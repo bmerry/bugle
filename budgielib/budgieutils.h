@@ -100,7 +100,7 @@ typedef struct
     const char *name;
 } bitfield_pair;
 
-extern const type_data type_table[];
+extern const type_data budgie_type_table[];
 /* Not const due to "real" field.
  * FIXME: split that field out for better efficiency */
 extern function_data budgie_function_table[];
@@ -117,14 +117,14 @@ bool check_skip(budgie_function); /* true to directly call this function */
 bool check_set_reentrance(void);
 void clear_reentrance(void);
 
-char *string_io(void (*call)(FILE *, void *), void *data);
+char *budgie_string_io(void (*call)(FILE *, void *), void *data);
 
 /* User functions */
 
-bool dump_string(const char *value, FILE *out);
-int count_string(const char *value);
+bool budgie_dump_string(const char *value, FILE *out);
+int budgie_count_string(const char *value);
 
-void make_indent(int indent, FILE *out);
+void budgie_make_indent(int indent, FILE *out);
 void budgie_dump_any_type(budgie_type type, const void *value, int length, FILE *out);
 void budgie_dump_any_call(const generic_function_call *call, int indent, FILE *out);
 void initialise_real(void);

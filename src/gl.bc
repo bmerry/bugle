@@ -6,7 +6,7 @@ INCLUDE src/data/overrides.h
 INCLUDE src/gldump.h
 INCLUDE src/glstate.h
 LIBRARY libGL.so
-LIMIT gl[A-Z][a-z].*|glXSwapBuffers|glXGetProcAddress(ARB)?|glXCreateContext|glXCreateNewContext|glXDestroyContext|glXMakeCurrent|glXMakeContextCurrent|glXQueryVersion|glXQueryExtensionsString
+LIMIT gl[A-Z][a-z].*|glXSwapBuffers|glXGetProcAddress(ARB)?|glXCreateContext|glXCreateNewContext|glXDestroyContext|glXMakeCurrent|glXMakeContextCurrent|glXQueryContext|glXGetCurrentDisplay|glXGetCurrentContext|glXGetCurrentDrawable|glXGetCurrentReadDrawable|glXChooseFBConfig|glXUseXFont|glXQueryDrawable|glXQueryVersion|glXQueryExtensionsString|glXIsDirect
 
 # Typedefs
 NEWTYPE BITFIELD bufferbits GLbitfield GL_COLOR_BUFFER_BIT GL_DEPTH_BUFFER_BIT GL_ACCUM_BUFFER_BIT GL_STENCIL_BUFFER_BIT
@@ -71,36 +71,36 @@ LENGTH PARAMETER glShaderSource(ARB)? 3 $1
 LENGTH PARAMETER glCompressedTexImage2D(ARB)? 7 $6
 
 # Functions where the count is determined by the token
-LENGTH PARAMETER glDrawElements 3 gl_type_to_size($2) * $1
-LENGTH PARAMETER glDrawRangeElements(EXT)? 5 gl_type_to_size($4) * $3
+LENGTH PARAMETER glDrawElements 3 bugle_gl_type_to_size($2) * $1
+LENGTH PARAMETER glDrawRangeElements(EXT)? 5 bugle_gl_type_to_size($4) * $3
 
-TYPE PARAMETER glTexImage1D 7 gl_type_to_type_ptr($6)
-LENGTH PARAMETER glTexImage1D 7 image_element_count($3, 1, -1, $5, $6, true)
-TYPE PARAMETER glTexSubImage1D 6 gl_type_to_type_ptr($5)
-LENGTH PARAMETER glTexSubImage1D 6 image_element_count($3, 1, -1, $4, $5, true)
-TYPE PARAMETER glTexImage2D 8 gl_type_to_type_ptr($7)
-LENGTH PARAMETER glTexImage2D 8 image_element_count($3, $4, -1, $6, $7, true)
-TYPE PARAMETER glTexSubImage2D 8 gl_type_to_type_ptr($7)
-LENGTH PARAMETER glTexSubImage2D 8 image_element_count($4, $5, -1, $6, $7, true)
-TYPE PARAMETER glTexImage3D(EXT)? 9 gl_type_to_type_ptr($8)
-LENGTH PARAMETER glTexImage3D(EXT)? 9 image_element_count($3, $4, $5, $7, $8, true)
-TYPE PARAMETER glTexSubImage3D(EXT)? 10 gl_type_to_type_ptr($9)
-LENGTH PARAMETER glTexSubImage3D(EXT)? 10 image_element_count($5, $6, $7, $8, $9, true)
-TYPE PARAMETER glGetTexImage 4 gl_type_to_type_ptr($3)
-LENGTH PARAMETER glGetTexImage 4 texture_element_count($0, $1, $2, $3)
+TYPE PARAMETER glTexImage1D 7 bugle_gl_type_to_type_ptr($6)
+LENGTH PARAMETER glTexImage1D 7 bugle_image_element_count($3, 1, -1, $5, $6, true)
+TYPE PARAMETER glTexSubImage1D 6 bugle_gl_type_to_type_ptr($5)
+LENGTH PARAMETER glTexSubImage1D 6 bugle_image_element_count($3, 1, -1, $4, $5, true)
+TYPE PARAMETER glTexImage2D 8 bugle_gl_type_to_type_ptr($7)
+LENGTH PARAMETER glTexImage2D 8 bugle_image_element_count($3, $4, -1, $6, $7, true)
+TYPE PARAMETER glTexSubImage2D 8 bugle_gl_type_to_type_ptr($7)
+LENGTH PARAMETER glTexSubImage2D 8 bugle_image_element_count($4, $5, -1, $6, $7, true)
+TYPE PARAMETER glTexImage3D(EXT)? 9 bugle_gl_type_to_type_ptr($8)
+LENGTH PARAMETER glTexImage3D(EXT)? 9 bugle_image_element_count($3, $4, $5, $7, $8, true)
+TYPE PARAMETER glTexSubImage3D(EXT)? 10 bugle_gl_type_to_type_ptr($9)
+LENGTH PARAMETER glTexSubImage3D(EXT)? 10 bugle_image_element_count($5, $6, $7, $8, $9, true)
+TYPE PARAMETER glGetTexImage 4 bugle_gl_type_to_type_ptr($3)
+LENGTH PARAMETER glGetTexImage 4 bugle_texture_element_count($0, $1, $2, $3)
 
 LENGTH PARAMETER glGetAttachedObjects(ARB)? 3 *$2
 
 # Both count and interpretation of type depend on the token
 # Note that we only override length for the vector versions
-LENGTH PARAMETER gl(LightModel|Fog)[if]v 1 count_gl($f, $0)
-LENGTH PARAMETER glGet(Boolean|Integer|Float|Double)v 1 count_gl($f, $0)
-LENGTH PARAMETER gl(Get)?(Material|Light|Tex(Env|Parameter|Gen))[sifd]v 2 count_gl($f, $1)
-LENGTH PARAMETER gl(Get)?TexLevelParameter[if]v 3 count_gl($f, $2)
-DUMP PARAMETER gl(LightModel|Fog)[if]v? 1 dump_convert($0, &$$, $t$, $F)
-DUMP PARAMETER glGet(Integer|Float|Double)v 1 dump_convert($0, &$$, $t$, $F)
-DUMP PARAMETER gl(Get)?(Material|Light|Tex(Env|Parameter|Gen))[sifd]v? 2 dump_convert($1, &$$, $t$, $F)
-DUMP PARAMETER gl(Get)?TexLevelParameter[if]v? 3 dump_convert($2, &$$, $t$, $F)
+LENGTH PARAMETER gl(LightModel|Fog)[if]v 1 bugle_count_gl($f, $0)
+LENGTH PARAMETER glGet(Boolean|Integer|Float|Double)v 1 bugle_count_gl($f, $0)
+LENGTH PARAMETER gl(Get)?(Material|Light|Tex(Env|Parameter|Gen))[sifd]v 2 bugle_count_gl($f, $1)
+LENGTH PARAMETER gl(Get)?TexLevelParameter[if]v 3 bugle_count_gl($f, $2)
+DUMP PARAMETER gl(LightModel|Fog)[if]v? 1 bugle_dump_convert($0, &$$, $t$, $F)
+DUMP PARAMETER glGet(Integer|Float|Double)v 1 bugle_dump_convert($0, &$$, $t$, $F)
+DUMP PARAMETER gl(Get)?(Material|Light|Tex(Env|Parameter|Gen))[sifd]v? 2 bugle_dump_convert($1, &$$, $t$, $F)
+DUMP PARAMETER gl(Get)?TexLevelParameter[if]v? 3 bugle_dump_convert($2, &$$, $t$, $F)
 
 # Assorted type overrides
 
@@ -126,22 +126,22 @@ TYPE PARAMETER glProgramString(ARB)? 3 TYPE_PKc
 TYPE PARAMETER glXGetProcAddress(ARB)? 0 TYPE_PKc
 
 # Dumping overrides
-DUMP TYPE GLenum dump_GLenum($$, $F)
-DUMP TYPE GLboolean dump_GLboolean($$, $F)
-DUMP TYPE GLerror dump_GLerror($$, $F)
-DUMP TYPE GLalternateenum dump_GLalternateenum($$, $F)
-DUMP TYPE GLcomponentsenum dump_GLcomponentsenum($$, $F)
-DUMP TYPE GLXDrawable dump_GLXDrawable($$, $F)
-DUMP TYPE +PKc dump_string($$, $F)
-DUMP TYPE +Pc dump_string($$, $F)
-DUMP TYPE +PK9GLchar dump_string($$, $F)
-DUMP TYPE +P9GLchar dump_string($$, $F)
-LENGTH TYPE +PKc count_string($$)
-LENGTH TYPE +Pc count_string($$)
-LENGTH TYPE +PK9GLcharARB count_string($$)
-LENGTH TYPE +P9GLcharARB count_string($$)
-LENGTH TYPE +PK9GLchar count_string($$)
-LENGTH TYPE +P9GLchar count_string($$)
+DUMP TYPE GLenum bugle_dump_GLenum($$, $F)
+DUMP TYPE GLboolean bugle_dump_GLboolean($$, $F)
+DUMP TYPE GLerror bugle_dump_GLerror($$, $F)
+DUMP TYPE GLalternateenum bugle_dump_GLalternateenum($$, $F)
+DUMP TYPE GLcomponentsenum bugle_dump_GLcomponentsenum($$, $F)
+DUMP TYPE GLXDrawable bugle_dump_GLXDrawable($$, $F)
+DUMP TYPE +PKc budgie_dump_string($$, $F)
+DUMP TYPE +Pc budgie_dump_string($$, $F)
+DUMP TYPE +PK9GLchar budgie_dump_string($$, $F)
+DUMP TYPE +P9GLchar budgie_dump_string($$, $F)
+LENGTH TYPE +PKc budgie_count_string($$)
+LENGTH TYPE +Pc budgie_count_string($$)
+LENGTH TYPE +PK9GLcharARB budgie_count_string($$)
+LENGTH TYPE +P9GLcharARB budgie_count_string($$)
+LENGTH TYPE +PK9GLchar budgie_count_string($$)
+LENGTH TYPE +P9GLchar budgie_count_string($$)
 
 # FIXME: LOAD and SAVE still won't work
 

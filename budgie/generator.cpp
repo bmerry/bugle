@@ -164,7 +164,7 @@ string dump_funcs(bool prototype)
     for (i = dump_overrides.begin(); i != dump_overrides.end(); i++)
     {
         if (i->first.type) continue;
-        out << "bool dump_";
+        out << "bool budgie_dump_";
         if (i->first.param == -1) out << "ret";
         else out << i->first.param;
         out << "_FUNC_" << IDENTIFIER_POINTER(DECL_NAME(i->first.func))
@@ -216,7 +216,7 @@ bool dumpable(tree_node_p type)
 static void make_dumper(tree_node_p node, bool prototype, ostream &out)
 {
     string custom_code;
-    string name = "dump_type_" + type_to_id(node);
+    string name = "budgie_dump_type_" + type_to_id(node);
     tree_node_p child;
 
     // We take a const pointer, to avoid copies
@@ -257,7 +257,7 @@ static void make_dumper(tree_node_p node, bool prototype, ostream &out)
         }
         out << "    };\n"
             << custom_code
-            << "    dump_bitfield(*value, out, tokens, " << tokens.size() << ");\n";
+            << "    budgie_dump_bitfield(*value, out, tokens, " << tokens.size() << ");\n";
     }
     else
     {
@@ -421,7 +421,7 @@ string type_table(bool header)
         out << "#define NUMBER_OF_TYPES " << counter << "\n"
             << "extern int number_of_types;\n"
             << "\n"
-            << "extern const type_data type_table[NUMBER_OF_TYPES];\n"
+            << "extern const type_data budgie_type_table[NUMBER_OF_TYPES];\n"
             << "\n";
     }
     else
@@ -459,7 +459,7 @@ string type_table(bool header)
             }
         }
 
-        out << "const type_data type_table[NUMBER_OF_TYPES] =\n"
+        out << "const type_data budgie_type_table[NUMBER_OF_TYPES] =\n"
             << "{\n";
 
         // generate the main table
@@ -518,7 +518,7 @@ string type_table(bool header)
             }
             else
                 out << "1"; // FIXME: should this perhaps be -1?
-            out << ", (type_dumper) dump_type_" << type_to_id(i->second);
+            out << ", (type_dumper) budgie_dump_type_" << type_to_id(i->second);
             param_or_type test(i->second);
             if (type_overrides.count(test))
                 out << ", get_type_TYPE_" << type_to_id(i->second);
@@ -565,10 +565,10 @@ void type_converter(bool prototype, ostream &out)
         << "    long double value;\n"
         << "    size_t i;\n"
         << "    if (in_type == out_type\n"
-        << "        || (type_table[in_type].code == type_table[out_type].code\n"
-        << "            && type_table[in_type].size == type_table[out_type].size))\n"
+        << "        || (budgie_type_table[in_type].code == budgie_type_table[out_type].code\n"
+        << "            && budgie_type_table[in_type].size == budgie_type_table[out_type].size))\n"
         << "    {\n"
-        << "        memcpy(out, in, type_table[in_type].size * count);\n"
+        << "        memcpy(out, in, budgie_type_table[in_type].size * count);\n"
         << "        return;\n"
         << "    }\n"
         << "    for (i = 0; i < count; i++)\n"
@@ -654,7 +654,7 @@ void function_table(bool header, ostream &out)
                 if (dump_overrides.count(test))
                 {
                     ostringstream dumper_str;
-                    dumper_str << "dump_" << count << "_FUNC_" << name;
+                    dumper_str << "budgie_dump_" << count << "_FUNC_" << name;
                     dumper = dumper_str.str();
                 }
                 if (count == 0)
@@ -706,7 +706,7 @@ void function_table(bool header, ostream &out)
                 param_or_type test(functions[i], -1);
                 string dumper = "NULL";
                 if (dump_overrides.count(test))
-                    dumper = "dump_ret_FUNC_" + name;
+                    dumper = "budgie_dump_ret_FUNC_" + name;
                 out << "{ " << type_to_enum(TREE_TYPE(type)) << ", "
                     << dumper << ", ";
                 if (type_overrides.count(test))
@@ -1067,7 +1067,7 @@ static void make_state_instance_struct(gen_state_tree *node,
                 << ", const char *name)\n"
                 << "{\n"
                 << "    return (" << indexed->instance_class
-                << " *) add_state_index(&s->generic, &key, name);\n"
+                << " *) budgie_add_state_index(&s->generic, &key, name);\n"
                 << "}\n\n";
         }
     }
@@ -1076,7 +1076,7 @@ static void make_state_instance_struct(gen_state_tree *node,
         out << "static void " << name << "_constructor(state_generic *s, state_generic *parent)\n"
             << "{\n"
             << "    " << name << " *me = (" << name << " *) s;\n"
-            << "    initialise_state(s, parent);\n"
+            << "    budgie_initialise_state(s, parent);\n"
             << "    s->children = me->children;\n"
             << "    s->spec = &state_spec_table[" << node->index << "];\n";
         if (node->type != NULL_TREE)

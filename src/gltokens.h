@@ -29,8 +29,8 @@ typedef struct
     const char *extension;   /* Extension that defines this token (NULL for core) */
 } gl_token;
 
-extern const gl_token gl_tokens_name[];
-extern const gl_token gl_tokens_value[];
-extern int gl_token_count;
+extern const gl_token bugle_gl_tokens_name[];
+extern const gl_token bugle_gl_tokens_value[];
+extern int bugle_gl_token_count;
 
 #endif /* !BUGLE_SRC_GLTOKENS_H */

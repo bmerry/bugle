@@ -30,7 +30,7 @@
 static GLenum state_to_enum(state_generic *state)
 {
     /* FIXME: should be made must faster (store in the specs) */
-    return gl_token_to_enum(state->spec->name);
+    return bugle_gl_token_to_enum(state->spec->name);
 }
 
 int glstate_compare_GLint(const void *a, const void *b)

@@ -61,9 +61,9 @@ static void trackcontext_initialise_state(const void *key, void *data)
     GLXContext ctx;
     state_generic *parent;
 
-    parent = &get_root_state()->c_context.generic;
+    parent = &budgie_get_root_state()->c_context.generic;
     ctx = (GLXContext) key;
-    *(state_7context_I **) data = (state_7context_I *) get_state_index(parent, &ctx);
+    *(state_7context_I **) data = (state_7context_I *) budgie_get_state_index(parent, &ctx);
 }
 
 static bool trackcontext_callback(function_call *call, const callback_data *data)
@@ -83,16 +83,16 @@ static bool trackcontext_callback(function_call *call, const callback_data *data
         /* These calls may fail, so we must explicitly check for the
          * current context.
          */
-        ctx = glXGetCurrentContext();
+        ctx = CALL_glXGetCurrentContext();
         if (!ctx)
             bugle_object_set_current(&bugle_context_class, NULL);
         else
         {
-            parent = &get_root_state()->c_context.generic;
+            parent = &budgie_get_root_state()->c_context.generic;
             pthread_mutex_lock(&context_mutex);
-            if (!(state = (state_7context_I *) get_state_index(parent, &ctx)))
+            if (!(state = (state_7context_I *) budgie_get_state_index(parent, &ctx)))
             {
-                state = (state_7context_I *) add_state_index(parent, &ctx, NULL);
+                state = (state_7context_I *) budgie_add_state_index(parent, &ctx, NULL);
                 obj = bugle_object_new(&bugle_context_class, ctx, true);
                 bugle_hashptr_set(&context_objects, ctx, obj);
             }

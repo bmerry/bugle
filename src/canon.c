@@ -52,7 +52,7 @@ budgie_function bugle_canonical_function(budgie_function f)
     if (f < 0 || f >= NUMBER_OF_FUNCTIONS)
         return f;
     else
-        return gl_function_table[f].canonical;
+        return bugle_gl_function_table[f].canonical;
 }
 
 budgie_function bugle_canonical_call(const function_call *call)
@@ -60,7 +60,7 @@ budgie_function bugle_canonical_call(const function_call *call)
     if (call->generic.id < 0 || call->generic.id >= NUMBER_OF_FUNCTIONS)
         return call->generic.id;
     else
-        return gl_function_table[call->generic.id].canonical;
+        return bugle_gl_function_table[call->generic.id].canonical;
 }
 
 budgie_function bugle_find_function(const char *name)

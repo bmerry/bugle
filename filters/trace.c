@@ -36,7 +36,7 @@ static bool trace_callback(function_call *call, const callback_data *data)
         budgie_dump_any_call(&call->generic, 0, f);
     if ((error = bugle_get_call_error(call)) && (f = bugle_log_header("trace", "error")))
     {
-        dump_GLerror(error, f);
+        bugle_dump_GLerror(error, f);
         fputs("\n", f);
     }
     return true;

@@ -28,44 +28,44 @@
 #include "common/bool.h"
 #include "src/gltokens.h"
 
-GLenum gl_token_to_enum(const char *name);
-const gl_token *gl_enum_to_token_struct(GLenum e);
-const char *gl_enum_to_token(GLenum e);
+GLenum bugle_gl_token_to_enum(const char *name);
+const gl_token *bugle_gl_enum_to_token_struct(GLenum e);
+const char *bugle_gl_enum_to_token(GLenum e);
 
-budgie_type gl_type_to_type(GLenum gl_type);
-budgie_type gl_type_to_type_ptr(GLenum gl_type);
-size_t gl_type_to_size(GLenum gl_type);
+budgie_type bugle_gl_type_to_type(GLenum gl_type);
+budgie_type bugle_gl_type_to_type_ptr(GLenum gl_type);
+size_t bugle_gl_type_to_size(GLenum gl_type);
 
 /* Initialiser for certain dumping function */
 void initialise_dump_tables(void);
 
-int count_gl(budgie_function func, GLenum token);
-int count_global_query(GLenum token);
-bool dump_GLenum(GLenum e, FILE *out);
-bool dump_GLalternateenum(GLenum e, FILE *out);
-bool dump_GLcomponentsenum(GLenum e, FILE *out);
-bool dump_GLerror(GLenum e, FILE *out);
-bool dump_GLboolean(GLboolean b, FILE *out);
-bool dump_GLXDrawable(GLXDrawable d, FILE *out);
-bool dump_convert(GLenum pname, const void *value,
-                  budgie_type in_type, FILE *out);
+int bugle_count_gl(budgie_function func, GLenum token);
+int bugle_count_global_query(GLenum token);
+bool bugle_dump_GLenum(GLenum e, FILE *out);
+bool bugle_dump_GLalternateenum(GLenum e, FILE *out);
+bool bugle_dump_GLcomponentsenum(GLenum e, FILE *out);
+bool bugle_dump_GLerror(GLenum e, FILE *out);
+bool bugle_dump_GLboolean(GLboolean b, FILE *out);
+bool bugle_dump_GLXDrawable(GLXDrawable d, FILE *out);
+bool bugle_dump_convert(GLenum pname, const void *value,
+                        budgie_type in_type, FILE *out);
 
 /* Computes the number of pixel elements (units of byte, int, float etc)
  * used by a client-side encoding of a 1D, 2D or 3D image.
  * Specify -1 for depth for 1D or 2D textures.
  */
-size_t image_element_count(GLsizei width,
-                           GLsizei height,
-                           GLsizei depth,
-                           GLenum format,
-                           GLenum type,
-                           bool unpack);
+size_t bugle_image_element_count(GLsizei width,
+                                 GLsizei height,
+                                 GLsizei depth,
+                                 GLenum format,
+                                 GLenum type,
+                                 bool unpack);
 
 /* Computes the number of pixel elements required by glGetTexImage
  */
-size_t texture_element_count(GLenum target,
-                             GLint level,
-                             GLenum format,
-                             GLenum type);
+size_t bugle_texture_element_count(GLenum target,
+                                   GLint level,
+                                   GLenum format,
+                                   GLenum type);
 
 #endif /* !BUGLE_SRC_GLDUMP_H */

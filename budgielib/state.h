@@ -80,20 +80,20 @@ typedef struct state_generic_s
 
 struct state_root_s;
 
-void update_state(state_generic *state);
-void update_state_recursive(state_generic *state);
-void initialise_state(state_generic *, state_generic *parent);
-state_generic *create_state(const state_spec *spec, state_generic *parent);
-void destroy_state(state_generic *state, bool indexed);
-void *get_state_cached(state_generic *state);
-void *get_state_current(state_generic *state);
-struct state_root_s *get_root_state(void);
+void budgie_update_state(state_generic *state);
+void budgie_update_state_recursive(state_generic *state);
+void budgie_initialise_state(state_generic *, state_generic *parent);
+state_generic *budgie_create_state(const state_spec *spec, state_generic *parent);
+void budgie_destroy_state(state_generic *state, bool indexed);
+void *budgie_get_state_cached(state_generic *state);
+void *budgie_get_state_current(state_generic *state);
+struct state_root_s *budgie_get_root_state(void);
 
 /* index-specific stuff */
-state_generic *add_state_index(state_generic *node, const void *key, const char *name);
-state_generic *get_state_index(state_generic *node, const void *key);
-state_generic *get_state_index_number(state_generic *node, int number);
-state_generic *get_state_by_name(state_generic *base, const char *name);
-void remove_state_index(state_generic *node, const void *key);
+state_generic *budgie_add_state_index(state_generic *node, const void *key, const char *name);
+state_generic *budgie_get_state_index(state_generic *node, const void *key);
+state_generic *budgie_get_state_index_number(state_generic *node, int number);
+state_generic *budgie_get_state_by_name(state_generic *base, const char *name);
+void budgie_remove_state_index(state_generic *node, const void *key);
 
 #endif /* !BUGLE_BUDGIELIB_STATE_H */

@@ -50,7 +50,7 @@ static void dump_state(state_generic *state, int indent, FILE *out)
     state_generic **children;
     char *ptr;
 
-    make_indent(indent, out);
+    budgie_make_indent(indent, out);
     fputs(state->name, out);
     if (state->data)
     {
@@ -58,25 +58,25 @@ static void dump_state(state_generic *state, int indent, FILE *out)
         if (state->spec->data_length > 1)
         {
             fputs("(", out);
-            ptr = get_state_current(state);
+            ptr = budgie_get_state_current(state);
             for (i = 0; i < state->spec->data_length; i++)
             {
                 if (i) fputs(", ", out);
                 budgie_dump_any_type(state->spec->data_type, ptr,
                                      -1, out);
-                ptr += type_table[state->spec->data_type].size;
+                ptr += budgie_type_table[state->spec->data_type].size;
             }
             fputs(")", out);
         }
         else
-            budgie_dump_any_type(state->spec->data_type, get_state_current(state),
+            budgie_dump_any_type(state->spec->data_type, budgie_get_state_current(state),
                                  -1, out);
     }
     fputs("\n", out);
     if (state->num_indexed)
     {
         big = true;
-        make_indent(indent, out);
+        budgie_make_indent(indent, out);
         fputs("{\n", out);
         for (i = 0; i < state->num_indexed; i++)
             dump_state(state->indexed[i], indent + 4, out);
@@ -86,19 +86,19 @@ static void dump_state(state_generic *state, int indent, FILE *out)
         if (!big)
         {
             big = true;
-            make_indent(indent, out);
+            budgie_make_indent(indent, out);
             fputs("{\n", out);
         }
         dump_state(*children, indent + 4, out);
     }
     if (big)
     {
-        make_indent(indent, out);
+        budgie_make_indent(indent, out);
         fputs("}\n", out);
     }
 }
 
-/* A driver for string_io, for state dumping. */
+/* A driver for budgie_string_io, for state dumping. */
 static void dump_string_state(FILE *f, void *data)
 {
     dump_state((state_generic *) data, 0, f);
@@ -126,18 +126,18 @@ static bool debugger_screenshot(int pipe)
 
     aux = bugle_get_aux_context();
     if (!aux || !bugle_begin_internal_render()) return false;
-    real = glXGetCurrentContext();
-    old_write = glXGetCurrentDrawable();
-    old_read = glXGetCurrentReadDrawable();
-    dpy = glXGetCurrentDisplay();
-    glXQueryDrawable(dpy, old_write, GLX_WIDTH, &width);
-    glXQueryDrawable(dpy, old_write, GLX_HEIGHT, &height);
+    real = CALL_glXGetCurrentContext();
+    old_write = CALL_glXGetCurrentDrawable();
+    old_read = CALL_glXGetCurrentReadDrawable();
+    dpy = CALL_glXGetCurrentDisplay();
+    CALL_glXQueryDrawable(dpy, old_write, GLX_WIDTH, &width);
+    CALL_glXQueryDrawable(dpy, old_write, GLX_HEIGHT, &height);
     CALL_glXMakeContextCurrent(dpy, old_write, old_write, aux);
 
     wh[0] = width;
     wh[1] = height;
     stride = ((3 * width + 3) & ~3);
-    header = string_io(dump_ppm_header, wh);
+    header = budgie_string_io(dump_ppm_header, wh);
     data = bugle_malloc(stride * height);
     CALL_glReadPixels(0, 0, width, height, GL_RGB, GL_UNSIGNED_BYTE, data);
 
@@ -273,7 +273,7 @@ static void debugger_loop(bool init)
             }
             if (*req_str)
             {
-                state = get_state_by_name(&ctx->generic, req_str);
+                state = budgie_get_state_by_name(&ctx->generic, req_str);
                 if (!state)
                 {
                     gldb_send_code(out_pipe, RESP_ERROR);
@@ -281,10 +281,10 @@ static void debugger_loop(bool init)
                     gldb_send_string(out_pipe, "No such state");
                     break;
                 }
-                resp_str = string_io(dump_string_state, state);
+                resp_str = budgie_string_io(dump_string_state, state);
             }
             else
-                resp_str = string_io(dump_string_state, &ctx->generic);
+                resp_str = budgie_string_io(dump_string_state, &ctx->generic);
             gldb_send_code(out_pipe, RESP_STATE);
             gldb_send_string(out_pipe, resp_str);
             free(resp_str);
@@ -369,7 +369,7 @@ static bool debugger_error_callback(function_call *call, const callback_data *da
     {
         gldb_send_code(out_pipe, RESP_BREAK_ERROR);
         gldb_send_string(out_pipe, budgie_function_table[call->generic.id].name);
-        gldb_send_string(out_pipe, gl_enum_to_token(error));
+        gldb_send_string(out_pipe, bugle_gl_enum_to_token(error));
         debugger_loop(false);
     }
     return true;

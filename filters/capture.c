@@ -350,12 +350,12 @@ static bool end_screenshot(GLenum format, int test_width, int test_height)
             fputs("warning: buffer data was lost - corrupting frame\n", stderr);
     }
 
-    real = glXGetCurrentContext();
-    old_write = glXGetCurrentDrawable();
-    old_read = glXGetCurrentReadDrawable();
-    dpy = glXGetCurrentDisplay();
-    glXQueryDrawable(dpy, old_write, GLX_WIDTH, &width);
-    glXQueryDrawable(dpy, old_write, GLX_HEIGHT, &height);
+    real = CALL_glXGetCurrentContext();
+    old_write = CALL_glXGetCurrentDrawable();
+    old_read = CALL_glXGetCurrentReadDrawable();
+    dpy = CALL_glXGetCurrentDisplay();
+    CALL_glXQueryDrawable(dpy, old_write, GLX_WIDTH, &width);
+    CALL_glXQueryDrawable(dpy, old_write, GLX_HEIGHT, &height);
     if (test_width != -1 || test_height != -1)
         if (width != test_width || height != test_height)
         {
@@ -636,7 +636,7 @@ static bool showextensions_callback(function_call *call, const callback_data *da
     const gl_function *glinfo;
 
     info = &budgie_function_table[call->generic.id];
-    glinfo = &gl_function_table[call->generic.id];
+    glinfo = &bugle_gl_function_table[call->generic.id];
     if (glinfo->extension)
         bugle_hash_set(&seen_extensions, glinfo->extension, &seen_extensions);
     else
@@ -655,7 +655,7 @@ static bool showextensions_callback(function_call *call, const callback_data *da
             const gl_token *t;
 
             e = *(const GLenum *) call->generic.args[i];
-            t = gl_enum_to_token_struct(e);
+            t = bugle_gl_enum_to_token_struct(e);
             if (t && t->extension)
                 bugle_hash_set(&seen_extensions, t->extension, &seen_extensions);
         }
@@ -685,12 +685,12 @@ static void destroy_showextensions(filter_set *handle)
     printf("Min GL version: %s\n", gl_version);
     printf("Min GLX version: %s\n", glx_version);
     printf("Used extensions:");
-    for (i = 0; i < gl_token_count; i++)
+    for (i = 0; i < bugle_gl_token_count; i++)
     {
         const char *ver, *ext;
 
-        ver = gl_tokens_name[i].version;
-        ext = gl_tokens_name[i].extension;
+        ver = bugle_gl_tokens_name[i].version;
+        ext = bugle_gl_tokens_name[i].extension;
         if ((!ver || strcmp(ver, gl_version) > 0)
             && ext && bugle_hash_get(&seen_extensions, ext) == &seen_extensions)
         {
@@ -702,7 +702,7 @@ static void destroy_showextensions(filter_set *handle)
     {
         const char *ext;
 
-        ext = gl_function_table[f].extension;
+        ext = bugle_gl_function_table[f].extension;
         if (ext && bugle_hash_get(&seen_extensions, ext) == &seen_extensions)
         {
             printf(" %s", ext);

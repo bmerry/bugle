@@ -29,22 +29,22 @@
 extern const state_spec *root_state_spec; /* defined in utils.c */
 static struct state_root_s *root_state = NULL;
 
-void update_state(state_generic *state)
+void budgie_update_state(state_generic *state)
 {
     if (state->spec->updater)
         (*state->spec->updater)(state);
 }
 
-void update_state_recursive(state_generic *state)
+void budgie_update_state_recursive(state_generic *state)
 {
     state_generic **i;
 
-    update_state(state);
+    budgie_update_state(state);
     for (i = state->children; *i; i++)
-        update_state_recursive(*i);
+        budgie_update_state_recursive(*i);
 }
 
-void initialise_state(state_generic *s, state_generic *parent)
+void budgie_initialise_state(state_generic *s, state_generic *parent)
 {
     /* other fields are set by constructors */
     s->key = NULL;
@@ -54,7 +54,7 @@ void initialise_state(state_generic *s, state_generic *parent)
     s->max_indexed = 0;
 }
 
-state_generic *create_state(const state_spec *spec, state_generic *parent)
+state_generic *budgie_create_state(const state_spec *spec, state_generic *parent)
 {
     state_generic *s;
 
@@ -64,14 +64,14 @@ state_generic *create_state(const state_spec *spec, state_generic *parent)
     return s;
 }
 
-void destroy_state(state_generic *state, bool indexed)
+void budgie_destroy_state(state_generic *state, bool indexed)
 {
     int i;
 
     for (i = 0; i < state->num_indexed; i++)
-        destroy_state(state->indexed[i], true);
+        budgie_destroy_state(state->indexed[i], true);
     for (i = 0; state->children[i]; i++)
-        destroy_state(state->children[i], false);
+        budgie_destroy_state(state->children[i], false);
     if (state->indexed) free(state->indexed);
     if (indexed)
     {
@@ -80,24 +80,24 @@ void destroy_state(state_generic *state, bool indexed)
     }
 }
 
-void *get_state_cached(state_generic *state)
+void *budgie_get_state_cached(state_generic *state)
 {
     return state->data;
 }
 
-void *get_state_current(state_generic *state)
+void *budgie_get_state_current(state_generic *state)
 {
-    update_state(state);
+    budgie_update_state(state);
     return state->data;
 }
 
 static pthread_once_t root_once = PTHREAD_ONCE_INIT;
 static void create_root_state(void)
 {
-    root_state = (struct state_root_s *) create_state(root_state_spec, NULL);
+    root_state = (struct state_root_s *) budgie_create_state(root_state_spec, NULL);
 }
 
-struct state_root_s *get_root_state(void)
+struct state_root_s *budgie_get_root_state(void)
 {
     pthread_once(&root_once, create_root_state);
     return root_state;
@@ -109,7 +109,7 @@ typedef struct
     int count;
     const void *value;
 } dump_any_type_str_data;
-/* A driver for string_io, that wraps budgie_dump_any_type */
+/* A driver for budgie_string_io, that wraps budgie_dump_any_type */
 static void dump_any_type_str(FILE *f, void *data)
 {
     const dump_any_type_str_data *d;
@@ -119,7 +119,7 @@ static void dump_any_type_str(FILE *f, void *data)
 }
 
 /* index-specific stuff */
-state_generic *add_state_index(state_generic *node, const void *key, const char *name)
+state_generic *budgie_add_state_index(state_generic *node, const void *key, const char *name)
 {
     state_generic *s;
     int i, j;
@@ -130,9 +130,9 @@ state_generic *add_state_index(state_generic *node, const void *key, const char 
         else node->max_indexed *= 2;
         node->indexed = realloc(node->indexed, node->max_indexed * sizeof(state_generic *));
     }
-    s = create_state(node->spec->indexed, node);
+    s = budgie_create_state(node->spec->indexed, node);
     if (s->spec->key_type != NULL_TYPE)
-        memcpy(s->key, key, type_table[s->spec->key_type].size);
+        memcpy(s->key, key, budgie_type_table[s->spec->key_type].size);
     if (s->spec->key_compare)
     {
         i = 0;
@@ -151,7 +151,7 @@ state_generic *add_state_index(state_generic *node, const void *key, const char 
         d.type = s->spec->key_type;
         d.count = 1;
         d.value = key;
-        s->name = string_io(dump_any_type_str, &d);
+        s->name = budgie_string_io(dump_any_type_str, &d);
     }
     else
         s->name = bugle_strdup("[]");
@@ -163,7 +163,7 @@ state_generic *add_state_index(state_generic *node, const void *key, const char 
     return s;
 }
 
-static int get_state_index_position(state_generic *node, const void *key)
+static int budgie_get_state_index_position(state_generic *node, const void *key)
 {
     int l, r, m;
     const state_spec *spec;
@@ -193,37 +193,37 @@ static int get_state_index_position(state_generic *node, const void *key)
     return -1;
 }
 
-state_generic *get_state_index(state_generic *node, const void *key)
+state_generic *budgie_get_state_index(state_generic *node, const void *key)
 {
     int num;
 
-    num = get_state_index_position(node, key);
+    num = budgie_get_state_index_position(node, key);
     if (num == -1) return NULL;
     else return node->indexed[num];
 }
 
-state_generic *get_state_index_number(state_generic *node, int number)
+state_generic *budgie_get_state_index_number(state_generic *node, int number)
 {
     if (number < 0 || number >= node->num_indexed)
         return NULL;
     return node->indexed[number];
 }
 
-void remove_state_index(state_generic *node, const void *key)
+void budgie_remove_state_index(state_generic *node, const void *key)
 {
     int num, i;
 
-    num = get_state_index_position(node, key);
+    num = budgie_get_state_index_position(node, key);
     if (num != -1)
     {
-        destroy_state(node->indexed[num], true);
+        budgie_destroy_state(node->indexed[num], true);
         node->num_indexed--;
         for (i = num; i < node->num_indexed; i++)
             node->indexed[i] = node->indexed[i + 1];
     }
 }
 
-state_generic *get_state_by_name(state_generic *base, const char *name)
+state_generic *budgie_get_state_by_name(state_generic *base, const char *name)
 {
     size_t len;
     const char *p;
@@ -240,14 +240,14 @@ state_generic *get_state_by_name(state_generic *base, const char *name)
         len = p - name;
         for (i = 0; i < base->num_indexed; i++)
             if (strncmp(name, base->indexed[i]->name, len) == 0)
-                return get_state_by_name(base->indexed[i], p + 1);
+                return budgie_get_state_by_name(base->indexed[i], p + 1);
     }
     else
     {
         len = strcspn(name, ".[]");
         for (i = 0; base->children[i]; i++)
             if (strncmp(name, base->children[i]->spec->name, len) == 0)
-                return get_state_by_name(base->children[i], name + len);
+                return budgie_get_state_by_name(base->children[i], name + len);
     }
     return NULL;
 }

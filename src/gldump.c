@@ -40,12 +40,12 @@
  * non-NULL, then it outputs "<pointer> -> " first as if dumping a
  * pointer to the array.
  */
-void dump_any_type_extended(budgie_type type,
-                            const void *value,
-                            int length,
-                            int outer_length,
-                            const void *pointer,
-                            FILE *out)
+static void dump_any_type_extended(budgie_type type,
+                                   const void *value,
+                                   int length,
+                                   int outer_length,
+                                   const void *pointer,
+                                   FILE *out)
 {
     int i;
     const char *v;
@@ -62,61 +62,61 @@ void dump_any_type_extended(budgie_type type,
         {
             if (i) fputs(", ", out);
             budgie_dump_any_type(type, (const void *) v, length, out);
-            v += type_table[type].size;
+            v += budgie_type_table[type].size;
         }
         fputs(" }", out);
     }
 }
 
-const gl_token *gl_enum_to_token_struct(GLenum e)
+const gl_token *bugle_gl_enum_to_token_struct(GLenum e)
 {
     int l, r, m;
 
     l = 0;
-    r = gl_token_count;
+    r = bugle_gl_token_count;
     while (l + 1 < r)
     {
         m = (l + r) / 2;
-        if (e < gl_tokens_value[m].value) r = m;
+        if (e < bugle_gl_tokens_value[m].value) r = m;
         else l = m;
     }
-    if (gl_tokens_value[l].value != e)
+    if (bugle_gl_tokens_value[l].value != e)
         return NULL;
     else
     {
         /* Pick the first one, to avoid using extension suffices */
-        while (l > 0 && gl_tokens_value[l - 1].value == e) l--;
-        return &gl_tokens_value[l];
+        while (l > 0 && bugle_gl_tokens_value[l - 1].value == e) l--;
+        return &bugle_gl_tokens_value[l];
     }
 }
 
-const char *gl_enum_to_token(GLenum e)
+const char *bugle_gl_enum_to_token(GLenum e)
 {
     const gl_token *t;
 
-    t = gl_enum_to_token_struct(e);
+    t = bugle_gl_enum_to_token_struct(e);
     if (t) return t->name; else return NULL;
 }
 
-GLenum gl_token_to_enum(const char *name)
+GLenum bugle_gl_token_to_enum(const char *name)
 {
     int l, r, m;
 
     l = 0;
-    r = gl_token_count;
+    r = bugle_gl_token_count;
     while (l + 1 < r)
     {
         m = (l + r) / 2;
-        if (strcmp(name, gl_tokens_name[m].name) < 0) r = m;
+        if (strcmp(name, bugle_gl_tokens_name[m].name) < 0) r = m;
         else l = m;
     }
-    if (strcmp(gl_tokens_name[l].name, name) != 0)
+    if (strcmp(bugle_gl_tokens_name[l].name, name) != 0)
         return (GLenum) -1;
     else
-        return gl_tokens_name[l].value;
+        return bugle_gl_tokens_name[l].value;
 }
 
-budgie_type gl_type_to_type(GLenum gl_type)
+budgie_type bugle_gl_type_to_type(GLenum gl_type)
 {
     switch (gl_type)
     {
@@ -150,26 +150,26 @@ budgie_type gl_type_to_type(GLenum gl_type)
         return TYPE_8GLdouble;
     default:
         fprintf(stderr, "Do not know the correct type for %s; please email the author\n",
-                gl_enum_to_token(gl_type));
+                bugle_gl_enum_to_token(gl_type));
         exit(1);
     }
 }
 
-budgie_type gl_type_to_type_ptr(GLenum gl_type)
+budgie_type bugle_gl_type_to_type_ptr(GLenum gl_type)
 {
     budgie_type ans;
 
-    ans = type_table[gl_type_to_type(gl_type)].pointer;
+    ans = budgie_type_table[bugle_gl_type_to_type(gl_type)].pointer;
     assert(ans != NULL_TYPE);
     return ans;
 }
 
-size_t gl_type_to_size(GLenum gl_type)
+size_t bugle_gl_type_to_size(GLenum gl_type)
 {
-    return type_table[gl_type_to_type(gl_type)].size;
+    return budgie_type_table[bugle_gl_type_to_type(gl_type)].size;
 }
 
-int gl_format_to_count(GLenum format, GLenum type)
+int bugle_gl_format_to_count(GLenum format, GLenum type)
 {
     switch (type)
     {
@@ -207,7 +207,7 @@ int gl_format_to_count(GLenum format, GLenum type)
             return 4;
         default:
             fprintf(stderr, "unknown format %s; assuming 4 components\n",
-                    gl_enum_to_token(format));
+                    bugle_gl_enum_to_token(format));
             return 4; /* conservative */
         }
         break;
@@ -217,9 +217,9 @@ int gl_format_to_count(GLenum format, GLenum type)
     }
 }
 
-bool dump_GLenum(GLenum e, FILE *out)
+bool bugle_dump_GLenum(GLenum e, FILE *out)
 {
-    const char *name = gl_enum_to_token(e);
+    const char *name = bugle_gl_enum_to_token(e);
     if (!name)
         fprintf(out, "<unknown token 0x%.4x>", (unsigned int) e);
     else
@@ -227,38 +227,38 @@ bool dump_GLenum(GLenum e, FILE *out)
     return true;
 }
 
-bool dump_GLerror(GLenum err, FILE *out)
+bool bugle_dump_GLerror(GLenum err, FILE *out)
 {
     switch (err)
     {
     case GL_NO_ERROR: fputs("GL_NO_ERROR", out); break;
-    default: dump_GLenum(err, out);
+    default: bugle_dump_GLenum(err, out);
     }
     return true;
 }
 
 /* FIXME: redo definition of alternate enums, based on sort order */
-bool dump_GLalternateenum(GLenum token, FILE *out)
+bool bugle_dump_GLalternateenum(GLenum token, FILE *out)
 {
     switch (token)
     {
     case GL_ZERO: fputs("GL_ZERO", out); break;
     case GL_ONE: fputs("GL_ONE", out); break;
-    default: dump_GLenum(token, out);
+    default: bugle_dump_GLenum(token, out);
     }
     return true;
 }
 
-bool dump_GLcomponentsenum(GLenum token, FILE *out)
+bool bugle_dump_GLcomponentsenum(GLenum token, FILE *out)
 {
     if (token >= 1 && token <= 4)
-        dump_type_i(&token, -1, out);
+        budgie_dump_type_i(&token, -1, out);
     else
-        dump_GLenum(token,  out);
+        bugle_dump_GLenum(token,  out);
     return true;
 }
 
-bool dump_GLboolean(GLboolean b, FILE *out)
+bool bugle_dump_GLboolean(GLboolean b, FILE *out)
 {
     if (b == 0 || b == 1)
         fputs(b ? "GL_TRUE" : "GL_FALSE", out);
@@ -267,7 +267,7 @@ bool dump_GLboolean(GLboolean b, FILE *out)
     return true;
 }
 
-bool dump_GLXDrawable(GLXDrawable d, FILE *out)
+bool bugle_dump_GLXDrawable(GLXDrawable d, FILE *out)
 {
     fprintf(out, "0x%08x", (unsigned int) d);
     return true;
@@ -320,7 +320,7 @@ void initialise_dump_tables(void)
     cur = dump_table;
     for (s = state_spec_table; s != state_spec_table + specs; s++)
     {
-        e = gl_token_to_enum(s->name);
+        e = bugle_gl_token_to_enum(s->name);
         if (e == (GLenum) -1) continue;
         cur->key = e;
         if (s->data_type == TYPE_9GLboolean
@@ -355,8 +355,8 @@ static const dump_table_entry *get_dump_table_entry(GLenum e)
     return ans ? ans : &def;
 }
 
-bool dump_convert(GLenum pname, const void *value,
-                  budgie_type in_type, FILE *out)
+bool bugle_dump_convert(GLenum pname, const void *value,
+                        budgie_type in_type, FILE *out)
 {
     const dump_table_entry *entry;
     budgie_type out_type;
@@ -369,10 +369,10 @@ bool dump_convert(GLenum pname, const void *value,
     if (entry->type == NULL_TYPE) return false;
     out_type = entry->type;
 
-    if (type_table[in_type].code == CODE_POINTER)
+    if (budgie_type_table[in_type].code == CODE_POINTER)
     {
         in = *(const void * const *) value;
-        in_type = type_table[in_type].type;
+        in_type = budgie_type_table[in_type].type;
         ptr = in;
     }
     else
@@ -380,7 +380,7 @@ bool dump_convert(GLenum pname, const void *value,
 
     length = entry->length;
     alength = (length == -1) ? 1 : length;
-    out_data = bugle_malloc(type_table[out_type].size * alength);
+    out_data = bugle_malloc(budgie_type_table[out_type].size * alength);
     type_convert(out_data, out_type, in, in_type, alength);
     if (ptr)
         dump_any_type_extended(out_type, out_data, -1, length, ptr, out);
@@ -390,7 +390,7 @@ bool dump_convert(GLenum pname, const void *value,
     return true;
 }
 
-int count_gl(budgie_function func, GLenum token)
+int bugle_count_gl(budgie_function func, GLenum token)
 {
     return get_dump_table_entry(token)->length;
 }
@@ -402,12 +402,12 @@ int count_gl(budgie_function func, GLenum token)
  * The trackcontext and trackbeginend filtersets
  * must be loaded for this to work.
  */
-size_t image_element_count(GLsizei width,
-                           GLsizei height,
-                           GLsizei depth,
-                           GLenum format,
-                           GLenum type,
-                           bool unpack)
+size_t bugle_image_element_count(GLsizei width,
+                                 GLsizei height,
+                                 GLsizei depth,
+                                 GLenum format,
+                                 GLenum type,
+                                 bool unpack)
 {
     state_7context_I *ctx;
     /* data from OpenGL state */
@@ -465,8 +465,8 @@ size_t image_element_count(GLsizei width,
     }
     else
     {
-        n = gl_format_to_count(format, type);
-        s = gl_type_to_size(type);
+        n = bugle_gl_format_to_count(format, type);
+        s = bugle_gl_type_to_size(type);
         if ((s == 1 || s == 2 || s == 4 || s == 8)
             && s < a)
             k = a / s * ((s * n * l + a - 1) / a);
@@ -481,10 +481,10 @@ size_t image_element_count(GLsizei width,
 
 /* Computes the number of pixel elements required by glGetTexImage
  */
-size_t texture_element_count(GLenum target,
-                             GLint level,
-                             GLenum format,
-                             GLenum type)
+size_t bugle_texture_element_count(GLenum target,
+                                   GLint level,
+                                   GLenum format,
+                                   GLenum type)
 {
     int width, height, depth = -1;
     /* FIXME: don't query for depth if we don't have 3D textures */
@@ -493,5 +493,5 @@ size_t texture_element_count(GLenum target,
 #ifdef GL_EXT_texture3D
     CALL_glGetTexLevelParameteriv(target, level, GL_TEXTURE_DEPTH, &depth);
 #endif
-    return image_element_count(width, height, depth, format, type, false);
+    return bugle_image_element_count(width, height, depth, format, type, false);
 }

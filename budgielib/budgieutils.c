@@ -38,8 +38,8 @@
 # include <pthread.h>
 #endif
 
-void dump_bitfield(unsigned int value, FILE *out,
-                   bitfield_pair *tags, int count)
+void budgie_dump_bitfield(unsigned int value, FILE *out,
+                          bitfield_pair *tags, int count)
 {
     bool first = true;
     int i;
@@ -62,7 +62,7 @@ void dump_bitfield(unsigned int value, FILE *out,
  * FIXME: error checking.
  * FIXME: is ftell portable on _binary_ streams (which tmpfile is)?
  */
-char *string_io(void (*call)(FILE *, void *), void *data)
+char *budgie_string_io(void (*call)(FILE *, void *), void *data)
 {
     FILE *f;
     size_t size;
@@ -86,7 +86,7 @@ char *string_io(void (*call)(FILE *, void *), void *data)
     return buffer;
 }
 
-bool dump_string(const char *value, FILE *out)
+bool budgie_dump_string(const char *value, FILE *out)
 {
     /* FIXME: handle illegal dereferences */
     if (value == NULL) fputs("NULL", out);
@@ -114,7 +114,7 @@ bool dump_string(const char *value, FILE *out)
     return true;
 }
 
-int count_string(const char *value)
+int budgie_count_string(const char *value)
 {
     /* FIXME: handle illegal dereferences */
     const char *str = (const char *) value;
@@ -128,7 +128,7 @@ void budgie_dump_any_type(budgie_type type, const void *value, int length, FILE 
     budgie_type new_type;
 
     assert(type >= 0);
-    info = &type_table[type];
+    info = &budgie_type_table[type];
     if (info->get_type) /* highly unlikely */
     {
         new_type = (*info->get_type)(value);
@@ -157,7 +157,7 @@ void budgie_dump_any_call(const generic_function_call *call, int indent, FILE *o
     int length;
     const function_parameter_data *info;
 
-    make_indent(indent, out);
+    budgie_make_indent(indent, out);
     data = &budgie_function_table[call->id];
     fputs(data->name, out);
     fputs("(", out);
@@ -193,7 +193,7 @@ void budgie_dump_any_call(const generic_function_call *call, int indent, FILE *o
     fputs("\n", out);
 }
 
-void make_indent(int indent, FILE *out)
+void budgie_make_indent(int indent, FILE *out)
 {
     int i;
     for (i = 0; i < indent; i++)

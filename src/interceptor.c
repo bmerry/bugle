@@ -75,13 +75,13 @@ static void load_config(void)
                 chain = NULL;
                 if (chain_name)
                 {
-                    chain = config_get_chain(chain_name);
+                    chain = bugle_config_get_chain(chain_name);
                     if (!chain)
                         fprintf(stderr, "could not find chain %s, trying default\n", chain_name);
                 }
                 if (!chain)
                 {
-                    root = config_get_root();
+                    root = bugle_config_get_root();
                     if (bugle_list_head(root))
                         chain = (const config_chain *) bugle_list_data(bugle_list_head(root));
                     if (!chain)
@@ -116,7 +116,7 @@ static void load_config(void)
                         if (f) bugle_enable_filter_set(f);
                     }
                 }
-                config_destroy();
+                bugle_config_destroy();
             }
             fclose(yyin);
         }

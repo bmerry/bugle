@@ -157,7 +157,7 @@ print <<'EOF'
 #include <stdlib.h> /* for NULL */
 #include "src/gltokens.h"
 
-const gl_token gl_tokens_name[] =
+const gl_token bugle_gl_tokens_name[] =
 {
 EOF
 ;
@@ -167,7 +167,7 @@ print <<'EOF'
 
 };
 
-const gl_token gl_tokens_value[] =
+const gl_token bugle_gl_tokens_value[] =
 {
 EOF
 ;
@@ -178,4 +178,4 @@ print <<'EOF'
 
 EOF
 ;
-print "int gl_token_count = ", scalar(@outtoks), ";\n";
+print "int bugle_gl_token_count = ", scalar(@outtoks), ";\n";

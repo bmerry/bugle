@@ -110,12 +110,12 @@ int yyerror(const char *msg)
     return 0;
 }
 
-const bugle_linked_list *config_get_root(void)
+const bugle_linked_list *bugle_config_get_root(void)
 {
     return &config_root;
 }
 
-const config_chain *config_get_chain(const char *name)
+const config_chain *bugle_config_get_chain(const char *name)
 {
     bugle_list_node *i;
     for (i = bugle_list_head(&config_root); i; i = bugle_list_next(i))
@@ -151,7 +151,7 @@ static void destroy_chain(config_chain *chain)
     free(chain);
 }
 
-void config_destroy(void)
+void bugle_config_destroy(void)
 {
     bugle_list_node *i;
     for (i = bugle_list_head(&config_root); i; i = bugle_list_next(i))

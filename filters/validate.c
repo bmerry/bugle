@@ -58,7 +58,7 @@ static bool error_callback(function_call *call, const callback_data *data)
         {
             flockfile(stderr);
             fputs("Warning: glGetError() returned ", stderr);
-            dump_GLerror(*call->typed.glGetError.retn, stderr);
+            bugle_dump_GLerror(*call->typed.glGetError.retn, stderr);
             fputs("\n", stderr);
             funlockfile(stderr);
         }

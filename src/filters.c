@@ -454,7 +454,7 @@ void bugle_register_filter_catches(filter *handle, budgie_function f)
     budgie_function i;
 
     for (i = 0; i < NUMBER_OF_FUNCTIONS; i++)
-        if (gl_function_table[i].canonical == gl_function_table[f].canonical)
+        if (bugle_gl_function_table[i].canonical == bugle_gl_function_table[f].canonical)
             bugle_list_append(&handle->catches, &function_refcount[i]);
 }
 

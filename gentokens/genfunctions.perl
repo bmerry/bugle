@@ -107,7 +107,7 @@ typedef struct
     const char *extension;   /* Extension that defines this function (NULL for core) */
 } gl_function;
 
-extern const gl_function gl_function_table[NUMBER_OF_FUNCTIONS];
+extern const gl_function bugle_gl_function_table[NUMBER_OF_FUNCTIONS];
         
 EOF
         ;
@@ -130,7 +130,7 @@ else
 #include "src/glfuncs.h"
 EOF
         ;
-    print "gl_function const gl_function_table[NUMBER_OF_FUNCTIONS] =\n{\n";
+    print "gl_function const bugle_gl_function_table[NUMBER_OF_FUNCTIONS] =\n{\n";
     my $first = 1;
     for my $i (@table)
     {

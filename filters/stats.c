@@ -350,10 +350,10 @@ static void initialise_showstats_struct(const void *key, void *data)
     showstats_struct *ss;
 
     ss = (showstats_struct *) data;
-    dpy = glXGetCurrentDisplay();
+    dpy = CALL_glXGetCurrentDisplay();
     ss->font_base = CALL_glGenLists(256);
     f = XLoadFont(dpy, "-*-courier-*-*-*");
-    glXUseXFont(f, 0, 256, ss->font_base);
+    CALL_glXUseXFont(f, 0, 256, ss->font_base);
     XUnloadFont(dpy, f);
 
     ss->shown_fps = 0.0f;
@@ -377,10 +377,10 @@ static bool showstats_callback(function_call *call, const callback_data *data)
         aux = bugle_get_aux_context();
         if (aux && bugle_begin_internal_render())
         {
-            real = glXGetCurrentContext();
-            old_write = glXGetCurrentDrawable();
-            old_read = glXGetCurrentReadDrawable();
-            dpy = glXGetCurrentDisplay();
+            real = CALL_glXGetCurrentContext();
+            old_write = CALL_glXGetCurrentDrawable();
+            old_read = CALL_glXGetCurrentReadDrawable();
+            dpy = CALL_glXGetCurrentDisplay();
             CALL_glXMakeContextCurrent(dpy, old_write, old_write, aux);
             s = bugle_object_get_current_data(&bugle_context_class, stats_offset);
             ss = bugle_object_get_current_data(&bugle_context_class, showstats_offset);
