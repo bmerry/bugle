@@ -46,6 +46,11 @@ typedef struct
     float fps;
     GLuint fragments;
     GLsizei triangles;
+
+    /* Data for showstats, which averages fps */
+    struct timeval last_show_time;
+    int skip_frames;
+    float shown_fps;
 } stats_struct;
 
 static filter_set *stats_handle = NULL;
@@ -59,11 +64,12 @@ static void init_stats_struct(stats_struct *s)
     s->begin_mode = GL_NONE;
     s->begin_count = 0;
 #ifdef GL_ARB_occlusion_query
-    if (count_fragments && function_table[FUNC_glGenQueriesARB].real)
-        CALL_glGenQueriesARB(1, &s->query);
-    if (s->query && begin_internal_render())
+    if (count_fragments && function_table[FUNC_glGenQueriesARB].real
+        && begin_internal_render())
     {
-        CALL_glBeginQueryARB(GL_SAMPLES_PASSED, s->query);
+        CALL_glGenQueriesARB(1, &s->query);
+        if (s->query)
+            CALL_glBeginQueryARB(GL_SAMPLES_PASSED, s->query);
         end_internal_render("init_stats_struct", true);
     }
 #endif
@@ -71,6 +77,8 @@ static void init_stats_struct(stats_struct *s)
     s->fps = 0.0f;
     s->fragments = 0;
     s->triangles = 0;
+
+    s->shown_fps = 0.0f;
 }
 
 /* Increments the triangle count for stats struct s according to mode */
@@ -111,7 +119,7 @@ static bool stats_callback(function_call *call, const callback_data *data)
         if (!s->initialised) init_stats_struct(s);
         gettimeofday(&now, NULL);
         elapsed = (now.tv_sec - s->last_time.tv_sec)
-            + 1.0e-6 * (now.tv_usec - s->last_time.tv_usec);
+            + 1.0e-6f * (now.tv_usec - s->last_time.tv_usec);
         s->last_time = now;
         s->fps = 1.0f / elapsed;
 #ifdef GL_ARB_occlusion_query
@@ -315,6 +323,8 @@ static bool showstats_callback(function_call *call, const callback_data *data)
     GLXContext aux, real;
     Font f;
     stats_struct *s;
+    float elapsed;
+    struct timeval now;
 
     switch (canonical_call(call))
     {
@@ -326,7 +336,7 @@ static bool showstats_callback(function_call *call, const callback_data *data)
             old_write = glXGetCurrentDrawable();
             old_read = glXGetCurrentReadDrawable();
             dpy = glXGetCurrentDisplay();
-            glXMakeContextCurrent(dpy, old_write, old_write, aux);
+            CALL_glXMakeContextCurrent(dpy, old_write, old_write, aux);
             s = get_filter_set_context_state(tracker_get_context_state(), stats_handle);
             if (!s->font_initialised)
             {
@@ -336,17 +346,29 @@ static bool showstats_callback(function_call *call, const callback_data *data)
                 glXUseXFont(f, 0, 256, s->font_base);
                 XUnloadFont(dpy, f);
             }
+
+            gettimeofday(&now, NULL);
+            elapsed = (now.tv_sec - s->last_show_time.tv_sec)
+                + 1.0e-6f * (now.tv_usec - s->last_show_time.tv_usec);
+            s->skip_frames++;
+            if (elapsed >= 1.0f)
+            {
+                s->shown_fps = s->skip_frames / elapsed;
+                s->last_show_time = now;
+                s->skip_frames = 0;
+            }
+
             /* We don't want to depend on glWindowPos since it
              * needs OpenGL 1.4, but fortunately the aux context
              * has identity MVP matrix.
              */
             CALL_glPushAttrib(GL_CURRENT_BIT);
             CALL_glRasterPos2f(-0.9, 0.9);
-            render_stats(s, "%.1f fps", s->fps);
+            render_stats(s, "%.1f fps", s->shown_fps);
             if (s->query) render_stats(s, "%u fragments", (unsigned int) s->fragments);
             if (count_triangles) render_stats(s, "%u triangles", (unsigned int) s->triangles);
             CALL_glPopAttrib();
-            glXMakeContextCurrent(dpy, old_write, old_read, real);
+            CALL_glXMakeContextCurrent(dpy, old_write, old_read, real);
             end_internal_render("showstats_callback", true);
         }
         break;

@@ -2,7 +2,9 @@
  * triangle counting code.
  */
 
+#define GL_GLEXT_PROTOTYPES
 #include <GL/gl.h>
+#include <GL/glext.h>
 #include <GL/glx.h>
 #include <GL/glut.h>
 #include <stdlib.h>

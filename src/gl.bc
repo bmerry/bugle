@@ -6,7 +6,7 @@ INCLUDE src/data/overrides.h
 INCLUDE src/gldump.h
 INCLUDE src/glstate.h
 LIBRARY libGL.so
-LIMIT gl[A-Z][a-z].*|glXSwapBuffers|glXGetProcAddressARB|glXCreateContext|glXCreateNewContext|glXDestroyContext|glXMakeCurrent|glXMakeContextCurrent|glXQueryVersion|glXQueryExtensionsString
+LIMIT gl[A-Z][a-z].*|glXSwapBuffers|glXGetProcAddress(ARB)?|glXCreateContext|glXCreateNewContext|glXDestroyContext|glXMakeCurrent|glXMakeContextCurrent|glXQueryVersion|glXQueryExtensionsString
 
 # Typedefs
 NEWTYPE BITFIELD bufferbits GLbitfield GL_COLOR_BUFFER_BIT GL_DEPTH_BUFFER_BIT GL_ACCUM_BUFFER_BIT GL_STENCIL_BUFFER_BIT
@@ -37,11 +37,11 @@ LENGTH PARAMETER gl(RasterPos|EvalCoord|Vertex|Normal|TexCoord|Color|SecondaryCo
 LENGTH PARAMETER glMultiTexCoord([234])u?[sifdb]vARB 1 \1
 LENGTH PARAMETER glUniform([1234])[if]vARB 2 $1
 LENGTH PARAMETER glUniformMatrix([234])[if]vARB 3 $1
-TYPE PARAMETER glUniform([234])fvARB 2 TYPE_6GLvec\1
-TYPE PARAMETER glUniform([234])ivARB 2 TYPE_7GLivec\1
-TYPE PARAMETER glUniformMatrix([23])fvARB 3 TYPE_6GLmat\1
-TYPE PARAMETER glUniformMatrix4fvARB 3 TYPE_13GLfloatmatrix
-TYPE PARAMETER glUniform([234])ivARB 2 TYPE_7GLimat\1
+TYPE PARAMETER glUniform([234])fv(ARB)? 2 TYPE_6GLvec\1
+TYPE PARAMETER glUniform([234])iv(ARB)? 2 TYPE_7GLivec\1
+TYPE PARAMETER glUniformMatrix([23])fv(ARB)? 3 TYPE_6GLmat\1
+TYPE PARAMETER glUniformMatrix4fv(ARB)? 3 TYPE_13GLfloatmatrix
+TYPE PARAMETER glUniform([234])iv(ARB)? 2 TYPE_7GLimat\1
 
 LENGTH PARAMETER glRect[sifd]v 0 2
 LENGTH PARAMETER glRect[sifd]v 1 2
@@ -55,24 +55,24 @@ LENGTH PARAMETER glFeedbackBuffer 2 $0
 LENGTH PARAMETER glSelectBuffer 1 $0
 
 # FIXME: cannot specify the length of each pointer in glMultiDrawElements
-LENGTH PARAMETER glMultiDrawArraysEXT 1 $3
-LENGTH PARAMETER glMultiDrawArraysEXT 2 $3
-LENGTH PARAMETER glMultiDrawElementsEXT 1 $4
-LENGTH PARAMETER glMultiDrawElementsEXT 3 $4
+LENGTH PARAMETER glMultiDrawArrays(EXT)? 1 $3
+LENGTH PARAMETER glMultiDrawArrays(EXT)? 2 $3
+LENGTH PARAMETER glMultiDrawElements(EXT)? 1 $4
+LENGTH PARAMETER glMultiDrawElements(EXT)? 3 $4
 
-LENGTH PARAMETER glBufferDataARB 2 $1
-LENGTH PARAMETER glBufferSubDataARB 3 $2
-LENGTH PARAMETER glGetBufferSubDataARB 3 $2
+LENGTH PARAMETER glBufferData(ARB)? 2 $1
+LENGTH PARAMETER glBufferSubData(ARB)? 3 $2
+LENGTH PARAMETER glGetBufferSubData(ARB)? 3 $2
 
-LENGTH PARAMETER glProgramStringARB 3 $2
-LENGTH PARAMETER glShaderSourceARB 2 $1
-LENGTH PARAMETER glShaderSourceARB 3 $1
+LENGTH PARAMETER glProgramString(ARB)? 3 $2
+LENGTH PARAMETER glShaderSource(ARB)? 2 $1
+LENGTH PARAMETER glShaderSource(ARB)? 3 $1
 
-LENGTH PARAMETER glCompressedTexImage2DARB 7 $6
+LENGTH PARAMETER glCompressedTexImage2D(ARB)? 7 $6
 
 # Functions where the count is determined by the token
 LENGTH PARAMETER glDrawElements 3 gl_type_to_size($2) * $1
-LENGTH PARAMETER glDrawRangeElementsEXT 5 gl_type_to_size($4) * $3
+LENGTH PARAMETER glDrawRangeElements(EXT)? 5 gl_type_to_size($4) * $3
 
 TYPE PARAMETER glTexImage1D 7 gl_type_to_type_ptr($6)
 LENGTH PARAMETER glTexImage1D 7 image_element_count($3, 1, -1, $5, $6, true)
@@ -82,14 +82,14 @@ TYPE PARAMETER glTexImage2D 8 gl_type_to_type_ptr($7)
 LENGTH PARAMETER glTexImage2D 8 image_element_count($3, $4, -1, $6, $7, true)
 TYPE PARAMETER glTexSubImage2D 8 gl_type_to_type_ptr($7)
 LENGTH PARAMETER glTexSubImage2D 8 image_element_count($4, $5, -1, $6, $7, true)
-TYPE PARAMETER glTexImage3DEXT 9 gl_type_to_type_ptr($8)
-LENGTH PARAMETER glTexImage3DEXT 9 image_element_count($3, $4, $5, $7, $8, true)
-TYPE PARAMETER glTexSubImage3DEXT 10 gl_type_to_type_ptr($9)
-LENGTH PARAMETER glTexSubImage3DEXT 10 image_element_count($5, $6, $7, $8, $9, true)
+TYPE PARAMETER glTexImage3D(EXT)? 9 gl_type_to_type_ptr($8)
+LENGTH PARAMETER glTexImage3D(EXT)? 9 image_element_count($3, $4, $5, $7, $8, true)
+TYPE PARAMETER glTexSubImage3D(EXT)? 10 gl_type_to_type_ptr($9)
+LENGTH PARAMETER glTexSubImage3D(EXT)? 10 image_element_count($5, $6, $7, $8, $9, true)
 TYPE PARAMETER glGetTexImage 4 gl_type_to_type_ptr($3)
 LENGTH PARAMETER glGetTexImage 4 texture_element_count($0, $1, $2, $3)
 
-LENGTH PARAMETER glGetAttachedObjectsARB 3 *$2
+LENGTH PARAMETER glGetAttachedObjects(ARB)? 3 *$2
 
 # Both count and interpretation of type depend on the token
 # Note that we only override length for the vector versions
@@ -111,10 +111,10 @@ TYPE PARAMETER glPushClientAttrib 0 TYPE_16clientattribbits
 TYPE PARAMETER glGetError -1 TYPE_7GLerror
 TYPE PARAMETER glBlendFunc 0 TYPE_15GLalternateenum
 TYPE PARAMETER glBlendFunc 1 TYPE_15GLalternateenum
-TYPE PARAMETER glBlendFuncSeparateEXT 0 TYPE_15GLalternateenum
-TYPE PARAMETER glBlendFuncSeparateEXT 1 TYPE_15GLalternateenum
-TYPE PARAMETER glBlendFuncSeparateEXT 2 TYPE_15GLalternateenum
-TYPE PARAMETER glBlendFuncSeparateEXT 3 TYPE_15GLalternateenum
+TYPE PARAMETER glBlendFuncSeparate(EXT)? 0 TYPE_15GLalternateenum
+TYPE PARAMETER glBlendFuncSeparate(EXT)? 1 TYPE_15GLalternateenum
+TYPE PARAMETER glBlendFuncSeparate(EXT)? 2 TYPE_15GLalternateenum
+TYPE PARAMETER glBlendFuncSeparate(EXT)? 3 TYPE_15GLalternateenum
 TYPE PARAMETER glTexImage(1|2|3)D(EXT)? 2 TYPE_16GLcomponentsenum
 
 TYPE PARAMETER glPolygonStipple 0 TYPE_9GLstipple
@@ -122,8 +122,8 @@ TYPE PARAMETER glClear 0 TYPE_10bufferbits
 
 # C string, not array
 TYPE PARAMETER glGetString -1 TYPE_PKc
-TYPE PARAMETER glProgramStringARB 3 TYPE_PKc
-TYPE PARAMETER glXGetProcAddressARB 0 TYPE_PKc
+TYPE PARAMETER glProgramString(ARB)? 3 TYPE_PKc
+TYPE PARAMETER glXGetProcAddress(ARB)? 0 TYPE_PKc
 
 # Dumping overrides
 DUMP TYPE GLenum dump_GLenum($$, $F)
@@ -134,12 +134,14 @@ DUMP TYPE GLcomponentsenum dump_GLcomponentsenum($$, $F)
 DUMP TYPE GLXDrawable dump_GLXDrawable($$, $F)
 DUMP TYPE +PKc dump_string($$, $F)
 DUMP TYPE +Pc dump_string($$, $F)
-DUMP TYPE +PK9GLcharARB dump_string($$, $F)
-DUMP TYPE +P9GLcharARB dump_string($$, $F)
+DUMP TYPE +PK9GLchar dump_string($$, $F)
+DUMP TYPE +P9GLchar dump_string($$, $F)
 LENGTH TYPE +PKc count_string($$)
 LENGTH TYPE +Pc count_string($$)
 LENGTH TYPE +PK9GLcharARB count_string($$)
 LENGTH TYPE +P9GLcharARB count_string($$)
+LENGTH TYPE +PK9GLchar count_string($$)
+LENGTH TYPE +P9GLchar count_string($$)
 
 # FIXME: LOAD and SAVE still won't work
 

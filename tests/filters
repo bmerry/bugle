@@ -1,8 +1,9 @@
 # Wireframe. We use this to test various things, mainly because it
-# loads up various other filtersets (error, trackcontext, etc).
+# loads up various other filtersets (trackbeginend, trackcontext, etc).
 chain wireframe
 {
     filterset wireframe
+    filterset error
 }
 
 chain trace

@@ -3,6 +3,7 @@
 #ifdef NDEBUG
 # undef NDEBUG
 #endif
+#define GLX_GLXEXT_PROTOTYPES
 #include <GL/glut.h>
 #include <GL/glx.h>
 #include <assert.h>
