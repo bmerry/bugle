@@ -1,0 +1,60 @@
+Filters are arranged in a three-level hierarchy:
+
+1. Filter libraries, which are a loose collection of filter-sets. These
+   allow filters to be grouped together to avoid having hundreds of
+   files.
+2. Filter-sets, which are tightly coupled groups of filters. Each
+   filter-set may have state, may depend upon other filter sets and may
+   only be loaded as a unit.
+3. Filters, which provide the actual callback functions to run. A filter
+   set may require multiple callbacks to be run at different times (e.g.
+   before and after invocation). Filters may have ordering dependencies
+   on other filters to ensure correct sequencing, but these dependencies
+   do not require the other filters to be loaded.
+
+Each library must define the function
+
+void initialise_filter_library(void)
+
+which will register all the filter-sets in the library. It registers a
+filter-set by calling
+
+register_filter_set("setname", initialiser, destroyer)
+
+where initialiser is a callback function that is called if and when the
+filter-set is loaded. It has the signature
+
+bool initialise_filter_set(filter_set *handle)
+
+and returns true if loading was successful. Shutdown is from the
+destroyer, and has the form
+
+void destroy_filter_set(filter_set *handle)
+
+A filter-set initialiser must do the following, apart from any internal
+initialisation:
+- register individual filters:
+  filter *filter_handle = register_filter(handle, "filtername", callback)
+- list ordering requirements between filters
+  register_filter_depends("second", "first") - where either may be in
+  another filter-set (even in another library, or even not exist)
+- request per-call state storage, if required
+  register_filter_set_call_state(handle, number_of_bytes)
+- get handles to dependent filter-sets
+  filter_set *other_handle = get_filter_set_handle("other_set_name")
+- specify dependencies on other filter-sets
+  register_filter_set_depends("set1", "set2")
+- get symbols from other filter-sets, if necessary:
+  foo_ptr = (void (*)(void)) get_filter_set_symbol(other_handle, "foo")
+
+The callback function for a filter looks like this:
+
+bool filter_callback(function_call *call, void *data)
+
+and should return false to halt processing of this call. The data is
+the per-call state that was registered with
+register_filter_set_call_state, or NULL if no memory was registered. It
+is also possible to obtain pointers to the per-call state of other
+filter sets (which is the intention of this extension) by calling
+
+get_filter_set_call_state(call, other_handle).

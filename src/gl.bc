@@ -1,0 +1,460 @@
+# Specify options
+INCLUDE GL/gl.h
+INCLUDE GL/glext.h
+INCLUDE GL/glx.h
+INCLUDE src/data/overrides.h
+INCLUDE src/gldump.h
+LIBRARY /usr/lib/libGL.so.1
+LIMIT gl[A-Z][a-z].*|glXSwapBuffers|glXGetProcAddressARB|glXCreateContext|glXCreateNewContext|glXDestroyContext|glXMakeCurrent|glXMakeContextCurrent
+
+# Typedefs
+NEWTYPE BITFIELD bufferbits GLbitfield GL_COLOR_BUFFER_BIT GL_DEPTH_BUFFER_BIT GL_ACCUM_BUFFER_BIT GL_STENCIL_BUFFER_BIT
+NEWTYPE BITFIELD attribbits GLbitfield GL_ALL_ATTRIB_BITS GL_ACCUM_BUFFER_BIT GL_COLOR_BUFFER_BIT GL_CURRENT_BIT GL_DEPTH_BUFFER_BIT GL_ENABLE_BIT GL_EVAL_BIT GL_FOG_BIT GL_HINT_BIT GL_LIGHTING_BIT GL_LINE_BIT GL_LIST_BIT GL_MULTISAMPLE_BIT GL_PIXEL_MODE_BIT GL_POINT_BIT GL_POLYGON_BIT GL_POLYGON_STIPPLE_BIT GL_SCISSOR_BIT GL_STENCIL_BUFFER_BIT GL_TEXTURE_BIT GL_TRANSFORM_BIT GL_VIEWPORT_BIT
+NEWTYPE BITFIELD clientattribbits GLbitfield GL_ALL_CLIENT_ATTRIB_BITS GL_CLIENT_VERTEX_ARRAY_BIT GL_CLIENT_PIXEL_STORE_BIT
+
+EXTRATYPE +PKc
+EXTRATYPE GLdoublematrix
+EXTRATYPE GLfloatmatrix
+EXTRATYPE GLerror
+EXTRATYPE GLalternateenum
+EXTRATYPE GLstipple
+
+# Functions taking pointers to fixed length arrays
+LENGTH PARAMETER gl(RasterPos|EvalCoord|Vertex|Normal|TexCoord|Color|SecondaryColor)([234])u?[sifdb]v 0 \2
+LENGTH PARAMETER glMultiTexCoord([234])u?[sifdb]v 1 \1
+
+LENGTH PARAMETER glRect[sifd]v 0 2
+LENGTH PARAMETER glRect[sifd]v 1 2
+
+LENGTH PARAMETER glClipPlane 1 4
+
+# Handle generator and deletors
+LENGTH PARAMETER gl(Gen|Delete)(Textures|Programs|Buffers) 1 $0
+
+LENGTH PARAMETER glFeedbackBuffer 2 $0
+LENGTH PARAMETER glSelectBuffer 1 $0
+
+# FIXME: cannot specify the length of each pointer in glMultiDrawElements
+LENGTH PARAMETER glMultiDrawArrays 1 $3
+LENGTH PARAMETER glMultiDrawArrays 2 $3
+LENGTH PARAMETER glMultiDrawElements 1 $4
+LENGTH PARAMETER glMultiDrawElements 3 $4
+
+LENGTH PARAMETER glBufferData 2 $1
+LENGTH PARAMETER glBufferSubData 3 $2
+LENGTH PARAMETER glGetBufferSubData 3 $2
+
+LENGTH PARAMETER glProgramStringARB 3 $2
+
+LENGTH PARAMETER glCompressedTexImage2D 7 $6
+
+# Functions where the count is determined by the token
+LENGTH PARAMETER gl(Material|Light|Tex(Env|Parameter|Gen))[sifd]v 2 count_gl(GENERIC_FUNCTION_ID(\0), $1)
+LENGTH PARAMETER gl(LightModel|Fog)[if]v 1 count_gl(GENERIC_FUNCTION_ID(\0), $0)
+
+# LENGTH PARAMETER glDrawElements 3 gltype_to_size($2) * $1
+# LENGTH PARAMETER glDrawRangeElements 5 gltype_to_size($4) * $3
+
+# LENGTH PARAMETER glTexImage1D 7 compute_image_memory($3, 1, -1, $5, $6)
+# LENGTH PARAMETER glTexSubImage1D 6 compute_image_memory($3, 1, -1, $4, $5)
+# LENGTH PARAMETER glTexImage2D 8 compute_image_memory($3, $4, -1, $6, $7)
+# LENGTH PARAMETER glTexSubImage2D 8 compute_image_memory($4, $5, -1, $6, $7)
+# LENGTH PARAMETER glTexImage3D 9 compute_image_memory($3, $4, $5, $7, $8)
+# LENGTH PARAMETER glTexSubImage3D 10 compute_image_memory($5, $6, $7, $8, $9)
+# LENGTH PARAMETER glGetTexImage 4 compute_texture_memory($0, $1, $2, $3)
+
+# Assorted type overrides
+
+TYPE PARAMETER gl(Mult|Load)Matrixf 0 TYPE_13GLfloatmatrix
+TYPE PARAMETER gl(Mult|Load)Matrixd 0 TYPE_14GLdoublematrix
+TYPE PARAMETER glPushAttrib 0 TYPE_10attribbits
+TYPE PARAMETER glPushClientAttrib 0 TYPE_16clientattribbits
+TYPE PARAMETER glGetError -1 TYPE_7GLerror
+TYPE PARAMETER glBlendFunc 0 TYPE_15GLalternateenum
+TYPE PARAMETER glBlendFunc 1 TYPE_15GLalternateenum
+TYPE PARAMETER glBlendFuncSeparate 0 TYPE_15GLalternateenum
+TYPE PARAMETER glBlendFuncSeparate 1 TYPE_15GLalternateenum
+TYPE PARAMETER glBlendFuncSeparate 2 TYPE_15GLalternateenum
+TYPE PARAMETER glBlendFuncSeparate 3 TYPE_15GLalternateenum
+
+TYPE PARAMETER glPolygonStipple 0 TYPE_9GLstipple
+TYPE PARAMETER glClear 0 TYPE_10bufferbits
+
+# C string, not array
+TYPE PARAMETER glGetString -1 TYPE_PKc
+TYPE PARAMETER glProgramStringARB 3 TYPE_PKc
+
+# Dumping overrides
+DUMP TYPE GLenum dump_GLenum
+DUMP TYPE GLboolean dump_GLboolean
+DUMP TYPE GLerror dump_GLerror
+DUMP TYPE GLalternateenum dump_GLalternateenum
+DUMP TYPE +PKc dump_string
+DUMP TYPE +Pc dump_string
+LENGTH TYPE +PKc count_string($)
+LENGTH TYPE +Pc count_string($)
+
+# since GLenums are passed through GLint
+# FIXME: dynamic type overrides
+# DUMP PARAMETER glTexParameter[if]v? 2 dump_argument_glTexParameter_2
+
+# Queries
+# FIXME: dynamic type overrides
+# LENGTH PARAMETER glGet(Boolean|Integer|Float|Double)v 1 count_glGetScalar($0)
+# DUMP PARAMETER glGetDoublev 1 dump_argument_glGetScalar_1
+
+# FIXME: LOAD and SAVE still won't work
+
+# State
+# STATE context[].GL_CURRENT_COLOR GLdouble 4 load_gl_scalar
+# STATE context[].GL_CURRENT_SECONDARY_COLOR GLdouble 4 load_gl_scalar
+# STATE context[].GL_CURRENT_INDEX GLdouble 1 load_gl_scalar
+# STATE context[].texunit[].GL_CURRENT_TEXTURE_COORDS GLdouble 4 load_gl_scalar
+# STATE context[].GL_CURRENT_NORMAL GLdouble 3 load_gl_scalar
+# 
+# STATE context[].GL_CURRENT_FOG_COORDINATE GLdouble 1 load_gl_scalar
+# STATE context[].GL_CURRENT_RASTER_POSITION GLdouble 4 load_gl_scalar
+# STATE context[].GL_CURRENT_RASTER_DISTANCE GLdouble 1 load_gl_scalar
+# STATE context[].GL_CURRENT_RASTER_COLOR GLdouble 4 load_gl_scalar
+# STATE context[].GL_CURRENT_RASTER_INDEX GLdouble 1 load_gl_scalar
+# STATE context[].texunit[].GL_CURRENT_RASTER_TEXTURE_COORDS GLdouble 4 load_gl_scalar
+# STATE context[].GL_CURRENT_RASTER_POSITION_VALID GLboolean 1 load_gl_integral
+# STATE context[].GL_EDGE_FLAG GLboolean 1 load_gl_integral
+# STATE context[].GL_CLIENT_ACTIVE_TEXTURE GLenum 1 load_gl_integral
+# 
+# STATE context[].array.GL_VERTEX_ARRAY GLarray 1 tracker_load_gl_array
+# STATE context[].array.GL_NORMAL_ARRAY GLarray 1 tracker_load_gl_array
+# STATE context[].array.GL_FOG_COORDINATE_ARRAY GLarray 1 tracker_load_gl_array
+# STATE context[].array.GL_COLOR_ARRAY GLarray 1 tracker_load_gl_array
+# STATE context[].array.GL_SECONDARY_COLOR_ARRAY GLarray 1 tracker_load_gl_array
+# STATE context[].array.GL_INDEX_ARRAY GLarray 1 tracker_load_gl_array
+# STATE context[].array.GL_EDGE_FLAG_ARRAY GLarray 1 tracker_load_gl_array
+# STATE context[].texunit[].GL_TEXTURE_COORD_ARRAY GLarray 1 tracker_load_gl_array
+# STATE context[].array.attrib[] GLarray 1 tracker_load_gl_attrib_array
+# 
+# STATE context[].GL_ARRAY_BUFFER_BINDING GLint 1 load_gl_integral
+# STATE context[].GL_ELEMENT_ARRAY_BUFFER_BINDING GLint 1 load_gl_integral
+# STATE share[].buffer[].GL_BUFFER_SIZE GLint 1 load_gl_integral
+# STATE share[].buffer[].GL_BUFFER_USAGE GLenum 1 load_gl_integral
+# STATE share[].buffer[].GL_BUFFER_ACCESS GLenum 1 load_gl_integral
+# STATE share[].buffer[].GL_BUFFER_MAPPED GLboolean 1 load_gl_integral
+# STATE share[].buffer[].GL_BUFFER_MAP_POINTER +P6GLvoid 1 load_gl_pointer
+# 
+# STATE context[].GL_VIEWPORT GLint 4 load_gl_integral
+# STATE context[].GL_DEPTH_RANGE GLdouble 2 load_gl_scalar
+# 
+# STATE context[].GL_COLOR_MATRIX_STACK_DEPTH GLint 1 load_gl_integral
+# STATE context[].GL_MODELVIEW_STACK_DEPTH GLint 1 load_gl_integral
+# STATE context[].GL_PROJECTION_STACK_DEPTH GLint 1 load_gl_integral
+# STATE context[].texunit[].GL_TEXTURE_STACK_DEPTH GLint 1 load_gl_integral
+# 
+# STATE context[].GL_MATRIX_MODE GLenum 1 load_gl_integral
+# 
+# STATE context[].enable.GL_NORMALIZE GLboolean 1 load_gl_enable
+# STATE context[].enable.GL_RESCALE_NORMAL GLboolean 1 load_gl_enable
+# 
+# 
+# STATE context[].GL_FOG_COLOR GLdouble 4 load_gl_scalar
+# STATE context[].GL_FOG_INDEX GLdouble 1 load_gl_scalar
+# STATE context[].GL_FOG_DENSITY GLdouble 1 load_gl_scalar
+# STATE context[].GL_FOG_START GLdouble 1 load_gl_scalar
+# STATE context[].GL_FOG_END GLdouble 1 load_gl_scalar
+# STATE context[].GL_FOG_MODE GLenum 1 load_gl_integral
+# STATE context[].enable.GL_FOG GLboolean 1 load_gl_enable
+# STATE context[].GL_FOG_COORDINATE_SOURCE GLenum 1 load_gl_integral
+# 
+# STATE context[].enable.GL_COLOR_SUM GLboolean 1 load_gl_enable
+# STATE context[].GL_SHADE_MODEL GLenum 1 load_gl_integral
+# STATE context[].enable.GL_LIGHTING GLboolean 1 load_gl_enable
+# STATE context[].enable.GL_COLOR_MATERIAL GLboolean 1 load_gl_enable
+# STATE context[].GL_COLOR_MATERIAL_PARAMETER GLenum 1 load_gl_integral
+# STATE context[].GL_COLOR_MATERIAL_FACE GLenum 1 load_gl_integral
+# STATE context[].material[].GL_AMBIENT GLdouble 4 load_gl_scalar
+# STATE context[].material[].GL_DIFFUSE GLdouble 4 load_gl_scalar
+# STATE context[].material[].GL_SPECULAR GLdouble 4 load_gl_scalar
+# STATE context[].material[].GL_EMISSION GLdouble 4 load_gl_scalar
+# STATE context[].material[].GL_SHININESS GLdouble 1 load_gl_scalar
+# STATE context[].material[].GL_COLOR_INDEXES GLdouble 3 load_gl_scalar
+# STATE context[].GL_LIGHT_MODEL_AMBIENT GLdouble 4 load_gl_scalar
+# STATE context[].GL_LIGHT_MODEL_LOCAL_VIEWER GLboolean 1 load_gl_integral
+# STATE context[].GL_LIGHT_MODEL_TWO_SIDE GLboolean 1 load_gl_integral
+# STATE context[].GL_LIGHT_MODEL_COLOR_CONTROL GLenum 1 load_gl_integral
+# 
+# STATE context[].light[].GL_AMBIENT GLdouble 4 load_gl_scalar
+# STATE context[].light[].GL_DIFFUSE GLdouble 4 load_gl_scalar
+# STATE context[].light[].GL_SPECULAR GLdouble 4 load_gl_scalar
+# STATE context[].light[].GL_POSITION GLdouble 4 load_gl_scalar
+# STATE context[].light[].GL_CONSTANT_ATTENUATION GLdouble 1 load_gl_scalar
+# STATE context[].light[].GL_LINEAR_ATTENUATION GLdouble 1 load_gl_scalar
+# STATE context[].light[].GL_QUADRATIC_ATTENUATION GLdouble 1 load_gl_scalar
+# STATE context[].light[].GL_SPOT_DIRECTION GLdouble 3 load_gl_scalar
+# STATE context[].light[].GL_SPOT_EXPONENT GLdouble 1 load_gl_scalar
+# STATE context[].light[].GL_SPOT_CUTOFF GLdouble 1 load_gl_scalar
+# STATE context[].light[].enable GLboolean 1 load_gl_enable
+# 
+# STATE context[].GL_POINT_SIZE GLdouble 1 load_gl_scalar
+# STATE context[].enable.GL_POINT_SMOOTH GLboolean 1 load_gl_enable
+# STATE context[].GL_POINT_SIZE_MIN GLdouble 1 load_gl_scalar
+# 
+# STATE context[].GL_POINT_SIZE_MAX GLdouble 1 load_gl_scalar
+# STATE context[].GL_POINT_FADE_THRESHOLD_SIZE GLdouble 1 load_gl_scalar
+# STATE context[].GL_POINT_DISTANCE_ATTENUATION GLdouble 3 load_gl_scalar
+# 
+# STATE context[].GL_LINE_WIDTH GLdouble 1 load_gl_scalar
+# STATE context[].enable.GL_LINE_SMOOTH GLboolean 1 load_gl_enable
+# STATE context[].GL_LINE_STIPPLE_PATTERN GLint 1 load_gl_integral
+# STATE context[].GL_LINE_STIPPLE_REPEAT GLint 1 load_gl_integral
+# STATE context[].enable.GL_LINE_STIPPLE GLboolean 1 load_gl_enable
+# 
+# STATE context[].enable.GL_CULL_FACE GLboolean 1 load_gl_enable
+# STATE context[].GL_CULL_FACE_MODE GLenum 1 load_gl_integral
+# STATE context[].GL_FRONT_FACE GLenum 1 load_gl_integral
+# 
+# STATE context[].enable.GL_POLYGON_SMOOTH GLboolean 1 load_gl_enable
+# STATE context[].GL_POLYGON_MODE GLenum 2 load_gl_integral
+# STATE context[].GL_POLYGON_OFFSET_FACTOR GLdouble 1 load_gl_scalar
+# STATE context[].GL_POLYGON_OFFSET_UNITS GLdouble 1 load_gl_scalar
+# STATE context[].enable.GL_POLYGON_OFFSET_POINT GLboolean 1 load_gl_enable
+# STATE context[].enable.GL_POLYGON_OFFSET_LINE GLboolean 1 load_gl_enable
+# STATE context[].enable.GL_POLYGON_OFFSET_FILL GLboolean 1 load_gl_enable
+# 
+# STATE context[].enable.GL_POLYGON_STIPPLE GLboolean 1 load_gl_enable
+# STATE context[].enable.GL_MULTISAMPLE GLboolean 1 load_gl_enable
+# STATE context[].enable.GL_SAMPLE_ALPHA_TO_COVERAGE GLboolean 1 load_gl_enable
+# STATE context[].enable.GL_SAMPLE_ALPHA_TO_ONE GLboolean 1 load_gl_enable
+# STATE context[].enable.GL_SAMPLE_COVERAGE GLboolean 1 load_gl_enable
+# STATE context[].GL_SAMPLE_COVERAGE_VALUE GLdouble 1 load_gl_scalar
+# STATE context[].GL_SAMPLE_COVERAGE_INVERT GLboolean 1 load_gl_integral
+# 
+# STATE context[].texunit[].GL_TEXTURE_1D GLboolean 1 load_gl_enable
+# STATE context[].texunit[].GL_TEXTURE_2D GLboolean 1 load_gl_enable
+# STATE context[].texunit[].GL_TEXTURE_3D GLboolean 1 load_gl_enable
+# STATE context[].texunit[].GL_TEXTURE_CUBE_MAP GLboolean 1 load_gl_enable
+# STATE context[].texunit[].GL_TEXTURE_BINDING_1D GLint 1 load_gl_integral
+# STATE context[].texunit[].GL_TEXTURE_BINDING_2D GLint 1 load_gl_integral
+# STATE context[].texunit[].GL_TEXTURE_BINDING_3D GLint 1 load_gl_integral
+# STATE context[].texunit[].GL_TEXTURE_BINDING_CUBE_MAP GLint 1 load_gl_integral
+# 
+# STATE share[].texture[].GL_TEXTURE_BORDER_COLOR GLdouble 4 load_gl_scalar
+# 
+# STATE share[].texture[].GL_TEXTURE_MIN_FILTER GLenum 1 load_gl_integral
+# STATE share[].texture[].GL_TEXTURE_MAG_FILTER GLenum 1 load_gl_integral
+# STATE share[].texture[].GL_TEXTURE_WRAP_S GLenum 1 load_gl_integral
+# STATE share[].texture[].GL_TEXTURE_WRAP_T GLenum 1 load_gl_integral
+# STATE share[].texture[].GL_TEXTURE_WRAP_R GLenum 1 load_gl_integral
+# STATE share[].texture[].GL_TEXTURE_PRIORITY GLdouble 1 load_gl_scalar
+# 
+# STATE share[].texture[].GL_TEXTURE_RESIDENT GLboolean 1 load_gl_integral
+# STATE share[].texture[].GL_TEXTURE_MIN_LOD GLdouble 1 load_gl_scalar
+# STATE share[].texture[].GL_TEXTURE_MAX_LOD GLdouble 1 load_gl_scalar
+# STATE share[].texture[].GL_TEXTURE_BASE_LEVEL GLint 1 load_gl_integral
+# STATE share[].texture[].GL_TEXTURE_MAX_LEVEL GLint 1 load_gl_integral
+# STATE share[].texture[].GL_TEXTURE_LOD_BIAS GLdouble 1 load_gl_scalar
+# STATE share[].texture[].GL_DEPTH_TEXTURE_MODE GLenum 1 load_gl_integral
+# STATE share[].texture[].GL_TEXTURE_COMPARE_MODE GLenum 1 load_gl_integral
+# STATE share[].texture[].GL_TEXTURE_COMPARE_FUNC GLenum 1 load_gl_integral
+# STATE share[].texture[].GL_GENERATE_MIPMAP GLboolean 1 load_gl_integral
+# 
+# STATE share[].texture[].level[].GL_TEXTURE_WIDTH GLint 1 load_gl_integral
+# STATE share[].texture[].level[].GL_TEXTURE_HEIGHT GLint 1 load_gl_integral
+# STATE share[].texture[].level[].GL_TEXTURE_DEPTH GLint 1 load_gl_integral
+# STATE share[].texture[].level[].GL_TEXTURE_BORDER GLint 1 load_gl_integral
+# STATE share[].texture[].level[].GL_TEXTURE_INTERNAL_FORMAT GLenum 1 load_gl_integral
+# STATE share[].texture[].level[].GL_TEXTURE_RED_SIZE GLint 1 load_gl_integral
+# STATE share[].texture[].level[].GL_TEXTURE_GREEN_SIZE GLint 1 load_gl_integral
+# STATE share[].texture[].level[].GL_TEXTURE_BLUE_SIZE GLint 1 load_gl_integral
+# STATE share[].texture[].level[].GL_TEXTURE_ALPHA_SIZE GLint 1 load_gl_integral
+# STATE share[].texture[].level[].GL_TEXTURE_LUMINANCE_SIZE GLint 1 load_gl_integral
+# STATE share[].texture[].level[].GL_TEXTURE_INTENSITY_SIZE GLint 1 load_gl_integral
+# STATE share[].texture[].level[].GL_TEXTURE_DEPTH_SIZE GLint 1 load_gl_integral
+# STATE share[].texture[].level[].GL_TEXTURE_COMPRESSED GLboolean 1 load_gl_integral
+# 
+# STATE context[].GL_ACTIVE_TEXTURE GLenum 1 load_gl_integral
+# STATE context[].texunit[].texgen[].enable GLboolean 1 load_gl_enable
+# STATE context[].texunit[].texgen[].GL_EYE_PLANE GLdouble 4 load_gl_scalar
+# STATE context[].texunit[].texgen[].GL_OBJECT_PLANE GLdouble 4 load_gl_scalar
+# STATE context[].texunit[].texgen[].GL_TEXTURE_GEN_MODE GLenum 1 load_gl_integral
+# 
+# STATE context[].texunit[].texenv.GL_TEXTURE_ENV_MODE GLenum 1 load_gl_integral
+# STATE context[].texunit[].texenv.GL_TEXTURE_ENV_COLOR GLdouble 4 load_gl_scalar
+# STATE context[].texunit[].texenv.GL_TEXTURE_LOD_BIAS GLdouble 1 load_gl_scalar
+# STATE context[].texunit[].texenv.GL_COMBINE_RGB GLenum 1 load_gl_integral
+# STATE context[].texunit[].texenv.GL_COMBINE_ALPHA GLenum 1 load_gl_integral
+# STATE context[].texunit[].texenv.GL_SOURCE0_RGB GLenum 1 load_gl_integral
+# STATE context[].texunit[].texenv.GL_SOURCE1_RGB GLenum 1 load_gl_integral
+# STATE context[].texunit[].texenv.GL_SOURCE2_RGB GLenum 1 load_gl_integral
+# STATE context[].texunit[].texenv.GL_SOURCE0_ALPHA GLenum 1 load_gl_integral
+# STATE context[].texunit[].texenv.GL_SOURCE1_ALPHA GLenum 1 load_gl_integral
+# STATE context[].texunit[].texenv.GL_SOURCE2_ALPHA GLenum 1 load_gl_integral
+# STATE context[].texunit[].texenv.GL_OPERAND0_RGB GLenum 1 load_gl_integral
+# STATE context[].texunit[].texenv.GL_OPERAND1_RGB GLenum 1 load_gl_integral
+# STATE context[].texunit[].texenv.GL_OPERAND2_RGB GLenum 1 load_gl_integral
+# STATE context[].texunit[].texenv.GL_OPERAND0_ALPHA GLenum 1 load_gl_integral
+# STATE context[].texunit[].texenv.GL_OPERAND1_ALPHA GLenum 1 load_gl_integral
+# STATE context[].texunit[].texenv.GL_OPERAND2_ALPHA GLenum 1 load_gl_integral
+# STATE context[].texunit[].texenv.GL_RGB_SCALE GLdouble 1 load_gl_scalar
+# STATE context[].texunit[].texenv.GL_ALPHA_SCALE GLdouble 1 load_gl_scalar
+# 
+# STATE context[].enable.GL_SCISSOR_TEST GLboolean 1 load_gl_enable
+# 
+# STATE context[].GL_SCISSOR_BOX GLint 4 load_gl_integral
+# STATE context[].enable.GL_ALPHA_TEST GLboolean 1 load_gl_enable
+# STATE context[].GL_ALPHA_TEST_FUNC GLenum 1 load_gl_integral
+# STATE context[].enable.GL_STENCIL_TEST GLboolean 1 load_gl_enable
+# STATE context[].GL_STENCIL_FUNC GLenum 1 load_gl_integral
+# STATE context[].GL_STENCIL_VALUE_MASK GLint 1 load_gl_integral
+# STATE context[].GL_STENCIL_REF GLint 1 load_gl_integral
+# STATE context[].GL_STENCIL_FAIL GLenum 1 load_gl_integral
+# STATE context[].GL_STENCIL_PASS_DEPTH_FAIL GLenum 1 load_gl_integral
+# STATE context[].GL_STENCIL_PASS_DEPTH_PASS GLenum 1 load_gl_integral
+# STATE context[].enable.GL_DEPTH_TEST GLboolean 1 load_gl_enable
+# STATE context[].GL_DEPTH_FUNC GLenum 1 load_gl_integral
+# STATE context[].enable.GL_BLEND GLboolean 1 load_gl_enable
+# STATE context[].GL_BLEND_SRC_RGB GLalternateenum 1 load_gl_integral
+# STATE context[].GL_BLEND_SRC_ALPHA GLalternateenum 1 load_gl_integral
+# STATE context[].GL_BLEND_DST_RGB GLalternateenum 1 load_gl_integral
+# STATE context[].GL_BLEND_DST_ALPHA GLalternateenum 1 load_gl_integral
+# STATE context[].GL_BLEND_EQUATION GLenum 1 load_gl_integral
+# STATE context[].GL_BLEND_COLOR GLdouble 4 load_gl_scalar
+# STATE context[].enable.GL_DITHER GLboolean 1 load_gl_enable
+# STATE context[].enable.GL_INDEX_LOGIC_OP GLboolean 1 load_gl_enable
+# STATE context[].enable.GL_COLOR_LOGIC_OP GLboolean 1 load_gl_enable
+# STATE context[].GL_LOGIC_OP_MODE GLenum 1 load_gl_integral
+# 
+# STATE context[].GL_DRAW_BUFFER GLenum 1 load_gl_integral
+# STATE context[].GL_INDEX_WRITEMASK GLint 1 load_gl_integral
+# STATE context[].GL_COLOR_WRITEMASK GLboolean 4 load_gl_integral
+# STATE context[].GL_DEPTH_WRITEMASK GLboolean 1 load_gl_integral
+# STATE context[].GL_STENCIL_WRITEMASK GLint 1 load_gl_integral
+# STATE context[].GL_COLOR_CLEAR_VALUE GLdouble 4 load_gl_scalar
+# STATE context[].GL_INDEX_CLEAR_VALUE GLdouble 1 load_gl_scalar
+# STATE context[].GL_DEPTH_CLEAR_VALUE GLdouble 1 load_gl_scalar
+# STATE context[].GL_STENCIL_CLEAR_VALUE GLint 1 load_gl_integral
+# 
+# STATE context[].GL_UNPACK_SWAP_BYTES GLboolean 1 load_gl_integral
+# STATE context[].GL_UNPACK_LSB_FIRST GLboolean 1 load_gl_integral
+# STATE context[].GL_UNPACK_IMAGE_HEIGHT GLint 1 load_gl_integral
+# STATE context[].GL_UNPACK_SKIP_IMAGES GLint 1 load_gl_integral
+# STATE context[].GL_UNPACK_ROW_LENGTH GLint 1 load_gl_integral
+# STATE context[].GL_UNPACK_SKIP_ROWS GLint 1 load_gl_integral
+# STATE context[].GL_UNPACK_SKIP_PIXELS GLint 1 load_gl_integral
+# STATE context[].GL_UNPACK_ALIGNMENT GLint 1 load_gl_integral
+# STATE context[].GL_PACK_SWAP_BYTES GLboolean 1 load_gl_integral
+# STATE context[].GL_PACK_LSB_FIRST GLboolean 1 load_gl_integral
+# STATE context[].GL_PACK_IMAGE_HEIGHT GLint 1 load_gl_integral
+# STATE context[].GL_PACK_SKIP_IMAGES GLint 1 load_gl_integral
+# STATE context[].GL_PACK_ROW_LENGTH GLint 1 load_gl_integral
+# STATE context[].GL_PACK_SKIP_ROWS GLint 1 load_gl_integral
+# STATE context[].GL_PACK_SKIP_PIXELS GLint 1 load_gl_integral
+# STATE context[].GL_PACK_ALIGNMENT GLint 1 load_gl_integral
+# 
+# STATE context[].GL_MAP_COLOR GLboolean 1 load_gl_integral
+# STATE context[].GL_MAP_STENCIL GLboolean 1 load_gl_integral
+# STATE context[].GL_INDEX_SHIFT GLint 1 load_gl_integral
+# STATE context[].GL_INDEX_OFFSET GLint 1 load_gl_integral
+# STATE context[].GL_RED_SCALE GLdouble 1 load_gl_scalar
+# STATE context[].GL_GREEN_SCALE GLdouble 1 load_gl_scalar
+# STATE context[].GL_BLUE_SCALE GLdouble 1 load_gl_scalar
+# STATE context[].GL_ALPHA_SCALE GLdouble 1 load_gl_scalar
+# STATE context[].GL_DEPTH_SCALE GLdouble 1 load_gl_scalar
+# STATE context[].GL_RED_BIAS GLdouble 1 load_gl_scalar
+# STATE context[].GL_GREEN_BIAS GLdouble 1 load_gl_scalar
+# STATE context[].GL_BLUE_BIAS GLdouble 1 load_gl_scalar
+# STATE context[].GL_ALPHA_BIAS GLdouble 1 load_gl_scalar
+# STATE context[].GL_DEPTH_BIAS GLdouble 1 load_gl_scalar
+# 
+# STATE context[].GL_ZOOM_X GLdouble 1 load_gl_scalar
+# STATE context[].GL_ZOOM_Y GLdouble 1 load_gl_scalar
+# 
+# STATE context[].GL_READ_BUFFER GLenum 1 load_gl_integral
+# 
+# STATE context[].GL_MAP1_GRID_DOMAIN GLdouble 2 load_gl_scalar
+# STATE context[].GL_MAP2_GRID_DOMAIN GLdouble 4 load_gl_scalar
+# STATE context[].GL_MAP1_GRID_SEGMENTS GLint 1 load_gl_integral
+# STATE context[].GL_MAP2_GRID_SEGMENTS GLint 2 load_gl_integral
+# 
+# STATE context[].enable.GL_AUTO_NORMAL GLboolean 1 load_gl_enable
+# 
+# STATE context[].GL_PERSPECTIVE_CORRECTION_HINT GLenum 1 load_gl_integral
+# STATE context[].GL_POINT_SMOOTH_HINT GLenum 1 load_gl_integral
+# STATE context[].GL_LINE_SMOOTH_HINT GLenum 1 load_gl_integral
+# STATE context[].GL_POLYGON_SMOOTH_HINT GLenum 1 load_gl_integral
+# STATE context[].GL_FOG_HINT GLenum 1 load_gl_integral
+# STATE context[].GL_GENERATE_MIPMAP_HINT GLenum 1 load_gl_integral
+# STATE context[].GL_TEXTURE_COMPRESSION_HINT GLenum 1 load_gl_integral
+# 
+# STATE context[].cap.GL_MAX_LIGHTS GLint 1 load_gl_integral
+# STATE context[].cap.GL_MAX_CLIP_PLANES GLint 1 load_gl_integral
+# STATE context[].cap.GL_MAX_COLOR_MATRIX_STACK_DEPTH GLint 1 load_gl_integral
+# STATE context[].cap.GL_MAX_MODELVIEW_STACK_DEPTH GLint 1 load_gl_integral
+# STATE context[].cap.GL_MAX_PROJECTION_STACK_DEPTH GLint 1 load_gl_integral
+# STATE context[].cap.GL_MAX_TEXTURE_STACK_DEPTH GLint 1 load_gl_integral
+# STATE context[].cap.GL_SUBPIXEL_BITS GLint 1 load_gl_integral
+# STATE context[].cap.GL_MAX_3D_TEXTURE_SIZE GLint 1 load_gl_integral
+# STATE context[].cap.GL_MAX_TEXTURE_SIZE GLint 1 load_gl_integral
+# STATE context[].cap.GL_MAX_TEXTURE_LOD_BIAS GLdouble 1 load_gl_scalar
+# STATE context[].cap.GL_MAX_CUBE_MAP_TEXTURE_SIZE GLint 1 load_gl_integral
+# STATE context[].cap.GL_MAX_PIXEL_MAP_TABLE GLint 1 load_gl_integral
+# STATE context[].cap.GL_MAX_NAME_STACK_DEPTH GLint 1 load_gl_integral
+# STATE context[].cap.GL_MAX_LIST_NESTING GLint 1 load_gl_integral
+# STATE context[].cap.GL_MAX_EVAL_ORDER GLint 1 load_gl_integral
+# 
+# STATE context[].cap.GL_MAX_VIEWPORT_DIMS GLint 2 load_gl_integral
+# STATE context[].cap.GL_MAX_ATTRIB_STACK_DEPTH GLint 1 load_gl_integral
+# STATE context[].cap.GL_MAX_CLIENT_ATTRIB_STACK_DEPTH GLint 1 load_gl_integral
+# STATE context[].cap.GL_AUX_BUFFERS GLint 1 load_gl_integral
+# STATE context[].cap.GL_RGBA_MODE GLboolean 1 load_gl_integral
+# STATE context[].cap.GL_INDEX_MODE GLboolean 1 load_gl_integral
+# STATE context[].cap.GL_DOUBLEBUFFER GLboolean 1 load_gl_integral
+# STATE context[].cap.GL_STEREO GLboolean 1 load_gl_integral
+# STATE context[].cap.GL_ALIASED_POINT_SIZE_RANGE GLdouble 2 load_gl_scalar
+# STATE context[].cap.GL_SMOOTH_POINT_SIZE_RANGE GLdouble 2 load_gl_scalar
+# STATE context[].cap.GL_SMOOTH_POINT_SIZE_GRANULARITY GLdouble 1 load_gl_scalar
+# STATE context[].cap.GL_ALIASED_LINE_WIDTH_RANGE GLdouble 2 load_gl_scalar
+# STATE context[].cap.GL_SMOOTH_LINE_WIDTH_RANGE GLdouble 2 load_gl_scalar
+# STATE context[].cap.GL_SMOOTH_LINE_WIDTH_GRANULARITY GLdouble 1 load_gl_scalar
+# 
+# STATE context[].cap.GL_MAX_ELEMENTS_INDICES GLint 1 load_gl_integral
+# STATE context[].cap.GL_MAX_ELEMENTS_VERTICES GLint 1 load_gl_integral
+# STATE context[].cap.GL_MAX_TEXTURE_UNITS GLint 1 load_gl_integral
+# STATE context[].cap.GL_SAMPLE_BUFFERS GLint 1 load_gl_integral
+# STATE context[].cap.GL_SAMPLES GLint 1 load_gl_integral
+# 
+# STATE context[].cap.GL_NUM_COMPRESSED_TEXTURE_FORMATS GLint 1 load_gl_integral
+# 
+# STATE context[].cap.GL_RED_BITS GLint 1 load_gl_integral
+# STATE context[].cap.GL_GREEN_BITS GLint 1 load_gl_integral
+# STATE context[].cap.GL_BLUE_BITS GLint 1 load_gl_integral
+# STATE context[].cap.GL_ALPHA_BITS GLint 1 load_gl_integral
+# STATE context[].cap.GL_DEPTH_BITS GLint 1 load_gl_integral
+# STATE context[].cap.GL_STENCIL_BITS GLint 1 load_gl_integral
+# STATE context[].cap.GL_ACCUM_RED_BITS GLint 1 load_gl_integral
+# STATE context[].cap.GL_ACCUM_GREEN_BITS GLint 1 load_gl_integral
+# STATE context[].cap.GL_ACCUM_BLUE_BITS GLint 1 load_gl_integral
+# STATE context[].cap.GL_ACCUM_ALPHA_BITS GLint 1 load_gl_integral
+# 
+# STATE context[].GL_LIST_BASE GLint 1 load_gl_integral
+# STATE context[].GL_LIST_INDEX GLint 1 load_gl_integral
+# STATE context[].GL_LIST_MODE GLint 1 load_gl_integral
+# STATE context[].GL_ATTRIB_STACK_DEPTH GLint 1 load_gl_integral
+# STATE context[].GL_CLIENT_ATTRIB_STACK_DEPTH GLint 1 load_gl_integral
+# STATE context[].GL_NAME_STACK_DEPTH GLint 1 load_gl_integral
+# STATE context[].GL_RENDER_MODE GLenum 1 load_gl_integral
+# STATE context[].GL_SELECTION_BUFFER_POINTER +P6GLvoid 1 load_gl_pointer
+# STATE context[].GL_SELECTION_BUFFER_SIZE GLint 1 load_gl_integral
+# STATE context[].GL_FEEDBACK_BUFFER_POINTER +P6GLvoid 1 load_gl_pointer
+# STATE context[].GL_FEEDBACK_BUFFER_SIZE GLint 1 load_gl_integral
+# STATE context[].GL_FEEDBACK_BUFFER_TYPE GLenum 1 load_gl_integral
+# 
+# STATE context[].internal.min_element GLint 1 load_gl_internal
+# STATE context[].internal.max_element GLint 1 load_gl_internal
+# STATE context[].internal.in_begin_end GLboolean 1 load_gl_internal
+# STATE context[].internal.error GLerror 1 load_gl_internal
+# STATE context[].internal.share +Pv 1 load_gl_internal
+# STATE context[].internal.destroyed GLboolean 1 load_gl_internal
+# STATE context[].internal.initialised GLboolean 1 load_gl_internal
+# STATE share[].internal.refcount GLsizei 1 load_gl_internal
+# STATE share[].internal.destroyed GLsizei 1 load_gl_internal
+# 
+# STATE current_context +Pv 1 load_gl_internal
+# STATE current_share +Pv 1 load_gl_internal

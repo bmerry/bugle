@@ -1,0 +1,13 @@
+- clean shutdown of filters
+- make dump_any_type table-driven
+- state code
+- test -O2
+- autoconf tests (e.g. regex, -fdump-translation-unit, strdup)
+- write safe allocators (xmalloc, xstrdup)
+- control over filter chain
+- debug module
+- filter chain variables
+- move filter code into budgie
+- write support for state
+- capture and reload
+- documentation
