@@ -17,24 +17,40 @@ thread are passed straight through. The start of each wrapper should
 call check_set_reentrance(), and do a pass-through if it returns false.
 Otherwise, it should wrap and then call clear_reentrance() afterwards.
 
+FIXME: the check_skip functionality does not protected against
+reentrance.
+
 3. Access to state
 
 Requests for the per-context state tree must go through
-get_context_state(), which reads the value out of thread-local storage.
-The value is placed there by the trackcontext module, which uses a
-private mutex to control access.
+bugle_tracker_get_context_state(), which reads the value out of
+thread-local storage. The value is placed there by the trackcontext
+module, which uses a private mutex to control access.
 
 Access to the root state should be done through get_root_state(), which
 uses a pthread_once_t to do initialisation once.
 
-BUG: there probably need to be a few more volatile keywords.
+FIXME: there probably need to be a few more volatile keywords.
 
 4. Log files
 
 The logging filters use flockfile/funlockfile to guarantee that each
 call occupies a contiguous piece of log. This is why you should use
-log_register_filter() for each filter that intends to do logging.
+bugle_log_register_filter() for each filter that intends to do logging.
 
 5. Debugger
 
 The debugger is not thread-safe.
+
+6. Object system: objects.c
+
+The methods named bugle_object_class_* are not thread-safe and should
+be protected with locks. The methods named bugle_object_* are
+thread-safe (including those referring to the current object). This is
+because the "current" object is a per-thread variable referenced by a
+pthread_key_t).
+
+7. Low-level types: linked lists and hash tables
+
+In the interests of efficiency, these do not provide thread-safe
+access. You are responsible for providing locks.
