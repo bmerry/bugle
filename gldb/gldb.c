@@ -180,6 +180,8 @@ static pid_t execute(void)
     default: /* Parent */
         lib_in = in_pipe[0];
         lib_out = out_pipe[1];
+        close(in_pipe[1]);
+        close(out_pipe[0]);
         return pid;
     }
 }
@@ -592,7 +594,7 @@ static void main_loop(void)
             if (!recv_code(lib_in, &resp))
             {
                 /* Failure here means EOF, which hopefully means that the
-                 * program will now terminate. Cross thumbs...
+                 * program will now terminate.
                  */
                 check(sigprocmask(SIG_SETMASK, &blocked, NULL), "sigprocmask");
                 sigsuspend(&unblocked);
