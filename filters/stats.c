@@ -485,6 +485,9 @@ static bool initialise_showstats(filter_set *handle)
     register_filter_depends("showstats", "stats");
     register_filter_depends("invoke", "showstats");
     register_filter_depends("screenshot", "showstats");
+    /* make sure that screenshots capture the stats */
+    register_filter_depends("debugger", "showstats");
+    register_filter_depends("screenshot", "showstats");
     register_filter_catches(f, CFUNC_glXSwapBuffers);
     register_filter_set_depends("showstats", "stats");
     register_filter_set_renders("showstats");

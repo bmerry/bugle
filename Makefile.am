@@ -147,8 +147,11 @@ CLEANFILES = \
 	src/gltokens.c src/glfuncs.c src/glfuncs.h src/data/gl.tu src/aliases.txt \
 	doc/gldb.1.gz doc/bugle.3.gz \
 	gldb/.libs/gldb \
-	tests/.libs/errors tests/.libs/threads1 \
-	tests/.libs/threads2 tests/.libs/queries tests/.libs/misc \
-	tests/.libs/setstate tests/.libs/lt-errors tests/.libs/lt-misc \
-	tests/.libs/lt-queries tests/.libs/lt-setstate
+        tests/.libs/threads1 \
+        tests/.libs/threads2 \
+	tests/.libs/errors tests/.libs/lt-errors \
+        tests/.libs/queries tests/.libs/lt-queries \
+        tests/.libs/misc tests/.libs/lt-misc \
+	tests/.libs/setstate tests/.libs/lt-setstate \
+        tests/.libs/triangles tests/.libs/lt-triangles
 DISTCLEANFILES = tests/*.log
