@@ -53,7 +53,10 @@ GLXContext bugle_get_aux_context();
  * not included). This includes commands that use arrays as well as
  * immediate mode commands.
  */
-void bugle_register_filter_catches_drawing(filter *f);
+void bugle_register_filter_catches_drawing(filter *f, filter_callback callback);
+/* Like the above, but only immediate mode vertex commands */
+void bugle_register_filter_catches_drawing_immediate(filter *f, filter_callback callback);
+
 /* Returns true for glVertex*, and for glVertexAttrib* with attribute
  * 0. These are the calls that generate a vertex in immediate mode.
  * f must be canonicalised.

@@ -55,6 +55,8 @@ static bool log_post_callback(function_call *call, const callback_data *data)
 
 static bool initialise_log(filter_set *handle)
 {
+    filter *f;
+
     if (log_filename)
         log_file = fopen(log_filename, "w");
     else
@@ -65,8 +67,10 @@ static bool initialise_log(filter_set *handle)
             fprintf(stderr, "failed to open log file %s\n", log_filename);
         return false;
     }
-    bugle_register_filter(handle, "log_pre", log_pre_callback);
-    bugle_register_filter(handle, "log_post", log_post_callback);
+    f = bugle_register_filter(handle, "log_pre");
+    bugle_register_filter_catches_all(f, log_pre_callback);
+    f = bugle_register_filter(handle, "log_post");
+    bugle_register_filter_catches_all(f, log_post_callback);
     return true;
 }
 

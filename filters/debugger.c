@@ -408,10 +408,10 @@ static bool initialise_debugger(filter_set *handle)
     }
     debugger_loop(true);
 
-    f = bugle_register_filter(handle, "debugger", debugger_callback);
-    bugle_register_filter_catches_all(f);
-    f = bugle_register_filter(handle, "debugger_error", debugger_error_callback);
-    bugle_register_filter_catches_all(f);
+    f = bugle_register_filter(handle, "debugger");
+    bugle_register_filter_catches_all(f, debugger_callback);
+    f = bugle_register_filter(handle, "debugger_error");
+    bugle_register_filter_catches_all(f, debugger_error_callback);
     bugle_register_filter_depends("invoke", "debugger");
     bugle_register_filter_depends("debugger_error", "invoke");
     bugle_register_filter_depends("debugger_error", "error");

@@ -77,41 +77,40 @@ void *bugle_displaylist_get(GLuint list)
     return ans;
 }
 
-static bool trackdisplaylist_callback(function_call *call, const callback_data *data)
+static bool trackdisplaylist_glNewList(function_call *call, const callback_data *data)
 {
+    displaylist_struct info;
     void *obj;
-    displaylist_struct info, *info_ptr;
     GLint value;
 
-    switch (bugle_canonical_call(call))
+    if (bugle_displaylist_list()) return true; /* Nested call */
+    if (bugle_begin_internal_render())
     {
-    case FUNC_glNewList:
-        if (bugle_displaylist_list()) break; /* Nested call */
-        if (bugle_begin_internal_render())
-        {
-            CALL_glGetIntegerv(GL_LIST_INDEX, &value);
-            info.list = value;
-            CALL_glGetIntegerv(GL_LIST_MODE, &value);
-            info.mode = value;
-            if (info.list == 0)
-                break;
-            obj = bugle_object_new(&bugle_displaylist_class, &info, true);
-            bugle_end_internal_render("trackdisplaylist_callback", true);
-        }
-        break;
-    case FUNC_glEndList:
-        obj = bugle_object_get_current(&bugle_displaylist_class);
-        info_ptr = bugle_object_get_data(&bugle_displaylist_class, obj, displaylist_offset);
-        /* Note: we update the hash table when we end the list, since this is
-         * when the list is ended, since this is when OpenGL says the new
-         * name comes into effect.
-         */
-        pthread_mutex_lock(&displaylist_lock);
-        bugle_hashptr_set(&displaylist_objects, (void *) (size_t) info_ptr->list, obj);
-        pthread_mutex_unlock(&displaylist_lock);
-        bugle_object_set_current(&bugle_displaylist_class, NULL);
-        break;
+        CALL_glGetIntegerv(GL_LIST_INDEX, &value);
+        info.list = value;
+        CALL_glGetIntegerv(GL_LIST_MODE, &value);
+        info.mode = value;
+        if (info.list == 0) return true; /* Call failed? */
+        obj = bugle_object_new(&bugle_displaylist_class, &info, true);
+        bugle_end_internal_render("trackdisplaylist_callback", true);
     }
+    return true;
+}
+
+static bool trackdisplaylist_glEndList(function_call *call, const callback_data *data)
+{
+    void *obj;
+    displaylist_struct *info_ptr;
+
+    obj = bugle_object_get_current(&bugle_displaylist_class);
+    info_ptr = bugle_object_get_data(&bugle_displaylist_class, obj, displaylist_offset);
+    /* Note: we update the hash table when we end the list, since this is when OpenGL
+     * says the new name comes into effect.
+     */
+    pthread_mutex_lock(&displaylist_lock);
+    bugle_hashptr_set(&displaylist_objects, (void *) (size_t) info_ptr->list, obj);
+    pthread_mutex_unlock(&displaylist_lock);
+    bugle_object_set_current(&bugle_displaylist_class, NULL);
     return true;
 }
 
@@ -119,10 +118,10 @@ static bool initialise_trackdisplaylist(filter_set *handle)
 {
     filter *f;
 
-    f = bugle_register_filter(handle, "trackdisplaylist", trackdisplaylist_callback);
+    f = bugle_register_filter(handle, "trackdisplaylist");
     bugle_register_filter_depends("trackdisplaylist", "invoke");
-    bugle_register_filter_catches(f, FUNC_glNewList);
-    bugle_register_filter_catches(f, FUNC_glEndList);
+    bugle_register_filter_catches(f, FUNC_glNewList, trackdisplaylist_glNewList);
+    bugle_register_filter_catches(f, FUNC_glEndList, trackdisplaylist_glEndList);
 
     displaylist_offset = bugle_object_class_register(&bugle_displaylist_class,
                                                      initialise_displaylist_struct,

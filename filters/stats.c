@@ -129,118 +129,168 @@ static void update_triangles(stats_struct *s, GLenum mode, GLsizei count)
     }
 }
 
-static bool stats_callback(function_call *call, const callback_data *data)
+static bool stats_glXSwapBuffers(function_call *call, const callback_data *data)
 {
     stats_struct *s;
     struct timeval now;
     float elapsed;
     FILE *f;
+
+    s = bugle_object_get_current_data(&bugle_context_class, stats_offset);
+    gettimeofday(&now, NULL);
+    elapsed = (now.tv_sec - s->last_time.tv_sec)
+        + 1.0e-6f * (now.tv_usec - s->last_time.tv_usec);
+    s->last_time = now;
+    s->fps = 1.0f / elapsed;
+#ifdef GL_ARB_occlusion_query
+    if (s->query && bugle_begin_internal_render())
+    {
+        CALL_glEndQueryARB(GL_SAMPLES_PASSED);
+        CALL_glGetQueryObjectuivARB(s->query, GL_QUERY_RESULT_ARB, &s->fragments);
+        bugle_end_internal_render("stats_callback", true);
+    }
+    else
+#endif
+    {
+        s->fragments = 0;
+    }
+
+    if ((f = bugle_log_header("stats", "fps")) != NULL)
+        fprintf(f, "%.3f\n", s->fps);
+    if (s->query && (f = bugle_log_header("stats", "fragments")) != NULL)
+        fprintf(f, "%u\n", (unsigned int) s->fragments);
+    if (count_triangles && (f = bugle_log_header("stats", "triangles")) != NULL)
+        fprintf(f, "%u\n", (unsigned int) s->triangles);
+    return true;
+}
+
+#ifdef GL_ARB_occlusion_query
+static bool stats_fragments(function_call *call, const callback_data *data)
+{
+    stats_struct *s;
+
+    s = bugle_object_get_current_data(&bugle_context_class, stats_offset);
+    if (count_fragments)
+    {
+        s = bugle_object_get_current_data(&bugle_context_class, stats_offset);
+        if (s->query)
+        {
+            fputs("App is using occlusion queries, disabling fragment counting\n", stderr);
+            s->query = 0;
+            s->fragments = 0;
+        }
+    }
+    return true;
+}
+#endif
+
+static bool stats_immediate(function_call *call, const callback_data *data)
+{
+    stats_struct *s;
+
+    if (bugle_in_begin_end())
+    {
+        s = bugle_object_get_current_data(&bugle_context_class, stats_offset);
+        s->begin_count++;
+    }
+    return true;
+}
+
+static bool stats_glBegin(function_call *call, const callback_data *data)
+{
+    stats_struct *s;
+
+    s = bugle_object_get_current_data(&bugle_context_class, stats_offset);
+    s->begin_mode = *call->typed.glBegin.arg0;
+    s->begin_count = 0;
+    return true;
+}
+
+static bool stats_glEnd(function_call *call, const callback_data *data)
+{
+    stats_struct *s;
+
+    s = bugle_object_get_current_data(&bugle_context_class, stats_offset);
+    update_triangles(s, s->begin_mode, s->begin_count);
+    s->begin_mode = 0;
+    s->begin_count = 0;
+    return true;
+}
+
+static bool stats_glDrawArrays(function_call *call, const callback_data *data)
+{
+    stats_struct *s;
+
+    s = bugle_object_get_current_data(&bugle_context_class, stats_offset);
+    update_triangles(s, *call->typed.glDrawArrays.arg0, *call->typed.glDrawArrays.arg2);
+    return true;
+}
+
+static bool stats_glDrawElements(function_call *call, const callback_data *data)
+{
+    stats_struct *s;
+
+    s = bugle_object_get_current_data(&bugle_context_class, stats_offset);
+    update_triangles(s, *call->typed.glDrawElements.arg0, *call->typed.glDrawElements.arg1);
+    return true;
+}
+
+#ifdef GL_EXT_draw_range_elements
+static bool stats_glDrawRangeElements(function_call *call, const callback_data *data)
+{
+    stats_struct *s;
+
+    s = bugle_object_get_current_data(&bugle_context_class, stats_offset);
+    update_triangles(s, *call->typed.glDrawRangeElementsEXT.arg0, *call->typed.glDrawRangeElementsEXT.arg3);
+    return true;
+}
+#endif
+
+#ifdef GL_EXT_multi_draw_arrays
+static bool stats_glMultiDrawArrays(function_call *call, const callback_data *data)
+{
+    stats_struct *s;
     GLsizei i, primcount;
-    budgie_function canon;
+
+    s = bugle_object_get_current_data(&bugle_context_class, stats_offset);
+    primcount = *call->typed.glMultiDrawArrays.arg3;
+    for (i = 0; i < primcount; i++)
+        update_triangles(s, *call->typed.glMultiDrawArrays.arg0,
+                         (*call->typed.glMultiDrawArrays.arg2)[i]);
+    return true;
+}
+
+static bool stats_glMultiDrawElements(function_call *call, const callback_data *data)
+{
+    stats_struct *s;
+    GLsizei i, primcount;
+
+    s = bugle_object_get_current_data(&bugle_context_class, stats_offset);
+
+    primcount = *call->typed.glMultiDrawElements.arg4;
+    for (i = 0; i < primcount; i++)
+        update_triangles(s, *call->typed.glMultiDrawElements.arg0,
+                         (*call->typed.glMultiDrawElements.arg1)[i]);
+    return true;
+}
+#endif
+
+static bool stats_glCallList(function_call *call, const callback_data *data)
+{
+    stats_struct *s;
     size_t *count;
 
     s = bugle_object_get_current_data(&bugle_context_class, stats_offset);
-    canon = bugle_canonical_call(call);
-    switch (canon)
-    {
-    case CFUNC_glXSwapBuffers:
-        gettimeofday(&now, NULL);
-        elapsed = (now.tv_sec - s->last_time.tv_sec)
-            + 1.0e-6f * (now.tv_usec - s->last_time.tv_usec);
-        s->last_time = now;
-        s->fps = 1.0f / elapsed;
-#ifdef GL_ARB_occlusion_query
-        if (s->query && bugle_begin_internal_render())
-        {
-            CALL_glEndQueryARB(GL_SAMPLES_PASSED);
-            CALL_glGetQueryObjectuivARB(s->query, GL_QUERY_RESULT_ARB, &s->fragments);
-            bugle_end_internal_render("stats_callback", true);
-        }
-        else
-#endif
-        {
-            s->fragments = 0;
-        }
+    count = bugle_object_get_data(&bugle_displaylist_class,
+                                  bugle_displaylist_get(*call->typed.glCallList.arg0),
+                                  displaylist_offset);
+    if (count) s->triangles += *count;
+    return true;
+}
 
-        if ((f = bugle_log_header("stats", "fps")) != NULL)
-            fprintf(f, "%.3f\n", s->fps);
-        if (s->query && (f = bugle_log_header("stats", "fragments")) != NULL)
-            fprintf(f, "%u\n", (unsigned int) s->fragments);
-        if (count_triangles && (f = bugle_log_header("stats", "triangles")) != NULL)
-            fprintf(f, "%u\n", (unsigned int) s->triangles);
-        return true;
-    }
-
-#ifdef GL_ARB_occlusion_query
-    if (count_fragments)
-        switch (canon)
-        {
-        case CFUNC_glBeginQueryARB:
-        case CFUNC_glEndQueryARB:
-            if (s->query)
-            {
-                fputs("App is using occlusion queries, disabling fragment counting\n", stderr);
-                s->query = 0;
-                s->fragments = 0;
-            }
-            break;
-        }
-#endif
-
-    if (count_triangles)
-    {
-        if (bugle_call_is_immediate(call))
-        {
-            if (bugle_in_begin_end()) s->begin_count++;
-        }
-        else
-            switch (canon)
-            {
-            case CFUNC_glBegin:
-                s->begin_mode = *call->typed.glBegin.arg0;
-                s->begin_count = 0;
-                break;
-            case CFUNC_glEnd:
-                update_triangles(s, s->begin_mode, s->begin_count);
-                s->begin_mode = 0;
-                s->begin_count = 0;
-                break;
-            case CFUNC_glDrawArrays:
-                update_triangles(s, *call->typed.glDrawArrays.arg0, *call->typed.glDrawArrays.arg2);
-                break;
-            case CFUNC_glDrawElements:
-                update_triangles(s, *call->typed.glDrawElements.arg0, *call->typed.glDrawElements.arg1);
-                break;
-#ifdef GL_EXT_draw_range_elements
-            case CFUNC_glDrawRangeElementsEXT:
-                update_triangles(s, *call->typed.glDrawRangeElementsEXT.arg0, *call->typed.glDrawRangeElementsEXT.arg3);
-                break;
-#endif
-#ifdef GL_EXT_multi_draw_arrays
-            case CFUNC_glMultiDrawArraysEXT:
-                primcount = *call->typed.glMultiDrawArrays.arg3;
-                for (i = 0; i < primcount; i++)
-                    update_triangles(s, *call->typed.glMultiDrawArrays.arg0,
-                                     (*call->typed.glMultiDrawArrays.arg2)[i]);
-                break;
-            case CFUNC_glMultiDrawElementsEXT:
-                primcount = *call->typed.glMultiDrawElements.arg4;
-                for (i = 0; i < primcount; i++)
-                    update_triangles(s, *call->typed.glMultiDrawElements.arg0,
-                                     (*call->typed.glMultiDrawElements.arg1)[i]);
-                break;
-#endif
-            case CFUNC_glCallList:
-                count = bugle_object_get_data(&bugle_displaylist_class,
-                                              bugle_displaylist_get(*call->typed.glCallList.arg0),
-                                              displaylist_offset);
-                if (count) s->triangles += *count;
-                break;
-            case CFUNC_glCallLists:
-                fputs("FIXME: triangle counting in glCallLists not implemented!\n", stderr);
-                break;
-            }
-    }
+static bool stats_glCallLists(function_call *call, const callback_data *data)
+{
+    fputs("FIXME: triangle counting in glCallLists not implemented!\n", stderr);
     return true;
 }
 
@@ -248,20 +298,15 @@ static bool stats_post_callback(function_call *call, const callback_data *data)
 {
     stats_struct *s;
 
-    switch (bugle_canonical_call(call))
-    {
-    case CFUNC_glXSwapBuffers:
-        s = bugle_object_get_current_data(&bugle_context_class, stats_offset);
+    s = bugle_object_get_current_data(&bugle_context_class, stats_offset);
 #ifdef GL_ARB_occlusion_query
-        if (s->query && bugle_begin_internal_render())
-        {
-            CALL_glBeginQueryARB(GL_SAMPLES_PASSED, s->query);
-            bugle_end_internal_render("stats_post_callback", true);
-        }
-#endif
-        s->triangles = 0;
-        break;
+    if (s->query && bugle_begin_internal_render())
+    {
+        CALL_glBeginQueryARB(GL_SAMPLES_PASSED, s->query);
+        bugle_end_internal_render("stats_post_callback", true);
     }
+#endif
+    s->triangles = 0;
     return true;
 }
 
@@ -311,45 +356,40 @@ static bool showstats_callback(function_call *call, const callback_data *data)
     float elapsed;
     struct timeval now;
 
-    switch (bugle_canonical_call(call))
+    aux = bugle_get_aux_context();
+    if (aux && bugle_begin_internal_render())
     {
-    case FUNC_glXSwapBuffers:
-        aux = bugle_get_aux_context();
-        if (aux && bugle_begin_internal_render())
+        real = CALL_glXGetCurrentContext();
+        old_write = CALL_glXGetCurrentDrawable();
+        old_read = CALL_glXGetCurrentReadDrawable();
+        dpy = CALL_glXGetCurrentDisplay();
+        CALL_glXMakeContextCurrent(dpy, old_write, old_write, aux);
+        s = bugle_object_get_current_data(&bugle_context_class, stats_offset);
+        ss = bugle_object_get_current_data(&bugle_context_class, showstats_offset);
+
+        gettimeofday(&now, NULL);
+        elapsed = (now.tv_sec - ss->last_show_time.tv_sec)
+            + 1.0e-6f * (now.tv_usec - ss->last_show_time.tv_usec);
+        ss->skip_frames++;
+        if (elapsed >= 0.2f)
         {
-            real = CALL_glXGetCurrentContext();
-            old_write = CALL_glXGetCurrentDrawable();
-            old_read = CALL_glXGetCurrentReadDrawable();
-            dpy = CALL_glXGetCurrentDisplay();
-            CALL_glXMakeContextCurrent(dpy, old_write, old_write, aux);
-            s = bugle_object_get_current_data(&bugle_context_class, stats_offset);
-            ss = bugle_object_get_current_data(&bugle_context_class, showstats_offset);
-
-            gettimeofday(&now, NULL);
-            elapsed = (now.tv_sec - ss->last_show_time.tv_sec)
-                + 1.0e-6f * (now.tv_usec - ss->last_show_time.tv_usec);
-            ss->skip_frames++;
-            if (elapsed >= 0.2f)
-            {
-                ss->shown_fps = ss->skip_frames / elapsed;
-                ss->last_show_time = now;
-                ss->skip_frames = 0;
-            }
-
-            /* We don't want to depend on glWindowPos since it
-             * needs OpenGL 1.4, but fortunately the aux context
-             * has identity MVP matrix.
-             */
-            CALL_glPushAttrib(GL_CURRENT_BIT);
-            CALL_glRasterPos2f(-0.9, 0.9);
-            render_stats(ss, "%.1f fps", ss->shown_fps);
-            if (s->query) render_stats(ss, "%u fragments", (unsigned int) s->fragments);
-            if (count_triangles) render_stats(ss, "%u triangles", (unsigned int) s->triangles);
-            CALL_glPopAttrib();
-            CALL_glXMakeContextCurrent(dpy, old_write, old_read, real);
-            bugle_end_internal_render("showstats_callback", true);
+            ss->shown_fps = ss->skip_frames / elapsed;
+            ss->last_show_time = now;
+            ss->skip_frames = 0;
         }
-        break;
+
+        /* We don't want to depend on glWindowPos since it
+         * needs OpenGL 1.4, but fortunately the aux context
+         * has identity MVP matrix.
+         */
+        CALL_glPushAttrib(GL_CURRENT_BIT);
+        CALL_glRasterPos2f(-0.9, 0.9);
+        render_stats(ss, "%.1f fps", ss->shown_fps);
+        if (s->query) render_stats(ss, "%u fragments", (unsigned int) s->fragments);
+        if (count_triangles) render_stats(ss, "%u triangles", (unsigned int) s->triangles);
+        CALL_glPopAttrib();
+        CALL_glXMakeContextCurrent(dpy, old_write, old_read, real);
+        bugle_end_internal_render("showstats_callback", true);
     }
     return true;
 }
@@ -383,23 +423,38 @@ static bool initialise_stats(filter_set *handle)
 {
     filter *f;
 
-    f = bugle_register_filter(handle, "stats", stats_callback);
-    bugle_register_filter_catches(f, CFUNC_glXSwapBuffers);
+    f = bugle_register_filter(handle, "stats");
+    bugle_register_filter_catches(f, CFUNC_glXSwapBuffers, stats_glXSwapBuffers);
+    if (count_fragments)
+    {
+        bugle_register_filter_catches(f, CFUNC_glBeginQueryARB, stats_fragments);
+        bugle_register_filter_catches(f, CFUNC_glEndQueryARB, stats_fragments);
+    }
     if (count_triangles)
     {
-        bugle_register_filter_catches_drawing(f);
-        bugle_register_filter_catches(f, CFUNC_glBegin);
-        bugle_register_filter_catches(f, CFUNC_glEnd);
-        bugle_register_filter_catches(f, CFUNC_glCallList);
-        bugle_register_filter_catches(f, CFUNC_glCallLists);
+        bugle_register_filter_catches_drawing_immediate(f, stats_immediate);
+        bugle_register_filter_catches(f, CFUNC_glDrawElements, stats_glDrawElements);
+        bugle_register_filter_catches(f, CFUNC_glDrawArrays, stats_glDrawArrays);
+#ifdef GL_EXT_draw_range_elements
+        bugle_register_filter_catches(f, CFUNC_glDrawRangeElementsEXT, stats_glDrawRangeElements);
+#endif
+#ifdef GL_EXT_multi_draw_arrays
+        bugle_register_filter_catches(f, CFUNC_glMultiDrawElementsEXT, stats_glMultiDrawElements);
+        bugle_register_filter_catches(f, CFUNC_glMultiDrawArraysEXT, stats_glMultiDrawArrays);
+#endif
+
+        bugle_register_filter_catches(f, CFUNC_glBegin, stats_glBegin);
+        bugle_register_filter_catches(f, CFUNC_glEnd, stats_glEnd);
+        bugle_register_filter_catches(f, CFUNC_glCallList, stats_glCallList);
+        bugle_register_filter_catches(f, CFUNC_glCallLists, stats_glCallLists);
     }
     bugle_register_filter_depends("invoke", "stats");
 
     if (count_triangles || count_fragments)
     {
-        f = bugle_register_filter(handle, "stats_post", stats_post_callback);
+        f = bugle_register_filter(handle, "stats_post");
         if (count_fragments || count_triangles)
-            bugle_register_filter_catches(f, CFUNC_glXSwapBuffers);
+            bugle_register_filter_catches(f, CFUNC_glXSwapBuffers, stats_post_callback);
         bugle_register_filter_post_renders("stats_post");
         bugle_register_filter_depends("stats_post", "invoke");
     }
@@ -420,14 +475,14 @@ static bool initialise_showstats(filter_set *handle)
 {
     filter *f;
 
-    f = bugle_register_filter(handle, "showstats", showstats_callback);
+    f = bugle_register_filter(handle, "showstats");
     bugle_register_filter_depends("showstats", "stats");
     bugle_register_filter_depends("invoke", "showstats");
     bugle_register_filter_depends("screenshot", "showstats");
     /* make sure that screenshots capture the stats */
     bugle_register_filter_depends("debugger", "showstats");
     bugle_register_filter_depends("screenshot", "showstats");
-    bugle_register_filter_catches(f, CFUNC_glXSwapBuffers);
+    bugle_register_filter_catches(f, CFUNC_glXSwapBuffers, showstats_callback);
     showstats_offset = bugle_object_class_register(&bugle_context_class,
                                                    initialise_showstats_struct,
                                                    NULL,

@@ -106,8 +106,8 @@ static bool initialise_error(filter_set *handle)
     filter *f;
 
     error_handle = handle;
-    f = bugle_register_filter(handle, "error", error_callback);
-    bugle_register_filter_catches_all(f);
+    f = bugle_register_filter(handle, "error");
+    bugle_register_filter_catches_all(f, error_callback);
     bugle_register_filter_depends("error", "invoke");
     /* We don't call filter_post_renders, because that would make the
      * error filterset depend on itself.
@@ -136,8 +136,8 @@ static bool initialise_showerror(filter_set *handle)
 {
     filter *f;
 
-    f = bugle_register_filter(handle, "showerror", showerror_callback);
-    bugle_register_filter_catches_all(f);
+    f = bugle_register_filter(handle, "showerror");
+    bugle_register_filter_catches_all(f, showerror_callback);
     bugle_register_filter_depends("showerror", "error");
     bugle_register_filter_depends("showerror", "invoke");
     return true;
@@ -212,20 +212,21 @@ static bool initialise_unwindstack(filter_set *handle)
 {
     filter *f;
 
-    f = bugle_register_filter(handle, "unwindstack_pre", unwindstack_pre_callback);
-    bugle_register_filter_catches_all(f);
-    f = bugle_register_filter(handle, "unwindstack_post", unwindstack_post_callback);
-    bugle_register_filter_catches_all(f);
+    f = bugle_register_filter(handle, "unwindstack_pre");
+    bugle_register_filter_catches_all(f, unwindstack_pre_callback);
+    f = bugle_register_filter(handle, "unwindstack_post");
+    bugle_register_filter_catches_all(f, unwindstack_post_callback);
     bugle_register_filter_depends("unwindstack_post", "invoke");
     bugle_register_filter_depends("invoke", "unwindstack_pre");
     return true;
 }
 
-static sigjmp_buf checks_buf;
 /* This is set to some description of the thing being tested, and if it
  * causes a SIGSEGV it is used to describe the error.
  */
 static const char *checks_error;
+static sigjmp_buf checks_buf;
+static pthread_mutex_t checks_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 static void checks_sigsegv_handler(int sig)
 {
@@ -512,142 +513,211 @@ static void checks_min_max(GLsizei count, GLenum gltype, const GLvoid *indices,
     if (vbo_indices) free(vbo_indices);
 }
 
-static bool checks_callback(function_call *call, const callback_data *data)
-{
-    static pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
-    struct sigaction act, old_act;
-    bool ret = true;
-    GLenum type;
-    GLsizei count, i;
-    const GLint *first_ptr;
-    const GLsizei *count_ptr;
-    GLuint min, max;
-    const GLvoid *indices;
-    const GLvoid * const *indices_ptr;
+/* Note: this cannot be a function, because a jmpbuf becomes invalid
+ * once the function calling setjmp exits. It is also written in a
+ * funny way, so that it can be used as if (CHECKS_START()) { ... },
+ * which will be true if there was an error.
+ *
+ * The entire checks method is fundamentally non-reentrant, so
+ * we protect it with a big lock.
+ *
+ */
+#define CHECKS_START() 1) { \
+    struct sigaction act, old_act; \
+    bool ret = true; \
+    \
+    pthread_mutex_lock(&checks_mutex); \
+    checks_error = NULL; \
+    if (sigsetjmp(checks_buf, 1) == 1) ret = false; \
+    if (ret) \
+    { \
+        act.sa_handler = checks_sigsegv_handler; \
+        act.sa_flags = 0; \
+        sigemptyset(&act.sa_mask); \
+        while (sigaction(SIGSEGV, &act, &old_act) != 0) \
+            if (errno != EINTR) \
+            { \
+                perror("failed to set SIGSEGV handler"); \
+                exit(1); \
+            } \
+    } \
+    if (!ret
 
-    /* The entire checks method is fundamentally non-reentrant, so
-     * we protect it with a big lock.
-     */
-    pthread_mutex_lock(&lock);
-    checks_error = NULL;
-    if (sigsetjmp(checks_buf, 1) == 1)
+#define CHECKS_STOP() \
+    while (sigaction(SIGSEGV, &old_act, NULL) != 0) \
+        if (errno != EINTR) \
+        { \
+            perror("failed to restore SIGSEGV handler"); \
+            exit(1); \
+        } \
+    pthread_mutex_unlock(&checks_mutex); \
+    return ret; \
+    } else (void) 0
+
+static bool checks_glDrawArrays(function_call *call, const callback_data *data)
+{
+    if (CHECKS_START())
     {
-        /* We get here if we went into the testing then segfaulted. */
-        fprintf(stderr, "WARNING: illegal %s caught in %s; call will be ignored\n",
-                checks_error ? checks_error : "pointer",
-                budgie_function_table[call->generic.id].name);
-        ret = false;
+        fprintf(stderr, "WARNING: illegal %s caught in glDrawArrays; call will be ignored\n",
+                checks_error ? checks_error : "pointer");
     }
     else
     {
-        act.sa_handler = checks_sigsegv_handler;
-        act.sa_flags = 0;
-        sigemptyset(&act.sa_mask);
+        checks_attributes(*call->typed.glDrawArrays.arg1,
+                          *call->typed.glDrawArrays.arg2);
+    }
+    CHECKS_STOP();
+}
 
-        while (sigaction(SIGSEGV, &act, &old_act) != 0)
-            if (errno != EINTR)
-            {
-                perror("failed to set SIGSEGV handler");
-                exit(1);
-            }
+static bool checks_glDrawElements(function_call *call, const callback_data *data)
+{
+    if (CHECKS_START())
+    {
+        fprintf(stderr, "WARNING: illegal %s caught in glDrawElements; call will be ignored\n",
+                checks_error ? checks_error : "pointer");
+    }
+    else
+    {
+        GLsizei count;
+        GLenum type;
+        const GLvoid *indices;
+        GLuint min, max;
 
-        switch (bugle_canonical_call(call))
-        {
-            /* FIXME: ArrayElement cannot work because it is inside begin/end */
-        case CFUNC_glDrawArrays:
-            checks_attributes(*call->typed.glDrawArrays.arg1,
-                              *call->typed.glDrawArrays.arg2);
-            break;
-        case CFUNC_glDrawElements:
-            checks_error = "index array";
-            count = *call->typed.glDrawElements.arg1;
-            type = *call->typed.glDrawElements.arg2;
-            indices = *call->typed.glDrawElements.arg3;
-            checks_buffer(count * bugle_gl_type_to_size(type),
-                          indices,
-                          VBO_ENUM(GL_ELEMENT_ARRAY_BUFFER_BINDING_ARB));
-            checks_min_max(count, type, indices, &min, &max);
-            checks_attributes(min, max - min + 1);
-            break;
+        checks_error = "index array";
+        count = *call->typed.glDrawElements.arg1;
+        type = *call->typed.glDrawElements.arg2;
+        indices = *call->typed.glDrawElements.arg3;
+        checks_buffer(count * bugle_gl_type_to_size(type),
+                      indices,
+                      VBO_ENUM(GL_ELEMENT_ARRAY_BUFFER_BINDING_ARB));
+        checks_min_max(count, type, indices, &min, &max);
+        checks_attributes(min, max - min + 1);
+    }
+    CHECKS_STOP();
+}
+
 #ifdef GL_EXT_draw_range_elements
-        case CFUNC_glDrawRangeElementsEXT:
-            checks_error = "index array";
-            count = *call->typed.glDrawRangeElementsEXT.arg3;
-            type = *call->typed.glDrawRangeElementsEXT.arg4;
-            indices = *call->typed.glDrawRangeElementsEXT.arg5;
-            checks_buffer(count * bugle_gl_type_to_size(type),
-                          indices,
-                          VBO_ENUM(GL_ELEMENT_ARRAY_BUFFER_BINDING_ARB));
-            checks_min_max(count, type, indices, &min, &max);
-            if (min < *call->typed.glDrawRangeElementsEXT.arg1
-                || max > *call->typed.glDrawRangeElementsEXT.arg2)
-            {
-                fprintf(stderr, "WARNING: glDrawRangeElements indices fall outside range, ignoring call\n");
-                ret = false;
-                break;
-            }
+static bool checks_glDrawRangeElements(function_call *call, const callback_data *data)
+{
+    if (CHECKS_START())
+    {
+        fprintf(stderr, "WARNING: illegal %s caught in glDrawRangeElements; call will be ignored\n",
+                checks_error ? checks_error : "pointer");
+    }
+    else
+    {
+        GLsizei count;
+        GLenum type;
+        const GLvoid *indices;
+        GLuint min, max;
+
+        checks_error = "index array";
+        count = *call->typed.glDrawRangeElementsEXT.arg3;
+        type = *call->typed.glDrawRangeElementsEXT.arg4;
+        indices = *call->typed.glDrawRangeElementsEXT.arg5;
+        checks_buffer(count * bugle_gl_type_to_size(type),
+                      indices,
+                      VBO_ENUM(GL_ELEMENT_ARRAY_BUFFER_BINDING_ARB));
+        checks_min_max(count, type, indices, &min, &max);
+        if (min < *call->typed.glDrawRangeElementsEXT.arg1
+            || max > *call->typed.glDrawRangeElementsEXT.arg2)
+        {
+            fprintf(stderr, "WARNING: glDrawRangeElements indices fall outside range, ignoring call\n");
+            ret = false;
+        }
+        else
+        {
             min = *call->typed.glDrawRangeElementsEXT.arg1;
             max = *call->typed.glDrawRangeElementsEXT.arg2;
             checks_attributes(min, max - min + 1);
-            break;
-#endif
-#ifdef GL_EXT_multi_draw_arrays
-        case CFUNC_glMultiDrawArraysEXT:
-            count = *call->typed.glMultiDrawArraysEXT.arg3;
-            first_ptr = *call->typed.glMultiDrawArraysEXT.arg1;
-            count_ptr = *call->typed.glMultiDrawArraysEXT.arg2;
-
-            checks_error = "first array";
-            checks_memory(sizeof(GLint) * count, first_ptr);
-            checks_error = "count array";
-            checks_memory(sizeof(GLsizei) * count, count_ptr);
-
-            for (i = 0; i < count; i++)
-                checks_attributes(first_ptr[i], count_ptr[i]);
-            break;
-        case CFUNC_glMultiDrawElementsEXT:
-            count = *call->typed.glMultiDrawElements.arg4;
-            type = *call->typed.glMultiDrawElements.arg2;
-            count_ptr = *call->typed.glMultiDrawElements.arg1;
-            indices_ptr = *call->typed.glMultiDrawElements.arg3;
-
-            checks_error = "count array";
-            checks_memory(sizeof(GLsizei) * count, count_ptr);
-            checks_error = "indices array";
-            checks_memory(sizeof(GLvoid *) * count, indices_ptr);
-            checks_error = "index array";
-
-            for (i = 0; i < count; i++)
-            {
-                checks_buffer(count_ptr[i] * bugle_gl_type_to_size(type),
-                              indices_ptr[i],
-                              VBO_ENUM(GL_ELEMENT_ARRAY_BUFFER_BINDING_ARB));
-                checks_min_max(count_ptr[i], type, indices_ptr[i], &min, &max);
-                checks_attributes(min, max - min + 1);
-            }
-            break;
         }
-#endif
     }
-
-    while (sigaction(SIGSEGV, &old_act, NULL) != 0)
-        if (errno != EINTR)
-        {
-            perror("failed to restore SIGSEGV handler");
-            exit(1);
-        }
-
-    pthread_mutex_unlock(&lock);
-    return ret;
+    CHECKS_STOP();
 }
+#endif
+
+#ifdef GL_EXT_multi_draw_arrays
+static bool checks_glMultiDrawArrays(function_call *call, const callback_data *data)
+{
+    if (CHECKS_START())
+    {
+        fprintf(stderr, "WARNING: illegal %s caught in glMultiDrawArrays; call will be ignored\n",
+                checks_error ? checks_error : "pointer");
+    }
+    else
+    {
+        const GLint *first_ptr;
+        const GLsizei *count_ptr;
+        GLsizei count, i;
+
+        count = *call->typed.glMultiDrawArraysEXT.arg3;
+        first_ptr = *call->typed.glMultiDrawArraysEXT.arg1;
+        count_ptr = *call->typed.glMultiDrawArraysEXT.arg2;
+
+        checks_error = "first array";
+        checks_memory(sizeof(GLint) * count, first_ptr);
+        checks_error = "count array";
+        checks_memory(sizeof(GLsizei) * count, count_ptr);
+
+        for (i = 0; i < count; i++)
+            checks_attributes(first_ptr[i], count_ptr[i]);
+    }
+    CHECKS_STOP();
+}
+
+static bool checks_glMultiDrawElements(function_call *call, const callback_data *data)
+{
+    if (CHECKS_START())
+    {
+        fprintf(stderr, "WARNING: illegal %s caught in glMultiDrawElements; call will be ignored\n",
+                checks_error ? checks_error : "pointer");
+    }
+    else
+    {
+        const GLsizei *count_ptr;
+        const GLvoid * const * indices_ptr;
+        GLsizei count, i;
+        GLenum type;
+        GLuint min, max;
+
+        count = *call->typed.glMultiDrawElements.arg4;
+        type = *call->typed.glMultiDrawElements.arg2;
+        count_ptr = *call->typed.glMultiDrawElements.arg1;
+        indices_ptr = *call->typed.glMultiDrawElements.arg3;
+
+        checks_error = "count array";
+        checks_memory(sizeof(GLsizei) * count, count_ptr);
+        checks_error = "indices array";
+        checks_memory(sizeof(GLvoid *) * count, indices_ptr);
+        checks_error = "index array";
+
+        for (i = 0; i < count; i++)
+        {
+            checks_buffer(count_ptr[i] * bugle_gl_type_to_size(type),
+                          indices_ptr[i],
+                          VBO_ENUM(GL_ELEMENT_ARRAY_BUFFER_BINDING_ARB));
+            checks_min_max(count_ptr[i], type, indices_ptr[i], &min, &max);
+            checks_attributes(min, max - min + 1);
+        }
+    }
+    CHECKS_STOP();
+}
+#endif
 
 static bool initialise_checks(filter_set *handle)
 {
     filter *f;
 
-    f = bugle_register_filter(handle, "checks", checks_callback);
-    /* FIXME: this is too general */
-    bugle_register_filter_catches_drawing(f);
+    f = bugle_register_filter(handle, "checks");
+    bugle_register_filter_catches(f, CFUNC_glDrawArrays, checks_glDrawArrays);
+    bugle_register_filter_catches(f, CFUNC_glDrawElements, checks_glDrawElements);
+#ifdef GL_EXT_draw_range_elements
+    bugle_register_filter_catches(f, CFUNC_glDrawRangeElementsEXT, checks_glDrawRangeElements);
+#endif
+#ifdef GL_EXT_multi_draw_arrays
+    bugle_register_filter_catches(f, CFUNC_glMultiDrawArraysEXT, checks_glMultiDrawArrays);
+    bugle_register_filter_catches(f, CFUNC_glMultiDrawElementsEXT, checks_glMultiDrawElements);
+#endif
     /* We try to push this early, since it would defeat the whole thing if
      * bugle crashed while examining the data in another filter.
      */

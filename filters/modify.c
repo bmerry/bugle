@@ -37,39 +37,40 @@ static void initialise_wireframe_context(const void *key, void *data)
     }
 }
 
-static bool wireframe_callback(function_call *call, const callback_data *data)
+static bool wireframe_glXSwapBuffers(function_call *call, const callback_data *data)
 {
-    switch (bugle_canonical_call(call))
+    CALL_glClear(GL_COLOR_BUFFER_BIT); /* hopefully bypass z-trick */
+    return true;
+}
+
+static bool wireframe_glPolygonMode(function_call *call, const callback_data *data)
+{
+    if (bugle_begin_internal_render())
     {
-    case CFUNC_glXSwapBuffers:
-        CALL_glClear(GL_COLOR_BUFFER_BIT); /* hopefully bypass z-trick */
-        break;
-    case CFUNC_glPolygonMode:
-        if (bugle_begin_internal_render())
-        {
-            CALL_glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-            bugle_end_internal_render("wireframe_callback", true);
-        }
-        break;
-    case CFUNC_glEnable:
-        switch (*call->typed.glEnable.arg0)
-        {
-        case GL_TEXTURE_1D:
-        case GL_TEXTURE_2D:
+        CALL_glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+        bugle_end_internal_render("wireframe_glPolygonMode", true);
+    }
+    return true;
+}
+
+static bool wireframe_glEnable(function_call *call, const callback_data *data)
+{
+    switch (*call->typed.glEnable.arg0)
+    {
+    case GL_TEXTURE_1D:
+    case GL_TEXTURE_2D:
 #ifdef GL_ARB_texture_cube_map
-        case GL_TEXTURE_CUBE_MAP_ARB:
+    case GL_TEXTURE_CUBE_MAP_ARB:
 #endif
 #ifdef GL_EXT_texture3D
-        case GL_TEXTURE_3D_EXT:
+    case GL_TEXTURE_3D_EXT:
 #endif
-            if (bugle_begin_internal_render())
-            {
-                CALL_glDisable(*call->typed.glEnable.arg0);
-                bugle_end_internal_render("wireframe_callback", true);
-            }
-            break;
-        default: ;
+        if (bugle_begin_internal_render())
+        {
+            CALL_glDisable(*call->typed.glEnable.arg0);
+            bugle_end_internal_render("wireframe_callback", true);
         }
+    default: /* avoids compiler warning if GLenum is a C enum */ ;
     }
     return true;
 }
@@ -78,9 +79,10 @@ static bool initialise_wireframe(filter_set *handle)
 {
     filter *f;
 
-    f = bugle_register_filter(handle, "wireframe", wireframe_callback);
-    bugle_register_filter_catches(f, CFUNC_glPolygonMode);
-    bugle_register_filter_catches(f, CFUNC_glEnable);
+    f = bugle_register_filter(handle, "wireframe");
+    bugle_register_filter_catches(f, CFUNC_glXSwapBuffers, wireframe_glXSwapBuffers);
+    bugle_register_filter_catches(f, CFUNC_glPolygonMode, wireframe_glPolygonMode);
+    bugle_register_filter_catches(f, CFUNC_glEnable, wireframe_glEnable);
     bugle_register_filter_depends("wireframe", "invoke");
     bugle_register_filter_post_renders("wireframe");
     bugle_object_class_register(&bugle_context_class, initialise_wireframe_context,
@@ -99,15 +101,10 @@ static void initialise_frontbuffer_context(const void *key, void *data)
 
 static bool frontbuffer_callback(function_call *call, const callback_data *data)
 {
-    switch (bugle_canonical_call(call))
+    if (bugle_begin_internal_render())
     {
-    case CFUNC_glDrawBuffer:
-        if (bugle_begin_internal_render())
-        {
-            CALL_glDrawBuffer(GL_FRONT);
-            bugle_end_internal_render("frontbuffer_callback", true);
-        }
-        break;
+        CALL_glDrawBuffer(GL_FRONT);
+        bugle_end_internal_render("frontbuffer_callback", true);
     }
     return true;
 }
@@ -116,9 +113,9 @@ static bool initialise_frontbuffer(filter_set *handle)
 {
     filter *f;
 
-    f = bugle_register_filter(handle, "frontbuffer", frontbuffer_callback);
+    f = bugle_register_filter(handle, "frontbuffer");
     bugle_register_filter_depends("frontbuffer", "invoke");
-    bugle_register_filter_catches(f, CFUNC_glDrawBuffer);
+    bugle_register_filter_catches(f, CFUNC_glDrawBuffer, frontbuffer_callback);
     bugle_register_filter_set_renders("frontbuffer");
     bugle_register_filter_post_renders("frontbuffer");
     bugle_object_class_register(&bugle_context_class, initialise_frontbuffer_context,

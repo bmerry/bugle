@@ -1,3 +1,9 @@
+Eventually, this file will serve as a guide for third party plugin
+authors. At present, the API is still too unstable for this to be
+practical. If you decide to write a plugin anyway, consider submitting
+it to the program author for inclusion, so that he can maintain it over
+API changes.
+
 Filters are arranged in a three-level hierarchy:
 
 1. Filter libraries, which are a loose collection of filter-sets. These
@@ -56,10 +62,24 @@ set1 requires set2 to operate.
 A filter-set initialiser must do the following, apart from any internal
 initialisation:
 - register individual filters:
-  filter *filter_handle = bugle_register_filter(handle, "filtername", callback)
+  filter *filter_handle = bugle_register_filter(handle, "filtername")
 - list ordering requirements between filters
   bugle_register_filter_depends("second", "first") - where either may be in
   another filter-set (even in another library, or even not exist)
+- register callbacks. A callback is registered by calling
+  bugle_register_filter_catches(filter_handle, function, callback)
+  where `function' is the symbol for the GL function
+  e.g. CFUNC_glBegin. The CFUNC_ prefix is recommended. Remember that
+  for functions not in OpenGL 1.1, one should use the name of the
+  extension version of the function, and ask protect the call with
+  #ifdef GL_FOO_the_extension. Note that unlike pre-2005 versions of
+  bugle, the callback will only be called with the GL calls that you
+  specifically named.
+  
+  One may also request a callback for all GL calls, using
+  bugle_register_filter_catches_all(filter_handle, callback). If more
+  than one callback matches a GL call, they are called in order of
+  registration.
 
 It may optionally:
 - get handles to other filter-sets
@@ -81,7 +101,7 @@ The filter dependencies are only implicitly transitive: if A must come
 before B and B before C, it is still possible for A to come after C if
 B is never loaded.
 
-The callback function for a filter looks like this:
+A callback function for a filter looks like this:
 
 bool filter_callback(function_call *call, const callback_data *data)
 
@@ -108,6 +128,9 @@ bugle_context_class class (see objects.txt).
 
 Conventions
 -----------
+- If a filter has only one callback, call it filtername_callback. If
+  it has one for each of several functions, then call each
+  filtername_glSomeFunction.
 
 - If your filter runs after invoke and makes GL calls, then the
 library initialisation should call bugle_register_filter_set_renders on

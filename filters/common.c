@@ -37,11 +37,9 @@ static bool invoke_callback(function_call *call, const callback_data *data)
 
 static bool initialise_invoke(filter_set *handle)
 {
-    bugle_register_filter(handle, "invoke", invoke_callback);
-    /* Note: this is the only useful filter that does not specify any catch
-     * statements. This is because the default if nothing catches is
-     * the same as invoking.
-     */
+    filter *f;
+    f = bugle_register_filter(handle, "invoke");
+    bugle_register_filter_catches_all(f, invoke_callback);
     return true;
 }
 
@@ -52,7 +50,6 @@ static bool initialise_invoke(filter_set *handle)
 
 static bool procaddress_callback(function_call *call, const callback_data *data)
 {
-
     /* FIXME: some systems don't prototype glXGetProcAddressARB (it is,
      * after all, an extension). That means extensions will probably
      * not be intercepted.
@@ -60,15 +57,10 @@ static bool procaddress_callback(function_call *call, const callback_data *data)
 #ifdef CFUNC_glXGetProcAddressARB
     void (*sym)(void);
 
-    switch (bugle_canonical_call(call))
-    {
-    case CFUNC_glXGetProcAddressARB:
-        if (!*call->typed.glXGetProcAddressARB.retn) break;
-        sym = (void (*)(void))
-            bugle_get_filter_set_symbol(NULL, (const char *) *call->typed.glXGetProcAddressARB.arg0);
-        if (sym) *call->typed.glXGetProcAddressARB.retn = sym;
-        break;
-    }
+    if (!*call->typed.glXGetProcAddressARB.retn) return true;
+    sym = (void (*)(void))
+        bugle_get_filter_set_symbol(NULL, (const char *) *call->typed.glXGetProcAddressARB.arg0);
+    if (sym) *call->typed.glXGetProcAddressARB.retn = sym;
 #endif
     return true;
 }
@@ -77,11 +69,11 @@ static bool initialise_procaddress(filter_set *handle)
 {
     filter *f;
 
-    f = bugle_register_filter(handle, "procaddress", procaddress_callback);
+#ifdef FUNC_glXGetProcAddressARB
+    f = bugle_register_filter(handle, "procaddress");
     bugle_register_filter_depends("procaddress", "invoke");
     bugle_register_filter_depends("trace", "procaddress");
-#ifdef FUNC_glXGetProcAddressARB
-    bugle_register_filter_catches(f, CFUNC_glXGetProcAddressARB);
+    bugle_register_filter_catches(f, CFUNC_glXGetProcAddressARB, procaddress_callback);
 #endif
     return true;
 }

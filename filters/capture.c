@@ -565,8 +565,8 @@ static bool initialise_screenshot(filter_set *handle)
 {
     filter *f;
 
-    f = bugle_register_filter(handle, "screenshot", screenshot_callback);
-    bugle_register_filter_catches(f, CFUNC_glXSwapBuffers);
+    f = bugle_register_filter(handle, "screenshot");
+    bugle_register_filter_catches(f, CFUNC_glXSwapBuffers, screenshot_callback);
     bugle_register_filter_depends("invoke", "screenshot");
 
     video_data = bugle_calloc(video_lag, sizeof(screenshot_data));
@@ -668,8 +668,8 @@ static bool initialise_showextensions(filter_set *handle)
 {
     filter *f;
 
-    f = bugle_register_filter(handle, "showextensions", showextensions_callback);
-    bugle_register_filter_catches_all(f);
+    f = bugle_register_filter(handle, "showextensions");
+    bugle_register_filter_catches_all(f, showextensions_callback);
     /* The order mainly doesn't matter, but making it a pre-filter
      * reduces the risk of another filter aborting the call.
      */

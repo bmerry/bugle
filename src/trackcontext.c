@@ -74,37 +74,29 @@ static bool trackcontext_callback(function_call *call, const callback_data *data
     static pthread_mutex_t context_mutex = PTHREAD_MUTEX_INITIALIZER;
     void *obj;
 
-    switch (bugle_canonical_call(call))
+    /* These calls may fail, so we must explicitly check for the
+     * current context.
+     */
+    ctx = CALL_glXGetCurrentContext();
+    if (!ctx)
+        bugle_object_set_current(&bugle_context_class, NULL);
+    else
     {
-    case CFUNC_glXMakeCurrent:
-#ifdef GLX_VERSION_1_3
-    case CFUNC_glXMakeContextCurrent:
-#endif
-        /* These calls may fail, so we must explicitly check for the
-         * current context.
-         */
-        ctx = CALL_glXGetCurrentContext();
-        if (!ctx)
-            bugle_object_set_current(&bugle_context_class, NULL);
+        parent = &budgie_get_root_state()->c_context.generic;
+        pthread_mutex_lock(&context_mutex);
+        if (!(state = (state_7context_I *) budgie_get_state_index(parent, &ctx)))
+        {
+            state = (state_7context_I *) budgie_add_state_index(parent, &ctx, NULL);
+            obj = bugle_object_new(&bugle_context_class, ctx, true);
+            bugle_hashptr_set(&context_objects, ctx, obj);
+        }
         else
         {
-            parent = &budgie_get_root_state()->c_context.generic;
-            pthread_mutex_lock(&context_mutex);
-            if (!(state = (state_7context_I *) budgie_get_state_index(parent, &ctx)))
-            {
-                state = (state_7context_I *) budgie_add_state_index(parent, &ctx, NULL);
-                obj = bugle_object_new(&bugle_context_class, ctx, true);
-                bugle_hashptr_set(&context_objects, ctx, obj);
-            }
-            else
-            {
-                obj = bugle_hashptr_get(&context_objects, ctx);
-                bugle_object_set_current(&bugle_context_class, obj);
-                tracker_set_context_state(state);
-            }
-            pthread_mutex_unlock(&context_mutex);
+            obj = bugle_hashptr_get(&context_objects, ctx);
+            bugle_object_set_current(&bugle_context_class, obj);
+            tracker_set_context_state(state);
         }
-        break;
+        pthread_mutex_unlock(&context_mutex);
     }
     return true;
 }
@@ -113,11 +105,11 @@ static bool initialise_trackcontext(filter_set *handle)
 {
     filter *f;
 
-    f = bugle_register_filter(handle, "trackcontext", trackcontext_callback);
+    f = bugle_register_filter(handle, "trackcontext");
     bugle_register_filter_depends("trackcontext", "invoke");
-    bugle_register_filter_catches(f, FUNC_glXMakeCurrent);
+    bugle_register_filter_catches(f, FUNC_glXMakeCurrent, trackcontext_callback);
 #ifdef FUNC_glXMakeContextCurrent
-    bugle_register_filter_catches(f, FUNC_glXMakeContextCurrent);
+    bugle_register_filter_catches(f, FUNC_glXMakeContextCurrent, trackcontext_callback);
 #endif
     trackcontext_offset = bugle_object_class_register(&bugle_context_class,
                                                       trackcontext_initialise_state,

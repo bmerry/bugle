@@ -46,10 +46,10 @@ static bool initialise_trace(filter_set *handle)
 {
     filter *f;
 
-    f = bugle_register_filter(handle, "trace", trace_callback);
+    f = bugle_register_filter(handle, "trace");
     bugle_register_filter_depends("trace", "invoke");
     bugle_log_register_filter("trace");
-    bugle_register_filter_catches_all(f);
+    bugle_register_filter_catches_all(f, trace_callback);
     bugle_register_filter_post_renders("trace");
     bugle_register_filter_set_queries_error("trace");
     return true;

@@ -25,7 +25,7 @@ static void invalid_direct(void)
     if (glutExtensionSupported("GL_EXT_draw_range_elements"))
     {
         glDrawRangeElementsEXT(GL_POINTS, 0, 0, 500, GL_UNSIGNED_INT, NULL);
-        fprintf(ref, "WARNING: illegal index array caught in glDrawRangeElementsEXT; call will be ignored\n");
+        fprintf(ref, "WARNING: illegal index array caught in glDrawRangeElements; call will be ignored\n");
         glDrawRangeElementsEXT(GL_POINTS, 0, 0, 4, GL_UNSIGNED_INT, i); /* legal */
     }
 #endif
@@ -69,7 +69,7 @@ static void invalid_direct_vbo(void)
         if (glutExtensionSupported("GL_EXT_draw_range_elements"))
         {
             glDrawRangeElementsEXT(GL_POINTS, 0, 0, 500, GL_UNSIGNED_INT, NULL);
-            fprintf(ref, "WARNING: illegal index array caught in glDrawRangeElementsEXT; call will be ignored\n");
+            fprintf(ref, "WARNING: illegal index array caught in glDrawRangeElements; call will be ignored\n");
             glDrawRangeElementsEXT(GL_POINTS, 0, 0, 4, GL_UNSIGNED_INT, NULL); /* legal */
         }
 #endif
@@ -79,7 +79,7 @@ static void invalid_direct_vbo(void)
             GLsizei count = 500;
             const GLvoid *indices = NULL;
             glMultiDrawElementsEXT(GL_POINTS, &count, GL_UNSIGNED_INT, &indices, 1);
-            fprintf(ref, "WARNING: illegal index array caught in glMultiDrawElementsEXT; call will be ignored\n");
+            fprintf(ref, "WARNING: illegal index array caught in glMultiDrawElements; call will be ignored\n");
 
             count = 4;
             glMultiDrawElementsEXT(GL_POINTS, &count, GL_UNSIGNED_INT, &indices, 1);
@@ -109,7 +109,7 @@ static void invalid_indirect(void)
     if (glutExtensionSupported("GL_EXT_draw_range_elements"))
     {
         glDrawRangeElementsEXT(GL_POINTS, 0, 0, 4, GL_UNSIGNED_INT, i);
-        fprintf(ref, "WARNING: illegal vertex array caught in glDrawRangeElementsEXT; call will be ignored\n");
+        fprintf(ref, "WARNING: illegal vertex array caught in glDrawRangeElements; call will be ignored\n");
     }
 #endif
 #ifdef GL_EXT_multi_draw_arrays
@@ -119,9 +119,9 @@ static void invalid_indirect(void)
         GLsizei count = 1;
         const GLvoid *indices = &i;
         glMultiDrawArraysEXT(GL_POINTS, &first, &count, 1);
-        fprintf(ref, "WARNING: illegal vertex array caught in glMultiDrawArraysEXT; call will be ignored\n");
+        fprintf(ref, "WARNING: illegal vertex array caught in glMultiDrawArrays; call will be ignored\n");
         glMultiDrawElementsEXT(GL_POINTS, &count, GL_UNSIGNED_INT, &indices, 1);
-        fprintf(ref, "WARNING: illegal vertex array caught in glMultiDrawElementsEXT; call will be ignored\n");
+        fprintf(ref, "WARNING: illegal vertex array caught in glMultiDrawElements; call will be ignored\n");
     }
 #endif
 
@@ -143,7 +143,7 @@ static void invalid_range(void)
         glDrawRangeElementsEXT(GL_POINTS, 1, 1, 4, GL_UNSIGNED_INT, i);
         fprintf(ref, "WARNING: glDrawRangeElements indices fall outside range, ignoring call\n");
         glDrawRangeElementsEXT(GL_POINTS, 0, 0xffffff, 4, GL_UNSIGNED_INT, i);
-        fprintf(ref, "WARNING: illegal vertex array caught in glDrawRangeElementsEXT; call will be ignored\n");
+        fprintf(ref, "WARNING: illegal vertex array caught in glDrawRangeElements; call will be ignored\n");
     }
 #endif
 }

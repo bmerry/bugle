@@ -38,35 +38,35 @@
 
 static size_t trackbeginend_offset;
 
-static bool trackbeginend_callback(function_call *call, const callback_data *data)
+static bool trackbeginend_glBegin(function_call *call, const callback_data *data)
 {
     bool *begin_end;
 
-    switch (bugle_canonical_call(call))
+    switch (*call->typed.glBegin.arg0)
     {
-    case CFUNC_glBegin:
-        switch (*call->typed.glBegin.arg0)
-        {
-        case GL_POINTS:
-        case GL_LINES:
-        case GL_LINE_STRIP:
-        case GL_LINE_LOOP:
-        case GL_TRIANGLES:
-        case GL_TRIANGLE_STRIP:
-        case GL_TRIANGLE_FAN:
-        case GL_QUADS:
-        case GL_QUAD_STRIP:
-        case GL_POLYGON:
-            begin_end = (bool *) bugle_object_get_current_data(&bugle_context_class, trackbeginend_offset);
-            if (begin_end != NULL) *begin_end = true;
-        default: ;
-        }
-        break;
-    case CFUNC_glEnd:
+    case GL_POINTS:
+    case GL_LINES:
+    case GL_LINE_STRIP:
+    case GL_LINE_LOOP:
+    case GL_TRIANGLES:
+    case GL_TRIANGLE_STRIP:
+    case GL_TRIANGLE_FAN:
+    case GL_QUADS:
+    case GL_QUAD_STRIP:
+    case GL_POLYGON:
         begin_end = (bool *) bugle_object_get_current_data(&bugle_context_class, trackbeginend_offset);
-        if (begin_end != NULL) *begin_end = false;
-        break;
+        if (begin_end != NULL) *begin_end = true;
+    default: /* Avoids compiler warning if GLenum is a C enum */ ;
     }
+    return true;
+}
+
+static bool trackbeginend_glEnd(function_call *call, const callback_data *data)
+{
+    bool *begin_end;
+
+    begin_end = (bool *) bugle_object_get_current_data(&bugle_context_class, trackbeginend_offset);
+    if (begin_end != NULL) *begin_end = false;
     return true;
 }
 
@@ -82,10 +82,10 @@ static bool initialise_trackbeginend(filter_set *handle)
 {
     filter *f;
 
-    f = bugle_register_filter(handle, "trackbeginend", trackbeginend_callback);
+    f = bugle_register_filter(handle, "trackbeginend");
     bugle_register_filter_depends("trackbeginend", "invoke");
-    bugle_register_filter_catches(f, FUNC_glBegin);
-    bugle_register_filter_catches(f, FUNC_glEnd);
+    bugle_register_filter_catches(f, FUNC_glBegin, trackbeginend_glBegin);
+    bugle_register_filter_catches(f, FUNC_glEnd, trackbeginend_glEnd);
 
     trackbeginend_offset = bugle_object_class_register(&bugle_context_class,
                                                        NULL,

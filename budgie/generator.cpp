@@ -779,13 +779,8 @@ string make_wrapper(tree_node_p node, bool prototype)
     if (TREE_CODE(ret_type) != VOID_TYPE)
         out << "    " << type_to_string(ret_type, "retn", false) << ";\n";
 
-    // check whether we want to catch this function at this time
-    out << "    if (check_skip(FUNC_" << name << "))\n"
-        << "    {\n";
-    make_wrapper_call(out, node);
-    out << "    }\n"
     // check for re-entrancy
-        << "    if (!check_set_reentrance())\n"
+    out << "    if (!check_set_reentrance())\n"
         << "    {\n"
         << "        initialise_real();\n";
     make_wrapper_call(out, node);

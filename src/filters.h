@@ -42,11 +42,9 @@ typedef bool (*filter_callback)(function_call *call, const callback_data *data);
 typedef struct
 {
     char *name;
-    filter_callback callback;
     struct filter_set_s *parent;
-    /* List of pointers to the reference counts for the caught functions */
-    bugle_linked_list catches;
-    bool catches_all;
+    /* List of filter_catcher structs. The list owns the struct memory */
+    bugle_linked_list callbacks;
 } filter;
 
 typedef struct filter_set_s
@@ -83,10 +81,9 @@ void run_filters(function_call *call);
 /* Functions to be used by the filter libraries, and perhaps the interceptor */
 
 filter_set *bugle_register_filter_set(const filter_set_info *info);
-filter *bugle_register_filter(filter_set *handle, const char *name,
-                              filter_callback callback);
-void bugle_register_filter_catches(filter *handle, budgie_function f);
-void bugle_register_filter_catches_all(filter *handle);
+filter *bugle_register_filter(filter_set *handle, const char *name);
+void bugle_register_filter_catches(filter *handle, budgie_function f, filter_callback callback);
+void bugle_register_filter_catches_all(filter *handle, filter_callback callback);
 void bugle_register_filter_set_depends(const char *base, const char *dep);
 void bugle_register_filter_depends(const char *after, const char *before);
 void *bugle_get_filter_set_call_state(function_call *call, filter_set *handle);
