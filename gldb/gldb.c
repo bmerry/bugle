@@ -550,7 +550,6 @@ static void initialise(void)
     register_command("unbreak", false, command_break_unbreak);
     register_command("kill", true, command_kill);
     register_command("run", false, command_run);
-    /* The gdb command is still very broken */
     register_command("backtrace", true, command_backtrace);
     register_command("bt", true, command_backtrace);
     atexit(shutdown);

@@ -2,6 +2,7 @@ noinst_PROGRAMS = budgie/budgie gentokens/gentokens
 noinst_LTLIBRARIES = budgie/libbudgie.la common/libcommon.la
 noinst_HEADERS = budgie/tree.def budgie/c-common.def
 noinst_SCRIPTS = gentokens/gettokens.awk
+dist_man_MANS = doc/gldb.1
 lib_LTLIBRARIES = src/libbugle.la
 bin_PROGRAMS = gldb/gldb
 pkglib_LTLIBRARIES = \
@@ -18,7 +19,7 @@ AM_YFLAGS = -d
 common_libcommon_la_SOURCES = \
 	common/safemem.c common/safemem.h \
 	common/bool.h common/protocol.h common/protocol.c \
-	common/hashtable.c common/hashtable.h \
+	common/hashtable.c common/hashtable.h
 common_libcommon_la_LDFLAGS = -static
 
 gldb_gldb_SOURCES = gldb/gldb.c
@@ -44,12 +45,12 @@ src_libbugle_la_SOURCES = \
 	src/gltokens.h \
 	src/linkedlist.c src/linkedlist.h \
 	src/glstate.c src/glstate.h \
-	src/canon.c src/canon.h \
+	src/canon.c src/canon.h
 nodist_src_libbugle_la_SOURCES = \
 	src/lib.c src/lib.h src/utils.c \
 	src/utils.h src/types.c src/types.h \
 	src/gltokens.c
-BUILT_SOURCES = src/lib.h src/utils.h src/types.h confparse.h
+BUILT_SOURCES = src/lib.h src/utils.h src/types.h src/confparse.h
 src_libbugle_la_LIBADD = budgie/libbudgie.la common/libcommon.la $(LTLIBOBJS) -lGL $(X_PRE_LIBS) $(X_LIBS) $(X_EXTRA_LIBS)
 src_libbugle_la_LDFLAGS = -export-dynamic -version-info 0:0:0
 

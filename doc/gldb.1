@@ -1,0 +1,73 @@
+.TH GLDB 1 "June 2004" GLDB "User Manual"
+.SH NAME
+gldb \- Debugger front-end for the BuGLe library
+.SH SYNOPSIS
+.B gldb
+.RB [ -c
+.IR chain ]
+.I prog
+.SH DESCRIPTION
+.B gldb
+is a front-end debugger to be used with the
+.BR bugle (3)
+library, modelled on
+.BR gdb (1).
+It can set breakpoints on OpenGL functions, and by default will stop
+whenever the program causes a GL error.
+.SH COMMANDS
+.TP
+.B run
+Start your program.
+.TP
+.B continue
+Continue running your program.
+.TP
+.B kill
+Kill the running program.
+.TP
+.B break \fIfunction
+\&
+Set a breakpoint at
+.I function
+(an OpenGL function).
+.TP
+.B break error
+Break on OpenGL errors.
+.TP
+.B unbreak \fIfunction
+\&
+Do not break on
+.IR function.
+.TP
+.B unbreak error
+Do not break on OpenGL errors.
+.TP
+.B quit
+Exit
+.BR gldb .
+.TP
+.B backtrace
+Call
+.BR gdb (1)
+to obtain a stack trace.
+.SH ENVIRONMENT
+.TP 
+.B BUGLE_DEBUGGER
+.TP
+.B BUGLE_DEBUGGER_FD_IN
+.TP
+.B BUGLE_DEBUGGER_FD_OUT
+Internal environment variables used to communicate between the debugger
+and the library.
+.TP
+.B LD_PRELOAD
+Used to force loading of the library.
+.SH AUTHOR
+.B gldb
+and the
+.B bugle
+library
+are written and maintained by Bruce Merry <bmerry@users.sourceforge.net>.
+.SH "SEE ALSO"
+.BR bugle (1),
+.BR gdb (1)

@@ -1,10 +1,11 @@
 AC_INIT(bugle, 0.0.20040609, bmerry@users.sourceforge.net)
 AC_CONFIG_SRCDIR([src/interceptor.c])
-AM_INIT_AUTOMAKE(bugle, 0.0.20040609)
+AM_INIT_AUTOMAKE([1.7 dist-bzip2 subdir-objects])
 AM_CONFIG_HEADER(config.h)
 
 dnl Checks for programs
 AC_PROG_CC_STDC
+AM_PROG_CC_C_O
 AC_PROG_CXX
 AC_PROG_AWK
 AM_PROG_LEX
