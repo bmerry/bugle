@@ -43,6 +43,7 @@ bool trackcontext_callback(function_call *call, void *data)
     GLXContext ctx;
     state_generic *parent;
     state_7context_I *state;
+    static pthread_mutex_t context_mutex = PTHREAD_MUTEX_INITIALIZER;
 
     switch (canonical_call(call))
     {
@@ -59,8 +60,10 @@ bool trackcontext_callback(function_call *call, void *data)
         else
         {
             parent = &get_root_state()->c_context.generic;
+            pthread_mutex_lock(&context_mutex);
             if (!(state = (state_7context_I *) get_state_index(parent, &ctx)))
                 state = (state_7context_I *) add_state_index(parent, &ctx, NULL);
+            pthread_mutex_unlock(&context_mutex);
             pthread_setspecific(context_state_key, state);
         }
         break;

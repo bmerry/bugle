@@ -1,0 +1,38 @@
+This file describes the locking mechanisms used internally to prevent
+interference between threads inside libbugle, and lists outstanding
+bugs.
+
+1. Initialisation
+
+Initialisation is done on the first call, and is protected by a
+pthread_once_t in interceptor.c. There are a few initialisers that are
+handled separately, particularly get_root_state() and
+check_set_reentrance(). This will probably be fixed one day.
+
+2. Reentrance
+
+OpenGL functions sometimes call other OpenGL functions, which also end
+up being intercepted. To avoid this, reentrant calls from the same
+thread are passed straight through. The start of each wrapper should
+call check_set_reentrance(), and do a pass-through if it returns false.
+Otherwise, it should wrap and then call clear_reentrance() afterwards.
+
+3. Access to state
+
+Requests for the per-context state tree must go through
+trackcontext_get_context_state(), which reads the value out of
+thread-local storage. The value is placed there by the trackcontext
+module, which uses a private mutex to control access.
+
+Access to the root state should be done through get_root_state(), which
+uses a pthread_once_t to do initialisation once.
+
+BUG: there probably need to be a few more volatile keywords.
+
+4. Log files
+
+When writing the log, use flockfile/funlockfile.
+
+5. Debugger
+
+The debugger is not thread-safe.
