@@ -1,9 +1,12 @@
+0.0.20040614
+------------
 * Added the gldb debugger
 * Added some sanity checks to make sure that internal code does not generate
   GL errors.
 * Remove the "trap" option of the "error" module.
 * Autoload the invoke filterset, and load the debugger filterset if the
   environment variables are set.
+* Wrote manual pages.
 
 0.0.20040609
 ------------

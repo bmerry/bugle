@@ -25,7 +25,7 @@
 #include <stdio.h>
 #include "common/safemem.h"
 #include "src/conffile.h"
-#include "confparse.h"
+#include "src/confparse.h"
 
 static char *current_string = NULL;
 static int current_string_length = 0;

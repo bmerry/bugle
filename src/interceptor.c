@@ -46,9 +46,15 @@ static void load_config(void)
     const config_variable *var;
     filter_set *f;
     list_node *i, *j;
+    bool debugging;
 
     home = getenv("HOME");
-    if (home)
+    chain_name = getenv("BUGLE_CHAIN");
+    debugging = getenv("BUGLE_DEBUGGER") != NULL;
+    /* If using the debugger and no chain is specified, we use passthrough
+     * mode.
+     */
+    if (home && (!debugging || chain_name))
     {
         config = xmalloc(strlen(home) + strlen(FILTERFILE) + 1);
         sprintf(config, "%s%s", home, FILTERFILE);
@@ -56,7 +62,6 @@ static void load_config(void)
         {
             if (yyparse() == 0)
             {
-                chain_name = getenv("BUGLE_CHAIN");
                 chain = NULL;
                 if (chain_name)
                 {
@@ -109,7 +114,7 @@ static void load_config(void)
             fprintf(stderr, "failed to open config file %s; running in passthrough mode\n", config);
         free(config);
     }
-    else
+    else if (!debugging)
         fputs("$HOME not defined; running in passthrough mode\n", stderr);
 
     /* Always load the invoke filter-set */
@@ -121,7 +126,7 @@ static void load_config(void)
     }
     enable_filter_set(f);
     /* Auto-load the debugger filter-set if using the debugger */
-    if (getenv("BUGLE_DEBUGGER"))
+    if (debugging)
     {
         f = get_filter_set_handle("debugger");
         if (!f)

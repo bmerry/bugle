@@ -1,3 +1,5 @@
+0.0.20040614
+------------
 This release adds the gldb debugging tool. This replaces the rather
 primitive debugging mode of earlier releases, where you specified
 breakpoints in the config file. See the man page for instructions on

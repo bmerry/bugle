@@ -1,0 +1,181 @@
+.TH BUGLE 3 "June 2004" BUGLE "User Manual"
+.SH NAME
+bugle \- An OpenGL debugging library
+.SH SYNOPSIS
+.BI BUGLE_CHAIN\fR= "chain " "LD_PRELOAD\fR=\fBlibbugle.so " prog
+.RI "[" args "...]"
+.SH DESCRIPTION
+.B bugle
+is a library that intercepts calls to OpenGL functions, in much the
+same way that many memory debuggers do. Calls are run through a number
+of user-specified
+.IR filter-sets ,
+including one that invokes the original call. The available
+filter-sets are listed in 
+.B FILTER-SETS
+below.
+
+In addition, the utility
+.BR gldb (1)
+can be used to interface with the library, and do useful things like
+stopping on OpenGL errors. For common usage this may be the most
+convenient way to use
+.BR bugle .
+
+The
+.B BUGLE_CHAIN
+environment variable specifies a
+.IR "filter-set chain" ,
+which is simply a collection of filter-sets. Chains are defined in the
+configuration file (see
+.BR CONFIGURATION ).
+.SH "FILTER-SETS"
+Several of the filter-sets take optional arguments. These are specified
+in the configuration file, described in
+.B CONFIGURATION
+below.
+.TP
+.B log
+Provides logging of all OpenGL calls, as well as a few key GLX calls.
+The
+.B filename
+option specifies the filename to which to write the log (the file is
+overwritten). If not specified, the log is to standard error. The
+.B flush
+option may be set to
+.B yes
+to flush the log after every operation. If the
+.B error
+filter-set is also loaded, OpenGL errors will also be written to the
+log (note that several other filter-sets implicitly load the
+.B error
+filter-set).
+.TP
+.B error
+Checks for OpenGL errors after every OpenGL call that does not occur
+between
+.B glBegin
+and
+.BR glEnd ,
+and wraps
+.B glGetError
+so that this checking is transparent to the application. This
+filter-set does little on its own, but provides this service to other
+filter-sets such as the
+.B log
+filter-set.
+.TP
+.B showerror
+Writes OpenGL errors to standard out.
+.TP
+.B wireframe
+Forces the application to render in wireframe mode (i.e. with
+.B glPolygonMode
+set to
+.BR GL_LINE ).
+It also forces a colour buffer clear after every frame, since some apps
+will look completely wrong otherwise.
+.TP
+.B frontbuffer
+Sets
+.B glDrawBuffer
+to
+.BR GL_FRONT ,
+and does a few other things to try to make drawing to the front buffer
+work. This is particularly useful in conjunction with
+.B gldb
+with breakpoints set on drawing functions, to watch a frame being drawn
+piece by piece.
+.TP
+.B screenshot
+Writes screenshots in
+.BR ppm (5)
+format after every frame. The screenshots are written to
+.BI frame NNNN .ppm\fR,
+where
+.I NNNN
+is the frame number.
+.TP
+.B unwindstack
+This filter-set is a bit of a hack, and may not work reliably on all
+systems. It addresses the problem of a crash inside an OpenGL driver
+that contains no stack frame information, making it impossible to
+determine the source of the error. It attempts to make a partial
+recovery, then regenerates the crash but from a point where a stack
+trace will work. If running your program inside
+.BR gdb,
+continue past the first segmentation fault and ask for a stack trace
+after the second.
+
+The other two filter-sets are
+.B invoke
+and
+.BR debugger,
+but these are automatically loaded when needed and you don't need to
+worry about them.
+
+.SH CONFIGURATION
+You can create filter-set chains in the file
+.BR $HOME/.bugle/filters .
+It is possible to use
+.B bugle
+without creating this file, but it will simply pass all calls straight
+through to the real OpenGL library. This is not particularly useful
+unless you are using
+.BR gldb .
+
+The file is text-based. Comments are started with a
+.B "#"
+and continue to the end of the line. Strings may be quoted with
+double-quotes, and backslash acts as an escape character in the usual
+way (including escaping of newlines). Other white-space is ignored.
+
+The file contains filter-set options, filter-sets, and chains, each
+nested inside the previous one. The syntax is most easily demonstrated
+with an example:
+
+.nf
+    chain trace
+    {
+        filterset log
+        {
+            filename bugle.log
+            flush yes
+        }
+        filterset showerror
+    }
+.fi
+
+Note that braces around sets of options are optional, while the braces
+around chains are not.
+
+.SH ENVIRONMENT
+.TP
+.B BUGLE_CHAIN
+Specifies the filter-set chain to use. If absent, the first chain in
+the configuration file is used.
+.TP
+.B LD_PRELOAD
+Used to tell the linker to load
+.BR bugle .
+.SH FILES
+.TP
+.B "$HOME/.bugle/filters"
+Lists the possible filter-set chains. See
+.B CONFIGURATION
+above for a description of the format.
+.SH BUGS
+OpenGL color-index mode is not well supported.
+
+Multi-threaded applications that call the GL from more than one thread
+are almost certain to break.
+.SH AUTHOR
+.B gldb
+and the
+.B bugle
+library
+are written and maintained by Bruce Merry <bmerry@users.sourceforge.net>.
+
+.SH "SEE ALSO"
+.BR gldb (1),
+.BR ppm (5)

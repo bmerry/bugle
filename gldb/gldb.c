@@ -35,6 +35,8 @@
 # include <readline/readline.h>
 # include <readline/history.h>
 #endif
+#include "src/types.h"
+#include "src/canon.h"
 #include "common/bool.h"
 #include "common/safemem.h"
 #include "common/protocol.h"
@@ -65,15 +67,41 @@ static sigjmp_buf chld_env;
  * handled but do not cause a new line to be read.
  */
 static bool running = false, started = false;
-static pid_t child_pid;
-static const char *chain;
-static const char *prog;
+static pid_t child_pid = -1;
+static int child_status = 0; /* status returned from waitpid */
+static char *chain = NULL;
+static const char *prog = NULL;
 
+/* The table of full command names. This is used for command completion
+ * and display of help. There is also a hash table of command names
+ * including prefixes. One day it may become a trie. The handler takes the
+ * canonical name of the command, the raw line data, and a NULL-terminated
+ * array of tokens. The generator is used by readline to complete arguments;
+ * see the readline documentation for more details.
+ *
+ * Please maintain the list in alphabetical order, as it makes the help
+ * output look neater.
+ */
+typedef bool (*command_handler)(const char *, const char *, const char * const *);
+typedef struct
+{
+    const char *name;
+    const char *help;
+    bool running;
+    command_handler handler;
+    char * (*generator)(const char *text, int state);
+} command_info;
+const command_info commands[];
+
+/* The structure for indexing commands in a hash table. */
+typedef struct
+{
+    bool root;             /* i.e. not an abbreviation */
+    const command_info *command;
+} command_data;
 /* The table of legal commands. The keys are the (possibly abbreviated)
- * command names, and the values are the command_data structs defined later.
- * Ambiguous commands have a NULL handler. The handler takes the canonical
- * name of the command, the raw line data, and a NULL-terminated array of
- * fields.
+ * command names, and the values are the command_data structs defined above.
+ * Ambiguous commands have a NULL command field.
  */
 static hash_table command_table;
 
@@ -130,7 +158,10 @@ static pid_t execute(void)
         perror("fork failed");
         exit(1);
     case 0: /* Child */
-        xsetenv("BUGLE_CHAIN", chain);
+        if (chain)
+            xsetenv("BUGLE_CHAIN", chain);
+        else
+            check(putenv("BUGLE_CHAIN"), "putenv"); /* clear it */
         xsetenv("LD_PRELOAD", LIBDIR "/libbugle.so");
         xsetenv("BUGLE_DEBUGGER", "1");
         xasprintf(&env, "%d", in_pipe[1]);
@@ -205,7 +236,7 @@ static bool command_break_unbreak(const char *cmd,
     func = tokens[1];
     if (!func)
     {
-        fputs("Specify a function or \"error\".\n", stderr);
+        fputs("Specify a function or \"error\".\n", stdout);
         return false;
     }
 
@@ -240,7 +271,7 @@ static bool command_run(const char *cmd,
 
     if (running)
     {
-        fputs("Already running\n", stderr);
+        fputs("Already running\n", stdout);
         return false;
     }
     else
@@ -272,10 +303,21 @@ static bool command_backtrace(const char *cmd,
     char *ln;
     FILE *in, *out;
     int status;
+    struct sigaction act, real_act;
 
     check(pipe(in_pipe), "pipe");
     check(pipe(out_pipe), "pipe");
-    /* FIXME: avoid triggering SIGCHLD when gdb dies */
+    /* We don't want the SIGCHLD handler to perform the longjmp when gdb
+     * exits. We disable the handler, and once we've re-enabled it we
+     * use waitpid with WNOHANG to see if the real program died in the
+     * meantime.
+     */
+    act.sa_handler = SIG_DFL;
+    act.sa_flags = 0;
+    sigemptyset(&act.sa_mask);
+    check(sigaction(SIGCHLD, &act, &real_act), "sigaction");
+    check(sigprocmask(SIG_SETMASK, &unblocked, NULL), "sigprocmask");
+
     switch (pid = fork())
     {
     case -1:
@@ -309,61 +351,88 @@ static bool command_backtrace(const char *cmd,
         }
         RESTART(waitpid(pid, &status, 0));
     }
+    check(sigprocmask(SIG_SETMASK, &blocked, NULL), "sigprocmask");
+    check(sigaction(SIGCHLD, &real_act, NULL), "sigaction");
+    /* Now check if the real child died in the meantime */
+    pid = waitpid(child_pid, &child_status, WNOHANG);
+    check(pid, "waitpid");
+    /* A value of 2 indicates that we have done the waiting */
+    if (pid == child_pid)
+        siglongjmp(chld_env, 2);
     return false;
 }
 
-typedef struct
+static bool command_chain(const char *cmd,
+                          const char *line,
+                          const char * const *tokens)
 {
-    bool root;             /* i.e. not an abbreviation */
-    bool running;          /* only makes sense when program running */
-    /* The canonical name of the command. The memory belongs to the root */
-    char *root_name;
-    bool (*handler)(const char *, const char *, const char * const *);
-} command_data;
+    if (!tokens[1])
+    {
+        fputs("Usage: chain <chain> OR chain none.\n", stdout);
+        return false;
+    }
+    if (chain)
+    {
+        free(chain);
+        chain = NULL;
+    }
+    if (strcmp(tokens[1], "none") == 0)
+        fputs("Chain cleared.\n", stdout);
+    else
+    {
+        chain = xstrdup(tokens[1]);
+        printf("Chain set to %s.\n", chain);
+    }
+    if (running)
+        fputs("The change will only take effect when the program is restarted.\n", stdout);
+    return false;
+}
 
-static void register_command(const char *name, bool running,
-                             bool (*handler)(const char *,
-                                             const char *,
-                                             const char * const *))
+static bool command_help(const char *cmd,
+                         const char *line,
+                         const char * const *tokens)
+{
+    const command_info *c;
+
+    /* FIXME: sort the commands by name */
+    for (c = commands; c->name; c++)
+        printf("%-12s\t%s\n", c->name, c->help);
+    return false;
+}
+
+static void register_command(const command_info *cmd)
 {
     command_data *data;
-    char *root_name, *end;
+    char *key, *end;
 
-    root_name = xstrdup(name);
-    data = (command_data *) hash_get(&command_table, name);
+    key = xstrdup(cmd->name);
+    data = (command_data *) hash_get(&command_table, key);
     if (data)
         assert(!data->root); /* can't redefine commands */
     else
         data = (command_data *) xmalloc(sizeof(command_data));
     data->root = true;
-    data->running = running;
-    data->root_name = root_name;
-    data->handler = handler;
-    hash_set(&command_table, name, data);
+    data->command = cmd;
+    hash_set(&command_table, key, data);
 
-    /* Dirty hack announcement: we progressively shorten the root_name
-     * string for indexing the table, then restore it later so that
-     * the pointers we are copying become correct again.
-     */
-    end = root_name + strlen(root_name);
+    /* Progressively shorten the key to create abbreviations. */
+    end = key + strlen(key);
     *--end = '\0';
-    while (end > root_name)
+    while (end > key)
     {
-        data = (command_data *) hash_get(&command_table, root_name);
+        data = (command_data *) hash_get(&command_table, key);
         if (!data)
         {
-            data = (command_data *) xmalloc(sizeof(command_data *));
+            data = (command_data *) xmalloc(sizeof(command_data));
             data->root = false;
-            data->running = running;
-            data->root_name = root_name;
-            data->handler = handler;
-            hash_set(&command_table, root_name, data);
+            data->command = cmd;
+            hash_set(&command_table, key, data);
         }
         else if (!data->root)
-            data->handler = NULL; /* ambiguate it */
+            data->command = NULL; /* ambiguate it */
         *--end = '\0';
     }
-    strcpy(root_name, name);
+    free(key);
 }
 
 static void handle_commands(void)
@@ -421,13 +490,13 @@ static void handle_commands(void)
                 /* Find the command */
                 data = (const command_data *) hash_get(&command_table, tokens[0]);
                 if (!data)
-                    fprintf(stderr, "Unknown command `%s'.\n", tokens[0]);
-                else if (!data->handler)
-                    fprintf(stderr, "Ambiguous command `%s'.\n", tokens[1]);
-                else if (data->running && !running)
-                    fprintf(stderr, "Program is not running.\n");
+                    printf("Unknown command `%s'.\n", tokens[0]);
+                else if (!data->command)
+                    printf("Ambiguous command `%s'.\n", tokens[0]);
+                else if (data->command->running && !running)
+                    printf("Program is not running.\n");
                 else
-                    done = data->handler(data->root_name, line, (const char * const *) tokens);
+                    done = data->command->handler(data->command->name, line, (const char * const *) tokens);
                 for (i = 0; i < num_tokens; i++)
                     free(tokens[i]);
                 free(tokens);
@@ -482,17 +551,29 @@ static bool handle_responses(uint32_t resp)
 
 static void main_loop(void)
 {
-    int status;
+    int form;
     uint32_t resp;
 
     setup_sigchld();
     while (true)
     {
-        if (sigsetjmp(chld_env, 1))
+        if ((form = sigsetjmp(chld_env, 1)) != 0)
         {
             /* If we get here, then the child died. */
-            RESTART(waitpid(child_pid, &status, 0));
-            printf("Program exited\n");
+            if (form == 1) /* i.e. not from command_backtrace or similar */
+                RESTART(waitpid(child_pid, &child_status, 0));
+            if (WIFEXITED(child_status))
+            {
+                if (WEXITSTATUS(child_status) == 0)
+                    printf("Program exited normally.\n");
+                else
+                    printf("Program exited with return code %d.\n", WEXITSTATUS(child_status));
+            }
+            else if (WIFSIGNALED(child_status))
+                printf("Program was terminated with signal %d.\n", WTERMSIG(child_status));
+            else
+                printf("Program was terminated abnormally.\n");
+
             assert(running == true);
             running = false;
             started = false;
@@ -507,63 +588,137 @@ static void main_loop(void)
          */
         do
         {
-            sigprocmask(SIG_SETMASK, &unblocked, NULL);
+            check(sigprocmask(SIG_SETMASK, &unblocked, NULL), "sigprocmask");
             if (!recv_code(lib_in, &resp))
             {
                 /* Failure here means EOF, which hopefully means that the
                  * program will now terminate. Cross thumbs...
                  */
-                sigprocmask(SIG_SETMASK, &blocked, NULL);
+                check(sigprocmask(SIG_SETMASK, &blocked, NULL), "sigprocmask");
                 sigsuspend(&unblocked);
                 /* Hopefully we won't even reach here, but hit the sigsetjmp. */
                 continue;
             }
-            sigprocmask(SIG_SETMASK, &blocked, NULL);
+            check(sigprocmask(SIG_SETMASK, &blocked, NULL), "sigprocmask");
         }
         while (!handle_responses(resp));
     }
 }
 
+static char *generate_commands(const char *text, int state)
+{
+    static const command_info *ptr;
+    static size_t len;
+
+    if (!state)
+    {
+        ptr = commands;
+        len = strlen(text);
+    }
+
+    for (; ptr->name; ptr++)
+        if (strncmp(ptr->name, text, len) == 0)
+            return xstrdup((ptr++)->name);
+    return NULL;
+}
+
+static char *generate_functions(const char *text, int state)
+{
+    static size_t i;
+    static size_t len;
+
+    if (!state)
+    {
+        len = strlen(text);
+        i = 0;
+    }
+    for (; i < NUMBER_OF_FUNCTIONS; i++)
+        if (strncmp(function_table[i].name, text, len) == 0
+            && canonical_function(i) == i)
+            return xstrdup(function_table[i++].name);
+    return NULL;
+}
+
+#if HAVE_READLINE_READLINE_H
+static char **completion(const char *text, int start, int end)
+{
+    char **matches = NULL;
+    const command_data *data;
+    char *key;
+    int first, last; /* first, last delimit the command, if any */
+
+    /* Complete commands */
+    first = 0;
+    last = start;
+    while (first < start && isspace(rl_line_buffer[first])) first++;
+    while (last > first && isspace(rl_line_buffer[last - 1])) last--;
+    if (first >= last) /* this is command expansion */
+        matches = rl_completion_matches(text, generate_commands);
+    else
+    {
+        /* try to find the command */
+        key = xmalloc(last - first + 1);
+        strncpy(key, rl_line_buffer + first, last - first);
+        key[last - first] = '\0';
+        data = hash_get(&command_table, key);
+        if (data && data->command && data->command->generator)
+        {
+            matches = rl_completion_matches(text, data->command->generator);
+        }
+        free(key);
+    }
+
+    rl_attempted_completion_over = 1; /* disable filename expansion */
+    return matches;
+}
+#endif
+
 static void shutdown(void)
 {
-    const hash_entry *h;
-    command_data *data;
-
-    for (h = hash_begin(&command_table); h; h = hash_next(&command_table, h))
-    {
-        data = (command_data *) h->value;
-        if (data->root) free(data->root_name);
-        free(data);
-    }
-    hash_clear(&command_table, false);
-    hash_clear(&break_on, true);
+    hash_clear(&command_table, true);
+    hash_clear(&break_on, false);
 }
+
+const command_info commands[] =
+{
+    { "backtrace", "Show a gdb backtrace", true, command_backtrace, NULL },
+    { "break", "Set breakpoints", false, command_break_unbreak, generate_functions },
+    { "bt", "Alias for backtrace", true, command_backtrace, NULL },
+    { "chain", "Set the filter-set chain", false, command_chain, NULL },
+    { "continue", "Continue running the program", true, command_cont, NULL },
+    { "help", "Show the list of commands", false, command_help, generate_commands },
+    { "kill", "Kill the program", true, command_kill, NULL },
+    { "run", "Start the program", false, command_run, NULL },
+    { "quit", "Exit gldb", false, command_quit, NULL },
+    { "unbreak", "Clear breakpoints", false, command_break_unbreak, generate_functions },
+    { NULL, NULL, false, NULL }
+};
 
 static void initialise(void)
 {
+    const command_info *cmd;
+
     initialise_hashing();
+    initialise_canonical();
     hash_init(&break_on);
     hash_init(&command_table);
-    register_command("quit", false, command_quit);
-    register_command("continue", true, command_cont);
-    register_command("break", false, command_break_unbreak);
-    register_command("unbreak", false, command_break_unbreak);
-    register_command("kill", true, command_kill);
-    register_command("run", false, command_run);
-    register_command("backtrace", true, command_backtrace);
-    register_command("bt", true, command_backtrace);
+    for (cmd = commands; cmd->name; cmd++)
+        register_command(cmd);
+#if HAVE_READLINE_READLINE_H
+    rl_readline_name = "gldb";
+    rl_attempted_completion_function = completion;
+#endif
     atexit(shutdown);
 }
 
 int main(int argc, char **argv)
 {
-    if (argc < 3)
+    if (argc != 2)
     {
-        fputs("Usage: gldb <chain> <program>\n", stderr);
+        fputs("Usage: gldb <program>\n", stderr);
         return 1;
     }
-    chain = argv[1];
-    prog = argv[2];
+    prog = argv[1];
     initialise();
     main_loop();
     return 0;

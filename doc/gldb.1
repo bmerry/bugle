@@ -1,10 +1,8 @@
-.TH GLDB 1 "June 2004" GLDB "User Manual"
+.TH GLDB 1 "June 2004" BUGLE "User Manual"
 .SH NAME
 gldb \- Debugger front-end for the BuGLe library
 .SH SYNOPSIS
 .B gldb
-.RB [ -c
-.IR chain ]
 .I prog
 .SH DESCRIPTION
 .B gldb
@@ -16,6 +14,16 @@ It can set breakpoints on OpenGL functions, and by default will stop
 whenever the program causes a GL error.
 .SH COMMANDS
 .TP
+.B chain \fIname
+Specify the name of the filter-set chain to use from the config file
+.BR $HOME/.bugle/filters .
+If
+.I name
+is none, then the default (no filters) is used.
+.TP
+.B help
+Show the list of commands, with brief descriptions.
+.TP
 .B run
 Start your program.
 .TP
@@ -26,16 +34,14 @@ Continue running your program.
 Kill the running program.
 .TP
 .B break \fIfunction
-\&
 Set a breakpoint at
 .I function
 (an OpenGL function).
 .TP
 .B break error
-Break on OpenGL errors.
+Break on OpenGL errors. This is the default.
 .TP
 .B unbreak \fIfunction
-\&
 Do not break on
 .IR function.
 .TP
@@ -50,7 +56,14 @@ Exit
 Call
 .BR gdb (1)
 to obtain a stack trace.
+.SH FILES
+.TP
+.B $HOME/.bugle/filters
+A configuration file for filters. See
+.BR bugle (3).
 .SH ENVIRONMENT
+.TP
+.B BUGLE_CHAIN
 .TP 
 .B BUGLE_DEBUGGER
 .TP
@@ -61,7 +74,7 @@ Internal environment variables used to communicate between the debugger
 and the library.
 .TP
 .B LD_PRELOAD
-Used to force loading of the library.
+Used internally to force loading of the library.
 .SH AUTHOR
 .B gldb
 and the
@@ -69,5 +82,5 @@ and the
 library
 are written and maintained by Bruce Merry <bmerry@users.sourceforge.net>.
 .SH "SEE ALSO"
-.BR bugle (1),
+.BR bugle (3),
 .BR gdb (1)

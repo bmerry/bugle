@@ -1,5 +1,5 @@
 - improvements to gldb
-- rewrite many things to use hash tables
+- rewrite some things to use hash tables
 - redesign state specification grammar
 - more autoconf tests (e.g. regex)
 - autoconf test for GLENUM_IS_GLUINT
@@ -9,6 +9,8 @@
 - more documentation
 - use ltdl for loading modules
 - allow the filter chain to be selectively bypassed, for benchmarking purposes
+- better separation between libbugleutils and libbugle, so that only the
+  latter requires GL and X libraries
 - cap and extension overrides
 - statistics
 - capture information about call lists

@@ -1,7 +1,8 @@
 P: I am getting the error 'Invalid option -fdump-translation-unit' or
 similar.
 S: You need to use a version of gcc that supports this flag. Version
-3.2 and newer are known to, but 3.0 and 2.95 do not.
+3.2 and newer are known to, but 3.0 and 2.95 do not. I'm not sure about
+3.1.
 
 P: I am getting the error "could not find GL/glext.h"
 S: You need to have this file, as it defines extensions to OpenGL that
@@ -10,4 +11,9 @@ http://oss.sgi.com/projects/ogl-sample/registry. If you don't want to
 put it in your system include directories, you can create a GL
 subdirectory of your source directory and put it there.
 
-For any other problems, contact me at bmerry@users.sourceforge.net.
+For any other problems, contact me at bmerry@users.sourceforge.net. If
+you are having compilation problems, then it would help to include the
+generated file src/data/gl.tu, assuming compilation got that far. Be
+aware that this file is generated from your OpenGL header files, and if
+you are using proprietry OpenGL headers then there is a small chance
+that distributing this file violates the vendor's copyright.

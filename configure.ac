@@ -1,4 +1,4 @@
-AC_INIT(bugle, 0.0.20040609, bmerry@users.sourceforge.net)
+AC_INIT(bugle, 0.0.20040614, bmerry@users.sourceforge.net)
 AC_CONFIG_SRCDIR([src/interceptor.c])
 AM_INIT_AUTOMAKE([1.7 dist-bzip2 subdir-objects])
 AM_CONFIG_HEADER(config.h)
@@ -17,8 +17,16 @@ AC_PROG_LIBTOOL
 AC_LANG(C)
 
 dnl Checks for libraries
-AC_CHECK_LIB([readline], [readline], [], [], [])
-AC_CHECK_LIB([history], [add_history], [], [], [])
+READLINE_LIBS=""
+AC_CHECK_LIB([readline], [readline], [
+  READLINE_LIBS="-lreadline $READLINE_LIBS"], [], [])
+AC_CHECK_LIB([history], [add_history], [
+  READLINE_LIBS="-lhistory $READLINE_LIBS"], [], [-lreadline])
+AC_SUBST(READLINE_LIBS)
+
+GL_LIBS=""
+AC_CHECK_LIB([GL], [glBegin], [GL_LIBS="-lGL $GL_LIBS"], [], [])
+AC_SUBST(GL_LIBS)
 
 dnl Checks for header files
 AC_HEADER_STDC

@@ -176,8 +176,6 @@ const hash_entry *hash_next(hash_table *table, const hash_entry *e)
 
 const hash_entry *hash_begin(hash_table *table)
 {
-    const hash_entry *ans;
-
     if (!table->entries) return NULL;
     else if (table->entries->key) return table->entries;
     return hash_next(table, table->entries);

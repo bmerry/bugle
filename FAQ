@@ -3,10 +3,10 @@ BuGLe: questions that nobody has asked yet, but which they might...
 
 Q. My program crashes, somewhere deep inside the OpenGL driver and I
 can't get a stack trace. How can I tell what caused it?
-A. Use the "unwindstack" filterset, and see doc/example.txt for
+A. Use the "unwindstack" filterset, and see the manual page for
 documentation.
 A. Use the "log" filterset, and turn on the flush option (see the example
-in doc/example.txt). Then after your program crashes, the last entry
+in doc/examples/filters). Then after your program crashes, the last entry
 in the log file will most likely be the one just before the crash.
 
 Q. I don't want to have to set BUGLE_CHAIN all the time; can't I

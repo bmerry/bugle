@@ -14,7 +14,7 @@ Here are a few things you can do so far
 - check for GL errors after every call
 - force a wireframe mode
 - run inside a gdb-like debugger, with breakpoints on GL functions and
-  stopping after every error.
+  (optionally) stopping after every error.
 
 To build, you will need a version of gcc that supports the
 -fdump-translation-unit flag. It was introduced by 3.2, but was not
@@ -29,18 +29,10 @@ $ BUGLE_CHAIN=trace LD_PRELOAD=/usr/local/lib/libbugle.so glxgears
 
 where BUGLE_CHAIN specifies a combination of filters to use. The name
 references a section in the configuration file; the example file
-doc/example.txt documents the configurations it provides.
+documents the configurations it provides. For more details, see the
+manual page bugle(3).
 
-The debugger mode is currently braindead: it will continue whenever you
-hit enter (so the app had better not be depending on stdin), and if you
-type in "state" and hit enter (without the quotes) then it will display
-a crude, incomplete and probably inaccurate state dump. The trace mode
-will write a big call log to the specified filename (or stderr if you
-leave out that line), and also write GL errors to stderr. A very useful
-filterset if you use NVIDIA drivers is the unwindstack filterset: it
-attempts to make enough of a recovery from segfaults inside the driver
-to enable you to determine where in your code things went wrong (since
-the NVIDIA drivers don't have frame pointers).
+The debugger is called gldb and is documented in the manual page.
 
 Feedback
 ========
