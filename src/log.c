@@ -104,7 +104,8 @@ void log_initialise(void)
         initialise_log,
         destroy_log,
         log_variables,
-        0
+        0,
+        "provides logging services to other filter-sets"
     };
 
     bugle_register_filter_set(&log_info);

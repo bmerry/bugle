@@ -739,7 +739,8 @@ void bugle_initialise_filter_library(void)
         initialise_error,
         NULL,
         NULL,
-        sizeof(GLenum)
+        sizeof(GLenum),
+        "checks for OpenGL errors after each call (see also `showerror')"
     };
     static const filter_set_info showerror_info =
     {
@@ -747,7 +748,8 @@ void bugle_initialise_filter_library(void)
         initialise_showerror,
         NULL,
         NULL,
-        0
+        0,
+        "prints any OpenGL errors to standard error"
     };
     static const filter_set_info unwindstack_info =
     {
@@ -755,7 +757,8 @@ void bugle_initialise_filter_library(void)
         initialise_unwindstack,
         NULL,
         NULL,
-        0
+        0,
+        "catches segfaults and allows recovery of the stack (see docs)"
     };
     static const filter_set_info checks_info =
     {
@@ -763,7 +766,8 @@ void bugle_initialise_filter_library(void)
         initialise_checks,
         NULL,
         NULL,
-        0
+        0,
+        "checks for illegal values passed to OpenGL in some places"
     };
     bugle_register_filter_set(&error_info);
     bugle_register_filter_set(&showerror_info);

@@ -63,7 +63,8 @@ void bugle_initialise_filter_library(void)
         initialise_trace,
         NULL,
         NULL,
-        0
+        0,
+        "captures a text trace of all calls made"
     };
     bugle_register_filter_set(&trace_info);
 

@@ -99,7 +99,8 @@ void trackbeginend_initialise(void)
         initialise_trackbeginend,
         NULL,
         NULL,
-        0
+        0,
+        NULL /* no documentation */
     };
 
     bugle_register_filter_set(&trackbeginend_info);

@@ -137,7 +137,8 @@ void trackdisplaylist_initialise(void)
         initialise_trackdisplaylist,
         NULL,
         NULL,
-        0
+        0,
+        NULL /* No documentation */
     };
 
     bugle_object_class_init(&bugle_displaylist_class, &bugle_context_class);

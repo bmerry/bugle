@@ -88,7 +88,8 @@ void bugle_initialise_filter_library(void)
         initialise_invoke,
         NULL,
         NULL,
-        0
+        0,
+        NULL /* no documentation */
     };
     static const filter_set_info procaddress_info =
     {
@@ -96,7 +97,8 @@ void bugle_initialise_filter_library(void)
         initialise_procaddress,
         NULL,
         NULL,
-        0
+        0,
+        NULL /* no documentation */
     };
     bugle_register_filter_set(&invoke_info);
     bugle_register_filter_set(&procaddress_info);

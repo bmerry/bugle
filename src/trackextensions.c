@@ -86,7 +86,8 @@ void trackextensions_initialise(void)
         initialise_trackextensions,
         NULL,
         NULL,
-        0
+        0,
+        NULL /* No documentation */
     };
 
     bugle_register_filter_set(&trackextensions_info);

@@ -130,7 +130,8 @@ void bugle_initialise_filter_library(void)
         initialise_wireframe,
         NULL,
         NULL,
-        0
+        0,
+        "renders in wireframe"
     };
     static const filter_set_info frontbuffer_info =
     {
@@ -138,7 +139,8 @@ void bugle_initialise_filter_library(void)
         initialise_frontbuffer,
         NULL,
         NULL,
-        0
+        0,
+        "renders directly to the frontbuffer (can see scene being built)"
     };
     bugle_register_filter_set(&wireframe_info);
     bugle_register_filter_set(&frontbuffer_info);

@@ -125,7 +125,8 @@ void trackcontext_initialise(void)
         initialise_trackcontext,
         NULL,
         NULL,
-        0
+        0,
+        NULL /* No documentation */
     };
 
     bugle_object_class_init(&bugle_context_class, NULL);

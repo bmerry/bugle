@@ -300,7 +300,7 @@ static void enable_filter_set_r(filter_set *handle)
         /* deps */
         for (i = bugle_list_head(&filter_set_dependencies[0]),
              j = bugle_list_head(&filter_set_dependencies[1]);
-             i != NULL;
+             i;
              i = bugle_list_next(i), j = bugle_list_next(j))
         {
             if (strcmp(handle->name, (const char *) bugle_list_data(i)) == 0)
@@ -327,7 +327,7 @@ static void enable_filter_set_r(filter_set *handle)
             handle->initialised = true;
         }
         handle->enabled = true;
-        for (i = bugle_list_head(&handle->filters); i != NULL; i = bugle_list_next(i))
+        for (i = bugle_list_head(&handle->filters); i; i = bugle_list_next(i))
         {
             f = (filter *) bugle_list_data(i);
             bugle_list_append(&active_filters, f);
@@ -355,7 +355,7 @@ static void disable_filter_set_r(filter_set *handle)
         /* reverse deps */
         for (i = bugle_list_head(&filter_set_dependencies[0]),
              j = bugle_list_head(&filter_set_dependencies[1]);
-             i != NULL;
+             i;
              i = bugle_list_next(i), j = bugle_list_next(j))
         {
             if (strcmp(handle->name, (const char *) bugle_list_data(j)) == 0)
@@ -523,6 +523,7 @@ filter_set *bugle_register_filter_set(const filter_set_info *info)
 
     s = (filter_set *) bugle_malloc(sizeof(filter_set));
     s->name = info->name;
+    s->help = info->help;
     bugle_list_init(&s->filters, false);
     s->init = info->init;
     s->done = info->done;
@@ -616,7 +617,7 @@ filter_set *bugle_get_filter_set_handle(const char *name)
     bugle_list_node *i;
     filter_set *cur;
 
-    for (i = bugle_list_head(&filter_sets); i != NULL; i = bugle_list_next(i))
+    for (i = bugle_list_head(&filter_sets); i; i = bugle_list_next(i))
     {
         cur = (filter_set *) bugle_list_data(i);
         if (strcmp(name, cur->name) == 0)
@@ -640,4 +641,21 @@ void *bugle_get_filter_set_symbol(filter_set *handle, const char *name)
         }
         return sym;
     }
+}
+
+void bugle_filters_help(void)
+{
+    bugle_list_node *i;
+    filter_set *cur;
+
+    flockfile(stderr);
+    fprintf(stderr, "Usage: BUGLE_CHAIN=<chain> LD_PRELOAD=libbugle.so <program> <args>\n");
+    fprintf(stderr, "The following filter-sets are available:\n");
+    for (i = bugle_list_head(&filter_sets); i; i = bugle_list_next(i))
+    {
+        cur = (filter_set *) bugle_list_data(i);
+        if (cur->help)
+            fprintf(stderr, "  %s: %s\n", cur->name, cur->help);
+    }
+    funlockfile(stderr);
 }

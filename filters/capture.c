@@ -705,7 +705,8 @@ void bugle_initialise_filter_library(void)
         initialise_screenshot,
         destroy_screenshot,
         screenshot_variables,
-        0
+        0,
+        "captures screenshots every frame, or a video clip"
     };
 
     static const filter_set_info showextensions_info =
@@ -714,7 +715,8 @@ void bugle_initialise_filter_library(void)
         initialise_showextensions,
         destroy_showextensions,
         NULL,
-        0
+        0,
+        "reports extensions used at program termination"
     };
 
     video_codec = bugle_strdup("mpeg4");

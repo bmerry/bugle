@@ -78,6 +78,7 @@ typedef struct
 typedef struct filter_set_s
 {
     const char *name;
+    const char *help;
     bugle_linked_list filters;
     filter_set_initialiser init;
     filter_set_destructor done;
@@ -96,6 +97,7 @@ typedef struct
     filter_set_destructor done;
     const filter_set_variable_info *variables; /* NULL-terminated array */
     size_t call_state_space;
+    const char *help;
 } filter_set_info;
 
 /* Functions to be used by the interceptor */
@@ -105,6 +107,7 @@ bool filter_set_variable(filter_set *handle, const char *name, const char *text)
 void bugle_enable_filter_set(filter_set *handle);
 void bugle_disable_filter_set(filter_set *handle);
 void run_filters(function_call *call);
+void bugle_filters_help(void);
 
 /* Functions to be used by the filter libraries, and perhaps the interceptor */
 

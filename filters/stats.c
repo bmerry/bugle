@@ -481,6 +481,7 @@ void bugle_initialise_filter_library(void)
         NULL,
         stats_variables,
         0,
+        "collects statistical information such as frame-rate"
     };
 
     static const filter_set_info showstats_info =
@@ -489,7 +490,8 @@ void bugle_initialise_filter_library(void)
         initialise_showstats,
         NULL,
         NULL,
-        0
+        0,
+        "renders information collected by `stats' onto the screen"
     };
 
     bugle_register_filter_set(&stats_info);

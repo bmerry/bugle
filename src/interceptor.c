@@ -75,7 +75,11 @@ static void load_config(void)
                 {
                     chain = bugle_config_get_chain(chain_name);
                     if (!chain)
-                        fprintf(stderr, "could not find chain %s, trying default\n", chain_name);
+                    {
+                        fprintf(stderr, "no such chain %s\n", chain_name);
+                        bugle_filters_help();
+                        exit(1);
+                    }
                 }
                 if (!chain)
                 {

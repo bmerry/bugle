@@ -429,7 +429,8 @@ void bugle_initialise_filter_library(void)
         initialise_debugger,
         NULL,
         NULL,
-        0
+        0,
+        NULL /* no documentation */
     };
 
     memset(break_on, 0, sizeof(break_on));
