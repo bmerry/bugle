@@ -23,6 +23,7 @@
 # include <config.h>
 #endif
 #include "src/types.h"
+#include "src/glfuncs.h"
 #include "budgielib/budgieutils.h"
 
 void initialise_canonical(void);

@@ -6,14 +6,15 @@ AM_CONFIG_HEADER(config.h)
 dnl Checks for programs
 AC_PROG_CC_STDC
 AM_PROG_CC_C_O
+AC_PROG_CPP
 AC_PROG_CXX
-AC_PROG_AWK
 AM_PROG_LEX
 AC_PROG_YACC
 AC_PROG_LN_S
 AC_PROG_INSTALL
 AC_PROG_MAKE_SET
-AC_PROG_LIBTOOL
+AM_PROG_LIBTOOL
+AC_PATH_PROG([PERL], [perl], [perl], [$srcdir/missing])
 AC_LANG(C)
 
 dnl Checks for libraries
@@ -67,7 +68,6 @@ dnl Checks for compiler characteristics
 AC_C_VOLATILE
 AC_C_INLINE
 AC_C_CHAR_UNSIGNED
-BUGLE_CPP_DEFINES
 
 dnl Checks for library functions
 AC_CHECK_FUNCS([regcomp strrchr vasprintf vsnprintf open_memstream])
@@ -81,14 +81,10 @@ LIBS="$real_libs"
 
 dnl Checks for system services
 AC_PATH_XTRA
-if test "x$CPP_DEFINES" = "xno"; then
-  BUGLE_PATH_GLINCLUDES
-fi
 
 dnl Set up some extra stuff
-AM_CONDITIONAL(PREPROCESS_GL, test x$CPP_DEFINES = xyes)
-
 dnl FIXME: add a --without-lavc option
+
 test $HAVE_LAVC = 1 || AVCODEC_LIBS=""
 AC_SUBST(AVCODEC_LIBS)
 AC_DEFINE_UNQUOTED(HAVE_LAVC, $HAVE_LAVC, [non-zero when libavcodec is being used])

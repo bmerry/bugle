@@ -30,19 +30,19 @@ static bool wireframe_callback(function_call *call, void *data)
 {
     switch (canonical_call(call))
     {
-    case FUNC_glPolygonMode:
-    case FUNC_glXMakeCurrent:
-#ifdef GLX_VERSION_1_3
-    case FUNC_glXMakeContextCurrent:
+    case CFUNC_glPolygonMode:
+    case CFUNC_glXMakeCurrent:
+#ifdef CFUNC_glXMakeContextCurrent
+    case CFUNC_glXMakeContextCurrent:
 #endif
-    case FUNC_glXSwapBuffers:
+    case CFUNC_glXSwapBuffers:
         if (begin_internal_render())
         {
             CALL_glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
             end_internal_render("wireframe", true);
         }
         break;
-    case FUNC_glEnable:
+    case CFUNC_glEnable:
         switch (*call->typed.glEnable.arg0)
         {
         case GL_TEXTURE_1D:
@@ -78,11 +78,11 @@ static bool frontbuffer_callback(function_call *call, void *data)
 {
     switch (canonical_call(call))
     {
-    case FUNC_glXMakeCurrent:
-#ifdef GLX_VERSION_1_3
-    case FUNC_glXMakeContextCurrent:
+#ifdef CFUNC_glXMakeContextCurrent
+    case CFUNC_glXMakeContextCurrent:
 #endif
-    case FUNC_glDrawBuffer:
+    case CFUNC_glXMakeCurrent:
+    case CFUNC_glDrawBuffer:
         begin_internal_render();
         CALL_glDrawBuffer(GL_FRONT);
         CALL_glClear(GL_COLOR_BUFFER_BIT); /* hopefully bypass z-trick */

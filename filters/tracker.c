@@ -47,9 +47,9 @@ bool trackcontext_callback(function_call *call, void *data)
 
     switch (canonical_call(call))
     {
-    case FUNC_glXMakeCurrent:
-#ifdef GLX_VERSION_1_3
-    case FUNC_glXMakeContextCurrent:
+    case CFUNC_glXMakeCurrent:
+#ifdef CFUNC_glXMakeContextCurrent
+    case CFUNC_glXMakeContextCurrent:
 #endif
         /* These calls may fail, so we must explicitly check for the
          * current context.
@@ -82,7 +82,7 @@ static bool trackbeginend_callback(function_call *call, void *data)
 
     switch (canonical_call(call))
     {
-    case FUNC_glBegin:
+    case CFUNC_glBegin:
         switch (*call->typed.glBegin.arg0)
         {
         case GL_POINTS:
@@ -100,7 +100,7 @@ static bool trackbeginend_callback(function_call *call, void *data)
         default: ;
         }
         break;
-    case FUNC_glEnd:
+    case CFUNC_glEnd:
         if ((context_state = trackcontext_get_context_state()) != NULL)
             context_state->c_internal.c_in_begin_end.data = GL_FALSE;
         break;

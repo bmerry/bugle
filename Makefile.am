@@ -1,10 +1,17 @@
 ## Process with automake 1.7 or newer
 
+glincludes = \
+	$(shell CPP="$(CPP)" $(PERL) -w $(srcdir)/gentokens/find_header.perl GL/gl.h) \
+	$(shell CPP="$(CPP)" $(PERL) -w $(srcdir)/gentokens/find_header.perl GL/glext.h) \
+	$(shell CPP="$(CPP)" $(PERL) -w $(srcdir)/gentokens/find_header.perl GL/glx.h) \
+	$(shell CPP="$(CPP)" $(PERL) -w $(srcdir)/gentokens/find_header.perl GL/glext.h)
+
 # Utility programs, used for generating other files
-noinst_PROGRAMS = budgie/budgie gentokens/gentokens
+noinst_PROGRAMS = budgie/budgie
 # Misc extra files to include
 noinst_HEADERS = budgie/tree.def budgie/c-common.def
-noinst_SCRIPTS = gentokens/gettokens.awk
+dist_noinst_SCRIPTS = gentokens/gentokens.perl gentokens/genfunctions.perl \
+	gentokens/find_header.perl
 dist_man_MANS = doc/gldb.1 doc/bugle.3
 # The real things
 lib_LTLIBRARIES = src/libbugleutils.la src/libbugle.la
@@ -60,7 +67,7 @@ src_libbugleutils_la_SOURCES = \
 	budgielib/state.c budgielib/state.h
 nodist_src_libbugleutils_la_SOURCES = \
 	src/utils.c src/utils.h src/types.c src/types.h \
-	src/gltokens.c
+	src/gltokens.c src/glfuncs.c src/glfuncs.h
 src_libbugleutils_la_LIBADD = $(LTLIBOBJS) $(GL_LIBS) $(X_PRE_LIBS) $(X_LIBS) $(X_EXTRA_LIBS) $(THREAD_LIBS)
 src_libbugleutils_la_LDFLAGS = -thread-safe -export-dynamic -version-info 0:0:0
 src_libbugle_la_SOURCES = \
@@ -84,15 +91,14 @@ src/types.c src/types.h src/utils.c src/utils.h src/lib.c src/lib.h: budgie/budg
 	$(srcdir)/mkinstalldirs src
 	budgie/budgie -c $(srcdir)/src/gl.bc -t `test -f src/data/gl.tu || echo '$(srcdir)/'`src/data/gl.tu -o src/utils -T src/types -l src/lib
 
-gentokens_gentokens_SOURCES = gentokens/gentokens.c
-BUILT_SOURCES += src/gltokens.c
+BUILT_SOURCES += src/gltokens.c src/glfuncs.c src/glfuncs.h
 
-src/gltokens.c: gentokens/gentokens gentokens/gettokens.awk
-if PREPROCESS_GL
-	$(CPP) $(CPP_DEFINES_FLAGS) $(DEFAULT_INCLUDES) $(INCLUDES) $(X_CFLAGS) $(srcdir)/src/data/gl.c | $(AWK) -f $(srcdir)/gentokens/gettokens.awk | gentokens/gentokens > $@
-else
-	$(AWK) -f $(srcdir)/gentokens/gettokens.awk $(GLINCLUDE_PATH)/glext.h $(GLINCLUDE_PATH)/gl.h | gentokens/gentokens > $@
-endif
+src/gltokens.c: gentokens/gentokens.perl
+	$(PERL) -w $(srcdir)/gentokens/gentokens.perl $(glincludes) > $@
+src/glfuncs.h: gentokens/genfunctions.perl src/types.h
+	$(PERL) -w $(srcdir)/gentokens/genfunctions.perl --out-header --header src/types.h $(glincludes) > $@
+src/glfuncs.c: gentokens/genfunctions.perl src/types.h
+	$(PERL) -w $(srcdir)/gentokens/genfunctions.perl --header src/types.h $(glincludes) > $@
 
 # Filters
 filters_common_la_SOURCES = filters/common.c
@@ -133,7 +139,6 @@ TESTS_ENVIRONMENT = BUGLE_FILTERS=$(srcdir)/tests/filters BUGLE_FILTER_DIR=filte
 
 # Extra files to distribute
 EXTRA_DIST = src/gl.bc src/data/gl.c src/data/overrides.h \
-	gentokens/gettokens.awk \
 	FAQ TROUBLESHOOTING \
 	doc/filters.txt doc/protocol.txt doc/examples/filters
 
@@ -141,7 +146,7 @@ EXTRA_DIST = src/gl.bc src/data/gl.c src/data/overrides.h \
 # for some reason does not.
 CLEANFILES = \
 	src/types.c src/types.h src/utils.c src/utils.h src/lib.c src/lib.h \
-	src/gltokens.c src/data/gl.tu doc/gldb.1.gz doc/bugle.3.gz \
+	src/gltokens.c src/glfuncs.c src/glfuncs.h src/data/gl.tu doc/gldb.1.gz doc/bugle.3.gz \
 	gldb/.libs/gldb \
 	tests/.libs/errors tests/.libs/threads1 \
 	tests/.libs/threads2 tests/.libs/queries tests/.libs/misc \

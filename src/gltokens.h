@@ -25,6 +25,8 @@ typedef struct
 {
     const char *name;
     GLenum value;
+    const char *version;     /* Min core version that defines this token (NULL for extension-only) */
+    const char *extension;   /* Extension that defines this token (NULL for core) */
 } gl_token;
 
 extern const gl_token gl_tokens_name[];

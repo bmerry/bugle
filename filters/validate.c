@@ -46,7 +46,7 @@ static bool error_callback(function_call *call, void *data)
     *(GLenum *) data = GL_NO_ERROR;
     if (function_table[call->generic.id].name[2] == 'X') return true; /* GLX */
     ctx = get_context_state();
-    if (canonical_call(call) == FUNC_glGetError)
+    if (canonical_call(call) == CFUNC_glGetError)
     {
         /* We hope that it returns GL_NO_ERROR, since otherwise something
          * slipped through our own net. If not, we return it to the app

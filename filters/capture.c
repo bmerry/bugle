@@ -38,6 +38,7 @@
 #include <errno.h>
 #include <assert.h>
 #include <GL/glx.h>
+#include <sys/time.h>
 
 #if HAVE_LAVC
 # include <inttypes.h>
@@ -54,11 +55,13 @@ typedef struct
     size_t stride;         /* bytes between rows */
     GLubyte *pixels;
     GLuint pbo;
+    int multiplicity;      /* number of times to write to video stream */
 } screenshot_data;
 
 static char *file_base = "frame";
 static const char *file_suffix = ".ppm";
 static char *video_codec = "mpeg4";
+static bool video_sample_fps = true;
 static int video_bitrate = 7500000;
 static int start_frameno = 0;
 static int video_lag = 1;     /* greater lag may give better overall speed */
@@ -72,6 +75,8 @@ static screenshot_data *video_data;
  */
 static int video_cur, video_leader;
 static bool video_done;
+static double video_frame_time = 0.0;
+static double video_frame_step = 1.0 / 30.0; /* FIXME: depends on frame rate */
 
 /* If data->pixels == NULL and pbo = 0,
  * or if data->width and data->height do not match the current frame,
@@ -427,8 +432,19 @@ static void screenshot_video()
     screenshot_data *fetch;
     AVCodecContext *c;
     size_t out_size;
-    int ret;
+    int i, ret;
+    struct timeval tv;
+    double t;
 
+    if (video_sample_fps)
+    {
+        gettimeofday(&tv, NULL);
+        t = tv.tv_sec + 1e-6 * tv.tv_usec;
+        if (video_leader == video_lag) /* first frame */
+            video_frame_time = t;
+        else if (t < video_frame_time)
+            return; /* drop the frame because it is too soon */
+    }
     if ((fetch = start_screenshot()) != NULL)
     {
         if (!video_context)
@@ -439,35 +455,52 @@ static void screenshot_video()
         img_convert((AVPicture *) video_yuv, c->pix_fmt,
                     (AVPicture *) video_raw, CAPTURE_AV_FMT,
                     fetch->width, fetch->height);
-        out_size = avcodec_encode_video(&video_stream->codec,
-                                        video_buffer, video_buffer_size,
-                                        video_yuv);
-        if (out_size != 0)
+        for (i = 0; i < fetch->multiplicity; i++)
         {
-#if LIBAVFORMAT_VERSION_INT >= 0x000409
-            AVPacket pkt;
-
-            av_init_packet(&pkt);
-            pkt.pts = c->coded_frame->pts;
-            if (c->coded_frame->key_frame)
-                pkt.flags |= PKT_FLAG_KEY;
-            pkt.stream_index = video_stream->index;
-            pkt.data = video_buffer;
-            pkt.size = out_size;
-            ret = av_write_frame(video_context, &pkt);
-#else
-            ret = av_write_frame(video_context, video_stream->index,
-                                 video_buffer, out_size);
-#endif
-            if (ret != 0)
+            out_size = avcodec_encode_video(&video_stream->codec,
+                                            video_buffer, video_buffer_size,
+                                            video_yuv);
+            if (out_size != 0)
             {
-                fprintf(stderr, "encoding failed\n");
-                exit(1);
+#if LIBAVFORMAT_VERSION_INT >= 0x000409
+                AVPacket pkt;
+
+                av_init_packet(&pkt);
+                pkt.pts = c->coded_frame->pts;
+                if (c->coded_frame->key_frame)
+                    pkt.flags |= PKT_FLAG_KEY;
+                pkt.stream_index = video_stream->index;
+                pkt.data = video_buffer;
+                pkt.size = out_size;
+                ret = av_write_frame(video_context, &pkt);
+#else
+                ret = av_write_frame(video_context, video_stream->index,
+                                     video_buffer, out_size);
+#endif
+                if (ret != 0)
+                {
+                    fprintf(stderr, "encoding failed\n");
+                    exit(1);
+                }
             }
         }
     }
+
+    if (video_sample_fps)
+    {
+        video_data[video_cur].multiplicity = 0;
+        while (t >= video_frame_time)
+        {
+            video_frame_time += video_frame_step;
+            video_data[video_cur].multiplicity++;
+        }
+    }
+    else
+        video_data[video_cur].multiplicity = 1;
     if (video_leader < video_lag)
+    {
         video_done = !end_screenshot(CAPTURE_GL_FMT, video_data[0].width, video_data[0].height);
+    }
     else
         end_screenshot(CAPTURE_GL_FMT, -1, -1);
 }
@@ -510,7 +543,7 @@ bool screenshot_callback(function_call *call, void *data)
      */
     static int frameno = 0;
 
-    if (canonical_call(call) == FUNC_glXSwapBuffers)
+    if (canonical_call(call) == CFUNC_glXSwapBuffers)
     {
         if (frameno >= start_frameno)
         {
@@ -566,7 +599,7 @@ static bool set_variable_screenshot(filter_set *handle,
                                     const char *name,
                                     const char *value)
 {
-    /* FIXME: take a filebase */
+    /* FIXME: take a filebase for screenshot mode */
     if (strcmp(name, "video") == 0)
         video_file = xstrdup(value);
     else if (strcmp(name, "codec") == 0)
@@ -575,6 +608,8 @@ static bool set_variable_screenshot(filter_set *handle,
         start_frameno = atoi(value);
     else if (strcmp(name, "bitrate") == 0)
         video_bitrate = atoi(value);
+    else if (strcmp(name, "allframes") == 0 && atoi(value))
+        video_sample_fps = false;
     else if (strcmp(name, "lag") == 0)
     {
         video_lag = atoi(value);

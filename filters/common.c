@@ -50,18 +50,13 @@ static bool procaddress_callback(function_call *call, void *data)
     void (*sym)(void);
 
     /* FIXME: some systems don't prototype glXGetProcAddressARB (it is,
-     * after all, and extension). That means extensions will probably
+     * after all, an extension). That means extensions will probably
      * not be intercepted.
      */
-#ifdef FUNC_glXGetProcAddressARB
-    switch (call->generic.id)
+#ifdef CFUNC_glXGetProcAddressARB
+    switch (canonical_call(call))
     {
-        /* Just in case glXGetProcAddress is ever promoted to core */
-#ifdef FUNC_glXGetProcAddress
-    case FUNC_glXGetProcAddress:
-#else
-    case FUNC_glXGetProcAddressARB:
-#endif
+    case CFUNC_glXGetProcAddressARB:
         if (!*call->typed.glXGetProcAddressARB.retn) break;
         sym = (void (*)(void))
             get_filter_set_symbol(NULL, (const char *) *call->typed.glXGetProcAddressARB.arg0);
