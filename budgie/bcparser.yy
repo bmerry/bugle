@@ -63,12 +63,12 @@ static void pt_substitute(param_or_type_list *l, const string &code)
         string::size_type pos = 0;
         while ((pos = ans.find("\\", pos)) < ans.length())
         {
-            int pos2 = pos + 1;
+            string::size_type pos2 = pos + 1;
             while (pos2 < ans.length()
                    && ans[pos2] >= '0'
                    && ans[pos2] <= '9') pos2++;
             int num = atoi(ans.substr(pos + 1, pos2 - pos - 1).c_str());
-            if (pos2 == pos + 1 || num < 0 || num >= l->nmatch)
+            if (pos2 == pos + 1 || num < 0 || num >= (int) l->nmatch)
             {
                 pos++;
                 continue;

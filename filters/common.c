@@ -19,6 +19,7 @@
 #if HAVE_CONFIG_H
 # include <config.h>
 #endif
+#define _POSIX_SOURCE
 #include "src/filters.h"
 #include "src/utils.h"
 #include "src/types.h"
