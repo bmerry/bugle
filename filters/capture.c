@@ -148,8 +148,8 @@ static AVFrame *allocate_video_frame(int fmt, int width, int height,
         fprintf(stderr, "failed to allocate frame\n");
         exit(1);
     }
-    if (create) buffer = xmalloc(size);
     size = avpicture_get_size(fmt, width, height);
+    if (create) buffer = xmalloc(size);
     avpicture_fill((AVPicture *) f, buffer, fmt, width, height);
     return f;
 }
@@ -433,7 +433,7 @@ static void screenshot_video()
     size_t out_size;
     int i, ret;
     struct timeval tv;
-    double t;
+    double t = 0.0;
 
     if (video_sample_fps)
     {

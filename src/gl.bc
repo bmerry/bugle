@@ -39,8 +39,8 @@ LENGTH PARAMETER glUniform([1234])[if]vARB 2 $1
 LENGTH PARAMETER glUniformMatrix([234])[if]vARB 3 $1
 TYPE PARAMETER glUniform([234])fvARB 2 TYPE_6GLvec\1
 TYPE PARAMETER glUniform([234])ivARB 2 TYPE_7GLivec\1
-TYPE PARAMETER glUniformMatrix([23])fvARB 2 TYPE_6GLmat\1
-TYPE PARAMETER glUniformMatrix4fvARB 2 TYPE_13GLfloatmatrix
+TYPE PARAMETER glUniformMatrix([23])fvARB 3 TYPE_6GLmat\1
+TYPE PARAMETER glUniformMatrix4fvARB 3 TYPE_13GLfloatmatrix
 TYPE PARAMETER glUniform([234])ivARB 2 TYPE_7GLimat\1
 
 LENGTH PARAMETER glRect[sifd]v 0 2

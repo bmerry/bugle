@@ -1,3 +1,6 @@
+* Fix crash in video capture (not sure how it ever worked)
+* Fix dumping bug (wrong field was being type overridden)
+
 0.0.20041025
 ------------
 * Redo libreadline detection to fall back gracefully if the library
