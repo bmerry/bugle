@@ -161,7 +161,8 @@ TESTS_ENVIRONMENT = BUGLE_FILTERS=$(srcdir)/tests/filters BUGLE_FILTER_DIR=filte
 # Extra files to distribute
 EXTRA_DIST = gl.bc.in $(BCFILES) src/data/gl.c src/data/overrides.h \
 	FAQ TROUBLESHOOTING \
-	doc/filters.html doc/objects.html doc/locks.txt doc/protocol.txt doc/examples/filters \
+	doc/filters.html doc/objects.html doc/locks.txt \
+        doc/protocol.txt doc/examples/filters doc/extensions.txt \
 	tests/filters
 
 # Note: automake ought to clean the various files in the .libs directories,

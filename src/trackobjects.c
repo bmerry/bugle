@@ -202,6 +202,32 @@ static bool trackobjects_glDeleteQueries(function_call *call, const callback_dat
 }
 #endif
 
+#if defined(GL_ARB_vertex_program) || defined(GL_ARB_fragment_program)
+static bool trackobjects_glBindProgramARB(function_call *call, const callback_data *data)
+{
+    /* NVIDIA driver 66.29 has a bug where glIsProgramARB will return
+     * false until glProgramStringARB is called. We work around this
+     * by blindly assuming that the bind succeeded, unless it is a bind
+     * to object 0.
+     */
+    if (*call->typed.glBindProgramARB.arg1 != 0)
+        trackobjects_add_single(BUGLE_TRACKOBJECTS_OLD_PROGRAM,
+                                *call->typed.glBindProgramARB.arg0,
+                                *call->typed.glBindProgramARB.arg1,
+                                -1);
+    return true;
+}
+
+static bool trackobjects_glDeleteProgramsARB(function_call *call, const callback_data *data)
+{
+    trackobjects_delete_multiple(BUGLE_TRACKOBJECTS_OLD_PROGRAM,
+                                 *call->typed.glDeleteProgramsARB.arg0,
+                                 *call->typed.glDeleteProgramsARB.arg1,
+                                 FUNC_glIsProgramARB);
+    return true;
+}
+#endif
+
 /* Shader and program objects are tricky, because unlike texture and buffer
  * objects they don't necessarily disappear immediately. Shaders disappear
  * when no longer attached to ANY program, and programs disappear when no
@@ -497,6 +523,10 @@ static bool initialise_trackobjects(filter_set *handle)
 #ifdef GL_ARB_occlusion_query
     bugle_register_filter_catches(f, GROUP_glBeginQueryARB, trackobjects_glBeginQuery);
     bugle_register_filter_catches(f, GROUP_glDeleteQueriesARB, trackobjects_glDeleteQueries);
+#endif
+#if defined(GL_ARB_vertex_program) || defined(GL_ARB_fragment_program)
+    bugle_register_filter_catches(f, GROUP_glBindProgramARB, trackobjects_glBindProgramARB);
+    bugle_register_filter_catches(f, GROUP_glDeleteProgramsARB, trackobjects_glDeleteProgramsARB);
 #endif
 #ifdef GL_ARB_shader_objects
     bugle_register_filter_catches(f, GROUP_glCreateShaderObjectARB, trackobjects_glCreateShaderObjectARB);

@@ -84,26 +84,49 @@ budgie_type bugle_gl_type_to_type(GLenum gl_type)
 {
     switch (gl_type)
     {
-    case GL_UNSIGNED_BYTE_3_3_2:
+#ifdef GL_EXT_packed_pixels
+    case GL_UNSIGNED_BYTE_3_3_2_EXT:
+#endif
+#ifdef GL_VERSION_1_2
     case GL_UNSIGNED_BYTE_2_3_3_REV:
+#endif
     case GL_UNSIGNED_BYTE:
         return TYPE_7GLubyte;
     case GL_BYTE:
         return TYPE_6GLbyte;
+#ifdef GL_EXT_packed_pixels
+    case GL_UNSIGNED_SHORT_4_4_4_4_EXT:
+    case GL_UNSIGNED_SHORT_5_5_5_1_EXT:
+#endif
+#ifdef GL_VERSION_1_2
     case GL_UNSIGNED_SHORT_5_6_5:
     case GL_UNSIGNED_SHORT_5_6_5_REV:
-    case GL_UNSIGNED_SHORT_4_4_4_4:
     case GL_UNSIGNED_SHORT_4_4_4_4_REV:
-    case GL_UNSIGNED_SHORT_5_5_5_1:
     case GL_UNSIGNED_SHORT_1_5_5_5_REV:
+#endif
+#ifdef GL_APPLE_ycbcr_422
+    case GL_UNSIGNED_SHORT_8_8_APPLE:
+    case GL_UNSIGNED_SHORT_8_8_REV_APPLE:
+#endif
     case GL_UNSIGNED_SHORT:
         return TYPE_8GLushort;
     case GL_SHORT:
         return TYPE_7GLshort;
-    case GL_UNSIGNED_INT_8_8_8_8:
+#ifdef GL_EXT_packed_pixels
+    case GL_UNSIGNED_INT_8_8_8_8_EXT:
+    case GL_UNSIGNED_INT_10_10_10_2_EXT:
+#endif
+#ifdef GL_VERSION_1_2
     case GL_UNSIGNED_INT_8_8_8_8_REV:
-    case GL_UNSIGNED_INT_10_10_10_2:
     case GL_UNSIGNED_INT_2_10_10_10_REV:
+#endif
+#ifdef GL_NV_packed_depth_stencil
+    case GL_UNSIGNED_INT_24_8_NV:
+#endif
+#ifdef GL_NV_texture_shader
+    case GL_UNSIGNED_INT_S8_S8_8_8_NV:
+    case GL_UNSIGNED_INT_8_8_S8_S8_REV_NV:
+#endif
     case GL_UNSIGNED_INT:
         return TYPE_6GLuint;
     case GL_INT:
@@ -136,7 +159,7 @@ budgie_type bugle_gl_type_to_type(GLenum gl_type)
     case GL_SAMPLER_2D_SHADOW_ARB:
     case GL_SAMPLER_2D_RECT_ARB:
     case GL_SAMPLER_2D_RECT_SHADOW_ARB:
-        return TYPE_6GLenum;
+        return TYPE_5GLint;
 #endif /* GL_SAMPLER_1D_ARB */
 #endif /* GL_ARB_shader_objects */
 #if defined(GL_VERSION_2_0) && !defined(GL_ARB_shader_objects)
@@ -161,7 +184,7 @@ budgie_type bugle_gl_type_to_type(GLenum gl_type)
     case GL_SAMPLER_2D_SHADOW:
     case GL_SAMPLER_2D_RECT:
     case GL_SAMPLER_2D_RECT_SHADOW:
-        return TYPE_6GLenum;
+        return TYPE_5GLint;
 #endif
     default:
         fprintf(stderr, "Do not know the correct type for %s; please email the author\n",
@@ -218,7 +241,12 @@ int bugle_gl_format_to_count(GLenum format, GLenum type)
         case GL_BGR:
             return 3;
         case GL_RGBA:
-        case GL_BGRA:
+#ifdef GL_EXT_bgra
+        case GL_BGRA_EXT:
+#endif
+#ifdef GL_EXT_abgr
+        case GL_ABGR_EXT:
+#endif
             return 4;
         default:
             fprintf(stderr, "unknown format %s; assuming 4 components\n",

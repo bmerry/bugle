@@ -2,8 +2,8 @@
 .SH NAME
 bugle \- An OpenGL debugging library
 .SH SYNOPSIS
-.BI BUGLE_CHAIN\fR= "chain " "LD_PRELOAD\fR=\fBlibbugle.so " prog
-.RI "[" args "...]"
+.BI BUGLE_CHAIN\fR= "chain " "LD_PRELOAD\fR=\fBlibbugle.so " program
+.RI "[" arguments "...]"
 .SH DESCRIPTION
 .B bugle
 is a library that intercepts calls to OpenGL functions, in much the
@@ -67,7 +67,7 @@ and wraps
 so that this checking is transparent to the application. This
 filter-set does little on its own, but provides this service to other
 filter-sets such as the
-.B log
+.B trace
 filter-set.
 .TP
 .B showerror
@@ -87,7 +87,8 @@ although they may not be.
 Forces the application to render in wireframe mode (i.e. with
 .B glPolygonMode
 set to
-.BR GL_LINE ), and attempts to disable texturing.
+.BR GL_LINE ),
+and attempts to disable texturing.
 It also forces a colour buffer clear after every frame, since some apps
 will look completely wrong otherwise.
 .TP
@@ -97,7 +98,7 @@ Sets
 to
 .BR GL_FRONT ,
 and does a few other things to try to make drawing to the front buffer
-work. This is particularly useful in conjunction with
+work. This is particularly useful in conjunction wth
 .B gldb
 with breakpoints set on drawing functions, to watch a frame being drawn
 piece by piece.
@@ -150,6 +151,14 @@ Sourcing vertex or index data from unreadable client memory.
 
 Sourcing vertex or index data from outside the valid range of a vertex
 buffer object.
+
+Calling
+.B glVertex
+from outside of
+.BR glBegin / glEnd .
+
+Setting client state from inside
+.BR glBegin / glEnd .
 
 Specifying indices to
 .BR glDrawRangeElements (3x)

@@ -32,31 +32,35 @@ static bugle_object_view trackextensions_view = 0;
 
 static void context_initialise(const void *key, void *data)
 {
-    const char *exts;
+    const char *glver, *glexts;
     const char *cur;
     bool *flags;
     int i;
     size_t len;
 
     flags = (bool *) data;
-    memset(flags, 0, sizeof(bool) * BUGLE_GLEXT_COUNT);
-    exts = (const char *) CALL_glGetString(GL_EXTENSIONS);
-    for (i = 0; i < BUGLE_GLEXT_COUNT; i++)
-    {
-        cur = exts;
-        len = strlen(bugle_glext_names[i]);
-        while ((cur = strstr(cur, bugle_glext_names[i])) != NULL)
+    memset(flags, 0, sizeof(bool) * BUGLE_EXT_COUNT);
+    glexts = (const char *) CALL_glGetString(GL_EXTENSIONS);
+    glver = (const char *) CALL_glGetString(GL_VERSION);
+    for (i = 0; i < BUGLE_EXT_COUNT; i++)
+        if (bugle_exts[i].gl_string)
+            flags[i] = strcmp(glver, bugle_exts[i].gl_string) >= 0;
+        else if (bugle_exts[i].glext_string)
         {
-            if ((cur == exts || cur[-1] == ' ')
-                && (cur[len] == ' ' || cur[len] == '\0'))
+            cur = glexts;
+            len = strlen(bugle_exts[i].glext_string);
+            while ((cur = strstr(cur, bugle_exts[i].glext_string)) != NULL)
             {
-                flags[i] = true;
-                break;
+                if ((cur == glexts || cur[-1] == ' ')
+                    && (cur[len] == ' ' || cur[len] == '\0'))
+                {
+                    flags[i] = true;
+                    break;
+                }
+                else
+                    cur += len;
             }
-            else
-                cur += len;
         }
-    }
 }
 
 static bool initialise_trackextensions(filter_set *handle)
@@ -64,18 +68,44 @@ static bool initialise_trackextensions(filter_set *handle)
     trackextensions_view = bugle_object_class_register(&bugle_context_class,
                                                        context_initialise,
                                                        NULL,
-                                                       sizeof(bool) * BUGLE_GLEXT_COUNT);
+                                                       sizeof(bool) * BUGLE_EXT_COUNT);
     return true;
 }
 
+/* The output can be inverted by passing ~ext instead of ext (which basically
+ * means "true if this extension is not present"). This is used in the
+ * state tables.
+ */
 bool bugle_gl_has_extension(int ext)
 {
-    bool *data;
+    const bool *data;
 
-    assert(0 <= ext && ext < BUGLE_GLEXT_COUNT);
-    data = (bool *) bugle_object_get_current_data(&bugle_context_class, trackextensions_view);
+    if (ext < 0) return !bugle_gl_has_extension(~ext);
+    assert(ext < BUGLE_EXT_COUNT);
+    data = (const bool *) bugle_object_get_current_data(&bugle_context_class, trackextensions_view);
     if (!data) return false;
     else return data[ext];
+}
+
+/* The output can be inverted by passing ~ext instead of ext (which basically
+ * means "true if none of these extensions are present"). This is used in the
+ * state tables.
+ */
+bool bugle_gl_has_extension_group(int ext)
+{
+    size_t i;
+    const bool *data;
+    const int *exts;
+
+    if (ext < 0) return !bugle_gl_has_extension_group(~ext);
+    assert(ext <= BUGLE_EXT_COUNT);
+    data = (const bool *) bugle_object_get_current_data(&bugle_context_class, trackextensions_view);
+    if (!data) return false;
+    exts = bugle_extgroups[ext];
+
+    for (i = 0; exts[i] != -1; i++)
+        if (data[exts[i]]) return true;
+    return false;
 }
 
 void trackextensions_initialise(void)

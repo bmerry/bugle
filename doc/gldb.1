@@ -3,7 +3,8 @@
 gldb \- Debugger front-end for the BuGLe library
 .SH SYNOPSIS
 .B gldb
-.I prog
+.I program
+.RI [ arguments ]
 .SH DESCRIPTION
 .B gldb
 is a front-end debugger to be used with the
@@ -81,9 +82,10 @@ the command without argument to see how the states are arranged, as
 some state is nested. For example, the width of the default 2D texture
 is referenced as
 
-.B texture[GL_TEXTURE_2D][0].level[0].GL_TEXTURE_WIDTH
+.B GL_TEXTURE_2D.0.0.GL_TEXTURE_WIDTH
 
-(the first zero is the texture object name).
+(the first zero is the texture object name). Tab completion is also
+supported.
 .TP
 .B screenshot \fIfilename\fR.ppm\fB
 Captures a screenshot from the back buffer, and saves it to
