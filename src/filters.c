@@ -25,6 +25,7 @@
 #include "common/linkedlist.h"
 #include "common/hashtable.h"
 #include "common/safemem.h"
+#include "common/threads.h"
 #include <stdio.h>
 #include <stddef.h>
 #include <string.h>
@@ -33,7 +34,6 @@
 #include <sys/types.h>
 #include <errno.h>
 #include <stdlib.h>
-#include <pthread.h>
 #if HAVE_DIRENT_H
 # include <dirent.h>
 # define NAMLEN(dirent) strlen((dirent)->d_name)
@@ -76,7 +76,7 @@ static bugle_linked_list filter_sets;
 static bugle_linked_list active_filters;
 static bugle_linked_list active_callbacks[NUMBER_OF_FUNCTIONS];
 static bool active_dirty = false;
-static pthread_mutex_t active_mutex = PTHREAD_MUTEX_INITIALIZER;
+static bugle_thread_mutex_t active_mutex = BUGLE_THREAD_MUTEX_INITIALIZER;
 
 /* hash table of linked lists of strings */
 static bugle_hash_table filter_dependencies;
@@ -330,9 +330,9 @@ static void enable_filter_set_r(filter_set *handle)
 
 void bugle_enable_filter_set(filter_set *handle)
 {
-    pthread_mutex_lock(&active_mutex);
+    bugle_thread_mutex_lock(&active_mutex);
     enable_filter_set_r(handle);
-    pthread_mutex_unlock(&active_mutex);
+    bugle_thread_mutex_unlock(&active_mutex);
 }
 
 static void disable_filter_set_r(filter_set *handle)
@@ -371,9 +371,9 @@ static void disable_filter_set_r(filter_set *handle)
 
 void bugle_disable_filter_set(filter_set *handle)
 {
-    pthread_mutex_lock(&active_mutex);
+    bugle_thread_mutex_lock(&active_mutex);
     disable_filter_set_r(handle);
-    pthread_mutex_unlock(&active_mutex);
+    bugle_thread_mutex_unlock(&active_mutex);
 }
 
 /* Note: caller must take active_mutex */
@@ -488,9 +488,10 @@ void run_filters(function_call *call)
 
     /* FIXME: this lock effectively makes the entire capture process a
      * critical section, even though changes to active_callbacks and
-     * active_dirty are rare. We need a read-write lock.
+     * active_dirty are rare. This may break the enable/disable commands
+     * in the debugger. We need a read-write lock.
      */
-    pthread_mutex_lock(&active_mutex);
+    bugle_thread_mutex_lock(&active_mutex);
     if (active_dirty)
     {
         repair_filter_order();
@@ -504,7 +505,7 @@ void run_filters(function_call *call)
         data.call_data = bugle_get_filter_set_call_state(call, cur->parent->parent);
         if (!(*cur->callback)(call, &data)) break;
     }
-    pthread_mutex_unlock(&active_mutex);
+    bugle_thread_mutex_unlock(&active_mutex);
 }
 
 filter_set *bugle_register_filter_set(const filter_set_info *info)

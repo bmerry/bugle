@@ -34,9 +34,7 @@
 #include "budgieutils.h"
 #include <setjmp.h>
 #include <dlfcn.h>
-#if HAVE_PTHREAD_H
-# include <pthread.h>
-#endif
+#include "common/threads.h"
 
 void budgie_dump_bitfield(unsigned int value, FILE *out,
                           bitfield_pair *tags, int count)
@@ -200,7 +198,7 @@ void budgie_make_indent(int indent, FILE *out)
         fputc(' ', out);
 }
 
-static pthread_once_t initialise_real_once = PTHREAD_ONCE_INIT;
+static bugle_thread_once_t initialise_real_once = BUGLE_THREAD_ONCE_INIT;
 
 static void initialise_real_work(void)
 {
@@ -236,7 +234,7 @@ void initialise_real(void)
      * call initialise_real if they are re-entered so that they can bypass
      * the filter chain.
      */
-    pthread_once(&initialise_real_once, initialise_real_work);
+    bugle_thread_once(&initialise_real_once, initialise_real_work);
 }
 
 /* Re-entrance protection. Note that we still wish to allow other threads
@@ -247,12 +245,12 @@ void initialise_real(void)
  * the interceptor, so we cannot rely on the interceptor to initialise us.
  */
 
-static pthread_key_t reentrance_key;
-static pthread_once_t reentrance_once = PTHREAD_ONCE_INIT;
+static bugle_thread_key_t reentrance_key;
+static bugle_thread_once_t reentrance_once = BUGLE_THREAD_ONCE_INIT;
 
 static void initialise_reentrance(void)
 {
-    pthread_key_create(&reentrance_key, NULL);
+    bugle_thread_key_create(&reentrance_key, NULL);
 }
 
 /* Sets the flag to mark entry, and returns true if we should call
@@ -265,13 +263,13 @@ bool check_set_reentrance(void)
      */
     bool ans;
 
-    pthread_once(&reentrance_once, initialise_reentrance);
-    ans = pthread_getspecific(reentrance_key) == NULL;
-    pthread_setspecific(reentrance_key, &ans);
+    bugle_thread_once(&reentrance_once, initialise_reentrance);
+    ans = bugle_thread_getspecific(reentrance_key) == NULL;
+    bugle_thread_setspecific(reentrance_key, &ans);
     return ans;
 }
 
 void clear_reentrance(void)
 {
-    pthread_setspecific(reentrance_key, NULL);
+    bugle_thread_setspecific(reentrance_key, NULL);
 }

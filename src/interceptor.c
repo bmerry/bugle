@@ -28,13 +28,11 @@
 #include "log.h"
 #include "common/hashtable.h"
 #include "common/safemem.h"
+#include "common/threads.h"
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
 #include <stdio.h>
-#if HAVE_PTHREAD_H
-# include <pthread.h>
-#endif
 
 #define FILTERFILE "/.bugle/filters"
 
@@ -156,7 +154,7 @@ static void initialise_core_filters(void)
     log_initialise();
 }
 
-static pthread_once_t init_key_once = PTHREAD_ONCE_INIT;
+static bugle_thread_once_t init_key_once = BUGLE_THREAD_ONCE_INIT;
 static void initialise_all(void)
 {
     bugle_initialise_hashing();
@@ -170,6 +168,6 @@ static void initialise_all(void)
 
 void interceptor(function_call *call)
 {
-    pthread_once(&init_key_once, initialise_all);
+    bugle_thread_once(&init_key_once, initialise_all);
     run_filters(call);
 }

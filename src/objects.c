@@ -23,14 +23,14 @@
 #if HAVE_CONFIG_H
 # include <config.h>
 #endif
-#include <stddef.h>
-#include <pthread.h>
-#include <string.h>
-#include <stdlib.h>
 #include "common/linkedlist.h"
 #include "common/safemem.h"
 #include "common/bool.h"
+#include "common/threads.h"
 #include "src/objects.h"
+#include <stddef.h>
+#include <string.h>
+#include <stdlib.h>
 
 typedef struct
 {
@@ -47,14 +47,14 @@ void bugle_object_class_init(bugle_object_class *klass, bugle_object_class *pare
     if (parent)
         klass->parent_view = bugle_object_class_register(parent, NULL, NULL, sizeof(bugle_object *));
     else
-        pthread_key_create(&klass->current, NULL);
+        bugle_thread_key_create(&klass->current, NULL);
 }
 
 void bugle_object_class_clear(bugle_object_class *klass)
 {
     bugle_list_clear(&klass->info);
     if (!klass->parent)
-        pthread_key_delete(klass->current);
+        bugle_thread_key_delete(klass->current);
 }
 
 bugle_object_view bugle_object_class_register(bugle_object_class *klass,
@@ -133,7 +133,7 @@ bugle_object *bugle_object_get_current(const bugle_object_class *klass)
         else return *(bugle_object **) ans;
     }
     else
-        return (bugle_object *) pthread_getspecific(klass->current);
+        return (bugle_object *) bugle_thread_getspecific(klass->current);
 }
 
 void *bugle_object_get_current_data(const bugle_object_class *klass, bugle_object_view view)
@@ -151,7 +151,7 @@ void bugle_object_set_current(const bugle_object_class *klass, bugle_object *obj
         if (tmp) *(bugle_object **) tmp = obj;
     }
     else
-        pthread_setspecific(klass->current, (void *) obj);
+        bugle_thread_setspecific(klass->current, (void *) obj);
 }
 
 void *bugle_object_get_data(const bugle_object_class *klass, bugle_object *obj, bugle_object_view view)

@@ -30,6 +30,7 @@
 #include "budgielib/state.h"
 #include "common/bool.h"
 #include "common/safemem.h"
+#include "common/threads.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -226,7 +227,7 @@ static bool initialise_unwindstack(filter_set *handle)
  */
 static const char *checks_error;
 static sigjmp_buf checks_buf;
-static pthread_mutex_t checks_mutex = PTHREAD_MUTEX_INITIALIZER;
+static bugle_thread_mutex_t checks_mutex = BUGLE_THREAD_MUTEX_INITIALIZER;
 
 static void checks_sigsegv_handler(int sig)
 {
@@ -272,7 +273,7 @@ static void checks_buffer_vbo(size_t size, const void *data,
     CALL_glBindBufferARB(GL_ARRAY_BUFFER_ARB, tmp);
     end = ((const char *) data - (const char *) NULL) + size;
     if (end > bsize)
-        pthread_kill(pthread_self(), SIGSEGV);
+        bugle_thread_raise(SIGSEGV);
 }
 #endif
 
@@ -526,7 +527,7 @@ static void checks_min_max(GLsizei count, GLenum gltype, const GLvoid *indices,
     struct sigaction act, old_act; \
     bool ret = true; \
     \
-    pthread_mutex_lock(&checks_mutex); \
+    bugle_thread_mutex_lock(&checks_mutex); \
     checks_error = NULL; \
     if (sigsetjmp(checks_buf, 1) == 1) ret = false; \
     if (ret) \
@@ -550,7 +551,7 @@ static void checks_min_max(GLsizei count, GLenum gltype, const GLvoid *indices,
             perror("failed to restore SIGSEGV handler"); \
             exit(1); \
         } \
-    pthread_mutex_unlock(&checks_mutex); \
+    bugle_thread_mutex_unlock(&checks_mutex); \
     return ret; \
     } else (void) 0
 

@@ -23,9 +23,9 @@
 # include <config.h>
 #endif
 #include <stddef.h>
-#include <pthread.h>
 #include "common/linkedlist.h"
 #include "common/bool.h"
+#include "common/threads.h"
 
 typedef size_t bugle_object_view;
 
@@ -33,7 +33,7 @@ typedef struct object_class_s
 {
     size_t count;     /* number of registrants */
     bugle_linked_list info;
-    pthread_key_t current;
+    bugle_thread_key_t current;
 
     struct object_class_s *parent;
     bugle_object_view parent_view; /* view where we store current of this class in parent */

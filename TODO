@@ -1,13 +1,15 @@
-Current rewrite:
+Current:
 ----------------
-- exploit per-context, per-filter state e.g. for video
+- check whether all dependencies on trackextensions are listed
+- check whether enable/disable in debugger still work (probably not!)
 - update docs (especially re variables)
 - help for variables
-- check whether all dependencies on trackextensions are listed
+- exploit per-context, per-filter state e.g. for video
 
 gldb
 ----
 - allow Ctrl-C to abort current line when reading commands
+- make one-letter shortcuts
 - set filter variables on the fly
 - enable reporting of segfaults
 - print full dump of current function

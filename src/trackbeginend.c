@@ -32,9 +32,6 @@
 #include "common/bool.h"
 #include <stddef.h>
 #include <GL/gl.h>
-#if HAVE_PTHREAD_H
-# include <pthread.h>
-#endif
 
 static bugle_object_view trackbeginend_view;
 

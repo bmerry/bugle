@@ -49,7 +49,8 @@ src_libbugleutils_la_SOURCES = \
 	common/safemem.c common/safemem.h \
 	common/bool.h common/protocol.h common/protocol.c \
 	common/hashtable.c common/hashtable.h \
-	common/linkedlist.c common/linkedlist.h
+	common/linkedlist.c common/linkedlist.h \
+        common/threads.h
 nodist_src_libbugleutils_la_SOURCES = \
 	src/names.c src/names.h \
 	src/gltokens.c src/glfuncs.c src/glfuncs.h \

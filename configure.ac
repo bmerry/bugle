@@ -31,9 +31,9 @@ AC_CHECK_LIB([history], [add_history], [
 AC_SUBST(READLINE_LIBS)
 
 THREAD_LIBS=""
+THREADS=BUGLE_THREADS_PTHREADS
 AC_CHECK_LIB([pthread], [pthread_create], [
-  THREAD_LIBS="-lpthread $THREAD_LIBS"], [], [])
-AC_SUBST(THREAD_LIBS)
+  THREAD_LIBS="-lpthread $THREAD_LIBS"], [THREADS=BUGLE_THREADS_SINGLE], [])
 
 AVCODEC_LIBS=""
 HAVE_LAVC=1
@@ -55,9 +55,10 @@ dnl Checks for header files
 AC_HEADER_STDC
 AC_HEADER_DIRENT
 AC_HEADER_STDBOOL
-AC_CHECK_HEADERS([sys/types.h stdlib.h stddef.h regex.h pthread.h])
+AC_CHECK_HEADERS([sys/types.h stdlib.h stddef.h regex.h])
 AC_CHECK_HEADERS([ffmpeg/avformat.h ffmpeg/avcodec.h], [], [HAVE_LAVC=0])
 AC_CHECK_HEADERS([readline/readline.h readline/history.h], [], [HAVE_READLINE=0])
+AC_CHECK_HEADERS([pthread.h], [], [THREADS=BUGLE_THREADS_SINGLE])
 
 GLINCLUDES="`CPP=\"$CPP\" $PERL -w $srcdir/gentokens/find_header.perl GL/gl.h` \
 `CPP=\"$CPP\" $PERL -w $srcdir/gentokens/find_header.perl GL/glx.h` \
@@ -92,7 +93,6 @@ dnl Checks for system services
 AC_PATH_XTRA
 
 dnl Set up some extra stuff
-dnl FIXME: add a --without-lavc option
 
 AC_ARG_WITH([lavc], AC_HELP_STRING([--without-lavc], [do not use libavcodec]),
             [test $withval = no && HAVE_LAVC=0], [])
@@ -100,10 +100,38 @@ test $HAVE_LAVC = 1 || AVCODEC_LIBS=""
 AC_SUBST(AVCODEC_LIBS)
 AC_DEFINE_UNQUOTED(HAVE_LAVC, $HAVE_LAVC, [non-zero when libavcodec is being used])
 
+AC_ARG_WITH([readline], AC_HELP_STRING([--without-readline], [do not use libreadline]),
+            [test $withval = no && HAVE_READLINE=0], [])
 test $HAVE_READLINE = 1 || READLINE_LIBS=""
 AC_SUBST(HAVE_READLINE)
 AC_DEFINE_UNQUOTED(HAVE_READLINE, $HAVE_READLINE, [non-zero when all the requirements for the readline library are met])
 
+AC_ARG_WITH([threads], AC_HELP_STRING([--with-threads=pthreads|single], [choose threading model [[auto]]]), [
+case $withval in
+  pthreads) THREADS=BUGLE_THREADS_PTHREADS ;;
+  single) THREADS=BUGLE_THREADS_SINGLE ;;
+  *) AC_MSG_ERROR([--with-threads must be either pthreads or single]) ;;
+esac], [])
+test $THREADS != BUGLE_THREADS_SINGLE || THREAD_LIBS=""
+AC_SUBST(THREAD_LIBS)
+AC_DEFINE_UNQUOTED(THREADS, $THREADS, [threading model])
+
 dnl Write out files
 AC_CONFIG_FILES([Makefile])
 AC_OUTPUT
+
+dnl Display configuration
+echo
+echo "Configuration:"
+case $HAVE_LAVC in
+  0) echo "        libavcodec: no" ;;
+  *) echo "        libavcodec: yes" ;;
+esac
+case $HAVE_READLINE in
+  0) echo "        readline: no" ;;
+  1) echo "        readline: yes" ;;
+esac
+case $THREADS in
+  BUGLE_THREADS_PTHREADS) echo "        threads: pthreads" ;;
+  BUGLE_THREADS_SINGLE) echo "        threads: single-threaded" ;;
+esac

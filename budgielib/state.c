@@ -21,10 +21,10 @@
 #endif
 #include "state.h"
 #include "common/safemem.h"
+#include "common/threads.h"
 #include <stddef.h>
 #include <stdlib.h>
 #include <string.h>
-#include <pthread.h>
 
 extern const state_spec *root_state_spec; /* defined in utils.c */
 static struct state_root_s *root_state = NULL;
@@ -91,7 +91,7 @@ void *budgie_get_state_current(state_generic *state)
     return state->data;
 }
 
-static pthread_once_t root_once = PTHREAD_ONCE_INIT;
+static bugle_thread_once_t root_once = BUGLE_THREAD_ONCE_INIT;
 static void create_root_state(void)
 {
     root_state = (struct state_root_s *) budgie_create_state(root_state_spec, NULL);
@@ -99,7 +99,7 @@ static void create_root_state(void)
 
 struct state_root_s *budgie_get_root_state(void)
 {
-    pthread_once(&root_once, create_root_state);
+    bugle_thread_once(&root_once, create_root_state);
     return root_state;
 }
 

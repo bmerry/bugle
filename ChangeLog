@@ -11,6 +11,7 @@
 * Make opaque bugle_object and bugle_object_view typedefs.
 * Redo the internals of object layer storage to avoid possible
   alignment problems.
+* Added a threading abstraction layer.
 
 0.0.20041123
 ------------

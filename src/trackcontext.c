@@ -27,12 +27,10 @@
 #include "budgielib/state.h"
 #include "common/bool.h"
 #include "common/hashtable.h"
+#include "common/threads.h"
 #include <assert.h>
 #include <stddef.h>
 #include <GL/glx.h>
-#if HAVE_PTHREAD_H
-# include <pthread.h>
-#endif
 
 bugle_object_class bugle_context_class;
 static bugle_hashptr_table context_objects;
@@ -71,7 +69,7 @@ static bool trackcontext_callback(function_call *call, const callback_data *data
     GLXContext ctx;
     state_generic *parent;
     state_7context_I *state;
-    static pthread_mutex_t context_mutex = PTHREAD_MUTEX_INITIALIZER;
+    static bugle_thread_mutex_t context_mutex = BUGLE_THREAD_MUTEX_INITIALIZER;
     bugle_object *obj;
 
     /* These calls may fail, so we must explicitly check for the
@@ -83,7 +81,7 @@ static bool trackcontext_callback(function_call *call, const callback_data *data
     else
     {
         parent = &budgie_get_root_state()->c_context.generic;
-        pthread_mutex_lock(&context_mutex);
+        bugle_thread_mutex_lock(&context_mutex);
         if (!(state = (state_7context_I *) budgie_get_state_index(parent, &ctx)))
         {
             state = (state_7context_I *) budgie_add_state_index(parent, &ctx, NULL);
@@ -96,7 +94,7 @@ static bool trackcontext_callback(function_call *call, const callback_data *data
             bugle_object_set_current(&bugle_context_class, obj);
             tracker_set_context_state(state);
         }
-        pthread_mutex_unlock(&context_mutex);
+        bugle_thread_mutex_unlock(&context_mutex);
     }
     return true;
 }
