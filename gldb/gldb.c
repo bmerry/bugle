@@ -156,6 +156,16 @@ static pid_t execute(void)
         perror("fork failed");
         exit(1);
     case 0: /* Child */
+        /* We don't want the child to receive Ctrl-C, but we want to
+         * allow it to write to the terminal. We move it into a background
+         * process group, and it inherits SIG_IGN on SIGTTIN and SIGTTOU.
+         *
+         * However, we don't want the child to have SIGINT and SIGCHLD
+         * blocked.
+         */
+        setpgid(0, 0);
+        sigprocmask(SIG_SETMASK, &unblocked, NULL);
+
         if (chain)
             check(setenv("BUGLE_CHAIN", chain, 1), "setenv");
         else
@@ -184,7 +194,7 @@ static pid_t execute(void)
     }
 }
 
-static void setup_sigchld(void)
+static void setup_signals(void)
 {
     struct sigaction act;
 
@@ -208,6 +218,16 @@ static void setup_sigchld(void)
     sigemptyset(&act.sa_mask);
     sigaddset(&act.sa_mask, SIGCHLD);
     check(sigaction(SIGINT, &act, NULL), "sigaction");
+
+    /* We do various things with process groups, and gdb does some more.
+     * To prevent any embarrassing stoppages we simply allow everyone
+     * to use the terminal. The only case where this might blow up is
+     * if gldb is backgrounded by the shell.
+     */
+    act.sa_handler = SIG_IGN;
+    sigemptyset(&act.sa_mask);
+    check(sigaction(SIGTTIN, &act, NULL), "sigaction");
+    check(sigaction(SIGTTOU, &act, NULL), "sigaction");
 }
 
 static bool command_cont(const char *cmd,
@@ -332,6 +352,7 @@ static bool command_backtrace(const char *cmd,
         perror("fork");
         exit(1);
     case 0: /* child */
+        sigprocmask(SIG_SETMASK, &unblocked, NULL);
         xasprintf(&pid_str, "%ld", (long) child_pid);
         /* FIXME: if in_pipe[1] or out_pipe[0] is already 0 or 1 */
         check(dup2(in_pipe[1], 1), "dup2");
@@ -393,6 +414,69 @@ static bool command_chain(const char *cmd,
     }
     if (running)
         fputs("The change will only take effect when the program is restarted.\n", stdout);
+    return false;
+}
+
+static bool command_gdb(const char *cmd,
+                        const char *line,
+                        const char * const *tokens)
+{
+    pid_t pid, pgrp, tc_pgrp;
+    char *pid_str;
+    int status;
+    struct sigaction act, real_act;
+    bool fore;
+
+    /* We don't want the SIGCHLD handler to perform the longjmp when gdb
+     * exits. We disable the handler, and once we've re-enabled it we
+     * use waitpid with WNOHANG to see if the real program died in the
+     * meantime.
+     */
+    act.sa_handler = SIG_DFL;
+    act.sa_flags = 0;
+    sigemptyset(&act.sa_mask);
+    check(sigaction(SIGCHLD, &act, &real_act), "sigaction");
+    check(sigprocmask(SIG_SETMASK, &unblocked, NULL), "sigprocmask");
+
+    /* By default, gdb will be in the same process group and thus we
+     * will receive the same terminal control signals, like SIGINT.
+     * gdb uses these signals but we don't want to know about them,
+     * so we move gdb into its own foreground process group if possible.
+     * Note that we don't check return values, since POSIX doesn't
+     * require job control.
+     */
+    tc_pgrp = tcgetpgrp(1);
+    pgrp = getpgrp();
+    fore = pgrp == tc_pgrp && pgrp != -1;
+    switch (pid = fork())
+    {
+    case -1:
+        perror("fork");
+        exit(1);
+    case 0: /* child */
+        setpgid(0, 0);
+        if (fore) tcsetpgrp(1, getpgrp());
+        sigprocmask(SIG_SETMASK, &unblocked, NULL);
+
+        printf("pid = %ld\n", (long) child_pid);
+        xasprintf(&pid_str, "%ld", (long) child_pid);
+        execlp("gdb", "gdb", prog, pid_str, NULL);
+        perror("could not invoke gdb");
+        free(pid_str);
+        exit(1);
+    default: /* parent */
+        RESTART(waitpid(pid, &status, 0));
+        /* Reclaim foreground */
+        if (fore) tcsetpgrp(1, pgrp);
+    }
+    check(sigprocmask(SIG_SETMASK, &blocked, NULL), "sigprocmask");
+    check(sigaction(SIGCHLD, &real_act, NULL), "sigaction");
+    /* Now check if the real child died in the meantime */
+    pid = waitpid(child_pid, &child_status, WNOHANG);
+    check(pid, "waitpid");
+    /* A return value of 2 indicates that we have done the waiting */
+    if (pid == child_pid)
+        siglongjmp(chld_env, 2);
     return false;
 }
 
@@ -559,17 +643,21 @@ static bool handle_responses(uint32_t resp)
 
 static void main_loop(void)
 {
-    int form;
     uint32_t resp;
 
-    setup_sigchld();
+    setup_signals();
     while (true)
     {
-        if ((form = sigsetjmp(chld_env, 1)) != 0)
+        /* POSIX makes some strange requirements on how sigsetjmp is
+         * used. In particular the result is not guaranteed to be
+         * assignable.
+         */
+        switch (sigsetjmp(chld_env, 1))
         {
-            /* If we get here, then the child died. */
-            if (form == 1) /* i.e. not from command_backtrace or similar */
-                RESTART(waitpid(child_pid, &child_status, 0));
+        case 1: /* from the signal handler */
+            RESTART(waitpid(child_pid, &child_status, 0));
+            /* fall through */
+        case 2: /* from normal code that detected the exit */
             if (WIFEXITED(child_status))
             {
                 if (WEXITSTATUS(child_status) == 0)
@@ -585,40 +673,51 @@ static void main_loop(void)
             assert(running == true);
             running = false;
             started = false;
-            continue;
-        }
+            break;
+        case 0: /* normal return from sigsetjmp */
 
-        if (sigsetjmp(int_env, 1)
-            && started)
-        {
-            /* Ctrl-C was pressed. Send an asynchonous stop request. */
-            send_code(lib_out, REQ_ASYNC);
-        }
-        else
-        {
-            if (!running || started)
-                handle_commands();
-        }
-
-        /* Wait for either input on the pipe, or for the child to die, or
-         * for SIGINT. In the last two cases we hit sigsetjmp's.
-         */
-        do
-        {
-            check(sigprocmask(SIG_SETMASK, &unblocked, NULL), "sigprocmask");
-            if (!recv_code(lib_in, &resp))
+            /* Again, POSIX requirements prevent these two tests from being
+             * merged.
+             */
+            if (sigsetjmp(int_env, 1))
             {
-                /* Failure here means EOF, which hopefully means that the
-                 * program will now terminate.
-                 */
-                check(sigprocmask(SIG_SETMASK, &blocked, NULL), "sigprocmask");
-                sigsuspend(&unblocked);
-                /* Hopefully we won't even reach here, but hit the sigsetjmp. */
-                continue;
+                if (started)
+                {
+                    /* Ctrl-C was pressed. Send an asynchonous stop request. */
+                    send_code(lib_out, REQ_ASYNC);
+                }
+                else
+                {
+                    if (!running || started)
+                        handle_commands();
+                }
             }
-            check(sigprocmask(SIG_SETMASK, &blocked, NULL), "sigprocmask");
+            else /* default code */
+            {
+                if (!running || started)
+                    handle_commands();
+            }
+
+            /* Wait for either input on the pipe, or for the child to die, or
+             * for SIGINT. In the last two cases we hit sigsetjmp's.
+             */
+            do
+            {
+                check(sigprocmask(SIG_SETMASK, &unblocked, NULL), "sigprocmask");
+                if (!recv_code(lib_in, &resp))
+                {
+                    /* Failure here means EOF, which hopefully means that the
+                     * program will now terminate.
+                     */
+                    check(sigprocmask(SIG_SETMASK, &blocked, NULL), "sigprocmask");
+                    sigsuspend(&unblocked);
+                    /* Hopefully we won't even reach here, but hit the sigsetjmp. */
+                    continue;
+                }
+                check(sigprocmask(SIG_SETMASK, &blocked, NULL), "sigprocmask");
+            }
+            while (!handle_responses(resp));
         }
-        while (!handle_responses(resp));
     }
 }
 
@@ -703,6 +802,7 @@ const command_info commands[] =
     { "bt", "Alias for backtrace", true, command_backtrace, NULL },
     { "chain", "Set the filter-set chain", false, command_chain, NULL },
     { "continue", "Continue running the program", true, command_cont, NULL },
+    { "gdb", "Stop in the program in gdb", false, command_gdb, NULL },
     { "help", "Show the list of commands", false, command_help, generate_commands },
     { "kill", "Kill the program", true, command_kill, NULL },
     { "run", "Start the program", false, command_run, NULL },
