@@ -1,7 +1,7 @@
 noinst_PROGRAMS = budgie/budgie gentokens/gentokens
 noinst_LTLIBRARIES = budgie/libbudgie.la
 noinst_HEADERS = budgie/tree.def
-lib_LTLIBRARIES = src/libfakegl.la
+lib_LTLIBRARIES = src/libbugle.la
 pkglib_LTLIBRARIES = \
 	filters/common.la \
 	filters/modify.la \
@@ -22,30 +22,38 @@ budgie_libbudgie_la_SOURCES = \
 	budgielib/budgieutils.c budgielib/budgieutils.h \
 	budgielib/state.c budgielib/state.h
 
-src_libfakegl_la_SOURCES = \
+src_libbugle_la_SOURCES = \
 	src/interceptor.c src/filters.c src/filters.h \
-	src/gldump.c src/gldump.h src/gltokens.c \
+	src/gldump.c src/gldump.h \
+	src/gltokens.h \
 	src/linkedlist.c src/linkedlist.h \
 	src/canon.c src/canon.h \
-	src/glstate.h src/glstate.c
-nodist_src_libfakegl_la_SOURCES = \
-	src/lib.c src/lib.h src/utils.c src/utils.h src/types.c src/types.h
+	src/glstate.c src/glstate.h \
+	src/safemem.c src/safemem.h \
+	common/bool.h 
+nodist_src_libbugle_la_SOURCES = \
+	src/lib.c src/lib.h src/utils.c \
+	src/utils.h src/types.c src/types.h \
+	src/gltokens.c
 BUILT_SOURCES = src/lib.h src/utils.h src/types.h
-src_libfakegl_la_LIBADD = budgie/libbudgie.la
-src_libfakegl_la_LDFLAGS = -export-dynamic
-EXTRA_src_libfakegl_la_SOURCES = src/gl.bc src/data/gl.c src/data/overrides.h
+src_libbugle_la_LIBADD = budgie/libbudgie.la
+src_libbugle_la_LDFLAGS = -export-dynamic
+
+# This is not the intended use of EXTRA..., but it forces the files into
+# the distribution. It would also work to use EXTRA_DIST
+EXTRA_src_libbugle_la_SOURCES = src/gl.bc src/data/gl.c src/data/gl.tu src/data/overrides.h
 
 # Generated files that generate other files
 
 src/data/gl.tu: src/data/gl.c src/data/overrides.h
-	mkdir -p src/data
+	$(srcdir)/mkinstalldirs src/data
 	$(CC) -fdump-translation-unit -c $(srcdir)/src/data/gl.c -o src/data/gl.o
 	rm -f src/data/gl.o
 	mv gl.c.tu src/data/gl.tu
 
 src/types.c src/types.h src/utils.c src/utils.h src/lib.c src/lib.h: budgie/budgie src/data/gl.tu src/gl.bc Makefile
-	mkdir -p src
-	budgie/budgie -c $(srcdir)/src/gl.bc -t src/data/gl.tu -o src/utils -T src/types -l src/lib
+	$(srcdir)/mkinstalldirs src
+	budgie/budgie -c $(srcdir)/src/gl.bc -t `test -f src/data/gl.tu || echo '$(srcdir)/src/data/gl.tu'` -o src/utils -T src/types -l src/lib
 
 gentokens_gentokens_SOURCES = gentokens/gentokens.c
 BUILT_SOURCES += src/gltokens.c
@@ -65,4 +73,5 @@ filters_tracker_la_LDFLAGS = -module -avoid-version
 filters_debugger_la_SOURCES = filters/debugger.c
 filters_debugger_la_LDFLAGS = -module -avoid-version
 
-CLEANFILES = src/types.c src/types.h src/utils.c src/utils.h src/lib.c src/lib.h src/data/gl.tu
+CLEANFILES = src/types.c src/types.h src/utils.c src/utils.h src/lib.c src/lib.h src/gltokens.c
+MAINTAINERCLEANFILES = src/data/gl.tu

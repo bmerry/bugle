@@ -4,8 +4,8 @@
 #include "src/filters.h"
 #include "src/utils.h"
 #include "src/types.h"
+#include "common/bool.h"
 #include <stdio.h>
-#include <stdbool.h>
 
 /* Invoke filter-set */
 
@@ -33,7 +33,7 @@ static bool log_callback(function_call *call, void *data)
 
 static bool initialise_log(filter_set *handle)
 {
-    log_file = fopen("/tmp/fakegl.log", "w");
+    log_file = fopen("/tmp/bugle.log", "w");
     if (!log_file) return false;
     register_filter(handle, "log", log_callback);
     register_filter_depends("log", "invoke");

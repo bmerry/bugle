@@ -6,7 +6,7 @@
 #include "src/types.h"
 #include "src/canon.h"
 #include "budgielib/state.h"
-#include <stdbool.h>
+#include "common/bool.h"
 #include <assert.h>
 
 static state_7context_I *context_state = NULL;

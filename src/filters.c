@@ -1,20 +1,35 @@
 #if HAVE_CONFIG_H
 # include <config.h>
 #endif
-#define _GNU_SOURCE
 #include "src/filters.h"
 #include "src/types.h"
 #include "src/utils.h"
 #include "src/linkedlist.h"
+#include "src/safemem.h"
 #include <stdio.h>
 #include <stddef.h>
 #include <string.h>
 #include <dlfcn.h>
 #include <assert.h>
 #include <sys/types.h>
-#include <dirent.h>
 #include <errno.h>
 #include <stdlib.h>
+#if HAVE_DIRENT_H
+# include <dirent.h>
+# define NAMLEN(dirent) strlen((dirent)->d_name)
+#else
+# define dirent direct
+# define NAMLEN(dirent) (dirent)->d_namlen
+# if HAVE_SYS_NDIR_H
+#  include <sys/ndir.h>
+# endif
+# if HAVE_SYS_DIR_H
+#  include <sys/dir.h>
+# endif
+# if HAVE_NDIR_H
+#  include <ndir.h>
+# endif
+#endif
 
 static linked_list filter_sets;
 static linked_list active_filters;
@@ -54,11 +69,11 @@ void initialise_filters(void)
         len = strlen(ent->d_name);
         if (len < 3) continue;
         if (strcmp(ent->d_name + len - 3, ".so") != 0) continue;
-        full_name = (char *) malloc(strlen(PKGLIBDIR) + strlen(ent->d_name) + 2);
+        full_name = (char *) xmalloc(strlen(PKGLIBDIR) + strlen(ent->d_name) + 2);
         sprintf(full_name, PKGLIBDIR "/%s", ent->d_name);
         handle = dlopen(full_name, RTLD_LAZY);
         if (handle == NULL) continue;
-        init = dlsym(handle, "initialise_filter_library");
+        init = (void (*)(void)) dlsym(handle, "initialise_filter_library");
         if (init == NULL) continue;
         current_dl_handle = handle;
         (*init)();
@@ -152,8 +167,8 @@ filter_set *register_filter_set(const char *name,
 {
     filter_set *s;
 
-    s = (filter_set *) malloc(sizeof(filter_set));
-    s->name = strdup(name);
+    s = (filter_set *) xmalloc(sizeof(filter_set));
+    s->name = xstrdup(name);
     list_init(&s->filters);
     s->init = init;
     s->done = done;
@@ -170,8 +185,8 @@ void register_filter(filter_set *handle, const char *name,
 {
     filter *f;
 
-    f = (filter *) malloc(sizeof(filter));
-    f->name = strdup(name);
+    f = (filter *) xmalloc(sizeof(filter));
+    f->name = xstrdup(name);
     f->callback = callback;
     f->parent = handle;
     list_append(&handle->filters, f);
@@ -179,14 +194,14 @@ void register_filter(filter_set *handle, const char *name,
 
 void register_filter_depends(const char *after, const char *before)
 {
-    list_append(&filter_dependencies[0], strdup(after));
-    list_append(&filter_dependencies[1], strdup(before));
+    list_append(&filter_dependencies[0], xstrdup(after));
+    list_append(&filter_dependencies[1], xstrdup(before));
 }
 
 void register_filter_set_depends(const char *base, const char *dep)
 {
-    list_append(&filter_set_dependencies[0], strdup(base));
-    list_append(&filter_set_dependencies[1], strdup(dep));
+    list_append(&filter_set_dependencies[0], xstrdup(base));
+    list_append(&filter_set_dependencies[1], xstrdup(dep));
 }
 
 void register_filter_set_call_state(filter_set *handle, size_t bytes)
@@ -194,7 +209,7 @@ void register_filter_set_call_state(filter_set *handle, size_t bytes)
     handle->offset = call_data_size;
     call_data_size += bytes;
     if (!call_data)
-        call_data = malloc(call_data_size);
+        call_data = xmalloc(call_data_size);
 }
 
 filter_set *get_filter_set_handle(const char *name)

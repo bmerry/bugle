@@ -38,7 +38,8 @@ GLenum gl_token_to_enum(const char *name)
         if (strcmp(name, gl_tokens_name[m].name) < 0) r = m;
         else l = m;
     }
-    assert(strcmp(gl_tokens_name[l].name, name) == 0);
+    if (strcmp(gl_tokens_name[l].name, name) != 0)
+        return (GLenum) -1;
     return gl_tokens_name[l].value;
 }
 

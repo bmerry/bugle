@@ -6,8 +6,8 @@
 #include "src/types.h"
 #include "src/canon.h"
 #include "budgielib/state.h"
+#include "common/bool.h"
 #include <stdio.h>
-#include <stdbool.h>
 
 static state_7context_I *(*get_context_state)(void);
 
@@ -57,8 +57,9 @@ static bool initialise_error(filter_set *handle)
     register_filter_depends("invoke", "error_pre");
     register_filter_depends("error_post", "invoke");
     register_filter_set_depends("error", "trackcontext");
-    get_context_state = get_filter_set_symbol(get_filter_set_handle("trackcontext"),
-                                              "get_context_state");
+    get_context_state = (state_7context_I *(*)(void))
+        get_filter_set_symbol(get_filter_set_handle("trackcontext"),
+                              "get_context_state");
     return true;
 }
 

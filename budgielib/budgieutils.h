@@ -3,7 +3,7 @@
 
 #include <stdio.h>
 #include <stddef.h>
-#include <stdbool.h>
+#include "common/bool.h"
 
 typedef int budgie_function;
 typedef int budgie_type;

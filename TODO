@@ -1,11 +1,7 @@
 - clean shutdown of filters
-- use const function_call * everywhere
 - make dump_any_type table-driven
-- type conversion
-- test -O2
-- autoconf tests (e.g. regex, -fdump-translation-unit, strdup)
+- autoconf tests (e.g. regex)
 - autoconf test for GLENUM_IS_GLUINT
-- write safe allocators (xmalloc, xstrdup)
 - control over filter chain
 - debug module
 - filter chain variables

@@ -1,8 +1,9 @@
-#include <stdlib.h>
-#include "linkedlist.h"
 #if HAVE_CONFIG_H
 # include <config.h>
 #endif
+#include <stdlib.h>
+#include "linkedlist.h"
+#include "safemem.h"
 
 void list_init(linked_list *l)
 {
@@ -23,7 +24,7 @@ list_node *list_prepend(linked_list *l, void *data)
 {
     list_node *n;
 
-    n = (list_node *) malloc(sizeof(list_node));
+    n = (list_node *) xmalloc(sizeof(list_node));
     n->prev = NULL;
     n->next = l->head;
     n->data = data;
@@ -36,7 +37,7 @@ list_node *list_prepend(linked_list *l, void *data)
 list_node *list_append(linked_list *l, void *data)
 {
     list_node *n;
-    n = (list_node *) malloc(sizeof(list_node));
+    n = (list_node *) xmalloc(sizeof(list_node));
     n->next = NULL;
     n->prev = l->tail;
     n->data = data;
@@ -51,7 +52,7 @@ list_node *list_insert_before(linked_list *l, list_node *node, void *data)
     list_node *n;
 
     if (node == l->head) return list_prepend(l, data);
-    n = (list_node *) malloc(sizeof(list_node));
+    n = (list_node *) xmalloc(sizeof(list_node));
     n->data = data;
     n->prev = node->prev;
     n->prev->next = n;
@@ -65,7 +66,7 @@ list_node *list_insert_after(linked_list *l, list_node *node, void *data)
     list_node *n;
 
     if (node == l->tail) return list_append(l, data);
-    n = (list_node *) malloc(sizeof(list_node));
+    n = (list_node *) xmalloc(sizeof(list_node));
     n->data = data;
     n->next = node->next;
     n->next->prev = n;

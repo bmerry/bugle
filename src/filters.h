@@ -4,10 +4,10 @@
 #if HAVE_CONFIG_H
 # include <config.h>
 #endif
-#include <stdbool.h>
 #include <stddef.h>
 #include "src/types.h"
 #include "src/linkedlist.h"
+#include "common/bool.h"
 
 struct filter_set_s;
 

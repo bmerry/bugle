@@ -6,10 +6,10 @@
 #include <stddef.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdbool.h>
 #include <unistd.h>
 #include <signal.h>
 #include <errno.h>
+#include "common/bool.h"
 #include "budgieutils.h"
 #include <setjmp.h>
 
@@ -60,6 +60,7 @@ void dump_any_call(const generic_function_call *call, int indent, FILE *out)
 {
     size_t i;
     const function_data *data;
+    parameter_dumper cur_dumper;
 
     make_indent(indent, out);
     data = &function_table[call->id];
@@ -68,7 +69,7 @@ void dump_any_call(const generic_function_call *call, int indent, FILE *out)
     for (i = 0; i < data->num_parameters; i++)
     {
         if (i) fputs(", ", out);
-        parameter_dumper cur_dumper = data->parameters[i].dumper;
+        cur_dumper = data->parameters[i].dumper;
         if (!cur_dumper || !(*cur_dumper)(call, i, call->args[i], out))
             dump_any_type(get_arg_type(call, i),
                           call->args[i],
@@ -79,7 +80,7 @@ void dump_any_call(const generic_function_call *call, int indent, FILE *out)
     if (call->ret)
     {
         fputs(" = ", out);
-        parameter_dumper cur_dumper = data->retn.dumper;
+        cur_dumper = data->retn.dumper;
         if (!cur_dumper || !(*cur_dumper)(call, -1, call->ret, out))
             dump_any_type(get_arg_type(call, -1),
                           call->ret,

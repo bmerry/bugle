@@ -2,7 +2,7 @@
 #include "src/utils.h"
 #include "src/types.h"
 #include "src/canon.h"
-#include <stdbool.h>
+#include "common/bool.h"
 
 /* Wireframe filter-set */
 

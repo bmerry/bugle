@@ -3,7 +3,7 @@
 #if HAVE_CONFIG_H
 # include <config.h>
 #endif
-#include <stdbool.h>
+#include "common/bool.h"
 
 typedef struct list_node_s
 {

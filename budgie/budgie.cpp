@@ -504,7 +504,7 @@ static void headers()
     utilhead << "#ifndef UTILS_H\n";
     utilhead << "#define UTILS_H\n\n";
     utilhead << "#include <stdio.h>\n";
-    utilhead << "#include <stdbool.h>\n";
+    utilhead << "#include \"common/bool.h\"\n";
     utilhead << "#include <stdlib.h>\n";
     utilhead << "#include <string.h>\n";
     utilhead << "#include \"" << typebase << ".h\"\n";

@@ -6,8 +6,8 @@
 #include "src/types.h"
 #include "src/canon.h"
 #include "budgielib/state.h"
+#include "common/bool.h"
 #include <stdio.h>
-#include <stdbool.h>
 
 static FILE *in_pipe, *out_pipe;
 
@@ -60,6 +60,8 @@ static bool debugger_callback(function_call *call, void *data)
         fputs("dumping state\n", out_pipe);
         dump_state(&get_root_state()->generic, 0);
     }
+    else if (strcmp(line, "quit\n") == 0)
+        exit(0);
     return true;
 }
 

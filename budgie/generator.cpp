@@ -218,10 +218,6 @@ static string make_dumper(tree_node_p node, bool prototype)
         return out.str();
     }
     out << "\n{\n";
-    // If there is a type override, handle it
-    if (dump_overrides.count(node))
-        out << "    if (" << dump_overrides[node]
-            << "((const void *) value, count, out)) return;\n";
     // Bitfields are special
     if (bitfield_types.count(node))
     {
@@ -236,8 +232,11 @@ static string make_dumper(tree_node_p node, bool prototype)
                 out << ",";
             out << "\n";
         }
-        out << "    };\n"
-            << "    dump_bitfield(*value, out, tokens, " << tokens.size() << ");\n";
+        out << "    };\n";
+        if (dump_overrides.count(node))
+            out << "    if (" << dump_overrides[node]
+                << "((const void *) value, count, out)) return;\n";
+        out << "    dump_bitfield(*value, out, tokens, " << tokens.size() << ");\n";
     }
     else
     {
@@ -245,6 +244,9 @@ static string make_dumper(tree_node_p node, bool prototype)
         switch (TREE_CODE(node))
         {
         case ENUMERAL_TYPE:
+            if (dump_overrides.count(node))
+                out << "    if (" << dump_overrides[node]
+                    << "((const void *) value, count, out)) return;\n";
             out << "    switch (*value)\n"
                 << "    {\n";
             tmp = TYPE_VALUES(node);
@@ -257,27 +259,37 @@ static string make_dumper(tree_node_p node, bool prototype)
             out << "    }\n";
             break;
         case INTEGER_TYPE:
+            if (dump_overrides.count(node))
+                out << "    if (" << dump_overrides[node]
+                    << "((const void *) value, count, out)) return;\n";
             // FIXME: long long types; unsigned types
             out << "    fprintf(out, \"%ld\", (long) *value);\n";
             break;
         case REAL_TYPE:
+            if (dump_overrides.count(node))
+                out << "    if (" << dump_overrides[node]
+                    << "((const void *) value, count, out)) return;\n";
             // FIXME: long double
             out << "    fprintf(out, \"%f\", (double) *value);\n";
             break;
         case ARRAY_TYPE:
+            out << "    int size;\n"
+                << "    budgie_type type;\n"
+                << "    int i;\n";
+            if (dump_overrides.count(node))
+                out << "    if (" << dump_overrides[node]
+                    << "((const void *) value, count, out)) return;\n";
             if (TYPE_DOMAIN(node) != NULL_TREE) // find size
             {
                 int size = TREE_INT_CST_LOW(TYPE_MAX_VALUE(TYPE_DOMAIN(node))) + 1;
-                out << "    int size = " << size << ";\n";
+                out << "    size = " << size << ";\n";
             }
             else
-                out << "    int size = count;\n";
+                out << "    size = count;\n";
             child = TREE_TYPE(node); // array element type
-            if (dumpable(child))
-                out << "    int i;\n";
             out << "    fputs(\"{ \", out);\n";
             // allow for type overrides of the elements
-            out << "    budgie_type type = get_type(TYPE_" << type_to_id(child) << ");\n";
+            out << "    type = get_type(TYPE_" << type_to_id(child) << ");\n";
             out << "    for (i = 0; i < size; i++)\n"
                 << "    {\n";
             if (dumpable(child))
@@ -293,15 +305,19 @@ static string make_dumper(tree_node_p node, bool prototype)
         case POINTER_TYPE:
             child = TREE_TYPE(node); // pointed to type
             if (dumpable(child))
-                out << "    int i;\n";
-            out << "    fprintf(out, \"%p\", *value);\n";
+                out << "    int i;\n"
+                    << "    budgie_type type;\n";
+            if (dump_overrides.count(node))
+                out << "    if (" << dump_overrides[node]
+                    << "((const void *) value, count, out)) return;\n";
+            out << "    fprintf(out, \"%p\", (void *) *value);\n";
             if (dumpable(child))
             {
                 out << "    if (*value)\n"
                     << "    {\n"
-                    << "        fputs(\" -> \", out);\n"
                     // handle type overrides
-                    << "        budgie_type type = get_type(TYPE_" << type_to_id(child) << ");\n"
+                    << "        type = get_type(TYPE_" << type_to_id(child) << ");\n"
+                    << "        fputs(\" -> \", out);\n"
                     // -1 means a simple pointer, not pointer to array
                     << "        if (count < 0)\n"
                     << "            dump_any_type(type, value, "
@@ -324,8 +340,11 @@ static string make_dumper(tree_node_p node, bool prototype)
         case RECORD_TYPE:
         case UNION_TYPE:
             { // block to allow "first" to be declared in this scope
-                out << "    fputs(\"{ \", out);\n"
-                    << "    budgie_type type;\n";
+                out << "    budgie_type type;\n";
+                if (dump_overrides.count(node))
+                    out << "    if (" << dump_overrides[node]
+                        << "((const void *) value, count, out)) return;\n";
+                out << "    fputs(\"{ \", out);\n";
                 tmp = TYPE_FIELDS(node);
                 bool first = true;
                 while (tmp != NULL_TREE)
@@ -347,6 +366,9 @@ static string make_dumper(tree_node_p node, bool prototype)
             }
             break;
         default:
+            if (dump_overrides.count(node))
+                out << "    if (" << dump_overrides[node]
+                    << "((const void *) value, count, out)) return;\n";
             out << "    fputs(\"<unknown>\", out);\n";
         }
     }
@@ -835,6 +857,11 @@ void function_types(ostream &out)
         tree_node_p tmp;
         string name = IDENTIFIER_POINTER(DECL_NAME(functions[i]));
 
+        // avoid empty structs
+        if ((cur == NULL_TREE || TREE_CODE(cur->value) == VOID_TYPE)
+            && TREE_CODE(TREE_TYPE(type)) == VOID_TYPE)
+            continue;
+
         out << "typedef struct " << name << "\n"
             << "{\n";
         int count = 0;
@@ -865,6 +892,12 @@ void function_types(ostream &out)
         << "    {\n";
     for (size_t i = 0; i < functions.size(); i++)
     {
+        tree_node_p type = TREE_TYPE(functions[i]);
+        tree_node_p args = TREE_ARG_TYPES(type);
+        // avoid empty structs
+        if ((args == NULL_TREE || TREE_CODE(args->value) == VOID_TYPE)
+            && TREE_CODE(TREE_TYPE(type)) == VOID_TYPE)
+            continue;
         string name = IDENTIFIER_POINTER(DECL_NAME(functions[i]));
         out << "        function_call_" << name << " " << name << ";\n";
     }
@@ -984,7 +1017,7 @@ static void make_state_instance_struct(gen_state_tree *node,
                     << "    " << node->children[i]->instance_class
                     << "_constructor((state_generic *) &me->c_" << node->children[i]->name << ", s);\n";
         }
-        out << "};\n\n";
+        out << "}\n\n";
     }
 }
 
@@ -1036,13 +1069,19 @@ void make_state_structs(bool prototype, ostream &out)
 {
     int count = 0;
 
+    /* Ugly hack: we expect to run with prototype == true before
+     * prototype == false. The first pass will set the index of the root
+     * state, and due to the pre-ordered walk, this will be one less than
+     * the size of the table.
+     */
     if (!prototype)
-        out << "static const state_spec state_spec_table[];\n";
+        out << "static const state_spec state_spec_table[" << root_state.index + 1 << "];\n";
     make_state_instance_struct(&root_state, "state", count, prototype, out);
+    assert(count == root_state.index + 1);
     if (!prototype)
     {
         make_state_spec_data(&root_state, out);
-        out << "static const state_spec state_spec_table[] =\n"
+        out << "static const state_spec state_spec_table[" << count << "] =\n"
             << "{\n";
         make_state_spec_table_entry(&root_state, out);
         out << "\n};\n"

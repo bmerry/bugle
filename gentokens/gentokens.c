@@ -61,7 +61,7 @@ int main()
             else max_tokens *= 2;
             tokens = realloc(tokens, sizeof(token) * max_tokens);
         }
-        r = scanf("%" MAX_TOKEN_LEN_STR "s %i",
+        r = scanf("%" MAX_TOKEN_LEN_STR "s %x",
                   tokens[num_tokens].name,
                   &tokens[num_tokens].value);
         if (r != 2) break;
@@ -74,9 +74,9 @@ int main()
           "#include <GL/gl.h>\n"
           "#include \"src/gltokens.h\"\n"
           "\n", stdout);
-    qsort(tokens, num_tokens, sizeof(token), compare_name);
+    qsort(tokens, num_tokens, sizeof(token), &compare_name);
     dump_tokens(tokens, num_tokens, "gl_tokens_name");
-    qsort(tokens, num_tokens, sizeof(token), compare_value);
+    qsort(tokens, num_tokens, sizeof(token), &compare_value);
     dump_tokens(tokens, num_tokens, "gl_tokens_value");
     printf("int gl_token_count = %d;\n", num_tokens);
     return 0;

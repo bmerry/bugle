@@ -112,7 +112,7 @@ static int get_state_index_position(state_generic *node, const void *key)
             else
                 l = m;
         }
-        if ((*node->spec->key_compare)(key, node->indexed[m]->key) == 0)
+        if ((*node->spec->key_compare)(key, node->indexed[l]->key) == 0)
             return l;
     }
     else

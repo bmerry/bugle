@@ -17,14 +17,23 @@ dnl Checks for libraries
 
 dnl Checks for header files
 AC_HEADER_STDC
+AC_HEADER_DIRENT
+AC_HEADER_STDBOOL
 
 dnl Checks for types
-AC_CHECK_TYPES([ptrdiff_t],,[AC_MSG_ERROR([you are missing the ptrdiff_t type])])
+AC_CHECK_TYPE(ptrdiff_t, int)
+AC_TYPE_SIZE_T
+
+dnl Checks for structures
 
 dnl Checks for compiler characteristics
-AC_C_CONST
+# AC_C_CONST
 AC_C_VOLATILE
 AC_C_INLINE
+
+dnl Checks for library functions
+AC_CHECK_FUNCS([regcomp strrchr])
+AC_FUNC_MEMCMP
 
 dnl Checks for system services
 
