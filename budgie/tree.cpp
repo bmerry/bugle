@@ -144,8 +144,7 @@ tree_node_p &tree::operator[] (unsigned int number)
 
 bool tree::exists(unsigned int number)
 {
-    return number >= 0 && number < nodes.size()
-        && nodes[number] != NULL;
+    return number < nodes.size() && nodes[number] != NULL;
 }
 
 void tree::clear()

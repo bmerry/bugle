@@ -15,7 +15,7 @@ static bool safe_write(int fd, const void *buf, size_t count)
 {
     ssize_t out;
 
-    while ((out = write(fd, buf, count)) < count)
+    while ((out = write(fd, buf, count)) < (ssize_t) count)
     {
         if (out == 0) return false; /* EOF */
         else if (out == -1)
@@ -40,7 +40,7 @@ static bool safe_read(int fd, void *buf, size_t count)
 {
     ssize_t in;
 
-    while ((in = read(fd, buf, count)) < count)
+    while ((in = read(fd, buf, count)) < (ssize_t) count)
     {
         if (in == 0) return false; /* EOF */
         else if (in == -1)

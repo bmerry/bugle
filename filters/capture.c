@@ -85,7 +85,7 @@ static void prepare_screenshot_data(screenshot_data *data,
                                     int width, int height,
                                     int align, bool use_pbo)
 {
-    int stride;
+    size_t stride;
 
     stride = ((width + align - 1) & ~(align - 1)) * CAPTURE_GL_ELEMENTS;
     if ((!data->pixels && !data->pbo)

@@ -20,9 +20,11 @@
 # include <config.h>
 #endif
 #define _POSIX_SOURCE
+#define _GNU_SOURCE /* For open_memstream */
 #include <stdio.h>
 #include <stddef.h>
 #include <stdlib.h>
+#include <ctype.h>
 #include <string.h>
 #include <unistd.h>
 #include <signal.h>
@@ -204,7 +206,7 @@ static void initialise_real_work(void)
 {
     void *handle;
     size_t i, j;
-    int N, F;
+    size_t N, F;
 
     N = number_of_libraries;
     F = number_of_functions;

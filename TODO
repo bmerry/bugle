@@ -6,7 +6,6 @@ Current rewrite:
 gldb
 ----
 - allow Ctrl-C to abort current line when reading commands
-- make pushing enter in gldb rerun last command
 - set filter variables on the fly
 - enable reporting of segfaults
 - print full dump of current function
@@ -25,6 +24,7 @@ bugle
 - handle texture proxies
 - handle GL shared objects correctly
 - statistics and profiling
+- improve support for GLSL
 - capture information about call lists
 - capture and replay
 - better movie capture

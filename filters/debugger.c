@@ -122,7 +122,7 @@ static bool debugger_screenshot(int pipe)
     size_t header_len;
     char *header;
     char *data, *in, *out;
-    size_t i;
+    int i;
 
     aux = get_aux_context();
     if (!aux || !begin_internal_render()) return false;

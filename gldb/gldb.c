@@ -576,7 +576,11 @@ static void register_command(const command_info *cmd)
 static void handle_commands(void)
 {
     bool done;
-    char *line, *cur, *base;
+    char *line = NULL, *cur, *base;
+    /* prev_line must be static, because we sometimes leave handle_commands
+     * via a signal/longjmp pair.
+     */
+    static char *prev_line = NULL;
     char **tokens;
     size_t num_tokens, i;
     const command_data *data;
@@ -596,51 +600,63 @@ static void handle_commands(void)
         if (!line)
         {
             if (running) send_code(lib_out, REQ_QUIT);
+            if (prev_line) free(prev_line);
             exit(0); /* FIXME: clean shutdown? */
         }
-        else if (*line)
+        else
         {
-            /* Tokenise */
-            num_tokens = 0;
-            for (cur = line; *cur; cur++)
-                if (!isspace(*cur)
-                    && (cur == line || isspace(cur[-1])))
-                    num_tokens++;
-            if (num_tokens)
+            if (!*line && prev_line != NULL)
             {
-                tokens = xmalloc((num_tokens + 1) * sizeof(char *));
-                tokens[num_tokens] = NULL;
-                i = 0;
-                for (cur = line; *cur; cur++)
-                {
-                    if (!isspace(*cur))
-                    {
-                        base = cur;
-                        while (*cur && !isspace(*cur)) cur++;
-                        tokens[i] = xmalloc(cur - base + 1);
-                        memcpy(tokens[i], base, cur - base);
-                        tokens[i][cur - base] = '\0';
-                        i++;
-                        cur--; /* balanced by cur++ above */
-                    }
-                }
-                assert(i == num_tokens);
-                /* Find the command */
-                data = (const command_data *) hash_get(&command_table, tokens[0]);
-                if (!data)
-                    printf("Unknown command `%s'.\n", tokens[0]);
-                else if (!data->command)
-                    printf("Ambiguous command `%s'.\n", tokens[0]);
-                else if (data->command->running && !running)
-                    printf("Program is not running.\n");
-                else
-                    done = data->command->handler(data->command->name, line, (const char * const *) tokens);
-                for (i = 0; i < num_tokens; i++)
-                    free(tokens[i]);
-                free(tokens);
+                free(line);
+                line = xstrdup(prev_line);
             }
+            if (*line)
+            {
+                if (prev_line) free(prev_line);
+                prev_line = xstrdup(line);
+
+                /* Tokenise */
+                num_tokens = 0;
+                for (cur = line; *cur; cur++)
+                    if (!isspace(*cur)
+                        && (cur == line || isspace(cur[-1])))
+                        num_tokens++;
+                if (num_tokens)
+                {
+                    tokens = xmalloc((num_tokens + 1) * sizeof(char *));
+                    tokens[num_tokens] = NULL;
+                    i = 0;
+                    for (cur = line; *cur; cur++)
+                    {
+                        if (!isspace(*cur))
+                        {
+                            base = cur;
+                            while (*cur && !isspace(*cur)) cur++;
+                            tokens[i] = xmalloc(cur - base + 1);
+                            memcpy(tokens[i], base, cur - base);
+                            tokens[i][cur - base] = '\0';
+                            i++;
+                            cur--; /* balanced by cur++ above */
+                        }
+                    }
+                    assert(i == num_tokens);
+                    /* Find the command */
+                    data = (const command_data *) hash_get(&command_table, tokens[0]);
+                    if (!data)
+                        printf("Unknown command `%s'.\n", tokens[0]);
+                    else if (!data->command)
+                        printf("Ambiguous command `%s'.\n", tokens[0]);
+                    else if (data->command->running && !running)
+                        printf("Program is not running.\n");
+                    else
+                        done = data->command->handler(data->command->name, line, (const char * const *) tokens);
+                    for (i = 0; i < num_tokens; i++)
+                        free(tokens[i]);
+                    free(tokens);
+                }
+            }
+            free(line);
         }
-        if (line) free(line);
     } while (!done);
 }
 
@@ -812,7 +828,7 @@ static char *generate_commands(const char *text, int state)
 
 static char *generate_functions(const char *text, int state)
 {
-    static size_t i;
+    static budgie_function i;
     static size_t len;
 
     if (!state)
@@ -885,7 +901,7 @@ const command_info commands[] =
     { "quit", "Exit gldb", false, command_quit, NULL },
     { "screenshot", "Capture a screenshot", true, command_screenshot, NULL },
     { "unbreak", "Clear breakpoints", false, command_break_unbreak, generate_functions },
-    { NULL, NULL, false, NULL }
+    { NULL, NULL, false, NULL, NULL }
 };
 
 static void initialise(void)
