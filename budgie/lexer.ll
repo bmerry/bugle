@@ -152,19 +152,29 @@ rest of the record, find the length, then replace what we don't need.
 "used: "{DIGIT}+	|
 "scpe: "@{DIGIT}+	|
 "op "[0-2]": "@{DIGIT}+	|
-"algn: "{DIGIT}+	/* Ignore these fields */
+"cond: "@{DIGIT}+	|
+"expr: "@{DIGIT}+	|
+"then: "@{DIGIT}+	|
+"labl: "@{DIGIT}+	|
+"dest: "@{DIGIT}+	|
+"args: "@{DIGIT}+	|
+"fn  : "@{DIGIT}+	|
+"high: "@{DIGIT}+	| /* This is the high: for case_label */
+"low : "@{DIGIT}+	| /* This is the low : for case_label */
+"algn: "{DIGIT}+	/* Ignore these fields, which are many code body */
 
 "struct"	{ yylnode->flag_struct = true; }
 "union"	{ yylnode->flag_union = true; }
 "undefined"	{ yylnode->flag_undefined = true; }
 "extern"	{ yylnode->flag_extern = true; }
 "unsigned"	{ yylnode->flag_unsigned = true; }
+"static"	{ yylnode->flag_static = true; }
 "begn"	|
 "end"	|
 "null"	|
 "clnp"	/* Ignore these tags */
 
-[a-z][a-z ]{3}": " { printf("Unknown field %s\n", yytext); }
+[a-z][a-z ]{3}": "[^ \t]* { printf("Unknown field %s\n", yytext); }
 [a-z]+	{ printf("Unknown flag %s\n", yytext); }
 
 \n@	{ yyless(0); return 1; }
