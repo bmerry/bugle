@@ -35,34 +35,34 @@ static pthread_key_t context_state_key;
 
 state_7context_I *trackcontext_get_context_state()
 {
-    state_7context_I *state;
-    state_generic *parent;
-    GLXContext ctx;
-
-    state = pthread_getspecific(context_state_key);
-    if (!state) /* indicates "dirty" */
-    {
-        ctx = glXGetCurrentContext();
-        if (!ctx) return NULL;  /* ok, there is no context */
-
-        parent = &get_root_state()->c_context.generic;
-        if (!(state = (state_7context_I *) get_state_index(parent, &ctx)))
-            state = (state_7context_I *) add_state_index(parent, &ctx, NULL);
-        pthread_setspecific(context_state_key, state);
-    }
-    return state;
+    return pthread_getspecific(context_state_key);
 }
 
 bool trackcontext_callback(function_call *call, void *data)
 {
+    GLXContext ctx;
+    state_generic *parent;
+    state_7context_I *state;
+
     switch (canonical_call(call))
     {
     case FUNC_glXMakeCurrent:
 #ifdef GLX_VERSION_1_3
     case FUNC_glXMakeContextCurrent:
 #endif
-        /* Tag the thread-local data as dirty */
-        pthread_setspecific(context_state_key, NULL);
+        /* These calls may fail, so we must explicitly check for the
+         * current context.
+         */
+        ctx = glXGetCurrentContext();
+        if (!ctx)
+            pthread_setspecific(context_state_key, NULL);
+        else
+        {
+            parent = &get_root_state()->c_context.generic;
+            if (!(state = (state_7context_I *) get_state_index(parent, &ctx)))
+                state = (state_7context_I *) add_state_index(parent, &ctx, NULL);
+            pthread_setspecific(context_state_key, state);
+        }
         break;
     }
     return true;

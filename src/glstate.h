@@ -37,5 +37,6 @@ void glstate_get_texgen(state_generic *state);
 void glstate_get_texunit(state_generic *state);
 void glstate_get_textureenv(state_generic *state);
 void glstate_get_texturefiltercontrol(state_generic *state);
+void glstate_get_light(state_generic *state);
 
 #endif /* !BUGLE_SRC_GLSTATE_H */

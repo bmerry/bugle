@@ -108,13 +108,15 @@ filters_capture_la_SOURCES = filters/capture.c
 filters_capture_la_LDFLAGS = -thread-safe -module -avoid-version
 
 # Demo programs
-check_PROGRAMS = tests/errors tests/threads1 tests/threads2
+check_PROGRAMS = tests/errors tests/threads1 tests/threads2 tests/queries
 tests_errors_SOURCES = tests/errors.c
 tests_errors_LDADD = -lglut $(GL_LIBS) $(X_PRE_LIBS) $(X_LIBS) $(X_EXTRA_LIBS)
 tests_threads1_SOURCES = tests/threads1.c
 tests_threads1_LDADD = $(GL_LIBS) $(X_PRE_LIBS) $(X_LIBS) $(X_EXTRA_LIBS) $(THREAD_LIBS)
 tests_threads2_SOURCES = tests/threads2.c
 tests_threads2_LDADD = $(GL_LIBS) $(X_PRE_LIBS) $(X_LIBS) $(X_EXTRA_LIBS) $(THREAD_LIBS)
+tests_queries_SOURCES = tests/queries.c
+tests_queries_LDADD = -lglut $(GL_LIBS) $(X_PRE_LIBS) $(X_LIBS) $(X_EXTRA_LIBS)
 
 # Extra files to distribute
 EXTRA_DIST = src/gl.bc src/data/gl.c src/data/overrides.h \

@@ -148,6 +148,7 @@ static void initialise_all(void)
     initialise_real();
     initialise_canonical();
     initialise_filters();
+    initialise_dump_tables();
     load_config();
 }
 

@@ -84,7 +84,7 @@ void glstate_get_enable(state_generic *state)
 void glstate_get_global(state_generic *state)
 {
     GLenum e;
-    double data[16]; /* 16 should be enough */
+    GLdouble data[16]; /* 16 should be enough */
 
     begin_internal_render();
     e = state_to_enum(state);
@@ -373,4 +373,36 @@ void glstate_get_textureenv(state_generic *state)
 void glstate_get_texturefiltercontrol(state_generic *state)
 {
     glstate_get_texenv(state, GL_TEXTURE_FILTER_CONTROL);
+}
+
+void glstate_get_light(state_generic *state)
+{
+    GLenum e, light;
+    GLfloat data[16];
+
+    begin_internal_render();
+    e = state_to_enum(state);
+    light = *(GLenum *) state->parent->key;
+    if (state->spec->data_type == TYPE_9GLboolean) /* enable bit */
+        *(GLboolean *) state->data = CALL_glIsEnabled(light);
+    else
+        switch (state->spec->data_type)
+        {
+        case TYPE_7GLfloat:
+            CALL_glGetLightfv(light, e, state->data);
+            break;
+        case TYPE_5GLint:
+        case TYPE_6GLuint:
+#if GLENUM_IS_GLUINT
+        case TYPE_6GLenum:
+#endif
+            CALL_glGetLightiv(light, e, state->data);
+            break;
+        default:
+            assert((size_t) state->spec->data_length <= sizeof(data) / sizeof(data[0]));
+            CALL_glGetLightfv(light, e, data);
+            type_convert(state->data, state->spec->data_type, data, TYPE_7GLfloat, state->spec->data_length);
+        }
+
+    end_internal_render("glstate_get_light", true);
 }

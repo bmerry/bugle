@@ -1106,19 +1106,21 @@ void make_state_structs(bool prototype, ostream &out)
      * the size of the table.
      */
     if (!prototype)
-        out << "static const state_spec state_spec_table[" << root_state.index + 1 << "];\n";
+        out << "const state_spec state_spec_table[" << root_state.index + 1 << "];\n";
     make_state_instance_struct(&root_state, "state", count, prototype, out);
     assert(count == root_state.index + 1);
     if (!prototype)
     {
         make_state_spec_data(&root_state, out);
-        out << "static const state_spec state_spec_table[" << count << "] =\n"
+        out << "const state_spec state_spec_table[" << count << "] =\n"
             << "{\n";
         make_state_spec_table_entry(&root_state, out);
         out << "\n};\n"
             << "const state_spec *root_state_spec = &state_spec_table["
             << root_state.index << "];\n\n";
     }
+    else
+        out << "extern const state_spec state_spec_table[" << count << "];\n";
 }
 
 // Overrides
@@ -1147,25 +1149,34 @@ void set_save_override(const param_or_type &p, const string &subst)
  * \param s The user-supplied string
  * \returns The modified string.
  */
-static string override_substitutions(tree_node_p func, const string &s)
+static string override_substitutions(tree_node_p func, int param, const string &s)
 {
     string::size_type pos;
     string l = s;
+    string r;
+    char ch;
     while ((pos = l.find("$")) != string::npos)
     {
-        // FIXME: parameters beyond 10
-        int param = l[pos + 1] - '0';
+        if (pos + 1 == l.length()) break; /* end of string */
+        ch = l[pos + 1];
+        if (ch == 'f')
+            r = "FUNC_" + IDENTIFIER_POINTER(DECL_NAME(func));
+        else
+        {
+            if (ch != '$') param = ch - '0';
 
-        tree_node_p cur = TREE_ARG_TYPES(TREE_TYPE(func));
-        // FIXME: falling off the end
-        for (int i = 0; i < param; i++)
-            cur = TREE_CHAIN(cur);
-        tree_node_p ptr = make_pointer(make_const(TREE_VALUE(cur)), false);
-        ostringstream repl;
-        repl << "(*("
-            << type_to_string(ptr, "", false) << ") call->args[" << param << "])";
-        l.replace(pos, 2, repl.str());
-        destroy_temporary(ptr);
+            tree_node_p cur = TREE_ARG_TYPES(TREE_TYPE(func));
+            // FIXME: falling off the end
+            for (int i = 0; i < param; i++)
+                cur = TREE_CHAIN(cur);
+            tree_node_p ptr = make_pointer(make_const(TREE_VALUE(cur)), false);
+            ostringstream repl;
+            repl << "(*("
+                << type_to_string(ptr, "", false) << ") call->args[" << param << "])";
+            r = repl.str();
+            destroy_temporary(ptr);
+        }
+        l.replace(pos, 2, r);
     }
     return l;
 }
@@ -1173,7 +1184,7 @@ static string override_substitutions(tree_node_p func, const string &s)
 void set_type_override(const param_or_type &p, const string &new_type)
 {
     if (p.func)
-        type_overrides[p] = override_substitutions(p.func, new_type);
+        type_overrides[p] = override_substitutions(p.func, p.param, new_type);
     else
         type_overrides[p] = new_type;
 }
@@ -1181,7 +1192,7 @@ void set_type_override(const param_or_type &p, const string &new_type)
 void set_length_override(const param_or_type &p, const string &len)
 {
     if (p.func)
-        length_overrides[p] = override_substitutions(p.func, len);
+        length_overrides[p] = override_substitutions(p.func, p.param, len);
     else
         length_overrides[p] = len;
 }

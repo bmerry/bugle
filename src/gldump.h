@@ -33,7 +33,11 @@ budgie_type gl_type_to_type(GLenum gl_type);
 budgie_type gl_type_to_type_ptr(GLenum gl_type);
 size_t gl_type_to_size(GLenum gl_type);
 
+/* Initialiser for certain dumping function */
+void initialise_dump_tables(void);
+
 int count_gl(budgie_function func, GLenum token);
+int count_global_query(GLenum token);
 bool dump_GLenum(const void *value, int count, FILE *out);
 bool dump_GLalternateenum(const void *value, int count, FILE *out);
 bool dump_GLerror(const void *value, int count, FILE *out);

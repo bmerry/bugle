@@ -18,6 +18,8 @@ bugle
 - use ltdl for loading modules
 - cap and extension overrides
 - wrap glXGetProcAddress
+- fill in the rest of the state
+- handle texture proxies
 - statistics
 - capture information about call lists
 - profiling

@@ -50,9 +50,6 @@ LENGTH PARAMETER glProgramStringARB 3 $2
 LENGTH PARAMETER glCompressedTexImage2D 7 $6
 
 # Functions where the count is determined by the token
-LENGTH PARAMETER gl(Material|Light|Tex(Env|Parameter|Gen))[sifd]v 2 count_gl(GENERIC_FUNCTION_ID(\0), $1)
-LENGTH PARAMETER gl(LightModel|Fog)[if]v 1 count_gl(GENERIC_FUNCTION_ID(\0), $0)
-
 LENGTH PARAMETER glDrawElements 3 gl_type_to_size($2) * $1
 LENGTH PARAMETER glDrawRangeElements 5 gl_type_to_size($4) * $3
 
@@ -70,6 +67,17 @@ TYPE PARAMETER glTexSubImage3D 10 gl_type_to_type_ptr($9)
 LENGTH PARAMETER glTexSubImage3D 10 image_element_count($5, $6, $7, $8, $9, true)
 TYPE PARAMETER glGetTexImage 4 gl_type_to_type_ptr($3)
 LENGTH PARAMETER glGetTexImage 4 texture_element_count($0, $1, $2, $3)
+
+# Both count and interpretation of type depend on the token
+# Note that we only override length for the vector versions
+LENGTH PARAMETER gl(LightModel|Fog)[if]v 1 count_gl($f, $0)
+LENGTH PARAMETER glGet(Boolean|Integer|Float|Double)v 1 count_gl($f, $0)
+LENGTH PARAMETER gl(Get)?(Material|Light|Tex(Env|Parameter|Gen))[sifd]v 2 count_gl($f, $1)
+LENGTH PARAMETER gl(Get)?TexLevelParameter[if]v 3 count_gl($f, $2)
+DUMP PARAMETER gl(LightModel|Fog)[if]v? 1 dump_convert
+DUMP PARAMETER glGet(Integer|Float|Double)v 1 dump_convert
+DUMP PARAMETER gl(Get)?(Material|Light|Tex(Env|Parameter|Gen))[sifd]v? 2 dump_convert
+DUMP PARAMETER gl(Get)?TexLevelParameter[if]v? 3 dump_convert
 
 # Assorted type overrides
 
@@ -102,15 +110,6 @@ DUMP TYPE +Pc dump_string
 LENGTH TYPE +PKc count_string($$)
 LENGTH TYPE +Pc count_string($$)
 
-# since GLenums are passed through GLint
-# Unfortunately it is not safe to assume that GLenum == GLint == GLboolean
-DUMP PARAMETER gl(Get)?TexParameter[if]v? 2 dump_convert
-
-# Queries
-# FIXME: dynamic type overrides
-# LENGTH PARAMETER glGet(Boolean|Integer|Float|Double)v 1 count_glGetScalar($0)
-# DUMP PARAMETER glGetDoublev 1 dump_argument_glGetScalar_1
-
 # FIXME: LOAD and SAVE still won't work
 
 # State
@@ -124,10 +123,10 @@ STATE context
 			# FIXME: cube maps are disabled for now, because of the way they interact with levels
                 	CONSTRUCTOR
                         {
-                                state_7context_I_7texture_add_index($$, GL_TEXTURE_1D, "1D");
-                                state_7context_I_7texture_add_index($$, GL_TEXTURE_2D, "2D");
-                                state_7context_I_7texture_add_index($$, GL_TEXTURE_3D_EXT, "3D");
-                                /* state_7context_I_7texture_add_index($$, GL_TEXTURE_CUBE_MAP_ARB, "cube"); */
+                                state_7context_I_7texture_add_index($$, GL_TEXTURE_1D, NULL);
+                                state_7context_I_7texture_add_index($$, GL_TEXTURE_2D, NULL);
+                                state_7context_I_7texture_add_index($$, GL_TEXTURE_3D_EXT, NULL);
+                                /* state_7context_I_7texture_add_index($$, GL_TEXTURE_CUBE_MAP_ARB, NULL); */
                         }
                 	STATE []   # dimension
                         {
@@ -143,7 +142,7 @@ STATE context
                                         {
                                         	CONSTRUCTOR
                                                 {
-                                                	state_7context_I_7texture_I_I_5level_add_index($$, 0, "0");
+                                                	state_7context_I_7texture_I_I_5level_add_index($$, 0, NULL);
                                                 }
                                         	STATE []
                                                 {
@@ -188,8 +187,11 @@ STATE context
                 {
                         CONSTRUCTOR
                         {
-                        	/* FIXME: query for texunit count */
-                                state_7context_I_7texunit_add_index($$, GL_TEXTURE0_ARB, "0");
+                        	GLint max, i;
+                                
+                                glGetIntegerv(GL_MAX_TEXTURE_UNITS_ARB, &max);
+                                for (i = 0; i < max; i++)
+                                    state_7context_I_7texunit_add_index($$, GL_TEXTURE0_ARB + i, NULL);
                         }
                 	STATE [] # texture unit enum
                         {
@@ -199,10 +201,10 @@ STATE context
 	                        {
                                 	CONSTRUCTOR
                                         {
-                                        	state_7context_I_7texunit_I_6texgen_add_index($$, GL_S, "S");
-                                        	state_7context_I_7texunit_I_6texgen_add_index($$, GL_T, "T");
-                                        	state_7context_I_7texunit_I_6texgen_add_index($$, GL_R, "R");
-                                        	state_7context_I_7texunit_I_6texgen_add_index($$, GL_Q, "Q");
+                                        	state_7context_I_7texunit_I_6texgen_add_index($$, GL_S, NULL);
+                                        	state_7context_I_7texunit_I_6texgen_add_index($$, GL_T, NULL);
+                                        	state_7context_I_7texunit_I_6texgen_add_index($$, GL_R, NULL);
+                                        	state_7context_I_7texunit_I_6texgen_add_index($$, GL_Q, NULL);
                                         }
 	                        	STATE [] # S, T, R, Q
 	                                {
@@ -234,6 +236,7 @@ STATE context
                                 VALUE GL_ALPHA_SCALE GLdouble 1 glstate_get_textureenv
 				VALUE GL_CURRENT_TEXTURE_COORDS GLdouble 4 glstate_get_texunit
 				VALUE GL_CURRENT_RASTER_TEXTURE_COORDS GLdouble 4 glstate_get_texunit
+                                VALUE GL_TEXTURE_MATRIX GLdouble 16 glstate_get_texunit
 				VALUE GL_TEXTURE_STACK_DEPTH GLint 1 glstate_get_texunit
 				VALUE GL_TEXTURE_1D GLboolean 1 glstate_get_texunit
 				VALUE GL_TEXTURE_2D GLboolean 1 glstate_get_texunit
@@ -259,6 +262,33 @@ STATE context
 #			VALUE GL_SECONDARY_COLOR_ARRAY GLarray 1 tracker_load_gl_array
 #			VALUE GL_INDEX_ARRAY GLarray 1 tracker_load_gl_array
 #			VALUE GL_EDGE_FLAG_ARRAY GLarray 1 tracker_load_gl_array
+                }
+                STATE light
+                {
+                	CONSTRUCTOR
+                        {
+                                GLint max, i;
+
+                                glGetIntegerv(GL_MAX_LIGHTS, &max);
+                                for (i = 0; i < max; i++)
+                                    state_7context_I_5light_add_index($$, GL_LIGHT0 + i, NULL);
+                        }
+                	STATE []
+                        {
+                        	KEY GLenum glstate_compare_GLenum
+                                
+				VALUE GL_AMBIENT GLdouble 4 glstate_get_light
+				VALUE GL_DIFFUSE GLdouble 4 glstate_get_light
+				VALUE GL_SPECULAR GLdouble 4 glstate_get_light
+				VALUE GL_POSITION GLdouble 4 glstate_get_light
+				VALUE GL_CONSTANT_ATTENUATION GLdouble 1 glstate_get_light
+				VALUE GL_LINEAR_ATTENUATION GLdouble 1 glstate_get_light
+				VALUE GL_QUADRATIC_ATTENUATION GLdouble 1 glstate_get_light
+				VALUE GL_SPOT_DIRECTION GLdouble 3 glstate_get_light
+				VALUE GL_SPOT_EXPONENT GLdouble 1 glstate_get_light
+				VALUE GL_SPOT_CUTOFF GLdouble 1 glstate_get_light
+				VALUE enable GLboolean 1 glstate_get_light
+                        }
                 }
                 VALUE GL_NORMALIZE GLboolean 1 glstate_get_enable
                 VALUE GL_RESCALE_NORMAL GLboolean 1 glstate_get_enable
@@ -347,6 +377,9 @@ STATE context
 		VALUE GL_CLIENT_ACTIVE_TEXTURE GLenum 1 glstate_get_global
 		VALUE GL_ARRAY_BUFFER_BINDING GLint 1 glstate_get_global
 		VALUE GL_ELEMENT_ARRAY_BUFFER_BINDING GLint 1 glstate_get_global
+                VALUE GL_COLOR_MATRIX GLdouble 16 glstate_get_global
+                VALUE GL_MODELVIEW_MATRIX GLdouble 16 glstate_get_global
+                VALUE GL_PROJECTION_MATRIX GLdouble 16 glstate_get_global
 		VALUE GL_VIEWPORT GLint 4 glstate_get_global
 		VALUE GL_DEPTH_RANGE GLdouble 2 glstate_get_global
 		VALUE GL_COLOR_MATRIX_STACK_DEPTH GLint 1 glstate_get_global
@@ -506,14 +539,4 @@ STATE share
 # STATE context[].material[].GL_SHININESS GLdouble 1 load_gl_scalar
 # STATE context[].material[].GL_COLOR_INDEXES GLdouble 3 load_gl_scalar
 
-# STATE context[].light[].GL_AMBIENT GLdouble 4 load_gl_scalar
-# STATE context[].light[].GL_DIFFUSE GLdouble 4 load_gl_scalar
-# STATE context[].light[].GL_SPECULAR GLdouble 4 load_gl_scalar
-# STATE context[].light[].GL_POSITION GLdouble 4 load_gl_scalar
-# STATE context[].light[].GL_CONSTANT_ATTENUATION GLdouble 1 load_gl_scalar
-# STATE context[].light[].GL_LINEAR_ATTENUATION GLdouble 1 load_gl_scalar
-# STATE context[].light[].GL_QUADRATIC_ATTENUATION GLdouble 1 load_gl_scalar
-# STATE context[].light[].GL_SPOT_DIRECTION GLdouble 3 load_gl_scalar
-# STATE context[].light[].GL_SPOT_EXPONENT GLdouble 1 load_gl_scalar
-# STATE context[].light[].GL_SPOT_CUTOFF GLdouble 1 load_gl_scalar
-# STATE context[].light[].enable GLboolean 1 load_gl_enable
+# FIXME: matrices

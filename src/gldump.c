@@ -32,6 +32,42 @@
 #include "src/types.h"
 #include "src/utils.h"
 
+/* FIXME: should this move into budgielib?
+ *
+ * Calls dump_any_type, BUT:
+ * if outer_length != -1, then it considers the type as if it were an
+ * array of that type, of length outer_length. If pointer is
+ * non-NULL, then it outputs "<pointer> -> " first as if dumping a
+ * pointer to the array.
+ */
+void dump_any_type_extended(budgie_type type,
+                            const void *value,
+                            int length,
+                            int outer_length,
+                            const void *pointer,
+                            FILE *out)
+{
+    int i;
+    const char *v;
+
+    if (pointer)
+        fprintf(out, "%p -> ", pointer);
+    if (outer_length == -1)
+        dump_any_type(type, value, length, out);
+    else
+    {
+        v = (const char *) value;
+        fputs("{ ", out);
+        for (i = 0; i < outer_length; i++)
+        {
+            if (i) fputs(", ", out);
+            dump_any_type(type, (const void *) v, length, out);
+            v += type_table[type].size;
+        }
+        fputs(" }", out);
+    }
+}
+
 const char *gl_enum_to_token(GLenum e)
 {
     int l, r, m;
@@ -217,42 +253,86 @@ bool dump_GLboolean(const void *value, int count, FILE *out)
     return true;
 }
 
-static budgie_type get_real_type(const function_call *call)
+typedef struct
 {
-    switch (canonical_call(call))
+    GLenum key;
+    budgie_type type;
+    int length;
+} dump_table_entry;
+
+static int compare_dump_table_entry(const void *a, const void *b)
+{
+    GLenum ka, kb;
+
+    ka = ((const dump_table_entry *) a)->key;
+    kb = ((const dump_table_entry *) b)->key;
+    return (ka < kb) ? -1 : (ka > kb) ? 1 : 0;
+}
+
+static int find_dump_table_entry(const void *a, const void *b)
+{
+    GLenum ka, kb;
+
+    ka = *(GLenum *) a;
+    kb = ((const dump_table_entry *) b)->key;
+    return (ka < kb) ? -1 : (ka > kb) ? 1 : 0;
+}
+
+static dump_table_entry *dump_table = NULL;
+static size_t dump_table_size = 0;
+
+/* The state tables tell us many things about the number of parameters
+ * that both queries and sets take. This routine processes the state
+ * specifications to build a lookup table.
+ */
+void initialise_dump_tables(void)
+{
+    /* Initially make room for one entry per state spec. We can scale
+     * down later
+     */
+    size_t specs;
+    GLenum e;
+    dump_table_entry *cur;
+    const state_spec *s;
+
+    specs = sizeof(state_spec_table) / sizeof(state_spec_table[0]);
+    dump_table = xmalloc(sizeof(dump_table_entry) * specs);
+    cur = dump_table;
+    for (s = state_spec_table; s != state_spec_table + specs; s++)
     {
-    case FUNC_glTexParameteri:
-    case FUNC_glTexParameteriv:
-    case FUNC_glTexParameterf:
-    case FUNC_glTexParameterfv:
-    case FUNC_glGetTexParameteriv:
-    case FUNC_glGetTexParameterfv:
-        switch (*(const GLenum *) call->args[1])
-        {
-        case GL_TEXTURE_WRAP_S:
-        case GL_TEXTURE_WRAP_T:
-        case GL_TEXTURE_WRAP_R:
-        case GL_TEXTURE_MIN_FILTER:
-        case GL_TEXTURE_MAG_FILTER:
-#ifdef GL_ARB_depth_texture
-        case GL_DEPTH_TEXTURE_MODE_ARB:
-#endif
-#ifdef GL_ARB_shadow
-        case GL_TEXTURE_COMPARE_MODE_ARB:
-        case GL_TEXTURE_COMPARE_FUNC_ARB:
-#endif
-            return TYPE_6GLenum;
-#ifdef GL_SGIS_generate_mipmap
-        case GL_GENERATE_MIPMAP_SGIS:
-            return TYPE_9GLboolean;
-#endif
-        default:
-            return NULL_TYPE;
-        }
-        break;
-    default:
-        return NULL_TYPE;
+        e = gl_token_to_enum(s->name);
+        if (e == (GLenum) -1) continue;
+        cur->key = e;
+        if (s->data_type == TYPE_9GLboolean
+            || s->data_type == TYPE_6GLenum)
+            cur->type = s->data_type;
+        else
+            cur->type = NULL_TYPE;
+        if (s->data_length != 1)
+            cur->length = s->data_length;
+        else
+            cur->length = -1;
+        if (cur->type != NULL_TYPE || cur->length != -1)
+            cur++;
     }
+
+    /* Reduce memory */
+    dump_table_size = cur - dump_table;
+    dump_table = xrealloc(dump_table, sizeof(dump_table_entry) * dump_table_size);
+    qsort(dump_table, dump_table_size, sizeof(dump_table_entry), compare_dump_table_entry);
+}
+
+static const dump_table_entry *get_dump_table_entry(GLenum e)
+{
+    /* Default, if no match is found */
+    static dump_table_entry def = {GL_ZERO, NULL_TYPE, -1};
+    const dump_table_entry *ans;
+
+    assert(dump_table != NULL);
+    ans = (const dump_table_entry *)
+        bsearch(&e, dump_table, dump_table_size, sizeof(dump_table_entry),
+                find_dump_table_entry);
+    return ans ? ans : &def;
 }
 
 bool dump_convert(const generic_function_call *gcall,
@@ -260,65 +340,43 @@ bool dump_convert(const generic_function_call *gcall,
                   const void *value,
                   FILE *out)
 {
+    const dump_table_entry *entry;
     const function_call *call;
     budgie_type in_type, out_type;
     const void *in;
-    int length = -1;
+    int length = -1, alength;
     void *out_data;
+    const void *ptr = NULL;
 
     call = (const function_call *) gcall;
-    out_type = get_real_type(call);
-    if (out_type == NULL_TYPE) return false;
+    assert(function_table[call->generic.id].parameters[arg - 1].type == TYPE_6GLenum);
+    entry = get_dump_table_entry(*(GLenum *) gcall->args[arg - 1]);
+    if (entry->type == NULL_TYPE) return false;
+    out_type = entry->type;
 
-    in_type = function_table[call->generic.id].parameters[2].type;
+    in_type = function_table[call->generic.id].parameters[arg].type;
     if (type_table[in_type].code == CODE_POINTER)
     {
         in = *(const void * const *) value;
         in_type = type_table[in_type].type;
+        ptr = in;
     }
     else
         in = value;
-    if (function_table[call->generic.id].parameters[2].get_length)
-        length = (*function_table[call->generic.id].parameters[2].get_length)(gcall, arg, value);
-    if (length < 0) length = 1;
+    if (function_table[call->generic.id].parameters[arg].get_length)
+        length = (*function_table[call->generic.id].parameters[arg].get_length)(gcall, arg, value);
 
-    out_data = xmalloc(type_table[out_type].size * length);
-    type_convert(out_data, out_type, in, in_type, length);
-    dump_any_type(out_type, out_data, length, out);
+    alength = (length == -1) ? 1 : length;
+    out_data = xmalloc(type_table[out_type].size * alength);
+    type_convert(out_data, out_type, in, in_type, alength);
+    dump_any_type_extended(out_type, out_data, -1, length, ptr, out);
     free(out_data);
     return true;
 }
 
 int count_gl(budgie_function func, GLenum token)
 {
-    switch (token)
-    {
-        /* lights and materials */
-    case GL_AMBIENT:
-    case GL_DIFFUSE:
-    case GL_SPECULAR:
-    case GL_EMISSION:
-    case GL_AMBIENT_AND_DIFFUSE:
-    case GL_POSITION:
-        /* glLightModel */
-    case GL_LIGHT_MODEL_AMBIENT:
-        /* glTexEnv */
-    case GL_TEXTURE_ENV_COLOR:
-        /* glFog */
-    case GL_FOG_COLOR:
-        /* glTexParmeter */
-    case GL_TEXTURE_BORDER_COLOR:
-        /* glTexGen */
-    case GL_OBJECT_PLANE:
-    case GL_EYE_PLANE:
-        return 4;
-        /* Other */
-    case GL_COLOR_INDEXES:
-    case GL_SPOT_DIRECTION:
-        return 3;
-    default:
-        return -1;
-    }
+    return get_dump_table_entry(token)->length;
 }
 
 /* Computes the number of pixel elements (units of byte, int, float etc)

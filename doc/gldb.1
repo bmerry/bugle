@@ -74,14 +74,14 @@ may not notice.
 .B state \fI[state]\fB
 Queries the OpenGL
 .IR state .
-If omitted, all state for all contexts is output. Otherwise,
+If omitted, all state for the current context is output. Otherwise,
 .I state
 is expected to be relative to the current context. Try first running
 the command without argument to see how the states are arranged, as
 some state is nested. For example, the width of the default 2D texture
 is referenced as
 
-.B texture[2D][0].level[0].GL_TEXTURE_WIDTH
+.B texture[GL_TEXTURE_2D][0].level[0].GL_TEXTURE_WIDTH
 
 (the first zero is the texture object name).
 .SH FILES

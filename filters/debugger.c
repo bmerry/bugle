@@ -114,6 +114,7 @@ static void debugger_loop(bool init)
     char *req_str, *resp_str;
     budgie_function func;
     state_generic *state;
+    state_7context_I *ctx;
 
     /* FIXME: error checking on the network code */
     if (!init && begin_internal_render())
@@ -161,16 +162,17 @@ static void debugger_loop(bool init)
             break;
         case REQ_STATE:
             recv_string(in_pipe, &req_str);
+            ctx = get_context_state();
+            if (!ctx)
+            {
+                send_code(out_pipe, RESP_ERROR);
+                send_code(out_pipe, 0);
+                send_string(out_pipe, "No context");
+                break;
+            }
             if (*req_str)
             {
-                if (!get_context_state())
-                {
-                    send_code(out_pipe, RESP_ERROR);
-                    send_code(out_pipe, 0);
-                    send_string(out_pipe, "No context");
-                    break;
-                }
-                state = get_state_by_name(&get_context_state()->generic, req_str);
+                state = get_state_by_name(&ctx->generic, req_str);
                 if (!state)
                 {
                     send_code(out_pipe, RESP_ERROR);
@@ -181,7 +183,7 @@ static void debugger_loop(bool init)
                 resp_str = string_io(dump_string_state, state);
             }
             else
-                resp_str = string_io(dump_string_state, &get_root_state()->generic);
+                resp_str = string_io(dump_string_state, &ctx->generic);
             send_code(out_pipe, RESP_STATE);
             send_string(out_pipe, resp_str);
             free(resp_str);
