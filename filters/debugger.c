@@ -54,6 +54,7 @@ static void dump_state(const glstate *state, int indent, FILE *out)
     if (str)
         fprintf(out, " = %s", str);
     fputs("\n", out);
+    free(str);
 
     bugle_state_get_children(state, &children);
     if (bugle_list_head(&children))
@@ -69,6 +70,31 @@ static void dump_state(const glstate *state, int indent, FILE *out)
         fputs("}\n", out);
     }
     bugle_list_clear(&children);
+}
+
+static void send_state(const glstate *state)
+{
+    char *str;
+    bugle_linked_list children;
+    bugle_list_node *cur;
+
+    str = bugle_state_get_string(state);
+    gldb_send_code(out_pipe, RESP_STATE_NODE_BEGIN);
+    if (state->name) gldb_send_string(out_pipe, state->name);
+    else gldb_send_string(out_pipe, "");
+    if (str) gldb_send_string(out_pipe, str);
+    else gldb_send_string(out_pipe, "");
+    free(str);
+
+    bugle_state_get_children(state, &children);
+    for (cur = bugle_list_head(&children); cur; cur = bugle_list_next(cur))
+    {
+        send_state((const glstate *) bugle_list_data(cur));
+        bugle_state_clear((glstate *) bugle_list_data(cur));
+    }
+    bugle_list_clear(&children);
+
+    gldb_send_code(out_pipe, RESP_STATE_NODE_END);
 }
 
 static void dump_state_by_name(const char *name, const glstate *base, FILE *f)
@@ -307,6 +333,9 @@ static void debugger_loop(bool init)
             free(req_str);
             free(resp_str);
             bugle_end_internal_render("debugger_loop", true);
+            break;
+        case REQ_STATE_TREE:
+            send_state(bugle_state_get_root());
             break;
         case REQ_SCREENSHOT:
             if (!debugger_screenshot(out_pipe))

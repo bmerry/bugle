@@ -2,7 +2,7 @@ Current:
 --------
 - check whether all dependencies on trackextensions are listed
 - exploit per-context, per-filter state e.g. for video
-- finish the state manager
+- finish and test the state manager
 
 gldb
 ----
@@ -11,8 +11,6 @@ gldb
 - enable reporting of segfaults
 - print full dump of current function
 - break on particular GL errors, not just 'all errors'
-- better handling of state dumps (assemble on client side)
-- tab completion for state
 
 bugle
 -----
@@ -23,7 +21,7 @@ bugle
 - cap and extension overrides
 - fill in the rest of the state
 - handle texture proxies
-- handle GL shared objects correctly
+- handle GL shared and unshared objects correctly (queries unshared)
 - improve support for GLSL
 - capture more information about call lists
 - capture and replay
@@ -33,8 +31,6 @@ budgie
 - more autoconf tests (e.g. regex)
 - robust logging, to avoid segfaulting
 - move filter framework into budgie?
-- write support for state
-- rewrite state code to parse C structs
 
 tests
 -----
@@ -47,6 +43,7 @@ long term
 - internationalisation
 - Windows support
 - graphical debugger interface
-- OpenGL 2.0 support
+- more OpenGL 2.0 support
+- write support for state
 - better movie capture
   - option of a separate thread, for parallel encoding

@@ -63,6 +63,13 @@
         } \
     } while (0)
 
+typedef struct
+{
+    char *name;
+    char *value;
+    bugle_linked_list children;
+} gldb_state;
+
 static int lib_in, lib_out;
 static sigset_t blocked, unblocked;
 static sigjmp_buf chld_env, int_env;
@@ -76,6 +83,9 @@ static int child_status = 0; /* status returned from waitpid */
 static char *chain = NULL;
 static const char *prog = NULL;
 static char **prog_argv = NULL;
+
+static gldb_state *state_root = NULL;
+static bool state_dirty = true;
 
 /* The table of full command names. This is used for command completion
  * and display of help. There is also a hash table of command names
@@ -231,6 +241,142 @@ static void setup_signals(void)
     sigemptyset(&act.sa_mask);
     check(sigaction(SIGTTIN, &act, NULL), "sigaction");
     check(sigaction(SIGTTOU, &act, NULL), "sigaction");
+}
+
+static void state_destroy(gldb_state *s)
+{
+    bugle_list_node *i;
+
+    for (i = bugle_list_head(&s->children); i; i = bugle_list_next(i))
+        state_destroy((gldb_state *) bugle_list_data(i));
+    bugle_list_clear(&s->children);
+    if (s->name) free(s->name);
+    if (s->value) free(s->value);
+    free(s);
+}
+
+static gldb_state *state_get(void)
+{
+    gldb_state *s, *child;
+    uint32_t resp;
+
+    s = bugle_malloc(sizeof(gldb_state));
+    /* The list actually does own the memory, but we do the free as
+     * part of state_destroy.
+     */
+    bugle_list_init(&s->children, false);
+    gldb_recv_string(lib_in, &s->name);
+    gldb_recv_string(lib_in, &s->value);
+
+    do
+    {
+        gldb_recv_code(lib_in, &resp);
+        switch (resp)
+        {
+        case RESP_STATE_NODE_BEGIN:
+            child = state_get();
+            bugle_list_append(&s->children, child);
+            break;
+        case RESP_STATE_NODE_END:
+            break;
+        default:
+            fprintf(stderr, "Warning: unexpected code in state tree\n");
+        }
+    } while (resp != RESP_STATE_NODE_END);
+
+    return s;
+}
+
+static void state_update()
+{
+    uint32_t resp;
+
+    if (state_dirty)
+    {
+        gldb_send_code(lib_out, REQ_STATE_TREE);
+        gldb_recv_code(lib_in, &resp);
+        switch (resp)
+        {
+        case RESP_STATE_NODE_BEGIN:
+            if (state_root) state_destroy(state_root);
+            state_root = state_get();
+            state_dirty = false;
+            break;
+        default:
+            fprintf(stderr, "Unexpected response %#08x", resp);
+        }
+    }
+}
+
+static void make_indent(int indent, FILE *out)
+{
+    int i;
+    for (i = 0; i < indent; i++)
+        fputc(' ', out);
+}
+
+static void state_dump(const gldb_state *root, int depth)
+{
+    bugle_list_node *i;
+
+    if (root->name && root->name[0])
+    {
+        make_indent(depth * 4, stdout);
+        fputs(root->name, stdout);
+        if (root->value && root->value[0])
+            printf(" = %s\n", root->value);
+        else
+            fputc('\n', stdout);
+    }
+    if (bugle_list_head(&root->children))
+    {
+        make_indent(depth * 4, stdout);
+        printf("{\n");
+        for (i = bugle_list_head(&root->children); i; i = bugle_list_next(i))
+            state_dump((const gldb_state *) bugle_list_data(i), depth + 1);
+        make_indent(depth * 4, stdout);
+        printf("}\n");
+    }
+}
+
+/* Only first n characters of name are considered. This simplifies
+ * generate_commands.
+ */
+static gldb_state *state_find(gldb_state *root, const char *name, size_t n)
+{
+    const char *split;
+    bugle_list_node *i;
+    gldb_state *child;
+    bool found = false;
+
+    if (n > strlen(name)) n = strlen(name);
+    while (n > 0)
+    {
+        split = strchr(name, '.');
+        while (split == name && n > 0 && name[0] == '.')
+        {
+            name++;
+            n--;
+            split = strchr(name, '.');
+        }
+        if (split == NULL || split > name + n) split = name + n;
+
+        for (i = bugle_list_head(&root->children); i; i = bugle_list_next(i))
+        {
+            child = (gldb_state *) bugle_list_data(i);
+            if (child->name && strncmp(child->name, name, split - name) == 0
+                && child->name[split - name] == '\0')
+            {
+                found = true;
+                root = child;
+                n -= split - name;
+                name = split;
+                break;
+            }
+        }
+        if (!found) return NULL;
+    }
+    return root;
 }
 
 static bool command_cont(const char *cmd,
@@ -503,9 +649,18 @@ static bool command_state(const char *cmd,
                           const char *line,
                           const char * const *tokens)
 {
-    gldb_send_code(lib_out, REQ_STATE);
-    gldb_send_string(lib_out, tokens[1] ? tokens[1] : "");
-    return true;
+    gldb_state *s;
+
+    state_update();
+    if (!tokens[1]) s = state_root;
+    else
+    {
+        s = state_find(state_root, tokens[1], strlen(tokens[1]));
+        if (!s)
+            fprintf(stderr, "No such state %s\n", tokens[1]);
+    }
+    if (s) state_dump(s, 0);
+    return false;
 }
 
 static bool command_screenshot(const char *cmd,
@@ -693,12 +848,13 @@ static bool handle_responses(uint32_t resp)
         /* Ignore, other than to flush the pipe */
         break;
     case RESP_STOP:
-        /* do nothing */
+        state_dirty = true;
         break;
     case RESP_BREAK:
         gldb_recv_string(lib_in, &resp_str);
         printf("Break on %s.\n", resp_str);
         free(resp_str);
+        state_dirty = true;
         break;
     case RESP_BREAK_ERROR:
         gldb_recv_string(lib_in, &resp_str);
@@ -706,6 +862,7 @@ static bool handle_responses(uint32_t resp)
         printf("Error %s in %s.\n", resp_str2, resp_str);
         free(resp_str);
         free(resp_str2);
+        state_dirty = true;
         break;
     case RESP_ERROR:
         gldb_recv_code(lib_in, &resp_val);
@@ -716,6 +873,7 @@ static bool handle_responses(uint32_t resp)
     case RESP_RUNNING:
         printf("Running.\n");
         started = true;
+        state_dirty = true;
         return false;
     case RESP_STATE:
         gldb_recv_string(lib_in, &resp_str);
@@ -859,6 +1017,52 @@ static char *generate_functions(const char *text, int state)
     return NULL;
 }
 
+static char *generate_state(const char *text, int state)
+{
+    static const gldb_state *root; /* total state we have */
+    static bugle_list_node *node;  /* walk of children */
+    static const char *split;
+    const gldb_state *child;
+    char *ans;
+
+    if (!started) return NULL;
+    state_update();
+    if (!state_root) return NULL;
+    if (!state)
+    {
+        root = NULL;
+        node = NULL;
+
+        split = strrchr(text, '.');
+        if (!split)
+        {
+            root = state_root;
+            split = text;
+        }
+        else
+        {
+            root = state_find(state_root, text, split - text);
+            split++;
+            if (!root) return NULL;
+        }
+        node = bugle_list_head(&root->children);
+    }
+
+    for (; node; node = bugle_list_next(node))
+    {
+        child = (const gldb_state *) bugle_list_data(node);
+        if (child->name && strncmp(child->name, split, strlen(split)) == 0)
+        {
+            node = bugle_list_next(node);
+            ans = bugle_malloc(strlen(child->name) + (split - text) + 1);
+            strncpy(ans, text, split - text);
+            strcpy(ans + (split - text), child->name);
+            return ans;
+        }
+    }
+    return NULL;
+}
+
 #if HAVE_READLINE
 static char **completion(const char *text, int start, int end)
 {
@@ -912,7 +1116,7 @@ command_info commands[] =
     { "help", "Show the list of commands", false, command_help, generate_commands },
     { "kill", "Kill the program", true, command_kill, NULL },
     { "run", "Start the program", false, command_run, NULL },
-    { "state", "Show GL state", true, command_state, NULL }, /* FIXME: completion */
+    { "state", "Show GL state", true, command_state, generate_state },
     { "quit", "Exit gldb", false, command_quit, NULL },
     { "screenshot", "Capture a screenshot", true, command_screenshot, NULL },
     { NULL, NULL, false, NULL, NULL }

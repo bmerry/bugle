@@ -31,7 +31,7 @@ RESP_BREAK_ERROR:
              name of the error.
 RESP_STOP:   A stop by request of the debugger. No extra data.
 RESP_STATE:  Response to a state request. Followed by the textual value
-             of the state.
+             of the state. DEPRECATED.
 RESP_ERROR:  The request was illegal. Followed by an error code (always
              0 for now) and an error string.
 RESP_RUNNING:
@@ -41,6 +41,13 @@ RESP_RUNNING:
 RESP_SCREENSHOT:
              Sent when a screenshot is requested. Contains a string in
              PPM (P6) format that can be dumped directly to file.
+RESP_STATE_NODE_BEGIN
+RESP_STATE_NODE_END:
+             New-style state response. BEGIN is followed by the name of
+             the state (empty for root state) and the textual value (empty
+             if there is no associated value). This is followed by
+             children in the tree (with their own BEGIN/END responses),
+             and finally RESP_STATE_NODE_END, which has no parameters.
 
 After each response group, the debugger should send a request. The
 requests have the same basic form. The following requests are defined:
@@ -65,11 +72,12 @@ REQ_ASYNC:   Requests the program to stop at the next available point.
              this request is ignored if received inside the debugger loop.
              Otherwise it is answered with RESP_
 REQ_STATE:   Requests the value of a state. Followed by the name of
-             the state.
+             the state. DEPRECATED.
 REQ_SCREENSHOT: Requests a screenshot from the program. Reply is
              RESP_SCREENSHOT on success, or RESP_ERROR if the screenshot
              could not be taken for some reason.
 REQ_QUIT:    Requests that the program exit.
+REQ_STATE_STATE: Requests the state tree. No parameters.
 
 Each request has a certain set of legal responses, as described below.
 Note that requests that start the program running (the first three) may
@@ -83,4 +91,5 @@ REQ_BREAK_ERROR: RESP_ANS
 REQ_ASYNC: REQ_STOP, or nothing (see description)
 REQ_STATE: RESP_STATE, RESP_ERROR
 REQ_SCREENSHOT: RESP_SCREENSHOT, RESP_ERROR.
+REQ_STATE: RESP_STATE_BEGIN, RESP_STATE_END.
 REQ_QUIT:  none (program exits)

@@ -16,6 +16,7 @@
   generally separates groups from functions.
 * Removed canon.c/canon.h, since they are no longer needed.
 * Rewrite of the state manager (incomplete).
+* Tab completion for state
 
 0.0.20041123
 ------------

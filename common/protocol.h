@@ -19,6 +19,8 @@
 #define RESP_ERROR             0xabcd0005L
 #define RESP_RUNNING           0xabcd0006L
 #define RESP_SCREENSHOT        0xabcd0007L
+#define RESP_STATE_NODE_BEGIN  0xabcd0008L
+#define RESP_STATE_NODE_END    0xabcd0009L
 
 #define REQ_RUN                0xdcba0000L
 #define REQ_CONT               0xdcba0001L
@@ -31,6 +33,7 @@
 #define REQ_SCREENSHOT         0xdcba0008L
 #define REQ_ENABLE_FILTERSET   0xdcba0009L
 #define REQ_DISABLE_FILTERSET  0xdcba000aL
+#define REQ_STATE_TREE         0xdcba000bL
 
 #define TO_NETWORK(x) (x)
 #define TO_HOST(x) (x)
