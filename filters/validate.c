@@ -35,6 +35,7 @@
 #include <assert.h>
 
 static bool trap = false;
+static filter_set *error_handle = NULL;
 
 static bool error_callback(function_call *call, void *data)
 {
@@ -70,8 +71,6 @@ static bool error_callback(function_call *call, void *data)
          */
         while ((error = CALL_glGetError()) != GL_NO_ERROR)
         {
-            dump_any_type(TYPE_7GLerror, &error, 1, stderr);
-            fprintf(stderr, " in %s\n", function_table[call->generic.id].name);
             if (ctx && !ctx->c_internal.c_error.data)
                 ctx->c_internal.c_error.data = error;
             *(GLenum *) data = error;
@@ -87,6 +86,7 @@ static bool error_callback(function_call *call, void *data)
 
 static bool initialise_error(filter_set *handle)
 {
+    error_handle = handle;
     register_filter(handle, "error", error_callback);
     register_filter_depends("error", "invoke");
     register_filter_set_call_state(handle, sizeof(GLenum));
@@ -97,21 +97,24 @@ static bool initialise_error(filter_set *handle)
     return true;
 }
 
-static bool set_variable_error(filter_set *handle,
-                               const char *name,
-                               const char *value)
+static bool showerror_callback(function_call *call, void *data)
 {
-    if (strcmp(name, "trap") == 0)
+    GLenum error;
+    if ((error = *(GLenum *) get_filter_set_call_state(call, error_handle)) != GL_NO_ERROR)
     {
-        if (strcmp(value, "yes") == 0)
-            trap = true;
-        else if (strcmp(value, "no") == 0)
-            trap = false;
-        else
-            fprintf(stderr, "please specify trap as either yes or no");
-        return true;
+        dump_any_type(TYPE_7GLerror, &error, -1, stderr);
+        fprintf(stderr, " in %s\n", function_table[call->generic.id].name);
     }
-    else return false;
+    return true;
+}
+
+static bool initialise_showerror(filter_set *handle)
+{
+    register_filter(handle, "showerror", showerror_callback);
+    register_filter_depends("showerror", "error");
+    register_filter_depends("showerror", "invoke");
+    register_filter_set_depends("showerror", "error");
+    return true;
 }
 
 /* Stack unwind hack, to get a usable stack trace after a segfault inside
@@ -186,6 +189,7 @@ static bool initialise_unwindstack(filter_set *handle)
 
 void initialise_filter_library(void)
 {
-    register_filter_set("error", initialise_error, NULL, set_variable_error);
+    register_filter_set("error", initialise_error, NULL, NULL);
+    register_filter_set("showerror", initialise_showerror, NULL, NULL);
     register_filter_set("unwindstack", initialise_unwindstack, NULL, NULL);
 }

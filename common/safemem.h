@@ -29,6 +29,7 @@
 #if HAVE_CONFIG_H
 # include <stddef.h>
 #endif
+#include <stdio.h>
 
 void *xmalloc(size_t size);
 void *xcalloc(size_t nmemb, size_t size);
@@ -41,6 +42,12 @@ char *xstrdup(const char *s);
  * post-condition.
  */
 char *xstrcat(char *dest, const char *src);
+
 int xasprintf(char **strp, const char *format, ...);
+
+/* Like fgets, but creates the memory. The return value has the same
+ * meaning as for fgets, but must be free()ed if non-NULL
+ */
+char *xafgets(FILE *stream);
 
 #endif /* !BUGLE_SRC_SAFEMEM_H */

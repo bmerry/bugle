@@ -76,7 +76,7 @@ char *xstrdup(const char *s)
 
 char *xstrcat(char *dest, const char *src)
 {
-    size_t dlen, dsize, slen, tlen, tsize;
+    size_t dlen, dsize, slen, tsize;
     char *tmp;
 
     slen = strlen(src);
@@ -137,4 +137,39 @@ int xasprintf(char **strp, const char *format, ...)
 #else
 #error "you have no safe way to format strings"
 #endif
+}
+
+char *xafgets(FILE *stream)
+{
+    char *str, *ret;
+    int size, have;
+
+    size = 16;
+    have = 0;
+    str = xmalloc(size);
+    while (1)
+    {
+        ret = fgets(str + have, size - have, stream);
+        if (!ret)
+        {
+            /* Error or EOF before anything new written */
+            if (have == 0)
+            {
+                free(str);
+                return NULL;
+            }
+            else
+            {
+                str[have] = '\0'; /* just to be safe; fgets might do this */
+                return str;
+            }
+        }
+        have += strlen(str + have);
+        /* We can (and must) terminate in two cases: a short read, or a
+         * full read with a newline at the end. */
+        if (have < size - 1 || str[size - 2] == '\n')
+            return str;
+        size *= 2;
+        str = xrealloc(str, size);
+    }
 }

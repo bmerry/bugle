@@ -20,10 +20,10 @@
 # include <config.h>
 #endif
 #include "canon.h"
-#include "hashtable.h"
 #include "src/types.h"
 #include "common/bool.h"
 #include "common/safemem.h"
+#include "common/hashtable.h"
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>

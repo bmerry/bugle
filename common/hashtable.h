@@ -27,7 +27,7 @@
 typedef struct
 {
     char *key;
-    const void *value;
+    void *value;
 } hash_entry;
 
 typedef struct
@@ -42,8 +42,14 @@ typedef struct
 void initialise_hashing(void);
 
 void hash_init(hash_table *table);
-void hash_set(hash_table *table, const char *key, const void *value);
+void hash_set(hash_table *table, const char *key, void *value);
 void *hash_get(const hash_table *table, const char *key);
 void hash_clear(hash_table *table, bool free_data);
+
+/* Walk the hash table. A walker loop looks like this:
+ * for (h = hash_begin(&table); h; h = hash_next(&table, h))
+ */
+const hash_entry *hash_begin(hash_table *table);
+const hash_entry *hash_next(hash_table *table, const hash_entry *e);
 
 #endif /* !BUGLE_SRC_HASHTABLE_H */

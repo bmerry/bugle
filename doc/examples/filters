@@ -1,0 +1,47 @@
+# Simply pass commands through to OpenGL
+chain pass
+{
+}
+
+# Checks for errors (written to stderr), and logs all calls to file.
+# The errors are also logged to file. Changing "showerror" to "error"
+# will suppress printing to strerr. Uncomment the "flush" line to have
+# the log flushed after every call. This is slow but will guarantee as
+# complete as possible a log in the event of a crash.
+chain trace
+{
+    filterset showerror
+    filterset log
+    {
+    	filename "/tmp/bugle.log"
+        # flush "yes"
+    }
+}
+
+# Used by gldb
+chain debugger
+{
+}
+
+# Captures a screenshot after every frame
+chain screenshot
+{
+    filterset screenshot
+}
+
+# A cute hack to get a wireframe mode
+chain wireframe
+{
+    filterset wireframe
+}
+
+# Use this if your program is crashing somewhere inside the driver, and you
+# can't get a useful stack trace (this happens with NVIDIA's drivers). Run
+# your program inside gdb, and when your receive SIGSEGV, select to continue.
+# You will see a message from the library, and another SIGSEGV will occur.
+# At this point gdb should give you a meaningful back-trace. This
+# depends on non-portable behaviour, so Your Mileage Might Vary.
+chain crash
+{
+    filterset unwindstack
+}

@@ -17,13 +17,15 @@
 #define RESP_STOP         0xabcd0003L
 #define RESP_STATE        0xabcd0004L
 #define RESP_ERROR        0xabcd0005L
+#define RESP_RUNNING      0xabcd0006L
 
-#define REQ_CONT          0xdcba0000L
-#define REQ_STEP          0xdcba0001L
-#define REQ_BREAK         0xdcba0002L
-#define REQ_BREAK_ERROR   0xdcba0003L
-#define REQ_STATE         0xdcba0004L
-#define REQ_QUIT          0xdcba0005L
+#define REQ_RUN           0xdcba0000L
+#define REQ_CONT          0xdcba0001L
+#define REQ_STEP          0xdcba0002L
+#define REQ_BREAK         0xdcba0003L
+#define REQ_BREAK_ERROR   0xdcba0004L
+#define REQ_STATE         0xdcba0005L
+#define REQ_QUIT          0xdcba0006L
 
 #define TO_NETWORK(x) (x)
 #define TO_HOST(x) (x)

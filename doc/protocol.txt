@@ -34,10 +34,16 @@ RESP_STATE:  Response to a state request. Followed by the textual value
              of the state.
 RESP_ERROR:  The request was illegal. Followed by an error code (always
              0 for now) and an error string.
+RESP_RUNNING:
+             Sent at initialisation, in response to REQ_START. No extra
+             data. This response aids in separating the responses to
+             the initialisation commands from everything else.
 
 After each response group, the debugger should send a request. The
 requests have the same basic form. The following requests are defined:
 
+REQ_RUN:     Start running. This is sent once at start-up, after setting
+             the initial breakpoints and similar state.
 REQ_CONT:    Continue running
 REQ_BREAK:   Set or clear a breakpoint on the named function.
              Followed by a name then either 1 or 0 (for set/clear).
@@ -55,6 +61,7 @@ REQ_QUIT:    Requests that the program exit.
 
 Each request has a certain set of legal responses, as described below:
 
+REQ_RUN:   RESP_RUNNING, followed by a code as for REQ_CONT
 REQ_CONT:  RESP_BREAK, RESP_BREAK_ERROR
 REQ_STEP:  RESP_BREAK, RESP_BREAK_ERROR, RESP_STOP
 REQ_BREAK: RESP_ANS, RESP_ERROR

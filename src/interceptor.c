@@ -24,7 +24,7 @@
 #include "filters.h"
 #include "canon.h"
 #include "conffile.h"
-#include "hashtable.h"
+#include "common/hashtable.h"
 #include "common/safemem.h"
 #include <stdlib.h>
 #include <string.h>
@@ -46,7 +46,6 @@ static void load_config(void)
     const config_variable *var;
     filter_set *f;
     list_node *i, *j;
-    bool done = false;
 
     home = getenv("HOME");
     if (home)
@@ -101,7 +100,6 @@ static void load_config(void)
                         f = get_filter_set_handle(set->name);
                         if (f) enable_filter_set(f);
                     }
-                    done = true;
                 }
                 config_destroy();
             }
@@ -113,12 +111,22 @@ static void load_config(void)
     }
     else
         fputs("$HOME not defined; running in passthrough mode\n", stderr);
-    if (!done)
+
+    /* Always load the invoke filter-set */
+    f = get_filter_set_handle("invoke");
+    if (!f)
     {
-        f = get_filter_set_handle("invoke");
+        fputs("could not find the 'invoke' filter-set; aborting\n", stderr);
+        exit(1);
+    }
+    enable_filter_set(f);
+    /* Auto-load the debugger filter-set if using the debugger */
+    if (getenv("BUGLE_DEBUGGER"))
+    {
+        f = get_filter_set_handle("debugger");
         if (!f)
         {
-            fputs("could not locate invoke filter-set; aborting\n", stderr);
+            fputs("could not find the 'debugger' filter-set; aborting\n", stderr);
             exit(1);
         }
         enable_filter_set(f);

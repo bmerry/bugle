@@ -81,7 +81,7 @@ void hash_init(hash_table *table)
  * - check for duplicate keys
  * It should only be used for rehashing
  */
-static void hash_set_fast(hash_table *table, char *key, const void *value)
+static void hash_set_fast(hash_table *table, char *key, void *value)
 {
     size_t h;
 
@@ -93,7 +93,7 @@ static void hash_set_fast(hash_table *table, char *key, const void *value)
 }
 
 /* FIXME: should overwritten values be freed? */
-void hash_set(hash_table *table, const char *key, const void *value)
+void hash_set(hash_table *table, const char *key, void *value)
 {
     hash_table big;
     size_t i;
@@ -136,7 +136,7 @@ void *hash_get(const hash_table *table, const char *key)
         if (++h == table->size) h = 0;
     if (table->entries[h].key)
     {
-        if (table->entries[h].value) return (void *) table->entries[h].value;
+        if (table->entries[h].value) return table->entries[h].value;
         return (void *) table->entries[h].key;
     }
     else
@@ -161,4 +161,24 @@ void hash_clear(hash_table *table, bool free_data)
     table->entries = NULL;
     table->size = table->count = 0;
     table->size_index = 0;
+}
+
+const hash_entry *hash_next(hash_table *table, const hash_entry *e)
+{
+    const hash_entry *end;
+
+    e++;
+    end = table->entries + table->size;
+    while (e < end && !e->key) e++;
+    if (e == end) return NULL;
+    else return e;
+}
+
+const hash_entry *hash_begin(hash_table *table)
+{
+    const hash_entry *ans;
+
+    if (!table->entries) return NULL;
+    else if (table->entries->key) return table->entries;
+    return hash_next(table, table->entries);
 }

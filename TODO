@@ -1,18 +1,16 @@
+- improvements to gldb
 - rewrite many things to use hash tables
 - redesign state specification grammar
-- deal gracefully with filter-generated GL errors
-- autoconf tests (e.g. regex)
+- more autoconf tests (e.g. regex)
 - autoconf test for GLENUM_IS_GLUINT
-- proper debug module
 - move filter code into budgie?
 - write support for state
 - capture and reload
-- documentation
+- more documentation
 - use ltdl for loading modules
 - allow the filter chain to be selectively bypassed, for benchmarking purposes
 - cap and extension overrides
 - statistics
 - capture information about call lists
-- log errors to file
 - profiling
-- use dump overrides rather than alterative types for alt enums and errors
+- use dump overrides rather than alterative types for alt enums and errors?

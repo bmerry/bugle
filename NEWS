@@ -1,2 +1,26 @@
+This release adds the gldb debugging tool. This replaces the rather
+primitive debugging mode of earlier releases, where you specified
+breakpoints in the config file. See the man page for instructions on
+using gldb.
+
+You will probably need to modify your configuration file, to take
+account of the following changes (or you can just copy the one in
+doc/examples/filters.
+- The invoke filter-set is automatically loaded. You may still specify
+  it, but omitting it makes no difference.
+- The debugger filter-set should no longer be specified. It is
+  automatically loaded by the debugger, and attempting to use it
+  without the debugger will lead to errors.
+- The "error" filter-set has been renamed to "showerror".
+  An "error" filter-set still exists, but only detects errors for the
+  benefit of other filter-sets. For example, the "log" filter-set will
+  log errors if the "error" filter-set is used.
+
+0.0.20040609
+------------
+Minor bugfixes only.
+
+0.0.20040606
+------------
 This is the first public release of BuGLe. Please read the README file
 first, as the software it still pretty rough.

@@ -17,7 +17,8 @@ AM_YFLAGS = -d
 
 common_libcommon_la_SOURCES = \
 	common/safemem.c common/safemem.h \
-	common/bool.h common/protocol.h common/protocol.c
+	common/bool.h common/protocol.h common/protocol.c \
+	common/hashtable.c common/hashtable.h \
 common_libcommon_la_LDFLAGS = -static
 
 gldb_gldb_SOURCES = gldb/gldb.c
@@ -42,7 +43,6 @@ src_libbugle_la_SOURCES = \
 	src/glutils.c src/glutils.h \
 	src/gltokens.h \
 	src/linkedlist.c src/linkedlist.h \
-	src/hashtable.c src/hashtable.h \
 	src/glstate.c src/glstate.h \
 	src/canon.c src/canon.h \
 nodist_src_libbugle_la_SOURCES = \
@@ -57,7 +57,8 @@ src_libbugle_la_LDFLAGS = -export-dynamic -version-info 0:0:0
 EXTRA_DIST = src/gl.bc src/data/gl.c src/data/overrides.h \
 	gentokens/gettokens.awk \
 	FAQ TROUBLESHOOTING \
-	doc/filters.txt doc/example.txt doc/protocol.txt
+	doc/filters.txt doc/protocol.txt \
+	doc/examples/filters
 
 # Generated files that generate other files
 

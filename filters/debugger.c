@@ -24,9 +24,9 @@
 #include "src/utils.h"
 #include "src/types.h"
 #include "src/canon.h"
-#include "src/hashtable.h"
 #include "src/glutils.h"
 #include "budgielib/state.h"
+#include "common/hashtable.h"
 #include "common/protocol.h"
 #include "common/bool.h"
 #include "common/safemem.h"
@@ -98,8 +98,10 @@ static void debugger_loop(bool init)
     while (true)
     {
         recv_code(in_pipe, &req);
-        if (req == REQ_CONT || req == REQ_STEP)
+        if (req == REQ_CONT || req == REQ_STEP || req == REQ_RUN)
         {
+            if (req == REQ_RUN)
+                send_code(out_pipe, RESP_RUNNING);
             break_on_next = (req == REQ_STEP);
             break;
         }
@@ -210,6 +212,7 @@ static bool initialise_debugger(filter_set *handle)
     register_filter_depends("invoke", "debugger");
     register_filter_depends("debugger_error", "invoke");
     register_filter_depends("debugger_error", "error");
+    register_filter_set_depends("debugger", "error");
     filter_set_renders("debugger");
     filter_post_renders("debugger_error");
     filter_set_queries_error("debugger", false);
@@ -217,31 +220,8 @@ static bool initialise_debugger(filter_set *handle)
     return true;
 }
 
-static bool set_variable_debugger(filter_set *handle,
-                                  const char *name,
-                                  const char *value)
-{
-    budgie_function f;
-
-    if (strcmp(name, "break") == 0)
-    {
-        if (strcmp(value, "error") == 0)
-            break_on_error = true;
-        else
-        {
-            f = find_function(value);
-            if (f == NULL_FUNCTION)
-                fprintf(stderr, "Warning: unknown function %s\n", value);
-            else
-                break_on[canonical_function(f)] = true;
-        }
-        return true;
-    }
-    return false;
-}
-
 void initialise_filter_library(void)
 {
     memset(break_on, 0, sizeof(break_on));
-    register_filter_set("debugger", initialise_debugger, NULL, set_variable_debugger);
+    register_filter_set("debugger", initialise_debugger, NULL, NULL);
 }

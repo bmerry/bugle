@@ -1,5 +1,5 @@
 BuGLe alpha release
-=======================
+===================
 
 This is a very alpha release, and may not due what you want. If you
 have problems installing, please refer to the TROUBLESHOOTING file. It
@@ -11,9 +11,10 @@ why.
 
 Here are a few things you can do so far
 - capture a log of what a program does (won't capture everything yet)
-- pause after selected calls (like glXSwapBuffers), and get state dumps
 - check for GL errors after every call
 - force a wireframe mode
+- run inside a gdb-like debugger, with breakpoints on GL functions and
+  stopping after every error.
 
 To build, you will need a version of gcc that supports the
 -fdump-translation-unit flag. It was introduced by 3.2, but was not
@@ -21,7 +22,7 @@ present in 2.95 or 3.0. See the FAQ for an explanation of why you have
 to use a recent gcc. Generic build instructions are in INSTALL.
 
 To run usefully, you will need a configuration file
-$HOME/.bugle/filters. You can copy the example file doc/example.txt.
+$HOME/.bugle/filters. You can copy the example file doc/examples/filters.
 Execute your program something like the following:
 
 $ BUGLE_CHAIN=trace LD_PRELOAD=/usr/local/lib/libbugle.so glxgears
