@@ -19,9 +19,10 @@
 #if HAVE_CONFIG_H
 # include <config.h>
 #endif
-#include "src/glstate.h"
 #include "src/types.h"
 #include "src/utils.h"
+#include "glstate.h"
+#include "glutils.h"
 #include "budgielib/state.h"
 #include <GL/gl.h>
 #include <GL/glext.h>
@@ -44,7 +45,9 @@ void glstate_get_enable(state_generic *state)
 
     e = state_to_enum(state);
     assert(state->spec->data_type == TYPE_9GLboolean);
+    begin_internal_render();
     *(GLboolean *) state->data = CALL_glIsEnabled(e);
+    end_internal_render("glstate_get_enable", true);
 }
 
 void glstate_get_global(state_generic *state)
@@ -52,6 +55,7 @@ void glstate_get_global(state_generic *state)
     GLenum e;
     double data[16]; /* 16 should be enough */
 
+    begin_internal_render();
     e = state_to_enum(state);
     switch (state->spec->data_type)
     {
@@ -79,6 +83,7 @@ void glstate_get_global(state_generic *state)
         CALL_glGetDoublev(e, data);
         type_convert(state->data, state->spec->data_type, data, TYPE_8GLdouble, state->spec->data_length);
     }
+    end_internal_render("glstate_get_global", true);
 }
 
 static GLenum target_to_binding(GLenum target)
@@ -105,6 +110,7 @@ static GLenum get_texture_target(state_generic *state)
     return ptr_to_int(state->parent->key);
 }
 
+/* Assumes that the called handles begin_internal_render */
 static GLenum push_texture_binding(GLenum target, state_generic *state)
 {
     GLenum texture, binding;
@@ -117,11 +123,13 @@ static GLenum push_texture_binding(GLenum target, state_generic *state)
     return old;
 }
 
+/* Assumes that the called handles begin_internal_render */
 static void pop_texture_binding(GLenum target, GLenum old)
 {
     CALL_glBindTexture(target, old);
 }
 
+/* Assumes that the called handles begin_internal_render */
 static GLenum push_server_texture_unit(state_generic *state)
 {
     GLenum old, cur;
@@ -138,6 +146,7 @@ static GLenum push_server_texture_unit(state_generic *state)
         return 0;
 }
 
+/* Assumes that the called handles begin_internal_render */
 static inline void pop_server_texture_unit(GLenum old)
 {
     if (old)
@@ -151,6 +160,7 @@ void glstate_get_texparameter(state_generic *state)
     GLenum e;
     float data[16]; /* should be enough */
 
+    begin_internal_render();
     target = get_texture_target(state->parent);
     old_texture = push_texture_binding(target, state->parent);
 
@@ -174,6 +184,7 @@ void glstate_get_texparameter(state_generic *state)
     }
 
     pop_texture_binding(target, old_texture);
+    end_internal_render("glstate_get_texparameter", true);
 }
 
 void glstate_get_texlevelparameter(state_generic *state)
@@ -183,6 +194,7 @@ void glstate_get_texlevelparameter(state_generic *state)
     GLint level;
     GLfloat data[16];
 
+    begin_internal_render();
     tex_state = state->parent->parent->parent;
     target = get_texture_target(tex_state);
     old_texture = push_texture_binding(target, tex_state);
@@ -208,6 +220,7 @@ void glstate_get_texlevelparameter(state_generic *state)
     }
 
     pop_texture_binding(target, old_texture);
+    end_internal_render("glstate_get_texlevelparameter", true);
 }
 
 void glstate_get_texgen(state_generic *state)
@@ -217,6 +230,7 @@ void glstate_get_texgen(state_generic *state)
     GLenum e;
     GLdouble data[16];
 
+    begin_internal_render();
     old_unit = push_server_texture_unit(state->parent->parent->parent);
     coord = ptr_to_int(state->parent->key) + GL_S;
     if (state->spec->data_type == TYPE_9GLboolean) /* enable bit */
@@ -247,6 +261,7 @@ void glstate_get_texgen(state_generic *state)
     }
 
     pop_server_texture_unit(old_unit);
+    end_internal_render("glstate_get_texgen", true);
 }
 
 void glstate_get_texunit(state_generic *state)
@@ -255,6 +270,7 @@ void glstate_get_texunit(state_generic *state)
     GLenum e;
     GLdouble data[16];
 
+    begin_internal_render();
     old_unit = push_server_texture_unit(state->parent);
     e = state_to_enum(state);
     if (state->spec->data_type == TYPE_9GLboolean) /* enable bit */
@@ -284,6 +300,7 @@ void glstate_get_texunit(state_generic *state)
     }
 
     pop_server_texture_unit(old_unit);
+    end_internal_render("glstate_get_texunit", true);
 }
 
 void glstate_get_texenv(state_generic *state)
@@ -291,6 +308,7 @@ void glstate_get_texenv(state_generic *state)
     GLenum old_unit, e;
     GLfloat data[16];
 
+    begin_internal_render();
     old_unit = push_server_texture_unit(state->parent->parent);
 
     e = state_to_enum(state);
@@ -313,4 +331,5 @@ void glstate_get_texenv(state_generic *state)
     }
 
     pop_server_texture_unit(old_unit);
+    end_internal_render("glstate_get_texenv", true);
 }

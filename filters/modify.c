@@ -20,6 +20,7 @@
 #include "src/utils.h"
 #include "src/types.h"
 #include "src/canon.h"
+#include "src/glutils.h"
 #include "common/bool.h"
 #include <GL/glx.h>
 
@@ -54,7 +55,9 @@ static bool wireframe_post_callback(function_call *call, void *data)
 #ifdef GLX_VERSION_1_3
     case FUNC_glXMakeContextCurrent:
 #endif
+        begin_internal_render();
         CALL_glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+        end_internal_render("wireframe", true);
     }
     return true;
 }
@@ -77,8 +80,10 @@ static bool frontbuffer_callback(function_call *call, void *data)
     case FUNC_glXMakeContextCurrent:
 #endif
     case FUNC_glDrawBuffer:
+        begin_internal_render();
         CALL_glDrawBuffer(GL_FRONT);
         CALL_glClear(GL_COLOR_BUFFER_BIT); /* hopefully bypass z-trick */
+        end_internal_render("frontbuffer", true);
     }
     return true;
 }

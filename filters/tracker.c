@@ -63,6 +63,16 @@ bool trackcontext_callback(function_call *call, void *data)
  * because glBegin can fail if given an illegal primitive, and we can't
  * check for the error because glGetError is illegal inside glBegin/glEnd.
  */
+
+bool in_begin_end(void)
+{
+    /* Begin/end is a time when GL calls fail. If we don't yet have a
+     * context, then the calls are simply undefined, so we probably also
+     * don't want to take actions based on calls.
+     */
+    return !context_state || context_state->c_internal.c_in_begin_end.data;
+}
+
 static bool trackbeginend_callback(function_call *call, void *data)
 {
     switch (canonical_call(call))

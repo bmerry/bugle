@@ -34,14 +34,15 @@
 #include <assert.h>
 
 static state_7context_I *(*get_context_state)(void);
+static bool (*in_begin_end)(void);
 
 static bool error_pre_callback(function_call *call, void *data)
 {
     state_7context_I *ctx;
 
-    ctx = (*get_context_state)();
+    ctx = get_context_state();
     if (canonical_call(call) == FUNC_glGetError
-        && ctx && !ctx->c_internal.c_in_begin_end.data
+        && !in_begin_end()
         && ctx->c_internal.c_error.data)
     {
         *call->typed.glGetError.retn = ctx->c_internal.c_error.data;
@@ -58,12 +59,11 @@ static bool error_post_callback(function_call *call, void *data)
 
     /* FIXME: work with the log module */
     if (function_table[call->generic.id].name[2] == 'X') return true; /* GLX */
-    assert(get_context_state);
-    ctx = (*get_context_state)();
-    if (ctx && !ctx->c_internal.c_in_begin_end.data)
+    ctx = get_context_state();
+    if (!in_begin_end())
     {
-        error = CALL_glGetError();
-        if (error)
+        /* Note: we deliberately don't call begin_internal_render here */
+        while ((error = CALL_glGetError()) != GL_NO_ERROR)
         {
             dump_any_type(TYPE_7GLerror, &error, 1, stderr);
             fprintf(stderr, " in %s\n", function_table[call->generic.id].name);
@@ -76,7 +76,7 @@ static bool error_post_callback(function_call *call, void *data)
 
 static bool initialise_error(filter_set *handle)
 {
-    filter_set *trackcontext;
+    filter_set *trackcontext, *trackbeginend;
 
     register_filter(handle, "error_pre", error_pre_callback);
     register_filter(handle, "error_post", error_post_callback);
@@ -87,13 +87,22 @@ static bool initialise_error(filter_set *handle)
     register_filter_set_depends("error", "trackcontext");
 
     trackcontext = get_filter_set_handle("trackcontext");
+    trackbeginend = get_filter_set_handle("trackbeginend");
     if (!trackcontext)
     {
         fputs("trackcontext filter-set not found (required by error)\n", stderr);
         return false;
     }
+    if (!trackbeginend)
+    {
+        fputs("trackbeginend filter-set not found (required by error)\n", stderr);
+        return false;
+    }
     get_context_state = (state_7context_I *(*)(void))
         get_filter_set_symbol(trackcontext, "get_context_state");
+    in_begin_end = (bool (*)(void))
+        get_filter_set_symbol(trackbeginend, "in_begin_end");
+    assert(get_context_state && in_begin_end);
     return true;
 }
 

@@ -24,6 +24,7 @@
 #include "src/types.h"
 #include "src/canon.h"
 #include "src/hashtable.h"
+#include "src/glutils.h"
 #include "budgielib/state.h"
 #include "common/bool.h"
 #include <stdio.h>
@@ -76,7 +77,9 @@ static bool debugger_callback(function_call *call, void *data)
     char line[1024];
     if (break_on[canonical_call(call)])
     {
+        begin_internal_render();
         CALL_glFinish();
+        end_internal_render("debugger", true);
         fgets(line, sizeof(line), in_pipe);
         if (strcmp(line, "state\n") == 0)
         {

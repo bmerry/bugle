@@ -318,6 +318,7 @@ int count_gl(budgie_function func, GLenum token)
 }
 
 static state_7context_I *(*get_context_state)(void) = NULL;
+static bool (*in_begin_end)(void) = NULL;
 
 void initialise_dump(void)
 {
@@ -330,6 +331,10 @@ void initialise_dump(void)
     if (f)
         get_context_state = (state_7context_I *(*)(void))
             get_filter_set_symbol(f, "get_context_state");
+    f = get_filter_set_handle("trackbeginend");
+    if (f)
+        in_begin_end = (bool (*)(void))
+            get_filter_set_symbol(f, "in_begin_end");
 }
 
 /* Computes the number of pixel elements (units of byte, int, float etc)
@@ -357,9 +362,9 @@ size_t image_element_count(GLsizei width,
     /* First check that we aren't in begin/end, in which case the call
      * will fail anyway.
      */
-    assert(get_context_state);
-    ctx = (*get_context_state)();
-    if (!ctx || ctx->c_internal.c_in_begin_end.data) return 0;
+    assert(get_context_state && in_begin_end);
+    ctx = get_context_state();
+    if (in_begin_end()) return 0;
     if (unpack)
     {
         CALL_glGetIntegerv(GL_UNPACK_SWAP_BYTES, &swap_bytes);

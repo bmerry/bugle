@@ -8,7 +8,8 @@ pkglib_LTLIBRARIES = \
 	filters/modify.la \
 	filters/validate.la \
 	filters/tracker.la \
-	filters/debugger.la
+	filters/debugger.la \
+	filters/capture.la
 INCLUDES = -I$(srcdir)/budgielib
 AM_CFLAGS = -DPKGLIBDIR=\"$(pkglibdir)\" $(X_CFLAGS)
 AM_YFLAGS = -d
@@ -28,6 +29,7 @@ src_libbugle_la_SOURCES = \
 	src/confparse.y src/conflex.l src/conffile.h \
 	src/interceptor.c src/filters.c src/filters.h \
 	src/gldump.c src/gldump.h \
+	src/glutils.c src/glutils.h \
 	src/gltokens.h \
 	src/linkedlist.c src/linkedlist.h \
 	src/hashtable.c src/hashtable.h \
@@ -82,6 +84,8 @@ filters_tracker_la_SOURCES = filters/tracker.c
 filters_tracker_la_LDFLAGS = -module -avoid-version
 filters_debugger_la_SOURCES = filters/debugger.c
 filters_debugger_la_LDFLAGS = -module -avoid-version
+filters_capture_la_SOURCES = filters/capture.c
+filters_capture_la_LDFLAGS = -module -avoid-version
 
 CLEANFILES = src/types.c src/types.h src/utils.c src/utils.h src/lib.c src/lib.h \
 	src/gltokens.c src/data/gl.tu
