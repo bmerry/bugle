@@ -16,10 +16,18 @@ Here are a few things you can do so far
 - run inside a gdb-like debugger, with breakpoints on GL functions and
   (optionally) stopping after every error.
 
-To build, you will need a version of gcc that supports the
--fdump-translation-unit flag. It was introduced by 3.2, but was not
-present in 2.95 or 3.0. See the FAQ for an explanation of why you have
-to use a recent gcc. Generic build instructions are in INSTALL.
+To build, you will need the following:
+- A version of gcc that supports the -fdump-translation-unit flag
+  (gcc 3.2 or higher is recommended).
+- A C++ compiler (probably g++)
+- OpenGL header files, including glext.h. The best OpenGL header files
+  are those from the Mesa project (pre-installed on many systems).
+  Avoid the header files provided by NVIDIA, as they have numerous
+  errors.
+
+If you have trouble with your system headers, see the file
+TROUBLESHOOTING for instructions on using Mesa headers to compile
+BuGLe.
 
 To run usefully, you will need a configuration file
 $HOME/.bugle/filters. You can copy the example file doc/examples/filters.
@@ -30,7 +38,7 @@ $ BUGLE_CHAIN=trace LD_PRELOAD=/usr/local/lib/libbugle.so glxgears
 where BUGLE_CHAIN specifies a combination of filters to use. The name
 references a section in the configuration file; the example file
 documents the configurations it provides. For more details, see the
-manual page bugle(3).
+manual page for bugle.
 
 The debugger is called gldb and is documented in the manual page.
 

@@ -28,6 +28,7 @@
 #include "budgielib/state.h"
 #include "common/bool.h"
 #include <stdio.h>
+#include <stdlib.h>
 #include <unistd.h>
 #include <signal.h>
 #include <setjmp.h>
@@ -77,7 +78,16 @@ static bool error_callback(function_call *call, void *data)
             if (trap)
             {
                 fflush(stderr);
+                /* SIGTRAP is technically a BSD extension, and various
+                 * versions of FreeBSD do weird things (e.g. 4.8 will
+                 * never define it if _POSIX_SOURCE is defined). Rather
+                 * than try all possibilities we just SIGABRT instead.
+                 */
+#ifdef SIGTRAP
                 raise(SIGTRAP);
+#else
+                abort();
+#endif
             }
         }
     }

@@ -1,15 +1,26 @@
-P: I am getting the error 'Invalid option -fdump-translation-unit' or
+Q. I am getting the error 'Invalid option -fdump-translation-unit' or
 similar.
-S: You need to use a version of gcc that supports this flag. Version
+A. You need to use a version of gcc that supports this flag. Version
 3.2 and newer are known to, but 3.0 and 2.95 do not. I'm not sure about
 3.1.
 
-P: I am getting the error "could not find GL/glext.h"
-S: You need to have this file, as it defines extensions to OpenGL that
-an application might use. Obtain the latest copy from
+Q. I am getting the error "could not find GL/glext.h"
+A. You need to have this file, as it defines extensions to OpenGL that
+an application might use. You can obtain the latest copy from
 http://oss.sgi.com/projects/ogl-sample/registry. If you don't want to
 put it in your system include directories, you can create a GL
 subdirectory of your source directory and put it there.
+
+Q. I am using the NVIDIA header files, and I am getting errors about
+conflicting definitions.
+A. Avoid using the NVIDIA header files. They define prototypes that do
+not match the OpenGL specification, and contain other flaws as well. If
+you are unwilling or unable to modify the system header files, then you
+can create a GL subdirectory of your BuGLe source directory and place
+alternative headers there. Mesa has good headers; try downloading the
+Mesa source from www.mesa3d.org and using the headers from there.
+
+
 
 For any other problems, contact me at bmerry@users.sourceforge.net. If
 you are having compilation problems, then it would help to include the

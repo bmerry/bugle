@@ -19,14 +19,14 @@
 #if HAVE_CONFIG_H
 # include <config.h>
 #endif
-#define _XOPEN_SOURCE
-#define _POSIX_SOURCE
+#define _XOPEN_SOURCE 600 /* for unsetenv */
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/wait.h>
+#include <signal.h>
 #include <errno.h>
 #include <assert.h>
 #include <ctype.h>
@@ -45,6 +45,10 @@
 #undef HAVE_READLINE_READLINE_H
 #define HAVE_READLINE_READLINE_H 0
 */
+
+#if HAVE_READLINE_READLINE_H && !HAVE_RL_COMPLETION_MATCHES
+# define rl_completion_matches completion_matches
+#endif
 
 #define RESTART(expr) \
     do \
@@ -126,17 +130,6 @@ static void check(int r, const char *str)
     }
 }
 
-static void xsetenv(const char *name, const char *value)
-{
-    char *env;
-
-    /* FIXME: memory leak. Might not be avoidable though, and probably
-     * not important since we do this right before exec. */
-    env = xmalloc(strlen(name) + strlen(value) + 2);
-    sprintf(env, "%s=%s", name, value);
-    check(putenv(env), "putenv");
-}
-
 static void sigchld_handler(int sig)
 {
     siglongjmp(chld_env, 1);
@@ -159,16 +152,16 @@ static pid_t execute(void)
         exit(1);
     case 0: /* Child */
         if (chain)
-            xsetenv("BUGLE_CHAIN", chain);
+            check(setenv("BUGLE_CHAIN", chain, 1), "setenv");
         else
-            check(putenv("BUGLE_CHAIN"), "putenv"); /* clear it */
-        xsetenv("LD_PRELOAD", LIBDIR "/libbugle.so");
-        xsetenv("BUGLE_DEBUGGER", "1");
+            unsetenv("BUGLE_CHAIN");
+        check(setenv("LD_PRELOAD", LIBDIR "/libbugle.so", 1), "setenv");
+        check(setenv("BUGLE_DEBUGGER", "1", 1), "setenv");
         xasprintf(&env, "%d", in_pipe[1]);
-        xsetenv("BUGLE_DEBUGGER_FD_OUT", env);
+        check(setenv("BUGLE_DEBUGGER_FD_OUT", env, 1), "setenv");
         free(env);
         xasprintf(&env, "%d", out_pipe[0]);
-        xsetenv("BUGLE_DEBUGGER_FD_IN", env);
+        check(setenv("BUGLE_DEBUGGER_FD_IN", env, 1), "setenv");
         free(env);
 
         close(in_pipe[0]);

@@ -1,5 +1,6 @@
 BuGLe: questions that nobody has asked yet, but which they might...
 ===================================================================
+Note that compilation problems are addressed in TROUBLESHOOTING.
 
 Q. My program crashes, somewhere deep inside the OpenGL driver and I
 can't get a stack trace. How can I tell what caused it?

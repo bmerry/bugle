@@ -26,6 +26,8 @@ AC_DEFUN([BUGLE_PATH_GLINCLUDES],
 [
 GLINCLUDE_PATH=/usr/include/GL
 AC_CHECK_FILE([/usr/X11R6/include/GL/gl.h], [GLINCLUDE_PATH=/usr/X11R6/include/GL], [])
+AC_CHECK_FILE([/usr/include/GL/gl.h], [GLINCLUDE_PATH=/usr/include/GL], [])
+AC_CHECK_FILE([$srcdir/GL/gl.h], [GLINCLUDE_PATH="$srcdir/GL/gl.h"], [])
 AC_ARG_WITH([gl],
             AC_HELP_STRING([--with-gl=DIR],
                            [GL headers are in DIR]),

@@ -3,7 +3,7 @@
 # an integer type with #defined values. These rules attempt to handle both
 # cases. There are also certain things that look like enums but are not.
 # These are the GL_VERSION_1_1 etc strings, and bitfields like
-# GL_ALL_CLIENT_ATTRIB_BITS. To make things more confusing, both real
+# GL_CLIENT_ALL_ATTRIB_BITS. To make things more confusing, both real
 # enums and bitfields can end in _BITS. We also need to consider extension
 # suffices.
 function is_enum(name)

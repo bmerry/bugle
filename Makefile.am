@@ -2,14 +2,12 @@
 
 # Utility programs, used for generating other files
 noinst_PROGRAMS = budgie/budgie gentokens/gentokens
-# Convenience libraries
-noinst_LTLIBRARIES = budgielib/libbudgie.la common/libcommon.la
 # Misc extra files to include
 noinst_HEADERS = budgie/tree.def budgie/c-common.def
 noinst_SCRIPTS = gentokens/gettokens.awk
-man_MANS = doc/gldb.1.gz doc/bugle.3.gz
+dist_man_MANS = doc/gldb.1 doc/bugle.3
 # The real things
-lib_LTLIBRARIES = src/libbugle.la src/libbugleutils.la
+lib_LTLIBRARIES = src/libbugleutils.la src/libbugle.la
 bin_PROGRAMS = gldb/gldb
 pkglib_LTLIBRARIES = \
 	filters/common.la \
@@ -23,8 +21,14 @@ INCLUDES = -I$(srcdir)/budgielib
 AM_CFLAGS = -DLIBDIR=\"$(libdir)\" -DPKGLIBDIR=\"$(pkglibdir)\" $(X_CFLAGS)
 AM_YFLAGS = -d
 
+# Convenience variable; not a target
+common_sources = \
+	common/safemem.c common/safemem.h \
+	common/bool.h common/protocol.h common/protocol.c \
+	common/hashtable.c common/hashtable.h
+
 gldb_gldb_SOURCES = gldb/gldb.c
-gldb_gldb_LDADD = common/libcommon.la src/libbugleutils.la $(READLINE_LIBS)
+gldb_gldb_LDADD = src/libbugleutils.la $(READLINE_LIBS)
 
 budgie_budgie_SOURCES = \
 	budgie/budgie.cpp \
@@ -32,17 +36,6 @@ budgie_budgie_SOURCES = \
 	budgie/tree.cpp budgie/tree.h \
 	budgie/treeutils.cpp budgie/treeutils.h \
 	budgie/lexer.ll
-
-common_libcommon_la_SOURCES = \
-	common/safemem.c common/safemem.h \
-	common/bool.h common/protocol.h common/protocol.c \
-	common/hashtable.c common/hashtable.h
-common_libcommon_la_LDFLAGS = -static
-
-budgielib_libbudgie_la_SOURCES = \
-	budgielib/budgieutils.c budgielib/budgieutils.h \
-	budgielib/state.c budgielib/state.h
-budgielib_libbudgie_la_LDFLAGS = -static
 
 src_libbugleutils_la_SOURCES = \
 	src/confparse.y src/conflex.l src/conffile.h \
@@ -52,18 +45,20 @@ src_libbugleutils_la_SOURCES = \
 	src/gltokens.h \
 	src/linkedlist.c src/linkedlist.h \
 	src/glstate.c src/glstate.h \
-	src/canon.c src/canon.h
+	src/canon.c src/canon.h \
+	$(common_sources) \
+	budgielib/budgieutils.c budgielib/budgieutils.h \
+	budgielib/state.c budgielib/state.h
 nodist_src_libbugleutils_la_SOURCES = \
 	src/utils.c src/utils.h src/types.c src/types.h \
 	src/gltokens.c
-src_libbugleutils_la_LIBADD = budgielib/libbudgie.la common/libcommon.la \
-	$(LTLIBOBJS) $(GL_LIBS) $(X_PRE_LIBS) $(X_LIBS) $(X_EXTRA_LIBS)
+src_libbugleutils_la_LIBADD = $(LTLIBOBJS) $(GL_LIBS) $(X_PRE_LIBS) $(X_LIBS) $(X_EXTRA_LIBS)
 src_libbugleutils_la_LDFLAGS = -export-dynamic -version-info 0:0:0
 src_libbugle_la_SOURCES = \
 	src/interceptor.c src/filters.c src/filters.h
 nodist_src_libbugle_la_SOURCES = \
 	src/lib.c src/lib.h
-src_libbugle_la_LIBADD = src/libbugleutils.la $(GL_LIBS) $(GL_LIBS) $(X_PRE_LIBS) $(X_LIBS) $(X_EXTRA_LIBS)
+src_libbugle_la_LIBADD = src/libbugleutils.la $(GL_LIBS) $(X_PRE_LIBS) $(X_LIBS) $(X_EXTRA_LIBS)
 src_libbugle_la_LDFLAGS = -export-dynamic -version-info 0:1:0
 
 BUILT_SOURCES = src/lib.h src/utils.h src/types.h src/confparse.h
@@ -92,9 +87,9 @@ endif
 
 # Filters
 filters_common_la_SOURCES = filters/common.c
-filters_common_la_LDFLAGS = -module
+filters_common_la_LDFLAGS = -module -avoid-version
 filters_modify_la_SOURCES = filters/modify.c
-filters_modify_la_LDFLAGS = -module
+filters_modify_la_LDFLAGS = -module -avoid-version
 filters_validate_la_SOURCES = filters/validate.c
 filters_validate_la_LDFLAGS = -module -avoid-version
 filters_tracker_la_SOURCES = filters/tracker.c
@@ -104,19 +99,10 @@ filters_debugger_la_LDFLAGS = -module -avoid-version
 filters_capture_la_SOURCES = filters/capture.c
 filters_capture_la_LDFLAGS = -module -avoid-version
 
-# Documentation
-doc/gldb.1.gz: doc/gldb.1
-	$(srcdir)/mkinstalldirs doc
-	GZIP=$(GZIP_ENV) gzip -c < $(srcdir)/doc/gldb.1 > doc/gldb.1.gz
-doc/bugle.3.gz: doc/bugle.3
-	$(srcdir)/mkinstalldirs doc
-	GZIP=$(GZIP_ENV) gzip -c < $(srcdir)/doc/bugle.3 > doc/bugle.3.gz
-
 # Extra files to distribute
 EXTRA_DIST = src/gl.bc src/data/gl.c src/data/overrides.h \
 	gentokens/gettokens.awk \
 	FAQ TROUBLESHOOTING \
-	doc/gldb.1 doc/bugle.3 \
 	doc/filters.txt doc/protocol.txt doc/examples/filters
 
 # Note: automake ought to clean gldb/.libs/gldb, but for some reason it

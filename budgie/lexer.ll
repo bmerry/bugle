@@ -188,6 +188,7 @@ rest of the record, find the length, then replace what we don't need.
 "end"	|
 "null"	|
 "register" |
+"artificial" |
 "clnp"	/* Ignore these tags */
 
 [a-z][a-z ]{3}": "[^ \t]* { printf("Unknown field %s\n", yytext); }

@@ -17,6 +17,8 @@ AC_PROG_LIBTOOL
 AC_LANG(C)
 
 dnl Checks for libraries
+AC_PATH_XTRA
+
 READLINE_LIBS=""
 AC_CHECK_LIB([readline], [readline], [
   READLINE_LIBS="-lreadline $READLINE_LIBS"], [], [])
@@ -24,9 +26,14 @@ AC_CHECK_LIB([history], [add_history], [
   READLINE_LIBS="-lhistory $READLINE_LIBS"], [], [-lreadline])
 AC_SUBST(READLINE_LIBS)
 
+# Sadly, FreeBSD does not implement libraries depending on libraries, and
+# OpenGL uses X and maths functions. Hence the -lm and all the X rubbish.
 GL_LIBS=""
-AC_CHECK_LIB([GL], [glBegin], [GL_LIBS="-lGL $GL_LIBS"], [], [])
+AC_CHECK_LIB([GL], [glBegin], [GL_LIBS="-lGL -lm $GL_LIBS"], [], [$X_PRE_LIBS $X_LIBS $X_XTRA_LIBS -lm])
 AC_SUBST(GL_LIBS)
+if test "x$GL_LIBS" = "x"; then 
+  AC_MSG_ERROR([An OpenGL library is required])
+fi
 
 dnl Checks for header files
 AC_HEADER_STDC
@@ -53,10 +60,17 @@ dnl Checks for library functions
 AC_CHECK_FUNCS([regcomp strrchr vasprintf vsnprintf])
 AC_REPLACE_FUNCS([bsearch])
 AC_FUNC_MEMCMP
+# Readline used to call this completion_matches
+real_libs="$LIBS"
+LIBS="-lreadline $LIBS"
+AC_CHECK_FUNCS([rl_completion_matches], [], [])
+LIBS="$real_libs"
 
 dnl Checks for system services
 AC_PATH_XTRA
-BUGLE_PATH_GLINCLUDES
+if test "x$CPP_DEFINES" = "xno"; then
+  BUGLE_PATH_GLINCLUDES
+fi
 
 dnl Set up some extra stuff
 AM_CONDITIONAL(PREPROCESS_GL, test x$CPP_DEFINES = xyes)
