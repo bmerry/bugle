@@ -108,6 +108,7 @@ filters_tracker_la_LDFLAGS = -thread-safe -module -avoid-version
 filters_debugger_la_SOURCES = filters/debugger.c
 filters_debugger_la_LDFLAGS = -thread-safe -module -avoid-version
 filters_capture_la_SOURCES = filters/capture.c
+filters_capture_la_LIBADD = $(AVCODEC_LIBS)
 filters_capture_la_LDFLAGS = -thread-safe -module -avoid-version
 
 # Demo/Test programs

@@ -31,6 +31,13 @@ AC_CHECK_LIB([pthread], [pthread_create], [
   THREAD_LIBS="-lpthread $THREAD_LIBS"], [], [])
 AC_SUBST(THREAD_LIBS)
 
+AVCODEC_LIBS=""
+HAVE_LAVC=1
+AC_CHECK_LIB([avcodec], [avcodec_open], [
+  AVCODEC_LIBS="-lavcodec $AVCODEC_LIBS"], [HAVE_LAVC=0], [])
+AC_CHECK_LIB([avformat], [av_write_frame], [
+  AVCODEC_LIBS="-lavformat $AVCODEC_LIBS"], [HAVE_LAVC=0], [$AVCODEC_LIBS])
+
 # Sadly, FreeBSD does not implement libraries depending on libraries, and
 # OpenGL uses X and maths functions. Hence the -lm and all the X rubbish.
 GL_LIBS=""
@@ -45,6 +52,7 @@ AC_HEADER_STDC
 AC_HEADER_DIRENT
 AC_HEADER_STDBOOL
 AC_CHECK_HEADERS([sys/types.h stdlib.h stddef.h regex.h])
+AC_CHECK_HEADERS([ffmpeg/avformat.h ffmpeg/avcodec.h], [], [HAVE_LAVC=0])
 AC_CHECK_HEADERS([readline/readline.h pthread.h])
 
 dnl Checks for types
@@ -79,6 +87,11 @@ fi
 
 dnl Set up some extra stuff
 AM_CONDITIONAL(PREPROCESS_GL, test x$CPP_DEFINES = xyes)
+
+dnl FIXME: add a --without-lavc option
+test $HAVE_LAVC = 1 || AVCODEC_LIBS=""
+AC_SUBST(AVCODEC_LIBS)
+AC_DEFINE_UNQUOTED(HAVE_LAVC, $HAVE_LAVC, [non-zero when libavcodec is being used])
 
 dnl Write out files
 AC_CONFIG_FILES([Makefile])
