@@ -110,8 +110,8 @@ extern int number_of_functions;
 extern int number_of_libraries;
 
 /* Code used by budgie output */
-void dump_bitfield(unsigned int value, FILE *out,
-                   bitfield_pair *tags, int count);
+void budgie_dump_bitfield(unsigned int value, FILE *out,
+                          bitfield_pair *tags, int count);
 
 bool check_skip(budgie_function); /* true to directly call this function */
 bool check_set_reentrance(void);
