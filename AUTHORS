@@ -1,4 +1,4 @@
-BuGLe is written by Bruce Merry (bmerry@sourceforge.net).
+BuGLe is written by Bruce Merry (bmerry@users.sourceforge.net).
 
 Portions of code, and the whole of tree.def, are taken from gcc.
 tree.def has not been modified. Information and source code for gcc can

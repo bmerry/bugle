@@ -32,6 +32,9 @@ with logging to file: 47fps
 
 So basically, the framework adds a little, and logging adds a lot.
 
+Q. How do you get Quake3 to use BuGLE?
+A. Run it as quake3 +set r_glDriver /path/to/libbugle.so
+
 Q. Why am I getting errors about unknown GL tokens?
 A. BuGLe assumes that your GL header files are reasonably up to date.
 You should try getting an updated glext.h from Sun:
