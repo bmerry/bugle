@@ -1,3 +1,8 @@
+0.0.20040903
+------------
+This release adds a few minor improvements to the video capture facility.
+See the ChangeLog.
+
 0.0.20040719
 ------------
 The big changes are improvements to the debugging facility, gldb. Pressing

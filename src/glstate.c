@@ -372,7 +372,9 @@ void glstate_get_textureenv(state_generic *state)
 
 void glstate_get_texturefiltercontrol(state_generic *state)
 {
+#ifdef GL_VERSION_1_4
     glstate_get_texenv(state, GL_TEXTURE_FILTER_CONTROL);
+#endif
 }
 
 void glstate_get_light(state_generic *state)

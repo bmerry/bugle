@@ -45,8 +45,8 @@
 # include <ffmpeg/avformat.h>
 # define CAPTURE_AV_FMT PIX_FMT_RGB24
 # define CAPTURE_GL_FMT GL_RGB
-# define CAPTURE_GL_ELEMENTS 3
 #endif
+#define CAPTURE_GL_ELEMENTS 3
 
 typedef struct
 {

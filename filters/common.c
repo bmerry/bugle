@@ -64,7 +64,7 @@ static bool procaddress_callback(function_call *call, void *data)
 #endif
         if (!*call->typed.glXGetProcAddressARB.retn) break;
         sym = (void (*)(void))
-            get_filter_set_symbol(NULL, function_table[call->generic.id].name);
+            get_filter_set_symbol(NULL, (const char *) *call->typed.glXGetProcAddressARB.arg0);
         if (sym) *call->typed.glXGetProcAddressARB.retn = sym;
         break;
     }
