@@ -5,6 +5,7 @@
 - update dates in all man pages
 - test on several machines
 - run 'make distcheck' on several machines
+- do a 'fakeroot make dist'
 - upload to sourceforge
 - post news to sourceforge
 - post details on freshmeat

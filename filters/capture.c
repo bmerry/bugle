@@ -16,6 +16,11 @@
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
+/* I have no idea what I'm doing with the video encoding, since
+ * libavformat has no documentation that I can find. It is probably full
+ * of bugs.
+ */
+
 #if HAVE_CONFIG_H
 # include <config.h>
 #endif
@@ -36,8 +41,8 @@
 # include <inttypes.h>
 # include <ffmpeg/avcodec.h>
 # include <ffmpeg/avformat.h>
-# define CAPTURE_AV_FMT PIX_FMT_BGR24
-# define CAPTURE_GL_FMT GL_BGR
+# define CAPTURE_AV_FMT PIX_FMT_RGB24
+# define CAPTURE_GL_FMT GL_RGB
 #endif
 
 typedef struct
@@ -96,7 +101,11 @@ static bool initialise_lavc(int width, int height)
     fmt = guess_format(NULL, video_file, NULL);
     if (!fmt) fmt = guess_format("avi", NULL, NULL);
     if (!fmt) return false;
+#if LIBAVFORMAT_VERSION_INT >= 0x000409
+    video_context = av_alloc_format_context();
+#else
     video_context = av_mallocz(sizeof(AVFormatContext));
+#endif
     if (!video_context) return false;
     video_context->oformat = fmt;
     snprintf(video_context->filename,
@@ -280,9 +289,10 @@ static bool screenshot_stream(FILE *out, bool check_size)
 #if HAVE_LAVC
 static void screenshot_video()
 {
-    size_t out_size;
     screenshot_data old_data;
     AVCodecContext *c;
+    size_t out_size;
+    int ret;
 
     old_data = video_data;
     if (!get_screenshot(&video_data, CAPTURE_GL_FMT)) return;
@@ -305,12 +315,28 @@ static void screenshot_video()
                                     video_buffer, video_buffer_size,
                                     video_yuv);
     if (out_size != 0)
-        if (av_write_frame(video_context, video_stream->index,
-                           video_buffer, out_size) != 0)
+    {
+#if LIBAVFORMAT_VERSION_INT >= 0x000409
+        AVPacket pkt;
+
+        av_init_packet(&pkt);
+        pkt.pts = c->coded_frame->pts;
+        if (c->coded_frame->key_frame)
+            pkt.flags |= PKT_FLAG_KEY;
+        pkt.stream_index = video_stream->index;
+        pkt.data = video_buffer;
+        pkt.size = out_size;
+        ret = av_write_frame(video_context, &pkt);
+#else
+        ret = av_write_frame(video_context, video_stream->index,
+                             video_buffer, out_size);
+#endif
+        if (ret != 0)
         {
             fprintf(stderr, "encoding failed\n");
             exit(1);
         }
+    }
 }
 
 #else /* !HAVE_LAVC */

@@ -72,7 +72,7 @@ std::string get_type(bool prototyp);
 //! Generates wrapper functions for length overrides
 std::string get_length(bool prototype);
 //! Generates wrapper functions for function dump overrides
-string dump_funcs(bool prototype);
+std::string dump_funcs(bool prototype);
 
 //! Returns true if the type can be reasonably dumped
 bool dumpable(tree_node_p type);

@@ -49,6 +49,11 @@ static bool procaddress_callback(function_call *call, void *data)
 {
     void (*sym)(void);
 
+    /* FIXME: some systems don't prototype glXGetProcAddressARB (it is,
+     * after all, and extension). That means extensions will probably
+     * not be intercepted.
+     */
+#ifdef FUNC_glXGetProcAddressARB
     switch (call->generic.id)
     {
         /* Just in case glXGetProcAddress is ever promoted to core */
@@ -63,6 +68,7 @@ static bool procaddress_callback(function_call *call, void *data)
         if (sym) *call->typed.glXGetProcAddressARB.retn = sym;
         break;
     }
+#endif
     return true;
 }
 
