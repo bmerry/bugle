@@ -238,7 +238,9 @@ int bugle_gl_format_to_count(GLenum format, GLenum type)
         case GL_LUMINANCE_ALPHA:
             return 2;
         case GL_RGB:
+#ifdef GL_EXT_bgra
         case GL_BGR:
+#endif
             return 3;
         case GL_RGBA:
 #ifdef GL_EXT_bgra

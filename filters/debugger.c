@@ -25,6 +25,7 @@
 #include "src/glutils.h"
 #include "src/tracker.h"
 #include "src/glstate.h"
+#include "src/glexts.h"
 #include "common/hashtable.h"
 #include "common/protocol.h"
 #include "common/bool.h"
@@ -144,6 +145,123 @@ static void dump_any_call_string_io(FILE *out, void *data)
     budgie_dump_any_call(&((const function_call *) data)->generic, 0, out);
 }
 
+/* Wherever possible we use the aux context. However, default textures
+ * are not shared between contexts, so we have to take our chances with
+ * setting up the default readback state and restoring it afterwards.
+ */
+static bool get_data_texture(GLuint texid, GLenum target, GLenum face,
+                             GLint level, GLenum format, GLenum type,
+                             char **data_out, size_t *length_out)
+{
+    char *data;
+    size_t length;
+
+    Display *dpy;
+    GLXContext aux, real;
+    GLXDrawable old_read, old_write;
+
+    GLboolean old_pack_swap_bytes, old_pack_lsb_first;
+    GLint old_pack_row_length, old_pack_skip_rows, old_pack_skip_pixels, old_pack_alignment;
+#ifdef GL_EXT_texture3D
+    GLint old_pack_image_height, old_pack_skip_images;
+#endif
+#ifdef GL_EXT_pixel_buffer_object
+    GLint old_buffer;
+#endif
+
+    aux = bugle_get_aux_context();
+    if (!aux || !bugle_begin_internal_render())
+    {
+        *data_out = NULL;
+        *length_out = 0;
+        return false;
+    }
+
+    if (texid)
+    {
+        real = CALL_glXGetCurrentContext();
+        old_write = CALL_glXGetCurrentDrawable();
+        old_read = CALL_glXGetCurrentReadDrawable();
+        dpy = CALL_glXGetCurrentDisplay();
+        CALL_glXMakeContextCurrent(dpy, old_write, old_write, aux);
+
+        glPushAttrib(GL_ALL_ATTRIB_BITS);
+        glPushClientAttrib(GL_CLIENT_PIXEL_STORE_BIT);
+    }
+    else
+    {
+        CALL_glGetBooleanv(GL_PACK_SWAP_BYTES, &old_pack_swap_bytes);
+        CALL_glGetBooleanv(GL_PACK_LSB_FIRST, &old_pack_lsb_first);
+        CALL_glGetIntegerv(GL_PACK_ROW_LENGTH, &old_pack_row_length);
+        CALL_glGetIntegerv(GL_PACK_SKIP_ROWS, &old_pack_skip_rows);
+        CALL_glGetIntegerv(GL_PACK_SKIP_PIXELS, &old_pack_skip_pixels);
+        CALL_glGetIntegerv(GL_PACK_ALIGNMENT, &old_pack_alignment);
+        CALL_glPixelStorei(GL_PACK_SWAP_BYTES, GL_FALSE);
+        CALL_glPixelStorei(GL_PACK_LSB_FIRST, GL_FALSE);
+        CALL_glPixelStorei(GL_PACK_ROW_LENGTH, 0);
+        CALL_glPixelStorei(GL_PACK_SKIP_ROWS, 0);
+        CALL_glPixelStorei(GL_PACK_SKIP_PIXELS, 0);
+#ifdef GL_EXT_texture3D
+        if (bugle_gl_has_extension(BUGLE_GL_EXT_texture3D))
+        {
+            CALL_glGetIntegerv(GL_PACK_IMAGE_HEIGHT, &old_pack_image_height);
+            CALL_glGetIntegerv(GL_PACK_SKIP_IMAGES, &old_pack_skip_images);
+            CALL_glPixelStorei(GL_PACK_IMAGE_HEIGHT, 0);
+            CALL_glPixelStorei(GL_PACK_SKIP_IMAGES, 0);
+        }
+#endif
+#ifdef GL_EXT_pixel_buffer_object
+        if (bugle_gl_has_extension(BUGLE_GL_EXT_pixel_buffer_object))
+        {
+            CALL_glGetIntegerv(GL_PIXEL_PACK_BUFFER_BINDING_EXT, &old_buffer);
+            CALL_glBindBufferARB(GL_PIXEL_PACK_BUFFER_EXT, 0);
+        }
+#endif
+    }
+
+    glBindTexture(target, texid);
+    glPixelStorei(GL_PACK_ALIGNMENT, 1);
+
+    length = bugle_gl_type_to_size(type)
+        * bugle_texture_element_count(target, level, format, type);
+    data = bugle_malloc(length);
+    glGetTexImage(target, level, format, type, data);
+
+    *data_out = data;
+    *length_out = length;
+
+    if (texid)
+    {
+        while (glGetError());  /* FIXME: handle any errors */
+        glPopClientAttrib();
+        glPopAttrib();
+        CALL_glXMakeContextCurrent(dpy, old_write, old_read, real);
+    }
+    else
+    {
+        CALL_glPixelStorei(GL_PACK_SWAP_BYTES, old_pack_swap_bytes);
+        CALL_glPixelStorei(GL_PACK_LSB_FIRST, old_pack_lsb_first);
+        CALL_glPixelStorei(GL_PACK_ROW_LENGTH, old_pack_row_length);
+        CALL_glPixelStorei(GL_PACK_SKIP_ROWS, old_pack_skip_rows);
+        CALL_glPixelStorei(GL_PACK_SKIP_PIXELS, old_pack_skip_pixels);
+        CALL_glPixelStorei(GL_PACK_ALIGNMENT, old_pack_alignment);
+#ifdef GL_EXT_texture3D
+        if (bugle_gl_has_extension(BUGLE_GL_EXT_texture3D))
+        {
+            CALL_glPixelStorei(GL_PACK_IMAGE_HEIGHT, old_pack_image_height);
+            CALL_glPixelStorei(GL_PACK_SKIP_IMAGES, old_pack_skip_images);
+        }
+#endif
+#ifdef GL_EXT_pixel_buffer_object
+        if (bugle_gl_has_extension(BUGLE_GL_EXT_pixel_buffer_object))
+            CALL_glBindBufferARB(GL_PIXEL_PACK_BUFFER_EXT, old_buffer);
+#endif
+    }
+
+    bugle_end_internal_render("debugger_screenshot", true);
+    return true;
+}
+
 static void process_single_command(function_call *call)
 {
     uint32_t req, id, req_val;
@@ -259,6 +377,38 @@ static void process_single_command(function_call *call)
         break;
     case REQ_QUIT:
         exit(1);
+    case REQ_DATA:
+        {
+            uint32_t sub_req, texid, target, face, level, format, type;
+            size_t size;
+            char *data;
+
+            gldb_protocol_recv_code(in_pipe, &sub_req);
+            switch (sub_req)
+            {
+            case REQ_DATA_TEXTURE:
+                gldb_protocol_recv_code(in_pipe, &texid);
+                gldb_protocol_recv_code(in_pipe, &target);
+                gldb_protocol_recv_code(in_pipe, &face);
+                gldb_protocol_recv_code(in_pipe, &level);
+                gldb_protocol_recv_code(in_pipe, &format);
+                gldb_protocol_recv_code(in_pipe, &type);
+                get_data_texture(texid, target, face, level, format, type,
+                                 &data, &size);
+                gldb_protocol_send_code(out_pipe, RESP_DATA);
+                gldb_protocol_send_code(out_pipe, id);
+                gldb_protocol_send_binary_string(out_pipe, size, data);
+                free(data);
+                break;
+            default:
+                gldb_protocol_send_code(out_pipe, RESP_ERROR);
+                gldb_protocol_send_code(out_pipe, id);
+                gldb_protocol_send_code(out_pipe, 0);
+                gldb_protocol_send_string(out_pipe, "unknown subcode");
+                break;
+            }
+        }
+        break;
     case REQ_ASYNC:
         if (!stopped)
         {

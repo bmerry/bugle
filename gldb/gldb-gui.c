@@ -20,10 +20,12 @@
 # include <config.h>
 #endif
 #include <gtk/gtk.h>
+#include <gdk-pixbuf/gdk-pixbuf.h>
 #include <glib.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <GL/gl.h>
 #include "common/protocol.h"
 #include "common/linkedlist.h"
 #include "common/hashtable.h"
@@ -44,6 +46,21 @@ enum
 
 typedef struct
 {
+    GtkTreeStore *state_store;
+} GldbWindowState;
+
+typedef struct
+{
+    GtkWidget *image;
+} GldbWindowTexture;
+
+typedef struct
+{
+    GtkListStore *backtrace_store;
+} GldbWindowBacktrace;
+
+typedef struct
+{
     GtkWidget *window;
     GtkWidget *notebook;
     GtkWidget *statusbar;
@@ -52,12 +69,14 @@ typedef struct
     GtkActionGroup *run_actions;
     GtkActionGroup *norun_actions;
 
-    GtkTreeStore *state_store;
-    GtkListStore *backtrace_store;
-    GtkListStore *breakpoints_store;
-
     GIOChannel *channel;
     guint channel_watch;
+
+    GldbWindowState state;
+    GldbWindowTexture texture;
+    GldbWindowBacktrace backtrace;
+
+    GtkListStore *breakpoints_store;
 } GldbWindow;
 
 typedef struct
@@ -67,6 +86,12 @@ typedef struct
 } GldbBreakpointsDialog;
 
 static GtkListStore *function_names;
+static guint32 seq;
+
+static void free_callback(guchar *data, gpointer user_data)
+{
+    free(data);
+}
 
 /* We can't just rip out all the old state and plug in the new, because
  * that loses any expansions that may have been active. Instead, we
@@ -142,7 +167,14 @@ static void update_state_r(const gldb_state *root, GtkTreeStore *store,
 
 static void update_state(GldbWindow *context)
 {
-    update_state_r(gldb_state_update(), context->state_store, NULL);
+    update_state_r(gldb_state_update(), context->state.state_store, NULL);
+}
+
+static void update_texture(GldbWindow *context)
+{
+    gldb_send_data_texture(seq++, 0, GL_TEXTURE_2D, GL_TEXTURE_2D, 0,
+                           GL_RGB, GL_UNSIGNED_BYTE);
+
 }
 
 static void update_backtrace(GldbWindow *context)
@@ -155,7 +187,7 @@ static void update_backtrace(GldbWindow *context)
     gsize terminator;
     const gchar *cmds = "set width 0\nset height 0\nbacktrace\nquit\n";
 
-    gtk_list_store_clear(context->backtrace_store);
+    gtk_list_store_clear(context->backtrace.backtrace_store);
 
     argv[0] = g_strdup("gdb");
     argv[1] = g_strdup(gldb_get_program());
@@ -190,8 +222,8 @@ static void update_backtrace(GldbWindow *context)
                 GtkTreeIter iter;
 
                 line[terminator] = '\0';
-                gtk_list_store_append(context->backtrace_store, &iter);
-                gtk_list_store_set(context->backtrace_store, &iter,
+                gtk_list_store_append(context->backtrace.backtrace_store, &iter);
+                gtk_list_store_set(context->backtrace.backtrace_store, &iter,
                                    0, line, -1);
                 g_free(line);
             }
@@ -212,6 +244,7 @@ static void update_status_bar(GldbWindow *context, const gchar *text)
 static void stopped(GldbWindow *context, const gchar *text)
 {
     update_state(context);
+    update_texture(context);
     update_backtrace(context);
     update_status_bar(context, text);
 }
@@ -235,13 +268,14 @@ static void child_exit_callback(GPid pid, gint status, gpointer data)
     update_status_bar(context, "Not running");
     gtk_action_group_set_sensitive(context->run_actions, FALSE);
     gtk_action_group_set_sensitive(context->norun_actions, TRUE);
-    gtk_list_store_clear(context->backtrace_store);
+    gtk_list_store_clear(context->backtrace.backtrace_store);
 }
 
 static gboolean response_callback(GIOChannel *channel, GIOCondition condition,
                                   gpointer data)
 {
     GldbWindow *context;
+    GdkPixbuf *pixbuf;
     gldb_response *r;
     char *msg;
 
@@ -274,6 +308,14 @@ static gboolean response_callback(GIOChannel *channel, GIOCondition condition,
         gtk_action_group_set_sensitive(context->run_actions, TRUE);
         gtk_action_group_set_sensitive(context->norun_actions, FALSE);
         break;
+    case RESP_DATA:
+        /* FIXME: make much more generic, and tie better to the request via ID */
+        pixbuf = gdk_pixbuf_new_from_data(((gldb_response_data *) r)->data,
+                                          GDK_COLORSPACE_RGB, false, 8,
+                                          64, 64, 64 * 3, free_callback, NULL);
+        gtk_image_set_from_pixbuf(GTK_IMAGE(context->texture.image), pixbuf);
+        g_object_unref(pixbuf);
+        break;
     }
     gldb_free_response(r);
 
@@ -304,7 +346,7 @@ static void run_action(GtkAction *action, gpointer user_data)
          * the input pipe in it without forcing us to do everything through
          * it.
          */
-        gldb_run(0, child_init);
+        gldb_run(seq++, child_init);
         context->channel = g_io_channel_unix_new(gldb_get_in_pipe());
         context->channel_watch = g_io_add_watch(context->channel, G_IO_IN | G_IO_ERR,
                                                 response_callback, context);
@@ -315,17 +357,19 @@ static void run_action(GtkAction *action, gpointer user_data)
 
 static void stop_action(GtkAction *action, gpointer user_data)
 {
-    gldb_send_async(0);
+    if (gldb_get_status() == GLDB_STATUS_RUNNING)
+        gldb_send_async(seq++);
 }
 
 static void continue_action(GtkAction *action, gpointer user_data)
 {
-    gldb_send_continue(0);
+    gldb_send_continue(seq++);
+    update_status_bar((GldbWindow *) user_data, "Running");
 }
 
 static void kill_action(GtkAction *action, gpointer user_data)
 {
-    gldb_send_quit(0);
+    gldb_send_quit(seq++);
 }
 
 static void chain_action(GtkAction *action, gpointer user_data)
@@ -390,7 +434,7 @@ static void breakpoints_add_action(GtkButton *button, gpointer user_data)
         gtk_list_store_set(context->parent->breakpoints_store, &iter,
                            BREAKPOINTS_COLUMN_FUNCTION, gtk_entry_get_text(GTK_ENTRY(entry)),
                            -1);
-        gldb_set_break(0, gtk_entry_get_text(GTK_ENTRY(entry)), true);
+        gldb_set_break(seq++, gtk_entry_get_text(GTK_ENTRY(entry)), true);
     }
     gtk_widget_destroy(dialog);
 }
@@ -408,7 +452,7 @@ static void breakpoints_remove_action(GtkButton *button, gpointer user_data)
     if (gtk_tree_selection_get_selected(selection, &model, &iter))
     {
         gtk_tree_model_get(model, &iter, 0, &func, -1);
-        gldb_set_break(0, func, false);
+        gldb_set_break(seq++, func, false);
         gtk_list_store_remove(GTK_LIST_STORE(model), &iter);
     }
 }
@@ -469,7 +513,7 @@ static void breakpoints_action(GtkAction *action, gpointer user_data)
 
     result = gtk_dialog_run(GTK_DIALOG(context.dialog));
     if (result == GTK_RESPONSE_ACCEPT)
-        gldb_set_break_error(0, gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(toggle)));
+        gldb_set_break_error(seq++, gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(toggle)));
     gtk_widget_destroy(context.dialog);
 }
 
@@ -479,8 +523,8 @@ static void build_state_page(GldbWindow *context)
     GtkCellRenderer *cell;
     GtkTreeViewColumn *column;
 
-    context->state_store = gtk_tree_store_new(2, G_TYPE_STRING, G_TYPE_STRING);
-    tree_view = gtk_tree_view_new_with_model(GTK_TREE_MODEL(context->state_store));
+    context->state.state_store = gtk_tree_store_new(2, G_TYPE_STRING, G_TYPE_STRING);
+    tree_view = gtk_tree_view_new_with_model(GTK_TREE_MODEL(context->state.state_store));
     cell = gtk_cell_renderer_text_new();
     g_object_set(cell, "yalign", 0.0, NULL);
     column = gtk_tree_view_column_new_with_attributes("Name",
@@ -505,7 +549,7 @@ static void build_state_page(GldbWindow *context)
                                    GTK_POLICY_AUTOMATIC);
     gtk_container_add(GTK_CONTAINER(scrolled), tree_view);
     gtk_widget_show(scrolled);
-    g_object_unref(G_OBJECT(context->state_store)); /* So that it dies with the view */
+    g_object_unref(G_OBJECT(context->state.state_store)); /* So that it dies with the view */
 
     label = gtk_label_new("State");
     gtk_notebook_append_page(GTK_NOTEBOOK(context->notebook), scrolled, label);
@@ -513,12 +557,18 @@ static void build_state_page(GldbWindow *context)
 
 static void build_texture_page(GldbWindow *context)
 {
-    GtkWidget *label, *vbox;
+    GtkWidget *label;
+    GdkPixbuf *pixbuf;
+    guchar *data;
 
     label = gtk_label_new("Textures");
-    vbox = gtk_drawing_area_new();
-    gtk_widget_show(vbox);
-    gtk_notebook_append_page(GTK_NOTEBOOK(context->notebook), vbox, label);
+    data = (guchar *) bugle_malloc(256 * 256 * 3);
+    pixbuf = gdk_pixbuf_new_from_data(data, GDK_COLORSPACE_RGB, false, 8,
+                                      256, 256, 256 * 3, free_callback, NULL);
+    context->texture.image = gtk_image_new_from_pixbuf(pixbuf);
+    g_object_unref(pixbuf);
+    gtk_notebook_append_page(GTK_NOTEBOOK(context->notebook),
+                             context->texture.image, label);
 }
 
 static void build_shader_page(GldbWindow *context)
@@ -537,17 +587,17 @@ static void build_backtrace_page(GldbWindow *context)
     GtkTreeViewColumn *column;
     GtkCellRenderer *cell;
 
-    context->backtrace_store = gtk_list_store_new(1, G_TYPE_STRING);
+    context->backtrace.backtrace_store = gtk_list_store_new(1, G_TYPE_STRING);
     cell = gtk_cell_renderer_text_new();
     column = gtk_tree_view_column_new_with_attributes("Call",
                                                       cell,
                                                       "text", 0,
                                                       NULL);
-    view = gtk_tree_view_new_with_model(GTK_TREE_MODEL(context->backtrace_store));
+    view = gtk_tree_view_new_with_model(GTK_TREE_MODEL(context->backtrace.backtrace_store));
     gtk_tree_view_append_column(GTK_TREE_VIEW(view), column);
     gtk_tree_view_set_headers_visible(GTK_TREE_VIEW(view), false);
     gtk_widget_show(view);
-    g_object_unref(G_OBJECT(context->backtrace_store)); /* So that it dies with the view */
+    g_object_unref(G_OBJECT(context->backtrace.backtrace_store)); /* So that it dies with the view */
 
     scrolled = gtk_scrolled_window_new(NULL, NULL);
     gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(scrolled),

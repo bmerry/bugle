@@ -11,29 +11,33 @@
 /* The top bytes are set to make them easier to pick out in dumps, and
  * so that things will break early if we don't have 32 bit-ness.
  */
-#define RESP_ANS               0xabcd0000L
-#define RESP_BREAK             0xabcd0001L
-#define RESP_BREAK_ERROR       0xabcd0002L
-#define RESP_STOP              0xabcd0003L
-#define RESP_STATE             0xabcd0004L
-#define RESP_ERROR             0xabcd0005L
-#define RESP_RUNNING           0xabcd0006L
-#define RESP_SCREENSHOT        0xabcd0007L
-#define RESP_STATE_NODE_BEGIN  0xabcd0008L
-#define RESP_STATE_NODE_END    0xabcd0009L
+#define RESP_ANS               0xabcd0000UL
+#define RESP_BREAK             0xabcd0001UL
+#define RESP_BREAK_ERROR       0xabcd0002UL
+#define RESP_STOP              0xabcd0003UL
+#define RESP_STATE             0xabcd0004UL
+#define RESP_ERROR             0xabcd0005UL
+#define RESP_RUNNING           0xabcd0006UL
+#define RESP_SCREENSHOT        0xabcd0007UL
+#define RESP_STATE_NODE_BEGIN  0xabcd0008UL
+#define RESP_STATE_NODE_END    0xabcd0009UL
+#define RESP_DATA              0xabcd000aUL
 
-#define REQ_RUN                0xdcba0000L
-#define REQ_CONT               0xdcba0001L
-#define REQ_STEP               0xdcba0002L
-#define REQ_BREAK              0xdcba0003L
-#define REQ_BREAK_ERROR        0xdcba0004L
-#define REQ_STATE              0xdcba0005L
-#define REQ_QUIT               0xdcba0006L
-#define REQ_ASYNC              0xdcba0007L
-#define REQ_SCREENSHOT         0xdcba0008L
-#define REQ_ENABLE_FILTERSET   0xdcba0009L
-#define REQ_DISABLE_FILTERSET  0xdcba000aL
-#define REQ_STATE_TREE         0xdcba000bL
+#define REQ_RUN                0xdcba0000UL
+#define REQ_CONT               0xdcba0001UL
+#define REQ_STEP               0xdcba0002UL
+#define REQ_BREAK              0xdcba0003UL
+#define REQ_BREAK_ERROR        0xdcba0004UL
+#define REQ_STATE              0xdcba0005UL
+#define REQ_QUIT               0xdcba0006UL
+#define REQ_ASYNC              0xdcba0007UL
+#define REQ_SCREENSHOT         0xdcba0008UL
+#define REQ_ENABLE_FILTERSET   0xdcba0009UL
+#define REQ_DISABLE_FILTERSET  0xdcba000aUL
+#define REQ_STATE_TREE         0xdcba000bUL
+#define REQ_DATA               0xdbca000cUL
+
+#define REQ_DATA_TEXTURE       0xedbc0000UL
 
 #define TO_NETWORK(x) (x)
 #define TO_HOST(x) (x)

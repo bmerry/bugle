@@ -50,6 +50,16 @@ REQ_SCREENSHOT: Requests a screenshot from the program. Reply is
              could not be taken for some reason.
 REQ_QUIT:    Requests that the program exit.
 REQ_STATE_TREE: Requests the state tree. No parameters.
+REQ_DATA:    Requests a readback of some large chunk of state, such as
+             a texture, framebuffer, buffer object etc. The first parameter
+             is a type code, which determines the remaining parameters:
+             REQ_DATA_TEXTURE: followed by
+               id
+               target
+               face (only used for cube maps)
+               level
+               format
+               type
 
 The following responses are defined
 
@@ -84,6 +94,9 @@ RESP_STATE_NODE_END:
 
              The entire tree will be sent as a contiguous block, without
              interrupt from asynchronous responses.
+RESP_DATA:   A single binary string containing the requested data. The
+             data is as returned by the appropriate glGet command, with
+             alignment of 1 but all other options as default.
 
 Each request has a certain set of legal responses, as described below.
 Note that requests that start the program running (the first three) will
@@ -99,3 +112,4 @@ REQ_STATE: RESP_STATE, RESP_ERROR
 REQ_SCREENSHOT: RESP_SCREENSHOT, RESP_ERROR.
 REQ_STATE: RESP_STATE_BEGIN, RESP_STATE_END.
 REQ_QUIT:  none
+REQ_DATA:  RESP_DATA, RESP_ERROR

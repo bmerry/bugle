@@ -295,6 +295,17 @@ static gldb_response *gldb_get_response_state_tree(uint32_t code, uint32_t id)
     return (gldb_response *) r;
 }
 
+static gldb_response *gldb_get_response_data(uint32_t code, uint32_t id)
+{
+    gldb_response_data *r;
+
+    r = bugle_malloc(sizeof(gldb_response_data));
+    r->code = code;
+    r->id = id;
+    gldb_protocol_recv_binary_string(lib_in, &r->length, &r->data);
+    return (gldb_response *) r;
+}
+
 gldb_response *gldb_get_response(void)
 {
     uint32_t code, id;
@@ -314,6 +325,7 @@ gldb_response *gldb_get_response(void)
     case RESP_RUNNING: return gldb_get_response_running(code, id);
     case RESP_SCREENSHOT: return gldb_get_response_screenshot(code, id);
     case RESP_STATE_NODE_BEGIN: return gldb_get_response_state_tree(code, id);
+    case RESP_DATA: return gldb_get_response_data(code, id);
     default:
         fprintf(stderr, "Unexpected response %#08x\n", code);
         return NULL;
@@ -463,6 +475,22 @@ void gldb_send_state_tree(uint32_t id)
     assert(status != GLDB_STATUS_DEAD);
     gldb_protocol_send_code(lib_out, REQ_STATE_TREE);
     gldb_protocol_send_code(lib_out, id);
+}
+
+void gldb_send_data_texture(uint32_t id, GLuint texid, GLenum target,
+                            GLenum face, GLint level, GLenum format,
+                            GLenum type)
+{
+    assert(status != GLDB_STATUS_DEAD);
+    gldb_protocol_send_code(lib_out, REQ_DATA);
+    gldb_protocol_send_code(lib_out, id);
+    gldb_protocol_send_code(lib_out, REQ_DATA_TEXTURE);
+    gldb_protocol_send_code(lib_out, texid);
+    gldb_protocol_send_code(lib_out, target);
+    gldb_protocol_send_code(lib_out, face);
+    gldb_protocol_send_code(lib_out, level);
+    gldb_protocol_send_code(lib_out, format);
+    gldb_protocol_send_code(lib_out, type);
 }
 
 bool gldb_get_break_error(void)

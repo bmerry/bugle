@@ -22,6 +22,7 @@
 #if HAVE_CONFIG_H
 # include <config.h>
 #endif
+#include <GL/gl.h>
 #include <sys/types.h>
 #include <inttypes.h>
 #include <signal.h>
@@ -133,6 +134,14 @@ typedef struct
     gldb_state *root;
 } gldb_response_state_tree;
 
+typedef struct
+{
+    uint32_t code;
+    uint32_t id;
+    char *data;
+    uint32_t length;
+} gldb_response_data;
+
 /* Generic type for responses. Always instantiated via one of the above. */
 typedef struct
 {
@@ -159,6 +168,9 @@ void gldb_send_enable_disable(uint32_t id, const char *filterset, bool enable);
 void gldb_send_screenshot(uint32_t id);
 void gldb_send_async(uint32_t id);
 void gldb_send_state_tree(uint32_t id);
+void gldb_send_data_texture(uint32_t id, GLuint texid, GLenum target,
+                            GLenum face, GLint level, GLenum format,
+                            GLenum type);
 void gldb_set_break_error(uint32_t id, bool brk);
 void gldb_set_break(uint32_t id, const char *function, bool brk);
 
