@@ -20,7 +20,7 @@ static bool error_pre_callback(function_call *call, void *data)
         && ctx && !ctx->c_internal.c_in_begin_end.data
         && ctx->c_internal.c_error.data)
     {
-        *call->typed.glGetError.ret = ctx->c_internal.c_error.data;
+        *call->typed.glGetError.retn = ctx->c_internal.c_error.data;
         ctx->c_internal.c_error.data = GL_NO_ERROR;
         return false;
     }

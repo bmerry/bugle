@@ -15,5 +15,9 @@ bool dump_GLenum(const void *value, int count, FILE *out);
 bool dump_GLalternateenum(const void *value, int count, FILE *out);
 bool dump_GLerror(const void *value, int count, FILE *out);
 bool dump_GLboolean(const void *value, int count, FILE *out);
+bool dump_convert(const generic_function_call *gcall,
+                  int arg,
+                  const void *value,
+                  FILE *out);
 
 #endif /* !BUGLE_SRC_GLDUMP_H */

@@ -14,7 +14,7 @@ void interceptor(function_call *call)
     {
         initialise_canonical();
         initialise_filters();
-        enable_filter_set(get_filter_set_handle("debugger"));
+        enable_filter_set(get_filter_set_handle("error"));
         enable_filter_set(get_filter_set_handle("invoke"));
         enable_filter_set(get_filter_set_handle("log"));
         init_real();

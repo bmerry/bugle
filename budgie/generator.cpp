@@ -48,63 +48,52 @@ bool param_or_type::operator <(const param_or_type &b) const
     else return type < b.type;
 }
 
-/*! The first takes just a type. The second takes a \c call object and
+/*! Generated type override functions. Overrides for types just take a
+ * pointer to the value. Overrides for arguments also take the call and
  * parameter number. Both return a \c budgie_type.
  * \param prototype True to only return function prototypes.
  */
 string get_type(bool prototype)
 {
-    ostringstream out, par; // par is for parameter get_type
+    ostringstream out;
 
-    out << "budgie_type get_type(budgie_type type)";
-    par << "budgie_type get_arg_type(const generic_function_call *call, int param)";
-    if (prototype)
-    {
-        out << ";\n";
-        par << ";\n";
-        return out.str() + par.str();
-    }
-    out << "\n"
-        << "{\n"
-        << "    while (1)"
-        << "    {\n"
-        << "        switch (type)\n"
-        << "        {\n";
-    par << "\n"
-        << "{\n";
     map<param_or_type, string>::const_iterator i;
     for (i = type_overrides.begin(); i != type_overrides.end(); i++)
     {
         if (i->first.type) // type override
         {
-            out << "         case TYPE_" << type_to_id(i->first.type) << ":\n";
             string l = "(" + i->second + ")";
             string::size_type pos;
             // In type overrides, $ is replaced by the value
+            // FIXME: do pre-substitution
             while ((pos = l.find("$")) != string::npos)
                 l.replace(pos, 1, "type");
-            out << "            type = " << l << ";\n"
-                << "            break;\n";
+
+            out << "budgie_type get_type_TYPE_" << type_to_id(i->first.type)
+                << "(const void *value)";
+            if (prototype) out << ";\n";
+            else
+                out << "\n{\n"
+                    << "    return " << l << ";\n"
+                    << "}\n\n";
         }
-        else // parameter override
+        else
         {
-            par << "    if (call->id == FUNC_"
-                << IDENTIFIER_POINTER(DECL_NAME(i->first.func))
-                << " && param == " << i->first.param << ")\n"
-                << "        return (" << i->second << ");\n";
+            // arg overrides are pre-substituted
+            // FIXME: simple symbol for the argument itself
+            out << "budgie_type get_type_";
+            if (i->first.param == -1) out << "ret";
+            else out << i->first.param;
+            out << "_FUNC_" << IDENTIFIER_POINTER(DECL_NAME(i->first.func))
+                << "(const generic_function_call *call, int arg, const void *value)";
+            if (prototype) out << ";\n";
+            else
+                out << "\n{\n"
+                    << "    return " << i->second << ";\n"
+                    << "}\n\n";
         }
     }
-    out << "        default: return type;\n"
-        << "        }\n"
-        << "    }\n"
-        << "}\n";
-
-    // If no parameter override, look for a type override
-    par << "    if (param == -1) return get_type(function_table[call->id].retn.type);\n"
-        << "    else return get_type(function_table[call->id].parameters[param].type);\n"
-        << "}\n";
-
-    return out.str() + par.str();
+    return out.str();
 }
 
 /*! Similar to \c get_type, but generates a \c get_length function. Length
@@ -114,31 +103,15 @@ string get_type(bool prototype)
  */
 string get_length(bool prototype)
 {
-    ostringstream out, par; // par is for parameter overrides
+    ostringstream out; // par is for parameter overrides
 
-    out << "int get_length(budgie_type type, const void *value)";
-    par << "int get_arg_length(const generic_function_call *call, int param, const void *value)";
-    if (prototype)
-    {
-        out << ";\n";
-        par << ";\n";
-        return out.str() + par.str();
-    }
-    out << "\n"
-        << "{\n"
-        << "    type = get_type(type);\n"
-        << "    switch (type)\n"
-        << "    {\n";
-    par << "\n"
-        << "{\n";
     map<param_or_type, string>::const_iterator i;
     for (i = length_overrides.begin(); i != length_overrides.end(); i++)
     {
-        if (i->first.type && TREE_CODE(i->first.type) == POINTER_TYPE)
+        if (i->first.type)
         { // type override
             tree_node_p base = TREE_TYPE(i->first.type);
             tree_node_p cnst = make_pointer(make_const(make_pointer(make_const(base), false)), false);
-            out << "    case TYPE_" << type_to_id(i->first.type) << ":\n";
             string l = "(" + i->second + ")";
             string repl = "(*(" + type_to_string(cnst, "", false)
                 + ") value)";
@@ -146,24 +119,29 @@ string get_length(bool prototype)
             string::size_type pos;
             while ((pos = l.find("$")) != string::npos)
                 l.replace(pos, 1, repl);
-            out << "         return " << l << ";\n";
+            out << "int get_length_TYPE_" << type_to_id(i->first.type)
+                << "(const void *value)";
+            if (prototype) out << ";\n";
+            else
+                out << "\n{\n"
+                    << "    return " << l << ";\n"
+                    << "}\n\n";
         }
         else // parameter override
         {
-            par << "    if (call->id == FUNC_"
-                << IDENTIFIER_POINTER(DECL_NAME(i->first.func))
-                << " && param == " << i->first.param << ")\n"
-                << "        return (" << i->second << ");\n";
+            out << "int get_length_";
+            if (i->first.param == -1) out << "ret";
+            else out << i->first.param;
+            out << "_FUNC_" << IDENTIFIER_POINTER(DECL_NAME(i->first.func))
+                << "(const generic_function_call *call, int arg, const void *value)";
+            if (prototype) out << ";\n";
+            else
+                out << "\n{\n"
+                    << "    return (" << i->second << ");\n"
+                    << "}\n\n";
         }
     }
-    out << "    default: return -1;\n";
-    out << "    }\n";
-    out << "}\n";
-
-    par << "    if (param == -1) return get_length(function_table[call->id].retn.type, value);\n"
-        << "    else return get_length(function_table[call->id].parameters[param].type, value);\n"
-        << "}\n";
-    return out.str() + par.str();
+    return out.str();
 }
 
 /*! \param type The type to check up on
@@ -244,9 +222,6 @@ static string make_dumper(tree_node_p node, bool prototype)
         switch (TREE_CODE(node))
         {
         case ENUMERAL_TYPE:
-            if (dump_overrides.count(node))
-                out << "    if (" << dump_overrides[node]
-                    << "((const void *) value, count, out)) return;\n";
             out << "    switch (*value)\n"
                 << "    {\n";
             tmp = TYPE_VALUES(node);
@@ -259,26 +234,16 @@ static string make_dumper(tree_node_p node, bool prototype)
             out << "    }\n";
             break;
         case INTEGER_TYPE:
-            if (dump_overrides.count(node))
-                out << "    if (" << dump_overrides[node]
-                    << "((const void *) value, count, out)) return;\n";
             // FIXME: long long types; unsigned types
             out << "    fprintf(out, \"%ld\", (long) *value);\n";
             break;
         case REAL_TYPE:
-            if (dump_overrides.count(node))
-                out << "    if (" << dump_overrides[node]
-                    << "((const void *) value, count, out)) return;\n";
             // FIXME: long double
-            out << "    fprintf(out, \"%f\", (double) *value);\n";
+            out << "    fprintf(out, \"%g\", (double) *value);\n";
             break;
         case ARRAY_TYPE:
             out << "    int size;\n"
-                << "    budgie_type type;\n"
                 << "    int i;\n";
-            if (dump_overrides.count(node))
-                out << "    if (" << dump_overrides[node]
-                    << "((const void *) value, count, out)) return;\n";
             if (TYPE_DOMAIN(node) != NULL_TREE) // find size
             {
                 int size = TREE_INT_CST_LOW(TYPE_MAX_VALUE(TYPE_DOMAIN(node))) + 1;
@@ -288,13 +253,11 @@ static string make_dumper(tree_node_p node, bool prototype)
                 out << "    size = count;\n";
             child = TREE_TYPE(node); // array element type
             out << "    fputs(\"{ \", out);\n";
-            // allow for type overrides of the elements
-            out << "    type = get_type(TYPE_" << type_to_id(child) << ");\n";
             out << "    for (i = 0; i < size; i++)\n"
                 << "    {\n";
             if (dumpable(child))
-                out << "        dump_any_type(type, &(*value)[i], "
-                    << "get_length(type, &(*value)[i]), out);\n";
+                out << "        dump_any_type(TYPE_" << type_to_id(child) << ", &(*value)[i], "
+                    << "-1, out);\n";
             else
                 out << "        fputs(\"<unknown>\", out);\n";
             out << "        if (i < size - 1) fputs(\", \", out);\n"
@@ -305,31 +268,24 @@ static string make_dumper(tree_node_p node, bool prototype)
         case POINTER_TYPE:
             child = TREE_TYPE(node); // pointed to type
             if (dumpable(child))
-                out << "    int i;\n"
-                    << "    budgie_type type;\n";
-            if (dump_overrides.count(node))
-                out << "    if (" << dump_overrides[node]
-                    << "((const void *) value, count, out)) return;\n";
+                out << "    int i;\n";
             out << "    fprintf(out, \"%p\", (void *) *value);\n";
             if (dumpable(child))
             {
                 out << "    if (*value)\n"
                     << "    {\n"
                     // handle type overrides
-                    << "        type = get_type(TYPE_" << type_to_id(child) << ");\n"
                     << "        fputs(\" -> \", out);\n"
                     // -1 means a simple pointer, not pointer to array
                     << "        if (count < 0)\n"
-                    << "            dump_any_type(type, value, "
-                    << "get_length(type, value), out);\n"
+                    << "            dump_any_type(TYPE_" << type_to_id(child) << ", value, -1, out);\n"
                     << "        else\n"
                     << "        {\n"
                     // pointer to array
                     << "            fputs(\"{ \", out);\n"
                     << "            for (i = 0; i < count; i++)\n"
                     << "            {\n"
-                    << "                dump_any_type(type, &(*value)[i], "
-                    << "get_length(type, &(*value)[i]), out);\n"
+                    << "                dump_any_type(TYPE_" << type_to_id(child) << ", &(*value)[i], -1, out);\n"
                     << "                if (i + 1 < count) fputs(\", \", out);\n"
                     << "            }\n"
                     << "            fputs(\" }\", out);\n"
@@ -340,10 +296,6 @@ static string make_dumper(tree_node_p node, bool prototype)
         case RECORD_TYPE:
         case UNION_TYPE:
             { // block to allow "first" to be declared in this scope
-                out << "    budgie_type type;\n";
-                if (dump_overrides.count(node))
-                    out << "    if (" << dump_overrides[node]
-                        << "((const void *) value, count, out)) return;\n";
                 out << "    fputs(\"{ \", out);\n";
                 tmp = TYPE_FIELDS(node);
                 bool first = true;
@@ -355,10 +307,8 @@ static string make_dumper(tree_node_p node, bool prototype)
                         if (!first) out << "    fputs(\", \", out);\n";
                         else first = false;
                         child = TREE_TYPE(tmp);
-                        out << "    type = get_type(TYPE_" << type_to_id(child) << ");\n"
-                            << "    dump_any_type(type, &value->" << name
-                            << ", get_length(type, &value->" << name << ")"
-                            << ", out);\n";
+                        out << "    dump_any_type(TYPE_" << type_to_id(child) << ", &value->" << name
+                            << ", -1, out);\n";
                     }
                     tmp = TREE_CHAIN(tmp);
                 }
@@ -366,9 +316,6 @@ static string make_dumper(tree_node_p node, bool prototype)
             }
             break;
         default:
-            if (dump_overrides.count(node))
-                out << "    if (" << dump_overrides[node]
-                    << "((const void *) value, count, out)) return;\n";
             out << "    fputs(\"<unknown>\", out);\n";
         }
     }
@@ -499,7 +446,21 @@ string type_table(bool header)
                     out << "-1";
             }
             else
-                out << "1";
+                out << "1"; // FIXME: should this perhaps be -1?
+            out << ", (standard_type_dumper) dump_type_" << type_to_id(i->second);
+            param_or_type test(i->second);
+            if (dump_overrides.count(test))
+                out << ", " << dump_overrides[test];
+            else
+                out << ", NULL";
+            if (type_overrides.count(test))
+                out << ", get_type_TYPE_" << type_to_id(i->second);
+            else
+                out << ", NULL";
+            if (length_overrides.count(test))
+                out << ", get_length_TYPE_" << type_to_id(i->second);
+            else
+                out << ", NULL";
             out << " }";
         }
         out << "\n};\n\n";
@@ -517,32 +478,6 @@ string make_type_dumper(bool prototype)
     // type specific dumpers
     for (enum_types_it i = enum_types.begin(); i != enum_types.end(); i++)
         out << make_dumper(i->second, prototype) << "\n";
-
-    out << "void dump_any_type(budgie_type type, const void *value, int length, FILE *out)";
-    if (prototype)
-    {
-        out << ";\n";
-        return out.str();
-    }
-    out << "\n{\n"
-        << "    switch (type)\n"
-        << "    {\n";
-
-    for (enum_types_it i = enum_types.begin(); i != enum_types.end(); i++)
-    {
-        string name = type_to_enum(i->second);
-
-        tree_node_p tmp = make_pointer(make_const(i->second), false);
-        out << "    case " << name << ":\n"
-            << "        dump_type_" << type_to_id(i->second) << "("
-            << "(" << type_to_string(tmp, "", false) << ") value"
-            << ", length, out);\n"
-            << "        break;\n";
-        destroy_temporary(tmp);
-    }
-    out << "    default: abort();\n"
-        << "    }\n"
-        << "}\n";
     return out.str();
 }
 
@@ -656,12 +591,19 @@ void function_table(bool header, ostream &out)
                     out << ",\n";
                 out << "    { "
                     << type_to_enum(TREE_VALUE(cur)) << ", "
-                    << dumper << " }";
+                    << dumper << ", ";
+                if (type_overrides.count(test))
+                    out << "get_type_" << count << "_FUNC_" << name << ", ";
+                else
+                    out << "NULL, ";
+                if (length_overrides.count(test))
+                    out << "get_length_" << count << "_FUNC_" << name << " }";
+                else
+                    out << "NULL }";
                 count++;
                 cur = TREE_CHAIN(cur);
             }
             if (count) out << "\n};\n\n";
-
         }
 
         out << "const function_data function_table[NUMBER_OF_FUNCTIONS] =\n"
@@ -688,11 +630,18 @@ void function_table(bool header, ostream &out)
                 string dumper = "NULL";
                 if (dump_overrides.count(test))
                     dumper = dump_overrides[test];
-                out << "{ " << type_to_enum(TREE_TYPE(type)) << ", " << dumper
-                    << " }, true }";
+                out << "{ " << type_to_enum(TREE_TYPE(type)) << ", "
+                    << dumper << ", ";
+                if (type_overrides.count(test))
+                    out << "get_type_ret_FUNC_" << name << ", ";
+                else out << "NULL, ";
+                if (length_overrides.count(test))
+                    out << "get_length_ret_FUNC_" << name << ", ";
+                else out << "NULL, ";
+                out << " }, true }";
             }
             else
-                out << "{ NULL_TYPE, NULL }, false }";
+                out << "{ NULL_TYPE, NULL, NULL, NULL }, false }";
         }
         out << "\n};\n\n";
     }
@@ -703,8 +652,8 @@ void function_table(bool header, ostream &out)
  * The wrapper does not necessarily invoke the original; rather, it
  * calls the user-supplied interceptor, which may optionally
  * invoke the original. For functions returning values, the value should
- * be written into the pointer given by \c call.generic.ret
- * taken from the \c ret field of the structure passed to interceptor.
+ * be written into the pointer given by \c call.generic.retn
+ * taken from the \c retn field of the structure passed to interceptor.
  */
 string make_wrapper(tree_node_p node, bool prototype)
 {
@@ -725,7 +674,7 @@ string make_wrapper(tree_node_p node, bool prototype)
     // return value
     tree_node_p ret_type = TREE_TYPE(TREE_TYPE(node));
     if (TREE_CODE(ret_type) != VOID_TYPE)
-        out << "    " << type_to_string(ret_type, "ret", false) << ";\n";
+        out << "    " << type_to_string(ret_type, "retn", false) << ";\n";
 
     // check for re-entrancy
     out << "    if (reentrant)\n"
@@ -762,11 +711,11 @@ string make_wrapper(tree_node_p node, bool prototype)
     out << "    call.generic.args = call.args;\n";
     if (TREE_CODE(ret_type) != VOID_TYPE)
     {
-        out << "    call.generic.ret = &ret;\n";
-        out << "    call.typed." << name << ".ret = &ret;\n";
+        out << "    call.generic.retn = &retn;\n";
+        out << "    call.typed." << name << ".retn = &retn;\n";
     }
     else
-        out << "    call.generic.ret = NULL;\n";
+        out << "    call.generic.retn = NULL;\n";
 
     while (cur != NULL_TREE && TREE_CODE(cur->value) != VOID_TYPE)
     {
@@ -784,7 +733,7 @@ string make_wrapper(tree_node_p node, bool prototype)
     out << "    reentrant = false;\n";
 
     if (TREE_CODE(ret_type) != VOID_TYPE)
-        out << "    return ret;\n";
+        out << "    return retn;\n";
     out << "}\n";
     return out.str();
 }
@@ -878,7 +827,7 @@ void function_types(ostream &out)
         if (TREE_CODE(TREE_TYPE(type)) != VOID_TYPE)
         {
             tmp = make_pointer(TREE_TYPE(type), false);
-            out << "    " << type_to_string(tmp, "ret", false) << ";\n";
+            out << "    " << type_to_string(tmp, "retn", false) << ";\n";
         }
         out << "} function_call_" << name << ";\n\n";
         if (count > max_args) max_args = count;
@@ -926,7 +875,7 @@ void make_invoker(bool prototype, ostream &out)
         out << "    case " << fname << ":\n";
         out << "        ";
         if (TREE_CODE(TREE_TYPE(type)) != VOID_TYPE) // save return val
-            out << "*call->typed." << name << ".ret = ";
+            out << "*call->typed." << name << ".retn = ";
         out << "(*" << name << "_real)(";
         tree_node_p cur = TREE_ARG_TYPES(type);
         int count = 0;

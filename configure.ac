@@ -21,8 +21,10 @@ AC_HEADER_DIRENT
 AC_HEADER_STDBOOL
 
 dnl Checks for types
-AC_CHECK_TYPE(ptrdiff_t, int)
+AC_CHECK_TYPE(ptrdiff_t, long int)
+AC_CHECK_TYPE([long long])
 AC_TYPE_SIZE_T
+AC_C_LONG_DOUBLE
 
 dnl Checks for structures
 
@@ -30,6 +32,7 @@ dnl Checks for compiler characteristics
 # AC_C_CONST
 AC_C_VOLATILE
 AC_C_INLINE
+AC_C_CHAR_UNSIGNED
 
 dnl Checks for library functions
 AC_CHECK_FUNCS([regcomp strrchr])

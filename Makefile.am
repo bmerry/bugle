@@ -53,7 +53,7 @@ src/data/gl.tu: src/data/gl.c src/data/overrides.h
 
 src/types.c src/types.h src/utils.c src/utils.h src/lib.c src/lib.h: budgie/budgie src/data/gl.tu src/gl.bc Makefile
 	$(srcdir)/mkinstalldirs src
-	budgie/budgie -c $(srcdir)/src/gl.bc -t `test -f src/data/gl.tu || echo '$(srcdir)/src/data/gl.tu'` -o src/utils -T src/types -l src/lib
+	budgie/budgie -c $(srcdir)/src/gl.bc -t `test -f src/data/gl.tu || echo '$(srcdir)/'`src/data/gl.tu -o src/utils -T src/types -l src/lib
 
 gentokens_gentokens_SOURCES = gentokens/gentokens.c
 BUILT_SOURCES += src/gltokens.c

@@ -96,8 +96,8 @@ LENGTH TYPE +PKc count_string($)
 LENGTH TYPE +Pc count_string($)
 
 # since GLenums are passed through GLint
-# FIXME: dynamic type overrides
-# DUMP PARAMETER glTexParameter[if]v? 2 dump_argument_glTexParameter_2
+# Unfortunately it is not safe to assume that GLenum == GLint == GLboolean
+DUMP PARAMETER gl(Get)?TexParameter[if]v? 2 dump_convert
 
 # Queries
 # FIXME: dynamic type overrides

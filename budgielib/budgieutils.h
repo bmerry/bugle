@@ -15,7 +15,7 @@ typedef struct
     budgie_function id;
     int num_args;
     const void **args;
-    void *ret;
+    void *retn;
     void *user_data;
 } generic_function_call;
 
@@ -37,21 +37,34 @@ typedef struct
     ptrdiff_t offset;
 } type_record_data;
 
+typedef bool (*custom_type_dumper)(const void *, int, FILE *);
+typedef void (*standard_type_dumper)(const void *, int, FILE *);
+typedef budgie_type (*type_get_type)(const void *);
+typedef int (*type_get_length)(const void *);
+
 typedef struct
 {
     type_code code;
-    budgie_type type;
+    budgie_type type;   /* base type of pointers, arrays, functions etc */
     const type_record_data *fields;
     size_t size;
     size_t length;
+    standard_type_dumper dumper;
+    custom_type_dumper custom_dumper;
+    type_get_type get_type;
+    type_get_length get_length;
 } type_data;
 
-typedef bool (*parameter_dumper)(const generic_function_call *, int, const void *, FILE *);
+typedef bool (*arg_dumper)(const generic_function_call *, int, const void *, FILE *);
+typedef budgie_type (*arg_get_type)(const generic_function_call *, int, const void *);
+typedef int (*arg_get_length)(const generic_function_call *, int, const void *);
 
 typedef struct
 {
     budgie_type type;
-    parameter_dumper dumper;
+    arg_dumper dumper;
+    arg_get_type get_type;
+    arg_get_length get_length;
 } function_parameter_data;
 
 typedef struct
@@ -79,6 +92,7 @@ int count_string(const void *value);
 
 /* User functions */
 
+void dump_any_type(budgie_type type, const void *value, int length, FILE *out);
 void dump_any_call(const generic_function_call *call, int indent, FILE *out);
 void make_indent(int indent, FILE *out);
 

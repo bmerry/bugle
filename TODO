@@ -1,5 +1,4 @@
 - clean shutdown of filters
-- make dump_any_type table-driven
 - autoconf tests (e.g. regex)
 - autoconf test for GLENUM_IS_GLUINT
 - control over filter chain

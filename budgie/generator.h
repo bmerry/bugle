@@ -26,8 +26,9 @@ struct param_or_type
     bool operator <(const param_or_type &b) const; // necessary for std::map
 };
 
-//! Returns a string containing two \c get_type functions.
-std::string get_type(bool prototype);
+//! Generates wrapper functions for type overrides
+std::string get_type(bool prototyp);
+//! Generates wrapper functions for length overrides
 std::string get_length(bool prototype);
 
 //! Returns true if the type can be reasonably dumped

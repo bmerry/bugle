@@ -524,6 +524,7 @@ static void headers()
 
     typec << "#include \"types.h\"\n";
     typec << "#include <stddef.h>\n"; // for offsetof
+    typec << "#include \"" << utilbase << ".h\"\n";
 }
 
 static void trailers()
@@ -566,10 +567,10 @@ static void handle_types()
 
     utilhead << make_type_dumper(true) << "\n";
     utilc << make_type_dumper(false) << "\n";
-    utilhead << get_type(true) << "\n";
-    utilc << get_type(false) << "\n";
-    utilhead << get_length(true) << "\n";
-    utilc << get_length(false) << "\n";
+    utilhead << get_type(true);
+    utilc << get_type(false);
+    utilhead << get_length(true);
+    utilc << get_length(false);
     type_converter(true, utilhead);
     type_converter(false, utilc);
 }
