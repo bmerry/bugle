@@ -68,7 +68,7 @@ static void init_stats_struct(stats_struct *s)
         && begin_internal_render())
     {
         CALL_glGenQueriesARB(1, &s->query);
-        if (s->query)
+        if (s->query) ;
             CALL_glBeginQueryARB(GL_SAMPLES_PASSED, s->query);
         end_internal_render("init_stats_struct", true);
     }
@@ -116,7 +116,6 @@ static bool stats_callback(function_call *call, const callback_data *data)
     switch (canon)
     {
     case CFUNC_glXSwapBuffers:
-        if (!s->initialised) init_stats_struct(s);
         gettimeofday(&now, NULL);
         elapsed = (now.tv_sec - s->last_time.tv_sec)
             + 1.0e-6f * (now.tv_usec - s->last_time.tv_usec);
@@ -141,7 +140,7 @@ static bool stats_callback(function_call *call, const callback_data *data)
             fprintf(f, "%u\n", (unsigned int) s->fragments);
         if (count_triangles && (f = log_header("stats", "triangles")) != NULL)
             fprintf(f, "%u\n", (unsigned int) s->triangles);
-        break;
+        return true;
     }
 
 #ifdef GL_ARB_occlusion_query
@@ -150,7 +149,6 @@ static bool stats_callback(function_call *call, const callback_data *data)
         {
         case CFUNC_glBeginQueryARB:
         case CFUNC_glEndQueryARB:
-            if (!s->initialised) init_stats_struct(s);
             if (s->query)
             {
                 fputs("App is using occlusion queries, disabling fragment counting\n", stderr);
@@ -229,22 +227,18 @@ static bool stats_callback(function_call *call, const callback_data *data)
         case CFUNC_glVertex4s:
         case CFUNC_glVertex4sv:
         case CFUNC_glArrayElement:
-            if (!s->initialised) init_stats_struct(s);
             if (in_begin_end()) s->begin_count++;
             break;
         case CFUNC_glBegin:
-            if (!s->initialised) init_stats_struct(s);
             s->begin_mode = *call->typed.glBegin.arg0;
             s->begin_count = 0;
             break;
         case CFUNC_glEnd:
-            if (!s->initialised) init_stats_struct(s);
             update_triangles(s, s->begin_mode, s->begin_count);
             s->begin_mode = 0;
             s->begin_count = 0;
             break;
         case CFUNC_glDrawArrays:
-            if (!s->initialised) init_stats_struct(s);
             update_triangles(s, *call->typed.glDrawArrays.arg0, *call->typed.glDrawArrays.arg2);
             break;
         case CFUNC_glDrawElements:
@@ -252,20 +246,17 @@ static bool stats_callback(function_call *call, const callback_data *data)
             break;
 #ifdef GL_EXT_draw_range_elements
         case CFUNC_glDrawRangeElementsEXT:
-            if (!s->initialised) init_stats_struct(s);
             update_triangles(s, *call->typed.glDrawRangeElementsEXT.arg0, *call->typed.glDrawRangeElementsEXT.arg3);
             break;
 #endif
 #ifdef GL_EXT_multi_draw_arrays
         case CFUNC_glMultiDrawArraysEXT:
-            if (!s->initialised) init_stats_struct(s);
             primcount = *call->typed.glMultiDrawArrays.arg3;
             for (i = 0; i < primcount; i++)
                 update_triangles(s, *call->typed.glMultiDrawArrays.arg0,
                                  (*call->typed.glMultiDrawArrays.arg2)[i]);
             break;
         case CFUNC_glMultiDrawElementsEXT:
-            if (!s->initialised) init_stats_struct(s);
             primcount = *call->typed.glMultiDrawElements.arg4;
             for (i = 0; i < primcount; i++)
                 update_triangles(s, *call->typed.glMultiDrawElements.arg0,
@@ -282,9 +273,14 @@ static bool stats_post_callback(function_call *call, const callback_data *data)
 
     switch (canonical_call(call))
     {
+    case CFUNC_glXMakeCurrent:
+#ifdef GLX_VERSION_1_3
+    case CFUNC_glXMakeContextCurrent:
+#endif
+        if (!s->initialised) init_stats_struct(s);
+        break;
     case CFUNC_glXSwapBuffers:
         s = (stats_struct *) data->context_data;
-        if (!s->initialised) init_stats_struct(s);
 #ifdef GL_ARB_occlusion_query
         if (s->query && begin_internal_render())
         {
@@ -351,7 +347,7 @@ static bool showstats_callback(function_call *call, const callback_data *data)
             elapsed = (now.tv_sec - s->last_show_time.tv_sec)
                 + 1.0e-6f * (now.tv_usec - s->last_show_time.tv_usec);
             s->skip_frames++;
-            if (elapsed >= 1.0f)
+            if (elapsed >= 0.2f)
             {
                 s->shown_fps = s->skip_frames / elapsed;
                 s->last_show_time = now;
@@ -486,14 +482,17 @@ static bool initialise_stats(filter_set *handle)
 #endif
     }
     register_filter_depends("invoke", "stats");
+
+    f = register_filter(handle, "stats_post", stats_post_callback);
     if (count_fragments || count_triangles)
-    {
-        f = register_filter(handle, "stats_post", stats_post_callback);
         register_filter_catches(f, CFUNC_glXSwapBuffers);
-        register_filter_set_renders("stats");
-        register_filter_post_renders("stats_post");
-        register_filter_depends("stats_post", "invoke");
-    }
+    register_filter_catches(f, CFUNC_glXMakeCurrent);
+#ifdef GLX_VERSION_1_3
+    register_filter_catches(f, CFUNC_glXMakeContextCurrent);
+#endif
+    register_filter_set_renders("stats");
+    register_filter_post_renders("stats_post");
+    register_filter_depends("stats_post", "invoke");
     log_register_filter("stats");
     register_filter_set_uses_state("stats");
     return true;
