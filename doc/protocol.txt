@@ -24,10 +24,10 @@ common/protocol.h)
 RESP_ANS:    A generic response, containing a single number. The request
              determines the meaning.
 RESP_BREAK:  Break on a particular function (before execution). Followed
-             by the name of the function.
+             by a dump of the function.
 RESP_BREAK_ERROR:
              Break on an error condition (after execution)
-             Followed by the name of the function, then the (textual)
+             Followed by the function call (string), then the (textual)
              name of the error.
 RESP_STOP:   A stop by request of the debugger. No extra data.
 RESP_STATE:  Response to a state request. Followed by the textual value

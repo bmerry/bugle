@@ -852,14 +852,14 @@ static bool handle_responses(uint32_t resp)
         break;
     case RESP_BREAK:
         gldb_recv_string(lib_in, &resp_str);
-        printf("Break on %s.\n", resp_str);
+        printf("Break on %s", resp_str);
         free(resp_str);
         state_dirty = true;
         break;
     case RESP_BREAK_ERROR:
         gldb_recv_string(lib_in, &resp_str);
         gldb_recv_string(lib_in, &resp_str2);
-        printf("Error %s in %s.\n", resp_str2, resp_str);
+        printf("Error %s in %s", resp_str2, resp_str);
         free(resp_str);
         free(resp_str2);
         state_dirty = true;
