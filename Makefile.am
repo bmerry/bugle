@@ -1,11 +1,5 @@
 ## Process with automake 1.7 or newer
 
-glincludes = \
-	$(shell CPP="$(CPP)" $(PERL) -w $(srcdir)/gentokens/find_header.perl GL/gl.h) \
-	$(shell CPP="$(CPP)" $(PERL) -w $(srcdir)/gentokens/find_header.perl GL/glext.h) \
-	$(shell CPP="$(CPP)" $(PERL) -w $(srcdir)/gentokens/find_header.perl GL/glx.h) \
-	$(shell CPP="$(CPP)" $(PERL) -w $(srcdir)/gentokens/find_header.perl GL/glext.h)
-
 # Utility programs, used for generating other files
 noinst_PROGRAMS = budgie/budgie
 # Misc extra files to include
@@ -92,11 +86,11 @@ src/names.c src/names.h src/utils.c src/utils.h src/lib.c src/lib.h: budgie/budg
 BUILT_SOURCES += src/glfuncs.h
 
 src/gltokens.c: gentokens/gentokens.perl
-	$(PERL) -w $(srcdir)/gentokens/gentokens.perl $(glincludes) > $@
+	$(PERL) -w $(srcdir)/gentokens/gentokens.perl $(GLINCLUDES) > $@
 src/glfuncs.h: gentokens/genfunctions.perl src/utils.h
-	$(PERL) -w $(srcdir)/gentokens/genfunctions.perl --out-header --header src/utils.h $(glincludes) > $@
+	$(PERL) -w $(srcdir)/gentokens/genfunctions.perl --out-header --header src/utils.h $(GLINCLUDES) > $@
 src/glfuncs.c: gentokens/genfunctions.perl src/utils.h
-	$(PERL) -w $(srcdir)/gentokens/genfunctions.perl --header src/utils.h $(glincludes) > $@
+	$(PERL) -w $(srcdir)/gentokens/genfunctions.perl --header src/utils.h $(GLINCLUDES) > $@
 
 # Filters
 filters_common_la_SOURCES = filters/common.c
@@ -119,24 +113,25 @@ check_PROGRAMS = \
 	tests/misc tests/setstate
 dist_check_SCRIPTS = tests/queries.sh tests/setstate.sh tests/comparelog.sh
 tests_errors_SOURCES = tests/errors.c
-tests_errors_LDADD = src/libbugle.la -lglut $(GL_LIBS) $(X_PRE_LIBS) $(X_LIBS) $(X_EXTRA_LIBS)
+tests_errors_LDADD = src/libbugle.la -lglut -lGLU $(GL_LIBS) $(X_PRE_LIBS) $(X_LIBS) $(X_EXTRA_LIBS)
 tests_threads1_SOURCES = tests/threads1.c
 tests_threads1_LDADD = src/libbugle.la $(GL_LIBS) $(X_PRE_LIBS) $(X_LIBS) $(X_EXTRA_LIBS) $(THREAD_LIBS)
 tests_threads2_SOURCES = tests/threads2.c
 tests_threads2_LDADD = src/libbugle.la $(GL_LIBS) $(X_PRE_LIBS) $(X_LIBS) $(X_EXTRA_LIBS) $(THREAD_LIBS)
 tests_queries_SOURCES = tests/queries.c
-tests_queries_LDADD = src/libbugle.la -lglut $(GL_LIBS) $(X_PRE_LIBS) $(X_LIBS) $(X_EXTRA_LIBS)
+tests_queries_LDADD = src/libbugle.la -lglut -lGLU $(GL_LIBS) $(X_PRE_LIBS) $(X_LIBS) $(X_EXTRA_LIBS)
 tests_misc_SOURCES = tests/misc.c
-tests_misc_LDADD = src/libbugle.la -lglut $(GL_LIBS) $(X_PRE_LIBS) $(X_LIBS) $(X_EXTRA_LIBS)
+tests_misc_LDADD = src/libbugle.la -lglut -lGLU $(GL_LIBS) $(X_PRE_LIBS) $(X_LIBS) $(X_EXTRA_LIBS)
 tests_setstate_SOURCES = tests/setstate.c
-tests_setstate_LDADD = src/libbugle.la -lglut $(GL_LIBS) $(X_PRE_LIBS) $(X_LIBS) $(X_EXTRA_LIBS)
+tests_setstate_LDADD = src/libbugle.la -lglut -lGLU $(GL_LIBS) $(X_PRE_LIBS) $(X_LIBS) $(X_EXTRA_LIBS)
 TESTS = tests/errors tests/misc tests/queries.sh tests/setstate.sh
 TESTS_ENVIRONMENT = BUGLE_FILTERS=$(srcdir)/tests/filters BUGLE_FILTER_DIR=filters/.libs
 
 # Extra files to distribute
 EXTRA_DIST = src/gl.bc src/data/gl.c src/data/overrides.h \
 	FAQ TROUBLESHOOTING \
-	doc/filters.txt doc/protocol.txt doc/examples/filters
+	doc/filters.txt doc/protocol.txt doc/examples/filters \
+	tests/filters
 
 # Note: automake ought to clean the various files in the .libs directories,
 # but for some reason does not.

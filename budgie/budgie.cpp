@@ -431,7 +431,7 @@ param_or_type_list *find_param(const string &func_regex, int param)
         }
     delete[] matches;
     if (!found)
-        cerr << "Warning: no functions matched the regex `" << func_regex << "'";
+        cerr << "Warning: no functions matched the regex `" << func_regex << "'\n";
 
     regfree(&preg);
     return ans;

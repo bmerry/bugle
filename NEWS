@@ -1,8 +1,14 @@
-This is a fairly major update to the internals, although relatively
-little will be visible to the user. 
+0.0.20041011
+------------
+This is a fairly major update to the internals, although not much of it
+is visible to the user. The biggest changes are the ability to pass
+options to the program that gldb will run, and a 'screenshot' command
+within gldb to take screenshots on request.
 
 WARNING: see the README for upgrade instructions. Simply installing
-over an older version will break things.
+over an older version will break things. You will also need to add the
+'trace' filter-set to your existing configuration files if you want the
+tracing functionality originally provided by the 'log' filter-set.
 
 0.0.20040903
 ------------

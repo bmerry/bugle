@@ -1,4 +1,4 @@
-.TH BUGLE 3 "July 2004" BUGLE "User Manual"
+.TH BUGLE 3 "October 2004" BUGLE "User Manual"
 .SH NAME
 bugle \- An OpenGL debugging library
 .SH SYNOPSIS
@@ -36,7 +36,8 @@ in the configuration file, described in
 below.
 .TP
 .B log
-Provides logging of all OpenGL calls, as well as a few key GLX calls.
+Provides a logging facility for other modules, without doing any
+logging itself.
 The
 .B filename
 option specifies the filename to which to write the log (the file is
@@ -44,7 +45,11 @@ overwritten). If not specified, the log is to standard error. The
 .B flush
 option may be set to
 .B yes
-to flush the log after every operation. If the
+to flush the log after every OpenGL call.
+.TP
+.B trace
+Writes information about each OpenGL call (and a few GLX calls) to the
+log. If the
 .B error
 filter-set is also loaded, OpenGL errors will also be written to the
 log (note that several other filter-sets implicitly load the
@@ -99,13 +104,10 @@ is the frame number. It has an optional variable
 If this variable is set, the value must be a filename. The frames are
 encoded to a video with this filename. The variable
 .B codec
-controls the video codec. This video mode requires
-.BR mjpegtools (1)
-and
-.BR ffmpeg (1).
-Refer to the latter for the list of video codecs. There is currently no
-way to set options such as bitrate, but this will probably be possible
-in future. Note that this will crash if the frame-size changes.
+controls the video codec. This video mode requires the
+.B ffmpeg
+library. See the example configuration file for documentation of the
+other options.
 .TP
 .B unwindstack
 This filter-set is a bit of a hack, and may not work reliably on all
