@@ -26,8 +26,10 @@
 #include <GL/glx.h>
 #include "budgieutils.h"
 #include "common/bool.h"
+#include "src/gltokens.h"
 
 GLenum gl_token_to_enum(const char *name);
+const gl_token *gl_enum_to_token_struct(GLenum e);
 const char *gl_enum_to_token(GLenum e);
 
 budgie_type gl_type_to_type(GLenum gl_type);

@@ -1,4 +1,4 @@
-.TH BUGLE 3 "October 2004" BUGLE "User Manual"
+.TH BUGLE 3 "November 2004" BUGLE "User Manual"
 .SH NAME
 bugle \- An OpenGL debugging library
 .SH SYNOPSIS
@@ -72,6 +72,17 @@ filter-set.
 .TP
 .B showerror
 Writes OpenGL errors to standard out.
+.TP
+.B showextensions
+On exit, outputs information on what version of OpenGL is required, and
+what extensions are required, to
+.I run
+the program. This code is still in development, and may report
+surprising results (e.g.
+.B GL_EXT_vertex_arrays
+may be reported even though it is incorporated into OpenGL 1.1).
+It is also not smart enough to distinguish between OpenGL 1.0 and 1.1,
+so it will always be reported as requiring at least 1.1.
 .TP
 .B wireframe
 Forces the application to render in wireframe mode (i.e. with

@@ -1,4 +1,4 @@
-AC_INIT(bugle, 0.0.20041025, bmerry@users.sourceforge.net)
+AC_INIT(bugle, 0.0.20041108, bmerry@users.sourceforge.net)
 AC_CONFIG_SRCDIR([src/interceptor.c])
 AM_INIT_AUTOMAKE([1.7 dist-bzip2 subdir-objects])
 AM_CONFIG_HEADER(config.h)
@@ -59,10 +59,10 @@ AC_CHECK_HEADERS([sys/types.h stdlib.h stddef.h regex.h pthread.h])
 AC_CHECK_HEADERS([ffmpeg/avformat.h ffmpeg/avcodec.h], [], [HAVE_LAVC=0])
 AC_CHECK_HEADERS([readline/readline.h readline/history.h], [], [HAVE_READLINE=0])
 
-GLINCLUDES="$(CPP=\"$CPP\" $PERL -w $srcdir/gentokens/find_header.perl GL/gl.h) \
-$(CPP=\"$CPP\" $PERL -w $srcdir/gentokens/find_header.perl GL/glx.h) \
-$(CPP=\"$CPP\" $PERL -w $srcdir/gentokens/find_header.perl GL/glext.h) \
-$(CPP=\"$CPP\" $PERL -w $srcdir/gentokens/find_header.perl GL/glxext.h)"
+GLINCLUDES="`CPP=\"$CPP\" $PERL -w $srcdir/gentokens/find_header.perl GL/gl.h` \
+`CPP=\"$CPP\" $PERL -w $srcdir/gentokens/find_header.perl GL/glx.h` \
+`CPP=\"$CPP\" $PERL -w $srcdir/gentokens/find_header.perl GL/glext.h` \
+`CPP=\"$CPP\" $PERL -w $srcdir/gentokens/find_header.perl GL/glxext.h`"
 AC_SUBST(GLINCLUDES)
 
 dnl Checks for types

@@ -30,6 +30,8 @@
 #include "src/utils.h"
 #include "src/canon.h"
 #include "src/glutils.h"
+#include "src/glfuncs.h"
+#include "common/hashtable.h"
 #include "common/safemem.h"
 #include "common/bool.h"
 #include <stdio.h>
@@ -620,6 +622,92 @@ static bool set_variable_screenshot(filter_set *handle,
     return true;
 }
 
+static hash_table seen_extensions;
+static const char *gl_version = "GL_VERSION_1_1";
+static const char *glx_version = "GLX_VERSION_1_2";
+
+static bool showextensions_callback(function_call *call, const callback_data *data)
+{
+    size_t i;
+    const function_data *info;
+    const gl_function *glinfo;
+
+    info = &function_table[call->generic.id];
+    glinfo = &gl_function_table[call->generic.id];
+    if (glinfo->extension)
+        hash_set(&seen_extensions, glinfo->extension, &seen_extensions);
+    else
+    {
+        if (glinfo->version && glinfo->version[2] == 'X' && strcmp(glinfo->version, glx_version) > 0)
+            glx_version = glinfo->version;
+        if (glinfo->version && glinfo->version[2] == '_' && strcmp(glinfo->version, gl_version) > 0)
+            gl_version = glinfo->version;
+    }
+
+    for (i = 0; i < info->num_parameters; i++)
+    {
+        if (info->parameters[i].type == TYPE_6GLenum)
+        {
+            GLenum e;
+            const gl_token *t;
+
+            e = *(const GLenum *) call->generic.args[i];
+            t = gl_enum_to_token_struct(e);
+            if (t && t->extension)
+                hash_set(&seen_extensions, t->extension, &seen_extensions);
+        }
+    }
+    return true;
+}
+
+static bool initialise_showextensions(filter_set *handle)
+{
+    register_filter(handle, "showextensions", showextensions_callback);
+    /* The order mainly doesn't matter, but making it a pre-filter
+     * reduces the risk of another filter aborting the call.
+     */
+    register_filter_depends("invoke", "showextensions");
+    hash_init(&seen_extensions);
+    return true;
+}
+
+static void destroy_showextensions(filter_set *handle)
+{
+    size_t i;
+    budgie_function f;
+
+    printf("Min GL version: %s\n", gl_version);
+    printf("Min GLX version: %s\n", glx_version);
+    printf("Used extensions:");
+    for (i = 0; i < gl_token_count; i++)
+    {
+        const char *ver, *ext;
+
+        ver = gl_tokens_name[i].version;
+        ext = gl_tokens_name[i].extension;
+        if ((!ver || strcmp(ver, gl_version) > 0)
+            && ext && hash_get(&seen_extensions, ext) == &seen_extensions)
+        {
+            printf(" %s", ext);
+            hash_set(&seen_extensions, ext, NULL);
+        }
+    }
+    for (f = 0; f < NUMBER_OF_FUNCTIONS; f++)
+    {
+        const char *ext;
+
+        ext = gl_function_table[f].extension;
+        if (ext && hash_get(&seen_extensions, ext) == &seen_extensions)
+        {
+            printf(" %s", ext);
+            hash_set(&seen_extensions, ext, NULL);
+        }
+    }
+
+    hash_clear(&seen_extensions, false);
+    printf("\n");
+}
+
 void initialise_filter_library(void)
 {
     const filter_set_info screenshot_info =
@@ -631,5 +719,15 @@ void initialise_filter_library(void)
         0,
         0
     };
+    const filter_set_info showextensions_info =
+    {
+        "showextensions",
+        initialise_showextensions,
+        destroy_showextensions,
+        NULL,
+        0,
+        0
+    };
     register_filter_set(&screenshot_info);
+    register_filter_set(&showextensions_info);
 }

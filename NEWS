@@ -1,3 +1,8 @@
+0.0.20041108
+------------
+Some bugfixes and minor improvements, including a filter-set to tell
+you what extensions are being used. See the ChangeLog.
+
 0.0.20041025
 ------------
 Minor update, the most important fix being that extension functions

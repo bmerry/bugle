@@ -24,6 +24,12 @@ chain debugger
 {
 }
 
+# On exit, shows the extensions required by the program.
+chain showextensions
+{
+    filterset showextensions
+}
+
 # Captures a screenshot after every frame
 chain screenshot
 {

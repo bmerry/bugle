@@ -1,8 +1,11 @@
+0.0.20041108
+------------
 * Fix crash in video capture (not sure how it ever worked)
 * Fix dumping bug (wrong field was being type overridden)
 * (gldb) Make a blank line rerun previous command
 * Fix various compiler warnings
 * Added --without-lavc configure option
+* Add the showextensions filter-set.
 
 0.0.20041025
 ------------

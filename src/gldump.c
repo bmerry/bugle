@@ -68,7 +68,7 @@ void dump_any_type_extended(budgie_type type,
     }
 }
 
-const char *gl_enum_to_token(GLenum e)
+const gl_token *gl_enum_to_token_struct(GLenum e)
 {
     int l, r, m;
 
@@ -85,10 +85,17 @@ const char *gl_enum_to_token(GLenum e)
     else
     {
         /* Pick the first one, to avoid using extension suffices */
-        while (l > 0 && gl_tokens_value[l - 1].value == e)
-            l--;
-        return gl_tokens_value[l].name;
+        while (l > 0 && gl_tokens_value[l - 1].value == e) l--;
+        return &gl_tokens_value[l];
     }
+}
+
+const char *gl_enum_to_token(GLenum e)
+{
+    const gl_token *t;
+
+    t = gl_enum_to_token_struct(e);
+    if (t) return t->name; else return NULL;
 }
 
 GLenum gl_token_to_enum(const char *name)

@@ -30,7 +30,7 @@
 # 3: extension, or undef for pure core
 #
 # The intermediate is similar, but indexed by group name and
-# with group name in the first field. It is then flattened into an
+# with the first field omitted. It is then flattened into an
 # array.
 
 use strict;
@@ -79,6 +79,7 @@ sub dump_toks(@)
 my (%inverse, %intoks, %toks, $ver, $ext, $suffix);
 
 # Load input
+$ver = "GL_VERSION_1_1";
 while (<>)
 {
     if (/^#ifndef (GL_VERSION_[0-9_]+)/)
@@ -89,10 +90,12 @@ while (<>)
     {
         $ext = $1;
         $suffix = $2;
+        $ver = undef;
     }
     elsif (/^#endif/)
     {
-        $ver = $ext = $suffix = undef;
+        $ext = $suffix = undef;
+        $ver = "GL_VERSION_1_1";
     }
     elsif (/^#define (GL_[0-9A-Z_]+)\s+((0x)?[0-9A-Fa-f]+)/ && is_enum_name($1))
     {
