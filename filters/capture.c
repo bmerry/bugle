@@ -722,7 +722,6 @@ void initialise_filter_library(void)
         initialise_screenshot,
         destroy_screenshot,
         set_variable_screenshot,
-        0,
         0
     };
     const filter_set_info showextensions_info =
@@ -731,7 +730,6 @@ void initialise_filter_library(void)
         initialise_showextensions,
         destroy_showextensions,
         NULL,
-        0,
         0
     };
     register_filter_set(&screenshot_info);

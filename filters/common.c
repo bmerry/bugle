@@ -97,7 +97,6 @@ void initialise_filter_library(void)
         initialise_invoke,
         NULL,
         NULL,
-        0,
         0
     };
     const filter_set_info procaddress_info =
@@ -106,7 +105,6 @@ void initialise_filter_library(void)
         initialise_procaddress,
         NULL,
         NULL,
-        0,
         0
     };
     register_filter_set(&invoke_info);

@@ -23,7 +23,6 @@ bugle
 - fill in the rest of the state
 - handle texture proxies
 - handle GL shared objects correctly
-- statistics and profiling
 - improve support for GLSL
 - capture information about call lists
 - capture and replay
@@ -47,7 +46,6 @@ tests
 general
 -------
 - more documentation
-- allow the filter chain to be selectively bypassed, for benchmarking purposes
 
 long term
 ---------
@@ -55,3 +53,4 @@ long term
 - Windows support
 - graphical debugger interface
 - OpenGL 2.0 support
+- reduce namespace pollution

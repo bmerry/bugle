@@ -431,7 +431,6 @@ void initialise_filter_library(void)
         initialise_debugger,
         NULL,
         NULL,
-        0,
         0
     };
 

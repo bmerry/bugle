@@ -31,44 +31,51 @@
 
 typedef struct
 {
-    /* resources */
-    bool initialised;
-    bool font_initialised;
-    GLuint font_base;
+    /* Resources */
     GLuint query;
 
     /* Intermediate data for stats */
     struct timeval last_time; /* Last frame - for fps */
     GLsizei begin_mode;       /* For counting triangles in immediate mode */
-    GLsizei begin_count;
+    GLsizei begin_count;      /* FIXME: use per-begin/end object */
 
-    /* stats */
+    /* current stats */
     float fps;
     GLuint fragments;
     GLsizei triangles;
+} stats_struct;
 
-    /* Data for showstats, which averages fps */
+typedef struct
+{
+    GLuint font_base;
+
     struct timeval last_show_time;
     int skip_frames;
     float shown_fps;
-} stats_struct;
+} showstats_struct;
 
-static filter_set *stats_handle = NULL;
+static size_t stats_offset;
+static size_t showstats_offset;
 static bool count_fragments = false;
 static bool count_triangles = false;
 
-static void init_stats_struct(stats_struct *s)
+static void initialise_stats_struct(const void *key, void *data)
 {
-    s->initialised = true;
+    stats_struct *s;
+
+    s = (stats_struct *) data;
     s->query = 0;
+    s->last_time.tv_sec = 0;
+    s->last_time.tv_usec = 0;
     s->begin_mode = GL_NONE;
     s->begin_count = 0;
 #ifdef GL_ARB_occlusion_query
+    /* FIXME: check for the extension, not the function */
     if (count_fragments && function_table[FUNC_glGenQueriesARB].real
         && begin_internal_render())
     {
         CALL_glGenQueriesARB(1, &s->query);
-        if (s->query) ;
+        if (s->query)
             CALL_glBeginQueryARB(GL_SAMPLES_PASSED, s->query);
         end_internal_render("init_stats_struct", true);
     }
@@ -77,8 +84,6 @@ static void init_stats_struct(stats_struct *s)
     s->fps = 0.0f;
     s->fragments = 0;
     s->triangles = 0;
-
-    s->shown_fps = 0.0f;
 }
 
 /* Increments the triangle count for stats struct s according to mode */
@@ -111,7 +116,7 @@ static bool stats_callback(function_call *call, const callback_data *data)
     GLsizei i, primcount;
     budgie_function canon;
 
-    s = (stats_struct *) data->context_data;
+    s = object_get_current(&context_class, stats_offset);
     canon = canonical_call(call);
     switch (canon)
     {
@@ -273,14 +278,8 @@ static bool stats_post_callback(function_call *call, const callback_data *data)
 
     switch (canonical_call(call))
     {
-    case CFUNC_glXMakeCurrent:
-#ifdef GLX_VERSION_1_3
-    case CFUNC_glXMakeContextCurrent:
-#endif
-        if (!s->initialised) init_stats_struct(s);
-        break;
     case CFUNC_glXSwapBuffers:
-        s = (stats_struct *) data->context_data;
+        s = object_get_current(&context_class, stats_offset);
 #ifdef GL_ARB_occlusion_query
         if (s->query && begin_internal_render())
         {
@@ -295,7 +294,7 @@ static bool stats_post_callback(function_call *call, const callback_data *data)
 }
 
 /* Renders a line of text to screen, and moves down one line */
-static void render_stats(stats_struct *s, const char *fmt, ...)
+static void render_stats(showstats_struct *ss, const char *fmt, ...)
 {
     va_list ap;
     char buffer[128];
@@ -307,9 +306,27 @@ static void render_stats(stats_struct *s, const char *fmt, ...)
 
     CALL_glPushAttrib(GL_CURRENT_BIT);
     for (ch = buffer; *ch; ch++)
-        CALL_glCallList(s->font_base + *ch);
+        CALL_glCallList(ss->font_base + *ch);
     CALL_glPopAttrib();
     CALL_glBitmap(0, 0, 0, 0, 0, -16, NULL);
+}
+
+static void initialise_showstats_struct(const void *key, void *data)
+{
+    Display *dpy;
+    Font f;
+    showstats_struct *ss;
+
+    ss = (showstats_struct *) data;
+    dpy = glXGetCurrentDisplay();
+    ss->font_base = CALL_glGenLists(256);
+    f = XLoadFont(dpy, "-*-courier-*-*-*");
+    glXUseXFont(f, 0, 256, ss->font_base);
+    XUnloadFont(dpy, f);
+
+    ss->shown_fps = 0.0f;
+    ss->last_show_time.tv_sec = 0;
+    ss->last_show_time.tv_usec = 0;
 }
 
 static bool showstats_callback(function_call *call, const callback_data *data)
@@ -317,8 +334,8 @@ static bool showstats_callback(function_call *call, const callback_data *data)
     Display *dpy;
     GLXDrawable old_read, old_write;
     GLXContext aux, real;
-    Font f;
     stats_struct *s;
+    showstats_struct *ss;
     float elapsed;
     struct timeval now;
 
@@ -333,25 +350,18 @@ static bool showstats_callback(function_call *call, const callback_data *data)
             old_read = glXGetCurrentReadDrawable();
             dpy = glXGetCurrentDisplay();
             CALL_glXMakeContextCurrent(dpy, old_write, old_write, aux);
-            s = get_filter_set_context_state(tracker_get_context_state(), stats_handle);
-            if (!s->font_initialised)
-            {
-                s->font_initialised = true;
-                s->font_base = CALL_glGenLists(256);
-                f = XLoadFont(dpy, "-*-courier-*-*-*");
-                glXUseXFont(f, 0, 256, s->font_base);
-                XUnloadFont(dpy, f);
-            }
+            s = object_get_current(&context_class, stats_offset);
+            ss = object_get_current(&context_class, showstats_offset);
 
             gettimeofday(&now, NULL);
-            elapsed = (now.tv_sec - s->last_show_time.tv_sec)
-                + 1.0e-6f * (now.tv_usec - s->last_show_time.tv_usec);
-            s->skip_frames++;
+            elapsed = (now.tv_sec - ss->last_show_time.tv_sec)
+                + 1.0e-6f * (now.tv_usec - ss->last_show_time.tv_usec);
+            ss->skip_frames++;
             if (elapsed >= 0.2f)
             {
-                s->shown_fps = s->skip_frames / elapsed;
-                s->last_show_time = now;
-                s->skip_frames = 0;
+                ss->shown_fps = ss->skip_frames / elapsed;
+                ss->last_show_time = now;
+                ss->skip_frames = 0;
             }
 
             /* We don't want to depend on glWindowPos since it
@@ -360,9 +370,9 @@ static bool showstats_callback(function_call *call, const callback_data *data)
              */
             CALL_glPushAttrib(GL_CURRENT_BIT);
             CALL_glRasterPos2f(-0.9, 0.9);
-            render_stats(s, "%.1f fps", s->shown_fps);
-            if (s->query) render_stats(s, "%u fragments", (unsigned int) s->fragments);
-            if (count_triangles) render_stats(s, "%u triangles", (unsigned int) s->triangles);
+            render_stats(ss, "%.1f fps", ss->shown_fps);
+            if (s->query) render_stats(ss, "%u fragments", (unsigned int) s->fragments);
+            if (count_triangles) render_stats(ss, "%u triangles", (unsigned int) s->triangles);
             CALL_glPopAttrib();
             CALL_glXMakeContextCurrent(dpy, old_write, old_read, real);
             end_internal_render("showstats_callback", true);
@@ -401,7 +411,6 @@ static bool initialise_stats(filter_set *handle)
 {
     filter *f;
 
-    stats_handle = handle;
     f = register_filter(handle, "stats", stats_callback);
     register_filter_catches(f, CFUNC_glXSwapBuffers);
     if (count_triangles)
@@ -483,18 +492,20 @@ static bool initialise_stats(filter_set *handle)
     }
     register_filter_depends("invoke", "stats");
 
-    f = register_filter(handle, "stats_post", stats_post_callback);
-    if (count_fragments || count_triangles)
-        register_filter_catches(f, CFUNC_glXSwapBuffers);
-    register_filter_catches(f, CFUNC_glXMakeCurrent);
-#ifdef GLX_VERSION_1_3
-    register_filter_catches(f, CFUNC_glXMakeContextCurrent);
-#endif
-    register_filter_set_renders("stats");
-    register_filter_post_renders("stats_post");
-    register_filter_depends("stats_post", "invoke");
+    if (count_triangles || count_fragments)
+    {
+        f = register_filter(handle, "stats_post", stats_post_callback);
+        if (count_fragments || count_triangles)
+            register_filter_catches(f, CFUNC_glXSwapBuffers);
+        register_filter_post_renders("stats_post");
+        register_filter_depends("stats_post", "invoke");
+    }
     log_register_filter("stats");
-    register_filter_set_uses_state("stats");
+    register_filter_set_renders("stats");
+    stats_offset = object_class_register(&context_class,
+                                         initialise_stats_struct,
+                                         NULL,
+                                         sizeof(stats_struct));
     return true;
 }
 
@@ -512,6 +523,10 @@ static bool initialise_showstats(filter_set *handle)
     register_filter_catches(f, CFUNC_glXSwapBuffers);
     register_filter_set_depends("showstats", "stats");
     register_filter_set_renders("showstats");
+    showstats_offset = object_class_register(&context_class,
+                                             initialise_showstats_struct,
+                                             NULL,
+                                             sizeof(showstats_struct));
     return true;
 }
 
@@ -524,7 +539,6 @@ void initialise_filter_library(void)
         NULL,
         command_stats,
         0,
-        sizeof(stats_struct)
     };
     const filter_set_info showstats_info =
     {
@@ -532,7 +546,6 @@ void initialise_filter_library(void)
         initialise_showstats,
         NULL,
         NULL,
-        0,
         0
     };
     register_filter_set(&stats_info);

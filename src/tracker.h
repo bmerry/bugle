@@ -26,12 +26,14 @@
 #include "common/bool.h"
 #include "src/utils.h"
 #include "src/filters.h"
+#include "src/objects.h"
+
+extern object_class context_class;
 
 /* Returns the current context wrapper, or NULL if no current context */
 state_7context_I *tracker_get_context_state(void);
 
-/* Used by the filter to request amount of per-context space */
-void tracker_set_context_space(size_t bytes);
+bool in_begin_end(void);
 
 /* Used by the initialisation code */
 void tracker_initialise(void);

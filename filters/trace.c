@@ -65,7 +65,6 @@ void initialise_filter_library(void)
         initialise_trace,
         NULL,
         NULL,
-        0,
         0
     };
     register_filter_set(&trace_info);

@@ -535,13 +535,10 @@ STATE context
                 {
 			VALUE min_element GLint 1 NULL
 			VALUE max_element GLint 1 NULL
-			VALUE in_begin_end GLboolean 1 NULL
-			VALUE error GLerror 1 NULL
 			VALUE share +Pv 1 NULL
 			VALUE destroyed GLboolean 1 NULL
 			VALUE initialised GLboolean 1 NULL
                         VALUE auxcontext GLXContext 1 NULL
-                        VALUE filterdata +Pv 1 NULL
                 }
         }
 }

@@ -31,14 +31,6 @@
 
 static filter_set *error_handle = NULL;
 
-bool in_begin_end(void)
-{
-    state_7context_I *ctx;
-
-    ctx = tracker_get_context_state();
-    return !ctx || ctx->c_internal.c_in_begin_end.data;
-}
-
 bool begin_internal_render(void)
 {
     GLenum error;

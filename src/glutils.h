@@ -48,8 +48,6 @@ bool begin_internal_render(void);
 void end_internal_render(const char *name, bool warn);
 GLXContext get_aux_context();
 
-bool in_begin_end(void);
-
 void register_filter_set_renders(const char *name);
 void register_filter_post_renders(const char *name);
 void register_filter_set_uses_state(const char *name);

@@ -20,26 +20,35 @@
 #include "src/utils.h"
 #include "src/canon.h"
 #include "src/glutils.h"
+#include "src/objects.h"
+#include "src/tracker.h"
 #include "common/bool.h"
 #include <GL/glx.h>
 #include <sys/time.h>
 
 /* Wireframe filter-set */
 
+static void initialise_wireframe_context(const void *key, void *data)
+{
+    if (begin_internal_render())
+    {
+        CALL_glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+        end_internal_render("initialise_wireframe_context", true);
+    }
+}
+
 static bool wireframe_callback(function_call *call, const callback_data *data)
 {
     switch (canonical_call(call))
     {
-    case CFUNC_glPolygonMode:
-    case CFUNC_glXMakeCurrent:
-#ifdef CFUNC_glXMakeContextCurrent
-    case CFUNC_glXMakeContextCurrent:
-#endif
     case CFUNC_glXSwapBuffers:
+        CALL_glClear(GL_COLOR_BUFFER_BIT); /* hopefully bypass z-trick */
+        break;
+    case CFUNC_glPolygonMode:
         if (begin_internal_render())
         {
             CALL_glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-            end_internal_render("wireframe", true);
+            end_internal_render("wireframe_callback", true);
         }
         break;
     case CFUNC_glEnable:
@@ -56,7 +65,7 @@ static bool wireframe_callback(function_call *call, const callback_data *data)
             if (begin_internal_render())
             {
                 CALL_glDisable(*call->typed.glEnable.arg0);
-                end_internal_render("wireframe", true);
+                end_internal_render("wireframe_callback", true);
             }
             break;
         default: ;
@@ -71,30 +80,35 @@ static bool initialise_wireframe(filter_set *handle)
 
     f = register_filter(handle, "wireframe", wireframe_callback);
     register_filter_catches(f, CFUNC_glPolygonMode);
-    register_filter_catches(f, CFUNC_glXMakeCurrent);
-#ifdef FUNC_glXMakeContextCurrent
-    register_filter_catches(f, CFUNC_glXMakeContextCurrent);
-#endif
     register_filter_catches(f, CFUNC_glEnable);
     register_filter_depends("wireframe", "invoke");
     register_filter_set_renders("wireframe");
     register_filter_post_renders("wireframe");
+    object_class_register(&context_class, initialise_wireframe_context,
+                          NULL, 0);
     return true;
+}
+
+static void initialise_frontbuffer_context(const void *key, void *data)
+{
+    if (begin_internal_render())
+    {
+        CALL_glDrawBuffer(GL_FRONT);
+        end_internal_render("initialise_frontbuffer_context", true);
+    }
 }
 
 static bool frontbuffer_callback(function_call *call, const callback_data *data)
 {
     switch (canonical_call(call))
     {
-#ifdef CFUNC_glXMakeContextCurrent
-    case CFUNC_glXMakeContextCurrent:
-#endif
-    case CFUNC_glXMakeCurrent:
     case CFUNC_glDrawBuffer:
-        begin_internal_render();
-        CALL_glDrawBuffer(GL_FRONT);
-        CALL_glClear(GL_COLOR_BUFFER_BIT); /* hopefully bypass z-trick */
-        end_internal_render("frontbuffer", true);
+        if (begin_internal_render())
+        {
+            CALL_glDrawBuffer(GL_FRONT);
+            end_internal_render("frontbuffer_callback", true);
+        }
+        break;
     }
     return true;
 }
@@ -105,11 +119,11 @@ static bool initialise_frontbuffer(filter_set *handle)
 
     f = register_filter(handle, "frontbuffer", frontbuffer_callback);
     register_filter_depends("frontbuffer", "invoke");
-    register_filter_catches(f, CFUNC_glXMakeCurrent);
-#ifdef FUNC_glXMakeContextCurrent
-    register_filter_catches(f, CFUNC_glXMakeContextCurrent);
-#endif
     register_filter_catches(f, CFUNC_glDrawBuffer);
+    register_filter_set_renders("frontbuffer");
+    register_filter_post_renders("frontbuffer");
+    object_class_register(&context_class, initialise_frontbuffer_context,
+                          NULL, 0);
     return true;
 }
 
@@ -121,7 +135,6 @@ void initialise_filter_library(void)
         initialise_wireframe,
         NULL,
         NULL,
-        0,
         0
     };
     const filter_set_info frontbuffer_info =
@@ -130,7 +143,6 @@ void initialise_filter_library(void)
         initialise_frontbuffer,
         NULL,
         NULL,
-        0,
         0
     };
     register_filter_set(&wireframe_info);

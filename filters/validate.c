@@ -37,15 +37,15 @@
 
 static bool trap = false;
 static filter_set *error_handle = NULL;
+static size_t error_context_offset;
 
 static bool error_callback(function_call *call, const callback_data *data)
 {
-    state_7context_I *ctx;
     GLenum error;
+    GLenum *stored_error;
 
     *(GLenum *) data->call_data = GL_NO_ERROR;
     if (function_table[call->generic.id].name[2] == 'X') return true; /* GLX */
-    ctx = tracker_get_context_state();
     if (canonical_call(call) == CFUNC_glGetError)
     {
         /* We hope that it returns GL_NO_ERROR, since otherwise something
@@ -53,6 +53,7 @@ static bool error_callback(function_call *call, const callback_data *data)
          * rather than whatever we have saved. Also, we must make sure to
          * return nothing else inside begin/end.
          */
+        stored_error = object_get_current(&context_class, error_context_offset);
         if (*call->typed.glGetError.retn != GL_NO_ERROR)
         {
             flockfile(stderr);
@@ -61,10 +62,10 @@ static bool error_callback(function_call *call, const callback_data *data)
             fputs("\n", stderr);
             funlockfile(stderr);
         }
-        else if (!in_begin_end() && ctx->c_internal.c_error.data)
+        else if (!in_begin_end() && *stored_error)
         {
-            *call->typed.glGetError.retn = ctx->c_internal.c_error.data;
-            ctx->c_internal.c_error.data = GL_NO_ERROR;
+            *call->typed.glGetError.retn = *stored_error;
+            *stored_error = GL_NO_ERROR;
         }
     }
     else if (!in_begin_end())
@@ -72,10 +73,11 @@ static bool error_callback(function_call *call, const callback_data *data)
         /* Note: we deliberately don't call begin_internal_render here,
          * since it will beat us to calling glGetError().
          */
+        stored_error = object_get_current(&context_class, error_context_offset);
         while ((error = CALL_glGetError()) != GL_NO_ERROR)
         {
-            if (ctx && !ctx->c_internal.c_error.data)
-                ctx->c_internal.c_error.data = error;
+            if (stored_error && !*stored_error)
+                *stored_error = error;
             *(GLenum *) data->call_data = error;
             if (trap)
             {
@@ -108,6 +110,10 @@ static bool initialise_error(filter_set *handle)
      * error filterset depend on itself.
      */
     register_filter_set_renders("error");
+    error_context_offset = object_class_register(&context_class,
+                                                 NULL,
+                                                 NULL,
+                                                 sizeof(GLenum));
     return true;
 }
 
@@ -218,8 +224,7 @@ void initialise_filter_library(void)
         initialise_error,
         NULL,
         NULL,
-        sizeof(GLenum),
-        0
+        sizeof(GLenum)
     };
     const filter_set_info showerror_info =
     {
@@ -227,7 +232,6 @@ void initialise_filter_library(void)
         initialise_showerror,
         NULL,
         NULL,
-        0,
         0
     };
     const filter_set_info unwindstack_info =
@@ -236,7 +240,6 @@ void initialise_filter_library(void)
         initialise_unwindstack,
         NULL,
         NULL,
-        0,
         0
     };
     register_filter_set(&error_info);

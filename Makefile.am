@@ -63,6 +63,7 @@ src_libbugle_la_SOURCES = \
 	src/filters.c src/filters.h \
 	src/tracker.c src/tracker.h \
 	src/log.c src/log.h \
+        src/objects.c src/objects.h \
 	budgielib/budgieutils.c budgielib/budgieutils.h \
 	budgielib/state.c budgielib/state.h
 nodist_src_libbugle_la_SOURCES = \

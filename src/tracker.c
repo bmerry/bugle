@@ -23,9 +23,11 @@
 #include "src/utils.h"
 #include "src/canon.h"
 #include "src/tracker.h"
+#include "src/objects.h"
 #include "budgielib/state.h"
 #include "common/bool.h"
 #include "common/safemem.h"
+#include "common/hashtable.h"
 #include <assert.h>
 #include <stddef.h>
 #include <GL/glx.h>
@@ -33,30 +35,49 @@
 # include <pthread.h>
 #endif
 
-static pthread_key_t context_state_key;
-static size_t context_state_space = 0;
+object_class context_class;
+static hashptr_table context_objects;
+static size_t trackcontext_offset, trackbeginend_offset;
 
 state_7context_I *tracker_get_context_state()
 {
-    return pthread_getspecific(context_state_key);
+    state_7context_I **cur;
+
+    cur = object_get_current(&context_class, trackcontext_offset);
+    if (cur) return *cur;
+    else return NULL;
 }
 
-void tracker_set_context_space(size_t bytes)
+static void tracker_set_context_state(void *obj, state_7context_I *state)
 {
-    context_state_space = bytes;
+    state_7context_I **data;
+
+    data = (state_7context_I **) (((char *) obj) + trackcontext_offset);
+    *data = state;
 }
 
-bool trackcontext_callback(function_call *call, const callback_data *data)
+static void trackcontext_initialise_state(const void *key, void *data)
+{
+    GLXContext ctx;
+    state_generic *parent;
+
+    parent = &get_root_state()->c_context.generic;
+    ctx = (GLXContext) key;
+    *(state_7context_I **) data = (state_7context_I *) get_state_index(parent, &ctx);
+}
+
+static bool trackcontext_callback(function_call *call, const callback_data *data)
 {
     GLXContext ctx;
     state_generic *parent;
     state_7context_I *state;
     static pthread_mutex_t context_mutex = PTHREAD_MUTEX_INITIALIZER;
+    void *obj;
 
     switch (canonical_call(call))
     {
     case CFUNC_glXMakeCurrent:
-#ifdef CFUNC_glXMakeContextCurrent
+#ifdef GLX_VERSION_1_3
     case CFUNC_glXMakeContextCurrent:
 #endif
         /* These calls may fail, so we must explicitly check for the
@@ -64,7 +85,7 @@ bool trackcontext_callback(function_call *call, const callback_data *data)
          */
         ctx = glXGetCurrentContext();
         if (!ctx)
-            pthread_setspecific(context_state_key, NULL);
+            object_set_current(&context_class, NULL);
         else
         {
             parent = &get_root_state()->c_context.generic;
@@ -72,14 +93,16 @@ bool trackcontext_callback(function_call *call, const callback_data *data)
             if (!(state = (state_7context_I *) get_state_index(parent, &ctx)))
             {
                 state = (state_7context_I *) add_state_index(parent, &ctx, NULL);
-                if (context_state_space)
-                {
-                    state->c_internal.c_filterdata.data = xmalloc(context_state_space);
-                    memset(state->c_internal.c_filterdata.data, 0, context_state_space);
-                }
+                obj = object_new(&context_class, ctx, true);
+                hashptr_set(&context_objects, ctx, obj);
+            }
+            else
+            {
+                obj = hashptr_get(&context_objects, ctx);
+                tracker_set_context_state(obj, state);
+                object_set_current(&context_class, obj);
             }
             pthread_mutex_unlock(&context_mutex);
-            pthread_setspecific(context_state_key, state);
         }
         break;
     }
@@ -93,7 +116,7 @@ bool trackcontext_callback(function_call *call, const callback_data *data)
 
 static bool trackbeginend_callback(function_call *call, const callback_data *data)
 {
-    state_7context_I *context_state;
+    bool *begin_end;
 
     switch (canonical_call(call))
     {
@@ -110,17 +133,25 @@ static bool trackbeginend_callback(function_call *call, const callback_data *dat
         case GL_QUADS:
         case GL_QUAD_STRIP:
         case GL_POLYGON:
-            if ((context_state = tracker_get_context_state()) != NULL)
-                context_state->c_internal.c_in_begin_end.data = GL_TRUE;
+            begin_end = (bool *) object_get_current(&context_class, trackbeginend_offset);
+            if (begin_end != NULL) *begin_end = true;
         default: ;
         }
         break;
     case CFUNC_glEnd:
-        if ((context_state = tracker_get_context_state()) != NULL)
-            context_state->c_internal.c_in_begin_end.data = GL_FALSE;
+        begin_end = (bool *) object_get_current(&context_class, trackbeginend_offset);
+        if (begin_end != NULL) *begin_end = false;
         break;
     }
     return true;
+}
+
+bool in_begin_end(void)
+{
+    bool *begin_end;
+
+    begin_end = (bool *) object_get_current(&context_class, trackbeginend_offset);
+    return !begin_end || *begin_end;
 }
 
 static bool initialise_trackcontext(filter_set *handle)
@@ -157,7 +188,6 @@ void tracker_initialise(void)
         initialise_trackcontext,
         NULL,
         NULL,
-        0,
         0
     };
     const filter_set_info trackbeginend_info =
@@ -166,10 +196,23 @@ void tracker_initialise(void)
         initialise_trackbeginend,
         NULL,
         NULL,
-        0,
         0
     };
-    pthread_key_create(&context_state_key, NULL);
+
+    object_class_init(&context_class);
+    hashptr_init(&context_objects);
+    /* These ought to be in the initialise routines, but it is vital that
+     * they run first and we currently have no other way to determine the
+     * ordering.
+     */
+    trackcontext_offset = object_class_register(&context_class,
+                                                trackcontext_initialise_state,
+                                                NULL,
+                                                sizeof(state_7context_I *));
+    trackbeginend_offset = object_class_register(&context_class,
+                                                 NULL,
+                                                 NULL,
+                                                 sizeof(bool));
     register_filter_set(&trackcontext_info);
     register_filter_set(&trackbeginend_info);
 }

@@ -32,7 +32,6 @@ struct filter_set_s;
 typedef struct
 {
     void *call_data;
-    void *context_data;
 } callback_data;
 
 typedef bool (*filter_set_initialiser)(struct filter_set_s *);
@@ -58,7 +57,6 @@ typedef struct filter_set_s
     filter_set_destructor done;
     filter_set_command_handler command_handler;
     ptrdiff_t call_state_offset;
-    ptrdiff_t context_state_offset;
     void *dl_handle;
 
     bool initialised;
@@ -72,7 +70,6 @@ typedef struct
     filter_set_destructor done;
     filter_set_command_handler command_handler;
     size_t call_state_space;
-    size_t context_state_space;
 } filter_set_info;
 
 /* Functions to be used by the interceptor */
@@ -93,7 +90,6 @@ void register_filter_catches_all(filter *handle);
 void register_filter_set_depends(const char *base, const char *dep);
 void register_filter_depends(const char *after, const char *before);
 void *get_filter_set_call_state(function_call *call, filter_set *handle);
-void *get_filter_set_context_state(state_7context_I *ctx, filter_set *handle);
 filter_set *get_filter_set_handle(const char *name);
 bool filter_set_is_enabled(const filter_set *handle);
 void *get_filter_set_symbol(filter_set *handle, const char *name);

@@ -114,7 +114,6 @@ void log_initialise(void)
         initialise_log,
         destroy_log,
         command_log,
-        0,
         0
     };
     register_filter_set(&log_info);
