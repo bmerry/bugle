@@ -133,30 +133,37 @@ void filter_set_shutdown(filter_set *);
 
 <h2>Other structures and typedefs</h2>
 <p>
-Each GL function is assigned a number in the range [0,
-<code>NUMBER_OF_FUNCTIONS</code>). These numbers are conventionally of
-type <code>budgie_function</code>. There is also a special value
-<code>NULL_FUNCTION</code>, which is simply <code>-1</code>.
+Bugle makes a sharp distinction between functions and groups. A
+function is what you think it is. A group is a set of functions with
+identical parameters and semantics. In OpenGL, groups arise from the
+fact that functions are promoted between extensions or from extensions
+to the core; for example <code>glActiveTexture</code> and
+<code>glActiveTextureARB</code> are equivalent functions and belong to
+the same group.
 </p>
 <p>
-For every GL function, there are two typedefs:
-<code>FUNC_glSomeFunction</code> and
-<code>CFUNC_glSomeFunction</code>. The first simply evaluates to the
-number assigned to the function. The second is similar, but where there
-are multiple names for the same function due to extensions, they will
-all resolve to the number of the function that is first alphabetically.
-Thus <code>CFUNC_glDrawRangeElements</code> and
-<code>CFUNC_glDrawRangeElementsEXT</code> are both equal to
-<code>FUNC_glDrawRangeElements</code>.
+Each GL function is assigned a number in the range [0,
+<code>NUMBER_OF_FUNCTIONS</code>). These numbers are conventionally of
+type <code>budgie_function</code>, which is some signed integral type.
+There is also a special value <code>NULL_FUNCTION</code>, which is
+simply <code>-1</code>. For each function <code>glSomeFunction</code>,
+there is a typedef <code>FUNC_glSomeFunction</code> which is the number
+assigned to the function.
+</p>
+<p>
+Similar, groups are numbered from 0 to <code>NUMBER_OF_GROUPS</code>
+and given defines <code>GROUP_glSomeFunction</code>. Groups do not have
+explicit names, but are referenced by any of the functions in the
+group.
 </p>
 <p>
 BuGLe tries to support systems that only have header files and runtime
 support for OpenGL 1.1 (so that a Win32 port will be possible one day).
 Thus for any functions introduces after 1.1, you should favour the
-<code>CFUNC_</code> definition with the oldest name, which is generally
+<code>GROUP_</code> definition with the oldest name, which is generally
 an extension function. You should also protect any such code with a
 test for the GL extension define e.g.
-<code>GL_EXT_draw_range_elements</code>.
+<code>GL_ARB_multitexture</code>.
 
 <h2>Library initialisation</h2>
 <p>
@@ -236,14 +243,17 @@ future, so it will not be documented here.
 </p>
 <p>
 Callbacks that handle multiple GL functions will need to know which GL
-function was called; this is found in <code>call->generic.id</code>.
-However, one will usually look at the result of
-<code>bugle_canonical_call(call)</code>, which gives the
-<code>CFUNC_</code> token for the call. One can also get access to the
+function was called; the function is found in
+<code>call->generic.id</code>, but more useful is the group found in
+<code>call->generic.group</code>. One can also get access to the
 arguments: if the call is known to be <code>glSomeFunction</code>, then
 <code>*call->typed.glSomeFunction.arg<em>i</em></code> is the
 <em>i</em><sup>th</sup> argument, and
-<code>*call->typed.glSomeFunction.retn</code> is the return value.
+<code>*call->typed.glSomeFunction.retn</code> is the return value. If
+the function is not known at compile time, then the
+arguments can be accessed via the <code>void</code. pointers
+<code>call->generic.args[<em>i</em>]</code> and
+<code>call->generic.retn</code>.
 These values can also be modified to change the arguments used or the
 value returned to the application, respectively.
 </p>
@@ -264,7 +274,7 @@ CALL_glClear(GL_COLOR_BUFFER_BIT);
 If there is no current
 context, then you should not make any calls to OpenGL (GLX is okay
 though). In addition, almost all OpenGL calls, and context-switching
-calls GLX calls, are illegal between <code>glBegin</code> and
+GLX calls, are illegal between <code>glBegin</code> and
 <code>glEnd</code>. It is also illegal to switch contexts while in
 feedback or selection mode, although this is not well handled at the
 moment. Finally, remember that BuGLe aims to support OpenGL 1.1 and
