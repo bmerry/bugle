@@ -65,7 +65,7 @@ bool dump_GLerror(const void *value, int count, FILE *out)
     return true;
 }
 
-// FIXME: redo definition of alternate enums, based on sort order
+/* FIXME: redo definition of alternate enums, based on sort order */
 bool dump_GLalternateenum(const void *value, int count, FILE *out)
 {
     GLenum token = *(const GLenum *) value;

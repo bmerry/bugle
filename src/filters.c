@@ -1,6 +1,7 @@
 #if HAVE_CONFIG_H
 # include <config.h>
 #endif
+#define _GNU_SOURCE
 #include "src/filters.h"
 #include "src/types.h"
 #include "src/utils.h"
@@ -73,7 +74,7 @@ void enable_filter_set(filter_set *handle)
     if (!handle->enabled)
     {
         handle->enabled = true;
-        // deps
+        /* deps */
         for (i = list_head(&filter_set_dependencies[0]),
              j = list_head(&filter_set_dependencies[1]);
              i != NULL;
@@ -99,7 +100,7 @@ void run_filters(function_call *call)
     if (dirty_active)
     {
         dirty_active = false;
-        // FIXME: check for infinite loop
+        /* FIXME: check for infinite loop */
         do
         {
             loops++;
@@ -141,7 +142,7 @@ void run_filters(function_call *call)
             data = (void *)(((char *) call_data) + cur->parent->offset);
         else
             data = NULL;
-        (*cur->callback)(call, data);
+        if (!(*cur->callback)(call, data)) break;
     }
 }
 

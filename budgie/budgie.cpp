@@ -497,6 +497,7 @@ static void headers()
 
     utilc << "#include \"" << utilbase << ".h\"\n";
     utilc << "#include \"budgieutils.h\"\n";
+    utilc << "#include \"state.h\"\n";
     utilc << "#include \"" << typebase << ".h\"\n";
     utilc << "#include <assert.h>\n\n";
     utilc << "#include <dlfcn.h>\n\n";
@@ -505,7 +506,9 @@ static void headers()
     utilhead << "#include <stdio.h>\n";
     utilhead << "#include <stdbool.h>\n";
     utilhead << "#include <stdlib.h>\n";
+    utilhead << "#include <string.h>\n";
     utilhead << "#include \"" << typebase << ".h\"\n";
+    utilhead << "#include \"state.h\"\n";
 
     libc << "#include \"" << libbase << ".h\"\n";
     libc << "#include \"" << utilbase << ".h\"\n";
@@ -567,6 +570,8 @@ static void handle_types()
     utilc << get_type(false) << "\n";
     utilhead << get_length(true) << "\n";
     utilc << get_length(false) << "\n";
+    type_converter(true, utilhead);
+    type_converter(false, utilc);
 }
 
 // make function pointers for the true functions
@@ -596,8 +601,8 @@ static void handle_functions()
 
 static void handle_state()
 {
-    // make_state_structs(true, utilhead);
-    // make_state_structs(false, utilc);
+    make_state_structs(true, utilhead);
+    make_state_structs(false, utilc);
 }
 
 int main(int argc, char * const argv[])

@@ -18,7 +18,8 @@ using namespace std;
 
 struct gen_state_tree
 {
-    string name, spec_class, instance_class;
+    int index;
+    string name, instance_class;
     vector<gen_state_tree *> children;
 
     tree_node_p type;
@@ -435,10 +436,16 @@ string type_table(bool header)
             switch (TREE_CODE(i->second))
             {
             case COMPLEX_TYPE:
+                out << "CODE_COMPLEX, ";
+                break;
             case ENUMERAL_TYPE:
+                out << "CODE_ENUMERAL, ";
+                break;
             case INTEGER_TYPE:
+                out << "CODE_INTEGRAL, ";
+                break;
             case REAL_TYPE:
-                out << "CODE_SIMPLE, ";
+                out << "CODE_FLOAT, ";
                 break;
             case RECORD_TYPE:
             case UNION_TYPE:
@@ -515,6 +522,68 @@ string make_type_dumper(bool prototype)
         << "    }\n"
         << "}\n";
     return out.str();
+}
+
+// type conversion
+void type_converter(bool prototype, ostream &out)
+{
+    out << "void type_convert(void *out, budgie_type out_type, const void *in, budgie_type in_type, size_t count)";
+    if (prototype)
+    {
+        out << ";\n";
+        return;
+    }
+    out << "{\n"
+        << "    long double value;\n"
+        << "    size_t i;\n"
+        << "    if (in_type == out_type\n"
+        << "        || (type_table[in_type].code == type_table[out_type].code\n"
+        << "            && type_table[in_type].size == type_table[out_type].size))\n"
+        << "    {\n"
+        << "        memcpy(out, in, type_table[in_type].size * count);\n"
+        << "        return;\n"
+        << "    }\n"
+        << "    for (i = 0; i < count; i++)\n"
+        << "    {\n"
+        << "        switch (in_type)\n"
+        << "        {\n";
+
+    tree_node_p tmp;
+    for (enum_types_it i = enum_types.begin(); i != enum_types.end(); i++)
+        switch (TREE_CODE(i->second))
+        {
+        case ENUMERAL_TYPE:
+        case REAL_TYPE:
+        case INTEGER_TYPE:
+            tmp = make_const(make_pointer(i->second, false));
+            out << "        case " << type_to_enum(i->second) << ": "
+                << "value = (long double) ((" << type_to_string(tmp, "", false) << ") in)[i]; break;\n";
+            destroy_temporary(tmp);
+        default: ;
+        }
+    out << "        default: abort();\n"
+        << "        }\n"
+        << "        switch (out_type)\n"
+        << "        {\n";
+    for (enum_types_it i = enum_types.begin(); i != enum_types.end(); i++)
+        if (!CP_TYPE_CONST_P(i->second))
+            switch (TREE_CODE(i->second))
+            {
+            case ENUMERAL_TYPE:
+            case REAL_TYPE:
+            case INTEGER_TYPE:
+                tmp = make_pointer(i->second, false);
+                out << "        case " << type_to_enum(i->second) << ": "
+                    << "((" << type_to_string(tmp, "", false) << ") out)[i] = "
+                    << "(" << type_to_string(i->second, "", false) << ") value; "
+                    << "break;\n";
+                destroy_temporary(tmp);
+            default: ;
+            }
+    out << "        default: abort();\n"
+        << "        }\n"
+        << "    }\n"
+        << "}\n\n";
 }
 
 // Function handling
@@ -843,78 +912,12 @@ void make_invoker(bool prototype, ostream &out)
         << "}\n";
 }
 
-static void make_state_spec_struct(gen_state_tree *node, const string &prefix,
-                                   bool prototype, ostream &out)
-{
-    ostringstream number;
-
-    string name = prefix;
-    if (node->name == "[]") name = prefix + "_I";
-    else if (node->name != "")
-    {
-        number << node->name.length();
-        name = prefix + "_" + number.str() + node->name;
-    }
-    else
-        name = prefix;
-    node->spec_class = name;
-    for (size_t i = 0; i < node->children.size(); i++)
-        make_state_spec_struct(node->children[i], name,
-                               prototype, out);
-    if (prototype)
-    {
-
-        out << "class " << name
-            << " : public state_spec\n"
-            << "{\n"
-            << "public:\n";
-        for (size_t i = 0; i < node->children.size(); i++)
-        {
-            out << "    ";
-            if (node->children[i]->name == "[]")
-                out << node->children[i]->spec_class << " *index_typed;\n";
-            else
-                out << node->children[i]->spec_class
-                    << " *child_" << node->children[i]->name << ";\n";
-        }
-        out << "    " << name << "(const std::string &name);\n"
-            << "};\n\n";
-    }
-    else
-    {
-        if (node->type != NULL_TREE)
-            out << "void " << node->loader << "(state_instance *);\n";
-
-        out << name << "::" << name << "(const std::string &name)\n"
-            << ": state_spec(name)\n"
-            << "{\n";
-        for (size_t i = 0; i < node->children.size(); i++)
-        {
-            if (node->children[i]->name == "[]")
-                out << "    set_indexed(index_typed = new "
-                    << node->children[i]->spec_class << "(\"[]\"));\n";
-            else
-                out << "    add_child(child_" << node->children[i]->name
-                    << " = new " << node->children[i]->spec_class << "(\""
-                    << node->children[i]->name << "\"));\n";
-        }
-        if (node->type != NULL_TREE)
-        {
-            out << "    size = sizeof(" << type_to_string(node->type, "", false)
-                << ") * " << node->count << ";\n"
-                << "    loader = " << node->loader << ";\n"
-                << "    type = " << type_to_enum(node->type) << ";\n"
-                << "    count = " << node->count << ";\n";
-        }
-        out << "}\n\n";
-    }
-}
-
-static void make_state_instance_struct(gen_state_tree *node, const string &prefix,
+static void make_state_instance_struct(gen_state_tree *node,
+                                       const string &prefix,
+                                       int &index,
                                        bool prototype, ostream &out)
 {
     ostringstream number;
-    tree_node_p pointer_value = NULL;
     string name = prefix;
 
     if (node->name == "[]") name = prefix + "_I";
@@ -923,94 +926,129 @@ static void make_state_instance_struct(gen_state_tree *node, const string &prefi
         number << node->name.length();
         name = prefix + "_" + number.str() + node->name;
     }
-    else
-        name = prefix;
+    string prefix_r = name;
+    if (name == "state") name = "state_root";
     node->instance_class = name;
     for (size_t i = 0; i < node->children.size(); i++)
-        make_state_instance_struct(node->children[i], name,
+        make_state_instance_struct(node->children[i], prefix_r, index,
                                    prototype, out);
-
-    if (node->type != NULL_TREE)
-        pointer_value = make_pointer(node->type, false);
-
+    node->index = index++;
     if (prototype)
     {
-
-        out << "class " << name
-            << " : public state_instance\n"
+        out << "typedef struct " << name << "_s\n"
             << "{\n"
-            << "public:\n"
-            << "    " << node->spec_class << " *spec_typed;\n";
+            << "    state_generic generic;\n";
+        int num_children = 0;
         for (size_t i = 0; i < node->children.size(); i++)
         {
             if (node->children[i]->name != "[]")
-                out << "    " << node->children[i]->instance_class
-                    << " *child_" << node->children[i]->name << ";\n";
-            else
             {
                 out << "    " << node->children[i]->instance_class
-                    << " *get_index_typed(const std::string &index) const\n"
-                    << "    { return static_cast<" << node->children[i]->instance_class
-                    << " *>(get_index(index)); }\n";
-                out << "    state_instance *add_index(const std::string &index)\n"
-                    << "    { return add_index_state(index, new " << node->children[i]->instance_class
-                    << "(spec_typed->index_typed)); }\n";
-                out << "    " << node->children[i]->instance_class
-                    << " *add_index_typed(const std::string &index)\n"
-                    << "    { return static_cast<" << node->children[i]->instance_class
-                    << " *>(add_index(index)); }\n";
-                out << "    " << node->children[i]->instance_class
-                    << " *operator[](const std::string &index);\n";
+                    << " c_" << node->children[i]->name << ";\n";
+                num_children++;
             }
         }
+        out << "    state_generic *children["
+            << num_children + 1 << "];\n";
         if (node->type != NULL_TREE)
-            out << "    " << type_to_string(pointer_value, "get_typed(bool update = true)", false) << "\n"
-                << "    { return static_cast<" << type_to_string(pointer_value, "", false)
-                << ">(get(update)); }\n";
-        out << "    " << name << "(" << node->spec_class << " *spec);\n"
-            << "};\n\n";
+        {
+            if (node->count == 1)
+                out << "    " << type_to_string(node->type, "data", false) << ";\n";
+            else
+            {
+                ostringstream num;
+                num << node->count;
+                out << "    " << type_to_string(node->type, "data[" + num.str() + "]", false) << ";\n";
+            }
+        }
+        out << "} " << name << ";\n\n";
     }
     else
     {
-        int idx = -1;
-
-        out << name << "::" << name << "(" << node->spec_class << " *spec)\n"
-            << ": state_instance(spec, false)\n"
+        out << "void " << name << "_constructor(state_generic *s, state_generic *parent)\n"
             << "{\n"
-            << "    spec_typed = spec;\n";
-
+            << "    " << name << " *me = (" << name << " *) s;\n"
+            << "    initialise_state(s, parent);\n"
+            << "    s->children = me->children;\n"
+            << "    s->spec = &state_spec_table[" << node->index << "];\n";
+        if (node->type != NULL_TREE)
+            out << "    s->data = &me->data;\n";
+        else
+            out << "    s->data = NULL;\n";
+        int counter = 0;
         for (size_t i = 0; i < node->children.size(); i++)
+        {
             if (node->children[i]->name != "[]")
-                out << "    add_child(child_" << node->children[i]->name
-                    << " = new " << node->children[i]->instance_class
-                    << "(spec->child_" << node->children[i]->name << "));\n";
-            else
-            {
-                out << "    for (vector<string>::iterator i = spec->fixed_indices.begin(); i != spec->fixed_indices.end(); i++)\n"
-                    << "        add_index_typed(*i);\n";
-                idx = (int) i;
-            }
-        out << "    if (spec->constructor) (*spec->constructor)(this);\n"
-            << "}\n\n";
+                out << "    me->children[" << counter++ << "] = &me->c_"
+                    << node->children[i]->name << ".generic;\n"
+                    << "    " << node->children[i]->instance_class
+                    << "_constructor((state_generic *) &me->c_" << node->children[i]->name << ", s);\n";
+        }
+        out << "};\n\n";
+    }
+}
 
-        if (idx != -1)
-            out << node->children[idx]->instance_class
-                << " *" << node->instance_class
-                << "::operator[](const std::string &index)\n"
-                << "{\n"
-                << "    " << node->children[idx]->instance_class
-                << " *tmp = get_index_typed(index);\n"
-                << "    return tmp ? tmp : add_index_typed(index);\n"
-                << "}\n\n";
+static void make_state_spec_data(gen_state_tree *node,
+                                 ostream &out)
+{
+    for (size_t i = 0; i < node->children.size(); i++)
+        make_state_spec_data(node->children[i], out);
+
+    out << "const state_spec *" << node->instance_class << "_spec_children[] = { ";
+    for (size_t i = 0; i < node->children.size(); i++)
+        if (node->children[i]->name != "[]")
+            out << "&state_spec_table[" << node->children[i]->index << "], ";
+    out << "NULL };\n";
+}
+
+static void make_state_spec_table_entry(gen_state_tree *node,
+                                        ostream &out)
+{
+    gen_state_tree *indexed = NULL;
+    for (size_t i = 0; i < node->children.size(); i++)
+    {
+        make_state_spec_table_entry(node->children[i], out);
+        if (node->children[i]->name == "[]")
+            indexed = node->children[i];
     }
 
-    if (pointer_value) destroy_temporary(pointer_value);
+    if (node->index) out << ",\n";
+    out << "    { \"" << node->name << "\", "
+        << node->instance_class << "_spec_children, ";
+    if (indexed)
+        out << "&state_spec_table[" << indexed->index << "], ";
+    else
+        out << "NULL, ";
+    out << "NULL, "; // FIXME: key_compare
+    if (node->type != NULL_TREE)
+        out << type_to_enum(node->type) << ", "
+            << node->count << ", ";
+    else
+        out << "NULL_TYPE, 0, ";
+    out << "sizeof(" << node->instance_class << "), ";
+    if (node->loader != "") out << node->loader;
+    else out << "NULL";
+    out << ", "
+        << node->instance_class << "_constructor }";
 }
 
 void make_state_structs(bool prototype, ostream &out)
 {
-    make_state_spec_struct(&root_state, "state_spec_typed", prototype, out);
-    make_state_instance_struct(&root_state, "state_instance_typed", prototype, out);
+    int count = 0;
+
+    if (!prototype)
+        out << "static const state_spec state_spec_table[];\n";
+    make_state_instance_struct(&root_state, "state", count, prototype, out);
+    if (!prototype)
+    {
+        make_state_spec_data(&root_state, out);
+        out << "static const state_spec state_spec_table[] =\n"
+            << "{\n";
+        make_state_spec_table_entry(&root_state, out);
+        out << "\n};\n"
+            << "const state_spec *root_state_spec = &state_spec_table["
+            << root_state.index << "];\n\n";
+    }
 }
 
 // Overrides

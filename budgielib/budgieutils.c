@@ -1,18 +1,21 @@
 #if HAVE_CONFIG_H
 # include <config.h>
 #endif
+#define _POSIX_SOURCE
 #include <stdio.h>
 #include <stddef.h>
+#include <stdlib.h>
 #include <string.h>
 #include <stdbool.h>
-#include <setjmp.h>
 #include <unistd.h>
 #include <signal.h>
 #include <errno.h>
 #include "budgieutils.h"
+#include <setjmp.h>
 
-// FIXME: define in a header somewhere
-// FIXME: dump_any_type should be table-driven
+/* FIXME: define in a header somewhere
+ * FIXME: dump_any_type should be table-driven
+ */
 void dump_any_type(budgie_type type, const void *value, int length, FILE *out);
 budgie_type get_arg_type(const generic_function_call *call, int param);
 int get_arg_length(const generic_function_call *call, int param, const void *value);
@@ -38,7 +41,7 @@ void dump_bitfield(unsigned int value, FILE *out,
 
 bool dump_string(const void *value, int count, FILE *out)
 {
-    // FIXME: handle illegal dereferences
+    /* FIXME: handle illegal dereferences */
     const char *str = *(const char * const *) value;
     if (str == NULL) fputs("NULL", out);
     else fprintf(out, "\"%s\"", str);
@@ -47,7 +50,7 @@ bool dump_string(const void *value, int count, FILE *out)
 
 int count_string(const void *value)
 {
-    // FIXME: handle illegal deferences
+    /* FIXME: handle illegal deferences */
     const char *str = (const char *) value;
     if (str == NULL) return 0;
     else return strlen(str) + 1;
@@ -95,7 +98,7 @@ void make_indent(int indent, FILE *out)
 
 /* Memory validation */
 
-static jmp_buf valid_buf;
+static sigjmp_buf valid_buf;
 
 static void valid_sigsegv_handler(int sig)
 {

@@ -24,6 +24,7 @@ AC_CHECK_TYPES([ptrdiff_t],,[AC_MSG_ERROR([you are missing the ptrdiff_t type])]
 dnl Checks for compiler characteristics
 AC_C_CONST
 AC_C_VOLATILE
+AC_C_INLINE
 
 dnl Checks for system services
 

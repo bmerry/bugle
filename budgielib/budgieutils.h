@@ -1,5 +1,5 @@
-#ifndef BUGLE_BUDGIE_BUDGIEFUNCS_H
-#define BUGLE_BUDGIE_BUDGIEFUNCS_H
+#ifndef BUGLE_BUDGIELIB_BUDGIEFUNCS_H
+#define BUGLE_BUDGIELIB_BUDGIEFUNCS_H
 
 #include <stdio.h>
 #include <stddef.h>
@@ -21,7 +21,10 @@ typedef struct
 
 typedef enum
 {
-    CODE_SIMPLE,
+    CODE_ENUMERAL,
+    CODE_INTEGRAL,
+    CODE_FLOAT,
+    CODE_COMPLEX,
     CODE_POINTER,
     CODE_ARRAY,
     CODE_RECORD,

@@ -39,6 +39,8 @@ void specify_types(const std::vector<tree_node_p> &types);
 std::string type_table(bool header);
 //! Returns the code for function \c dump_any_type
 std::string make_type_dumper(bool prototype);
+//! Creates a function to convert between arithmetic types
+void type_converter(bool prototype, std::ostream &out);
 
 //! Specifies the functions to be used by generators handling functions
 void specify_functions(const std::vector<tree_node_p> &funcs);
