@@ -17,7 +17,10 @@
  */
 
 /* The function names and functionality are modelled on libiberty,
- * but are independently implemented.
+ * but are independently implemented. They are light wrappers around
+ * the similarly named standard functions, but they display an error
+ * and exit if memory could not be allocated. In some cases they also
+ * reimplement non-portable functionality.
  */
 
 #ifndef BUGLE_SRC_SAFEMEM_H
@@ -31,6 +34,13 @@ void *xmalloc(size_t size);
 void *xcalloc(size_t nmemb, size_t size);
 void *xrealloc(void *ptr, size_t size);
 char *xstrdup(const char *s);
+
+/* Appends src to dest, possibly xrealloc()ing, and returns the pointer.
+ * It assumes that dest was malloc()ed with a size that is the smallest
+ * power of 2 large enough to hold it, and this will also hold as a
+ * post-condition.
+ */
+char *xstrcat(char *dest, const char *src);
 int xasprintf(char **strp, const char *format, ...);
 
 #endif /* !BUGLE_SRC_SAFEMEM_H */

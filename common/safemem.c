@@ -74,6 +74,32 @@ char *xstrdup(const char *s)
     return n;
 }
 
+char *xstrcat(char *dest, const char *src)
+{
+    size_t dlen, dsize, slen, tlen, tsize;
+    char *tmp;
+
+    slen = strlen(src);
+    dlen = strlen(dest);
+    dsize = 1;
+    while (dsize <= dlen) dsize *= 2;
+    tsize = dsize;
+    if (tsize <= slen + dlen)
+    {
+        while (tsize <= slen + dlen) tsize *= 2;
+        tmp = xmalloc(tsize);
+        memcpy(tmp, dest, dlen);
+        memcpy(tmp + dlen, src, slen + 1);
+        free(dest);
+        return tmp;
+    }
+    else
+    {
+        memcpy(dest + dlen, src, slen + 1);
+        return dest;
+    }
+}
+
 int xasprintf(char **strp, const char *format, ...)
 {
     int ans;

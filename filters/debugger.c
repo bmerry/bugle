@@ -34,9 +34,9 @@
 #include <string.h>
 #include <inttypes.h>
 
-static int in_pipe, out_pipe;
+static int in_pipe = -1, out_pipe = -1;
 static bool break_on[NUMBER_OF_FUNCTIONS];
-static bool break_on_error;
+static bool break_on_error = true, break_on_next = false;
 
 #if 0
 static void dump_state(state_generic *state, int indent)
@@ -79,14 +79,18 @@ static void dump_state(state_generic *state, int indent)
 }
 #endif
 
-static void debugger_loop(function_call *call, void *data)
+/* The main initialiser calls this with init = true. It has essentially
+ * the usual effects, but refuses to do anything that doesn't make sense
+ * until the program is properly running (such as flush or query state).
+ */
+static void debugger_loop(bool init)
 {
     uint32_t req, req_val;
     char *req_str, *resp_str;
     budgie_function func;
 
-    /* FIXME: error checking */
-    if (begin_internal_render())
+    /* FIXME: error checking on the network code */
+    if (!init && begin_internal_render())
     {
         CALL_glFinish();
         end_internal_render("debugger", true);
@@ -94,7 +98,11 @@ static void debugger_loop(function_call *call, void *data)
     while (true)
     {
         recv_code(in_pipe, &req);
-        if (req == REQ_CONT) break;
+        if (req == REQ_CONT || req == REQ_STEP)
+        {
+            break_on_next = (req == REQ_STEP);
+            break;
+        }
         switch (req)
         {
         case REQ_BREAK:
@@ -141,7 +149,13 @@ static bool debugger_callback(function_call *call, void *data)
     {
         send_code(out_pipe, RESP_BREAK);
         send_string(out_pipe, function_table[call->generic.id].name);
-        debugger_loop(call, data);
+        debugger_loop(false);
+    }
+    else if (break_on_next)
+    {
+        break_on_next = false;
+        send_code(out_pipe, RESP_STOP);
+        debugger_loop(false);
     }
     return true;
 }
@@ -155,13 +169,42 @@ static bool debugger_error_callback(function_call *call, void *data)
         send_code(out_pipe, RESP_BREAK_ERROR);
         send_string(out_pipe, function_table[call->generic.id].name);
         send_string(out_pipe, gl_enum_to_token(error));
-        debugger_loop(call, data);
+        debugger_loop(false);
     }
     return true;
 }
 
 static bool initialise_debugger(filter_set *handle)
 {
+    const char *env;
+    char *last;
+    if (!getenv("BUGLE_DEBUGGER")
+        || !getenv("BUGLE_DEBUGGER_FD_IN")
+        || !getenv("BUGLE_DEBUGGER_FD_OUT"))
+    {
+        fputs("The debugger module should only be used with gldb\n", stderr);
+        return false;
+    }
+
+    env = getenv("BUGLE_DEBUGGER_FD_IN");
+    in_pipe = strtol(env, &last, 0);
+    if (!*env || *last)
+    {
+        fprintf(stderr, "Illegal BUGLE_DEBUGGER_FD_IN: '%s' (bug in gldb?)",
+                env);
+        return false;
+    }
+
+    env = getenv("BUGLE_DEBUGGER_FD_OUT");
+    out_pipe = strtol(env, &last, 0);
+    if (!*env || *last)
+    {
+        fprintf(stderr, "Illegal BUGLE_DEBUGGER_FD_OUT: '%s' (bug in gldb?)",
+                env);
+        return false;
+    }
+    debugger_loop(true);
+
     register_filter(handle, "debugger", debugger_callback);
     register_filter(handle, "debugger_error", debugger_error_callback);
     register_filter_depends("invoke", "debugger");
@@ -171,15 +214,6 @@ static bool initialise_debugger(filter_set *handle)
     filter_post_renders("debugger_error");
     filter_set_queries_error("debugger", false);
 
-    /* FIXME: validate the numbers and the function calls */
-    if (getenv("BUGLE_DEBUGGER_FD_IN"))
-        in_pipe = atoi(getenv("BUGLE_DEBUGGER_FD_IN"));
-    else
-        in_pipe = 0;
-    if (getenv("BUGLE_DEBUGGER_FD_OUT"))
-        out_pipe = atoi(getenv("BUGLE_DEBUGGER_FD_OUT"));
-    else
-        out_pipe = 1;
     return true;
 }
 

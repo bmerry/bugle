@@ -19,19 +19,19 @@
 #if HAVE_CONFIG_H
 # include <config.h>
 #endif
-#define _XOPEN_SOURCE 600
-#define _BSD_SOURCE
+#define _XOPEN_SOURCE
+#define _POSIX_SOURCE
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/wait.h>
-#include <sys/select.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <assert.h>
 #include <ctype.h>
+#include <setjmp.h>
 #if HAVE_READLINE_READLINE_H
 # include <readline/readline.h>
 # include <readline/history.h>
@@ -41,8 +41,10 @@
 #include "common/protocol.h"
 
 static int lib_in, lib_out;
-static volatile int dead_children = 0; /* incremented by SIGCHLD handler */
 static sigset_t blocked, unblocked;
+static sigjmp_buf chld_env;
+static bool running = false;
+static pid_t child_pid;
 
 #if !HAVE_READLINE_READLINE_H
 static void chop(char *s)
@@ -75,7 +77,7 @@ static void xsetenv(const char *name, const char *value)
 
 static void sigchld_handler(int sig)
 {
-    dead_children++;
+    siglongjmp(chld_env, 1);
 }
 
 /* Spawns off the program, and returns the pid */
@@ -135,145 +137,172 @@ static void setup_sigchld(void)
     check(sigaction(SIGCHLD, &act, NULL), "sigaction");
 }
 
-static void main_loop(const char *chain, const char *prog)
+static void handle_commands(const char *chain, const char *prog)
 {
-    fd_set readset;
-    pid_t child_pid;
+    bool more;
     char *line;      /* FIXME: handle longer, or use a lexical analyser */
     char func[128];  /* FIXME: buffer overflow */
-    int status;
-    sigset_t pending;
-    uint32_t req_val, resp, resp_val;
+    uint32_t req_val;
+
+    do
+    {
+        more = !running;
+#if HAVE_READLINE_READLINE_H
+        line = readline("(gldb) ");
+#else
+        fputs("(gldb) ", stdout);
+        fflush(stdout);
+        line = xmalloc(128); /* FIXME: buffer overflow */
+        if (fgets(line, sizeof(line), stdin) == NULL);
+        {
+            free(line);
+            line = NULL;
+        }
+        else
+            chop(line);
+#endif
+        if (!line)
+        {
+            if (running) send_code(lib_out, REQ_QUIT);
+            exit(0); /* FIXME: clean shutdown? */
+        }
+        /* FIXME: use a lexical scanner */
+        if (strcmp(line, "cont") == 0)
+        {
+            if (!running)
+                fputs("Not running\n", stdout);
+            else
+                send_code(lib_out, REQ_CONT);
+        }
+        else if (strcmp(line, "kill") == 0)
+        {
+            if (!running)
+                fputs("Not running\n", stdout);
+            else
+                send_code(lib_out, REQ_QUIT);
+        }
+        else if (strcmp(line, "quit") == 0)
+        {
+            if (running)
+                send_code(lib_out, REQ_QUIT);
+            exit(0);
+        }
+        else if (sscanf(line, "break %s", func) == 1
+                 || sscanf(line, "unbreak %s", func) == 1)
+        {
+            req_val = sscanf(line, "break %s", func);
+            if (strcmp(func, "error") == 0)
+            {
+                send_code(lib_out, REQ_BREAK_ERROR);
+                send_code(lib_out, req_val);
+            }
+            else
+            {
+                send_code(lib_out, REQ_BREAK);
+                send_string(lib_out, func);
+                send_code(lib_out, req_val);
+            }
+        }
+        else if (strcmp(line, "run") == 0)
+        {
+            if (running)
+            {
+                fputs("Already running\n", stderr);
+                more = true;
+            }
+            else
+            {
+                child_pid = execute(chain, prog);
+                send_code(lib_out, REQ_CONT); /* from initialisation */
+                running = true;
+                more = false;
+            }
+        }
+        else
+        {
+            more = true;
+            if (*line)
+                printf("Unknown command `%s'\n", line);
+        }
+#if HAVE_READLINE_READLINE_H
+        if (*line) add_history(line);
+#endif
+        free(line);
+    } while (more);
+}
+
+static void handle_responses(uint32_t resp)
+{
+    uint32_t resp_val;
     char *resp_str, *resp_str2;
-    bool more;
+
+    switch (resp)
+    {
+    case RESP_ANS:
+        recv_code(lib_in, &resp_val);
+        /* Ignore, otherwise than to flush the pipe */
+        break;
+    case RESP_STOP:
+        /* do nothing */
+        break;
+    case RESP_BREAK:
+        recv_string(lib_in, &resp_str);
+        printf("Break on %s\n", resp_str);
+        free(resp_str);
+        break;
+    case RESP_BREAK_ERROR:
+        recv_string(lib_in, &resp_str);
+        recv_string(lib_in, &resp_str2);
+        printf("Error %s in %s\n", resp_str2, resp_str);
+        free(resp_str);
+        free(resp_str2);
+        break;
+    case RESP_ERROR:
+        recv_code(lib_in, &resp_val);
+        recv_string(lib_in, &resp_str);
+        printf("%s\n", resp_str);
+        free(resp_str);
+        break;
+    }
+}
+
+static void main_loop(const char *chain, const char *prog)
+{
+    int status;
+    uint32_t resp;
 
     setup_sigchld();
-    child_pid = execute(chain, prog);
     while (true)
     {
-        /* Wait for input on pipe (including EOF), or for signal. We
-         * use pselect so that we can catch the signals.
-         */
-        assert(dead_children == 0);
-        while (true)
+        if (sigsetjmp(chld_env, 1))
         {
-            FD_ZERO(&readset);
-            FD_SET(lib_in, &readset);
-            /* If pselect is implemented as a library function, there will
-             * be a race condition. We can't easily fix this without
-             * sacrificing some portability.
-             */
-            sigpending(&pending);
-            if (sigismember(&pending, SIGCHLD))
-            {
-                sigsuspend(&unblocked);
-                break;
-            }
-            /* If pselect is implemented as a library function, then a
-             * SIGCHLD here will be missed.
-             */
-            assert(dead_children == 0);
-            if (pselect(lib_in + 1, &readset, NULL, NULL, NULL, &unblocked) != -1)
-                break;
-            if (errno != EINTR)
-            {
-                perror("select");
-                exit(1);
-            }
-            if (dead_children > 0) break;
-        }
-        /* EOF means program is busy shutting down */
-        if (dead_children > 0 || !recv_code(lib_in, &resp))
-        {
-            /* If we only got EOF, wait for the child to really die */
-            while (dead_children <= 0)
-                sigsuspend(&unblocked);
+            /* If we get here, then the child died. */
             waitpid(child_pid, &status, 0);
-            dead_children--; /* Clear the flag */
-            /* FIXME: output status info */
-            fputs("Program exited\n", stdout);
-            break;
+            printf("Program exited\n");
+            assert(running == true);
+            running = false;
+            continue;
         }
 
-        switch (resp)
-        {
-        case RESP_ANS:
-            recv_code(lib_in, &resp_val);
-            /* Ignore, otherwise than to flush the pipe */
-            break;
-        case RESP_BREAK:
-            recv_string(lib_in, &resp_str);
-            printf("Break on %s\n", resp_str);
-            free(resp_str);
-            break;
-        case RESP_BREAK_ERROR:
-            recv_string(lib_in, &resp_str);
-            recv_string(lib_in, &resp_str2);
-            printf("Error %s in %s\n", resp_str2, resp_str);
-            free(resp_str);
-            free(resp_str2);
-            break;
-        case RESP_ERROR:
-            recv_code(lib_in, &resp_val);
-            recv_string(lib_in, &resp_str);
-            printf("%s\n", resp_str);
-            free(resp_str);
-            break;
-        }
+        handle_commands(chain, prog);
 
-        do
+        /* Wait for either input on the pipe, or for the child to die.
+         * In the latter case we hit the sigsetjmp above.
+         */
+        sigprocmask(SIG_SETMASK, &unblocked, NULL);
+        if (!recv_code(lib_in, &resp))
         {
-            more = false;
-#if HAVE_READLINE_READLINE_H
-            line = readline("(gldb) ");
-#else
-            fputs("(gldb) ", stdout);
-            fflush(stdout);
-            line = xmalloc(128); /* FIXME: buffer overflow */
-            if (fgets(line, sizeof(line), stdin) == NULL);
-            {
-                free(line);
-                line = NULL;
-            }
-            else
-                chop(line);
-#endif
-            if (!line)
-            {
-                send_code(lib_out, REQ_QUIT);
-                exit(0); /* FIXME: clean shutdown? */
-            }
-            /* FIXME: use a lexical scanner */
-            if (strcmp(line, "cont") == 0)
-                send_code(lib_out, REQ_CONT);
-            else if (strcmp(line, "quit") == 0)
-                send_code(lib_out, REQ_QUIT);
-            else if (sscanf(line, "break %s", func) == 1
-                     || sscanf(line, "unbreak %s", func) == 1)
-            {
-                req_val = sscanf(line, "break %s", func);
-                if (strcmp(func, "error") == 0)
-                {
-                    send_code(lib_out, REQ_BREAK_ERROR);
-                    send_code(lib_out, req_val);
-                }
-                else
-                {
-                    send_code(lib_out, REQ_BREAK);
-                    send_string(lib_out, func);
-                    send_code(lib_out, req_val);
-                }
-            }
-            else
-            {
-                more = true;
-                if (*line)
-                    printf("Unknown command `%s'\n", line);
-            }
-            if (!more)
-                add_history(line);
-            free(line);
-        } while (more);
+            /* Failure here means EOF, which hopefully means that the
+             * program will now terminate. Cross thumbs...
+             */
+            sigprocmask(SIG_SETMASK, &blocked, NULL);
+            sigsuspend(&unblocked);
+            /* Hopefully we won't even reach here, but hit the sigsetjmp. */
+            continue;
+        }
+        sigprocmask(SIG_SETMASK, &blocked, NULL);
+
+        handle_responses(resp);
     }
 }
 

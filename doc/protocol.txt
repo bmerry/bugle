@@ -25,10 +25,11 @@ RESP_ANS:    A generic response, containing a single number. The request
              determines the meaning.
 RESP_BREAK:  Break on a particular function (before execution). Followed
              by the name of the function.
-RESP_BREAK_ERROR:  
+RESP_BREAK_ERROR:
              Break on an error condition (after execution)
              Followed by the name of the function, then the (textual)
              name of the error.
+RESP_STOP:   A stop by request of the debugger. No extra data.
 RESP_STATE:  Response to a state request. Followed by the textual value
              of the state.
 RESP_ERROR:  The request was illegal. Followed by an error code (always
@@ -37,20 +38,25 @@ RESP_ERROR:  The request was illegal. Followed by an error code (always
 After each response group, the debugger should send a request. The
 requests have the same basic form. The following requests are defined:
 
-REQ_CONT:  Continue running
-REQ_BREAK: Set or clear a breakpoint on the named function.
-           Followed by a name then either 1 or 0 (for set/clear).
-           Response RESP_ANS has undefined value.
+REQ_CONT:    Continue running
+REQ_BREAK:   Set or clear a breakpoint on the named function.
+             Followed by a name then either 1 or 0 (for set/clear).
+             Response RESP_ANS has undefined value.
 REQ_BREAK_ERROR: 
-           Enable or disable breaking on error. Followed by either
-           1 or 0 (for set/clear). Response RESP_ANS has undefined value.
-REQ_STATE: Requests the value of a state. Followed by the name of
-           the state.
-REQ_QUIT:  Requests that the program exit.
+             Enable or disable breaking on error. Followed by either
+             1 or 0 (for set/clear). Response RESP_ANS has undefined value.
+REQ_STEP:    Like REQ_CONT, but stop at the next call. Note that if a
+             breakpoint is set on the next call, the response is
+             RESP_BREAK, and if an error occurs before reaching the next
+             call then the response is RESP_BREAK_ERROR.
+REQ_STATE:   Requests the value of a state. Followed by the name of
+             the state.
+REQ_QUIT:    Requests that the program exit.
 
 Each request has a certain set of legal responses, as described below:
 
 REQ_CONT:  RESP_BREAK, RESP_BREAK_ERROR
+REQ_STEP:  RESP_BREAK, RESP_BREAK_ERROR, RESP_STOP
 REQ_BREAK: RESP_ANS, RESP_ERROR
 REQ_BREAK_ERROR: RESP_ANS
 REQ_STATE: RESP_STATE, RESP_ERROR
