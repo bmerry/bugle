@@ -859,7 +859,7 @@ static void texture_face_changed(GtkComboBox *face_box, gpointer user_data)
     model = gtk_combo_box_get_model(GTK_COMBO_BOX(context->texture.target));
     if (!gtk_combo_box_get_active_iter(GTK_COMBO_BOX(context->texture.target), &iter)) return;
     gtk_tree_model_get(model, &iter, 1, &target, -1);
-    g_return_if_fail(target == GL_TEXTURE_CUBE_MAP_ARB);
+    if (target != GL_TEXTURE_CUBE_MAP_ARB) return;
 
     model = gtk_combo_box_get_model(GTK_COMBO_BOX(context->texture.id));
     if (!gtk_combo_box_get_active_iter(GTK_COMBO_BOX(context->texture.id), &iter)) return;
