@@ -2,7 +2,6 @@ gldb
 ----
 - allow Ctrl-C to abort current line when reading commands
 - make pushing enter in gldb rerun last command
-- enable and disable filters on the fly
 - set filter variables on the fly
 - enable reporting of segfaults
 - print full dump of current function
@@ -52,3 +51,5 @@ long term
 ---------
 - internationalisation
 - Windows support
+- graphical debugger interface
+- OpenGL 2.0 support

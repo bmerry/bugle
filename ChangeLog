@@ -1,5 +1,6 @@
 * (gldb) Allow options to be passed to the program
 * (gldb) screenshot command
+* (gldb) Enable and disable filters on the fly
 
 0.0.20040903
 ------------

@@ -420,6 +420,23 @@ static bool command_chain(const char *cmd,
     return false;
 }
 
+static bool command_enable_disable(const char *cmd,
+                                   const char *line,
+                                   const char * const *tokens)
+{
+    uint32_t req;
+
+    if (!tokens[1] || !*tokens[1])
+    {
+        fputs("Usage: enable|disable <filterset>\n", stdout);
+        return false;
+    }
+    req = (strcmp(cmd, "enable") == 0) ? REQ_ENABLE_FILTERSET : REQ_DISABLE_FILTERSET;
+    send_code(lib_out, req);
+    send_string(lib_out, tokens[1]);
+    return true;
+}
+
 static bool command_gdb(const char *cmd,
                         const char *line,
                         const char * const *tokens)
@@ -858,6 +875,8 @@ const command_info commands[] =
     { "bt", "Alias for backtrace", true, command_backtrace, NULL },
     { "chain", "Set the filter-set chain", false, command_chain, NULL },
     { "continue", "Continue running the program", true, command_cont, NULL },
+    { "disable", "Disable a filterset", true, command_enable_disable, NULL },
+    { "enable", "Enable a filterset", true, command_enable_disable, NULL },
     { "gdb", "Stop in the program in gdb", false, command_gdb, NULL },
     { "help", "Show the list of commands", false, command_help, generate_commands },
     { "kill", "Kill the program", true, command_kill, NULL },

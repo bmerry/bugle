@@ -35,6 +35,7 @@ static bool wireframe_callback(function_call *call, void *data)
 #ifdef GLX_VERSION_1_3
     case FUNC_glXMakeContextCurrent:
 #endif
+    case FUNC_glXSwapBuffers:
         if (begin_internal_render())
         {
             CALL_glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);

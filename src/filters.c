@@ -194,6 +194,38 @@ void enable_filter_set(filter_set *handle)
     }
 }
 
+void disable_filter_set(filter_set *handle)
+{
+    list_node *i, *j;
+    filter_set *f;
+
+    if (handle->enabled)
+    {
+        handle->enabled = false;
+        /* reverse deps */
+        for (i = list_head(&filter_set_dependencies[0]),
+             j = list_head(&filter_set_dependencies[1]);
+             i != NULL;
+             i = list_next(i), j = list_next(j))
+        {
+            if (strcmp(handle->name, (const char *) list_data(j)) == 0)
+            {
+                f = get_filter_set_handle((const char *) list_data(i));
+                disable_filter_set(f);
+            }
+        }
+        i = list_head(&active_filters);
+        while (i)
+        {
+            j = list_next(i);
+            if (((filter *) list_data(i))->parent == handle)
+                list_erase(&active_filters, i, false);
+            i = j;
+        }
+        dirty_active = true;
+    }
+}
+
 void repair_filter_order(void)
 {
     list_node *i, *j;

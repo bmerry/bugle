@@ -173,6 +173,8 @@ static void debugger_loop(bool init)
     budgie_function func;
     state_generic *state;
     state_7context_I *ctx;
+    filter_set *f;
+    bool enable;
 
     /* FIXME: error checking on the network code */
     if (!init && begin_internal_render())
@@ -217,6 +219,47 @@ static void debugger_loop(bool init)
             break_on_error = req_val != 0;
             send_code(out_pipe, RESP_ANS);
             send_code(out_pipe, 0);
+            break;
+        case REQ_ENABLE_FILTERSET:
+        case REQ_DISABLE_FILTERSET:
+            enable = (req == REQ_ENABLE_FILTERSET);
+            recv_string(in_pipe, &req_str);
+            f = get_filter_set_handle(req_str);
+            if (!f)
+            {
+                xasprintf(&resp_str, "Unknown filter-set %s", req_str);
+                send_code(out_pipe, RESP_ERROR);
+                send_code(out_pipe, 0);
+                send_string(out_pipe, resp_str);
+                free(resp_str);
+            }
+            else if (filter_set_is_enabled(f) == enable)
+            {
+                xasprintf(&resp_str, "Filter-set %s is already %s",
+                          req_str, enable ? "enabled" : "disabled");
+                send_code(out_pipe, RESP_ERROR);
+                send_code(out_pipe, 0);
+                send_string(out_pipe, resp_str);
+                free(resp_str);
+            }
+            else
+            {
+                if (enable) enable_filter_set(f);
+                else disable_filter_set(f);
+                if (!filter_set_is_enabled(get_filter_set_handle("debugger")))
+                {
+                    send_code(out_pipe, RESP_ERROR);
+                    send_code(out_pipe, 0);
+                    send_string(out_pipe, "Debugger was disabled; re-enabling");
+                    enable_filter_set(get_filter_set_handle("debugger"));
+                }
+                else
+                {
+                    send_code(out_pipe, RESP_ANS);
+                    send_code(out_pipe, 0);
+                }
+            }
+            free(req_str);
             break;
         case REQ_STATE:
             recv_string(in_pipe, &req_str);

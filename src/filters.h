@@ -60,6 +60,7 @@ typedef struct filter_set_s
 void initialise_filters(void);
 bool set_filter_set_variable(filter_set *handle, const char *name, const char *value);
 void enable_filter_set(filter_set *handle);
+void disable_filter_set(filter_set *handle);
 void run_filters(function_call *call);
 
 /* Functions to be used by the filter libraries, and perhaps the interceptor */
