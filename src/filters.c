@@ -292,9 +292,6 @@ void run_filters(function_call *call)
             data = (void *)(((char *) call_data) + cur->parent->offset);
         else
             data = NULL;
-        fprintf(stderr, "running filter %s on call %s\n",
-                cur->name,
-                function_table[call->generic.id].name);
         if (!(*cur->callback)(call, data)) break;
     }
 }
