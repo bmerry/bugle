@@ -648,6 +648,9 @@ static const state_info tex_parameter_state[] =
 #ifdef GL_EXT_texture_filter_anisotropic
     { STATE_NAME_EXT(GL_TEXTURE_MAX_ANISOTROPY, _EXT), TYPE_8GLdouble, -1, BUGLE_GL_EXT_texture_filter_anisotropic, STATE_TEX_PARAMETER },
 #endif
+#ifdef GL_NV_texture_expand_normal
+    { STATE_NAME_EXT(GL_TEXTURE_UNSIGNED_REMAP_MODE, _NV), TYPE_6GLenum, -1, BUGLE_GL_NV_texture_expand_normal, STATE_TEX_PARAMETER },
+#endif
     { NULL, GL_NONE, NULL_TYPE, 0, -1, 0 }
 };
 

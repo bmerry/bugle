@@ -347,11 +347,12 @@ static gldb_state *state_find(gldb_state *root, const char *name, size_t n)
     const char *split;
     bugle_list_node *i;
     gldb_state *child;
-    bool found = false;
+    bool found;
 
     if (n > strlen(name)) n = strlen(name);
     while (n > 0)
     {
+        found = false;
         split = strchr(name, '.');
         while (split == name && n > 0 && name[0] == '.')
         {
