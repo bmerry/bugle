@@ -42,7 +42,7 @@ typedef struct glstate
     char *name;
 
     /* context */
-    GLenum target, binding;
+    GLenum target, face, binding;
     GLenum unit;
     GLuint object;
     GLint level;

@@ -20,6 +20,7 @@
  * - buffer objects
  * - shader objects
  * - program objects
+ * - proxies
  * - vertex and fragment program objects
  * - query objects
  * - check all the non-global state (e.g. COORD_REPLACE???)
@@ -76,9 +77,10 @@
 #define STATE_MULTIPLEX_ACTIVE_TEXTURE      0x00000100    /* Set active texture */
 #define STATE_MULTIPLEX_BIND_TEXTURE        0x00000200    /* Set current texture object */
 
-#define STATE_SELECT_NO_CONVOLUTION_1D      0x00010000    /* Ignore for GL_CONVOLUTION_1D */
-#define STATE_SELECT_NON_ZERO               0x00020000    /* Ignore if some field is 0 */
-#define STATE_SELECT_NO_PROXY               0x00040000    /* Ignore for proxy targets */
+#define STATE_SELECT_NO_1D                  0x00010000    /* Ignore for 1D targets like GL_CONVOLUTION_1D */
+#define STATE_SELECT_NO_2D                  0x00020000    /* Ignore for 2D targets like GL_TEXTURE_2D */
+#define STATE_SELECT_NON_ZERO               0x00040000    /* Ignore if some field is 0 */
+#define STATE_SELECT_NO_PROXY               0x00080000    /* Ignore for proxy targets */
 #define STATE_SELECT_NO_BLEND_FUNC_SEPARATE 0x00100000    /* Ignore if GL_EXT_blend_func_separate is present */
 #define STATE_SELECT_NO_DRAW_BUFFERS        0x00200000    /* Ignore if GL_ARB_draw_buffers is present */
 
@@ -531,9 +533,9 @@ static const state_info tex_parameter_state[] =
 static const state_info tex_level_parameter_state[] =
 {
     { STATE_NAME(GL_TEXTURE_WIDTH), TYPE_5GLint, 1, -1, "1.1", STATE_TEX_LEVEL_PARAMETER },
-    { STATE_NAME(GL_TEXTURE_HEIGHT), TYPE_5GLint, 1, -1, "1.1", STATE_TEX_LEVEL_PARAMETER },
+    { STATE_NAME(GL_TEXTURE_HEIGHT), TYPE_5GLint, 1, -1, "1.1", STATE_TEX_LEVEL_PARAMETER | STATE_SELECT_NO_1D },
 #ifdef GL_EXT_texture3D
-    { STATE_NAME_EXT(GL_TEXTURE_DEPTH, _EXT), TYPE_5GLint, 1, BUGLE_GL_EXT_texture3D, "1.2", STATE_TEX_LEVEL_PARAMETER },
+    { STATE_NAME_EXT(GL_TEXTURE_DEPTH, _EXT), TYPE_5GLint, 1, BUGLE_GL_EXT_texture3D, "1.2", STATE_TEX_LEVEL_PARAMETER | STATE_SELECT_NO_1D | STATE_SELECT_NO_2D },
 #endif
     { STATE_NAME(GL_TEXTURE_BORDER), TYPE_5GLint, 1, -1, "1.1", STATE_TEX_LEVEL_PARAMETER },
     { STATE_NAME(GL_TEXTURE_INTERNAL_FORMAT), TYPE_16GLcomponentsenum, 1, -1, "1.1", STATE_TEX_LEVEL_PARAMETER },
@@ -673,10 +675,9 @@ static const state_info convolution_parameter_state[] =
     { STATE_NAME(GL_CONVOLUTION_FILTER_BIAS), TYPE_8GLdouble, 4, BUGLE_GL_ARB_imaging, NULL, STATE_CONVOLUTION_PARAMETER },
     { STATE_NAME(GL_CONVOLUTION_FORMAT), TYPE_6GLenum, 1, BUGLE_GL_ARB_imaging, NULL, STATE_CONVOLUTION_PARAMETER },
     { STATE_NAME(GL_CONVOLUTION_WIDTH), TYPE_5GLint, 1, BUGLE_GL_ARB_imaging, NULL, STATE_CONVOLUTION_PARAMETER },
-    /* FIXME: CONVOLUTION_HEIGHT and CONVOLUTION_MAX_HEIGHT are illegal for CONVOLUTION_1D */
-    { STATE_NAME(GL_CONVOLUTION_HEIGHT), TYPE_5GLint, 1, BUGLE_GL_ARB_imaging, NULL, STATE_CONVOLUTION_PARAMETER },
+    { STATE_NAME(GL_CONVOLUTION_HEIGHT), TYPE_5GLint, 1, BUGLE_GL_ARB_imaging, NULL, STATE_CONVOLUTION_PARAMETER | STATE_SELECT_NO_1D },
     { STATE_NAME(GL_MAX_CONVOLUTION_WIDTH), TYPE_5GLint, 1, BUGLE_GL_ARB_imaging, NULL, STATE_CONVOLUTION_PARAMETER },
-    { STATE_NAME(GL_MAX_CONVOLUTION_HEIGHT), TYPE_5GLint, 1, BUGLE_GL_ARB_imaging, NULL, STATE_CONVOLUTION_PARAMETER },
+    { STATE_NAME(GL_MAX_CONVOLUTION_HEIGHT), TYPE_5GLint, 1, BUGLE_GL_ARB_imaging, NULL, STATE_CONVOLUTION_PARAMETER | STATE_SELECT_NO_1D },
     { NULL, GL_NONE, NULL_TYPE, 0, 0, NULL, 0 }
 };
 
@@ -756,6 +757,19 @@ static const enum_pair material_pairs[] =
     { STATE_NAME(GL_BACK) },
     { NULL, GL_NONE }
 };
+
+#ifdef GL_ARB_texture_cube_map
+static const enum_pair cube_map_face_pairs[] =
+{
+    { STATE_NAME_EXT(GL_TEXTURE_CUBE_MAP_POSITIVE_X, _ARB) },
+    { STATE_NAME_EXT(GL_TEXTURE_CUBE_MAP_NEGATIVE_X, _ARB) },
+    { STATE_NAME_EXT(GL_TEXTURE_CUBE_MAP_POSITIVE_Y, _ARB) },
+    { STATE_NAME_EXT(GL_TEXTURE_CUBE_MAP_NEGATIVE_Y, _ARB) },
+    { STATE_NAME_EXT(GL_TEXTURE_CUBE_MAP_POSITIVE_Z, _ARB) },
+    { STATE_NAME_EXT(GL_TEXTURE_CUBE_MAP_NEGATIVE_Z, _ARB) },
+    { NULL, GL_NONE }
+};
+#endif
 
 static const enum_pair tex_gen_pairs[] =
 {
@@ -956,12 +970,12 @@ char *bugle_state_get_string(const glstate *state)
     case STATE_MODE_TEX_LEVEL_PARAMETER:
         if (state->info->type == TYPE_8GLdouble || state->info->type == TYPE_7GLfloat)
         {
-            CALL_glGetTexLevelParameterfv(state->target, state->level, pname, f);
+            CALL_glGetTexLevelParameterfv(state->face, state->level, pname, f);
             in_type = TYPE_7GLfloat;
         }
         else
         {
-            CALL_glGetTexLevelParameteriv(state->target, state->level, pname, i);
+            CALL_glGetTexLevelParameteriv(state->face, state->level, pname, i);
             in_type = TYPE_5GLint;
         }
         break;
@@ -1212,6 +1226,7 @@ static void make_objects(const glstate *self,
 }
 
 static void spawn_children_tex_target(const glstate *, bugle_linked_list *);
+static void spawn_children_tex_level_parameter(const glstate *, bugle_linked_list *);
 
 static void make_tex_target(const glstate *self,
                             const char *name,
@@ -1225,10 +1240,36 @@ static void make_tex_target(const glstate *self,
     *child = *self;
     child->name = bugle_strdup(name);
     child->target = target;
+    child->face = target;   /* Changed at next level for cube maps */
     child->binding = binding;
     child->spawn_children = spawn_children_tex_target;
     child->info = NULL;
     bugle_list_append(children, child);
+}
+
+static void make_tex_levels(const glstate *self,
+                            bugle_linked_list *children)
+{
+    GLint base, max, i;
+    glstate *child;
+
+    CALL_glGetTexParameteriv(self->target, GL_TEXTURE_BASE_LEVEL, &base);
+    CALL_glGetTexParameteriv(self->target, GL_TEXTURE_MAX_LEVEL, &max);
+
+    for (i = base; i <= base + max; i++)
+    {
+        GLint width;
+        CALL_glGetTexLevelParameteriv(self->face, i, GL_TEXTURE_WIDTH, &width);
+        if (width <= 0) break;
+
+        child = bugle_malloc(sizeof(glstate));
+        *child = *self;
+        bugle_asprintf(&child->name, "level[%d]", (int) i);
+        child->info = NULL;
+        child->level = i;
+        child->spawn_children = spawn_children_tex_level_parameter;
+        bugle_list_append(children, child);
+    }
 }
 
 static void spawn_children_tex_gen(const glstate *self, bugle_linked_list *children)
@@ -1268,74 +1309,54 @@ static void spawn_children_tex_unit(const glstate *self, bugle_linked_list *chil
                spawn_children_tex_gen, children);
 }
 
+/* Returns a mask of flags not to select from state tables, based on the
+ * dimension of the target.
+ */
+static unsigned int texture_mask(GLenum target)
+{
+    switch (target)
+    {
+    case GL_PROXY_TEXTURE_1D:
+    case GL_TEXTURE_1D: return STATE_SELECT_NO_1D;
+#ifdef GL_ARB_texture_cube_map
+    case GL_PROXY_TEXTURE_CUBE_MAP_ARB:
+    case GL_TEXTURE_CUBE_MAP_ARB: /* Fall through */
+#endif
+    case GL_PROXY_TEXTURE_2D:
+    case GL_TEXTURE_2D: return STATE_SELECT_NO_2D;
+    }
+    return 0;
+}
+
 static void spawn_children_tex_level_parameter(const glstate *self, bugle_linked_list *children)
 {
     bugle_list_init(children, true);
-    make_leaves(self, tex_level_parameter_state, children);
+    make_leaves_conditional(self, tex_level_parameter_state, 0,
+                            texture_mask(self->target), children);
 }
 
-static GLint log2(GLint s)
+#ifdef GL_ARB_texture_cube_map
+static void spawn_children_cube_map_faces(const glstate *self, bugle_linked_list *children)
 {
-    GLint ans = 0;
-
-    if (s < 1) return -1;
-    while (s > 1)
-    {
-        s = s / 2; /* rounding down is consistent with NPOT mipmaps */
-        ans++;
-    }
-    return ans;
+    bugle_list_init(children, true);
+    make_tex_levels(self, children);
 }
+#endif
 
 static void spawn_children_tex_parameter(const glstate *self, bugle_linked_list *children)
 {
-    GLint dim, log_dim;
-    GLint p, q;       /* names follow GL 2.0 spec */
-    GLint base, max, i;
-    glstate *child;
-
     bugle_list_init(children, true);
-    make_leaves(self, tex_parameter_state, children);
+    make_leaves_conditional(self, tex_parameter_state, 0,
+                            texture_mask(self->target), children);
 #ifdef GL_ARB_texture_cube_map
-    if (self->target == GL_TEXTURE_CUBE_MAP_ARB) return; /* FIXME: cube faces */
-#endif
-
-    CALL_glGetTexParameteriv(self->target, GL_TEXTURE_BASE_LEVEL, &base);
-    CALL_glGetTexParameteriv(self->target, GL_TEXTURE_MAX_LEVEL, &max);
-    p = -1;
-    switch (self->target)
+    if (self->target == GL_TEXTURE_CUBE_MAP_ARB)
     {
-#ifdef GL_EXT_texture_3D
-    case GL_TEXTURE_3D_EXT:
-        CALL_glGetTexLevelParameteriv(self->target, base, GL_TEXTURE_DEPTH_EXT, &dim);
-        log_dim = log2(dim);
-        if (log_dim > p) p = log_dim;
-        /* Fall through */
+        make_fixed(self, cube_map_face_pairs, offsetof(glstate, face),
+                   spawn_children_cube_map_faces, children);
+        return;
+    }
 #endif
-    case GL_TEXTURE_2D:
-        CALL_glGetTexLevelParameteriv(self->target, base, GL_TEXTURE_HEIGHT, &dim);
-        log_dim = log2(dim);
-        if (log_dim > p) p = log_dim;
-        /* Fall through */
-    case GL_TEXTURE_1D:
-        CALL_glGetTexLevelParameteriv(self->target, base, GL_TEXTURE_WIDTH, &dim);
-        log_dim = log2(dim);
-        if (log_dim > p) p = log_dim;
-        break;
-    }
-
-    q = max;
-    if (p < q) q = p;
-    for (i = base; i <= base + q; i++)
-    {
-        child = bugle_malloc(sizeof(glstate));
-        *child = *self;
-        bugle_asprintf(&child->name, "level[%d]", (int) i);
-        child->info = NULL;
-        child->level = i;
-        child->spawn_children = spawn_children_tex_level_parameter;
-        bugle_list_append(children, child);
-    }
+    make_tex_levels(self, children);
 }
 
 static void spawn_children_tex_target(const glstate *self, bugle_linked_list *children)
@@ -1381,7 +1402,7 @@ static void spawn_children_convolution_parameter(const glstate *self, bugle_link
     bugle_list_init(children, true);
     if (self->target == GL_CONVOLUTION_1D)
         make_leaves_conditional(self, convolution_parameter_state,
-                                0, STATE_SELECT_NO_CONVOLUTION_1D, children);
+                                0, STATE_SELECT_NO_1D, children);
     else
         make_leaves(self, convolution_parameter_state, children);
 }
@@ -1542,7 +1563,7 @@ static void spawn_children_global(const glstate *self, bugle_linked_list *childr
 const glstate *bugle_state_get_root(void)
 {
     static const glstate root =
-    { "", GL_NONE, GL_NONE, GL_NONE, 0, 0, NULL, spawn_children_global };
+    { "", GL_NONE, GL_NONE, GL_NONE, GL_NONE, 0, 0, NULL, spawn_children_global };
 
     return &root;
 }

@@ -49,9 +49,8 @@ static bool initialise_invoke(filter_set *handle)
 
 static bool procaddress_callback(function_call *call, const callback_data *data)
 {
-    /* FIXME: some systems don't prototype glXGetProcAddressARB (it is,
-     * after all, an extension). That means extensions will probably
-     * not be intercepted.
+    /* Note: we can depend on this extension at least on Linux, since it
+     * is specified as part of the ABI.
      */
 #ifdef GLX_ARB_get_proc_address
     void (*sym)(void);
