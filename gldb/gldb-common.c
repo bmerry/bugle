@@ -42,7 +42,7 @@ static int lib_in, lib_out;
  * we are in the state (running && !started), non-break responses are
  * handled but do not cause a new line to be read.
  */
-static bool running = false, started = false;
+static gldb_status status = GLDB_STATUS_DEAD;
 static pid_t child_pid = -1;
 static char *filter_chain = NULL;
 static const char *prog = NULL;
@@ -234,40 +234,45 @@ void gldb_run(void (*child_init)(void))
         gldb_protocol_send_code(lib_out, *(const char *) h->value - '0');
     }
     gldb_protocol_send_code(lib_out, REQ_RUN);
-    running = true;
-    started = false;
+    status = GLDB_STATUS_STARTED;
 }
 
 void gldb_send_continue(void)
 {
+    assert(status == GLDB_STATUS_STOPPED);
+    gldb_set_status(GLDB_STATUS_RUNNING);
     gldb_protocol_send_code(lib_out, REQ_CONT);
 }
 
 void gldb_send_quit(void)
 {
+    assert(status != GLDB_STATUS_DEAD);
     gldb_protocol_send_code(lib_out, REQ_QUIT);
 }
 
 void gldb_send_enable_disable(const char *filterset, bool enable)
 {
+    assert(status != GLDB_STATUS_DEAD);
     gldb_protocol_send_code(lib_out, enable ? REQ_ENABLE_FILTERSET : REQ_DISABLE_FILTERSET);
     gldb_protocol_send_string(lib_out, filterset);
 }
 
 void gldb_send_screenshot(void)
 {
+    assert(status != GLDB_STATUS_DEAD);
     gldb_protocol_send_code(lib_out, REQ_SCREENSHOT);
 }
 
 void gldb_send_async(void)
 {
+    assert(status != GLDB_STATUS_DEAD && status != GLDB_STATUS_STOPPED);
     gldb_protocol_send_code(lib_out, REQ_ASYNC);
 }
 
 void gldb_set_break_error(bool brk)
 {
     break_on_error = brk;
-    if (running)
+    if (status != GLDB_STATUS_DEAD)
     {
         gldb_protocol_send_code(lib_out, REQ_BREAK_ERROR);
         gldb_protocol_send_code(lib_out, brk ? 1 : 0);
@@ -277,12 +282,17 @@ void gldb_set_break_error(bool brk)
 void gldb_set_break(const char *function, bool brk)
 {
     bugle_hash_set(&break_on, function, brk ? "1" : "0");
-    if (running)
+    if (status != GLDB_STATUS_DEAD)
     {
         gldb_protocol_send_code(lib_out, REQ_BREAK);
         gldb_protocol_send_string(lib_out, function);
         gldb_protocol_send_code(lib_out, brk ? 1 : 0);
     }
+}
+
+const char *gldb_get_chain(void)
+{
+    return filter_chain;
 }
 
 void gldb_set_chain(const char *chain)
@@ -292,36 +302,31 @@ void gldb_set_chain(const char *chain)
     else chain = NULL;
 }
 
-void gldb_info_stopped(void)
+void gldb_set_status(gldb_status s)
 {
-    state_dirty = true;
+    if (status == s) return;
+    status = s;
+    switch (status)
+    {
+    case GLDB_STATUS_RUNNING:
+    case GLDB_STATUS_STOPPED:
+        state_dirty = true;
+        break;
+    case GLDB_STATUS_STARTED:
+        abort(); /* Should never be set by the app, only gldb_run */
+    case GLDB_STATUS_DEAD:
+        close(lib_in);
+        close(lib_out);
+        lib_in = -1;
+        lib_out = -1;
+        child_pid = 0;
+        break;
+    }
 }
 
-void gldb_info_running(void)
+gldb_status gldb_get_status(void)
 {
-    started = true;
-    state_dirty = true;
-}
-
-void gldb_info_child_terminated(void)
-{
-    running = false;
-    started = false;
-    close(lib_in);
-    close(lib_out);
-    lib_in = -1;
-    lib_out = -1;
-    child_pid = 0;
-}
-
-bool gldb_running(void)
-{
-    return running;
-}
-
-bool gldb_started(void)
-{
-    return started;
+    return status;
 }
 
 pid_t gldb_child_pid(void)
@@ -334,10 +339,15 @@ const char *gldb_program(void)
     return prog;
 }
 
-/* FIXME: make this unnecessary */
+/* FIXME: make these unnecessary */
 int gldb_in_pipe(void)
 {
     return lib_in;
+}
+
+int gldb_out_pipe(void)
+{
+    return lib_out;
 }
 
 void gldb_initialise(int argc, char * const *argv)

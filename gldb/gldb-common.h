@@ -45,6 +45,21 @@
         } \
     } while (0)
 
+/* There are four possible statuses:
+ * - dead: the program has not been started or has exited
+ * - started: the program is busy initialising and accepting our
+ *   breakpoints
+ * - running: we have received RESP_RUNNING
+ * - stopped: the program is stopped on a breakpoint/error/interrupt
+ */
+typedef enum
+{
+    GLDB_STATUS_DEAD,
+    GLDB_STATUS_STARTED,
+    GLDB_STATUS_RUNNING,
+    GLDB_STATUS_STOPPED
+} gldb_status;
+
 typedef struct
 {
     char *name;
@@ -72,17 +87,16 @@ void gldb_send_screenshot(void);
 void gldb_send_async(void);
 void gldb_set_break_error(bool brk);
 void gldb_set_break(const char *function, bool brk);
+const char *gldb_get_chain(void);
 void gldb_set_chain(const char *chain);
 
-void gldb_info_stopped(void);
-void gldb_info_running(void);
-void gldb_info_child_terminated(void);
+void gldb_set_status(gldb_status);
+gldb_status gldb_get_status(void);
 
-bool gldb_running(void);
-bool gldb_started(void);
 pid_t gldb_child_pid(void);
 const char *gldb_program(void);
 int gldb_in_pipe(void);
+int gldb_out_pipe(void);
 
 void gldb_initialise(int argc, char * const *argv);
 void gldb_shutdown(void);

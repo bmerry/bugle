@@ -140,7 +140,7 @@ static bool handle_commands(void)
 #endif
         if (!line)
         {
-            if (gldb_running()) gldb_send_quit();
+            if (gldb_get_status() != GLDB_STATUS_DEAD) gldb_send_quit();
             if (prev_line) free(prev_line);
             return true;
         }
@@ -187,7 +187,7 @@ static bool handle_commands(void)
                         printf("Unknown command `%s'.\n", tokens[0]);
                     else if (!data->command)
                         printf("Ambiguous command `%s'.\n", tokens[0]);
-                    else if (data->command->running && !gldb_running())
+                    else if (data->command->running && gldb_get_status() == GLDB_STATUS_DEAD)
                         printf("Program is not running.\n");
                     else
                         done = data->command->handler(data->command->name, line, (const char * const *) tokens);
@@ -226,13 +226,13 @@ static bool handle_responses(void)
         /* Ignore, other than to flush the pipe */
         break;
     case RESP_STOP:
-        gldb_info_stopped();
+        gldb_set_status(GLDB_STATUS_STOPPED);
         break;
     case RESP_BREAK:
         gldb_protocol_recv_string(lib_in, &resp_str);
         printf("Break on %s", resp_str);
         free(resp_str);
-        gldb_info_stopped();
+        gldb_set_status(GLDB_STATUS_STOPPED);
         break;
     case RESP_BREAK_ERROR:
         gldb_protocol_recv_string(lib_in, &resp_str);
@@ -240,7 +240,7 @@ static bool handle_responses(void)
         printf("Error %s in %s", resp_str2, resp_str);
         free(resp_str);
         free(resp_str2);
-        gldb_info_stopped();
+        gldb_set_status(GLDB_STATUS_STOPPED);
         break;
     case RESP_ERROR:
         gldb_protocol_recv_code(lib_in, &resp_val);
@@ -250,7 +250,7 @@ static bool handle_responses(void)
         break;
     case RESP_RUNNING:
         printf("Running.\n");
-        gldb_info_running();
+        gldb_set_status(GLDB_STATUS_RUNNING);
         return false;
     case RESP_STATE:
         gldb_protocol_recv_string(lib_in, &resp_str);
@@ -278,7 +278,10 @@ static bool handle_responses(void)
         screenshot_file = NULL;
         break;
     }
-    return gldb_started();
+
+
+    return (gldb_get_status() == GLDB_STATUS_RUNNING
+            || gldb_get_status() == GLDB_STATUS_STOPPED);
 }
 
 static void setup_signals(void)
@@ -330,7 +333,7 @@ static void main_loop(void)
     while (!handle_commands())
     {
         done = false;
-        while (gldb_running() && !done)
+        while (gldb_get_status() != GLDB_STATUS_DEAD && !done)
         {
             /* Allow signals in. This appears to open a race condition (because
              * a signal may arrive between now and select), but the write() in
@@ -381,8 +384,8 @@ static void main_loop(void)
                 else
                     printf("Program was terminated abnormally.\n");
 
-                assert(gldb_running());
-                gldb_info_child_terminated();
+                assert(gldb_get_status() != GLDB_STATUS_DEAD);
+                gldb_set_status(GLDB_STATUS_DEAD);
                 done = true;
             }
             else if (result != -1 && FD_ISSET(int_pipes[0], &readfds))
@@ -463,7 +466,7 @@ static bool command_quit(const char *cmd,
                          const char *line,
                          const char * const *tokens)
 {
-    if (gldb_running()) gldb_send_quit();
+    if (gldb_get_status() != GLDB_STATUS_DEAD) gldb_send_quit();
     exit(0);
 }
 
@@ -484,7 +487,7 @@ static bool command_break_unbreak(const char *cmd,
         gldb_set_break_error(cmd[0] == 'b');
     else
         gldb_set_break(func, cmd[0] == 'b');
-    return gldb_running();
+    return gldb_get_status() != GLDB_STATUS_DEAD;
 }
 
 static void child_init(void)
@@ -504,7 +507,7 @@ static bool command_run(const char *cmd,
                         const char *line,
                         const char * const *tokens)
 {
-    if (gldb_running())
+    if (gldb_get_status() != GLDB_STATUS_DEAD)
     {
         fputs("Already running\n", stdout);
         return false;
@@ -593,7 +596,7 @@ static bool command_chain(const char *cmd,
         gldb_set_chain(tokens[1]);
         printf("Chain set to %s.\n", tokens[1]);
     }
-    if (gldb_running())
+    if (gldb_get_status() != GLDB_STATUS_DEAD)
         fputs("The change will only take effect when the program is restarted.\n", stdout);
     return false;
 }
@@ -784,7 +787,7 @@ static char *generate_state(const char *text, int state)
     const gldb_state *child;
     char *ans;
 
-    if (!gldb_started()) return NULL;
+    if (gldb_get_status() != GLDB_STATUS_STOPPED) return NULL;
     state_root = gldb_state_update();
     if (!state_root) return NULL;
     if (!state)

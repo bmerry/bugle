@@ -38,6 +38,8 @@ typedef struct
 {
     GtkWidget *window;
     GtkWidget *notebook;
+    GtkWidget *statusbar;
+    guint statusbar_context_id;
     GtkActionGroup *actions;
     GtkActionGroup *run_actions;
     GtkActionGroup *norun_actions;
@@ -75,10 +77,17 @@ static void update_state(GldbWindow *context)
     update_state_r(gldb_state_update(), context->state_store, NULL);
 }
 
+static void update_status_bar(GldbWindow *context, const gchar *text)
+{
+    gtk_statusbar_pop(GTK_STATUSBAR(context->statusbar), context->statusbar_context_id);
+    gtk_statusbar_push(GTK_STATUSBAR(context->statusbar), context->statusbar_context_id, text);
+}
+
 static void stopped(GldbWindow *context)
 {
-    gldb_info_stopped();
+    gldb_set_status(GLDB_STATUS_STOPPED);
     update_state(context);
+    update_status_bar(context, "Stopped");
 }
 
 static void child_exit_callback(GPid pid, gint status, gpointer data)
@@ -96,8 +105,8 @@ static void child_exit_callback(GPid pid, gint status, gpointer data)
         context->channel_watch = 0;
     }
 
-    g_message("Child exited");
-    gldb_info_child_terminated();
+    gldb_set_status(GLDB_STATUS_DEAD);
+    update_status_bar(context, "Not running");
     gtk_action_group_set_sensitive(context->run_actions, FALSE);
     gtk_action_group_set_sensitive(context->norun_actions, TRUE);
 }
@@ -149,8 +158,8 @@ static gboolean response_callback(GIOChannel *channel, GIOCondition condition,
         free(resp_str);
         break;
     case RESP_RUNNING:
-        g_message("Running.\n");
-        gldb_info_running();
+        gldb_set_status(GLDB_STATUS_RUNNING);
+        update_status_bar(context, "Running");
         gtk_action_group_set_sensitive(context->run_actions, TRUE);
         gtk_action_group_set_sensitive(context->norun_actions, FALSE);
         break;
@@ -200,7 +209,7 @@ static void run_action(GtkAction *action, gpointer user_data)
     GldbWindow *context;
 
     context = (GldbWindow *) user_data;
-    if (gldb_running())
+    if (gldb_get_status() != GLDB_STATUS_DEAD)
     {
         /* FIXME */
     }
@@ -215,25 +224,48 @@ static void run_action(GtkAction *action, gpointer user_data)
         context->channel_watch = g_io_add_watch(context->channel, G_IO_IN | G_IO_ERR,
                                                 response_callback, context);
         g_child_watch_add(gldb_child_pid(), child_exit_callback, context);
+        update_status_bar(context, "Started");
     }
 }
 
-static void break_action(GtkAction *action, gpointer user_data)
+static void stop_action(GtkAction *action, gpointer user_data)
 {
-    if (gldb_running())
-        gldb_send_async();
+    gldb_send_async();
 }
 
 static void continue_action(GtkAction *action, gpointer user_data)
 {
-    if (gldb_running())
-        gldb_send_continue();
+    gldb_send_continue();
 }
 
 static void kill_action(GtkAction *action, gpointer user_data)
 {
-    if (gldb_running())
-        gldb_send_quit();
+    gldb_send_quit();
+}
+
+static void chain_action(GtkAction *action, gpointer user_data)
+{
+    GtkWidget *dialog, *entry;
+    GldbWindow *context;
+    gint result;
+
+    context = (GldbWindow *) user_data;
+    dialog = gtk_dialog_new_with_buttons("Filter chain",
+                                         GTK_WINDOW(context->window),
+                                         GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
+                                         GTK_STOCK_OK, GTK_RESPONSE_ACCEPT,
+                                         GTK_STOCK_CANCEL, GTK_RESPONSE_REJECT,
+                                         NULL);
+    entry = gtk_entry_new();
+    if (gldb_get_chain())
+        gtk_entry_set_text(GTK_ENTRY(entry), gldb_get_chain());
+    gtk_widget_show(entry);
+    gtk_box_pack_start(GTK_BOX(GTK_DIALOG(dialog)->vbox), entry, TRUE, FALSE, 0);
+
+    result = gtk_dialog_run(GTK_DIALOG(dialog));
+    if (result == GTK_RESPONSE_ACCEPT)
+        gldb_set_chain(gtk_entry_get_text(GTK_ENTRY(entry)));
+    gtk_widget_destroy(dialog);
 }
 
 static void build_state_page(GldbWindow *context)
@@ -309,6 +341,9 @@ static const gchar *ui_desc =
 "    <menu action='FileMenu'>"
 "      <menuitem action='Quit' />"
 "    </menu>"
+"    <menu action='OptionsMenu'>"
+"      <menuitem action='Chain' />"
+"    </menu>"
 "    <menu action='RunMenu'>"
 "      <menuitem action='Run' />"
 "      <separator />"
@@ -324,12 +359,15 @@ static GtkActionEntry action_desc[] =
     { "FileMenu", NULL, "_File", NULL, NULL, NULL },
     { "Quit", GTK_STOCK_QUIT, "_Quit", "<control>Q", NULL, G_CALLBACK(quit_action) },
 
+    { "OptionsMenu", NULL, "_Options", NULL, NULL, NULL },
+    { "Chain", NULL, "Filter _Chain", NULL, NULL, G_CALLBACK(chain_action) },
+
     { "RunMenu", NULL, "_Run", NULL, NULL, NULL },
 };
 
 static GtkActionEntry run_action_desc[] =
 {
-    { "Stop", NULL, "_Stop", "<control>Break", NULL, G_CALLBACK(break_action) },
+    { "Stop", NULL, "_Stop", "<control>Break", NULL, G_CALLBACK(stop_action) },
     { "Continue", NULL, "_Continue", "<control>F9", NULL, G_CALLBACK(continue_action) },
     { "Kill", NULL, "_Kill", "<control>F2", NULL, G_CALLBACK(kill_action) }
 };
@@ -389,6 +427,11 @@ static void build_main_window(GldbWindow *context)
     build_shader_page(context);
     build_backtrace_page(context);
     gtk_box_pack_start(GTK_BOX(vbox), context->notebook, TRUE, TRUE, 0);
+
+    context->statusbar = gtk_statusbar_new();
+    context->statusbar_context_id = gtk_statusbar_get_context_id(GTK_STATUSBAR(context->statusbar), "Program status");
+    gtk_statusbar_push(GTK_STATUSBAR(context->statusbar), context->statusbar_context_id, "Not running");
+    gtk_box_pack_start(GTK_BOX(vbox), context->statusbar, FALSE, FALSE, 0);
 
     gtk_container_add(GTK_CONTAINER(context->window), vbox);
     gtk_window_set_default_size(GTK_WINDOW(context->window), 640, 480);
