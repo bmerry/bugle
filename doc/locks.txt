@@ -17,9 +17,6 @@ thread are passed straight through. The start of each wrapper should
 call check_set_reentrance(), and do a pass-through if it returns false.
 Otherwise, it should wrap and then call clear_reentrance() afterwards.
 
-FIXME: the check_skip functionality does not protected against
-reentrance.
-
 3. Access to state
 
 Requests for the per-context state tree must go through
@@ -38,22 +35,15 @@ The logging filters use flockfile/funlockfile to guarantee that each
 call occupies a contiguous piece of log. This is why you should use
 bugle_log_register_filter() for each filter that intends to do logging.
 
-5. Debugger
+5. Debugger: The debugger is not thread-safe.
 
-The debugger is not thread-safe.
+6. Object system: see objects.html
 
-6. Object system: objects.c
+7. Filters
 
-The methods named bugle_object_class_* are not thread-safe and should
-be protected with locks. The methods named bugle_object_* are
-thread-safe (including those referring to the current object). This is
-because the "current" object is a per-thread variable referenced by a
-pthread_key_t.
-
-7. Filter lists
-
-The variables in filters.c that start with active_ are protected by the
-active_mutex mutex. This leads to an unfortunate loss in performance.
+The registration is all done in a single thread, so there are no
+locking issues. The list of active filters can be updated by the
+debugger, so locks are required. See comments in filters.c.
 
 8. Low-level types: linked lists and hash tables
 

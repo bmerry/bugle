@@ -198,7 +198,7 @@ bool filter_set_variable(filter_set *handle, const char *name, const char *value
     long int_value;
     char *string_value;
     char *end;
-    void *value_ptr;
+    void *value_ptr = NULL;
 
     for (v = handle->variables; v && v->name; v++)
     {
@@ -646,6 +646,7 @@ void *bugle_get_filter_set_symbol(filter_set *handle, const char *name)
 void bugle_filters_help(void)
 {
     bugle_list_node *i;
+    const filter_set_variable_info *j;
     filter_set *cur;
 
     flockfile(stderr);
@@ -656,6 +657,28 @@ void bugle_filters_help(void)
         cur = (filter_set *) bugle_list_data(i);
         if (cur->help)
             fprintf(stderr, "  %s: %s\n", cur->name, cur->help);
+        j = cur->variables;
+        for (j = cur->variables; j && j->name; j++)
+            if (j->help)
+            {
+                const char *type_str = NULL;
+                switch (j->type)
+                {
+                case FILTER_SET_VARIABLE_INT:
+                case FILTER_SET_VARIABLE_UINT:
+                case FILTER_SET_VARIABLE_POSITIVE_INT:
+                    type_str = "int";
+                    break;
+                case FILTER_SET_VARIABLE_BOOL:
+                    type_str = "bool";
+                    break;
+                case FILTER_SET_VARIABLE_STRING:
+                    type_str = "string";
+                    break;
+                }
+                fprintf(stderr, "    %s (%s): %s\n",
+                        j->name, type_str, j->help);
+            }
     }
     funlockfile(stderr);
 }

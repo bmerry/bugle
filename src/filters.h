@@ -50,6 +50,7 @@ typedef enum
 typedef struct filter_set_variable_info_s
 {
     const char *name;
+    const char *help;
     filter_set_variable_type type;
     /* int, uint, posint: a long * (uint just enforces non-negative)
      * bool: a bool *

@@ -1,4 +1,4 @@
-.TH BUGLE 3 "November 2004" BUGLE "User Manual"
+.TH BUGLE 3 "January 2005" BUGLE "User Manual"
 .SH NAME
 bugle \- An OpenGL debugging library
 .SH SYNOPSIS
@@ -71,7 +71,7 @@ filter-sets such as the
 filter-set.
 .TP
 .B showerror
-Writes OpenGL errors to standard out.
+Writes OpenGL errors to standard error.
 .TP
 .B showextensions
 On exit, outputs information on what version of OpenGL and what
@@ -87,7 +87,7 @@ although they may not be.
 Forces the application to render in wireframe mode (i.e. with
 .B glPolygonMode
 set to
-.BR GL_LINE ).
+.BR GL_LINE ), and attempts to disable texturing.
 It also forces a colour buffer clear after every frame, since some apps
 will look completely wrong otherwise.
 .TP
@@ -130,7 +130,7 @@ trace will work. If running your program inside
 continue past the first segmentation fault and ask for a stack trace
 after the second.
 .TP
-.BR stats ", "
+.BR stats ", " showstats
 The
 .B stats
 filterset collects various statistics (frames per second, and optionally
@@ -140,13 +140,24 @@ filterset is also loaded, it will write stats to the log. The
 .B showstats
 filterset will render the statistics into the framebuffer
 each frame.
+.TP
+.B checks
+Does some expensive checks for things that are illegal in rendering
+calls but for which OpenGL only specifies undefined behaviour. These
+include
+.RE
+Sourcing vertex or index data from unreadable client memory.
 
-The other two filter-sets are
-.B invoke
-and
-.BR debugger,
-but these are automatically loaded when needed and you don't need to
-worry about them.
+Sourcing vertex or index data from outside the valid range of a vertex
+buffer object.
+
+Specifying indices to
+.BR glDrawRangeElements (3x)
+that are outside the specified range.
+.RS
+.P
+There are several other filter-sets, but they are all used internally
+and are automatically loaded when necessary.
 
 .SH CONFIGURATION
 You can create filter-set chains in the file
@@ -173,7 +184,7 @@ with an example:
     {
         filterset log
         {
-            filename bugle.log
+            filename "bugle.log"
             flush yes
         }
         filterset showerror
@@ -181,7 +192,12 @@ with an example:
 .fi
 
 Note that braces around sets of options are optional, while the braces
-around chains are not.
+around chains are not. Boolean options may be specified as
+.BR yes/no ,
+as
+.BR true/false ,
+or as
+.BR 1/0 .
 
 .SH ENVIRONMENT
 .TP

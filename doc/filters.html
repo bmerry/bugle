@@ -49,7 +49,10 @@ that can be set from the configuration file. It has the following fields:
  <dl>
  <dt><code>name</code></dt>
  <dd>The name to match in the configuration file.</dd>
- <dt><code>type</code><dt>
+ <dt><code>help</code></dt>
+ <dd>The help string to show when help is requested. This may be
+     <code>NULL</code> to leave the variable undocumented.</dd>
+ <dt><code>type</code></dt>
  <dd>The type of variable. It must be one of the following:
   <ul>
   <li><code>FILTER_SET_VARIABLE_STRING</code> (a general string)</li>
@@ -111,7 +114,7 @@ void filter_set_shutdown(filter_set *);
 </pre>
  <dt><code>variables</code></dt>
  <dd>A pointer to an array of <code>filter_set_variable_info</code> structures,
- terminated by a null structure <code>{NULL, 0, NULL, NULL}</code>. This
+ terminated by a null structure <code>{NULL, NULL, 0, NULL, NULL}</code>. This
  describes the user variables that are accepted by the filter-set. If there
  are no variables, this field may be <code>NULL</code>.
  </dd>
@@ -120,6 +123,10 @@ void filter_set_shutdown(filter_set *);
  call structure. This will probably go away soon and it is recommended
  that it is set to <code>0</code> for now.
  </dd>
+ <dt><code>help</code></dt>
+ <dd>The help string to show when help is requested. This may be left
+     as <code>NULL</code> to leave the filter-set undocumented. This is
+     recommended for internal or helper filter-sets.</dd>
  </dl>
 </dd>
 </dl>

@@ -26,11 +26,15 @@ chain showstats
     {
         # Uncomment to count fragments that pass the Z test. This requires
         # GL_ARB_occlusion_query and will have a performance penalty.
+        
         # fragments yes
         
-        # Uncomment to count triangles. This will not work if any rendering
-        # is done with display lists or if you use GL_NV_primitive_restart.
-        # In general, don't rely on it being accurate.
+        # Uncomment to count triangles. It theoretically supports display
+        # lists. It will not work if you use GL_NV_primitive_restart, and
+        # it does not yet support any kind of generated geometry
+        # (evaluators or displacement maps). In general, don't rely on it
+        # being accurate.
+        
         # triangles yes
     }
     
@@ -56,11 +60,21 @@ chain video
     filterset screenshot
     {
         video "bugle.avi"
+        
+        # You can in theory use any codec supported by ffmpeg
         codec "mpeg4"
+        
         # Roughly DVD size, although no high quality options are set
         bitrate "7500000"
+        
         # You can also set a start frame.
         # start "1000"
+        
+        # By default, a frame is captured every 30th of a second, with
+        # frames skipped or duplicated as necessary. Uncomment this
+        # line to instead capture every frame exactly once to the
+        # output.
+        # allframes "yes"
     }
 }
 
@@ -70,10 +84,16 @@ chain wireframe
     filterset wireframe
 }
 
+chain debug
+{
+    
+}
+
 # Use this if your program is crashing somewhere inside the driver, and you
-# can't get a useful stack trace (this happens with NVIDIA's drivers). Run
-# your program inside gdb, and when your receive SIGSEGV, select to continue.
-# You will see a message from the library, and another SIGSEGV will occur.
+# can't get a useful stack trace (this used to happen with NVIDIA's drivers,
+# although it seems that the 60 series fixes it). Run your program
+# inside gdb, and when your receive SIGSEGV, select to continue. You
+# will see a message from the library, and another SIGSEGV will occur.
 # At this point gdb should give you a meaningful back-trace. This
 # depends on non-portable behaviour, so Your Mileage Might Vary.
 chain crash

@@ -469,9 +469,9 @@ void bugle_initialise_filter_library(void)
 {
     static const filter_set_variable_info stats_variables[] =
     {
-        { "fragments", FILTER_SET_VARIABLE_BOOL, &count_fragments, NULL },
-        { "triangles", FILTER_SET_VARIABLE_BOOL, &count_triangles, NULL },
-        { NULL, 0, NULL, NULL }
+        { "fragments", "count fragments that pass the depth test [no]", FILTER_SET_VARIABLE_BOOL, &count_fragments, NULL },
+        { "triangles", "count the number of triangles draw [no]", FILTER_SET_VARIABLE_BOOL, &count_triangles, NULL },
+        { NULL, NULL, 0, NULL, NULL }
     };
 
     static const filter_set_info stats_info =

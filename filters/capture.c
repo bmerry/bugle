@@ -690,13 +690,13 @@ void bugle_initialise_filter_library(void)
 {
     static const filter_set_variable_info screenshot_variables[] =
     {
-        { "video", FILTER_SET_VARIABLE_STRING, &video_file, NULL },
-        { "codec", FILTER_SET_VARIABLE_STRING, &video_codec, NULL },
-        { "start", FILTER_SET_VARIABLE_UINT, &start_frameno, NULL },
-        { "bitrate", FILTER_SET_VARIABLE_POSITIVE_INT, &video_bitrate, NULL },
-        { "allframes", FILTER_SET_VARIABLE_BOOL, &video_sample_all, NULL },
-        { "lag", FILTER_SET_VARIABLE_POSITIVE_INT, &video_lag, NULL },
-        { NULL, 0, NULL, NULL }
+        { "video", "file to write video to [none]", FILTER_SET_VARIABLE_STRING, &video_file, NULL },
+        { "codec", "video codec to use [mpeg4]", FILTER_SET_VARIABLE_STRING, &video_codec, NULL },
+        { "start", "frame from which to capture [0]", FILTER_SET_VARIABLE_UINT, &start_frameno, NULL },
+        { "bitrate", "video bitrate (bytes/s) [7.5MB/s]", FILTER_SET_VARIABLE_POSITIVE_INT, &video_bitrate, NULL },
+        { "allframes", "capture every frame, ignoring framerate [no]", FILTER_SET_VARIABLE_BOOL, &video_sample_all, NULL },
+        { "lag", "length of capture pipeline (set higher for better throughput) [1]", FILTER_SET_VARIABLE_POSITIVE_INT, &video_lag, NULL },
+        { NULL, NULL, 0, NULL, NULL }
     };
 
     static const filter_set_info screenshot_info =

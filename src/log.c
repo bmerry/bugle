@@ -93,9 +93,9 @@ void log_initialise(void)
 {
     static const filter_set_variable_info log_variables[] =
     {
-        { "filename", FILTER_SET_VARIABLE_STRING, &log_filename, NULL },
-        { "flush", FILTER_SET_VARIABLE_BOOL, &log_flush, NULL },
-        { NULL, 0, NULL, NULL }
+        { "filename", "filename of the log to write [stderr]", FILTER_SET_VARIABLE_STRING, &log_filename, NULL },
+        { "flush", "flush log after every call [no]", FILTER_SET_VARIABLE_BOOL, &log_flush, NULL },
+        { NULL, NULL, 0, NULL, NULL }
     };
 
     static const filter_set_info log_info =
