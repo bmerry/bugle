@@ -31,11 +31,6 @@
 
 static bugle_hash_table function_names;
 
-void destroy_canonical(void)
-{
-    bugle_hash_clear(&function_names);
-}
-
 void initialise_canonical(void)
 {
     budgie_function i;
@@ -44,7 +39,7 @@ void initialise_canonical(void)
     for (i = 0; i < NUMBER_OF_FUNCTIONS; i++)
         bugle_hash_set(&function_names, budgie_function_table[i].name, &budgie_function_table[i]);
 
-    atexit(destroy_canonical);
+    bugle_atexit((void (*)(void *)) bugle_hash_clear, &function_names);
 }
 
 budgie_function bugle_canonical_function(budgie_function f)

@@ -28,6 +28,7 @@
 #include "common/bool.h"
 #include "common/hashtable.h"
 #include "common/threads.h"
+#include "common/safemem.h"
 #include <stddef.h>
 #include <GL/gl.h>
 
@@ -140,7 +141,8 @@ void trackdisplaylist_initialise(void)
     };
 
     bugle_object_class_init(&bugle_displaylist_class, &bugle_context_class);
-    bugle_hashptr_init(&displaylist_objects, true); /* FIXME: never released */
+    bugle_hashptr_init(&displaylist_objects, true);
+    bugle_atexit((void (*)(void *)) bugle_hashptr_clear, &displaylist_objects);
     bugle_register_filter_set(&trackdisplaylist_info);
 
     bugle_register_filter_set_depends("trackdisplaylist", "trackcontext");

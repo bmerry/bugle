@@ -97,7 +97,7 @@ static size_t call_data_size = 0; /* FIXME: turn into an object */
 static void *current_dl_handle = NULL;
 
 /* FIXME: use dlclose on the modules */
-void destroy_filters(void)
+void destroy_filters(void *dummy)
 {
     bugle_list_node *i, *j;
     filter_set *s;
@@ -190,7 +190,7 @@ void initialise_filters(void)
     }
 
     closedir(dir);
-    atexit(destroy_filters);
+    bugle_atexit(destroy_filters, NULL);
 }
 
 bool filter_set_variable(filter_set *handle, const char *name, const char *value)

@@ -54,6 +54,12 @@ int bugle_asprintf(char **strp, const char *format, ...);
  */
 char *bugle_afgets(FILE *stream);
 
+/* Only sort of memory related: a shutdown handler that has an unlimited
+ * number of entries and will pass arbitrary pointers to the shutdown
+ * functions.
+ */
+void bugle_atexit(void (*shutdown_function)(void *), void *arg);
+
 #ifdef __cplusplus
 }
 #endif

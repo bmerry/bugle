@@ -21,6 +21,8 @@
 #endif
 #define _GNU_SOURCE
 #include "safemem.h"
+#include "linkedlist.h"
+#include "threads.h"
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
@@ -104,7 +106,7 @@ int bugle_asprintf(char **strp, const char *format, ...)
 {
     int ans;
 #if !HAVE_VASPRINTF && HAVE_VSNPRINTF
-    size;
+    size_t size;
 #endif
 
     va_list ap;
@@ -172,4 +174,46 @@ char *bugle_afgets(FILE *stream)
         size *= 2;
         str = bugle_realloc(str, size);
     }
+}
+
+typedef struct
+{
+    void (*shutdown_function)(void *);
+    void *arg;
+} shutdown_call;
+
+static bugle_linked_list shutdown_calls;
+static bugle_thread_mutex_t shutdown_mutex = BUGLE_THREAD_MUTEX_INITIALIZER;
+static bugle_thread_once_t shutdown_once = BUGLE_THREAD_ONCE_INIT;
+
+static void bugle_atexit_handler(void)
+{
+    bugle_list_node *i;
+    shutdown_call *call;
+
+    for (i = bugle_list_head(&shutdown_calls); i; i = bugle_list_next(i))
+    {
+        call = (shutdown_call *) bugle_list_data(i);
+        (*call->shutdown_function)(call->arg);
+    }
+    bugle_list_clear(&shutdown_calls);
+}
+
+static void bugle_atexit_once(void)
+{
+    bugle_list_init(&shutdown_calls, true);
+    atexit(bugle_atexit_handler);
+}
+
+void bugle_atexit(void (*shutdown_function)(void *), void *arg)
+{
+    shutdown_call *call;
+
+    call = bugle_malloc(sizeof(shutdown_call));
+    call->shutdown_function = shutdown_function;
+    call->arg = arg;
+    bugle_thread_mutex_lock(&shutdown_mutex);
+    bugle_list_prepend(&shutdown_calls, call);
+    bugle_thread_mutex_unlock(&shutdown_mutex);
+    bugle_thread_once(&shutdown_once, bugle_atexit_once);
 }

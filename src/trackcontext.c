@@ -28,6 +28,7 @@
 #include "common/bool.h"
 #include "common/hashtable.h"
 #include "common/threads.h"
+#include "common/safemem.h"
 #include <assert.h>
 #include <stddef.h>
 #include <GL/glx.h>
@@ -128,6 +129,7 @@ void trackcontext_initialise(void)
     };
 
     bugle_object_class_init(&bugle_context_class, NULL);
-    bugle_hashptr_init(&context_objects, true); /* FIXME: never released */
+    bugle_hashptr_init(&context_objects, true);
+    bugle_atexit((void (*)(void *)) bugle_hashptr_clear, &context_objects);
     bugle_register_filter_set(&trackcontext_info);
 }
