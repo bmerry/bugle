@@ -57,7 +57,7 @@ static bool initialise_trace(filter_set *handle)
 
 void bugle_initialise_filter_library(void)
 {
-    const filter_set_info trace_info =
+    static const filter_set_info trace_info =
     {
         "trace",
         initialise_trace,

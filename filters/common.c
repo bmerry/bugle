@@ -82,7 +82,7 @@ static bool initialise_procaddress(filter_set *handle)
 
 void bugle_initialise_filter_library(void)
 {
-    const filter_set_info invoke_info =
+    static const filter_set_info invoke_info =
     {
         "invoke",
         initialise_invoke,
@@ -90,7 +90,7 @@ void bugle_initialise_filter_library(void)
         NULL,
         0
     };
-    const filter_set_info procaddress_info =
+    static const filter_set_info procaddress_info =
     {
         "procaddress",
         initialise_procaddress,

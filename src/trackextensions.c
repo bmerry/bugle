@@ -80,7 +80,7 @@ bool bugle_gl_has_extension(int ext)
 
 void trackextensions_initialise(void)
 {
-    const filter_set_info trackextensions_info =
+    static const filter_set_info trackextensions_info =
     {
         "trackextensions",
         initialise_trackextensions,

@@ -127,12 +127,10 @@ void destroy_filters(void *dummy)
                     free(dep);
                 }
                 bugle_list_clear(&f->callbacks);
-                free(f->name);
                 free(f);
             }
             bugle_list_clear(&s->filters);
         }
-        free(s->name);
         free(s);
     }
     bugle_list_clear(&filter_sets);
@@ -524,7 +522,7 @@ filter_set *bugle_register_filter_set(const filter_set_info *info)
     filter_set *s;
 
     s = (filter_set *) bugle_malloc(sizeof(filter_set));
-    s->name = bugle_strdup(info->name);
+    s->name = info->name;
     bugle_list_init(&s->filters, false);
     s->init = info->init;
     s->done = info->done;
@@ -549,7 +547,7 @@ filter *bugle_register_filter(filter_set *handle, const char *name)
     filter *f;
 
     f = (filter *) bugle_malloc(sizeof(filter));
-    f->name = bugle_strdup(name);
+    f->name = name;
     f->parent = handle;
     bugle_list_init(&f->callbacks, true);
     bugle_list_append(&handle->filters, f);

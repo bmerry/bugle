@@ -93,7 +93,7 @@ static bool initialise_trackbeginend(filter_set *handle)
 
 void trackbeginend_initialise(void)
 {
-    const filter_set_info trackbeginend_info =
+    static const filter_set_info trackbeginend_info =
     {
         "trackbeginend",
         initialise_trackbeginend,

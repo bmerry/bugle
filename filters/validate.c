@@ -733,7 +733,7 @@ static bool initialise_checks(filter_set *handle)
 
 void bugle_initialise_filter_library(void)
 {
-    const filter_set_info error_info =
+    static const filter_set_info error_info =
     {
         "error",
         initialise_error,
@@ -741,7 +741,7 @@ void bugle_initialise_filter_library(void)
         NULL,
         sizeof(GLenum)
     };
-    const filter_set_info showerror_info =
+    static const filter_set_info showerror_info =
     {
         "showerror",
         initialise_showerror,
@@ -749,7 +749,7 @@ void bugle_initialise_filter_library(void)
         NULL,
         0
     };
-    const filter_set_info unwindstack_info =
+    static const filter_set_info unwindstack_info =
     {
         "unwindstack",
         initialise_unwindstack,
@@ -757,7 +757,7 @@ void bugle_initialise_filter_library(void)
         NULL,
         0
     };
-    const filter_set_info checks_info =
+    static const filter_set_info checks_info =
     {
         "checks",
         initialise_checks,

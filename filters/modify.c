@@ -124,7 +124,7 @@ static bool initialise_frontbuffer(filter_set *handle)
 
 void bugle_initialise_filter_library(void)
 {
-    const filter_set_info wireframe_info =
+    static const filter_set_info wireframe_info =
     {
         "wireframe",
         initialise_wireframe,
@@ -132,7 +132,7 @@ void bugle_initialise_filter_library(void)
         NULL,
         0
     };
-    const filter_set_info frontbuffer_info =
+    static const filter_set_info frontbuffer_info =
     {
         "frontbuffer",
         initialise_frontbuffer,

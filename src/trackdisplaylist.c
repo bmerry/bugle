@@ -131,7 +131,7 @@ static bool initialise_trackdisplaylist(filter_set *handle)
 
 void trackdisplaylist_initialise(void)
 {
-    const filter_set_info trackdisplaylist_info =
+    static const filter_set_info trackdisplaylist_info =
     {
         "trackdisplaylist",
         initialise_trackdisplaylist,

@@ -119,7 +119,7 @@ static bool initialise_trackcontext(filter_set *handle)
 
 void trackcontext_initialise(void)
 {
-    const filter_set_info trackcontext_info =
+    static const filter_set_info trackcontext_info =
     {
         "trackcontext",
         initialise_trackcontext,

@@ -423,7 +423,7 @@ static bool initialise_debugger(filter_set *handle)
 
 void bugle_initialise_filter_library(void)
 {
-    const filter_set_info debugger_info =
+    static const filter_set_info debugger_info =
     {
         "debugger",
         initialise_debugger,

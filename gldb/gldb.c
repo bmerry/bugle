@@ -594,7 +594,7 @@ static void handle_commands(void)
 #else
         fputs("(gldb) ", stdout);
         fflush(stdout);
-        if ((line = xafgets(stdin)) != NULL)
+        if ((line = bugle_afgets(stdin)) != NULL)
             chop(line);
 #endif
         if (!line)

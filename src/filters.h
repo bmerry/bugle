@@ -69,14 +69,15 @@ typedef struct filter_set_variable_info_s
 
 typedef struct
 {
-    char *name;
+    const char *name;
     struct filter_set_s *parent;
     /* List of filter_catcher structs. The list owns the struct memory */
-    bugle_linked_list callbacks;} filter;
+    bugle_linked_list callbacks;
+} filter;
 
 typedef struct filter_set_s
 {
-    char *name;
+    const char *name;
     bugle_linked_list filters;
     filter_set_initialiser init;
     filter_set_destructor done;
