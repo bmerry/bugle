@@ -20,7 +20,9 @@
 #if HAVE_CONFIG_H
 # include <config.h>
 #endif
-#define _POSIX_SOURCE
+#ifndef _POSIX_SOURCE
+# define _POSIX_SOURCE
+#endif
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>

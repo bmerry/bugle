@@ -207,8 +207,6 @@ static bool trackobjects_glDeleteQueries(function_call *call, const callback_dat
  * when no longer attached to ANY program, and programs disappear when no
  * longer active in ANY context. The only reliable way to check is to try
  * to get a parameter and see if it generates an error.
- *
- * FIXME: we need to do this check.
  */
 
 typedef struct
@@ -289,10 +287,24 @@ static bool trackobjects_pre_glDeleteObjectARB(function_call *call, const callba
 
 static bool trackobjects_pre_glUseProgramObjectARB(function_call *call, const callback_data *data)
 {
+    GLhandleARB program;
+    GLhandleARB *attached;
+    GLint i, count;
+
     init_checks(data);
     if (bugle_begin_internal_render())
     {
-        add_check(data, BUGLE_TRACKOBJECTS_PROGRAM_OBJECT, CALL_glGetHandleARB(GL_PROGRAM_OBJECT_ARB));
+        program = CALL_glGetHandleARB(GL_PROGRAM_OBJECT_ARB);
+        if (program != 0)
+        {
+            add_check(data, BUGLE_TRACKOBJECTS_PROGRAM_OBJECT, program);
+            CALL_glGetObjectParameterivARB(program, GL_OBJECT_ATTACHED_OBJECTS_ARB, &count);
+            attached = bugle_malloc(count * sizeof(GLhandleARB));
+            CALL_glGetAttachedObjectsARB(program, count, NULL, attached);
+            for (i = 0; i < count; i++)
+                add_check(data, BUGLE_TRACKOBJECTS_SHADER_OBJECT, attached[i]);
+            free(attached);
+        }
         bugle_end_internal_render("trackobjects_pre_glUseProgramARB", true);
     }
     return true;
@@ -361,14 +373,25 @@ static bool trackobjects_pre_glDeleteProgram(function_call *call, const callback
 
 static bool trackobjects_pre_glUseProgram(function_call *call, const callback_data *data)
 {
-    GLint p;
+    GLint program;
+    GLuint *attached;
+    GLint count, i;
 
     init_checks(data);
     if (bugle_begin_internal_render())
     {
-        CALL_glGetIntegerv(GL_CURRENT_PROGRAM, &p);
+        CALL_glGetIntegerv(GL_CURRENT_PROGRAM, &program);
+        if (program != 0)
+        {
+            add_check(data, BUGLE_TRACKOBJECTS_PROGRAM, program);
+            CALL_glGetProgramiv(program, GL_ATTACHED_SHADERS, &count);
+            attached = bugle_malloc(count * sizeof(GLuint));
+            CALL_glGetAttachedShaders(program, count, NULL, attached);
+            for (i = 0; i < count; i++)
+                add_check(data, BUGLE_TRACKOBJECTS_SHADER, attached[i]);
+            free(attached);
+        }
         bugle_end_internal_render("trackobjects_pre_glUseProgramARB", true);
-        add_check(data, BUGLE_TRACKOBJECTS_PROGRAM, p);
     }
     return true;
 }

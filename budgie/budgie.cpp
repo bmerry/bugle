@@ -1065,9 +1065,11 @@ static void write_type_dumpers()
         case INTEGER_TYPE:
             fprintf(util_c,
                     "%s"
-                    "    fprintf(out, \"%%\" PRI%c%d, *value);\n",
+                    "    fprintf(out, \"%%\" PRI%c%d, (%sint%d_t) *value);\n",
                     custom_code.c_str(),
                     (i->node->flag_unsigned ? 'u' : 'd'),
+                    i->node->size->low,
+                    (i->node->flag_unsigned ? "u" : ""),
                     i->node->size->low);
             break;
         case REAL_TYPE:

@@ -122,10 +122,11 @@ static void make_shader_object(void)
 {
 #if defined(GL_ARB_shader_objects) && defined(GL_ARB_vertex_shader)
     const GLcharARB *source =
+        "uniform vec4 c;\n"
         "void main()\n"
         "{\n"
         "    gl_Position = gl_ModelViewProjectionMatrix * gl_Vertex;\n"
-        "    gl_FrontColor = vec4(1.0, 1.0, 1.0, 1.0);\n"
+        "    gl_FrontColor = c;\n"
         "}\n";
     GLint length;
 
@@ -146,9 +147,13 @@ static void make_program_object(void)
     if (glutExtensionSupported("GL_ARB_shader_objects")
         && glutExtensionSupported("GL_ARB_vertex_shader"))
     {
+        GLfloat c[4] = {0.0, 0.5, 1.0, 0.5};
+
         program = glCreateProgramObjectARB();
         glAttachObjectARB(program, shader);
         glLinkProgramARB(program);
+        glUseProgramObjectARB(program);
+        glUniform4fvARB(glGetUniformLocationARB(program, "c"), 1, c);
     }
 #endif
 }
@@ -203,7 +208,10 @@ static void delete_program_object(void)
 #if defined(GL_ARB_shader_objects) && defined(GL_ARB_vertex_shader)
     if (glutExtensionSupported("GL_ARB_shader_objects")
         && glutExtensionSupported("GL_ARB_vertex_shader"))
+    {
         glDeleteObjectARB(program);
+        glUseProgramObjectARB(0);
+    }
 #endif
 }
 
