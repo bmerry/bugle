@@ -274,7 +274,7 @@ static bool send_data_texture(uint32_t id, GLuint texid, GLenum target,
     gldb_protocol_send_code(out_pipe, width);
     gldb_protocol_send_code(out_pipe, height);
     gldb_protocol_send_code(out_pipe, depth);
-    bugle_end_internal_render("debugger_screenshot", true);
+    bugle_end_internal_render("send_data_texture", true);
     return true;
 }
 
