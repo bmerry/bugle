@@ -379,7 +379,8 @@ static const state_info global_state[] =
 #ifdef GL_ARB_texture_compression
     { STATE_NAME_EXT(GL_TEXTURE_COMPRESSION_HINT, _ARB), TYPE_6GLenum, 1, BUGLE_GL_ARB_texture_compression, "1.3", STATE_GLOBAL },
 #endif
-#ifdef GL_ARB_fragment_shader
+    /* NVIDIA ship a glext.h that doesn't define GL_FRAGMENT_SHADER_DERIVATIVE_HINT_ARB */
+#if defined(GL_ARB_fragment_shader) && defined(GL_FRAGMENT_SHADER_DERIVATIVE_HINT_ARB)
     { STATE_NAME_EXT(GL_FRAGMENT_SHADER_DERIVATIVE_HINT, _ARB), TYPE_6GLenum, 1, BUGLE_GL_ARB_fragment_program, "2.0", STATE_GLOBAL },
 #endif
     { STATE_NAME(GL_MAX_LIGHTS), TYPE_5GLint, 1, -1, "1.1", STATE_GLOBAL },
@@ -432,7 +433,8 @@ static const state_info global_state[] =
     /* FIXME: QUERY_COUNTER_BITS missing? */
     { STATE_NAME(GL_EXTENSIONS), TYPE_PKc, 1, -1, "1.1", STATE_GLOBAL },
     { STATE_NAME(GL_RENDERER), TYPE_PKc, 1, -1, "1.1", STATE_GLOBAL },
-#ifdef GL_ARB_shading_language_100
+    /* SHADING_LANGUAGE_VERSION was only added in a later version of the spec */
+#if defined(GL_ARB_shading_language_100) && defined(GL_SHADING_LANGUAGE_VERSION_ARB)
     { STATE_NAME_EXT(GL_SHADING_LANGUAGE_VERSION, _ARB), TYPE_PKc, 1, BUGLE_GL_ARB_shading_language_100, "2.0", STATE_GLOBAL },
 #endif
     { STATE_NAME(GL_VENDOR), TYPE_PKc, 1, -1, "1.1", STATE_GLOBAL },
@@ -684,13 +686,13 @@ static const state_info minmax_parameter_state[] =
 static const state_info vertex_attrib_state[] =
 {
 #ifdef GL_ARB_vertex_program
-    { STATE_NAME(GL_VERTEX_ATTRIB_ARRAY_ENABLED), TYPE_9GLboolean, 1, BUGLE_GL_ARB_vertex_program, "2.0", STATE_VERTEX_ATTRIB },
-    { STATE_NAME(GL_VERTEX_ATTRIB_ARRAY_SIZE), TYPE_5GLint, 1, BUGLE_GL_ARB_vertex_program, "2.0", STATE_VERTEX_ATTRIB },
-    { STATE_NAME(GL_VERTEX_ATTRIB_ARRAY_STRIDE), TYPE_5GLint, 1, BUGLE_GL_ARB_vertex_program, "2.0", STATE_VERTEX_ATTRIB },
-    { STATE_NAME(GL_VERTEX_ATTRIB_ARRAY_TYPE), TYPE_6GLenum, 1, BUGLE_GL_ARB_vertex_program, "2.0", STATE_VERTEX_ATTRIB },
-    { STATE_NAME(GL_VERTEX_ATTRIB_ARRAY_NORMALIZED), TYPE_9GLboolean, 1, BUGLE_GL_ARB_vertex_program, "2.0", STATE_VERTEX_ATTRIB },
-    { STATE_NAME(GL_VERTEX_ATTRIB_ARRAY_POINTER), TYPE_P6GLvoid, 1, BUGLE_GL_ARB_vertex_program, "2.0", STATE_VERTEX_ATTRIB },
-    { STATE_NAME(GL_CURRENT_VERTEX_ATTRIB), TYPE_8GLdouble, 4, BUGLE_GL_ARB_vertex_program, "2.0", STATE_VERTEX_ATTRIB | STATE_SELECT_NON_ZERO },
+    { STATE_NAME_EXT(GL_VERTEX_ATTRIB_ARRAY_ENABLED, _ARB), TYPE_9GLboolean, 1, BUGLE_GL_ARB_vertex_program, "2.0", STATE_VERTEX_ATTRIB },
+    { STATE_NAME_EXT(GL_VERTEX_ATTRIB_ARRAY_SIZE, _ARB), TYPE_5GLint, 1, BUGLE_GL_ARB_vertex_program, "2.0", STATE_VERTEX_ATTRIB },
+    { STATE_NAME_EXT(GL_VERTEX_ATTRIB_ARRAY_STRIDE, _ARB), TYPE_5GLint, 1, BUGLE_GL_ARB_vertex_program, "2.0", STATE_VERTEX_ATTRIB },
+    { STATE_NAME_EXT(GL_VERTEX_ATTRIB_ARRAY_TYPE, _ARB), TYPE_6GLenum, 1, BUGLE_GL_ARB_vertex_program, "2.0", STATE_VERTEX_ATTRIB },
+    { STATE_NAME_EXT(GL_VERTEX_ATTRIB_ARRAY_NORMALIZED, _ARB), TYPE_9GLboolean, 1, BUGLE_GL_ARB_vertex_program, "2.0", STATE_VERTEX_ATTRIB },
+    { STATE_NAME_EXT(GL_VERTEX_ATTRIB_ARRAY_POINTER, _ARB), TYPE_P6GLvoid, 1, BUGLE_GL_ARB_vertex_program, "2.0", STATE_VERTEX_ATTRIB },
+    { STATE_NAME_EXT(GL_CURRENT_VERTEX_ATTRIB, _ARB), TYPE_8GLdouble, 4, BUGLE_GL_ARB_vertex_program, "2.0", STATE_VERTEX_ATTRIB | STATE_SELECT_NON_ZERO },
 #endif
     { NULL, GL_NONE, NULL_TYPE, 0, 0, NULL, 0 }
 };
@@ -1396,10 +1398,12 @@ static void spawn_children_global(const glstate *self, bugle_linked_list *childr
     {
         NULL, GL_NONE, TYPE_8GLdouble, 4, -1, "1.1", STATE_CLIP_PLANE
     };
+#ifdef GL_ARB_draw_buffers
     static const state_info draw_buffers =
     {
         NULL, GL_NONE, TYPE_6GLenum, 1, BUGLE_GL_ARB_draw_buffers, "2.0", STATE_GLOBAL
     };
+#endif
     GLint count, i;
     const char *version;
 
