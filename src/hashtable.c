@@ -1,0 +1,146 @@
+#if HAVE_CONFIG_H
+# include <config.h>
+#endif
+#include <stdlib.h>
+#include <string.h>
+#include <stddef.h>
+#include <assert.h>
+#include "hashtable.h"
+#include "safemem.h"
+#include "common/bool.h"
+
+/* Primes are used for hash table sizes */
+static size_t primes[sizeof(size_t) * 8];
+static bool primes_initialised = false;
+
+static bool is_prime(int x)
+{
+    int i;
+
+    for (i = 2; i * i <= x; i++)
+        if (x % i == 0) return false;
+    return true;
+}
+
+void initialise_hashing(void)
+{
+    int i;
+
+    primes[0] = 0;
+    primes[1] = 5;
+    i = 1;
+    while (primes[i] < ((size_t) -1) / 2)
+    {
+        primes[i + 1] = primes[i] * 2 + 1;
+        i++;
+        while (!is_prime(primes[i])) primes[i]++;
+    }
+    primes[i + 1] = (size_t) -1;
+    primes_initialised = true;
+}
+
+static inline size_t hash(const char *str)
+{
+    size_t h = 0;
+    const char *ch;
+
+    for (ch = str; *ch; ch++)
+        h = (h + *ch) * 29;
+    return h;
+}
+
+void hash_init(hash_table *table)
+{
+    table->size = table->count = 0;
+    table->size_index = 0;
+    table->entries = 0;
+}
+
+/* Does not
+ * - resize the table
+ * - update the count
+ * - copy the memory for the key
+ * - check for duplicate keys
+ * It should only be used for rehashing
+ */
+static void hash_set_fast(hash_table *table, const char *key, const void *value)
+{
+    size_t h;
+
+    h = hash(key) % table->size;
+    while (table->entries[h].key)
+        if (++h == table->size) h = 0;
+    table->entries[h].key = key;
+    table->entries[h].value = value;
+}
+
+/* FIXME: should overwritten values be freed? */
+void hash_set(hash_table *table, const char *key, const void *value)
+{
+    hash_table big;
+    size_t i;
+    size_t h;
+
+    if (table->count >= table->size / 2
+        && table->size < (size_t) -1)
+    {
+        assert(primes_initialised);
+        big.size_index = table->size_index + 1;
+        big.size = primes[big.size_index];
+        big.entries = (hash_entry *) xcalloc(big.size, sizeof(hash_entry));
+        big.count = 0;
+        for (i = 0; i < table->size; i++)
+            if (table->entries[i].key)
+                hash_set_fast(&big, table->entries[i].key,
+                              table->entries[i].value);
+        if (table->entries) free(table->entries);
+        *table = big;
+    }
+
+    h = hash(key) % table->size;
+    while (table->entries[h].key && strcmp(key, table->entries[h].key) != 0)
+        if (++h == table->size) h = 0;
+    if (!table->entries[h].key)
+    {
+        table->entries[h].key = xstrdup(key);
+        table->count++;
+    }
+    table->entries[h].value = value;
+}
+
+void *hash_get(const hash_table *table, const char *key)
+{
+    size_t h;
+
+    if (!table->entries) return NULL;
+    h = hash(key) % table->size;
+    while (table->entries[h].key && strcmp(key, table->entries[h].key) != 0)
+        if (++h == table->size) h = 0;
+    if (table->entries[h].key)
+    {
+        if (table->entries[h].value) return (void *) table->entries[h].value;
+        return (void *) table->entries[h].key;
+    }
+    else
+        return NULL;
+}
+
+void hash_clear(hash_table *table, bool free_data)
+{
+    size_t i;
+
+    if (table->entries)
+    {
+        for (i = 0; i < table->size; i++)
+            if (table->entries[i].key)
+            {
+                free(table->entries[i].key);
+                if (free_data && table->entries[i].value)
+                    free((void *) table->entries[i].value);
+            }
+        free(table->entries);
+    }
+    table->entries = NULL;
+    table->size = table->count = 0;
+    table->size_index = 0;
+}

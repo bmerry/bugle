@@ -5,11 +5,14 @@
 #include "src/utils.h"
 #include "src/types.h"
 #include "src/canon.h"
+#include "src/hashtable.h"
 #include "budgielib/state.h"
 #include "common/bool.h"
 #include <stdio.h>
+#include <string.h>
 
 static FILE *in_pipe, *out_pipe;
+bool break_on[NUMBER_OF_FUNCTIONS];
 
 static void dump_state(state_generic *state, int indent)
 {
@@ -53,15 +56,18 @@ static void dump_state(state_generic *state, int indent)
 static bool debugger_callback(function_call *call, void *data)
 {
     char line[1024];
-    if (canonical_call(call) == FUNC_glXSwapBuffers)
-        fgets(line, sizeof(line), in_pipe);
-    if (strcmp(line, "state\n") == 0)
+    if (break_on[canonical_call(call)])
     {
-        fputs("dumping state\n", out_pipe);
-        dump_state(&get_root_state()->generic, 0);
+        (*glFinish_real)();
+        fgets(line, sizeof(line), in_pipe);
+        if (strcmp(line, "state\n") == 0)
+        {
+            fputs("dumping state\n", out_pipe);
+            dump_state(&get_root_state()->generic, 0);
+        }
+        else if (strcmp(line, "quit\n") == 0)
+            exit(0);
     }
-    else if (strcmp(line, "quit\n") == 0)
-        exit(0);
     return true;
 }
 
@@ -75,7 +81,26 @@ static bool initialise_debugger(filter_set *handle)
     return true;
 }
 
+static bool set_variable_debugger(filter_set *handle,
+                                  const char *name,
+                                  const char *value)
+{
+    budgie_function f;
+
+    if (strcmp(name, "break") == 0)
+    {
+        f = find_function(value);
+        if (f == NULL_FUNCTION)
+            fprintf(stderr, "Warning: unknown function %s", value);
+        else
+            break_on[canonical_function(f)] = true;
+        return true;
+    }
+    return false;
+}
+
 void initialise_filter_library(void)
 {
-    register_filter_set("debugger", initialise_debugger, NULL, NULL);
+    memset(break_on, 0, sizeof(break_on));
+    register_filter_set("debugger", initialise_debugger, NULL, set_variable_debugger);
 }

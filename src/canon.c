@@ -2,79 +2,61 @@
 # include <config.h>
 #endif
 #include "canon.h"
+#include "hashtable.h"
 #include "src/types.h"
 #include "common/bool.h"
+#include "safemem.h"
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
-#if !HAVE_BSEARCH
-void *bsearch(const void *key, const void *base, size_t nmemb,
-              size_t size, int (*compar)(const void *, const void *));
-#endif
 
 static budgie_function canonical_table[NUMBER_OF_FUNCTIONS];
+static hash_table function_names;
 
-static int compare_functions_by_name(const void *a, const void *b)
+void destroy_canonical(void)
 {
-    return strcmp((*(const function_data * const *) a)->name,
-                  (*(const function_data * const *) b)->name);
-}
-
-/* Like strncmp, but the full length of b is considered */
-static int strhalfncmp(const char *a, const char *b, size_t n)
-{
-    int test;
-
-    test = strncmp(a, b, n);
-    if (test) return test;
-    if (strlen(b) > n) return -1;
-    return 0;
+    hash_clear(&function_names, false);
 }
 
 void initialise_canonical(void)
 {
     /* function data sorted by name */
-    const function_data *function_names[NUMBER_OF_FUNCTIONS];
-    const function_data **alias;
-    const void *key;
+    const function_data *alias;
     budgie_function i;
-    const char *name, *end;
+    char *name, *end;
 
+    hash_init(&function_names);
     for (i = 0; i < NUMBER_OF_FUNCTIONS; i++)
-        function_names[i] = &function_table[i];
-    qsort(function_names, NUMBER_OF_FUNCTIONS, sizeof(const function_data *),
-          compare_functions_by_name);
+        hash_set(&function_names, function_table[i].name, &function_table[i]);
 
     for (i = 0; i < NUMBER_OF_FUNCTIONS; i++)
     {
         canonical_table[i] = i; /* assume that this is canonical */
-        name = function_table[i].name;
-        if (strncmp(name, "gl", 2) != 0) continue; /* not a GL/GLX function */
+        /* only do GL/GLX functions */
+        if (strncmp(function_table[i].name, "gl", 2) != 0) continue;
+        name = xstrdup(function_table[i].name);
         end = name + strlen(name) - 1;
-        key = &function_table[i];
-        alias = (const function_data **) bsearch(&key, function_names,
-                                                 NUMBER_OF_FUNCTIONS, sizeof(const function_data *),
-                                                 compare_functions_by_name);
-        /* Extension suffices are sequences of upper-case characters, but
-         * may not be maximal (e.g. glGetCompressedTexImage2DARB).
-         * Note: don't use isupper here, since we DON'T want to
-         * use locale-specific versions. */
-        assert(alias != NULL);
         while (*end >= 'A' && *end <= 'Z')
         {
-            while (alias >= function_names
-                   && strhalfncmp(name, (*alias)->name, end - name) < 0)
-                alias--;
-            if (strhalfncmp(name, (*alias)->name, end - name) == 0)
+            *end-- = '\0';
+            if ((alias = hash_get(&function_names, name)) != NULL)
             {
-                canonical_table[i] = (*alias) - function_table;
-                fprintf(stderr, "canonicalising %s to %s\n",
-                        name, function_table[canonical_table[i]].name);
+                canonical_table[i] = alias - function_table;
                 break;
             }
-            end--;
         }
+        free(name);
     }
+
+    atexit(destroy_canonical);
+}
+
+budgie_function canonical_function(budgie_function f)
+{
+    if (f < 0 || f >= NUMBER_OF_FUNCTIONS)
+        return f;
+    else
+        return canonical_table[f];
 }
 
 budgie_function canonical_call(const function_call *call)
@@ -83,4 +65,13 @@ budgie_function canonical_call(const function_call *call)
         return call->generic.id;
     else
         return canonical_table[call->generic.id];
+}
+
+budgie_function find_function(const char *name)
+{
+    const function_data *alias;
+
+    alias = hash_get(&function_names, name);
+    if (alias) return alias - function_table;
+    else return NULL_FUNCTION;
 }

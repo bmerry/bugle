@@ -13,12 +13,21 @@ static char *current_string = NULL;
 static int current_string_length = 0;
 static int current_string_memory = 0;
 
+static void free_string(void)
+{
+    if (current_string) free(current_string);
+}
+
 static void append_char(char ch)
 {
     current_string_length++;
     if (current_string_length >= current_string_memory)
     {
-        if (current_string_memory == 0) current_string_memory = 64;
+        if (current_string_memory == 0)
+        {
+            current_string_memory = 64;
+            atexit(free_string);
+        }
         current_string = xrealloc(current_string, current_string_memory);
     }
     current_string[current_string_length - 1] = ch;

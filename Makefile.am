@@ -29,6 +29,7 @@ src_libbugle_la_SOURCES = \
 	src/gldump.c src/gldump.h \
 	src/gltokens.h \
 	src/linkedlist.c src/linkedlist.h \
+	src/hashtable.c src/hashtable.h \
 	src/glstate.c src/glstate.h \
 	src/canon.c src/canon.h \
 	src/safemem.c src/safemem.h \
@@ -43,7 +44,7 @@ src_libbugle_la_LDFLAGS = -export-dynamic
 
 # Extra files to distribute
 EXTRA_DIST = src/gl.bc src/data/gl.c src/data/gl.tu src/data/overrides.h \
-	FAQ
+	FAQ doc/filters.txt
 
 # Generated files that generate other files
 

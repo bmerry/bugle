@@ -57,7 +57,7 @@ void glstate_get_global(state_generic *state)
         (*glGetBooleanv_real)(e, (GLboolean *) state->data);
         break;
     default:
-        assert(state->spec->data_length <= sizeof(data) / sizeof(data[0]));
+        assert((size_t) state->spec->data_length <= sizeof(data) / sizeof(data[0]));
         (*glGetDoublev_real)(e, data);
         type_convert(state->data, state->spec->data_type, data, TYPE_8GLdouble, state->spec->data_length);
     }
@@ -143,7 +143,7 @@ void glstate_get_texparameter(state_generic *state)
         (*glGetTexParameterfv)(target, e, state->data);
         break;
     default:
-        assert(state->spec->data_length <= sizeof(data) / sizeof(data[0]));
+        assert((size_t) state->spec->data_length <= sizeof(data) / sizeof(data[0]));
         (*glGetTexParameterfv)(target, e, data);
         type_convert(state->data, state->spec->data_type, data, TYPE_7GLfloat, state->spec->data_length);
     }
@@ -177,7 +177,7 @@ void glstate_get_texlevelparameter(state_generic *state)
         (*glGetTexLevelParameterfv_real)(target, level, e, state->data);
         break;
     default:
-        assert(state->spec->data_length <= sizeof(data) / sizeof(data[0]));
+        assert((size_t) state->spec->data_length <= sizeof(data) / sizeof(data[0]));
         (*glGetTexLevelParameterfv_real)(target, level, e, data);
         type_convert(state->data, state->spec->data_type, data, TYPE_7GLfloat, state->spec->data_length);
     }
@@ -215,7 +215,7 @@ void glstate_get_texgen(state_generic *state)
             (*glGetTexGeniv_real)(coord, e, (GLint *) state->data);
             break;
         default:
-            assert(state->spec->data_length <= sizeof(data) / sizeof(data[0]));
+            assert((size_t) state->spec->data_length <= sizeof(data) / sizeof(data[0]));
             (*glGetTexGendv_real)(coord, e, data);
             type_convert(state->data, state->spec->data_type, data, TYPE_8GLdouble, state->spec->data_length);
         }
@@ -252,7 +252,7 @@ void glstate_get_texunit(state_generic *state)
             (*glGetIntegerv_real)(e, (GLint *) state->data);
             break;
         default:
-            assert(state->spec->data_length <= sizeof(data) / sizeof(data[0]));
+            assert((size_t) state->spec->data_length <= sizeof(data) / sizeof(data[0]));
             (*glGetDoublev_real)(e, data);
             type_convert(state->data, state->spec->data_type, data, TYPE_8GLdouble, state->spec->data_length);
         }
@@ -282,7 +282,7 @@ void glstate_get_texenv(state_generic *state)
         (*glGetTexEnviv_real)(GL_TEXTURE_ENV, e, state->data);
         break;
     default:
-        assert(state->spec->data_length <= sizeof(data) / sizeof(data[0]));
+        assert((size_t) state->spec->data_length <= sizeof(data) / sizeof(data[0]));
         (*glGetTexEnvfv_real)(GL_TEXTURE_ENV, e, data);
         type_convert(state->data, state->spec->data_type, data, TYPE_7GLfloat, state->spec->data_length);
     }

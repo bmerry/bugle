@@ -46,7 +46,28 @@ static bool initialise_wireframe(filter_set *handle)
     return true;
 }
 
+static bool frontbuffer_callback(function_call *call, void *data)
+{
+    switch (canonical_call(call))
+    {
+    case FUNC_glXMakeCurrent:
+    case FUNC_glXMakeContextCurrent:
+    case FUNC_glDrawBuffer:
+        (*glDrawBuffer_real)(GL_FRONT);
+        (*glClear_real)(GL_COLOR_BUFFER_BIT); /* hopefully bypass z-trick */
+    }
+    return true;
+}
+
+static bool initialise_frontbuffer(filter_set *handle)
+{
+    register_filter(handle, "frontbuffer", frontbuffer_callback);
+    register_filter_depends("frontbuffer", "invoke");
+    return true;
+}
+
 void initialise_filter_library(void)
 {
     register_filter_set("wireframe", initialise_wireframe, NULL, NULL);
+    register_filter_set("frontbuffer", initialise_frontbuffer, NULL, NULL);
 }

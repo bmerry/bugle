@@ -41,6 +41,39 @@ static size_t call_data_size = 0;
 
 static void *current_dl_handle = NULL;
 
+/* FIXME: use dlclose on the modules */
+void destroy_filters(void)
+{
+    list_node *i, *j;
+    filter_set *s;
+    filter *f;
+
+    list_clear(&filter_dependencies[0], true);
+    list_clear(&filter_dependencies[1], true);
+    list_clear(&filter_set_dependencies[0], true);
+    list_clear(&filter_set_dependencies[1], true);
+    list_clear(&active_filters, false);
+    for (i = list_head(&filter_sets); i; i = list_next(i))
+    {
+        s = (filter_set *) list_data(i);
+        if (s->initialised)
+        {
+            if (s->done)
+                (*s->done)(s);
+            for (j = list_head(&s->filters); j; j = list_next(j))
+            {
+                f = (filter *) list_data(j);
+                free(f->name);
+                free(f);
+            }
+            list_clear(&s->filters, false);
+        }
+        free(s->name);
+        free(s);
+    }
+    list_clear(&filter_sets, false);
+}
+
 void initialise_filters(void)
 {
     DIR *dir;
@@ -80,6 +113,9 @@ void initialise_filters(void)
         current_dl_handle = NULL;
         free(full_name);
     }
+
+    closedir(dir);
+    atexit(destroy_filters);
 }
 
 bool set_filter_set_variable(filter_set *handle, const char *name, const char *value)

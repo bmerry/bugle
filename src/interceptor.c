@@ -3,10 +3,11 @@
 #endif
 #include "src/utils.h"
 #include "src/lib.h"
-#include "src/filters.h"
-#include "src/canon.h"
-#include "src/safemem.h"
-#include "src/conffile.h"
+#include "filters.h"
+#include "canon.h"
+#include "safemem.h"
+#include "conffile.h"
+#include "hashtable.h"
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
@@ -81,6 +82,7 @@ static void load_config(void)
         }
         else
             fprintf(stderr, "failed to open config file %s; running in passthrough mode\n", config);
+        free(config);
     }
     else
         fputs("$HOME not defined; running in passthrough mode\n", stderr);
@@ -94,6 +96,7 @@ void interceptor(function_call *call)
 
     if (!initialised)
     {
+        initialise_hashing();
         initialise_canonical();
         initialise_filters();
         init_real();
