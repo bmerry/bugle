@@ -1,3 +1,8 @@
-0.0.20040606
+0.0.20040609
+------------
+* Made lexer.ll more robust to headers containing function bodies and
+  inline assembler.
+
+0.0.20040608
 ------------
 * First public release

@@ -1,6 +1,6 @@
-AC_INIT(bugle, 0.0.20040608, bmerry@users.sourceforge.net)
+AC_INIT(bugle, 0.0.20040609, bmerry@users.sourceforge.net)
 AC_CONFIG_SRCDIR([src/interceptor.c])
-AM_INIT_AUTOMAKE(bugle, 0.0.20040608)
+AM_INIT_AUTOMAKE(bugle, 0.0.20040609)
 AM_CONFIG_HEADER(config.h)
 
 dnl Checks for programs

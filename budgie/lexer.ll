@@ -32,10 +32,11 @@ tree *yyltree;
 
 %x NODE_TYPE
 %x NODE_NUMBER
+%s ASM
 DIGIT [0-9]
 WHITE [ \t\n]
 ID [A-Za-z_]+
-STRG (.|(\n" "))+
+STRG (.|(\n(" "|\t)))+
 TOKEN [A-Za-z0-9@_:<>.-]+
 
 %%
@@ -52,7 +53,18 @@ BEGIN(NODE_NUMBER);
 	yylnode = yyltree->get(atoi(yytext + 1));
         BEGIN(NODE_TYPE);
 }
-<NODE_TYPE>{ID}		{ yylnode->code = name_to_code(yytext); BEGIN(INITIAL); }
+<NODE_TYPE>{ID}		{ 
+	/* For some reason, ASM_STMT outputs an strg: field, but it is
+         * node pointer. We ignore the field, but we have to enter the
+         * ASM_STMT condition so that we can distinguish the two and
+         * match the right one (since "longest match" will be wrong).
+         */
+	yylnode->code = name_to_code(yytext); 
+        if (yylnode->code == ASM_STMT)
+            BEGIN(ASM);
+        else
+            BEGIN(INITIAL);
+}
 
 %{
 /*
@@ -60,19 +72,19 @@ Note that we match "\n " so that we don't cross nodes. We suck in the
 rest of the record, find the length, then replace what we don't need.
 */
 %}
-"strg: "{STRG}	{
+<INITIAL>"strg: "{STRG}	{
 	if (yylnode->length == -1)
-        {
-        	ptr = yytext + yyleng - 6;
-                while (ptr >= yytext && memcmp(ptr, "lngt: ", 6)) ptr--;
-                assert(ptr >= yytext);
-                yylnode->length = atoi(ptr + 6);
-        }
-        tmpc = yytext[yylnode->length + 6];
-        yytext[yylnode->length + 6] = '\0';
+	{
+	    ptr = yytext + yyleng - 6;
+	    while (ptr >= yytext && memcmp(ptr, "lngt: ", 6)) ptr--;
+	    assert(ptr >= yytext);
+	    yylnode->length = atoi(ptr + 6);
+	}
+	tmpc = yytext[yylnode->length + 6];
+	yytext[yylnode->length + 6] = '\0';
 	yylnode->str = yytext + 6;
-        yytext[yylnode->length + 6] = tmpc;
-        yyless(yylnode->length + 6);
+	yytext[yylnode->length + 6] = tmpc;
+	yyless(yylnode->length + 6);
 }
 
 "srcp: "{TOKEN}	{
@@ -162,6 +174,8 @@ rest of the record, find the length, then replace what we don't need.
 "stmt: "@{DIGIT}+	|
 "high: "@{DIGIT}+	| /* This is the high: for case_label */
 "low : "@{DIGIT}+	| /* This is the low : for case_label */
+<ASM>"strg: "@{DIGIT}+	| /* See comments about ASM above */
+"outs: "@{DIGIT}+	|
 "algn: "{DIGIT}+	/* Ignore these fields, which are many code body */
 
 "struct"	{ yylnode->flag_struct = true; }

@@ -33,6 +33,7 @@
 #define DEFTREECODE(SYM, STRING, TYPE, NARGS)   SYM,
 enum tree_code {
 #include "tree.def"
+#include "c-common.def"
   LAST_AND_UNUSED_TREE_CODE     /* A convenient way to get a value for
                                    NUM_TREE_CODE.  */
 };

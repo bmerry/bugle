@@ -42,6 +42,7 @@ typedef pair<tree_code, const char *> name_pair;
 name_pair name_map[] =
 {
 #include "tree.def"
+#include "c-common.def"
     name_pair(LAST_AND_UNUSED_TREE_CODE, "")
 };
 #undef DEFTREECODE

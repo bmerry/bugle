@@ -1,6 +1,6 @@
 noinst_PROGRAMS = budgie/budgie gentokens/gentokens
 noinst_LTLIBRARIES = budgie/libbudgie.la
-noinst_HEADERS = budgie/tree.def
+noinst_HEADERS = budgie/tree.def budgie/c-common.def
 noinst_SCRIPTS = gentokens/gettokens.awk
 lib_LTLIBRARIES = src/libbugle.la
 pkglib_LTLIBRARIES = \
