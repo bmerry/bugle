@@ -178,5 +178,6 @@ CLEANFILES = \
         tests/.libs/misc tests/.libs/lt-misc \
 	tests/.libs/setstate tests/.libs/lt-setstate \
         tests/.libs/triangles tests/.libs/lt-triangles \
-        tests/.libs/pointers tests/.libs/lt-pointers
+        tests/.libs/pointers tests/.libs/lt-pointers \
+        tests/.libs/objects
 DISTCLEANFILES = tests/*.log

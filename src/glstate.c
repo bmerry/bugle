@@ -1632,7 +1632,7 @@ static void make_tex_levels(const glstate *self,
     base = 0;
     max = 1000;
 #ifdef GL_SGIS_texture_lod
-    if (self->binding && bugle_gl_has_extension(GL_SGIS_texture_lod) /* No parameters for proxy textures */
+    if (self->binding && bugle_gl_has_extension(GL_SGIS_texture_lod)) /* No parameters for proxy textures */
     {
         CALL_glGetTexParameteriv(self->target, GL_TEXTURE_BASE_LEVEL_SGIS, &base);
         CALL_glGetTexParameteriv(self->target, GL_TEXTURE_MAX_LEVEL_SGIS, &max);
