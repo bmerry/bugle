@@ -155,6 +155,8 @@ static void update_backtrace(GldbWindow *context)
     gsize terminator;
     const gchar *cmds = "set width 0\nset height 0\nbacktrace\nquit\n";
 
+    gtk_list_store_clear(context->backtrace_store);
+
     argv[0] = g_strdup("gdb");
     argv[1] = g_strdup(gldb_program());
     bugle_asprintf(&argv[2], "%lu", (unsigned long) gldb_child_pid());
@@ -181,7 +183,6 @@ static void update_backtrace(GldbWindow *context)
         g_io_channel_write_chars(outf, cmds, strlen(cmds), NULL, NULL);
         g_io_channel_flush(outf, NULL);
 
-        gtk_list_store_clear(context->backtrace_store);
         while (g_io_channel_read_line(inf, &line, NULL, &terminator, &error) == G_IO_STATUS_NORMAL
                && line != NULL)
             if (line[0] == '#')
