@@ -7,7 +7,7 @@ noinst_PROGRAMS = budgie/budgie
 # Misc extra files to include
 noinst_HEADERS = budgie/tree.def budgie/c-common.def
 dist_noinst_SCRIPTS = gentokens/gentokens.perl gentokens/genfunctions.perl \
-	gentokens/find_header.perl
+	gentokens/find_header.perl gentokens/genexts.perl
 dist_man_MANS = doc/gldb.1 doc/bugle.3
 # The real things
 lib_LTLIBRARIES = src/libbugleutils.la src/libbugle.la
@@ -126,7 +126,7 @@ check_PROGRAMS = \
 	tests/errors tests/threads1 tests/threads2 tests/queries \
 	tests/misc tests/setstate tests/triangles \
         tests/pointers
-dist_check_SCRIPTS = tests/queries.sh tests/setstate.sh tests/triangles.sh tests/comparelog.sh
+dist_check_SCRIPTS = tests/queries.sh tests/setstate.sh tests/pointers.sh tests/triangles.sh tests/comparelog.sh tests/comparelog.perl
 tests_errors_SOURCES = tests/errors.c
 tests_errors_LDADD = src/libbugle.la -lglut -lGLU $(GL_LIBS) $(X_PRE_LIBS) $(X_LIBS) -lX11 $(X_EXTRA_LIBS)
 tests_pointers_SOURCES = tests/pointers.c
@@ -149,7 +149,7 @@ TESTS_ENVIRONMENT = BUGLE_FILTERS=$(srcdir)/tests/filters BUGLE_FILTER_DIR=filte
 # Extra files to distribute
 EXTRA_DIST = src/gl.bc src/data/gl.c src/data/overrides.h \
 	FAQ TROUBLESHOOTING \
-	doc/filters.txt doc/protocol.txt doc/examples/filters \
+	doc/filters.html doc/objects.html doc/locks.txt doc/protocol.txt doc/examples/filters \
 	tests/filters
 
 # Note: automake ought to clean the various files in the .libs directories,
@@ -166,5 +166,6 @@ CLEANFILES = \
         tests/.libs/queries tests/.libs/lt-queries \
         tests/.libs/misc tests/.libs/lt-misc \
 	tests/.libs/setstate tests/.libs/lt-setstate \
-        tests/.libs/triangles tests/.libs/lt-triangles
+        tests/.libs/triangles tests/.libs/lt-triangles \
+        tests/.libs/pointers tests/.libs/lt-pointers
 DISTCLEANFILES = tests/*.log
