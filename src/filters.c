@@ -283,6 +283,14 @@ void repair_filter_order(void)
     hash_clear(&names, false);
 }
 
+void *get_filter_set_call_state(function_call *call, filter_set *handle)
+{
+    if (handle && handle->offset >= 0)
+        return (void *)(((char *) call->generic.user_data) + handle->offset);
+    else
+        return NULL;
+}
+
 void run_filters(function_call *call)
 {
     list_node *i;
@@ -299,10 +307,7 @@ void run_filters(function_call *call)
     for (i = list_head(&active_filters); i != NULL; i = list_next(i))
     {
         cur = (filter *) list_data(i);
-        if (cur->parent->offset >= 0)
-            data = (void *)(((char *) call_data) + cur->parent->offset);
-        else
-            data = NULL;
+        data = get_filter_set_call_state(call, cur->parent);
         if (!(*cur->callback)(call, data)) break;
     }
 }

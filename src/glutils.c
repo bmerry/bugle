@@ -29,6 +29,7 @@
 #include <assert.h>
 
 static state_7context_I **context_state = NULL;
+static filter_set *error_handle = NULL;
 
 state_7context_I *get_context_state(void)
 {
@@ -114,4 +115,20 @@ void filter_set_uses_state(const char *name)
 void filter_post_uses_state(const char *name)
 {
     register_filter_depends(name, "trackcontext");
+}
+
+void filter_set_queries_error(const char *name, bool require)
+{
+    if (require) register_filter_set_depends(name, "error");
+    if (!error_handle)
+        error_handle = get_filter_set_handle("error");
+}
+
+GLenum get_call_error(function_call *call)
+{
+    if (error_handle
+        && filter_set_is_enabled(error_handle))
+        return *(GLenum *) get_filter_set_call_state(call, error_handle);
+    else
+        return GL_NO_ERROR;
 }

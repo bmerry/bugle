@@ -27,10 +27,10 @@
 #include "common/bool.h"
 #include <stdio.h>
 
-/* Invoke filter-set */
-
 static char *log_filename = NULL;
 static bool log_flush = false;
+
+/* Invoke filter-set */
 
 static bool invoke_callback(function_call *call, void *data)
 {
@@ -50,7 +50,16 @@ static FILE *log_file;
 
 static bool log_callback(function_call *call, void *data)
 {
+    GLenum error;
+
+    fputs("C: ", log_file);
     dump_any_call(&call->generic, 0, log_file);
+    if ((error = get_call_error(call)))
+    {
+        fputs("E: ", log_file);
+        dump_GLerror(&error, -1, log_file);
+        fputs("\n", log_file);
+    }
     if (log_flush) fflush(log_file);
     return true;
 }
@@ -72,6 +81,7 @@ static bool initialise_log(filter_set *handle)
     /* No direct rendering, but some of the length functions query state */
     filter_set_renders("log");
     filter_post_renders("log");
+    filter_set_queries_error("log", false);
     return true;
 }
 

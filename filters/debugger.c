@@ -31,7 +31,8 @@
 #include <string.h>
 
 static FILE *in_pipe, *out_pipe;
-bool break_on[NUMBER_OF_FUNCTIONS];
+static bool break_on[NUMBER_OF_FUNCTIONS];
+static bool break_on_error;
 
 static void dump_state(state_generic *state, int indent)
 {
@@ -72,16 +73,21 @@ static void dump_state(state_generic *state, int indent)
     }
 }
 
-static bool debugger_callback(function_call *call, void *data)
+static void debugger_loop(function_call *call, void *data)
 {
     char line[1024];
-    if (break_on[canonical_call(call)])
+
+    if (begin_internal_render())
     {
-        begin_internal_render();
         CALL_glFinish();
         end_internal_render("debugger", true);
+    }
+    while (1)
+    {
         fgets(line, sizeof(line), in_pipe);
-        if (strcmp(line, "state\n") == 0)
+        if (strcmp(line, "\n") == 0)
+            break;
+        else if (strcmp(line, "state\n") == 0)
         {
             fputs("dumping state\n", out_pipe);
             dump_state(&get_root_state()->generic, 0);
@@ -89,14 +95,34 @@ static bool debugger_callback(function_call *call, void *data)
         else if (strcmp(line, "quit\n") == 0)
             exit(0);
     }
+}
+
+static bool debugger_callback(function_call *call, void *data)
+{
+    if (break_on[canonical_call(call)])
+        debugger_loop(call, data);
+    return true;
+}
+
+static bool debugger_error_callback(function_call *call, void *data)
+{
+    GLenum error;
+    if (break_on_error
+        && (error = get_call_error(call)))
+        debugger_loop(call, data);
     return true;
 }
 
 static bool initialise_debugger(filter_set *handle)
 {
     register_filter(handle, "debugger", debugger_callback);
+    register_filter(handle, "debugger_error", debugger_error_callback);
     register_filter_depends("invoke", "debugger");
-    register_filter_set_depends("debugger", "trackcontext");
+    register_filter_depends("debugger_error", "invoke");
+    register_filter_depends("debugger_error", "error");
+    filter_set_renders("debugger");
+    filter_post_renders("debugger_error");
+    filter_set_queries_error("debugger", false);
     in_pipe = stdin;
     out_pipe = stdout;
     return true;
@@ -110,11 +136,16 @@ static bool set_variable_debugger(filter_set *handle,
 
     if (strcmp(name, "break") == 0)
     {
-        f = find_function(value);
-        if (f == NULL_FUNCTION)
-            fprintf(stderr, "Warning: unknown function %s", value);
+        if (strcmp(value, "error") == 0)
+            break_on_error = true;
         else
-            break_on[canonical_function(f)] = true;
+        {
+            f = find_function(value);
+            if (f == NULL_FUNCTION)
+                fprintf(stderr, "Warning: unknown function %s\n", value);
+            else
+                break_on[canonical_function(f)] = true;
+        }
         return true;
     }
     return false;

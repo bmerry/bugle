@@ -51,5 +51,7 @@ void filter_set_renders(const char *name);
 void filter_post_renders(const char *name);
 void filter_set_uses_state(const char *name);
 void filter_post_uses_state(const char *name);
+void filter_set_queries_error(const char *name, bool require);
+GLenum get_call_error(function_call *call);
 
 #endif /* !BUGLE_SRC_GLUTILS_H */
