@@ -49,6 +49,7 @@ src_libbugleutils_la_SOURCES = \
 	common/bool.h common/protocol.h common/protocol.c \
 	common/hashtable.c common/hashtable.h \
 	common/linkedlist.c common/linkedlist.h \
+        common/radixtree.c common/radixtree.h \
         common/threads.h
 nodist_src_libbugleutils_la_SOURCES = \
 	src/names.c src/names.h \
@@ -133,7 +134,7 @@ filters_capture_la_LDFLAGS = -thread-safe -module -avoid-version -export-dynamic
 check_PROGRAMS = \
 	tests/errors tests/threads1 tests/threads2 tests/queries \
 	tests/misc tests/setstate tests/triangles \
-        tests/pointers
+        tests/pointers tests/objects
 dist_check_SCRIPTS = tests/queries.sh tests/setstate.sh tests/pointers.sh tests/triangles.sh tests/comparelog.sh tests/comparelog.perl
 tests_errors_SOURCES = tests/errors.c
 tests_errors_LDADD = src/libbugle.la -lglut -lGLU $(GL_LIBS) $(X_PRE_LIBS) $(X_LIBS) -lX11 $(X_EXTRA_LIBS)
@@ -151,6 +152,8 @@ tests_misc_SOURCES = tests/misc.c
 tests_misc_LDADD = src/libbugle.la -lglut -lGLU $(GL_LIBS) $(X_PRE_LIBS) $(X_LIBS) -lX11 $(X_EXTRA_LIBS)
 tests_setstate_SOURCES = tests/setstate.c
 tests_setstate_LDADD = src/libbugle.la -lglut -lGLU $(GL_LIBS) $(X_PRE_LIBS) $(X_LIBS) -lX11 $(X_EXTRA_LIBS)
+tests_objects_SOURCES = tests/objects.c
+tests_objects_LDADD = src/libbugle.la -lglut -lGLU $(GL_LIBS) $(X_PRE_LIBS) $(X_LIBS) -lX11 $(X_EXTRA_LIBS)
 TESTS = tests/errors tests/misc tests/queries.sh tests/setstate.sh tests/triangles.sh tests/pointers.sh
 TESTS_ENVIRONMENT = BUGLE_FILTERS=$(srcdir)/tests/filters BUGLE_FILTER_DIR=filters/.libs
 

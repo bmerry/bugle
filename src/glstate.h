@@ -24,6 +24,7 @@
 #endif
 #include <stddef.h>
 #include <GL/gl.h>
+#include "src/tracker.h"         /* For gl_handle */
 #include "common/linkedlist.h"
 
 typedef struct state_info
@@ -44,7 +45,7 @@ typedef struct glstate
     /* context */
     GLenum target, face, binding;
     GLenum unit;
-    GLuint object;
+    gl_handle object;
     GLint level;
     const struct state_info *info;
 

@@ -92,7 +92,17 @@ if ($aliases)
                            "glTexCoordPointerEXT" => 1,
                            "glVertexPointerEXT" => 1,
                            "glVertexAttribPointerNV" => 1,
-                           "glHintPGI" => 1);
+                           "glHintPGI" => 1,
+                           "glShaderSourceARB" => 1,
+                           "glCompileShaderARB" => 1,
+                           "glLinkProgramARB" => 1,
+                           "glValidateProgramARB" => 1,
+                           "glGetUniformLocationARB" => 1,
+                           "glActiveUniformARB" => 1,
+                           "glGetUniformfvARB" => 1,
+                           "glGetUniformivARB" => 1,
+                           "glGetShaderSourceARB" => 1
+                          );
             if (!exists($exclude{$i->[0]}))
             {
                 print "ALIAS ", $i->[0], " ", $i->[1], "\n";

@@ -1,13 +1,13 @@
-This version adds the 'checks' filter-set. I wrote this after losing a
-day and a half to a Heisenbug. It examines the memory that array
-drawing commands (like glDrawElements) would read, and catches SIGSEGVs
-it generates. If you're using vertex buffer objects, it will instead
-check whether any accesses will be beyond the range of the buffer. In
-future it may be expanded to check other things that the OpenGL
-implementation isn't required to.
+This version is a major update. The code generator, state manager and
+object tracker have all been rewritten and work a lot better, and
+substantial changes have been made to the call dispatcher to reduce
+overhead. Almost all of OpenGL 2.0 is now supported.
 
-The code generator and state manager have also been rewritten. If there
-are any issues, report them to me at bmerry@users.sourceforge.net.
+As a result, there are probably lots of new bugs. Please send them to
+me at bmerry@users.sourceforge.net.
+
+This version also adds the 'checks' filter-set. See the man page for
+details.
 
 0.0.20041123
 ------------

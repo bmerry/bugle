@@ -23,9 +23,14 @@
 # include <config.h>
 #endif
 #include <stddef.h>
+#include "common/radixtree.h"
+/* A type big enough for GLuint and GLhandleARB.
+ * This needs to go here at the top to avoid cyclic dependencies.
+ */
+typedef bugle_radix_tree_type gl_handle;
 #include "common/bool.h"
-#include "src/utils.h"
 #include "src/filters.h"
+#include "src/utils.h"
 #include "src/objects.h"
 
 typedef enum
@@ -33,14 +38,12 @@ typedef enum
     BUGLE_TRACKOBJECTS_TEXTURE,
     BUGLE_TRACKOBJECTS_BUFFER,
     BUGLE_TRACKOBJECTS_QUERY,
+    BUGLE_TRACKOBJECTS_SHADER_OBJECT,
+    BUGLE_TRACKOBJECTS_PROGRAM_OBJECT,
+    BUGLE_TRACKOBJECTS_SHADER,
+    BUGLE_TRACKOBJECTS_PROGRAM,
     BUGLE_TRACKOBJECTS_COUNT
 } bugle_trackobjects_type;
-
-typedef struct
-{
-    GLuint id;
-    GLenum target;
-} bugle_trackobjects_id;
 
 extern bugle_object_class bugle_context_class, bugle_namespace_class;
 extern bugle_object_class bugle_displaylist_class;
@@ -62,11 +65,13 @@ GLenum bugle_displaylist_mode(void);
 /* The display list object associated with a numbered list */
 void *bugle_displaylist_get(GLuint list);
 
-/* Returns a linked list of bugle_trackobjects_id objects. The
- * list owns the memory. It need not be initialised.
+/* Calls back walker for each object of the specified type. The parameters
+ * to the walker are object, target (if available or applicable), and the
+ * user data.
  */
-void bugle_trackobjects_get(bugle_trackobjects_type type,
-                            bugle_linked_list *ids);
+void bugle_trackobjects_walk(bugle_trackobjects_type type,
+                             void (*walker)(gl_handle, GLenum, void *),
+                             void *);
 
 /* Checks for GL extensions by #define from glexts.h */
 bool bugle_gl_has_extension(int ext);

@@ -1,12 +1,8 @@
 /* Does miscellaneous sanity checking */
 
-#ifdef NDEBUG
-# undef NDEBUG
-#endif
-#define GLX_GLXEXT_PROTOTYPES
 #include <GL/glut.h>
 #include <GL/glx.h>
-#include <assert.h>
+#include <stdlib.h>
 
 void check_procaddress()
 {
@@ -19,7 +15,7 @@ void check_procaddress()
 
     GetError = (GLenum (*)(void)) glXGetProcAddressARB((const GLubyte *) "glGetError");
     glPopAttrib();
-    assert((*GetError)() == GL_STACK_UNDERFLOW);
+    if ((*GetError)() != GL_STACK_UNDERFLOW) abort();
 }
 
 int main(int argc, char **argv)

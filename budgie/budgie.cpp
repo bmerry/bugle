@@ -1429,7 +1429,7 @@ static void write_call_structs()
     }
 
     fprintf(util_h,
-            "typedef struct\n"
+            "typedef struct function_call_s\n"
             "{\n"
             "    generic_function_call generic;\n"
             "    const void *args[%d];\n"

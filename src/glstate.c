@@ -17,16 +17,10 @@
  */
 
 /* Still TODO:
- * - buffer objects
- * - shader objects
- * - program objects
  * - proxies
- * - vertex and fragment program objects
- * - query objects
- * - check all the non-global state (e.g. COORD_REPLACE???)
- * - all the image state (texures, color tables, stipple etc)
- * - GetPixelMap (also sort of image-like)
- * - GetMap
+ * - low level vertex and fragment programs
+ * - various GLSL stuff
+ * - all the image state (texures, color tables, maps, pixel maps, convolution, stipple etc)
  */
 
 #if HAVE_CONFIG_H
@@ -44,6 +38,7 @@
 #include <string.h>
 #include <limits.h>
 #include <assert.h>
+#include <inttypes.h>
 
 #define STATE_NAME(x) #x, x
 #define STATE_NAME_EXT(x, ext) #x, x ## ext
@@ -72,10 +67,20 @@
 #define STATE_MODE_VERTEX_ATTRIB            0x00000010    /* glGetVertexAttrib */
 #define STATE_MODE_QUERY                    0x00000011    /* glGetQuery */
 #define STATE_MODE_QUERY_OBJECT             0x00000012    /* glGetQueryObject */
+#define STATE_MODE_BUFFER_PARAMETER         0x00000013    /* glGetBufferParameter */
+#define STATE_MODE_OBJECT_PARAMETER         0x00000014    /* glGetObjectParameterARB */
+#define STATE_MODE_SHADER                   0x00000015    /* glGetShader */
+#define STATE_MODE_PROGRAM                  0x00000016    /* glGetProgram */
+#define STATE_MODE_OBJECT_INFO_LOG          0x00000017    /* glGetInfoLogARB */
+#define STATE_MODE_SHADER_INFO_LOG          0x00000018    /* glGetShaderInfoLog */
+#define STATE_MODE_PROGRAM_INFO_LOG         0x00000019    /* glGetProgramInfoLog */
+#define STATE_MODE_OBJECT_SHADER_SOURCE     0x0000001a    /* glGetShaderSourceARB */
+#define STATE_MODE_SHADER_SOURCE            0x0000001b    /* glGetShaderSource */
 #define STATE_MODE_MASK                     0x000000ff
 
 #define STATE_MULTIPLEX_ACTIVE_TEXTURE      0x00000100    /* Set active texture */
 #define STATE_MULTIPLEX_BIND_TEXTURE        0x00000200    /* Set current texture object */
+#define STATE_MULTIPLEX_BIND_BUFFER         0x00000400    /* Set current buffer object (GL_ARRAY_BUFFER) */
 
 #define STATE_SELECT_NO_1D                  0x00010000    /* Ignore for 1D targets like GL_CONVOLUTION_1D */
 #define STATE_SELECT_NO_2D                  0x00020000    /* Ignore for 2D targets like GL_TEXTURE_2D */
@@ -83,6 +88,7 @@
 #define STATE_SELECT_NO_PROXY               0x00080000    /* Ignore for proxy targets */
 #define STATE_SELECT_NO_BLEND_FUNC_SEPARATE 0x00100000    /* Ignore if GL_EXT_blend_func_separate is present */
 #define STATE_SELECT_NO_DRAW_BUFFERS        0x00200000    /* Ignore if GL_ARB_draw_buffers is present */
+#define STATE_SELECT_VERTEX                 0x00400000    /* Applies only if GL_ARB_vertex_shader is present */
 
 /* conveniences */
 #define STATE_GLOBAL STATE_MODE_GLOBAL
@@ -105,6 +111,15 @@
 #define STATE_VERTEX_ATTRIB STATE_MODE_VERTEX_ATTRIB
 #define STATE_QUERY STATE_MODE_QUERY
 #define STATE_QUERY_OBJECT STATE_MODE_QUERY_OBJECT
+#define STATE_BUFFER_PARAMETER (STATE_MODE_BUFFER_PARAMETER | STATE_MULTIPLEX_BIND_BUFFER)
+#define STATE_OBJECT_PARAMETER STATE_MODE_OBJECT_PARAMETER
+#define STATE_SHADER STATE_MODE_SHADER
+#define STATE_PROGRAM STATE_MODE_PROGRAM
+#define STATE_OBJECT_INFO_LOG STATE_MODE_OBJECT_INFO_LOG
+#define STATE_SHADER_INFO_LOG STATE_MODE_SHADER_INFO_LOG
+#define STATE_PROGRAM_INFO_LOG STATE_MODE_PROGRAM_INFO_LOG
+#define STATE_OBJECT_SHADER_SOURCE STATE_MODE_OBJECT_SHADER_SOURCE
+#define STATE_SHADER_SOURCE STATE_MODE_SHADER_SOURCE
 
 static const state_info global_state[] =
 {
@@ -235,7 +250,7 @@ static const state_info global_state[] =
     { STATE_NAME(GL_POLYGON_OFFSET_POINT), TYPE_9GLboolean, 1, -1, "1.1", STATE_ENABLED },
     { STATE_NAME(GL_POLYGON_OFFSET_LINE), TYPE_9GLboolean, 1, -1, "1.1", STATE_ENABLED },
     { STATE_NAME(GL_POLYGON_OFFSET_FILL), TYPE_9GLboolean, 1, -1, "1.1", STATE_ENABLED },
-    /* FIXME: GetPolygonStipple */
+    /* FIXME: glGetPolygonStipple */
     { STATE_NAME(GL_POLYGON_STIPPLE), TYPE_9GLboolean, 1, -1, "1.1", STATE_ENABLED },
 #ifdef GL_ARB_multisample
     { STATE_NAME_EXT(GL_MULTISAMPLE, _ARB), TYPE_9GLboolean, 1, BUGLE_GL_ARB_multisample, "1.3", STATE_ENABLED },
@@ -340,9 +355,10 @@ static const state_info global_state[] =
     { STATE_NAME(GL_COLOR_TABLE), TYPE_9GLboolean, 1, BUGLE_GL_ARB_imaging, NULL, STATE_ENABLED },
     { STATE_NAME(GL_POST_CONVOLUTION_COLOR_TABLE), TYPE_9GLboolean, 1, BUGLE_GL_ARB_imaging, NULL, STATE_ENABLED },
     { STATE_NAME(GL_POST_COLOR_MATRIX_COLOR_TABLE), TYPE_9GLboolean, 1, BUGLE_GL_ARB_imaging, NULL, STATE_ENABLED },
-    /* Note: images missing here */
+    /* FIXME: glGetColorTable */
     /* FIXME: glConvolution_xD enable missing */
-    /* Note: convolution filters missing here */
+    /* FIXME: glGetConvolutionFilter */
+    /* FIXME: glGetSeparableFilter */
     { STATE_NAME(GL_POST_CONVOLUTION_RED_SCALE), TYPE_8GLdouble, 1, BUGLE_GL_ARB_imaging, NULL, STATE_GLOBAL },
     { STATE_NAME(GL_POST_CONVOLUTION_GREEN_SCALE), TYPE_8GLdouble, 1, BUGLE_GL_ARB_imaging, NULL, STATE_GLOBAL },
     { STATE_NAME(GL_POST_CONVOLUTION_BLUE_SCALE), TYPE_8GLdouble, 1, BUGLE_GL_ARB_imaging, NULL, STATE_GLOBAL },
@@ -360,12 +376,42 @@ static const state_info global_state[] =
     { STATE_NAME(GL_POST_COLOR_MATRIX_BLUE_BIAS), TYPE_8GLdouble, 1, BUGLE_GL_ARB_imaging, NULL, STATE_GLOBAL },
     { STATE_NAME(GL_POST_COLOR_MATRIX_ALPHA_BIAS), TYPE_8GLdouble, 1, BUGLE_GL_ARB_imaging, NULL, STATE_GLOBAL },
     { STATE_NAME(GL_HISTOGRAM), TYPE_9GLboolean, 1, BUGLE_GL_ARB_imaging, NULL, STATE_ENABLED },
+    /* FIXME: glGetHistogram */
     { STATE_NAME(GL_MINMAX), TYPE_9GLboolean, 1, BUGLE_GL_ARB_imaging, NULL, STATE_ENABLED },
+    /* FIXME: glGetMinmax */
     { STATE_NAME(GL_ZOOM_X), TYPE_8GLdouble, 1, -1, "1.1", STATE_GLOBAL },
     { STATE_NAME(GL_ZOOM_Y), TYPE_8GLdouble, 1, -1, "1.1", STATE_GLOBAL },
-    /* FIXME: GetPixelMap state missing here */
+    /* FIXME: glGetPixelMap */
+    { STATE_NAME(GL_PIXEL_MAP_I_TO_I_SIZE), TYPE_5GLint, 1, -1, "1.1", STATE_GLOBAL },
+    { STATE_NAME(GL_PIXEL_MAP_S_TO_S_SIZE), TYPE_5GLint, 1, -1, "1.1", STATE_GLOBAL },
+    { STATE_NAME(GL_PIXEL_MAP_I_TO_R_SIZE), TYPE_5GLint, 1, -1, "1.1", STATE_GLOBAL },
+    { STATE_NAME(GL_PIXEL_MAP_I_TO_G_SIZE), TYPE_5GLint, 1, -1, "1.1", STATE_GLOBAL },
+    { STATE_NAME(GL_PIXEL_MAP_I_TO_B_SIZE), TYPE_5GLint, 1, -1, "1.1", STATE_GLOBAL },
+    { STATE_NAME(GL_PIXEL_MAP_I_TO_A_SIZE), TYPE_5GLint, 1, -1, "1.1", STATE_GLOBAL },
+    { STATE_NAME(GL_PIXEL_MAP_R_TO_R_SIZE), TYPE_5GLint, 1, -1, "1.1", STATE_GLOBAL },
+    { STATE_NAME(GL_PIXEL_MAP_G_TO_G_SIZE), TYPE_5GLint, 1, -1, "1.1", STATE_GLOBAL },
+    { STATE_NAME(GL_PIXEL_MAP_B_TO_B_SIZE), TYPE_5GLint, 1, -1, "1.1", STATE_GLOBAL },
+    { STATE_NAME(GL_PIXEL_MAP_A_TO_A_SIZE), TYPE_5GLint, 1, -1, "1.1", STATE_GLOBAL },
     { STATE_NAME(GL_READ_BUFFER), TYPE_6GLenum, 1, -1, "1.1", STATE_GLOBAL },
-    /* FIXME: pixel map state missing here */
+    /* FIXME: glGetMap */
+    { STATE_NAME(GL_MAP1_VERTEX_3), TYPE_9GLboolean, 1, -1, "1.1", STATE_ENABLED },
+    { STATE_NAME(GL_MAP1_VERTEX_4), TYPE_9GLboolean, 1, -1, "1.1", STATE_ENABLED },
+    { STATE_NAME(GL_MAP1_INDEX), TYPE_9GLboolean, 1, -1, "1.1", STATE_ENABLED },
+    { STATE_NAME(GL_MAP1_COLOR_4), TYPE_9GLboolean, 1, -1, "1.1", STATE_ENABLED },
+    { STATE_NAME(GL_MAP1_NORMAL), TYPE_9GLboolean, 1, -1, "1.1", STATE_ENABLED },
+    { STATE_NAME(GL_MAP1_TEXTURE_COORD_1), TYPE_9GLboolean, 1, -1, "1.1", STATE_ENABLED },
+    { STATE_NAME(GL_MAP1_TEXTURE_COORD_2), TYPE_9GLboolean, 1, -1, "1.1", STATE_ENABLED },
+    { STATE_NAME(GL_MAP1_TEXTURE_COORD_3), TYPE_9GLboolean, 1, -1, "1.1", STATE_ENABLED },
+    { STATE_NAME(GL_MAP1_TEXTURE_COORD_4), TYPE_9GLboolean, 1, -1, "1.1", STATE_ENABLED },
+    { STATE_NAME(GL_MAP2_VERTEX_3), TYPE_9GLboolean, 1, -1, "1.1", STATE_ENABLED },
+    { STATE_NAME(GL_MAP2_VERTEX_4), TYPE_9GLboolean, 1, -1, "1.1", STATE_ENABLED },
+    { STATE_NAME(GL_MAP2_INDEX), TYPE_9GLboolean, 1, -1, "1.1", STATE_ENABLED },
+    { STATE_NAME(GL_MAP2_COLOR_4), TYPE_9GLboolean, 1, -1, "1.1", STATE_ENABLED },
+    { STATE_NAME(GL_MAP2_NORMAL), TYPE_9GLboolean, 1, -1, "1.1", STATE_ENABLED },
+    { STATE_NAME(GL_MAP2_TEXTURE_COORD_1), TYPE_9GLboolean, 1, -1, "1.1", STATE_ENABLED },
+    { STATE_NAME(GL_MAP2_TEXTURE_COORD_2), TYPE_9GLboolean, 1, -1, "1.1", STATE_ENABLED },
+    { STATE_NAME(GL_MAP2_TEXTURE_COORD_3), TYPE_9GLboolean, 1, -1, "1.1", STATE_ENABLED },
+    { STATE_NAME(GL_MAP2_TEXTURE_COORD_4), TYPE_9GLboolean, 1, -1, "1.1", STATE_ENABLED },
     { STATE_NAME(GL_MAP1_GRID_DOMAIN), TYPE_8GLdouble, 2, -1, "1.1", STATE_GLOBAL },
     { STATE_NAME(GL_MAP2_GRID_DOMAIN), TYPE_8GLdouble, 4, -1, "1.1", STATE_GLOBAL },
     { STATE_NAME(GL_MAP1_GRID_SEGMENTS), TYPE_5GLint, 1, -1, "1.1", STATE_GLOBAL },
@@ -440,7 +486,6 @@ static const state_info global_state[] =
 #ifdef GL_ARB_texture_compression
     { STATE_NAME_EXT(GL_NUM_COMPRESSED_TEXTURE_FORMATS, _ARB), TYPE_5GLint, 1, BUGLE_GL_ARB_texture_compression, "1.3", STATE_GLOBAL },
 #endif
-    /* FIXME: QUERY_COUNTER_BITS missing? */
     { STATE_NAME(GL_EXTENSIONS), TYPE_PKc, 1, -1, "1.1", STATE_GLOBAL },
     { STATE_NAME(GL_RENDERER), TYPE_PKc, 1, -1, "1.1", STATE_GLOBAL },
     /* SHADING_LANGUAGE_VERSION was only added in a later version of the spec */
@@ -458,6 +503,7 @@ static const state_info global_state[] =
     { STATE_NAME_EXT(GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS, _ARB), TYPE_5GLint, 1, BUGLE_GL_ARB_vertex_shader, "2.0", STATE_GLOBAL },
     { STATE_NAME_EXT(GL_MAX_VERTEX_TEXTURE_IMAGE_UNITS, _ARB), TYPE_5GLint, 1, BUGLE_GL_ARB_vertex_shader, "2.0", STATE_GLOBAL },
 #endif
+    /* FIXME: the next two are also defined by GL_ARB_vertex_shader and GL_ARB_fragment_shader */
 #ifdef GL_ARB_fragment_program
     { STATE_NAME_EXT(GL_MAX_TEXTURE_IMAGE_UNITS, _ARB), TYPE_5GLint, 1, BUGLE_GL_ARB_fragment_program, "2.0", STATE_GLOBAL },
     { STATE_NAME_EXT(GL_MAX_TEXTURE_COORDS, _ARB), TYPE_5GLint, 1, BUGLE_GL_ARB_fragment_program, "2.0", STATE_GLOBAL },
@@ -492,7 +538,7 @@ static const state_info global_state[] =
     { STATE_NAME(GL_FEEDBACK_BUFFER_POINTER), TYPE_P6GLvoid, 1, -1, "1.1", STATE_GLOBAL },
     { STATE_NAME(GL_FEEDBACK_BUFFER_SIZE), TYPE_5GLint, 1, -1, "1.1", STATE_GLOBAL },
     { STATE_NAME(GL_FEEDBACK_BUFFER_TYPE), TYPE_6GLenum, 1, -1, "1.1", STATE_GLOBAL },
-    /* FIXME: missing GL_QUERY_CURRENT */
+    /* FIXME: glGetError */
     { NULL, GL_NONE, NULL_TYPE, 0, 0, NULL, 0 }
 };
 
@@ -550,8 +596,10 @@ static const state_info tex_level_parameter_state[] =
 #endif
 #ifdef GL_ARB_texture_compression
     { STATE_NAME_EXT(GL_TEXTURE_COMPRESSED, _ARB), TYPE_9GLboolean, 1, BUGLE_GL_ARB_texture_compression, "1.3", STATE_TEX_LEVEL_PARAMETER },
+#ifdef GL_TEXTURE_COMPRESSED_IMAGE_SIZE_ARB /* Not defined in glext.h version 21??? */
     { STATE_NAME_EXT(GL_TEXTURE_COMPRESSED_IMAGE_SIZE, _ARB), TYPE_5GLint, 1, BUGLE_GL_ARB_texture_compression, "1.3", STATE_TEX_LEVEL_PARAMETER },
 #endif
+#endif /* GL_ARB_texture_compression */
     { NULL, GL_NONE, NULL_TYPE, 0, 0, NULL, 0 }
 };
 
@@ -566,7 +614,7 @@ static const state_info tex_unit_state[] =
     { STATE_NAME_EXT(GL_TEXTURE_COORD_ARRAY_BUFFER_BINDING, _ARB), TYPE_5GLint, 1, BUGLE_GL_ARB_vertex_buffer_object, "1.5", STATE_TEX_UNIT },
 #endif
 #ifdef GL_ARB_point_sprite
-    { STATE_NAME_EXT(GL_COORD_REPLACE), TYPE_9GLboolean, 1, BUGLE_GL_ARB_point_sprite, "2.0", STATE_POINT_SPRITE },
+    { STATE_NAME_EXT(GL_COORD_REPLACE, _ARB), TYPE_9GLboolean, 1, BUGLE_GL_ARB_point_sprite, "2.0", STATE_POINT_SPRITE },
 #endif
     { STATE_NAME(GL_TEXTURE_ENV_MODE), TYPE_6GLenum, 1, -1, "1.1", STATE_TEXTURE_ENV },
     { STATE_NAME(GL_TEXTURE_ENV_COLOR), TYPE_8GLdouble, 4, -1, "1.1", STATE_TEXTURE_ENV },
@@ -612,6 +660,7 @@ static const state_info tex_unit_state[] =
 #ifdef GL_VERSION_1_2
     { STATE_NAME(GL_TEXTURE_BINDING_3D), TYPE_5GLint, 1, -1, "1.2", STATE_TEX_UNIT }, /* Note: GL_EXT_texture3D doesn't define this! */
 #endif
+    /* FIXME: GetTexImage */
 #ifdef GL_ARB_texture_cube_map
     { STATE_NAME_EXT(GL_TEXTURE_BINDING_CUBE_MAP, _ARB), TYPE_5GLint, 1, BUGLE_GL_ARB_texture_cube_map, "1.3", STATE_TEX_UNIT },
 #endif
@@ -715,14 +764,88 @@ static const state_info vertex_attrib_state[] =
     { NULL, GL_NONE, NULL_TYPE, 0, 0, NULL, 0 }
 };
 
-static const state_info buffer_parameter_state[] =
+/* Note: we keep GL_ARB_shader_objects totally distinct from the shader
+ * objects in OpenGL 2.0, because the former uses GLhandleARB and the new
+ * object system while OpenGL 2.0 does not.
+ */
+
+/* State common to both shaders and programs */
+static const state_info object_state[] =
 {
-#ifdef GL_ARB_vertex_buffer_object
-    { STATE_NAME_EXT(GL_BUFFER_SIZE, _ARB), TYPE_5GLint, 1, BUGLE_GL_ARB_vertex_buffer_object, "1.5", STATE_BUFFER_PARAMETER },
-    { STATE_NAME_EXT(GL_BUFFER_USAGE, _ARB), TYPE_5GLenum, 1, BUGLE_GL_ARB_vertex_buffer_object, "1.5", STATE_BUFFER_PARAMETER },
-    { STATE_NAME_EXT(GL_BUFFER_ACCESS, _ARB), TYPE_5GLenum, 1, BUGLE_GL_ARB_vertex_buffer_object, "1.5", STATE_BUFFER_PARAMETER },
-    { STATE_NAME_EXT(GL_BUFFER_MAPPED, _ARB), TYPE_9GLboolean, 1, BUGLE_GL_ARB_vertex_buffer_object, "1.5", STATE_BUFFER_PARAMETER },
-    { STATE_NAME_EXT(GL_BUFFER_MAP_POINTER, _ARB), TYPE_P6GLvoid, 1, BUGLE_GL_ARB_vertex_buffer_object, "1.5", STATE_BUFFER_PARAMETER },
+#ifdef GL_ARB_shader_objects
+    { STATE_NAME(GL_OBJECT_TYPE_ARB), TYPE_6GLenum, 1, BUGLE_GL_ARB_shader_objects, NULL, STATE_OBJECT_PARAMETER },
+    { STATE_NAME(GL_OBJECT_DELETE_STATUS_ARB), TYPE_9GLboolean, 1, BUGLE_GL_ARB_shader_objects, NULL, STATE_OBJECT_PARAMETER },
+    { STATE_NAME(GL_OBJECT_INFO_LOG_LENGTH_ARB), TYPE_5GLint, 1, BUGLE_GL_ARB_shader_objects, NULL, STATE_OBJECT_PARAMETER },
+    { "InfoLog", GL_NONE, TYPE_P9GLcharARB, 1, BUGLE_GL_ARB_shader_objects, NULL, STATE_OBJECT_INFO_LOG },
+    /* FIXME: glGetInfoLogARB */
+#endif
+    { NULL, GL_NONE, NULL_TYPE, 0, 0, NULL, 0 }
+};
+
+static const state_info program_object_state[] =
+{
+#ifdef GL_ARB_shader_objects
+    { STATE_NAME(GL_OBJECT_ATTACHED_OBJECTS_ARB), TYPE_5GLint, 1, BUGLE_GL_ARB_shader_objects, NULL, STATE_OBJECT_PARAMETER },
+    { STATE_NAME(GL_OBJECT_ACTIVE_UNIFORMS_ARB), TYPE_5GLint, 1, BUGLE_GL_ARB_shader_objects, NULL, STATE_OBJECT_PARAMETER },
+    { STATE_NAME(GL_OBJECT_LINK_STATUS_ARB), TYPE_9GLboolean, 1, BUGLE_GL_ARB_shader_objects, NULL, STATE_OBJECT_PARAMETER },
+    { STATE_NAME(GL_OBJECT_VALIDATE_STATUS_ARB), TYPE_9GLboolean, 1, BUGLE_GL_ARB_shader_objects, NULL, STATE_OBJECT_PARAMETER },
+    { STATE_NAME(GL_OBJECT_ACTIVE_UNIFORM_MAX_LENGTH_ARB), TYPE_5GLint, 1, BUGLE_GL_ARB_shader_objects, NULL, STATE_OBJECT_PARAMETER },
+    /* FIXME: glGetActiveUniformARB */
+    /* FIXME: glGetUniformLocationARB */
+    /* FIXME: glGetAttachedObjectsARB */
+    /* FIXME: glGetActiveAttribARB */
+    /* FIXME: glGetAttribLocationARB */
+#endif
+#ifdef GL_ARB_vertex_shader
+    { STATE_NAME(GL_OBJECT_ACTIVE_ATTRIBUTES_ARB), TYPE_5GLint, 1, BUGLE_GL_ARB_vertex_shader, NULL, STATE_OBJECT_PARAMETER | STATE_SELECT_VERTEX },
+    { STATE_NAME(GL_OBJECT_ACTIVE_ATTRIBUTE_MAX_LENGTH_ARB), TYPE_5GLint, 1, BUGLE_GL_ARB_vertex_shader, NULL, STATE_OBJECT_PARAMETER | STATE_SELECT_VERTEX },
+#endif
+    { NULL, GL_NONE, NULL_TYPE, 0, 0, NULL, 0 }
+};
+
+static const state_info shader_object_state[] =
+{
+#ifdef GL_ARB_shader_objects
+    { "ShaderSource", GL_NONE, TYPE_P9GLcharARB, 1, BUGLE_GL_ARB_shader_objects, NULL, STATE_OBJECT_SHADER_SOURCE },
+    { STATE_NAME(GL_OBJECT_SUBTYPE_ARB), TYPE_6GLenum, 1, BUGLE_GL_ARB_shader_objects, NULL, STATE_OBJECT_PARAMETER },
+    { STATE_NAME(GL_OBJECT_COMPILE_STATUS_ARB), TYPE_9GLboolean, 1, BUGLE_GL_ARB_shader_objects, NULL, STATE_OBJECT_PARAMETER },
+    { STATE_NAME(GL_OBJECT_SHADER_SOURCE_LENGTH_ARB), TYPE_5GLint, 1, BUGLE_GL_ARB_shader_objects, NULL, STATE_OBJECT_PARAMETER },
+#endif
+    { NULL, GL_NONE, NULL_TYPE, 0, 0, NULL, 0 }
+};
+
+static const state_info shader_state[] =
+{
+#ifdef GL_VERSION_2_0
+    { STATE_NAME(GL_SHADER_TYPE), TYPE_6GLenum, 1, -1, "2.0", STATE_SHADER },
+    { STATE_NAME(GL_DELETE_STATUS), TYPE_9GLboolean, 1, -1, "2.0", STATE_SHADER },
+    { STATE_NAME(GL_COMPILE_STATUS), TYPE_9GLboolean, 1, -1, "2.0", STATE_SHADER },
+    { "InfoLog", GL_NONE, TYPE_P6GLchar, 1, -1, "2.0", STATE_SHADER_INFO_LOG },
+    { STATE_NAME(GL_INFO_LOG_LENGTH), TYPE_5GLint, 1, -1, "2.0", STATE_SHADER },
+    { "ShaderSource", GL_NONE, TYPE_P9GLchar, 1, BUGLE_GL_ARB_shader_objects, NULL, STATE_SHADER_SOURCE },
+    { STATE_NAME(GL_SHADER_SOURCE_LENGTH), TYPE_5GLint, 1, -1, "2.0", STATE_SHADER },
+#endif
+    { NULL, GL_NONE, NULL_TYPE, 0, 0, NULL, 0 }
+};
+
+static const state_info program_state[] =
+{
+#ifdef GL_VERSION_2_0
+    { STATE_NAME(GL_DELETE_STATUS), TYPE_9GLboolean, 1, -1, "2.0", STATE_PROGRAM },
+    { STATE_NAME(GL_LINK_STATUS), TYPE_9GLboolean, 1, -1, "2.0", STATE_PROGRAM },
+    { STATE_NAME(GL_VALIDATE_STATUS), TYPE_9GLboolean, 1, -1, "2.0", STATE_PROGRAM },
+    { STATE_NAME(GL_ATTACHED_SHADERS), TYPE_9GLboolean, 1, -1, "2.0", STATE_PROGRAM },
+    /* FIXME: glGetAttachedShaders */
+    { "InfoLog", GL_NONE, TYPE_P6GLchar, 1, -1, "2.0", STATE_PROGRAM_INFO_LOG },
+    { STATE_NAME(GL_INFO_LOG_LENGTH), TYPE_5GLint, 1, -1, "2.0", STATE_PROGRAM },
+    { STATE_NAME(GL_ACTIVE_UNIFORMS), TYPE_5GLint, 1, -1, "2.0", STATE_PROGRAM },
+    /* FIXME: glGetActiveUniform */
+    { STATE_NAME(GL_ACTIVE_UNIFORM_MAX_LENGTH), TYPE_5GLint, 1, -1, "2.0", STATE_PROGRAM },
+    /* FIXME: glGetUniform */
+    { STATE_NAME(GL_ACTIVE_ATTRIBUTES), TYPE_5GLint, 1, BUGLE_GL_ARB_vertex_shader, "2.0", STATE_PROGRAM },
+    /* FIXME: glGetAttribLocation */
+    /* FIXME: glGetActiveAttrib */
+    { STATE_NAME(GL_ACTIVE_ATTRIBUTES_MAX_LENGTH), TYPE_5GLint, 1, BUGLE_GL_ARB_vertex_shader, "2.0", STATE_PROGRAM  },
 #endif
     { NULL, GL_NONE, NULL_TYPE, 0, 0, NULL, 0 }
 };
@@ -739,8 +862,20 @@ static const state_info query_state[] =
 static const state_info query_object_state[] =
 {
 #ifdef GL_ARB_occlusion_query
-    { STATE_NAME_EXT(GL_QUERY_RESULT, _ARB), TYPE_6GLuint, 1, BUGLE_GL_ARB_occlusion_query, "1.5", STATE_QUERY },
-    { STATE_NAME_EXT(GL_QUERY_RESULT_AVAILABLE, _ARB), TYPE_9GLboolean, 1, BUGLE_GL_ARB_occlusion_query, "1.5", STATE_QUERY },
+    { STATE_NAME_EXT(GL_QUERY_RESULT, _ARB), TYPE_6GLuint, 1, BUGLE_GL_ARB_occlusion_query, "1.5", STATE_QUERY_OBJECT },
+    { STATE_NAME_EXT(GL_QUERY_RESULT_AVAILABLE, _ARB), TYPE_9GLboolean, 1, BUGLE_GL_ARB_occlusion_query, "1.5", STATE_QUERY_OBJECT },
+#endif
+    { NULL, GL_NONE, NULL_TYPE, 0, 0, NULL, 0 }
+};
+
+static const state_info buffer_parameter_state[] =
+{
+#ifdef GL_ARB_vertex_buffer_object
+    { STATE_NAME_EXT(GL_BUFFER_SIZE, _ARB), TYPE_5GLint, 1, BUGLE_GL_ARB_vertex_buffer_object, "1.5", STATE_BUFFER_PARAMETER },
+    { STATE_NAME_EXT(GL_BUFFER_USAGE, _ARB), TYPE_6GLenum, 1, BUGLE_GL_ARB_vertex_buffer_object, "1.5", STATE_BUFFER_PARAMETER },
+    { STATE_NAME_EXT(GL_BUFFER_ACCESS, _ARB), TYPE_6GLenum, 1, BUGLE_GL_ARB_vertex_buffer_object, "1.5", STATE_BUFFER_PARAMETER },
+    { STATE_NAME_EXT(GL_BUFFER_MAPPED, _ARB), TYPE_9GLboolean, 1, BUGLE_GL_ARB_vertex_buffer_object, "1.5", STATE_BUFFER_PARAMETER },
+    { STATE_NAME_EXT(GL_BUFFER_MAP_POINTER, _ARB), TYPE_P6GLvoid, 1, BUGLE_GL_ARB_vertex_buffer_object, "1.5", STATE_BUFFER_PARAMETER },
 #endif
     { NULL, GL_NONE, NULL_TYPE, 0, 0, NULL, 0 }
 };
@@ -836,6 +971,12 @@ const state_info * const all_state[] =
     vertex_attrib_state,
     query_state,
     query_object_state,
+    buffer_parameter_state,
+    object_state,
+    shader_object_state,
+    program_object_state,
+    shader_state,
+    program_state,
     NULL
 };
 
@@ -855,6 +996,11 @@ static void dump_wrapper(FILE *f, void *data)
     length = w->length;
     if (length == 1) length = -1;
     budgie_dump_any_type_extended(w->type, w->out, -1, length, NULL, f);
+}
+
+static void dump_string_wrapper(FILE *f, void *data)
+{
+    budgie_dump_string((const char *) data, f);
 }
 
 static void get_helper(const glstate *state,
@@ -884,18 +1030,25 @@ static void get_helper(const glstate *state,
 
 char *bugle_state_get_string(const glstate *state)
 {
-    const char *s;
     GLdouble d[16];
     GLfloat f[16];
     GLint i[16];
     GLuint ui[16];
     GLboolean b[16];
     GLvoid *p[16];
+#ifdef GL_ARB_shader_objects
+    GLhandleARB h[16];
+#endif
+#if defined(GL_VERSION_2_0) || defined(GL_ARB_shader_objects)
+    GLsizei length;
+    GLint max_length;
+#endif
     void *in;
     budgie_type in_type;
     dump_wrapper_data wrapper;
+    char *str = NULL;
 
-    GLint old_texture;
+    GLint old_texture, old_buffer;
     GLint old_unit, old_client_unit;
     bool flag_active_texture = false;
     GLenum pname;
@@ -903,6 +1056,7 @@ char *bugle_state_get_string(const glstate *state)
     if (!state->info) return NULL;
     if (state->info->pname) pname = state->info->pname;
     else pname = state->target;
+    in_type = state->info->type;
 
 #ifdef GL_ARB_multitexture
     if ((state->info->flags & STATE_MULTIPLEX_ACTIVE_TEXTURE)
@@ -915,6 +1069,13 @@ char *bugle_state_get_string(const glstate *state)
         flag_active_texture = true;
     }
 #endif
+#ifdef GL_ARB_vertex_buffer_object
+    if (state->info->flags & STATE_MULTIPLEX_BIND_BUFFER)
+    {
+        CALL_glGetIntegerv(GL_ARRAY_BUFFER_BINDING_ARB, &old_buffer);
+        CALL_glBindBufferARB(GL_ARRAY_BUFFER_ARB, state->object);
+    }
+#endif
     if (state->info->flags & STATE_MULTIPLEX_BIND_TEXTURE)
     {
         CALL_glGetIntegerv(state->binding, &old_texture);
@@ -925,30 +1086,15 @@ char *bugle_state_get_string(const glstate *state)
     {
     case STATE_MODE_GLOBAL:
         if (state->info->type == TYPE_PKc)
-        {
-            s = (const char *) CALL_glGetString(pname);
-            return bugle_strdup(s);
-        }
+            str = bugle_strdup((const char *) CALL_glGetString(pname));
         else if (state->info->type == TYPE_9GLboolean)
-        {
             CALL_glGetBooleanv(pname, b);
-            in_type = TYPE_9GLboolean;
-        }
         else if (state->info->type == TYPE_P6GLvoid)
-        {
             CALL_glGetPointerv(pname, p);
-            in_type = TYPE_P6GLvoid;
-        }
         else if (state->info->type == TYPE_8GLdouble)
-        {
             CALL_glGetDoublev(pname, d);
-            in_type = TYPE_8GLdouble;
-        }
         else if (state->info->type == TYPE_7GLfloat)
-        {
             CALL_glGetFloatv(pname, f);
-            in_type = TYPE_7GLfloat;
-        }
         else
         {
             CALL_glGetIntegerv(pname, i);
@@ -960,6 +1106,8 @@ char *bugle_state_get_string(const glstate *state)
         in_type = TYPE_9GLboolean;
         break;
     case STATE_MODE_TEXTURE_ENV:
+    case STATE_MODE_TEXTURE_FILTER_CONTROL:
+    case STATE_MODE_POINT_SPRITE:
         get_helper(state, d, f, i, &in_type, NULL_FUNCTION,
                    FUNC_glGetTexEnvfv, FUNC_glGetTexEnviv);
         break;
@@ -1014,20 +1162,11 @@ char *bugle_state_get_string(const glstate *state)
 #ifdef GL_ARB_vertex_program
     case STATE_MODE_VERTEX_ATTRIB:
         if (state->info->type == TYPE_P6GLvoid)
-        {
             CALL_glGetVertexAttribPointervARB(state->object, pname, p);
-            in_type = TYPE_P6GLvoid;
-        }
         else if (state->info->type == TYPE_8GLdouble)
-        {
             CALL_glGetVertexAttribdvARB(state->object, pname, d);
-            in_type = TYPE_8GLdouble;
-        }
         else if (state->info->type == TYPE_7GLfloat)
-        {
             CALL_glGetVertexAttribfvARB(state->object, pname, f);
-            in_type = TYPE_7GLfloat;
-        }
         else
         {
             CALL_glGetVertexAttribivARB(state->object, pname, i);
@@ -1042,15 +1181,72 @@ char *bugle_state_get_string(const glstate *state)
         break;
     case STATE_MODE_QUERY_OBJECT:
         if (state->info->type == TYPE_6GLuint)
-        {
             CALL_glGetQueryObjectuivARB(state->object, pname, ui);
-            in_type = TYPE_6GLuint;
-        }
         else
         {
             CALL_glGetQueryObjectivARB(state->object, pname, i);
             in_type = TYPE_5GLint;
         }
+        break;
+#endif
+#ifdef GL_ARB_vertex_buffer_object
+    case STATE_MODE_BUFFER_PARAMETER:
+        if (state->info->type == TYPE_P6GLvoid)
+            CALL_glGetBufferPointervARB(GL_ARRAY_BUFFER_ARB, pname, p);
+        else
+        {
+            CALL_glGetBufferParameterivARB(GL_ARRAY_BUFFER_ARB, pname, i);
+            in_type = TYPE_5GLint;
+        }
+        break;
+#endif
+#ifdef GL_ARB_shader_objects
+    case STATE_MODE_OBJECT_PARAMETER:
+        if (state->info->type == TYPE_8GLdouble || state->info->type == TYPE_7GLfloat)
+        {
+            CALL_glGetObjectParameterfvARB(state->object, pname, f);
+            in_type = TYPE_7GLfloat;
+        }
+        else
+        {
+            CALL_glGetObjectParameterivARB(state->object, pname, i);
+            in_type = TYPE_5GLint;
+        }
+        break;
+    case STATE_MODE_OBJECT_INFO_LOG:
+        CALL_glGetObjectParameterivARB(state->object, GL_OBJECT_INFO_LOG_LENGTH_ARB, &max_length);
+        str = bugle_malloc(max_length * sizeof(GLcharARB));
+        CALL_glGetInfoLogARB(state->object, max_length, &length, (GLcharARB *) str);
+        break;
+    case STATE_MODE_OBJECT_SHADER_SOURCE:
+        CALL_glGetObjectParameterivARB(state->object, GL_OBJECT_SHADER_SOURCE_LENGTH_ARB, &max_length);
+        str = bugle_malloc(max_length * sizeof(GLcharARB));
+        CALL_glGetShaderSourceARB(state->object, max_length, &length, (GLcharARB *) str);
+        break;
+#endif
+#ifdef GL_VERSION_2_0
+    case STATE_MODE_SHADER:
+        CALL_glGetShaderiv(state->object, pname, i);
+        in_type = TYPE_5GLint;
+        break;
+    case STATE_MODE_PROGRAM:
+        CALL_glGetProgramiv(state->object, pname, i);
+        in_type = TYPE_5GLint;
+        break;
+    case STATE_MODE_SHADER_INFO_LOG:
+        CALL_glGetShaderiv(state->handle, GL_INFO_LOG_LENGTH, &max_length);
+        str = bugle_malloc(max_length * sizeof(GLchar));
+        CALL_glGetShaderInfoLog(state->handle, max_length, &length, (GLchar *) str);
+        break;
+    case STATE_MODE_PROGRAM_INFO_LOG:
+        CALL_glGetProgramiv(state->handle, GL_INFO_LOG_LENGTH, &max_length);
+        str = bugle_malloc(max_length * sizeof(GLchar));
+        CALL_glGetProgramInfoLog(state->handle, max_length, &length, (GLchar *) str);
+        break;
+    case STATE_MODE_SHADER_SOURCE:
+        CALL_glGetShaderiv(state->handle, GL_SHADER_SOURCE_LENGTH, &max_length);
+        str = bugle_malloc(max_length * sizeof(GLcharARB));
+        CALL_glGetShaderSource(state->handle, max_length, &length, (GLchar *) str);
         break;
 #endif
     default:
@@ -1064,19 +1260,12 @@ char *bugle_state_get_string(const glstate *state)
         CALL_glClientActiveTextureARB(old_client_unit);
     }
 #endif
+#ifdef GL_ARB_vertex_buffer_object
+    if (state->info->flags & STATE_MULTIPLEX_BIND_BUFFER)
+        CALL_glBindBufferARB(GL_ARRAY_BUFFER_ARB, old_buffer);
+#endif
     if (state->info->flags & STATE_MULTIPLEX_BIND_TEXTURE)
         CALL_glBindTexture(state->target, old_texture);
-
-    switch (in_type)
-    {
-    case TYPE_8GLdouble: in = d; break;
-    case TYPE_7GLfloat: in = f; break;
-    case TYPE_5GLint: in = i; break;
-    case TYPE_6GLuint: in = ui; break;
-    case TYPE_9GLboolean: in = b; break;
-    case TYPE_P6GLvoid: in = p; break;
-    default: abort();
-    }
 
     if (CALL_glGetError())
     {
@@ -1085,6 +1274,33 @@ char *bugle_state_get_string(const glstate *state)
         else
             fprintf(stderr, "GL error generated by anonymous state\n");
         return bugle_strdup("<GL error>");
+    }
+
+    if (str)
+    {
+        char *ans;
+
+        ans = budgie_string_io(dump_string_wrapper, str);
+        free(str);
+        return ans;
+    }
+
+    switch (in_type)
+    {
+    case TYPE_8GLdouble: in = d; break;
+    case TYPE_7GLfloat: in = f; break;
+    case TYPE_5GLint: in = i; break;
+    case TYPE_6GLuint: in = ui; break;
+#ifdef GL_ARB_shader_objects
+    /* FIXME: we don't actually use this atm. We need some way to
+     * call exactly one of glGetIntegerv on GL_CURRENT_PROGRAM_ARB
+     * or glGetHandle on GL_PROGRAM_OBJECT_ARB.
+     */
+    case TYPE_11GLhandleARB: in = h; break;
+#endif
+    case TYPE_9GLboolean: in = b; break;
+    case TYPE_P6GLvoid: in = p; break;
+    default: abort();
     }
 
     wrapper.out = bugle_malloc(state->info->length * budgie_type_table[state->info->type].size);
@@ -1109,7 +1325,7 @@ void bugle_state_clear(glstate *self)
  * to initialise the list yourself.
  */
 static void make_leaves_conditional(const glstate *self, const state_info *table,
-                                    unsigned int flags, unsigned int mask,
+                                    uint32_t flags, unsigned int mask,
                                     bugle_linked_list *children)
 {
     const char *version;
@@ -1161,7 +1377,7 @@ static void make_fixed(const glstate *self,
 }
 
 static void make_counted(const glstate *self,
-                         int count,
+                         GLint count,
                          const char *format,
                          GLenum base,
                          size_t offset,
@@ -1169,7 +1385,7 @@ static void make_counted(const glstate *self,
                          const state_info *info,
                          bugle_linked_list *children)
 {
-    int i;
+    GLint i;
     glstate *child;
 
     for (i = 0; i < count; i++)
@@ -1177,7 +1393,7 @@ static void make_counted(const glstate *self,
         child = bugle_malloc(sizeof(glstate));
         *child = *self;
         child->info = info;
-        bugle_asprintf(&child->name, format, i);
+        bugle_asprintf(&child->name, format, (unsigned long) i);
         *(GLenum *) (((char *) child) + offset) = base + i;
         child->spawn_children = spawn;
         bugle_list_append(children, child);
@@ -1186,7 +1402,7 @@ static void make_counted(const glstate *self,
 
 static void make_object(const glstate *self,
                         const char *format,
-                        GLuint id,
+                        gl_handle id,
                         void (*spawn)(const glstate *, bugle_linked_list *),
                         const state_info *info,
                         bugle_linked_list *children)
@@ -1196,33 +1412,56 @@ static void make_object(const glstate *self,
     child = bugle_malloc(sizeof(glstate));
     *child = *self;
     child->info = info;
-    bugle_asprintf(&child->name, format, id);
+    bugle_asprintf(&child->name, format, (unsigned long) id);
     child->object = id;
     child->spawn_children = spawn;
     bugle_list_append(children, child);
 }
 
+typedef struct
+{
+    const glstate *self;
+    GLenum target;
+    const char *format;
+    void (*spawn_children)(const glstate *, bugle_linked_list *);
+    state_info *info;
+    bugle_linked_list *children;
+} make_objects_data;
+
+static void make_objects_walker(gl_handle object,
+                                GLenum target,
+                                void *vdata)
+{
+    const make_objects_data *data;
+
+    data = (const make_objects_data *) vdata;
+    if (data->target != GL_NONE && target != GL_NONE
+        && target != data->target) return;
+    make_object(data->self, data->format, object, data->spawn_children,
+                data->info, data->children);
+}
+
 static void make_objects(const glstate *self,
                          bugle_trackobjects_type type,
+                         gl_handle target,
                          bool add_zero,
                          const char *format,
                          void (*spawn_children)(const glstate *, bugle_linked_list *),
                          state_info *info,
                          bugle_linked_list *children)
 {
-    bugle_linked_list objects;
-    bugle_list_node *i;
-    bugle_trackobjects_id *id;
+    make_objects_data data;
+
+    data.self = self;
+    data.target = target;
+    data.format = format;
+    data.spawn_children = spawn_children;
+    data.info = info;
+    data.children = children;
 
     if (add_zero)
         make_object(self, format, 0, spawn_children, info, children);
-    bugle_trackobjects_get(type, &objects);
-    for (i = bugle_list_head(&objects); i; i = bugle_list_next(i))
-    {
-        id = (bugle_trackobjects_id *) bugle_list_data(i);
-        make_object(self, format, id->id, spawn_children, info, children);
-    }
-    bugle_list_clear(&objects);
+    bugle_trackobjects_walk(type, make_objects_walker, &data);
 }
 
 static void spawn_children_tex_target(const glstate *, bugle_linked_list *);
@@ -1252,7 +1491,11 @@ static void make_tex_levels(const glstate *self,
 {
     GLint base, max, i;
     glstate *child;
+    GLint old;
 
+    CALL_glGetIntegerv(self->binding, &old);
+    CALL_glBindTexture(self->target, self->object);
+    /* FIXME: BASE and MAX are only in GL 1.2? */
     CALL_glGetTexParameteriv(self->target, GL_TEXTURE_BASE_LEVEL, &base);
     CALL_glGetTexParameteriv(self->target, GL_TEXTURE_MAX_LEVEL, &max);
 
@@ -1264,12 +1507,14 @@ static void make_tex_levels(const glstate *self,
 
         child = bugle_malloc(sizeof(glstate));
         *child = *self;
-        bugle_asprintf(&child->name, "level[%d]", (int) i);
+        bugle_asprintf(&child->name, "level[%lu]", (unsigned long) i);
         child->info = NULL;
         child->level = i;
         child->spawn_children = spawn_children_tex_level_parameter;
         bugle_list_append(children, child);
     }
+
+    CALL_glBindTexture(self->target, old);
 }
 
 static void spawn_children_tex_gen(const glstate *self, bugle_linked_list *children)
@@ -1312,7 +1557,7 @@ static void spawn_children_tex_unit(const glstate *self, bugle_linked_list *chil
 /* Returns a mask of flags not to select from state tables, based on the
  * dimension of the target.
  */
-static unsigned int texture_mask(GLenum target)
+static uint32_t texture_mask(GLenum target)
 {
     switch (target)
     {
@@ -1362,7 +1607,7 @@ static void spawn_children_tex_parameter(const glstate *self, bugle_linked_list 
 static void spawn_children_tex_target(const glstate *self, bugle_linked_list *children)
 {
     bugle_list_init(children, true);
-    make_objects(self, BUGLE_TRACKOBJECTS_TEXTURE, true, "%d",
+    make_objects(self, BUGLE_TRACKOBJECTS_TEXTURE, self->target, true, "%lu",
                  spawn_children_tex_parameter, NULL, children);
 }
 
@@ -1440,9 +1685,55 @@ static void spawn_children_query_object(const glstate *self, bugle_linked_list *
     make_leaves(self, query_object_state, children);
 }
 
+static void spawn_children_buffer_parameter(const glstate *self, bugle_linked_list *children)
+{
+    bugle_list_init(children, true);
+    make_leaves(self, buffer_parameter_state, children);
+}
+
+#ifdef GL_ARB_shader_objects
+static void spawn_children_shader_object(const glstate *self, bugle_linked_list *children)
+{
+    uint32_t mask = STATE_SELECT_VERTEX;
+
+    bugle_list_init(children, true);
+#ifdef GL_ARB_vertex_shader
+    if (bugle_gl_has_extension(BUGLE_GL_ARB_vertex_shader)) mask = 0;
+#endif
+    make_leaves_conditional(self, object_state, 0, mask, children);
+    make_leaves_conditional(self, shader_object_state, 0, mask, children);
+}
+
+static void spawn_children_program_object(const glstate *self, bugle_linked_list *children)
+{
+    uint32_t mask = STATE_SELECT_VERTEX;
+
+    bugle_list_init(children, true);
+#ifdef GL_ARB_vertex_shader
+    if (bugle_gl_has_extension(BUGLE_GL_ARB_vertex_shader)) mask = 0;
+#endif
+    make_leaves(self, object_state, children);
+    make_leaves(self, program_object_state, children);
+}
+#endif /* GL_ARB_shader_objects */
+
+#ifdef GL_VERSION_2_0
+static void spawn_children_shader_state(const glstate *self, bugle_linked_list *children)
+{
+    bugle_list_init(children, true);
+    make_leaves(self, shader_state, children);
+}
+
+static void spawn_children_program_state(const glstate *self, bugle_linked_list *children)
+{
+    bugle_list_init(children, true);
+    make_leaves(self, shader_state, children);
+}
+#endif
+
 static void spawn_children_global(const glstate *self, bugle_linked_list *children)
 {
-    unsigned int mask = 0;
+    uint32_t mask = 0;
 
     static const state_info light_enable =
     {
@@ -1483,7 +1774,7 @@ static void spawn_children_global(const glstate *self, bugle_linked_list *childr
     if (bugle_gl_has_extension(BUGLE_GL_ARB_multitexture))
     {
         CALL_glGetIntegerv(GL_MAX_TEXTURE_UNITS_ARB, &count);
-        make_counted(self, count, "GL_TEXTURE%d", GL_TEXTURE0_ARB,
+        make_counted(self, count, "GL_TEXTURE%lu", GL_TEXTURE0_ARB,
                      offsetof(glstate, unit), spawn_children_tex_unit,
                      NULL, children);
     }
@@ -1493,12 +1784,12 @@ static void spawn_children_global(const glstate *self, bugle_linked_list *childr
         make_leaves(self, tex_unit_state, children);
     }
     CALL_glGetIntegerv(GL_MAX_LIGHTS, &count);
-    make_counted(self, count, "GL_LIGHT%d", GL_LIGHT0,
+    make_counted(self, count, "GL_LIGHT%lu", GL_LIGHT0,
                  offsetof(glstate, target), spawn_children_light,
                  &light_enable, children);
 
     CALL_glGetIntegerv(GL_MAX_CLIP_PLANES, &count);
-    make_counted(self, count, "GL_CLIP_PLANE%d", GL_CLIP_PLANE0,
+    make_counted(self, count, "GL_CLIP_PLANE%lu", GL_CLIP_PLANE0,
                  offsetof(glstate, target), NULL,
                  &clip_plane_state, children);
 
@@ -1506,7 +1797,7 @@ static void spawn_children_global(const glstate *self, bugle_linked_list *childr
     if (bugle_gl_has_extension(BUGLE_GL_ARB_draw_buffers))
     {
         CALL_glGetIntegerv(GL_MAX_DRAW_BUFFERS_ARB, &count);
-        make_counted(self, count, "GL_DRAW_BUFFER%d", GL_DRAW_BUFFER0_ARB,
+        make_counted(self, count, "GL_DRAW_BUFFER%lu", GL_DRAW_BUFFER0_ARB,
                      offsetof(glstate, target), NULL,
                      &draw_buffers, children);
     }
@@ -1529,7 +1820,7 @@ static void spawn_children_global(const glstate *self, bugle_linked_list *childr
     {
         CALL_glGetIntegerv(GL_MAX_VERTEX_ATTRIBS_ARB, &count);
         for (i = 0; i < count; i++)
-            make_object(self, "VertexAttrib[%d]", i, spawn_children_vertex_attrib, NULL, children);
+            make_object(self, "VertexAttrib[%lu]", i, spawn_children_vertex_attrib, NULL, children);
     }
 #endif
 
@@ -1552,18 +1843,47 @@ static void spawn_children_global(const glstate *self, bugle_linked_list *childr
 #endif
 
 #ifdef GL_ARB_occlusion_query
-    make_fixed(self, query_pairs, offsetof(glstate, target),
-               spawn_children_query, children);
     if (bugle_gl_has_extension(BUGLE_GL_ARB_occlusion_query))
-        make_objects(self, BUGLE_TRACKOBJECTS_QUERY, false, "Query[%d]",
-                     spawn_children_query_object, NULL, children);
+    {
+        make_fixed(self, query_pairs, offsetof(glstate, target),
+                   spawn_children_query, children);
+        make_objects(self, BUGLE_TRACKOBJECTS_QUERY, GL_NONE, false,
+                     "Query[%lu]", spawn_children_query_object, NULL, children);
+    }
+#endif
+#ifdef GL_ARB_vertex_buffer_object
+    if (bugle_gl_has_extension(BUGLE_GL_ARB_vertex_buffer_object))
+    {
+        make_objects(self, BUGLE_TRACKOBJECTS_BUFFER, GL_NONE, false,
+                     "Buffer[%lu]", spawn_children_buffer_parameter, NULL, children);
+    }
+#endif
+#ifdef GL_ARB_shader_objects
+    if (bugle_gl_has_extension(BUGLE_GL_ARB_shader_objects))
+    {
+        make_objects(self, BUGLE_TRACKOBJECTS_SHADER_OBJECT, GL_NONE, false,
+                     "Object[%lu]", spawn_children_shader_object, NULL, children);
+        make_objects(self, BUGLE_TRACKOBJECTS_PROGRAM_OBJECT, GL_NONE, false,
+                     "Object[%lu]", spawn_children_program_object, NULL, children);
+    }
+#endif
+#ifdef GL_VERSION_2_0
+    if (strcmp(version, "2.0") >= 0)
+    {
+        make_objects(self, BUGLE_TRACKOBJECTS_SHADER, GL_NONE, false,
+                     "Shader[%lu]", spawn_children_shader, NULL, children);
+        make_objects(self, BUGLE_TRACKOBJECTS_PROGRAM, GL_NONE, false,
+                     "Program[%lu]", spawn_children_program, NULL, children);
 #endif
 }
 
 const glstate *bugle_state_get_root(void)
 {
     static const glstate root =
-    { "", GL_NONE, GL_NONE, GL_NONE, GL_NONE, 0, 0, NULL, spawn_children_global };
+    {
+        "", GL_NONE, GL_NONE, GL_NONE, GL_NONE,
+        0, 0, NULL, spawn_children_global
+    };
 
     return &root;
 }

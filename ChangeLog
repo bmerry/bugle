@@ -1,22 +1,24 @@
 * Added checks filterset
-* Improved support for systems short on extensions
+* Vastly improved support for systems short on extensions
 * Changed the way tests are done (using regexes) to make them more
   robust and less likely to fail when moving to a different system.
 * Redesign of the filter management code to reduce overhead.
 * Redesign of the filter-set variable code to use tables rather than
   banks of if's.
-* Rewrite some of the documentation
+* Rewrite some of the documentation.
+* Rewrite of the code generator; now generates GROUP_ tokens and
+  generally separates groups from functions.
+* Rewrite of the state manager (incomplete).
+* Support for GLSL.
+* Rewritten object tracker, using radix trees.
 * Linked lists and hash tables are now told at creation time whether
   they own their memory.
 * Make opaque bugle_object and bugle_object_view typedefs.
 * Redo the internals of object layer storage to avoid possible
   alignment problems.
 * Added a threading abstraction layer.
-* Rewrite of the code generator; now generates GROUP_ tokens and
-  generally separates groups from functions.
 * Removed canon.c/canon.h, since they are no longer needed.
-* Rewrite of the state manager (incomplete).
-* Tab completion for state
+* State now assembled by gldb, allowing tab completion for state
 
 0.0.20041123
 ------------
