@@ -6,7 +6,7 @@ INCLUDE src/data/overrides.h
 INCLUDE src/gldump.h
 INCLUDE src/glstate.h
 LIBRARY libGL.so
-LIMIT gl[A-Z][a-z].*|glXSwapBuffers|glXGetProcAddressARB|glXCreateContext|glXCreateNewContext|glXDestroyContext|glXMakeCurrent|glXMakeContextCurrent
+LIMIT gl[A-Z][a-z].*|glXSwapBuffers|glXGetProcAddressARB|glXCreateContext|glXCreateNewContext|glXDestroyContext|glXMakeCurrent|glXMakeContextCurrent|glXQueryVersion|glXQueryExtensionsString
 
 # Typedefs
 NEWTYPE BITFIELD bufferbits GLbitfield GL_COLOR_BUFFER_BIT GL_DEPTH_BUFFER_BIT GL_ACCUM_BUFFER_BIT GL_STENCIL_BUFFER_BIT

@@ -24,6 +24,7 @@
 #endif
 #include "common/bool.h"
 #include "src/utils.h"
+#include <assert.h>
 
 /* The intended use is:
  * if (begin_internal_render())
@@ -44,7 +45,12 @@
 bool begin_internal_render(void);
 void end_internal_render(const char *name, bool warn);
 
-state_7context_I *get_context_state(void);
+extern state_7context_I *(*trackcontext_get_context_state_ptr)(void);
+static inline state_7context_I *get_context_state(void)
+{
+    assert(trackcontext_get_context_state_ptr);
+    return trackcontext_get_context_state_ptr();
+}
 bool in_begin_end(void);
 
 void filter_set_renders(const char *name);

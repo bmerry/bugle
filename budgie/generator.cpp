@@ -724,7 +724,7 @@ string make_wrapper(tree_node_p node, bool prototype)
         out << "    " << type_to_string(ret_type, "retn", false) << ";\n";
 
     // check for re-entrancy
-    out << "    if (reentrant)\n"
+    out << "    if (!check_set_reentrance())\n"
         << "    {\n"
         << "        initialise_real();\n"
         << "        ";
@@ -743,8 +743,7 @@ string make_wrapper(tree_node_p node, bool prototype)
     out << ");\n";
     if (TREE_CODE(ret_type) == VOID_TYPE)
         out << "        return;\n";
-    out << "    }\n"
-        << "    reentrant = true;\n";
+    out << "    }\n";
 
     /* At this stage we capture only the value of the parameters, with
      * no deep copies. This is so that if the interceptor immediately
@@ -777,7 +776,7 @@ string make_wrapper(tree_node_p node, bool prototype)
     out << "    interceptor(&call);\n";
 
     // clear the lock
-    out << "    reentrant = false;\n";
+    out << "    clear_reentrance();\n";
 
     if (TREE_CODE(ret_type) != VOID_TYPE)
         out << "    return retn;\n";

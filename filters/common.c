@@ -52,6 +52,7 @@ static bool log_callback(function_call *call, void *data)
 {
     GLenum error;
 
+    flockfile(log_file);
     fputs("C: ", log_file);
     dump_any_call(&call->generic, 0, log_file);
     if ((error = get_call_error(call)))
@@ -61,6 +62,7 @@ static bool log_callback(function_call *call, void *data)
         fputs("\n", log_file);
     }
     if (log_flush) fflush(log_file);
+    funlockfile(log_file);
     return true;
 }
 

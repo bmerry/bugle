@@ -30,6 +30,9 @@
 #include <string.h>
 #include <errno.h>
 #include <stdio.h>
+#if HAVE_PTHREAD_H
+# include <pthread.h>
+#endif
 
 #define FILTERFILE "/.bugle/filters"
 
@@ -138,18 +141,18 @@ static void load_config(void)
     }
 }
 
+static pthread_once_t init_key_once = PTHREAD_ONCE_INIT;
+static void initialise_all(void)
+{
+    initialise_hashing();
+    initialise_real();
+    initialise_canonical();
+    initialise_filters();
+    load_config();
+}
+
 void interceptor(function_call *call)
 {
-    static bool initialised = false;
-
-    if (!initialised)
-    {
-        initialise_hashing();
-        initialise_real();
-        initialise_canonical();
-        initialise_filters();
-        load_config();
-        initialised = true;
-    }
+    pthread_once(&init_key_once, initialise_all);
     run_filters(call);
 }

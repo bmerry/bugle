@@ -111,12 +111,18 @@ extern int number_of_types;
 extern int number_of_functions;
 extern int number_of_libraries;
 
+/* Code used by budgie output */
 void dump_bitfield(unsigned int value, FILE *out,
                    bitfield_pair *tags, int count);
-bool dump_string(const void *value, int count, FILE *out);
-int count_string(const void *value);
+
+bool check_set_reentrance(void);
+void clear_reentrance(void);
+
 
 /* User functions */
+
+bool dump_string(const void *value, int count, FILE *out);
+int count_string(const void *value);
 
 void make_indent(int indent, FILE *out);
 void dump_any_type(budgie_type type, const void *value, int length, FILE *out);

@@ -1,3 +1,5 @@
+/* Generates a variety of GL errors */
+
 #include <GL/gl.h>
 #include <GL/glx.h>
 #include <GL/glut.h>

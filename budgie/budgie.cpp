@@ -484,7 +484,6 @@ static void headers()
     libc << "#include \"" << libbase << ".h\"\n";
     libc << "#include \"" << utilbase << ".h\"\n";
     libc << "#include \"budgieutils.h\"\n";
-    libc << "static bool reentrant = false;\n";
     libhead << "#ifndef LIB_H\n";
     libhead << "#define LIB_H\n\n";
     libhead << "#include \"" << typebase << ".h\"\n";

@@ -26,6 +26,11 @@ AC_CHECK_LIB([history], [add_history], [
   READLINE_LIBS="-lhistory $READLINE_LIBS"], [], [-lreadline])
 AC_SUBST(READLINE_LIBS)
 
+THREAD_LIBS=""
+AC_CHECK_LIB([pthread], [pthread_create], [
+  THREAD_LIBS="-lpthread $THREAD_LIBS"], [], [])
+AC_SUBST(THREAD_LIBS)
+
 # Sadly, FreeBSD does not implement libraries depending on libraries, and
 # OpenGL uses X and maths functions. Hence the -lm and all the X rubbish.
 GL_LIBS=""
@@ -40,7 +45,7 @@ AC_HEADER_STDC
 AC_HEADER_DIRENT
 AC_HEADER_STDBOOL
 AC_CHECK_HEADERS([sys/types.h stdlib.h stddef.h regex.h])
-AC_CHECK_HEADERS([readline/readline.h])
+AC_CHECK_HEADERS([readline/readline.h pthread.h])
 
 dnl Checks for types
 AC_CHECK_TYPE(ptrdiff_t, long int)

@@ -55,9 +55,11 @@ static bool error_callback(function_call *call, void *data)
          */
         if (*call->typed.glGetError.retn != GL_NO_ERROR)
         {
+            flockfile(stderr);
             fputs("Warning: glGetError() returned ", stderr);
             dump_GLerror(call->typed.glGetError.retn, -1, stderr);
             fputs("\n", stderr);
+            funlockfile(stderr);
         }
         else if (!in_begin_end() && ctx->c_internal.c_error.data)
         {
@@ -112,8 +114,10 @@ static bool showerror_callback(function_call *call, void *data)
     GLenum error;
     if ((error = *(GLenum *) get_filter_set_call_state(call, error_handle)) != GL_NO_ERROR)
     {
+        flockfile(stderr);
         dump_any_type(TYPE_7GLerror, &error, -1, stderr);
         fprintf(stderr, " in %s\n", function_table[call->generic.id].name);
+        funlockfile(stderr);
     }
     return true;
 }

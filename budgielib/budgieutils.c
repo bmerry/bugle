@@ -32,6 +32,9 @@
 #include "budgieutils.h"
 #include <setjmp.h>
 #include <dlfcn.h>
+#if HAVE_PTHREAD_H
+# include <pthread.h>
+#endif
 
 void dump_bitfield(unsigned int value, FILE *out,
                    bitfield_pair *tags, int count)
@@ -151,19 +154,13 @@ void make_indent(int indent, FILE *out)
         fputc(' ', out);
 }
 
-void initialise_real(void)
+static pthread_once_t initialise_real_once = PTHREAD_ONCE_INIT;
+
+static void initialise_real_work(void)
 {
     void *handle;
     size_t i, j;
     int N, F;
-    static bool done = false;
-
-    /* We have to provide this protection, because the interceptor function
-     * call initialise_real if they are re-entered so that they can bypass
-     * the filter chain.
-     */
-    if (done) return;
-    done = true;
 
     N = number_of_libraries;
     F = number_of_functions;
@@ -185,6 +182,52 @@ void initialise_real(void)
             exit(1);
         }
     }
+}
+
+void initialise_real(void)
+{
+    /* We have to provide this protection, because the interceptor functions
+     * call initialise_real if they are re-entered so that they can bypass
+     * the filter chain.
+     */
+    pthread_once(&initialise_real_once, initialise_real_work);
+}
+
+/* Re-entrance protection. Note that we still wish to allow other threads
+ * to enter from the user application; it is just that we do not want the
+ * real library to call our fake functions.
+ *
+ * Also note that the protection is called *before* we first encounter
+ * the interceptor, so we cannot rely on the interceptor to initialise us.
+ */
+
+static pthread_key_t reentrance_key;
+static pthread_once_t reentrance_once = PTHREAD_ONCE_INIT;
+
+static void initialise_reentrance(void)
+{
+    pthread_key_create(&reentrance_key, NULL);
+}
+
+/* Sets the flag to mark entry, and returns true if we should call
+ * the interceptor. We set an arbitrary non-NULL pointer.
+ */
+bool check_set_reentrance(void)
+{
+    /* Note that since the data is thread-specific, we need not worry
+     * about contention.
+     */
+    bool ans;
+
+    pthread_once(&reentrance_once, initialise_reentrance);
+    ans = pthread_getspecific(reentrance_key) == NULL;
+    pthread_setspecific(reentrance_key, &ans);
+    return ans;
+}
+
+void clear_reentrance(void)
+{
+    pthread_setspecific(reentrance_key, NULL);
 }
 
 /* Memory validation */

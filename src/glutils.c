@@ -28,19 +28,16 @@
 #include <GL/gl.h>
 #include <assert.h>
 
-static state_7context_I **context_state = NULL;
+state_7context_I *(*trackcontext_get_context_state_ptr)(void) = NULL;
 static filter_set *error_handle = NULL;
-
-state_7context_I *get_context_state(void)
-{
-    assert(context_state);
-    return *context_state;
-}
 
 bool in_begin_end(void)
 {
-    assert(context_state);
-    return !*context_state || (*context_state)->c_internal.c_in_begin_end.data;
+    state_7context_I *context_state;
+
+    assert(trackcontext_get_context_state_ptr);
+    context_state = trackcontext_get_context_state_ptr();
+    return !context_state || context_state->c_internal.c_in_begin_end.data;
 }
 
 bool begin_internal_render(void)
@@ -93,7 +90,10 @@ void filter_set_uses_state(const char *name)
     filter_set *handle;
 
     register_filter_set_depends(name, "trackcontext");
-    if (!context_state)
+    /* Since this function should only be called during init, we shouldn't
+     * have to worry about thread safety
+     */
+    if (!trackcontext_get_context_state_ptr)
     {
         handle = get_filter_set_handle("trackcontext");
         if (!handle)
@@ -102,11 +102,11 @@ void filter_set_uses_state(const char *name)
                     name);
             exit(1);
         }
-        context_state = (state_7context_I **)
-            get_filter_set_symbol(handle, "context_state");
-        if (!context_state)
+        trackcontext_get_context_state_ptr = (state_7context_I *(*)(void))
+            get_filter_set_symbol(handle, "trackcontext_get_context_state");
+        if (!trackcontext_get_context_state_ptr)
         {
-            fprintf(stderr, "could not find symbol context_state in filterset trackcontext\n");
+            fprintf(stderr, "could not find symbol trackcontext_get_context_state in filterset trackcontext\n");
             exit(1);
         }
     }

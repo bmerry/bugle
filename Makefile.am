@@ -52,14 +52,14 @@ src_libbugleutils_la_SOURCES = \
 nodist_src_libbugleutils_la_SOURCES = \
 	src/utils.c src/utils.h src/types.c src/types.h \
 	src/gltokens.c
-src_libbugleutils_la_LIBADD = $(LTLIBOBJS) $(GL_LIBS) $(X_PRE_LIBS) $(X_LIBS) $(X_EXTRA_LIBS)
-src_libbugleutils_la_LDFLAGS = -export-dynamic -version-info 0:0:0
+src_libbugleutils_la_LIBADD = $(LTLIBOBJS) $(GL_LIBS) $(X_PRE_LIBS) $(X_LIBS) $(X_EXTRA_LIBS) $(THREAD_LIBS)
+src_libbugleutils_la_LDFLAGS = -thread-safe -export-dynamic -version-info 0:0:0
 src_libbugle_la_SOURCES = \
 	src/interceptor.c src/filters.c src/filters.h
 nodist_src_libbugle_la_SOURCES = \
 	src/lib.c src/lib.h
-src_libbugle_la_LIBADD = src/libbugleutils.la $(GL_LIBS) $(X_PRE_LIBS) $(X_LIBS) $(X_EXTRA_LIBS)
-src_libbugle_la_LDFLAGS = -export-dynamic -version-info 0:1:0
+src_libbugle_la_LIBADD = src/libbugleutils.la $(GL_LIBS) $(X_PRE_LIBS) $(X_LIBS) $(X_EXTRA_LIBS) $(THREAD_LIBS)
+src_libbugle_la_LDFLAGS = -thread-safe -export-dynamic -version-info 0:1:0
 
 BUILT_SOURCES = src/lib.h src/utils.h src/types.h src/confparse.h
 
@@ -87,22 +87,26 @@ endif
 
 # Filters
 filters_common_la_SOURCES = filters/common.c
-filters_common_la_LDFLAGS = -module -avoid-version
+filters_common_la_LDFLAGS = -thread-safe -module -avoid-version
 filters_modify_la_SOURCES = filters/modify.c
-filters_modify_la_LDFLAGS = -module -avoid-version
+filters_modify_la_LDFLAGS = -thread-safe -module -avoid-version
 filters_validate_la_SOURCES = filters/validate.c
-filters_validate_la_LDFLAGS = -module -avoid-version
+filters_validate_la_LDFLAGS = -thread-safe -module -avoid-version
 filters_tracker_la_SOURCES = filters/tracker.c
-filters_tracker_la_LDFLAGS = -module -avoid-version
+filters_tracker_la_LDFLAGS = -thread-safe -module -avoid-version
 filters_debugger_la_SOURCES = filters/debugger.c
-filters_debugger_la_LDFLAGS = -module -avoid-version
+filters_debugger_la_LDFLAGS = -thread-safe -module -avoid-version
 filters_capture_la_SOURCES = filters/capture.c
-filters_capture_la_LDFLAGS = -module -avoid-version
+filters_capture_la_LDFLAGS = -thread-safe -module -avoid-version
 
 # Demo programs
-check_PROGRAMS = tests/errors
+check_PROGRAMS = tests/errors tests/threads1 tests/threads2
 tests_errors_SOURCES = tests/errors.c
 tests_errors_LDADD = -lglut $(GL_LIBS) $(X_PRE_LIBS) $(X_LIBS) $(X_EXTRA_LIBS)
+tests_threads1_SOURCES = tests/threads1.c
+tests_threads1_LDADD = $(GL_LIBS) $(X_PRE_LIBS) $(X_LIBS) $(X_EXTRA_LIBS) $(THREAD_LIBS)
+tests_threads2_SOURCES = tests/threads2.c
+tests_threads2_LDADD = $(GL_LIBS) $(X_PRE_LIBS) $(X_LIBS) $(X_EXTRA_LIBS) $(THREAD_LIBS)
 
 # Extra files to distribute
 EXTRA_DIST = src/gl.bc src/data/gl.c src/data/overrides.h \

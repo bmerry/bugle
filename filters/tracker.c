@@ -27,30 +27,44 @@
 #include "common/bool.h"
 #include <assert.h>
 #include <GL/glx.h>
+#if HAVE_PTHREAD_H
+# include <pthread.h>
+#endif
 
-state_7context_I *context_state = NULL;
+static pthread_key_t context_state_key;
+
+state_7context_I *trackcontext_get_context_state()
+{
+    state_7context_I *state;
+    state_generic *parent;
+    GLXContext ctx;
+
+    state = pthread_getspecific(context_state_key);
+    if (!state) /* indicates "dirty" */
+    {
+        ctx = glXGetCurrentContext();
+        if (!ctx) return NULL;  /* ok, there is no context */
+
+        parent = &get_root_state()->c_context.generic;
+        if (!(state = (state_7context_I *) get_state_index(parent, ctx)))
+            state = (state_7context_I *) add_state_index(parent, ctx);
+        pthread_setspecific(context_state_key, state);
+    }
+    return state;
+}
 
 bool trackcontext_callback(function_call *call, void *data)
 {
-    GLXContext ctx;
-    state_generic *parent;
-
     switch (canonical_call(call))
     {
     case FUNC_glXMakeCurrent:
-        ctx = *call->typed.glXMakeCurrent.arg2;
-        break;
 #ifdef GLX_VERSION_1_3
     case FUNC_glXMakeContextCurrent:
-        ctx = *call->typed.glXMakeContextCurrent.arg3;
-        break;
 #endif
-    default:
-        return true;
+        /* Tag the thread-local data as dirty */
+        pthread_setspecific(context_state_key, NULL);
+        break;
     }
-    parent = &get_root_state()->c_context.generic;
-    if (!(context_state = (state_7context_I *) get_state_index(parent, ctx)))
-        context_state = (state_7context_I *) add_state_index(parent, ctx);
     return true;
 }
 
@@ -61,6 +75,8 @@ bool trackcontext_callback(function_call *call, void *data)
 
 static bool trackbeginend_callback(function_call *call, void *data)
 {
+    state_7context_I *context_state;
+
     switch (canonical_call(call))
     {
     case FUNC_glBegin:
@@ -76,13 +92,13 @@ static bool trackbeginend_callback(function_call *call, void *data)
         case GL_QUADS:
         case GL_QUAD_STRIP:
         case GL_POLYGON:
-            if (context_state)
+            if ((context_state = trackcontext_get_context_state()) != NULL)
                 context_state->c_internal.c_in_begin_end.data = GL_TRUE;
         default: ;
         }
         break;
     case FUNC_glEnd:
-        if (context_state)
+        if ((context_state = trackcontext_get_context_state()) != NULL)
             context_state->c_internal.c_in_begin_end.data = GL_FALSE;
         break;
     }
@@ -91,6 +107,7 @@ static bool trackbeginend_callback(function_call *call, void *data)
 
 static bool initialise_trackcontext(filter_set *handle)
 {
+    pthread_key_create(&context_state_key, NULL);
     register_filter(handle, "trackcontext", trackcontext_callback);
     register_filter_depends("trackcontext", "invoke");
     return true;
