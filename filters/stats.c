@@ -403,11 +403,13 @@ static bool initialise_stats(filter_set *handle)
 
     f = bugle_register_filter(handle, "stats");
     bugle_register_filter_catches(f, GROUP_glXSwapBuffers, stats_glXSwapBuffers);
+#ifdef GL_ARB_occlusion_query
     if (count_fragments)
     {
         bugle_register_filter_catches(f, GROUP_glBeginQueryARB, stats_fragments);
         bugle_register_filter_catches(f, GROUP_glEndQueryARB, stats_fragments);
     }
+#endif
     if (count_triangles)
     {
         bugle_register_filter_catches_drawing_immediate(f, stats_immediate);
