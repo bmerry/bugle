@@ -1,27 +1,52 @@
-- improvements to gldb
-  - allow Ctrl-C to abort current line when reading commands
-  - make pushing enter in gldb rerun last command
-  - enable and disable filters on the fly
-  - set filter variables on the fly
+gldb
+----
+- allow Ctrl-C to abort current line when reading commands
+- make pushing enter in gldb rerun last command
+- enable and disable filters on the fly
+- set filter variables on the fly
+- enable reporting of segfaults
+- print full dump of current function
+- break on particular GL errors, not just 'all errors'
+
+bugle
+-----
+- thread safety
+- make segfault handling adhere better to POSIX
 - rewrite some things to use hash tables
-- redesign state specification grammar
-- more autoconf tests (e.g. regex)
 - autoconf test for GLENUM_IS_GLUINT
-- move filter code into budgie?
-- write support for state
-- capture and reload
-- more documentation
 - use ltdl for loading modules
-- allow the filter chain to be selectively bypassed, for benchmarking purposes
-- better separation between libbugleutils and libbugle, so that only the
-  latter requires GL and X libraries
 - cap and extension overrides
+- wrap glXGetProcAddress
 - statistics
 - capture information about call lists
 - profiling
 - use dump overrides rather than alterative types for alt enums and errors?
+- capture and replay
 
-LONG TERM
+budgie
+------
+- redesign state specification grammar
+- more autoconf tests (e.g. regex)
+- robust logging, to avoid segfaulting
+- dump expressions rather than dump functions
+- move filter code into budgie?
+- write support for state
+- capture and replay
+- better separation between libbugleutils and libbugle, so that only the
+  latter requires GL and X libraries
+
+tests
+-----
+- multithreaded tests
+- coverage tests
+- test for glut
+
+general
+-------
+- more documentation
+- allow the filter chain to be selectively bypassed, for benchmarking purposes
+
+long term
 ---------
 - internationalisation
 - Windows support

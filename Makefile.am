@@ -99,6 +99,11 @@ filters_debugger_la_LDFLAGS = -module -avoid-version
 filters_capture_la_SOURCES = filters/capture.c
 filters_capture_la_LDFLAGS = -module -avoid-version
 
+# Demo programs
+check_PROGRAMS = tests/errors
+tests_errors_SOURCES = tests/errors.c
+tests_errors_LDADD = -lglut $(GL_LIBS) $(X_PRE_LIBS) $(X_LIBS) $(X_EXTRA_LIBS)
+
 # Extra files to distribute
 EXTRA_DIST = src/gl.bc src/data/gl.c src/data/overrides.h \
 	gentokens/gettokens.awk \
