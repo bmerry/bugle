@@ -2,7 +2,7 @@ Current:
 --------
 - check whether all dependencies on trackextensions are listed
 - exploit per-context, per-filter state e.g. for video
-- update filter documentation re GROUP_.
+- finish the state manager
 
 gldb
 ----
