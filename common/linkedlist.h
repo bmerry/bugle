@@ -38,9 +38,10 @@ typedef struct
 {
     bugle_list_node *head;
     bugle_list_node *tail;
+    bool owns_memory;
 } bugle_linked_list;
 
-void bugle_list_init(bugle_linked_list *l);
+void bugle_list_init(bugle_linked_list *l, bool owns_memory);
 void *bugle_list_data(const bugle_list_node *node);
 void bugle_list_set_data(bugle_list_node *node, void *data);
 bugle_list_node *bugle_list_prepend(bugle_linked_list *l, void *data);
@@ -51,8 +52,8 @@ bugle_list_node *bugle_list_head(const bugle_linked_list *l);
 bugle_list_node *bugle_list_tail(const bugle_linked_list *l);
 bugle_list_node *bugle_list_next(const bugle_list_node *node);
 bugle_list_node *bugle_list_prev(const bugle_list_node *node);
-void bugle_list_erase(bugle_linked_list *l, bugle_list_node *node, bool free_data);
-void bugle_list_clear(bugle_linked_list *l, bool free_data);
+void bugle_list_erase(bugle_linked_list *l, bugle_list_node *node);
+void bugle_list_clear(bugle_linked_list *l);
 
 #ifdef __cplusplus
 }

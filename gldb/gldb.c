@@ -879,8 +879,8 @@ static char **completion(const char *text, int start, int end)
 
 static void shutdown(void)
 {
-    bugle_hash_clear(&command_table, true);
-    bugle_hash_clear(&break_on, false);
+    bugle_hash_clear(&command_table);
+    bugle_hash_clear(&break_on);
     free(prog_argv);
 }
 
@@ -909,8 +909,8 @@ static void initialise(void)
     const command_info *cmd;
 
     bugle_initialise_hashing();
-    bugle_hash_init(&break_on);
-    bugle_hash_init(&command_table);
+    bugle_hash_init(&break_on, false);
+    bugle_hash_init(&command_table, true);
     for (cmd = commands; cmd->name; cmd++)
         register_command(cmd);
 #if HAVE_READLINE

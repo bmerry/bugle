@@ -40,7 +40,7 @@
 
 static bool trap = false;
 static filter_set *error_handle = NULL;
-static size_t error_context_offset;
+static bugle_object_view error_context_view;
 
 static bool error_callback(function_call *call, const callback_data *data)
 {
@@ -56,7 +56,7 @@ static bool error_callback(function_call *call, const callback_data *data)
          * rather than whatever we have saved. Also, we must make sure to
          * return nothing else inside begin/end.
          */
-        stored_error = bugle_object_get_current_data(&bugle_context_class, error_context_offset);
+        stored_error = bugle_object_get_current_data(&bugle_context_class, error_context_view);
         if (*call->typed.glGetError.retn != GL_NO_ERROR)
         {
             flockfile(stderr);
@@ -76,7 +76,7 @@ static bool error_callback(function_call *call, const callback_data *data)
         /* Note: we deliberately don't call begin_internal_render here,
          * since it will beat us to calling glGetError().
          */
-        stored_error = bugle_object_get_current_data(&bugle_context_class, error_context_offset);
+        stored_error = bugle_object_get_current_data(&bugle_context_class, error_context_view);
         while ((error = CALL_glGetError()) != GL_NO_ERROR)
         {
             if (stored_error && !*stored_error)
@@ -112,10 +112,10 @@ static bool initialise_error(filter_set *handle)
     /* We don't call filter_post_renders, because that would make the
      * error filterset depend on itself.
      */
-    error_context_offset = bugle_object_class_register(&bugle_context_class,
-                                                       NULL,
-                                                       NULL,
-                                                       sizeof(GLenum));
+    error_context_view = bugle_object_class_register(&bugle_context_class,
+                                                     NULL,
+                                                     NULL,
+                                                     sizeof(GLenum));
     return true;
 }
 

@@ -36,14 +36,19 @@ typedef struct
     size_t size;
     size_t count;
     int size_index;
+    bool owns_memory;
 } bugle_hash_table;
 
+/* Must be called before any other hash functions */
 void bugle_initialise_hashing(void);
 
-void bugle_hash_init(bugle_hash_table *table);
+/* A hash table that owns its memory will call free() on values that
+ * are deleted or overwritten.
+ */
+void bugle_hash_init(bugle_hash_table *table, bool owns_memory);
 void bugle_hash_set(bugle_hash_table *table, const char *key, void *value);
 void *bugle_hash_get(const bugle_hash_table *table, const char *key);
-void bugle_hash_clear(bugle_hash_table *table, bool free_data);
+void bugle_hash_clear(bugle_hash_table *table);
 
 /* Walk the hash table. A walker loop looks like this:
  * for (h = bugle_hash_begin(&table); h; h = bugle_hash_next(&table, h))
@@ -52,7 +57,8 @@ const bugle_hash_entry *bugle_hash_begin(bugle_hash_table *table);
 const bugle_hash_entry *bugle_hash_next(bugle_hash_table *table, const bugle_hash_entry *e);
 
 /* A similar implementation but with void * instead of string keys.
- * The data in the void * is irrelevant.
+ * The data in the void * is irrelevant and in fact the void * is
+ * never dereferenced, so one can cast integers to void *.
  */
 typedef struct
 {
@@ -66,12 +72,13 @@ typedef struct
     size_t size;
     size_t count;
     int size_index;
+    bool owns_memory;
 } bugle_hashptr_table;
 
-void bugle_hashptr_init(bugle_hashptr_table *table);
+void bugle_hashptr_init(bugle_hashptr_table *table, bool owns_memory);
 void bugle_hashptr_set(bugle_hashptr_table *table, const void *key, void *value);
 void *bugle_hashptr_get(const bugle_hashptr_table *table, const void *key);
-void bugle_hashptr_clear(bugle_hashptr_table *table, bool free_data);
+void bugle_hashptr_clear(bugle_hashptr_table *table);
 
 const bugle_hashptr_entry *bugle_hashptr_begin(bugle_hashptr_table *table);
 const bugle_hashptr_entry *bugle_hashptr_next(bugle_hashptr_table *table, const bugle_hashptr_entry *e);

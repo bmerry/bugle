@@ -55,11 +55,11 @@ typedef struct
     float shown_fps;
 } showstats_struct;
 
-static size_t stats_offset;
-static size_t showstats_offset;
+static bugle_object_view stats_view;
+static bugle_object_view showstats_view;
 static bool count_fragments = false;
 static bool count_triangles = false;
-static size_t displaylist_offset;
+static bugle_object_view displaylist_view;
 
 static void initialise_stats_struct(const void *key, void *data)
 {
@@ -111,7 +111,7 @@ static void update_triangles(stats_struct *s, GLenum mode, GLsizei count)
     }
     if (!t) return;
 
-    displaylist_count = bugle_object_get_current_data(&bugle_displaylist_class, displaylist_offset);
+    displaylist_count = bugle_object_get_current_data(&bugle_displaylist_class, displaylist_view);
     switch (bugle_displaylist_mode())
     {
     case GL_NONE:
@@ -136,7 +136,7 @@ static bool stats_glXSwapBuffers(function_call *call, const callback_data *data)
     float elapsed;
     FILE *f;
 
-    s = bugle_object_get_current_data(&bugle_context_class, stats_offset);
+    s = bugle_object_get_current_data(&bugle_context_class, stats_view);
     gettimeofday(&now, NULL);
     elapsed = (now.tv_sec - s->last_time.tv_sec)
         + 1.0e-6f * (now.tv_usec - s->last_time.tv_usec);
@@ -169,10 +169,10 @@ static bool stats_fragments(function_call *call, const callback_data *data)
 {
     stats_struct *s;
 
-    s = bugle_object_get_current_data(&bugle_context_class, stats_offset);
+    s = bugle_object_get_current_data(&bugle_context_class, stats_view);
     if (count_fragments)
     {
-        s = bugle_object_get_current_data(&bugle_context_class, stats_offset);
+        s = bugle_object_get_current_data(&bugle_context_class, stats_view);
         if (s->query)
         {
             fputs("App is using occlusion queries, disabling fragment counting\n", stderr);
@@ -190,7 +190,7 @@ static bool stats_immediate(function_call *call, const callback_data *data)
 
     if (bugle_in_begin_end())
     {
-        s = bugle_object_get_current_data(&bugle_context_class, stats_offset);
+        s = bugle_object_get_current_data(&bugle_context_class, stats_view);
         s->begin_count++;
     }
     return true;
@@ -200,7 +200,7 @@ static bool stats_glBegin(function_call *call, const callback_data *data)
 {
     stats_struct *s;
 
-    s = bugle_object_get_current_data(&bugle_context_class, stats_offset);
+    s = bugle_object_get_current_data(&bugle_context_class, stats_view);
     s->begin_mode = *call->typed.glBegin.arg0;
     s->begin_count = 0;
     return true;
@@ -210,7 +210,7 @@ static bool stats_glEnd(function_call *call, const callback_data *data)
 {
     stats_struct *s;
 
-    s = bugle_object_get_current_data(&bugle_context_class, stats_offset);
+    s = bugle_object_get_current_data(&bugle_context_class, stats_view);
     update_triangles(s, s->begin_mode, s->begin_count);
     s->begin_mode = 0;
     s->begin_count = 0;
@@ -221,7 +221,7 @@ static bool stats_glDrawArrays(function_call *call, const callback_data *data)
 {
     stats_struct *s;
 
-    s = bugle_object_get_current_data(&bugle_context_class, stats_offset);
+    s = bugle_object_get_current_data(&bugle_context_class, stats_view);
     update_triangles(s, *call->typed.glDrawArrays.arg0, *call->typed.glDrawArrays.arg2);
     return true;
 }
@@ -230,7 +230,7 @@ static bool stats_glDrawElements(function_call *call, const callback_data *data)
 {
     stats_struct *s;
 
-    s = bugle_object_get_current_data(&bugle_context_class, stats_offset);
+    s = bugle_object_get_current_data(&bugle_context_class, stats_view);
     update_triangles(s, *call->typed.glDrawElements.arg0, *call->typed.glDrawElements.arg1);
     return true;
 }
@@ -240,7 +240,7 @@ static bool stats_glDrawRangeElements(function_call *call, const callback_data *
 {
     stats_struct *s;
 
-    s = bugle_object_get_current_data(&bugle_context_class, stats_offset);
+    s = bugle_object_get_current_data(&bugle_context_class, stats_view);
     update_triangles(s, *call->typed.glDrawRangeElementsEXT.arg0, *call->typed.glDrawRangeElementsEXT.arg3);
     return true;
 }
@@ -252,7 +252,7 @@ static bool stats_glMultiDrawArrays(function_call *call, const callback_data *da
     stats_struct *s;
     GLsizei i, primcount;
 
-    s = bugle_object_get_current_data(&bugle_context_class, stats_offset);
+    s = bugle_object_get_current_data(&bugle_context_class, stats_view);
     primcount = *call->typed.glMultiDrawArrays.arg3;
     for (i = 0; i < primcount; i++)
         update_triangles(s, *call->typed.glMultiDrawArrays.arg0,
@@ -265,7 +265,7 @@ static bool stats_glMultiDrawElements(function_call *call, const callback_data *
     stats_struct *s;
     GLsizei i, primcount;
 
-    s = bugle_object_get_current_data(&bugle_context_class, stats_offset);
+    s = bugle_object_get_current_data(&bugle_context_class, stats_view);
 
     primcount = *call->typed.glMultiDrawElements.arg4;
     for (i = 0; i < primcount; i++)
@@ -280,10 +280,10 @@ static bool stats_glCallList(function_call *call, const callback_data *data)
     stats_struct *s;
     size_t *count;
 
-    s = bugle_object_get_current_data(&bugle_context_class, stats_offset);
+    s = bugle_object_get_current_data(&bugle_context_class, stats_view);
     count = bugle_object_get_data(&bugle_displaylist_class,
                                   bugle_displaylist_get(*call->typed.glCallList.arg0),
-                                  displaylist_offset);
+                                  displaylist_view);
     if (count) s->triangles += *count;
     return true;
 }
@@ -298,7 +298,7 @@ static bool stats_post_callback(function_call *call, const callback_data *data)
 {
     stats_struct *s;
 
-    s = bugle_object_get_current_data(&bugle_context_class, stats_offset);
+    s = bugle_object_get_current_data(&bugle_context_class, stats_view);
 #ifdef GL_ARB_occlusion_query
     if (s->query && bugle_begin_internal_render())
     {
@@ -364,8 +364,8 @@ static bool showstats_callback(function_call *call, const callback_data *data)
         old_read = CALL_glXGetCurrentReadDrawable();
         dpy = CALL_glXGetCurrentDisplay();
         CALL_glXMakeContextCurrent(dpy, old_write, old_write, aux);
-        s = bugle_object_get_current_data(&bugle_context_class, stats_offset);
-        ss = bugle_object_get_current_data(&bugle_context_class, showstats_offset);
+        s = bugle_object_get_current_data(&bugle_context_class, stats_view);
+        ss = bugle_object_get_current_data(&bugle_context_class, showstats_view);
 
         gettimeofday(&now, NULL);
         elapsed = (now.tv_sec - ss->last_show_time.tv_sec)
@@ -434,15 +434,15 @@ static bool initialise_stats(filter_set *handle)
         bugle_register_filter_depends("stats_post", "invoke");
     }
     bugle_log_register_filter("stats");
-    stats_offset = bugle_object_class_register(&bugle_context_class,
-                                               initialise_stats_struct,
-                                               NULL,
-                                               sizeof(stats_struct));
+    stats_view = bugle_object_class_register(&bugle_context_class,
+                                             initialise_stats_struct,
+                                             NULL,
+                                             sizeof(stats_struct));
     if (count_triangles)
-        displaylist_offset = bugle_object_class_register(&bugle_displaylist_class,
-                                                         NULL,
-                                                         NULL,
-                                                         sizeof(size_t));
+        displaylist_view = bugle_object_class_register(&bugle_displaylist_class,
+                                                       NULL,
+                                                       NULL,
+                                                       sizeof(size_t));
     return true;
 }
 
@@ -458,10 +458,10 @@ static bool initialise_showstats(filter_set *handle)
     bugle_register_filter_depends("debugger", "showstats");
     bugle_register_filter_depends("screenshot", "showstats");
     bugle_register_filter_catches(f, CFUNC_glXSwapBuffers, showstats_callback);
-    showstats_offset = bugle_object_class_register(&bugle_context_class,
-                                                   initialise_showstats_struct,
-                                                   NULL,
-                                                   sizeof(showstats_struct));
+    showstats_view = bugle_object_class_register(&bugle_context_class,
+                                                 initialise_showstats_struct,
+                                                 NULL,
+                                                 sizeof(showstats_struct));
     return true;
 }
 

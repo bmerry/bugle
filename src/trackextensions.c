@@ -28,7 +28,7 @@
 #include <string.h>
 #include <assert.h>
 
-static size_t trackextensions_offset = 0;
+static bugle_object_view trackextensions_view = 0;
 
 static void context_initialise(const void *key, void *data)
 {
@@ -61,10 +61,10 @@ static void context_initialise(const void *key, void *data)
 
 static bool initialise_trackextensions(filter_set *handle)
 {
-    trackextensions_offset = bugle_object_class_register(&bugle_context_class,
-                                                         context_initialise,
-                                                         NULL,
-                                                         sizeof(bool) * BUGLE_GLEXT_COUNT);
+    trackextensions_view = bugle_object_class_register(&bugle_context_class,
+                                                       context_initialise,
+                                                       NULL,
+                                                       sizeof(bool) * BUGLE_GLEXT_COUNT);
     return true;
 }
 
@@ -73,7 +73,7 @@ bool bugle_gl_has_extension(int ext)
     bool *data;
 
     assert(0 <= ext && ext < BUGLE_GLEXT_COUNT);
-    data = (bool *) bugle_object_get_current_data(&bugle_context_class, trackextensions_offset);
+    data = (bool *) bugle_object_get_current_data(&bugle_context_class, trackextensions_view);
     if (!data) return false;
     else return data[ext];
 }

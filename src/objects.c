@@ -26,6 +26,7 @@
 #include <stddef.h>
 #include <pthread.h>
 #include <string.h>
+#include <stdlib.h>
 #include "common/linkedlist.h"
 #include "common/safemem.h"
 #include "common/bool.h"
@@ -38,121 +39,123 @@ typedef struct
     size_t size;
 } object_class_info;
 
-void bugle_object_class_init(object_class *klass, object_class *parent)
+void bugle_object_class_init(bugle_object_class *klass, bugle_object_class *parent)
 {
-    bugle_list_init(&klass->info);
-    klass->total_size = 0;
+    bugle_list_init(&klass->info, true);
     klass->parent = parent;
+    klass->count = 0;
     if (parent)
-        klass->parent_offset = bugle_object_class_register(parent, NULL, NULL, sizeof(void *));
+        klass->parent_view = bugle_object_class_register(parent, NULL, NULL, sizeof(bugle_object *));
     else
         pthread_key_create(&klass->current, NULL);
 }
 
-void bugle_object_class_clear(object_class *klass)
+void bugle_object_class_clear(bugle_object_class *klass)
 {
-    bugle_list_clear(&klass->info, true);
+    bugle_list_clear(&klass->info);
     if (!klass->parent)
         pthread_key_delete(klass->current);
 }
 
-size_t bugle_object_class_register(object_class *klass,
-                                   void (*constructor)(const void *key, void *data),
-                                   void (*destructor)(void *data),
-                                   size_t size)
+bugle_object_view bugle_object_class_register(bugle_object_class *klass,
+                                              void (*constructor)(const void *key, void *data),
+                                              void (*destructor)(void *data),
+                                              size_t size)
 {
     object_class_info *info;
-    size_t ans;
 
     info = bugle_malloc(sizeof(object_class_info));
     info->constructor = constructor;
     info->destructor = destructor;
     info->size = size;
     bugle_list_append(&klass->info, info);
-    ans = klass->total_size;
-    klass->total_size += size;
-    return ans;
+    return klass->count++;
 }
 
-static inline void *offset_ptr(void *base, size_t offset)
+bugle_object *bugle_object_new(const bugle_object_class *klass, const void *key, bool make_current)
 {
-    return (void *) (((char *) base) + offset);
-}
-
-void *bugle_object_new(const object_class *klass, const void *key, bool make_current)
-{
-    void *ans;
-    size_t offset = 0;
+    bugle_object *obj;
     bugle_list_node *i;
     const object_class_info *info;
+    size_t j;
 
-    if (klass->total_size)
-        ans = bugle_malloc(klass->total_size);
-    else
-        ans = bugle_malloc(1);
-    if (make_current) bugle_object_set_current(klass, ans);
+    obj = bugle_malloc(sizeof(bugle_object) + klass->count * sizeof(void *) - sizeof(void *));
+    obj->klass = klass;
+    obj->count = klass->count;
 
-    for (i = bugle_list_head(&klass->info); i; i = bugle_list_next(i))
+    for (i = bugle_list_head(&klass->info), j = 0; i; i = bugle_list_next(i), j++)
+    {
+        info = (const object_class_info *) bugle_list_data(i);
+        if (info->size)
+        {
+            obj->views[j] = bugle_malloc(info->size);
+            memset(obj->views[j], 0, info->size);
+        }
+        else
+            obj->views[j] = NULL;
+    }
+
+    if (make_current) bugle_object_set_current(klass, obj);
+
+    for (i = bugle_list_head(&klass->info), j = 0; i; i = bugle_list_next(i), j++)
     {
         info = (const object_class_info *) bugle_list_data(i);
         if (info->constructor)
-            (*info->constructor)(key, offset_ptr(ans, offset));
-        else
-            memset(offset_ptr(ans, offset), 0, info->size);
-        offset += info->size;
+            (*info->constructor)(key, obj->views[j]);
     }
-    return ans;
+    return obj;
 }
 
-void bugle_object_delete(const object_class *klass, void *obj)
+void bugle_object_delete(const bugle_object_class *klass, bugle_object *obj)
 {
     bugle_list_node *i;
+    size_t j;
     const object_class_info *info;
-    size_t offset = 0;
 
-    for (i = bugle_list_head(&klass->info); i; i = bugle_list_next(i))
+    for (i = bugle_list_head(&klass->info), j = 0; i; i = bugle_list_next(i), j++)
     {
         info = (const object_class_info *) bugle_list_data(i);
         if (info->destructor)
-            (*info->destructor)(offset_ptr(obj, offset));
-        offset += info->size;
+            (*info->destructor)(obj->views[j]);
+        free(obj->views[j]);
     }
+    free(obj);
 }
 
-void *bugle_object_get_current(const object_class *klass)
+bugle_object *bugle_object_get_current(const bugle_object_class *klass)
 {
     void *ans;
 
     if (klass->parent)
     {
-        ans = bugle_object_get_current_data(klass->parent, klass->parent_offset);
+        ans = bugle_object_get_current_data(klass->parent, klass->parent_view);
         if (!ans) return NULL;
-        else return *(void **) ans;
+        else return *(bugle_object **) ans;
     }
     else
-        return pthread_getspecific(klass->current);
+        return (bugle_object *) pthread_getspecific(klass->current);
 }
 
-void *bugle_object_get_current_data(const object_class *klass, size_t offset)
+void *bugle_object_get_current_data(const bugle_object_class *klass, bugle_object_view view)
 {
-    return bugle_object_get_data(klass, bugle_object_get_current(klass), offset);
+    return bugle_object_get_data(klass, bugle_object_get_current(klass), view);
 }
 
-void bugle_object_set_current(const object_class *klass, void *obj)
+void bugle_object_set_current(const bugle_object_class *klass, bugle_object *obj)
 {
     void *tmp;
 
     if (klass->parent)
     {
-        tmp = bugle_object_get_current_data(klass->parent, klass->parent_offset);
-        if (tmp) *(void **) tmp = obj;
+        tmp = bugle_object_get_current_data(klass->parent, klass->parent_view);
+        if (tmp) *(bugle_object **) tmp = obj;
     }
     else
-        pthread_setspecific(klass->current, obj);
+        pthread_setspecific(klass->current, (void *) obj);
 }
 
-void *bugle_object_get_data(const object_class *klass, void *obj, size_t offset)
+void *bugle_object_get_data(const bugle_object_class *klass, bugle_object *obj, bugle_object_view view)
 {
     if (!obj) return NULL;
-    else return offset_ptr(obj, offset);
+    else return obj->views[view];
 }

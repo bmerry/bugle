@@ -23,9 +23,10 @@
 #include "linkedlist.h"
 #include "common/safemem.h"
 
-void bugle_list_init(bugle_linked_list *l)
+void bugle_list_init(bugle_linked_list *l, bool owns_memory)
 {
     l->head = l->tail = NULL;
+    l->owns_memory = owns_memory;
 }
 
 void *bugle_list_data(const bugle_list_node *node)
@@ -117,9 +118,9 @@ bugle_list_node *bugle_list_prev(const bugle_list_node *node)
     return node->prev;
 }
 
-void bugle_list_erase(bugle_linked_list *l, bugle_list_node *node, bool free_data)
+void bugle_list_erase(bugle_linked_list *l, bugle_list_node *node)
 {
-    if (free_data) free(node->data);
+    if (l->owns_memory) free(node->data);
 
     if (node->next) node->next->prev = node->prev;
     else l->tail = node->prev;
@@ -130,7 +131,7 @@ void bugle_list_erase(bugle_linked_list *l, bugle_list_node *node, bool free_dat
     free(node);
 }
 
-void bugle_list_clear(bugle_linked_list *l, bool free_data)
+void bugle_list_clear(bugle_linked_list *l)
 {
     bugle_list_node *cur, *nxt;
 
@@ -138,7 +139,7 @@ void bugle_list_clear(bugle_linked_list *l, bool free_data)
     while (cur)
     {
         nxt = cur->next;
-        if (free_data) free(cur->data);
+        if (l->owns_memory) free(cur->data);
         free(cur);
         cur = nxt;
     }

@@ -95,11 +95,11 @@ void destroy_filters(void)
     budgie_function k;
     bugle_linked_list *dep;
 
-    bugle_list_clear(&filter_set_dependencies[0], true);
-    bugle_list_clear(&filter_set_dependencies[1], true);
-    bugle_list_clear(&active_filters, false);
+    bugle_list_clear(&filter_set_dependencies[0]);
+    bugle_list_clear(&filter_set_dependencies[1]);
+    bugle_list_clear(&active_filters);
     for (k = 0; k < NUMBER_OF_FUNCTIONS; k++)
-        bugle_list_clear(&active_callbacks[k], false);
+        bugle_list_clear(&active_callbacks[k]);
     for (i = bugle_list_head(&filter_sets); i; i = bugle_list_next(i))
     {
         s = (filter_set *) bugle_list_data(i);
@@ -113,20 +113,20 @@ void destroy_filters(void)
                 dep = (bugle_linked_list *) bugle_hash_get(&filter_dependencies, f->name);
                 if (dep)
                 {
-                    bugle_list_clear(dep, true);
+                    bugle_list_clear(dep);
                     free(dep);
                 }
-                bugle_list_clear(&f->callbacks, true);
+                bugle_list_clear(&f->callbacks);
                 free(f->name);
                 free(f);
             }
-            bugle_list_clear(&s->filters, false);
+            bugle_list_clear(&s->filters);
         }
         free(s->name);
         free(s);
     }
-    bugle_list_clear(&filter_sets, false);
-    bugle_hash_clear(&filter_dependencies, false);
+    bugle_list_clear(&filter_sets);
+    bugle_hash_clear(&filter_dependencies);
 }
 
 void initialise_filters(void)
@@ -140,13 +140,13 @@ void initialise_filters(void)
     const char *libdir;
     budgie_function f;
 
-    bugle_list_init(&filter_sets);
-    bugle_list_init(&active_filters);
+    bugle_list_init(&filter_sets, false);
+    bugle_list_init(&active_filters, false);
     for (f = 0; f < NUMBER_OF_FUNCTIONS; f++)
-        bugle_list_init(&active_callbacks[f]);
-    bugle_hash_init(&filter_dependencies);
-    bugle_list_init(&filter_set_dependencies[0]);
-    bugle_list_init(&filter_set_dependencies[1]);
+        bugle_list_init(&active_callbacks[f], false);
+    bugle_hash_init(&filter_dependencies, false);
+    bugle_list_init(&filter_set_dependencies[0], true);
+    bugle_list_init(&filter_set_dependencies[1], true);
 
     libdir = getenv("BUGLE_FILTER_DIR");
     if (!libdir) libdir = PKGLIBDIR;
@@ -362,7 +362,7 @@ static void disable_filter_set_r(filter_set *handle)
             j = bugle_list_next(i);
             f = (filter *) bugle_list_data(i);
             if (f->parent == handle)
-                bugle_list_erase(&active_filters, i, false);
+                bugle_list_erase(&active_filters, i);
             i = j;
         }
         active_dirty = true;
@@ -398,9 +398,9 @@ void repair_filter_order(void)
 
     /* Clear the old active_callback lists */
     for (func = 0; func < NUMBER_OF_FUNCTIONS; func++)
-        bugle_list_clear(&active_callbacks[func], false);
+        bugle_list_clear(&active_callbacks[func]);
 
-    bugle_hash_init(&info);
+    bugle_hash_init(&info, true);
     /* initialise info table */
     for (i = bugle_list_head(&active_filters); i; i = bugle_list_next(i))
     {
@@ -427,7 +427,7 @@ void repair_filter_order(void)
         }
     }
     /* prime the queue */
-    bugle_list_init(&queue);
+    bugle_list_init(&queue, false);
     for (i = bugle_list_head(&active_filters); i; i = bugle_list_next(i))
     {
         cur = (filter *) bugle_list_data(i);
@@ -440,7 +440,7 @@ void repair_filter_order(void)
     {
         count--;
         cur = (filter *) bugle_list_data(bugle_list_head(&queue));
-        bugle_list_erase(&queue, bugle_list_head(&queue), false);
+        bugle_list_erase(&queue, bugle_list_head(&queue));
         deps = (bugle_linked_list *) bugle_hash_get(&filter_dependencies, cur->name);
         if (deps)
         {
@@ -468,8 +468,8 @@ void repair_filter_order(void)
         exit(1);
     }
     /* clean up */
-    bugle_list_clear(&queue, false);
-    bugle_hash_clear(&info, true);
+    bugle_list_clear(&queue);
+    bugle_hash_clear(&info);
 }
 
 void *bugle_get_filter_set_call_state(function_call *call, filter_set *handle)
@@ -513,7 +513,7 @@ filter_set *bugle_register_filter_set(const filter_set_info *info)
 
     s = (filter_set *) bugle_malloc(sizeof(filter_set));
     s->name = bugle_strdup(info->name);
-    bugle_list_init(&s->filters);
+    bugle_list_init(&s->filters, false);
     s->init = info->init;
     s->done = info->done;
     s->variables = info->variables;
@@ -539,7 +539,7 @@ filter *bugle_register_filter(filter_set *handle, const char *name)
     f = (filter *) bugle_malloc(sizeof(filter));
     f->name = bugle_strdup(name);
     f->parent = handle;
-    bugle_list_init(&f->callbacks);
+    bugle_list_init(&f->callbacks, true);
     bugle_list_append(&handle->filters, f);
     return f;
 }
@@ -583,7 +583,7 @@ void bugle_register_filter_depends(const char *after, const char *before)
     if (!deps)
     {
         deps = bugle_malloc(sizeof(bugle_linked_list));
-        bugle_list_init(deps);
+        bugle_list_init(deps, true);
         bugle_hash_set(&filter_dependencies, after, deps);
     }
     bugle_list_append(deps, bugle_strdup(before));

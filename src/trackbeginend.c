@@ -36,7 +36,7 @@
 # include <pthread.h>
 #endif
 
-static size_t trackbeginend_offset;
+static bugle_object_view trackbeginend_view;
 
 static bool trackbeginend_glBegin(function_call *call, const callback_data *data)
 {
@@ -54,7 +54,7 @@ static bool trackbeginend_glBegin(function_call *call, const callback_data *data
     case GL_QUADS:
     case GL_QUAD_STRIP:
     case GL_POLYGON:
-        begin_end = (bool *) bugle_object_get_current_data(&bugle_context_class, trackbeginend_offset);
+        begin_end = (bool *) bugle_object_get_current_data(&bugle_context_class, trackbeginend_view);
         if (begin_end != NULL) *begin_end = true;
     default: /* Avoids compiler warning if GLenum is a C enum */ ;
     }
@@ -65,7 +65,7 @@ static bool trackbeginend_glEnd(function_call *call, const callback_data *data)
 {
     bool *begin_end;
 
-    begin_end = (bool *) bugle_object_get_current_data(&bugle_context_class, trackbeginend_offset);
+    begin_end = (bool *) bugle_object_get_current_data(&bugle_context_class, trackbeginend_view);
     if (begin_end != NULL) *begin_end = false;
     return true;
 }
@@ -74,7 +74,7 @@ bool bugle_in_begin_end(void)
 {
     bool *begin_end;
 
-    begin_end = (bool *) bugle_object_get_current_data(&bugle_context_class, trackbeginend_offset);
+    begin_end = (bool *) bugle_object_get_current_data(&bugle_context_class, trackbeginend_view);
     return !begin_end || *begin_end;
 }
 
@@ -87,10 +87,10 @@ static bool initialise_trackbeginend(filter_set *handle)
     bugle_register_filter_catches(f, FUNC_glBegin, trackbeginend_glBegin);
     bugle_register_filter_catches(f, FUNC_glEnd, trackbeginend_glEnd);
 
-    trackbeginend_offset = bugle_object_class_register(&bugle_context_class,
-                                                       NULL,
-                                                       NULL,
-                                                       sizeof(bool));
+    trackbeginend_view = bugle_object_class_register(&bugle_context_class,
+                                                     NULL,
+                                                     NULL,
+                                                     sizeof(bool));
     return true;
 }
 

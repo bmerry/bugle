@@ -67,11 +67,12 @@ static inline size_t hash(const char *str)
     return h;
 }
 
-void bugle_hash_init(bugle_hash_table *table)
+void bugle_hash_init(bugle_hash_table *table, bool owns_memory)
 {
     table->size = table->count = 0;
     table->size_index = 0;
     table->entries = 0;
+    table->owns_memory = owns_memory;
 }
 
 /* Does not
@@ -92,7 +93,6 @@ static void hash_set_fast(bugle_hash_table *table, char *key, void *value)
     table->entries[h].value = value;
 }
 
-/* FIXME: should overwritten values be freed? */
 void bugle_hash_set(bugle_hash_table *table, const char *key, void *value)
 {
     bugle_hash_table big;
@@ -107,6 +107,7 @@ void bugle_hash_set(bugle_hash_table *table, const char *key, void *value)
         big.size = primes[big.size_index];
         big.entries = (bugle_hash_entry *) bugle_calloc(big.size, sizeof(bugle_hash_entry));
         big.count = 0;
+        big.owns_memory = table->owns_memory;
         for (i = 0; i < table->size; i++)
             if (table->entries[i].key)
                 hash_set_fast(&big, table->entries[i].key,
@@ -123,6 +124,8 @@ void bugle_hash_set(bugle_hash_table *table, const char *key, void *value)
         table->entries[h].key = bugle_strdup(key);
         table->count++;
     }
+    else if (table->owns_memory && table->entries[h].value)
+        free(table->entries[h].value);
     table->entries[h].value = value;
 }
 
@@ -143,7 +146,7 @@ void *bugle_hash_get(const bugle_hash_table *table, const char *key)
         return NULL;
 }
 
-void bugle_hash_clear(bugle_hash_table *table, bool free_data)
+void bugle_hash_clear(bugle_hash_table *table)
 {
     size_t i;
 
@@ -153,8 +156,8 @@ void bugle_hash_clear(bugle_hash_table *table, bool free_data)
             if (table->entries[i].key)
             {
                 free(table->entries[i].key);
-                if (free_data && table->entries[i].value)
-                    free((void *) table->entries[i].value);
+                if (table->owns_memory && table->entries[i].value)
+                    free(table->entries[i].value);
             }
         free(table->entries);
     }
@@ -188,11 +191,12 @@ static inline size_t hashptr(const void *str)
     return (const char *) str - (const char *) NULL;
 }
 
-void bugle_hashptr_init(bugle_hashptr_table *table)
+void bugle_hashptr_init(bugle_hashptr_table *table, bool owns_memory)
 {
     table->size = table->count = 0;
     table->size_index = 0;
     table->entries = 0;
+    table->owns_memory = owns_memory;
 }
 
 /* Does not
@@ -213,7 +217,6 @@ static void hashptr_set_fast(bugle_hashptr_table *table, const void *key, void *
     table->entries[h].value = value;
 }
 
-/* FIXME: should overwritten values be freed? */
 void bugle_hashptr_set(bugle_hashptr_table *table, const void *key, void *value)
 {
     bugle_hashptr_table big;
@@ -244,6 +247,8 @@ void bugle_hashptr_set(bugle_hashptr_table *table, const void *key, void *value)
         table->entries[h].key = key;
         table->count++;
     }
+    else if (table->owns_memory && table->entries[h].value)
+        free(table->entries[h].value);
     table->entries[h].value = value;
 }
 
@@ -264,7 +269,7 @@ void *bugle_hashptr_get(const bugle_hashptr_table *table, const void *key)
         return NULL;
 }
 
-void bugle_hashptr_clear(bugle_hashptr_table *table, bool free_data)
+void bugle_hashptr_clear(bugle_hashptr_table *table)
 {
     size_t i;
 
@@ -273,8 +278,8 @@ void bugle_hashptr_clear(bugle_hashptr_table *table, bool free_data)
         for (i = 0; i < table->size; i++)
             if (table->entries[i].key)
             {
-                if (free_data && table->entries[i].value)
-                    free((void *) table->entries[i].value);
+                if (table->owns_memory && table->entries[i].value)
+                    free(table->entries[i].value);
             }
         free(table->entries);
     }

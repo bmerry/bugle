@@ -645,7 +645,7 @@ static bool initialise_showextensions(filter_set *handle)
      * reduces the risk of another filter aborting the call.
      */
     bugle_register_filter_depends("invoke", "showextensions");
-    bugle_hash_init(&seen_extensions);
+    bugle_hash_init(&seen_extensions, false);
     return true;
 }
 
@@ -682,7 +682,7 @@ static void destroy_showextensions(filter_set *handle)
         }
     }
 
-    bugle_hash_clear(&seen_extensions, false);
+    bugle_hash_clear(&seen_extensions);
     printf("\n");
 }
 

@@ -60,7 +60,7 @@ extern int yylex(void);
 
 %%
 
-input: 		/* empty */ { bugle_list_init(&$$); config_root = $$; }
+input: 		/* empty */ { bugle_list_init(&$$, false); config_root = $$; }
 		| input chainitem { bugle_list_append(&$1, $2); config_root = $$ = $1; }
 ;
 
@@ -71,14 +71,14 @@ chainitem:	CHAIN WORD '{' chainspec '}' {
 	        }
 ;
 
-chainspec:	/* empty */ { bugle_list_init(&$$); }
+chainspec:	/* empty */ { bugle_list_init(&$$, false); }
 		| chainspec filtersetitem { bugle_list_append(&$1, $2); $$ = $1; }
 ;
 
 filtersetitem:	FILTERSET WORD {
 			$$ = bugle_malloc(sizeof(config_filterset));
                         $$->name = $2;
-                        bugle_list_init(&$$->variables);
+                        bugle_list_init(&$$->variables, false);
 		}
 		| FILTERSET WORD '{' filtersetspec '}' {
 			$$ = bugle_malloc(sizeof(config_filterset));
@@ -87,7 +87,7 @@ filtersetitem:	FILTERSET WORD {
                 }
 ;
 
-filtersetspec:	/* empty */ { bugle_list_init(&$$); }
+filtersetspec:	/* empty */ { bugle_list_init(&$$, false); }
 		| filtersetspec variableitem { bugle_list_append(&$1, $2); $$ = $1; }
 ;
 
@@ -137,7 +137,7 @@ static void destroy_filterset(config_filterset *filterset)
     free(filterset->name);
     for (i = bugle_list_head(&filterset->variables); i; i = bugle_list_next(i))
         destroy_variable((config_variable *) bugle_list_data(i));
-    bugle_list_clear(&filterset->variables, false);
+    bugle_list_clear(&filterset->variables);
     free(filterset);
 }
 
@@ -147,7 +147,7 @@ static void destroy_chain(config_chain *chain)
     free(chain->name);
     for (i = bugle_list_head(&chain->filtersets); i; i = bugle_list_next(i))
         destroy_filterset((config_filterset *) bugle_list_data(i));
-    bugle_list_clear(&chain->filtersets, false);
+    bugle_list_clear(&chain->filtersets);
     free(chain);
 }
 
@@ -156,5 +156,5 @@ void bugle_config_destroy(void)
     bugle_list_node *i;
     for (i = bugle_list_head(&config_root); i; i = bugle_list_next(i))
         destroy_chain((config_chain *) bugle_list_data(i));
-    bugle_list_clear(&config_root, false);
+    bugle_list_clear(&config_root);
 }

@@ -28,7 +28,7 @@
 #include "src/filters.h"
 #include "src/objects.h"
 
-extern object_class bugle_context_class, bugle_displaylist_class;
+extern bugle_object_class bugle_context_class, bugle_displaylist_class;
 
 /* Returns the current context wrapper, or NULL if no current context.
  * trackcontext is required.

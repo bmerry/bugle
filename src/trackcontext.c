@@ -34,15 +34,15 @@
 # include <pthread.h>
 #endif
 
-object_class bugle_context_class;
+bugle_object_class bugle_context_class;
 static bugle_hashptr_table context_objects;
-static size_t trackcontext_offset;
+static bugle_object_view trackcontext_view;
 
 state_7context_I *bugle_tracker_get_context_state()
 {
     state_7context_I **cur;
 
-    cur = (state_7context_I **) bugle_object_get_current_data(&bugle_context_class, trackcontext_offset);
+    cur = (state_7context_I **) bugle_object_get_current_data(&bugle_context_class, trackcontext_view);
     if (cur) return *cur;
     else return NULL;
 }
@@ -51,7 +51,7 @@ static void tracker_set_context_state(state_7context_I *state)
 {
     state_7context_I **cur;
 
-    cur = (state_7context_I **) bugle_object_get_current_data(&bugle_context_class, trackcontext_offset);
+    cur = (state_7context_I **) bugle_object_get_current_data(&bugle_context_class, trackcontext_view);
     assert(cur);
     *cur = state;
 }
@@ -72,7 +72,7 @@ static bool trackcontext_callback(function_call *call, const callback_data *data
     state_generic *parent;
     state_7context_I *state;
     static pthread_mutex_t context_mutex = PTHREAD_MUTEX_INITIALIZER;
-    void *obj;
+    bugle_object *obj;
 
     /* These calls may fail, so we must explicitly check for the
      * current context.
@@ -111,10 +111,10 @@ static bool initialise_trackcontext(filter_set *handle)
 #ifdef FUNC_glXMakeContextCurrent
     bugle_register_filter_catches(f, FUNC_glXMakeContextCurrent, trackcontext_callback);
 #endif
-    trackcontext_offset = bugle_object_class_register(&bugle_context_class,
-                                                      trackcontext_initialise_state,
-                                                      NULL,
-                                                      sizeof(state_7context_I *));
+    trackcontext_view = bugle_object_class_register(&bugle_context_class,
+                                                    trackcontext_initialise_state,
+                                                    NULL,
+                                                    sizeof(state_7context_I *));
     return true;
 }
 
@@ -130,6 +130,6 @@ void trackcontext_initialise(void)
     };
 
     bugle_object_class_init(&bugle_context_class, NULL);
-    bugle_hashptr_init(&context_objects);
+    bugle_hashptr_init(&context_objects, true); /* FIXME: never released */
     bugle_register_filter_set(&trackcontext_info);
 }

@@ -33,10 +33,10 @@
 # include <pthread.h>
 #endif
 
-object_class bugle_displaylist_class;
+bugle_object_class bugle_displaylist_class;
 static bugle_hashptr_table displaylist_objects;
 static pthread_mutex_t displaylist_lock = PTHREAD_MUTEX_INITIALIZER;
-static size_t displaylist_offset;
+static bugle_object_view displaylist_view;
 
 typedef struct
 {
@@ -53,7 +53,7 @@ GLenum bugle_displaylist_mode(void)
 {
     displaylist_struct *info;
 
-    info = bugle_object_get_current_data(&bugle_displaylist_class, displaylist_offset);
+    info = bugle_object_get_current_data(&bugle_displaylist_class, displaylist_view);
     if (!info) return GL_NONE;
     else return info->mode;
 }
@@ -62,7 +62,7 @@ GLuint bugle_displaylist_list(void)
 {
     displaylist_struct *info;
 
-    info = bugle_object_get_current_data(&bugle_displaylist_class, displaylist_offset);
+    info = bugle_object_get_current_data(&bugle_displaylist_class, displaylist_view);
     if (!info) return 0;
     else return info->list;
 }
@@ -80,7 +80,7 @@ void *bugle_displaylist_get(GLuint list)
 static bool trackdisplaylist_glNewList(function_call *call, const callback_data *data)
 {
     displaylist_struct info;
-    void *obj;
+    bugle_object *obj;
     GLint value;
 
     if (bugle_displaylist_list()) return true; /* Nested call */
@@ -99,11 +99,11 @@ static bool trackdisplaylist_glNewList(function_call *call, const callback_data 
 
 static bool trackdisplaylist_glEndList(function_call *call, const callback_data *data)
 {
-    void *obj;
+    bugle_object *obj;
     displaylist_struct *info_ptr;
 
     obj = bugle_object_get_current(&bugle_displaylist_class);
-    info_ptr = bugle_object_get_data(&bugle_displaylist_class, obj, displaylist_offset);
+    info_ptr = bugle_object_get_data(&bugle_displaylist_class, obj, displaylist_view);
     /* Note: we update the hash table when we end the list, since this is when OpenGL
      * says the new name comes into effect.
      */
@@ -123,10 +123,10 @@ static bool initialise_trackdisplaylist(filter_set *handle)
     bugle_register_filter_catches(f, FUNC_glNewList, trackdisplaylist_glNewList);
     bugle_register_filter_catches(f, FUNC_glEndList, trackdisplaylist_glEndList);
 
-    displaylist_offset = bugle_object_class_register(&bugle_displaylist_class,
-                                                     initialise_displaylist_struct,
-                                                     NULL,
-                                                     sizeof(displaylist_struct));
+    displaylist_view = bugle_object_class_register(&bugle_displaylist_class,
+                                                   initialise_displaylist_struct,
+                                                   NULL,
+                                                   sizeof(displaylist_struct));
     return true;
 }
 
@@ -142,7 +142,7 @@ void trackdisplaylist_initialise(void)
     };
 
     bugle_object_class_init(&bugle_displaylist_class, &bugle_context_class);
-    bugle_hashptr_init(&displaylist_objects);
+    bugle_hashptr_init(&displaylist_objects, true); /* FIXME: never released */
     bugle_register_filter_set(&trackdisplaylist_info);
 
     bugle_register_filter_set_depends("trackdisplaylist", "trackcontext");

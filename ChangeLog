@@ -5,6 +5,12 @@
 * Redesign of the filter management code to reduce overhead.
 * Redesign of the filter-set variable code to use tables rather than
   banks of if's.
+* Rewrite some of the documentation
+* Linked lists and hash tables are now told at creation time whether
+  they own their memory.
+* Make opaque bugle_object and bugle_object_view typedefs.
+* Redo the internals of object layer storage to avoid possible
+  alignment problems.
 
 0.0.20041123
 ------------
