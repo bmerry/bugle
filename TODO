@@ -2,7 +2,6 @@ Current:
 --------
 - check whether all dependencies on trackextensions are listed
 - exploit per-context, per-filter state e.g. for video
-- finish and test the state manager
 - get threads working again in BSD
 
 gldb
