@@ -410,7 +410,7 @@ static bool screenshot_stream(FILE *out, bool check_size)
     if ((fetch = start_screenshot()) != NULL)
     {
         fprintf(out, "P6\n%d %d\n255\n",
-                (int) fetch->width, (int) fetch->height);
+                fetch->width, fetch->height);
         cur = fetch->pixels + fetch->stride * (fetch->height - 1);
         size = fetch->width * 3;
         for (i = 0; i < fetch->height; i++)

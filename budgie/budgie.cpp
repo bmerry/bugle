@@ -656,7 +656,8 @@ static void write_headers()
             "#include \"budgieutils.h\"\n"
             "#include <assert.h>\n"
             "#include <dlfcn.h>\n"
-            "#include <stddef.h>\n"   // for offsetof FIXME do we need it?
+            "#include <stddef.h>\n"   // for offsetof
+            "#include <inttypes.h>\n" // for PRIu8 etc
             "\n",
             utilbase.c_str());
     fprintf(util_h,
@@ -1062,18 +1063,26 @@ static void write_type_dumpers()
                     "    }\n");
             break;
         case INTEGER_TYPE:
-            // FIXME: long long types; unsigned long types
             fprintf(util_c,
                     "%s"
-                    "    fprintf(out, \"%%ld\", (long) *value);\n",
-                    custom_code.c_str());
+                    "    fprintf(out, \"%%\" PRI%c%d, *value);\n",
+                    custom_code.c_str(),
+                    (i->node->flag_unsigned ? 'u' : 'd'),
+                    i->node->size->low);
             break;
         case REAL_TYPE:
             // FIXME: long double
+#if HAVE_LONG_DOUBLE
+            fprintf(util_c,
+                    "%s"
+                    "    fprintf(out, \"%%Lg\", (long double) *value);\n",
+                    custom_code.c_str());
+#else
             fprintf(util_c,
                     "%s"
                     "    fprintf(out, \"%%g\", (double) *value);\n",
                     custom_code.c_str());
+#endif
             break;
         case ARRAY_TYPE:
             fprintf(util_c,

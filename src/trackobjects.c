@@ -312,8 +312,8 @@ static bool trackobjects_pre_glDetachObjectARB(function_call *call, const callba
 static bool trackobjects_glCreateShader(function_call *call, const callback_data *data)
 {
     trackobjects_add_single(BUGLE_TRACKOBJECTS_SHADER,
-                            *call->typed.glCreateShaderObject.arg0,
-                            *call->typed.glCreateShaderObject.retn,
+                            *call->typed.glCreateShader.arg0,
+                            *call->typed.glCreateShader.retn,
                             FUNC_glIsShader);
     return true;
 }
@@ -322,8 +322,9 @@ static bool trackobjects_glCreateProgram(function_call *call, const callback_dat
 {
     trackobjects_add_single(BUGLE_TRACKOBJECTS_PROGRAM,
                             GL_NONE,
-                            *call->typed.glCreateProgramObject.retn,
+                            *call->typed.glCreateProgram.retn,
                             FUNC_glIsProgram);
+    return true;
 }
 
 static bool trackobjects_pre_glDeleteShader(function_call *call, const callback_data *data)
@@ -337,8 +338,10 @@ static bool trackobjects_pre_glDeleteProgram(function_call *call, const callback
 {
     GLint count, i;
     GLuint *attached;
+    GLuint object;
 
     init_checks(data);
+    object = *call->typed.glDeleteProgram.arg0;
     if (bugle_begin_internal_render())
     {
         CALL_glGetProgramiv(object, GL_ATTACHED_SHADERS, &count);
@@ -352,7 +355,7 @@ static bool trackobjects_pre_glDeleteProgram(function_call *call, const callback
         }
         bugle_end_internal_render("trackobjects_pre_DeleteProgram", true);
     }
-    add_check(data, BUGLE_TRACKOBJECTS_PROGRAM, *call->typed.glDeleteProgram.arg0);
+    add_check(data, BUGLE_TRACKOBJECTS_PROGRAM, object);
     return true;
 }
 
@@ -364,7 +367,7 @@ static bool trackobjects_pre_glUseProgram(function_call *call, const callback_da
     if (bugle_begin_internal_render())
     {
         CALL_glGetIntegerv(GL_CURRENT_PROGRAM, &p);
-        end_internal_render("trackobjects_pre_glUseProgramARB");
+        bugle_end_internal_render("trackobjects_pre_glUseProgramARB", true);
         add_check(data, BUGLE_TRACKOBJECTS_PROGRAM, p);
     }
     return true;
@@ -373,7 +376,7 @@ static bool trackobjects_pre_glUseProgram(function_call *call, const callback_da
 static bool trackobjects_pre_glDetachShader(function_call *call, const callback_data *data)
 {
     init_checks(data);
-    add_check(data, BGLE_TRACKOBJECTS_SHADER, *call->typed.glDetachShader.arg1);
+    add_check(data, BUGLE_TRACKOBJECTS_SHADER, *call->typed.glDetachShader.arg1);
     return true;
 }
 
@@ -484,7 +487,7 @@ static bool initialise_trackobjects(filter_set *handle)
     bugle_register_filter_catches(f, GROUP_glCreateProgram, trackobjects_glCreateProgram);
     bugle_register_filter_catches(f, GROUP_glDeleteShader, trackobjects_checks);
     bugle_register_filter_catches(f, GROUP_glDeleteProgram, trackobjects_checks);
-    bugle_register_filter_catches(f, GROUP_glUseProgram, trackobjects_check);
+    bugle_register_filter_catches(f, GROUP_glUseProgram, trackobjects_checks);
     bugle_register_filter_catches(f, GROUP_glDetachShader, trackobjects_checks);
 #endif
     bugle_register_filter_depends("trackobjects", "invoke");
