@@ -8,5 +8,20 @@ chain wireframe
 chain trace
 {
     filterset log
+    {
+        flush yes
+    }
     filterset trace
+}
+
+chain triangles
+{
+    filterset log
+    {
+        flush yes
+    }
+    filterset stats
+    {
+        triangles yes
+    }
 }

@@ -115,8 +115,8 @@ filters_capture_la_LDFLAGS = -thread-safe -module -avoid-version
 # Demo/Test programs
 check_PROGRAMS = \
 	tests/errors tests/threads1 tests/threads2 tests/queries \
-	tests/misc tests/setstate
-dist_check_SCRIPTS = tests/queries.sh tests/setstate.sh tests/comparelog.sh
+	tests/misc tests/setstate tests/triangles
+dist_check_SCRIPTS = tests/queries.sh tests/setstate.sh tests/triangles.sh tests/comparelog.sh
 tests_errors_SOURCES = tests/errors.c
 tests_errors_LDADD = src/libbugle.la -lglut -lGLU $(GL_LIBS) $(X_PRE_LIBS) $(X_LIBS) $(X_EXTRA_LIBS)
 tests_threads1_SOURCES = tests/threads1.c
@@ -125,11 +125,13 @@ tests_threads2_SOURCES = tests/threads2.c
 tests_threads2_LDADD = src/libbugle.la $(GL_LIBS) $(X_PRE_LIBS) $(X_LIBS) $(X_EXTRA_LIBS) $(THREAD_LIBS)
 tests_queries_SOURCES = tests/queries.c
 tests_queries_LDADD = src/libbugle.la -lglut -lGLU $(GL_LIBS) $(X_PRE_LIBS) $(X_LIBS) $(X_EXTRA_LIBS)
+tests_triangles_SOURCES = tests/triangles.c
+tests_triangles_LDADD = src/libbugle.la -lglut -lGLU $(GL_LIBS) $(X_PRE_LIBS) $(X_LIBS) $(X_EXTRA_LIBS)
 tests_misc_SOURCES = tests/misc.c
 tests_misc_LDADD = src/libbugle.la -lglut -lGLU $(GL_LIBS) $(X_PRE_LIBS) $(X_LIBS) $(X_EXTRA_LIBS)
 tests_setstate_SOURCES = tests/setstate.c
 tests_setstate_LDADD = src/libbugle.la -lglut -lGLU $(GL_LIBS) $(X_PRE_LIBS) $(X_LIBS) $(X_EXTRA_LIBS)
-TESTS = tests/errors tests/misc tests/queries.sh tests/setstate.sh
+TESTS = tests/errors tests/misc tests/queries.sh tests/setstate.sh tests/triangles.sh
 TESTS_ENVIRONMENT = BUGLE_FILTERS=$(srcdir)/tests/filters BUGLE_FILTER_DIR=filters/.libs
 
 # Extra files to distribute

@@ -127,7 +127,6 @@ static bool initialise_trackcontext(filter_set *handle)
 {
     filter *f;
 
-    pthread_key_create(&context_state_key, NULL);
     f = register_filter(handle, "trackcontext", trackcontext_callback);
     register_filter_depends("trackcontext", "invoke");
     register_filter_catches(f, FUNC_glXMakeCurrent);
@@ -170,6 +169,7 @@ void tracker_initialise(void)
         0,
         0
     };
+    pthread_key_create(&context_state_key, NULL);
     register_filter_set(&trackcontext_info);
     register_filter_set(&trackbeginend_info);
 }

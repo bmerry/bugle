@@ -386,8 +386,8 @@ void *get_filter_set_call_state(function_call *call, filter_set *handle)
 
 void *get_filter_set_context_state(state_7context_I *ctx, filter_set *handle)
 {
-    if (ctx && ctx->c_internal.c_filterdata.data
-        && handle->context_state_offset >= 0)
+    if (handle->context_state_offset >= 0
+        && ctx && ctx->c_internal.c_filterdata.data)
         return (void *)(((char *) ctx->c_internal.c_filterdata.data) + handle->context_state_offset);
     else
         return NULL;

@@ -27,6 +27,11 @@ chain showstats
         # Uncomment to count fragments that pass the Z test. This requires
         # GL_ARB_occlusion_query and will have a performance penalty.
         # fragments yes
+        
+        # Uncomment to count triangles. This will not work if any rendering
+        # is done with display lists or if you use GL_NV_primitive_restart.
+        # In general, don't rely on it being accurate.
+        # triangles yes
     }
     
     # Replace showstats with log to log stats to file

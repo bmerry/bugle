@@ -1,7 +1,9 @@
 #!/bin/sh
 # Run as comparelog.sh program
 set -e
-BUGLE_CHAIN=trace tests/$1 2>&1 | sed 's/0x[0-9a-f][0-9a-f]*/0x????????/g' > tests/$1.log
+
+if [ -n "$2" ]; then chain="$2"; else chain=trace; fi
+BUGLE_CHAIN="$chain" tests/$1 2>&1 | sed -e 's/0x[0-9a-f][0-9a-f]*/0x????????/g' -e 's/^stats.fps: .*$/stats.fps: <suppressed>/' > tests/$1.log
 if [ -r tests/$1.base.log ]; then
   echo "Comparing log for $1 to base"
   if ! diff tests/$1.base.log tests/$1.log > /dev/null; then
