@@ -20,16 +20,33 @@ A. Yes, you can specify -lbugle in place of -lGL when you link. If it
 is not installed in a standard directory, you may need extra compiler
 flags, such as -L/path/to/bugle -Wl,-rpath -Wl,/path/to/bugle
 
+Q. How do I build a 32-bit version of BuGLe on an AMD64 system?
+A. The exact details will depend on your OS. Here is what I do on Gentoo:
+
+./configure --x-libraries=/usr/X11R6/lib32 CC="gcc -m32" CXX="g++ -m32" \
+   LD="ld -m elf_i386" --libdir=/usr/local/lib32 --bindir=/usr/local/bin32
+
+Gentoo also tries to be clever by putting in a libGL.la to make linking
+against OpenGL work better, but in some cases it causes libtool to pick
+up the 64-bit version of OpenGL. I work around this by copying
+/usr/lib/libGL.la into the compilation directory, and replacing all
+references to /usr/lib with /usr/lib32 and /usr/X11R6/lib with
+/usr/X11R6/lib32.
+
+Q. How do you get Quake3 or Doom3 to use BuGLe?
+A. Run it as quake3/doom3 +set r_glDriver /path/to/libbugle.so (but see
+the previous question if you use an AMD64 system with 64-bit OS).
+
 Q. What is the performance penality?
 A. That depends on what you're doing with the library. If you only use
 filter-sets that intercept a few functions (like showstats), then all
-other functions suffer essentially no penalty. Using filter-sets that
+other functions suffer only a very small penalty. Using filter-sets that
 check for error after every function (including showerror and the
 debugger) adds a much bigger penalty.
 
 To give you an example, here are some rough numbers for Quake3 1.32 on
-demo 'four' (not even remotely scientificly collected, and probably out
-of date).
+demo 'four' (not even remotely scientificly collected, and definitely
+out of date).
 
 without BuGLe: 167fps
 with no filter-sets: 167fps
@@ -39,9 +56,6 @@ with tracing: 47.8fps
 
 Tracing is particularly slow because it does file I/O, as well as a lot
 of text formatting.
-
-Q. How do you get Quake3 or Doom3 to use BuGLe?
-A. Run it as quake3/doom3 +set r_glDriver /path/to/libbugle.so
 
 Q. Why is there a mix of C and C++ code?
 A. The library itself is written entirely in C. This is mainly because

@@ -26,13 +26,8 @@ Mesa source from www.mesa3d.org and using the headers from there.
 Q. I have an x86_64 (Athlon 64/Opteron/EM64T) machine with 64-bit OS,
 and BuGLe fails to work with Quake3/Doom3.
 A. Quake3 and Doom3 are 32-bit apps, while you probably have a 64-bit
-version of BuGLe. You will need to compile a 32-bit version. The
-details of how to do that depend on your OS, but as a start try
-configuring BuGLe with
-
-./configure --x-libraries=/path/to/32bit/X CC="gcc -m32" CXX="g++ -m32" LD="ld -m elf_i386"
-
-I have also not had success with Doom3, even with a 32-bit bugle.
+version of BuGLe. You will need to compile a 32-bit version. See the
+FAQ for more details.
 
 
 
