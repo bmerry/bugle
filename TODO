@@ -24,8 +24,6 @@ bugle
 - capture information about call lists
 - capture and replay
 - better movie capture
-  - use MMX for faster mirroring
-  - use PBO for async readback
   - option of a separate thread, for parallel encoding
   - frame rate control
   - --without-lavc configure option

@@ -172,3 +172,17 @@ GLenum get_call_error(function_call *call)
     else
         return GL_NO_ERROR;
 }
+
+bool gl_has_extension(const char *name)
+{
+    const char *exts;
+    size_t len;
+
+    exts = (const char *) CALL_glGetString(GL_EXTENSIONS);
+    len = strlen(name);
+    while ((exts = strstr(exts, name)) != NULL)
+    {
+        if (exts[len] == '\0' || exts[len] == ' ') return true;
+    }
+    return false;
+}

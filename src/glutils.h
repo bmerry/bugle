@@ -63,4 +63,6 @@ void filter_post_uses_state(const char *name);
 void filter_set_queries_error(const char *name, bool require);
 GLenum get_call_error(function_call *call);
 
+bool gl_has_extension(const char *ext);
+
 #endif /* !BUGLE_SRC_GLUTILS_H */

@@ -19,6 +19,8 @@
 /* I have no idea what I'm doing with the video encoding, since
  * libavformat has no documentation that I can find. It is probably full
  * of bugs.
+ *
+ * This file is also blatantly unsafe to use with multiple contexts.
  */
 
 #if HAVE_CONFIG_H
@@ -43,6 +45,7 @@
 # include <ffmpeg/avformat.h>
 # define CAPTURE_AV_FMT PIX_FMT_RGB24
 # define CAPTURE_GL_FMT GL_RGB
+# define CAPTURE_GL_ELEMENTS 3
 #endif
 
 typedef struct
@@ -50,18 +53,76 @@ typedef struct
     int width, height;
     size_t stride;         /* bytes between rows */
     GLubyte *pixels;
+    GLuint pbo;
 } screenshot_data;
 
 static char *file_base = "frame";
 static const char *file_suffix = ".ppm";
-static char *video_codec = "huffyuv";
-static int video_bitrate = 1000000;
+static char *video_codec = "mpeg4";
+static int video_bitrate = 7500000;
 static int start_frameno = 0;
+static int video_lag = 1;     /* greater lag may give better overall speed */
 
 static char *video_file = NULL;
 static FILE *video_pipe = NULL;
-static screenshot_data video_data = {0, 0, 0, NULL};
+static screenshot_data *video_data;
+/* video_cur is the index of the next circular queue index to capture into,
+ * and also to read back from first if appropriate. video_leader starts at
+ * video_lag, and is decremented on each frame.
+ */
+static int video_cur, video_leader;
 static bool video_done;
+
+/* If data->pixels == NULL and pbo = 0,
+ * or if data->width and data->height do not match the current frame,
+ * new memory is allocated. Otherwise the existing memory is reused.
+ */
+static void prepare_screenshot_data(screenshot_data *data,
+                                    int width, int height,
+                                    int align, bool use_pbo)
+{
+    int stride;
+
+    stride = ((width + align - 1) & ~(align - 1)) * CAPTURE_GL_ELEMENTS;
+    if ((!data->pixels && !data->pbo)
+        || data->width != width
+        || data->height != height
+        || data->stride != stride)
+    {
+        if (data->pixels) free(data->pixels);
+#ifdef GL_EXT_pixel_buffer_object
+        if (data->pbo) CALL_glDeleteBuffersARB(1, &data->pbo);
+#endif
+        data->width = width;
+        data->height = height;
+        data->stride = stride;
+#ifdef GL_EXT_pixel_buffer_object
+        if (use_pbo && gl_has_extension("GL_EXT_pixel_buffer_object"))
+        {
+            CALL_glGenBuffersARB(1, &data->pbo);
+            CALL_glBindBufferARB(GL_PIXEL_PACK_BUFFER_EXT, data->pbo);
+            CALL_glBufferDataARB(GL_PIXEL_PACK_BUFFER_EXT, stride * height,
+                                 NULL, GL_DYNAMIC_READ_ARB);
+            CALL_glBindBufferARB(GL_PIXEL_PACK_BUFFER_EXT, 0);
+            data->pixels = NULL;
+        }
+        else
+#endif
+        {
+            data->pixels = xmalloc(stride * height);
+            data->pbo = 0;
+        }
+    }
+}
+
+/* FIXME: we do not currently free the PBO, since we have no way of knowing
+ * whether we are in the right context, or for that matter if the context
+ * has been deleted.
+ */
+static void free_screenshot_data(screenshot_data *data)
+{
+    if (data->pixels) free(data->pixels);
+}
 
 #if HAVE_LAVC
 static AVFormatContext *video_context = NULL;
@@ -71,10 +132,11 @@ static uint8_t *video_buffer;
 static size_t video_buffer_size = 2000000; /* FIXME: what should it be? */
 
 static AVFrame *allocate_video_frame(int fmt, int width, int height,
-                                     uint8_t *buffer)
+                                     bool create)
 {
     AVFrame *f;
     size_t size;
+    void *buffer = NULL;
 
     f = avcodec_alloc_frame();
     if (!f)
@@ -82,11 +144,8 @@ static AVFrame *allocate_video_frame(int fmt, int width, int height,
         fprintf(stderr, "failed to allocate frame\n");
         exit(1);
     }
-    if (!buffer)
-    {
-        size = avpicture_get_size(fmt, width, height);
-        buffer = xmalloc(size);
-    }
+    if (create) buffer = xmalloc(size);
+    size = avpicture_get_size(fmt, width, height);
     avpicture_fill((AVPicture *) f, buffer, fmt, width, height);
     return f;
 }
@@ -131,14 +190,8 @@ static bool initialise_lavc(int width, int height)
     if (av_set_parameters(video_context, NULL) < 0) return false;
     if (avcodec_open(c, codec) < 0) return false;
     video_buffer = xmalloc(video_buffer_size);
-
-    video_data.width = width;
-    video_data.height = height;
-    video_data.stride = video_data.width * 3;
-    video_data.pixels = xmalloc(video_data.stride * video_data.height);
-    video_raw = allocate_video_frame(CAPTURE_AV_FMT, width, height,
-                                     video_data.pixels);
-    video_yuv = allocate_video_frame(c->pix_fmt, width, height, NULL);
+    video_raw = allocate_video_frame(CAPTURE_AV_FMT, width, height, false);
+    video_yuv = allocate_video_frame(c->pix_fmt, width, height, true);
     if (url_fopen(&video_context->pb, video_file, URL_WRONLY) < 0)
     {
         fprintf(stderr, "failed to open video output file %s\n", video_file);
@@ -184,159 +237,239 @@ static void finalise_lavc(void)
     url_fclose(&video_context->pb);
     av_free(video_context);
 
+    for (i = 0; i < video_lag; i++)
+        free_screenshot_data(&video_data[i]);
+    free(video_data);
+
     video_context = NULL;
 }
 
-#endif
+#endif /* HAVE_LAVC */
 
-/* If data->pixels == NULL, or if data->width and data->height do not
- * match the current frame, new memory is allocated. Otherwise the
- * existing memory is reused.
- */
-static void prepare_data(screenshot_data *data, int width, int height, int align)
+static bool map_screenshot(screenshot_data *data)
 {
-    int stride;
-
-    stride = ((width + align - 1) & ~(align - 1)) * 3;
-    if (!data->pixels
-        || data->width != width
-        || data->height != height
-        || data->stride != stride)
+#ifdef GL_EXT_pixel_buffer_object
+    if (data->pbo)
     {
-        if (data->pixels) free(data->pixels);
-        data->pixels = xmalloc(stride * height);
-        data->width = width;
-        data->height = height;
-        data->stride = stride;
+        /* Mapping is done from the real context, so we must save the
+         * old binding.
+         */
+        GLuint old_id;
+
+        if (!begin_internal_render())
+        {
+            fputs("warning: glXSwapBuffers called inside begin/end. Dropping frame\n", stderr);
+            return false;
+        }
+
+        CALL_glGetIntegerv(GL_PIXEL_PACK_BUFFER_BINDING_EXT, &old_id);
+        CALL_glBindBufferARB(GL_PIXEL_PACK_BUFFER_EXT, data->pbo);
+        data->pixels = CALL_glMapBuffer(GL_PIXEL_PACK_BUFFER_EXT, GL_READ_ONLY_ARB);
+        if (!data->pixels)
+        {
+            CALL_glGetError(); /* hide the error from end_internal_render() */
+            CALL_glBindBufferARB(GL_PIXEL_PACK_BUFFER_EXT, old_id);
+            end_internal_render("map_screenshot", true);
+            return false;
+        }
+        else
+        {
+            CALL_glBindBufferARB(GL_PIXEL_PACK_BUFFER_EXT, old_id);
+            end_internal_render("map_screenshot", true);
+        }
+    }
+#endif
+    return true;
+}
+
+static bool unmap_screenshot(screenshot_data *data)
+{
+#ifdef GL_EXT_pixel_buffer_object
+    if (data->pbo)
+    {
+        /* Mapping is done from the real context, so we must save the
+         * old binding.
+         */
+        GLuint old_id;
+        bool ret;
+
+        if (!begin_internal_render())
+        {
+            fputs("warning: glXSwapBuffers called inside begin/end. Dropping frame\n", stderr);
+            return false;
+        }
+
+        CALL_glGetIntegerv(GL_PIXEL_PACK_BUFFER_BINDING_EXT, &old_id);
+        CALL_glBindBufferARB(GL_PIXEL_PACK_BUFFER_EXT, data->pbo);
+        ret = CALL_glUnmapBufferARB(GL_PIXEL_PACK_BUFFER_EXT);
+        CALL_glBindBufferARB(GL_PIXEL_PACK_BUFFER_EXT, old_id);
+        end_internal_render("unmap_screenshot", true);
+        data->pixels = NULL;
+        return ret;
+    }
+    else
+#endif
+    {
+        return true;
     }
 }
 
-static bool get_screenshot(screenshot_data *data, GLenum format)
+static screenshot_data *start_screenshot(void)
 {
-    static screenshot_data my_data = {0, 0, 0, NULL};
+    if (video_leader == 0
+        && map_screenshot(&video_data[video_cur]))
+        return &video_data[video_cur];
+    else
+        return NULL;
+}
+
+/* Returns false if width and height do not match test_width and test_height.
+ * If these are both -1, then no test is performed (use -1,0 for a test
+ * that will always fail).
+ */
+static bool end_screenshot(GLenum format, int test_width, int test_height)
+{
     GLXContext aux, real;
     GLXDrawable old_read, old_write;
     Display *dpy;
-    GLubyte *cur_in, *cur_out;
+    screenshot_data *cur;
     int width, height;
-    int i;
 
-    aux = get_aux_context();
-    if (!aux) return false;
-
-    if (!begin_internal_render())
+    cur = &video_data[video_cur];
+    video_cur = (video_cur + 1) % video_lag;
+    if (video_leader) video_leader--;
+    if (cur->pbo && cur->pixels)
     {
-        fputs("warning: glXSwapBuffers called inside begin/end. Dropping frame\n", stderr);
-        return false;
+        if (!unmap_screenshot(cur))
+            fputs("warning: buffer data was lost - corrupting frame\n", stderr);
     }
 
     real = glXGetCurrentContext();
     old_write = glXGetCurrentDrawable();
     old_read = glXGetCurrentReadDrawable();
     dpy = glXGetCurrentDisplay();
-    CALL_glXMakeContextCurrent(dpy, old_write, old_write, aux);
     glXQueryDrawable(dpy, old_write, GLX_WIDTH, &width);
     glXQueryDrawable(dpy, old_write, GLX_HEIGHT, &height);
+    if (test_width != -1 || test_height != -1)
+        if (width != test_width || height != test_height)
+        {
+            fprintf(stderr, "size changed from %dx%d to %dx%d\n",
+                    test_width, test_height, width, height);
+            return false;
+        }
 
-    prepare_data(&my_data, width, height, 4);
-    prepare_data(data, width, height, 1);
-
-    CALL_glReadPixels(0, 0, width, height, format,
-                      GL_UNSIGNED_BYTE, my_data.pixels);
-    cur_in = my_data.pixels;
-    cur_out = data->pixels + data->stride * (data->height - 1);
-    for (i = 0; i < height; i++)
+    aux = get_aux_context();
+    if (!aux) return false;
+    if (!begin_internal_render())
     {
-        memcpy(cur_out, cur_in, data->stride);
-        cur_in += my_data.stride;
-        cur_out -= data->stride;
+        fputs("warning: glXSwapBuffers called inside begin/end - corrupting frame\n", stderr);
+        return true;
     }
+    CALL_glXMakeContextCurrent(dpy, old_write, old_write, aux);
+
+    prepare_screenshot_data(cur, width, height, 4, true);
+
+    /* FIXME: if we set up all the glReadPixels state, it may be faster
+     * due to not having to context switch.
+     */
+#ifdef GL_EXT_pixel_buffer_object
+    if (cur->pbo)
+        CALL_glBindBufferARB(GL_PIXEL_PACK_BUFFER_EXT, cur->pbo);
+#endif
+    CALL_glReadPixels(0, 0, width, height, format,
+                      GL_UNSIGNED_BYTE, cur->pixels);
+#ifdef GL_EXT_pixel_buffer_object
+    if (cur->pbo)
+        CALL_glBindBufferARB(GL_PIXEL_PACK_BUFFER_EXT, 0);
+#endif
 
     CALL_glXMakeContextCurrent(dpy, old_write, old_read, real);
-    end_internal_render("screenshot", true);
+    end_internal_render("end_screenshot", true);
     return true;
 }
 
 static bool screenshot_stream(FILE *out, bool check_size)
 {
-    screenshot_data old_data;
+    screenshot_data *fetch;
+    GLubyte *cur;
     size_t size, count;
+    bool ret = true;
+    int i;
 
-    old_data = video_data;
-    if (!get_screenshot(&video_data, GL_RGB)) return false;
-    if (check_size && old_data.pixels && old_data.pixels != video_data.pixels)
+    if ((fetch = start_screenshot()) != NULL)
     {
-        fprintf(stderr, "size changed from %dx%d to %dx%d; halting recording\n",
-                old_data.width, old_data.height,
-                video_data.width, video_data.height);
-        video_done = true;
-        return false;
+        fprintf(out, "P6\n%d %d\n255\n",
+                (int) fetch->width, (int) fetch->height);
+        cur = fetch->pixels + fetch->stride * (fetch->height - 1);
+        size = fetch->width * 3;
+        for (i = 0; i < fetch->height; i++)
+        {
+            count = fwrite(cur, sizeof(GLubyte), size, out);
+            if (count != size)
+            {
+                perror("write error");
+                ret = false;
+                break;
+            }
+            cur -= fetch->stride;
+        }
     }
-
-    fprintf(out, "P6\n%d %d\n255\n",
-            (int) video_data.width, (int) video_data.height);
-    size = video_data.stride * video_data.height;
-    count = fwrite(video_data.pixels, sizeof(GLubyte),
-                   size, out);
-    if (count != size)
-    {
-        perror("write error");
-        return false;
-    }
-    return true;
+    if (check_size && video_leader < video_lag)
+        video_done = !end_screenshot(GL_RGB, video_data[0].width, video_data[0].height);
+    else
+        end_screenshot(GL_RGB, -1, -1);
+    return ret;
 }
 
 #if HAVE_LAVC
 static void screenshot_video()
 {
-    screenshot_data old_data;
+    screenshot_data *fetch;
     AVCodecContext *c;
     size_t out_size;
     int ret;
 
-    old_data = video_data;
-    if (!get_screenshot(&video_data, CAPTURE_GL_FMT)) return;
-    if (!video_context)
-        initialise_lavc(video_data.width, video_data.height);
-    if (old_data.pixels && old_data.pixels != video_data.pixels)
+    if ((fetch = start_screenshot()) != NULL)
     {
-        fprintf(stderr, "size changed from %dx%d to %dx%d; halting recording\n",
-                old_data.width, old_data.height,
-                video_data.width, video_data.height);
-        video_done = true;
-        finalise_lavc();
-        return;
-    }
-    c = &video_stream->codec;
-    img_convert((AVPicture *) video_yuv, c->pix_fmt,
-                (AVPicture *) video_raw, CAPTURE_AV_FMT,
-                video_data.width, video_data.height);
-    out_size = avcodec_encode_video(&video_stream->codec,
-                                    video_buffer, video_buffer_size,
-                                    video_yuv);
-    if (out_size != 0)
-    {
-#if LIBAVFORMAT_VERSION_INT >= 0x000409
-        AVPacket pkt;
-
-        av_init_packet(&pkt);
-        pkt.pts = c->coded_frame->pts;
-        if (c->coded_frame->key_frame)
-            pkt.flags |= PKT_FLAG_KEY;
-        pkt.stream_index = video_stream->index;
-        pkt.data = video_buffer;
-        pkt.size = out_size;
-        ret = av_write_frame(video_context, &pkt);
-#else
-        ret = av_write_frame(video_context, video_stream->index,
-                             video_buffer, out_size);
-#endif
-        if (ret != 0)
+        if (!video_context)
+            initialise_lavc(fetch->width, fetch->height);
+        c = &video_stream->codec;
+        video_raw->data[0] = fetch->pixels + fetch->stride * (fetch->height - 1);
+        video_raw->linesize[0] = -fetch->stride;
+        img_convert((AVPicture *) video_yuv, c->pix_fmt,
+                    (AVPicture *) video_raw, CAPTURE_AV_FMT,
+                    fetch->width, fetch->height);
+        out_size = avcodec_encode_video(&video_stream->codec,
+                                        video_buffer, video_buffer_size,
+                                        video_yuv);
+        if (out_size != 0)
         {
-            fprintf(stderr, "encoding failed\n");
-            exit(1);
+#if LIBAVFORMAT_VERSION_INT >= 0x000409
+            AVPacket pkt;
+
+            av_init_packet(&pkt);
+            pkt.pts = c->coded_frame->pts;
+            if (c->coded_frame->key_frame)
+                pkt.flags |= PKT_FLAG_KEY;
+            pkt.stream_index = video_stream->index;
+            pkt.data = video_buffer;
+            pkt.size = out_size;
+            ret = av_write_frame(video_context, &pkt);
+#else
+            ret = av_write_frame(video_context, video_stream->index,
+                                 video_buffer, out_size);
+#endif
+            if (ret != 0)
+            {
+                fprintf(stderr, "encoding failed\n");
+                exit(1);
+            }
         }
     }
+    if (video_leader < video_lag)
+        video_done = !end_screenshot(CAPTURE_GL_FMT, video_data[0].width, video_data[0].height);
+    else
+        end_screenshot(CAPTURE_GL_FMT, -1, -1);
 }
 
 #else /* !HAVE_LAVC */
@@ -374,8 +507,6 @@ static void screenshot_file(int frameno)
 bool screenshot_callback(function_call *call, void *data)
 {
     /* FIXME: track the frameno in the context?
-     * FIXME: async copy via textures or PBO
-     * FIXME: thread safety
      */
     static int frameno = 0;
 
@@ -399,6 +530,10 @@ static bool initialise_screenshot(filter_set *handle)
     register_filter(handle, "screenshot", screenshot_callback);
     register_filter_depends("invoke", "screenshot");
     filter_set_renders("screenshot");
+
+    video_data = xcalloc(video_lag, sizeof(screenshot_data));
+    video_cur = 0;
+    video_leader = video_lag;
     if (video_file)
     {
         video_done = false; /* becomes true if we resize */
@@ -425,13 +560,6 @@ static void destroy_screenshot(filter_set *handle)
         finalise_lavc();
 #endif
     if (video_pipe) pclose(video_pipe);
-    if (video_data.pixels)
-    {
-        free(video_data.pixels);
-        video_data.width = video_data.height = 0;
-        video_data.stride = 0;
-        video_data.pixels = NULL;
-    }
 }
 
 static bool set_variable_screenshot(filter_set *handle,
@@ -447,6 +575,12 @@ static bool set_variable_screenshot(filter_set *handle,
         start_frameno = atoi(value);
     else if (strcmp(name, "bitrate") == 0)
         video_bitrate = atoi(value);
+    else if (strcmp(name, "lag") == 0)
+    {
+        video_lag = atoi(value);
+        if (video_lag < 1)
+            video_lag = 1;
+    }
     else
         return false;
     return true;
