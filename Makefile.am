@@ -1,6 +1,6 @@
 ## Process with automake 1.7 or newer
 
-SYMBOLFLAGS = -export-symbol-regex '^(gl[A-Z]|budgie_|bugle_)'
+SYMBOLFLAGS = -export-symbol-regex '^(gl[A-Z]|budgie_|bugle_|gldb_)'
 
 # Utility programs, used for generating other files
 noinst_PROGRAMS = budgie/budgie
@@ -54,7 +54,7 @@ nodist_src_libbugleutils_la_SOURCES = \
 	src/names.c src/names.h \
 	src/gltokens.c src/glfuncs.c src/glfuncs.h
 src_libbugleutils_la_LIBADD = $(LTLIBOBJS) $(THREAD_LIBS)
-src_libbugleutils_la_LDFLAGS = -thread-safe -export-dynamic -version-info 0:0:0
+src_libbugleutils_la_LDFLAGS = -thread-safe -export-dynamic $(SYMBOLFLAGS) -version-info 0:0:0
 
 src_libbugle_la_SOURCES = \
 	src/gldump.c src/gldump.h \

@@ -33,17 +33,17 @@ typedef struct
 typedef struct
 {
     char *name;
-    linked_list variables;
+    bugle_linked_list variables;
 } config_filterset;
 
 typedef struct
 {
     char *name;
-    linked_list filtersets;
+    bugle_linked_list filtersets;
 } config_chain;
 
 void config_destroy(void);
 const config_chain *config_get_chain(const char *name);
-const linked_list *config_get_root(void);
+const bugle_linked_list *config_get_root(void);
 
 #endif /* !BUGLE_SRC_CONFFILE_H */

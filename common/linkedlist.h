@@ -27,32 +27,32 @@
 extern "C" {
 #endif
 
-typedef struct list_node_s
+typedef struct bugle_list_node_s
 {
     void *data;
-    struct list_node_s *prev;
-    struct list_node_s *next;
-} list_node;
+    struct bugle_list_node_s *prev;
+    struct bugle_list_node_s *next;
+} bugle_list_node;
 
 typedef struct
 {
-    list_node *head;
-    list_node *tail;
-} linked_list;
+    bugle_list_node *head;
+    bugle_list_node *tail;
+} bugle_linked_list;
 
-void list_init(linked_list *l);
-void *list_data(const list_node *node);
-void list_set_data(list_node *node, void *data);
-list_node *list_prepend(linked_list *l, void *data);
-list_node *list_append(linked_list *l, void *data);
-list_node *list_insert_before(linked_list *l, list_node *node, void *data);
-list_node *list_insert_after(linked_list *l, list_node *node, void *data);
-list_node *list_head(const linked_list *l);
-list_node *list_tail(const linked_list *l);
-list_node *list_next(const list_node *node);
-list_node *list_prev(const list_node *node);
-void list_erase(linked_list *l, list_node *node, bool free_data);
-void list_clear(linked_list *l, bool free_data);
+void bugle_list_init(bugle_linked_list *l);
+void *bugle_list_data(const bugle_list_node *node);
+void bugle_list_set_data(bugle_list_node *node, void *data);
+bugle_list_node *bugle_list_prepend(bugle_linked_list *l, void *data);
+bugle_list_node *bugle_list_append(bugle_linked_list *l, void *data);
+bugle_list_node *bugle_list_insert_before(bugle_linked_list *l, bugle_list_node *node, void *data);
+bugle_list_node *bugle_list_insert_after(bugle_linked_list *l, bugle_list_node *node, void *data);
+bugle_list_node *bugle_list_head(const bugle_linked_list *l);
+bugle_list_node *bugle_list_tail(const bugle_linked_list *l);
+bugle_list_node *bugle_list_next(const bugle_list_node *node);
+bugle_list_node *bugle_list_prev(const bugle_list_node *node);
+void bugle_list_erase(bugle_linked_list *l, bugle_list_node *node, bool free_data);
+void bugle_list_clear(bugle_linked_list *l, bool free_data);
 
 #ifdef __cplusplus
 }

@@ -29,20 +29,20 @@
 #include <string.h>
 #include <assert.h>
 
-static hash_table function_names;
+static bugle_hash_table function_names;
 
 void destroy_canonical(void)
 {
-    hash_clear(&function_names, false);
+    bugle_hash_clear(&function_names, false);
 }
 
 void initialise_canonical(void)
 {
     budgie_function i;
 
-    hash_init(&function_names);
+    bugle_hash_init(&function_names);
     for (i = 0; i < NUMBER_OF_FUNCTIONS; i++)
-        hash_set(&function_names, budgie_function_table[i].name, &budgie_function_table[i]);
+        bugle_hash_set(&function_names, budgie_function_table[i].name, &budgie_function_table[i]);
 
     atexit(destroy_canonical);
 }
@@ -67,7 +67,7 @@ budgie_function bugle_find_function(const char *name)
 {
     const function_data *alias;
 
-    alias = hash_get(&function_names, name);
+    alias = bugle_hash_get(&function_names, name);
     if (alias) return alias - budgie_function_table;
     else return NULL_FUNCTION;
 }

@@ -108,10 +108,10 @@ typedef struct
  * command names, and the values are the command_data structs defined above.
  * Ambiguous commands have a NULL command field.
  */
-static hash_table command_table;
+static bugle_hash_table command_table;
 
 static bool break_on_error = true;
-static hash_table break_on;
+static bugle_hash_table break_on;
 static char *screenshot_file = NULL;
 
 #if !HAVE_READLINE
@@ -174,10 +174,10 @@ static pid_t execute(void)
             unsetenv("BUGLE_CHAIN");
         check(setenv("LD_PRELOAD", LIBDIR "/libbugle.so", 1), "setenv");
         check(setenv("BUGLE_DEBUGGER", "1", 1), "setenv");
-        xasprintf(&env, "%d", in_pipe[1]);
+        bugle_asprintf(&env, "%d", in_pipe[1]);
         check(setenv("BUGLE_DEBUGGER_FD_OUT", env, 1), "setenv");
         free(env);
-        xasprintf(&env, "%d", out_pipe[0]);
+        bugle_asprintf(&env, "%d", out_pipe[0]);
         check(setenv("BUGLE_DEBUGGER_FD_IN", env, 1), "setenv");
         free(env);
 
@@ -237,7 +237,7 @@ static bool command_cont(const char *cmd,
                          const char *line,
                          const char * const *tokens)
 {
-    send_code(lib_out, REQ_CONT);
+    gldb_send_code(lib_out, REQ_CONT);
     return true;
 }
 
@@ -245,7 +245,7 @@ static bool command_kill(const char *cmd,
                          const char *line,
                          const char * const *tokens)
 {
-    send_code(lib_out, REQ_QUIT);
+    gldb_send_code(lib_out, REQ_QUIT);
     return true;
 }
 
@@ -253,7 +253,7 @@ static bool command_quit(const char *cmd,
                          const char *line,
                          const char * const *tokens)
 {
-    if (running) send_code(lib_out, REQ_QUIT);
+    if (running) gldb_send_code(lib_out, REQ_QUIT);
     exit(0);
 }
 
@@ -277,18 +277,18 @@ static bool command_break_unbreak(const char *cmd,
         break_on_error = req_val;
         if (running)
         {
-            send_code(lib_out, REQ_BREAK_ERROR);
-            send_code(lib_out, req_val);
+            gldb_send_code(lib_out, REQ_BREAK_ERROR);
+            gldb_send_code(lib_out, req_val);
         }
     }
     else
     {
-        hash_set(&break_on, func, req_val ? "1" : "0");
+        bugle_hash_set(&break_on, func, req_val ? "1" : "0");
         if (running)
         {
-            send_code(lib_out, REQ_BREAK);
-            send_string(lib_out, func);
-            send_code(lib_out, req_val);
+            gldb_send_code(lib_out, REQ_BREAK);
+            gldb_send_string(lib_out, func);
+            gldb_send_code(lib_out, req_val);
         }
     }
     return running;
@@ -298,7 +298,7 @@ static bool command_run(const char *cmd,
                         const char *line,
                         const char * const *tokens)
 {
-    const hash_entry *h;
+    const bugle_hash_entry *h;
 
     if (running)
     {
@@ -309,15 +309,15 @@ static bool command_run(const char *cmd,
     {
         child_pid = execute();
         /* Send breakpoints */
-        send_code(lib_out, REQ_BREAK_ERROR);
-        send_code(lib_out, break_on_error ? 1 : 0);
-        for (h = hash_begin(&break_on); h; h = hash_next(&break_on, h))
+        gldb_send_code(lib_out, REQ_BREAK_ERROR);
+        gldb_send_code(lib_out, break_on_error ? 1 : 0);
+        for (h = bugle_hash_begin(&break_on); h; h = bugle_hash_next(&break_on, h))
         {
-            send_code(lib_out, REQ_BREAK);
-            send_string(lib_out, h->key);
-            send_code(lib_out, *(const char *) h->value - '0');
+            gldb_send_code(lib_out, REQ_BREAK);
+            gldb_send_string(lib_out, h->key);
+            gldb_send_code(lib_out, *(const char *) h->value - '0');
         }
-        send_code(lib_out, REQ_RUN);
+        gldb_send_code(lib_out, REQ_RUN);
         running = true;
         started = false;
         return true;
@@ -356,7 +356,7 @@ static bool command_backtrace(const char *cmd,
         exit(1);
     case 0: /* child */
         sigprocmask(SIG_SETMASK, &unblocked, NULL);
-        xasprintf(&pid_str, "%ld", (long) child_pid);
+        bugle_asprintf(&pid_str, "%ld", (long) child_pid);
         /* FIXME: if in_pipe[1] or out_pipe[0] is already 0 or 1 */
         check(dup2(in_pipe[1], 1), "dup2");
         check(dup2(out_pipe[0], 0), "dup2");
@@ -375,7 +375,7 @@ static bool command_backtrace(const char *cmd,
         check((out = fdopen(out_pipe[1], "w")) ? 0 : -1, "fdopen");
         fprintf(out, "backtrace\nquit\n");
         fflush(out);
-        while ((ln = xafgets(in)) != NULL)
+        while ((ln = bugle_afgets(in)) != NULL)
         {
             /* gdb backtrace lines start with # */
             if (*ln == '#') fputs(ln, stdout);
@@ -412,7 +412,7 @@ static bool command_chain(const char *cmd,
         fputs("Chain cleared.\n", stdout);
     else
     {
-        chain = xstrdup(tokens[1]);
+        chain = bugle_strdup(tokens[1]);
         printf("Chain set to %s.\n", chain);
     }
     if (running)
@@ -432,8 +432,8 @@ static bool command_enable_disable(const char *cmd,
         return false;
     }
     req = (strcmp(cmd, "enable") == 0) ? REQ_ENABLE_FILTERSET : REQ_DISABLE_FILTERSET;
-    send_code(lib_out, req);
-    send_string(lib_out, tokens[1]);
+    gldb_send_code(lib_out, req);
+    gldb_send_string(lib_out, tokens[1]);
     return true;
 }
 
@@ -478,7 +478,7 @@ static bool command_gdb(const char *cmd,
         if (fore) tcsetpgrp(1, getpgrp());
         sigprocmask(SIG_SETMASK, &unblocked, NULL);
 
-        xasprintf(&pid_str, "%ld", (long) child_pid);
+        bugle_asprintf(&pid_str, "%ld", (long) child_pid);
         execlp("gdb", "gdb", prog, pid_str, NULL);
         perror("could not invoke gdb");
         free(pid_str);
@@ -503,8 +503,8 @@ static bool command_state(const char *cmd,
                           const char *line,
                           const char * const *tokens)
 {
-    send_code(lib_out, REQ_STATE);
-    send_string(lib_out, tokens[1] ? tokens[1] : "");
+    gldb_send_code(lib_out, REQ_STATE);
+    gldb_send_string(lib_out, tokens[1] ? tokens[1] : "");
     return true;
 }
 
@@ -520,9 +520,9 @@ static bool command_screenshot(const char *cmd,
         fputs("Specify a filename\n", stdout);
         return false;
     }
-    send_code(lib_out, REQ_SCREENSHOT);
+    gldb_send_code(lib_out, REQ_SCREENSHOT);
     if (screenshot_file) free(screenshot_file);
-    screenshot_file = xstrdup(tokens[1]);
+    screenshot_file = bugle_strdup(tokens[1]);
     return true;
 }
 
@@ -543,28 +543,28 @@ static void register_command(const command_info *cmd)
     command_data *data;
     char *key, *end;
 
-    key = xstrdup(cmd->name);
-    data = (command_data *) hash_get(&command_table, key);
+    key = bugle_strdup(cmd->name);
+    data = (command_data *) bugle_hash_get(&command_table, key);
     if (data)
         assert(!data->root); /* can't redefine commands */
     else
-        data = (command_data *) xmalloc(sizeof(command_data));
+        data = (command_data *) bugle_malloc(sizeof(command_data));
     data->root = true;
     data->command = cmd;
-    hash_set(&command_table, key, data);
+    bugle_hash_set(&command_table, key, data);
 
     /* Progressively shorten the key to create abbreviations. */
     end = key + strlen(key);
     *--end = '\0';
     while (end > key)
     {
-        data = (command_data *) hash_get(&command_table, key);
+        data = (command_data *) bugle_hash_get(&command_table, key);
         if (!data)
         {
-            data = (command_data *) xmalloc(sizeof(command_data));
+            data = (command_data *) bugle_malloc(sizeof(command_data));
             data->root = false;
             data->command = cmd;
-            hash_set(&command_table, key, data);
+            bugle_hash_set(&command_table, key, data);
         }
         else if (!data->root)
             data->command = NULL; /* ambiguate it */
@@ -599,7 +599,7 @@ static void handle_commands(void)
 #endif
         if (!line)
         {
-            if (running) send_code(lib_out, REQ_QUIT);
+            if (running) gldb_send_code(lib_out, REQ_QUIT);
             if (prev_line) free(prev_line);
             exit(0); /* FIXME: clean shutdown? */
         }
@@ -608,12 +608,12 @@ static void handle_commands(void)
             if (!*line && prev_line != NULL)
             {
                 free(line);
-                line = xstrdup(prev_line);
+                line = bugle_strdup(prev_line);
             }
             if (*line)
             {
                 if (prev_line) free(prev_line);
-                prev_line = xstrdup(line);
+                prev_line = bugle_strdup(line);
 
                 /* Tokenise */
                 num_tokens = 0;
@@ -623,7 +623,7 @@ static void handle_commands(void)
                         num_tokens++;
                 if (num_tokens)
                 {
-                    tokens = xmalloc((num_tokens + 1) * sizeof(char *));
+                    tokens = bugle_malloc((num_tokens + 1) * sizeof(char *));
                     tokens[num_tokens] = NULL;
                     i = 0;
                     for (cur = line; *cur; cur++)
@@ -632,7 +632,7 @@ static void handle_commands(void)
                         {
                             base = cur;
                             while (*cur && !isspace(*cur)) cur++;
-                            tokens[i] = xmalloc(cur - base + 1);
+                            tokens[i] = bugle_malloc(cur - base + 1);
                             memcpy(tokens[i], base, cur - base);
                             tokens[i][cur - base] = '\0';
                             i++;
@@ -641,7 +641,7 @@ static void handle_commands(void)
                     }
                     assert(i == num_tokens);
                     /* Find the command */
-                    data = (const command_data *) hash_get(&command_table, tokens[0]);
+                    data = (const command_data *) bugle_hash_get(&command_table, tokens[0]);
                     if (!data)
                         printf("Unknown command `%s'.\n", tokens[0]);
                     else if (!data->command)
@@ -672,27 +672,27 @@ static bool handle_responses(uint32_t resp)
     switch (resp)
     {
     case RESP_ANS:
-        recv_code(lib_in, &resp_val);
+        gldb_recv_code(lib_in, &resp_val);
         /* Ignore, other than to flush the pipe */
         break;
     case RESP_STOP:
         /* do nothing */
         break;
     case RESP_BREAK:
-        recv_string(lib_in, &resp_str);
+        gldb_recv_string(lib_in, &resp_str);
         printf("Break on %s.\n", resp_str);
         free(resp_str);
         break;
     case RESP_BREAK_ERROR:
-        recv_string(lib_in, &resp_str);
-        recv_string(lib_in, &resp_str2);
+        gldb_recv_string(lib_in, &resp_str);
+        gldb_recv_string(lib_in, &resp_str2);
         printf("Error %s in %s.\n", resp_str2, resp_str);
         free(resp_str);
         free(resp_str2);
         break;
     case RESP_ERROR:
-        recv_code(lib_in, &resp_val);
-        recv_string(lib_in, &resp_str);
+        gldb_recv_code(lib_in, &resp_val);
+        gldb_recv_string(lib_in, &resp_str);
         printf("%s\n", resp_str);
         free(resp_str);
         break;
@@ -701,12 +701,12 @@ static bool handle_responses(uint32_t resp)
         started = true;
         return false;
     case RESP_STATE:
-        recv_string(lib_in, &resp_str);
+        gldb_recv_string(lib_in, &resp_str);
         fputs(resp_str, stdout);
         free(resp_str);
         break;
     case RESP_SCREENSHOT:
-        recv_binary_string(lib_in, &resp_len, &resp_str);
+        gldb_recv_binary_string(lib_in, &resp_len, &resp_str);
         if (!screenshot_file)
         {
             fputs("Unexpected screenshot data. Please contact the author.\n", stderr);
@@ -772,7 +772,7 @@ static void main_loop(void)
                 if (started)
                 {
                     /* Ctrl-C was pressed. Send an asynchonous stop request. */
-                    send_code(lib_out, REQ_ASYNC);
+                    gldb_send_code(lib_out, REQ_ASYNC);
                 }
                 else
                 {
@@ -792,7 +792,7 @@ static void main_loop(void)
             do
             {
                 check(sigprocmask(SIG_SETMASK, &unblocked, NULL), "sigprocmask");
-                if (!recv_code(lib_in, &resp))
+                if (!gldb_recv_code(lib_in, &resp))
                 {
                     /* Failure here means EOF, which hopefully means that the
                      * program will now terminate.
@@ -822,7 +822,7 @@ static char *generate_commands(const char *text, int state)
 
     for (; ptr->name; ptr++)
         if (strncmp(ptr->name, text, len) == 0)
-            return xstrdup((ptr++)->name);
+            return bugle_strdup((ptr++)->name);
     return NULL;
 }
 
@@ -839,7 +839,7 @@ static char *generate_functions(const char *text, int state)
     for (; i < NUMBER_OF_FUNCTIONS; i++)
         if (strncmp(budgie_function_names[i], text, len) == 0
             && gl_function_table[i].canonical == i)
-            return xstrdup(budgie_function_names[i++]);
+            return bugle_strdup(budgie_function_names[i++]);
     return NULL;
 }
 
@@ -861,10 +861,10 @@ static char **completion(const char *text, int start, int end)
     else
     {
         /* try to find the command */
-        key = xmalloc(last - first + 1);
+        key = bugle_malloc(last - first + 1);
         strncpy(key, rl_line_buffer + first, last - first);
         key[last - first] = '\0';
-        data = hash_get(&command_table, key);
+        data = bugle_hash_get(&command_table, key);
         if (data && data->command && data->command->generator)
         {
             matches = rl_completion_matches(text, data->command->generator);
@@ -879,8 +879,8 @@ static char **completion(const char *text, int start, int end)
 
 static void shutdown(void)
 {
-    hash_clear(&command_table, true);
-    hash_clear(&break_on, false);
+    bugle_hash_clear(&command_table, true);
+    bugle_hash_clear(&break_on, false);
     free(prog_argv);
 }
 
@@ -908,9 +908,9 @@ static void initialise(void)
 {
     const command_info *cmd;
 
-    initialise_hashing();
-    hash_init(&break_on);
-    hash_init(&command_table);
+    bugle_initialise_hashing();
+    bugle_hash_init(&break_on);
+    bugle_hash_init(&command_table);
     for (cmd = commands; cmd->name; cmd++)
         register_command(cmd);
 #if HAVE_READLINE
@@ -925,7 +925,7 @@ char **create_argv(int argc, char * const *argv_in)
     char **out;
     int i;
 
-    out = xmalloc(sizeof(char *) * (argc + 1));
+    out = bugle_malloc(sizeof(char *) * (argc + 1));
     out[argc] = NULL;
     for (i = 0; i < argc; i++)
         out[i] = argv_in[i];

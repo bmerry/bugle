@@ -84,7 +84,7 @@ static bool command_log(filter_set *handle, const char *name, const char *value)
     if (strcmp(name, "filename") == 0)
     {
         if (log_filename) free(log_filename);
-        log_filename = xstrdup(value);
+        log_filename = bugle_strdup(value);
     }
     else if (strcmp(name, "flush") == 0)
     {

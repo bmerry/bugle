@@ -23,26 +23,26 @@
 #include "linkedlist.h"
 #include "common/safemem.h"
 
-void list_init(linked_list *l)
+void bugle_list_init(bugle_linked_list *l)
 {
     l->head = l->tail = NULL;
 }
 
-void *list_data(const list_node *node)
+void *bugle_list_data(const bugle_list_node *node)
 {
     return node->data;
 }
 
-void list_set_data(list_node *node, void *data)
+void bugle_list_set_data(bugle_list_node *node, void *data)
 {
     node->data = data;
 }
 
-list_node *list_prepend(linked_list *l, void *data)
+bugle_list_node *bugle_list_prepend(bugle_linked_list *l, void *data)
 {
-    list_node *n;
+    bugle_list_node *n;
 
-    n = (list_node *) xmalloc(sizeof(list_node));
+    n = (bugle_list_node *) bugle_malloc(sizeof(bugle_list_node));
     n->prev = NULL;
     n->next = l->head;
     n->data = data;
@@ -52,10 +52,10 @@ list_node *list_prepend(linked_list *l, void *data)
     return n;
 }
 
-list_node *list_append(linked_list *l, void *data)
+bugle_list_node *bugle_list_append(bugle_linked_list *l, void *data)
 {
-    list_node *n;
-    n = (list_node *) xmalloc(sizeof(list_node));
+    bugle_list_node *n;
+    n = (bugle_list_node *) bugle_malloc(sizeof(bugle_list_node));
     n->next = NULL;
     n->prev = l->tail;
     n->data = data;
@@ -65,12 +65,14 @@ list_node *list_append(linked_list *l, void *data)
     return n;
 }
 
-list_node *list_insert_before(linked_list *l, list_node *node, void *data)
+bugle_list_node *bugle_list_insert_before(bugle_linked_list *l,
+                                          bugle_list_node *node,
+                                          void *data)
 {
-    list_node *n;
+    bugle_list_node *n;
 
-    if (node == l->head) return list_prepend(l, data);
-    n = (list_node *) xmalloc(sizeof(list_node));
+    if (node == l->head) return bugle_list_prepend(l, data);
+    n = (bugle_list_node *) bugle_malloc(sizeof(bugle_list_node));
     n->data = data;
     n->prev = node->prev;
     n->prev->next = n;
@@ -79,12 +81,14 @@ list_node *list_insert_before(linked_list *l, list_node *node, void *data)
     return n;
 }
 
-list_node *list_insert_after(linked_list *l, list_node *node, void *data)
+bugle_list_node *bugle_list_insert_after(bugle_linked_list *l,
+                                         bugle_list_node *node,
+                                         void *data)
 {
-    list_node *n;
+    bugle_list_node *n;
 
-    if (node == l->tail) return list_append(l, data);
-    n = (list_node *) xmalloc(sizeof(list_node));
+    if (node == l->tail) return bugle_list_append(l, data);
+    n = (bugle_list_node *) bugle_malloc(sizeof(bugle_list_node));
     n->data = data;
     n->next = node->next;
     n->next->prev = n;
@@ -93,27 +97,27 @@ list_node *list_insert_after(linked_list *l, list_node *node, void *data)
     return n;
 }
 
-list_node *list_head(const linked_list *l)
+bugle_list_node *bugle_list_head(const bugle_linked_list *l)
 {
     return l->head;
 }
 
-list_node *list_tail(const linked_list *l)
+bugle_list_node *bugle_list_tail(const bugle_linked_list *l)
 {
     return l->tail;
 }
 
-list_node *list_next(const list_node *node)
+bugle_list_node *bugle_list_next(const bugle_list_node *node)
 {
     return node->next;
 }
 
-list_node *list_prev(const list_node *node)
+bugle_list_node *bugle_list_prev(const bugle_list_node *node)
 {
     return node->prev;
 }
 
-void list_erase(linked_list *l, list_node *node, bool free_data)
+void bugle_list_erase(bugle_linked_list *l, bugle_list_node *node, bool free_data)
 {
     if (free_data) free(node->data);
 
@@ -126,9 +130,9 @@ void list_erase(linked_list *l, list_node *node, bool free_data)
     free(node);
 }
 
-void list_clear(linked_list *l, bool free_data)
+void bugle_list_clear(bugle_linked_list *l, bool free_data)
 {
-    list_node *cur, *nxt;
+    bugle_list_node *cur, *nxt;
 
     cur = l->head;
     while (cur)

@@ -316,7 +316,7 @@ void initialise_dump_tables(void)
     const state_spec *s;
 
     specs = sizeof(state_spec_table) / sizeof(state_spec_table[0]);
-    dump_table = xmalloc(sizeof(dump_table_entry) * specs);
+    dump_table = bugle_malloc(sizeof(dump_table_entry) * specs);
     cur = dump_table;
     for (s = state_spec_table; s != state_spec_table + specs; s++)
     {
@@ -338,7 +338,7 @@ void initialise_dump_tables(void)
 
     /* Reduce memory */
     dump_table_size = cur - dump_table;
-    dump_table = xrealloc(dump_table, sizeof(dump_table_entry) * dump_table_size);
+    dump_table = bugle_realloc(dump_table, sizeof(dump_table_entry) * dump_table_size);
     qsort(dump_table, dump_table_size, sizeof(dump_table_entry), compare_dump_table_entry);
 }
 
@@ -380,7 +380,7 @@ bool dump_convert(GLenum pname, const void *value,
 
     length = entry->length;
     alength = (length == -1) ? 1 : length;
-    out_data = xmalloc(type_table[out_type].size * alength);
+    out_data = bugle_malloc(type_table[out_type].size * alength);
     type_convert(out_data, out_type, in, in_type, alength);
     if (ptr)
         dump_any_type_extended(out_type, out_data, -1, length, ptr, out);

@@ -43,7 +43,7 @@
 
 typedef struct object_class_s
 {
-    linked_list info;
+    bugle_linked_list info;
     size_t total_size;
     pthread_key_t current;
 

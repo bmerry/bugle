@@ -26,7 +26,7 @@
 #include <stdio.h>
 #include <stdarg.h>
 
-void *xmalloc(size_t size)
+void *bugle_malloc(size_t size)
 {
     void *ptr;
     if (size == 0) size = 1;
@@ -39,7 +39,7 @@ void *xmalloc(size_t size)
     return ptr;
 }
 
-void *xcalloc(size_t nmemb, size_t size)
+void *bugle_calloc(size_t nmemb, size_t size)
 {
     void *ptr;
     ptr = calloc(nmemb, size);
@@ -51,7 +51,7 @@ void *xcalloc(size_t nmemb, size_t size)
     return ptr;
 }
 
-void *xrealloc(void *ptr, size_t size)
+void *bugle_realloc(void *ptr, size_t size)
 {
     ptr = realloc(ptr, size);
     if (size && !ptr)
@@ -62,19 +62,19 @@ void *xrealloc(void *ptr, size_t size)
     return ptr;
 }
 
-char *xstrdup(const char *s)
+char *bugle_strdup(const char *s)
 {
     /* strdup is not ANSI or POSIX, so we reimplement it */
     char *n;
     size_t len;
 
     len = strlen(s);
-    n = xmalloc(len + 1);
+    n = bugle_malloc(len + 1);
     memcpy(n, s, len + 1);
     return n;
 }
 
-char *xstrcat(char *dest, const char *src)
+char *bugle_strcat(char *dest, const char *src)
 {
     size_t dlen, dsize, slen, tsize;
     char *tmp;
@@ -87,7 +87,7 @@ char *xstrcat(char *dest, const char *src)
     if (tsize <= slen + dlen)
     {
         while (tsize <= slen + dlen) tsize *= 2;
-        tmp = xmalloc(tsize);
+        tmp = bugle_malloc(tsize);
         memcpy(tmp, dest, dlen);
         memcpy(tmp + dlen, src, slen + 1);
         free(dest);
@@ -100,7 +100,7 @@ char *xstrcat(char *dest, const char *src)
     }
 }
 
-int xasprintf(char **strp, const char *format, ...)
+int bugle_asprintf(char **strp, const char *format, ...)
 {
     int ans;
 #if !HAVE_VASPRINTF && HAVE_VSNPRINTF
@@ -120,7 +120,7 @@ int xasprintf(char **strp, const char *format, ...)
     return ans;
 #elif HAVE_VSNPRINTF
     size = 128;
-    *strp = xmalloc(size);
+    *strp = bugle_malloc(size);
     while (1)
     {
         va_start(ap, format);
@@ -132,21 +132,21 @@ int xasprintf(char **strp, const char *format, ...)
             size = ans + 1;
         else                      /* Older e.g. glibc 2.0 */
             size *= 2;
-        *strp = xrealloc(*strp, size);
+        *strp = bugle_realloc(*strp, size);
     }
 #else
 #error "you have no safe way to format strings"
 #endif
 }
 
-char *xafgets(FILE *stream)
+char *bugle_afgets(FILE *stream)
 {
     char *str, *ret;
     int size, have;
 
     size = 16;
     have = 0;
-    str = xmalloc(size);
+    str = bugle_malloc(size);
     while (1)
     {
         ret = fgets(str + have, size - have, stream);
@@ -170,6 +170,6 @@ char *xafgets(FILE *stream)
         if (have < size - 1 || str[size - 2] == '\n')
             return str;
         size *= 2;
-        str = xrealloc(str, size);
+        str = bugle_realloc(str, size);
     }
 }

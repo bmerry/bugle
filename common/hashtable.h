@@ -28,28 +28,28 @@ typedef struct
 {
     char *key;
     void *value;
-} hash_entry;
+} bugle_hash_entry;
 
 typedef struct
 {
-    hash_entry *entries;
+    bugle_hash_entry *entries;
     size_t size;
     size_t count;
     int size_index;
-} hash_table;
+} bugle_hash_table;
 
-void initialise_hashing(void);
+void bugle_initialise_hashing(void);
 
-void hash_init(hash_table *table);
-void hash_set(hash_table *table, const char *key, void *value);
-void *hash_get(const hash_table *table, const char *key);
-void hash_clear(hash_table *table, bool free_data);
+void bugle_hash_init(bugle_hash_table *table);
+void bugle_hash_set(bugle_hash_table *table, const char *key, void *value);
+void *bugle_hash_get(const bugle_hash_table *table, const char *key);
+void bugle_hash_clear(bugle_hash_table *table, bool free_data);
 
 /* Walk the hash table. A walker loop looks like this:
- * for (h = hash_begin(&table); h; h = hash_next(&table, h))
+ * for (h = bugle_hash_begin(&table); h; h = bugle_hash_next(&table, h))
  */
-const hash_entry *hash_begin(hash_table *table);
-const hash_entry *hash_next(hash_table *table, const hash_entry *e);
+const bugle_hash_entry *bugle_hash_begin(bugle_hash_table *table);
+const bugle_hash_entry *bugle_hash_next(bugle_hash_table *table, const bugle_hash_entry *e);
 
 /* A similar implementation but with void * instead of string keys.
  * The data in the void * is irrelevant.
@@ -58,22 +58,22 @@ typedef struct
 {
     const void *key;
     void *value;
-} hashptr_entry;
+} bugle_hashptr_entry;
 
 typedef struct
 {
-    hashptr_entry *entries;
+    bugle_hashptr_entry *entries;
     size_t size;
     size_t count;
     int size_index;
-} hashptr_table;
+} bugle_hashptr_table;
 
-void hashptr_init(hashptr_table *table);
-void hashptr_set(hashptr_table *table, const void *key, void *value);
-void *hashptr_get(const hashptr_table *table, const void *key);
-void hashptr_clear(hashptr_table *table, bool free_data);
+void bugle_hashptr_init(bugle_hashptr_table *table);
+void bugle_hashptr_set(bugle_hashptr_table *table, const void *key, void *value);
+void *bugle_hashptr_get(const bugle_hashptr_table *table, const void *key);
+void bugle_hashptr_clear(bugle_hashptr_table *table, bool free_data);
 
-const hashptr_entry *hashptr_begin(hashptr_table *table);
-const hashptr_entry *hashptr_next(hashptr_table *table, const hashptr_entry *e);
+const bugle_hashptr_entry *bugle_hashptr_begin(bugle_hashptr_table *table);
+const bugle_hashptr_entry *bugle_hashptr_next(bugle_hashptr_table *table, const bugle_hashptr_entry *e);
 
 #endif /* !BUGLE_COMMON_HASHTABLE_H */

@@ -40,7 +40,7 @@ static bool is_prime(int x)
     return true;
 }
 
-void initialise_hashing(void)
+void bugle_initialise_hashing(void)
 {
     int i;
 
@@ -67,7 +67,7 @@ static inline size_t hash(const char *str)
     return h;
 }
 
-void hash_init(hash_table *table)
+void bugle_hash_init(bugle_hash_table *table)
 {
     table->size = table->count = 0;
     table->size_index = 0;
@@ -81,7 +81,7 @@ void hash_init(hash_table *table)
  * - check for duplicate keys
  * It should only be used for rehashing
  */
-static void hash_set_fast(hash_table *table, char *key, void *value)
+static void hash_set_fast(bugle_hash_table *table, char *key, void *value)
 {
     size_t h;
 
@@ -93,9 +93,9 @@ static void hash_set_fast(hash_table *table, char *key, void *value)
 }
 
 /* FIXME: should overwritten values be freed? */
-void hash_set(hash_table *table, const char *key, void *value)
+void bugle_hash_set(bugle_hash_table *table, const char *key, void *value)
 {
-    hash_table big;
+    bugle_hash_table big;
     size_t i;
     size_t h;
 
@@ -105,12 +105,12 @@ void hash_set(hash_table *table, const char *key, void *value)
         assert(primes_initialised);
         big.size_index = table->size_index + 1;
         big.size = primes[big.size_index];
-        big.entries = (hash_entry *) xcalloc(big.size, sizeof(hash_entry));
+        big.entries = (bugle_hash_entry *) bugle_calloc(big.size, sizeof(bugle_hash_entry));
         big.count = 0;
         for (i = 0; i < table->size; i++)
             if (table->entries[i].key)
                 hash_set_fast(&big, table->entries[i].key,
-                              table->entries[i].value);
+                                    table->entries[i].value);
         if (table->entries) free(table->entries);
         *table = big;
     }
@@ -120,13 +120,13 @@ void hash_set(hash_table *table, const char *key, void *value)
         if (++h == table->size) h = 0;
     if (!table->entries[h].key)
     {
-        table->entries[h].key = xstrdup(key);
+        table->entries[h].key = bugle_strdup(key);
         table->count++;
     }
     table->entries[h].value = value;
 }
 
-void *hash_get(const hash_table *table, const char *key)
+void *bugle_hash_get(const bugle_hash_table *table, const char *key)
 {
     size_t h;
 
@@ -143,7 +143,7 @@ void *hash_get(const hash_table *table, const char *key)
         return NULL;
 }
 
-void hash_clear(hash_table *table, bool free_data)
+void bugle_hash_clear(bugle_hash_table *table, bool free_data)
 {
     size_t i;
 
@@ -163,9 +163,9 @@ void hash_clear(hash_table *table, bool free_data)
     table->size_index = 0;
 }
 
-const hash_entry *hash_next(hash_table *table, const hash_entry *e)
+const bugle_hash_entry *bugle_hash_next(bugle_hash_table *table, const bugle_hash_entry *e)
 {
-    const hash_entry *end;
+    const bugle_hash_entry *end;
 
     e++;
     end = table->entries + table->size;
@@ -174,11 +174,11 @@ const hash_entry *hash_next(hash_table *table, const hash_entry *e)
     else return e;
 }
 
-const hash_entry *hash_begin(hash_table *table)
+const bugle_hash_entry *bugle_hash_begin(bugle_hash_table *table)
 {
     if (!table->entries) return NULL;
     else if (table->entries->key) return table->entries;
-    else return hash_next(table, table->entries);
+    else return bugle_hash_next(table, table->entries);
 }
 
 /* void * based hashing */
@@ -188,7 +188,7 @@ static inline size_t hashptr(const void *str)
     return (const char *) str - (const char *) NULL;
 }
 
-void hashptr_init(hashptr_table *table)
+void bugle_hashptr_init(bugle_hashptr_table *table)
 {
     table->size = table->count = 0;
     table->size_index = 0;
@@ -202,7 +202,7 @@ void hashptr_init(hashptr_table *table)
  * - check for duplicate keys
  * It should only be used for rehashing
  */
-static void hashptr_set_fast(hashptr_table *table, const void *key, void *value)
+static void hashptr_set_fast(bugle_hashptr_table *table, const void *key, void *value)
 {
     size_t h;
 
@@ -214,9 +214,9 @@ static void hashptr_set_fast(hashptr_table *table, const void *key, void *value)
 }
 
 /* FIXME: should overwritten values be freed? */
-void hashptr_set(hashptr_table *table, const void *key, void *value)
+void bugle_hashptr_set(bugle_hashptr_table *table, const void *key, void *value)
 {
-    hashptr_table big;
+    bugle_hashptr_table big;
     size_t i;
     size_t h;
 
@@ -226,7 +226,7 @@ void hashptr_set(hashptr_table *table, const void *key, void *value)
         assert(primes_initialised);
         big.size_index = table->size_index + 1;
         big.size = primes[big.size_index];
-        big.entries = (hashptr_entry *) xcalloc(big.size, sizeof(hashptr_entry));
+        big.entries = (bugle_hashptr_entry *) bugle_calloc(big.size, sizeof(bugle_hashptr_entry));
         big.count = 0;
         for (i = 0; i < table->size; i++)
             if (table->entries[i].key)
@@ -247,7 +247,7 @@ void hashptr_set(hashptr_table *table, const void *key, void *value)
     table->entries[h].value = value;
 }
 
-void *hashptr_get(const hashptr_table *table, const void *key)
+void *bugle_hashptr_get(const bugle_hashptr_table *table, const void *key)
 {
     size_t h;
 
@@ -264,7 +264,7 @@ void *hashptr_get(const hashptr_table *table, const void *key)
         return NULL;
 }
 
-void hashptr_clear(hashptr_table *table, bool free_data)
+void bugle_hashptr_clear(bugle_hashptr_table *table, bool free_data)
 {
     size_t i;
 
@@ -283,9 +283,9 @@ void hashptr_clear(hashptr_table *table, bool free_data)
     table->size_index = 0;
 }
 
-const hashptr_entry *hashptr_next(hashptr_table *table, const hashptr_entry *e)
+const bugle_hashptr_entry *bugle_hashptr_next(bugle_hashptr_table *table, const bugle_hashptr_entry *e)
 {
-    const hashptr_entry *end;
+    const bugle_hashptr_entry *end;
 
     e++;
     end = table->entries + table->size;
@@ -294,9 +294,9 @@ const hashptr_entry *hashptr_next(hashptr_table *table, const hashptr_entry *e)
     else return e;
 }
 
-const hashptr_entry *hashptr_begin(hashptr_table *table)
+const bugle_hashptr_entry *bugle_hashptr_begin(bugle_hashptr_table *table)
 {
     if (!table->entries) return NULL;
     else if (table->entries->key) return table->entries;
-    else return hashptr_next(table, table->entries);
+    else return bugle_hashptr_next(table, table->entries);
 }

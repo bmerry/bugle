@@ -45,16 +45,16 @@ static void load_config(void)
 {
     const char *home;
     char *config = NULL, *chain_name;
-    const linked_list *root;
+    const bugle_linked_list *root;
     const config_chain *chain;
     const config_filterset *set;
     const config_variable *var;
     filter_set *f;
-    list_node *i, *j;
+    bugle_list_node *i, *j;
     bool debugging;
 
     if (getenv("BUGLE_FILTERS"))
-        config = xstrdup(getenv("BUGLE_FILTERS"));
+        config = bugle_strdup(getenv("BUGLE_FILTERS"));
     home = getenv("HOME");
     chain_name = getenv("BUGLE_CHAIN");
     debugging = getenv("BUGLE_DEBUGGER") != NULL;
@@ -65,7 +65,7 @@ static void load_config(void)
     {
         if (!config)
         {
-            config = xmalloc(strlen(home) + strlen(FILTERFILE) + 1);
+            config = bugle_malloc(strlen(home) + strlen(FILTERFILE) + 1);
             sprintf(config, "%s%s", home, FILTERFILE);
         }
         if ((yyin = fopen(config, "r")))
@@ -82,16 +82,16 @@ static void load_config(void)
                 if (!chain)
                 {
                     root = config_get_root();
-                    if (list_head(root))
-                        chain = (const config_chain *) list_data(list_head(root));
+                    if (bugle_list_head(root))
+                        chain = (const config_chain *) bugle_list_data(bugle_list_head(root));
                     if (!chain)
                         fputs("no chains defined; running in passthrough mode\n", stderr);
                 }
                 if (chain)
                 {
-                    for (i = list_head(&chain->filtersets); i; i = list_next(i))
+                    for (i = bugle_list_head(&chain->filtersets); i; i = bugle_list_next(i))
                     {
-                        set = (const config_filterset *) list_data(i);
+                        set = (const config_filterset *) bugle_list_data(i);
                         f = bugle_get_filter_set_handle(set->name);
                         if (!f)
                         {
@@ -99,9 +99,9 @@ static void load_config(void)
                                     set->name);
                             continue;
                         }
-                        for (j = list_head(&set->variables); j; j = list_next(j))
+                        for (j = bugle_list_head(&set->variables); j; j = bugle_list_next(j))
                         {
-                            var = (const config_variable *) list_data(j);
+                            var = (const config_variable *) bugle_list_data(j);
                             if (!filter_set_command(f,
                                                     var->name,
                                                     var->value))
@@ -109,9 +109,9 @@ static void load_config(void)
                                         var->name, set->name);
                         }
                     }
-                    for (i = list_head(&chain->filtersets); i; i = list_next(i))
+                    for (i = bugle_list_head(&chain->filtersets); i; i = bugle_list_next(i))
                     {
-                        set = (const config_filterset *) list_data(i);
+                        set = (const config_filterset *) bugle_list_data(i);
                         f = bugle_get_filter_set_handle(set->name);
                         if (f) bugle_enable_filter_set(f);
                     }
@@ -159,7 +159,7 @@ static void initialise_core_filters(void)
 static pthread_once_t init_key_once = PTHREAD_ONCE_INIT;
 static void initialise_all(void)
 {
-    initialise_hashing();
+    bugle_initialise_hashing();
     initialise_real();
     initialise_canonical();
     initialise_filters();

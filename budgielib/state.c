@@ -58,7 +58,7 @@ state_generic *create_state(const state_spec *spec, state_generic *parent)
 {
     state_generic *s;
 
-    s = xcalloc(1, spec->instance_size);
+    s = bugle_calloc(1, spec->instance_size);
     s->name = (char *) spec->name;
     (*spec->constructor)(s, parent);
     return s;
@@ -144,7 +144,7 @@ state_generic *add_state_index(state_generic *node, const void *key, const char 
         i = node->num_indexed;
 
     if (name)
-        s->name = xstrdup(name);
+        s->name = bugle_strdup(name);
     else if (s->spec->key_type != NULL_TYPE)
     {
         dump_any_type_str_data d;
@@ -154,7 +154,7 @@ state_generic *add_state_index(state_generic *node, const void *key, const char 
         s->name = string_io(dump_any_type_str, &d);
     }
     else
-        s->name = xstrdup("[]");
+        s->name = bugle_strdup("[]");
 
     for (j = node->num_indexed; j > i; j--)
         node->indexed[j] = node->indexed[j - 1];

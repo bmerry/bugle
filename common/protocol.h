@@ -35,11 +35,11 @@
 #define TO_NETWORK(x) (x)
 #define TO_HOST(x) (x)
 
-bool send_code(int fd, uint32_t code);
-bool send_binary_string(int fd, uint32_t len, const char *str);
-bool send_string(int fd, const char *str);
-bool recv_code(int fd, uint32_t *code);
-bool recv_binary_string(int fd, uint32_t *len, char **data);
-bool recv_string(int fd, char **str);
+bool gldb_send_code(int fd, uint32_t code);
+bool gldb_send_binary_string(int fd, uint32_t len, const char *str);
+bool gldb_send_string(int fd, const char *str);
+bool gldb_recv_code(int fd, uint32_t *code);
+bool gldb_recv_binary_string(int fd, uint32_t *len, char **data);
+bool gldb_recv_string(int fd, char **str);
 
 #endif /* BUGLE_COMMON_PROTOCOL_H */

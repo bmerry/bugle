@@ -35,7 +35,7 @@
 #endif
 
 object_class bugle_context_class;
-static hashptr_table context_objects;
+static bugle_hashptr_table context_objects;
 static size_t trackcontext_offset;
 
 state_7context_I *bugle_tracker_get_context_state()
@@ -94,11 +94,11 @@ static bool trackcontext_callback(function_call *call, const callback_data *data
             {
                 state = (state_7context_I *) add_state_index(parent, &ctx, NULL);
                 obj = bugle_object_new(&bugle_context_class, ctx, true);
-                hashptr_set(&context_objects, ctx, obj);
+                bugle_hashptr_set(&context_objects, ctx, obj);
             }
             else
             {
-                obj = hashptr_get(&context_objects, ctx);
+                obj = bugle_hashptr_get(&context_objects, ctx);
                 bugle_object_set_current(&bugle_context_class, obj);
                 tracker_set_context_state(state);
             }
@@ -134,7 +134,7 @@ void trackcontext_initialise(void)
     };
 
     bugle_object_class_init(&bugle_context_class, NULL);
-    hashptr_init(&context_objects);
+    bugle_hashptr_init(&context_objects);
     /* This ought to be in the initialise routines, but it is vital that
      * it runs early and we currently have no other way to determine the
      * ordering.

@@ -45,14 +45,14 @@ typedef struct
     filter_callback callback;
     struct filter_set_s *parent;
     /* List of pointers to the reference counts for the caught functions */
-    linked_list catches;
+    bugle_linked_list catches;
     bool catches_all;
 } filter;
 
 typedef struct filter_set_s
 {
     char *name;
-    linked_list filters;
+    bugle_linked_list filters;
     filter_set_initialiser init;
     filter_set_destructor done;
     filter_set_command_handler command_handler;

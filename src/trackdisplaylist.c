@@ -34,7 +34,7 @@
 #endif
 
 object_class bugle_displaylist_class;
-static hashptr_table displaylist_objects;
+static bugle_hashptr_table displaylist_objects;
 static pthread_mutex_t displaylist_lock = PTHREAD_MUTEX_INITIALIZER;
 static size_t displaylist_offset;
 
@@ -72,7 +72,7 @@ void *bugle_displaylist_get(GLuint list)
     void *ans;
 
     pthread_mutex_lock(&displaylist_lock);
-    ans = hashptr_get(&displaylist_objects, (void *) (size_t) list);
+    ans = bugle_hashptr_get(&displaylist_objects, (void *) (size_t) list);
     pthread_mutex_unlock(&displaylist_lock);
     return ans;
 }
@@ -107,7 +107,7 @@ static bool trackdisplaylist_callback(function_call *call, const callback_data *
          * name comes into effect.
          */
         pthread_mutex_lock(&displaylist_lock);
-        hashptr_set(&displaylist_objects, (void *) (size_t) info_ptr->list, obj);
+        bugle_hashptr_set(&displaylist_objects, (void *) (size_t) info_ptr->list, obj);
         pthread_mutex_unlock(&displaylist_lock);
         bugle_object_set_current(&bugle_displaylist_class, NULL);
         break;
@@ -139,7 +139,7 @@ void trackdisplaylist_initialise(void)
     };
 
     bugle_object_class_init(&bugle_displaylist_class, &bugle_context_class);
-    hashptr_init(&displaylist_objects);
+    bugle_hashptr_init(&displaylist_objects);
     /* These ought to be in the initialise routines, but it is vital that
      * they run first and we currently have no other way to determine the
      * ordering.

@@ -115,7 +115,7 @@ static void prepare_screenshot_data(screenshot_data *data,
         else
 #endif
         {
-            data->pixels = xmalloc(stride * height);
+            data->pixels = bugle_malloc(stride * height);
             data->pbo = 0;
         }
     }
@@ -151,7 +151,7 @@ static AVFrame *allocate_video_frame(int fmt, int width, int height,
         exit(1);
     }
     size = avpicture_get_size(fmt, width, height);
-    if (create) buffer = xmalloc(size);
+    if (create) buffer = bugle_malloc(size);
     avpicture_fill((AVPicture *) f, buffer, fmt, width, height);
     return f;
 }
@@ -195,7 +195,7 @@ static bool initialise_lavc(int width, int height)
     /* FIXME: what does the NULL do? */
     if (av_set_parameters(video_context, NULL) < 0) return false;
     if (avcodec_open(c, codec) < 0) return false;
-    video_buffer = xmalloc(video_buffer_size);
+    video_buffer = bugle_malloc(video_buffer_size);
     video_raw = allocate_video_frame(CAPTURE_AV_FMT, width, height, false);
     video_yuv = allocate_video_frame(c->pix_fmt, width, height, true);
     if (url_fopen(&video_context->pb, video_file, URL_WRONLY) < 0)
@@ -524,7 +524,7 @@ static void screenshot_file(int frameno)
     char *fname;
     FILE *out;
 
-    xasprintf(&fname, "%s%.4d%s", file_base, frameno, file_suffix);
+    bugle_asprintf(&fname, "%s%.4d%s", file_base, frameno, file_suffix);
     out = fopen(fname, "wb");
     free(fname);
     if (!out)
@@ -568,7 +568,7 @@ static bool initialise_screenshot(filter_set *handle)
     bugle_register_filter_depends("invoke", "screenshot");
     bugle_register_filter_set_renders("screenshot");
 
-    video_data = xcalloc(video_lag, sizeof(screenshot_data));
+    video_data = bugle_calloc(video_lag, sizeof(screenshot_data));
     video_cur = 0;
     video_leader = video_lag;
     if (video_file)
@@ -577,7 +577,7 @@ static bool initialise_screenshot(filter_set *handle)
 #if !HAVE_LAVC
         char *cmdline;
 
-        xasprintf(&cmdline, "ppmtoy4m | ffmpeg -f yuv4mpegpipe -i - -vcodec %s -strict -1 -y %s",
+        bugle_asprintf(&cmdline, "ppmtoy4m | ffmpeg -f yuv4mpegpipe -i - -vcodec %s -strict -1 -y %s",
                   video_codec, video_file);
         video_pipe = popen(cmdline, "w");
         free(cmdline);
@@ -605,9 +605,9 @@ static bool set_variable_screenshot(filter_set *handle,
 {
     /* FIXME: take a filebase for screenshot mode */
     if (strcmp(name, "video") == 0)
-        video_file = xstrdup(value);
+        video_file = bugle_strdup(value);
     else if (strcmp(name, "codec") == 0)
-        video_codec = xstrdup(value);
+        video_codec = bugle_strdup(value);
     else if (strcmp(name, "start") == 0)
         start_frameno = atoi(value);
     else if (strcmp(name, "bitrate") == 0)
@@ -625,7 +625,7 @@ static bool set_variable_screenshot(filter_set *handle,
     return true;
 }
 
-static hash_table seen_extensions;
+static bugle_hash_table seen_extensions;
 static const char *gl_version = "GL_VERSION_1_1";
 static const char *glx_version = "GLX_VERSION_1_2";
 
@@ -638,7 +638,7 @@ static bool showextensions_callback(function_call *call, const callback_data *da
     info = &budgie_function_table[call->generic.id];
     glinfo = &gl_function_table[call->generic.id];
     if (glinfo->extension)
-        hash_set(&seen_extensions, glinfo->extension, &seen_extensions);
+        bugle_hash_set(&seen_extensions, glinfo->extension, &seen_extensions);
     else
     {
         if (glinfo->version && glinfo->version[2] == 'X' && strcmp(glinfo->version, glx_version) > 0)
@@ -657,7 +657,7 @@ static bool showextensions_callback(function_call *call, const callback_data *da
             e = *(const GLenum *) call->generic.args[i];
             t = gl_enum_to_token_struct(e);
             if (t && t->extension)
-                hash_set(&seen_extensions, t->extension, &seen_extensions);
+                bugle_hash_set(&seen_extensions, t->extension, &seen_extensions);
         }
     }
     return true;
@@ -673,7 +673,7 @@ static bool initialise_showextensions(filter_set *handle)
      * reduces the risk of another filter aborting the call.
      */
     bugle_register_filter_depends("invoke", "showextensions");
-    hash_init(&seen_extensions);
+    bugle_hash_init(&seen_extensions);
     return true;
 }
 
@@ -692,10 +692,10 @@ static void destroy_showextensions(filter_set *handle)
         ver = gl_tokens_name[i].version;
         ext = gl_tokens_name[i].extension;
         if ((!ver || strcmp(ver, gl_version) > 0)
-            && ext && hash_get(&seen_extensions, ext) == &seen_extensions)
+            && ext && bugle_hash_get(&seen_extensions, ext) == &seen_extensions)
         {
             printf(" %s", ext);
-            hash_set(&seen_extensions, ext, NULL);
+            bugle_hash_set(&seen_extensions, ext, NULL);
         }
     }
     for (f = 0; f < NUMBER_OF_FUNCTIONS; f++)
@@ -703,14 +703,14 @@ static void destroy_showextensions(filter_set *handle)
         const char *ext;
 
         ext = gl_function_table[f].extension;
-        if (ext && hash_get(&seen_extensions, ext) == &seen_extensions)
+        if (ext && bugle_hash_get(&seen_extensions, ext) == &seen_extensions)
         {
             printf(" %s", ext);
-            hash_set(&seen_extensions, ext, NULL);
+            bugle_hash_set(&seen_extensions, ext, NULL);
         }
     }
 
-    hash_clear(&seen_extensions, false);
+    bugle_hash_clear(&seen_extensions, false);
     printf("\n");
 }
 

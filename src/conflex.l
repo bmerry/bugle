@@ -46,7 +46,7 @@ static void append_char(char ch)
             current_string_memory = 64;
             atexit(free_string);
         }
-        current_string = xrealloc(current_string, current_string_memory);
+        current_string = bugle_realloc(current_string, current_string_memory);
     }
     current_string[current_string_length - 1] = ch;
     current_string[current_string_length] = '\0';
@@ -67,7 +67,7 @@ static void clear_string(void)
 
 chain		{ return CHAIN; }
 filterset	{ return FILTERSET; }
-[A-Za-z_]+	{ yylval.str = xstrdup(yytext); return WORD; }
+[A-Za-z_]+	{ yylval.str = bugle_strdup(yytext); return WORD; }
 \"		{ BEGIN(STRING_MODE); }
 #.*$		/* Do nothing: eats comments */
 "{"|"}"		{ return yytext[0]; }
@@ -80,7 +80,7 @@ filterset	{ return FILTERSET; }
 <STRING_MODE>\\\n	/* Do nothing */
 <STRING_MODE>\\.	{ append_char(yytext[1]); }
 <STRING_MODE>\"	{ BEGIN(INITIAL);
-			yylval.str = xstrdup(current_string);
+			yylval.str = bugle_strdup(current_string);
 			clear_string();
 			return STRING; }
 <STRING_MODE><<EOF>>	{

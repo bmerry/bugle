@@ -35,24 +35,24 @@
 extern "C" {
 #endif
 
-void *xmalloc(size_t size);
-void *xcalloc(size_t nmemb, size_t size);
-void *xrealloc(void *ptr, size_t size);
-char *xstrdup(const char *s);
+void *bugle_malloc(size_t size);
+void *bugle_calloc(size_t nmemb, size_t size);
+void *bugle_realloc(void *ptr, size_t size);
+char *bugle_strdup(const char *s);
 
-/* Appends src to dest, possibly xrealloc()ing, and returns the pointer.
+/* Appends src to dest, possibly bugle_realloc()ing, and returns the pointer.
  * It assumes that dest was malloc()ed with a size that is the smallest
  * power of 2 large enough to hold it, and this will also hold as a
  * post-condition.
  */
-char *xstrcat(char *dest, const char *src);
+char *bugle_strcat(char *dest, const char *src);
 
-int xasprintf(char **strp, const char *format, ...);
+int bugle_asprintf(char **strp, const char *format, ...);
 
 /* Like fgets, but creates the memory. The return value has the same
  * meaning as for fgets, but must be free()ed if non-NULL
  */
-char *xafgets(FILE *stream);
+char *bugle_afgets(FILE *stream);
 
 #ifdef __cplusplus
 }

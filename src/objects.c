@@ -36,7 +36,7 @@ typedef struct
 
 void bugle_object_class_init(object_class *klass, object_class *parent)
 {
-    list_init(&klass->info);
+    bugle_list_init(&klass->info);
     klass->total_size = 0;
     klass->parent = parent;
     if (parent)
@@ -47,7 +47,7 @@ void bugle_object_class_init(object_class *klass, object_class *parent)
 
 void bugle_object_class_clear(object_class *klass)
 {
-    list_clear(&klass->info, true);
+    bugle_list_clear(&klass->info, true);
     if (!klass->parent)
         pthread_key_delete(klass->current);
 }
@@ -60,11 +60,11 @@ size_t bugle_object_class_register(object_class *klass,
     object_class_info *info;
     size_t ans;
 
-    info = xmalloc(sizeof(object_class_info));
+    info = bugle_malloc(sizeof(object_class_info));
     info->constructor = constructor;
     info->destructor = destructor;
     info->size = size;
-    list_append(&klass->info, info);
+    bugle_list_append(&klass->info, info);
     ans = klass->total_size;
     klass->total_size += size;
     return ans;
@@ -79,18 +79,18 @@ void *bugle_object_new(const object_class *klass, const void *key, bool make_cur
 {
     void *ans;
     size_t offset = 0;
-    list_node *i;
+    bugle_list_node *i;
     const object_class_info *info;
 
     if (klass->total_size)
-        ans = xmalloc(klass->total_size);
+        ans = bugle_malloc(klass->total_size);
     else
-        ans = xmalloc(1);
+        ans = bugle_malloc(1);
     if (make_current) bugle_object_set_current(klass, ans);
 
-    for (i = list_head(&klass->info); i; i = list_next(i))
+    for (i = bugle_list_head(&klass->info); i; i = bugle_list_next(i))
     {
-        info = (const object_class_info *) list_data(i);
+        info = (const object_class_info *) bugle_list_data(i);
         if (info->constructor)
             (*info->constructor)(key, offset_ptr(ans, offset));
         else
@@ -102,13 +102,13 @@ void *bugle_object_new(const object_class *klass, const void *key, bool make_cur
 
 void bugle_object_delete(const object_class *klass, void *obj)
 {
-    list_node *i;
+    bugle_list_node *i;
     const object_class_info *info;
     size_t offset = 0;
 
-    for (i = list_head(&klass->info); i; i = list_next(i))
+    for (i = bugle_list_head(&klass->info); i; i = bugle_list_next(i))
     {
-        info = (const object_class_info *) list_data(i);
+        info = (const object_class_info *) bugle_list_data(i);
         if (info->destructor)
             (*info->destructor)(offset_ptr(obj, offset));
         offset += info->size;
