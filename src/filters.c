@@ -159,7 +159,7 @@ void initialise_filters(void)
         if (strcmp(ent->d_name + len - 3, ".so") != 0) continue;
         full_name = (char *) bugle_malloc(strlen(libdir) + strlen(ent->d_name) + 2);
         sprintf(full_name, "%s/%s", libdir, ent->d_name);
-        handle = dlopen(full_name, RTLD_LAZY);
+        handle = dlopen(full_name, RTLD_NOW);
         if (handle == NULL) continue;
         init = (void (*)(void)) dlsym(handle, "bugle_initialise_filter_library");
         if (init == NULL)

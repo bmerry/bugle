@@ -82,10 +82,18 @@ static void invalid_direct_vbo(void)
             glDrawRangeElementsEXT(GL_POINTS, 0, 0, 4, GL_UNSIGNED_INT, NULL); /* legal */
         }
 #endif
+#ifdef GL_EXT_multi_draw_arrays
+        if (glutExtensionSupported("GL_EXT_multi_draw_arrays"))
+        {
+            GLsizei count = 500;
+            const GLvoid *indices = NULL;
+            glMultiDrawElementsEXT(GL_POINTS, &count, GL_UNSIGNED_INT, &indices, 1);
+        }
 
         glBindBufferARB(GL_ELEMENT_ARRAY_BUFFER_ARB, 0);
         glDeleteBuffersARB(1, &id);
         glDisableClientState(GL_VERTEX_ARRAY);
+#endif
     }
 #endif /* GL_ARB_vertex_buffer_object */
 }
@@ -102,6 +110,16 @@ static void invalid_indirect(void)
 #ifdef GL_EXT_draw_range_elements
     if (glutExtensionSupported("GL_EXT_draw_range_elements"))
         glDrawRangeElementsEXT(GL_POINTS, 0, 0, 4, GL_UNSIGNED_INT, i);
+#endif
+#ifdef GL_EXT_multi_draw_arrays
+    if (glutExtensionSupported("GL_EXT_multi_draw_arrays"))
+    {
+        GLint first = 0;
+        GLsizei count = 1;
+        const GLvoid *indices = &i;
+        glMultiDrawArraysEXT(GL_POINTS, &first, &count, 1);
+        glMultiDrawElementsEXT(GL_POINTS, &count, GL_UNSIGNED_INT, &indices, 1);
+    }
 #endif
 
     glDisableClientState(GL_VERTEX_ARRAY);

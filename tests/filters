@@ -27,7 +27,7 @@ chain triangles
     }
 }
 
-chain checkaddress
+chain checks
 {
-    filterset checkaddress
+    filterset checks
 }

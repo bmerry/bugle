@@ -221,21 +221,21 @@ static bool initialise_unwindstack(filter_set *handle)
     return true;
 }
 
-static sigjmp_buf checkaddress_buf;
+static sigjmp_buf checks_buf;
 /* This is set to some description of the thing being tested, and if it
  * causes a SIGSEGV it is used to describe the error.
  */
-static const char *checkaddress_error;
+static const char *checks_error;
 
-static void checkaddress_sigsegv_handler(int sig)
+static void checks_sigsegv_handler(int sig)
 {
-    siglongjmp(checkaddress_buf, 1);
+    siglongjmp(checks_buf, 1);
 }
 
 /* Just reads every byte of the given address range. We use the volatile
  * keyword to (hopefully) force the read.
  */
-static void checkaddress_memory(size_t size, const void *data)
+static void checks_memory(size_t size, const void *data)
 {
     volatile char dummy;
     const char *cdata;
@@ -246,7 +246,7 @@ static void checkaddress_memory(size_t size, const void *data)
         dummy = cdata[i];
 }
 
-/* We don't want to have to make *calls* to checkaddress_buffer conditional
+/* We don't want to have to make *calls* to checks_buffer conditional
  * on GL_ARB_vertex_buffer_object, but the bindings are only defined by
  * that extension. Instead we wrap them in this macro.
  */
@@ -257,8 +257,8 @@ static void checkaddress_memory(size_t size, const void *data)
 #endif
 
 #ifdef GL_ARB_vertex_buffer_object
-static void checkaddress_buffer_vbo(size_t size, const void *data,
-                                    GLuint buffer)
+static void checks_buffer_vbo(size_t size, const void *data,
+                              GLuint buffer)
 {
     GLint tmp, bsize;
     size_t end;
@@ -275,28 +275,28 @@ static void checkaddress_buffer_vbo(size_t size, const void *data,
 }
 #endif
 
-/* Like checkaddress_memory, but handles buffer objects */
-static void checkaddress_buffer(size_t size, const void *data,
-                                GLenum binding)
+/* Like checks_memory, but handles buffer objects */
+static void checks_buffer(size_t size, const void *data,
+                          GLenum binding)
 {
 #ifdef GL_ARB_vertex_buffer_object
     GLint id = 0;
     if (!bugle_in_begin_end() && bugle_gl_has_extension(BUGLE_GL_ARB_vertex_buffer_object))
         CALL_glGetIntegerv(binding, &id);
-    if (id) checkaddress_buffer_vbo(size, data, id);
+    if (id) checks_buffer_vbo(size, data, id);
     else
 #endif
     {
-        checkaddress_memory(size, data);
+        checks_memory(size, data);
     }
 }
 
-static void checkaddress_attribute(size_t first, size_t count,
-                                   const char *text, GLenum name,
-                                   GLenum size_name, GLint size,
-                                   GLenum type_name, budgie_type type,
-                                   GLenum stride_name,
-                                   GLenum ptr_name, GLenum binding)
+static void checks_attribute(size_t first, size_t count,
+                             const char *text, GLenum name,
+                             GLenum size_name, GLint size,
+                             GLenum type_name, budgie_type type,
+                             GLenum stride_name,
+                             GLenum ptr_name, GLenum binding)
 {
     GLint stride, gltype;
     size_t group_size;
@@ -305,7 +305,7 @@ static void checkaddress_attribute(size_t first, size_t count,
 
     if (CALL_glIsEnabled(name))
     {
-        checkaddress_error = text;
+        checks_error = text;
         if (size_name) CALL_glGetIntegerv(size_name, &size);
         if (type_name)
         {
@@ -318,14 +318,14 @@ static void checkaddress_attribute(size_t first, size_t count,
         if (!stride) stride = group_size;
         cptr = (const char *) ptr;
         cptr += group_size * first;
-        checkaddress_buffer((count - 1) * stride + group_size, cptr,
-                            binding);
+        checks_buffer((count - 1) * stride + group_size, cptr,
+                      binding);
     }
 }
 
 #ifdef GL_ARB_vertex_program
-static void checkaddress_generic_attribute(size_t first, size_t count,
-                                           GLint number)
+static void checks_generic_attribute(size_t first, size_t count,
+                                     GLint number)
 {
     GLint stride, gltype, enabled, size;
     size_t group_size;
@@ -339,7 +339,7 @@ static void checkaddress_generic_attribute(size_t first, size_t count,
     CALL_glGetVertexAttribivARB(number, GL_VERTEX_ATTRIB_ARRAY_ENABLED_ARB, &enabled);
     if (enabled)
     {
-        checkaddress_error = "vertex attribute array";
+        checks_error = "vertex attribute array";
         CALL_glGetVertexAttribivARB(number, GL_VERTEX_ATTRIB_ARRAY_SIZE_ARB, &size);
         CALL_glGetVertexAttribivARB(number, GL_VERTEX_ATTRIB_ARRAY_TYPE_ARB, &gltype);
         type = bugle_gl_type_to_type(gltype);
@@ -355,56 +355,57 @@ static void checkaddress_generic_attribute(size_t first, size_t count,
         id = 0;
         if (!bugle_in_begin_end() && bugle_gl_has_extension(BUGLE_GL_ARB_vertex_buffer_object))
             CALL_glGetVertexAttribivARB(number, GL_VERTEX_ATTRIB_ARRAY_BUFFER_BINDING_ARB, &id);
-        if (id) checkaddress_buffer_vbo(size, cptr, id);
+        if (id) checks_buffer_vbo(size, cptr, id);
         else
 #endif
         {
-            checkaddress_memory(size, cptr);
+            checks_memory(size, cptr);
         }
     }
 }
 #endif /* GL_ARB_vertex_program */
 
-static void checkaddress_attributes(size_t first, size_t count)
+static void checks_attributes(size_t first, size_t count)
 {
     GLenum i;
 
     if (!count) return;
-    checkaddress_attribute(first, count,
-                           "vertex array", GL_VERTEX_ARRAY,
-                           GL_VERTEX_ARRAY_SIZE, 0,
-                           GL_VERTEX_ARRAY_TYPE, 0,
-                           GL_VERTEX_ARRAY_STRIDE,
-                           GL_VERTEX_ARRAY_POINTER,
-                           VBO_ENUM(GL_VERTEX_ARRAY_BUFFER_BINDING_ARB));
-    checkaddress_attribute(first, count,
-                           "normal array", GL_NORMAL_ARRAY,
-                           0, 3,
-                           GL_NORMAL_ARRAY_TYPE, 0,
-                           GL_NORMAL_ARRAY_STRIDE,
-                           GL_NORMAL_ARRAY_POINTER,
-                           VBO_ENUM(GL_NORMAL_ARRAY_BUFFER_BINDING_ARB));
-    checkaddress_attribute(first, count,
-                           "color array", GL_COLOR_ARRAY,
-                           GL_COLOR_ARRAY_SIZE, 0,
-                           GL_COLOR_ARRAY_TYPE, 0,
-                           GL_COLOR_ARRAY_STRIDE,
-                           GL_COLOR_ARRAY_POINTER,
-                           VBO_ENUM(GL_COLOR_ARRAY_BUFFER_BINDING_ARB));
-    checkaddress_attribute(first, count,
-                           "index array", GL_INDEX_ARRAY,
-                           0, 1,
-                           GL_INDEX_ARRAY_TYPE, 0,
-                           GL_INDEX_ARRAY_STRIDE,
-                           GL_INDEX_ARRAY_POINTER,
-                           VBO_ENUM(GL_INDEX_ARRAY_BUFFER_BINDING_ARB));
-    checkaddress_attribute(first, count,
-                           "edge flag array", GL_EDGE_FLAG_ARRAY,
-                           0, 1,
-                           0, TYPE_9GLboolean,
-                           GL_EDGE_FLAG_ARRAY_STRIDE,
-                           GL_EDGE_FLAG_ARRAY_POINTER,
-                           VBO_ENUM(GL_EDGE_FLAG_ARRAY_BUFFER_BINDING_ARB));
+    checks_attribute(first, count,
+                     "vertex array", GL_VERTEX_ARRAY,
+                     GL_VERTEX_ARRAY_SIZE, 0,
+                     GL_VERTEX_ARRAY_TYPE, 0,
+                     GL_VERTEX_ARRAY_STRIDE,
+                     GL_VERTEX_ARRAY_POINTER,
+                     VBO_ENUM(GL_VERTEX_ARRAY_BUFFER_BINDING_ARB));
+    checks_attribute(first, count,
+                     "normal array", GL_NORMAL_ARRAY,
+                     0, 3,
+                     GL_NORMAL_ARRAY_TYPE, 0,
+                     GL_NORMAL_ARRAY_STRIDE,
+                     GL_NORMAL_ARRAY_POINTER,
+                     VBO_ENUM(GL_NORMAL_ARRAY_BUFFER_BINDING_ARB));
+    checks_attribute(first, count,
+                     "color array", GL_COLOR_ARRAY,
+                     GL_COLOR_ARRAY_SIZE, 0,
+                     GL_COLOR_ARRAY_TYPE, 0,
+                     GL_COLOR_ARRAY_STRIDE,
+                     GL_COLOR_ARRAY_POINTER,
+                     VBO_ENUM(GL_COLOR_ARRAY_BUFFER_BINDING_ARB));
+    checks_attribute(first, count,
+                     "index array", GL_INDEX_ARRAY,
+                     0, 1,
+                     GL_INDEX_ARRAY_TYPE, 0,
+                     GL_INDEX_ARRAY_STRIDE,
+                     GL_INDEX_ARRAY_POINTER,
+                     VBO_ENUM(GL_INDEX_ARRAY_BUFFER_BINDING_ARB));
+    checks_attribute(first, count,
+                     "edge flag array", GL_EDGE_FLAG_ARRAY,
+                     0, 1,
+                     0, TYPE_9GLboolean,
+                     GL_EDGE_FLAG_ARRAY_STRIDE,
+                     GL_EDGE_FLAG_ARRAY_POINTER,
+                     VBO_ENUM(GL_EDGE_FLAG_ARRAY_BUFFER_BINDING_ARB));
+    /* FIXME: there are others (fog, secondary colour, ?) */
 
 #ifdef GL_ARB_multitexture
     /* FIXME: if there is a failure, the current texture unit will be wrong */
@@ -417,26 +418,26 @@ static void checkaddress_attributes(size_t first, size_t count)
         for (i = GL_TEXTURE0_ARB; i < GL_TEXTURE0_ARB + texunits; i++)
         {
             CALL_glClientActiveTextureARB(i);
-            checkaddress_attribute(first, count,
-                                   "texture coordinate array", GL_TEXTURE_COORD_ARRAY,
-                                   GL_TEXTURE_COORD_ARRAY_SIZE, 0,
-                                   GL_TEXTURE_COORD_ARRAY_TYPE, 0,
-                                   GL_TEXTURE_COORD_ARRAY_STRIDE,
-                                   GL_TEXTURE_COORD_ARRAY_POINTER,
-                                   VBO_ENUM(GL_TEXTURE_COORD_ARRAY_BUFFER_BINDING_ARB));
+            checks_attribute(first, count,
+                             "texture coordinate array", GL_TEXTURE_COORD_ARRAY,
+                             GL_TEXTURE_COORD_ARRAY_SIZE, 0,
+                             GL_TEXTURE_COORD_ARRAY_TYPE, 0,
+                             GL_TEXTURE_COORD_ARRAY_STRIDE,
+                             GL_TEXTURE_COORD_ARRAY_POINTER,
+                             VBO_ENUM(GL_TEXTURE_COORD_ARRAY_BUFFER_BINDING_ARB));
         }
         CALL_glClientActiveTextureARB(old);
     }
     else
 #endif
     {
-        checkaddress_attribute(first, count,
-                               "texture coordinate array", GL_TEXTURE_COORD_ARRAY,
-                               GL_TEXTURE_COORD_ARRAY_SIZE, 0,
-                               GL_TEXTURE_COORD_ARRAY_TYPE, 0,
-                               GL_TEXTURE_COORD_ARRAY_STRIDE,
-                               GL_TEXTURE_COORD_ARRAY_POINTER,
-                               VBO_ENUM(GL_TEXTURE_COORD_ARRAY_BUFFER_BINDING_ARB));
+        checks_attribute(first, count,
+                         "texture coordinate array", GL_TEXTURE_COORD_ARRAY,
+                         GL_TEXTURE_COORD_ARRAY_SIZE, 0,
+                         GL_TEXTURE_COORD_ARRAY_TYPE, 0,
+                         GL_TEXTURE_COORD_ARRAY_STRIDE,
+                         GL_TEXTURE_COORD_ARRAY_POINTER,
+                         VBO_ENUM(GL_TEXTURE_COORD_ARRAY_BUFFER_BINDING_ARB));
     }
 
 #ifdef GL_ARB_vertex_program
@@ -446,14 +447,13 @@ static void checkaddress_attributes(size_t first, size_t count)
 
         CALL_glGetIntegerv(GL_MAX_VERTEX_ATTRIBS_ARB, &count);
         for (i = 0; i < count; i++)
-            checkaddress_generic_attribute(first, count, i);
+            checks_generic_attribute(first, count, i);
     }
 #endif
-    /* FIXME: generic attributes */
 }
 
-static void checkaddress_min_max(GLsizei count, GLenum gltype, const GLvoid *indices,
-                                 GLuint *min_out, GLuint *max_out)
+static void checks_min_max(GLsizei count, GLenum gltype, const GLvoid *indices,
+                           GLuint *min_out, GLuint *max_out)
 {
     GLuint *out;
     GLsizei i;
@@ -480,32 +480,35 @@ static void checkaddress_min_max(GLsizei count, GLenum gltype, const GLvoid *ind
     free(out);
 }
 
-static bool checkaddress_callback(function_call *call, const callback_data *data)
+static bool checks_callback(function_call *call, const callback_data *data)
 {
     static pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
     struct sigaction act, old_act;
     bool ret = true;
     GLenum type;
-    GLsizei count;
+    GLsizei count, i;
+    const GLint *first_ptr;
+    const GLsizei *count_ptr;
     GLuint min, max;
     const GLvoid *indices;
+    const GLvoid * const *indices_ptr;
 
-    /* The entire checkaddress method is fundamentally non-reentrant, so
+    /* The entire checks method is fundamentally non-reentrant, so
      * we protect it with a big lock.
      */
     pthread_mutex_lock(&lock);
-    checkaddress_error = NULL;
-    if (sigsetjmp(checkaddress_buf, 1) == 1)
+    checks_error = NULL;
+    if (sigsetjmp(checks_buf, 1) == 1)
     {
         /* We get here if we went into the testing then segfaulted. */
         fprintf(stderr, "WARNING: illegal %s caught in %s; call will be ignored\n",
-                checkaddress_error ? checkaddress_error : "pointer",
+                checks_error ? checks_error : "pointer",
                 budgie_function_table[call->generic.id].name);
         ret = false;
     }
     else
     {
-        act.sa_handler = checkaddress_sigsegv_handler;
+        act.sa_handler = checks_sigsegv_handler;
         act.sa_flags = 0;
         sigemptyset(&act.sa_mask);
 
@@ -519,34 +522,31 @@ static bool checkaddress_callback(function_call *call, const callback_data *data
         switch (bugle_canonical_call(call))
         {
             /* FIXME: ArrayElement cannot work because it is inside begin/end */
-        case CFUNC_glArrayElement:
-            checkaddress_attributes(*call->typed.glArrayElement.arg0, 1);
-            break;
         case CFUNC_glDrawArrays:
-            checkaddress_attributes(*call->typed.glDrawArrays.arg1,
-                                    *call->typed.glDrawArrays.arg2);
+            checks_attributes(*call->typed.glDrawArrays.arg1,
+                              *call->typed.glDrawArrays.arg2);
             break;
         case CFUNC_glDrawElements:
-            checkaddress_error = "index array";
+            checks_error = "index array";
             count = *call->typed.glDrawElements.arg1;
             type = *call->typed.glDrawElements.arg2;
             indices = *call->typed.glDrawElements.arg3;
-            checkaddress_buffer(count * bugle_gl_type_to_size(type),
-                                indices,
-                                VBO_ENUM(GL_ELEMENT_ARRAY_BUFFER_BINDING_ARB));
-            checkaddress_min_max(count, type, indices, &min, &max);
-            checkaddress_attributes(min, max - min + 1);
+            checks_buffer(count * bugle_gl_type_to_size(type),
+                          indices,
+                          VBO_ENUM(GL_ELEMENT_ARRAY_BUFFER_BINDING_ARB));
+            checks_min_max(count, type, indices, &min, &max);
+            checks_attributes(min, max - min + 1);
             break;
 #ifdef GL_EXT_draw_range_elements
         case CFUNC_glDrawRangeElementsEXT:
-            checkaddress_error = "index array";
+            checks_error = "index array";
             count = *call->typed.glDrawRangeElementsEXT.arg3;
             type = *call->typed.glDrawRangeElementsEXT.arg4;
             indices = *call->typed.glDrawRangeElementsEXT.arg5;
-            checkaddress_buffer(count * bugle_gl_type_to_size(type),
-                                indices,
-                                VBO_ENUM(GL_ELEMENT_ARRAY_BUFFER_BINDING_ARB));
-            checkaddress_min_max(count, type, indices, &min, &max);
+            checks_buffer(count * bugle_gl_type_to_size(type),
+                          indices,
+                          VBO_ENUM(GL_ELEMENT_ARRAY_BUFFER_BINDING_ARB));
+            checks_min_max(count, type, indices, &min, &max);
             if (min < *call->typed.glDrawRangeElementsEXT.arg1
                 || max > *call->typed.glDrawRangeElementsEXT.arg2)
             {
@@ -556,7 +556,42 @@ static bool checkaddress_callback(function_call *call, const callback_data *data
             }
             min = *call->typed.glDrawRangeElementsEXT.arg1;
             max = *call->typed.glDrawRangeElementsEXT.arg2;
-            checkaddress_attributes(min, max - min + 1);
+            checks_attributes(min, max - min + 1);
+            break;
+#endif
+#ifdef GL_EXT_multi_draw_arrays
+        case CFUNC_glMultiDrawArraysEXT:
+            count = *call->typed.glMultiDrawArraysEXT.arg3;
+            first_ptr = *call->typed.glMultiDrawArraysEXT.arg1;
+            count_ptr = *call->typed.glMultiDrawArraysEXT.arg2;
+
+            checks_error = "first array";
+            checks_memory(sizeof(GLint) * count, first_ptr);
+            checks_error = "count array";
+            checks_memory(sizeof(GLsizei) * count, count_ptr);
+
+            for (i = 0; i < count; i++)
+                checks_attributes(first_ptr[i], count_ptr[i]);
+            break;
+        case CFUNC_glMultiDrawElementsEXT:
+            count = *call->typed.glMultiDrawElements.arg4;
+            type = *call->typed.glMultiDrawElements.arg2;
+            count_ptr = *call->typed.glMultiDrawElements.arg1;
+            indices_ptr = *call->typed.glMultiDrawElements.arg3;
+
+            checks_error = "count array";
+            checks_memory(sizeof(GLsizei) * count, count_ptr);
+            checks_error = "indices array";
+            checks_memory(sizeof(GLvoid *) * count, indices_ptr);
+
+            for (i = 0; i < count; i++)
+            {
+                checks_buffer(count_ptr[i] * bugle_gl_type_to_size(type),
+                              indices_ptr[i],
+                              VBO_ENUM(GL_ELEMENT_ARRAY_BUFFER_BINDING_ARB));
+                checks_min_max(count_ptr[i], type, indices_ptr[i], &min, &max);
+                checks_attributes(min, max - min + 1);
+            }
             break;
         }
 #endif
@@ -573,21 +608,22 @@ static bool checkaddress_callback(function_call *call, const callback_data *data
     return ret;
 }
 
-static bool initialise_checkaddress(filter_set *handle)
+static bool initialise_checks(filter_set *handle)
 {
     filter *f;
 
-    f = bugle_register_filter(handle, "checkaddress", checkaddress_callback);
+    f = bugle_register_filter(handle, "checks", checks_callback);
+    /* FIXME: this is too general */
     bugle_register_filter_catches_drawing(f);
     /* We try to push this early, since it would defeat the whole thing if
-     * bugle crashed while examining the data.
+     * bugle crashed while examining the data in another filter.
      */
-    bugle_register_filter_depends("invoke", "checkaddress");
-    bugle_register_filter_depends("stats", "checkaddress");
-    bugle_register_filter_depends("log_pre", "checkaddress");
-    bugle_register_filter_depends("trackcontext", "checkaddress");
-    bugle_register_filter_depends("trackbeginend", "checkaddress");
-    bugle_register_filter_depends("trackdisplaylist", "checkaddress");
+    bugle_register_filter_depends("invoke", "checks");
+    bugle_register_filter_depends("stats", "checks");
+    bugle_register_filter_depends("log_pre", "checks");
+    bugle_register_filter_depends("trackcontext", "checks");
+    bugle_register_filter_depends("trackbeginend", "checks");
+    bugle_register_filter_depends("trackdisplaylist", "checks");
     return true;
 }
 
@@ -617,10 +653,10 @@ void bugle_initialise_filter_library(void)
         NULL,
         0
     };
-    const filter_set_info checkaddress_info =
+    const filter_set_info checks_info =
     {
-        "checkaddress",
-        initialise_checkaddress,
+        "checks",
+        initialise_checks,
         NULL,
         NULL,
         0
@@ -628,10 +664,10 @@ void bugle_initialise_filter_library(void)
     bugle_register_filter_set(&error_info);
     bugle_register_filter_set(&showerror_info);
     bugle_register_filter_set(&unwindstack_info);
-    bugle_register_filter_set(&checkaddress_info);
+    bugle_register_filter_set(&checks_info);
 
     bugle_register_filter_set_renders("error");
     bugle_register_filter_set_depends("showerror", "error");
-    bugle_register_filter_set_renders("checkaddress");
-    bugle_register_filter_set_depends("checkaddress", "trackextensions");
+    bugle_register_filter_set_renders("checks");
+    bugle_register_filter_set_depends("checks", "trackextensions");
 }
