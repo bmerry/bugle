@@ -203,6 +203,9 @@ OpenGL color-index mode is not well supported.
 Multi-threaded applications that call the GL from more than one thread
 will break in various ways. The debugger filter-set is particularly
 fragile.
+
+Display lists may cause things to go wrong, depending on how they are
+created and what calls go into them.
 .SH AUTHOR
 .B gldb
 and the

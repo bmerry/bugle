@@ -22,6 +22,7 @@
 #include "src/glutils.h"
 #include "common/bool.h"
 #include <GL/glx.h>
+#include <sys/time.h>
 
 /* Wireframe filter-set */
 
@@ -97,6 +98,79 @@ static bool initialise_frontbuffer(filter_set *handle)
     return true;
 }
 
+typedef struct
+{
+    bool initialised;
+    GLuint list_base;
+    struct timeval last_time;
+} showfps_struct;
+
+static bool showfps_callback(function_call *call, const callback_data *data)
+{
+    Display *dpy;
+    GLXDrawable old_read, old_write;
+    GLXContext real, aux;
+    Font f;
+
+    char *ch;
+    showfps_struct *s;
+    struct timeval now;
+    double elapsed;
+    char buffer[128];
+
+    switch (canonical_call(call))
+    {
+    case FUNC_glXSwapBuffers:
+        aux = get_aux_context();
+        if (aux && begin_internal_render())
+        {
+            real = glXGetCurrentContext();
+            old_write = glXGetCurrentDrawable();
+            old_read = glXGetCurrentReadDrawable();
+            dpy = glXGetCurrentDisplay();
+            glXMakeContextCurrent(dpy, old_write, old_write, aux);
+            s = (showfps_struct *) data->context_data;
+            if (!s->initialised)
+            {
+                s->initialised = true;
+                s->list_base = CALL_glGenLists(256);
+                f = XLoadFont(dpy, "-*-courier-*-*-*");
+                glXUseXFont(f, 0, 256, s->list_base);
+                XUnloadFont(dpy, f);
+                gettimeofday(&s->last_time, NULL);
+            }
+            else
+            {
+                gettimeofday(&now, NULL);
+                elapsed = now.tv_sec + 1.0e-6 * now.tv_usec;
+                elapsed -= s->last_time.tv_sec + 1.0e-6 * s->last_time.tv_usec;
+                s->last_time = now;
+                snprintf(buffer, sizeof(buffer), "%.1f fps", 1.0 / elapsed);
+                /* We don't want to depend on glWindowPos since it
+                 * needs OpenGL 1.4, but fortunately the aux context
+                 * should have identity MVP matrix.
+                 */
+                CALL_glPushAttrib(GL_CURRENT_BIT);
+                CALL_glRasterPos2f(-0.9, -0.9);
+                for (ch = buffer; *ch; ch++)
+                    CALL_glCallList(s->list_base + *ch);
+                CALL_glPopAttrib();
+            }
+            glXMakeContextCurrent(dpy, old_write, old_read, real);
+            end_internal_render("showfps_callback", true);
+        }
+    }
+    return true;
+}
+
+static bool initialise_showfps(filter_set *handle)
+{
+    register_filter(handle, "showfps", showfps_callback);
+    register_filter_depends("invoke", "showfps");
+    register_filter_set_renders("showfps");
+    return true;
+}
+
 void initialise_filter_library(void)
 {
     const filter_set_info wireframe_info =
@@ -117,6 +191,16 @@ void initialise_filter_library(void)
         0,
         0
     };
+    const filter_set_info showfps_info =
+    {
+        "showfps",
+        initialise_showfps,
+        NULL,
+        NULL,
+        0,
+        sizeof(showfps_struct)
+    };
     register_filter_set(&wireframe_info);
     register_filter_set(&frontbuffer_info);
+    register_filter_set(&showfps_info);
 }

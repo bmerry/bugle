@@ -1,3 +1,5 @@
+* Added showfps filterset (FIXME: document)
+
 0.0.20041108
 ------------
 * Fix crash in video capture (not sure how it ever worked)
