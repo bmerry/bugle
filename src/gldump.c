@@ -230,12 +230,18 @@ static budgie_type get_real_type(const function_call *call)
         case GL_TEXTURE_WRAP_R:
         case GL_TEXTURE_MIN_FILTER:
         case GL_TEXTURE_MAG_FILTER:
-        case GL_DEPTH_TEXTURE_MODE:
-        case GL_TEXTURE_COMPARE_MODE:
-        case GL_TEXTURE_COMPARE_FUNC:
+#ifdef GL_ARB_depth_texture
+        case GL_DEPTH_TEXTURE_MODE_ARB:
+#endif
+#ifdef GL_ARB_shadow
+        case GL_TEXTURE_COMPARE_MODE_ARB:
+        case GL_TEXTURE_COMPARE_FUNC_ARB:
+#endif
             return TYPE_6GLenum;
-        case GL_GENERATE_MIPMAP:
+#ifdef GL_SGIS_generate_mipmap
+        case GL_GENERATE_MIPMAP_SGIS:
             return TYPE_9GLboolean;
+#endif
         default:
             return NULL_TYPE;
         }
@@ -342,8 +348,8 @@ size_t image_element_count(GLsizei width,
 {
     state_7context_I *ctx;
     /* data from OpenGL state */
-    GLint swap_bytes, row_length, image_height;
-    GLint skip_pixels, skip_rows, skip_images, alignment;
+    GLint swap_bytes = 0, row_length = 0, image_height = 0;
+    GLint skip_pixels = 0, skip_rows = 0, skip_images = 0, alignment = 4;
     /* following the notation of the OpenGL 1.5 spec, section 3.6.4 */
     int l, n, k, s, a;
     int elements; /* number of elements in the last row */
@@ -356,24 +362,33 @@ size_t image_element_count(GLsizei width,
     if (!ctx || ctx->c_internal.c_in_begin_end.data) return 0;
     if (unpack)
     {
-        /* FIXME: don't query on non-existant extensions */
         CALL_glGetIntegerv(GL_UNPACK_SWAP_BYTES, &swap_bytes);
         CALL_glGetIntegerv(GL_UNPACK_ROW_LENGTH, &row_length);
-        CALL_glGetIntegerv(GL_UNPACK_IMAGE_HEIGHT, &image_height);
         CALL_glGetIntegerv(GL_UNPACK_SKIP_PIXELS, &skip_pixels);
         CALL_glGetIntegerv(GL_UNPACK_SKIP_ROWS, &skip_rows);
-        CALL_glGetIntegerv(GL_UNPACK_SKIP_IMAGES, &skip_images);
         CALL_glGetIntegerv(GL_UNPACK_ALIGNMENT, &alignment);
+#ifdef GL_EXT_texture3D
+        if (depth >= 0)
+        {
+            CALL_glGetIntegerv(GL_UNPACK_IMAGE_HEIGHT, &image_height);
+            CALL_glGetIntegerv(GL_UNPACK_SKIP_IMAGES, &skip_images);
+        }
+#endif
     }
     else
     {
         CALL_glGetIntegerv(GL_PACK_SWAP_BYTES, &swap_bytes);
         CALL_glGetIntegerv(GL_PACK_ROW_LENGTH, &row_length);
-        CALL_glGetIntegerv(GL_PACK_IMAGE_HEIGHT, &image_height);
         CALL_glGetIntegerv(GL_PACK_SKIP_PIXELS, &skip_pixels);
         CALL_glGetIntegerv(GL_PACK_SKIP_ROWS, &skip_rows);
-        CALL_glGetIntegerv(GL_PACK_SKIP_IMAGES, &skip_images);
         CALL_glGetIntegerv(GL_PACK_ALIGNMENT, &alignment);
+#ifdef GL_EXT_texture3D
+        if (depth >= 0)
+        {
+            CALL_glGetIntegerv(GL_PACK_IMAGE_HEIGHT_EXT, &image_height);
+            CALL_glGetIntegerv(GL_PACK_SKIP_IMAGES_EXT, &skip_images);
+        }
+#endif
     }
     a = alignment;
     skip_images = (depth > 0) ? skip_images : 0;
@@ -409,10 +424,12 @@ size_t texture_element_count(GLenum target,
                              GLenum format,
                              GLenum type)
 {
-    int width, height, depth;
+    int width, height, depth = -1;
     /* FIXME: don't query for depth if we don't have 3D textures */
     CALL_glGetTexLevelParameteriv(target, level, GL_TEXTURE_WIDTH, &width);
     CALL_glGetTexLevelParameteriv(target, level, GL_TEXTURE_HEIGHT, &height);
+#ifdef GL_EXT_texture3D
     CALL_glGetTexLevelParameteriv(target, level, GL_TEXTURE_DEPTH, &depth);
+#endif
     return image_element_count(width, height, depth, format, type, false);
 }

@@ -87,8 +87,15 @@ static GLenum target_to_binding(GLenum target)
     {
     case GL_TEXTURE_1D: return GL_TEXTURE_BINDING_1D;
     case GL_TEXTURE_2D: return GL_TEXTURE_BINDING_2D;
+#ifdef GL_ARB_texture_cube_map
     case GL_TEXTURE_CUBE_MAP_ARB: return GL_TEXTURE_BINDING_CUBE_MAP_ARB;
+#endif
+#ifdef GL_VERSION_1_2
+    /* For some reason GL_TEXTURE_BINDING_3D_EXT did not exist in the
+     * GL_EXT_texture3D extension
+     */
     case GL_TEXTURE_3D: return GL_TEXTURE_BINDING_3D;
+#endif
     default: abort();
     }
 }
