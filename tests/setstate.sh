@@ -1,2 +1,2 @@
 #!/bin/sh
-exec $srcdir/tests/comparelog.sh setstate
+exec $srcdir/tests/comparelog.sh setstate trace

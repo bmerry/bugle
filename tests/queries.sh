@@ -1,2 +1,2 @@
 #!/bin/sh
-exec $srcdir/tests/comparelog.sh queries
+exec $srcdir/tests/comparelog.sh queries trace

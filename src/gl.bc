@@ -101,6 +101,7 @@ DUMP PARAMETER gl(LightModel|Fog)[if]v? 1 bugle_dump_convert($0, &$$, $t$, $F)
 DUMP PARAMETER glGet(Integer|Float|Double)v 1 bugle_dump_convert($0, &$$, $t$, $F)
 DUMP PARAMETER gl(Get)?(Material|Light|Tex(Env|Parameter|Gen))[sifd]v? 2 bugle_dump_convert($1, &$$, $t$, $F)
 DUMP PARAMETER gl(Get)?TexLevelParameter[if]v? 3 bugle_dump_convert($2, &$$, $t$, $F)
+DUMP PARAMETER glPixelStore[if] 1 bugle_dump_convert($0, &$$, $t$, $F)
 
 # Assorted type overrides
 

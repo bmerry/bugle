@@ -452,6 +452,7 @@ static void checks_attributes(size_t first, size_t count)
 #endif
 }
 
+/* FIXME: breaks when using an element array buffer for indices */
 static void checks_min_max(GLsizei count, GLenum gltype, const GLvoid *indices,
                            GLuint *min_out, GLuint *max_out)
 {
@@ -459,14 +460,44 @@ static void checks_min_max(GLsizei count, GLenum gltype, const GLvoid *indices,
     GLsizei i;
     GLuint min, max;
     budgie_type type;
+    GLvoid *vbo_indices = NULL;
 
     if (count <= 0) return;
     if (gltype != GL_UNSIGNED_INT
         && gltype != GL_UNSIGNED_SHORT
         && gltype != GL_UNSIGNED_BYTE)
         return; /* It will just generate a GL error and be ignored */
-
+    if (bugle_in_begin_end()) return;
     type = bugle_gl_type_to_type(gltype);
+
+    /* Check for element array buffer */
+#ifdef GL_ARB_vertex_buffer_object
+    if (bugle_gl_has_extension(BUGLE_GL_ARB_vertex_buffer_object))
+    {
+        GLint id, mapped;
+        size_t size;
+        CALL_glGetIntegerv(GL_ELEMENT_ARRAY_BUFFER_BINDING_ARB, &id);
+        if (id)
+        {
+            /* We are not allowed to call glGetBufferSubDataARB on a
+             * mapped buffer. Fortunately, if the buffer is mapped, the
+             * call is illegal and should generate INVALID_OPERATION anyway.
+             */
+            CALL_glGetBufferParameterivARB(GL_ELEMENT_ARRAY_BUFFER_ARB,
+                                           GL_BUFFER_MAPPED_ARB,
+                                           &mapped);
+            if (mapped) return;
+
+            size = count * budgie_type_table[type].size;
+            vbo_indices = bugle_malloc(size);
+            CALL_glGetBufferSubDataARB(GL_ELEMENT_ARRAY_BUFFER_ARB,
+                                       (const char *) indices - (const char *) NULL,
+                                       size, vbo_indices);
+            indices = vbo_indices;
+        }
+    }
+#endif
+
     out = (GLuint *) bugle_malloc(count * sizeof(GLuint));
     budgie_type_convert(out, TYPE_6GLuint, indices, type, count);
     min = max = out[0];
@@ -478,6 +509,7 @@ static void checks_min_max(GLsizei count, GLenum gltype, const GLvoid *indices,
     if (min_out) *min_out = min;
     if (max_out) *max_out = max;
     free(out);
+    if (vbo_indices) free(vbo_indices);
 }
 
 static bool checks_callback(function_call *call, const callback_data *data)
@@ -583,6 +615,7 @@ static bool checks_callback(function_call *call, const callback_data *data)
             checks_memory(sizeof(GLsizei) * count, count_ptr);
             checks_error = "indices array";
             checks_memory(sizeof(GLvoid *) * count, indices_ptr);
+            checks_error = "index array";
 
             for (i = 0; i < count; i++)
             {
