@@ -70,13 +70,23 @@ static bugle_linked_list filter_sets;
  * Each active_callback list entry points to a filter_catcher
  * in the original filter structure.
  *
- * All access to the active_* structures in multithreaded code is
- * protected by active_mutex.
+ * The locking gets a little hairy, because we have to avoid a deadlock
+ * when a filter (viz the debugger) enables or disables filtersets.
+ * There are three usage scenarios:
+ * 1. Modify active_filters and set active_dirty.
+ *    Lock active_filters_mutex.
+ * 2. Modify active_callbacks and clear active_dirty.
+ *    Lock active_callbacks_mutex and active_filters_mutex, in that order.
+ * 3. Read from active_callbacks.
+ *    Lock active_callbacks_mutex.
+ * The lock order in scenario 2 is critical, because scenario 1 can occur
+ * inside scenario 3.
  */
 static bugle_linked_list active_filters;
 static bugle_linked_list active_callbacks[NUMBER_OF_FUNCTIONS];
 static bool active_dirty = false;
-static bugle_thread_mutex_t active_mutex = BUGLE_THREAD_MUTEX_INITIALIZER;
+static bugle_thread_mutex_t active_filters_mutex = BUGLE_THREAD_MUTEX_INITIALIZER;
+static bugle_thread_mutex_t active_callbacks_mutex = BUGLE_THREAD_MUTEX_INITIALIZER;
 
 /* hash table of linked lists of strings */
 static bugle_hash_table filter_dependencies;
@@ -330,9 +340,9 @@ static void enable_filter_set_r(filter_set *handle)
 
 void bugle_enable_filter_set(filter_set *handle)
 {
-    bugle_thread_mutex_lock(&active_mutex);
+    bugle_thread_mutex_lock(&active_filters_mutex);
     enable_filter_set_r(handle);
-    bugle_thread_mutex_unlock(&active_mutex);
+    bugle_thread_mutex_unlock(&active_filters_mutex);
 }
 
 static void disable_filter_set_r(filter_set *handle)
@@ -371,18 +381,18 @@ static void disable_filter_set_r(filter_set *handle)
 
 void bugle_disable_filter_set(filter_set *handle)
 {
-    bugle_thread_mutex_lock(&active_mutex);
+    bugle_thread_mutex_lock(&active_filters_mutex);
     disable_filter_set_r(handle);
-    bugle_thread_mutex_unlock(&active_mutex);
+    bugle_thread_mutex_unlock(&active_filters_mutex);
 }
 
-/* Note: caller must take active_mutex */
 typedef struct
 {
     filter *f;
     int valence;
 } repair_info;
 
+/* Note: caller must take mutexes */
 void repair_filter_order(void)
 {
     bugle_list_node *i, *j;
@@ -488,24 +498,25 @@ void run_filters(function_call *call)
 
     /* FIXME: this lock effectively makes the entire capture process a
      * critical section, even though changes to active_callbacks and
-     * active_dirty are rare. This may break the enable/disable commands
-     * in the debugger. We need a read-write lock.
+     * active_dirty are rare. We would prefer a read-write lock.
      */
-    bugle_thread_mutex_lock(&active_mutex);
+    bugle_thread_mutex_lock(&active_callbacks_mutex);
+    bugle_thread_mutex_lock(&active_filters_mutex);
     if (active_dirty)
     {
         repair_filter_order();
         active_dirty = false;
     }
+    bugle_thread_mutex_unlock(&active_filters_mutex);
 
     call->generic.user_data = call_data;
-    for (i = bugle_list_head(&active_callbacks[call->generic.id]); i ; i = bugle_list_next(i))
+    for (i = bugle_list_head(&active_callbacks[call->generic.id]); i; i = bugle_list_next(i))
     {
         cur = (filter_catcher *) bugle_list_data(i);
         data.call_data = bugle_get_filter_set_call_state(call, cur->parent->parent);
         if (!(*cur->callback)(call, &data)) break;
     }
-    bugle_thread_mutex_unlock(&active_mutex);
+    bugle_thread_mutex_unlock(&active_callbacks_mutex);
 }
 
 filter_set *bugle_register_filter_set(const filter_set_info *info)

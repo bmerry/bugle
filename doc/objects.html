@@ -13,7 +13,7 @@ to add C++-like features to C. So what is it? Well, OpenGL has a number
 of types of &ldquo;object&rdquo; &mdash; things like contexts, drawables, display lists, 
 texture objects etc &mdash; and various bits of code in BuGLe want to
 associate data with these objects. The object layer makes this easier.
-It is should be understood, however, that the object layer has no
+It should be understood, however, that the object layer has no
 knowledge of OpenGL. It is up to you to track the OpenGL calls that
 manage objects and mirror them within the the object layer (some of
 this is done in the core code, particularly context and display list
@@ -70,7 +70,7 @@ which should be deleted first).</dd>
 <dd>Called by each registrant to request <em>size</em> bytes of storage
 within a class. The constructor is documented later;
 the destructor is simply given the view
-of the object, so that it can do cleanup (but is must
+of the object, so that it can do cleanup (but it must
 <strong>not</strong> try to free the view itself). Both the constructor
 and destructor may be <code>NULL</code>.
 The size may be zero, if one only wants notification of object creation
