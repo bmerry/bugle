@@ -150,7 +150,9 @@ static void load_config(void)
 
 static void initialise_core_filters(void)
 {
-    tracker_initialise();
+    trackcontext_initialise();
+    trackdisplaylist_initialise();
+    trackbeginend_initialise();
     log_initialise();
 }
 

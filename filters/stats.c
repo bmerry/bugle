@@ -58,6 +58,7 @@ static size_t stats_offset;
 static size_t showstats_offset;
 static bool count_fragments = false;
 static bool count_triangles = false;
+static size_t displaylist_offset;
 
 static void initialise_stats_struct(const void *key, void *data)
 {
@@ -89,21 +90,42 @@ static void initialise_stats_struct(const void *key, void *data)
 /* Increments the triangle count for stats struct s according to mode */
 static void update_triangles(stats_struct *s, GLenum mode, GLsizei count)
 {
+    size_t t = 0;
+    size_t *displaylist_count;
+
     switch (mode)
     {
     case GL_TRIANGLES:
-        s->triangles += count / 3;
+        t = count / 3;
         break;
     case GL_QUADS:
-        s->triangles += count / 4 * 2;
+        t = count / 4 * 2;
         break;
     case GL_TRIANGLE_STRIP:
     case GL_TRIANGLE_FAN:
     case GL_QUAD_STRIP:
     case GL_POLYGON:
         if (count >= 3)
-            s->triangles += count - 2;
+            t = count - 2;
         break;
+    }
+    if (!t) return;
+
+    displaylist_count = object_get_current_data(&displaylist_class, displaylist_offset);
+    switch (displaylist_mode())
+    {
+    case GL_NONE:
+        s->triangles += t;
+        break;
+    case GL_COMPILE_AND_EXECUTE:
+        s->triangles += t;
+        /* Fall through */
+    case GL_COMPILE:
+        assert(displaylist_count);
+        *displaylist_count += t;
+        break;
+    default:
+        abort();
     }
 }
 
@@ -115,8 +137,9 @@ static bool stats_callback(function_call *call, const callback_data *data)
     FILE *f;
     GLsizei i, primcount;
     budgie_function canon;
+    size_t *count;
 
-    s = object_get_current(&context_class, stats_offset);
+    s = object_get_current_data(&context_class, stats_offset);
     canon = canonical_call(call);
     switch (canon)
     {
@@ -268,6 +291,15 @@ static bool stats_callback(function_call *call, const callback_data *data)
                                  (*call->typed.glMultiDrawElements.arg1)[i]);
             break;
 #endif
+        case CFUNC_glCallList:
+            count = object_get_data(&displaylist_class,
+                                    displaylist_get(*call->typed.glCallList.arg0),
+                                    displaylist_offset);
+            if (count) s->triangles += *count;
+            break;
+        case CFUNC_glCallLists:
+            fputs("FIXME: triangle counting in glCallLists not implemented!\n", stderr);
+            break;
         }
     return true;
 }
@@ -279,7 +311,7 @@ static bool stats_post_callback(function_call *call, const callback_data *data)
     switch (canonical_call(call))
     {
     case CFUNC_glXSwapBuffers:
-        s = object_get_current(&context_class, stats_offset);
+        s = object_get_current_data(&context_class, stats_offset);
 #ifdef GL_ARB_occlusion_query
         if (s->query && begin_internal_render())
         {
@@ -350,8 +382,8 @@ static bool showstats_callback(function_call *call, const callback_data *data)
             old_read = glXGetCurrentReadDrawable();
             dpy = glXGetCurrentDisplay();
             CALL_glXMakeContextCurrent(dpy, old_write, old_write, aux);
-            s = object_get_current(&context_class, stats_offset);
-            ss = object_get_current(&context_class, showstats_offset);
+            s = object_get_current_data(&context_class, stats_offset);
+            ss = object_get_current_data(&context_class, showstats_offset);
 
             gettimeofday(&now, NULL);
             elapsed = (now.tv_sec - ss->last_show_time.tv_sec)
@@ -489,6 +521,8 @@ static bool initialise_stats(filter_set *handle)
         register_filter_catches(f, CFUNC_glMultiDrawElementsEXT);
         register_filter_catches(f, CFUNC_glMultiDrawArraysEXT);
 #endif
+        register_filter_catches(f, CFUNC_glCallList);
+        register_filter_catches(f, CFUNC_glCallLists);
     }
     register_filter_depends("invoke", "stats");
 
@@ -502,10 +536,18 @@ static bool initialise_stats(filter_set *handle)
     }
     log_register_filter("stats");
     register_filter_set_renders("stats");
+    register_filter_set_depends("stats", "trackcontext");
+    if (count_triangles)
+        register_filter_set_depends("stats", "trackdisplaylist");
     stats_offset = object_class_register(&context_class,
                                          initialise_stats_struct,
                                          NULL,
                                          sizeof(stats_struct));
+    if (count_triangles)
+        displaylist_offset = object_class_register(&displaylist_class,
+                                                   NULL,
+                                                   NULL,
+                                                   sizeof(size_t));
     return true;
 }
 

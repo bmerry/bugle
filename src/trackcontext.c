@@ -26,7 +26,6 @@
 #include "src/objects.h"
 #include "budgielib/state.h"
 #include "common/bool.h"
-#include "common/safemem.h"
 #include "common/hashtable.h"
 #include <assert.h>
 #include <stddef.h>
@@ -37,23 +36,24 @@
 
 object_class context_class;
 static hashptr_table context_objects;
-static size_t trackcontext_offset, trackbeginend_offset;
+static size_t trackcontext_offset;
 
 state_7context_I *tracker_get_context_state()
 {
     state_7context_I **cur;
 
-    cur = object_get_current(&context_class, trackcontext_offset);
+    cur = (state_7context_I **) object_get_current_data(&context_class, trackcontext_offset);
     if (cur) return *cur;
     else return NULL;
 }
 
-static void tracker_set_context_state(void *obj, state_7context_I *state)
+static void tracker_set_context_state(state_7context_I *state)
 {
-    state_7context_I **data;
+    state_7context_I **cur;
 
-    data = (state_7context_I **) (((char *) obj) + trackcontext_offset);
-    *data = state;
+    cur = (state_7context_I **) object_get_current_data(&context_class, trackcontext_offset);
+    assert(cur);
+    *cur = state;
 }
 
 static void trackcontext_initialise_state(const void *key, void *data)
@@ -99,59 +99,14 @@ static bool trackcontext_callback(function_call *call, const callback_data *data
             else
             {
                 obj = hashptr_get(&context_objects, ctx);
-                tracker_set_context_state(obj, state);
                 object_set_current(&context_class, obj);
+                tracker_set_context_state(state);
             }
             pthread_mutex_unlock(&context_mutex);
         }
         break;
     }
     return true;
-}
-
-/* Track whether we are in glBegin/glEnd. This is trickier than it looks,
- * because glBegin can fail if given an illegal primitive, and we can't
- * check for the error because glGetError is illegal inside glBegin/glEnd.
- */
-
-static bool trackbeginend_callback(function_call *call, const callback_data *data)
-{
-    bool *begin_end;
-
-    switch (canonical_call(call))
-    {
-    case CFUNC_glBegin:
-        switch (*call->typed.glBegin.arg0)
-        {
-        case GL_POINTS:
-        case GL_LINES:
-        case GL_LINE_STRIP:
-        case GL_LINE_LOOP:
-        case GL_TRIANGLES:
-        case GL_TRIANGLE_STRIP:
-        case GL_TRIANGLE_FAN:
-        case GL_QUADS:
-        case GL_QUAD_STRIP:
-        case GL_POLYGON:
-            begin_end = (bool *) object_get_current(&context_class, trackbeginend_offset);
-            if (begin_end != NULL) *begin_end = true;
-        default: ;
-        }
-        break;
-    case CFUNC_glEnd:
-        begin_end = (bool *) object_get_current(&context_class, trackbeginend_offset);
-        if (begin_end != NULL) *begin_end = false;
-        break;
-    }
-    return true;
-}
-
-bool in_begin_end(void)
-{
-    bool *begin_end;
-
-    begin_end = (bool *) object_get_current(&context_class, trackbeginend_offset);
-    return !begin_end || *begin_end;
 }
 
 static bool initialise_trackcontext(filter_set *handle)
@@ -167,20 +122,7 @@ static bool initialise_trackcontext(filter_set *handle)
     return true;
 }
 
-static bool initialise_trackbeginend(filter_set *handle)
-{
-    filter *f;
-
-    f = register_filter(handle, "trackbeginend", trackbeginend_callback);
-    register_filter_depends("trackbeginend", "invoke");
-    register_filter_depends("trackbeginend", "trackcontext");
-    register_filter_catches(f, FUNC_glBegin);
-    register_filter_catches(f, FUNC_glEnd);
-    register_filter_set_depends("trackbeginend", "trackcontext");
-    return true;
-}
-
-void tracker_initialise(void)
+void trackcontext_initialise(void)
 {
     const filter_set_info trackcontext_info =
     {
@@ -190,29 +132,16 @@ void tracker_initialise(void)
         NULL,
         0
     };
-    const filter_set_info trackbeginend_info =
-    {
-        "trackbeginend",
-        initialise_trackbeginend,
-        NULL,
-        NULL,
-        0
-    };
 
-    object_class_init(&context_class);
+    object_class_init(&context_class, NULL);
     hashptr_init(&context_objects);
-    /* These ought to be in the initialise routines, but it is vital that
-     * they run first and we currently have no other way to determine the
+    /* This ought to be in the initialise routines, but it is vital that
+     * it runs early and we currently have no other way to determine the
      * ordering.
      */
     trackcontext_offset = object_class_register(&context_class,
                                                 trackcontext_initialise_state,
                                                 NULL,
                                                 sizeof(state_7context_I *));
-    trackbeginend_offset = object_class_register(&context_class,
-                                                 NULL,
-                                                 NULL,
-                                                 sizeof(bool));
     register_filter_set(&trackcontext_info);
-    register_filter_set(&trackbeginend_info);
 }

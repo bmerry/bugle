@@ -20,9 +20,10 @@
  * to attach storage to various _abstract_ objects, such as contexts,
  * display lists, or glBegin/glEnd blocks.
  *
- * Pure ANSI C does not allow pointers to data and pointers to functions
- * to be interchanged. To keep to the standard, the void pointers in the
- * linked list actually point to the pointers to the functions.
+ * These is a notion of a "current" object in each class. This is either
+ * per-thread, or else is slaved to another class. When slaved, there is
+ * a current object within each parent object, and object_get_current will
+ * return the current object within the current parent (recursively).
  *
  * FIXME: the current memory packing scheme can cause misalignments. This
  * should be ok for x86/amd64 because they allow misaligned accesses, but
@@ -40,14 +41,17 @@
 #include "common/linkedlist.h"
 #include "common/bool.h"
 
-typedef struct
+typedef struct object_class_s
 {
     linked_list info;
     size_t total_size;
     pthread_key_t current;
+
+    struct object_class_s *parent;
+    size_t parent_offset;
 } object_class;
 
-void object_class_init(object_class *klass);
+void object_class_init(object_class *klass, object_class *parent);
 void object_class_clear(object_class *klass);
 /* Returns an offset into the structure, which should be passed back to
  * object_get_current to get the data associated with this registration.
@@ -60,7 +64,9 @@ size_t object_class_register(object_class *klass,
                              size_t size);
 void *object_new(const object_class *klass, const void *key, bool make_current);
 void object_delete(const object_class *klass, void *obj);
-void *object_get_current(const object_class *klass, size_t offset);
+void *object_get_current(const object_class *klass);
+void *object_get_current_data(const object_class *klass, size_t offset);
 void object_set_current(const object_class *klass, void *obj);
+void *object_get_data(const object_class *klass, void *obj, size_t offset);
 
 #endif /* !BUGLE_SRC_OBJECTS_H */

@@ -53,7 +53,7 @@ static bool error_callback(function_call *call, const callback_data *data)
          * rather than whatever we have saved. Also, we must make sure to
          * return nothing else inside begin/end.
          */
-        stored_error = object_get_current(&context_class, error_context_offset);
+        stored_error = object_get_current_data(&context_class, error_context_offset);
         if (*call->typed.glGetError.retn != GL_NO_ERROR)
         {
             flockfile(stderr);
@@ -73,7 +73,7 @@ static bool error_callback(function_call *call, const callback_data *data)
         /* Note: we deliberately don't call begin_internal_render here,
          * since it will beat us to calling glGetError().
          */
-        stored_error = object_get_current(&context_class, error_context_offset);
+        stored_error = object_get_current_data(&context_class, error_context_offset);
         while ((error = CALL_glGetError()) != GL_NO_ERROR)
         {
             if (stored_error && !*stored_error)

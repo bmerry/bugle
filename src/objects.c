@@ -34,17 +34,22 @@ typedef struct
     size_t size;
 } object_class_info;
 
-void object_class_init(object_class *klass)
+void object_class_init(object_class *klass, object_class *parent)
 {
     list_init(&klass->info);
     klass->total_size = 0;
-    pthread_key_create(&klass->current, NULL);
+    klass->parent = parent;
+    if (parent)
+        klass->parent_offset = object_class_register(parent, NULL, NULL, sizeof(void *));
+    else
+        pthread_key_create(&klass->current, NULL);
 }
 
 void object_class_clear(object_class *klass)
 {
     list_clear(&klass->info, true);
-    pthread_key_delete(klass->current);
+    if (!klass->parent)
+        pthread_key_delete(klass->current);
 }
 
 size_t object_class_register(object_class *klass,
@@ -110,14 +115,40 @@ void object_delete(const object_class *klass, void *obj)
     }
 }
 
-void *object_get_current(const object_class *klass, size_t offset)
+void *object_get_current(const object_class *klass)
 {
-    void *ans = pthread_getspecific(klass->current);
-    if (ans == NULL) return ans;
-    else return offset_ptr(ans, offset);
+    void *ans;
+
+    if (klass->parent)
+    {
+        ans = object_get_current_data(klass->parent, klass->parent_offset);
+        if (!ans) return NULL;
+        else return *(void **) ans;
+    }
+    else
+        return pthread_getspecific(klass->current);
+}
+
+void *object_get_current_data(const object_class *klass, size_t offset)
+{
+    return object_get_data(klass, object_get_current(klass), offset);
 }
 
 void object_set_current(const object_class *klass, void *obj)
 {
-    pthread_setspecific(klass->current, obj);
+    void *tmp;
+
+    if (klass->parent)
+    {
+        tmp = object_get_current_data(klass->parent, klass->parent_offset);
+        if (tmp) *(void **) tmp = obj;
+    }
+    else
+        pthread_setspecific(klass->current, obj);
+}
+
+void *object_get_data(const object_class *klass, void *obj, size_t offset)
+{
+    if (!obj) return NULL;
+    else return offset_ptr(obj, offset);
 }

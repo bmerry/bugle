@@ -61,7 +61,7 @@ src_libbugle_la_SOURCES = \
 	src/canon.c src/canon.h \
 	src/interceptor.c \
 	src/filters.c src/filters.h \
-	src/tracker.c src/tracker.h \
+	src/trackcontext.c src/trackdisplaylist.c src/trackbeginend.c src/tracker.h \
 	src/log.c src/log.h \
         src/objects.c src/objects.h \
 	budgielib/budgieutils.c budgielib/budgieutils.h \
