@@ -75,6 +75,7 @@ static pid_t child_pid = -1;
 static int child_status = 0; /* status returned from waitpid */
 static char *chain = NULL;
 static const char *prog = NULL;
+static char **prog_argv = NULL;
 
 /* The table of full command names. This is used for command completion
  * and display of help. There is also a hash table of command names
@@ -111,6 +112,7 @@ static hash_table command_table;
 
 static bool break_on_error = true;
 static hash_table break_on;
+static char *screenshot_file = NULL;
 
 #if !HAVE_READLINE_READLINE_H
 static void chop(char *s)
@@ -181,8 +183,8 @@ static pid_t execute(void)
 
         close(in_pipe[0]);
         close(out_pipe[1]);
-        execlp(prog, prog, NULL);
-        execl(prog, prog, NULL);
+        execvp(prog, prog_argv);
+        execv(prog, prog_argv);
         perror("failed to execute program");
         exit(1);
     default: /* Parent */
@@ -489,6 +491,24 @@ static bool command_state(const char *cmd,
     return true;
 }
 
+static bool command_screenshot(const char *cmd,
+                               const char *line,
+                               const char * const *tokens)
+{
+    const char *fname;
+
+    fname = tokens[1];
+    if (!fname)
+    {
+        fputs("Specify a filename\n", stdout);
+        return false;
+    }
+    send_code(lib_out, REQ_SCREENSHOT);
+    if (screenshot_file) free(screenshot_file);
+    screenshot_file = xstrdup(tokens[1]);
+    return true;
+}
+
 static bool command_help(const char *cmd,
                          const char *line,
                          const char * const *tokens)
@@ -612,14 +632,15 @@ static void handle_commands(void)
  */
 static bool handle_responses(uint32_t resp)
 {
-    uint32_t resp_val;
+    uint32_t resp_val, resp_len;
     char *resp_str, *resp_str2;
+    FILE *f;
 
     switch (resp)
     {
     case RESP_ANS:
         recv_code(lib_in, &resp_val);
-        /* Ignore, otherwise than to flush the pipe */
+        /* Ignore, other than to flush the pipe */
         break;
     case RESP_STOP:
         /* do nothing */
@@ -650,6 +671,26 @@ static bool handle_responses(uint32_t resp)
         recv_string(lib_in, &resp_str);
         fputs(resp_str, stdout);
         free(resp_str);
+        break;
+    case RESP_SCREENSHOT:
+        recv_binary_string(lib_in, &resp_len, &resp_str);
+        if (!screenshot_file)
+        {
+            fputs("Unexpected screenshot data. Please contact the author.\n", stderr);
+            break;
+        }
+        f = fopen(screenshot_file, "wb");
+        if (!f)
+        {
+            fprintf(stderr, "Cannot open %s: %s\n", screenshot_file, strerror(errno));
+            free(screenshot_file);
+            break;
+        }
+        if (fwrite(resp_str, 1, resp_len, f) != resp_len || fclose(f) == EOF)
+            fprintf(stderr, "Error writing %s: %s\n", screenshot_file, strerror(errno));
+        free(resp_str);
+        free(screenshot_file);
+        screenshot_file = NULL;
         break;
     }
     return started;
@@ -807,6 +848,7 @@ static void shutdown(void)
 {
     hash_clear(&command_table, true);
     hash_clear(&break_on, false);
+    free(prog_argv);
 }
 
 const command_info commands[] =
@@ -822,6 +864,7 @@ const command_info commands[] =
     { "run", "Start the program", false, command_run, NULL },
     { "state", "Show GL state", true, command_state, NULL }, /* FIXME: completion */
     { "quit", "Exit gldb", false, command_quit, NULL },
+    { "screenshot", "Capture a screenshot", true, command_screenshot, NULL },
     { "unbreak", "Clear breakpoints", false, command_break_unbreak, generate_functions },
     { NULL, NULL, false, NULL }
 };
@@ -843,15 +886,28 @@ static void initialise(void)
     atexit(shutdown);
 }
 
-int main(int argc, char **argv)
+char **create_argv(int argc, char * const *argv_in)
 {
-    if (argc != 2)
+    char **out;
+    int i;
+
+    out = xmalloc(sizeof(char *) * (argc + 1));
+    out[argc] = NULL;
+    for (i = 0; i < argc; i++)
+        out[i] = argv_in[i];
+    return out;
+}
+
+int main(int argc, char * const *argv)
+{
+    if (argc < 2)
     {
-        fputs("Usage: gldb <program>\n", stderr);
+        fputs("Usage: gldb <program> <args>\n", stderr);
         return 1;
     }
     prog = argv[1];
     initialise();
+    prog_argv = create_argv(argc - 1, argv + 1);
     main_loop();
     return 0;
 }

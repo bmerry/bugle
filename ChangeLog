@@ -1,3 +1,6 @@
+* (gldb) Allow options to be passed to the program
+* (gldb) screenshot command
+
 0.0.20040903
 ------------
 * Improvements to video capture: get libavcodec to do the mirroring,

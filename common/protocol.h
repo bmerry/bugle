@@ -18,6 +18,7 @@
 #define RESP_STATE        0xabcd0004L
 #define RESP_ERROR        0xabcd0005L
 #define RESP_RUNNING      0xabcd0006L
+#define RESP_SCREENSHOT   0xabcd0007L
 
 #define REQ_RUN           0xdcba0000L
 #define REQ_CONT          0xdcba0001L
@@ -27,13 +28,16 @@
 #define REQ_STATE         0xdcba0005L
 #define REQ_QUIT          0xdcba0006L
 #define REQ_ASYNC         0xdcba0007L
+#define REQ_SCREENSHOT    0xdcba0008L
 
 #define TO_NETWORK(x) (x)
 #define TO_HOST(x) (x)
 
 bool send_code(int fd, uint32_t code);
+bool send_binary_string(int fd, uint32_t len, const char *str);
 bool send_string(int fd, const char *str);
 bool recv_code(int fd, uint32_t *code);
+bool recv_binary_string(int fd, uint32_t *len, char **data);
 bool recv_string(int fd, char **str);
 
 #endif /* BUGLE_COMMON_PROTOCOL_H */

@@ -104,6 +104,64 @@ static void dump_string_state(FILE *f, void *data)
     dump_state((state_generic *) data, 0, f);
 }
 
+static void dump_ppm_header(FILE *f, void *data)
+{
+    int *wh;
+
+    wh = (int *) data;
+    fprintf(f, "P6\n%d %d\n255\n", wh[0], wh[1]);
+}
+
+static bool debugger_screenshot(int pipe)
+{
+    Display *dpy;
+    GLXContext aux, real;
+    GLXDrawable old_read, old_write;
+    int width, height, stride;
+    int wh[2];
+    size_t header_len;
+    char *header;
+    char *data, *in, *out;
+    size_t i;
+
+    aux = get_aux_context();
+    if (!aux || !begin_internal_render()) return false;
+    real = glXGetCurrentContext();
+    old_write = glXGetCurrentDrawable();
+    old_read = glXGetCurrentReadDrawable();
+    dpy = glXGetCurrentDisplay();
+    glXQueryDrawable(dpy, old_write, GLX_WIDTH, &width);
+    glXQueryDrawable(dpy, old_write, GLX_HEIGHT, &height);
+    CALL_glXMakeContextCurrent(dpy, old_write, old_write, aux);
+
+    wh[0] = width;
+    wh[1] = height;
+    stride = ((3 * width + 3) & ~3);
+    header = string_io(dump_ppm_header, wh);
+    data = xmalloc(stride * height);
+    CALL_glReadPixels(0, 0, width, height, GL_RGB, GL_UNSIGNED_BYTE, data);
+
+    header_len = strlen(header);
+    header = xrealloc(header, header_len + width * height * 3);
+    in = data + (height - 1) * stride;
+    out = header + header_len;
+    for (i = 0; i < height; i++)
+    {
+        memcpy(out, in, width * 3);
+        out += width * 3;
+        in -= stride;
+    }
+
+    send_code(pipe, RESP_SCREENSHOT);
+    send_binary_string(pipe, header_len + width * height * 3, header);
+    free(header);
+    free(data);
+
+    CALL_glXMakeContextCurrent(dpy, old_write, old_read, real);
+    end_internal_render("debugger_screenshot", true);
+    return true;
+}
+
 /* The main initialiser calls this with init = true. It has essentially
  * the usual effects, but refuses to do anything that doesn't make sense
  * until the program is properly running (such as flush or query state).
@@ -187,6 +245,14 @@ static void debugger_loop(bool init)
             send_code(out_pipe, RESP_STATE);
             send_string(out_pipe, resp_str);
             free(resp_str);
+            break;
+        case REQ_SCREENSHOT:
+            if (!debugger_screenshot(out_pipe))
+            {
+                send_code(out_pipe, RESP_ERROR);
+                send_code(out_pipe, 0);
+                send_string(out_pipe, "Not able to call GL at this time");
+            }
             break;
         case REQ_QUIT:
             exit(1);

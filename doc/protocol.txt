@@ -38,6 +38,9 @@ RESP_RUNNING:
              Sent at initialisation, in response to REQ_START. No extra
              data. This response aids in separating the responses to
              the initialisation commands from everything else.
+RESP_SCREENSHOT:
+             Sent when a screenshot is requested. Contains a string in
+             PPM (P6) format that can be dumped directly to file.
 
 After each response group, the debugger should send a request. The
 requests have the same basic form. The following requests are defined:
@@ -63,6 +66,9 @@ REQ_ASYNC:   Requests the program to stop at the next available point.
              Otherwise it is answered with RESP_
 REQ_STATE:   Requests the value of a state. Followed by the name of
              the state.
+REQ_SCREENSHOT: Requests a screenshot from the program. Reply is
+             RESP_SCREENSHOT on success, or RESP_ERROR if the screenshot
+             could not be taken for some reason.
 REQ_QUIT:    Requests that the program exit.
 
 Each request has a certain set of legal responses, as described below.
@@ -76,4 +82,5 @@ REQ_BREAK: RESP_ANS, RESP_ERROR
 REQ_BREAK_ERROR: RESP_ANS
 REQ_ASYNC: REQ_STOP, or nothing (see description)
 REQ_STATE: RESP_STATE, RESP_ERROR
+REQ_SCREENSHOT: RESP_SCREENSHOT, RESP_ERROR.
 REQ_QUIT:  none (program exits)

@@ -84,6 +84,16 @@ is referenced as
 .B texture[GL_TEXTURE_2D][0].level[0].GL_TEXTURE_WIDTH
 
 (the first zero is the texture object name).
+.TP
+.B screenshot \fIfilename\fR.ppm\fB
+Captures a screenshot from the back buffer, and saves it to
+.IR filename .ppm
+in
+.BR PPM (5)
+format. Since the back buffer is used, you are not guaranteed a
+complete picture. For a complete picture, put a breakpoint on
+.B glXSwapBuffers
+and call this command from there.
 .SH FILES
 .TP
 .B $HOME/.bugle/filters
@@ -126,4 +136,6 @@ library
 are written and maintained by Bruce Merry <bmerry@users.sourceforge.net>.
 .SH "SEE ALSO"
 .BR bugle (3),
-.BR gdb (1)
+.BR gdb (1),
+.BR ppm (5)
+

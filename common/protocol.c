@@ -69,16 +69,20 @@ bool send_code(int fd, uint32_t code)
     return safe_write(fd, &code2, sizeof(uint32_t));
 }
 
-bool send_string(int fd, const char *str)
+bool send_binary_string(int fd, uint32_t len, const char *str)
 {
-    uint32_t len, len2;
+    uint32_t len2;
 
     /* FIXME: on 64-bit systems, length could in theory be >2^32 */
-    len = strlen(str);
     len2 = TO_NETWORK(len);
     if (!safe_write(fd, &len2, sizeof(uint32_t))) return false;
     if (!safe_write(fd, str, len)) return false;
     return true;
+}
+
+bool send_string(int fd, const char *str)
+{
+    return send_binary_string(fd, strlen(str), str);
 }
 
 bool recv_code(int fd, uint32_t *code)
@@ -93,24 +97,31 @@ bool recv_code(int fd, uint32_t *code)
         return false;
 }
 
-bool recv_string(int fd, char **str)
+bool recv_binary_string(int fd, uint32_t *len, char **data)
 {
-    uint32_t len, len2;
+    uint32_t len2;
     int old_errno;
 
     if (!safe_read(fd, &len2, sizeof(uint32_t))) return false;
-    len = TO_HOST(len2);
-    *str = xmalloc(len + 1);
-    if (!safe_read(fd, *str, len))
+    *len = TO_HOST(len2);
+    *data = xmalloc(*len + 1);
+    if (!safe_read(fd, *data, *len))
     {
         old_errno = errno;
-        free(*str);
+        free(*data);
         errno = old_errno;
         return false;
     }
     else
     {
-        (*str)[len] = '\0';
+        (*data)[*len] = '\0';
         return true;
     }
+}
+
+bool recv_string(int fd, char **str)
+{
+    uint32_t dummy;
+
+    return recv_binary_string(fd, &dummy, str);
 }
