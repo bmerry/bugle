@@ -53,39 +53,41 @@
  * 16-23: conditional selection flags
  * 24-31: other
  */
-#define STATE_MODE_GLOBAL                0x00000001    /* glGet* */
-#define STATE_MODE_ENABLED               0x00000002    /* glIsEnabled */
-#define STATE_MODE_TEX_ENV               0x00000003    /* glGetTexEnv */
-#define STATE_MODE_TEX_PARAMETER         0x00000004    /* glGetTexParameter */
-#define STATE_MODE_TEX_LEVEL_PARAMETER   0x00000005    /* glGetTexLevelParameter */
-#define STATE_MODE_TEX_GEN               0x00000006    /* glGetTexGen */
-#define STATE_MODE_LIGHT                 0x00000007    /* glGetLight */
-#define STATE_MODE_MATERIAL              0x00000008    /* glGetMaterial */
-#define STATE_MODE_CLIP_PLANE            0x00000009    /* glGetClipPlane */
-#define STATE_MODE_COLOR_TABLE_PARAMETER 0x0000000a    /* glGetColorTableParameter */
-#define STATE_MODE_CONVOLUTION_PARAMETER 0x0000000b    /* glGetConvolutionParameter */
-#define STATE_MODE_HISTOGRAM_PARAMETER   0x0000000c    /* glGetHistogramParameter */
-#define STATE_MODE_MINMAX_PARAMETER      0x0000000d    /* glGetMinmaxParameter */
-#define STATE_MODE_VERTEX_ATTRIB         0x0000000e    /* glGetVertexAttrib */
-#define STATE_MODE_QUERY                 0x0000000f    /* glGetQuery */
-#define STATE_MODE_QUERY_OBJECT          0x00000010    /* glGetQueryObject */
-#define STATE_MODE_MASK                  0x000000ff
+#define STATE_MODE_GLOBAL                   0x00000001    /* glGet* */
+#define STATE_MODE_ENABLED                  0x00000002    /* glIsEnabled */
+#define STATE_MODE_TEXTURE_ENV              0x00000003    /* glGetTexEnv(GL_TEXTURE_ENV) */
+#define STATE_MODE_TEXTURE_FILTER_CONTROL   0x00000004    /* glGetTexEnv(GL_TEXTURE_FILTER_CONTROL) */
+#define STATE_MODE_POINT_SPRITE             0x00000005    /* glGetTexEnv(GL_POINT_SPRITE) */
+#define STATE_MODE_TEX_PARAMETER            0x00000006    /* glGetTexParameter */
+#define STATE_MODE_TEX_LEVEL_PARAMETER      0x00000007    /* glGetTexLevelParameter */
+#define STATE_MODE_TEX_GEN                  0x00000008    /* glGetTexGen */
+#define STATE_MODE_LIGHT                    0x00000009    /* glGetLight */
+#define STATE_MODE_MATERIAL                 0x0000000a    /* glGetMaterial */
+#define STATE_MODE_CLIP_PLANE               0x0000000b    /* glGetClipPlane */
+#define STATE_MODE_COLOR_TABLE_PARAMETER    0x0000000c    /* glGetColorTableParameter */
+#define STATE_MODE_CONVOLUTION_PARAMETER    0x0000000d    /* glGetConvolutionParameter */
+#define STATE_MODE_HISTOGRAM_PARAMETER      0x0000000e    /* glGetHistogramParameter */
+#define STATE_MODE_MINMAX_PARAMETER         0x0000000f    /* glGetMinmaxParameter */
+#define STATE_MODE_VERTEX_ATTRIB            0x00000010    /* glGetVertexAttrib */
+#define STATE_MODE_QUERY                    0x00000011    /* glGetQuery */
+#define STATE_MODE_QUERY_OBJECT             0x00000012    /* glGetQueryObject */
+#define STATE_MODE_MASK                     0x000000ff
 
-#define STATE_MULTIPLEX_ACTIVE_TEXTURE   0x00000100    /* Set active texture */
-#define STATE_MULTIPLEX_BIND_TEXTURE     0x00000200    /* Set current texture object */
+#define STATE_MULTIPLEX_ACTIVE_TEXTURE      0x00000100    /* Set active texture */
+#define STATE_MULTIPLEX_BIND_TEXTURE        0x00000200    /* Set current texture object */
 
-#define STATE_SELECT_NO_CONVOLUTION_1D   0x00010000    /* Ignore for GL_CONVOLUTION_1D */
-#define STATE_SELECT_NON_ZERO            0x00020000    /* Ignore if some field is 0 */
-#define STATE_SELECT_NO_PROXY            0x00040000    /* Ignore for proxy targets */
-#define STATE_SELECT_NO_BLEND_FUNC_SEPARATE 0x00100000 /* Ignore if GL_EXT_blend_func_separate is present */
-#define STATE_SELECT_NO_DRAW_BUFFERS     0x00200000    /* Ignore if GL_ARB_draw_buffers is present */
-
-#define STATE_FLAG_FILTER_CONTROL        0x01000000    /* Pass GL_TEXTURE_FILTER_CONTROL */
+#define STATE_SELECT_NO_CONVOLUTION_1D      0x00010000    /* Ignore for GL_CONVOLUTION_1D */
+#define STATE_SELECT_NON_ZERO               0x00020000    /* Ignore if some field is 0 */
+#define STATE_SELECT_NO_PROXY               0x00040000    /* Ignore for proxy targets */
+#define STATE_SELECT_NO_BLEND_FUNC_SEPARATE 0x00100000    /* Ignore if GL_EXT_blend_func_separate is present */
+#define STATE_SELECT_NO_DRAW_BUFFERS        0x00200000    /* Ignore if GL_ARB_draw_buffers is present */
 
 /* conveniences */
 #define STATE_GLOBAL STATE_MODE_GLOBAL
 #define STATE_ENABLED STATE_MODE_ENABLED
-#define STATE_TEX_ENV (STATE_MODE_TEX_ENV | STATE_MULTIPLEX_ACTIVE_TEXTURE)
+#define STATE_TEXTURE_ENV (STATE_MODE_TEXTURE_ENV | STATE_MULTIPLEX_ACTIVE_TEXTURE)
+#define STATE_TEXTURE_FILTER_CONTROL (STATE_MODE_TEXTURE_FILTER_CONTROL | STATE_MULTIPLEX_ACTIVE_TEXTURE)
+#define STATE_POINT_SPRITE (STATE_MODE_POINT_SPRITE | STATE_MULTIPLEX_ACTIVE_TEXTURE)
 #define STATE_TEX_UNIT (STATE_MODE_GLOBAL | STATE_MULTIPLEX_ACTIVE_TEXTURE)
 #define STATE_TEX_UNIT_ENABLED (STATE_MODE_ENABLED | STATE_MULTIPLEX_ACTIVE_TEXTURE)
 #define STATE_TEX_PARAMETER (STATE_MODE_TEX_PARAMETER | STATE_MULTIPLEX_BIND_TEXTURE)
@@ -167,6 +169,7 @@ static const state_info global_state[] =
     { STATE_NAME_EXT(GL_FOG_COORDINATE_ARRAY_BUFFER_BINDING, _ARB), TYPE_5GLint, 1, BUGLE_GL_ARB_vertex_buffer_object, "1.5", STATE_GLOBAL },
     { STATE_NAME_EXT(GL_ELEMENT_ARRAY_BUFFER_BINDING, _ARB), TYPE_5GLint, 1, BUGLE_GL_ARB_vertex_buffer_object, "1.5", STATE_GLOBAL },
 #endif
+    /* FIXME: these are matrix stacks, not just single matrices */
     { STATE_NAME(GL_COLOR_MATRIX), TYPE_8GLdouble, 16, BUGLE_GL_ARB_imaging, NULL, STATE_GLOBAL },
     { STATE_NAME(GL_MODELVIEW_MATRIX), TYPE_8GLdouble, 16, -1, "1.1", STATE_GLOBAL },
     { STATE_NAME(GL_PROJECTION_MATRIX), TYPE_8GLdouble, 16, -1, "1.1", STATE_GLOBAL },
@@ -230,6 +233,7 @@ static const state_info global_state[] =
     { STATE_NAME(GL_POLYGON_OFFSET_POINT), TYPE_9GLboolean, 1, -1, "1.1", STATE_ENABLED },
     { STATE_NAME(GL_POLYGON_OFFSET_LINE), TYPE_9GLboolean, 1, -1, "1.1", STATE_ENABLED },
     { STATE_NAME(GL_POLYGON_OFFSET_FILL), TYPE_9GLboolean, 1, -1, "1.1", STATE_ENABLED },
+    /* FIXME: GetPolygonStipple */
     { STATE_NAME(GL_POLYGON_STIPPLE), TYPE_9GLboolean, 1, -1, "1.1", STATE_ENABLED },
 #ifdef GL_ARB_multisample
     { STATE_NAME_EXT(GL_MULTISAMPLE, _ARB), TYPE_9GLboolean, 1, BUGLE_GL_ARB_multisample, "1.3", STATE_ENABLED },
@@ -277,6 +281,8 @@ static const state_info global_state[] =
 #ifdef GL_EXT_blend_equation_separate
     { STATE_NAME_EXT(GL_BLEND_EQUATION_ALPHA, _EXT), TYPE_6GLenum, 1, BUGLE_GL_EXT_blend_equation_separate, "2.0", STATE_GLOBAL },
 #endif
+    /* FIXME: BLEND_COLOR seems to have come via GL_ARB_imaging, but is
+     * listed in the GL state tables as required? */
     { STATE_NAME(GL_BLEND_COLOR), TYPE_8GLdouble, 4, -1, "1.1", STATE_GLOBAL },
     { STATE_NAME(GL_DITHER), TYPE_9GLboolean, 1, -1, "1.1", STATE_ENABLED },
     { STATE_NAME(GL_INDEX_LOGIC_OP), TYPE_9GLboolean, 1, -1, "1.1", STATE_ENABLED },
@@ -333,6 +339,8 @@ static const state_info global_state[] =
     { STATE_NAME(GL_POST_CONVOLUTION_COLOR_TABLE), TYPE_9GLboolean, 1, BUGLE_GL_ARB_imaging, NULL, STATE_ENABLED },
     { STATE_NAME(GL_POST_COLOR_MATRIX_COLOR_TABLE), TYPE_9GLboolean, 1, BUGLE_GL_ARB_imaging, NULL, STATE_ENABLED },
     /* Note: images missing here */
+    /* FIXME: glConvolution_xD enable missing */
+    /* Note: convolution filters missing here */
     { STATE_NAME(GL_POST_CONVOLUTION_RED_SCALE), TYPE_8GLdouble, 1, BUGLE_GL_ARB_imaging, NULL, STATE_GLOBAL },
     { STATE_NAME(GL_POST_CONVOLUTION_GREEN_SCALE), TYPE_8GLdouble, 1, BUGLE_GL_ARB_imaging, NULL, STATE_GLOBAL },
     { STATE_NAME(GL_POST_CONVOLUTION_BLUE_SCALE), TYPE_8GLdouble, 1, BUGLE_GL_ARB_imaging, NULL, STATE_GLOBAL },
@@ -493,7 +501,9 @@ static const state_info tex_parameter_state[] =
     { STATE_NAME(GL_TEXTURE_MAG_FILTER), TYPE_6GLenum, 1, -1, "1.1", STATE_TEX_PARAMETER },
     { STATE_NAME(GL_TEXTURE_WRAP_S), TYPE_6GLenum, 1, -1, "1.1", STATE_TEX_PARAMETER },
     { STATE_NAME(GL_TEXTURE_WRAP_T), TYPE_6GLenum, 1, -1, "1.1", STATE_TEX_PARAMETER },
-    { STATE_NAME(GL_TEXTURE_WRAP_R), TYPE_6GLenum, 1, -1, "1.1", STATE_TEX_PARAMETER },
+#ifdef GL_EXT_texture3D
+    { STATE_NAME(GL_TEXTURE_WRAP_R), TYPE_6GLenum, 1, BUGLE_GL_EXT_texture3D, "1.2", STATE_TEX_PARAMETER },
+#endif
     { STATE_NAME(GL_TEXTURE_PRIORITY), TYPE_8GLdouble, 1, -1, "1.1", STATE_TEX_PARAMETER },
     { STATE_NAME(GL_TEXTURE_RESIDENT), TYPE_9GLboolean, 1, -1, "1.1", STATE_TEX_PARAMETER },
 #ifdef GL_SGIS_texture_lod
@@ -538,6 +548,7 @@ static const state_info tex_level_parameter_state[] =
 #endif
 #ifdef GL_ARB_texture_compression
     { STATE_NAME_EXT(GL_TEXTURE_COMPRESSED, _ARB), TYPE_9GLboolean, 1, BUGLE_GL_ARB_texture_compression, "1.3", STATE_TEX_LEVEL_PARAMETER },
+    { STATE_NAME_EXT(GL_TEXTURE_COMPRESSED_IMAGE_SIZE, _ARB), TYPE_5GLint, 1, BUGLE_GL_ARB_texture_compression, "1.3", STATE_TEX_LEVEL_PARAMETER },
 #endif
     { NULL, GL_NONE, NULL_TYPE, 0, 0, NULL, 0 }
 };
@@ -549,28 +560,38 @@ static const state_info tex_unit_state[] =
     { STATE_NAME(GL_TEXTURE_COORD_ARRAY_TYPE), TYPE_6GLenum, 1, -1, "1.1", STATE_TEX_UNIT },
     { STATE_NAME(GL_TEXTURE_COORD_ARRAY_STRIDE), TYPE_5GLint, 1, -1, "1.1", STATE_TEX_UNIT },
     { STATE_NAME(GL_TEXTURE_COORD_ARRAY_POINTER), TYPE_P6GLvoid, 1, -1, "1.1", STATE_TEX_UNIT },
-    { STATE_NAME(GL_TEXTURE_ENV_MODE), TYPE_6GLenum, 1, -1, "1.1", STATE_TEX_ENV },
-    { STATE_NAME(GL_TEXTURE_ENV_COLOR), TYPE_8GLdouble, 4, -1, "1.1", STATE_TEX_ENV },
-#ifdef GL_EXT_texture_lod_bias
-    { STATE_NAME_EXT(GL_TEXTURE_LOD_BIAS, _EXT), TYPE_8GLdouble, 1, BUGLE_GL_EXT_texture_lod_bias, "1.4", STATE_TEX_ENV | STATE_FLAG_FILTER_CONTROL },
+#ifdef GL_ARB_vertex_buffer_object
+    { STATE_NAME_EXT(GL_TEXTURE_COORD_ARRAY_BUFFER_BINDING, _ARB), TYPE_5GLint, 1, BUGLE_GL_ARB_vertex_buffer_object, "1.5", STATE_TEX_UNIT },
 #endif
+#ifdef GL_ARB_point_sprite
+    { STATE_NAME_EXT(GL_COORD_REPLACE), TYPE_9GLboolean, 1, BUGLE_GL_ARB_point_sprite, "2.0", STATE_POINT_SPRITE },
+#endif
+    { STATE_NAME(GL_TEXTURE_ENV_MODE), TYPE_6GLenum, 1, -1, "1.1", STATE_TEXTURE_ENV },
+    { STATE_NAME(GL_TEXTURE_ENV_COLOR), TYPE_8GLdouble, 4, -1, "1.1", STATE_TEXTURE_ENV },
+#ifdef GL_EXT_texture_lod_bias
+    { STATE_NAME_EXT(GL_TEXTURE_LOD_BIAS, _EXT), TYPE_8GLdouble, 1, BUGLE_GL_EXT_texture_lod_bias, "1.4", STATE_TEXTURE_FILTER_CONTROL },
+#endif
+    { STATE_NAME(GL_TEXTURE_GEN_S), TYPE_9GLboolean, 1, -1, "1.1", STATE_TEX_UNIT_ENABLED },
+    { STATE_NAME(GL_TEXTURE_GEN_T), TYPE_9GLboolean, 1, -1, "1.1", STATE_TEX_UNIT_ENABLED },
+    { STATE_NAME(GL_TEXTURE_GEN_R), TYPE_9GLboolean, 1, -1, "1.1", STATE_TEX_UNIT_ENABLED },
+    { STATE_NAME(GL_TEXTURE_GEN_Q), TYPE_9GLboolean, 1, -1, "1.1", STATE_TEX_UNIT_ENABLED },
 #ifdef GL_EXT_texture_env_combine
-    { STATE_NAME_EXT(GL_COMBINE_RGB, _ARB), TYPE_6GLenum, 1, BUGLE_GL_ARB_texture_env_combine, "1.3", STATE_TEX_ENV },
-    { STATE_NAME_EXT(GL_COMBINE_ALPHA, _ARB), TYPE_6GLenum, 1, BUGLE_GL_ARB_texture_env_combine, "1.3", STATE_TEX_ENV },
-    { STATE_NAME_EXT(GL_SOURCE0_RGB, _ARB), TYPE_6GLenum, 1, BUGLE_GL_ARB_texture_env_combine, "1.3", STATE_TEX_ENV },
-    { STATE_NAME_EXT(GL_SOURCE1_RGB, _ARB), TYPE_6GLenum, 1, BUGLE_GL_ARB_texture_env_combine, "1.3", STATE_TEX_ENV },
-    { STATE_NAME_EXT(GL_SOURCE2_RGB, _ARB), TYPE_6GLenum, 1, BUGLE_GL_ARB_texture_env_combine, "1.3", STATE_TEX_ENV },
-    { STATE_NAME_EXT(GL_SOURCE0_ALPHA, _ARB), TYPE_6GLenum, 1, BUGLE_GL_ARB_texture_env_combine, "1.3", STATE_TEX_ENV },
-    { STATE_NAME_EXT(GL_SOURCE1_ALPHA, _ARB), TYPE_6GLenum, 1, BUGLE_GL_ARB_texture_env_combine, "1.3", STATE_TEX_ENV },
-    { STATE_NAME_EXT(GL_SOURCE2_ALPHA, _ARB), TYPE_6GLenum, 1, BUGLE_GL_ARB_texture_env_combine, "1.3", STATE_TEX_ENV },
-    { STATE_NAME_EXT(GL_OPERAND0_RGB, _ARB), TYPE_6GLenum, 1, BUGLE_GL_ARB_texture_env_combine, "1.3", STATE_TEX_ENV },
-    { STATE_NAME_EXT(GL_OPERAND1_RGB, _ARB), TYPE_6GLenum, 1, BUGLE_GL_ARB_texture_env_combine, "1.3", STATE_TEX_ENV },
-    { STATE_NAME_EXT(GL_OPERAND2_RGB, _ARB), TYPE_6GLenum, 1, BUGLE_GL_ARB_texture_env_combine, "1.3", STATE_TEX_ENV },
-    { STATE_NAME_EXT(GL_OPERAND0_ALPHA, _ARB), TYPE_6GLenum, 1, BUGLE_GL_ARB_texture_env_combine, "1.3", STATE_TEX_ENV },
-    { STATE_NAME_EXT(GL_OPERAND1_ALPHA, _ARB), TYPE_6GLenum, 1, BUGLE_GL_ARB_texture_env_combine, "1.3", STATE_TEX_ENV },
-    { STATE_NAME_EXT(GL_OPERAND2_ALPHA, _ARB), TYPE_6GLenum, 1, BUGLE_GL_ARB_texture_env_combine, "1.3", STATE_TEX_ENV },
-    { STATE_NAME_EXT(GL_RGB_SCALE, _ARB), TYPE_8GLdouble, 1, BUGLE_GL_ARB_texture_env_combine, "1.3", STATE_TEX_ENV },
-    { STATE_NAME(GL_ALPHA_SCALE), TYPE_8GLdouble, 1, BUGLE_GL_ARB_texture_env_combine, "1.3", STATE_TEX_ENV },
+    { STATE_NAME_EXT(GL_COMBINE_RGB, _EXT), TYPE_6GLenum, 1, BUGLE_GL_EXT_texture_env_combine, "1.3", STATE_TEXTURE_ENV },
+    { STATE_NAME_EXT(GL_COMBINE_ALPHA, _EXT), TYPE_6GLenum, 1, BUGLE_GL_EXT_texture_env_combine, "1.3", STATE_TEXTURE_ENV },
+    { STATE_NAME_EXT(GL_SOURCE0_RGB, _EXT), TYPE_6GLenum, 1, BUGLE_GL_EXT_texture_env_combine, "1.3", STATE_TEXTURE_ENV },
+    { STATE_NAME_EXT(GL_SOURCE1_RGB, _EXT), TYPE_6GLenum, 1, BUGLE_GL_EXT_texture_env_combine, "1.3", STATE_TEXTURE_ENV },
+    { STATE_NAME_EXT(GL_SOURCE2_RGB, _EXT), TYPE_6GLenum, 1, BUGLE_GL_EXT_texture_env_combine, "1.3", STATE_TEXTURE_ENV },
+    { STATE_NAME_EXT(GL_SOURCE0_ALPHA, _EXT), TYPE_6GLenum, 1, BUGLE_GL_EXT_texture_env_combine, "1.3", STATE_TEXTURE_ENV },
+    { STATE_NAME_EXT(GL_SOURCE1_ALPHA, _EXT), TYPE_6GLenum, 1, BUGLE_GL_EXT_texture_env_combine, "1.3", STATE_TEXTURE_ENV },
+    { STATE_NAME_EXT(GL_SOURCE2_ALPHA, _EXT), TYPE_6GLenum, 1, BUGLE_GL_EXT_texture_env_combine, "1.3", STATE_TEXTURE_ENV },
+    { STATE_NAME_EXT(GL_OPERAND0_RGB, _EXT), TYPE_6GLenum, 1, BUGLE_GL_EXT_texture_env_combine, "1.3", STATE_TEXTURE_ENV },
+    { STATE_NAME_EXT(GL_OPERAND1_RGB, _EXT), TYPE_6GLenum, 1, BUGLE_GL_EXT_texture_env_combine, "1.3", STATE_TEXTURE_ENV },
+    { STATE_NAME_EXT(GL_OPERAND2_RGB, _EXT), TYPE_6GLenum, 1, BUGLE_GL_EXT_texture_env_combine, "1.3", STATE_TEXTURE_ENV },
+    { STATE_NAME_EXT(GL_OPERAND0_ALPHA, _EXT), TYPE_6GLenum, 1, BUGLE_GL_EXT_texture_env_combine, "1.3", STATE_TEXTURE_ENV },
+    { STATE_NAME_EXT(GL_OPERAND1_ALPHA, _EXT), TYPE_6GLenum, 1, BUGLE_GL_EXT_texture_env_combine, "1.3", STATE_TEXTURE_ENV },
+    { STATE_NAME_EXT(GL_OPERAND2_ALPHA, _EXT), TYPE_6GLenum, 1, BUGLE_GL_EXT_texture_env_combine, "1.3", STATE_TEXTURE_ENV },
+    { STATE_NAME_EXT(GL_RGB_SCALE, _EXT), TYPE_8GLdouble, 1, BUGLE_GL_EXT_texture_env_combine, "1.3", STATE_TEXTURE_ENV },
+    { STATE_NAME(GL_ALPHA_SCALE), TYPE_8GLdouble, 1, BUGLE_GL_EXT_texture_env_combine, "1.3", STATE_TEXTURE_ENV },
 #endif
     { STATE_NAME(GL_CURRENT_TEXTURE_COORDS), TYPE_8GLdouble, 4, -1, "1.1", STATE_TEX_UNIT },
     { STATE_NAME(GL_CURRENT_RASTER_TEXTURE_COORDS), TYPE_8GLdouble, 4, -1, "1.1", STATE_TEX_UNIT },
@@ -592,10 +613,6 @@ static const state_info tex_unit_state[] =
 #ifdef GL_ARB_texture_cube_map
     { STATE_NAME_EXT(GL_TEXTURE_BINDING_CUBE_MAP, _ARB), TYPE_5GLint, 1, BUGLE_GL_ARB_texture_cube_map, "1.3", STATE_TEX_UNIT },
 #endif
-    { STATE_NAME(GL_TEXTURE_GEN_S), TYPE_9GLboolean, 1, -1, "1.1", STATE_TEX_UNIT_ENABLED },
-    { STATE_NAME(GL_TEXTURE_GEN_T), TYPE_9GLboolean, 1, -1, "1.1", STATE_TEX_UNIT_ENABLED },
-    { STATE_NAME(GL_TEXTURE_GEN_R), TYPE_9GLboolean, 1, -1, "1.1", STATE_TEX_UNIT_ENABLED },
-    { STATE_NAME(GL_TEXTURE_GEN_Q), TYPE_9GLboolean, 1, -1, "1.1", STATE_TEX_UNIT_ENABLED },
     { NULL, GL_NONE, NULL_TYPE, 0, 0, NULL, 0 }
 };
 
@@ -693,6 +710,18 @@ static const state_info vertex_attrib_state[] =
     { STATE_NAME_EXT(GL_VERTEX_ATTRIB_ARRAY_NORMALIZED, _ARB), TYPE_9GLboolean, 1, BUGLE_GL_ARB_vertex_program, "2.0", STATE_VERTEX_ATTRIB },
     { STATE_NAME_EXT(GL_VERTEX_ATTRIB_ARRAY_POINTER, _ARB), TYPE_P6GLvoid, 1, BUGLE_GL_ARB_vertex_program, "2.0", STATE_VERTEX_ATTRIB },
     { STATE_NAME_EXT(GL_CURRENT_VERTEX_ATTRIB, _ARB), TYPE_8GLdouble, 4, BUGLE_GL_ARB_vertex_program, "2.0", STATE_VERTEX_ATTRIB | STATE_SELECT_NON_ZERO },
+#endif
+    { NULL, GL_NONE, NULL_TYPE, 0, 0, NULL, 0 }
+};
+
+static const state_info buffer_parameter_state[] =
+{
+#ifdef GL_ARB_vertex_buffer_object
+    { STATE_NAME_EXT(GL_BUFFER_SIZE, _ARB), TYPE_5GLint, 1, BUGLE_GL_ARB_vertex_buffer_object, "1.5", STATE_BUFFER_PARAMETER },
+    { STATE_NAME_EXT(GL_BUFFER_USAGE, _ARB), TYPE_5GLenum, 1, BUGLE_GL_ARB_vertex_buffer_object, "1.5", STATE_BUFFER_PARAMETER },
+    { STATE_NAME_EXT(GL_BUFFER_ACCESS, _ARB), TYPE_5GLenum, 1, BUGLE_GL_ARB_vertex_buffer_object, "1.5", STATE_BUFFER_PARAMETER },
+    { STATE_NAME_EXT(GL_BUFFER_MAPPED, _ARB), TYPE_9GLboolean, 1, BUGLE_GL_ARB_vertex_buffer_object, "1.5", STATE_BUFFER_PARAMETER },
+    { STATE_NAME_EXT(GL_BUFFER_MAP_POINTER, _ARB), TYPE_P6GLvoid, 1, BUGLE_GL_ARB_vertex_buffer_object, "1.5", STATE_BUFFER_PARAMETER },
 #endif
     { NULL, GL_NONE, NULL_TYPE, 0, 0, NULL, 0 }
 };
@@ -916,7 +945,7 @@ char *bugle_state_get_string(const glstate *state)
         b[0] = CALL_glIsEnabled(pname);
         in_type = TYPE_9GLboolean;
         break;
-    case STATE_MODE_TEX_ENV:
+    case STATE_MODE_TEXTURE_ENV:
         get_helper(state, d, f, i, &in_type, NULL_FUNCTION,
                    FUNC_glGetTexEnvfv, FUNC_glGetTexEnviv);
         break;
@@ -1218,17 +1247,21 @@ static void spawn_children_tex_unit(const glstate *self, bugle_linked_list *chil
     for (i = bugle_list_head(children); i; i = bugle_list_next(i))
     {
         child = (glstate *) bugle_list_data(i);
-        if (child->info
-            && (child->info->flags & STATE_MODE_MASK) == STATE_MODE_TEX_ENV)
+        switch (child->info->flags & STATE_MODE_MASK)
         {
+        case STATE_MODE_TEXTURE_ENV:
+            child->target = GL_TEXTURE_ENV;
+            break;
 #ifdef GL_EXT_texture_lod_bias
-            if (child->info->flags & STATE_FLAG_FILTER_CONTROL)
-                child->target = GL_TEXTURE_FILTER_CONTROL;
-            else
+        case STATE_MODE_TEXTURE_FILTER_CONTROL:
+            child->target = GL_TEXTURE_FILTER_CONTROL;
+            break;
 #endif
-            {
-                child->target = GL_TEXTURE_ENV;
-            }
+#ifdef GL_ARB_point_sprite
+        case STATE_MODE_POINT_SPRITE:
+            child->target = GL_POINT_SPRITE_ARB;
+            break;
+#endif
         }
     }
     make_fixed(self, tex_gen_pairs, offsetof(glstate, target),
@@ -1394,6 +1427,7 @@ static void spawn_children_global(const glstate *self, bugle_linked_list *childr
     {
         NULL, GL_NONE, TYPE_9GLboolean, 1, -1, "1.1", STATE_ENABLED
     };
+    /* FIXME: clip plane enables */
     static const state_info clip_plane_state =
     {
         NULL, GL_NONE, TYPE_8GLdouble, 4, -1, "1.1", STATE_CLIP_PLANE

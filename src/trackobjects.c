@@ -39,21 +39,22 @@ typedef struct
     budgie_group del;
     budgie_group bind;
     budgie_function is;
+    bool shared;
 } trackobjects_info;
 
 /* FIXME: ARB_occlusion_query specifies that queries are NOT shared between contexts */
 static const trackobjects_info info_table[BUGLE_TRACKOBJECTS_COUNT] =
 {
-    { GROUP_glGenTextures, GROUP_glDeleteTextures, GROUP_glBindTexture, FUNC_glIsTexture },
+    { GROUP_glGenTextures, GROUP_glDeleteTextures, GROUP_glBindTexture, FUNC_glIsTexture, true },
 
 #ifdef GL_ARB_vertex_buffer_object
-    { GROUP_glGenBuffersARB, GROUP_glDeleteBuffersARB, GROUP_glBindBufferARB, FUNC_glIsBufferARB },
+    { GROUP_glGenBuffersARB, GROUP_glDeleteBuffersARB, GROUP_glBindBufferARB, FUNC_glIsBufferARB, true },
 #else
     { NULL_GROUP, NULL_GROUP, NULL_GROUP, NULL_FUNCTION },
 #endif
 
 #ifdef GL_ARB_occlusion_query
-    { GROUP_glGenQueriesARB, GROUP_glDeleteQueriesARB, GROUP_glBeginQueryARB, FUNC_glIsQueryARB }
+    { GROUP_glGenQueriesARB, GROUP_glDeleteQueriesARB, GROUP_glBeginQueryARB, FUNC_glIsQueryARB, false }
 #else
     { NULL_GROUP, NULL_GROUP, NULL_GROUP, NULL_FUNCTION }
 #endif
