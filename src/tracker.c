@@ -21,24 +21,32 @@
 #endif
 #include "src/filters.h"
 #include "src/utils.h"
-#include "src/types.h"
 #include "src/canon.h"
+#include "src/tracker.h"
 #include "budgielib/state.h"
 #include "common/bool.h"
+#include "common/safemem.h"
 #include <assert.h>
+#include <stddef.h>
 #include <GL/glx.h>
 #if HAVE_PTHREAD_H
 # include <pthread.h>
 #endif
 
 static pthread_key_t context_state_key;
+static size_t context_state_space = 0;
 
-state_7context_I *trackcontext_get_context_state()
+state_7context_I *tracker_get_context_state()
 {
     return pthread_getspecific(context_state_key);
 }
 
-bool trackcontext_callback(function_call *call, void *data)
+void tracker_set_context_space(size_t bytes)
+{
+    context_state_space = bytes;
+}
+
+bool trackcontext_callback(function_call *call, const callback_data *data)
 {
     GLXContext ctx;
     state_generic *parent;
@@ -62,7 +70,14 @@ bool trackcontext_callback(function_call *call, void *data)
             parent = &get_root_state()->c_context.generic;
             pthread_mutex_lock(&context_mutex);
             if (!(state = (state_7context_I *) get_state_index(parent, &ctx)))
+            {
                 state = (state_7context_I *) add_state_index(parent, &ctx, NULL);
+                if (context_state_space)
+                {
+                    state->c_internal.c_filterdata.data = xmalloc(context_state_space);
+                    memset(state->c_internal.c_filterdata.data, 0, context_state_space);
+                }
+            }
             pthread_mutex_unlock(&context_mutex);
             pthread_setspecific(context_state_key, state);
         }
@@ -76,7 +91,7 @@ bool trackcontext_callback(function_call *call, void *data)
  * check for the error because glGetError is illegal inside glBegin/glEnd.
  */
 
-static bool trackbeginend_callback(function_call *call, void *data)
+static bool trackbeginend_callback(function_call *call, const callback_data *data)
 {
     state_7context_I *context_state;
 
@@ -95,13 +110,13 @@ static bool trackbeginend_callback(function_call *call, void *data)
         case GL_QUADS:
         case GL_QUAD_STRIP:
         case GL_POLYGON:
-            if ((context_state = trackcontext_get_context_state()) != NULL)
+            if ((context_state = tracker_get_context_state()) != NULL)
                 context_state->c_internal.c_in_begin_end.data = GL_TRUE;
         default: ;
         }
         break;
     case CFUNC_glEnd:
-        if ((context_state = trackcontext_get_context_state()) != NULL)
+        if ((context_state = tracker_get_context_state()) != NULL)
             context_state->c_internal.c_in_begin_end.data = GL_FALSE;
         break;
     }
@@ -125,8 +140,26 @@ static bool initialise_trackbeginend(filter_set *handle)
     return true;
 }
 
-void initialise_filter_library(void)
+void tracker_initialise(void)
 {
-    register_filter_set("trackcontext", initialise_trackcontext, NULL, NULL);
-    register_filter_set("trackbeginend", initialise_trackbeginend, NULL, NULL);
+    const filter_set_info trackcontext_info =
+    {
+        "trackcontext",
+        initialise_trackcontext,
+        NULL,
+        NULL,
+        0,
+        0
+    };
+    const filter_set_info trackbeginend_info =
+    {
+        "trackbeginend",
+        initialise_trackbeginend,
+        NULL,
+        NULL,
+        0,
+        0
+    };
+    register_filter_set(&trackcontext_info);
+    register_filter_set(&trackbeginend_info);
 }

@@ -16,20 +16,24 @@
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#ifndef BUGLE_SRC_CANON_H
-#define BUGLE_SRC_CANON_H
+#ifndef BUGLE_SRC_TRACKER_H
+#define BUGLE_SRC_TRACKER_H
 
 #if HAVE_CONFIG_H
 # include <config.h>
 #endif
+#include <stddef.h>
+#include "common/bool.h"
 #include "src/utils.h"
-#include "src/glfuncs.h"
-#include "budgielib/budgieutils.h"
+#include "src/filters.h"
 
-void initialise_canonical(void);
+/* Returns the current context wrapper, or NULL if no current context */
+state_7context_I *tracker_get_context_state(void);
 
-budgie_function canonical_function(budgie_function f);
-budgie_function canonical_call(const function_call *call);
-budgie_function find_function(const char *name);
+/* Used by the filter to request amount of per-context space */
+void tracker_set_context_space(size_t bytes);
 
-#endif /* !BUGLE_SRC_CANON_H */
+/* Used by the initialisation code */
+void tracker_initialise(void);
+
+#endif /* !BUGLE_SRC_TRACKER_H */

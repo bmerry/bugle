@@ -1,3 +1,8 @@
+Current rewrite:
+----------------
+- exploit per-context, per-filter state e.g. for video
+- update docs
+
 gldb
 ----
 - allow Ctrl-C to abort current line when reading commands
@@ -24,10 +29,7 @@ bugle
 - capture and replay
 - better movie capture
   - option of a separate thread, for parallel encoding
-  - frame rate control
   - --without-lavc configure option
-- better separation between libbugleutils and libbugle, so that only the
-  latter requires GL and X libraries
 
 budgie
 ------
@@ -35,6 +37,7 @@ budgie
 - robust logging, to avoid segfaulting
 - move filter code into budgie?
 - write support for state
+- rewrite state code to parse C structs
 
 tests
 -----

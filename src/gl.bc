@@ -109,6 +109,7 @@ DUMP TYPE GLboolean dump_GLboolean($$, $F)
 DUMP TYPE GLerror dump_GLerror($$, $F)
 DUMP TYPE GLalternateenum dump_GLalternateenum($$, $F)
 DUMP TYPE GLcomponentsenum dump_GLcomponentsenum($$, $F)
+DUMP TYPE GLXDrawable dump_GLXDrawable($$, $F)
 DUMP TYPE +PKc dump_string($$, $F)
 DUMP TYPE +Pc dump_string($$, $F)
 LENGTH TYPE +PKc count_string($$)
@@ -512,6 +513,7 @@ STATE context
 			VALUE destroyed GLboolean 1 NULL
 			VALUE initialised GLboolean 1 NULL
                         VALUE auxcontext GLXContext 1 NULL
+                        VALUE filterdata +Pv 1 NULL
                 }
         }
 }

@@ -1,4 +1,4 @@
-.TH GLDB 1 "July 2004" BUGLE "User Manual"
+.TH GLDB 1 "October 2004" BUGLE "User Manual"
 .SH NAME
 gldb \- Debugger front-end for the BuGLe library
 .SH SYNOPSIS
@@ -94,6 +94,16 @@ format. Since the back buffer is used, you are not guaranteed a
 complete picture. For a complete picture, put a breakpoint on
 .B glXSwapBuffers
 and call this command from there.
+.TP
+.B enable\fR|\fBdisable \fIfilter-set\fB
+Enables or disables a filter-set on the fly. This is still
+experimental, and for some filter-sets disabling will not do what you
+expect. In addition,
+.B enable
+will automatically load dependent
+filter-sets, but
+.B disable
+will not unload them again.
 .SH FILES
 .TP
 .B $HOME/.bugle/filters
@@ -138,4 +148,3 @@ are written and maintained by Bruce Merry <bmerry@users.sourceforge.net>.
 .BR bugle (3),
 .BR gdb (1),
 .BR ppm (5)
-

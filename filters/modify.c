@@ -18,7 +18,6 @@
 
 #include "src/filters.h"
 #include "src/utils.h"
-#include "src/types.h"
 #include "src/canon.h"
 #include "src/glutils.h"
 #include "common/bool.h"
@@ -26,7 +25,7 @@
 
 /* Wireframe filter-set */
 
-static bool wireframe_callback(function_call *call, void *data)
+static bool wireframe_callback(function_call *call, const callback_data *data)
 {
     switch (canonical_call(call))
     {
@@ -69,12 +68,12 @@ static bool initialise_wireframe(filter_set *handle)
 {
     register_filter(handle, "wireframe", wireframe_callback);
     register_filter_depends("wireframe", "invoke");
-    filter_set_renders("wireframe");
-    filter_post_renders("wireframe");
+    register_filter_set_renders("wireframe");
+    register_filter_post_renders("wireframe");
     return true;
 }
 
-static bool frontbuffer_callback(function_call *call, void *data)
+static bool frontbuffer_callback(function_call *call, const callback_data *data)
 {
     switch (canonical_call(call))
     {
@@ -100,6 +99,24 @@ static bool initialise_frontbuffer(filter_set *handle)
 
 void initialise_filter_library(void)
 {
-    register_filter_set("wireframe", initialise_wireframe, NULL, NULL);
-    register_filter_set("frontbuffer", initialise_frontbuffer, NULL, NULL);
+    const filter_set_info wireframe_info =
+    {
+        "wireframe",
+        initialise_wireframe,
+        NULL,
+        NULL,
+        0,
+        0
+    };
+    const filter_set_info frontbuffer_info =
+    {
+        "frontbuffer",
+        initialise_frontbuffer,
+        NULL,
+        NULL,
+        0,
+        0
+    };
+    register_filter_set(&wireframe_info);
+    register_filter_set(&frontbuffer_info);
 }

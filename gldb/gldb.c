@@ -35,8 +35,8 @@
 # include <readline/readline.h>
 # include <readline/history.h>
 #endif
-#include "src/types.h"
-#include "src/canon.h"
+#include "src/names.h"
+#include "src/glfuncs.h"
 #include "common/bool.h"
 #include "common/safemem.h"
 #include "common/protocol.h"
@@ -821,9 +821,9 @@ static char *generate_functions(const char *text, int state)
         i = 0;
     }
     for (; i < NUMBER_OF_FUNCTIONS; i++)
-        if (strncmp(function_table[i].name, text, len) == 0
-            && canonical_function(i) == i)
-            return xstrdup(function_table[i++].name);
+        if (strncmp(budgie_function_names[i], text, len) == 0
+            && gl_function_table[i].canonical == i)
+            return xstrdup(budgie_function_names[i++]);
     return NULL;
 }
 
@@ -893,7 +893,6 @@ static void initialise(void)
     const command_info *cmd;
 
     initialise_hashing();
-    initialise_canonical();
     hash_init(&break_on);
     hash_init(&command_table);
     for (cmd = commands; cmd->name; cmd++)

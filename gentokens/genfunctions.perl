@@ -77,7 +77,7 @@ if ($outheader)
 #if HAVE_CONFIG_H
 # include <config.h>
 #endif
-#include "src/types.h"
+#include "src/utils.h"
 
 typedef struct
 {
@@ -105,7 +105,7 @@ else
 #endif
 #include <GL/gl.h>
 #include <GL/glext.h>
-#include "src/types.h"
+#include "src/utils.h"
 #include "src/glfuncs.h"
 EOF
         ;

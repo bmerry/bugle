@@ -22,9 +22,9 @@
 #define _XOPEN_SOURCE
 #include "src/filters.h"
 #include "src/utils.h"
-#include "src/types.h"
 #include "src/canon.h"
 #include "src/glutils.h"
+#include "src/tracker.h"
 #include "budgielib/state.h"
 #include "common/hashtable.h"
 #include "common/protocol.h"
@@ -263,7 +263,7 @@ static void debugger_loop(bool init)
             break;
         case REQ_STATE:
             recv_string(in_pipe, &req_str);
-            ctx = get_context_state();
+            ctx = tracker_get_context_state();
             if (!ctx)
             {
                 send_code(out_pipe, RESP_ERROR);
@@ -342,7 +342,7 @@ static void check_async(void)
     }
 }
 
-static bool debugger_callback(function_call *call, void *data)
+static bool debugger_callback(function_call *call, const callback_data *data)
 {
     check_async();
     if (break_on[canonical_call(call)])
@@ -360,7 +360,7 @@ static bool debugger_callback(function_call *call, void *data)
     return true;
 }
 
-static bool debugger_error_callback(function_call *call, void *data)
+static bool debugger_error_callback(function_call *call, const callback_data *data)
 {
     GLenum error;
 
@@ -412,15 +412,25 @@ static bool initialise_debugger(filter_set *handle)
     register_filter_depends("debugger_error", "invoke");
     register_filter_depends("debugger_error", "error");
     register_filter_set_depends("debugger", "error");
-    filter_set_renders("debugger");
-    filter_post_renders("debugger_error");
-    filter_set_queries_error("debugger", false);
+    register_filter_set_renders("debugger");
+    register_filter_post_renders("debugger_error");
+    register_filter_set_queries_error("debugger", false);
 
     return true;
 }
 
 void initialise_filter_library(void)
 {
+    const filter_set_info debugger_info =
+    {
+        "debugger",
+        initialise_debugger,
+        NULL,
+        NULL,
+        0,
+        0
+    };
+
     memset(break_on, 0, sizeof(break_on));
-    register_filter_set("debugger", initialise_debugger, NULL, NULL);
+    register_filter_set(&debugger_info);
 }

@@ -8,4 +8,5 @@ chain wireframe
 chain trace
 {
     filterset log
+    filterset trace
 }

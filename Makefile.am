@@ -1,11 +1,5 @@
 ## Process with automake 1.7 or newer
 
-glincludes = \
-	$(shell CPP="$(CPP)" $(PERL) -w $(srcdir)/gentokens/find_header.perl GL/gl.h) \
-	$(shell CPP="$(CPP)" $(PERL) -w $(srcdir)/gentokens/find_header.perl GL/glext.h) \
-	$(shell CPP="$(CPP)" $(PERL) -w $(srcdir)/gentokens/find_header.perl GL/glx.h) \
-	$(shell CPP="$(CPP)" $(PERL) -w $(srcdir)/gentokens/find_header.perl GL/glext.h)
-
 # Utility programs, used for generating other files
 noinst_PROGRAMS = budgie/budgie
 # Misc extra files to include
@@ -18,23 +12,15 @@ lib_LTLIBRARIES = src/libbugleutils.la src/libbugle.la
 bin_PROGRAMS = gldb/gldb
 pkglib_LTLIBRARIES = \
 	filters/common.la \
-	filters/log.la \
+	filters/trace.la \
 	filters/modify.la \
 	filters/validate.la \
-	filters/tracker.la \
 	filters/debugger.la \
 	filters/capture.la
 
 INCLUDES = -I$(srcdir)/budgielib
 AM_CFLAGS = -DLIBDIR=\"$(libdir)\" -DPKGLIBDIR=\"$(pkglibdir)\" $(X_CFLAGS)
 AM_YFLAGS = -d
-
-# Convenience variable; not a target
-common_sources = \
-	common/safemem.c common/safemem.h \
-	common/bool.h common/protocol.h common/protocol.c \
-	common/hashtable.c common/hashtable.h \
-	common/linkedlist.c common/linkedlist.h
 
 gldb_gldb_SOURCES = gldb/gldb.c
 gldb_gldb_LDADD = src/libbugleutils.la $(READLINE_LIBS)
@@ -56,28 +42,34 @@ BUILT_SOURCES = budgie/bcparser.h
 
 src_libbugleutils_la_SOURCES = \
 	src/confparse.y src/conflex.l src/conffile.h \
-	src/interceptor.c src/filters.c src/filters.h \
+	src/gltokens.h \
+	common/safemem.c common/safemem.h \
+	common/bool.h common/protocol.h common/protocol.c \
+	common/hashtable.c common/hashtable.h \
+	common/linkedlist.c common/linkedlist.h
+nodist_src_libbugleutils_la_SOURCES = \
+	src/names.c src/names.h \
+	src/gltokens.c src/glfuncs.c src/glfuncs.h
+src_libbugleutils_la_LIBADD = $(LTLIBOBJS) $(THREAD_LIBS)
+src_libbugleutils_la_LDFLAGS = -thread-safe -export-dynamic -version-info 0:0:0
+
+src_libbugle_la_SOURCES = \
 	src/gldump.c src/gldump.h \
 	src/glutils.c src/glutils.h \
-	src/gltokens.h \
 	src/glstate.c src/glstate.h \
 	src/canon.c src/canon.h \
-	$(common_sources) \
+	src/interceptor.c \
+	src/filters.c src/filters.h \
+	src/tracker.c src/tracker.h \
+	src/log.c src/log.h \
 	budgielib/budgieutils.c budgielib/budgieutils.h \
 	budgielib/state.c budgielib/state.h
-nodist_src_libbugleutils_la_SOURCES = \
-	src/utils.c src/utils.h src/types.c src/types.h \
-	src/gltokens.c src/glfuncs.c src/glfuncs.h
-src_libbugleutils_la_LIBADD = $(LTLIBOBJS) $(GL_LIBS) $(X_PRE_LIBS) $(X_LIBS) $(X_EXTRA_LIBS) $(THREAD_LIBS)
-src_libbugleutils_la_LDFLAGS = -thread-safe -export-dynamic -version-info 0:0:0
-src_libbugle_la_SOURCES = \
-	src/interceptor.c src/filters.c src/filters.h
 nodist_src_libbugle_la_SOURCES = \
-	src/lib.c src/lib.h
+	src/utils.c src/utils.h src/lib.c src/lib.h
 src_libbugle_la_LIBADD = src/libbugleutils.la $(GL_LIBS) $(X_PRE_LIBS) $(X_LIBS) $(X_EXTRA_LIBS) $(THREAD_LIBS)
 src_libbugle_la_LDFLAGS = -thread-safe -export-dynamic -version-info 0:1:0
 
-BUILT_SOURCES += src/lib.h src/utils.h src/types.h src/confparse.h
+BUILT_SOURCES += src/lib.h src/utils.h src/names.h src/confparse.h
 
 # Generated files that generate other files
 
@@ -87,30 +79,28 @@ src/data/gl.tu: src/data/gl.c src/data/overrides.h
 	rm -f src/data/gl.o
 	mv gl.c.tu src/data/gl.tu
 
-src/types.c src/types.h src/utils.c src/utils.h src/lib.c src/lib.h: budgie/budgie src/data/gl.tu src/gl.bc
+src/names.c src/names.h src/utils.c src/utils.h src/lib.c src/lib.h: budgie/budgie src/data/gl.tu src/gl.bc
 	$(srcdir)/mkinstalldirs src
-	budgie/budgie -c $(srcdir)/src/gl.bc -t `test -f src/data/gl.tu || echo '$(srcdir)/'`src/data/gl.tu -o src/utils -T src/types -l src/lib
+	budgie/budgie -c $(srcdir)/src/gl.bc -t `test -f src/data/gl.tu || echo '$(srcdir)/'`src/data/gl.tu -o src/utils -n src/names -l src/lib
 
-BUILT_SOURCES += src/gltokens.c src/glfuncs.c src/glfuncs.h
+BUILT_SOURCES += src/glfuncs.h
 
 src/gltokens.c: gentokens/gentokens.perl
-	$(PERL) -w $(srcdir)/gentokens/gentokens.perl $(glincludes) > $@
-src/glfuncs.h: gentokens/genfunctions.perl src/types.h
-	$(PERL) -w $(srcdir)/gentokens/genfunctions.perl --out-header --header src/types.h $(glincludes) > $@
-src/glfuncs.c: gentokens/genfunctions.perl src/types.h
-	$(PERL) -w $(srcdir)/gentokens/genfunctions.perl --header src/types.h $(glincludes) > $@
+	$(PERL) -w $(srcdir)/gentokens/gentokens.perl $(GLINCLUDES) > $@
+src/glfuncs.h: gentokens/genfunctions.perl src/utils.h
+	$(PERL) -w $(srcdir)/gentokens/genfunctions.perl --out-header --header src/utils.h $(GLINCLUDES) > $@
+src/glfuncs.c: gentokens/genfunctions.perl src/utils.h
+	$(PERL) -w $(srcdir)/gentokens/genfunctions.perl --header src/utils.h $(GLINCLUDES) > $@
 
 # Filters
 filters_common_la_SOURCES = filters/common.c
 filters_common_la_LDFLAGS = -thread-safe -module -avoid-version
-filters_log_la_SOURCES = filters/log.c
-filters_log_la_LDFLAGS = -thread-safe -module -avoid-version
+filters_trace_la_SOURCES = filters/trace.c
+filters_trace_la_LDFLAGS = -thread-safe -module -avoid-version
 filters_modify_la_SOURCES = filters/modify.c
 filters_modify_la_LDFLAGS = -thread-safe -module -avoid-version
 filters_validate_la_SOURCES = filters/validate.c
 filters_validate_la_LDFLAGS = -thread-safe -module -avoid-version
-filters_tracker_la_SOURCES = filters/tracker.c
-filters_tracker_la_LDFLAGS = -thread-safe -module -avoid-version
 filters_debugger_la_SOURCES = filters/debugger.c
 filters_debugger_la_LDFLAGS = -thread-safe -module -avoid-version
 filters_capture_la_SOURCES = filters/capture.c
@@ -123,29 +113,30 @@ check_PROGRAMS = \
 	tests/misc tests/setstate
 dist_check_SCRIPTS = tests/queries.sh tests/setstate.sh tests/comparelog.sh
 tests_errors_SOURCES = tests/errors.c
-tests_errors_LDADD = src/libbugle.la -lglut $(GL_LIBS) $(X_PRE_LIBS) $(X_LIBS) $(X_EXTRA_LIBS)
+tests_errors_LDADD = src/libbugle.la -lglut -lGLU $(GL_LIBS) $(X_PRE_LIBS) $(X_LIBS) $(X_EXTRA_LIBS)
 tests_threads1_SOURCES = tests/threads1.c
 tests_threads1_LDADD = src/libbugle.la $(GL_LIBS) $(X_PRE_LIBS) $(X_LIBS) $(X_EXTRA_LIBS) $(THREAD_LIBS)
 tests_threads2_SOURCES = tests/threads2.c
 tests_threads2_LDADD = src/libbugle.la $(GL_LIBS) $(X_PRE_LIBS) $(X_LIBS) $(X_EXTRA_LIBS) $(THREAD_LIBS)
 tests_queries_SOURCES = tests/queries.c
-tests_queries_LDADD = src/libbugle.la -lglut $(GL_LIBS) $(X_PRE_LIBS) $(X_LIBS) $(X_EXTRA_LIBS)
+tests_queries_LDADD = src/libbugle.la -lglut -lGLU $(GL_LIBS) $(X_PRE_LIBS) $(X_LIBS) $(X_EXTRA_LIBS)
 tests_misc_SOURCES = tests/misc.c
-tests_misc_LDADD = src/libbugle.la -lglut $(GL_LIBS) $(X_PRE_LIBS) $(X_LIBS) $(X_EXTRA_LIBS)
+tests_misc_LDADD = src/libbugle.la -lglut -lGLU $(GL_LIBS) $(X_PRE_LIBS) $(X_LIBS) $(X_EXTRA_LIBS)
 tests_setstate_SOURCES = tests/setstate.c
-tests_setstate_LDADD = src/libbugle.la -lglut $(GL_LIBS) $(X_PRE_LIBS) $(X_LIBS) $(X_EXTRA_LIBS)
+tests_setstate_LDADD = src/libbugle.la -lglut -lGLU $(GL_LIBS) $(X_PRE_LIBS) $(X_LIBS) $(X_EXTRA_LIBS)
 TESTS = tests/errors tests/misc tests/queries.sh tests/setstate.sh
 TESTS_ENVIRONMENT = BUGLE_FILTERS=$(srcdir)/tests/filters BUGLE_FILTER_DIR=filters/.libs
 
 # Extra files to distribute
 EXTRA_DIST = src/gl.bc src/data/gl.c src/data/overrides.h \
 	FAQ TROUBLESHOOTING \
-	doc/filters.txt doc/protocol.txt doc/examples/filters
+	doc/filters.txt doc/protocol.txt doc/examples/filters \
+	tests/filters
 
-# Note: automake ought to the various files in the .libs directories, but
-# for some reason does not.
+# Note: automake ought to clean the various files in the .libs directories,
+# but for some reason does not.
 CLEANFILES = \
-	src/types.c src/types.h src/utils.c src/utils.h src/lib.c src/lib.h \
+	src/names.c src/names.h src/utils.c src/utils.h src/lib.c src/lib.h \
 	src/gltokens.c src/glfuncs.c src/glfuncs.h src/data/gl.tu doc/gldb.1.gz doc/bugle.3.gz \
 	gldb/.libs/gldb \
 	tests/.libs/errors tests/.libs/threads1 \

@@ -27,9 +27,9 @@
 #include "glutils.h"
 #include "canon.h"
 #include "filters.h"
+#include "tracker.h"
 #include "common/safemem.h"
 #include "budgielib/budgieutils.h"
-#include "src/types.h"
 #include "src/utils.h"
 
 /* FIXME: should this move into budgielib?
@@ -260,6 +260,12 @@ bool dump_GLboolean(GLboolean b, FILE *out)
     return true;
 }
 
+bool dump_GLXDrawable(GLXDrawable d, FILE *out)
+{
+    fprintf(out, "0x%08x", (unsigned int) d);
+    return true;
+}
+
 typedef struct
 {
     GLenum key;
@@ -407,7 +413,7 @@ size_t image_element_count(GLsizei width,
     /* First check that we aren't in begin/end, in which case the call
      * will fail anyway.
      */
-    ctx = get_context_state();
+    ctx = tracker_get_context_state();
     if (in_begin_end()) return 0;
     if (unpack)
     {

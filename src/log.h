@@ -16,20 +16,29 @@
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#ifndef BUGLE_SRC_CANON_H
-#define BUGLE_SRC_CANON_H
+#ifndef BUGLE_SRC_LOG_H
+#define BUGLE_SRC_LOG_H
 
 #if HAVE_CONFIG_H
 # include <config.h>
 #endif
+#include "common/bool.h"
 #include "src/utils.h"
-#include "src/glfuncs.h"
-#include "budgielib/budgieutils.h"
+#include "src/filters.h"
 
-void initialise_canonical(void);
+/* When logging stuff, you should call log_header before each line of output.
+ * If the logger is loaded, it will write a prefix and return a file handle.
+ * Otherwise, it will return NULL and you should not continue.
+ *
+ * You should also call log_register_filter to set up the order dependencies
+ * on any filter that will do logging.
+ */
+FILE *log_header(const char *filterset, const char *mode);
 
-budgie_function canonical_function(budgie_function f);
-budgie_function canonical_call(const function_call *call);
-budgie_function find_function(const char *name);
+/* Call this for filter sets that use logging */
+void log_register_filter(const char *filter);
 
-#endif /* !BUGLE_SRC_CANON_H */
+/* Used by the initialisation code */
+void log_initialise(void);
+
+#endif /* !BUGLE_SRC_LOG_H */

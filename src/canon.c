@@ -21,7 +21,7 @@
 #endif
 #include "canon.h"
 #include "src/glfuncs.h"
-#include "src/types.h"
+#include "src/utils.h"
 #include "common/bool.h"
 #include "common/safemem.h"
 #include "common/hashtable.h"

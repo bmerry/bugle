@@ -151,6 +151,7 @@ print <<'EOF'
 #endif
 #include <GL/gl.h>
 #include <GL/glext.h>
+#include <stdlib.h> /* for NULL */
 #include "src/gltokens.h"
 
 const gl_token gl_tokens_name[] =

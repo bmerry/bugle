@@ -7,7 +7,7 @@ die("Usage: $0 <header>") unless $#ARGV >= 0;
 my $cpp = $ENV{'CPP'};
 my $header = $ARGV[0];
 my $path = '';
-open(PREPROC, '-|', "echo '#include <$header>' | $cpp -");
+open(PREPROC, '-|', "echo '#include <$header>' | $cpp - 2>/dev/null");
 while (<PREPROC>)
 {
     if (/^# \d+ "(.*$header)"/) { $path = $1; }

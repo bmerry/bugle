@@ -21,9 +21,6 @@
 #endif
 #define _POSIX_SOURCE /* for flockfile */
 #include "src/filters.h"
-#include "src/utils.h"
-#include "src/types.h"
-#include "src/glutils.h"
 #include "common/safemem.h"
 #include "common/bool.h"
 #include <stdio.h>
@@ -32,21 +29,27 @@ static char *log_filename = NULL;
 static bool log_flush = false;
 static FILE *log_file;
 
-static bool log_callback(function_call *call, void *data)
+FILE *log_header(const char *filterset, const char *mode)
 {
-    GLenum error;
+    if (!log_file) return NULL;
+    if (mode) fprintf(log_file, "%s.%s: ", filterset, mode);
+    else fprintf(log_file, "%s: ", filterset);
+    return log_file;
+}
 
-    flockfile(log_file);
-    fputs("C: ", log_file);
-    dump_any_call(&call->generic, 0, log_file);
-    if ((error = get_call_error(call)))
+static bool log_pre_callback(function_call *call, const callback_data *data)
+{
+    if (log_file) flockfile(log_file);
+    return true;
+}
+
+static bool log_post_callback(function_call *call, const callback_data *data)
+{
+    if (log_file)
     {
-        fputs("E: ", log_file);
-        dump_GLerror(error, log_file);
-        fputs("\n", log_file);
+        if (log_flush) fflush(log_file);
+        funlockfile(log_file);
     }
-    if (log_flush) fflush(log_file);
-    funlockfile(log_file);
     return true;
 }
 
@@ -62,12 +65,8 @@ static bool initialise_log(filter_set *handle)
             fprintf(stderr, "failed to open log file %s\n", log_filename);
         return false;
     }
-    register_filter(handle, "log", log_callback);
-    register_filter_depends("log", "invoke");
-    /* No direct rendering, but some of the length functions query state */
-    filter_set_renders("log");
-    filter_post_renders("log");
-    filter_set_queries_error("log", false);
+    register_filter(handle, "log_pre", log_pre_callback);
+    register_filter(handle, "log_post", log_post_callback);
     return true;
 }
 
@@ -80,7 +79,7 @@ static void destroy_log(filter_set *handle)
     }
 }
 
-static bool set_variable_log(filter_set *handle, const char *name, const char *value)
+static bool command_log(filter_set *handle, const char *name, const char *value)
 {
     if (strcmp(name, "filename") == 0)
     {
@@ -101,8 +100,22 @@ static bool set_variable_log(filter_set *handle, const char *name, const char *v
     return true;
 }
 
-
-void initialise_filter_library(void)
+void log_register_filter(const char *filter)
 {
-    register_filter_set("log", initialise_log, destroy_log, set_variable_log);
+    register_filter_depends(filter, "log_pre");
+    register_filter_depends("log_post", filter);
+}
+
+void log_initialise(void)
+{
+    const filter_set_info log_info =
+    {
+        "log",
+        initialise_log,
+        destroy_log,
+        command_log,
+        0,
+        0
+    };
+    register_filter_set(&log_info);
 }
