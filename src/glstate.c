@@ -86,7 +86,9 @@
 #define STATE_MODE_ATTACHED_OBJECTS         0x00000021    /* glGetAttachedObjectsARB */
 #define STATE_MODE_ATTACHED_SHADERS         0x00000022    /* glGetAttachedShaders */
 #define STATE_MODE_OLD_PROGRAM              0x00000023    /* glGetProgramivARB */
-#define STATE_MODE_COMPRESSED_TEXTURE_FORMATS 0x00000024  /* glGetIntegerv(GL_COMPRESSED_TEXTURE_FORMATS, ...) */
+#define STATE_MODE_PROGRAM_ENV_PARAMETER    0x00000024    /* glGetProgramEnvParameterARB */
+#define STATE_MODE_PROGRAM_LOCAL_PARAMETER  0x00000025    /* glGetProgramLocalParameterARB */
+#define STATE_MODE_COMPRESSED_TEXTURE_FORMATS 0x00000026  /* glGetIntegerv(GL_COMPRESSED_TEXTURE_FORMATS, ...) */
 #define STATE_MODE_MASK                     0x000000ff
 
 #define STATE_MULTIPLEX_ACTIVE_TEXTURE      0x00000100    /* Set active texture */
@@ -143,6 +145,8 @@
 #define STATE_ATTACHED_OBJECTS STATE_MODE_ATTACHED_OBJECTS
 #define STATE_ATTACHED_SHADERS STATE_MODE_ATTACHED_SHADERS
 #define STATE_OLD_PROGRAM (STATE_MODE_OLD_PROGRAM | STATE_MULTIPLEX_BIND_PROGRAM)
+#define STATE_PROGRAM_ENV_PARAMETER STATE_MODE_PROGRAM_ENV_PARAMETER
+#define STATE_PROGRAM_LOCAL_PARAMETER (STATE_MODE_PROGRAM_ENV_PARAMETER | STATE_MULTIPLEX_BIND_PROGRAM)
 #define STATE_COMPRESSED_TEXTURE_FORMATS STATE_MODE_COMPRESSED_TEXTURE_FORMATS
 
 static const state_info global_state[] =
@@ -924,7 +928,6 @@ static const state_info program_state[] =
 static const state_info old_program_object_state[] =
 {
 #if defined(GL_ARB_vertex_program) || defined(GL_ARB_fragment_program)
-    { STATE_NAME(GL_PROGRAM_BINDING_ARB), TYPE_5GLint, -1, BUGLE_EXTGROUP_old_program, STATE_OLD_PROGRAM },
     { STATE_NAME(GL_PROGRAM_LENGTH_ARB), TYPE_5GLint, -1, BUGLE_EXTGROUP_old_program, STATE_OLD_PROGRAM },
     { STATE_NAME(GL_PROGRAM_FORMAT_ARB), TYPE_6GLenum, -1, BUGLE_EXTGROUP_old_program, STATE_OLD_PROGRAM },
     { STATE_NAME(GL_PROGRAM_STRING_ARB), TYPE_PKc, -1, BUGLE_EXTGROUP_old_program, STATE_OLD_PROGRAM },
@@ -960,6 +963,7 @@ static const state_info old_program_object_state[] =
 static const state_info old_program_state[] =
 {
 #if defined(GL_ARB_vertex_program) || defined(GL_ARB_fragment_program)
+    { STATE_NAME(GL_PROGRAM_BINDING_ARB), TYPE_5GLint, -1, BUGLE_EXTGROUP_old_program, STATE_OLD_PROGRAM },
     { STATE_NAME(GL_MAX_PROGRAM_ENV_PARAMETERS_ARB), TYPE_5GLint, -1, BUGLE_EXTGROUP_old_program, STATE_OLD_PROGRAM },
     { STATE_NAME(GL_MAX_PROGRAM_LOCAL_PARAMETERS_ARB), TYPE_5GLint, -1, BUGLE_EXTGROUP_old_program, STATE_OLD_PROGRAM },
     { STATE_NAME(GL_MAX_PROGRAM_INSTRUCTIONS_ARB), TYPE_5GLint, -1, BUGLE_EXTGROUP_old_program, STATE_OLD_PROGRAM },
@@ -1651,6 +1655,14 @@ char *bugle_state_get_string(const glstate *state)
             CALL_glGetProgramivARB(state->target, pname, i);
             in_type = TYPE_5GLint;
         }
+        break;
+    case STATE_MODE_PROGRAM_ENV_PARAMETER:
+        CALL_glGetProgramEnvParameterdvARB(state->target, state->level, d);
+        in_type = TYPE_8GLdouble;
+        break;
+    case STATE_MODE_PROGRAM_LOCAL_PARAMETER:
+        CALL_glGetProgramLocalParameterdvARB(state->target, state->level, d);
+        in_type = TYPE_8GLdouble;
         break;
 #endif
 #ifdef GL_ARB_texture_compression
@@ -2368,6 +2380,12 @@ static void spawn_children_program(const glstate *self, bugle_linked_list *child
 static void spawn_children_old_program_object(const glstate *self, bugle_linked_list *children)
 {
     uint32_t mask = 0;
+    GLint max_local, i;
+    GLdouble local[4];
+    static const state_info program_local_state =
+    {
+        NULL, GL_NONE, TYPE_8GLdouble, 4, BUGLE_EXTGROUP_old_program, STATE_PROGRAM_LOCAL_PARAMETER
+    };
 
     bugle_list_init(children, true);
 #ifdef GL_ARB_vertex_program
@@ -2377,11 +2395,35 @@ static void spawn_children_old_program_object(const glstate *self, bugle_linked_
     if (self->target == GL_ARB_fragment_program) mask = STATE_SELECT_VERTEX;
 #endif
     make_leaves_conditional(self, old_program_object_state, 0, mask, children);
+
+    CALL_glGetProgramivARB(self->target, GL_MAX_PROGRAM_LOCAL_PARAMETERS_ARB, &max_local);
+    for (i = 0; i < max_local; i++)
+    {
+        CALL_glGetProgramLocalParameterdvARB(self->target, i, local);
+        if (local[0] || local[1] || local[2] || local[3])
+        {
+            glstate *child;
+
+            child = bugle_malloc(sizeof(glstate));
+            *child = *self;
+            child->level = i;
+            child->info = &program_local_state;
+            child->spawn_children = NULL;
+            bugle_asprintf(&child->name, "Local[%lu]", (unsigned long) i);
+            bugle_list_append(children, child);
+        }
+    }
 }
 
 static void spawn_children_old_program(const glstate *self, bugle_linked_list *children)
 {
     uint32_t mask = 0;
+    GLint max_env, i;
+    GLdouble env[4];
+    static const state_info program_env_state =
+    {
+        NULL, GL_NONE, TYPE_8GLdouble, 4, BUGLE_EXTGROUP_old_program, STATE_PROGRAM_ENV_PARAMETER
+    };
 
     bugle_list_init(children, true);
 #ifdef GL_ARB_vertex_program
@@ -2391,6 +2433,23 @@ static void spawn_children_old_program(const glstate *self, bugle_linked_list *c
     if (self->target == GL_ARB_fragment_program) mask = STATE_SELECT_VERTEX;
 #endif
     make_leaves_conditional(self, old_program_state, 0, mask, children);
+    CALL_glGetProgramivARB(self->target, GL_MAX_PROGRAM_ENV_PARAMETERS_ARB, &max_env);
+    for (i = 0; i < max_env; i++)
+    {
+        CALL_glGetProgramEnvParameterdvARB(self->target, i, env);
+        if (env[0] || env[1] || env[2] || env[3])
+        {
+            glstate *child;
+
+            child = bugle_malloc(sizeof(glstate));
+            *child = *self;
+            child->level = i;
+            child->info = &program_env_state;
+            child->spawn_children = NULL;
+            bugle_asprintf(&child->name, "Env[%lu]", (unsigned long) i);
+            bugle_list_append(children, child);
+        }
+    }
     make_objects(self, BUGLE_TRACKOBJECTS_OLD_PROGRAM, self->target, false,
                  "%lu", spawn_children_old_program_object, NULL, children);
 }
