@@ -30,25 +30,25 @@
 
 static void initialise_wireframe_context(const void *key, void *data)
 {
-    if (begin_internal_render())
+    if (bugle_begin_internal_render())
     {
         CALL_glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-        end_internal_render("initialise_wireframe_context", true);
+        bugle_end_internal_render("initialise_wireframe_context", true);
     }
 }
 
 static bool wireframe_callback(function_call *call, const callback_data *data)
 {
-    switch (canonical_call(call))
+    switch (bugle_canonical_call(call))
     {
     case CFUNC_glXSwapBuffers:
         CALL_glClear(GL_COLOR_BUFFER_BIT); /* hopefully bypass z-trick */
         break;
     case CFUNC_glPolygonMode:
-        if (begin_internal_render())
+        if (bugle_begin_internal_render())
         {
             CALL_glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-            end_internal_render("wireframe_callback", true);
+            bugle_end_internal_render("wireframe_callback", true);
         }
         break;
     case CFUNC_glEnable:
@@ -62,10 +62,10 @@ static bool wireframe_callback(function_call *call, const callback_data *data)
 #ifdef GL_EXT_texture3D
         case GL_TEXTURE_3D_EXT:
 #endif
-            if (begin_internal_render())
+            if (bugle_begin_internal_render())
             {
                 CALL_glDisable(*call->typed.glEnable.arg0);
-                end_internal_render("wireframe_callback", true);
+                bugle_end_internal_render("wireframe_callback", true);
             }
             break;
         default: ;
@@ -78,35 +78,35 @@ static bool initialise_wireframe(filter_set *handle)
 {
     filter *f;
 
-    f = register_filter(handle, "wireframe", wireframe_callback);
-    register_filter_catches(f, CFUNC_glPolygonMode);
-    register_filter_catches(f, CFUNC_glEnable);
-    register_filter_depends("wireframe", "invoke");
-    register_filter_set_renders("wireframe");
-    register_filter_post_renders("wireframe");
-    object_class_register(&context_class, initialise_wireframe_context,
-                          NULL, 0);
+    f = bugle_register_filter(handle, "wireframe", wireframe_callback);
+    bugle_register_filter_catches(f, CFUNC_glPolygonMode);
+    bugle_register_filter_catches(f, CFUNC_glEnable);
+    bugle_register_filter_depends("wireframe", "invoke");
+    bugle_register_filter_set_renders("wireframe");
+    bugle_register_filter_post_renders("wireframe");
+    bugle_object_class_register(&bugle_context_class, initialise_wireframe_context,
+                                NULL, 0);
     return true;
 }
 
 static void initialise_frontbuffer_context(const void *key, void *data)
 {
-    if (begin_internal_render())
+    if (bugle_begin_internal_render())
     {
         CALL_glDrawBuffer(GL_FRONT);
-        end_internal_render("initialise_frontbuffer_context", true);
+        bugle_end_internal_render("initialise_frontbuffer_context", true);
     }
 }
 
 static bool frontbuffer_callback(function_call *call, const callback_data *data)
 {
-    switch (canonical_call(call))
+    switch (bugle_canonical_call(call))
     {
     case CFUNC_glDrawBuffer:
-        if (begin_internal_render())
+        if (bugle_begin_internal_render())
         {
             CALL_glDrawBuffer(GL_FRONT);
-            end_internal_render("frontbuffer_callback", true);
+            bugle_end_internal_render("frontbuffer_callback", true);
         }
         break;
     }
@@ -117,17 +117,17 @@ static bool initialise_frontbuffer(filter_set *handle)
 {
     filter *f;
 
-    f = register_filter(handle, "frontbuffer", frontbuffer_callback);
-    register_filter_depends("frontbuffer", "invoke");
-    register_filter_catches(f, CFUNC_glDrawBuffer);
-    register_filter_set_renders("frontbuffer");
-    register_filter_post_renders("frontbuffer");
-    object_class_register(&context_class, initialise_frontbuffer_context,
-                          NULL, 0);
+    f = bugle_register_filter(handle, "frontbuffer", frontbuffer_callback);
+    bugle_register_filter_depends("frontbuffer", "invoke");
+    bugle_register_filter_catches(f, CFUNC_glDrawBuffer);
+    bugle_register_filter_set_renders("frontbuffer");
+    bugle_register_filter_post_renders("frontbuffer");
+    bugle_object_class_register(&bugle_context_class, initialise_frontbuffer_context,
+                                NULL, 0);
     return true;
 }
 
-void initialise_filter_library(void)
+void bugle_initialise_filter_library(void)
 {
     const filter_set_info wireframe_info =
     {
@@ -145,6 +145,6 @@ void initialise_filter_library(void)
         NULL,
         0
     };
-    register_filter_set(&wireframe_info);
-    register_filter_set(&frontbuffer_info);
+    bugle_register_filter_set(&wireframe_info);
+    bugle_register_filter_set(&frontbuffer_info);
 }

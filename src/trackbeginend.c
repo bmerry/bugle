@@ -42,7 +42,7 @@ static bool trackbeginend_callback(function_call *call, const callback_data *dat
 {
     bool *begin_end;
 
-    switch (canonical_call(call))
+    switch (bugle_canonical_call(call))
     {
     case CFUNC_glBegin:
         switch (*call->typed.glBegin.arg0)
@@ -57,24 +57,24 @@ static bool trackbeginend_callback(function_call *call, const callback_data *dat
         case GL_QUADS:
         case GL_QUAD_STRIP:
         case GL_POLYGON:
-            begin_end = (bool *) object_get_current_data(&context_class, trackbeginend_offset);
+            begin_end = (bool *) bugle_object_get_current_data(&bugle_context_class, trackbeginend_offset);
             if (begin_end != NULL) *begin_end = true;
         default: ;
         }
         break;
     case CFUNC_glEnd:
-        begin_end = (bool *) object_get_current_data(&context_class, trackbeginend_offset);
+        begin_end = (bool *) bugle_object_get_current_data(&bugle_context_class, trackbeginend_offset);
         if (begin_end != NULL) *begin_end = false;
         break;
     }
     return true;
 }
 
-bool in_begin_end(void)
+bool bugle_in_begin_end(void)
 {
     bool *begin_end;
 
-    begin_end = (bool *) object_get_current_data(&context_class, trackbeginend_offset);
+    begin_end = (bool *) bugle_object_get_current_data(&bugle_context_class, trackbeginend_offset);
     return !begin_end || *begin_end;
 }
 
@@ -82,11 +82,11 @@ static bool initialise_trackbeginend(filter_set *handle)
 {
     filter *f;
 
-    f = register_filter(handle, "trackbeginend", trackbeginend_callback);
-    register_filter_depends("trackbeginend", "invoke");
-    register_filter_catches(f, FUNC_glBegin);
-    register_filter_catches(f, FUNC_glEnd);
-    register_filter_set_depends("trackbeginend", "trackcontext");
+    f = bugle_register_filter(handle, "trackbeginend", trackbeginend_callback);
+    bugle_register_filter_depends("trackbeginend", "invoke");
+    bugle_register_filter_catches(f, FUNC_glBegin);
+    bugle_register_filter_catches(f, FUNC_glEnd);
+    bugle_register_filter_set_depends("trackbeginend", "trackcontext");
     return true;
 }
 
@@ -105,9 +105,9 @@ void trackbeginend_initialise(void)
      * it runs early and we currently have no other way to determine the
      * ordering.
      */
-    trackbeginend_offset = object_class_register(&context_class,
-                                                 NULL,
-                                                 NULL,
-                                                 sizeof(bool));
-    register_filter_set(&trackbeginend_info);
+    trackbeginend_offset = bugle_object_class_register(&bugle_context_class,
+                                                       NULL,
+                                                       NULL,
+                                                       sizeof(bool));
+    bugle_register_filter_set(&trackbeginend_info);
 }

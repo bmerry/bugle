@@ -237,7 +237,7 @@ void hashptr_set(hashptr_table *table, const void *key, void *value)
     }
 
     h = hashptr(key) % table->size;
-    while (table->entries[h].key && strcmp(key, table->entries[h].key) != 0)
+    while (table->entries[h].key && key != table->entries[h].key)
         if (++h == table->size) h = 0;
     if (!table->entries[h].key)
     {
@@ -253,7 +253,7 @@ void *hashptr_get(const hashptr_table *table, const void *key)
 
     if (!table->entries) return NULL;
     h = hashptr(key) % table->size;
-    while (table->entries[h].key == key)
+    while (table->entries[h].key != key)
         if (++h == table->size) h = 0;
     if (table->entries[h].key)
     {

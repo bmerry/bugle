@@ -122,7 +122,7 @@ int count_string(const char *value)
     else return strlen(str) + 1;
 }
 
-void dump_any_type(budgie_type type, const void *value, int length, FILE *out)
+void budgie_dump_any_type(budgie_type type, const void *value, int length, FILE *out)
 {
     const type_data *info;
     budgie_type new_type;
@@ -134,7 +134,7 @@ void dump_any_type(budgie_type type, const void *value, int length, FILE *out)
         new_type = (*info->get_type)(value);
         if (new_type != type)
         {
-            dump_any_type(new_type, value, length, out);
+            budgie_dump_any_type(new_type, value, length, out);
             return;
         }
     }
@@ -148,7 +148,7 @@ void dump_any_type(budgie_type type, const void *value, int length, FILE *out)
     (*info->dumper)(value, length, out);
 }
 
-void dump_any_call(const generic_function_call *call, int indent, FILE *out)
+void budgie_dump_any_call(const generic_function_call *call, int indent, FILE *out)
 {
     size_t i;
     const function_data *data;
@@ -158,7 +158,7 @@ void dump_any_call(const generic_function_call *call, int indent, FILE *out)
     const function_parameter_data *info;
 
     make_indent(indent, out);
-    data = &function_table[call->id];
+    data = &budgie_function_table[call->id];
     fputs(data->name, out);
     fputs("(", out);
     info = &data->parameters[0];
@@ -172,7 +172,7 @@ void dump_any_call(const generic_function_call *call, int indent, FILE *out)
         {
             type = info->type;
             if (info->get_type) type = (*info->get_type)(call, i, call->args[i]);
-            dump_any_type(type, call->args[i], length, out);
+            budgie_dump_any_type(type, call->args[i], length, out);
         }
     }
     fputs(")", out);
@@ -187,7 +187,7 @@ void dump_any_call(const generic_function_call *call, int indent, FILE *out)
         {
             type = info->type;
             if (info->get_type) type = (*info->get_type)(call, -1, call->retn);
-            dump_any_type(type, call->retn, length, out);
+            budgie_dump_any_type(type, call->retn, length, out);
         }
     }
     fputs("\n", out);
@@ -216,9 +216,9 @@ static void initialise_real_work(void)
         if (handle)
         {
             for (j = 0; j < F; j++)
-                if (!function_table[j].real)
+                if (!budgie_function_table[j].real)
                 {
-                    function_table[j].real = (void (*)(void)) dlsym(handle, function_table[j].name);
+                    budgie_function_table[j].real = (void (*)(void)) dlsym(handle, budgie_function_table[j].name);
                     dlerror(); /* clear the error flag */
                 }
         }

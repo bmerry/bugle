@@ -29,7 +29,7 @@ static char *log_filename = NULL;
 static bool log_flush = false;
 static FILE *log_file;
 
-FILE *log_header(const char *filterset, const char *mode)
+FILE *bugle_log_header(const char *filterset, const char *mode)
 {
     if (!log_file) return NULL;
     if (mode) fprintf(log_file, "%s.%s: ", filterset, mode);
@@ -65,8 +65,8 @@ static bool initialise_log(filter_set *handle)
             fprintf(stderr, "failed to open log file %s\n", log_filename);
         return false;
     }
-    register_filter(handle, "log_pre", log_pre_callback);
-    register_filter(handle, "log_post", log_post_callback);
+    bugle_register_filter(handle, "log_pre", log_pre_callback);
+    bugle_register_filter(handle, "log_post", log_post_callback);
     return true;
 }
 
@@ -100,10 +100,10 @@ static bool command_log(filter_set *handle, const char *name, const char *value)
     return true;
 }
 
-void log_register_filter(const char *filter)
+void bugle_log_register_filter(const char *filter)
 {
-    register_filter_depends(filter, "log_pre");
-    register_filter_depends("log_post", filter);
+    bugle_register_filter_depends(filter, "log_pre");
+    bugle_register_filter_depends("log_post", filter);
 }
 
 void log_initialise(void)
@@ -116,5 +116,5 @@ void log_initialise(void)
         command_log,
         0
     };
-    register_filter_set(&log_info);
+    bugle_register_filter_set(&log_info);
 }

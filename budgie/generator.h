@@ -81,7 +81,7 @@ bool dumpable(tree_node_p type);
 void specify_types(const std::vector<tree_node_p> &types);
 //! Returns the code to create a type table
 std::string type_table(bool header);
-//! Returns the code for function \c dump_any_type
+//! Returns the code for function \c budgie_dump_any_type
 void make_type_dumper(bool prototype, std::ostream &out);
 //! Creates a function to convert between arithmetic types
 void type_converter(bool prototype, std::ostream &out);

@@ -34,7 +34,7 @@
 
 /* FIXME: should this move into budgielib?
  *
- * Calls dump_any_type, BUT:
+ * Calls budgie_dump_any_type, BUT:
  * if outer_length != -1, then it considers the type as if it were an
  * array of that type, of length outer_length. If pointer is
  * non-NULL, then it outputs "<pointer> -> " first as if dumping a
@@ -53,7 +53,7 @@ void dump_any_type_extended(budgie_type type,
     if (pointer)
         fprintf(out, "%p -> ", pointer);
     if (outer_length == -1)
-        dump_any_type(type, value, length, out);
+        budgie_dump_any_type(type, value, length, out);
     else
     {
         v = (const char *) value;
@@ -61,7 +61,7 @@ void dump_any_type_extended(budgie_type type,
         for (i = 0; i < outer_length; i++)
         {
             if (i) fputs(", ", out);
-            dump_any_type(type, (const void *) v, length, out);
+            budgie_dump_any_type(type, (const void *) v, length, out);
             v += type_table[type].size;
         }
         fputs(" }", out);
@@ -385,7 +385,7 @@ bool dump_convert(GLenum pname, const void *value,
     if (ptr)
         dump_any_type_extended(out_type, out_data, -1, length, ptr, out);
     else
-        dump_any_type(out_type, out_data, -1, out);
+        budgie_dump_any_type(out_type, out_data, -1, out);
     free(out_data);
     return true;
 }
@@ -420,8 +420,8 @@ size_t image_element_count(GLsizei width,
     /* First check that we aren't in begin/end, in which case the call
      * will fail anyway.
      */
-    ctx = tracker_get_context_state();
-    if (in_begin_end()) return 0;
+    ctx = bugle_tracker_get_context_state();
+    if (bugle_in_begin_end()) return 0;
     if (unpack)
     {
         CALL_glGetIntegerv(GL_UNPACK_SWAP_BYTES, &swap_bytes);

@@ -92,7 +92,7 @@ static void load_config(void)
                     for (i = list_head(&chain->filtersets); i; i = list_next(i))
                     {
                         set = (const config_filterset *) list_data(i);
-                        f = get_filter_set_handle(set->name);
+                        f = bugle_get_filter_set_handle(set->name);
                         if (!f)
                         {
                             fprintf(stderr, "warning: ignoring unknown filter-set %s\n",
@@ -112,8 +112,8 @@ static void load_config(void)
                     for (i = list_head(&chain->filtersets); i; i = list_next(i))
                     {
                         set = (const config_filterset *) list_data(i);
-                        f = get_filter_set_handle(set->name);
-                        if (f) enable_filter_set(f);
+                        f = bugle_get_filter_set_handle(set->name);
+                        if (f) bugle_enable_filter_set(f);
                     }
                 }
                 config_destroy();
@@ -128,23 +128,23 @@ static void load_config(void)
         fputs("$HOME not defined; running in passthrough mode\n", stderr);
 
     /* Always load the invoke filter-set */
-    f = get_filter_set_handle("invoke");
+    f = bugle_get_filter_set_handle("invoke");
     if (!f)
     {
         fputs("could not find the 'invoke' filter-set; aborting\n", stderr);
         exit(1);
     }
-    enable_filter_set(f);
+    bugle_enable_filter_set(f);
     /* Auto-load the debugger filter-set if using the debugger */
     if (debugging)
     {
-        f = get_filter_set_handle("debugger");
+        f = bugle_get_filter_set_handle("debugger");
         if (!f)
         {
             fputs("could not find the 'debugger' filter-set; aborting\n", stderr);
             exit(1);
         }
-        enable_filter_set(f);
+        bugle_enable_filter_set(f);
     }
 }
 

@@ -42,12 +42,12 @@ void initialise_canonical(void)
 
     hash_init(&function_names);
     for (i = 0; i < NUMBER_OF_FUNCTIONS; i++)
-        hash_set(&function_names, function_table[i].name, &function_table[i]);
+        hash_set(&function_names, budgie_function_table[i].name, &budgie_function_table[i]);
 
     atexit(destroy_canonical);
 }
 
-budgie_function canonical_function(budgie_function f)
+budgie_function bugle_canonical_function(budgie_function f)
 {
     if (f < 0 || f >= NUMBER_OF_FUNCTIONS)
         return f;
@@ -55,7 +55,7 @@ budgie_function canonical_function(budgie_function f)
         return gl_function_table[f].canonical;
 }
 
-budgie_function canonical_call(const function_call *call)
+budgie_function bugle_canonical_call(const function_call *call)
 {
     if (call->generic.id < 0 || call->generic.id >= NUMBER_OF_FUNCTIONS)
         return call->generic.id;
@@ -63,11 +63,11 @@ budgie_function canonical_call(const function_call *call)
         return gl_function_table[call->generic.id].canonical;
 }
 
-budgie_function find_function(const char *name)
+budgie_function bugle_find_function(const char *name)
 {
     const function_data *alias;
 
     alias = hash_get(&function_names, name);
-    if (alias) return alias - function_table;
+    if (alias) return alias - budgie_function_table;
     else return NULL_FUNCTION;
 }

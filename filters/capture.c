@@ -103,7 +103,7 @@ static void prepare_screenshot_data(screenshot_data *data,
         data->height = height;
         data->stride = stride;
 #ifdef GL_EXT_pixel_buffer_object
-        if (use_pbo && gl_has_extension("GL_EXT_pixel_buffer_object"))
+        if (use_pbo && bugle_gl_has_extension("GL_EXT_pixel_buffer_object"))
         {
             CALL_glGenBuffersARB(1, &data->pbo);
             CALL_glBindBufferARB(GL_PIXEL_PACK_BUFFER_EXT, data->pbo);
@@ -262,7 +262,7 @@ static bool map_screenshot(screenshot_data *data)
          */
         GLuint old_id;
 
-        if (!begin_internal_render())
+        if (!bugle_begin_internal_render())
         {
             fputs("warning: glXSwapBuffers called inside begin/end. Dropping frame\n", stderr);
             return false;
@@ -275,13 +275,13 @@ static bool map_screenshot(screenshot_data *data)
         {
             CALL_glGetError(); /* hide the error from end_internal_render() */
             CALL_glBindBufferARB(GL_PIXEL_PACK_BUFFER_EXT, old_id);
-            end_internal_render("map_screenshot", true);
+            bugle_end_internal_render("map_screenshot", true);
             return false;
         }
         else
         {
             CALL_glBindBufferARB(GL_PIXEL_PACK_BUFFER_EXT, old_id);
-            end_internal_render("map_screenshot", true);
+            bugle_end_internal_render("map_screenshot", true);
         }
     }
 #endif
@@ -299,7 +299,7 @@ static bool unmap_screenshot(screenshot_data *data)
         GLuint old_id;
         bool ret;
 
-        if (!begin_internal_render())
+        if (!bugle_begin_internal_render())
         {
             fputs("warning: glXSwapBuffers called inside begin/end. Dropping frame\n", stderr);
             return false;
@@ -309,7 +309,7 @@ static bool unmap_screenshot(screenshot_data *data)
         CALL_glBindBufferARB(GL_PIXEL_PACK_BUFFER_EXT, data->pbo);
         ret = CALL_glUnmapBufferARB(GL_PIXEL_PACK_BUFFER_EXT);
         CALL_glBindBufferARB(GL_PIXEL_PACK_BUFFER_EXT, old_id);
-        end_internal_render("unmap_screenshot", true);
+        bugle_end_internal_render("unmap_screenshot", true);
         data->pixels = NULL;
         return ret;
     }
@@ -364,9 +364,9 @@ static bool end_screenshot(GLenum format, int test_width, int test_height)
             return false;
         }
 
-    aux = get_aux_context();
+    aux = bugle_get_aux_context();
     if (!aux) return false;
-    if (!begin_internal_render())
+    if (!bugle_begin_internal_render())
     {
         fputs("warning: glXSwapBuffers called inside begin/end - corrupting frame\n", stderr);
         return true;
@@ -390,7 +390,7 @@ static bool end_screenshot(GLenum format, int test_width, int test_height)
 #endif
 
     CALL_glXMakeContextCurrent(dpy, old_write, old_read, real);
-    end_internal_render("end_screenshot", true);
+    bugle_end_internal_render("end_screenshot", true);
     return true;
 }
 
@@ -544,7 +544,7 @@ bool screenshot_callback(function_call *call, const callback_data *data)
      */
     static int frameno = 0;
 
-    if (canonical_call(call) == CFUNC_glXSwapBuffers)
+    if (bugle_canonical_call(call) == CFUNC_glXSwapBuffers)
     {
         if (frameno >= start_frameno)
         {
@@ -563,10 +563,10 @@ static bool initialise_screenshot(filter_set *handle)
 {
     filter *f;
 
-    f = register_filter(handle, "screenshot", screenshot_callback);
-    register_filter_catches(f, CFUNC_glXSwapBuffers);
-    register_filter_depends("invoke", "screenshot");
-    register_filter_set_renders("screenshot");
+    f = bugle_register_filter(handle, "screenshot", screenshot_callback);
+    bugle_register_filter_catches(f, CFUNC_glXSwapBuffers);
+    bugle_register_filter_depends("invoke", "screenshot");
+    bugle_register_filter_set_renders("screenshot");
 
     video_data = xcalloc(video_lag, sizeof(screenshot_data));
     video_cur = 0;
@@ -635,7 +635,7 @@ static bool showextensions_callback(function_call *call, const callback_data *da
     const function_data *info;
     const gl_function *glinfo;
 
-    info = &function_table[call->generic.id];
+    info = &budgie_function_table[call->generic.id];
     glinfo = &gl_function_table[call->generic.id];
     if (glinfo->extension)
         hash_set(&seen_extensions, glinfo->extension, &seen_extensions);
@@ -667,12 +667,12 @@ static bool initialise_showextensions(filter_set *handle)
 {
     filter *f;
 
-    f = register_filter(handle, "showextensions", showextensions_callback);
-    register_filter_catches_all(f);
+    f = bugle_register_filter(handle, "showextensions", showextensions_callback);
+    bugle_register_filter_catches_all(f);
     /* The order mainly doesn't matter, but making it a pre-filter
      * reduces the risk of another filter aborting the call.
      */
-    register_filter_depends("invoke", "showextensions");
+    bugle_register_filter_depends("invoke", "showextensions");
     hash_init(&seen_extensions);
     return true;
 }
@@ -714,7 +714,7 @@ static void destroy_showextensions(filter_set *handle)
     printf("\n");
 }
 
-void initialise_filter_library(void)
+void bugle_initialise_filter_library(void)
 {
     const filter_set_info screenshot_info =
     {
@@ -732,6 +732,6 @@ void initialise_filter_library(void)
         NULL,
         0
     };
-    register_filter_set(&screenshot_info);
-    register_filter_set(&showextensions_info);
+    bugle_register_filter_set(&screenshot_info);
+    bugle_register_filter_set(&showextensions_info);
 }

@@ -76,23 +76,23 @@ typedef struct
 
 void initialise_filters(void);
 bool filter_set_command(filter_set *handle, const char *name, const char *value);
-void enable_filter_set(filter_set *handle);
-void disable_filter_set(filter_set *handle);
+void bugle_enable_filter_set(filter_set *handle);
+void bugle_disable_filter_set(filter_set *handle);
 void run_filters(function_call *call);
 
 /* Functions to be used by the filter libraries, and perhaps the interceptor */
 
-filter_set *register_filter_set(const filter_set_info *info);
-filter *register_filter(filter_set *handle, const char *name,
-                        filter_callback callback);
-void register_filter_catches(filter *handle, budgie_function f);
-void register_filter_catches_all(filter *handle);
-void register_filter_set_depends(const char *base, const char *dep);
-void register_filter_depends(const char *after, const char *before);
-void *get_filter_set_call_state(function_call *call, filter_set *handle);
-filter_set *get_filter_set_handle(const char *name);
-bool filter_set_is_enabled(const filter_set *handle);
-void *get_filter_set_symbol(filter_set *handle, const char *name);
+filter_set *bugle_register_filter_set(const filter_set_info *info);
+filter *bugle_register_filter(filter_set *handle, const char *name,
+                              filter_callback callback);
+void bugle_register_filter_catches(filter *handle, budgie_function f);
+void bugle_register_filter_catches_all(filter *handle);
+void bugle_register_filter_set_depends(const char *base, const char *dep);
+void bugle_register_filter_depends(const char *after, const char *before);
+void *bugle_get_filter_set_call_state(function_call *call, filter_set *handle);
+filter_set *bugle_get_filter_set_handle(const char *name);
+bool bugle_filter_set_is_enabled(const filter_set *handle);
+void *bugle_get_filter_set_symbol(filter_set *handle, const char *name);
 
 /* Functions called directly from the generated code */
 

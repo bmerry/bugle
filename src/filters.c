@@ -122,7 +122,7 @@ bool check_skip(budgie_function f)
     pthread_mutex_lock(&refcount_mutex);
     ans = !(all_refcount || function_refcount[f]);
     pthread_mutex_unlock(&refcount_mutex);
-    /* if (ans) printf("Skipping %s\n", function_table[f].name); */
+    /* if (ans) printf("Skipping %s\n", budgie_function_table[f].name); */
     return ans;
 }
 
@@ -161,8 +161,13 @@ void initialise_filters(void)
         sprintf(full_name, "%s/%s", libdir, ent->d_name);
         handle = dlopen(full_name, RTLD_LAZY);
         if (handle == NULL) continue;
-        init = (void (*)(void)) dlsym(handle, "initialise_filter_library");
-        if (init == NULL) continue;
+        init = (void (*)(void)) dlsym(handle, "bugle_initialise_filter_library");
+        if (init == NULL)
+        {
+            fprintf(stderr, "Warning: library %s did not export initialisation symbol\n",
+                    ent->d_name);
+            continue;
+        }
         current_dl_handle = handle;
         (*init)();
         current_dl_handle = NULL;
@@ -207,7 +212,7 @@ static void enable_filter_set_r(filter_set *handle)
         {
             if (strcmp(handle->name, (const char *) list_data(i)) == 0)
             {
-                s = get_filter_set_handle((const char *) list_data(j));
+                s = bugle_get_filter_set_handle((const char *) list_data(j));
                 if (!s)
                 {
                     fprintf(stderr, "filter-set %s depends on unknown filter-set %s\n",
@@ -230,7 +235,7 @@ static void enable_filter_set_r(filter_set *handle)
     }
 }
 
-void enable_filter_set(filter_set *handle)
+void bugle_enable_filter_set(filter_set *handle)
 {
     pthread_mutex_lock(&refcount_mutex);
     enable_filter_set_r(handle);
@@ -254,7 +259,7 @@ static void disable_filter_set_r(filter_set *handle)
         {
             if (strcmp(handle->name, (const char *) list_data(j)) == 0)
             {
-                s = get_filter_set_handle((const char *) list_data(i));
+                s = bugle_get_filter_set_handle((const char *) list_data(i));
                 disable_filter_set_r(s);
             }
         }
@@ -276,7 +281,7 @@ static void disable_filter_set_r(filter_set *handle)
     }
 }
 
-void disable_filter_set(filter_set *handle)
+void bugle_disable_filter_set(filter_set *handle)
 {
     pthread_mutex_lock(&refcount_mutex);
     disable_filter_set_r(handle);
@@ -375,7 +380,7 @@ void repair_filter_order(void)
     hash_clear(&names, false);
 }
 
-void *get_filter_set_call_state(function_call *call, filter_set *handle)
+void *bugle_get_filter_set_call_state(function_call *call, filter_set *handle)
 {
     if (handle && handle->call_state_offset >= 0)
         return (void *)(((char *) call->generic.user_data) + handle->call_state_offset);
@@ -399,12 +404,12 @@ void run_filters(function_call *call)
     for (i = list_head(&active_filters); i != NULL; i = list_next(i))
     {
         cur = (filter *) list_data(i);
-        data.call_data = get_filter_set_call_state(call, cur->parent);
+        data.call_data = bugle_get_filter_set_call_state(call, cur->parent);
         if (!(*cur->callback)(call, &data)) break;
     }
 }
 
-filter_set *register_filter_set(const filter_set_info *info)
+filter_set *bugle_register_filter_set(const filter_set_info *info)
 {
     filter_set *s;
 
@@ -429,8 +434,8 @@ filter_set *register_filter_set(const filter_set_info *info)
     return s;
 }
 
-filter *register_filter(filter_set *handle, const char *name,
-                        filter_callback callback)
+filter *bugle_register_filter(filter_set *handle, const char *name,
+                              filter_callback callback)
 {
     filter *f;
 
@@ -444,7 +449,7 @@ filter *register_filter(filter_set *handle, const char *name,
     return f;
 }
 
-void register_filter_catches(filter *handle, budgie_function f)
+void bugle_register_filter_catches(filter *handle, budgie_function f)
 {
     budgie_function i;
 
@@ -453,12 +458,12 @@ void register_filter_catches(filter *handle, budgie_function f)
             list_append(&handle->catches, &function_refcount[i]);
 }
 
-void register_filter_catches_all(filter *handle)
+void bugle_register_filter_catches_all(filter *handle)
 {
     handle->catches_all = true;
 }
 
-void register_filter_depends(const char *after, const char *before)
+void bugle_register_filter_depends(const char *after, const char *before)
 {
     linked_list *deps;
     deps = (linked_list *) hash_get(&filter_dependencies, after);
@@ -471,19 +476,19 @@ void register_filter_depends(const char *after, const char *before)
     list_append(deps, xstrdup(before));
 }
 
-void register_filter_set_depends(const char *base, const char *dep)
+void bugle_register_filter_set_depends(const char *base, const char *dep)
 {
     list_append(&filter_set_dependencies[0], xstrdup(base));
     list_append(&filter_set_dependencies[1], xstrdup(dep));
 }
 
-bool filter_set_is_enabled(const filter_set *handle)
+bool bugle_filter_set_is_enabled(const filter_set *handle)
 {
     assert(handle);
     return handle->enabled;
 }
 
-filter_set *get_filter_set_handle(const char *name)
+filter_set *bugle_get_filter_set_handle(const char *name)
 {
     list_node *i;
     filter_set *cur;
@@ -497,7 +502,7 @@ filter_set *get_filter_set_handle(const char *name)
     return NULL;
 }
 
-void *get_filter_set_symbol(filter_set *handle, const char *name)
+void *bugle_get_filter_set_symbol(filter_set *handle, const char *name)
 {
     if (handle)
         return dlsym(handle->dl_handle, name);

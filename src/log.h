@@ -33,10 +33,10 @@
  * You should also call log_register_filter to set up the order dependencies
  * on any filter that will do logging.
  */
-FILE *log_header(const char *filterset, const char *mode);
+FILE *bugle_log_header(const char *filterset, const char *mode);
 
 /* Call this for filter sets that use logging */
-void log_register_filter(const char *filter);
+void bugle_log_register_filter(const char *filter);
 
 /* Used by the initialisation code */
 void log_initialise(void);

@@ -34,15 +34,15 @@
 # include <pthread.h>
 #endif
 
-object_class context_class;
+object_class bugle_context_class;
 static hashptr_table context_objects;
 static size_t trackcontext_offset;
 
-state_7context_I *tracker_get_context_state()
+state_7context_I *bugle_tracker_get_context_state()
 {
     state_7context_I **cur;
 
-    cur = (state_7context_I **) object_get_current_data(&context_class, trackcontext_offset);
+    cur = (state_7context_I **) bugle_object_get_current_data(&bugle_context_class, trackcontext_offset);
     if (cur) return *cur;
     else return NULL;
 }
@@ -51,7 +51,7 @@ static void tracker_set_context_state(state_7context_I *state)
 {
     state_7context_I **cur;
 
-    cur = (state_7context_I **) object_get_current_data(&context_class, trackcontext_offset);
+    cur = (state_7context_I **) bugle_object_get_current_data(&bugle_context_class, trackcontext_offset);
     assert(cur);
     *cur = state;
 }
@@ -74,7 +74,7 @@ static bool trackcontext_callback(function_call *call, const callback_data *data
     static pthread_mutex_t context_mutex = PTHREAD_MUTEX_INITIALIZER;
     void *obj;
 
-    switch (canonical_call(call))
+    switch (bugle_canonical_call(call))
     {
     case CFUNC_glXMakeCurrent:
 #ifdef GLX_VERSION_1_3
@@ -85,7 +85,7 @@ static bool trackcontext_callback(function_call *call, const callback_data *data
          */
         ctx = glXGetCurrentContext();
         if (!ctx)
-            object_set_current(&context_class, NULL);
+            bugle_object_set_current(&bugle_context_class, NULL);
         else
         {
             parent = &get_root_state()->c_context.generic;
@@ -93,13 +93,13 @@ static bool trackcontext_callback(function_call *call, const callback_data *data
             if (!(state = (state_7context_I *) get_state_index(parent, &ctx)))
             {
                 state = (state_7context_I *) add_state_index(parent, &ctx, NULL);
-                obj = object_new(&context_class, ctx, true);
+                obj = bugle_object_new(&bugle_context_class, ctx, true);
                 hashptr_set(&context_objects, ctx, obj);
             }
             else
             {
                 obj = hashptr_get(&context_objects, ctx);
-                object_set_current(&context_class, obj);
+                bugle_object_set_current(&bugle_context_class, obj);
                 tracker_set_context_state(state);
             }
             pthread_mutex_unlock(&context_mutex);
@@ -113,11 +113,11 @@ static bool initialise_trackcontext(filter_set *handle)
 {
     filter *f;
 
-    f = register_filter(handle, "trackcontext", trackcontext_callback);
-    register_filter_depends("trackcontext", "invoke");
-    register_filter_catches(f, FUNC_glXMakeCurrent);
+    f = bugle_register_filter(handle, "trackcontext", trackcontext_callback);
+    bugle_register_filter_depends("trackcontext", "invoke");
+    bugle_register_filter_catches(f, FUNC_glXMakeCurrent);
 #ifdef FUNC_glXMakeContextCurrent
-    register_filter_catches(f, FUNC_glXMakeContextCurrent);
+    bugle_register_filter_catches(f, FUNC_glXMakeContextCurrent);
 #endif
     return true;
 }
@@ -133,15 +133,15 @@ void trackcontext_initialise(void)
         0
     };
 
-    object_class_init(&context_class, NULL);
+    bugle_object_class_init(&bugle_context_class, NULL);
     hashptr_init(&context_objects);
     /* This ought to be in the initialise routines, but it is vital that
      * it runs early and we currently have no other way to determine the
      * ordering.
      */
-    trackcontext_offset = object_class_register(&context_class,
-                                                trackcontext_initialise_state,
-                                                NULL,
-                                                sizeof(state_7context_I *));
-    register_filter_set(&trackcontext_info);
+    trackcontext_offset = bugle_object_class_register(&bugle_context_class,
+                                                      trackcontext_initialise_state,
+                                                      NULL,
+                                                      sizeof(state_7context_I *));
+    bugle_register_filter_set(&trackcontext_info);
 }

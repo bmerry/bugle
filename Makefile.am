@@ -1,5 +1,7 @@
 ## Process with automake 1.7 or newer
 
+SYMBOLFLAGS = -export-symbol-regex '^(gl[A-Z]|budgie_|bugle_)'
+
 # Utility programs, used for generating other files
 noinst_PROGRAMS = budgie/budgie
 # Misc extra files to include
@@ -69,7 +71,7 @@ src_libbugle_la_SOURCES = \
 nodist_src_libbugle_la_SOURCES = \
 	src/utils.c src/utils.h src/lib.c src/lib.h
 src_libbugle_la_LIBADD = src/libbugleutils.la $(GL_LIBS) $(X_PRE_LIBS) $(X_LIBS) $(X_EXTRA_LIBS) $(THREAD_LIBS)
-src_libbugle_la_LDFLAGS = -thread-safe -export-dynamic -version-info 0:1:0
+src_libbugle_la_LDFLAGS = -thread-safe -export-dynamic $(SYMBOLFLAGS) -version-info 0:1:0
 
 BUILT_SOURCES += src/lib.h src/utils.h src/names.h src/confparse.h
 
@@ -98,20 +100,20 @@ src/aliases.txt: gentokens/genfunctions.perl
 
 # Filters
 filters_common_la_SOURCES = filters/common.c
-filters_common_la_LDFLAGS = -thread-safe -module -avoid-version
+filters_common_la_LDFLAGS = -thread-safe -module -avoid-version -export-dynamic $(SYMBOLFLAGS)
 filters_trace_la_SOURCES = filters/trace.c
-filters_trace_la_LDFLAGS = -thread-safe -module -avoid-version
+filters_trace_la_LDFLAGS = -thread-safe -module -avoid-version -export-dynamic $(SYMBOLFLAGS)
 filters_modify_la_SOURCES = filters/modify.c
-filters_modify_la_LDFLAGS = -thread-safe -module -avoid-version
+filters_modify_la_LDFLAGS = -thread-safe -module -avoid-version -export-dynamic $(SYMBOLFLAGS)
 filters_validate_la_SOURCES = filters/validate.c
-filters_validate_la_LDFLAGS = -thread-safe -module -avoid-version
+filters_validate_la_LDFLAGS = -thread-safe -module -avoid-version -export-dynamic $(SYMBOLFLAGS)
 filters_debugger_la_SOURCES = filters/debugger.c
-filters_debugger_la_LDFLAGS = -thread-safe -module -avoid-version
+filters_debugger_la_LDFLAGS = -thread-safe -module -avoid-version -export-dynamic $(SYMBOLFLAGS)
 filters_stats_la_SOURCES = filters/stats.c
-filters_stats_la_LDFLAGS = -thread-safe -module -avoid-version
+filters_stats_la_LDFLAGS = -thread-safe -module -avoid-version -export-dynamic $(SYMBOLFLAGS)
 filters_capture_la_SOURCES = filters/capture.c
 filters_capture_la_LIBADD = $(AVCODEC_LIBS)
-filters_capture_la_LDFLAGS = -thread-safe -module -avoid-version
+filters_capture_la_LDFLAGS = -thread-safe -module -avoid-version -export-dynamic $(SYMBOLFLAGS)
 
 # Demo/Test programs
 check_PROGRAMS = \

@@ -34,28 +34,28 @@ typedef struct
     size_t size;
 } object_class_info;
 
-void object_class_init(object_class *klass, object_class *parent)
+void bugle_object_class_init(object_class *klass, object_class *parent)
 {
     list_init(&klass->info);
     klass->total_size = 0;
     klass->parent = parent;
     if (parent)
-        klass->parent_offset = object_class_register(parent, NULL, NULL, sizeof(void *));
+        klass->parent_offset = bugle_object_class_register(parent, NULL, NULL, sizeof(void *));
     else
         pthread_key_create(&klass->current, NULL);
 }
 
-void object_class_clear(object_class *klass)
+void bugle_object_class_clear(object_class *klass)
 {
     list_clear(&klass->info, true);
     if (!klass->parent)
         pthread_key_delete(klass->current);
 }
 
-size_t object_class_register(object_class *klass,
-                             void (*constructor)(const void *key, void *data),
-                             void (*destructor)(void *data),
-                             size_t size)
+size_t bugle_object_class_register(object_class *klass,
+                                   void (*constructor)(const void *key, void *data),
+                                   void (*destructor)(void *data),
+                                   size_t size)
 {
     object_class_info *info;
     size_t ans;
@@ -75,7 +75,7 @@ static inline void *offset_ptr(void *base, size_t offset)
     return (void *) (((char *) base) + offset);
 }
 
-void *object_new(const object_class *klass, const void *key, bool make_current)
+void *bugle_object_new(const object_class *klass, const void *key, bool make_current)
 {
     void *ans;
     size_t offset = 0;
@@ -86,7 +86,7 @@ void *object_new(const object_class *klass, const void *key, bool make_current)
         ans = xmalloc(klass->total_size);
     else
         ans = xmalloc(1);
-    if (make_current) object_set_current(klass, ans);
+    if (make_current) bugle_object_set_current(klass, ans);
 
     for (i = list_head(&klass->info); i; i = list_next(i))
     {
@@ -100,7 +100,7 @@ void *object_new(const object_class *klass, const void *key, bool make_current)
     return ans;
 }
 
-void object_delete(const object_class *klass, void *obj)
+void bugle_object_delete(const object_class *klass, void *obj)
 {
     list_node *i;
     const object_class_info *info;
@@ -115,13 +115,13 @@ void object_delete(const object_class *klass, void *obj)
     }
 }
 
-void *object_get_current(const object_class *klass)
+void *bugle_object_get_current(const object_class *klass)
 {
     void *ans;
 
     if (klass->parent)
     {
-        ans = object_get_current_data(klass->parent, klass->parent_offset);
+        ans = bugle_object_get_current_data(klass->parent, klass->parent_offset);
         if (!ans) return NULL;
         else return *(void **) ans;
     }
@@ -129,25 +129,25 @@ void *object_get_current(const object_class *klass)
         return pthread_getspecific(klass->current);
 }
 
-void *object_get_current_data(const object_class *klass, size_t offset)
+void *bugle_object_get_current_data(const object_class *klass, size_t offset)
 {
-    return object_get_data(klass, object_get_current(klass), offset);
+    return bugle_object_get_data(klass, bugle_object_get_current(klass), offset);
 }
 
-void object_set_current(const object_class *klass, void *obj)
+void bugle_object_set_current(const object_class *klass, void *obj)
 {
     void *tmp;
 
     if (klass->parent)
     {
-        tmp = object_get_current_data(klass->parent, klass->parent_offset);
+        tmp = bugle_object_get_current_data(klass->parent, klass->parent_offset);
         if (tmp) *(void **) tmp = obj;
     }
     else
         pthread_setspecific(klass->current, obj);
 }
 
-void *object_get_data(const object_class *klass, void *obj, size_t offset)
+void *bugle_object_get_data(const object_class *klass, void *obj, size_t offset)
 {
     if (!obj) return NULL;
     else return offset_ptr(obj, offset);

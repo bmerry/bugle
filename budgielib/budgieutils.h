@@ -103,7 +103,7 @@ typedef struct
 extern const type_data type_table[];
 /* Not const due to "real" field.
  * FIXME: split that field out for better efficiency */
-extern function_data function_table[];
+extern function_data budgie_function_table[];
 extern const char * const library_names[];
 extern int number_of_types;
 extern int number_of_functions;
@@ -125,8 +125,8 @@ bool dump_string(const char *value, FILE *out);
 int count_string(const char *value);
 
 void make_indent(int indent, FILE *out);
-void dump_any_type(budgie_type type, const void *value, int length, FILE *out);
-void dump_any_call(const generic_function_call *call, int indent, FILE *out);
+void budgie_dump_any_type(budgie_type type, const void *value, int length, FILE *out);
+void budgie_dump_any_call(const generic_function_call *call, int indent, FILE *out);
 void initialise_real(void);
 
 #endif /* BUGLE_BUDGIE_BUDGIEFUNCS_H */

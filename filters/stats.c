@@ -72,13 +72,13 @@ static void initialise_stats_struct(const void *key, void *data)
     s->begin_count = 0;
 #ifdef GL_ARB_occlusion_query
     /* FIXME: check for the extension, not the function */
-    if (count_fragments && function_table[FUNC_glGenQueriesARB].real
-        && begin_internal_render())
+    if (count_fragments && budgie_function_table[FUNC_glGenQueriesARB].real
+        && bugle_begin_internal_render())
     {
         CALL_glGenQueriesARB(1, &s->query);
         if (s->query)
             CALL_glBeginQueryARB(GL_SAMPLES_PASSED, s->query);
-        end_internal_render("init_stats_struct", true);
+        bugle_end_internal_render("init_stats_struct", true);
     }
 #endif
 
@@ -111,8 +111,8 @@ static void update_triangles(stats_struct *s, GLenum mode, GLsizei count)
     }
     if (!t) return;
 
-    displaylist_count = object_get_current_data(&displaylist_class, displaylist_offset);
-    switch (displaylist_mode())
+    displaylist_count = bugle_object_get_current_data(&bugle_displaylist_class, displaylist_offset);
+    switch (bugle_displaylist_mode())
     {
     case GL_NONE:
         s->triangles += t;
@@ -139,8 +139,8 @@ static bool stats_callback(function_call *call, const callback_data *data)
     budgie_function canon;
     size_t *count;
 
-    s = object_get_current_data(&context_class, stats_offset);
-    canon = canonical_call(call);
+    s = bugle_object_get_current_data(&bugle_context_class, stats_offset);
+    canon = bugle_canonical_call(call);
     switch (canon)
     {
     case CFUNC_glXSwapBuffers:
@@ -150,11 +150,11 @@ static bool stats_callback(function_call *call, const callback_data *data)
         s->last_time = now;
         s->fps = 1.0f / elapsed;
 #ifdef GL_ARB_occlusion_query
-        if (s->query && begin_internal_render())
+        if (s->query && bugle_begin_internal_render())
         {
             CALL_glEndQueryARB(GL_SAMPLES_PASSED);
             CALL_glGetQueryObjectuivARB(s->query, GL_QUERY_RESULT_ARB, &s->fragments);
-            end_internal_render("stats_callback", true);
+            bugle_end_internal_render("stats_callback", true);
         }
         else
 #endif
@@ -162,11 +162,11 @@ static bool stats_callback(function_call *call, const callback_data *data)
             s->fragments = 0;
         }
 
-        if ((f = log_header("stats", "fps")) != NULL)
+        if ((f = bugle_log_header("stats", "fps")) != NULL)
             fprintf(f, "%.3f\n", s->fps);
-        if (s->query && (f = log_header("stats", "fragments")) != NULL)
+        if (s->query && (f = bugle_log_header("stats", "fragments")) != NULL)
             fprintf(f, "%u\n", (unsigned int) s->fragments);
-        if (count_triangles && (f = log_header("stats", "triangles")) != NULL)
+        if (count_triangles && (f = bugle_log_header("stats", "triangles")) != NULL)
             fprintf(f, "%u\n", (unsigned int) s->triangles);
         return true;
     }
@@ -255,7 +255,7 @@ static bool stats_callback(function_call *call, const callback_data *data)
         case CFUNC_glVertex4s:
         case CFUNC_glVertex4sv:
         case CFUNC_glArrayElement:
-            if (in_begin_end()) s->begin_count++;
+            if (bugle_in_begin_end()) s->begin_count++;
             break;
         case CFUNC_glBegin:
             s->begin_mode = *call->typed.glBegin.arg0;
@@ -292,9 +292,9 @@ static bool stats_callback(function_call *call, const callback_data *data)
             break;
 #endif
         case CFUNC_glCallList:
-            count = object_get_data(&displaylist_class,
-                                    displaylist_get(*call->typed.glCallList.arg0),
-                                    displaylist_offset);
+            count = bugle_object_get_data(&bugle_displaylist_class,
+                                          bugle_displaylist_get(*call->typed.glCallList.arg0),
+                                          displaylist_offset);
             if (count) s->triangles += *count;
             break;
         case CFUNC_glCallLists:
@@ -308,15 +308,15 @@ static bool stats_post_callback(function_call *call, const callback_data *data)
 {
     stats_struct *s;
 
-    switch (canonical_call(call))
+    switch (bugle_canonical_call(call))
     {
     case CFUNC_glXSwapBuffers:
-        s = object_get_current_data(&context_class, stats_offset);
+        s = bugle_object_get_current_data(&bugle_context_class, stats_offset);
 #ifdef GL_ARB_occlusion_query
-        if (s->query && begin_internal_render())
+        if (s->query && bugle_begin_internal_render())
         {
             CALL_glBeginQueryARB(GL_SAMPLES_PASSED, s->query);
-            end_internal_render("stats_post_callback", true);
+            bugle_end_internal_render("stats_post_callback", true);
         }
 #endif
         s->triangles = 0;
@@ -371,19 +371,19 @@ static bool showstats_callback(function_call *call, const callback_data *data)
     float elapsed;
     struct timeval now;
 
-    switch (canonical_call(call))
+    switch (bugle_canonical_call(call))
     {
     case FUNC_glXSwapBuffers:
-        aux = get_aux_context();
-        if (aux && begin_internal_render())
+        aux = bugle_get_aux_context();
+        if (aux && bugle_begin_internal_render())
         {
             real = glXGetCurrentContext();
             old_write = glXGetCurrentDrawable();
             old_read = glXGetCurrentReadDrawable();
             dpy = glXGetCurrentDisplay();
             CALL_glXMakeContextCurrent(dpy, old_write, old_write, aux);
-            s = object_get_current_data(&context_class, stats_offset);
-            ss = object_get_current_data(&context_class, showstats_offset);
+            s = bugle_object_get_current_data(&bugle_context_class, stats_offset);
+            ss = bugle_object_get_current_data(&bugle_context_class, showstats_offset);
 
             gettimeofday(&now, NULL);
             elapsed = (now.tv_sec - ss->last_show_time.tv_sec)
@@ -407,7 +407,7 @@ static bool showstats_callback(function_call *call, const callback_data *data)
             if (count_triangles) render_stats(ss, "%u triangles", (unsigned int) s->triangles);
             CALL_glPopAttrib();
             CALL_glXMakeContextCurrent(dpy, old_write, old_read, real);
-            end_internal_render("showstats_callback", true);
+            bugle_end_internal_render("showstats_callback", true);
         }
         break;
     }
@@ -443,111 +443,111 @@ static bool initialise_stats(filter_set *handle)
 {
     filter *f;
 
-    f = register_filter(handle, "stats", stats_callback);
-    register_filter_catches(f, CFUNC_glXSwapBuffers);
+    f = bugle_register_filter(handle, "stats", stats_callback);
+    bugle_register_filter_catches(f, CFUNC_glXSwapBuffers);
     if (count_triangles)
     {
 #ifdef GL_ARB_vertex_program
-        register_filter_catches(f, CFUNC_glVertexAttrib1sARB);
-        register_filter_catches(f, CFUNC_glVertexAttrib1fARB);
-        register_filter_catches(f, CFUNC_glVertexAttrib1dARB);
-        register_filter_catches(f, CFUNC_glVertexAttrib2sARB);
-        register_filter_catches(f, CFUNC_glVertexAttrib2fARB);
-        register_filter_catches(f, CFUNC_glVertexAttrib2dARB);
-        register_filter_catches(f, CFUNC_glVertexAttrib3sARB);
-        register_filter_catches(f, CFUNC_glVertexAttrib3fARB);
-        register_filter_catches(f, CFUNC_glVertexAttrib3dARB);
-        register_filter_catches(f, CFUNC_glVertexAttrib4sARB);
-        register_filter_catches(f, CFUNC_glVertexAttrib4fARB);
-        register_filter_catches(f, CFUNC_glVertexAttrib4dARB);
-        register_filter_catches(f, CFUNC_glVertexAttrib4NubARB);
-        register_filter_catches(f, CFUNC_glVertexAttrib1svARB);
-        register_filter_catches(f, CFUNC_glVertexAttrib1fvARB);
-        register_filter_catches(f, CFUNC_glVertexAttrib1dvARB);
-        register_filter_catches(f, CFUNC_glVertexAttrib2svARB);
-        register_filter_catches(f, CFUNC_glVertexAttrib2fvARB);
-        register_filter_catches(f, CFUNC_glVertexAttrib2dvARB);
-        register_filter_catches(f, CFUNC_glVertexAttrib3svARB);
-        register_filter_catches(f, CFUNC_glVertexAttrib3fvARB);
-        register_filter_catches(f, CFUNC_glVertexAttrib3dvARB);
-        register_filter_catches(f, CFUNC_glVertexAttrib4bvARB);
-        register_filter_catches(f, CFUNC_glVertexAttrib4svARB);
-        register_filter_catches(f, CFUNC_glVertexAttrib4ivARB);
-        register_filter_catches(f, CFUNC_glVertexAttrib4ubvARB);
-        register_filter_catches(f, CFUNC_glVertexAttrib4usvARB);
-        register_filter_catches(f, CFUNC_glVertexAttrib4uivARB);
-        register_filter_catches(f, CFUNC_glVertexAttrib4fvARB);
-        register_filter_catches(f, CFUNC_glVertexAttrib4dvARB);
-        register_filter_catches(f, CFUNC_glVertexAttrib4NbvARB);
-        register_filter_catches(f, CFUNC_glVertexAttrib4NsvARB);
-        register_filter_catches(f, CFUNC_glVertexAttrib4NivARB);
-        register_filter_catches(f, CFUNC_glVertexAttrib4NubvARB);
-        register_filter_catches(f, CFUNC_glVertexAttrib4NusvARB);
-        register_filter_catches(f, CFUNC_glVertexAttrib4NuivARB);
+        bugle_register_filter_catches(f, CFUNC_glVertexAttrib1sARB);
+        bugle_register_filter_catches(f, CFUNC_glVertexAttrib1fARB);
+        bugle_register_filter_catches(f, CFUNC_glVertexAttrib1dARB);
+        bugle_register_filter_catches(f, CFUNC_glVertexAttrib2sARB);
+        bugle_register_filter_catches(f, CFUNC_glVertexAttrib2fARB);
+        bugle_register_filter_catches(f, CFUNC_glVertexAttrib2dARB);
+        bugle_register_filter_catches(f, CFUNC_glVertexAttrib3sARB);
+        bugle_register_filter_catches(f, CFUNC_glVertexAttrib3fARB);
+        bugle_register_filter_catches(f, CFUNC_glVertexAttrib3dARB);
+        bugle_register_filter_catches(f, CFUNC_glVertexAttrib4sARB);
+        bugle_register_filter_catches(f, CFUNC_glVertexAttrib4fARB);
+        bugle_register_filter_catches(f, CFUNC_glVertexAttrib4dARB);
+        bugle_register_filter_catches(f, CFUNC_glVertexAttrib4NubARB);
+        bugle_register_filter_catches(f, CFUNC_glVertexAttrib1svARB);
+        bugle_register_filter_catches(f, CFUNC_glVertexAttrib1fvARB);
+        bugle_register_filter_catches(f, CFUNC_glVertexAttrib1dvARB);
+        bugle_register_filter_catches(f, CFUNC_glVertexAttrib2svARB);
+        bugle_register_filter_catches(f, CFUNC_glVertexAttrib2fvARB);
+        bugle_register_filter_catches(f, CFUNC_glVertexAttrib2dvARB);
+        bugle_register_filter_catches(f, CFUNC_glVertexAttrib3svARB);
+        bugle_register_filter_catches(f, CFUNC_glVertexAttrib3fvARB);
+        bugle_register_filter_catches(f, CFUNC_glVertexAttrib3dvARB);
+        bugle_register_filter_catches(f, CFUNC_glVertexAttrib4bvARB);
+        bugle_register_filter_catches(f, CFUNC_glVertexAttrib4svARB);
+        bugle_register_filter_catches(f, CFUNC_glVertexAttrib4ivARB);
+        bugle_register_filter_catches(f, CFUNC_glVertexAttrib4ubvARB);
+        bugle_register_filter_catches(f, CFUNC_glVertexAttrib4usvARB);
+        bugle_register_filter_catches(f, CFUNC_glVertexAttrib4uivARB);
+        bugle_register_filter_catches(f, CFUNC_glVertexAttrib4fvARB);
+        bugle_register_filter_catches(f, CFUNC_glVertexAttrib4dvARB);
+        bugle_register_filter_catches(f, CFUNC_glVertexAttrib4NbvARB);
+        bugle_register_filter_catches(f, CFUNC_glVertexAttrib4NsvARB);
+        bugle_register_filter_catches(f, CFUNC_glVertexAttrib4NivARB);
+        bugle_register_filter_catches(f, CFUNC_glVertexAttrib4NubvARB);
+        bugle_register_filter_catches(f, CFUNC_glVertexAttrib4NusvARB);
+        bugle_register_filter_catches(f, CFUNC_glVertexAttrib4NuivARB);
 #endif
-        register_filter_catches(f, CFUNC_glVertex2d);
-        register_filter_catches(f, CFUNC_glVertex2dv);
-        register_filter_catches(f, CFUNC_glVertex2f);
-        register_filter_catches(f, CFUNC_glVertex2fv);
-        register_filter_catches(f, CFUNC_glVertex2i);
-        register_filter_catches(f, CFUNC_glVertex2iv);
-        register_filter_catches(f, CFUNC_glVertex2s);
-        register_filter_catches(f, CFUNC_glVertex2sv);
-        register_filter_catches(f, CFUNC_glVertex3d);
-        register_filter_catches(f, CFUNC_glVertex3dv);
-        register_filter_catches(f, CFUNC_glVertex3f);
-        register_filter_catches(f, CFUNC_glVertex3fv);
-        register_filter_catches(f, CFUNC_glVertex3i);
-        register_filter_catches(f, CFUNC_glVertex3iv);
-        register_filter_catches(f, CFUNC_glVertex3s);
-        register_filter_catches(f, CFUNC_glVertex3sv);
-        register_filter_catches(f, CFUNC_glVertex4d);
-        register_filter_catches(f, CFUNC_glVertex4dv);
-        register_filter_catches(f, CFUNC_glVertex4f);
-        register_filter_catches(f, CFUNC_glVertex4fv);
-        register_filter_catches(f, CFUNC_glVertex4i);
-        register_filter_catches(f, CFUNC_glVertex4iv);
-        register_filter_catches(f, CFUNC_glVertex4s);
-        register_filter_catches(f, CFUNC_glVertex4sv);
-        register_filter_catches(f, CFUNC_glArrayElement);
-        register_filter_catches(f, CFUNC_glBegin);
-        register_filter_catches(f, CFUNC_glEnd);
-        register_filter_catches(f, CFUNC_glDrawElements);
-        register_filter_catches(f, CFUNC_glDrawArrays);
+        bugle_register_filter_catches(f, CFUNC_glVertex2d);
+        bugle_register_filter_catches(f, CFUNC_glVertex2dv);
+        bugle_register_filter_catches(f, CFUNC_glVertex2f);
+        bugle_register_filter_catches(f, CFUNC_glVertex2fv);
+        bugle_register_filter_catches(f, CFUNC_glVertex2i);
+        bugle_register_filter_catches(f, CFUNC_glVertex2iv);
+        bugle_register_filter_catches(f, CFUNC_glVertex2s);
+        bugle_register_filter_catches(f, CFUNC_glVertex2sv);
+        bugle_register_filter_catches(f, CFUNC_glVertex3d);
+        bugle_register_filter_catches(f, CFUNC_glVertex3dv);
+        bugle_register_filter_catches(f, CFUNC_glVertex3f);
+        bugle_register_filter_catches(f, CFUNC_glVertex3fv);
+        bugle_register_filter_catches(f, CFUNC_glVertex3i);
+        bugle_register_filter_catches(f, CFUNC_glVertex3iv);
+        bugle_register_filter_catches(f, CFUNC_glVertex3s);
+        bugle_register_filter_catches(f, CFUNC_glVertex3sv);
+        bugle_register_filter_catches(f, CFUNC_glVertex4d);
+        bugle_register_filter_catches(f, CFUNC_glVertex4dv);
+        bugle_register_filter_catches(f, CFUNC_glVertex4f);
+        bugle_register_filter_catches(f, CFUNC_glVertex4fv);
+        bugle_register_filter_catches(f, CFUNC_glVertex4i);
+        bugle_register_filter_catches(f, CFUNC_glVertex4iv);
+        bugle_register_filter_catches(f, CFUNC_glVertex4s);
+        bugle_register_filter_catches(f, CFUNC_glVertex4sv);
+        bugle_register_filter_catches(f, CFUNC_glArrayElement);
+        bugle_register_filter_catches(f, CFUNC_glBegin);
+        bugle_register_filter_catches(f, CFUNC_glEnd);
+        bugle_register_filter_catches(f, CFUNC_glDrawElements);
+        bugle_register_filter_catches(f, CFUNC_glDrawArrays);
 #ifdef GL_EXT_draw_range_elements
-        register_filter_catches(f, CFUNC_glDrawRangeElementsEXT);
+        bugle_register_filter_catches(f, CFUNC_glDrawRangeElementsEXT);
 #endif
 #ifdef GL_EXT_multi_draw_arrays
-        register_filter_catches(f, CFUNC_glMultiDrawElementsEXT);
-        register_filter_catches(f, CFUNC_glMultiDrawArraysEXT);
+        bugle_register_filter_catches(f, CFUNC_glMultiDrawElementsEXT);
+        bugle_register_filter_catches(f, CFUNC_glMultiDrawArraysEXT);
 #endif
-        register_filter_catches(f, CFUNC_glCallList);
-        register_filter_catches(f, CFUNC_glCallLists);
+        bugle_register_filter_catches(f, CFUNC_glCallList);
+        bugle_register_filter_catches(f, CFUNC_glCallLists);
     }
-    register_filter_depends("invoke", "stats");
+    bugle_register_filter_depends("invoke", "stats");
 
     if (count_triangles || count_fragments)
     {
-        f = register_filter(handle, "stats_post", stats_post_callback);
+        f = bugle_register_filter(handle, "stats_post", stats_post_callback);
         if (count_fragments || count_triangles)
-            register_filter_catches(f, CFUNC_glXSwapBuffers);
-        register_filter_post_renders("stats_post");
-        register_filter_depends("stats_post", "invoke");
+            bugle_register_filter_catches(f, CFUNC_glXSwapBuffers);
+        bugle_register_filter_post_renders("stats_post");
+        bugle_register_filter_depends("stats_post", "invoke");
     }
-    log_register_filter("stats");
-    register_filter_set_renders("stats");
-    register_filter_set_depends("stats", "trackcontext");
+    bugle_log_register_filter("stats");
+    bugle_register_filter_set_renders("stats");
+    bugle_register_filter_set_depends("stats", "trackcontext");
     if (count_triangles)
-        register_filter_set_depends("stats", "trackdisplaylist");
-    stats_offset = object_class_register(&context_class,
-                                         initialise_stats_struct,
-                                         NULL,
-                                         sizeof(stats_struct));
+        bugle_register_filter_set_depends("stats", "trackdisplaylist");
+    stats_offset = bugle_object_class_register(&bugle_context_class,
+                                               initialise_stats_struct,
+                                               NULL,
+                                               sizeof(stats_struct));
     if (count_triangles)
-        displaylist_offset = object_class_register(&displaylist_class,
-                                                   NULL,
-                                                   NULL,
-                                                   sizeof(size_t));
+        displaylist_offset = bugle_object_class_register(&bugle_displaylist_class,
+                                                         NULL,
+                                                         NULL,
+                                                         sizeof(size_t));
     return true;
 }
 
@@ -555,24 +555,24 @@ static bool initialise_showstats(filter_set *handle)
 {
     filter *f;
 
-    f = register_filter(handle, "showstats", showstats_callback);
-    register_filter_depends("showstats", "stats");
-    register_filter_depends("invoke", "showstats");
-    register_filter_depends("screenshot", "showstats");
+    f = bugle_register_filter(handle, "showstats", showstats_callback);
+    bugle_register_filter_depends("showstats", "stats");
+    bugle_register_filter_depends("invoke", "showstats");
+    bugle_register_filter_depends("screenshot", "showstats");
     /* make sure that screenshots capture the stats */
-    register_filter_depends("debugger", "showstats");
-    register_filter_depends("screenshot", "showstats");
-    register_filter_catches(f, CFUNC_glXSwapBuffers);
-    register_filter_set_depends("showstats", "stats");
-    register_filter_set_renders("showstats");
-    showstats_offset = object_class_register(&context_class,
-                                             initialise_showstats_struct,
-                                             NULL,
-                                             sizeof(showstats_struct));
+    bugle_register_filter_depends("debugger", "showstats");
+    bugle_register_filter_depends("screenshot", "showstats");
+    bugle_register_filter_catches(f, CFUNC_glXSwapBuffers);
+    bugle_register_filter_set_depends("showstats", "stats");
+    bugle_register_filter_set_renders("showstats");
+    showstats_offset = bugle_object_class_register(&bugle_context_class,
+                                                   initialise_showstats_struct,
+                                                   NULL,
+                                                   sizeof(showstats_struct));
     return true;
 }
 
-void initialise_filter_library(void)
+void bugle_initialise_filter_library(void)
 {
     const filter_set_info stats_info =
     {
@@ -590,6 +590,6 @@ void initialise_filter_library(void)
         NULL,
         0
     };
-    register_filter_set(&stats_info);
-    register_filter_set(&showstats_info);
+    bugle_register_filter_set(&stats_info);
+    bugle_register_filter_set(&showstats_info);
 }

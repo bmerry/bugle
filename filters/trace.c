@@ -32,9 +32,9 @@ static bool trace_callback(function_call *call, const callback_data *data)
     GLenum error;
     FILE *f;
 
-    if ((f = log_header("trace", "call")))
-        dump_any_call(&call->generic, 0, f);
-    if ((error = get_call_error(call)) && (f = log_header("trace", "error")))
+    if ((f = bugle_log_header("trace", "call")))
+        budgie_dump_any_call(&call->generic, 0, f);
+    if ((error = bugle_get_call_error(call)) && (f = bugle_log_header("trace", "error")))
     {
         dump_GLerror(error, f);
         fputs("\n", f);
@@ -46,18 +46,18 @@ static bool initialise_trace(filter_set *handle)
 {
     filter *f;
 
-    f = register_filter(handle, "trace", trace_callback);
-    register_filter_depends("trace", "invoke");
-    log_register_filter("trace");
-    register_filter_catches_all(f);
+    f = bugle_register_filter(handle, "trace", trace_callback);
+    bugle_register_filter_depends("trace", "invoke");
+    bugle_log_register_filter("trace");
+    bugle_register_filter_catches_all(f);
     /* No direct rendering, but some of the length functions query state */
-    register_filter_set_renders("trace");
-    register_filter_post_renders("trace");
-    register_filter_set_queries_error("trace", false);
+    bugle_register_filter_set_renders("trace");
+    bugle_register_filter_post_renders("trace");
+    bugle_register_filter_set_queries_error("trace", false);
     return true;
 }
 
-void initialise_filter_library(void)
+void bugle_initialise_filter_library(void)
 {
     const filter_set_info trace_info =
     {
@@ -67,5 +67,5 @@ void initialise_filter_library(void)
         NULL,
         0
     };
-    register_filter_set(&trace_info);
+    bugle_register_filter_set(&trace_info);
 }

@@ -62,15 +62,15 @@ static void dump_state(state_generic *state, int indent, FILE *out)
             for (i = 0; i < state->spec->data_length; i++)
             {
                 if (i) fputs(", ", out);
-                dump_any_type(state->spec->data_type, ptr,
-                              -1, out);
+                budgie_dump_any_type(state->spec->data_type, ptr,
+                                     -1, out);
                 ptr += type_table[state->spec->data_type].size;
             }
             fputs(")", out);
         }
         else
-            dump_any_type(state->spec->data_type, get_state_current(state),
-                          -1, out);
+            budgie_dump_any_type(state->spec->data_type, get_state_current(state),
+                                 -1, out);
     }
     fputs("\n", out);
     if (state->num_indexed)
@@ -124,8 +124,8 @@ static bool debugger_screenshot(int pipe)
     char *data, *in, *out;
     int i;
 
-    aux = get_aux_context();
-    if (!aux || !begin_internal_render()) return false;
+    aux = bugle_get_aux_context();
+    if (!aux || !bugle_begin_internal_render()) return false;
     real = glXGetCurrentContext();
     old_write = glXGetCurrentDrawable();
     old_read = glXGetCurrentReadDrawable();
@@ -158,7 +158,7 @@ static bool debugger_screenshot(int pipe)
     free(data);
 
     CALL_glXMakeContextCurrent(dpy, old_write, old_read, real);
-    end_internal_render("debugger_screenshot", true);
+    bugle_end_internal_render("debugger_screenshot", true);
     return true;
 }
 
@@ -177,10 +177,10 @@ static void debugger_loop(bool init)
     bool enable;
 
     /* FIXME: error checking on the network code */
-    if (!init && begin_internal_render())
+    if (!init && bugle_begin_internal_render())
     {
         CALL_glFinish();
-        end_internal_render("debugger", true);
+        bugle_end_internal_render("debugger", true);
     }
     while (true)
     {
@@ -197,7 +197,7 @@ static void debugger_loop(bool init)
         case REQ_BREAK:
             recv_string(in_pipe, &req_str);
             recv_code(in_pipe, &req_val);
-            func = find_function(req_str);
+            func = bugle_find_function(req_str);
             if (func != NULL_FUNCTION)
             {
                 send_code(out_pipe, RESP_ANS);
@@ -224,7 +224,7 @@ static void debugger_loop(bool init)
         case REQ_DISABLE_FILTERSET:
             enable = (req == REQ_ENABLE_FILTERSET);
             recv_string(in_pipe, &req_str);
-            f = get_filter_set_handle(req_str);
+            f = bugle_get_filter_set_handle(req_str);
             if (!f)
             {
                 xasprintf(&resp_str, "Unknown filter-set %s", req_str);
@@ -233,7 +233,7 @@ static void debugger_loop(bool init)
                 send_string(out_pipe, resp_str);
                 free(resp_str);
             }
-            else if (filter_set_is_enabled(f) == enable)
+            else if (bugle_filter_set_is_enabled(f) == enable)
             {
                 xasprintf(&resp_str, "Filter-set %s is already %s",
                           req_str, enable ? "enabled" : "disabled");
@@ -244,14 +244,14 @@ static void debugger_loop(bool init)
             }
             else
             {
-                if (enable) enable_filter_set(f);
-                else disable_filter_set(f);
-                if (!filter_set_is_enabled(get_filter_set_handle("debugger")))
+                if (enable) bugle_enable_filter_set(f);
+                else bugle_disable_filter_set(f);
+                if (!bugle_filter_set_is_enabled(bugle_get_filter_set_handle("debugger")))
                 {
                     send_code(out_pipe, RESP_ERROR);
                     send_code(out_pipe, 0);
                     send_string(out_pipe, "Debugger was disabled; re-enabling");
-                    enable_filter_set(get_filter_set_handle("debugger"));
+                    bugle_enable_filter_set(bugle_get_filter_set_handle("debugger"));
                 }
                 else
                 {
@@ -263,7 +263,7 @@ static void debugger_loop(bool init)
             break;
         case REQ_STATE:
             recv_string(in_pipe, &req_str);
-            ctx = tracker_get_context_state();
+            ctx = bugle_tracker_get_context_state();
             if (!ctx)
             {
                 send_code(out_pipe, RESP_ERROR);
@@ -345,10 +345,10 @@ static void check_async(void)
 static bool debugger_callback(function_call *call, const callback_data *data)
 {
     check_async();
-    if (break_on[canonical_call(call)])
+    if (break_on[bugle_canonical_call(call)])
     {
         send_code(out_pipe, RESP_BREAK);
-        send_string(out_pipe, function_table[call->generic.id].name);
+        send_string(out_pipe, budgie_function_table[call->generic.id].name);
         debugger_loop(false);
     }
     else if (break_on_next)
@@ -365,10 +365,10 @@ static bool debugger_error_callback(function_call *call, const callback_data *da
     GLenum error;
 
     if (break_on_error
-        && (error = get_call_error(call)))
+        && (error = bugle_get_call_error(call)))
     {
         send_code(out_pipe, RESP_BREAK_ERROR);
-        send_string(out_pipe, function_table[call->generic.id].name);
+        send_string(out_pipe, budgie_function_table[call->generic.id].name);
         send_string(out_pipe, gl_enum_to_token(error));
         debugger_loop(false);
     }
@@ -408,22 +408,22 @@ static bool initialise_debugger(filter_set *handle)
     }
     debugger_loop(true);
 
-    f = register_filter(handle, "debugger", debugger_callback);
-    register_filter_catches_all(f);
-    f = register_filter(handle, "debugger_error", debugger_error_callback);
-    register_filter_catches_all(f);
-    register_filter_depends("invoke", "debugger");
-    register_filter_depends("debugger_error", "invoke");
-    register_filter_depends("debugger_error", "error");
-    register_filter_set_depends("debugger", "error");
-    register_filter_set_renders("debugger");
-    register_filter_post_renders("debugger_error");
-    register_filter_set_queries_error("debugger", false);
+    f = bugle_register_filter(handle, "debugger", debugger_callback);
+    bugle_register_filter_catches_all(f);
+    f = bugle_register_filter(handle, "debugger_error", debugger_error_callback);
+    bugle_register_filter_catches_all(f);
+    bugle_register_filter_depends("invoke", "debugger");
+    bugle_register_filter_depends("debugger_error", "invoke");
+    bugle_register_filter_depends("debugger_error", "error");
+    bugle_register_filter_set_depends("debugger", "error");
+    bugle_register_filter_set_renders("debugger");
+    bugle_register_filter_post_renders("debugger_error");
+    bugle_register_filter_set_queries_error("debugger", false);
 
     return true;
 }
 
-void initialise_filter_library(void)
+void bugle_initialise_filter_library(void)
 {
     const filter_set_info debugger_info =
     {
@@ -435,5 +435,5 @@ void initialise_filter_library(void)
     };
 
     memset(break_on, 0, sizeof(break_on));
-    register_filter_set(&debugger_info);
+    bugle_register_filter_set(&debugger_info);
 }

@@ -28,26 +28,26 @@
 #include "src/filters.h"
 #include "src/objects.h"
 
-extern object_class context_class, displaylist_class;
+extern object_class bugle_context_class, bugle_displaylist_class;
 
 /* Returns the current context wrapper, or NULL if no current context.
  * trackcontext is required.
  */
-state_7context_I *tracker_get_context_state(void);
+state_7context_I *bugle_tracker_get_context_state(void);
 
 /* True if we are in begin/end, OR if there is no current context.
  * trackbeginend is required.
  */
-bool in_begin_end(void);
+bool bugle_in_begin_end(void);
 
 /* The number and mode of the current display list being compiled,
  * or 0 and GL_NONE if none.
  * trackdisplaylist is required.
  */
-GLuint displaylist_list(void);
-GLenum displaylist_mode(void);
+GLuint bugle_displaylist_list(void);
+GLenum bugle_displaylist_mode(void);
 /* The display list object associated with a numbered list */
-void *displaylist_get(GLuint list);
+void *bugle_displaylist_get(GLuint list);
 
 /* Used by the initialisation code */
 void trackcontext_initialise(void);

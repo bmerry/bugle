@@ -109,13 +109,13 @@ typedef struct
     int count;
     const void *value;
 } dump_any_type_str_data;
-/* A driver for string_io, that wraps dump_any_type */
+/* A driver for string_io, that wraps budgie_dump_any_type */
 static void dump_any_type_str(FILE *f, void *data)
 {
     const dump_any_type_str_data *d;
 
     d = (const dump_any_type_str_data *) data;
-    dump_any_type(d->type, d->value, d->count, f);
+    budgie_dump_any_type(d->type, d->value, d->count, f);
 }
 
 /* index-specific stuff */

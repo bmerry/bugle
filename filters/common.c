@@ -31,14 +31,14 @@
 
 static bool invoke_callback(function_call *call, const callback_data *data)
 {
-    invoke(call);
+    budgie_invoke(call);
     return true;
 }
 
 static bool initialise_invoke(filter_set *handle)
 {
-    register_filter(handle, "invoke", invoke_callback);
-    register_filter_set_depends("invoke", "procaddress");
+    bugle_register_filter(handle, "invoke", invoke_callback);
+    bugle_register_filter_set_depends("invoke", "procaddress");
     /* Note: this is the only filter that does not specify any catch
      * statements. This is because the default if nothing catches is
      * the same as invoking.
@@ -61,12 +61,12 @@ static bool procaddress_callback(function_call *call, const callback_data *data)
 #ifdef CFUNC_glXGetProcAddressARB
     void (*sym)(void);
 
-    switch (canonical_call(call))
+    switch (bugle_canonical_call(call))
     {
     case CFUNC_glXGetProcAddressARB:
         if (!*call->typed.glXGetProcAddressARB.retn) break;
         sym = (void (*)(void))
-            get_filter_set_symbol(NULL, (const char *) *call->typed.glXGetProcAddressARB.arg0);
+            bugle_get_filter_set_symbol(NULL, (const char *) *call->typed.glXGetProcAddressARB.arg0);
         if (sym) *call->typed.glXGetProcAddressARB.retn = sym;
         break;
     }
@@ -78,18 +78,18 @@ static bool initialise_procaddress(filter_set *handle)
 {
     filter *f;
 
-    f = register_filter(handle, "procaddress", procaddress_callback);
-    register_filter_depends("procaddress", "invoke");
-    register_filter_depends("trace", "procaddress");
+    f = bugle_register_filter(handle, "procaddress", procaddress_callback);
+    bugle_register_filter_depends("procaddress", "invoke");
+    bugle_register_filter_depends("trace", "procaddress");
 #ifdef FUNC_glXGetProcAddressARB
-    register_filter_catches(f, CFUNC_glXGetProcAddressARB);
+    bugle_register_filter_catches(f, CFUNC_glXGetProcAddressARB);
 #endif
     return true;
 }
 
 /* General */
 
-void initialise_filter_library(void)
+void bugle_initialise_filter_library(void)
 {
     const filter_set_info invoke_info =
     {
@@ -107,6 +107,6 @@ void initialise_filter_library(void)
         NULL,
         0
     };
-    register_filter_set(&invoke_info);
-    register_filter_set(&procaddress_info);
+    bugle_register_filter_set(&invoke_info);
+    bugle_register_filter_set(&procaddress_info);
 }

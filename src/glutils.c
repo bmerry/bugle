@@ -31,11 +31,11 @@
 
 static filter_set *error_handle = NULL;
 
-bool begin_internal_render(void)
+bool bugle_begin_internal_render(void)
 {
     GLenum error;
 
-    if (in_begin_end()) return false;
+    if (bugle_in_begin_end()) return false;
     /* FIXME: work with the error filterset to save the errors even
      * when the error filterset is not actively checking for errors.
      */
@@ -50,7 +50,7 @@ bool begin_internal_render(void)
     return true;
 }
 
-void end_internal_render(const char *name, bool warn)
+void bugle_end_internal_render(const char *name, bool warn)
 {
     GLenum error;
     while ((error = CALL_glGetError()) != GL_NO_ERROR)
@@ -64,7 +64,7 @@ void end_internal_render(const char *name, bool warn)
     }
 }
 
-GLXContext get_aux_context()
+GLXContext bugle_get_aux_context()
 {
     state_7context_I *context_state;
     GLXContext old_ctx, ctx;
@@ -74,7 +74,7 @@ GLXContext get_aux_context()
     GLXFBConfig *cfgs;
     Display *dpy;
 
-    context_state = tracker_get_context_state();
+    context_state = bugle_tracker_get_context_state();
     if (context_state->c_internal.c_auxcontext.data == NULL)
     {
         dpy = glXGetCurrentDisplay();
@@ -103,45 +103,45 @@ GLXContext get_aux_context()
     return context_state->c_internal.c_auxcontext.data;
 }
 
-void register_filter_set_renders(const char *name)
+void bugle_register_filter_set_renders(const char *name)
 {
-    register_filter_set_uses_state(name);
-    register_filter_set_depends(name, "trackbeginend");
+    bugle_register_filter_set_uses_state(name);
+    bugle_register_filter_set_depends(name, "trackbeginend");
 }
 
-void register_filter_post_renders(const char *name)
+void bugle_register_filter_post_renders(const char *name)
 {
-    register_filter_depends(name, "error");
-    register_filter_depends(name, "trackbeginend");
+    bugle_register_filter_depends(name, "error");
+    bugle_register_filter_depends(name, "trackbeginend");
 }
 
-void register_filter_set_uses_state(const char *name)
+void bugle_register_filter_set_uses_state(const char *name)
 {
-    register_filter_set_depends(name, "trackcontext");
+    bugle_register_filter_set_depends(name, "trackcontext");
 }
 
-void register_filter_post_uses_state(const char *name)
+void bugle_register_filter_post_uses_state(const char *name)
 {
-    register_filter_depends(name, "trackcontext");
+    bugle_register_filter_depends(name, "trackcontext");
 }
 
-void register_filter_set_queries_error(const char *name, bool require)
+void bugle_register_filter_set_queries_error(const char *name, bool require)
 {
-    if (require) register_filter_set_depends(name, "error");
+    if (require) bugle_register_filter_set_depends(name, "error");
     if (!error_handle)
-        error_handle = get_filter_set_handle("error");
+        error_handle = bugle_get_filter_set_handle("error");
 }
 
-GLenum get_call_error(function_call *call)
+GLenum bugle_get_call_error(function_call *call)
 {
     if (error_handle
-        && filter_set_is_enabled(error_handle))
-        return *(GLenum *) get_filter_set_call_state(call, error_handle);
+        && bugle_filter_set_is_enabled(error_handle))
+        return *(GLenum *) bugle_get_filter_set_call_state(call, error_handle);
     else
         return GL_NO_ERROR;
 }
 
-bool gl_has_extension(const char *name)
+bool bugle_gl_has_extension(const char *name)
 {
     const char *exts;
     size_t len;

@@ -28,8 +28,8 @@
 
 void initialise_canonical(void);
 
-budgie_function canonical_function(budgie_function f);
-budgie_function canonical_call(const function_call *call);
-budgie_function find_function(const char *name);
+budgie_function bugle_canonical_function(budgie_function f);
+budgie_function bugle_canonical_call(const function_call *call);
+budgie_function bugle_find_function(const char *name);
 
 #endif /* !BUGLE_SRC_CANON_H */

@@ -208,7 +208,7 @@ bool dumpable(tree_node_p type)
 }
 
 /*! Returns a function that logs a particular type. It does not take
- * into account overrides of the immediate type (use \c dump_any_type for
+ * into account overrides of the immediate type (use \c budgie_dump_any_type for
  * that).
  * \param node The type to work on
  * \param prototype True to only generate a function prototype
@@ -312,7 +312,7 @@ static void make_dumper(tree_node_p node, bool prototype, ostream &out)
             out << "    for (i = 0; i < size; i++)\n"
                 << "    {\n";
             if (dumpable(child))
-                out << "        dump_any_type(TYPE_" << type_to_id(child) << ", &(*value)[i], "
+                out << "        budgie_dump_any_type(TYPE_" << type_to_id(child) << ", &(*value)[i], "
                     << "-1, out);\n";
             else
                 out << "        fputs(\"<unknown>\", out);\n";
@@ -334,14 +334,14 @@ static void make_dumper(tree_node_p node, bool prototype, ostream &out)
                     << "        fputs(\" -> \", out);\n"
                     // -1 means a simple pointer, not pointer to array
                     << "        if (count < 0)\n"
-                    << "            dump_any_type(TYPE_" << type_to_id(child) << ", *value, -1, out);\n"
+                    << "            budgie_dump_any_type(TYPE_" << type_to_id(child) << ", *value, -1, out);\n"
                     << "        else\n"
                     << "        {\n"
                     // pointer to array
                     << "            fputs(\"{ \", out);\n"
                     << "            for (i = 0; i < count; i++)\n"
                     << "            {\n"
-                    << "                dump_any_type(TYPE_" << type_to_id(child) << ", &(*value)[i], -1, out);\n"
+                    << "                budgie_dump_any_type(TYPE_" << type_to_id(child) << ", &(*value)[i], -1, out);\n"
                     << "                if (i + 1 < count) fputs(\", \", out);\n"
                     << "            }\n"
                     << "            fputs(\" }\", out);\n"
@@ -364,7 +364,7 @@ static void make_dumper(tree_node_p node, bool prototype, ostream &out)
                         if (!first) out << "    fputs(\", \", out);\n";
                         else first = false;
                         child = TREE_TYPE(tmp);
-                        out << "    dump_any_type(TYPE_" << type_to_id(child) << ", &value->" << name
+                        out << "    budgie_dump_any_type(TYPE_" << type_to_id(child) << ", &value->" << name
                             << ", -1, out);\n";
                     }
                     tmp = TREE_CHAIN(tmp);
@@ -637,7 +637,7 @@ void function_table(bool header, ostream &out)
         out << "#define NUMBER_OF_FUNCTIONS " << counter << "\n"
             << "extern int number_of_functions;\n"
             << "\n"
-            << "extern function_data function_table[NUMBER_OF_FUNCTIONS];\n";
+            << "extern function_data budgie_function_table[NUMBER_OF_FUNCTIONS];\n";
     }
     else
     {
@@ -682,7 +682,7 @@ void function_table(bool header, ostream &out)
             if (count) out << "\n};\n\n";
         }
 
-        out << "function_data function_table[NUMBER_OF_FUNCTIONS] =\n"
+        out << "function_data budgie_function_table[NUMBER_OF_FUNCTIONS] =\n"
             << "{\n";
         for (size_t i = 0; i < functions.size(); i++)
         {
@@ -892,7 +892,7 @@ void function_macros(ostream &out)
             cur = TREE_CHAIN(cur);
         }
         out << ") ((*(" << type_to_string(ptr, "", false)
-            << ") function_table[FUNC_" << name << "].real)(";
+            << ") budgie_function_table[FUNC_" << name << "].real)(";
         count = 0;
         cur = TREE_ARG_TYPES(type);
         while (cur != NULL_TREE && TREE_CODE(cur->value) != VOID_TYPE)
@@ -968,7 +968,7 @@ void function_types(ostream &out)
 
 void make_invoker(bool prototype, ostream &out)
 {
-    out << "void invoke(function_call *call)";
+    out << "void budgie_invoke(function_call *call)";
     if (prototype)
     {
         out << ";\n";

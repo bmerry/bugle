@@ -45,15 +45,15 @@ static bool error_callback(function_call *call, const callback_data *data)
     GLenum *stored_error;
 
     *(GLenum *) data->call_data = GL_NO_ERROR;
-    if (function_table[call->generic.id].name[2] == 'X') return true; /* GLX */
-    if (canonical_call(call) == CFUNC_glGetError)
+    if (budgie_function_table[call->generic.id].name[2] == 'X') return true; /* GLX */
+    if (bugle_canonical_call(call) == CFUNC_glGetError)
     {
         /* We hope that it returns GL_NO_ERROR, since otherwise something
          * slipped through our own net. If not, we return it to the app
          * rather than whatever we have saved. Also, we must make sure to
          * return nothing else inside begin/end.
          */
-        stored_error = object_get_current_data(&context_class, error_context_offset);
+        stored_error = bugle_object_get_current_data(&bugle_context_class, error_context_offset);
         if (*call->typed.glGetError.retn != GL_NO_ERROR)
         {
             flockfile(stderr);
@@ -62,18 +62,18 @@ static bool error_callback(function_call *call, const callback_data *data)
             fputs("\n", stderr);
             funlockfile(stderr);
         }
-        else if (!in_begin_end() && *stored_error)
+        else if (!bugle_in_begin_end() && *stored_error)
         {
             *call->typed.glGetError.retn = *stored_error;
             *stored_error = GL_NO_ERROR;
         }
     }
-    else if (!in_begin_end())
+    else if (!bugle_in_begin_end())
     {
         /* Note: we deliberately don't call begin_internal_render here,
          * since it will beat us to calling glGetError().
          */
-        stored_error = object_get_current_data(&context_class, error_context_offset);
+        stored_error = bugle_object_get_current_data(&bugle_context_class, error_context_offset);
         while ((error = CALL_glGetError()) != GL_NO_ERROR)
         {
             if (stored_error && !*stored_error)
@@ -103,28 +103,28 @@ static bool initialise_error(filter_set *handle)
     filter *f;
 
     error_handle = handle;
-    f = register_filter(handle, "error", error_callback);
-    register_filter_catches_all(f);
-    register_filter_depends("error", "invoke");
+    f = bugle_register_filter(handle, "error", error_callback);
+    bugle_register_filter_catches_all(f);
+    bugle_register_filter_depends("error", "invoke");
     /* We don't call filter_post_renders, because that would make the
      * error filterset depend on itself.
      */
-    register_filter_set_renders("error");
-    error_context_offset = object_class_register(&context_class,
-                                                 NULL,
-                                                 NULL,
-                                                 sizeof(GLenum));
+    bugle_register_filter_set_renders("error");
+    error_context_offset = bugle_object_class_register(&bugle_context_class,
+                                                       NULL,
+                                                       NULL,
+                                                       sizeof(GLenum));
     return true;
 }
 
 static bool showerror_callback(function_call *call, const callback_data *data)
 {
     GLenum error;
-    if ((error = *(GLenum *) get_filter_set_call_state(call, error_handle)) != GL_NO_ERROR)
+    if ((error = *(GLenum *) bugle_get_filter_set_call_state(call, error_handle)) != GL_NO_ERROR)
     {
         flockfile(stderr);
-        dump_any_type(TYPE_7GLerror, &error, -1, stderr);
-        fprintf(stderr, " in %s\n", function_table[call->generic.id].name);
+        budgie_dump_any_type(TYPE_7GLerror, &error, -1, stderr);
+        fprintf(stderr, " in %s\n", budgie_function_table[call->generic.id].name);
         funlockfile(stderr);
     }
     return true;
@@ -134,11 +134,11 @@ static bool initialise_showerror(filter_set *handle)
 {
     filter *f;
 
-    f = register_filter(handle, "showerror", showerror_callback);
-    register_filter_catches_all(f);
-    register_filter_depends("showerror", "error");
-    register_filter_depends("showerror", "invoke");
-    register_filter_set_depends("showerror", "error");
+    f = bugle_register_filter(handle, "showerror", showerror_callback);
+    bugle_register_filter_catches_all(f);
+    bugle_register_filter_depends("showerror", "error");
+    bugle_register_filter_depends("showerror", "invoke");
+    bugle_register_filter_set_depends("showerror", "error");
     return true;
 }
 
@@ -207,16 +207,16 @@ static bool initialise_unwindstack(filter_set *handle)
 {
     filter *f;
 
-    f = register_filter(handle, "unwindstack_pre", unwindstack_pre_callback);
-    register_filter_catches_all(f);
-    f = register_filter(handle, "unwindstack_post", unwindstack_post_callback);
-    register_filter_catches_all(f);
-    register_filter_depends("unwindstack_post", "invoke");
-    register_filter_depends("invoke", "unwindstack_pre");
+    f = bugle_register_filter(handle, "unwindstack_pre", unwindstack_pre_callback);
+    bugle_register_filter_catches_all(f);
+    f = bugle_register_filter(handle, "unwindstack_post", unwindstack_post_callback);
+    bugle_register_filter_catches_all(f);
+    bugle_register_filter_depends("unwindstack_post", "invoke");
+    bugle_register_filter_depends("invoke", "unwindstack_pre");
     return true;
 }
 
-void initialise_filter_library(void)
+void bugle_initialise_filter_library(void)
 {
     const filter_set_info error_info =
     {
@@ -242,7 +242,7 @@ void initialise_filter_library(void)
         NULL,
         0
     };
-    register_filter_set(&error_info);
-    register_filter_set(&showerror_info);
-    register_filter_set(&unwindstack_info);
+    bugle_register_filter_set(&error_info);
+    bugle_register_filter_set(&showerror_info);
+    bugle_register_filter_set(&unwindstack_info);
 }

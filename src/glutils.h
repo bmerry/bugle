@@ -44,17 +44,17 @@
  * well as ANY OpenGL function call, requires the stronger form.
  */
 
-bool begin_internal_render(void);
-void end_internal_render(const char *name, bool warn);
-GLXContext get_aux_context();
+bool bugle_begin_internal_render(void);
+void bugle_end_internal_render(const char *name, bool warn);
+GLXContext bugle_get_aux_context();
 
-void register_filter_set_renders(const char *name);
-void register_filter_post_renders(const char *name);
-void register_filter_set_uses_state(const char *name);
-void register_filter_post_uses_state(const char *name);
-void register_filter_set_queries_error(const char *name, bool require);
-GLenum get_call_error(function_call *call);
+void bugle_register_filter_set_renders(const char *name);
+void bugle_register_filter_post_renders(const char *name);
+void bugle_register_filter_set_uses_state(const char *name);
+void bugle_register_filter_post_uses_state(const char *name);
+void bugle_register_filter_set_queries_error(const char *name, bool require);
+GLenum bugle_get_call_error(function_call *call);
 
-bool gl_has_extension(const char *ext);
+bool bugle_gl_has_extension(const char *ext);
 
 #endif /* !BUGLE_SRC_GLUTILS_H */
