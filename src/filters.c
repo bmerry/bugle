@@ -20,6 +20,7 @@
 # include <config.h>
 #endif
 #include "src/utils.h"
+#include "src/glfuncs.h"
 #include "filters.h"
 #include "tracker.h"
 #include "common/linkedlist.h"
@@ -33,6 +34,7 @@
 #include <sys/types.h>
 #include <errno.h>
 #include <stdlib.h>
+#include <pthread.h>
 #if HAVE_DIRENT_H
 # include <dirent.h>
 # define NAMLEN(dirent) strlen((dirent)->d_name)
@@ -58,6 +60,19 @@ static linked_list filter_set_dependencies[2];
 static bool dirty_active = false;
 static void *call_data = NULL;
 static size_t call_data_size = 0, context_data_size = 0;
+
+/* To speed things up, each filter lists the functions that it catches.
+ * Functions that are not caught at all are skipped over. Note that the
+ * catch hints are only advisory, and filters must explicitly ignore
+ * other functions.
+ */
+static size_t function_refcount[NUMBER_OF_FUNCTIONS];
+/* This is incremented for each function that wants to catch everything.
+ * It is statically initialised to 1, because otherwise the dynamic
+ * initialisation may never run at all.
+ */
+static size_t all_refcount = 1;
+static pthread_mutex_t refcount_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 static void *current_dl_handle = NULL;
 
@@ -88,6 +103,7 @@ void destroy_filters(void)
                     list_clear(dep, true);
                     free(dep);
                 }
+                list_clear(&f->catches, false);
                 free(f->name);
                 free(f);
             }
@@ -98,6 +114,17 @@ void destroy_filters(void)
     }
     list_clear(&filter_sets, false);
     hash_clear(&filter_dependencies, false);
+}
+
+bool check_skip(budgie_function f)
+{
+    bool ans;
+
+    pthread_mutex_lock(&refcount_mutex);
+    ans = !(all_refcount || function_refcount[f]);
+    pthread_mutex_unlock(&refcount_mutex);
+    /* if (ans) printf("Skipping %s\n", function_table[f].name); */
+    return ans;
 }
 
 void initialise_filters(void)
@@ -115,6 +142,7 @@ void initialise_filters(void)
     hash_init(&filter_dependencies);
     list_init(&filter_set_dependencies[0]);
     list_init(&filter_set_dependencies[1]);
+    memset(function_refcount, 0, sizeof(function_refcount));
 
     libdir = getenv("BUGLE_FILTER_DIR");
     if (!libdir) libdir = PKGLIBDIR;
@@ -144,6 +172,8 @@ void initialise_filters(void)
 
     closedir(dir);
     atexit(destroy_filters);
+
+    all_refcount--; /* Cancel out the static initialisation to 1 */
 }
 
 bool filter_set_command(filter_set *handle, const char *name, const char *value)
@@ -152,10 +182,11 @@ bool filter_set_command(filter_set *handle, const char *name, const char *value)
     return (*handle->command_handler)(handle, name, value);
 }
 
-void enable_filter_set(filter_set *handle)
+static void enable_filter_set_r(filter_set *handle)
 {
     list_node *i, *j;
-    filter_set *f;
+    filter_set *s;
+    filter *f;
 
     if (!handle->enabled)
     {
@@ -177,27 +208,41 @@ void enable_filter_set(filter_set *handle)
         {
             if (strcmp(handle->name, (const char *) list_data(i)) == 0)
             {
-                f = get_filter_set_handle((const char *) list_data(j));
-                if (!f)
+                s = get_filter_set_handle((const char *) list_data(j));
+                if (!s)
                 {
                     fprintf(stderr, "filter-set %s depends on unknown filter-set %s\n",
                             ((const char *) list_data(i)),
                             ((const char *) list_data(j)));
                     exit(1);
                 }
-                enable_filter_set(f);
+                enable_filter_set_r(s);
             }
         }
         for (i = list_head(&handle->filters); i != NULL; i = list_next(i))
-            list_append(&active_filters, list_data(i));
+        {
+            f = (filter *) list_data(i);
+            list_append(&active_filters, f);
+            if (f->catches_all) all_refcount++;
+            for (j = list_head(&f->catches); j != NULL; j = list_next(j))
+                (*(size_t *) list_data(j))++;
+        }
         dirty_active = true;
     }
 }
 
-void disable_filter_set(filter_set *handle)
+void enable_filter_set(filter_set *handle)
 {
-    list_node *i, *j;
-    filter_set *f;
+    pthread_mutex_lock(&refcount_mutex);
+    enable_filter_set_r(handle);
+    pthread_mutex_unlock(&refcount_mutex);
+}
+
+static void disable_filter_set_r(filter_set *handle)
+{
+    list_node *i, *j, *k;
+    filter_set *s;
+    filter *f;
 
     if (handle->enabled)
     {
@@ -210,20 +255,33 @@ void disable_filter_set(filter_set *handle)
         {
             if (strcmp(handle->name, (const char *) list_data(j)) == 0)
             {
-                f = get_filter_set_handle((const char *) list_data(i));
-                disable_filter_set(f);
+                s = get_filter_set_handle((const char *) list_data(i));
+                disable_filter_set_r(s);
             }
         }
         i = list_head(&active_filters);
         while (i)
         {
             j = list_next(i);
-            if (((filter *) list_data(i))->parent == handle)
+            f = (filter *) list_data(i);
+            if (f->parent == handle)
+            {
+                for (k = list_head(&f->catches); k != NULL; k = list_next(k))
+                    (*(size_t *) list_data(k))--;
+                if (f->catches_all) all_refcount--;
                 list_erase(&active_filters, i, false);
+            }
             i = j;
         }
         dirty_active = true;
     }
+}
+
+void disable_filter_set(filter_set *handle)
+{
+    pthread_mutex_lock(&refcount_mutex);
+    disable_filter_set_r(handle);
+    pthread_mutex_unlock(&refcount_mutex);
 }
 
 void repair_filter_order(void)
@@ -352,7 +410,6 @@ void run_filters(function_call *call)
     {
         cur = (filter *) list_data(i);
         data.call_data = get_filter_set_call_state(call, cur->parent);
-        /* FIXME: implement */
         data.context_data = get_filter_set_context_state(tracker_get_context_state(),
                                                          cur->parent);
         if (!(*cur->callback)(call, &data)) break;
@@ -391,8 +448,8 @@ filter_set *register_filter_set(const filter_set_info *info)
     return s;
 }
 
-void register_filter(filter_set *handle, const char *name,
-                     filter_callback callback)
+filter *register_filter(filter_set *handle, const char *name,
+                        filter_callback callback)
 {
     filter *f;
 
@@ -400,7 +457,24 @@ void register_filter(filter_set *handle, const char *name,
     f->name = xstrdup(name);
     f->callback = callback;
     f->parent = handle;
+    list_init(&f->catches);
+    f->catches_all = false;
     list_append(&handle->filters, f);
+    return f;
+}
+
+void register_filter_catches(filter *handle, budgie_function f)
+{
+    budgie_function i;
+
+    for (i = 0; i < NUMBER_OF_FUNCTIONS; i++)
+        if (gl_function_table[i].canonical == gl_function_table[f].canonical)
+            list_append(&handle->catches, &function_refcount[i]);
+}
+
+void register_filter_catches_all(filter *handle)
+{
+    handle->catches_all = true;
 }
 
 void register_filter_depends(const char *after, const char *before)

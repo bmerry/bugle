@@ -19,12 +19,21 @@ chain trace
     }
 }
 
-# Used by gldb
-chain debugger
+# Shows a fps counter on screen
+chain showstats
 {
+    filterset stats
+    {
+        # Uncomment to count fragments that pass the Z test. This requires
+        # GL_ARB_occlusion_query and will have a performance penalty.
+        # fragments yes
+    }
+    
+    # Replace showstats with log to log stats to file
+    filterset showstats
 }
 
-# On exit, shows the extensions required by the program.
+# On exit, shows the extensions used by the program.
 chain showextensions
 {
     filterset showextensions
@@ -36,9 +45,7 @@ chain screenshot
     filterset screenshot
 }
 
-# Captures every frame into a video file. There is currently no frame rate
-# control, so if you are using this in your own application you should
-# arrange for the frames to be frame-rate independent.
+# Captures every frame into a video file.
 chain video
 {
     filterset screenshot

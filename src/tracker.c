@@ -125,17 +125,27 @@ static bool trackbeginend_callback(function_call *call, const callback_data *dat
 
 static bool initialise_trackcontext(filter_set *handle)
 {
+    filter *f;
+
     pthread_key_create(&context_state_key, NULL);
-    register_filter(handle, "trackcontext", trackcontext_callback);
+    f = register_filter(handle, "trackcontext", trackcontext_callback);
     register_filter_depends("trackcontext", "invoke");
+    register_filter_catches(f, FUNC_glXMakeCurrent);
+#ifdef FUNC_glXMakeContextCurrent
+    register_filter_catches(f, FUNC_glXMakeContextCurrent);
+#endif
     return true;
 }
 
 static bool initialise_trackbeginend(filter_set *handle)
 {
-    register_filter(handle, "trackbeginend", trackbeginend_callback);
+    filter *f;
+
+    f = register_filter(handle, "trackbeginend", trackbeginend_callback);
     register_filter_depends("trackbeginend", "invoke");
     register_filter_depends("trackbeginend", "trackcontext");
+    register_filter_catches(f, FUNC_glBegin);
+    register_filter_catches(f, FUNC_glEnd);
     register_filter_set_depends("trackbeginend", "trackcontext");
     return true;
 }

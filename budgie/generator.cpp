@@ -725,6 +725,31 @@ void function_table(bool header, ostream &out)
     }
 }
 
+//! Utility code for make_wrapper, to directly invoke the true function
+static void make_wrapper_call(ostream &out, tree_node_p node)
+{
+    tree_node_p type = TREE_TYPE(node);
+    tree_node_p ret_type = TREE_TYPE(type);
+    string name = IDENTIFIER_POINTER(DECL_NAME(node));
+
+    out << "        ";
+    if (TREE_CODE(ret_type) != VOID_TYPE)
+        out << "return ";
+    out << "CALL_" << name << "(";
+    tree_node_p cur = type->prms;
+    int count = 0;
+    while (cur != NULL_TREE && TREE_CODE(cur->value) != VOID_TYPE)
+    {
+        if (count) out << ", ";
+        out << "arg" << count;
+        count++;
+        cur = TREE_CHAIN(cur);
+    }
+    out << ");\n";
+    if (TREE_CODE(ret_type) == VOID_TYPE)
+        out << "        return;\n";
+}
+
 //! Creates a wrapper for a function.
 /*! Creates a wrapper for function \arg node, returning it as a \c string.
  * The wrapper does not necessarily invoke the original; rather, it
@@ -754,26 +779,16 @@ string make_wrapper(tree_node_p node, bool prototype)
     if (TREE_CODE(ret_type) != VOID_TYPE)
         out << "    " << type_to_string(ret_type, "retn", false) << ";\n";
 
+    // check whether we want to catch this function at this time
+    out << "    if (check_skip(FUNC_" << name << "))\n"
+        << "    {\n";
+    make_wrapper_call(out, node);
+    out << "    }\n"
     // check for re-entrancy
-    out << "    if (!check_set_reentrance())\n"
+        << "    if (!check_set_reentrance())\n"
         << "    {\n"
-        << "        initialise_real();\n"
-        << "        ";
-    if (TREE_CODE(ret_type) != VOID_TYPE)
-        out << "return ";
-    out << "CALL_" << name << "(";
-    tree_node_p cur = type->prms;
-    int count = 0;
-    while (cur != NULL_TREE && TREE_CODE(cur->value) != VOID_TYPE)
-    {
-        if (count) out << ", ";
-        out << "arg" << count;
-        count++;
-        cur = TREE_CHAIN(cur);
-    }
-    out << ");\n";
-    if (TREE_CODE(ret_type) == VOID_TYPE)
-        out << "        return;\n";
+        << "        initialise_real();\n";
+    make_wrapper_call(out, node);
     out << "    }\n";
 
     /* At this stage we capture only the value of the parameters, with
@@ -782,8 +797,8 @@ string make_wrapper(tree_node_p node, bool prototype)
      * of the full data (for writing to file) is done by calling
      * complete_call() on the resulting function_call object.
      */
-    cur = type->prms;
-    count = 0;
+    tree_node_p cur = type->prms;
+    int count = 0;
     out << "    call.generic.id = FUNC_" << name << ";\n";
     out << "    call.generic.args = call.args;\n";
     if (TREE_CODE(ret_type) != VOID_TYPE)

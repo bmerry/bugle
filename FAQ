@@ -21,23 +21,27 @@ is not installed in a standard directory, you may need extra compiler
 flags, such as -L/path/to/bugle -Wl,-rpath -Wl,/path/to/bugle
 
 Q. What is the performance penality?
-A. That depends on what you're doing with the library, but to give you
-an example, here are some rough numbers for Quake3 1.32 on demo 'four'
-(not even remotely scientificly collected, and probably out of date).
+A. That depends on what you're doing with the library. If you only use
+filter-sets that intercept a few functions (like showstats), then all
+other functions suffer essentially no penalty. Using filter-sets that
+check for error after every function (including showerror and the
+debugger) adds a much bigger penalty.
 
-without BuGLe: 133fps
-with just the "invoke" filterset: 125fps
-with the wireframe filterset: 125fps
-with logging to /dev/null: 48fps
-with logging to file: 47fps
+To give you an example, here are some rough numbers for Quake3 1.32 on
+demo 'four' (not even remotely scientificly collected, and probably out
+of date).
 
-So in this case, the framework adds a little, and logging adds a lot.
-The overhead will depend greatly on how much work you get OpenGL to do
-with each call; for example, glxgears suffers almost no penalty because
-it uses display lists heavily.
+without BuGLe: 167fps
+with no filter-sets: 167fps
+with the showstats filter-set: 166.2fps
+with no filter-sets, but in the debugger: 137.4fps
+with tracing: 47.8fps
 
-Q. How do you get Quake3 to use BuGLe?
-A. Run it as quake3 +set r_glDriver /path/to/libbugle.so
+Tracing is particularly slow because it does file I/O, as well as a lot
+of text formatting.
+
+Q. How do you get Quake3 or Doom3 to use BuGLe?
+A. Run it as quake3/doom3 +set r_glDriver /path/to/libbugle.so
 
 Q. Why is there a mix of C and C++ code?
 A. The library itself is written entirely in C. This is mainly because

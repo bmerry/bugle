@@ -39,6 +39,10 @@ static bool initialise_invoke(filter_set *handle)
 {
     register_filter(handle, "invoke", invoke_callback);
     register_filter_set_depends("invoke", "procaddress");
+    /* Note: this is the only filter that does not specify any catch
+     * statements. This is because the default if nothing catches is
+     * the same as invoking.
+     */
     return true;
 }
 
@@ -49,13 +53,14 @@ static bool initialise_invoke(filter_set *handle)
 
 static bool procaddress_callback(function_call *call, const callback_data *data)
 {
-    void (*sym)(void);
 
     /* FIXME: some systems don't prototype glXGetProcAddressARB (it is,
      * after all, an extension). That means extensions will probably
      * not be intercepted.
      */
 #ifdef CFUNC_glXGetProcAddressARB
+    void (*sym)(void);
+
     switch (canonical_call(call))
     {
     case CFUNC_glXGetProcAddressARB:
@@ -71,9 +76,14 @@ static bool procaddress_callback(function_call *call, const callback_data *data)
 
 static bool initialise_procaddress(filter_set *handle)
 {
-    register_filter(handle, "procaddress", procaddress_callback);
+    filter *f;
+
+    f = register_filter(handle, "procaddress", procaddress_callback);
     register_filter_depends("procaddress", "invoke");
     register_filter_depends("trace", "procaddress");
+#ifdef FUNC_glXGetProcAddressARB
+    register_filter_catches(f, CFUNC_glXGetProcAddressARB);
+#endif
     return true;
 }
 

@@ -44,9 +44,12 @@ static bool trace_callback(function_call *call, const callback_data *data)
 
 static bool initialise_trace(filter_set *handle)
 {
-    register_filter(handle, "trace", trace_callback);
+    filter *f;
+
+    f = register_filter(handle, "trace", trace_callback);
     register_filter_depends("trace", "invoke");
     log_register_filter("trace");
+    register_filter_catches_all(f);
     /* No direct rendering, but some of the length functions query state */
     register_filter_set_renders("trace");
     register_filter_post_renders("trace");

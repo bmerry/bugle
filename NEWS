@@ -1,3 +1,8 @@
+The major news is the news stats and showstats filter-sets, which can
+currently display fps and fragment counts - as an overlay on the rendered
+frame! There has also been some work to reduce overhead, so that the
+fps counter will be reasonably accurate.
+
 0.0.20041108
 ------------
 Some bugfixes and minor improvements, including a filter-set to tell

@@ -1,4 +1,5 @@
-* Added showfps filterset (FIXME: document)
+* Added stats and showstats filtersets
+* Speeded up the case where functions are not intercepted at all
 
 0.0.20041108
 ------------

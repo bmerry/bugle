@@ -379,6 +379,8 @@ static bool initialise_debugger(filter_set *handle)
 {
     const char *env;
     char *last;
+    filter *f;
+
     if (!getenv("BUGLE_DEBUGGER")
         || !getenv("BUGLE_DEBUGGER_FD_IN")
         || !getenv("BUGLE_DEBUGGER_FD_OUT"))
@@ -406,8 +408,10 @@ static bool initialise_debugger(filter_set *handle)
     }
     debugger_loop(true);
 
-    register_filter(handle, "debugger", debugger_callback);
-    register_filter(handle, "debugger_error", debugger_error_callback);
+    f = register_filter(handle, "debugger", debugger_callback);
+    register_filter_catches_all(f);
+    f = register_filter(handle, "debugger_error", debugger_error_callback);
+    register_filter_catches_all(f);
     register_filter_depends("invoke", "debugger");
     register_filter_depends("debugger_error", "invoke");
     register_filter_depends("debugger_error", "error");

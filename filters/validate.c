@@ -98,8 +98,11 @@ static bool error_callback(function_call *call, const callback_data *data)
 
 static bool initialise_error(filter_set *handle)
 {
+    filter *f;
+
     error_handle = handle;
-    register_filter(handle, "error", error_callback);
+    f = register_filter(handle, "error", error_callback);
+    register_filter_catches_all(f);
     register_filter_depends("error", "invoke");
     /* We don't call filter_post_renders, because that would make the
      * error filterset depend on itself.
@@ -123,7 +126,10 @@ static bool showerror_callback(function_call *call, const callback_data *data)
 
 static bool initialise_showerror(filter_set *handle)
 {
-    register_filter(handle, "showerror", showerror_callback);
+    filter *f;
+
+    f = register_filter(handle, "showerror", showerror_callback);
+    register_filter_catches_all(f);
     register_filter_depends("showerror", "error");
     register_filter_depends("showerror", "invoke");
     register_filter_set_depends("showerror", "error");
@@ -193,8 +199,12 @@ static bool unwindstack_post_callback(function_call *call, const callback_data *
 
 static bool initialise_unwindstack(filter_set *handle)
 {
-    register_filter(handle, "unwindstack_pre", unwindstack_pre_callback);
-    register_filter(handle, "unwindstack_post", unwindstack_post_callback);
+    filter *f;
+
+    f = register_filter(handle, "unwindstack_pre", unwindstack_pre_callback);
+    register_filter_catches_all(f);
+    f = register_filter(handle, "unwindstack_post", unwindstack_post_callback);
+    register_filter_catches_all(f);
     register_filter_depends("unwindstack_post", "invoke");
     register_filter_depends("invoke", "unwindstack_pre");
     return true;

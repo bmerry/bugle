@@ -561,7 +561,10 @@ bool screenshot_callback(function_call *call, const callback_data *data)
 
 static bool initialise_screenshot(filter_set *handle)
 {
-    register_filter(handle, "screenshot", screenshot_callback);
+    filter *f;
+
+    f = register_filter(handle, "screenshot", screenshot_callback);
+    register_filter_catches(f, CFUNC_glXSwapBuffers);
     register_filter_depends("invoke", "screenshot");
     register_filter_set_renders("screenshot");
 
@@ -662,7 +665,10 @@ static bool showextensions_callback(function_call *call, const callback_data *da
 
 static bool initialise_showextensions(filter_set *handle)
 {
-    register_filter(handle, "showextensions", showextensions_callback);
+    filter *f;
+
+    f = register_filter(handle, "showextensions", showextensions_callback);
+    register_filter_catches_all(f);
     /* The order mainly doesn't matter, but making it a pre-filter
      * reduces the risk of another filter aborting the call.
      */

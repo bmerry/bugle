@@ -93,7 +93,7 @@ static bool command_log(filter_set *handle, const char *name, const char *value)
         else if (strcmp(value, "no") == 0)
             log_flush = false;
         else
-            fprintf(stderr, "illegal flush value '%s'\n", value);
+            fprintf(stderr, "illegal flush value '%s' (should be yes or no)\n", value);
     }
     else
         return false;
