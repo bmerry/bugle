@@ -79,7 +79,7 @@ after C if B is never loaded.
 
 The callback function for a filter looks like this:
 
-bool filter_callback(function_call *call, void *data)
+bool filter_callback(function_call *call, const callback_data *data)
 
 and should return false to halt processing of this call. The data is
 the per-call state that was registered with

@@ -1,6 +1,14 @@
 * (gldb) Allow options to be passed to the program
 * (gldb) screenshot command
 * (gldb) Enable and disable filters on the fly
+* (capture) By default, skip or duplicate frames for videos
+* Fold old types.c and types.h into utils.c and utils.h
+* Introduce names.c and names.h, to hold just the names of the functions
+* Rewrite the token capture system, which now captures extension info
+* New system to capture which functions belong to which extensions
+* Stub support for per-context, per-filter state
+* Move tracker library into the core source
+* Make gldb and libbugleutils independent of GL and X
 
 0.0.20040903
 ------------

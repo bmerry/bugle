@@ -1,3 +1,9 @@
+This is a fairly major update to the internals, although relatively
+little will be visible to the user. 
+
+WARNING: see the README for upgrade instructions. Simply installing
+over an older version will break things.
+
 0.0.20040903
 ------------
 This release adds a few minor improvements to the video capture facility.
