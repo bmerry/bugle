@@ -30,6 +30,9 @@ void add_library(const std::string &);
 void add_include(const std::string &);
 void set_limit_regex(const std::string &);
 
+void add_alias(const std::string &, const std::string &);
+tree_node_p get_alias(tree_node_p);
+
 tree_node_p get_type_node(const std::string &type);
 param_or_type_list *find_type(const std::string &type);
 param_or_type_list *find_param(const std::string &func_regex, int param);

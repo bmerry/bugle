@@ -43,6 +43,7 @@
 #include <utility>
 #include <stack>
 #include <set>
+#include <map>
 #include <cassert>
 #include <cstddef>
 #include <cstdio>
@@ -73,6 +74,8 @@ static string libbase = "lib";          // output <libbase>.c, <libbase>.h
 static string namebase = "names";       // output <names>.c, <names>.h
 static regex_t limit_regex;             // limit to functions matching this
 static bool have_limit_regex = false;   // whether to apply the above
+
+static map<string, string> aliases;
 
 /* Vector of configuration files
  * These cannot be loaded by process_args directly, since
@@ -368,16 +371,24 @@ void set_limit_regex(const string &s)
     have_limit_regex = true;
 }
 
-tree_node_p get_type_node(const string &type)
+static tree_node_p get_type_node_test(const string &type)
 {
     tree_node_p ans = find_by_name(T, type);
+    if (ans == NULL_TREE) return ans;
+    else if (TREE_CODE(ans) == TYPE_DECL)
+        return TREE_TYPE(ans);
+    else
+        return ans;
+}
+
+tree_node_p get_type_node(const string &type)
+{
+    tree_node_p ans = get_type_node_test(type);
     if (ans == NULL_TREE)
     {
-        cerr << "Could not find type `" << type << "'";
+        cerr << "Could not find type `" << type << "'\n";
         exit(1);
     }
-    if (TREE_CODE(ans) == TYPE_DECL)
-        return TREE_TYPE(ans);
     else
         return ans;
 }
@@ -388,11 +399,38 @@ param_or_type_list *find_type(const string &type)
 
     ans = new param_or_type_list;
     ans->nmatch = 0;
-    ans->pt_list.push_back(param_or_type_match());
-    ans->pt_list.back().pt = param_or_type(get_type_node(type));
-    ans->pt_list.back().text = type;
-    ans->pt_list.back().pmatch = NULL;
+    tree_node_p node = get_type_node_test(type);
+    if (node != NULL_TREE)
+    {
+        ans->pt_list.push_back(param_or_type_match());
+        ans->pt_list.back().pt = param_or_type(get_type_node(type));
+        ans->pt_list.back().text = type;
+        ans->pt_list.back().pmatch = NULL;
+    }
+    else
+        cerr << "Warning: could not find type '" << type << "'\n";
     return ans;
+}
+
+void add_alias(const string &a, const string &b)
+{
+    aliases[a] = b;
+}
+
+tree_node_p get_alias(tree_node_p a)
+{
+    tree_node_p b;
+
+    string name = IDENTIFIER_POINTER(DECL_NAME(a));
+    if (!aliases.count(name)) return a;
+    name = aliases[name];
+    b = find_by_name(T, name);
+    if (!b)
+    {
+        cerr << "Could not find function '" << name << "'\n";
+        exit(1);
+    }
+    return b;
 }
 
 param_or_type_list *find_param(const string &func_regex, int param)
@@ -419,8 +457,9 @@ param_or_type_list *find_param(const string &func_regex, int param)
                 if (regexec(&preg, name.c_str(),
                             ans->nmatch, matches, 0) == 0)
                 {
+                    tree_node_p alias = get_alias(node);
                     ans->pt_list.push_back(param_or_type_match());
-                    ans->pt_list.back().pt = param_or_type(node, param);
+                    ans->pt_list.back().pt = param_or_type(alias, param);
                     ans->pt_list.back().text = name;
                     ans->pt_list.back().pmatch = matches;
                     ans->pt_list.back().code = "";

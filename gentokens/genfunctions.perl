@@ -4,6 +4,7 @@
 # There is a required option: --header types.h, where types.h contains the
 # defines of the functions known to the C code. The option --out-header
 # should be given to get a header file, no extra option to get the C file.
+# Can all use --alias to get a list of aliases to paste into gl.bc.
 
 use strict;
 use Getopt::Long;
@@ -26,15 +27,19 @@ my ($ver, $ext, $suffix, @table, %index);
 # Load known function names
 my $header = '';
 my $outheader = '';
-GetOptions('header=s' => \$header, 'out-header' => \$outheader);
-open(H, "<$header");
-while (<H>)
+my $aliases = '';
+GetOptions('header=s' => \$header, 'out-header' => \$outheader, 'alias' => \$aliases);
+if ($header)
 {
-    if (/^#define FUNC_(\w+)\s+(\d+)/)
+    open(H, "<$header");
+    while (<H>)
     {
-        my ($func, $value) = ($1, $2);
-        $table[$value] = [$func, undef, undef, undef];
-        $index{$func} = $table[$value];
+        if (/^#define FUNC_(\w+)\s+(\d+)/)
+        {
+            my ($func, $value) = ($1, $2);
+            $table[$value] = [$func, undef, undef, undef];
+            $index{$func} = $table[$value];
+        }
     }
 }
 
@@ -53,10 +58,14 @@ while (<>)
     }
     elsif ((/(gl\w+)\s*\(/
             || /^extern .+ ()(glX\w+)\s*\(/)
-           && exists($index{$1}))
+           && (!$header || exists($index{$1})))
     {
         my $name = $1;
         my ($t_ver, $t_ext) = text_versions($ver, $ext);
+        if (!exists($index{$name})) 
+        {
+            $index{$name} = [$name, undef, undef, undef];
+        }
         my $ref = $index{$name};
         my $base = $name;
         if (defined($suffix)) { $base =~ s/$suffix$//; }
@@ -65,6 +74,18 @@ while (<>)
         $ref->[2] = $t_ver;
         $ref->[3] = $t_ext;
     }
+}
+
+if ($aliases)
+{
+    for my $i (values %index)
+    {
+        if ($i->[0] ne $i->[1])
+        { 
+            print "ALIAS ", $i->[0], " ", $i->[1], "\n"; 
+        }
+    }
+    exit 0;
 }
 
 print "/* Generated at ", scalar(localtime), " by $0. Do not edit. */\n";

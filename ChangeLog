@@ -1,3 +1,13 @@
+0.0.20041025
+------------
+* Redo libreadline detection to fall back gracefully if the library
+  doesn't link properly, and to explicitly link against libncurses if
+  present (needed for Slackware with readline 5, apparently)
+* Better support for older versions of glext.h, as well as better support
+  for possible future versions where extensions get promoted to core.
+* Better dumping of GLSLang functions (GetUniformARB needs works still).
+* Fix interception of glXGetProcAddressARB (was not loading the filter)
+
 0.0.20041011
 ------------
 * (gldb) Allow options to be passed to the program

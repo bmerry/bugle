@@ -78,6 +78,7 @@ STATE		{ return STATE; }
 KEY		{ return KEY; }
 CONSTRUCTOR	{ return CONSTRUCT; } /* not CONSTRUCTOR, due to conflict with tree.def */
 VALUE		{ return VALUE; }
+ALIAS		{ return ALIAS; }
 "[]"		{ return BRACKET_PAIR; }
 
 "{"|"}"		{ return yytext[0]; }

@@ -1,4 +1,4 @@
-AC_INIT(bugle, 0.0.20041011, bmerry@users.sourceforge.net)
+AC_INIT(bugle, 0.0.20041025, bmerry@users.sourceforge.net)
 AC_CONFIG_SRCDIR([src/interceptor.c])
 AM_INIT_AUTOMAKE([1.7 dist-bzip2 subdir-objects])
 AM_CONFIG_HEADER(config.h)
@@ -21,10 +21,13 @@ dnl Checks for libraries
 AC_PATH_XTRA
 
 READLINE_LIBS=""
+HAVE_READLINE=1
+AC_CHECK_LIB([ncurses], [initscr], [
+  READLINE_LIBS="-lncurses $READLINE_LIBS"], [], [])
 AC_CHECK_LIB([readline], [readline], [
-  READLINE_LIBS="-lreadline $READLINE_LIBS"], [], [])
+  READLINE_LIBS="-lreadline $READLINE_LIBS"], [HAVE_READLINE=0], [$READLINE_LIBS])
 AC_CHECK_LIB([history], [add_history], [
-  READLINE_LIBS="-lhistory $READLINE_LIBS"], [], [-lreadline])
+  READLINE_LIBS="-lhistory $READLINE_LIBS"], [HAVE_READLINE=0], [$READLINE_LIBS])
 AC_SUBST(READLINE_LIBS)
 
 THREAD_LIBS=""
@@ -52,9 +55,9 @@ dnl Checks for header files
 AC_HEADER_STDC
 AC_HEADER_DIRENT
 AC_HEADER_STDBOOL
-AC_CHECK_HEADERS([sys/types.h stdlib.h stddef.h regex.h])
+AC_CHECK_HEADERS([sys/types.h stdlib.h stddef.h regex.h pthread.h])
 AC_CHECK_HEADERS([ffmpeg/avformat.h ffmpeg/avcodec.h], [], [HAVE_LAVC=0])
-AC_CHECK_HEADERS([readline/readline.h pthread.h])
+AC_CHECK_HEADERS([readline/readline.h readline/history.h], [], [HAVE_READLINE=0])
 
 GLINCLUDES="$(CPP=\"$CPP\" $PERL -w $srcdir/gentokens/find_header.perl GL/gl.h) \
 $(CPP=\"$CPP\" $PERL -w $srcdir/gentokens/find_header.perl GL/glx.h) \
@@ -81,7 +84,7 @@ AC_REPLACE_FUNCS([bsearch])
 AC_FUNC_MEMCMP
 # Readline used to call this completion_matches
 real_libs="$LIBS"
-LIBS="-lreadline $LIBS"
+LIBS="$READLINE_LIBS $LIBS"
 AC_CHECK_FUNCS([rl_completion_matches], [], [])
 LIBS="$real_libs"
 
@@ -94,6 +97,10 @@ dnl FIXME: add a --without-lavc option
 test $HAVE_LAVC = 1 || AVCODEC_LIBS=""
 AC_SUBST(AVCODEC_LIBS)
 AC_DEFINE_UNQUOTED(HAVE_LAVC, $HAVE_LAVC, [non-zero when libavcodec is being used])
+
+test $HAVE_READLINE = 1 || READLINE_LIBS=""
+AC_SUBST(HAVE_READLINE)
+AC_DEFINE_UNQUOTED(HAVE_READLINE, $HAVE_READLINE, [non-zero when all the requirements for the readline library are met])
 
 dnl Write out files
 AC_CONFIG_FILES([Makefile])

@@ -1,3 +1,10 @@
+0.0.20041025
+------------
+Minor update, the most important fix being that extension functions
+will now be properly intercepted. If the previous version worked for
+you, and you are not using extensions, then you shouldn't need to
+update.
+
 0.0.20041011
 ------------
 This is a fairly major update to the internals, although not much of it

@@ -79,9 +79,9 @@ src/data/gl.tu: src/data/gl.c src/data/overrides.h
 	rm -f src/data/gl.o
 	mv gl.c.tu src/data/gl.tu
 
-src/names.c src/names.h src/utils.c src/utils.h src/lib.c src/lib.h: budgie/budgie src/data/gl.tu src/gl.bc
+src/names.c src/names.h src/utils.c src/utils.h src/lib.c src/lib.h: budgie/budgie src/data/gl.tu src/gl.bc src/aliases.txt
 	$(srcdir)/mkinstalldirs src
-	budgie/budgie -c $(srcdir)/src/gl.bc -t `test -f src/data/gl.tu || echo '$(srcdir)/'`src/data/gl.tu -o src/utils -n src/names -l src/lib
+	budgie/budgie -c src/aliases.txt -c $(srcdir)/src/gl.bc -t `test -f src/data/gl.tu || echo '$(srcdir)/'`src/data/gl.tu -o src/utils -n src/names -l src/lib
 
 BUILT_SOURCES += src/glfuncs.h
 
@@ -91,6 +91,8 @@ src/glfuncs.h: gentokens/genfunctions.perl src/utils.h
 	$(PERL) -w $(srcdir)/gentokens/genfunctions.perl --out-header --header src/utils.h $(GLINCLUDES) > $@
 src/glfuncs.c: gentokens/genfunctions.perl src/utils.h
 	$(PERL) -w $(srcdir)/gentokens/genfunctions.perl --header src/utils.h $(GLINCLUDES) > $@
+src/aliases.txt: gentokens/genfunctions.perl
+	$(PERL) -w $(srcdir)/gentokens/genfunctions.perl --alias $(GLINCLUDES) > $@
 
 # Filters
 filters_common_la_SOURCES = filters/common.c
@@ -137,7 +139,8 @@ EXTRA_DIST = src/gl.bc src/data/gl.c src/data/overrides.h \
 # but for some reason does not.
 CLEANFILES = \
 	src/names.c src/names.h src/utils.c src/utils.h src/lib.c src/lib.h \
-	src/gltokens.c src/glfuncs.c src/glfuncs.h src/data/gl.tu doc/gldb.1.gz doc/bugle.3.gz \
+	src/gltokens.c src/glfuncs.c src/glfuncs.h src/data/gl.tu src/aliases.txt \
+	doc/gldb.1.gz doc/bugle.3.gz \
 	gldb/.libs/gldb \
 	tests/.libs/errors tests/.libs/threads1 \
 	tests/.libs/threads2 tests/.libs/queries tests/.libs/misc \

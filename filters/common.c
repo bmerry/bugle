@@ -38,6 +38,7 @@ static bool invoke_callback(function_call *call, const callback_data *data)
 static bool initialise_invoke(filter_set *handle)
 {
     register_filter(handle, "invoke", invoke_callback);
+    register_filter_set_depends("invoke", "procaddress");
     return true;
 }
 
@@ -73,7 +74,6 @@ static bool initialise_procaddress(filter_set *handle)
     register_filter(handle, "procaddress", procaddress_callback);
     register_filter_depends("procaddress", "invoke");
     register_filter_depends("trace", "procaddress");
-    register_filter_set_depends("invoke", "procaddress");
     return true;
 }
 

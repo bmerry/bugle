@@ -47,10 +47,10 @@ static bool wireframe_callback(function_call *call, const callback_data *data)
         case GL_TEXTURE_1D:
         case GL_TEXTURE_2D:
 #ifdef GL_ARB_texture_cube_map
-        case GL_TEXTURE_CUBE_MAP:
+        case GL_TEXTURE_CUBE_MAP_ARB:
 #endif
 #ifdef GL_EXT_texture3D
-        case GL_TEXTURE_3D:
+        case GL_TEXTURE_3D_EXT:
 #endif
             if (begin_internal_render())
             {

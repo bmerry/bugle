@@ -12,6 +12,18 @@ typedef const GLubyte (*GLstipple)[32][4];
 typedef GLenum GLerror;         /* since GL_NO_ERROR conflicts with other tokens */
 typedef GLenum GLalternateenum; /* handles general conflicts */
 typedef GLenum GLcomponentsenum; /* reinterpret 1, 2, 3, 4 */
+typedef GLfloat (*GLvec2)[2];
+typedef GLfloat (*GLvec3)[3];
+typedef GLfloat (*GLvec4)[4];
+typedef GLint (*GLivec2)[2];
+typedef GLint (*GLivec3)[3];
+typedef GLint (*GLivec4)[4];
+typedef GLfloat (*GLmat2)[2][2];
+typedef GLfloat (*GLmat3)[3][3];
+typedef GLfloat (*GLmat4)[4][4];
+typedef GLint (*GLimat2)[2][2];
+typedef GLint (*GLimat3)[3][3];
+typedef GLint (*GLimat4)[4][4];
 
 typedef struct {
     GLint size;

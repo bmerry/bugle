@@ -113,6 +113,7 @@ static void pt_foreach(param_or_type_list *l,
 %token KEY
 %token CONSTRUCT
 %token VALUE
+%token ALIAS
 
 %type <str> funcregex
 %type <str> text
@@ -148,6 +149,7 @@ bcitem: includeitem
         | typeitem
         | dumpitem
         | statetree
+        | aliasitem
 ;
 
 includeitem:
@@ -178,6 +180,9 @@ typeitem: TYPE typeparamcode
 ;
 dumpitem: DUMP typeparamcode
         { pt_foreach($2, set_dump_override); delete $2; }
+;
+aliasitem: ALIAS ID ID
+	{ add_alias(*$2, *$3); delete $2; delete $3; }
 ;
 statetree: 
 	stateheader '{' stateitems '}' { pop_state(); }

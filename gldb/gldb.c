@@ -31,7 +31,7 @@
 #include <assert.h>
 #include <ctype.h>
 #include <setjmp.h>
-#if HAVE_READLINE_READLINE_H
+#if HAVE_READLINE
 # include <readline/readline.h>
 # include <readline/history.h>
 #endif
@@ -42,11 +42,11 @@
 #include "common/protocol.h"
 #include "common/hashtable.h"
 /* Uncomment these lines to test the legacy I/O support
-#undef HAVE_READLINE_READLINE_H
-#define HAVE_READLINE_READLINE_H 0
+#undef HAVE_READLINE
+#define HAVE_READLINE
 */
 
-#if HAVE_READLINE_READLINE_H && !HAVE_RL_COMPLETION_MATCHES
+#if HAVE_READLINE && !HAVE_RL_COMPLETION_MATCHES
 # define rl_completion_matches completion_matches
 #endif
 
@@ -114,7 +114,7 @@ static bool break_on_error = true;
 static hash_table break_on;
 static char *screenshot_file = NULL;
 
-#if !HAVE_READLINE_READLINE_H
+#if !HAVE_READLINE
 static void chop(char *s)
 {
     size_t len = strlen(s);
@@ -584,7 +584,7 @@ static void handle_commands(void)
     do
     {
         done = false;
-#if HAVE_READLINE_READLINE_H
+#if HAVE_READLINE
         line = readline("(gldb) ");
         if (line && *line) add_history(line);
 #else
@@ -827,7 +827,7 @@ static char *generate_functions(const char *text, int state)
     return NULL;
 }
 
-#if HAVE_READLINE_READLINE_H
+#if HAVE_READLINE
 static char **completion(const char *text, int start, int end)
 {
     char **matches = NULL;
@@ -897,7 +897,7 @@ static void initialise(void)
     hash_init(&command_table);
     for (cmd = commands; cmd->name; cmd++)
         register_command(cmd);
-#if HAVE_READLINE_READLINE_H
+#if HAVE_READLINE
     rl_readline_name = "gldb";
     rl_attempted_completion_function = completion;
 #endif

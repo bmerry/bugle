@@ -88,7 +88,27 @@ bool dump_string(const char *value, FILE *out)
 {
     /* FIXME: handle illegal dereferences */
     if (value == NULL) fputs("NULL", out);
-    else fprintf(out, "\"%s\"", value);
+    else
+    {
+        fputc('"', out);
+        while (value[0])
+        {
+            switch (value[0])
+            {
+            case '"': fputs("\\\"", out); break;
+            case '\\': fputs("\\\\", out); break;
+            case '\n': fputs("\\n", out); break;
+            case '\r': fputs("\\r", out); break;
+            default:
+                if (iscntrl(value[0]))
+                    fprintf(out, "\\%03o", (int) value[0]);
+                else
+                    fputc(value[0], out);
+            }
+            value++;
+        }
+        fputc('"', out);
+    }
     return true;
 }
 
