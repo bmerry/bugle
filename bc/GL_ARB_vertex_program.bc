@@ -1,0 +1,4 @@
+LENGTH PARAMETER gl(Gen|Delete)ProgramsARB 1 $0
+
+LENGTH PARAMETER glProgramStringARB 3 $2
+TYPE PARAMETER glProgramStringARB 3 TYPE_PKc

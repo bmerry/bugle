@@ -117,7 +117,7 @@ AC_SUBST(THREAD_LIBS)
 AC_DEFINE_UNQUOTED(THREADS, $THREADS, [threading model])
 
 dnl Write out files
-AC_CONFIG_FILES([Makefile])
+AC_CONFIG_FILES([Makefile gl.bc])
 AC_OUTPUT
 
 dnl Display configuration

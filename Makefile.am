@@ -85,9 +85,17 @@ src/data/gl.tu: src/data/gl.c src/data/overrides.h
 	rm -f src/data/gl.o
 	mv gl.c.tu src/data/gl.tu
 
-src/names.c src/names.h src/utils.c src/utils.h src/lib.c src/lib.h: budgie/budgie src/data/gl.tu src/gl.bc src/aliases.txt
+BCFILES = bc/core1_1.bc bc/glx.bc bc/state.bc \
+	bc/GL_ARB_multitexture.bc bc/GL_ARB_shader_objects.bc \
+        bc/GL_ARB_texture_compression.bc bc/GL_ARB_vertex_buffer_object.bc \
+        bc/GL_ARB_vertex_program.bc bc/GL_EXT_blend_func_separate.bc \
+        bc/GL_EXT_draw_range_elements.bc bc/GL_EXT_multi_draw_arrays.bc \
+        bc/GL_EXT_secondary_color.bc bc/GL_EXT_texture3D.bc \
+        bc/GLX_ARB_get_proc_address.bc
+
+src/names.c src/names.h src/utils.c src/utils.h src/lib.c src/lib.h: budgie/budgie src/data/gl.tu gl.bc bc/alias.bc $(BCFILES)
 	$(srcdir)/mkinstalldirs src
-	budgie/budgie -c src/aliases.txt -c $(srcdir)/src/gl.bc -t `test -f src/data/gl.tu || echo '$(srcdir)/'`src/data/gl.tu -o src/utils -n src/names -l src/lib
+	budgie/budgie -c gl.bc -t `test -f src/data/gl.tu || echo '$(srcdir)/'`src/data/gl.tu -o src/utils -n src/names -l src/lib
 
 BUILT_SOURCES += src/glfuncs.h src/glexts.h
 
@@ -101,7 +109,8 @@ src/glexts.h: gentokens/genexts.perl
 	$(PERL) -w $(srcdir)/gentokens/genexts.perl --out-header $(GLINCLUDES) > $@
 src/glexts.c: gentokens/genexts.perl
 	$(PERL) -w $(srcdir)/gentokens/genexts.perl $(GLINCLUDES) > $@
-src/aliases.txt: gentokens/genfunctions.perl
+bc/alias.bc: gentokens/genfunctions.perl
+	$(srcdir)/mkinstalldirs bc
 	$(PERL) -w $(srcdir)/gentokens/genfunctions.perl --alias $(GLINCLUDES) > $@
 
 # Filters
@@ -147,7 +156,7 @@ TESTS = tests/errors tests/misc tests/queries.sh tests/setstate.sh tests/triangl
 TESTS_ENVIRONMENT = BUGLE_FILTERS=$(srcdir)/tests/filters BUGLE_FILTER_DIR=filters/.libs
 
 # Extra files to distribute
-EXTRA_DIST = src/gl.bc src/data/gl.c src/data/overrides.h \
+EXTRA_DIST = gl.bc.in $(BCFILES) src/data/gl.c src/data/overrides.h \
 	FAQ TROUBLESHOOTING \
 	doc/filters.html doc/objects.html doc/locks.txt doc/protocol.txt doc/examples/filters \
 	tests/filters
@@ -157,7 +166,7 @@ EXTRA_DIST = src/gl.bc src/data/gl.c src/data/overrides.h \
 CLEANFILES = \
 	src/names.c src/names.h src/utils.c src/utils.h src/lib.c src/lib.h \
 	src/gltokens.c src/glfuncs.c src/glfuncs.h src/glexts.c src/glexts.h \
-        src/data/gl.tu src/aliases.txt \
+        src/data/gl.tu bc/alias.bc \
 	doc/gldb.1.gz doc/bugle.3.gz \
 	gldb/.libs/gldb \
         tests/.libs/threads1 \

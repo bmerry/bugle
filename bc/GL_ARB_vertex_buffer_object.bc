@@ -1,0 +1,5 @@
+LENGTH PARAMETER gl(Gen|Delete)BuffersARB 1 $0
+
+LENGTH PARAMETER glBufferDataARB 2 $1
+LENGTH PARAMETER glBufferSubDataARB 3 $2
+LENGTH PARAMETER glGetBufferSubDataARB 3 $2

@@ -97,7 +97,7 @@ static void pt_foreach(param_or_type_list *l,
 %token <str> ID
 %token <str> NUMBER
 %token <str> TEXT
-%token INCLUDE
+%token HEADER
 %token LIBRARY
 %token LIMIT
 %token NEWTYPE
@@ -153,7 +153,7 @@ bcitem: includeitem
 ;
 
 includeitem:
-	INCLUDE text
+	HEADER text
         { add_include(*$2); delete $2; }
 ;
 libraryitem:

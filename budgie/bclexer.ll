@@ -24,6 +24,7 @@
 #include <cstring>
 #include <cstdlib>
 #include <cassert>
+#include <stack>
 #include "budgie/bc.h"
 
 using namespace std;
@@ -37,6 +38,8 @@ static void finish_c(string **s)
     *s = new string(yytext);
     BEGIN(INITIAL);
 }
+
+static stack<YY_BUFFER_STATE> include_stack;
 
 #define YY_USER_ACTION \
     if (expect_c) \
@@ -59,12 +62,13 @@ WS	[ \t\n]+
 %x C_CODE_START
 %x C_COMMENT
 %x C_STRING
+%x incl
 
 %%
 
 #.*$		{ /* eat comments */ }
 
-INCLUDE		{ return INCLUDE; }
+HEADER		{ return HEADER; }
 LIBRARY		{ return LIBRARY; }
 TYPE		{ return TYPE; }
 LENGTH		{ return LENGTH; }
@@ -79,6 +83,7 @@ KEY		{ return KEY; }
 CONSTRUCTOR	{ return CONSTRUCT; } /* not CONSTRUCTOR, due to conflict with tree.def */
 VALUE		{ return VALUE; }
 ALIAS		{ return ALIAS; }
+INCLUDE		{ BEGIN(incl); }
 "[]"		{ return BRACKET_PAIR; }
 
 "{"|"}"		{ return yytext[0]; }
@@ -95,14 +100,15 @@ ALIAS		{ return ALIAS; }
 <C_CODE>"{"|"("	{ yymore(); nesting++; }
 <C_CODE>"}"|")"	{ yymore(); nesting--; }
 <C_CODE>"/*"	{ yymore(); BEGIN(C_COMMENT); }
-<C_CODE>\n	{ if (nesting <= 0)
-		  {
-                      finish_c(&yylval.str);
-                      return C_STATEMENTS;
-                  }
-                  else
-                      yymore();
-		}
+<C_CODE>\n	{
+    if (nesting <= 0)
+    {
+        finish_c(&yylval.str);
+        return C_STATEMENTS;
+    }
+    else
+        yymore();
+}
 <C_CODE>.	{ yymore(); }
 
 <C_STRING>\\.	|
@@ -114,6 +120,29 @@ ALIAS		{ return ALIAS; }
 <C_COMMENT>.|\n	{ yymore(); }
 
 <C_CODE,C_COMMENT,C_STRING><<EOF>> { fputs("EOF inside C code\n", stderr); exit(1); }
+
+<incl>[ \t]*	/* eat whitespace */
+<incl>[^ \t\n]+	{
+    include_stack.push(YY_CURRENT_BUFFER);
+    yyin = fopen(yytext, "r");
+    if (!yyin)
+    {
+        fprintf(stderr, "could not open %s: ", yytext);
+        perror(NULL);
+        exit(1);
+    }
+    yy_switch_to_buffer(yy_create_buffer(yyin, YY_BUF_SIZE));
+    BEGIN(INITIAL);
+}
+<<EOF>> {
+    if (include_stack.empty()) yyterminate();
+    else
+    {
+        yy_delete_buffer(YY_CURRENT_BUFFER);
+        yy_switch_to_buffer(include_stack.top());
+        include_stack.pop();
+    }
+}
 
 %%
 

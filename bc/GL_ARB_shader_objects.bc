@@ -1,0 +1,33 @@
+EXTRATYPE GLvec2
+EXTRATYPE GLvec3
+EXTRATYPE GLvec4
+EXTRATYPE GLivec2
+EXTRATYPE GLivec3
+EXTRATYPE GLivec4
+EXTRATYPE GLimat2
+EXTRATYPE GLimat3
+EXTRATYPE GLimat4
+EXTRATYPE GLmat2
+EXTRATYPE GLmat3
+
+LENGTH PARAMETER glUniform([1234])[if]vARB 2 $1
+LENGTH PARAMETER glUniformMatrix([234])[if]vARB 3 $1
+TYPE PARAMETER glUniform([234])fvARB 2 TYPE_6GLvec\1
+TYPE PARAMETER glUniform([234])ivARB 2 TYPE_7GLivec\1
+TYPE PARAMETER glUniformMatrix([23])fvARB 3 TYPE_6GLmat\1
+TYPE PARAMETER glUniformMatrix4fvARB 3 TYPE_13GLfloatmatrix
+TYPE PARAMETER glUniform([234])ivARB 2 TYPE_7GLimat\1
+
+LENGTH PARAMETER glShaderSourceARB 2 $1
+LENGTH PARAMETER glShaderSourceARB 3 $1
+
+LENGTH PARAMETER glGetAttachedObjectsARB 3 *$2
+
+DUMP TYPE +PK9GLcharARB budgie_dump_string($$, $F)
+DUMP TYPE +P9GLcharARB budgie_dump_string($$, $F)
+DUMP TYPE +PK9GLchar budgie_dump_string($$, $F)
+DUMP TYPE +P9GLchar budgie_dump_string($$, $F)
+LENGTH TYPE +PK9GLcharARB budgie_count_string($$)
+LENGTH TYPE +P9GLcharARB budgie_count_string($$)
+LENGTH TYPE +PK9GLchar budgie_count_string($$)
+LENGTH TYPE +P9GLchar budgie_count_string($$)

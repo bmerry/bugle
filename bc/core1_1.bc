@@ -1,0 +1,84 @@
+# Typedefs
+NEWTYPE BITFIELD bufferbits GLbitfield GL_COLOR_BUFFER_BIT GL_DEPTH_BUFFER_BIT GL_ACCUM_BUFFER_BIT GL_STENCIL_BUFFER_BIT
+NEWTYPE BITFIELD attribbits GLbitfield GL_ALL_ATTRIB_BITS GL_ACCUM_BUFFER_BIT GL_COLOR_BUFFER_BIT GL_CURRENT_BIT GL_DEPTH_BUFFER_BIT GL_ENABLE_BIT GL_EVAL_BIT GL_FOG_BIT GL_HINT_BIT GL_LIGHTING_BIT GL_LINE_BIT GL_LIST_BIT GL_MULTISAMPLE_BIT_ARB GL_PIXEL_MODE_BIT GL_POINT_BIT GL_POLYGON_BIT GL_POLYGON_STIPPLE_BIT GL_SCISSOR_BIT GL_STENCIL_BUFFER_BIT GL_TEXTURE_BIT GL_TRANSFORM_BIT GL_VIEWPORT_BIT
+NEWTYPE BITFIELD clientattribbits GLbitfield GL_CLIENT_ALL_ATTRIB_BITS GL_CLIENT_VERTEX_ARRAY_BIT GL_CLIENT_PIXEL_STORE_BIT
+
+EXTRATYPE +PKc
+EXTRATYPE GLdoublematrix
+EXTRATYPE GLfloatmatrix
+EXTRATYPE GLerror
+EXTRATYPE GLalternateenum
+EXTRATYPE GLcomponentsenum
+EXTRATYPE GLstipple
+
+# Functions taking pointers to fixed length arrays
+LENGTH PARAMETER gl(RasterPos|EvalCoord|Vertex|Normal|TexCoord|Color)([234])u?[sifdb]v 0 \2
+
+LENGTH PARAMETER glRect[sifd]v 0 2
+LENGTH PARAMETER glRect[sifd]v 1 2
+
+LENGTH PARAMETER glClipPlane 1 4
+
+# Handle generator and deletors
+LENGTH PARAMETER gl(Gen|Delete)Textures 1 $0
+
+LENGTH PARAMETER glFeedbackBuffer 2 $0
+LENGTH PARAMETER glSelectBuffer 1 $0
+
+LENGTH PARAMETER glPrioritizeTextures 1 $0
+LENGTH PARAMETER glPrioritizeTextures 2 $0
+
+# Functions where the count is determined by the token
+LENGTH PARAMETER glDrawElements 3 bugle_gl_type_to_size($2) * $1
+
+TYPE PARAMETER glTexImage1D 7 bugle_gl_type_to_type_ptr($6)
+LENGTH PARAMETER glTexImage1D 7 bugle_image_element_count($3, 1, -1, $5, $6, true)
+TYPE PARAMETER glTexSubImage1D 6 bugle_gl_type_to_type_ptr($5)
+LENGTH PARAMETER glTexSubImage1D 6 bugle_image_element_count($3, 1, -1, $4, $5, true)
+TYPE PARAMETER glTexImage2D 8 bugle_gl_type_to_type_ptr($7)
+LENGTH PARAMETER glTexImage2D 8 bugle_image_element_count($3, $4, -1, $6, $7, true)
+TYPE PARAMETER glTexSubImage2D 8 bugle_gl_type_to_type_ptr($7)
+LENGTH PARAMETER glTexSubImage2D 8 bugle_image_element_count($4, $5, -1, $6, $7, true)
+
+TYPE PARAMETER glGetTexImage 4 bugle_gl_type_to_type_ptr($3)
+LENGTH PARAMETER glGetTexImage 4 bugle_texture_element_count($0, $1, $2, $3)
+
+# Both count and interpretation of type depend on the token
+# Note that we only override length for the vector versions
+LENGTH PARAMETER gl(LightModel|Fog)[if]v 1 bugle_count_gl($f, $0)
+LENGTH PARAMETER glGet(Boolean|Integer|Float|Double)v 1 bugle_count_gl($f, $0)
+LENGTH PARAMETER gl(Get)?(Material|Light|Tex(Env|Parameter|Gen))[sifd]v 2 bugle_count_gl($f, $1)
+LENGTH PARAMETER gl(Get)?TexLevelParameter[if]v 3 bugle_count_gl($f, $2)
+DUMP PARAMETER gl(LightModel|Fog)[if]v? 1 bugle_dump_convert($0, &$$, $t$, $F)
+DUMP PARAMETER glGet(Integer|Float|Double)v 1 bugle_dump_convert($0, &$$, $t$, $F)
+DUMP PARAMETER gl(Get)?(Material|Light|Tex(Env|Parameter|Gen))[sifd]v? 2 bugle_dump_convert($1, &$$, $t$, $F)
+DUMP PARAMETER gl(Get)?TexLevelParameter[if]v? 3 bugle_dump_convert($2, &$$, $t$, $F)
+DUMP PARAMETER glPixelStore[if] 1 bugle_dump_convert($0, &$$, $t$, $F)
+
+# Assorted type overrides
+TYPE PARAMETER gl(Mult|Load)Matrixf 0 TYPE_13GLfloatmatrix
+TYPE PARAMETER gl(Mult|Load)Matrixd 0 TYPE_14GLdoublematrix
+TYPE PARAMETER glPushAttrib 0 TYPE_10attribbits
+TYPE PARAMETER glPushClientAttrib 0 TYPE_16clientattribbits
+TYPE PARAMETER glGetError -1 TYPE_7GLerror
+TYPE PARAMETER glBlendFunc 0 TYPE_15GLalternateenum
+TYPE PARAMETER glBlendFunc 1 TYPE_15GLalternateenum
+
+TYPE PARAMETER glTexImage(1|2)D 2 TYPE_16GLcomponentsenum
+
+TYPE PARAMETER glPolygonStipple 0 TYPE_9GLstipple
+TYPE PARAMETER glClear 0 TYPE_10bufferbits
+
+# C string, not array
+TYPE PARAMETER glGetString -1 TYPE_PKc
+
+# Dumping overrides
+DUMP TYPE GLenum bugle_dump_GLenum($$, $F)
+DUMP TYPE GLboolean bugle_dump_GLboolean($$, $F)
+DUMP TYPE GLerror bugle_dump_GLerror($$, $F)
+DUMP TYPE GLalternateenum bugle_dump_GLalternateenum($$, $F)
+DUMP TYPE GLcomponentsenum bugle_dump_GLcomponentsenum($$, $F)
+DUMP TYPE +PKc budgie_dump_string($$, $F)
+DUMP TYPE +Pc budgie_dump_string($$, $F)
+LENGTH TYPE +PKc budgie_count_string($$)
+LENGTH TYPE +Pc budgie_count_string($$)
