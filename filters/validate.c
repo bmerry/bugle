@@ -22,9 +22,9 @@
 #define _POSIX_SOURCE
 #include "src/filters.h"
 #include "src/utils.h"
-#include "src/types.h"
 #include "src/canon.h"
 #include "src/glutils.h"
+#include "src/tracker.h"
 #include "budgielib/state.h"
 #include "common/bool.h"
 #include <stdio.h>
@@ -38,12 +38,12 @@
 static bool trap = false;
 static filter_set *error_handle = NULL;
 
-static bool error_callback(function_call *call, void *data)
+static bool error_callback(function_call *call, const callback_data *data)
 {
     state_7context_I *ctx;
     GLenum error;
 
-    *(GLenum *) data = GL_NO_ERROR;
+    *(GLenum *) data->call_data = GL_NO_ERROR;
     if (function_table[call->generic.id].name[2] == 'X') return true; /* GLX */
     ctx = get_context_state();
     if (canonical_call(call) == CFUNC_glGetError)
@@ -76,7 +76,7 @@ static bool error_callback(function_call *call, void *data)
         {
             if (ctx && !ctx->c_internal.c_error.data)
                 ctx->c_internal.c_error.data = error;
-            *(GLenum *) data = error;
+            *(GLenum *) data->call_data = error;
             if (trap)
             {
                 fflush(stderr);
@@ -101,7 +101,6 @@ static bool initialise_error(filter_set *handle)
     error_handle = handle;
     register_filter(handle, "error", error_callback);
     register_filter_depends("error", "invoke");
-    register_filter_set_call_state(handle, sizeof(GLenum));
     /* We don't call filter_post_renders, because that would make the
      * error filterset depend on itself.
      */
@@ -109,7 +108,7 @@ static bool initialise_error(filter_set *handle)
     return true;
 }
 
-static bool showerror_callback(function_call *call, void *data)
+static bool showerror_callback(function_call *call, const callback_data *data)
 {
     GLenum error;
     if ((error = *(GLenum *) get_filter_set_call_state(call, error_handle)) != GL_NO_ERROR)
@@ -147,7 +146,7 @@ static void unwindstack_sigsegv_handler(int sig)
     siglongjmp(unwind_buf, 1);
 }
 
-static bool unwindstack_pre_callback(function_call *call, void *data)
+static bool unwindstack_pre_callback(function_call *call, const callback_data *data)
 {
     struct sigaction act;
 
@@ -181,7 +180,7 @@ static bool unwindstack_pre_callback(function_call *call, void *data)
     return true;
 }
 
-static bool unwindstack_post_callback(function_call *call, void *data)
+static bool unwindstack_post_callback(function_call *call, const callback_data *data)
 {
     while (sigaction(SIGSEGV, &old_sigsegv_act, NULL) != 0)
         if (errno != EINTR)
@@ -203,7 +202,34 @@ static bool initialise_unwindstack(filter_set *handle)
 
 void initialise_filter_library(void)
 {
-    register_filter_set("error", initialise_error, NULL, NULL);
-    register_filter_set("showerror", initialise_showerror, NULL, NULL);
-    register_filter_set("unwindstack", initialise_unwindstack, NULL, NULL);
+    const filter_set_info error_info =
+    {
+        "error",
+        initialise_error,
+        NULL,
+        NULL,
+        sizeof(GLenum),
+        0
+    };
+    const filter_set_info showerror_info =
+    {
+        "showerror",
+        initialise_showerror,
+        NULL,
+        NULL,
+        0,
+        0
+    };
+    const filter_set_info unwindstack_info =
+    {
+        "unwindstack",
+        initialise_unwindstack,
+        NULL,
+        NULL,
+        0,
+        0
+    };
+    register_filter_set(&error_info);
+    register_filter_set(&showerror_info);
+    register_filter_set(&unwindstack_info);
 }

@@ -27,9 +27,9 @@
 #include "glutils.h"
 #include "canon.h"
 #include "filters.h"
+#include "tracker.h"
 #include "common/safemem.h"
 #include "budgielib/budgieutils.h"
-#include "src/types.h"
 #include "src/utils.h"
 
 /* FIXME: should this move into budgielib?

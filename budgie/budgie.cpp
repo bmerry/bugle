@@ -62,7 +62,7 @@ static vector<tree_node_p> types;       // types that we need to handle
 static vector<pair<tree_node_p, tree_node_p> > typedefs;
 
 // the output files
-static ofstream utilc, utilhead, libc, libhead, typehead, typec;
+static ofstream utilc, utilhead, libc, libhead, namec, namehead;
 
 // Configuration
 static vector<string> libraries;        // libraries to search for symbols
@@ -70,7 +70,7 @@ static vector<string> includefiles;     // files to include in the header
 static string tufile = "";              // the source file
 static string utilbase = "utils";       // output <utilbase>.c, <utilbase>.h
 static string libbase = "lib";          // output <libbase>.c, <libbase>.h
-static string typebase = "types";       // output for typedefs
+static string namebase = "names";       // output <names>.c, <names>.h
 static regex_t limit_regex;             // limit to functions matching this
 static bool have_limit_regex = false;   // whether to apply the above
 
@@ -151,7 +151,7 @@ static void process_args(int argc, char * const argv[])
 {
     int opt;
 
-    while ((opt = getopt(argc, argv, "T:t:o:l:c:")) != -1)
+    while ((opt = getopt(argc, argv, "n:t:o:l:c:")) != -1)
     {
         switch (opt)
         {
@@ -164,8 +164,8 @@ static void process_args(int argc, char * const argv[])
         case 'o':
             utilbase = optarg;
             break;
-        case 'T':
-            typebase = optarg;
+        case 'n':
+            namebase = optarg;
             break;
         case 'l':
             libbase = optarg;
@@ -183,22 +183,21 @@ static void headers()
     libhead.open((libbase + ".h").c_str());
     utilc.open((utilbase + ".c").c_str());
     utilhead.open((utilbase + ".h").c_str());
-    typec.open((typebase + ".c").c_str());
-    typehead.open((typebase + ".h").c_str());
+    namec.open((namebase + ".c").c_str());
+    namehead.open((namebase + ".h").c_str());
 
     utilc << "#include \"" << utilbase << ".h\"\n";
     utilc << "#include \"budgieutils.h\"\n";
     utilc << "#include \"state.h\"\n";
-    utilc << "#include \"" << typebase << ".h\"\n";
-    utilc << "#include <assert.h>\n\n";
-    utilc << "#include <dlfcn.h>\n\n";
+    utilc << "#include <assert.h>\n";
+    utilc << "#include <dlfcn.h>\n";
+    utilc << "#include <stddef.h>\n\n";  // for offsetof
     utilhead << "#ifndef UTILS_H\n";
     utilhead << "#define UTILS_H\n\n";
     utilhead << "#include <stdio.h>\n";
     utilhead << "#include \"common/bool.h\"\n";
     utilhead << "#include <stdlib.h>\n";
     utilhead << "#include <string.h>\n";
-    utilhead << "#include \"" << typebase << ".h\"\n";
     utilhead << "#include \"state.h\"\n";
 
     libc << "#include \"" << libbase << ".h\"\n";
@@ -206,40 +205,37 @@ static void headers()
     libc << "#include \"budgieutils.h\"\n";
     libhead << "#ifndef LIB_H\n";
     libhead << "#define LIB_H\n\n";
-    libhead << "#include \"" << typebase << ".h\"\n";
+    libhead << "#include \"" << utilbase << ".h\"\n";
 
-    typehead << "#ifndef TYPES_H\n";
-    typehead << "#define TYPES_H\n\n";
-    typehead << "#include \"budgieutils.h\"\n";
-
-    typec << "#include \"types.h\"\n";
-    typec << "#include <stddef.h>\n"; // for offsetof
-    typec << "#include \"" << utilbase << ".h\"\n";
+    namehead
+        << "#ifndef NAMES_H\n"
+        << "#define NAMES_N\n\n";
+    namec << "#include \"" << namebase << ".h\"\n";
 }
 
 static void trailers()
 {
     utilhead << "#endif /* !UTIL_H */\n";
-    typehead << "#endif /* !TYPES_H */\n";
     libhead << "#endif /* !LIB_H */\n";
+    namehead << "#endif /* !NAMES_H */\n";
     libc.close();
     utilc.close();
+    namec.close();
     libhead.close();
     utilhead.close();
-    typehead.close();
-    typec.close();
+    namehead.close();
 }
 
 static void tables()
 {
-    typehead << type_table(true);
-    typec << type_table(false);
-    function_table(true, typehead);
-    function_table(false, typec);
+    utilhead << type_table(true);
+    utilc << type_table(false);
+    function_table(true, utilhead);
+    function_table(false, utilc);
     // Place this here, since some of the included files may wish
     // to have the enums defined
     for (size_t i = 0; i < includefiles.size(); i++)
-        typehead << "#include \"" << includefiles[i] << "\"\n";
+        utilhead << "#include \"" << includefiles[i] << "\"\n";
 }
 
 static void handle_types()
@@ -248,7 +244,7 @@ static void handle_types()
     // listed in external headers
     for (size_t i = 0; i < typedefs.size(); i++)
     {
-        typehead
+        utilhead
             << "typedef "
             << type_to_string(typedefs[i].second,
                               IDENTIFIER_POINTER(DECL_NAME(TYPE_NAME(typedefs[i].first))),
@@ -289,9 +285,9 @@ static void handle_functions()
     // make function pointers for the true functions
     function_macros(utilhead);
     // make the function_call type and nested types
-    function_types(typehead);
+    function_types(utilhead);
     // table of libraries
-    library_table(typec);
+    library_table(utilc);
 
     // write out function wrappers
     for (size_t i = 0; i < functions.size(); i++)
@@ -302,6 +298,19 @@ static void handle_functions()
     make_invoker(true, utilhead);
     make_invoker(false, utilc);
     generics(utilhead);
+
+    // Name table
+    namehead << "#define NUMBER_OF_FUNCTIONS " << functions.size() << "\n";
+    namehead << "extern const char * const budgie_function_names[NUMBER_OF_FUNCTIONS];\n";
+    namec << "const char * const budgie_function_names[NUMBER_OF_FUNCTIONS] =\n"
+        << "{\n";
+    for (size_t i = 0; i < functions.size(); i++)
+    {
+        string name = IDENTIFIER_POINTER(DECL_NAME(functions[i]));
+        if (i) namec << ",\n";
+        namec << "    \"" << name << "\"";
+    }
+    namec << "\n};\n";
 }
 
 static void handle_state()

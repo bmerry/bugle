@@ -24,6 +24,7 @@
 #include "filters.h"
 #include "canon.h"
 #include "conffile.h"
+#include "tracker.h"
 #include "common/hashtable.h"
 #include "common/safemem.h"
 #include <stdlib.h>
@@ -100,10 +101,10 @@ static void load_config(void)
                         for (j = list_head(&set->variables); j; j = list_next(j))
                         {
                             var = (const config_variable *) list_data(j);
-                            if (!set_filter_set_variable(f,
-                                                         var->name,
-                                                         var->value))
-                                fprintf(stderr, "warning: unused variable %s in filter-set %s\n",
+                            if (!filter_set_command(f,
+                                                    var->name,
+                                                    var->value))
+                                fprintf(stderr, "warning: unknown command %s in filter-set %s\n",
                                         var->name, set->name);
                         }
                     }
@@ -146,6 +147,30 @@ static void load_config(void)
     }
 }
 
+static void initialise_core_filters(void)
+{
+    const filter_set_info trackcontext_info =
+    {
+        "trackcontext",
+        initialise_trackcontext,
+        NULL,
+        NULL,
+        0,
+        0
+    };
+    const filter_set_info trackbeginend_info =
+    {
+        "trackbeginend",
+        initialise_trackbeginend,
+        NULL,
+        NULL,
+        0,
+        0
+    };
+    register_filter_set(&trackcontext_info);
+    register_filter_set(&trackbeginend_info);
+}
+
 static pthread_once_t init_key_once = PTHREAD_ONCE_INIT;
 static void initialise_all(void)
 {
@@ -153,6 +178,7 @@ static void initialise_all(void)
     initialise_real();
     initialise_canonical();
     initialise_filters();
+    initialise_core_filters();
     initialise_dump_tables();
     load_config();
 }

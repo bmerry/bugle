@@ -21,14 +21,15 @@
 #endif
 #include "src/filters.h"
 #include "src/utils.h"
-#include "src/types.h"
 #include "src/glutils.h"
+#include "src/glfuncs.h"
+#include "src/canon.h"
 #include "common/safemem.h"
 #include "common/bool.h"
 
 /* Invoke filter-set */
 
-static bool invoke_callback(function_call *call, void *data)
+static bool invoke_callback(function_call *call, const callback_data *data)
 {
     invoke(call);
     return true;
@@ -45,7 +46,7 @@ static bool initialise_invoke(filter_set *handle)
  * to never change the truth value of the return.
  */
 
-static bool procaddress_callback(function_call *call, void *data)
+static bool procaddress_callback(function_call *call, const callback_data *data)
 {
     void (*sym)(void);
 
@@ -80,6 +81,24 @@ static bool initialise_procaddress(filter_set *handle)
 
 void initialise_filter_library(void)
 {
-    register_filter_set("invoke", initialise_invoke, NULL, NULL);
-    register_filter_set("procaddress", initialise_procaddress, NULL, NULL);
+    const filter_set_info invoke_info =
+    {
+        "invoke",
+        initialise_invoke,
+        NULL,
+        NULL,
+        0,
+        0
+    };
+    const filter_set_info procaddress_info =
+    {
+        "procaddress",
+        initialise_procaddress,
+        NULL,
+        NULL,
+        0,
+        0
+    };
+    register_filter_set(&invoke_info);
+    register_filter_set(&procaddress_info);
 }

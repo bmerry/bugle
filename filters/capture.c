@@ -28,7 +28,6 @@
 #endif
 #include "src/filters.h"
 #include "src/utils.h"
-#include "src/types.h"
 #include "src/canon.h"
 #include "src/glutils.h"
 #include "common/safemem.h"
@@ -537,7 +536,7 @@ static void screenshot_file(int frameno)
         perror("write error");
 }
 
-bool screenshot_callback(function_call *call, void *data)
+bool screenshot_callback(function_call *call, const callback_data *data)
 {
     /* FIXME: track the frameno in the context?
      */
@@ -623,6 +622,14 @@ static bool set_variable_screenshot(filter_set *handle,
 
 void initialise_filter_library(void)
 {
-    register_filter_set("screenshot", initialise_screenshot, destroy_screenshot,
-                        set_variable_screenshot);
+    const filter_set_info screenshot_info =
+    {
+        "screenshot",
+        initialise_screenshot,
+        destroy_screenshot,
+        set_variable_screenshot,
+        0,
+        0
+    };
+    register_filter_set(&screenshot_info);
 }

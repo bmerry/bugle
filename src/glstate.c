@@ -19,7 +19,6 @@
 #if HAVE_CONFIG_H
 # include <config.h>
 #endif
-#include "src/types.h"
 #include "src/utils.h"
 #include "glstate.h"
 #include "glutils.h"

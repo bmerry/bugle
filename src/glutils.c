@@ -22,22 +22,21 @@
 #include "common/bool.h"
 #include "filters.h"
 #include "glutils.h"
+#include "tracker.h"
 #include "src/utils.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <GL/gl.h>
 #include <assert.h>
 
-state_7context_I *(*trackcontext_get_context_state_ptr)(void) = NULL;
 static filter_set *error_handle = NULL;
 
 bool in_begin_end(void)
 {
-    state_7context_I *context_state;
+    state_7context_I *ctx;
 
-    assert(trackcontext_get_context_state_ptr);
-    context_state = trackcontext_get_context_state_ptr();
-    return !context_state || context_state->c_internal.c_in_begin_end.data;
+    ctx = get_context_state();
+    return !ctx || ctx->c_internal.c_in_begin_end.data;
 }
 
 bool begin_internal_render(void)
@@ -83,8 +82,7 @@ GLXContext get_aux_context()
     GLXFBConfig *cfgs;
     Display *dpy;
 
-    assert(trackcontext_get_context_state_ptr);
-    context_state = (*trackcontext_get_context_state_ptr)();
+    context_state = get_context_state();
     if (context_state->c_internal.c_auxcontext.data == NULL)
     {
         dpy = glXGetCurrentDisplay();
@@ -107,7 +105,7 @@ GLXContext get_aux_context()
                                        old_ctx, glXIsDirect(dpy, old_ctx));
         XFree(cfgs);
         if (ctx == NULL)
-            fprintf(stderr, "Warning: count not create an auxiliary context\n");
+            fprintf(stderr, "Warning: could not create an auxiliary context\n");
         context_state->c_internal.c_auxcontext.data = ctx;
     }
     return context_state->c_internal.c_auxcontext.data;
@@ -127,29 +125,7 @@ void filter_post_renders(const char *name)
 
 void filter_set_uses_state(const char *name)
 {
-    filter_set *handle;
-
     register_filter_set_depends(name, "trackcontext");
-    /* Since this function should only be called during init, we shouldn't
-     * have to worry about thread safety
-     */
-    if (!trackcontext_get_context_state_ptr)
-    {
-        handle = get_filter_set_handle("trackcontext");
-        if (!handle)
-        {
-            fprintf(stderr, "could not find trackcontext filterset, required by %s filterset\n",
-                    name);
-            exit(1);
-        }
-        trackcontext_get_context_state_ptr = (state_7context_I *(*)(void))
-            get_filter_set_symbol(handle, "trackcontext_get_context_state");
-        if (!trackcontext_get_context_state_ptr)
-        {
-            fprintf(stderr, "could not find symbol trackcontext_get_context_state in filterset trackcontext\n");
-            exit(1);
-        }
-    }
 }
 
 void filter_post_uses_state(const char *name)

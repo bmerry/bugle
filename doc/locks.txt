@@ -20,9 +20,9 @@ Otherwise, it should wrap and then call clear_reentrance() afterwards.
 3. Access to state
 
 Requests for the per-context state tree must go through
-trackcontext_get_context_state(), which reads the value out of
-thread-local storage. The value is placed there by the trackcontext
-module, which uses a private mutex to control access.
+get_context_state(), which reads the value out of thread-local storage.
+The value is placed there by the trackcontext module, which uses a
+private mutex to control access.
 
 Access to the root state should be done through get_root_state(), which
 uses a pthread_once_t to do initialisation once.

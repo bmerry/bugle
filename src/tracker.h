@@ -16,20 +16,18 @@
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#ifndef BUGLE_SRC_CANON_H
-#define BUGLE_SRC_CANON_H
+#ifndef BUGLE_SRC_TRACKER_H
+#define BUGLE_SRC_TRACKER_H
 
 #if HAVE_CONFIG_H
 # include <config.h>
 #endif
+#include "common/bool.h"
 #include "src/utils.h"
-#include "src/glfuncs.h"
-#include "budgielib/budgieutils.h"
+#include "src/filters.h"
 
-void initialise_canonical(void);
+state_7context_I *get_context_state(void);
+bool initialise_trackbeginend(filter_set *handle);
+bool initialise_trackcontext(filter_set *handle);
 
-budgie_function canonical_function(budgie_function f);
-budgie_function canonical_call(const function_call *call);
-budgie_function find_function(const char *name);
-
-#endif /* !BUGLE_SRC_CANON_H */
+#endif /* !BUGLE_SRC_TRACKER_H */

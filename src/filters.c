@@ -19,7 +19,6 @@
 #if HAVE_CONFIG_H
 # include <config.h>
 #endif
-#include "src/types.h"
 #include "src/utils.h"
 #include "filters.h"
 #include "common/linkedlist.h"
@@ -146,10 +145,10 @@ void initialise_filters(void)
     atexit(destroy_filters);
 }
 
-bool set_filter_set_variable(filter_set *handle, const char *name, const char *value)
+bool filter_set_command(filter_set *handle, const char *name, const char *value)
 {
-    if (!handle->set_variable) return false;
-    return (*handle->set_variable)(handle, name, value);
+    if (!handle->command_handler) return false;
+    return (*handle->command_handler)(handle, name, value);
 }
 
 void enable_filter_set(filter_set *handle)
@@ -320,17 +319,23 @@ void repair_filter_order(void)
 
 void *get_filter_set_call_state(function_call *call, filter_set *handle)
 {
-    if (handle && handle->offset >= 0)
-        return (void *)(((char *) call->generic.user_data) + handle->offset);
+    if (handle && handle->call_state_offset >= 0)
+        return (void *)(((char *) call->generic.user_data) + handle->call_state_offset);
     else
         return NULL;
+}
+
+void *get_filter_set_context_state(state_7context_I *ctx, filter_set *handle)
+{
+    /* FIXME: implement */
+    return NULL;
 }
 
 void run_filters(function_call *call)
 {
     list_node *i;
     filter *cur;
-    void *data;
+    callback_data data;
 
     if (dirty_active)
     {
@@ -342,28 +347,39 @@ void run_filters(function_call *call)
     for (i = list_head(&active_filters); i != NULL; i = list_next(i))
     {
         cur = (filter *) list_data(i);
-        data = get_filter_set_call_state(call, cur->parent);
-        if (!(*cur->callback)(call, data)) break;
+        data.call_data = get_filter_set_call_state(call, cur->parent);
+        /* FIXME: implement */
+        data.context_data = NULL;
+        if (!(*cur->callback)(call, &data)) break;
     }
 }
 
-filter_set *register_filter_set(const char *name,
-                                filter_set_initialiser init,
-                                filter_set_destructor done,
-                                filter_set_set_variable set_variable)
+filter_set *register_filter_set(const filter_set_info *info)
 {
     filter_set *s;
 
     s = (filter_set *) xmalloc(sizeof(filter_set));
-    s->name = xstrdup(name);
+    s->name = xstrdup(info->name);
     list_init(&s->filters);
-    s->init = init;
-    s->done = done;
-    s->set_variable = set_variable;
-    s->offset = (ptrdiff_t) -1;
+    s->init = info->init;
+    s->done = info->done;
+    s->command_handler = info->command_handler;
     s->initialised = false;
     s->enabled = false;
     s->dl_handle = current_dl_handle;
+    if (info->call_state_space)
+    {
+        s->call_state_offset = call_data_size;
+        call_data_size += info->call_state_space;
+        call_data = xrealloc(call_data, call_data_size);
+    }
+    else s->call_state_offset = (ptrdiff_t) -1;
+    if (info->context_state_space)
+    {
+        /* FIXME: implement */
+    }
+    else s->context_state_offset = (ptrdiff_t) -1;
+
     list_append(&filter_sets, s);
     return s;
 }
@@ -397,14 +413,6 @@ void register_filter_set_depends(const char *base, const char *dep)
 {
     list_append(&filter_set_dependencies[0], xstrdup(base));
     list_append(&filter_set_dependencies[1], xstrdup(dep));
-}
-
-void register_filter_set_call_state(filter_set *handle, size_t bytes)
-{
-    handle->offset = call_data_size;
-    call_data_size += bytes;
-    if (!call_data)
-        call_data = xmalloc(call_data_size);
 }
 
 bool filter_set_is_enabled(const filter_set *handle)

@@ -40,20 +40,14 @@
  * after invoke.
  *
  * If you want to access the context but not necessary do rendering, you
- * can use the weaker _uses_state functions. Note that in_begin_end requires
- * the stronger form.
+ * can use the weaker _uses_state functions. Note that in_begin_end, as
+ * well as ANY OpenGL function call, requires the stronger form.
  */
 
 bool begin_internal_render(void);
 void end_internal_render(const char *name, bool warn);
 GLXContext get_aux_context();
 
-extern state_7context_I *(*trackcontext_get_context_state_ptr)(void);
-static inline state_7context_I *get_context_state(void)
-{
-    assert(trackcontext_get_context_state_ptr);
-    return trackcontext_get_context_state_ptr();
-}
 bool in_begin_end(void);
 
 void filter_set_renders(const char *name);

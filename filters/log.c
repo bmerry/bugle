@@ -22,7 +22,6 @@
 #define _POSIX_SOURCE /* for flockfile */
 #include "src/filters.h"
 #include "src/utils.h"
-#include "src/types.h"
 #include "src/glutils.h"
 #include "common/safemem.h"
 #include "common/bool.h"
@@ -32,7 +31,7 @@ static char *log_filename = NULL;
 static bool log_flush = false;
 static FILE *log_file;
 
-static bool log_callback(function_call *call, void *data)
+static bool log_callback(function_call *call, const callback_data *data)
 {
     GLenum error;
 
@@ -104,5 +103,14 @@ static bool set_variable_log(filter_set *handle, const char *name, const char *v
 
 void initialise_filter_library(void)
 {
-    register_filter_set("log", initialise_log, destroy_log, set_variable_log);
+    const filter_set_info log_info =
+    {
+        "log",
+        initialise_log,
+        destroy_log,
+        set_variable_log,
+        0,
+        0
+    };
+    register_filter_set(&log_info);
 }

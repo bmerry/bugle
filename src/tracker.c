@@ -21,8 +21,8 @@
 #endif
 #include "src/filters.h"
 #include "src/utils.h"
-#include "src/types.h"
 #include "src/canon.h"
+#include "src/tracker.h"
 #include "budgielib/state.h"
 #include "common/bool.h"
 #include <assert.h>
@@ -33,12 +33,12 @@
 
 static pthread_key_t context_state_key;
 
-state_7context_I *trackcontext_get_context_state()
+state_7context_I *get_context_state()
 {
     return pthread_getspecific(context_state_key);
 }
 
-bool trackcontext_callback(function_call *call, void *data)
+bool trackcontext_callback(function_call *call, const callback_data *data)
 {
     GLXContext ctx;
     state_generic *parent;
@@ -76,7 +76,7 @@ bool trackcontext_callback(function_call *call, void *data)
  * check for the error because glGetError is illegal inside glBegin/glEnd.
  */
 
-static bool trackbeginend_callback(function_call *call, void *data)
+static bool trackbeginend_callback(function_call *call, const callback_data *data)
 {
     state_7context_I *context_state;
 
@@ -95,20 +95,20 @@ static bool trackbeginend_callback(function_call *call, void *data)
         case GL_QUADS:
         case GL_QUAD_STRIP:
         case GL_POLYGON:
-            if ((context_state = trackcontext_get_context_state()) != NULL)
+            if ((context_state = get_context_state()) != NULL)
                 context_state->c_internal.c_in_begin_end.data = GL_TRUE;
         default: ;
         }
         break;
     case CFUNC_glEnd:
-        if ((context_state = trackcontext_get_context_state()) != NULL)
+        if ((context_state = get_context_state()) != NULL)
             context_state->c_internal.c_in_begin_end.data = GL_FALSE;
         break;
     }
     return true;
 }
 
-static bool initialise_trackcontext(filter_set *handle)
+bool initialise_trackcontext(filter_set *handle)
 {
     pthread_key_create(&context_state_key, NULL);
     register_filter(handle, "trackcontext", trackcontext_callback);
@@ -116,17 +116,11 @@ static bool initialise_trackcontext(filter_set *handle)
     return true;
 }
 
-static bool initialise_trackbeginend(filter_set *handle)
+bool initialise_trackbeginend(filter_set *handle)
 {
     register_filter(handle, "trackbeginend", trackbeginend_callback);
     register_filter_depends("trackbeginend", "invoke");
     register_filter_depends("trackbeginend", "trackcontext");
     register_filter_set_depends("trackbeginend", "trackcontext");
     return true;
-}
-
-void initialise_filter_library(void)
-{
-    register_filter_set("trackcontext", initialise_trackcontext, NULL, NULL);
-    register_filter_set("trackbeginend", initialise_trackbeginend, NULL, NULL);
 }
