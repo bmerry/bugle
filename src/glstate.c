@@ -60,26 +60,27 @@
 #define STATE_MODE_LIGHT                    0x00000009    /* glGetLight */
 #define STATE_MODE_MATERIAL                 0x0000000a    /* glGetMaterial */
 #define STATE_MODE_CLIP_PLANE               0x0000000b    /* glGetClipPlane */
-#define STATE_MODE_COLOR_TABLE_PARAMETER    0x0000000c    /* glGetColorTableParameter */
-#define STATE_MODE_CONVOLUTION_PARAMETER    0x0000000d    /* glGetConvolutionParameter */
-#define STATE_MODE_HISTOGRAM_PARAMETER      0x0000000e    /* glGetHistogramParameter */
-#define STATE_MODE_MINMAX_PARAMETER         0x0000000f    /* glGetMinmaxParameter */
-#define STATE_MODE_VERTEX_ATTRIB            0x00000010    /* glGetVertexAttrib */
-#define STATE_MODE_QUERY                    0x00000011    /* glGetQuery */
-#define STATE_MODE_QUERY_OBJECT             0x00000012    /* glGetQueryObject */
-#define STATE_MODE_BUFFER_PARAMETER         0x00000013    /* glGetBufferParameter */
-#define STATE_MODE_OBJECT_PARAMETER         0x00000014    /* glGetObjectParameterARB */
-#define STATE_MODE_SHADER                   0x00000015    /* glGetShader */
-#define STATE_MODE_PROGRAM                  0x00000016    /* glGetProgram */
-#define STATE_MODE_OBJECT_INFO_LOG          0x00000017    /* glGetInfoLogARB */
-#define STATE_MODE_SHADER_INFO_LOG          0x00000018    /* glGetShaderInfoLog */
-#define STATE_MODE_PROGRAM_INFO_LOG         0x00000019    /* glGetProgramInfoLog */
-#define STATE_MODE_OBJECT_SHADER_SOURCE     0x0000001a    /* glGetShaderSourceARB */
-#define STATE_MODE_SHADER_SOURCE            0x0000001b    /* glGetShaderSource */
-#define STATE_MODE_OBJECT_UNIFORM           0x0000001c    /* glGetActiveUniformARB, glGetUniformARB */
-#define STATE_MODE_UNIFORM                  0x0000001d    /* glGetActiveUniform, glGetUniform */
-#define STATE_MODE_ATTACHED_OBJECTS         0x0000001e    /* glGetAttachedObjectsARB */
-#define STATE_MODE_ATTACHED_SHADERS         0x0000001f    /* glGetAttachedShaders */
+#define STATE_MODE_POLYGON_STIPPLE          0x0000000c    /* glGetPolygonStipple */
+#define STATE_MODE_COLOR_TABLE_PARAMETER    0x0000000d    /* glGetColorTableParameter */
+#define STATE_MODE_CONVOLUTION_PARAMETER    0x0000000e    /* glGetConvolutionParameter */
+#define STATE_MODE_HISTOGRAM_PARAMETER      0x0000000f    /* glGetHistogramParameter */
+#define STATE_MODE_MINMAX_PARAMETER         0x00000010    /* glGetMinmaxParameter */
+#define STATE_MODE_VERTEX_ATTRIB            0x00000011    /* glGetVertexAttrib */
+#define STATE_MODE_QUERY                    0x00000012    /* glGetQuery */
+#define STATE_MODE_QUERY_OBJECT             0x00000013    /* glGetQueryObject */
+#define STATE_MODE_BUFFER_PARAMETER         0x00000014    /* glGetBufferParameter */
+#define STATE_MODE_OBJECT_PARAMETER         0x00000015    /* glGetObjectParameterARB */
+#define STATE_MODE_SHADER                   0x00000016    /* glGetShader */
+#define STATE_MODE_PROGRAM                  0x00000017    /* glGetProgram */
+#define STATE_MODE_OBJECT_INFO_LOG          0x00000018    /* glGetInfoLogARB */
+#define STATE_MODE_SHADER_INFO_LOG          0x00000019    /* glGetShaderInfoLog */
+#define STATE_MODE_PROGRAM_INFO_LOG         0x0000001a    /* glGetProgramInfoLog */
+#define STATE_MODE_OBJECT_SHADER_SOURCE     0x0000001b    /* glGetShaderSourceARB */
+#define STATE_MODE_SHADER_SOURCE            0x0000001c    /* glGetShaderSource */
+#define STATE_MODE_OBJECT_UNIFORM           0x0000001d    /* glGetActiveUniformARB, glGetUniformARB */
+#define STATE_MODE_UNIFORM                  0x0000001e    /* glGetActiveUniform, glGetUniform */
+#define STATE_MODE_ATTACHED_OBJECTS         0x0000001f    /* glGetAttachedObjectsARB */
+#define STATE_MODE_ATTACHED_SHADERS         0x00000020    /* glGetAttachedShaders */
 #define STATE_MODE_MASK                     0x000000ff
 
 #define STATE_MULTIPLEX_ACTIVE_TEXTURE      0x00000100    /* Set active texture */
@@ -109,6 +110,7 @@
 #define STATE_LIGHT STATE_MODE_LIGHT
 #define STATE_MATERIAL STATE_MODE_MATERIAL
 #define STATE_CLIP_PLANE STATE_MODE_CLIP_PLANE
+#define STATE_POLYGON_STIPPLE STATE_MODE_POLYGON_STIPPLE
 #define STATE_COLOR_TABLE_PARAMETER STATE_MODE_COLOR_TABLE_PARAMETER
 #define STATE_CONVOLUTION_PARAMETER STATE_MODE_CONVOLUTION_PARAMETER
 #define STATE_HISTOGRAM_PARAMETER STATE_MODE_HISTOGRAM_PARAMETER
@@ -259,8 +261,8 @@ static const state_info global_state[] =
     { STATE_NAME(GL_POLYGON_OFFSET_POINT), TYPE_9GLboolean, -1, -1, "1.1", STATE_ENABLED },
     { STATE_NAME(GL_POLYGON_OFFSET_LINE), TYPE_9GLboolean, -1, -1, "1.1", STATE_ENABLED },
     { STATE_NAME(GL_POLYGON_OFFSET_FILL), TYPE_9GLboolean, -1, -1, "1.1", STATE_ENABLED },
-    /* FIXME: glGetPolygonStipple */
     { STATE_NAME(GL_POLYGON_STIPPLE), TYPE_9GLboolean, -1, -1, "1.1", STATE_ENABLED },
+    { "PolygonStipple", GL_NONE, TYPE_16GLpolygonstipple, -1, 1, "1.1", STATE_POLYGON_STIPPLE },
 #ifdef GL_ARB_multisample
     { STATE_NAME_EXT(GL_MULTISAMPLE, _ARB), TYPE_9GLboolean, -1, BUGLE_GL_ARB_multisample, "1.3", STATE_ENABLED },
     { STATE_NAME_EXT(GL_SAMPLE_ALPHA_TO_COVERAGE, _ARB), TYPE_9GLboolean, -1, BUGLE_GL_ARB_multisample, "1.3", STATE_ENABLED },
@@ -1081,6 +1083,7 @@ char *bugle_state_get_string(const glstate *state)
     GLuint ui[16];
     GLboolean b[16];
     GLvoid *p[16];
+    GLpolygonstipple stipple;
 #ifdef GL_ARB_shader_objects
     GLhandleARB h[16];
 #endif
@@ -1203,6 +1206,9 @@ char *bugle_state_get_string(const glstate *state)
     case STATE_MODE_CLIP_PLANE:
         CALL_glGetClipPlane(state->target, d);
         in_type = TYPE_8GLdouble;
+        break;
+    case STATE_MODE_POLYGON_STIPPLE:
+        CALL_glGetPolygonStipple((GLubyte *) stipple);
         break;
     case STATE_MODE_COLOR_TABLE_PARAMETER:
         get_helper(state, d, f, i, &in_type, NULL_FUNCTION,
@@ -1415,6 +1421,7 @@ char *bugle_state_get_string(const glstate *state)
 #endif
     case TYPE_9GLboolean: in = b; break;
     case TYPE_P6GLvoid: in = p; break;
+    case TYPE_16GLpolygonstipple: in = stipple; break;
     default: abort();
     }
 

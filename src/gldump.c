@@ -112,6 +112,52 @@ budgie_type bugle_gl_type_to_type(GLenum gl_type)
         return TYPE_7GLfloat;
     case GL_DOUBLE:
         return TYPE_8GLdouble;
+#ifdef GL_ARB_shader_objects
+    case GL_FLOAT_VEC2_ARB: return TYPE_6GLvec2; break;
+    case GL_FLOAT_VEC3_ARB: return TYPE_6GLvec3; break;
+    case GL_FLOAT_VEC4_ARB: return TYPE_6GLvec4; break;
+    case GL_INT_VEC2_ARB: return TYPE_7GLivec2; break;
+    case GL_INT_VEC3_ARB: return TYPE_7GLivec3; break;
+    case GL_INT_VEC4_ARB: return TYPE_7GLivec4; break;
+    case GL_FLOAT_MAT2_ARB: return TYPE_6GLmat2; break;
+    case GL_FLOAT_MAT3_ARB: return TYPE_6GLmat3; break;
+    case GL_FLOAT_MAT4_ARB: return TYPE_6GLmat4; break;
+    case GL_BOOL_VEC2_ARB: return TYPE_7GLbvec2; break;
+    case GL_BOOL_VEC3_ARB: return TYPE_7GLbvec3; break;
+    case GL_BOOL_VEC4_ARB: return TYPE_7GLbvec4; break;
+    case GL_SAMPLER_1D_ARB:
+    case GL_SAMPLER_2D_ARB:
+    case GL_SAMPLER_3D_ARB:
+    case GL_SAMPLER_CUBE_ARB:
+    case GL_SAMPLER_1D_SHADOW_ARB:
+    case GL_SAMPLER_2D_SHADOW_ARB:
+    case GL_SAMPLER_2D_RECT_ARB:
+    case GL_SAMPLER_2D_RECT_SHADOW_ARB:
+        return TYPE_6GLenum;
+#endif
+#if defined(GL_VERSION_2_0) && !defined(GL_ARB_shader_objects)
+    case GL_FLOAT_VEC2: return TYPE_6GLvec2; break;
+    case GL_FLOAT_VEC3: return TYPE_6GLvec3; break;
+    case GL_FLOAT_VEC4: return TYPE_6GLvec4; break;
+    case GL_INT_VEC2: return TYPE_7GLivec2; break;
+    case GL_INT_VEC3: return TYPE_7GLivec3; break;
+    case GL_INT_VEC4: return TYPE_7GLivec4; break;
+    case GL_FLOAT_MAT2: return TYPE_6GLmat2; break;
+    case GL_FLOAT_MAT3: return TYPE_6GLmat3; break;
+    case GL_FLOAT_MAT4: return TYPE_6GLmat4; break;
+    case GL_BOOL_VEC2: return TYPE_7GLbvec2; break;
+    case GL_BOOL_VEC3: return TYPE_7GLbvec3; break;
+    case GL_BOOL_VEC4: return TYPE_7GLbvec4; break;
+    case GL_SAMPLER_1D:
+    case GL_SAMPLER_2D:
+    case GL_SAMPLER_3D:
+    case GL_SAMPLER_CUBE:
+    case GL_SAMPLER_1D_SHADOW:
+    case GL_SAMPLER_2D_SHADOW:
+    case GL_SAMPLER_2D_RECT:
+    case GL_SAMPLER_2D_RECT_SHADOW:
+        return TYPE_6GLenum;
+#endif
     default:
         fprintf(stderr, "Do not know the correct type for %s; please email the author\n",
                 bugle_gl_enum_to_token(gl_type));
@@ -239,6 +285,24 @@ bool bugle_dump_GLboolean(GLboolean b, FILE *out)
 bool bugle_dump_GLXDrawable(GLXDrawable d, FILE *out)
 {
     fprintf(out, "0x%08x", (unsigned int) d);
+    return true;
+}
+
+bool bugle_dump_GLpolygonstipple(const GLubyte (*pattern)[4], FILE *out)
+{
+    GLubyte cur;
+    int i, j, k;
+
+    fputs("{ ", out);
+    for (i = 0; i < 32; i++)
+        for (j = 0; j < 4; j++)
+        {
+            cur = pattern[i][j];
+            for (k = 0; k < 8; k++)
+                fputc((cur & (1 << (7 - k))) ? '1' : '0', out);
+            fputc(' ', out);
+        }
+    fputs("}", out);
     return true;
 }
 

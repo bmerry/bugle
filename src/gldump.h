@@ -47,6 +47,7 @@ bool bugle_dump_GLcomponentsenum(GLenum e, FILE *out);
 bool bugle_dump_GLerror(GLenum e, FILE *out);
 bool bugle_dump_GLboolean(GLboolean b, FILE *out);
 bool bugle_dump_GLXDrawable(GLXDrawable d, FILE *out);
+bool bugle_dump_GLpolygonstipple(const GLubyte (*pattern)[4], FILE *out);
 bool bugle_dump_convert(GLenum pname, const void *value,
                         budgie_type in_type, FILE *out);
 

@@ -59,7 +59,26 @@ sub is_enum_name($)
 
 sub compare_token_values
 {
+    # Some tokens are defined in multiple extensions. Usually alphabetical
+    # will do want we want (core first, ARB second, other after), but if
+    # the token was renamed then we have a problem. The table below forces
+    # certain names to sort later.
+    my %name_map = ("GL_ATTRIB_ARRAY_SIZE_NV" => 1,
+                    "GL_ATTRIB_ARRAY_STRIDE_NV" => 1,
+                    "GL_ATTRIB_ARRAY_TYPE_NV" => 1,
+                    "GL_ATTRIB_ARRAY_POINTER_NV" => 1,
+                    "GL_PIXEL_COUNT_AVAILABLE_NV" => 1,
+                    "GL_PIXEL_COUNT_NV" => 1,
+                    "GL_CURRENT_OCCLUSION_QUERY_ID_NV" => 1,
+                    "GL_PIXEL_COUNTER_BITS_NV" => 1,
+                    "GL_TEXTURE_COMPONENTS" => 1,
+                    "GL_CURRENT_ATTRIB_NV" => 1);
+    
     return $a->[1] <=> $b->[1] if $a->[1] != $b->[1];
+    
+    return 0 if (exists $name_map{$a->[0]} && exists $name_map{$b->[0]});
+    return 1 if (exists $name_map{$a->[0]});
+    return -1 if (exists $name_map{$b->[0]});
     return $a->[0] cmp $b->[0];
 }
 

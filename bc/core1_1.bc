@@ -5,19 +5,25 @@ NEWTYPE BITFIELD clientattribbits GLbitfield GL_CLIENT_ALL_ATTRIB_BITS GL_CLIENT
 
 EXTRATYPE +PKc
 EXTRATYPE GLdoublematrix
+EXTRATYPE pGLdoublematrix
 EXTRATYPE GLfloatmatrix
+EXTRATYPE pGLfloatmatrix
 EXTRATYPE GLerror
 EXTRATYPE GLalternateenum
 EXTRATYPE GLcomponentsenum
-EXTRATYPE GLstipple
+EXTRATYPE GLpolygonstipple
+EXTRATYPE pGLpolygonstipple
 
 # Functions taking pointers to fixed length arrays
 LENGTH PARAMETER gl(RasterPos|EvalCoord|Vertex|Normal|TexCoord|Color)([234])u?[sifdb]v 0 \2
+# FIXME: how do glMap, glPixelMap, glGetMap, glGetPixelMap work?
+# FIXME: glRectfv
 
 LENGTH PARAMETER glRect[sifd]v 0 2
 LENGTH PARAMETER glRect[sifd]v 1 2
 
 LENGTH PARAMETER glClipPlane 1 4
+LENGTH PARAMETER glGetClipPlane 1 4
 
 # Handle generator and deletors
 LENGTH PARAMETER gl(Gen|Delete)Textures 1 $0
@@ -47,17 +53,17 @@ LENGTH PARAMETER glGetTexImage 4 bugle_texture_element_count($0, $1, $2, $3)
 # Note that we only override length for the vector versions
 LENGTH PARAMETER gl(LightModel|Fog)[if]v 1 bugle_count_gl($f, $0)
 LENGTH PARAMETER glGet(Boolean|Integer|Float|Double)v 1 bugle_count_gl($f, $0)
-LENGTH PARAMETER gl(Get)?(Material|Light|Tex(Env|Parameter|Gen))[sifd]v 2 bugle_count_gl($f, $1)
+LENGTH PARAMETER gl(Get)?(TexParameter|TexGen|TexEnv|Light|Material)[sifd]v 2 bugle_count_gl($f, $1)
 LENGTH PARAMETER gl(Get)?TexLevelParameter[if]v 3 bugle_count_gl($f, $2)
 DUMP PARAMETER gl(LightModel|Fog)[if]v? 1 bugle_dump_convert($0, &$$, $t$, $F)
 DUMP PARAMETER glGet(Integer|Float|Double)v 1 bugle_dump_convert($0, &$$, $t$, $F)
-DUMP PARAMETER gl(Get)?(Material|Light|Tex(Env|Parameter|Gen))[sifd]v? 2 bugle_dump_convert($1, &$$, $t$, $F)
+DUMP PARAMETER gl(Get)?(TexParameter|TexGen|TexEnv|Light|Material)[sifd]v? 2 bugle_dump_convert($1, &$$, $t$, $F)
 DUMP PARAMETER gl(Get)?TexLevelParameter[if]v? 3 bugle_dump_convert($2, &$$, $t$, $F)
 DUMP PARAMETER glPixelStore[if] 1 bugle_dump_convert($0, &$$, $t$, $F)
 
 # Assorted type overrides
-TYPE PARAMETER gl(Mult|Load)Matrixf 0 TYPE_13GLfloatmatrix
-TYPE PARAMETER gl(Mult|Load)Matrixd 0 TYPE_14GLdoublematrix
+TYPE PARAMETER gl(Mult|Load)Matrixf 0 TYPE_14pGLfloatmatrix
+TYPE PARAMETER gl(Mult|Load)Matrixd 0 TYPE_15pGLdoublematrix
 TYPE PARAMETER glPushAttrib 0 TYPE_10attribbits
 TYPE PARAMETER glPushClientAttrib 0 TYPE_16clientattribbits
 TYPE PARAMETER glGetError -1 TYPE_7GLerror
@@ -66,7 +72,7 @@ TYPE PARAMETER glBlendFunc 1 TYPE_15GLalternateenum
 
 TYPE PARAMETER glTexImage(1|2)D 2 TYPE_16GLcomponentsenum
 
-TYPE PARAMETER glPolygonStipple 0 TYPE_9GLstipple
+TYPE PARAMETER glPolygonStipple 0 TYPE_17pGLpolygonstipple
 TYPE PARAMETER glClear 0 TYPE_10bufferbits
 
 # C string, not array
@@ -82,3 +88,4 @@ DUMP TYPE +PKc budgie_dump_string($$, $F)
 DUMP TYPE +Pc budgie_dump_string($$, $F)
 LENGTH TYPE +PKc budgie_count_string($$)
 LENGTH TYPE +Pc budgie_count_string($$)
+DUMP TYPE GLpolygonstipple bugle_dump_GLpolygonstipple($$, $F)

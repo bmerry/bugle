@@ -4,24 +4,45 @@ EXTRATYPE GLvec4
 EXTRATYPE GLivec2
 EXTRATYPE GLivec3
 EXTRATYPE GLivec4
-EXTRATYPE GLimat2
-EXTRATYPE GLimat3
-EXTRATYPE GLimat4
 EXTRATYPE GLmat2
 EXTRATYPE GLmat3
+EXTRATYPE GLmat4
+EXTRATYPE GLbvec2
+EXTRATYPE GLbvec3
+EXTRATYPE GLbvec4
+
+EXTRATYPE pGLvec2
+EXTRATYPE pGLvec3
+EXTRATYPE pGLvec4
+EXTRATYPE pGLivec2
+EXTRATYPE pGLivec3
+EXTRATYPE pGLivec4
+EXTRATYPE pGLmat2
+EXTRATYPE pGLmat3
+EXTRATYPE pGLmat4
+EXTRATYPE pGLbvec2
+EXTRATYPE pGLbvec3
+EXTRATYPE pGLbvec4
 
 LENGTH PARAMETER glUniform([1234])[if]vARB 2 $1
-LENGTH PARAMETER glUniformMatrix([234])[if]vARB 3 $1
-TYPE PARAMETER glUniform([234])fvARB 2 TYPE_6GLvec\1
-TYPE PARAMETER glUniform([234])ivARB 2 TYPE_7GLivec\1
-TYPE PARAMETER glUniformMatrix([23])fvARB 3 TYPE_6GLmat\1
-TYPE PARAMETER glUniformMatrix4fvARB 3 TYPE_13GLfloatmatrix
-TYPE PARAMETER glUniform([234])ivARB 2 TYPE_7GLimat\1
+LENGTH PARAMETER glUniformMatrix([234])fv(ARB)? 3 $1
+TYPE PARAMETER glUniform([234])fv(ARB)? 2 TYPE_7pGLvec\1
+TYPE PARAMETER glUniform([234])iv(ARB)? 2 TYPE_8pGLivec\1
+TYPE PARAMETER glUniformMatrix([234])fvARB 3 TYPE_7pGLmat\1
 
-LENGTH PARAMETER glShaderSourceARB 2 $1
-LENGTH PARAMETER glShaderSourceARB 3 $1
+# Note: the ARB versions here are not the same as they take GLhandleARB
+LENGTH PARAMETER glShaderSource(ARB)? 2 $1
+LENGTH PARAMETER glShaderSource(ARB)? 3 $1
 
 LENGTH PARAMETER glGetAttachedObjectsARB 3 *$2
+LENGTH PARAMETER glGetAttachedShaders 3 *$2
+
+LENGTH PARAMETER glGetObjectParameter[if]vARB 2 bugle_count_gl($f, $1)
+LENGTH PARAMETER glGetProgramiv 2 bugle_count_gl($f, $1)
+LENGTH PARAMETER glGetShaderiv 2 bugle_count_gl($f, $1)
+DUMP PARAMETER glGetObjectParameter[if]vARB 2 bugle_dump_convert($1, &$$, $t$, $F)
+DUMP PARAMETER glGetProgramiv 2 bugle_dump_convert($1, &$$, $t$, $F)
+DUMP PARAMETER glGetShaderiv 2 bugle_dump_convert($1, &$$, $t$, $F)
 
 DUMP TYPE +PK9GLcharARB budgie_dump_string($$, $F)
 DUMP TYPE +P9GLcharARB budgie_dump_string($$, $F)
