@@ -44,7 +44,7 @@ typedef enum
     FILTER_SET_VARIABLE_INT,
     FILTER_SET_VARIABLE_UINT,
     FILTER_SET_VARIABLE_POSITIVE_INT,
-    FILTER_SET_VARIABLE_STRING,
+    FILTER_SET_VARIABLE_STRING
 } filter_set_variable_type;
 
 typedef struct filter_set_variable_info_s

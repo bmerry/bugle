@@ -32,19 +32,50 @@
 #include <GL/glx.h>
 
 bugle_object_class bugle_context_class;
-static bugle_hashptr_table context_objects;
+bugle_object_class bugle_namespace_class;
+static bugle_hashptr_table context_objects, namespace_objects;
+static bugle_hashptr_table parent_context; /* for namespacing */
 static bugle_object_view trackcontext_view;
+static bugle_thread_mutex_t context_mutex = BUGLE_THREAD_MUTEX_INITIALIZER;
 
 typedef struct
 {
     GLXContext aux_context;
 } trackcontext_data;
 
+static bool trackcontext_newcontext(function_call *call, const callback_data *data)
+{
+    GLXContext self, parent;
+
+    switch (call->generic.group)
+    {
+#ifdef GLX_VERSION_1_3
+    case GROUP_glXCreateNewContext:
+        self = *call->typed.glXCreateNewContext.retn;
+        parent = *call->typed.glXCreateNewContext.arg3;
+        break;
+#endif
+    case GROUP_glXCreateContext:
+        self = *call->typed.glXCreateContext.retn;
+        parent = *call->typed.glXCreateContext.arg2;
+        break;
+    default:
+        abort();
+    }
+
+    if (self && parent)
+    {
+        bugle_thread_mutex_lock(&context_mutex);
+        bugle_hashptr_set(&parent_context, self, parent);
+        bugle_thread_mutex_unlock(&context_mutex);
+    }
+    return true;
+}
+
 static bool trackcontext_callback(function_call *call, const callback_data *data)
 {
-    GLXContext ctx;
-    static bugle_thread_mutex_t context_mutex = BUGLE_THREAD_MUTEX_INITIALIZER;
-    bugle_object *obj;
+    GLXContext ctx, root, tmp;
+    bugle_object *obj, *ns;
 
     /* These calls may fail, so we must explicitly check for the
      * current context.
@@ -60,6 +91,18 @@ static bool trackcontext_callback(function_call *call, const callback_data *data
         {
             obj = bugle_object_new(&bugle_context_class, ctx, true);
             bugle_hashptr_set(&context_objects, ctx, obj);
+            if (bugle_hashptr_get(&parent_context, ctx) == NULL)
+            {
+                ns = bugle_object_new(&bugle_namespace_class, ctx, true);
+                bugle_hashptr_set(&namespace_objects, ctx, ns);
+            }
+            else
+            {
+                root = ctx;
+                while ((tmp = bugle_hashptr_get(&parent_context, root)) != NULL)
+                    root = tmp;
+                bugle_object_set_current(&bugle_namespace_class, obj);
+            }
         }
         else
             bugle_object_set_current(&bugle_context_class, obj);
@@ -75,8 +118,10 @@ static bool initialise_trackcontext(filter_set *handle)
     f = bugle_register_filter(handle, "trackcontext");
     bugle_register_filter_depends("trackcontext", "invoke");
     bugle_register_filter_catches(f, GROUP_glXMakeCurrent, trackcontext_callback);
+    bugle_register_filter_catches(f, GROUP_glXCreateContext, trackcontext_newcontext);
 #ifdef GLX_VERSION_1_3
     bugle_register_filter_catches(f, GROUP_glXMakeContextCurrent, trackcontext_callback);
+    bugle_register_filter_catches(f, GROUP_glXCreateNewContext, trackcontext_newcontext);
 #endif
     trackcontext_view = bugle_object_class_register(&bugle_context_class,
                                                     NULL,
@@ -96,7 +141,7 @@ GLXContext bugle_get_aux_context()
     Display *dpy;
 
     data = bugle_object_get_current_data(&bugle_context_class, trackcontext_view);
-    if (!data) return NULL; // no current context, hence no aux context
+    if (!data) return NULL; /* no current context, hence no aux context */
     if (data->aux_context == NULL)
     {
         dpy = CALL_glXGetCurrentDisplay();
@@ -138,7 +183,12 @@ void trackcontext_initialise(void)
     };
 
     bugle_object_class_init(&bugle_context_class, NULL);
+    bugle_object_class_init(&bugle_namespace_class, &bugle_context_class);
     bugle_hashptr_init(&context_objects, true);
+    bugle_hashptr_init(&namespace_objects, true);
+    bugle_hashptr_init(&parent_context, false);
     bugle_atexit((void (*)(void *)) bugle_hashptr_clear, &context_objects);
+    bugle_atexit((void (*)(void *)) bugle_hashptr_clear, &namespace_objects);
+    bugle_atexit((void (*)(void *)) bugle_hashptr_clear, &parent_context);
     bugle_register_filter_set(&trackcontext_info);
 }

@@ -3,7 +3,11 @@
 # undef NDEBUG
 #endif
 
+#if HAVE_CONFIG_H
+# include <config.h>
+#endif
 #define GL_GLEXT_PROTOTYPES
+#define _POSIX_SOURCE
 #include <GL/glut.h>
 #include <GL/glext.h>
 #include <stdio.h>
@@ -53,11 +57,12 @@ static void invalid_direct_vbo(void)
     if (glutExtensionSupported("GL_ARB_vertex_buffer_object"))
     {
         GLfloat v[3] = {0.0f, 0.0f, 0.0f};
+        GLuint indices[4] = {0, 0, 0, 0};
+        GLuint id;
+
         glVertexPointer(3, GL_FLOAT, 0, v);
         glEnableClientState(GL_VERTEX_ARRAY);
 
-        GLuint indices[4] = {0, 0, 0, 0};
-        GLuint id;
         glGenBuffersARB(1, &id);
         glBindBufferARB(GL_ELEMENT_ARRAY_BUFFER_ARB, id);
         glBufferDataARB(GL_ELEMENT_ARRAY_BUFFER_ARB, sizeof(indices),

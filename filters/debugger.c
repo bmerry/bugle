@@ -127,7 +127,7 @@ static bool debugger_screenshot(int pipe)
     Display *dpy;
     GLXContext aux, real;
     GLXDrawable old_read, old_write;
-    int width, height, stride;
+    unsigned int width, height, stride;
     int wh[2];
     size_t header_len;
     char *header;
@@ -191,7 +191,6 @@ static void debugger_loop(bool init)
     uint32_t req, req_val;
     char *req_str, *resp_str;
     budgie_function func;
-    glstate state;
     filter_set *f;
     bool enable;
 
@@ -303,7 +302,6 @@ static void debugger_loop(bool init)
                 bugle_end_internal_render("debugger_loop", true);
                 break;
             }
-            bugle_state_clear(&state);
             gldb_send_code(out_pipe, RESP_STATE);
             gldb_send_string(out_pipe, resp_str);
             free(req_str);
@@ -459,5 +457,6 @@ void bugle_initialise_filter_library(void)
 
     bugle_register_filter_set_depends("debugger", "error");
     bugle_register_filter_set_depends("debugger", "trackextensions");
+    bugle_register_filter_set_depends("debugger", "trackobjects");
     bugle_register_filter_set_renders("debugger");
 }

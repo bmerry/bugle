@@ -17,7 +17,7 @@ void check_procaddress()
      */
     GLenum (*GetError)(void);
 
-    GetError = (GLenum (*)(void)) glXGetProcAddressARB("glGetError");
+    GetError = (GLenum (*)(void)) glXGetProcAddressARB((const GLubyte *) "glGetError");
     glPopAttrib();
     assert((*GetError)() == GL_STACK_UNDERFLOW);
 }

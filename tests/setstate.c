@@ -1,5 +1,9 @@
 /* Sets a variety of OpenGL state, mainly to test the logger */
 
+#if HAVE_CONFIG_H
+# include <config.h>
+#endif
+#define _POSIX_SOURCE
 #include <GL/gl.h>
 #include <GL/glx.h>
 #include <GL/glut.h>
@@ -39,7 +43,7 @@ void set_texture_state()
     GLuint id;
     GLint arg;
 
-    glGenTextures(1, &id);                fprintf(ref, "trace\\.call: glGenTextures\\(1, %p -> { %u }\\)\n", &id, (unsigned int) id);
+    glGenTextures(1, &id);                fprintf(ref, "trace\\.call: glGenTextures\\(1, %p -> { %u }\\)\n", (void *) &id, (unsigned int) id);
     glBindTexture(GL_TEXTURE_2D, id);     fprintf(ref, "trace\\.call: glBindTexture\\(GL_TEXTURE_2D, [0-9]+\\)\n");
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 4, 4, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
     fprintf(ref, "trace\\.call: glTexImage2D\\(GL_TEXTURE_2D, 0, GL_RGB, 4, 4, 0, GL_RGB, GL_UNSIGNED_BYTE, \\(nil\\)\\)\n");
@@ -47,7 +51,7 @@ void set_texture_state()
     fprintf(ref, "trace\\.call: glTexParameteri\\(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR\\)\n");
     arg = GL_LINEAR;
     glTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, &arg);
-    fprintf(ref, "trace\\.call: glTexParameteriv\\(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, %p -> GL_LINEAR\\)\n", &arg);
+    fprintf(ref, "trace\\.call: glTexParameteriv\\(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, %p -> GL_LINEAR\\)\n", (void *) &arg);
 #ifdef GL_SGIS_generate_mipmap
     fprintf(ref, "trace\\.call: glGetString\\(GL_EXTENSIONS\\) = \"[A-Za-z0-9_ ]+\"\n");
     if (glutExtensionSupported("GL_SGIS_generate_mipmap"))
@@ -57,7 +61,7 @@ void set_texture_state()
     }
 #endif
     glDeleteTextures(1, &id);
-    fprintf(ref, "trace\\.call: glDeleteTextures\\(1, %p -> { %u }\\)\n", &id, (unsigned int) id);
+    fprintf(ref, "trace\\.call: glDeleteTextures\\(1, %p -> { %u }\\)\n", (void *) &id, (unsigned int) id);
 }
 
 int main(int argc, char **argv)

@@ -215,8 +215,13 @@ bool bugle_dump_GLalternateenum(GLenum token, FILE *out)
 
 bool bugle_dump_GLcomponentsenum(GLenum token, FILE *out)
 {
+    int token2;
+
     if (token >= 1 && token <= 4)
-        budgie_dump_TYPE_i(&token, -1, out);
+    {
+        token2 = token;
+        budgie_dump_TYPE_i(&token2, -1, out);
+    }
     else
         bugle_dump_GLenum(token,  out);
     return true;

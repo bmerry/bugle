@@ -279,11 +279,10 @@ static void identify()
 {
     bool have_limit = false;
     regex_t limit_regex;
-    string rx = "^" + limit + "$";
 
     if (limit != "")
     {
-        int result = regcomp(&limit_regex, rx.c_str(), REG_NOSUB | REG_EXTENDED);
+        int result = regcomp(&limit_regex, limit.c_str(), REG_NOSUB | REG_EXTENDED);
         if (result != 0) die_regex(result, &limit_regex);
         have_limit = true;
     }
@@ -293,12 +292,14 @@ static void identify()
         {
             tree_node_p node = T[i];
             tree_code code = TREE_CODE(node);
+            if (code != FUNCTION_DECL) continue;
             // try to eliminate various builtins.
+            string name = IDENTIFIER_POINTER(DECL_NAME(node));
             if (code == FUNCTION_DECL
                 && DECL_SOURCE_FILE(node) != "<built-in>"
-                && IDENTIFIER_POINTER(DECL_NAME(node)).substr(0, 9) != "__builtin"
+                && name.substr(0, 9) != "__builtin"
                 && (!have_limit
-                    || regexec(&limit_regex, IDENTIFIER_POINTER(DECL_NAME(node)).c_str(),
+                    || regexec(&limit_regex, name.c_str(),
                                0, NULL, 0) == 0))
             {
                 functions.push_back(Function());
@@ -537,11 +538,13 @@ static void make_overrides()
                 regmatch_t pmatch[nmatch];
                 for (Group::iterator k = j->functions.begin(); k != j->functions.end(); k++)
                 {
-                    result = regexec(&regex, (*k)->name().c_str(),
+                    string name = (*k)->name();
+                    result = regexec(&regex, name.c_str(),
                                      nmatch, pmatch, 0);
                     if (result != 0 && result != REG_NOMATCH)
                         die_regex(result, &regex);
-                    if (result == 0)
+                    if (result == 0 && pmatch[0].rm_so == 0
+                        && pmatch[0].rm_eo == (regoff_t) name.length())
                     {
                         matches = true;
                         match = *k;
@@ -1618,7 +1621,7 @@ int main(int argc, char * const argv[])
 
 void parser_limit(const string &l)
 {
-    limit = "^" + l + "$";
+    limit = "^(" + l + ")$";
 }
 
 void parser_header(const string &h)
@@ -1636,13 +1639,19 @@ void parser_alias(const string &a, const string &b)
     aliases.push_back(make_pair(a, b));
 }
 
+/* We don't wrap the regex in ^,$. We would like to, but unfortunately these
+ * have lower precedence than |, so we would need to group the interior.
+ * But that in turn would mess up the counting of substrings, because all
+ * groups become backreferences. Instead, we check that the match is against
+ * the entire string. This should be safe because regexes are greedy.
+ */
 void parser_param(override_type mode, const string &regex,
                   int param, const string &code)
 {
     Override o;
 
     o.mode = mode;
-    o.functions = "^" + regex + "$";
+    o.functions = regex;
     o.param = param;
     o.type = "";
     o.code = code;

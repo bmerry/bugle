@@ -63,7 +63,8 @@ src_libbugle_la_SOURCES = \
 	src/glstate.c src/glstate.h \
 	src/interceptor.c \
 	src/filters.c src/filters.h \
-	src/trackcontext.c src/trackdisplaylist.c src/trackbeginend.c src/trackextensions.c src/tracker.h \
+	src/trackcontext.c src/trackdisplaylist.c src/trackobjects.c \
+        src/trackbeginend.c src/trackextensions.c src/tracker.h \
 	src/log.c src/log.h \
         src/objects.c src/objects.h \
 	budgielib/budgieutils.c budgielib/budgieutils.h

@@ -52,9 +52,9 @@ typedef struct glstate
 } glstate;
 
 /* Must be in a valid state to make GL calls.
- * Must also have trackextensions.
+ * Must also have trackextensions and trackobjects.
  */
-char *bugle_state_get_string(const glstate *); // caller frees
+char *bugle_state_get_string(const glstate *); /* caller frees */
 void bugle_state_get_children(const glstate *, bugle_linked_list *);
 void bugle_state_clear(glstate *);
 const glstate *bugle_state_get_root(void);

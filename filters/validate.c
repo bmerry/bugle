@@ -333,7 +333,7 @@ static void checks_generic_attribute(size_t first, size_t count,
     budgie_type type;
     const char *cptr;
 #ifdef GL_ARB_vertex_buffer_object
-    GLuint id;
+    GLint id;
 #endif
 
     CALL_glGetVertexAttribivARB(number, GL_VERTEX_ATTRIB_ARRAY_ENABLED_ARB, &enabled);

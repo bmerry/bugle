@@ -32,15 +32,25 @@
 #include <GL/gl.h>
 
 bugle_object_class bugle_displaylist_class;
-static bugle_hashptr_table displaylist_objects;
 static bugle_thread_mutex_t displaylist_lock = BUGLE_THREAD_MUTEX_INITIALIZER;
 static bugle_object_view displaylist_view;
+static bugle_object_view namespace_view;   /* handle of the hash table */
 
 typedef struct
 {
     GLuint list;
     GLenum mode;
 } displaylist_struct;
+
+static void initialise_namespace(const void *key, void *data)
+{
+    bugle_hashptr_init((bugle_hashptr_table *) data, true);
+}
+
+static void destroy_namespace(void *data)
+{
+    bugle_hashptr_clear((bugle_hashptr_table *) data);
+}
 
 static void initialise_displaylist_struct(const void *key, void *data)
 {
@@ -67,10 +77,12 @@ GLuint bugle_displaylist_list(void)
 
 void *bugle_displaylist_get(GLuint list)
 {
-    void *ans;
+    void *ans = NULL;
+    bugle_hashptr_table *objects;
 
     bugle_thread_mutex_lock(&displaylist_lock);
-    ans = bugle_hashptr_get(&displaylist_objects, (void *) (size_t) list);
+    objects = bugle_object_get_current_data(&bugle_namespace_class, namespace_view);
+    if (objects) ans = bugle_hashptr_get(objects, (void *) (size_t) list);
     bugle_thread_mutex_unlock(&displaylist_lock);
     return ans;
 }
@@ -99,6 +111,7 @@ static bool trackdisplaylist_glEndList(function_call *call, const callback_data 
 {
     bugle_object *obj;
     displaylist_struct *info_ptr;
+    bugle_hashptr_table *objects;
 
     obj = bugle_object_get_current(&bugle_displaylist_class);
     info_ptr = bugle_object_get_data(&bugle_displaylist_class, obj, displaylist_view);
@@ -106,7 +119,9 @@ static bool trackdisplaylist_glEndList(function_call *call, const callback_data 
      * says the new name comes into effect.
      */
     bugle_thread_mutex_lock(&displaylist_lock);
-    bugle_hashptr_set(&displaylist_objects, (void *) (size_t) info_ptr->list, obj);
+    objects = bugle_object_get_current_data(&bugle_namespace_class, namespace_view);
+    if (objects)
+        bugle_hashptr_set(objects, (void *) (size_t) info_ptr->list, obj);
     bugle_thread_mutex_unlock(&displaylist_lock);
     bugle_object_set_current(&bugle_displaylist_class, NULL);
     return true;
@@ -125,6 +140,10 @@ static bool initialise_trackdisplaylist(filter_set *handle)
                                                    initialise_displaylist_struct,
                                                    NULL,
                                                    sizeof(displaylist_struct));
+    namespace_view = bugle_object_class_register(&bugle_namespace_class,
+                                                 initialise_namespace,
+                                                 destroy_namespace,
+                                                 sizeof(bugle_hashptr_table));
     return true;
 }
 
@@ -141,8 +160,6 @@ void trackdisplaylist_initialise(void)
     };
 
     bugle_object_class_init(&bugle_displaylist_class, &bugle_context_class);
-    bugle_hashptr_init(&displaylist_objects, true);
-    bugle_atexit((void (*)(void *)) bugle_hashptr_clear, &displaylist_objects);
     bugle_register_filter_set(&trackdisplaylist_info);
 
     bugle_register_filter_set_depends("trackdisplaylist", "trackcontext");

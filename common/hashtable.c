@@ -231,6 +231,7 @@ void bugle_hashptr_set(bugle_hashptr_table *table, const void *key, void *value)
         big.size = primes[big.size_index];
         big.entries = (bugle_hashptr_entry *) bugle_calloc(big.size, sizeof(bugle_hashptr_entry));
         big.count = 0;
+        big.owns_memory = table->owns_memory;
         for (i = 0; i < table->size; i++)
             if (table->entries[i].key)
                 hashptr_set_fast(&big, table->entries[i].key,

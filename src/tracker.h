@@ -28,7 +28,20 @@
 #include "src/filters.h"
 #include "src/objects.h"
 
-extern bugle_object_class bugle_context_class, bugle_displaylist_class;
+typedef enum
+{
+    BUGLE_TRACKOBJECTS_TEXTURE,
+    BUGLE_TRACKOBJECTS_COUNT
+} bugle_trackobjects_type;
+
+typedef struct
+{
+    GLuint id;
+    GLenum target;
+} bugle_trackobjects_id;
+
+extern bugle_object_class bugle_context_class, bugle_namespace_class;
+extern bugle_object_class bugle_displaylist_class;
 
 /* True if we are in begin/end, OR if there is no current context.
  * trackbeginend is required.
@@ -47,6 +60,12 @@ GLenum bugle_displaylist_mode(void);
 /* The display list object associated with a numbered list */
 void *bugle_displaylist_get(GLuint list);
 
+/* Returns a linked list of bugle_trackobjects_id objects. The
+ * list owns the memory. It need not be initialised.
+ */
+void bugle_trackobjects_get(bugle_trackobjects_type type,
+                            bugle_linked_list *ids);
+
 /* Checks for GL extensions by #define from glexts.h */
 bool bugle_gl_has_extension(int ext);
 
@@ -55,5 +74,6 @@ void trackcontext_initialise(void);
 void trackbeginend_initialise(void);
 void trackdisplaylist_initialise(void);
 void trackextensions_initialise(void);
+void trackobjects_initialise(void);
 
 #endif /* !BUGLE_SRC_TRACKER_H */

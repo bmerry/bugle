@@ -33,23 +33,23 @@
 #define STATE_NAME(x) #x, x
 #define STATE_NAME_EXT(x, ext) #x, x ## ext
 
-// bottom 8 bits are fetch function, rest are true flags
-#define STATE_MODE_GLOBAL             0x0001    // glGet*
-#define STATE_MODE_ENABLE             0x0002    // glIsEnabled
-#define STATE_MODE_TEXENV             0x0003    // glGetTexEnv
-#define STATE_MODE_TEXPARAMETER       0x0004    // glGetTexParameter
-#define STATE_MODE_TEXLEVELPARAMETER  0x0005    // glGetTexLevelParameter
-#define STATE_MODE_TEXGEN             0x0006    // glGetTexGen
-#define STATE_MODE_LIGHT              0x0007    // glGetLight
-#define STATE_MODE_MATERIAL           0x0008    // glGetMaterial
+/* bottom 8 bits are fetch function, rest are true flags */
+#define STATE_MODE_GLOBAL             0x0001    /* glGet* */
+#define STATE_MODE_ENABLE             0x0002    /* glIsEnabled */
+#define STATE_MODE_TEXENV             0x0003    /* glGetTexEnv */
+#define STATE_MODE_TEXPARAMETER       0x0004    /* glGetTexParameter */
+#define STATE_MODE_TEXLEVELPARAMETER  0x0005    /* glGetTexLevelParameter */
+#define STATE_MODE_TEXGEN             0x0006    /* glGetTexGen */
+#define STATE_MODE_LIGHT              0x0007    /* glGetLight */
+#define STATE_MODE_MATERIAL           0x0008    /* glGetMaterial */
 
 #define STATE_MODE_MASK               0x00ff
 
-#define STATE_FLAG_TEXUNIT            0x0100    // Set active texture
-#define STATE_FLAG_TEXTARGET          0x0200    // Set current texture object
-#define STATE_FLAG_FILTERCONTROL      0x0400    // Pass GL_TEXTURE_FILTER_CONTROL
+#define STATE_FLAG_TEXUNIT            0x0100    /* Set active texture */
+#define STATE_FLAG_TEXTARGET          0x0200    /* Set current texture object */
+#define STATE_FLAG_FILTERCONTROL      0x0400    /* Pass GL_TEXTURE_FILTER_CONTROL */
 
-// conveniences
+/* conveniences */
 #define STATE_GLOBAL STATE_MODE_GLOBAL
 #define STATE_ENABLE STATE_MODE_ENABLE
 #define STATE_TEXENV (STATE_MODE_TEXENV | STATE_FLAG_TEXUNIT)
@@ -460,6 +460,28 @@ static const state_info material_state[] =
     { NULL, GL_NONE, NULL_TYPE, 0, 0, NULL, 0 }
 };
 
+typedef struct
+{
+    const char *name;
+    GLenum token;
+} enum_pair;
+
+static const enum_pair material_pairs[] =
+{
+    { STATE_NAME(GL_FRONT) },
+    { STATE_NAME(GL_BACK) },
+    { NULL, GL_NONE }
+};
+
+static const enum_pair texgen_pairs[] =
+{
+    { STATE_NAME(GL_S) },
+    { STATE_NAME(GL_T) },
+    { STATE_NAME(GL_R) },
+    { STATE_NAME(GL_Q) },
+    { NULL, GL_NONE }
+};
+
 /* This exists to simplify the work of gldump.c */
 const state_info * const all_state[] =
 {
@@ -503,7 +525,7 @@ char *bugle_state_get_string(const glstate *state)
     dump_wrapper_data wrapper;
 
     GLint old_texture;
-    GLenum old_unit, old_client_unit;
+    GLint old_unit, old_client_unit;
     bool set_texture_unit = false;
     bool set_texture_object = false;
 
@@ -687,20 +709,100 @@ static void make_leaves(const glstate *self, const state_info *table,
     glstate *child;
     const state_info *info;
 
-    version = CALL_glGetString(GL_VERSION);
+    version = (const char *) CALL_glGetString(GL_VERSION);
     for (info = table; info->name; info++)
     {
         if ((info->version && strcmp(version, info->version) >= 0)
             || (info->extension != -1 && bugle_gl_has_extension(info->extension)))
         {
             child = bugle_malloc(sizeof(glstate));
-            *child = *self; // copies contextual info
+            *child = *self; /* copies contextual info */
             child->name = bugle_strdup(info->name);
             child->info = info;
             child->spawn_children = NULL;
             bugle_list_append(children, child);
         }
     }
+}
+
+/* Again, must initialise the list yourself */
+static void make_fixed(const glstate *self,
+                       const enum_pair *pairs,
+                       size_t offset,
+                       void (*spawn)(const glstate *, bugle_linked_list *),
+                       bugle_linked_list *children)
+{
+    size_t i;
+    glstate *child;
+
+    for (i = 0; pairs[i].name; i++)
+    {
+        child = bugle_malloc(sizeof(glstate));
+        *child = *self;
+        child->info = NULL;
+        child->name = bugle_strdup(pairs[i].name);
+        *(GLenum *) (((char *) child) + offset) = pairs[i].token;
+        child->spawn_children = spawn;
+        bugle_list_append(children, child);
+    }
+}
+
+static void make_counted(const glstate *self,
+                         int count,
+                         const char *format,
+                         GLenum base,
+                         size_t offset,
+                         void (*spawn)(const glstate *, bugle_linked_list *),
+                         bugle_linked_list *children)
+{
+    int i;
+    glstate *child;
+
+    for (i = 0; i < count; i++)
+    {
+        child = bugle_malloc(sizeof(glstate));
+        *child = *self;
+        child->info = NULL;
+        bugle_asprintf(&child->name, format, i);
+        *(GLenum *) (((char *) child) + offset) = base + i;
+        child->spawn_children = spawn;
+        bugle_list_append(children, child);
+    }
+}
+
+static void make_object(const glstate *self,
+                        GLuint id,
+                        void (*spawn)(const glstate *, bugle_linked_list *),
+                        bugle_linked_list *children)
+{
+    glstate *child;
+
+    child = bugle_malloc(sizeof(glstate));
+    *child = *self;
+    child->info = NULL;
+    bugle_asprintf(&child->name, "%d", id);
+    child->object = id;
+    child->spawn_children = spawn;
+    bugle_list_append(children, child);
+}
+
+static void make_target(const glstate *self,
+                        const char *name,
+                        GLenum target,
+                        GLenum binding,
+                        void (*spawn)(const glstate *, bugle_linked_list *),
+                        bugle_linked_list *children)
+{
+    glstate *child;
+
+    child = bugle_malloc(sizeof(glstate));
+    *child = *self;
+    child->info = NULL;
+    child->name = bugle_strdup(name);
+    child->target = target;
+    child->binding = binding;
+    child->spawn_children = spawn;
+    bugle_list_append(children, child);
 }
 
 static void spawn_children_texgen(const glstate *self, bugle_linked_list *children)
@@ -712,10 +814,7 @@ static void spawn_children_texgen(const glstate *self, bugle_linked_list *childr
 static void spawn_children_texunit(const glstate *self, bugle_linked_list *children)
 {
     bugle_list_node *i;
-    int j;
     glstate *child;
-    GLenum gen_enum[4] = {GL_S, GL_T, GL_R, GL_Q};
-    const char *gen_names[4] = {"GL_S", "GL_T", "GL_R", "GL_Q"};
 
     bugle_list_init(children, true);
     make_leaves(self, texture_unit_state, children);
@@ -735,17 +834,32 @@ static void spawn_children_texunit(const glstate *self, bugle_linked_list *child
             }
         }
     }
+    make_fixed(self, texgen_pairs, offsetof(glstate, target),
+               spawn_children_texgen, children);
+}
 
-    for (j = 0; j < 4; j++)
+static void spawn_children_texture(const glstate *self, bugle_linked_list *children)
+{
+    bugle_list_init(children, true);
+    make_leaves(self, texture_object_state, children);
+}
+
+static void spawn_children_textures(const glstate *self, bugle_linked_list *children)
+{
+    bugle_linked_list objects;
+    bugle_list_node *i;
+    bugle_trackobjects_id *id;
+
+    bugle_list_init(children, true);
+    make_object(self, 0, spawn_children_texture, children);
+    bugle_trackobjects_get(BUGLE_TRACKOBJECTS_TEXTURE, &objects);
+    for (i = bugle_list_head(&objects); i; i = bugle_list_next(i))
     {
-        child = bugle_malloc(sizeof(glstate));
-        memset(child, 0, sizeof(glstate));
-        child->name = bugle_strdup(gen_names[j]);
-        child->unit = self->unit;
-        child->target = gen_enum[j];
-        child->spawn_children = spawn_children_texgen;
-        bugle_list_append(children, child);
+        id = (bugle_trackobjects_id *) bugle_list_data(i);
+        if (id->target == self->target)
+            make_object(self, id->id, spawn_children_texture, children);
     }
+    bugle_list_clear(&objects);
 }
 
 static void spawn_children_light(const glstate *self, bugle_linked_list *children)
@@ -762,10 +876,7 @@ static void spawn_children_material(const glstate *self, bugle_linked_list *chil
 
 static void spawn_children_global(const glstate *self, bugle_linked_list *children)
 {
-    GLint count, i;
-    glstate *child;
-    GLenum material_enum[2] = {GL_FRONT, GL_BACK};
-    const char *material_name[2] = {"GL_FRONT", "GL_BACK"};
+    GLint count;
 
     bugle_list_init(children, true);
     make_leaves(self, global_state, children);
@@ -773,42 +884,37 @@ static void spawn_children_global(const glstate *self, bugle_linked_list *childr
     if (bugle_gl_has_extension(BUGLE_GL_ARB_multitexture))
     {
         CALL_glGetIntegerv(GL_MAX_TEXTURE_UNITS_ARB, &count);
-        for (i = 0; i < count; i++)
-        {
-            child = bugle_malloc(sizeof(glstate));
-            memset(child, 0, sizeof(glstate));
-            bugle_asprintf(&child->name, "GL_TEXTURE%d", i);
-            child->unit = GL_TEXTURE0_ARB + i;
-            child->spawn_children = spawn_children_texunit;
-            bugle_list_append(children, child);
-        }
+        make_counted(self, count, "GL_TEXTURE%d", GL_TEXTURE0_ARB,
+                     offsetof(glstate, unit), spawn_children_texunit, children);
     }
     else
 #endif
     {
         make_leaves(self, texture_unit_state, children);
     }
-
     CALL_glGetIntegerv(GL_MAX_LIGHTS, &count);
-    for (i = 0; i < count; i++)
-    {
-        child = bugle_malloc(sizeof(glstate));
-        memset(child, 0, sizeof(glstate));
-        bugle_asprintf(&child->name, "GL_LIGHT%d", i);
-        child->target = GL_LIGHT0 + i;
-        child->spawn_children = spawn_children_light;
-        bugle_list_append(children, child);
-    }
+    make_counted(self, count, "GL_LIGHT%d", GL_LIGHT0,
+                 offsetof(glstate, target), spawn_children_light, children);
 
-    for (i = 0; i < 2; i++)
-    {
-        child = bugle_malloc(sizeof(glstate));
-        memset(child, 0, sizeof(glstate));
-        child->name = bugle_strdup(material_name[i]);
-        child->target = material_enum[i];
-        child->spawn_children = spawn_children_material;
-        bugle_list_append(children, child);
-    }
+    make_fixed(self, material_pairs, offsetof(glstate, target),
+               spawn_children_material, children);
+
+    make_target(self, "GL_TEXTURE_1D", GL_TEXTURE_1D,
+                GL_TEXTURE_BINDING_1D, spawn_children_textures, children);
+    make_target(self, "GL_TEXTURE_2D", GL_TEXTURE_2D,
+                GL_TEXTURE_BINDING_2D, spawn_children_textures, children);
+#ifdef GL_VERSION_1_2
+    if (strcmp((const char *) CALL_glGetString(GL_VERSION), "1.2") >= 0)
+        make_target(self, "GL_TEXTURE_3D", GL_TEXTURE_3D,
+                    GL_TEXTURE_BINDING_3D, spawn_children_textures, children);
+#endif
+#ifdef GL_ARB_texture_cube_map
+    if (bugle_gl_has_extension(BUGLE_GL_ARB_texture_cube_map))
+        make_target(self, "GL_TEXTURE_CUBE_MAP",
+                    GL_TEXTURE_CUBE_MAP_ARB,
+                    GL_TEXTURE_BINDING_CUBE_MAP_ARB,
+                    spawn_children_textures, children);
+#endif
 }
 
 const glstate *bugle_state_get_root(void)

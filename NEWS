@@ -3,8 +3,8 @@ day and a half to a Heisenbug. It examines the memory that array
 drawing commands (like glDrawElements) would read, and catches SIGSEGVs
 it generates. If you're using vertex buffer objects, it will instead
 check whether any accesses will be beyond the range of the buffer. In
-future it will be expanded to check other things that the driver
-doesn't.
+future it may be expanded to check other things that the OpenGL
+implementation isn't required to.
 
 The code generator and state manager have also been rewritten. If there
 are any issues, report them to me at bmerry@users.sourceforge.net.

@@ -40,7 +40,7 @@ static void context_initialise(const void *key, void *data)
 
     flags = (bool *) data;
     memset(flags, 0, sizeof(bool) * BUGLE_GLEXT_COUNT);
-    exts = CALL_glGetString(GL_EXTENSIONS);
+    exts = (const char *) CALL_glGetString(GL_EXTENSIONS);
     for (i = 0; i < BUGLE_GLEXT_COUNT; i++)
     {
         cur = exts;

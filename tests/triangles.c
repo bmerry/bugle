@@ -2,7 +2,11 @@
  * triangle counting code.
  */
 
+#if HAVE_CONFIG_H
+# include <config.h>
+#endif
 #define GL_GLEXT_PROTOTYPES
+#define _POSIX_SOURCE
 #include <GL/gl.h>
 #include <GL/glext.h>
 #include <GL/glx.h>

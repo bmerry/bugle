@@ -26,6 +26,7 @@
 #if HAVE_CONFIG_H
 # include <config.h>
 #endif
+#define _XOPEN_SOURCE 500
 #include "src/filters.h"
 #include "src/utils.h"
 #include "src/glutils.h"
@@ -261,7 +262,7 @@ static bool map_screenshot(screenshot_data *data)
         /* Mapping is done from the real context, so we must save the
          * old binding.
          */
-        GLuint old_id;
+        GLint old_id;
 
         if (!bugle_begin_internal_render())
         {
@@ -297,7 +298,7 @@ static bool unmap_screenshot(screenshot_data *data)
         /* Mapping is done from the real context, so we must save the
          * old binding.
          */
-        GLuint old_id;
+        GLint old_id;
         bool ret;
 
         if (!bugle_begin_internal_render())
@@ -340,6 +341,7 @@ static bool end_screenshot(GLenum format, int test_width, int test_height)
     GLXDrawable old_read, old_write;
     Display *dpy;
     screenshot_data *cur;
+    unsigned int w, h;
     int width, height;
 
     cur = &video_data[video_cur];
@@ -355,8 +357,10 @@ static bool end_screenshot(GLenum format, int test_width, int test_height)
     old_write = CALL_glXGetCurrentDrawable();
     old_read = CALL_glXGetCurrentReadDrawable();
     dpy = CALL_glXGetCurrentDisplay();
-    CALL_glXQueryDrawable(dpy, old_write, GLX_WIDTH, &width);
-    CALL_glXQueryDrawable(dpy, old_write, GLX_HEIGHT, &height);
+    CALL_glXQueryDrawable(dpy, old_write, GLX_WIDTH, &w);
+    CALL_glXQueryDrawable(dpy, old_write, GLX_HEIGHT, &h);
+    width = w;
+    height = h;
     if (test_width != -1 || test_height != -1)
         if (width != test_width || height != test_height)
         {
