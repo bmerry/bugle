@@ -1,15 +1,11 @@
 Current:
-----------------
+--------
 - check whether all dependencies on trackextensions are listed
-- check whether enable/disable in debugger still work (probably not!)
-- update docs (especially re variables)
-- help for variables
 - exploit per-context, per-filter state e.g. for video
 
 gldb
 ----
 - allow Ctrl-C to abort current line when reading commands
-- make one-letter shortcuts
 - set filter variables on the fly
 - enable reporting of segfaults
 - print full dump of current function
@@ -28,10 +24,8 @@ bugle
 - handle texture proxies
 - handle GL shared objects correctly
 - improve support for GLSL
-- capture information about call lists
+- capture more information about call lists
 - capture and replay
-- better movie capture
-  - option of a separate thread, for parallel encoding
 
 budgie
 ------
@@ -53,3 +47,5 @@ long term
 - Windows support
 - graphical debugger interface
 - OpenGL 2.0 support
+- better movie capture
+  - option of a separate thread, for parallel encoding

@@ -79,13 +79,13 @@ static char **prog_argv = NULL;
 
 /* The table of full command names. This is used for command completion
  * and display of help. There is also a hash table of command names
- * including prefixes. One day it may become a trie. The handler takes the
- * canonical name of the command, the raw line data, and a NULL-terminated
- * array of tokens. The generator is used by readline to complete arguments;
- * see the readline documentation for more details.
+ * including prefixes. The handler takes the canonical name of the command,
+ * the raw line data, and a NULL-terminated array of tokens. The
+ * generator is used by readline to complete arguments; see the
+ * readline documentation for more details.
  *
- * Please maintain the list in alphabetical order, as it makes the help
- * output look neater.
+ * Note that setting "help" to NULL excludes the command from the
+ * documentation. This is recommended for shorthand aliases.
  */
 typedef bool (*command_handler)(const char *, const char *, const char * const *);
 typedef struct
@@ -96,7 +96,7 @@ typedef struct
     command_handler handler;
     char * (*generator)(const char *text, int state);
 } command_info;
-const command_info commands[];
+command_info commands[];
 
 /* The structure for indexing commands in a hash table. */
 typedef struct
@@ -271,7 +271,7 @@ static bool command_break_unbreak(const char *cmd,
         return false;
     }
 
-    req_val = strcmp(cmd, "break") == 0;
+    req_val = (cmd[0] == 'b');
     if (strcmp(func, "error") == 0)
     {
         break_on_error = req_val;
@@ -532,9 +532,9 @@ static bool command_help(const char *cmd,
 {
     const command_info *c;
 
-    /* FIXME: sort the commands by name */
     for (c = commands; c->name; c++)
-        printf("%-12s\t%s\n", c->name, c->help);
+        if (c->help)
+            printf("%-12s\t%s\n", c->name, c->help);
     return false;
 }
 
@@ -584,12 +584,29 @@ static void handle_commands(void)
     char **tokens;
     size_t num_tokens, i;
     const command_data *data;
+    struct sigaction act, old_act;
+    sigset_t sigint_set;
 
     do
     {
         done = false;
 #if HAVE_READLINE
+        /* Readline replaces the SIGINT handler, but still chains to the
+         * original. We set the handler to ignore for the readline()
+         * call to avoid queuing up extra stop requests.
+         */
+        act.sa_handler = SIG_DFL;
+        act.sa_flags = 0;
+        sigemptyset(&act.sa_mask);
+        check(sigaction(SIGINT, &act, &old_act), "sigaction");
+        sigemptyset(&sigint_set);
+        sigaddset(&sigint_set, SIGINT);
+        check(sigprocmask(SIG_UNBLOCK, &sigint_set, NULL), "sigprocmask");
+
         line = readline("(gldb) ");
+
+        check(sigprocmask(SIG_BLOCK, &sigint_set, NULL), "sigprocmask");
+        check(sigaction(SIGINT, &old_act, NULL), "sigaction");
         if (line && *line) add_history(line);
 #else
         fputs("(gldb) ", stdout);
@@ -601,7 +618,7 @@ static void handle_commands(void)
         {
             if (running) gldb_send_code(lib_out, REQ_QUIT);
             if (prev_line) free(prev_line);
-            exit(0); /* FIXME: clean shutdown? */
+            exit(0);
         }
         else
         {
@@ -877,20 +894,19 @@ static char **completion(const char *text, int start, int end)
 }
 #endif
 
-static void shutdown(void)
-{
-    bugle_hash_clear(&command_table);
-    bugle_hash_clear(&break_on);
-    free(prog_argv);
-}
-
-const command_info commands[] =
+command_info commands[] =
 {
     { "backtrace", "Show a gdb backtrace", true, command_backtrace, NULL },
+    { "bt", NULL, true, command_backtrace, NULL },
+
     { "break", "Set breakpoints", false, command_break_unbreak, generate_functions },
-    { "bt", "Alias for backtrace", true, command_backtrace, NULL },
-    { "chain", "Set the filter-set chain", false, command_chain, NULL },
+    { "b", NULL, false, command_break_unbreak, generate_functions },
+    { "unbreak", "Clear breakpoints", false, command_break_unbreak, generate_functions },
+
     { "continue", "Continue running the program", true, command_cont, NULL },
+    { "c", NULL, true, command_cont, NULL },
+
+    { "chain", "Set the filter-set chain", false, command_chain, NULL },
     { "disable", "Disable a filterset", true, command_enable_disable, NULL },
     { "enable", "Enable a filterset", true, command_enable_disable, NULL },
     { "gdb", "Stop in the program in gdb", false, command_gdb, NULL },
@@ -900,14 +916,38 @@ const command_info commands[] =
     { "state", "Show GL state", true, command_state, NULL }, /* FIXME: completion */
     { "quit", "Exit gldb", false, command_quit, NULL },
     { "screenshot", "Capture a screenshot", true, command_screenshot, NULL },
-    { "unbreak", "Clear breakpoints", false, command_break_unbreak, generate_functions },
     { NULL, NULL, false, NULL, NULL }
 };
+
+static int compare_commands(const void *a, const void *b)
+{
+    const command_info *A = (const command_info *) a;
+    const command_info *B = (const command_info *) b;
+
+    return strcmp(A->name, B->name);
+}
+
+static void sort_commands(void)
+{
+    const command_info *c;
+    size_t count = 0;
+
+    for (c = commands; c->name; c++) count++;
+    qsort(commands, count, sizeof(command_info), compare_commands);
+}
+
+static void shutdown(void)
+{
+    bugle_hash_clear(&command_table);
+    bugle_hash_clear(&break_on);
+    free(prog_argv);
+}
 
 static void initialise(void)
 {
     const command_info *cmd;
 
+    sort_commands();
     bugle_initialise_hashing();
     bugle_hash_init(&break_on, false);
     bugle_hash_init(&command_table, true);
