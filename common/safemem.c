@@ -19,10 +19,12 @@
 #if HAVE_CONFIG_H
 # include <config.h>
 #endif
+#define _GNU_SOURCE
 #include "safemem.h"
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
+#include <stdarg.h>
 
 void *xmalloc(size_t size)
 {
@@ -70,4 +72,43 @@ char *xstrdup(const char *s)
     n = xmalloc(len + 1);
     memcpy(n, s, len + 1);
     return n;
+}
+
+int xasprintf(char **strp, const char *format, ...)
+{
+    int ans;
+#if !HAVE_VASPRINTF && HAVE_VSNPRINTF
+    size;
+#endif
+
+    va_list ap;
+#if HAVE_VASPRINTF
+    va_start(ap, format);
+    ans = vasprintf(strp, format, ap);
+    if (!*strp)
+    {
+        fputs("out of memory in vasprintf\n", stderr);
+        exit(1);
+    }
+    va_end(ap);
+    return ans;
+#elif HAVE_VSNPRINTF
+    size = 128;
+    *strp = xmalloc(size);
+    while (1)
+    {
+        va_start(ap, format);
+        ans = vsnprintf(*strp, size, format, ap);
+        va_end(ap);
+        if (ans > -1 && n < size) /* Worked */
+            return ans;
+        else if (ans > -1)        /* C99 standard: number of bytes */
+            size = ans + 1;
+        else                      /* Older e.g. glibc 2.0 */
+            size *= 2;
+        *strp = xrealloc(*strp, size);
+    }
+#else
+#error "you have no safe way to format strings"
+#endif
 }

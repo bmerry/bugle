@@ -23,8 +23,8 @@
 #include "src/utils.h"
 #include "src/types.h"
 #include "src/canon.h"
-#include "src/safemem.h"
 #include "src/glutils.h"
+#include "common/safemem.h"
 #include "common/bool.h"
 #include <stdio.h>
 #include <string.h>
@@ -60,8 +60,7 @@ bool screenshot_callback(function_call *call, void *data)
             return true;
         }
         frameno++;
-        fname = xmalloc(strlen(filebase) + strlen(filesuffix) + 64);
-        sprintf(fname, "%s%.4d%s", filebase, frameno, filesuffix);
+        xasprintf(&fname, "%s%.4d%s", filebase, frameno, filesuffix);
         out = fopen(fname, "wb");
         if (!out)
         {

@@ -24,7 +24,7 @@
 #include "filters.h"
 #include "linkedlist.h"
 #include "hashtable.h"
-#include "src/safemem.h"
+#include "common/safemem.h"
 #include <stdio.h>
 #include <stddef.h>
 #include <string.h>

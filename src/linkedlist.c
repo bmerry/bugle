@@ -21,7 +21,7 @@
 #endif
 #include <stdlib.h>
 #include "linkedlist.h"
-#include "safemem.h"
+#include "common/safemem.h"
 
 void list_init(linked_list *l)
 {

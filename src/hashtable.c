@@ -24,7 +24,7 @@
 #include <stddef.h>
 #include <assert.h>
 #include "hashtable.h"
-#include "safemem.h"
+#include "common/safemem.h"
 #include "common/bool.h"
 
 /* Primes are used for hash table sizes */

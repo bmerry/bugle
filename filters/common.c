@@ -22,8 +22,8 @@
 #include "src/filters.h"
 #include "src/utils.h"
 #include "src/types.h"
-#include "src/safemem.h"
 #include "src/glutils.h"
+#include "common/safemem.h"
 #include "common/bool.h"
 #include <stdio.h>
 

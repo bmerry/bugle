@@ -1,8 +1,9 @@
 noinst_PROGRAMS = budgie/budgie gentokens/gentokens
-noinst_LTLIBRARIES = budgie/libbudgie.la
+noinst_LTLIBRARIES = budgie/libbudgie.la common/libcommon.la
 noinst_HEADERS = budgie/tree.def budgie/c-common.def
 noinst_SCRIPTS = gentokens/gettokens.awk
 lib_LTLIBRARIES = src/libbugle.la
+bin_PROGRAMS = gldb/gldb
 pkglib_LTLIBRARIES = \
 	filters/common.la \
 	filters/modify.la \
@@ -11,8 +12,16 @@ pkglib_LTLIBRARIES = \
 	filters/debugger.la \
 	filters/capture.la
 INCLUDES = -I$(srcdir)/budgielib
-AM_CFLAGS = -DPKGLIBDIR=\"$(pkglibdir)\" $(X_CFLAGS)
+AM_CFLAGS = -DLIBDIR=\"$(libdir)\" -DPKGLIBDIR=\"$(pkglibdir)\" $(X_CFLAGS)
 AM_YFLAGS = -d
+
+common_libcommon_la_SOURCES = \
+	common/safemem.c common/safemem.h \
+	common/bool.h common/protocol.h common/protocol.c
+common_libcommon_la_LDFLAGS = -static
+
+gldb_gldb_SOURCES = gldb/gldb.c
+gldb_gldb_LDADD = common/libcommon.la
 
 budgie_budgie_SOURCES = \
 	budgie/budgie.cpp \
@@ -24,6 +33,7 @@ budgie_budgie_SOURCES = \
 budgie_libbudgie_la_SOURCES = \
 	budgielib/budgieutils.c budgielib/budgieutils.h \
 	budgielib/state.c budgielib/state.h
+budgie_libbudgie_la_LDFLAGS = -static
 
 src_libbugle_la_SOURCES = \
 	src/confparse.y src/conflex.l src/conffile.h \
@@ -35,20 +45,19 @@ src_libbugle_la_SOURCES = \
 	src/hashtable.c src/hashtable.h \
 	src/glstate.c src/glstate.h \
 	src/canon.c src/canon.h \
-	src/safemem.c src/safemem.h \
-	common/bool.h
 nodist_src_libbugle_la_SOURCES = \
 	src/lib.c src/lib.h src/utils.c \
 	src/utils.h src/types.c src/types.h \
 	src/gltokens.c
 BUILT_SOURCES = src/lib.h src/utils.h src/types.h confparse.h
-src_libbugle_la_LIBADD = budgie/libbudgie.la $(LTLIBOBJS) -lGL $(X_PRE_LIBS) $(X_LIBS) $(X_EXTRA_LIBS)
+src_libbugle_la_LIBADD = budgie/libbudgie.la common/libcommon.la $(LTLIBOBJS) -lGL $(X_PRE_LIBS) $(X_LIBS) $(X_EXTRA_LIBS)
 src_libbugle_la_LDFLAGS = -export-dynamic -version-info 0:0:0
 
 # Extra files to distribute
 EXTRA_DIST = src/gl.bc src/data/gl.c src/data/overrides.h \
 	gentokens/gettokens.awk \
-	FAQ TROUBLESHOOTING doc/filters.txt doc/example.txt
+	FAQ TROUBLESHOOTING \
+	doc/filters.txt doc/example.txt doc/protocol.txt
 
 # Generated files that generate other files
 

@@ -23,7 +23,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
-#include "src/safemem.h"
+#include "common/safemem.h"
 #include "src/conffile.h"
 #include "confparse.h"
 

@@ -13,14 +13,18 @@ AC_PROG_LN_S
 AC_PROG_INSTALL
 AC_PROG_MAKE_SET
 AC_PROG_LIBTOOL
+AC_LANG(C)
 
 dnl Checks for libraries
+AC_CHECK_LIB([readline], [readline], [], [], [])
+AC_CHECK_LIB([history], [add_history], [], [], [])
 
 dnl Checks for header files
 AC_HEADER_STDC
 AC_HEADER_DIRENT
 AC_HEADER_STDBOOL
 AC_CHECK_HEADERS([sys/types.h stdlib.h stddef.h regex.h])
+AC_CHECK_HEADERS([readline/readline.h])
 
 dnl Checks for types
 AC_CHECK_TYPE(ptrdiff_t, long int)
@@ -37,7 +41,7 @@ AC_C_CHAR_UNSIGNED
 BUGLE_CPP_DEFINES
 
 dnl Checks for library functions
-AC_CHECK_FUNCS([regcomp strrchr])
+AC_CHECK_FUNCS([regcomp strrchr vasprintf vsnprintf])
 AC_REPLACE_FUNCS([bsearch])
 AC_FUNC_MEMCMP
 

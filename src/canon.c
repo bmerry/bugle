@@ -23,7 +23,7 @@
 #include "hashtable.h"
 #include "src/types.h"
 #include "common/bool.h"
-#include "safemem.h"
+#include "common/safemem.h"
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>

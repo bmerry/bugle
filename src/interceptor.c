@@ -23,9 +23,9 @@
 #include "src/lib.h"
 #include "filters.h"
 #include "canon.h"
-#include "safemem.h"
 #include "conffile.h"
 #include "hashtable.h"
+#include "common/safemem.h"
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>

@@ -19,6 +19,7 @@
 #if HAVE_CONFIG_H
 # include <config.h>
 #endif
+#define _XOPEN_SOURCE
 #include "src/filters.h"
 #include "src/utils.h"
 #include "src/types.h"
@@ -26,14 +27,18 @@
 #include "src/hashtable.h"
 #include "src/glutils.h"
 #include "budgielib/state.h"
+#include "common/protocol.h"
 #include "common/bool.h"
+#include "common/safemem.h"
 #include <stdio.h>
 #include <string.h>
+#include <inttypes.h>
 
-static FILE *in_pipe, *out_pipe;
+static int in_pipe, out_pipe;
 static bool break_on[NUMBER_OF_FUNCTIONS];
 static bool break_on_error;
 
+#if 0
 static void dump_state(state_generic *state, int indent)
 {
     bool big = false;
@@ -72,35 +77,72 @@ static void dump_state(state_generic *state, int indent)
         fputs("}\n", out_pipe);
     }
 }
+#endif
 
 static void debugger_loop(function_call *call, void *data)
 {
-    char line[1024];
+    uint32_t req, req_val;
+    char *req_str, *resp_str;
+    budgie_function func;
 
+    /* FIXME: error checking */
     if (begin_internal_render())
     {
         CALL_glFinish();
         end_internal_render("debugger", true);
     }
-    while (1)
+    while (true)
     {
-        fgets(line, sizeof(line), in_pipe);
-        if (strcmp(line, "\n") == 0)
-            break;
-        else if (strcmp(line, "state\n") == 0)
+        recv_code(in_pipe, &req);
+        if (req == REQ_CONT) break;
+        switch (req)
         {
-            fputs("dumping state\n", out_pipe);
-            dump_state(&get_root_state()->generic, 0);
+        case REQ_BREAK:
+            recv_string(in_pipe, &req_str);
+            recv_code(in_pipe, &req_val);
+            func = find_function(req_str);
+            if (func != NULL_FUNCTION)
+            {
+                send_code(out_pipe, RESP_ANS);
+                send_code(out_pipe, 0);
+                break_on[func] = req_val != 0;
+            }
+            else
+            {
+                send_code(out_pipe, RESP_ERROR);
+                send_code(out_pipe, 0);
+                xasprintf(&resp_str, "Unknown function %s", req_str);
+                send_string(out_pipe, resp_str);
+                free(resp_str);
+            }
+            free(req_str);
+            break;
+        case REQ_BREAK_ERROR:
+            recv_code(in_pipe, &req_val);
+            break_on_error = req_val != 0;
+            send_code(out_pipe, RESP_ANS);
+            send_code(out_pipe, 0);
+            break;
+        case REQ_STATE:
+            recv_string(in_pipe, &req_str);
+            send_code(out_pipe, RESP_ERROR);
+            send_code(out_pipe, 0);
+            send_string(out_pipe, "REQ_STATE not supported yet");
+            break;
+        case REQ_QUIT:
+            exit(1);
         }
-        else if (strcmp(line, "quit\n") == 0)
-            exit(0);
     }
 }
 
 static bool debugger_callback(function_call *call, void *data)
 {
     if (break_on[canonical_call(call)])
+    {
+        send_code(out_pipe, RESP_BREAK);
+        send_string(out_pipe, function_table[call->generic.id].name);
         debugger_loop(call, data);
+    }
     return true;
 }
 
@@ -109,7 +151,12 @@ static bool debugger_error_callback(function_call *call, void *data)
     GLenum error;
     if (break_on_error
         && (error = get_call_error(call)))
+    {
+        send_code(out_pipe, RESP_BREAK_ERROR);
+        send_string(out_pipe, function_table[call->generic.id].name);
+        send_string(out_pipe, gl_enum_to_token(error));
         debugger_loop(call, data);
+    }
     return true;
 }
 
@@ -123,8 +170,16 @@ static bool initialise_debugger(filter_set *handle)
     filter_set_renders("debugger");
     filter_post_renders("debugger_error");
     filter_set_queries_error("debugger", false);
-    in_pipe = stdin;
-    out_pipe = stdout;
+
+    /* FIXME: validate the numbers and the function calls */
+    if (getenv("BUGLE_DEBUGGER_FD_IN"))
+        in_pipe = atoi(getenv("BUGLE_DEBUGGER_FD_IN"));
+    else
+        in_pipe = 0;
+    if (getenv("BUGLE_DEBUGGER_FD_OUT"))
+        out_pipe = atoi(getenv("BUGLE_DEBUGGER_FD_OUT"));
+    else
+        out_pipe = 1;
     return true;
 }
 

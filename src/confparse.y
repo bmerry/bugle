@@ -28,7 +28,7 @@
 #include <stdlib.h>
 #include "src/linkedlist.h"
 #include "src/conffile.h"
-#include "src/safemem.h"
+#include "common/safemem.h"
 
 static linked_list config_root;
 int yyerror(const char *msg);
