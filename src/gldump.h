@@ -26,9 +26,6 @@
 #include "budgieutils.h"
 #include "common/bool.h"
 
-/* Call this *after* filters have been set up */
-void initialise_dump(void);
-
 GLenum gl_token_to_enum(const char *name);
 const char *gl_enum_to_token(GLenum e);
 

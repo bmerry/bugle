@@ -23,6 +23,7 @@
 #include "src/utils.h"
 #include "src/types.h"
 #include "src/safemem.h"
+#include "src/glutils.h"
 #include "common/bool.h"
 #include <stdio.h>
 
@@ -68,9 +69,9 @@ static bool initialise_log(filter_set *handle)
     }
     register_filter(handle, "log", log_callback);
     register_filter_depends("log", "invoke");
-    register_filter_depends("log", "trackbeginend");
-    register_filter_set_depends("log", "trackcontext");
-    register_filter_set_depends("log", "trackbeginend");
+    /* No direct rendering, but some of the length functions query state */
+    filter_set_renders("log");
+    filter_post_renders("log");
     return true;
 }
 
@@ -86,7 +87,10 @@ static void destroy_log(filter_set *handle)
 static bool set_variable_log(filter_set *handle, const char *name, const char *value)
 {
     if (strcmp(name, "filename") == 0)
+    {
+        if (log_filename) free(log_filename);
         log_filename = xstrdup(value);
+    }
     else if (strcmp(name, "flush") == 0)
     {
         if (strcmp(value, "yes") == 0)

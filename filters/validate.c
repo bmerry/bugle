@@ -24,6 +24,7 @@
 #include "src/utils.h"
 #include "src/types.h"
 #include "src/canon.h"
+#include "src/glutils.h"
 #include "budgielib/state.h"
 #include "common/bool.h"
 #include <stdio.h>
@@ -33,26 +34,7 @@
 #include <errno.h>
 #include <assert.h>
 
-static state_7context_I *(*get_context_state)(void);
-static bool (*in_begin_end)(void);
-
-static bool error_pre_callback(function_call *call, void *data)
-{
-    state_7context_I *ctx;
-
-    ctx = get_context_state();
-    if (canonical_call(call) == FUNC_glGetError
-        && !in_begin_end()
-        && ctx->c_internal.c_error.data)
-    {
-        *call->typed.glGetError.retn = ctx->c_internal.c_error.data;
-        ctx->c_internal.c_error.data = GL_NO_ERROR;
-        return false;
-    }
-    return true;
-}
-
-static bool error_post_callback(function_call *call, void *data)
+static bool error_callback(function_call *call, void *data)
 {
     state_7context_I *ctx;
     GLenum error;
@@ -60,9 +42,30 @@ static bool error_post_callback(function_call *call, void *data)
     /* FIXME: work with the log module */
     if (function_table[call->generic.id].name[2] == 'X') return true; /* GLX */
     ctx = get_context_state();
-    if (!in_begin_end())
+    if (canonical_call(call) == FUNC_glGetError)
     {
-        /* Note: we deliberately don't call begin_internal_render here */
+        /* We hope that it returns GL_NO_ERROR, since otherwise something
+         * slipped through our own net. If not, we return it to the app
+         * rather than whatever we have saved. Also, we must make sure to
+         * return nothing else inside begin/end.
+         */
+        if (*call->typed.glGetError.retn != GL_NO_ERROR)
+        {
+            fputs("Warning: glGetError() returned ", stderr);
+            dump_GLerror(call->typed.glGetError.retn, -1, stderr);
+            fputs("\n", stderr);
+        }
+        else if (!in_begin_end() && ctx->c_internal.c_error.data)
+        {
+            *call->typed.glGetError.retn = ctx->c_internal.c_error.data;
+            ctx->c_internal.c_error.data = GL_NO_ERROR;
+        }
+    }
+    else if (!in_begin_end())
+    {
+        /* Note: we deliberately don't call begin_internal_render here,
+         * since it will beat us to calling glGetError().
+         */
         while ((error = CALL_glGetError()) != GL_NO_ERROR)
         {
             dump_any_type(TYPE_7GLerror, &error, 1, stderr);
@@ -76,33 +79,12 @@ static bool error_post_callback(function_call *call, void *data)
 
 static bool initialise_error(filter_set *handle)
 {
-    filter_set *trackcontext, *trackbeginend;
-
-    register_filter(handle, "error_pre", error_pre_callback);
-    register_filter(handle, "error_post", error_post_callback);
-    register_filter_depends("invoke", "error_pre");
-    register_filter_depends("error_post", "invoke");
-    register_filter_depends("error_post", "trackbeginend");
-    register_filter_set_depends("error", "trackbeginend");
-    register_filter_set_depends("error", "trackcontext");
-
-    trackcontext = get_filter_set_handle("trackcontext");
-    trackbeginend = get_filter_set_handle("trackbeginend");
-    if (!trackcontext)
-    {
-        fputs("trackcontext filter-set not found (required by error)\n", stderr);
-        return false;
-    }
-    if (!trackbeginend)
-    {
-        fputs("trackbeginend filter-set not found (required by error)\n", stderr);
-        return false;
-    }
-    get_context_state = (state_7context_I *(*)(void))
-        get_filter_set_symbol(trackcontext, "get_context_state");
-    in_begin_end = (bool (*)(void))
-        get_filter_set_symbol(trackbeginend, "in_begin_end");
-    assert(get_context_state && in_begin_end);
+    register_filter(handle, "error", error_callback);
+    register_filter_depends("error", "invoke");
+    /* We don't call filter_post_renders, because that would make the
+     * error filterset depend on itself.
+     */
+    filter_set_renders("error");
     return true;
 }
 

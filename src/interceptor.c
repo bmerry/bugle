@@ -135,7 +135,6 @@ void interceptor(function_call *call)
         initialise_real();
         initialise_canonical();
         initialise_filters();
-        initialise_dump();
         load_config();
         initialised = true;
     }

@@ -28,12 +28,7 @@
 #include <assert.h>
 #include <GL/glx.h>
 
-static state_7context_I *context_state = NULL;
-
-state_7context_I *get_context_state(void)
-{
-    return context_state;
-}
+state_7context_I *context_state = NULL;
 
 bool trackcontext_callback(function_call *call, void *data)
 {
@@ -63,15 +58,6 @@ bool trackcontext_callback(function_call *call, void *data)
  * because glBegin can fail if given an illegal primitive, and we can't
  * check for the error because glGetError is illegal inside glBegin/glEnd.
  */
-
-bool in_begin_end(void)
-{
-    /* Begin/end is a time when GL calls fail. If we don't yet have a
-     * context, then the calls are simply undefined, so we probably also
-     * don't want to take actions based on calls.
-     */
-    return !context_state || context_state->c_internal.c_in_begin_end.data;
-}
 
 static bool trackbeginend_callback(function_call *call, void *data)
 {
@@ -114,6 +100,7 @@ static bool initialise_trackbeginend(filter_set *handle)
 {
     register_filter(handle, "trackbeginend", trackbeginend_callback);
     register_filter_depends("trackbeginend", "invoke");
+    register_filter_depends("trackbeginend", "trackcontext");
     register_filter_set_depends("trackbeginend", "trackcontext");
     return true;
 }

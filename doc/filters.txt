@@ -87,3 +87,23 @@ is also possible to obtain pointers to the per-call state of other
 filter sets (which is the intention of this extension) by calling
 
 get_filter_set_call_state(call, other_handle).
+
+
+Some guidelines
+---------------
+- Try not to halt calls. Rather let them run and then overwrite the
+return value and possibly the GL state that it set. Otherwise the call
+will not appear in the log.
+- If your filter runs after invoke and makes GL calls, then the
+initialisation should call filter_set_renders on the set and
+filter_post_renders on the filter (from glutils.h). Protect any
+rendering like this:
+
+if (begin_internal_render())
+{
+    CALL_glFrob();
+    CALL_glBaz();
+    end_internal_render("filtername", true);
+}
+
+Replace true with false if you expect errors and wish to ignore them.

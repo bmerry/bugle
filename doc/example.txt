@@ -13,6 +13,17 @@ chain trace
     filterset invoke
 }
 
+# Write out screenshots frame0001.ppm, frame0002.ppm etc after every
+# frame. It will not work correctly if you do complicated things like
+# use glXSwapBuffers on a drawable not attached to the current context,
+# change the viewport, or mess around with glPixelStore. This will
+# probably be fixed one day.
+chain screenshot
+{
+    filterset screenshot
+    filterset invoke
+}
+
 # Wait for a line of input from stdin whenever a particular function is
 # called (before executing it). You can also type in "state" to get a
 # crude state dump, and "quit" to abort the program. You may have multiple

@@ -20,15 +20,33 @@
 # include <config.h>
 #endif
 #include "common/bool.h"
-#include "gldump.h"
+#include "filters.h"
+#include "glutils.h"
 #include "src/utils.h"
 #include <stdio.h>
+#include <stdlib.h>
 #include <GL/gl.h>
+#include <assert.h>
 
-void begin_internal_render(void)
+static state_7context_I **context_state = NULL;
+
+state_7context_I *get_context_state(void)
+{
+    assert(context_state);
+    return *context_state;
+}
+
+bool in_begin_end(void)
+{
+    assert(context_state);
+    return !*context_state || (*context_state)->c_internal.c_in_begin_end.data;
+}
+
+bool begin_internal_render(void)
 {
     GLenum error;
 
+    if (in_begin_end()) return false;
     /* FIXME: work with the error filterset to save the errors even
      * when the error filterset is not actively checking for errors.
      */
@@ -40,6 +58,7 @@ void begin_internal_render(void)
               stderr);
         while ((error = CALL_glGetError()) != GL_NO_ERROR);
     }
+    return true;
 }
 
 void end_internal_render(const char *name, bool warn)
@@ -54,4 +73,45 @@ void end_internal_render(const char *name, bool warn)
             fputs(".\n", stderr);
         }
     }
+}
+
+void filter_set_renders(const char *name)
+{
+    filter_set_uses_state(name);
+    register_filter_set_depends(name, "trackbeginend");
+}
+
+void filter_post_renders(const char *name)
+{
+    register_filter_depends(name, "error");
+    register_filter_depends(name, "trackbeginend");
+}
+
+void filter_set_uses_state(const char *name)
+{
+    filter_set *handle;
+
+    register_filter_set_depends(name, "trackcontext");
+    if (!context_state)
+    {
+        handle = get_filter_set_handle("trackcontext");
+        if (!handle)
+        {
+            fprintf(stderr, "could not find trackcontext filterset, required by %s filterset\n",
+                    name);
+            exit(1);
+        }
+        context_state = (state_7context_I **)
+            get_filter_set_symbol(handle, "context_state");
+        if (!context_state)
+        {
+            fprintf(stderr, "could not find symbol context_state in filterset trackcontext\n");
+            exit(1);
+        }
+    }
+}
+
+void filter_post_uses_state(const char *name)
+{
+    register_filter_depends(name, "trackcontext");
 }

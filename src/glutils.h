@@ -23,8 +23,33 @@
 # include <config.h>
 #endif
 #include "common/bool.h"
+#include "src/utils.h"
 
-void begin_internal_render(void);
+/* The intended use is:
+ * if (begin_internal_render())
+ * {
+ *     CALL_glFrob();
+ *     end_internal_render();
+ * }
+ * begin_internal_render will return false if one is inside begin/end.
+ * You must also call filter_set_renders in the filterset initialiser,
+ * as well as filter_post_renders for each filter that will do rendering
+ * after invoke.
+ *
+ * If you want to access the context but not necessary do rendering, you
+ * can use the weaker _uses_state functions. Note that in_begin_end requires
+ * the stronger form.
+ */
+
+bool begin_internal_render(void);
 void end_internal_render(const char *name, bool warn);
+
+state_7context_I *get_context_state(void);
+bool in_begin_end(void);
+
+void filter_set_renders(const char *name);
+void filter_post_renders(const char *name);
+void filter_set_uses_state(const char *name);
+void filter_post_uses_state(const char *name);
 
 #endif /* !BUGLE_SRC_GLUTILS_H */

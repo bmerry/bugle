@@ -26,48 +26,50 @@
 
 /* Wireframe filter-set */
 
-static bool wireframe_pre_callback(function_call *call, void *data)
+static bool wireframe_callback(function_call *call, void *data)
 {
     switch (canonical_call(call))
     {
+    case FUNC_glPolygonMode:
+    case FUNC_glXMakeCurrent:
+#ifdef GLX_VERSION_1_3
+    case FUNC_glXMakeContextCurrent:
+#endif
+        if (begin_internal_render())
+        {
+            CALL_glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+            end_internal_render("wireframe", true);
+        }
+        break;
     case FUNC_glEnable:
         switch (*call->typed.glEnable.arg0)
         {
         case GL_TEXTURE_1D:
         case GL_TEXTURE_2D:
+#ifdef GL_ARB_texture_cube_map
         case GL_TEXTURE_CUBE_MAP:
+#endif
+#ifdef GL_EXT_texture3D
         case GL_TEXTURE_3D:
-            return false;
+#endif
+            if (begin_internal_render())
+            {
+                CALL_glDisable(*call->typed.glEnable.arg0);
+                end_internal_render("wireframe", true);
+            }
+            break;
         default: ;
         }
-        break;
-    case FUNC_glPolygonMode:
-        return false;
-    }
-    return true;
-}
-
-static bool wireframe_post_callback(function_call *call, void *data)
-{
-    switch (canonical_call(call))
-    {
-    case FUNC_glXMakeCurrent:
-#ifdef GLX_VERSION_1_3
-    case FUNC_glXMakeContextCurrent:
-#endif
-        begin_internal_render();
-        CALL_glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-        end_internal_render("wireframe", true);
     }
     return true;
 }
 
 static bool initialise_wireframe(filter_set *handle)
 {
-    register_filter(handle, "wireframe_pre", wireframe_pre_callback);
-    register_filter(handle, "wireframe_post", wireframe_post_callback);
-    register_filter_depends("invoke", "wireframe_pre");
-    register_filter_depends("wireframe_post", "invoke");
+    register_filter(handle, "wireframe", wireframe_callback);
+    register_filter_depends("wireframe", "invoke");
+    filter_set_renders("wireframe");
+    filter_post_renders("wireframe");
     return true;
 }
 

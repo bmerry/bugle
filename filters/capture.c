@@ -38,9 +38,9 @@ static const char *filesuffix = ".ppm";
 bool screenshot_callback(function_call *call, void *data)
 {
     /* FIXME: track the frameno in the context?
-     * FIXME: check for begin/end
      * FIXME: use an aux context to control the pixelstore
      * FIXME: use glX to get the window size if possible
+     * FIXME: async copy via textures
      * FIXME: recycle memory
      */
     static int frameno = 0;
@@ -54,6 +54,11 @@ bool screenshot_callback(function_call *call, void *data)
 
     if (canonical_call(call) == FUNC_glXSwapBuffers)
     {
+        if (!begin_internal_render())
+        {
+            fputs("warning: glXSwapBuffers called inside begin/end. Dropping frame\n", stderr);
+            return true;
+        }
         frameno++;
         fname = xmalloc(strlen(filebase) + strlen(filesuffix) + 64);
         sprintf(fname, "%s%.4d%s", filebase, frameno, filesuffix);
@@ -65,7 +70,6 @@ bool screenshot_callback(function_call *call, void *data)
             return true;
         }
         free(fname);
-        begin_internal_render();
         CALL_glGetIntegerv(GL_VIEWPORT, viewport);
         w = viewport[2];
         h = viewport[3];
@@ -74,7 +78,6 @@ bool screenshot_callback(function_call *call, void *data)
         cur = frame + aw * h * 3;
         CALL_glReadPixels(viewport[0], viewport[1], w, h, GL_RGB,
                           GL_UNSIGNED_BYTE, frame);
-        end_internal_render("screenshot", true);
         fprintf(out, "P6\n%d %d\n255\n", (int) w, (int) h);
         while (h > 0)
         {
@@ -92,6 +95,7 @@ bool screenshot_callback(function_call *call, void *data)
         if (fclose(out) != 0)
             perror("write error");
         free(frame);
+        end_internal_render("screenshot", true);
     }
     return true;
 }
@@ -100,6 +104,7 @@ static bool initialise_screenshot(filter_set *handle)
 {
     register_filter(handle, "screenshot", screenshot_callback);
     register_filter_depends("invoke", "screenshot");
+    filter_set_renders("screenshot");
     return true;
 }
 

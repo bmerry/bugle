@@ -24,6 +24,7 @@
 #include <assert.h>
 #include "gltokens.h"
 #include "gldump.h"
+#include "glutils.h"
 #include "canon.h"
 #include "safemem.h"
 #include "filters.h"
@@ -46,7 +47,12 @@ const char *gl_enum_to_token(GLenum e)
     if (gl_tokens_value[l].value != e)
         return NULL;
     else
+    {
+        /* Pick the first one, to avoid using extension suffices */
+        while (l > 0 && gl_tokens_value[l - 1].value == e)
+            l--;
         return gl_tokens_value[l].name;
+    }
 }
 
 GLenum gl_token_to_enum(const char *name)
@@ -63,10 +69,8 @@ GLenum gl_token_to_enum(const char *name)
     }
     if (strcmp(gl_tokens_name[l].name, name) != 0)
         return (GLenum) -1;
-    /* Pick the first one, to avoid using extension suffices */
-    while (l > 0 && strcmp(gl_tokens_name[l - 1].name, name) == 0)
-        l--;
-    return gl_tokens_name[l].value;
+    else
+        return gl_tokens_name[l].value;
 }
 
 budgie_type gl_type_to_type(GLenum gl_type)
@@ -317,26 +321,6 @@ int count_gl(budgie_function func, GLenum token)
     }
 }
 
-static state_7context_I *(*get_context_state)(void) = NULL;
-static bool (*in_begin_end)(void) = NULL;
-
-void initialise_dump(void)
-{
-    filter_set *f;
-
-    /* We don't make any asserts here, since this function is called
-     * whether logging is enabled or not.
-     */
-    f = get_filter_set_handle("trackcontext");
-    if (f)
-        get_context_state = (state_7context_I *(*)(void))
-            get_filter_set_symbol(f, "get_context_state");
-    f = get_filter_set_handle("trackbeginend");
-    if (f)
-        in_begin_end = (bool (*)(void))
-            get_filter_set_symbol(f, "in_begin_end");
-}
-
 /* Computes the number of pixel elements (units of byte, int, float etc)
  * used by a client-side encoding of a 1D, 2D or 3D image.
  * Specify -1 for depth for 1D or 2D textures.
@@ -362,7 +346,6 @@ size_t image_element_count(GLsizei width,
     /* First check that we aren't in begin/end, in which case the call
      * will fail anyway.
      */
-    assert(get_context_state && in_begin_end);
     ctx = get_context_state();
     if (in_begin_end()) return 0;
     if (unpack)
