@@ -42,68 +42,77 @@ static int in_pipe = -1, out_pipe = -1;
 static bool break_on[NUMBER_OF_FUNCTIONS];
 static bool break_on_error = true, break_on_next = false;
 
-#if 0 // FIXME
-static void dump_state(state_generic *state, int indent, FILE *out)
+static void dump_state(const glstate *state, int indent, FILE *out)
 {
-    bool big = false;
-    int i;
-    state_generic **children;
-    char *ptr;
+    char *str;
+    bugle_linked_list children;
+    bugle_list_node *cur;
 
     budgie_make_indent(indent, out);
-    fputs(state->name, out);
-    if (state->data)
-    {
-        fputs(" = ", out);
-        if (state->spec->data_length > 1)
-        {
-            fputs("(", out);
-            ptr = budgie_get_state_current(state);
-            for (i = 0; i < state->spec->data_length; i++)
-            {
-                if (i) fputs(", ", out);
-                budgie_dump_any_type(state->spec->data_type, ptr,
-                                     -1, out);
-                ptr += budgie_type_table[state->spec->data_type].size;
-            }
-            fputs(")", out);
-        }
-        else
-            budgie_dump_any_type(state->spec->data_type, budgie_get_state_current(state),
-                                 -1, out);
-    }
+    if (state->name) fputs(state->name, out);
+    str = bugle_state_get_string(state);
+    if (str)
+        fprintf(out, " = %s", str);
     fputs("\n", out);
-    if (state->num_indexed)
+
+    bugle_state_get_children(state, &children);
+    if (bugle_list_head(&children))
     {
-        big = true;
         budgie_make_indent(indent, out);
         fputs("{\n", out);
-        for (i = 0; i < state->num_indexed; i++)
-            dump_state(state->indexed[i], indent + 4, out);
-    }
-    for (children = state->children; *children; children++)
-    {
-        if (!big)
+        for (cur = bugle_list_head(&children); cur; cur = bugle_list_next(cur))
         {
-            big = true;
-            budgie_make_indent(indent, out);
-            fputs("{\n", out);
+            dump_state((const glstate *) bugle_list_data(cur), indent + 4, out);
+            bugle_state_clear((glstate *) bugle_list_data(cur));
         }
-        dump_state(*children, indent + 4, out);
-    }
-    if (big)
-    {
         budgie_make_indent(indent, out);
         fputs("}\n", out);
     }
+    bugle_list_clear(&children);
+}
+
+static void dump_state_by_name(const char *name, const glstate *base, FILE *f)
+{
+    const char *split;
+    bugle_linked_list children;
+    bugle_list_node *i;
+    glstate *child;
+
+    if (!name[0])
+    {
+        dump_state(base, 0, f);
+        return;
+    }
+    split = strchr(name, '.');
+    if (split == name) return; /* empty component??? */
+    if (split == NULL) split = name + strlen(name);
+    bugle_state_get_children(base, &children);
+    for (i = bugle_list_head(&children); i; i = bugle_list_next(i))
+    {
+        child = (glstate *) bugle_list_data(i);
+        if (child->name && strncmp(child->name, name, split - name) == 0
+            && child->name[split - name] == '\0')
+        {
+            if (!split[0])
+                dump_state(child, 0, f);
+            else
+                dump_state_by_name(split + 1, child, f);
+            break;
+        }
+    }
+    for (i = bugle_list_head(&children); i; i = bugle_list_next(i))
+    {
+        child = (glstate *) bugle_list_data(i);
+        bugle_state_clear(child);
+    }
+    bugle_list_clear(&children);
 }
 
 /* A driver for budgie_string_io, for state dumping. */
-static void dump_string_state(FILE *f, void *data)
+static void dump_state_wrapper(FILE *f, void *data)
 {
-    dump_state((state_generic *) data, 0, f);
+    dump_state_by_name((const char *) data, bugle_state_get_root(), f);
 }
-#endif
 
 static void dump_ppm_header(FILE *f, void *data)
 {
@@ -182,6 +191,7 @@ static void debugger_loop(bool init)
     uint32_t req, req_val;
     char *req_str, *resp_str;
     budgie_function func;
+    glstate state;
     filter_set *f;
     bool enable;
 
@@ -270,36 +280,36 @@ static void debugger_loop(bool init)
             }
             free(req_str);
             break;
-#if 0 // FIXME
         case REQ_STATE:
             gldb_recv_string(in_pipe, &req_str);
-            ctx = bugle_tracker_get_context_state();
-            if (!ctx)
+            if (!bugle_begin_internal_render())
             {
                 gldb_send_code(out_pipe, RESP_ERROR);
                 gldb_send_code(out_pipe, 0);
-                gldb_send_string(out_pipe, "No context");
+                gldb_send_string(out_pipe, "No context or in begin/end");
+                free(req_str);
                 break;
             }
-            if (*req_str)
+            resp_str = budgie_string_io(dump_state_wrapper, req_str);
+            if (!resp_str[0])
             {
-                state = budgie_get_state_by_name(&ctx->generic, req_str);
-                if (!state)
-                {
-                    gldb_send_code(out_pipe, RESP_ERROR);
-                    gldb_send_code(out_pipe, 0);
-                    gldb_send_string(out_pipe, "No such state");
-                    break;
-                }
-                resp_str = budgie_string_io(dump_string_state, state);
+                free(resp_str);
+                gldb_send_code(out_pipe, RESP_ERROR);
+                gldb_send_code(out_pipe, 0);
+                bugle_asprintf(&resp_str, "No such state %s", req_str);
+                gldb_send_string(out_pipe, resp_str);
+                free(resp_str);
+                free(req_str);
+                bugle_end_internal_render("debugger_loop", true);
+                break;
             }
-            else
-                resp_str = budgie_string_io(dump_string_state, &ctx->generic);
+            bugle_state_clear(&state);
             gldb_send_code(out_pipe, RESP_STATE);
             gldb_send_string(out_pipe, resp_str);
+            free(req_str);
             free(resp_str);
+            bugle_end_internal_render("debugger_loop", true);
             break;
-#endif
         case REQ_SCREENSHOT:
             if (!debugger_screenshot(out_pipe))
             {
@@ -448,5 +458,6 @@ void bugle_initialise_filter_library(void)
     bugle_register_filter_set(&debugger_info);
 
     bugle_register_filter_set_depends("debugger", "error");
+    bugle_register_filter_set_depends("debugger", "trackextensions");
     bugle_register_filter_set_renders("debugger");
 }

@@ -146,6 +146,34 @@ void budgie_dump_any_type(budgie_type type, const void *value, int length, FILE 
     (*info->dumper)(value, length, out);
 }
 
+void budgie_dump_any_type_extended(budgie_type type,
+                                   const void *value,
+                                   int length,
+                                   int outer_length,
+                                   const void *pointer,
+                                   FILE *out)
+{
+    int i;
+    const char *v;
+
+    if (pointer)
+        fprintf(out, "%p -> ", pointer);
+    if (outer_length == -1)
+        budgie_dump_any_type(type, value, length, out);
+    else
+    {
+        v = (const char *) value;
+        fputs("{ ", out);
+        for (i = 0; i < outer_length; i++)
+        {
+            if (i) fputs(", ", out);
+            budgie_dump_any_type(type, (const void *) v, length, out);
+            v += budgie_type_table[type].size;
+        }
+        fputs(" }", out);
+    }
+}
+
 void budgie_dump_any_call(const generic_function_call *call, int indent, FILE *out)
 {
     size_t i;

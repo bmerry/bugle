@@ -224,7 +224,7 @@ bool bugle_call_is_immediate(function_call *call)
 
 void bugle_register_filter_set_renders(const char *name)
 {
-    bugle_register_filter_set_uses_state(name);
+    bugle_register_filter_set_depends(name, "trackcontext");
     bugle_register_filter_set_depends(name, "trackbeginend");
 }
 
@@ -232,16 +232,6 @@ void bugle_register_filter_post_renders(const char *name)
 {
     bugle_register_filter_depends(name, "error");
     bugle_register_filter_depends(name, "trackbeginend");
-}
-
-void bugle_register_filter_set_uses_state(const char *name)
-{
-    bugle_register_filter_set_depends(name, "trackcontext");
-}
-
-void bugle_register_filter_post_uses_state(const char *name)
-{
-    bugle_register_filter_depends(name, "trackcontext");
 }
 
 void bugle_register_filter_set_queries_error(const char *name)

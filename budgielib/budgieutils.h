@@ -133,6 +133,18 @@ int budgie_count_string(const char *value);
 
 void budgie_make_indent(int indent, FILE *out);
 void budgie_dump_any_type(budgie_type type, const void *value, int length, FILE *out);
+/* Calls budgie_dump_any_type, BUT:
+ * if outer_length != -1, then it considers the type as if it were an
+ * array of that type, of length outer_length. If pointer is
+ * non-NULL, then it outputs "<pointer> -> " first as if dumping a
+ * pointer to the array.
+ */
+void budgie_dump_any_type_extended(budgie_type type,
+                                   const void *value,
+                                   int length,
+                                   int outer_length,
+                                   const void *pointer,
+                                   FILE *out);
 void budgie_dump_any_call(const generic_function_call *call, int indent, FILE *out);
 
 void initialise_real(void);

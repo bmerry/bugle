@@ -39,10 +39,6 @@
  * You must also call filter_set_renders in the filterset initialiser,
  * as well as filter_post_renders for each filter that will do rendering
  * after invoke.
- *
- * If you want to access the context but not necessary do rendering, you
- * can use the weaker _uses_state functions. Note that in_begin_end, as
- * well as ANY OpenGL function call, requires the stronger form.
  */
 
 bool bugle_begin_internal_render(void);
@@ -64,8 +60,6 @@ bool bugle_call_is_immediate(function_call *call);
 
 void bugle_register_filter_set_renders(const char *name);
 void bugle_register_filter_post_renders(const char *name);
-void bugle_register_filter_set_uses_state(const char *name);
-void bugle_register_filter_post_uses_state(const char *name);
 void bugle_register_filter_set_queries_error(const char *name);
 GLenum bugle_get_call_error(function_call *call);
 

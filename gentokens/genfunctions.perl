@@ -90,7 +90,8 @@ if ($aliases)
                            "glIndexPointerEXT" => 1,
                            "glNormalPointerEXT" => 1,
                            "glTexCoordPointerEXT" => 1,
-                           "glVertexPointerEXT" => 1);
+                           "glVertexPointerEXT" => 1,
+                           "glVertexAttribPointerNV" => 1);
             if (!exists($exclude{$i->[0]}))
             {
                 print "ALIAS ", $i->[0], " ", $i->[1], "\n";

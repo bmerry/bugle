@@ -37,6 +37,7 @@
 #include <algorithm>
 #include <map>
 #include <cstdio>
+#include <cassert>
 #include <regex.h>
 
 using namespace std;

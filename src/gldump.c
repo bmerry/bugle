@@ -32,42 +32,6 @@
 #include "src/utils.h"
 #include "src/glexts.h"
 
-/* FIXME: should this move into budgielib?
- *
- * Calls budgie_dump_any_type, BUT:
- * if outer_length != -1, then it considers the type as if it were an
- * array of that type, of length outer_length. If pointer is
- * non-NULL, then it outputs "<pointer> -> " first as if dumping a
- * pointer to the array.
- */
-static void dump_any_type_extended(budgie_type type,
-                                   const void *value,
-                                   int length,
-                                   int outer_length,
-                                   const void *pointer,
-                                   FILE *out)
-{
-    int i;
-    const char *v;
-
-    if (pointer)
-        fprintf(out, "%p -> ", pointer);
-    if (outer_length == -1)
-        budgie_dump_any_type(type, value, length, out);
-    else
-    {
-        v = (const char *) value;
-        fputs("{ ", out);
-        for (i = 0; i < outer_length; i++)
-        {
-            if (i) fputs(", ", out);
-            budgie_dump_any_type(type, (const void *) v, length, out);
-            v += budgie_type_table[type].size;
-        }
-        fputs(" }", out);
-    }
-}
-
 const gl_token *bugle_gl_enum_to_token_struct(GLenum e)
 {
     int l, r, m;
@@ -377,7 +341,7 @@ bool bugle_dump_convert(GLenum pname, const void *value,
     out_data = bugle_malloc(budgie_type_table[out_type].size * alength);
     budgie_type_convert(out_data, out_type, in, in_type, alength);
     if (ptr)
-        dump_any_type_extended(out_type, out_data, -1, length, ptr, out);
+        budgie_dump_any_type_extended(out_type, out_data, -1, length, ptr, out);
     else
         budgie_dump_any_type(out_type, out_data, -1, out);
     free(out_data);

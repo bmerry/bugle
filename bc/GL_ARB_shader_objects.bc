@@ -25,9 +25,9 @@ LENGTH PARAMETER glGetAttachedObjectsARB 3 *$2
 
 DUMP TYPE +PK9GLcharARB budgie_dump_string($$, $F)
 DUMP TYPE +P9GLcharARB budgie_dump_string($$, $F)
-DUMP TYPE +PK9GLchar budgie_dump_string($$, $F)
-DUMP TYPE +P9GLchar budgie_dump_string($$, $F)
+DUMP TYPE +PK6GLchar budgie_dump_string($$, $F)
+DUMP TYPE +P6GLchar budgie_dump_string($$, $F)
 LENGTH TYPE +PK9GLcharARB budgie_count_string($$)
 LENGTH TYPE +P9GLcharARB budgie_count_string($$)
-LENGTH TYPE +PK9GLchar budgie_count_string($$)
-LENGTH TYPE +P9GLchar budgie_count_string($$)
+LENGTH TYPE +PK6GLchar budgie_count_string($$)
+LENGTH TYPE +P6GLchar budgie_count_string($$)

@@ -39,12 +39,11 @@ typedef struct state_info
 
 typedef struct glstate
 {
-    const char *name;
+    char *name;
 
     /* context */
-    GLenum target;
+    GLenum target, binding;
     GLenum unit;
-    GLenum coord;
     GLuint object;
     GLint level;
     const struct state_info *info;
@@ -52,8 +51,13 @@ typedef struct glstate
     void (*spawn_children)(const struct glstate *, bugle_linked_list *);
 } glstate;
 
-char *bugle_get_state_string(const glstate *); // caller frees
-const glstate *bugle_get_root_state(void);
+/* Must be in a valid state to make GL calls.
+ * Must also have trackextensions.
+ */
+char *bugle_state_get_string(const glstate *); // caller frees
+void bugle_state_get_children(const glstate *, bugle_linked_list *);
+void bugle_state_clear(glstate *);
+const glstate *bugle_state_get_root(void);
 
 extern const state_info * const all_state[];
 
