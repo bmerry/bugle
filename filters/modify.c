@@ -163,14 +163,6 @@ static bool showfps_callback(function_call *call, const callback_data *data)
     return true;
 }
 
-static bool initialise_showfps(filter_set *handle)
-{
-    register_filter(handle, "showfps", showfps_callback);
-    register_filter_depends("invoke", "showfps");
-    register_filter_set_renders("showfps");
-    return true;
-}
-
 void initialise_filter_library(void)
 {
     const filter_set_info wireframe_info =
@@ -191,16 +183,6 @@ void initialise_filter_library(void)
         0,
         0
     };
-    const filter_set_info showfps_info =
-    {
-        "showfps",
-        initialise_showfps,
-        NULL,
-        NULL,
-        0,
-        sizeof(showfps_struct)
-    };
     register_filter_set(&wireframe_info);
     register_filter_set(&frontbuffer_info);
-    register_filter_set(&showfps_info);
 }

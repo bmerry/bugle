@@ -74,15 +74,14 @@ filter-set.
 Writes OpenGL errors to standard out.
 .TP
 .B showextensions
-On exit, outputs information on what version of OpenGL is required, and
-what extensions are required, to
-.I run
-the program. This code is still in development, and may report
-surprising results (e.g.
+On exit, outputs information on what version of OpenGL and what
+extensions are used by the program (they may not be required, if the
+program adapts to what is available). This code is still in
+development, and may report surprising results (e.g.
 .B GL_EXT_vertex_arrays
 may be reported even though it is incorporated into OpenGL 1.1).
-It is also not smart enough to distinguish between OpenGL 1.0 and 1.1,
-so it will always be reported as requiring at least 1.1.
+It will always report at least OpenGL 1.1 and GLX 1.2 as required,
+although they may not be.
 .TP
 .B wireframe
 Forces the application to render in wireframe mode (i.e. with
@@ -130,6 +129,17 @@ trace will work. If running your program inside
 .BR gdb,
 continue past the first segmentation fault and ask for a stack trace
 after the second.
+.TP
+.BR stats ", "
+The
+.B stats
+filterset collects various statistics (just frames per second at the
+time of writing). If the
+.B log
+filterset is also loaded, it will write stats to the log. The
+.B showstats
+filterset will render the statistics into the framebuffer
+each frame.
 
 The other two filter-sets are
 .B invoke
@@ -210,8 +220,8 @@ created and what calls go into them.
 .B gldb
 and the
 .B bugle
-library
-are written and maintained by Bruce Merry <bmerry@users.sourceforge.net>.
+library are written and maintained by Bruce Merry
+<bmerry@users.sourceforge.net>.
 
 .SH "SEE ALSO"
 .BR gldb (1),

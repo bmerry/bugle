@@ -16,7 +16,8 @@ pkglib_LTLIBRARIES = \
 	filters/modify.la \
 	filters/validate.la \
 	filters/debugger.la \
-	filters/capture.la
+	filters/capture.la \
+        filters/stats.la
 
 INCLUDES = -I$(srcdir)/budgielib
 AM_CFLAGS = -DLIBDIR=\"$(libdir)\" -DPKGLIBDIR=\"$(pkglibdir)\" $(X_CFLAGS)
@@ -105,6 +106,8 @@ filters_validate_la_SOURCES = filters/validate.c
 filters_validate_la_LDFLAGS = -thread-safe -module -avoid-version
 filters_debugger_la_SOURCES = filters/debugger.c
 filters_debugger_la_LDFLAGS = -thread-safe -module -avoid-version
+filters_stats_la_SOURCES = filters/stats.c
+filters_stats_la_LDFLAGS = -thread-safe -module -avoid-version
 filters_capture_la_SOURCES = filters/capture.c
 filters_capture_la_LIBADD = $(AVCODEC_LIBS)
 filters_capture_la_LDFLAGS = -thread-safe -module -avoid-version
