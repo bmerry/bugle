@@ -44,6 +44,9 @@ GLenum gl_token_to_enum(const char *name)
     }
     if (strcmp(gl_tokens_name[l].name, name) != 0)
         return (GLenum) -1;
+    // Pick the first one, to avoid using extension suffices
+    while (l > 0 && strcmp(gl_tokens_name[l - 1].name, name) == 0)
+        l--;
     return gl_tokens_name[l].value;
 }
 

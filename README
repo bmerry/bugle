@@ -25,27 +25,58 @@ To run usefully, you will need a configuration file
 $HOME/.bugle/filters. You can copy and paste the example below:
 
 -----BEGIN CUT-----
+# Dump a log, and write errors to stderr
 chain trace
 {
     filterset error
     filterset log
     {
-    	filename "/tmp/bugle.log"
+    	filename "bugle.log"
+        # Uncomment the next line to flush the output after every call (slow)
+        # flush "yes"
     }
     filterset invoke
 }
 
-chain debugger
+# Press enter after each frame
+chain step
 {
     filterset debugger
+    {
+    	break glXSwapBuffers
+    }
     filterset invoke
 }
 
+# Press enter after each drawing command; drawing is to the front buffer
+chain stepdraw
+{
+    filterset invoke
+    filterset frontbuffer
+    filterset debugger
+    {
+        break glEnd
+        break glDrawArrays
+        break glDrawElements
+        break glDrawRangeElements
+        break glMultiDrawArrays
+        break glCallList
+    }
+}
+
+# Draws in wireframe
 chain wireframe
 {
     filterset wireframe
     filterset invoke
 }
+
+# Passthrough mode; don't do anything fancy
+chain pass
+{
+    filterset invoke
+}
+
 -----END CUT-----
 
 To run, execute your program something like the following:

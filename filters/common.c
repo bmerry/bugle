@@ -11,6 +11,7 @@
 /* Invoke filter-set */
 
 static char *log_filename = NULL;
+static bool log_flush = false;
 
 static bool invoke_callback(function_call *call, void *data)
 {
@@ -31,6 +32,7 @@ static FILE *log_file;
 static bool log_callback(function_call *call, void *data)
 {
     dump_any_call(&call->generic, 0, log_file);
+    if (log_flush) fflush(log_file);
     return true;
 }
 
@@ -63,11 +65,19 @@ static void destroy_log(filter_set *handle)
 static bool set_variable_log(filter_set *handle, const char *name, const char *value)
 {
     if (strcmp(name, "filename") == 0)
-    {
         log_filename = xstrdup(value);
-        return true;
+    else if (strcmp(name, "flush") == 0)
+    {
+        if (strcmp(value, "yes") == 0)
+            log_flush = true;
+        else if (strcmp(value, "no") == 0)
+            log_flush = false;
+        else
+            fprintf(stderr, "illegal flush value '%s'\n", value);
     }
-    return false;
+    else
+        return false;
+    return true;
 }
 
 /* General */

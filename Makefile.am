@@ -39,7 +39,8 @@ nodist_src_libbugle_la_SOURCES = \
 	src/utils.h src/types.c src/types.h \
 	src/gltokens.c
 BUILT_SOURCES = src/lib.h src/utils.h src/types.h confparse.h
-src_libbugle_la_LIBADD = budgie/libbudgie.la $(LTLIBOBJS)
+## FIXME: use autoconf to find the right paths
+src_libbugle_la_LIBADD = budgie/libbudgie.la $(LTLIBOBJS) -ldl -lGL -L/usr/X11R6/lib -lX11
 src_libbugle_la_LDFLAGS = -export-dynamic
 
 # Extra files to distribute
@@ -61,7 +62,7 @@ src/types.c src/types.h src/utils.c src/utils.h src/lib.c src/lib.h: budgie/budg
 gentokens_gentokens_SOURCES = gentokens/gentokens.c
 BUILT_SOURCES += src/gltokens.c
 src/gltokens.c: gentokens/gentokens Makefile
-	$(AWK) '/^#define GL_[_A-Z0-9]+[ \t]+0x[0-9A-F]+/ && !/(GL_COLOR_TABLE_.*_EXT)|(GL_.*BIT(_[A-Z]+.*)?[ \t])/{printf "%s 0x%x\n", $$2, $$3;}' /usr/include/GL/glext.h /usr/include/GL/gl.h | gentokens/gentokens > $@
+	$(AWK) '/^#define GL_[_A-Z0-9]+[ \t]+0x[0-9A-F]+/ && !/(GL_COLOR_TABLE_.*_EXT)|(GL_.*BIT(_[0-9A-Z]+.*)?[ \t])|(GL_ALL_[0-9A-Z_]+_BITS)/{printf "%s 0x%x\n", $$2, $$3;}' /usr/include/GL/glext.h /usr/include/GL/gl.h | gentokens/gentokens > $@
 
 # Filters
 
