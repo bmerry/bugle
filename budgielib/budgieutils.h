@@ -89,6 +89,7 @@ typedef struct
 typedef struct
 {
     const char *name;
+    void (*real)(void);
     size_t num_parameters;
     const function_parameter_data *parameters;
     function_parameter_data retn;
@@ -102,7 +103,13 @@ typedef struct
 } bitfield_pair;
 
 extern const type_data type_table[];
-extern const function_data function_table[];
+/* Not const due to "real" field.
+ * FIXME: split that field out for better efficiency*/
+extern function_data function_table[];
+extern const char * const library_names[];
+extern int number_of_types;
+extern int number_of_functions;
+extern int number_of_libraries;
 
 void dump_bitfield(unsigned int value, FILE *out,
                    bitfield_pair *tags, int count);
@@ -111,8 +118,9 @@ int count_string(const void *value);
 
 /* User functions */
 
+void make_indent(int indent, FILE *out);
 void dump_any_type(budgie_type type, const void *value, int length, FILE *out);
 void dump_any_call(const generic_function_call *call, int indent, FILE *out);
-void make_indent(int indent, FILE *out);
+void initialise_real(void);
 
 #endif /* BUGLE_BUDGIE_BUDGIEFUNCS_H */

@@ -30,34 +30,13 @@ with the wireframe filterset: 125fps
 with logging to /dev/null: 48fps
 with logging to file: 47fps
 
-So basically, the framework adds a little, and logging adds a lot.
-Logging is particularly expensive because of all the formatting it has
-to do, but most of the others filtersets are cheaper.
+So in this case, the framework adds a little, and logging adds a lot.
+The overhead will depend greatly on how much work you get OpenGL to do
+with each call; for example, glxgears suffers almost no penalty because
+it uses display lists heavily.
 
 Q. How do you get Quake3 to use BuGLe?
 A. Run it as quake3 +set r_glDriver /path/to/libbugle.so
-
-Q. Why am I getting errors about unknown GL tokens?
-A. BuGLe assumes that your GL header files are reasonably up to date.
-You should try getting an updated glext.h from Sun:
-http://oss.sgi.com/projects/ogl-sample/registry/
-
-Q. I have a 64-bit machine, and I get errors trying to compile or run
-the library. Why?
-A. It is probably because the code generator relies on the file
-src/data/gl.tu. This file contains a parse tree of gl.h, glext.h and
-glx.h. It is machine-dependent, but is packaged anyway because it
-requires gcc 3.x to regenerate and because the code generated from it
-should still be machine-independent. Try removing this file and
-recompiling (in which case you need gcc 3.x; 3.3.2 is tested), and if
-it works let me know so that I can fix it.
-
-Q. I'm running Bob's Incredibly Obscure UNIX system, and the library
-doesn't compile/work.
-A. If the platform is POSIX compliant and supports dynamic loading
-via dlopen() and preloading via LD_PRELOAD, then it should be supported
-more or less supported right now and this is a bug. Please let me know
-about it.
 
 Q. Why is there a mix of C and C++ code?
 A. The library itself is written entirely in C. This is mainly because
@@ -67,3 +46,12 @@ depends on a conflicting version of libstdc++. There is still a
 dependence on libc, but libc is less of a moving target. The code
 generator is written in C++, since it makes the coding easier and does
 not introduce the dependency issues above.
+
+Q. Why is a recent (>3.0) version of gcc required?
+A. BuGLe is driven a number of tables that list all the information
+about the various types and functions in OpenGL. To capture this
+information, it is necessary to pass the OpenGL header files. It would
+be very difficult to write a parser to do this robustly, but gcc
+already knows how to do this. Unfortunately, the ability to extract a
+parse tree from gcc (the -fdump-translation-unit option)
+was only added sometime after 3.0.

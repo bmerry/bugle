@@ -16,6 +16,15 @@
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
+/* This program reads in a list of GL tokens with their values, and outputs
+ * C code for two tables, one sorted by name and one by value. The output
+ * tables contain the raw values, not the defines. This is important
+ * because it means that the code becomes dependent on the version of
+ * the GL headers installed on the system. The Right Way (tm) to do things
+ * would be to put in the values and use #ifdef's to determine the header
+ * support, but we don't currently have a way to determine which tokens
+ * are defined by which ifdefs.
+ */
 #if HAVE_CONFIG_H
 # include <config.h>
 #endif
@@ -24,7 +33,6 @@
 #include <string.h>
 #include <stdlib.h>
 #include <assert.h>
-#include <GL/gl.h>
 
 #define MAX_TOKEN_LEN 100
 #define MAX_TOKEN_LEN_STR "100"

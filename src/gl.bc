@@ -5,7 +5,7 @@ INCLUDE GL/glx.h
 INCLUDE src/data/overrides.h
 INCLUDE src/gldump.h
 INCLUDE src/glstate.h
-LIBRARY /usr/lib/libGL.so.1
+LIBRARY libGL.so
 LIMIT gl[A-Z][a-z].*|glXSwapBuffers|glXGetProcAddressARB|glXCreateContext|glXCreateNewContext|glXDestroyContext|glXMakeCurrent|glXMakeContextCurrent
 
 # Typedefs

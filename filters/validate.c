@@ -62,7 +62,7 @@ static bool error_post_callback(function_call *call, void *data)
     ctx = (*get_context_state)();
     if (ctx && !ctx->c_internal.c_in_begin_end.data)
     {
-        error = (*glGetError_real)();
+        error = CALL_glGetError();
         if (error)
         {
             dump_any_type(TYPE_7GLerror, &error, 1, stderr);

@@ -28,6 +28,7 @@
 #include <sstream>
 #include <cstddef>
 #include <cassert>
+#include <set>
 #include "generator.h"
 #include "tree.h"
 #include "treeutils.h"
@@ -196,9 +197,8 @@ bool dumpable(tree_node_p type)
  * \param node The type to work on
  * \param prototype True to only generate a function prototype
  */
-static string make_dumper(tree_node_p node, bool prototype)
+static void make_dumper(tree_node_p node, bool prototype, ostream &out)
 {
-    ostringstream out;
     string name = "dump_type_" + type_to_id(node);
     tree_node_p child;
 
@@ -211,7 +211,7 @@ static string make_dumper(tree_node_p node, bool prototype)
     if (prototype)
     {
         out << ";";
-        return out.str();
+        return;
     }
     out << "\n{\n";
     // Bitfields are special
@@ -237,6 +237,9 @@ static string make_dumper(tree_node_p node, bool prototype)
     else
     {
         string name;
+        // FIXME: should store both low and high
+        set<long> seen_enums; // to get around duplicate enums
+        long value;
         switch (TREE_CODE(node))
         {
         case ENUMERAL_TYPE:
@@ -246,10 +249,16 @@ static string make_dumper(tree_node_p node, bool prototype)
             while (tmp != NULL_TREE)
             {
                 name = IDENTIFIER_POINTER(TREE_PURPOSE(tmp));
-                out << "    case " << name << ": fputs(\"" << name << "\", out); break;\n";
+                value = TREE_INT_CST_LOW(TREE_VALUE(tmp));
+                if (!seen_enums.count(value))
+                {
+                    out << "    case " << name << ": fputs(\"" << name << "\", out); break;\n";
+                    seen_enums.insert(value);
+                }
                 tmp = TREE_CHAIN(tmp);
             }
-            out << "    }\n";
+            out << "    default: fprintf(out, \"%ld\", (long) *value);\n"
+                << "    }\n";
             break;
         case INTEGER_TYPE:
             // FIXME: long long types; unsigned types
@@ -338,7 +347,6 @@ static string make_dumper(tree_node_p node, bool prototype)
         }
     }
     out << "}\n";
-    return out.str();
 }
 
 // Type handling
@@ -380,6 +388,7 @@ string type_table(bool header)
             out << "/* " << type_to_string(i->second, "", false) << " */\n"
                 << "#define TYPE_" << i->first << " " << counter++ << "\n";
         out << "#define NUMBER_OF_TYPES " << counter << "\n"
+            << "extern int number_of_types;\n"
             << "\n"
             << "extern const type_data type_table[NUMBER_OF_TYPES];\n"
             << "\n";
@@ -495,6 +504,9 @@ string type_table(bool header)
             out << " }";
         }
         out << "\n};\n\n";
+
+        // run-time number of types (for budgielib)
+        out << "int number_of_types = NUMBER_OF_TYPES;\n";
     }
     return out.str();
 }
@@ -502,14 +514,15 @@ string type_table(bool header)
 /*! \param prototype True to only return a function prototype
  * \todo Consider using a lookup table
  */
-string make_type_dumper(bool prototype)
+void make_type_dumper(bool prototype, ostream &out)
 {
-    ostringstream out;
-
     // type specific dumpers
     for (enum_types_it i = enum_types.begin(); i != enum_types.end(); i++)
-        out << make_dumper(i->second, prototype) << "\n";
-    return out.str();
+    {
+        make_dumper(i->second, prototype, out);
+        out << "\n";
+    }
+    out << "\n";
 }
 
 // type conversion
@@ -595,8 +608,9 @@ void function_table(bool header, ostream &out)
             out << "#define FUNC_" << IDENTIFIER_POINTER(DECL_NAME(functions[i]))
                 << " " << counter++ << "\n";
         out << "#define NUMBER_OF_FUNCTIONS " << counter << "\n"
+            << "extern int number_of_functions;\n"
             << "\n"
-            << "extern const function_data function_table[NUMBER_OF_FUNCTIONS];\n";
+            << "extern function_data function_table[NUMBER_OF_FUNCTIONS];\n";
     }
     else
     {
@@ -637,13 +651,14 @@ void function_table(bool header, ostream &out)
             if (count) out << "\n};\n\n";
         }
 
-        out << "const function_data function_table[NUMBER_OF_FUNCTIONS] =\n"
+        out << "function_data function_table[NUMBER_OF_FUNCTIONS] =\n"
             << "{\n";
         for (size_t i = 0; i < functions.size(); i++)
         {
             if (i) out << ",\n";
             string name = IDENTIFIER_POINTER(DECL_NAME(functions[i]));
-            out << "    { \"" << name << "\", ";
+            out << "    { \"" << name << "\", "
+                << "NULL, "; // real function; found at runtime
             tree_node_p type = TREE_TYPE(functions[i]);
             tree_node_p cur = TREE_ARG_TYPES(type);
             int count = 0;
@@ -674,7 +689,8 @@ void function_table(bool header, ostream &out)
             else
                 out << "{ NULL_TYPE, NULL, NULL, NULL }, false }";
         }
-        out << "\n};\n\n";
+        out << "\n};\n"
+            << "int number_of_functions = NUMBER_OF_FUNCTIONS;\n\n";
     }
 }
 
@@ -710,11 +726,11 @@ string make_wrapper(tree_node_p node, bool prototype)
     // check for re-entrancy
     out << "    if (reentrant)\n"
         << "    {\n"
-        << "        init_real();\n"
+        << "        initialise_real();\n"
         << "        ";
     if (TREE_CODE(ret_type) != VOID_TYPE)
         out << "return ";
-    out << "(*" << name << "_real)(";
+    out << "CALL_" << name << "(";
     tree_node_p cur = type->prms;
     int count = 0;
     while (cur != NULL_TREE && TREE_CODE(cur->value) != VOID_TYPE)
@@ -812,16 +828,36 @@ void generics(ostream &out)
     out << "\n"; // since the last line has a backslash escape
 }
 
-void function_pointers(bool prototype, ostream &out)
+void function_macros(ostream &out)
 {
     for (size_t i = 0; i < functions.size(); i++)
     {
-        tree_node_p ptr = make_pointer(TREE_TYPE(functions[i]), false);
-        string name = IDENTIFIER_POINTER(DECL_NAME(functions[i])) + "_real";
-        if (prototype)
-            out << "extern " << type_to_string(ptr, name, false) << ";\n";
-        else
-            out << type_to_string(ptr, name, false) << " = NULL;\n";
+        tree_node_p type = TREE_TYPE(functions[i]);
+        tree_node_p ptr = make_pointer(type, false);
+        string name = IDENTIFIER_POINTER(DECL_NAME(functions[i]));
+        out << "#define CALL_" << name << "(";
+
+        int count = 0;
+        tree_node_p cur = TREE_ARG_TYPES(type);
+        while (cur != NULL_TREE && TREE_CODE(cur->value) != VOID_TYPE)
+        {
+            if (count) out << ", ";
+            out << "arg" << count;
+            count++;
+            cur = TREE_CHAIN(cur);
+        }
+        out << ") ((*(" << type_to_string(ptr, "", false)
+            << ") function_table[FUNC_" << name << "].real)(";
+        count = 0;
+        cur = TREE_ARG_TYPES(type);
+        while (cur != NULL_TREE && TREE_CODE(cur->value) != VOID_TYPE)
+        {
+            if (count) out << ", ";
+            out << "arg" << count;
+            count++;
+            cur = TREE_CHAIN(cur);
+        }
+        out << "))\n";
         destroy_temporary(ptr);
     }
 }
@@ -895,7 +931,6 @@ void make_invoker(bool prototype, ostream &out)
     }
     out << "\n"
         << "{\n"
-        << "    init_real();\n"
         << "    switch (call->generic.id)\n"
         << "    {\n";
     for (size_t i = 0; i < functions.size(); i++)
@@ -907,7 +942,7 @@ void make_invoker(bool prototype, ostream &out)
         out << "        ";
         if (TREE_CODE(TREE_TYPE(type)) != VOID_TYPE) // save return val
             out << "*call->typed." << name << ".retn = ";
-        out << "(*" << name << "_real)(";
+        out << "CALL_" << name << "(";
         tree_node_p cur = TREE_ARG_TYPES(type);
         int count = 0;
         while (cur != NULL_TREE && TREE_CODE(cur->value) != VOID_TYPE)

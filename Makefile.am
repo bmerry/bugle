@@ -1,6 +1,7 @@
 noinst_PROGRAMS = budgie/budgie gentokens/gentokens
 noinst_LTLIBRARIES = budgie/libbudgie.la
 noinst_HEADERS = budgie/tree.def
+noinst_SCRIPTS = gentokens/gettokens.awk
 lib_LTLIBRARIES = src/libbugle.la
 pkglib_LTLIBRARIES = \
 	filters/common.la \
@@ -9,7 +10,7 @@ pkglib_LTLIBRARIES = \
 	filters/tracker.la \
 	filters/debugger.la
 INCLUDES = -I$(srcdir)/budgielib
-AM_CFLAGS = -DPKGLIBDIR=\"$(pkglibdir)\"
+AM_CFLAGS = -DPKGLIBDIR=\"$(pkglibdir)\" $(X_CFLAGS)
 AM_YFLAGS = -d
 
 budgie_budgie_SOURCES = \
@@ -39,19 +40,19 @@ nodist_src_libbugle_la_SOURCES = \
 	src/utils.h src/types.c src/types.h \
 	src/gltokens.c
 BUILT_SOURCES = src/lib.h src/utils.h src/types.h confparse.h
-## FIXME: use autoconf to find the right paths
-src_libbugle_la_LIBADD = budgie/libbudgie.la $(LTLIBOBJS) -ldl -lGL -L/usr/X11R6/lib -lX11
+src_libbugle_la_LIBADD = budgie/libbudgie.la $(LTLIBOBJS) -lGL $(X_PRE_LIBS) $(X_LIBS) $(X_EXTRA_LIBS)
 src_libbugle_la_LDFLAGS = -export-dynamic -version-info 0:0:0
 
 # Extra files to distribute
-EXTRA_DIST = src/gl.bc src/data/gl.c src/data/gl.tu src/data/overrides.h \
-	FAQ doc/filters.txt doc/example.txt
+EXTRA_DIST = src/gl.bc src/data/gl.c src/data/overrides.h \
+	gentokens/gettokens.awk \
+	FAQ TROUBLESHOOTING doc/filters.txt doc/example.txt
 
 # Generated files that generate other files
 
 src/data/gl.tu: src/data/gl.c src/data/overrides.h
 	$(srcdir)/mkinstalldirs src/data
-	$(CC) -fdump-translation-unit -c $(srcdir)/src/data/gl.c -o src/data/gl.o
+	$(COMPILE) -fdump-translation-unit -c $(srcdir)/src/data/gl.c -o src/data/gl.o
 	rm -f src/data/gl.o
 	mv gl.c.tu src/data/gl.tu
 
@@ -61,8 +62,13 @@ src/types.c src/types.h src/utils.c src/utils.h src/lib.c src/lib.h: budgie/budg
 
 gentokens_gentokens_SOURCES = gentokens/gentokens.c
 BUILT_SOURCES += src/gltokens.c
-src/gltokens.c: gentokens/gentokens Makefile
-	$(AWK) '/^#define GL_[_A-Z0-9]+[ \t]+0x[0-9A-F]+/ && !/(GL_COLOR_TABLE_.*_EXT)|(GL_.*BIT(_[0-9A-Z]+.*)?[ \t])|(GL_ALL_[0-9A-Z_]+_BITS)/{printf "%s 0x%x\n", $$2, $$3;}' /usr/include/GL/glext.h /usr/include/GL/gl.h | gentokens/gentokens > $@
+
+src/gltokens.c: gentokens/gentokens gentokens/gettokens.awk Makefile
+if PREPROCESS_GL
+	$(CPP) $(CPP_DEFINES_FLAGS) $(DEFAULT_INCLUDES) $(INCLUDES) $(X_CFLAGS) $(srcdir)/src/data/gl.c | $(AWK) -f $(srcdir)/gentokens/gettokens.awk | gentokens/gentokens > $@
+else
+	$(AWK) -f $(srcdir)/gentokens/gettokens.awk $(GLINCLUDE_PATH)/glext.h $(GLINCLUDE_PATH)/gl.h | gentokens/gentokens > $@
+endif
 
 # Filters
 
@@ -77,5 +83,6 @@ filters_tracker_la_LDFLAGS = -module -avoid-version
 filters_debugger_la_SOURCES = filters/debugger.c
 filters_debugger_la_LDFLAGS = -module -avoid-version
 
-CLEANFILES = src/types.c src/types.h src/utils.c src/utils.h src/lib.c src/lib.h src/gltokens.c
-MAINTAINERCLEANFILES = src/data/gl.tu
+CLEANFILES = src/types.c src/types.h src/utils.c src/utils.h src/lib.c src/lib.h \
+	src/gltokens.c src/data/gl.tu
+

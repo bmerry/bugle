@@ -31,6 +31,7 @@
 #include "common/bool.h"
 #include "budgieutils.h"
 #include <setjmp.h>
+#include <dlfcn.h>
 
 void dump_bitfield(unsigned int value, FILE *out,
                    bitfield_pair *tags, int count)
@@ -148,6 +149,42 @@ void make_indent(int indent, FILE *out)
     int i;
     for (i = 0; i < indent; i++)
         fputc(' ', out);
+}
+
+void initialise_real(void)
+{
+    void *handle;
+    size_t i, j;
+    int N, F;
+    static bool done = false;
+
+    /* We have to provide this protection, because the interceptor function
+     * call initialise_real if they are re-entered so that they can bypass
+     * the filter chain.
+     */
+    if (done) return;
+    done = true;
+
+    N = number_of_libraries;
+    F = number_of_functions;
+    for (i = 0; i < N; i++)
+    {
+        handle = dlopen(library_names[i], RTLD_LAZY);
+        if (handle)
+        {
+            for (j = 0; j < F; j++)
+                if (!function_table[j].real)
+                {
+                    function_table[j].real = (void (*)(void)) dlsym(handle, function_table[j].name);
+                    dlerror(); /* clear the error flag */
+                }
+        }
+        else
+        {
+            fprintf(stderr, "%s", dlerror());
+            exit(1);
+        }
+    }
 }
 
 /* Memory validation */

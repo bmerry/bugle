@@ -81,7 +81,7 @@ void hash_init(hash_table *table)
  * - check for duplicate keys
  * It should only be used for rehashing
  */
-static void hash_set_fast(hash_table *table, const char *key, const void *value)
+static void hash_set_fast(hash_table *table, char *key, const void *value)
 {
     size_t h;
 

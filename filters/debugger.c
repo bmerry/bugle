@@ -76,7 +76,7 @@ static bool debugger_callback(function_call *call, void *data)
     char line[1024];
     if (break_on[canonical_call(call)])
     {
-        (*glFinish_real)();
+        CALL_glFinish();
         fgets(line, sizeof(line), in_pipe);
         if (strcmp(line, "state\n") == 0)
         {

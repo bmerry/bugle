@@ -57,7 +57,7 @@ void specify_types(const std::vector<tree_node_p> &types);
 //! Returns the code to create a type table
 std::string type_table(bool header);
 //! Returns the code for function \c dump_any_type
-std::string make_type_dumper(bool prototype);
+void make_type_dumper(bool prototype, std::ostream &out);
 //! Creates a function to convert between arithmetic types
 void type_converter(bool prototype, std::ostream &out);
 
@@ -69,8 +69,8 @@ void function_table(bool header, std::ostream &out);
 std::string make_wrapper(tree_node_p node, bool prototype);
 //! Returns macros that can be used to define generics
 void generics(std::ostream &out);
-//! Generates all the function pointers needed
-void function_pointers(bool prototype, std::ostream &out);
+//! Generates all the direct call function macros (header only)
+void function_macros(std::ostream &out);
 //! Generates the function_call type
 void function_types(std::ostream &out);
 //! Generates a generic invoker

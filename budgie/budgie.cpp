@@ -16,6 +16,12 @@
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
+/* budgie is a utility to generate code for API interception. It is intended
+ * to be able to stand alone from bugle, and in particular has no explicit
+ * knowledge about OpenGL. However, the design was created with bugle in
+ * mind, so it may be difficult to adapt for other APIs.
+ */
+
 /* $Id: budgie.cpp,v 1.22 2004/02/29 16:29:25 bruce Exp $ */
 /*! \file budgie.cpp
  * Main program
@@ -112,59 +118,6 @@ static void identify()
                 }
             }
         }
-}
-
-static void library_init()
-{
-    /* Write out the library initialiser
-     * This looks up the original functions and saves pointers to them
-     */
-    utilhead << "void init_real();\n";
-    utilc << "static bool initialised = false;\n";
-    utilc << "void init_real()\n"
-        << "{\n"
-        << "    void *handles[" << libraries.size() << "];\n"
-        << "    const char *names[" << libraries.size() << "] =\n"
-        << "    {\n";
-    // build a table of library names
-    for (size_t i = 0; i < libraries.size(); i++)
-    {
-        utilc << "        \"" << libraries[i] << "\"";
-        if (i + 1 < libraries.size()) utilc << ", ";
-        utilc << "\n";
-    }
-    // initialise the libraries
-    utilc << "    };\n"
-        << "    char *error;\n"
-        << "    size_t i;\n"
-        << "    if (initialised) return;\n"
-        << "    for (i = 0; i < " << libraries.size() << "; i++)\n"
-        << "    {\n"
-        << "        handles[i] = dlopen(names[i], RTLD_LAZY);\n"
-        << "        if (!handles[i])\n"
-        << "        {\n"
-        << "            fprintf(stderr, \"%s\", dlerror());\n"
-        << "            exit(1);\n"
-        << "        }\n"
-        << "    }\n";
-    // look up the functions
-    for (size_t i = 0; i < functions.size(); i++)
-    {
-        string name = IDENTIFIER_POINTER(DECL_NAME(functions[i]));
-        tree_node_p ptr = make_pointer(TREE_TYPE(functions[i]), false);
-        utilc << "    for (i = 0; i < " << libraries.size() << "; i++)\n"
-            << "    {\n"
-            << "        " << name
-            << "_real = (" << type_to_string(ptr, "", true)
-            << ") dlsym(handles[i], \"" << name << "\");\n"
-            << "        if ((error = dlerror()) == NULL) break;\n"
-            << "    }\n";
-//            << "    if (error != NULL)\n"
-//            << "        fprintf(stderr, \"Warning: %s\\n\", error);\n";
-        delete ptr;
-    }
-    utilc << "    initialised = true;\n"
-        << "}\n\n";
 }
 
 struct config_thing
@@ -583,14 +536,27 @@ static void handle_types()
                               false) << ";\n";
     }
 
-    utilhead << make_type_dumper(true) << "\n";
-    utilc << make_type_dumper(false) << "\n";
+    make_type_dumper(true, utilhead);
+    make_type_dumper(false, utilc);
     utilhead << get_type(true);
     utilc << get_type(false);
     utilhead << get_length(true);
     utilc << get_length(false);
     type_converter(true, utilhead);
     type_converter(false, utilc);
+}
+
+static void library_table(ostream &out)
+{
+    out << "const char * const library_names[" << libraries.size() << "] =\n"
+        << "{\n";
+    for (size_t i = 0; i < libraries.size(); i++)
+    {
+        if (i) out << ",\n";
+        out << "    \"" << libraries[i] << "\"";
+    }
+    out << "\n};\n"
+        << "int number_of_libraries = " << libraries.size() << ";\n";
 }
 
 // make function pointers for the true functions
@@ -600,12 +566,11 @@ static void handle_functions()
     libhead << "void interceptor(function_call *);\n";
 
     // make function pointers for the true functions
-    function_pointers(true, utilhead);
-    function_pointers(false, utilc);
-    // make specific call types for each function
+    function_macros(utilhead);
+    // make the function_call type and nested types
     function_types(typehead);
-
-    library_init();
+    // table of libraries
+    library_table(typec);
 
     // write out function wrappers
     for (size_t i = 0; i < functions.size(); i++)

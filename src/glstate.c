@@ -44,7 +44,7 @@ void glstate_get_enable(state_generic *state)
 
     e = state_to_enum(state);
     assert(state->spec->data_type == TYPE_9GLboolean);
-    *(GLboolean *) state->data = (*glIsEnabled_real)(e);
+    *(GLboolean *) state->data = CALL_glIsEnabled(e);
 }
 
 void glstate_get_global(state_generic *state)
@@ -56,27 +56,27 @@ void glstate_get_global(state_generic *state)
     switch (state->spec->data_type)
     {
     case TYPE_P6GLvoid:
-        (*glGetPointerv_real)(e, (GLvoid **) state->data);
+        CALL_glGetPointerv(e, (GLvoid **) state->data);
          break;
     case TYPE_8GLdouble:
-        (*glGetDoublev_real)(e, (GLdouble *) state->data);
+        CALL_glGetDoublev(e, (GLdouble *) state->data);
         break;
     case TYPE_7GLfloat:
-        (*glGetFloatv_real)(e, (GLfloat *) state->data);
+        CALL_glGetFloatv(e, (GLfloat *) state->data);
         break;
     case TYPE_5GLint:
     case TYPE_6GLuint:
 #if GLENUM_IS_GLUINT
     case TYPE_6GLenum:
 #endif
-        (*glGetIntegerv_real)(e, (GLint *) state->data);
+        CALL_glGetIntegerv(e, (GLint *) state->data);
         break;
     case TYPE_9GLboolean:
-        (*glGetBooleanv_real)(e, (GLboolean *) state->data);
+        CALL_glGetBooleanv(e, (GLboolean *) state->data);
         break;
     default:
         assert((size_t) state->spec->data_length <= sizeof(data) / sizeof(data[0]));
-        (*glGetDoublev_real)(e, data);
+        CALL_glGetDoublev(e, data);
         type_convert(state->data, state->spec->data_type, data, TYPE_8GLdouble, state->spec->data_length);
     }
 }
@@ -104,15 +104,15 @@ static GLenum push_texture_binding(GLenum target, state_generic *state)
     GLenum old;
 
     binding = target_to_binding(target);
-    (*glGetIntegerv_real)(binding, (GLint *) &old);
+    CALL_glGetIntegerv(binding, (GLint *) &old);
     texture = ptr_to_int(state->key);
-    (*glBindTexture_real)(target, texture);
+    CALL_glBindTexture(target, texture);
     return old;
 }
 
 static void pop_texture_binding(GLenum target, GLenum old)
 {
-    (*glBindTexture_real)(target, old);
+    CALL_glBindTexture(target, old);
 }
 
 static GLenum push_server_texture_unit(state_generic *state)
@@ -120,11 +120,11 @@ static GLenum push_server_texture_unit(state_generic *state)
     GLenum old, cur;
 
     /* FIXME: check if we really have multitex */
-    (*glGetIntegerv_real)(GL_ACTIVE_TEXTURE_ARB, (GLint *) &old);
+    CALL_glGetIntegerv(GL_ACTIVE_TEXTURE_ARB, (GLint *) &old);
     cur = GL_TEXTURE0_ARB + ptr_to_int(state->key);
     if (cur != old)
     {
-        (*glActiveTextureARB_real)(cur);
+        CALL_glActiveTextureARB(cur);
         return old;
     }
     else
@@ -134,7 +134,7 @@ static GLenum push_server_texture_unit(state_generic *state)
 static inline void pop_server_texture_unit(GLenum old)
 {
     if (old)
-        (*glActiveTextureARB_real)(old);
+        CALL_glActiveTextureARB(old);
 }
 
 void glstate_get_texparameter(state_generic *state)
@@ -189,14 +189,14 @@ void glstate_get_texlevelparameter(state_generic *state)
 #if GLENUM_IS_GLUINT
     case TYPE_6GLenum:
 #endif
-        (*glGetTexLevelParameteriv_real)(target, level, e, state->data);
+        CALL_glGetTexLevelParameteriv(target, level, e, state->data);
         break;
     case TYPE_7GLfloat:
-        (*glGetTexLevelParameterfv_real)(target, level, e, state->data);
+        CALL_glGetTexLevelParameterfv(target, level, e, state->data);
         break;
     default:
         assert((size_t) state->spec->data_length <= sizeof(data) / sizeof(data[0]));
-        (*glGetTexLevelParameterfv_real)(target, level, e, data);
+        CALL_glGetTexLevelParameterfv(target, level, e, data);
         type_convert(state->data, state->spec->data_type, data, TYPE_7GLfloat, state->spec->data_length);
     }
 
@@ -213,28 +213,28 @@ void glstate_get_texgen(state_generic *state)
     old_unit = push_server_texture_unit(state->parent->parent->parent);
     coord = ptr_to_int(state->parent->key) + GL_S;
     if (state->spec->data_type == TYPE_9GLboolean) /* enable bit */
-        *(GLboolean *) state->data = (*glIsEnabled_real)(coord);
+        *(GLboolean *) state->data = CALL_glIsEnabled(coord);
     else
     {
         e = state_to_enum(state);
         switch (state->spec->data_type)
         {
         case TYPE_8GLdouble:
-            (*glGetTexGendv_real)(coord, e, (GLdouble *) state->data);
+            CALL_glGetTexGendv(coord, e, (GLdouble *) state->data);
             break;
         case TYPE_7GLfloat:
-            (*glGetTexGenfv_real)(coord, e, (GLfloat *) state->data);
+            CALL_glGetTexGenfv(coord, e, (GLfloat *) state->data);
             break;
         case TYPE_5GLint:
         case TYPE_6GLuint:
 #if GLENUM_IS_GLUINT
         case TYPE_6GLenum:
 #endif
-            (*glGetTexGeniv_real)(coord, e, (GLint *) state->data);
+            CALL_glGetTexGeniv(coord, e, (GLint *) state->data);
             break;
         default:
             assert((size_t) state->spec->data_length <= sizeof(data) / sizeof(data[0]));
-            (*glGetTexGendv_real)(coord, e, data);
+            CALL_glGetTexGendv(coord, e, data);
             type_convert(state->data, state->spec->data_type, data, TYPE_8GLdouble, state->spec->data_length);
         }
     }
@@ -251,27 +251,27 @@ void glstate_get_texunit(state_generic *state)
     old_unit = push_server_texture_unit(state->parent);
     e = state_to_enum(state);
     if (state->spec->data_type == TYPE_9GLboolean) /* enable bit */
-        *(GLboolean *) state->data = (*glIsEnabled_real)(e);
+        *(GLboolean *) state->data = CALL_glIsEnabled(e);
     else
     {
         switch (state->spec->data_type)
         {
         case TYPE_8GLdouble:
-            (*glGetDoublev_real)(e, (GLdouble *) state->data);
+            CALL_glGetDoublev(e, (GLdouble *) state->data);
             break;
         case TYPE_7GLfloat:
-            (*glGetFloatv_real)(e, (GLfloat *) state->data);
+            CALL_glGetFloatv(e, (GLfloat *) state->data);
             break;
         case TYPE_5GLint:
         case TYPE_6GLuint:
 #if GLENUM_IS_GLUINT
         case TYPE_6GLenum:
 #endif
-            (*glGetIntegerv_real)(e, (GLint *) state->data);
+            CALL_glGetIntegerv(e, (GLint *) state->data);
             break;
         default:
             assert((size_t) state->spec->data_length <= sizeof(data) / sizeof(data[0]));
-            (*glGetDoublev_real)(e, data);
+            CALL_glGetDoublev(e, data);
             type_convert(state->data, state->spec->data_type, data, TYPE_8GLdouble, state->spec->data_length);
         }
     }
@@ -290,18 +290,18 @@ void glstate_get_texenv(state_generic *state)
     switch (state->spec->data_type)
     {
     case TYPE_7GLfloat:
-        (*glGetTexEnvfv_real)(GL_TEXTURE_ENV, e, state->data);
+        CALL_glGetTexEnvfv(GL_TEXTURE_ENV, e, state->data);
         break;
     case TYPE_5GLint:
     case TYPE_6GLuint:
 #if GLENUM_IS_GLUINT
     case TYPE_6GLenum:
 #endif
-        (*glGetTexEnviv_real)(GL_TEXTURE_ENV, e, state->data);
+        CALL_glGetTexEnviv(GL_TEXTURE_ENV, e, state->data);
         break;
     default:
         assert((size_t) state->spec->data_length <= sizeof(data) / sizeof(data[0]));
-        (*glGetTexEnvfv_real)(GL_TEXTURE_ENV, e, data);
+        CALL_glGetTexEnvfv(GL_TEXTURE_ENV, e, data);
         type_convert(state->data, state->spec->data_type, data, TYPE_7GLfloat, state->spec->data_length);
     }
 

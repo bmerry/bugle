@@ -21,6 +21,7 @@
 #include "src/types.h"
 #include "src/canon.h"
 #include "common/bool.h"
+#include <GL/glx.h>
 
 /* Wireframe filter-set */
 
@@ -36,6 +37,7 @@ static bool wireframe_pre_callback(function_call *call, void *data)
         case GL_TEXTURE_CUBE_MAP:
         case GL_TEXTURE_3D:
             return false;
+        default: ;
         }
         break;
     case FUNC_glPolygonMode:
@@ -49,8 +51,10 @@ static bool wireframe_post_callback(function_call *call, void *data)
     switch (canonical_call(call))
     {
     case FUNC_glXMakeCurrent:
+#ifdef GLX_VERSION_1_3
     case FUNC_glXMakeContextCurrent:
-        (*glPolygonMode_real)(GL_FRONT_AND_BACK, GL_LINE);
+#endif
+        CALL_glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
     }
     return true;
 }
@@ -69,10 +73,12 @@ static bool frontbuffer_callback(function_call *call, void *data)
     switch (canonical_call(call))
     {
     case FUNC_glXMakeCurrent:
+#ifdef GLX_VERSION_1_3
     case FUNC_glXMakeContextCurrent:
+#endif
     case FUNC_glDrawBuffer:
-        (*glDrawBuffer_real)(GL_FRONT);
-        (*glClear_real)(GL_COLOR_BUFFER_BIT); /* hopefully bypass z-trick */
+        CALL_glDrawBuffer(GL_FRONT);
+        CALL_glClear(GL_COLOR_BUFFER_BIT); /* hopefully bypass z-trick */
     }
     return true;
 }

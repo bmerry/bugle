@@ -132,10 +132,10 @@ void interceptor(function_call *call)
     if (!initialised)
     {
         initialise_hashing();
+        initialise_real();
         initialise_canonical();
         initialise_filters();
         initialise_dump();
-        init_real();
         load_config();
         initialised = true;
     }

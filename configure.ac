@@ -1,6 +1,6 @@
-AC_INIT(bugle, 0.0.20040606, bmerry@users.sourceforge.net)
+AC_INIT(bugle, 0.0.20040608, bmerry@users.sourceforge.net)
 AC_CONFIG_SRCDIR([src/interceptor.c])
-AM_INIT_AUTOMAKE(bugle, 0.0.20040606)
+AM_INIT_AUTOMAKE(bugle, 0.0.20040608)
 AM_CONFIG_HEADER(config.h)
 
 dnl Checks for programs
@@ -31,10 +31,10 @@ AC_C_LONG_DOUBLE
 dnl Checks for structures
 
 dnl Checks for compiler characteristics
-# AC_C_CONST
 AC_C_VOLATILE
 AC_C_INLINE
 AC_C_CHAR_UNSIGNED
+BUGLE_CPP_DEFINES
 
 dnl Checks for library functions
 AC_CHECK_FUNCS([regcomp strrchr])
@@ -42,6 +42,11 @@ AC_REPLACE_FUNCS([bsearch])
 AC_FUNC_MEMCMP
 
 dnl Checks for system services
+AC_PATH_XTRA
+BUGLE_PATH_GLINCLUDES
+
+dnl Set up some extra stuff
+AM_CONDITIONAL(PREPROCESS_GL, test x$CPP_DEFINES = xyes)
 
 dnl Write out files
 AC_CONFIG_FILES([Makefile])

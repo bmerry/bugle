@@ -357,23 +357,23 @@ size_t image_element_count(GLsizei width,
     if (unpack)
     {
         /* FIXME: don't query on non-existant extensions */
-        (*glGetIntegerv_real)(GL_UNPACK_SWAP_BYTES, &swap_bytes);
-        (*glGetIntegerv_real)(GL_UNPACK_ROW_LENGTH, &row_length);
-        (*glGetIntegerv_real)(GL_UNPACK_IMAGE_HEIGHT, &image_height);
-        (*glGetIntegerv_real)(GL_UNPACK_SKIP_PIXELS, &skip_pixels);
-        (*glGetIntegerv_real)(GL_UNPACK_SKIP_ROWS, &skip_rows);
-        (*glGetIntegerv_real)(GL_UNPACK_SKIP_IMAGES, &skip_images);
-        (*glGetIntegerv_real)(GL_UNPACK_ALIGNMENT, &alignment);
+        CALL_glGetIntegerv(GL_UNPACK_SWAP_BYTES, &swap_bytes);
+        CALL_glGetIntegerv(GL_UNPACK_ROW_LENGTH, &row_length);
+        CALL_glGetIntegerv(GL_UNPACK_IMAGE_HEIGHT, &image_height);
+        CALL_glGetIntegerv(GL_UNPACK_SKIP_PIXELS, &skip_pixels);
+        CALL_glGetIntegerv(GL_UNPACK_SKIP_ROWS, &skip_rows);
+        CALL_glGetIntegerv(GL_UNPACK_SKIP_IMAGES, &skip_images);
+        CALL_glGetIntegerv(GL_UNPACK_ALIGNMENT, &alignment);
     }
     else
     {
-        (*glGetIntegerv_real)(GL_PACK_SWAP_BYTES, &swap_bytes);
-        (*glGetIntegerv_real)(GL_PACK_ROW_LENGTH, &row_length);
-        (*glGetIntegerv_real)(GL_PACK_IMAGE_HEIGHT, &image_height);
-        (*glGetIntegerv_real)(GL_PACK_SKIP_PIXELS, &skip_pixels);
-        (*glGetIntegerv_real)(GL_PACK_SKIP_ROWS, &skip_rows);
-        (*glGetIntegerv_real)(GL_PACK_SKIP_IMAGES, &skip_images);
-        (*glGetIntegerv_real)(GL_PACK_ALIGNMENT, &alignment);
+        CALL_glGetIntegerv(GL_PACK_SWAP_BYTES, &swap_bytes);
+        CALL_glGetIntegerv(GL_PACK_ROW_LENGTH, &row_length);
+        CALL_glGetIntegerv(GL_PACK_IMAGE_HEIGHT, &image_height);
+        CALL_glGetIntegerv(GL_PACK_SKIP_PIXELS, &skip_pixels);
+        CALL_glGetIntegerv(GL_PACK_SKIP_ROWS, &skip_rows);
+        CALL_glGetIntegerv(GL_PACK_SKIP_IMAGES, &skip_images);
+        CALL_glGetIntegerv(GL_PACK_ALIGNMENT, &alignment);
     }
     a = alignment;
     skip_images = (depth > 0) ? skip_images : 0;
@@ -411,8 +411,8 @@ size_t texture_element_count(GLenum target,
 {
     int width, height, depth;
     /* FIXME: don't query for depth if we don't have 3D textures */
-    (*glGetTexLevelParameteriv_real)(target, level, GL_TEXTURE_WIDTH, &width);
-    (*glGetTexLevelParameteriv_real)(target, level, GL_TEXTURE_HEIGHT, &height);
-    (*glGetTexLevelParameteriv_real)(target, level, GL_TEXTURE_DEPTH, &depth);
+    CALL_glGetTexLevelParameteriv(target, level, GL_TEXTURE_WIDTH, &width);
+    CALL_glGetTexLevelParameteriv(target, level, GL_TEXTURE_HEIGHT, &height);
+    CALL_glGetTexLevelParameteriv(target, level, GL_TEXTURE_DEPTH, &depth);
     return image_element_count(width, height, depth, format, type, false);
 }

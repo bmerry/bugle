@@ -26,6 +26,7 @@
 #include "budgielib/state.h"
 #include "common/bool.h"
 #include <assert.h>
+#include <GL/glx.h>
 
 static state_7context_I *context_state = NULL;
 
@@ -44,9 +45,11 @@ bool trackcontext_callback(function_call *call, void *data)
     case FUNC_glXMakeCurrent:
         ctx = *call->typed.glXMakeCurrent.arg2;
         break;
+#ifdef GLX_VERSION_1_3
     case FUNC_glXMakeContextCurrent:
         ctx = *call->typed.glXMakeContextCurrent.arg3;
         break;
+#endif
     default:
         return true;
     }
@@ -79,6 +82,7 @@ static bool trackbeginend_callback(function_call *call, void *data)
         case GL_POLYGON:
             if (context_state)
                 context_state->c_internal.c_in_begin_end.data = GL_TRUE;
+        default: ;
         }
         break;
     case FUNC_glEnd:
