@@ -79,8 +79,10 @@
 #define STATE_MODE_SHADER_SOURCE            0x0000001c    /* glGetShaderSource */
 #define STATE_MODE_OBJECT_UNIFORM           0x0000001d    /* glGetActiveUniformARB, glGetUniformARB */
 #define STATE_MODE_UNIFORM                  0x0000001e    /* glGetActiveUniform, glGetUniform */
-#define STATE_MODE_ATTACHED_OBJECTS         0x0000001f    /* glGetAttachedObjectsARB */
-#define STATE_MODE_ATTACHED_SHADERS         0x00000020    /* glGetAttachedShaders */
+#define STATE_MODE_OBJECT_ATTRIB_LOCATION   0x0000001f    /* glGetAttribLocationARB */
+#define STATE_MODE_ATTRIB_LOCATION          0x00000020    /* glGetAttribLocation */
+#define STATE_MODE_ATTACHED_OBJECTS         0x00000021    /* glGetAttachedObjectsARB */
+#define STATE_MODE_ATTACHED_SHADERS         0x00000022    /* glGetAttachedShaders */
 #define STATE_MODE_MASK                     0x000000ff
 
 #define STATE_MULTIPLEX_ACTIVE_TEXTURE      0x00000100    /* Set active texture */
@@ -129,6 +131,8 @@
 #define STATE_SHADER_SOURCE STATE_MODE_SHADER_SOURCE
 #define STATE_OBJECT_UNIFORM STATE_MODE_OBJECT_UNIFORM
 #define STATE_UNIFORM STATE_MODE_UNIFORM
+#define STATE_OBJECT_ATTRIB_LOCATION STATE_MODE_OBJECT_ATTRIB_LOCATION
+#define STATE_ATTRIB_LOCATION STATE_MODE_ATTRIB_LOCATION
 #define STATE_ATTACHED_OBJECTS STATE_MODE_ATTACHED_OBJECTS
 #define STATE_ATTACHED_SHADERS STATE_MODE_ATTACHED_SHADERS
 
@@ -309,9 +313,7 @@ static const state_info global_state[] =
 #ifdef GL_EXT_blend_equation_separate
     { STATE_NAME_EXT(GL_BLEND_EQUATION_ALPHA, _EXT), TYPE_6GLenum, -1, BUGLE_GL_EXT_blend_equation_separate, "2.0", STATE_GLOBAL },
 #endif
-    /* FIXME: BLEND_COLOR seems to have come via GL_ARB_imaging, but is
-     * listed in the GL state tables as required? */
-    { STATE_NAME(GL_BLEND_COLOR), TYPE_8GLdouble, 4, -1, "1.1", STATE_GLOBAL },
+    { STATE_NAME_EXT(GL_BLEND_COLOR, _EXT), TYPE_8GLdouble, 4, BUGLE_GL_EXT_blend_color, "1.2", STATE_GLOBAL },
     { STATE_NAME(GL_DITHER), TYPE_9GLboolean, -1, -1, "1.1", STATE_ENABLED },
     { STATE_NAME(GL_INDEX_LOGIC_OP), TYPE_9GLboolean, -1, -1, "1.1", STATE_ENABLED },
     { STATE_NAME(GL_COLOR_LOGIC_OP), TYPE_9GLboolean, -1, -1, "1.1", STATE_ENABLED },
@@ -801,8 +803,6 @@ static const state_info program_object_state[] =
     { STATE_NAME(GL_OBJECT_VALIDATE_STATUS_ARB), TYPE_9GLboolean, -1, BUGLE_GL_ARB_shader_objects, NULL, STATE_OBJECT_PARAMETER },
     { STATE_NAME(GL_OBJECT_ACTIVE_UNIFORM_MAX_LENGTH_ARB), TYPE_5GLint, -1, BUGLE_GL_ARB_shader_objects, NULL, STATE_OBJECT_PARAMETER },
     { "Attached", GL_NONE, TYPE_11GLhandleARB, 0, BUGLE_GL_ARB_shader_objects, NULL, STATE_ATTACHED_OBJECTS },
-    /* FIXME: glGetActiveAttribARB */
-    /* FIXME: glGetAttribLocationARB */
 #endif
 #ifdef GL_ARB_vertex_shader
     { STATE_NAME(GL_OBJECT_ACTIVE_ATTRIBUTES_ARB), TYPE_5GLint, -1, BUGLE_GL_ARB_vertex_shader, NULL, STATE_OBJECT_PARAMETER | STATE_SELECT_VERTEX },
@@ -849,8 +849,6 @@ static const state_info program_state[] =
     { STATE_NAME(GL_ACTIVE_UNIFORMS), TYPE_5GLint, -1, -1, "2.0", STATE_PROGRAM },
     { STATE_NAME(GL_ACTIVE_UNIFORM_MAX_LENGTH), TYPE_5GLint, -1, -1, "2.0", STATE_PROGRAM },
     { STATE_NAME(GL_ACTIVE_ATTRIBUTES), TYPE_5GLint, -1, BUGLE_GL_ARB_vertex_shader, "2.0", STATE_PROGRAM },
-    /* FIXME: glGetAttribLocation */
-    /* FIXME: glGetActiveAttrib */
     { STATE_NAME(GL_ACTIVE_ATTRIBUTE_MAX_LENGTH), TYPE_5GLint, -1, BUGLE_GL_ARB_vertex_shader, "2.0", STATE_PROGRAM  },
 #endif
     { NULL, GL_NONE, NULL_TYPE, 0, 0, NULL, 0 }
@@ -1304,6 +1302,9 @@ char *bugle_state_get_string(const glstate *state)
                 CALL_glGetUniformivARB(state->object, state->level, i);
         }
         break;
+    case STATE_MODE_OBJECT_ATTRIB_LOCATION:
+        i[0] = CALL_glGetAttribLocationARB(state->object, state->name);
+        break;
     case STATE_MODE_ATTACHED_OBJECTS:
         {
             GLhandleARB *attached;
@@ -1354,6 +1355,9 @@ char *bugle_state_get_string(const glstate *state)
             else
                 CALL_glGetUniformiv(state->object, state->level, i);
         }
+        break;
+    case STATE_MODE_ATTRIB_LOCATION:
+        i[0] = CALL_glGetAttribLocation(state->object, state->name);
         break;
     case STATE_MODE_ATTACHED_SHADERS:
         {
@@ -1625,14 +1629,15 @@ static void make_tex_levels(const glstate *self,
         CALL_glGetIntegerv(self->binding, &old);
         CALL_glBindTexture(self->target, self->object);
     }
-    /* FIXME: BASE and MAX are only in GL 1.2? */
     base = 0;
     max = 1000;
-    if (self->binding) /* No parameters for proxy textures */
+#ifdef GL_SGIS_texture_lod
+    if (self->binding && bugle_gl_has_extension(GL_SGIS_texture_lod) /* No parameters for proxy textures */
     {
-        CALL_glGetTexParameteriv(self->target, GL_TEXTURE_BASE_LEVEL, &base);
-        CALL_glGetTexParameteriv(self->target, GL_TEXTURE_MAX_LEVEL, &max);
+        CALL_glGetTexParameteriv(self->target, GL_TEXTURE_BASE_LEVEL_SGIS, &base);
+        CALL_glGetTexParameteriv(self->target, GL_TEXTURE_MAX_LEVEL_SGIS, &max);
     }
+#endif
 
     for (i = base; i <= base + max; i++)
     {
@@ -1881,6 +1886,10 @@ static void spawn_children_program_object(const glstate *self, bugle_linked_list
     {
         NULL, GL_NONE, NULL_TYPE, -1, BUGLE_GL_ARB_shader_objects, NULL, STATE_OBJECT_UNIFORM
     };
+    static const state_info object_attrib_state =
+    {
+        NULL, GL_NONE, TYPE_5GLint, -1, BUGLE_GL_ARB_vertex_shader, NULL, STATE_OBJECT_ATTRIB_LOCATION
+    };
 
     bugle_list_init(children, true);
 #ifdef GL_ARB_vertex_shader
@@ -1915,6 +1924,31 @@ static void spawn_children_program_object(const glstate *self, bugle_linked_list
         if (length) bugle_list_append(children, child);
         else free(child->name); /* failed query */
     }
+
+#ifdef GL_ARB_vertex_shader
+    if (bugle_gl_has_extension(BUGLE_GL_ARB_vertex_shader))
+    {
+        CALL_glGetObjectParameterivARB(self->object, GL_OBJECT_ACTIVE_ATTRIBUTES_ARB,
+                                       &count);
+        CALL_glGetObjectParameterivARB(self->object, GL_OBJECT_ACTIVE_ATTRIBUTE_MAX_LENGTH_ARB,
+                                       &max);
+
+        for (i = 0; i < count; i++)
+        {
+            child = bugle_malloc(sizeof(glstate));
+            *child = *self;
+            child->spawn_children = NULL;
+            child->info = &object_attrib_state;
+            child->name = bugle_malloc(sizeof(GLcharARB) * (max + 1));
+            child->name[0] = '\0';
+            child->level = i;
+            CALL_glGetActiveAttribARB(self->object, i, max, &length, &size,
+                                      &type, child->name);
+            if (length) bugle_list_append(children, child);
+            else free(child->name);
+        }
+    }
+#endif
 }
 #endif /* GL_ARB_shader_objects */
 
@@ -1930,6 +1964,10 @@ static void spawn_children_program(const glstate *self, bugle_linked_list *child
     static const state_info program_uniform_state =
     {
         NULL, GL_NONE, NULL_TYPE, -1, -1, "2.0", STATE_UNIFORM
+    };
+    static const state_info program_attrib_state =
+    {
+        NULL, GL_NONE, TYPE_5GLint, -1, -1, "2.0", STATE_ATTRIB_LOCATION
     };
     GLint i, count, max, type;
     GLsizei length, size;
@@ -1961,6 +1999,24 @@ static void spawn_children_program(const glstate *self, bugle_linked_list *child
         }
         if (length) bugle_list_append(children, child);
         else free(child->name); /* failed query */
+    }
+
+    CALL_glGetProgramiv(self->object, GL_ACTIVE_ATTRIBUTES, &count);
+    CALL_glGetProgramiv(self->object, GL_ACTIVE_ATTRIBUTE_MAX_LENGTH, &max);
+
+    for (i = 0; i < count; i++)
+    {
+        child = bugle_malloc(sizeof(glstate));
+        *child = *self;
+        child->spawn_children = NULL;
+        child->info = &program_attrib_state;
+        child->name = bugle_malloc(sizeof(GLchar) * (max + 1));
+        child->name[0] = '\0';
+        child->level = i;
+        CALL_glGetActiveAttrib(self->object, i, max, &length, &size,
+                               &type, child->name);
+        if (length) bugle_list_append(children, child);
+        else free(child->name);
     }
 }
 #endif

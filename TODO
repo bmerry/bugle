@@ -19,10 +19,10 @@ bugle
 - autoconf test for GLENUM_IS_GLUINT
 - use ltdl for loading modules
 - cap and extension overrides
-- fill in the rest of the state
-- handle texture proxies
+- better handling of texture proxies
+- fill in the rest of the state (image state, mainly)
 - handle GL shared and unshared objects correctly (queries unshared)
-- improve support for GLSL
+- improve support for GLSL (better code dump, more type information)
 - capture more information about call lists
 - capture and replay
 
@@ -43,7 +43,6 @@ long term
 - internationalisation
 - Windows support
 - graphical debugger interface
-- more OpenGL 2.0 support
 - write support for state
 - better movie capture
   - option of a separate thread, for parallel encoding

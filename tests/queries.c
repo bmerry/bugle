@@ -14,15 +14,10 @@
 #include <string.h>
 
 /* Still TODO (how depressing)
- * - GetColorTable
- * - GetConvolutionParameter
  * - GetConvolutionFilter
  * - GetSeparableFilter
  * - GetHistogram
- * - GetHistogramParameter
  * - GetMinmax
- * - GetMinmaxParameter
- * - GetPointer
  * - GetPixelMap
  * - GetMap
  * - GetTexImage
@@ -85,6 +80,19 @@ static void query_bools(void)
     fprintf(ref, "trace\\.call: glGetIntegerv\\(GL_CURRENT_RASTER_POSITION_VALID, %p -> GL_TRUE\\)\n", (void *) &i);
     glGetIntegerv(GL_LIGHT_MODEL_TWO_SIDE, &i);
     fprintf(ref, "trace\\.call: glGetIntegerv\\(GL_LIGHT_MODEL_TWO_SIDE, %p -> GL_FALSE\\)\n", (void *) &i);
+}
+
+static void query_pointers(void)
+{
+    GLfloat data[4] = {0.0f, 1.0f, 2.0f, 3.0f};
+    GLvoid *ptr;
+
+    glVertexPointer(4, GL_FLOAT, 0, data);
+    fprintf(ref, "trace\\.call: glVertexPointer\\(4, GL_FLOAT, 0, %p\\)\n",
+            (void *) data);
+    glGetPointerv(GL_VERTEX_ARRAY_POINTER, &ptr);
+    fprintf(ref, "trace\\.call: glGetPointerv\\(GL_VERTEX_ARRAY_POINTER, %p -> %p\\)\n",
+            (void *) &ptr, (void *) data);
 }
 
 /* Query a bunch of things that are actually arrays */
@@ -293,6 +301,101 @@ static void query_color_table(void)
         glGetColorTableParameterfv(GL_COLOR_TABLE, GL_COLOR_TABLE_SCALE, scale);
         fprintf(ref, "trace\\.call: glGetColorTableParameterfv\\(GL_COLOR_TABLE, GL_COLOR_TABLE_SCALE, %p -> { 1, 1, 1, 1 }\\)\n",
                 (void *) scale);
+        glGetColorTable(GL_COLOR_TABLE, GL_RGB, GL_UNSIGNED_BYTE, data);
+        fprintf(ref, "trace\\.call: glGetColorTable\\(GL_COLOR_TABLE, GL_RGB, GL_UNSIGNED_BYTE, %p\\)\n",
+                (void *) data);
+    }
+#endif
+}
+
+static void query_convolution(void)
+{
+#ifdef GL_ARB_imaging
+    GLubyte data[12] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11};
+    GLfloat bias[4];
+    GLint border_mode;
+
+    if (extension_supported("GL_ARB_imaging"))
+    {
+        glConvolutionFilter1D(GL_CONVOLUTION_1D, GL_LUMINANCE, 12, GL_LUMINANCE, GL_UNSIGNED_BYTE, data);
+        fprintf(ref, "trace\\.call: glConvolutionFilter1D\\(GL_CONVOLUTION_1D, GL_LUMINANCE, 12, GL_LUMINANCE, GL_UNSIGNED_BYTE, %p\\)\n",
+                (void *) data);
+        glGetConvolutionParameterfv(GL_CONVOLUTION_1D, GL_CONVOLUTION_FILTER_BIAS, bias);
+        fprintf(ref, "trace\\.call: glGetConvolutionParameterfv\\(GL_CONVOLUTION_1D, GL_CONVOLUTION_FILTER_BIAS, %p -> { 0, 0, 0, 0 }\\)\n",
+                (void *) bias);
+        glGetConvolutionParameteriv(GL_CONVOLUTION_1D, GL_CONVOLUTION_BORDER_MODE, &border_mode);
+        fprintf(ref, "trace\\.call: glGetConvolutionParameteriv\\(GL_CONVOLUTION_1D, GL_CONVOLUTION_BORDER_MODE, %p -> GL_REDUCE\\)\n",
+                (void *) &border_mode);
+    }
+#endif
+}
+
+static void query_histogram(void)
+{
+#ifdef GL_ARB_imaging
+    GLint format, sink;
+
+    if (extension_supported("GL_ARB_imaging"))
+    {
+        glHistogram(GL_HISTOGRAM, 16, GL_RGB, GL_FALSE);
+        fprintf(ref, "trace\\.call: glHistogram\\(GL_HISTOGRAM, 16, GL_RGB, GL_FALSE\\)\n");
+        glGetHistogramParameteriv(GL_HISTOGRAM, GL_HISTOGRAM_FORMAT, &format);
+        fprintf(ref, "trace\\.call: glGetHistogramParameteriv\\(GL_HISTOGRAM, GL_HISTOGRAM_FORMAT, %p -> GL_RGB\\)\n",
+                (void *) &format);
+        glGetHistogramParameteriv(GL_HISTOGRAM, GL_HISTOGRAM_SINK, &sink);
+        fprintf(ref, "trace\\.call: glGetHistogramParameteriv\\(GL_HISTOGRAM, GL_HISTOGRAM_SINK, %p -> GL_FALSE\\)\n",
+                (void *) &sink);
+    }
+#endif
+}
+
+static void query_minmax(void)
+{
+#ifdef GL_ARB_imaging
+    GLint format, sink;
+
+    if (extension_supported("GL_ARB_imaging"))
+    {
+        glMinmax(GL_MINMAX, GL_RGB, GL_FALSE);
+        fprintf(ref, "trace\\.call: glMinmax\\(GL_MINMAX, GL_RGB, GL_FALSE\\)\n");
+        glGetMinmaxParameteriv(GL_MINMAX, GL_MINMAX_FORMAT, &format);
+        fprintf(ref, "trace\\.call: glGetMinmaxParameteriv\\(GL_MINMAX, GL_MINMAX_FORMAT, %p -> GL_RGB\\)\n",
+                (void *) &format);
+        glGetMinmaxParameteriv(GL_MINMAX, GL_MINMAX_SINK, &sink);
+        fprintf(ref, "trace\\.call: glGetMinmaxParameteriv\\(GL_MINMAX, GL_MINMAX_SINK, %p -> GL_FALSE\\)\n",
+                (void *) &sink);
+    }
+#endif
+}
+
+static void query_shaders(void)
+{
+#if defined(GL_ARB_shader_objects) && defined(GL_ARB_vertex_shader)
+    GLhandleARB v1, v2, p, attached[2];
+    GLsizei count;
+
+    if (extension_supported("GL_ARB_shader_objects")
+        && extension_supported("GL_ARB_vertex_shader"))
+    {
+        v1 = glCreateShaderObjectARB(GL_VERTEX_SHADER_ARB);
+        fprintf(ref, "trace\\.call: glCreateShaderObjectARB\\(GL_VERTEX_SHADER(_ARB)?\\) = %u\n",
+                (unsigned int) v1);
+        v2 = glCreateShaderObjectARB(GL_VERTEX_SHADER_ARB);
+        fprintf(ref, "trace\\.call: glCreateShaderObjectARB\\(GL_VERTEX_SHADER(_ARB)?\\) = %u\n",
+                (unsigned int) v2);
+        p = glCreateProgramObjectARB();
+        fprintf(ref, "trace\\.call: glCreateProgramObjectARB\\(\\) = %u\n",
+                (unsigned int) p);
+
+        glAttachObjectARB(p, v1);
+        fprintf(ref, "trace\\.call: glAttachObjectARB\\(%u, %u\\)\n",
+                (unsigned int) p, (unsigned int) v1);
+        glAttachObjectARB(p, v2);
+        fprintf(ref, "trace\\.call: glAttachObjectARB\\(%u, %u\\)\n",
+                (unsigned int) p, (unsigned int) v2);
+        glGetAttachedObjectsARB(p, 2, &count, attached);
+        fprintf(ref, "trace\\.call: glGetAttachedObjectsARB\\(%u, 2, %p -> 2, %p -> { %u, %u }\\)\n",
+                (unsigned int) p, (void *) &count, (void *) attached, (unsigned int) v1, (unsigned int) v2);
     }
 #endif
 }
@@ -308,6 +411,7 @@ int main(int argc, char **argv)
 
     query_enums();
     query_bools();
+    query_pointers();
     query_multi();
     query_tex_parameter();
     query_tex_level_parameter();
@@ -320,6 +424,10 @@ int main(int argc, char **argv)
     query_query();
     query_buffer_parameter();
     query_color_table();
+    query_convolution();
+    query_histogram();
+    query_minmax();
     query_strings();
+    query_shaders();
     return 0;
 }
