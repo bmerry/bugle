@@ -56,6 +56,8 @@ static void send_state(const glstate *state, uint32_t id)
     gldb_protocol_send_code(out_pipe, id);
     if (state->name) gldb_protocol_send_string(out_pipe, state->name);
     else gldb_protocol_send_string(out_pipe, "");
+    gldb_protocol_send_code(out_pipe, state->numeric_name);
+    gldb_protocol_send_code(out_pipe, state->enum_name);
     if (str) gldb_protocol_send_string(out_pipe, str);
     else gldb_protocol_send_string(out_pipe, "");
     free(str);
@@ -146,15 +148,17 @@ static void dump_any_call_string_io(FILE *out, void *data)
 }
 
 /* Wherever possible we use the aux context. However, default textures
- * are not shared between contexts, so we have to take our chances with
- * setting up the default readback state and restoring it afterwards.
+ * are not shared between contexts, so we sometimes have to take our
+ * chances with setting up the default readback state and restoring it
+ * afterwards.
  */
-static bool get_data_texture(GLuint texid, GLenum target, GLenum face,
-                             GLint level, GLenum format, GLenum type,
-                             char **data_out, size_t *length_out)
+static bool send_data_texture(uint32_t id, GLuint texid, GLenum target,
+                              GLenum face, GLint level,
+                              GLenum format, GLenum type)
 {
     char *data;
     size_t length;
+    GLint width, height = 1, depth = 1;
 
     Display *dpy;
     GLXContext aux, real;
@@ -172,8 +176,10 @@ static bool get_data_texture(GLuint texid, GLenum target, GLenum face,
     aux = bugle_get_aux_context();
     if (!aux || !bugle_begin_internal_render())
     {
-        *data_out = NULL;
-        *length_out = 0;
+        gldb_protocol_send_code(out_pipe, RESP_ERROR);
+        gldb_protocol_send_code(out_pipe, id);
+        gldb_protocol_send_code(out_pipe, 0);
+        gldb_protocol_send_string(out_pipe, "inside glBegin/glEnd");
         return false;
     }
 
@@ -222,13 +228,16 @@ static bool get_data_texture(GLuint texid, GLenum target, GLenum face,
     glBindTexture(target, texid);
     glPixelStorei(GL_PACK_ALIGNMENT, 1);
 
-    length = bugle_gl_type_to_size(type)
-        * bugle_texture_element_count(target, level, format, type);
+    glGetTexLevelParameteriv(face, level, GL_TEXTURE_WIDTH, &width);
+    glGetTexLevelParameteriv(face, level, GL_TEXTURE_HEIGHT, &height);
+#ifdef GL_EXT_texture3D
+    if (bugle_gl_has_extension(BUGLE_GL_EXT_texture3D))
+        glGetTexLevelParameteriv(face, level, GL_TEXTURE_DEPTH_EXT, &depth);
+#endif
+    length = bugle_gl_type_to_size(type) * bugle_gl_format_to_count(format, type)
+        * width * height * depth;
     data = bugle_malloc(length);
     glGetTexImage(target, level, format, type, data);
-
-    *data_out = data;
-    *length_out = length;
 
     if (texid)
     {
@@ -258,6 +267,13 @@ static bool get_data_texture(GLuint texid, GLenum target, GLenum face,
 #endif
     }
 
+    gldb_protocol_send_code(out_pipe, RESP_DATA);
+    gldb_protocol_send_code(out_pipe, id);
+    gldb_protocol_send_code(out_pipe, REQ_DATA_TEXTURE);
+    gldb_protocol_send_binary_string(out_pipe, length, data);
+    gldb_protocol_send_code(out_pipe, width);
+    gldb_protocol_send_code(out_pipe, height);
+    gldb_protocol_send_code(out_pipe, depth);
     bugle_end_internal_render("debugger_screenshot", true);
     return true;
 }
@@ -379,12 +395,10 @@ static void process_single_command(function_call *call)
         exit(1);
     case REQ_DATA:
         {
-            uint32_t sub_req, texid, target, face, level, format, type;
-            size_t size;
-            char *data;
+            uint32_t subtype, texid, target, face, level, format, type;
 
-            gldb_protocol_recv_code(in_pipe, &sub_req);
-            switch (sub_req)
+            gldb_protocol_recv_code(in_pipe, &subtype);
+            switch (subtype)
             {
             case REQ_DATA_TEXTURE:
                 gldb_protocol_recv_code(in_pipe, &texid);
@@ -393,18 +407,14 @@ static void process_single_command(function_call *call)
                 gldb_protocol_recv_code(in_pipe, &level);
                 gldb_protocol_recv_code(in_pipe, &format);
                 gldb_protocol_recv_code(in_pipe, &type);
-                get_data_texture(texid, target, face, level, format, type,
-                                 &data, &size);
-                gldb_protocol_send_code(out_pipe, RESP_DATA);
-                gldb_protocol_send_code(out_pipe, id);
-                gldb_protocol_send_binary_string(out_pipe, size, data);
-                free(data);
+                send_data_texture(id, texid, target, face, level,
+                                  format, type);
                 break;
             default:
                 gldb_protocol_send_code(out_pipe, RESP_ERROR);
                 gldb_protocol_send_code(out_pipe, id);
                 gldb_protocol_send_code(out_pipe, 0);
-                gldb_protocol_send_string(out_pipe, "unknown subcode");
+                gldb_protocol_send_string(out_pipe, "unknown subtype");
                 break;
             }
         }

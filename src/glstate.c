@@ -1813,6 +1813,8 @@ static void make_leaves_conditional(const glstate *self, const state_info *table
             child = bugle_malloc(sizeof(glstate));
             *child = *self; /* copies contextual info */
             child->name = bugle_strdup(info->name);
+            child->numeric_name = 0;
+            child->enum_name = info->pname;
             child->info = info;
             child->spawn_children = NULL;
             bugle_list_append(children, child);
@@ -1841,6 +1843,7 @@ static void make_fixed(const glstate *self,
         *child = *self;
         child->info = NULL;
         child->name = bugle_strdup(pairs[i].name);
+        child->enum_name = pairs[i].token;
         *(GLenum *) (((char *) child) + offset) = pairs[i].token;
         child->spawn_children = spawn;
         bugle_list_append(children, child);
@@ -1865,6 +1868,8 @@ static void make_counted(const glstate *self,
         *child = *self;
         child->info = info;
         bugle_asprintf(&child->name, format, (unsigned long) i);
+        child->numeric_name = i;
+        child->enum_name = 0;
         *(GLenum *) (((char *) child) + offset) = base + i;
         child->spawn_children = spawn;
         bugle_list_append(children, child);
@@ -1886,6 +1891,8 @@ static void make_object(const glstate *self,
     child->target = target;
     child->info = info;
     bugle_asprintf(&child->name, format, (unsigned long) id);
+    child->numeric_name = id;
+    child->enum_name = 0;
     child->object = id;
     child->spawn_children = spawn;
     bugle_list_append(children, child);
@@ -1953,6 +1960,8 @@ static void make_target(const glstate *self,
     child = bugle_malloc(sizeof(glstate));
     *child = *self;
     child->name = bugle_strdup(name);
+    child->numeric_name = 0;
+    child->enum_name = target;
     child->target = target;
     child->face = target;   /* Changed at next level for cube maps */
     child->binding = binding;
@@ -1992,6 +2001,8 @@ static void make_tex_levels(const glstate *self,
         child = bugle_malloc(sizeof(glstate));
         *child = *self;
         bugle_asprintf(&child->name, "level[%lu]", (unsigned long) i);
+        child->numeric_name = i;
+        child->enum_name = 0;
         child->info = NULL;
         child->level = i;
         child->spawn_children = spawn_children_tex_level_parameter;
@@ -2268,6 +2279,8 @@ static void spawn_children_program_object(const glstate *self, bugle_linked_list
         child->info = &object_uniform_state;
         child->name = bugle_malloc(sizeof(GLcharARB) * (max + 1));
         child->name[0] = '\0'; /* sanity, in case the query borks */
+        child->numeric_name = i;
+        child->enum_name = 0;
         child->level = i;
         CALL_glGetActiveUniformARB(self->object, i, max, &length, &size,
                                    &type, child->name);
@@ -2299,6 +2312,8 @@ static void spawn_children_program_object(const glstate *self, bugle_linked_list
             child->info = &object_attrib_state;
             child->name = bugle_malloc(sizeof(GLcharARB) * (max + 1));
             child->name[0] = '\0';
+            child->numeric_name = i;
+            child->enum_name = 0;
             child->level = i;
             CALL_glGetActiveAttribARB(self->object, i, max, &length, &size,
                                       &type, child->name);
@@ -2344,6 +2359,8 @@ static void spawn_children_program(const glstate *self, bugle_linked_list *child
         child->info = &program_uniform_state;
         child->name = bugle_malloc(sizeof(GLchar) * (max + 1));
         child->name[0] = '\0'; /* sanity, in case the query borks */
+        child->numeric_name = i;
+        child->enum_name = 0;
         child->level = i;
         CALL_glGetActiveUniform(self->object, i, max, &length, &size,
                                 &type, child->name);
@@ -2370,6 +2387,8 @@ static void spawn_children_program(const glstate *self, bugle_linked_list *child
         child->info = &program_attrib_state;
         child->name = bugle_malloc(sizeof(GLchar) * (max + 1));
         child->name[0] = '\0';
+        child->numeric_name = i;
+        child->enum_name = 0;
         child->level = i;
         CALL_glGetActiveAttrib(self->object, i, max, &length, &size,
                                &type, child->name);
@@ -2413,6 +2432,8 @@ static void spawn_children_old_program_object(const glstate *self, bugle_linked_
             child->info = &program_local_state;
             child->spawn_children = NULL;
             bugle_asprintf(&child->name, "Local[%lu]", (unsigned long) i);
+            child->numeric_name = i;
+            child->enum_name = 0;
             bugle_list_append(children, child);
         }
     }
@@ -2450,6 +2471,8 @@ static void spawn_children_old_program(const glstate *self, bugle_linked_list *c
             child->info = &program_env_state;
             child->spawn_children = NULL;
             bugle_asprintf(&child->name, "Env[%lu]", (unsigned long) i);
+            child->numeric_name = i;
+            child->enum_name = 0;
             bugle_list_append(children, child);
         }
     }
@@ -2632,7 +2655,7 @@ const glstate *bugle_state_get_root(void)
 {
     static const glstate root =
     {
-        "", GL_NONE, GL_NONE, GL_NONE, GL_NONE,
+        "", 0, GL_NONE, GL_NONE, GL_NONE, GL_NONE, GL_NONE,
         0, 0, NULL, spawn_children_global
     };
 

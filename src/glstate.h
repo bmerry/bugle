@@ -40,6 +40,8 @@ typedef struct state_info
 typedef struct glstate
 {
     char *name;
+    GLint numeric_name;
+    GLenum enum_name;
 
     /* context */
     GLenum target, face, binding;

@@ -35,6 +35,7 @@ const char *bugle_gl_enum_to_token(GLenum e);
 budgie_type bugle_gl_type_to_type(GLenum gl_type);
 budgie_type bugle_gl_type_to_type_ptr(GLenum gl_type);
 size_t bugle_gl_type_to_size(GLenum gl_type);
+int bugle_gl_format_to_count(GLenum format, GLenum type);
 
 /* Initialiser for certain dumping function */
 void initialise_dump_tables(void);

@@ -65,6 +65,8 @@ typedef enum
 typedef struct
 {
     char *name;
+    GLuint numeric_name;
+    GLenum enum_name;
     char *value;
     bugle_linked_list children;
 } gldb_state;
@@ -138,9 +140,22 @@ typedef struct
 {
     uint32_t code;
     uint32_t id;
+    uint32_t subtype;
     char *data;
     uint32_t length;
-} gldb_response_data;
+    uint32_t width;
+    uint32_t height;
+    uint32_t depth;
+} gldb_response_data_texture;
+
+typedef struct
+{
+    uint32_t code;
+    uint32_t id;
+    uint32_t subtype;
+    char *data;
+    uint32_t length;
+} gldb_response_data; /* Generic form of gldb_response_data_* */
 
 /* Generic type for responses. Always instantiated via one of the above. */
 typedef struct

@@ -26,7 +26,8 @@ last command that (re)started program execution.
 The possible requests are as follows (#defines in common/protocol.h)
 
 REQ_RUN:     Start running. This is sent once at start-up, after setting
-             the initial breakpoints and similar state.
+             the initial breakpoints and similar state. Its effect is
+             the same as REQ_CONT.
 REQ_CONT:    Continue running. Behaviour is undefined if received while
              the program is already running.
 REQ_STEP:    Like REQ_CONT, but stop at the next call. Note that if a
@@ -86,17 +87,27 @@ RESP_SCREENSHOT:
              PPM (P6) format that can be dumped directly to file.
 RESP_STATE_NODE_BEGIN
 RESP_STATE_NODE_END:
-             New-style state response. BEGIN is followed by the name of
-             the state (empty for root state) and the textual value (empty
-             if there is no associated value). This is followed by
-             children in the tree (with their own BEGIN/END responses),
-             and finally RESP_STATE_NODE_END, which has no parameters.
+             New-style state response. BEGIN is followed by 
+             - (str) The name of the state (empty for root state),
+             - (int32) A numeric name for the state. This is usually
+               an object ID, or 0, or occasionally a GLenum.
+             - (uint32) A GLenum name for the state. This is usually
+               a pname parameter to a get function.
+             - (str) the value (empty if there is no value)
+             - the children, recursively (separate responses)
+             - RESP_STATE_NODE_END response
 
              The entire tree will be sent as a contiguous block, without
-             interrupt from asynchronous responses.
-RESP_DATA:   A single binary string containing the requested data. The
-             data is as returned by the appropriate glGet command, with
-             alignment of 1 but all other options as default.
+             interruption from asynchronous responses.
+RESP_DATA:   The response depends on the subtype of the request. In
+             every case though, the data itself is returned as a binary
+             string. GL_PACK_ALIGNMENT is 1, other state is default,
+             and the data is as returned by the appropriate glGet call.
+             The first parameter is the subtype itself, for
+             convenience, and the second is the data. The rest are
+             REQ_DATA_TEXTURE:
+               width, height, depth (all present even for 1D, 2D etc)
+               data
 
 Each request has a certain set of legal responses, as described below.
 Note that requests that start the program running (the first three) will

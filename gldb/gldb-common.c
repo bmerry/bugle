@@ -254,6 +254,7 @@ static gldb_state *state_get(void)
 {
     gldb_state *s, *child;
     uint32_t resp, id;
+    uint32_t numeric_name, enum_name;
 
     s = bugle_malloc(sizeof(gldb_state));
     /* The list actually does own the memory, but we do the free as
@@ -261,6 +262,10 @@ static gldb_state *state_get(void)
      */
     bugle_list_init(&s->children, false);
     gldb_protocol_recv_string(lib_in, &s->name);
+    gldb_protocol_recv_code(lib_in, &numeric_name);
+    gldb_protocol_recv_code(lib_in, &enum_name);
+    s->numeric_name = numeric_name;
+    s->enum_name = enum_name;
     gldb_protocol_recv_string(lib_in, &s->value);
 
     do
@@ -276,7 +281,8 @@ static gldb_state *state_get(void)
         case RESP_STATE_NODE_END:
             break;
         default:
-            fprintf(stderr, "Unexpected code in state tree\n");
+            fprintf(stderr, "Unexpected code %lu in state tree\n",
+                   (unsigned long) resp);
             exit(1);
         }
     } while (resp != RESP_STATE_NODE_END);
@@ -295,15 +301,40 @@ static gldb_response *gldb_get_response_state_tree(uint32_t code, uint32_t id)
     return (gldb_response *) r;
 }
 
-static gldb_response *gldb_get_response_data(uint32_t code, uint32_t id)
+static gldb_response *gldb_get_response_data_texture(uint32_t code, uint32_t id,
+                                                     uint32_t subtype,
+                                                     uint32_t length, char *data)
 {
-    gldb_response_data *r;
+    gldb_response_data_texture *r;
 
-    r = bugle_malloc(sizeof(gldb_response_data));
+    r = bugle_malloc(sizeof(gldb_response_data_texture));
     r->code = code;
     r->id = id;
-    gldb_protocol_recv_binary_string(lib_in, &r->length, &r->data);
+    r->subtype = subtype;
+    r->length = length;
+    r->data = data;
+    gldb_protocol_recv_code(lib_in, &r->width);
+    gldb_protocol_recv_code(lib_in, &r->height);
+    gldb_protocol_recv_code(lib_in, &r->depth);
     return (gldb_response *) r;
+}
+
+static gldb_response *gldb_get_response_data(uint32_t code, uint32_t id)
+{
+    uint32_t subtype;
+    uint32_t length;
+    char *data;
+
+    gldb_protocol_recv_code(lib_in, &subtype);
+    gldb_protocol_recv_binary_string(lib_in, &length, &data);
+    switch (subtype)
+    {
+    case REQ_DATA_TEXTURE:
+        return gldb_get_response_data_texture(code, id, subtype, length, data);
+    default:
+        fprintf(stderr, "Unknown DATA subtype %lu\n", (unsigned long) subtype);
+        exit(1);
+    }
 }
 
 gldb_response *gldb_get_response(void)

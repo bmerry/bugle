@@ -170,8 +170,59 @@ static void update_state(GldbWindow *context)
     update_state_r(gldb_state_update(), context->state.state_store, NULL);
 }
 
+static const gldb_state *state_find_child_numeric(const gldb_state *parent,
+                                                  GLint name)
+{
+    const gldb_state *child;
+    bugle_list_node *i;
+
+    /* FIXME: build indices on the state */
+    for (i = bugle_list_head(&parent->children); i; i = bugle_list_next(i))
+    {
+        child = (const gldb_state *) bugle_list_data(i);
+        if (child->numeric_name == name) return child;
+    }
+    return NULL;
+}
+
+static const gldb_state *state_find_child_enum(const gldb_state *parent,
+                                               GLenum name)
+{
+    const gldb_state *child;
+    bugle_list_node *i;
+
+    /* FIXME: build indices on the state */
+    for (i = bugle_list_head(&parent->children); i; i = bugle_list_next(i))
+    {
+        child = (const gldb_state *) bugle_list_data(i);
+        if (child->enum_name == name) return child;
+    }
+    return NULL;
+}
+
 static void update_texture(GldbWindow *context)
 {
+    bugle_list_node *nt, *nl;
+    const gldb_state *s, *t, *l;
+
+    s = gldb_state_update(); /* FIXME: manage state tree ourselves */
+    s = state_find_child_enum(s, GL_TEXTURE_2D);
+    if (!s) return;
+    for (nt = bugle_list_head(&s->children); nt != NULL; nt = bugle_list_next(nt))
+    {
+        t = (const gldb_state *) bugle_list_data(nt);
+        if (t->enum_name == 0)
+        {
+            g_message("Texture: %d", (int) t->numeric_name);
+            for (nl = bugle_list_head(&t->children); nl != NULL; nl = bugle_list_next(nl))
+            {
+                l = (const gldb_state *) bugle_list_data(nl);
+                if (l->enum_name == 0)
+                    g_message("  Level: %d", (int) l->numeric_name);
+            }
+        }
+    }
+
     gldb_send_data_texture(seq++, 0, GL_TEXTURE_2D, GL_TEXTURE_2D, 0,
                            GL_RGB, GL_UNSIGNED_BYTE);
 
@@ -277,6 +328,7 @@ static gboolean response_callback(GIOChannel *channel, GIOCondition condition,
     GldbWindow *context;
     GdkPixbuf *pixbuf;
     gldb_response *r;
+    gldb_response_data_texture *rdt;
     char *msg;
 
     context = (GldbWindow *) data;
@@ -309,12 +361,19 @@ static gboolean response_callback(GIOChannel *channel, GIOCondition condition,
         gtk_action_group_set_sensitive(context->norun_actions, FALSE);
         break;
     case RESP_DATA:
-        /* FIXME: make much more generic, and tie better to the request via ID */
-        pixbuf = gdk_pixbuf_new_from_data(((gldb_response_data *) r)->data,
-                                          GDK_COLORSPACE_RGB, false, 8,
-                                          64, 64, 64 * 3, free_callback, NULL);
-        gtk_image_set_from_pixbuf(GTK_IMAGE(context->texture.image), pixbuf);
-        g_object_unref(pixbuf);
+        switch (((gldb_response_data *) r)->subtype)
+        {
+        case REQ_DATA_TEXTURE:
+            rdt = (gldb_response_data_texture *) r;
+            /* FIXME: make much more generic, and tie better to the request via ID */
+            pixbuf = gdk_pixbuf_new_from_data(rdt->data,
+                                              GDK_COLORSPACE_RGB, false, 8,
+                                              rdt->width, rdt->height, rdt->width * 3,
+                                              free_callback, NULL);
+            gtk_image_set_from_pixbuf(GTK_IMAGE(context->texture.image), pixbuf);
+            g_object_unref(pixbuf);
+            break;
+        }
         break;
     }
     gldb_free_response(r);
