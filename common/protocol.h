@@ -26,6 +26,7 @@
 #define REQ_BREAK_ERROR   0xdcba0004L
 #define REQ_STATE         0xdcba0005L
 #define REQ_QUIT          0xdcba0006L
+#define REQ_ASYNC         0xdcba0007L
 
 #define TO_NETWORK(x) (x)
 #define TO_HOST(x) (x)

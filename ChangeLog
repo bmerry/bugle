@@ -1,3 +1,5 @@
+* Added ability to stop running program with Ctrl-C.
+
 0.0.20040614
 ------------
 * Added the gldb debugger

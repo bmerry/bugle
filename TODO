@@ -1,4 +1,8 @@
 - improvements to gldb
+  - allow Ctrl-C to abort current line when reading commands
+  - make pushing enter in gldb rerun last command
+  - enable and disable filters on the fly
+  - set filter variables on the fly
 - rewrite some things to use hash tables
 - redesign state specification grammar
 - more autoconf tests (e.g. regex)
@@ -16,3 +20,8 @@
 - capture information about call lists
 - profiling
 - use dump overrides rather than alterative types for alt enums and errors?
+
+LONG TERM
+---------
+- internationalisation
+- Windows support

@@ -17,7 +17,7 @@ map to htonl and ntohl for network transparency.
 
 Upon hitting any form of breakpoint or upon receiving a request from
 the debugger that demands a response, the library will send a response
-code and a response length. The length excludes this 8 byte header.
+code and possibly extra data.
 
 The following responses are defined (the symbols are defined in
 common/protocol.h)
@@ -45,26 +45,35 @@ requests have the same basic form. The following requests are defined:
 REQ_RUN:     Start running. This is sent once at start-up, after setting
              the initial breakpoints and similar state.
 REQ_CONT:    Continue running
+REQ_STEP:    Like REQ_CONT, but stop at the next call. Note that if a
+             breakpoint is set on the next call, the response is
+             RESP_BREAK, and if an error occurs before reaching the next
+             call then the response is RESP_BREAK_ERROR.
 REQ_BREAK:   Set or clear a breakpoint on the named function.
              Followed by a name then either 1 or 0 (for set/clear).
              Response RESP_ANS has undefined value.
 REQ_BREAK_ERROR: 
              Enable or disable breaking on error. Followed by either
              1 or 0 (for set/clear). Response RESP_ANS has undefined value.
-REQ_STEP:    Like REQ_CONT, but stop at the next call. Note that if a
-             breakpoint is set on the next call, the response is
-             RESP_BREAK, and if an error occurs before reaching the next
-             call then the response is RESP_BREAK_ERROR.
+REQ_ASYNC:   Requests the program to stop at the next available point.
+             This is the only request that may be made asynchronously
+             i.e. when the program is not inside the debugger loop. To
+             facilitate correct operation in the face of race conditions,
+             this request is ignored if received inside the debugger loop.
+             Otherwise it is answered with RESP_
 REQ_STATE:   Requests the value of a state. Followed by the name of
              the state.
 REQ_QUIT:    Requests that the program exit.
 
-Each request has a certain set of legal responses, as described below:
+Each request has a certain set of legal responses, as described below.
+Note that requests that start the program running (the first three) may
+also return RESP_STOP if a REQ_ASYNC was received.
 
 REQ_RUN:   RESP_RUNNING, followed by a code as for REQ_CONT
 REQ_CONT:  RESP_BREAK, RESP_BREAK_ERROR
 REQ_STEP:  RESP_BREAK, RESP_BREAK_ERROR, RESP_STOP
 REQ_BREAK: RESP_ANS, RESP_ERROR
 REQ_BREAK_ERROR: RESP_ANS
+REQ_ASYNC: REQ_STOP, or nothing (see description)
 REQ_STATE: RESP_STATE, RESP_ERROR
 REQ_QUIT:  none (program exits)

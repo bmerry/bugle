@@ -65,7 +65,7 @@
 
 static int lib_in, lib_out;
 static sigset_t blocked, unblocked;
-static sigjmp_buf chld_env;
+static sigjmp_buf chld_env, int_env;
 /* Started is set to true only after receiving RESP_RUNNING. When
  * we are in the state (running && !started), non-break responses are
  * handled but do not cause a new line to be read.
@@ -135,6 +135,11 @@ static void sigchld_handler(int sig)
     siglongjmp(chld_env, 1);
 }
 
+static void sigint_handler(int sig)
+{
+    siglongjmp(int_env, 1);
+}
+
 /* Spawns off the program, and returns the pid */
 static pid_t execute(void)
 {
@@ -183,18 +188,26 @@ static void setup_sigchld(void)
 {
     struct sigaction act;
 
-    /* In normal operation, we block SIGCHLD to avoid race condition.
+    /* In normal operation, we block SIGCHLD to avoid race conditions.
      * We explicitly unblock it only when waiting for things to happen.
      */
     check(sigprocmask(SIG_BLOCK, NULL, &unblocked), "sigprocmask");
     check(sigprocmask(SIG_BLOCK, NULL, &blocked), "sigprocmask");
     sigaddset(&blocked, SIGCHLD);
+    sigaddset(&blocked, SIGINT);
     check(sigprocmask(SIG_SETMASK, &blocked, NULL), "sigprocmask");
 
     act.sa_handler = sigchld_handler;
     act.sa_flags = SA_NOCLDSTOP;
     sigemptyset(&act.sa_mask);
+    sigaddset(&act.sa_mask, SIGINT);
     check(sigaction(SIGCHLD, &act, NULL), "sigaction");
+
+    act.sa_handler = sigint_handler;
+    act.sa_flags = 0;
+    sigemptyset(&act.sa_mask);
+    sigaddset(&act.sa_mask, SIGCHLD);
+    check(sigaction(SIGINT, &act, NULL), "sigaction");
 }
 
 static bool command_cont(const char *cmd,
@@ -575,11 +588,20 @@ static void main_loop(void)
             continue;
         }
 
-        if (!running || started)
-            handle_commands();
+        if (sigsetjmp(int_env, 1)
+            && started)
+        {
+            /* Ctrl-C was pressed. Send an asynchonous stop request. */
+            send_code(lib_out, REQ_ASYNC);
+        }
+        else
+        {
+            if (!running || started)
+                handle_commands();
+        }
 
-        /* Wait for either input on the pipe, or for the child to die.
-         * In the latter case we hit the sigsetjmp above.
+        /* Wait for either input on the pipe, or for the child to die, or
+         * for SIGINT. In the last two cases we hit sigsetjmp's.
          */
         do
         {

@@ -31,8 +31,13 @@
 #include "common/bool.h"
 #include "common/safemem.h"
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <inttypes.h>
+#include <sys/time.h>
+#include <sys/types.h>
+#include <unistd.h>
+#include <errno.h>
 
 static int in_pipe = -1, out_pipe = -1;
 static bool break_on[NUMBER_OF_FUNCTIONS];
@@ -141,12 +146,52 @@ static void debugger_loop(bool init)
             break;
         case REQ_QUIT:
             exit(1);
+        case REQ_ASYNC:
+            /* Ignore this, since it we are stopped anyway */
+            break;
+        }
+    }
+}
+
+/* Check for asynchronous requests to stop */
+static void check_async(void)
+{
+    fd_set readfds;
+    struct timeval timeout;
+    int ret;
+
+    while (1)
+    {
+        FD_ZERO(&readfds);
+        FD_SET(in_pipe, &readfds);
+        timeout.tv_sec = 0;
+        timeout.tv_usec = 0;
+        ret = select(in_pipe + 1, &readfds, NULL, NULL, &timeout);
+        if (ret == -1)
+        {
+            if (errno != EINTR)
+            {
+                perror("select failed");
+                exit(1);
+            }
+        }
+        else if (ret == 0)
+            break; /* timeout i.e. no async data */
+        else
+        {
+            /* Received async data; assume it was REQ_ASYNC since nothing
+             * else is permitted. The debugger loop will read it and ignore
+             * it, so we send the response here.
+             */
+            send_code(out_pipe, RESP_STOP);
+            debugger_loop(false);
         }
     }
 }
 
 static bool debugger_callback(function_call *call, void *data)
 {
+    check_async();
     if (break_on[canonical_call(call)])
     {
         send_code(out_pipe, RESP_BREAK);
@@ -165,6 +210,7 @@ static bool debugger_callback(function_call *call, void *data)
 static bool debugger_error_callback(function_call *call, void *data)
 {
     GLenum error;
+
     if (break_on_error
         && (error = get_call_error(call)))
     {
