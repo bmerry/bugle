@@ -82,7 +82,6 @@ static bool initialise_wireframe(filter_set *handle)
     bugle_register_filter_catches(f, CFUNC_glPolygonMode);
     bugle_register_filter_catches(f, CFUNC_glEnable);
     bugle_register_filter_depends("wireframe", "invoke");
-    bugle_register_filter_set_renders("wireframe");
     bugle_register_filter_post_renders("wireframe");
     bugle_object_class_register(&bugle_context_class, initialise_wireframe_context,
                                 NULL, 0);
@@ -147,4 +146,6 @@ void bugle_initialise_filter_library(void)
     };
     bugle_register_filter_set(&wireframe_info);
     bugle_register_filter_set(&frontbuffer_info);
+
+    bugle_register_filter_set_renders("wireframe");
 }

@@ -123,7 +123,11 @@ static bool initialise_trackdisplaylist(filter_set *handle)
     bugle_register_filter_depends("trackdisplaylist", "invoke");
     bugle_register_filter_catches(f, FUNC_glNewList);
     bugle_register_filter_catches(f, FUNC_glEndList);
-    bugle_register_filter_set_depends("trackdisplaylist", "trackcontext");
+
+    displaylist_offset = bugle_object_class_register(&bugle_displaylist_class,
+                                                     initialise_displaylist_struct,
+                                                     NULL,
+                                                     sizeof(displaylist_struct));
     return true;
 }
 
@@ -140,13 +144,7 @@ void trackdisplaylist_initialise(void)
 
     bugle_object_class_init(&bugle_displaylist_class, &bugle_context_class);
     bugle_hashptr_init(&displaylist_objects);
-    /* These ought to be in the initialise routines, but it is vital that
-     * they run first and we currently have no other way to determine the
-     * ordering.
-     */
-    displaylist_offset = bugle_object_class_register(&bugle_displaylist_class,
-                                                     initialise_displaylist_struct,
-                                                     NULL,
-                                                     sizeof(displaylist_struct));
     bugle_register_filter_set(&trackdisplaylist_info);
+
+    bugle_register_filter_set_depends("trackdisplaylist", "trackcontext");
 }

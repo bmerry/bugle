@@ -415,10 +415,8 @@ static bool initialise_debugger(filter_set *handle)
     bugle_register_filter_depends("invoke", "debugger");
     bugle_register_filter_depends("debugger_error", "invoke");
     bugle_register_filter_depends("debugger_error", "error");
-    bugle_register_filter_set_depends("debugger", "error");
-    bugle_register_filter_set_renders("debugger");
     bugle_register_filter_post_renders("debugger_error");
-    bugle_register_filter_set_queries_error("debugger", false);
+    bugle_register_filter_set_queries_error("debugger");
 
     return true;
 }
@@ -436,4 +434,7 @@ void bugle_initialise_filter_library(void)
 
     memset(break_on, 0, sizeof(break_on));
     bugle_register_filter_set(&debugger_info);
+
+    bugle_register_filter_set_depends("debugger", "error");
+    bugle_register_filter_set_renders("debugger");
 }

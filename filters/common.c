@@ -38,8 +38,7 @@ static bool invoke_callback(function_call *call, const callback_data *data)
 static bool initialise_invoke(filter_set *handle)
 {
     bugle_register_filter(handle, "invoke", invoke_callback);
-    bugle_register_filter_set_depends("invoke", "procaddress");
-    /* Note: this is the only filter that does not specify any catch
+    /* Note: this is the only useful filter that does not specify any catch
      * statements. This is because the default if nothing catches is
      * the same as invoking.
      */
@@ -109,4 +108,6 @@ void bugle_initialise_filter_library(void)
     };
     bugle_register_filter_set(&invoke_info);
     bugle_register_filter_set(&procaddress_info);
+
+    bugle_register_filter_set_depends("invoke", "procaddress");
 }

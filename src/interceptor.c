@@ -153,6 +153,7 @@ static void initialise_core_filters(void)
     trackcontext_initialise();
     trackdisplaylist_initialise();
     trackbeginend_initialise();
+    trackextensions_initialise();
     log_initialise();
 }
 

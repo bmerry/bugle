@@ -49,6 +49,10 @@ call_state_space: the number of bytes that should be made available for
 each call passed through the library. This can be used to communicate
 data between filters. Usually set to 0 i.e. unused.
 
+Each library initialiser must also declare filter set dependencies
+using bugle_register_filter_set_depends("set", "set") to indicate that
+set1 requires set2 to operate.
+
 A filter-set initialiser must do the following, apart from any internal
 initialisation:
 - register individual filters:
@@ -56,8 +60,6 @@ initialisation:
 - list ordering requirements between filters
   bugle_register_filter_depends("second", "first") - where either may be in
   another filter-set (even in another library, or even not exist)
-- specify any dependencies on other filter-sets
-  bugle_register_filter_set_depends("set1", "set2")
 
 It may optionally:
 - get handles to other filter-sets
@@ -108,8 +110,9 @@ Conventions
 -----------
 
 - If your filter runs after invoke and makes GL calls, then the
-initialisation should call bugle_register_filter_set_renders on the set
-and bugle_register_filter_post_renders on the filter (from glutils.h).
+library initialisation should call bugle_register_filter_set_renders on
+the set and the filter-set initialiser should call
+bugle_register_filter_post_renders on the filter (from glutils.h).
 Protect any rendering like this:
 
 if (begin_internal_render())
@@ -120,6 +123,12 @@ if (begin_internal_render())
 }
 
 Replace true with false if you expect errors and wish to ignore them.
+
+In addition, if you use any GL extensions be sure to declare a
+dependency on trackextensions and call
+bugle_gl_has_extension(BUGLE_GL_ARB_some_random_extension) to check
+whether there is runtime support (the symbolic constants are defined in
+src/glexts.h, a generated file).
 
 - If you intend to use any logging, see the comments at the top of
 src/log.h for instructions.

@@ -555,7 +555,7 @@ void make_type_dumper(bool prototype, ostream &out)
 // type conversion
 void type_converter(bool prototype, ostream &out)
 {
-    out << "void type_convert(void *out, budgie_type out_type, const void *in, budgie_type in_type, size_t count)";
+    out << "void budgie_type_convert(void *out, budgie_type out_type, const void *in, budgie_type in_type, size_t count)";
     if (prototype)
     {
         out << ";\n";

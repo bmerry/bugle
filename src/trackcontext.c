@@ -119,6 +119,10 @@ static bool initialise_trackcontext(filter_set *handle)
 #ifdef FUNC_glXMakeContextCurrent
     bugle_register_filter_catches(f, FUNC_glXMakeContextCurrent);
 #endif
+    trackcontext_offset = bugle_object_class_register(&bugle_context_class,
+                                                      trackcontext_initialise_state,
+                                                      NULL,
+                                                      sizeof(state_7context_I *));
     return true;
 }
 
@@ -135,13 +139,5 @@ void trackcontext_initialise(void)
 
     bugle_object_class_init(&bugle_context_class, NULL);
     bugle_hashptr_init(&context_objects);
-    /* This ought to be in the initialise routines, but it is vital that
-     * it runs early and we currently have no other way to determine the
-     * ordering.
-     */
-    trackcontext_offset = bugle_object_class_register(&bugle_context_class,
-                                                      trackcontext_initialise_state,
-                                                      NULL,
-                                                      sizeof(state_7context_I *));
     bugle_register_filter_set(&trackcontext_info);
 }

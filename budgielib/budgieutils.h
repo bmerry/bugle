@@ -127,6 +127,7 @@ int budgie_count_string(const char *value);
 void budgie_make_indent(int indent, FILE *out);
 void budgie_dump_any_type(budgie_type type, const void *value, int length, FILE *out);
 void budgie_dump_any_call(const generic_function_call *call, int indent, FILE *out);
+
 void initialise_real(void);
 
 #endif /* BUGLE_BUDGIE_BUDGIEFUNCS_H */

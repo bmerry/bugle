@@ -194,16 +194,6 @@ static void enable_filter_set_r(filter_set *handle)
 
     if (!handle->enabled)
     {
-        if (!handle->initialised)
-        {
-            if (!(*handle->init)(handle))
-            {
-                fprintf(stderr, "Failed to initialise filter-set %s\n", handle->name);
-                exit(1);
-            }
-            handle->initialised = true;
-        }
-        handle->enabled = true;
         /* deps */
         for (i = bugle_list_head(&filter_set_dependencies[0]),
              j = bugle_list_head(&filter_set_dependencies[1]);
@@ -223,6 +213,17 @@ static void enable_filter_set_r(filter_set *handle)
                 enable_filter_set_r(s);
             }
         }
+        /* Initialisation */
+        if (!handle->initialised)
+        {
+            if (!(*handle->init)(handle))
+            {
+                fprintf(stderr, "Failed to initialise filter-set %s\n", handle->name);
+                exit(1);
+            }
+            handle->initialised = true;
+        }
+        handle->enabled = true;
         for (i = bugle_list_head(&handle->filters); i != NULL; i = bugle_list_next(i))
         {
             f = (filter *) bugle_list_data(i);

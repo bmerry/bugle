@@ -31,6 +31,7 @@
 #include "common/safemem.h"
 #include "budgielib/budgieutils.h"
 #include "src/utils.h"
+#include "src/glexts.h"
 
 /* FIXME: should this move into budgielib?
  *
@@ -381,7 +382,7 @@ bool bugle_dump_convert(GLenum pname, const void *value,
     length = entry->length;
     alength = (length == -1) ? 1 : length;
     out_data = bugle_malloc(budgie_type_table[out_type].size * alength);
-    type_convert(out_data, out_type, in, in_type, alength);
+    budgie_type_convert(out_data, out_type, in, in_type, alength);
     if (ptr)
         dump_any_type_extended(out_type, out_data, -1, length, ptr, out);
     else
@@ -479,19 +480,20 @@ size_t bugle_image_element_count(GLsizei width,
         + k * image_height * (depth + skip_images - 1);
 }
 
-/* Computes the number of pixel elements required by glGetTexImage
- */
+/* Computes the number of pixel elements required by glGetTexImage */
 size_t bugle_texture_element_count(GLenum target,
                                    GLint level,
                                    GLenum format,
                                    GLenum type)
 {
     int width, height, depth = -1;
-    /* FIXME: don't query for depth if we don't have 3D textures */
     CALL_glGetTexLevelParameteriv(target, level, GL_TEXTURE_WIDTH, &width);
     CALL_glGetTexLevelParameteriv(target, level, GL_TEXTURE_HEIGHT, &height);
 #ifdef GL_EXT_texture3D
-    CALL_glGetTexLevelParameteriv(target, level, GL_TEXTURE_DEPTH, &depth);
+    if (bugle_gl_has_extension(BUGLE_GL_EXT_texture3D))
+        CALL_glGetTexLevelParameteriv(target, level, GL_TEXTURE_DEPTH_EXT, &depth);
+    else
+        depth = 1;
 #endif
     return bugle_image_element_count(width, height, depth, format, type, false);
 }

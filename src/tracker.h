@@ -49,9 +49,13 @@ GLenum bugle_displaylist_mode(void);
 /* The display list object associated with a numbered list */
 void *bugle_displaylist_get(GLuint list);
 
+/* Checks for GL extensions by #define from glexts.h */
+bool bugle_gl_has_extension(int ext);
+
 /* Used by the initialisation code */
 void trackcontext_initialise(void);
 void trackbeginend_initialise(void);
 void trackdisplaylist_initialise(void);
+void trackextensions_initialise(void);
 
 #endif /* !BUGLE_SRC_TRACKER_H */

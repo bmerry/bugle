@@ -24,9 +24,12 @@
 #include "src/utils.h"
 #include "src/canon.h"
 #include "src/glutils.h"
+#include "src/gldump.h"
 #include "src/tracker.h"
+#include "src/glexts.h"
 #include "budgielib/state.h"
 #include "common/bool.h"
+#include "common/safemem.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -109,7 +112,6 @@ static bool initialise_error(filter_set *handle)
     /* We don't call filter_post_renders, because that would make the
      * error filterset depend on itself.
      */
-    bugle_register_filter_set_renders("error");
     error_context_offset = bugle_object_class_register(&bugle_context_class,
                                                        NULL,
                                                        NULL,
@@ -138,7 +140,6 @@ static bool initialise_showerror(filter_set *handle)
     bugle_register_filter_catches_all(f);
     bugle_register_filter_depends("showerror", "error");
     bugle_register_filter_depends("showerror", "invoke");
-    bugle_register_filter_set_depends("showerror", "error");
     return true;
 }
 
@@ -149,8 +150,12 @@ static bool initialise_showerror(filter_set *handle)
  * It Works For Me (tm). Unfortunately there doesn't seem to be a way
  * to satisfy the requirements of setjmp without breaking the nicely
  * modular filter system.
+ *
+ * This is also grossly thread-unsafe, but since the semantics for
+ * signal delivery in multi-threaded programs are so vague anyway, we
+ * won't worry about it too much.
  */
-static struct sigaction old_sigsegv_act;
+static struct sigaction unwindstack_old_sigsegv_act;
 static sigjmp_buf unwind_buf;
 
 static void unwindstack_sigsegv_handler(int sig)
@@ -170,7 +175,7 @@ static bool unwindstack_pre_callback(function_call *call, const callback_data *d
               "try to continue again, as gdb will get confused.\n", stderr);
         fflush(stderr);
         /* avoid hitting the same handler */
-        while (sigaction(SIGSEGV, &old_sigsegv_act, NULL) != 0)
+        while (sigaction(SIGSEGV, &unwindstack_old_sigsegv_act, NULL) != 0)
             if (errno != EINTR)
             {
                 perror("failed to set SIGSEGV handler");
@@ -183,7 +188,7 @@ static bool unwindstack_pre_callback(function_call *call, const callback_data *d
     act.sa_flags = 0;
     sigemptyset(&act.sa_mask);
 
-    while (sigaction(SIGSEGV, &act, &old_sigsegv_act) != 0)
+    while (sigaction(SIGSEGV, &act, &unwindstack_old_sigsegv_act) != 0)
         if (errno != EINTR)
         {
             perror("failed to set SIGSEGV handler");
@@ -194,7 +199,7 @@ static bool unwindstack_pre_callback(function_call *call, const callback_data *d
 
 static bool unwindstack_post_callback(function_call *call, const callback_data *data)
 {
-    while (sigaction(SIGSEGV, &old_sigsegv_act, NULL) != 0)
+    while (sigaction(SIGSEGV, &unwindstack_old_sigsegv_act, NULL) != 0)
         if (errno != EINTR)
         {
             perror("failed to restore SIGSEGV handler");
@@ -213,6 +218,376 @@ static bool initialise_unwindstack(filter_set *handle)
     bugle_register_filter_catches_all(f);
     bugle_register_filter_depends("unwindstack_post", "invoke");
     bugle_register_filter_depends("invoke", "unwindstack_pre");
+    return true;
+}
+
+static sigjmp_buf checkaddress_buf;
+/* This is set to some description of the thing being tested, and if it
+ * causes a SIGSEGV it is used to describe the error.
+ */
+static const char *checkaddress_error;
+
+static void checkaddress_sigsegv_handler(int sig)
+{
+    siglongjmp(checkaddress_buf, 1);
+}
+
+/* Just reads every byte of the given address range. We use the volatile
+ * keyword to (hopefully) force the read.
+ */
+static void checkaddress_memory(size_t size, const void *data)
+{
+    volatile char dummy;
+    const char *cdata;
+    size_t i;
+
+    cdata = (const char *) data;
+    for (i = 0; i < size; i++)
+        dummy = cdata[i];
+}
+
+/* We don't want to have to make *calls* to checkaddress_buffer conditional
+ * on GL_ARB_vertex_buffer_object, but the bindings are only defined by
+ * that extension. Instead we wrap them in this macro.
+ */
+#ifdef GL_ARB_vertex_buffer_object
+# define VBO_ENUM(x) (x)
+#else
+# define VBO_ENUM(x) (GL_NONE)
+#endif
+
+#ifdef GL_ARB_vertex_buffer_object
+static void checkaddress_buffer_vbo(size_t size, const void *data,
+                                    GLuint buffer)
+{
+    GLint tmp, bsize;
+    size_t end;
+
+    assert(buffer && !bugle_in_begin_end() && bugle_gl_has_extension(BUGLE_GL_ARB_vertex_buffer_object));
+
+    CALL_glGetIntegerv(GL_ARRAY_BUFFER_BINDING_ARB, &tmp);
+    CALL_glBindBufferARB(GL_ARRAY_BUFFER_ARB, buffer);
+    CALL_glGetBufferParameterivARB(GL_ARRAY_BUFFER_ARB, GL_BUFFER_SIZE_ARB, &bsize);
+    CALL_glBindBufferARB(GL_ARRAY_BUFFER_ARB, tmp);
+    end = ((const char *) data - (const char *) NULL) + size;
+    if (end > bsize)
+        pthread_kill(pthread_self(), SIGSEGV);
+}
+#endif
+
+/* Like checkaddress_memory, but handles buffer objects */
+static void checkaddress_buffer(size_t size, const void *data,
+                                GLenum binding)
+{
+#ifdef GL_ARB_vertex_buffer_object
+    GLint id = 0;
+    if (!bugle_in_begin_end() && bugle_gl_has_extension(BUGLE_GL_ARB_vertex_buffer_object))
+        CALL_glGetIntegerv(binding, &id);
+    if (id) checkaddress_buffer_vbo(size, data, id);
+    else
+#endif
+    {
+        checkaddress_memory(size, data);
+    }
+}
+
+static void checkaddress_attribute(size_t first, size_t count,
+                                   const char *text, GLenum name,
+                                   GLenum size_name, GLint size,
+                                   GLenum type_name, budgie_type type,
+                                   GLenum stride_name,
+                                   GLenum ptr_name, GLenum binding)
+{
+    GLint stride, gltype;
+    size_t group_size;
+    GLvoid *ptr;
+    const char *cptr;
+
+    if (CALL_glIsEnabled(name))
+    {
+        checkaddress_error = text;
+        if (size_name) CALL_glGetIntegerv(size_name, &size);
+        if (type_name)
+        {
+            CALL_glGetIntegerv(type_name, &gltype);
+            type = bugle_gl_type_to_type(gltype);
+        }
+        CALL_glGetIntegerv(stride_name, &stride);
+        CALL_glGetPointerv(ptr_name, &ptr);
+        group_size = budgie_type_table[type].size * size;
+        if (!stride) stride = group_size;
+        cptr = (const char *) ptr;
+        cptr += group_size * first;
+        checkaddress_buffer((count - 1) * stride + group_size, cptr,
+                            binding);
+    }
+}
+
+#ifdef GL_ARB_vertex_program
+static void checkaddress_generic_attribute(size_t first, size_t count,
+                                           GLint number)
+{
+    GLint stride, gltype, enabled, size;
+    size_t group_size;
+    GLvoid *ptr;
+    budgie_type type;
+    const char *cptr;
+#ifdef GL_ARB_vertex_buffer_object
+    GLuint id;
+#endif
+
+    CALL_glGetVertexAttribivARB(number, GL_VERTEX_ATTRIB_ARRAY_ENABLED_ARB, &enabled);
+    if (enabled)
+    {
+        checkaddress_error = "vertex attribute array";
+        CALL_glGetVertexAttribivARB(number, GL_VERTEX_ATTRIB_ARRAY_SIZE_ARB, &size);
+        CALL_glGetVertexAttribivARB(number, GL_VERTEX_ATTRIB_ARRAY_TYPE_ARB, &gltype);
+        type = bugle_gl_type_to_type(gltype);
+        CALL_glGetVertexAttribivARB(number, GL_VERTEX_ATTRIB_ARRAY_STRIDE_ARB, &stride);
+        CALL_glGetVertexAttribPointervARB(number, GL_VERTEX_ATTRIB_ARRAY_POINTER_ARB, &ptr);
+        group_size = budgie_type_table[type].size * size;
+        if (!stride) stride = group_size;
+        cptr = (const char *) ptr;
+        cptr += group_size * first;
+
+        size = (count - 1) * stride + group_size;
+#ifdef GL_ARB_vertex_buffer_object
+        id = 0;
+        if (!bugle_in_begin_end() && bugle_gl_has_extension(BUGLE_GL_ARB_vertex_buffer_object))
+            CALL_glGetVertexAttribivARB(number, GL_VERTEX_ATTRIB_ARRAY_BUFFER_BINDING_ARB, &id);
+        if (id) checkaddress_buffer_vbo(size, cptr, id);
+        else
+#endif
+        {
+            checkaddress_memory(size, cptr);
+        }
+    }
+}
+#endif /* GL_ARB_vertex_program */
+
+static void checkaddress_attributes(size_t first, size_t count)
+{
+    GLenum i;
+
+    if (!count) return;
+    checkaddress_attribute(first, count,
+                           "vertex array", GL_VERTEX_ARRAY,
+                           GL_VERTEX_ARRAY_SIZE, 0,
+                           GL_VERTEX_ARRAY_TYPE, 0,
+                           GL_VERTEX_ARRAY_STRIDE,
+                           GL_VERTEX_ARRAY_POINTER,
+                           VBO_ENUM(GL_VERTEX_ARRAY_BUFFER_BINDING_ARB));
+    checkaddress_attribute(first, count,
+                           "normal array", GL_NORMAL_ARRAY,
+                           0, 3,
+                           GL_NORMAL_ARRAY_TYPE, 0,
+                           GL_NORMAL_ARRAY_STRIDE,
+                           GL_NORMAL_ARRAY_POINTER,
+                           VBO_ENUM(GL_NORMAL_ARRAY_BUFFER_BINDING_ARB));
+    checkaddress_attribute(first, count,
+                           "color array", GL_COLOR_ARRAY,
+                           GL_COLOR_ARRAY_SIZE, 0,
+                           GL_COLOR_ARRAY_TYPE, 0,
+                           GL_COLOR_ARRAY_STRIDE,
+                           GL_COLOR_ARRAY_POINTER,
+                           VBO_ENUM(GL_COLOR_ARRAY_BUFFER_BINDING_ARB));
+    checkaddress_attribute(first, count,
+                           "index array", GL_INDEX_ARRAY,
+                           0, 1,
+                           GL_INDEX_ARRAY_TYPE, 0,
+                           GL_INDEX_ARRAY_STRIDE,
+                           GL_INDEX_ARRAY_POINTER,
+                           VBO_ENUM(GL_INDEX_ARRAY_BUFFER_BINDING_ARB));
+    checkaddress_attribute(first, count,
+                           "edge flag array", GL_EDGE_FLAG_ARRAY,
+                           0, 1,
+                           0, TYPE_9GLboolean,
+                           GL_EDGE_FLAG_ARRAY_STRIDE,
+                           GL_EDGE_FLAG_ARRAY_POINTER,
+                           VBO_ENUM(GL_EDGE_FLAG_ARRAY_BUFFER_BINDING_ARB));
+
+#ifdef GL_ARB_multitexture
+    /* FIXME: if there is a failure, the current texture unit will be wrong */
+    if (bugle_gl_has_extension(BUGLE_GL_ARB_multitexture))
+    {
+        GLint texunits, old;
+
+        CALL_glGetIntegerv(GL_MAX_TEXTURE_UNITS_ARB, &texunits);
+        CALL_glGetIntegerv(GL_CLIENT_ACTIVE_TEXTURE_ARB, &old);
+        for (i = GL_TEXTURE0_ARB; i < GL_TEXTURE0_ARB + texunits; i++)
+        {
+            CALL_glClientActiveTextureARB(i);
+            checkaddress_attribute(first, count,
+                                   "texture coordinate array", GL_TEXTURE_COORD_ARRAY,
+                                   GL_TEXTURE_COORD_ARRAY_SIZE, 0,
+                                   GL_TEXTURE_COORD_ARRAY_TYPE, 0,
+                                   GL_TEXTURE_COORD_ARRAY_STRIDE,
+                                   GL_TEXTURE_COORD_ARRAY_POINTER,
+                                   VBO_ENUM(GL_TEXTURE_COORD_ARRAY_BUFFER_BINDING_ARB));
+        }
+        CALL_glClientActiveTextureARB(old);
+    }
+    else
+#endif
+    {
+        checkaddress_attribute(first, count,
+                               "texture coordinate array", GL_TEXTURE_COORD_ARRAY,
+                               GL_TEXTURE_COORD_ARRAY_SIZE, 0,
+                               GL_TEXTURE_COORD_ARRAY_TYPE, 0,
+                               GL_TEXTURE_COORD_ARRAY_STRIDE,
+                               GL_TEXTURE_COORD_ARRAY_POINTER,
+                               VBO_ENUM(GL_TEXTURE_COORD_ARRAY_BUFFER_BINDING_ARB));
+    }
+
+#ifdef GL_ARB_vertex_program
+    if (bugle_gl_has_extension(BUGLE_GL_ARB_vertex_program))
+    {
+        GLint count, i;
+
+        CALL_glGetIntegerv(GL_MAX_VERTEX_ATTRIBS_ARB, &count);
+        for (i = 0; i < count; i++)
+            checkaddress_generic_attribute(first, count, i);
+    }
+#endif
+    /* FIXME: generic attributes */
+}
+
+static void checkaddress_min_max(GLsizei count, GLenum gltype, const GLvoid *indices,
+                                 GLuint *min_out, GLuint *max_out)
+{
+    GLuint *out;
+    GLsizei i;
+    GLuint min, max;
+    budgie_type type;
+
+    if (count <= 0) return;
+    if (gltype != GL_UNSIGNED_INT
+        && gltype != GL_UNSIGNED_SHORT
+        && gltype != GL_UNSIGNED_BYTE)
+        return; /* It will just generate a GL error and be ignored */
+
+    type = bugle_gl_type_to_type(gltype);
+    out = (GLuint *) bugle_malloc(count * sizeof(GLuint));
+    budgie_type_convert(out, TYPE_6GLuint, indices, type, count);
+    min = max = out[0];
+    for (i = 0; i < count; i++)
+    {
+        if (out[i] < min) min = out[i];
+        if (out[i] > max) max = out[i];
+    }
+    if (min_out) *min_out = min;
+    if (max_out) *max_out = max;
+    free(out);
+}
+
+static bool checkaddress_callback(function_call *call, const callback_data *data)
+{
+    static pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
+    struct sigaction act, old_act;
+    bool ret = true;
+    GLenum type;
+    GLsizei count;
+    GLuint min, max;
+    const GLvoid *indices;
+
+    /* The entire checkaddress method is fundamentally non-reentrant, so
+     * we protect it with a big lock.
+     */
+    pthread_mutex_lock(&lock);
+    checkaddress_error = NULL;
+    if (sigsetjmp(checkaddress_buf, 1) == 1)
+    {
+        /* We get here if we went into the testing then segfaulted. */
+        fprintf(stderr, "WARNING: illegal %s caught in %s; call will be ignored\n",
+                checkaddress_error ? checkaddress_error : "pointer",
+                budgie_function_table[call->generic.id].name);
+        ret = false;
+    }
+    else
+    {
+        act.sa_handler = checkaddress_sigsegv_handler;
+        act.sa_flags = 0;
+        sigemptyset(&act.sa_mask);
+
+        while (sigaction(SIGSEGV, &act, &old_act) != 0)
+            if (errno != EINTR)
+            {
+                perror("failed to set SIGSEGV handler");
+                exit(1);
+            }
+
+        switch (bugle_canonical_call(call))
+        {
+            /* FIXME: ArrayElement cannot work because it is inside begin/end */
+        case CFUNC_glArrayElement:
+            checkaddress_attributes(*call->typed.glArrayElement.arg0, 1);
+            break;
+        case CFUNC_glDrawArrays:
+            checkaddress_attributes(*call->typed.glDrawArrays.arg1,
+                                    *call->typed.glDrawArrays.arg2);
+            break;
+        case CFUNC_glDrawElements:
+            checkaddress_error = "index array";
+            count = *call->typed.glDrawElements.arg1;
+            type = *call->typed.glDrawElements.arg2;
+            indices = *call->typed.glDrawElements.arg3;
+            checkaddress_buffer(count * bugle_gl_type_to_size(type),
+                                indices,
+                                VBO_ENUM(GL_ELEMENT_ARRAY_BUFFER_BINDING_ARB));
+            checkaddress_min_max(count, type, indices, &min, &max);
+            checkaddress_attributes(min, max - min + 1);
+            break;
+#ifdef GL_EXT_draw_range_elements
+        case CFUNC_glDrawRangeElementsEXT:
+            checkaddress_error = "index array";
+            count = *call->typed.glDrawRangeElementsEXT.arg3;
+            type = *call->typed.glDrawRangeElementsEXT.arg4;
+            indices = *call->typed.glDrawRangeElementsEXT.arg5;
+            checkaddress_buffer(count * bugle_gl_type_to_size(type),
+                                indices,
+                                VBO_ENUM(GL_ELEMENT_ARRAY_BUFFER_BINDING_ARB));
+            checkaddress_min_max(count, type, indices, &min, &max);
+            if (min < *call->typed.glDrawRangeElementsEXT.arg1
+                || max > *call->typed.glDrawRangeElementsEXT.arg2)
+            {
+                fprintf(stderr, "WARNING: glDrawRangeElements indices fall outside range, ignoring call\n");
+                ret = false;
+                break;
+            }
+            min = *call->typed.glDrawRangeElementsEXT.arg1;
+            max = *call->typed.glDrawRangeElementsEXT.arg2;
+            checkaddress_attributes(min, max - min + 1);
+            break;
+        }
+#endif
+    }
+
+    while (sigaction(SIGSEGV, &old_act, NULL) != 0)
+        if (errno != EINTR)
+        {
+            perror("failed to restore SIGSEGV handler");
+            exit(1);
+        }
+
+    pthread_mutex_unlock(&lock);
+    return ret;
+}
+
+static bool initialise_checkaddress(filter_set *handle)
+{
+    filter *f;
+
+    f = bugle_register_filter(handle, "checkaddress", checkaddress_callback);
+    bugle_register_filter_catches_drawing(f);
+    /* We try to push this early, since it would defeat the whole thing if
+     * bugle crashed while examining the data.
+     */
+    bugle_register_filter_depends("invoke", "checkaddress");
+    bugle_register_filter_depends("stats", "checkaddress");
+    bugle_register_filter_depends("log_pre", "checkaddress");
+    bugle_register_filter_depends("trackcontext", "checkaddress");
+    bugle_register_filter_depends("trackbeginend", "checkaddress");
+    bugle_register_filter_depends("trackdisplaylist", "checkaddress");
     return true;
 }
 
@@ -242,7 +617,21 @@ void bugle_initialise_filter_library(void)
         NULL,
         0
     };
+    const filter_set_info checkaddress_info =
+    {
+        "checkaddress",
+        initialise_checkaddress,
+        NULL,
+        NULL,
+        0
+    };
     bugle_register_filter_set(&error_info);
     bugle_register_filter_set(&showerror_info);
     bugle_register_filter_set(&unwindstack_info);
+    bugle_register_filter_set(&checkaddress_info);
+
+    bugle_register_filter_set_renders("error");
+    bugle_register_filter_set_depends("showerror", "error");
+    bugle_register_filter_set_renders("checkaddress");
+    bugle_register_filter_set_depends("checkaddress", "trackextensions");
 }

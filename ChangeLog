@@ -1,3 +1,6 @@
+* Added checkaddress filterset
+* Improved support for systems short on extensions
+
 0.0.20041123
 ------------
 * Added stats and showstats filtersets

@@ -20,8 +20,10 @@
 # include <config.h>
 #endif
 #include "src/utils.h"
-#include "glstate.h"
-#include "glutils.h"
+#include "src/glstate.h"
+#include "src/glutils.h"
+#include "src/glexts.h"
+#include "src/tracker.h"
 #include "budgielib/state.h"
 #include <GL/gl.h>
 #include <GL/glext.h>
@@ -111,7 +113,7 @@ void glstate_get_global(state_generic *state)
     default:
         assert((size_t) state->spec->data_length <= sizeof(data) / sizeof(data[0]));
         CALL_glGetDoublev(e, data);
-        type_convert(state->data, state->spec->data_type, data, TYPE_8GLdouble, state->spec->data_length);
+        budgie_type_convert(state->data, state->spec->data_type, data, TYPE_8GLdouble, state->spec->data_length);
     }
     bugle_end_internal_render("glstate_get_global", true);
 }
@@ -164,16 +166,19 @@ static GLenum push_server_texture_unit(state_generic *state)
 {
     GLenum old, cur;
 
-    /* FIXME: check if we really have multitex */
-    CALL_glGetIntegerv(GL_ACTIVE_TEXTURE_ARB, (GLint *) &old);
-    cur = *(GLenum *) state->key;
-    if (cur != old)
+    if (bugle_gl_has_extension(BUGLE_GL_ARB_multitexture))
     {
-        CALL_glActiveTextureARB(cur);
-        return old;
+        CALL_glGetIntegerv(GL_ACTIVE_TEXTURE_ARB, (GLint *) &old);
+        cur = *(GLenum *) state->key;
+        if (cur != old)
+        {
+            CALL_glActiveTextureARB(cur);
+            return old;
+        }
+        else
+            return 0;
     }
-    else
-        return 0;
+    else return 0;
 }
 
 /* Assumes that the called handles begin_internal_render */
@@ -210,7 +215,7 @@ void glstate_get_texparameter(state_generic *state)
     default:
         assert((size_t) state->spec->data_length <= sizeof(data) / sizeof(data[0]));
         (*glGetTexParameterfv)(target, e, data);
-        type_convert(state->data, state->spec->data_type, data, TYPE_7GLfloat, state->spec->data_length);
+        budgie_type_convert(state->data, state->spec->data_type, data, TYPE_7GLfloat, state->spec->data_length);
     }
 
     pop_texture_binding(target, old_texture);
@@ -246,7 +251,7 @@ void glstate_get_texlevelparameter(state_generic *state)
     default:
         assert((size_t) state->spec->data_length <= sizeof(data) / sizeof(data[0]));
         CALL_glGetTexLevelParameterfv(target, level, e, data);
-        type_convert(state->data, state->spec->data_type, data, TYPE_7GLfloat, state->spec->data_length);
+        budgie_type_convert(state->data, state->spec->data_type, data, TYPE_7GLfloat, state->spec->data_length);
     }
 
     pop_texture_binding(target, old_texture);
@@ -286,7 +291,7 @@ void glstate_get_texgen(state_generic *state)
         default:
             assert((size_t) state->spec->data_length <= sizeof(data) / sizeof(data[0]));
             CALL_glGetTexGendv(coord, e, data);
-            type_convert(state->data, state->spec->data_type, data, TYPE_8GLdouble, state->spec->data_length);
+            budgie_type_convert(state->data, state->spec->data_type, data, TYPE_8GLdouble, state->spec->data_length);
         }
     }
 
@@ -325,7 +330,7 @@ void glstate_get_texunit(state_generic *state)
         default:
             assert((size_t) state->spec->data_length <= sizeof(data) / sizeof(data[0]));
             CALL_glGetDoublev(e, data);
-            type_convert(state->data, state->spec->data_type, data, TYPE_8GLdouble, state->spec->data_length);
+            budgie_type_convert(state->data, state->spec->data_type, data, TYPE_8GLdouble, state->spec->data_length);
         }
     }
 
@@ -357,7 +362,7 @@ static void glstate_get_texenv(state_generic *state, GLenum target)
     default:
         assert((size_t) state->spec->data_length <= sizeof(data) / sizeof(data[0]));
         CALL_glGetTexEnvfv(target, e, data);
-        type_convert(state->data, state->spec->data_type, data, TYPE_7GLfloat, state->spec->data_length);
+        budgie_type_convert(state->data, state->spec->data_type, data, TYPE_7GLfloat, state->spec->data_length);
     }
 
     pop_server_texture_unit(old_unit);
@@ -402,7 +407,7 @@ void glstate_get_light(state_generic *state)
         default:
             assert((size_t) state->spec->data_length <= sizeof(data) / sizeof(data[0]));
             CALL_glGetLightfv(light, e, data);
-            type_convert(state->data, state->spec->data_type, data, TYPE_7GLfloat, state->spec->data_length);
+            budgie_type_convert(state->data, state->spec->data_type, data, TYPE_7GLfloat, state->spec->data_length);
         }
 
     bugle_end_internal_render("glstate_get_light", true);

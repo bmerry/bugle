@@ -50,10 +50,8 @@ static bool initialise_trace(filter_set *handle)
     bugle_register_filter_depends("trace", "invoke");
     bugle_log_register_filter("trace");
     bugle_register_filter_catches_all(f);
-    /* No direct rendering, but some of the length functions query state */
-    bugle_register_filter_set_renders("trace");
     bugle_register_filter_post_renders("trace");
-    bugle_register_filter_set_queries_error("trace", false);
+    bugle_register_filter_set_queries_error("trace");
     return true;
 }
 
@@ -68,4 +66,9 @@ void bugle_initialise_filter_library(void)
         0
     };
     bugle_register_filter_set(&trace_info);
+
+    /* No direct rendering, but some of the length functions query state */
+    bugle_register_filter_set_renders("trace");
+    /* Some of the queries depend on extensions */
+    bugle_register_filter_set_depends("trace", "trackextensions");
 }

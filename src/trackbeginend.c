@@ -86,7 +86,11 @@ static bool initialise_trackbeginend(filter_set *handle)
     bugle_register_filter_depends("trackbeginend", "invoke");
     bugle_register_filter_catches(f, FUNC_glBegin);
     bugle_register_filter_catches(f, FUNC_glEnd);
-    bugle_register_filter_set_depends("trackbeginend", "trackcontext");
+
+    trackbeginend_offset = bugle_object_class_register(&bugle_context_class,
+                                                       NULL,
+                                                       NULL,
+                                                       sizeof(bool));
     return true;
 }
 
@@ -101,13 +105,7 @@ void trackbeginend_initialise(void)
         0
     };
 
-    /* This ought to be in the initialise routines, but it is vital that
-     * it runs early and we currently have no other way to determine the
-     * ordering.
-     */
-    trackbeginend_offset = bugle_object_class_register(&bugle_context_class,
-                                                       NULL,
-                                                       NULL,
-                                                       sizeof(bool));
     bugle_register_filter_set(&trackbeginend_info);
+
+    bugle_register_filter_set_depends("trackbeginend", "trackcontext");
 }

@@ -26,6 +26,7 @@
 #include <GL/glx.h>
 #include "common/bool.h"
 #include "src/utils.h"
+#include "src/filters.h"
 #include <assert.h>
 
 /* The intended use is:
@@ -48,13 +49,22 @@ bool bugle_begin_internal_render(void);
 void bugle_end_internal_render(const char *name, bool warn);
 GLXContext bugle_get_aux_context();
 
+/* Registers all commands that trigger geometry (pixel rectangles are
+ * not included). This includes commands that use arrays as well as
+ * immediate mode commands.
+ */
+void bugle_register_filter_catches_drawing(filter *f);
+/* Returns true for glVertex*, and for glVertexAttrib* with attribute
+ * 0. These are the calls that generate a vertex in immediate mode.
+ * f must be canonicalised.
+ */
+bool bugle_call_is_immediate(function_call *call);
+
 void bugle_register_filter_set_renders(const char *name);
 void bugle_register_filter_post_renders(const char *name);
 void bugle_register_filter_set_uses_state(const char *name);
 void bugle_register_filter_post_uses_state(const char *name);
-void bugle_register_filter_set_queries_error(const char *name, bool require);
+void bugle_register_filter_set_queries_error(const char *name);
 GLenum bugle_get_call_error(function_call *call);
-
-bool bugle_gl_has_extension(const char *ext);
 
 #endif /* !BUGLE_SRC_GLUTILS_H */

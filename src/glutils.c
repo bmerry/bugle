@@ -20,10 +20,12 @@
 # include <config.h>
 #endif
 #include "common/bool.h"
-#include "filters.h"
-#include "glutils.h"
-#include "tracker.h"
+#include "src/filters.h"
+#include "src/glutils.h"
+#include "src/tracker.h"
+#include "src/canon.h"
 #include "src/utils.h"
+#include "src/glfuncs.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <GL/gl.h>
@@ -103,6 +105,156 @@ GLXContext bugle_get_aux_context()
     return context_state->c_internal.c_auxcontext.data;
 }
 
+void bugle_register_filter_catches_drawing(filter *f)
+{
+#ifdef GL_ARB_vertex_program
+    bugle_register_filter_catches(f, CFUNC_glVertexAttrib1sARB);
+    bugle_register_filter_catches(f, CFUNC_glVertexAttrib1fARB);
+    bugle_register_filter_catches(f, CFUNC_glVertexAttrib1dARB);
+    bugle_register_filter_catches(f, CFUNC_glVertexAttrib2sARB);
+    bugle_register_filter_catches(f, CFUNC_glVertexAttrib2fARB);
+    bugle_register_filter_catches(f, CFUNC_glVertexAttrib2dARB);
+    bugle_register_filter_catches(f, CFUNC_glVertexAttrib3sARB);
+    bugle_register_filter_catches(f, CFUNC_glVertexAttrib3fARB);
+    bugle_register_filter_catches(f, CFUNC_glVertexAttrib3dARB);
+    bugle_register_filter_catches(f, CFUNC_glVertexAttrib4sARB);
+    bugle_register_filter_catches(f, CFUNC_glVertexAttrib4fARB);
+    bugle_register_filter_catches(f, CFUNC_glVertexAttrib4dARB);
+    bugle_register_filter_catches(f, CFUNC_glVertexAttrib4NubARB);
+    bugle_register_filter_catches(f, CFUNC_glVertexAttrib1svARB);
+    bugle_register_filter_catches(f, CFUNC_glVertexAttrib1fvARB);
+    bugle_register_filter_catches(f, CFUNC_glVertexAttrib1dvARB);
+    bugle_register_filter_catches(f, CFUNC_glVertexAttrib2svARB);
+    bugle_register_filter_catches(f, CFUNC_glVertexAttrib2fvARB);
+    bugle_register_filter_catches(f, CFUNC_glVertexAttrib2dvARB);
+    bugle_register_filter_catches(f, CFUNC_glVertexAttrib3svARB);
+    bugle_register_filter_catches(f, CFUNC_glVertexAttrib3fvARB);
+    bugle_register_filter_catches(f, CFUNC_glVertexAttrib3dvARB);
+    bugle_register_filter_catches(f, CFUNC_glVertexAttrib4bvARB);
+    bugle_register_filter_catches(f, CFUNC_glVertexAttrib4svARB);
+    bugle_register_filter_catches(f, CFUNC_glVertexAttrib4ivARB);
+    bugle_register_filter_catches(f, CFUNC_glVertexAttrib4ubvARB);
+    bugle_register_filter_catches(f, CFUNC_glVertexAttrib4usvARB);
+    bugle_register_filter_catches(f, CFUNC_glVertexAttrib4uivARB);
+    bugle_register_filter_catches(f, CFUNC_glVertexAttrib4fvARB);
+    bugle_register_filter_catches(f, CFUNC_glVertexAttrib4dvARB);
+    bugle_register_filter_catches(f, CFUNC_glVertexAttrib4NbvARB);
+    bugle_register_filter_catches(f, CFUNC_glVertexAttrib4NsvARB);
+    bugle_register_filter_catches(f, CFUNC_glVertexAttrib4NivARB);
+    bugle_register_filter_catches(f, CFUNC_glVertexAttrib4NubvARB);
+    bugle_register_filter_catches(f, CFUNC_glVertexAttrib4NusvARB);
+    bugle_register_filter_catches(f, CFUNC_glVertexAttrib4NuivARB);
+#endif
+    bugle_register_filter_catches(f, CFUNC_glVertex2d);
+    bugle_register_filter_catches(f, CFUNC_glVertex2dv);
+    bugle_register_filter_catches(f, CFUNC_glVertex2f);
+    bugle_register_filter_catches(f, CFUNC_glVertex2fv);
+    bugle_register_filter_catches(f, CFUNC_glVertex2i);
+    bugle_register_filter_catches(f, CFUNC_glVertex2iv);
+    bugle_register_filter_catches(f, CFUNC_glVertex2s);
+    bugle_register_filter_catches(f, CFUNC_glVertex2sv);
+    bugle_register_filter_catches(f, CFUNC_glVertex3d);
+    bugle_register_filter_catches(f, CFUNC_glVertex3dv);
+    bugle_register_filter_catches(f, CFUNC_glVertex3f);
+    bugle_register_filter_catches(f, CFUNC_glVertex3fv);
+    bugle_register_filter_catches(f, CFUNC_glVertex3i);
+    bugle_register_filter_catches(f, CFUNC_glVertex3iv);
+    bugle_register_filter_catches(f, CFUNC_glVertex3s);
+    bugle_register_filter_catches(f, CFUNC_glVertex3sv);
+    bugle_register_filter_catches(f, CFUNC_glVertex4d);
+    bugle_register_filter_catches(f, CFUNC_glVertex4dv);
+    bugle_register_filter_catches(f, CFUNC_glVertex4f);
+    bugle_register_filter_catches(f, CFUNC_glVertex4fv);
+    bugle_register_filter_catches(f, CFUNC_glVertex4i);
+    bugle_register_filter_catches(f, CFUNC_glVertex4iv);
+    bugle_register_filter_catches(f, CFUNC_glVertex4s);
+    bugle_register_filter_catches(f, CFUNC_glVertex4sv);
+    bugle_register_filter_catches(f, CFUNC_glArrayElement);
+    bugle_register_filter_catches(f, CFUNC_glDrawElements);
+    bugle_register_filter_catches(f, CFUNC_glDrawArrays);
+#ifdef GL_EXT_draw_range_elements
+    bugle_register_filter_catches(f, CFUNC_glDrawRangeElementsEXT);
+#endif
+#ifdef GL_EXT_multi_draw_arrays
+    bugle_register_filter_catches(f, CFUNC_glMultiDrawElementsEXT);
+    bugle_register_filter_catches(f, CFUNC_glMultiDrawArraysEXT);
+#endif
+}
+
+bool bugle_call_is_immediate(function_call *call)
+{
+    switch (bugle_canonical_call(call))
+    {
+#ifdef GL_ARB_vertex_program
+    case CFUNC_glVertexAttrib1sARB:
+    case CFUNC_glVertexAttrib1fARB:
+    case CFUNC_glVertexAttrib1dARB:
+    case CFUNC_glVertexAttrib2sARB:
+    case CFUNC_glVertexAttrib2fARB:
+    case CFUNC_glVertexAttrib2dARB:
+    case CFUNC_glVertexAttrib3sARB:
+    case CFUNC_glVertexAttrib3fARB:
+    case CFUNC_glVertexAttrib3dARB:
+    case CFUNC_glVertexAttrib4sARB:
+    case CFUNC_glVertexAttrib4fARB:
+    case CFUNC_glVertexAttrib4dARB:
+    case CFUNC_glVertexAttrib4NubARB:
+    case CFUNC_glVertexAttrib1svARB:
+    case CFUNC_glVertexAttrib1fvARB:
+    case CFUNC_glVertexAttrib1dvARB:
+    case CFUNC_glVertexAttrib2svARB:
+    case CFUNC_glVertexAttrib2fvARB:
+    case CFUNC_glVertexAttrib2dvARB:
+    case CFUNC_glVertexAttrib3svARB:
+    case CFUNC_glVertexAttrib3fvARB:
+    case CFUNC_glVertexAttrib3dvARB:
+    case CFUNC_glVertexAttrib4bvARB:
+    case CFUNC_glVertexAttrib4svARB:
+    case CFUNC_glVertexAttrib4ivARB:
+    case CFUNC_glVertexAttrib4ubvARB:
+    case CFUNC_glVertexAttrib4usvARB:
+    case CFUNC_glVertexAttrib4uivARB:
+    case CFUNC_glVertexAttrib4fvARB:
+    case CFUNC_glVertexAttrib4dvARB:
+    case CFUNC_glVertexAttrib4NbvARB:
+    case CFUNC_glVertexAttrib4NsvARB:
+    case CFUNC_glVertexAttrib4NivARB:
+    case CFUNC_glVertexAttrib4NubvARB:
+    case CFUNC_glVertexAttrib4NusvARB:
+    case CFUNC_glVertexAttrib4NuivARB:
+        return (*(GLuint *) call->generic.args[0] == 0);
+#endif
+    case CFUNC_glVertex2d:
+    case CFUNC_glVertex2dv:
+    case CFUNC_glVertex2f:
+    case CFUNC_glVertex2fv:
+    case CFUNC_glVertex2i:
+    case CFUNC_glVertex2iv:
+    case CFUNC_glVertex2s:
+    case CFUNC_glVertex2sv:
+    case CFUNC_glVertex3d:
+    case CFUNC_glVertex3dv:
+    case CFUNC_glVertex3f:
+    case CFUNC_glVertex3fv:
+    case CFUNC_glVertex3i:
+    case CFUNC_glVertex3iv:
+    case CFUNC_glVertex3s:
+    case CFUNC_glVertex3sv:
+    case CFUNC_glVertex4d:
+    case CFUNC_glVertex4dv:
+    case CFUNC_glVertex4f:
+    case CFUNC_glVertex4fv:
+    case CFUNC_glVertex4i:
+    case CFUNC_glVertex4iv:
+    case CFUNC_glVertex4s:
+    case CFUNC_glVertex4sv:
+    case CFUNC_glArrayElement:
+        return true;
+    default:
+        return false;
+    }
+}
+
 void bugle_register_filter_set_renders(const char *name)
 {
     bugle_register_filter_set_uses_state(name);
@@ -125,9 +277,8 @@ void bugle_register_filter_post_uses_state(const char *name)
     bugle_register_filter_depends(name, "trackcontext");
 }
 
-void bugle_register_filter_set_queries_error(const char *name, bool require)
+void bugle_register_filter_set_queries_error(const char *name)
 {
-    if (require) bugle_register_filter_set_depends(name, "error");
     if (!error_handle)
         error_handle = bugle_get_filter_set_handle("error");
 }
@@ -139,18 +290,4 @@ GLenum bugle_get_call_error(function_call *call)
         return *(GLenum *) bugle_get_filter_set_call_state(call, error_handle);
     else
         return GL_NO_ERROR;
-}
-
-bool bugle_gl_has_extension(const char *name)
-{
-    const char *exts;
-    size_t len;
-
-    exts = (const char *) CALL_glGetString(GL_EXTENSIONS);
-    len = strlen(name);
-    while ((exts = strstr(exts, name)) != NULL)
-    {
-        if (exts[len] == '\0' || exts[len] == ' ') return true;
-    }
-    return false;
 }

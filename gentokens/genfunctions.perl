@@ -4,7 +4,8 @@
 # There is a required option: --header types.h, where types.h contains the
 # defines of the functions known to the C code. The option --out-header
 # should be given to get a header file, no extra option to get the C file.
-# Can all use --alias to get a list of aliases to paste into gl.bc.
+# Can all use --alias to get a list of aliases to paste into gl.bc (not
+# implemented in budgie yet).
 
 use strict;
 use Getopt::Long;

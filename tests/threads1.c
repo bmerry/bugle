@@ -23,7 +23,6 @@ void *thread2(void *arg)
 {
     int i;
     Display *dpy;
-    struct timespec t;
 
     dpy = (Display *) arg;
     for (i = 0; i < 10000; i++)

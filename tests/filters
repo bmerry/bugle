@@ -26,3 +26,8 @@ chain triangles
         triangles yes
     }
 }
+
+chain checkaddress
+{
+    filterset checkaddress
+}

@@ -31,6 +31,8 @@
 #include "src/canon.h"
 #include "src/glutils.h"
 #include "src/glfuncs.h"
+#include "src/glexts.h"
+#include "src/tracker.h"
 #include "common/hashtable.h"
 #include "common/safemem.h"
 #include "common/bool.h"
@@ -103,7 +105,7 @@ static void prepare_screenshot_data(screenshot_data *data,
         data->height = height;
         data->stride = stride;
 #ifdef GL_EXT_pixel_buffer_object
-        if (use_pbo && bugle_gl_has_extension("GL_EXT_pixel_buffer_object"))
+        if (use_pbo && bugle_gl_has_extension(BUGLE_GL_EXT_pixel_buffer_object))
         {
             CALL_glGenBuffersARB(1, &data->pbo);
             CALL_glBindBufferARB(GL_PIXEL_PACK_BUFFER_EXT, data->pbo);
@@ -566,7 +568,6 @@ static bool initialise_screenshot(filter_set *handle)
     f = bugle_register_filter(handle, "screenshot", screenshot_callback);
     bugle_register_filter_catches(f, CFUNC_glXSwapBuffers);
     bugle_register_filter_depends("invoke", "screenshot");
-    bugle_register_filter_set_renders("screenshot");
 
     video_data = bugle_calloc(video_lag, sizeof(screenshot_data));
     video_cur = 0;
@@ -734,4 +735,7 @@ void bugle_initialise_filter_library(void)
     };
     bugle_register_filter_set(&screenshot_info);
     bugle_register_filter_set(&showextensions_info);
+
+    bugle_register_filter_set_renders("screenshot");
+    bugle_register_filter_set_depends("screenshot", "trackextensions");
 }
