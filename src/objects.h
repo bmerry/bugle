@@ -19,6 +19,8 @@
 /* FIXME: the current memory packing scheme can cause misalignments. This
  * should be ok for x86/amd64 because they allow misaligned accesses, but
  * could cause crashes on other architectures.
+ * FIXME: make typedefs for objects (void *) and handles (size_t) so that
+ * they are opaque.
  */
 
 #ifndef BUGLE_SRC_OBJECTS_H

@@ -1,6 +1,8 @@
-<html>
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html lang="en">
 <head>
 <title>BuGLe object management</title>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 </head>
 <body>
 <h1>BuGLe object management</title>
@@ -8,8 +10,8 @@
 <p>
 This file documents the object layer in BuGLe. It is NOT an OOP layer
 to add C++-like features to C. So what is it? Well, OpenGL has a number
-of types of `object' - things like contexts, drawables, display lists,
-texture objects etc - and various bits of code in BuGLe want to
+of types of &ldquo;object&rdquo; &mdash; things like contexts, drawables, display lists, 
+texture objects etc &mdash; and various bits of code in BuGLe want to
 associate data with these objects. The object layer makes this easier.
 It is should be understood, however, that the object layer has no
 knowledge of OpenGL. It is up to you to track the OpenGL calls that

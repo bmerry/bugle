@@ -16,7 +16,7 @@
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-/* This is not an OOP layer, like gobject. See doc/objects.txt for an
+/* This is not an OOP layer, like gobject. See doc/objects.html for an
  * explanation.
  */
 

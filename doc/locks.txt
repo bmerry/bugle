@@ -48,9 +48,14 @@ The methods named bugle_object_class_* are not thread-safe and should
 be protected with locks. The methods named bugle_object_* are
 thread-safe (including those referring to the current object). This is
 because the "current" object is a per-thread variable referenced by a
-pthread_key_t).
+pthread_key_t.
 
-7. Low-level types: linked lists and hash tables
+7. Filter lists
+
+The variables in filters.c that start with active_ are protected by the
+active_mutex mutex. This leads to an unfortunate loss in performance.
+
+8. Low-level types: linked lists and hash tables
 
 In the interests of efficiency, these do not provide thread-safe
-access. You are responsible for providing locks.
+access. The user is responsible for providing locks.
