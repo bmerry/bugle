@@ -1,0 +1,68 @@
+BuGLe pre-alpha release
+=======================
+
+This is a VERY early release, and is mosy unlikely to do what you want.
+It is only tested on GNU/Linux with gcc and NVIDIA OpenGL drivers. I
+would like to support all POSIX platforms that use dynamic loading and
+something like LD_PRELOAD, so if things don't work on your platform
+then let me know why.
+
+Here is what you can do so far
+- capture a log of what a program does (won't capture everything yet)
+- pause after every frame, and get crude state dumps
+- check for GL errors after every call
+- force a wireframe mode
+
+To build, you should be able to use any C and C++ compiler, although
+gcc is recommended (2.95.3 and 3.3.2 have both been tested). If you
+have a non i386 machine, it is recommended that you use erase
+src/data/gl.tu, and use gcc 3.3 (gcc 3.x may also work, but 2.x won't).
+This file contains somewhat architecture-dependent data, and this MAY
+leak through to the generated code. For generic build instructions, see
+INSTALL.
+
+To run usefully, you will need a configuration file
+$HOME/.bugle/filters. You can copy and paste the example below:
+
+-----BEGIN CUT-----
+chain trace
+{
+    filterset error
+    filterset log
+    {
+    	filename "/tmp/bugle.log"
+    }
+    filterset invoke
+}
+
+chain debugger
+{
+    filterset debugger
+    filterset invoke
+}
+
+chain wireframe
+{
+    filterset wireframe
+    filterset invoke
+}
+-----END CUT-----
+
+To run, execute your program something like the following:
+
+$ BUGLE_CHAIN=trace LD_PRELOAD=/usr/local/lib/libbugle.so glxgears
+
+where BUGLE_CHAIN changes depending on what you wish to achieve. The
+debugger mode is currently braindead: it will continue whenever you hit
+enter (so the app had better not be depending on stdin), and if you
+type in "state" and hit enter (without the quotes) then it will display
+a crude, incomplete and probably inaccurate state dump. The trace mode
+will write a big call log to the specified filename (or stderr if you
+leave out that line), and also write GL errors to stderr.
+
+Feedback
+========
+I am interested to get feedback on this tool: bugs you've found (but
+first read this file to make sure it has even been implemented),
+suggestions for improvements, whatever. My address is
+bmerry@sourceforge.net.

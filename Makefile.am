@@ -38,12 +38,12 @@ nodist_src_libbugle_la_SOURCES = \
 	src/utils.h src/types.c src/types.h \
 	src/gltokens.c
 BUILT_SOURCES = src/lib.h src/utils.h src/types.h confparse.h
-src_libbugle_la_LIBADD = budgie/libbudgie.la
+src_libbugle_la_LIBADD = budgie/libbudgie.la $(LTLIBOBJS)
 src_libbugle_la_LDFLAGS = -export-dynamic
 
-# This is not the intended use of EXTRA..., but it forces the files into
-# the distribution. It would also work to use EXTRA_DIST
-EXTRA_src_libbugle_la_SOURCES = src/gl.bc src/data/gl.c src/data/gl.tu src/data/overrides.h
+# Extra files to distribute
+EXTRA_DIST = src/gl.bc src/data/gl.c src/data/gl.tu src/data/overrides.h \
+	FAQ
 
 # Generated files that generate other files
 
@@ -66,14 +66,19 @@ src/gltokens.c: gentokens/gentokens Makefile
 
 filters_common_la_SOURCES = filters/common.c
 filters_common_la_LDFLAGS = -module
+filters_common_la_LIBADD = $(LTLIBOBJS)
 filters_modify_la_SOURCES = filters/modify.c
 filters_modify_la_LDFLAGS = -module
+filters_modify_la_LIBADD = $(LTLIBOBJS)
 filters_validate_la_SOURCES = filters/validate.c
 filters_validate_la_LDFLAGS = -module -avoid-version
+filters_validate_la_LIBADD = $(LTLIBOBJS)
 filters_tracker_la_SOURCES = filters/tracker.c
 filters_tracker_la_LDFLAGS = -module -avoid-version
+filters_tracker_la_LIBADD = $(LTLIBOBJS)
 filters_debugger_la_SOURCES = filters/debugger.c
 filters_debugger_la_LDFLAGS = -module -avoid-version
+filters_debugger_la_LIBADD = $(LTLIBOBJS)
 
 CLEANFILES = src/types.c src/types.h src/utils.c src/utils.h src/lib.c src/lib.h src/gltokens.c
 MAINTAINERCLEANFILES = src/data/gl.tu

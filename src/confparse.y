@@ -32,6 +32,7 @@ extern int yylex(void);
 %token <str> STRING
 %token <str> WORD
 
+%type <str> string
 %type <list> input
 %type <chain> chainitem
 %type <list> chainspec
@@ -72,11 +73,15 @@ filtersetspec:	/* empty */ { list_init(&$$); }
 		| filtersetspec variableitem { list_append(&$1, $2); $$ = $1; }
 ;
 
-variableitem:	WORD STRING {
+variableitem:	WORD string {
 			$$ = xmalloc(sizeof(config_variable));
                         $$->name = $1;
                         $$->value = $2;
 		}
+;
+
+string:		WORD { $$ = $1; }
+		| STRING { $$ = $1; }
 ;
 
 %%

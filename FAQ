@@ -1,0 +1,39 @@
+BuGLe: questions that nobody has asked yet, but which they might...
+===================================================================
+
+Q. Why is there a mix of C and C++ code?
+A. The library itself is written entirely in C. This is mainly because
+a C++ library will drag libstdc++ in with it, and this has been found to
+create some problems when forcing linking to an app that already
+depends on a conflicting version of libstdc++. There is still a
+dependence on libc, but libc is less of a moving target. The code
+generator is written in C++, since it makes the coding easier and does
+not introduce the dependency issues above.
+
+Q. When I try to use BuGLe as the renderer for Quake3, it segfaults?
+A. If you figure this out, please let me know. I'm working on it.
+
+Q. Why am I getting errors about unknown GL tokens?
+A. BuGLe assumes that your GL header files are reasonably up to date.
+You should try getting an updated glext.h from Sun:
+http://oss.sgi.com/projects/ogl-sample/registry/
+
+Q. I have a 64-bit machine, and I get errors trying to compile or run
+the library. Why?
+A. It is probably because the code generator relies on the file
+src/data/gl.tu. This file contains a parse tree of gl.h, glext.h and
+glx.h. Unfortunately, the file may be somewhat machine dependent. If
+you delete it, it will be regenerated from the files on your local
+machine. However, you will need gcc 3.x to regenerate it (only tested
+with gcc 3.3).
+
+Q. Isn't buGLe just a re-implementation of spyGLass?
+A. At the moment, the functionality is similar, but there are Big Plans
+for the debugger.
+
+Q. I'm running Bob's Incredibly Arcane UNIX system, and the library
+doesn't compile/work.
+A. If the platform is POSIX compliant and supports dynamic loading
+via dlopen() and preloading via LD_PRELOAD, then it should be supported
+more or less supported right now and this is a bug. Please let me know
+about it.

@@ -1,6 +1,6 @@
-AC_INIT(bugle, 0.1, bmerry@cs.uct.ac.za)
-AC_CONFIG_SRCDIR([budgie/budgie.cpp])
-AM_INIT_AUTOMAKE(bugle, 0.1)
+AC_INIT(bugle, 0.0.20040604, bmerry@sourceforge.net)
+AC_CONFIG_SRCDIR([src/interceptor.c])
+AM_INIT_AUTOMAKE(bugle, 0.0.20040604)
 AM_CONFIG_HEADER(config.h)
 
 dnl Checks for programs
@@ -20,6 +20,7 @@ dnl Checks for header files
 AC_HEADER_STDC
 AC_HEADER_DIRENT
 AC_HEADER_STDBOOL
+AC_CHECK_HEADERS([sys/types.h stdlib.h stddef.h regex.h])
 
 dnl Checks for types
 AC_CHECK_TYPE(ptrdiff_t, long int)
@@ -37,6 +38,7 @@ AC_C_CHAR_UNSIGNED
 
 dnl Checks for library functions
 AC_CHECK_FUNCS([regcomp strrchr])
+AC_REPLACE_FUNCS([bsearch])
 AC_FUNC_MEMCMP
 
 dnl Checks for system services
