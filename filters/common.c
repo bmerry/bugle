@@ -19,17 +19,12 @@
 #if HAVE_CONFIG_H
 # include <config.h>
 #endif
-#define _POSIX_SOURCE
 #include "src/filters.h"
 #include "src/utils.h"
 #include "src/types.h"
 #include "src/glutils.h"
 #include "common/safemem.h"
 #include "common/bool.h"
-#include <stdio.h>
-
-static char *log_filename = NULL;
-static bool log_flush = false;
 
 /* Invoke filter-set */
 
@@ -45,76 +40,38 @@ static bool initialise_invoke(filter_set *handle)
     return true;
 }
 
-/* Log filter-set */
+/* glXGetProcAddress wrapper. This ensures that glXGetProcAddressARB
+ * returns pointers to our library, not the real library. It is careful
+ * to never change the truth value of the return.
+ */
 
-static FILE *log_file;
-
-static bool log_callback(function_call *call, void *data)
+static bool procaddress_callback(function_call *call, void *data)
 {
-    GLenum error;
+    void (*sym)(void);
 
-    flockfile(log_file);
-    fputs("C: ", log_file);
-    dump_any_call(&call->generic, 0, log_file);
-    if ((error = get_call_error(call)))
+    switch (call->generic.id)
     {
-        fputs("E: ", log_file);
-        dump_GLerror(error, log_file);
-        fputs("\n", log_file);
+        /* Just in case glXGetProcAddress is ever promoted to core */
+#ifdef FUNC_glXGetProcAddress
+    case FUNC_glXGetProcAddress:
+#else
+    case FUNC_glXGetProcAddressARB:
+#endif
+        if (!*call->typed.glXGetProcAddressARB.retn) break;
+        sym = (void (*)(void))
+            get_filter_set_symbol(NULL, function_table[call->generic.id].name);
+        if (sym) *call->typed.glXGetProcAddressARB.retn = sym;
+        break;
     }
-    if (log_flush) fflush(log_file);
-    funlockfile(log_file);
     return true;
 }
 
-static bool initialise_log(filter_set *handle)
+static bool initialise_procaddress(filter_set *handle)
 {
-    if (log_filename)
-        log_file = fopen(log_filename, "w");
-    else
-        log_file = stderr;
-    if (!log_file)
-    {
-        if (log_filename)
-            fprintf(stderr, "failed to open log file %s\n", log_filename);
-        return false;
-    }
-    register_filter(handle, "log", log_callback);
-    register_filter_depends("log", "invoke");
-    /* No direct rendering, but some of the length functions query state */
-    filter_set_renders("log");
-    filter_post_renders("log");
-    filter_set_queries_error("log", false);
-    return true;
-}
-
-static void destroy_log(filter_set *handle)
-{
-    if (log_filename)
-    {
-        if (log_file) fclose(log_file);
-        free(log_filename);
-    }
-}
-
-static bool set_variable_log(filter_set *handle, const char *name, const char *value)
-{
-    if (strcmp(name, "filename") == 0)
-    {
-        if (log_filename) free(log_filename);
-        log_filename = xstrdup(value);
-    }
-    else if (strcmp(name, "flush") == 0)
-    {
-        if (strcmp(value, "yes") == 0)
-            log_flush = true;
-        else if (strcmp(value, "no") == 0)
-            log_flush = false;
-        else
-            fprintf(stderr, "illegal flush value '%s'\n", value);
-    }
-    else
-        return false;
+    register_filter(handle, "procaddress", procaddress_callback);
+    register_filter_depends("procaddress", "invoke");
+    register_filter_depends("log", "procaddress");
+    register_filter_set_depends("invoke", "procaddress");
     return true;
 }
 
@@ -123,5 +80,5 @@ static bool set_variable_log(filter_set *handle, const char *name, const char *v
 void initialise_filter_library(void)
 {
     register_filter_set("invoke", initialise_invoke, NULL, NULL);
-    register_filter_set("log", initialise_log, destroy_log, set_variable_log);
+    register_filter_set("procaddress", initialise_procaddress, NULL, NULL);
 }

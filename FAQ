@@ -42,16 +42,16 @@ A. Run it as quake3 +set r_glDriver /path/to/libbugle.so
 Q. Why is there a mix of C and C++ code?
 A. The library itself is written entirely in C. This is mainly because
 a C++ library will drag libstdc++ in with it, and this has been found to
-create some problems when forcing linking to an app that already
+create some problems when forcing linking to an application that already
 depends on a conflicting version of libstdc++. There is still a
 dependence on libc, but libc is less of a moving target. The code
 generator is written in C++, since it makes the coding easier and does
 not introduce the dependency issues above.
 
 Q. Why is a recent (>3.0) version of gcc required?
-A. BuGLe is driven a number of tables that list all the information
+A. BuGLe is driven by a number of tables that list all the information
 about the various types and functions in OpenGL. To capture this
-information, it is necessary to pass the OpenGL header files. It would
+information, it is necessary to parse the OpenGL header files. It would
 be very difficult to write a parser to do this robustly, but gcc
 already knows how to do this. Unfortunately, the ability to extract a
 parse tree from gcc (the -fdump-translation-unit option)

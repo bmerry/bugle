@@ -42,7 +42,7 @@ extern int yyparse(void);
 static void load_config(void)
 {
     const char *home;
-    char *config, *chain_name;
+    char *config = NULL, *chain_name;
     const linked_list *root;
     const config_chain *chain;
     const config_filterset *set;
@@ -51,16 +51,21 @@ static void load_config(void)
     list_node *i, *j;
     bool debugging;
 
+    if (getenv("BUGLE_FILTERS"))
+        config = xstrdup(getenv("BUGLE_FILTERS"));
     home = getenv("HOME");
     chain_name = getenv("BUGLE_CHAIN");
     debugging = getenv("BUGLE_DEBUGGER") != NULL;
     /* If using the debugger and no chain is specified, we use passthrough
      * mode.
      */
-    if (home && (!debugging || chain_name))
+    if ((config || home) && (!debugging || chain_name))
     {
-        config = xmalloc(strlen(home) + strlen(FILTERFILE) + 1);
-        sprintf(config, "%s%s", home, FILTERFILE);
+        if (!config)
+        {
+            config = xmalloc(strlen(home) + strlen(FILTERFILE) + 1);
+            sprintf(config, "%s%s", home, FILTERFILE);
+        }
         if ((yyin = fopen(config, "r")))
         {
             if (yyparse() == 0)

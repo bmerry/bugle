@@ -22,6 +22,8 @@
 #if HAVE_CONFIG_H
 # include <config.h>
 #endif
+#include <GL/gl.h>
+#include <GL/glx.h>
 #include "common/bool.h"
 #include "src/utils.h"
 #include <assert.h>
@@ -44,6 +46,7 @@
 
 bool begin_internal_render(void);
 void end_internal_render(const char *name, bool warn);
+GLXContext get_aux_context();
 
 extern state_7context_I *(*trackcontext_get_context_state_ptr)(void);
 static inline state_7context_I *get_context_state(void)

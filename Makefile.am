@@ -11,6 +11,7 @@ lib_LTLIBRARIES = src/libbugleutils.la src/libbugle.la
 bin_PROGRAMS = gldb/gldb
 pkglib_LTLIBRARIES = \
 	filters/common.la \
+	filters/log.la \
 	filters/modify.la \
 	filters/validate.la \
 	filters/tracker.la \
@@ -79,14 +80,14 @@ src/data/gl.tu: src/data/gl.c src/data/overrides.h
 	rm -f src/data/gl.o
 	mv gl.c.tu src/data/gl.tu
 
-src/types.c src/types.h src/utils.c src/utils.h src/lib.c src/lib.h: budgie/budgie src/data/gl.tu src/gl.bc Makefile
+src/types.c src/types.h src/utils.c src/utils.h src/lib.c src/lib.h: budgie/budgie src/data/gl.tu src/gl.bc
 	$(srcdir)/mkinstalldirs src
 	budgie/budgie -c $(srcdir)/src/gl.bc -t `test -f src/data/gl.tu || echo '$(srcdir)/'`src/data/gl.tu -o src/utils -T src/types -l src/lib
 
 gentokens_gentokens_SOURCES = gentokens/gentokens.c
 BUILT_SOURCES += src/gltokens.c
 
-src/gltokens.c: gentokens/gentokens gentokens/gettokens.awk Makefile
+src/gltokens.c: gentokens/gentokens gentokens/gettokens.awk
 if PREPROCESS_GL
 	$(CPP) $(CPP_DEFINES_FLAGS) $(DEFAULT_INCLUDES) $(INCLUDES) $(X_CFLAGS) $(srcdir)/src/data/gl.c | $(AWK) -f $(srcdir)/gentokens/gettokens.awk | gentokens/gentokens > $@
 else
@@ -96,6 +97,8 @@ endif
 # Filters
 filters_common_la_SOURCES = filters/common.c
 filters_common_la_LDFLAGS = -thread-safe -module -avoid-version
+filters_log_la_SOURCES = filters/log.c
+filters_log_la_LDFLAGS = -thread-safe -module -avoid-version
 filters_modify_la_SOURCES = filters/modify.c
 filters_modify_la_LDFLAGS = -thread-safe -module -avoid-version
 filters_validate_la_SOURCES = filters/validate.c
@@ -107,16 +110,25 @@ filters_debugger_la_LDFLAGS = -thread-safe -module -avoid-version
 filters_capture_la_SOURCES = filters/capture.c
 filters_capture_la_LDFLAGS = -thread-safe -module -avoid-version
 
-# Demo programs
-check_PROGRAMS = tests/errors tests/threads1 tests/threads2 tests/queries
+# Demo/Test programs
+check_PROGRAMS = \
+	tests/errors tests/threads1 tests/threads2 tests/queries \
+	tests/misc tests/setstate
+dist_check_SCRIPTS = tests/queries.sh tests/setstate.sh tests/comparelog.sh
 tests_errors_SOURCES = tests/errors.c
-tests_errors_LDADD = -lglut $(GL_LIBS) $(X_PRE_LIBS) $(X_LIBS) $(X_EXTRA_LIBS)
+tests_errors_LDADD = src/libbugle.la -lglut $(GL_LIBS) $(X_PRE_LIBS) $(X_LIBS) $(X_EXTRA_LIBS)
 tests_threads1_SOURCES = tests/threads1.c
-tests_threads1_LDADD = $(GL_LIBS) $(X_PRE_LIBS) $(X_LIBS) $(X_EXTRA_LIBS) $(THREAD_LIBS)
+tests_threads1_LDADD = src/libbugle.la $(GL_LIBS) $(X_PRE_LIBS) $(X_LIBS) $(X_EXTRA_LIBS) $(THREAD_LIBS)
 tests_threads2_SOURCES = tests/threads2.c
-tests_threads2_LDADD = $(GL_LIBS) $(X_PRE_LIBS) $(X_LIBS) $(X_EXTRA_LIBS) $(THREAD_LIBS)
+tests_threads2_LDADD = src/libbugle.la $(GL_LIBS) $(X_PRE_LIBS) $(X_LIBS) $(X_EXTRA_LIBS) $(THREAD_LIBS)
 tests_queries_SOURCES = tests/queries.c
-tests_queries_LDADD = -lglut $(GL_LIBS) $(X_PRE_LIBS) $(X_LIBS) $(X_EXTRA_LIBS)
+tests_queries_LDADD = src/libbugle.la -lglut $(GL_LIBS) $(X_PRE_LIBS) $(X_LIBS) $(X_EXTRA_LIBS)
+tests_misc_SOURCES = tests/misc.c
+tests_misc_LDADD = src/libbugle.la -lglut $(GL_LIBS) $(X_PRE_LIBS) $(X_LIBS) $(X_EXTRA_LIBS)
+tests_setstate_SOURCES = tests/setstate.c
+tests_setstate_LDADD = src/libbugle.la -lglut $(GL_LIBS) $(X_PRE_LIBS) $(X_LIBS) $(X_EXTRA_LIBS)
+TESTS = tests/errors tests/misc tests/queries.sh tests/setstate.sh
+TESTS_ENVIRONMENT = BUGLE_FILTERS=$(srcdir)/tests/filters BUGLE_FILTER_DIR=filters/.libs
 
 # Extra files to distribute
 EXTRA_DIST = src/gl.bc src/data/gl.c src/data/overrides.h \
@@ -124,8 +136,14 @@ EXTRA_DIST = src/gl.bc src/data/gl.c src/data/overrides.h \
 	FAQ TROUBLESHOOTING \
 	doc/filters.txt doc/protocol.txt doc/examples/filters
 
-# Note: automake ought to clean gldb/.libs/gldb, but for some reason it
-# does not.
-CLEANFILES = src/types.c src/types.h src/utils.c src/utils.h src/lib.c src/lib.h \
+# Note: automake ought to the various files in the .libs directories, but
+# for some reason does not.
+CLEANFILES = \
+	src/types.c src/types.h src/utils.c src/utils.h src/lib.c src/lib.h \
 	src/gltokens.c src/data/gl.tu doc/gldb.1.gz doc/bugle.3.gz \
-	gldb/.libs/gldb
+	gldb/.libs/gldb \
+	tests/.libs/errors tests/.libs/threads1 \
+	tests/.libs/threads2 tests/.libs/queries tests/.libs/misc \
+	tests/.libs/setstate tests/.libs/lt-errors tests/.libs/lt-misc \
+	tests/.libs/lt-queries tests/.libs/lt-setstate
+DISTCLEANFILES = tests/*.log

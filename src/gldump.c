@@ -242,6 +242,15 @@ bool dump_GLalternateenum(GLenum token, FILE *out)
     return true;
 }
 
+bool dump_GLcomponentsenum(GLenum token, FILE *out)
+{
+    if (token >= 1 && token <= 4)
+        dump_type_i(&token, -1, out);
+    else
+        dump_GLenum(token,  out);
+    return true;
+}
+
 bool dump_GLboolean(GLboolean b, FILE *out)
 {
     if (b == 0 || b == 1)

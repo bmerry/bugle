@@ -18,6 +18,7 @@ EXTRATYPE GLdoublematrix
 EXTRATYPE GLfloatmatrix
 EXTRATYPE GLerror
 EXTRATYPE GLalternateenum
+EXTRATYPE GLcomponentsenum
 EXTRATYPE GLstipple
 
 # Functions taking pointers to fixed length arrays
@@ -92,6 +93,7 @@ TYPE PARAMETER glBlendFuncSeparate 0 TYPE_15GLalternateenum
 TYPE PARAMETER glBlendFuncSeparate 1 TYPE_15GLalternateenum
 TYPE PARAMETER glBlendFuncSeparate 2 TYPE_15GLalternateenum
 TYPE PARAMETER glBlendFuncSeparate 3 TYPE_15GLalternateenum
+TYPE PARAMETER glTexImage(1|2|3)D 2 TYPE_16GLcomponentsenum
 
 TYPE PARAMETER glPolygonStipple 0 TYPE_9GLstipple
 TYPE PARAMETER glClear 0 TYPE_10bufferbits
@@ -105,6 +107,7 @@ DUMP TYPE GLenum dump_GLenum($$, $F)
 DUMP TYPE GLboolean dump_GLboolean($$, $F)
 DUMP TYPE GLerror dump_GLerror($$, $F)
 DUMP TYPE GLalternateenum dump_GLalternateenum($$, $F)
+DUMP TYPE GLcomponentsenum dump_GLcomponentsenum($$, $F)
 DUMP TYPE +PKc dump_string($$, $F)
 DUMP TYPE +Pc dump_string($$, $F)
 LENGTH TYPE +PKc count_string($$)
@@ -152,7 +155,7 @@ STATE context
 							VALUE GL_TEXTURE_HEIGHT GLint 1 glstate_get_texlevelparameter
 							VALUE GL_TEXTURE_DEPTH GLint 1 glstate_get_texlevelparameter
 							VALUE GL_TEXTURE_BORDER GLint 1 glstate_get_texlevelparameter
-							VALUE GL_TEXTURE_INTERNAL_FORMAT GLenum 1 glstate_get_texlevelparameter
+							VALUE GL_TEXTURE_INTERNAL_FORMAT GLcomponentsenum 1 glstate_get_texlevelparameter
 							VALUE GL_TEXTURE_RED_SIZE GLint 1 glstate_get_texlevelparameter
 							VALUE GL_TEXTURE_GREEN_SIZE GLint 1 glstate_get_texlevelparameter
 							VALUE GL_TEXTURE_BLUE_SIZE GLint 1 glstate_get_texlevelparameter
@@ -507,6 +510,7 @@ STATE context
 			VALUE share +Pv 1 NULL
 			VALUE destroyed GLboolean 1 NULL
 			VALUE initialised GLboolean 1 NULL
+                        VALUE auxcontext GLXContext 1 NULL
                 }
         }
 }

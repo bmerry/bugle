@@ -94,7 +94,18 @@ format after every frame. The screenshots are written to
 .BI frame NNNN .ppm\fR,
 where
 .I NNNN
-is the frame number.
+is the frame number. It has an optional variable
+.BR video .
+If this variable is set, the value must be a filename. The frames are
+encoded to a video with this filename. The variable
+.B codec
+controls the video codec. This video mode requires
+.BR mjpegtools (1)
+and
+.BR ffmpeg (1).
+Refer to the latter for the list of video codecs. There is currently no
+way to set options such as bitrate, but this will probably be possible
+in future. Note that this will crash if the frame-size changes.
 .TP
 .B unwindstack
 This filter-set is a bit of a hack, and may not work reliably on all
@@ -124,7 +135,7 @@ through to the real OpenGL library. This is not particularly useful
 unless you are using
 .BR gldb .
 
-The file is text-based. Comments are started with a
+The file is text-based. Comments begin with a
 .B "#"
 and continue to the end of the line. Strings may be quoted with
 double-quotes, and backslash acts as an escape character in the usual
@@ -155,6 +166,15 @@ around chains are not.
 Specifies the filter-set chain to use. If absent, the first chain in
 the configuration file is used.
 .TP
+.B BUGLE_FILTERS
+If present, specifies an alternative configuration file to use, instead of
+.BR "$HOME/.bugle/filters" .
+.TP
+.B BUGLE_FILTER_DIR
+If present, specifies an alternative directory in which to find
+modules. This option is currently used by the test suite, and is not
+intended for general use.
+.TP
 .B LD_PRELOAD
 Used to tell the linker to load
 .BR bugle .
@@ -168,7 +188,8 @@ above for a description of the format.
 OpenGL color-index mode is not well supported.
 
 Multi-threaded applications that call the GL from more than one thread
-are almost certain to break.
+will break in various ways. The debugger filter-set is particularly
+fragile.
 .SH AUTHOR
 .B gldb
 and the

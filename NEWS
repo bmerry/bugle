@@ -3,9 +3,10 @@ Ctrl-C will now stop the program (ala gdb), and it is possible to query
 OpenGL state. Refer to the gldb(1) manual page for details.
 
 This release also offers much better thread safety, and it should now
-be possible to use bugle even with programs that render simultaneously
-from multiple threads. However, the debugger will not work on a
-multi-threaded program.
+be mostly possible to use bugle even with programs that render
+simultaneously from multiple threads. However, the debugger will not
+work on a multi-threaded program, and there are still a few known race
+conditions.
 
 0.0.20040614
 ------------

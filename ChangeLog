@@ -2,7 +2,10 @@
 * Improved thread safety.
 * Rewrite of the state code
 * Added basic state dump support to gldb
-* dump overrides are now boolean expressions, not functions
+* Dump overrides are now boolean expressions, not functions
+* Improved test suite, with some log regression tests
+* Support for aux contexts
+* Added movie mode to screenshot filterset
 
 0.0.20040614
 ------------

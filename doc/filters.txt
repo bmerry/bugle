@@ -65,7 +65,8 @@ initialisation:
 - get symbols from other filter-sets, if necessary:
   foo_ptr = (void (*)(void)) get_filter_set_symbol(other_handle, "foo")
   This will also return a meaningful value even if the other filter
-  will never be used, provided the symbol is defined.
+  will never be used, provided the symbol is defined. Passing NULL as
+  the first argument will look up symbols in the main library.
 
 Note that there is a fundamental difference between filter dependencies
 and filter-set dependencies: the first is an ORDERING relationship, and

@@ -1,0 +1,11 @@
+# Wireframe. We use this to test various things, mainly because it
+# loads up various other filtersets (error, trackcontext, etc).
+chain wireframe
+{
+    filterset wireframe
+}
+
+chain trace
+{
+    filterset log
+}

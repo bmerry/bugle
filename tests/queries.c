@@ -58,6 +58,13 @@ void query_texlevelparameter(void)
     glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_COMPRESSED, &i);
 }
 
+void query_strings(void)
+{
+    glGetString(GL_VENDOR);
+    glGetString(GL_RENDERER);
+    glGetString(GL_EXTENSIONS);
+}
+
 int main(int argc, char **argv)
 {
     glutInit(&argc, argv);
@@ -69,5 +76,6 @@ int main(int argc, char **argv)
     query_multi();
     query_texparameter();
     query_texlevelparameter();
+    query_strings();
     return 0;
 }

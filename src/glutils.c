@@ -73,6 +73,46 @@ void end_internal_render(const char *name, bool warn)
     }
 }
 
+GLXContext get_aux_context()
+{
+    state_7context_I *context_state;
+    GLXContext old_ctx, ctx;
+    int render_type = 0, screen;
+    int n;
+    int attribs[3] = {GLX_FBCONFIG_ID, 0, None};
+    GLXFBConfig *cfgs;
+    Display *dpy;
+
+    assert(trackcontext_get_context_state_ptr);
+    context_state = (*trackcontext_get_context_state_ptr)();
+    if (context_state->c_internal.c_auxcontext.data == NULL)
+    {
+        dpy = glXGetCurrentDisplay();
+        old_ctx = glXGetCurrentContext();
+        glXQueryContext(dpy, old_ctx, GLX_RENDER_TYPE, &render_type);
+        glXQueryContext(dpy, old_ctx, GLX_SCREEN, &screen);
+        glXQueryContext(dpy, old_ctx, GLX_FBCONFIG_ID, &attribs[1]);
+        /* It seems that render_type comes back as a boolean, although
+         * the spec seems to indicate that it should be otherwise.
+         */
+        if (render_type <= 1)
+            render_type = render_type ? GLX_RGBA_TYPE : GLX_COLOR_INDEX_TYPE;
+        cfgs = glXChooseFBConfig(dpy, screen, attribs, &n);
+        if (cfgs == NULL)
+        {
+            fprintf(stderr, "Warning: could not create an auxiliary context\n");
+            return NULL;
+        }
+        ctx = CALL_glXCreateNewContext(dpy, cfgs[0], render_type,
+                                       old_ctx, glXIsDirect(dpy, old_ctx));
+        XFree(cfgs);
+        if (ctx == NULL)
+            fprintf(stderr, "Warning: count not create an auxiliary context\n");
+        context_state->c_internal.c_auxcontext.data = ctx;
+    }
+    return context_state->c_internal.c_auxcontext.data;
+}
+
 void filter_set_renders(const char *name)
 {
     filter_set_uses_state(name);

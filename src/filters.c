@@ -108,6 +108,7 @@ void initialise_filters(void)
     size_t len;
     void *handle;
     void (*init)(void);
+    const char *libdir;
 
     list_init(&filter_sets);
     list_init(&active_filters);
@@ -115,10 +116,12 @@ void initialise_filters(void)
     list_init(&filter_set_dependencies[0]);
     list_init(&filter_set_dependencies[1]);
 
-    dir = opendir(PKGLIBDIR);
+    libdir = getenv("BUGLE_FILTER_DIR");
+    if (!libdir) libdir = PKGLIBDIR;
+    dir = opendir(libdir);
     if (!dir)
     {
-        perror("failed to open " PKGLIBDIR);
+        fprintf(stderr, "failed to open %s: %s", libdir, strerror(errno));
         exit(1);
     }
 
@@ -127,8 +130,8 @@ void initialise_filters(void)
         len = strlen(ent->d_name);
         if (len < 3) continue;
         if (strcmp(ent->d_name + len - 3, ".so") != 0) continue;
-        full_name = (char *) xmalloc(strlen(PKGLIBDIR) + strlen(ent->d_name) + 2);
-        sprintf(full_name, PKGLIBDIR "/%s", ent->d_name);
+        full_name = (char *) xmalloc(strlen(libdir) + strlen(ent->d_name) + 2);
+        sprintf(full_name, "%s/%s", libdir, ent->d_name);
         handle = dlopen(full_name, RTLD_LAZY);
         if (handle == NULL) continue;
         init = (void (*)(void)) dlsym(handle, "initialise_filter_library");
@@ -394,6 +397,17 @@ filter_set *get_filter_set_handle(const char *name)
 
 void *get_filter_set_symbol(filter_set *handle, const char *name)
 {
-    assert(handle);
-    return dlsym(handle->dl_handle, name);
+    if (handle)
+        return dlsym(handle->dl_handle, name);
+    else
+    {
+        void *h, *sym = NULL;
+        h = dlopen(NULL, RTLD_LAZY);
+        if (h)
+        {
+            sym = dlsym(h, name);
+            dlclose(h);
+        }
+        return sym;
+    }
 }

@@ -3,11 +3,11 @@ BuGLe alpha release
 
 This is a very alpha release, and may not due what you want. If you
 have problems installing, please refer to the TROUBLESHOOTING file. It
-has, however, been tested on GNU/Linux with NVIDIA drivers and on
-FreeBSD with Mesa. I would like to support all POSIX platforms that use
-X, dynamic loading and something like LD_PRELOAD; if your platforms
-meet these requirements but you can't get it to work then let me know
-why.
+has, however, been tested on GNU/Linux and on FreeBSD. 
+I would like to support all POSIX platforms that use X, dynamic loading
+and something like LD_PRELOAD; if your platforms meet these
+requirements but you can't get it to work then let me know why. Windows
+may one day be supported, but certainly not yet.
 
 Here are a few things you can do so far
 - capture a log of what a program does (won't capture everything yet)

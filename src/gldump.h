@@ -40,6 +40,7 @@ int count_gl(budgie_function func, GLenum token);
 int count_global_query(GLenum token);
 bool dump_GLenum(GLenum e, FILE *out);
 bool dump_GLalternateenum(GLenum e, FILE *out);
+bool dump_GLcomponentsenum(GLenum e, FILE *out);
 bool dump_GLerror(GLenum e, FILE *out);
 bool dump_GLboolean(GLboolean b, FILE *out);
 bool dump_convert(GLenum pname, const void *value,
