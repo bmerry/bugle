@@ -41,9 +41,22 @@ typedef struct
     budgie_function is;
 } trackobjects_info;
 
+/* FIXME: ARB_occlusion_query specifies that queries are NOT shared between contexts */
 static const trackobjects_info info_table[BUGLE_TRACKOBJECTS_COUNT] =
 {
-    { GROUP_glGenTextures, GROUP_glDeleteTextures, GROUP_glBindTexture, FUNC_glIsTexture }
+    { GROUP_glGenTextures, GROUP_glDeleteTextures, GROUP_glBindTexture, FUNC_glIsTexture },
+
+#ifdef GL_ARB_vertex_buffer_object
+    { GROUP_glGenBuffersARB, GROUP_glDeleteBuffersARB, GROUP_glBindBufferARB, FUNC_glIsBufferARB },
+#else
+    { NULL_GROUP, NULL_GROUP, NULL_GROUP, NULL_FUNCTION },
+#endif
+
+#ifdef GL_ARB_occlusion_query
+    { GROUP_glGenQueriesARB, GROUP_glDeleteQueriesARB, GROUP_glBeginQueryARB, FUNC_glIsQueryARB }
+#else
+    { NULL_GROUP, NULL_GROUP, NULL_GROUP, NULL_FUNCTION }
+#endif
 };
 
 static bugle_object_view view;
@@ -128,6 +141,14 @@ static bool initialise_trackobjects(filter_set *handle)
     f = bugle_register_filter(handle, "trackobjects");
     bugle_register_filter_catches(f, GROUP_glBindTexture, trackobjects_bind);
     bugle_register_filter_catches(f, GROUP_glDeleteTextures, trackobjects_delete);
+#ifdef GL_ARB_vertex_buffer_object
+    bugle_register_filter_catches(f, GROUP_glBindBufferARB, trackobjects_bind);
+    bugle_register_filter_catches(f, GROUP_glDeleteBuffersARB, trackobjects_delete);
+#endif
+#ifdef GL_ARB_occlusion_query
+    bugle_register_filter_catches(f, GROUP_glBeginQueryARB, trackobjects_bind);
+    bugle_register_filter_catches(f, GROUP_glDeleteQueriesARB, trackobjects_delete);
+#endif
     view = bugle_object_class_register(&bugle_namespace_class,
                                        initialise_objects,
                                        destroy_objects,

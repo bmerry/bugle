@@ -84,7 +84,8 @@ src/data/gl.tu: src/data/gl.c src/data/overrides.h
 	mv gl.c.tu src/data/gl.tu
 
 BCFILES = bc/core1_1.bc bc/glx.bc \
-	bc/GL_ARB_multitexture.bc bc/GL_ARB_shader_objects.bc \
+	bc/GL_ARB_multitexture.bc bc/GL_ARB_imaging.bc \
+        bc/GL_ARB_shader_objects.bc bc/GL_ARB_occlusion_query.bc \
         bc/GL_ARB_texture_compression.bc bc/GL_ARB_vertex_buffer_object.bc \
         bc/GL_ARB_vertex_program.bc bc/GL_EXT_blend_func_separate.bc \
         bc/GL_EXT_draw_range_elements.bc bc/GL_EXT_multi_draw_arrays.bc \

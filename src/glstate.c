@@ -17,7 +17,6 @@
  */
 
 /* Still TODO:
- * - vertex attributes
  * - buffer objects
  * - shader objects
  * - program objects
@@ -64,10 +63,12 @@
 #define STATE_MODE_MATERIAL              0x00000008    /* glGetMaterial */
 #define STATE_MODE_CLIP_PLANE            0x00000009    /* glGetClipPlane */
 #define STATE_MODE_COLOR_TABLE_PARAMETER 0x0000000a    /* glGetColorTableParameter */
-#define STATE_MODE_CONVOLUTION_PARAMETER 0x0000000b    /* glGetConvolutionFilter */
+#define STATE_MODE_CONVOLUTION_PARAMETER 0x0000000b    /* glGetConvolutionParameter */
 #define STATE_MODE_HISTOGRAM_PARAMETER   0x0000000c    /* glGetHistogramParameter */
 #define STATE_MODE_MINMAX_PARAMETER      0x0000000d    /* glGetMinmaxParameter */
-#define STATE_MODE_VERTEX_ATTRIB         0x0000000e
+#define STATE_MODE_VERTEX_ATTRIB         0x0000000e    /* glGetVertexAttrib */
+#define STATE_MODE_QUERY                 0x0000000f    /* glGetQuery */
+#define STATE_MODE_QUERY_OBJECT          0x00000010    /* glGetQueryObject */
 #define STATE_MODE_MASK                  0x000000ff
 
 #define STATE_MULTIPLEX_ACTIVE_TEXTURE   0x00000100    /* Set active texture */
@@ -75,7 +76,9 @@
 
 #define STATE_SELECT_NO_CONVOLUTION_1D   0x00010000    /* Ignore for GL_CONVOLUTION_1D */
 #define STATE_SELECT_NON_ZERO            0x00020000    /* Ignore if some field is 0 */
-#define STATE_SELECT_NO_BLEND_FUNC_SEPARATE 0x00040000 /* Ignore if GL_EXT_blend_func_separate is present */
+#define STATE_SELECT_NO_PROXY            0x00040000    /* Ignore for proxy targets */
+#define STATE_SELECT_NO_BLEND_FUNC_SEPARATE 0x00100000 /* Ignore if GL_EXT_blend_func_separate is present */
+#define STATE_SELECT_NO_DRAW_BUFFERS     0x00200000    /* Ignore if GL_ARB_draw_buffers is present */
 
 #define STATE_FLAG_FILTER_CONTROL        0x01000000    /* Pass GL_TEXTURE_FILTER_CONTROL */
 
@@ -96,6 +99,8 @@
 #define STATE_HISTOGRAM_PARAMETER STATE_MODE_HISTOGRAM_PARAMETER
 #define STATE_MINMAX_PARAMETER STATE_MODE_MINMAX_PARAMETER
 #define STATE_VERTEX_ATTRIB STATE_MODE_VERTEX_ATTRIB
+#define STATE_QUERY STATE_MODE_QUERY
+#define STATE_QUERY_OBJECT STATE_MODE_QUERY_OBJECT
 
 static const state_info global_state[] =
 {
@@ -277,6 +282,7 @@ static const state_info global_state[] =
     { STATE_NAME(GL_INDEX_LOGIC_OP), TYPE_9GLboolean, 1, -1, "1.1", STATE_ENABLED },
     { STATE_NAME(GL_COLOR_LOGIC_OP), TYPE_9GLboolean, 1, -1, "1.1", STATE_ENABLED },
     { STATE_NAME(GL_LOGIC_OP_MODE), TYPE_6GLenum, 1, -1, "1.1", STATE_GLOBAL },
+    { STATE_NAME(GL_DRAW_BUFFER), TYPE_6GLenum, 1, -1, "1.1", STATE_GLOBAL | STATE_SELECT_NO_DRAW_BUFFERS},
     { STATE_NAME(GL_INDEX_WRITEMASK), TYPE_5GLint, 1, -1, "1.1", STATE_GLOBAL },
     { STATE_NAME(GL_COLOR_WRITEMASK), TYPE_9GLboolean, 4, -1, "1.1", STATE_GLOBAL },
     { STATE_NAME(GL_DEPTH_WRITEMASK), TYPE_9GLboolean, 1, -1, "1.1", STATE_GLOBAL },
@@ -488,10 +494,12 @@ static const state_info tex_parameter_state[] =
     { STATE_NAME(GL_TEXTURE_WRAP_R), TYPE_6GLenum, 1, -1, "1.1", STATE_TEX_PARAMETER },
     { STATE_NAME(GL_TEXTURE_PRIORITY), TYPE_8GLdouble, 1, -1, "1.1", STATE_TEX_PARAMETER },
     { STATE_NAME(GL_TEXTURE_RESIDENT), TYPE_9GLboolean, 1, -1, "1.1", STATE_TEX_PARAMETER },
-    { STATE_NAME(GL_TEXTURE_MIN_LOD), TYPE_8GLdouble, 1, -1, "1.1", STATE_TEX_PARAMETER },
-    { STATE_NAME(GL_TEXTURE_MAX_LOD), TYPE_8GLdouble, 1, -1, "1.1", STATE_TEX_PARAMETER },
-    { STATE_NAME(GL_TEXTURE_BASE_LEVEL), TYPE_5GLint, 1, -1, "1.1", STATE_TEX_PARAMETER },
-    { STATE_NAME(GL_TEXTURE_MAX_LEVEL), TYPE_5GLint, 1, -1, "1.1", STATE_TEX_PARAMETER },
+#ifdef GL_SGIS_texture_lod
+    { STATE_NAME_EXT(GL_TEXTURE_MIN_LOD, _SGIS), TYPE_8GLdouble, 1, BUGLE_GL_SGIS_texture_lod, "1.2", STATE_TEX_PARAMETER },
+    { STATE_NAME_EXT(GL_TEXTURE_MAX_LOD, _SGIS), TYPE_8GLdouble, 1, BUGLE_GL_SGIS_texture_lod, "1.2", STATE_TEX_PARAMETER },
+    { STATE_NAME_EXT(GL_TEXTURE_BASE_LEVEL, _SGIS), TYPE_5GLint, 1, BUGLE_GL_SGIS_texture_lod, "1.2", STATE_TEX_PARAMETER },
+    { STATE_NAME_EXT(GL_TEXTURE_MAX_LEVEL, _SGIS), TYPE_5GLint, 1, BUGLE_GL_SGIS_texture_lod, "1.2", STATE_TEX_PARAMETER },
+#endif
 #ifdef GL_EXT_texture_lod_bias
     { STATE_NAME_EXT(GL_TEXTURE_LOD_BIAS, _EXT), TYPE_8GLdouble, 1, BUGLE_GL_EXT_texture_lod_bias, "1.4", STATE_TEX_PARAMETER },
 #endif
@@ -633,6 +641,8 @@ static const state_info color_table_parameter_state[] =
     { STATE_NAME(GL_COLOR_TABLE_ALPHA_SIZE), TYPE_5GLint, 1, BUGLE_GL_ARB_imaging, NULL, STATE_COLOR_TABLE_PARAMETER },
     { STATE_NAME(GL_COLOR_TABLE_LUMINANCE_SIZE), TYPE_5GLint, 1, BUGLE_GL_ARB_imaging, NULL, STATE_COLOR_TABLE_PARAMETER },
     { STATE_NAME(GL_COLOR_TABLE_INTENSITY_SIZE), TYPE_5GLint, 1, BUGLE_GL_ARB_imaging, NULL, STATE_COLOR_TABLE_PARAMETER },
+    { STATE_NAME(GL_COLOR_TABLE_SCALE), TYPE_8GLdouble, 4, BUGLE_GL_ARB_imaging, NULL, STATE_COLOR_TABLE_PARAMETER | STATE_SELECT_NO_PROXY },
+    { STATE_NAME(GL_COLOR_TABLE_BIAS), TYPE_8GLdouble, 4, BUGLE_GL_ARB_imaging, NULL, STATE_COLOR_TABLE_PARAMETER | STATE_SELECT_NO_PROXY },
     { NULL, GL_NONE, NULL_TYPE, 0, 0, NULL, 0 }
 };
 
@@ -681,6 +691,24 @@ static const state_info vertex_attrib_state[] =
     { STATE_NAME(GL_VERTEX_ATTRIB_ARRAY_NORMALIZED), TYPE_9GLboolean, 1, BUGLE_GL_ARB_vertex_program, "2.0", STATE_VERTEX_ATTRIB },
     { STATE_NAME(GL_VERTEX_ATTRIB_ARRAY_POINTER), TYPE_P6GLvoid, 1, BUGLE_GL_ARB_vertex_program, "2.0", STATE_VERTEX_ATTRIB },
     { STATE_NAME(GL_CURRENT_VERTEX_ATTRIB), TYPE_8GLdouble, 4, BUGLE_GL_ARB_vertex_program, "2.0", STATE_VERTEX_ATTRIB | STATE_SELECT_NON_ZERO },
+#endif
+    { NULL, GL_NONE, NULL_TYPE, 0, 0, NULL, 0 }
+};
+
+static const state_info query_state[] =
+{
+#ifdef GL_ARB_occlusion_query
+    { STATE_NAME_EXT(GL_CURRENT_QUERY, _ARB), TYPE_5GLint, 1, BUGLE_GL_ARB_occlusion_query, "1.5", STATE_QUERY },
+    { STATE_NAME_EXT(GL_QUERY_COUNTER_BITS, _ARB), TYPE_5GLint, 1, BUGLE_GL_ARB_occlusion_query, "1.5", STATE_QUERY },
+#endif
+    { NULL, GL_NONE, NULL_TYPE, 0, 0, NULL, 0 }
+};
+
+static const state_info query_object_state[] =
+{
+#ifdef GL_ARB_occlusion_query
+    { STATE_NAME_EXT(GL_QUERY_RESULT, _ARB), TYPE_6GLuint, 1, BUGLE_GL_ARB_occlusion_query, "1.5", STATE_QUERY },
+    { STATE_NAME_EXT(GL_QUERY_RESULT_AVAILABLE, _ARB), TYPE_9GLboolean, 1, BUGLE_GL_ARB_occlusion_query, "1.5", STATE_QUERY },
 #endif
     { NULL, GL_NONE, NULL_TYPE, 0, 0, NULL, 0 }
 };
@@ -738,6 +766,14 @@ static const enum_pair minmax_parameter_pairs[] =
     { NULL, GL_NONE }
 };
 
+static const enum_pair query_pairs[] =
+{
+#ifdef GL_ARB_occlusion_query
+    { STATE_NAME_EXT(GL_SAMPLES_PASSED, _ARB) },
+#endif
+    { NULL, GL_NONE }
+};
+
 /* This exists to simplify the work of gldump.c */
 const state_info * const all_state[] =
 {
@@ -753,6 +789,8 @@ const state_info * const all_state[] =
     histogram_parameter_state,
     minmax_parameter_state,
     vertex_attrib_state,
+    query_state,
+    query_object_state,
     NULL
 };
 
@@ -805,6 +843,7 @@ char *bugle_state_get_string(const glstate *state)
     GLdouble d[16];
     GLfloat f[16];
     GLint i[16];
+    GLuint ui[16];
     GLboolean b[16];
     GLvoid *p[16];
     void *in;
@@ -927,8 +966,8 @@ char *bugle_state_get_string(const glstate *state)
         get_helper(state, d, f, i, &in_type, NULL_FUNCTION,
                    FUNC_glGetMinmaxParameterfv, FUNC_glGetMinmaxParameteriv);
         break;
-    case STATE_MODE_VERTEX_ATTRIB:
 #ifdef GL_ARB_vertex_program
+    case STATE_MODE_VERTEX_ATTRIB:
         if (state->info->type == TYPE_P6GLvoid)
         {
             CALL_glGetVertexAttribPointervARB(state->object, pname, p);
@@ -950,8 +989,24 @@ char *bugle_state_get_string(const glstate *state)
             in_type = TYPE_5GLint;
         }
         break;
-#else
-        abort();
+#endif
+#ifdef GL_ARB_occlusion_query
+    case STATE_MODE_QUERY:
+        CALL_glGetQueryivARB(state->target, pname, i);
+        in_type = TYPE_5GLint;
+        break;
+    case STATE_MODE_QUERY_OBJECT:
+        if (state->info->type == TYPE_6GLuint)
+        {
+            CALL_glGetQueryObjectuivARB(state->object, pname, ui);
+            in_type = TYPE_6GLuint;
+        }
+        else
+        {
+            CALL_glGetQueryObjectivARB(state->object, pname, i);
+            in_type = TYPE_5GLint;
+        }
+        break;
 #endif
     default:
         abort();
@@ -972,6 +1027,7 @@ char *bugle_state_get_string(const glstate *state)
     case TYPE_8GLdouble: in = d; break;
     case TYPE_7GLfloat: in = f; break;
     case TYPE_5GLint: in = i; break;
+    case TYPE_6GLuint: in = ui; break;
     case TYPE_9GLboolean: in = b; break;
     case TYPE_P6GLvoid: in = p; break;
     default: abort();
@@ -1101,23 +1157,46 @@ static void make_object(const glstate *self,
     bugle_list_append(children, child);
 }
 
-static void make_target(const glstate *self,
-                        const char *name,
-                        GLenum target,
-                        GLenum binding,
-                        void (*spawn)(const glstate *, bugle_linked_list *),
-                        const state_info *info,
-                        bugle_linked_list *children)
+static void make_objects(const glstate *self,
+                         bugle_trackobjects_type type,
+                         bool add_zero,
+                         const char *format,
+                         void (*spawn_children)(const glstate *, bugle_linked_list *),
+                         state_info *info,
+                         bugle_linked_list *children)
+{
+    bugle_linked_list objects;
+    bugle_list_node *i;
+    bugle_trackobjects_id *id;
+
+    if (add_zero)
+        make_object(self, format, 0, spawn_children, info, children);
+    bugle_trackobjects_get(type, &objects);
+    for (i = bugle_list_head(&objects); i; i = bugle_list_next(i))
+    {
+        id = (bugle_trackobjects_id *) bugle_list_data(i);
+        make_object(self, format, id->id, spawn_children, info, children);
+    }
+    bugle_list_clear(&objects);
+}
+
+static void spawn_children_tex_target(const glstate *, bugle_linked_list *);
+
+static void make_tex_target(const glstate *self,
+                            const char *name,
+                            GLenum target,
+                            GLenum binding,
+                            bugle_linked_list *children)
 {
     glstate *child;
 
     child = bugle_malloc(sizeof(glstate));
     *child = *self;
-    child->info = info;
     child->name = bugle_strdup(name);
     child->target = target;
     child->binding = binding;
-    child->spawn_children = spawn;
+    child->spawn_children = spawn_children_tex_target;
+    child->info = NULL;
     bugle_list_append(children, child);
 }
 
@@ -1224,22 +1303,11 @@ static void spawn_children_tex_parameter(const glstate *self, bugle_linked_list 
     }
 }
 
-static void spawn_children_texture_objects(const glstate *self, bugle_linked_list *children)
+static void spawn_children_tex_target(const glstate *self, bugle_linked_list *children)
 {
-    bugle_linked_list objects;
-    bugle_list_node *i;
-    bugle_trackobjects_id *id;
-
     bugle_list_init(children, true);
-    make_object(self, "%d", 0, spawn_children_tex_parameter, NULL, children);
-    bugle_trackobjects_get(BUGLE_TRACKOBJECTS_TEXTURE, &objects);
-    for (i = bugle_list_head(&objects); i; i = bugle_list_next(i))
-    {
-        id = (bugle_trackobjects_id *) bugle_list_data(i);
-        if (id->target == self->target)
-            make_object(self, "%d", id->id, spawn_children_tex_parameter, NULL, children);
-    }
-    bugle_list_clear(&objects);
+    make_objects(self, BUGLE_TRACKOBJECTS_TEXTURE, true, "%d",
+                 spawn_children_tex_parameter, NULL, children);
 }
 
 static void spawn_children_light(const glstate *self, bugle_linked_list *children)
@@ -1257,7 +1325,20 @@ static void spawn_children_material(const glstate *self, bugle_linked_list *chil
 static void spawn_children_color_table_parameter(const glstate *self, bugle_linked_list *children)
 {
     bugle_list_init(children, true);
-    make_leaves(self, color_table_parameter_state, children);
+    switch (self->target)
+    {
+    case GL_COLOR_TABLE:
+    case GL_POST_CONVOLUTION_COLOR_TABLE:
+    case GL_POST_COLOR_MATRIX_COLOR_TABLE:
+        make_leaves(self, color_table_parameter_state, children);
+        break;
+    case GL_PROXY_COLOR_TABLE:
+    case GL_PROXY_POST_CONVOLUTION_COLOR_TABLE:
+    case GL_PROXY_POST_COLOR_MATRIX_COLOR_TABLE:
+        make_leaves_conditional(self, color_table_parameter_state, 0,
+                                STATE_SELECT_NO_PROXY, children);
+        break;
+    }
 }
 
 static void spawn_children_convolution_parameter(const glstate *self, bugle_linked_list *children)
@@ -1291,8 +1372,22 @@ static void spawn_children_vertex_attrib(const glstate *self, bugle_linked_list 
                             children);
 }
 
+static void spawn_children_query(const glstate *self, bugle_linked_list *children)
+{
+    bugle_list_init(children, true);
+    make_leaves(self, query_state, children);
+}
+
+static void spawn_children_query_object(const glstate *self, bugle_linked_list *children)
+{
+    bugle_list_init(children, true);
+    make_leaves(self, query_object_state, children);
+}
+
 static void spawn_children_global(const glstate *self, bugle_linked_list *children)
 {
+    unsigned int mask = 0;
+
     static const state_info light_enable =
     {
         NULL, GL_NONE, TYPE_9GLboolean, 1, -1, "1.1", STATE_ENABLED
@@ -1305,34 +1400,26 @@ static void spawn_children_global(const glstate *self, bugle_linked_list *childr
     {
         NULL, GL_NONE, TYPE_6GLenum, 1, BUGLE_GL_ARB_draw_buffers, "2.0", STATE_GLOBAL
     };
-    static const state_info draw_buffer_state[] =
-    {
-        { STATE_NAME(GL_DRAW_BUFFER), TYPE_6GLenum, 1, -1, "1.1", STATE_GLOBAL },
-        { NULL, GL_NONE, NULL_TYPE, 0, 0, NULL, 0 }
-    };
     GLint count, i;
+    const char *version;
 
-    bugle_list_init(children, true);
+    version = (const char *) glGetString(GL_VERSION);
 #ifdef GL_EXT_blend_func_separate
-    /* If we have blend_func_separate, we must weed out the state
-     * dealing with boring old single blend function. We don't need to
-     * do this for GL_EXT_blend_equation_separate because that extension
-     * recycles the tokens.
-     */
     if (bugle_gl_has_extension(BUGLE_GL_EXT_blend_func_separate)
-        || strcmp((const char *) CALL_glGetString(GL_VERSION),
-                  "1.4") >= 0)
-    {
-        make_leaves_conditional(self, global_state,
-                                0,
-                                STATE_SELECT_NO_BLEND_FUNC_SEPARATE,
-                                children);
-    }
-    else
+        || strcmp(version, "1.4") >= 0)
+        mask |= STATE_SELECT_NO_BLEND_FUNC_SEPARATE;
 #endif
-    {
-        make_leaves(self, global_state, children);
-    }
+#ifdef GL_ARB_draw_buffers
+    if (bugle_gl_has_extension(BUGLE_GL_ARB_draw_buffers)
+        || strcmp(version, "2.0") >= 0)
+        mask |= STATE_SELECT_NO_DRAW_BUFFERS;
+#endif
+    bugle_list_init(children, true);
+    make_leaves_conditional(self, global_state,
+                            0,
+                            mask,
+                            children);
+
 #ifdef GL_ARB_multitexture
     if (bugle_gl_has_extension(BUGLE_GL_ARB_multitexture))
     {
@@ -1366,9 +1453,6 @@ static void spawn_children_global(const glstate *self, bugle_linked_list *childr
     }
     else
 #endif
-    {
-        make_leaves(self, draw_buffer_state, children);
-    }
 
     make_fixed(self, material_pairs, offsetof(glstate, target),
                spawn_children_material, children);
@@ -1390,24 +1474,30 @@ static void spawn_children_global(const glstate *self, bugle_linked_list *childr
     }
 #endif
 
-    make_target(self, "GL_TEXTURE_1D", GL_TEXTURE_1D,
-                GL_TEXTURE_BINDING_1D, spawn_children_texture_objects,
-                NULL, children);
-    make_target(self, "GL_TEXTURE_2D", GL_TEXTURE_2D,
-                GL_TEXTURE_BINDING_2D, spawn_children_texture_objects,
-                NULL, children);
+    /* FIXME: proxy objects */
+    make_tex_target(self, "GL_TEXTURE_1D", GL_TEXTURE_1D,
+                    GL_TEXTURE_BINDING_1D, children);
+    make_tex_target(self, "GL_TEXTURE_2D", GL_TEXTURE_2D,
+                    GL_TEXTURE_BINDING_2D, children);
 #ifdef GL_VERSION_1_2
-    if (strcmp((const char *) CALL_glGetString(GL_VERSION), "1.2") >= 0)
-        make_target(self, "GL_TEXTURE_3D", GL_TEXTURE_3D,
-                    GL_TEXTURE_BINDING_3D, spawn_children_texture_objects,
-                    NULL, children);
+    if (strcmp(version, "1.2") >= 0)
+        make_tex_target(self, "GL_TEXTURE_3D", GL_TEXTURE_3D,
+                        GL_TEXTURE_BINDING_3D, children);
 #endif
 #ifdef GL_ARB_texture_cube_map
     if (bugle_gl_has_extension(BUGLE_GL_ARB_texture_cube_map))
-        make_target(self, "GL_TEXTURE_CUBE_MAP",
-                    GL_TEXTURE_CUBE_MAP_ARB,
-                    GL_TEXTURE_BINDING_CUBE_MAP_ARB,
-                    spawn_children_texture_objects, NULL, children);
+        make_tex_target(self, "GL_TEXTURE_CUBE_MAP",
+                        GL_TEXTURE_CUBE_MAP_ARB,
+                        GL_TEXTURE_BINDING_CUBE_MAP_ARB,
+                        children);
+#endif
+
+#ifdef GL_ARB_occlusion_query
+    make_fixed(self, query_pairs, offsetof(glstate, target),
+               spawn_children_query, children);
+    if (bugle_gl_has_extension(BUGLE_GL_ARB_occlusion_query))
+        make_objects(self, BUGLE_TRACKOBJECTS_QUERY, false, "Query[%d]",
+                     spawn_children_query_object, NULL, children);
 #endif
 }
 

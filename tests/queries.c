@@ -4,16 +4,50 @@
 # include <config.h>
 #endif
 #define _POSIX_SOURCE
+#define GL_GLEXT_PROTOTYPES
 #include <GL/gl.h>
 #include <GL/glx.h>
 #include <GL/glut.h>
 #include <stdlib.h>
 #include <stdio.h>
 
+/* Still TODO (how depressing)
+ * - GetTexGen
+ * - GetTexEnv
+ * - GetQuery
+ * - GetQueryObject
+ * - GetBufferParameter
+ * - GetBufferSubData
+ * - GetBufferPointer
+ * - GetClipPlane
+ * - GetColorTableParameter
+ * - GetColorTable
+ * - GetConvolutionParameter
+ * - GetConvolutionFilter
+ * - GetSeparableFilter
+ * - GetHistogram
+ * - GetHistogramParameter
+ * - GetMinmax
+ * - GetMinmaxParameter
+ * - GetPointer
+ * - GetPixelMap
+ * - GetMap
+ * - GetTexImage
+ * - GetCompressedTexImage
+ * - GetPolygonStipple
+ * - GetShader
+ * - GetProgram
+ * - GetAttachedShaders
+ * - GetShaderInfoLog
+ * - GetProgramInfoLog
+ * - GetShaderSource
+ * - GetUniform
+ */
+
 static FILE *ref;
 
 /* Query a bunch of things that are actually enumerants */
-void query_enums(void)
+static void query_enums(void)
 {
     GLint i;
     glGetIntegerv(GL_COLOR_MATERIAL_FACE, &i);
@@ -25,7 +59,7 @@ void query_enums(void)
 }
 
 /* Query a bunch of things that are actually booleans */
-void query_bools(void)
+static void query_bools(void)
 {
     GLint i;
 
@@ -45,7 +79,7 @@ void query_bools(void)
 }
 
 /* Query a bunch of things that are actually arrays */
-void query_multi(void)
+static void query_multi(void)
 {
     GLint i[16];
     GLdouble d[16];
@@ -58,7 +92,14 @@ void query_multi(void)
     fprintf(ref, "trace\\.call: glGetDoublev\\(GL_MODELVIEW_MATRIX, %p -> { 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1 }\\)\n", (void *) d);
 }
 
-void query_texparameter(void)
+static void query_strings(void)
+{
+    fprintf(ref, "trace\\.call: glGetString\\(GL_VENDOR\\) = \"%s\"\n", glGetString(GL_VENDOR));
+    fprintf(ref, "trace\\.call: glGetString\\(GL_RENDERER\\) = \"%s\"\n", glGetString(GL_RENDERER));
+    fprintf(ref, "trace\\.call: glGetString\\(GL_EXTENSIONS\\) = \"%s\"\n", glGetString(GL_EXTENSIONS));
+}
+
+static void query_tex_parameter(void)
 {
     GLint i;
     GLfloat f[4];
@@ -71,7 +112,7 @@ void query_texparameter(void)
     fprintf(ref, "trace\\.call: glGetTexParameterfv\\(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, %p -> { 0, 0, 0, 0 }\\)\n", (void *) f);
 }
 
-void query_texlevelparameter(void)
+static void query_tex_level_parameter(void)
 {
     GLint i;
 
@@ -89,11 +130,39 @@ void query_texlevelparameter(void)
 #endif
 }
 
-void query_strings(void)
+static void query_light(void)
 {
-    fprintf(ref, "trace\\.call: glGetString\\(GL_VENDOR\\) = \"%s\"\n", glGetString(GL_VENDOR));
-    fprintf(ref, "trace\\.call: glGetString\\(GL_RENDERER\\) = \"%s\"\n", glGetString(GL_RENDERER));
-    fprintf(ref, "trace\\.call: glGetString\\(GL_EXTENSIONS\\) = \"%s\"\n", glGetString(GL_EXTENSIONS));
+    GLfloat f[4];
+
+    glGetLightfv(GL_LIGHT1, GL_SPECULAR, f);
+    fprintf(ref, "trace\\.call: glGetLightfv\\(GL_LIGHT1, GL_SPECULAR, %p -> { 0, 0, 0, 1 }\\)\n", (void *) f);
+}
+
+static void query_material(void)
+{
+    GLfloat f[4];
+
+    glGetMaterialfv(GL_FRONT, GL_SPECULAR, f);
+    fprintf(ref, "trace\\.call: glGetMaterialfv\\(GL_FRONT, GL_SPECULAR, %p -> { 0, 0, 0, 1 }\\)\n", (void *) f);
+}
+
+static void query_vertex_attrib(void)
+{
+#ifdef GL_ARB_vertex_program
+    GLvoid *p;
+    GLint i;
+    GLdouble d[4];
+
+    if (glutExtensionSupported("GL_ARB_vertex_program"))
+    {
+        glGetVertexAttribPointervARB(0, GL_VERTEX_ATTRIB_ARRAY_POINTER_ARB, &p);
+        fprintf(ref, "trace\\.call: glGetVertexAttribPointervARB\\(0, (GL_VERTEX_ATTRIB_ARRAY_POINTER(_ARB)?|GL_ATTRIB_ARRAY_POINTER_NV), %p -> \\(nil\\)\\)\n", (void *) &p);
+        glGetVertexAttribdvARB(6, GL_CURRENT_VERTEX_ATTRIB_ARB, d);
+        fprintf(ref, "trace\\.call: glGetVertexAttribdvARB\\(6, (GL_CURRENT_VERTEX_ATTRIB(_ARB)?|GL_CURRENT_ATTRIB_NV), %p -> { 0, 0, 0, 1 }\\)\n", (void *) d);
+        glGetVertexAttribivARB(6, GL_VERTEX_ATTRIB_ARRAY_TYPE_ARB, &i);
+        fprintf(ref, "trace\\.call: glGetVertexAttribivARB\\(6, (GL_VERTEX_ATTRIB_ARRAY_TYPE(_ARB)?|GL_ATTRIB_ARRAY_TYPE_NV), %p -> GL_FLOAT\\)\n", (void *) &i);
+    }
+#endif
 }
 
 int main(int argc, char **argv)
@@ -107,8 +176,11 @@ int main(int argc, char **argv)
     query_enums();
     query_bools();
     query_multi();
-    query_texparameter();
-    query_texlevelparameter();
+    query_tex_parameter();
+    query_tex_level_parameter();
+    query_light();
+    query_material();
+    query_vertex_attrib();
     query_strings();
     return 0;
 }

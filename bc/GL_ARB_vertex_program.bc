@@ -4,6 +4,6 @@ LENGTH PARAMETER glProgramStringARB 3 $2
 TYPE PARAMETER glProgramStringARB 3 TYPE_PKc
 
 LENGTH PARAMETER glVertexAttrib(1|2|3|4)(N?)(b|s|i|ub|us|ui|f|d)ARB 1 \1
-
 LENGTH PARAMETER gl(Get)?Program(Env|Local)Parameter4[df]ARB 2 4
-LENGTH PARAMETER glGetVertexAttrib[dfi]vARB 2 4
+LENGTH PARAMETER glGetVertexAttrib[dfi]vARB 2 bugle_count_gl($f, $1)
+DUMP PARAMETER glGetVertexAttrib[dfi]vARB 2 bugle_dump_convert($1, &$$, $t$, $F)

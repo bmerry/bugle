@@ -10,6 +10,29 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+/* Still TODO:
+ * - glTexImage
+ * - glCompressedTexImage
+ * - glLight
+ * - glMaterial
+ * - glClipPlane
+ * - glGenBuffers, glDeleteBuffers
+ * - glGenQueries, glDeleteQueries
+ * - glConvolutionFilter1D
+ * - glConvolutionFilter2D
+ * - glSeparableFilter1D
+ * - glPixelTransfer
+ * - glPixelMap
+ * - glColorTable
+ * - glCopyColorTable
+ * - glCopyColorSubTable
+ * - glTexImage1D, glTexImage3D
+ * - glTexSubImage1D, glTexSubImage2D, glTexSubImage3D
+ * - glCopyTexImage1D, glCopyTexSubImage1D, glCopyTexImage2D, glCopyTexSubImage2D
+ * - glVertexAttrib*
+ * - glUniform*
+ */
+
 static FILE *ref;
 
 static void set_enables()
@@ -21,10 +44,10 @@ static void set_enables()
     glEnable(GL_TEXTURE_1D);           fprintf(ref, "trace\\.call: glEnable\\(GL_TEXTURE_1D\\)\n");
     glEnable(GL_TEXTURE_2D);           fprintf(ref, "trace\\.call: glEnable\\(GL_TEXTURE_2D\\)\n");
 #ifdef GL_EXT_texture3D
-    glEnable(GL_TEXTURE_3D_EXT);       fprintf(ref, "trace\\.call: glEnable\\(GL_TEXTURE_3D\\)\n");
+    glEnable(GL_TEXTURE_3D_EXT);       fprintf(ref, "trace\\.call: glEnable\\(GL_TEXTURE_3D_(EXT)?\\)\n");
 #endif
 #ifdef GL_ARB_texture_cube_map
-    glEnable(GL_TEXTURE_CUBE_MAP_ARB); fprintf(ref, "trace\\.call: glEnable\\(GL_TEXTURE_CUBE_MAP\\)\n");
+    glEnable(GL_TEXTURE_CUBE_MAP_ARB); fprintf(ref, "trace\\.call: glEnable\\(GL_TEXTURE_CUBE_MAP_(ARB)?\\)\n");
 #endif
     glEnable(GL_POLYGON_OFFSET_LINE);  fprintf(ref, "trace\\.call: glEnable\\(GL_POLYGON_OFFSET_LINE\\)\n");
     glEnable(GL_BLEND);                fprintf(ref, "trace\\.call: glEnable\\(GL_BLEND\\)\n");
