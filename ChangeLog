@@ -2,6 +2,7 @@
 * Fix dumping bug (wrong field was being type overridden)
 * (gldb) Make a blank line rerun previous command
 * Fix various compiler warnings
+* Added --without-lavc configure option
 
 0.0.20041025
 ------------

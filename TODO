@@ -29,7 +29,6 @@ bugle
 - capture and replay
 - better movie capture
   - option of a separate thread, for parallel encoding
-  - --without-lavc configure option
 
 budgie
 ------

@@ -94,6 +94,8 @@ AC_PATH_XTRA
 dnl Set up some extra stuff
 dnl FIXME: add a --without-lavc option
 
+AC_ARG_WITH([lavc], AC_HELP_STRING([--without-lavc], [do not use libavcodec]),
+            [test $withval = no && HAVE_LAVC=0], [])
 test $HAVE_LAVC = 1 || AVCODEC_LIBS=""
 AC_SUBST(AVCODEC_LIBS)
 AC_DEFINE_UNQUOTED(HAVE_LAVC, $HAVE_LAVC, [non-zero when libavcodec is being used])
