@@ -11,7 +11,7 @@ then let me know why. Windows may one day be supported, but certainly
 not yet.
 
 Here are a few things you can do so far
-- capture a log of what a program does (won't capture everything yet)
+- capture a log of what a program does
 - check for GL errors after every call
 - force a wireframe mode
 - capture a video
@@ -25,15 +25,13 @@ To build, you will need the following:
 - A C++ compiler (probably g++)
 - OpenGL header files, including glext.h. The best OpenGL header files
   are those from the Mesa project (pre-installed on many systems).
-  Avoid the header files provided by NVIDIA, as they have numerous
-  errors [these seem to be fixed in the 60 series of drivers, though].
 - To do video capture, you will need libavcodec/libavformat from ffmpeg.
 
 If you are upgrading, you MUST uninstall the previous version first. If
 you don't have the built tree around to do `make uninstall', then at
 the very least remove all the files from /usr/local/lib/bugle/ (or
-wherever you install them). Newer versions install may install fewer
-libraries here, and old libraries will confuse bugle.
+wherever you install them). Newer versions may install fewer libraries
+here, and old libraries will confuse bugle.
 
 If you have trouble with your system headers, see the file
 TROUBLESHOOTING for instructions on using Mesa headers to compile

@@ -37,4 +37,4 @@ generated file src/data/gl.tu, assuming compilation got that far. Be
 aware that this file is generated from your OpenGL header files, and if
 you are using proprietry OpenGL headers then there is a small chance
 that distributing this file violates the vendor's copyright. I am not a
-lawyer, so unfortunately I can't give definitive advise you on this.
+lawyer, so I can't give definitive advice on this.

@@ -622,6 +622,10 @@ static const state_info tex_parameter_state[] =
     { STATE_NAME_EXT(GL_TEXTURE_BASE_LEVEL, _SGIS), TYPE_5GLint, -1, BUGLE_GL_SGIS_texture_lod, STATE_TEX_PARAMETER },
     { STATE_NAME_EXT(GL_TEXTURE_MAX_LEVEL, _SGIS), TYPE_5GLint, -1, BUGLE_GL_SGIS_texture_lod, STATE_TEX_PARAMETER },
 #endif
+#ifdef GL_EXT_depth_bounds_test
+    { STATE_NAME_EXT(GL_DEPTH_BOUNDS_TEST, _EXT), TYPE_9GLboolean, -1, BUGLE_GL_EXT_depth_bounds_test, STATE_ENABLED },
+    { STATE_NAME_EXT(GL_DEPTH_BOUNDS, _EXT), TYPE_8GLdouble, 2, BUGLE_GL_EXT_depth_bounds_test, STATE_GLOBAL },
+#endif
 #ifdef GL_EXT_texture_lod_bias
     { STATE_NAME_EXT(GL_TEXTURE_LOD_BIAS, _EXT), TYPE_8GLdouble, -1, BUGLE_GL_EXT_texture_lod_bias, STATE_TEX_PARAMETER },
 #endif
@@ -717,16 +721,16 @@ static const state_info tex_unit_state[] =
     { STATE_NAME(GL_CURRENT_RASTER_TEXTURE_COORDS), TYPE_8GLdouble, 4, BUGLE_GL_VERSION_1_1, STATE_TEX_UNIT | STATE_SELECT_TEXTURE_COORD },
     { STATE_NAME(GL_TEXTURE_MATRIX), TYPE_8GLdouble, 16, BUGLE_GL_VERSION_1_1, STATE_TEX_UNIT | STATE_SELECT_TEXTURE_COORD },
     { STATE_NAME(GL_TEXTURE_STACK_DEPTH), TYPE_5GLint, -1, BUGLE_GL_VERSION_1_1, STATE_TEX_UNIT | STATE_SELECT_TEXTURE_COORD },
-    { STATE_NAME(GL_TEXTURE_1D), TYPE_9GLboolean, -1, BUGLE_GL_VERSION_1_1, STATE_TEX_UNIT_ENABLED },
-    { STATE_NAME(GL_TEXTURE_2D), TYPE_9GLboolean, -1, BUGLE_GL_VERSION_1_1, STATE_TEX_UNIT_ENABLED },
+    { STATE_NAME(GL_TEXTURE_1D), TYPE_9GLboolean, -1, BUGLE_GL_VERSION_1_1, STATE_TEX_UNIT_ENABLED | STATE_SELECT_TEXTURE_ENV },
+    { STATE_NAME(GL_TEXTURE_2D), TYPE_9GLboolean, -1, BUGLE_GL_VERSION_1_1, STATE_TEX_UNIT_ENABLED | STATE_SELECT_TEXTURE_ENV },
 #ifdef GL_EXT_texture3D
-    { STATE_NAME_EXT(GL_TEXTURE_3D, _EXT), TYPE_9GLboolean, -1, BUGLE_GL_EXT_texture3D, STATE_TEX_UNIT_ENABLED },
+    { STATE_NAME_EXT(GL_TEXTURE_3D, _EXT), TYPE_9GLboolean, -1, BUGLE_GL_EXT_texture3D, STATE_TEX_UNIT_ENABLED | STATE_SELECT_TEXTURE_ENV },
 #endif
 #ifdef GL_ARB_texture_cube_map
-    { STATE_NAME_EXT(GL_TEXTURE_CUBE_MAP, _ARB), TYPE_9GLboolean, -1, BUGLE_GL_ARB_texture_cube_map, STATE_TEX_UNIT_ENABLED },
+    { STATE_NAME_EXT(GL_TEXTURE_CUBE_MAP, _ARB), TYPE_9GLboolean, -1, BUGLE_GL_ARB_texture_cube_map, STATE_TEX_UNIT_ENABLED | STATE_SELECT_TEXTURE_ENV },
 #endif
 #ifdef GL_NV_texture_rectangle
-    { STATE_NAME_EXT(GL_TEXTURE_RECTANGLE, _NV), TYPE_9GLboolean, -1, BUGLE_GL_NV_texture_rectangle, STATE_TEX_UNIT_ENABLED },
+    { STATE_NAME_EXT(GL_TEXTURE_RECTANGLE, _NV), TYPE_9GLboolean, -1, BUGLE_GL_NV_texture_rectangle, STATE_TEX_UNIT_ENABLED | STATE_SELECT_TEXTURE_ENV },
 #endif
     { STATE_NAME(GL_TEXTURE_BINDING_1D), TYPE_5GLint, -1, BUGLE_GL_VERSION_1_1, STATE_TEX_UNIT | STATE_SELECT_TEXTURE_IMAGE },
     { STATE_NAME(GL_TEXTURE_BINDING_2D), TYPE_5GLint, -1, BUGLE_GL_VERSION_1_1, STATE_TEX_UNIT | STATE_SELECT_TEXTURE_IMAGE },
@@ -1358,13 +1362,15 @@ char *bugle_state_get_string(const glstate *state)
         if (bugle_gl_has_extension(BUGLE_GL_VERSION_1_3))
         {
             CALL_glActiveTexture(state->unit);
-            CALL_glClientActiveTexture(state->unit);
+            if (state->unit > get_texture_coord_units())
+                CALL_glClientActiveTexture(state->unit);
         }
         else
 #endif
         {
             CALL_glActiveTextureARB(state->unit);
-            CALL_glClientActiveTextureARB(state->unit);
+            if (state->unit > get_texture_coord_units())
+                CALL_glClientActiveTextureARB(state->unit);
         }
         flag_active_texture = true;
     }
@@ -1677,13 +1683,15 @@ char *bugle_state_get_string(const glstate *state)
         if (bugle_gl_has_extension(BUGLE_GL_VERSION_1_3))
         {
             CALL_glActiveTexture(old_unit);
-            CALL_glClientActiveTexture(old_client_unit);
+            if (state->unit > get_texture_coord_units())
+                CALL_glClientActiveTexture(old_client_unit);
         }
         else
 #endif
         {
             CALL_glActiveTextureARB(old_unit);
-            CALL_glClientActiveTextureARB(old_client_unit);
+            if (state->unit > get_texture_coord_units())
+                CALL_glClientActiveTextureARB(old_client_unit);
         }
     }
 #endif /* GL_ARB_multitexture */
