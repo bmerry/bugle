@@ -159,6 +159,7 @@ rest of the record, find the length, then replace what we don't need.
 "dest: "@{DIGIT}+	|
 "args: "@{DIGIT}+	|
 "fn  : "@{DIGIT}+	|
+"stmt: "@{DIGIT}+	|
 "high: "@{DIGIT}+	| /* This is the high: for case_label */
 "low : "@{DIGIT}+	| /* This is the low : for case_label */
 "algn: "{DIGIT}+	/* Ignore these fields, which are many code body */
@@ -172,6 +173,7 @@ rest of the record, find the length, then replace what we don't need.
 "begn"	|
 "end"	|
 "null"	|
+"register" |
 "clnp"	/* Ignore these tags */
 
 [a-z][a-z ]{3}": "[^ \t]* { printf("Unknown field %s\n", yytext); }
