@@ -225,7 +225,7 @@ static bool get_screenshot(screenshot_data *data, GLenum format)
     old_write = glXGetCurrentDrawable();
     old_read = glXGetCurrentReadDrawable();
     dpy = glXGetCurrentDisplay();
-    glXMakeContextCurrent(dpy, old_write, old_write, aux);
+    CALL_glXMakeContextCurrent(dpy, old_write, old_write, aux);
     glXQueryDrawable(dpy, old_write, GLX_WIDTH, &width);
     glXQueryDrawable(dpy, old_write, GLX_HEIGHT, &height);
 
@@ -243,7 +243,7 @@ static bool get_screenshot(screenshot_data *data, GLenum format)
         cur_out -= data->stride;
     }
 
-    glXMakeContextCurrent(dpy, old_write, old_read, real);
+    CALL_glXMakeContextCurrent(dpy, old_write, old_read, real);
     end_internal_render("screenshot", true);
     return true;
 }
