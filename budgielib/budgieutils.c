@@ -76,7 +76,7 @@ char *string_io(void (*call)(FILE *, void *), void *data)
     size = ftell(f);
     fseek(f, 0, SEEK_SET);
     buffer = malloc(size + 1);
-    fread(buffer, 1, size, tmp);
+    fread(buffer, 1, size, f);
     buffer[size] = '\0';
     fclose(f);
 #endif
@@ -84,16 +84,15 @@ char *string_io(void (*call)(FILE *, void *), void *data)
     return buffer;
 }
 
-bool dump_string(const void *value, int count, FILE *out)
+bool dump_string(const char *value, FILE *out)
 {
     /* FIXME: handle illegal dereferences */
-    const char *str = *(const char * const *) value;
-    if (str == NULL) fputs("NULL", out);
-    else fprintf(out, "\"%s\"", str);
+    if (value == NULL) fputs("NULL", out);
+    else fprintf(out, "\"%s\"", value);
     return true;
 }
 
-int count_string(const void *value)
+int count_string(const char *value)
 {
     /* FIXME: handle illegal dereferences */
     const char *str = (const char *) value;
@@ -123,12 +122,8 @@ void dump_any_type(budgie_type type, const void *value, int length, FILE *out)
     if (info->get_length && length == -1) 
         length = (*info->get_length)(value);
 
-    if (!info->custom_dumper
-        || !(*info->custom_dumper)(value, length, out))
-    {
-        assert(info->dumper);
-        (*info->dumper)(value, length, out);
-    }
+    assert(info->dumper);
+    (*info->dumper)(value, length, out);
 }
 
 void dump_any_call(const generic_function_call *call, int indent, FILE *out)
@@ -149,12 +144,12 @@ void dump_any_call(const generic_function_call *call, int indent, FILE *out)
     {
         if (i) fputs(", ", out);
         cur_dumper = info->dumper; /* custom dumper */
-        if (!cur_dumper || !(*cur_dumper)(call, i, call->args[i], out))
+        length = -1;
+        if (info->get_length) length = (*info->get_length)(call, i, call->args[i]);
+        if (!cur_dumper || !(*cur_dumper)(call, i, call->args[i], length, out))
         {
             type = info->type;
-            length = -1;
             if (info->get_type) type = (*info->get_type)(call, i, call->args[i]);
-            if (info->get_length) length = (*info->get_length)(call, i, call->args[i]);
             dump_any_type(type, call->args[i], length, out);
         }
     }
@@ -164,12 +159,12 @@ void dump_any_call(const generic_function_call *call, int indent, FILE *out)
         fputs(" = ", out);
         info = &data->retn;
         cur_dumper = info->dumper; /* custom dumper */
-        if (!cur_dumper || !(*cur_dumper)(call, -1, call->retn, out))
+        length = -1;
+        if (info->get_length) length = (*info->get_length)(call, i, call->retn);
+        if (!cur_dumper || !(*cur_dumper)(call, -1, call->retn, length, out))
         {
             type = info->type;
-            length = -1;
             if (info->get_type) type = (*info->get_type)(call, -1, call->retn);
-            if (info->get_length) length = (*info->get_length)(call, i, call->retn);
             dump_any_type(type, call->retn, length, out);
         }
     }

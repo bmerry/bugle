@@ -67,7 +67,7 @@ void end_internal_render(const char *name, bool warn)
         if (warn)
         {
             fprintf(stderr, "Warning: %s internally generated ", name);
-            dump_GLerror(&error, -1, stderr);
+            dump_GLerror(error, stderr);
             fputs(".\n", stderr);
         }
     }

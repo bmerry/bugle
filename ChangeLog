@@ -2,6 +2,7 @@
 * Improved thread safety.
 * Rewrite of the state code
 * Added basic state dump support to gldb
+* dump overrides are now boolean expressions, not functions
 
 0.0.20040614
 ------------

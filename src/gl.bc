@@ -74,10 +74,10 @@ LENGTH PARAMETER gl(LightModel|Fog)[if]v 1 count_gl($f, $0)
 LENGTH PARAMETER glGet(Boolean|Integer|Float|Double)v 1 count_gl($f, $0)
 LENGTH PARAMETER gl(Get)?(Material|Light|Tex(Env|Parameter|Gen))[sifd]v 2 count_gl($f, $1)
 LENGTH PARAMETER gl(Get)?TexLevelParameter[if]v 3 count_gl($f, $2)
-DUMP PARAMETER gl(LightModel|Fog)[if]v? 1 dump_convert
-DUMP PARAMETER glGet(Integer|Float|Double)v 1 dump_convert
-DUMP PARAMETER gl(Get)?(Material|Light|Tex(Env|Parameter|Gen))[sifd]v? 2 dump_convert
-DUMP PARAMETER gl(Get)?TexLevelParameter[if]v? 3 dump_convert
+DUMP PARAMETER gl(LightModel|Fog)[if]v? 1 dump_convert($0, &$$, $t$, $F)
+DUMP PARAMETER glGet(Integer|Float|Double)v 1 dump_convert($0, &$$, $t$, $F)
+DUMP PARAMETER gl(Get)?(Material|Light|Tex(Env|Parameter|Gen))[sifd]v? 2 dump_convert($1, &$$, $t$, $F)
+DUMP PARAMETER gl(Get)?TexLevelParameter[if]v? 3 dump_convert($2, &$$, $t$, $F)
 
 # Assorted type overrides
 
@@ -101,12 +101,12 @@ TYPE PARAMETER glGetString -1 TYPE_PKc
 TYPE PARAMETER glProgramStringARB 3 TYPE_PKc
 
 # Dumping overrides
-DUMP TYPE GLenum dump_GLenum
-DUMP TYPE GLboolean dump_GLboolean
-DUMP TYPE GLerror dump_GLerror
-DUMP TYPE GLalternateenum dump_GLalternateenum
-DUMP TYPE +PKc dump_string
-DUMP TYPE +Pc dump_string
+DUMP TYPE GLenum dump_GLenum($$, $F)
+DUMP TYPE GLboolean dump_GLboolean($$, $F)
+DUMP TYPE GLerror dump_GLerror($$, $F)
+DUMP TYPE GLalternateenum dump_GLalternateenum($$, $F)
+DUMP TYPE +PKc dump_string($$, $F)
+DUMP TYPE +Pc dump_string($$, $F)
 LENGTH TYPE +PKc count_string($$)
 LENGTH TYPE +Pc count_string($$)
 

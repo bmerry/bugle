@@ -55,8 +55,7 @@ typedef struct
     ptrdiff_t offset;
 } type_record_data;
 
-typedef bool (*custom_type_dumper)(const void *, int, FILE *);
-typedef void (*standard_type_dumper)(const void *, int, FILE *);
+typedef void (*type_dumper)(const void *, int, FILE *);
 typedef budgie_type (*type_get_type)(const void *);
 typedef int (*type_get_length)(const void *);
 
@@ -68,13 +67,12 @@ typedef struct
     const type_record_data *fields;
     size_t size;
     size_t length;
-    standard_type_dumper dumper;
-    custom_type_dumper custom_dumper;
+    type_dumper dumper;
     type_get_type get_type;
     type_get_length get_length;
 } type_data;
 
-typedef bool (*arg_dumper)(const generic_function_call *, int, const void *, FILE *);
+typedef bool (*arg_dumper)(const generic_function_call *, int, const void *, int, FILE *);
 typedef budgie_type (*arg_get_type)(const generic_function_call *, int, const void *);
 typedef int (*arg_get_length)(const generic_function_call *, int, const void *);
 
@@ -122,8 +120,8 @@ char *string_io(void (*call)(FILE *, void *), void *data);
 
 /* User functions */
 
-bool dump_string(const void *value, int count, FILE *out);
-int count_string(const void *value);
+bool dump_string(const char *value, FILE *out);
+int count_string(const char *value);
 
 void make_indent(int indent, FILE *out);
 void dump_any_type(budgie_type type, const void *value, int length, FILE *out);

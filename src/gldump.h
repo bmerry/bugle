@@ -38,14 +38,12 @@ void initialise_dump_tables(void);
 
 int count_gl(budgie_function func, GLenum token);
 int count_global_query(GLenum token);
-bool dump_GLenum(const void *value, int count, FILE *out);
-bool dump_GLalternateenum(const void *value, int count, FILE *out);
-bool dump_GLerror(const void *value, int count, FILE *out);
-bool dump_GLboolean(const void *value, int count, FILE *out);
-bool dump_convert(const generic_function_call *gcall,
-                  int arg,
-                  const void *value,
-                  FILE *out);
+bool dump_GLenum(GLenum e, FILE *out);
+bool dump_GLalternateenum(GLenum e, FILE *out);
+bool dump_GLerror(GLenum e, FILE *out);
+bool dump_GLboolean(GLboolean b, FILE *out);
+bool dump_convert(GLenum pname, const void *value,
+                  budgie_type in_type, FILE *out);
 
 /* Computes the number of pixel elements (units of byte, int, float etc)
  * used by a client-side encoding of a 1D, 2D or 3D image.

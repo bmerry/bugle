@@ -59,7 +59,7 @@ static bool log_callback(function_call *call, void *data)
     if ((error = get_call_error(call)))
     {
         fputs("E: ", log_file);
-        dump_GLerror(&error, -1, log_file);
+        dump_GLerror(error, log_file);
         fputs("\n", log_file);
     }
     if (log_flush) fflush(log_file);

@@ -261,6 +261,8 @@ static void handle_types()
     utilc << get_type(false);
     utilhead << get_length(true);
     utilc << get_length(false);
+    utilhead << dump_funcs(true);
+    utilc << dump_funcs(false);
     type_converter(true, utilhead);
     type_converter(false, utilc);
 }

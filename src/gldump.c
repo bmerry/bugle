@@ -210,9 +210,8 @@ int gl_format_to_count(GLenum format, GLenum type)
     }
 }
 
-bool dump_GLenum(const void *value, int count, FILE *out)
+bool dump_GLenum(GLenum e, FILE *out)
 {
-    GLenum e = *(const GLenum *) value;
     const char *name = gl_enum_to_token(e);
     if (!name)
         fprintf(out, "<unknown token 0x%.4x>", (unsigned int) e);
@@ -221,35 +220,34 @@ bool dump_GLenum(const void *value, int count, FILE *out)
     return true;
 }
 
-bool dump_GLerror(const void *value, int count, FILE *out)
+bool dump_GLerror(GLenum err, FILE *out)
 {
-    GLenum err = *(const GLenum *) value;
-
     switch (err)
     {
     case GL_NO_ERROR: fputs("GL_NO_ERROR", out); break;
-    default: dump_GLenum(value, count, out);
+    default: dump_GLenum(err, out);
     }
     return true;
 }
 
 /* FIXME: redo definition of alternate enums, based on sort order */
-bool dump_GLalternateenum(const void *value, int count, FILE *out)
+bool dump_GLalternateenum(GLenum token, FILE *out)
 {
-    GLenum token = *(const GLenum *) value;
-
     switch (token)
     {
     case GL_ZERO: fputs("GL_ZERO", out); break;
     case GL_ONE: fputs("GL_ONE", out); break;
-    default: dump_GLenum(value, count, out);
+    default: dump_GLenum(token, out);
     }
     return true;
 }
 
-bool dump_GLboolean(const void *value, int count, FILE *out)
+bool dump_GLboolean(GLboolean b, FILE *out)
 {
-    fputs((*(const GLboolean *) value) ? "GL_TRUE" : "GL_FALSE", out);
+    if (b == 0 || b == 1)
+        fputs(b ? "GL_TRUE" : "GL_FALSE", out);
+    else
+        fprintf(out, "(GLboolean) %u", (unsigned int) b);
     return true;
 }
 
@@ -335,26 +333,20 @@ static const dump_table_entry *get_dump_table_entry(GLenum e)
     return ans ? ans : &def;
 }
 
-bool dump_convert(const generic_function_call *gcall,
-                  int arg,
-                  const void *value,
-                  FILE *out)
+bool dump_convert(GLenum pname, const void *value,
+                  budgie_type in_type, FILE *out)
 {
     const dump_table_entry *entry;
-    const function_call *call;
-    budgie_type in_type, out_type;
+    budgie_type out_type;
     const void *in;
     int length = -1, alength;
     void *out_data;
     const void *ptr = NULL;
 
-    call = (const function_call *) gcall;
-    assert(function_table[call->generic.id].parameters[arg - 1].type == TYPE_6GLenum);
-    entry = get_dump_table_entry(*(GLenum *) gcall->args[arg - 1]);
+    entry = get_dump_table_entry(pname);
     if (entry->type == NULL_TYPE) return false;
     out_type = entry->type;
 
-    in_type = function_table[call->generic.id].parameters[arg].type;
     if (type_table[in_type].code == CODE_POINTER)
     {
         in = *(const void * const *) value;
@@ -363,13 +355,15 @@ bool dump_convert(const generic_function_call *gcall,
     }
     else
         in = value;
-    if (function_table[call->generic.id].parameters[arg].get_length)
-        length = (*function_table[call->generic.id].parameters[arg].get_length)(gcall, arg, value);
 
+    length = entry->length;
     alength = (length == -1) ? 1 : length;
     out_data = xmalloc(type_table[out_type].size * alength);
     type_convert(out_data, out_type, in, in_type, alength);
-    dump_any_type_extended(out_type, out_data, -1, length, ptr, out);
+    if (ptr)
+        dump_any_type_extended(out_type, out_data, -1, length, ptr, out);
+    else
+        dump_any_type(out_type, out_data, -1, out);
     free(out_data);
     return true;
 }

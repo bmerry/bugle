@@ -105,14 +105,14 @@ string get_type(bool prototype)
     return out.str();
 }
 
-/*! Similar to \c get_type, but generates a \c get_length function. Length
+/*! Similar to \c get_type, but generates length override functions. Length
  * is an attribute of a pointer, that says how many elements are being
  * pointed at.
  * \param prototype True to only return function prototypes.
  */
 string get_length(bool prototype)
 {
-    ostringstream out; // par is for parameter overrides
+    ostringstream out;
 
     map<param_or_type, string>::const_iterator i;
     for (i = length_overrides.begin(); i != length_overrides.end(); i++)
@@ -150,6 +150,34 @@ string get_length(bool prototype)
     return out.str();
 }
 
+/*! Similar again to \c get_type, but generates dump functions. Only
+ * function argument dumpers are generated, since type dumpers are
+ * inlined into the default routines. The functions return false to
+ * fall back to the default.
+ * \param prototype True to only return function prototypes.
+ */
+string dump_funcs(bool prototype)
+{
+    ostringstream out;
+
+    map<param_or_type, string>::const_iterator i;
+    for (i = dump_overrides.begin(); i != dump_overrides.end(); i++)
+    {
+        if (i->first.type) continue;
+        out << "bool dump_";
+        if (i->first.param == -1) out << "ret";
+        else out << i->first.param;
+        out << "_FUNC_" << IDENTIFIER_POINTER(DECL_NAME(i->first.func))
+            << "(const generic_function_call *call, int arg, const void *value, int length, FILE *out)";
+        if (prototype) out << ";\n";
+        else
+            out << "\n{\n"
+                << "    return (" << i->second << ");\n"
+                << "}\n\n";
+    }
+    return out.str();
+}
+
 /*! \param type The type to check up on
  * \returns True if the type can be saved, false otherwise.
  */
@@ -179,13 +207,15 @@ bool dumpable(tree_node_p type)
     }
 }
 
-/*! Returns a function that logs a particular type. It takes into account
- * type overrides.
+/*! Returns a function that logs a particular type. It does not take
+ * into account overrides of the immediate type (use \c dump_any_type for
+ * that).
  * \param node The type to work on
  * \param prototype True to only generate a function prototype
  */
 static void make_dumper(tree_node_p node, bool prototype, ostream &out)
 {
+    string custom_code;
     string name = "dump_type_" + type_to_id(node);
     tree_node_p child;
 
@@ -200,6 +230,16 @@ static void make_dumper(tree_node_p node, bool prototype, ostream &out)
         out << ";";
         return;
     }
+
+    param_or_type test(node);
+    if (dump_overrides.count(test))
+    {
+        custom_code = search_replace(dump_overrides[test], "$$", "(*value)");
+        custom_code = search_replace(custom_code, "$F", "(out)");
+        custom_code = search_replace(custom_code, "$l", "(count)");
+        custom_code = "    if (" + custom_code + ") return;\n";
+    }
+
     out << "\n{\n";
     // Bitfields are special
     if (bitfield_types.count(node))
@@ -215,11 +255,9 @@ static void make_dumper(tree_node_p node, bool prototype, ostream &out)
                 out << ",";
             out << "\n";
         }
-        out << "    };\n";
-        if (dump_overrides.count(node))
-            out << "    if (" << dump_overrides[node]
-                << "((const void *) value, count, out)) return;\n";
-        out << "    dump_bitfield(*value, out, tokens, " << tokens.size() << ");\n";
+        out << "    };\n"
+            << custom_code
+            << "    dump_bitfield(*value, out, tokens, " << tokens.size() << ");\n";
     }
     else
     {
@@ -230,7 +268,8 @@ static void make_dumper(tree_node_p node, bool prototype, ostream &out)
         switch (TREE_CODE(node))
         {
         case ENUMERAL_TYPE:
-            out << "    switch (*value)\n"
+            out << custom_code
+                << "    switch (*value)\n"
                 << "    {\n";
             tmp = TYPE_VALUES(node);
             while (tmp != NULL_TREE)
@@ -249,15 +288,18 @@ static void make_dumper(tree_node_p node, bool prototype, ostream &out)
             break;
         case INTEGER_TYPE:
             // FIXME: long long types; unsigned types
-            out << "    fprintf(out, \"%ld\", (long) *value);\n";
+            out << custom_code
+                << "    fprintf(out, \"%ld\", (long) *value);\n";
             break;
         case REAL_TYPE:
             // FIXME: long double
-            out << "    fprintf(out, \"%g\", (double) *value);\n";
+            out << custom_code
+                << "    fprintf(out, \"%g\", (double) *value);\n";
             break;
         case ARRAY_TYPE:
             out << "    int size;\n"
-                << "    int i;\n";
+                << "    int i;\n"
+                << custom_code;
             if (TYPE_DOMAIN(node) != NULL_TREE) // find size
             {
                 int size = TREE_INT_CST_LOW(TYPE_MAX_VALUE(TYPE_DOMAIN(node))) + 1;
@@ -283,12 +325,12 @@ static void make_dumper(tree_node_p node, bool prototype, ostream &out)
             child = TREE_TYPE(node); // pointed to type
             if (dumpable(child))
                 out << "    int i;\n";
-            out << "    fprintf(out, \"%p\", (void *) *value);\n";
+            out << custom_code
+                << "    fprintf(out, \"%p\", (void *) *value);\n";
             if (dumpable(child))
             {
                 out << "    if (*value)\n"
                     << "    {\n"
-                    // handle type overrides
                     << "        fputs(\" -> \", out);\n"
                     // -1 means a simple pointer, not pointer to array
                     << "        if (count < 0)\n"
@@ -310,7 +352,8 @@ static void make_dumper(tree_node_p node, bool prototype, ostream &out)
         case RECORD_TYPE:
         case UNION_TYPE:
             { // block to allow "first" to be declared in this scope
-                out << "    fputs(\"{ \", out);\n";
+                out << custom_code
+                    << "    fputs(\"{ \", out);\n";
                 tmp = TYPE_FIELDS(node);
                 bool first = true;
                 while (tmp != NULL_TREE)
@@ -330,7 +373,8 @@ static void make_dumper(tree_node_p node, bool prototype, ostream &out)
             }
             break;
         default:
-            out << "    fputs(\"<unknown>\", out);\n";
+            out << custom_code
+                << "    fputs(\"<unknown>\", out);\n";
         }
     }
     out << "}\n";
@@ -474,12 +518,8 @@ string type_table(bool header)
             }
             else
                 out << "1"; // FIXME: should this perhaps be -1?
-            out << ", (standard_type_dumper) dump_type_" << type_to_id(i->second);
+            out << ", (type_dumper) dump_type_" << type_to_id(i->second);
             param_or_type test(i->second);
-            if (dump_overrides.count(test))
-                out << ", " << dump_overrides[test];
-            else
-                out << ", NULL";
             if (type_overrides.count(test))
                 out << ", get_type_TYPE_" << type_to_id(i->second);
             else
@@ -612,7 +652,11 @@ void function_table(bool header, ostream &out)
                 param_or_type test(functions[i], count);
                 string dumper = "NULL";
                 if (dump_overrides.count(test))
-                    dumper = dump_overrides[test];
+                {
+                    ostringstream dumper_str;
+                    dumper_str << "dump_" << count << "_FUNC_" << name;
+                    dumper = dumper_str.str();
+                }
                 if (count == 0)
                 {
                     out << "static function_parameter_data parameters_"
@@ -662,7 +706,7 @@ void function_table(bool header, ostream &out)
                 param_or_type test(functions[i], -1);
                 string dumper = "NULL";
                 if (dump_overrides.count(test))
-                    dumper = dump_overrides[test];
+                    dumper = "dump_ret_FUNC_" + name;
                 out << "{ " << type_to_enum(TREE_TYPE(type)) << ", "
                     << dumper << ", ";
                 if (type_overrides.count(test))
@@ -1125,11 +1169,6 @@ void make_state_structs(bool prototype, ostream &out)
 
 // Overrides
 
-void set_dump_override(const param_or_type &p, const string &subst)
-{
-    dump_overrides[p] = subst;
-}
-
 void set_load_override(const param_or_type &p, const string &subst)
 {
     load_overrides[p] = subst;
@@ -1144,39 +1183,73 @@ void set_save_override(const param_or_type &p, const string &subst)
  * assuming that the string will be used in a function that has \c call as
  * a parameter. Also, $f is replaced with the \c budgie_function name of
  * the function, and $t\it n with the \c budgie_type type of the n'th
- * parameter. FIXME: implement this
+ * parameter. For dump overrides, $F is replaced by the output file, and
+ * $l is replaced by the computed length.
+ * \todo FIXME: implement this
  * \param func The function that is involved
  * \param s The user-supplied string
  * \returns The modified string.
  */
-static string override_substitutions(tree_node_p func, int param, const string &s)
+static string override_substitutions(tree_node_p func, int arg, const string &s)
 {
     string::size_type pos;
     string l = s;
     string r;
     char ch;
+
     while ((pos = l.find("$")) != string::npos)
     {
+        int rlen = 2; // length to replace
+        int param = arg;
+
         if (pos + 1 == l.length()) break; /* end of string */
         ch = l[pos + 1];
         if (ch == 'f')
             r = "FUNC_" + IDENTIFIER_POINTER(DECL_NAME(func));
+        else if (ch == 'F')
+            r = "out";
+        else if (ch == 'l')
+            r = "count";
         else
         {
+            bool t = false; /* request type? */
+
+            if (ch == 't' && pos + 2 < l.length())
+            {
+                ch = l[pos + 2];
+                rlen++;
+                t = true;
+            }
             if (ch != '$') param = ch - '0';
+            if (param < 0 || param > 9)
+            {
+                cerr << "illegal parameter number '" << ch << "'\n";
+                exit(1);
+            }
 
             tree_node_p cur = TREE_ARG_TYPES(TREE_TYPE(func));
             // FIXME: falling off the end
             for (int i = 0; i < param; i++)
                 cur = TREE_CHAIN(cur);
-            tree_node_p ptr = make_pointer(make_const(TREE_VALUE(cur)), false);
-            ostringstream repl;
-            repl << "(*("
-                << type_to_string(ptr, "", false) << ") call->args[" << param << "])";
-            r = repl.str();
-            destroy_temporary(ptr);
+            if (!t)
+            {
+                ostringstream repl;
+                tree_node_p ptr = make_pointer(make_const(TREE_VALUE(cur)), false);
+                repl << "*("
+                    << type_to_string(ptr, "", false) << ") call->args[" << param << "]";
+                r = repl.str();
+                destroy_temporary(ptr);
+            }
+            else
+            {
+                /* NB: type_to_enum won't work, because we haven't generated
+                 * the table for it yet. But since this is a parameter, we
+                 * can be pretty sure that it will exist as a type.
+                 */
+                r = "TYPE_" + type_to_id(TREE_VALUE(cur));
+            }
         }
-        l.replace(pos, 2, r);
+        l.replace(pos, rlen, "(" + r + ")");
     }
     return l;
 }
@@ -1195,6 +1268,14 @@ void set_length_override(const param_or_type &p, const string &len)
         length_overrides[p] = override_substitutions(p.func, p.param, len);
     else
         length_overrides[p] = len;
+}
+
+void set_dump_override(const param_or_type &p, const string &subst)
+{
+    if (p.func)
+        dump_overrides[p] = override_substitutions(p.func, p.param, subst);
+    else
+        dump_overrides[p] = subst;
 }
 
 tree_node_p new_bitfield_type(tree_node_p base,
