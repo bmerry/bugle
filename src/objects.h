@@ -16,16 +16,7 @@
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-/* This is not an OOP layer, like gobject. It provides a way for filters
- * to attach storage to various _abstract_ objects, such as contexts,
- * display lists, or glBegin/glEnd blocks.
- *
- * These is a notion of a "current" object in each class. This is either
- * per-thread, or else is slaved to another class. When slaved, there is
- * a current object within each parent object, and object_get_current will
- * return the current object within the current parent (recursively).
- *
- * FIXME: the current memory packing scheme can cause misalignments. This
+/* FIXME: the current memory packing scheme can cause misalignments. This
  * should be ok for x86/amd64 because they allow misaligned accesses, but
  * could cause crashes on other architectures.
  */

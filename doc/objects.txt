@@ -1,0 +1,73 @@
+This file documents the object layer in buGLe. It is NOT an OOP layer
+to add C++ like features to C. So what is it? Well, OpenGL has a number
+of types of `object' - things like contexts, drawables, display lists,
+texture objects etc - and various bits of code in bugle want to
+associate data with these objects. The object layer makes this easier.
+
+The important concepts are:
+- a CLASS (bugle_object_class *). A class is like an OOP class, in that
+  objects are instantiated by (and belong to) classes.
+- OBJECTs (void *). There may be multiple bits of code, all separately
+  attaching data to GL objects. The collection of all data attached to
+  a GL object is an object.
+- VIEWs (void *). A view is a pointer to the data that a single
+  registrant attached to a GL object.
+
+For each CLASS, bugle also maintains a notion of the `current' object
+(which may be NULL). NB: objects are current to a thread, not to the
+program. It is also possible to make objects current to another object.
+For example, the current display list is current to a context, and
+changing the current context will AUTOMATICALLY update the current
+display list.
+
+It is also important to notice that the object layer does *not*
+maintain a map between GL objects and OBJECTs, simply because there is
+no unified way of naming all objects (the key could be a GLXContext,
+GLXDrawable, GLuint, or GLhandle, for example). You need a separate
+manager for each class to do this mapping.
+
+Class management functions:
+
+bugle_object_class_init: Initialises the structures for a class. The
+    parent field may be set to either NULL (in which case the `current'
+    object is per-thread), or another class (in which case the
+    `current' object is per that class).
+bugle_object_class_clear: Frees the structures for a class (does not delete
+    any objects though; that must be done first).
+bugle_object_class_register(class, constructor, destructor, size):
+    Requests that size bytes of storage be associated with the given
+    class. The constructor takes a key and a pointer to the VIEW. The
+    constructor may also be NULL in which case the VIEW is filled with
+    zero bytes. The destructor takes a pointer to the VIEW, and may
+    also be NULL. The destructor must not free the VIEW. It is legal to
+    specify a size of zero if you just want notice of object creation
+    and destruction.
+    
+    The return value is used to obtain VIEWs from OBJECTs. Save it
+    somewhere.
+
+Object management functions:
+
+bugle_object_new: Instantiate an instance of the given class, passing
+    the key field to the constructors (it is an arbitrary way to pass
+    information). This will be called from interceptors that catch
+    the creation of the new GL object. The object may also be
+    immediately made the current object, BEFORE any constructors are
+    run.
+
+bugle_object_delete: Calls the destructors and frees the memory. Don't
+    forget that some GL objects don't actually die when you delete
+    them, only when they are no longer referenced. Also be sure to pass
+    an OBJECT, not a VIEW.
+
+bugle_object_get_data: Maps an OBJECT to the VIEW for a particular
+    registrant.
+
+Current objectment managemant:
+
+bugle_object_get_current
+bugle_object_set_current
+
+These are pretty self-explanatory: get and set the current OBJECT for
+the given CLASS. If you want to get the current VIEW, use
+bugle_object_get_current_data instead.
