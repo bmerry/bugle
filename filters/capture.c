@@ -63,11 +63,11 @@ typedef struct
 
 static char *file_base = "frame";
 static const char *file_suffix = ".ppm";
-static char *video_codec = "mpeg4";
-static bool video_sample_fps = true;
-static int video_bitrate = 7500000;
-static int start_frameno = 0;
-static int video_lag = 1;     /* greater lag may give better overall speed */
+static char *video_codec = NULL;
+static bool video_sample_all = false;
+static long video_bitrate = 7500000;
+static long start_frameno = 0;
+static long video_lag = 1;     /* greater lag may give better overall speed */
 
 static char *video_file = NULL;
 static FILE *video_pipe = NULL;
@@ -439,7 +439,7 @@ static void screenshot_video()
     struct timeval tv;
     double t = 0.0;
 
-    if (video_sample_fps)
+    if (!video_sample_all)
     {
         gettimeofday(&tv, NULL);
         t = tv.tv_sec + 1e-6 * tv.tv_usec;
@@ -489,8 +489,9 @@ static void screenshot_video()
         }
     }
 
-    if (video_sample_fps)
+    if (!video_sample_all)
     {
+        /* Repeat frames to make up for low app framerate */
         video_data[video_cur].multiplicity = 0;
         while (t >= video_frame_time)
         {
@@ -501,9 +502,7 @@ static void screenshot_video()
     else
         video_data[video_cur].multiplicity = 1;
     if (video_leader < video_lag)
-    {
         video_done = !end_screenshot(CAPTURE_GL_FMT, video_data[0].width, video_data[0].height);
-    }
     else
         end_screenshot(CAPTURE_GL_FMT, -1, -1);
 }
@@ -546,18 +545,15 @@ bool screenshot_callback(function_call *call, const callback_data *data)
      */
     static int frameno = 0;
 
-    if (bugle_canonical_call(call) == CFUNC_glXSwapBuffers)
+    if (frameno >= start_frameno)
     {
-        if (frameno >= start_frameno)
+        if (video_file)
         {
-            if (video_file)
-            {
                 if (!video_done) screenshot_video(frameno);
-            }
-            else screenshot_file(frameno);
         }
-        frameno++;
+        else screenshot_file(frameno);
     }
+    frameno++;
     return true;
 }
 
@@ -579,7 +575,7 @@ static bool initialise_screenshot(filter_set *handle)
         char *cmdline;
 
         bugle_asprintf(&cmdline, "ppmtoy4m | ffmpeg -f yuv4mpegpipe -i - -vcodec %s -strict -1 -y %s",
-                  video_codec, video_file);
+                       video_codec, video_file);
         video_pipe = popen(cmdline, "w");
         free(cmdline);
         if (!video_pipe) return false;
@@ -598,32 +594,7 @@ static void destroy_screenshot(filter_set *handle)
         finalise_lavc();
 #endif
     if (video_pipe) pclose(video_pipe);
-}
-
-static bool set_variable_screenshot(filter_set *handle,
-                                    const char *name,
-                                    const char *value)
-{
-    /* FIXME: take a filebase for screenshot mode */
-    if (strcmp(name, "video") == 0)
-        video_file = bugle_strdup(value);
-    else if (strcmp(name, "codec") == 0)
-        video_codec = bugle_strdup(value);
-    else if (strcmp(name, "start") == 0)
-        start_frameno = atoi(value);
-    else if (strcmp(name, "bitrate") == 0)
-        video_bitrate = atoi(value);
-    else if (strcmp(name, "allframes") == 0 && atoi(value))
-        video_sample_fps = false;
-    else if (strcmp(name, "lag") == 0)
-    {
-        video_lag = atoi(value);
-        if (video_lag < 1)
-            video_lag = 1;
-    }
-    else
-        return false;
-    return true;
+    if (video_codec) free(video_codec);
 }
 
 static bugle_hash_table seen_extensions;
@@ -717,15 +688,27 @@ static void destroy_showextensions(filter_set *handle)
 
 void bugle_initialise_filter_library(void)
 {
-    const filter_set_info screenshot_info =
+    static const filter_set_variable_info screenshot_variables[] =
+    {
+        { "video", FILTER_SET_VARIABLE_STRING, &video_file, NULL },
+        { "codec", FILTER_SET_VARIABLE_STRING, &video_codec, NULL },
+        { "start", FILTER_SET_VARIABLE_UINT, &start_frameno, NULL },
+        { "bitrate", FILTER_SET_VARIABLE_POSITIVE_INT, &video_bitrate, NULL },
+        { "allframes", FILTER_SET_VARIABLE_BOOL, &video_sample_all, NULL },
+        { "lag", FILTER_SET_VARIABLE_POSITIVE_INT, &video_lag, NULL },
+        { NULL, 0, NULL, NULL }
+    };
+
+    static const filter_set_info screenshot_info =
     {
         "screenshot",
         initialise_screenshot,
         destroy_screenshot,
-        set_variable_screenshot,
+        screenshot_variables,
         0
     };
-    const filter_set_info showextensions_info =
+
+    static const filter_set_info showextensions_info =
     {
         "showextensions",
         initialise_showextensions,
@@ -733,6 +716,9 @@ void bugle_initialise_filter_library(void)
         NULL,
         0
     };
+
+    video_codec = bugle_strdup("mpeg4");
+
     bugle_register_filter_set(&screenshot_info);
     bugle_register_filter_set(&showextensions_info);
 

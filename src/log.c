@@ -83,27 +83,6 @@ static void destroy_log(filter_set *handle)
     }
 }
 
-static bool command_log(filter_set *handle, const char *name, const char *value)
-{
-    if (strcmp(name, "filename") == 0)
-    {
-        if (log_filename) free(log_filename);
-        log_filename = bugle_strdup(value);
-    }
-    else if (strcmp(name, "flush") == 0)
-    {
-        if (strcmp(value, "yes") == 0)
-            log_flush = true;
-        else if (strcmp(value, "no") == 0)
-            log_flush = false;
-        else
-            fprintf(stderr, "illegal flush value '%s' (should be yes or no)\n", value);
-    }
-    else
-        return false;
-    return true;
-}
-
 void bugle_log_register_filter(const char *filter)
 {
     bugle_register_filter_depends(filter, "log_pre");
@@ -112,13 +91,21 @@ void bugle_log_register_filter(const char *filter)
 
 void log_initialise(void)
 {
-    const filter_set_info log_info =
+    static const filter_set_variable_info log_variables[] =
+    {
+        { "filename", FILTER_SET_VARIABLE_STRING, &log_filename, NULL },
+        { "flush", FILTER_SET_VARIABLE_BOOL, &log_flush, NULL },
+        { NULL, 0, NULL, NULL }
+    };
+
+    static const filter_set_info log_info =
     {
         "log",
         initialise_log,
         destroy_log,
-        command_log,
+        log_variables,
         0
     };
+
     bugle_register_filter_set(&log_info);
 }

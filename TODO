@@ -1,7 +1,9 @@
 Current rewrite:
 ----------------
 - exploit per-context, per-filter state e.g. for video
-- update docs
+- update docs (especially re variables)
+- help for variables
+- check whether all dependencies on trackextensions are listed
 
 gldb
 ----
@@ -33,7 +35,7 @@ budgie
 ------
 - more autoconf tests (e.g. regex)
 - robust logging, to avoid segfaulting
-- move filter code into budgie?
+- move filter framework into budgie?
 - write support for state
 - rewrite state code to parse C structs
 
@@ -43,14 +45,9 @@ tests
 - coverage tests
 - tests for glut
 
-general
--------
-- more documentation
-
 long term
 ---------
 - internationalisation
 - Windows support
 - graphical debugger interface
 - OpenGL 2.0 support
-- reduce namespace pollution

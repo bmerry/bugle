@@ -102,11 +102,10 @@ static void load_config(void)
                         for (j = bugle_list_head(&set->variables); j; j = bugle_list_next(j))
                         {
                             var = (const config_variable *) bugle_list_data(j);
-                            if (!filter_set_command(f,
-                                                    var->name,
-                                                    var->value))
-                                fprintf(stderr, "warning: unknown command %s in filter-set %s\n",
-                                        var->name, set->name);
+                            if (!filter_set_variable(f,
+                                                     var->name,
+                                                     var->value))
+                                exit(1);
                         }
                     }
                     for (i = bugle_list_head(&chain->filtersets); i; i = bugle_list_next(i))

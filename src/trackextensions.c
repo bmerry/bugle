@@ -16,11 +16,6 @@
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-/* Track whether we are in glBegin/glEnd. This is trickier than it sounds,
- * because glBegin can fail if given an illegal primitive, and we can't
- * check for the error because glGetError is illegal inside glBegin/glEnd.
- */
-
 #if HAVE_CONFIG_H
 # include <config.h>
 #endif

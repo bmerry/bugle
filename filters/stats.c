@@ -394,31 +394,6 @@ static bool showstats_callback(function_call *call, const callback_data *data)
     return true;
 }
 
-static bool command_stats(filter_set *handle, const char *name, const char *value)
-{
-    if (strcmp(name, "fragments") == 0)
-    {
-        if (strcmp(value, "yes") == 0)
-            count_fragments = true;
-        else if (strcmp(value, "no") == 0)
-            count_fragments = false;
-        else
-            fprintf(stderr, "illegal fragments value '%s' (should be yes or no)\n", value);
-    }
-    else if (strcmp(name, "triangles") == 0)
-    {
-        if (strcmp(value, "yes") == 0)
-            count_triangles = true;
-        else if (strcmp(value, "no") == 0)
-            count_triangles = false;
-        else
-            fprintf(stderr, "illegal triangles value '%s' (should be yes or no)\n", value);
-    }
-    else
-        return false;
-    return true;
-}
-
 static bool initialise_stats(filter_set *handle)
 {
     filter *f;
@@ -492,15 +467,23 @@ static bool initialise_showstats(filter_set *handle)
 
 void bugle_initialise_filter_library(void)
 {
-    const filter_set_info stats_info =
+    static const filter_set_variable_info stats_variables[] =
+    {
+        { "fragments", FILTER_SET_VARIABLE_BOOL, &count_fragments, NULL },
+        { "triangles", FILTER_SET_VARIABLE_BOOL, &count_triangles, NULL },
+        { NULL, 0, NULL, NULL }
+    };
+
+    static const filter_set_info stats_info =
     {
         "stats",
         initialise_stats,
         NULL,
-        command_stats,
+        stats_variables,
         0,
     };
-    const filter_set_info showstats_info =
+
+    static const filter_set_info showstats_info =
     {
         "showstats",
         initialise_showstats,
@@ -508,6 +491,7 @@ void bugle_initialise_filter_library(void)
         NULL,
         0
     };
+
     bugle_register_filter_set(&stats_info);
     bugle_register_filter_set(&showstats_info);
 

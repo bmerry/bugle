@@ -183,10 +183,102 @@ void initialise_filters(void)
     atexit(destroy_filters);
 }
 
-bool filter_set_command(filter_set *handle, const char *name, const char *value)
+bool filter_set_variable(filter_set *handle, const char *name, const char *value)
 {
-    if (!handle->command_handler) return false;
-    return (*handle->command_handler)(handle, name, value);
+    const filter_set_variable_info *v;
+    bool bool_value;
+    long int_value;
+    char *string_value;
+    char *end;
+    void *value_ptr;
+
+    for (v = handle->variables; v && v->name; v++)
+    {
+        if (strcmp(name, v->name) == 0)
+        {
+            switch (v->type)
+            {
+            case FILTER_SET_VARIABLE_BOOL:
+                if (strcmp(value, "1") == 0
+                    || strcmp(value, "yes") == 0
+                    || strcmp(value, "true") == 0)
+                    bool_value = true;
+                else if (strcmp(value, "0") == 0
+                         || strcmp(value, "no") == 0
+                         || strcmp(value, "false") == 0)
+                    bool_value = false;
+                else
+                {
+                    fprintf(stderr, "Expected 1|0|yes|no|true|false for %s in filter-set %s\n",
+                            name, handle->name);
+                    return false;
+                }
+                value_ptr = &bool_value;
+                break;
+            case FILTER_SET_VARIABLE_INT:
+            case FILTER_SET_VARIABLE_UINT:
+            case FILTER_SET_VARIABLE_POSITIVE_INT:
+                errno = 0;
+                int_value = strtol(value, &end, 0);
+                if (errno || !*value || *end)
+                {
+                    fprintf(stderr, "Expected an integer for %s in filter-set %s\n",
+                            name, handle->name);
+                    return false;
+                }
+                if (v->type == FILTER_SET_VARIABLE_UINT && int_value < 0)
+                {
+                    fprintf(stderr, "Expected a non-negative integer for %s in filter-set %s\n",
+                            name, handle->name);
+                    return false;
+                }
+                else if (v->type == FILTER_SET_VARIABLE_POSITIVE_INT && int_value <= 0)
+                {
+                    fprintf(stderr, "Expected a positive integer for %s in filter-set %s\n",
+                            name, handle->name);
+                    return false;
+                }
+                value_ptr = &int_value;
+                break;
+            case FILTER_SET_VARIABLE_STRING:
+                string_value = bugle_strdup(value);
+                value_ptr = &string_value;
+                break;
+            }
+            if (v->callback && !(*v->callback)(v, value, value_ptr))
+            {
+                if (v->type == FILTER_SET_VARIABLE_STRING)
+                    free(string_value);
+                return false;
+            }
+            else
+            {
+                if (v->value)
+                {
+                    switch (v->type)
+                    {
+                    case FILTER_SET_VARIABLE_BOOL:
+                        *(bool *) v->value = bool_value;
+                        break;
+                    case FILTER_SET_VARIABLE_INT:
+                    case FILTER_SET_VARIABLE_UINT:
+                    case FILTER_SET_VARIABLE_POSITIVE_INT:
+                        *(long *) v->value = int_value;
+                        break;
+                    case FILTER_SET_VARIABLE_STRING:
+                        if (*(char **) v->value)
+                            free(*(char **) v->value);
+                        *(char **) v->value = string_value;
+                        break;
+                    }
+                }
+                return true;
+            }
+        }
+    }
+    fprintf(stderr, "Unknown variable %s in filter-set %s\n",
+            name, handle->name);
+    return false;
 }
 
 static void enable_filter_set_r(filter_set *handle)
@@ -424,7 +516,7 @@ filter_set *bugle_register_filter_set(const filter_set_info *info)
     bugle_list_init(&s->filters);
     s->init = info->init;
     s->done = info->done;
-    s->command_handler = info->command_handler;
+    s->variables = info->variables;
     s->initialised = false;
     s->enabled = false;
     s->dl_handle = current_dl_handle;

@@ -116,7 +116,6 @@ static bool initialise_frontbuffer(filter_set *handle)
     f = bugle_register_filter(handle, "frontbuffer");
     bugle_register_filter_depends("frontbuffer", "invoke");
     bugle_register_filter_catches(f, CFUNC_glDrawBuffer, frontbuffer_callback);
-    bugle_register_filter_set_renders("frontbuffer");
     bugle_register_filter_post_renders("frontbuffer");
     bugle_object_class_register(&bugle_context_class, initialise_frontbuffer_context,
                                 NULL, 0);
@@ -145,4 +144,5 @@ void bugle_initialise_filter_library(void)
     bugle_register_filter_set(&frontbuffer_info);
 
     bugle_register_filter_set_renders("wireframe");
+    bugle_register_filter_set_renders("frontbuffer");
 }
