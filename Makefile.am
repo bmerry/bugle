@@ -179,7 +179,7 @@ CLEANFILES = \
 	src/gltokens.c src/glfuncs.c src/glfuncs.h src/glexts.c src/glexts.h \
         src/data/gl.tu bc/alias.bc \
 	doc/gldb.1.gz doc/bugle.3.gz \
-	gldb/.libs/gldb \
+	gldb/.libs/gldb gldb/.libs/gldb-gui \
         tests/.libs/threads1 \
         tests/.libs/threads2 \
 	tests/.libs/errors tests/.libs/lt-errors \
