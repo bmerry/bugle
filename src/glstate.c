@@ -838,10 +838,74 @@ static void spawn_children_texunit(const glstate *self, bugle_linked_list *child
                spawn_children_texgen, children);
 }
 
-static void spawn_children_texture(const glstate *self, bugle_linked_list *children)
+static void spawn_children_texlevel(const glstate *self, bugle_linked_list *children)
 {
     bugle_list_init(children, true);
+    make_leaves(self, texture_level_state, children);
+}
+
+static GLint log2(GLint s)
+{
+    GLint ans = 0;
+
+    if (s < 1) return -1;
+    while (s > 1)
+    {
+        s = s / 2; /* rounding down is consistent with NPOT mipmaps */
+        ans++;
+    }
+    return ans;
+}
+
+static void spawn_children_texture(const glstate *self, bugle_linked_list *children)
+{
+    GLint dim, log_dim;
+    GLint p, q;       /* names follow GL 2.0 spec */
+    GLint base, max, i;
+    glstate *child;
+
+    bugle_list_init(children, true);
     make_leaves(self, texture_object_state, children);
+#ifdef GL_ARB_texture_cube_map
+    if (self->target == GL_TEXTURE_CUBE_MAP_ARB) return; /* FIXME: cube faces */
+#endif
+
+    CALL_glGetTexParameteriv(self->target, GL_TEXTURE_BASE_LEVEL, &base);
+    CALL_glGetTexParameteriv(self->target, GL_TEXTURE_MAX_LEVEL, &max);
+    p = -1;
+    switch (self->target)
+    {
+#ifdef GL_EXT_texture_3D
+    case GL_TEXTURE_3D_EXT:
+        CALL_glGetTexLevelParameteriv(self->target, base, GL_TEXTURE_DEPTH_EXT, &dim);
+        log_dim = log2(dim);
+        if (log_dim > p) p = log_dim;
+        /* Fall through */
+#endif
+    case GL_TEXTURE_2D:
+        CALL_glGetTexLevelParameteriv(self->target, base, GL_TEXTURE_HEIGHT, &dim);
+        log_dim = log2(dim);
+        if (log_dim > p) p = log_dim;
+        /* Fall through */
+    case GL_TEXTURE_1D:
+        CALL_glGetTexLevelParameteriv(self->target, base, GL_TEXTURE_WIDTH, &dim);
+        log_dim = log2(dim);
+        if (log_dim > p) p = log_dim;
+        break;
+    }
+
+    q = max;
+    if (p < q) q = p;
+    for (i = base; i <= base + q; i++)
+    {
+        child = bugle_malloc(sizeof(glstate));
+        *child = *self;
+        bugle_asprintf(&child->name, "level[%d]", (int) i);
+        child->info = NULL;
+        child->level = i;
+        child->spawn_children = spawn_children_texlevel;
+        bugle_list_append(children, child);
+    }
 }
 
 static void spawn_children_textures(const glstate *self, bugle_linked_list *children)
