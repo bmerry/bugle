@@ -16,8 +16,8 @@
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#ifndef BUGLE_SRC_BOOL_H
-#define BUGLE_SRC_BOOL_H
+#ifndef BUGLE_COMMON_BOOL_H
+#define BUGLE_COMMON_BOOL_H
 
 #if HAVE_CONFIG_H
 # include <config.h>
@@ -38,4 +38,4 @@ typedef unsigned char _Bool;
 # define __bool_true_false_are_defined 1
 #endif
 
-#endif /* !BUGLE_SRC_BOOL_H */
+#endif /* !BUGLE_COMMON_BOOL_H */

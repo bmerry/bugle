@@ -16,8 +16,8 @@
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#ifndef BUGLE_SRC_HASHTABLE_H
-#define BUGLE_SRC_HASHTABLE_H
+#ifndef BUGLE_COMMON_HASHTABLE_H
+#define BUGLE_COMMON_HASHTABLE_H
 
 #if HAVE_CONFIG_H
 # include <config.h>
@@ -52,4 +52,4 @@ void hash_clear(hash_table *table, bool free_data);
 const hash_entry *hash_begin(hash_table *table);
 const hash_entry *hash_next(hash_table *table, const hash_entry *e);
 
-#endif /* !BUGLE_SRC_HASHTABLE_H */
+#endif /* !BUGLE_COMMON_HASHTABLE_H */

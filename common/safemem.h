@@ -23,8 +23,8 @@
  * reimplement non-portable functionality.
  */
 
-#ifndef BUGLE_SRC_SAFEMEM_H
-#define BUGLE_SRC_SAFEMEM_H
+#ifndef BUGLE_COMMON_SAFEMEM_H
+#define BUGLE_COMMON_SAFEMEM_H
 
 #if HAVE_CONFIG_H
 # include <stddef.h>
@@ -50,4 +50,4 @@ int xasprintf(char **strp, const char *format, ...);
  */
 char *xafgets(FILE *stream);
 
-#endif /* !BUGLE_SRC_SAFEMEM_H */
+#endif /* !BUGLE_COMMON_SAFEMEM_H */
