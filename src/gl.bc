@@ -68,6 +68,9 @@ LENGTH PARAMETER glProgramString(ARB)? 3 $2
 LENGTH PARAMETER glShaderSource(ARB)? 2 $1
 LENGTH PARAMETER glShaderSource(ARB)? 3 $1
 
+LENGTH PARAMETER glPrioritizeTextures 1 $0
+LENGTH PARAMETER glPrioritizeTextures 2 $0
+
 LENGTH PARAMETER glCompressedTexImage2D(ARB)? 7 $6
 
 # Functions where the count is determined by the token
