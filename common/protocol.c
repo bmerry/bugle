@@ -61,7 +61,7 @@ static bool safe_read(int fd, void *buf, size_t count)
     return true;
 }
 
-bool gldb_send_code(int fd, uint32_t code)
+bool gldb_protocol_send_code(int fd, uint32_t code)
 {
     uint32_t code2;
 
@@ -69,7 +69,7 @@ bool gldb_send_code(int fd, uint32_t code)
     return safe_write(fd, &code2, sizeof(uint32_t));
 }
 
-bool gldb_send_binary_string(int fd, uint32_t len, const char *str)
+bool gldb_protocol_send_binary_string(int fd, uint32_t len, const char *str)
 {
     uint32_t len2;
 
@@ -80,12 +80,12 @@ bool gldb_send_binary_string(int fd, uint32_t len, const char *str)
     return true;
 }
 
-bool gldb_send_string(int fd, const char *str)
+bool gldb_protocol_send_string(int fd, const char *str)
 {
-    return gldb_send_binary_string(fd, strlen(str), str);
+    return gldb_protocol_send_binary_string(fd, strlen(str), str);
 }
 
-bool gldb_recv_code(int fd, uint32_t *code)
+bool gldb_protocol_recv_code(int fd, uint32_t *code)
 {
     uint32_t code2;
     if (safe_read(fd, &code2, sizeof(uint32_t)))
@@ -97,7 +97,7 @@ bool gldb_recv_code(int fd, uint32_t *code)
         return false;
 }
 
-bool gldb_recv_binary_string(int fd, uint32_t *len, char **data)
+bool gldb_protocol_recv_binary_string(int fd, uint32_t *len, char **data)
 {
     uint32_t len2;
     int old_errno;
@@ -119,9 +119,9 @@ bool gldb_recv_binary_string(int fd, uint32_t *len, char **data)
     }
 }
 
-bool gldb_recv_string(int fd, char **str)
+bool gldb_protocol_recv_string(int fd, char **str)
 {
     uint32_t dummy;
 
-    return gldb_recv_binary_string(fd, &dummy, str);
+    return gldb_protocol_recv_binary_string(fd, &dummy, str);
 }

@@ -26,6 +26,7 @@
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/wait.h>
+#include <sys/time.h>
 #include <signal.h>
 #include <errno.h>
 #include <assert.h>
@@ -41,51 +42,11 @@
 #include "common/safemem.h"
 #include "common/protocol.h"
 #include "common/hashtable.h"
+#include "gldb/gldb-common.h"
 /* Uncomment these lines to test the legacy I/O support
 #undef HAVE_READLINE
 #define HAVE_READLINE
 */
-
-#if HAVE_READLINE && !HAVE_RL_COMPLETION_MATCHES
-# define rl_completion_matches completion_matches
-#endif
-
-#define RESTART(expr) \
-    do \
-    { \
-        while ((expr) == -1) \
-        { \
-            if (errno != EINTR) \
-            { \
-                perror(#expr " failed"); \
-                exit(1); \
-            } \
-        } \
-    } while (0)
-
-typedef struct
-{
-    char *name;
-    char *value;
-    bugle_linked_list children;
-} gldb_state;
-
-static int lib_in, lib_out;
-static sigset_t blocked, unblocked;
-static sigjmp_buf chld_env, int_env;
-/* Started is set to true only after receiving RESP_RUNNING. When
- * we are in the state (running && !started), non-break responses are
- * handled but do not cause a new line to be read.
- */
-static bool running = false, started = false;
-static pid_t child_pid = -1;
-static int child_status = 0; /* status returned from waitpid */
-static char *chain = NULL;
-static const char *prog = NULL;
-static char **prog_argv = NULL;
-
-static gldb_state *state_root = NULL;
-static bool state_dirty = true;
 
 /* The table of full command names. This is used for command completion
  * and display of help. There is also a hash table of command names
@@ -119,91 +80,205 @@ typedef struct
  * Ambiguous commands have a NULL command field.
  */
 static bugle_hash_table command_table;
-
-static bool break_on_error = true;
-static bugle_hash_table break_on;
 static char *screenshot_file = NULL;
-
-#if !HAVE_READLINE
-static void chop(char *s)
-{
-    size_t len = strlen(s);
-    while (len && isspace(s[len - 1]))
-        s[--len] = '\0';
-}
-#endif
-
-static void check(int r, const char *str)
-{
-    if (r == -1)
-    {
-        perror(str);
-        exit(1);
-    }
-}
+static int chld_pipes[2], int_pipes[2];
+static sigset_t blocked, unblocked;
 
 static void sigchld_handler(int sig)
 {
-    siglongjmp(chld_env, 1);
+    char buf = 'c';
+    write(chld_pipes[1], &buf, 1);
 }
 
 static void sigint_handler(int sig)
 {
-    siglongjmp(int_env, 1);
+    char buf = 'i';
+    write(int_pipes[1], &buf, 1);
 }
 
-/* Spawns off the program, and returns the pid */
-static pid_t execute(void)
+/* Returns true on quit, false otherwise */
+static bool handle_commands(void)
 {
-    pid_t pid;
-    /* in/out refers to our view, not child view */
-    int in_pipe[2], out_pipe[2];
-    char *env;
+    bool done;
+    char *line = NULL, *cur, *base;
+    /* prev_line must be static, because we sometimes leave handle_commands
+     * via a signal/longjmp pair.
+     */
+    static char *prev_line = NULL;
+    char **tokens;
+    size_t num_tokens, i;
+    const command_data *data;
+    struct sigaction act, old_act;
+    sigset_t sigint_set;
 
-    check(pipe(in_pipe), "pipe");
-    check(pipe(out_pipe), "pipe");
-    switch ((pid = fork()))
+    do
     {
-    case -1:
-        perror("fork failed");
-        exit(1);
-    case 0: /* Child */
-        /* We don't want the child to receive Ctrl-C, but we want to
-         * allow it to write to the terminal. We move it into a background
-         * process group, and it inherits SIG_IGN on SIGTTIN and SIGTTOU.
-         *
-         * However, we don't want the child to have SIGINT and SIGCHLD
-         * blocked.
+        done = false;
+#if HAVE_READLINE
+        /* Readline replaces the SIGINT handler, but still chains to the
+         * original. We set the handler to ignore for the readline()
+         * call to avoid queuing up extra stop requests.
          */
-        setpgid(0, 0);
-        sigprocmask(SIG_SETMASK, &unblocked, NULL);
+        act.sa_handler = SIG_DFL;
+        act.sa_flags = 0;
+        sigemptyset(&act.sa_mask);
+        gldb_safe_syscall(sigaction(SIGINT, &act, &old_act), "sigaction");
+        sigemptyset(&sigint_set);
+        sigaddset(&sigint_set, SIGINT);
+        gldb_safe_syscall(sigprocmask(SIG_UNBLOCK, &sigint_set, NULL), "sigprocmask");
 
-        if (chain)
-            check(setenv("BUGLE_CHAIN", chain, 1), "setenv");
+        line = readline("(gldb) ");
+
+        gldb_safe_syscall(sigprocmask(SIG_BLOCK, &sigint_set, NULL), "sigprocmask");
+        gldb_safe_syscall(sigaction(SIGINT, &old_act, NULL), "sigaction");
+        if (line && *line) add_history(line);
+#else
+        fputs("(gldb) ", stdout);
+        fflush(stdout);
+        if ((line = bugle_afgets(stdin)) != NULL)
+            chop(line);
+#endif
+        if (!line)
+        {
+            if (gldb_running()) gldb_send_quit();
+            if (prev_line) free(prev_line);
+            return true;
+        }
         else
-            unsetenv("BUGLE_CHAIN");
-        check(setenv("LD_PRELOAD", LIBDIR "/libbugle.so", 1), "setenv");
-        check(setenv("BUGLE_DEBUGGER", "1", 1), "setenv");
-        bugle_asprintf(&env, "%d", in_pipe[1]);
-        check(setenv("BUGLE_DEBUGGER_FD_OUT", env, 1), "setenv");
-        free(env);
-        bugle_asprintf(&env, "%d", out_pipe[0]);
-        check(setenv("BUGLE_DEBUGGER_FD_IN", env, 1), "setenv");
-        free(env);
+        {
+            if (!*line && prev_line != NULL)
+            {
+                free(line);
+                line = bugle_strdup(prev_line);
+            }
+            if (*line)
+            {
+                if (prev_line) free(prev_line);
+                prev_line = bugle_strdup(line);
 
-        close(in_pipe[0]);
-        close(out_pipe[1]);
-        execvp(prog, prog_argv);
-        execv(prog, prog_argv);
-        perror("failed to execute program");
+                /* Tokenise */
+                num_tokens = 0;
+                for (cur = line; *cur; cur++)
+                    if (!isspace(*cur)
+                        && (cur == line || isspace(cur[-1])))
+                        num_tokens++;
+                if (num_tokens)
+                {
+                    tokens = bugle_malloc((num_tokens + 1) * sizeof(char *));
+                    tokens[num_tokens] = NULL;
+                    i = 0;
+                    for (cur = line; *cur; cur++)
+                    {
+                        if (!isspace(*cur))
+                        {
+                            base = cur;
+                            while (*cur && !isspace(*cur)) cur++;
+                            tokens[i] = bugle_malloc(cur - base + 1);
+                            memcpy(tokens[i], base, cur - base);
+                            tokens[i][cur - base] = '\0';
+                            i++;
+                            cur--; /* balanced by cur++ above */
+                        }
+                    }
+                    assert(i == num_tokens);
+                    /* Find the command */
+                    data = (const command_data *) bugle_hash_get(&command_table, tokens[0]);
+                    if (!data)
+                        printf("Unknown command `%s'.\n", tokens[0]);
+                    else if (!data->command)
+                        printf("Ambiguous command `%s'.\n", tokens[0]);
+                    else if (data->command->running && !gldb_running())
+                        printf("Program is not running.\n");
+                    else
+                        done = data->command->handler(data->command->name, line, (const char * const *) tokens);
+                    for (i = 0; i < num_tokens; i++)
+                        free(tokens[i]);
+                    free(tokens);
+                }
+            }
+            free(line);
+        }
+    } while (!done);
+    return false;
+}
+
+/* Deals with response code resp. Returns true if we are done processing
+ * responses, or false if we are expecting more.
+ */
+static bool handle_responses(void)
+{
+    uint32_t resp;
+    uint32_t resp_val, resp_len;
+    char *resp_str, *resp_str2;
+    FILE *f;
+    int lib_in;
+
+    lib_in = gldb_in_pipe();
+    if (!gldb_protocol_recv_code(lib_in, &resp))
+    {
+        fputs("Pipe error", stderr);
         exit(1);
-    default: /* Parent */
-        lib_in = in_pipe[0];
-        lib_out = out_pipe[1];
-        close(in_pipe[1]);
-        close(out_pipe[0]);
-        return pid;
     }
+    switch (resp)
+    {
+    case RESP_ANS:
+        gldb_protocol_recv_code(lib_in, &resp_val);
+        /* Ignore, other than to flush the pipe */
+        break;
+    case RESP_STOP:
+        gldb_info_stopped();
+        break;
+    case RESP_BREAK:
+        gldb_protocol_recv_string(lib_in, &resp_str);
+        printf("Break on %s", resp_str);
+        free(resp_str);
+        gldb_info_stopped();
+        break;
+    case RESP_BREAK_ERROR:
+        gldb_protocol_recv_string(lib_in, &resp_str);
+        gldb_protocol_recv_string(lib_in, &resp_str2);
+        printf("Error %s in %s", resp_str2, resp_str);
+        free(resp_str);
+        free(resp_str2);
+        gldb_info_stopped();
+        break;
+    case RESP_ERROR:
+        gldb_protocol_recv_code(lib_in, &resp_val);
+        gldb_protocol_recv_string(lib_in, &resp_str);
+        printf("%s\n", resp_str);
+        free(resp_str);
+        break;
+    case RESP_RUNNING:
+        printf("Running.\n");
+        gldb_info_running();
+        return false;
+    case RESP_STATE:
+        gldb_protocol_recv_string(lib_in, &resp_str);
+        fputs(resp_str, stdout);
+        free(resp_str);
+        break;
+    case RESP_SCREENSHOT:
+        gldb_protocol_recv_binary_string(lib_in, &resp_len, &resp_str);
+        if (!screenshot_file)
+        {
+            fputs("Unexpected screenshot data. Please contact the author.\n", stderr);
+            break;
+        }
+        f = fopen(screenshot_file, "wb");
+        if (!f)
+        {
+            fprintf(stderr, "Cannot open %s: %s\n", screenshot_file, strerror(errno));
+            free(screenshot_file);
+            break;
+        }
+        if (fwrite(resp_str, 1, resp_len, f) != resp_len || fclose(f) == EOF)
+            fprintf(stderr, "Error writing %s: %s\n", screenshot_file, strerror(errno));
+        free(resp_str);
+        free(screenshot_file);
+        screenshot_file = NULL;
+        break;
+    }
+    return gldb_started();
 }
 
 static void setup_signals(void)
@@ -213,23 +288,23 @@ static void setup_signals(void)
     /* In normal operation, we block SIGCHLD to avoid race conditions.
      * We explicitly unblock it only when waiting for things to happen.
      */
-    check(sigprocmask(SIG_BLOCK, NULL, &unblocked), "sigprocmask");
-    check(sigprocmask(SIG_BLOCK, NULL, &blocked), "sigprocmask");
+    gldb_safe_syscall(sigprocmask(SIG_BLOCK, NULL, &unblocked), "sigprocmask");
+    gldb_safe_syscall(sigprocmask(SIG_BLOCK, NULL, &blocked), "sigprocmask");
     sigaddset(&blocked, SIGCHLD);
     sigaddset(&blocked, SIGINT);
-    check(sigprocmask(SIG_SETMASK, &blocked, NULL), "sigprocmask");
+    gldb_safe_syscall(sigprocmask(SIG_SETMASK, &blocked, NULL), "sigprocmask");
 
     act.sa_handler = sigchld_handler;
     act.sa_flags = SA_NOCLDSTOP;
     sigemptyset(&act.sa_mask);
     sigaddset(&act.sa_mask, SIGINT);
-    check(sigaction(SIGCHLD, &act, NULL), "sigaction");
+    gldb_safe_syscall(sigaction(SIGCHLD, &act, NULL), "sigaction");
 
     act.sa_handler = sigint_handler;
     act.sa_flags = 0;
     sigemptyset(&act.sa_mask);
     sigaddset(&act.sa_mask, SIGCHLD);
-    check(sigaction(SIGINT, &act, NULL), "sigaction");
+    gldb_safe_syscall(sigaction(SIGINT, &act, NULL), "sigaction");
 
     /* We do various things with process groups, and gdb does some more.
      * To prevent any embarrassing stoppages we simply allow everyone
@@ -239,74 +314,103 @@ static void setup_signals(void)
     act.sa_handler = SIG_IGN;
     act.sa_flags = 0;
     sigemptyset(&act.sa_mask);
-    check(sigaction(SIGTTIN, &act, NULL), "sigaction");
-    check(sigaction(SIGTTOU, &act, NULL), "sigaction");
+    gldb_safe_syscall(sigaction(SIGTTIN, &act, NULL), "sigaction");
+    gldb_safe_syscall(sigaction(SIGTTOU, &act, NULL), "sigaction");
 }
 
-static void state_destroy(gldb_state *s)
+static void main_loop(void)
 {
-    bugle_list_node *i;
+    fd_set readfds;
+    int n;
+    int result;
+    int status;
+    pid_t pid;
+    bool done;
 
-    for (i = bugle_list_head(&s->children); i; i = bugle_list_next(i))
-        state_destroy((gldb_state *) bugle_list_data(i));
-    bugle_list_clear(&s->children);
-    if (s->name) free(s->name);
-    if (s->value) free(s->value);
-    free(s);
-}
-
-static gldb_state *state_get(void)
-{
-    gldb_state *s, *child;
-    uint32_t resp;
-
-    s = bugle_malloc(sizeof(gldb_state));
-    /* The list actually does own the memory, but we do the free as
-     * part of state_destroy.
-     */
-    bugle_list_init(&s->children, false);
-    gldb_recv_string(lib_in, &s->name);
-    gldb_recv_string(lib_in, &s->value);
-
-    do
+    while (!handle_commands())
     {
-        gldb_recv_code(lib_in, &resp);
-        switch (resp)
+        done = false;
+        while (gldb_running() && !done)
         {
-        case RESP_STATE_NODE_BEGIN:
-            child = state_get();
-            bugle_list_append(&s->children, child);
-            break;
-        case RESP_STATE_NODE_END:
-            break;
-        default:
-            fprintf(stderr, "Warning: unexpected code in state tree\n");
-        }
-    } while (resp != RESP_STATE_NODE_END);
+            /* Allow signals in. This appears to open a race condition (because
+             * a signal may arrive between now and select), but the write() in
+             * the signal handlers will take care of it.
+             */
+            gldb_safe_syscall(sigprocmask(SIG_SETMASK, &unblocked, NULL), "sigprocmask");
 
-    return s;
-}
+            n = 0;
+            FD_ZERO(&readfds);
+            FD_SET(chld_pipes[0], &readfds); if (chld_pipes[0] >= n) n = chld_pipes[0] + 1;
+            FD_SET(int_pipes[0], &readfds); if (int_pipes[0] >= n) n = int_pipes[0] + 1;
+            FD_SET(gldb_in_pipe(), &readfds); if (gldb_in_pipe() >= n) n = gldb_in_pipe() + 1;
+            result = select(n, &readfds, NULL, NULL, NULL);
+            if (result == -1 && errno != EINTR)
+            {
+                perror("select");
+                exit(1);
+            }
 
-static void state_update()
-{
-    uint32_t resp;
+            gldb_safe_syscall(sigprocmask(SIG_SETMASK, &blocked, NULL), "sigprocmask");
 
-    if (state_dirty)
-    {
-        gldb_send_code(lib_out, REQ_STATE_TREE);
-        gldb_recv_code(lib_in, &resp);
-        switch (resp)
-        {
-        case RESP_STATE_NODE_BEGIN:
-            if (state_root) state_destroy(state_root);
-            state_root = state_get();
-            state_dirty = false;
-            break;
-        default:
-            fprintf(stderr, "Unexpected response %#08x", resp);
+            /* If the child pipe was flagged by select, we need to drain it
+             * to avoid spinning on it. We don't take the child pipe as
+             * proof that the child as died, since it may indicate that
+             * gdb has exited.
+             */
+            if (result != -1 && FD_ISSET(chld_pipes[0], &readfds))
+            {
+                char buf;
+                read(chld_pipes[0], &buf, 1);
+            }
+
+            /* Find out what happened */
+            pid = waitpid(gldb_child_pid(), &status, WNOHANG);
+            gldb_safe_syscall(pid, "waitpid");
+            if (pid == gldb_child_pid())
+            {
+                /* Child terminated */
+                if (WIFEXITED(status))
+                {
+                    if (WEXITSTATUS(status) == 0)
+                        printf("Program exited normally.\n");
+                    else
+                        printf("Program exited with return code %d.\n", WEXITSTATUS(status));
+                }
+                else if (WIFSIGNALED(status))
+                    printf("Program was terminated with signal %d.\n", WTERMSIG(status));
+                else
+                    printf("Program was terminated abnormally.\n");
+
+                assert(gldb_running());
+                gldb_info_child_terminated();
+                done = true;
+            }
+            else if (result != -1 && FD_ISSET(int_pipes[0], &readfds))
+            {
+                char buf;
+
+                /* Ctrl-C was pressed */
+                read(int_pipes[0], &buf, 1);
+                gldb_send_async();
+                done = false; /* We still need to wait for RESP_STOP */
+            }
+            else if (result != -1 && FD_ISSET(gldb_in_pipe(), &readfds))
+            {
+                /* Response from child */
+                done = handle_responses();
+            }
         }
     }
 }
+
+#if !HAVE_READLINE
+static void chop(char *s)
+{
+    size_t len = strlen(s);
+    while (len && isspace(s[len - 1]))
+        s[--len] = '\0';
+}
+#endif
 
 static void make_indent(int indent, FILE *out)
 {
@@ -339,52 +443,11 @@ static void state_dump(const gldb_state *root, int depth)
     }
 }
 
-/* Only first n characters of name are considered. This simplifies
- * generate_commands.
- */
-static gldb_state *state_find(gldb_state *root, const char *name, size_t n)
-{
-    const char *split;
-    bugle_list_node *i;
-    gldb_state *child;
-    bool found;
-
-    if (n > strlen(name)) n = strlen(name);
-    while (n > 0)
-    {
-        found = false;
-        split = strchr(name, '.');
-        while (split == name && n > 0 && name[0] == '.')
-        {
-            name++;
-            n--;
-            split = strchr(name, '.');
-        }
-        if (split == NULL || split > name + n) split = name + n;
-
-        for (i = bugle_list_head(&root->children); i; i = bugle_list_next(i))
-        {
-            child = (gldb_state *) bugle_list_data(i);
-            if (child->name && strncmp(child->name, name, split - name) == 0
-                && child->name[split - name] == '\0')
-            {
-                found = true;
-                root = child;
-                n -= split - name;
-                name = split;
-                break;
-            }
-        }
-        if (!found) return NULL;
-    }
-    return root;
-}
-
 static bool command_cont(const char *cmd,
                          const char *line,
                          const char * const *tokens)
 {
-    gldb_send_code(lib_out, REQ_CONT);
+    gldb_send_continue();
     return true;
 }
 
@@ -392,7 +455,7 @@ static bool command_kill(const char *cmd,
                          const char *line,
                          const char * const *tokens)
 {
-    gldb_send_code(lib_out, REQ_QUIT);
+    gldb_send_quit();
     return true;
 }
 
@@ -400,7 +463,7 @@ static bool command_quit(const char *cmd,
                          const char *line,
                          const char * const *tokens)
 {
-    if (running) gldb_send_code(lib_out, REQ_QUIT);
+    if (gldb_running()) gldb_send_quit();
     exit(0);
 }
 
@@ -409,7 +472,6 @@ static bool command_break_unbreak(const char *cmd,
                                   const char * const *tokens)
 {
     const char *func;
-    uint32_t req_val;
 
     func = tokens[1];
     if (!func)
@@ -418,55 +480,38 @@ static bool command_break_unbreak(const char *cmd,
         return false;
     }
 
-    req_val = (cmd[0] == 'b');
     if (strcmp(func, "error") == 0)
-    {
-        break_on_error = req_val;
-        if (running)
-        {
-            gldb_send_code(lib_out, REQ_BREAK_ERROR);
-            gldb_send_code(lib_out, req_val);
-        }
-    }
+        gldb_set_break_error(cmd[0] == 'b');
     else
-    {
-        bugle_hash_set(&break_on, func, req_val ? "1" : "0");
-        if (running)
-        {
-            gldb_send_code(lib_out, REQ_BREAK);
-            gldb_send_string(lib_out, func);
-            gldb_send_code(lib_out, req_val);
-        }
-    }
-    return running;
+        gldb_set_break(func, cmd[0] == 'b');
+    return gldb_running();
+}
+
+static void child_init(void)
+{
+    /* We don't want the child to receive Ctrl-C, but we want to
+     * allow it to write to the terminal. We move it into a background
+     * process group, and it inherits SIG_IGN on SIGTTIN and SIGTTOU.
+     *
+     * However, we don't want the child to have SIGINT and SIGCHLD
+     * blocked.
+     */
+    setpgid(0, 0);
+    sigprocmask(SIG_SETMASK, &unblocked, NULL);
 }
 
 static bool command_run(const char *cmd,
                         const char *line,
                         const char * const *tokens)
 {
-    const bugle_hash_entry *h;
-
-    if (running)
+    if (gldb_running())
     {
         fputs("Already running\n", stdout);
         return false;
     }
     else
     {
-        child_pid = execute();
-        /* Send breakpoints */
-        gldb_send_code(lib_out, REQ_BREAK_ERROR);
-        gldb_send_code(lib_out, break_on_error ? 1 : 0);
-        for (h = bugle_hash_begin(&break_on); h; h = bugle_hash_next(&break_on, h))
-        {
-            gldb_send_code(lib_out, REQ_BREAK);
-            gldb_send_string(lib_out, h->key);
-            gldb_send_code(lib_out, *(const char *) h->value - '0');
-        }
-        gldb_send_code(lib_out, REQ_RUN);
-        running = true;
-        started = false;
+        gldb_run(child_init);
         return true;
     }
 }
@@ -481,20 +526,10 @@ static bool command_backtrace(const char *cmd,
     char *ln;
     FILE *in, *out;
     int status;
-    struct sigaction act, real_act;
 
-    check(pipe(in_pipe), "pipe");
-    check(pipe(out_pipe), "pipe");
-    /* We don't want the SIGCHLD handler to perform the longjmp when gdb
-     * exits. We disable the handler, and once we've re-enabled it we
-     * use waitpid with WNOHANG to see if the real program died in the
-     * meantime.
-     */
-    act.sa_handler = SIG_DFL;
-    act.sa_flags = 0;
-    sigemptyset(&act.sa_mask);
-    check(sigaction(SIGCHLD, &act, &real_act), "sigaction");
-    check(sigprocmask(SIG_SETMASK, &unblocked, NULL), "sigprocmask");
+    gldb_safe_syscall(pipe(in_pipe), "pipe");
+    gldb_safe_syscall(pipe(out_pipe), "pipe");
+    gldb_safe_syscall(sigprocmask(SIG_SETMASK, &unblocked, NULL), "sigprocmask");
 
     switch (pid = fork())
     {
@@ -503,41 +538,39 @@ static bool command_backtrace(const char *cmd,
         exit(1);
     case 0: /* child */
         sigprocmask(SIG_SETMASK, &unblocked, NULL);
-        bugle_asprintf(&pid_str, "%ld", (long) child_pid);
+        bugle_asprintf(&pid_str, "%ld", (long) gldb_child_pid());
         /* FIXME: if in_pipe[1] or out_pipe[0] is already 0 or 1 */
-        check(dup2(in_pipe[1], 1), "dup2");
-        check(dup2(out_pipe[0], 0), "dup2");
-        if (in_pipe[0] != 0 && in_pipe[0] != 1) check(close(in_pipe[0]), "close");
-        if (in_pipe[1] != 0 && in_pipe[1] != 1) check(close(in_pipe[1]), "close");
-        if (out_pipe[0] != 0 && out_pipe[0] != 1) check(close(out_pipe[0]), "close");
-        if (out_pipe[0] != 1 && out_pipe[1] != 1) check(close(out_pipe[1]), "close");
-        execlp("gdb", "gdb", "-batch", "-nx", "-command", "/dev/stdin", prog, pid_str, NULL);
+        gldb_safe_syscall(dup2(in_pipe[1], 1), "dup2");
+        gldb_safe_syscall(dup2(out_pipe[0], 0), "dup2");
+        if (in_pipe[0] != 0 && in_pipe[0] != 1) gldb_safe_syscall(close(in_pipe[0]), "close");
+        if (in_pipe[1] != 0 && in_pipe[1] != 1) gldb_safe_syscall(close(in_pipe[1]), "close");
+        if (out_pipe[0] != 0 && out_pipe[0] != 1) gldb_safe_syscall(close(out_pipe[0]), "close");
+        if (out_pipe[0] != 1 && out_pipe[1] != 1) gldb_safe_syscall(close(out_pipe[1]), "close");
+        execlp("gdb", "gdb", "-batch", "-nx", "-command", "/dev/stdin", gldb_program(), pid_str, NULL);
         perror("could not invoke gdb");
         free(pid_str);
         exit(1);
     default: /* parent */
-        check(close(in_pipe[1]), "close");
-        check(close(out_pipe[0]), "close");
-        check((in = fdopen(in_pipe[0], "r")) ? 0 : -1, "fdopen");
-        check((out = fdopen(out_pipe[1], "w")) ? 0 : -1, "fdopen");
+        gldb_safe_syscall(close(in_pipe[1]), "close");
+        gldb_safe_syscall(close(out_pipe[0]), "close");
+        gldb_safe_syscall((in = fdopen(in_pipe[0], "r")) ? 0 : -1, "fdopen");
+        gldb_safe_syscall((out = fdopen(out_pipe[1], "w")) ? 0 : -1, "fdopen");
         fprintf(out, "backtrace\nquit\n");
         fflush(out);
         while ((ln = bugle_afgets(in)) != NULL)
         {
-            /* gdb backtrace lines start with # */
-            if (*ln == '#') fputs(ln, stdout);
+            /* strip out the rubbish */
+            if (*ln == '#' || *ln == ' ') fputs(ln, stdout);
             free(ln);
         }
         RESTART(waitpid(pid, &status, 0));
+        /* We don't drain chld_pipe, in case we accidentally miss the
+         * real thing. The main loop is protected against spurious
+         * stoppages.
+         */
     }
-    check(sigprocmask(SIG_SETMASK, &blocked, NULL), "sigprocmask");
-    check(sigaction(SIGCHLD, &real_act, NULL), "sigaction");
-    /* Now check if the real child died in the meantime */
-    pid = waitpid(child_pid, &child_status, WNOHANG);
-    check(pid, "waitpid");
-    /* A value of 2 indicates that we have done the waiting */
-    if (pid == child_pid)
-        siglongjmp(chld_env, 2);
+
+    gldb_safe_syscall(sigprocmask(SIG_SETMASK, &blocked, NULL), "sigprocmask");
     return false;
 }
 
@@ -550,19 +583,17 @@ static bool command_chain(const char *cmd,
         fputs("Usage: chain <chain> OR chain none.\n", stdout);
         return false;
     }
-    if (chain)
-    {
-        free(chain);
-        chain = NULL;
-    }
     if (strcmp(tokens[1], "none") == 0)
+    {
+        gldb_set_chain(NULL);
         fputs("Chain cleared.\n", stdout);
+    }
     else
     {
-        chain = bugle_strdup(tokens[1]);
-        printf("Chain set to %s.\n", chain);
+        gldb_set_chain(tokens[1]);
+        printf("Chain set to %s.\n", tokens[1]);
     }
-    if (running)
+    if (gldb_running())
         fputs("The change will only take effect when the program is restarted.\n", stdout);
     return false;
 }
@@ -571,16 +602,13 @@ static bool command_enable_disable(const char *cmd,
                                    const char *line,
                                    const char * const *tokens)
 {
-    uint32_t req;
-
     if (!tokens[1] || !*tokens[1])
     {
         fputs("Usage: enable|disable <filterset>\n", stdout);
         return false;
     }
-    req = (strcmp(cmd, "enable") == 0) ? REQ_ENABLE_FILTERSET : REQ_DISABLE_FILTERSET;
-    gldb_send_code(lib_out, req);
-    gldb_send_string(lib_out, tokens[1]);
+
+    gldb_send_enable_disable(tokens[1], strcmp(cmd, "enable") == 0);
     return true;
 }
 
@@ -591,19 +619,9 @@ static bool command_gdb(const char *cmd,
     pid_t pid, pgrp, tc_pgrp;
     char *pid_str;
     int status;
-    struct sigaction act, real_act;
     bool fore;
 
-    /* We don't want the SIGCHLD handler to perform the longjmp when gdb
-     * exits. We disable the handler, and once we've re-enabled it we
-     * use waitpid with WNOHANG to see if the real program died in the
-     * meantime.
-     */
-    act.sa_handler = SIG_DFL;
-    act.sa_flags = 0;
-    sigemptyset(&act.sa_mask);
-    check(sigaction(SIGCHLD, &act, &real_act), "sigaction");
-    check(sigprocmask(SIG_SETMASK, &unblocked, NULL), "sigprocmask");
+    gldb_safe_syscall(sigprocmask(SIG_SETMASK, &unblocked, NULL), "sigprocmask");
 
     /* By default, gdb will be in the same process group and thus we
      * will receive the same terminal control signals, like SIGINT.
@@ -625,8 +643,8 @@ static bool command_gdb(const char *cmd,
         if (fore) tcsetpgrp(1, getpgrp());
         sigprocmask(SIG_SETMASK, &unblocked, NULL);
 
-        bugle_asprintf(&pid_str, "%ld", (long) child_pid);
-        execlp("gdb", "gdb", prog, pid_str, NULL);
+        bugle_asprintf(&pid_str, "%ld", (long) gldb_child_pid());
+        execlp("gdb", "gdb", gldb_program(), pid_str, NULL);
         perror("could not invoke gdb");
         free(pid_str);
         exit(1);
@@ -635,14 +653,8 @@ static bool command_gdb(const char *cmd,
         /* Reclaim foreground */
         if (fore) tcsetpgrp(1, pgrp);
     }
-    check(sigprocmask(SIG_SETMASK, &blocked, NULL), "sigprocmask");
-    check(sigaction(SIGCHLD, &real_act, NULL), "sigaction");
-    /* Now check if the real child died in the meantime */
-    pid = waitpid(child_pid, &child_status, WNOHANG);
-    check(pid, "waitpid");
-    /* A return value of 2 indicates that we have done the waiting */
-    if (pid == child_pid)
-        siglongjmp(chld_env, 2);
+
+    gldb_safe_syscall(sigprocmask(SIG_SETMASK, &blocked, NULL), "sigprocmask");
     return false;
 }
 
@@ -651,12 +663,13 @@ static bool command_state(const char *cmd,
                           const char * const *tokens)
 {
     gldb_state *s;
+    gldb_state *root;
 
-    state_update();
-    if (!tokens[1]) s = state_root;
+    root = gldb_state_update();
+    if (!tokens[1]) s = root;
     else
     {
-        s = state_find(state_root, tokens[1], strlen(tokens[1]));
+        s = gldb_state_find(root, tokens[1], strlen(tokens[1]));
         if (!s)
             fprintf(stderr, "No such state %s\n", tokens[1]);
     }
@@ -676,9 +689,9 @@ static bool command_screenshot(const char *cmd,
         fputs("Specify a filename\n", stdout);
         return false;
     }
-    gldb_send_code(lib_out, REQ_SCREENSHOT);
     if (screenshot_file) free(screenshot_file);
     screenshot_file = bugle_strdup(tokens[1]);
+    gldb_send_screenshot();
     return true;
 }
 
@@ -729,262 +742,6 @@ static void register_command(const command_info *cmd)
     free(key);
 }
 
-static void handle_commands(void)
-{
-    bool done;
-    char *line = NULL, *cur, *base;
-    /* prev_line must be static, because we sometimes leave handle_commands
-     * via a signal/longjmp pair.
-     */
-    static char *prev_line = NULL;
-    char **tokens;
-    size_t num_tokens, i;
-    const command_data *data;
-    struct sigaction act, old_act;
-    sigset_t sigint_set;
-
-    do
-    {
-        done = false;
-#if HAVE_READLINE
-        /* Readline replaces the SIGINT handler, but still chains to the
-         * original. We set the handler to ignore for the readline()
-         * call to avoid queuing up extra stop requests.
-         */
-        act.sa_handler = SIG_DFL;
-        act.sa_flags = 0;
-        sigemptyset(&act.sa_mask);
-        check(sigaction(SIGINT, &act, &old_act), "sigaction");
-        sigemptyset(&sigint_set);
-        sigaddset(&sigint_set, SIGINT);
-        check(sigprocmask(SIG_UNBLOCK, &sigint_set, NULL), "sigprocmask");
-
-        line = readline("(gldb) ");
-
-        check(sigprocmask(SIG_BLOCK, &sigint_set, NULL), "sigprocmask");
-        check(sigaction(SIGINT, &old_act, NULL), "sigaction");
-        if (line && *line) add_history(line);
-#else
-        fputs("(gldb) ", stdout);
-        fflush(stdout);
-        if ((line = bugle_afgets(stdin)) != NULL)
-            chop(line);
-#endif
-        if (!line)
-        {
-            if (running) gldb_send_code(lib_out, REQ_QUIT);
-            if (prev_line) free(prev_line);
-            exit(0);
-        }
-        else
-        {
-            if (!*line && prev_line != NULL)
-            {
-                free(line);
-                line = bugle_strdup(prev_line);
-            }
-            if (*line)
-            {
-                if (prev_line) free(prev_line);
-                prev_line = bugle_strdup(line);
-
-                /* Tokenise */
-                num_tokens = 0;
-                for (cur = line; *cur; cur++)
-                    if (!isspace(*cur)
-                        && (cur == line || isspace(cur[-1])))
-                        num_tokens++;
-                if (num_tokens)
-                {
-                    tokens = bugle_malloc((num_tokens + 1) * sizeof(char *));
-                    tokens[num_tokens] = NULL;
-                    i = 0;
-                    for (cur = line; *cur; cur++)
-                    {
-                        if (!isspace(*cur))
-                        {
-                            base = cur;
-                            while (*cur && !isspace(*cur)) cur++;
-                            tokens[i] = bugle_malloc(cur - base + 1);
-                            memcpy(tokens[i], base, cur - base);
-                            tokens[i][cur - base] = '\0';
-                            i++;
-                            cur--; /* balanced by cur++ above */
-                        }
-                    }
-                    assert(i == num_tokens);
-                    /* Find the command */
-                    data = (const command_data *) bugle_hash_get(&command_table, tokens[0]);
-                    if (!data)
-                        printf("Unknown command `%s'.\n", tokens[0]);
-                    else if (!data->command)
-                        printf("Ambiguous command `%s'.\n", tokens[0]);
-                    else if (data->command->running && !running)
-                        printf("Program is not running.\n");
-                    else
-                        done = data->command->handler(data->command->name, line, (const char * const *) tokens);
-                    for (i = 0; i < num_tokens; i++)
-                        free(tokens[i]);
-                    free(tokens);
-                }
-            }
-            free(line);
-        }
-    } while (!done);
-}
-
-/* Deals with response code resp. Returns true if we are done processing
- * responses, or false if we are expecting more.
- */
-static bool handle_responses(uint32_t resp)
-{
-    uint32_t resp_val, resp_len;
-    char *resp_str, *resp_str2;
-    FILE *f;
-
-    switch (resp)
-    {
-    case RESP_ANS:
-        gldb_recv_code(lib_in, &resp_val);
-        /* Ignore, other than to flush the pipe */
-        break;
-    case RESP_STOP:
-        state_dirty = true;
-        break;
-    case RESP_BREAK:
-        gldb_recv_string(lib_in, &resp_str);
-        printf("Break on %s", resp_str);
-        free(resp_str);
-        state_dirty = true;
-        break;
-    case RESP_BREAK_ERROR:
-        gldb_recv_string(lib_in, &resp_str);
-        gldb_recv_string(lib_in, &resp_str2);
-        printf("Error %s in %s", resp_str2, resp_str);
-        free(resp_str);
-        free(resp_str2);
-        state_dirty = true;
-        break;
-    case RESP_ERROR:
-        gldb_recv_code(lib_in, &resp_val);
-        gldb_recv_string(lib_in, &resp_str);
-        printf("%s\n", resp_str);
-        free(resp_str);
-        break;
-    case RESP_RUNNING:
-        printf("Running.\n");
-        started = true;
-        state_dirty = true;
-        return false;
-    case RESP_STATE:
-        gldb_recv_string(lib_in, &resp_str);
-        fputs(resp_str, stdout);
-        free(resp_str);
-        break;
-    case RESP_SCREENSHOT:
-        gldb_recv_binary_string(lib_in, &resp_len, &resp_str);
-        if (!screenshot_file)
-        {
-            fputs("Unexpected screenshot data. Please contact the author.\n", stderr);
-            break;
-        }
-        f = fopen(screenshot_file, "wb");
-        if (!f)
-        {
-            fprintf(stderr, "Cannot open %s: %s\n", screenshot_file, strerror(errno));
-            free(screenshot_file);
-            break;
-        }
-        if (fwrite(resp_str, 1, resp_len, f) != resp_len || fclose(f) == EOF)
-            fprintf(stderr, "Error writing %s: %s\n", screenshot_file, strerror(errno));
-        free(resp_str);
-        free(screenshot_file);
-        screenshot_file = NULL;
-        break;
-    }
-    return started;
-}
-
-static void main_loop(void)
-{
-    uint32_t resp;
-
-    setup_signals();
-    while (true)
-    {
-        /* POSIX makes some strange requirements on how sigsetjmp is
-         * used. In particular the result is not guaranteed to be
-         * assignable.
-         */
-        switch (sigsetjmp(chld_env, 1))
-        {
-        case 1: /* from the signal handler */
-            RESTART(waitpid(child_pid, &child_status, 0));
-            /* fall through */
-        case 2: /* from normal code that detected the exit */
-            if (WIFEXITED(child_status))
-            {
-                if (WEXITSTATUS(child_status) == 0)
-                    printf("Program exited normally.\n");
-                else
-                    printf("Program exited with return code %d.\n", WEXITSTATUS(child_status));
-            }
-            else if (WIFSIGNALED(child_status))
-                printf("Program was terminated with signal %d.\n", WTERMSIG(child_status));
-            else
-                printf("Program was terminated abnormally.\n");
-
-            assert(running == true);
-            running = false;
-            started = false;
-            break;
-        case 0: /* normal return from sigsetjmp */
-
-            /* Again, POSIX requirements prevent these two tests from being
-             * merged.
-             */
-            if (sigsetjmp(int_env, 1))
-            {
-                if (started)
-                {
-                    /* Ctrl-C was pressed. Send an asynchonous stop request. */
-                    gldb_send_code(lib_out, REQ_ASYNC);
-                }
-                else
-                {
-                    if (!running || started)
-                        handle_commands();
-                }
-            }
-            else /* default code */
-            {
-                if (!running || started)
-                    handle_commands();
-            }
-
-            /* Wait for either input on the pipe, or for the child to die, or
-             * for SIGINT. In the last two cases we hit sigsetjmp's.
-             */
-            do
-            {
-                check(sigprocmask(SIG_SETMASK, &unblocked, NULL), "sigprocmask");
-                if (!gldb_recv_code(lib_in, &resp))
-                {
-                    /* Failure here means EOF, which hopefully means that the
-                     * program will now terminate.
-                     */
-                    check(sigprocmask(SIG_SETMASK, &blocked, NULL), "sigprocmask");
-                    sigsuspend(&unblocked);
-                    /* Hopefully we won't even reach here, but hit the sigsetjmp. */
-                    continue;
-                }
-                check(sigprocmask(SIG_SETMASK, &blocked, NULL), "sigprocmask");
-            }
-            while (!handle_responses(resp));
-        }
-    }
-}
-
 static char *generate_commands(const char *text, int state)
 {
     static const command_info *ptr;
@@ -1023,11 +780,12 @@ static char *generate_state(const char *text, int state)
     static const gldb_state *root; /* total state we have */
     static bugle_list_node *node;  /* walk of children */
     static const char *split;
+    gldb_state *state_root;
     const gldb_state *child;
     char *ans;
 
-    if (!started) return NULL;
-    state_update();
+    if (!gldb_started()) return NULL;
+    state_root = gldb_state_update();
     if (!state_root) return NULL;
     if (!state)
     {
@@ -1042,7 +800,7 @@ static char *generate_state(const char *text, int state)
         }
         else
         {
-            root = state_find(state_root, text, split - text);
+            root = gldb_state_find(state_root, text, split - text);
             split++;
             if (!root) return NULL;
         }
@@ -1142,9 +900,9 @@ static void sort_commands(void)
 
 static void shutdown(void)
 {
+    gldb_shutdown();
+
     bugle_hash_clear(&command_table);
-    bugle_hash_clear(&break_on);
-    free(prog_argv);
 }
 
 static void initialise(void)
@@ -1152,8 +910,9 @@ static void initialise(void)
     const command_info *cmd;
 
     sort_commands();
+    pipe(chld_pipes);
+    pipe(int_pipes);
     bugle_initialise_hashing();
-    bugle_hash_init(&break_on, false);
     bugle_hash_init(&command_table, true);
     for (cmd = commands; cmd->name; cmd++)
         register_command(cmd);
@@ -1164,18 +923,6 @@ static void initialise(void)
     atexit(shutdown);
 }
 
-char **create_argv(int argc, char * const *argv_in)
-{
-    char **out;
-    int i;
-
-    out = bugle_malloc(sizeof(char *) * (argc + 1));
-    out[argc] = NULL;
-    for (i = 0; i < argc; i++)
-        out[i] = argv_in[i];
-    return out;
-}
-
 int main(int argc, char * const *argv)
 {
     if (argc < 2)
@@ -1183,9 +930,9 @@ int main(int argc, char * const *argv)
         fputs("Usage: gldb <program> <args>\n", stderr);
         return 1;
     }
-    prog = argv[1];
     initialise();
-    prog_argv = create_argv(argc - 1, argv + 1);
+    gldb_initialise(argc, argv);
+    setup_signals();
     main_loop();
     return 0;
 }

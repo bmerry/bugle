@@ -28,6 +28,9 @@ AC_PATH_PROG([PERL], [perl], [perl], [$srcdir/missing])
 dnl Checks for libraries
 AC_PATH_XTRA
 
+AM_PATH_GTK_2_0([2.0.0], , [AC_MSG_ERROR([GTK+ 2.0 not found])])
+AM_PATH_GTKGLEXT_1_0([1.0.0], , [AC_MSG_ERROR([GtkGLExt 1.0 not found])])
+
 READLINE_LIBS=""
 HAVE_READLINE=1
 AC_CHECK_LIB([ncurses], [initscr], [

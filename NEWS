@@ -1,6 +1,8 @@
-There is now support for several new extensions in gldb's state viewer,
-including GL_ARB_vertex_program, GL_ARB_fragment_program and
-GL_ARB_texture_rectangle.
+There is now a graphical debugger, gldb-gui!
+
+There is also support for several new extensions in gldb's state viewer,
+including GL_ARB_vertex_program, GL_ARB_fragment_program,
+GL_ARB_texture_rectangle and GL_EXT_texture_filter_anisotropic.
 
 0.0.20050221
 ------------

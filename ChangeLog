@@ -16,6 +16,9 @@
 * Add some extra checks to the 'checks' filterset
 * Add documentation on extension handling
 * gldb no longer hangs when asked for non-existant substate
+* gldb gives all lines of backtrace, not just first line
+* split gldb-common.c out from gldb.c to facilitate gldb-gui
+* gldb-gui
 
 0.0.20050221
 ------------

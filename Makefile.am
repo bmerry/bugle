@@ -12,7 +12,7 @@ dist_noinst_SCRIPTS = gentokens/gentokens.perl gentokens/genfunctions.perl \
 dist_man_MANS = doc/gldb.1 doc/bugle.3
 # The real things
 lib_LTLIBRARIES = src/libbugleutils.la src/libbugle.la
-bin_PROGRAMS = gldb/gldb
+bin_PROGRAMS = gldb/gldb gldb/gldb-gui
 pkglib_LTLIBRARIES = \
 	filters/common.la \
 	filters/trace.la \
@@ -26,9 +26,14 @@ INCLUDES = -I$(srcdir)/budgielib $(LTDLINCL)
 AM_CFLAGS = -DLIBDIR=\"$(libdir)\" -DPKGLIBDIR=\"$(pkglibdir)\" $(X_CFLAGS)
 AM_YFLAGS = -d
 
-gldb_gldb_SOURCES = gldb/gldb.c
+gldb_gldb_SOURCES = gldb/gldb.c gldb/gldb-common.c gldb/gldb-common.h
 gldb_gldb_LDADD = src/libbugleutils.la $(READLINE_LIBS)
 gldb_gldb_LDFLAGS = -thread-safe
+
+gldb_gldb_gui_SOURCES = gldb/gldb-gui.c
+gldb_gldb_gui_LDADD = src/libbugleutils.la $(GTK_LIBS) $(GTKGLEXT_LIBS)
+gldb_gldb_gui_LDFLAGS = -thread-safe
+gldb_gldb_gui_CFLAGS = $(AM_CFLAGS) $(GTK_CFLAGS) $(GTKGLEXT_CFLAGS)
 
 budgie_budgie_SOURCES = \
 	budgie/budgie.cpp budgie/budgie.h \

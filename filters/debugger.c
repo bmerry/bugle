@@ -79,11 +79,11 @@ static void send_state(const glstate *state)
     bugle_list_node *cur;
 
     str = bugle_state_get_string(state);
-    gldb_send_code(out_pipe, RESP_STATE_NODE_BEGIN);
-    if (state->name) gldb_send_string(out_pipe, state->name);
-    else gldb_send_string(out_pipe, "");
-    if (str) gldb_send_string(out_pipe, str);
-    else gldb_send_string(out_pipe, "");
+    gldb_protocol_send_code(out_pipe, RESP_STATE_NODE_BEGIN);
+    if (state->name) gldb_protocol_send_string(out_pipe, state->name);
+    else gldb_protocol_send_string(out_pipe, "");
+    if (str) gldb_protocol_send_string(out_pipe, str);
+    else gldb_protocol_send_string(out_pipe, "");
     free(str);
 
     bugle_state_get_children(state, &children);
@@ -94,7 +94,7 @@ static void send_state(const glstate *state)
     }
     bugle_list_clear(&children);
 
-    gldb_send_code(out_pipe, RESP_STATE_NODE_END);
+    gldb_protocol_send_code(out_pipe, RESP_STATE_NODE_END);
 }
 
 static void dump_state_by_name(const char *name, const glstate *base, FILE *f)
@@ -188,8 +188,8 @@ static bool debugger_screenshot(int pipe)
         in -= stride;
     }
 
-    gldb_send_code(pipe, RESP_SCREENSHOT);
-    gldb_send_binary_string(pipe, header_len + width * height * 3, header);
+    gldb_protocol_send_code(pipe, RESP_SCREENSHOT);
+    gldb_protocol_send_binary_string(pipe, header_len + width * height * 3, header);
     free(header);
     free(data);
 
@@ -228,62 +228,62 @@ static void debugger_loop(bool init)
     }
     while (true)
     {
-        gldb_recv_code(in_pipe, &req);
+        gldb_protocol_recv_code(in_pipe, &req);
         if (req == REQ_CONT || req == REQ_STEP || req == REQ_RUN)
         {
             if (req == REQ_RUN)
-                gldb_send_code(out_pipe, RESP_RUNNING);
+                gldb_protocol_send_code(out_pipe, RESP_RUNNING);
             break_on_next = (req == REQ_STEP);
             break;
         }
         switch (req)
         {
         case REQ_BREAK:
-            gldb_recv_string(in_pipe, &req_str);
-            gldb_recv_code(in_pipe, &req_val);
+            gldb_protocol_recv_string(in_pipe, &req_str);
+            gldb_protocol_recv_code(in_pipe, &req_val);
             func = find_function(req_str);
             if (func != NULL_FUNCTION)
             {
-                gldb_send_code(out_pipe, RESP_ANS);
-                gldb_send_code(out_pipe, 0);
+                gldb_protocol_send_code(out_pipe, RESP_ANS);
+                gldb_protocol_send_code(out_pipe, 0);
                 break_on[func] = req_val != 0;
             }
             else
             {
-                gldb_send_code(out_pipe, RESP_ERROR);
-                gldb_send_code(out_pipe, 0);
+                gldb_protocol_send_code(out_pipe, RESP_ERROR);
+                gldb_protocol_send_code(out_pipe, 0);
                 bugle_asprintf(&resp_str, "Unknown function %s", req_str);
-                gldb_send_string(out_pipe, resp_str);
+                gldb_protocol_send_string(out_pipe, resp_str);
                 free(resp_str);
             }
             free(req_str);
             break;
         case REQ_BREAK_ERROR:
-            gldb_recv_code(in_pipe, &req_val);
+            gldb_protocol_recv_code(in_pipe, &req_val);
             break_on_error = req_val != 0;
-            gldb_send_code(out_pipe, RESP_ANS);
-            gldb_send_code(out_pipe, 0);
+            gldb_protocol_send_code(out_pipe, RESP_ANS);
+            gldb_protocol_send_code(out_pipe, 0);
             break;
         case REQ_ENABLE_FILTERSET:
         case REQ_DISABLE_FILTERSET:
             enable = (req == REQ_ENABLE_FILTERSET);
-            gldb_recv_string(in_pipe, &req_str);
+            gldb_protocol_recv_string(in_pipe, &req_str);
             f = bugle_get_filter_set_handle(req_str);
             if (!f)
             {
                 bugle_asprintf(&resp_str, "Unknown filter-set %s", req_str);
-                gldb_send_code(out_pipe, RESP_ERROR);
-                gldb_send_code(out_pipe, 0);
-                gldb_send_string(out_pipe, resp_str);
+                gldb_protocol_send_code(out_pipe, RESP_ERROR);
+                gldb_protocol_send_code(out_pipe, 0);
+                gldb_protocol_send_string(out_pipe, resp_str);
                 free(resp_str);
             }
             else if (bugle_filter_set_is_enabled(f) == enable)
             {
                 bugle_asprintf(&resp_str, "Filter-set %s is already %s",
                           req_str, enable ? "enabled" : "disabled");
-                gldb_send_code(out_pipe, RESP_ERROR);
-                gldb_send_code(out_pipe, 0);
-                gldb_send_string(out_pipe, resp_str);
+                gldb_protocol_send_code(out_pipe, RESP_ERROR);
+                gldb_protocol_send_code(out_pipe, 0);
+                gldb_protocol_send_string(out_pipe, resp_str);
                 free(resp_str);
             }
             else
@@ -292,26 +292,26 @@ static void debugger_loop(bool init)
                 else bugle_disable_filter_set(f);
                 if (!bugle_filter_set_is_enabled(bugle_get_filter_set_handle("debugger")))
                 {
-                    gldb_send_code(out_pipe, RESP_ERROR);
-                    gldb_send_code(out_pipe, 0);
-                    gldb_send_string(out_pipe, "Debugger was disabled; re-enabling");
+                    gldb_protocol_send_code(out_pipe, RESP_ERROR);
+                    gldb_protocol_send_code(out_pipe, 0);
+                    gldb_protocol_send_string(out_pipe, "Debugger was disabled; re-enabling");
                     bugle_enable_filter_set(bugle_get_filter_set_handle("debugger"));
                 }
                 else
                 {
-                    gldb_send_code(out_pipe, RESP_ANS);
-                    gldb_send_code(out_pipe, 0);
+                    gldb_protocol_send_code(out_pipe, RESP_ANS);
+                    gldb_protocol_send_code(out_pipe, 0);
                 }
             }
             free(req_str);
             break;
         case REQ_STATE:
-            gldb_recv_string(in_pipe, &req_str);
+            gldb_protocol_recv_string(in_pipe, &req_str);
             if (!bugle_begin_internal_render())
             {
-                gldb_send_code(out_pipe, RESP_ERROR);
-                gldb_send_code(out_pipe, 0);
-                gldb_send_string(out_pipe, "No context or in begin/end");
+                gldb_protocol_send_code(out_pipe, RESP_ERROR);
+                gldb_protocol_send_code(out_pipe, 0);
+                gldb_protocol_send_string(out_pipe, "No context or in begin/end");
                 free(req_str);
                 break;
             }
@@ -319,17 +319,17 @@ static void debugger_loop(bool init)
             if (!resp_str[0])
             {
                 free(resp_str);
-                gldb_send_code(out_pipe, RESP_ERROR);
-                gldb_send_code(out_pipe, 0);
+                gldb_protocol_send_code(out_pipe, RESP_ERROR);
+                gldb_protocol_send_code(out_pipe, 0);
                 bugle_asprintf(&resp_str, "No such state %s", req_str);
-                gldb_send_string(out_pipe, resp_str);
+                gldb_protocol_send_string(out_pipe, resp_str);
                 free(resp_str);
                 free(req_str);
                 bugle_end_internal_render("debugger_loop", true);
                 break;
             }
-            gldb_send_code(out_pipe, RESP_STATE);
-            gldb_send_string(out_pipe, resp_str);
+            gldb_protocol_send_code(out_pipe, RESP_STATE);
+            gldb_protocol_send_string(out_pipe, resp_str);
             free(req_str);
             free(resp_str);
             bugle_end_internal_render("debugger_loop", true);
@@ -340,9 +340,9 @@ static void debugger_loop(bool init)
         case REQ_SCREENSHOT:
             if (!debugger_screenshot(out_pipe))
             {
-                gldb_send_code(out_pipe, RESP_ERROR);
-                gldb_send_code(out_pipe, 0);
-                gldb_send_string(out_pipe, "Not able to call GL at this time");
+                gldb_protocol_send_code(out_pipe, RESP_ERROR);
+                gldb_protocol_send_code(out_pipe, 0);
+                gldb_protocol_send_string(out_pipe, "Not able to call GL at this time");
             }
             break;
         case REQ_QUIT:
@@ -384,7 +384,7 @@ static void check_async(void)
              * else is permitted. The debugger loop will read it and ignore
              * it, so we send the response here.
              */
-            gldb_send_code(out_pipe, RESP_STOP);
+            gldb_protocol_send_code(out_pipe, RESP_STOP);
             debugger_loop(false);
         }
     }
@@ -403,15 +403,15 @@ static bool debugger_callback(function_call *call, const callback_data *data)
     if (break_on[call->generic.id])
     {
         resp_str = budgie_string_io(dump_any_call_string_io, call);
-        gldb_send_code(out_pipe, RESP_BREAK);
-        gldb_send_string(out_pipe, resp_str);
+        gldb_protocol_send_code(out_pipe, RESP_BREAK);
+        gldb_protocol_send_string(out_pipe, resp_str);
         free(resp_str);
         debugger_loop(false);
     }
     else if (break_on_next)
     {
         break_on_next = false;
-        gldb_send_code(out_pipe, RESP_STOP);
+        gldb_protocol_send_code(out_pipe, RESP_STOP);
         debugger_loop(false);
     }
     return true;
@@ -426,9 +426,9 @@ static bool debugger_error_callback(function_call *call, const callback_data *da
         && (error = bugle_get_call_error(call)))
     {
         resp_str = budgie_string_io(dump_any_call_string_io, call);
-        gldb_send_code(out_pipe, RESP_BREAK_ERROR);
-        gldb_send_string(out_pipe, resp_str);
-        gldb_send_string(out_pipe, bugle_gl_enum_to_token(error));
+        gldb_protocol_send_code(out_pipe, RESP_BREAK_ERROR);
+        gldb_protocol_send_string(out_pipe, resp_str);
+        gldb_protocol_send_string(out_pipe, bugle_gl_enum_to_token(error));
         free(resp_str);
         debugger_loop(false);
     }
