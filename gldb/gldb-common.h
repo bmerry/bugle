@@ -85,6 +85,7 @@ void gldb_send_continue(void);
 void gldb_send_enable_disable(const char *filterset, bool enable);
 void gldb_send_screenshot(void);
 void gldb_send_async(void);
+bool gldb_get_break_error(void);
 void gldb_set_break_error(bool brk);
 void gldb_set_break(const char *function, bool brk);
 const char *gldb_get_chain(void);

@@ -558,7 +558,7 @@ static bool command_backtrace(const char *cmd,
         gldb_safe_syscall(close(out_pipe[0]), "close");
         gldb_safe_syscall((in = fdopen(in_pipe[0], "r")) ? 0 : -1, "fdopen");
         gldb_safe_syscall((out = fdopen(out_pipe[1], "w")) ? 0 : -1, "fdopen");
-        fprintf(out, "backtrace\nquit\n");
+        fprintf(out, "set height 0\nbacktrace\nquit\n");
         fflush(out);
         while ((ln = bugle_afgets(in)) != NULL)
         {

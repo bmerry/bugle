@@ -269,6 +269,11 @@ void gldb_send_async(void)
     gldb_protocol_send_code(lib_out, REQ_ASYNC);
 }
 
+bool gldb_get_break_error(void)
+{
+    return break_on_error;
+}
+
 void gldb_set_break_error(bool brk)
 {
     break_on_error = brk;
