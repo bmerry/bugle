@@ -10,6 +10,7 @@ pkglib_LTLIBRARIES = \
 	filters/debugger.la
 INCLUDES = -I$(srcdir)/budgielib
 AM_CFLAGS = -DPKGLIBDIR=\"$(pkglibdir)\"
+AM_YFLAGS = -d
 
 budgie_budgie_SOURCES = \
 	budgie/budgie.cpp \
@@ -23,19 +24,20 @@ budgie_libbudgie_la_SOURCES = \
 	budgielib/state.c budgielib/state.h
 
 src_libbugle_la_SOURCES = \
+	src/confparse.y src/conflex.l src/conffile.h \
 	src/interceptor.c src/filters.c src/filters.h \
 	src/gldump.c src/gldump.h \
 	src/gltokens.h \
 	src/linkedlist.c src/linkedlist.h \
-	src/canon.c src/canon.h \
 	src/glstate.c src/glstate.h \
+	src/canon.c src/canon.h \
 	src/safemem.c src/safemem.h \
-	common/bool.h 
+	common/bool.h
 nodist_src_libbugle_la_SOURCES = \
 	src/lib.c src/lib.h src/utils.c \
 	src/utils.h src/types.c src/types.h \
 	src/gltokens.c
-BUILT_SOURCES = src/lib.h src/utils.h src/types.h
+BUILT_SOURCES = src/lib.h src/utils.h src/types.h confparse.h
 src_libbugle_la_LIBADD = budgie/libbudgie.la
 src_libbugle_la_LDFLAGS = -export-dynamic
 

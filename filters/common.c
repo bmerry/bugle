@@ -4,10 +4,13 @@
 #include "src/filters.h"
 #include "src/utils.h"
 #include "src/types.h"
+#include "src/safemem.h"
 #include "common/bool.h"
 #include <stdio.h>
 
 /* Invoke filter-set */
+
+static char *log_filename = NULL;
 
 static bool invoke_callback(function_call *call, void *data)
 {
@@ -33,8 +36,16 @@ static bool log_callback(function_call *call, void *data)
 
 static bool initialise_log(filter_set *handle)
 {
-    log_file = fopen("/tmp/bugle.log", "w");
-    if (!log_file) return false;
+    if (log_filename)
+        log_file = fopen(log_filename, "w");
+    else
+        log_file = stderr;
+    if (!log_file)
+    {
+        if (log_filename)
+            fprintf(stderr, "failed to open log file %s\n", log_filename);
+        return false;
+    }
     register_filter(handle, "log", log_callback);
     register_filter_depends("log", "invoke");
     return true;
@@ -42,13 +53,27 @@ static bool initialise_log(filter_set *handle)
 
 static void destroy_log(filter_set *handle)
 {
-    if (log_file) fclose(log_file);
+    if (log_filename)
+    {
+        if (log_file) fclose(log_file);
+        free(log_filename);
+    }
+}
+
+static bool set_variable_log(filter_set *handle, const char *name, const char *value)
+{
+    if (strcmp(name, "filename") == 0)
+    {
+        log_filename = xstrdup(value);
+        return true;
+    }
+    return false;
 }
 
 /* General */
 
 void initialise_filter_library(void)
 {
-    register_filter_set("invoke", initialise_invoke, NULL);
-    register_filter_set("log", initialise_log, destroy_log);
+    register_filter_set("invoke", initialise_invoke, NULL, NULL);
+    register_filter_set("log", initialise_log, destroy_log, set_variable_log);
 }

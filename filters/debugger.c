@@ -77,5 +77,5 @@ static bool initialise_debugger(filter_set *handle)
 
 void initialise_filter_library(void)
 {
-    register_filter_set("debugger", initialise_debugger, NULL);
+    register_filter_set("debugger", initialise_debugger, NULL, NULL);
 }

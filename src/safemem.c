@@ -33,7 +33,7 @@ void *xcalloc(size_t nmemb, size_t size)
 
 void *xrealloc(void *ptr, size_t size)
 {
-    ptr = xrealloc(ptr, size);
+    ptr = realloc(ptr, size);
     if (size && !ptr)
     {
         fputs("out of memory in realloc\n", stderr);

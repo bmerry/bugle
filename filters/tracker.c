@@ -86,6 +86,6 @@ static bool initialise_trackbeginend(filter_set *handle)
 
 void initialise_filter_library(void)
 {
-    register_filter_set("trackcontext", initialise_trackcontext, NULL);
-    register_filter_set("trackbeginend", initialise_trackbeginend, NULL);
+    register_filter_set("trackcontext", initialise_trackcontext, NULL, NULL);
+    register_filter_set("trackbeginend", initialise_trackbeginend, NULL, NULL);
 }

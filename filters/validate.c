@@ -56,7 +56,8 @@ static bool initialise_error(filter_set *handle)
     register_filter(handle, "error_post", error_post_callback);
     register_filter_depends("invoke", "error_pre");
     register_filter_depends("error_post", "invoke");
-    register_filter_set_depends("error", "trackcontext");
+    register_filter_depends("error_post", "trackbeginend");
+    register_filter_set_depends("error", "trackbeginend");
     get_context_state = (state_7context_I *(*)(void))
         get_filter_set_symbol(get_filter_set_handle("trackcontext"),
                               "get_context_state");
@@ -65,5 +66,5 @@ static bool initialise_error(filter_set *handle)
 
 void initialise_filter_library(void)
 {
-    register_filter_set("error", initialise_error, NULL);
+    register_filter_set("error", initialise_error, NULL, NULL);
 }

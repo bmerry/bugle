@@ -48,5 +48,5 @@ static bool initialise_wireframe(filter_set *handle)
 
 void initialise_filter_library(void)
 {
-    register_filter_set("wireframe", initialise_wireframe, NULL);
+    register_filter_set("wireframe", initialise_wireframe, NULL, NULL);
 }

@@ -13,6 +13,7 @@ struct filter_set_s;
 
 typedef bool (*filter_set_initialiser)(struct filter_set_s *);
 typedef void (*filter_set_destructor)(struct filter_set_s *);
+typedef bool (*filter_set_set_variable)(struct filter_set_s *, const char *, const char *);
 typedef bool (*filter_callback)(function_call *call, void *data);
 
 typedef struct
@@ -28,6 +29,7 @@ typedef struct filter_set_s
     linked_list filters;
     filter_set_initialiser init;
     filter_set_destructor done;
+    filter_set_set_variable set_variable;
     ptrdiff_t offset;
     void *dl_handle;
 
@@ -38,14 +40,16 @@ typedef struct filter_set_s
 /* Functions to be used by the interceptor */
 
 void initialise_filters(void);
+bool set_filter_set_variable(filter_set *handle, const char *name, const char *value);
 void enable_filter_set(filter_set *handle);
 void run_filters(function_call *call);
 
-/* Functions to be used by the filter libraries */
+/* Functions to be used by the filter libraries, and perhaps the interceptor */
 
 filter_set *register_filter_set(const char *name,
                                 filter_set_initialiser init,
-                                filter_set_destructor done);
+                                filter_set_destructor done,
+                                filter_set_set_variable set_variable);
 void register_filter(filter_set *handle, const char *name,
                      filter_callback callback);
 void register_filter_set_depends(const char *base, const char *dep);

@@ -82,12 +82,27 @@ void initialise_filters(void)
     }
 }
 
+bool set_filter_set_variable(filter_set *handle, const char *name, const char *value)
+{
+    if (!handle->set_variable) return false;
+    return (*handle->set_variable)(handle, name, value);
+}
+
 void enable_filter_set(filter_set *handle)
 {
     list_node *i, *j;
 
     if (!handle->enabled)
     {
+        if (!handle->initialised)
+        {
+            if (!(*handle->init)(handle))
+            {
+                fprintf(stderr, "Failed to initialise filter-set %s\n", handle->name);
+                exit(1);
+            }
+            handle->initialised = true;
+        }
         handle->enabled = true;
         /* deps */
         for (i = list_head(&filter_set_dependencies[0]),
@@ -163,7 +178,8 @@ void run_filters(function_call *call)
 
 filter_set *register_filter_set(const char *name,
                                 filter_set_initialiser init,
-                                filter_set_destructor done)
+                                filter_set_destructor done,
+                                filter_set_set_variable set_variable)
 {
     filter_set *s;
 
@@ -172,6 +188,7 @@ filter_set *register_filter_set(const char *name,
     list_init(&s->filters);
     s->init = init;
     s->done = done;
+    s->set_variable = set_variable;
     s->offset = (ptrdiff_t) -1;
     s->initialised = false;
     s->enabled = false;
@@ -221,18 +238,7 @@ filter_set *get_filter_set_handle(const char *name)
     {
         cur = (filter_set *) list_data(i);
         if (strcmp(name, cur->name) == 0)
-        {
-            if (!cur->initialised)
-            {
-                if (!(*cur->init)(cur))
-                {
-                    fprintf(stderr, "Failed to initialise filter-set %s\n", name);
-                    exit(1);
-                }
-                cur->initialised = true;
-            }
             return cur;
-        }
     }
     fprintf(stderr, "Failed to locate filter-set %s\n", name);
     exit(1);

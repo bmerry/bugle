@@ -10,7 +10,7 @@ void list_init(linked_list *l)
     l->head = l->tail = NULL;
 }
 
-void *list_data(list_node *node)
+void *list_data(const list_node *node)
 {
     return node->data;
 }
@@ -75,22 +75,22 @@ list_node *list_insert_after(linked_list *l, list_node *node, void *data)
     return n;
 }
 
-list_node *list_head(linked_list *l)
+list_node *list_head(const linked_list *l)
 {
     return l->head;
 }
 
-list_node *list_tail(linked_list *l)
+list_node *list_tail(const linked_list *l)
 {
     return l->tail;
 }
 
-list_node *list_next(list_node *node)
+list_node *list_next(const list_node *node)
 {
     return node->next;
 }
 
-list_node *list_prev(list_node *node)
+list_node *list_prev(const list_node *node)
 {
     return node->prev;
 }
