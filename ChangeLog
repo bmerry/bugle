@@ -3,6 +3,8 @@
 * Changed the way tests are done (using regexes) to make them more
   robust and less likely to fail when moving to a different system.
 * Redesign of the filter management code to reduce overhead.
+* Redesign of the filter-set variable code to use tables rather than
+  banks of if's.
 
 0.0.20041123
 ------------
