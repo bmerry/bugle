@@ -45,7 +45,7 @@ src_libbugle_la_LDFLAGS = -export-dynamic
 
 # Extra files to distribute
 EXTRA_DIST = src/gl.bc src/data/gl.c src/data/gl.tu src/data/overrides.h \
-	FAQ doc/filters.txt
+	FAQ doc/filters.txt doc/example.txt
 
 # Generated files that generate other files
 

@@ -1,6 +1,7 @@
 #if HAVE_CONFIG_H
 # include <config.h>
 #endif
+#define _POSIX_SOURCE
 #include "src/filters.h"
 #include "src/utils.h"
 #include "src/types.h"
@@ -8,6 +9,10 @@
 #include "budgielib/state.h"
 #include "common/bool.h"
 #include <stdio.h>
+#include <unistd.h>
+#include <signal.h>
+#include <setjmp.h>
+#include <errno.h>
 
 static state_7context_I *(*get_context_state)(void);
 
@@ -64,7 +69,70 @@ static bool initialise_error(filter_set *handle)
     return true;
 }
 
+static struct sigaction old_sigsegv_act;
+static sigjmp_buf unwind_buf;
+
+static void unwindstack_sigsegv_handler(int sig)
+{
+    siglongjmp(unwind_buf, 1);
+}
+
+static bool unwindstack_pre_callback(function_call *call, void *data)
+{
+    struct sigaction act;
+
+    if (sigsetjmp(unwind_buf, 1))
+    {
+        fputs("A segfault occurred, which was caught by the unwindstack\n"
+              "filter-set. It will now be rethrown. If you are running in\n"
+              "a debugger, you should get a useful stack trace. Do not\n"
+              "try to continue again, as gdb will get confused.\n", stderr);
+        fflush(stderr);
+        /* avoid hitting the same handler */
+        while (sigaction(SIGSEGV, &old_sigsegv_act, NULL) != 0)
+            if (errno != EINTR)
+            {
+                perror("failed to set SIGSEGV handler");
+                exit(1);
+            }
+        raise(SIGSEGV);
+        exit(1); /* make sure we don't recover */
+    }
+    act.sa_handler = unwindstack_sigsegv_handler;
+    act.sa_flags = 0;
+    sigemptyset(&act.sa_mask);
+
+    while (sigaction(SIGSEGV, &act, &old_sigsegv_act) != 0)
+        if (errno != EINTR)
+        {
+            perror("failed to set SIGSEGV handler");
+            exit(1);
+        }
+    return true;
+}
+
+static bool unwindstack_post_callback(function_call *call, void *data)
+{
+    while (sigaction(SIGSEGV, &old_sigsegv_act, NULL) != 0)
+        if (errno != EINTR)
+        {
+            perror("failed to set SIGSEGV handler");
+            exit(1);
+        }
+    return true;
+}
+
+static bool initialise_unwindstack(filter_set *handle)
+{
+    register_filter(handle, "unwindstack_pre", unwindstack_pre_callback);
+    register_filter(handle, "unwindstack_post", unwindstack_post_callback);
+    register_filter_depends("unwindstack_post", "invoke");
+    register_filter_depends("invoke", "unwindstack_pre");
+    return true;
+}
+
 void initialise_filter_library(void)
 {
     register_filter_set("error", initialise_error, NULL, NULL);
+    register_filter_set("unwindstack", initialise_unwindstack, NULL, NULL);
 }

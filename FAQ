@@ -3,31 +3,34 @@ BuGLe: questions that nobody has asked yet, but which they might...
 
 Q. My program crashes, somewhere deep inside the OpenGL driver and I
 can't get a stack trace. How can I tell what caused it?
+A. Use the "unwindstack" filterset, and see doc/example.txt for
+documentation.
 A. Use the "log" filterset, and turn on the flush option (see the example
-config file in README). Then after your program crashes, the last entry
-in the log file will most likely be just before the crash.
+in doc/example.txt). Then after your program crashes, the last entry
+in the log file will most likely be the one just before the crash.
+
+Q. I don't want to have to set BUGLE_CHAIN all the time; can't I
+specify a default?
+A. The first chain in the configuration file is the default.
+
+Q. I don't want to have to set LD_PRELOAD all the time, or it is not
+available on my system. Can I just link directly to BuGLe?
+A. Yes, you can specify -lbugle in place of -lGL when you link. If it
+is not installed in a standard directory, you may need extra compiler
+flags, such as -L/path/to/bugle -Wl,-rpath -Wl,/path/to/bugle
 
 Q. What is the performance penality?
 A. That depends on what you're doing with the library, but to give you
-an example, here are some rough numbers for Quake3 on demo 'four'
+an example, here are some rough numbers for Quake3 1.32 on demo 'four'
 (not even remotely scientificly collected).
 
-without bugle: 133fps
+without BuGLe: 133fps
 with just the "invoke" filterset: 125fps
 with the wireframe filterset: 125fps
 with logging to /dev/null: 48fps
 with logging to file: 47fps
 
 So basically, the framework adds a little, and logging adds a lot.
-
-Q. Why is there a mix of C and C++ code?
-A. The library itself is written entirely in C. This is mainly because
-a C++ library will drag libstdc++ in with it, and this has been found to
-create some problems when forcing linking to an app that already
-depends on a conflicting version of libstdc++. There is still a
-dependence on libc, but libc is less of a moving target. The code
-generator is written in C++, since it makes the coding easier and does
-not introduce the dependency issues above.
 
 Q. Why am I getting errors about unknown GL tokens?
 A. BuGLe assumes that your GL header files are reasonably up to date.
@@ -38,14 +41,24 @@ Q. I have a 64-bit machine, and I get errors trying to compile or run
 the library. Why?
 A. It is probably because the code generator relies on the file
 src/data/gl.tu. This file contains a parse tree of gl.h, glext.h and
-glx.h. Unfortunately, the file may be somewhat machine dependent. If
-you delete it, it will be regenerated from the files on your local
-machine. However, you will need gcc 3.x to regenerate it (only tested
-with gcc 3.3). If this works, please let me know.
+glx.h. It is machine-dependent, but is packaged anyway because it
+requires gcc 3.x to regenerate and because the code generated from it
+should still be machine-independent. Try removing this file and
+recompiling (in which case you need gcc 3.x; 3.3.2 is tested), and if
+it works let me know so that I can fix it.
 
-Q. I'm running Bob's Incredibly Arcane UNIX system, and the library
+Q. I'm running Bob's Incredibly Obscure UNIX system, and the library
 doesn't compile/work.
 A. If the platform is POSIX compliant and supports dynamic loading
 via dlopen() and preloading via LD_PRELOAD, then it should be supported
 more or less supported right now and this is a bug. Please let me know
 about it.
+
+Q. Why is there a mix of C and C++ code?
+A. The library itself is written entirely in C. This is mainly because
+a C++ library will drag libstdc++ in with it, and this has been found to
+create some problems when forcing linking to an app that already
+depends on a conflicting version of libstdc++. There is still a
+dependence on libc, but libc is less of a moving target. The code
+generator is written in C++, since it makes the coding easier and does
+not introduce the dependency issues above.

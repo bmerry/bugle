@@ -22,78 +22,30 @@ leak through to the generated code. For generic build instructions, see
 INSTALL.
 
 To run usefully, you will need a configuration file
-$HOME/.bugle/filters. You can copy and paste the example below:
-
------BEGIN CUT-----
-# Dump a log, and write errors to stderr
-chain trace
-{
-    filterset error
-    filterset log
-    {
-    	filename "bugle.log"
-        # Uncomment the next line to flush the output after every call (slow)
-        # flush "yes"
-    }
-    filterset invoke
-}
-
-# Press enter after each frame
-chain step
-{
-    filterset debugger
-    {
-    	break glXSwapBuffers
-    }
-    filterset invoke
-}
-
-# Press enter after each drawing command; drawing is to the front buffer
-chain stepdraw
-{
-    filterset invoke
-    filterset frontbuffer
-    filterset debugger
-    {
-        break glEnd
-        break glDrawArrays
-        break glDrawElements
-        break glDrawRangeElements
-        break glMultiDrawArrays
-        break glCallList
-    }
-}
-
-# Draws in wireframe
-chain wireframe
-{
-    filterset wireframe
-    filterset invoke
-}
-
-# Passthrough mode; don't do anything fancy
-chain pass
-{
-    filterset invoke
-}
-
------END CUT-----
+$HOME/.bugle/filters. You can copy the example file doc/example.txt.
 
 To run, execute your program something like the following:
 
 $ BUGLE_CHAIN=trace LD_PRELOAD=/usr/local/lib/libbugle.so glxgears
 
-where BUGLE_CHAIN changes depending on what you wish to achieve. The
-debugger mode is currently braindead: it will continue whenever you hit
-enter (so the app had better not be depending on stdin), and if you
+where BUGLE_CHAIN specifies a combination of filters to use. The name
+references a section in the configuration file; the example file
+doc/example.txt documents the configurations it provides.
+
+The debugger mode is currently braindead: it will continue whenever you
+hit enter (so the app had better not be depending on stdin), and if you
 type in "state" and hit enter (without the quotes) then it will display
 a crude, incomplete and probably inaccurate state dump. The trace mode
 will write a big call log to the specified filename (or stderr if you
-leave out that line), and also write GL errors to stderr.
+leave out that line), and also write GL errors to stderr. A very useful
+filterset if you use NVIDIA drivers is the unwindstack filterset: it
+attempts to make enough of a recovery from segfaults inside the driver
+to enable you to determine where in your code things went wrong (since
+the NVIDIA drivers don't have frame pointers).
 
 Feedback
 ========
 I am interested to get feedback on this tool: bugs you've found (but
-first read this file to make sure it has even been implemented),
+first read this file and the FAQ to make sure it isn't already known),
 suggestions for improvements, whatever. My address is
 bmerry@sourceforge.net.

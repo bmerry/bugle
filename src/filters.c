@@ -1,10 +1,11 @@
 #if HAVE_CONFIG_H
 # include <config.h>
 #endif
-#include "src/filters.h"
 #include "src/types.h"
 #include "src/utils.h"
-#include "src/linkedlist.h"
+#include "filters.h"
+#include "linkedlist.h"
+#include "hashtable.h"
 #include "src/safemem.h"
 #include <stdio.h>
 #include <stddef.h>
@@ -33,7 +34,8 @@
 
 static linked_list filter_sets;
 static linked_list active_filters;
-static linked_list filter_dependencies[2];
+/* hash table of linked lists of strings */
+static hash_table filter_dependencies;
 static linked_list filter_set_dependencies[2];
 static bool dirty_active = false;
 static void *call_data = NULL;
@@ -47,9 +49,8 @@ void destroy_filters(void)
     list_node *i, *j;
     filter_set *s;
     filter *f;
+    linked_list *dep;
 
-    list_clear(&filter_dependencies[0], true);
-    list_clear(&filter_dependencies[1], true);
     list_clear(&filter_set_dependencies[0], true);
     list_clear(&filter_set_dependencies[1], true);
     list_clear(&active_filters, false);
@@ -63,6 +64,12 @@ void destroy_filters(void)
             for (j = list_head(&s->filters); j; j = list_next(j))
             {
                 f = (filter *) list_data(j);
+                dep = (linked_list *) hash_get(&filter_dependencies, f->name);
+                if (dep)
+                {
+                    list_clear(dep, true);
+                    free(dep);
+                }
                 free(f->name);
                 free(f);
             }
@@ -72,6 +79,7 @@ void destroy_filters(void)
         free(s);
     }
     list_clear(&filter_sets, false);
+    hash_clear(&filter_dependencies, false);
 }
 
 void initialise_filters(void)
@@ -85,8 +93,7 @@ void initialise_filters(void)
 
     list_init(&filter_sets);
     list_init(&active_filters);
-    list_init(&filter_dependencies[0]);
-    list_init(&filter_dependencies[1]);
+    hash_init(&filter_dependencies);
     list_init(&filter_set_dependencies[0]);
     list_init(&filter_set_dependencies[1]);
 
@@ -155,49 +162,108 @@ void enable_filter_set(filter_set *handle)
     }
 }
 
+void repair_filter_order(void)
+{
+    list_node *i, *j;
+    linked_list active; /* replacement for active_filters */
+    linked_list *deps;
+    linked_list queue;
+    hash_table names;   /* maps filter names to filters */
+    hash_table valence; /* for re-ordering */
+    filter *cur;
+    /* We encode integers into pointers as base + n, so base is arbitrary
+     * but must be non-NULL (so that NULL is different from 0)
+     */
+    char base[] = "", *d;
+    const char *name;
+    int count = 0; /* checks that everything made it without cycles */
+
+    list_init(&active);
+    hash_init(&valence);
+    hash_init(&names);
+    /* initialise name table, and set valence table to all 0's */
+    for (i = list_head(&active_filters); i; i = list_next(i))
+    {
+        count++;
+        cur = (filter *) list_data(i);
+        hash_set(&names, cur->name, cur);
+        hash_set(&valence, cur->name, base);
+    }
+    /* fill in valences */
+    for (i = list_head(&active_filters); i; i = list_next(i))
+    {
+        cur = (filter *) list_data(i);
+        deps = (linked_list *) hash_get(&filter_dependencies, cur->name);
+        if (deps)
+        {
+            for (j = list_head(deps); j; j = list_next(j))
+            {
+                name = (const char *) list_data(j);
+                d = hash_get(&valence, name);
+                if (d) /* otherwise a non-existant filter */
+                {
+                    d++;
+                    hash_set(&valence, name, d);
+                }
+            }
+        }
+    }
+    /* prime the queue */
+    list_init(&queue);
+    for (i = list_head(&active_filters); i; i = list_next(i))
+    {
+        cur = (filter *) list_data(i);
+        if (hash_get(&valence, cur->name) == base)
+            list_append(&queue, cur);
+    }
+    /* do a topological walk, starting at the back */
+    while (list_head(&queue))
+    {
+        count--;
+        cur = (filter *) list_data(list_head(&queue));
+        list_erase(&queue, list_head(&queue), false);
+        list_prepend(&active, cur);
+        deps = (linked_list *) hash_get(&filter_dependencies, cur->name);
+        if (deps)
+        {
+            for (j = list_head(deps); j; j = list_next(j))
+            {
+                name = (const char *) list_data(j);
+                d = hash_get(&valence, name);
+                if (d) /* otherwise a non-existant filter */
+                {
+                    d--;
+                    hash_set(&valence, name, d);
+                    if (d == base)
+                        list_append(&queue, hash_get(&names, name));
+                }
+            }
+        }
+    }
+    if (count > 0)
+    {
+        fprintf(stderr, "cyclic dependency between filters, aborting\n");
+        exit(1);
+    }
+    /* replace the old */
+    list_clear(&active_filters, false);
+    memcpy(&active_filters, &active, sizeof(active));
+    /* clean up */
+    list_clear(&queue, false);
+    hash_clear(&valence, false);
+    hash_clear(&names, false);
+}
+
 void run_filters(function_call *call)
 {
-    list_node *i, *j, *k;
-    filter *cur, *nxt;
-    bool more;
-    int loops = 0, count;
+    list_node *i;
+    filter *cur;
     void *data;
 
     if (dirty_active)
     {
         dirty_active = false;
-        /* FIXME: check for infinite loop */
-        do
-        {
-            loops++;
-            count = 1;
-            more = false;
-            for (i = list_head(&active_filters); list_next(i) != NULL; i = list_next(i))
-            {
-                cur = (filter *) list_data(i);
-                nxt = (filter *) list_data(list_next(i));
-                for (j = list_head(&filter_dependencies[0]),
-                     k = list_head(&filter_dependencies[1]);
-                     j != NULL;
-                     j = list_next(j), k = list_next(k))
-                {
-                    if (strcmp((char *) list_data(j), cur->name) == 0
-                        && strcmp((char *) list_data(k), nxt->name) == 0) break;
-                }
-                if (j)
-                {
-                    list_set_data(i, nxt);
-                    list_set_data(list_next(i), cur);
-                    more = true;
-                }
-                count++;
-            }
-        } while (more && loops <= count);
-        if (more)
-        {
-            fprintf(stderr, "Cyclic dependency between filters");
-            exit(1);
-        }
+        repair_filter_order();
     }
 
     call->generic.user_data = call_data;
@@ -208,6 +274,9 @@ void run_filters(function_call *call)
             data = (void *)(((char *) call_data) + cur->parent->offset);
         else
             data = NULL;
+        fprintf(stderr, "running filter %s on call %s\n",
+                cur->name,
+                function_table[call->generic.id].name);
         if (!(*cur->callback)(call, data)) break;
     }
 }
@@ -247,8 +316,15 @@ void register_filter(filter_set *handle, const char *name,
 
 void register_filter_depends(const char *after, const char *before)
 {
-    list_append(&filter_dependencies[0], xstrdup(after));
-    list_append(&filter_dependencies[1], xstrdup(before));
+    linked_list *deps;
+    deps = (linked_list *) hash_get(&filter_dependencies, after);
+    if (!deps)
+    {
+        deps = xmalloc(sizeof(linked_list));
+        list_init(deps);
+        hash_set(&filter_dependencies, after, deps);
+    }
+    list_append(deps, xstrdup(before));
 }
 
 void register_filter_set_depends(const char *base, const char *dep)
