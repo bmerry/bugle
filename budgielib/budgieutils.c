@@ -37,7 +37,7 @@
 #include "common/threads.h"
 
 void budgie_dump_bitfield(unsigned int value, FILE *out,
-                          bitfield_pair *tags, int count)
+                          const bitfield_pair *tags, int count)
 {
     bool first = true;
     int i;
@@ -149,16 +149,15 @@ void budgie_dump_any_type(budgie_type type, const void *value, int length, FILE 
 void budgie_dump_any_call(const generic_function_call *call, int indent, FILE *out)
 {
     size_t i;
-    const function_data *data;
+    const group_data *data;
     arg_dumper cur_dumper;
     budgie_type type;
     int length;
-    const function_parameter_data *info;
+    const group_parameter_data *info;
 
     budgie_make_indent(indent, out);
-    data = &budgie_function_table[call->id];
-    fputs(data->name, out);
-    fputs("(", out);
+    fprintf(out, "%s(", budgie_function_table[call->id].name);
+    data = &budgie_group_table[call->group];
     info = &data->parameters[0];
     for (i = 0; i < data->num_parameters; i++, info++)
     {

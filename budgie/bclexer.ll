@@ -25,17 +25,20 @@
 #include <cstdlib>
 #include <cassert>
 #include <stack>
-#include "budgie/bc.h"
+#include <string>
+#include <list>
+#include "bcparser.h"
 
 using namespace std;
 
 /* #define ECHO {} */
 
 static int nesting = 0;
+extern int expect_c;
 
 static void finish_c(string **s)
 {
-    *s = new string(yytext);
+    *s = new string(bc_yytext);
     BEGIN(INITIAL);
 }
 
@@ -78,20 +81,15 @@ NEWTYPE		{ return NEWTYPE; }
 BITFIELD	{ return BITFIELD; }
 EXTRATYPE	{ return EXTRATYPE; }
 DUMP		{ return DUMP; }
-STATE		{ return STATE; }
-KEY		{ return KEY; }
-CONSTRUCTOR	{ return CONSTRUCT; } /* not CONSTRUCTOR, due to conflict with tree.def */
-VALUE		{ return VALUE; }
 ALIAS		{ return ALIAS; }
 INCLUDE		{ BEGIN(incl); }
-"[]"		{ return BRACKET_PAIR; }
 
-"{"|"}"		{ return yytext[0]; }
+"{"|"}"		{ return bc_yytext[0]; }
 
-\+{ID}		{ yylval.str = new string(yytext); return TYPE_ID; }
-{NUM}		{ yylval.str = new string(yytext); return NUMBER; }
-{ID}		{ yylval.str = new string(yytext); return ID; }
-[^ \t\n]+	{ yylval.str = new string(yytext); return TEXT; }
+\+{ID}		{ yylval.str = new string(bc_yytext); return TYPE_ID; }
+{NUM}		{ yylval.str = new string(bc_yytext); return NUMBER; }
+{ID}		{ yylval.str = new string(bc_yytext); return ID; }
+[^ \t\n]+	{ yylval.str = new string(bc_yytext); return TEXT; }
 {WS}       	{ /* eat whitespace */ }
 
 <C_CODE_START>{WS}	{ /* eat whitespace */ }
@@ -124,26 +122,26 @@ INCLUDE		{ BEGIN(incl); }
 <incl>[ \t]*	/* eat whitespace */
 <incl>[^ \t\n]+	{
     include_stack.push(YY_CURRENT_BUFFER);
-    yyin = fopen(yytext, "r");
-    if (!yyin)
+    bc_yyin = fopen(yytext, "r");
+    if (!bc_yyin)
     {
-        fprintf(stderr, "could not open %s: ", yytext);
+        fprintf(stderr, "could not open %s: ", bc_yytext);
         perror(NULL);
         exit(1);
     }
-    yy_switch_to_buffer(yy_create_buffer(yyin, YY_BUF_SIZE));
+    bc_yy_switch_to_buffer(bc_yy_create_buffer(bc_yyin, YY_BUF_SIZE));
     BEGIN(INITIAL);
 }
 <<EOF>> {
     if (include_stack.empty()) yyterminate();
     else
     {
-        yy_delete_buffer(YY_CURRENT_BUFFER);
-        yy_switch_to_buffer(include_stack.top());
+        bc_yy_delete_buffer(YY_CURRENT_BUFFER);
+        bc_yy_switch_to_buffer(include_stack.top());
         include_stack.pop();
     }
 }
 
 %%
 
-int yywrap() { return 1; }
+int bc_yywrap() { return 1; }

@@ -22,7 +22,6 @@
 #include "src/utils.h"
 #include "src/lib.h"
 #include "filters.h"
-#include "canon.h"
 #include "conffile.h"
 #include "tracker.h"
 #include "log.h"
@@ -163,14 +162,13 @@ static void initialise_all(void)
 {
     bugle_initialise_hashing();
     initialise_real();
-    initialise_canonical();
     initialise_filters();
     initialise_core_filters();
     initialise_dump_tables();
     load_config();
 }
 
-void interceptor(function_call *call)
+void budgie_interceptor(function_call *call)
 {
     bugle_thread_once(&init_key_once, initialise_all);
     run_filters(call);

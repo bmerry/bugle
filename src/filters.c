@@ -555,14 +555,14 @@ filter *bugle_register_filter(filter_set *handle, const char *name)
     return f;
 }
 
-void bugle_register_filter_catches(filter *handle, budgie_function f,
+void bugle_register_filter_catches(filter *handle, budgie_group g,
                                    filter_callback callback)
 {
     budgie_function i;
     filter_catcher *cb;
 
     for (i = 0; i < NUMBER_OF_FUNCTIONS; i++)
-        if (bugle_gl_function_table[i].canonical == bugle_gl_function_table[f].canonical)
+        if (budgie_function_to_group[i] == g)
         {
             cb = (filter_catcher *) bugle_malloc(sizeof(filter_catcher));
             cb->parent = handle;

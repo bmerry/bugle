@@ -28,12 +28,11 @@
 
 using namespace std;
 
-tree_node_p make_pointer(tree_node_p base, bool ref)
+tree_node_p make_pointer(tree_node_p base)
 {
     tree_node_p p = new tree_node;
 
-    if (ref) p->code = REFERENCE_TYPE;
-    else p->code = POINTER_TYPE;
+    p->code = POINTER_TYPE;
     p->type = base;
     p->user_flags |= FLAG_TEMPORARY | FLAG_ARTIFICIAL;
     return p;

@@ -25,7 +25,6 @@
 #include "gltokens.h"
 #include "gldump.h"
 #include "glutils.h"
-#include "canon.h"
 #include "filters.h"
 #include "tracker.h"
 #include "common/safemem.h"
@@ -253,7 +252,7 @@ bool bugle_dump_GLalternateenum(GLenum token, FILE *out)
 bool bugle_dump_GLcomponentsenum(GLenum token, FILE *out)
 {
     if (token >= 1 && token <= 4)
-        budgie_dump_type_i(&token, -1, out);
+        budgie_dump_TYPE_i(&token, -1, out);
     else
         bugle_dump_GLenum(token,  out);
     return true;
@@ -308,38 +307,32 @@ static size_t dump_table_size = 0;
  */
 void initialise_dump_tables(void)
 {
-    /* Initially make room for one entry per state spec. We can scale
-     * down later
-     */
-    size_t specs;
-    GLenum e;
     dump_table_entry *cur;
-    const state_spec *s;
+    const state_info * const *t;
+    const state_info *s;
 
-    specs = sizeof(state_spec_table) / sizeof(state_spec_table[0]);
-    dump_table = bugle_malloc(sizeof(dump_table_entry) * specs);
+    /* Count */
+    dump_table_size = 0;
+    for (t = all_state; *t; t++)
+        for (s = *t; s->name; s++)
+            if (s->type == TYPE_9GLboolean || s->type == TYPE_6GLenum
+                || s->length != 1) dump_table_size++;
+
+    dump_table = bugle_malloc(sizeof(dump_table_entry) * dump_table_size);
     cur = dump_table;
-    for (s = state_spec_table; s != state_spec_table + specs; s++)
-    {
-        e = bugle_gl_token_to_enum(s->name);
-        if (e == (GLenum) -1) continue;
-        cur->key = e;
-        if (s->data_type == TYPE_9GLboolean
-            || s->data_type == TYPE_6GLenum)
-            cur->type = s->data_type;
-        else
-            cur->type = NULL_TYPE;
-        if (s->data_length != 1)
-            cur->length = s->data_length;
-        else
-            cur->length = -1;
-        if (cur->type != NULL_TYPE || cur->length != -1)
-            cur++;
-    }
+    for (t = all_state; *t; t++)
+        for (s = *t; s->name; s++)
+            if (s->type == TYPE_9GLboolean || s->type == TYPE_6GLenum
+                || s->length != 1)
+            {
+                cur->key = s->pname;
+                cur->type = NULL_TYPE;
+                if (s->type == TYPE_9GLboolean || s->type == TYPE_6GLenum)
+                    cur->type = s->type;
+                cur->length = (s->length == 1) ? -1 : s->length;
+                cur++;
+            }
 
-    /* Reduce memory */
-    dump_table_size = cur - dump_table;
-    dump_table = bugle_realloc(dump_table, sizeof(dump_table_entry) * dump_table_size);
     qsort(dump_table, dump_table_size, sizeof(dump_table_entry), compare_dump_table_entry);
 }
 
@@ -410,7 +403,6 @@ size_t bugle_image_element_count(GLsizei width,
                                  GLenum type,
                                  bool unpack)
 {
-    state_7context_I *ctx;
     /* data from OpenGL state */
     GLint swap_bytes = 0, row_length = 0, image_height = 0;
     GLint skip_pixels = 0, skip_rows = 0, skip_images = 0, alignment = 4;
@@ -421,7 +413,6 @@ size_t bugle_image_element_count(GLsizei width,
     /* First check that we aren't in begin/end, in which case the call
      * will fail anyway.
      */
-    ctx = bugle_tracker_get_context_state();
     if (bugle_in_begin_end()) return 0;
     if (unpack)
     {

@@ -30,15 +30,13 @@
 
 extern bugle_object_class bugle_context_class, bugle_displaylist_class;
 
-/* Returns the current context wrapper, or NULL if no current context.
- * trackcontext is required.
- */
-state_7context_I *bugle_tracker_get_context_state(void);
-
 /* True if we are in begin/end, OR if there is no current context.
  * trackbeginend is required.
  */
 bool bugle_in_begin_end(void);
+
+/* Gets a context with the same config. Please leave all state as default */
+GLXContext bugle_get_aux_context();
 
 /* The number and mode of the current display list being compiled,
  * or 0 and GL_NONE if none.

@@ -21,7 +21,6 @@
 #endif
 #include "src/filters.h"
 #include "src/utils.h"
-#include "src/canon.h"
 #include "src/objects.h"
 #include "src/tracker.h"
 #include "src/glutils.h"
@@ -119,8 +118,8 @@ static bool initialise_trackdisplaylist(filter_set *handle)
 
     f = bugle_register_filter(handle, "trackdisplaylist");
     bugle_register_filter_depends("trackdisplaylist", "invoke");
-    bugle_register_filter_catches(f, FUNC_glNewList, trackdisplaylist_glNewList);
-    bugle_register_filter_catches(f, FUNC_glEndList, trackdisplaylist_glEndList);
+    bugle_register_filter_catches(f, GROUP_glNewList, trackdisplaylist_glNewList);
+    bugle_register_filter_catches(f, GROUP_glEndList, trackdisplaylist_glEndList);
 
     displaylist_view = bugle_object_class_register(&bugle_displaylist_class,
                                                    initialise_displaylist_struct,

@@ -31,11 +31,10 @@ gldb_gldb_LDFLAGS = -thread-safe
 
 budgie_budgie_SOURCES = \
 	budgie/budgie.cpp budgie/budgie.h \
-	budgie/generator.cpp budgie/generator.h \
 	budgie/tree.cpp budgie/tree.h \
 	budgie/treeutils.cpp budgie/treeutils.h \
 	budgie/tulexer.ll \
-	budgie/bclexer.ll budgie/bcparser.yy budgie/bc.h
+	budgie/bclexer.ll budgie/bcparser.yy
 
 # Unfortunately this introduces a dependence open flex
 budgie/bclexer.cc: budgie/bclexer.ll
@@ -62,14 +61,12 @@ src_libbugle_la_SOURCES = \
 	src/gldump.c src/gldump.h \
 	src/glutils.c src/glutils.h \
 	src/glstate.c src/glstate.h \
-	src/canon.c src/canon.h \
 	src/interceptor.c \
 	src/filters.c src/filters.h \
 	src/trackcontext.c src/trackdisplaylist.c src/trackbeginend.c src/trackextensions.c src/tracker.h \
 	src/log.c src/log.h \
         src/objects.c src/objects.h \
-	budgielib/budgieutils.c budgielib/budgieutils.h \
-	budgielib/state.c budgielib/state.h
+	budgielib/budgieutils.c budgielib/budgieutils.h
 nodist_src_libbugle_la_SOURCES = \
 	src/utils.c src/utils.h src/lib.c src/lib.h
 src_libbugle_la_LIBADD = src/libbugleutils.la -ldl -lGL $(X_PRE_LIBS) $(X_LIBS) -lX11 $(X_EXTRA_LIBS) $(THREAD_LIBS)
@@ -85,7 +82,7 @@ src/data/gl.tu: src/data/gl.c src/data/overrides.h
 	rm -f src/data/gl.o
 	mv gl.c.tu src/data/gl.tu
 
-BCFILES = bc/core1_1.bc bc/glx.bc bc/state.bc \
+BCFILES = bc/core1_1.bc bc/glx.bc \
 	bc/GL_ARB_multitexture.bc bc/GL_ARB_shader_objects.bc \
         bc/GL_ARB_texture_compression.bc bc/GL_ARB_vertex_buffer_object.bc \
         bc/GL_ARB_vertex_program.bc bc/GL_EXT_blend_func_separate.bc \
@@ -95,7 +92,7 @@ BCFILES = bc/core1_1.bc bc/glx.bc bc/state.bc \
 
 src/names.c src/names.h src/utils.c src/utils.h src/lib.c src/lib.h: budgie/budgie src/data/gl.tu gl.bc bc/alias.bc $(BCFILES)
 	$(srcdir)/mkinstalldirs src
-	budgie/budgie -c gl.bc -t `test -f src/data/gl.tu || echo '$(srcdir)/'`src/data/gl.tu -o src/utils -n src/names -l src/lib
+	budgie/budgie -t `test -f src/data/gl.tu || echo '$(srcdir)/'`src/data/gl.tu -o src/utils -n src/names -l src/lib gl.bc
 
 BUILT_SOURCES += src/glfuncs.h src/glexts.h
 

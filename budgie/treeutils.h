@@ -34,7 +34,7 @@
 
 // Generates a new node, which points at the base. It is a reference
 // if ref is true, a pointer otherwise.
-tree_node_p make_pointer(tree_node_p base, bool ref);
+tree_node_p make_pointer(tree_node_p base);
 
 // Similar, but creates a version of base that is not const qualified.
 tree_node_p make_unconst(tree_node_p base);

@@ -22,353 +22,153 @@
  * mind, so it may be difficult to adapt for other APIs.
  */
 
-/* $Id: budgie.cpp,v 1.22 2004/02/29 16:29:25 bruce Exp $ */
-/*! \file budgie.cpp
- * Main program
- */
-
 #include "tree.h"
 #include "treeutils.h"
-#include "generator.h"
-#include "bc.h"
 #include "budgie.h"
-#include <cstdlib>
+#include "getopt.h"
 #include <iostream>
 #include <fstream>
 #include <sstream>
 #include <string>
-#include <vector>
-#include <algorithm>
-#include <iterator>
-#include <utility>
-#include <stack>
 #include <set>
+#include <list>
+#include <vector>
+#include <utility>
+#include <algorithm>
 #include <map>
-#include <cassert>
-#include <cstddef>
 #include <cstdio>
-#include <unistd.h>
-#include <sys/types.h>
 #include <regex.h>
 
 using namespace std;
 
+/* Raw text */
+struct Override
+{
+    override_type mode;
+    string functions;
+    int param;
+    string type;
+    string code;
+};
+
+struct Type
+{
+    int index;
+    tree_node_p node;
+    tree_node_p unconst;
+    map<override_type, string> overrides;
+
+    string type_name() const;  /* e.g. "int *" */
+    string name() const;
+    string define() const;
+};
+
+struct Bitfield
+{
+    string new_type;
+    string old_type;
+    list<string> bits;
+
+    tree_node_p new_node;
+};
+
+struct Parameter
+{
+    list<Type>::iterator type;
+    map<override_type, string> overrides;
+};
+
+struct Group;
+
+struct Function
+{
+    int index;
+    tree_node_p node;
+    list<Function>::iterator parent; // used while building groups
+    list<Group>::iterator group;
+
+    string name() const;
+    string define() const;
+    string group_define() const;
+};
+
+struct Group
+{
+    typedef list<Function>::iterator FunctionIterator;
+    typedef list<FunctionIterator>::iterator iterator;
+
+    int index;
+    list<FunctionIterator> functions;
+    vector<Parameter> parameters;
+    bool has_retn;
+    Parameter retn;
+
+    Parameter &parameter(int);
+    const Parameter &parameter(int) const;
+
+    FunctionIterator canonical() const;
+    string name() const;
+    string define() const;
+};
+
+/* Core data structures */
+static tree T;
+static list<Group> groups;
+static list<Function> functions;
+static list<Type> types;
+
+/* Configuration and command line stuff */
+static string tufile, utilbase, namebase, libbase;
+static string limit = "";
+static list<string> headers, libraries;
+static list<Override> overrides;
+static list<pair<string, string> > aliases;
+static list<string> extra_types;
+static list<Bitfield> bitfields;
+
+/* Yacc stuff */
 extern FILE *bc_yyin;
 extern int yyparse();
 
-static tree T;  // the tree containing the entire .tu file
-static vector<tree_node_p> functions;   // functions that we wish to intercept
-static vector<tree_node_p> types;       // types that we need to handle
-// newly created types for internal use
-static vector<pair<tree_node_p, tree_node_p> > typedefs;
+/* File handles */
+static FILE *name_h, *name_c, *util_h, *util_c, *lib_h, *lib_c;
 
-// the output files
-static ofstream utilc, utilhead, libc, libhead, namec, namehead;
+/* Utility data */
+static map<string, list<Function>::iterator> function_map;
+static map<tree_node_p, list<Type>::iterator> type_map;
 
-// Configuration
-static vector<string> libraries;        // libraries to search for symbols
-static vector<string> includefiles;     // files to include in the header
-static string tufile = "";              // the source file
-static string utilbase = "utils";       // output <utilbase>.c, <utilbase>.h
-static string libbase = "lib";          // output <libbase>.c, <libbase>.h
-static string namebase = "names";       // output <names>.c, <names>.h
-static regex_t limit_regex;             // limit to functions matching this
-static bool have_limit_regex = false;   // whether to apply the above
-
-static map<string, string> aliases;
-
-/* Vector of configuration files
- * These cannot be loaded by process_args directly, since
- * the processing requires the tree to already be loaded.
- */
-static vector<string> configfiles;
-
-/* Identify the nodes that are required. We call set_flags on the
- * type of the function to recursively tag the parameter and return
- * types. We do not call set_flags directly on the declaration as this
- * may drag in other, irrelevant nodes.
- */
-static void identify()
+/* Utility functions */
+static string search_replace(const string &s, const string &old, const string &nu)
 {
-    for (size_t i = 0; i < T.size(); i++)
-        if (T.exists(i))
-        {
-            tree_node_p node = T[i];
-            tree_code code = TREE_CODE(node);
-            // try to eliminate various builtins.
-            if (code == FUNCTION_DECL
-                && DECL_SOURCE_FILE(node) != "<built-in>"
-                && IDENTIFIER_POINTER(DECL_NAME(node)).substr(0, 9) != "__builtin"
-                && (!have_limit_regex
-                    || regexec(&limit_regex, IDENTIFIER_POINTER(DECL_NAME(node)).c_str(),
-                               0, NULL, 0) == 0))
-            {
-                functions.push_back(node);
-                set_flags(TREE_TYPE(node), FLAG_USE);
-                node->user_flags |= 1;
-            }
-        }
+    string ans = s;
+    string::size_type pos = 0;
 
-    // capture these types
-    size_t size = T.size(); // save, since we add along the way
-    for (size_t i = 0; i < size; i++)
-        if (T.exists(i) && (T[i]->user_flags & FLAG_USE))
-        {
-            tree_node_p node = T[i];
-            // FIXME: add an IGNORETYPE command
-            if (dumpable(node))
-            {
-                types.push_back(node);
-                tree_node_p unconst = make_unconst(node);
-                if (unconst->user_flags & FLAG_TEMPORARY)
-		{
-                    unconst->user_flags &= ~FLAG_TEMPORARY;
-                    insert_tree(T, unconst);
-                    types.push_back(unconst);
-                }
-            }
-        }
-}
-
-// Reads a configuration file. See the man page for syntax
-static void load_config(const string &name)
-{
-    bc_yyin = fopen(name.c_str(), "r");
-
-    if (!bc_yyin)
+    while ((pos = ans.find(old, pos)) != string::npos)
     {
-        cerr << "Could not open config file " << name << "\n";
-        exit(1);
+        ans.replace(pos, old.length(), nu);
+        pos += nu.length(); /* avoid infinite loops */
     }
-
-    if (yyparse() != 0)
-    {
-        cerr << "Unknown parse error\n";
-        exit(1);
-    }
-
-    fclose(bc_yyin);
+    return ans;
 }
 
-static void process_args(int argc, char * const argv[])
+static void die(const string &error)
 {
-    int opt;
-
-    while ((opt = getopt(argc, argv, "n:t:o:l:c:")) != -1)
-    {
-        switch (opt)
-        {
-        case 'c':
-            configfiles.push_back(optarg);
-            break;
-        case 't':
-            tufile = optarg;
-            break;
-        case 'o':
-            utilbase = optarg;
-            break;
-        case 'n':
-            namebase = optarg;
-            break;
-        case 'l':
-            libbase = optarg;
-            break;
-        case '?':
-        case ':':
-            exit(1);
-        }
-    }
+    cerr << error;
+    exit(1);
 }
 
-static void headers()
+static void pdie(const string &error)
 {
-    libc.open((libbase + ".c").c_str());
-    libhead.open((libbase + ".h").c_str());
-    utilc.open((utilbase + ".c").c_str());
-    utilhead.open((utilbase + ".h").c_str());
-    namec.open((namebase + ".c").c_str());
-    namehead.open((namebase + ".h").c_str());
-
-    utilc << "#include \"" << utilbase << ".h\"\n";
-    utilc << "#include \"budgieutils.h\"\n";
-    utilc << "#include \"state.h\"\n";
-    utilc << "#include <assert.h>\n";
-    utilc << "#include <dlfcn.h>\n";
-    utilc << "#include <stddef.h>\n\n";  // for offsetof
-    utilhead << "#ifndef UTILS_H\n";
-    utilhead << "#define UTILS_H\n\n";
-    utilhead << "#include <stdio.h>\n";
-    utilhead << "#include \"common/bool.h\"\n";
-    utilhead << "#include <stdlib.h>\n";
-    utilhead << "#include <string.h>\n";
-    utilhead << "#include \"state.h\"\n";
-
-    libc << "#include \"" << libbase << ".h\"\n";
-    libc << "#include \"" << utilbase << ".h\"\n";
-    libc << "#include \"budgieutils.h\"\n";
-    libhead << "#ifndef LIB_H\n";
-    libhead << "#define LIB_H\n\n";
-    libhead << "#include \"" << utilbase << ".h\"\n";
-
-    namehead
-        << "#ifndef NAMES_H\n"
-        << "#define NAMES_N\n\n";
-    namec << "#include \"" << namebase << ".h\"\n";
+    perror(error.c_str());
+    exit(1);
 }
 
-static void trailers()
+static void die_regex(int errcode, const regex_t *preg)
 {
-    utilhead << "#endif /* !UTIL_H */\n";
-    libhead << "#endif /* !LIB_H */\n";
-    namehead << "#endif /* !NAMES_H */\n";
-    libc.close();
-    utilc.close();
-    namec.close();
-    libhead.close();
-    utilhead.close();
-    namehead.close();
-}
-
-static void tables()
-{
-    utilhead << type_table(true);
-    utilc << type_table(false);
-    function_table(true, utilhead);
-    function_table(false, utilc);
-    // Place this here, since some of the included files may wish
-    // to have the enums defined
-    for (size_t i = 0; i < includefiles.size(); i++)
-        utilhead << "#include \"" << includefiles[i] << "\"\n";
-}
-
-static void handle_types()
-{
-    // these are internally generated types, which will not be
-    // listed in external headers
-    for (size_t i = 0; i < typedefs.size(); i++)
-    {
-        utilhead
-            << "typedef "
-            << type_to_string(typedefs[i].second,
-                              IDENTIFIER_POINTER(DECL_NAME(TYPE_NAME(typedefs[i].first))),
-                              false) << ";\n";
-    }
-
-    make_type_dumper(true, utilhead);
-    make_type_dumper(false, utilc);
-    utilhead << get_type(true);
-    utilc << get_type(false);
-    utilhead << get_length(true);
-    utilc << get_length(false);
-    utilhead << dump_funcs(true);
-    utilc << dump_funcs(false);
-    type_converter(true, utilhead);
-    type_converter(false, utilc);
-}
-
-static void library_table(ostream &out)
-{
-    out << "const char * const library_names[" << libraries.size() << "] =\n"
-        << "{\n";
-    for (size_t i = 0; i < libraries.size(); i++)
-    {
-        if (i) out << ",\n";
-        out << "    \"" << libraries[i] << "\"";
-    }
-    out << "\n};\n"
-        << "int number_of_libraries = " << libraries.size() << ";\n";
-}
-
-// make function pointers for the true functions
-static void handle_functions()
-{
-    // declare the interceptor (user-defined)
-    libhead << "void interceptor(function_call *);\n";
-
-    // make function pointers for the true functions
-    function_macros(utilhead);
-    // make the function_call type and nested types
-    function_types(utilhead);
-    // table of libraries
-    library_table(utilc);
-
-    // write out function wrappers
-    for (size_t i = 0; i < functions.size(); i++)
-    {
-        libhead << make_wrapper(functions[i], true);
-        libc << make_wrapper(functions[i], false) << "\n";
-    }
-    make_invoker(true, utilhead);
-    make_invoker(false, utilc);
-    generics(utilhead);
-
-    // Name table
-    namehead << "#define NUMBER_OF_FUNCTIONS " << functions.size() << "\n";
-    namehead << "extern const char * const budgie_function_names[NUMBER_OF_FUNCTIONS];\n";
-    namec << "const char * const budgie_function_names[NUMBER_OF_FUNCTIONS] =\n"
-        << "{\n";
-    for (size_t i = 0; i < functions.size(); i++)
-    {
-        string name = IDENTIFIER_POINTER(DECL_NAME(functions[i]));
-        if (i) namec << ",\n";
-        namec << "    \"" << name << "\"";
-    }
-    namec << "\n};\n";
-}
-
-static void handle_state()
-{
-    make_state_structs(true, utilhead);
-    make_state_structs(false, utilc);
-}
-
-int main(int argc, char * const argv[])
-{
-    process_args(argc, argv);
-
-    T.load(tufile);
-    for_each(configfiles.begin(), configfiles.end(), load_config);
-
-    identify();           // identify types and functions to use
-    specify_types(types);
-    specify_functions(functions);
-
-    headers();            // initialise files
-    tables();
-    handle_types();       // type tables, dumping etc
-    handle_functions();   // function tables, wrappers, invoker etc.
-    handle_state();       // state structures
-    trailers();           // clean up files
-
-    T.clear();
-    if (have_limit_regex)
-        regfree(&limit_regex);
-    return 0;
-}
-
-/* Here we put the routines called by the parser */
-void add_include(const string &s)
-{
-    includefiles.push_back(s);
-}
-
-void add_library(const string &s)
-{
-    libraries.push_back(s);
-}
-
-void set_limit_regex(const string &s)
-{
-    int result = regcomp(&limit_regex, s.c_str(), REG_NOSUB | REG_EXTENDED);
-    if (result != 0)
-    {
-        int sz = regerror(result, &limit_regex, NULL, 0);
-        char *buffer = new char[sz + 1];
-        regerror(result, &limit_regex, buffer, sz + 1);
-        cerr << buffer;
-        exit(1);
-    }
-    have_limit_regex = true;
+    int sz = regerror(errcode, preg, NULL, 0);
+    char buffer[sz];
+    regerror(errcode, preg, buffer, sz);
+    die(string(buffer) + "\n");
 }
 
 static tree_node_p get_type_node_test(const string &type)
@@ -386,63 +186,107 @@ tree_node_p get_type_node(const string &type)
     tree_node_p ans = get_type_node_test(type);
     if (ans == NULL_TREE)
     {
-        cerr << "Could not find type `" << type << "'\n";
-        exit(1);
+        die("Could not find type '" + type + "'\n");
+        return NULL;  // never executed, but suppresses warning
     }
     else
         return ans;
 }
 
-param_or_type_list *find_type(const string &type)
+string parameter_number(int i)
 {
-    param_or_type_list *ans;
+    ostringstream s;
 
-    ans = new param_or_type_list;
-    ans->nmatch = 0;
-    tree_node_p node = get_type_node_test(type);
-    if (node != NULL_TREE)
+    if (i == -1) s << "retn"; else s << i;
+    return s.str();
+}
+
+/* Real code */
+
+static void process_args(int argc, char * const argv[])
+{
+    int opt;
+
+    while ((opt = getopt(argc, argv, "n:t:o:l:")) != -1)
     {
-        ans->pt_list.push_back(param_or_type_match());
-        ans->pt_list.back().pt = param_or_type(get_type_node(type));
-        ans->pt_list.back().text = type;
-        ans->pt_list.back().pmatch = NULL;
+        switch (opt)
+        {
+        case 't':
+            tufile = optarg;
+            break;
+        case 'o':
+            utilbase = optarg;
+            break;
+        case 'n':
+            namebase = optarg;
+            break;
+        case 'l':
+            libbase = optarg;
+            break;
+        case '?':
+        case ':':
+            exit(1);
+        }
     }
-    else
-        cerr << "Warning: could not find type '" << type << "'\n";
-    return ans;
+    if (optind + 1 != argc) die("Must specify a config file\n");
 }
 
-void add_alias(const string &a, const string &b)
+static void load_config(const string &name)
 {
-    aliases[a] = b;
+    bc_yyin = fopen(name.c_str(), "r");
+
+    if (!bc_yyin)
+        die("Could not open config file " + name + "\n");
+    if (yyparse() != 0) die("Unknown parse error\n");
+
+    fclose(bc_yyin);
 }
 
-tree_node_p get_alias(tree_node_p a)
+static bool dumpable(tree_node_p type)
 {
-    tree_node_p b;
-
-    string name = IDENTIFIER_POINTER(DECL_NAME(a));
-    if (!aliases.count(name)) return a;
-    name = aliases[name];
-    b = find_by_name(T, name);
-    if (!b)
+    switch (TREE_CODE(type))
     {
-        cerr << "Could not find function '" << name << "'\n";
-        exit(1);
+    case INTEGER_TYPE:
+    case REAL_TYPE:
+    case BOOLEAN_TYPE:
+    case POINTER_TYPE:
+    case REFERENCE_TYPE:
+        return true;
+    case ENUMERAL_TYPE:
+    case RECORD_TYPE:
+    case UNION_TYPE:
+        // anonymous types are impossible to name for dumping, and
+        // if the types are undefined then there is nothing to dump
+        if ((DECL_NAME(type) || TYPE_NAME(type)) && TYPE_VALUES(type)) return true;
+        else return false;
+    case ARRAY_TYPE:
+        // unspecified array sizes make dumping impossible
+        if (TYPE_DOMAIN(type) != NULL_TREE) return true;
+        else return false;
+    default:
+        return false;
     }
-    return b;
 }
 
-param_or_type_list *find_param(const string &func_regex, int param)
-{
-    param_or_type_list *ans = new param_or_type_list;
-    string name;
 
-    regex_t preg;
-    regcomp(&preg, ("^" + func_regex + "$").c_str(), REG_EXTENDED);
-    ans->nmatch = preg.re_nsub + 1;
-    regmatch_t *matches = new regmatch_t[ans->nmatch];
-    bool found = false;
+/* Identify the nodes that are required. We call set_flags on the
+ * type of the function to recursively tag the parameter and return
+ * types. We do not call set_flags directly on the declaration as this
+ * may drag in other, irrelevant nodes.
+ */
+static void identify()
+{
+    bool have_limit = false;
+    regex_t limit_regex;
+    string rx = "^" + limit + "$";
+
+    if (limit != "")
+    {
+        int result = regcomp(&limit_regex, rx.c_str(), REG_NOSUB | REG_EXTENDED);
+        if (result != 0) die_regex(result, &limit_regex);
+        have_limit = true;
+    }
+
     for (size_t i = 0; i < T.size(); i++)
         if (T.exists(i))
         {
@@ -451,96 +295,1472 @@ param_or_type_list *find_param(const string &func_regex, int param)
             // try to eliminate various builtins.
             if (code == FUNCTION_DECL
                 && DECL_SOURCE_FILE(node) != "<built-in>"
-                && IDENTIFIER_POINTER(DECL_NAME(node)).substr(0, 9) != "__builtin")
+                && IDENTIFIER_POINTER(DECL_NAME(node)).substr(0, 9) != "__builtin"
+                && (!have_limit
+                    || regexec(&limit_regex, IDENTIFIER_POINTER(DECL_NAME(node)).c_str(),
+                               0, NULL, 0) == 0))
             {
-                name = IDENTIFIER_POINTER(DECL_NAME(node));
-                if (regexec(&preg, name.c_str(),
-                            ans->nmatch, matches, 0) == 0)
-                {
-                    tree_node_p alias = get_alias(node);
-                    ans->pt_list.push_back(param_or_type_match());
-                    ans->pt_list.back().pt = param_or_type(alias, param);
-                    ans->pt_list.back().text = name;
-                    ans->pt_list.back().pmatch = matches;
-                    ans->pt_list.back().code = "";
-                    found = true;
-                    matches = new regmatch_t[ans->nmatch];
+                functions.push_back(Function());
+                functions.back().node = node;
+                functions.back().parent = functions.end();
+                functions.back().parent--;
+
+                set_flags(TREE_TYPE(node), FLAG_USE);
+                node->user_flags |= FLAG_USE;
+            }
+        }
+
+    if (have_limit) regfree(&limit_regex);
+
+    /* Add extra types that were explicitly requested */
+    for (list<string>::iterator i = extra_types.begin(); i != extra_types.end(); i++)
+    {
+        set_flags(get_type_node(*i), FLAG_USE);
+    }
+
+    // capture these types
+    size_t size = T.size();
+    for (size_t i = 0; i < size; i++)
+        if (T.exists(i) && (T[i]->user_flags & FLAG_USE))
+        {
+            tree_node_p node = T[i];
+            // FIXME: add an IGNORETYPE command
+            if (dumpable(node))
+            {
+                tree_node_p unconst = make_unconst(node);
+
+                types.push_back(Type());
+                types.back().node = node;
+                types.back().unconst = unconst;
+                if (unconst->user_flags & FLAG_TEMPORARY)
+		{
+                    unconst->user_flags &= ~FLAG_TEMPORARY;
+                    insert_tree(T, unconst);
+                    types.push_back(Type());
+                    types.back().node = unconst;
+                    types.back().unconst = unconst;
                 }
             }
         }
-    delete[] matches;
-    if (!found)
-        cerr << "Warning: no functions matched the regex `" << func_regex << "'\n";
+}
 
-    regfree(&preg);
+static void make_function_map()
+{
+    for (list<Function>::iterator i = functions.begin(); i != functions.end(); i++)
+        function_map[i->name()] = i;
+}
+
+static void make_type_map()
+{
+    for (list<Type>::iterator i = types.begin(); i != types.end(); i++)
+        type_map[i->node] = i;
+}
+
+static list<Type>::iterator get_type_map(tree_node_p node)
+{
+    assert(type_map.count(node));
+    return type_map[node];
+}
+
+static list<Function>::iterator get_function_root(list<Function>::iterator f)
+{
+    while (f != f->parent) f = f->parent;
+    return f;
+}
+
+static void make_groups()
+{
+    for (list<pair<string, string> >::iterator i = aliases.begin(); i != aliases.end(); i++)
+    {
+        string aname = i->first;
+        string bname = i->second;
+        if (!function_map.count(aname))
+        {
+            cerr << "Warning: no such function '" << aname << "'\n";
+            continue;
+        }
+        if (!function_map.count(bname))
+        {
+            cerr << "Warning: no such function '" << bname << "'\n";
+            continue;
+        }
+        list<Function>::iterator aroot = get_function_root(function_map[aname]);
+        list<Function>::iterator broot = get_function_root(function_map[bname]);
+        if (aroot != broot) aroot->parent = broot;
+    }
+
+    for (list<Function>::iterator i = functions.begin(); i != functions.end(); i++)
+    {
+        if (i == i->parent)
+        {
+            groups.push_back(Group());
+            i->group = groups.end();
+            i->group--;
+            groups.back().functions.push_back(i);
+        }
+    }
+
+    for (list<Function>::iterator i = functions.begin(); i != functions.end(); i++)
+    {
+        if (i != i->parent)
+        {
+            i->group = get_function_root(i)->group;
+            i->group->functions.push_back(i);
+        }
+    }
+
+    for (list<Group>::iterator i = groups.begin(); i != groups.end(); i++)
+    {
+        int count = 0;
+        tree_node_p type = TREE_TYPE(i->canonical()->node);
+        tree_node_p cur = TREE_ARG_TYPES(type);
+        while (cur != NULL_TREE && TREE_CODE(cur->value) != VOID_TYPE)
+        {
+            cur = TREE_CHAIN(cur);
+            count++;
+        }
+        i->parameters.reserve(count);
+
+        count = 0;
+        cur = TREE_ARG_TYPES(type);
+        while (cur != NULL_TREE && TREE_CODE(cur->value) != VOID_TYPE)
+        {
+            i->parameters.push_back(Parameter());
+            i->parameters.back().type = get_type_map(TREE_VALUE(cur));
+            cur = TREE_CHAIN(cur);
+            count++;
+        }
+        if (TREE_CODE(TREE_TYPE(type)) != VOID_TYPE)
+        {
+            i->has_retn = true;
+            i->retn.type = get_type_map(TREE_TYPE(type));
+        }
+        else
+            i->has_retn = false;
+    }
+}
+
+// applies the backreferences and $-substitutions
+static string group_substitute(const Override &o,
+                               const Group &g,
+                               const string &text,
+                               size_t nmatch,
+                               const regmatch_t *pmatch)
+{
+    string ans = o.code;
+    string::size_type pos = 0;
+
+    while ((pos = ans.find("\\", pos)) < ans.length())
+    {
+        string::size_type pos2 = pos + 1;
+        while (pos2 < ans.length()
+               && ans[pos2] >= '0'
+               && ans[pos2] <= '9') pos2++;
+        int num = atoi(ans.substr(pos + 1, pos2 - pos - 1).c_str());
+        if (pos2 == pos + 1 || num < 0 || num >= (int) nmatch)
+        {
+            pos++;
+            continue;
+        }
+        string subst = text.substr(pmatch[num].rm_so,
+                                   pmatch[num].rm_eo - pmatch[num].rm_so);
+        ans.replace(pos, pos2 - pos, subst);
+        // skip over the replacement, in case it somehow has \'s
+        pos += subst.length();
+    }
+
+    ans = search_replace(ans, "$f", "(" + g.define() + ")");
+    ans = search_replace(ans, "$l", "(count)");
+    if (o.mode == OVERRIDE_DUMP)
+        ans = search_replace(ans, "$F", "(out)");
+
+    /* We count downwards because there may be more than 10 parameters,
+     * in which case we must do the multi-digit ones first.
+     */
+    int start = (int) g.parameters.size() - 1;
+    int end = (g.has_retn ? -1 : 0);
+    for (int j = start; j >= end; j--)
+    {
+        tree_node_p tmp;
+        const Parameter &p = g.parameter(j);
+        const string n = parameter_number(j);
+        const string define = p.type->define();
+
+        tmp = make_pointer(make_const(p.type->node));
+        string type = type_to_string(tmp, "", false);
+        if (j >= 0)
+        {
+            ans = search_replace(ans, "$" + n, "(*(" + type + ") call->args[" + n + "])");
+            ans = search_replace(ans, "$t" + n, "(" + define + ")");
+            if (o.param == j)
+            {
+                ans = search_replace(ans, "$$", "(*(" + type + ") call->args[" + n + "])");
+                ans = search_replace(ans, "$t$", "(" + define + ")");
+            }
+        }
+        else
+        {
+            ans = search_replace(ans, "$r", "(*(" + type + ") call->retn)");
+            ans = search_replace(ans, "$tr", "(" + define + ")");
+            if (o.param == j)
+            {
+                ans = search_replace(ans, "$$", "(*(" + type + ") call->retn)");
+                ans = search_replace(ans, "$t$", "(" + define + ")");
+            }
+        }
+
+        destroy_temporary(tmp);
+    }
+
     return ans;
 }
 
-void add_new_bitfield(const string &new_type,
-                      const string &old_type,
-                      const vector<string> &tokens)
+static void make_overrides()
 {
-    tree_node_p old_node = get_type_node(old_type);
-    tree_node_p new_node = new_bitfield_type(old_node, tokens);
-    tree_node_p id = new tree_node;
-    // create an ID node so that find_by_name will pick up the
-    // new type
-    TREE_CODE(id) = IDENTIFIER_NODE;
-    IDENTIFIER_POINTER(id) = new_type;
-    id->user_flags |= FLAG_ARTIFICIAL;
-    DECL_NAME(TYPE_NAME(new_node)) = id;
-    insert_tree(T, new_node);
-    set_flags(new_node, FLAG_USE);
-    typedefs.push_back(make_pair(new_node, old_node));
-}
-
-static gen_state_tree *current_state = &root_state;
-static stack<gen_state_tree *> state_stack;
-
-void push_state(const string &name)
-{
-    for (size_t i = 0; i < current_state->children.size(); i++)
+    for (list<Override>::iterator i = overrides.begin(); i != overrides.end(); i++)
     {
-        if (name == current_state->children[i]->name)
+        if (!i->functions.empty())
         {
-            cerr << "duplicate state name (" << name << ")\n";
-            exit(1);
+            regex_t regex;
+            int result;
+            bool any_matches = false;
+
+            result = regcomp(&regex, i->functions.c_str(), REG_EXTENDED);
+            if (result != 0) die_regex(result, &regex);
+
+            for (list<Group>::iterator j = groups.begin(); j != groups.end(); j++)
+            {
+                bool matches = false;
+                list<Function>::iterator match;
+                size_t nmatch = regex.re_nsub + 1;
+                regmatch_t pmatch[nmatch];
+                for (Group::iterator k = j->functions.begin(); k != j->functions.end(); k++)
+                {
+                    result = regexec(&regex, (*k)->name().c_str(),
+                                     nmatch, pmatch, 0);
+                    if (result != 0 && result != REG_NOMATCH)
+                        die_regex(result, &regex);
+                    if (result == 0)
+                    {
+                        matches = true;
+                        match = *k;
+                        break;
+                    }
+                }
+                if (matches)
+                {
+                    string subst = group_substitute(*i, *j, match->name(), nmatch, pmatch);
+                    if (i->param == -1)
+                        j->retn.overrides[i->mode] = subst;
+                    else
+                    {
+                        if (i->param < -1 || i->param >= (int) j->parameters.size())
+                            die("Parameter out of range");
+                        j->parameters[i->param].overrides[i->mode] = subst;
+                    }
+                    // FIXME: substitutions
+                    any_matches = true;
+                }
+            }
+            if (!any_matches)
+                cerr << "Warning: no functions matched the regex '" << i->functions << "'\n";
+            regfree(&regex);
+        }
+        else
+        {
+            tree_node_p node = get_type_node_test(i->type);
+            if (!node)
+            {
+                cerr << "Warning: no such type '" << i->type << "'\n";
+                continue;
+            }
+            if (!type_map.count(node))
+            {
+                cerr << "Type '" << i->type << "' is unused\n";
+                continue;
+            }
+            list<Type>::iterator j = get_type_map(node);
+            j->overrides[i->mode] = i->code;
+            // FIXME: substitutions
         }
     }
-    state_stack.push(current_state);
-
-    current_state->children.push_back(new gen_state_tree());
-    current_state = current_state->children.back();
-    current_state->name = name;
 }
 
-void pop_state()
+static void make_indices()
 {
-    assert(!state_stack.empty());
-    current_state = state_stack.top();
-    state_stack.pop();
+    int index = 0;
+    for (list<Function>::iterator i = functions.begin(); i != functions.end(); i++)
+        i->index = index++;
+
+    index = 0;
+    for (list<Group>::iterator i = groups.begin(); i != groups.end(); i++)
+        i->index = index++;
+
+    index = 0;
+    for (list<Type>::iterator i = types.begin(); i != types.end(); i++)
+        i->index = index++;
 }
 
-void add_state_value(const std::string &name,
-                     const std::string &type,
-                     int count,
-                     const std::string &loader)
+static void make_bitfields()
 {
-    push_state(name);
-    current_state->count = count;
-    current_state->type = get_type_node(type);
-    current_state->loader = loader;
-    pop_state();
+    for (list<Bitfield>::iterator i = bitfields.begin(); i != bitfields.end(); i++)
+    {
+        tree_node_p old_node = get_type_node(i->old_type);
+        tree_node_p type_node = new tree_node; // underlying integer type
+        tree_node_p new_node = new tree_node;  // the new type
+        tree_node_p id_node = new tree_node;   // the name for the type
+
+        *type_node = *TYPE_NAME(old_node);
+        *new_node = *old_node;
+        TREE_TYPE(type_node) = new_node;
+        DECL_NAME(type_node) = NULL_TREE;
+        TYPE_NAME(new_node) = type_node;
+
+        type_node->number = -1;   // not yet in tree
+        new_node->number = -1;
+        type_node->user_flags |= FLAG_ARTIFICIAL;
+        new_node->user_flags |= FLAG_ARTIFICIAL;
+
+        TREE_CODE(id_node) = IDENTIFIER_NODE;
+        IDENTIFIER_POINTER(id_node) = i->new_type;
+        id_node->user_flags |= FLAG_ARTIFICIAL;
+        DECL_NAME(TYPE_NAME(new_node)) = id_node;
+        insert_tree(T, new_node);
+        set_flags(new_node, FLAG_USE);
+
+        i->new_node = new_node;
+    }
 }
 
-void set_state_key(const std::string &key,
-                   const std::string &compare)
+static void write_headers()
 {
-    current_state->key_type = get_type_node(key);
-    current_state->key_compare = compare;
+    lib_c = fopen((libbase + ".c").c_str(), "w");
+    if (!lib_c) pdie("Failed to open " + libbase + ".c");
+    lib_h = fopen((libbase + ".h").c_str(), "w");
+    if (!lib_h) pdie("Failed to open " + libbase + ".h");
+    util_c = fopen((utilbase + ".c").c_str(), "w");
+    if (!util_c) pdie("Failed to open " + utilbase + ".c");
+    util_h = fopen((utilbase + ".h").c_str(), "w");
+    if (!util_h) pdie("Failed to open " + utilbase + ".h");
+    name_c = fopen((namebase + ".c").c_str(), "w");
+    if (!name_c) pdie("Failed to open " + namebase + ".c");
+    name_h = fopen((namebase + ".h").c_str(), "w");
+    if (!name_h) pdie("Failed to open " + namebase + ".h");
+
+    fprintf(util_c,
+            "#include \"%s.h\"\n"
+            "#include \"budgieutils.h\"\n"
+            "#include <assert.h>\n"
+            "#include <dlfcn.h>\n"
+            "#include <stddef.h>\n"   // for offsetof FIXME do we need it?
+            "\n",
+            utilbase.c_str());
+    fprintf(util_h,
+            "#ifndef UTILS_H\n"
+            "#define UTILS_H\n"
+            "\n"
+            "#include <stdio.h>\n"
+            "#include \"common/bool.h\"\n"
+            "#include <stdlib.h>\n"
+            "#include <string.h>\n"
+            "\n");
+    fprintf(lib_c,
+            "#include \"%s.h\"\n"
+            "#include \"%s.h\"\n"
+            "#include \"budgieutils.h\"\n"
+            "\n",
+            libbase.c_str(), utilbase.c_str());
+    fprintf(lib_h,
+            "#ifndef LIB_H\n"
+            "#define LIB_H\n"
+            "\n"
+            "#include \"%s.h\"\n"
+            "\n",
+            utilbase.c_str());
+    fprintf(name_c,
+            "#include \"%s.h\"\n"
+            "\n",
+            namebase.c_str());
+    fprintf(name_h,
+            "#ifndef NAMES_H\n"
+            "#define NAMES_H\n"
+            "\n");
 }
 
-void set_state_constructor(const std::string &constructor)
+static void write_trailers()
 {
-    current_state->constructor = constructor;
+    fprintf(name_h, "#endif /* !NAMES_H */\n");
+    fprintf(util_h, "#endif /* !UTILS_H */\n");
+    fprintf(lib_h, "#endif /* !LIB_H */\n");
+
+    fclose(name_c);
+    fclose(name_h);
+    fclose(lib_c);
+    fclose(lib_h);
+    fclose(util_c);
+    fclose(util_h);
+}
+
+static void write_enums()
+{
+    for (list<Function>::iterator i = functions.begin(); i != functions.end(); i++)
+        fprintf(util_h, "#define %s %d\n", i->define().c_str(), i->index);
+    fprintf(util_h,
+            "#define NUMBER_OF_FUNCTIONS %d\n"
+            "extern int number_of_functions;\n"
+            "\n", (int) functions.size());
+    fprintf(util_c,
+            "int number_of_functions = NUMBER_OF_FUNCTIONS;\n");
+
+    for (list<Function>::iterator i = functions.begin(); i != functions.end(); i++)
+        fprintf(util_h, "#define %s %d\n", i->group_define().c_str(), i->group->index);
+    fprintf(util_h,
+            "#define NUMBER_OF_GROUPS %d\n"
+            "extern int number_of_groups;\n"
+            "\n", (int) groups.size());
+    fprintf(util_c,
+            "int number_of_groups = NUMBER_OF_GROUPS;\n");
+
+    for (list<Type>::iterator i = types.begin(); i != types.end(); i++)
+    {
+        string name = i->type_name();
+        string define = i->define();
+        fprintf(util_h,
+                "/* %s */\n"
+                "#define %s %d\n",
+                name.c_str(), define.c_str(), i->index);
+    }
+    fprintf(util_h,
+            "#define NUMBER_OF_TYPES %d\n"
+            "extern int number_of_types;\n"
+            "\n", (int) types.size());
+    fprintf(util_c,
+            "int number_of_types = NUMBER_OF_TYPES;\n"
+            "\n");
+}
+
+static void write_function_to_group_table()
+{
+    fprintf(util_h,
+            "extern const int budgie_function_to_group[NUMBER_OF_FUNCTIONS];\n");
+    fprintf(util_c,
+            "const int budgie_function_to_group[NUMBER_OF_FUNCTIONS] =\n"
+            "{\n");
+    for (list<Function>::iterator i = functions.begin(); i != functions.end(); i++)
+    {
+        string group = i->group_define();
+        if (i != functions.begin()) fprintf(util_c, ",\n");
+        fprintf(util_c, "    %s", group.c_str());
+    }
+    fprintf(util_c, "\n};\n\n");
+}
+
+static void write_includes()
+{
+    for (list<string>::iterator i = headers.begin(); i != headers.end(); i++)
+        fprintf(util_h, "#include \"%s\"\n", i->c_str());
+    fprintf(util_h, "\n");
+}
+
+static void write_typedefs()
+{
+    for (list<Bitfield>::iterator i = bitfields.begin(); i != bitfields.end(); i++)
+        fprintf(util_h, "typedef %s %s;\n",
+                i->old_type.c_str(), i->new_type.c_str());
+    fprintf(util_h, "\n");
+}
+
+static void write_function_table()
+{
+    fprintf(util_h, "extern function_data budgie_function_table[NUMBER_OF_FUNCTIONS];\n");
+    fprintf(util_c,
+            "function_data budgie_function_table[NUMBER_OF_FUNCTIONS] =\n"
+            "{\n");
+    for (list<Function>::iterator i = functions.begin(); i != functions.end(); i++)
+    {
+        string name = i->name();
+        string group = i->group_define();
+        if (i != functions.begin()) fprintf(util_c, ",\n");
+        fprintf(util_c,
+                "    { \"%s\", NULL, %s }",
+                name.c_str(), group.c_str());
+    }
+    fprintf(util_c, "\n};\n\n");
+}
+
+static void write_parameter_entry(FILE *out, const Group &g,
+                                  const Parameter &p,
+                                  int index)
+{
+    string type = p.type->define();
+    string dumper = "NULL", get_type = "NULL", get_length = "NULL";
+    string ind = parameter_number(index);
+
+    if (p.overrides.count(OVERRIDE_DUMP))
+        dumper = "budgie_dump_" + ind + "_" + g.define();
+    if (p.overrides.count(OVERRIDE_TYPE))
+        get_type = "budgie_get_type_" + ind + "_" + g.define();
+    if (p.overrides.count(OVERRIDE_LENGTH))
+        get_length = "budgie_get_length_" + ind + "_" + g.define();
+    fprintf(out, "{ %s, %s, %s, %s }",
+            type.c_str(), dumper.c_str(), get_type.c_str(), get_length.c_str());
+}
+
+static void write_group_table()
+{
+    for (list<Group>::iterator i = groups.begin(); i != groups.end(); i++)
+    {
+        string name = i->name();
+        if (i->parameters.empty()) continue;
+        fprintf(util_c,
+                "static const group_parameter_data parameters_%s[] =\n"
+                "{\n",
+                name.c_str());
+        for (size_t j = 0; j < i->parameters.size(); j++)
+        {
+            if (j) fprintf(util_c, ",\n");
+            fprintf(util_c, "    ");
+            write_parameter_entry(util_c, *i, i->parameters[j], j);
+        }
+        fprintf(util_c, "\n};\n\n");
+    }
+
+    fprintf(util_h, "extern const group_data budgie_group_table[NUMBER_OF_GROUPS];\n");
+    fprintf(util_c,
+            "const group_data budgie_group_table[NUMBER_OF_GROUPS] =\n"
+            "{\n");
+    for (list<Group>::iterator i = groups.begin(); i != groups.end(); i++)
+    {
+        string name = i->name();
+        if (i != groups.begin()) fprintf(util_c, ",\n");
+        fprintf(util_c, "    { %d, ", i->parameters.size());
+        if (!i->parameters.empty())
+            fprintf(util_c, "parameters_%s, ", name.c_str());
+        else
+            fprintf(util_c, "NULL, ");
+        if (i->has_retn)
+            write_parameter_entry(util_c, *i, i->retn, -1);
+        else
+            fprintf(util_c, "{ NULL_TYPE, NULL, NULL, NULL }");
+        fprintf(util_c, i->has_retn ? ", true }" : ", false }");
+    }
+    fprintf(util_c, "\n};\n\n");
+}
+
+static void write_type_table()
+{
+    map<tree_node_p, tree_node_p> inverse_pointer;
+
+    // build inverse of the pointer mapping
+    for (list<Type>::iterator i = types.begin(); i != types.end(); i++)
+        if (TREE_CODE(i->node) == POINTER_TYPE)
+            inverse_pointer[TREE_TYPE(i->node)] = i->node;
+
+    // generate arrays for record types
+    for (list<Type>::iterator i = types.begin(); i != types.end(); i++)
+    {
+        if ((TREE_CODE(i->node) == UNION_TYPE
+             || TREE_CODE(i->node) == RECORD_TYPE)
+            && TYPE_FIELDS(i->node) != NULL_TREE)
+        {
+            string name = i->name();
+            string type = i->type_name();
+            fprintf(util_c,
+                    "static const type_record_data fields_%s[] =\n"
+                    "{\n",
+                    name.c_str());
+
+            tree_node_p cur = TYPE_FIELDS(i->node);
+            while (cur != NULL)
+            {
+                if (TREE_CODE(cur) == FIELD_DECL)
+                {
+                    string field_type = get_type_map(TREE_TYPE(cur))->define();
+                    string field = IDENTIFIER_POINTER(DECL_NAME(cur));
+                    fprintf(util_c,
+                            "    { %s, offsetof(%s, %s) },\n",
+                            field_type.c_str(), type.c_str(), field.c_str());
+                }
+                cur = TREE_CHAIN(cur);
+            }
+            fprintf(util_c,
+                    "    { NULL_TYPE, -1 }\n"
+                    "};\n\n");
+        }
+    }
+
+    // main type table
+    fprintf(util_h, "extern const type_data budgie_type_table[NUMBER_OF_TYPES];\n");
+    fprintf(util_c,
+            "const type_data budgie_type_table[NUMBER_OF_TYPES] =\n"
+            "{\n");
+    for (list<Type>::iterator i = types.begin(); i != types.end(); i++)
+    {
+        string type = i->type_name();
+        string name = i->name();
+        string define = i->define();
+        string base_type = "NULL_TYPE";
+        const char *code;
+        string ptr = "NULL_TYPE";
+        string fields = "NULL";
+        ptrdiff_t length = -1;
+        string get_type = "NULL", get_length = "NULL";
+
+        switch (TREE_CODE(i->node))
+        {
+        case COMPLEX_TYPE: code = "CODE_COMPLEX"; break;
+        case ENUMERAL_TYPE: code = "CODE_ENUMERAL"; break;
+        case INTEGER_TYPE: code = "CODE_INTEGRAL"; break;
+        case REAL_TYPE: code = "CODE_FLOAT"; break;
+        case RECORD_TYPE:
+        case UNION_TYPE: code = "CODE_RECORD"; break;
+        case ARRAY_TYPE: code = "CODE_ARRAY"; break;
+        case POINTER_TYPE: code = "CODE_POINTER"; break;
+        default: code = "CODE_OTHER";
+        }
+        if (TREE_TYPE(i->node) != NULL_TREE
+            && type_map.count(TREE_TYPE(i->node)))
+            base_type = get_type_map(TREE_TYPE(i->node))->define();
+        if (inverse_pointer.count(i->node))
+            ptr = get_type_map(inverse_pointer[i->node])->define();
+        if ((TREE_CODE(i->node) == UNION_TYPE
+             || TREE_CODE(i->node) == RECORD_TYPE)
+            && TYPE_FIELDS(i->node) != NULL_TREE)
+            fields = "fields_" + name;
+        if (TREE_CODE(i->node) == ARRAY_TYPE)
+        {
+            if (TYPE_DOMAIN(i->node) != NULL_TREE
+                && TYPE_MAX_VALUE(TYPE_DOMAIN(i->node)) != NULL_TREE)
+                length = TREE_INT_CST_LOW(TYPE_MAX_VALUE(TYPE_DOMAIN(i->node))) + 1;
+            else
+                length = -1;
+        }
+        else
+            length = 1; // FIXME: should this perhaps be -1?
+        if (i->overrides.count(OVERRIDE_TYPE))
+            get_type = "budgie_get_type_" + define;
+        if (i->overrides.count(OVERRIDE_LENGTH))
+            get_length = "budgie_get_length_" + define;
+
+        if (i != types.begin()) fprintf(util_c, ",\n");
+        fprintf(util_c,
+                "    { %s, %s, %s, %s, sizeof(%s), %d,\n"
+                "      (type_dumper) budgie_dump_%s,\n"
+                "      (type_get_type) %s,\n"
+                "      (type_get_length) %s }",
+                code, base_type.c_str(), ptr.c_str(), fields.c_str(),
+                type.c_str(), (int) length, define.c_str(),
+                get_type.c_str(), get_length.c_str());
+    }
+    fprintf(util_c, "\n};\n\n");
+}
+
+static void write_library_table()
+{
+    fprintf(util_c,
+            "const char * const library_names[] =\n"
+            "{\n");
+    for (list<string>::iterator i = libraries.begin(); i != libraries.end(); i++)
+    {
+        if (i != libraries.begin()) fprintf(util_c, ",\n");
+        fprintf(util_c, "\"%s\"", i->c_str());
+    }
+    fprintf(util_c,
+            "};\n"
+            "int number_of_libraries = %d;\n"
+            "\n",
+            libraries.size());
+}
+
+static void write_type_dumpers()
+{
+    map<tree_node_p, list<Bitfield>::iterator> bitfield_map;
+
+    // Build map from types to bitfields.
+    for (list<Bitfield>::iterator i = bitfields.begin(); i != bitfields.end(); i++)
+        bitfield_map[i->new_node] = i;
+
+    for (list<Type>::iterator i = types.begin(); i != types.end(); i++)
+    {
+        tree_node_p ptr = make_pointer(make_const(i->node));
+        string define = i->define();
+        string arg = type_to_string(ptr, "value", false);
+        string custom_code;
+        destroy_temporary(ptr);
+
+        fprintf(util_h,
+                "void budgie_dump_%s(%s, int count, FILE *out);\n",
+                define.c_str(), arg.c_str());
+        fprintf(util_c,
+                "void budgie_dump_%s(%s, int count, FILE *out)\n"
+                "{\n",
+                define.c_str(), arg.c_str());
+
+        // build handler for override, if any
+        if (i->overrides.count(OVERRIDE_DUMP))
+            custom_code = "    if (" + i->overrides[OVERRIDE_DUMP] + ") return;\n";
+
+        // handle bitfields
+        if (bitfield_map.count(i->node))
+        {
+            list<Bitfield>::iterator b = bitfield_map[i->node];
+            fprintf(util_c,
+                    "    static const bitfield_pair tokens[] =\n"
+                    "    {\n");
+            for (list<string>::iterator j = b->bits.begin(); j != b->bits.end(); j++)
+            {
+                if (j != b->bits.begin()) fprintf(util_c, ",\n");
+                fprintf(util_c,
+                        "        { %s, \"%s\" }",
+                        j->c_str(), j->c_str());
+            }
+            fprintf(util_c,
+                    "\n"
+                    "    };\n"
+                    "%s"
+                    "    budgie_dump_bitfield(*value, out, tokens, %d);\n"
+                    "}\n"
+                    "\n",
+                    custom_code.c_str(), (int) b->bits.size());
+            continue;
+        }
+
+        string name;
+        // FIXME: should store both low and high
+        set<long> seen_enums; // to get around duplicate enums
+        long value;
+        tree_node_p tmp, child;
+
+        switch (TREE_CODE(i->node))
+        {
+        case ENUMERAL_TYPE:
+            fprintf(util_c,
+                    "%s"
+                    "    switch (*value)\n"
+                    "    {",
+                    custom_code.c_str());
+            tmp = TYPE_VALUES(i->node);
+            while (tmp != NULL_TREE)
+            {
+                name = IDENTIFIER_POINTER(TREE_PURPOSE(tmp));
+                value = TREE_INT_CST_LOW(TREE_VALUE(tmp));
+                if (!seen_enums.count(value))
+                {
+                    fprintf(util_c,
+                            "    case %s: fputs(\"%s\", out); break;\n",
+                            name.c_str(), name.c_str());
+                    seen_enums.insert(value);
+                }
+                tmp = TREE_CHAIN(tmp);
+            }
+            fprintf(util_c,
+                    "    default: fprintf(out, \"%%ld\", (long) *value);\n"
+                    "    }\n");
+            break;
+        case INTEGER_TYPE:
+            // FIXME: long long types; unsigned long types
+            fprintf(util_c,
+                    "%s"
+                    "    fprintf(out, \"%%ld\", (long) *value);\n",
+                    custom_code.c_str());
+            break;
+        case REAL_TYPE:
+            // FIXME: long double
+            fprintf(util_c,
+                    "%s"
+                    "    fprintf(out, \"%%g\", (double) *value);\n",
+                    custom_code.c_str());
+            break;
+        case ARRAY_TYPE:
+            fprintf(util_c,
+                    "    long size;\n"
+                    "    long i;\n"
+                    "%s",
+                    custom_code.c_str());
+            if (TYPE_DOMAIN(i->node) != NULL_TREE) // find size
+            {
+                long size = TREE_INT_CST_LOW(TYPE_MAX_VALUE(TYPE_DOMAIN(i->node))) + 1;
+                fprintf(util_c, "    size = %ld;\n", size);
+            }
+            else
+                fprintf(util_c, "    size = count;\n");
+            child = TREE_TYPE(i->node); // array element type
+            fprintf(util_c,
+                    "    fputs(\"{ \", out);\n"
+                    "    for (i = 0; i < size; i++)\n"
+                    "    {\n");
+            if (type_map.count(child))
+            {
+                define = get_type_map(child)->define();
+                fprintf(util_c,
+                        "        budgie_dump_any_type(%s, &(*value)[i], -1, out);\n",
+                        define.c_str());
+            }
+            else
+                fprintf(util_c,
+                        "        fputs(\"<unknown>\", out);\n");
+            fprintf(util_c,
+                    "        if (i < size - 1) fputs(\", \", out);\n"
+                    "    }\n"
+                    "    if (size < 0) fputs(\"<unknown size array>\", out);\n"
+                    "    fputs(\" }\", out);\n");
+            break;
+        case POINTER_TYPE:
+            child = TREE_TYPE(i->node); // pointed to type
+            if (type_map.count(child))
+                fprintf(util_c, "    int i;\n");
+            fprintf(util_c,
+                    "%s"
+                    "    fprintf(out, \"%%p\", (void *) *value);\n",
+                    custom_code.c_str());
+            if (type_map.count(child))
+            {
+                string define = get_type_map(child)->define();
+                fprintf(util_c,
+                        "    if (*value)\n"
+                        "    {\n"
+                        "        fputs(\" -> \", out);\n"
+                        // -1 means a simple pointer, not pointer to array
+                        "        if (count < 0)\n"
+                        "            budgie_dump_any_type(%s, *value, -1, out);\n"
+                        "        else\n"
+                        "        {\n"
+                        // pointer to array
+                        "            fputs(\"{ \", out);\n"
+                        "            for (i = 0; i < count; i++)\n"
+                        "            {\n"
+                        "                budgie_dump_any_type(%s, &(*value)[i], -1, out);\n"
+                        "                if (i + 1 < count) fputs(\", \", out);\n"
+                        "            }\n"
+                        "            fputs(\" }\", out);\n"
+                        "        }\n"
+                        "    }\n",
+                        define.c_str(), define.c_str());
+            }
+            break;
+        case RECORD_TYPE:
+        case UNION_TYPE:
+            { // block to allow "first" to be declared in this scope
+                fprintf(util_c,
+                        "%s"
+                        "    fputs(\"{ \", out);\n",
+                        custom_code.c_str());
+                tmp = TYPE_FIELDS(i->node);
+                bool first = true;
+                while (tmp != NULL_TREE)
+                {
+                    if (TREE_CODE(tmp) == FIELD_DECL)
+                    {
+                        name = IDENTIFIER_POINTER(DECL_NAME(tmp));
+                        if (!first)
+                            fprintf(util_c,
+                                    "    fputs(\", \", out);\n");
+                        else first = false;
+                        child = TREE_TYPE(tmp);
+                        define = get_type_map(child)->define();
+                        fprintf(util_c,
+                                "    budgie_dump_any_type(%s, &value->%s, -1, out);\n",
+                                define.c_str(), name.c_str());
+                    }
+                    tmp = TREE_CHAIN(tmp);
+                }
+                fprintf(util_c,
+                        "    fputs(\" }\", out);\n");
+            }
+            break;
+        default:
+            fprintf(util_c,
+                    "%s"
+                    "    fputs(\"<unknown>\", out);\n",
+                    custom_code.c_str());
+        }
+        fprintf(util_c, "\n}\n\n");
+    }
+}
+
+static void write_type_get_types()
+{
+    for (list<Type>::iterator i = types.begin(); i != types.end(); i++)
+    {
+        if (!i->overrides.count(OVERRIDE_TYPE)) continue;
+        tree_node_p ptr = make_pointer(make_const(i->node));
+        string define = i->define();
+        string type = type_to_string(ptr, "", false);
+        string subst = search_replace(i->overrides[OVERRIDE_TYPE],
+                                      "$$", "(*(" + type + ") value)");
+
+        fprintf(util_h,
+                "budgie_type budgie_get_type_%s(const void *value);\n",
+                define.c_str());
+        fprintf(util_c,
+                "budgie_type budgie_get_type_%s(const void *value)"
+                "{\n"
+                "    return (%s);\n"
+                "}\n"
+                "\n",
+                define.c_str(), subst.c_str());
+    }
+}
+
+static void write_type_get_lengths()
+{
+    for (list<Type>::iterator i = types.begin(); i != types.end(); i++)
+    {
+        if (!i->overrides.count(OVERRIDE_LENGTH)) continue;
+        tree_node_p ptr = make_pointer(make_const(i->node));
+        string define = i->define();
+        string type = type_to_string(ptr, "", false);
+        string subst = search_replace(i->overrides[OVERRIDE_LENGTH],
+                                      "$$", "(*(" + type + ") value)");
+
+        fprintf(util_h,
+                "int budgie_get_length_%s(const void *value);\n",
+                define.c_str());
+        fprintf(util_c,
+                "int budgie_get_length_%s(const void *value)"
+                "{\n"
+                "    return (%s);\n"
+                "}\n"
+                "\n",
+                define.c_str(), subst.c_str());
+    }
+}
+
+static void write_parameter_overrides()
+{
+    for (list<Group>::iterator i = groups.begin(); i != groups.end(); i++)
+    {
+        string define = i->define();
+        for (int j = (i->has_retn) ? -1 : 0; j < (int) i->parameters.size(); j++)
+        {
+            string ind = parameter_number(j);
+            Parameter &p = i->parameter(j);
+
+            if (p.overrides.count(OVERRIDE_DUMP))
+            {
+                fprintf(util_h,
+                        "bool budgie_dump_%s_%s(const generic_function_call *call, int arg, const void *value, int length, FILE *out);\n",
+                        ind.c_str(), define.c_str());
+                fprintf(util_c,
+                        "bool budgie_dump_%s_%s(const generic_function_call *call, int arg, const void *value, int length, FILE *out)\n"
+                        "{\n"
+                        "    return (%s);\n"
+                        "}\n"
+                        "\n",
+                        ind.c_str(), define.c_str(), p.overrides[OVERRIDE_DUMP].c_str());
+            }
+
+            if (p.overrides.count(OVERRIDE_TYPE))
+            {
+                fprintf(util_h,
+                        "budgie_type budgie_get_type_%s_%s(const generic_function_call *call, int arg, const void *value);\n",
+                        ind.c_str(), define.c_str());
+                fprintf(util_c,
+                        "budgie_type budgie_get_type_%s_%s(const generic_function_call *call, int arg, const void *value)\n"
+                        "{\n"
+                        "    return (%s);\n"
+                        "}\n"
+                        "\n",
+                        ind.c_str(), define.c_str(), p.overrides[OVERRIDE_TYPE].c_str());
+            }
+
+            if (p.overrides.count(OVERRIDE_LENGTH))
+            {
+                fprintf(util_h,
+                        "int budgie_get_length_%s_%s(const generic_function_call *call, int arg, const void *value);\n",
+                        ind.c_str(), define.c_str());
+                fprintf(util_c,
+                        "int budgie_get_length_%s_%s(const generic_function_call *call, int arg, const void *value)\n"
+                        "{\n"
+                        "    return (%s);\n"
+                        "}\n"
+                        "\n",
+                        ind.c_str(), define.c_str(), p.overrides[OVERRIDE_LENGTH].c_str());
+            }
+        }
+    }
+}
+
+static void write_converter()
+{
+    tree_node_p tmp;
+
+    fprintf(util_h,
+            "void budgie_type_convert(void *out, budgie_type out_type, const void *in, budgie_type in_type, size_t count);\n");
+    fprintf(util_c,
+            "void budgie_type_convert(void *out, budgie_type out_type, const void *in, budgie_type in_type, size_t count)\n"
+            "{\n"
+            "    long double value;\n"
+            "    size_t i;\n"
+            "    if (in_type == out_type\n"
+            "        || (budgie_type_table[in_type].code == budgie_type_table[out_type].code\n"
+            "            && budgie_type_table[in_type].size == budgie_type_table[out_type].size))\n"
+            "    {\n"
+            "        memcpy(out, in, budgie_type_table[in_type].size * count);\n"
+            "        return;\n"
+            "    }\n"
+            "    for (i = 0; i < count; i++)\n"
+            "    {\n"
+            "        switch (in_type)\n"
+            "        {\n");
+
+    for (list<Type>::iterator i = types.begin(); i != types.end(); i++)
+    {
+        string define = i->define();
+        string cast;
+        switch (TREE_CODE(i->node))
+        {
+        case ENUMERAL_TYPE:
+        case REAL_TYPE:
+        case INTEGER_TYPE:
+            tmp = make_pointer(make_const(i->node));
+            cast = type_to_string(tmp, "", false);
+            fprintf(util_c,
+                    "        case %s: value = (long double) ((%s) in)[i]; break;",
+                    define.c_str(), cast.c_str());
+            destroy_temporary(tmp);
+            break;
+        default:;
+        }
+    }
+
+    fprintf(util_c,
+            "        default: abort();\n"
+            "        }\n"
+            "        switch (out_type)\n"
+            "        {\n");
+
+    for (list<Type>::iterator i = types.begin(); i != types.end(); i++)
+    {
+        if (CP_TYPE_CONST_P(i->node)) continue;
+        string define = i->define();
+        string type = i->type_name();
+        string cast;
+        switch (TREE_CODE(i->node))
+        {
+        case ENUMERAL_TYPE:
+        case REAL_TYPE:
+        case INTEGER_TYPE:
+            tmp = make_pointer(i->node);
+            cast = type_to_string(tmp, "", false);
+            fprintf(util_c,
+                    "        case %s: ((%s) out)[i] = (%s) value; break;\n",
+                    define.c_str(), cast.c_str(), type.c_str());
+            destroy_temporary(tmp);
+        default: ;
+        }
+    }
+
+    fprintf(util_c,
+            "        default: abort();\n"
+            "        }\n"
+            "    }\n"
+            "}\n\n");
+}
+
+static void write_call_wrappers()
+{
+    for (list<Function>::iterator i = functions.begin(); i != functions.end(); i++)
+    {
+        tree_node_p ptr = make_pointer(TREE_TYPE(i->node));
+
+        string name = i->name();
+        string type = type_to_string(ptr, "", false);
+        string define = i->define();
+        fprintf(util_h,
+                "#define CALL_%s(", name.c_str());
+        for (size_t j = 0; j < i->group->parameters.size(); j++)
+        {
+            if (j) fprintf(util_h, ", ");
+            fprintf(util_h, "arg%d", (int) j);
+        }
+        fprintf(util_h,
+                ") ((*(%s) budgie_function_table[%s].real)(",
+                type.c_str(), define.c_str());
+        for (size_t j = 0; j < i->group->parameters.size(); j++)
+        {
+            if (j) fprintf(util_h, ", ");
+            fprintf(util_h, "arg%d", (int) j);
+        }
+        fprintf(util_h, "))\n");
+
+        destroy_temporary(ptr);
+    }
+}
+
+static void write_call_structs()
+{
+    size_t max_args = 0;
+
+    for (list<Function>::iterator i = functions.begin(); i != functions.end(); i++)
+    {
+        // avoid empty structs
+        if (i->group->parameters.empty() && !i->group->has_retn) continue;
+        string name = i->name();
+        fprintf(util_h,
+                "typedef struct\n"
+                "{\n");
+        for (size_t j = 0; j < i->group->parameters.size(); j++)
+        {
+            ostringstream arg;
+            tree_node_p ptr;
+
+            ptr = make_pointer(i->group->parameters[j].type->node);
+            arg << "arg" << j;
+            string p = type_to_string(ptr, arg.str(), true);
+            fprintf(util_h, "    %s;\n", p.c_str());
+
+            destroy_temporary(ptr);
+        }
+        if (i->group->has_retn)
+        {
+            tree_node_p ptr = make_pointer(i->group->retn.type->node);
+            string p = type_to_string(ptr, "retn", true);
+            fprintf(util_h, "    %s;\n", p.c_str());
+            destroy_temporary(ptr);
+        }
+        fprintf(util_h, "} budgie_call_struct_%s;\n\n", name.c_str());
+
+        max_args = max(max_args, i->group->parameters.size());
+    }
+
+    fprintf(util_h,
+            "typedef struct\n"
+            "{\n"
+            "    generic_function_call generic;\n"
+            "    const void *args[%d];\n"
+            "    union\n"
+            "    {\n",
+            (int) max_args);
+    for (list<Function>::iterator i = functions.begin(); i != functions.end(); i++)
+    {
+        if (i->group->parameters.empty() && !i->group->has_retn) continue;
+        string name = i->name();
+        fprintf(util_h, "        budgie_call_struct_%s %s;\n",
+                name.c_str(), name.c_str());
+    }
+    fprintf(util_h,
+            "    } typed;\n"
+            "} function_call;\n"
+            "\n");
+}
+
+static void write_invoke()
+{
+    // the prototype isn't part of the invoker, but fits in best here
+    fprintf(util_h,
+            "void budgie_interceptor(function_call *call);\n"
+            "\n");
+
+    fprintf(util_h, "void budgie_invoke(function_call *call);\n");
+    fprintf(util_c,
+            "void budgie_invoke(function_call *call)\n"
+            "{\n"
+            "    switch (call->generic.id)\n"
+            "    {\n");
+
+    for (list<Function>::iterator i = functions.begin(); i != functions.end(); i++)
+    {
+        string name = i->name();
+        string define = i->define();
+        fprintf(util_c,
+                "    case %s:\n"
+                "        ",
+                define.c_str());
+        if (i->group->has_retn)
+            fprintf(util_c, "*call->typed.%s.retn = ", name.c_str());
+        fprintf(util_c, "CALL_%s(", name.c_str());
+        for (size_t j = 0; j < i->group->parameters.size(); j++)
+        {
+            if (j) fprintf(util_c, ", ");
+            fprintf(util_c, "*call->typed.%s.arg%d", name.c_str(), j);
+        }
+        fprintf(util_c,
+                ");\n"
+                "        break;\n");
+    }
+    fprintf(util_c,
+            "    default:\n"
+            "        abort();\n"
+            "    }\n"
+            "}\n"
+            "\n");
+}
+
+static void write_interceptors()
+{
+    for (list<Function>::iterator i = functions.begin(); i != functions.end(); i++)
+    {
+        string name = i->name();
+        string define = i->define();
+        string group = i->group_define();
+        string proto = function_type_to_string(TREE_TYPE(i->node), i->name(),
+                                               false, "arg");
+        fprintf(lib_h, "%s;\n", proto.c_str());
+        fprintf(lib_c,
+                "%s\n"
+                "{\n"
+                "    function_call call;\n",
+                proto.c_str());
+        if (i->group->has_retn)
+        {
+            string ret_var = type_to_string(i->group->retn.type->node,
+                                            "retn", false);
+            fprintf(lib_c, "    %s;\n", ret_var.c_str());
+        }
+        fprintf(lib_c,
+                "    if (!check_set_reentrance())\n"
+                "    {\n"
+                "        initialise_real();\n"
+                "        ",
+                proto.c_str());
+        if (i->group->has_retn)
+            fprintf(lib_c, "return ");
+        fprintf(lib_c, "CALL_%s(", name.c_str());
+        for (size_t j = 0; j < i->group->parameters.size(); j++)
+        {
+            if (j) fprintf(lib_c, ", ");
+            fprintf(lib_c, "arg%d", (int) j);
+        }
+        fprintf(lib_c, ");\n");
+        if (!i->group->has_retn) fprintf(lib_c, "        return;\n");
+
+        fprintf(lib_c,
+                "    }\n"
+                "    call.generic.id = %s;\n"
+                "    call.generic.group = %s;\n"
+                "    call.generic.args = call.args;\n"
+                "    call.generic.retn = %s;\n"
+                "    call.generic.num_args = %d;\n",
+                define.c_str(), group.c_str(),
+                i->group->has_retn ? "&retn" : "NULL",
+                (int) i->group->parameters.size());
+
+        for (size_t j = 0; j < i->group->parameters.size(); j++)
+        {
+            fprintf(lib_c,
+                    "    call.args[%d] = &arg%d;\n"
+                    "    call.typed.%s.arg%d = &arg%d;\n",
+                    (int) j, (int) j, name.c_str(), (int) j, (int) j);
+        }
+        if (i->group->has_retn)
+            fprintf(lib_c,
+                    "    call.typed.%s.retn = &retn;\n",
+                    name.c_str());
+
+        fprintf(lib_c,
+                "    budgie_interceptor(&call);\n"
+                "    clear_reentrance();\n"
+                "%s"
+                "}\n\n",
+                i->group->has_retn ? "    return retn;\n" : "");
+    }
+}
+
+static void write_name_table()
+{
+    fprintf(name_h,
+            "#define NUMBER_OF_FUNCTIONS %d\n"
+            "extern const char * const budgie_function_names[NUMBER_OF_FUNCTIONS];\n"
+            "\n",
+            (int) functions.size());
+    fprintf(name_c,
+            "const char * const budgie_function_names[NUMBER_OF_FUNCTIONS] =\n"
+            "{\n");
+    for (list<Function>::iterator i = functions.begin(); i != functions.end(); i++)
+    {
+        string name = i->name();
+        if (i != functions.begin()) fprintf(name_c, ",\n");
+        fprintf(name_c, "    \"%s\"", name.c_str());
+    }
+    fprintf(name_c, "\n};\n\n");
+}
+
+int main(int argc, char * const argv[])
+{
+    process_args(argc, argv);
+    T.load(tufile);
+    for (int i = optind; i < argc; i++)
+        load_config(argv[i]);
+
+    make_bitfields();
+    identify();
+    make_function_map();
+    make_type_map();
+    make_groups();
+    make_overrides();
+    make_indices();
+
+    write_headers();
+    write_enums();
+    write_function_to_group_table();
+    write_includes();
+    write_typedefs();
+    write_function_table();
+    write_group_table();
+    write_type_table();
+    write_library_table();
+    write_type_dumpers();
+    write_type_get_types();
+    write_type_get_lengths();
+    write_parameter_overrides();
+    write_converter();
+    write_call_wrappers();
+    write_call_structs();
+    write_invoke();
+    write_interceptors();
+    write_name_table();
+    write_trailers();
+}
+
+/* Parser callbacks */
+
+void parser_limit(const string &l)
+{
+    limit = "^" + l + "$";
+}
+
+void parser_header(const string &h)
+{
+    headers.push_back(h);
+}
+
+void parser_library(const string &l)
+{
+    libraries.push_back(l);
+}
+
+void parser_alias(const string &a, const string &b)
+{
+    aliases.push_back(make_pair(a, b));
+}
+
+void parser_param(override_type mode, const string &regex,
+                  int param, const string &code)
+{
+    Override o;
+
+    o.mode = mode;
+    o.functions = "^" + regex + "$";
+    o.param = param;
+    o.type = "";
+    o.code = code;
+    overrides.push_back(o);
+}
+
+void parser_type(override_type mode, const string &type, const string &code)
+{
+    Override o;
+
+    o.mode = mode;
+    o.functions = "";
+    o.param = -2;
+    o.type = type;
+    o.code = code;
+
+    switch (mode)
+    {
+    case OVERRIDE_TYPE:
+    case OVERRIDE_LENGTH:
+        /* These are substituted on use, since they need type information */
+        break;
+    case OVERRIDE_DUMP:
+        o.code = search_replace(o.code, "$$", "(*value)");
+        o.code = search_replace(o.code, "$F", "(out)");
+        o.code = search_replace(o.code, "$l", "(count)");
+        break;
+    }
+
+    overrides.push_back(o);
+}
+
+void parser_extra_type(const string &type)
+{
+    extra_types.push_back(type);
+}
+
+void parser_bitfield(const string &new_type, const string &old_type,
+                     const list<string> &bits)
+{
+    Bitfield b;
+
+    b.new_type = new_type;
+    b.old_type = old_type;
+    b.bits = bits;
+    bitfields.push_back(b);
+}
+
+/* Other functions declared at the top */
+
+string Function::name() const
+{
+    return IDENTIFIER_POINTER(DECL_NAME(node));
+}
+
+string Function::define() const
+{
+    return "FUNC_" + name();
+}
+
+string Function::group_define() const
+{
+    return "GROUP_" + name();
+}
+
+string Type::type_name() const
+{
+    return type_to_string(node, "", false);
+}
+
+string Type::name() const
+{
+    return type_to_id(node);
+}
+
+string Type::define() const
+{
+    return "TYPE_" + name();
+}
+
+Group::FunctionIterator Group::canonical() const
+{
+    return functions.front();
+}
+
+string Group::name() const
+{
+    return canonical()->name();
+}
+
+string Group::define() const
+{
+    return "GROUP_" + name();
+}
+
+Parameter &Group::parameter(int p)
+{
+    if (p == -1)
+    {
+        assert(has_retn);
+        return retn;
+    }
+    else
+    {
+        assert(p >= -1 && p < (int) parameters.size());
+        return parameters[p];
+    }
+}
+
+const Parameter &Group::parameter(int p) const
+{
+    if (p == -1)
+    {
+        assert(has_retn);
+        return retn;
+    }
+    else
+    {
+        assert(p >= -1 && p < (int) parameters.size());
+        return parameters[p];
+    }
 }

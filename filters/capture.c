@@ -28,7 +28,6 @@
 #endif
 #include "src/filters.h"
 #include "src/utils.h"
-#include "src/canon.h"
 #include "src/glutils.h"
 #include "src/glfuncs.h"
 #include "src/glexts.h"
@@ -562,7 +561,7 @@ static bool initialise_screenshot(filter_set *handle)
     filter *f;
 
     f = bugle_register_filter(handle, "screenshot");
-    bugle_register_filter_catches(f, CFUNC_glXSwapBuffers, screenshot_callback);
+    bugle_register_filter_catches(f, GROUP_glXSwapBuffers, screenshot_callback);
     bugle_register_filter_depends("invoke", "screenshot");
 
     video_data = bugle_calloc(video_lag, sizeof(screenshot_data));
@@ -604,10 +603,10 @@ static const char *glx_version = "GLX_VERSION_1_2";
 static bool showextensions_callback(function_call *call, const callback_data *data)
 {
     size_t i;
-    const function_data *info;
+    const group_data *info;
     const gl_function *glinfo;
 
-    info = &budgie_function_table[call->generic.id];
+    info = &budgie_group_table[call->generic.id];
     glinfo = &bugle_gl_function_table[call->generic.id];
     if (glinfo->extension)
         bugle_hash_set(&seen_extensions, glinfo->extension, &seen_extensions);

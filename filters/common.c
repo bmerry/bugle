@@ -23,7 +23,6 @@
 #include "src/utils.h"
 #include "src/glutils.h"
 #include "src/glfuncs.h"
-#include "src/canon.h"
 #include "common/safemem.h"
 #include "common/bool.h"
 
@@ -54,7 +53,7 @@ static bool procaddress_callback(function_call *call, const callback_data *data)
      * after all, an extension). That means extensions will probably
      * not be intercepted.
      */
-#ifdef CFUNC_glXGetProcAddressARB
+#ifdef GLX_ARB_get_proc_address
     void (*sym)(void);
 
     if (!*call->typed.glXGetProcAddressARB.retn) return true;
@@ -69,11 +68,11 @@ static bool initialise_procaddress(filter_set *handle)
 {
     filter *f;
 
-#ifdef FUNC_glXGetProcAddressARB
+#ifdef GLX_ARB_get_proc_address
     f = bugle_register_filter(handle, "procaddress");
     bugle_register_filter_depends("procaddress", "invoke");
     bugle_register_filter_depends("trace", "procaddress");
-    bugle_register_filter_catches(f, CFUNC_glXGetProcAddressARB, procaddress_callback);
+    bugle_register_filter_catches(f, GROUP_glXGetProcAddressARB, procaddress_callback);
 #endif
     return true;
 }

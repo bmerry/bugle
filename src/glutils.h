@@ -47,7 +47,6 @@
 
 bool bugle_begin_internal_render(void);
 void bugle_end_internal_render(const char *name, bool warn);
-GLXContext bugle_get_aux_context();
 
 /* Registers all commands that trigger geometry (pixel rectangles are
  * not included). This includes commands that use arrays as well as

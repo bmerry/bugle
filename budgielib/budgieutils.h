@@ -23,6 +23,7 @@
 #include <stddef.h>
 #include "common/bool.h"
 
+typedef int budgie_group;   /* function group */
 typedef int budgie_function;
 typedef int budgie_type;
 #define NULL_TYPE (-1)
@@ -30,6 +31,7 @@ typedef int budgie_type;
 
 typedef struct
 {
+    budgie_group group;
     budgie_function id;
     int num_args;
     const void **args;
@@ -82,16 +84,21 @@ typedef struct
     arg_dumper dumper;
     arg_get_type get_type;
     arg_get_length get_length;
-} function_parameter_data;
+} group_parameter_data;
+
+typedef struct
+{
+    size_t num_parameters;
+    const group_parameter_data *parameters;
+    group_parameter_data retn;
+    bool has_retn;
+} group_data;
 
 typedef struct
 {
     const char *name;
     void (*real)(void);
-    size_t num_parameters;
-    const function_parameter_data *parameters;
-    function_parameter_data retn;
-    bool has_retn;
+    budgie_group group;
 } function_data;
 
 typedef struct
@@ -104,14 +111,15 @@ extern const type_data budgie_type_table[];
 /* Not const due to "real" field.
  * FIXME: split that field out for better efficiency */
 extern function_data budgie_function_table[];
+extern const group_data budgie_group_table[];
 extern const char * const library_names[];
 extern int number_of_types;
-extern int number_of_functions;
+extern int number_of_groupsm, number_of_functions;
 extern int number_of_libraries;
 
 /* Code used by budgie output */
 void budgie_dump_bitfield(unsigned int value, FILE *out,
-                          bitfield_pair *tags, int count);
+                          const bitfield_pair *tags, int count);
 
 bool check_set_reentrance(void);
 void clear_reentrance(void);

@@ -6,6 +6,9 @@ check whether any accesses will be beyond the range of the buffer. In
 future it will be expanded to check other things that the driver
 doesn't.
 
+The code generator and state manager have also been rewritten. If there
+are any issues, report them to me at bmerry@users.sourceforge.net.
+
 0.0.20041123
 ------------
 The major news is the news stats and showstats filter-sets, which can

@@ -18,7 +18,6 @@
 
 #include "src/filters.h"
 #include "src/utils.h"
-#include "src/canon.h"
 #include "src/glutils.h"
 #include "src/objects.h"
 #include "src/tracker.h"
@@ -80,9 +79,9 @@ static bool initialise_wireframe(filter_set *handle)
     filter *f;
 
     f = bugle_register_filter(handle, "wireframe");
-    bugle_register_filter_catches(f, CFUNC_glXSwapBuffers, wireframe_glXSwapBuffers);
-    bugle_register_filter_catches(f, CFUNC_glPolygonMode, wireframe_glPolygonMode);
-    bugle_register_filter_catches(f, CFUNC_glEnable, wireframe_glEnable);
+    bugle_register_filter_catches(f, GROUP_glXSwapBuffers, wireframe_glXSwapBuffers);
+    bugle_register_filter_catches(f, GROUP_glPolygonMode, wireframe_glPolygonMode);
+    bugle_register_filter_catches(f, GROUP_glEnable, wireframe_glEnable);
     bugle_register_filter_depends("wireframe", "invoke");
     bugle_register_filter_post_renders("wireframe");
     bugle_object_class_register(&bugle_context_class, initialise_wireframe_context,
@@ -115,7 +114,7 @@ static bool initialise_frontbuffer(filter_set *handle)
 
     f = bugle_register_filter(handle, "frontbuffer");
     bugle_register_filter_depends("frontbuffer", "invoke");
-    bugle_register_filter_catches(f, CFUNC_glDrawBuffer, frontbuffer_callback);
+    bugle_register_filter_catches(f, GROUP_glDrawBuffer, frontbuffer_callback);
     bugle_register_filter_post_renders("frontbuffer");
     bugle_object_class_register(&bugle_context_class, initialise_frontbuffer_context,
                                 NULL, 0);

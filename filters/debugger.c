@@ -22,10 +22,9 @@
 #define _XOPEN_SOURCE
 #include "src/filters.h"
 #include "src/utils.h"
-#include "src/canon.h"
 #include "src/glutils.h"
 #include "src/tracker.h"
-#include "budgielib/state.h"
+#include "src/glstate.h"
 #include "common/hashtable.h"
 #include "common/protocol.h"
 #include "common/bool.h"
@@ -43,6 +42,7 @@ static int in_pipe = -1, out_pipe = -1;
 static bool break_on[NUMBER_OF_FUNCTIONS];
 static bool break_on_error = true, break_on_next = false;
 
+#if 0 // FIXME
 static void dump_state(state_generic *state, int indent, FILE *out)
 {
     bool big = false;
@@ -103,6 +103,7 @@ static void dump_string_state(FILE *f, void *data)
 {
     dump_state((state_generic *) data, 0, f);
 }
+#endif
 
 static void dump_ppm_header(FILE *f, void *data)
 {
@@ -162,6 +163,16 @@ static bool debugger_screenshot(int pipe)
     return true;
 }
 
+static budgie_function find_function(const char *name)
+{
+    int i;
+
+    for (i = 0; i < NUMBER_OF_FUNCTIONS; i++)
+        if (strcmp(budgie_function_table[i].name, name) == 0)
+            return i;
+    return NULL_FUNCTION;
+}
+
 /* The main initialiser calls this with init = true. It has essentially
  * the usual effects, but refuses to do anything that doesn't make sense
  * until the program is properly running (such as flush or query state).
@@ -171,8 +182,6 @@ static void debugger_loop(bool init)
     uint32_t req, req_val;
     char *req_str, *resp_str;
     budgie_function func;
-    state_generic *state;
-    state_7context_I *ctx;
     filter_set *f;
     bool enable;
 
@@ -197,7 +206,7 @@ static void debugger_loop(bool init)
         case REQ_BREAK:
             gldb_recv_string(in_pipe, &req_str);
             gldb_recv_code(in_pipe, &req_val);
-            func = bugle_find_function(req_str);
+            func = find_function(req_str);
             if (func != NULL_FUNCTION)
             {
                 gldb_send_code(out_pipe, RESP_ANS);
@@ -261,6 +270,7 @@ static void debugger_loop(bool init)
             }
             free(req_str);
             break;
+#if 0 // FIXME
         case REQ_STATE:
             gldb_recv_string(in_pipe, &req_str);
             ctx = bugle_tracker_get_context_state();
@@ -289,6 +299,7 @@ static void debugger_loop(bool init)
             gldb_send_string(out_pipe, resp_str);
             free(resp_str);
             break;
+#endif
         case REQ_SCREENSHOT:
             if (!debugger_screenshot(out_pipe))
             {
@@ -345,7 +356,7 @@ static void check_async(void)
 static bool debugger_callback(function_call *call, const callback_data *data)
 {
     check_async();
-    if (break_on[bugle_canonical_call(call)])
+    if (break_on[call->generic.id])
     {
         gldb_send_code(out_pipe, RESP_BREAK);
         gldb_send_string(out_pipe, budgie_function_table[call->generic.id].name);

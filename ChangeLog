@@ -12,6 +12,10 @@
 * Redo the internals of object layer storage to avoid possible
   alignment problems.
 * Added a threading abstraction layer.
+* Rewrite of the code generator; now generates GROUP_ tokens and
+  generally separates groups from functions.
+* Removed canon.c/canon.h, since they are no longer needed.
+* Rewrite of the state manager (incomplete).
 
 0.0.20041123
 ------------

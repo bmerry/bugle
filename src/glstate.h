@@ -22,21 +22,39 @@
 #if HAVE_CONFIG_H
 # include <config.h>
 #endif
-#include "budgielib/state.h"
+#include <stddef.h>
+#include <GL/gl.h>
+#include "common/linkedlist.h"
 
-int glstate_compare_GLint(const void *a, const void *b);
-int glstate_compare_GLuint(const void *a, const void *b);
-int glstate_compare_GLenum(const void *a, const void *b);
-int glstate_compare_GLXContext(const void *a, const void *b);
+typedef struct state_info
+{
+    const char *name;
+    GLenum pname;
+    budgie_type type;
+    int length;
+    int extension;
+    const char *version;
+    unsigned int flags;
+} state_info;
 
-void glstate_get_enable(state_generic *state);
-void glstate_get_global(state_generic *state);
-void glstate_get_texparameter(state_generic *state);
-void glstate_get_texlevelparameter(state_generic *state);
-void glstate_get_texgen(state_generic *state);
-void glstate_get_texunit(state_generic *state);
-void glstate_get_textureenv(state_generic *state);
-void glstate_get_texturefiltercontrol(state_generic *state);
-void glstate_get_light(state_generic *state);
+typedef struct glstate
+{
+    const char *name;
+
+    /* context */
+    GLenum target;
+    GLenum unit;
+    GLenum coord;
+    GLuint object;
+    GLint level;
+    const struct state_info *info;
+
+    void (*spawn_children)(const struct glstate *, bugle_linked_list *);
+} glstate;
+
+char *bugle_get_state_string(const glstate *); // caller frees
+const glstate *bugle_get_root_state(void);
+
+extern const state_info * const all_state[];
 
 #endif /* !BUGLE_SRC_GLSTATE_H */

@@ -26,7 +26,6 @@
 #endif
 #include "src/filters.h"
 #include "src/utils.h"
-#include "src/canon.h"
 #include "src/tracker.h"
 #include "src/objects.h"
 #include "common/bool.h"
@@ -81,8 +80,8 @@ static bool initialise_trackbeginend(filter_set *handle)
 
     f = bugle_register_filter(handle, "trackbeginend");
     bugle_register_filter_depends("trackbeginend", "invoke");
-    bugle_register_filter_catches(f, FUNC_glBegin, trackbeginend_glBegin);
-    bugle_register_filter_catches(f, FUNC_glEnd, trackbeginend_glEnd);
+    bugle_register_filter_catches(f, GROUP_glBegin, trackbeginend_glBegin);
+    bugle_register_filter_catches(f, GROUP_glEnd, trackbeginend_glEnd);
 
     trackbeginend_view = bugle_object_class_register(&bugle_context_class,
                                                      NULL,

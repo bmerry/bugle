@@ -22,12 +22,10 @@
 #define _POSIX_SOURCE
 #include "src/filters.h"
 #include "src/utils.h"
-#include "src/canon.h"
 #include "src/glutils.h"
 #include "src/gldump.h"
 #include "src/tracker.h"
 #include "src/glexts.h"
-#include "budgielib/state.h"
 #include "common/bool.h"
 #include "common/safemem.h"
 #include "common/threads.h"
@@ -50,7 +48,7 @@ static bool error_callback(function_call *call, const callback_data *data)
 
     *(GLenum *) data->call_data = GL_NO_ERROR;
     if (budgie_function_table[call->generic.id].name[2] == 'X') return true; /* GLX */
-    if (bugle_canonical_call(call) == CFUNC_glGetError)
+    if (call->generic.group == GROUP_glGetError)
     {
         /* We hope that it returns GL_NO_ERROR, since otherwise something
          * slipped through our own net. If not, we return it to the app
@@ -710,14 +708,14 @@ static bool initialise_checks(filter_set *handle)
     filter *f;
 
     f = bugle_register_filter(handle, "checks");
-    bugle_register_filter_catches(f, CFUNC_glDrawArrays, checks_glDrawArrays);
-    bugle_register_filter_catches(f, CFUNC_glDrawElements, checks_glDrawElements);
+    bugle_register_filter_catches(f, GROUP_glDrawArrays, checks_glDrawArrays);
+    bugle_register_filter_catches(f, GROUP_glDrawElements, checks_glDrawElements);
 #ifdef GL_EXT_draw_range_elements
-    bugle_register_filter_catches(f, CFUNC_glDrawRangeElementsEXT, checks_glDrawRangeElements);
+    bugle_register_filter_catches(f, GROUP_glDrawRangeElementsEXT, checks_glDrawRangeElements);
 #endif
 #ifdef GL_EXT_multi_draw_arrays
-    bugle_register_filter_catches(f, CFUNC_glMultiDrawArraysEXT, checks_glMultiDrawArrays);
-    bugle_register_filter_catches(f, CFUNC_glMultiDrawElementsEXT, checks_glMultiDrawElements);
+    bugle_register_filter_catches(f, GROUP_glMultiDrawArraysEXT, checks_glMultiDrawArrays);
+    bugle_register_filter_catches(f, GROUP_glMultiDrawElementsEXT, checks_glMultiDrawElements);
 #endif
     /* We try to push this early, since it would defeat the whole thing if
      * bugle crashed while examining the data in another filter.

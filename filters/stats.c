@@ -18,7 +18,6 @@
 
 #include "src/filters.h"
 #include "src/utils.h"
-#include "src/canon.h"
 #include "src/glutils.h"
 #include "src/tracker.h"
 #include "src/log.h"
@@ -399,29 +398,29 @@ static bool initialise_stats(filter_set *handle)
     filter *f;
 
     f = bugle_register_filter(handle, "stats");
-    bugle_register_filter_catches(f, CFUNC_glXSwapBuffers, stats_glXSwapBuffers);
+    bugle_register_filter_catches(f, GROUP_glXSwapBuffers, stats_glXSwapBuffers);
     if (count_fragments)
     {
-        bugle_register_filter_catches(f, CFUNC_glBeginQueryARB, stats_fragments);
-        bugle_register_filter_catches(f, CFUNC_glEndQueryARB, stats_fragments);
+        bugle_register_filter_catches(f, GROUP_glBeginQueryARB, stats_fragments);
+        bugle_register_filter_catches(f, GROUP_glEndQueryARB, stats_fragments);
     }
     if (count_triangles)
     {
         bugle_register_filter_catches_drawing_immediate(f, stats_immediate);
-        bugle_register_filter_catches(f, CFUNC_glDrawElements, stats_glDrawElements);
-        bugle_register_filter_catches(f, CFUNC_glDrawArrays, stats_glDrawArrays);
+        bugle_register_filter_catches(f, GROUP_glDrawElements, stats_glDrawElements);
+        bugle_register_filter_catches(f, GROUP_glDrawArrays, stats_glDrawArrays);
 #ifdef GL_EXT_draw_range_elements
-        bugle_register_filter_catches(f, CFUNC_glDrawRangeElementsEXT, stats_glDrawRangeElements);
+        bugle_register_filter_catches(f, GROUP_glDrawRangeElementsEXT, stats_glDrawRangeElements);
 #endif
 #ifdef GL_EXT_multi_draw_arrays
-        bugle_register_filter_catches(f, CFUNC_glMultiDrawElementsEXT, stats_glMultiDrawElements);
-        bugle_register_filter_catches(f, CFUNC_glMultiDrawArraysEXT, stats_glMultiDrawArrays);
+        bugle_register_filter_catches(f, GROUP_glMultiDrawElementsEXT, stats_glMultiDrawElements);
+        bugle_register_filter_catches(f, GROUP_glMultiDrawArraysEXT, stats_glMultiDrawArrays);
 #endif
 
-        bugle_register_filter_catches(f, CFUNC_glBegin, stats_glBegin);
-        bugle_register_filter_catches(f, CFUNC_glEnd, stats_glEnd);
-        bugle_register_filter_catches(f, CFUNC_glCallList, stats_glCallList);
-        bugle_register_filter_catches(f, CFUNC_glCallLists, stats_glCallLists);
+        bugle_register_filter_catches(f, GROUP_glBegin, stats_glBegin);
+        bugle_register_filter_catches(f, GROUP_glEnd, stats_glEnd);
+        bugle_register_filter_catches(f, GROUP_glCallList, stats_glCallList);
+        bugle_register_filter_catches(f, GROUP_glCallLists, stats_glCallLists);
     }
     bugle_register_filter_depends("invoke", "stats");
 
@@ -429,7 +428,7 @@ static bool initialise_stats(filter_set *handle)
     {
         f = bugle_register_filter(handle, "stats_post");
         if (count_fragments || count_triangles)
-            bugle_register_filter_catches(f, CFUNC_glXSwapBuffers, stats_post_callback);
+            bugle_register_filter_catches(f, GROUP_glXSwapBuffers, stats_post_callback);
         bugle_register_filter_post_renders("stats_post");
         bugle_register_filter_depends("stats_post", "invoke");
     }
@@ -457,7 +456,7 @@ static bool initialise_showstats(filter_set *handle)
     /* make sure that screenshots capture the stats */
     bugle_register_filter_depends("debugger", "showstats");
     bugle_register_filter_depends("screenshot", "showstats");
-    bugle_register_filter_catches(f, CFUNC_glXSwapBuffers, showstats_callback);
+    bugle_register_filter_catches(f, GROUP_glXSwapBuffers, showstats_callback);
     showstats_view = bugle_object_class_register(&bugle_context_class,
                                                  initialise_showstats_struct,
                                                  NULL,

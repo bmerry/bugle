@@ -16,37 +16,45 @@
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#ifndef BUDGIE_BUDGIE_H
-#define BUDGIE_BUDGIE_H
+/* budgie is a utility to generate code for API interception. It is intended
+ * to be able to stand alone from bugle, and in particular has no explicit
+ * knowledge about OpenGL. However, the design was created with bugle in
+ * mind, so it may be difficult to adapt for other APIs.
+ */
 
 #if HAVE_CONFIG_H
 # include <config.h>
 #endif
+#include <list>
 #include <string>
-#include <vector>
-#include "budgie/bc.h"
+#include "tree.h"
 
-void add_library(const std::string &);
-void add_include(const std::string &);
-void set_limit_regex(const std::string &);
+#ifndef BUDGIE_BUDGIE_H
+#define BUDGIE_BUDGIE_H
 
-void add_alias(const std::string &, const std::string &);
-tree_node_p get_alias(tree_node_p);
+enum override_type
+{
+    OVERRIDE_LENGTH,
+    OVERRIDE_TYPE,
+    OVERRIDE_DUMP
+};
 
-tree_node_p get_type_node(const std::string &type);
-param_or_type_list *find_type(const std::string &type);
-param_or_type_list *find_param(const std::string &func_regex, int param);
-void add_new_bitfield(const std::string &, const std::string &,
-                      const std::vector<std::string> &);
+/* Routines to be called by parser */
 
-void push_state(const std::string &name);
-void pop_state();
-void add_state_value(const std::string &name,
-                     const std::string &type,
-                     int count,
-                     const std::string &loader);
-void set_state_key(const std::string &key,
-                   const std::string &compare);
-void set_state_constructor(const std::string &constructor);
+void parser_limit(const std::string &limit);
+void parser_header(const std::string &header);
+void parser_library(const std::string &library);
+void parser_alias(const std::string &func1, const std::string &func2);
+
+void parser_param(override_type mode,
+                  const std::string &regex, int param,
+                  const std::string &code);
+void parser_type(override_type mode,
+                 const std::string &type, const std::string &code);
+
+void parser_extra_type(const std::string &type);
+void parser_bitfield(const std::string &newtype,
+                     const std::string &base,
+                     const std::list<std::string> &bits);
 
 #endif /* !BUDGIE_BUDGIE_H */

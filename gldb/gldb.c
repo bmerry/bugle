@@ -854,8 +854,7 @@ static char *generate_functions(const char *text, int state)
         i = 0;
     }
     for (; i < NUMBER_OF_FUNCTIONS; i++)
-        if (strncmp(budgie_function_names[i], text, len) == 0
-            && bugle_gl_function_table[i].canonical == i)
+        if (strncmp(budgie_function_names[i], text, len) == 0)
             return bugle_strdup(budgie_function_names[i++]);
     return NULL;
 }

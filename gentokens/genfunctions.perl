@@ -4,8 +4,7 @@
 # There is a required option: --header types.h, where types.h contains the
 # defines of the functions known to the C code. The option --out-header
 # should be given to get a header file, no extra option to get the C file.
-# Can all use --alias to get a list of aliases to paste into gl.bc (not
-# implemented in budgie yet).
+# Can all use --alias to get a list of aliases to paste into gl.bc.
 
 use strict;
 use Getopt::Long;
@@ -82,8 +81,20 @@ if ($aliases)
     for my $i (values %index)
     {
         if ($i->[0] ne $i->[1])
-        { 
-            print "ALIAS ", $i->[0], " ", $i->[1], "\n"; 
+        {
+            # Unfortunately, there are cases where what look like
+            # aliases have different signatures, and hence cannot
+            # be grouped
+            my %exclude = ("glColorPointerEXT" => 1,
+                           "glEdgeFlagPointerEXT" => 1,
+                           "glIndexPointerEXT" => 1,
+                           "glNormalPointerEXT" => 1,
+                           "glTexCoordPointerEXT" => 1,
+                           "glVertexPointerEXT" => 1);
+            if (!exists($exclude{$i->[0]}))
+            {
+                print "ALIAS ", $i->[0], " ", $i->[1], "\n";
+            }
         }
     }
     exit 0;
@@ -103,7 +114,6 @@ if ($outheader)
 
 typedef struct
 {
-    budgie_function canonical; /* The core version of this function */
     const char *version;     /* Min core version that defines this function (NULL for extension) */
     const char *extension;   /* Extension that defines this function (NULL for core) */
 } gl_function;
@@ -112,10 +122,6 @@ extern const gl_function bugle_gl_function_table[NUMBER_OF_FUNCTIONS];
         
 EOF
         ;
-    for my $i (@table)
-    {
-        print "#define CFUNC_", $i->[0], " FUNC_", $i->[1], "\n";
-    }
     print "\n";
     print "#endif /* !BUGLE_SRC_GLFUNCS_H */\n";
 }
@@ -136,7 +142,7 @@ EOF
     for my $i (@table)
     {
         print ",\n" unless $first; $first = 0;
-        print "    { CFUNC_", $i->[0], ", ", $i->[2], ", ", $i->[3], " }";
+        print "    { ", $i->[2], ", ", $i->[3], " }";
     }
     print "\n};\n";
 }
