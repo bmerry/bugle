@@ -18,7 +18,6 @@ bugle
 - make segfault handling adhere better to POSIX
 - rewrite some things to use hash tables
 - autoconf test for GLENUM_IS_GLUINT
-- use ltdl for loading modules
 - cap and extension overrides
 - better handling of texture proxies
 - fill in the rest of the state (image state, mainly)

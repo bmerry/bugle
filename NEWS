@@ -1,7 +1,8 @@
 This version is a major update. The code generator, state manager and
 object tracker have all been rewritten and work a lot better, and
 substantial changes have been made to the call dispatcher to reduce
-overhead. Almost all of OpenGL 2.0 is now supported.
+overhead. Almost all of OpenGL 2.0 is now supported. It should also be
+slightly more portable, due to the use of ltdl to load modules.
 
 As a result, there are probably lots of new bugs. Please send them to
 me at bmerry@users.sourceforge.net.

@@ -1050,13 +1050,15 @@ static void uniform_types(GLenum type,
     case GL_INT_VEC2_ARB: *in_type = TYPE_5GLint; *out_type = TYPE_5GLint; *length = 2; break;
     case GL_INT_VEC3_ARB: *in_type = TYPE_5GLint; *out_type = TYPE_5GLint; *length = 3; break;
     case GL_INT_VEC4_ARB: *in_type = TYPE_5GLint; *out_type = TYPE_5GLint; *length = 4; break;
-    case GL_BOOL: *in_type = TYPE_5GLint; *out_type = TYPE_9GLboolean; *length = -1; break;
+    case GL_BOOL_ARB: *in_type = TYPE_5GLint; *out_type = TYPE_9GLboolean; *length = -1; break;
     case GL_BOOL_VEC2_ARB: *in_type = TYPE_5GLint; *out_type = TYPE_9GLboolean; *length = 2; break;
     case GL_BOOL_VEC3_ARB: *in_type = TYPE_5GLint; *out_type = TYPE_9GLboolean; *length = 3; break;
     case GL_BOOL_VEC4_ARB: *in_type = TYPE_5GLint; *out_type = TYPE_9GLboolean; *length = 4; break;
     case GL_FLOAT_MAT2_ARB: *in_type = TYPE_7GLfloat; *out_type = TYPE_7GLfloat; *length = 4; break;
     case GL_FLOAT_MAT3_ARB: *in_type = TYPE_7GLfloat; *out_type = TYPE_7GLfloat; *length = 9; break;
     case GL_FLOAT_MAT4_ARB: *in_type = TYPE_7GLfloat; *out_type = TYPE_7GLfloat; *length = 16; break;
+    /* It appears that glext.h version 21 doesn't define these */
+#ifdef GL_SAMPLER_1D_ARB
     case GL_SAMPLER_1D_ARB:
     case GL_SAMPLER_2D_ARB:
     case GL_SAMPLER_3D_ARB:
@@ -1066,6 +1068,7 @@ static void uniform_types(GLenum type,
     case GL_SAMPLER_2D_RECT_ARB:
     case GL_SAMPLER_2D_RECT_SHADOW_ARB:
         *in_type = TYPE_5GLint; *out_type = TYPE_6GLenum; *length = -1; break;
+#endif
     default:
         abort();
     }

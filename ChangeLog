@@ -19,6 +19,7 @@
 * Added a threading abstraction layer.
 * Removed canon.c/canon.h, since they are no longer needed.
 * State now assembled by gldb, allowing tab completion for state
+* Switch to ltdl for module and library loading
 
 0.0.20041123
 ------------

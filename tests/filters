@@ -13,6 +13,7 @@ chain trace
         flush yes
     }
     filterset trace
+    filterset error
 }
 
 chain triangles

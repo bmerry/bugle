@@ -30,7 +30,6 @@
 #include <stdio.h>
 #include <stddef.h>
 #include <string.h>
-#include <dlfcn.h>
 #include <assert.h>
 #include <sys/types.h>
 #include <errno.h>
@@ -95,10 +94,9 @@ static bugle_linked_list filter_set_dependencies[2];
 static void *call_data = NULL;
 static size_t call_data_size = 0; /* FIXME: turn into an object */
 
-static void *current_dl_handle = NULL;
+static lt_dlhandle current_dl_handle = NULL;
 
-/* FIXME: use dlclose on the modules */
-void destroy_filters(void *dummy)
+static void destroy_filters(void *dummy)
 {
     bugle_list_node *i, *j;
     filter_set *s;
@@ -136,16 +134,37 @@ void destroy_filters(void *dummy)
     }
     bugle_list_clear(&filter_sets);
     bugle_hash_clear(&filter_dependencies);
+
+    lt_dlexit();
 }
 
+static int initialise_filter(const char *filename, lt_ptr data)
+{
+    lt_dlhandle handle;
+    void (*init)(void);
+
+    handle = lt_dlopenext(filename);
+    if (handle == NULL) return 0;
+
+    init = (void (*)(void)) lt_dlsym(handle, "bugle_initialise_filter_library");
+    if (init == NULL)
+    {
+        fprintf(stderr, "Warning: library %s did not export initialisation symbol\n",
+                filename);
+        return 0;
+    }
+    current_dl_handle = handle;
+    (*init)();
+    current_dl_handle = NULL;
+    return 0;
+}
+
+/* Note: initialise_filters is called after initialise_real, which sets
+ * up ltdl. Hence we don't call lt_dlinit.
+ */
 void initialise_filters(void)
 {
     DIR *dir;
-    struct dirent *ent;
-    char *full_name;
-    size_t len;
-    void *handle;
-    void (*init)(void);
     const char *libdir;
     budgie_function f;
 
@@ -165,30 +184,10 @@ void initialise_filters(void)
         fprintf(stderr, "failed to open %s: %s", libdir, strerror(errno));
         exit(1);
     }
-
-    while ((ent = readdir(dir)) != NULL)
-    {
-        len = strlen(ent->d_name);
-        if (len < 3) continue;
-        if (strcmp(ent->d_name + len - 3, ".so") != 0) continue;
-        full_name = (char *) bugle_malloc(strlen(libdir) + strlen(ent->d_name) + 2);
-        sprintf(full_name, "%s/%s", libdir, ent->d_name);
-        handle = dlopen(full_name, RTLD_NOW);
-        if (handle == NULL) continue;
-        init = (void (*)(void)) dlsym(handle, "bugle_initialise_filter_library");
-        if (init == NULL)
-        {
-            fprintf(stderr, "Warning: library %s did not export initialisation symbol\n",
-                    ent->d_name);
-            continue;
-        }
-        current_dl_handle = handle;
-        (*init)();
-        current_dl_handle = NULL;
-        free(full_name);
-    }
-
     closedir(dir);
+
+    lt_dlforeachfile(libdir, initialise_filter, NULL);
+
     bugle_atexit(destroy_filters, NULL);
 }
 
@@ -630,15 +629,15 @@ filter_set *bugle_get_filter_set_handle(const char *name)
 void *bugle_get_filter_set_symbol(filter_set *handle, const char *name)
 {
     if (handle)
-        return dlsym(handle->dl_handle, name);
+        return lt_dlsym(handle->dl_handle, name);
     else
     {
         void *h, *sym = NULL;
-        h = dlopen(NULL, RTLD_LAZY);
+        h = lt_dlopen(NULL);
         if (h)
         {
-            sym = dlsym(h, name);
-            dlclose(h);
+            sym = lt_dlsym(h, name);
+            lt_dlclose(h);
         }
         return sym;
     }

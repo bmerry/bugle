@@ -1,4 +1,5 @@
 ## Process with automake 1.7 or newer
+SUBDIRS = libltdl
 
 SYMBOLFLAGS = -export-symbol-regex '^(gl[A-Z]|budgie_|bugle_|gldb_)'
 
@@ -21,7 +22,7 @@ pkglib_LTLIBRARIES = \
 	filters/capture.la \
         filters/stats.la
 
-INCLUDES = -I$(srcdir)/budgielib
+INCLUDES = -I$(srcdir)/budgielib $(LTDLINCL)
 AM_CFLAGS = -DLIBDIR=\"$(libdir)\" -DPKGLIBDIR=\"$(pkglibdir)\" $(X_CFLAGS)
 AM_YFLAGS = -d
 
@@ -71,7 +72,7 @@ src_libbugle_la_SOURCES = \
 	budgielib/budgieutils.c budgielib/budgieutils.h
 nodist_src_libbugle_la_SOURCES = \
 	src/utils.c src/utils.h src/lib.c src/lib.h
-src_libbugle_la_LIBADD = src/libbugleutils.la -ldl -lGL $(X_PRE_LIBS) $(X_LIBS) -lX11 $(X_EXTRA_LIBS) $(THREAD_LIBS)
+src_libbugle_la_LIBADD = $(LIBLTDL) src/libbugleutils.la -ldl -lGL $(X_PRE_LIBS) $(X_LIBS) -lX11 $(X_EXTRA_LIBS) $(THREAD_LIBS)
 src_libbugle_la_LDFLAGS = -thread-safe -export-dynamic $(SYMBOLFLAGS) -version-info 0:1:0
 
 BUILT_SOURCES += src/lib.h src/utils.h src/names.h src/confparse.h

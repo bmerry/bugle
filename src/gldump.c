@@ -122,9 +122,12 @@ budgie_type bugle_gl_type_to_type(GLenum gl_type)
     case GL_FLOAT_MAT2_ARB: return TYPE_6GLmat2; break;
     case GL_FLOAT_MAT3_ARB: return TYPE_6GLmat3; break;
     case GL_FLOAT_MAT4_ARB: return TYPE_6GLmat4; break;
+    case GL_BOOL_ARB: return TYPE_9GLboolean; break;
     case GL_BOOL_VEC2_ARB: return TYPE_7GLbvec2; break;
     case GL_BOOL_VEC3_ARB: return TYPE_7GLbvec3; break;
     case GL_BOOL_VEC4_ARB: return TYPE_7GLbvec4; break;
+    /* It appears that glext.h version 21 doesn't define these */
+#ifdef GL_SAMPLER_1D_ARB
     case GL_SAMPLER_1D_ARB:
     case GL_SAMPLER_2D_ARB:
     case GL_SAMPLER_3D_ARB:
@@ -134,7 +137,8 @@ budgie_type bugle_gl_type_to_type(GLenum gl_type)
     case GL_SAMPLER_2D_RECT_ARB:
     case GL_SAMPLER_2D_RECT_SHADOW_ARB:
         return TYPE_6GLenum;
-#endif
+#endif /* GL_SAMPLER_1D_ARB */
+#endif /* GL_ARB_shader_objects */
 #if defined(GL_VERSION_2_0) && !defined(GL_ARB_shader_objects)
     case GL_FLOAT_VEC2: return TYPE_6GLvec2; break;
     case GL_FLOAT_VEC3: return TYPE_6GLvec3; break;
@@ -145,6 +149,7 @@ budgie_type bugle_gl_type_to_type(GLenum gl_type)
     case GL_FLOAT_MAT2: return TYPE_6GLmat2; break;
     case GL_FLOAT_MAT3: return TYPE_6GLmat3; break;
     case GL_FLOAT_MAT4: return TYPE_6GLmat4; break;
+    case GL_BOOL: return TYPE_9GLboolean; break;
     case GL_BOOL_VEC2: return TYPE_7GLbvec2; break;
     case GL_BOOL_VEC3: return TYPE_7GLbvec3; break;
     case GL_BOOL_VEC4: return TYPE_7GLbvec4; break;

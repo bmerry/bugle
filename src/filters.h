@@ -23,6 +23,7 @@
 # include <config.h>
 #endif
 #include <stddef.h>
+#include <ltdl.h>
 #include "src/utils.h"
 #include "common/linkedlist.h"
 #include "common/bool.h"
@@ -86,7 +87,7 @@ typedef struct filter_set_s
     filter_set_destructor done;
     const filter_set_variable_info *variables;
     ptrdiff_t call_state_offset;
-    void *dl_handle;
+    lt_dlhandle dl_handle;
 
     bool initialised;
     bool enabled;

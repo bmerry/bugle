@@ -30,11 +30,12 @@
 #include <signal.h>
 #include <errno.h>
 #include <assert.h>
-#include "common/bool.h"
-#include "budgieutils.h"
 #include <setjmp.h>
-#include <dlfcn.h>
+#include <ltdl.h>
+#include "budgieutils.h"
+#include "common/bool.h"
 #include "common/threads.h"
+#include "common/safemem.h"
 
 void budgie_dump_bitfield(unsigned int value, FILE *out,
                           const bitfield_pair *tags, int count)
@@ -229,27 +230,31 @@ static bugle_thread_once_t initialise_real_once = BUGLE_THREAD_ONCE_INIT;
 
 static void initialise_real_work(void)
 {
-    void *handle;
+    lt_dlhandle handle;
     size_t i, j;
     size_t N, F;
 
     N = number_of_libraries;
     F = number_of_functions;
+
+    lt_dlmalloc = bugle_malloc;
+    lt_dlrealloc = bugle_realloc;
+    lt_dlinit();
     for (i = 0; i < N; i++)
     {
-        handle = dlopen(library_names[i], RTLD_LAZY);
+        handle = lt_dlopen(library_names[i]);
         if (handle)
         {
             for (j = 0; j < F; j++)
                 if (!budgie_function_table[j].real)
                 {
-                    budgie_function_table[j].real = (void (*)(void)) dlsym(handle, budgie_function_table[j].name);
-                    dlerror(); /* clear the error flag */
+                    budgie_function_table[j].real = (void (*)(void)) lt_dlsym(handle, budgie_function_table[j].name);
+                    lt_dlerror(); /* clear the error flag */
                 }
         }
         else
         {
-            fprintf(stderr, "%s", dlerror());
+            fprintf(stderr, "%s", lt_dlerror());
             exit(1);
         }
     }
