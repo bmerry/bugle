@@ -28,7 +28,8 @@ AC_PATH_PROG([PERL], [perl], [perl], [$srcdir/missing])
 dnl Checks for libraries
 AC_PATH_XTRA
 
-AM_PATH_GTK_2_0([2.4.0], , [AC_MSG_ERROR([GTK+ 2.4 not found])])
+HAVE_GTK=1
+AM_PATH_GTK_2_0([2.4.0], [], [HAVE_GTK=0])
 # AM_PATH_GTKGLEXT_1_0([1.0.0], , [AC_MSG_ERROR([GtkGLExt 1.0 not found])])
 
 READLINE_LIBS=""
@@ -117,6 +118,12 @@ test $HAVE_READLINE = 1 || READLINE_LIBS=""
 AC_SUBST(HAVE_READLINE)
 AC_DEFINE_UNQUOTED(HAVE_READLINE, $HAVE_READLINE, [non-zero when all the requirements for the readline library are met])
 
+AC_ARG_WITH([gtk], AC_HELP_STRING([--without-gtk], [do not build the GUI debugger]),
+            [test $withval = no && HAVE_GTK=0], [])
+GLDB_GUI=gldb/gldb-gui
+test $HAVE_GTK == 1 || GLDB_GUI=""
+AC_SUBST(GLDB_GUI)
+
 AC_ARG_WITH([threads], AC_HELP_STRING([--with-threads=pthreads|single], [choose threading model [[auto]]]), [
 case $withval in
   pthreads) THREADS=BUGLE_THREADS_PTHREADS ;;
@@ -141,6 +148,10 @@ esac
 case $HAVE_READLINE in
   0) echo "        readline: no" ;;
   1) echo "        readline: yes" ;;
+esac
+case $HAVE_GTK in
+  0) echo "        GUI: no" ;;
+  1) echo "        GUI: yes" ;;
 esac
 case $THREADS in
   BUGLE_THREADS_PTHREADS) echo "        threads: pthreads" ;;

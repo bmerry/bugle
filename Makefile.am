@@ -12,7 +12,9 @@ dist_noinst_SCRIPTS = gentokens/gentokens.perl gentokens/genfunctions.perl \
 dist_man_MANS = doc/gldb.1 doc/bugle.3
 # The real things
 lib_LTLIBRARIES = src/libbugleutils.la src/libbugle.la
-bin_PROGRAMS = gldb/gldb gldb/gldb-gui
+bin_PROGRAMS = gldb/gldb @GLDB_GUI@
+EXTRA_PROGRAMS = gldb/gldb-gui
+
 pkglib_LTLIBRARIES = \
 	filters/common.la \
 	filters/trace.la \
