@@ -24,11 +24,19 @@
 #endif
 #include <GL/gl.h>
 #include "budgieutils.h"
+#include "common/bool.h"
 
-int count_gl(budgie_function func, GLenum token);
+/* Call this *after* filters have been set up */
+void initialise_dump(void);
+
 GLenum gl_token_to_enum(const char *name);
 const char *gl_enum_to_token(GLenum e);
 
+budgie_type gl_type_to_type(GLenum gl_type);
+budgie_type gl_type_to_type_ptr(GLenum gl_type);
+size_t gl_type_to_size(GLenum gl_type);
+
+int count_gl(budgie_function func, GLenum token);
 bool dump_GLenum(const void *value, int count, FILE *out);
 bool dump_GLalternateenum(const void *value, int count, FILE *out);
 bool dump_GLerror(const void *value, int count, FILE *out);
@@ -37,5 +45,23 @@ bool dump_convert(const generic_function_call *gcall,
                   int arg,
                   const void *value,
                   FILE *out);
+
+/* Computes the number of pixel elements (units of byte, int, float etc)
+ * used by a client-side encoding of a 1D, 2D or 3D image.
+ * Specify -1 for depth for 1D or 2D textures.
+ */
+size_t image_element_count(GLsizei width,
+                           GLsizei height,
+                           GLsizei depth,
+                           GLenum format,
+                           GLenum type,
+                           bool unpack);
+
+/* Computes the number of pixel elements required by glGetTexImage
+ */
+size_t texture_element_count(GLenum target,
+                             GLint level,
+                             GLenum format,
+                             GLenum type);
 
 #endif /* !BUGLE_SRC_GLDUMP_H */

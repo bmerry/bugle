@@ -7,7 +7,7 @@ would like to support all POSIX platforms that use dynamic loading and
 something like LD_PRELOAD, so if things don't work on your platform
 then let me know why.
 
-Here is what you can do so far
+Here are a few things you can do so far
 - capture a log of what a program does (won't capture everything yet)
 - pause after every frame, and get crude state dumps
 - check for GL errors after every call
@@ -15,16 +15,15 @@ Here is what you can do so far
 
 To build, you should be able to use any C and C++ compiler, although
 gcc is recommended (2.95.3 and 3.3.2 have both been tested). If you
-have a non i386 machine, it is recommended that you use erase
-src/data/gl.tu, and use gcc 3.3 (gcc 3.x may also work, but 2.x won't).
+have problems building, first try erasing src/data/gl.tu and use gcc
+3.x (gcc 3.x is required to rebuild this file for you machine).
 This file contains somewhat architecture-dependent data, and this MAY
 leak through to the generated code. For generic build instructions, see
 INSTALL.
 
 To run usefully, you will need a configuration file
 $HOME/.bugle/filters. You can copy the example file doc/example.txt.
-
-To run, execute your program something like the following:
+Execute your program something like the following:
 
 $ BUGLE_CHAIN=trace LD_PRELOAD=/usr/local/lib/libbugle.so glxgears
 
@@ -45,7 +44,7 @@ the NVIDIA drivers don't have frame pointers).
 
 Feedback
 ========
-I am interested to get feedback on this tool: bugs you've found (but
-first read this file and the FAQ to make sure it isn't already known),
-suggestions for improvements, whatever. My address is
+I am interested in getting feedback about this tool: bugs you've found
+(but first read this file and the FAQ to make sure it isn't already
+known), suggestions for improvements, whatever. My address is
 bmerry@users.sourceforge.net.

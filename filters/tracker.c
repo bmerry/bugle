@@ -77,12 +77,14 @@ static bool trackbeginend_callback(function_call *call, void *data)
         case GL_QUADS:
         case GL_QUAD_STRIP:
         case GL_POLYGON:
-            assert(context_state);
-            context_state->c_internal.c_in_begin_end.data = GL_TRUE;
+            if (context_state)
+                context_state->c_internal.c_in_begin_end.data = GL_TRUE;
         }
+        break;
     case FUNC_glEnd:
-        assert(context_state);
-        context_state->c_internal.c_in_begin_end.data = GL_FALSE;
+        if (context_state)
+            context_state->c_internal.c_in_begin_end.data = GL_FALSE;
+        break;
     }
     return true;
 }

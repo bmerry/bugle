@@ -296,7 +296,7 @@ static string make_dumper(tree_node_p node, bool prototype)
                     << "        fputs(\" -> \", out);\n"
                     // -1 means a simple pointer, not pointer to array
                     << "        if (count < 0)\n"
-                    << "            dump_any_type(TYPE_" << type_to_id(child) << ", value, -1, out);\n"
+                    << "            dump_any_type(TYPE_" << type_to_id(child) << ", *value, -1, out);\n"
                     << "        else\n"
                     << "        {\n"
                     // pointer to array
@@ -369,6 +369,8 @@ string type_table(bool header)
 {
     ostringstream out;
     int counter;
+    // tracks the pointer-to relationship, for getting inverse pointers
+    map<tree_node_p, tree_node_p> inverse_pointer;
 
     if (header)
     {
@@ -384,6 +386,12 @@ string type_table(bool header)
     }
     else
     {
+        // generate the pointer mappings
+        for (enum_types_it i = enum_types.begin(); i != enum_types.end(); i++)
+            if (TREE_CODE(i->second) == POINTER_TYPE)
+                inverse_pointer[TREE_TYPE(i->second)] = i->second;
+
+        // generate extra arrays for records
         for (enum_types_it i = enum_types.begin(); i != enum_types.end(); i++)
         {
             if ((TREE_CODE(i->second) == UNION_TYPE
@@ -414,6 +422,7 @@ string type_table(bool header)
         out << "const type_data type_table[NUMBER_OF_TYPES] =\n"
             << "{\n";
 
+        // generate the main table
         for (enum_types_it i = enum_types.begin(); i != enum_types.end(); i++)
         {
             string name = type_to_id(i->second);
@@ -448,6 +457,10 @@ string type_table(bool header)
                 out << "CODE_OTHER, ";
             }
             out << type_to_enum(TREE_TYPE(i->second)) << ", ";
+            if (inverse_pointer.count(i->second))
+                out << type_to_enum(inverse_pointer[i->second]) << ", ";
+            else
+                out << "NULL_TYPE, ";
             if ((TREE_CODE(i->second) == UNION_TYPE
                  || TREE_CODE(i->second) == RECORD_TYPE)
                 && TYPE_FIELDS(i->second) != NULL_TREE)

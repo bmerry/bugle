@@ -63,7 +63,8 @@ typedef int (*type_get_length)(const void *);
 typedef struct
 {
     type_code code;
-    budgie_type type;   /* base type of pointers, arrays, functions etc */
+    budgie_type type;    /* base type of pointers, arrays, functions etc */
+    budgie_type pointer; /* pointer to this type (NULL_TYPE if not generated) */
     const type_record_data *fields;
     size_t size;
     size_t length;

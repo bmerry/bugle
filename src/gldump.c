@@ -26,6 +26,7 @@
 #include "gldump.h"
 #include "canon.h"
 #include "safemem.h"
+#include "filters.h"
 #include "budgielib/budgieutils.h"
 #include "src/types.h"
 #include "src/utils.h"
@@ -62,10 +63,111 @@ GLenum gl_token_to_enum(const char *name)
     }
     if (strcmp(gl_tokens_name[l].name, name) != 0)
         return (GLenum) -1;
-    // Pick the first one, to avoid using extension suffices
+    /* Pick the first one, to avoid using extension suffices */
     while (l > 0 && strcmp(gl_tokens_name[l - 1].name, name) == 0)
         l--;
     return gl_tokens_name[l].value;
+}
+
+budgie_type gl_type_to_type(GLenum gl_type)
+{
+    switch (gl_type)
+    {
+    case GL_UNSIGNED_BYTE_3_3_2:
+    case GL_UNSIGNED_BYTE_2_3_3_REV:
+    case GL_UNSIGNED_BYTE:
+        return TYPE_7GLubyte;
+    case GL_BYTE:
+        return TYPE_6GLbyte;
+    case GL_UNSIGNED_SHORT_5_6_5:
+    case GL_UNSIGNED_SHORT_5_6_5_REV:
+    case GL_UNSIGNED_SHORT_4_4_4_4:
+    case GL_UNSIGNED_SHORT_4_4_4_4_REV:
+    case GL_UNSIGNED_SHORT_5_5_5_1:
+    case GL_UNSIGNED_SHORT_1_5_5_5_REV:
+    case GL_UNSIGNED_SHORT:
+        return TYPE_8GLushort;
+    case GL_SHORT:
+        return TYPE_7GLshort;
+    case GL_UNSIGNED_INT_8_8_8_8:
+    case GL_UNSIGNED_INT_8_8_8_8_REV:
+    case GL_UNSIGNED_INT_10_10_10_2:
+    case GL_UNSIGNED_INT_2_10_10_10_REV:
+    case GL_UNSIGNED_INT:
+        return TYPE_6GLuint;
+    case GL_INT:
+        return TYPE_5GLint;
+    case GL_FLOAT:
+        return TYPE_7GLfloat;
+    case GL_DOUBLE:
+        return TYPE_8GLdouble;
+    default:
+        fprintf(stderr, "Do not know the correct type for %s; please email the author\n",
+                gl_enum_to_token(gl_type));
+        exit(1);
+    }
+}
+
+budgie_type gl_type_to_type_ptr(GLenum gl_type)
+{
+    budgie_type ans;
+
+    ans = type_table[gl_type_to_type(gl_type)].pointer;
+    assert(ans != NULL_TYPE);
+    return ans;
+}
+
+size_t gl_type_to_size(GLenum gl_type)
+{
+    return type_table[gl_type_to_type(gl_type)].size;
+}
+
+int gl_format_to_count(GLenum format, GLenum type)
+{
+    switch (type)
+    {
+    case GL_UNSIGNED_BYTE:
+    case GL_BYTE:
+    case GL_UNSIGNED_SHORT:
+    case GL_SHORT:
+    case GL_UNSIGNED_INT:
+    case GL_INT:
+    case GL_FLOAT:
+        /* Note: GL_DOUBLE is not a legal value */
+        switch (format)
+        {
+        case 1:
+        case 2:
+        case 3:
+        case 4:
+            return format;
+        case GL_COLOR_INDEX:
+        case GL_RED:
+        case GL_GREEN:
+        case GL_BLUE:
+        case GL_ALPHA:
+        case GL_LUMINANCE:
+        case GL_STENCIL_INDEX:
+        case GL_DEPTH_COMPONENT:
+            return 1;
+        case GL_LUMINANCE_ALPHA:
+            return 2;
+        case GL_RGB:
+        case GL_BGR:
+            return 3;
+        case GL_RGBA:
+        case GL_BGRA:
+            return 4;
+        default:
+            fprintf(stderr, "unknown format %s; assuming 4 components\n",
+                    gl_enum_to_token(format));
+            return 4; /* conservative */
+        }
+        break;
+    default:
+        assert(type != GL_BITMAP); /* cannot return 1/8 */
+        return 1; /* all the packed types */
+    }
 }
 
 bool dump_GLenum(const void *value, int count, FILE *out)
@@ -207,4 +309,110 @@ int count_gl(budgie_function func, GLenum token)
     default:
         return -1;
     }
+}
+
+static state_7context_I *(*get_context_state)(void) = NULL;
+
+void initialise_dump(void)
+{
+    filter_set *f;
+
+    /* We don't make any asserts here, since this function is called
+     * whether logging is enabled or not.
+     */
+    f = get_filter_set_handle("trackcontext");
+    if (f)
+        get_context_state = (state_7context_I *(*)(void))
+            get_filter_set_symbol(f, "get_context_state");
+}
+
+/* Computes the number of pixel elements (units of byte, int, float etc)
+ * used by a client-side encoding of a 1D, 2D or 3D image.
+ * Specify -1 for depth for 1D or 2D textures.
+ *
+ * The trackcontext and trackbeginend filtersets
+ * must be loaded for this to work.
+ */
+size_t image_element_count(GLsizei width,
+                           GLsizei height,
+                           GLsizei depth,
+                           GLenum format,
+                           GLenum type,
+                           bool unpack)
+{
+    state_7context_I *ctx;
+    /* data from OpenGL state */
+    GLint swap_bytes, row_length, image_height;
+    GLint skip_pixels, skip_rows, skip_images, alignment;
+    /* following the notation of the OpenGL 1.5 spec, section 3.6.4 */
+    int l, n, k, s, a;
+    int elements; /* number of elements in the last row */
+
+    /* First check that we aren't in begin/end, in which case the call
+     * will fail anyway.
+     */
+    assert(get_context_state);
+    ctx = (*get_context_state)();
+    if (!ctx || ctx->c_internal.c_in_begin_end.data) return 0;
+    if (unpack)
+    {
+        /* FIXME: don't query on non-existant extensions */
+        (*glGetIntegerv_real)(GL_UNPACK_SWAP_BYTES, &swap_bytes);
+        (*glGetIntegerv_real)(GL_UNPACK_ROW_LENGTH, &row_length);
+        (*glGetIntegerv_real)(GL_UNPACK_IMAGE_HEIGHT, &image_height);
+        (*glGetIntegerv_real)(GL_UNPACK_SKIP_PIXELS, &skip_pixels);
+        (*glGetIntegerv_real)(GL_UNPACK_SKIP_ROWS, &skip_rows);
+        (*glGetIntegerv_real)(GL_UNPACK_SKIP_IMAGES, &skip_images);
+        (*glGetIntegerv_real)(GL_UNPACK_ALIGNMENT, &alignment);
+    }
+    else
+    {
+        (*glGetIntegerv_real)(GL_PACK_SWAP_BYTES, &swap_bytes);
+        (*glGetIntegerv_real)(GL_PACK_ROW_LENGTH, &row_length);
+        (*glGetIntegerv_real)(GL_PACK_IMAGE_HEIGHT, &image_height);
+        (*glGetIntegerv_real)(GL_PACK_SKIP_PIXELS, &skip_pixels);
+        (*glGetIntegerv_real)(GL_PACK_SKIP_ROWS, &skip_rows);
+        (*glGetIntegerv_real)(GL_PACK_SKIP_IMAGES, &skip_images);
+        (*glGetIntegerv_real)(GL_PACK_ALIGNMENT, &alignment);
+    }
+    a = alignment;
+    skip_images = (depth > 0) ? skip_images : 0;
+    depth = abs(depth);
+    image_height = (image_height > 0) ? image_height : height;
+    l = (row_length > 0) ? row_length : width;
+    /* FIXME: divisions can be avoided */
+    if (type == GL_BITMAP) /* bitmaps are totally different */
+    {
+        k = a * ((l + 8 * a - 1) / (8 * a));
+        elements = a * (((width + skip_pixels) + 8 * a - 1) / (8 * a));
+    }
+    else
+    {
+        n = gl_format_to_count(format, type);
+        s = gl_type_to_size(type);
+        if ((s == 1 || s == 2 || s == 4 || s == 8)
+            && s < a)
+            k = a / s * ((s * n * l + a - 1) / a);
+        else
+            k = n * l;
+        elements = (width + skip_pixels) * n;
+    }
+    return elements
+        + k * (height + skip_rows - 1)
+        + k * image_height * (depth + skip_images - 1);
+}
+
+/* Computes the number of pixel elements required by glGetTexImage
+ */
+size_t texture_element_count(GLenum target,
+                             GLint level,
+                             GLenum format,
+                             GLenum type)
+{
+    int width, height, depth;
+    /* FIXME: don't query for depth if we don't have 3D textures */
+    (*glGetTexLevelParameteriv_real)(target, level, GL_TEXTURE_WIDTH, &width);
+    (*glGetTexLevelParameteriv_real)(target, level, GL_TEXTURE_HEIGHT, &height);
+    (*glGetTexLevelParameteriv_real)(target, level, GL_TEXTURE_DEPTH, &depth);
+    return image_element_count(width, height, depth, format, type, false);
 }

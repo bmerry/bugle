@@ -9,3 +9,10 @@
 - capture and reload
 - documentation
 - use ltdl for loading modules
+- allow the filter chain to be selectively bypassed, for benchmarking purposes
+- cap and extension overrides
+- statistics
+- capture information about call lists
+- log errors to file
+- profiling
+- use dump overrides rather than alterative types for alt enums and errors

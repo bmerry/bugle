@@ -68,6 +68,9 @@ static bool initialise_log(filter_set *handle)
     }
     register_filter(handle, "log", log_callback);
     register_filter_depends("log", "invoke");
+    register_filter_depends("log", "trackbeginend");
+    register_filter_set_depends("log", "trackcontext");
+    register_filter_set_depends("log", "trackbeginend");
     return true;
 }
 

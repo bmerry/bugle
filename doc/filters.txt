@@ -2,7 +2,7 @@ Filters are arranged in a three-level hierarchy:
 
 1. Filter libraries, which are a loose collection of filter-sets. These
    allow filters to be grouped together to avoid having hundreds of
-   files.
+   files. It also makes shared access to data easier.
 2. Filter-sets, which are tightly coupled groups of filters. Each
    filter-set may have state, may depend upon other filter sets and may
    only be loaded as a unit.
@@ -19,7 +19,7 @@ void initialise_filter_library(void)
 which will register all the filter-sets in the library. It registers a
 filter-set by calling
 
-register_filter_set("setname", initialiser, destroyer)
+register_filter_set("setname", initialiser, destroyer, configurator)
 
 where initialiser is a callback function that is called if and when the
 filter-set is loaded. It has the signature
@@ -27,9 +27,25 @@ filter-set is loaded. It has the signature
 bool initialise_filter_set(filter_set *handle)
 
 and returns true if loading was successful. Shutdown is from the
-destroyer, and has the form
+destroyer (which may be NULL), and has the form
 
 void destroy_filter_set(filter_set *handle)
+
+Finally, a filter-set may have user-configurable options. These are
+called variables, but are more like commands. The configurator has the
+signature
+
+bool configure_filter_set(filter_set *handle, const void *name, const void *value)
+
+It should return true if the variable was processed, false otherwise.
+If the name was recognised but the value was illegal, it should print a
+warning to stderr, ignoring the variable and return true (returning
+false would cause a confusing error about the *name* being illegal. The
+configurator is called before the initialiser, so it can control the
+actions of the latter. Any initialisation that needs to happen prior to
+the configurator must be done in initialise_filter_library
+(and should be minimal, given that the filter-set might never be
+loaded).
 
 A filter-set initialiser must do the following, apart from any internal
 initialisation:
@@ -40,12 +56,25 @@ initialisation:
   another filter-set (even in another library, or even not exist)
 - request per-call state storage, if required
   register_filter_set_call_state(handle, number_of_bytes)
-- get handles to dependent filter-sets
+- get handles to other filter-sets
   filter_set *other_handle = get_filter_set_handle("other_set_name")
+  which will return NULL if the latter was not found (but will return
+  a meaningful value even if it won't be used).
 - specify dependencies on other filter-sets
   register_filter_set_depends("set1", "set2")
 - get symbols from other filter-sets, if necessary:
   foo_ptr = (void (*)(void)) get_filter_set_symbol(other_handle, "foo")
+  This will also return a meaningful value even if the other filter
+  will never be used, provided the symbol is defined.
+
+Note that there is a fundamental difference between filter dependencies
+and filter-set dependencies: the first is an ORDERING relationship, and
+limits in the order in the filters can run if both are loaded, while
+the latter is an ENABLING relationship, and determines which extra
+filter-sets must be loaded in order to guarantee correct operation.
+Note that the filter dependencies are only implicitly transitive: if A
+must come before B and B before C, it is still possible for A to come
+after C if B is never loaded.
 
 The callback function for a filter looks like this:
 

@@ -22,7 +22,7 @@ flags, such as -L/path/to/bugle -Wl,-rpath -Wl,/path/to/bugle
 Q. What is the performance penality?
 A. That depends on what you're doing with the library, but to give you
 an example, here are some rough numbers for Quake3 1.32 on demo 'four'
-(not even remotely scientificly collected).
+(not even remotely scientificly collected, and probably out of date).
 
 without BuGLe: 133fps
 with just the "invoke" filterset: 125fps
@@ -31,8 +31,10 @@ with logging to /dev/null: 48fps
 with logging to file: 47fps
 
 So basically, the framework adds a little, and logging adds a lot.
+Logging is particularly expensive because of all the formatting it has
+to do, but most of the others filtersets are cheaper.
 
-Q. How do you get Quake3 to use BuGLE?
+Q. How do you get Quake3 to use BuGLe?
 A. Run it as quake3 +set r_glDriver /path/to/libbugle.so
 
 Q. Why am I getting errors about unknown GL tokens?

@@ -152,6 +152,7 @@ bool set_filter_set_variable(filter_set *handle, const char *name, const char *v
 void enable_filter_set(filter_set *handle)
 {
     list_node *i, *j;
+    filter_set *f;
 
     if (!handle->enabled)
     {
@@ -172,7 +173,17 @@ void enable_filter_set(filter_set *handle)
              i = list_next(i), j = list_next(j))
         {
             if (strcmp(handle->name, (const char *) list_data(i)) == 0)
-                enable_filter_set(get_filter_set_handle((const char *) list_data(j)));
+            {
+                f = get_filter_set_handle((const char *) list_data(j));
+                if (!f)
+                {
+                    fprintf(stderr, "filter-set %s depends on unknown filter-set %s\n",
+                            ((const char *) list_data(i)),
+                            ((const char *) list_data(j)));
+                    exit(1);
+                }
+                enable_filter_set(f);
+            }
         }
         for (i = list_head(&handle->filters); i != NULL; i = list_next(i))
             list_append(&active_filters, list_data(i));
@@ -356,6 +367,12 @@ void register_filter_set_call_state(filter_set *handle, size_t bytes)
         call_data = xmalloc(call_data_size);
 }
 
+bool filter_set_is_enabled(const filter_set *handle)
+{
+    assert(handle);
+    return handle->enabled;
+}
+
 filter_set *get_filter_set_handle(const char *name)
 {
     list_node *i;
@@ -367,11 +384,11 @@ filter_set *get_filter_set_handle(const char *name)
         if (strcmp(name, cur->name) == 0)
             return cur;
     }
-    fprintf(stderr, "Failed to locate filter-set %s\n", name);
-    exit(1);
+    return NULL;
 }
 
 void *get_filter_set_symbol(filter_set *handle, const char *name)
 {
+    assert(handle);
     return dlsym(handle->dl_handle, name);
 }

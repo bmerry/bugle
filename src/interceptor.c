@@ -44,6 +44,7 @@ static void load_config(void)
     const config_chain *chain;
     const config_filterset *set;
     const config_variable *var;
+    filter_set *f;
     list_node *i, *j;
     bool done = false;
 
@@ -77,10 +78,17 @@ static void load_config(void)
                     for (i = list_head(&chain->filtersets); i; i = list_next(i))
                     {
                         set = (const config_filterset *) list_data(i);
+                        f = get_filter_set_handle(set->name);
+                        if (!f)
+                        {
+                            fprintf(stderr, "warning: ignoring unknown filter-set %s\n",
+                                    set->name);
+                            continue;
+                        }
                         for (j = list_head(&set->variables); j; j = list_next(j))
                         {
                             var = (const config_variable *) list_data(j);
-                            if (!set_filter_set_variable(get_filter_set_handle(set->name),
+                            if (!set_filter_set_variable(f,
                                                          var->name,
                                                          var->value))
                                 fprintf(stderr, "warning: unused variable %s in filter-set %s\n",
@@ -90,7 +98,8 @@ static void load_config(void)
                     for (i = list_head(&chain->filtersets); i; i = list_next(i))
                     {
                         set = (const config_filterset *) list_data(i);
-                        enable_filter_set(get_filter_set_handle(set->name));
+                        f = get_filter_set_handle(set->name);
+                        if (f) enable_filter_set(f);
                     }
                     done = true;
                 }
@@ -105,7 +114,15 @@ static void load_config(void)
     else
         fputs("$HOME not defined; running in passthrough mode\n", stderr);
     if (!done)
-        enable_filter_set(get_filter_set_handle("invoke"));
+    {
+        f = get_filter_set_handle("invoke");
+        if (!f)
+        {
+            fputs("could not locate invoke filter-set; aborting\n", stderr);
+            exit(1);
+        }
+        enable_filter_set(f);
+    }
 }
 
 void interceptor(function_call *call)
@@ -117,6 +134,7 @@ void interceptor(function_call *call)
         initialise_hashing();
         initialise_canonical();
         initialise_filters();
+        initialise_dump();
         init_real();
         load_config();
         initialised = true;

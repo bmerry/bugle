@@ -74,6 +74,7 @@ void register_filter_set_depends(const char *base, const char *dep);
 void register_filter_depends(const char *after, const char *before);
 void register_filter_set_call_state(filter_set *handle, size_t bytes);
 filter_set *get_filter_set_handle(const char *name);
+bool filter_set_is_enabled(const filter_set *handle);
 void *get_filter_set_symbol(filter_set *handle, const char *name);
 
 #endif /* BUGLE_SRC_FILTERS_H */
