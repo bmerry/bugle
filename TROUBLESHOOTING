@@ -13,12 +13,26 @@ subdirectory of your source directory and put it there.
 
 Q. I am using the NVIDIA header files, and I am getting errors about
 conflicting definitions.
+A. Try upgrading to the latest NVIDIA drivers. The 60 series seem to
+fix many of the problems in older header files. If that doesn't help,
+then see the original answer below:
 A. Avoid using the NVIDIA header files. They define prototypes that do
 not match the OpenGL specification, and contain other flaws as well. If
 you are unwilling or unable to modify the system header files, then you
 can create a GL subdirectory of your BuGLe source directory and place
 alternative headers there. Mesa has good headers; try downloading the
 Mesa source from www.mesa3d.org and using the headers from there.
+
+Q. I have an x86_64 (Athlon 64/Opteron/EM64T) machine with 64-bit OS,
+and BuGLe fails to work with Quake3/Doom3.
+A. Quake3 and Doom3 are 32-bit apps, while you probably have a 64-bit
+version of BuGLe. You will need to compile a 32-bit version. The
+details of how to do that depend on your OS, but as a start try
+configuring BuGLe with
+
+./configure --x-libraries=/path/to/32bit/X CC="gcc -m32" CXX="g++ -m32" LD="ld -m elf_i386"
+
+I have also not had success with Doom3, even with a 32-bit bugle.
 
 
 
@@ -27,4 +41,5 @@ you are having compilation problems, then it would help to include the
 generated file src/data/gl.tu, assuming compilation got that far. Be
 aware that this file is generated from your OpenGL header files, and if
 you are using proprietry OpenGL headers then there is a small chance
-that distributing this file violates the vendor's copyright.
+that distributing this file violates the vendor's copyright. I am not a
+lawyer, so unfortunately I can't give definitive advise you on this.

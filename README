@@ -26,7 +26,7 @@ To build, you will need the following:
 - OpenGL header files, including glext.h. The best OpenGL header files
   are those from the Mesa project (pre-installed on many systems).
   Avoid the header files provided by NVIDIA, as they have numerous
-  errors [this may no longer be true, but it is untested].
+  errors [these seem to be fixed in the 60 series of drivers, though].
 - To do video capture, you will need libavcodec/libavformat from ffmpeg.
 
 If you are upgrading, you MUST uninstall the previous version first. If
