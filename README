@@ -13,6 +13,7 @@ Here are a few things you can do so far
 - capture a log of what a program does (won't capture everything yet)
 - check for GL errors after every call
 - force a wireframe mode
+- capture a video
 - run inside a gdb-like debugger, with breakpoints on GL functions and
   (optionally) stopping after every error.
 
@@ -24,6 +25,7 @@ To build, you will need the following:
   are those from the Mesa project (pre-installed on many systems).
   Avoid the header files provided by NVIDIA, as they have numerous
   errors.
+- To do video capture, you will need libavcodec/libavformat from ffmpeg.
 
 If you have trouble with your system headers, see the file
 TROUBLESHOOTING for instructions on using Mesa headers to compile

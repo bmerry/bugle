@@ -1,3 +1,5 @@
+0.0.20040719
+------------
 The big changes are improvements to the debugging facility, gldb. Pressing
 Ctrl-C will now stop the program (ala gdb), and it is possible to query
 OpenGL state. Refer to the gldb(1) manual page for details.
@@ -7,6 +9,9 @@ be mostly possible to use bugle even with programs that render
 simultaneously from multiple threads. However, the debugger will not
 work on a multi-threaded program, and there are still a few known race
 conditions.
+
+Finally, there is also a preliminary video capture mode. It is still
+somewhat slow and experimental.
 
 0.0.20040614
 ------------

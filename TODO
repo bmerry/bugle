@@ -19,22 +19,25 @@ bugle
 - cap and extension overrides
 - fill in the rest of the state
 - handle texture proxies
-- statistics
+- handle GL shared objects correctly
+- statistics and profiling
 - capture information about call lists
-- profiling
 - capture and replay
-- screenshot: better movie capture
+- better movie capture
+  - use MMX for faster mirroring
+  - use PBO for async readback
+  - option of a separate thread, for parallel encoding
+  - frame rate control
+  - --without-lavc configure option
+- better separation between libbugleutils and libbugle, so that only the
+  latter requires GL and X libraries
 
 budgie
 ------
 - more autoconf tests (e.g. regex)
 - robust logging, to avoid segfaulting
-- dump expressions rather than dump functions
 - move filter code into budgie?
 - write support for state
-- capture and replay
-- better separation between libbugleutils and libbugle, so that only the
-  latter requires GL and X libraries
 
 tests
 -----

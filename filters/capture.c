@@ -349,7 +349,6 @@ bool screenshot_callback(function_call *call, void *data)
 {
     /* FIXME: track the frameno in the context?
      * FIXME: async copy via textures or PBO
-     * FIXME: recycle memory
      * FIXME: thread safety
      */
     static int frameno = 0;

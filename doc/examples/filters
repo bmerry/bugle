@@ -29,6 +29,22 @@ chain screenshot
     filterset screenshot
 }
 
+# Captures every frame into a video file. There is currently no frame rate
+# control, so if you are using this in your own application you should
+# arrange for the frames to be frame-rate independent.
+chain video
+{
+    filterset screenshot
+    {
+        video "bugle.avi"
+        codec "mpeg4"
+        # Roughly DVD size, although no high quality options are set
+        bitrate "7500000"
+        # You can also set a start frame.
+        # start "1000"
+    }
+}
+
 # A cute hack to get a wireframe mode
 chain wireframe
 {
