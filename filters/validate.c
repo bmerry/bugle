@@ -45,7 +45,7 @@ static bool error_callback(function_call *call, const callback_data *data)
 
     *(GLenum *) data->call_data = GL_NO_ERROR;
     if (function_table[call->generic.id].name[2] == 'X') return true; /* GLX */
-    ctx = get_context_state();
+    ctx = tracker_get_context_state();
     if (canonical_call(call) == CFUNC_glGetError)
     {
         /* We hope that it returns GL_NO_ERROR, since otherwise something
@@ -104,7 +104,7 @@ static bool initialise_error(filter_set *handle)
     /* We don't call filter_post_renders, because that would make the
      * error filterset depend on itself.
      */
-    filter_set_renders("error");
+    register_filter_set_renders("error");
     return true;
 }
 

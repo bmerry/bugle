@@ -72,7 +72,7 @@ static bool initialise_procaddress(filter_set *handle)
 {
     register_filter(handle, "procaddress", procaddress_callback);
     register_filter_depends("procaddress", "invoke");
-    register_filter_depends("log", "procaddress");
+    register_filter_depends("trace", "procaddress");
     register_filter_set_depends("invoke", "procaddress");
     return true;
 }

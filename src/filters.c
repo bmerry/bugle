@@ -21,6 +21,7 @@
 #endif
 #include "src/utils.h"
 #include "filters.h"
+#include "tracker.h"
 #include "common/linkedlist.h"
 #include "common/hashtable.h"
 #include "common/safemem.h"
@@ -56,7 +57,7 @@ static hash_table filter_dependencies;
 static linked_list filter_set_dependencies[2];
 static bool dirty_active = false;
 static void *call_data = NULL;
-static size_t call_data_size = 0;
+static size_t call_data_size = 0, context_data_size = 0;
 
 static void *current_dl_handle = NULL;
 
@@ -327,8 +328,11 @@ void *get_filter_set_call_state(function_call *call, filter_set *handle)
 
 void *get_filter_set_context_state(state_7context_I *ctx, filter_set *handle)
 {
-    /* FIXME: implement */
-    return NULL;
+    if (ctx && ctx->c_internal.c_filterdata.data
+        && handle->context_state_offset >= 0)
+        return (void *)(((char *) ctx->c_internal.c_filterdata.data) + handle->context_state_offset);
+    else
+        return NULL;
 }
 
 void run_filters(function_call *call)
@@ -349,7 +353,8 @@ void run_filters(function_call *call)
         cur = (filter *) list_data(i);
         data.call_data = get_filter_set_call_state(call, cur->parent);
         /* FIXME: implement */
-        data.context_data = NULL;
+        data.context_data = get_filter_set_context_state(tracker_get_context_state(),
+                                                         cur->parent);
         if (!(*cur->callback)(call, &data)) break;
     }
 }
@@ -376,7 +381,9 @@ filter_set *register_filter_set(const filter_set_info *info)
     else s->call_state_offset = (ptrdiff_t) -1;
     if (info->context_state_space)
     {
-        /* FIXME: implement */
+        s->context_state_offset = context_data_size;
+        context_data_size += info->context_state_space;
+        tracker_set_context_space(context_data_size);
     }
     else s->context_state_offset = (ptrdiff_t) -1;
 

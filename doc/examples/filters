@@ -10,10 +10,11 @@ chain pass
 # complete as possible a log in the event of a crash.
 chain trace
 {
+    filterset trace
     filterset showerror
     filterset log
     {
-    	filename "/tmp/bugle.log"
+    	filename "bugle.log"
         # flush "yes"
     }
 }

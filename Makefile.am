@@ -18,7 +18,7 @@ lib_LTLIBRARIES = src/libbugleutils.la src/libbugle.la
 bin_PROGRAMS = gldb/gldb
 pkglib_LTLIBRARIES = \
 	filters/common.la \
-	filters/log.la \
+	filters/trace.la \
 	filters/modify.la \
 	filters/validate.la \
 	filters/debugger.la \
@@ -67,6 +67,7 @@ src_libbugle_la_SOURCES = \
 	src/interceptor.c \
 	src/filters.c src/filters.h \
 	src/tracker.c src/tracker.h \
+	src/log.c src/log.h \
 	budgielib/budgieutils.c budgielib/budgieutils.h \
 	budgielib/state.c budgielib/state.h
 nodist_src_libbugle_la_SOURCES = \
@@ -100,8 +101,8 @@ src/glfuncs.c: gentokens/genfunctions.perl src/utils.h
 # Filters
 filters_common_la_SOURCES = filters/common.c
 filters_common_la_LDFLAGS = -thread-safe -module -avoid-version
-filters_log_la_SOURCES = filters/log.c
-filters_log_la_LDFLAGS = -thread-safe -module -avoid-version
+filters_trace_la_SOURCES = filters/trace.c
+filters_trace_la_LDFLAGS = -thread-safe -module -avoid-version
 filters_modify_la_SOURCES = filters/modify.c
 filters_modify_la_LDFLAGS = -thread-safe -module -avoid-version
 filters_validate_la_SOURCES = filters/validate.c

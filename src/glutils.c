@@ -35,7 +35,7 @@ bool in_begin_end(void)
 {
     state_7context_I *ctx;
 
-    ctx = get_context_state();
+    ctx = tracker_get_context_state();
     return !ctx || ctx->c_internal.c_in_begin_end.data;
 }
 
@@ -82,7 +82,7 @@ GLXContext get_aux_context()
     GLXFBConfig *cfgs;
     Display *dpy;
 
-    context_state = get_context_state();
+    context_state = tracker_get_context_state();
     if (context_state->c_internal.c_auxcontext.data == NULL)
     {
         dpy = glXGetCurrentDisplay();
@@ -111,29 +111,29 @@ GLXContext get_aux_context()
     return context_state->c_internal.c_auxcontext.data;
 }
 
-void filter_set_renders(const char *name)
+void register_filter_set_renders(const char *name)
 {
-    filter_set_uses_state(name);
+    register_filter_set_uses_state(name);
     register_filter_set_depends(name, "trackbeginend");
 }
 
-void filter_post_renders(const char *name)
+void register_filter_post_renders(const char *name)
 {
     register_filter_depends(name, "error");
     register_filter_depends(name, "trackbeginend");
 }
 
-void filter_set_uses_state(const char *name)
+void register_filter_set_uses_state(const char *name)
 {
     register_filter_set_depends(name, "trackcontext");
 }
 
-void filter_post_uses_state(const char *name)
+void register_filter_post_uses_state(const char *name)
 {
     register_filter_depends(name, "trackcontext");
 }
 
-void filter_set_queries_error(const char *name, bool require)
+void register_filter_set_queries_error(const char *name, bool require)
 {
     if (require) register_filter_set_depends(name, "error");
     if (!error_handle)

@@ -23,6 +23,7 @@
 # include <config.h>
 #endif
 #include <GL/gl.h>
+#include <GL/glx.h>
 #include "budgieutils.h"
 #include "common/bool.h"
 
@@ -43,6 +44,7 @@ bool dump_GLalternateenum(GLenum e, FILE *out);
 bool dump_GLcomponentsenum(GLenum e, FILE *out);
 bool dump_GLerror(GLenum e, FILE *out);
 bool dump_GLboolean(GLboolean b, FILE *out);
+bool dump_GLXDrawable(GLXDrawable d, FILE *out);
 bool dump_convert(GLenum pname, const void *value,
                   budgie_type in_type, FILE *out);
 

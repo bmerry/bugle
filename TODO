@@ -1,9 +1,6 @@
 Current rewrite:
 ----------------
-- fill in code for per-context, per-filter state
 - exploit per-context, per-filter state e.g. for video
-- update documentation on filter registration
-- complete rename of 'variables' to 'commands' for filtersets
 - update docs
 
 gldb

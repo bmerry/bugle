@@ -68,8 +68,8 @@ static bool initialise_wireframe(filter_set *handle)
 {
     register_filter(handle, "wireframe", wireframe_callback);
     register_filter_depends("wireframe", "invoke");
-    filter_set_renders("wireframe");
-    filter_post_renders("wireframe");
+    register_filter_set_renders("wireframe");
+    register_filter_post_renders("wireframe");
     return true;
 }
 

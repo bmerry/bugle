@@ -25,6 +25,7 @@
 #include "canon.h"
 #include "conffile.h"
 #include "tracker.h"
+#include "log.h"
 #include "common/hashtable.h"
 #include "common/safemem.h"
 #include <stdlib.h>
@@ -149,26 +150,8 @@ static void load_config(void)
 
 static void initialise_core_filters(void)
 {
-    const filter_set_info trackcontext_info =
-    {
-        "trackcontext",
-        initialise_trackcontext,
-        NULL,
-        NULL,
-        0,
-        0
-    };
-    const filter_set_info trackbeginend_info =
-    {
-        "trackbeginend",
-        initialise_trackbeginend,
-        NULL,
-        NULL,
-        0,
-        0
-    };
-    register_filter_set(&trackcontext_info);
-    register_filter_set(&trackbeginend_info);
+    tracker_initialise();
+    log_initialise();
 }
 
 static pthread_once_t init_key_once = PTHREAD_ONCE_INIT;

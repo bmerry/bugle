@@ -6,9 +6,13 @@
 * Introduce names.c and names.h, to hold just the names of the functions
 * Rewrite the token capture system, which now captures extension info
 * New system to capture which functions belong to which extensions
-* Stub support for per-context, per-filter state
+* Support for per-context, per-filter state
 * Move tracker library into the core source
+* Move logging into the core source, and split the tracing functionality
+  out into a 'trace' module
 * Make gldb and libbugleutils independent of GL and X
+* Hex output of GLXDrawable (looks nicer, plus removes spurious regression
+  errors)
 
 0.0.20040903
 ------------

@@ -561,7 +561,7 @@ static bool initialise_screenshot(filter_set *handle)
 {
     register_filter(handle, "screenshot", screenshot_callback);
     register_filter_depends("invoke", "screenshot");
-    filter_set_renders("screenshot");
+    register_filter_set_renders("screenshot");
 
     video_data = xcalloc(video_lag, sizeof(screenshot_data));
     video_cur = 0;

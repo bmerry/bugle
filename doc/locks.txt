@@ -31,7 +31,9 @@ BUG: there probably need to be a few more volatile keywords.
 
 4. Log files
 
-When writing the log, use flockfile/funlockfile.
+The logging filters use flockfile/funlockfile to guarantee that each
+call occupies a contiguous piece of log. This is why you should use
+log_register_filter() for each filter that intends to do logging.
 
 5. Debugger
 
