@@ -350,6 +350,7 @@ void gldb_initialise(int argc, char * const *argv)
     for (i = 1; i < argc; i++)
         prog_argv[i - 1] = argv[i];
 
+    bugle_initialise_hashing();
     bugle_hash_init(&break_on, false);
 }
 
