@@ -35,28 +35,10 @@
 
 using namespace std;
 
-struct gen_state_tree
-{
-    int index;
-    string name, instance_class;
-    vector<gen_state_tree *> children;
-
-    tree_node_p type;
-    int count;
-    string loader;
-
-    gen_state_tree() : type(NULL_TREE), count(0) {}
-    ~gen_state_tree()
-    {
-        for (size_t i = 0; i < children.size(); i++)
-            delete children[i];
-    }
-};
-
 static map<tree_node_p, vector<string> > bitfield_types;
 static map<param_or_type, string> type_overrides;
 static map<param_or_type, string> length_overrides, dump_overrides, save_overrides, load_overrides;
-static gen_state_tree root_state;
+gen_state_tree root_state;
 
 bool param_or_type::operator <(const param_or_type &b) const
 {
@@ -65,6 +47,19 @@ bool param_or_type::operator <(const param_or_type &b) const
     if (func != b.func) return func < b.func;
     if (func) return param < b.param;
     else return type < b.type;
+}
+
+static string search_replace(const string &s, const string &old, const string &nu)
+{
+    string ans = s;
+    string::size_type pos = 0;
+
+    while ((pos = ans.find(old, pos)) != string::npos)
+    {
+        ans.replace(pos, old.length(), nu);
+        pos += nu.length(); /* avoid infinite loops */
+    }
+    return ans;
 }
 
 /*! Generated type override functions. Overrides for types just take a
@@ -81,19 +76,14 @@ string get_type(bool prototype)
     {
         if (i->first.type) // type override
         {
-            string l = "(" + i->second + ")";
-            string::size_type pos;
-            // In type overrides, $ is replaced by the value
-            // FIXME: do pre-substitution
-            while ((pos = l.find("$")) != string::npos)
-                l.replace(pos, 1, "type");
+            string l = search_replace(i->second, "$$", "type");
 
             out << "budgie_type get_type_TYPE_" << type_to_id(i->first.type)
                 << "(const void *value)";
             if (prototype) out << ";\n";
             else
                 out << "\n{\n"
-                    << "    return " << l << ";\n"
+                    << "    return (" << l << ");\n"
                     << "}\n\n";
         }
         else
@@ -131,13 +121,10 @@ string get_length(bool prototype)
         { // type override
             tree_node_p base = TREE_TYPE(i->first.type);
             tree_node_p cnst = make_pointer(make_const(make_pointer(make_const(base), false)), false);
-            string l = "(" + i->second + ")";
             string repl = "(*(" + type_to_string(cnst, "", false)
                 + ") value)";
             destroy_temporary(cnst);
-            string::size_type pos;
-            while ((pos = l.find("$")) != string::npos)
-                l.replace(pos, 1, repl);
+            string l = search_replace("(" + i->second + ")", "$$", repl);
             out << "int get_length_TYPE_" << type_to_id(i->first.type)
                 << "(const void *value)";
             if (prototype) out << ";\n";
@@ -966,6 +953,7 @@ static void make_state_instance_struct(gen_state_tree *node,
 {
     ostringstream number;
     string name = prefix;
+    gen_state_tree *indexed = NULL;
 
     if (node->name == "[]") name = prefix + "_I";
     else if (node->name != "")
@@ -994,6 +982,7 @@ static void make_state_instance_struct(gen_state_tree *node,
                     << " c_" << node->children[i]->name << ";\n";
                 num_children++;
             }
+            else indexed = node->children[i];
         }
         out << "    state_generic *children["
             << num_children + 1 << "];\n";
@@ -1008,11 +997,24 @@ static void make_state_instance_struct(gen_state_tree *node,
                 out << "    " << type_to_string(node->type, "data[" + num.str() + "]", false) << ";\n";
             }
         }
+        if (node->key_type != NULL_TREE)
+            out << "    " << type_to_string(node->key_type, "key", false) << ";\n";
         out << "} " << name << ";\n\n";
+        if (indexed && indexed->key_type != NULL_TREE)
+        {
+            out << "static inline " << indexed->instance_class << " *"
+                << name << "_add_index(" << name << " *s, "
+                << type_to_string(indexed->key_type, "key", false)
+                << ", const char *name)\n"
+                << "{\n"
+                << "    return (" << indexed->instance_class
+                << " *) add_state_index(&s->generic, &key, name);\n"
+                << "}\n\n";
+        }
     }
     else
     {
-        out << "void " << name << "_constructor(state_generic *s, state_generic *parent)\n"
+        out << "static void " << name << "_constructor(state_generic *s, state_generic *parent)\n"
             << "{\n"
             << "    " << name << " *me = (" << name << " *) s;\n"
             << "    initialise_state(s, parent);\n"
@@ -1022,6 +1024,11 @@ static void make_state_instance_struct(gen_state_tree *node,
             out << "    s->data = &me->data;\n";
         else
             out << "    s->data = NULL;\n";
+        if (node->key_type != NULL_TREE)
+            out << "    s->key = &me->key;\n";
+        else
+            out << "    s->key = NULL;\n";
+        out << "    s->name = (char *) s->spec->name;\n";
         int counter = 0;
         for (size_t i = 0; i < node->children.size(); i++)
         {
@@ -1030,6 +1037,12 @@ static void make_state_instance_struct(gen_state_tree *node,
                     << node->children[i]->name << ".generic;\n"
                     << "    " << node->children[i]->instance_class
                     << "_constructor((state_generic *) &me->c_" << node->children[i]->name << ", s);\n";
+        }
+        if (node->constructor != "")
+        {
+            out << "    {\n"
+                << search_replace(node->constructor, "$$", "me") << "\n"
+                << "    }\n";
         }
         out << "}\n\n";
     }
@@ -1066,7 +1079,11 @@ static void make_state_spec_table_entry(gen_state_tree *node,
         out << "&state_spec_table[" << indexed->index << "], ";
     else
         out << "NULL, ";
-    out << "NULL, "; // FIXME: key_compare
+    if (node->key_type == NULL_TREE)
+        out << "NULL_TYPE, NULL, ";
+    else
+        out << type_to_enum(node->key_type) << ", "
+            << node->key_compare << ", ";
     if (node->type != NULL_TREE)
         out << type_to_enum(node->type) << ", "
             << node->count << ", ";
@@ -1167,48 +1184,6 @@ void set_length_override(const param_or_type &p, const string &len)
         length_overrides[p] = override_substitutions(p.func, len);
     else
         length_overrides[p] = len;
-}
-
-void set_state_spec(const string &name, tree_node_p type,
-                    int count, const string loader)
-{
-    gen_state_tree *tree = &root_state;
-    string name2 = name;
-    string child;
-    string::size_type pos;
-    size_t i;
-
-    while (!name2.empty())
-    {
-        if (name2[0] == '.')
-        {
-            name2.erase(0, 1);
-            continue;
-        }
-        else if (name2[0] == '[')
-        {
-            // FIXME: give a decent error
-            assert(name2[1] == ']');
-            pos = 2;
-        }
-        else
-            pos = name2.find_first_of("[].");
-        child = name2.substr(0, pos);
-        name2.erase(0, pos);
-        for (i = 0; i < tree->children.size(); i++)
-            if (tree->children[i]->name == child) break;
-        if (i == tree->children.size())
-        {
-            tree->children.push_back(new gen_state_tree());
-            tree = tree->children.back();
-            tree->name = child;
-        }
-        else
-            tree = tree->children[i];
-    }
-    tree->count = count;
-    tree->type = type;
-    tree->loader = loader;
 }
 
 tree_node_p new_bitfield_type(tree_node_p base,

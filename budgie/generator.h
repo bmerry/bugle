@@ -27,6 +27,7 @@
 #include <iostream>
 #include <string>
 #include <vector>
+#include <cstddef>
 #include "tree.h"
 
 //! A class used for overrides
@@ -43,6 +44,28 @@ struct param_or_type
     param_or_type(tree_node_p func_, int param_) : func(func_), param(param_), type(NULL) {}
     bool operator <(const param_or_type &b) const; // necessary for std::map
 };
+
+struct gen_state_tree
+{
+    int index;
+    std::string name, instance_class;
+    std::vector<gen_state_tree *> children;
+
+    tree_node_p key_type;
+    std::string key_compare;
+    tree_node_p type;
+    int count;
+    std::string constructor;
+    std::string loader;
+
+    gen_state_tree() : key_type(NULL_TREE), type(NULL_TREE), count(0) {}
+    ~gen_state_tree()
+    {
+        for (size_t i = 0; i < children.size(); i++)
+            delete children[i];
+    }
+};
+extern gen_state_tree root_state;
 
 //! Generates wrapper functions for type overrides
 std::string get_type(bool prototyp);

@@ -22,7 +22,7 @@
 #if HAVE_CONFIG_H
 # include <config.h>
 #endif
-#include "linkedlist.h"
+#include "common/linkedlist.h"
 
 typedef struct
 {

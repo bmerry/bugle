@@ -16,26 +16,46 @@
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#ifndef BUGLE_SRC_GLSTATE_H
-#define BUGLE_SRC_GLSTATE_H
+#ifndef BUGLE_BUDGIE_BC_H
+#define BUGLE_BUDGIE_BC_H
 
 #if HAVE_CONFIG_H
 # include <config.h>
 #endif
-#include "budgielib/state.h"
+#include <list>
+#include <string>
+#include <cstddef>
+#include <regex.h>
+#include "budgie/tree.h"
+#include "budgie/generator.h"
 
-int glstate_compare_GLint(const void *a, const void *b);
-int glstate_compare_GLuint(const void *a, const void *b);
-int glstate_compare_GLenum(const void *a, const void *b);
-int glstate_compare_GLXContext(const void *a, const void *b);
+extern int expect_c;
+extern int bc_yylex(void);
 
-void glstate_get_enable(state_generic *state);
-void glstate_get_global(state_generic *state);
-void glstate_get_texparameter(state_generic *state);
-void glstate_get_texlevelparameter(state_generic *state);
-void glstate_get_texgen(state_generic *state);
-void glstate_get_texunit(state_generic *state);
-void glstate_get_textureenv(state_generic *state);
-void glstate_get_texturefiltercontrol(state_generic *state);
+struct param_or_type_match
+{
+    param_or_type pt;
 
-#endif /* !BUGLE_SRC_GLSTATE_H */
+    std::string text;
+    regmatch_t *pmatch;
+    std::string code;
+};
+
+struct param_or_type_list
+{
+    std::list<param_or_type_match> pt_list;
+    std::size_t nmatch;
+
+    ~param_or_type_list()
+    { for (std::list<param_or_type_match>::iterator i = pt_list.begin();
+           i != pt_list.end(); i++)
+        if (i->pmatch) delete[] i->pmatch;
+    }
+};
+
+extern void *get_type_tree(const std::string &s);
+extern void *get_function_tree(const std::string &s);
+
+#include "budgie/bcparser.h"
+
+#endif /* !BUGLE_BUDGIE_BC_H */

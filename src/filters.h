@@ -24,7 +24,7 @@
 #endif
 #include <stddef.h>
 #include "src/types.h"
-#include "src/linkedlist.h"
+#include "common/linkedlist.h"
 #include "common/bool.h"
 
 struct filter_set_s;

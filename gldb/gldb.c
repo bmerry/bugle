@@ -480,6 +480,15 @@ static bool command_gdb(const char *cmd,
     return false;
 }
 
+static bool command_state(const char *cmd,
+                          const char *line,
+                          const char * const *tokens)
+{
+    send_code(lib_out, REQ_STATE);
+    send_string(lib_out, tokens[1] ? tokens[1] : "");
+    return true;
+}
+
 static bool command_help(const char *cmd,
                          const char *line,
                          const char * const *tokens)
@@ -637,6 +646,11 @@ static bool handle_responses(uint32_t resp)
         printf("Running.\n");
         started = true;
         return false;
+    case RESP_STATE:
+        recv_string(lib_in, &resp_str);
+        fputs(resp_str, stdout);
+        free(resp_str);
+        break;
     }
     return started;
 }
@@ -806,6 +820,7 @@ const command_info commands[] =
     { "help", "Show the list of commands", false, command_help, generate_commands },
     { "kill", "Kill the program", true, command_kill, NULL },
     { "run", "Start the program", false, command_run, NULL },
+    { "state", "Show GL state", true, command_state, NULL }, /* FIXME: completion */
     { "quit", "Exit gldb", false, command_quit, NULL },
     { "unbreak", "Clear breakpoints", false, command_break_unbreak, generate_functions },
     { NULL, NULL, false, NULL }

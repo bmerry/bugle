@@ -34,9 +34,40 @@ static GLenum state_to_enum(state_generic *state)
     return gl_token_to_enum(state->spec->name);
 }
 
-static inline GLint ptr_to_int(const void *ptr)
+int glstate_compare_GLint(const void *a, const void *b)
 {
-    return ((const char *) ptr) - ((const char *) NULL);
+    GLint A, B;
+
+    A = *(const GLint *) a;
+    B = *(const GLint *) b;
+    return (A < B) ? -1 : (A > B) ? 1 : 0;
+}
+
+int glstate_compare_GLuint(const void *a, const void *b)
+{
+    GLuint A, B;
+
+    A = *(const GLuint *) a;
+    B = *(const GLuint *) b;
+    return (A < B) ? -1 : (A > B) ? 1 : 0;
+}
+
+int glstate_compare_GLenum(const void *a, const void *b)
+{
+    GLenum A, B;
+
+    A = *(const GLenum *) a;
+    B = *(const GLenum *) b;
+    return (A < B) ? -1 : (A > B) ? 1 : 0;
+}
+
+int glstate_compare_GLXContext(const void *a, const void *b)
+{
+    GLXContext A, B;
+
+    A = *(const GLXContext *) a;
+    B = *(const GLXContext *) b;
+    return (A < B) ? -1 : (A > B) ? 1 : 0;
 }
 
 void glstate_get_enable(state_generic *state)
@@ -107,18 +138,18 @@ static GLenum target_to_binding(GLenum target)
 
 static GLenum get_texture_target(state_generic *state)
 {
-    return ptr_to_int(state->parent->key);
+    return *(GLenum *) state->parent->key;
 }
 
-/* Assumes that the called handles begin_internal_render */
+/* Assumes that the caller handles begin_internal_render */
 static GLenum push_texture_binding(GLenum target, state_generic *state)
 {
-    GLenum texture, binding;
-    GLenum old;
+    GLenum binding;
+    GLuint old, texture;
 
     binding = target_to_binding(target);
     CALL_glGetIntegerv(binding, (GLint *) &old);
-    texture = ptr_to_int(state->key);
+    texture = *(GLuint *) state->key;
     CALL_glBindTexture(target, texture);
     return old;
 }
@@ -136,7 +167,7 @@ static GLenum push_server_texture_unit(state_generic *state)
 
     /* FIXME: check if we really have multitex */
     CALL_glGetIntegerv(GL_ACTIVE_TEXTURE_ARB, (GLint *) &old);
-    cur = GL_TEXTURE0_ARB + ptr_to_int(state->key);
+    cur = *(GLenum *) state->key;
     if (cur != old)
     {
         CALL_glActiveTextureARB(cur);
@@ -200,7 +231,7 @@ void glstate_get_texlevelparameter(state_generic *state)
     old_texture = push_texture_binding(target, tex_state);
 
     e = state_to_enum(state);
-    level = ptr_to_int(state->parent->key);
+    level = *(GLint *) state->parent->key;
     switch (state->spec->data_type)
     {
     case TYPE_5GLint:
@@ -232,7 +263,7 @@ void glstate_get_texgen(state_generic *state)
 
     begin_internal_render();
     old_unit = push_server_texture_unit(state->parent->parent->parent);
-    coord = ptr_to_int(state->parent->key) + GL_S;
+    coord = *(GLenum *) state->parent->key;
     if (state->spec->data_type == TYPE_9GLboolean) /* enable bit */
         *(GLboolean *) state->data = CALL_glIsEnabled(coord);
     else
@@ -303,33 +334,43 @@ void glstate_get_texunit(state_generic *state)
     end_internal_render("glstate_get_texunit", true);
 }
 
-void glstate_get_texenv(state_generic *state)
+static void glstate_get_texenv(state_generic *state, GLenum target)
 {
     GLenum old_unit, e;
     GLfloat data[16];
 
     begin_internal_render();
-    old_unit = push_server_texture_unit(state->parent->parent);
+    old_unit = push_server_texture_unit(state->parent);
 
     e = state_to_enum(state);
     switch (state->spec->data_type)
     {
     case TYPE_7GLfloat:
-        CALL_glGetTexEnvfv(GL_TEXTURE_ENV, e, state->data);
+        CALL_glGetTexEnvfv(target, e, state->data);
         break;
     case TYPE_5GLint:
     case TYPE_6GLuint:
 #if GLENUM_IS_GLUINT
     case TYPE_6GLenum:
 #endif
-        CALL_glGetTexEnviv(GL_TEXTURE_ENV, e, state->data);
+        CALL_glGetTexEnviv(target, e, state->data);
         break;
     default:
         assert((size_t) state->spec->data_length <= sizeof(data) / sizeof(data[0]));
-        CALL_glGetTexEnvfv(GL_TEXTURE_ENV, e, data);
+        CALL_glGetTexEnvfv(target, e, data);
         type_convert(state->data, state->spec->data_type, data, TYPE_7GLfloat, state->spec->data_length);
     }
 
     pop_server_texture_unit(old_unit);
     end_internal_render("glstate_get_texenv", true);
+}
+
+void glstate_get_textureenv(state_generic *state)
+{
+    glstate_get_texenv(state, GL_TEXTURE_ENV);
+}
+
+void glstate_get_texturefiltercontrol(state_generic *state)
+{
+    glstate_get_texenv(state, GL_TEXTURE_FILTER_CONTROL);
 }

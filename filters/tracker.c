@@ -46,8 +46,8 @@ state_7context_I *trackcontext_get_context_state()
         if (!ctx) return NULL;  /* ok, there is no context */
 
         parent = &get_root_state()->c_context.generic;
-        if (!(state = (state_7context_I *) get_state_index(parent, ctx)))
-            state = (state_7context_I *) add_state_index(parent, ctx);
+        if (!(state = (state_7context_I *) get_state_index(parent, &ctx)))
+            state = (state_7context_I *) add_state_index(parent, &ctx, NULL);
         pthread_setspecific(context_state_key, state);
     }
     return state;

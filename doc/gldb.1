@@ -1,4 +1,4 @@
-.TH GLDB 1 "June 2004" BUGLE "User Manual"
+.TH GLDB 1 "July 2004" BUGLE "User Manual"
 .SH NAME
 gldb \- Debugger front-end for the BuGLe library
 .SH SYNOPSIS
@@ -11,7 +11,8 @@ is a front-end debugger to be used with the
 library, modelled on
 .BR gdb (1).
 It can set breakpoints on OpenGL functions, and by default will stop
-whenever the program causes a GL error.
+whenever the program causes a GL error. Pressing Ctrl-C will also cause
+the running program to stop.
 .SH COMMANDS
 .TP
 .B chain \fIname
@@ -28,7 +29,7 @@ Show the list of commands, with brief descriptions.
 Start your program.
 .TP
 .B continue
-Continue running your program.
+Continue running the program.
 .TP
 .B kill
 Kill the running program.
@@ -56,6 +57,33 @@ Exit
 Call
 .BR gdb (1)
 to obtain a stack trace.
+.TP
+.B gdb
+Start
+.BR gdb (1)
+and attach it to the program. Note that the program will be waiting for
+commands from
+.BR gldb ,
+so even if you continue the program it will not appear to go anywhere.
+Killing the program from within
+.B gdb
+is not recommended, since
+.B gldb
+may not notice.
+.TP
+.B state \fI[state]\fB
+Queries the OpenGL
+.IR state .
+If omitted, all state for all contexts is output. Otherwise,
+.I state
+is expected to be relative to the current context. Try first running
+the command without argument to see how the states are arranged, as
+some state is nested. For example, the width of the default 2D texture
+is referenced as
+
+.B texture[2D][0].level[0].GL_TEXTURE_WIDTH
+
+(the first zero is the texture object name).
 .SH FILES
 .TP
 .B $HOME/.bugle/filters
@@ -75,6 +103,21 @@ and the library.
 .TP
 .B LD_PRELOAD
 Used internally to force loading of the library.
+.SH BUGS
+On some systems, the
+.B gdb
+command will cause some of the processes involved to be stopped. The
+cause is currently unknown. The work-around is to use another terminal
+to manually connect
+.BR gdb (1)
+to the process.
+
+.B gldb
+will probably do strange things if you try to use it on a
+multi-threaded program. If only one thread does rendering, then the
+result is predicable: when the program is ``stopped'', only that thread
+will actually be stopped. If multiple threads attempt to render, then
+the results will be unpredictable.
 .SH AUTHOR
 .B gldb
 and the

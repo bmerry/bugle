@@ -79,7 +79,7 @@ filterset	{ return FILTERSET; }
 
 <STRING_MODE>\\\n	/* Do nothing */
 <STRING_MODE>\\.	{ append_char(yytext[1]); }
-<STRING_MODE>\"	{ BEGIN(INITIAL); 
+<STRING_MODE>\"	{ BEGIN(INITIAL);
 			yylval.str = xstrdup(current_string);
 			clear_string();
 			return STRING; }

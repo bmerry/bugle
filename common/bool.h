@@ -19,6 +19,8 @@
 #ifndef BUGLE_COMMON_BOOL_H
 #define BUGLE_COMMON_BOOL_H
 
+#ifndef __cplusplus
+
 #if HAVE_CONFIG_H
 # include <config.h>
 #endif
@@ -36,6 +38,8 @@ typedef unsigned char _Bool;
 # define false 0
 # define true 1
 # define __bool_true_false_are_defined 1
-#endif
+#endif /* !HAVE_STDBOOL_H */
+
+#endif /* !__cplusplus */
 
 #endif /* !BUGLE_COMMON_BOOL_H */

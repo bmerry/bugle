@@ -1,5 +1,7 @@
 * Added ability to stop running program with Ctrl-C.
 * Improved thread safety.
+* Rewrite of the state code
+* Added basic state dump support to gldb
 
 0.0.20040614
 ------------

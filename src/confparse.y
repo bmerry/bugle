@@ -26,8 +26,8 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-#include "src/linkedlist.h"
 #include "src/conffile.h"
+#include "common/linkedlist.h"
 #include "common/safemem.h"
 
 static linked_list config_root;

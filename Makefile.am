@@ -1,4 +1,4 @@
-# Process with automake 1.7 or newer
+## Process with automake 1.7 or newer
 
 # Utility programs, used for generating other files
 noinst_PROGRAMS = budgie/budgie gentokens/gentokens
@@ -25,18 +25,26 @@ AM_YFLAGS = -d
 common_sources = \
 	common/safemem.c common/safemem.h \
 	common/bool.h common/protocol.h common/protocol.c \
-	common/hashtable.c common/hashtable.h
+	common/hashtable.c common/hashtable.h \
+	common/linkedlist.c common/linkedlist.h
 
 gldb_gldb_SOURCES = gldb/gldb.c
 gldb_gldb_LDADD = src/libbugleutils.la $(READLINE_LIBS)
 gldb_gldb_LDFLAGS = -thread-safe
 
 budgie_budgie_SOURCES = \
-	budgie/budgie.cpp \
+	budgie/budgie.cpp budgie/budgie.h \
 	budgie/generator.cpp budgie/generator.h \
 	budgie/tree.cpp budgie/tree.h \
 	budgie/treeutils.cpp budgie/treeutils.h \
-	budgie/lexer.ll
+	budgie/tulexer.ll \
+	budgie/bclexer.ll budgie/bcparser.yy budgie/bc.h
+
+# Unfortunately this introduces a dependence open flex
+budgie/bclexer.cc: budgie/bclexer.ll
+	$(SHELL) $(YLWRAP) `test -f budgie/bclexer.ll || echo '$(srcdir)/'`budgie/bclexer.ll lex.bc_yy.c budgie/bclexer.cc -- $(LEXCOMPILE) -Pbc_yy
+
+BUILT_SOURCES = budgie/bcparser.h
 
 src_libbugleutils_la_SOURCES = \
 	src/confparse.y src/conflex.l src/conffile.h \
@@ -44,7 +52,6 @@ src_libbugleutils_la_SOURCES = \
 	src/gldump.c src/gldump.h \
 	src/glutils.c src/glutils.h \
 	src/gltokens.h \
-	src/linkedlist.c src/linkedlist.h \
 	src/glstate.c src/glstate.h \
 	src/canon.c src/canon.h \
 	$(common_sources) \
@@ -62,7 +69,7 @@ nodist_src_libbugle_la_SOURCES = \
 src_libbugle_la_LIBADD = src/libbugleutils.la $(GL_LIBS) $(X_PRE_LIBS) $(X_LIBS) $(X_EXTRA_LIBS) $(THREAD_LIBS)
 src_libbugle_la_LDFLAGS = -thread-safe -export-dynamic -version-info 0:1:0
 
-BUILT_SOURCES = src/lib.h src/utils.h src/types.h src/confparse.h
+BUILT_SOURCES += src/lib.h src/utils.h src/types.h src/confparse.h
 
 # Generated files that generate other files
 

@@ -31,6 +31,10 @@
 #endif
 #include <stdio.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 void *xmalloc(size_t size);
 void *xcalloc(size_t nmemb, size_t size);
 void *xrealloc(void *ptr, size_t size);
@@ -49,5 +53,9 @@ int xasprintf(char **strp, const char *format, ...);
  * meaning as for fgets, but must be free()ed if non-NULL
  */
 char *xafgets(FILE *stream);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* !BUGLE_COMMON_SAFEMEM_H */

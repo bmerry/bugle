@@ -43,46 +43,66 @@ static int in_pipe = -1, out_pipe = -1;
 static bool break_on[NUMBER_OF_FUNCTIONS];
 static bool break_on_error = true, break_on_next = false;
 
-#if 0
-static void dump_state(state_generic *state, int indent)
+static void dump_state(state_generic *state, int indent, FILE *out)
 {
     bool big = false;
     int i;
     state_generic **children;
+    char *ptr;
 
-    make_indent(indent, out_pipe);
-    fputs(state->spec->name, out_pipe);
+    make_indent(indent, out);
+    fputs(state->name, out);
     if (state->data)
     {
-        fputs(" = ", out_pipe);
-        dump_any_type(state->spec->data_type, get_state_current(state), 1, out_pipe);
+        fputs(" = ", out);
+        if (state->spec->data_length > 1)
+        {
+            fputs("(", out);
+            ptr = get_state_current(state);
+            for (i = 0; i < state->spec->data_length; i++)
+            {
+                if (i) fputs(", ", out);
+                dump_any_type(state->spec->data_type, ptr,
+                              -1, out);
+                ptr += type_table[state->spec->data_type].size;
+            }
+            fputs(")", out);
+        }
+        else
+            dump_any_type(state->spec->data_type, get_state_current(state),
+                          -1, out);
     }
-    fputs("\n", out_pipe);
+    fputs("\n", out);
     if (state->num_indexed)
     {
         big = true;
-        make_indent(indent, out_pipe);
-        fputs("{\n", out_pipe);
+        make_indent(indent, out);
+        fputs("{\n", out);
         for (i = 0; i < state->num_indexed; i++)
-            dump_state(state->indexed[i], indent + 4);
+            dump_state(state->indexed[i], indent + 4, out);
     }
     for (children = state->children; *children; children++)
     {
         if (!big)
         {
             big = true;
-            make_indent(indent, out_pipe);
-            fputs("{\n", out_pipe);
+            make_indent(indent, out);
+            fputs("{\n", out);
         }
-        dump_state(*children, indent + 4);
+        dump_state(*children, indent + 4, out);
     }
     if (big)
     {
-        make_indent(indent, out_pipe);
-        fputs("}\n", out_pipe);
+        make_indent(indent, out);
+        fputs("}\n", out);
     }
 }
-#endif
+
+/* A driver for string_io, for state dumping. */
+static void dump_string_state(FILE *f, void *data)
+{
+    dump_state((state_generic *) data, 0, f);
+}
 
 /* The main initialiser calls this with init = true. It has essentially
  * the usual effects, but refuses to do anything that doesn't make sense
@@ -93,6 +113,7 @@ static void debugger_loop(bool init)
     uint32_t req, req_val;
     char *req_str, *resp_str;
     budgie_function func;
+    state_generic *state;
 
     /* FIXME: error checking on the network code */
     if (!init && begin_internal_render())
@@ -140,14 +161,35 @@ static void debugger_loop(bool init)
             break;
         case REQ_STATE:
             recv_string(in_pipe, &req_str);
-            send_code(out_pipe, RESP_ERROR);
-            send_code(out_pipe, 0);
-            send_string(out_pipe, "REQ_STATE not supported yet");
+            if (*req_str)
+            {
+                if (!get_context_state())
+                {
+                    send_code(out_pipe, RESP_ERROR);
+                    send_code(out_pipe, 0);
+                    send_string(out_pipe, "No context");
+                    break;
+                }
+                state = get_state_by_name(&get_context_state()->generic, req_str);
+                if (!state)
+                {
+                    send_code(out_pipe, RESP_ERROR);
+                    send_code(out_pipe, 0);
+                    send_string(out_pipe, "No such state");
+                    break;
+                }
+                resp_str = string_io(dump_string_state, state);
+            }
+            else
+                resp_str = string_io(dump_string_state, &get_root_state()->generic);
+            send_code(out_pipe, RESP_STATE);
+            send_string(out_pipe, resp_str);
+            free(resp_str);
             break;
         case REQ_QUIT:
             exit(1);
         case REQ_ASYNC:
-            /* Ignore this, since it we are stopped anyway */
+            /* Ignore this, since we are stopped anyway */
             break;
         }
     }

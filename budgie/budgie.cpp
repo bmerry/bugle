@@ -30,6 +30,8 @@
 #include "tree.h"
 #include "treeutils.h"
 #include "generator.h"
+#include "bc.h"
+#include "budgie.h"
 #include <cstdlib>
 #include <iostream>
 #include <fstream>
@@ -39,39 +41,44 @@
 #include <algorithm>
 #include <iterator>
 #include <utility>
+#include <stack>
 #include <set>
 #include <cassert>
 #include <cstddef>
+#include <cstdio>
 #include <unistd.h>
 #include <sys/types.h>
 #include <regex.h>
 
 using namespace std;
 
-tree T;  // the tree containing the entire .tu file
-vector<tree_node_p> functions;   // functions that we wish to intercept
-vector<tree_node_p> types;       // types that we need to handle
+extern FILE *bc_yyin;
+extern int yyparse();
+
+static tree T;  // the tree containing the entire .tu file
+static vector<tree_node_p> functions;   // functions that we wish to intercept
+static vector<tree_node_p> types;       // types that we need to handle
 // newly created types for internal use
-vector<pair<tree_node_p, tree_node_p> > typedefs;
+static vector<pair<tree_node_p, tree_node_p> > typedefs;
 
 // the output files
-ofstream utilc, utilhead, libc, libhead, typehead, typec;
+static ofstream utilc, utilhead, libc, libhead, typehead, typec;
 
 // Configuration
-vector<string> libraries;        // libraries to search for symbols
-vector<string> includefiles;     // files to include in the header
-string tufile = "";              // the source file
-string utilbase = "utils";       // output <utilbase>.c, <utilbase>.h
-string libbase = "lib";          // output <libbase>.c, <libbase>.h
-string typebase = "types";       // output for typedefs
-regex_t limit_regex;             // limit to functions matching this
-bool have_limit_regex = false;   // whether to apply the above
+static vector<string> libraries;        // libraries to search for symbols
+static vector<string> includefiles;     // files to include in the header
+static string tufile = "";              // the source file
+static string utilbase = "utils";       // output <utilbase>.c, <utilbase>.h
+static string libbase = "lib";          // output <libbase>.c, <libbase>.h
+static string typebase = "types";       // output for typedefs
+static regex_t limit_regex;             // limit to functions matching this
+static bool have_limit_regex = false;   // whether to apply the above
 
 /* Vector of configuration files
  * These cannot be loaded by process_args directly, since
  * the processing requires the tree to already be loaded.
  */
-vector<string> configfiles;
+static vector<string> configfiles;
 
 /* Identify the nodes that are required. We call set_flags on the
  * type of the function to recursively tag the parameter and return
@@ -120,311 +127,24 @@ static void identify()
         }
 }
 
-struct config_thing
-{
-    param_or_type p;
-    vector<string> substrings;
-};
-
-static vector<config_thing> get_param_or_types(istream &in, const string &pos)
-{
-    string token;
-    in >> token;
-    vector<config_thing> answer;
-    if (!in)
-    {
-        cerr << "Unexpected end of line" << pos;
-        exit(1);
-    }
-    if (token != "TYPE" && token != "PARAMETER")
-    {
-        cerr << "Expected TYPE or PARAMETER" << pos;
-        exit(1);
-    }
-    if (token == "PARAMETER")
-    {
-        string func_regex;
-        int param;
-        in >> func_regex >> param;
-        if (!in)
-        {
-            cerr << "PARAMETER must be followed by function regex and parameter number" << pos;
-            exit(1);
-        }
-
-        regex_t preg;
-        regcomp(&preg, ("^" + func_regex + "$").c_str(), REG_EXTENDED);
-        size_t group_count = 1 + count(func_regex.begin(), func_regex.end(), '(');
-        regmatch_t matches[group_count];
-        bool found = false;
-        for (size_t i = 0; i < T.size(); i++)
-            if (T.exists(i))
-            {
-                tree_node_p node = T[i];
-                tree_code code = TREE_CODE(node);
-                // try to eliminate various builtins.
-                if (code == FUNCTION_DECL
-                    && DECL_SOURCE_FILE(node) != "<built-in>"
-                    && IDENTIFIER_POINTER(DECL_NAME(node)).substr(0, 9) != "__builtin")
-                {
-                    string name = IDENTIFIER_POINTER(DECL_NAME(node));
-                    if (regexec(&preg, name.c_str(),
-                                group_count, matches, 0) == 0)
-                    {
-                        config_thing cur;
-                        cur.p = param_or_type(node, param);
-                        for (size_t j = 0; j < group_count; j++)
-                            if (matches[j].rm_so != -1)
-                                cur.substrings.push_back(name.substr(matches[j].rm_so,
-                                                                     matches[j].rm_eo - matches[j].rm_so));
-                        answer.push_back(cur);
-                        found = true;
-                    }
-                }
-            }
-        if (!found) cerr << "Warning: no functions matched the regex `" << func_regex << "'" << pos;
-        regfree(&preg);
-    }
-    else
-    {
-        string type;
-        tree_node_p type_node;
-        in >> type;
-        if (!in)
-        {
-            cerr << "Expected a type" << pos;
-            exit(1);
-        }
-
-        type_node = find_by_name(T, type);
-        if (type_node == NULL_TREE)
-        {
-            cerr << "Could not find type `" << type << "'" << pos;
-            exit(1);
-        }
-        if (TREE_CODE(type_node) == TYPE_DECL)
-            type_node = TREE_TYPE(type_node);
-
-        config_thing cur;
-        cur.p = type_node;
-        answer.push_back(cur);
-    }
-    return answer;
-}
-
-static string substitute(const string &in, const vector<string> &subst)
-{
-    string ans = in;
-    string::size_type pos = 0;
-    while ((pos = ans.find("\\", pos)) < ans.length())
-    {
-        if (pos + 1 == ans.length()) break; // trailing \ -- WTF?
-        int num = ans[pos + 1] - '0';
-        if (num < 0 || num > 9 || num >= (int) subst.size())
-        {
-            pos++;
-            continue;
-        }
-        ans.replace(pos, 2, subst[num]);
-        // skip over the replacement, in case it somehow has \'s
-        pos += subst[num].length();
-    }
-    return ans;
-}
-
 // Reads a configuration file. See the man page for syntax
 static void load_config(const string &name)
 {
-    ifstream in(name.c_str());
-    string line, token;
-    int lno = 0;
+    bc_yyin = fopen(name.c_str(), "r");
 
-    while (getline(in, line))
+    if (!bc_yyin)
     {
-        lno++;
-        ostringstream position;
-        position << " (" << name << ":" << lno << ").\n";
-        string pos = position.str();
-
-        istringstream l(line);
-        l >> token;
-        if (!l || token[0] == '#') continue;
-        if (token == "INCLUDE")
-        {
-            l >> ws;
-            getline(l, token);
-            if (!l)
-            {
-                cerr << "Include file name missing" << pos;
-                exit(1);
-            }
-            includefiles.push_back(token);
-        }
-        else if (token == "LIBRARY")
-        {
-            l >> ws;
-            getline(l, token);
-            if (!l)
-            {
-                cerr << "LIBRARY file name missing" << pos;
-                exit(1);
-            }
-            libraries.push_back(token);
-        }
-        else if (token == "LIMIT")
-        {
-            l >> ws;
-            getline(l, token);
-            if (!l)
-            {
-                cerr << "LIMIT regex missing" << pos;
-                exit(1);
-            }
-            int result = regcomp(&limit_regex, token.c_str(), REG_NOSUB | REG_EXTENDED);
-            if (result != 0)
-            {
-                int sz = regerror(result, &limit_regex, NULL, 0);
-                char *buffer = new char[sz + 1];
-                regerror(result, &limit_regex, buffer, sz + 1);
-                cerr << buffer << pos;
-                exit(1);
-            }
-            have_limit_regex = true;
-        }
-        else if (token == "EXTRATYPE")
-        {
-            string type;
-            l >> type;
-            tree_node_p type_node = find_by_name(T, type);
-            if (type_node == NULL_TREE)
-            {
-                cerr << "Could not find type `" << type << "'" << pos;
-                exit(1);
-            }
-            set_flags(type_node, FLAG_USE);
-        }
-        else if (token == "NEWTYPE")
-        {
-            l >> token;
-            if (!l)
-            {
-                cerr << "NEWTYPE requires a subcommand" << pos;
-                exit(1);
-            }
-            if (token == "BITFIELD")
-            {
-                string new_type, old_type;
-                l >> new_type >> old_type;
-                vector<string> tokens;
-                copy(istream_iterator<string>(l),
-                     istream_iterator<string>(),
-                     back_inserter(tokens));
-
-                tree_node_p old_node = find_by_name(T, old_type);
-                if (old_node == NULL_TREE)
-                {
-                    cerr << "Could not find type `" << old_type << "'" << pos;
-                    exit(1);
-                }
-                if (TREE_CODE(old_node) == TYPE_DECL)
-                    old_node = TREE_TYPE(old_node);
-                tree_node_p new_node = new_bitfield_type(old_node, tokens);
-                tree_node_p id = new tree_node;
-                // create an ID node so that find_by_name will pick up the
-                // new type
-                TREE_CODE(id) = IDENTIFIER_NODE;
-                IDENTIFIER_POINTER(id) = new_type;
-                id->user_flags |= FLAG_ARTIFICIAL;
-                DECL_NAME(TYPE_NAME(new_node)) = id;
-                insert_tree(T, new_node);
-                set_flags(new_node, FLAG_USE);
-                typedefs.push_back(make_pair(new_node, old_node));
-            }
-            else
-            {
-                cerr << "Unknown NEWTYPE subcommand `" << token << "'" << pos;
-                exit(1);
-            }
-        }
-        else if (token == "LENGTH")
-        {
-            vector<config_thing> things = get_param_or_types(l, pos);
-            string len;
-            l >> ws;
-            getline(l, len);
-            for (size_t i = 0; i < things.size(); i++)
-            {
-                string len2 = substitute(len, things[i].substrings);
-                set_length_override(things[i].p, len2);
-            }
-        }
-        else if (token == "TYPE")
-        {
-            string new_type;
-
-            vector<config_thing> things = get_param_or_types(l, pos);
-            l >> ws;
-            getline(l, new_type);
-            for (size_t i = 0; i < things.size(); i++)
-            {
-                string new_type2 = substitute(new_type, things[i].substrings);
-                set_type_override(things[i].p, new_type2);
-            }
-        }
-        else if (token == "STATE")
-        {
-            string state_name;
-            string state_type;
-            int state_count;
-            string state_loader;
-            l >> state_name >> state_type >> state_count >> state_loader;
-            if (!l)
-            {
-                cerr << "Invalid STATE specification" << pos;
-                exit(1);
-            }
-
-            tree_node_p type_node = find_by_name(T, state_type);
-            if (type_node == NULL_TREE)
-            {
-                cerr << "Could not find type `" << state_type << "'" << pos;
-                exit(1);
-            }
-
-            set_state_spec(state_name, type_node, state_count, state_loader);
-            set_flags(type_node, FLAG_USE);
-        }
-        else if (token == "DUMP" || token == "SAVE" || token == "LOAD")
-        {
-            // FIXME: save and load will be broken
-            string cmd = token;
-            string sub;
-            vector<config_thing> things = get_param_or_types(l, pos);
-            l >> sub;
-            if (!l)
-            {
-                cerr << "Expected the name of a subroutine" << pos;
-                exit(1);
-            }
-
-            for (size_t i = 0; i < things.size(); i++)
-            {
-                string sub2 = substitute(sub, things[i].substrings);
-                if (cmd == "DUMP")
-                    set_dump_override(things[i].p, sub2);
-                else if (cmd == "LOAD")
-                    set_load_override(things[i].p, sub2);
-                else
-                    set_save_override(things[i].p, sub2);
-            }
-        }
-        else
-        {
-            cerr << "Unknown command `" << token << "'" << pos;
-            exit(1);
-        }
+        cerr << "Could not open config file " << name << "\n";
+        exit(1);
     }
-    in.close();
+
+    if (yyparse() != 0)
+    {
+        cerr << "Unknown parse error\n";
+        exit(1);
+    }
+
+    fclose(bc_yyin);
 }
 
 static void process_args(int argc, char * const argv[])
@@ -610,4 +330,167 @@ int main(int argc, char * const argv[])
     if (have_limit_regex)
         regfree(&limit_regex);
     return 0;
+}
+
+/* Here we put the routines called by the parser */
+void add_include(const string &s)
+{
+    includefiles.push_back(s);
+}
+
+void add_library(const string &s)
+{
+    libraries.push_back(s);
+}
+
+void set_limit_regex(const string &s)
+{
+    int result = regcomp(&limit_regex, s.c_str(), REG_NOSUB | REG_EXTENDED);
+    if (result != 0)
+    {
+        int sz = regerror(result, &limit_regex, NULL, 0);
+        char *buffer = new char[sz + 1];
+        regerror(result, &limit_regex, buffer, sz + 1);
+        cerr << buffer;
+        exit(1);
+    }
+    have_limit_regex = true;
+}
+
+tree_node_p get_type_node(const string &type)
+{
+    tree_node_p ans = find_by_name(T, type);
+    if (ans == NULL_TREE)
+    {
+        cerr << "Could not find type `" << type << "'";
+        exit(1);
+    }
+    if (TREE_CODE(ans) == TYPE_DECL)
+        return TREE_TYPE(ans);
+    else
+        return ans;
+}
+
+param_or_type_list *find_type(const string &type)
+{
+    param_or_type_list *ans;
+
+    ans = new param_or_type_list;
+    ans->nmatch = 0;
+    ans->pt_list.push_back(param_or_type_match());
+    ans->pt_list.back().pt = param_or_type(get_type_node(type));
+    ans->pt_list.back().text = type;
+    ans->pt_list.back().pmatch = NULL;
+    return ans;
+}
+
+param_or_type_list *find_param(const string &func_regex, int param)
+{
+    param_or_type_list *ans = new param_or_type_list;
+    string name;
+
+    regex_t preg;
+    regcomp(&preg, ("^" + func_regex + "$").c_str(), REG_EXTENDED);
+    ans->nmatch = preg.re_nsub + 1;
+    regmatch_t *matches = new regmatch_t[ans->nmatch];
+    bool found = false;
+    for (size_t i = 0; i < T.size(); i++)
+        if (T.exists(i))
+        {
+            tree_node_p node = T[i];
+            tree_code code = TREE_CODE(node);
+            // try to eliminate various builtins.
+            if (code == FUNCTION_DECL
+                && DECL_SOURCE_FILE(node) != "<built-in>"
+                && IDENTIFIER_POINTER(DECL_NAME(node)).substr(0, 9) != "__builtin")
+            {
+                name = IDENTIFIER_POINTER(DECL_NAME(node));
+                if (regexec(&preg, name.c_str(),
+                            ans->nmatch, matches, 0) == 0)
+                {
+                    ans->pt_list.push_back(param_or_type_match());
+                    ans->pt_list.back().pt = param_or_type(node, param);
+                    ans->pt_list.back().text = name;
+                    ans->pt_list.back().pmatch = matches;
+                    ans->pt_list.back().code = "";
+                    found = true;
+                    matches = new regmatch_t[ans->nmatch];
+                }
+            }
+        }
+    delete[] matches;
+    if (!found)
+        cerr << "Warning: no functions matched the regex `" << func_regex << "'";
+
+    regfree(&preg);
+    return ans;
+}
+
+void add_new_bitfield(const string &new_type,
+                      const string &old_type,
+                      const vector<string> &tokens)
+{
+    tree_node_p old_node = get_type_node(old_type);
+    tree_node_p new_node = new_bitfield_type(old_node, tokens);
+    tree_node_p id = new tree_node;
+    // create an ID node so that find_by_name will pick up the
+    // new type
+    TREE_CODE(id) = IDENTIFIER_NODE;
+    IDENTIFIER_POINTER(id) = new_type;
+    id->user_flags |= FLAG_ARTIFICIAL;
+    DECL_NAME(TYPE_NAME(new_node)) = id;
+    insert_tree(T, new_node);
+    set_flags(new_node, FLAG_USE);
+    typedefs.push_back(make_pair(new_node, old_node));
+}
+
+static gen_state_tree *current_state = &root_state;
+static stack<gen_state_tree *> state_stack;
+
+void push_state(const string &name)
+{
+    for (size_t i = 0; i < current_state->children.size(); i++)
+    {
+        if (name == current_state->children[i]->name)
+        {
+            cerr << "duplicate state name (" << name << ")\n";
+            exit(1);
+        }
+    }
+    state_stack.push(current_state);
+
+    current_state->children.push_back(new gen_state_tree());
+    current_state = current_state->children.back();
+    current_state->name = name;
+}
+
+void pop_state()
+{
+    assert(!state_stack.empty());
+    current_state = state_stack.top();
+    state_stack.pop();
+}
+
+void add_state_value(const std::string &name,
+                     const std::string &type,
+                     int count,
+                     const std::string &loader)
+{
+    push_state(name);
+    current_state->count = count;
+    current_state->type = get_type_node(type);
+    current_state->loader = loader;
+    pop_state();
+}
+
+void set_state_key(const std::string &key,
+                   const std::string &compare)
+{
+    current_state->key_type = get_type_node(key);
+    current_state->key_compare = compare;
+}
+
+void set_state_constructor(const std::string &constructor)
+{
+    current_state->constructor = constructor;
 }

@@ -21,7 +21,7 @@
 #include "budgie/tree.h"
 #include <cstring>
 #include <string>
-#include <stdlib.h>
+#include <cstdlib>
 #include <cassert>
 
 using namespace std;

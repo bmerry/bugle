@@ -62,7 +62,7 @@ AC_C_CHAR_UNSIGNED
 BUGLE_CPP_DEFINES
 
 dnl Checks for library functions
-AC_CHECK_FUNCS([regcomp strrchr vasprintf vsnprintf])
+AC_CHECK_FUNCS([regcomp strrchr vasprintf vsnprintf open_memstream])
 AC_REPLACE_FUNCS([bsearch])
 AC_FUNC_MEMCMP
 # Readline used to call this completion_matches

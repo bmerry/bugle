@@ -104,7 +104,7 @@ typedef struct
 
 extern const type_data type_table[];
 /* Not const due to "real" field.
- * FIXME: split that field out for better efficiency*/
+ * FIXME: split that field out for better efficiency */
 extern function_data function_table[];
 extern const char * const library_names[];
 extern int number_of_types;
@@ -118,6 +118,7 @@ void dump_bitfield(unsigned int value, FILE *out,
 bool check_set_reentrance(void);
 void clear_reentrance(void);
 
+char *string_io(void (*call)(FILE *, void *), void *data);
 
 /* User functions */
 

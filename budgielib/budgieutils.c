@@ -55,6 +55,35 @@ void dump_bitfield(unsigned int value, FILE *out,
     }
 }
 
+/* Calls "call" with a FILE * and "data". The data that "call" writes into
+ * the file is returned in as a malloc'ed string.
+ * FIXME: error checking.
+ * FIXME: is ftell portable on _binary_ streams (which tmpfile is)?
+ */
+char *string_io(void (*call)(FILE *, void *), void *data)
+{
+    FILE *f;
+    size_t size;
+    char *buffer;
+
+#if HAVE_OPEN_MEMSTREAM
+    f = open_memstream(&buffer, &size);
+    (*call)(f, data);
+    fclose(f);
+#else
+    f = tmpfile();
+    (*call)(f, data);
+    size = ftell(f);
+    fseek(f, 0, SEEK_SET);
+    buffer = malloc(size + 1);
+    fread(buffer, 1, size, tmp);
+    buffer[size] = '\0';
+    fclose(f);
+#endif
+
+    return buffer;
+}
+
 bool dump_string(const void *value, int count, FILE *out)
 {
     /* FIXME: handle illegal dereferences */
@@ -66,7 +95,7 @@ bool dump_string(const void *value, int count, FILE *out)
 
 int count_string(const void *value)
 {
-    /* FIXME: handle illegal deferences */
+    /* FIXME: handle illegal dereferences */
     const char *str = (const char *) value;
     if (str == NULL) return 0;
     else return strlen(str) + 1;

@@ -7,10 +7,11 @@ gldb
 - enable reporting of segfaults
 - print full dump of current function
 - break on particular GL errors, not just 'all errors'
+- better handling of state dumps (assemble on client side)
+- tab completion for state
 
 bugle
 -----
-- thread safety
 - make segfault handling adhere better to POSIX
 - rewrite some things to use hash tables
 - autoconf test for GLENUM_IS_GLUINT
@@ -25,7 +26,6 @@ bugle
 
 budgie
 ------
-- redesign state specification grammar
 - more autoconf tests (e.g. regex)
 - robust logging, to avoid segfaulting
 - dump expressions rather than dump functions
@@ -37,9 +37,9 @@ budgie
 
 tests
 -----
-- multithreaded tests
+- multithreaded conformance tests
 - coverage tests
-- test for glut
+- tests for glut
 
 general
 -------
