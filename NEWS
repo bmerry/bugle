@@ -1,3 +1,6 @@
+- Improved thread safety. However, the debugger will not work on a
+multi-threaded program.
+
 0.0.20040614
 ------------
 This release adds the gldb debugging tool. This replaces the rather

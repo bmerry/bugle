@@ -1,4 +1,5 @@
 * Added ability to stop running program with Ctrl-C.
+* Improved thread safety.
 
 0.0.20040614
 ------------

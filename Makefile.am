@@ -16,7 +16,7 @@ pkglib_LTLIBRARIES = \
 	filters/tracker.la \
 	filters/debugger.la \
 	filters/capture.la
-	
+
 INCLUDES = -I$(srcdir)/budgielib
 AM_CFLAGS = -DLIBDIR=\"$(libdir)\" -DPKGLIBDIR=\"$(pkglibdir)\" $(X_CFLAGS)
 AM_YFLAGS = -d
@@ -29,6 +29,7 @@ common_sources = \
 
 gldb_gldb_SOURCES = gldb/gldb.c
 gldb_gldb_LDADD = src/libbugleutils.la $(READLINE_LIBS)
+gldb_gldb_LDFLAGS = -thread-safe
 
 budgie_budgie_SOURCES = \
 	budgie/budgie.cpp \

@@ -225,6 +225,7 @@ static void setup_signals(void)
      * if gldb is backgrounded by the shell.
      */
     act.sa_handler = SIG_IGN;
+    act.sa_flags = 0;
     sigemptyset(&act.sa_mask);
     check(sigaction(SIGTTIN, &act, NULL), "sigaction");
     check(sigaction(SIGTTOU, &act, NULL), "sigaction");
@@ -458,7 +459,6 @@ static bool command_gdb(const char *cmd,
         if (fore) tcsetpgrp(1, getpgrp());
         sigprocmask(SIG_SETMASK, &unblocked, NULL);
 
-        printf("pid = %ld\n", (long) child_pid);
         xasprintf(&pid_str, "%ld", (long) child_pid);
         execlp("gdb", "gdb", prog, pid_str, NULL);
         perror("could not invoke gdb");
