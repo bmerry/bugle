@@ -140,7 +140,7 @@ static bool handle_commands(void)
 #endif
         if (!line)
         {
-            if (gldb_get_status() != GLDB_STATUS_DEAD) gldb_send_quit();
+            if (gldb_get_status() != GLDB_STATUS_DEAD) gldb_send_quit(0);
             if (prev_line) free(prev_line);
             return true;
         }
@@ -207,58 +207,30 @@ static bool handle_commands(void)
  */
 static bool handle_responses(void)
 {
-    uint32_t resp;
-    uint32_t resp_val, resp_len;
-    char *resp_str, *resp_str2;
-    FILE *f;
-    int lib_in;
+    gldb_response *r;
 
-    lib_in = gldb_in_pipe();
-    if (!gldb_protocol_recv_code(lib_in, &resp))
+    FILE *f;
+    char *data;
+    uint32_t len;
+
+    r = gldb_get_response();
+    switch (r->code)
     {
-        fputs("Pipe error", stderr);
-        exit(1);
-    }
-    switch (resp)
-    {
-    case RESP_ANS:
-        gldb_protocol_recv_code(lib_in, &resp_val);
-        /* Ignore, other than to flush the pipe */
-        break;
-    case RESP_STOP:
-        gldb_set_status(GLDB_STATUS_STOPPED);
-        break;
     case RESP_BREAK:
-        gldb_protocol_recv_string(lib_in, &resp_str);
-        printf("Break on %s", resp_str);
-        free(resp_str);
-        gldb_set_status(GLDB_STATUS_STOPPED);
+        printf("Break on %s\n", ((gldb_response_break *) r)->call);
         break;
     case RESP_BREAK_ERROR:
-        gldb_protocol_recv_string(lib_in, &resp_str);
-        gldb_protocol_recv_string(lib_in, &resp_str2);
-        printf("Error %s in %s", resp_str2, resp_str);
-        free(resp_str);
-        free(resp_str2);
-        gldb_set_status(GLDB_STATUS_STOPPED);
+        printf("Error %s in %s\n",
+               ((gldb_response_break_error *) r)->error,
+               ((gldb_response_break_error *) r)->call);
         break;
     case RESP_ERROR:
-        gldb_protocol_recv_code(lib_in, &resp_val);
-        gldb_protocol_recv_string(lib_in, &resp_str);
-        printf("%s\n", resp_str);
-        free(resp_str);
+        printf("%s\n", ((gldb_response_break_error *) r)->error);
         break;
     case RESP_RUNNING:
         printf("Running.\n");
-        gldb_set_status(GLDB_STATUS_RUNNING);
         return false;
-    case RESP_STATE:
-        gldb_protocol_recv_string(lib_in, &resp_str);
-        fputs(resp_str, stdout);
-        free(resp_str);
-        break;
     case RESP_SCREENSHOT:
-        gldb_protocol_recv_binary_string(lib_in, &resp_len, &resp_str);
         if (!screenshot_file)
         {
             fputs("Unexpected screenshot data. Please contact the author.\n", stderr);
@@ -271,14 +243,14 @@ static bool handle_responses(void)
             free(screenshot_file);
             break;
         }
-        if (fwrite(resp_str, 1, resp_len, f) != resp_len || fclose(f) == EOF)
+        data = ((gldb_response_screenshot *) r)->data;
+        len = ((gldb_response_screenshot *) r)->length;
+        if (fwrite(data, 1, len, f) != len || fclose(f) == EOF)
             fprintf(stderr, "Error writing %s: %s\n", screenshot_file, strerror(errno));
-        free(resp_str);
-        free(screenshot_file);
         screenshot_file = NULL;
         break;
     }
-
+    gldb_free_response(r);
 
     return (gldb_get_status() == GLDB_STATUS_RUNNING
             || gldb_get_status() == GLDB_STATUS_STOPPED);
@@ -345,7 +317,7 @@ static void main_loop(void)
             FD_ZERO(&readfds);
             FD_SET(chld_pipes[0], &readfds); if (chld_pipes[0] >= n) n = chld_pipes[0] + 1;
             FD_SET(int_pipes[0], &readfds); if (int_pipes[0] >= n) n = int_pipes[0] + 1;
-            FD_SET(gldb_in_pipe(), &readfds); if (gldb_in_pipe() >= n) n = gldb_in_pipe() + 1;
+            FD_SET(gldb_get_in_pipe(), &readfds); if (gldb_get_in_pipe() >= n) n = gldb_get_in_pipe() + 1;
             result = select(n, &readfds, NULL, NULL, NULL);
             if (result == -1 && errno != EINTR)
             {
@@ -367,9 +339,9 @@ static void main_loop(void)
             }
 
             /* Find out what happened */
-            pid = waitpid(gldb_child_pid(), &status, WNOHANG);
+            pid = waitpid(gldb_get_child_pid(), &status, WNOHANG);
             gldb_safe_syscall(pid, "waitpid");
-            if (pid == gldb_child_pid())
+            if (pid == gldb_get_child_pid())
             {
                 /* Child terminated */
                 if (WIFEXITED(status))
@@ -385,7 +357,7 @@ static void main_loop(void)
                     printf("Program was terminated abnormally.\n");
 
                 assert(gldb_get_status() != GLDB_STATUS_DEAD);
-                gldb_set_status(GLDB_STATUS_DEAD);
+                gldb_notify_child_dead();
                 done = true;
             }
             else if (result != -1 && FD_ISSET(int_pipes[0], &readfds))
@@ -394,10 +366,10 @@ static void main_loop(void)
 
                 /* Ctrl-C was pressed */
                 read(int_pipes[0], &buf, 1);
-                gldb_send_async();
+                gldb_send_async(0);
                 done = false; /* We still need to wait for RESP_STOP */
             }
-            else if (result != -1 && FD_ISSET(gldb_in_pipe(), &readfds))
+            else if (result != -1 && FD_ISSET(gldb_get_in_pipe(), &readfds))
             {
                 /* Response from child */
                 done = handle_responses();
@@ -450,7 +422,7 @@ static bool command_cont(const char *cmd,
                          const char *line,
                          const char * const *tokens)
 {
-    gldb_send_continue();
+    gldb_send_continue(0);
     return true;
 }
 
@@ -458,7 +430,7 @@ static bool command_kill(const char *cmd,
                          const char *line,
                          const char * const *tokens)
 {
-    gldb_send_quit();
+    gldb_send_quit(0);
     return true;
 }
 
@@ -466,7 +438,7 @@ static bool command_quit(const char *cmd,
                          const char *line,
                          const char * const *tokens)
 {
-    if (gldb_get_status() != GLDB_STATUS_DEAD) gldb_send_quit();
+    if (gldb_get_status() != GLDB_STATUS_DEAD) gldb_send_quit(0);
     exit(0);
 }
 
@@ -484,9 +456,9 @@ static bool command_break_unbreak(const char *cmd,
     }
 
     if (strcmp(func, "error") == 0)
-        gldb_set_break_error(cmd[0] == 'b');
+        gldb_set_break_error(0, cmd[0] == 'b');
     else
-        gldb_set_break(func, cmd[0] == 'b');
+        gldb_set_break(0, func, cmd[0] == 'b');
     return gldb_get_status() != GLDB_STATUS_DEAD;
 }
 
@@ -514,7 +486,7 @@ static bool command_run(const char *cmd,
     }
     else
     {
-        gldb_run(child_init);
+        gldb_run(0, child_init);
         return true;
     }
 }
@@ -541,7 +513,7 @@ static bool command_backtrace(const char *cmd,
         exit(1);
     case 0: /* child */
         sigprocmask(SIG_SETMASK, &unblocked, NULL);
-        bugle_asprintf(&pid_str, "%ld", (long) gldb_child_pid());
+        bugle_asprintf(&pid_str, "%lu", (unsigned long) gldb_get_child_pid());
         /* FIXME: if in_pipe[1] or out_pipe[0] is already 0 or 1 */
         gldb_safe_syscall(dup2(in_pipe[1], 1), "dup2");
         gldb_safe_syscall(dup2(out_pipe[0], 0), "dup2");
@@ -549,7 +521,7 @@ static bool command_backtrace(const char *cmd,
         if (in_pipe[1] != 0 && in_pipe[1] != 1) gldb_safe_syscall(close(in_pipe[1]), "close");
         if (out_pipe[0] != 0 && out_pipe[0] != 1) gldb_safe_syscall(close(out_pipe[0]), "close");
         if (out_pipe[0] != 1 && out_pipe[1] != 1) gldb_safe_syscall(close(out_pipe[1]), "close");
-        execlp("gdb", "gdb", "-batch", "-nx", "-command", "/dev/stdin", gldb_program(), pid_str, NULL);
+        execlp("gdb", "gdb", "-batch", "-nx", "-command", "/dev/stdin", gldb_get_program(), pid_str, NULL);
         perror("could not invoke gdb");
         free(pid_str);
         exit(1);
@@ -611,7 +583,7 @@ static bool command_enable_disable(const char *cmd,
         return false;
     }
 
-    gldb_send_enable_disable(tokens[1], strcmp(cmd, "enable") == 0);
+    gldb_send_enable_disable(0, tokens[1], strcmp(cmd, "enable") == 0);
     return true;
 }
 
@@ -646,8 +618,8 @@ static bool command_gdb(const char *cmd,
         if (fore) tcsetpgrp(1, getpgrp());
         sigprocmask(SIG_SETMASK, &unblocked, NULL);
 
-        bugle_asprintf(&pid_str, "%ld", (long) gldb_child_pid());
-        execlp("gdb", "gdb", gldb_program(), pid_str, NULL);
+        bugle_asprintf(&pid_str, "%lu", (unsigned long) gldb_get_child_pid());
+        execlp("gdb", "gdb", gldb_get_program(), pid_str, NULL);
         perror("could not invoke gdb");
         free(pid_str);
         exit(1);
@@ -694,7 +666,7 @@ static bool command_screenshot(const char *cmd,
     }
     if (screenshot_file) free(screenshot_file);
     screenshot_file = bugle_strdup(tokens[1]);
-    gldb_send_screenshot();
+    gldb_send_screenshot(0);
     return true;
 }
 

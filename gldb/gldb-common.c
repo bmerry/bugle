@@ -112,10 +112,148 @@ static void state_destroy(gldb_state *s)
     free(s);
 }
 
+void set_status(gldb_status s)
+{
+    if (status == s) return;
+    status = s;
+    switch (status)
+    {
+    case GLDB_STATUS_RUNNING:
+    case GLDB_STATUS_STOPPED:
+        state_dirty = true;
+        break;
+    case GLDB_STATUS_STARTED:
+        break;
+    case GLDB_STATUS_DEAD:
+        close(lib_in);
+        close(lib_out);
+        lib_in = -1;
+        lib_out = -1;
+        child_pid = 0;
+        break;
+    }
+}
+
+gldb_state *gldb_state_update(uint32_t id)
+{
+    gldb_response *r = NULL;
+
+    if (state_dirty)
+    {
+        gldb_send_state_tree(0);
+        do
+        {
+            if (r) gldb_free_response(r);
+            r = gldb_get_response();
+        } while (r && r->code != RESP_STATE_NODE_BEGIN);
+        if (!r)
+            state_root = NULL;
+        else
+        {
+            state_root = ((gldb_response_state_tree *) r)->root;
+            free(r);
+        }
+    }
+    return state_root;
+}
+
+static gldb_response *gldb_get_response_ans(uint32_t code, uint32_t id)
+{
+    gldb_response_ans *r;
+
+    r = bugle_malloc(sizeof(gldb_response_ans));
+    r->code = code;
+    r->id = id;
+    gldb_protocol_recv_code(lib_in, &r->value);
+    return (gldb_response *) r;
+}
+
+static gldb_response *gldb_get_response_stop(uint32_t code, uint32_t id)
+{
+    gldb_response_stop *r;
+
+    set_status(GLDB_STATUS_STOPPED);
+    r = bugle_malloc(sizeof(gldb_response_stop));
+    r->code = code;
+    r->id = id;
+    gldb_protocol_recv_string(lib_in, &r->call);
+    return (gldb_response *) r;
+}
+
+static gldb_response *gldb_get_response_break(uint32_t code, uint32_t id)
+{
+    gldb_response_break *r;
+
+    set_status(GLDB_STATUS_STOPPED);
+    r = bugle_malloc(sizeof(gldb_response_break));
+    r->code = code;
+    r->id = id;
+    gldb_protocol_recv_string(lib_in, &r->call);
+    return (gldb_response *) r;
+}
+
+static gldb_response *gldb_get_response_break_error(uint32_t code, uint32_t id)
+{
+    gldb_response_break_error *r;
+
+    set_status(GLDB_STATUS_STOPPED);
+    r = bugle_malloc(sizeof(gldb_response_break_error));
+    r->code = code;
+    r->id = id;
+    gldb_protocol_recv_string(lib_in, &r->call);
+    gldb_protocol_recv_string(lib_in, &r->error);
+    return (gldb_response *) r;
+}
+
+static gldb_response *gldb_get_response_state(uint32_t code, uint32_t id)
+{
+    gldb_response_state *r;
+
+    r = bugle_malloc(sizeof(gldb_response_state));
+    r->code = code;
+    r->id = id;
+    gldb_protocol_recv_string(lib_in, &r->state);
+    return (gldb_response *) r;
+}
+
+static gldb_response *gldb_get_response_error(uint32_t code, uint32_t id)
+{
+    gldb_response_error *r;
+
+    r = bugle_malloc(sizeof(gldb_response_error));
+    r->code = code;
+    r->id = id;
+    gldb_protocol_recv_code(lib_in, &r->error_code);
+    gldb_protocol_recv_string(lib_in, &r->error);
+    return (gldb_response *) r;
+}
+
+static gldb_response *gldb_get_response_running(uint32_t code, uint32_t id)
+{
+    gldb_response_running *r;
+
+    set_status(GLDB_STATUS_RUNNING);
+    r = bugle_malloc(sizeof(gldb_response_running));
+    r->code = code;
+    r->id = id;
+    return (gldb_response *) r;
+}
+
+static gldb_response *gldb_get_response_screenshot(uint32_t code, uint32_t id)
+{
+    gldb_response_screenshot *r;
+
+    r = bugle_malloc(sizeof(gldb_response_screenshot));
+    r->code = code;
+    r->id = id;
+    gldb_protocol_recv_binary_string(lib_in, &r->length, &r->data);
+    return (gldb_response *) r;
+}
+
 static gldb_state *state_get(void)
 {
     gldb_state *s, *child;
-    uint32_t resp;
+    uint32_t resp, id;
 
     s = bugle_malloc(sizeof(gldb_state));
     /* The list actually does own the memory, but we do the free as
@@ -128,6 +266,7 @@ static gldb_state *state_get(void)
     do
     {
         gldb_protocol_recv_code(lib_in, &resp);
+        gldb_protocol_recv_code(lib_in, &id);
         switch (resp)
         {
         case RESP_STATE_NODE_BEGIN:
@@ -137,33 +276,75 @@ static gldb_state *state_get(void)
         case RESP_STATE_NODE_END:
             break;
         default:
-            fprintf(stderr, "Warning: unexpected code in state tree\n");
+            fprintf(stderr, "Unexpected code in state tree\n");
+            exit(1);
         }
     } while (resp != RESP_STATE_NODE_END);
 
     return s;
 }
 
-gldb_state *gldb_state_update()
+static gldb_response *gldb_get_response_state_tree(uint32_t code, uint32_t id)
 {
-    uint32_t resp;
+    gldb_response_state_tree *r;
 
-    if (state_dirty)
+    r = bugle_malloc(sizeof(gldb_response_state_tree));
+    r->code = code;
+    r->id = id;
+    r->root = state_get();
+    return (gldb_response *) r;
+}
+
+gldb_response *gldb_get_response(void)
+{
+    uint32_t code, id;
+
+    if (!gldb_protocol_recv_code(lib_in, &code)
+        || !gldb_protocol_recv_code(lib_in, &id))
+        return NULL;
+
+    switch (code)
     {
-        gldb_protocol_send_code(lib_out, REQ_STATE_TREE);
-        gldb_protocol_recv_code(lib_in, &resp);
-        switch (resp)
-        {
-        case RESP_STATE_NODE_BEGIN:
-            if (state_root) state_destroy(state_root);
-            state_root = state_get();
-            state_dirty = false;
-            break;
-        default:
-            fprintf(stderr, "Unexpected response %#08x\n", resp);
-        }
+    case RESP_ANS: return gldb_get_response_ans(code, id);
+    case RESP_STOP: return gldb_get_response_stop(code, id);
+    case RESP_BREAK: return gldb_get_response_break(code, id);
+    case RESP_BREAK_ERROR: return gldb_get_response_break_error(code, id);
+    case RESP_STATE: return gldb_get_response_state(code, id);
+    case RESP_ERROR: return gldb_get_response_error(code, id);
+    case RESP_RUNNING: return gldb_get_response_running(code, id);
+    case RESP_SCREENSHOT: return gldb_get_response_screenshot(code, id);
+    case RESP_STATE_NODE_BEGIN: return gldb_get_response_state_tree(code, id);
+    default:
+        fprintf(stderr, "Unexpected response %#08x\n", code);
+        return NULL;
     }
-    return state_root;
+}
+
+void gldb_free_response(gldb_response *r)
+{
+    switch (r->code)
+    {
+    case RESP_BREAK:
+        free(((gldb_response_break *) r)->call);
+        break;
+    case RESP_BREAK_ERROR:
+        free(((gldb_response_break_error *) r)->call);
+        free(((gldb_response_break_error *) r)->error);
+        break;
+    case RESP_STATE:
+        free(((gldb_response_state *) r)->state);
+        break;
+    case RESP_ERROR:
+        free(((gldb_response_error *) r)->error);
+        break;
+    case RESP_SCREENSHOT:
+        free(((gldb_response_screenshot *) r)->data);
+        break;
+    case RESP_STATE_NODE_BEGIN:
+        state_destroy(((gldb_response_state_tree *) r)->root);
+        break;
+    }
+    free(r);
 }
 
 /* Only first n characters of name are considered. This simplifies
@@ -219,54 +400,69 @@ void gldb_safe_syscall(int r, const char *str)
     }
 }
 
-void gldb_run(void (*child_init)(void))
+void gldb_run(uint32_t id, void (*child_init)(void))
 {
     const bugle_hash_entry *h;
 
     child_pid = execute(child_init);
     /* Send breakpoints */
     gldb_protocol_send_code(lib_out, REQ_BREAK_ERROR);
+    gldb_protocol_send_code(lib_out, 0);
     gldb_protocol_send_code(lib_out, break_on_error ? 1 : 0);
     for (h = bugle_hash_begin(&break_on); h; h = bugle_hash_next(&break_on, h))
     {
         gldb_protocol_send_code(lib_out, REQ_BREAK);
+        gldb_protocol_send_code(lib_out, 0);
         gldb_protocol_send_string(lib_out, h->key);
         gldb_protocol_send_code(lib_out, *(const char *) h->value - '0');
     }
     gldb_protocol_send_code(lib_out, REQ_RUN);
-    status = GLDB_STATUS_STARTED;
+    gldb_protocol_send_code(lib_out, id);
+    set_status(GLDB_STATUS_STARTED);
 }
 
-void gldb_send_continue(void)
+void gldb_send_continue(uint32_t id)
 {
     assert(status == GLDB_STATUS_STOPPED);
-    gldb_set_status(GLDB_STATUS_RUNNING);
+    set_status(GLDB_STATUS_RUNNING);
     gldb_protocol_send_code(lib_out, REQ_CONT);
+    gldb_protocol_send_code(lib_out, id);
 }
 
-void gldb_send_quit(void)
+void gldb_send_quit(uint32_t id)
 {
     assert(status != GLDB_STATUS_DEAD);
     gldb_protocol_send_code(lib_out, REQ_QUIT);
+    gldb_protocol_send_code(lib_out, id);
 }
 
-void gldb_send_enable_disable(const char *filterset, bool enable)
+void gldb_send_enable_disable(uint32_t id, const char *filterset, bool enable)
 {
     assert(status != GLDB_STATUS_DEAD);
     gldb_protocol_send_code(lib_out, enable ? REQ_ENABLE_FILTERSET : REQ_DISABLE_FILTERSET);
+    gldb_protocol_send_code(lib_out, id);
     gldb_protocol_send_string(lib_out, filterset);
 }
 
-void gldb_send_screenshot(void)
+void gldb_send_screenshot(uint32_t id)
 {
     assert(status != GLDB_STATUS_DEAD);
     gldb_protocol_send_code(lib_out, REQ_SCREENSHOT);
+    gldb_protocol_send_code(lib_out, id);
 }
 
-void gldb_send_async(void)
+void gldb_send_async(uint32_t id)
 {
     assert(status != GLDB_STATUS_DEAD && status != GLDB_STATUS_STOPPED);
     gldb_protocol_send_code(lib_out, REQ_ASYNC);
+    gldb_protocol_send_code(lib_out, id);
+}
+
+void gldb_send_state_tree(uint32_t id)
+{
+    assert(status != GLDB_STATUS_DEAD);
+    gldb_protocol_send_code(lib_out, REQ_STATE_TREE);
+    gldb_protocol_send_code(lib_out, id);
 }
 
 bool gldb_get_break_error(void)
@@ -274,25 +470,32 @@ bool gldb_get_break_error(void)
     return break_on_error;
 }
 
-void gldb_set_break_error(bool brk)
+void gldb_set_break_error(uint32_t id, bool brk)
 {
     break_on_error = brk;
     if (status != GLDB_STATUS_DEAD)
     {
         gldb_protocol_send_code(lib_out, REQ_BREAK_ERROR);
+        gldb_protocol_send_code(lib_out, id);
         gldb_protocol_send_code(lib_out, brk ? 1 : 0);
     }
 }
 
-void gldb_set_break(const char *function, bool brk)
+void gldb_set_break(uint32_t id, const char *function, bool brk)
 {
     bugle_hash_set(&break_on, function, brk ? "1" : "0");
     if (status != GLDB_STATUS_DEAD)
     {
         gldb_protocol_send_code(lib_out, REQ_BREAK);
+        gldb_protocol_send_code(lib_out, id);
         gldb_protocol_send_string(lib_out, function);
         gldb_protocol_send_code(lib_out, brk ? 1 : 0);
     }
+}
+
+void gldb_notify_child_dead(void)
+{
+    set_status(GLDB_STATUS_DEAD);
 }
 
 const char *gldb_get_chain(void)
@@ -307,50 +510,27 @@ void gldb_set_chain(const char *chain)
     else chain = NULL;
 }
 
-void gldb_set_status(gldb_status s)
-{
-    if (status == s) return;
-    status = s;
-    switch (status)
-    {
-    case GLDB_STATUS_RUNNING:
-    case GLDB_STATUS_STOPPED:
-        state_dirty = true;
-        break;
-    case GLDB_STATUS_STARTED:
-        abort(); /* Should never be set by the app, only gldb_run */
-    case GLDB_STATUS_DEAD:
-        close(lib_in);
-        close(lib_out);
-        lib_in = -1;
-        lib_out = -1;
-        child_pid = 0;
-        break;
-    }
-}
-
 gldb_status gldb_get_status(void)
 {
     return status;
 }
 
-pid_t gldb_child_pid(void)
+pid_t gldb_get_child_pid(void)
 {
     return child_pid;
 }
 
-const char *gldb_program(void)
+const char *gldb_get_program(void)
 {
     return prog;
 }
 
-/* FIXME: make these unnecessary */
-int gldb_in_pipe(void)
+int gldb_get_in_pipe(void)
 {
     return lib_in;
 }
 
-int gldb_out_pipe(void)
+int gldb_get_out_pipe(void)
 {
     return lib_out;
 }

@@ -158,8 +158,8 @@ static void update_backtrace(GldbWindow *context)
     gtk_list_store_clear(context->backtrace_store);
 
     argv[0] = g_strdup("gdb");
-    argv[1] = g_strdup(gldb_program());
-    bugle_asprintf(&argv[2], "%lu", (unsigned long) gldb_child_pid());
+    argv[1] = g_strdup(gldb_get_program());
+    bugle_asprintf(&argv[2], "%lu", (unsigned long) gldb_get_child_pid());
     argv[3] = NULL;
     if (g_spawn_async_with_pipes(NULL,    /* working directory */
                                  argv,
@@ -209,12 +209,11 @@ static void update_status_bar(GldbWindow *context, const gchar *text)
     gtk_statusbar_push(GTK_STATUSBAR(context->statusbar), context->statusbar_context_id, text);
 }
 
-static void stopped(GldbWindow *context)
+static void stopped(GldbWindow *context, const gchar *text)
 {
-    gldb_set_status(GLDB_STATUS_STOPPED);
     update_state(context);
     update_backtrace(context);
-    update_status_bar(context, "Stopped");
+    update_status_bar(context, text);
 }
 
 static void child_exit_callback(GPid pid, gint status, gpointer data)
@@ -232,7 +231,7 @@ static void child_exit_callback(GPid pid, gint status, gpointer data)
         context->channel_watch = 0;
     }
 
-    gldb_set_status(GLDB_STATUS_DEAD);
+    gldb_notify_child_dead();
     update_status_bar(context, "Not running");
     gtk_action_group_set_sensitive(context->run_actions, FALSE);
     gtk_action_group_set_sensitive(context->norun_actions, TRUE);
@@ -242,83 +241,41 @@ static void child_exit_callback(GPid pid, gint status, gpointer data)
 static gboolean response_callback(GIOChannel *channel, GIOCondition condition,
                                   gpointer data)
 {
-    uint32_t resp;
-    uint32_t resp_val, resp_len;
-    char *resp_str, *resp_str2;
-    FILE *f;
-    int lib_in;
     GldbWindow *context;
+    gldb_response *r;
+    char *msg;
 
     context = (GldbWindow *) data;
-    lib_in = gldb_in_pipe();
-    if (!gldb_protocol_recv_code(lib_in, &resp))
+    r = gldb_get_response();
+    switch (r->code)
     {
-        fputs("Pipe error", stderr);
-        exit(1);
-    }
-    switch (resp)
-    {
-    case RESP_ANS:
-        gldb_protocol_recv_code(lib_in, &resp_val);
-        /* Ignore, other than to flush the pipe */
-        break;
     case RESP_STOP:
-        stopped(context);
+        bugle_asprintf(&msg, "Stopped in %s", ((gldb_response_stop *) r)->call);
+        stopped(context, msg);
+        free(msg);
         break;
     case RESP_BREAK:
-        gldb_protocol_recv_string(lib_in, &resp_str);
-        g_message("Break on %s", resp_str);
-        free(resp_str);
-        stopped(context);
+        bugle_asprintf(&msg, "Break on %s", ((gldb_response_break *) r)->call);
+        stopped(context, msg);
+        free(msg);
         break;
     case RESP_BREAK_ERROR:
-        gldb_protocol_recv_string(lib_in, &resp_str);
-        gldb_protocol_recv_string(lib_in, &resp_str2);
-        g_message("Error %s in %s", resp_str2, resp_str);
-        free(resp_str);
-        free(resp_str2);
-        stopped(context);
+        bugle_asprintf(&msg, "%s in %s",
+                       ((gldb_response_break_error *) r)->error,
+                       ((gldb_response_break_error *) r)->call);
+        stopped(context, msg);
+        free(msg);
         break;
     case RESP_ERROR:
-        gldb_protocol_recv_code(lib_in, &resp_val);
-        gldb_protocol_recv_string(lib_in, &resp_str);
-        g_message("%s\n", resp_str);
-        free(resp_str);
+        /* FIXME: display the error */
         break;
     case RESP_RUNNING:
-        gldb_set_status(GLDB_STATUS_RUNNING);
         update_status_bar(context, "Running");
         gtk_action_group_set_sensitive(context->run_actions, TRUE);
         gtk_action_group_set_sensitive(context->norun_actions, FALSE);
         break;
-    case RESP_STATE:
-        gldb_protocol_recv_string(lib_in, &resp_str);
-        fputs(resp_str, stdout);
-        free(resp_str);
-        break;
-    case RESP_SCREENSHOT:
-        gldb_protocol_recv_binary_string(lib_in, &resp_len, &resp_str);
-#if 0 /* FIXME */
-        if (!screenshot_file)
-        {
-            g_warning("Unexpected screenshot data. Please contact the author.\n");
-            break;
-        }
-        f = fopen(screenshot_file, "wb");
-        if (!f)
-        {
-            g_warning("Cannot open %s: %s\n", screenshot_file, strerror(errno));
-            free(screenshot_file);
-            break;
-        }
-        if (fwrite(resp_str, 1, resp_len, f) != resp_len || fclose(f) == EOF)
-            g_warning("Error writing %s: %s\n", screenshot_file, strerror(errno));
-        free(resp_str);
-        free(screenshot_file);
-        screenshot_file = NULL;
-#endif
-        break;
     }
+    gldb_free_response(r);
 
     return TRUE;
 }
@@ -347,28 +304,28 @@ static void run_action(GtkAction *action, gpointer user_data)
          * the input pipe in it without forcing us to do everything through
          * it.
          */
-        gldb_run(child_init);
-        context->channel = g_io_channel_unix_new(gldb_in_pipe());
+        gldb_run(0, child_init);
+        context->channel = g_io_channel_unix_new(gldb_get_in_pipe());
         context->channel_watch = g_io_add_watch(context->channel, G_IO_IN | G_IO_ERR,
                                                 response_callback, context);
-        g_child_watch_add(gldb_child_pid(), child_exit_callback, context);
+        g_child_watch_add(gldb_get_child_pid(), child_exit_callback, context);
         update_status_bar(context, "Started");
     }
 }
 
 static void stop_action(GtkAction *action, gpointer user_data)
 {
-    gldb_send_async();
+    gldb_send_async(0);
 }
 
 static void continue_action(GtkAction *action, gpointer user_data)
 {
-    gldb_send_continue();
+    gldb_send_continue(0);
 }
 
 static void kill_action(GtkAction *action, gpointer user_data)
 {
-    gldb_send_quit();
+    gldb_send_quit(0);
 }
 
 static void chain_action(GtkAction *action, gpointer user_data)
@@ -433,7 +390,7 @@ static void breakpoints_add_action(GtkButton *button, gpointer user_data)
         gtk_list_store_set(context->parent->breakpoints_store, &iter,
                            BREAKPOINTS_COLUMN_FUNCTION, gtk_entry_get_text(GTK_ENTRY(entry)),
                            -1);
-        gldb_set_break(gtk_entry_get_text(GTK_ENTRY(entry)), true);
+        gldb_set_break(0, gtk_entry_get_text(GTK_ENTRY(entry)), true);
     }
     gtk_widget_destroy(dialog);
 }
@@ -451,7 +408,7 @@ static void breakpoints_remove_action(GtkButton *button, gpointer user_data)
     if (gtk_tree_selection_get_selected(selection, &model, &iter))
     {
         gtk_tree_model_get(model, &iter, 0, &func, -1);
-        gldb_set_break(func, false);
+        gldb_set_break(0, func, false);
         gtk_list_store_remove(GTK_LIST_STORE(model), &iter);
     }
 }
@@ -512,7 +469,7 @@ static void breakpoints_action(GtkAction *action, gpointer user_data)
 
     result = gtk_dialog_run(GTK_DIALOG(context.dialog));
     if (result == GTK_RESPONSE_ACCEPT)
-        gldb_set_break_error(gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(toggle)));
+        gldb_set_break_error(0, gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(toggle)));
     gtk_widget_destroy(context.dialog);
 }
 

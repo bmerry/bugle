@@ -7,7 +7,7 @@ libbugle.
 The protocol is a simple binary protocol. This makes it easier to use
 with the read() and write() system calls, rather than using the C stdio
 layer. The former are easier to use with features like select(), but
-are not suitable for text-based protocols.
+are not very for text-based protocols.
 
 Values are all 32-bit except where otherwise specified. Strings are a
 32-bit count followed by the characters (no explicit terminator). At
@@ -15,27 +15,60 @@ present values are not byte-ordered consistently. However, they are all
 run through TO_NETWORK() and TO_HOST() so that these macros may later
 map to htonl and ntohl for network transparency. 
 
-Upon hitting any form of breakpoint or upon receiving a request from
-the debugger that demands a response, the library will send a response
-code and possibly extra data.
+The protocol is partially asynchronous. gldb may send requests at any
+time, but the library will answer them as soon as possible and in the
+order that they are received. The library may also asynchronously send
+notifications to gldb. All requests begin with a request code and a
+request ID. Responses carry a response code and the corresponding
+request ID. Asynchronous responses use the request ID of the
+last command that (re)started program execution.
 
-The following responses are defined (the symbols are defined in
-common/protocol.h)
+The possible requests are as follows (#defines in common/protocol.h)
+
+REQ_RUN:     Start running. This is sent once at start-up, after setting
+             the initial breakpoints and similar state.
+REQ_CONT:    Continue running. Behaviour is undefined if received while
+             the program is already running.
+REQ_STEP:    Like REQ_CONT, but stop at the next call. Note that if a
+             breakpoint is set on the next call, the response is
+             RESP_BREAK, and if an error occurs before reaching the next
+             call then the response is RESP_BREAK_ERROR. Behaviour is
+             undefined if received while the program is already running.
+REQ_BREAK:   Set or clear a breakpoint on the named function.
+             Followed by a name then either 1 or 0 (for set/clear).
+             Response RESP_ANS has undefined value.
+REQ_BREAK_ERROR: 
+             Enable or disable breaking on error. Followed by either
+             1 or 0 (for set/clear). Response RESP_ANS has undefined value.
+REQ_ASYNC:   Requests the program to stop at the next available point.
+             To facilitate correct operation in the face of race
+             conditions, this request is ignored if the program is already
+             stopped. It does not generate an explicit response, but will
+             cause a RESP_STOP response.
+REQ_SCREENSHOT: Requests a screenshot from the program. Reply is
+             RESP_SCREENSHOT on success, or RESP_ERROR if the screenshot
+             could not be taken for some reason.
+REQ_QUIT:    Requests that the program exit.
+REQ_STATE_TREE: Requests the state tree. No parameters.
+
+The following responses are defined
+
 RESP_ANS:    A generic response, containing a single number. The request
              determines the meaning.
-RESP_BREAK:  Break on a particular function (before execution). Followed
-             by a dump of the function.
-RESP_BREAK_ERROR:
+RESP_BREAK (async):  
+             Break on a particular function (before execution).
+             Followed by a dump of the function call.
+RESP_BREAK_ERROR (async):
              Break on an error condition (after execution)
              Followed by the function call (string), then the (textual)
              name of the error.
-RESP_STOP:   A stop by request of the debugger. No extra data.
-RESP_STATE:  Response to a state request. Followed by the textual value
-             of the state. DEPRECATED.
+RESP_STOP (async): 
+             A stop by request of the debugger. Same data as for
+             RESP_BREAK.
 RESP_ERROR:  The request was illegal. Followed by an error code (always
              0 for now) and an error string.
 RESP_RUNNING:
-             Sent at initialisation, in response to REQ_START. No extra
+             Sent at initialisation, in response to REQ_RUN. No extra
              data. This response aids in separating the responses to
              the initialisation commands from everything else.
 RESP_SCREENSHOT:
@@ -49,47 +82,20 @@ RESP_STATE_NODE_END:
              children in the tree (with their own BEGIN/END responses),
              and finally RESP_STATE_NODE_END, which has no parameters.
 
-After each response group, the debugger should send a request. The
-requests have the same basic form. The following requests are defined:
-
-REQ_RUN:     Start running. This is sent once at start-up, after setting
-             the initial breakpoints and similar state.
-REQ_CONT:    Continue running
-REQ_STEP:    Like REQ_CONT, but stop at the next call. Note that if a
-             breakpoint is set on the next call, the response is
-             RESP_BREAK, and if an error occurs before reaching the next
-             call then the response is RESP_BREAK_ERROR.
-REQ_BREAK:   Set or clear a breakpoint on the named function.
-             Followed by a name then either 1 or 0 (for set/clear).
-             Response RESP_ANS has undefined value.
-REQ_BREAK_ERROR: 
-             Enable or disable breaking on error. Followed by either
-             1 or 0 (for set/clear). Response RESP_ANS has undefined value.
-REQ_ASYNC:   Requests the program to stop at the next available point.
-             This is the only request that may be made asynchronously
-             i.e. when the program is not inside the debugger loop. To
-             facilitate correct operation in the face of race conditions,
-             this request is ignored if received inside the debugger loop.
-             Otherwise it is answered with RESP_
-REQ_STATE:   Requests the value of a state. Followed by the name of
-             the state. DEPRECATED.
-REQ_SCREENSHOT: Requests a screenshot from the program. Reply is
-             RESP_SCREENSHOT on success, or RESP_ERROR if the screenshot
-             could not be taken for some reason.
-REQ_QUIT:    Requests that the program exit.
-REQ_STATE_STATE: Requests the state tree. No parameters.
+             The entire tree will be sent as a contiguous block, without
+             interrupt from asynchronous responses.
 
 Each request has a certain set of legal responses, as described below.
-Note that requests that start the program running (the first three) may
-also return RESP_STOP if a REQ_ASYNC was received.
+Note that requests that start the program running (the first three) will
+receive asynchronous responses.
 
-REQ_RUN:   RESP_RUNNING, followed by a code as for REQ_CONT
-REQ_CONT:  RESP_BREAK, RESP_BREAK_ERROR
-REQ_STEP:  RESP_BREAK, RESP_BREAK_ERROR, RESP_STOP
+REQ_RUN:   RESP_RUNNING (will precede any async response)
+REQ_CONT:  none
+REQ_STEP:  none
 REQ_BREAK: RESP_ANS, RESP_ERROR
 REQ_BREAK_ERROR: RESP_ANS
-REQ_ASYNC: REQ_STOP, or nothing (see description)
+REQ_ASYNC: none
 REQ_STATE: RESP_STATE, RESP_ERROR
 REQ_SCREENSHOT: RESP_SCREENSHOT, RESP_ERROR.
 REQ_STATE: RESP_STATE_BEGIN, RESP_STATE_END.
-REQ_QUIT:  none (program exits)
+REQ_QUIT:  none
