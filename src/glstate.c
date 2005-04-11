@@ -255,7 +255,7 @@ static const state_info global_state[] =
     { STATE_NAME(GL_POINT_SIZE), TYPE_8GLdouble, -1, BUGLE_GL_VERSION_1_1, STATE_GLOBAL },
     { STATE_NAME(GL_POINT_SMOOTH), TYPE_9GLboolean, -1, BUGLE_GL_VERSION_1_1, STATE_ENABLED },
 #ifdef GL_ARB_point_sprite
-    { STATE_NAME_EXT(GL_POINT_SPRITE, _ARB), TYPE_9GLboolean, -1, BUGLE_GL_VERSION_2_0, STATE_ENABLED },
+    { STATE_NAME_EXT(GL_POINT_SPRITE, _ARB), TYPE_9GLboolean, -1, BUGLE_GL_ARB_point_sprite, STATE_ENABLED },
 #endif
 #ifdef GL_EXT_point_parameters
     { STATE_NAME_EXT(GL_POINT_SIZE_MIN, _EXT), TYPE_8GLdouble, -1, BUGLE_GL_EXT_point_parameters, STATE_GLOBAL },

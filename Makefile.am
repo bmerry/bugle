@@ -87,7 +87,7 @@ BUILT_SOURCES += src/lib.h src/utils.h src/names.h src/confparse.h
 # Generated files that generate other files
 
 src/data/gl.tu: src/data/gl.c src/data/overrides.h
-	$(srcdir)/mkinstalldirs src/data
+	$(INSTALL) -d src/data
 	$(COMPILE) -fdump-translation-unit -c $(srcdir)/src/data/gl.c -o src/data/gl.o
 	rm -f src/data/gl.o
 	mv gl.c.tu src/data/gl.tu
@@ -102,7 +102,7 @@ BCFILES = bc/core1_1.bc bc/glx.bc \
         bc/GLX_ARB_get_proc_address.bc
 
 src/names.c src/names.h src/utils.c src/utils.h src/lib.c src/lib.h: budgie/budgie src/data/gl.tu gl.bc bc/alias.bc $(BCFILES)
-	$(srcdir)/mkinstalldirs src
+	$(INSTALL) -d src
 	budgie/budgie -t `test -f src/data/gl.tu || echo '$(srcdir)/'`src/data/gl.tu -o src/utils -n src/names -l src/lib gl.bc
 
 BUILT_SOURCES += src/glfuncs.h src/glexts.h
@@ -118,7 +118,7 @@ src/glexts.h: gentokens/genexts.perl
 src/glexts.c: gentokens/genexts.perl
 	$(PERL) -w $(srcdir)/gentokens/genexts.perl $(GLINCLUDES) > $@
 bc/alias.bc: gentokens/genfunctions.perl
-	$(srcdir)/mkinstalldirs bc
+	$(INSTALL) -d bc
 	$(PERL) -w $(srcdir)/gentokens/genfunctions.perl --alias $(GLINCLUDES) > $@
 
 # Filters

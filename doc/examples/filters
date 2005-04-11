@@ -102,5 +102,5 @@ chain validate
 {
     filterset checks
     filterset errors
-    fitlerset log
+    filterset log
 }
