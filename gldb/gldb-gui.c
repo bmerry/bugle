@@ -20,7 +20,9 @@
 # include <config.h>
 #endif
 #include <gtk/gtk.h>
-#include <gdk-pixbuf/gdk-pixbuf.h>
+#ifdef HAVE_GTKGLEXT
+# include <gtk/gtkgl.h>
+#endif
 #include <glib.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -61,13 +63,16 @@ typedef struct
     GtkTreeStore *state_store;
 } GldbWindowState;
 
+#ifdef HAVE_GTKGLEXT
 typedef struct
 {
     bool dirty;
     GtkWidget *page;
-    GtkWidget *image;
+    GtkWidget *draw;
     GtkWidget *target, *id, *face, *level;
+    bool have_texture;  /* false if no texture is selected */
 } GldbWindowTexture;
+#endif
 
 typedef struct
 {
@@ -91,7 +96,9 @@ typedef struct GldbWindow
     bugle_linked_list response_handlers;
 
     GldbWindowState state;
+#ifdef HAVE_GTKGLEXT
     GldbWindowTexture texture;
+#endif
     GldbWindowBacktrace backtrace;
 
     GtkListStore *breakpoints_store;
@@ -245,27 +252,130 @@ static const gldb_state *state_find_child_enum(const gldb_state *parent,
     return NULL;
 }
 
+#ifdef HAVE_GTKGLEXT
+static void texture_draw_realize(GtkWidget *widget, gpointer user_data)
+{
+    GdkGLContext *glcontext;
+    GdkGLDrawable *gldrawable;
+
+    glcontext = gtk_widget_get_gl_context(widget);
+    gldrawable = gtk_widget_get_gl_drawable(widget);
+    if (!gdk_gl_drawable_gl_begin(gldrawable, glcontext)) return;
+
+    glViewport(0, 0, widget->allocation.width, widget->allocation.height);
+    glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+
+    gdk_gl_drawable_gl_end(gldrawable);
+}
+
+static gboolean texture_draw_configure(GtkWidget *widget,
+                                       GdkEventConfigure *event,
+                                       gpointer user_data)
+{
+    GdkGLContext *glcontext;
+    GdkGLDrawable *gldrawable;
+
+    glcontext = gtk_widget_get_gl_context(widget);
+    gldrawable = gtk_widget_get_gl_drawable(widget);
+    if (!gdk_gl_drawable_gl_begin(gldrawable, glcontext)) return FALSE;
+
+    glViewport(0, 0, widget->allocation.width, widget->allocation.height);
+
+    gdk_gl_drawable_gl_end(gldrawable);
+    return TRUE;
+}
+
+static gboolean texture_draw_expose(GtkWidget *widget,
+                                    GdkEventExpose *event,
+                                    gpointer user_data)
+{
+    guint target;
+    gint level;
+    GtkTreeModel *model;
+    GldbWindow *context;
+    GtkTreeIter iter;
+    GdkGLContext *glcontext;
+    GdkGLDrawable *gldrawable;
+    static const GLint vertices[8] =
+    {
+        -1, -1,
+        1, -1,
+        1, 1,
+        -1, 1
+    };
+    static const GLint texcoords[8] =
+    {
+        0, 0,
+        1, 0,
+        1, 1,
+        0, 1
+    };
+
+    context = (GldbWindow *) user_data;
+    model = gtk_combo_box_get_model(GTK_COMBO_BOX(context->texture.target));
+    if (!gtk_combo_box_get_active_iter(GTK_COMBO_BOX(context->texture.target),
+                                       &iter)) return FALSE;
+    gtk_tree_model_get(model, &iter, 1, &target, -1);
+    model = gtk_combo_box_get_model(GTK_COMBO_BOX(context->texture.level));
+    if (!gtk_combo_box_get_active_iter(GTK_COMBO_BOX(context->texture.level),
+                                       &iter)) return FALSE;
+    gtk_tree_model_get(model, &iter, 0, &level, -1);
+
+    glcontext = gtk_widget_get_gl_context(widget);
+    gldrawable = gtk_widget_get_gl_drawable(widget);
+    if (!gdk_gl_drawable_gl_begin(gldrawable, glcontext)) return FALSE;
+
+    glPushAttrib(GL_CURRENT_BIT | GL_ENABLE_BIT);
+    glPushClientAttrib(GL_CLIENT_VERTEX_ARRAY_BIT);
+    glEnable(target);
+    glEnableClientState(GL_VERTEX_ARRAY);
+    glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+    glColor3f(1.0f, 1.0f, 1.0f);
+    glVertexPointer(2, GL_INT, 0, vertices);
+    glTexCoordPointer(2, GL_INT, 0, texcoords);
+    glDrawArrays(GL_QUADS, 0, 4);
+    glPopClientAttrib();
+    glPopAttrib();
+
+    gdk_gl_drawable_swap_buffers(gldrawable);
+    gdk_gl_drawable_gl_end(gldrawable);
+    return TRUE;
+}
+
 static gboolean response_callback_texture(GldbWindow *context,
                                           gldb_response *response,
                                           gpointer user_data)
 {
     gldb_response_data_texture *r;
-    GdkPixbuf *pixbuf;
 
     r = (gldb_response_data_texture *) response;
     if (response->code != RESP_DATA || !r->length)
-        gtk_image_set_from_stock(GTK_IMAGE(context->texture.image),
-                                 GTK_STOCK_MISSING_IMAGE, GTK_ICON_SIZE_DIALOG);
+    {
+        if (context->texture.have_texture)
+        {
+            context->texture.have_texture = false;
+            invalidate_widget(context->texture.draw);
+        }
+    }
     else
     {
-        pixbuf = gdk_pixbuf_new_from_data(r->data,
-                                          GDK_COLORSPACE_RGB, false, 8,
-                                          r->width, r->height, r->width * 3,
-                                          free_callback, NULL);
-        gtk_image_set_from_pixbuf(GTK_IMAGE(context->texture.image), pixbuf);
-        g_object_unref(pixbuf);
+        GdkGLContext *glcontext;
+        GdkGLDrawable *gldrawable;
+
+        gtk_widget_set_size_request(context->texture.draw, r->width, r->height);
+        glcontext = gtk_widget_get_gl_context(context->texture.draw);
+        gldrawable = gtk_widget_get_gl_drawable(context->texture.draw);
+        if (gdk_gl_drawable_gl_begin(gldrawable, glcontext))
+        {
+            /* FIXME: handle other targets */
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB8, r->width, r->height, 0,
+                         GL_RGB, GL_UNSIGNED_BYTE, r->data);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+            gdk_gl_drawable_gl_end(gldrawable);
+        }
     }
-    free(r); /* NOT gldb_free_response, since that nukes the data as well */
+    gldb_free_response(response);
     return TRUE;
 }
 
@@ -284,6 +394,7 @@ static gboolean texture_expose(GtkWidget *widget, GdkEventExpose *event,
     g_signal_emit_by_name(G_OBJECT(context->texture.target), "changed", NULL, NULL);
     return FALSE;
 }
+#endif /* HAVE_GTKGLEXT */
 
 static gboolean backtrace_expose(GtkWidget *widget, GdkEventExpose *event,
                                  gpointer user_data)
@@ -360,8 +471,10 @@ static void stopped(GldbWindow *context, const gchar *text)
 {
     context->state.dirty = true;
     invalidate_widget(context->state.page);
+#ifdef HAVE_GTKGLEXT
     context->texture.dirty = true;
-    invalidate_widget(context->state.page);
+    invalidate_widget(context->texture.page);
+#endif
     context->backtrace.dirty = true;
     invalidate_widget(context->backtrace.page);
 
@@ -688,6 +801,7 @@ static void build_state_page(GldbWindow *context)
                               G_CALLBACK(state_expose), context);
 }
 
+#ifdef HAVE_GTKGLEXT
 static void update_texture_ids(GldbWindow *context, GLenum target)
 {
     const gldb_state *s, *t;
@@ -1057,14 +1171,46 @@ static GtkWidget *build_texture_page_level(GldbWindow *context)
     return level;
 }
 
+static GtkWidget *build_texture_page_draw(GldbWindow *context)
+{
+    GtkWidget *aspect, *draw;
+    GdkGLConfig *glconfig;
+    static const int attrib_list[] =
+    {
+        GDK_GL_USE_GL, TRUE,
+        GDK_GL_RGBA, TRUE,
+        GDK_GL_DOUBLEBUFFER, TRUE,
+        GDK_GL_ATTRIB_LIST_NONE
+    };
+
+    /* FIXME: use new_for_screen */
+    glconfig = gdk_gl_config_new(attrib_list);
+    g_return_val_if_fail(glconfig != NULL, NULL);
+
+    draw = gtk_drawing_area_new();
+    gtk_widget_set_size_request(draw, 50, 50);
+    gtk_widget_set_gl_capability(draw, glconfig, NULL, TRUE, GDK_GL_RGBA_TYPE);
+    g_signal_connect_after(G_OBJECT(draw), "realize",
+                           G_CALLBACK(texture_draw_realize), context);
+    g_signal_connect(G_OBJECT(draw), "configure-event",
+                     G_CALLBACK(texture_draw_configure), context);
+    g_signal_connect(G_OBJECT(draw), "expose-event",
+                     G_CALLBACK(texture_draw_expose), context);
+
+    aspect = gtk_aspect_frame_new(NULL, 0.5, 0.5, 1.0, FALSE);
+    gtk_container_add(GTK_CONTAINER(aspect), draw);
+
+    context->texture.draw = draw;
+    return aspect;
+}
+
 static void build_texture_page(GldbWindow *context)
 {
-    GtkWidget *label, *target, *id, *face, *level;
+    GtkWidget *label, *target, *id, *face, *level, *draw;
     GtkWidget *vbox, *hbox, *scrolled;
     gint page;
 
-    context->texture.image = gtk_image_new_from_stock(GTK_STOCK_MISSING_IMAGE,
-                                                      GTK_ICON_SIZE_DIALOG);
+    draw = build_texture_page_draw(context);
     hbox = gtk_hbox_new(FALSE, 0);
     vbox = gtk_vbox_new(FALSE, 0);
     target = build_texture_page_target(context);
@@ -1083,8 +1229,11 @@ static void build_texture_page(GldbWindow *context)
     gtk_box_pack_start(GTK_BOX(vbox), level, FALSE, FALSE, 0);
 
     scrolled = gtk_scrolled_window_new(NULL, NULL);
-    gtk_scrolled_window_add_with_viewport(GTK_SCROLLED_WINDOW(scrolled),
-                                          context->texture.image);
+    if (draw)
+    {
+        gtk_scrolled_window_add_with_viewport(GTK_SCROLLED_WINDOW(scrolled),
+                                              draw);
+    }
     gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(scrolled),
                                    GTK_POLICY_AUTOMATIC,
                                    GTK_POLICY_AUTOMATIC);
@@ -1094,10 +1243,12 @@ static void build_texture_page(GldbWindow *context)
     page = gtk_notebook_append_page(GTK_NOTEBOOK(context->notebook),
                                     hbox, label);
     context->texture.dirty = false;
+    context->texture.have_texture = false;
     context->texture.page = gtk_notebook_get_nth_page(GTK_NOTEBOOK(context->notebook), page);
     g_signal_connect(G_OBJECT(context->texture.page), "expose-event",
                               G_CALLBACK(texture_expose), context);
 }
+#endif /* HAVE_GTKGLEXT */
 
 static void build_shader_page(GldbWindow *context)
 {
@@ -1235,7 +1386,9 @@ static void build_main_window(GldbWindow *context)
     context->breakpoints_store = gtk_list_store_new(1, G_TYPE_STRING);
     context->notebook = gtk_notebook_new();
     build_state_page(context);
+#ifdef HAVE_GTKGLEXT
     build_texture_page(context);
+#endif
     build_shader_page(context);
     build_backtrace_page(context);
     gtk_box_pack_start(GTK_BOX(vbox), context->notebook, TRUE, TRUE, 0);
@@ -1270,6 +1423,9 @@ int main(int argc, char **argv)
     GldbWindow context;
 
     gtk_init(&argc, &argv);
+#ifdef HAVE_GTKGLEXT
+    gtk_gl_init(&argc, &argv);
+#endif
     gldb_initialise(argc, argv);
     bugle_initialise_hashing();
 

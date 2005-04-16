@@ -33,9 +33,9 @@ gldb_gldb_LDADD = src/libbugleutils.la $(READLINE_LIBS)
 gldb_gldb_LDFLAGS = -thread-safe
 
 gldb_gldb_gui_SOURCES = gldb/gldb-gui.c gldb/gldb-common.c gldb/gldb-common.h
-gldb_gldb_gui_LDADD = src/libbugleutils.la $(GTK_LIBS)
+gldb_gldb_gui_LDADD = src/libbugleutils.la $(GTKGLEXT_LIBS) $(GTK_LIBS)
 gldb_gldb_gui_LDFLAGS = -thread-safe
-gldb_gldb_gui_CFLAGS = $(AM_CFLAGS) $(GTK_CFLAGS)
+gldb_gldb_gui_CFLAGS = $(AM_CFLAGS) $(GTKGLEXT_CFLAGS) $(GTK_CFLAGS)
 
 budgie_budgie_SOURCES = \
 	budgie/budgie.cpp budgie/budgie.h \
