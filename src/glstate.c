@@ -336,8 +336,8 @@ static const state_info global_state[] =
     { STATE_NAME(GL_INDEX_LOGIC_OP), TYPE_9GLboolean, -1, BUGLE_GL_VERSION_1_1, STATE_ENABLED },
     { STATE_NAME(GL_COLOR_LOGIC_OP), TYPE_9GLboolean, -1, BUGLE_GL_VERSION_1_1, STATE_ENABLED },
     { STATE_NAME(GL_LOGIC_OP_MODE), TYPE_6GLenum, -1, BUGLE_GL_VERSION_1_1, STATE_GLOBAL },
-#ifdef GL_ARB_draw_buffers
-    { STATE_NAME(GL_DRAW_BUFFER), TYPE_6GLenum, -1, ~BUGLE_GL_ARB_draw_buffers, STATE_GLOBAL },
+#ifdef GL_ATI_draw_buffers
+    { STATE_NAME(GL_DRAW_BUFFER), TYPE_6GLenum, -1, ~BUGLE_GL_ATI_draw_buffers, STATE_GLOBAL },
 #else
     { STATE_NAME(GL_DRAW_BUFFER), TYPE_6GLenum, -1, GL_VERSION_1_1, STATE_GLOBAL },
 #endif
@@ -547,8 +547,8 @@ static const state_info global_state[] =
     { STATE_NAME_EXT(GL_MAX_FRAGMENT_UNIFORM_COMPONENTS, _ARB), TYPE_5GLint, -1, BUGLE_EXTGROUP_fragment_shader, STATE_GLOBAL },
 #endif
     /* Note: The GL 2.0 spec duplicates some entries at this point */
-#ifdef GL_ARB_draw_buffers
-    { STATE_NAME_EXT(GL_MAX_DRAW_BUFFERS, _ARB), TYPE_5GLint, -1, BUGLE_GL_ARB_draw_buffers, STATE_GLOBAL },
+#ifdef GL_ATI_draw_buffers
+    { STATE_NAME_EXT(GL_MAX_DRAW_BUFFERS, _ATI), TYPE_5GLint, -1, BUGLE_GL_ATI_draw_buffers, STATE_GLOBAL },
 #endif
     { STATE_NAME(GL_RED_BITS), TYPE_5GLint, -1, BUGLE_GL_VERSION_1_1, STATE_GLOBAL },
     { STATE_NAME(GL_GREEN_BITS), TYPE_5GLint, -1, BUGLE_GL_VERSION_1_1, STATE_GLOBAL },
@@ -2492,10 +2492,10 @@ static void spawn_children_global(const glstate *self, bugle_linked_list *childr
     {
         NULL, GL_NONE, TYPE_8GLdouble, 4, BUGLE_GL_VERSION_1_1, STATE_CLIP_PLANE
     };
-#ifdef GL_ARB_draw_buffers
+#ifdef GL_ATI_draw_buffers
     static const state_info draw_buffers =
     {
-        NULL, GL_NONE, TYPE_6GLenum, -1, BUGLE_GL_ARB_draw_buffers, STATE_GLOBAL
+        NULL, GL_NONE, TYPE_6GLenum, -1, BUGLE_GL_ATI_draw_buffers, STATE_GLOBAL
     };
 #endif
 
@@ -2529,11 +2529,11 @@ static void spawn_children_global(const glstate *self, bugle_linked_list *childr
                  offsetof(glstate, target), NULL,
                  &clip_plane_state, children);
 
-#ifdef GL_ARB_draw_buffers
-    if (bugle_gl_has_extension_group(BUGLE_GL_ARB_draw_buffers))
+#ifdef GL_ATI_draw_buffers
+    if (bugle_gl_has_extension_group(BUGLE_GL_ATI_draw_buffers))
     {
-        CALL_glGetIntegerv(GL_MAX_DRAW_BUFFERS_ARB, &count);
-        make_counted(self, count, "GL_DRAW_BUFFER%lu", GL_DRAW_BUFFER0_ARB,
+        CALL_glGetIntegerv(GL_MAX_DRAW_BUFFERS_ATI, &count);
+        make_counted(self, count, "GL_DRAW_BUFFER%lu", GL_DRAW_BUFFER0_ATI,
                      offsetof(glstate, target), NULL,
                      &draw_buffers, children);
     }
