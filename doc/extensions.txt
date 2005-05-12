@@ -1,0 +1,51 @@
+BuGLe is designed to be able to both compile and run on systems that
+expose only OpenGL 1.1 with no extensions. Extensions play a part in
+BuGLe in several places:
+
+1. Catching calls to extension functions, e.g. for the object tracker.
+2. Making calls to extension functions to implement functionality,
+   e.g. for the fragment counter.
+3. For queries in the state manager.
+
+For simplicity, core versions are treated like extensions, with each
+core version exposing the "extensions" of itself and all previous core
+versions.
+
+For each use, the question of both compile-time and run-time
+availability arises. Where extensions are promoted to the core or to
+a cross-vendor extension (EXT or ARB), we assume that compile-time
+presence of the newer extension/core implies that of the older
+extension. We do not make this assumption for run-time behaviour,
+though. The reasoning is that glext.h is centrally managed and evolves
+linearly, while implementations could return pretty much anything in
+GL_EXTENSIONS. This is particularly important with vendor extensions,
+which may not be exposed by other vendors even if they have the
+functionality as part of the core.
+
+The implementation introduces the concept of an "extension group": this
+is a set of extensions, any one of which exposes some functionality.
+This will usually consist of a true extension and an optional core
+version (where the extension has been promoted), but could include
+several extensions where an extension has been promoted to EXT or ARB
+status. It may also be defined where several extensions overlap in
+functionality e.g. several extensions define generic vertex attributes.
+
+Every extension defines an extension group; every extension in the
+group should be a superset of the extension defining the group. They
+should share token values and token semantics, although generally the
+token names will differ in at least the suffices.
+
+When testing at compile time for extension support, one should test for
+a specific extension (with #ifdef), which should be the oldest of the
+extension group of interest. Do not try to test for all of the group,
+as the others in the group will not match the token names exactly (the
+exception is when a number of related extensions with the same vendor
+prefix define exactly the same tokens, e.g. GL_ARB_vertex_program and
+GL_ARB_fragment_program).
+
+At run time, use bugle_gl_has_extension(BUGLE_GL_FOO_some_extension) to
+test for a specific extension, or bugle_gl_has_extension_group to test
+for a group. When making function calls, remember that you may need to
+determine which member of the group is actually available so as to call
+functions with the right suffix.
+

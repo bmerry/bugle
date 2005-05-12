@@ -347,11 +347,12 @@ static gldb_state *state_find(gldb_state *root, const char *name, size_t n)
     const char *split;
     bugle_list_node *i;
     gldb_state *child;
-    bool found = false;
+    bool found;
 
     if (n > strlen(name)) n = strlen(name);
     while (n > 0)
     {
+        found = false;
         split = strchr(name, '.');
         while (split == name && n > 0 && name[0] == '.')
         {
@@ -852,14 +853,14 @@ static bool handle_responses(uint32_t resp)
         break;
     case RESP_BREAK:
         gldb_recv_string(lib_in, &resp_str);
-        printf("Break on %s.\n", resp_str);
+        printf("Break on %s", resp_str);
         free(resp_str);
         state_dirty = true;
         break;
     case RESP_BREAK_ERROR:
         gldb_recv_string(lib_in, &resp_str);
         gldb_recv_string(lib_in, &resp_str2);
-        printf("Error %s in %s.\n", resp_str2, resp_str);
+        printf("Error %s in %s", resp_str2, resp_str);
         free(resp_str);
         free(resp_str2);
         state_dirty = true;

@@ -8,8 +8,8 @@ gldb
 ----
 - allow Ctrl-C to abort current line when reading commands
 - set filter variables on the fly
+- ability to have filtersets loaded but inactive
 - enable reporting of segfaults
-- print full dump of current function
 - break on particular GL errors, not just 'all errors'
 
 bugle
@@ -34,7 +34,7 @@ budgie
 tests
 -----
 - multithreaded conformance tests
-- coverage tests
+- coverage tests (glean?)
 - tests for glut
 
 long term
@@ -43,5 +43,6 @@ long term
 - Windows support
 - graphical debugger interface
 - write support for state
+- network debugging
 - better movie capture
   - option of a separate thread, for parallel encoding

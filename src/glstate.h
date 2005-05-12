@@ -33,8 +33,7 @@ typedef struct state_info
     GLenum pname;
     budgie_type type;
     int length;
-    int extension;
-    const char *version;
+    int extensions;
     unsigned int flags;
 } state_info;
 

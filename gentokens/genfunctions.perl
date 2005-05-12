@@ -83,16 +83,21 @@ if ($aliases)
         if ($i->[0] ne $i->[1])
         {
             # Unfortunately, there are cases where what look like
-            # aliases have different signatures, and hence cannot
-            # be grouped
-            my %exclude = ("glColorPointerEXT" => 1,
+            # aliases have different signatures or semantics, and hence
+            # cannot be grouped
+            my %exclude = (# GL_EXT_vertex_array had one extra parameter
+                           "glColorPointerEXT" => 1,
                            "glEdgeFlagPointerEXT" => 1,
                            "glIndexPointerEXT" => 1,
                            "glNormalPointerEXT" => 1,
                            "glTexCoordPointerEXT" => 1,
                            "glVertexPointerEXT" => 1,
                            "glVertexAttribPointerNV" => 1,
+                           
+                           # This takes a GLint, not a GLenum
                            "glHintPGI" => 1,
+                           
+                           # These take GLhandleARB, not GLuint
                            "glShaderSourceARB" => 1,
                            "glCompileShaderARB" => 1,
                            "glLinkProgramARB" => 1,
@@ -101,7 +106,14 @@ if ($aliases)
                            "glActiveUniformARB" => 1,
                            "glGetUniformfvARB" => 1,
                            "glGetUniformivARB" => 1,
-                           "glGetShaderSourceARB" => 1
+                           "glGetShaderSourceARB" => 1,
+                           
+                           # These have totally unrelated semantics to the core 2.0 version
+                           # (but they should alias each other, which is handled later)
+                           "glGetProgramivARB" => 1,
+                           "glGetProgramivNV" => 1,
+                           "glIsProgramNV" => 1,
+                           "glIsProgramARB" => 1
                           );
             if (!exists($exclude{$i->[0]}))
             {
@@ -109,6 +121,9 @@ if ($aliases)
             }
         }
     }
+    print "ALIAS glGetProgramivNV glGetProgramivARB\n";
+    print "ALIAS glIsProgramNV glIsProgramARB\n";
+    
     exit 0;
 }
 

@@ -390,13 +390,22 @@ static void check_async(void)
     }
 }
 
+static void dump_any_call_string_io(FILE *out, void *data)
+{
+    budgie_dump_any_call(&((const function_call *) data)->generic, 0, out);
+}
+
 static bool debugger_callback(function_call *call, const callback_data *data)
 {
+    char *resp_str;
+
     check_async();
     if (break_on[call->generic.id])
     {
+        resp_str = budgie_string_io(dump_any_call_string_io, call);
         gldb_send_code(out_pipe, RESP_BREAK);
-        gldb_send_string(out_pipe, budgie_function_table[call->generic.id].name);
+        gldb_send_string(out_pipe, resp_str);
+        free(resp_str);
         debugger_loop(false);
     }
     else if (break_on_next)
@@ -411,13 +420,16 @@ static bool debugger_callback(function_call *call, const callback_data *data)
 static bool debugger_error_callback(function_call *call, const callback_data *data)
 {
     GLenum error;
+    char *resp_str;
 
     if (break_on_error
         && (error = bugle_get_call_error(call)))
     {
+        resp_str = budgie_string_io(dump_any_call_string_io, call);
         gldb_send_code(out_pipe, RESP_BREAK_ERROR);
-        gldb_send_string(out_pipe, budgie_function_table[call->generic.id].name);
+        gldb_send_string(out_pipe, resp_str);
         gldb_send_string(out_pipe, bugle_gl_enum_to_token(error));
+        free(resp_str);
         debugger_loop(false);
     }
     return true;

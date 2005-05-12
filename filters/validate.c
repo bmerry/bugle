@@ -555,9 +555,15 @@ static void checks_min_max(GLsizei count, GLenum gltype, const GLvoid *indices,
 
 static bool checks_glDrawArrays(function_call *call, const callback_data *data)
 {
+    if (*call->typed.glDrawArrays.arg1 < 0)
+    {
+        fprintf(stderr, "WARNING: glDrawArrays called with a negative argument; call will be ignored.\n");
+        return false;
+    }
+
     if (CHECKS_START())
     {
-        fprintf(stderr, "WARNING: illegal %s caught in glDrawArrays; call will be ignored\n",
+        fprintf(stderr, "WARNING: illegal %s caught in glDrawArrays; call will be ignored.\n",
                 checks_error ? checks_error : "pointer");
     }
     else
@@ -572,7 +578,7 @@ static bool checks_glDrawElements(function_call *call, const callback_data *data
 {
     if (CHECKS_START())
     {
-        fprintf(stderr, "WARNING: illegal %s caught in glDrawElements; call will be ignored\n",
+        fprintf(stderr, "WARNING: illegal %s caught in glDrawElements; call will be ignored.\n",
                 checks_error ? checks_error : "pointer");
     }
     else
@@ -600,7 +606,7 @@ static bool checks_glDrawRangeElements(function_call *call, const callback_data 
 {
     if (CHECKS_START())
     {
-        fprintf(stderr, "WARNING: illegal %s caught in glDrawRangeElements; call will be ignored\n",
+        fprintf(stderr, "WARNING: illegal %s caught in glDrawRangeElements; call will be ignored.\n",
                 checks_error ? checks_error : "pointer");
     }
     else
@@ -621,7 +627,7 @@ static bool checks_glDrawRangeElements(function_call *call, const callback_data 
         if (min < *call->typed.glDrawRangeElementsEXT.arg1
             || max > *call->typed.glDrawRangeElementsEXT.arg2)
         {
-            fprintf(stderr, "WARNING: glDrawRangeElements indices fall outside range, ignoring call\n");
+            fprintf(stderr, "WARNING: glDrawRangeElements indices fall outside range; call will be ignored.\n");
             ret = false;
         }
         else
@@ -640,7 +646,7 @@ static bool checks_glMultiDrawArrays(function_call *call, const callback_data *d
 {
     if (CHECKS_START())
     {
-        fprintf(stderr, "WARNING: illegal %s caught in glMultiDrawArrays; call will be ignored\n",
+        fprintf(stderr, "WARNING: illegal %s caught in glMultiDrawArrays; call will be ignored.\n",
                 checks_error ? checks_error : "pointer");
     }
     else
@@ -668,7 +674,7 @@ static bool checks_glMultiDrawElements(function_call *call, const callback_data 
 {
     if (CHECKS_START())
     {
-        fprintf(stderr, "WARNING: illegal %s caught in glMultiDrawElements; call will be ignored\n",
+        fprintf(stderr, "WARNING: illegal %s caught in glMultiDrawElements; call will be ignored.\n",
                 checks_error ? checks_error : "pointer");
     }
     else
@@ -703,11 +709,97 @@ static bool checks_glMultiDrawElements(function_call *call, const callback_data 
 }
 #endif
 
+/* OpenGL defines certain calls to be illegal inside glBegin/glEnd but
+ * allows undefined behaviour when it happens (these are client-side calls).
+ */
+static bool checks_no_begin_end(function_call *call, const callback_data *data)
+{
+    if (bugle_in_begin_end())
+    {
+        fprintf(stderr, "WARNING: %s called inside glBegin/glEnd; call will be ignored.\n",
+                budgie_function_table[call->generic.id].name);
+        return false;
+    }
+    else return true;
+}
+
+/* Vertex drawing commands have undefined behaviour outside of begin/end. */
+static bool checks_begin_end(function_call *call, const callback_data *data)
+{
+    const char *name;
+
+    if (!bugle_in_begin_end())
+    {
+        /* VertexAttrib commands are ok if they are not affecting attrib 0 */
+        name = budgie_function_table[call->generic.id].name;
+#ifdef GL_ARB_vertex_program
+        if (strncmp(name, "VertexAttrib", 12) == 0)
+        {
+            GLuint attrib;
+
+            attrib = *(const GLuint *) call->generic.args[0];
+            if (attrib) return true;
+        }
+#endif
+        fprintf(stderr, "WARNING: %s called outside glBegin/glEnd; call will be ignored.\n",
+                name);
+        return false;
+    }
+    else
+        return true;
+}
+
+static bool checks_glArrayElement(function_call *call, const callback_data *data)
+{
+    if (*call->typed.glArrayElement.arg0 < 0)
+    {
+        fprintf(stderr, "WARNING: glArrayElement called with a negative argument; call will be ignored.\n");
+        return false;
+    }
+    return true;
+}
+
+/* glMultiTexCoord with an illegal texture has undefined behaviour */
+#ifdef GL_ARB_multitexture
+static bool checks_glMultiTexCoord(function_call *call, const callback_data *data)
+{
+    GLenum texture;
+    GLint max = 0;
+
+    texture = *(GLenum *) call->generic.args[0];
+    if (bugle_begin_internal_render())
+    {
+#ifdef GL_ARB_fragment_program
+        if (bugle_gl_has_extension_group(BUGLE_EXTGROUP_texunits))
+        {
+            CALL_glGetIntegerv(GL_MAX_TEXTURE_COORDS_ARB, &max);
+            /* NVIDIA ship a driver that just generates an error on this
+             * call on NV20. Instead of borking we check for the error and
+             * fall back to GL_MAX_TEXTURE_UNITS.
+             */
+            CALL_glGetError();
+        }
+#endif
+        if (!max)
+            CALL_glGetIntegerv(GL_MAX_TEXTURE_UNITS_ARB, &max);
+        bugle_end_internal_render("checks_glMultiTexCoord", true);
+    }
+    if (texture < GL_TEXTURE0_ARB || texture >= GL_TEXTURE0_ARB + max)
+    {
+        fprintf(stderr, "WARNING: %s called with out of range texture unit; call will be ignored.\n",
+                budgie_function_table[call->generic.id].name);
+        return false;
+    }
+    return true;
+}
+#endif
+
 static bool initialise_checks(filter_set *handle)
 {
     filter *f;
 
     f = bugle_register_filter(handle, "checks");
+    /* Pointer checks */
     bugle_register_filter_catches(f, GROUP_glDrawArrays, checks_glDrawArrays);
     bugle_register_filter_catches(f, GROUP_glDrawElements, checks_glDrawElements);
 #ifdef GL_EXT_draw_range_elements
@@ -717,6 +809,76 @@ static bool initialise_checks(filter_set *handle)
     bugle_register_filter_catches(f, GROUP_glMultiDrawArraysEXT, checks_glMultiDrawArrays);
     bugle_register_filter_catches(f, GROUP_glMultiDrawElementsEXT, checks_glMultiDrawElements);
 #endif
+    /* Checks that we are outside begin/end */
+    bugle_register_filter_catches(f, GROUP_glEnableClientState, checks_no_begin_end);
+    bugle_register_filter_catches(f, GROUP_glDisableClientState, checks_no_begin_end);
+    bugle_register_filter_catches(f, GROUP_glPushClientAttrib, checks_no_begin_end);
+    bugle_register_filter_catches(f, GROUP_glPopClientAttrib, checks_no_begin_end);
+    bugle_register_filter_catches(f, GROUP_glColorPointer, checks_no_begin_end);
+#ifdef GL_EXT_fog_coord
+    bugle_register_filter_catches(f, GROUP_glFogCoordPointerEXT, checks_no_begin_end);
+#endif
+    bugle_register_filter_catches(f, GROUP_glEdgeFlagPointer, checks_no_begin_end);
+    bugle_register_filter_catches(f, GROUP_glIndexPointer, checks_no_begin_end);
+    bugle_register_filter_catches(f, GROUP_glNormalPointer, checks_no_begin_end);
+    bugle_register_filter_catches(f, GROUP_glTexCoordPointer, checks_no_begin_end);
+#ifdef GL_EXT_secondary_color
+    bugle_register_filter_catches(f, GROUP_glSecondaryColorPointerEXT, checks_no_begin_end);
+#endif
+    bugle_register_filter_catches(f, GROUP_glVertexPointer, checks_no_begin_end);
+#ifdef GL_ARB_vertex_program
+    bugle_register_filter_catches(f, GROUP_glVertexAttribPointerARB, checks_no_begin_end);
+#endif
+#ifdef GL_ARB_multitexture
+    bugle_register_filter_catches(f, GROUP_glClientActiveTextureARB, checks_no_begin_end);
+#endif
+    bugle_register_filter_catches(f, GROUP_glInterleavedArrays, checks_no_begin_end);
+    bugle_register_filter_catches(f, GROUP_glPixelStorei, checks_no_begin_end);
+    bugle_register_filter_catches(f, GROUP_glPixelStoref, checks_no_begin_end);
+    /* Checks that we are inside begin/end */
+    bugle_register_filter_catches_drawing_immediate(f, checks_begin_end);
+    /* This call has undefined behaviour if given a negative argument */
+    bugle_register_filter_catches(f, GROUP_glArrayElement, checks_glArrayElement);
+    /* Other */
+#ifdef GL_ARB_multitexture
+    bugle_register_filter_catches(f, GROUP_glMultiTexCoord1s, checks_glMultiTexCoord);
+    bugle_register_filter_catches(f, GROUP_glMultiTexCoord1i, checks_glMultiTexCoord);
+    bugle_register_filter_catches(f, GROUP_glMultiTexCoord1f, checks_glMultiTexCoord);
+    bugle_register_filter_catches(f, GROUP_glMultiTexCoord1d, checks_glMultiTexCoord);
+    bugle_register_filter_catches(f, GROUP_glMultiTexCoord2s, checks_glMultiTexCoord);
+    bugle_register_filter_catches(f, GROUP_glMultiTexCoord2i, checks_glMultiTexCoord);
+    bugle_register_filter_catches(f, GROUP_glMultiTexCoord2f, checks_glMultiTexCoord);
+    bugle_register_filter_catches(f, GROUP_glMultiTexCoord2d, checks_glMultiTexCoord);
+    bugle_register_filter_catches(f, GROUP_glMultiTexCoord3s, checks_glMultiTexCoord);
+    bugle_register_filter_catches(f, GROUP_glMultiTexCoord3i, checks_glMultiTexCoord);
+    bugle_register_filter_catches(f, GROUP_glMultiTexCoord3f, checks_glMultiTexCoord);
+    bugle_register_filter_catches(f, GROUP_glMultiTexCoord3d, checks_glMultiTexCoord);
+    bugle_register_filter_catches(f, GROUP_glMultiTexCoord4s, checks_glMultiTexCoord);
+    bugle_register_filter_catches(f, GROUP_glMultiTexCoord4i, checks_glMultiTexCoord);
+    bugle_register_filter_catches(f, GROUP_glMultiTexCoord4f, checks_glMultiTexCoord);
+    bugle_register_filter_catches(f, GROUP_glMultiTexCoord4d, checks_glMultiTexCoord);
+    bugle_register_filter_catches(f, GROUP_glMultiTexCoord1sv, checks_glMultiTexCoord);
+    bugle_register_filter_catches(f, GROUP_glMultiTexCoord1iv, checks_glMultiTexCoord);
+    bugle_register_filter_catches(f, GROUP_glMultiTexCoord1fv, checks_glMultiTexCoord);
+    bugle_register_filter_catches(f, GROUP_glMultiTexCoord1dv, checks_glMultiTexCoord);
+    bugle_register_filter_catches(f, GROUP_glMultiTexCoord2sv, checks_glMultiTexCoord);
+    bugle_register_filter_catches(f, GROUP_glMultiTexCoord2iv, checks_glMultiTexCoord);
+    bugle_register_filter_catches(f, GROUP_glMultiTexCoord2fv, checks_glMultiTexCoord);
+    bugle_register_filter_catches(f, GROUP_glMultiTexCoord2dv, checks_glMultiTexCoord);
+    bugle_register_filter_catches(f, GROUP_glMultiTexCoord3sv, checks_glMultiTexCoord);
+    bugle_register_filter_catches(f, GROUP_glMultiTexCoord3iv, checks_glMultiTexCoord);
+    bugle_register_filter_catches(f, GROUP_glMultiTexCoord3fv, checks_glMultiTexCoord);
+    bugle_register_filter_catches(f, GROUP_glMultiTexCoord3dv, checks_glMultiTexCoord);
+    bugle_register_filter_catches(f, GROUP_glMultiTexCoord4sv, checks_glMultiTexCoord);
+    bugle_register_filter_catches(f, GROUP_glMultiTexCoord4iv, checks_glMultiTexCoord);
+    bugle_register_filter_catches(f, GROUP_glMultiTexCoord4fv, checks_glMultiTexCoord);
+    bugle_register_filter_catches(f, GROUP_glMultiTexCoord4dv, checks_glMultiTexCoord);
+#endif
+
+    /* FIXME: still perhaps to do:
+     * - check for passing a glMapBuffer region to a command
+     */
+
     /* We try to push this early, since it would defeat the whole thing if
      * bugle crashed while examining the data in another filter.
      */

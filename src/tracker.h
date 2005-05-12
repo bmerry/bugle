@@ -42,6 +42,7 @@ typedef enum
     BUGLE_TRACKOBJECTS_PROGRAM_OBJECT,
     BUGLE_TRACKOBJECTS_SHADER,
     BUGLE_TRACKOBJECTS_PROGRAM,
+    BUGLE_TRACKOBJECTS_OLD_PROGRAM, /* glGenProgramsARB */
     BUGLE_TRACKOBJECTS_COUNT
 } bugle_trackobjects_type;
 
@@ -75,6 +76,7 @@ void bugle_trackobjects_walk(bugle_trackobjects_type type,
 
 /* Checks for GL extensions by #define from glexts.h */
 bool bugle_gl_has_extension(int ext);
+bool bugle_gl_has_extension_group(int ext);
 
 /* Used by the initialisation code */
 void trackcontext_initialise(void);

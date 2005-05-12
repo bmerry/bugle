@@ -1,3 +1,24 @@
+0.0.20050512
+------------
+* Add support for several extensions in the state manager:
+  - GL_ARB_vertex_program
+  - GL_ARB_fragment_program
+  - GL_EXT_texture_filter_anisotropic
+  - GL_EXT_depth_bounds_test
+  - GL_NV_texture_rectangle/GL_EXT_texture_rectangle/GL_ARB_texture_rectangle
+  - GL_NV_light_max_exponent
+  - GL_NV_depth_clamp
+  - GL_NV_multisample_filter_hint
+  - GL_NV_texture_expand_normal
+  - GL_IBM_rasterpos_clip
+* Add support for textures beyond GL_MAX_TEXTURE_UNITS
+  i.e. GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS and GL_MAX_TEXTURE_COORDS
+* Add GL_COMPRESSED_TEXTURE_FORMATS to the state
+* Extend the extension generator to handle extension groups
+* Add some extra checks to the 'checks' filterset
+* Add documentation on extension handling
+* gldb no longer hangs when asked for non-existant substate
+
 0.0.20050221
 ------------
 * Added checks filterset

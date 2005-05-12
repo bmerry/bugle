@@ -84,11 +84,6 @@ chain wireframe
     filterset wireframe
 }
 
-chain debug
-{
-    
-}
-
 # Use this if your program is crashing somewhere inside the driver, and you
 # can't get a useful stack trace (this used to happen with NVIDIA's drivers,
 # although it seems that the 60 series fixes it). Run your program
@@ -99,4 +94,13 @@ chain debug
 chain crash
 {
     filterset unwindstack
+}
+
+# If you get weird behaviour or crashes, try using this chain. It checks
+# for several cases of illegal usage of OpenGL.
+chain validate
+{
+    filterset checks
+    filterset errors
+    filterset log
 }
