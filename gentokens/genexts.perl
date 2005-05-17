@@ -71,7 +71,7 @@ my %groups = (# This got promoted to core from imaging subset in 1.4
              );
 
 
-my %glext_hash = ("GL_VERSION_1_1");
+my %glext_hash = ("GL_VERSION_1_1" => 1);
 my %indices = ();
 while (<>)
 {

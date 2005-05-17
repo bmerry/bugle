@@ -71,10 +71,10 @@ AC_CHECK_HEADERS([ffmpeg/avformat.h ffmpeg/avcodec.h], [], [HAVE_LAVC=0])
 AC_CHECK_HEADERS([readline/readline.h readline/history.h], [], [HAVE_READLINE=0])
 AC_CHECK_HEADERS([pthread.h], [], [THREADS=BUGLE_THREADS_SINGLE])
 
-GLINCLUDES="`CPP=\"$CPP\" $PERL -w $srcdir/gentokens/find_header.perl GL/gl.h` \
-`CPP=\"$CPP\" $PERL -w $srcdir/gentokens/find_header.perl GL/glx.h` \
-`CPP=\"$CPP\" $PERL -w $srcdir/gentokens/find_header.perl GL/glext.h` \
-`CPP=\"$CPP\" $PERL -w $srcdir/gentokens/find_header.perl GL/glxext.h`"
+GLINCLUDES="`CPP=\"$CPP\" srcdir=\"$srcdir\" $PERL -w $srcdir/gentokens/find_header.perl GL/gl.h` \
+`CPP=\"$CPP\" srcdir=\"$srcdir\" $PERL -w $srcdir/gentokens/find_header.perl GL/glx.h` \
+`CPP=\"$CPP\" srcdir=\"$srcdir\" $PERL -w $srcdir/gentokens/find_header.perl GL/glext.h` \
+`CPP=\"$CPP\" srcdir=\"$srcdir\" $PERL -w $srcdir/gentokens/find_header.perl GL/glxext.h`"
 AC_SUBST(GLINCLUDES)
 
 dnl Checks for types
