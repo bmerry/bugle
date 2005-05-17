@@ -4,7 +4,7 @@
 # There is a required option: --header types.h, where types.h contains the
 # defines of the functions known to the C code. The option --out-header
 # should be given to get a header file, no extra option to get the C file.
-# Can all use --alias to get a list of aliases to paste into gl.bc.
+# Can also use --alias to get a list of aliases to use in gl.bc.
 
 use strict;
 use Getopt::Long;
@@ -57,7 +57,7 @@ while (<>)
         $ver = $ext = $suffix = undef;
     }
     elsif ((/(gl\w+)\s*\(/
-            || /^extern .+ ()(glX\w+)\s*\(/)
+            || /^extern .+ (glX\w+)\s*\(/)
            && (!$header || exists($index{$1})))
     {
         my $name = $1;
@@ -146,7 +146,7 @@ typedef struct
 } gl_function;
 
 extern const gl_function bugle_gl_function_table[NUMBER_OF_FUNCTIONS];
-        
+
 EOF
         ;
     print "\n";
@@ -169,6 +169,12 @@ EOF
     for my $i (@table)
     {
         print ",\n" unless $first; $first = 0;
+        if (!defined($i->[2]))
+        {
+            print "#warning \"No extension information found for $i->[0]\"\n";
+	    $i->[2] = 'NULL';
+	    $i->[3] = 'NULL';
+	}
         print "    { ", $i->[2], ", ", $i->[3], " }";
     }
     print "\n};\n";
