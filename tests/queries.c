@@ -43,7 +43,7 @@ static int extension_supported(const char *str)
 
     ext = glGetString(GL_EXTENSIONS);
     fprintf(ref, "trace\\.call: glGetString\\(GL_EXTENSIONS\\) = \"[A-Za-z0-9_ ]+\"\n");
-    len = strlen(ext);
+    len = strlen(str);
     while ((ext = strstr(ext, str)) != NULL)
         if (ext[len] == ' ' || ext[len] == '\0') return 1;
         else ext++;
@@ -400,6 +400,152 @@ static void query_shaders(void)
 #endif
 }
 
+#ifdef GL_EXT_framebuffer_object
+/* Generates empty contents for a texture */
+static void texture2D(GLenum target, const char *target_regex)
+{
+    glTexImage2D(target, 0, GL_RGBA, 4, 4, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+    fprintf(ref, "trace\\.call: glTexImage2D\\(%s, 0, GL_RGBA, 4, 4, 0, GL_RGBA, GL_UNSIGNED_BYTE, \\(nil\\)\\)\n", target_regex);
+}
+
+#ifdef GL_EXT_texture3D
+/* Same but for 3D */
+static void texture3D(GLenum target, const char *target_regex)
+{
+    glTexImage3DEXT(target, 0, GL_RGBA, 4, 4, 4, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+    fprintf(ref, "trace\\.call: glTexImage3DEXT\\(%s, 0, GL_RGBA, 4, 4, 4, 0, GL_RGBA, GL_UNSIGNED_BYTE, \\(nil\\)\\)\n", target_regex);
+}
+#endif /* GL_EXT_texture3D */
+#endif /* GL_EXT_framebuffer_object */
+
+static void query_framebuffers(void)
+{
+#ifdef GL_EXT_framebuffer_object
+    GLuint fb, tex[3];
+    GLint i;
+
+    if (extension_supported("GL_EXT_framebuffer_object"))
+    {
+        glGenTextures(3, tex);
+        fprintf(ref, "trace\\.call: glGenTextures\\(3, %p -> { %u, %u, %u }\\)\n",
+                (void *) tex, (unsigned int) tex[0], (unsigned int) tex[1], (unsigned int) tex[2]);
+        glGenFramebuffersEXT(1, &fb);
+        fprintf(ref, "trace\\.call: glGenFramebuffersEXT\\(1, %p -> { %u }\\)\n",
+                (void *) &fb, (unsigned int) fb);
+        glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, fb);
+        fprintf(ref, "trace\\.call: glBindFramebufferEXT\\(GL_FRAMEBUFFER(_EXT)?, %u\\)\n",
+                (unsigned int) fb);
+
+        /* 2D texture */
+        glBindTexture(GL_TEXTURE_2D, tex[0]);
+        fprintf(ref, "trace\\.call: glBindTexture\\(GL_TEXTURE_2D, %u\\)\n",
+                (unsigned int) tex[0]);
+        texture2D(GL_TEXTURE_2D, "GL_TEXTURE_2D");
+        glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT,
+                                  GL_TEXTURE_2D, tex[0], 1);
+        fprintf(ref, "trace\\.call: glFramebufferTexture2DEXT\\(GL_FRAMEBUFFER(_EXT)?, GL_COLOR_ATTACHMENT0(_EXT)?, GL_TEXTURE_2D, %u, 1\\)\n",
+               (unsigned int) tex[0]);
+        glGetIntegerv(GL_FRAMEBUFFER_BINDING_EXT, &i);
+        fprintf(ref, "trace\\.call: glGetIntegerv\\(GL_FRAMEBUFFER_BINDING(_EXT)?, %p -> %i\\)\n",
+                (void *) &i, (int) fb);
+        glGetFramebufferAttachmentParameterivEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT,
+                                                 GL_FRAMEBUFFER_ATTACHMENT_OBJECT_TYPE_EXT, &i);
+        fprintf(ref, "trace\\.call: glGetFramebufferAttachmentParameterivEXT\\(GL_FRAMEBUFFER(_EXT)?, GL_COLOR_ATTACHMENT0(_EXT)?, GL_FRAMEBUFFER_ATTACHMENT_OBJECT_TYPE(_EXT), %p -> GL_TEXTURE\\)\n",
+                (void *) &i);
+        glGetFramebufferAttachmentParameterivEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT,
+                                                 GL_FRAMEBUFFER_ATTACHMENT_OBJECT_NAME_EXT, &i);
+        fprintf(ref, "trace\\.call: glGetFramebufferAttachmentParameterivEXT\\(GL_FRAMEBUFFER(_EXT)?, GL_COLOR_ATTACHMENT0(_EXT)?, GL_FRAMEBUFFER_ATTACHMENT_OBJECT_NAME(_EXT), %p -> %i\\)\n",
+                (void *) &i, (int) tex[0]);
+        glGetFramebufferAttachmentParameterivEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT,
+                                                 GL_FRAMEBUFFER_ATTACHMENT_TEXTURE_LEVEL_EXT, &i);
+        fprintf(ref, "trace\\.call: glGetFramebufferAttachmentParameterivEXT\\(GL_FRAMEBUFFER(_EXT)?, GL_COLOR_ATTACHMENT0(_EXT)?, GL_FRAMEBUFFER_ATTACHMENT_TEXTURE_LEVEL(_EXT), %p -> 1\\)\n",
+                (void *) &i);
+
+        /* 3D texture */
+#ifdef GL_EXT_texture3D
+        if (extension_supported("GL_EXT_texture3D"))
+        {
+            glBindTexture(GL_TEXTURE_3D_EXT, tex[1]);
+            fprintf(ref, "trace\\.call: glBindTexture\\(GL_TEXTURE_3D(_EXT)?, %u\\)\n",
+                    (unsigned int) tex[1]);
+            texture3D(GL_TEXTURE_3D_EXT, "GL_TEXTURE_3D(_EXT)?");
+            glFramebufferTexture3DEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT,
+                                      GL_TEXTURE_3D, tex[1], 1, 1);
+            fprintf(ref, "trace\\.call: glFramebufferTexture3DEXT\\(GL_FRAMEBUFFER(_EXT)?, GL_COLOR_ATTACHMENT0(_EXT)?, GL_TEXTURE_3D(_EXT)?, %u, 1, 1\\)\n",
+                    (unsigned int) tex[1]);
+            glGetFramebufferAttachmentParameterivEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT,
+                                                     GL_FRAMEBUFFER_ATTACHMENT_TEXTURE_3D_ZOFFSET_EXT, &i);
+            fprintf(ref, "trace\\.call: glGetFramebufferAttachmentParameterivEXT\\(GL_FRAMEBUFFER(_EXT)?, GL_COLOR_ATTACHMENT0(_EXT)?, GL_FRAMEBUFFER_ATTACHMENT_TEXTURE_3D_ZOFFSET(_EXT), %p -> 1\\)\n",
+                    (void *) &i);
+        }
+#endif
+
+        /* Cube map texture */
+#ifdef GL_ARB_texture_cube_map
+        if (extension_supported("GL_ARB_texture_cube_map"))
+        {
+            glBindTexture(GL_TEXTURE_CUBE_MAP_ARB, tex[2]);
+            fprintf(ref, "trace\\.call: glBindTexture\\(GL_TEXTURE_CUBE_MAP(_ARB)?, %u\\)\n",
+                    (unsigned int) tex[2]);
+            texture2D(GL_TEXTURE_CUBE_MAP_NEGATIVE_X_ARB, "GL_TEXTURE_CUBE_MAP_NEGATIVE_X(_ARB)?");
+            texture2D(GL_TEXTURE_CUBE_MAP_NEGATIVE_Y_ARB, "GL_TEXTURE_CUBE_MAP_NEGATIVE_Y(_ARB)?");
+            texture2D(GL_TEXTURE_CUBE_MAP_NEGATIVE_Z_ARB, "GL_TEXTURE_CUBE_MAP_NEGATIVE_Z(_ARB)?");
+            texture2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X_ARB, "GL_TEXTURE_CUBE_MAP_POSITIVE_X(_ARB)?");
+            texture2D(GL_TEXTURE_CUBE_MAP_POSITIVE_Y_ARB, "GL_TEXTURE_CUBE_MAP_POSITIVE_Y(_ARB)?");
+            texture2D(GL_TEXTURE_CUBE_MAP_POSITIVE_Z_ARB, "GL_TEXTURE_CUBE_MAP_POSITIVE_Z(_ARB)?");
+            glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT,
+                                      GL_TEXTURE_CUBE_MAP_NEGATIVE_X_ARB, tex[2], 1);
+            fprintf(ref, "trace\\.call: glFramebufferTexture2DEXT\\(GL_FRAMEBUFFER(_EXT)?, GL_COLOR_ATTACHMENT0(_EXT)?, GL_TEXTURE_CUBE_MAP_NEGATIVE_X(_ARB)?, %u, 1\\)\n",
+                   (unsigned int) tex[2]);
+            glGetFramebufferAttachmentParameterivEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT,
+                                                     GL_FRAMEBUFFER_ATTACHMENT_TEXTURE_CUBE_MAP_FACE_EXT, &i);
+            fprintf(ref, "trace\\.call: glGetFramebufferAttachmentParameterivEXT\\(GL_FRAMEBUFFER(_EXT)?, GL_COLOR_ATTACHMENT0(_EXT)?, GL_FRAMEBUFFER_ATTACHMENT_TEXTURE_CUBE_MAP_FACE(_EXT), %p -> GL_TEXTURE_CUBE_MAP_NEGATIVE_X(_ARB)?\\)\n",
+                    (void *) &i);
+        }
+#endif
+
+        glDeleteFramebuffersEXT(1, &fb);
+        fprintf(ref, "trace\\.call: glDeleteFramebuffersEXT\\(1, %p -> { %u }\\)\n",
+                (void *) &fb, (unsigned int) fb);
+        glDeleteTextures(3, tex);
+        fprintf(ref, "trace\\.call: glDeleteTextures\\(3, %p -> { %u, %u, %u }\\)\n",
+                (void *) tex, (unsigned int) tex[0], (unsigned int) tex[1], (unsigned int) tex[2]);
+    }
+#endif /* GL_EXT_framebuffer_object */
+}
+
+static void query_renderbuffers(void)
+{
+#ifdef GL_EXT_framebuffer_object
+    GLuint rb;
+    GLint i;
+
+    if (extension_supported("GL_EXT_framebuffer_object"))
+    {
+        glGenRenderbuffersEXT(1, &rb);
+        fprintf(ref, "trace\\.call: glGenRenderbuffersEXT\\(1, %p -> %u\\)\n",
+                (void *) &rb, (unsigned int) rb);
+        glBindRenderbufferEXT(GL_RENDERBUFFER_EXT, rb);
+        fprintf(ref, "trace\\.call: glBindRenderbufferEXT\\(GL_RENDERBUFFER(_EXT)?, %u\\)\n",
+                (unsigned int) rb);
+        glRenderbufferStorageEXT(GL_RENDERBUFFER_EXT, GL_RGBA8, 64, 64);
+        fprintf(ref, "trace\\.call: glRenderbufferStorageEXT\\(GL_RENDERBUFFER(_EXT)?, GL_RGBA8, 64, 64\\)\n");
+        glGetRenderbufferParameterivEXT(GL_RENDERBUFFER_EXT, GL_RENDERBUFFER_WIDTH_EXT, &i);
+        fprintf(ref, "trace\\.call: glGetRenderbufferParameterivEXT\\(GL_RENDERBUFFER(_EXT)?, GL_RENDERBUFFER_WIDTH(_EXT)?, %p -> 64\\)\n",
+                (void *) &i);
+        glGetRenderbufferParameterivEXT(GL_RENDERBUFFER_EXT, GL_RENDERBUFFER_INTERNAL_FORMAT_EXT, &i);
+        fprintf(ref, "trace\\.call: glGetRenderbufferParameterivEXT\\(GL_RENDERBUFFER(_EXT)?, GL_RENDERBUFFER_INTERNAL_FORMAT(_EXT)?, %p -> GL_RGBA8\\)\n",
+                (void *) &i);
+        glGetRenderbufferParameterivEXT(GL_RENDERBUFFER_EXT, GL_RENDERBUFFER_RED_SIZE_EXT, &i);
+        fprintf(ref, "trace\\.call: glGetRenderbufferParameterivEXT\\(GL_RENDERBUFFER(_EXT)?, GL_RENDERBUFFER_RED_SIZE(_EXT)?, %p -> %d\\)\n",
+                (void *) &i, (int) i);
+        glDeleteRenderbuffersEXT(1, &rb);
+        fprintf(ref, "trace\\.call: glDeleteRenderbuffersEXT\\(1, %p -> %u\\)\n",
+                (void *) &rb, (unsigned int) rb);
+    }
+#endif /* GL_EXT_framebuffer_object */
+}
+
 int main(int argc, char **argv)
 {
     ref = fdopen(3, "w");
@@ -429,5 +575,7 @@ int main(int argc, char **argv)
     query_minmax();
     query_strings();
     query_shaders();
+    query_framebuffers();
+    query_renderbuffers();
     return 0;
 }

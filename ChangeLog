@@ -15,6 +15,7 @@
   - GL_NV_multisample_filter_hint
   - GL_NV_texture_expand_normal
   - GL_IBM_rasterpos_clip
+  - GL_EXT_framebuffer_object (incomplete)
 * Add support for textures beyond GL_MAX_TEXTURE_UNITS
   i.e. GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS and GL_MAX_TEXTURE_COORDS
 * Add GL_COMPRESSED_TEXTURE_FORMATS to the state
@@ -24,7 +25,7 @@
 * gldb no longer hangs when asked for non-existant substate
 * gldb gives all lines of backtrace, not just first line
 * split gldb-common.c out from gldb.c to facilitate gldb-gui
-* gldb-gui
+* early work on gldb-gui
 
 0.0.20050221
 ------------
