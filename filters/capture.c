@@ -40,6 +40,7 @@
 #include <string.h>
 #include <errno.h>
 #include <assert.h>
+#include <math.h>
 #include <GL/glx.h>
 #include <sys/time.h>
 
@@ -722,10 +723,10 @@ static void epswire_boundingbox(GLfloat *buffer, GLint entries,
     GLint pos, i, n;
     GLfloat coord[2];
     GLenum token;
-    *x1 = 1.0;
-    *y1 = 1.0;
-    *x2 = 0.0;
-    *y2 = 0.0;
+    *x1 = 1e20;
+    *y1 = 1e20;
+    *x2 = 0.0f;
+    *y2 = 0.0f;
 
     pos = 0;
     while (pos < entries)
@@ -835,10 +836,10 @@ static bool epswire_glXSwapBuffers(function_call *call, const callback_data *dat
 
             epswire_boundingbox(d->feedback, entries, &x1, &y1, &x2, &y2);
             f = fopen("bugle.eps", "w");
-            fputs("%!PS-Adobe-2.0 EPSF-1.2\n", f);
-            fprintf(f, "%%BoundingBox: %.3f %.3f %.3f %.3f\n",
+            fputs("%%!PS-Adobe-2.0 EPSF-1.2\n", f);
+            fprintf(f, "%%%%BoundingBox: %.3f %.3f %.3f %.3f\n",
                     x1 - 1.0, y1 - 1.0, x2 + 1.0, y2 + 1.0);
-            fputs("%%EndComments\ngsave\n1 setlinecap\n1 setlinejoin\n", f);
+            fputs("%%%%EndComments\ngsave\n1 setlinecap\n1 setlinejoin\n", f);
             epswire_dumpfeedback(f, d->feedback, entries);
             fputs("grestore\n", f);
             fclose(f);
