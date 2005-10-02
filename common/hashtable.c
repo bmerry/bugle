@@ -259,7 +259,7 @@ void *bugle_hashptr_get(const bugle_hashptr_table *table, const void *key)
 
     if (!table->entries) return NULL;
     h = hashptr(key) % table->size;
-    while (table->entries[h].key != key)
+    while (table->entries[h].key && table->entries[h].key != key)
         if (++h == table->size) h = 0;
     if (table->entries[h].key)
     {
