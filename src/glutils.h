@@ -48,9 +48,9 @@ void bugle_end_internal_render(const char *name, bool warn);
  * not included). This includes commands that use arrays as well as
  * immediate mode commands.
  */
-void bugle_register_filter_catches_drawing(filter *f, filter_callback callback);
+void bugle_register_filter_catches_drawing(filter *f, bool inactive, filter_callback callback);
 /* Like the above, but only immediate mode vertex commands */
-void bugle_register_filter_catches_drawing_immediate(filter *f, filter_callback callback);
+void bugle_register_filter_catches_drawing_immediate(filter *f, bool inactive, filter_callback callback);
 
 /* Returns true for glVertex*, and for glVertexAttrib* with attribute
  * 0. These are the calls that generate a vertex in immediate mode.

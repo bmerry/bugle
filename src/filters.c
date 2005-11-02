@@ -55,6 +55,7 @@ typedef struct
 {
     filter *parent;
     budgie_function function;
+    bool inactive;    /* True if callback should be called even when filterset is inactive */
     filter_callback callback;
 } filter_catcher;
 
@@ -289,6 +290,28 @@ bool filter_set_variable(filter_set *handle, const char *name, const char *value
     return false;
 }
 
+static void bugle_activate_filter_set_nolock(filter_set *handle)
+{
+    assert(handle);
+    if (!handle->active)
+    {
+        if (handle->activate) (*handle->activate)(handle);
+        handle->active = true;
+        active_dirty = true;
+    }
+}
+
+static void bugle_deactivate_filter_set_nolock(filter_set *handle)
+{
+    assert(handle);
+    if (handle->active)
+    {
+        if (handle->deactivate) (*handle->deactivate)(handle);
+        handle->active = false;
+        active_dirty = true;
+    }
+}
+
 static void enable_filter_set_r(filter_set *handle)
 {
     bugle_list_node *i, *j;
@@ -327,6 +350,8 @@ static void enable_filter_set_r(filter_set *handle)
             handle->initialised = true;
         }
         handle->enabled = true;
+        bugle_activate_filter_set_nolock(handle);
+
         for (i = bugle_list_head(&handle->filters); i; i = bugle_list_next(i))
         {
             f = (filter *) bugle_list_data(i);
@@ -351,6 +376,7 @@ static void disable_filter_set_r(filter_set *handle)
 
     if (handle->enabled)
     {
+        bugle_deactivate_filter_set_nolock(handle);
         handle->enabled = false;
         /* reverse deps */
         for (i = bugle_list_head(&filter_set_dependencies[0]),
@@ -381,6 +407,20 @@ void bugle_disable_filter_set(filter_set *handle)
 {
     bugle_thread_mutex_lock(&active_filters_mutex);
     disable_filter_set_r(handle);
+    bugle_thread_mutex_unlock(&active_filters_mutex);
+}
+
+void bugle_activate_filter_set(filter_set *handle)
+{
+    bugle_thread_mutex_lock(&active_filters_mutex);
+    bugle_activate_filter_set_nolock(handle);
+    bugle_thread_mutex_unlock(&active_filters_mutex);
+}
+
+void bugle_deactivate_filter_set(filter_set *handle)
+{
+    bugle_thread_mutex_lock(&active_filters_mutex);
+    bugle_deactivate_filter_set_nolock(handle);
     bugle_thread_mutex_unlock(&active_filters_mutex);
 }
 
@@ -467,7 +507,8 @@ void repair_filter_order(void)
         for (j = bugle_list_tail(&cur->callbacks); j; j = bugle_list_prev(j))
         {
             catcher = (filter_catcher *) bugle_list_data(j);
-            bugle_list_prepend(&active_callbacks[catcher->function], catcher);
+            if (cur->parent->active || catcher->inactive)
+                bugle_list_prepend(&active_callbacks[catcher->function], catcher);
         }
     }
     if (count > 0)
@@ -512,6 +553,7 @@ void run_filters(function_call *call)
     {
         cur = (filter_catcher *) bugle_list_data(i);
         data.call_data = bugle_get_filter_set_call_state(call, cur->parent->parent);
+        data.filter_set_handle = cur->parent->parent;
         if (!(*cur->callback)(call, &data)) break;
     }
     bugle_thread_mutex_unlock(&active_callbacks_mutex);
@@ -527,9 +569,12 @@ filter_set *bugle_register_filter_set(const filter_set_info *info)
     bugle_list_init(&s->filters, false);
     s->init = info->init;
     s->done = info->done;
+    s->activate = info->activate;
+    s->deactivate = info->deactivate;
     s->variables = info->variables;
     s->initialised = false;
     s->enabled = false;
+    s->active = false;
     s->dl_handle = current_dl_handle;
     if (info->call_state_space)
     {
@@ -556,6 +601,7 @@ filter *bugle_register_filter(filter_set *handle, const char *name)
 }
 
 void bugle_register_filter_catches(filter *handle, budgie_group g,
+                                   bool inactive,
                                    filter_callback callback)
 {
     budgie_function i;
@@ -567,12 +613,14 @@ void bugle_register_filter_catches(filter *handle, budgie_group g,
             cb = (filter_catcher *) bugle_malloc(sizeof(filter_catcher));
             cb->parent = handle;
             cb->function = i;
+            cb->inactive = inactive;
             cb->callback = callback;
             bugle_list_append(&handle->callbacks, cb);
         }
 }
 
-void bugle_register_filter_catches_all(filter *handle, filter_callback callback)
+void bugle_register_filter_catches_all(filter *handle, bool inactive,
+                                       filter_callback callback)
 {
     budgie_function i;
     filter_catcher *cb;
@@ -582,6 +630,7 @@ void bugle_register_filter_catches_all(filter *handle, filter_callback callback)
             cb = (filter_catcher *) bugle_malloc(sizeof(filter_catcher));
             cb->parent = handle;
             cb->function = i;
+            cb->inactive = inactive;
             cb->callback = callback;
             bugle_list_append(&handle->callbacks, cb);
         }
@@ -610,6 +659,12 @@ bool bugle_filter_set_is_enabled(const filter_set *handle)
 {
     assert(handle);
     return handle->enabled;
+}
+
+bool bugle_filter_set_is_active(const filter_set *handle)
+{
+    assert(handle);
+    return handle->active;
 }
 
 filter_set *bugle_get_filter_set_handle(const char *name)

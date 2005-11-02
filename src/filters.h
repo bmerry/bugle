@@ -34,10 +34,13 @@ struct function_call_s;
 typedef struct
 {
     void *call_data;
+    struct filter_set_s *filter_set_handle;
 } callback_data;
 
 typedef bool (*filter_set_initialiser)(struct filter_set_s *);
 typedef void (*filter_set_destructor)(struct filter_set_s *);
+typedef void (*filter_set_activator)(struct filter_set_s *);
+typedef void (*filter_set_deactivator)(struct filter_set_s *);
 typedef bool (*filter_callback)(struct function_call_s *call, const callback_data *data);
 
 typedef enum
@@ -85,12 +88,15 @@ typedef struct filter_set_s
     bugle_linked_list filters;
     filter_set_initialiser init;
     filter_set_destructor done;
+    filter_set_activator activate;
+    filter_set_deactivator deactivate;
     const filter_set_variable_info *variables;
     ptrdiff_t call_state_offset;
     lt_dlhandle dl_handle;
 
     bool initialised;
     bool enabled;
+    bool active;
 } filter_set;
 
 typedef struct
@@ -98,6 +104,8 @@ typedef struct
     const char *name;
     filter_set_initialiser init;
     filter_set_destructor done;
+    filter_set_activator activate;
+    filter_set_deactivator deactivate;
     const filter_set_variable_info *variables; /* NULL-terminated array */
     size_t call_state_space;
     const char *help;
@@ -109,6 +117,8 @@ void initialise_filters(void);
 bool filter_set_variable(filter_set *handle, const char *name, const char *text);
 void bugle_enable_filter_set(filter_set *handle);
 void bugle_disable_filter_set(filter_set *handle);
+void bugle_activate_filter_set(filter_set *handle);
+void bugle_deactivate_filter_set(filter_set *handle);
 void run_filters(struct function_call_s *call);
 void bugle_filters_help(void);
 
@@ -116,13 +126,14 @@ void bugle_filters_help(void);
 
 filter_set *bugle_register_filter_set(const filter_set_info *info);
 filter *bugle_register_filter(filter_set *handle, const char *name);
-void bugle_register_filter_catches(filter *handle, budgie_group g, filter_callback callback);
-void bugle_register_filter_catches_all(filter *handle, filter_callback callback);
+void bugle_register_filter_catches(filter *handle, budgie_group g, bool inactive, filter_callback callback);
+void bugle_register_filter_catches_all(filter *handle, bool inactive, filter_callback callback);
 void bugle_register_filter_set_depends(const char *base, const char *dep);
 void bugle_register_filter_depends(const char *after, const char *before);
 void *bugle_get_filter_set_call_state(struct function_call_s *call, filter_set *handle);
 filter_set *bugle_get_filter_set_handle(const char *name);
 bool bugle_filter_set_is_enabled(const filter_set *handle);
+bool bugle_filter_set_is_active(const filter_set *handle);
 void *bugle_get_filter_set_symbol(filter_set *handle, const char *name);
 
 #endif /* BUGLE_SRC_FILTERS_H */

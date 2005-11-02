@@ -79,9 +79,9 @@ static bool initialise_wireframe(filter_set *handle)
     filter *f;
 
     f = bugle_register_filter(handle, "wireframe");
-    bugle_register_filter_catches(f, GROUP_glXSwapBuffers, wireframe_glXSwapBuffers);
-    bugle_register_filter_catches(f, GROUP_glPolygonMode, wireframe_glPolygonMode);
-    bugle_register_filter_catches(f, GROUP_glEnable, wireframe_glEnable);
+    bugle_register_filter_catches(f, GROUP_glXSwapBuffers, false, wireframe_glXSwapBuffers);
+    bugle_register_filter_catches(f, GROUP_glPolygonMode, false, wireframe_glPolygonMode);
+    bugle_register_filter_catches(f, GROUP_glEnable, false, wireframe_glEnable);
     bugle_register_filter_depends("wireframe", "invoke");
     bugle_register_filter_post_renders("wireframe");
     bugle_object_class_register(&bugle_context_class, initialise_wireframe_context,
@@ -114,7 +114,7 @@ static bool initialise_frontbuffer(filter_set *handle)
 
     f = bugle_register_filter(handle, "frontbuffer");
     bugle_register_filter_depends("frontbuffer", "invoke");
-    bugle_register_filter_catches(f, GROUP_glDrawBuffer, frontbuffer_callback);
+    bugle_register_filter_catches(f, GROUP_glDrawBuffer, false, frontbuffer_callback);
     bugle_register_filter_post_renders("frontbuffer");
     bugle_object_class_register(&bugle_context_class, initialise_frontbuffer_context,
                                 NULL, 0);
@@ -129,6 +129,8 @@ void bugle_initialise_filter_library(void)
         initialise_wireframe,
         NULL,
         NULL,
+        NULL,
+        NULL,
         0,
         "renders in wireframe"
     };
@@ -136,6 +138,8 @@ void bugle_initialise_filter_library(void)
     {
         "frontbuffer",
         initialise_frontbuffer,
+        NULL,
+        NULL,
         NULL,
         NULL,
         0,

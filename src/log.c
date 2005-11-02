@@ -68,9 +68,9 @@ static bool initialise_log(filter_set *handle)
         return false;
     }
     f = bugle_register_filter(handle, "log_pre");
-    bugle_register_filter_catches_all(f, log_pre_callback);
+    bugle_register_filter_catches_all(f, false, log_pre_callback);
     f = bugle_register_filter(handle, "log_post");
-    bugle_register_filter_catches_all(f, log_post_callback);
+    bugle_register_filter_catches_all(f, false, log_post_callback);
     return true;
 }
 
@@ -103,6 +103,8 @@ void log_initialise(void)
         "log",
         initialise_log,
         destroy_log,
+        NULL,
+        NULL,
         log_variables,
         0,
         "provides logging services to other filter-sets"

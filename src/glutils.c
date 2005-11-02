@@ -65,86 +65,86 @@ void bugle_end_internal_render(const char *name, bool warn)
     }
 }
 
-void bugle_register_filter_catches_drawing_immediate(filter *f, filter_callback callback)
+void bugle_register_filter_catches_drawing_immediate(filter *f, bool inactive, filter_callback callback)
 {
 #ifdef GL_ARB_vertex_program
-    bugle_register_filter_catches(f, GROUP_glVertexAttrib1sARB, callback);
-    bugle_register_filter_catches(f, GROUP_glVertexAttrib1fARB, callback);
-    bugle_register_filter_catches(f, GROUP_glVertexAttrib1dARB, callback);
-    bugle_register_filter_catches(f, GROUP_glVertexAttrib2sARB, callback);
-    bugle_register_filter_catches(f, GROUP_glVertexAttrib2fARB, callback);
-    bugle_register_filter_catches(f, GROUP_glVertexAttrib2dARB, callback);
-    bugle_register_filter_catches(f, GROUP_glVertexAttrib3sARB, callback);
-    bugle_register_filter_catches(f, GROUP_glVertexAttrib3fARB, callback);
-    bugle_register_filter_catches(f, GROUP_glVertexAttrib3dARB, callback);
-    bugle_register_filter_catches(f, GROUP_glVertexAttrib4sARB, callback);
-    bugle_register_filter_catches(f, GROUP_glVertexAttrib4fARB, callback);
-    bugle_register_filter_catches(f, GROUP_glVertexAttrib4dARB, callback);
-    bugle_register_filter_catches(f, GROUP_glVertexAttrib4NubARB, callback);
-    bugle_register_filter_catches(f, GROUP_glVertexAttrib1svARB, callback);
-    bugle_register_filter_catches(f, GROUP_glVertexAttrib1fvARB, callback);
-    bugle_register_filter_catches(f, GROUP_glVertexAttrib1dvARB, callback);
-    bugle_register_filter_catches(f, GROUP_glVertexAttrib2svARB, callback);
-    bugle_register_filter_catches(f, GROUP_glVertexAttrib2fvARB, callback);
-    bugle_register_filter_catches(f, GROUP_glVertexAttrib2dvARB, callback);
-    bugle_register_filter_catches(f, GROUP_glVertexAttrib3svARB, callback);
-    bugle_register_filter_catches(f, GROUP_glVertexAttrib3fvARB, callback);
-    bugle_register_filter_catches(f, GROUP_glVertexAttrib3dvARB, callback);
-    bugle_register_filter_catches(f, GROUP_glVertexAttrib4bvARB, callback);
-    bugle_register_filter_catches(f, GROUP_glVertexAttrib4svARB, callback);
-    bugle_register_filter_catches(f, GROUP_glVertexAttrib4ivARB, callback);
-    bugle_register_filter_catches(f, GROUP_glVertexAttrib4ubvARB, callback);
-    bugle_register_filter_catches(f, GROUP_glVertexAttrib4usvARB, callback);
-    bugle_register_filter_catches(f, GROUP_glVertexAttrib4uivARB, callback);
-    bugle_register_filter_catches(f, GROUP_glVertexAttrib4fvARB, callback);
-    bugle_register_filter_catches(f, GROUP_glVertexAttrib4dvARB, callback);
-    bugle_register_filter_catches(f, GROUP_glVertexAttrib4NbvARB, callback);
-    bugle_register_filter_catches(f, GROUP_glVertexAttrib4NsvARB, callback);
-    bugle_register_filter_catches(f, GROUP_glVertexAttrib4NivARB, callback);
-    bugle_register_filter_catches(f, GROUP_glVertexAttrib4NubvARB, callback);
-    bugle_register_filter_catches(f, GROUP_glVertexAttrib4NusvARB, callback);
-    bugle_register_filter_catches(f, GROUP_glVertexAttrib4NuivARB, callback);
+    bugle_register_filter_catches(f, GROUP_glVertexAttrib1sARB, inactive, callback);
+    bugle_register_filter_catches(f, GROUP_glVertexAttrib1fARB, inactive, callback);
+    bugle_register_filter_catches(f, GROUP_glVertexAttrib1dARB, inactive, callback);
+    bugle_register_filter_catches(f, GROUP_glVertexAttrib2sARB, inactive, callback);
+    bugle_register_filter_catches(f, GROUP_glVertexAttrib2fARB, inactive, callback);
+    bugle_register_filter_catches(f, GROUP_glVertexAttrib2dARB, inactive, callback);
+    bugle_register_filter_catches(f, GROUP_glVertexAttrib3sARB, inactive, callback);
+    bugle_register_filter_catches(f, GROUP_glVertexAttrib3fARB, inactive, callback);
+    bugle_register_filter_catches(f, GROUP_glVertexAttrib3dARB, inactive, callback);
+    bugle_register_filter_catches(f, GROUP_glVertexAttrib4sARB, inactive, callback);
+    bugle_register_filter_catches(f, GROUP_glVertexAttrib4fARB, inactive, callback);
+    bugle_register_filter_catches(f, GROUP_glVertexAttrib4dARB, inactive, callback);
+    bugle_register_filter_catches(f, GROUP_glVertexAttrib4NubARB, inactive, callback);
+    bugle_register_filter_catches(f, GROUP_glVertexAttrib1svARB, inactive, callback);
+    bugle_register_filter_catches(f, GROUP_glVertexAttrib1fvARB, inactive, callback);
+    bugle_register_filter_catches(f, GROUP_glVertexAttrib1dvARB, inactive, callback);
+    bugle_register_filter_catches(f, GROUP_glVertexAttrib2svARB, inactive, callback);
+    bugle_register_filter_catches(f, GROUP_glVertexAttrib2fvARB, inactive, callback);
+    bugle_register_filter_catches(f, GROUP_glVertexAttrib2dvARB, inactive, callback);
+    bugle_register_filter_catches(f, GROUP_glVertexAttrib3svARB, inactive, callback);
+    bugle_register_filter_catches(f, GROUP_glVertexAttrib3fvARB, inactive, callback);
+    bugle_register_filter_catches(f, GROUP_glVertexAttrib3dvARB, inactive, callback);
+    bugle_register_filter_catches(f, GROUP_glVertexAttrib4bvARB, inactive, callback);
+    bugle_register_filter_catches(f, GROUP_glVertexAttrib4svARB, inactive, callback);
+    bugle_register_filter_catches(f, GROUP_glVertexAttrib4ivARB, inactive, callback);
+    bugle_register_filter_catches(f, GROUP_glVertexAttrib4ubvARB, inactive, callback);
+    bugle_register_filter_catches(f, GROUP_glVertexAttrib4usvARB, inactive, callback);
+    bugle_register_filter_catches(f, GROUP_glVertexAttrib4uivARB, inactive, callback);
+    bugle_register_filter_catches(f, GROUP_glVertexAttrib4fvARB, inactive, callback);
+    bugle_register_filter_catches(f, GROUP_glVertexAttrib4dvARB, inactive, callback);
+    bugle_register_filter_catches(f, GROUP_glVertexAttrib4NbvARB, inactive, callback);
+    bugle_register_filter_catches(f, GROUP_glVertexAttrib4NsvARB, inactive, callback);
+    bugle_register_filter_catches(f, GROUP_glVertexAttrib4NivARB, inactive, callback);
+    bugle_register_filter_catches(f, GROUP_glVertexAttrib4NubvARB, inactive, callback);
+    bugle_register_filter_catches(f, GROUP_glVertexAttrib4NusvARB, inactive, callback);
+    bugle_register_filter_catches(f, GROUP_glVertexAttrib4NuivARB, inactive, callback);
 #endif
-    bugle_register_filter_catches(f, GROUP_glVertex2d, callback);
-    bugle_register_filter_catches(f, GROUP_glVertex2dv, callback);
-    bugle_register_filter_catches(f, GROUP_glVertex2f, callback);
-    bugle_register_filter_catches(f, GROUP_glVertex2fv, callback);
-    bugle_register_filter_catches(f, GROUP_glVertex2i, callback);
-    bugle_register_filter_catches(f, GROUP_glVertex2iv, callback);
-    bugle_register_filter_catches(f, GROUP_glVertex2s, callback);
-    bugle_register_filter_catches(f, GROUP_glVertex2sv, callback);
-    bugle_register_filter_catches(f, GROUP_glVertex3d, callback);
-    bugle_register_filter_catches(f, GROUP_glVertex3dv, callback);
-    bugle_register_filter_catches(f, GROUP_glVertex3f, callback);
-    bugle_register_filter_catches(f, GROUP_glVertex3fv, callback);
-    bugle_register_filter_catches(f, GROUP_glVertex3i, callback);
-    bugle_register_filter_catches(f, GROUP_glVertex3iv, callback);
-    bugle_register_filter_catches(f, GROUP_glVertex3s, callback);
-    bugle_register_filter_catches(f, GROUP_glVertex3sv, callback);
-    bugle_register_filter_catches(f, GROUP_glVertex4d, callback);
-    bugle_register_filter_catches(f, GROUP_glVertex4dv, callback);
-    bugle_register_filter_catches(f, GROUP_glVertex4f, callback);
-    bugle_register_filter_catches(f, GROUP_glVertex4fv, callback);
-    bugle_register_filter_catches(f, GROUP_glVertex4i, callback);
-    bugle_register_filter_catches(f, GROUP_glVertex4iv, callback);
-    bugle_register_filter_catches(f, GROUP_glVertex4s, callback);
-    bugle_register_filter_catches(f, GROUP_glVertex4sv, callback);
+    bugle_register_filter_catches(f, GROUP_glVertex2d, inactive, callback);
+    bugle_register_filter_catches(f, GROUP_glVertex2dv, inactive, callback);
+    bugle_register_filter_catches(f, GROUP_glVertex2f, inactive, callback);
+    bugle_register_filter_catches(f, GROUP_glVertex2fv, inactive, callback);
+    bugle_register_filter_catches(f, GROUP_glVertex2i, inactive, callback);
+    bugle_register_filter_catches(f, GROUP_glVertex2iv, inactive, callback);
+    bugle_register_filter_catches(f, GROUP_glVertex2s, inactive, callback);
+    bugle_register_filter_catches(f, GROUP_glVertex2sv, inactive, callback);
+    bugle_register_filter_catches(f, GROUP_glVertex3d, inactive, callback);
+    bugle_register_filter_catches(f, GROUP_glVertex3dv, inactive, callback);
+    bugle_register_filter_catches(f, GROUP_glVertex3f, inactive, callback);
+    bugle_register_filter_catches(f, GROUP_glVertex3fv, inactive, callback);
+    bugle_register_filter_catches(f, GROUP_glVertex3i, inactive, callback);
+    bugle_register_filter_catches(f, GROUP_glVertex3iv, inactive, callback);
+    bugle_register_filter_catches(f, GROUP_glVertex3s, inactive, callback);
+    bugle_register_filter_catches(f, GROUP_glVertex3sv, inactive, callback);
+    bugle_register_filter_catches(f, GROUP_glVertex4d, inactive, callback);
+    bugle_register_filter_catches(f, GROUP_glVertex4dv, inactive, callback);
+    bugle_register_filter_catches(f, GROUP_glVertex4f, inactive, callback);
+    bugle_register_filter_catches(f, GROUP_glVertex4fv, inactive, callback);
+    bugle_register_filter_catches(f, GROUP_glVertex4i, inactive, callback);
+    bugle_register_filter_catches(f, GROUP_glVertex4iv, inactive, callback);
+    bugle_register_filter_catches(f, GROUP_glVertex4s, inactive, callback);
+    bugle_register_filter_catches(f, GROUP_glVertex4sv, inactive, callback);
 
-    bugle_register_filter_catches(f, GROUP_glArrayElement, callback);
+    bugle_register_filter_catches(f, GROUP_glArrayElement, inactive, callback);
 }
 
-void bugle_register_filter_catches_drawing(filter *f, filter_callback callback)
+void bugle_register_filter_catches_drawing(filter *f, bool inactive, filter_callback callback)
 {
-    bugle_register_filter_catches_drawing_immediate(f, callback);
+    bugle_register_filter_catches_drawing_immediate(f, inactive, callback);
 
-    bugle_register_filter_catches(f, GROUP_glDrawElements, callback);
-    bugle_register_filter_catches(f, GROUP_glDrawArrays, callback);
+    bugle_register_filter_catches(f, GROUP_glDrawElements, inactive, callback);
+    bugle_register_filter_catches(f, GROUP_glDrawArrays, inactive, callback);
 #ifdef GL_EXT_draw_range_elements
-    bugle_register_filter_catches(f, GROUP_glDrawRangeElementsEXT, callback);
+    bugle_register_filter_catches(f, GROUP_glDrawRangeElementsEXT, inactive, callback);
 #endif
 #ifdef GL_EXT_multi_draw_arrays
-    bugle_register_filter_catches(f, GROUP_glMultiDrawElementsEXT, callback);
-    bugle_register_filter_catches(f, GROUP_glMultiDrawArraysEXT, callback);
+    bugle_register_filter_catches(f, GROUP_glMultiDrawElementsEXT, inactive, callback);
+    bugle_register_filter_catches(f, GROUP_glMultiDrawArraysEXT, inactive, callback);
 #endif
 }
 

@@ -49,7 +49,7 @@ static bool initialise_trace(filter_set *handle)
     f = bugle_register_filter(handle, "trace");
     bugle_register_filter_depends("trace", "invoke");
     bugle_log_register_filter("trace");
-    bugle_register_filter_catches_all(f, trace_callback);
+    bugle_register_filter_catches_all(f, false, trace_callback);
     bugle_register_filter_post_renders("trace");
     bugle_register_filter_set_queries_error("trace");
     return true;
@@ -61,6 +61,8 @@ void bugle_initialise_filter_library(void)
     {
         "trace",
         initialise_trace,
+        NULL,
+        NULL,
         NULL,
         NULL,
         0,

@@ -348,7 +348,17 @@ static void process_single_command(function_call *call)
             gldb_protocol_send_string(out_pipe, resp_str);
             free(resp_str);
         }
-        else if (bugle_filter_set_is_enabled(f) == enable)
+        else if (!bugle_filter_set_is_enabled(f))
+        {
+            bugle_asprintf(&resp_str, "Filter-set %s is not loaded; it must be loaded at program start",
+                           req_str);
+            gldb_protocol_send_code(out_pipe, RESP_ERROR);
+            gldb_protocol_send_code(out_pipe, id);
+            gldb_protocol_send_code(out_pipe, 0);
+            gldb_protocol_send_string(out_pipe, resp_str);
+            free(resp_str);
+        }
+        else if (bugle_filter_set_is_active(f) == enable)
         {
             bugle_asprintf(&resp_str, "Filter-set %s is already %s",
                            req_str, enable ? "enabled" : "disabled");
@@ -360,8 +370,8 @@ static void process_single_command(function_call *call)
         }
         else
         {
-            if (enable) bugle_enable_filter_set(f);
-            else bugle_disable_filter_set(f);
+            if (enable) bugle_activate_filter_set(f);
+            else bugle_deactivate_filter_set(f);
             if (!bugle_filter_set_is_enabled(bugle_get_filter_set_handle("debugger")))
             {
                 gldb_protocol_send_code(out_pipe, RESP_ERROR);
@@ -562,9 +572,9 @@ static bool initialise_debugger(filter_set *handle)
     debugger_loop(NULL);
 
     f = bugle_register_filter(handle, "debugger");
-    bugle_register_filter_catches_all(f, debugger_callback);
+    bugle_register_filter_catches_all(f, false, debugger_callback);
     f = bugle_register_filter(handle, "debugger_error");
-    bugle_register_filter_catches_all(f, debugger_error_callback);
+    bugle_register_filter_catches_all(f, false, debugger_error_callback);
     bugle_register_filter_depends("invoke", "debugger");
     bugle_register_filter_depends("debugger_error", "invoke");
     bugle_register_filter_depends("debugger_error", "error");
@@ -580,6 +590,8 @@ void bugle_initialise_filter_library(void)
     {
         "debugger",
         initialise_debugger,
+        NULL,
+        NULL,
         NULL,
         NULL,
         0,

@@ -38,7 +38,7 @@ static bool initialise_invoke(filter_set *handle)
 {
     filter *f;
     f = bugle_register_filter(handle, "invoke");
-    bugle_register_filter_catches_all(f, invoke_callback);
+    bugle_register_filter_catches_all(f, false, invoke_callback);
     return true;
 }
 
@@ -71,7 +71,7 @@ static bool initialise_procaddress(filter_set *handle)
     f = bugle_register_filter(handle, "procaddress");
     bugle_register_filter_depends("procaddress", "invoke");
     bugle_register_filter_depends("trace", "procaddress");
-    bugle_register_filter_catches(f, GROUP_glXGetProcAddressARB, procaddress_callback);
+    bugle_register_filter_catches(f, GROUP_glXGetProcAddressARB, false, procaddress_callback);
 #endif
     return true;
 }

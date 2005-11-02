@@ -566,7 +566,7 @@ static bool initialise_screenshot(filter_set *handle)
     filter *f;
 
     f = bugle_register_filter(handle, "screenshot");
-    bugle_register_filter_catches(f, GROUP_glXSwapBuffers, screenshot_callback);
+    bugle_register_filter_catches(f, GROUP_glXSwapBuffers, false, screenshot_callback);
     bugle_register_filter_depends("invoke", "screenshot");
 
     video_data = bugle_calloc(video_lag, sizeof(screenshot_data));
@@ -644,7 +644,7 @@ static bool initialise_showextensions(filter_set *handle)
     filter *f;
 
     f = bugle_register_filter(handle, "showextensions");
-    bugle_register_filter_catches_all(f, showextensions_callback);
+    bugle_register_filter_catches_all(f, false, showextensions_callback);
     /* The order mainly doesn't matter, but making it a pre-filter
      * reduces the risk of another filter aborting the call.
      */
@@ -871,8 +871,8 @@ static bool initialise_epswire(filter_set *handle)
     filter *f;
 
     f = bugle_register_filter(handle, "epswire");
-    bugle_register_filter_catches(f, GROUP_glXSwapBuffers, epswire_glXSwapBuffers);
-    bugle_register_filter_catches(f, GROUP_glEnable, epswire_glEnable);
+    bugle_register_filter_catches(f, GROUP_glXSwapBuffers, false, epswire_glXSwapBuffers);
+    bugle_register_filter_catches(f, GROUP_glEnable, false, epswire_glEnable);
     bugle_register_filter_depends("invoke", "epswire");
     epswire_view = bugle_object_class_register(&bugle_context_class, initialise_epswire_context,
                                                NULL, sizeof(epswire_struct));
@@ -897,6 +897,8 @@ void bugle_initialise_filter_library(void)
         "screenshot",
         initialise_screenshot,
         destroy_screenshot,
+        NULL,
+        NULL,
         screenshot_variables,
         0,
         "captures screenshots every frame, or a video clip"
@@ -908,6 +910,8 @@ void bugle_initialise_filter_library(void)
         initialise_showextensions,
         destroy_showextensions,
         NULL,
+        NULL,
+        NULL,
         0,
         "reports extensions used at program termination"
     };
@@ -916,6 +920,8 @@ void bugle_initialise_filter_library(void)
     {
         "epswire",
         initialise_epswire,
+        NULL,
+        NULL,
         NULL,
         NULL,
         0,

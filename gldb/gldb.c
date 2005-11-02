@@ -214,6 +214,12 @@ static bool handle_responses(void)
     uint32_t len;
 
     r = gldb_get_response();
+    /* For some reason select() sometimes claims that there is data
+     * available when in fact the pipe has been closed. In this case
+     * gldb_get_response will return NULL (for EOF), and we go back to the
+     * loop to await SIGCHLD notification.
+     */
+    if (!r) return false;
     switch (r->code)
     {
     case RESP_BREAK:
