@@ -205,7 +205,7 @@ static bool handle_commands(void)
 /* Deals with response code resp. Returns true if we are done processing
  * responses, or false if we are expecting more.
  */
-static bool handle_responses(void)
+static int handle_responses(void)
 {
     gldb_response *r;
 
@@ -219,7 +219,7 @@ static bool handle_responses(void)
      * gldb_get_response will return NULL (for EOF), and we go back to the
      * loop to await SIGCHLD notification.
      */
-    if (!r) return false;
+    if (!r) return 2;
     switch (r->code)
     {
     case RESP_BREAK:
@@ -235,7 +235,7 @@ static bool handle_responses(void)
         break;
     case RESP_RUNNING:
         printf("Running.\n");
-        return false;
+        return 0;
     case RESP_SCREENSHOT:
         if (!screenshot_file)
         {
@@ -259,7 +259,7 @@ static bool handle_responses(void)
     gldb_free_response(r);
 
     return (gldb_get_status() == GLDB_STATUS_RUNNING
-            || gldb_get_status() == GLDB_STATUS_STOPPED);
+            || gldb_get_status() == GLDB_STATUS_STOPPED) ? 1 : 0;
 }
 
 static void setup_signals(void)
@@ -306,11 +306,12 @@ static void main_loop(void)
     int result;
     int status;
     pid_t pid;
-    bool done;
+    bool done, pipe_done;
 
     while (!handle_commands())
     {
         done = false;
+        pipe_done = false;
         while (gldb_get_status() != GLDB_STATUS_DEAD && !done)
         {
             /* Allow signals in. This appears to open a race condition (because
@@ -321,9 +322,15 @@ static void main_loop(void)
 
             n = 0;
             FD_ZERO(&readfds);
-            FD_SET(chld_pipes[0], &readfds); if (chld_pipes[0] >= n) n = chld_pipes[0] + 1;
-            FD_SET(int_pipes[0], &readfds); if (int_pipes[0] >= n) n = int_pipes[0] + 1;
-            FD_SET(gldb_get_in_pipe(), &readfds); if (gldb_get_in_pipe() >= n) n = gldb_get_in_pipe() + 1;
+            FD_SET(chld_pipes[0], &readfds);
+            if (chld_pipes[0] >= n) n = chld_pipes[0] + 1;
+            FD_SET(int_pipes[0], &readfds);
+            if (int_pipes[0] >= n) n = int_pipes[0] + 1;
+            if (!pipe_done)
+            {
+                FD_SET(gldb_get_in_pipe(), &readfds);
+                if (gldb_get_in_pipe() >= n) n = gldb_get_in_pipe() + 1;
+            }
             result = select(n, &readfds, NULL, NULL, NULL);
             if (result == -1 && errno != EINTR)
             {
@@ -378,7 +385,12 @@ static void main_loop(void)
             else if (result != -1 && FD_ISSET(gldb_get_in_pipe(), &readfds))
             {
                 /* Response from child */
-                done = handle_responses();
+                switch (handle_responses())
+                {
+                case 0: break;                    /* Expecting more */
+                case 1: done = true; break;       /* Get commands */
+                case 2: pipe_done = true; break;  /* EOF on pipe, expect SIGCHLD */
+                }
             }
         }
     }

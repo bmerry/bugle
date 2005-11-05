@@ -26,6 +26,7 @@
 * gldb gives all lines of backtrace, not just first line
 * split gldb-common.c out from gldb.c to facilitate gldb-gui
 * early work on gldb-gui
+* fix gldb segfault on program exit
 
 0.0.20050221
 ------------

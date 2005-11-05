@@ -362,7 +362,7 @@ static gboolean response_callback_texture(GldbWindow *context,
         {
             context->texture.have_texture = false;
             gtk_widget_set_size_request(context->texture.draw, 50, 50);
-            gtk_frame_set_label(GTK_FRAME(context->texture.aspect), "No image");
+            gtk_frame_set_label(GTK_FRAME(context->texture.aspect), "No texture");
             invalidate_widget(context->texture.draw);
         }
     }
