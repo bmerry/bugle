@@ -809,6 +809,7 @@ static void breakpoints_action(GtkAction *action, gpointer user_data)
                                                  GTK_STOCK_OK, GTK_RESPONSE_ACCEPT,
                                                  GTK_STOCK_CANCEL, GTK_RESPONSE_REJECT,
                                                  NULL);
+    gtk_dialog_set_default_response(GTK_DIALOG(context.dialog), GTK_RESPONSE_ACCEPT);
 
     hbox = gtk_hbox_new(FALSE, 0);
 
