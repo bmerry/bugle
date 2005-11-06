@@ -89,8 +89,9 @@ typedef struct GldbWindow
     GtkWidget *statusbar;
     guint statusbar_context_id;
     GtkActionGroup *actions;
-    GtkActionGroup *run_actions;
-    GtkActionGroup *norun_actions;
+    GtkActionGroup *running_actions;
+    GtkActionGroup *stopped_actions;
+    GtkActionGroup *dead_actions;
 
     GIOChannel *channel;
     guint channel_watch;
@@ -493,6 +494,8 @@ static void stopped(GldbWindow *context, const gchar *text)
 #endif
     context->backtrace.dirty = true;
     invalidate_widget(context->backtrace.page);
+    gtk_action_group_set_sensitive(context->running_actions, FALSE);
+    gtk_action_group_set_sensitive(context->stopped_actions, TRUE);
 
     update_status_bar(context, text);
 }
@@ -512,8 +515,9 @@ static void child_exit_callback(GPid pid, gint status, gpointer user_data)
 
     gldb_notify_child_dead();
     update_status_bar(context, "Not running");
-    gtk_action_group_set_sensitive(context->run_actions, FALSE);
-    gtk_action_group_set_sensitive(context->norun_actions, TRUE);
+    gtk_action_group_set_sensitive(context->running_actions, FALSE);
+    gtk_action_group_set_sensitive(context->stopped_actions, FALSE);
+    gtk_action_group_set_sensitive(context->dead_actions, TRUE);
     gtk_list_store_clear(context->backtrace.backtrace_store);
 }
 
@@ -571,8 +575,9 @@ static gboolean response_callback(GIOChannel *channel, GIOCondition condition,
         break;
     case RESP_RUNNING:
         update_status_bar(context, "Running");
-        gtk_action_group_set_sensitive(context->run_actions, TRUE);
-        gtk_action_group_set_sensitive(context->norun_actions, FALSE);
+        gtk_action_group_set_sensitive(context->running_actions, TRUE);
+        gtk_action_group_set_sensitive(context->stopped_actions, FALSE);
+        gtk_action_group_set_sensitive(context->dead_actions, FALSE);
         break;
     }
 
@@ -620,6 +625,11 @@ static void stop_action(GtkAction *action, gpointer user_data)
 
 static void continue_action(GtkAction *action, gpointer user_data)
 {
+    GldbWindow *context;
+
+    context = (GldbWindow *) user_data;
+    gtk_action_group_set_sensitive(context->stopped_actions, FALSE);
+    gtk_action_group_set_sensitive(context->running_actions, TRUE);
     gldb_send_continue(seq++);
     update_status_bar((GldbWindow *) user_data, "Running");
 }
@@ -1342,14 +1352,18 @@ static GtkActionEntry action_desc[] =
     { "Breakpoints", NULL, "_Breakpoints...", NULL, NULL, G_CALLBACK(breakpoints_action) }
 };
 
-static GtkActionEntry run_action_desc[] =
+static GtkActionEntry running_action_desc[] =
 {
-    { "Stop", NULL, "_Stop", "<control>Break", NULL, G_CALLBACK(stop_action) },
+    { "Stop", NULL, "_Stop", "<control>Break", NULL, G_CALLBACK(stop_action) }
+};
+
+static GtkActionEntry stopped_action_desc[] =
+{
     { "Continue", NULL, "_Continue", "<control>F9", NULL, G_CALLBACK(continue_action) },
     { "Kill", NULL, "_Kill", "<control>F2", NULL, G_CALLBACK(kill_action) }
 };
 
-static GtkActionEntry norun_action_desc[] =
+static GtkActionEntry dead_action_desc[] =
 {
     { "Run", NULL, "_Run", NULL, NULL, G_CALLBACK(run_action) }
 };
@@ -1362,19 +1376,24 @@ static GtkUIManager *build_ui(GldbWindow *context)
     context->actions = gtk_action_group_new("Actions");
     gtk_action_group_add_actions(context->actions, action_desc,
                                  G_N_ELEMENTS(action_desc), context);
-    context->run_actions = gtk_action_group_new("RunActions");
-    gtk_action_group_add_actions(context->run_actions, run_action_desc,
-                                 G_N_ELEMENTS(run_action_desc), context);
-    context->norun_actions = gtk_action_group_new("NorunActions");
-    gtk_action_group_add_actions(context->norun_actions, norun_action_desc,
-                                 G_N_ELEMENTS(norun_action_desc), context);
-    gtk_action_group_set_sensitive(context->run_actions, FALSE);
+    context->running_actions = gtk_action_group_new("RunningActions");
+    gtk_action_group_add_actions(context->running_actions, running_action_desc,
+                                 G_N_ELEMENTS(running_action_desc), context);
+    context->stopped_actions = gtk_action_group_new("StoppedActions");
+    gtk_action_group_add_actions(context->stopped_actions, stopped_action_desc,
+                                 G_N_ELEMENTS(stopped_action_desc), context);
+    context->dead_actions = gtk_action_group_new("DeadActions");
+    gtk_action_group_add_actions(context->dead_actions, dead_action_desc,
+                                 G_N_ELEMENTS(dead_action_desc), context);
+    gtk_action_group_set_sensitive(context->running_actions, FALSE);
+    gtk_action_group_set_sensitive(context->stopped_actions, FALSE);
 
     ui = gtk_ui_manager_new();
     gtk_ui_manager_set_add_tearoffs(ui, TRUE);
     gtk_ui_manager_insert_action_group(ui, context->actions, 0);
-    gtk_ui_manager_insert_action_group(ui, context->run_actions, 0);
-    gtk_ui_manager_insert_action_group(ui, context->norun_actions, 0);
+    gtk_ui_manager_insert_action_group(ui, context->running_actions, 0);
+    gtk_ui_manager_insert_action_group(ui, context->stopped_actions, 0);
+    gtk_ui_manager_insert_action_group(ui, context->dead_actions, 0);
     if (!gtk_ui_manager_add_ui_from_string(ui, ui_desc, strlen(ui_desc), &error))
     {
         g_message("Failed to create UI: %s", error->message);

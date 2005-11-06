@@ -610,6 +610,11 @@ void gldb_initialise(int argc, char * const *argv)
 
 void gldb_shutdown(void)
 {
+    /* If the process is running, we tell it to stop. It will then
+     * find EOF on the command buffer and quit.
+     */
+    if (gldb_get_status() == GLDB_STATUS_RUNNING)
+        gldb_send_async(0);
     bugle_hash_clear(&break_on);
     free(prog_argv);
 }
