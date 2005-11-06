@@ -107,7 +107,8 @@ RESP_DATA:   The response depends on the subtype of the request. In
              convenience, and the second is the data. The rest are
              REQ_DATA_TEXTURE:
                width, height, depth (all present even for 1D, 2D etc)
-               data
+             REQ_DATA_SHADER:
+               none
 
 Each request has a certain set of legal responses, as described below.
 Note that requests that start the program running (the first three) will

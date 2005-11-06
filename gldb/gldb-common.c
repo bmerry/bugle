@@ -319,6 +319,21 @@ static gldb_response *gldb_get_response_data_texture(uint32_t code, uint32_t id,
     return (gldb_response *) r;
 }
 
+static gldb_response *gldb_get_response_data_shader(uint32_t code, uint32_t id,
+                                                    uint32_t subtype,
+                                                    uint32_t length, char *data)
+{
+    gldb_response_data_shader *r;
+
+    r = bugle_malloc(sizeof(gldb_response_data_shader));
+    r->code = code;
+    r->id = id;
+    r->subtype = subtype;
+    r->length = length;
+    r->data = data;
+    return (gldb_response *) r;
+}
+
 static gldb_response *gldb_get_response_data(uint32_t code, uint32_t id)
 {
     uint32_t subtype;
@@ -331,6 +346,8 @@ static gldb_response *gldb_get_response_data(uint32_t code, uint32_t id)
     {
     case REQ_DATA_TEXTURE:
         return gldb_get_response_data_texture(code, id, subtype, length, data);
+    case REQ_DATA_SHADER:
+        return gldb_get_response_data_shader(code, id, subtype, length, data);
     default:
         fprintf(stderr, "Unknown DATA subtype %lu\n", (unsigned long) subtype);
         exit(1);
@@ -508,7 +525,7 @@ void gldb_send_state_tree(uint32_t id)
     gldb_protocol_send_code(lib_out, id);
 }
 
-void gldb_send_data_texture(uint32_t id, GLuint texid, GLenum target,
+void gldb_send_data_texture(uint32_t id, GLuint tex_id, GLenum target,
                             GLenum face, GLint level, GLenum format,
                             GLenum type)
 {
@@ -516,12 +533,22 @@ void gldb_send_data_texture(uint32_t id, GLuint texid, GLenum target,
     gldb_protocol_send_code(lib_out, REQ_DATA);
     gldb_protocol_send_code(lib_out, id);
     gldb_protocol_send_code(lib_out, REQ_DATA_TEXTURE);
-    gldb_protocol_send_code(lib_out, texid);
+    gldb_protocol_send_code(lib_out, tex_id);
     gldb_protocol_send_code(lib_out, target);
     gldb_protocol_send_code(lib_out, face);
     gldb_protocol_send_code(lib_out, level);
     gldb_protocol_send_code(lib_out, format);
     gldb_protocol_send_code(lib_out, type);
+}
+
+void gldb_send_data_shader(uint32_t id, GLuint shader_id, GLenum target)
+{
+    assert(status != GLDB_STATUS_DEAD);
+    gldb_protocol_send_code(lib_out, REQ_DATA);
+    gldb_protocol_send_code(lib_out, id);
+    gldb_protocol_send_code(lib_out, REQ_DATA_SHADER);
+    gldb_protocol_send_code(lib_out, shader_id);
+    gldb_protocol_send_code(lib_out, target);
 }
 
 bool gldb_get_break_error(void)

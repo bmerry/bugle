@@ -38,6 +38,7 @@
 #define REQ_DATA               0xdbca000cUL
 
 #define REQ_DATA_TEXTURE       0xedbc0000UL
+#define REQ_DATA_SHADER        0xedbc0001UL
 
 #define TO_NETWORK(x) (x)
 #define TO_HOST(x) (x)

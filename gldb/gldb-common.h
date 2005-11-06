@@ -155,6 +155,15 @@ typedef struct
     uint32_t subtype;
     char *data;
     uint32_t length;
+} gldb_response_data_shader;
+
+typedef struct
+{
+    uint32_t code;
+    uint32_t id;
+    uint32_t subtype;
+    char *data;
+    uint32_t length;
 } gldb_response_data; /* Generic form of gldb_response_data_* */
 
 /* Generic type for responses. Always instantiated via one of the above. */
@@ -183,9 +192,10 @@ void gldb_send_enable_disable(uint32_t id, const char *filterset, bool enable);
 void gldb_send_screenshot(uint32_t id);
 void gldb_send_async(uint32_t id);
 void gldb_send_state_tree(uint32_t id);
-void gldb_send_data_texture(uint32_t id, GLuint texid, GLenum target,
+void gldb_send_data_texture(uint32_t id, GLuint tex_id, GLenum target,
                             GLenum face, GLint level, GLenum format,
                             GLenum type);
+void gldb_send_data_shader(uint32_t id, GLuint shader_id, GLenum target);
 void gldb_set_break_error(uint32_t id, bool brk);
 void gldb_set_break(uint32_t id, const char *function, bool brk);
 
