@@ -638,6 +638,7 @@ void trackobjects_initialise(void)
         initialise_trackobjects,
         NULL,
         NULL,
+        NULL,
         sizeof(bugle_linked_list),
         NULL /* no documentation */
     };

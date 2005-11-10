@@ -88,8 +88,7 @@ bool bugle_gl_has_extension(int ext)
 }
 
 /* The output can be inverted by passing ~ext instead of ext (which basically
- * means "true if none of these extensions are present"). This is used in the
- * state tables.
+ * means "true if none of these extensions are present").
  */
 bool bugle_gl_has_extension_group(int ext)
 {

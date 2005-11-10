@@ -153,6 +153,7 @@ gldb_state *gldb_state_update(uint32_t id)
             state_root = ((gldb_response_state_tree *) r)->root;
             free(r);
         }
+        state_dirty = false;
     }
     return state_root;
 }

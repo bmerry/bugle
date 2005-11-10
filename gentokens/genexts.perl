@@ -17,7 +17,8 @@ my $outheader = '';
 GetOptions('out-header' => \$outheader);
 
 # Chains, for the simple cases.
-my %chains = ("GL_ARB_depth_texture" => "GL_VERSION_1_4",
+my %chains = ("GL_ATI_draw_buffers" => "GL_ARB_draw_buffers",
+              "GL_ARB_depth_texture" => "GL_VERSION_1_4",
               "GL_ARB_draw_buffers" => "GL_VERSION_2_0",
               "GL_ARB_fragment_program" => undef,
               "GL_ARB_fragment_shader" => undef,
@@ -67,7 +68,9 @@ my %groups = (# This got promoted to core from imaging subset in 1.4
               # Extensions that have GL_VERTEX_PROGRAM_POINT_SIZE and GL_VERTEX_PROGRAM_TWO_SIDE
               "EXTGROUP_vp_options" => ["GL_ARB_vertex_program", "GL_ARB_vertex_shader", "GL_VERSION_2_0"],
               # Extensions that define generic vertex attributes
-              "EXTGROUP_vertex_attrib" => ["GL_ARB_vertex_program", "GL_ARB_vertex_shader", "GL_VERSION_2_0"]
+              "EXTGROUP_vertex_attrib" => ["GL_ARB_vertex_program", "GL_ARB_vertex_shader", "GL_VERSION_2_0"],
+              # Extensions that cause GL_DRAW_BUFFER to not appear in global scope
+              "EXTGROUP_no_draw_buffer" => ["GL_ATI_draw_buffers", "GL_VERSION_2_0", "GL_EXT_framebuffer_object"]
              );
 
 

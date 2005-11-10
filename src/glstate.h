@@ -34,6 +34,7 @@ typedef struct state_info
     budgie_type type;
     int length;
     int extensions;
+    int exclude;
     unsigned int flags;
 } state_info;
 
