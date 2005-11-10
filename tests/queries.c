@@ -12,6 +12,7 @@
 #include <stdio.h>
 #include <stddef.h>
 #include <string.h>
+#include <ctype.h>
 
 /* Still TODO (how depressing)
  * - GetConvolutionFilter
@@ -35,6 +36,37 @@
  */
 
 static FILE *ref;
+
+static void dump_string(FILE *out, const char *value)
+{
+    if (value == NULL) fputs("NULL", out);
+    else
+    {
+        fputc('"', out);
+        while (value[0])
+        {
+            switch (value[0])
+            {
+            case '"': fputs("\\\\\"", out); break;
+            case '\\': fputs("\\\\\\", out); break;
+            case '\n': fputs("\\\\n", out); break;
+            case '\r': fputs("\\\\r", out); break;
+            default:
+                if (iscntrl(value[0]))
+                    fprintf(out, "\\\\%03o", (int) value[0]);
+                else if (isalnum(value[0]))
+                    fputc(value[0], out);
+                else
+                {
+                    fputc('\\', out);
+                    fputc(value[0], out);
+                }
+            }
+            value++;
+        }
+        fputc('"', out);
+    }
+}
 
 static int extension_supported(const char *str)
 {
@@ -398,6 +430,48 @@ static void query_shaders(void)
                 (unsigned int) p, (void *) &count, (void *) attached, (unsigned int) v1, (unsigned int) v2);
     }
 #endif
+    /* FIXME: test lots more things e.g. source */
+}
+
+static void query_ll_programs(void)
+{
+#if defined(GL_ARB_vertex_program)
+    static const char *vp = "!!ARBvp1.0\nMOV result.position, vertex.position;\nEND\n";
+    char *source;
+
+    GLuint program;
+    if (extension_supported("GL_ARB_vertex_program"))
+    {
+        GLint param;
+        glGenProgramsARB(1, &program);
+        fprintf(ref, "trace\\.call: glGenProgramsARB\\(1, %p -> { %u }\\)\n", (void *) &program, (unsigned int) program);
+        glBindProgramARB(GL_VERTEX_PROGRAM_ARB, program);
+        fprintf(ref, "trace\\.call: glBindProgramARB\\(GL_VERTEX_PROGRAM_ARB, %u\\)\n", (unsigned int) program);
+        glProgramStringARB(GL_VERTEX_PROGRAM_ARB, GL_PROGRAM_FORMAT_ASCII_ARB,
+                           strlen(vp), vp);
+        fprintf(ref, "trace\\.call: glProgramStringARB\\(GL_VERTEX_PROGRAM_ARB, GL_PROGRAM_FORMAT_ASCII_ARB, %u, ",
+                (unsigned int) strlen(vp));
+        dump_string(ref, vp);
+        fprintf(ref, "\\)\n");
+
+        glGetProgramivARB(GL_VERTEX_PROGRAM_ARB, GL_PROGRAM_FORMAT_ARB, &param);
+        fprintf(ref, "trace\\.call: glGetProgramivARB\\(GL_VERTEX_PROGRAM_ARB, GL_PROGRAM_FORMAT_ARB, %p -> GL_PROGRAM_FORMAT_ASCII_ARB\\)\n",
+                (void *) &param);
+        glGetProgramivARB(GL_VERTEX_PROGRAM_ARB, GL_PROGRAM_LENGTH_ARB, &param);
+        fprintf(ref, "trace\\.call: glGetProgramivARB\\(GL_VERTEX_PROGRAM_ARB, GL_PROGRAM_LENGTH_ARB, %p -> %u\\)\n",
+                (void *) &param, (unsigned int) strlen(vp));
+        source = malloc(strlen(vp) + 1);
+        glGetProgramStringARB(GL_VERTEX_PROGRAM_ARB, GL_PROGRAM_STRING_ARB, source);
+        fprintf(ref, "trace\\.call: glGetProgramStringARB\\(GL_VERTEX_PROGRAM_ARB, GL_PROGRAM_STRING_ARB, ");
+        dump_string(ref, vp);
+        fprintf(ref, "\\)\n");
+        free(source);
+
+        glDeleteProgramsARB(1, &program);
+        fprintf(ref, "trace\\.call: glDeleteProgramsARB\\(1, %p -> { %u }\\)\n",
+                (void *) &program, (unsigned int) program);
+    }
+#endif
 }
 
 #ifdef GL_EXT_framebuffer_object
@@ -523,7 +597,7 @@ static void query_renderbuffers(void)
     if (extension_supported("GL_EXT_framebuffer_object"))
     {
         glGenRenderbuffersEXT(1, &rb);
-        fprintf(ref, "trace\\.call: glGenRenderbuffersEXT\\(1, %p -> %u\\)\n",
+        fprintf(ref, "trace\\.call: glGenRenderbuffersEXT\\(1, %p -> { %u }\\)\n",
                 (void *) &rb, (unsigned int) rb);
         glBindRenderbufferEXT(GL_RENDERBUFFER_EXT, rb);
         fprintf(ref, "trace\\.call: glBindRenderbufferEXT\\(GL_RENDERBUFFER(_EXT)?, %u\\)\n",
@@ -536,11 +610,14 @@ static void query_renderbuffers(void)
         glGetRenderbufferParameterivEXT(GL_RENDERBUFFER_EXT, GL_RENDERBUFFER_INTERNAL_FORMAT_EXT, &i);
         fprintf(ref, "trace\\.call: glGetRenderbufferParameterivEXT\\(GL_RENDERBUFFER(_EXT)?, GL_RENDERBUFFER_INTERNAL_FORMAT(_EXT)?, %p -> GL_RGBA8\\)\n",
                 (void *) &i);
+        /* FIXME: Disabled for now because NVIDIA 76.76 doesn't support it */
+#if 0
         glGetRenderbufferParameterivEXT(GL_RENDERBUFFER_EXT, GL_RENDERBUFFER_RED_SIZE_EXT, &i);
         fprintf(ref, "trace\\.call: glGetRenderbufferParameterivEXT\\(GL_RENDERBUFFER(_EXT)?, GL_RENDERBUFFER_RED_SIZE(_EXT)?, %p -> %d\\)\n",
                 (void *) &i, (int) i);
+#endif
         glDeleteRenderbuffersEXT(1, &rb);
-        fprintf(ref, "trace\\.call: glDeleteRenderbuffersEXT\\(1, %p -> %u\\)\n",
+        fprintf(ref, "trace\\.call: glDeleteRenderbuffersEXT\\(1, %p -> { %u }\\)\n",
                 (void *) &rb, (unsigned int) rb);
     }
 #endif /* GL_EXT_framebuffer_object */
@@ -575,6 +652,7 @@ int main(int argc, char **argv)
     query_minmax();
     query_strings();
     query_shaders();
+    query_ll_programs();
     query_framebuffers();
     query_renderbuffers();
     return 0;
