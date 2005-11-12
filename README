@@ -27,6 +27,9 @@ To build, you will need the following:
   are those from the Mesa project (pre-installed on many systems).
 - To do video capture, you will need libavcodec/libavformat from ffmpeg.
 
+There is also a preliminary version of a GUI debugger - it depends on
+GTK+ and for best effect you should also have gtkglext.
+
 If you are upgrading, you MUST uninstall the previous version first. If
 you don't have the built tree around to do `make uninstall', then at
 the very least remove all the files from /usr/local/lib/bugle/ (or
@@ -48,7 +51,8 @@ references a section in the configuration file; the example file
 documents the configurations it provides. For more details, see the
 manual page for bugle.
 
-The debugger is called gldb and is documented in the manual page.
+The debugger is called gldb and is documented in the manual page. The
+GUI debugger is called gldb-gui, and is still undocumented.
 
 Feedback
 ========
