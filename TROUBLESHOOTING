@@ -29,6 +29,13 @@ A. Quake3 and Doom3 are 32-bit apps, while you probably have a 64-bit
 version of BuGLe. You will need to compile a 32-bit version. See the
 FAQ for more details.
 
+Q. I am using GL_EXT_framebuffer_object to render to texture, but the
+results do not appear in the texture pane of gldb-gui.
+A. This is a known bug in NVIDIA's 76.76 driver. It will be fixed in
+the 80 series drivers (not release at the time of writing). As a
+workaround, you can change the "#if 0" to "#if 1" on line 241 of
+filters/debugger.c, but be aware that this then breaks display of
+non-rendered textures.
 
 
 For any other problems, contact me at bmerry@users.sourceforge.net. If

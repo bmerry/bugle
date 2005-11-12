@@ -8,12 +8,22 @@ gldb
 ----
 - allow Ctrl-C to abort current line when reading commands
 - set filter variables on the fly
-- ability to have filtersets loaded but inactive
 - enable reporting of segfaults
 - break on particular GL errors, not just 'all errors'
 
+gldb-gui
+--------
+- Support texture targets other than 2D and RECT
+- Support GLSL in shader dump
+- Show shader metadata in shader pane
+- VBO decode
+- texture zoom
+- texture info e.g. show RGB values
+- trace window?
+
 bugle
 -----
+- proper support for enabled but inactive filtersets
 - make segfault handling adhere better to POSIX
 - rewrite some things to use hash tables
 - autoconf test for GLENUM_IS_GLUINT
@@ -41,7 +51,6 @@ long term
 ---------
 - internationalisation
 - Windows support
-- graphical debugger interface
 - write support for state
 - network debugging
 - better movie capture

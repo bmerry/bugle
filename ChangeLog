@@ -1,3 +1,5 @@
+0.0.20051012
+------------
 * Fix find_header.pl to look in . and in $srcdir
 * Fix Perl warning in glexts.perl
 * Have genfunctions.perl spit out #warnings in the C++ code when
@@ -5,6 +7,7 @@
 * Fix a check for the incorrect symbol in glstate.c (broke with
   older glext.h)
 * Add support for several extensions in the state manager:
+  - GL_ATI_draw_buffers
   - GL_ARB_vertex_program
   - GL_ARB_fragment_program
   - GL_EXT_texture_filter_anisotropic

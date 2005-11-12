@@ -110,8 +110,21 @@ bool filter_set_initialiser(filter_set *);
  <dt><code>done</code></dt>
  <dd>A shutdown function for the filter-set, with signature
 <pre>
-void filter_set_shutdown(filter_set *);
+void filter_set_destructor(filter_set *);
 </pre>
+ </dd>
+ <dt><code>activate</code></dt>
+ <dd>An optional activation function, with signature
+<pre>
+void filter_set_activator(filter_set *);
+</pre>
+ </dd>
+ <dt><code>deactivate</code></dt>
+ <dd>An optional deactivator function, with signature
+<pre>
+void filter_set_deactivator(filter_set *);
+</pre>
+ </dd>
  <dt><code>variables</code></dt>
  <dd>A pointer to an array of <code>filter_set_variable_info</code> structures,
  terminated by a null structure <code>{NULL, NULL, 0, NULL, NULL}</code>. This
@@ -222,6 +235,19 @@ the built-in <code>invoke</code> filter, which actually executes GL
 functions.
 </p>
 
+<h2>Filter-set activation</h2>
+<p>
+Activation is slightly different from initialisation. Initialisation happens
+only once at startup time, and should be used to open files, allocate memory
+and so on. Destruction is the complement of initialisation, and occurs at
+program termination. Activation and deactivation are not yet fully supported,
+but the eventual goal is that the debugger can activate and deactivate
+filter-sets on the fly. An example of this would be the wireframe filterset:
+eventually it will be possible to control wireframe mode on a frame-by-frame
+basis. Some calls need to be trapped even when wireframe is not being used,
+so that the contexts can be identified, so initialisation must still be done
+at program startup.
+
 <h2>Writing callbacks</h2>
 <p>
 A callback has the following signature:
@@ -230,7 +256,7 @@ A callback has the following signature:
 bool callback(function_call *<em>call</em>, const callback_data *<em>data</em>)
 </pre>
 <p>
-The callback should generally return <code>true</code>. Returning false
+The callback should generally return <code>true</code>. Returning <code>false</code>
 aborts any further processing of the call (including execution if the
 <code>invoke</code> filter has not yet run). This can be useful if you
 want to suppress a call, but if possible it is better to allow
@@ -344,7 +370,7 @@ BuGLe has a logging system that acts as a built-in filter-set. If you
 intend to do any logging, see the comments at the top of
 <code>src/log.h</code>.</p>
 
-<h2>Conventions</h2>
+<h3>Conventions</h3>
 <ol>
 <li>If a filter named <em>filter</em> has only one callback, call it
 <code><em>filter</em>_callback</code>. If

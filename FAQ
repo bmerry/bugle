@@ -37,7 +37,7 @@ Q. How do you get Quake3 or Doom3 to use BuGLe?
 A. Run it as quake3/doom3 +set r_glDriver /path/to/libbugle.so (but see
 the previous question if you use an AMD64 system with 64-bit OS).
 
-Q. What is the performance penality?
+Q. What is the performance penalty?
 A. That depends on what you're doing with the library. If you only use
 filter-sets that intercept a few functions (like showstats), then all
 other functions suffer only a very small penalty. Using filter-sets that
