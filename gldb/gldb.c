@@ -24,9 +24,14 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-#include <sys/types.h>
 #include <sys/wait.h>
 #include <sys/time.h>
+#if HAVE_SYS_TYPES_H
+# include <sys/types.h>
+#endif
+#if HAVE_SYS_SELECT_H
+# include <sys/select.h>
+#endif
 #include <signal.h>
 #include <errno.h>
 #include <assert.h>

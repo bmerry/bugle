@@ -20,7 +20,7 @@
 # include <config.h>
 #endif
 #include <gtk/gtk.h>
-#ifdef HAVE_GTKGLEXT
+#if HAVE_GTKGLEXT
 # include <gtk/gtkgl.h>
 #endif
 #include <glib.h>
@@ -63,7 +63,7 @@ typedef struct
     GtkTreeStore *state_store;
 } GldbWindowState;
 
-#ifdef HAVE_GTKGLEXT
+#if HAVE_GTKGLEXT
 typedef struct
 {
     bool dirty;
@@ -108,7 +108,7 @@ typedef struct GldbWindow
     bugle_linked_list response_handlers;
 
     GldbWindowState state;
-#ifdef HAVE_GTKGLEXT
+#if HAVE_GTKGLEXT
     GldbWindowTexture texture;
 #endif
 #if defined(GL_ARB_vertex_program) || defined(GL_ARB_fragment_program)
@@ -267,7 +267,7 @@ static const gldb_state *state_find_child_enum(const gldb_state *parent,
     return NULL;
 }
 
-#ifdef HAVE_GTKGLEXT
+#if HAVE_GTKGLEXT
 static void texture_draw_realize(GtkWidget *widget, gpointer user_data)
 {
     GdkGLContext *glcontext;
@@ -552,7 +552,7 @@ static void stopped(GldbWindow *context, const gchar *text)
 {
     context->state.dirty = true;
     invalidate_widget(context->state.page);
-#ifdef HAVE_GTKGLEXT
+#if HAVE_GTKGLEXT
     context->texture.dirty = true;
     invalidate_widget(context->texture.page);
 #endif
@@ -896,7 +896,7 @@ static void build_state_page(GldbWindow *context)
                               G_CALLBACK(state_expose), context);
 }
 
-#ifdef HAVE_GTKGLEXT
+#if HAVE_GTKGLEXT
 static void update_texture_ids(GldbWindow *context, GLenum target)
 {
     const gldb_state *s, *t;
@@ -1668,7 +1668,7 @@ static void build_main_window(GldbWindow *context)
     context->breakpoints_store = gtk_list_store_new(1, G_TYPE_STRING);
     context->notebook = gtk_notebook_new();
     build_state_page(context);
-#ifdef HAVE_GTKGLEXT
+#if HAVE_GTKGLEXT
     build_texture_page(context);
 #endif
 #if defined(GL_ARB_vertex_program) || defined(GL_ARB_fragment_program)
@@ -1707,7 +1707,7 @@ int main(int argc, char **argv)
     GldbWindow context;
 
     gtk_init(&argc, &argv);
-#ifdef HAVE_GTKGLEXT
+#if HAVE_GTKGLEXT
     gtk_gl_init(&argc, &argv);
 #endif
     gldb_initialise(argc, argv);

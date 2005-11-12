@@ -1,4 +1,4 @@
-0.0.20051012
+0.0.20051112
 ------------
 There is now a graphical debugger, gldb-gui. The GUI is still in very
 early development, and anything complicated will break it (in

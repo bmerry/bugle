@@ -5,7 +5,7 @@
 <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 </head>
 <body>
-<h1>Writing plugins for BuGLe</title>
+<h1>Writing plugins for BuGLe</h1>
 <h2>Introduction</h2>
 <p>
 Eventually, this file will serve as a guide for third party plugin
@@ -82,7 +82,7 @@ bool callback(const filter_set_variable_info *info, const char *text, void *valu
  The <code>text</code> is the literal string value from the configuration file,
  while <code>value</code> is interpreted in the same way as the <code>value</code>
  field in the structure (note: the parameter will be meaningful even if the
- structure provides a <code>value</code> of </code>NULL</code>). The
+ structure provides a <code>value</code> of <code>NULL</code>). The
  <code>value</code> may be overridden by the callback. The return value should
  be <code>true</code> unless the value is determined to be illegal, in which
  case it should print a message to <code>stderr</code> and return
@@ -131,7 +131,7 @@ void filter_set_deactivator(filter_set *);
  describes the user variables that are accepted by the filter-set. If there
  are no variables, this field may be <code>NULL</code>.
  </dd>
- <dt><code>call_state_space</code><dt>
+ <dt><code>call_state_space</code></dt>
  <dd>An integer number of bytes of storage to piggy-back on to the
  call structure. This will probably go away soon and it is recommended
  that it is set to <code>0</code> for now.
@@ -216,14 +216,18 @@ later use.
 <dl>
 <dt><code>bugle_register_filter_catches(filter *<em>filter</em>,
                                         budgie_function <em>function</em>,
-                                        filter_callback <em>callback</em>)<code></dt>
+                                        bool <em>inactive</em>,
+                                        filter_callback <em>callback</em>)</code></dt>
 <dd>Registers a callback function that will apply to a single GL function
 (or several if called several times). The <em>function</em> should be
 one of the <code>CFUNC_*</code> defines; other names for the same
-function are also trapped.</dd>
+function are also trapped. If <em>inactive</em> is <code>true</code>, the
+callback will be called even if the filter-set is inactive (see below
+for an explanation of active and inactive filter-sets).</dd>
 
 <dt><code>bugle_register_filter_catches_all(filter *<em>filter</em>,
-                                            filter_callback <em>callback</em>)<code></dt>
+                                            bool <em>inactive</em>,
+                                            filter_callback <em>callback</em>)</code></dt>
 <dd>Registers a callback function that will apply to all GL functions.</dd>
 </dl>
 <p>
@@ -277,7 +281,7 @@ arguments: if the call is known to be <code>glSomeFunction</code>, then
 <em>i</em><sup>th</sup> argument, and
 <code>*call->typed.glSomeFunction.retn</code> is the return value. If
 the function is not known at compile time, then the
-arguments can be accessed via the <code>void</code. pointers
+arguments can be accessed via the <code>void</code> pointers
 <code>call->generic.args[<em>i</em>]</code> and
 <code>call->generic.retn</code>.
 These values can also be modified to change the arguments used or the

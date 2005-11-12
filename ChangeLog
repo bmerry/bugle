@@ -1,4 +1,4 @@
-0.0.20051012
+0.0.20051112
 ------------
 * Fix find_header.pl to look in . and in $srcdir
 * Fix Perl warning in glexts.perl
