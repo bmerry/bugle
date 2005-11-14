@@ -97,17 +97,6 @@ if ($aliases)
                            # This takes a GLint, not a GLenum
                            "glHintPGI" => 1,
                            
-                           # These take GLhandleARB, not GLuint
-                           "glShaderSourceARB" => 1,
-                           "glCompileShaderARB" => 1,
-                           "glLinkProgramARB" => 1,
-                           "glValidateProgramARB" => 1,
-                           "glGetUniformLocationARB" => 1,
-                           "glActiveUniformARB" => 1,
-                           "glGetUniformfvARB" => 1,
-                           "glGetUniformivARB" => 1,
-                           "glGetShaderSourceARB" => 1,
-                           
                            # These have totally unrelated semantics to the core 2.0 version
                            # (but they should alias each other, which is handled later)
                            "glGetProgramivARB" => 1,
@@ -121,16 +110,23 @@ if ($aliases)
             }
         }
     }
-    print "ALIAS glGetProgramivNV glGetProgramivARB\n";
-    print "ALIAS glIsProgramNV glIsProgramARB\n";
-    
+    print <<'EOF';
+ALIAS glGetProgramivNV glGetProgramivARB
+ALIAS glIsProgramNV glIsProgramARB
+ALIAS glCreateShaderObjectARB glCreateShader
+ALIAS glCreateProgramObjectARB glCreateProgram
+ALIAS glUseProgramObjectARB glUseProgram
+ALIAS glAttachObjectARB glAttachShader
+ALIAS glDetachObjectARB glDetachShader
+ALIAS glGetAttachedObjectsARB glGetAttachedShaders
+EOF
     exit 0;
 }
 
 print "/* Generated at ", scalar(localtime), " by $0. Do not edit. */\n";
 if ($outheader)
 {
-    print <<'EOF'
+    print <<'EOF';
 #ifndef BUGLE_SRC_GLFUNCS_H
 #define BUGLE_SRC_GLFUNCS_H
 
@@ -148,13 +144,12 @@ typedef struct
 extern const gl_function bugle_gl_function_table[NUMBER_OF_FUNCTIONS];
 
 EOF
-        ;
     print "\n";
     print "#endif /* !BUGLE_SRC_GLFUNCS_H */\n";
 }
 else
 {
-    print <<'EOF'
+    print <<'EOF';
 #if HAVE_CONFIG_H
 # include <config.h>
 #endif
@@ -163,7 +158,6 @@ else
 #include "src/utils.h"
 #include "src/glfuncs.h"
 EOF
-        ;
     print "gl_function const bugle_gl_function_table[NUMBER_OF_FUNCTIONS] =\n{\n";
     my $first = 1;
     for my $i (@table)

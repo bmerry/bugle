@@ -33,6 +33,7 @@
 #include "src/glutils.h"
 #include "src/glexts.h"
 #include "src/tracker.h"
+#include "src/glsl.h"
 #include "common/safemem.h"
 #include "budgielib/budgieutils.h"
 #include <GL/gl.h>
@@ -71,19 +72,13 @@
 #define STATE_MODE_QUERY                    0x00000012    /* glGetQuery */
 #define STATE_MODE_QUERY_OBJECT             0x00000013    /* glGetQueryObject */
 #define STATE_MODE_BUFFER_PARAMETER         0x00000014    /* glGetBufferParameter */
-#define STATE_MODE_OBJECT_PARAMETER         0x00000015    /* glGetObjectParameterARB */
-#define STATE_MODE_SHADER                   0x00000016    /* glGetShader */
-#define STATE_MODE_PROGRAM                  0x00000017    /* glGetProgram */
-#define STATE_MODE_OBJECT_INFO_LOG          0x00000018    /* glGetInfoLogARB */
-#define STATE_MODE_SHADER_INFO_LOG          0x00000019    /* glGetShaderInfoLog */
-#define STATE_MODE_PROGRAM_INFO_LOG         0x0000001a    /* glGetProgramInfoLog */
-#define STATE_MODE_OBJECT_SHADER_SOURCE     0x0000001b    /* glGetShaderSourceARB */
-#define STATE_MODE_SHADER_SOURCE            0x0000001c    /* glGetShaderSource */
-#define STATE_MODE_OBJECT_UNIFORM           0x0000001d    /* glGetActiveUniformARB, glGetUniformARB */
-#define STATE_MODE_UNIFORM                  0x0000001e    /* glGetActiveUniform, glGetUniform */
-#define STATE_MODE_OBJECT_ATTRIB_LOCATION   0x0000001f    /* glGetAttribLocationARB */
+#define STATE_MODE_SHADER                   0x00000015    /* glGetShader */
+#define STATE_MODE_PROGRAM                  0x00000016    /* glGetProgram */
+#define STATE_MODE_SHADER_INFO_LOG          0x00000017    /* glGetShaderInfoLog */
+#define STATE_MODE_PROGRAM_INFO_LOG         0x00000018    /* glGetProgramInfoLog */
+#define STATE_MODE_SHADER_SOURCE            0x00000019    /* glGetShaderSource */
+#define STATE_MODE_UNIFORM                  0x0000001a    /* glGetActiveUniform, glGetUniform */
 #define STATE_MODE_ATTRIB_LOCATION          0x00000020    /* glGetAttribLocation */
-#define STATE_MODE_ATTACHED_OBJECTS         0x00000021    /* glGetAttachedObjectsARB */
 #define STATE_MODE_ATTACHED_SHADERS         0x00000022    /* glGetAttachedShaders */
 #define STATE_MODE_OLD_PROGRAM              0x00000023    /* glGetProgramivARB */
 #define STATE_MODE_PROGRAM_ENV_PARAMETER    0x00000024    /* glGetProgramEnvParameterARB */
@@ -134,19 +129,13 @@
 #define STATE_QUERY STATE_MODE_QUERY
 #define STATE_QUERY_OBJECT STATE_MODE_QUERY_OBJECT
 #define STATE_BUFFER_PARAMETER (STATE_MODE_BUFFER_PARAMETER | STATE_MULTIPLEX_BIND_BUFFER)
-#define STATE_OBJECT_PARAMETER STATE_MODE_OBJECT_PARAMETER
 #define STATE_SHADER STATE_MODE_SHADER
 #define STATE_PROGRAM STATE_MODE_PROGRAM
-#define STATE_OBJECT_INFO_LOG STATE_MODE_OBJECT_INFO_LOG
 #define STATE_SHADER_INFO_LOG STATE_MODE_SHADER_INFO_LOG
 #define STATE_PROGRAM_INFO_LOG STATE_MODE_PROGRAM_INFO_LOG
-#define STATE_OBJECT_SHADER_SOURCE STATE_MODE_OBJECT_SHADER_SOURCE
 #define STATE_SHADER_SOURCE STATE_MODE_SHADER_SOURCE
-#define STATE_OBJECT_UNIFORM STATE_MODE_OBJECT_UNIFORM
 #define STATE_UNIFORM STATE_MODE_UNIFORM
-#define STATE_OBJECT_ATTRIB_LOCATION STATE_MODE_OBJECT_ATTRIB_LOCATION
 #define STATE_ATTRIB_LOCATION STATE_MODE_ATTRIB_LOCATION
-#define STATE_ATTACHED_OBJECTS STATE_MODE_ATTACHED_OBJECTS
 #define STATE_ATTACHED_SHADERS STATE_MODE_ATTACHED_SHADERS
 #define STATE_OLD_PROGRAM (STATE_MODE_OLD_PROGRAM | STATE_MULTIPLEX_BIND_PROGRAM)
 #define STATE_PROGRAM_ENV_PARAMETER STATE_MODE_PROGRAM_ENV_PARAMETER
@@ -479,7 +468,7 @@ static const state_info global_state[] =
 #endif
     /* glext.h v21 doesn't define GL_FRAGMENT_SHADER_DERIVATIVE_HINT_ARB (based on older version of spec) */
 #if defined(GL_ARB_fragment_shader) && defined(GL_FRAGMENT_SHADER_DERIVATIVE_HINT_ARB)
-    { STATE_NAME_EXT(GL_FRAGMENT_SHADER_DERIVATIVE_HINT, _ARB), TYPE_6GLenum, -1, BUGLE_EXTGROUP_fragment_shader, -1, STATE_GLOBAL },
+    { STATE_NAME_EXT(GL_FRAGMENT_SHADER_DERIVATIVE_HINT, _ARB), TYPE_6GLenum, -1, BUGLE_GL_ARB_fragment_shader, -1, STATE_GLOBAL },
 #endif
     { STATE_NAME(GL_MAX_LIGHTS), TYPE_5GLint, -1, BUGLE_GL_VERSION_1_1, -1, STATE_GLOBAL },
     { STATE_NAME(GL_MAX_CLIP_PLANES), TYPE_5GLint, -1, BUGLE_GL_VERSION_1_1, -1, STATE_GLOBAL },
@@ -541,17 +530,17 @@ static const state_info global_state[] =
     { STATE_NAME_EXT(GL_MAX_VERTEX_ATTRIBS, _ARB), TYPE_5GLint, -1, BUGLE_EXTGROUP_vertex_attrib, -1, STATE_GLOBAL },
 #endif
 #ifdef GL_ARB_vertex_shader
-    { STATE_NAME_EXT(GL_MAX_VERTEX_UNIFORM_COMPONENTS, _ARB), TYPE_5GLint, -1, BUGLE_EXTGROUP_vertex_shader, -1, STATE_GLOBAL },
-    { STATE_NAME_EXT(GL_MAX_VARYING_FLOATS, _ARB), TYPE_5GLint, -1, BUGLE_EXTGROUP_vertex_shader, -1, STATE_GLOBAL },
-    { STATE_NAME_EXT(GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS, _ARB), TYPE_5GLint, -1, BUGLE_EXTGROUP_vertex_shader, -1, STATE_GLOBAL },
-    { STATE_NAME_EXT(GL_MAX_VERTEX_TEXTURE_IMAGE_UNITS, _ARB), TYPE_5GLint, -1, BUGLE_EXTGROUP_vertex_shader, -1, STATE_GLOBAL },
+    { STATE_NAME_EXT(GL_MAX_VERTEX_UNIFORM_COMPONENTS, _ARB), TYPE_5GLint, -1, BUGLE_GL_ARB_vertex_shader, -1, STATE_GLOBAL },
+    { STATE_NAME_EXT(GL_MAX_VARYING_FLOATS, _ARB), TYPE_5GLint, -1, BUGLE_GL_ARB_vertex_shader, -1, STATE_GLOBAL },
+    { STATE_NAME_EXT(GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS, _ARB), TYPE_5GLint, -1, BUGLE_GL_ARB_vertex_shader, -1, STATE_GLOBAL },
+    { STATE_NAME_EXT(GL_MAX_VERTEX_TEXTURE_IMAGE_UNITS, _ARB), TYPE_5GLint, -1, BUGLE_GL_ARB_vertex_shader, -1, STATE_GLOBAL },
 #endif
 #ifdef GL_ARB_fragment_program
     { STATE_NAME_EXT(GL_MAX_TEXTURE_IMAGE_UNITS, _ARB), TYPE_5GLint, -1, BUGLE_EXTGROUP_texunits, -1, STATE_GLOBAL },
     { STATE_NAME_EXT(GL_MAX_TEXTURE_COORDS, _ARB), TYPE_5GLint, -1, BUGLE_EXTGROUP_texunits, -1, STATE_GLOBAL },
 #endif
 #ifdef GL_ARB_fragment_shader
-    { STATE_NAME_EXT(GL_MAX_FRAGMENT_UNIFORM_COMPONENTS, _ARB), TYPE_5GLint, -1, BUGLE_EXTGROUP_fragment_shader, -1, STATE_GLOBAL },
+    { STATE_NAME_EXT(GL_MAX_FRAGMENT_UNIFORM_COMPONENTS, _ARB), TYPE_5GLint, -1, BUGLE_GL_ARB_fragment_shader, -1, STATE_GLOBAL },
 #endif
     /* Note: The GL 2.0 spec duplicates some entries at this point */
 #ifdef GL_ATI_draw_buffers
@@ -864,79 +853,36 @@ static const state_info vertex_attrib_state[] =
     { NULL, GL_NONE, NULL_TYPE, 0, -1, -1, 0 }
 };
 
-/* Note: we keep GL_ARB_shader_objects totally distinct from the shader
- * objects in OpenGL 2.0, because the former uses GLhandleARB and the new
- * object system while OpenGL 2.0 does not.
- */
-
-/* State common to both shaders and programs */
-static const state_info object_state[] =
+static const state_info program_state[] =
 {
 #ifdef GL_ARB_shader_objects
-    { STATE_NAME(GL_OBJECT_TYPE_ARB), TYPE_6GLenum, -1, BUGLE_GL_ARB_shader_objects, -1,  STATE_OBJECT_PARAMETER },
-    { STATE_NAME(GL_OBJECT_DELETE_STATUS_ARB), TYPE_9GLboolean, -1, BUGLE_GL_ARB_shader_objects, -1, STATE_OBJECT_PARAMETER },
-    { STATE_NAME(GL_OBJECT_INFO_LOG_LENGTH_ARB), TYPE_5GLint, -1, BUGLE_GL_ARB_shader_objects, -1, STATE_OBJECT_PARAMETER },
-    { "InfoLog", GL_NONE, TYPE_P9GLcharARB, -1, BUGLE_GL_ARB_shader_objects, -1, STATE_OBJECT_INFO_LOG },
-#endif
-    { NULL, GL_NONE, NULL_TYPE, 0, -1, -1, 0 }
-};
-
-static const state_info program_object_state[] =
-{
-#ifdef GL_ARB_shader_objects
-    { STATE_NAME(GL_OBJECT_ATTACHED_OBJECTS_ARB), TYPE_5GLint, -1, BUGLE_GL_ARB_shader_objects, -1, STATE_OBJECT_PARAMETER },
-    { STATE_NAME(GL_OBJECT_ACTIVE_UNIFORMS_ARB), TYPE_5GLint, -1, BUGLE_GL_ARB_shader_objects, -1, STATE_OBJECT_PARAMETER },
-    { STATE_NAME(GL_OBJECT_LINK_STATUS_ARB), TYPE_9GLboolean, -1, BUGLE_GL_ARB_shader_objects, -1, STATE_OBJECT_PARAMETER },
-    { STATE_NAME(GL_OBJECT_VALIDATE_STATUS_ARB), TYPE_9GLboolean, -1, BUGLE_GL_ARB_shader_objects, -1, STATE_OBJECT_PARAMETER },
-    { STATE_NAME(GL_OBJECT_ACTIVE_UNIFORM_MAX_LENGTH_ARB), TYPE_5GLint, -1, BUGLE_GL_ARB_shader_objects, -1, STATE_OBJECT_PARAMETER },
-    { "Attached", GL_NONE, TYPE_11GLhandleARB, 0, BUGLE_GL_ARB_shader_objects, -1, STATE_ATTACHED_OBJECTS },
+    { "GL_DELETE_STATUS", GL_OBJECT_DELETE_STATUS_ARB, TYPE_9GLboolean, -1, BUGLE_GL_ARB_shader_objects, -1, STATE_PROGRAM },
+    { "GL_INFO_LOG_LENGTH", GL_OBJECT_INFO_LOG_LENGTH_ARB, TYPE_5GLint, -1, BUGLE_GL_ARB_shader_objects, -1, STATE_PROGRAM },
+    { "InfoLog", GL_NONE, TYPE_P9GLcharARB, -1, BUGLE_GL_ARB_shader_objects, -1, STATE_PROGRAM_INFO_LOG },
+    { "GL_ATTACHED_SHADERS", GL_OBJECT_ATTACHED_OBJECTS_ARB, TYPE_5GLint, -1, BUGLE_GL_ARB_shader_objects, -1, STATE_PROGRAM },
+    { "GL_ACTIVE_UNIFORMS", GL_OBJECT_ACTIVE_UNIFORMS_ARB, TYPE_5GLint, -1, BUGLE_GL_ARB_shader_objects, -1, STATE_PROGRAM },
+    { "GL_LINK_STATUS", GL_OBJECT_LINK_STATUS_ARB, TYPE_9GLboolean, -1, BUGLE_GL_ARB_shader_objects, -1, STATE_PROGRAM },
+    { "GL_VALIDATE_STATUS", GL_OBJECT_VALIDATE_STATUS_ARB, TYPE_9GLboolean, -1, BUGLE_GL_ARB_shader_objects, -1, STATE_PROGRAM },
+    { "GL_ACTIVE_UNIFORM_MAX_LENGTH", GL_OBJECT_ACTIVE_UNIFORM_MAX_LENGTH_ARB, TYPE_5GLint, -1, BUGLE_GL_ARB_shader_objects, -1, STATE_PROGRAM },
+    { "Attached", GL_NONE, TYPE_11GLhandleARB, 0, BUGLE_GL_ARB_shader_objects, -1, STATE_ATTACHED_SHADERS },
 #endif
 #ifdef GL_ARB_vertex_shader
-    { STATE_NAME(GL_OBJECT_ACTIVE_ATTRIBUTES_ARB), TYPE_5GLint, -1, BUGLE_GL_ARB_vertex_shader, -1, STATE_OBJECT_PARAMETER | STATE_SELECT_VERTEX },
-    { STATE_NAME(GL_OBJECT_ACTIVE_ATTRIBUTE_MAX_LENGTH_ARB), TYPE_5GLint, -1, BUGLE_GL_ARB_vertex_shader, -1, STATE_OBJECT_PARAMETER | STATE_SELECT_VERTEX },
-#endif
-    { NULL, GL_NONE, NULL_TYPE, 0, -1, -1, 0 }
-};
-
-static const state_info shader_object_state[] =
-{
-#ifdef GL_ARB_shader_objects
-    { "ShaderSource", GL_NONE, TYPE_P9GLcharARB, -1, BUGLE_GL_ARB_shader_objects, -1, STATE_OBJECT_SHADER_SOURCE },
-    { STATE_NAME(GL_OBJECT_SUBTYPE_ARB), TYPE_6GLenum, -1, BUGLE_GL_ARB_shader_objects, -1, STATE_OBJECT_PARAMETER },
-    { STATE_NAME(GL_OBJECT_COMPILE_STATUS_ARB), TYPE_9GLboolean, -1, BUGLE_GL_ARB_shader_objects, -1, STATE_OBJECT_PARAMETER },
-    { STATE_NAME(GL_OBJECT_SHADER_SOURCE_LENGTH_ARB), TYPE_5GLint, -1, BUGLE_GL_ARB_shader_objects, -1, STATE_OBJECT_PARAMETER },
+    { "GL_ACTIVE_ATTRIBUTES", GL_OBJECT_ACTIVE_ATTRIBUTES_ARB, TYPE_5GLint, -1, BUGLE_GL_ARB_vertex_shader, -1, STATE_PROGRAM | STATE_SELECT_VERTEX },
+    { "GL_ACTIVE_ATTRIBUTE_MAX_LENGTH", GL_OBJECT_ACTIVE_ATTRIBUTE_MAX_LENGTH_ARB, TYPE_5GLint, -1, BUGLE_GL_ARB_vertex_shader, -1, STATE_PROGRAM | STATE_SELECT_VERTEX },
 #endif
     { NULL, GL_NONE, NULL_TYPE, 0, -1, -1, 0 }
 };
 
 static const state_info shader_state[] =
 {
-#ifdef GL_VERSION_2_0
-    { STATE_NAME(GL_SHADER_TYPE), TYPE_6GLenum, -1, BUGLE_GL_VERSION_2_0, -1, STATE_SHADER },
-    { STATE_NAME(GL_DELETE_STATUS), TYPE_9GLboolean, -1, BUGLE_GL_VERSION_2_0, -1, STATE_SHADER },
-    { STATE_NAME(GL_COMPILE_STATUS), TYPE_9GLboolean, -1, BUGLE_GL_VERSION_2_0, -1, STATE_SHADER },
-    { "InfoLog", GL_NONE, TYPE_P6GLchar, -1, BUGLE_GL_VERSION_2_0, -1, STATE_SHADER_INFO_LOG },
-    { STATE_NAME(GL_INFO_LOG_LENGTH), TYPE_5GLint, -1, BUGLE_GL_VERSION_2_0, -1, STATE_SHADER },
-    { "ShaderSource", GL_NONE, TYPE_P6GLchar, -1, BUGLE_GL_VERSION_2_0, -1, STATE_SHADER_SOURCE },
-    { STATE_NAME(GL_SHADER_SOURCE_LENGTH), TYPE_5GLint, -1, BUGLE_GL_VERSION_2_0, -1, STATE_SHADER },
-#endif
-    { NULL, GL_NONE, NULL_TYPE, 0, -1, -1, 0 }
-};
-
-static const state_info program_state[] =
-{
-#ifdef GL_VERSION_2_0
-    { STATE_NAME(GL_DELETE_STATUS), TYPE_9GLboolean, -1, BUGLE_GL_VERSION_2_0, -1, STATE_PROGRAM },
-    { STATE_NAME(GL_LINK_STATUS), TYPE_9GLboolean, -1, BUGLE_GL_VERSION_2_0, -1, STATE_PROGRAM },
-    { STATE_NAME(GL_VALIDATE_STATUS), TYPE_9GLboolean, -1, BUGLE_GL_VERSION_2_0, -1, STATE_PROGRAM },
-    { STATE_NAME(GL_ATTACHED_SHADERS), TYPE_9GLboolean, -1, BUGLE_GL_VERSION_2_0, -1, STATE_PROGRAM },
-    { "Attached", GL_NONE, TYPE_6GLuint, 0, BUGLE_GL_VERSION_2_0, -1, STATE_ATTACHED_SHADERS },
-    { "InfoLog", GL_NONE, TYPE_P6GLchar, -1, BUGLE_GL_VERSION_2_0, -1, STATE_PROGRAM_INFO_LOG },
-    { STATE_NAME(GL_INFO_LOG_LENGTH), TYPE_5GLint, -1, BUGLE_GL_VERSION_2_0, -1, STATE_PROGRAM },
-    { STATE_NAME(GL_ACTIVE_UNIFORMS), TYPE_5GLint, -1, BUGLE_GL_VERSION_2_0, -1, STATE_PROGRAM },
-    { STATE_NAME(GL_ACTIVE_UNIFORM_MAX_LENGTH), TYPE_5GLint, -1, BUGLE_GL_VERSION_2_0, -1, STATE_PROGRAM },
-    { STATE_NAME(GL_ACTIVE_ATTRIBUTES), TYPE_5GLint, -1, BUGLE_GL_VERSION_2_0, -1, STATE_PROGRAM },
-    { STATE_NAME(GL_ACTIVE_ATTRIBUTE_MAX_LENGTH), TYPE_5GLint, -1, BUGLE_GL_VERSION_2_0, -1, STATE_PROGRAM  },
+#ifdef GL_ARB_shader_objects
+    { "GL_DELETE_STATUS", GL_OBJECT_DELETE_STATUS_ARB, TYPE_9GLboolean, -1, BUGLE_GL_ARB_shader_objects, -1, STATE_SHADER },
+    { "GL_INFO_LOG_LENGTH", GL_OBJECT_INFO_LOG_LENGTH_ARB, TYPE_5GLint, -1, BUGLE_GL_ARB_shader_objects, -1, STATE_SHADER },
+    { "InfoLog", GL_NONE, TYPE_P9GLcharARB, -1, BUGLE_GL_ARB_shader_objects, -1, STATE_SHADER_INFO_LOG },
+    { "ShaderSource", GL_NONE, TYPE_P9GLcharARB, -1, BUGLE_GL_ARB_shader_objects, -1, STATE_SHADER_SOURCE },
+    { "GL_SHADER_TYPE", GL_OBJECT_SUBTYPE_ARB, TYPE_6GLenum, -1, BUGLE_GL_ARB_shader_objects, -1, STATE_SHADER },
+    { "GL_COMPILE_STATUS", GL_OBJECT_COMPILE_STATUS_ARB, TYPE_9GLboolean, -1, BUGLE_GL_ARB_shader_objects, -1, STATE_SHADER },
+    { "GL_SHADER_SOURCE_LENGTH", GL_OBJECT_SHADER_SOURCE_LENGTH_ARB, TYPE_5GLint, -1, BUGLE_GL_ARB_shader_objects, -1, STATE_SHADER },
 #endif
     { NULL, GL_NONE, NULL_TYPE, 0, -1, -1, 0 }
 };
@@ -1201,9 +1147,6 @@ const state_info * const all_state[] =
     query_state,
     query_object_state,
     buffer_parameter_state,
-    object_state,
-    shader_object_state,
-    program_object_state,
     shader_state,
     program_state,
     old_program_object_state,
@@ -1323,13 +1266,13 @@ static int get_total_texture_units(void)
     }
 #endif
 #ifdef GL_ARB_vertex_shader
-    if (bugle_gl_has_extension_group(BUGLE_EXTGROUP_vertex_shader))
+    if (bugle_gl_has_extension_group(BUGLE_GL_ARB_vertex_shader))
     {
         CALL_glGetIntegerv(GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS_ARB, &cur);
         if (cur > max) max = cur;
     }
 #endif
-    /* NVIDIA 66.29 on NV20 fail on some of these calls. Clear the error. */
+    /* NVIDIA 66.29 on NV20 fails on some of these calls. Clear the error. */
     CALL_glGetError();
     return max;
 }
@@ -1364,13 +1307,13 @@ static int get_texture_image_units(void)
     }
 #endif
 #ifdef GL_ARB_vertex_shader
-    if (bugle_gl_has_extension_group(BUGLE_EXTGROUP_vertex_shader))
+    if (bugle_gl_has_extension_group(BUGLE_GL_ARB_vertex_shader))
     {
         CALL_glGetIntegerv(GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS_ARB, &cur);
         if (cur > max) max = cur;
     }
 #endif
-    /* NVIDIA 66.29 on NV20 fail on some of these calls. Clear the error. */
+    /* NVIDIA 66.29 on NV20 fails on some of these calls. Clear the error. */
     CALL_glGetError();
     return max;
 }
@@ -1393,7 +1336,7 @@ static int get_texture_coord_units(void)
         if (cur > max) max = cur;
     }
 #endif
-    /* NVIDIA 66.29 on NV20 fail on some of these calls. Clear the error. */
+    /* NVIDIA 66.29 on NV20 fails on some of these calls. Clear the error. */
     CALL_glGetError();
     return max;
 }
@@ -1409,8 +1352,6 @@ char *bugle_state_get_string(const glstate *state)
     GLpolygonstipple stipple;
 #ifdef GL_ARB_shader_objects
     GLhandleARB h[16];
-#endif
-#if defined(GL_VERSION_2_0) || defined(GL_ARB_shader_objects)
     GLsizei length;
     GLint max_length;
 #endif
@@ -1637,7 +1578,7 @@ char *bugle_state_get_string(const glstate *state)
         break;
 #endif
 #ifdef GL_ARB_shader_objects
-    case STATE_MODE_OBJECT_PARAMETER:
+    case STATE_MODE_SHADER:
         if (state->info->type == TYPE_8GLdouble || state->info->type == TYPE_7GLfloat)
         {
             CALL_glGetObjectParameterfvARB(state->object, pname, f);
@@ -1645,98 +1586,61 @@ char *bugle_state_get_string(const glstate *state)
         }
         else
         {
-            CALL_glGetObjectParameterivARB(state->object, pname, i);
+            glsl_glGetShaderiv(state->object, pname, i);
             in_type = TYPE_5GLint;
         }
         break;
-    case STATE_MODE_OBJECT_INFO_LOG:
-        CALL_glGetObjectParameterivARB(state->object, GL_OBJECT_INFO_LOG_LENGTH_ARB, &max_length);
-        str = bugle_malloc(max_length * sizeof(GLcharARB));
-        CALL_glGetInfoLogARB(state->object, max_length, &length, (GLcharARB *) str);
-        break;
-    case STATE_MODE_OBJECT_SHADER_SOURCE:
-        CALL_glGetObjectParameterivARB(state->object, GL_OBJECT_SHADER_SOURCE_LENGTH_ARB, &max_length);
-        str = bugle_malloc(max_length * sizeof(GLcharARB));
-        CALL_glGetShaderSourceARB(state->object, max_length, &length, (GLcharARB *) str);
-        break;
-    case STATE_MODE_OBJECT_UNIFORM:
-        {
-            GLsizei size;
-            GLenum type;
-
-            CALL_glGetActiveUniformARB(state->object, state->level, 0, NULL,
-                                       &size, &type, NULL);
-            uniform_types(type, &in_type, &out_type, &in_length);
-            if (in_type == TYPE_7GLfloat)
-                CALL_glGetUniformfvARB(state->object, state->level, f);
-            else
-                CALL_glGetUniformivARB(state->object, state->level, i);
-        }
-        break;
-    case STATE_MODE_OBJECT_ATTRIB_LOCATION:
-        i[0] = CALL_glGetAttribLocationARB(state->object, state->name);
-        break;
-    case STATE_MODE_ATTACHED_OBJECTS:
-        {
-            GLhandleARB *attached;
-
-            CALL_glGetObjectParameterivARB(state->object, GL_OBJECT_ATTACHED_OBJECTS_ARB, &max_length);
-            attached = bugle_malloc(max_length * sizeof(GLhandleARB));
-            CALL_glGetAttachedObjectsARB(state->object, max_length, NULL, attached);
-            wrapper.out = attached;
-            wrapper.length = max_length;
-            wrapper.type = TYPE_11GLhandleARB;
-        }
-        break;
-#endif
-#ifdef GL_VERSION_2_0
-    case STATE_MODE_SHADER:
-        CALL_glGetShaderiv(state->object, pname, i);
-        in_type = TYPE_5GLint;
-        break;
     case STATE_MODE_PROGRAM:
-        CALL_glGetProgramiv(state->object, pname, i);
-        in_type = TYPE_5GLint;
+        if (state->info->type == TYPE_8GLdouble || state->info->type == TYPE_7GLfloat)
+        {
+            CALL_glGetObjectParameterfvARB(state->object, pname, f);
+            in_type = TYPE_7GLfloat;
+        }
+        else
+        {
+            glsl_glGetProgramiv(state->object, pname, i);
+            in_type = TYPE_5GLint;
+        }
         break;
     case STATE_MODE_SHADER_INFO_LOG:
-        CALL_glGetShaderiv(state->object, GL_INFO_LOG_LENGTH, &max_length);
-        str = bugle_malloc(max_length * sizeof(GLchar));
-        CALL_glGetShaderInfoLog(state->object, max_length, &length, (GLchar *) str);
+        glsl_glGetShaderiv(state->object, GL_OBJECT_INFO_LOG_LENGTH_ARB, &max_length);
+        str = bugle_malloc(max_length * sizeof(GLcharARB));
+        glsl_glGetShaderInfoLog(state->object, max_length, &length, (GLcharARB *) str);
         break;
     case STATE_MODE_PROGRAM_INFO_LOG:
-        CALL_glGetProgramiv(state->object, GL_INFO_LOG_LENGTH, &max_length);
-        str = bugle_malloc(max_length * sizeof(GLchar));
-        CALL_glGetProgramInfoLog(state->object, max_length, &length, (GLchar *) str);
+        glsl_glGetProgramiv(state->object, GL_OBJECT_INFO_LOG_LENGTH_ARB, &max_length);
+        str = bugle_malloc(max_length * sizeof(GLcharARB));
+        glsl_glGetProgramInfoLog(state->object, max_length, &length, (GLcharARB *) str);
         break;
     case STATE_MODE_SHADER_SOURCE:
-        CALL_glGetShaderiv(state->object, GL_SHADER_SOURCE_LENGTH, &max_length);
+        glsl_glGetShaderiv(state->object, GL_OBJECT_SHADER_SOURCE_LENGTH_ARB, &max_length);
         str = bugle_malloc(max_length * sizeof(GLcharARB));
-        CALL_glGetShaderSource(state->object, max_length, &length, (GLchar *) str);
+        glsl_glGetShaderSource(state->object, max_length, &length, (GLcharARB *) str);
         break;
     case STATE_MODE_UNIFORM:
         {
             GLsizei size;
             GLenum type;
 
-            CALL_glGetActiveUniform(state->object, state->level, 0, NULL,
+            glsl_glGetActiveUniform(state->object, state->level, 0, NULL,
                                     &size, &type, NULL);
             uniform_types(type, &in_type, &out_type, &in_length);
             if (in_type == TYPE_7GLfloat)
-                CALL_glGetUniformfv(state->object, state->level, f);
+                glsl_glGetUniformfv(state->object, state->level, f);
             else
-                CALL_glGetUniformiv(state->object, state->level, i);
+                glsl_glGetUniformiv(state->object, state->level, i);
         }
         break;
     case STATE_MODE_ATTRIB_LOCATION:
-        i[0] = CALL_glGetAttribLocation(state->object, state->name);
+        i[0] = glsl_glGetAttribLocation(state->object, state->name);
         break;
     case STATE_MODE_ATTACHED_SHADERS:
         {
             GLuint *attached;
 
-            CALL_glGetProgramiv(state->object, GL_ATTACHED_SHADERS, &max_length);
+            glsl_glGetProgramiv(state->object, GL_OBJECT_ATTACHED_OBJECTS_ARB, &max_length);
             attached = bugle_malloc(max_length * sizeof(GLuint));
-            CALL_glGetAttachedShaders(state->object, max_length, NULL, attached);
+            glsl_glGetAttachedShaders(state->object, max_length, NULL, attached);
             wrapper.out = attached;
             wrapper.length = max_length;
             wrapper.type = TYPE_6GLuint;
@@ -1880,7 +1784,8 @@ char *bugle_state_get_string(const glstate *state)
 #ifdef GL_ARB_shader_objects
         /* FIXME: we don't actually use this atm. We need some way to
          * call exactly one of glGetIntegerv on GL_CURRENT_PROGRAM_ARB
-         * or glGetHandle on GL_PROGRAM_OBJECT_ARB.
+         * or glGetHandle on GL_PROGRAM_OBJECT_ARB. Currently there is
+         * no indication of the current program if 2.0 is not available.
          */
         case TYPE_11GLhandleARB: in = h; break;
 #endif
@@ -1998,7 +1903,7 @@ static void make_counted(const glstate *self,
 static void make_object(const glstate *self,
                         GLenum target,
                         const char *format,
-                        gl_handle id,
+                        GLuint id,
                         void (*spawn)(const glstate *, bugle_linked_list *),
                         const state_info *info,
                         bugle_linked_list *children)
@@ -2027,7 +1932,7 @@ typedef struct
     bugle_linked_list *children;
 } make_objects_data;
 
-static void make_objects_walker(gl_handle object,
+static void make_objects_walker(GLuint object,
                                 GLenum target,
                                 void *vdata)
 {
@@ -2352,7 +2257,7 @@ static void spawn_children_buffer_parameter(const glstate *self, bugle_linked_li
 }
 
 #ifdef GL_ARB_shader_objects
-static void spawn_children_shader_object(const glstate *self, bugle_linked_list *children)
+static void spawn_children_shader(const glstate *self, bugle_linked_list *children)
 {
     uint32_t mask = STATE_SELECT_VERTEX;
 
@@ -2360,55 +2265,51 @@ static void spawn_children_shader_object(const glstate *self, bugle_linked_list 
 #ifdef GL_ARB_vertex_shader
     if (bugle_gl_has_extension_group(BUGLE_GL_ARB_vertex_shader)) mask = 0;
 #endif
-    make_leaves_conditional(self, object_state, 0, mask, children);
-    make_leaves_conditional(self, shader_object_state, 0, mask, children);
+    make_leaves_conditional(self, shader_state, 0, mask, children);
 }
 
-static void spawn_children_program_object(const glstate *self, bugle_linked_list *children)
+static void spawn_children_program(const glstate *self, bugle_linked_list *children)
 {
     uint32_t mask = STATE_SELECT_VERTEX;
     GLint i, count, max, type;
     GLsizei length, size;
     glstate *child;
-    static const state_info object_uniform_state =
+    static const state_info uniform_state =
     {
-        NULL, GL_NONE, NULL_TYPE, -1, BUGLE_GL_ARB_shader_objects, -1, STATE_OBJECT_UNIFORM
+        NULL, GL_NONE, NULL_TYPE, -1, BUGLE_GL_ARB_shader_objects, -1, STATE_UNIFORM
     };
-    static const state_info object_attrib_state =
+    static const state_info attrib_state =
     {
-        NULL, GL_NONE, TYPE_5GLint, -1, BUGLE_GL_ARB_vertex_shader, -1, STATE_OBJECT_ATTRIB_LOCATION
+        NULL, GL_NONE, TYPE_5GLint, -1, BUGLE_GL_ARB_vertex_shader, -1, STATE_ATTRIB_LOCATION
     };
 
     bugle_list_init(children, true);
 #ifdef GL_ARB_vertex_shader
     if (bugle_gl_has_extension_group(BUGLE_GL_ARB_vertex_shader)) mask = 0;
 #endif
-    make_leaves(self, object_state, children);
-    make_leaves(self, program_object_state, children);
+    make_leaves(self, program_state, children);
 
-    CALL_glGetObjectParameterivARB(self->object, GL_OBJECT_ACTIVE_UNIFORMS_ARB,
-                                   &count);
-    CALL_glGetObjectParameterivARB(self->object, GL_OBJECT_ACTIVE_UNIFORM_MAX_LENGTH_ARB,
-                                   &max);
+    glsl_glGetProgramiv(self->object, GL_OBJECT_ACTIVE_UNIFORMS_ARB, &count);
+    glsl_glGetProgramiv(self->object, GL_OBJECT_ACTIVE_UNIFORM_MAX_LENGTH_ARB, &max);
     for (i = 0; i < count; i++)
     {
         child = bugle_malloc(sizeof(glstate));
         *child = *self;
         child->spawn_children = NULL;
-        child->info = &object_uniform_state;
+        child->info = &uniform_state;
         child->name = bugle_malloc(sizeof(GLcharARB) * (max + 1));
         child->name[0] = '\0'; /* sanity, in case the query borks */
         child->numeric_name = i;
         child->enum_name = 0;
         child->level = i;
-        CALL_glGetActiveUniformARB(self->object, i, max, &length, &size,
-                                   &type, child->name);
+        glsl_glGetActiveUniform(self->object, i, max, &length, &size,
+                                &type, child->name);
         if (length)
         {
             /* Check for built-in state, which is returned by glGetActiveUniformARB
              * but cannot be queried.
              */
-            child->level = CALL_glGetUniformLocationARB(self->object, child->name);
+            child->level = glsl_glGetUniformLocation(self->object, child->name);
             if (child->level == -1) length = 0;
         }
         if (length) bugle_list_append(children, child);
@@ -2416,26 +2317,26 @@ static void spawn_children_program_object(const glstate *self, bugle_linked_list
     }
 
 #ifdef GL_ARB_vertex_shader
-    if (bugle_gl_has_extension(BUGLE_GL_ARB_vertex_shader))
+    if (bugle_gl_has_extension_group(BUGLE_GL_ARB_vertex_shader))
     {
-        CALL_glGetObjectParameterivARB(self->object, GL_OBJECT_ACTIVE_ATTRIBUTES_ARB,
-                                       &count);
-        CALL_glGetObjectParameterivARB(self->object, GL_OBJECT_ACTIVE_ATTRIBUTE_MAX_LENGTH_ARB,
-                                       &max);
+        glsl_glGetProgramiv(self->object, GL_OBJECT_ACTIVE_ATTRIBUTES_ARB,
+                            &count);
+        glsl_glGetProgramiv(self->object, GL_OBJECT_ACTIVE_ATTRIBUTE_MAX_LENGTH_ARB,
+                            &max);
 
         for (i = 0; i < count; i++)
         {
             child = bugle_malloc(sizeof(glstate));
             *child = *self;
             child->spawn_children = NULL;
-            child->info = &object_attrib_state;
+            child->info = &attrib_state;
             child->name = bugle_malloc(sizeof(GLcharARB) * (max + 1));
             child->name[0] = '\0';
             child->numeric_name = i;
             child->enum_name = 0;
             child->level = i;
-            CALL_glGetActiveAttribARB(self->object, i, max, &length, &size,
-                                      &type, child->name);
+            glsl_glGetActiveAttrib(self->object, i, max, &length, &size,
+                                   &type, child->name);
             if (length) bugle_list_append(children, child);
             else free(child->name);
         }
@@ -2443,79 +2344,6 @@ static void spawn_children_program_object(const glstate *self, bugle_linked_list
 #endif
 }
 #endif /* GL_ARB_shader_objects */
-
-#ifdef GL_VERSION_2_0
-static void spawn_children_shader(const glstate *self, bugle_linked_list *children)
-{
-    bugle_list_init(children, true);
-    make_leaves(self, shader_state, children);
-}
-
-static void spawn_children_program(const glstate *self, bugle_linked_list *children)
-{
-    static const state_info program_uniform_state =
-    {
-        NULL, GL_NONE, NULL_TYPE, -1, BUGLE_GL_VERSION_2_0, -1, STATE_UNIFORM
-    };
-    static const state_info program_attrib_state =
-    {
-        NULL, GL_NONE, TYPE_5GLint, -1, BUGLE_GL_VERSION_2_0, -1, STATE_ATTRIB_LOCATION
-    };
-    GLint i, count, max, type;
-    GLsizei length, size;
-    glstate *child;
-
-    bugle_list_init(children, true);
-    make_leaves(self, shader_state, children);
-
-    CALL_glGetProgramiv(self->object, GL_ACTIVE_UNIFORMS, &count);
-    CALL_glGetProgramiv(self->object, GL_ACTIVE_UNIFORM_MAX_LENGTH, &max);
-    for (i = 0; i < count; i++)
-    {
-        child = bugle_malloc(sizeof(glstate));
-        *child = *self;
-        child->spawn_children = NULL;
-        child->info = &program_uniform_state;
-        child->name = bugle_malloc(sizeof(GLchar) * (max + 1));
-        child->name[0] = '\0'; /* sanity, in case the query borks */
-        child->numeric_name = i;
-        child->enum_name = 0;
-        child->level = i;
-        CALL_glGetActiveUniform(self->object, i, max, &length, &size,
-                                &type, child->name);
-        if (length)
-        {
-            /* Check for built-in state, which is returned by glGetActiveUniform
-             * but cannot be queried.
-             */
-            child->level = CALL_glGetUniformLocation(self->object, child->name);
-            if (child->level == -1) length = 0;
-        }
-        if (length) bugle_list_append(children, child);
-        else free(child->name); /* failed query */
-    }
-
-    CALL_glGetProgramiv(self->object, GL_ACTIVE_ATTRIBUTES, &count);
-    CALL_glGetProgramiv(self->object, GL_ACTIVE_ATTRIBUTE_MAX_LENGTH, &max);
-
-    for (i = 0; i < count; i++)
-    {
-        child = bugle_malloc(sizeof(glstate));
-        *child = *self;
-        child->spawn_children = NULL;
-        child->info = &program_attrib_state;
-        child->name = bugle_malloc(sizeof(GLchar) * (max + 1));
-        child->name[0] = '\0';
-        child->numeric_name = i;
-        child->enum_name = 0;
-        child->level = i;
-        CALL_glGetActiveAttrib(self->object, i, max, &length, &size,
-                               &type, child->name);
-        if (length) bugle_list_append(children, child);
-        else free(child->name);
-    }
-}
-#endif
 
 #if defined(GL_ARB_vertex_program) || defined(GL_ARB_fragment_program)
 static void spawn_children_old_program_object(const glstate *self, bugle_linked_list *children)
@@ -2842,16 +2670,7 @@ static void spawn_children_global(const glstate *self, bugle_linked_list *childr
     }
 #endif
 #ifdef GL_ARB_shader_objects
-    if (bugle_gl_has_extension(BUGLE_GL_ARB_shader_objects))
-    {
-        make_objects(self, BUGLE_TRACKOBJECTS_SHADER_OBJECT, GL_NONE, false,
-                     "Object[%lu]", spawn_children_shader_object, NULL, children);
-        make_objects(self, BUGLE_TRACKOBJECTS_PROGRAM_OBJECT, GL_NONE, false,
-                     "Object[%lu]", spawn_children_program_object, NULL, children);
-    }
-#endif
-#ifdef GL_VERSION_2_0
-    if (bugle_gl_has_extension_group(BUGLE_GL_VERSION_2_0))
+    if (bugle_gl_has_extension_group(BUGLE_GL_ARB_shader_objects))
     {
         make_objects(self, BUGLE_TRACKOBJECTS_SHADER, GL_NONE, false,
                      "Shader[%lu]", spawn_children_shader, NULL, children);

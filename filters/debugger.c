@@ -26,6 +26,7 @@
 #include "src/tracker.h"
 #include "src/glstate.h"
 #include "src/glexts.h"
+#include "src/glsl.h"
 #include "common/hashtable.h"
 #include "common/protocol.h"
 #include "common/bool.h"
@@ -310,7 +311,7 @@ static bool send_data_texture(uint32_t id, GLuint texid, GLenum target,
     return true;
 }
 
-#if defined(GL_ARB_vertex_program) || defined(GL_ARB_fragment_program)
+#if defined(GL_ARB_vertex_program) || defined(GL_ARB_fragment_program) || defined(GL_ARB_vertex_shader) || defined(GL_ARB_fragment_shader)
 static bool send_data_shader(uint32_t id, GLuint shader_id,
                              GLenum target)
 {
@@ -338,15 +339,46 @@ static bool send_data_shader(uint32_t id, GLuint shader_id,
     CALL_glXMakeContextCurrent(dpy, old_write, old_write, aux);
 
     CALL_glPushAttrib(GL_ALL_ATTRIB_BITS);
-    CALL_glBindProgramARB(target, shader_id);
-    CALL_glGetProgramivARB(target, GL_PROGRAM_LENGTH_ARB, &length);
-    text = bugle_malloc(length);
-    CALL_glGetProgramStringARB(target, GL_PROGRAM_STRING_ARB, text);
+    switch (target)
+    {
+#ifdef GL_ARB_fragment_program
+    case GL_FRAGMENT_PROGRAM_ARB:
+#endif
+#ifdef GL_ARB_vertex_program
+    case GL_VERTEX_PROGRAM_ARB:
+#endif
+#if defined(GL_ARB_vertex_program) || defined(GL_ARB_fragment_program)
+        CALL_glBindProgramARB(target, shader_id);
+        CALL_glGetProgramivARB(target, GL_PROGRAM_LENGTH_ARB, &length);
+        text = bugle_malloc(length);
+        CALL_glGetProgramStringARB(target, GL_PROGRAM_STRING_ARB, text);
+        break;
+#endif
+#ifdef GL_ARB_vertex_shader
+    case GL_VERTEX_SHADER_ARB:
+#endif
+#ifdef GL_ARB_fragment_shader
+    case GL_FRAGMENT_SHADER_ARB:
+#endif
+#ifdef GL_ARB_shader_objects
+        glsl_glGetShaderiv(shader_id, GL_OBJECT_SHADER_SOURCE_LENGTH_ARB, &length);
+        if (length != 0)
+        {
+            text = bugle_malloc(length);
+            glsl_glGetShaderSource(shader_id, length, NULL, (GLcharARB *) text);
+            length--; /* Don't count NULL terminator */
+        }
+        else
+            text = bugle_malloc(1);
+#endif
+        break;
+    }
 
     gldb_protocol_send_code(out_pipe, RESP_DATA);
     gldb_protocol_send_code(out_pipe, id);
     gldb_protocol_send_code(out_pipe, REQ_DATA_SHADER);
     gldb_protocol_send_binary_string(out_pipe, length, text);
+    free(text);
 
     CALL_glPopAttrib();
     while ((error = CALL_glGetError()) != GL_NO_ERROR)

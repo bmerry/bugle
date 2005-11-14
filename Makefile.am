@@ -70,6 +70,7 @@ src_libbugle_la_SOURCES = \
 	src/gldump.c src/gldump.h \
 	src/glutils.c src/glutils.h \
 	src/glstate.c src/glstate.h \
+	src/glsl.c src/glsl.h \
 	src/interceptor.c \
 	src/filters.c src/filters.h \
 	src/trackcontext.c src/trackdisplaylist.c src/trackobjects.c \

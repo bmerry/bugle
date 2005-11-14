@@ -23,11 +23,8 @@
 # include <config.h>
 #endif
 #include <stddef.h>
+#include <GL/gl.h>
 #include "common/radixtree.h"
-/* A type big enough for GLuint and GLhandleARB.
- * This needs to go here at the top to avoid cyclic dependencies.
- */
-typedef bugle_radix_tree_type gl_handle;
 #include "common/bool.h"
 #include "src/filters.h"
 #include "src/utils.h"
@@ -38,9 +35,7 @@ typedef enum
     BUGLE_TRACKOBJECTS_TEXTURE,
     BUGLE_TRACKOBJECTS_BUFFER,
     BUGLE_TRACKOBJECTS_QUERY,
-    BUGLE_TRACKOBJECTS_SHADER_OBJECT,  /* ARB version of GLSL */
-    BUGLE_TRACKOBJECTS_PROGRAM_OBJECT,
-    BUGLE_TRACKOBJECTS_SHADER,         /* 2.0 version of GLSL */
+    BUGLE_TRACKOBJECTS_SHADER,      /* GLSL */
     BUGLE_TRACKOBJECTS_PROGRAM,
     BUGLE_TRACKOBJECTS_OLD_PROGRAM, /* glGenProgramsARB */
     BUGLE_TRACKOBJECTS_RENDERBUFFER,
@@ -73,7 +68,7 @@ void *bugle_displaylist_get(GLuint list);
  * user data.
  */
 void bugle_trackobjects_walk(bugle_trackobjects_type type,
-                             void (*walker)(gl_handle, GLenum, void *),
+                             void (*walker)(GLuint, GLenum, void *),
                              void *);
 
 /* Checks for GL extensions by #define from glexts.h */

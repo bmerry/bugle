@@ -36,6 +36,19 @@
 #include "src/names.h"
 #include "gldb/gldb-common.h"
 
+#if defined(GL_ARB_vertex_program) || defined(GL_ARB_fragment_program)
+# define GLDB_GUI_SHADER_OLD
+#endif
+#if defined(GL_ARB_vertex_shader) || defined(GL_ARB_fragment_shader)
+# define GLDB_GUI_SHADER_GLSL_ARB
+#endif
+#ifdef GL_VERSION_2_0
+# define GLDB_GUI_SHADER_GLSL_2_0
+#endif
+#if defined(GLDB_GUI_SHADER_OLD) || defined(GLDB_GUI_SHADER_GLSL_ARB) || defined(GLDB_GUI_SHADER_GLSL_2_0)
+# define GLDB_GUI_SHADER
+#endif
+
 enum
 {
     STATE_COLUMN_NAME,
@@ -75,7 +88,6 @@ typedef struct
 } GldbWindowTexture;
 #endif
 
-#if defined(GL_ARB_vertex_program) || defined(GL_ARB_fragment_program)
 typedef struct
 {
     bool dirty;
@@ -83,7 +95,6 @@ typedef struct
     GtkWidget *target, *id;
     GtkWidget *source;
 } GldbWindowShader;
-#endif
 
 typedef struct
 {
@@ -111,9 +122,7 @@ typedef struct GldbWindow
 #if HAVE_GTKGLEXT
     GldbWindowTexture texture;
 #endif
-#if defined(GL_ARB_vertex_program) || defined(GL_ARB_fragment_program)
     GldbWindowShader shader;
-#endif
     GldbWindowBacktrace backtrace;
 
     GtkListStore *breakpoints_store;
@@ -426,7 +435,7 @@ static gboolean texture_expose(GtkWidget *widget, GdkEventExpose *event,
 }
 #endif /* HAVE_GTKGLEXT */
 
-#if defined(GL_ARB_vertex_program) || defined(GL_ARB_fragment_program)
+#ifdef GLDB_GUI_SHADER
 static gboolean response_callback_shader(GldbWindow *context,
                                          gldb_response *response,
                                          gpointer user_data)
@@ -556,7 +565,7 @@ static void stopped(GldbWindow *context, const gchar *text)
     context->texture.dirty = true;
     invalidate_widget(context->texture.page);
 #endif
-#if defined(GL_ARB_vertex_program) || defined(GL_ARB_fragment_program)
+#ifdef GLDB_GUI_SHADER
     context->shader.dirty = true;
     invalidate_widget(context->shader.page);
 #endif
@@ -1346,10 +1355,10 @@ static void build_texture_page(GldbWindow *context)
 }
 #endif /* HAVE_GTKGLEXT */
 
-#if defined(GL_ARB_vertex_program) || defined(GL_ARB_fragment_program)
+#ifdef GLDB_GUI_SHADER
 static void update_shader_ids(GldbWindow *context, GLenum target)
 {
-    const gldb_state *s, *t;
+    const gldb_state *s, *t, *u;
     GtkTreeModel *model;
     GtkTreeIter iter, old_iter;
     guint old;
@@ -1365,22 +1374,69 @@ static void update_shader_ids(GldbWindow *context, GLenum target)
     gtk_list_store_clear(GTK_LIST_STORE(model));
 
     s = gldb_state_update(); /* FIXME: manage state tree ourselves */
-    s = state_find_child_enum(s, target);
-    if (!s) return;
-    for (nt = bugle_list_head(&s->children); nt != NULL; nt = bugle_list_next(nt))
+    switch (target)
     {
-        t = (const gldb_state *) bugle_list_data(nt);
-        if (t->enum_name == 0)
+#ifdef GL_ARB_vertex_program
+    case GL_VERTEX_PROGRAM_ARB:
+#endif
+#ifdef GL_ARB_fragment_program
+    case GL_FRAGMENT_PROGRAM_ARB:
+#endif
+#ifdef GLDB_GUI_SHADER_OLD
+        s = state_find_child_enum(s, target);
+        if (!s) return;
+        for (nt = bugle_list_head(&s->children); nt != NULL; nt = bugle_list_next(nt))
         {
-            gtk_list_store_append(GTK_LIST_STORE(model), &iter);
-            gtk_list_store_set(GTK_LIST_STORE(model), &iter,
-                               0, (guint) t->numeric_name, -1);
-            if (have_old && t->numeric_name == old)
+            t = (const gldb_state *) bugle_list_data(nt);
+            if (t->enum_name == 0 && t->name[0] >= '0' && t->name[0] <= '9')
             {
-                old_iter = iter;
-                have_old_iter = TRUE;
+                gtk_list_store_append(GTK_LIST_STORE(model), &iter);
+                gtk_list_store_set(GTK_LIST_STORE(model), &iter,
+                                   0, (guint) t->numeric_name, -1);
+                if (have_old && t->numeric_name == old)
+                {
+                    old_iter = iter;
+                    have_old_iter = TRUE;
+                }
             }
         }
+        break;
+#endif
+#ifdef GL_ARB_vertex_shader
+    case GL_VERTEX_SHADER_ARB:
+#endif
+#ifdef GL_ARB_fragment_shader
+    case GL_FRAGMENT_SHADER_ARB:
+#endif
+#ifdef GLDB_GUI_SHADER_GLSL_ARB
+        for (nt = bugle_list_head(&s->children); nt != NULL; nt = bugle_list_next(nt))
+        {
+            const char *target_string = "";
+            switch (target)
+            {
+#ifdef GL_ARB_vertex_shader
+            case GL_VERTEX_SHADER_ARB: target_string = "GL_VERTEX_SHADER"; break;
+#endif
+#ifdef GL_ARB_fragment_shader
+            case GL_FRAGMENT_SHADER_ARB: target_string = "GL_FRAGMENT_SHADER"; break;
+#endif
+            }
+            t = (const gldb_state *) bugle_list_data(nt);
+            u = state_find_child_enum(t, GL_OBJECT_SUBTYPE_ARB);
+            if (u && !strcmp(u->value, target_string))
+            {
+                gtk_list_store_append(GTK_LIST_STORE(model), &iter);
+                gtk_list_store_set(GTK_LIST_STORE(model), &iter,
+                                   0, (guint) t->numeric_name, -1);
+                if (have_old && t->numeric_name == old)
+                {
+                    old_iter = iter;
+                    have_old_iter = TRUE;
+                }
+            }
+        }
+        break;
+#endif
     }
     if (have_old_iter)
         gtk_combo_box_set_active_iter(GTK_COMBO_BOX(context->shader.id),
@@ -1413,7 +1469,6 @@ static void shader_id_changed(GtkComboBox *id_box, gpointer user_data)
     GtkTreeModel *model;
     guint target, id;
     GldbWindow *context;
-    const gldb_state *s;
 
     context = (GldbWindow *) user_data;
 
@@ -1427,12 +1482,6 @@ static void shader_id_changed(GtkComboBox *id_box, gpointer user_data)
 
     if (gldb_get_status() == GLDB_STATUS_STOPPED)
     {
-        s = gldb_state_update(); /* FIXME: manage state tree ourselves */
-        s = state_find_child_enum(s, target);
-        if (!s) return;
-        s = state_find_child_numeric(s, id);
-        if (!s) return;
-
         set_response_handler(context, seq, response_callback_shader, NULL);
         gldb_send_data_shader(seq++, id, target);
     }
@@ -1457,6 +1506,18 @@ static GtkWidget *build_shader_page_target(GldbWindow *context)
     gtk_list_store_set(store, &iter,
                        0, "GL_FRAGMENT_PROGRAM_ARB",
                        1, (gint) GL_FRAGMENT_PROGRAM_ARB, -1);
+#endif
+#ifdef GL_ARB_vertex_shader
+    gtk_list_store_append(store, &iter);
+    gtk_list_store_set(store, &iter,
+                       0, "GL_VERTEX_SHADER_ARB",
+                       1, (gint) GL_VERTEX_SHADER_ARB, -1);
+#endif
+#ifdef GL_ARB_fragment_shader
+    gtk_list_store_append(store, &iter);
+    gtk_list_store_set(store, &iter,
+                       0, "GL_FRAGMENT_SHADER_ARB",
+                       1, (gint) GL_FRAGMENT_SHADER_ARB, -1);
 #endif
     target = gtk_combo_box_new_with_model(GTK_TREE_MODEL(store));
     gtk_combo_box_set_active(GTK_COMBO_BOX(target), 0);
