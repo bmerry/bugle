@@ -1,0 +1,97 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<head>
+    <title>BuGLe: an OpenGL debugging tool</title>
+    <link rel="stylesheet" type="text/css" href="styles.css">
+</head>
+<body>
+    <div class="menu">
+        <span>
+           <a href="index.html">[About]</a>
+           <a href="news.html">[News]</a>
+           <a href="screenshots.html">[Screenshots]</a>
+        </span>
+    </div>
+    <h1>About BuGLe</h1>
+    <p>
+    BuGLe is a tool for OpenGL debugging, implemented as a wrapper library
+    that sits between your program and OpenGL. While still in
+    development, it can already do the following:
+    </p>
+    <ul>
+        <li>Dump a textual log of all GL calls made.</li>
+        <li>Take a screenshot after every frame, or capture a video</li>
+        <li>Call <tt>glGetError</tt> after each call to check for errors, and
+        wrap <tt>glGetError</tt> so that this checking is transparent to your
+        program.</li>
+        <li>Capture and display statistics (such as frame rate)</li>
+        <li>Force a wireframe mode</li>
+        <li>Recover a backtrace from segmentation faults inside the driver, even
+        if the driver is compiled without symbols.</li>
+    </ul>
+
+    <p>In addition, there is a debugger (<kbd>gldb</kbd>) that lets you set
+    breakpoints and examine backtraces. It also lets you examine OpenGL
+    state, enable and disable filters, and drop into gdb to
+    see what is going wrong. A GUI version of the debugger (<kbd>gldb-gui</kbd>)
+    is currently in development, and a preliminary version is available
+    with the latest release.
+    </p>
+
+    <p>
+    You can download the source from the
+    <a href="http://sourceforge.net/projects/bugle/">project page</a>.
+    </p>
+
+    <hr>
+
+    <h2>Requirements</h2>
+    <ul>
+        <li><a href="http://gcc.gnu.org">GCC</a> 3.2 or later</li>
+        <li><a href="http://ffmpeg.sourceforge.net/">FFmpeg</a> is needed for
+        video capture</li>
+        <li><a href="http://cnswww.cns.cwru.edu/~chet/readline/rltop.html">GNU
+            readline</a> is recommended for history editing in <kbd>gldb</kbd></li>
+        <li><a href="http://www.gtk.org/">GTK+</a> is required for <kbd>gldb-gui</kbd></li>
+        <li><a href="http://gtkglext.sourceforge.net/">GtkGLExt</a> is highly
+        recommended for <kbd>gldb-gui</kbd> (with it, the texture display will
+        not work)</li>
+    </ul>
+
+    <hr>
+    <h2>Example</h2>
+    <p>
+    Here is an extract from a log, generated from an application I am writing.
+    Note that <tt>GLenum</tt>s are displayed by name, and pointers are followed
+    to the correct number of elements.
+    </p>
+<pre>
+stats.fps: 22.671
+stats.fragments: 52335
+stats.triangles: 99732
+trace.call: glXSwapBuffers(0x8117720, 0x01c00021)
+trace.call: glXMakeCurrent(0x8117720, 0x01c00021, 0x8444800) = 1
+trace.call: glBindBufferARB(GL_ARRAY_BUFFER, 1)
+trace.call: glMapBufferARB(GL_ARRAY_BUFFER, GL_READ_WRITE) = 0x45c3c000
+trace.call: glUnmapBufferARB(GL_ARRAY_BUFFER) = GL_TRUE
+trace.call: glBindBufferARB(GL_ARRAY_BUFFER, 0)
+trace.call: glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
+trace.call: glLoadMatrixd(0xbfffe610 -> { { 0, -0.29661, 1.22295, 0 }, { 1.22295, 0, 0, 0 }, { 0, 1.18644, 0.305739, 0 }, { 0.037888, 1.61781, -1.52576, 1 } })
+trace.call: glActiveTextureARB(GL_TEXTURE0)
+trace.call: glTexEnvfv(GL_TEXTURE_ENV, GL_TEXTURE_ENV_COLOR, 0xbfffe5d0 -> { 0.778524, 0.778524, 0.569631, 0 })
+trace.call: glGetIntegerv(GL_MAX_TEXTURE_UNITS, 0xbfffe688 -> 4)
+trace.call: glBindBufferARB(GL_ARRAY_BUFFER, 1)
+trace.call: glVertexPointer(3, GL_FLOAT, 32, (nil))
+</pre>
+
+    <hr>
+    <p>
+    <a href="http://sourceforge.net"><img 
+        src="http://sourceforge.net/sflogo.php?group_id=110905&amp;type=1" 
+        width="88" height="31" alt="SourceForge.net Logo"></a>
+
+    <a href="http://validator.w3.org/check?uri=referer"><img
+        src="http://www.w3.org/Icons/valid-html401"
+        alt="Valid HTML 4.01!" height="31" width="88"></a>
+    </p>
+</body>
+</html>

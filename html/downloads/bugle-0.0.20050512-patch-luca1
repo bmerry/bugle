@@ -1,0 +1,126 @@
+Index: ChangeLog
+===================================================================
+--- ChangeLog	(revision 156)
++++ ChangeLog	(revision 157)
+@@ -1,3 +1,10 @@
++* Fix find_header.pl to look in . and in $srcdir
++* Fix Perl warning in glexts.perl
++* Have genfunctions.perl spit out #warnings in the C++ code when
++  the function lists mismatch, rather than breaking everything
++* Fix a check for the incorrect symbol in glstate.c (broke with
++  older glext.h)
++
+ 0.0.20050512
+ ------------
+ * Add support for several extensions in the state manager:
+Index: src/glstate.c
+===================================================================
+--- src/glstate.c	(revision 156)
++++ src/glstate.c	(revision 157)
+@@ -982,7 +982,7 @@
+     { STATE_NAME(GL_MAX_PROGRAM_ADDRESS_REGISTERS_ARB), TYPE_5GLint, -1, BUGLE_GL_ARB_vertex_program, STATE_OLD_PROGRAM | STATE_SELECT_VERTEX },
+ #endif
+     { STATE_NAME(GL_MAX_PROGRAM_NATIVE_INSTRUCTIONS_ARB), TYPE_5GLint, -1, BUGLE_EXTGROUP_old_program, STATE_OLD_PROGRAM },
+-#ifdef BUGLE_GL_ARB_fragment_program
++#ifdef GL_ARB_fragment_program
+     { STATE_NAME(GL_MAX_PROGRAM_NATIVE_ALU_INSTRUCTIONS_ARB), TYPE_5GLint, -1, BUGLE_GL_ARB_fragment_program, STATE_OLD_PROGRAM | STATE_SELECT_FRAGMENT },
+     { STATE_NAME(GL_MAX_PROGRAM_NATIVE_TEX_INSTRUCTIONS_ARB), TYPE_5GLint, -1, BUGLE_GL_ARB_fragment_program, STATE_OLD_PROGRAM | STATE_SELECT_FRAGMENT },
+     { STATE_NAME(GL_MAX_PROGRAM_NATIVE_TEX_INDIRECTIONS_ARB), TYPE_5GLint, -1, BUGLE_GL_ARB_fragment_program, STATE_OLD_PROGRAM | STATE_SELECT_FRAGMENT },
+Index: gentokens/genfunctions.perl
+===================================================================
+--- gentokens/genfunctions.perl	(revision 156)
++++ gentokens/genfunctions.perl	(revision 157)
+@@ -4,7 +4,7 @@
+ # There is a required option: --header types.h, where types.h contains the
+ # defines of the functions known to the C code. The option --out-header
+ # should be given to get a header file, no extra option to get the C file.
+-# Can all use --alias to get a list of aliases to paste into gl.bc.
++# Can also use --alias to get a list of aliases to use in gl.bc.
+ 
+ use strict;
+ use Getopt::Long;
+@@ -57,7 +57,7 @@
+         $ver = $ext = $suffix = undef;
+     }
+     elsif ((/(gl\w+)\s*\(/
+-            || /^extern .+ ()(glX\w+)\s*\(/)
++            || /^extern .+ (glX\w+)\s*\(/)
+            && (!$header || exists($index{$1})))
+     {
+         my $name = $1;
+@@ -146,7 +146,7 @@
+ } gl_function;
+ 
+ extern const gl_function bugle_gl_function_table[NUMBER_OF_FUNCTIONS];
+-        
++
+ EOF
+         ;
+     print "\n";
+@@ -169,6 +169,12 @@
+     for my $i (@table)
+     {
+         print ",\n" unless $first; $first = 0;
++        if (!defined($i->[2]))
++        {
++            print "#warning \"No extension information found for $i->[0]\"\n";
++	    $i->[2] = 'NULL';
++	    $i->[3] = 'NULL';
++	}
+         print "    { ", $i->[2], ", ", $i->[3], " }";
+     }
+     print "\n};\n";
+Index: gentokens/find_header.perl
+===================================================================
+--- gentokens/find_header.perl	(revision 156)
++++ gentokens/find_header.perl	(revision 157)
+@@ -5,13 +5,16 @@
+ die("Usage: $0 <header>") unless $#ARGV >= 0;
+ 
+ my $cpp = $ENV{'CPP'};
++my $srcdir = $ENV{'srcdir'};
++$srcdir =~ s/'/'\\''/g;
+ my $header = $ARGV[0];
+ my $path = '';
+-open(PREPROC, '-|', "echo '#include <$header>' | $cpp - 2>/dev/null");
++open(PREPROC, '-|', "echo '#include <$header>' | $cpp -I. -I'$srcdir' - 2>/dev/null");
+ while (<PREPROC>)
+ {
+     if (/^# \d+ "(.*$header)"/) { $path = $1; }
+ }
++close PREPROC;
+ 
+ if (!$path)
+ {
+Index: gentokens/genexts.perl
+===================================================================
+--- gentokens/genexts.perl	(revision 156)
++++ gentokens/genexts.perl	(revision 157)
+@@ -71,7 +71,7 @@
+              );
+ 
+ 
+-my %glext_hash = ("GL_VERSION_1_1");
++my %glext_hash = ("GL_VERSION_1_1" => 1);
+ my %indices = ();
+ while (<>)
+ {
+Index: configure.ac
+===================================================================
+--- configure.ac	(revision 156)
++++ configure.ac	(revision 157)
+@@ -68,10 +68,10 @@
+ AC_CHECK_HEADERS([readline/readline.h readline/history.h], [], [HAVE_READLINE=0])
+ AC_CHECK_HEADERS([pthread.h], [], [THREADS=BUGLE_THREADS_SINGLE])
+ 
+-GLINCLUDES="`CPP=\"$CPP\" $PERL -w $srcdir/gentokens/find_header.perl GL/gl.h` \
+-`CPP=\"$CPP\" $PERL -w $srcdir/gentokens/find_header.perl GL/glx.h` \
+-`CPP=\"$CPP\" $PERL -w $srcdir/gentokens/find_header.perl GL/glext.h` \
+-`CPP=\"$CPP\" $PERL -w $srcdir/gentokens/find_header.perl GL/glxext.h`"
++GLINCLUDES="`CPP=\"$CPP\" srcdir=\"$srcdir\" $PERL -w $srcdir/gentokens/find_header.perl GL/gl.h` \
++`CPP=\"$CPP\" srcdir=\"$srcdir\" $PERL -w $srcdir/gentokens/find_header.perl GL/glx.h` \
++`CPP=\"$CPP\" srcdir=\"$srcdir\" $PERL -w $srcdir/gentokens/find_header.perl GL/glext.h` \
++`CPP=\"$CPP\" srcdir=\"$srcdir\" $PERL -w $srcdir/gentokens/find_header.perl GL/glxext.h`"
+ AC_SUBST(GLINCLUDES)
+ 
+ dnl Checks for types

@@ -1,0 +1,21 @@
+img {
+	border: 0pt;
+}
+
+body {
+	color: black;
+	background-color: white;
+	margin: 0pt;
+}
+
+div.menu {
+	margin: 0pt;
+	padding: 0pt;
+	background-color: gray;
+	color: white;
+}
+
+div.menu a {
+	background-color: gray;
+	color: white;
+}
