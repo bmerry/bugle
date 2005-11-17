@@ -397,9 +397,8 @@ static void process_single_command(function_call *call)
     budgie_function func;
     filter_set *f;
 
-    /* FIXME: error checking on the network code */
-    gldb_protocol_recv_code(in_pipe, &req);
-    gldb_protocol_recv_code(in_pipe, &id);
+    if (!gldb_protocol_recv_code(in_pipe, &req)) exit(1);
+    if (!gldb_protocol_recv_code(in_pipe, &id)) exit(1);
 
     switch (req)
     {

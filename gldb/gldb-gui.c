@@ -199,7 +199,13 @@ static void update_state_r(const gldb_state *root, GtkTreeStore *store,
         g_free(name);
         if (child)
         {
-            gtk_tree_store_set(store, &iter, STATE_COLUMN_VALUE, child->value, -1);
+            gchar *value;
+            gchar *value_utf8;
+
+            value = child->value ? child->value : "";
+            value_utf8 = g_convert(value, -1, "UTF8", "ASCII", NULL, NULL, NULL);
+            gtk_tree_store_set(store, &iter, STATE_COLUMN_VALUE, value_utf8 ? value_utf8 : "", -1);
+            g_free(value_utf8);
             update_state_r(child, store, &iter);
             bugle_hash_set(&seen, child->name, NULL);
             valid = gtk_tree_model_iter_next(GTK_TREE_MODEL(store), &iter);
@@ -217,12 +223,18 @@ static void update_state_r(const gldb_state *root, GtkTreeStore *store,
         if (!child->name) continue;
         if (!bugle_hash_get(&seen, child->name))
         {
+            gchar *value;
+            gchar *value_utf8;
+
+            value = child->value ? child->value : "";
+            value_utf8 = g_convert(value, -1, "UTF8", "ASCII", NULL, NULL, NULL);
             gtk_tree_store_insert_before(store, &iter2, parent,
                                          valid ? &iter : NULL);
             gtk_tree_store_set(store, &iter2,
                                STATE_COLUMN_NAME, child->name,
-                               STATE_COLUMN_VALUE, child->value ? child->value : "",
+                               STATE_COLUMN_VALUE, value_utf8 ? value_utf8 : "",
                                -1);
+            g_free(value_utf8);
             update_state_r(child, store, &iter2);
         }
         else if (valid)
