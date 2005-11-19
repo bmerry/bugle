@@ -1,5 +1,6 @@
 * Fix programs hanging around and spinning after gldb-gui quits
 * Convert values to UTF8 in gldb-gui (TODO: names as well)
+* Rewrite of the GLSL state tracking
 
 0.0.20051112
 ------------

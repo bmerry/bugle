@@ -2,7 +2,7 @@ Current:
 --------
 - check whether all dependencies on trackextensions are listed
 - exploit per-context, per-filter state e.g. for video
-- get threads working again in BSD
+- get threads working again in BSD (is this still broken?)
 
 gldb
 ----
@@ -14,9 +14,9 @@ gldb
 gldb-gui
 --------
 - Support texture targets other than 2D and RECT
-- Support GLSL in shader dump
 - Show shader metadata in shader pane
 - VBO decode
+- convert state names to UTF8
 - texture zoom
 - texture info e.g. show RGB values
 - trace window?
@@ -31,7 +31,7 @@ bugle
 - better handling of texture proxies
 - fill in the rest of the state (image state, mainly)
 - handle GL shared and unshared objects correctly (queries unshared)
-- improve support for GLSL (better code dump, more type information)
+- improve support for GLSL (more type information)
 - capture more information about call lists
 - capture and replay
 
