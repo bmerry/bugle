@@ -23,6 +23,7 @@
 #if HAVE_GTKGLEXT
 # include <gtk/gtkgl.h>
 #endif
+#include <gdk-pixbuf/gdk-pixbuf.h>
 #include <glib.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -136,11 +137,6 @@ typedef struct
 
 static GtkListStore *function_names;
 static guint32 seq;
-
-static void free_callback(guchar *data, gpointer user_data)
-{
-    free(data);
-}
 
 static void set_response_handler(GldbWindow *context, guint32 id,
                                  gboolean (*callback)(GldbWindow *, gldb_response *r, gpointer user_data),
@@ -1156,6 +1152,56 @@ static void texture_level_changed(GtkComboBox *level, gpointer user_data)
     }
 }
 
+static void free_pixbuf_data(guchar *pixels, gpointer user_data)
+{
+    free(pixels);
+}
+
+static void texture_copy_clicked(GtkWidget *button, gpointer user_data)
+{
+    GdkGLContext *glcontext;
+    GdkGLDrawable *gldrawable;
+    GLint width, height, r1, r2;
+    GLubyte *pixels, *row;
+    GdkPixbuf *pixbuf;
+    GtkClipboard *clipboard;
+    GldbWindow *context;
+
+    context = (GldbWindow *) user_data;
+    glcontext = gtk_widget_get_gl_context(context->texture.draw);
+    gldrawable = gtk_widget_get_gl_drawable(context->texture.draw);
+    if (!gdk_gl_drawable_gl_begin(gldrawable, glcontext)) return;
+
+    /* FIXME: handle other targets */
+    glPushClientAttrib(GL_CLIENT_PIXEL_STORE_BIT);
+    glPixelStorei(GL_PACK_ALIGNMENT, 1);
+    glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_WIDTH, &width);
+    glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_HEIGHT, &height);
+    pixels = (GLubyte *) bugle_malloc(width * height * 4);
+    row = (GLubyte *) bugle_malloc(width * 4); /* temp storage for swaps */
+    glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
+    /* Flip vertically */
+    for (r1 = 0, r2 = height - 1; r1 < r2; r1++, r2--)
+    {
+        memcpy(row, pixels + r1 * width * 4, width * 4);
+        memcpy(pixels + r1 * width * 4, pixels + r2 * width * 4, width * 4);
+        memcpy(pixels + r2 * width * 4, row, width * 4);
+    }
+    free(row);
+    pixbuf = gdk_pixbuf_new_from_data(pixels, GDK_COLORSPACE_RGB, TRUE, 8,
+                                      width, height, width * 4,
+                                      free_pixbuf_data, NULL);
+    glPopClientAttrib();
+    gdk_gl_drawable_gl_end(gldrawable);
+
+    if (!pixbuf) return;
+
+    clipboard = gtk_clipboard_get_for_display(gtk_widget_get_display(button),
+                                              GDK_SELECTION_CLIPBOARD);
+    gtk_clipboard_set_image(clipboard, pixbuf);
+    g_object_unref(pixbuf);
+}
+
 static GtkWidget *build_texture_page_target(GldbWindow *context)
 {
     GtkWidget *target;
@@ -1323,7 +1369,7 @@ static GtkWidget *build_texture_page_draw(GldbWindow *context)
 
 static void build_texture_page(GldbWindow *context)
 {
-    GtkWidget *label, *target, *id, *face, *level, *draw;
+    GtkWidget *label, *target, *id, *face, *level, *draw, *copy;
     GtkWidget *vbox, *hbox, *scrolled;
     gint page;
 
@@ -1344,6 +1390,11 @@ static void build_texture_page(GldbWindow *context)
     gtk_box_pack_start(GTK_BOX(vbox), face, FALSE, FALSE, 0);
 #endif
     gtk_box_pack_start(GTK_BOX(vbox), level, FALSE, FALSE, 0);
+
+    copy = gtk_button_new_with_label("Copy");
+    gtk_box_pack_end(GTK_BOX(vbox), copy, FALSE, FALSE, 0);
+    g_signal_connect(G_OBJECT(copy), "clicked",
+                     G_CALLBACK(texture_copy_clicked), context);
 
     scrolled = gtk_scrolled_window_new(NULL, NULL);
     if (draw)
