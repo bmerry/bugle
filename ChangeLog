@@ -1,7 +1,23 @@
-* Fix programs hanging around and spinning after gldb-gui quits
-* Convert values to UTF8 in gldb-gui (TODO: names as well)
+* gldb-gui improvements
+  - Fix programs hanging around and spinning after gldb-gui quits
+  - Convert values to UTF8 (TODO: names as well)
+  * Texture viewer improvements
+    - copy button
+    - display of 1D, 2D, RECT and cubemap textures
+    - stubs for level, zoom, zoom in, zoom out
+    - work around ATI driver bug
 * Rewrite of the GLSL state tracking
-* Add "copy" button to texture viewer
+* Add bugle_hash_count and bugle_hashptr_count to simplify hash table class
+* Allow aux contexts to be created in absence of GLX 1.3
+* Make GL_EXT_texture_rectangle support work even if neither
+  GL_NV_texture_rectangle nor GL_ARB_texture_rectangle is advertised
+* Use glXGetProcAddress to get function pointers rather than libtool
+  (ATI driver works much better now)
+* test suite:
+  - Use a quick-n-dirty extension loader rather than relying on 
+    GL_GLEXT_PROTOTYPES
+  - Fix some failures in caused by driver weirdness not bugle bugs
+  - Rewrite the log comparison tool to give more useful feedback
 
 0.0.20051112
 ------------

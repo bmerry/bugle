@@ -3,3 +3,9 @@ BuGLe is written by Bruce Merry (bmerry@users.sourceforge.net).
 Portions of code, and the whole of c-common.def and tree.def,
 are taken from gcc. c-common.def and tree.def are copied verbatim from
 gcc 3.4.0, which can be obtained from http://gcc.gnu.org.
+
+The files GLee.c and GLee.h in the tests/ directory are copied verbatim
+GLee 5.02, which can be obtained from http://elfstone.com. It has its
+own licence, which is included at the top of the files. Note that no
+GLee code is installed by 'make install'; it is used only for the test
+suite.

@@ -31,21 +31,32 @@
 #include <stddef.h>
 #include <GL/glx.h>
 
+/* Some constructors like the context to be current when they are run.
+ * To facilitate this, the object is not constructed until the first
+ * use of the context. However, some of the useful information is passed
+ * as parameters to glXCreate[New]Context, so they are put in
+ * a trackcontext_data struct in the initial_values hash.
+ */
+
 bugle_object_class bugle_context_class;
 bugle_object_class bugle_namespace_class;
 static bugle_hashptr_table context_objects, namespace_objects;
-static bugle_hashptr_table parent_context; /* for namespacing */
+static bugle_hashptr_table initial_values;
 static bugle_object_view trackcontext_view;
 static bugle_thread_mutex_t context_mutex = BUGLE_THREAD_MUTEX_INITIALIZER;
 
 typedef struct
 {
+    GLXContext root_context;  /* context that owns the namespace - possibly self*/
     GLXContext aux_context;
+    XVisualInfo visual_info;
+    bool use_visual_info;
 } trackcontext_data;
 
 static bool trackcontext_newcontext(function_call *call, const callback_data *data)
 {
     GLXContext self, parent;
+    trackcontext_data *base, *up;
 
     switch (call->generic.group)
     {
@@ -63,19 +74,50 @@ static bool trackcontext_newcontext(function_call *call, const callback_data *da
         abort();
     }
 
-    if (self && parent)
+    if (self)
     {
         bugle_thread_mutex_lock(&context_mutex);
-        bugle_hashptr_set(&parent_context, self, parent);
+
+        base = (trackcontext_data *) bugle_malloc(sizeof(trackcontext_data));
+        base->aux_context = NULL;
+        if (parent)
+        {
+            up = (trackcontext_data *) bugle_hashptr_get(&initial_values, parent);
+            if (!up)
+            {
+                fprintf(stderr, "CRITICAL: share context %p unknown\n", (void *) parent);
+                base->root_context = self;
+            }
+            else
+                base->root_context = up->root_context;
+        }
+        switch (call->generic.group)
+        {
+#ifdef GLX_VERSION_1_3
+        case GROUP_glXCreateNewContext:
+            base->use_visual_info = false;
+            break;
+#endif
+        case GROUP_glXCreateContext:
+            base->visual_info = **call->typed.glXCreateContext.arg1;
+            base->use_visual_info = true;
+            break;
+        default:
+            abort();
+        }
+
+        bugle_hashptr_set(&initial_values, self, base);
         bugle_thread_mutex_unlock(&context_mutex);
     }
+
     return true;
 }
 
 static bool trackcontext_callback(function_call *call, const callback_data *data)
 {
-    GLXContext ctx, root, tmp;
+    GLXContext ctx;
     bugle_object *obj, *ns;
+    trackcontext_data *initial, *view;
 
     /* These calls may fail, so we must explicitly check for the
      * current context.
@@ -91,17 +133,24 @@ static bool trackcontext_callback(function_call *call, const callback_data *data
         {
             obj = bugle_object_new(&bugle_context_class, ctx, true);
             bugle_hashptr_set(&context_objects, ctx, obj);
-            if (bugle_hashptr_get(&parent_context, ctx) == NULL)
+            initial = bugle_hashptr_get(&initial_values, ctx);
+            if (initial == NULL)
             {
-                ns = bugle_object_new(&bugle_namespace_class, ctx, true);
-                bugle_hashptr_set(&namespace_objects, ctx, ns);
+                fprintf(stderr, "CRITICAL: context %p used but not created\n",
+                        (void *) ctx);
             }
             else
             {
-                root = ctx;
-                while ((tmp = bugle_hashptr_get(&parent_context, root)) != NULL)
-                    root = tmp;
-                bugle_object_set_current(&bugle_namespace_class, obj);
+                view = bugle_object_get_data(&bugle_context_class, obj, trackcontext_view);
+                *view = *initial;
+                ns = bugle_hashptr_get(&namespace_objects, view->root_context);
+                if (!ns)
+                {
+                    ns = bugle_object_new(&bugle_namespace_class, ctx, true);
+                    bugle_hashptr_set(&namespace_objects, ctx, ns);
+                }
+                else
+                    bugle_object_set_current(&bugle_namespace_class, ns);
             }
         }
         else
@@ -139,6 +188,7 @@ GLXContext bugle_get_aux_context()
     int attribs[3] = {GLX_FBCONFIG_ID, 0, None};
     GLXFBConfig *cfgs;
     Display *dpy;
+    int major = -1, minor = -1;
 
     data = bugle_object_get_current_data(&bugle_context_class, trackcontext_view);
     if (!data) return NULL; /* no current context, hence no aux context */
@@ -146,25 +196,48 @@ GLXContext bugle_get_aux_context()
     {
         dpy = CALL_glXGetCurrentDisplay();
         old_ctx = CALL_glXGetCurrentContext();
-        CALL_glXQueryContext(dpy, old_ctx, GLX_RENDER_TYPE, &render_type);
-        CALL_glXQueryContext(dpy, old_ctx, GLX_SCREEN, &screen);
-        CALL_glXQueryContext(dpy, old_ctx, GLX_FBCONFIG_ID, &attribs[1]);
-        /* It seems that render_type comes back as a boolean, although
-         * the spec seems to indicate that it should be otherwise.
-         */
-        if (render_type <= 1)
-            render_type = render_type ? GLX_RGBA_TYPE : GLX_COLOR_INDEX_TYPE;
-        cfgs = CALL_glXChooseFBConfig(dpy, screen, attribs, &n);
-        if (cfgs == NULL)
+        CALL_glXQueryVersion(dpy, &major, &minor);
+
+#ifdef GLX_VERSION_1_3
+        if (major >= 1 && (major > 1 || minor >= 3))
         {
-            fprintf(stderr, "Warning: could not create an auxiliary context\n");
-            return NULL;
+            /* Have all the facilities to extract the necessary information */
+            CALL_glXQueryContext(dpy, old_ctx, GLX_RENDER_TYPE_SGIX, &render_type);
+            CALL_glXQueryContext(dpy, old_ctx, GLX_SCREEN_EXT, &screen);
+            CALL_glXQueryContext(dpy, old_ctx, GLX_FBCONFIG_ID_SGIX, &attribs[1]);
+            /* It seems that render_type comes back as a boolean, although
+             * the spec seems to indicate that it should be otherwise.
+             */
+            if (render_type <= 1)
+                render_type = render_type ? GLX_RGBA_TYPE_SGIX : GLX_COLOR_INDEX_TYPE_SGIX;
+            cfgs = CALL_glXChooseFBConfig(dpy, screen, attribs, &n);
+            if (cfgs == NULL)
+            {
+                fprintf(stderr, "Warning: could not create an auxiliary context: no matching FBConfig\n");
+                return NULL;
+            }
+            ctx = CALL_glXCreateNewContext(dpy, cfgs[0], render_type,
+                                           old_ctx, CALL_glXIsDirect(dpy, old_ctx));
+            XFree(cfgs);
+            if (ctx == NULL)
+                fprintf(stderr, "Warning: could not create an auxiliary context: creation failed\n");
         }
-        ctx = CALL_glXCreateNewContext(dpy, cfgs[0], render_type,
-                                       old_ctx, CALL_glXIsDirect(dpy, old_ctx));
-        XFree(cfgs);
-        if (ctx == NULL)
-            fprintf(stderr, "Warning: could not create an auxiliary context\n");
+        else
+#endif
+        {
+            if (data->use_visual_info)
+            {
+                ctx = CALL_glXCreateContext(dpy, &data->visual_info, old_ctx,
+                                            CALL_glXIsDirect(dpy, old_ctx));
+                if (ctx == NULL)
+                    fprintf(stderr, "Warning: could not create an auxiliary context: creation failed\n");
+            }
+            else
+            {
+                fprintf(stderr, "Warning: could not create an auxiliary context: missing extensions\n");
+                return NULL;
+            }
+        }
         data->aux_context = ctx;
     }
     return data->aux_context;
@@ -186,9 +259,9 @@ void trackcontext_initialise(void)
     bugle_object_class_init(&bugle_namespace_class, &bugle_context_class);
     bugle_hashptr_init(&context_objects, true);
     bugle_hashptr_init(&namespace_objects, true);
-    bugle_hashptr_init(&parent_context, false);
+    bugle_hashptr_init(&initial_values, true);
     bugle_atexit((void (*)(void *)) bugle_hashptr_clear, &context_objects);
     bugle_atexit((void (*)(void *)) bugle_hashptr_clear, &namespace_objects);
-    bugle_atexit((void (*)(void *)) bugle_hashptr_clear, &parent_context);
+    bugle_atexit((void (*)(void *)) bugle_hashptr_clear, &initial_values);
     bugle_register_filter_set(&trackcontext_info);
 }

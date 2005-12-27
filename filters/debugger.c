@@ -159,7 +159,7 @@ static bool send_data_texture(uint32_t id, GLuint texid, GLenum target,
 {
     char *data;
     size_t length;
-    GLint width, height = 1, depth = 1;
+    GLint width = 1, height = 1, depth = 1;
 
     Display *dpy;
     GLXContext aux, real;
@@ -174,8 +174,7 @@ static bool send_data_texture(uint32_t id, GLuint texid, GLenum target,
     GLint old_buffer;
 #endif
 
-    aux = bugle_get_aux_context();
-    if (!aux || !bugle_begin_internal_render())
+    if (!bugle_begin_internal_render())
     {
         gldb_protocol_send_code(out_pipe, RESP_ERROR);
         gldb_protocol_send_code(out_pipe, id);
@@ -184,7 +183,8 @@ static bool send_data_texture(uint32_t id, GLuint texid, GLenum target,
         return false;
     }
 
-    if (texid)
+    aux = bugle_get_aux_context();
+    if (aux && texid)
     {
         real = CALL_glXGetCurrentContext();
         old_write = CALL_glXGetCurrentDrawable();
@@ -230,9 +230,10 @@ static bool send_data_texture(uint32_t id, GLuint texid, GLenum target,
     CALL_glPixelStorei(GL_PACK_ALIGNMENT, 1);
 
     CALL_glGetTexLevelParameteriv(face, level, GL_TEXTURE_WIDTH, &width);
-    CALL_glGetTexLevelParameteriv(face, level, GL_TEXTURE_HEIGHT, &height);
+    if (face != GL_TEXTURE_1D)
+        CALL_glGetTexLevelParameteriv(face, level, GL_TEXTURE_HEIGHT, &height);
 #ifdef GL_EXT_texture3D
-    if (bugle_gl_has_extension(BUGLE_GL_EXT_texture3D))
+    if (face == GL_TEXTURE_3D && bugle_gl_has_extension(BUGLE_GL_EXT_texture3D))
         CALL_glGetTexLevelParameteriv(face, level, GL_TEXTURE_DEPTH_EXT, &depth);
 #endif
     length = bugle_gl_type_to_size(type) * bugle_gl_format_to_count(format, type)
@@ -242,15 +243,16 @@ static bool send_data_texture(uint32_t id, GLuint texid, GLenum target,
 #if 0 /* Disabled by default because it breaks non-rendered textures */
 #ifdef GL_EXT_framebuffer_object
     /* NVIDIA driver 76.76 has a bug where glGetTexImage does not reflect
-     * the results of render-to-texture. */
-    /* FIXME: should also apply to default textures, in which case we
-     * need to save various FBO state. */
-    /* FIXME: need to handle targets other than 2D and RECTANGLE
+     * the results of render-to-texture. This is fixed in 81.74, hence the
+     * following limitations will likely never be addressed:
+     * - should also apply to default textures, in which case we
+     *   need to save various FBO state.
+     * - only handles 2D and RECTANGLE targets
      */
     if (strcmp(CALL_glGetString(GL_VERSION), "2.0.0 NVIDIA 76.76") == 0
         && texid
         && bugle_gl_has_extension(BUGLE_GL_EXT_framebuffer_object)
-        && (target == GL_TEXTURE_2D || target == GL_TEXTURE_RECTANGLE_ARB))
+        && (target == GL_TEXTURE_2D || target == GL_TEXTURE_RECTANGLE_NV))
     {
         GLuint fbo;
 
@@ -267,10 +269,10 @@ static bool send_data_texture(uint32_t id, GLuint texid, GLenum target,
 #endif
 #endif
     {
-        CALL_glGetTexImage(target, level, format, type, data);
+        CALL_glGetTexImage(face, level, format, type, data);
     }
 
-    if (texid)
+    if (aux && texid)
     {
         GLenum error;
         while ((error = CALL_glGetError()) != GL_NO_ERROR)

@@ -5,8 +5,8 @@
 #if HAVE_CONFIG_H
 # include <config.h>
 #endif
-#define GL_GLEXT_PROTOTYPES
 #define _POSIX_SOURCE
+#include "tests/loader.h"
 #include <GL/gl.h>
 #include <GL/glext.h>
 #include <GL/glx.h>
@@ -66,7 +66,7 @@ static void triangles_draw_range_elements(GLenum mode, int count)
 
     glVertexPointer(GL_FLOAT, 3, 0, float_data);
 #ifdef GL_EXT_draw_range_elements
-    if (glutExtensionSupported("GL_EXT_draw_range_elements"))
+    if (BUGLE_GL_EXT_draw_range_elements)
     {
         glDrawRangeElementsEXT(mode, 0, 5, 6, GL_UNSIGNED_SHORT, indices);
         fprintf(ref, "stats\\.fps: [0-9.]+\nstats\\.triangles: %d\n", count);
@@ -96,6 +96,8 @@ int main(int argc, char **argv)
     glutInitDisplayMode(GLUT_RGBA | GLUT_DOUBLE | GLUT_DEPTH);
     glutInitWindowSize(300, 300);
     glutCreateWindow("triangle count test");
+    bugle_init();
+
     run(triangles_immediate);
     run(triangles_draw_arrays);
     run(triangles_draw_elements);

@@ -129,6 +129,17 @@ void bugle_hash_set(bugle_hash_table *table, const char *key, void *value)
     table->entries[h].value = value;
 }
 
+bool bugle_hash_count(const bugle_hash_table *table, const char *key)
+{
+    size_t h;
+
+    if (!table->entries) return NULL;
+    h = hash(key) % table->size;
+    while (table->entries[h].key && strcmp(key, table->entries[h].key) != 0)
+        if (++h == table->size) h = 0;
+    return table->entries[h].key != NULL;
+}
+
 void *bugle_hash_get(const bugle_hash_table *table, const char *key)
 {
     size_t h;
@@ -137,13 +148,8 @@ void *bugle_hash_get(const bugle_hash_table *table, const char *key)
     h = hash(key) % table->size;
     while (table->entries[h].key && strcmp(key, table->entries[h].key) != 0)
         if (++h == table->size) h = 0;
-    if (table->entries[h].key)
-    {
-        if (table->entries[h].value) return table->entries[h].value;
-        return (void *) table->entries[h].key;
-    }
-    else
-        return NULL;
+    if (table->entries[h].key) return table->entries[h].value;
+    else return NULL;
 }
 
 void bugle_hash_clear(bugle_hash_table *table)
@@ -253,6 +259,17 @@ void bugle_hashptr_set(bugle_hashptr_table *table, const void *key, void *value)
     table->entries[h].value = value;
 }
 
+bool bugle_hashptr_count(const bugle_hashptr_table *table, const void *key)
+{
+    size_t h;
+
+    if (!table->entries) return NULL;
+    h = hashptr(key) % table->size;
+    while (table->entries[h].key && table->entries[h].key != key)
+        if (++h == table->size) h = 0;
+    return table->entries[h].key != NULL;
+}
+
 void *bugle_hashptr_get(const bugle_hashptr_table *table, const void *key)
 {
     size_t h;
@@ -261,13 +278,8 @@ void *bugle_hashptr_get(const bugle_hashptr_table *table, const void *key)
     h = hashptr(key) % table->size;
     while (table->entries[h].key && table->entries[h].key != key)
         if (++h == table->size) h = 0;
-    if (table->entries[h].key)
-    {
-        if (table->entries[h].value) return table->entries[h].value;
-        return (void *) key;
-    }
-    else
-        return NULL;
+    if (table->entries[h].key) return table->entries[h].value;
+    else return NULL;
 }
 
 void bugle_hashptr_clear(bugle_hashptr_table *table)

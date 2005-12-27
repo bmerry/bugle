@@ -16,6 +16,15 @@ sub write_group($$)
 my $outheader = '';
 GetOptions('out-header' => \$outheader);
 
+# These extensions do not exist in the registry nor in glext.h, but
+# are advertised by some drivers. They are listed here because they
+# are equivalent to some registered extension, and we wish drivers that
+# expose these extensions to benefit from the equivalent extension. An
+# example of this is that ATI drivers expose GL_EXT_texture_rectangle,
+# which does not appear in the registry but is equivalent to
+# GL_NV_texture_rectangle which does.
+my @force = ("GL_EXT_texture_rectangle");
+
 # Chains, for the simple cases.
 my %chains = ("GL_ATI_draw_buffers" => "GL_ARB_draw_buffers",
               "GL_ARB_depth_texture" => "GL_VERSION_1_4",
@@ -68,7 +77,7 @@ my %groups = (# This got promoted to core from imaging subset in 1.4
              );
 
 
-my %glext_hash = ("GL_VERSION_1_1" => 1);
+my %glext_hash = ("GL_VERSION_1_1" => 1, map { $_ => 1 } @force);
 my %indices = ();
 while (<>)
 {
@@ -117,7 +126,7 @@ else
         $indices{$e} = $ext_index;
         $ext_index++;
     }
-    
+
     print "/* Generated at ", scalar(localtime), " by $0. Do not edit. */\n";
     print <<EOF
 #if HAVE_CONFIG_H
@@ -142,7 +151,7 @@ EOF
     }
     print join(",\n", ("    { NULL, NULL }") x scalar(keys %groups)), "\n";
     print "};\n\n";
-    
+
     for my $e (@glext)
     {
         my $cur = $e;

@@ -601,6 +601,9 @@ static void destroy_screenshot(filter_set *handle)
     if (video_codec) free(video_codec);
 }
 
+/* The values are set to &seen_extensions to indicate presence, then
+ * lazily deleted by setting to NULL.
+ */
 static bugle_hash_table seen_extensions;
 static const char *gl_version = "GL_VERSION_1_1";
 static const char *glx_version = "GLX_VERSION_1_2";

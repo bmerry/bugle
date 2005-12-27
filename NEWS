@@ -1,3 +1,8 @@
+This release greatly improves support for ATI drivers, which previously
+caused problems due to some dubious shortcuts used by bugle. There have
+also been various bug-fixes and improvements, most notably in the GUI
+debugger gldb-gui.
+
 0.0.20051112
 ------------
 There is now a graphical debugger, gldb-gui. The GUI is still in very

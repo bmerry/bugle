@@ -8,7 +8,7 @@ noinst_PROGRAMS = budgie/budgie
 # Misc extra files to include
 noinst_HEADERS = budgie/tree.def budgie/c-common.def
 dist_noinst_SCRIPTS = gentokens/gentokens.perl gentokens/genfunctions.perl \
-	gentokens/find_header.perl gentokens/genexts.perl
+	gentokens/find_header.perl gentokens/genexts.perl gentokens/genloader.perl
 dist_man_MANS = doc/gldb.1 doc/bugle.3
 # The real things
 lib_LTLIBRARIES = src/libbugleutils.la src/libbugle.la
@@ -107,7 +107,7 @@ src/names.c src/names.h src/utils.c src/utils.h src/lib.c src/lib.h: budgie/budg
 	$(INSTALL) -d src
 	budgie/budgie -t `test -f src/data/gl.tu || echo '$(srcdir)/'`src/data/gl.tu -o src/utils -n src/names -l src/lib gl.bc
 
-BUILT_SOURCES += src/glfuncs.h src/glexts.h
+BUILT_SOURCES += src/glfuncs.h src/glexts.h tests/loader.h
 
 src/gltokens.c: gentokens/gentokens.perl
 	$(PERL) -w $(srcdir)/gentokens/gentokens.perl $(GLINCLUDES) > $@
@@ -122,6 +122,10 @@ src/glexts.c: gentokens/genexts.perl
 bc/alias.bc: gentokens/genfunctions.perl
 	$(INSTALL) -d bc
 	$(PERL) -w $(srcdir)/gentokens/genfunctions.perl --alias $(GLINCLUDES) > $@
+tests/loader.h: gentokens/genloader.perl
+	$(PERL) -w $(srcdir)/gentokens/genloader.perl --out-header $(GLEXTINCLUDE) > $@
+tests/loader.c: gentokens/genloader.perl
+	$(PERL) -w $(srcdir)/gentokens/genloader.perl $(GLEXTINCLUDE) > $@
 
 # Filters
 filters_common_la_SOURCES = filters/common.c
@@ -144,28 +148,36 @@ filters_capture_la_LDFLAGS = -thread-safe -module -avoid-version -export-dynamic
 check_PROGRAMS = \
 	tests/errors tests/threads1 tests/threads2 tests/queries \
 	tests/misc tests/setstate tests/triangles \
-        tests/pointers tests/objects
-dist_check_SCRIPTS = tests/queries.sh tests/setstate.sh tests/pointers.sh tests/triangles.sh tests/comparelog.sh tests/comparelog.perl
+        tests/pointers tests/objects tests/textest
+dist_check_SCRIPTS = tests/errors.sh tests/misc.sh tests/queries.sh tests/setstate.sh tests/pointers.sh tests/triangles.sh tests/comparelog.sh tests/comparelog.perl
 tests_errors_SOURCES = tests/errors.c
-tests_errors_LDADD = src/libbugle.la -lglut -lGLU $(GL_LIBS) $(X_PRE_LIBS) $(X_LIBS) -lX11 $(X_EXTRA_LIBS)
+tests_errors_LDADD = -lglut -lGLU $(GL_LIBS) $(X_PRE_LIBS) $(X_LIBS) -lX11 $(X_EXTRA_LIBS)
 tests_pointers_SOURCES = tests/pointers.c
-tests_pointers_LDADD = src/libbugle.la -lglut -lGLU $(GL_LIBS) $(X_PRE_LIBS) $(X_LIBS) -lX11 $(X_EXTRA_LIBS)
+nodist_tests_pointers_SOURCES = tests/loader.c tests/loader.h
+tests_pointers_LDADD = -lglut -lGLU $(GL_LIBS) $(X_PRE_LIBS) $(X_LIBS) -lX11 $(X_EXTRA_LIBS)
 tests_threads1_SOURCES = tests/threads1.c
-tests_threads1_LDADD = src/libbugle.la $(GL_LIBS) $(X_PRE_LIBS) $(X_LIBS) $(X_EXTRA_LIBS) -lX11 $(THREAD_LIBS)
+tests_threads1_LDADD = $(GL_LIBS) $(X_PRE_LIBS) $(X_LIBS) $(X_EXTRA_LIBS) -lX11 $(THREAD_LIBS)
 tests_threads2_SOURCES = tests/threads2.c
-tests_threads2_LDADD = src/libbugle.la $(GL_LIBS) $(X_PRE_LIBS) $(X_LIBS) $(X_EXTRA_LIBS) -lX11 $(THREAD_LIBS)
+tests_threads2_LDADD = $(GL_LIBS) $(X_PRE_LIBS) $(X_LIBS) $(X_EXTRA_LIBS) -lX11 $(THREAD_LIBS)
 tests_queries_SOURCES = tests/queries.c
-tests_queries_LDADD = src/libbugle.la -lglut -lGLU $(GL_LIBS) $(X_PRE_LIBS) $(X_LIBS) -lX11 $(X_EXTRA_LIBS)
+nodist_tests_queries_SOURCES = tests/loader.c tests/loader.h
+tests_queries_LDADD = -lglut -lGLU $(GL_LIBS) $(X_PRE_LIBS) $(X_LIBS) -lX11 $(X_EXTRA_LIBS)
 tests_triangles_SOURCES = tests/triangles.c
-tests_triangles_LDADD = src/libbugle.la -lglut -lGLU $(GL_LIBS) $(X_PRE_LIBS) $(X_LIBS) -lX11 $(X_EXTRA_LIBS)
+nodist_tests_triangles_SOURCES = tests/loader.c tests/loader.h
+tests_triangles_LDADD = -lglut -lGLU $(GL_LIBS) $(X_PRE_LIBS) $(X_LIBS) -lX11 $(X_EXTRA_LIBS)
 tests_misc_SOURCES = tests/misc.c
-tests_misc_LDADD = src/libbugle.la -lglut -lGLU $(GL_LIBS) $(X_PRE_LIBS) $(X_LIBS) -lX11 $(X_EXTRA_LIBS)
+tests_misc_LDADD = -lglut -lGLU $(GL_LIBS) $(X_PRE_LIBS) $(X_LIBS) -lX11 $(X_EXTRA_LIBS)
 tests_setstate_SOURCES = tests/setstate.c
+nodist_tests_setstate_SOURCES = tests/loader.c tests/loader.h
 tests_setstate_LDADD = src/libbugle.la -lglut -lGLU $(GL_LIBS) $(X_PRE_LIBS) $(X_LIBS) -lX11 $(X_EXTRA_LIBS)
 tests_objects_SOURCES = tests/objects.c
-tests_objects_LDADD = src/libbugle.la -lglut -lGLU $(GL_LIBS) $(X_PRE_LIBS) $(X_LIBS) -lX11 $(X_EXTRA_LIBS)
-TESTS = tests/errors tests/misc tests/queries.sh tests/setstate.sh tests/triangles.sh tests/pointers.sh
-TESTS_ENVIRONMENT = BUGLE_FILTERS=$(srcdir)/tests/filters BUGLE_FILTER_DIR=filters/.libs
+nodist_tests_objects_SOURCES = tests/loader.c tests/loader.h
+tests_objects_LDADD = -lglut -lGLU $(GL_LIBS) $(X_PRE_LIBS) $(X_LIBS) -lX11 $(X_EXTRA_LIBS)
+tests_textest_SOURCES = tests/textest.c
+nodist_tests_textest_SOURCES = tests/loader.c tests/loader.h
+tests_textest_LDADD = -lglut -lGLU $(GL_LIBS) $(X_PRE_LIBS) $(X_LIBS) -lX11 $(X_EXTRA_LIBS)
+TESTS = tests/errors.sh tests/misc.sh tests/queries.sh tests/setstate.sh tests/triangles.sh tests/pointers.sh
+TESTS_ENVIRONMENT = BUGLE_FILTERS=$(srcdir)/tests/filters BUGLE_FILTER_DIR=filters/.libs BUGLE_LIB=src/.libs/libbugle.so
 
 # Extra files to distribute
 EXTRA_DIST = gl.bc.in $(BCFILES) src/data/gl.c src/data/overrides.h \
@@ -190,5 +202,6 @@ CLEANFILES = \
 	tests/.libs/setstate tests/.libs/lt-setstate \
         tests/.libs/triangles tests/.libs/lt-triangles \
         tests/.libs/pointers tests/.libs/lt-pointers \
-        tests/.libs/objects
+        tests/.libs/objects \
+	tests/loader.c tests/loader.h
 DISTCLEANFILES = tests/*.log

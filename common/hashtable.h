@@ -47,6 +47,9 @@ void bugle_initialise_hashing(void);
  */
 void bugle_hash_init(bugle_hash_table *table, bool owns_memory);
 void bugle_hash_set(bugle_hash_table *table, const char *key, void *value);
+/* Determines whether the key is present */
+bool bugle_hash_count(const bugle_hash_table *table, const char *key);
+/* Returns NULL if key absent OR if value is NULL */
 void *bugle_hash_get(const bugle_hash_table *table, const char *key);
 void bugle_hash_clear(bugle_hash_table *table);
 
@@ -77,6 +80,7 @@ typedef struct
 
 void bugle_hashptr_init(bugle_hashptr_table *table, bool owns_memory);
 void bugle_hashptr_set(bugle_hashptr_table *table, const void *key, void *value);
+bool bugle_hashptr_count(const bugle_hashptr_table *table, const void *key);
 void *bugle_hashptr_get(const bugle_hashptr_table *table, const void *key);
 void bugle_hashptr_clear(bugle_hashptr_table *table);
 

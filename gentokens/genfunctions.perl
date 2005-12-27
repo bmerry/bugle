@@ -13,7 +13,7 @@ sub text_versions($$)
 {
     my $ver = $_[0];
     my $ext = $_[1];
-    
+
     if (defined($ver)) { $ver = '"' . $ver . '"'; }
     elsif (defined($ext)) { $ver = "NULL"; }
     else { $ver = '"GL_VERSION_1_1"'; }
@@ -24,11 +24,11 @@ sub text_versions($$)
 
 my ($ver, $ext, $suffix, @table, %index);
 
-# Load known function names
 my $header = '';
 my $outheader = '';
 my $aliases = '';
 GetOptions('header=s' => \$header, 'out-header' => \$outheader, 'alias' => \$aliases);
+# Load known function names
 if ($header)
 {
     open(H, "<$header");
@@ -47,7 +47,7 @@ if ($header)
 while (<>)
 {
     if (/^#ifndef (GL_VERSION_[0-9_]+)/) { $ver = $1; }
-    elsif (/^#ifndef (GL_([0-9A-Z]+)_\w+)/) 
+    elsif (/^#ifndef (GL_([0-9A-Z]+)_\w+)/)
     { 
         $ext = $1;
         $suffix = $2;
