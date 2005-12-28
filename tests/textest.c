@@ -1,6 +1,6 @@
 /* Creates a number of textures, to test the texture viewer */
 
-#include "tests/loader.h"
+#include "glee/GLee.h"
 #include <GL/glut.h>
 
 static void display(void)
@@ -66,7 +66,7 @@ static void init_gl()
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 
 #ifdef GL_NV_texture_rectangle
-    if (BUGLE_GL_NV_texture_rectangle)
+    if (GLEE_NV_texture_rectangle)
     {
         glGenTextures(1, &id);
         glBindTexture(GL_TEXTURE_RECTANGLE_NV, id);
@@ -77,7 +77,7 @@ static void init_gl()
 #endif
 
 #ifdef GL_ARB_texture_cube_map
-    if (BUGLE_GL_ARB_texture_cube_map)
+    if (GLEE_ARB_texture_cube_map)
     {
         glGenTextures(1, &id);
         glBindTexture(GL_TEXTURE_CUBE_MAP_ARB, id);
@@ -89,7 +89,7 @@ static void init_gl()
 #endif
 
 #ifdef GL_EXT_texture3D
-    if (BUGLE_GL_EXT_texture3D)
+    if (GLEE_EXT_texture3D)
     {
         glGenTextures(1, &id);
         glBindTexture(GL_TEXTURE_3D_EXT, id);
@@ -112,7 +112,7 @@ int main(int argc, char **argv)
     glutInitWindowSize(512, 512);
     glutCreateWindow("Texture test");
 
-    bugle_init();
+    GLeeInit();
     init_gl();
     glutDisplayFunc(display);
     glutReshapeFunc(reshape);

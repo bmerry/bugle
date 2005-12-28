@@ -14,8 +14,7 @@
 * Use glXGetProcAddress to get function pointers rather than libtool
   (ATI driver works much better now)
 * test suite:
-  - Use a quick-n-dirty extension loader rather than relying on 
-    GL_GLEXT_PROTOTYPES
+  - Use GLee rather than relying on GL_GLEXT_PROTOTYPES
   - Fix some failures in caused by driver weirdness not bugle bugs
   - Rewrite the log comparison tool to give more useful feedback
 

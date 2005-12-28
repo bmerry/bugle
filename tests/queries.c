@@ -4,7 +4,7 @@
 # include <config.h>
 #endif
 #define _POSIX_SOURCE
-#include "tests/loader.h"
+#include "glee/GLee.h"
 #include <GL/gl.h>
 #include <GL/glx.h>
 #include <GL/glut.h>
@@ -157,7 +157,7 @@ static void query_tex_level_parameter(void)
     glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_INTERNAL_FORMAT, &i);
     fprintf(ref, "trace\\.call: glGetTexLevelParameteriv\\(GL_TEXTURE_2D, 0, GL_TEXTURE_INTERNAL_FORMAT, %p -> ([0-4]|GL_[A-Z0-9_]+)\\)\n", (void *) &i);
 #ifdef GL_ARB_texture_compression
-    if (BUGLE_GL_ARB_texture_compression)
+    if (GLEE_ARB_texture_compression)
     {
         glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_COMPRESSED_ARB, &i);
         fprintf(ref, "trace\\.call: glGetTexLevelParameteriv\\(GL_TEXTURE_2D, 0, GL_TEXTURE_COMPRESSED(_ARB)?, %p -> (GL_TRUE|GL_FALSE)\\)\n", (void *) &i);
@@ -191,7 +191,7 @@ static void query_tex_env(void)
             (void *) color);
 
 #ifdef GL_EXT_texture_lod_bias
-    if (BUGLE_GL_EXT_texture_lod_bias)
+    if (GLEE_EXT_texture_lod_bias)
     {
         glGetTexEnvfv(GL_TEXTURE_FILTER_CONTROL_EXT, GL_TEXTURE_LOD_BIAS_EXT, color);
         fprintf(ref, "trace\\.call: glGetTexEnvfv\\(GL_TEXTURE_FILTER_CONTROL(_EXT)?, GL_TEXTURE_LOD_BIAS(_EXT)?, %p -> 0\\)\n",
@@ -199,7 +199,7 @@ static void query_tex_env(void)
     }
 #endif
 #ifdef GL_ARB_point_sprite
-    if (BUGLE_GL_ARB_point_sprite)
+    if (GLEE_ARB_point_sprite)
     {
         glGetTexEnviv(GL_POINT_SPRITE_ARB, GL_COORD_REPLACE_ARB, &mode);
         fprintf(ref, "trace\\.call: glGetTexEnviv\\(GL_POINT_SPRITE(_ARB)?, GL_COORD_REPLACE(_ARB)?, %p -> GL_FALSE\\)\n",
@@ -240,7 +240,7 @@ static void query_vertex_attrib(void)
     GLint i;
     GLdouble d[4];
 
-    if (BUGLE_GL_ARB_vertex_program)
+    if (GLEE_ARB_vertex_program)
     {
         /* We use attribute 6, since ATI seems to use the same buffer for
          * attribute 0 and VertexPointer.
@@ -261,7 +261,7 @@ static void query_query(void)
     GLint res;
     GLuint count;
 
-    if (BUGLE_GL_ARB_occlusion_query)
+    if (GLEE_ARB_occlusion_query)
     {
         glGetQueryivARB(GL_SAMPLES_PASSED_ARB, GL_QUERY_COUNTER_BITS_ARB, &res);
         fprintf(ref, "trace\\.call: glGetQueryivARB\\(GL_SAMPLES_PASSED(_ARB)?, GL_QUERY_COUNTER_BITS(_ARB)?, %p -> %d\\)\n",
@@ -288,7 +288,7 @@ static void query_buffer_parameter(void)
     GLint res;
     GLvoid *ptr;
 
-    if (BUGLE_GL_ARB_vertex_buffer_object)
+    if (GLEE_ARB_vertex_buffer_object)
     {
         glBindBufferARB(GL_ARRAY_BUFFER_ARB, 1);
         fprintf(ref, "trace\\.call: glBindBufferARB\\(GL_ARRAY_BUFFER(_ARB)?, 1\\)\n");
@@ -312,7 +312,7 @@ static void query_color_table(void)
     GLfloat scale[4];
     GLint format;
 
-    if (BUGLE_GL_ARB_imaging)
+    if (GLEE_ARB_imaging)
     {
         glColorTable(GL_COLOR_TABLE, GL_RGB8, 4, GL_RGB, GL_UNSIGNED_BYTE, data);
         fprintf(ref, "trace\\.call: glColorTable\\(GL_COLOR_TABLE, GL_RGB8, 4, GL_RGB, GL_UNSIGNED_BYTE, %p\\)\n",
@@ -337,7 +337,7 @@ static void query_convolution(void)
     GLfloat bias[4];
     GLint border_mode;
 
-    if (BUGLE_GL_ARB_imaging)
+    if (GLEE_ARB_imaging)
     {
         glConvolutionFilter1D(GL_CONVOLUTION_1D, GL_LUMINANCE, 3, GL_LUMINANCE, GL_UNSIGNED_BYTE, data);
         fprintf(ref, "trace\\.call: glConvolutionFilter1D\\(GL_CONVOLUTION_1D, GL_LUMINANCE, 3, GL_LUMINANCE, GL_UNSIGNED_BYTE, %p\\)\n",
@@ -357,7 +357,7 @@ static void query_histogram(void)
 #ifdef GL_ARB_imaging
     GLint format, sink;
 
-    if (BUGLE_GL_ARB_imaging)
+    if (GLEE_ARB_imaging)
     {
         glHistogram(GL_HISTOGRAM, 16, GL_RGB, GL_FALSE);
         fprintf(ref, "trace\\.call: glHistogram\\(GL_HISTOGRAM, 16, GL_RGB, GL_FALSE\\)\n");
@@ -376,7 +376,7 @@ static void query_minmax(void)
 #ifdef GL_ARB_imaging
     GLint format, sink;
 
-    if (BUGLE_GL_ARB_imaging)
+    if (GLEE_ARB_imaging)
     {
         glMinmax(GL_MINMAX, GL_RGBA, GL_FALSE);
         fprintf(ref, "trace\\.call: glMinmax\\(GL_MINMAX, GL_RGBA, GL_FALSE\\)\n");
@@ -396,8 +396,8 @@ static void query_shaders(void)
     GLhandleARB v1, v2, p, attached[2];
     GLsizei count;
 
-    if (BUGLE_GL_ARB_shader_objects
-        && BUGLE_GL_ARB_vertex_shader)
+    if (GLEE_ARB_shader_objects
+        && GLEE_ARB_vertex_shader)
     {
         v1 = glCreateShaderObjectARB(GL_VERTEX_SHADER_ARB);
         fprintf(ref, "trace\\.call: glCreateShaderObjectARB\\(GL_VERTEX_SHADER(_ARB)?\\) = %u\n",
@@ -430,7 +430,7 @@ static void query_ll_programs(void)
     char *source;
 
     GLuint program;
-    if (BUGLE_GL_ARB_vertex_program)
+    if (GLEE_ARB_vertex_program)
     {
         GLint param;
         glGenProgramsARB(1, &program);
@@ -438,7 +438,7 @@ static void query_ll_programs(void)
         glBindProgramARB(GL_VERTEX_PROGRAM_ARB, program);
         fprintf(ref, "trace\\.call: glBindProgramARB\\(GL_VERTEX_PROGRAM_ARB, %u\\)\n", (unsigned int) program);
         glProgramStringARB(GL_VERTEX_PROGRAM_ARB, GL_PROGRAM_FORMAT_ASCII_ARB,
-                                strlen(vp), vp);
+                           strlen(vp), vp);
         fprintf(ref, "trace\\.call: glProgramStringARB\\(GL_VERTEX_PROGRAM_ARB, GL_PROGRAM_FORMAT_ASCII_ARB, %u, ",
                 (unsigned int) strlen(vp));
         dump_string(ref, vp);
@@ -488,7 +488,7 @@ static void query_framebuffers(void)
     GLuint fb, tex[3];
     GLint i;
 
-    if (BUGLE_GL_EXT_framebuffer_object)
+    if (GLEE_EXT_framebuffer_object)
     {
         glGenTextures(3, tex);
         fprintf(ref, "trace\\.call: glGenTextures\\(3, %p -> { %u, %u, %u }\\)\n",
@@ -527,7 +527,7 @@ static void query_framebuffers(void)
 
         /* 3D texture */
 #ifdef GL_EXT_texture3D
-        if (BUGLE_GL_EXT_texture3D)
+        if (GLEE_EXT_texture3D)
         {
             glBindTexture(GL_TEXTURE_3D_EXT, tex[1]);
             fprintf(ref, "trace\\.call: glBindTexture\\(GL_TEXTURE_3D(_EXT)?, %u\\)\n",
@@ -546,7 +546,7 @@ static void query_framebuffers(void)
 
         /* Cube map texture */
 #ifdef GL_ARB_texture_cube_map
-        if (BUGLE_GL_ARB_texture_cube_map)
+        if (GLEE_ARB_texture_cube_map)
         {
             glBindTexture(GL_TEXTURE_CUBE_MAP_ARB, tex[2]);
             fprintf(ref, "trace\\.call: glBindTexture\\(GL_TEXTURE_CUBE_MAP(_ARB)?, %u\\)\n",
@@ -584,7 +584,7 @@ static void query_renderbuffers(void)
     GLuint rb;
     GLint i;
 
-    if (BUGLE_GL_EXT_framebuffer_object)
+    if (GLEE_EXT_framebuffer_object)
     {
         glGenRenderbuffersEXT(1, &rb);
         fprintf(ref, "trace\\.call: glGenRenderbuffersEXT\\(1, %p -> { %u }\\)\n",
@@ -622,7 +622,7 @@ int main(int argc, char **argv)
     glutInitWindowSize(300, 300);
     glutCreateWindow("query generator");
 
-    bugle_init();
+    GLeeInit();
 
     query_enums();
     query_bools();

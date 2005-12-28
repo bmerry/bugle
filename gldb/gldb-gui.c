@@ -19,6 +19,7 @@
 #if HAVE_CONFIG_H
 # include <config.h>
 #endif
+#include "glee/GLee.h"
 /* Not sure if this the correct definition of GETTEXT_PACKAGE... */
 #ifndef GETTEXT_PACKAGE
 # define GETTEXT_PACKAGE "gtk20"
@@ -533,8 +534,7 @@ static gboolean response_callback_texture(GldbWindow *context,
 #endif
 #ifdef GL_EXT_texture3D
             case GL_TEXTURE_3D_EXT:
-                /* FIXME: use extension loader */
-                (* (PFNGLTEXIMAGE3DEXTPROC) gdk_gl_get_proc_address("glTexImage3DEXT"))(data->face, 0, GL_RGBA8, r->width, r->height, r->depth, 0,
+                glTexImage3DEXT(data->face, 0, GL_RGBA8, r->width, r->height, r->depth, 0,
                                                                                         GL_RGBA, GL_UNSIGNED_BYTE, r->data);
                 glTexParameteri(GL_TEXTURE_CUBE_MAP_ARB, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
                 glTexParameteri(GL_TEXTURE_CUBE_MAP_ARB, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
