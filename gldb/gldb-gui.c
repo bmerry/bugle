@@ -115,7 +115,7 @@ typedef struct
     GtkWidget *page;
     GtkWidget *draw;
     GtkWidget *aspect;
-    GtkWidget *id;
+    GtkWidget *id, *mag_filter, *min_filter;
 
     GLenum display_target; /* GL_NONE if no texture is selected */
     int cube_map_bits;
@@ -190,10 +190,12 @@ static void set_response_handler(GldbWindow *context, guint32 id,
     bugle_list_append(&context->response_handlers, h);
 }
 
-static void invalidate_widget(GtkWidget *widget)
+static void texture_filter_changed(GtkWidget *widget, gpointer user_data)
 {
-    if (GTK_WIDGET_REALIZED(widget))
-        gdk_window_invalidate_rect(widget->window, &widget->allocation, FALSE);
+    GldbWindow *context;
+
+    context = (GldbWindow *) user_data;
+    gtk_widget_queue_draw(context->texture.draw);
 }
 
 /* We can't just rip out all the old state and plug in the new, because
@@ -360,6 +362,9 @@ static gboolean texture_draw_expose(GtkWidget *widget,
     GdkGLContext *glcontext;
     GdkGLDrawable *gldrawable;
     GLint width, height;
+    GtkTreeModel *model;
+    GtkTreeIter iter;
+    guint mag, min;
     static const GLint vertices[8] =
     {
         -1, -1,
@@ -396,11 +401,19 @@ static gboolean texture_draw_expose(GtkWidget *widget,
         7, 3, 1, 5
     };
 
+    context = (GldbWindow *) user_data;
+
+    model = gtk_combo_box_get_model(GTK_COMBO_BOX(context->texture.mag_filter));
+    gtk_combo_box_get_active_iter(GTK_COMBO_BOX(context->texture.mag_filter), &iter);
+    gtk_tree_model_get(model, &iter, COLUMN_TEXTURE_FILTER_VALUE, &mag, -1);
+    model = gtk_combo_box_get_model(GTK_COMBO_BOX(context->texture.min_filter));
+    gtk_combo_box_get_active_iter(GTK_COMBO_BOX(context->texture.min_filter), &iter);
+    gtk_tree_model_get(model, &iter, COLUMN_TEXTURE_FILTER_VALUE, &min, -1);
+
     glcontext = gtk_widget_get_gl_context(widget);
     gldrawable = gtk_widget_get_gl_drawable(widget);
     if (!gdk_gl_drawable_gl_begin(gldrawable, glcontext)) return FALSE;
 
-    context = (GldbWindow *) user_data;
     if (context->texture.display_target == GL_NONE) goto no_texture;
 
     glClear(GL_COLOR_BUFFER_BIT);
@@ -413,10 +426,12 @@ static gboolean texture_draw_expose(GtkWidget *widget,
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
 
-    /* FIXME: handle other targets and formats fully */
+    /* FIXME: 3D textures */
+    /* FIXME: non-RGBA textures */
     glEnable(context->texture.display_target);
     glEnableClientState(GL_VERTEX_ARRAY);
     glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+
     switch (context->texture.display_target)
     {
 #ifdef GL_NV_texture_rectangle
@@ -430,19 +445,22 @@ static gboolean texture_draw_expose(GtkWidget *widget,
 #endif
     case GL_TEXTURE_1D:
     case GL_TEXTURE_2D:
+        glTexParameteri(context->texture.display_target, GL_TEXTURE_MAG_FILTER, mag);
+        glTexParameteri(context->texture.display_target, GL_TEXTURE_MIN_FILTER, min);
         glVertexPointer(2, GL_INT, 0, vertices);
         glTexCoordPointer(2, GL_INT, 0, texcoords);
         glDrawArrays(GL_QUADS, 0, 4);
         break;
 #ifdef GL_ARB_texture_cube_map
     case GL_TEXTURE_CUBE_MAP_ARB:
-        glClear(GL_COLOR_BUFFER_BIT);
         glTranslatef(0.0f, 0.0f, -3.0f);
         glRotatef(45.0f, 1.0f, 1.0f, 0.0f);
         glMatrixMode(GL_PROJECTION);
         glFrustum(-1.0, 1.0, -1.0, 1.0, 1.0, 10.0);
         glMatrixMode(GL_MODELVIEW);
         glEnable(GL_CULL_FACE);
+        glTexParameteri(context->texture.display_target, GL_TEXTURE_MAG_FILTER, mag);
+        glTexParameteri(context->texture.display_target, GL_TEXTURE_MIN_FILTER, min);
         glVertexPointer(3, GL_INT, 0, cube_vertices);
         glTexCoordPointer(3, GL_INT, 0, cube_vertices);
         glDrawElements(GL_QUADS, 24, GL_UNSIGNED_BYTE, cube_indices);
@@ -470,6 +488,7 @@ static gboolean response_callback_texture(GldbWindow *context,
                                           gldb_response *response,
                                           gpointer user_data)
 {
+    GtkTreeModel *model;
     gldb_response_data_texture *r;
     texture_callback_data *data;
     bool dirty = false;
@@ -506,8 +525,7 @@ static gboolean response_callback_texture(GldbWindow *context,
             case GL_TEXTURE_1D:
                 glTexImage1D(data->target, 0, GL_RGBA8, r->width, 0,
                              GL_RGBA, GL_UNSIGNED_BYTE, r->data);
-                glTexParameteri(data->target, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-                glTexParameteri(data->target, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+                glTexParameteri(data->target, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
                 context->texture.display_target = data->target;
                 break;
             case GL_TEXTURE_2D:
@@ -517,16 +535,16 @@ static gboolean response_callback_texture(GldbWindow *context,
                 /* FIXME: handle multiple levels */
                 glTexImage2D(data->target, 0, GL_RGBA8, r->width, r->height, 0,
                              GL_RGBA, GL_UNSIGNED_BYTE, r->data);
-                glTexParameteri(data->target, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-                glTexParameteri(data->target, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+                glTexParameteri(data->target, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+                glTexParameteri(data->target, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
                 context->texture.display_target = data->target;
                 break;
 #ifdef GL_ARB_texture_cube_map
             case GL_TEXTURE_CUBE_MAP_ARB:
                 glTexImage2D(data->face, 0, GL_RGBA8, r->width, r->height, 0,
                              GL_RGBA, GL_UNSIGNED_BYTE, r->data);
-                glTexParameteri(GL_TEXTURE_CUBE_MAP_ARB, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-                glTexParameteri(GL_TEXTURE_CUBE_MAP_ARB, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+                glTexParameteri(data->target, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+                glTexParameteri(data->target, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
                 context->texture.cube_map_bits |= 1 << (data->face - GL_TEXTURE_CUBE_MAP_POSITIVE_X_ARB);
                 if (context->texture.cube_map_bits == 0x3f)
                     context->texture.display_target = GL_TEXTURE_CUBE_MAP_ARB;
@@ -535,9 +553,10 @@ static gboolean response_callback_texture(GldbWindow *context,
 #ifdef GL_EXT_texture3D
             case GL_TEXTURE_3D_EXT:
                 glTexImage3DEXT(data->face, 0, GL_RGBA8, r->width, r->height, r->depth, 0,
-                                                                                        GL_RGBA, GL_UNSIGNED_BYTE, r->data);
-                glTexParameteri(GL_TEXTURE_CUBE_MAP_ARB, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-                glTexParameteri(GL_TEXTURE_CUBE_MAP_ARB, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+                                GL_RGBA, GL_UNSIGNED_BYTE, r->data);
+                glTexParameteri(data->target, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+                glTexParameteri(data->target, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+                glTexParameteri(data->target, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
                 context->texture.display_target = data->target;
                 break;
 #endif
@@ -564,7 +583,9 @@ static gboolean response_callback_texture(GldbWindow *context,
             gtk_frame_set_label(GTK_FRAME(context->texture.aspect), caption);
             free(caption);
         }
-        invalidate_widget(context->texture.draw);
+        model = gtk_combo_box_get_model(GTK_COMBO_BOX(context->texture.min_filter));
+        gtk_tree_model_filter_refilter(GTK_TREE_MODEL_FILTER(model));
+        gtk_widget_queue_draw(context->texture.draw);
     }
 
     gldb_free_response(response);
@@ -717,17 +738,17 @@ static void update_status_bar(GldbWindow *context, const gchar *text)
 static void stopped(GldbWindow *context, const gchar *text)
 {
     context->state.dirty = true;
-    invalidate_widget(context->state.page);
+    gtk_widget_queue_draw(context->state.page);
 #if HAVE_GTKGLEXT
     context->texture.dirty = true;
-    invalidate_widget(context->texture.page);
+    gtk_widget_queue_draw(context->texture.page);
 #endif
 #ifdef GLDB_GUI_SHADER
     context->shader.dirty = true;
-    invalidate_widget(context->shader.page);
+    gtk_widget_queue_draw(context->shader.page);
 #endif
     context->backtrace.dirty = true;
-    invalidate_widget(context->backtrace.page);
+    gtk_widget_queue_draw(context->backtrace.page);
     gtk_action_group_set_sensitive(context->running_actions, FALSE);
     gtk_action_group_set_sensitive(context->stopped_actions, TRUE);
 
@@ -1059,7 +1080,7 @@ static void build_state_page(GldbWindow *context)
     context->state.dirty = false;
     context->state.page = gtk_notebook_get_nth_page(GTK_NOTEBOOK(context->notebook), page);
     g_signal_connect(G_OBJECT(context->state.page), "expose-event",
-                              G_CALLBACK(state_expose), context);
+                     G_CALLBACK(state_expose), context);
 }
 
 #if HAVE_GTKGLEXT
@@ -1176,7 +1197,6 @@ static void texture_id_changed(GtkComboBox *id_box, gpointer user_data)
                        COLUMN_TEXTURE_ID_ID, &id,
                        COLUMN_TEXTURE_ID_TARGET, &target,
                        -1);
-
     if (gldb_get_status() == GLDB_STATUS_STOPPED)
     {
 #ifdef GL_ARB_texture_cube_map
@@ -1372,14 +1392,36 @@ static GtkWidget *build_texture_page_select(GldbWindow *context)
     return select;
 }
 
+static gboolean texture_filter_visible(GtkTreeModel *model,
+                                       GtkTreeIter *iter,
+                                       gpointer data)
+{
+#ifdef GL_NV_texture_rectangle
+    GldbWindow *context;
+    context = (GldbWindow *) data;
+
+    if (context->texture.display_target == GL_TEXTURE_RECTANGLE_NV)
+    {
+        guint value;
+
+        gtk_tree_model_get(model, iter, COLUMN_TEXTURE_FILTER_VALUE, &value, -1);
+        if (value != GL_LINEAR && value != GL_NEAREST)
+            return FALSE;
+    }
+#endif
+    return TRUE;
+}
+
 static GtkWidget *build_texture_page_filter(GldbWindow *context, gboolean min_filter)
 {
     GtkListStore *store;
+    GtkTreeModel *model;
     GtkCellRenderer *cell;
     GtkTreeIter iter;
     GtkWidget *filter;
     int count, i;
 
+    /* FIXME: use a filter to disable the mipmap options for rect textures */
     struct { GLuint value; const gchar *text; } filters[6] =
     {
         { GL_NEAREST,                "GL_NEAREST"                },
@@ -1400,8 +1442,19 @@ static GtkWidget *build_texture_page_filter(GldbWindow *context, gboolean min_fi
                            COLUMN_TEXTURE_FILTER_TEXT, filters[i].text,
                            -1);
     }
-
-    filter = gtk_combo_box_new_with_model(GTK_TREE_MODEL(store));
+    if (min_filter)
+    {
+        model = gtk_tree_model_filter_new(GTK_TREE_MODEL(store), NULL);
+        gtk_tree_model_filter_set_visible_func(GTK_TREE_MODEL_FILTER(model), texture_filter_visible, context, NULL);
+        filter = gtk_combo_box_new_with_model(model);
+        g_object_unref(model);
+        g_object_unref(store);
+    }
+    else
+    {
+        filter = gtk_combo_box_new_with_model(GTK_TREE_MODEL(store));
+        g_object_unref(store);
+    }
     cell = gtk_cell_renderer_text_new();
     gtk_cell_layout_pack_start(GTK_CELL_LAYOUT(filter), cell, TRUE);
     gtk_cell_layout_set_attributes(GTK_CELL_LAYOUT(filter), cell,
@@ -1418,14 +1471,18 @@ static GtkWidget *build_texture_page_view(GldbWindow *context)
     view = gtk_hbox_new(FALSE, 0);
 
     label = gtk_label_new(_("Mag filter"));
-    mag = build_texture_page_filter(context, FALSE);
+    context->texture.mag_filter = mag = build_texture_page_filter(context, FALSE);
     gtk_box_pack_start(GTK_BOX(view), label, FALSE, FALSE, 10);
     gtk_box_pack_start(GTK_BOX(view), mag, FALSE, FALSE, 0);
+    g_signal_connect(G_OBJECT(mag), "changed",
+                     G_CALLBACK(texture_filter_changed), context);
 
     label = gtk_label_new(_("Min filter"));
-    min = build_texture_page_filter(context, TRUE);
+    context->texture.min_filter = min = build_texture_page_filter(context, TRUE);
     gtk_box_pack_start(GTK_BOX(view), label, FALSE, FALSE, 10);
     gtk_box_pack_start(GTK_BOX(view), min, FALSE, FALSE, 0);
+    g_signal_connect(G_OBJECT(min), "changed",
+                     G_CALLBACK(texture_filter_changed), context);
 
     return view;
 }
@@ -1493,11 +1550,14 @@ static void build_texture_page(GldbWindow *context)
     GtkWidget *vbox, *select, *view, *scrolled;
     gint page;
 
+    /* Note: draw must be created first, since some widgets pass it to
+     * signal handlers.
+     */
+    draw = build_texture_page_draw(context);
     select = build_texture_page_select(context);
     view = build_texture_page_view(context);
     toolbar = build_texture_page_toolbar(context);
 
-    draw = build_texture_page_draw(context);
     scrolled = gtk_scrolled_window_new(NULL, NULL);
     if (draw)
     {
