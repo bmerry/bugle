@@ -71,6 +71,7 @@ enum
 {
     COLUMN_TEXTURE_ID_ID,
     COLUMN_TEXTURE_ID_TARGET,
+    COLUMN_TEXTURE_ID_LEVELS,
     COLUMN_TEXTURE_ID_TEXT
 };
 
@@ -115,10 +116,9 @@ typedef struct
     GtkWidget *page;
     GtkWidget *draw;
     GtkWidget *aspect;
-    GtkWidget *id, *mag_filter, *min_filter;
+    GtkWidget *id, *level, *mag_filter, *min_filter;
 
     GLenum display_target; /* GL_NONE if no texture is selected */
-    int cube_map_bits;
 } GldbWindowTexture;
 #endif
 
@@ -168,10 +168,15 @@ typedef struct
     GtkWidget *dialog, *list;
 } GldbBreakpointsDialog;
 
+#define TEXTURE_CALLBACK_FLAG_FIRST 1
+#define TEXTURE_CALLBACK_FLAG_LAST 2
+
 typedef struct
 {
     GLenum target;
     GLenum face;
+    GLuint level;
+    guint32 flags;
 } texture_callback_data;
 
 static GtkListStore *function_names;
@@ -365,6 +370,7 @@ static gboolean texture_draw_expose(GtkWidget *widget,
     GLint width, height;
     GtkTreeModel *model;
     GtkTreeIter iter;
+    gint level;
     guint mag, min;
     static const GLint vertices[8] =
     {
@@ -410,6 +416,10 @@ static gboolean texture_draw_expose(GtkWidget *widget,
     glClear(GL_COLOR_BUFFER_BIT);
 
     if (context->texture.display_target == GL_NONE) goto no_texture;
+    model = gtk_combo_box_get_model(GTK_COMBO_BOX(context->texture.level));
+    if (!gtk_combo_box_get_active_iter(GTK_COMBO_BOX(context->texture.level), &iter))
+        goto no_texture;
+    gtk_tree_model_get(model, &iter, COLUMN_TEXTURE_LEVEL_VALUE, &level, -1);
     model = gtk_combo_box_get_model(GTK_COMBO_BOX(context->texture.mag_filter));
     if (!gtk_combo_box_get_active_iter(GTK_COMBO_BOX(context->texture.mag_filter), &iter))
         goto no_texture;
@@ -433,6 +443,17 @@ static gboolean texture_draw_expose(GtkWidget *widget,
     glEnable(context->texture.display_target);
     glEnableClientState(GL_VERTEX_ARRAY);
     glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+
+    if (level == -1)
+    {
+        glTexParameteri(context->texture.display_target, GL_TEXTURE_BASE_LEVEL, 0);
+        glTexParameteri(context->texture.display_target, GL_TEXTURE_MAX_LEVEL, 1000);
+    }
+    else
+    {
+        glTexParameteri(context->texture.display_target, GL_TEXTURE_BASE_LEVEL, level);
+        glTexParameteri(context->texture.display_target, GL_TEXTURE_MAX_LEVEL, level);
+    }
 
     switch (context->texture.display_target)
     {
@@ -493,117 +514,88 @@ static gboolean response_callback_texture(GldbWindow *context,
     GtkTreeModel *model;
     gldb_response_data_texture *r;
     texture_callback_data *data;
-    bool dirty = false;
 
     r = (gldb_response_data_texture *) response;
     data = (texture_callback_data *) user_data;
 
+    if (data->flags & TEXTURE_CALLBACK_FLAG_FIRST)
+    {
+        GLuint id;
+
+        /* We abuse the fact that we may assign our own IDs to textures,
+         * and use the target token as the texture ID.
+         */
+        id = data->target;
+        glDeleteTextures(1, &id);
+        glBindTexture(data->target, id);
+
+        context->texture.display_target = GL_NONE;
+    }
+
     if (response->code != RESP_DATA || !r->length)
     {
-        if (context->texture.display_target) dirty = true;
-        context->texture.display_target = GL_NONE;
-        context->texture.cube_map_bits = 0;
+        /* FIXME: tag the texture as invalid */
     }
     else
     {
         GdkGLContext *glcontext;
         GdkGLDrawable *gldrawable;
 
-        gtk_widget_set_size_request(context->texture.draw, r->width, r->height);
+        /* FIXME: compute size differently depending on target */
+        /* FIXME: use zoom to set the size */
+        if (data->flags & TEXTURE_CALLBACK_FLAG_FIRST)
+            gtk_widget_set_size_request(context->texture.draw, r->width, r->height);
         glcontext = gtk_widget_get_gl_context(context->texture.draw);
         gldrawable = gtk_widget_get_gl_drawable(context->texture.draw);
 
-        context->texture.display_target = GL_NONE;
-#ifdef GL_ARB_texture_cube_map
-        if (data->target != GL_TEXTURE_CUBE_MAP_ARB)
-            context->texture.cube_map_bits = 0;
-#endif
         /* FIXME: check runtime support for all extensions */
         if (gdk_gl_drawable_gl_begin(gldrawable, glcontext))
         {
-            context->texture.display_target = GL_NONE;
+            /* FIXME: multiple TexParameteri calls are overkill */
             switch (data->target)
             {
             case GL_TEXTURE_1D:
-                glTexImage1D(data->target, 0, GL_RGBA8, r->width, 0,
+                glTexImage1D(data->target, data->level, GL_RGBA8, r->width, 0,
                              GL_RGBA, GL_UNSIGNED_BYTE, r->data);
                 glTexParameteri(data->target, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-                context->texture.display_target = data->target;
                 break;
             case GL_TEXTURE_2D:
 #ifdef GL_NV_texture_rectangle
             case GL_TEXTURE_RECTANGLE_NV:
 #endif
-                /* FIXME: handle multiple levels */
-                glTexImage2D(data->target, 0, GL_RGBA8, r->width, r->height, 0,
+                glTexImage2D(data->target, data->level, GL_RGBA8, r->width, r->height, 0,
                              GL_RGBA, GL_UNSIGNED_BYTE, r->data);
                 glTexParameteri(data->target, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
                 glTexParameteri(data->target, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-                context->texture.display_target = data->target;
                 break;
 #ifdef GL_ARB_texture_cube_map
             case GL_TEXTURE_CUBE_MAP_ARB:
-                glTexImage2D(data->face, 0, GL_RGBA8, r->width, r->height, 0,
+                glTexImage2D(data->face, data->level, GL_RGBA8, r->width, r->height, 0,
                              GL_RGBA, GL_UNSIGNED_BYTE, r->data);
                 glTexParameteri(data->target, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
                 glTexParameteri(data->target, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-                context->texture.cube_map_bits |= 1 << (data->face - GL_TEXTURE_CUBE_MAP_POSITIVE_X_ARB);
-                if (context->texture.cube_map_bits == 0x3f)
-                    context->texture.display_target = GL_TEXTURE_CUBE_MAP_ARB;
                 break;
 #endif
 #ifdef GL_EXT_texture3D
             case GL_TEXTURE_3D_EXT:
-                glTexImage3DEXT(data->face, 0, GL_RGBA8, r->width, r->height, r->depth, 0,
+                glTexImage3DEXT(data->face, data->level, GL_RGBA8, r->width, r->height, r->depth, 0,
                                 GL_RGBA, GL_UNSIGNED_BYTE, r->data);
                 glTexParameteri(data->target, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
                 glTexParameteri(data->target, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
                 glTexParameteri(data->target, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
-                context->texture.display_target = data->target;
                 break;
 #endif
-            default: /* Unsupported target! */;
+            default:
+                g_error("Texture target is not supported.\n");
             }
             gdk_gl_drawable_gl_end(gldrawable);
-            dirty = true;
         }
-
     }
 
-    if (dirty)
+    if (data->flags & TEXTURE_CALLBACK_FLAG_LAST)
     {
-        if (!context->texture.display_target)
-        {
-            gtk_widget_set_size_request(context->texture.draw, 50, 50);
-            gtk_frame_set_label(GTK_FRAME(context->texture.aspect), _("No texture"));
-        }
-        else
-        {
-            char *caption;
-            switch (context->texture.display_target)
-            {
-            case GL_TEXTURE_1D:
-                bugle_asprintf(&caption, "%d", (int) r->width);
-                break;
-            case GL_TEXTURE_2D:
-#ifdef GL_NV_texture_rectangle
-            case GL_TEXTURE_RECTANGLE_NV:
-#endif
-#ifdef GL_ARB_texture_cube_map
-            case GL_TEXTURE_CUBE_MAP_ARB:
-#endif
-                bugle_asprintf(&caption, "%dx%d", (int) r->width, (int) r->height);
-                break;
-#ifdef GL_EXT_texture3D
-            case GL_TEXTURE_3D_EXT:
-#endif
-                bugle_asprintf(&caption, "%dx%dx%d", (int) r->width, (int) r->height, (int) r->depth);
-                break;
-            default: g_error(_("Texture target is unknown"));
-            }
-            gtk_frame_set_label(GTK_FRAME(context->texture.aspect), caption);
-            free(caption);
-        }
+        context->texture.display_target = data->target;
+        /* FIXME: caption */
         model = gtk_combo_box_get_model(GTK_COMBO_BOX(context->texture.min_filter));
         gtk_tree_model_filter_refilter(GTK_TREE_MODEL_FILTER(model));
         if (gtk_combo_box_get_active(GTK_COMBO_BOX(context->texture.min_filter)) < 0)
@@ -1116,6 +1108,7 @@ static void update_texture_ids(GldbWindow *context)
     gboolean have_old = FALSE, have_old_iter = FALSE;
     bugle_list_node *nt, *nl;
     gchar *name;
+    guint levels;
 
     const GLenum targets[] = {
         GL_TEXTURE_1D,
@@ -1167,24 +1160,26 @@ static void update_texture_ids(GldbWindow *context)
             t = (const gldb_state *) bugle_list_data(nt);
             if (t->enum_name == 0)
             {
-                /* Check that at least level 0 exists */
+                /* Count the levels */
                 f = t;
 #ifdef GL_ARB_texture_cube_map
                 if (targets[trg] == GL_TEXTURE_CUBE_MAP_ARB)
                     f = state_find_child_enum(t, GL_TEXTURE_CUBE_MAP_POSITIVE_X_ARB);
 #endif
+                levels = 0;
                 for (nl = bugle_list_head(&f->children); nl != NULL; nl = bugle_list_next(nl))
                 {
                     l = (const gldb_state *) bugle_list_data(nl);
-                    if (l->enum_name == 0 && l->numeric_name == 0)
-                        break;
+                    if (l->enum_name == 0)
+                        levels = MAX(levels, l->numeric_name + 1);
                 }
-                if (!nl) continue;
+                if (!levels) continue;
                 bugle_asprintf(&name, "%u (%s)", (unsigned int) t->numeric_name, target_names[trg]);
                 gtk_list_store_append(GTK_LIST_STORE(model), &iter);
                 gtk_list_store_set(GTK_LIST_STORE(model), &iter,
                                    COLUMN_TEXTURE_ID_ID, (guint) t->numeric_name,
                                    COLUMN_TEXTURE_ID_TARGET, (guint) targets[trg],
+                                   COLUMN_TEXTURE_ID_LEVELS, levels,
                                    COLUMN_TEXTURE_ID_TEXT, name,
                                    -1);
                 free(name);
@@ -1207,45 +1202,92 @@ static void texture_id_changed(GtkComboBox *id_box, gpointer user_data)
 {
     GtkTreeIter iter;
     GtkTreeModel *model;
-    guint target, id;
+    guint target, id, levels;
     GldbWindow *context;
     texture_callback_data *data;
-    int i;
+    gint old;
+    int i, l;
 
-    context = (GldbWindow *) user_data;
-
-    model = gtk_combo_box_get_model(GTK_COMBO_BOX(context->texture.id));
-    if (!gtk_combo_box_get_active_iter(GTK_COMBO_BOX(context->texture.id), &iter)) return;
-    gtk_tree_model_get(model, &iter,
-                       COLUMN_TEXTURE_ID_ID, &id,
-                       COLUMN_TEXTURE_ID_TARGET, &target,
-                       -1);
     if (gldb_get_status() == GLDB_STATUS_STOPPED)
     {
-#ifdef GL_ARB_texture_cube_map
-        if (target == GL_TEXTURE_CUBE_MAP_ARB)
+        context = (GldbWindow *) user_data;
+
+        model = gtk_combo_box_get_model(GTK_COMBO_BOX(context->texture.id));
+        if (!gtk_combo_box_get_active_iter(GTK_COMBO_BOX(context->texture.id), &iter)) return;
+        gtk_tree_model_get(model, &iter,
+                           COLUMN_TEXTURE_ID_ID, &id,
+                           COLUMN_TEXTURE_ID_TARGET, &target,
+                           COLUMN_TEXTURE_ID_LEVELS, &levels,
+                           -1);
+
+        for (l = 0; l < levels; l++)
         {
-            for (i = 0; i < 6; i++)
+#ifdef GL_ARB_texture_cube_map
+            if (target == GL_TEXTURE_CUBE_MAP_ARB)
+            {
+                for (i = 0; i < 6; i++)
+                {
+                    data = (texture_callback_data *) bugle_malloc(sizeof(texture_callback_data));
+                    data->target = target;
+                    data->face = GL_TEXTURE_CUBE_MAP_POSITIVE_X_ARB + i;
+                    data->level = l;
+                    data->flags = 0;
+                    if (l == 0 && i == 0) data->flags |= TEXTURE_CALLBACK_FLAG_FIRST;
+                    if (l == levels - 1 && i == 5) data->flags |= TEXTURE_CALLBACK_FLAG_LAST;
+                    set_response_handler(context, seq, response_callback_texture, data);
+                    gldb_send_data_texture(seq++, id, target, data->face, l,
+                                           GL_RGBA, GL_UNSIGNED_BYTE);
+                }
+            }
+            else
+#endif
             {
                 data = (texture_callback_data *) bugle_malloc(sizeof(texture_callback_data));
                 data->target = target;
-                data->face = GL_TEXTURE_CUBE_MAP_POSITIVE_X_ARB + i;
+                data->face = target;
+                data->level = l;
+                data->flags = 0;
+                if (l == 0) data->flags |= TEXTURE_CALLBACK_FLAG_FIRST;
+                if (l == levels - 1) data->flags |= TEXTURE_CALLBACK_FLAG_LAST;
                 set_response_handler(context, seq, response_callback_texture, data);
-                gldb_send_data_texture(seq++, id, target, data->face, 0,
+                gldb_send_data_texture(seq++, id, target, target, l,
                                        GL_RGBA, GL_UNSIGNED_BYTE);
             }
         }
-        else
-#endif
+
+        model = gtk_combo_box_get_model(GTK_COMBO_BOX(context->texture.level));
+        old = gtk_combo_box_get_active(GTK_COMBO_BOX(context->texture.level));
+        gtk_list_store_clear(GTK_LIST_STORE(model));
+        gtk_list_store_append(GTK_LIST_STORE(model), &iter);
+        gtk_list_store_set(GTK_LIST_STORE(model), &iter,
+                           COLUMN_TEXTURE_LEVEL_VALUE, -1,
+                           COLUMN_TEXTURE_LEVEL_TEXT, _("Auto"),
+                           -1);
+        for (i = 0; i < levels; i++)
         {
-            data = (texture_callback_data *) bugle_malloc(sizeof(texture_callback_data));
-            data->target = target;
-            data->face = target;
-            set_response_handler(context, seq, response_callback_texture, data);
-            /* FIXME: fetch all levels */
-            gldb_send_data_texture(seq++, id, target, target, 0,
-                                   GL_RGBA, GL_UNSIGNED_BYTE);
+            char *text;
+
+            bugle_asprintf(&text, "%d", i);
+            gtk_list_store_append(GTK_LIST_STORE(model), &iter);
+            gtk_list_store_set(GTK_LIST_STORE(model), &iter,
+                               COLUMN_TEXTURE_LEVEL_VALUE, (gint) i,
+                               COLUMN_TEXTURE_LEVEL_TEXT, text,
+                               -1);
+            free(text);
         }
+        if (old <= levels) gtk_combo_box_set_active(GTK_COMBO_BOX(context->texture.level), old);
+        else gtk_combo_box_set_active(GTK_COMBO_BOX(context->texture.level), levels);
+    }
+}
+
+static void texture_level_changed(GtkWidget *widget, gpointer user_data)
+{
+    GldbWindow *context;
+
+    if (gldb_get_status() == GLDB_STATUS_STOPPED)
+    {
+        context = (GldbWindow *) user_data;
+        gtk_widget_queue_draw(context->texture.draw);
     }
 }
 
@@ -1319,7 +1361,7 @@ static GtkWidget *build_texture_page_id(GldbWindow *context)
     GtkWidget *id;
     GtkCellRenderer *cell;
 
-    store = gtk_list_store_new(3, G_TYPE_UINT, G_TYPE_UINT, G_TYPE_STRING);
+    store = gtk_list_store_new(4, G_TYPE_UINT, G_TYPE_UINT, G_TYPE_UINT, G_TYPE_STRING);
     gtk_tree_sortable_set_sort_column_id(GTK_TREE_SORTABLE(store),
                                          COLUMN_TEXTURE_ID_ID,
                                          GTK_SORT_ASCENDING);
@@ -1351,12 +1393,13 @@ static GtkWidget *build_texture_page_level(GldbWindow *context)
                        COLUMN_TEXTURE_LEVEL_TEXT, _("Auto"),
                        -1);
 
-    level = gtk_combo_box_new_with_model(GTK_TREE_MODEL(store));
+    context->texture.level = level = gtk_combo_box_new_with_model(GTK_TREE_MODEL(store));
     cell = gtk_cell_renderer_text_new();
     gtk_cell_layout_pack_start(GTK_CELL_LAYOUT(level), cell, TRUE);
     gtk_cell_layout_set_attributes(GTK_CELL_LAYOUT(level), cell,
                                    "text", COLUMN_TEXTURE_LEVEL_TEXT, NULL);
     gtk_combo_box_set_active_iter(GTK_COMBO_BOX(level), &iter);
+    g_signal_connect(G_OBJECT(level), "changed", texture_level_changed, context);
     g_object_unref(G_OBJECT(store));
     return level;
 }

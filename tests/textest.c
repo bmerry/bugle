@@ -53,6 +53,11 @@ static void init_gl()
             data[i][j][2] = 128;
         }
 
+    /* default texture; with non-generated mipmaps */
+    for (i = 0; i <= 4; i++)
+        glTexImage2D(GL_TEXTURE_2D, i, GL_RGB, 16 >> i, 16 >> i, 0,
+                     GL_RGB, GL_UNSIGNED_BYTE, data);
+
     glGenTextures(1, &id);
     glBindTexture(GL_TEXTURE_1D, id);
     glTexImage1D(GL_TEXTURE_1D, 0, GL_RGB, 16, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
