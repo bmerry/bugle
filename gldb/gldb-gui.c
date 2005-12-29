@@ -550,7 +550,11 @@ static gboolean response_callback_texture(GldbWindow *context,
         /* FIXME: compute size differently depending on target */
         /* FIXME: use zoom to set the size */
         if (data->flags & TEXTURE_CALLBACK_FLAG_FIRST)
-            gtk_widget_set_size_request(context->texture.draw, r->width, r->height);
+        {
+            gtk_widget_set_size_request(context->texture.draw, 1, 1);
+            gtk_aspect_frame_set(GTK_ASPECT_FRAME(context->texture.aspect),
+                                 0.5, 0.5, r->width / (gfloat) r->height, FALSE);
+        }
         glcontext = gtk_widget_get_gl_context(context->texture.draw);
         gldrawable = gtk_widget_get_gl_drawable(context->texture.draw);
 
@@ -1571,7 +1575,7 @@ static GtkWidget *build_texture_page_draw(GldbWindow *context)
     g_return_val_if_fail(glconfig != NULL, NULL);
 
     draw = gtk_drawing_area_new();
-    gtk_widget_set_size_request(draw, 50, 50);
+    gtk_widget_set_size_request(draw, 1, 1);
     gtk_widget_set_gl_capability(draw, glconfig, NULL, TRUE, GDK_GL_RGBA_TYPE);
     g_signal_connect_after(G_OBJECT(draw), "realize",
                            G_CALLBACK(texture_draw_realize), context);
@@ -1580,7 +1584,7 @@ static GtkWidget *build_texture_page_draw(GldbWindow *context)
     g_signal_connect(G_OBJECT(draw), "expose-event",
                      G_CALLBACK(texture_draw_expose), context);
 
-    aspect = gtk_aspect_frame_new(_("No texture"), 0.5, 0.5, 1.0, TRUE);
+    aspect = gtk_aspect_frame_new("", 0.5, 0.5, 1.0, FALSE);
     gtk_container_add(GTK_CONTAINER(aspect), draw);
 
     context->texture.draw = draw;

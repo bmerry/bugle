@@ -42,31 +42,31 @@ static void idle(void)
 static void init_gl()
 {
     GLuint id;
-    GLubyte data[16][16][3];
+    GLubyte data[64][64][3];
     int i, j;
 
-    for (i = 0; i < 16; i++)
-        for (j = 0; j < 16; j++)
+    for (i = 0; i < 64; i++)
+        for (j = 0; j < 64; j++)
         {
-            data[i][j][0] = i * 16;
-            data[i][j][1] = j * 16;
+            data[i][j][0] = i * 4;
+            data[i][j][1] = j * 4;
             data[i][j][2] = 128;
         }
 
     /* default texture; with non-generated mipmaps */
-    for (i = 0; i <= 4; i++)
-        glTexImage2D(GL_TEXTURE_2D, i, GL_RGB, 16 >> i, 16 >> i, 0,
+    for (i = 0; i <= 6; i++)
+        glTexImage2D(GL_TEXTURE_2D, i, GL_RGB, 64 >> i, 64 >> i, 0,
                      GL_RGB, GL_UNSIGNED_BYTE, data);
 
     glGenTextures(1, &id);
     glBindTexture(GL_TEXTURE_1D, id);
-    glTexImage1D(GL_TEXTURE_1D, 0, GL_RGB, 16, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+    glTexImage1D(GL_TEXTURE_1D, 0, GL_RGB, 64, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
     glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 
     glGenTextures(1, &id);
     glBindTexture(GL_TEXTURE_2D, id);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB8, 16, 16, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB8, 64, 64, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 
@@ -75,7 +75,7 @@ static void init_gl()
     {
         glGenTextures(1, &id);
         glBindTexture(GL_TEXTURE_RECTANGLE_NV, id);
-        glTexImage2D(GL_TEXTURE_RECTANGLE_NV, 0, GL_RGB8, 16, 16, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+        glTexImage2D(GL_TEXTURE_RECTANGLE_NV, 0, GL_RGB8, 64, 64, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
         glTexParameteri(GL_TEXTURE_RECTANGLE_NV, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
         glTexParameteri(GL_TEXTURE_RECTANGLE_NV, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     }
@@ -87,7 +87,7 @@ static void init_gl()
         glGenTextures(1, &id);
         glBindTexture(GL_TEXTURE_CUBE_MAP_ARB, id);
         for (i = 0; i < 6; i++)
-            glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGB, 16, 16, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+            glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGB, 64, 64, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
         glTexParameteri(GL_TEXTURE_RECTANGLE_NV, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
         glTexParameteri(GL_TEXTURE_RECTANGLE_NV, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     }
@@ -98,7 +98,7 @@ static void init_gl()
     {
         glGenTextures(1, &id);
         glBindTexture(GL_TEXTURE_3D_EXT, id);
-        glTexImage3DEXT(GL_TEXTURE_3D_EXT, 0, GL_RGB, 8, 8, 4, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+        glTexImage3DEXT(GL_TEXTURE_3D_EXT, 0, GL_RGB, 16, 16, 16, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
         glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
         glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     }
