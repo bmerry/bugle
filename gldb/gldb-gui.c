@@ -20,7 +20,7 @@
 # include <config.h>
 #endif
 #include "glee/GLee.h"
-/* Not sure if this the correct definition of GETTEXT_PACKAGE... */
+/* FIXME: Not sure if this the correct definition of GETTEXT_PACKAGE... */
 #ifndef GETTEXT_PACKAGE
 # define GETTEXT_PACKAGE "gtk20"
 #endif
@@ -117,12 +117,13 @@ typedef struct
     bool dirty;
     GtkWidget *page;
     GtkWidget *draw;
-    GtkWidget *aspect;
-    GtkWidget *id, *level, *mag_filter, *min_filter;
+    GtkWidget *id, *level, *zoom;
+    GtkWidget *mag_filter, *min_filter;
 
     GtkCellRenderer *min_filter_cell;
 
     GLenum display_target; /* GL_NONE if no texture is selected */
+    GLint width, height;
 } GldbWindowTexture;
 #endif
 
@@ -198,14 +199,6 @@ static void set_response_handler(GldbWindow *context, guint32 id,
     h->callback = callback;
     h->user_data = user_data;
     bugle_list_append(&context->response_handlers, h);
-}
-
-static void texture_filter_changed(GtkWidget *widget, gpointer user_data)
-{
-    GldbWindow *context;
-
-    context = (GldbWindow *) user_data;
-    gtk_widget_queue_draw(context->texture.draw);
 }
 
 /* We can't just rip out all the old state and plug in the new, because
@@ -448,15 +441,20 @@ static gboolean texture_draw_expose(GtkWidget *widget,
     glEnableClientState(GL_VERTEX_ARRAY);
     glEnableClientState(GL_TEXTURE_COORD_ARRAY);
 
-    if (level == -1)
+#ifdef GL_NV_texture_rectangle
+    if (context->texture.display_target != GL_TEXTURE_RECTANGLE_NV)
+#endif
     {
-        glTexParameteri(context->texture.display_target, GL_TEXTURE_BASE_LEVEL, 0);
-        glTexParameteri(context->texture.display_target, GL_TEXTURE_MAX_LEVEL, 1000);
-    }
-    else
-    {
-        glTexParameteri(context->texture.display_target, GL_TEXTURE_BASE_LEVEL, level);
-        glTexParameteri(context->texture.display_target, GL_TEXTURE_MAX_LEVEL, level);
+        if (level == -1)
+        {
+            glTexParameteri(context->texture.display_target, GL_TEXTURE_BASE_LEVEL, 0);
+            glTexParameteri(context->texture.display_target, GL_TEXTURE_MAX_LEVEL, 1000);
+        }
+        else
+        {
+            glTexParameteri(context->texture.display_target, GL_TEXTURE_BASE_LEVEL, level);
+            glTexParameteri(context->texture.display_target, GL_TEXTURE_MAX_LEVEL, level);
+        }
     }
 
     switch (context->texture.display_target)
@@ -511,6 +509,45 @@ no_texture:
     return TRUE;
 }
 
+static void resize_texture_draw(GldbWindow *context)
+{
+    GtkWidget *aspect, *alignment, *draw;
+    GtkTreeModel *zoom_model;
+    GtkTreeIter iter;
+    gdouble zoom;
+    int width, height;
+
+    draw = context->texture.draw;
+    aspect = gtk_widget_get_parent(draw);
+    alignment = gtk_widget_get_parent(aspect);
+    width = context->texture.width;
+    height = context->texture.height;
+
+    zoom_model = gtk_combo_box_get_model(GTK_COMBO_BOX(context->texture.zoom));
+    if (gtk_combo_box_get_active_iter(GTK_COMBO_BOX(context->texture.zoom),
+                                      &iter))
+    {
+        gtk_tree_model_get(zoom_model, &iter,
+                           COLUMN_TEXTURE_ZOOM_VALUE, &zoom, -1);
+        if (zoom < 0.0)
+        {
+            /* Fit */
+            gtk_widget_set_size_request(draw, 1, 1);
+            gtk_alignment_set(GTK_ALIGNMENT(alignment), 0.5f, 0.5f, 1.0f, 1.0f);
+            gtk_aspect_frame_set(GTK_ASPECT_FRAME(aspect),
+                                 0.5f, 0.5f, (gfloat) width / height, FALSE);
+        }
+        else
+        {
+            /* fixed */
+            gtk_widget_set_size_request(draw, width, height);
+            gtk_alignment_set(GTK_ALIGNMENT(alignment), 0.5f, 0.5f, 0.0f, 0.0f);
+            gtk_aspect_frame_set(GTK_ASPECT_FRAME(aspect),
+                                 0.5f, 0.5f, 1.0f, TRUE);
+        }
+    }
+}
+
 static gboolean response_callback_texture(GldbWindow *context,
                                           gldb_response *response,
                                           gpointer user_data)
@@ -547,13 +584,11 @@ static gboolean response_callback_texture(GldbWindow *context,
         GdkGLContext *glcontext;
         GdkGLDrawable *gldrawable;
 
-        /* FIXME: compute size differently depending on target */
-        /* FIXME: use zoom to set the size */
         if (data->flags & TEXTURE_CALLBACK_FLAG_FIRST)
         {
-            gtk_widget_set_size_request(context->texture.draw, 1, 1);
-            gtk_aspect_frame_set(GTK_ASPECT_FRAME(context->texture.aspect),
-                                 0.5, 0.5, r->width / (gfloat) r->height, FALSE);
+            context->texture.width = r->width;
+            context->texture.height = r->height;
+            resize_texture_draw(context);
         }
         glcontext = gtk_widget_get_gl_context(context->texture.draw);
         gldrawable = gtk_widget_get_gl_drawable(context->texture.draw);
@@ -605,7 +640,6 @@ static gboolean response_callback_texture(GldbWindow *context,
     if (data->flags & TEXTURE_CALLBACK_FLAG_LAST)
     {
         context->texture.display_target = data->target;
-        /* FIXME: caption */
 
 #ifdef GL_NV_texture_rectangle
         sensitive = (context->texture.display_target == GL_TEXTURE_RECTANGLE_NV)
@@ -1313,6 +1347,19 @@ static void texture_level_changed(GtkWidget *widget, gpointer user_data)
     }
 }
 
+static void texture_filter_changed(GtkWidget *widget, gpointer user_data)
+{
+    GldbWindow *context;
+
+    context = (GldbWindow *) user_data;
+    gtk_widget_queue_draw(context->texture.draw);
+}
+
+static void texture_zoom_changed(GtkWidget *widget, gpointer user_data)
+{
+    resize_texture_draw((GldbWindow *) user_data);
+}
+
 static void free_pixbuf_data(guchar *pixels, gpointer user_data)
 {
     free(pixels);
@@ -1446,12 +1493,14 @@ static GtkWidget *build_texture_page_zoom(GldbWindow *context)
                        COLUMN_TEXTURE_ZOOM_TEXT, "1:1",
                        -1);
 
-    zoom = gtk_combo_box_new_with_model(GTK_TREE_MODEL(store));
+    context->texture.zoom = zoom = gtk_combo_box_new_with_model(GTK_TREE_MODEL(store));
     cell = gtk_cell_renderer_text_new();
     gtk_cell_layout_pack_start(GTK_CELL_LAYOUT(zoom), cell, TRUE);
     gtk_cell_layout_set_attributes(GTK_CELL_LAYOUT(zoom), cell,
                                    "text", COLUMN_TEXTURE_ZOOM_TEXT, NULL);
     gtk_combo_box_set_active(GTK_COMBO_BOX(zoom), 0);
+    g_signal_connect(G_OBJECT(zoom), "changed",
+                     G_CALLBACK(texture_zoom_changed), context);
     g_object_unref(G_OBJECT(store));
     return zoom;
 }
@@ -1560,7 +1609,7 @@ static GtkWidget *build_texture_page_toolbar(GldbWindow *context)
 
 static GtkWidget *build_texture_page_draw(GldbWindow *context)
 {
-    GtkWidget *aspect, *draw;
+    GtkWidget *alignment, *aspect, *draw;
     GdkGLConfig *glconfig;
     static const int attrib_list[] =
     {
@@ -1584,12 +1633,14 @@ static GtkWidget *build_texture_page_draw(GldbWindow *context)
     g_signal_connect(G_OBJECT(draw), "expose-event",
                      G_CALLBACK(texture_draw_expose), context);
 
-    aspect = gtk_aspect_frame_new("", 0.5, 0.5, 1.0, FALSE);
+    aspect = gtk_aspect_frame_new(NULL, 0.5, 0.5, 1.0, TRUE);
+    gtk_frame_set_shadow_type(GTK_FRAME(aspect), GTK_SHADOW_NONE);
+    alignment = gtk_alignment_new(0.5, 0.5, 0.0, 0.0);
     gtk_container_add(GTK_CONTAINER(aspect), draw);
+    gtk_container_add(GTK_CONTAINER(alignment), aspect);
 
     context->texture.draw = draw;
-    context->texture.aspect = aspect;
-    return aspect;
+    return alignment;
 }
 
 static void build_texture_page(GldbWindow *context)
@@ -1598,13 +1649,10 @@ static void build_texture_page(GldbWindow *context)
     GtkWidget *vbox, *select, *view, *scrolled;
     gint page;
 
-    /* Note: draw must be created first, since some widgets pass it to
-     * signal handlers.
-     */
-    draw = build_texture_page_draw(context);
     select = build_texture_page_select(context);
     view = build_texture_page_view(context);
     toolbar = build_texture_page_toolbar(context);
+    draw = build_texture_page_draw(context);
 
     scrolled = gtk_scrolled_window_new(NULL, NULL);
     if (draw)
@@ -1627,6 +1675,8 @@ static void build_texture_page(GldbWindow *context)
                                     vbox, label);
     context->texture.dirty = false;
     context->texture.display_target = GL_NONE;
+    context->texture.width = 64;
+    context->texture.height = 64;
     context->texture.page = gtk_notebook_get_nth_page(GTK_NOTEBOOK(context->notebook), page);
     g_signal_connect(G_OBJECT(context->texture.page), "expose-event",
                      G_CALLBACK(texture_expose), context);

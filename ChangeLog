@@ -4,7 +4,8 @@
   * Texture viewer improvements
     - copy button
     - display of 1D, 2D, RECT and cubemap textures
-    - stubs for level, zoom, zoom in, zoom out
+    - control over mag and min filters
+    - stubs for zoom in, zoom out
     - work around ATI driver bug
 * Rewrite of the GLSL state tracking
 * Add bugle_hash_count and bugle_hashptr_count to simplify hash table class
