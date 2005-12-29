@@ -90,7 +90,9 @@ enum
 enum
 {
     COLUMN_TEXTURE_FILTER_VALUE,
-    COLUMN_TEXTURE_FILTER_TEXT
+    COLUMN_TEXTURE_FILTER_TEXT,
+    COLUMN_TEXTURE_FILTER_TRUE,
+    COLUMN_TEXTURE_FILTER_NON_MIP
 };
 
 struct GldbWindow;
@@ -117,6 +119,8 @@ typedef struct
     GtkWidget *draw;
     GtkWidget *aspect;
     GtkWidget *id, *level, *mag_filter, *min_filter;
+
+    GtkCellRenderer *min_filter_cell;
 
     GLenum display_target; /* GL_NONE if no texture is selected */
 } GldbWindowTexture;
@@ -511,9 +515,11 @@ static gboolean response_callback_texture(GldbWindow *context,
                                           gldb_response *response,
                                           gpointer user_data)
 {
-    GtkTreeModel *model;
     gldb_response_data_texture *r;
     texture_callback_data *data;
+    GtkTreeIter iter;
+    gboolean valid;
+    gint sensitive;
 
     r = (gldb_response_data_texture *) response;
     data = (texture_callback_data *) user_data;
@@ -596,10 +602,22 @@ static gboolean response_callback_texture(GldbWindow *context,
     {
         context->texture.display_target = data->target;
         /* FIXME: caption */
-        model = gtk_combo_box_get_model(GTK_COMBO_BOX(context->texture.min_filter));
-        gtk_tree_model_filter_refilter(GTK_TREE_MODEL_FILTER(model));
-        if (gtk_combo_box_get_active(GTK_COMBO_BOX(context->texture.min_filter)) < 0)
+
+#ifdef GL_NV_texture_rectangle
+        sensitive = (context->texture.display_target == GL_TEXTURE_RECTANGLE_NV)
+            ? COLUMN_TEXTURE_FILTER_NON_MIP : COLUMN_TEXTURE_FILTER_TRUE;
+        gtk_cell_layout_set_attributes(GTK_CELL_LAYOUT(context->texture.min_filter),
+                                       context->texture.min_filter_cell,
+                                       "text", COLUMN_TEXTURE_FILTER_TEXT,
+                                       "sensitive", sensitive,
+                                       NULL);
+        valid = FALSE;
+        if (gtk_combo_box_get_active_iter(GTK_COMBO_BOX(context->texture.min_filter), &iter))
+            gtk_tree_model_get(gtk_combo_box_get_model(GTK_COMBO_BOX(context->texture.min_filter)), &iter,
+                               sensitive, &valid, -1);
+        if (!valid)
             gtk_combo_box_set_active(GTK_COMBO_BOX(context->texture.min_filter), 0);
+#endif
         gtk_widget_queue_draw(context->texture.draw);
     }
 
@@ -1399,7 +1417,8 @@ static GtkWidget *build_texture_page_level(GldbWindow *context)
     gtk_cell_layout_set_attributes(GTK_CELL_LAYOUT(level), cell,
                                    "text", COLUMN_TEXTURE_LEVEL_TEXT, NULL);
     gtk_combo_box_set_active_iter(GTK_COMBO_BOX(level), &iter);
-    g_signal_connect(G_OBJECT(level), "changed", texture_level_changed, context);
+    g_signal_connect(G_OBJECT(level), "changed",
+                     G_CALLBACK(texture_level_changed), context);
     g_object_unref(G_OBJECT(store));
     return level;
 }
@@ -1458,32 +1477,12 @@ static GtkWidget *build_texture_page_select(GldbWindow *context)
     return select;
 }
 
-static gboolean texture_min_filter_visible(GtkTreeModel *model,
-                                           GtkTreeIter *iter,
-                                           gpointer data)
-{
-#ifdef GL_NV_texture_rectangle
-    GldbWindow *context;
-    context = (GldbWindow *) data;
-
-    if (context->texture.display_target == GL_TEXTURE_RECTANGLE_NV)
-    {
-        guint value;
-
-        gtk_tree_model_get(model, iter, COLUMN_TEXTURE_FILTER_VALUE, &value, -1);
-        if (value != GL_LINEAR && value != GL_NEAREST)
-            return FALSE;
-    }
-#endif
-    return TRUE;
-}
-
 static GtkWidget *build_texture_page_mag_filter(GldbWindow *context)
 {
     GtkCellRenderer *cell;
     GtkWidget *filter;
 
-    filter = gtk_combo_box_new_with_model(texture_mag_filters);
+    context->texture.mag_filter = filter = gtk_combo_box_new_with_model(texture_mag_filters);
     cell = gtk_cell_renderer_text_new();
     gtk_cell_layout_pack_start(GTK_CELL_LAYOUT(filter), cell, TRUE);
     gtk_cell_layout_set_attributes(GTK_CELL_LAYOUT(filter), cell,
@@ -1494,22 +1493,17 @@ static GtkWidget *build_texture_page_mag_filter(GldbWindow *context)
 
 static GtkWidget *build_texture_page_min_filter(GldbWindow *context)
 {
-    GtkWidget *filter;
-    GtkTreeModel *model;
     GtkCellRenderer *cell;
+    GtkWidget *filter;
 
-    model = gtk_tree_model_filter_new(texture_min_filters, NULL);
-    gtk_tree_model_filter_set_visible_func(GTK_TREE_MODEL_FILTER(model),
-                                           texture_min_filter_visible, context, NULL);
-
-    filter = gtk_combo_box_new_with_model(model);
-    cell = gtk_cell_renderer_text_new();
+    context->texture.min_filter = filter = gtk_combo_box_new_with_model(texture_min_filters);
+    context->texture.min_filter_cell = cell = gtk_cell_renderer_text_new();
     gtk_cell_layout_pack_start(GTK_CELL_LAYOUT(filter), cell, TRUE);
     gtk_cell_layout_set_attributes(GTK_CELL_LAYOUT(filter), cell,
-                                   "text", COLUMN_TEXTURE_FILTER_TEXT, NULL);
+                                   "text", COLUMN_TEXTURE_FILTER_TEXT,
+                                   "sensitive", COLUMN_TEXTURE_FILTER_NON_MIP,
+                                   NULL);
     gtk_combo_box_set_active(GTK_COMBO_BOX(filter), 0);
-
-    g_object_unref(G_OBJECT(model));
     return filter;
 }
 
@@ -1521,14 +1515,14 @@ static GtkWidget *build_texture_page_view(GldbWindow *context)
     view = gtk_hbox_new(FALSE, 0);
 
     label = gtk_label_new(_("Mag filter"));
-    context->texture.mag_filter = mag = build_texture_page_mag_filter(context);
+    mag = build_texture_page_mag_filter(context);
     gtk_box_pack_start(GTK_BOX(view), label, FALSE, FALSE, 10);
     gtk_box_pack_start(GTK_BOX(view), mag, FALSE, FALSE, 0);
     g_signal_connect(G_OBJECT(mag), "changed",
                      G_CALLBACK(texture_filter_changed), context);
 
     label = gtk_label_new(_("Min filter"));
-    context->texture.min_filter = min = build_texture_page_min_filter(context);
+    min = build_texture_page_min_filter(context);
     gtk_box_pack_start(GTK_BOX(view), label, FALSE, FALSE, 10);
     gtk_box_pack_start(GTK_BOX(view), min, FALSE, FALSE, 0);
     g_signal_connect(G_OBJECT(min), "changed",
@@ -2048,17 +2042,22 @@ static GtkListStore *build_texture_filters(gboolean min_filter)
     GtkListStore *store;
     GtkTreeIter iter;
     int count, i;
-    const struct { GLuint value; const gchar *text; } filters[6] =
+    const struct
     {
-        { GL_NEAREST,                "GL_NEAREST"                },
-        { GL_LINEAR,                 "GL_LINEAR"                 },
-        { GL_NEAREST_MIPMAP_NEAREST, "GL_NEAREST_MIPMAP_NEAREST" },
-        { GL_LINEAR_MIPMAP_NEAREST,  "GL_LINEAR_MIPMAP_NEAREST"  },
-        { GL_NEAREST_MIPMAP_LINEAR,  "GL_NEAREST_MIPMAP_LINEAR"  },
-        { GL_LINEAR_MIPMAP_LINEAR,   "GL_LINEAR_MIPMAP_LINEAR"   }
+        GLuint value;
+        const gchar *text;
+        gboolean non_mip;
+    } filters[6] =
+    {
+        { GL_NEAREST,                "GL_NEAREST",                TRUE },
+        { GL_LINEAR,                 "GL_LINEAR",                 TRUE },
+        { GL_NEAREST_MIPMAP_NEAREST, "GL_NEAREST_MIPMAP_NEAREST", FALSE },
+        { GL_LINEAR_MIPMAP_NEAREST,  "GL_LINEAR_MIPMAP_NEAREST",  FALSE },
+        { GL_NEAREST_MIPMAP_LINEAR,  "GL_NEAREST_MIPMAP_LINEAR",  FALSE },
+        { GL_LINEAR_MIPMAP_LINEAR,   "GL_LINEAR_MIPMAP_LINEAR",   FALSE }
     };
 
-    store = gtk_list_store_new(2, G_TYPE_UINT, G_TYPE_STRING);
+    store = gtk_list_store_new(4, G_TYPE_UINT, G_TYPE_STRING, G_TYPE_BOOLEAN, G_TYPE_BOOLEAN);
     count = min_filter ? 6 : 2;
     for (i = 0; i < count; i++)
     {
@@ -2066,6 +2065,8 @@ static GtkListStore *build_texture_filters(gboolean min_filter)
         gtk_list_store_set(store, &iter,
                            COLUMN_TEXTURE_FILTER_VALUE, filters[i].value,
                            COLUMN_TEXTURE_FILTER_TEXT, filters[i].text,
+                           COLUMN_TEXTURE_FILTER_TRUE, TRUE,
+                           COLUMN_TEXTURE_FILTER_NON_MIP, filters[i].non_mip,
                            -1);
     }
     return store;
