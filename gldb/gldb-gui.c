@@ -85,7 +85,8 @@ enum
 enum
 {
     COLUMN_TEXTURE_ZOOM_VALUE,
-    COLUMN_TEXTURE_ZOOM_TEXT
+    COLUMN_TEXTURE_ZOOM_TEXT,
+    COLUMN_TEXTURE_ZOOM_SENSITIVE
 };
 
 enum
@@ -125,6 +126,7 @@ typedef struct
 
     GLenum display_target; /* GL_NONE if no texture is selected */
     GLint width, height;
+    GLint max_viewport_dims[2];
 } GldbWindowTexture;
 #endif
 
@@ -329,7 +331,9 @@ static void texture_draw_realize(GtkWidget *widget, gpointer user_data)
 {
     GdkGLContext *glcontext;
     GdkGLDrawable *gldrawable;
+    GldbWindow *context;
 
+    context = (GldbWindow *) user_data;
     glcontext = gtk_widget_get_gl_context(widget);
     gldrawable = gtk_widget_get_gl_drawable(widget);
     if (!gdk_gl_drawable_gl_begin(gldrawable, glcontext)) return;
@@ -337,6 +341,7 @@ static void texture_draw_realize(GtkWidget *widget, gpointer user_data)
     glViewport(0, 0, widget->allocation.width, widget->allocation.height);
     glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
     glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
+    glGetIntegerv(GL_MAX_VIEWPORT_DIMS, context->texture.max_viewport_dims);
 
     gdk_gl_drawable_gl_end(gldrawable);
 }
@@ -557,8 +562,9 @@ static gboolean response_callback_texture(GldbWindow *context,
 {
     gldb_response_data_texture *r;
     texture_callback_data *data;
+    GtkTreeModel *model;
     GtkTreeIter iter;
-    gboolean valid;
+    gboolean valid, more;
     gint sensitive;
 
     r = (gldb_response_data_texture *) response;
@@ -591,7 +597,6 @@ static gboolean response_callback_texture(GldbWindow *context,
         {
             context->texture.width = r->width;
             context->texture.height = r->height;
-            resize_texture_draw(context);
         }
         glcontext = gtk_widget_get_gl_context(context->texture.draw);
         gldrawable = gtk_widget_get_gl_drawable(context->texture.draw);
@@ -644,6 +649,31 @@ static gboolean response_callback_texture(GldbWindow *context,
     {
         context->texture.display_target = data->target;
 
+        model = gtk_combo_box_get_model(GTK_COMBO_BOX(context->texture.zoom));
+        more = gtk_tree_model_get_iter_first(model, &iter);
+        while (more)
+        {
+            gdouble zoom;
+
+            gtk_tree_model_get(model, &iter, COLUMN_TEXTURE_ZOOM_VALUE, &zoom, -1);
+            if (zoom > 0.0)
+            {
+                valid = zoom * context->texture.width < context->texture.max_viewport_dims[0]
+                    && zoom * context->texture.height < context->texture.max_viewport_dims[1]
+                    && zoom * context->texture.width >= 1.0
+                    && zoom * context->texture.height >= 1.0;
+                gtk_list_store_set(GTK_LIST_STORE(model), &iter,
+                                   COLUMN_TEXTURE_ZOOM_SENSITIVE, valid, -1);
+            }
+            more = gtk_tree_model_iter_next(model, &iter);
+        }
+        valid = FALSE;
+        if (gtk_combo_box_get_active_iter(GTK_COMBO_BOX(context->texture.zoom), &iter))
+            gtk_tree_model_get(model, &iter, COLUMN_TEXTURE_ZOOM_SENSITIVE, &valid, -1);
+        /* FIXME: pick nearest zoom level rather than "Fit" */
+        if (!valid)
+            gtk_combo_box_set_active(GTK_COMBO_BOX(context->texture.zoom), 0);
+
 #ifdef GL_NV_texture_rectangle
         sensitive = (context->texture.display_target == GL_TEXTURE_RECTANGLE_NV)
             ? COLUMN_TEXTURE_FILTER_NON_MIP : COLUMN_TEXTURE_FILTER_TRUE;
@@ -653,12 +683,14 @@ static gboolean response_callback_texture(GldbWindow *context,
                                        "sensitive", sensitive,
                                        NULL);
         valid = FALSE;
+        model = gtk_combo_box_get_model(GTK_COMBO_BOX(context->texture.min_filter));
         if (gtk_combo_box_get_active_iter(GTK_COMBO_BOX(context->texture.min_filter), &iter))
-            gtk_tree_model_get(gtk_combo_box_get_model(GTK_COMBO_BOX(context->texture.min_filter)), &iter,
-                               sensitive, &valid, -1);
+            gtk_tree_model_get(model, &iter, sensitive, &valid, -1);
         if (!valid)
             gtk_combo_box_set_active(GTK_COMBO_BOX(context->texture.min_filter), 0);
 #endif
+
+        resize_texture_draw(context);
         gtk_widget_queue_draw(context->texture.draw);
     }
 
@@ -1477,6 +1509,16 @@ static GtkWidget *build_texture_page_level(GldbWindow *context)
     return level;
 }
 
+static gboolean texture_zoom_row_separator(GtkTreeModel *model,
+                                           GtkTreeIter *iter,
+                                           gpointer data)
+{
+    gdouble value;
+
+    gtk_tree_model_get(model, iter, COLUMN_TEXTURE_ZOOM_VALUE, &value, -1);
+    return value == -2.0;
+}
+
 static GtkWidget *build_texture_page_zoom(GldbWindow *context)
 {
     GtkListStore *store;
@@ -1485,26 +1527,22 @@ static GtkWidget *build_texture_page_zoom(GldbWindow *context)
     GtkCellRenderer *cell;
     int i;
 
-    store = gtk_list_store_new(2, G_TYPE_DOUBLE, G_TYPE_STRING);
+    store = gtk_list_store_new(3, G_TYPE_DOUBLE, G_TYPE_STRING, G_TYPE_BOOLEAN);
     gtk_list_store_append(store, &iter);
     gtk_list_store_set(store, &iter,
                        COLUMN_TEXTURE_ZOOM_VALUE, -1.0,
                        COLUMN_TEXTURE_ZOOM_TEXT, "Fit",
+                       COLUMN_TEXTURE_ZOOM_SENSITIVE, TRUE,
                        -1);
 
-    for (i = 0; i <= 4; i++)
-    {
-        gchar *caption;
+    gtk_list_store_append(store, &iter);
+    gtk_list_store_set(store, &iter,
+                       COLUMN_TEXTURE_ZOOM_VALUE, -2.0, /* -2.0 is magic separator value - see above function */
+                       COLUMN_TEXTURE_ZOOM_TEXT, "Separator",
+                       COLUMN_TEXTURE_ZOOM_SENSITIVE, TRUE
+                       -1);
 
-        bugle_asprintf(&caption, "%d:1", (1 << i));
-        gtk_list_store_append(store, &iter);
-        gtk_list_store_set(store, &iter,
-                           COLUMN_TEXTURE_ZOOM_VALUE, (gdouble) (1 << i),
-                           COLUMN_TEXTURE_ZOOM_TEXT, caption,
-                           -1);
-        free(caption);
-    }
-    for (i = 1; i <= 4; i++)
+    for (i = 5; i >= 0; i--)
     {
         gchar *caption;
 
@@ -1513,6 +1551,20 @@ static GtkWidget *build_texture_page_zoom(GldbWindow *context)
         gtk_list_store_set(store, &iter,
                            COLUMN_TEXTURE_ZOOM_VALUE, (gdouble) 1.0 / (1 << i),
                            COLUMN_TEXTURE_ZOOM_TEXT, caption,
+                           COLUMN_TEXTURE_ZOOM_SENSITIVE, FALSE,
+                           -1);
+        free(caption);
+    }
+    for (i = 1; i <= 5; i++)
+    {
+        gchar *caption;
+
+        bugle_asprintf(&caption, "%d:1", (1 << i));
+        gtk_list_store_append(store, &iter);
+        gtk_list_store_set(store, &iter,
+                           COLUMN_TEXTURE_ZOOM_VALUE, (gdouble) (1 << i),
+                           COLUMN_TEXTURE_ZOOM_TEXT, caption,
+                           COLUMN_TEXTURE_ZOOM_SENSITIVE, FALSE,
                            -1);
         free(caption);
     }
@@ -1521,7 +1573,12 @@ static GtkWidget *build_texture_page_zoom(GldbWindow *context)
     cell = gtk_cell_renderer_text_new();
     gtk_cell_layout_pack_start(GTK_CELL_LAYOUT(zoom), cell, TRUE);
     gtk_cell_layout_set_attributes(GTK_CELL_LAYOUT(zoom), cell,
-                                   "text", COLUMN_TEXTURE_ZOOM_TEXT, NULL);
+                                   "text", COLUMN_TEXTURE_ZOOM_TEXT,
+                                   "sensitive", COLUMN_TEXTURE_ZOOM_SENSITIVE,
+                                   NULL);
+    gtk_combo_box_set_row_separator_func(GTK_COMBO_BOX(zoom),
+                                         texture_zoom_row_separator,
+                                         NULL, NULL);
     gtk_combo_box_set_active(GTK_COMBO_BOX(zoom), 0);
     g_signal_connect(G_OBJECT(zoom), "changed",
                      G_CALLBACK(texture_zoom_changed), context);
