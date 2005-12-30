@@ -34,6 +34,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <math.h>
 #include <GL/gl.h>
 #include <GL/glext.h>
 #include "common/protocol.h"
@@ -540,6 +541,8 @@ static void resize_texture_draw(GldbWindow *context)
         else
         {
             /* fixed */
+            width = (int) ceil(width * zoom);
+            height = (int) ceil(height * zoom);
             gtk_widget_set_size_request(draw, width, height);
             gtk_alignment_set(GTK_ALIGNMENT(alignment), 0.5f, 0.5f, 0.0f, 0.0f);
             gtk_aspect_frame_set(GTK_ASPECT_FRAME(aspect),
@@ -1480,6 +1483,7 @@ static GtkWidget *build_texture_page_zoom(GldbWindow *context)
     GtkTreeIter iter;
     GtkWidget *zoom;
     GtkCellRenderer *cell;
+    int i;
 
     store = gtk_list_store_new(2, G_TYPE_DOUBLE, G_TYPE_STRING);
     gtk_list_store_append(store, &iter);
@@ -1487,11 +1491,31 @@ static GtkWidget *build_texture_page_zoom(GldbWindow *context)
                        COLUMN_TEXTURE_ZOOM_VALUE, -1.0,
                        COLUMN_TEXTURE_ZOOM_TEXT, "Fit",
                        -1);
-    gtk_list_store_append(store, &iter);
-    gtk_list_store_set(store, &iter,
-                       COLUMN_TEXTURE_ZOOM_VALUE, 1.0,
-                       COLUMN_TEXTURE_ZOOM_TEXT, "1:1",
-                       -1);
+
+    for (i = 0; i <= 4; i++)
+    {
+        gchar *caption;
+
+        bugle_asprintf(&caption, "%d:1", (1 << i));
+        gtk_list_store_append(store, &iter);
+        gtk_list_store_set(store, &iter,
+                           COLUMN_TEXTURE_ZOOM_VALUE, (gdouble) (1 << i),
+                           COLUMN_TEXTURE_ZOOM_TEXT, caption,
+                           -1);
+        free(caption);
+    }
+    for (i = 1; i <= 4; i++)
+    {
+        gchar *caption;
+
+        bugle_asprintf(&caption, "1:%d", (1 << i));
+        gtk_list_store_append(store, &iter);
+        gtk_list_store_set(store, &iter,
+                           COLUMN_TEXTURE_ZOOM_VALUE, (gdouble) 1.0 / (1 << i),
+                           COLUMN_TEXTURE_ZOOM_TEXT, caption,
+                           -1);
+        free(caption);
+    }
 
     context->texture.zoom = zoom = gtk_combo_box_new_with_model(GTK_TREE_MODEL(store));
     cell = gtk_cell_renderer_text_new();
