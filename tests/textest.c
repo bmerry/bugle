@@ -7,6 +7,8 @@
 # define LOG_TEXTURE_SIZE 6
 #endif
 #define TEXTURE_SIZE (1 << LOG_TEXTURE_SIZE)
+#define LOG_TEXTURE_SIZE_3D (LOG_TEXTURE_SIZE * 2 / 3)
+#define TEXTURE_SIZE_3D (1 << LOG_TEXTURE_SIZE_3D)
 
 static void display(void)
 {
@@ -100,14 +102,17 @@ static void init_gl()
     }
 #endif
 
+    glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
 #ifdef GL_EXT_texture3D
     if (GLEE_EXT_texture3D)
     {
         glGenTextures(1, &id);
         glBindTexture(GL_TEXTURE_3D_EXT, id);
-        glTexImage3DEXT(GL_TEXTURE_3D_EXT, 0, GL_RGB, 16, 16, 16, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
-        glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-        glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+        glTexImage3DEXT(GL_TEXTURE_3D_EXT, 0, GL_RGB,
+                        TEXTURE_SIZE_3D, TEXTURE_SIZE_3D, TEXTURE_SIZE_3D,
+                        0, GL_RGB, GL_UNSIGNED_BYTE, data);
+        glTexParameteri(GL_TEXTURE_3D_EXT, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_3D_EXT, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     }
 #endif
 
