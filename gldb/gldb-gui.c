@@ -1358,6 +1358,11 @@ static void texture_id_changed(GtkComboBox *id_box, gpointer user_data)
                            COLUMN_TEXTURE_LEVEL_VALUE, -1,
                            COLUMN_TEXTURE_LEVEL_TEXT, _("Auto"),
                            -1);
+        gtk_list_store_append(GTK_LIST_STORE(model), &iter);
+        gtk_list_store_set(GTK_LIST_STORE(model), &iter,
+                           COLUMN_TEXTURE_LEVEL_VALUE, -2, /* -2 is magic separator value */
+                           COLUMN_TEXTURE_LEVEL_TEXT, "Separator",
+                           -1);
         for (i = 0; i < levels; i++)
         {
             char *text;
@@ -1460,8 +1465,19 @@ static void texture_copy_clicked(GtkWidget *button, gpointer user_data)
     GtkClipboard *clipboard;
     GldbWindow *context;
     GLenum target;
+    gint level;
+    GtkTreeModel *model;
+    GtkTreeIter iter;
+    GtkWidget *dialog;
 
     context = (GldbWindow *) user_data;
+    if (context->texture.display_target == GL_NONE) return;
+    model = gtk_combo_box_get_model(GTK_COMBO_BOX(context->texture.level));
+    if (!gtk_combo_box_get_active_iter(GTK_COMBO_BOX(context->texture.level), &iter))
+        return;
+    gtk_tree_model_get(model, &iter, COLUMN_TEXTURE_LEVEL_VALUE, &level, -1);
+    if (level < 0) level = 0;
+
     glcontext = gtk_widget_get_gl_context(context->texture.draw);
     gldrawable = gtk_widget_get_gl_drawable(context->texture.draw);
     if (!gdk_gl_drawable_gl_begin(gldrawable, glcontext)) return;
@@ -1478,12 +1494,12 @@ static void texture_copy_clicked(GtkWidget *button, gpointer user_data)
 #endif
         glPushClientAttrib(GL_CLIENT_PIXEL_STORE_BIT);
         glPixelStorei(GL_PACK_ALIGNMENT, 1);
-        glGetTexLevelParameteriv(target, 0, GL_TEXTURE_WIDTH, &width);
+        glGetTexLevelParameteriv(target, level, GL_TEXTURE_WIDTH, &width);
         if (target != GL_TEXTURE_1D)
-            glGetTexLevelParameteriv(target, 0, GL_TEXTURE_HEIGHT, &height);
+            glGetTexLevelParameteriv(target, level, GL_TEXTURE_HEIGHT, &height);
         pixels = (GLubyte *) bugle_malloc(width * height * 4);
         row = (GLubyte *) bugle_malloc(width * 4); /* temp storage for swaps */
-        glGetTexImage(target, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
+        glGetTexImage(target, level, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
         /* Flip vertically */
         for (r1 = 0, r2 = height - 1; r1 < r2; r1++, r2--)
         {
@@ -1497,7 +1513,15 @@ static void texture_copy_clicked(GtkWidget *button, gpointer user_data)
                                           free_pixbuf_data, NULL);
         glPopClientAttrib();
         break;
-    default:;
+    default:
+        dialog = gtk_message_dialog_new(GTK_WINDOW(context->window),
+                                        GTK_DIALOG_DESTROY_WITH_PARENT,
+                                        GTK_MESSAGE_ERROR,
+                                        GTK_BUTTONS_CLOSE,
+                                        "Copying is not currently supported for this target.");
+        gtk_dialog_run(GTK_DIALOG(dialog));
+        gtk_widget_destroy(dialog);
+        break;
     }
     gdk_gl_drawable_gl_end(gldrawable);
 
@@ -1616,6 +1640,16 @@ static GtkWidget *build_texture_page_id(GldbWindow *context)
     return id;
 }
 
+static gboolean texture_level_row_separator(GtkTreeModel *model,
+                                            GtkTreeIter *iter,
+                                            gpointer user_data)
+{
+    gint value;
+
+    gtk_tree_model_get(model, iter, COLUMN_TEXTURE_LEVEL_VALUE, &value, -1);
+    return value == -2;
+}
+
 static GtkWidget *build_texture_page_level(GldbWindow *context)
 {
     GtkListStore *store;
@@ -1629,13 +1663,21 @@ static GtkWidget *build_texture_page_level(GldbWindow *context)
                        COLUMN_TEXTURE_LEVEL_VALUE, -1,
                        COLUMN_TEXTURE_LEVEL_TEXT, _("Auto"),
                        -1);
+    gtk_list_store_append(store, &iter);
+    gtk_list_store_set(store, &iter,
+                       COLUMN_TEXTURE_LEVEL_VALUE, -2, /* -2 is magic separator value */
+                       COLUMN_TEXTURE_LEVEL_TEXT, "Separator",
+                       -1);
 
     context->texture.level = level = gtk_combo_box_new_with_model(GTK_TREE_MODEL(store));
     cell = gtk_cell_renderer_text_new();
     gtk_cell_layout_pack_start(GTK_CELL_LAYOUT(level), cell, TRUE);
     gtk_cell_layout_set_attributes(GTK_CELL_LAYOUT(level), cell,
                                    "text", COLUMN_TEXTURE_LEVEL_TEXT, NULL);
-    gtk_combo_box_set_active_iter(GTK_COMBO_BOX(level), &iter);
+    gtk_combo_box_set_row_separator_func(GTK_COMBO_BOX(level),
+                                         texture_level_row_separator,
+                                         NULL, NULL);
+    gtk_combo_box_set_active(GTK_COMBO_BOX(level), 0);
     g_signal_connect(G_OBJECT(level), "changed",
                      G_CALLBACK(texture_level_changed), context);
     g_object_unref(G_OBJECT(store));
@@ -1664,7 +1706,7 @@ static GtkWidget *build_texture_page_zoom(GldbWindow *context)
     gtk_list_store_append(store, &iter);
     gtk_list_store_set(store, &iter,
                        COLUMN_TEXTURE_ZOOM_VALUE, -1.0,
-                       COLUMN_TEXTURE_ZOOM_TEXT, "Fit",
+                       COLUMN_TEXTURE_ZOOM_TEXT, _("Fit"),
                        COLUMN_TEXTURE_ZOOM_SENSITIVE, TRUE,
                        -1);
 
