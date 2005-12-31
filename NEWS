@@ -1,7 +1,8 @@
-This release greatly improves support for ATI drivers, which previously
-caused problems due to some dubious shortcuts used by bugle. There have
-also been various bug-fixes and improvements, most notably in the GUI
-debugger gldb-gui.
+This release greatly improves the texture viewer in gldb-gui, as well as
+fixing a number of bugs. It also fixes a dubious shortcut (read: bug)
+that caused all kinds of havoc with ATI drivers. If previous releases
+have caused weird problems when using an ATI card (whether with gldb,
+gldb-gui or a filter), give this release a try.
 
 0.0.20051112
 ------------
