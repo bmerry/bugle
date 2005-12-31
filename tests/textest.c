@@ -50,6 +50,15 @@ static void init_gl()
 {
     GLuint id;
     GLubyte data[TEXTURE_SIZE][TEXTURE_SIZE][3];
+    GLubyte cube[18] =
+    {
+        255, 0, 0,
+        0, 255, 0,
+        0, 0, 255,
+        255, 255, 0,
+        255, 0, 255,
+        0, 255, 255
+    };
     int i, j;
 
     for (i = 0; i < TEXTURE_SIZE; i++)
@@ -97,8 +106,16 @@ static void init_gl()
         glBindTexture(GL_TEXTURE_CUBE_MAP_ARB, id);
         for (i = 0; i < 6; i++)
             glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGB, TEXTURE_SIZE, TEXTURE_SIZE, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
-        glTexParameteri(GL_TEXTURE_RECTANGLE_NV, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-        glTexParameteri(GL_TEXTURE_RECTANGLE_NV, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_CUBE_MAP_ARB, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_CUBE_MAP_ARB, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+
+        /* Second cube map tests that the view shows the right faces */
+        glGenTextures(1, &id);
+        glBindTexture(GL_TEXTURE_CUBE_MAP_ARB, id);
+        for (i = 0; i < 6; i++)
+            glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGB, 1, 1, 0, GL_RGB, GL_UNSIGNED_BYTE, cube + 3 * i);
+        glTexParameteri(GL_TEXTURE_CUBE_MAP_ARB, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_CUBE_MAP_ARB, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     }
 #endif
 

@@ -412,6 +412,28 @@ static gboolean texture_draw_expose(GtkWidget *widget,
         7, 3, 1, 5
     };
 
+#define GLDB_ISQRT2 0.70710678118654752440
+#define GLDB_ISQRT3 0.57735026918962576451
+#define GLDB_ISQRT6 0.40824829046386301636
+    /* Rotation for looking at the (1, 1, 1) corner of the cube while
+     * maintaining an up direction.
+     */
+    static const GLdouble cube_matrix1[16] =
+    {
+         GLDB_ISQRT2, -GLDB_ISQRT6,        GLDB_ISQRT3,  0.0,
+         0.0,          2.0 * GLDB_ISQRT6,  GLDB_ISQRT3,  0.0,
+        -GLDB_ISQRT2, -GLDB_ISQRT6,        GLDB_ISQRT3,  0.0,
+         0.0,          0.0,                0.0,          1.0
+    };
+    /* Similar, but looking at (-1, -1, -1) */
+    static const GLdouble cube_matrix2[16] =
+    {
+        -GLDB_ISQRT2, -GLDB_ISQRT6,       -GLDB_ISQRT3,  0.0,
+         0.0,          2.0 * GLDB_ISQRT6, -GLDB_ISQRT3,  0.0,
+         GLDB_ISQRT2, -GLDB_ISQRT6,       -GLDB_ISQRT3,  0.0,
+         0.0,          0.0,                0.0,          1.0
+    };
+
     context = (GldbWindow *) user_data;
 
     glcontext = gtk_widget_get_gl_context(widget);
@@ -485,16 +507,24 @@ static gboolean texture_draw_expose(GtkWidget *widget,
         break;
 #ifdef GL_ARB_texture_cube_map
     case GL_TEXTURE_CUBE_MAP_ARB:
-        glTranslatef(0.0f, 0.0f, -3.0f);
-        glRotatef(45.0f, 1.0f, 1.0f, 0.0f);
-        glMatrixMode(GL_PROJECTION);
-        glFrustum(-1.0, 1.0, -1.0, 1.0, 1.0, 10.0);
-        glMatrixMode(GL_MODELVIEW);
+        /* Force all Z coordinates to 0 to avoid face clipping, and
+         * scale down to fit in left half of window */
+        glTranslatef(-0.5f, 0.0f, 0.0f);
+        glScalef(0.25f, 0.5f, 0.0f);
+        glMultMatrixd(cube_matrix1);
+
         glEnable(GL_CULL_FACE);
         glTexParameteri(context->texture.display_target, GL_TEXTURE_MAG_FILTER, mag);
         glTexParameteri(context->texture.display_target, GL_TEXTURE_MIN_FILTER, min);
         glVertexPointer(3, GL_INT, 0, cube_vertices);
         glTexCoordPointer(3, GL_INT, 0, cube_vertices);
+        glDrawElements(GL_QUADS, 24, GL_UNSIGNED_BYTE, cube_indices);
+
+        /* Draw second view */
+        glLoadIdentity();
+        glTranslatef(0.5f, 0.0f, 0.0f);
+        glScalef(0.25f, 0.5, 0.5f);
+        glMultMatrixd(cube_matrix2);
         glDrawElements(GL_QUADS, 24, GL_UNSIGNED_BYTE, cube_indices);
         break;
 #endif
@@ -598,6 +628,11 @@ static gboolean response_callback_texture(GldbWindow *context,
         {
             context->texture.width = r->width;
             context->texture.height = r->height;
+#ifdef GL_ARB_texture_cube_map
+            /* Make space for two views of the cube */
+            if (data->target == GL_TEXTURE_CUBE_MAP_ARB)
+                context->texture.width *= 2;
+#endif
         }
         glcontext = gtk_widget_get_gl_context(context->texture.draw);
         gldrawable = gtk_widget_get_gl_drawable(context->texture.draw);
