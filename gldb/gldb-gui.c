@@ -120,6 +120,7 @@ typedef struct
     GtkWidget *page;
     GtkWidget *draw;
     GtkWidget *id, *level, *zoom;
+    GtkToolItem *zoom_in, *zoom_out, *zoom_100;
     GtkWidget *mag_filter, *min_filter;
 
     GtkCellRenderer *min_filter_cell;
@@ -673,6 +674,9 @@ static gboolean response_callback_texture(GldbWindow *context,
         /* FIXME: pick nearest zoom level rather than "Fit" */
         if (!valid)
             gtk_combo_box_set_active(GTK_COMBO_BOX(context->texture.zoom), 0);
+        else
+            /* Updates the sensitivity of the zoom buttons if necessary */
+            g_signal_emit_by_name(G_OBJECT(context->texture.zoom), "changed", context);
 
 #ifdef GL_NV_texture_rectangle
         sensitive = (context->texture.display_target == GL_TEXTURE_RECTANGLE_NV)
@@ -1390,9 +1394,55 @@ static void texture_filter_changed(GtkWidget *widget, gpointer user_data)
     gtk_widget_queue_draw(context->texture.draw);
 }
 
-static void texture_zoom_changed(GtkWidget *widget, gpointer user_data)
+static void texture_zoom_changed(GtkWidget *zoom, gpointer user_data)
 {
-    resize_texture_draw((GldbWindow *) user_data);
+    GldbWindow *context;
+    GtkTreeModel *model;
+    GtkTreePath *path;
+    GtkTreeIter iter, next;
+    gboolean sensitive_in = FALSE;
+    gboolean sensitive_out = FALSE;
+    gboolean sensitive_100 = FALSE;
+    gboolean sensitive;
+    gboolean more;
+    gdouble value;
+
+    context = (GldbWindow *) user_data;
+
+    model = gtk_combo_box_get_model(GTK_COMBO_BOX(zoom));
+    if (gtk_combo_box_get_active_iter(GTK_COMBO_BOX(zoom), &iter))
+    {
+        next = iter;
+        if (gtk_tree_model_iter_next(model, &next))
+            gtk_tree_model_get(model, &next, COLUMN_TEXTURE_ZOOM_SENSITIVE, &sensitive_in, -1);
+        path = gtk_tree_model_get_path(model, &iter);
+        if (gtk_tree_path_prev(path))
+        {
+            gtk_tree_model_get_iter(model, &iter, path);
+            gtk_tree_model_get(model, &iter, COLUMN_TEXTURE_ZOOM_SENSITIVE, &sensitive_out, -1);
+        }
+        gtk_tree_path_free(path);
+    }
+
+    more = gtk_tree_model_get_iter_first(model, &iter);
+    while (more)
+    {
+        gtk_tree_model_get(model, &iter,
+                           COLUMN_TEXTURE_ZOOM_VALUE, &value,
+                           COLUMN_TEXTURE_ZOOM_SENSITIVE, &sensitive,
+                           -1);
+        if (value == 1.0)
+        {
+            sensitive_100 = sensitive;
+            break;
+        }
+        more = gtk_tree_model_iter_next(model, &iter);
+    }
+    gtk_widget_set_sensitive(GTK_WIDGET(context->texture.zoom_in), sensitive_in);
+    gtk_widget_set_sensitive(GTK_WIDGET(context->texture.zoom_out), sensitive_out);
+    gtk_widget_set_sensitive(GTK_WIDGET(context->texture.zoom_100), sensitive_100);
+
+    resize_texture_draw(context);
 }
 
 static void free_pixbuf_data(guchar *pixels, gpointer user_data)
@@ -1457,6 +1507,89 @@ static void texture_copy_clicked(GtkWidget *button, gpointer user_data)
                                               GDK_SELECTION_CLIPBOARD);
     gtk_clipboard_set_image(clipboard, pixbuf);
     g_object_unref(pixbuf);
+}
+
+static void texture_zoom_in_clicked(GtkToolButton *toolbutton,
+                                    gpointer user_data)
+{
+    GtkTreeModel *model;
+    GtkTreeIter iter;
+    GldbWindow *context;
+    gboolean sensitive;
+
+    context = (GldbWindow *) user_data;
+    model = gtk_combo_box_get_model(GTK_COMBO_BOX(context->texture.zoom));
+    if (gtk_combo_box_get_active_iter(GTK_COMBO_BOX(context->texture.zoom), &iter)
+        && gtk_tree_model_iter_next(model, &iter))
+    {
+        gtk_tree_model_get(model, &iter, COLUMN_TEXTURE_ZOOM_SENSITIVE, &sensitive, -1);
+        if (sensitive)
+            gtk_combo_box_set_active_iter(GTK_COMBO_BOX(context->texture.zoom), &iter);
+    }
+}
+
+static void texture_zoom_out_clicked(GtkToolButton *toolbutton,
+                                     gpointer user_data)
+{
+    GtkTreeModel *model;
+    GtkTreeIter iter;
+    GtkTreePath *path;
+    GldbWindow *context;
+    gboolean sensitive;
+
+    context = (GldbWindow *) user_data;
+    model = gtk_combo_box_get_model(GTK_COMBO_BOX(context->texture.zoom));
+    if (gtk_combo_box_get_active_iter(GTK_COMBO_BOX(context->texture.zoom), &iter))
+    {
+        /* There is no gtk_tree_model_iter_prev, so we have to go via tree paths. */
+        path = gtk_tree_model_get_path(model, &iter);
+        if (gtk_tree_path_prev(path))
+        {
+            gtk_tree_model_get_iter(model, &iter, path);
+            gtk_tree_model_get(model, &iter, COLUMN_TEXTURE_ZOOM_SENSITIVE, &sensitive, -1);
+            if (sensitive)
+                gtk_combo_box_set_active_iter(GTK_COMBO_BOX(context->texture.zoom), &iter);
+        }
+        gtk_tree_path_free(path);
+    }
+}
+
+static void texture_zoom_100_clicked(GtkToolButton *toolbutton,
+                                     gpointer user_data)
+{
+    GtkTreeModel *model;
+    GtkTreeIter iter;
+    GldbWindow *context;
+    gdouble zoom;
+    gboolean sensitive, more;
+
+    context = (GldbWindow *) user_data;
+    model = gtk_combo_box_get_model(GTK_COMBO_BOX(context->texture.zoom));
+    more = gtk_tree_model_get_iter_first(model, &iter);
+    while (more)
+    {
+        gtk_tree_model_get(model, &iter,
+                           COLUMN_TEXTURE_ZOOM_VALUE, &zoom,
+                           COLUMN_TEXTURE_ZOOM_SENSITIVE, &sensitive,
+                           -1);
+        if (zoom == 1.0)
+        {
+            if (sensitive)
+                gtk_combo_box_set_active_iter(GTK_COMBO_BOX(context->texture.zoom), &iter);
+            return;
+        }
+
+        more = gtk_tree_model_iter_next(model, &iter);
+    }
+}
+
+static void texture_zoom_fit_clicked(GtkToolButton *toolbutton,
+                                     gpointer user_data)
+{
+    GldbWindow *context;
+
+    context = (GldbWindow *) user_data;
+    gtk_combo_box_set_active(GTK_COMBO_BOX(context->texture.zoom), 0);
 }
 
 static GtkWidget *build_texture_page_id(GldbWindow *context)
@@ -1535,11 +1668,14 @@ static GtkWidget *build_texture_page_zoom(GldbWindow *context)
                        COLUMN_TEXTURE_ZOOM_SENSITIVE, TRUE,
                        -1);
 
+    /* Note: separator must be non-sensitive, because the zoom-out button
+     * examines its sensitivity to see if it can zoom out further.
+     */
     gtk_list_store_append(store, &iter);
     gtk_list_store_set(store, &iter,
                        COLUMN_TEXTURE_ZOOM_VALUE, -2.0, /* -2.0 is magic separator value - see above function */
                        COLUMN_TEXTURE_ZOOM_TEXT, "Separator",
-                       COLUMN_TEXTURE_ZOOM_SENSITIVE, TRUE
+                       COLUMN_TEXTURE_ZOOM_SENSITIVE, FALSE,
                        -1);
 
     for (i = 5; i >= 0; i--)
@@ -1680,9 +1816,26 @@ static GtkWidget *build_texture_page_toolbar(GldbWindow *context)
 
     gtk_toolbar_insert(GTK_TOOLBAR(toolbar), gtk_separator_tool_item_new(), -1);
 
-    item = gtk_tool_button_new_from_stock(GTK_STOCK_ZOOM_IN);
+    context->texture.zoom_in = item = gtk_tool_button_new_from_stock(GTK_STOCK_ZOOM_IN);
+    g_signal_connect(G_OBJECT(item), "clicked",
+                     G_CALLBACK(texture_zoom_in_clicked), context);
+    gtk_widget_set_sensitive(GTK_WIDGET(item), FALSE);
     gtk_toolbar_insert(GTK_TOOLBAR(toolbar), item, -1);
-    item = gtk_tool_button_new_from_stock(GTK_STOCK_ZOOM_OUT);
+
+    context->texture.zoom_out = item = gtk_tool_button_new_from_stock(GTK_STOCK_ZOOM_OUT);
+    g_signal_connect(G_OBJECT(item), "clicked",
+                     G_CALLBACK(texture_zoom_out_clicked), context);
+    gtk_widget_set_sensitive(GTK_WIDGET(item), FALSE);
+    gtk_toolbar_insert(GTK_TOOLBAR(toolbar), item, -1);
+
+    context->texture.zoom_100 = item = gtk_tool_button_new_from_stock(GTK_STOCK_ZOOM_100);
+    g_signal_connect(G_OBJECT(item), "clicked",
+                     G_CALLBACK(texture_zoom_100_clicked), context);
+    gtk_toolbar_insert(GTK_TOOLBAR(toolbar), item, -1);
+
+    item = gtk_tool_button_new_from_stock(GTK_STOCK_ZOOM_FIT);
+    g_signal_connect(G_OBJECT(item), "clicked",
+                     G_CALLBACK(texture_zoom_fit_clicked), context);
     gtk_toolbar_insert(GTK_TOOLBAR(toolbar), item, -1);
 
     return toolbar;
