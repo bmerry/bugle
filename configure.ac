@@ -1,4 +1,4 @@
-AC_INIT(bugle, 0.0.20051112, bmerry@users.sourceforge.net)
+AC_INIT(bugle, 0.0.20060101, bmerry@users.sourceforge.net)
 AC_CONFIG_SRCDIR([src/interceptor.c])
 AM_INIT_AUTOMAKE([1.7 dist-bzip2 subdir-objects])
 AM_CONFIG_HEADER(config.h)
@@ -124,6 +124,10 @@ AC_ARG_WITH([gtk], AC_HELP_STRING([--without-gtk], [do not build the GUI debugge
 GLDB_GUI=gldb/gldb-gui
 test $HAVE_GTK == 1 || GLDB_GUI=""
 AC_SUBST(GLDB_GUI)
+
+AC_ARG_WITH([gtkglext], AC_HELP_STRING([--without-gtkglext], [do not use OpenGL within the GUI debugger]),
+            [ test $withval = no && HAVE_GTKGLEXT=0], [])
+AM_CONDITIONAL(HAVE_GTKGLEXT, test x$HAVE_GTKGLEXT = x1)
 AC_DEFINE_UNQUOTED(HAVE_GTKGLEXT, $HAVE_GTKGLEXT, [non-zero when all the requirements for GtkGLExt are met])
 
 AC_ARG_WITH([threads], AC_HELP_STRING([--with-threads=pthreads|single], [choose threading model [[auto]]]), [

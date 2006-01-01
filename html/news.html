@@ -12,6 +12,24 @@
         </span>
     </div>
     <h1>BuGLe News</h1>
+    <h2>Improved texture viewer and ATI driver support (1/1/2006) </h2>
+    <p>
+    I've worked on the texture viewer in the debugger and made it a lot 
+    better. It is not yet complete (in particular 3D textures cannot be
+    viewed, and luminance textures show up red), but should be an improvement
+    on the previous release.
+    </p>
+    <p>
+    I'd be interested to hear what features people would be interested in
+    seeing in the texture viewer, and in fact gldb in general.
+    </p>
+    <p>I also spent a few days over Christmas with only my laptop, which has
+    an ATI graphics card. I found some surprising bugs in the ATI driver
+    (for example, during <tt>glDrawArrays</tt> the colour set with
+    <tt>glColor3f</tt> is simply ignored), but also some bugs in my own
+    code that only showed up with the ATI drivers. So those of you with
+    ATI cards should now get a much better experience from BuGLe.
+    </p>
     <h2>New release (0.0.20051112) adds preliminary GUI debugger (12/11/2005)</h2>
     <p>
     The promised GUI debugger is now ready in a preliminary form (meaning that

@@ -1,8 +1,14 @@
+0.0.20060101
+------------
 This release greatly improves the texture viewer in gldb-gui, as well as
 fixing a number of bugs. It also fixes a dubious shortcut (read: bug)
 that caused all kinds of havoc with ATI drivers. If previous releases
 have caused weird problems when using an ATI card (whether with gldb,
 gldb-gui or a filter), give this release a try.
+
+I have had intermittent problems with gldb-gui crashing due to "an X
+Window System error". If you can reproduce this, let me so that I can
+try to fix it.
 
 0.0.20051112
 ------------

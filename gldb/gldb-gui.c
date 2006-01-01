@@ -19,11 +19,13 @@
 #if HAVE_CONFIG_H
 # include <config.h>
 #endif
-#include "glee/GLee.h"
-/* FIXME: Not sure if this the correct definition of GETTEXT_PACKAGE... */
 #ifndef GETTEXT_PACKAGE
 # define GETTEXT_PACKAGE "gtk20"
 #endif
+#if HAVE_GTKGLEXT
+# include "glee/GLee.h"
+#endif
+/* FIXME: Not sure if this the correct definition of GETTEXT_PACKAGE... */
 #include <gtk/gtk.h>
 #include <glib.h>
 #include <glib/gi18n-lib.h>
@@ -68,6 +70,7 @@ enum
     COLUMN_BREAKPOINTS_FUNCTION
 };
 
+#ifdef HAVE_GTKGLEXT
 enum
 {
     COLUMN_TEXTURE_ID_ID,
@@ -96,6 +99,7 @@ enum
     COLUMN_TEXTURE_FILTER_TRUE,
     COLUMN_TEXTURE_FILTER_NON_MIP
 };
+#endif
 
 struct GldbWindow;
 
@@ -177,8 +181,9 @@ typedef struct
     GtkWidget *dialog, *list;
 } GldbBreakpointsDialog;
 
-#define TEXTURE_CALLBACK_FLAG_FIRST 1
-#define TEXTURE_CALLBACK_FLAG_LAST 2
+#if HAVE_GTKGLEXT
+# define TEXTURE_CALLBACK_FLAG_FIRST 1
+# define TEXTURE_CALLBACK_FLAG_LAST 2
 
 typedef struct
 {
@@ -188,8 +193,11 @@ typedef struct
     guint32 flags;
 } texture_callback_data;
 
-static GtkListStore *function_names;
 static GtkTreeModel *texture_mag_filters, *texture_min_filters;
+
+#endif
+
+static GtkListStore *function_names;
 static guint32 seq = 0;
 
 static void set_response_handler(GldbWindow *context, guint32 id,
@@ -2402,6 +2410,7 @@ static void build_function_names(void)
     }
 }
 
+#if HAVE_GTKGLEXT
 static GtkListStore *build_texture_filters(gboolean min_filter)
 {
     GtkListStore *store;
@@ -2436,6 +2445,7 @@ static GtkListStore *build_texture_filters(gboolean min_filter)
     }
     return store;
 }
+#endif
 
 int main(int argc, char **argv)
 {
@@ -2444,13 +2454,13 @@ int main(int argc, char **argv)
     gtk_init(&argc, &argv);
 #if HAVE_GTKGLEXT
     gtk_gl_init(&argc, &argv);
+    texture_mag_filters = GTK_TREE_MODEL(build_texture_filters(FALSE));
+    texture_min_filters = GTK_TREE_MODEL(build_texture_filters(TRUE));
 #endif
     gldb_initialise(argc, argv);
     bugle_initialise_hashing();
 
     build_function_names();
-    texture_mag_filters = GTK_TREE_MODEL(build_texture_filters(FALSE));
-    texture_min_filters = GTK_TREE_MODEL(build_texture_filters(TRUE));
     memset(&context, 0, sizeof(context));
     build_main_window(&context);
 
@@ -2458,8 +2468,10 @@ int main(int argc, char **argv)
 
     gldb_shutdown();
     g_object_unref(G_OBJECT(function_names));
+#if HAVE_GTKGLEXT
     g_object_unref(G_OBJECT(texture_mag_filters));
     g_object_unref(G_OBJECT(texture_min_filters));
+#endif
     g_object_unref(G_OBJECT(context.breakpoints_store));
     return 0;
 }

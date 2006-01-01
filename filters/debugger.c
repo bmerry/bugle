@@ -19,7 +19,7 @@
 #if HAVE_CONFIG_H
 # include <config.h>
 #endif
-#define _XOPEN_SOURCE
+#define _XOPEN_SOURCE 500
 #include "src/filters.h"
 #include "src/utils.h"
 #include "src/glutils.h"
@@ -39,6 +39,9 @@
 #include <sys/types.h>
 #include <unistd.h>
 #include <errno.h>
+#if HAVE_SYS_SELECT_H
+# include <sys/select.h>
+#endif
 
 static int in_pipe = -1, out_pipe = -1;
 static bool break_on[NUMBER_OF_FUNCTIONS];

@@ -32,7 +32,11 @@ gldb_gldb_SOURCES = gldb/gldb.c gldb/gldb-common.c gldb/gldb-common.h
 gldb_gldb_LDADD = src/libbugleutils.la $(READLINE_LIBS)
 gldb_gldb_LDFLAGS = -thread-safe
 
-gldb_gldb_gui_SOURCES = gldb/gldb-gui.c gldb/gldb-common.c gldb/gldb-common.h glee/GLee.c glee/GLee.h
+gldb_gldb_gui_SOURCES = gldb/gldb-gui.c gldb/gldb-common.c gldb/gldb-common.h
+if HAVE_GTKGLEXT
+  gldb_gldb_gui_SOURCES += glee/GLee.c glee/GLee.h
+endif
+EXTRA_gldb_gldb_gui_SOURCES = glee/GLee.c glee/GLee.h
 gldb_gldb_gui_LDADD = src/libbugleutils.la $(GTKGLEXT_LIBS) $(GTK_LIBS) -lm
 gldb_gldb_gui_LDFLAGS = -thread-safe
 gldb_gldb_gui_CFLAGS = $(AM_CFLAGS) $(GTKGLEXT_CFLAGS) $(GTK_CFLAGS)
