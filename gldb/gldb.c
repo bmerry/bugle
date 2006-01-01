@@ -101,6 +101,15 @@ static void sigint_handler(int sig)
     write(int_pipes[1], &buf, 1);
 }
 
+#if !HAVE_READLINE
+static void chop(char *s)
+{
+    size_t len = strlen(s);
+    while (len && isspace(s[len - 1]))
+        s[--len] = '\0';
+}
+#endif
+
 /* Returns true on quit, false otherwise */
 static bool handle_commands(void)
 {
@@ -400,15 +409,6 @@ static void main_loop(void)
         }
     }
 }
-
-#if !HAVE_READLINE
-static void chop(char *s)
-{
-    size_t len = strlen(s);
-    while (len && isspace(s[len - 1]))
-        s[--len] = '\0';
-}
-#endif
 
 static void make_indent(int indent, FILE *out)
 {

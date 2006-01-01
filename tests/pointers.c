@@ -6,8 +6,8 @@
 #if HAVE_CONFIG_H
 # include <config.h>
 #endif
-#define GL_GLEXT_PROTOTYPES
 #define _POSIX_SOURCE
+#include "glee/GLee.h"
 #include <GL/glut.h>
 #include <GL/glext.h>
 #include <stdio.h>
@@ -26,7 +26,7 @@ static void invalid_direct(void)
     fprintf(ref, "WARNING: illegal index array caught in glDrawElements; call will be ignored\\.\n");
     glDrawElements(GL_POINTS, 4, GL_UNSIGNED_INT, i); /* legal */
 #ifdef GL_EXT_draw_range_elements
-    if (glutExtensionSupported("GL_EXT_draw_range_elements"))
+    if (GLEE_EXT_draw_range_elements)
     {
         glDrawRangeElementsEXT(GL_POINTS, 0, 0, 500, GL_UNSIGNED_INT, NULL);
         fprintf(ref, "WARNING: illegal index array caught in glDrawRangeElements; call will be ignored\\.\n");
@@ -40,7 +40,7 @@ static void invalid_direct(void)
     glDrawElements(GL_POINTS, 500, GL_UNSIGNED_INT, NULL);
     fprintf(ref, "WARNING: illegal index array caught in glDrawElements; call will be ignored\\.\n");
 #ifdef GL_ARB_multitexture
-    if (glutExtensionSupported("GL_ARB_multitexture"))
+    if (GLEE_ARB_multitexture)
     {
         glClientActiveTextureARB(GL_TEXTURE1_ARB);
         glDrawElements(GL_POINTS, 500, GL_UNSIGNED_INT, NULL);
@@ -54,7 +54,7 @@ static void invalid_direct(void)
 static void invalid_direct_vbo(void)
 {
 #ifdef GL_ARB_vertex_buffer_object
-    if (glutExtensionSupported("GL_ARB_vertex_buffer_object"))
+    if (GLEE_ARB_vertex_buffer_object)
     {
         GLfloat v[3] = {0.0f, 0.0f, 0.0f};
         GLuint indices[4] = {0, 0, 0, 0};
@@ -71,7 +71,7 @@ static void invalid_direct_vbo(void)
         fprintf(ref, "WARNING: illegal index array caught in glDrawElements; call will be ignored\\.\n");
         glDrawElements(GL_POINTS, 4, GL_UNSIGNED_INT, NULL); /* legal */
 #ifdef GL_EXT_draw_range_elements
-        if (glutExtensionSupported("GL_EXT_draw_range_elements"))
+        if (GLEE_EXT_draw_range_elements)
         {
             glDrawRangeElementsEXT(GL_POINTS, 0, 0, 500, GL_UNSIGNED_INT, NULL);
             fprintf(ref, "WARNING: illegal index array caught in glDrawRangeElements; call will be ignored\\.\n");
@@ -79,7 +79,7 @@ static void invalid_direct_vbo(void)
         }
 #endif
 #ifdef GL_EXT_multi_draw_arrays
-        if (glutExtensionSupported("GL_EXT_multi_draw_arrays"))
+        if (GLEE_EXT_multi_draw_arrays)
         {
             GLsizei count = 500;
             const GLvoid *indices = NULL;
@@ -111,14 +111,14 @@ static void invalid_indirect(void)
     glDrawElements(GL_POINTS, 4, GL_UNSIGNED_INT, i);
     fprintf(ref, "WARNING: illegal vertex array caught in glDrawElements; call will be ignored\\.\n");
 #ifdef GL_EXT_draw_range_elements
-    if (glutExtensionSupported("GL_EXT_draw_range_elements"))
+    if (GLEE_EXT_draw_range_elements)
     {
         glDrawRangeElementsEXT(GL_POINTS, 0, 0, 4, GL_UNSIGNED_INT, i);
         fprintf(ref, "WARNING: illegal vertex array caught in glDrawRangeElements; call will be ignored\\.\n");
     }
 #endif
 #ifdef GL_EXT_multi_draw_arrays
-    if (glutExtensionSupported("GL_EXT_multi_draw_arrays"))
+    if (GLEE_EXT_multi_draw_arrays)
     {
         GLint first = 0;
         GLsizei count = 1;
@@ -141,7 +141,7 @@ static void invalid_range(void)
     glVertexPointer(3, GL_FLOAT, 0, v);
     glEnableClientState(GL_VERTEX_ARRAY);
 
-    if (glutExtensionSupported("GL_EXT_draw_range_elements"))
+    if (GLEE_EXT_draw_range_elements)
     {
         glDrawRangeElementsEXT(GL_POINTS, 0, 0, 4, GL_UNSIGNED_INT, i);
         fprintf(ref, "WARNING: glDrawRangeElements indices fall outside range; call will be ignored\\.\n");
@@ -161,6 +161,7 @@ int main(int argc, char **argv)
     glutInitDisplayMode(GLUT_RGBA | GLUT_DOUBLE | GLUT_DEPTH);
     glutInitWindowSize(300, 300);
     glutCreateWindow("invalid address generator");
+    GLeeInit();
     invalid_direct();
     invalid_direct_vbo();
     invalid_indirect();

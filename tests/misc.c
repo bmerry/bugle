@@ -2,7 +2,10 @@
 
 #include <GL/glut.h>
 #include <GL/glx.h>
+#include <GL/glxext.h>
 #include <stdlib.h>
+
+extern __GLXextFuncPtr glXGetProcAddressARB(const GLubyte *);
 
 void check_procaddress()
 {

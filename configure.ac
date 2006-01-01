@@ -1,4 +1,4 @@
-AC_INIT(bugle, 0.0.20051112, bmerry@users.sourceforge.net)
+AC_INIT(bugle, 0.0.20060101, bmerry@users.sourceforge.net)
 AC_CONFIG_SRCDIR([src/interceptor.c])
 AM_INIT_AUTOMAKE([1.7 dist-bzip2 subdir-objects])
 AM_CONFIG_HEADER(config.h)
@@ -71,6 +71,8 @@ AC_CHECK_HEADERS([ffmpeg/avformat.h ffmpeg/avcodec.h], [], [HAVE_LAVC=0])
 AC_CHECK_HEADERS([readline/readline.h readline/history.h], [], [HAVE_READLINE=0])
 AC_CHECK_HEADERS([pthread.h], [], [THREADS=BUGLE_THREADS_SINGLE])
 
+GLEXTINCLUDE="`CPP=\"$CPP\" srcdir=\"$srcdir\" $PERL -w $srcdir/gentokens/find_header.perl GL/glext.h`"
+AC_SUBST(GLEXTINCLUDE)
 GLINCLUDES="`CPP=\"$CPP\" srcdir=\"$srcdir\" $PERL -w $srcdir/gentokens/find_header.perl GL/gl.h` \
 `CPP=\"$CPP\" srcdir=\"$srcdir\" $PERL -w $srcdir/gentokens/find_header.perl GL/glx.h` \
 `CPP=\"$CPP\" srcdir=\"$srcdir\" $PERL -w $srcdir/gentokens/find_header.perl GL/glext.h` \
@@ -122,6 +124,10 @@ AC_ARG_WITH([gtk], AC_HELP_STRING([--without-gtk], [do not build the GUI debugge
 GLDB_GUI=gldb/gldb-gui
 test $HAVE_GTK == 1 || GLDB_GUI=""
 AC_SUBST(GLDB_GUI)
+
+AC_ARG_WITH([gtkglext], AC_HELP_STRING([--without-gtkglext], [do not use OpenGL within the GUI debugger]),
+            [ test $withval = no && HAVE_GTKGLEXT=0], [])
+AM_CONDITIONAL(HAVE_GTKGLEXT, test x$HAVE_GTKGLEXT = x1)
 AC_DEFINE_UNQUOTED(HAVE_GTKGLEXT, $HAVE_GTKGLEXT, [non-zero when all the requirements for GtkGLExt are met])
 
 AC_ARG_WITH([threads], AC_HELP_STRING([--with-threads=pthreads|single], [choose threading model [[auto]]]), [

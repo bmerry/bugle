@@ -33,7 +33,11 @@ gldb_gldb_LDADD = src/libbugleutils.la $(READLINE_LIBS)
 gldb_gldb_LDFLAGS = -thread-safe
 
 gldb_gldb_gui_SOURCES = gldb/gldb-gui.c gldb/gldb-common.c gldb/gldb-common.h
-gldb_gldb_gui_LDADD = src/libbugleutils.la $(GTKGLEXT_LIBS) $(GTK_LIBS)
+if HAVE_GTKGLEXT
+  gldb_gldb_gui_SOURCES += glee/GLee.c glee/GLee.h
+endif
+EXTRA_gldb_gldb_gui_SOURCES = glee/GLee.c glee/GLee.h
+gldb_gldb_gui_LDADD = src/libbugleutils.la $(GTKGLEXT_LIBS) $(GTK_LIBS) -lm
 gldb_gldb_gui_LDFLAGS = -thread-safe
 gldb_gldb_gui_CFLAGS = $(AM_CFLAGS) $(GTKGLEXT_CFLAGS) $(GTK_CFLAGS)
 
@@ -144,34 +148,37 @@ filters_capture_la_LDFLAGS = -thread-safe -module -avoid-version -export-dynamic
 check_PROGRAMS = \
 	tests/errors tests/threads1 tests/threads2 tests/queries \
 	tests/misc tests/setstate tests/triangles \
-        tests/pointers tests/objects
-dist_check_SCRIPTS = tests/queries.sh tests/setstate.sh tests/pointers.sh tests/triangles.sh tests/comparelog.sh tests/comparelog.perl
+        tests/pointers tests/objects tests/textest
+dist_check_SCRIPTS = tests/errors.sh tests/misc.sh tests/queries.sh tests/setstate.sh tests/pointers.sh tests/triangles.sh tests/comparelog.sh tests/comparelog.perl
 tests_errors_SOURCES = tests/errors.c
-tests_errors_LDADD = src/libbugle.la -lglut -lGLU $(GL_LIBS) $(X_PRE_LIBS) $(X_LIBS) -lX11 $(X_EXTRA_LIBS)
-tests_pointers_SOURCES = tests/pointers.c
-tests_pointers_LDADD = src/libbugle.la -lglut -lGLU $(GL_LIBS) $(X_PRE_LIBS) $(X_LIBS) -lX11 $(X_EXTRA_LIBS)
+tests_errors_LDADD = -lglut -lGLU $(GL_LIBS) $(X_PRE_LIBS) $(X_LIBS) -lX11 $(X_EXTRA_LIBS)
+tests_pointers_SOURCES = tests/pointers.c glee/GLee.c glee/GLee.h
+tests_pointers_LDADD = -lglut -lGLU $(GL_LIBS) $(X_PRE_LIBS) $(X_LIBS) -lX11 $(X_EXTRA_LIBS)
 tests_threads1_SOURCES = tests/threads1.c
-tests_threads1_LDADD = src/libbugle.la $(GL_LIBS) $(X_PRE_LIBS) $(X_LIBS) $(X_EXTRA_LIBS) -lX11 $(THREAD_LIBS)
+tests_threads1_LDADD = $(GL_LIBS) $(X_PRE_LIBS) $(X_LIBS) $(X_EXTRA_LIBS) -lX11 $(THREAD_LIBS)
 tests_threads2_SOURCES = tests/threads2.c
-tests_threads2_LDADD = src/libbugle.la $(GL_LIBS) $(X_PRE_LIBS) $(X_LIBS) $(X_EXTRA_LIBS) -lX11 $(THREAD_LIBS)
-tests_queries_SOURCES = tests/queries.c
-tests_queries_LDADD = src/libbugle.la -lglut -lGLU $(GL_LIBS) $(X_PRE_LIBS) $(X_LIBS) -lX11 $(X_EXTRA_LIBS)
-tests_triangles_SOURCES = tests/triangles.c
-tests_triangles_LDADD = src/libbugle.la -lglut -lGLU $(GL_LIBS) $(X_PRE_LIBS) $(X_LIBS) -lX11 $(X_EXTRA_LIBS)
+tests_threads2_LDADD = $(GL_LIBS) $(X_PRE_LIBS) $(X_LIBS) $(X_EXTRA_LIBS) -lX11 $(THREAD_LIBS)
+tests_queries_SOURCES = tests/queries.c glee/GLee.c glee/GLee.h
+tests_queries_LDADD = -lglut -lGLU $(GL_LIBS) $(X_PRE_LIBS) $(X_LIBS) -lX11 $(X_EXTRA_LIBS)
+tests_triangles_SOURCES = tests/triangles.c glee/GLee.c glee/GLee.h
+tests_triangles_LDADD = -lglut -lGLU $(GL_LIBS) $(X_PRE_LIBS) $(X_LIBS) -lX11 $(X_EXTRA_LIBS)
 tests_misc_SOURCES = tests/misc.c
-tests_misc_LDADD = src/libbugle.la -lglut -lGLU $(GL_LIBS) $(X_PRE_LIBS) $(X_LIBS) -lX11 $(X_EXTRA_LIBS)
-tests_setstate_SOURCES = tests/setstate.c
+tests_misc_LDADD = -lglut -lGLU $(GL_LIBS) $(X_PRE_LIBS) $(X_LIBS) -lX11 $(X_EXTRA_LIBS)
+tests_setstate_SOURCES = tests/setstate.c glee/GLee.c glee/GLee.h
 tests_setstate_LDADD = src/libbugle.la -lglut -lGLU $(GL_LIBS) $(X_PRE_LIBS) $(X_LIBS) -lX11 $(X_EXTRA_LIBS)
-tests_objects_SOURCES = tests/objects.c
-tests_objects_LDADD = src/libbugle.la -lglut -lGLU $(GL_LIBS) $(X_PRE_LIBS) $(X_LIBS) -lX11 $(X_EXTRA_LIBS)
-TESTS = tests/errors tests/misc tests/queries.sh tests/setstate.sh tests/triangles.sh tests/pointers.sh
-TESTS_ENVIRONMENT = BUGLE_FILTERS=$(srcdir)/tests/filters BUGLE_FILTER_DIR=filters/.libs
+tests_objects_SOURCES = tests/objects.c glee/GLee.c glee/GLee.h
+tests_objects_LDADD = -lglut -lGLU $(GL_LIBS) $(X_PRE_LIBS) $(X_LIBS) -lX11 $(X_EXTRA_LIBS)
+tests_textest_SOURCES = tests/textest.c glee/GLee.c glee/GLee.h
+tests_textest_LDADD = -lglut -lGLU $(GL_LIBS) $(X_PRE_LIBS) $(X_LIBS) -lX11 $(X_EXTRA_LIBS)
+TESTS = tests/errors.sh tests/misc.sh tests/queries.sh tests/setstate.sh tests/triangles.sh tests/pointers.sh
+TESTS_ENVIRONMENT = BUGLE_FILTERS=$(srcdir)/tests/filters BUGLE_FILTER_DIR=filters/.libs BUGLE_LIB=src/.libs/libbugle.so
 
 # Extra files to distribute
 EXTRA_DIST = gl.bc.in $(BCFILES) src/data/gl.c src/data/overrides.h \
-	FAQ TROUBLESHOOTING \
+	FAQ TROUBLESHOOTING LICENSE \
 	doc/filters.html doc/objects.html doc/locks.txt \
         doc/protocol.txt doc/examples/filters doc/extensions.txt \
+	glee/readme.txt \
 	tests/filters
 
 # Note: automake ought to clean the various files in the .libs directories,
@@ -190,5 +197,5 @@ CLEANFILES = \
 	tests/.libs/setstate tests/.libs/lt-setstate \
         tests/.libs/triangles tests/.libs/lt-triangles \
         tests/.libs/pointers tests/.libs/lt-pointers \
-        tests/.libs/objects
+        tests/.libs/objects \
 DISTCLEANFILES = tests/*.log

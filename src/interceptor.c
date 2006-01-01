@@ -21,6 +21,7 @@
 #endif
 #include "src/utils.h"
 #include "src/lib.h"
+#include "src/glfuncs.h"
 #include "filters.h"
 #include "conffile.h"
 #include "tracker.h"
@@ -158,11 +159,26 @@ static void initialise_core_filters(void)
     log_initialise();
 }
 
+/* The Linux ABI requires that OpenGL 1.2 functions be accessible by
+ * direct dynamic linking, but everything else should be accessed by
+ * glXGetProcAddressARB. We deal with that here.
+ */
+static void initialise_addresses(void)
+{
+    size_t i;
+
+    for (i = 0; i < NUMBER_OF_FUNCTIONS; i++)
+        if (!bugle_gl_function_table[i].version
+            || strcmp(bugle_gl_function_table[i].version, "GL_VERSION_1_2") > 0)
+            budgie_function_table[i].real = CALL_glXGetProcAddressARB(budgie_function_table[i].name);
+}
+
 static bugle_thread_once_t init_key_once = BUGLE_THREAD_ONCE_INIT;
 static void initialise_all(void)
 {
     bugle_initialise_hashing();
     initialise_real();
+    initialise_addresses();
     initialise_filters();
     initialise_core_filters();
     initialise_dump_tables();

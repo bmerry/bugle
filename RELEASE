@@ -7,7 +7,6 @@
 - run 'make distcheck' on several machines
 - do a 'fakeroot make dist'
 - upload to sourceforge
-- post news to sourceforge
 - post details on freshmeat
 - update project webpage
 - tag in svn

@@ -12,14 +12,8 @@
 
 static void invalid_enum(void)
 {
-    glBegin(GL_MATRIX_MODE);
-    if (glGetError() != GL_INVALID_ENUM)
-    {
-        fprintf(stderr,
-                "glBegin(GL_MATRIX_MODE) failed to generate GL_INVALID_ENUM.\n"
-                "Mesa 6.1 (distributed with xorg) doesn't, so this isn't considered a failure.\n"
-                "If you're not using Mesa, then it may indicate a bug.\n");
-    }
+    glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_FLOAT);
+    assert(glGetError() == GL_INVALID_ENUM);
 }
 
 static void invalid_operation(void)
