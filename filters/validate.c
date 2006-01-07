@@ -270,7 +270,7 @@ static void checks_buffer_vbo(size_t size, const void *data,
     CALL_glGetBufferParameterivARB(GL_ARRAY_BUFFER_ARB, GL_BUFFER_SIZE_ARB, &bsize);
     CALL_glBindBufferARB(GL_ARRAY_BUFFER_ARB, tmp);
     end = ((const char *) data - (const char *) NULL) + size;
-    if (end > bsize)
+    if (end > (size_t) bsize)
         bugle_thread_raise(SIGSEGV);
 }
 #endif
@@ -415,7 +415,7 @@ static void checks_attributes(size_t first, size_t count)
 
         CALL_glGetIntegerv(GL_MAX_TEXTURE_UNITS_ARB, &texunits);
         CALL_glGetIntegerv(GL_CLIENT_ACTIVE_TEXTURE_ARB, &old);
-        for (i = GL_TEXTURE0_ARB; i < GL_TEXTURE0_ARB + texunits; i++)
+        for (i = GL_TEXTURE0_ARB; i < GL_TEXTURE0_ARB + (GLenum) texunits; i++)
         {
             CALL_glClientActiveTextureARB(i);
             checks_attribute(first, count,
@@ -523,7 +523,7 @@ static void checks_min_max(GLsizei count, GLenum gltype, const GLvoid *indices,
  */
 #define CHECKS_START() 1) { \
     struct sigaction act, old_act; \
-    bool ret = true; \
+    volatile bool ret = true; \
     \
     bugle_thread_mutex_lock(&checks_mutex); \
     checks_error = NULL; \
@@ -784,7 +784,7 @@ static bool checks_glMultiTexCoord(function_call *call, const callback_data *dat
             CALL_glGetIntegerv(GL_MAX_TEXTURE_UNITS_ARB, &max);
         bugle_end_internal_render("checks_glMultiTexCoord", true);
     }
-    if (texture < GL_TEXTURE0_ARB || texture >= GL_TEXTURE0_ARB + max)
+    if (texture < GL_TEXTURE0_ARB || texture >= GL_TEXTURE0_ARB + (GLenum) max)
     {
         fprintf(stderr, "WARNING: %s called with out of range texture unit; call will be ignored.\n",
                 budgie_function_table[call->generic.id].name);

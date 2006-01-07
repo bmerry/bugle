@@ -98,6 +98,8 @@ void trackbeginend_initialise(void)
         initialise_trackbeginend,
         NULL,
         NULL,
+        NULL,
+        NULL,
         0,
         NULL /* no documentation */
     };

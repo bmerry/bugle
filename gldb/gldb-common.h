@@ -65,7 +65,7 @@ typedef enum
 typedef struct
 {
     char *name;
-    GLuint numeric_name;
+    GLint numeric_name;
     GLenum enum_name;
     char *value;
     bugle_linked_list children;

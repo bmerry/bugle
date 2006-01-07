@@ -251,6 +251,8 @@ void trackcontext_initialise(void)
         initialise_trackcontext,
         NULL,
         NULL,
+        NULL,
+        NULL,
         0,
         NULL /* No documentation */
     };

@@ -170,7 +170,7 @@ static void initialise_addresses(void)
     for (i = 0; i < NUMBER_OF_FUNCTIONS; i++)
         if (!bugle_gl_function_table[i].version
             || strcmp(bugle_gl_function_table[i].version, "GL_VERSION_1_2") > 0)
-            budgie_function_table[i].real = CALL_glXGetProcAddressARB(budgie_function_table[i].name);
+            budgie_function_table[i].real = CALL_glXGetProcAddressARB((const GLubyte *) budgie_function_table[i].name);
 }
 
 static bugle_thread_once_t init_key_once = BUGLE_THREAD_ONCE_INIT;

@@ -1274,7 +1274,7 @@ static void update_texture_ids(GldbWindow *context)
         "rect"
 #endif
     };
-    int trg;
+    guint trg;
 
     model = gtk_combo_box_get_model(GTK_COMBO_BOX(context->texture.id));
     if (gtk_combo_box_get_active_iter(GTK_COMBO_BOX(context->texture.id), &iter))
@@ -1309,7 +1309,7 @@ static void update_texture_ids(GldbWindow *context)
                 {
                     l = (const gldb_state *) bugle_list_data(nl);
                     if (l->enum_name == 0)
-                        levels = MAX(levels, l->numeric_name + 1);
+                        levels = MAX(levels, (guint) l->numeric_name + 1);
                 }
                 if (!levels) continue;
                 bugle_asprintf(&name, "%u (%s)", (unsigned int) t->numeric_name, target_names[trg]);
@@ -1321,7 +1321,7 @@ static void update_texture_ids(GldbWindow *context)
                                    COLUMN_TEXTURE_ID_TEXT, name,
                                    -1);
                 free(name);
-                if (have_old && t->numeric_name == old_id && targets[trg] == old_target)
+                if (have_old && t->numeric_name == (GLint) old_id && targets[trg] == (GLenum) old_target)
                 {
                     old_iter = iter;
                     have_old_iter = TRUE;
@@ -1341,10 +1341,10 @@ static void texture_id_changed(GtkComboBox *id_box, gpointer user_data)
     GtkTreeIter iter;
     GtkTreeModel *model;
     guint target, id, levels;
+    guint i, l;
     GldbWindow *context;
     texture_callback_data *data;
     gint old;
-    int i, l;
 
     if (gldb_get_status() == GLDB_STATUS_STOPPED)
     {
@@ -1418,7 +1418,7 @@ static void texture_id_changed(GtkComboBox *id_box, gpointer user_data)
                                -1);
             free(text);
         }
-        if (old <= levels) gtk_combo_box_set_active(GTK_COMBO_BOX(context->texture.level), old);
+        if (old <= (gint) levels) gtk_combo_box_set_active(GTK_COMBO_BOX(context->texture.level), old);
         else gtk_combo_box_set_active(GTK_COMBO_BOX(context->texture.level), levels);
     }
 }
@@ -2040,7 +2040,7 @@ static void update_shader_ids(GldbWindow *context, GLenum target)
                 gtk_list_store_append(GTK_LIST_STORE(model), &iter);
                 gtk_list_store_set(GTK_LIST_STORE(model), &iter,
                                    0, (guint) t->numeric_name, -1);
-                if (have_old && t->numeric_name == old)
+                if (have_old && t->numeric_name == (GLint) old)
                 {
                     old_iter = iter;
                     have_old_iter = TRUE;
@@ -2075,7 +2075,7 @@ static void update_shader_ids(GldbWindow *context, GLenum target)
                 gtk_list_store_append(GTK_LIST_STORE(model), &iter);
                 gtk_list_store_set(GTK_LIST_STORE(model), &iter,
                                    0, (guint) t->numeric_name, -1);
-                if (have_old && t->numeric_name == old)
+                if (have_old && t->numeric_name == (GLint) old)
                 {
                     old_iter = iter;
                     have_old_iter = TRUE;

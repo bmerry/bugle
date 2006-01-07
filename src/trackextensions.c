@@ -115,6 +115,8 @@ void trackextensions_initialise(void)
         initialise_trackextensions,
         NULL,
         NULL,
+        NULL,
+        NULL,
         0,
         NULL /* No documentation */
     };

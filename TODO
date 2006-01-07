@@ -1,5 +1,6 @@
-Current:
---------
+Current
+-------
+- replace GLee with something C89 compliant
 - check whether all dependencies on trackextensions are listed
 - exploit per-context, per-filter state e.g. for video
 - get threads working again in BSD (is this still broken?)
@@ -13,19 +14,21 @@ gldb
 
 gldb-gui
 --------
-- Show shader metadata in shader pane
 - VBO decode
 - convert state names to UTF8
+- enabling and disabling filter sets, and setting variables
 - texture viewer:
-  - texture zoom
   - show RGBA values
   - interaction with cube map cube
   - display of 3D textures
   - stats
-  - options to control filtering etc
+  - LOD bias
   - support for non-RGBA textures (e.g. shadow)
-- test for extensions before using them, and query for extension
-  addresses properly
+- shader viewer
+  - show line numbers in a way that doesn't interfere with selection
+  - show metadata like uniforms
+  - use texture viewer layout
+- test for extensions before using them
 - buffer window
 - trace window?
 - figure out why BadValue is sometimes generated on exit

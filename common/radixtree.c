@@ -57,7 +57,7 @@ void bugle_radix_tree_init(bugle_radix_tree *tree, bool owns_memory)
 static void radix_tree_set(bugle_radix_tree *tree, bugle_radix_tree_type key,
                            void *value)
 {
-    bugle_radix_node **cur, *n;
+    bugle_radix_node **cur, *n = NULL;
     bugle_radix_tree_type bit;
     int i;
 
@@ -96,7 +96,7 @@ static void radix_tree_set(bugle_radix_tree *tree, bugle_radix_tree_type key,
 static void radix_tree_unset(bugle_radix_tree *tree, bugle_radix_tree_type key)
 {
     bugle_radix_tree_type bit;
-    bugle_radix_node **stack[sizeof(bugle_radix_tree_type) * CHAR_BIT + 1], **cur, *n;
+    bugle_radix_node **stack[sizeof(bugle_radix_tree_type) * CHAR_BIT + 1], **cur, *n = NULL;
     int i;
 
     if (key > tree_max(tree->bits)) return; /* Beyond the range of the tree */

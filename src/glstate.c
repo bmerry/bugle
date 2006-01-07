@@ -1277,7 +1277,7 @@ static int get_total_texture_units(void)
     return max;
 }
 
-static int get_texture_env_units(void)
+static unsigned int get_texture_env_units(void)
 {
     GLint ans = 1;
 
@@ -1288,7 +1288,7 @@ static int get_texture_env_units(void)
     return ans;
 }
 
-static int get_texture_image_units(void)
+static unsigned int get_texture_image_units(void)
 {
     GLint cur = 0, max = 1;
 
@@ -1318,7 +1318,7 @@ static int get_texture_image_units(void)
     return max;
 }
 
-static int get_texture_coord_units(void)
+static unsigned int get_texture_coord_units(void)
 {
     GLint cur = 0, max = 1;
 
@@ -2271,7 +2271,8 @@ static void spawn_children_shader(const glstate *self, bugle_linked_list *childr
 static void spawn_children_program(const glstate *self, bugle_linked_list *children)
 {
     uint32_t mask = STATE_SELECT_VERTEX;
-    GLint i, count, max, type;
+    GLint i, count, max;
+    GLenum type;
     GLsizei length, size;
     glstate *child;
     static const state_info uniform_state =

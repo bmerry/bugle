@@ -1,3 +1,5 @@
+* Fix numerous C89 warnings. Unfortunately GLee is not valid C89 code.
+
 0.0.20060101
 ------------
 * gldb-gui improvements

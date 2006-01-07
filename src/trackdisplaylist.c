@@ -155,6 +155,8 @@ void trackdisplaylist_initialise(void)
         initialise_trackdisplaylist,
         NULL,
         NULL,
+        NULL,
+        NULL,
         0,
         NULL /* No documentation */
     };

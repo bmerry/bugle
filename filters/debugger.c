@@ -96,7 +96,7 @@ static bool debugger_screenshot(int pipe)
     size_t header_len;
     char *header;
     char *data, *in, *out;
-    int i;
+    unsigned int i;
 
     aux = bugle_get_aux_context();
     if (!aux || !bugle_begin_internal_render()) return false;
@@ -164,9 +164,9 @@ static bool send_data_texture(uint32_t id, GLuint texid, GLenum target,
     size_t length;
     GLint width = 1, height = 1, depth = 1;
 
-    Display *dpy;
-    GLXContext aux, real;
-    GLXDrawable old_read, old_write;
+    Display *dpy = NULL;
+    GLXContext aux = NULL, real = NULL;
+    GLXDrawable old_read = 0, old_write = 0;
 
     GLboolean old_pack_swap_bytes, old_pack_lsb_first;
     GLint old_pack_row_length, old_pack_skip_rows, old_pack_skip_pixels, old_pack_alignment;
@@ -377,6 +377,10 @@ static bool send_data_shader(uint32_t id, GLuint shader_id,
             text = bugle_malloc(1);
 #endif
         break;
+    default:
+        /* Should never get here */
+        text = bugle_malloc(1);
+        length = 0;
     }
 
     gldb_protocol_send_code(out_pipe, RESP_DATA);

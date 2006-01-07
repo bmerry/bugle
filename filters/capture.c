@@ -658,7 +658,7 @@ static bool initialise_showextensions(filter_set *handle)
 
 static void destroy_showextensions(filter_set *handle)
 {
-    size_t i;
+    int i;
     budgie_function f;
 
     printf("Min GL version: %s\n", gl_version);
@@ -817,10 +817,12 @@ static void epswire_dumpfeedback(FILE *f, GLfloat *buffer, GLint entries)
 
 static bool epswire_glXSwapBuffers(function_call *call, const callback_data *data)
 {
+    GLint entries;
+    size_t frame;
+
     epswire_struct *d = (epswire_struct *) bugle_object_get_current_data(&bugle_context_class, epswire_view);
     if (!d) return true;
-    size_t frame = d->frame++;
-    GLint entries;
+    frame = d->frame++;
     if (frame & 1)
     {
         /* Capture frame; dump the EPS file and return to render mode */

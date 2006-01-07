@@ -86,6 +86,8 @@ void bugle_initialise_filter_library(void)
         initialise_invoke,
         NULL,
         NULL,
+        NULL,
+        NULL,
         0,
         NULL /* no documentation */
     };
@@ -93,6 +95,8 @@ void bugle_initialise_filter_library(void)
     {
         "procaddress",
         initialise_procaddress,
+        NULL,
+        NULL,
         NULL,
         NULL,
         0,
