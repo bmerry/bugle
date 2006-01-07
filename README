@@ -21,11 +21,13 @@ Here are a few things you can do so far
 To build, you will need the following:
 - Perl 5
 - A version of gcc that supports the -fdump-translation-unit flag
-  (gcc 3.2 or higher is recommended).
+  (gcc 3.2 or higher is recommended). Note that in gcc 4.0 this flag
+  is broken (gcc bug 18279)
 - A C++ compiler (probably g++)
 - OpenGL header files, including glext.h. The best OpenGL header files
-  are those from the Mesa project (pre-installed on many systems).
+  are those from xorg/Mesa (pre-installed on many systems).
 - To do video capture, you will need libavcodec/libavformat from ffmpeg.
+- readline is recommended for the console debugger
 
 There is also a preliminary version of a GUI debugger - it depends on
 GTK+ and for best effect you should also have gtkglext.

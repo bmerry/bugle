@@ -4,6 +4,11 @@ A. You need to use a version of gcc that supports this flag. Version
 3.2 and newer are known to, but 3.0 and 2.95 do not. I'm not sure about
 3.1.
 
+Q. I get an error trying to move gl.c.tu, saying that the file does not
+exist.
+A. You are probably using gcc 4.0, which has broken support for
+-fdump-translation-unit (see gcc bug 18279). Use gcc 3.x instead.
+
 Q. I am getting the error "could not find GL/glext.h"
 A. You need to have this file, as it defines extensions to OpenGL that
 an application might use. You can obtain the latest copy from
