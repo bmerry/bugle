@@ -25,6 +25,7 @@
 #include "filters.h"
 #include "conffile.h"
 #include "tracker.h"
+#include "xevent.h"
 #include "log.h"
 #include "common/hashtable.h"
 #include "common/safemem.h"
@@ -179,6 +180,7 @@ static void initialise_all(void)
     bugle_initialise_hashing();
     initialise_real();
     initialise_addresses();
+    initialise_xevent();
     initialise_filters();
     initialise_core_filters();
     initialise_dump_tables();

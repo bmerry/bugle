@@ -33,6 +33,7 @@
 #include "src/glfuncs.h"
 #include "src/glexts.h"
 #include "src/tracker.h"
+#include "src/xevent.h"
 #include "common/hashtable.h"
 #include "common/safemem.h"
 #include "common/bool.h"
@@ -81,6 +82,8 @@ static int video_cur, video_leader;
 static bool video_done;
 static double video_frame_time = 0.0;
 static double video_frame_step = 1.0 / 30.0; /* FIXME: depends on frame rate */
+
+static bool screenshot_wanted = false; /* Set by keypress */
 
 /* If data->pixels == NULL and pbo = 0,
  * or if data->width and data->height do not match the current frame,
@@ -184,16 +187,26 @@ static bool initialise_lavc(int width, int height)
     codec = avcodec_find_encoder_by_name(video_codec);
     if (!codec) codec = avcodec_find_encoder(CODEC_ID_HUFFYUV);
     if (!codec) return false;
+#if LIBAVFORMAT_VERSION_INT >= 0x00320000  /* Version 50? */
+    c = video_stream->codec;
+#else
     c = &video_stream->codec;
+#endif
     c->codec_type = CODEC_TYPE_VIDEO;
     c->codec_id = codec->id;
     if (c->codec_id == CODEC_ID_HUFFYUV) c->pix_fmt = PIX_FMT_YUV422P;
+    else c->pix_fmt = PIX_FMT_YUV420P;
     if (c->codec_id == CODEC_ID_FFV1) c->strict_std_compliance = -1;
     c->bit_rate = video_bitrate;
     c->width = width;
     c->height = height;
+#if LIBAVFORMAT_VERSION_INT >= 0x00320000 /* Version 50? */
+    c->time_base.den = 30;
+    c->time_base.num = 1;
+#else
     c->frame_rate = 30;   /* FIXME: user should specify */
     c->frame_rate_base = 1;
+#endif
     c->gop_size = 12;     /* FIXME: user should specify */
     /* FIXME: what does the NULL do? */
     if (av_set_parameters(video_context, NULL) < 0) return false;
@@ -213,29 +226,50 @@ static bool initialise_lavc(int width, int height)
 static void finalise_lavc(void)
 {
     int i;
-
-    /* Write any delayed frames.
-     * FIXME: For some reason this causes a segfault, so we disable it.
-     */
-#if 0
+    AVCodecContext *c;
     size_t out_size;
+
+#if LIBAVFORMAT_VERSION_INT >= 0x00320000
+    c = video_stream->codec;
+#else
+    c = &video_stream->codec;
+#endif
+    /* Write any delayed frames. On older ffmpeg's this seemed to cause
+     * a segfault and needed different code, so we leave it out.
+     */
+#if LIBAVFORMAT_VERSION_INT >= 0x000409
     do
     {
-        out_size = avcodec_encode_video(&video_stream->codec,
-                                        video_buffer, video_buffer_size, NULL);
+        AVPacket pkt;
+        int ret;
+
+        out_size = avcodec_encode_video(c, video_buffer, video_buffer_size, NULL);
         if (out_size)
-            if (av_write_frame(video_context, video_stream->index,
-                               video_buffer, out_size) != 0)
+        {
+            av_init_packet(&pkt);
+            pkt.pts = c->coded_frame->pts;
+            if (c->coded_frame->key_frame)
+                pkt.flags |= PKT_FLAG_KEY;
+            pkt.stream_index = video_stream->index;
+            pkt.data = video_buffer;
+            pkt.size = out_size;
+            ret = av_write_frame(video_context, &pkt);
+            if (ret != 0)
             {
                 fprintf(stderr, "encoding failed\n");
                 exit(1);
             }
+        }
     } while (out_size);
 #endif
 
     /* Close it all down */
     av_write_trailer(video_context);
+#if LIBAVFORMAT_VERSION_INT >= 0x00320000
+    avcodec_close(video_stream->codec);
+#else
     avcodec_close(&video_stream->codec);
+#endif
     av_free(video_yuv->data[0]);
     /* We don't free video_raw, since that memory belongs to video_data */
     av_free(video_yuv);
@@ -382,7 +416,8 @@ static bool end_screenshot(GLenum format, int test_width, int test_height)
     prepare_screenshot_data(cur, width, height, 4, true);
 
     /* FIXME: if we set up all the glReadPixels state, it may be faster
-     * due to not having to context switch.
+     * due to not having to context switch. It's probably not worth
+     * the risk due to unknown extensions though
      */
 #ifdef GL_EXT_pixel_buffer_object
     if (cur->pbo)
@@ -456,7 +491,11 @@ static void screenshot_video()
     {
         if (!video_context)
             initialise_lavc(fetch->width, fetch->height);
+#if LIBAVFORMAT_VERSION_INT >= 0x00320000
+        c = video_stream->codec;
+#else
         c = &video_stream->codec;
+#endif
         video_raw->data[0] = fetch->pixels + fetch->stride * (fetch->height - 1);
         video_raw->linesize[0] = -fetch->stride;
         img_convert((AVPicture *) video_yuv, c->pix_fmt,
@@ -464,9 +503,15 @@ static void screenshot_video()
                     fetch->width, fetch->height);
         for (i = 0; i < fetch->multiplicity; i++)
         {
+#if LIBAVFORMAT_VERSION_INT >= 0x00320000
+            out_size = avcodec_encode_video(video_stream->codec,
+                                            video_buffer, video_buffer_size,
+                                            video_yuv);
+#else
             out_size = avcodec_encode_video(&video_stream->codec,
                                             video_buffer, video_buffer_size,
                                             video_yuv);
+#endif
             if (out_size != 0)
             {
 #if LIBAVFORMAT_VERSION_INT >= 0x000409
@@ -535,12 +580,21 @@ static void screenshot_file(int frameno)
     if (!out)
     {
         perror("failed to open screenshot file");
-        free(fname);
         return;
     }
     if (!screenshot_stream(out, false)) return;
     if (fclose(out) != 0)
         perror("write error");
+}
+
+bool screenshot_key_want(KeySym key, unsigned int state, void *arg)
+{
+    return !video_file;
+}
+
+void screenshot_key_callback(KeySym key, unsigned int state, void *arg)
+{
+    screenshot_wanted = true;
 }
 
 bool screenshot_callback(function_call *call, const callback_data *data)
@@ -549,13 +603,17 @@ bool screenshot_callback(function_call *call, const callback_data *data)
      */
     static int frameno = 0;
 
-    if (frameno >= start_frameno)
+    if (video_file)
     {
-        if (video_file)
+        if (frameno >= start_frameno)
         {
-                if (!video_done) screenshot_video(frameno);
+            if (!video_done) screenshot_video(frameno);
         }
-        else screenshot_file(frameno);
+    }
+    else if (screenshot_wanted)
+    {
+        screenshot_file(frameno);
+        screenshot_wanted = false;
     }
     frameno++;
     return true;
@@ -942,4 +1000,6 @@ void bugle_initialise_filter_library(void)
     bugle_register_filter_set_renders("screenshot");
     bugle_register_filter_set_depends("screenshot", "trackextensions");
     bugle_register_filter_set_depends("epswire", "trackcontext");
+
+    bugle_register_xevent(XK_S, ControlMask, 0, NULL, screenshot_key_callback, NULL);
 }

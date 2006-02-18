@@ -1,7 +1,7 @@
 ## Process with automake 1.7 or newer
 SUBDIRS = libltdl
 
-SYMBOLFLAGS = -export-symbol-regex '^(gl[A-Z]|budgie_|bugle_|gldb_)'
+SYMBOLFLAGS = -export-symbol-regex '^(gl[A-Z]|budgie_|bugle_|gldb_|X)'
 
 # Utility programs, used for generating other files
 noinst_PROGRAMS = budgie/budgie
@@ -81,6 +81,7 @@ src_libbugle_la_SOURCES = \
         src/trackbeginend.c src/trackextensions.c src/tracker.h \
 	src/log.c src/log.h \
         src/objects.c src/objects.h \
+	src/xevent.c src/xevent.h \
 	budgielib/budgieutils.c budgielib/budgieutils.h
 nodist_src_libbugle_la_SOURCES = \
 	src/utils.c src/utils.h src/lib.c src/lib.h
