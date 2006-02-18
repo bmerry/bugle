@@ -1,4 +1,9 @@
 * Fix numerous C89 warnings. Unfortunately GLee is not valid C89 code.
+* Change the way pages were refreshed to be cleaner and to work on GTK+ 2.8.
+* Fix bogus warnings about glVertexAttrib*ARB being called from outside
+  glBegin/glEnd with indices other than 0
+* Pass textures to gldb-gui in GL_FLOAT, in preparation for eventual
+  tone mapping
 
 0.0.20060101
 ------------

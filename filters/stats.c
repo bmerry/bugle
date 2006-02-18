@@ -80,7 +80,7 @@ static void initialise_stats_struct(const void *key, void *data)
     {
         CALL_glGenQueriesARB(1, &s->query);
         if (s->query)
-            CALL_glBeginQueryARB(GL_SAMPLES_PASSED, s->query);
+            CALL_glBeginQueryARB(GL_SAMPLES_PASSED_ARB, s->query);
         bugle_end_internal_render("init_stats_struct", true);
     }
 #endif

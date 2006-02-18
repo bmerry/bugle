@@ -19,13 +19,13 @@
 #if HAVE_CONFIG_H
 # include <config.h>
 #endif
+/* FIXME: Not sure if this the correct definition of GETTEXT_PACKAGE... */
 #ifndef GETTEXT_PACKAGE
-# define GETTEXT_PACKAGE "gtk20"
+# define GETTEXT_PACKAGE "bugle00"
 #endif
 #if HAVE_GTKGLEXT
 # include "glee/GLee.h"
 #endif
-/* FIXME: Not sure if this the correct definition of GETTEXT_PACKAGE... */
 #include <gtk/gtk.h>
 #include <glib.h>
 #include <glib/gi18n-lib.h>
@@ -292,17 +292,12 @@ static void update_state_r(const gldb_state *root, GtkTreeStore *store,
     bugle_hash_clear(&lookup);
 }
 
-static gboolean state_expose(GtkWidget *widget, GdkEventExpose *event,
-                             gpointer user_data)
+static void state_update(GldbWindow *context)
 {
-    GldbWindow *context;
-
-    context = (GldbWindow *) user_data;
-    if (!context->state.dirty) return FALSE;
+    if (!context->state.dirty) return;
     context->state.dirty = FALSE;
 
     update_state_r(gldb_state_update(), context->state.state_store, NULL);
-    return FALSE;
 }
 
 static const gldb_state *state_find_child_numeric(const gldb_state *parent,
@@ -653,7 +648,7 @@ static gboolean response_callback_texture(GldbWindow *context,
             {
             case GL_TEXTURE_1D:
                 glTexImage1D(data->target, data->level, GL_RGBA8, r->width, 0,
-                             GL_RGBA, GL_UNSIGNED_BYTE, r->data);
+                             GL_RGBA, GL_FLOAT, r->data);
                 glTexParameteri(data->target, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
                 break;
             case GL_TEXTURE_2D:
@@ -661,14 +656,14 @@ static gboolean response_callback_texture(GldbWindow *context,
             case GL_TEXTURE_RECTANGLE_NV:
 #endif
                 glTexImage2D(data->target, data->level, GL_RGBA8, r->width, r->height, 0,
-                             GL_RGBA, GL_UNSIGNED_BYTE, r->data);
+                             GL_RGBA, GL_FLOAT, r->data);
                 glTexParameteri(data->target, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
                 glTexParameteri(data->target, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
                 break;
 #ifdef GL_ARB_texture_cube_map
             case GL_TEXTURE_CUBE_MAP_ARB:
                 glTexImage2D(data->face, data->level, GL_RGBA8, r->width, r->height, 0,
-                             GL_RGBA, GL_UNSIGNED_BYTE, r->data);
+                             GL_RGBA, GL_FLOAT, r->data);
                 glTexParameteri(data->target, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
                 glTexParameteri(data->target, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
                 break;
@@ -676,7 +671,7 @@ static gboolean response_callback_texture(GldbWindow *context,
 #ifdef GL_EXT_texture3D
             case GL_TEXTURE_3D_EXT:
                 glTexImage3DEXT(data->face, data->level, GL_RGBA8, r->width, r->height, r->depth, 0,
-                                GL_RGBA, GL_UNSIGNED_BYTE, r->data);
+                                GL_RGBA, GL_FLOAT, r->data);
                 glTexParameteri(data->target, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
                 glTexParameteri(data->target, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
                 glTexParameteri(data->target, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
@@ -748,13 +743,9 @@ static gboolean response_callback_texture(GldbWindow *context,
 
 static void update_texture_ids(GldbWindow *context);
 
-static gboolean texture_expose(GtkWidget *widget, GdkEventExpose *event,
-                               gpointer user_data)
+static void texture_update(GldbWindow *context)
 {
-    GldbWindow *context;
-
-    context = (GldbWindow *) user_data;
-    if (!context->texture.dirty) return FALSE;
+    if (!context->texture.dirty) return;
     context->texture.dirty = FALSE;
 
     /* Simply invoke a change event on the selector. This launches a
@@ -762,7 +753,6 @@ static gboolean texture_expose(GtkWidget *widget, GdkEventExpose *event,
      */
     update_texture_ids(context);
     g_signal_emit_by_name(G_OBJECT(context->texture.id), "changed", NULL, NULL);
-    return FALSE;
 }
 #endif /* HAVE_GTKGLEXT */
 
@@ -800,25 +790,19 @@ static gboolean response_callback_shader(GldbWindow *context,
     return TRUE;
 }
 
-static gboolean shader_expose(GtkWidget *widget, GdkEventExpose *event,
-                              gpointer user_data)
+static void shader_update(GldbWindow *context)
 {
-    GldbWindow *context;
-
-    context = (GldbWindow *) user_data;
-    if (!context->shader.dirty) return FALSE;
+    if (!context->shader.dirty) return;
     context->shader.dirty = FALSE;
 
     /* Simply invoke a change event on the target. This launches a
      * cascade of updates.
      */
     g_signal_emit_by_name(G_OBJECT(context->shader.target), "changed", NULL, NULL);
-    return FALSE;
 }
 #endif
 
-static gboolean backtrace_expose(GtkWidget *widget, GdkEventExpose *event,
-                                 gpointer user_data)
+static void backtrace_update(GldbWindow *context)
 {
     gchar *argv[4];
     gint in, out;
@@ -826,11 +810,9 @@ static gboolean backtrace_expose(GtkWidget *widget, GdkEventExpose *event,
     GIOChannel *inf, *outf;
     gchar *line;
     gsize terminator;
-    GldbWindow *context;
     const gchar *cmds = "set width 0\nset height 0\nbacktrace\nquit\n";
 
-    context = (GldbWindow *) user_data;
-    if (!context->backtrace.dirty) return FALSE;
+    if (!context->backtrace.dirty) return;
     context->backtrace.dirty = FALSE;
 
     gtk_list_store_clear(context->backtrace.backtrace_store);
@@ -878,8 +860,36 @@ static gboolean backtrace_expose(GtkWidget *widget, GdkEventExpose *event,
     g_free(argv[0]);
     g_free(argv[1]);
     free(argv[2]);
+}
 
-    return FALSE;
+static void notebook_update(GldbWindow *context, gint new_page)
+{
+    guint page;
+    GtkNotebook *notebook;
+
+    notebook = GTK_NOTEBOOK(context->notebook);
+    if (new_page >= 0) page = new_page;
+    else page = gtk_notebook_get_current_page(notebook);
+    if (page == gtk_notebook_page_num(notebook, context->state.page))
+        state_update(context);
+#ifdef HAVE_GTKGLEXT
+    else if (page == gtk_notebook_page_num(notebook, context->texture.page))
+        texture_update(context);
+#endif
+#ifdef GLDB_GUI_SHADER
+    else if (page == gtk_notebook_page_num(notebook, context->shader.page))
+        shader_update(context);
+#endif
+    else if (page == gtk_notebook_page_num(notebook, context->backtrace.page))
+        backtrace_update(context);
+}
+
+static void notebook_switch_page(GtkNotebook *notebook,
+                                 GtkNotebookPage *page,
+                                 guint page_num,
+                                 gpointer user_data)
+{
+    notebook_update((GldbWindow *) user_data, page_num);
 }
 
 static void update_status_bar(GldbWindow *context, const gchar *text)
@@ -891,20 +901,17 @@ static void update_status_bar(GldbWindow *context, const gchar *text)
 static void stopped(GldbWindow *context, const gchar *text)
 {
     context->state.dirty = true;
-    gtk_widget_queue_draw(context->state.page);
 #if HAVE_GTKGLEXT
     context->texture.dirty = true;
-    gtk_widget_queue_draw(context->texture.page);
 #endif
 #ifdef GLDB_GUI_SHADER
     context->shader.dirty = true;
-    gtk_widget_queue_draw(context->shader.page);
 #endif
     context->backtrace.dirty = true;
-    gtk_widget_queue_draw(context->backtrace.page);
     gtk_action_group_set_sensitive(context->running_actions, FALSE);
     gtk_action_group_set_sensitive(context->stopped_actions, TRUE);
 
+    notebook_update(context, -1);
     update_status_bar(context, text);
 }
 
@@ -1232,8 +1239,6 @@ static void build_state_page(GldbWindow *context)
     page = gtk_notebook_append_page(GTK_NOTEBOOK(context->notebook), scrolled, label);
     context->state.dirty = false;
     context->state.page = gtk_notebook_get_nth_page(GTK_NOTEBOOK(context->notebook), page);
-    g_signal_connect(G_OBJECT(context->state.page), "expose-event",
-                     G_CALLBACK(state_expose), context);
 }
 
 #if HAVE_GTKGLEXT
@@ -1374,7 +1379,7 @@ static void texture_id_changed(GtkComboBox *id_box, gpointer user_data)
                     if (l == levels - 1 && i == 5) data->flags |= TEXTURE_CALLBACK_FLAG_LAST;
                     set_response_handler(context, seq, response_callback_texture, data);
                     gldb_send_data_texture(seq++, id, target, data->face, l,
-                                           GL_RGBA, GL_UNSIGNED_BYTE);
+                                           GL_RGBA, GL_FLOAT);
                 }
             }
             else
@@ -1389,7 +1394,7 @@ static void texture_id_changed(GtkComboBox *id_box, gpointer user_data)
                 if (l == levels - 1) data->flags |= TEXTURE_CALLBACK_FLAG_LAST;
                 set_response_handler(context, seq, response_callback_texture, data);
                 gldb_send_data_texture(seq++, id, target, target, l,
-                                       GL_RGBA, GL_UNSIGNED_BYTE);
+                                       GL_RGBA, GL_FLOAT);
             }
         }
 
@@ -1938,7 +1943,6 @@ static GtkWidget *build_texture_page_draw(GldbWindow *context)
         GDK_GL_ATTRIB_LIST_NONE
     };
 
-    /* FIXME: use new_for_screen */
     glconfig = gdk_gl_config_new(attrib_list);
     g_return_val_if_fail(glconfig != NULL, NULL);
 
@@ -1997,8 +2001,6 @@ static void build_texture_page(GldbWindow *context)
     context->texture.width = 64;
     context->texture.height = 64;
     context->texture.page = gtk_notebook_get_nth_page(GTK_NOTEBOOK(context->notebook), page);
-    g_signal_connect(G_OBJECT(context->texture.page), "expose-event",
-                     G_CALLBACK(texture_expose), context);
 }
 #endif /* HAVE_GTKGLEXT */
 
@@ -2236,8 +2238,6 @@ static void build_shader_page(GldbWindow *context)
     context->shader.dirty = false;
     context->shader.source = source;
     context->shader.page = gtk_notebook_get_nth_page(GTK_NOTEBOOK(context->notebook), page);
-    g_signal_connect(G_OBJECT(context->shader.page), "expose-event",
-                     G_CALLBACK(shader_expose), context);
 }
 #endif /* shaders */
 
@@ -2270,8 +2270,6 @@ static void build_backtrace_page(GldbWindow *context)
     page = gtk_notebook_append_page(GTK_NOTEBOOK(context->notebook), scrolled, label);
     context->backtrace.dirty = false;
     context->backtrace.page = gtk_notebook_get_nth_page(GTK_NOTEBOOK(context->notebook), page);
-    g_signal_connect(G_OBJECT(context->backtrace.page), "expose-event",
-                     G_CALLBACK(backtrace_expose), context);
 }
 
 static const gchar *ui_desc =
@@ -2384,6 +2382,8 @@ static void build_main_window(GldbWindow *context)
 #endif
     build_backtrace_page(context);
     gtk_box_pack_start(GTK_BOX(vbox), context->notebook, TRUE, TRUE, 0);
+    g_signal_connect(G_OBJECT(context->notebook), "switch-page",
+                     G_CALLBACK(notebook_switch_page), context);
 
     context->statusbar = gtk_statusbar_new();
     context->statusbar_context_id = gtk_statusbar_get_context_id(GTK_STATUSBAR(context->statusbar), _("Program status"));

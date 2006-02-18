@@ -733,7 +733,7 @@ static bool checks_begin_end(function_call *call, const callback_data *data)
         /* VertexAttrib commands are ok if they are not affecting attrib 0 */
         name = budgie_function_table[call->generic.id].name;
 #ifdef GL_ARB_vertex_program
-        if (strncmp(name, "VertexAttrib", 12) == 0)
+        if (strncmp(name, "glVertexAttrib", 14) == 0)
         {
             GLuint attrib;
 
