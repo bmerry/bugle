@@ -350,6 +350,11 @@ bool bugle_xevent_key_assign(const filter_set_variable_info *var,
     return true;
 }
 
+void bugle_xevent_key_callback_flag(const xevent_key *key, void *arg)
+{
+    *(bool *) arg = true;
+}
+
 void bugle_register_xevent_key(const xevent_key *key,
                                bool (*wanted)(const xevent_key *, void *),
                                void (*callback)(const xevent_key *, void *),
@@ -374,7 +379,7 @@ void initialise_xevent(void)
     handle = lt_dlopenext("libX11");
     if (handle == NULL)
     {
-        fputs("WARNING: unable to intercept X events\n", stderr);
+        fputs("WARNING: unable to intercept X events. A crash is highly likely.\n", stderr);
         return;
     }
 
@@ -408,7 +413,6 @@ void initialise_xevent(void)
         || !real_XEventsQueued
         || !real_XPending)
         fputs("WARNING: unable to obtain X symbols. A crash is highly likely.\n", stderr);
-    fputs("Initialised xevents\n", stderr);
 
     bugle_list_init(&handlers, true);
 }

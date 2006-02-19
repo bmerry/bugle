@@ -40,6 +40,14 @@ bool bugle_xevent_key_lookup(const char *name, xevent_key *key);
 bool bugle_xevent_key_assign(const filter_set_variable_info *var,
                              const char *text, const void *value);
 
+/* Convenience callback: sets a flag */
+void bugle_xevent_key_callback_flag(const xevent_key *key, void *arg);
+
+/* Registers a key trap. If non-NULL, the wanted function should return
+ * true if the key should be trapped on this occasion. The wanted function
+ * may be called multiple times for the same keypress, so it should be
+ * stateless and have no side effects.
+ */
 void bugle_register_xevent_key(const xevent_key *key,
                                bool (*wanted)(const xevent_key *, void *arg),
                                void (*callback)(const xevent_key *, void *arg),

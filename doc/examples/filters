@@ -26,18 +26,18 @@ chain showstats
     {
         # Uncomment to count fragments that pass the Z test. This requires
         # GL_ARB_occlusion_query and will have a performance penalty.
-        
+
         # fragments yes
-        
+
         # Uncomment to count triangles. It theoretically supports display
         # lists. It will not work if you use GL_NV_primitive_restart, and
         # it does not yet support any kind of generated geometry
         # (evaluators or displacement maps). In general, don't rely on it
         # being accurate.
-        
+
         # triangles yes
     }
-    
+
     # Replace showstats with log to log stats to file
     filterset showstats
 }
@@ -53,6 +53,8 @@ chain screenshot
 {
     filterset screenshot
     {
+        filename "/tmp/bugle%d.ppm" # A %d will be filled in with the frame number
+
         # Sets the key (default: Ctrl-Alt-Shift-S). Key names are based on
         # X11; see /usr/include/X11/keysymdefs.h for a list.
         key_screenshot "C-A-S-S"
@@ -64,22 +66,40 @@ chain video
 {
     filterset screenshot
     {
-        video "bugle.avi"
-        
+        video "1"
+        filename "bugle.avi"
+
         # You can in theory use any codec supported by ffmpeg
         codec "mpeg4"
-        
+
         # Roughly DVD size, although no high quality options are set
         bitrate "7500000"
-        
-        # You can also set a start frame.
-        # start "1000"
-        
+
         # By default, a frame is captured every 30th of a second, with
         # frames skipped or duplicated as necessary. Uncomment this
         # line to instead capture every frame exactly once to the
         # output.
         # allframes "yes"
+
+        # By default, encoding starts with the first frame and ends
+        # when the framebuffer size changes or at app shutdown. Setting
+        # a start key causes recording to start only when the key is
+        # pressed.
+        # key_start "C-F11"
+        # key_stop "C-F12"
+
+        # Control the encoding latency. A higher latency may give
+        # better throughput, at the expense of more memory.
+        lag "2"
+    }
+}
+
+chain epswire
+{
+    filterset epswire
+    {
+        filename "/tmp/bugle.eps"  # Can use %d to obtain frame number
+        key_epswire "C-A-S-W"      # Key to press to take snapshot
     }
 }
 
@@ -87,6 +107,13 @@ chain video
 chain wireframe
 {
     filterset wireframe
+}
+
+# Forces rendering to the frontbuffer rather than the backbuffer. This
+# is useful to see how a scene is built up in the debugger
+chain frontbuffer
+{
+    filterset frontbuffer
 }
 
 # Use this if your program is crashing somewhere inside the driver, and you

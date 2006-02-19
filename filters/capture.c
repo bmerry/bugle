@@ -1,5 +1,5 @@
 /*  BuGLe: an OpenGL debugging tool
- *  Copyright (C) 2004, 2005  Bruce Merry
+ *  Copyright (C) 2004-2006  Bruce Merry
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -63,25 +63,43 @@ typedef struct
     int multiplicity;      /* number of times to write to video stream */
 } screenshot_data;
 
-static char *file_base = "frame";
-static const char *file_suffix = ".ppm";
+/* General settings */
+static bool video = false;
+static char *video_filename = NULL;
+/* Still settings */
+static xevent_key key_screenshot = { XK_S, ControlMask | ShiftMask | Mod1Mask };
+/* Video settings */
 static char *video_codec = NULL;
 static bool video_sample_all = false;
 static long video_bitrate = 7500000;
-static long start_frameno = 0;
-static long video_lag = 1;     /* greater lag may give better overall speed */
-static xevent_key key_screenshot = { XK_S, ControlMask | ShiftMask | Mod1Mask };
+static long video_lag = 1;     /* latency between readpixels and encoding */
+static xevent_key key_video_start = { NoSymbol, 0 };
+static xevent_key key_video_stop = { XK_E, ControlMask | ShiftMask | Mod1Mask };
 
-static char *video_file = NULL;
-static FILE *video_pipe = NULL;
+/* General data */
+static int video_cur;  /* index of the next circular queue index to capture into */
+static bool video_first;
 static screenshot_data *video_data;
-/* video_cur is the index of the next circular queue index to capture into */
-static int video_cur;
-static bool video_first, video_done;
+/* Still data */
+static bool keypress_screenshot = false;
+/* Video data */
+static FILE *video_pipe = NULL;  /* Used for ppmtoy4m */
+static bool video_start = false, video_done = false;
 static double video_frame_time = 0.0;
 static double video_frame_step = 1.0 / 30.0; /* FIXME: depends on frame rate */
 
-static bool screenshot_wanted = false; /* Set by keypress */
+static char *interpolate_filename(const char *pattern, int frame)
+{
+    char *out;
+
+    if (strchr(pattern, '%'))
+    {
+        bugle_asprintf(&out, pattern, frame);
+        return out;
+    }
+    else
+        return bugle_strdup(pattern);
+}
 
 /* If data->pixels == NULL and pbo = 0,
  * or if data->width and data->height do not match the current frame,
@@ -167,7 +185,7 @@ static bool initialise_lavc(int width, int height)
     AVCodec *codec;
 
     av_register_all();
-    fmt = guess_format(NULL, video_file, NULL);
+    fmt = guess_format(NULL, video_filename, NULL);
     if (!fmt) fmt = guess_format("avi", NULL, NULL);
     if (!fmt) return false;
 #if LIBAVFORMAT_VERSION_INT >= 0x000409
@@ -178,7 +196,7 @@ static bool initialise_lavc(int width, int height)
     if (!video_context) return false;
     video_context->oformat = fmt;
     snprintf(video_context->filename,
-             sizeof(video_context->filename), "%s", video_file);
+             sizeof(video_context->filename), "%s", video_filename);
     /* FIXME: what does the second parameter (id) do? */
     video_stream = av_new_stream(video_context, 0);
     if (!video_stream) return false;
@@ -212,9 +230,9 @@ static bool initialise_lavc(int width, int height)
     video_buffer = bugle_malloc(video_buffer_size);
     video_raw = allocate_video_frame(CAPTURE_AV_FMT, width, height, false);
     video_yuv = allocate_video_frame(c->pix_fmt, width, height, true);
-    if (url_fopen(&video_context->pb, video_file, URL_WRONLY) < 0)
+    if (url_fopen(&video_context->pb, video_filename, URL_WRONLY) < 0)
     {
-        fprintf(stderr, "failed to open video output file %s\n", video_file);
+        fprintf(stderr, "failed to open video output file %s\n", video_filename);
         return false;
     }
     av_write_header(video_context);
@@ -561,7 +579,7 @@ static void screenshot_file(int frameno)
     char *fname;
     FILE *out;
 
-    bugle_asprintf(&fname, "%s%.4d%s", file_base, frameno, file_suffix);
+    fname = interpolate_filename(video_filename, frameno);
     out = fopen(fname, "wb");
     free(fname);
     if (!out)
@@ -574,26 +592,21 @@ static void screenshot_file(int frameno)
         perror("write error");
 }
 
-void screenshot_key_callback(const xevent_key *key, void *arg)
-{
-    screenshot_wanted = true;
-}
-
 bool screenshot_callback(function_call *call, const callback_data *data)
 {
     /* FIXME: track the frameno in the context?
      */
     static int frameno = 0;
 
-    if (video_file)
+    if (video)
     {
-        if (frameno >= start_frameno && !video_done)
+        if (video_start && !video_done)
             screenshot_video(frameno);
     }
-    else if (screenshot_wanted)
+    else if (keypress_screenshot)
     {
         screenshot_file(frameno);
-        screenshot_wanted = false;
+        keypress_screenshot = false;
     }
     frameno++;
     return true;
@@ -610,14 +623,17 @@ static bool initialise_screenshot(filter_set *handle)
     video_data = bugle_calloc(video_lag, sizeof(screenshot_data));
     video_cur = 0;
     video_first = true;
-    if (video_file)
+    if (video)
     {
+        video_start = false;
         video_done = false; /* becomes true if we resize */
+        if (!video_filename)
+            video_filename = bugle_strdup("/tmp/bugle.avi");
 #if !HAVE_LAVC
         char *cmdline;
 
         bugle_asprintf(&cmdline, "ppmtoy4m | ffmpeg -f yuv4mpegpipe -i - -vcodec %s -strict -1 -y %s",
-                       video_codec, video_file);
+                       video_codec, video_filename);
         video_pipe = popen(cmdline, "w");
         free(cmdline);
         if (!video_pipe) return false;
@@ -625,11 +641,18 @@ static bool initialise_screenshot(filter_set *handle)
         /* Note: we only initialise libavcodec on the first frame, because
          * we need the frame size.
          */
+        if (key_video_start.keysym != NoSymbol)
+            bugle_register_xevent_key(&key_video_start, NULL, bugle_xevent_key_callback_flag, &video_start);
+        else
+            video_start = true;
+        bugle_register_xevent_key(&key_video_stop, NULL, bugle_xevent_key_callback_flag, &video_done);
     }
     else
     {
+        if (!video_filename)
+            video_filename = bugle_strdup("/tmp/bugle.ppm");
         video_lag = 1;
-        bugle_register_xevent_key(&key_screenshot, NULL, screenshot_key_callback, NULL);
+        bugle_register_xevent_key(&key_screenshot, NULL, bugle_xevent_key_callback_flag, &keypress_screenshot);
     }
     return true;
 }
@@ -738,12 +761,17 @@ static void destroy_showextensions(filter_set *handle)
 
 typedef struct
 {
+    bool capture;            /* Set to true when in feedback mode */
     size_t frame;
     GLfloat *feedback;
     GLsizei feedback_size;   /* number of GLfloats, not bytes */
 } epswire_struct;
 
 static bugle_object_view epswire_view;
+static bool keypress_epswire = false;
+static xevent_key key_epswire = { XK_W, ControlMask | ShiftMask | Mod1Mask };
+static char *epswire_filename = "/tmp/bugle.eps";
+
 static void initialise_epswire_context(const void *key, void *data)
 {
     epswire_struct *d = (epswire_struct *) data;
@@ -866,40 +894,49 @@ static bool epswire_glXSwapBuffers(function_call *call, const callback_data *dat
     epswire_struct *d = (epswire_struct *) bugle_object_get_current_data(&bugle_context_class, epswire_view);
     if (!d) return true;
     frame = d->frame++;
-    if (frame & 1)
+    if (d->capture)
     {
-        /* Capture frame; dump the EPS file and return to render mode */
+        /* Captured frame; dump the EPS file and return to render mode */
         entries = glRenderMode(GL_RENDER);
         if (entries < 0)
         {
             /* Overflow - reallocate and better luck next time */
             d->feedback_size *= 2;
             d->feedback = bugle_realloc(d->feedback, d->feedback_size * sizeof(GLfloat));
+            fputs("Feedback buffer overflowed. Will try again on next frame.\n", stderr);
         }
         else
         {
-            /* FIXME: config option */
             FILE *f;
+            char *fname;
             GLfloat x1, y1, x2, y2;
 
-            epswire_boundingbox(d->feedback, entries, &x1, &y1, &x2, &y2);
-            f = fopen("bugle.eps", "w");
-            fputs("%%!PS-Adobe-2.0 EPSF-1.2\n", f);
-            fprintf(f, "%%%%BoundingBox: %.3f %.3f %.3f %.3f\n",
-                    x1 - 1.0, y1 - 1.0, x2 + 1.0, y2 + 1.0);
-            fputs("%%%%EndComments\ngsave\n1 setlinecap\n1 setlinejoin\n", f);
-            epswire_dumpfeedback(f, d->feedback, entries);
-            fputs("grestore\n", f);
-            fclose(f);
+            fname = interpolate_filename(epswire_filename, frame);
+            f = fopen(epswire_filename, "w");
+            free(fname);
+            if (f)
+            {
+                epswire_boundingbox(d->feedback, entries, &x1, &y1, &x2, &y2);
+                fputs("%%!PS-Adobe-2.0 EPSF-1.2\n", f);
+                fprintf(f, "%%%%BoundingBox: %.3f %.3f %.3f %.3f\n",
+                        x1 - 1.0, y1 - 1.0, x2 + 1.0, y2 + 1.0);
+                fputs("%%%%EndComments\ngsave\n1 setlinecap\n1 setlinejoin\n", f);
+                epswire_dumpfeedback(f, d->feedback, entries);
+                fputs("grestore\n", f);
+                fclose(f);
+            }
+            d->capture = false;
         }
         return false; /* Don't swap, since it isn't a real frame */
     }
-    else
+    else if (keypress_epswire)
     {
+        keypress_epswire = false;
         glFeedbackBuffer(d->feedback_size, GL_2D, d->feedback);
         glRenderMode(GL_FEEDBACK);
-        return true;
+        d->capture = true;
     }
+    return true;
 }
 
 static bool epswire_glEnable(function_call *call, const callback_data *data)
@@ -924,6 +961,7 @@ static bool initialise_epswire(filter_set *handle)
     bugle_register_filter_depends("invoke", "epswire");
     epswire_view = bugle_object_class_register(&bugle_context_class, initialise_epswire_context,
                                                NULL, sizeof(epswire_struct));
+    bugle_register_xevent_key(&key_epswire, NULL, bugle_xevent_key_callback_flag, &keypress_epswire);
     return true;
 }
 
@@ -931,13 +969,15 @@ void bugle_initialise_filter_library(void)
 {
     static const filter_set_variable_info screenshot_variables[] =
     {
-        { "video", "file to write video to [none]", FILTER_SET_VARIABLE_STRING, &video_file, NULL },
+        { "video", "record a video", FILTER_SET_VARIABLE_BOOL, &video, NULL },
+        { "filename", "file to write video/screenshot to [/tmp/bugle.avi | /tmp/bugle.ppm]", FILTER_SET_VARIABLE_STRING, &video_filename, NULL },
         { "codec", "video codec to use [mpeg4]", FILTER_SET_VARIABLE_STRING, &video_codec, NULL },
-        { "start", "frame from which to capture [0]", FILTER_SET_VARIABLE_UINT, &start_frameno, NULL },
         { "bitrate", "video bitrate (bytes/s) [7.5MB/s]", FILTER_SET_VARIABLE_POSITIVE_INT, &video_bitrate, NULL },
         { "allframes", "capture every frame, ignoring framerate [no]", FILTER_SET_VARIABLE_BOOL, &video_sample_all, NULL },
         { "lag", "length of capture pipeline (set higher for better throughput) [1]", FILTER_SET_VARIABLE_POSITIVE_INT, &video_lag, NULL },
         { "key_screenshot", "key to take a screenshot [C-A-S-S]", FILTER_SET_VARIABLE_CUSTOM, &key_screenshot, bugle_xevent_key_assign },
+        { "key_start", "key to start video encoding [autostart]", FILTER_SET_VARIABLE_CUSTOM, &key_video_start, bugle_xevent_key_assign },
+        { "key_stop", "key to end video recording [C-A-S-E]", FILTER_SET_VARIABLE_CUSTOM, &key_video_stop, bugle_xevent_key_assign },
         { NULL, NULL, 0, NULL, NULL }
     };
 
@@ -965,6 +1005,13 @@ void bugle_initialise_filter_library(void)
         "reports extensions used at program termination"
     };
 
+    static const filter_set_variable_info epswire_variables[] =
+    {
+        { "filename", "file to write to [/tmp/bugle.eps]", FILTER_SET_VARIABLE_STRING, &epswire_filename, NULL },
+        { "key_epswire", "key to trigger EPS snapshot [C-A-S-W]", FILTER_SET_VARIABLE_CUSTOM, &key_epswire, bugle_xevent_key_assign },
+        { NULL, NULL, 0, NULL, NULL }
+    };
+
     static const filter_set_info epswire_info =
     {
         "epswire",
@@ -972,7 +1019,7 @@ void bugle_initialise_filter_library(void)
         NULL,
         NULL,
         NULL,
-        NULL,
+        epswire_variables,
         0,
         "dumps wireframes to postscript format"
     };

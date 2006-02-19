@@ -108,19 +108,23 @@ This has two modes of operation. In the first, it will take a screenshot
 when a key combination is pressed (by default, Ctrl-Alt-Shift-S). The
 screenshots are written in
 .BR ppm (5)
-to
-.BI frame NNNN .ppm\fR,
-where
-.I NNNN
-is the frame number. In the other mode, it records a video. To select this
-mode, provide a filename for the variable
-.BR video ,
-which is the filename to write to. The variable
+to the filename specified by
+.BR filename .
+If the filename contains a %, then it is used as a format string to 
+.BR printf (3)
+with the frame number (a signed integer) passed as the parameter.
+In the other mode, it records a video (this requires ffmpeg). To select
+this mode, set the variable
+.B video
+to 1. The variable
 .B codec
-controls the video codec. This video mode requires the
-.B ffmpeg
-library. See the example configuration file for documentation of
-other options.
+controls the video codec. See the example configuration file for
+documentation of other options.
+.TP
+.B epswire
+This is similar to the
+.B screenshot
+filter-set, but captures a wireframe as an EPS file.
 .TP
 .B unwindstack
 This filter-set is a bit of a hack, and may not work reliably on all
@@ -182,7 +186,7 @@ unless you are using
 
 The file is text-based. Comments begin with a
 .B "#"
-and continue to the end of the line. Strings may be quoted with
+and continue to the end of the line. Strings must be quoted with
 double-quotes, and backslash acts as an escape character in the usual
 way (including escaping of newlines). Other white-space is ignored.
 
