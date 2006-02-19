@@ -49,7 +49,8 @@ typedef enum
     FILTER_SET_VARIABLE_INT,
     FILTER_SET_VARIABLE_UINT,
     FILTER_SET_VARIABLE_POSITIVE_INT,
-    FILTER_SET_VARIABLE_STRING
+    FILTER_SET_VARIABLE_STRING,
+    FILTER_SET_VARIABLE_CUSTOM
 } filter_set_variable_type;
 
 typedef struct filter_set_variable_info_s
@@ -61,13 +62,15 @@ typedef struct filter_set_variable_info_s
      * bool: a bool *
      * string: pointer to char *, which will then own the memory.
      *         If the old value was non-NULL, it is freed.
-     * value may also be NULL, in which case a callback is needed.
+     * custom: pointer to whatever you like, even NULL. The callback
+     *         is required in this case.
      */
     void *value;
     /* If not NULL, then is called before value is assigned. It may
      * return false to abort the assignment. The parameter `value'
      * points to the value that will be assigned to the struct `value'
-     * if the callback returns true.
+     * if the callback returns true (in the case of CUSTOM, no copy
+     * is performed - you get the real pointer).
      */
     bool (*callback)(const struct filter_set_variable_info_s *var,
                      const char *text, const void *value);

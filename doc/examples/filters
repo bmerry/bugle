@@ -48,10 +48,15 @@ chain showextensions
     filterset showextensions
 }
 
-# Captures a screenshot after every frame
+# Captures a screenshot when a key is pressed
 chain screenshot
 {
     filterset screenshot
+    {
+        # Sets the key (default: Ctrl-Alt-Shift-S). Key names are based on
+        # X11; see /usr/include/X11/keysymdefs.h for a list.
+        key_screenshot "C-A-S-S"
+    }
 }
 
 # Captures every frame into a video file.

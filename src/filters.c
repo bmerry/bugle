@@ -253,6 +253,9 @@ bool filter_set_variable(filter_set *handle, const char *name, const char *value
                 string_value = bugle_strdup(value);
                 value_ptr = &string_value;
                 break;
+            case FILTER_SET_VARIABLE_CUSTOM:
+                value_ptr = v->value;
+                break;
             }
             if (v->callback && !(*v->callback)(v, value, value_ptr))
             {
@@ -278,6 +281,8 @@ bool filter_set_variable(filter_set *handle, const char *name, const char *value
                         if (*(char **) v->value)
                             free(*(char **) v->value);
                         *(char **) v->value = string_value;
+                        break;
+                    case FILTER_SET_VARIABLE_CUSTOM:
                         break;
                     }
                 }
@@ -722,16 +727,19 @@ void bugle_filters_help(void)
                 case FILTER_SET_VARIABLE_INT:
                 case FILTER_SET_VARIABLE_UINT:
                 case FILTER_SET_VARIABLE_POSITIVE_INT:
-                    type_str = "int";
+                    type_str = " (int)";
                     break;
                 case FILTER_SET_VARIABLE_BOOL:
-                    type_str = "bool";
+                    type_str = " (bool)";
                     break;
                 case FILTER_SET_VARIABLE_STRING:
-                    type_str = "string";
+                    type_str = " (string)";
+                    break;
+                case FILTER_SET_VARIABLE_CUSTOM:
+                    type_str = "";
                     break;
                 }
-                fprintf(stderr, "    %s (%s): %s\n",
+                fprintf(stderr, "    %s%s: %s\n",
                         j->name, type_str, j->help);
             }
     }

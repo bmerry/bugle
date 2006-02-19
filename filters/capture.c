@@ -70,16 +70,14 @@ static bool video_sample_all = false;
 static long video_bitrate = 7500000;
 static long start_frameno = 0;
 static long video_lag = 1;     /* greater lag may give better overall speed */
+static xevent_key key_screenshot = { XK_S, ControlMask | ShiftMask | Mod1Mask };
 
 static char *video_file = NULL;
 static FILE *video_pipe = NULL;
 static screenshot_data *video_data;
-/* video_cur is the index of the next circular queue index to capture into,
- * and also to read back from first if appropriate. video_leader starts at
- * video_lag, and is decremented on each frame.
- */
-static int video_cur, video_leader;
-static bool video_done;
+/* video_cur is the index of the next circular queue index to capture into */
+static int video_cur;
+static bool video_first, video_done;
 static double video_frame_time = 0.0;
 static double video_frame_step = 1.0 / 30.0; /* FIXME: depends on frame rate */
 
@@ -357,20 +355,8 @@ static bool unmap_screenshot(screenshot_data *data)
     }
 }
 
-static screenshot_data *start_screenshot(void)
-{
-    if (video_leader == 0
-        && map_screenshot(&video_data[video_cur]))
-        return &video_data[video_cur];
-    else
-        return NULL;
-}
-
-/* Returns false if width and height do not match test_width and test_height.
- * If these are both -1, then no test is performed (use -1,0 for a test
- * that will always fail).
- */
-static bool end_screenshot(GLenum format, int test_width, int test_height)
+static bool do_screenshot(GLenum format, int test_width, int test_height,
+                          screenshot_data **data)
 {
     GLXContext aux, real;
     GLXDrawable old_read, old_write;
@@ -379,14 +365,9 @@ static bool end_screenshot(GLenum format, int test_width, int test_height)
     unsigned int w, h;
     int width, height;
 
+    *data = &video_data[(video_cur + video_lag - 1) % video_lag];
     cur = &video_data[video_cur];
     video_cur = (video_cur + 1) % video_lag;
-    if (video_leader) video_leader--;
-    if (cur->pbo && cur->pixels)
-    {
-        if (!unmap_screenshot(cur))
-            fputs("warning: buffer data was lost - corrupting frame\n", stderr);
-    }
 
     real = CALL_glXGetCurrentContext();
     old_write = CALL_glXGetCurrentDrawable();
@@ -399,7 +380,7 @@ static bool end_screenshot(GLenum format, int test_width, int test_height)
     if (test_width != -1 || test_height != -1)
         if (width != test_width || height != test_height)
         {
-            fprintf(stderr, "size changed from %dx%d to %dx%d\n",
+            fprintf(stderr, "size changed from %dx%d to %dx%d, stopping recording\n",
                     test_width, test_height, width, height);
             return false;
         }
@@ -429,9 +410,9 @@ static bool end_screenshot(GLenum format, int test_width, int test_height)
     if (cur->pbo)
         CALL_glBindBufferARB(GL_PIXEL_PACK_BUFFER_EXT, 0);
 #endif
-
     CALL_glXMakeContextCurrent(dpy, old_write, old_read, real);
-    bugle_end_internal_render("end_screenshot", true);
+    bugle_end_internal_render("do_screenshot", true);
+
     return true;
 }
 
@@ -443,8 +424,15 @@ static bool screenshot_stream(FILE *out, bool check_size)
     bool ret = true;
     int i;
 
-    if ((fetch = start_screenshot()) != NULL)
+    if (check_size && !video_first)
+        video_done = !do_screenshot(GL_RGB, video_data[0].width, video_data[0].height, &fetch);
+    else
+        do_screenshot(GL_RGB, -1, -1, &fetch);
+    video_first = false;
+
+    if (fetch->width > 0)
     {
+        map_screenshot(fetch);
         fprintf(out, "P6\n%d %d\n255\n",
                 fetch->width, fetch->height);
         cur = fetch->pixels + fetch->stride * (fetch->height - 1);
@@ -460,11 +448,8 @@ static bool screenshot_stream(FILE *out, bool check_size)
             }
             cur -= fetch->stride;
         }
+        unmap_screenshot(fetch);
     }
-    if (check_size && video_leader < video_lag)
-        video_done = !end_screenshot(GL_RGB, video_data[0].width, video_data[0].height);
-    else
-        end_screenshot(GL_RGB, -1, -1);
     return ret;
 }
 
@@ -482,12 +467,29 @@ static void screenshot_video()
     {
         gettimeofday(&tv, NULL);
         t = tv.tv_sec + 1e-6 * tv.tv_usec;
-        if (video_leader == video_lag) /* first frame */
+        if (video_first) /* first frame */
             video_frame_time = t;
         else if (t < video_frame_time)
             return; /* drop the frame because it is too soon */
+
+        /* Repeat frames to make up for low app framerate */
+        video_data[video_cur].multiplicity = 0;
+        while (t >= video_frame_time)
+        {
+            video_frame_time += video_frame_step;
+            video_data[video_cur].multiplicity++;
+        }
     }
-    if ((fetch = start_screenshot()) != NULL)
+    else
+        video_data[video_cur].multiplicity = 1;
+
+    if (!video_first)
+        video_done = !do_screenshot(CAPTURE_GL_FMT, video_data[0].width, video_data[0].height, &fetch);
+    else
+        do_screenshot(CAPTURE_GL_FMT, -1, -1, &fetch);
+    video_first = false;
+
+    if (fetch->width > 0)
     {
         if (!video_context)
             initialise_lavc(fetch->width, fetch->height);
@@ -496,6 +498,7 @@ static void screenshot_video()
 #else
         c = &video_stream->codec;
 #endif
+        map_screenshot(fetch);
         video_raw->data[0] = fetch->pixels + fetch->stride * (fetch->height - 1);
         video_raw->linesize[0] = -fetch->stride;
         img_convert((AVPicture *) video_yuv, c->pix_fmt,
@@ -536,24 +539,8 @@ static void screenshot_video()
                 }
             }
         }
+        unmap_screenshot(fetch);
     }
-
-    if (!video_sample_all)
-    {
-        /* Repeat frames to make up for low app framerate */
-        video_data[video_cur].multiplicity = 0;
-        while (t >= video_frame_time)
-        {
-            video_frame_time += video_frame_step;
-            video_data[video_cur].multiplicity++;
-        }
-    }
-    else
-        video_data[video_cur].multiplicity = 1;
-    if (video_leader < video_lag)
-        video_done = !end_screenshot(CAPTURE_GL_FMT, video_data[0].width, video_data[0].height);
-    else
-        end_screenshot(CAPTURE_GL_FMT, -1, -1);
 }
 
 #else /* !HAVE_LAVC */
@@ -587,12 +574,7 @@ static void screenshot_file(int frameno)
         perror("write error");
 }
 
-bool screenshot_key_want(KeySym key, unsigned int state, void *arg)
-{
-    return !video_file;
-}
-
-void screenshot_key_callback(KeySym key, unsigned int state, void *arg)
+void screenshot_key_callback(const xevent_key *key, void *arg)
 {
     screenshot_wanted = true;
 }
@@ -605,10 +587,8 @@ bool screenshot_callback(function_call *call, const callback_data *data)
 
     if (video_file)
     {
-        if (frameno >= start_frameno)
-        {
-            if (!video_done) screenshot_video(frameno);
-        }
+        if (frameno >= start_frameno && !video_done)
+            screenshot_video(frameno);
     }
     else if (screenshot_wanted)
     {
@@ -629,7 +609,7 @@ static bool initialise_screenshot(filter_set *handle)
 
     video_data = bugle_calloc(video_lag, sizeof(screenshot_data));
     video_cur = 0;
-    video_leader = video_lag;
+    video_first = true;
     if (video_file)
     {
         video_done = false; /* becomes true if we resize */
@@ -645,6 +625,11 @@ static bool initialise_screenshot(filter_set *handle)
         /* Note: we only initialise libavcodec on the first frame, because
          * we need the frame size.
          */
+    }
+    else
+    {
+        video_lag = 1;
+        bugle_register_xevent_key(&key_screenshot, NULL, screenshot_key_callback, NULL);
     }
     return true;
 }
@@ -952,6 +937,7 @@ void bugle_initialise_filter_library(void)
         { "bitrate", "video bitrate (bytes/s) [7.5MB/s]", FILTER_SET_VARIABLE_POSITIVE_INT, &video_bitrate, NULL },
         { "allframes", "capture every frame, ignoring framerate [no]", FILTER_SET_VARIABLE_BOOL, &video_sample_all, NULL },
         { "lag", "length of capture pipeline (set higher for better throughput) [1]", FILTER_SET_VARIABLE_POSITIVE_INT, &video_lag, NULL },
+        { "key_screenshot", "key to take a screenshot [C-A-S-S]", FILTER_SET_VARIABLE_CUSTOM, &key_screenshot, bugle_xevent_key_assign },
         { NULL, NULL, 0, NULL, NULL }
     };
 
@@ -1000,6 +986,4 @@ void bugle_initialise_filter_library(void)
     bugle_register_filter_set_renders("screenshot");
     bugle_register_filter_set_depends("screenshot", "trackextensions");
     bugle_register_filter_set_depends("epswire", "trackcontext");
-
-    bugle_register_xevent(XK_S, ControlMask, 0, NULL, screenshot_key_callback, NULL);
 }

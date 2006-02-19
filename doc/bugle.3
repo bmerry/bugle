@@ -1,4 +1,4 @@
-.TH BUGLE 3 "February 2005" BUGLE "User Manual"
+.TH BUGLE 3 "February 2006" BUGLE "User Manual"
 .SH NAME
 bugle \- An OpenGL debugging library
 .SH SYNOPSIS
@@ -104,20 +104,22 @@ with breakpoints set on drawing functions, to watch a frame being drawn
 piece by piece.
 .TP
 .B screenshot
-Writes screenshots in
+This has two modes of operation. In the first, it will take a screenshot
+when a key combination is pressed (by default, Ctrl-Alt-Shift-S). The
+screenshots are written in
 .BR ppm (5)
-format after every frame. The screenshots are written to
+to
 .BI frame NNNN .ppm\fR,
 where
 .I NNNN
-is the frame number. It has an optional variable
-.BR video .
-If this variable is set, the value must be a filename. The frames are
-encoded to a video with this filename. The variable
+is the frame number. In the other mode, it records a video. To select this
+mode, provide a filename for the variable
+.BR video ,
+which is the filename to write to. The variable
 .B codec
 controls the video codec. This video mode requires the
 .B ffmpeg
-library. See the example configuration file for documentation of the
+library. See the example configuration file for documentation of
 other options.
 .TP
 .B unwindstack

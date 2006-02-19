@@ -187,6 +187,12 @@ static void initialise_all(void)
     load_config();
 }
 
+/* Used by xevents */
+void bugle_initialise_all(void)
+{
+    bugle_thread_once(&init_key_once, initialise_all);
+}
+
 void budgie_interceptor(function_call *call)
 {
     bugle_thread_once(&init_key_once, initialise_all);

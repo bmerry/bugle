@@ -25,10 +25,25 @@
 #include <X11/Xlib.h>
 #include <X11/keysym.h> /* Convenience for including files */
 
-void bugle_register_xevent(KeySym key, unsigned int state, unsigned int state_mask,
-                           bool (*wanted)(KeySym key, unsigned int state, void *arg),
-                           void (*callback)(KeySym key, unsigned int state, void *arg),
-                           void *arg);
+typedef struct
+{
+    KeySym keysym;
+    unsigned int state;
+} xevent_key;
+
+/* Returns true if the key name was found, false otherwise. On false
+ * return, the value of *key is unmodified.
+ */
+bool bugle_xevent_key_lookup(const char *name, xevent_key *key);
+
+/* Used as a callback for variable setup in filters */
+bool bugle_xevent_key_assign(const filter_set_variable_info *var,
+                             const char *text, const void *value);
+
+void bugle_register_xevent_key(const xevent_key *key,
+                               bool (*wanted)(const xevent_key *, void *arg),
+                               void (*callback)(const xevent_key *, void *arg),
+                               void *arg);
 
 void initialise_xevent(void);
 
