@@ -1,3 +1,18 @@
+This release adds code to intercept keypresses from the application.
+Screenshots are now taken by keypress rather than on every frame, and
+it is possible to manually start and stop video recording (particularly
+useful if the framebuffer is resized before starting, as a resize
+normally terminates encoding).
+
+There are also some bugfixes, and in particular GTK+ 2.8 and pre-release
+versions of ffmpeg should now be better supported.
+
+WARNING: the options to the screenshot filter-set have changed. You
+will need to update your ~/.bugle/filters file. Refer to the example in
+doc/examples/filters for a sample. I've removed the option to set a
+start frame for video capture (since you can now press a key to start).
+If you need the old behaviour let me know and I can restore it.
+
 0.0.20060101
 ------------
 This release greatly improves the texture viewer in gldb-gui, as well as
@@ -7,8 +22,8 @@ have caused weird problems when using an ATI card (whether with gldb,
 gldb-gui or a filter), give this release a try.
 
 I have had intermittent problems with gldb-gui crashing due to "an X
-Window System error". If you can reproduce this, let me so that I can
-try to fix it.
+Window System error". If you can reproduce this, let me know so that I
+can try to fix it.
 
 0.0.20051112
 ------------

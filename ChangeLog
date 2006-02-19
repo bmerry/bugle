@@ -4,7 +4,7 @@
   glBegin/glEnd with indices other than 0
 * Pass textures to gldb-gui in GL_FLOAT, in preparation for eventual
   tone mapping
-* Preliminary keyboard interception (used for screenshot so far)
+* Preliminary keyboard interception (used for screenshot and epswire so far)
 * Make video capture work with pre-release versions of libavformat
 
 0.0.20060101

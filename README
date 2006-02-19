@@ -14,7 +14,7 @@ Here are a few things you can do so far
 - capture a log of what a program does
 - check for GL errors after every call
 - force a wireframe mode
-- capture a video
+- capture a video or a screenshot
 - run inside a gdb-like debugger, with breakpoints on GL functions and
   (optionally) stopping after every error.
 
