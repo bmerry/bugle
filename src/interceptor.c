@@ -115,7 +115,7 @@ static void load_config(void)
                     {
                         set = (const config_filterset *) bugle_list_data(i);
                         f = bugle_get_filter_set_handle(set->name);
-                        if (f) bugle_enable_filter_set(f);
+                        if (f) bugle_load_filter_set(f);
                     }
                 }
                 bugle_config_destroy();
@@ -136,7 +136,7 @@ static void load_config(void)
         fputs("could not find the 'invoke' filter-set; aborting\n", stderr);
         exit(1);
     }
-    bugle_enable_filter_set(f);
+    bugle_load_filter_set(f);
     /* Auto-load the debugger filter-set if using the debugger */
     if (debugging)
     {
@@ -146,7 +146,7 @@ static void load_config(void)
             fputs("could not find the 'debugger' filter-set; aborting\n", stderr);
             exit(1);
         }
-        bugle_enable_filter_set(f);
+        bugle_load_filter_set(f);
     }
 }
 
@@ -185,6 +185,7 @@ static void initialise_all(void)
     initialise_core_filters();
     initialise_dump_tables();
     load_config();
+    filter_compute_order();
 }
 
 /* Used by xevents */

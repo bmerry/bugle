@@ -66,7 +66,7 @@ chain video
 {
     filterset screenshot
     {
-        video "1"
+        video "yes"
         filename "bugle.avi"
 
         # You can in theory use any codec supported by ffmpeg

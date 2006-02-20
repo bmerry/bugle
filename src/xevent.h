@@ -36,10 +36,6 @@ typedef struct
  */
 bool bugle_xevent_key_lookup(const char *name, xevent_key *key);
 
-/* Used as a callback for variable setup in filters */
-bool bugle_xevent_key_assign(const filter_set_variable_info *var,
-                             const char *text, const void *value);
-
 /* Convenience callback: sets a flag */
 void bugle_xevent_key_callback_flag(const xevent_key *key, void *arg);
 

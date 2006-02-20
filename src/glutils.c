@@ -243,7 +243,7 @@ void bugle_register_filter_set_queries_error(const char *name)
 GLenum bugle_get_call_error(function_call *call)
 {
     if (error_handle
-        && bugle_filter_set_is_enabled(error_handle))
+        && bugle_filter_set_is_active(error_handle))
         return *(GLenum *) bugle_get_filter_set_call_state(call, error_handle);
     else
         return GL_NO_ERROR;

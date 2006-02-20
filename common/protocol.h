@@ -32,8 +32,8 @@
 #define REQ_QUIT               0xdcba0006UL
 #define REQ_ASYNC              0xdcba0007UL
 #define REQ_SCREENSHOT         0xdcba0008UL
-#define REQ_ENABLE_FILTERSET   0xdcba0009UL
-#define REQ_DISABLE_FILTERSET  0xdcba000aUL
+#define REQ_ACTIVATE_FILTERSET 0xdcba0009UL
+#define REQ_DEACTIVATE_FILTERSET  0xdcba000aUL
 #define REQ_STATE_TREE         0xdcba000bUL
 #define REQ_DATA               0xdbca000cUL
 

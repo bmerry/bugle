@@ -60,10 +60,6 @@ static int (*real_XPending)(Display *) = NULL;
 
 extern void bugle_initialise_all(void);
 
-static void initialise_pointers(void)
-{
-}
-
 /* Determines whether bugle wants to intercept an event */
 static Bool event_predicate(Display *dpy, XEvent *event, XPointer arg)
 {
@@ -332,22 +328,6 @@ bool bugle_xevent_key_lookup(const char *name, xevent_key *key)
                 return false;
         }
     }
-}
-
-bool bugle_xevent_key_assign(const filter_set_variable_info *var,
-                             const char *text, const void *value)
-{
-    xevent_key *key;
-    bool valid;
-
-    key = (xevent_key *) var->value;
-    valid = bugle_xevent_key_lookup(text, key);
-    if (!valid)
-    {
-        fprintf(stderr, "Invalid key %s\n", text);
-        return false;
-    }
-    return true;
 }
 
 void bugle_xevent_key_callback_flag(const xevent_key *key, void *arg)

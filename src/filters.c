@@ -1,5 +1,5 @@
 /*  BuGLe: an OpenGL debugging tool
- *  Copyright (C) 2004, 2005  Bruce Merry
+ *  Copyright (C) 2004-2006  Bruce Merry
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -22,7 +22,8 @@
 #define _POSIX_SOURCE
 #include "src/utils.h"
 #include "src/glfuncs.h"
-#include "filters.h"
+#include "src/xevent.h"
+#include "src/filters.h"
 #include "common/linkedlist.h"
 #include "common/hashtable.h"
 #include "common/safemem.h"
@@ -61,32 +62,37 @@ typedef struct
 
 static bugle_linked_list filter_sets;
 
-/* When filter-sets are activated and deactivated, the active_filters
- * list is updated to contain pointers to the active filters, and
- * active_dirty is set to true. Note that active_filters is an
- * _un_sorted list. When the next call comes in, it notices that
- * active_dirty is true and does a topological sort to recreate the
- * active_callbacks array.
+/* As the filter-sets are loaded, loaded_filters is populated with
+ * the loaded filters in arbitrary order. Once all filter-sets are
+ * loaded, the initialisation code calls filter_compute_order
+ * to do a topological sort on the filters in loaded_filters. No
+ * locking is required because this all happens in the initialisation
+ * code.
  *
- * Each active_callback list entry points to a filter_catcher
- * in the original filter structure.
+ * The active_callbacks list contains the list of callback in
+ * active filters. Each active_callback list entry points to a
+ * filter_catcher in the original filter structure. It is updated lazily,
+ * based on the value of active_dirty. Both these variables are
+ * protected by active_callbacks_mutex (as are the ->active flags on
+ * filter-sets). If there are both activations
+ * and deactivations within the same call, the order is not guaranted
+ * to be preserved (this may eventually be fixed). Similarly, the
+ * result of bugle_filter_set_is_active will reflect the old values
+ * until the end of the call.
  *
- * The locking gets a little hairy, because we have to avoid a deadlock
- * when a filter (viz the debugger) enables or disables filtersets.
- * There are three usage scenarios:
- * 1. Modify active_filters and set active_dirty.
- *    Lock active_filters_mutex.
- * 2. Modify active_callbacks and clear active_dirty.
- *    Lock active_callbacks_mutex and active_filters_mutex, in that order.
- * 3. Read from active_callbacks.
- *    Lock active_callbacks_mutex.
- * The lock order in scenario 2 is critical, because scenario 1 can occur
- * inside scenario 3.
+ * If a filter wishes to activate or deactivative a filter-set (its own
+ * or another), it should call bugle_activate_filter_set_deferred
+ * or bugle_deactivate_filter_set_deferred. This causes the change to
+ * happen only after the current call has completed processing (which
+ * removes the need to recompute the active filters while processing
+ * them), and also prevents a self-deadlock.
  */
-static bugle_linked_list active_filters;
+static bugle_linked_list loaded_filters;
+
 static bugle_linked_list active_callbacks[NUMBER_OF_FUNCTIONS];
 static bool active_dirty = false;
-static bugle_thread_mutex_t active_filters_mutex = BUGLE_THREAD_MUTEX_INITIALIZER;
+static bugle_linked_list activations_deferred;
+static bugle_linked_list deactivations_deferred;
 static bugle_thread_mutex_t active_callbacks_mutex = BUGLE_THREAD_MUTEX_INITIALIZER;
 
 /* hash table of linked lists of strings */
@@ -107,16 +113,16 @@ static void destroy_filters(void *dummy)
 
     bugle_list_clear(&filter_set_dependencies[0]);
     bugle_list_clear(&filter_set_dependencies[1]);
-    bugle_list_clear(&active_filters);
+    bugle_list_clear(&loaded_filters);
     for (k = 0; k < NUMBER_OF_FUNCTIONS; k++)
         bugle_list_clear(&active_callbacks[k]);
     for (i = bugle_list_head(&filter_sets); i; i = bugle_list_next(i))
     {
         s = (filter_set *) bugle_list_data(i);
-        if (s->initialised)
+        if (s->loaded)
         {
-            if (s->done)
-                (*s->done)(s);
+            if (s->unload)
+                (*s->unload)(s);
             for (j = bugle_list_head(&s->filters); j; j = bugle_list_next(j))
             {
                 f = (filter *) bugle_list_data(j);
@@ -139,7 +145,7 @@ static void destroy_filters(void *dummy)
     lt_dlexit();
 }
 
-static int initialise_filter(const char *filename, lt_ptr data)
+static int initialise_filter_library(const char *filename, lt_ptr data)
 {
     lt_dlhandle handle;
     void (*init)(void);
@@ -170,9 +176,11 @@ void initialise_filters(void)
     budgie_function f;
 
     bugle_list_init(&filter_sets, false);
-    bugle_list_init(&active_filters, false);
+    bugle_list_init(&loaded_filters, false);
     for (f = 0; f < NUMBER_OF_FUNCTIONS; f++)
         bugle_list_init(&active_callbacks[f], false);
+    bugle_list_init(&activations_deferred, false);
+    bugle_list_init(&deactivations_deferred, false);
     bugle_hash_init(&filter_dependencies, false);
     bugle_list_init(&filter_set_dependencies[0], true);
     bugle_list_init(&filter_set_dependencies[1], true);
@@ -187,7 +195,7 @@ void initialise_filters(void)
     }
     closedir(dir);
 
-    lt_dlforeachfile(libdir, initialise_filter, NULL);
+    lt_dlforeachfile(libdir, initialise_filter_library, NULL);
 
     bugle_atexit(destroy_filters, NULL);
 }
@@ -199,6 +207,7 @@ bool filter_set_variable(filter_set *handle, const char *name, const char *value
     long int_value;
     char *string_value;
     char *end;
+    xevent_key key_value;
     void *value_ptr = NULL;
 
     for (v = handle->variables; v && v->name; v++)
@@ -253,6 +262,14 @@ bool filter_set_variable(filter_set *handle, const char *name, const char *value
                 string_value = bugle_strdup(value);
                 value_ptr = &string_value;
                 break;
+            case FILTER_SET_VARIABLE_KEY:
+                if (!bugle_xevent_key_lookup(value, &key_value))
+                {
+                    fprintf(stderr, "Unknown key %s for %s in filter-set %s\n", value, name, handle->name);
+                    return false;
+                }
+                value_ptr = &key_value;
+                break;
             case FILTER_SET_VARIABLE_CUSTOM:
                 value_ptr = v->value;
                 break;
@@ -282,6 +299,9 @@ bool filter_set_variable(filter_set *handle, const char *name, const char *value
                             free(*(char **) v->value);
                         *(char **) v->value = string_value;
                         break;
+                    case FILTER_SET_VARIABLE_KEY:
+                        *(xevent_key *) v->value = key_value;
+                        break;
                     case FILTER_SET_VARIABLE_CUSTOM:
                         break;
                     }
@@ -295,6 +315,7 @@ bool filter_set_variable(filter_set *handle, const char *name, const char *value
     return false;
 }
 
+/* FIXME: deps should also be activated */
 static void bugle_activate_filter_set_nolock(filter_set *handle)
 {
     assert(handle);
@@ -306,6 +327,7 @@ static void bugle_activate_filter_set_nolock(filter_set *handle)
     }
 }
 
+/* FIXME: reverse deps should also be deactivated */
 static void bugle_deactivate_filter_set_nolock(filter_set *handle)
 {
     assert(handle);
@@ -317,13 +339,13 @@ static void bugle_deactivate_filter_set_nolock(filter_set *handle)
     }
 }
 
-static void enable_filter_set_r(filter_set *handle)
+static void load_filter_set_r(filter_set *handle)
 {
     bugle_list_node *i, *j;
     filter_set *s;
     filter *f;
 
-    if (!handle->enabled)
+    if (!handle->loaded)
     {
         /* deps */
         for (i = bugle_list_head(&filter_set_dependencies[0]),
@@ -341,130 +363,93 @@ static void enable_filter_set_r(filter_set *handle)
                             ((const char *) bugle_list_data(j)));
                     exit(1);
                 }
-                enable_filter_set_r(s);
+                load_filter_set_r(s);
             }
         }
         /* Initialisation */
-        if (!handle->initialised)
+        if (!(*handle->load)(handle))
         {
-            if (!(*handle->init)(handle))
-            {
-                fprintf(stderr, "Failed to initialise filter-set %s\n", handle->name);
-                exit(1);
-            }
-            handle->initialised = true;
+            fprintf(stderr, "Failed to initialise filter-set %s\n", handle->name);
+            exit(1);
         }
-        handle->enabled = true;
-        bugle_activate_filter_set_nolock(handle);
+        handle->loaded = true;
+
 
         for (i = bugle_list_head(&handle->filters); i; i = bugle_list_next(i))
         {
             f = (filter *) bugle_list_data(i);
-            bugle_list_append(&active_filters, f);
+            bugle_list_append(&loaded_filters, f);
         }
+
+        /* FIXME: allow a filter-set to start out inactive */
+        bugle_activate_filter_set_nolock(handle);
         active_dirty = true;
     }
 }
 
-void bugle_enable_filter_set(filter_set *handle)
+void bugle_load_filter_set(filter_set *handle)
 {
-    bugle_thread_mutex_lock(&active_filters_mutex);
-    enable_filter_set_r(handle);
-    bugle_thread_mutex_unlock(&active_filters_mutex);
-}
-
-static void disable_filter_set_r(filter_set *handle)
-{
-    bugle_list_node *i, *j;
-    filter_set *s;
-    filter *f;
-
-    if (handle->enabled)
-    {
-        bugle_deactivate_filter_set_nolock(handle);
-        handle->enabled = false;
-        /* reverse deps */
-        for (i = bugle_list_head(&filter_set_dependencies[0]),
-             j = bugle_list_head(&filter_set_dependencies[1]);
-             i;
-             i = bugle_list_next(i), j = bugle_list_next(j))
-        {
-            if (strcmp(handle->name, (const char *) bugle_list_data(j)) == 0)
-            {
-                s = bugle_get_filter_set_handle((const char *) bugle_list_data(i));
-                disable_filter_set_r(s);
-            }
-        }
-        i = bugle_list_head(&active_filters);
-        while (i)
-        {
-            j = bugle_list_next(i);
-            f = (filter *) bugle_list_data(i);
-            if (f->parent == handle)
-                bugle_list_erase(&active_filters, i);
-            i = j;
-        }
-        active_dirty = true;
-    }
-}
-
-void bugle_disable_filter_set(filter_set *handle)
-{
-    bugle_thread_mutex_lock(&active_filters_mutex);
-    disable_filter_set_r(handle);
-    bugle_thread_mutex_unlock(&active_filters_mutex);
+    load_filter_set_r(handle);
 }
 
 void bugle_activate_filter_set(filter_set *handle)
 {
-    bugle_thread_mutex_lock(&active_filters_mutex);
+    bugle_thread_mutex_lock(&active_callbacks_mutex);
     bugle_activate_filter_set_nolock(handle);
-    bugle_thread_mutex_unlock(&active_filters_mutex);
+    bugle_thread_mutex_unlock(&active_callbacks_mutex);
 }
 
 void bugle_deactivate_filter_set(filter_set *handle)
 {
-    bugle_thread_mutex_lock(&active_filters_mutex);
+    bugle_thread_mutex_lock(&active_callbacks_mutex);
     bugle_deactivate_filter_set_nolock(handle);
-    bugle_thread_mutex_unlock(&active_filters_mutex);
+    bugle_thread_mutex_unlock(&active_callbacks_mutex);
+}
+
+/* Note: these should be called only from within a callback, in which
+ * case the lock is already held.
+ */
+void bugle_activate_filter_set_deferred(filter_set *handle)
+{
+    bugle_list_append(&activations_deferred, handle);
+}
+
+void bugle_deactivate_filter_set_deferred(filter_set *handle)
+{
+    bugle_list_append(&deactivations_deferred, handle);
 }
 
 typedef struct
 {
     filter *f;
     int valence;
-} repair_info;
+} order_data;
 
-/* Note: caller must take mutexes */
-void repair_filter_order(void)
+void filter_compute_order(void)
 {
-    bugle_list_node *i, *j;
-    bugle_linked_list *deps;
+    bugle_linked_list ordered;
     bugle_linked_list queue;
-    bugle_hash_table info;    /* table of repair_info structs for each filter */
-    repair_info *cur_info;
-    filter *cur;
+    bugle_linked_list *deps;
+    bugle_hash_table byname;  /* table of order_data structs for each filter by name */
     const char *name;
-    int count = 0; /* checks that everything made it without cycles */
-    budgie_function func;
-    filter_catcher *catcher;
+    int count = 0;            /* checks that everything made it without cycles */
+    bugle_list_node *i, *j;
+    filter *cur;
+    order_data *info;
 
-    /* Clear the old active_callback lists */
-    for (func = 0; func < NUMBER_OF_FUNCTIONS; func++)
-        bugle_list_clear(&active_callbacks[func]);
-
-    bugle_hash_init(&info, true);
-    /* initialise info table */
-    for (i = bugle_list_head(&active_filters); i; i = bugle_list_next(i))
+    bugle_list_init(&ordered, true);
+    bugle_hash_init(&byname, true);
+    for (i = bugle_list_head(&loaded_filters); i; i = bugle_list_next(i))
     {
         count++;
-        cur_info = (repair_info *) bugle_malloc(sizeof(repair_info));
-        cur_info->f = (filter *) bugle_list_data(i);
-        cur_info->valence = 0;
-        bugle_hash_set(&info, cur_info->f->name, cur_info);
+        info = (order_data *) bugle_malloc(sizeof(order_data));
+        info->f = (filter *) bugle_list_data(i);
+        info->valence = 0;
+        bugle_hash_set(&byname, info->f->name, info);
     }
+
     /* fill in valences */
-    for (i = bugle_list_head(&active_filters); i; i = bugle_list_next(i))
+    for (i = bugle_list_head(&loaded_filters); i; i = bugle_list_next(i))
     {
         cur = (filter *) bugle_list_data(i);
         deps = (bugle_linked_list *) bugle_hash_get(&filter_dependencies, cur->name);
@@ -473,21 +458,23 @@ void repair_filter_order(void)
             for (j = bugle_list_head(deps); j; j = bugle_list_next(j))
             {
                 name = (const char *) bugle_list_data(j);
-                cur_info = (repair_info *) bugle_hash_get(&info, name);
-                if (cur_info) /* otherwise a non-active filter */
-                    cur_info->valence++;
+                info = (order_data *) bugle_hash_get(&byname, name);
+                if (info) /* otherwise a non-loaded filter */
+                    info->valence++;
             }
         }
     }
+
     /* prime the queue */
     bugle_list_init(&queue, false);
-    for (i = bugle_list_head(&active_filters); i; i = bugle_list_next(i))
+    for (i = bugle_list_head(&loaded_filters); i; i = bugle_list_next(i))
     {
         cur = (filter *) bugle_list_data(i);
-        cur_info = (repair_info *) bugle_hash_get(&info, cur->name);
-        if (cur_info->valence == 0)
+        info = (order_data *) bugle_hash_get(&byname, cur->name);
+        if (info->valence == 0)
             bugle_list_append(&queue, cur);
     }
+
     /* do a topological walk, starting at the back */
     while (bugle_list_head(&queue))
     {
@@ -500,30 +487,52 @@ void repair_filter_order(void)
             for (j = bugle_list_head(deps); j; j = bugle_list_next(j))
             {
                 name = (const char *) bugle_list_data(j);
-                cur_info = (repair_info *) bugle_hash_get(&info, name);
-                if (cur_info) /* otherwise a non-active filter */
+                info = (order_data *) bugle_hash_get(&byname, name);
+                if (info) /* otherwise not a loaded filter */
                 {
-                    cur_info->valence--;
-                    if (cur_info->valence == 0)
-                        bugle_list_append(&queue, cur_info->f);
+                    info->valence--;
+                    if (info->valence == 0)
+                        bugle_list_append(&queue, info->f);
                 }
             }
         }
-        for (j = bugle_list_tail(&cur->callbacks); j; j = bugle_list_prev(j))
-        {
-            catcher = (filter_catcher *) bugle_list_data(j);
-            if (cur->parent->active || catcher->inactive)
-                bugle_list_prepend(&active_callbacks[catcher->function], catcher);
-        }
+        bugle_list_prepend(&ordered, cur);
     }
+
     if (count > 0)
     {
         fprintf(stderr, "cyclic dependency between filters, aborting\n");
         exit(1);
     }
-    /* clean up */
+    /* clean up and replace old version */
     bugle_list_clear(&queue);
-    bugle_hash_clear(&info);
+    bugle_hash_clear(&byname);
+    bugle_list_clear(&loaded_filters);
+    loaded_filters = ordered;
+}
+
+/* Note: caller must take mutexes */
+static void compute_active_callbacks(void)
+{
+    bugle_list_node *i, *j;
+    filter *cur;
+    budgie_function func;
+    filter_catcher *catcher;
+
+    /* Clear the old active_callback lists */
+    for (func = 0; func < NUMBER_OF_FUNCTIONS; func++)
+        bugle_list_clear(&active_callbacks[func]);
+
+    for (i = bugle_list_head(&loaded_filters); i; i = bugle_list_next(i))
+    {
+        cur = (filter *) bugle_list_data(i);
+        for (j = bugle_list_tail(&cur->callbacks); j; j = bugle_list_prev(j))
+        {
+            catcher = (filter_catcher *) bugle_list_data(j);
+            if (cur->parent->active || catcher->inactive)
+                bugle_list_append(&active_callbacks[catcher->function], catcher);
+        }
+    }
 }
 
 void *bugle_get_filter_set_call_state(function_call *call, filter_set *handle)
@@ -542,16 +551,15 @@ void run_filters(function_call *call)
 
     /* FIXME: this lock effectively makes the entire capture process a
      * critical section, even though changes to active_callbacks and
-     * active_dirty are rare. We would prefer a read-write lock.
+     * active_dirty are rare. We would prefer a read-write lock or
+     * a read-copy process or something.
      */
     bugle_thread_mutex_lock(&active_callbacks_mutex);
-    bugle_thread_mutex_lock(&active_filters_mutex);
     if (active_dirty)
     {
-        repair_filter_order();
+        compute_active_callbacks();
         active_dirty = false;
     }
-    bugle_thread_mutex_unlock(&active_filters_mutex);
 
     call->generic.user_data = call_data;
     for (i = bugle_list_head(&active_callbacks[call->generic.id]); i; i = bugle_list_next(i))
@@ -560,6 +568,19 @@ void run_filters(function_call *call)
         data.call_data = bugle_get_filter_set_call_state(call, cur->parent->parent);
         data.filter_set_handle = cur->parent->parent;
         if (!(*cur->callback)(call, &data)) break;
+    }
+
+    while (bugle_list_head(&activations_deferred))
+    {
+        i = bugle_list_head(&activations_deferred);
+        bugle_activate_filter_set_nolock((filter_set *) bugle_list_data(i));
+        bugle_list_erase(&activations_deferred, i);
+    }
+    while (bugle_list_head(&deactivations_deferred))
+    {
+        i = bugle_list_head(&deactivations_deferred);
+        bugle_deactivate_filter_set_nolock((filter_set *) bugle_list_data(i));
+        bugle_list_erase(&deactivations_deferred, i);
     }
     bugle_thread_mutex_unlock(&active_callbacks_mutex);
 }
@@ -572,13 +593,12 @@ filter_set *bugle_register_filter_set(const filter_set_info *info)
     s->name = info->name;
     s->help = info->help;
     bugle_list_init(&s->filters, false);
-    s->init = info->init;
-    s->done = info->done;
+    s->load = info->load;
+    s->unload = info->unload;
     s->activate = info->activate;
     s->deactivate = info->deactivate;
     s->variables = info->variables;
-    s->initialised = false;
-    s->enabled = false;
+    s->loaded = false;
     s->active = false;
     s->dl_handle = current_dl_handle;
     if (info->call_state_space)
@@ -660,10 +680,10 @@ void bugle_register_filter_set_depends(const char *base, const char *dep)
     bugle_list_append(&filter_set_dependencies[1], bugle_strdup(dep));
 }
 
-bool bugle_filter_set_is_enabled(const filter_set *handle)
+bool bugle_filter_set_is_loaded(const filter_set *handle)
 {
     assert(handle);
-    return handle->enabled;
+    return handle->loaded;
 }
 
 bool bugle_filter_set_is_active(const filter_set *handle)
@@ -735,6 +755,8 @@ void bugle_filters_help(void)
                 case FILTER_SET_VARIABLE_STRING:
                     type_str = " (string)";
                     break;
+                case FILTER_SET_VARIABLE_KEY:
+                    type_str = " (key)";
                 case FILTER_SET_VARIABLE_CUSTOM:
                     type_str = "";
                     break;

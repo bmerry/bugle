@@ -1,386 +1,392 @@
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
 <html lang="en">
-<head>
-<title>Writing plugins for BuGLe</title>
-<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-</head>
-<body>
-<h1>Writing plugins for BuGLe</h1>
-<h2>Introduction</h2>
-<p>
-Eventually, this file will serve as a guide for third party plugin
-authors. At present, the API is still too unstable for this to be
-practical, and the ABI will vary between machines with different OpenGL
-headers. To repeat: you <strong>cannot</strong> just distribute binary
-filter-sets and expect them to work. If you decide to write a plugin
-anyway, consider submitting it to the program author for inclusion, so
-that he can maintain it across API changes.
-</p>
+    <head>
+        <title>Writing plugins for BuGLe</title>
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    </head>
+    <body>
+        <h1>Writing plugins for BuGLe</h1>
+        <h2>Introduction</h2>
+        <p>
+        Eventually, this file will serve as a guide for third party plugin
+        authors. At present, the API is still too unstable for this to be
+        practical, and the ABI will vary between machines with different OpenGL
+        headers. To repeat: you <strong>cannot</strong> just distribute binary
+        filter-sets and expect them to work. If you decide to write a plugin
+        anyway, consider submitting it to the program author for inclusion, so
+        that he can maintain it across API changes.
+        </p>
 
-<p>
-Filters are arranged in a four-level hierarchy:
-</p>
-<ol>
-<li>Filter libraries, which are a loose collection of filter-sets. These
-allow filters to be grouped together to avoid having hundreds of
-files. It also makes shared access to data easier.</li>
-<li>Filter-sets, which are tightly coupled groups of filters. Each
-filter-set may have state, may depend upon other filter-sets and may
-only be loaded or unloaded as a unit.</li>
-<li>Filters, which are used to control sequencing. For example, some
-filter-sets need to have some code run before calls are executed and
-other code after. These pieces of code would be placed in separate
-filters. The plugin author may list ordering dependencies between
-filters.</li>
-<li>Callbacks, which are the actual functions that act on calls. A
-filter may register multiple callbacks, each of which acts on some
-subset of the possible calls.
-</ol>
+        <p>
+        Filters are arranged in a four-level hierarchy:
+        </p>
+        <ol>
+            <li>Filter libraries, which are a loose collection of filter-sets. These
+            allow filters to be grouped together to avoid having hundreds of
+            files. It also makes shared access to data easier.</li>
+            <li>Filter-sets, which are tightly coupled groups of filters. Each
+            filter-set may have state, may depend upon other filter-sets and may
+            only be loaded or unloaded as a unit.</li>
+            <li>Filters, which are used to control sequencing. For example, some
+            filter-sets need to have some code run before calls are executed and
+            other code after. These pieces of code would be placed in separate
+            filters. The plugin author may list ordering dependencies between
+            filters.</li>
+            <li>Callbacks, which are the actual functions that act on calls. A
+            filter may register multiple callbacks, each of which acts on some
+            subset of the possible calls.
+        </ol>
 
-<h2>Filter-related structures and typedefs</h2>
-<dl>
-<dt><code>filter_set</code></dt>
-<dd>An opaque structure representing a filter-set.</dd>
-<dt><code>filter</code></dt>
-<dd>An opaque structure representing a filter.</dd>
-<dt><code>filter_set_variable_info</code></dt>
-<dd>A user-supplied structure that describes one filter-set variable
-that can be set from the configuration file. It has the following fields:
- <dl>
- <dt><code>name</code></dt>
- <dd>The name to match in the configuration file.</dd>
- <dt><code>help</code></dt>
- <dd>The help string to show when help is requested. This may be
-     <code>NULL</code> to leave the variable undocumented.</dd>
- <dt><code>type</code></dt>
- <dd>The type of variable. It must be one of the following:
-  <ul>
-  <li><code>FILTER_SET_VARIABLE_STRING</code> (a general string)</li>
-  <li><code>FILTER_SET_VARIABLE_INT</code> (a general integer)</li>
-  <li><code>FILTER_SET_VARIABLE_UINT</code> (a non-negative integer)</li>
-  <li><code>FILTER_SET_VARIABLE_POSITIVE_INT</code> (a positive integer)</li>
-  <li><code>FILTER_SET_VARIABLE_BOOL</code> (a boolean value)</li>
-  </ul>
- </dd>
- <dt><code>value</code></dt>
- <dd>A <code>void</code> pointer to a location to update. For the integer
- types, the target must be of type <code>long</code>. For boolean variables,
- it must be of type <code>bool</code>, and for string variables it must
- be of type <code>char *</code>. In the last case, the value written in
- is a copy of the string, and you are responsible for freeing it. If the
- old value was non-<code>NULL</code>, it will be freed first (so be
- sure to use a static initialisation to <code>NULL</code>; if you want
- a non-<code>NULL</code> default then you must allocate the memory). It
- is also legal for <code>value</code> to be <code>NULL</code>, in which case
- no assignment is done.</dd>
- <dt><code>callback</code></dt>
- <dd>A callback function that runs before the assignment. It has the
- signature
+        <h2>Loading vs. activation</h2>
+        <p>
+        In order to allow modifiers to be turned on or off on the fly, there
+        is a distinction between loading and activation. All filter-sets
+        listed in the chain are loaded, but should alter the behaviour of
+        the program only when <em>active</em>. Filter-sets are loaded only
+        at startup and unloaded at program termination, but can be
+        activated or deactivated arbitrarily. Most callbacks are only called
+        when the filter-set is active, but it is possible to register
+        callbacks that are called even when the filter-set is inactive.
+        This allows the filter-set to monitor state so that it can do the
+        right thing during activation, or to execute cleanup code after
+        deactivation.
+        </p>
+
+        <h2>Filter-related structures and typedefs</h2>
+        <dl>
+            <dt><code>filter_set</code></dt>
+            <dd>An opaque structure representing a filter-set.</dd>
+            <dt><code>filter</code></dt>
+            <dd>An opaque structure representing a filter.</dd>
+            <dt><code>filter_set_variable_info</code></dt>
+            <dd>A user-supplied structure that describes one filter-set variable
+            that can be set from the configuration file. It has the following fields:
+            <dl>
+                <dt><code>name</code></dt>
+                <dd>The name to match in the configuration file.</dd>
+                <dt><code>help</code></dt>
+                <dd>The help string to show when help is requested. This may be
+                <code>NULL</code> to leave the variable undocumented.</dd>
+                <dt><code>type</code></dt>
+                <dd>The type of variable. It must be one of the following:
+                <ul>
+                    <li><code>FILTER_SET_VARIABLE_STRING</code> (a general string)</li>
+                    <li><code>FILTER_SET_VARIABLE_INT</code> (a general integer)</li>
+                    <li><code>FILTER_SET_VARIABLE_UINT</code> (a non-negative integer)</li>
+                    <li><code>FILTER_SET_VARIABLE_POSITIVE_INT</code> (a positive integer)</li>
+                    <li><code>FILTER_SET_VARIABLE_BOOL</code> (a boolean value)</li>
+                    <li><code>FILTER_SET_VARIABLE_KEY</code> (a
+                    xevent_key structure, which holds an X KeySym and a shift mask)</li> 
+                    <li><code>FILTER_SET_VARIABLE_CUSTOM</code> (any
+                    type, with a callback to assign the value)</li>
+                </ul>
+                </dd>
+                <dt><code>value</code></dt>
+                <dd>A <code>void</code> pointer to a location to update. For the integer
+                types, the target must be of type <code>long</code> and for string
+                variables it must be of type <code>char *</code>. In
+                the latter case, the value written in
+                is a copy of the string, and you are responsible for freeing it. If the
+                old value was non-<code>NULL</code>, it will be freed first (so be
+                sure to use a static initialisation to <code>NULL</code>; if you want
+                a non-<code>NULL</code> default then you must allocate the memory). It
+                is also legal for <code>value</code> to be <code>NULL</code>, in which case
+                no assignment is done.</dd>
+                <dt><code>callback</code></dt>
+                <dd>A callback function that runs before the assignment. It has the
+                signature
 <pre>
 bool callback(const filter_set_variable_info *info, const char *text, void *value);
 </pre>
- The <code>text</code> is the literal string value from the configuration file,
- while <code>value</code> is interpreted in the same way as the <code>value</code>
- field in the structure (note: the parameter will be meaningful even if the
- structure provides a <code>value</code> of <code>NULL</code>). The
- <code>value</code> may be overridden by the callback. The return value should
- be <code>true</code> unless the value is determined to be illegal, in which
- case it should print a message to <code>stderr</code> and return
- <code>false</code>. The callback may also be <code>NULL</code>.
- </dd>
- </dl>
-</dd>
-<dt><code>filter_set_variable_type</code></dt>
-<dd>An <code>enum</code> of the possible values for the <code>type</code>
-field above.</dd>
-<dt><code>filter_set_info</code></dt>
-<dd>A structure used to register a filter-set. It has the following fields:
- <dl>
- <dt><code>name</code></dt>
- <dd>The name of the filter-set, to be used in the configuration file.</dd>
- <dt><code>init</code></dt>
- <dd>A callback function used to initialise the filter-set. It has the
- following signature:
+                The <code>text</code> is the literal string value from the configuration file,
+                while <code>value</code> is interpreted in the same way as the <code>value</code>
+                field in the structure (note: the parameter will be meaningful even if the
+                structure provides a <code>value</code> of <code>NULL</code>). The
+                <code>value</code> may be overridden by the callback. The return value should
+                be <code>true</code> unless the value is determined to be illegal, in which
+                case it should print a message to <code>stderr</code> and return
+                <code>false</code>. The callback may also be <code>NULL</code> (and usually will be).
+                </dd>
+            </dl>
+            </dd>
+            <dt><code>filter_set_variable_type</code></dt>
+            <dd>An <code>enum</code> of the possible values for the <code>type</code>
+            field above.</dd>
+            <dt><code>filter_set_info</code></dt>
+            <dd>A structure used to register a filter-set. It has the following fields:
+            <dl>
+                <dt><code>name</code></dt>
+                <dd>The name of the filter-set, to be used in the configuration file.</dd>
+                <dt><code>load</code></dt>
+                <dd>A callback function used to initialise the filter-set. It has the
+                following signature:
 <pre>
-bool filter_set_initialiser(filter_set *);
+bool filter_set_loader(filter_set *);
 </pre>
- It should return <code>true</code> on success and <code>false</code> on
- failure. See below for more information on initialisation. 
- </dd>
- <dt><code>done</code></dt>
- <dd>A shutdown function for the filter-set, with signature
+                It should return <code>true</code> on success and <code>false</code> on
+                failure. See below for more information on initialisation. 
+                </dd>
+                <dt><code>unload</code></dt>
+                <dd>A shutdown function for the filter-set, with signature
 <pre>
-void filter_set_destructor(filter_set *);
+void filter_set_unload(filter_set *);
 </pre>
- </dd>
- <dt><code>activate</code></dt>
- <dd>An optional activation function, with signature
+                </dd>
+                <dt><code>activate</code></dt>
+                <dd>An optional activation function, with signature
 <pre>
 void filter_set_activator(filter_set *);
 </pre>
- </dd>
- <dt><code>deactivate</code></dt>
- <dd>An optional deactivator function, with signature
+                </dd>
+                <dt><code>deactivate</code></dt>
+                <dd>An optional deactivator function, with signature
 <pre>
 void filter_set_deactivator(filter_set *);
 </pre>
- </dd>
- <dt><code>variables</code></dt>
- <dd>A pointer to an array of <code>filter_set_variable_info</code> structures,
- terminated by a null structure <code>{NULL, NULL, 0, NULL, NULL}</code>. This
- describes the user variables that are accepted by the filter-set. If there
- are no variables, this field may be <code>NULL</code>.
- </dd>
- <dt><code>call_state_space</code></dt>
- <dd>An integer number of bytes of storage to piggy-back on to the
- call structure. This will probably go away soon and it is recommended
- that it is set to <code>0</code> for now.
- </dd>
- <dt><code>help</code></dt>
- <dd>The help string to show when help is requested. This may be left
-     as <code>NULL</code> to leave the filter-set undocumented. This is
-     recommended for internal or helper filter-sets.</dd>
- </dl>
-</dd>
-</dl>
+                </dd>
+                <dt><code>variables</code></dt>
+                <dd>A pointer to an array of <code>filter_set_variable_info</code> structures,
+                terminated by a null structure <code>{NULL, NULL, 0, NULL, NULL}</code>. This
+                describes the user variables that are accepted by the filter-set. If there
+                are no variables, this field may be <code>NULL</code>.
+                </dd>
+                <dt><code>call_state_space</code></dt>
+                <dd>An integer number of bytes of storage to piggy-back on to the
+                call structure. This will probably go away soon and it is recommended
+                that it is set to <code>0</code> for now.
+                </dd>
+                <dt><code>help</code></dt>
+                <dd>The help string to show when help is requested. This may be left
+                as <code>NULL</code> to leave the filter-set undocumented. This is
+                recommended for internal or helper filter-sets.</dd>
+            </dl>
+            </dd>
+        </dl>
 
-<h2>Other structures and typedefs</h2>
-<p>
-Bugle makes a sharp distinction between functions and groups. A
-function is what you think it is. A group is a set of functions with
-identical parameters and semantics. In OpenGL, groups arise from the
-fact that functions are promoted between extensions or from extensions
-to the core; for example <code>glActiveTexture</code> and
-<code>glActiveTextureARB</code> are equivalent functions and belong to
-the same group.
-</p>
-<p>
-Each GL function is assigned a number in the range [0,
-<code>NUMBER_OF_FUNCTIONS</code>). These numbers are conventionally of
-type <code>budgie_function</code>, which is some signed integral type.
-There is also a special value <code>NULL_FUNCTION</code>, which is
-simply <code>-1</code>. For each function <code>glSomeFunction</code>,
-there is a typedef <code>FUNC_glSomeFunction</code> which is the number
-assigned to the function.
-</p>
-<p>
-Similar, groups are numbered from 0 to <code>NUMBER_OF_GROUPS</code>
-and given defines <code>GROUP_glSomeFunction</code>. Groups do not have
-explicit names, but are referenced by any of the functions in the
-group.
-</p>
-<p>
-BuGLe tries to support systems that only have header files and runtime
-support for OpenGL 1.1 (so that a Win32 port will be possible one day).
-Thus for any functions introduces after 1.1, you should favour the
-<code>GROUP_</code> definition with the oldest name, which is generally
-an extension function. You should also protect any such code with a
-test for the GL extension define e.g.
-<code>GL_ARB_multitexture</code>.
+        <h2>Other structures and typedefs</h2>
+        <p>
+        Bugle makes a sharp distinction between functions and groups. A
+        function is what you think it is. A group is a set of functions with
+        identical parameters and semantics. In OpenGL, groups arise from the
+        fact that functions are promoted between extensions or from extensions
+        to the core; for example <code>glActiveTexture</code> and
+        <code>glActiveTextureARB</code> are equivalent functions and belong to
+        the same group.
+        </p>
+        <p>
+        Each GL function is assigned a number in the range [0,
+        <code>NUMBER_OF_FUNCTIONS</code>). These numbers are conventionally of
+        type <code>budgie_function</code>, which is some signed integral type.
+        There is also a special value <code>NULL_FUNCTION</code>, which is
+        simply <code>-1</code>. For each function <code>glSomeFunction</code>,
+        there is a typedef <code>FUNC_glSomeFunction</code> which is the number
+        assigned to the function.
+        </p>
+        <p>
+        Similar, groups are numbered from 0 to <code>NUMBER_OF_GROUPS</code>
+        and given defines <code>GROUP_glSomeFunction</code>. Groups do not have
+        explicit names, but are referenced by any of the functions in the
+        group.
+        </p>
+        <p>
+        BuGLe tries to support systems that only have header files and runtime
+        support for OpenGL 1.1 (so that a Win32 port will be possible one day).
+        Thus for any functions introduces after 1.1, you should favour the
+        <code>GROUP_</code> definition with the oldest name, which is generally
+        an extension function. You should also protect any such code with a
+        test for the GL extension define e.g.
+        <code>GL_ARB_multitexture</code>.
 
-<h2>Library initialisation</h2>
-<p>
-Each filter library must define an initialisation function called
-<code>bugle_initialise_filter_library</code> which takes no parameters
-and no return. This function registers all the filter-sets in the
-library, as well as their dependencies.
-</p>
-<p>
-Filter-sets are registered by passing a pointer to a
-<code>filter_set_info</code> structure (see above) to
-<code>bugle_register_filter_set</code>. Some of the fields in the
-structure are used later in-place rather than copied, so the structure
-(including the variables array) must have global lifetime.
-</p>
-<p>
-Dependencies are registered by calling
-</p>
+        <h2>Library initialisation</h2>
+        <p>
+        Each filter library must define an initialisation function called
+        <code>bugle_initialise_filter_library</code> which takes no parameters
+        and no return. This function registers all the filter-sets in the
+        library, as well as their dependencies.
+        </p>
+        <p>
+        Filter-sets are registered by passing a pointer to a
+        <code>filter_set_info</code> structure (see above) to
+        <code>bugle_register_filter_set</code>. Some of the fields in the
+        structure are used later in-place rather than copied, so the structure
+        (including the variables array) must have global lifetime.
+        </p>
+        <p>
+        Dependencies are registered by calling
+        </p>
 <pre>
 bugle_register_filter_set_depends("<em>set1</em>", "<em>set2</em>")
 </pre>
-<p>
-to indicate that <em>set1</em> requires <em>set2</em> to be
-present for operation.
-</p>
+        <p>
+        to indicate that <em>set1</em> requires <em>set2</em> to be
+        present for operation.
+        </p>
 
-<h2>Filter-set initialisation</h2>
-<p>
-Apart from initialising internal structures, a filter-set initialiser
-registers filters and callbacks. A filter is created by calling
-<code>bugle_register_filter(handle, "<em>filtername</em>")</code>
-This function returns a <code>filter *</code> which should be saved for
-later use.
-</p>
-<p>There are two ways to register a callback:
-</p>
-<dl>
-<dt><code>bugle_register_filter_catches(filter *<em>filter</em>,
-                                        budgie_function <em>function</em>,
-                                        bool <em>inactive</em>,
-                                        filter_callback <em>callback</em>)</code></dt>
-<dd>Registers a callback function that will apply to a single GL function
-(or several if called several times). The <em>function</em> should be
-one of the <code>CFUNC_*</code> defines; other names for the same
-function are also trapped. If <em>inactive</em> is <code>true</code>, the
-callback will be called even if the filter-set is inactive (see below
-for an explanation of active and inactive filter-sets).</dd>
+        <h2>Filter-set loading</h2>
+        <p>
+        Apart from initialising internal structures, a filter-set loader
+        registers filters and callbacks. A filter is created by calling
+        <code>bugle_register_filter(handle, "<em>filtername</em>")</code>
+        This function returns a <code>filter *</code> which should be saved for
+        later use.
+        </p>
+        <p>There are two ways to register a callback:
+        </p>
+        <dl>
+            <dt><code>bugle_register_filter_catches(filter *<em>filter</em>,
+                budgie_function <em>function</em>,
+                bool <em>inactive</em>,
+                filter_callback <em>callback</em>)</code></dt>
+            <dd>Registers a callback function that will apply to a single GL function
+            (or several if called several times). The <em>function</em> should be
+            one of the <code>CFUNC_*</code> defines; other names for the same
+            function are also trapped. If <em>inactive</em> is <code>true</code>, the
+            callback will be called even if the filter-set is inactive (see below
+            for an explanation of active and inactive filter-sets).</dd>
 
-<dt><code>bugle_register_filter_catches_all(filter *<em>filter</em>,
-                                            bool <em>inactive</em>,
-                                            filter_callback <em>callback</em>)</code></dt>
-<dd>Registers a callback function that will apply to all GL functions.</dd>
-</dl>
-<p>
-In addition, you should list sequencing requirements between filters. To
-specify that <em>filter1</em> must run after <em>filter2</em> if both
-are present, call <code>bugle_register_filter_depends("<em>filter1</em>",
-"<em>filter2</em>")</code>. An important filter for setting dependencies is
-the built-in <code>invoke</code> filter, which actually executes GL
-functions.
-</p>
+            <dt><code>bugle_register_filter_catches_all(filter *<em>filter</em>,
+                bool <em>inactive</em>,
+                filter_callback <em>callback</em>)</code></dt>
+            <dd>Registers a callback function that will apply to all GL functions.</dd>
+        </dl>
+        <p>
+        In addition, you should list sequencing requirements between filters. To
+        specify that <em>filter1</em> must run after <em>filter2</em> if both
+        are present, call <code>bugle_register_filter_depends("<em>filter1</em>",
+            "<em>filter2</em>")</code>. An important filter for setting dependencies is
+        the built-in <code>invoke</code> filter, which actually executes GL
+        functions.
+        </p>
 
-<h2>Filter-set activation</h2>
-<p>
-Activation is slightly different from initialisation. Initialisation happens
-only once at startup time, and should be used to open files, allocate memory
-and so on. Destruction is the complement of initialisation, and occurs at
-program termination. Activation and deactivation are not yet fully supported,
-but the eventual goal is that the debugger can activate and deactivate
-filter-sets on the fly. An example of this would be the wireframe filterset:
-eventually it will be possible to control wireframe mode on a frame-by-frame
-basis. Some calls need to be trapped even when wireframe is not being used,
-so that the contexts can be identified, so initialisation must still be done
-at program startup.
-
-<h2>Writing callbacks</h2>
-<p>
-A callback has the following signature:
-</p>
+        <h2>Writing callbacks</h2>
+        <p>
+        A callback has the following signature:
+        </p>
 <pre>
 bool callback(function_call *<em>call</em>, const callback_data *<em>data</em>)
 </pre>
-<p>
-The callback should generally return <code>true</code>. Returning <code>false</code>
-aborts any further processing of the call (including execution if the
-<code>invoke</code> filter has not yet run). This can be useful if you
-want to suppress a call, but if possible it is better to allow
-execution and undo the effects afterwards so that later filters get a
-chance to run.
-</p>
-<p>
-The <em>data</em> element will likely change or go away in the near
-future, so it will not be documented here.
-</p>
-<p>
-Callbacks that handle multiple GL functions will need to know which GL
-function was called; the function is found in
-<code>call->generic.id</code>, but more useful is the group found in
-<code>call->generic.group</code>. One can also get access to the
-arguments: if the call is known to be <code>glSomeFunction</code>, then
-<code>*call->typed.glSomeFunction.arg<em>i</em></code> is the
-<em>i</em><sup>th</sup> argument, and
-<code>*call->typed.glSomeFunction.retn</code> is the return value. If
-the function is not known at compile time, then the
-arguments can be accessed via the <code>void</code> pointers
-<code>call->generic.args[<em>i</em>]</code> and
-<code>call->generic.retn</code>.
-These values can also be modified to change the arguments used or the
-value returned to the application, respectively.
-</p>
+        <p>
+        The callback should generally return <code>true</code>. Returning <code>false</code>
+        aborts any further processing of the call (including execution if the
+        <code>invoke</code> filter has not yet run). This can be useful if you
+        want to suppress a call, but if possible it is better to allow
+        execution and undo the effects afterwards so that later filters get a
+        chance to run.
+        </p>
+        <p>
+        The <em>data</em> element will likely change or go away in the near
+        future, so it will not be documented here.
+        </p>
+        <p>
+        Callbacks that handle multiple GL functions will need to know which GL
+        function was called; the function is found in
+        <code>call->generic.id</code>, but more useful is the group found in
+        <code>call->generic.group</code>. One can also get access to the
+        arguments: if the call is known to be <code>glSomeFunction</code>, then
+        <code>*call->typed.glSomeFunction.arg<em>i</em></code> is the
+        <em>i</em><sup>th</sup> argument, and
+        <code>*call->typed.glSomeFunction.retn</code> is the return value. If
+        the function is not known at compile time, then the
+        arguments can be accessed via the <code>void</code> pointers
+        <code>call->generic.args[<em>i</em>]</code> and
+        <code>call->generic.retn</code>.
+        These values can also be modified to change the arguments used or the
+        value returned to the application, respectively.
+        </p>
 
-<h3>Making GL calls</h3>
-<p>
-There are some issues to be aware of if you want your callbacks to
-themselves make calls to GL/GLX. Firstly, if you make the call in the
-obvious way, it will be intercepted in the same way as all other GL/GLX
-calls. There is protection against this, so everything will continue to
-work, but there will be a loss of performance. Instead, you should
-prefix the name of the function with <code>CALL_</code>. e.g.
-</p>
+        <h3>Making GL calls</h3>
+        <p>
+        There are some issues to be aware of if you want your callbacks to
+        themselves make calls to GL/GLX. Firstly, if you make the call in the
+        obvious way, it will be intercepted in the same way as all other GL/GLX
+        calls. There is protection against this, so everything will continue to
+        work, but there will be a loss of performance. Instead, you should
+        prefix the name of the function with <code>CALL_</code>. e.g.
+        </p>
 <pre>
 CALL_glClear(GL_COLOR_BUFFER_BIT);
 </pre>
-<p>
-If there is no current
-context, then you should not make any calls to OpenGL (GLX is okay
-though). In addition, almost all OpenGL calls, and context-switching
-GLX calls, are illegal between <code>glBegin</code> and
-<code>glEnd</code>. It is also illegal to switch contexts while in
-feedback or selection mode, although this is not well handled at the
-moment. Finally, remember that BuGLe aims to support OpenGL 1.1 and
-thus anything not in OpenGL 1.1 must be treated as an extension.
-</p>
-<p>
-To simplify matters, some utility functions are provided.
-</p>
-<ul>
-<li>For filter-set <em>foo</em> that makes calls to GL/GLX, one must
-call <code>bugle_register_filter_set_renders("<em>foo</em>")</code> in
-the library initialiser. This causes the filter-set to depend on the
-necessary utility filter-sets. In addition, for each filter
-<em>bar</em> that makes GL/GLX calls after the captured call is
-executed, one must call
-<code>bugle_register_filter_post_renders("<em>bar</em>")</code>. This inserts
-ordering dependencies to ensure that errors from the original call are
-not confused with errors generated by the inserted calls.</li>
-<li>Before attempting to make OpenGL calls, call
-<code>bugle_begin_internal_render()</code>. If it returns false, then
-it is not safe to render at this time. Otherwise, make your calls, then
-call <code>bugle_end_internal_render("<em>name</em>",
-<em>warn</em>)</code>. If <em>warn</em> is true and your calls
-generated any GL errors, then a warning will be written to standard
-error including <em>name</em> (which should be the name of the callback
-function).</li>
-<li>If you are intercepting a call that belongs to an extension, then
-it is safe to assume that the extension is present (if it isn't, then
-the app is at fault). Otherwise, you need to check for any extensions
-you use. Your filter-set must depend on <em>trackextensions</em>, and
-you must call
-<code>bugle_gl_has_extension(BUGLE_GL_EXT_some_extension)</code>
-to determine whether the extension is present (the defines for
-available extensions are in the generated file <code>glexts.h</code>).
-This is a relatively cheap operation, since the list of available
-extensions is parsed at context creation time rather than call
-time.</li>
-</ul>
+        <p>
+        If there is no current
+        context, then you should not make any calls to OpenGL (GLX is okay
+        though). In addition, almost all OpenGL calls, and context-switching
+        GLX calls, are illegal between <code>glBegin</code> and
+        <code>glEnd</code>. It is also illegal to switch contexts while in
+        feedback or selection mode, although this is not well handled at the
+        moment. Finally, remember that BuGLe aims to support OpenGL 1.1 and
+        thus anything not in OpenGL 1.1 must be treated as an extension.
+        </p>
+        <p>
+        To simplify matters, some utility functions are provided.
+        </p>
+        <ul>
+            <li>For filter-set <em>foo</em> that makes calls to GL/GLX, one must
+            call <code>bugle_register_filter_set_renders("<em>foo</em>")</code> in
+            the library initialiser. This causes the filter-set to depend on the
+            necessary utility filter-sets. In addition, for each filter
+            <em>bar</em> that makes GL/GLX calls after the captured call is
+            executed, one must call
+            <code>bugle_register_filter_post_renders("<em>bar</em>")</code>. This inserts
+            ordering dependencies to ensure that errors from the original call are
+            not confused with errors generated by the inserted calls.</li>
+            <li>Before attempting to make OpenGL calls, call
+            <code>bugle_begin_internal_render()</code>. If it returns false, then
+            it is not safe to render at this time. Otherwise, make your calls, then
+            call <code>bugle_end_internal_render("<em>name</em>",
+                <em>warn</em>)</code>. If <em>warn</em> is true and your calls
+            generated any GL errors, then a warning will be written to standard
+            error including <em>name</em> (which should be the name of the callback
+            function).</li>
+            <li>If you are intercepting a call that belongs to an extension, then
+            it is safe to assume that the extension is present (if it isn't, then
+            the app is at fault). Otherwise, you need to check for any extensions
+            you use. Your filter-set must depend on <em>trackextensions</em>, and
+            you must call
+            <code>bugle_gl_has_extension(BUGLE_GL_EXT_some_extension)</code>
+            to determine whether the extension is present (the defines for
+            available extensions are in the generated file <code>glexts.h</code>).
+            This is a relatively cheap operation, since the list of available
+            extensions is parsed at context creation time rather than call
+            time.</li>
+        </ul>
 
-<h3>Sharing symbols between libraries</h3>
-<p>
-Sometimes it is necessary to access variables or functions that reside
-in a different filter library. To get a <code>filter_set *</code>
-handle to the filter-set <em>foo</em>, call</p>
+        <h3>Sharing symbols between libraries</h3>
+        <p>
+        Sometimes it is necessary to access variables or functions that reside
+        in a different filter library. To get a <code>filter_set *</code>
+        handle to the filter-set <em>foo</em>, call</p>
 <pre>
 bugle_get_filter_set_handle("<em>foo</em>")
 </pre>
-<p>
-With a <code>filter_set *</code> handle, symbols (global variables and
-functions) are obtained with</p>
+        <p>
+        With a <code>filter_set *</code> handle, symbols (global variables and
+        functions) are obtained with</p>
 <pre>
 bugle_get_filter_set_symbol(<em>handle</em>, "<em>symbol</em>")
 </pre>
 
-<h3>State management</h3>
-<p>
-BuGLe is designed from the ground up to work with multiple contexts,
-and a good filter should as well. Part of this is recognising that a
-lot of things that you might want to store in global variables in fact
-needs a copy per context. BuGLe has a fairly generic method for
-associating state with various objects such as contexts, which is
-described in <a href="objects.html">objects.html</a>.</p>
+        <h3>State management</h3>
+        <p>
+        BuGLe is designed from the ground up to work with multiple contexts,
+        and a good filter should as well. Part of this is recognising that a
+        lot of things that you might want to store in global variables in fact
+        needs a copy per context. BuGLe has a fairly generic method for
+        associating state with various objects such as contexts, which is
+        described in <a href="objects.html">objects.html</a>.</p>
 
-<h3>Logging</h3>
-<p>
-BuGLe has a logging system that acts as a built-in filter-set. If you
-intend to do any logging, see the comments at the top of
-<code>src/log.h</code>.</p>
+        <h3>Logging</h3>
+        <p>
+        BuGLe has a logging system that acts as a built-in filter-set. If you
+        intend to do any logging, see the comments at the top of
+        <code>src/log.h</code>.</p>
 
-<h3>Conventions</h3>
-<ol>
-<li>If a filter named <em>filter</em> has only one callback, call it
-<code><em>filter</em>_callback</code>. If
-it has one for each of several functions, then call each
-<code><em>filter</em>_glSomeFunction</code>.</li>
-</ol>
+        <h3>Conventions</h3>
+        <ol>
+            <li>If a filter named <em>filter</em> has only one callback, call it
+            <code><em>filter</em>_callback</code>. If
+            it has one for each of several functions, then call each
+            <code><em>filter</em>_glSomeFunction</code>.</li>
+        </ol>
 
-</body>
+    </body>
 </html>

@@ -1,5 +1,5 @@
 /*  BuGLe: an OpenGL debugging tool
- *  Copyright (C) 2004, 2005  Bruce Merry
+ *  Copyright (C) 2004-2006  Bruce Merry
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -37,8 +37,8 @@ typedef struct
     struct filter_set_s *filter_set_handle;
 } callback_data;
 
-typedef bool (*filter_set_initialiser)(struct filter_set_s *);
-typedef void (*filter_set_destructor)(struct filter_set_s *);
+typedef bool (*filter_set_loader)(struct filter_set_s *);
+typedef void (*filter_set_unloader)(struct filter_set_s *);
 typedef void (*filter_set_activator)(struct filter_set_s *);
 typedef void (*filter_set_deactivator)(struct filter_set_s *);
 typedef bool (*filter_callback)(struct function_call_s *call, const callback_data *data);
@@ -50,6 +50,7 @@ typedef enum
     FILTER_SET_VARIABLE_UINT,
     FILTER_SET_VARIABLE_POSITIVE_INT,
     FILTER_SET_VARIABLE_STRING,
+    FILTER_SET_VARIABLE_KEY,
     FILTER_SET_VARIABLE_CUSTOM
 } filter_set_variable_type;
 
@@ -62,6 +63,7 @@ typedef struct filter_set_variable_info_s
      * bool: a bool *
      * string: pointer to char *, which will then own the memory.
      *         If the old value was non-NULL, it is freed.
+     * key: a xevent_key *
      * custom: pointer to whatever you like, even NULL. The callback
      *         is required in this case.
      */
@@ -89,24 +91,23 @@ typedef struct filter_set_s
     const char *name;
     const char *help;
     bugle_linked_list filters;
-    filter_set_initialiser init;
-    filter_set_destructor done;
+    filter_set_loader load;
+    filter_set_unloader unload;
     filter_set_activator activate;
     filter_set_deactivator deactivate;
     const filter_set_variable_info *variables;
     ptrdiff_t call_state_offset;
     lt_dlhandle dl_handle;
 
-    bool initialised;
-    bool enabled;
+    bool loaded;
     bool active;
 } filter_set;
 
 typedef struct
 {
     const char *name;
-    filter_set_initialiser init;
-    filter_set_destructor done;
+    filter_set_loader load;
+    filter_set_unloader unload;
     filter_set_activator activate;
     filter_set_deactivator deactivate;
     const filter_set_variable_info *variables; /* NULL-terminated array */
@@ -118,10 +119,12 @@ typedef struct
 
 void initialise_filters(void);
 bool filter_set_variable(filter_set *handle, const char *name, const char *text);
-void bugle_enable_filter_set(filter_set *handle);
-void bugle_disable_filter_set(filter_set *handle);
+void bugle_load_filter_set(filter_set *handle);
 void bugle_activate_filter_set(filter_set *handle);
 void bugle_deactivate_filter_set(filter_set *handle);
+void bugle_activate_filter_set_deferred(filter_set *handle);
+void bugle_deactivate_filter_set_deferred(filter_set *handle);
+void filter_compute_order(void); /* Called after all filtersets loaded to determine filter order */
 void run_filters(struct function_call_s *call);
 void bugle_filters_help(void);
 
@@ -135,7 +138,7 @@ void bugle_register_filter_set_depends(const char *base, const char *dep);
 void bugle_register_filter_depends(const char *after, const char *before);
 void *bugle_get_filter_set_call_state(struct function_call_s *call, filter_set *handle);
 filter_set *bugle_get_filter_set_handle(const char *name);
-bool bugle_filter_set_is_enabled(const filter_set *handle);
+bool bugle_filter_set_is_loaded(const filter_set *handle);
 bool bugle_filter_set_is_active(const filter_set *handle);
 void *bugle_get_filter_set_symbol(filter_set *handle, const char *name);
 

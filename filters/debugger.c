@@ -402,7 +402,7 @@ static void process_single_command(function_call *call)
 {
     uint32_t req, id, req_val;
     char *req_str, *resp_str;
-    bool enable;
+    bool activate;
     budgie_function func;
     filter_set *f;
 
@@ -453,9 +453,9 @@ static void process_single_command(function_call *call)
         gldb_protocol_send_code(out_pipe, id);
         gldb_protocol_send_code(out_pipe, 0);
         break;
-    case REQ_ENABLE_FILTERSET:
-    case REQ_DISABLE_FILTERSET:
-        enable = (req == REQ_ENABLE_FILTERSET);
+    case REQ_ACTIVATE_FILTERSET:
+    case REQ_DEACTIVATE_FILTERSET:
+        activate = (req == REQ_ACTIVATE_FILTERSET);
         gldb_protocol_recv_string(in_pipe, &req_str);
         f = bugle_get_filter_set_handle(req_str);
         if (!f)
@@ -467,7 +467,14 @@ static void process_single_command(function_call *call)
             gldb_protocol_send_string(out_pipe, resp_str);
             free(resp_str);
         }
-        else if (!bugle_filter_set_is_enabled(f))
+        else if (!strcmp(req_str, "debugger"))
+        {
+            gldb_protocol_send_code(out_pipe, RESP_ERROR);
+            gldb_protocol_send_code(out_pipe, id);
+            gldb_protocol_send_code(out_pipe, 0);
+            gldb_protocol_send_string(out_pipe, "Cannot activate or deactivate the debugger");
+        }
+        else if (!bugle_filter_set_is_loaded(f))
         {
             bugle_asprintf(&resp_str, "Filter-set %s is not loaded; it must be loaded at program start",
                            req_str);
@@ -477,10 +484,10 @@ static void process_single_command(function_call *call)
             gldb_protocol_send_string(out_pipe, resp_str);
             free(resp_str);
         }
-        else if (bugle_filter_set_is_active(f) == enable)
+        else if (bugle_filter_set_is_active(f) == activate)
         {
             bugle_asprintf(&resp_str, "Filter-set %s is already %s",
-                           req_str, enable ? "enabled" : "disabled");
+                           req_str, activate ? "active" : "inactive");
             gldb_protocol_send_code(out_pipe, RESP_ERROR);
             gldb_protocol_send_code(out_pipe, id);
             gldb_protocol_send_code(out_pipe, 0);
@@ -489,15 +496,15 @@ static void process_single_command(function_call *call)
         }
         else
         {
-            if (enable) bugle_activate_filter_set(f);
-            else bugle_deactivate_filter_set(f);
-            if (!bugle_filter_set_is_enabled(bugle_get_filter_set_handle("debugger")))
+            if (activate) bugle_activate_filter_set_deferred(f);
+            else bugle_deactivate_filter_set_deferred(f);
+            if (!bugle_filter_set_is_active(bugle_get_filter_set_handle("debugger")))
             {
                 gldb_protocol_send_code(out_pipe, RESP_ERROR);
                 gldb_protocol_send_code(out_pipe, id);
                 gldb_protocol_send_code(out_pipe, 0);
                 gldb_protocol_send_string(out_pipe, "Debugger was disabled; re-enabling");
-                bugle_enable_filter_set(bugle_get_filter_set_handle("debugger"));
+                bugle_activate_filter_set(bugle_get_filter_set_handle("debugger"));
             }
             else
             {

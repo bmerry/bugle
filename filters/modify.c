@@ -27,25 +27,82 @@
 
 /* Wireframe filter-set */
 
+static filter_set *wireframe_filterset;
+static bugle_object_view wireframe_view;
+
+typedef struct
+{
+    bool active; /* True if polygon mode has been adjusted */
+    GLenum polygon_mode[2];  /* The app polygon mode, for front and back */
+} wireframe_context;
+
 static void initialise_wireframe_context(const void *key, void *data)
 {
-    if (bugle_begin_internal_render())
+    wireframe_context *ctx;
+
+    ctx = (wireframe_context *) data;
+    ctx->active = false;
+    ctx->polygon_mode[0] = GL_FILL;
+    ctx->polygon_mode[1] = GL_FILL;
+
+    if (bugle_filter_set_is_active(wireframe_filterset)
+        && bugle_begin_internal_render())
     {
         CALL_glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+        ctx->active = true;
         bugle_end_internal_render("initialise_wireframe_context", true);
+    }
+}
+
+/* Handles on the fly activation and deactivation */
+static void wireframe_activation(bool active, wireframe_context *ctx)
+{
+    if (active && !ctx->active)
+    {
+        if (bugle_begin_internal_render())
+        {
+            CALL_glGetIntegerv(GL_POLYGON_MODE, ctx->polygon_mode);
+            CALL_glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+            ctx->active = true;
+            bugle_end_internal_render("wireframe_activation", true);
+        }
+    }
+    else if (!active && ctx->active)
+    {
+        if (bugle_begin_internal_render())
+        {
+            CALL_glPolygonMode(GL_FRONT, ctx->polygon_mode[0]);
+            CALL_glPolygonMode(GL_BACK, ctx->polygon_mode[1]);
+            ctx->active = false;
+            bugle_end_internal_render("wireframe_activation", true);
+        }
     }
 }
 
 static bool wireframe_glXSwapBuffers(function_call *call, const callback_data *data)
 {
-    CALL_glClear(GL_COLOR_BUFFER_BIT); /* hopefully bypass z-trick */
+    wireframe_context *ctx;
+    ctx = (wireframe_context *) bugle_object_get_current_data(&bugle_context_class, wireframe_view);
+
+    if (bugle_filter_set_is_active(data->filter_set_handle))
+    {
+        CALL_glClear(GL_COLOR_BUFFER_BIT); /* hopefully bypass z-trick */
+        wireframe_activation(true, ctx);
+    }
+    else
+        wireframe_activation(false, ctx);
     return true;
 }
 
 static bool wireframe_glPolygonMode(function_call *call, const callback_data *data)
 {
+    wireframe_context *ctx;
+    ctx = (wireframe_context *) bugle_object_get_current_data(&bugle_context_class, wireframe_view);
+
     if (bugle_begin_internal_render())
     {
+        ctx->active = true;
+        CALL_glGetIntegerv(GL_POLYGON_MODE, ctx->polygon_mode);
         CALL_glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
         bugle_end_internal_render("wireframe_glPolygonMode", true);
     }
@@ -54,6 +111,7 @@ static bool wireframe_glPolygonMode(function_call *call, const callback_data *da
 
 static bool wireframe_glEnable(function_call *call, const callback_data *data)
 {
+    /* FIXME: need to track this state to restore it on deactivation */
     switch (*call->typed.glEnable.arg0)
     {
     case GL_TEXTURE_1D:
@@ -78,14 +136,15 @@ static bool initialise_wireframe(filter_set *handle)
 {
     filter *f;
 
+    wireframe_filterset = handle;
     f = bugle_register_filter(handle, "wireframe");
-    bugle_register_filter_catches(f, GROUP_glXSwapBuffers, false, wireframe_glXSwapBuffers);
+    bugle_register_filter_catches(f, GROUP_glXSwapBuffers, true, wireframe_glXSwapBuffers);
     bugle_register_filter_catches(f, GROUP_glPolygonMode, false, wireframe_glPolygonMode);
     bugle_register_filter_catches(f, GROUP_glEnable, false, wireframe_glEnable);
     bugle_register_filter_depends("wireframe", "invoke");
     bugle_register_filter_post_renders("wireframe");
-    bugle_object_class_register(&bugle_context_class, initialise_wireframe_context,
-                                NULL, 0);
+    wireframe_view = bugle_object_class_register(&bugle_context_class, initialise_wireframe_context,
+                                                 NULL, sizeof(wireframe_context));
     return true;
 }
 

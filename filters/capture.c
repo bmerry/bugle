@@ -975,9 +975,9 @@ void bugle_initialise_filter_library(void)
         { "bitrate", "video bitrate (bytes/s) [7.5MB/s]", FILTER_SET_VARIABLE_POSITIVE_INT, &video_bitrate, NULL },
         { "allframes", "capture every frame, ignoring framerate [no]", FILTER_SET_VARIABLE_BOOL, &video_sample_all, NULL },
         { "lag", "length of capture pipeline (set higher for better throughput) [1]", FILTER_SET_VARIABLE_POSITIVE_INT, &video_lag, NULL },
-        { "key_screenshot", "key to take a screenshot [C-A-S-S]", FILTER_SET_VARIABLE_CUSTOM, &key_screenshot, bugle_xevent_key_assign },
-        { "key_start", "key to start video encoding [autostart]", FILTER_SET_VARIABLE_CUSTOM, &key_video_start, bugle_xevent_key_assign },
-        { "key_stop", "key to end video recording [C-A-S-E]", FILTER_SET_VARIABLE_CUSTOM, &key_video_stop, bugle_xevent_key_assign },
+        { "key_screenshot", "key to take a screenshot [C-A-S-S]", FILTER_SET_VARIABLE_KEY, &key_screenshot, NULL },
+        { "key_start", "key to start video encoding [autostart]", FILTER_SET_VARIABLE_KEY, &key_video_start, NULL },
+        { "key_stop", "key to end video recording [C-A-S-E]", FILTER_SET_VARIABLE_KEY, &key_video_stop, NULL },
         { NULL, NULL, 0, NULL, NULL }
     };
 
@@ -1008,7 +1008,7 @@ void bugle_initialise_filter_library(void)
     static const filter_set_variable_info epswire_variables[] =
     {
         { "filename", "file to write to [/tmp/bugle.eps]", FILTER_SET_VARIABLE_STRING, &epswire_filename, NULL },
-        { "key_epswire", "key to trigger EPS snapshot [C-A-S-W]", FILTER_SET_VARIABLE_CUSTOM, &key_epswire, bugle_xevent_key_assign },
+        { "key_epswire", "key to trigger EPS snapshot [C-A-S-W]", FILTER_SET_VARIABLE_KEY, &key_epswire },
         { NULL, NULL, 0, NULL, NULL }
     };
 

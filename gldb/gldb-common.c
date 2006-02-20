@@ -500,7 +500,7 @@ void gldb_send_quit(uint32_t id)
 void gldb_send_enable_disable(uint32_t id, const char *filterset, bool enable)
 {
     assert(status != GLDB_STATUS_DEAD);
-    gldb_protocol_send_code(lib_out, enable ? REQ_ENABLE_FILTERSET : REQ_DISABLE_FILTERSET);
+    gldb_protocol_send_code(lib_out, enable ? REQ_ACTIVATE_FILTERSET : REQ_DEACTIVATE_FILTERSET);
     gldb_protocol_send_code(lib_out, id);
     gldb_protocol_send_string(lib_out, filterset);
 }
