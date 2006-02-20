@@ -73,8 +73,6 @@ static char *video_codec = NULL;
 static bool video_sample_all = false;
 static long video_bitrate = 7500000;
 static long video_lag = 1;     /* latency between readpixels and encoding */
-static xevent_key key_video_start = { NoSymbol, 0 };
-static xevent_key key_video_stop = { XK_E, ControlMask | ShiftMask | Mod1Mask };
 
 /* General data */
 static int video_cur;  /* index of the next circular queue index to capture into */
@@ -84,7 +82,7 @@ static screenshot_data *video_data;
 static bool keypress_screenshot = false;
 /* Video data */
 static FILE *video_pipe = NULL;  /* Used for ppmtoy4m */
-static bool video_start = false, video_done = false;
+static bool video_done = false;
 static double video_frame_time = 0.0;
 static double video_frame_step = 1.0 / 30.0; /* FIXME: depends on frame rate */
 
@@ -600,7 +598,7 @@ bool screenshot_callback(function_call *call, const callback_data *data)
 
     if (video)
     {
-        if (video_start && !video_done)
+        if (!video_done)
             screenshot_video(frameno);
     }
     else if (keypress_screenshot)
@@ -625,7 +623,6 @@ static bool initialise_screenshot(filter_set *handle)
     video_first = true;
     if (video)
     {
-        video_start = false;
         video_done = false; /* becomes true if we resize */
         if (!video_filename)
             video_filename = bugle_strdup("/tmp/bugle.avi");
@@ -641,11 +638,6 @@ static bool initialise_screenshot(filter_set *handle)
         /* Note: we only initialise libavcodec on the first frame, because
          * we need the frame size.
          */
-        if (key_video_start.keysym != NoSymbol)
-            bugle_register_xevent_key(&key_video_start, NULL, bugle_xevent_key_callback_flag, &video_start);
-        else
-            video_start = true;
-        bugle_register_xevent_key(&key_video_stop, NULL, bugle_xevent_key_callback_flag, &video_done);
     }
     else
     {
@@ -976,8 +968,6 @@ void bugle_initialise_filter_library(void)
         { "allframes", "capture every frame, ignoring framerate [no]", FILTER_SET_VARIABLE_BOOL, &video_sample_all, NULL },
         { "lag", "length of capture pipeline (set higher for better throughput) [1]", FILTER_SET_VARIABLE_POSITIVE_INT, &video_lag, NULL },
         { "key_screenshot", "key to take a screenshot [C-A-S-S]", FILTER_SET_VARIABLE_KEY, &key_screenshot, NULL },
-        { "key_start", "key to start video encoding [autostart]", FILTER_SET_VARIABLE_KEY, &key_video_start, NULL },
-        { "key_stop", "key to end video recording [C-A-S-E]", FILTER_SET_VARIABLE_KEY, &key_video_stop, NULL },
         { NULL, NULL, 0, NULL, NULL }
     };
 

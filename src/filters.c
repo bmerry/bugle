@@ -339,7 +339,7 @@ static void bugle_deactivate_filter_set_nolock(filter_set *handle)
     }
 }
 
-static void load_filter_set_r(filter_set *handle)
+static void load_filter_set_r(filter_set *handle, bool activate)
 {
     bugle_list_node *i, *j;
     filter_set *s;
@@ -363,7 +363,7 @@ static void load_filter_set_r(filter_set *handle)
                             ((const char *) bugle_list_data(j)));
                     exit(1);
                 }
-                load_filter_set_r(s);
+                load_filter_set_r(s, activate);
             }
         }
         /* Initialisation */
@@ -381,15 +381,17 @@ static void load_filter_set_r(filter_set *handle)
             bugle_list_append(&loaded_filters, f);
         }
 
-        /* FIXME: allow a filter-set to start out inactive */
-        bugle_activate_filter_set_nolock(handle);
-        active_dirty = true;
+        if (activate)
+        {
+            bugle_activate_filter_set_nolock(handle);
+            active_dirty = true;
+        }
     }
 }
 
-void bugle_load_filter_set(filter_set *handle)
+void bugle_load_filter_set(filter_set *handle, bool activate)
 {
-    load_filter_set_r(handle);
+    load_filter_set_r(handle, activate);
 }
 
 void bugle_activate_filter_set(filter_set *handle)

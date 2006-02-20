@@ -119,7 +119,7 @@ typedef struct
 
 void initialise_filters(void);
 bool filter_set_variable(filter_set *handle, const char *name, const char *text);
-void bugle_load_filter_set(filter_set *handle);
+void bugle_load_filter_set(filter_set *handle, bool activate);
 void bugle_activate_filter_set(filter_set *handle);
 void bugle_deactivate_filter_set(filter_set *handle);
 void bugle_activate_filter_set_deferred(filter_set *handle);

@@ -47,6 +47,8 @@ extern int yylex(void);
 
 %token <str> CHAIN
 %token <str> FILTERSET
+%token <str> ACTIVE
+%token <str> INACTIVE
 %token <str> STRING
 %token <str> WORD
 
@@ -55,6 +57,9 @@ extern int yylex(void);
 %type <chain> chainitem
 %type <list> chainspec
 %type <filterset> filtersetitem
+%type <filterset> filtersetoptions
+%type <filterset> filtersetactive
+%type <filterset> filtersetallocator
 %type <list> filtersetspec
 %type <variable> variableitem
 
@@ -75,16 +80,46 @@ chainspec:	/* empty */ { bugle_list_init(&$$, false); }
 		| chainspec filtersetitem { bugle_list_append(&$1, $2); $$ = $1; }
 ;
 
-filtersetitem:	FILTERSET WORD {
-			$$ = bugle_malloc(sizeof(config_filterset));
+filtersetitem:	FILTERSET WORD filtersetoptions {
+			$$ = $3;
                         $$->name = $2;
                         bugle_list_init(&$$->variables, false);
 		}
-		| FILTERSET WORD '{' filtersetspec '}' {
-			$$ = bugle_malloc(sizeof(config_filterset));
+		| FILTERSET WORD filtersetoptions '{' filtersetspec '}' {
+			$$ = $3;
                         $$->name = $2;
-                        $$->variables = $4;
+                        $$->variables = $5;
                 }
+;
+
+filtersetoptions: filtersetallocator {
+			$$ = $1;
+		}
+                | string filtersetactive {
+                	$$ = $2;
+                        $$->key = $1;
+                }
+;
+
+filtersetactive: filtersetallocator {
+			$$ = $1;
+		}
+                | ACTIVE filtersetallocator {
+                	$$ = $2;
+                }
+                | INACTIVE filtersetallocator {
+                	$$ = $2;
+                        $$->active = 0;
+                }
+;
+
+filtersetallocator: /* empty */ {
+                	$$ = bugle_malloc(sizeof(config_filterset));
+                        $$->name = NULL;
+                        $$->key = NULL;
+                        $$->active = 1;
+                        bugle_list_init(&$$->variables, false);
+		}
 ;
 
 filtersetspec:	/* empty */ { bugle_list_init(&$$, false); }
@@ -135,6 +170,7 @@ static void destroy_filterset(config_filterset *filterset)
 {
     bugle_list_node *i;
     free(filterset->name);
+    if (filterset->key) free(filterset->key);
     for (i = bugle_list_head(&filterset->variables); i; i = bugle_list_next(i))
         destroy_variable((config_variable *) bugle_list_data(i));
     bugle_list_clear(&filterset->variables);

@@ -40,6 +40,17 @@
 extern FILE *yyin;
 extern int yyparse(void);
 
+static void toggle_filterset(const xevent_key *key, void *arg)
+{
+    filter_set *set;
+
+    set = (filter_set *) arg;
+    if (bugle_filter_set_is_active(set))
+        bugle_deactivate_filter_set(set);
+    else
+        bugle_activate_filter_set(set);
+}
+
 static void load_config(void)
 {
     const char *home;
@@ -51,6 +62,7 @@ static void load_config(void)
     filter_set *f;
     bugle_list_node *i, *j;
     bool debugging;
+    xevent_key key;
 
     if (getenv("BUGLE_FILTERS"))
         config = bugle_strdup(getenv("BUGLE_FILTERS"));
@@ -115,7 +127,18 @@ static void load_config(void)
                     {
                         set = (const config_filterset *) bugle_list_data(i);
                         f = bugle_get_filter_set_handle(set->name);
-                        if (f) bugle_load_filter_set(f);
+                        if (f)
+                        {
+                            bugle_load_filter_set(f, set->active);
+                            if (set->key)
+                            {
+                                if (!bugle_xevent_key_lookup(set->key, &key))
+                                    fprintf(stderr, "warning: ignoring unknown toggle key %s for filter-set %s\n",
+                                            set->key, set->name);
+                                else
+                                    bugle_register_xevent_key(&key, NULL, toggle_filterset, f);
+                            }
+                        }
                     }
                 }
                 bugle_config_destroy();
@@ -136,7 +159,7 @@ static void load_config(void)
         fputs("could not find the 'invoke' filter-set; aborting\n", stderr);
         exit(1);
     }
-    bugle_load_filter_set(f);
+    bugle_load_filter_set(f, true);
     /* Auto-load the debugger filter-set if using the debugger */
     if (debugging)
     {
@@ -146,7 +169,7 @@ static void load_config(void)
             fputs("could not find the 'debugger' filter-set; aborting\n", stderr);
             exit(1);
         }
-        bugle_load_filter_set(f);
+        bugle_load_filter_set(f, true);
     }
 }
 

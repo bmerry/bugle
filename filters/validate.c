@@ -81,7 +81,7 @@ static bool error_callback(function_call *call, const callback_data *data)
             if (stored_error && !*stored_error)
                 *stored_error = error;
             *(GLenum *) data->call_data = error;
-            if (trap)
+            if (trap && bugle_filter_set_is_active(data->filter_set_handle))
             {
                 fflush(stderr);
                 /* SIGTRAP is technically a BSD extension, and various
@@ -106,7 +106,7 @@ static bool initialise_error(filter_set *handle)
 
     error_handle = handle;
     f = bugle_register_filter(handle, "error");
-    bugle_register_filter_catches_all(f, false, error_callback);
+    bugle_register_filter_catches_all(f, true, error_callback);
     bugle_register_filter_depends("error", "invoke");
     /* We don't call filter_post_renders, because that would make the
      * error filterset depend on itself.

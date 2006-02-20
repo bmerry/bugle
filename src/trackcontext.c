@@ -166,11 +166,11 @@ static bool initialise_trackcontext(filter_set *handle)
 
     f = bugle_register_filter(handle, "trackcontext");
     bugle_register_filter_depends("trackcontext", "invoke");
-    bugle_register_filter_catches(f, GROUP_glXMakeCurrent, false, trackcontext_callback);
-    bugle_register_filter_catches(f, GROUP_glXCreateContext, false, trackcontext_newcontext);
+    bugle_register_filter_catches(f, GROUP_glXMakeCurrent, true, trackcontext_callback);
+    bugle_register_filter_catches(f, GROUP_glXCreateContext, true, trackcontext_newcontext);
 #ifdef GLX_VERSION_1_3
-    bugle_register_filter_catches(f, GROUP_glXMakeContextCurrent, false, trackcontext_callback);
-    bugle_register_filter_catches(f, GROUP_glXCreateNewContext, false, trackcontext_newcontext);
+    bugle_register_filter_catches(f, GROUP_glXMakeContextCurrent, true, trackcontext_callback);
+    bugle_register_filter_catches(f, GROUP_glXCreateNewContext, true, trackcontext_newcontext);
 #endif
     trackcontext_view = bugle_object_class_register(&bugle_context_class,
                                                     NULL,

@@ -70,7 +70,9 @@ static void clear_string(void)
 
 chain		{ return CHAIN; }
 filterset	{ return FILTERSET; }
-[A-Za-z_]+	{ yylval.str = bugle_strdup(yytext); return WORD; }
+active          { return ACTIVE; }
+inactive        { return INACTIVE; }
+[A-Za-z0-9_-]+	{ yylval.str = bugle_strdup(yytext); return WORD; }
 \"		{ BEGIN(STRING_MODE); }
 #.*$		/* Do nothing: eats comments */
 "{"|"}"		{ return yytext[0]; }

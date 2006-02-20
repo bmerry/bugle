@@ -34,6 +34,8 @@ typedef struct
 {
     char *name;
     bugle_linked_list variables;
+    char *key;
+    int active;
 } config_filterset;
 
 typedef struct

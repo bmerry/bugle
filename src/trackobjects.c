@@ -461,46 +461,46 @@ static bool initialise_trackobjects(filter_set *handle)
 
     f = bugle_register_filter(handle, "trackobjects_pre");
 #ifdef GL_ARB_shader_objects
-    bugle_register_filter_catches(f, GROUP_glDeleteObjectARB, false, trackobjects_pre_glDeleteObjectARB);
-    bugle_register_filter_catches(f, GROUP_glUseProgramObjectARB, false, trackobjects_pre_glUseProgramObjectARB);
-    bugle_register_filter_catches(f, GROUP_glDetachObjectARB, false, trackobjects_pre_glDetachObjectARB);
+    bugle_register_filter_catches(f, GROUP_glDeleteObjectARB, true, trackobjects_pre_glDeleteObjectARB);
+    bugle_register_filter_catches(f, GROUP_glUseProgramObjectARB, true, trackobjects_pre_glUseProgramObjectARB);
+    bugle_register_filter_catches(f, GROUP_glDetachObjectARB, true, trackobjects_pre_glDetachObjectARB);
 #endif
 #ifdef GL_VERSION_2_0
-    bugle_register_filter_catches(f, GROUP_glDeleteShader, false, trackobjects_pre_glDeleteShader);
-    bugle_register_filter_catches(f, GROUP_glDeleteProgram, false, trackobjects_pre_glDeleteProgram);
+    bugle_register_filter_catches(f, GROUP_glDeleteShader, true, trackobjects_pre_glDeleteShader);
+    bugle_register_filter_catches(f, GROUP_glDeleteProgram, true, trackobjects_pre_glDeleteProgram);
 #endif
 
     f = bugle_register_filter(handle, "trackobjects");
-    bugle_register_filter_catches(f, GROUP_glBindTexture, false, trackobjects_glBindTexture);
-    bugle_register_filter_catches(f, GROUP_glDeleteTextures, false, trackobjects_glDeleteTextures);
+    bugle_register_filter_catches(f, GROUP_glBindTexture, true, trackobjects_glBindTexture);
+    bugle_register_filter_catches(f, GROUP_glDeleteTextures, true, trackobjects_glDeleteTextures);
 #ifdef GL_ARB_vertex_buffer_object
-    bugle_register_filter_catches(f, GROUP_glBindBufferARB, false, trackobjects_glBindBuffer);
-    bugle_register_filter_catches(f, GROUP_glDeleteBuffersARB, false, trackobjects_glDeleteBuffers);
+    bugle_register_filter_catches(f, GROUP_glBindBufferARB, true, trackobjects_glBindBuffer);
+    bugle_register_filter_catches(f, GROUP_glDeleteBuffersARB, true, trackobjects_glDeleteBuffers);
 #endif
 #ifdef GL_ARB_occlusion_query
-    bugle_register_filter_catches(f, GROUP_glBeginQueryARB, false, trackobjects_glBeginQuery);
-    bugle_register_filter_catches(f, GROUP_glDeleteQueriesARB, false, trackobjects_glDeleteQueries);
+    bugle_register_filter_catches(f, GROUP_glBeginQueryARB, true, trackobjects_glBeginQuery);
+    bugle_register_filter_catches(f, GROUP_glDeleteQueriesARB, true, trackobjects_glDeleteQueries);
 #endif
 #if defined(GL_ARB_vertex_program) || defined(GL_ARB_fragment_program)
-    bugle_register_filter_catches(f, GROUP_glBindProgramARB, false, trackobjects_glBindProgramARB);
-    bugle_register_filter_catches(f, GROUP_glDeleteProgramsARB, false, trackobjects_glDeleteProgramsARB);
+    bugle_register_filter_catches(f, GROUP_glBindProgramARB, true, trackobjects_glBindProgramARB);
+    bugle_register_filter_catches(f, GROUP_glDeleteProgramsARB, true, trackobjects_glDeleteProgramsARB);
 #endif
 #ifdef GL_ARB_shader_objects
-    bugle_register_filter_catches(f, GROUP_glCreateShaderObjectARB, false, trackobjects_glCreateShaderObjectARB);
-    bugle_register_filter_catches(f, GROUP_glCreateProgramObjectARB, false, trackobjects_glCreateProgramObjectARB);
-    bugle_register_filter_catches(f, GROUP_glDeleteObjectARB, false, trackobjects_checks);
-    bugle_register_filter_catches(f, GROUP_glUseProgramObjectARB, false, trackobjects_checks);
-    bugle_register_filter_catches(f, GROUP_glDetachObjectARB, false, trackobjects_checks);
+    bugle_register_filter_catches(f, GROUP_glCreateShaderObjectARB, true, trackobjects_glCreateShaderObjectARB);
+    bugle_register_filter_catches(f, GROUP_glCreateProgramObjectARB, true, trackobjects_glCreateProgramObjectARB);
+    bugle_register_filter_catches(f, GROUP_glDeleteObjectARB, true, trackobjects_checks);
+    bugle_register_filter_catches(f, GROUP_glUseProgramObjectARB, true, trackobjects_checks);
+    bugle_register_filter_catches(f, GROUP_glDetachObjectARB, true, trackobjects_checks);
 #endif
 #ifdef GL_VERSION_2_0
-    bugle_register_filter_catches(f, GROUP_glDeleteShader, false, trackobjects_checks);
-    bugle_register_filter_catches(f, GROUP_glDeleteProgram, false, trackobjects_checks);
+    bugle_register_filter_catches(f, GROUP_glDeleteShader, true, trackobjects_checks);
+    bugle_register_filter_catches(f, GROUP_glDeleteProgram, true, trackobjects_checks);
 #endif
 #ifdef GL_EXT_framebuffer_object
-    bugle_register_filter_catches(f, GROUP_glBindRenderbufferEXT, false, trackobjects_glBindRenderbuffer);
-    bugle_register_filter_catches(f, GROUP_glDeleteRenderbuffersEXT, false, trackobjects_glDeleteRenderbuffers);
-    bugle_register_filter_catches(f, GROUP_glBindFramebufferEXT, false, trackobjects_glBindFramebuffer);
-    bugle_register_filter_catches(f, GROUP_glDeleteFramebuffersEXT, false, trackobjects_glDeleteFramebuffers);
+    bugle_register_filter_catches(f, GROUP_glBindRenderbufferEXT, true, trackobjects_glBindRenderbuffer);
+    bugle_register_filter_catches(f, GROUP_glDeleteRenderbuffersEXT, true, trackobjects_glDeleteRenderbuffers);
+    bugle_register_filter_catches(f, GROUP_glBindFramebufferEXT, true, trackobjects_glBindFramebuffer);
+    bugle_register_filter_catches(f, GROUP_glDeleteFramebuffersEXT, true, trackobjects_glDeleteFramebuffers);
 #endif
     bugle_register_filter_depends("trackobjects", "invoke");
     bugle_register_filter_depends("invoke", "trackobjects_pre");

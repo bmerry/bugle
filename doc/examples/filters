@@ -14,7 +14,7 @@ chain trace
     filterset showerror
     filterset log
     {
-    	filename "bugle.log"
+    	filename "/tmp/bugle.log"
         # flush "yes"
     }
 }
@@ -64,10 +64,12 @@ chain screenshot
 # Captures every frame into a video file.
 chain video
 {
-    filterset screenshot
+    # Press C-V to start and to stop recording. By removing the "inactive"
+    # tag, recording will start immediately.
+    filterset screenshot C-V inactive
     {
         video "yes"
-        filename "bugle.avi"
+        filename "/tmp/bugle.avi"
 
         # You can in theory use any codec supported by ffmpeg
         codec "mpeg4"
@@ -80,13 +82,6 @@ chain video
         # line to instead capture every frame exactly once to the
         # output.
         # allframes "yes"
-
-        # By default, encoding starts with the first frame and ends
-        # when the framebuffer size changes or at app shutdown. Setting
-        # a start key causes recording to start only when the key is
-        # pressed.
-        # key_start "C-F11"
-        # key_stop "C-F12"
 
         # Control the encoding latency. A higher latency may give
         # better throughput, at the expense of more memory.
@@ -133,6 +128,6 @@ chain crash
 chain validate
 {
     filterset checks
-    filterset errors
+    filterset showerrors
     filterset log
 }
