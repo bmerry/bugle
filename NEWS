@@ -1,14 +1,23 @@
 This release adds code to intercept keypresses from the application.
 Screenshots are now taken by keypress rather than on every frame, and
-it is possible to manually start and stop video recording (particularly
-useful if the framebuffer is resized before starting, as a resize
-normally terminates encoding).
+it is possible to manually start and stop filter-sets such as video
+recording (particularly useful if the framebuffer is resized before
+starting, as a resize normally terminates encoding) and wireframe. See
+the manual page for details.
+
+gl2ps, a library to create Postscript and similar files from the
+feedback buffer, has been incorporated, allowing one to create vector
+graphic screenshots. This is handled by the 'eps' filterset, although it
+actually supports PS, PDF and even SVG). Of course, this has the usual
+limitations of the feedback buffer (no per-pixel effects), so don't
+expect to capture Doom 3, but it works beautifully for glxgears.
 
 There are also some bugfixes, and in particular GTK+ 2.8 and pre-release
 versions of ffmpeg should now be better supported.
 
-WARNING: the options to the screenshot filter-set have changed. You
-will need to update your ~/.bugle/filters file. Refer to the example in
+WARNING: the options to the screenshot filter-set have changed, and the
+epswire filter-set has been replaced by the eps filter-set. You will
+need to update your ~/.bugle/filters file. Refer to the example in
 doc/examples/filters for a sample. I've removed the option to set a
 start frame for video capture (since you can now press a key to start).
 If you need the old behaviour let me know and I can restore it.

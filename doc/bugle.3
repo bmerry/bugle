@@ -26,8 +26,8 @@ The
 .B BUGLE_CHAIN
 environment variable specifies a
 .IR "filter-set chain" ,
-which is simply a collection of filter-sets. Chains are defined in the
-configuration file (see
+which is simply a collection of filter-sets with options. Chains are
+defined in the configuration file (see
 .BR CONFIGURATION ).
 .SH "FILTER-SETS"
 Several of the filter-sets take optional arguments. These are specified
@@ -121,10 +121,11 @@ to 1. The variable
 controls the video codec. See the example configuration file for
 documentation of other options.
 .TP
-.B epswire
+.B eps
 This is similar to the
 .B screenshot
-filter-set, but captures a wireframe as an EPS file.
+filter-set, but captures the scene as an EPS/PS/PDF/SVG file using 
+.BR gl2ps .
 .TP
 .B unwindstack
 This filter-set is a bit of a hack, and may not work reliably on all
@@ -186,28 +187,51 @@ unless you are using
 
 The file is text-based. Comments begin with a
 .B "#"
-and continue to the end of the line. Strings must be quoted with
+and continue to the end of the line. Strings should be quoted with
 double-quotes, and backslash acts as an escape character in the usual
 way (including escaping of newlines). Other white-space is ignored.
 
-The file contains filter-set options, filter-sets, and chains, each
-nested inside the previous one. The syntax is most easily demonstrated
-with an example:
+Each chain is specified as
 
 .nf
-    chain trace
-    {
-        filterset log
-        {
-            filename "bugle.log"
-            flush yes
-        }
-        filterset showerror
-    }
+\fB    chain\fI chain
+\fB    {
+\fI        filter-set
+\fI        filter-set
+\fR        .
+\fR        .
+\fR        .
+\fB    }\fR
 .fi
 
-Note that braces around sets of options are optional, while the braces
-around chains are not. Boolean options may be specified as
+Filtersets are specified as
+
+.nf
+\fB    filterset\fI filterset\fB [\fIkey\fB [inactive]]\fR
+\fB    {
+\fI        option value
+\fI        option value
+\fR        .
+\fR        .
+\fR        .
+\fB    }\fR
+.fi
+
+The
+.I key
+may be used to toggle the filter-set at run-time (not all filter-sets
+support this yet, and even those that do will not always work). Key
+names are based on X KeySyms (see
+.B "<X11/keysymdefs.h>"
+for a list). They may also be prefixed with
+.BR "C-" ,
+.BR "A-" ,
+and/or
+.B "S-"
+to indicate that the key must be combined with Ctrl, Alt or Shift.
+
+If you don't need to specify any options, it is also legal to specify
+only the first line. Boolean options may be specified as
 .BR yes/no ,
 as
 .BR true/false ,

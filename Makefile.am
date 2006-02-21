@@ -141,7 +141,7 @@ filters_debugger_la_SOURCES = filters/debugger.c
 filters_debugger_la_LDFLAGS = -thread-safe -module -avoid-version -export-dynamic $(SYMBOLFLAGS)
 filters_stats_la_SOURCES = filters/stats.c
 filters_stats_la_LDFLAGS = -thread-safe -module -avoid-version -export-dynamic $(SYMBOLFLAGS)
-filters_capture_la_SOURCES = filters/capture.c
+filters_capture_la_SOURCES = filters/capture.c gl2ps/gl2ps.c gl2ps/gl2ps.h
 filters_capture_la_LIBADD = $(AVCODEC_LIBS)
 filters_capture_la_LDFLAGS = -thread-safe -module -avoid-version -export-dynamic $(SYMBOLFLAGS)
 
@@ -180,6 +180,8 @@ EXTRA_DIST = gl.bc.in $(BCFILES) src/data/gl.c src/data/overrides.h \
 	doc/filters.html doc/objects.html doc/locks.txt \
         doc/protocol.txt doc/examples/filters doc/extensions.txt \
 	glee/readme.txt \
+	gl2ps/TODO gl2ps/COPYING.GL2PS gl2ps/COPYING.LGPL gl2ps/gl2ps.pdf \
+	gl2ps/gl2psTestSimple.c gl2ps/gl2psTest.c \
 	tests/filters
 
 # Note: automake ought to clean the various files in the .libs directories,

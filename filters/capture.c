@@ -34,6 +34,7 @@
 #include "src/glexts.h"
 #include "src/tracker.h"
 #include "src/xevent.h"
+#include "gl2ps/gl2ps.h"
 #include "common/hashtable.h"
 #include "common/safemem.h"
 #include "common/bool.h"
@@ -755,205 +756,160 @@ typedef struct
 {
     bool capture;            /* Set to true when in feedback mode */
     size_t frame;
-    GLfloat *feedback;
-    GLsizei feedback_size;   /* number of GLfloats, not bytes */
-} epswire_struct;
+    FILE *stream;
+} eps_struct;
 
-static bugle_object_view epswire_view;
-static bool keypress_epswire = false;
-static xevent_key key_epswire = { XK_W, ControlMask | ShiftMask | Mod1Mask };
-static char *epswire_filename = "/tmp/bugle.eps";
+static bugle_object_view eps_view;
+static bool keypress_eps = false;
+static xevent_key key_eps = { XK_W, ControlMask | ShiftMask | Mod1Mask };
+static char *eps_filename = NULL;
+static char *eps_title = NULL;
+static bool eps_bsp = false;
+static long eps_feedback_size = 0x100000;
 
-static void initialise_epswire_context(const void *key, void *data)
+static void initialise_eps_context(const void *key, void *data)
 {
-    epswire_struct *d = (epswire_struct *) data;
+    eps_struct *d;
+
+    d = (eps_struct *) data;
     d->frame = 0;
-    d->feedback_size = 1 << 20; /* 1 MB */
-    d->feedback = bugle_malloc(d->feedback_size * sizeof(GLfloat));
+    d->stream = NULL;
 }
 
-static void epswire_adjustboundingbox(GLfloat *p,
-                                      GLfloat *x1, GLfloat *y1,
-                                      GLfloat *x2, GLfloat *y2)
+static bool eps_glXSwapBuffers(function_call *call, const callback_data *data)
 {
-    if (p[0] < *x1) *x1 = p[0];
-    if (p[0] > *x2) *x2 = p[0];
-    if (p[1] < *y1) *y1 = p[1];
-    if (p[1] > *y2) *y2 = p[1];
-}
-
-static void epswire_boundingbox(GLfloat *buffer, GLint entries,
-                                GLfloat *x1, GLfloat *y1,
-                                GLfloat *x2, GLfloat *y2)
-{
-    GLint pos, i, n;
-    GLfloat coord[2];
-    GLenum token;
-    *x1 = 1e20;
-    *y1 = 1e20;
-    *x2 = 0.0f;
-    *y2 = 0.0f;
-
-    pos = 0;
-    while (pos < entries)
-    {
-        token = (GLenum) buffer[pos++];
-        switch (token)
-        {
-        case GL_PASS_THROUGH_TOKEN:
-            pos++;
-            break;
-        case GL_POINT_TOKEN:
-        case GL_BITMAP_TOKEN:
-        case GL_DRAW_PIXEL_TOKEN:
-        case GL_COPY_PIXEL_TOKEN:
-            pos += 2;
-            break;
-        case GL_LINE_TOKEN:
-        case GL_LINE_RESET_TOKEN:
-            for (i = 0; i < 2; i++)
-            {
-                coord[0] = buffer[pos++];
-                coord[1] = buffer[pos++];
-                epswire_adjustboundingbox(coord, x1, y1, x2, y2);
-            }
-            break;
-        case GL_POLYGON_TOKEN:
-            n = (GLint) buffer[pos++];
-            for (i = 0; i < n; i++)
-            {
-                coord[0] = buffer[pos++];
-                coord[1] = buffer[pos++];
-                epswire_adjustboundingbox(coord, x1, y1, x2, y2);
-            }
-            break;
-        }
-    }
-}
-
-static void epswire_dumpfeedback(FILE *f, GLfloat *buffer, GLint entries)
-{
-    GLint pos, i, n;
-    GLfloat coord[4];
-    GLenum token;
-
-    pos = 0;
-    while (pos < entries)
-    {
-        token = (GLenum) buffer[pos++];
-        switch (token)
-        {
-        case GL_PASS_THROUGH_TOKEN:
-            pos++;
-            break;
-        case GL_POINT_TOKEN:
-        case GL_BITMAP_TOKEN:
-        case GL_DRAW_PIXEL_TOKEN:
-        case GL_COPY_PIXEL_TOKEN:
-            pos += 2;
-            break;
-        case GL_LINE_TOKEN:
-        case GL_LINE_RESET_TOKEN:
-            for (i = 0; i < 4; i++)
-                coord[i] = buffer[pos++];
-            fprintf(f, "newpath\n"
-                    "%.6f %.6f moveto\n"
-                    "%.6f %.6f lineto\n"
-                    "stroke\n",
-                    coord[0], coord[1], coord[2], coord[3]);
-            break;
-        case GL_POLYGON_TOKEN:
-            n = (GLint) buffer[pos++];
-            fputs("newpath\n", f);
-            for (i = 0; i < n; i++)
-            {
-                coord[0] = buffer[pos++];
-                coord[1] = buffer[pos++];
-                fprintf(f, "%.6f %.6f %s\n",
-                        coord[0], coord[1],
-                        i ? "lineto" : "moveto");
-            }
-            fputs("closepath\nstroke\n", f);
-        }
-    }
-}
-
-static bool epswire_glXSwapBuffers(function_call *call, const callback_data *data)
-{
-    GLint entries;
     size_t frame;
+    eps_struct *d;
 
-    epswire_struct *d = (epswire_struct *) bugle_object_get_current_data(&bugle_context_class, epswire_view);
+    d = (eps_struct *) bugle_object_get_current_data(&bugle_context_class, eps_view);
     if (!d) return true;
     frame = d->frame++;
     if (d->capture)
     {
-        /* Captured frame; dump the EPS file and return to render mode */
-        entries = glRenderMode(GL_RENDER);
-        if (entries < 0)
+        if (bugle_begin_internal_render())
         {
-            /* Overflow - reallocate and better luck next time */
-            d->feedback_size *= 2;
-            d->feedback = bugle_realloc(d->feedback, d->feedback_size * sizeof(GLfloat));
-            fputs("Feedback buffer overflowed. Will try again on next frame.\n", stderr);
+            GLint status;
+
+            status = gl2psEndPage();
+            switch (status)
+            {
+            case GL2PS_OVERFLOW:
+                fprintf(stderr, "Feedback buffer overflowed; size will be doubled (can be increased in configuration)\n");
+                break;
+            case GL2PS_NO_FEEDBACK:
+                fprintf(stderr, "No primitives were generated!\n");
+                break;
+            case GL2PS_UNINITIALIZED:
+                fprintf(stderr, "gl2ps was not initialised. This indicates a bug in bugle.\n");
+                break;
+            case GL2PS_ERROR:
+                fprintf(stderr, "An unknown gl2ps error occurred.\n");
+                break;
+            case GL2PS_SUCCESS:
+                break;
+            }
+            fclose(d->stream);
+            d->capture = false;
+            return false; /* Don't swap, since it isn't a real frame */
         }
         else
+            fprintf(stderr, "Warning: glXSwapBuffers called from inside glBegin/glEnd\nSnapshot may be corrupted.\n");
+    }
+    else if (keypress_eps && bugle_begin_internal_render())
+    {
+        FILE *f;
+        char *fname, *end;
+        GLint format, status;
+        GLfloat size;
+
+        keypress_eps = false;
+
+        fname = interpolate_filename(eps_filename, frame);
+        end = fname + strlen(fname);
+        format = GL2PS_EPS;
+        if (strlen(fname) >= 3 && !strcmp(end - 3, ".ps")) format = GL2PS_PS;
+        if (strlen(fname) >= 4 && !strcmp(end - 4, ".eps")) format = GL2PS_EPS;
+        if (strlen(fname) >= 4 && !strcmp(end - 4, ".pdf")) format = GL2PS_PDF;
+        if (strlen(fname) >= 4 && !strcmp(end - 4, ".svg")) format = GL2PS_SVG;
+        f = fopen(eps_filename, "wb");
+        if (!f)
         {
-            FILE *f;
-            char *fname;
-            GLfloat x1, y1, x2, y2;
-
-            fname = interpolate_filename(epswire_filename, frame);
-            f = fopen(epswire_filename, "w");
             free(fname);
-            if (f)
-            {
-                epswire_boundingbox(d->feedback, entries, &x1, &y1, &x2, &y2);
-                fputs("%%!PS-Adobe-2.0 EPSF-1.2\n", f);
-                fprintf(f, "%%%%BoundingBox: %.3f %.3f %.3f %.3f\n",
-                        x1 - 1.0, y1 - 1.0, x2 + 1.0, y2 + 1.0);
-                fputs("%%%%EndComments\ngsave\n1 setlinecap\n1 setlinejoin\n", f);
-                epswire_dumpfeedback(f, d->feedback, entries);
-                fputs("grestore\n", f);
-                fclose(f);
-            }
-            d->capture = false;
+            fprintf(stderr, "Cannot open %s\n", eps_filename);
+            return true;
         }
-        return false; /* Don't swap, since it isn't a real frame */
-    }
-    else if (keypress_epswire)
-    {
-        keypress_epswire = false;
-        glFeedbackBuffer(d->feedback_size, GL_2D, d->feedback);
-        glRenderMode(GL_FEEDBACK);
+
+        status = gl2psBeginPage(eps_title ? eps_title : "Unnamed scene", "bugle",
+                                NULL, format,
+                                eps_bsp ? GL2PS_BSP_SORT : GL2PS_SIMPLE_SORT,
+                                GL2PS_NO_PS3_SHADING | GL2PS_OCCLUSION_CULL | GL2PS_USE_CURRENT_VIEWPORT,
+                                GL_RGBA, 0, 0, 0, 0, 0, eps_feedback_size,
+                                f, fname);
+        if (status != GL2PS_SUCCESS)
+        {
+            fprintf(stderr, "gl2psBeginPage failed\n");
+            fclose(f);
+            free(fname);
+            return true;
+        }
+        CALL_glGetFloatv(GL_POINT_SIZE, &size);
+        gl2psPointSize(size);
+        CALL_glGetFloatv(GL_LINE_WIDTH, &size);
+        gl2psLineWidth(size);
+
+        d->stream = f;
         d->capture = true;
+        free(fname);
+        bugle_end_internal_render("eps_glXSwapBuffers", true);
     }
     return true;
 }
 
-static bool epswire_glEnable(function_call *call, const callback_data *data)
+static bool eps_glPointSize(function_call *call, const callback_data *data)
 {
-    /* FIXME: dirty hack. This should be a post-call, should track the
-     * value during EPS frames and restore the value for real frames.*/
-    switch (*call->typed.glEnable.arg0)
+    eps_struct *d;
+
+    d = (eps_struct *) bugle_object_get_current_data(&bugle_context_class, eps_view);
+    if (d && d->capture && bugle_begin_internal_render())
     {
-    case GL_CULL_FACE:
-        return false;
+        GLfloat size;
+        CALL_glGetFloatv(GL_POINT_SIZE, &size);
+        gl2psPointSize(size);
+        bugle_end_internal_render("eps_glPointSize", true);
     }
     return true;
 }
 
-static bool initialise_epswire(filter_set *handle)
+static bool eps_glLineWidth(function_call *call, const callback_data *data)
+{
+    eps_struct *d;
+
+    d = (eps_struct *) bugle_object_get_current_data(&bugle_context_class, eps_view);
+    if (d && d->capture && bugle_begin_internal_render())
+    {
+        GLfloat width;
+        CALL_glGetFloatv(GL_LINE_WIDTH, &width);
+        gl2psPointSize(width);
+        bugle_end_internal_render("eps_glLineWidth", true);
+    }
+    return true;
+}
+
+static bool initialise_eps(filter_set *handle)
 {
     filter *f;
 
-    f = bugle_register_filter(handle, "epswire");
-    bugle_register_filter_catches(f, GROUP_glXSwapBuffers, false, epswire_glXSwapBuffers);
-    bugle_register_filter_catches(f, GROUP_glEnable, false, epswire_glEnable);
-    bugle_register_filter_depends("invoke", "epswire");
-    epswire_view = bugle_object_class_register(&bugle_context_class, initialise_epswire_context,
-                                               NULL, sizeof(epswire_struct));
-    bugle_register_xevent_key(&key_epswire, NULL, bugle_xevent_key_callback_flag, &keypress_epswire);
+    f = bugle_register_filter(handle, "eps_pre");
+    bugle_register_filter_catches(f, GROUP_glXSwapBuffers, false, eps_glXSwapBuffers);
+    f = bugle_register_filter(handle, "eps");
+    bugle_register_filter_catches(f, GROUP_glPointSize, false, eps_glPointSize);
+    bugle_register_filter_catches(f, GROUP_glLineWidth, false, eps_glLineWidth);
+    bugle_register_filter_depends("invoke", "eps_pre");
+    bugle_register_filter_depends("eps", "invoke");
+    bugle_register_filter_post_renders("eps");
+    eps_view = bugle_object_class_register(&bugle_context_class, initialise_eps_context,
+                                           NULL, sizeof(eps_struct));
+    bugle_register_xevent_key(&key_eps, NULL, bugle_xevent_key_callback_flag, &keypress_eps);
     return true;
 }
 
@@ -995,32 +951,37 @@ void bugle_initialise_filter_library(void)
         "reports extensions used at program termination"
     };
 
-    static const filter_set_variable_info epswire_variables[] =
+    static const filter_set_variable_info eps_variables[] =
     {
-        { "filename", "file to write to [/tmp/bugle.eps]", FILTER_SET_VARIABLE_STRING, &epswire_filename, NULL },
-        { "key_epswire", "key to trigger EPS snapshot [C-A-S-W]", FILTER_SET_VARIABLE_KEY, &key_epswire },
+        { "filename", "file to write to (extension determines format) [/tmp/bugle.eps]", FILTER_SET_VARIABLE_STRING, &eps_filename, NULL },
+        { "key_eps", "key to trigger snapshot [C-A-S-W]", FILTER_SET_VARIABLE_KEY, &key_eps, NULL },
+        { "title", "title in EPS file [Unnamed scene]", FILTER_SET_VARIABLE_STRING, &eps_title, NULL },
+        { "bsp", "use BSP sorting (slower but more accurate) [no]", FILTER_SET_VARIABLE_BOOL, &eps_bsp, NULL },
+        { "buffer", "feedback buffer size [1M]", FILTER_SET_VARIABLE_UINT, &eps_feedback_size, NULL },
         { NULL, NULL, 0, NULL, NULL }
     };
 
-    static const filter_set_info epswire_info =
+    static const filter_set_info eps_info =
     {
-        "epswire",
-        initialise_epswire,
+        "eps",
+        initialise_eps,
         NULL,
         NULL,
         NULL,
-        epswire_variables,
+        eps_variables,
         0,
-        "dumps wireframes to postscript format"
+        "dumps scene to EPS/PS/PDF/SVG format"
     };
 
     video_codec = bugle_strdup("mpeg4");
+    eps_filename = bugle_strdup("/tmp/bugle.eps");
 
     bugle_register_filter_set(&screenshot_info);
     bugle_register_filter_set(&showextensions_info);
-    bugle_register_filter_set(&epswire_info);
+    bugle_register_filter_set(&eps_info);
 
     bugle_register_filter_set_renders("screenshot");
     bugle_register_filter_set_depends("screenshot", "trackextensions");
-    bugle_register_filter_set_depends("epswire", "trackcontext");
+    bugle_register_filter_set_renders("eps");
+    bugle_register_filter_set_depends("eps", "trackcontext");
 }

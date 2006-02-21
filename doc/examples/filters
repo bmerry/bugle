@@ -89,12 +89,12 @@ chain video
     }
 }
 
-chain epswire
+chain eps
 {
-    filterset epswire
+    filterset eps
     {
         filename "/tmp/bugle.eps"  # Can use %d to obtain frame number
-        key_epswire "C-A-S-W"      # Key to press to take snapshot
+        key_eps "C-A-S-W"          # Key to press to take snapshot
     }
 }
 
