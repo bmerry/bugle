@@ -1,10 +1,9 @@
 /*  BuGLe: an OpenGL debugging tool
- *  Copyright (C) 2004, 2005  Bruce Merry
+ *  Copyright (C) 2004-2006  Bruce Merry
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation; either version 2 of the License, or
- *  (at your option) any later version.
+ *  the Free Software Foundation; version 2.
  *
  *  This program is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -41,7 +40,10 @@ int bugle_gl_format_to_count(GLenum format, GLenum type);
 void initialise_dump_tables(void);
 
 int bugle_count_gl(budgie_function func, GLenum token);
-int bugle_count_global_query(GLenum token);
+#ifdef GL_ARB_vertex_program
+int bugle_count_program_string(GLenum target, GLenum pname);
+#endif
+
 bool bugle_dump_GLenum(GLenum e, FILE *out);
 bool bugle_dump_GLalternateenum(GLenum e, FILE *out);
 bool bugle_dump_GLcomponentsenum(GLenum e, FILE *out);

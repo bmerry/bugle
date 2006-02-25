@@ -12,7 +12,26 @@
         </span>
     </div>
     <h1>BuGLe News</h1>
-    <h2>Improved texture viewer and ATI driver support (1/1/2006) </h2>
+    <h2>gl2ps integrated as a filter-set (24/02/2006)</h2>
+    <p>
+    Today's release incorporates <a href="http://www.geuz.org/gl2ps/">gl2ps</a>
+    into a filter-set, allowing you to capture your scene as Postscript, EPS,
+    PDF or SVG. The gl2ps mechanism itself has some limitations, and hence
+    will not work with advanced applications that use per-pixel operations,
+    but it does work with glxgears (if your browser supports SVG, click
+    <a href="images/glxgears.svg" type="image/svg+xml">here</a> to see it).
+    </p>
+    <p>
+    The snapshots are made possible by another new feature, keyboard
+    interception. The screenshot filter-set also takes a key to trigger the
+    screenshot, and some filter-sets (such as wireframe and video capture)
+    can be enabled or disabled on the fly by keypress.
+    </p>
+    <p>
+    As usual, there are also some miscellaneous bugfixes (see the ChangeLog
+    for details), this time mostly affecting GTK+ 2.8.
+    </p>
+    <h2>Improved texture viewer and ATI driver support (1/1/2006)</h2>
     <p>
     I've worked on the texture viewer in the debugger and made it a lot 
     better. It is not yet complete (in particular 3D textures cannot be

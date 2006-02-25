@@ -112,6 +112,35 @@ bool budgie_dump_string(const char *value, FILE *out)
     return true;
 }
 
+bool budgie_dump_string_length(const char *value, size_t length, FILE *out)
+{
+    size_t i;
+    /* FIXME: handle illegal dereferences */
+    if (value == NULL) fputs("NULL", out);
+    else
+    {
+        fputc('"', out);
+        for (i = 0; i < length; i++)
+        {
+            switch (value[0])
+            {
+            case '"': fputs("\\\"", out); break;
+            case '\\': fputs("\\\\", out); break;
+            case '\n': fputs("\\n", out); break;
+            case '\r': fputs("\\r", out); break;
+            default:
+                if (iscntrl(value[0]))
+                    fprintf(out, "\\%03o", (int) value[0]);
+                else
+                    fputc(value[0], out);
+            }
+            value++;
+        }
+        fputc('"', out);
+    }
+    return true;
+}
+
 int budgie_count_string(const char *value)
 {
     /* FIXME: handle illegal dereferences */

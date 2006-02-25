@@ -1,10 +1,9 @@
 /*  BuGLe: an OpenGL debugging tool
- *  Copyright (C) 2004, 2005  Bruce Merry
+ *  Copyright (C) 2004-2006  Bruce Merry
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation; either version 2 of the License, or
- *  (at your option) any later version.
+ *  the Free Software Foundation; version 2.
  *
  *  This program is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -70,7 +69,7 @@ enum
     COLUMN_BREAKPOINTS_FUNCTION
 };
 
-#ifdef HAVE_GTKGLEXT
+#if HAVE_GTKGLEXT
 enum
 {
     COLUMN_TEXTURE_ID_ID,
@@ -872,7 +871,7 @@ static void notebook_update(GldbWindow *context, gint new_page)
     else page = gtk_notebook_get_current_page(notebook);
     if (page == gtk_notebook_page_num(notebook, context->state.page))
         state_update(context);
-#ifdef HAVE_GTKGLEXT
+#if HAVE_GTKGLEXT
     else if (page == gtk_notebook_page_num(notebook, context->texture.page))
         texture_update(context);
 #endif

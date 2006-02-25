@@ -1,10 +1,9 @@
 /*  BuGLe: an OpenGL debugging tool
- *  Copyright (C) 2004, 2005  Bruce Merry
+ *  Copyright (C) 2004-2006  Bruce Merry
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation; either version 2 of the License, or
- *  (at your option) any later version.
+ *  the Free Software Foundation; version 2.
  *
  *  This program is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -456,6 +455,24 @@ int bugle_count_gl(budgie_function func, GLenum token)
 {
     return get_dump_table_entry(token)->length;
 }
+
+#ifdef GL_ARB_vertex_program
+int bugle_count_program_string(GLenum target, GLenum pname)
+{
+    GLint length = 0;
+    if (bugle_in_begin_end()) return 0;
+
+    switch (pname)
+    {
+    case GL_PROGRAM_STRING_ARB:
+        CALL_glGetProgramivARB(target, GL_PROGRAM_LENGTH_ARB, &length);
+        break;
+    default:
+        length = 0;
+    }
+    return length;
+}
+#endif
 
 /* Computes the number of pixel elements (units of byte, int, float etc)
  * used by a client-side encoding of a 1D, 2D or 3D image.

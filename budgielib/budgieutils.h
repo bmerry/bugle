@@ -129,6 +129,8 @@ char *budgie_string_io(void (*call)(FILE *, void *), void *data);
 
 bool budgie_dump_string(const char *value, FILE *out);
 int budgie_count_string(const char *value);
+/* Like dump_string but takes an explicit length rather than NULL terminator */
+bool budgie_dump_string_length(const char *value, size_t length, FILE *out);
 
 void budgie_make_indent(int indent, FILE *out);
 void budgie_dump_any_type(budgie_type type, const void *value, int length, FILE *out);

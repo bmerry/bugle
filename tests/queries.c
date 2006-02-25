@@ -451,6 +451,9 @@ static void query_ll_programs(void)
         fprintf(ref, "trace\\.call: glGetProgramivARB\\(GL_VERTEX_PROGRAM_ARB, GL_PROGRAM_LENGTH_ARB, %p -> %u\\)\n",
                 (void *) &param, (unsigned int) strlen(vp));
         source = malloc(strlen(vp) + 1);
+        /* Make sure that the dumper counts things right, since glGetProgramStringARB
+         * does NOT write a terminating NULL. */
+        source[strlen(vp)] = '\1';
         glGetProgramStringARB(GL_VERTEX_PROGRAM_ARB, GL_PROGRAM_STRING_ARB, source);
         fprintf(ref, "trace\\.call: glGetProgramStringARB\\(GL_VERTEX_PROGRAM_ARB, GL_PROGRAM_STRING_ARB, ");
         dump_string(ref, vp);

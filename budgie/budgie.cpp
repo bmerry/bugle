@@ -1,10 +1,9 @@
 /*  BuGLe: an OpenGL debugging tool
- *  Copyright (C) 2004  Bruce Merry
+ *  Copyright (C) 2004-2006  Bruce Merry
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation; either version 2 of the License, or
- *  (at your option) any later version.
+ *  the Free Software Foundation; version 2.
  *
  *  This program is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -472,7 +471,7 @@ static string group_substitute(const Override &o,
     }
 
     ans = search_replace(ans, "$f", "(" + g.define() + ")");
-    ans = search_replace(ans, "$l", "(count)");
+    ans = search_replace(ans, "$l", "(length)");
     if (o.mode == OVERRIDE_DUMP)
         ans = search_replace(ans, "$F", "(out)");
 

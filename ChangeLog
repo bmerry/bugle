@@ -1,4 +1,7 @@
+0.0.20060224
+------------
 * Fix numerous C89 warnings. Unfortunately GLee is not valid C89 code.
+* Fix dumping of return from glGetProgramStringARB
 * Change the way pages were refreshed to be cleaner and to work on GTK+ 2.8.
 * Fix bogus warnings about glVertexAttrib*ARB being called from outside
   glBegin/glEnd with indices other than 0
@@ -12,6 +15,7 @@
 * Make video capture work with pre-release versions of libavformat
 * Make wireframe and frontbuffer work with activation and deactivation
 * Integrate gl2ps to replace epswire
+* Change license to GPLv2 only
 
 0.0.20060101
 ------------
