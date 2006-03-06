@@ -1,3 +1,9 @@
+0.0.20060306
+------------
+This is a minor update that fixes some build problems on Debian
+testing. Users who successfully built and installed 0.0.20060224 do not
+need to upgrade.
+
 0.0.20060224
 ------------
 This release adds code to intercept keypresses from the application.

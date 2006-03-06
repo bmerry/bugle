@@ -38,7 +38,7 @@ extern int expect_c;
 static void finish_c(string **s)
 {
     *s = new string(bc_yytext);
-    BEGIN(INITIAL);
+    BEGIN(0);
 }
 
 static stack<YY_BUFFER_STATE> include_stack;

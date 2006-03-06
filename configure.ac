@@ -1,4 +1,4 @@
-AC_INIT(bugle, 0.0.20060224, bmerry@users.sourceforge.net)
+AC_INIT(bugle, 0.0.20060306, bmerry@users.sourceforge.net)
 AC_CONFIG_SRCDIR([src/interceptor.c])
 AM_INIT_AUTOMAKE([1.7 dist-bzip2 subdir-objects])
 AM_CONFIG_HEADER(config.h)
@@ -46,10 +46,12 @@ THREADS=BUGLE_THREADS_PTHREADS
 AC_CHECK_LIB([pthread], [pthread_create], [
   THREAD_LIBS="-lpthread $THREAD_LIBS"], [THREADS=BUGLE_THREADS_SINGLE], [])
 
-AVCODEC_LIBS=""
+AVCODEC_LIBS="-lm"
 HAVE_LAVC=1
+AC_CHECK_LIB([avutil], [ff_log2_tab], [
+  AVCODEC_LIBS="-lavutil $AVCODEC_LIBS"], [], [$AVCODEC_LIBS])
 AC_CHECK_LIB([avcodec], [avcodec_open], [
-  AVCODEC_LIBS="-lavcodec $AVCODEC_LIBS"], [HAVE_LAVC=0], [])
+  AVCODEC_LIBS="-lavcodec $AVCODEC_LIBS"], [HAVE_LAVC=0], [$AVCODEC_LIBS])
 AC_CHECK_LIB([avformat], [av_write_frame], [
   AVCODEC_LIBS="-lavformat $AVCODEC_LIBS"], [HAVE_LAVC=0], [$AVCODEC_LIBS])
 
