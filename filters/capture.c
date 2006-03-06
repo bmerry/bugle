@@ -201,7 +201,7 @@ static bool initialise_lavc(int width, int height)
     codec = avcodec_find_encoder_by_name(video_codec);
     if (!codec) codec = avcodec_find_encoder(CODEC_ID_HUFFYUV);
     if (!codec) return false;
-#if LIBAVFORMAT_VERSION_INT >= 0x00320000  /* Version 50? */
+#if LIBAVFORMAT_VERSION_INT >= 0x00310000  /* Version 50? */
     c = video_stream->codec;
 #else
     c = &video_stream->codec;
@@ -214,7 +214,7 @@ static bool initialise_lavc(int width, int height)
     c->bit_rate = video_bitrate;
     c->width = width;
     c->height = height;
-#if LIBAVFORMAT_VERSION_INT >= 0x00320000 /* Version 50? */
+#if LIBAVFORMAT_VERSION_INT >= 0x00310000 /* Version 50? */
     c->time_base.den = 30;
     c->time_base.num = 1;
 #else
@@ -243,7 +243,7 @@ static void finalise_lavc(void)
     AVCodecContext *c;
     size_t out_size;
 
-#if LIBAVFORMAT_VERSION_INT >= 0x00320000
+#if LIBAVFORMAT_VERSION_INT >= 0x00310000
     c = video_stream->codec;
 #else
     c = &video_stream->codec;
@@ -279,7 +279,7 @@ static void finalise_lavc(void)
 
     /* Close it all down */
     av_write_trailer(video_context);
-#if LIBAVFORMAT_VERSION_INT >= 0x00320000
+#if LIBAVFORMAT_VERSION_INT >= 0x00310000
     avcodec_close(video_stream->codec);
 #else
     avcodec_close(&video_stream->codec);
@@ -509,7 +509,7 @@ static void screenshot_video()
     {
         if (!video_context)
             initialise_lavc(fetch->width, fetch->height);
-#if LIBAVFORMAT_VERSION_INT >= 0x00320000
+#if LIBAVFORMAT_VERSION_INT >= 0x00310000
         c = video_stream->codec;
 #else
         c = &video_stream->codec;
@@ -522,7 +522,7 @@ static void screenshot_video()
                     fetch->width, fetch->height);
         for (i = 0; i < fetch->multiplicity; i++)
         {
-#if LIBAVFORMAT_VERSION_INT >= 0x00320000
+#if LIBAVFORMAT_VERSION_INT >= 0x00310000
             out_size = avcodec_encode_video(video_stream->codec,
                                             video_buffer, video_buffer_size,
                                             video_yuv);
