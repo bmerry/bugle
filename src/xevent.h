@@ -28,10 +28,12 @@ typedef struct
 {
     KeySym keysym;
     unsigned int state;
+    bool press;
 } xevent_key;
 
 /* Returns true if the key name was found, false otherwise. On false
- * return, the value of *key is unmodified.
+ * return, the value of *key is unmodified. The press field is always
+ * set to true.
  */
 bool bugle_xevent_key_lookup(const char *name, xevent_key *key);
 
@@ -41,7 +43,8 @@ void bugle_xevent_key_callback_flag(const xevent_key *key, void *arg);
 /* Registers a key trap. If non-NULL, the wanted function should return
  * true if the key should be trapped on this occasion. The wanted function
  * may be called multiple times for the same keypress, so it should be
- * stateless and have no side effects.
+ * stateless and have no side effects. It must also ignore the 'press'
+ * field, otherwise the app will see press/release mismatches.
  */
 void bugle_register_xevent_key(const xevent_key *key,
                                bool (*wanted)(const xevent_key *, void *arg),

@@ -67,7 +67,7 @@ typedef struct
 static bool video = false;
 static char *video_filename = NULL;
 /* Still settings */
-static xevent_key key_screenshot = { XK_S, ControlMask | ShiftMask | Mod1Mask };
+static xevent_key key_screenshot = { XK_S, ControlMask | ShiftMask | Mod1Mask, true };
 /* Video settings */
 static char *video_codec = NULL;
 static bool video_sample_all = false;
@@ -644,6 +644,7 @@ static bool initialise_screenshot(filter_set *handle)
         if (!video_filename)
             video_filename = bugle_strdup("/tmp/bugle.ppm");
         video_lag = 1;
+        /* FIXME: should only intercept the key when enabled */
         bugle_register_xevent_key(&key_screenshot, NULL, bugle_xevent_key_callback_flag, &keypress_screenshot);
     }
     return true;
@@ -760,7 +761,7 @@ typedef struct
 
 static bugle_object_view eps_view;
 static bool keypress_eps = false;
-static xevent_key key_eps = { XK_W, ControlMask | ShiftMask | Mod1Mask };
+static xevent_key key_eps = { XK_W, ControlMask | ShiftMask | Mod1Mask, true };
 static char *eps_filename = NULL;
 static char *eps_title = NULL;
 static bool eps_bsp = false;

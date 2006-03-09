@@ -34,8 +34,8 @@ typedef struct
 {
     xevent_key key;
     void *arg;
-    bool (*wanted)(const xevent_key *, void *arg);
-    void (*callback)(const xevent_key *, void *arg);
+    bool (*wanted)(const xevent_key *, void *);
+    void (*callback)(const xevent_key *, void *);
 } handler;
 
 static bool active = false;
@@ -57,6 +57,8 @@ static int (*real_XPeekIfEvent)(Display *, XEvent *, Bool (*)(Display *, XEvent 
 static int (*real_XEventsQueued)(Display *, int) = NULL;
 static int (*real_XPending)(Display *) = NULL;
 
+static Window (*real_XCreateWindow)(Display *, Window, int, int, unsigned int, unsigned int, unsigned int, int, unsigned int, Visual *, unsigned long, XSetWindowAttributes *) = NULL;
+
 extern void bugle_initialise_all(void);
 
 /* Determines whether bugle wants to intercept an event */
@@ -69,6 +71,7 @@ static Bool event_predicate(Display *dpy, XEvent *event, XPointer arg)
     if (event->type != KeyPress && event->type != KeyRelease) return False;
     key.keysym = XKeycodeToKeysym(dpy, event->xkey.keycode, 1);
     key.state = event->xkey.state & STATE_MASK;
+    key.press = event->type == KeyPress;
     for (i = bugle_list_head(&handlers); i; i = bugle_list_next(i))
     {
         h = (handler *) bugle_list_data(i);
@@ -88,16 +91,18 @@ static void handle_event(Display *dpy, XEvent *event)
 
     /* event_predicate returns true on release as well, so that the
      * release event does not appear to the app without the press event.
-     * However, we don't pass the release event to the filterset.
+     * We only conditionally pass releases to the filterset.
      */
-    if (event->type != KeyPress) return;
+    if (event->type != KeyPress && event->type != KeyRelease) return;
 
     key.keysym = XKeycodeToKeysym(dpy, event->xkey.keycode, 1);
     key.state = event->xkey.state & STATE_MASK;
+    key.press = (event->type == KeyPress);
     for (i = bugle_list_head(&handlers); i; i = bugle_list_next(i))
     {
         h = (handler *) bugle_list_data(i);
         if (h->key.keysym == key.keysym && h->key.state == key.state
+            && h->key.press == key.press
             && (!h->wanted || (*h->wanted)(&key, h->arg)))
             (*h->callback)(&key, h->arg);
     }
@@ -293,10 +298,38 @@ int XPending(Display *dpy)
     return (*real_XPending)(dpy);
 }
 
+Window XCreateWindow(Display *dpy, Window parent, int x, int y,
+                     unsigned int width, unsigned int height,
+                     unsigned int border_width, int depth,
+                     unsigned int c_class, Visual *visual,
+                     unsigned long valuemask,
+                     XSetWindowAttributes *attributes)
+{
+    long events = KeyPressMask | KeyReleaseMask;
+    XSetWindowAttributes my_attributes;
+
+    bugle_initialise_all();
+    if (active
+        && (!(valuemask & CWEventMask) || (attributes->event_mask & events) != events))
+    {
+        valuemask |= CWEventMask;
+        my_attributes = *attributes;
+        my_attributes.event_mask |= events;
+        return (*real_XCreateWindow)(dpy, parent, x, y, width, height,
+                                     border_width, depth, c_class, visual,
+                                     valuemask, &my_attributes);
+    }
+    return (*real_XCreateWindow)(dpy, parent, x, y, width, height,
+                                 border_width, depth, c_class, visual,
+                                 valuemask, attributes);
+}
+
 bool bugle_xevent_key_lookup(const char *name, xevent_key *key)
 {
     KeySym keysym = NoSymbol;
     unsigned int state = 0;
+
+    key->press = true;
     while (true)
     {
         if (name[0] == 'C' && name[1] == '-')
@@ -377,6 +410,8 @@ void initialise_xevent(void)
 
     real_XEventsQueued = (int (*)(Display *, int)) lt_dlsym(handle, "XEventsQueued");
     real_XPending = (int (*)(Display *)) lt_dlsym(handle, "XPending");
+
+    real_XCreateWindow = (Window (*)(Display *, Window, int, int, unsigned int, unsigned int, unsigned int, int, unsigned int, Visual *, unsigned long, XSetWindowAttributes *)) lt_dlsym(handle, "XCreateWindow");
 
     if (!real_XNextEvent
         || !real_XPeekEvent

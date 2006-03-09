@@ -104,6 +104,11 @@ chain wireframe
     filterset wireframe
 }
 
+chain camera
+{
+    filterset camera
+}
+
 # Forces rendering to the frontbuffer rather than the backbuffer. This
 # is useful to see how a scene is built up in the debugger
 chain frontbuffer
