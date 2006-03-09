@@ -104,9 +104,21 @@ chain wireframe
     filterset wireframe
 }
 
+# Use this filter-set and press the key sequence below to give manual
+# control over the camera position. Pressing it again restores the
+# original camera position and deactivates the override keys.
+# Usefor for LOD and frustum culling research.
 chain camera
 {
-    filterset camera
+    filterset camera "C-A-S-C" inactive
+    {
+        key_forward "Up"
+        key_back "Down"
+        key_left "Left"
+        key_right "Right"
+        key_faster "Page_Up"     # speeds up motion
+        key_slower "Page_Down"   # slows down motion
+    }
 }
 
 # Forces rendering to the frontbuffer rather than the backbuffer. This
