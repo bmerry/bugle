@@ -134,6 +134,7 @@ filters_common_la_LDFLAGS = -thread-safe -module -avoid-version -export-dynamic 
 filters_trace_la_SOURCES = filters/trace.c
 filters_trace_la_LDFLAGS = -thread-safe -module -avoid-version -export-dynamic $(SYMBOLFLAGS)
 filters_modify_la_SOURCES = filters/modify.c
+filters_modify_la_LIBADD = -lm
 filters_modify_la_LDFLAGS = -thread-safe -module -avoid-version -export-dynamic $(SYMBOLFLAGS)
 filters_validate_la_SOURCES = filters/validate.c
 filters_validate_la_LDFLAGS = -thread-safe -module -avoid-version -export-dynamic $(SYMBOLFLAGS)

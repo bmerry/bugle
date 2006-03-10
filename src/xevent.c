@@ -41,6 +41,12 @@ typedef struct
 static bool active = false;
 static bugle_linked_list handlers;
 
+static bool mouse_active = false;
+static bool mouse_first = true;
+static Window mouse_window;
+static int mouse_x, mouse_y;
+static void (*mouse_callback)(int dx, int dy) = NULL;
+
 static int (*real_XNextEvent)(Display *, XEvent *) = NULL;
 static int (*real_XPeekEvent)(Display *, XEvent *) = NULL;
 static int (*real_XWindowEvent)(Display *, Window, long, XEvent *) = NULL;
@@ -68,6 +74,7 @@ static Bool event_predicate(Display *dpy, XEvent *event, XPointer arg)
     bugle_list_node *i;
     handler *h;
 
+    if (mouse_active && event->type == MotionNotify) return True;
     if (event->type != KeyPress && event->type != KeyRelease) return False;
     key.keysym = XKeycodeToKeysym(dpy, event->xkey.keycode, 1);
     key.state = event->xkey.state & STATE_MASK;
@@ -89,6 +96,30 @@ static void handle_event(Display *dpy, XEvent *event)
     bugle_list_node *i;
     handler *h;
 
+    if (mouse_active && event->type == MotionNotify)
+    {
+        if (mouse_first)
+        {
+            XWindowAttributes attr;
+            XGetWindowAttributes(dpy, event->xmotion.window, &attr);
+
+            mouse_window = event->xmotion.window;
+            mouse_x = attr.width / 2;
+            mouse_y = attr.height / 2;
+            mouse_first = False;
+            XWarpPointer(dpy, event->xmotion.window, event->xmotion.window,
+                         0, 0, 0, 0, mouse_x, mouse_y);
+            mouse_first = false;
+        }
+        else if (event->xmotion.window != mouse_window)
+            XWarpPointer(dpy, None, mouse_window, 0, 0, 0, 0, mouse_x, mouse_y);
+        else if (mouse_x != event->xmotion.x || mouse_y != event->xmotion.y)
+        {
+            (*mouse_callback)(event->xmotion.x - mouse_x, event->xmotion.y - mouse_y);
+            XWarpPointer(dpy, event->xmotion.window, event->xmotion.window, 0, 0, 0, 0, mouse_x, mouse_y);
+        }
+        return;
+    }
     /* event_predicate returns true on release as well, so that the
      * release event does not appear to the app without the press event.
      * We only conditionally pass releases to the filterset.
@@ -305,16 +336,18 @@ Window XCreateWindow(Display *dpy, Window parent, int x, int y,
                      unsigned long valuemask,
                      XSetWindowAttributes *attributes)
 {
-    long events = KeyPressMask | KeyReleaseMask;
+    long events = KeyPressMask | KeyReleaseMask | PointerMotionMask;
     XSetWindowAttributes my_attributes;
-
-    bugle_initialise_all();
+            bugle_initialise_all();
     if (active
         && (!(valuemask & CWEventMask) || (attributes->event_mask & events) != events))
     {
-        valuemask |= CWEventMask;
         my_attributes = *attributes;
-        my_attributes.event_mask |= events;
+        if (!(valuemask & CWEventMask))
+            my_attributes.event_mask = events;
+        else
+            my_attributes.event_mask |= events;
+        valuemask |= CWEventMask;
         return (*real_XCreateWindow)(dpy, parent, x, y, width, height,
                                      border_width, depth, c_class, visual,
                                      valuemask, &my_attributes);
@@ -382,6 +415,18 @@ void bugle_register_xevent_key(const xevent_key *key,
 
     bugle_list_append(&handlers, h);
     active = true;
+}
+
+void bugle_xevent_grab_pointer(void (*callback)(int, int))
+{
+    mouse_callback = callback;
+    mouse_active = true;
+    mouse_first = true;
+}
+
+void bugle_xevent_release_pointer()
+{
+    mouse_active = false;
 }
 
 void initialise_xevent(void)

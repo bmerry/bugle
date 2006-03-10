@@ -1,3 +1,5 @@
+* Add 'camera' filterset
+
 0.0.20060306
 ------------
 * Fix compilation problem with newer versions of flex

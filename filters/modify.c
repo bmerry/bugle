@@ -24,6 +24,7 @@
 #include "common/bool.h"
 #include <GL/glx.h>
 #include <sys/time.h>
+#include <math.h>
 
 /*** Wireframe filter-set ***/
 
@@ -344,6 +345,7 @@ static void camera_key_callback(const xevent_key *key, void *arg)
     camera_context *ctx;
 
     ctx = (camera_context *) bugle_object_get_current_data(&bugle_context_class, camera_view);
+    if (!ctx) return;
     index = (xevent_key *) arg - key_camera;
     if (index < CAMERA_MOTION_KEYS)
         ctx->pressed[index] = key->press;
@@ -355,6 +357,53 @@ static void camera_key_callback(const xevent_key *key, void *arg)
         case CAMERA_KEY_SLOWER: camera_speed *= 0.5f; break;
         }
     }
+}
+
+static void camera_mouse_callback(int dx, int dy)
+{
+    camera_context *ctx;
+    GLfloat old[16], rotator[3][3];
+    GLfloat axis[3];
+    GLfloat angle, cs, sn;
+    int i, j, k;
+
+    ctx = (camera_context *) bugle_object_get_current_data(&bugle_context_class, camera_view);
+    if (!ctx) return;
+
+    /* We use a rolling-ball type rotation. We do the calculations
+     * ourselves rather than farming them out to OpenGL, since this
+     * event could be processed asynchronously and OpenGL might not
+     * be in a suitable state.
+     */
+    axis[0] = dy;
+    axis[1] = dx;
+    axis[2] = 0.0f;
+    angle = sqrt(axis[0] * axis[0] + axis[1] * axis[1] + axis[2] * axis[2]);
+    axis[0] /= angle;
+    axis[1] /= angle;
+    axis[2] /= angle;
+    angle *= 0.005f;
+
+    memcpy(old, ctx->modifier, sizeof(old));
+    cs = cosf(angle);
+    sn = sinf(angle);
+    for (i = 0; i < 3; i++)
+        for (j = 0; j < 3; j++)
+        {
+            rotator[i][j] = (1 - cs) * axis[i] * axis[j];
+            if (i == j) rotator[i][j] += cs;
+            else if ((i + 1) % 3 == j)
+                rotator[i][j] -= sn * axis[3 - i - j];
+            else
+                rotator[i][j] += sn * axis[3 - i - j];
+        }
+    for (i = 0; i < 3; i++)
+        for (j = 0; j < 4; j++)
+        {
+            ctx->modifier[j * 4 + i] = 0.0f;
+            for (k = 0; k < 3; k++)
+                ctx->modifier[j * 4 + i] += rotator[i][k] * old[j * 4 + k];
+        }
 }
 
 static void initialise_camera_context(const void *key, void *data)
@@ -509,6 +558,7 @@ static void camera_activation(filter_set *handle)
     ctx = (camera_context *) bugle_object_get_current_data(&bugle_context_class, camera_view);
     if (ctx)
         camera_handle_activation(true, ctx);
+    bugle_xevent_grab_pointer(camera_mouse_callback);
 }
 
 static void camera_deactivation(filter_set *handle)
@@ -518,6 +568,7 @@ static void camera_deactivation(filter_set *handle)
     ctx = (camera_context *) bugle_object_get_current_data(&bugle_context_class, camera_view);
     if (ctx)
         camera_handle_activation(false, ctx);
+    bugle_xevent_release_pointer();
 }
 
 static bool initialise_camera(filter_set *handle)
