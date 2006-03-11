@@ -30,6 +30,8 @@
 
 #define STATE_MASK (ControlMask | ShiftMask | Mod1Mask)
 
+#define XEVENT_LOG
+
 typedef struct
 {
     xevent_key key;
@@ -115,8 +117,13 @@ static void handle_event(Display *dpy, XEvent *event)
             XWarpPointer(dpy, None, mouse_window, 0, 0, 0, 0, mouse_x, mouse_y);
         else if (mouse_x != event->xmotion.x || mouse_y != event->xmotion.y)
         {
+#ifdef XEVENT_LOG
+            fprintf(stderr, "Mouse moved by (%d, %d) ref = (%d, %d)\n",
+                    event->xmotion.x - mouse_x, event->xmotion.y - mouse_y,
+                    mouse_x, mouse_y);
+#endif
             (*mouse_callback)(event->xmotion.x - mouse_x, event->xmotion.y - mouse_y);
-            XWarpPointer(dpy, event->xmotion.window, event->xmotion.window, 0, 0, 0, 0, mouse_x, mouse_y);
+            XWarpPointer(dpy, None, event->xmotion.window, 0, 0, 0, 0, mouse_x, mouse_y);
         }
         return;
     }
@@ -139,25 +146,43 @@ static void handle_event(Display *dpy, XEvent *event)
     }
 }
 
-static void extract_events(Display *dpy)
+static bool extract_events(Display *dpy)
 {
     XEvent event;
+    bool any = false;
+
     while ((*real_XCheckIfEvent)(dpy, &event, event_predicate, NULL))
+    {
         handle_event(dpy, &event);
+        any = true;
+    }
+    return any;
 }
 
 int XNextEvent(Display *dpy, XEvent *event)
 {
     int ret;
 
+#ifdef XEVENT_LOG
+    fputs("-> XNextEvent\n", stderr);
+#endif
     bugle_initialise_all();
     if (!active) return (*real_XNextEvent)(dpy, event);
     extract_events(dpy);
     while ((ret = (*real_XNextEvent)(dpy, event)) != 0)
     {
-        if (!event_predicate(dpy, event, NULL)) return ret;
+        if (!event_predicate(dpy, event, NULL))
+        {
+#ifdef XEVENT_LOG
+            fputs("<- XNextEvent\n", stderr);
+#endif
+            return ret;
+        }
         handle_event(dpy, event);
     }
+#ifdef XEVENT_LOG
+    fputs("<- XNextEvent\n", stderr);
+#endif
     return ret;
 }
 
@@ -165,16 +190,28 @@ int XPeekEvent(Display *dpy, XEvent *event)
 {
     int ret;
 
+#ifdef XEVENT_LOG
+    fputs("-> XPeekEvent\n", stderr);
+#endif
     bugle_initialise_all();
     if (!active) return (*real_XPeekEvent)(dpy, event);
     extract_events(dpy);
     while ((ret = (*real_XPeekEvent)(dpy, event)) != 0)
     {
-        if (!event_predicate(dpy, event, NULL)) return ret;
+        if (!event_predicate(dpy, event, NULL))
+        {
+#ifdef XEVENT_LOG
+            fputs("<- XPeekEvent\n", stderr);
+#endif
+            return ret;
+        }
         /* Peek doesn't remove the event, so do another extract run to
          * clear it */
         extract_events(dpy);
     }
+#ifdef XEVENT_LOG
+    fputs("<- XPeekEvent\n", stderr);
+#endif
     return ret;
 }
 
@@ -182,14 +219,26 @@ int XWindowEvent(Display *dpy, Window w, long event_mask, XEvent *event)
 {
     int ret;
 
+#ifdef XEVENT_LOG
+    fputs("-> XWindowEvent\n", stderr);
+#endif
     bugle_initialise_all();
     if (!active) return (*real_XWindowEvent)(dpy, w, event_mask, event);
     extract_events(dpy);
     while ((ret = (*real_XWindowEvent)(dpy, w, event_mask, event)) != 0)
     {
-        if (!event_predicate(dpy, event, NULL)) return ret;
+        if (!event_predicate(dpy, event, NULL))
+        {
+#ifdef XEVENT_LOG
+            fputs("<- XWindowEvent\n", stderr);
+#endif
+            return ret;
+        }
         handle_event(dpy, event);
     }
+#ifdef XEVENT_LOG
+    fputs("<- XWindowEvent\n", stderr);
+#endif
     return ret;
 }
 
@@ -197,14 +246,26 @@ Bool XCheckWindowEvent(Display *dpy, Window w, long event_mask, XEvent *event)
 {
     Bool ret;
 
+#ifdef XEVENT_LOG
+    fputs("-> XCheckWindowEvent\n", stderr);
+#endif
     bugle_initialise_all();
     if (!active) return (*real_XCheckWindowEvent)(dpy, w, event_mask, event);
     extract_events(dpy);
     while ((ret = (*real_XCheckWindowEvent)(dpy, w, event_mask, event)) == True)
     {
-        if (!event_predicate(dpy, event, NULL)) return ret;
+        if (!event_predicate(dpy, event, NULL))
+        {
+#ifdef XEVENT_LOG
+            fputs("<- XCheckWindowEvent\n", stderr);
+#endif
+            return ret;
+        }
         handle_event(dpy, event);
     }
+#ifdef XEVENT_LOG
+    fputs("<- XCheckWindowEvent\n", stderr);
+#endif
     return ret;
 }
 
@@ -212,14 +273,26 @@ int XMaskEvent(Display *dpy, long event_mask, XEvent *event)
 {
     int ret;
 
+#ifdef XEVENT_LOG
+    fputs("-> XMaskEvent\n", stderr);
+#endif
     bugle_initialise_all();
     if (!active) return (*real_XMaskEvent)(dpy, event_mask, event);
     extract_events(dpy);
     while ((ret = (*real_XMaskEvent)(dpy, event_mask, event)) != 0)
     {
-        if (!event_predicate(dpy, event, NULL)) return ret;
+        if (!event_predicate(dpy, event, NULL))
+        {
+#ifdef XEVENT_LOG
+            fputs("<- XMaskEvent\n", stderr);
+#endif
+            return ret;
+        }
         handle_event(dpy, event);
     }
+#ifdef XEVENT_LOG
+    fputs("<- XMaskEvent\n", stderr);
+#endif
     return ret;
 }
 
@@ -227,14 +300,26 @@ Bool XCheckMaskEvent(Display *dpy, long event_mask, XEvent *event)
 {
     Bool ret;
 
+#ifdef XEVENT_LOG
+    fputs("-> XCheckMaskEvent\n", stderr);
+#endif
     bugle_initialise_all();
     if (!active) return (*real_XCheckMaskEvent)(dpy, event_mask, event);
     extract_events(dpy);
     while ((ret = (*real_XCheckMaskEvent)(dpy, event_mask, event)) == True)
     {
-        if (!event_predicate(dpy, event, NULL)) return ret;
+        if (!event_predicate(dpy, event, NULL))
+        {
+#ifdef XEVENT_LOG
+            fputs("<- XCheckMaskEvent\n", stderr);
+#endif
+            return ret;
+        }
         handle_event(dpy, event);
     }
+#ifdef XEVENT_LOG
+    fputs("<- XCheckMaskEvent\n", stderr);
+#endif
     return ret;
 }
 
@@ -242,14 +327,26 @@ Bool XCheckTypedEvent(Display *dpy, int type, XEvent *event)
 {
     Bool ret;
 
+#ifdef XEVENT_LOG
+    fputs("-> XCheckTypedEvent\n", stderr);
+#endif
     bugle_initialise_all();
     if (!active) return (*real_XCheckTypedEvent)(dpy, type, event);
     extract_events(dpy);
     while ((ret = (*real_XCheckTypedEvent)(dpy, type, event)) == True)
     {
-        if (!event_predicate(dpy, event, NULL)) return ret;
+        if (!event_predicate(dpy, event, NULL))
+        {
+#ifdef XEVENT_LOG
+            fputs("<- XCheckTypedEvent\n", stderr);
+#endif
+            return ret;
+        }
         handle_event(dpy, event);
     }
+#ifdef XEVENT_LOG
+    fputs("<- XCheckTypedEvent\n", stderr);
+#endif
     return ret;
 }
 
@@ -257,14 +354,26 @@ Bool XCheckTypedWindowEvent(Display *dpy, Window w, int type, XEvent *event)
 {
     Bool ret;
 
+#ifdef XEVENT_LOG
+    fputs("-> XCheckTypedWindowEvent\n", stderr);
+#endif
     bugle_initialise_all();
     if (!active) return (*real_XCheckTypedWindowEvent)(dpy, w, type, event);
     extract_events(dpy);
     while ((ret = (*real_XCheckTypedWindowEvent)(dpy, w, type, event)) == True)
     {
-        if (!event_predicate(dpy, event, NULL)) return ret;
+        if (!event_predicate(dpy, event, NULL))
+        {
+#ifdef XEVENT_LOG
+            fputs("<- XCheckTypedWindowEvent\n", stderr);
+#endif
+            return ret;
+        }
         handle_event(dpy, event);
     }
+#ifdef XEVENT_LOG
+    fputs("<- XCheckTypedWindowEvent\n", stderr);
+#endif
     return ret;
 }
 
@@ -272,14 +381,26 @@ int XIfEvent(Display *dpy, XEvent *event, Bool (*predicate)(Display *, XEvent *,
 {
     int ret;
 
+#ifdef XEVENT_LOG
+    fputs("-> XIfEvent\n", stderr);
+#endif
     bugle_initialise_all();
     if (!active) return (*real_XIfEvent)(dpy, event, predicate, arg);
     extract_events(dpy);
     while ((ret = (*real_XIfEvent)(dpy, event, predicate, arg)) != 0)
     {
-        if (!event_predicate(dpy, event, NULL)) return ret;
+        if (!event_predicate(dpy, event, NULL))
+        {
+#ifdef XEVENT_LOG
+            fputs("<- XIfEvent\n", stderr);
+#endif
+            return ret;
+        }
         handle_event(dpy, event);
     }
+#ifdef XEVENT_LOG
+    fputs("<- XIfEvent\n", stderr);
+#endif
     return ret;
 }
 
@@ -287,14 +408,26 @@ Bool XCheckIfEvent(Display *dpy, XEvent *event, Bool (*predicate)(Display *, XEv
 {
     Bool ret;
 
+#ifdef XEVENT_LOG
+    fputs("-> XCheckIfEvent\n", stderr);
+#endif
     bugle_initialise_all();
     if (!active) return (*real_XCheckIfEvent)(dpy, event, predicate, arg);
     extract_events(dpy);
     while ((ret = (*real_XCheckIfEvent)(dpy, event, predicate, arg)) == True)
     {
-        if (!event_predicate(dpy, event, NULL)) return ret;
+        if (!event_predicate(dpy, event, NULL))
+        {
+#ifdef XEVENT_LOG
+            fputs("<- XCheckIfEvent\n", stderr);
+#endif
+            return ret;
+        }
         handle_event(dpy, event);
     }
+#ifdef XEVENT_LOG
+    fputs("<- XCheckIfEvent\n", stderr);
+#endif
     return ret;
 }
 
@@ -302,30 +435,67 @@ int XPeekIfEvent(Display *dpy, XEvent *event, Bool (*predicate)(Display *, XEven
 {
     int ret;
 
+#ifdef XEVENT_LOG
+    fputs("-> XPeekIfEvent\n", stderr);
+#endif
     bugle_initialise_all();
     if (!active) return (*real_XPeekIfEvent)(dpy, event, predicate, arg);
     extract_events(dpy);
     while ((ret = (*real_XPeekIfEvent)(dpy, event, predicate, arg)) != 0)
     {
-        if (!event_predicate(dpy, event, NULL)) return ret;
+        if (!event_predicate(dpy, event, NULL))
+        {
+#ifdef XEVENT_LOG
+            fputs("<- XPeekIfEvent\n", stderr);
+#endif
+            return ret;
+        }
         /* Peek doesn't remove the event, so do another extract run to
          * clear it */
         extract_events(dpy);
     }
+#ifdef XEVENT_LOG
+    fputs("<- XPeekIfEvent\n", stderr);
+#endif
     return ret;
 }
 
 int XEventsQueued(Display *dpy, int mode)
 {
+    int events;
+
+#ifdef XEVENT_LOG
+    fputs("-> XEventsQueued\n", stderr);
+#endif
     bugle_initialise_all();
-    if (active) extract_events(dpy);
-    return (*real_XEventsQueued)(dpy, mode);
+    if (!active) return (*real_XEventsQueued)(dpy, mode);
+
+    do
+    {
+        events = (*real_XEventsQueued)(dpy, mode);
+    } while (events > 0 && extract_events(dpy));
+#ifdef XEVENT_LOG
+    fputs("<- XEventsQueued\n", stderr);
+#endif
+    return events;
 }
 
 int XPending(Display *dpy)
 {
+    int events;
+#ifdef XEVENT_LOG
+    fputs("-> XPending\n", stderr);
+#endif
     bugle_initialise_all();
-    if (active) extract_events(dpy);
+    if (!active) return (*real_XPending)(dpy);
+
+    do
+    {
+        events = (*real_XPending)(dpy);
+    } while (events > 0 && extract_events(dpy));
+#ifdef XEVENT_LOG
+    fputs("<- XPending\n", stderr);
+#endif
     return (*real_XPending)(dpy);
 }
 
@@ -336,6 +506,9 @@ Window XCreateWindow(Display *dpy, Window parent, int x, int y,
                      unsigned long valuemask,
                      XSetWindowAttributes *attributes)
 {
+#ifdef XEVENT_LOG
+    fputs("-> XCreateWindow\n", stderr);
+#endif
     long events = KeyPressMask | KeyReleaseMask | PointerMotionMask;
     XSetWindowAttributes my_attributes;
             bugle_initialise_all();
@@ -343,6 +516,7 @@ Window XCreateWindow(Display *dpy, Window parent, int x, int y,
         && (!(valuemask & CWEventMask) || (attributes->event_mask & events) != events))
     {
         my_attributes = *attributes;
+        /* FIXME: what should the default attributes be? */
         if (!(valuemask & CWEventMask))
             my_attributes.event_mask = events;
         else
@@ -352,6 +526,9 @@ Window XCreateWindow(Display *dpy, Window parent, int x, int y,
                                      border_width, depth, c_class, visual,
                                      valuemask, &my_attributes);
     }
+#ifdef XEVENT_LOG
+    fputs("<- XCreateWindow\n", stderr);
+#endif
     return (*real_XCreateWindow)(dpy, parent, x, y, width, height,
                                  border_width, depth, c_class, visual,
                                  valuemask, attributes);
