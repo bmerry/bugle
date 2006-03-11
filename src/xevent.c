@@ -29,8 +29,9 @@
 #include <stddef.h>
 
 #define STATE_MASK (ControlMask | ShiftMask | Mod1Mask)
+#define EVENT_MASK (KeyPressMask | KeyReleaseMask | PointerMotionMask)
 
-#define XEVENT_LOG
+/* #define XEVENT_LOG */
 
 typedef struct
 {
@@ -67,6 +68,8 @@ static int (*real_XEventsQueued)(Display *, int) = NULL;
 static int (*real_XPending)(Display *) = NULL;
 
 static Window (*real_XCreateWindow)(Display *, Window, int, int, unsigned int, unsigned int, unsigned int, int, unsigned int, Visual *, unsigned long, XSetWindowAttributes *) = NULL;
+static Window (*real_XCreateSimpleWindow)(Display *, Window, int, int, unsigned int, unsigned int, unsigned int, unsigned long, unsigned long);
+static int (*real_XSelectInput)(Display *, Window, long);
 
 extern void bugle_initialise_all(void);
 
@@ -507,6 +510,15 @@ int XPending(Display *dpy)
     return (*real_XPending)(dpy);
 }
 
+static void adjust_event_mask(Display *dpy, Window w)
+{
+    XWindowAttributes attributes;
+
+    XGetWindowAttributes(dpy, w, &attributes);
+    if (~attributes.your_event_mask & EVENT_MASK)
+        (*real_XSelectInput)(dpy, w, attributes.your_event_mask | EVENT_MASK);
+}
+
 Window XCreateWindow(Display *dpy, Window parent, int x, int y,
                      unsigned int width, unsigned int height,
                      unsigned int border_width, int depth,
@@ -514,32 +526,56 @@ Window XCreateWindow(Display *dpy, Window parent, int x, int y,
                      unsigned long valuemask,
                      XSetWindowAttributes *attributes)
 {
+    Window ret;
+
 #ifdef XEVENT_LOG
     fputs("-> XCreateWindow\n", stderr);
 #endif
-    long events = KeyPressMask | KeyReleaseMask | PointerMotionMask;
-    XSetWindowAttributes my_attributes;
-            bugle_initialise_all();
-    if (active
-        && (!(valuemask & CWEventMask) || (attributes->event_mask & events) != events))
-    {
-        my_attributes = *attributes;
-        /* FIXME: what should the default attributes be? */
-        if (!(valuemask & CWEventMask))
-            my_attributes.event_mask = events;
-        else
-            my_attributes.event_mask |= events;
-        valuemask |= CWEventMask;
-        return (*real_XCreateWindow)(dpy, parent, x, y, width, height,
-                                     border_width, depth, c_class, visual,
-                                     valuemask, &my_attributes);
-    }
+    bugle_initialise_all();
+    ret = (*real_XCreateWindow)(dpy, parent, x, y, width, height,
+                                border_width, depth, c_class, visual,
+                                valuemask, attributes);
+    if (active && ret != None)
+        adjust_event_mask(dpy, ret);
 #ifdef XEVENT_LOG
     fputs("<- XCreateWindow\n", stderr);
 #endif
-    return (*real_XCreateWindow)(dpy, parent, x, y, width, height,
-                                 border_width, depth, c_class, visual,
-                                 valuemask, attributes);
+    return ret;
+}
+
+Window XCreateSimpleWindow(Display *dpy, Window parent, int x, int y,
+                           unsigned int width, unsigned int height,
+                           unsigned int border_width, unsigned long border,
+                           unsigned long background)
+{
+    Window ret;
+
+#ifdef XEVENT_LOG
+    fputs("-> XCreateSimpleWindow\n", stderr);
+#endif
+    bugle_initialise_all();
+    ret = (*real_XCreateSimpleWindow)(dpy, parent, x, y, width, height,
+                                      border_width, border, background);
+    if (active && ret != None)
+        adjust_event_mask(dpy, ret);
+#ifdef XEVENT_LOG
+    fputs("<- XCreateSimpleWindow\n", stderr);
+#endif
+    return ret;
+}
+
+int XSelectInput(Display *dpy, Window w, long event_mask)
+{
+#ifdef XEVENT_LONG
+    fputs("-> XSelectInput\n");
+#endif
+    bugle_initialise_all();
+    if (active)
+        event_mask |= EVENT_MASK;
+#ifdef XEVENT_LONG
+    fputs("<- XSelectInput\n");
+#endif
+    return (*real_XSelectInput)(dpy, w, event_mask);
 }
 
 bool bugle_xevent_key_lookup(const char *name, xevent_key *key)
@@ -643,6 +679,8 @@ void initialise_xevent(void)
     real_XPending = (int (*)(Display *)) lt_dlsym(handle, "XPending");
 
     real_XCreateWindow = (Window (*)(Display *, Window, int, int, unsigned int, unsigned int, unsigned int, int, unsigned int, Visual *, unsigned long, XSetWindowAttributes *)) lt_dlsym(handle, "XCreateWindow");
+    real_XCreateSimpleWindow = (Window (*)(Display *, Window, int, int, unsigned int, unsigned int, unsigned int, unsigned long, unsigned long)) lt_dlsym(handle, "XCreateSimpleWindow");
+    real_XSelectInput = (int (*)(Display *, Window, long)) lt_dlsym(handle, "XSelectInput");
 
     if (!real_XNextEvent
         || !real_XPeekEvent
@@ -656,7 +694,9 @@ void initialise_xevent(void)
         || !real_XCheckIfEvent
         || !real_XPeekIfEvent
         || !real_XEventsQueued
-        || !real_XPending)
+        || !real_XPending
+        || !real_XCreateWindow
+        || !real_XSelectInput)
         fputs("WARNING: unable to obtain X symbols. A crash is highly likely.\n", stderr);
 
     bugle_list_init(&handlers, true);

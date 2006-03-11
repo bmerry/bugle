@@ -315,7 +315,7 @@ static bool initialise_frontbuffer(filter_set *handle)
 static filter_set *camera_filterset;
 static bugle_object_view camera_view;
 static GLfloat camera_speed = 1.0f;
-static bool camera_dga;
+static bool camera_dga = false;
 
 static xevent_key key_camera[CAMERA_KEYS] =
 {
