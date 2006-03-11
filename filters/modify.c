@@ -315,6 +315,7 @@ static bool initialise_frontbuffer(filter_set *handle)
 static filter_set *camera_filterset;
 static bugle_object_view camera_view;
 static GLfloat camera_speed = 1.0f;
+static bool camera_dga;
 
 static xevent_key key_camera[CAMERA_KEYS] =
 {
@@ -558,7 +559,7 @@ static void camera_activation(filter_set *handle)
     ctx = (camera_context *) bugle_object_get_current_data(&bugle_context_class, camera_view);
     if (ctx)
         camera_handle_activation(true, ctx);
-    bugle_xevent_grab_pointer(camera_mouse_callback);
+    bugle_xevent_grab_pointer(camera_dga, camera_mouse_callback);
 }
 
 static void camera_deactivation(filter_set *handle)
@@ -667,6 +668,7 @@ void bugle_initialise_filter_library(void)
     };
     static const filter_set_variable_info camera_variables[] =
     {
+        { "mouse_dga", "mouse is controlled with XF86DGA extension", FILTER_SET_VARIABLE_BOOL, &camera_dga, NULL },
         { "key_forward", "key to move forward", FILTER_SET_VARIABLE_KEY, &key_camera[CAMERA_KEY_FORWARD], NULL },
         { "key_back", "key to move back", FILTER_SET_VARIABLE_KEY, &key_camera[CAMERA_KEY_BACK], NULL },
         { "key_left", "key to move left", FILTER_SET_VARIABLE_KEY, &key_camera[CAMERA_KEY_LEFT], NULL },

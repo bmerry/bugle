@@ -45,6 +45,7 @@ static bugle_linked_list handlers;
 
 static bool mouse_active = false;
 static bool mouse_first = true;
+static bool mouse_dga = false;
 static Window mouse_window;
 static int mouse_x, mouse_y;
 static void (*mouse_callback)(int dx, int dy) = NULL;
@@ -100,7 +101,15 @@ static void handle_event(Display *dpy, XEvent *event)
 
     if (mouse_active && event->type == MotionNotify)
     {
-        if (mouse_first)
+        if (mouse_dga)
+        {
+#ifdef XEVENT_LOG
+            fprintf(stderr, "DGA mouse moved by (%d, %d)\n",
+                    event->xmotion.x, event->xmotion.y);
+#endif
+            (*mouse_callback)(event->xmotion.x, event->xmotion.y);
+        }
+        else if (mouse_first)
         {
             XWindowAttributes attr;
             XGetWindowAttributes(dpy, event->xmotion.window, &attr);
@@ -108,7 +117,6 @@ static void handle_event(Display *dpy, XEvent *event)
             mouse_window = event->xmotion.window;
             mouse_x = attr.width / 2;
             mouse_y = attr.height / 2;
-            mouse_first = False;
             XWarpPointer(dpy, event->xmotion.window, event->xmotion.window,
                          0, 0, 0, 0, mouse_x, mouse_y);
             mouse_first = false;
@@ -594,8 +602,9 @@ void bugle_register_xevent_key(const xevent_key *key,
     active = true;
 }
 
-void bugle_xevent_grab_pointer(void (*callback)(int, int))
+void bugle_xevent_grab_pointer(bool dga, void (*callback)(int, int))
 {
+    mouse_dga = dga;
     mouse_callback = callback;
     mouse_active = true;
     mouse_first = true;

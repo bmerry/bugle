@@ -112,6 +112,9 @@ chain camera
 {
     filterset camera "C-A-S-C" inactive
     {
+        # mouse_dga yes          # Try enabling this if moving the mouse
+                                 # causes the view to jump all over
+                                 # the place
         key_forward "Up"
         key_back "Down"
         key_left "Left"

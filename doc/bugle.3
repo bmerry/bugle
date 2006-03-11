@@ -103,6 +103,14 @@ work. This is particularly useful in conjunction wth
 with breakpoints set on drawing functions, to watch a frame being drawn
 piece by piece.
 .TP
+.B camera
+Allows you to take over the camera. Up/Down/Left/Right (by default)
+move the camera, while the mouse will rotate it. This depends on the
+application doing certain things like applying the modelview matrix in
+any vertex shaders and not calling
+.BR XQueryPointer (3X11),
+so it is not guaranteed to work in all cases.
+.TP
 .B screenshot
 This has two modes of operation. In the first, it will take a screenshot
 when a key combination is pressed (by default, Ctrl-Alt-Shift-S). The
