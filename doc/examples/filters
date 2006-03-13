@@ -148,6 +148,6 @@ chain crash
 chain validate
 {
     filterset checks
-    filterset showerrors
+    filterset showerror
     filterset log
 }
