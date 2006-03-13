@@ -276,6 +276,7 @@ static bool dumpable(tree_node_p type)
  */
 static void identify()
 {
+    map<string, tree_node_p> seen_types;
     bool have_limit = false;
     regex_t limit_regex;
 
@@ -320,19 +321,34 @@ static void identify()
     }
 
     // capture these types
+    /* Note: GCC 4.1 seems to cause some types to be duplicated. We keep
+     * track of types that have already been seen and only push them once.
+     * We also construct the type map here so that duplicates can still
+     * be examined through the type map.
+     */
     size_t size = T.size();
     for (size_t i = 0; i < size; i++)
         if (T.exists(i) && (T[i]->user_flags & FLAG_USE))
         {
             tree_node_p node = T[i];
-            // FIXME: add an IGNORETYPE command
             if (dumpable(node))
             {
-                tree_node_p unconst = make_unconst(node);
+                string name = type_to_id(node);
+                // FIXME: add an IGNORETYPE command
+                if (name == "GLubyte")
+                    cout << "";
+                if (seen_types.count(name))
+                {
+                    type_map[node] = type_map[seen_types[name]];
+                    continue;
+                }
+                seen_types[name] = node;
 
+                tree_node_p unconst = make_unconst(node);
                 types.push_back(Type());
                 types.back().node = node;
                 types.back().unconst = unconst;
+                type_map[node] = types.end(); type_map[node]--;
                 if (unconst->user_flags & FLAG_TEMPORARY)
 		{
                     unconst->user_flags &= ~FLAG_TEMPORARY;
@@ -340,6 +356,7 @@ static void identify()
                     types.push_back(Type());
                     types.back().node = unconst;
                     types.back().unconst = unconst;
+                    type_map[unconst] = types.end(); type_map[node]--;
                 }
             }
         }
@@ -349,12 +366,6 @@ static void make_function_map()
 {
     for (list<Function>::iterator i = functions.begin(); i != functions.end(); i++)
         function_map[i->name()] = i;
-}
-
-static void make_type_map()
-{
-    for (list<Type>::iterator i = types.begin(); i != types.end(); i++)
-        type_map[i->node] = i;
 }
 
 static list<Type>::iterator get_type_map(tree_node_p node)
@@ -1600,7 +1611,6 @@ int main(int argc, char * const argv[])
     make_bitfields();
     identify();
     make_function_map();
-    make_type_map();
     make_groups();
     make_overrides();
     make_indices();

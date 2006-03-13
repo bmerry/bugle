@@ -29,6 +29,8 @@ tree *yyltree;
 
 %}
 
+%option yylineno
+
 %x NODE_TYPE
 %x NODE_NUMBER
 %s ASM
@@ -175,14 +177,23 @@ rest of the record, find the length, then replace what we don't need.
 "low : "@{DIGIT}+	| /* This is the low : for case_label */
 <ASM>"strg: "@{DIGIT}+	| /* See comments about ASM above */
 "outs: "@{DIGIT}+	|
-"algn: "{DIGIT}+	/* Ignore these fields, which are many code body */
+"algn: "{DIGIT}+	/* Ignore these fields, which are mainly code body */
 
-"struct"	{ yylnode->flag_struct = true; }
-"union"	{ yylnode->flag_union = true; }
-"undefined"	{ yylnode->flag_undefined = true; }
-"extern"	{ yylnode->flag_extern = true; }
-"unsigned"	{ yylnode->flag_unsigned = true; }
-"static"	{ yylnode->flag_static = true; }
+"tag : struct"		{ yylnode->flag_struct = true; }
+"tag : union"		{ yylnode->flag_union = true; }
+"body: undefined"	{ yylnode->flag_undefined = true; }
+"link: extern"		{ yylnode->flag_extern = true; }
+"sign: signed"		{ yylnode->flag_unsigned = false; }
+"sign: unsigned"	{ yylnode->flag_unsigned = true; }
+"note: artificial"	/* Ignore these fields */
+
+"struct"		{ yylnode->flag_struct = true; }
+"union"			{ yylnode->flag_union = true; }
+"undefined"		{ yylnode->flag_undefined = true; }
+"extern"		{ yylnode->flag_extern = true; }
+"unsigned"		{ yylnode->flag_unsigned = true; }
+"signed"		{ yylnode->flag_unsigned = false; }
+"static"		{ yylnode->flag_static = true; }
 "begn"	|
 "end"	|
 "null"	|
@@ -190,11 +201,14 @@ rest of the record, find the length, then replace what we don't need.
 "artificial" |
 "clnp"	/* Ignore these tags */
 
+{DIGIT}({DIGIT}|" "){3}:" "@{DIGIT}+ /* GCC 4.1 generates fields which are just numbers */
+
 [a-z][a-z ]{3}": "[^ \t]* { printf("Unknown field %s\n", yytext); }
 [a-z]+	{ printf("Unknown flag %s\n", yytext); }
 
 \n@	{ yyless(0); return 1; }
 <*>{WHITE}	/* eat whitespace */
+.	{ printf("Unexpected character %s (line %d)\n", yytext, yylineno); }
 
 <<EOF>>	{
 		yy_delete_buffer(YY_CURRENT_BUFFER); // free memory
