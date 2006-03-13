@@ -122,6 +122,7 @@ static void handle_event(Display *dpy, XEvent *event)
             mouse_y = attr.height / 2;
             XWarpPointer(dpy, event->xmotion.window, event->xmotion.window,
                          0, 0, 0, 0, mouse_x, mouse_y);
+            XFlush(dpy); /* try to ensure that XWarpPointer gets to server before next motion */
             mouse_first = false;
         }
         else if (event->xmotion.window != mouse_window)
@@ -135,6 +136,7 @@ static void handle_event(Display *dpy, XEvent *event)
 #endif
             (*mouse_callback)(event->xmotion.x - mouse_x, event->xmotion.y - mouse_y);
             XWarpPointer(dpy, None, event->xmotion.window, 0, 0, 0, 0, mouse_x, mouse_y);
+            XFlush(dpy); /* try to ensure that XWarpPointer gets to server before next motion */
         }
         return;
     }
@@ -505,9 +507,9 @@ int XPending(Display *dpy)
         events = (*real_XPending)(dpy);
     } while (events > 0 && extract_events(dpy));
 #ifdef XEVENT_LOG
-    fputs("<- XPending\n", stderr);
+    fprintf(stderr, "<- XPending = %d\n", events);
 #endif
-    return (*real_XPending)(dpy);
+    return events;
 }
 
 static void adjust_event_mask(Display *dpy, Window w)
@@ -644,11 +646,17 @@ void bugle_xevent_grab_pointer(bool dga, void (*callback)(int, int))
     mouse_callback = callback;
     mouse_active = true;
     mouse_first = true;
+#ifdef XEVENT_LOG
+    fputs("Mouse grabbed\n", stderr);
+#endif
 }
 
 void bugle_xevent_release_pointer()
 {
     mouse_active = false;
+#ifdef XEVENT_LOG
+    fputs("Mouse released\n", stderr);
+#endif
 }
 
 void initialise_xevent(void)

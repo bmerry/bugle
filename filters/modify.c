@@ -329,10 +329,11 @@ static xevent_key key_camera[CAMERA_KEYS] =
 
 typedef struct
 {
-    bool active;
-    bool pressed[CAMERA_MOTION_KEYS];
     GLfloat original[16];
     GLfloat modifier[16];
+    bool active;
+    bool dirty; /* Set to true when mouse moves */
+    bool pressed[CAMERA_MOTION_KEYS];
 } camera_context;
 
 static bool camera_key_wanted(const xevent_key *key, void *arg)
@@ -405,6 +406,7 @@ static void camera_mouse_callback(int dx, int dy)
             for (k = 0; k < 3; k++)
                 ctx->modifier[j * 4 + i] += rotator[i][k] * old[j * 4 + k];
         }
+    ctx->dirty = true;
 }
 
 static void initialise_camera_context(const void *key, void *data)
@@ -496,7 +498,7 @@ static bool camera_glXSwapBuffers(function_call *call, const callback_data *data
         if (ctx->pressed[CAMERA_KEY_BACK]) f--;
         if (ctx->pressed[CAMERA_KEY_LEFT]) l++;
         if (ctx->pressed[CAMERA_KEY_RIGHT]) l--;
-        if (f || l)
+        if (f || l || ctx->dirty)
         {
             ctx->modifier[14] += f * camera_speed;
             ctx->modifier[12] += l * camera_speed;
@@ -505,6 +507,7 @@ static bool camera_glXSwapBuffers(function_call *call, const callback_data *data
             CALL_glLoadMatrixf(ctx->modifier);
             CALL_glMultMatrixf(ctx->original);
             CALL_glMatrixMode(mode);
+            ctx->dirty = false;
         }
         bugle_end_internal_render("camera_glXSwapBuffers", true);
     }
