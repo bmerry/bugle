@@ -1,13 +1,13 @@
 Q. I am getting the error 'Invalid option -fdump-translation-unit' or
 similar.
-A. You need to use a version of gcc that supports this flag. Version
+A. You need to use a version of GCC that supports this flag. Version
 3.2 and newer are known to, but 3.0 and 2.95 do not. I'm not sure about
 3.1.
 
 Q. I get an error trying to move gl.c.tu, saying that the file does not
 exist.
-A. You are probably using gcc 4.0, which has broken support for
--fdump-translation-unit (see gcc bug 18279). Use gcc 3.x instead.
+A. You are probably using GCC 4.0, which has broken support for
+-fdump-translation-unit (see gcc bug 18279). Use GCC 3.x or 4.1 instead.
 
 Q. I am getting the error "could not find GL/glext.h"
 A. You need to have this file, as it defines extensions to OpenGL that
@@ -36,11 +36,10 @@ FAQ for more details.
 
 Q. I am using GL_EXT_framebuffer_object to render to texture, but the
 results do not appear in the texture pane of gldb-gui.
-A. This is a known bug in NVIDIA's 76.76 driver. It will be fixed in
-the 80 series drivers (not release at the time of writing). As a
-workaround, you can change the "#if 0" to "#if 1" on line 241 of
-filters/debugger.c, but be aware that this then breaks display of
-non-rendered textures.
+A. This is a known bug in NVIDIA's 76.76 driver. It is fixed in the 80
+series drivers. As a workaround, you can change the "#if 0" to "#if 1"
+on line 241 of filters/debugger.c, but be aware that this then breaks
+display of non-rendered textures.
 
 
 For any other problems, contact me at bmerry@users.sourceforge.net. If
