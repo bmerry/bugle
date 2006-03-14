@@ -432,13 +432,16 @@ static bool camera_restore(function_call *call, const callback_data *data)
     GLint mode;
     camera_context *ctx;
 
-    ctx = (camera_context *) bugle_object_get_current_data(&bugle_context_class, camera_view);
-    if (ctx && bugle_begin_internal_render())
+    if (bugle_displaylist_mode() == GL_NONE)
     {
-        CALL_glGetIntegerv(GL_MATRIX_MODE, &mode);
-        if (mode == GL_MODELVIEW)
-            CALL_glLoadMatrixf(ctx->original);
-        bugle_end_internal_render("camera_restore", true);
+        ctx = (camera_context *) bugle_object_get_current_data(&bugle_context_class, camera_view);
+        if (ctx && bugle_begin_internal_render())
+        {
+            CALL_glGetIntegerv(GL_MATRIX_MODE, &mode);
+            if (mode == GL_MODELVIEW)
+                CALL_glLoadMatrixf(ctx->original);
+            bugle_end_internal_render("camera_restore", true);
+        }
     }
     return true;
 }
@@ -448,17 +451,20 @@ static bool camera_override(function_call *call, const callback_data *data)
     GLint mode;
     camera_context *ctx;
 
-    ctx = (camera_context *) bugle_object_get_current_data(&bugle_context_class, camera_view);
-    if (ctx && bugle_begin_internal_render())
+    if (bugle_displaylist_mode() == GL_NONE)
     {
-        CALL_glGetIntegerv(GL_MATRIX_MODE, &mode);
-        if (mode == GL_MODELVIEW)
+        ctx = (camera_context *) bugle_object_get_current_data(&bugle_context_class, camera_view);
+        if (ctx && bugle_begin_internal_render())
         {
-            CALL_glGetFloatv(GL_MODELVIEW_MATRIX, ctx->original);
-            CALL_glLoadMatrixf(ctx->modifier);
-            CALL_glMultMatrixf(ctx->original);
+            CALL_glGetIntegerv(GL_MATRIX_MODE, &mode);
+            if (mode == GL_MODELVIEW)
+            {
+                CALL_glGetFloatv(GL_MODELVIEW_MATRIX, ctx->original);
+                CALL_glLoadMatrixf(ctx->modifier);
+                CALL_glMultMatrixf(ctx->original);
+            }
+            bugle_end_internal_render("camera_restore", true);
         }
-        bugle_end_internal_render("camera_restore", true);
     }
     return true;
 }
@@ -700,4 +706,5 @@ void bugle_initialise_filter_library(void)
     bugle_register_filter_set_renders("wireframe");
     bugle_register_filter_set_renders("frontbuffer");
     bugle_register_filter_set_renders("camera");
+    bugle_register_filter_set_depends("camera", "trackdisplaylist");
 }
