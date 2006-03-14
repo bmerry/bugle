@@ -96,7 +96,7 @@ src/data/gl.tu: src/data/gl.c src/data/overrides.h
 	$(INSTALL) -d src/data
 	$(COMPILE) -fdump-translation-unit -c $(srcdir)/src/data/gl.c -o src/data/gl.o
 	rm -f src/data/gl.o
-	mv gl.c.tu src/data/gl.tu
+	mv gl.c.`test -f gl.c.t00.tu && echo t00.`tu src/data/gl.tu
 
 BCFILES = bc/core1_1.bc bc/glx.bc \
 	bc/GL_ARB_multitexture.bc bc/GL_ARB_imaging.bc \

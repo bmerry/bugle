@@ -34,7 +34,7 @@ static bugle_object_view wireframe_view;
 typedef struct
 {
     bool active; /* True if polygon mode has been adjusted */
-    GLenum polygon_mode[2];  /* The app polygon mode, for front and back */
+    GLint polygon_mode[2];  /* The app polygon mode, for front and back */
 } wireframe_context;
 
 static void initialise_wireframe_context(const void *key, void *data)
@@ -185,7 +185,7 @@ static bugle_object_view frontbuffer_view;
 typedef struct
 {
     bool active;
-    GLenum draw_buffer;
+    GLint draw_buffer;
 } frontbuffer_context;
 
 static void initialise_frontbuffer_context(const void *key, void *data)
