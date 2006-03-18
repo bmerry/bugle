@@ -49,7 +49,7 @@ static bool mouse_first = true;
 static bool mouse_dga = false;
 static Window mouse_window;
 static int mouse_x, mouse_y;
-static void (*mouse_callback)(int dx, int dy) = NULL;
+static void (*mouse_callback)(int, int, XEvent *) = NULL;
 
 static int (*real_XNextEvent)(Display *, XEvent *) = NULL;
 static int (*real_XPeekEvent)(Display *, XEvent *) = NULL;
@@ -110,7 +110,7 @@ static void handle_event(Display *dpy, XEvent *event)
             fprintf(stderr, "DGA mouse moved by (%d, %d)\n",
                     event->xmotion.x, event->xmotion.y);
 #endif
-            (*mouse_callback)(event->xmotion.x, event->xmotion.y);
+            (*mouse_callback)(event->xmotion.x, event->xmotion.y, event);
         }
         else if (mouse_first)
         {
@@ -134,7 +134,7 @@ static void handle_event(Display *dpy, XEvent *event)
                     event->xmotion.x - mouse_x, event->xmotion.y - mouse_y,
                     mouse_x, mouse_y);
 #endif
-            (*mouse_callback)(event->xmotion.x - mouse_x, event->xmotion.y - mouse_y);
+            (*mouse_callback)(event->xmotion.x - mouse_x, event->xmotion.y - mouse_y, event);
             XWarpPointer(dpy, None, event->xmotion.window, 0, 0, 0, 0, mouse_x, mouse_y);
             XFlush(dpy); /* try to ensure that XWarpPointer gets to server before next motion */
         }
@@ -640,7 +640,7 @@ void bugle_register_xevent_key(const xevent_key *key,
     active = true;
 }
 
-void bugle_xevent_grab_pointer(bool dga, void (*callback)(int, int))
+void bugle_xevent_grab_pointer(bool dga, void (*callback)(int, int, XEvent *))
 {
     mouse_dga = dga;
     mouse_callback = callback;

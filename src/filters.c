@@ -19,6 +19,8 @@
 # include <config.h>
 #endif
 #define _POSIX_SOURCE
+#define _BSD_SOURCE /* For finite() */
+#define _XOPEN_SOURCE 600 /* For strtof */
 #include "src/utils.h"
 #include "src/glfuncs.h"
 #include "src/xevent.h"
@@ -34,6 +36,7 @@
 #include <sys/types.h>
 #include <errno.h>
 #include <stdlib.h>
+#include <math.h>
 #if HAVE_DIRENT_H
 # include <dirent.h>
 # define NAMLEN(dirent) strlen((dirent)->d_name)
@@ -204,6 +207,7 @@ bool filter_set_variable(filter_set *handle, const char *name, const char *value
     const filter_set_variable_info *v;
     bool bool_value;
     long int_value;
+    float float_value;
     char *string_value;
     char *end;
     xevent_key key_value;
@@ -257,6 +261,36 @@ bool filter_set_variable(filter_set *handle, const char *name, const char *value
                 }
                 value_ptr = &int_value;
                 break;
+            case FILTER_SET_VARIABLE_FLOAT:
+                errno = 0;
+#if HAVE_STRTOF
+                float_value = strtof(value, &end);
+#else
+                float_value = strtod(value, &end);
+#endif
+                if (errno || !*value || *end)
+                {
+                    fprintf(stderr, "Expected a real number for %s in filter-set %s\n",
+                            name, handle->name);
+                    return false;
+                }
+#if HAVE_ISFINITE
+                if (!isfinite(float_value))
+                {
+                    fprintf(stderr, "Expected a finite real number for %s in filter-set %s\n",
+                            name, handle->name);
+                    return false;
+                }
+#elif HAVE_FINITE
+                if (!finite(float_value))
+                {
+                    fprintf(stderr, "Expected a finite real number for %s in filter-set %s\n",
+                            name, handle->name);
+                    return false;
+                }
+#endif
+                value_ptr = &float_value;
+                break;
             case FILTER_SET_VARIABLE_STRING:
                 string_value = bugle_strdup(value);
                 value_ptr = &string_value;
@@ -292,6 +326,9 @@ bool filter_set_variable(filter_set *handle, const char *name, const char *value
                     case FILTER_SET_VARIABLE_UINT:
                     case FILTER_SET_VARIABLE_POSITIVE_INT:
                         *(long *) v->value = int_value;
+                        break;
+                    case FILTER_SET_VARIABLE_FLOAT:
+                        *(float *) v->value = float_value;
                         break;
                     case FILTER_SET_VARIABLE_STRING:
                         if (*(char **) v->value)
@@ -749,6 +786,9 @@ void bugle_filters_help(void)
                 case FILTER_SET_VARIABLE_UINT:
                 case FILTER_SET_VARIABLE_POSITIVE_INT:
                     type_str = " (int)";
+                    break;
+                case FILTER_SET_VARIABLE_FLOAT:
+                    type_str = " (float)";
                     break;
                 case FILTER_SET_VARIABLE_BOOL:
                     type_str = " (bool)";

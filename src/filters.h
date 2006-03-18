@@ -48,6 +48,7 @@ typedef enum
     FILTER_SET_VARIABLE_INT,
     FILTER_SET_VARIABLE_UINT,
     FILTER_SET_VARIABLE_POSITIVE_INT,
+    FILTER_SET_VARIABLE_FLOAT,
     FILTER_SET_VARIABLE_STRING,
     FILTER_SET_VARIABLE_KEY,
     FILTER_SET_VARIABLE_CUSTOM
@@ -59,6 +60,7 @@ typedef struct filter_set_variable_info_s
     const char *help;
     filter_set_variable_type type;
     /* int, uint, posint: a long * (uint just enforces non-negative)
+     * float: a float *
      * bool: a bool *
      * string: pointer to char *, which will then own the memory.
      *         If the old value was non-NULL, it is freed.

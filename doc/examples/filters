@@ -115,12 +115,14 @@ chain camera
         # mouse_dga yes          # Try enabling this if moving the mouse
                                  # causes the view to jump all over
                                  # the place
-        key_forward "Up"
-        key_back "Down"
-        key_left "Left"
-        key_right "Right"
-        key_faster "Page_Up"     # speeds up motion
-        key_slower "Page_Down"   # slows down motion
+        # The defaults are:
+        # key_forward "Up"
+        # key_back "Down"
+        # key_left "Left"
+        # key_right "Right"
+        # key_faster "Page_Up"   # speeds up motion
+        # key_slower "Page_Down" # slows down motion
+        # speed "1.0"            # initial keyboard speed
     }
 }
 

@@ -51,7 +51,7 @@ void bugle_register_xevent_key(const xevent_key *key,
                                void (*callback)(const xevent_key *, void *arg),
                                void *arg);
 
-void bugle_xevent_grab_pointer(bool dga, void (*callback)(int, int));
+void bugle_xevent_grab_pointer(bool dga, void (*callback)(int, int, XEvent *));
 void bugle_xevent_release_pointer(void);
 
 void initialise_xevent(void);

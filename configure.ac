@@ -95,7 +95,7 @@ AC_C_INLINE
 AC_C_CHAR_UNSIGNED
 
 dnl Checks for library functions
-AC_CHECK_FUNCS([regcomp strrchr vasprintf vsnprintf open_memstream])
+AC_CHECK_FUNCS([regcomp strrchr vasprintf vsnprintf open_memstream finite isfinite])
 AC_REPLACE_FUNCS([bsearch])
 AC_FUNC_MEMCMP
 # Readline used to call this completion_matches

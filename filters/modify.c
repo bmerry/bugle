@@ -314,7 +314,7 @@ static bool initialise_frontbuffer(filter_set *handle)
 
 static filter_set *camera_filterset;
 static bugle_object_view camera_view;
-static GLfloat camera_speed = 1.0f;
+static float camera_speed = 1.0f;
 static bool camera_dga = false;
 
 static xevent_key key_camera[CAMERA_KEYS] =
@@ -361,13 +361,14 @@ static void camera_key_callback(const xevent_key *key, void *arg)
     }
 }
 
-static void camera_mouse_callback(int dx, int dy)
+static void camera_mouse_callback(int dx, int dy, XEvent *event)
 {
     camera_context *ctx;
     GLfloat old[16], rotator[3][3];
     GLfloat axis[3];
     GLfloat angle, cs, sn;
     int i, j, k;
+    XEvent dirty;
 
     ctx = (camera_context *) bugle_object_get_current_data(&bugle_context_class, camera_view);
     if (!ctx) return;
@@ -407,6 +408,19 @@ static void camera_mouse_callback(int dx, int dy)
                 ctx->modifier[j * 4 + i] += rotator[i][k] * old[j * 4 + k];
         }
     ctx->dirty = true;
+
+    if (event->xany.window != None)
+    {
+        dirty.type = Expose;
+        dirty.xexpose.display = event->xany.display;
+        dirty.xexpose.window = event->xany.window;
+        dirty.xexpose.x = 0;
+        dirty.xexpose.y = 0;
+        dirty.xexpose.width = 1;
+        dirty.xexpose.height = 1;
+        dirty.xexpose.count = 0;
+        XSendEvent(event->xany.display, PointerWindow, True, ExposureMask, &dirty);
+    }
 }
 
 static void initialise_camera_context(const void *key, void *data)
@@ -678,12 +692,13 @@ void bugle_initialise_filter_library(void)
     static const filter_set_variable_info camera_variables[] =
     {
         { "mouse_dga", "mouse is controlled with XF86DGA extension", FILTER_SET_VARIABLE_BOOL, &camera_dga, NULL },
-        { "key_forward", "key to move forward", FILTER_SET_VARIABLE_KEY, &key_camera[CAMERA_KEY_FORWARD], NULL },
-        { "key_back", "key to move back", FILTER_SET_VARIABLE_KEY, &key_camera[CAMERA_KEY_BACK], NULL },
-        { "key_left", "key to move left", FILTER_SET_VARIABLE_KEY, &key_camera[CAMERA_KEY_LEFT], NULL },
-        { "key_right", "key to move right", FILTER_SET_VARIABLE_KEY, &key_camera[CAMERA_KEY_RIGHT], NULL },
-        { "key_faster", "key to double camera speed", FILTER_SET_VARIABLE_KEY, &key_camera[CAMERA_KEY_FASTER], NULL },
-        { "key_slower", "key to halve camera speed", FILTER_SET_VARIABLE_KEY, &key_camera[CAMERA_KEY_SLOWER], NULL },
+        { "key_forward", "key to move forward [Up]", FILTER_SET_VARIABLE_KEY, &key_camera[CAMERA_KEY_FORWARD], NULL },
+        { "key_back", "key to move back [Down]", FILTER_SET_VARIABLE_KEY, &key_camera[CAMERA_KEY_BACK], NULL },
+        { "key_left", "key to move left [Left]", FILTER_SET_VARIABLE_KEY, &key_camera[CAMERA_KEY_LEFT], NULL },
+        { "key_right", "key to move right [Right]", FILTER_SET_VARIABLE_KEY, &key_camera[CAMERA_KEY_RIGHT], NULL },
+        { "key_faster", "key to double camera speed [PgUp]", FILTER_SET_VARIABLE_KEY, &key_camera[CAMERA_KEY_FASTER], NULL },
+        { "key_slower", "key to halve camera speed [PgDn]", FILTER_SET_VARIABLE_KEY, &key_camera[CAMERA_KEY_SLOWER], NULL },
+        { "speed", "initial speed of camera [1.0]", FILTER_SET_VARIABLE_FLOAT, &camera_speed, NULL },
         { NULL, NULL, 0, NULL, NULL }
     };
 
