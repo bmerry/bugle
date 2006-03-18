@@ -30,6 +30,7 @@
 
 #define STATE_MASK (ControlMask | ShiftMask | Mod1Mask)
 #define EVENT_MASK (KeyPressMask | KeyReleaseMask | PointerMotionMask)
+#define EVENT_UNMASK (PointerMotionHintMask)
 
 /* #define XEVENT_LOG */
 
@@ -228,9 +229,99 @@ int XPeekEvent(Display *dpy, XEvent *event)
     return ret;
 }
 
+/* Note: for the blocking condition event extractions, we cannot simply
+ * call the real function, because interception events may occur before
+ * the real function ever returns. On the other hand, we need to call
+ * some blocking method to avoid hammering the CPU. Instead, we use
+ * XIfEvent to wait until either an interception event or a user-requested
+ * event arrives. If the former, we process it and start again, if the
+ * latter we return the event.
+ */
+
+typedef struct
+{
+    Window w;
+    long event_mask;
+    Bool (*predicate)(Display *, XEvent *, XPointer);
+    XPointer arg;
+    int use_w : 1;
+    int use_event_mask : 1;
+    int use_predicate : 1;
+} if_block_data;
+
+Bool matches_mask(XEvent *event, unsigned long mask)
+{
+    /* Loosely based on evtomask.c and ChkMaskEv.c from XOrg 6.8.2 */
+    switch (event->type)
+    {
+    case KeyPress: return (mask & KeyPressMask) ? True : False;
+    case KeyRelease: return (mask & KeyReleaseMask) ? True : False;
+    case ButtonPress: return (mask & ButtonPressMask) ? True : False;
+    case ButtonRelease: return (mask & ButtonReleaseMask) ? True : False;
+    case MotionNotify:
+        if (mask & (PointerMotionMask | PointerMotionHintMask | ButtonMotionMask))
+            return True;
+        if (mask & (Button1MotionMask | Button2MotionMask | Button3MotionMask | Button4MotionMask | Button5MotionMask) & event->xmotion.state)
+            return True;
+        return False;
+    case EnterNotify: return (mask & EnterWindowMask) ? True : False;
+    case LeaveNotify: return (mask & LeaveWindowMask) ? True : False;
+    case FocusIn:
+    case FocusOut: return (mask & FocusChangeMask) ? True : False;
+    case KeymapStateMask: return (mask & KeymapNotify) ? True : False;
+    case Expose:
+    case GraphicsExpose:
+    case NoExpose: return (mask & ExposureMask) ? True : False;
+    case VisibilityNotify: return (mask & VisibilityChangeMask) ? True : False;
+    case CreateNotify: return (mask & SubstructureNotifyMask) ? True : False;
+    case DestroyNotify:
+    case UnmapNotify:
+    case MapNotify:
+    case ReparentNotify:
+    case ConfigureNotify:
+    case GravityNotify:
+    case CirculateNotify: return (mask & (SubstructureNotifyMask | StructureNotifyMask)) ? True : False;
+    case MapRequest:
+    case ConfigureRequest:
+    case CirculateRequest: return (mask & SubstructureRedirectMask) ? True : False;
+    case ResizeRequest: return (mask & ResizeRedirectMask) ? True : False;
+    case PropertyNotify: return (mask & PropertyChangeMask) ? True : False;
+    case ColormapNotify: return (mask & ColormapChangeMask) ? True : False;
+    case SelectionClear:
+    case SelectionRequest:
+    case SelectionNotify:
+    case ClientMessage:
+    case MappingNotify: return False;
+    default:
+        /* Unknown event! This is probably related to an extension. We
+         * return true for now to be safe. That means that BuGLe might
+         * wait longer than expected for an event, but it will never
+         * cause to wait forever for one.
+         */
+        return True;
+    }
+}
+
+Bool if_block(Display *dpy, XEvent *event, XPointer arg)
+{
+    const if_block_data *data;
+
+    data = (if_block_data *) arg;
+    if (data->use_w && event->xany.window != data->w) return False;
+    if (data->use_event_mask && !matches_mask(event, data->event_mask)) return False;
+    if (data->use_predicate && !(*data->predicate)(dpy, event, data->arg)) return False;
+    return True;
+}
+
+Bool if_block_intercept(Display *dpy, XEvent *event, XPointer arg)
+{
+    return event_predicate(dpy, event, NULL) || if_block(dpy, event, arg);
+}
+
 int XWindowEvent(Display *dpy, Window w, long event_mask, XEvent *event)
 {
     int ret;
+    if_block_data data;
 
 #ifdef XEVENT_LOG
     fputs("-> XWindowEvent\n", stderr);
@@ -238,7 +329,12 @@ int XWindowEvent(Display *dpy, Window w, long event_mask, XEvent *event)
     bugle_initialise_all();
     if (!active) return (*real_XWindowEvent)(dpy, w, event_mask, event);
     extract_events(dpy);
-    while ((ret = (*real_XWindowEvent)(dpy, w, event_mask, event)) != 0)
+    data.use_w = 1;
+    data.use_event_mask = 1;
+    data.use_predicate = 0;
+    data.w = w;
+    data.event_mask = event_mask;
+    while ((ret = (*real_XIfEvent)(dpy, event, if_block_intercept, (XPointer) &data)) != 0)
     {
         if (!event_predicate(dpy, event, NULL))
         {
@@ -285,6 +381,7 @@ Bool XCheckWindowEvent(Display *dpy, Window w, long event_mask, XEvent *event)
 int XMaskEvent(Display *dpy, long event_mask, XEvent *event)
 {
     int ret;
+    if_block_data data;
 
 #ifdef XEVENT_LOG
     fputs("-> XMaskEvent\n", stderr);
@@ -292,7 +389,11 @@ int XMaskEvent(Display *dpy, long event_mask, XEvent *event)
     bugle_initialise_all();
     if (!active) return (*real_XMaskEvent)(dpy, event_mask, event);
     extract_events(dpy);
-    while ((ret = (*real_XMaskEvent)(dpy, event_mask, event)) != 0)
+    data.use_w = 0;
+    data.use_event_mask = 1;
+    data.use_predicate = 0;
+    data.event_mask = event_mask;
+    while ((ret = (*real_XIfEvent)(dpy, event, if_block_intercept, (XPointer) &data)) != 0)
     {
         if (!event_predicate(dpy, event, NULL))
         {
@@ -393,6 +494,7 @@ Bool XCheckTypedWindowEvent(Display *dpy, Window w, int type, XEvent *event)
 int XIfEvent(Display *dpy, XEvent *event, Bool (*predicate)(Display *, XEvent *, XPointer), XPointer arg)
 {
     int ret;
+    if_block_data data;
 
 #ifdef XEVENT_LOG
     fputs("-> XIfEvent\n", stderr);
@@ -400,7 +502,12 @@ int XIfEvent(Display *dpy, XEvent *event, Bool (*predicate)(Display *, XEvent *,
     bugle_initialise_all();
     if (!active) return (*real_XIfEvent)(dpy, event, predicate, arg);
     extract_events(dpy);
-    while ((ret = (*real_XIfEvent)(dpy, event, predicate, arg)) != 0)
+    data.use_w = 0;
+    data.use_event_mask = 0;
+    data.use_predicate = 1;
+    data.predicate = predicate;
+    data.arg = arg;
+    while ((ret = (*real_XIfEvent)(dpy, event, if_block_intercept, (XPointer) &data)) != 0)
     {
         if (!event_predicate(dpy, event, NULL))
         {
@@ -447,6 +554,7 @@ Bool XCheckIfEvent(Display *dpy, XEvent *event, Bool (*predicate)(Display *, XEv
 int XPeekIfEvent(Display *dpy, XEvent *event, Bool (*predicate)(Display *, XEvent *, XPointer), XPointer arg)
 {
     int ret;
+    if_block_data data;
 
 #ifdef XEVENT_LOG
     fputs("-> XPeekIfEvent\n", stderr);
@@ -454,7 +562,12 @@ int XPeekIfEvent(Display *dpy, XEvent *event, Bool (*predicate)(Display *, XEven
     bugle_initialise_all();
     if (!active) return (*real_XPeekIfEvent)(dpy, event, predicate, arg);
     extract_events(dpy);
-    while ((ret = (*real_XPeekIfEvent)(dpy, event, predicate, arg)) != 0)
+    data.use_w = 0;
+    data.use_event_mask = 0;
+    data.use_predicate = 1;
+    data.predicate = predicate;
+    data.arg = arg;
+    while ((ret = (*real_XPeekIfEvent)(dpy, event, if_block_intercept, (XPointer) &data)) != 0)
     {
         if (!event_predicate(dpy, event, NULL))
         {
@@ -515,10 +628,17 @@ int XPending(Display *dpy)
 static void adjust_event_mask(Display *dpy, Window w)
 {
     XWindowAttributes attributes;
+    unsigned long mask;
 
     XGetWindowAttributes(dpy, w, &attributes);
-    if (~attributes.your_event_mask & EVENT_MASK)
-        (*real_XSelectInput)(dpy, w, attributes.your_event_mask | EVENT_MASK);
+    mask = attributes.your_event_mask;
+    if ((~mask & EVENT_MASK)
+        || (mask & EVENT_UNMASK))
+    {
+        mask |= EVENT_MASK;
+        mask &= ~EVENT_UNMASK;
+        (*real_XSelectInput)(dpy, w, mask);
+    }
 }
 
 Window XCreateWindow(Display *dpy, Window parent, int x, int y,
@@ -566,6 +686,8 @@ Window XCreateSimpleWindow(Display *dpy, Window parent, int x, int y,
     return ret;
 }
 
+/* FIXME: capture XChangeWindowAttributes */
+
 int XSelectInput(Display *dpy, Window w, long event_mask)
 {
 #ifdef XEVENT_LONG
@@ -573,7 +695,10 @@ int XSelectInput(Display *dpy, Window w, long event_mask)
 #endif
     bugle_initialise_all();
     if (active)
+    {
         event_mask |= EVENT_MASK;
+        event_mask &= ~EVENT_UNMASK;
+    }
 #ifdef XEVENT_LONG
     fputs("<- XSelectInput\n");
 #endif
