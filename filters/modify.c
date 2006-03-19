@@ -311,12 +311,14 @@ static bool initialise_frontbuffer(filter_set *handle)
 #define CAMERA_KEY_FASTER 4
 #define CAMERA_KEY_SLOWER 5
 #define CAMERA_KEY_RESET 6
-#define CAMERA_KEYS 7
+#define CAMERA_KEY_TOGGLE 7
+#define CAMERA_KEYS 8
 
 static filter_set *camera_filterset;
 static bugle_object_view camera_view;
 static float camera_speed = 1.0f;
 static bool camera_dga = false;
+static bool camera_intercept = true;
 
 static xevent_key key_camera[CAMERA_KEYS] =
 {
@@ -334,7 +336,7 @@ typedef struct
     GLfloat original[16];
     GLfloat modifier[16];
     bool active;
-    bool dirty; /* Set to true when mouse moves */
+    bool dirty;       /* Set to true when mouse moves */
     bool pressed[CAMERA_MOTION_KEYS];
 } camera_context;
 
@@ -364,39 +366,6 @@ static void invalidate_window(XEvent *event)
         dirty.xexpose.height = height;
     }
     XSendEvent(dpy, PointerWindow, True, ExposureMask, &dirty);
-}
-
-static bool camera_key_wanted(const xevent_key *key, void *arg, XEvent *event)
-{
-    return bugle_filter_set_is_active(camera_filterset);
-}
-
-static void camera_key_callback(const xevent_key *key, void *arg, XEvent *event)
-{
-    int index, i;
-    camera_context *ctx;
-
-    ctx = (camera_context *) bugle_object_get_current_data(&bugle_context_class, camera_view);
-    if (!ctx) return;
-    index = (xevent_key *) arg - key_camera;
-    if (index < CAMERA_MOTION_KEYS)
-    {
-        ctx->pressed[index] = key->press;
-        if (key->press) invalidate_window(event);
-    }
-    else
-    {
-        switch (index)
-        {
-        case CAMERA_KEY_FASTER: camera_speed *= 2.0f; break;
-        case CAMERA_KEY_SLOWER: camera_speed *= 0.5f; break;
-        case CAMERA_KEY_RESET:
-            for (i = 0; i < 16; i++)
-                ctx->modifier[i] = (i % 5) ? 0.0f : 1.0f;
-            invalidate_window(event);
-            break;
-        }
-    }
 }
 
 static void camera_mouse_callback(int dx, int dy, XEvent *event)
@@ -447,6 +416,52 @@ static void camera_mouse_callback(int dx, int dy, XEvent *event)
     ctx->dirty = true;
 
     invalidate_window(event);
+}
+
+static bool camera_key_wanted(const xevent_key *key, void *arg, XEvent *event)
+{
+    return bugle_filter_set_is_active(camera_filterset);
+}
+
+static void camera_key_callback(const xevent_key *key, void *arg, XEvent *event)
+{
+    int index, i;
+    camera_context *ctx;
+
+    ctx = (camera_context *) bugle_object_get_current_data(&bugle_context_class, camera_view);
+    if (!ctx) return;
+    index = (xevent_key *) arg - key_camera;
+    if (index < CAMERA_MOTION_KEYS)
+    {
+        ctx->pressed[index] = key->press;
+        if (key->press) invalidate_window(event);
+    }
+    else
+    {
+        switch (index)
+        {
+        case CAMERA_KEY_FASTER: camera_speed *= 2.0f; break;
+        case CAMERA_KEY_SLOWER: camera_speed *= 0.5f; break;
+        case CAMERA_KEY_RESET:
+            for (i = 0; i < 16; i++)
+                ctx->modifier[i] = (i % 5) ? 0.0f : 1.0f;
+            invalidate_window(event);
+            break;
+        case CAMERA_KEY_TOGGLE:
+            if (!camera_intercept)
+            {
+                camera_intercept = true;
+                bugle_xevent_grab_pointer(camera_dga, camera_mouse_callback);
+                break;
+            }
+            else
+            {
+                camera_intercept = false;
+                bugle_xevent_release_pointer();
+            }
+            break;
+        }
+    }
 }
 
 static void initialise_camera_context(const void *key, void *data)
@@ -570,6 +585,7 @@ static void camera_handle_activation(bool active, camera_context *ctx)
         {
             CALL_glGetFloatv(GL_MODELVIEW_MATRIX, ctx->original);
             ctx->active = true;
+            ctx->dirty = true;
             bugle_end_internal_render("camera_handle_activation", true);
         }
     }
@@ -604,7 +620,8 @@ static void camera_activation(filter_set *handle)
     ctx = (camera_context *) bugle_object_get_current_data(&bugle_context_class, camera_view);
     if (ctx)
         camera_handle_activation(true, ctx);
-    bugle_xevent_grab_pointer(camera_dga, camera_mouse_callback);
+    if (camera_intercept)
+        bugle_xevent_grab_pointer(camera_dga, camera_mouse_callback);
 }
 
 static void camera_deactivation(filter_set *handle)
@@ -614,7 +631,8 @@ static void camera_deactivation(filter_set *handle)
     ctx = (camera_context *) bugle_object_get_current_data(&bugle_context_class, camera_view);
     if (ctx)
         camera_handle_activation(false, ctx);
-    bugle_xevent_release_pointer();
+    if (camera_intercept)
+        bugle_xevent_release_pointer();
 }
 
 static bool initialise_camera(filter_set *handle)
@@ -682,7 +700,8 @@ static bool initialise_camera(filter_set *handle)
         release = key_camera[i];
         release.press = false;
         bugle_register_xevent_key(&key_camera[i], camera_key_wanted, camera_key_callback, (void *) &key_camera[i]);
-        bugle_register_xevent_key(&release, camera_key_wanted, camera_key_callback, (void *) &key_camera[i]);
+        if (i < CAMERA_MOTION_KEYS)
+            bugle_register_xevent_key(&release, camera_key_wanted, camera_key_callback, (void *) &key_camera[i]);
     }
     return true;
 }
@@ -721,6 +740,7 @@ void bugle_initialise_filter_library(void)
         { "key_faster", "key to double camera speed [PgUp]", FILTER_SET_VARIABLE_KEY, &key_camera[CAMERA_KEY_FASTER], NULL },
         { "key_slower", "key to halve camera speed [PgDn]", FILTER_SET_VARIABLE_KEY, &key_camera[CAMERA_KEY_SLOWER], NULL },
         { "key_reset", "key to undo adjustments [none]", FILTER_SET_VARIABLE_KEY, &key_camera[CAMERA_KEY_RESET], NULL },
+        { "key_toggle", "key to toggle mouse grab [none]", FILTER_SET_VARIABLE_KEY, &key_camera[CAMERA_KEY_TOGGLE], NULL },
         { "speed", "initial speed of camera [1.0]", FILTER_SET_VARIABLE_FLOAT, &camera_speed, NULL },
         { NULL, NULL, 0, NULL, NULL }
     };

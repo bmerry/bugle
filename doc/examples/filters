@@ -107,7 +107,7 @@ chain wireframe
 # Use this filter-set and press the key sequence below to give manual
 # control over the camera position. Pressing it again restores the
 # original camera position and deactivates the override keys.
-# Usefor for LOD and frustum culling research.
+# Useful for LOD and frustum culling research.
 chain camera
 {
     filterset camera "C-A-S-C" inactive
@@ -122,7 +122,9 @@ chain camera
         # key_right "Right"
         # key_faster "Page_Up"   # speeds up motion
         # key_slower "Page_Down" # slows down motion
-        # speed "1.0"            # initial keyboard speed
+        # key_reset "R"          # resets the camera to the app's view (no default)
+        # key_toggle "T"         # toggles mouse capture (no default)
+        # speed "1.0"            # initial keyboard motion speed
     }
 }
 
