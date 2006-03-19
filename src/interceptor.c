@@ -39,7 +39,7 @@
 extern FILE *yyin;
 extern int yyparse(void);
 
-static void toggle_filterset(const xevent_key *key, void *arg)
+static void toggle_filterset(const xevent_key *key, void *arg, XEvent *event)
 {
     filter_set *set;
 

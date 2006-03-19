@@ -310,7 +310,8 @@ static bool initialise_frontbuffer(filter_set *handle)
 
 #define CAMERA_KEY_FASTER 4
 #define CAMERA_KEY_SLOWER 5
-#define CAMERA_KEYS 6
+#define CAMERA_KEY_RESET 6
+#define CAMERA_KEYS 7
 
 static filter_set *camera_filterset;
 static bugle_object_view camera_view;
@@ -324,7 +325,8 @@ static xevent_key key_camera[CAMERA_KEYS] =
     { XK_Left, 0, true },
     { XK_Right, 0, true },
     { XK_Page_Up, 0, true },
-    { XK_Page_Down, 0, true }
+    { XK_Page_Down, 0, true },
+    { NoSymbol, 0, true }
 };
 
 typedef struct
@@ -336,27 +338,63 @@ typedef struct
     bool pressed[CAMERA_MOTION_KEYS];
 } camera_context;
 
-static bool camera_key_wanted(const xevent_key *key, void *arg)
+static void invalidate_window(XEvent *event)
+{
+    Display *dpy;
+    XEvent dirty;
+    Window w;
+    Window root;
+    int x, y;
+    unsigned int width, height, border_width, depth;
+
+    dpy = event->xany.display;
+    w = event->xany.window != None ? event->xany.window : PointerWindow;
+    dirty.type = Expose;
+    dirty.xexpose.display = dpy;
+    dirty.xexpose.window = event->xany.window;
+    dirty.xexpose.x = 0;
+    dirty.xexpose.y = 0;
+    dirty.xexpose.width = 1;
+    dirty.xexpose.height = 1;
+    dirty.xexpose.count = 0;
+    if (event->xany.window != None
+        && XGetGeometry(dpy, w, &root, &x, &y, &width, &height, &border_width, &depth))
+    {
+        dirty.xexpose.width = width;
+        dirty.xexpose.height = height;
+    }
+    XSendEvent(dpy, PointerWindow, True, ExposureMask, &dirty);
+}
+
+static bool camera_key_wanted(const xevent_key *key, void *arg, XEvent *event)
 {
     return bugle_filter_set_is_active(camera_filterset);
 }
 
-static void camera_key_callback(const xevent_key *key, void *arg)
+static void camera_key_callback(const xevent_key *key, void *arg, XEvent *event)
 {
-    int index;
+    int index, i;
     camera_context *ctx;
 
     ctx = (camera_context *) bugle_object_get_current_data(&bugle_context_class, camera_view);
     if (!ctx) return;
     index = (xevent_key *) arg - key_camera;
     if (index < CAMERA_MOTION_KEYS)
+    {
         ctx->pressed[index] = key->press;
+        if (key->press) invalidate_window(event);
+    }
     else
     {
         switch (index)
         {
         case CAMERA_KEY_FASTER: camera_speed *= 2.0f; break;
         case CAMERA_KEY_SLOWER: camera_speed *= 0.5f; break;
+        case CAMERA_KEY_RESET:
+            for (i = 0; i < 16; i++)
+                ctx->modifier[i] = (i % 5) ? 0.0f : 1.0f;
+            invalidate_window(event);
+            break;
         }
     }
 }
@@ -368,7 +406,6 @@ static void camera_mouse_callback(int dx, int dy, XEvent *event)
     GLfloat axis[3];
     GLfloat angle, cs, sn;
     int i, j, k;
-    XEvent dirty;
 
     ctx = (camera_context *) bugle_object_get_current_data(&bugle_context_class, camera_view);
     if (!ctx) return;
@@ -409,18 +446,7 @@ static void camera_mouse_callback(int dx, int dy, XEvent *event)
         }
     ctx->dirty = true;
 
-    if (event->xany.window != None)
-    {
-        dirty.type = Expose;
-        dirty.xexpose.display = event->xany.display;
-        dirty.xexpose.window = event->xany.window;
-        dirty.xexpose.x = 0;
-        dirty.xexpose.y = 0;
-        dirty.xexpose.width = 1;
-        dirty.xexpose.height = 1;
-        dirty.xexpose.count = 0;
-        XSendEvent(event->xany.display, PointerWindow, True, ExposureMask, &dirty);
-    }
+    invalidate_window(event);
 }
 
 static void initialise_camera_context(const void *key, void *data)
@@ -536,7 +562,6 @@ static bool camera_glXSwapBuffers(function_call *call, const callback_data *data
 
 static void camera_handle_activation(bool active, camera_context *ctx)
 {
-    int i, j;
     GLint mode;
 
     if (active && !ctx->active)
@@ -544,9 +569,6 @@ static void camera_handle_activation(bool active, camera_context *ctx)
         if (bugle_begin_internal_render())
         {
             CALL_glGetFloatv(GL_MODELVIEW_MATRIX, ctx->original);
-            for (i = 0; i < 4; i++)
-                for (j = 0; j < 4; j++)
-                    ctx->modifier[i * 4 + j] = (i == j) ? 1.0f : 0.0f;
             ctx->active = true;
             bugle_end_internal_render("camera_handle_activation", true);
         }
@@ -698,6 +720,7 @@ void bugle_initialise_filter_library(void)
         { "key_right", "key to move right [Right]", FILTER_SET_VARIABLE_KEY, &key_camera[CAMERA_KEY_RIGHT], NULL },
         { "key_faster", "key to double camera speed [PgUp]", FILTER_SET_VARIABLE_KEY, &key_camera[CAMERA_KEY_FASTER], NULL },
         { "key_slower", "key to halve camera speed [PgDn]", FILTER_SET_VARIABLE_KEY, &key_camera[CAMERA_KEY_SLOWER], NULL },
+        { "key_reset", "key to undo adjustments [none]", FILTER_SET_VARIABLE_KEY, &key_camera[CAMERA_KEY_RESET], NULL },
         { "speed", "initial speed of camera [1.0]", FILTER_SET_VARIABLE_FLOAT, &camera_speed, NULL },
         { NULL, NULL, 0, NULL, NULL }
     };

@@ -38,7 +38,7 @@ typedef struct
 bool bugle_xevent_key_lookup(const char *name, xevent_key *key);
 
 /* Convenience callback: sets a flag */
-void bugle_xevent_key_callback_flag(const xevent_key *key, void *arg);
+void bugle_xevent_key_callback_flag(const xevent_key *key, void *arg, XEvent *event);
 
 /* Registers a key trap. If non-NULL, the wanted function should return
  * true if the key should be trapped on this occasion. The wanted function
@@ -47,8 +47,8 @@ void bugle_xevent_key_callback_flag(const xevent_key *key, void *arg);
  * field, otherwise the app will see press/release mismatches.
  */
 void bugle_register_xevent_key(const xevent_key *key,
-                               bool (*wanted)(const xevent_key *, void *arg),
-                               void (*callback)(const xevent_key *, void *arg),
+                               bool (*wanted)(const xevent_key *, void *, XEvent *),
+                               void (*callback)(const xevent_key *, void *, XEvent *),
                                void *arg);
 
 void bugle_xevent_grab_pointer(bool dga, void (*callback)(int, int, XEvent *));

@@ -38,8 +38,8 @@ typedef struct
 {
     xevent_key key;
     void *arg;
-    bool (*wanted)(const xevent_key *, void *);
-    void (*callback)(const xevent_key *, void *);
+    bool (*wanted)(const xevent_key *, void *, XEvent *);
+    void (*callback)(const xevent_key *, void *, XEvent *);
 } handler;
 
 static bool active = false;
@@ -90,7 +90,7 @@ static Bool event_predicate(Display *dpy, XEvent *event, XPointer arg)
     {
         h = (handler *) bugle_list_data(i);
         if (h->key.keysym == key.keysym && h->key.state == key.state
-            && (!h->wanted || (*h->wanted)(&key, h->arg)))
+            && (!h->wanted || (*h->wanted)(&key, h->arg, event)))
             return True;
     }
     return False;
@@ -155,8 +155,8 @@ static void handle_event(Display *dpy, XEvent *event)
         h = (handler *) bugle_list_data(i);
         if (h->key.keysym == key.keysym && h->key.state == key.state
             && h->key.press == key.press
-            && (!h->wanted || (*h->wanted)(&key, h->arg)))
-            (*h->callback)(&key, h->arg);
+            && (!h->wanted || (*h->wanted)(&key, h->arg, event)))
+            (*h->callback)(&key, h->arg, event);
     }
 }
 
@@ -743,14 +743,14 @@ bool bugle_xevent_key_lookup(const char *name, xevent_key *key)
     }
 }
 
-void bugle_xevent_key_callback_flag(const xevent_key *key, void *arg)
+void bugle_xevent_key_callback_flag(const xevent_key *key, void *arg, XEvent *event)
 {
     *(bool *) arg = true;
 }
 
 void bugle_register_xevent_key(const xevent_key *key,
-                               bool (*wanted)(const xevent_key *, void *),
-                               void (*callback)(const xevent_key *, void *),
+                               bool (*wanted)(const xevent_key *, void *, XEvent *),
+                               void (*callback)(const xevent_key *, void *, XEvent *),
                                void *arg)
 {
     handler *h;

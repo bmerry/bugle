@@ -3,7 +3,16 @@ Current
 - replace GLee with something C89 compliant
 - check whether all dependencies on trackextensions are listed
 - exploit per-context, per-filter state e.g. for video
-- get threads working again in BSD (is this still broken?)
+
+camera filter-set
+-----------------
+- handle display lists properly
+- do not modify camera when attached to pbuffer or when using
+  GL_EXT_framebuffer_object
+- do not modify camera when in feedback mode
+- do the right thing when event handling is in a different
+  thread to rendering
+- invalidate every frame when a motion key is depressed
 
 gldb
 ----
@@ -11,6 +20,8 @@ gldb
 - set filter variables on the fly
 - enable reporting of segfaults
 - break on particular GL errors, not just 'all errors'
+- fix programming continuing after error
+- fix display of uniform arrays
 
 gldb-gui
 --------
