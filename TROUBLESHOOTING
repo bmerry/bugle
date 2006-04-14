@@ -28,6 +28,21 @@ can create a GL subdirectory of your BuGLe source directory and place
 alternative headers there. Mesa has good headers; try downloading the
 Mesa source from www.mesa3d.org and using the headers from there.
 
+Q. I am using Gentoo, and during compilation of bugle I get errors
+similar to this one:
+/usr/lib/opengl/nvidia/lib/libGLcore.so.1: undefined reference to `_nv000016gl'
+A. This seems to be a problem with Gentoo's system for switching
+between OpenGL drivers, that causes part of the build process to use
+the X11 software drivers. A workaround is to switch to the X11 drivers
+for compilation and installation of bugle:
+1. Run `eselect opengl set xorg-x11' (or `opengl-update xorg-x11' on
+older systems) as root.
+2. Ensure that your environment is up to date e.g. `source
+/etc/profile' in the shell you will use to compile bugle.
+3. Unpack a fresh copy of bugle (do not use a previously configured
+copy), compile and install it.
+4. Switch back to the NVIDIA OpenGL driver (`eselect opengl set nvidia')
+
 Q. I have an x86_64 (Athlon 64/Opteron/EM64T) machine with 64-bit OS,
 and BuGLe fails to work with Quake3/Doom3.
 A. Quake3 and Doom3 are 32-bit apps, while you probably have a 64-bit
