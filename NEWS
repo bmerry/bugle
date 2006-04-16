@@ -1,4 +1,9 @@
-- Camera filterset
+0.0.20060416
+------------
+This release adds a camera filterset, which allows the user to take
+over the camera. It won't work with advanced rendering techniques (such
+as any kind of post-processing), but is a handy way to test LOD and
+visibility culling.
 
 0.0.20060306
 ------------

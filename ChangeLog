@@ -1,9 +1,11 @@
 * Add 'camera' filterset
+* Add --disable-xevent option to configure to handle the case where
+  ltdl fails to get symbols from libX11
 
 0.0.20060306
 ------------
 * Fix compilation problem with newer versions of flex
-* Fix some Debian testing build program (thanks to James Lyon for a patch)
+* Fix some Debian testing build problems (thanks to James Lyon for a patch)
 
 0.0.20060224
 ------------
