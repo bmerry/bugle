@@ -1,4 +1,4 @@
-AC_INIT(bugle, 0.0.20060306, bmerry@users.sourceforge.net)
+AC_INIT(bugle, 0.0.20060416, bmerry@users.sourceforge.net)
 AC_CONFIG_SRCDIR([src/interceptor.c])
 AM_INIT_AUTOMAKE([1.7 dist-bzip2 subdir-objects])
 AM_CONFIG_HEADER(config.h)
@@ -109,6 +109,11 @@ AC_PATH_XTRA
 
 dnl Set up some extra stuff
 
+ENABLE_XEVENT=1
+AC_ARG_ENABLE([xevent], AC_HELP_STRING([--disable-xevent], [disable key and mouse interception]),
+              [test $enableval = no && ENABLE_XEVENT=0], [])
+AC_DEFINE_UNQUOTED(ENABLE_XEVENT, $ENABLE_XEVENT, [non-zero when X key and mouse events should be intercepted])
+
 AC_ARG_WITH([lavc], AC_HELP_STRING([--without-lavc], [do not use libavcodec]),
             [test $withval = no && HAVE_LAVC=0], [])
 test $HAVE_LAVC = 1 || AVCODEC_LIBS=""
@@ -167,4 +172,8 @@ esac
 case $THREADS in
   BUGLE_THREADS_PTHREADS) echo "        threads: pthreads" ;;
   BUGLE_THREADS_SINGLE) echo "        threads: single-threaded" ;;
+esac
+case $ENABLE_XEVENT in
+  0) echo "        X event interception: no" ;;
+  1) echo "        X event interception: yes" ;;
 esac

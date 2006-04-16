@@ -34,6 +34,8 @@
 
 /* #define XEVENT_LOG */
 
+#if ENABLE_XEVENT
+
 typedef struct
 {
     xevent_key key;
@@ -705,6 +707,124 @@ int XSelectInput(Display *dpy, Window w, long event_mask)
     return (*real_XSelectInput)(dpy, w, event_mask);
 }
 
+void bugle_register_xevent_key(const xevent_key *key,
+                               bool (*wanted)(const xevent_key *, void *, XEvent *),
+                               void (*callback)(const xevent_key *, void *, XEvent *),
+                               void *arg)
+{
+    handler *h;
+
+    h = (handler *) bugle_malloc(sizeof(handler));
+    h->key = *key;
+    h->wanted = wanted;
+    h->callback = callback;
+    h->arg = arg;
+
+    bugle_list_append(&handlers, h);
+    active = true;
+}
+
+void bugle_xevent_grab_pointer(bool dga, void (*callback)(int, int, XEvent *))
+{
+    mouse_dga = dga;
+    mouse_callback = callback;
+    mouse_active = true;
+    mouse_first = true;
+#ifdef XEVENT_LOG
+    fputs("Mouse grabbed\n", stderr);
+#endif
+}
+
+void bugle_xevent_release_pointer(void)
+{
+    mouse_active = false;
+#ifdef XEVENT_LOG
+    fputs("Mouse released\n", stderr);
+#endif
+}
+
+void initialise_xevent(void)
+{
+    lt_dlhandle handle;
+
+    handle = lt_dlopenext("libX11");
+    if (handle == NULL)
+    {
+        fputs("ERROR: cannot locate libX11. There is something unusual about the linkage\n"
+              "of your application. You will need to pass --disable-xevent to configure\n"
+              "when configuring bugle, and will you lose the key and mouse interception\n"
+              "features. Please contact the author to help him resolve this issue.\n", stderr);
+        exit(1);
+    }
+
+    real_XNextEvent = (int (*)(Display *, XEvent *)) lt_dlsym(handle, "XNextEvent");
+    real_XPeekEvent = (int (*)(Display *, XEvent *)) lt_dlsym(handle, "XPeekEvent");
+    real_XWindowEvent = (int (*)(Display *, Window, long, XEvent *)) lt_dlsym(handle, "XWindowEvent");
+    real_XCheckWindowEvent = (Bool (*)(Display *, Window, long, XEvent *)) lt_dlsym(handle, "XCheckWindowEvent");
+    real_XMaskEvent = (int (*)(Display *, long, XEvent *)) lt_dlsym(handle, "XMaskEvent");
+    real_XCheckMaskEvent = (Bool (*)(Display *, long, XEvent *)) lt_dlsym(handle, "XCheckMaskEvent");
+    real_XCheckTypedEvent = (Bool (*)(Display *, int, XEvent *)) lt_dlsym(handle, "XCheckTypedEvent");
+    real_XCheckTypedWindowEvent = (Bool (*)(Display *, Window, int, XEvent *)) lt_dlsym(handle, "XCheckTypedWindowEvent");
+
+    real_XIfEvent = (int (*)(Display *, XEvent *, Bool (*)(Display *, XEvent *, XPointer), XPointer)) lt_dlsym(handle, "XIfEvent");
+    real_XCheckIfEvent = (Bool (*)(Display *, XEvent *, Bool (*)(Display *, XEvent *, XPointer), XPointer)) lt_dlsym(handle, "XCheckIfEvent");
+    real_XPeekIfEvent = (int (*)(Display *, XEvent *, Bool (*)(Display *, XEvent *, XPointer), XPointer)) lt_dlsym(handle, "XPeekIfEvent");
+
+    real_XEventsQueued = (int (*)(Display *, int)) lt_dlsym(handle, "XEventsQueued");
+    real_XPending = (int (*)(Display *)) lt_dlsym(handle, "XPending");
+
+    real_XCreateWindow = (Window (*)(Display *, Window, int, int, unsigned int, unsigned int, unsigned int, int, unsigned int, Visual *, unsigned long, XSetWindowAttributes *)) lt_dlsym(handle, "XCreateWindow");
+    real_XCreateSimpleWindow = (Window (*)(Display *, Window, int, int, unsigned int, unsigned int, unsigned int, unsigned long, unsigned long)) lt_dlsym(handle, "XCreateSimpleWindow");
+    real_XSelectInput = (int (*)(Display *, Window, long)) lt_dlsym(handle, "XSelectInput");
+
+    if (!real_XNextEvent
+        || !real_XPeekEvent
+        || !real_XWindowEvent
+        || !real_XCheckWindowEvent
+        || !real_XMaskEvent
+        || !real_XCheckMaskEvent
+        || !real_XCheckTypedEvent
+        || !real_XCheckTypedWindowEvent
+        || !real_XIfEvent
+        || !real_XCheckIfEvent
+        || !real_XPeekIfEvent
+        || !real_XEventsQueued
+        || !real_XPending
+        || !real_XCreateWindow
+        || !real_XSelectInput)
+    {
+        fputs("ERROR: cannot load X symbols. There is something unusual about the linkage\n"
+              "of your application. You will need to pass --disable-xevent to configure\n"
+              "when configuring bugle, and will you lose the key and mouse interception\n"
+              "features. Please contact the author to help him resolve this issue.\n", stderr);
+        exit(1);
+    }
+    bugle_list_init(&handlers, true);
+}
+
+#else /* !ENABLE_XEVENT */
+
+void bugle_register_xevent_key(const xevent_key *key,
+                               bool (*wanted)(const xevent_key *, void *, XEvent *),
+                               void (*callback)(const xevent_key *, void *, XEvent *),
+                               void *arg)
+{
+}
+
+void bugle_xevent_grab_pointer(bool dga, void (*callback)(int, int, XEvent *))
+{
+}
+
+void bugle_xevent_release_pointer(void)
+{
+}
+
+void initialise_xevent(void)
+{
+}
+
+#endif /* !ENABLE_XEVENT */
+
 bool bugle_xevent_key_lookup(const char *name, xevent_key *key)
 {
     KeySym keysym = NoSymbol;
@@ -746,91 +866,4 @@ bool bugle_xevent_key_lookup(const char *name, xevent_key *key)
 void bugle_xevent_key_callback_flag(const xevent_key *key, void *arg, XEvent *event)
 {
     *(bool *) arg = true;
-}
-
-void bugle_register_xevent_key(const xevent_key *key,
-                               bool (*wanted)(const xevent_key *, void *, XEvent *),
-                               void (*callback)(const xevent_key *, void *, XEvent *),
-                               void *arg)
-{
-    handler *h;
-
-    h = (handler *) bugle_malloc(sizeof(handler));
-    h->key = *key;
-    h->wanted = wanted;
-    h->callback = callback;
-    h->arg = arg;
-
-    bugle_list_append(&handlers, h);
-    active = true;
-}
-
-void bugle_xevent_grab_pointer(bool dga, void (*callback)(int, int, XEvent *))
-{
-    mouse_dga = dga;
-    mouse_callback = callback;
-    mouse_active = true;
-    mouse_first = true;
-#ifdef XEVENT_LOG
-    fputs("Mouse grabbed\n", stderr);
-#endif
-}
-
-void bugle_xevent_release_pointer()
-{
-    mouse_active = false;
-#ifdef XEVENT_LOG
-    fputs("Mouse released\n", stderr);
-#endif
-}
-
-void initialise_xevent(void)
-{
-    lt_dlhandle handle;
-
-    handle = lt_dlopenext("libX11");
-    if (handle == NULL)
-    {
-        fputs("WARNING: unable to intercept X events. A crash is highly likely.\n", stderr);
-        return;
-    }
-
-    real_XNextEvent = (int (*)(Display *, XEvent *)) lt_dlsym(handle, "XNextEvent");
-    real_XPeekEvent = (int (*)(Display *, XEvent *)) lt_dlsym(handle, "XPeekEvent");
-    real_XWindowEvent = (int (*)(Display *, Window, long, XEvent *)) lt_dlsym(handle, "XWindowEvent");
-    real_XCheckWindowEvent = (Bool (*)(Display *, Window, long, XEvent *)) lt_dlsym(handle, "XCheckWindowEvent");
-    real_XMaskEvent = (int (*)(Display *, long, XEvent *)) lt_dlsym(handle, "XMaskEvent");
-    real_XCheckMaskEvent = (Bool (*)(Display *, long, XEvent *)) lt_dlsym(handle, "XCheckMaskEvent");
-    real_XCheckTypedEvent = (Bool (*)(Display *, int, XEvent *)) lt_dlsym(handle, "XCheckTypedEvent");
-    real_XCheckTypedWindowEvent = (Bool (*)(Display *, Window, int, XEvent *)) lt_dlsym(handle, "XCheckTypedWindowEvent");
-
-    real_XIfEvent = (int (*)(Display *, XEvent *, Bool (*)(Display *, XEvent *, XPointer), XPointer)) lt_dlsym(handle, "XIfEvent");
-    real_XCheckIfEvent = (Bool (*)(Display *, XEvent *, Bool (*)(Display *, XEvent *, XPointer), XPointer)) lt_dlsym(handle, "XCheckIfEvent");
-    real_XPeekIfEvent = (int (*)(Display *, XEvent *, Bool (*)(Display *, XEvent *, XPointer), XPointer)) lt_dlsym(handle, "XPeekIfEvent");
-
-    real_XEventsQueued = (int (*)(Display *, int)) lt_dlsym(handle, "XEventsQueued");
-    real_XPending = (int (*)(Display *)) lt_dlsym(handle, "XPending");
-
-    real_XCreateWindow = (Window (*)(Display *, Window, int, int, unsigned int, unsigned int, unsigned int, int, unsigned int, Visual *, unsigned long, XSetWindowAttributes *)) lt_dlsym(handle, "XCreateWindow");
-    real_XCreateSimpleWindow = (Window (*)(Display *, Window, int, int, unsigned int, unsigned int, unsigned int, unsigned long, unsigned long)) lt_dlsym(handle, "XCreateSimpleWindow");
-    real_XSelectInput = (int (*)(Display *, Window, long)) lt_dlsym(handle, "XSelectInput");
-
-    if (!real_XNextEvent
-        || !real_XPeekEvent
-        || !real_XWindowEvent
-        || !real_XCheckWindowEvent
-        || !real_XMaskEvent
-        || !real_XCheckMaskEvent
-        || !real_XCheckTypedEvent
-        || !real_XCheckTypedWindowEvent
-        || !real_XIfEvent
-        || !real_XCheckIfEvent
-        || !real_XPeekIfEvent
-        || !real_XEventsQueued
-        || !real_XPending
-        || !real_XCreateWindow
-        || !real_XSelectInput)
-        fputs("WARNING: unable to obtain X symbols. A crash is highly likely.\n", stderr);
-
-    bugle_list_init(&handlers, true);
 }
