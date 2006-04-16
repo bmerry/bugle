@@ -863,7 +863,7 @@ static void backtrace_update(GldbWindow *context)
 
 static void notebook_update(GldbWindow *context, gint new_page)
 {
-    guint page;
+    gint page;
     GtkNotebook *notebook;
 
     notebook = GTK_NOTEBOOK(context->notebook);
