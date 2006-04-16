@@ -43,6 +43,7 @@ gldb-gui
 - buffer window
 - trace window?
 - figure out why BadValue is sometimes generated on exit
+- ability to save state
 
 bugle
 -----
