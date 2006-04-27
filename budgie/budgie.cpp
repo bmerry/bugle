@@ -339,6 +339,7 @@ static void identify()
                     cout << "";
                 if (seen_types.count(name))
                 {
+                    assert(type_to_id(seen_types[name]) == name);
                     type_map[node] = type_map[seen_types[name]];
                     continue;
                 }
@@ -356,7 +357,7 @@ static void identify()
                     types.push_back(Type());
                     types.back().node = unconst;
                     types.back().unconst = unconst;
-                    type_map[unconst] = types.end(); type_map[node]--;
+                    type_map[unconst] = types.end(); type_map[unconst]--;
                 }
             }
         }

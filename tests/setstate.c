@@ -90,6 +90,18 @@ void set_texture_state()
     fprintf(ref, "trace\\.call: glDeleteTextures\\(1, %p -> { %u }\\)\n", (void *) &id, (unsigned int) id);
 }
 
+static void set_matrices()
+{
+    GLfloat m[16] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16};
+    glMultMatrixf(m);
+    fprintf(ref, "trace\\.call: glMultMatrixf\\(%p -> { { %g, %g, %g, %g }, { %g, %g, %g, %g }, { %g, %g, %g, %g }, { %g, %g, %g, %g } }\\)\n",
+            m,
+            m[0], m[1], m[2], m[3],
+            m[4], m[5], m[6], m[7],
+            m[8], m[9], m[10], m[11],
+            m[12], m[13], m[14], m[15]);
+}
+
 int main(int argc, char **argv)
 {
     ref = fdopen(3, "w");
@@ -103,5 +115,6 @@ int main(int argc, char **argv)
     set_enables();
     set_client_state();
     set_texture_state();
+    set_matrices();
     return 0;
 }
