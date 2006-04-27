@@ -59,6 +59,8 @@ bugle
 - improve support for GLSL (more type information)
 - capture more information about call lists
 - capture and replay
+- option to use pid in log filename or log file
+- use textured quads rather than bitmaps for showstats?
 
 budgie
 ------
