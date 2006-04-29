@@ -1,3 +1,9 @@
+0.0.20060429
+------------
+This release fixes a nasty bug (introduced in 0.0.20060416) that causes
+the trace filterset to crash on certain calls, and may cause other
+spurious behaviour. All users are 0.0.20060416 should upgrade.
+
 0.0.20060416
 ------------
 This release adds a camera filterset, which allows the user to take
