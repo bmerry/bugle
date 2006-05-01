@@ -11,7 +11,19 @@
            <a href="screenshots.html">[Screenshots]</a>
         </span>
     </div>
+    <div class="body">
     <h1>BuGLe News</h1>
+    <h2>Major bug in 0.0.20060416 (29/04/2006)</h2>
+    <p>
+    The previous release (0.0.20060416) added support for GCC 4.1, but in
+    doing so it introduced a bug in the program that generates huge amounts
+    of the code that goes into bugle. The consequences are difficult to
+    predict, but one user reported crashes when using the <em>trace</em>
+    filterset with <code>glMultMatrixf</code> and similar functions.
+    </p>
+    <p>
+    All users of 0.0.20060429 should upgrade.
+    </p>
     <h2>Camera filterset (16/04/2006)</h2>
     <p>
     The new 0.0.20060416 release adds a camera filterset, which allows the user to take
@@ -132,5 +144,6 @@ in this function)
         src="http://www.w3.org/Icons/valid-html401"
         alt="Valid HTML 4.01!" height="31" width="88"></a>
     </p>
+    </div>
 </body>
 </html>

@@ -19,3 +19,7 @@ div.menu a {
 	background-color: gray;
 	color: white;
 }
+
+div.body {
+	margin: 3pt;
+}
