@@ -628,6 +628,7 @@ static bool debugger_callback(function_call *call, const callback_data *data)
         resp_str = budgie_string_io(dump_any_call_string_io, call);
         resp_str[strlen(resp_str) - 1] = '\0'; /* strip the \n */
         stopped = true;
+        break_on_next = false;
         gldb_protocol_send_code(out_pipe, RESP_BREAK);
         gldb_protocol_send_code(out_pipe, start_id);
         gldb_protocol_send_string(out_pipe, resp_str);
@@ -663,6 +664,7 @@ static bool debugger_error_callback(function_call *call, const callback_data *da
         gldb_protocol_send_string(out_pipe, resp_str);
         gldb_protocol_send_string(out_pipe, bugle_gl_enum_to_token(error));
         free(resp_str);
+        stopped = true;
         debugger_loop(call);
     }
     return true;

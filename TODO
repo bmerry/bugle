@@ -1,5 +1,6 @@
 Current
 -------
+- Add -pthread to OpenGL test (ATI driver bug)
 - replace GLee with something C89 compliant
 - check whether all dependencies on trackextensions are listed
 - exploit per-context, per-filter state e.g. for video

@@ -21,6 +21,7 @@
  *   complicated by the fact that the palette belongs to the texture not
  *   the target).
  * - pixel buffer objects
+ * - find EXT_framebuffer_object support
  * - all the image state (texures, color tables, maps, pixel maps, convolution, stipple etc)
  */
 
@@ -603,6 +604,7 @@ static const state_info global_state[] =
 #ifdef GL_EXT_framebuffer_object
     { STATE_NAME_EXT(GL_RENDERBUFFER_BINDING, _EXT), TYPE_5GLint, -1, BUGLE_GL_EXT_framebuffer_object, -1, STATE_GLOBAL },
     { STATE_NAME_EXT(GL_FRAMEBUFFER_BINDING, _EXT), TYPE_5GLint, -1, BUGLE_GL_EXT_framebuffer_object, -1, STATE_GLOBAL },
+    { STATE_NAME_EXT(GL_MAX_RENDERBUFFER_SIZE, _EXT), TYPE_5GLint, -1, BUGLE_GL_EXT_framebuffer_object, -1, STATE_GLOBAL },
 #endif
     { NULL, GL_NONE, NULL_TYPE, 0, -1, -1, 0 }
 };
