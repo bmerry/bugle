@@ -448,6 +448,14 @@ static bool command_cont(const char *cmd,
     return true;
 }
 
+static bool command_step(const char *cmd,
+                         const char *line,
+                         const char * const *tokens)
+{
+    gldb_send_step(0);
+    return true;
+}
+
 static bool command_kill(const char *cmd,
                          const char *line,
                          const char * const *tokens)
@@ -873,6 +881,10 @@ command_info commands[] =
     { "kill", "Kill the program", true, command_kill, NULL },
     { "run", "Start the program", false, command_run, NULL },
     { "state", "Show GL state", true, command_state, generate_state },
+
+    { "step", "Continue until next OpenGL call", true, command_step, NULL },
+    { "s", NULL, true, command_step, NULL },
+
     { "quit", "Exit gldb", false, command_quit, NULL },
     { "screenshot", "Capture a screenshot", true, command_screenshot, NULL },
     { NULL, NULL, false, NULL, NULL }

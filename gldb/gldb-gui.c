@@ -1048,6 +1048,17 @@ static void continue_action(GtkAction *action, gpointer user_data)
     update_status_bar((GldbWindow *) user_data, _("Running"));
 }
 
+static void step_action(GtkAction *action, gpointer user_data)
+{
+    GldbWindow *context;
+
+    context = (GldbWindow *) user_data;
+    gtk_action_group_set_sensitive(context->stopped_actions, FALSE);
+    gtk_action_group_set_sensitive(context->running_actions, TRUE);
+    gldb_send_step(seq++);
+    update_status_bar((GldbWindow *) user_data, _("Running"));
+}
+
 static void kill_action(GtkAction *action, gpointer user_data)
 {
     gldb_send_quit(seq++);
@@ -2284,6 +2295,7 @@ static const gchar *ui_desc =
 "      <menuitem action='Run' />"
 "      <menuitem action='Stop' />"
 "      <menuitem action='Continue' />"
+"      <menuitem action='Step' />"
 "      <menuitem action='Kill' />"
 "      <separator />"
 "      <menuitem action='Breakpoints' />"
@@ -2311,6 +2323,7 @@ static GtkActionEntry running_action_desc[] =
 static GtkActionEntry stopped_action_desc[] =
 {
     { "Continue", NULL, "_Continue", "<control>F9", NULL, G_CALLBACK(continue_action) },
+    { "Step", NULL, "_Step", NULL, NULL, G_CALLBACK(step_action) },
     { "Kill", NULL, "_Kill", "<control>F2", NULL, G_CALLBACK(kill_action) }
 };
 

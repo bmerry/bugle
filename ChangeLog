@@ -1,7 +1,8 @@
-* Fix break-on-error
-* Add support for GL_MAX_RENDERBUFFER_SIZE_EXT
+* Fix break-on-error.
+* Add support for GL_MAX_RENDERBUFFER_SIZE_EXT.
 * Fix false warnings when glMultiTexCoord* is called from inside
   begin/end.
+* Add support for the "step" operation to gldb and gldb-gui.
 
 0.0.20060429
 ------------

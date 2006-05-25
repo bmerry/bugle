@@ -489,6 +489,14 @@ void gldb_send_continue(uint32_t id)
     gldb_protocol_send_code(lib_out, id);
 }
 
+void gldb_send_step(uint32_t id)
+{
+    assert(status == GLDB_STATUS_STOPPED);
+    set_status(GLDB_STATUS_RUNNING);
+    gldb_protocol_send_code(lib_out, REQ_STEP);
+    gldb_protocol_send_code(lib_out, id);
+}
+
 void gldb_send_quit(uint32_t id)
 {
     assert(status != GLDB_STATUS_DEAD);
