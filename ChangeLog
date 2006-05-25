@@ -1,5 +1,7 @@
 * Fix break-on-error
 * Add support for GL_MAX_RENDERBUFFER_SIZE_EXT
+* Fix false warnings when glMultiTexCoord* is called from inside
+  begin/end.
 
 0.0.20060429
 ------------

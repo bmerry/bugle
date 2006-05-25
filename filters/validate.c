@@ -783,6 +783,13 @@ static bool checks_glMultiTexCoord(function_call *call, const callback_data *dat
             CALL_glGetIntegerv(GL_MAX_TEXTURE_UNITS_ARB, &max);
         bugle_end_internal_render("checks_glMultiTexCoord", true);
     }
+
+    /* FIXME: This is the most likely scenario i.e. inside glBegin/glEnd.
+     * We should pre-lookup the implementation dependent values so that
+     * we can actually check things here.
+     */
+    if (!max) return true;
+
     if (texture < GL_TEXTURE0_ARB || texture >= GL_TEXTURE0_ARB + (GLenum) max)
     {
         fprintf(stderr, "WARNING: %s called with out of range texture unit; call will be ignored.\n",
