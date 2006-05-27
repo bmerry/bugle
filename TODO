@@ -1,6 +1,5 @@
 Current
 -------
-- Add -pthread to OpenGL test (ATI driver bug)
 - replace GLee with something C89 compliant
 - check whether all dependencies on trackextensions are listed
 - exploit per-context, per-filter state e.g. for video
@@ -21,7 +20,6 @@ gldb
 - set filter variables on the fly
 - enable reporting of segfaults
 - break on particular GL errors, not just 'all errors'
-- fix programming continuing after error
 - fix display of uniform arrays
 
 gldb-gui
@@ -41,7 +39,7 @@ gldb-gui
   - show metadata like uniforms
   - use texture viewer layout
 - test for extensions before using them
-- buffer window
+- framebuffer window
 - trace window?
 - figure out why BadValue is sometimes generated on exit
 - ability to save state
