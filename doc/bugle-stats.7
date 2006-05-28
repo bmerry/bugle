@@ -42,7 +42,9 @@ Applications that themselves use occlusion queries will disable
 fragment counting, and possibly fail to operate correctly. While some
 attempt has been made to handle display lists correctly, complicated
 nested display list usage could easily lead to incorrect triangle
-counts.
+counts. In addition, the
+.B GL_NV_primitive_restart
+extension is not taken into account.
 .SH AUTHOR
 .B gldb
 and the
