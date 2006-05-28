@@ -1,0 +1,67 @@
+.TH eps 7 "May 2006" BUGLE "User manual"
+.SH NAME
+eps \- takes vector-graphic screenshots
+.SH SYNOPSIS
+.nf
+filterset eps
+{
+    filename "bugle.eps"
+    key_eps "C-A-S-S"
+    title "My screenshot"
+    bsp "no"
+    buffer "1000000"
+}
+.fi
+.SH DESCRIPTION
+This filterset is similar to the screenshot filter-set, but instead of
+a raster image, it produces a vector graphic suitable for printing.
+This is achieved through
+.BR gl2ps (3),
+which is incorporated into
+.BR bugle .
+The supported formats are Postscript, Encapsulated Postscript (EPS),
+Portable Document Format (PDF) and Scalable Vector Graphic (SVG).
+
+The capturing process utilises the OpenGL feedback buffer (see
+.BR glFeedbackBuffer (3)),
+which creates some inherent limitations. No per-fragment effects (such
+as texturing or bitmap rendering) are captured, not will vertex
+programs work correctly. Essentially, the colour of each vertex must be
+either directly specified or determined by the OpenGL lighting model.
+
+.SH OPTIONS
+.TP
+.B filename
+The file to which the screenshot will be written. The extension is used
+to determine the file format. Valid extensions are
+.BR ps ,
+.BR eps ,
+.B pdf
+and
+.BR svg .
+.TP
+.B key_eps
+The key-press which triggers the snapshot.
+.TP
+.B title
+This is a string that is embedded in Postscript and EPS files.
+.TP
+.B bsp
+If this boolean is enabled, the depth sorting is done with a BSP tree
+to give accurate results. This may be necessary to get correct results
+in scenes with complex occlusion, but it is much slower.
+.TP
+.B buffer
+The number of entries to allocate for the feedback buffer. If this is
+too low, the feedback buffer will overflow and the screenshot will
+fail. The default should be enough for most simple scenes, but for
+highly complex scenes it may be necessary to create a larger buffer.
+.
+.SH AUTHOR
+.B gldb
+and the
+.B bugle
+library are written and maintained by Bruce Merry
+<bmerry@users.sourceforge.net>.
+.SH SEE ALSO
+.BR glFeedbackBuffer (3)

@@ -25,6 +25,7 @@
  * - mutexes (lock and unlock only, no trylock or timedlock
  * - thread-specific data
  * - run-onces
+ * - unsigned long thread ID
  */
 
 #ifndef BUGLE_COMMON_THREADS_H
@@ -53,6 +54,14 @@ typedef pthread_once_t bugle_thread_once_t;
 #define BUGLE_THREAD_MUTEX_INITIALIZER PTHREAD_MUTEX_INITIALIZER
 
 /* Functions */
+static inline unsigned long bugle_thread_self(void)
+{
+#if BUGLE_PTHREAD_T_INTEGRAL
+    return (unsigned long) pthread_self();
+#else
+    return (unsigned long) 0;
+#endif
+}
 static inline int bugle_thread_mutex_init(bugle_thread_mutex_t *mutex, const void *mutexattr)
 { return pthread_mutex_init(mutex, mutexattr); }
 static inline int bugle_thread_mutex_lock(bugle_thread_mutex_t *mutex)
@@ -102,6 +111,8 @@ typedef struct bugle_thread_key_s
 #define BUGLE_THREAD_MUTEX_INITIALIZER 0
 
 /* Functions */
+static inline unsigned long bugle_thread_self(void)
+{ return (unsigned long) 0; }
 static inline int bugle_thread_mutex_init(bugle_thread_mutex_t *mutex, const void *mutexattr)
 { return 0; }
 static inline int bugle_thread_mutex_lock(bugle_thread_mutex_t *mutex)

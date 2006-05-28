@@ -131,11 +131,22 @@ static void update_triangles(stats_struct *s, GLenum mode, GLsizei count)
     }
 }
 
+static void dump_float(void *v, FILE *f)
+{
+    fprintf(f, "%.3f", *(float *) v);
+}
+
+static void dump_unsigned_int(void *v, FILE *f)
+{
+    fprintf(f, "%u", *(unsigned int *) v);
+}
+
 static bool stats_glXSwapBuffers(function_call *call, const callback_data *data)
 {
     stats_struct *s;
     struct timeval now;
     float elapsed;
+    unsigned int ui;
     FILE *f;
 
     s = bugle_object_get_current_data(&bugle_context_class, stats_view);
@@ -157,12 +168,17 @@ static bool stats_glXSwapBuffers(function_call *call, const callback_data *data)
         s->fragments = 0;
     }
 
-    if ((f = bugle_log_header("stats", "fps")) != NULL)
-        fprintf(f, "%.3f\n", s->fps);
-    if (s->query && (f = bugle_log_header("stats", "fragments")) != NULL)
-        fprintf(f, "%u\n", (unsigned int) s->fragments);
-    if (count_triangles && (f = bugle_log_header("stats", "triangles")) != NULL)
-        fprintf(f, "%u\n", (unsigned int) s->triangles);
+    bugle_log_callback("stats", "fps", dump_float, &s->fps);
+    if (s->query)
+    {
+        ui = s->fragments;
+        bugle_log_callback("stats", "fragments", dump_unsigned_int, &ui);
+    }
+    if (count_triangles)
+    {
+        ui = s->triangles;
+        bugle_log_callback("stats", "triangles", dump_unsigned_int, &ui);
+    }
     return true;
 }
 

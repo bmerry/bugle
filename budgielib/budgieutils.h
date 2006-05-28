@@ -146,6 +146,8 @@ void budgie_dump_any_type_extended(budgie_type type,
                                    int outer_length,
                                    const void *pointer,
                                    FILE *out);
+
+/* Dumps a call, including arguments and return. Does not include a newline */
 void budgie_dump_any_call(const generic_function_call *call, int indent, FILE *out);
 
 void initialise_real(void);

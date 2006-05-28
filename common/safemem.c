@@ -211,8 +211,8 @@ void bugle_atexit(void (*shutdown_function)(void *), void *arg)
     call = bugle_malloc(sizeof(shutdown_call));
     call->shutdown_function = shutdown_function;
     call->arg = arg;
+    bugle_thread_once(&shutdown_once, bugle_atexit_once);
     bugle_thread_mutex_lock(&shutdown_mutex);
     bugle_list_prepend(&shutdown_calls, call);
     bugle_thread_mutex_unlock(&shutdown_mutex);
-    bugle_thread_once(&shutdown_once, bugle_atexit_once);
 }

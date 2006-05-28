@@ -1,4 +1,4 @@
-.TH BUGLE 3 "April 2006" BUGLE "User Manual"
+.TH BUGLE 3 "May 2006" BUGLE "User Manual"
 .SH NAME
 bugle \- An OpenGL debugging library
 .SH SYNOPSIS
@@ -10,10 +10,7 @@ is a library that intercepts calls to OpenGL functions, in much the
 same way that many memory debuggers do. Calls are run through a number
 of user-specified
 .IR filter-sets ,
-including one that invokes the original call. The available
-filter-sets are listed in 
-.B FILTER-SETS
-below.
+including one that invokes the original call.
 
 In addition, the utility
 .BR gldb (1)
@@ -21,6 +18,9 @@ can be used to interface with the library, and do useful things like
 stopping on OpenGL errors. For common usage this may be the most
 convenient way to use
 .BR bugle .
+There is also a GUI version of the debugger (currently undocumented,
+but relatively user-friendly) called
+.BR gldb-gui .
 
 The
 .B BUGLE_CHAIN
@@ -29,160 +29,6 @@ environment variable specifies a
 which is simply a collection of filter-sets with options. Chains are
 defined in the configuration file (see
 .BR CONFIGURATION ).
-.SH "FILTER-SETS"
-Several of the filter-sets take optional arguments. These are specified
-in the configuration file, described in
-.B CONFIGURATION
-below.
-.TP
-.B log
-Provides a logging facility for other modules, without doing any
-logging itself.
-The
-.B filename
-option specifies the filename to which to write the log (the file is
-overwritten). If not specified, the log is to standard error. The
-.B flush
-option may be set to
-.B yes
-to flush the log after every OpenGL call.
-.TP
-.B trace
-Writes information about each OpenGL call (and a few GLX calls) to the
-log. If the
-.B error
-filter-set is also loaded, OpenGL errors will also be written to the
-log (note that several other filter-sets implicitly load the
-.B error
-filter-set).
-.TP
-.B error
-Checks for OpenGL errors after every OpenGL call that does not occur
-between
-.B glBegin
-and
-.BR glEnd ,
-and wraps
-.B glGetError
-so that this checking is transparent to the application. This
-filter-set does little on its own, but provides this service to other
-filter-sets such as the
-.B trace
-filter-set.
-.TP
-.B showerror
-Writes OpenGL errors to standard error.
-.TP
-.B showextensions
-On exit, outputs information on what version of OpenGL and what
-extensions are used by the program (they may not be required, if the
-program adapts to what is available). This code is still in
-development, and may report surprising results (e.g.
-.B GL_EXT_vertex_arrays
-may be reported even though it is incorporated into OpenGL 1.1).
-It will always report at least OpenGL 1.1 and GLX 1.2 as required,
-although they may not be.
-.TP
-.B wireframe
-Forces the application to render in wireframe mode (i.e. with
-.B glPolygonMode
-set to
-.BR GL_LINE ),
-and attempts to disable texturing.
-It also forces a colour buffer clear after every frame, since some apps
-will look completely wrong otherwise.
-.TP
-.B frontbuffer
-Sets
-.B glDrawBuffer
-to
-.BR GL_FRONT ,
-and does a few other things to try to make drawing to the front buffer
-work. This is particularly useful in conjunction wth
-.B gldb
-with breakpoints set on drawing functions, to watch a frame being drawn
-piece by piece.
-.TP
-.B camera
-Allows you to take over the camera. Up/Down/Left/Right (by default)
-move the camera, while the mouse will rotate it. This depends on the
-application doing certain things like applying the modelview matrix in
-any vertex shaders and not calling
-.BR XQueryPointer (3X11),
-so it is not guaranteed to work in all cases.
-.TP
-.B screenshot
-This has two modes of operation. In the first, it will take a screenshot
-when a key combination is pressed (by default, Ctrl-Alt-Shift-S). The
-screenshots are written in
-.BR ppm (5)
-to the filename specified by
-.BR filename .
-If the filename contains a %, then it is used as a format string to 
-.BR printf (3)
-with the frame number (a signed integer) passed as the parameter.
-In the other mode, it records a video (this requires ffmpeg). To select
-this mode, set the variable
-.B video
-to 1. The variable
-.B codec
-controls the video codec. See the example configuration file for
-documentation of other options.
-.TP
-.B eps
-This is similar to the
-.B screenshot
-filter-set, but captures the scene as an EPS/PS/PDF/SVG file using 
-.BR gl2ps .
-.TP
-.B unwindstack
-This filter-set is a bit of a hack, and may not work reliably on all
-systems. It addresses the problem of a crash inside an OpenGL driver
-that contains no stack frame information, making it impossible to
-determine the source of the error. It attempts to make a partial
-recovery, then regenerates the crash but from a point where a stack
-trace will work. If running your program inside
-.BR gdb,
-continue past the first segmentation fault and ask for a stack trace
-after the second.
-.TP
-.BR stats ", " showstats
-The
-.B stats
-filterset collects various statistics (frames per second, and optionally
-fragments and triangles, at the time of writing). If the
-.B log
-filterset is also loaded, it will write stats to the log. The
-.B showstats
-filterset will render the statistics into the framebuffer
-each frame.
-.TP
-.B checks
-Does some expensive checks for things that are illegal in rendering
-calls but for which OpenGL only specifies undefined behaviour. These
-include
-.RE
-Sourcing vertex or index data from unreadable client memory.
-
-Sourcing vertex or index data from outside the valid range of a vertex
-buffer object.
-
-Calling
-.B glVertex
-from outside of
-.BR glBegin / glEnd .
-
-Setting client state from inside
-.BR glBegin / glEnd .
-
-Specifying indices to
-.BR glDrawRangeElements (3x)
-that are outside the specified range.
-.RS
-.P
-There are several other filter-sets, but they are all used internally
-and are automatically loaded when necessary.
-
 .SH CONFIGURATION
 You can create filter-set chains in the file
 .BR $HOME/.bugle/filters .
@@ -191,7 +37,7 @@ It is possible to use
 without creating this file, but it will simply pass all calls straight
 through to the real OpenGL library. This is not particularly useful
 unless you are using
-.BR gldb .
+.BR gldb or gldb-gui .
 
 The file is text-based. Comments begin with a
 .B "#"
@@ -217,8 +63,8 @@ Filtersets are specified as
 .nf
 \fB    filterset\fI filterset\fB [\fIkey\fB [inactive]]\fR
 \fB    {
-\fI        option value
-\fI        option value
+\fI        option "value"
+\fI        option "value"
 \fR        .
 \fR        .
 \fR        .
@@ -236,16 +82,30 @@ for a list). They may also be prefixed with
 .BR "A-" ,
 and/or
 .B "S-"
-to indicate that the key must be combined with Ctrl, Alt or Shift.
+to indicate that the key must be combined with Ctrl, Alt or Shift
+respectively. Some filter-sets have options which are keys; these take
+the same format.
 
-If you don't need to specify any options, it is also legal to specify
-only the first line. Boolean options may be specified as
+If you don't need to specify any options, it is also legal to omit the
+braces. Boolean options may be specified as
 .BR yes/no ,
 as
 .BR true/false ,
 or as
 .BR 1/0 .
 
+.SH "FILTER-SETS"
+Each filter-set is documented in its own manual page e.g., the
+.B trace
+filter-set is documented in
+.BR bugle-trace (7).
+You can get a brief list of available filter-sets and their options by
+specifying an undefined chain e.g.
+.IP
+.nf
+.B BUGLE_CHAIN=help LD_PRELOAD=libbugle.so glxgears
+.fi
+.P
 .SH ENVIRONMENT
 .TP
 .B BUGLE_CHAIN
@@ -279,13 +139,28 @@ fragile.
 
 Display lists may cause things to go wrong, depending on how they are
 created and what calls go into them.
+
+See the pages for individual filter-sets for specific bugs affecting
+each.
 .SH AUTHOR
 .B gldb
 and the
 .B bugle
 library are written and maintained by Bruce Merry
 <bmerry@users.sourceforge.net>.
-
 .SH "SEE ALSO"
 .BR gldb (1),
-.BR ppm (5)
+.BR bugle-camera (7),
+.BR bugle-checks (7),
+.BR bugle-eps (7),
+.BR bugle-error (7),
+.BR bugle-frontbuffer (7),
+.BR bugle-log (7),
+.BR bugle-screenshot (7),
+.BR bugle-showerror (7),
+.BR bugle-showextensions (7),
+.BR bugle-showstats (7),
+.BR bugle-stats (7),
+.BR bugle-trace (7),
+.BR bugle-unwindstack (7),
+.BR bugle-wireframe (7)

@@ -475,7 +475,7 @@ void filter_compute_order(void)
     filter *cur;
     order_data *info;
 
-    bugle_list_init(&ordered, true);
+    bugle_list_init(&ordered, false);
     bugle_hash_init(&byname, true);
     for (i = bugle_list_head(&loaded_filters); i; i = bugle_list_next(i))
     {

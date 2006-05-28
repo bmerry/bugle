@@ -1,0 +1,59 @@
+.TH log 7 "May 2006" BUGLE "User manual"
+.SH NAME
+log \- configure logging output from other filter-sets
+.SH SYNOPSIS
+.nf
+filterset log
+{
+    filename "bugle.log"
+    flush "no"
+    format "%f.%e: %m"
+}
+.fi
+.SH DESCRIPTION
+The log filter-set does not do any logging itself; instead, it provides
+logging services to other filter-sets. It is automatically loaded when
+needed, but explicitly loading it allows options to be set.
+.SH OPTIONS
+.TP
+.B filename
+This sets the filename for logging. If not filename is given, the log
+is written to standard error.
+.TP
+.B flush
+If this is enabled (it is not by default) then the log is flushed to
+disk after every entry. This may be required to obtain a complete log
+if the program crashes.
+.TP
+.B format
+This optional string overrides the default log format. The following
+printf-style escapes are recognised:
+.RS
+.TP
+.B %f
+filterset
+.TP
+.B %e
+event
+.TP
+.B %m
+log message
+.TP
+.B %p
+process ID
+.TP
+.B %t
+thread ID (from
+.BR pthread_self (3))
+.TP
+.B %%
+a literal %
+.RE
+.SH AUTHOR
+.B gldb
+and the
+.B bugle
+library are written and maintained by Bruce Merry
+<bmerry@users.sourceforge.net>.
+.SH SEE ALSO
+.BR bugle (3)

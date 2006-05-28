@@ -1,0 +1,52 @@
+.TH error 7 "May 2006" BUGLE "User manual"
+.SH NAME
+error \- detect errors in OpenGL calls
+.SH SYNOPSIS
+.nf
+filterset error
+filterset showerror
+.fi
+.SH DESCRIPTION
+This filter-set does not take any visible action on its own, but
+provides a service to other filter-sets. It calls
+.BR glGetError (3)
+after every OpenGL call to detect OpenGL errors (it does not detect X
+errors). The
+.B showerror
+filter-set will display any errors on standard error, while the
+.B trace
+filter-set will report errors in the log.
+
+Apart from this explicit error reporting, you may occasionally see the
+message
+.IP
+An OpenGL error was detected but will be lost to the app
+.P
+This means that
+.BR bugle "'s"
+internal error-checking code accidentally collected an error caused by
+one of your calls, and thus if your application later called
+.BR glGetError (3)
+it would not be informed of the error. However, if you add the
+.B error
+filter-set, it will catch the error first and your application will be
+correctly informed of the error.
+.SH BUGS
+Because the error reporting semantics of OpenGL are not completely
+defined (in particular, an implementation may choose how many error
+flags it has), it is impossible to guarantee that this filter-set is
+completely transparent to the application. However, the first call to
+.B glGetError (3)
+after generating an error will always return an error, and in practice
+this is all that is necessary.
+.SH AUTHOR
+.B gldb
+and the
+.B bugle
+library are written and maintained by Bruce Merry
+<bmerry@users.sourceforge.net>.
+.SH SEE ALSO
+.BR bugle (3),
+.BR bugle-showerror (7),
+.BR bugle-trace (7),
+.BR glGetError (3)

@@ -25,14 +25,17 @@
 #include "src/utils.h"
 #include "src/filters.h"
 
-/* When logging stuff, you should call log_header before each line of output.
- * If the logger is loaded, it will write a prefix and return a file handle.
- * Otherwise, it will return NULL and you should not continue.
- *
- * You should also call log_register_filter to set up the order dependencies
- * on any filter that will do logging.
+/* Write a message to the log. Do not include a trailing newline; this will
+ * be provided automatically.
  */
-FILE *bugle_log_header(const char *filterset, const char *mode);
+void bugle_log(const char *filterset, const char *event, const char *message);
+
+/* A generalised version that takes a callback to write out to the log file.
+ * The callback must be prepared to deal with zero or more calls. Again, it
+ * should not output a newline.
+ */
+void bugle_log_callback(const char *filterset, const char *event,
+                        void (*callback)(void *arg, FILE *f), void *arg);
 
 /* Call this for filter sets that use logging */
 void bugle_log_register_filter(const char *filter);

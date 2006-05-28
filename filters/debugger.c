@@ -563,7 +563,6 @@ static void process_single_command(function_call *call)
         if (!stopped)
         {
             resp_str = budgie_string_io(dump_any_call_string_io, call);
-            resp_str[strlen(resp_str) - 1] = '\0'; /* strip the \n */
             stopped = true;
             gldb_protocol_send_code(out_pipe, RESP_STOP);
             gldb_protocol_send_code(out_pipe, start_id);
@@ -626,7 +625,6 @@ static bool debugger_callback(function_call *call, const callback_data *data)
     if (break_on[call->generic.id])
     {
         resp_str = budgie_string_io(dump_any_call_string_io, call);
-        resp_str[strlen(resp_str) - 1] = '\0'; /* strip the \n */
         stopped = true;
         break_on_next = false;
         gldb_protocol_send_code(out_pipe, RESP_BREAK);
@@ -637,7 +635,6 @@ static bool debugger_callback(function_call *call, const callback_data *data)
     else if (break_on_next)
     {
         resp_str = budgie_string_io(dump_any_call_string_io, call);
-        resp_str[strlen(resp_str) - 1] = '\0'; /* strip the \n */
         break_on_next = false;
         stopped = true;
         gldb_protocol_send_code(out_pipe, RESP_STOP);
@@ -658,7 +655,6 @@ static bool debugger_error_callback(function_call *call, const callback_data *da
         && (error = bugle_get_call_error(call)))
     {
         resp_str = budgie_string_io(dump_any_call_string_io, call);
-        resp_str[strlen(resp_str) - 1] = '\0'; /* strip the \n */
         gldb_protocol_send_code(out_pipe, RESP_BREAK_ERROR);
         gldb_protocol_send_code(out_pipe, start_id);
         gldb_protocol_send_string(out_pipe, resp_str);

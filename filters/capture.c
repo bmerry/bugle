@@ -673,7 +673,7 @@ static bool showextensions_callback(function_call *call, const callback_data *da
     const group_data *info;
     const gl_function *glinfo;
 
-    info = &budgie_group_table[call->generic.id];
+    info = &budgie_group_table[call->generic.group];
     glinfo = &bugle_gl_function_table[call->generic.id];
     if (glinfo->extension)
         bugle_hash_set(&seen_extensions, glinfo->extension, &seen_extensions);

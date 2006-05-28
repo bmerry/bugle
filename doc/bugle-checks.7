@@ -1,0 +1,48 @@
+.TH checks 7 "May 2006" BUGLE "User manual"
+.SH NAME
+checks \- check for errors that OpenGL defines as undefined behaviour
+.SH SYNOPSIS
+.nf
+filterset unwindstack
+.fi
+.SH DESCRIPTION
+While OpenGL checks for many error conditions, there are some for which
+the specification does not define behaviour. These instances are
+usually in performance-critical paths where error-checking would impact
+on performance. This filter-set checks for some of these conditions.
+Because of the high cost of the checks, it is only intended for
+debugging.
+
+The checks that are made are for
+.IP \(bu
+Sourcing vertex or index data from unreadable client memory.
+.IP \(bu
+Sourcing vertex or index data from outside the valid range of a vertex
+buffer object.
+.IP \(bu
+Calling
+.B glVertex
+from outside of
+.BR glBegin / glEnd .
+.IP \(bu
+Setting client state from inside
+.BR glBegin / glEnd .
+.IP \(bu
+Specifying indices to
+.BR glDrawRangeElements (3)
+that are outside the specified range.
+.P
+When an error is detected, a warning is written to standard error and
+the call is ignored. There is currently no convenient way to trap the
+errors in a debugger (you can, however, find the message in the
+.B bugle
+source and set a breakpoint on the appropriate line).
+.SH AUTHOR
+.B gldb
+and the
+.B bugle
+library are written and maintained by Bruce Merry
+<bmerry@users.sourceforge.net>.
+.SH SEE ALSO
+.BR bugle (3),
+.BR bugle-unwindstack (7)

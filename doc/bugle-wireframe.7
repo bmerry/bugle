@@ -1,0 +1,31 @@
+.TH wireframe 7 "May 2006" BUGLE "User manual"
+.SH NAME
+wireframe \- force rendering in wireframe mode
+.SH SYNOPSIS
+.nf
+filterset wireframe
+.SH DESCRIPTION
+The
+.B wireframe
+filter-set overrides the polygon mode, setting it to
+.BR GL_LINES .
+This is useful for visualising the triangulation of models.
+.SH BUGS
+This filter-set does not properly support activation and deactivation.
+
+Display lists that alter the polygon mode will cause problems.
+
+As with any filter-set that modifies OpenGL state, it will break
+complex rendering techniques like render-to-vertex-buffer.
+
+Texturing is generally disabled to make the lines more visible, but
+fragment programs will nevertheless continue to apply textures.
+.SH AUTHOR
+.B gldb
+and the
+.B bugle
+library are written and maintained by Bruce Merry
+<bmerry@users.sourceforge.net>.
+.SH SEE ALSO
+.BR bugle (3),
+.BR glPolygonMode (3)

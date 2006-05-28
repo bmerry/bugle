@@ -1,0 +1,30 @@
+.TH showstats 7 "May 2006" BUGLE "User manual"
+.SH NAME
+showstats \- render statistics over the display
+.SH SYNOPSIS
+.nf
+filterset frontbuffer
+.SH DESCRIPTION
+The
+.B stats
+filter-set gathers statistics about the rendering, such as frame rate.
+When this filter-set is also used, the statistics are displayed in the
+rendered window.
+.SH BUGS
+The filter-set has some overhead. You should use the
+.B log
+filterset to record statistics to file if you want to get accurate
+frame-rate measurements.
+
+Resizing the window can cause the stats display to be misplaced.
+
+If the background is white it is impossible to see the statistics.
+.SH AUTHOR
+.B gldb
+and the
+.B bugle
+library are written and maintained by Bruce Merry
+<bmerry@users.sourceforge.net>.
+.SH SEE ALSO
+.BR bugle (3),
+.BR bugle-stats (3)

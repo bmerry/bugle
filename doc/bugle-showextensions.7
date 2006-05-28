@@ -1,0 +1,59 @@
+.TH showextensions 7 "May 2006" BUGLE "User manual"
+.SH NAME
+showextensions \- show that extensions utilised by an OpenGL application
+.SH SYNOPSIS
+.nf
+filterset showextensions
+.fi
+.SH DESCRIPTION
+The
+.B showextensions
+filter-set can be used to determine what version of OpenGL and what
+extensions are used by a particular application. It can be used to
+check that an application does not accidentally depend on an OpenGL
+version that is not targetted. The most common error is calling a core
+OpenGL function (for a recent version of OpenGL) when one intended to
+use an older and more widely supported extension.
+
+Note that it can only report what is used, not what is required, which
+may be different if the application uses certain features only after
+detecting them. It also only tests the run-time usage; the compile-time
+usage may be different.
+
+Two methods are used for detection: the functions called and the
+enumerants passed to functions. The former is quite reliable, since
+different entry points are used for the core and extension versions of
+the same function. The latter is necessary to detect extensions such as
+.B GL_SGIS_generate_mipmap
+which do not introduce new function calls, but it is less reliable as
+many enumerants share values.
+.
+.SH OUTPUT
+A typical output is the following:
+.IP
+.nf
+Min GL version: GL_VERSION_1_5
+Min GLX version: GLX_VERSION_1_2
+Used extensions: GL_ARB_shader_objects GL_ARB_vertex_shader
+.fi
+.P
+This indicates that the application used OpenGL 1.5 and GLX 1.2 (and
+possibly some extensions that are incorporated into OpenGL 1.5), as
+well as the extensions listed.
+.
+.SH BUGS
+The enumerant detection is not entirely reliable.
+
+Sometimes extensions are listed even though they are already part of
+the core version listed.
+
+It is assumed that OpenGL 1.1 and GLX 1.2 are used; there is no way to
+detect whether an application would work on OpenGL 1.0 or GLX 1.1.
+.SH AUTHOR
+.B gldb
+and the
+.B bugle
+library are written and maintained by Bruce Merry
+<bmerry@users.sourceforge.net>.
+.SH SEE ALSO
+.BR bugle (3)

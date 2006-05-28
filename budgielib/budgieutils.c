@@ -244,7 +244,6 @@ void budgie_dump_any_call(const generic_function_call *call, int indent, FILE *o
             budgie_dump_any_type(type, call->retn, length, out);
         }
     }
-    fputs("\n", out);
 }
 
 void budgie_make_indent(int indent, FILE *out)

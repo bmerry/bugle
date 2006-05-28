@@ -26,18 +26,27 @@
 #include "common/bool.h"
 #include <stdio.h>
 
+/* Callback passed to bugle_log */
+static void trace_callback_call_callback(void *call, FILE *f)
+{
+    budgie_dump_any_call((generic_function_call *) call, 0, f);
+}
+
+static void trace_callback_error_callback(void *error, FILE *f)
+{
+    bugle_dump_GLerror(*(GLenum *) error, f);
+}
+
 static bool trace_callback(function_call *call, const callback_data *data)
 {
     GLenum error;
     FILE *f;
 
-    if ((f = bugle_log_header("trace", "call")))
-        budgie_dump_any_call(&call->generic, 0, f);
-    if ((error = bugle_get_call_error(call)) && (f = bugle_log_header("trace", "error")))
-    {
-        bugle_dump_GLerror(error, f);
-        fputs("\n", f);
-    }
+    bugle_log_callback("trace", "call",
+                       trace_callback_call_callback, &call->generic);
+    if ((error = bugle_get_call_error(call)))
+        bugle_log_callback("trace", "error",
+                           trace_callback_error_callback, &error);
     return true;
 }
 

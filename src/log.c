@@ -22,18 +22,48 @@
 #include "src/filters.h"
 #include "common/safemem.h"
 #include "common/bool.h"
+#include "common/threads.h"
 #include <stdio.h>
 
 static char *log_filename = NULL;
+static char *log_format = NULL;
 static bool log_flush = false;
-static FILE *log_file;
+static FILE *log_file = NULL;
 
-FILE *bugle_log_header(const char *filterset, const char *mode)
+void bugle_log_callback(const char *filterset, const char *event,
+                        void (*callback)(void *arg, FILE *f), void *arg)
 {
-    if (!log_file) return NULL;
-    if (mode) fprintf(log_file, "%s.%s: ", filterset, mode);
-    else fprintf(log_file, "%s: ", filterset);
-    return log_file;
+    const char *format;
+
+    if (!log_file) return;
+    format = log_format;
+    while (*format)
+    {
+        if (*format == '%')
+        {
+            switch (format[1])
+            {
+            case 'f': fputs(filterset, log_file); break;
+            case 'e': fputs(event, log_file); break;
+            case 'm': (*callback)(arg, log_file); break;
+            case 'p': fprintf(log_file, "%lu", (unsigned long) getpid()); break;
+            case 't': fprintf(log_file, "%lu", bugle_thread_self()); break;
+            case '%': fputc('%', log_file); break;
+            default: /* Unrecognised escape, treat it as literal */
+                fputc('%', log_file);
+                format--;
+            }
+            format += 2;
+        }
+        else
+            fputc(*format++, log_file);
+    }
+    fputc('\n', log_file);
+}
+
+void bugle_log(const char *filterset, const char *event, const char *message)
+{
+    bugle_log_callback(filterset, event, (void (*)(void *, FILE *)) fputs, (void *) message);
 }
 
 static bool log_pre_callback(function_call *call, const callback_data *data)
@@ -80,6 +110,7 @@ static void destroy_log(filter_set *handle)
         if (log_file) fclose(log_file);
         free(log_filename);
     }
+    free(log_format);
 }
 
 void bugle_log_register_filter(const char *filter)
@@ -94,6 +125,7 @@ void log_initialise(void)
     {
         { "filename", "filename of the log to write [stderr]", FILTER_SET_VARIABLE_STRING, &log_filename, NULL },
         { "flush", "flush log after every call [no]", FILTER_SET_VARIABLE_BOOL, &log_flush, NULL },
+        { "format", "template for log lines [%f.%e: %m]", FILTER_SET_VARIABLE_STRING, &log_format, NULL },
         { NULL, NULL, 0, NULL, NULL }
     };
 
@@ -110,4 +142,5 @@ void log_initialise(void)
     };
 
     bugle_register_filter_set(&log_info);
+    log_format = bugle_strdup("%f.%e: %m");
 }

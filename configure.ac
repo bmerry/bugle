@@ -86,6 +86,7 @@ AC_CHECK_TYPE(ptrdiff_t, long int)
 AC_CHECK_TYPE([long long])
 AC_TYPE_SIZE_T
 AC_C_LONG_DOUBLE
+BUGLE_TYPE_PTHREAD_T_INTEGRAL
 
 dnl Checks for structures
 
