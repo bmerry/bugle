@@ -1,3 +1,10 @@
+0.0.20060528
+------------
+This release fixes several important bugs (see the ChangeLog for
+details). It also introduces some flexibility into the logging format
+and allows gldb and gldb-gui to step to the next GL call. The
+filter-sets are now documented in individual manual pages.
+
 0.0.20060429
 ------------
 This release fixes a nasty bug (introduced in 0.0.20060416) that causes

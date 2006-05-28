@@ -1,4 +1,4 @@
-* Fix break-on-error.
+* Fix break-on-error
 * Add flexible log format
 * Add support for GL_MAX_RENDERBUFFER_SIZE_EXT.
 * Fix false warnings when glMultiTexCoord* is called from inside
@@ -6,6 +6,7 @@
 * Add support for the "step" operation to gldb and gldb-gui.
 * Fix numerous shutdown bugs
 * Fix bug in the showextensions filterset revealed by the fix above
+* Create a separate manual page for each filter-set.
 
 0.0.20060429
 ------------

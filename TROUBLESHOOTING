@@ -2,7 +2,7 @@ Q. I am getting the error 'Invalid option -fdump-translation-unit' or
 similar.
 A. You need to use a version of GCC that supports this flag. Version
 3.2 and newer are known to, but 3.0 and 2.95 do not. I'm not sure about
-3.1.
+3.1. In version 4.0 the support is broken.
 
 Q. I get an error trying to move gl.c.tu, saying that the file does not
 exist.
@@ -55,6 +55,14 @@ A. This is a known bug in NVIDIA's 76.76 driver. It is fixed in the 80
 series drivers. As a workaround, you can change the "#if 0" to "#if 1"
 on line 241 of filters/debugger.c, but be aware that this then breaks
 display of non-rendered textures.
+
+Q. I am using ATI drivers and when I run configure, it does not find
+glBegin in -lGL.
+A. I have had this reported by one Debian user, but didn't get further
+details on hardware or driver version. It appears that this version
+depended on but did not link to libpthread. While it is possible to
+hack this in configure.ac, the same user reported other problems with
+this driver, and it is probably best to upgrade to a newer driver.
 
 
 For any other problems, contact me at bmerry@users.sourceforge.net. If
