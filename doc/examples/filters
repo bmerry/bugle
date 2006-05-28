@@ -24,16 +24,13 @@ chain showstats
 {
     filterset stats
     {
-        # Uncomment to count fragments that pass the Z test. This requires
-        # GL_ARB_occlusion_query and will have a performance penalty.
-
+        # Uncomment to count fragments that pass the depth test. This
+        # requires GL_ARB_occlusion_query and will have a performance
+        # penalty.
+        
         # fragments yes
 
-        # Uncomment to count triangles. It theoretically supports display
-        # lists. It will not work if you use GL_NV_primitive_restart, and
-        # it does not yet support any kind of generated geometry
-        # (evaluators or displacement maps). In general, don't rely on it
-        # being accurate.
+        # Uncomment to count triangles.
 
         # triangles yes
     }
@@ -85,7 +82,7 @@ chain video
 
         # Control the encoding latency. A higher latency may give
         # better throughput, at the expense of more memory.
-        lag "2"
+        # lag "1"
     }
 }
 
@@ -107,7 +104,7 @@ chain wireframe
 # Use this filter-set and press the key sequence below to give manual
 # control over the camera position. Pressing it again restores the
 # original camera position and deactivates the override keys.
-# Useful for LOD and frustum culling research.
+# Useful for LOD and visibility culling research.
 chain camera
 {
     filterset camera "C-A-S-C" inactive
