@@ -1,0 +1,123 @@
+
+<HTML><HEAD><TITLE>Manpage of eps</TITLE>
+</HEAD><BODY>
+<H1>eps</H1>
+Section: User manual (7)<BR>Updated: May 2006<BR><A HREF="#index">Index</A>
+<A HREF="../index.html">Return to Main Contents</A><HR>
+
+<A NAME="lbAB">&nbsp;</A>
+<H2>NAME</H2>
+
+eps - takes vector-graphic screenshots
+<A NAME="lbAC">&nbsp;</A>
+<H2>SYNOPSIS</H2>
+
+<PRE>
+filterset eps
+{
+    filename &quot;bugle.eps&quot;
+    key_eps &quot;C-A-S-S&quot;
+    title &quot;My screenshot&quot;
+    bsp &quot;no&quot;
+    buffer &quot;1000000&quot;
+}
+</PRE>
+
+<A NAME="lbAD">&nbsp;</A>
+<H2>DESCRIPTION</H2>
+
+This filterset is similar to the screenshot filter-set, but instead of
+a raster image, it produces a vector graphic suitable for printing.
+This is achieved through
+<B><A HREF="../man3/gl2ps.3.html">gl2ps</A></B>(3),
+
+which is incorporated into
+<B>bugle</B>.
+
+The supported formats are Postscript, Encapsulated Postscript (EPS),
+Portable Document Format (PDF) and Scalable Vector Graphic (SVG).
+<P>
+The capturing process utilises the OpenGL feedback buffer (see
+<B><A HREF="../man3/glFeedbackBuffer.3.html">glFeedbackBuffer</A></B>(3)),
+
+which creates some inherent limitations. No per-fragment effects (such
+as texturing or bitmap rendering) are captured, not will vertex
+programs work correctly. Essentially, the colour of each vertex must be
+either directly specified or determined by the OpenGL lighting model.
+<P>
+<A NAME="lbAE">&nbsp;</A>
+<H2>OPTIONS</H2>
+
+<DL COMPACT>
+<DT><B>filename</B>
+
+<DD>
+The file to which the screenshot will be written. The extension is used
+to determine the file format. Valid extensions are
+<B>ps</B>,
+
+<B>eps</B>,
+
+<B>pdf</B>
+
+and
+<B>svg</B>.
+
+<DT><B>key_eps</B>
+
+<DD>
+The key-press which triggers the snapshot.
+<DT><B>title</B>
+
+<DD>
+This is a string that is embedded in Postscript and EPS files.
+<DT><B>bsp</B>
+
+<DD>
+If this boolean is enabled, the depth sorting is done with a BSP tree
+to give accurate results. This may be necessary to get correct results
+in scenes with complex occlusion, but it is much slower.
+<DT><B>buffer</B>
+
+<DD>
+The number of entries to allocate for the feedback buffer. If this is
+too low, the feedback buffer will overflow and the screenshot will
+fail. The default should be enough for most simple scenes, but for
+highly complex scenes it may be necessary to create a larger buffer.
+</DL>
+<A NAME="lbAF">&nbsp;</A>
+<H2>AUTHOR</H2>
+
+<B>gldb</B>
+
+and the
+<B>bugle</B>
+
+library are written and maintained by Bruce Merry
+&lt;<A HREF="mailto:bmerry@users.sourceforge.net">bmerry@users.sourceforge.net</A>&gt;.
+<A NAME="lbAG">&nbsp;</A>
+<H2>SEE ALSO</H2>
+
+<B><A HREF="../man3/bugle.3.html">bugle</A></B>(3),
+
+<B><A HREF="../man3/glFeedbackBuffer.3.html">glFeedbackBuffer</A></B>(3)
+
+<P>
+
+<HR>
+<A NAME="index">&nbsp;</A><H2>Index</H2>
+<DL>
+<DT><A HREF="#lbAB">NAME</A><DD>
+<DT><A HREF="#lbAC">SYNOPSIS</A><DD>
+<DT><A HREF="#lbAD">DESCRIPTION</A><DD>
+<DT><A HREF="#lbAE">OPTIONS</A><DD>
+<DT><A HREF="#lbAF">AUTHOR</A><DD>
+<DT><A HREF="#lbAG">SEE ALSO</A><DD>
+</DL>
+<HR>
+This document was created by
+<A HREF="http://localhost/cgi-bin/man/man2html">man2html</A>,
+using the manual pages.<BR>
+Time: 10:41:20 GMT, May 29, 2006
+</BODY>
+</HTML>

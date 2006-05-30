@@ -1,0 +1,106 @@
+
+<HTML><HEAD><TITLE>Manpage of showextensions</TITLE>
+</HEAD><BODY>
+<H1>showextensions</H1>
+Section: User manual (7)<BR>Updated: May 2006<BR><A HREF="#index">Index</A>
+<A HREF="../index.html">Return to Main Contents</A><HR>
+
+<A NAME="lbAB">&nbsp;</A>
+<H2>NAME</H2>
+
+showextensions - show that extensions utilised by an OpenGL application
+<A NAME="lbAC">&nbsp;</A>
+<H2>SYNOPSIS</H2>
+
+<PRE>
+filterset showextensions
+</PRE>
+
+<A NAME="lbAD">&nbsp;</A>
+<H2>DESCRIPTION</H2>
+
+The
+<B>showextensions</B>
+
+filter-set can be used to determine what version of OpenGL and what
+extensions are used by a particular application. It can be used to
+check that an application does not accidentally depend on an OpenGL
+version that is not targetted. The most common error is calling a core
+OpenGL function (for a recent version of OpenGL) when one intended to
+use an older and more widely supported extension.
+<P>
+Note that it can only report what is used, not what is required, which
+may be different if the application uses certain features only after
+detecting them. It also only tests the run-time usage; the compile-time
+usage may be different.
+<P>
+Two methods are used for detection: the functions called and the
+enumerants passed to functions. The former is quite reliable, since
+different entry points are used for the core and extension versions of
+the same function. The latter is necessary to detect extensions such as
+<B>GL_SGIS_generate_mipmap</B>
+
+which do not introduce new function calls, but it is less reliable as
+many enumerants share values.
+<A NAME="lbAE">&nbsp;</A>
+<H2>OUTPUT</H2>
+
+A typical output is the following:
+<DL COMPACT>
+<DT><DD>
+<PRE>
+Min GL version: GL_VERSION_1_5
+Min GLX version: GLX_VERSION_1_2
+Used extensions: GL_ARB_shader_objects GL_ARB_vertex_shader
+</PRE>
+
+
+This indicates that the application used OpenGL 1.5 and GLX 1.2 (and
+possibly some extensions that are incorporated into OpenGL 1.5), as
+well as the extensions listed.
+</DL>
+<A NAME="lbAF">&nbsp;</A>
+<H2>BUGS</H2>
+
+The enumerant detection is not entirely reliable.
+<P>
+Sometimes extensions are listed even though they are already part of
+the core version listed.
+<P>
+It is assumed that OpenGL 1.1 and GLX 1.2 are used; there is no way to
+detect whether an application would work on OpenGL 1.0 or GLX 1.1.
+<A NAME="lbAG">&nbsp;</A>
+<H2>AUTHOR</H2>
+
+<B>gldb</B>
+
+and the
+<B>bugle</B>
+
+library are written and maintained by Bruce Merry
+&lt;<A HREF="mailto:bmerry@users.sourceforge.net">bmerry@users.sourceforge.net</A>&gt;.
+<A NAME="lbAH">&nbsp;</A>
+<H2>SEE ALSO</H2>
+
+<B><A HREF="../man3/bugle.3.html">bugle</A></B>(3)
+
+<P>
+
+<HR>
+<A NAME="index">&nbsp;</A><H2>Index</H2>
+<DL>
+<DT><A HREF="#lbAB">NAME</A><DD>
+<DT><A HREF="#lbAC">SYNOPSIS</A><DD>
+<DT><A HREF="#lbAD">DESCRIPTION</A><DD>
+<DT><A HREF="#lbAE">OUTPUT</A><DD>
+<DT><A HREF="#lbAF">BUGS</A><DD>
+<DT><A HREF="#lbAG">AUTHOR</A><DD>
+<DT><A HREF="#lbAH">SEE ALSO</A><DD>
+</DL>
+<HR>
+This document was created by
+<A HREF="http://localhost/cgi-bin/man/man2html">man2html</A>,
+using the manual pages.<BR>
+Time: 10:41:20 GMT, May 29, 2006
+</BODY>
+</HTML>

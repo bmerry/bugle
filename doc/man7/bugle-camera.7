@@ -1,0 +1,88 @@
+.TH camera 7 "May 2006" BUGLE "User manual"
+.SH NAME
+camera \- allow the camera to be manipulated
+.SH SYNOPSIS
+.nf
+filterset camera
+{
+    speed "1.0"
+    mouse_dga "no"
+}
+.fi
+.SH DESCRIPTION
+This filter-set allows you to take over the camera in an OpenGL
+application and move it about. This is particularly useful for testing
+visibility culling and level-of-detail (LOD), as these will
+.I not
+change as the camera is moved.
+
+Since this filter-set is based on modifying OpenGL state without
+telling the application, there are significant limitations:
+.IP \(bu
+The application may use a vertex program, provided that it uses the
+camera transformation in the standard way.
+.IP \(bu
+The projection matrix, and in particular, the near and far clip planes,
+are not altered. Thus, trying to move in too close or out too far could
+cause objects to be clipped away.
+.IP \(bu
+Various fancy rendering techniques involve rendering a quad that is
+carefully aligned to the screen; altering the camera will break such
+techniques. There is ultimately no general fix as it is impossible to
+know when an application is dealing with the real world. If you are
+writing such an application and wish it to work with this filter-set,
+you should use a vertex program that ignores the model-view matrix in
+instances where you do not want this filter-set to interfere.
+.IP \(bu
+Applications that rely on the feedback buffer will likely break.
+This filter-set supports activation and deactivation; the recommended
+use is to have it initially inactive and use a key to take over control
+when desired.
+.SH OPTIONS
+.TP
+.B mouse_dga
+This is a boolean option which should be enabled when debugging an
+application that uses the
+.BR XDGA (3)
+extension to get relative motion data from the mouse. If the camera
+goes all over the place as soon as you move the mouse, try enabling
+this option (SDL-based applications are the main culprits).
+.TP
+.B speed
+This sets the speed at which the camera moves. Since each application
+has a different scale, you will need to adjust the value for each
+application (but dynamic control is also possible; see below).
+.TP
+.B key_forward
+.TP
+.B key_back
+.TP
+.B key_left
+.TP
+.B key_right
+The are the keys for moving the camera. They default to the arrow
+keys.
+.TP
+.B key_faster
+.TP
+.B key_slower
+These keys control the speed of the camera, doubling or halving it
+respectively. They default to PageUp and PageDown.
+.TP
+.B key_reset
+This key cancels any alterations made, restoring the camera to where
+the application thinks it is. There is no default.
+.TP
+.B key_toggle
+This key alternately releases and recaptures the mouse. It can be
+useful if you need to use the mouse in another window without
+completely disabling the filter-set (which would also restore the
+camera position). There is no default.
+.SH AUTHOR
+.B gldb
+and the
+.B bugle
+library are written and maintained by Bruce Merry
+<bmerry@users.sourceforge.net>.
+.SH SEE ALSO
+.BR bugle (3)

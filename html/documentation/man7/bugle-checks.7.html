@@ -1,0 +1,94 @@
+
+<HTML><HEAD><TITLE>Manpage of checks</TITLE>
+</HEAD><BODY>
+<H1>checks</H1>
+Section: User manual (7)<BR>Updated: May 2006<BR><A HREF="#index">Index</A>
+<A HREF="../index.html">Return to Main Contents</A><HR>
+
+<A NAME="lbAB">&nbsp;</A>
+<H2>NAME</H2>
+
+checks - check for errors that OpenGL defines as undefined behaviour
+<A NAME="lbAC">&nbsp;</A>
+<H2>SYNOPSIS</H2>
+
+<PRE>
+filterset unwindstack
+</PRE>
+
+<A NAME="lbAD">&nbsp;</A>
+<H2>DESCRIPTION</H2>
+
+While OpenGL checks for many error conditions, there are some for which
+the specification does not define behaviour. These instances are
+usually in performance-critical paths where error-checking would impact
+on performance. This filter-set checks for some of these conditions.
+Because of the high cost of the checks, it is only intended for
+debugging.
+<P>
+The checks that are made are for
+<DL COMPACT>
+<DT>*<DD>
+Sourcing vertex or index data from unreadable client memory.
+<DT>*<DD>
+Sourcing vertex or index data from outside the valid range of a vertex
+buffer object.
+<DT>*<DD>
+Calling
+<B>glVertex</B>
+
+from outside of
+<B>glBegin</B>/<B>glEnd</B>.
+
+<DT>*<DD>
+Setting client state from inside
+<B>glBegin</B>/<B>glEnd</B>.
+
+<DT>*<DD>
+Specifying indices to
+<B><A HREF="../man3/glDrawRangeElements.3.html">glDrawRangeElements</A></B>(3)
+
+that are outside the specified range.
+
+When an error is detected, a warning is written to standard error and
+the call is ignored. There is currently no convenient way to trap the
+errors in a debugger (you can, however, find the message in the
+<B>bugle</B>
+
+source and set a breakpoint on the appropriate line).
+</DL>
+<A NAME="lbAE">&nbsp;</A>
+<H2>AUTHOR</H2>
+
+<B>gldb</B>
+
+and the
+<B>bugle</B>
+
+library are written and maintained by Bruce Merry
+&lt;<A HREF="mailto:bmerry@users.sourceforge.net">bmerry@users.sourceforge.net</A>&gt;.
+<A NAME="lbAF">&nbsp;</A>
+<H2>SEE ALSO</H2>
+
+<B><A HREF="../man3/bugle.3.html">bugle</A></B>(3),
+
+<B><A HREF="../man7/bugle-unwindstack.7.html">bugle-unwindstack</A></B>(7)
+
+<P>
+
+<HR>
+<A NAME="index">&nbsp;</A><H2>Index</H2>
+<DL>
+<DT><A HREF="#lbAB">NAME</A><DD>
+<DT><A HREF="#lbAC">SYNOPSIS</A><DD>
+<DT><A HREF="#lbAD">DESCRIPTION</A><DD>
+<DT><A HREF="#lbAE">AUTHOR</A><DD>
+<DT><A HREF="#lbAF">SEE ALSO</A><DD>
+</DL>
+<HR>
+This document was created by
+<A HREF="http://localhost/cgi-bin/man/man2html">man2html</A>,
+using the manual pages.<BR>
+Time: 10:41:20 GMT, May 29, 2006
+</BODY>
+</HTML>

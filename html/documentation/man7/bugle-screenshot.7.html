@@ -1,0 +1,142 @@
+
+<HTML><HEAD><TITLE>Manpage of screenshot</TITLE>
+</HEAD><BODY>
+<H1>screenshot</H1>
+Section: User manual (7)<BR>Updated: May 2006<BR><A HREF="#index">Index</A>
+<A HREF="../index.html">Return to Main Contents</A><HR>
+
+<A NAME="lbAB">&nbsp;</A>
+<H2>NAME</H2>
+
+screenshot - takes screenshots and captures video
+<A NAME="lbAC">&nbsp;</A>
+<H2>SYNOPSIS</H2>
+
+<PRE>
+filterset screenshot
+{
+    filename &quot;bugle.ppm&quot;
+    key_screenshot &quot;C-A-S-S&quot;
+}
+
+filterset screenshot C-V inactive
+{
+    video &quot;yes&quot;
+    filename &quot;bugle.avi&quot;
+    codec &quot;mpeg4&quot;
+    bitrate &quot;1000000&quot;
+    allframes &quot;yes&quot;
+}
+</PRE>
+
+<A NAME="lbAD">&nbsp;</A>
+<H2>DESCRIPTION</H2>
+
+The screenshot filter-set can be used in one of two modes,
+corresponding to the two examples above. In the first, a particular
+key-press causes a screenshot to be taken, which is written to file in
+<B><A HREF="../man5/ppm.5.html">ppm</A></B>(5)
+
+format. In the second, a video stream is captured and encoded to a
+range of formats with
+<B><A HREF="../man1/ffmpeg.1.html">ffmpeg</A>(1).</B>
+
+<A NAME="lbAE">&nbsp;</A>
+<H2>OPTIONS</H2>
+
+<DL COMPACT>
+<DT><B>video</B>
+
+<DD>
+This option controls the mode: either screenshots on request or a video
+stream. This filter-set supports activation and deactivation, so it is
+possible to record video only on demand.
+<DT><B>filename</B>
+
+<DD>
+The file to which the image/video is written. In the case of an image,
+if the filename contains a % it is used as a format string for
+<B><A HREF="../man3/sprintf.3.html">sprintf</A></B>(3)
+
+with the frame number passed as the parameter.
+<DT><B>key_screenshot</B>
+
+<DD>
+The key-sequence used to capture a screenshot.
+<DT><B>codec</B>
+
+<DD>
+The codec to use when capturing a video. See
+<B><A HREF="../man1/ffmpeg.1.html">ffmpeg</A></B>(1)
+
+for a list of valid codecs.
+<DT><B>bitrate</B>
+
+<DD>
+The approximate number of bits per second to use for video encoding.
+<DT><B>allframes</B>
+
+<DD>
+By default, a frame is captured 30 times per second. If this option is
+set, every frame is captured. Note that the video file will still play
+at 30fps, so the speed will vary unless the application has been
+written to use a fixed time-step between frames for its internal
+animation (this is a useful way to produce smooth video if the
+capturing overhead is otherwise too high).
+<DT><B>lag</B>
+
+<DD>
+Sets the latency between beginning frame capture and encoding. On
+systems that support the
+<B>GL_EXT_pixel_buffer_object</B>
+
+extension, making this value greater than 1 can help mask readback
+latencies at the expense of video memory.
+</DL>
+<A NAME="lbAF">&nbsp;</A>
+<H2>BUGS</H2>
+
+Not all codecs supported by
+<B><A HREF="../man1/ffmpeg.1.html">ffmpeg</A></B>(1)
+
+can be used, as some of them import format restrictions that bugle does
+not handle.
+<A NAME="lbAG">&nbsp;</A>
+<H2>AUTHOR</H2>
+
+<B>gldb</B>
+
+and the
+<B>bugle</B>
+
+library are written and maintained by Bruce Merry
+&lt;<A HREF="mailto:bmerry@users.sourceforge.net">bmerry@users.sourceforge.net</A>&gt;.
+<A NAME="lbAH">&nbsp;</A>
+<H2>SEE ALSO</H2>
+
+<B><A HREF="../man3/bugle.3.html">bugle</A></B>(3),
+
+<B><A HREF="../man1/ffmpeg.1.html">ffmpeg</A></B>(1),
+
+<B><A HREF="../man5/ppm.5.html">ppm</A></B>(5)
+
+<P>
+
+<HR>
+<A NAME="index">&nbsp;</A><H2>Index</H2>
+<DL>
+<DT><A HREF="#lbAB">NAME</A><DD>
+<DT><A HREF="#lbAC">SYNOPSIS</A><DD>
+<DT><A HREF="#lbAD">DESCRIPTION</A><DD>
+<DT><A HREF="#lbAE">OPTIONS</A><DD>
+<DT><A HREF="#lbAF">BUGS</A><DD>
+<DT><A HREF="#lbAG">AUTHOR</A><DD>
+<DT><A HREF="#lbAH">SEE ALSO</A><DD>
+</DL>
+<HR>
+This document was created by
+<A HREF="http://localhost/cgi-bin/man/man2html">man2html</A>,
+using the manual pages.<BR>
+Time: 10:41:20 GMT, May 29, 2006
+</BODY>
+</HTML>

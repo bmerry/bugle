@@ -9,21 +9,21 @@ noinst_PROGRAMS = budgie/budgie
 noinst_HEADERS = budgie/tree.def budgie/c-common.def
 dist_noinst_SCRIPTS = gentokens/gentokens.perl gentokens/genfunctions.perl \
 	gentokens/find_header.perl gentokens/genexts.perl
-dist_man_MANS = doc/gldb.1 doc/bugle.3 \
-	doc/bugle-camera.7 \
-	doc/bugle-checks.7 \
-	doc/bugle-eps.7 \
-	doc/bugle-error.7 \
-	doc/bugle-frontbuffer.7 \
-	doc/bugle-log.7 \
-	doc/bugle-screenshot.7 \
-	doc/bugle-showerror.7 \
-	doc/bugle-showextensions.7 \
-	doc/bugle-showstats.7 \
-	doc/bugle-stats.7 \
-	doc/bugle-trace.7 \
-	doc/bugle-unwindstack.7 \
-	doc/bugle-wireframe.7
+dist_man_MANS = doc/man1/gldb.1 doc/man3/bugle.3 \
+	doc/man7/bugle-camera.7 \
+	doc/man7/bugle-checks.7 \
+	doc/man7/bugle-eps.7 \
+	doc/man7/bugle-error.7 \
+	doc/man7/bugle-frontbuffer.7 \
+	doc/man7/bugle-log.7 \
+	doc/man7/bugle-screenshot.7 \
+	doc/man7/bugle-showerror.7 \
+	doc/man7/bugle-showextensions.7 \
+	doc/man7/bugle-showstats.7 \
+	doc/man7/bugle-stats.7 \
+	doc/man7/bugle-trace.7 \
+	doc/man7/bugle-unwindstack.7 \
+	doc/man7/bugle-wireframe.7
 # The real things
 lib_LTLIBRARIES = src/libbugleutils.la src/libbugle.la
 bin_PROGRAMS = gldb/gldb @GLDB_GUI@

@@ -1,0 +1,262 @@
+
+<HTML><HEAD><TITLE>Manpage of GLDB</TITLE>
+</HEAD><BODY>
+<H1>GLDB</H1>
+Section: User Manual (1)<BR>Updated: May 2006<BR><A HREF="#index">Index</A>
+<A HREF="../index.html">Return to Main Contents</A><HR>
+
+<A NAME="lbAB">&nbsp;</A>
+<H2>NAME</H2>
+
+gldb - Debugger front-end for the BuGLe library
+<A NAME="lbAC">&nbsp;</A>
+<H2>SYNOPSIS</H2>
+
+<B>gldb</B>
+
+<I>program</I>
+
+[<I>arguments</I>]
+
+<A NAME="lbAD">&nbsp;</A>
+<H2>DESCRIPTION</H2>
+
+<B>gldb</B>
+
+is a front-end debugger to be used with the
+<B><A HREF="../man3/bugle.3.html">bugle</A></B>(3)
+
+library, modelled on
+<B><A HREF="../man1/gdb.1.html">gdb</A></B>(1).
+
+It can set breakpoints on OpenGL functions, and by default will stop
+whenever the program causes a GL error. Pressing Ctrl-C will also cause
+the running program to stop.
+<A NAME="lbAE">&nbsp;</A>
+<H2>COMMANDS</H2>
+
+<DL COMPACT>
+<DT><B>chain </B><I>name</I>
+
+<DD>
+Specify the name of the filter-set chain to use from the config file
+<B>$HOME/.bugle/filters</B>.
+
+If
+<I>name</I>
+
+is none, then the default (no filters) is used.
+<DT><B>help</B>
+
+<DD>
+Show the list of commands, with brief descriptions.
+<DT><B>run</B>
+
+<DD>
+Start your program.
+<DT><B>continue</B>
+
+<DD>
+Continue running the program.
+<DT><B>step</B>
+
+<DD>
+Run the program until the next OpenGL call.
+<DT><B>kill</B>
+
+<DD>
+Kill the running program.
+<DT><B>break </B><I>function</I>
+
+<DD>
+Set a breakpoint at
+<I>function</I>
+
+(an OpenGL function).
+<DT><B>break error</B>
+
+<DD>
+Break on OpenGL errors. This is the default.
+<DT><B>unbreak </B><I>function</I>
+
+<DD>
+Do not break on
+<I>function.</I>
+
+<DT><B>unbreak error</B>
+
+<DD>
+Do not break on OpenGL errors.
+<DT><B>quit</B>
+
+<DD>
+Exit
+<B>gldb</B>.
+
+<DT><B>backtrace</B>
+
+<DD>
+Call
+<B><A HREF="../man1/gdb.1.html">gdb</A></B>(1)
+
+to obtain a stack trace.
+<DT><B>gdb</B>
+
+<DD>
+Start
+<B><A HREF="../man1/gdb.1.html">gdb</A></B>(1)
+
+and attach it to the program. Note that the program will be waiting for
+commands from
+<B>gldb</B>,
+
+so even if you continue the program it will not appear to go anywhere.
+Killing the program from within
+<B>gdb</B>
+
+is not recommended, since
+<B>gldb</B>
+
+may not notice.
+<DT><B>state </B><I>[state]</I><B></B>
+
+<DD>
+Queries the OpenGL
+<I>state</I>.
+
+If omitted, all state for the current context is output. Otherwise,
+<I>state</I>
+
+is expected to be relative to the current context. Try first running
+the command without argument to see how the states are arranged, as
+some state is nested. For example, the width of the default 2D texture
+is referenced as
+<P>
+<B>GL_TEXTURE_2D.0.0.GL_TEXTURE_WIDTH</B>
+
+<P>
+(the first zero is the texture object name). Tab completion is also
+supported.
+<DT><B>screenshot </B><I>filename</I>.ppm<B></B>
+
+<DD>
+Captures a screenshot from the back buffer, and saves it to
+<I>filename</I>.ppm
+
+in
+<B><A HREF="../man5/PPM.5.html">PPM</A></B>(5)
+
+format. Since the back buffer is used, you are not guaranteed a
+complete picture. For a complete picture, put a breakpoint on
+<B>glXSwapBuffers</B>
+
+and call this command from there.
+<DT><B>enable</B>|<B>disable </B><I>filter-set</I><B></B>
+
+<DD>
+Enables or disables a filter-set on the fly. This is still
+experimental, and won't work for most filter-sets (because they expect to
+perform initialisation when the context is created). In addition,
+<B>enable</B>
+
+will automatically load dependent
+filter-sets, but
+<B>disable</B>
+
+will not unload them again.
+</DL>
+<A NAME="lbAF">&nbsp;</A>
+<H2>FILES</H2>
+
+<DL COMPACT>
+<DT><B>$HOME/.bugle/filters</B>
+
+<DD>
+A configuration file for filters. See
+<B><A HREF="../man3/bugle.3.html">bugle</A></B>(3).
+
+</DL>
+<A NAME="lbAG">&nbsp;</A>
+<H2>ENVIRONMENT</H2>
+
+<DL COMPACT>
+<DT><B>BUGLE_CHAIN</B>
+
+<DD>
+<DT><B>BUGLE_DEBUGGER</B>
+
+<DD>
+<DT><B>BUGLE_DEBUGGER_FD_IN</B>
+
+<DD>
+<DT><B>BUGLE_DEBUGGER_FD_OUT</B>
+
+<DD>
+Internal environment variables used to communicate between the debugger
+and the library.
+<DT><B>LD_PRELOAD</B>
+
+<DD>
+Used internally to force loading of the library.
+</DL>
+<A NAME="lbAH">&nbsp;</A>
+<H2>BUGS</H2>
+
+On some systems, the
+<B>gdb</B>
+
+command will cause some of the processes involved to be stopped. The
+cause is currently unknown. The work-around is to use another terminal
+to manually connect
+<B><A HREF="../man1/gdb.1.html">gdb</A></B>(1)
+
+to the process.
+<P>
+<B>gldb</B>
+
+will probably do strange things if you try to use it on a
+multi-threaded program. If only one thread does rendering, then the
+result is predicable: when the program is ``stopped'', only that thread
+will actually be stopped. If multiple threads attempt to render, then
+the results will be unpredictable.
+<A NAME="lbAI">&nbsp;</A>
+<H2>AUTHOR</H2>
+
+<B>gldb</B>
+
+and the
+<B>bugle</B>
+
+library
+are written and maintained by Bruce Merry &lt;<A HREF="mailto:bmerry@users.sourceforge.net">bmerry@users.sourceforge.net</A>&gt;.
+<A NAME="lbAJ">&nbsp;</A>
+<H2>SEE ALSO</H2>
+
+<B><A HREF="../man3/bugle.3.html">bugle</A></B>(3),
+
+<B><A HREF="../man1/gdb.1.html">gdb</A></B>(1),
+
+<B><A HREF="../man5/ppm.5.html">ppm</A></B>(5)
+
+<P>
+
+<HR>
+<A NAME="index">&nbsp;</A><H2>Index</H2>
+<DL>
+<DT><A HREF="#lbAB">NAME</A><DD>
+<DT><A HREF="#lbAC">SYNOPSIS</A><DD>
+<DT><A HREF="#lbAD">DESCRIPTION</A><DD>
+<DT><A HREF="#lbAE">COMMANDS</A><DD>
+<DT><A HREF="#lbAF">FILES</A><DD>
+<DT><A HREF="#lbAG">ENVIRONMENT</A><DD>
+<DT><A HREF="#lbAH">BUGS</A><DD>
+<DT><A HREF="#lbAI">AUTHOR</A><DD>
+<DT><A HREF="#lbAJ">SEE ALSO</A><DD>
+</DL>
+<HR>
+This document was created by
+<A HREF="http://localhost/cgi-bin/man/man2html">man2html</A>,
+using the manual pages.<BR>
+Time: 10:41:20 GMT, May 29, 2006
+</BODY>
+</HTML>

@@ -1,0 +1,115 @@
+
+<HTML><HEAD><TITLE>Manpage of log</TITLE>
+</HEAD><BODY>
+<H1>log</H1>
+Section: User manual (7)<BR>Updated: May 2006<BR><A HREF="#index">Index</A>
+<A HREF="../index.html">Return to Main Contents</A><HR>
+
+<A NAME="lbAB">&nbsp;</A>
+<H2>NAME</H2>
+
+log - configure logging output from other filter-sets
+<A NAME="lbAC">&nbsp;</A>
+<H2>SYNOPSIS</H2>
+
+<PRE>
+filterset log
+{
+    filename &quot;bugle.log&quot;
+    flush &quot;no&quot;
+    format &quot;%f.%e: %m&quot;
+}
+</PRE>
+
+<A NAME="lbAD">&nbsp;</A>
+<H2>DESCRIPTION</H2>
+
+The log filter-set does not do any logging itself; instead, it provides
+logging services to other filter-sets. It is automatically loaded when
+needed, but explicitly loading it allows options to be set.
+<A NAME="lbAE">&nbsp;</A>
+<H2>OPTIONS</H2>
+
+<DL COMPACT>
+<DT><B>filename</B>
+
+<DD>
+This sets the filename for logging. If not filename is given, the log
+is written to standard error.
+<DT><B>flush</B>
+
+<DD>
+If this is enabled (it is not by default) then the log is flushed to
+disk after every entry. This may be required to obtain a complete log
+if the program crashes.
+<DT><B>format</B>
+
+<DD>
+This optional string overrides the default log format. The following
+printf-style escapes are recognised:
+<DL COMPACT><DT><DD>
+<DL COMPACT>
+<DT><B>%f</B>
+
+<DD>
+filterset
+<DT><B>%e</B>
+
+<DD>
+event
+<DT><B>%m</B>
+
+<DD>
+log message
+<DT><B>%p</B>
+
+<DD>
+process ID
+<DT><B>%t</B>
+
+<DD>
+thread ID (from
+<B><A HREF="../man3/pthread_self.3.html">pthread_self</A></B>(3))
+
+<DT><B>%%</B>
+
+<DD>
+a literal %
+</DL>
+</DL>
+
+</DL>
+<A NAME="lbAF">&nbsp;</A>
+<H2>AUTHOR</H2>
+
+<B>gldb</B>
+
+and the
+<B>bugle</B>
+
+library are written and maintained by Bruce Merry
+&lt;<A HREF="mailto:bmerry@users.sourceforge.net">bmerry@users.sourceforge.net</A>&gt;.
+<A NAME="lbAG">&nbsp;</A>
+<H2>SEE ALSO</H2>
+
+<B><A HREF="../man3/bugle.3.html">bugle</A></B>(3)
+
+<P>
+
+<HR>
+<A NAME="index">&nbsp;</A><H2>Index</H2>
+<DL>
+<DT><A HREF="#lbAB">NAME</A><DD>
+<DT><A HREF="#lbAC">SYNOPSIS</A><DD>
+<DT><A HREF="#lbAD">DESCRIPTION</A><DD>
+<DT><A HREF="#lbAE">OPTIONS</A><DD>
+<DT><A HREF="#lbAF">AUTHOR</A><DD>
+<DT><A HREF="#lbAG">SEE ALSO</A><DD>
+</DL>
+<HR>
+This document was created by
+<A HREF="http://localhost/cgi-bin/man/man2html">man2html</A>,
+using the manual pages.<BR>
+Time: 10:41:20 GMT, May 29, 2006
+</BODY>
+</HTML>
