@@ -37,6 +37,13 @@ chain showstats
 
     # Replace showstats with log to log stats to file
     filterset showstats
+    {
+        # Uncomment this and press 'A' to accumulate FPS. The FPS shown
+        # will be the average from when the key was pressed.
+        # key_accumulate "A"
+        # Uncomment this and press 'I' to return to the default display
+        # key_noaccumulate "I"
+    }
 }
 
 # On exit, shows the extensions used by the program.

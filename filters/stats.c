@@ -25,6 +25,7 @@
 #include "src/tracker.h"
 #include "src/log.h"
 #include "src/glexts.h"
+#include "src/xevent.h"
 #include "common/bool.h"
 #include <stdio.h>
 #include <GL/glx.h>
@@ -43,7 +44,7 @@ typedef struct
     GLsizei begin_count;      /* FIXME: use per-begin/end object */
 
     /* current stats */
-    float fps;
+    double fps;
     GLuint fragments;
     GLsizei triangles;
 } stats_struct;
@@ -54,14 +55,20 @@ typedef struct
 
     struct timeval last_show_time;
     int skip_frames;
-    float shown_fps;
+    double shown_fps;
+
+    struct timeval accumulate_start_time;
+    int accumulating;  /* 0: no  1: yes  2: yes, reset counters */
 } showstats_struct;
 
 static bugle_object_view stats_view;
-static bugle_object_view showstats_view;
 static bool count_fragments = false;
 static bool count_triangles = false;
 static bugle_object_view displaylist_view;
+
+static bugle_object_view showstats_view;
+static xevent_key key_showstats_accumulate = { NoSymbol, 0, true };
+static xevent_key key_showstats_noaccumulate = { NoSymbol, 0, true };
 
 static void initialise_stats_struct(const void *key, void *data)
 {
@@ -84,7 +91,7 @@ static void initialise_stats_struct(const void *key, void *data)
     }
 #endif
 
-    s->fps = 0.0f;
+    s->fps = 0.0;
     s->fragments = 0;
     s->triangles = 0;
 }
@@ -131,9 +138,9 @@ static void update_triangles(stats_struct *s, GLenum mode, GLsizei count)
     }
 }
 
-static void dump_float(void *v, FILE *f)
+static void dump_double(void *v, FILE *f)
 {
-    fprintf(f, "%.3f", *(float *) v);
+    fprintf(f, "%.3f", *(double *) v);
 }
 
 static void dump_unsigned_int(void *v, FILE *f)
@@ -145,16 +152,15 @@ static bool stats_glXSwapBuffers(function_call *call, const callback_data *data)
 {
     stats_struct *s;
     struct timeval now;
-    float elapsed;
+    double elapsed;
     unsigned int ui;
-    FILE *f;
 
     s = bugle_object_get_current_data(&bugle_context_class, stats_view);
     gettimeofday(&now, NULL);
     elapsed = (now.tv_sec - s->last_time.tv_sec)
-        + 1.0e-6f * (now.tv_usec - s->last_time.tv_usec);
+        + 1.0e-6 * (now.tv_usec - s->last_time.tv_usec);
     s->last_time = now;
-    s->fps = 1.0f / elapsed;
+    s->fps = 1.0 / elapsed;
 #ifdef GL_ARB_occlusion_query
     if (s->query && bugle_begin_internal_render())
     {
@@ -168,7 +174,7 @@ static bool stats_glXSwapBuffers(function_call *call, const callback_data *data)
         s->fragments = 0;
     }
 
-    bugle_log_callback("stats", "fps", dump_float, &s->fps);
+    bugle_log_callback("stats", "fps", dump_double, &s->fps);
     if (s->query)
     {
         ui = s->fragments;
@@ -359,9 +365,13 @@ static void initialise_showstats_struct(const void *key, void *data)
     CALL_glXUseXFont(f, 0, 256, ss->font_base);
     XUnloadFont(dpy, f);
 
-    ss->shown_fps = 0.0f;
+    ss->shown_fps = 0.0;
     ss->last_show_time.tv_sec = 0;
     ss->last_show_time.tv_usec = 0;
+
+    ss->accumulating = 0;
+    ss->accumulate_start_time.tv_sec = 0;
+    ss->accumulate_start_time.tv_usec = 0;
 }
 
 static bool showstats_callback(function_call *call, const callback_data *data)
@@ -371,12 +381,14 @@ static bool showstats_callback(function_call *call, const callback_data *data)
     GLXContext aux, real;
     stats_struct *s;
     showstats_struct *ss;
-    float elapsed;
+    double elapsed, accumulate_elapsed;
     struct timeval now;
+    GLint viewport[4];
 
     aux = bugle_get_aux_context();
     if (aux && bugle_begin_internal_render())
     {
+        CALL_glGetIntegerv(GL_VIEWPORT, viewport);
         real = CALL_glXGetCurrentContext();
         old_write = CALL_glXGetCurrentDrawable();
         old_read = CALL_glXGetCurrentReadDrawable();
@@ -387,20 +399,28 @@ static bool showstats_callback(function_call *call, const callback_data *data)
 
         gettimeofday(&now, NULL);
         elapsed = (now.tv_sec - ss->last_show_time.tv_sec)
-            + 1.0e-6f * (now.tv_usec - ss->last_show_time.tv_usec);
+            + 1.0e-6 * (now.tv_usec - ss->last_show_time.tv_usec);
         ss->skip_frames++;
-        if (elapsed >= 0.2f)
+        if (elapsed >= 0.2)
         {
-            ss->shown_fps = ss->skip_frames / elapsed;
+            accumulate_elapsed = (now.tv_sec - ss->accumulate_start_time.tv_sec)
+                + 1.0e-6 * (now.tv_usec - ss->accumulate_start_time.tv_usec);
+            ss->shown_fps = ss->skip_frames / accumulate_elapsed;
             ss->last_show_time = now;
-            ss->skip_frames = 0;
+            if (ss->accumulating != 1)
+            {
+                ss->accumulate_start_time = now;
+                ss->skip_frames = 0;
+                if (ss->accumulating == 2) ss->accumulating = 1;
+            }
         }
 
         /* We don't want to depend on glWindowPos since it
          * needs OpenGL 1.4, but fortunately the aux context
          * has identity MVP matrix.
          */
-        CALL_glPushAttrib(GL_CURRENT_BIT);
+        CALL_glPushAttrib(GL_CURRENT_BIT | GL_VIEWPORT_BIT);
+        CALL_glViewport(viewport[0], viewport[1], viewport[2], viewport[3]);
         CALL_glRasterPos2f(-0.9, 0.9);
         render_stats(ss, "%.1f fps", ss->shown_fps);
         if (s->query) render_stats(ss, "%u fragments", (unsigned int) s->fragments);
@@ -410,6 +430,15 @@ static bool showstats_callback(function_call *call, const callback_data *data)
         bugle_end_internal_render("showstats_callback", true);
     }
     return true;
+}
+
+static void showstats_accumulate_callback(const xevent_key *key, void *arg, XEvent *event)
+{
+    showstats_struct *ss;
+    ss = bugle_object_get_current_data(&bugle_context_class, showstats_view);
+    if (!ss) return;
+    /* Value of arg is irrelevant, only truth value */
+    ss->accumulating = arg ? 2 : 0;
 }
 
 static bool initialise_stats(filter_set *handle)
@@ -482,6 +511,13 @@ static bool initialise_showstats(filter_set *handle)
                                                  initialise_showstats_struct,
                                                  NULL,
                                                  sizeof(showstats_struct));
+
+    /* Value of arg is irrelevant, only truth value */
+    bugle_register_xevent_key(&key_showstats_accumulate, NULL,
+                              showstats_accumulate_callback, f);
+    bugle_register_xevent_key(&key_showstats_noaccumulate, NULL,
+                              showstats_accumulate_callback, NULL);
+
     return true;
 }
 
@@ -491,6 +527,13 @@ void bugle_initialise_filter_library(void)
     {
         { "fragments", "count fragments that pass the depth test [no]", FILTER_SET_VARIABLE_BOOL, &count_fragments, NULL },
         { "triangles", "count the number of triangles draw [no]", FILTER_SET_VARIABLE_BOOL, &count_triangles, NULL },
+        { NULL, NULL, 0, NULL, NULL }
+    };
+
+    static const filter_set_variable_info showstats_variables[] =
+    {
+        { "key_accumulate", "frame rate is averaged from time key is pressed [none]", FILTER_SET_VARIABLE_KEY, &key_showstats_accumulate, NULL },
+        { "key_noaccumulate", "return frame rate to instantaneous display [none]", FILTER_SET_VARIABLE_KEY, &key_showstats_noaccumulate, NULL },
         { NULL, NULL, 0, NULL, NULL }
     };
 
@@ -513,7 +556,7 @@ void bugle_initialise_filter_library(void)
         NULL,
         NULL,
         NULL,
-        NULL,
+        showstats_variables,
         0,
         "renders information collected by `stats' onto the screen"
     };

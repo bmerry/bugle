@@ -1,3 +1,8 @@
+* Fix positioning of stats display when resizing the viewport
+* Add accumulate/noaccumulate options to showstats
+
+0.0.20060528
+------------
 * Fix break-on-error
 * Add flexible log format
 * Add support for GL_MAX_RENDERBUFFER_SIZE_EXT.
