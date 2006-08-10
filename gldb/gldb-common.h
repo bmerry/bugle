@@ -187,6 +187,7 @@ void gldb_safe_syscall(int r, const char *str);
 void gldb_run(uint32_t id, void (*child_init)(void));
 void gldb_send_quit(uint32_t id);
 void gldb_send_continue(uint32_t id);
+void gldb_send_step(uint32_t id);
 void gldb_send_enable_disable(uint32_t id, const char *filterset, bool enable);
 void gldb_send_screenshot(uint32_t id);
 void gldb_send_async(uint32_t id);

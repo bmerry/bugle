@@ -116,6 +116,19 @@ typedef struct
     GtkTreeStore *state_store;
 } GldbWindowState;
 
+typedef struct
+{
+    int width;
+    int height;
+    GLfloat *pixels;
+} GldbTextureLevel;
+
+typedef struct
+{
+    int levels;
+    GldbTextureLevel images[1000];
+} GldbTexture;
+
 #if HAVE_GTKGLEXT
 typedef struct
 {
@@ -131,6 +144,8 @@ typedef struct
     GLenum display_target; /* GL_NONE if no texture is selected */
     GLint width, height;
     GLint max_viewport_dims[2];
+
+    GldbTexture active, progressive;
 } GldbWindowTexture;
 #endif
 
@@ -589,6 +604,19 @@ static void resize_texture_draw(GldbWindow *context)
     }
 }
 
+static void free_gldb_texture(GldbTexture *texture)
+{
+    int i;
+    for (i = 0; i < texture->levels; i++)
+    {
+        free(texture->images[i].pixels);
+        texture->images[i].width = 0;
+        texture->images[i].height = 0;
+        texture->images[i].pixels = NULL;
+    }
+    texture->levels = 0;
+}
+
 static gboolean response_callback_texture(GldbWindow *context,
                                           gldb_response *response,
                                           gpointer user_data)
@@ -615,6 +643,7 @@ static gboolean response_callback_texture(GldbWindow *context,
         glBindTexture(data->target, id);
 
         context->texture.display_target = GL_NONE;
+        free_gldb_texture(&context->texture.progressive);
     }
 
     if (response->code != RESP_DATA || !r->length)
@@ -681,6 +710,15 @@ static gboolean response_callback_texture(GldbWindow *context,
             }
             gdk_gl_drawable_gl_end(gldrawable);
         }
+
+        /* Save our local copy of the data */
+        if (context->texture.progressive.levels <= data->level)
+            context->texture.progressive.levels = data->level + 1;
+        free(context->texture.progressive.images[data->level].pixels);
+        context->texture.progressive.images[data->level].width = r->width;
+        context->texture.progressive.images[data->level].height = r->height;
+        context->texture.progressive.images[data->level].pixels = (GLfloat *) r->data;
+        r->data = NULL; /* Prevents gldb_free_response from freeing the data */
     }
 
     if (data->flags & TEXTURE_CALLBACK_FLAG_LAST)
@@ -733,6 +771,10 @@ static gboolean response_callback_texture(GldbWindow *context,
 
         resize_texture_draw(context);
         gtk_widget_queue_draw(context->texture.draw);
+
+        free_gldb_texture(&context->texture.active);
+        context->texture.active = context->texture.progressive;
+        memset(&context->texture.progressive, 0, sizeof(context->texture.progressive));
     }
 
     gldb_free_response(response);
@@ -769,21 +811,11 @@ static gboolean response_callback_shader(GldbWindow *context,
         gtk_text_buffer_set_text(buffer, "", 0);
     else
     {
-        gint lines, i;
-        GtkTextIter iter, start, end;
-        gchar lineno[64];
+        GtkTextIter start, end;
 
         gtk_text_buffer_set_text(buffer, r->data, r->length);
         gtk_text_buffer_get_bounds(buffer, &start, &end);
         gtk_text_buffer_apply_tag_by_name(buffer, "default", &start, &end);
-        lines = gtk_text_buffer_get_line_count(buffer);
-        for (i = 0; i < lines; i++)
-        {
-            gtk_text_buffer_get_iter_at_line(buffer, &iter, i);
-            g_snprintf(lineno, G_N_ELEMENTS(lineno), "%4d: ", (int) i + 1);
-            gtk_text_buffer_insert_with_tags_by_name(buffer, &iter, lineno, -1,
-                                                    "default", "lineno", NULL);
-        }
     }
     gldb_free_response(response);
     return TRUE;
@@ -2146,6 +2178,64 @@ static void shader_id_changed(GtkComboBox *id_box, gpointer user_data)
     }
 }
 
+static gboolean shader_source_expose(GtkWidget *widget,
+                                     GdkEventExpose *event,
+                                     gpointer user_data)
+{
+    PangoLayout *layout;
+    gint lines, firsty, lasty, dummy;
+    GtkTextBuffer *buffer;
+    GtkTextIter line;
+
+    /* Check that this is an expose on the line number area */
+    if (gtk_text_view_get_window_type(GTK_TEXT_VIEW(widget), event->window)
+        != GTK_TEXT_WINDOW_LEFT)
+        return FALSE;
+
+    buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(widget));
+    lines = gtk_text_buffer_get_line_count(buffer);
+    layout = gtk_widget_create_pango_layout(widget, NULL);
+
+    /* Find the first line that is in the expose area */
+    firsty = event->area.y;
+    lasty = event->area.y + event->area.height;
+    gtk_text_view_window_to_buffer_coords(GTK_TEXT_VIEW(widget),
+                                          GTK_TEXT_WINDOW_LEFT,
+                                          0, firsty,
+                                          &dummy, &firsty);
+    gtk_text_view_window_to_buffer_coords(GTK_TEXT_VIEW(widget),
+                                          GTK_TEXT_WINDOW_LEFT,
+                                          0, lasty,
+                                          &dummy, &lasty);
+    gtk_text_view_get_line_at_y(GTK_TEXT_VIEW(widget), &line, firsty, NULL);
+
+    /* Loop over the visible lines, displaying the line number */
+    while (!gtk_text_iter_is_end(&line))
+    {
+        int y, height;
+        int text_width, text_height;
+        int winx, winy;
+        char *no;
+
+        gtk_text_view_get_line_yrange(GTK_TEXT_VIEW(widget), &line,
+                                      &y, &height);
+        gtk_text_view_buffer_to_window_coords(GTK_TEXT_VIEW(widget),
+                                              GTK_TEXT_WINDOW_LEFT,
+                                              0, y, &winx, &winy);
+        bugle_asprintf(&no, "%d", (int) gtk_text_iter_get_line(&line) + 1);
+        pango_layout_set_text(layout, no, -1);
+        free(no);
+        pango_layout_get_pixel_size(layout, &text_width, &text_height);
+        gtk_paint_layout(gtk_widget_get_style(widget), event->window,
+                         GTK_STATE_NORMAL, FALSE, NULL,
+                         widget, NULL, 35 - text_width, winy, layout);
+        if (y + height >= lasty) break;
+        gtk_text_iter_forward_line(&line);
+    }
+    g_object_unref(layout);
+    return FALSE;
+}
+
 static GtkWidget *build_shader_page_target(GldbWindow *context)
 {
     GtkListStore *store;
@@ -2222,10 +2312,11 @@ static void build_shader_page(GldbWindow *context)
     source = gtk_text_view_new();
     gtk_text_view_set_editable(GTK_TEXT_VIEW(source), FALSE);
     gtk_text_view_set_cursor_visible(GTK_TEXT_VIEW(source), FALSE);
-    gtk_text_buffer_create_tag(gtk_text_view_get_buffer(GTK_TEXT_VIEW(source)),
-                               "lineno",
-                               "foreground", "grey",
-                               NULL);
+    gtk_text_view_set_border_window_size(GTK_TEXT_VIEW(source),
+                                         GTK_TEXT_WINDOW_LEFT,
+                                         40);
+    g_signal_connect(G_OBJECT(source), "expose-event", G_CALLBACK(shader_source_expose), NULL);
+
     gtk_text_buffer_create_tag(gtk_text_view_get_buffer(GTK_TEXT_VIEW(source)),
                                "default",
                                "family", "Monospace",
@@ -2461,7 +2552,7 @@ static GtkListStore *build_texture_filters(gboolean min_filter)
 
 int main(int argc, char **argv)
 {
-    GldbWindow context;
+    GldbWindow context = {NULL};
 
     gtk_init(&argc, &argv);
 #if HAVE_GTKGLEXT

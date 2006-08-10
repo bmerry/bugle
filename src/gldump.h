@@ -31,8 +31,15 @@ GLenum bugle_gl_token_to_enum(const char *name);
 const gl_token *bugle_gl_enum_to_token_struct(GLenum e);
 const char *bugle_gl_enum_to_token(GLenum e);
 
+/* Takes a type specified by a GL token e.g. GL_FLOAT and returns the budgie_type.
+ * The _ptr variant returns the budgie_type returns the variant for a pointer to
+ * that type. The _pbo_source and _pbo_sink variant first check if a PBO
+ * source/sink is active, and if so returns an integral type of suitable size.
+ */
 budgie_type bugle_gl_type_to_type(GLenum gl_type);
 budgie_type bugle_gl_type_to_type_ptr(GLenum gl_type);
+budgie_type bugle_gl_type_to_type_ptr_pbo_source(GLenum gl_type);
+budgie_type bugle_gl_type_to_type_ptr_pbo_sink(GLenum gl_type);
 size_t bugle_gl_type_to_size(GLenum gl_type);
 int bugle_gl_format_to_count(GLenum format, GLenum type);
 

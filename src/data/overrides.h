@@ -24,6 +24,14 @@ typedef GLboolean GLbvec2[2];
 typedef GLboolean GLbvec3[3];
 typedef GLboolean GLbvec4[4];
 
+/* New types in GLSL 1.20 */
+typedef GLfloat GLmat2x3[2][3];
+typedef GLfloat GLmat3x2[3][2];
+typedef GLfloat GLmat2x4[2][4];
+typedef GLfloat GLmat4x2[4][2];
+typedef GLfloat GLmat3x4[3][4];
+typedef GLfloat GLmat4x3[4][3];
+
 /* Pointers to the array types */
 typedef const GLfloatmatrix *pGLfloatmatrix;
 typedef const GLdoublematrix *pGLdoublematrix;
@@ -41,6 +49,13 @@ typedef GLmat4 *pGLmat4;
 typedef GLbvec2 *pGLbvec2;
 typedef GLbvec3 *pGLbvec3;
 typedef GLbvec4 *pGLbvec4;
+
+typedef GLmat2x3 *pGLmat2x3;
+typedef GLmat3x2 *pGLmat3x2;
+typedef GLmat2x4 *pGLmat2x4;
+typedef GLmat4x2 *pGLmat4x2;
+typedef GLmat3x4 *pGLmat3x4;
+typedef GLmat4x3 *pGLmat4x3;
 
 /* Other ways to interpret enums */
 typedef GLenum GLerror;          /* since GL_NO_ERROR conflicts with other tokens */

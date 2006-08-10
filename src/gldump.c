@@ -185,6 +185,18 @@ budgie_type bugle_gl_type_to_type(GLenum gl_type)
     case GL_SAMPLER_2D_RECT_SHADOW:
         return TYPE_5GLint;
 #endif
+    /* The 2.1 spec doesn't define tokens for these. I'm guessing it will be GL_FLOAT_MATaXb,
+     * but I don't want to break compilation if I have it wrong. This can go away once we see
+     * what occurs in glext.h.
+     */
+#if defined(GL_VERSION_2_1) && defined(GL_FLOAT_MAT2X3)
+    case GL_FLOAT_MAT2X3: return TYPE_8GLmat2x3; break;
+    case GL_FLOAT_MAT3X2: return TYPE_8GLmat3x2; break;
+    case GL_FLOAT_MAT2X4: return TYPE_8GLmat2x4; break;
+    case GL_FLOAT_MAT4X2: return TYPE_8GLmat4x2; break;
+    case GL_FLOAT_MAT3X4: return TYPE_8GLmat3x4; break;
+    case GL_FLOAT_MAT4X3: return TYPE_8GLmat4x3; break;
+#endif
     default:
         fprintf(stderr, "Do not know the correct type for %s; please email the author\n",
                 bugle_gl_enum_to_token(gl_type));
@@ -199,6 +211,38 @@ budgie_type bugle_gl_type_to_type_ptr(GLenum gl_type)
     ans = budgie_type_table[bugle_gl_type_to_type(gl_type)].pointer;
     assert(ans != NULL_TYPE);
     return ans;
+}
+
+budgie_type bugle_gl_type_to_type_ptr_pbo_source(GLenum gl_type)
+{
+    if (bugle_gl_has_extension_group(BUGLE_GL_EXT_pixel_buffer_object)
+        && bugle_begin_internal_render())
+    {
+        GLint id;
+        CALL_glGetIntegerv(GL_PIXEL_UNPACK_BUFFER_BINDING_EXT, &id);
+        if (id) 
+        {
+            if (sizeof(unsigned long) == sizeof(GLvoid *)) return TYPE_m;
+            else return TYPE_P6GLvoid;
+        }
+    }
+    return bugle_gl_type_to_type_ptr(gl_type);
+}
+
+budgie_type bugle_gl_type_to_type_ptr_pbo_sink(GLenum gl_type)
+{
+    if (bugle_gl_has_extension_group(BUGLE_GL_EXT_pixel_buffer_object)
+        && bugle_begin_internal_render())
+    {
+        GLint id;
+        CALL_glGetIntegerv(GL_PIXEL_PACK_BUFFER_BINDING_EXT, &id);
+        if (id) 
+        {
+            if (sizeof(unsigned long) == sizeof(GLvoid *)) return TYPE_m;
+            else return TYPE_P6GLvoid;
+        }
+    }
+    return bugle_gl_type_to_type_ptr(gl_type);
 }
 
 size_t bugle_gl_type_to_size(GLenum gl_type)

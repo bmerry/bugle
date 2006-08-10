@@ -257,12 +257,12 @@ string type_to_id(tree_node_p type)
         else if (name == "char") ans << "c";
         else if (name == "unsigned char") ans << "h";
         else if (name == "signed char") ans << "a";
-        else if (name == "unsigned short") ans << "t";
-        else if (name == "short") ans << "s";
+        else if (name == "unsigned short" || name == "short unsigned int") ans << "t";
+        else if (name == "short" || name == "short int") ans << "s";
         else if (name == "unsigned int") ans << "j";
         else if (name == "int") ans << "i";
-        else if (name == "unsigned long") ans << "m";
-        else if (name == "long") ans << "l";
+        else if (name == "unsigned long" || name == "long unsigned int") ans << "m";
+        else if (name == "long" || name == "long int") ans << "l";
         else if (name == "unsigned long long") ans << "y";
         else if (name == "long long") ans << "x";
         else if (name == "unsigned __int128") ans << "o";
