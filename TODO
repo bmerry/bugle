@@ -32,7 +32,8 @@ gldb-gui
   - display of 3D textures
   - stats
   - LOD bias
-  - support for non-RGBA textures (e.g. shadow)
+  - alpha blending
+  - test sRGB textures
   - better support for non [0,1] colours e.g. OpenEXR export
 - shader viewer
   - show metadata like uniforms

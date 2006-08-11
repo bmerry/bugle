@@ -66,14 +66,14 @@ The following responses are defined
 
 RESP_ANS:    A generic response, containing a single number. The request
              determines the meaning.
-RESP_BREAK (async):  
+RESP_BREAK (async):
              Break on a particular function (before execution).
              Followed by a dump of the function call.
 RESP_BREAK_ERROR (async):
              Break on an error condition (after execution)
              Followed by the function call (string), then the (textual)
              name of the error.
-RESP_STOP (async): 
+RESP_STOP (async):
              A stop by request of the debugger. Same data as for
              RESP_BREAK.
 RESP_ERROR:  The request was illegal. Followed by an error code (always
