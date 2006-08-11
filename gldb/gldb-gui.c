@@ -145,6 +145,7 @@ typedef struct
     GLint width, height;
     GLint max_viewport_dims[2];
 
+    gint pixel_status_id;
     GldbTexture active, progressive;
 } GldbWindowTexture;
 #endif
@@ -362,6 +363,12 @@ static void texture_draw_realize(GtkWidget *widget, gpointer user_data)
     glGetIntegerv(GL_MAX_VIEWPORT_DIMS, context->texture.max_viewport_dims);
 
     gdk_gl_drawable_gl_end(gldrawable);
+
+    gdk_window_set_events(widget->window,
+                          gdk_window_get_events(widget->window)
+                          | GDK_POINTER_MOTION_MASK
+                          | GDK_ENTER_NOTIFY_MASK
+                          | GDK_LEAVE_NOTIFY_MASK);
 }
 
 static gboolean texture_draw_configure(GtkWidget *widget,
@@ -561,6 +568,79 @@ no_texture:
     gdk_gl_drawable_swap_buffers(gldrawable);
     gdk_gl_drawable_gl_end(gldrawable);
     return TRUE;
+}
+
+static void texture_draw_motion_update(GldbWindow *context,
+                                       GtkWidget *draw,
+                                       gdouble x, gdouble y)
+{
+    int width, height;
+    int u, v, level;
+    GLfloat *pixel;
+    char *msg;
+    GtkTreeModel *model;
+    GtkTreeIter iter;
+
+    if (context->texture.pixel_status_id != -1)
+    {
+        gtk_statusbar_remove(GTK_STATUSBAR(context->statusbar),
+                             context->statusbar_context_id,
+                             context->texture.pixel_status_id);
+        context->texture.pixel_status_id = -1;
+    }
+
+    model = gtk_combo_box_get_model(GTK_COMBO_BOX(context->texture.level));
+    if (!gtk_combo_box_get_active_iter(GTK_COMBO_BOX(context->texture.level), &iter))
+        return;
+    gtk_tree_model_get(model, &iter, COLUMN_TEXTURE_LEVEL_VALUE, &level, -1);
+    level = CLAMP(level, 0, context->texture.active.levels - 1);
+
+    width = context->texture.active.images[level].width;
+    height = context->texture.active.images[level].height;
+    x = (x + 0.5) / draw->allocation.width * width;
+    y = (1.0 - (y + 0.5) / draw->allocation.height) * height;
+    u = CLAMP((int) x, 0, width - 1);
+    v = CLAMP((int) y, 0, height - 1);
+    pixel = context->texture.active.images[level].pixels + 4 * (v * width + u);
+    bugle_asprintf(&msg, "u: %d v: %d  R: %f G: %f B: %f A: %f",
+                   u, v, pixel[0], pixel[1], pixel[2], pixel[3]);
+    context->texture.pixel_status_id = gtk_statusbar_push(GTK_STATUSBAR(context->statusbar),
+                                                          context->statusbar_context_id,
+                                                          msg);
+    free(msg);
+}
+
+static gboolean texture_draw_motion(GtkWidget *widget,
+                                    GdkEventMotion *event,
+                                    gpointer user_data)
+{
+    texture_draw_motion_update((GldbWindow *) user_data, widget, event->x, event->y);
+    return FALSE;
+}
+
+static gboolean texture_draw_enter(GtkWidget *widget,
+                                   GdkEventCrossing *event,
+                                   gpointer user_data)
+{
+    texture_draw_motion_update((GldbWindow *) user_data, widget, event->x, event->y);
+    return FALSE;
+}
+
+static gboolean texture_draw_leave(GtkWidget *widget,
+                                   GdkEventCrossing *event,
+                                   gpointer user_data)
+{
+    GldbWindow *context;
+
+    context = (GldbWindow *) user_data;
+    if (context->texture.pixel_status_id != -1)
+    {
+        gtk_statusbar_remove(GTK_STATUSBAR(context->statusbar),
+                             context->statusbar_context_id,
+                             context->texture.pixel_status_id);
+        context->texture.pixel_status_id = -1;
+    }
+    return FALSE;
 }
 
 static void resize_texture_draw(GldbWindow *context)
@@ -1997,6 +2077,12 @@ static GtkWidget *build_texture_page_draw(GldbWindow *context)
                      G_CALLBACK(texture_draw_configure), context);
     g_signal_connect(G_OBJECT(draw), "expose-event",
                      G_CALLBACK(texture_draw_expose), context);
+    g_signal_connect(G_OBJECT(draw), "motion-notify-event",
+                     G_CALLBACK(texture_draw_motion), context);
+    g_signal_connect(G_OBJECT(draw), "enter-notify-event",
+                     G_CALLBACK(texture_draw_enter), context);
+    g_signal_connect(G_OBJECT(draw), "leave-notify-event",
+                     G_CALLBACK(texture_draw_leave), context);
 
     aspect = gtk_aspect_frame_new(NULL, 0.5, 0.5, 1.0, TRUE);
     gtk_frame_set_shadow_type(GTK_FRAME(aspect), GTK_SHADOW_NONE);
@@ -2043,6 +2129,7 @@ static void build_texture_page(GldbWindow *context)
     context->texture.width = 64;
     context->texture.height = 64;
     context->texture.page = gtk_notebook_get_nth_page(GTK_NOTEBOOK(context->notebook), page);
+    context->texture.pixel_status_id = -1;
 }
 #endif /* HAVE_GTKGLEXT */
 

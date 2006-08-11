@@ -2,6 +2,7 @@
 * Move line numbering out of the text buffer
 * Add accumulate/noaccumulate options to showstats
 * Improve PBO support e.g. in dumping glTexImage2D
+* Show RGBA and UV values in texture viewer
 * Misc OpenGL 2.1 stuff e.g. non-square uniform matrices, GL_CURRENT_RASTER_SECONDARY_COLOR
 
 0.0.20060528

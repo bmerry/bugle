@@ -28,13 +28,12 @@ gldb-gui
 - convert state names to UTF8
 - enabling and disabling filter sets, and setting variables
 - texture viewer:
-  - show RGBA values
   - interaction with cube map cube
   - display of 3D textures
   - stats
   - LOD bias
   - support for non-RGBA textures (e.g. shadow)
-  - better support for non [0,1] colours
+  - better support for non [0,1] colours e.g. OpenEXR export
 - shader viewer
   - show metadata like uniforms
   - use texture viewer layout
