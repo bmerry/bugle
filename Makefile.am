@@ -46,7 +46,9 @@ gldb_gldb_SOURCES = gldb/gldb.c gldb/gldb-common.c gldb/gldb-common.h
 gldb_gldb_LDADD = src/libbugleutils.la $(READLINE_LIBS)
 gldb_gldb_LDFLAGS = -thread-safe
 
-gldb_gldb_gui_SOURCES = gldb/gldb-gui.c gldb/gldb-common.c gldb/gldb-common.h
+gldb_gldb_gui_SOURCES = gldb/gldb-gui.c \
+	gldb/gldb-common.c gldb/gldb-common.h \
+	gldb/gldb-channels.c gldb/gldb-channels.h
 if HAVE_GTKGLEXT
   gldb_gldb_gui_SOURCES += glee/GLee.c glee/GLee.h
 endif
