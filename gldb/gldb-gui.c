@@ -1981,31 +1981,6 @@ static GtkWidget *build_texture_page_zoom(GldbWindow *context)
     return zoom;
 }
 
-static GtkWidget *build_texture_page_select(GldbWindow *context)
-{
-    GtkWidget *select;
-    GtkWidget *label, *id, *level, *zoom;
-
-    select = gtk_hbox_new(FALSE, 0);
-
-    label = gtk_label_new(_("Texture"));
-    id = build_texture_page_id(context);
-    gtk_box_pack_start(GTK_BOX(select), label, FALSE, FALSE, 10);
-    gtk_box_pack_start(GTK_BOX(select), id, FALSE, FALSE, 0);
-
-    label = gtk_label_new(_("Level"));
-    level = build_texture_page_level(context);
-    gtk_box_pack_start(GTK_BOX(select), label, FALSE, FALSE, 10);
-    gtk_box_pack_start(GTK_BOX(select), level, FALSE, FALSE, 0);
-
-    label = gtk_label_new(_("Zoom"));
-    zoom = build_texture_page_zoom(context);
-    gtk_box_pack_start(GTK_BOX(select), label, FALSE, FALSE, 10);
-    gtk_box_pack_start(GTK_BOX(select), zoom, FALSE, FALSE, 0);
-
-    return select;
-}
-
 static GtkWidget *build_texture_page_mag_filter(GldbWindow *context)
 {
     GtkCellRenderer *cell;
@@ -2036,28 +2011,42 @@ static GtkWidget *build_texture_page_min_filter(GldbWindow *context)
     return filter;
 }
 
-static GtkWidget *build_texture_page_view(GldbWindow *context)
+static GtkWidget *build_texture_page_combos(GldbWindow *context)
 {
-    GtkWidget *view;
-    GtkWidget *label, *mag, *min;
+    GtkWidget *combos;
+    GtkWidget *label, *id, *level, *zoom, *min, *mag;
 
-    view = gtk_hbox_new(FALSE, 0);
+    combos = gtk_table_new(3, 2, FALSE);
+
+    label = gtk_label_new(_("Texture"));
+    id = build_texture_page_id(context);
+    gtk_table_attach(GTK_TABLE(combos), label, 0, 1, 0, 1, 0, 0, 0, 0);
+    gtk_table_attach(GTK_TABLE(combos), id, 1, 2, 0, 1, GTK_EXPAND | GTK_FILL, 0, 0, 0);
+
+    label = gtk_label_new(_("Level"));
+    level = build_texture_page_level(context);
+    gtk_table_attach(GTK_TABLE(combos), label, 0, 1, 1, 2, 0, 0, 0, 0);
+    gtk_table_attach(GTK_TABLE(combos), level, 1, 2, 1, 2, GTK_EXPAND | GTK_FILL, 0, 0, 0);
+
+    label = gtk_label_new(_("Zoom"));
+    zoom = build_texture_page_zoom(context);
+    gtk_table_attach(GTK_TABLE(combos), label, 0, 1, 2, 3, 0, 0, 0, 0);
+    gtk_table_attach(GTK_TABLE(combos), zoom, 1, 2, 2, 3, GTK_EXPAND | GTK_FILL, 0, 0, 0);
 
     label = gtk_label_new(_("Mag filter"));
     mag = build_texture_page_mag_filter(context);
-    gtk_box_pack_start(GTK_BOX(view), label, FALSE, FALSE, 10);
-    gtk_box_pack_start(GTK_BOX(view), mag, FALSE, FALSE, 0);
+    gtk_table_attach(GTK_TABLE(combos), label, 0, 1, 3, 4, 0, 0, 0, 0);
+    gtk_table_attach(GTK_TABLE(combos), mag, 1, 2, 3, 4, GTK_EXPAND | GTK_FILL, 0, 0, 0);
     g_signal_connect(G_OBJECT(mag), "changed",
                      G_CALLBACK(texture_filter_changed), context);
 
     label = gtk_label_new(_("Min filter"));
     min = build_texture_page_min_filter(context);
-    gtk_box_pack_start(GTK_BOX(view), label, FALSE, FALSE, 10);
-    gtk_box_pack_start(GTK_BOX(view), min, FALSE, FALSE, 0);
+    gtk_table_attach(GTK_TABLE(combos), label, 0, 1, 4, 5, 0, 0, 0, 0);
+    gtk_table_attach(GTK_TABLE(combos), min, 1, 2, 4, 5, GTK_EXPAND | GTK_FILL, 0, 0, 0);
     g_signal_connect(G_OBJECT(min), "changed",
                      G_CALLBACK(texture_filter_changed), context);
-
-    return view;
+    return combos;
 }
 
 static GtkWidget *build_texture_page_toolbar(GldbWindow *context)
@@ -2144,11 +2133,10 @@ static GtkWidget *build_texture_page_draw(GldbWindow *context)
 static void build_texture_page(GldbWindow *context)
 {
     GtkWidget *label, *draw, *toolbar;
-    GtkWidget *vbox, *select, *view, *scrolled;
+    GtkWidget *vbox, *hbox, *combos, *view, *scrolled;
     gint page;
 
-    select = build_texture_page_select(context);
-    view = build_texture_page_view(context);
+    combos = build_texture_page_combos(context);
     toolbar = build_texture_page_toolbar(context);
     draw = build_texture_page_draw(context);
 
@@ -2162,11 +2150,12 @@ static void build_texture_page(GldbWindow *context)
                                    GTK_POLICY_AUTOMATIC,
                                    GTK_POLICY_AUTOMATIC);
 
+    hbox = gtk_hbox_new(FALSE, 0);
+    gtk_box_pack_start(GTK_BOX(hbox), combos, FALSE, FALSE, 0);
+    gtk_box_pack_start(GTK_BOX(hbox), scrolled, TRUE, TRUE, 0);
     vbox = gtk_vbox_new(FALSE, 0);
-    gtk_box_pack_start(GTK_BOX(vbox), select, FALSE, FALSE, 0);
-    gtk_box_pack_start(GTK_BOX(vbox), view, FALSE, FALSE, 0);
     gtk_box_pack_start(GTK_BOX(vbox), toolbar, FALSE, FALSE, 0);
-    gtk_box_pack_start(GTK_BOX(vbox), scrolled, TRUE, TRUE, 0);
+    gtk_box_pack_start(GTK_BOX(vbox), hbox, TRUE, TRUE, 0);
 
     label = gtk_label_new(_("Textures"));
     page = gtk_notebook_append_page(GTK_NOTEBOOK(context->notebook),
