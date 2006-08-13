@@ -1,3 +1,11 @@
+0.0.20060713
+------------
+This release makes some improvements to the texture viewer - in
+particular, shadow textures will be displayed in grey-scale rather than
+crashing, and luminance textures will appear in grey-scale rather than
+red-scale. Refer to the ChangeLog for miscellaneous other bug-fixes and
+improvements.
+
 0.0.20060528
 ------------
 This release fixes several important bugs (see the ChangeLog for
