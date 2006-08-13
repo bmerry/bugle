@@ -114,7 +114,7 @@ src/data/gl.tu: src/data/gl.c src/data/overrides.h
 	rm -f src/data/gl.o
 	mv gl.c.`test -f gl.c.t00.tu && echo t00.`tu src/data/gl.tu
 
-BCFILES = bc/core1_1.bc bc/glx.bc \
+BCFILES = bc/core1_1.bc bc/glsl1_20.bc bc/glx.bc \
 	bc/GL_ARB_multitexture.bc bc/GL_ARB_imaging.bc \
         bc/GL_ARB_shader_objects.bc bc/GL_ARB_occlusion_query.bc \
         bc/GL_ARB_texture_compression.bc bc/GL_ARB_vertex_buffer_object.bc \

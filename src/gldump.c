@@ -215,6 +215,7 @@ budgie_type bugle_gl_type_to_type_ptr(GLenum gl_type)
 
 budgie_type bugle_gl_type_to_type_ptr_pbo_source(GLenum gl_type)
 {
+#ifdef GL_EXT_pixel_buffer_object
     if (bugle_gl_has_extension_group(BUGLE_GL_EXT_pixel_buffer_object)
         && bugle_begin_internal_render())
     {
@@ -226,11 +227,13 @@ budgie_type bugle_gl_type_to_type_ptr_pbo_source(GLenum gl_type)
             else return TYPE_P6GLvoid;
         }
     }
+#endif
     return bugle_gl_type_to_type_ptr(gl_type);
 }
 
 budgie_type bugle_gl_type_to_type_ptr_pbo_sink(GLenum gl_type)
 {
+#ifdef GL_EXT_pixel_buffer_object
     if (bugle_gl_has_extension_group(BUGLE_GL_EXT_pixel_buffer_object)
         && bugle_begin_internal_render())
     {
@@ -242,6 +245,7 @@ budgie_type bugle_gl_type_to_type_ptr_pbo_sink(GLenum gl_type)
             else return TYPE_P6GLvoid;
         }
     }
+#endif
     return bugle_gl_type_to_type_ptr(gl_type);
 }
 
