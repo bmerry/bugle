@@ -1,4 +1,4 @@
-0.0.20060613
+0.0.20060813
 ------------
 * Fix positioning of stats display when resizing the viewport
 * Move line numbering out of the text buffer

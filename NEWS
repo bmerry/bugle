@@ -1,4 +1,4 @@
-0.0.20060713
+0.0.20060813
 ------------
 This release makes some improvements to the texture viewer - in
 particular, shadow textures will be displayed in grey-scale rather than
