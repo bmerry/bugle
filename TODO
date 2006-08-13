@@ -29,6 +29,7 @@ gldb-gui
 - enabling and disabling filter sets, and setting variables
 - texture viewer:
   - interaction with cube map cube
+  - display of pixel values on cube map
   - display of 3D textures
   - stats
   - LOD bias

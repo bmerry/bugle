@@ -593,6 +593,10 @@ static void texture_draw_motion_update(GldbWindow *context,
                              context->texture.pixel_status_id);
         context->texture.pixel_status_id = -1;
     }
+#ifdef GL_ARB_texture_cube_map
+    if (context->texture.display_target == GL_TEXTURE_CUBE_MAP_ARB)
+        return; /* Currently no support for identifying cube map pixels */
+#endif
 
     model = gtk_combo_box_get_model(GTK_COMBO_BOX(context->texture.level));
     if (!gtk_combo_box_get_active_iter(GTK_COMBO_BOX(context->texture.level), &iter))
