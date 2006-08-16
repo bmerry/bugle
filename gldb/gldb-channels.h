@@ -52,11 +52,13 @@
 typedef struct
 {
     uint32_t channel;
-    GLenum query_token;         /* Name for glGetTexImage / glReadPixels */
-    GLenum display_token;       /* Equivalent token to get colour image */
-    GLenum texture_size_token;  /* GL_TEXTURE_RED_SIZE etc */
-    const char *abbr;           /* Abbreviation e.g. R for red */
-    const char *text;           /* Full name e.g. "red" for red */
+    GLenum texture_token;          /* Name for glGetTexImage */
+    GLenum framebuffer_token;      /* Name for glReadPixels */
+    GLenum display_token;          /* Equivalent token to get colour image */
+    GLenum texture_size_token;     /* GL_TEXTURE_RED_SIZE etc */
+    GLenum framebuffer_size_token; /* GL_RED_BITS etc */
+    const char *abbr;              /* Abbreviation e.g. R for red */
+    const char *text;              /* Full name e.g. "red" for red */
 } gldb_channel_table_entry;
 
 /* Table of channel table entries. The end is indicated by a field with
@@ -75,7 +77,8 @@ uint32_t gldb_channel_get_query_channels(uint32_t channels);
  * the set; use gldb_channel_get_query_channel to do that. If no token
  * is found, returns GL_NONE.
  */
-GLenum gldb_channel_get_query_token(uint32_t channels);
+GLenum gldb_channel_get_texture_token(uint32_t channels);
+GLenum gldb_channel_get_framebuffer_token(uint32_t channels);
 
 /* Similar to the above, but returns the abbreviation, or NULL */
 const char *gldb_channel_get_abbr(uint32_t channels);

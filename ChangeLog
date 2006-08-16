@@ -1,3 +1,7 @@
+* Framebuffer viewer (incomplete)
+* (Possibly) eliminate double fetch of texture
+  FIXME: test with streaming texture before releasing
+
 0.0.20060813
 ------------
 * Fix positioning of stats display when resizing the viewport

@@ -18,7 +18,7 @@
 #if HAVE_CONFIG_H
 # include <config.h>
 #endif
-/* FIXME: Not sure if this the correct definition of GETTEXT_PACKAGE... */
+/* FIXME: Not sure if this is the correct definition of GETTEXT_PACKAGE... */
 #ifndef GETTEXT_PACKAGE
 # define GETTEXT_PACKAGE "bugle00"
 #endif
@@ -100,6 +100,28 @@ enum
     COLUMN_TEXTURE_FILTER_TRUE,
     COLUMN_TEXTURE_FILTER_NON_MIP
 };
+
+enum
+{
+    COLUMN_FRAMEBUFFER_ID_ID,
+    COLUMN_FRAMEBUFFER_ID_TARGET,
+    COLUMN_FRAMEBUFFER_ID_DOUBLEBUFFER,
+    COLUMN_FRAMEBUFFER_ID_CHANNELS,
+    COLUMN_FRAMEBUFFER_ID_TEXT
+};
+
+enum
+{
+    COLUMN_FRAMEBUFFER_BUFFER_VALUE,
+    COLUMN_FRAMEBUFFER_BUFFER_TEXT
+};
+
+enum
+{
+    COLUMN_FRAMEBUFFER_CHANNEL_VALUE,
+    COLUMN_FRAMEBUFFER_CHANNEL_TEXT
+};
+
 #endif
 
 struct GldbWindow;
@@ -151,6 +173,16 @@ typedef struct
     gint pixel_status_id;
     GldbTexture active, progressive;
 } GldbWindowTexture;
+
+typedef struct
+{
+    bool dirty;
+    GtkWidget *page;
+    GtkWidget *draw;
+    GtkWidget *id;
+    GtkWidget *buffer;
+    GtkWidget *channel;
+} GldbWindowFramebuffer;
 #endif
 
 typedef struct
@@ -186,6 +218,7 @@ typedef struct GldbWindow
     GldbWindowState state;
 #if HAVE_GTKGLEXT
     GldbWindowTexture texture;
+    GldbWindowFramebuffer framebuffer;
 #endif
     GldbWindowShader shader;
     GldbWindowBacktrace backtrace;
@@ -347,6 +380,104 @@ static const gldb_state *state_find_child_enum(const gldb_state *parent,
         if (child->enum_name == name) return child;
     }
     return NULL;
+}
+
+/* Saves some of the current state of a combo box into the given array.
+ * This array can then be passed to combo_box_restore_old, which will attempt
+ * to find an entry that has the same attributes and will then set that
+ * element in the combo box. If there is no current value, the GValue
+ * elements are unset. The variadic arguments are the column IDs to use,
+ * followed by -1. The array must have enough storage.
+ *
+ * Currently these function are limited to 4 identifying columns, and
+ * to guint, gint and gdouble types.
+ */
+static void combo_box_get_old(GtkComboBox *box, GValue *save, ...)
+{
+    GtkTreeModel *model;
+    GtkTreeIter iter;
+    va_list ap;
+    int col;
+    gboolean have_iter;
+
+    va_start(ap, save);
+    model = gtk_combo_box_get_model(box);
+    have_iter = gtk_combo_box_get_active_iter(box, &iter);
+    while ((col = va_arg(ap, int)) != -1)
+    {
+        memset(save, 0, sizeof(GValue));
+        if (have_iter)
+            gtk_tree_model_get_value(model, &iter, col, save);
+        save++;
+    }
+    va_end(ap);
+}
+
+/* Note: this function automatically releases the GValues, so it is
+ * important to match with the previous one, or else release values
+ * manually.
+ */
+static void combo_box_restore_old(GtkComboBox *box, GValue *save, ...)
+{
+    GtkTreeModel *model;
+    GtkTreeIter iter;
+    GValue cur;
+    va_list ap;
+    int col, cols[4];
+    int ncols = 0;
+    int i;
+    gboolean more, match;
+
+    va_start(ap, save);
+    while ((col = va_arg(ap, int)) != -1)
+    {
+        g_return_if_fail(ncols < 4);
+        cols[ncols++] = col;
+    }
+    va_end(ap);
+
+    if (!G_IS_VALUE(&save[0]))
+    {
+        gtk_combo_box_set_active(box, 0);
+        return;
+    }
+
+    memset(&cur, 0, sizeof(cur));
+    model = gtk_combo_box_get_model(box);
+    more = gtk_tree_model_get_iter_first(model, &iter);
+    while (more)
+    {
+        match = TRUE;
+        for (i = 0; i < ncols && match; i++)
+        {
+            gtk_tree_model_get_value(model, &iter, cols[i], &cur);
+            switch (gtk_tree_model_get_column_type(model, cols[i]))
+            {
+            case G_TYPE_INT:
+                match = g_value_get_int(&save[i]) == g_value_get_int(&cur);
+                break;
+            case G_TYPE_UINT:
+                match = g_value_get_uint(&save[i]) == g_value_get_uint(&cur);
+                break;
+            case G_TYPE_DOUBLE:
+                match = g_value_get_double(&save[i]) == g_value_get_double(&cur);
+                break;
+            default:
+                g_return_if_reached();
+            }
+            g_value_unset(&cur);
+        }
+        if (match)
+        {
+            for (i = 0; i < ncols; i++)
+                g_value_unset(&save[i]);
+            gtk_combo_box_set_active_iter(box, &iter);
+            return;
+        }
+
+        more = gtk_tree_model_iter_next(model, &iter);
+    }
+    gtk_combo_box_set_active(box, 0);
 }
 
 #if HAVE_GTKGLEXT
@@ -898,7 +1029,19 @@ static void texture_update(GldbWindow *context)
      * cascade of updates.
      */
     update_texture_ids(context);
-    g_signal_emit_by_name(G_OBJECT(context->texture.id), "changed", NULL, NULL);
+}
+
+static void update_framebuffer_ids(GldbWindow *context);
+
+static void framebuffer_update(GldbWindow *context)
+{
+    if (!context->framebuffer.dirty) return;
+    context->framebuffer.dirty = FALSE;
+
+    /* Simply invoke a change event on the selector. This launches a
+     * cascade of updates.
+     */
+    update_framebuffer_ids(context);
 }
 #endif /* HAVE_GTKGLEXT */
 
@@ -1011,6 +1154,8 @@ static void notebook_update(GldbWindow *context, gint new_page)
 #if HAVE_GTKGLEXT
     else if (page == gtk_notebook_page_num(notebook, context->texture.page))
         texture_update(context);
+    else if (page == gtk_notebook_page_num(notebook, context->framebuffer.page))
+        framebuffer_update(context);
 #endif
 #ifdef GLDB_GUI_SHADER
     else if (page == gtk_notebook_page_num(notebook, context->shader.page))
@@ -1039,6 +1184,7 @@ static void stopped(GldbWindow *context, const gchar *text)
     context->state.dirty = true;
 #if HAVE_GTKGLEXT
     context->texture.dirty = true;
+    context->framebuffer.dirty = true;
 #endif
 #ifdef GLDB_GUI_SHADER
     context->shader.dirty = true;
@@ -1078,7 +1224,7 @@ static gboolean response_callback(GIOChannel *channel, GIOCondition condition,
     GldbWindow *context;
     gldb_response *r;
     char *msg;
-    gboolean done = false;
+    gboolean done = FALSE;
     bugle_list_node *n;
     response_handler *h;
 
@@ -1391,11 +1537,10 @@ static void build_state_page(GldbWindow *context)
 #if HAVE_GTKGLEXT
 static void update_texture_ids(GldbWindow *context)
 {
+    GValue old[2];
     const gldb_state *root, *s, *t, *l, *f, *param;
     GtkTreeModel *model;
     GtkTreeIter iter, old_iter;
-    guint old_id, old_target;
-    gboolean have_old = FALSE, have_old_iter = FALSE;
     bugle_list_node *nt, *nl;
     gchar *name;
     guint levels;
@@ -1429,15 +1574,9 @@ static void update_texture_ids(GldbWindow *context)
     };
     guint trg;
 
+    combo_box_get_old(GTK_COMBO_BOX(context->texture.id), old,
+                      COLUMN_TEXTURE_ID_ID, COLUMN_TEXTURE_ID_TARGET, -1);
     model = gtk_combo_box_get_model(GTK_COMBO_BOX(context->texture.id));
-    if (gtk_combo_box_get_active_iter(GTK_COMBO_BOX(context->texture.id), &iter))
-    {
-        have_old = TRUE;
-        gtk_tree_model_get(model, &iter,
-                           COLUMN_TEXTURE_ID_ID, &old_id,
-                           COLUMN_TEXTURE_ID_TARGET, &old_target,
-                           -1);
-    }
     gtk_list_store_clear(GTK_LIST_STORE(model));
 
     root = gldb_state_update(); /* FIXME: manage state tree ourselves */
@@ -1488,19 +1627,12 @@ static void update_texture_ids(GldbWindow *context)
                                    COLUMN_TEXTURE_ID_TEXT, name,
                                    -1);
                 free(name);
-                if (have_old && t->numeric_name == (GLint) old_id && targets[trg] == (GLenum) old_target)
-                {
-                    old_iter = iter;
-                    have_old_iter = TRUE;
-                }
             }
         }
     }
-    if (have_old_iter)
-        gtk_combo_box_set_active_iter(GTK_COMBO_BOX(context->texture.id),
-                                      &old_iter);
-    else
-        gtk_combo_box_set_active(GTK_COMBO_BOX(context->texture.id), 0);
+
+    combo_box_restore_old(GTK_COMBO_BOX(context->texture.id), old,
+                          COLUMN_TEXTURE_ID_ID, COLUMN_TEXTURE_ID_TARGET, -1);
 }
 
 static void texture_id_changed(GtkComboBox *id_box, gpointer user_data)
@@ -1543,7 +1675,7 @@ static void texture_id_changed(GtkComboBox *id_box, gpointer user_data)
                     if (l == levels - 1 && i == 5) data->flags |= TEXTURE_CALLBACK_FLAG_LAST;
                     set_response_handler(context, seq, response_callback_texture, data);
                     gldb_send_data_texture(seq++, id, target, data->face, l,
-                                           gldb_channel_get_query_token(channels),
+                                           gldb_channel_get_texture_token(channels),
                                            GL_FLOAT);
                 }
             }
@@ -1560,7 +1692,7 @@ static void texture_id_changed(GtkComboBox *id_box, gpointer user_data)
                 if (l == levels - 1) data->flags |= TEXTURE_CALLBACK_FLAG_LAST;
                 set_response_handler(context, seq, response_callback_texture, data);
                 gldb_send_data_texture(seq++, id, target, target, l,
-                                       gldb_channel_get_query_token(channels),
+                                       gldb_channel_get_texture_token(channels),
                                        GL_FLOAT);
             }
         }
@@ -2171,6 +2303,351 @@ static void build_texture_page(GldbWindow *context)
     context->texture.page = gtk_notebook_get_nth_page(GTK_NOTEBOOK(context->notebook), page);
     context->texture.pixel_status_id = -1;
 }
+
+
+static void update_framebuffer_ids(GldbWindow *context)
+{
+    GValue old[2];
+    GtkTreeIter iter;
+    const gldb_state *root, *fbo, *sz;
+    GtkTreeModel *model;
+    char *name;
+    int c;
+
+    combo_box_get_old(GTK_COMBO_BOX(context->framebuffer.id), old,
+                      COLUMN_FRAMEBUFFER_ID_ID, COLUMN_FRAMEBUFFER_ID_TARGET, -1);
+    model = gtk_combo_box_get_model(GTK_COMBO_BOX(context->framebuffer.id));
+    gtk_list_store_clear(GTK_LIST_STORE(model));
+    root = gldb_state_update();
+
+#ifdef GL_EXT_framebuffer_object
+    if ((fbo = state_find_child_enum(root, GL_FRAMEBUFFER_EXT)) != NULL)
+    {
+        bugle_list_node *nf;
+        const gldb_state *f;
+
+        for (nf = bugle_list_head(&fbo->children); nf != NULL; nf = bugle_list_next(nf))
+        {
+            f = (const gldb_state *) bugle_list_data(nf);
+            guint channels = 0;
+            gboolean doublebuffer = FALSE;
+            for (c = 0; gldb_channel_table[c].channel; c++)
+                if (gldb_channel_table[c].framebuffer_size_token
+                    && (sz = state_find_child_enum(f, gldb_channel_table[c].framebuffer_size_token)) != NULL
+                    && strcmp(sz->value, "0") != 0)
+                    channels |= gldb_channel_table[c].channel;
+
+            if ((sz = state_find_child_enum(f, GL_DOUBLEBUFFER)) != NULL
+                && strcmp(sz->value, "GL_FALSE") != 0)
+                doublebuffer = TRUE;
+
+            if (f->numeric_name == 0)
+                bugle_asprintf(&name, _("Default"));
+            else
+                bugle_asprintf(&name, "%u", (unsigned int) f->numeric_name);
+            gtk_list_store_append(GTK_LIST_STORE(model), &iter);
+            gtk_list_store_set(GTK_LIST_STORE(model), &iter,
+                               COLUMN_FRAMEBUFFER_ID_ID, f->numeric_name,
+                               COLUMN_FRAMEBUFFER_ID_TARGET, GL_FRAMEBUFFER_EXT,
+                               COLUMN_FRAMEBUFFER_ID_DOUBLEBUFFER, doublebuffer,
+                               COLUMN_FRAMEBUFFER_ID_CHANNELS, channels,
+                               COLUMN_FRAMEBUFFER_ID_TEXT, name,
+                               -1);
+            free(name);
+            /* FIXME: provide access to aux buffers */
+
+        }
+    }
+    else
+#endif
+    {
+        guint channels = 0;
+        gboolean doublebuffer = FALSE;
+        for (c = 0; gldb_channel_table[c].channel; c++)
+            if (gldb_channel_table[c].framebuffer_size_token
+                && (sz = state_find_child_enum(root, gldb_channel_table[c].framebuffer_size_token)) != NULL
+                && strcmp(sz->value, "0") != 0)
+                channels |= gldb_channel_table[c].channel;
+
+        if ((sz = state_find_child_enum(root, GL_DOUBLEBUFFER)) != NULL
+            && strcmp(sz->value, "GL_FALSE") != 0)
+            doublebuffer = TRUE;
+
+        gtk_list_store_append(GTK_LIST_STORE(model), &iter);
+        gtk_list_store_set(GTK_LIST_STORE(model), &iter,
+                           COLUMN_FRAMEBUFFER_ID_ID, 0,
+                           COLUMN_FRAMEBUFFER_ID_TARGET, 0,
+                           COLUMN_FRAMEBUFFER_ID_DOUBLEBUFFER, doublebuffer,
+                           COLUMN_FRAMEBUFFER_ID_CHANNELS, channels,
+                           COLUMN_FRAMEBUFFER_ID_TEXT, _("Default"),
+                           -1);
+    }
+
+    combo_box_restore_old(GTK_COMBO_BOX(context->framebuffer.id), old,
+                          COLUMN_FRAMEBUFFER_ID_ID, COLUMN_FRAMEBUFFER_ID_TARGET, -1);
+}
+
+static void framebuffer_id_changed(GtkWidget *widget, gpointer user_data)
+{
+    GldbWindow *context;
+    GtkTreeModel *model;
+    GtkTreeIter iter;
+    gboolean doublebuffer;
+    guint channels;
+    GValue old_buffer, old_channel;
+    int c;
+
+    if (gldb_get_status() == GLDB_STATUS_STOPPED)
+    {
+        context = (GldbWindow *) user_data;
+
+        model = gtk_combo_box_get_model(GTK_COMBO_BOX(context->framebuffer.id));
+        if (!gtk_combo_box_get_active_iter(GTK_COMBO_BOX(context->framebuffer.id), &iter))
+            return;
+        gtk_tree_model_get(model, &iter,
+                           COLUMN_FRAMEBUFFER_ID_DOUBLEBUFFER, &doublebuffer,
+                           COLUMN_FRAMEBUFFER_ID_CHANNELS, &channels,
+                           -1);
+
+        combo_box_get_old(GTK_COMBO_BOX(context->framebuffer.buffer), &old_buffer,
+                          COLUMN_FRAMEBUFFER_BUFFER_VALUE, -1);
+        combo_box_get_old(GTK_COMBO_BOX(context->framebuffer.channel), &old_channel,
+                          COLUMN_FRAMEBUFFER_CHANNEL_VALUE, -1);
+
+        model = gtk_combo_box_get_model(GTK_COMBO_BOX(context->framebuffer.buffer));
+        gtk_list_store_clear(GTK_LIST_STORE(model));
+        gtk_list_store_append(GTK_LIST_STORE(model), &iter);
+        gtk_list_store_set(GTK_LIST_STORE(model), &iter,
+                           COLUMN_FRAMEBUFFER_BUFFER_VALUE, (guint) GL_FRONT,
+                           COLUMN_FRAMEBUFFER_BUFFER_TEXT, _("Front"),
+                           -1);
+        if (doublebuffer)
+        {
+            gtk_list_store_append(GTK_LIST_STORE(model), &iter);
+            gtk_list_store_set(GTK_LIST_STORE(model), &iter,
+                               COLUMN_FRAMEBUFFER_BUFFER_VALUE, (guint) GL_BACK,
+                               COLUMN_FRAMEBUFFER_BUFFER_TEXT, _("Back"),
+                               -1);
+        }
+
+        model = gtk_combo_box_get_model(GTK_COMBO_BOX(context->framebuffer.channel));
+        gtk_list_store_clear(GTK_LIST_STORE(model));
+        for (c = 0; gldb_channel_table[c].channel; c++)
+            if (gldb_channel_table[c].framebuffer_token
+                && gldb_channel_table[c].text
+                && !(gldb_channel_table[c].channel & ~channels))
+            {
+                gtk_list_store_append(GTK_LIST_STORE(model), &iter);
+                gtk_list_store_set(GTK_LIST_STORE(model), &iter,
+                                   COLUMN_FRAMEBUFFER_CHANNEL_VALUE, (guint) gldb_channel_table[c].channel,
+                                   COLUMN_FRAMEBUFFER_CHANNEL_TEXT, gldb_channel_table[c].text,
+                                   -1);
+            }
+
+        combo_box_restore_old(GTK_COMBO_BOX(context->framebuffer.buffer), &old_buffer,
+                              COLUMN_FRAMEBUFFER_BUFFER_VALUE, -1);
+        combo_box_restore_old(GTK_COMBO_BOX(context->framebuffer.channel), &old_channel,
+                              COLUMN_FRAMEBUFFER_CHANNEL_VALUE, -1);
+    }
+}
+
+static void framebuffer_buffer_changed(GtkWidget *widget, gpointer user_data)
+{
+    GldbWindow *context;
+
+    context = (GldbWindow *) user_data;
+    /* FIXME: query new data */
+    gtk_widget_queue_draw(context->framebuffer.draw);
+}
+
+static void framebuffer_channel_changed(GtkWidget *widget, gpointer user_data)
+{
+    GldbWindow *context;
+
+    context = (GldbWindow *) user_data;
+    /* FIXME: query new data? */
+    gtk_widget_queue_draw(context->framebuffer.draw);
+}
+
+static GtkWidget *build_framebuffer_page_id(GldbWindow *context)
+{
+    GtkListStore *store;
+    GtkWidget *id;
+    GtkCellRenderer *cell;
+
+    store = gtk_list_store_new(5,
+                               G_TYPE_UINT,  /* ID */
+                               G_TYPE_UINT,  /* target */
+                               G_TYPE_BOOLEAN, /* doublebuffer */
+                               G_TYPE_UINT,  /* channels */
+                               G_TYPE_STRING);
+
+    gtk_tree_sortable_set_sort_column_id(GTK_TREE_SORTABLE(store),
+                                         COLUMN_FRAMEBUFFER_ID_ID,
+                                         GTK_SORT_ASCENDING);
+    id = gtk_combo_box_new_with_model(GTK_TREE_MODEL(store));
+    gtk_widget_set_size_request(id, 80, -1);
+
+    cell = gtk_cell_renderer_text_new();
+    gtk_cell_layout_pack_start(GTK_CELL_LAYOUT(id), cell, TRUE);
+    gtk_cell_layout_set_attributes(GTK_CELL_LAYOUT(id), cell,
+                                   "text", COLUMN_FRAMEBUFFER_ID_TEXT, NULL);
+    g_signal_connect(G_OBJECT(id), "changed",
+                     G_CALLBACK(framebuffer_id_changed), context);
+
+    context->framebuffer.id = id;
+    g_object_unref(G_OBJECT(store));
+    return id;
+}
+
+static GtkWidget *build_framebuffer_page_buffer(GldbWindow *context)
+{
+    GtkListStore *store;
+    GtkTreeIter iter;
+    GtkWidget *buffer;
+    GtkCellRenderer *cell;
+
+    store = gtk_list_store_new(2, G_TYPE_UINT, G_TYPE_STRING);
+    gtk_list_store_append(store, &iter);
+    gtk_list_store_set(store, &iter,
+                       COLUMN_FRAMEBUFFER_BUFFER_VALUE, GL_FRONT,
+                       COLUMN_FRAMEBUFFER_BUFFER_TEXT, _("Front"),
+                       -1);
+    gtk_list_store_append(store, &iter);
+    gtk_list_store_set(store, &iter,
+                       COLUMN_FRAMEBUFFER_BUFFER_VALUE, GL_BACK,
+                       COLUMN_FRAMEBUFFER_BUFFER_TEXT, _("Back"),
+                       -1);
+
+    context->framebuffer.buffer = buffer = gtk_combo_box_new_with_model(GTK_TREE_MODEL(store));
+    cell = gtk_cell_renderer_text_new();
+    gtk_cell_layout_pack_start(GTK_CELL_LAYOUT(buffer), cell, TRUE);
+    gtk_cell_layout_set_attributes(GTK_CELL_LAYOUT(buffer), cell,
+                                   "text", COLUMN_FRAMEBUFFER_BUFFER_TEXT, NULL);
+    gtk_combo_box_set_active(GTK_COMBO_BOX(buffer), 0);
+    g_signal_connect(G_OBJECT(buffer), "changed",
+                     G_CALLBACK(framebuffer_buffer_changed), context);
+    g_object_unref(G_OBJECT(store));
+    return buffer;
+}
+
+static GtkWidget *build_framebuffer_page_channel(GldbWindow *context)
+{
+    GtkListStore *store;
+    GtkTreeIter iter;
+    GtkWidget *channel;
+    GtkCellRenderer *cell;
+
+    store = gtk_list_store_new(2, G_TYPE_UINT, G_TYPE_STRING);
+
+    context->framebuffer.channel = channel = gtk_combo_box_new_with_model(GTK_TREE_MODEL(store));
+    cell = gtk_cell_renderer_text_new();
+    gtk_cell_layout_pack_start(GTK_CELL_LAYOUT(channel), cell, TRUE);
+    gtk_cell_layout_set_attributes(GTK_CELL_LAYOUT(channel), cell,
+                                   "text", COLUMN_FRAMEBUFFER_CHANNEL_TEXT, NULL);
+    g_signal_connect(G_OBJECT(channel), "changed",
+                     G_CALLBACK(framebuffer_channel_changed), context);
+    g_object_unref(G_OBJECT(store));
+    return channel;
+}
+
+static GtkWidget *build_framebuffer_page_combos(GldbWindow *context)
+{
+    GtkWidget *combos;
+    GtkWidget *label, *id, *buffer, *channel;
+
+    combos = gtk_table_new(3, 2, FALSE);
+
+    label = gtk_label_new(_("Framebuffer"));
+    id = build_framebuffer_page_id(context);
+    gtk_table_attach(GTK_TABLE(combos), label, 0, 1, 0, 1, 0, 0, 0, 0);
+    gtk_table_attach(GTK_TABLE(combos), id, 1, 2, 0, 1, GTK_EXPAND | GTK_FILL, 0, 0, 0);
+
+    label = gtk_label_new(_("Buffer"));
+    buffer = build_framebuffer_page_buffer(context);
+    gtk_table_attach(GTK_TABLE(combos), label, 0, 1, 1, 2, 0, 0, 0, 0);
+    gtk_table_attach(GTK_TABLE(combos), buffer, 1, 2, 1, 2, GTK_EXPAND | GTK_FILL, 0, 0, 0);
+
+    label = gtk_label_new(_("Channel"));
+    channel = build_framebuffer_page_channel(context);
+    gtk_table_attach(GTK_TABLE(combos), label, 0, 1, 2, 3, 0, 0, 0, 0);
+    gtk_table_attach(GTK_TABLE(combos), channel, 1, 2, 2, 3, GTK_EXPAND | GTK_FILL, 0, 0, 0);
+
+    return combos;
+}
+
+static GtkWidget *build_framebuffer_page_draw(GldbWindow *context)
+{
+    GtkWidget *alignment, *aspect, *draw;
+    GdkGLConfig *glconfig;
+    static const int attrib_list[] =
+    {
+        GDK_GL_USE_GL, TRUE,
+        GDK_GL_RGBA, TRUE,
+        GDK_GL_DOUBLEBUFFER, TRUE,
+        GDK_GL_ATTRIB_LIST_NONE
+    };
+
+    glconfig = gdk_gl_config_new(attrib_list);
+    g_return_val_if_fail(glconfig != NULL, NULL);
+
+    draw = gtk_drawing_area_new();
+    gtk_widget_set_size_request(draw, 1, 1);
+    gtk_widget_set_gl_capability(draw, glconfig, NULL, TRUE, GDK_GL_RGBA_TYPE);
+    /*
+    g_signal_connect_after(G_OBJECT(draw), "realize",
+                           G_CALLBACK(texture_draw_realize), context);
+    g_signal_connect(G_OBJECT(draw), "configure-event",
+                     G_CALLBACK(texture_draw_configure), context);
+    g_signal_connect(G_OBJECT(draw), "expose-event",
+                     G_CALLBACK(texture_draw_expose), context);
+    g_signal_connect(G_OBJECT(draw), "motion-notify-event",
+                     G_CALLBACK(texture_draw_motion), context);
+    g_signal_connect(G_OBJECT(draw), "enter-notify-event",
+                     G_CALLBACK(texture_draw_enter), context);
+    g_signal_connect(G_OBJECT(draw), "leave-notify-event",
+                     G_CALLBACK(texture_draw_leave), context);
+    */
+
+    aspect = gtk_aspect_frame_new(NULL, 0.5, 0.5, 1.0, TRUE);
+    gtk_frame_set_shadow_type(GTK_FRAME(aspect), GTK_SHADOW_NONE);
+    alignment = gtk_alignment_new(0.5, 0.5, 0.0, 0.0);
+    gtk_container_add(GTK_CONTAINER(aspect), draw);
+    gtk_container_add(GTK_CONTAINER(alignment), aspect);
+
+    context->framebuffer.draw = draw;
+    return alignment;
+}
+
+static void build_framebuffer_page(GldbWindow *context)
+{
+    GtkWidget *vbox, *hbox, *label, *draw, *combos, *scrolled;
+    gint page;
+
+    combos = build_framebuffer_page_combos(context);
+    draw = build_framebuffer_page_draw(context);
+
+    scrolled = gtk_scrolled_window_new(NULL, NULL);
+    if (draw)
+    {
+        gtk_scrolled_window_add_with_viewport(GTK_SCROLLED_WINDOW(scrolled),
+                                              draw);
+    }
+    gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(scrolled),
+                                   GTK_POLICY_AUTOMATIC,
+                                   GTK_POLICY_AUTOMATIC);
+
+    hbox = gtk_hbox_new(FALSE, 0);
+    gtk_box_pack_start(GTK_BOX(hbox), combos, FALSE, FALSE, 0);
+    gtk_box_pack_start(GTK_BOX(hbox), scrolled, TRUE, TRUE, 0);
+
+    label = gtk_label_new(_("Framebuffers"));
+    page = gtk_notebook_append_page(GTK_NOTEBOOK(context->notebook),
+                                    hbox, label);
+
+    context->framebuffer.dirty = false;
+    context->framebuffer.page = gtk_notebook_get_nth_page(GTK_NOTEBOOK(context->notebook), page);
+}
 #endif /* HAVE_GTKGLEXT */
 
 #ifdef GLDB_GUI_SHADER
@@ -2606,8 +3083,9 @@ static void build_main_window(GldbWindow *context)
     build_state_page(context);
 #if HAVE_GTKGLEXT
     build_texture_page(context);
+    build_framebuffer_page(context);
 #endif
-#if defined(GL_ARB_vertex_program) || defined(GL_ARB_fragment_program)
+#ifdef GLDB_GUI_SHADER
     build_shader_page(context);
 #endif
     build_backtrace_page(context);

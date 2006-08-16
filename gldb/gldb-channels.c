@@ -33,29 +33,26 @@ gldb_channel_table_entry gldb_channel_table[] =
      * will appear in a readback. In particular, luminance must appear
      * before alpha.
      */
-    { GLDB_CHANNEL_LUMINANCE, GL_LUMINANCE, GL_LUMINANCE, GL_TEXTURE_LUMINANCE_SIZE, "L", "luminance" },
-    { GLDB_CHANNEL_INTENSITY, GL_INTENSITY, GL_INTENSITY, GL_TEXTURE_INTENSITY_SIZE, "I", "intensity" },
-    { GLDB_CHANNEL_RED, 0, 0, GL_TEXTURE_RED_SIZE, "R", "red" },
-    { GLDB_CHANNEL_GREEN, 0, 0, GL_TEXTURE_GREEN_SIZE, "G", "green" },
-    { GLDB_CHANNEL_BLUE, 0, 0, GL_TEXTURE_BLUE_SIZE, "B", "blue" },
-    { GLDB_CHANNEL_ALPHA, GL_ALPHA, GL_LUMINANCE, GL_TEXTURE_ALPHA_SIZE, "A", "alpha" },
+    { GLDB_CHANNEL_LUMINANCE, GL_LUMINANCE,       GL_LUMINANCE,       GL_LUMINANCE, GL_TEXTURE_LUMINANCE_SIZE, 0,               "L", "Luminance" },
+    { GLDB_CHANNEL_INTENSITY, GL_INTENSITY,       0,                  GL_INTENSITY, GL_TEXTURE_INTENSITY_SIZE, 0,               "I", "Intensity" },
+    { GLDB_CHANNEL_RED,       GL_RED,             GL_RED,             GL_LUMINANCE, GL_TEXTURE_RED_SIZE,       GL_RED_BITS,     "R", "Red" },
+    { GLDB_CHANNEL_GREEN,     GL_GREEN,           GL_GREEN,           GL_LUMINANCE, GL_TEXTURE_GREEN_SIZE,     GL_GREEN_BITS,   "G", "Green" },
+    { GLDB_CHANNEL_BLUE,      GL_BLUE,            GL_BLUE,            GL_LUMINANCE, GL_TEXTURE_BLUE_SIZE,      GL_BLUE_BITS,    "B", "Blue" },
+    { GLDB_CHANNEL_ALPHA,     GL_ALPHA,           GL_ALPHA,           GL_LUMINANCE, GL_TEXTURE_ALPHA_SIZE,     GL_ALPHA_BITS,   "A", "Alpha" },
 #ifdef GL_ARB_depth_texture
-    { GLDB_CHANNEL_DEPTH, GL_DEPTH_COMPONENT, GL_LUMINANCE, GL_TEXTURE_DEPTH_SIZE, "D", "depth" },
+    { GLDB_CHANNEL_DEPTH,     GL_DEPTH_COMPONENT, GL_DEPTH_COMPONENT, GL_LUMINANCE, GL_TEXTURE_DEPTH_SIZE,     GL_DEPTH_BITS,   "D", "Depth" },
 #else
-    { GLDB_CHANNEL_DEPTH, GL_DEPTH_COMPONENT, GL_LUMINANCE, 0, "D", "depth" },
+    { GLDB_CHANNEL_DEPTH,     0,                  GL_DEPTH_COMPONENT, GL_LUMINANCE, 0,                         GL_DEPTH_BITS,   "D", "Depth" },
 #endif
-    { GLDB_CHANNEL_STENCIL, GL_STENCIL_INDEX, GL_LUMINANCE, 0, "S", "stencil" },
-    { GLDB_CHANNEL_COLOR_INDEX, GL_COLOR_INDEX, GL_LUMINANCE, 0, "C", "color-index" },
+    { GLDB_CHANNEL_STENCIL,   0,                  GL_STENCIL_INDEX,   GL_LUMINANCE, 0,                         GL_STENCIL_BITS, "S", "Stencil" },
+    { GLDB_CHANNEL_COLOR_INDEX, 0,                GL_COLOR_INDEX,     GL_LUMINANCE, 0,                         GL_INDEX_BITS,   "C", "Color" },
 
     /* Composites */
-    { GLDB_CHANNEL_RGB, GL_RGB, GL_RGB, 0, "RGB", NULL },
-    { GLDB_CHANNEL_RGBA, GL_RGBA, GL_RGBA, 0, "RGBA", NULL },
-    { GLDB_CHANNEL_LUMINANCE_ALPHA, GL_LUMINANCE_ALPHA, GL_LUMINANCE_ALPHA, 0, NULL, NULL },
-#ifdef GL_NV_packed_depth_stencil
-    { GLDB_CHANNEL_DEPTH_STENCIL, GL_DEPTH_STENCIL_NV, 0, 0, NULL, NULL },
-#endif
+    { GLDB_CHANNEL_RGB,       GL_RGB,             GL_RGB,             GL_RGB,       0,                         0,               "RGB", "RGB" },
+    { GLDB_CHANNEL_RGBA,      GL_RGBA,            GL_RGBA,            GL_RGBA,      0,                         0,               "RGBA", "RGBA" },
+    { GLDB_CHANNEL_LUMINANCE_ALPHA, GL_LUMINANCE_ALPHA, GL_LUMINANCE_ALPHA, GL_LUMINANCE_ALPHA, 0,             0,               "LA", "Luminance-Alpha" },
 
-    { 0, GL_NONE, GL_NONE, 0, NULL, NULL }
+    { 0, 0, 0, 0, 0, 0, NULL, NULL }
 };
 
 uint32_t gldb_channel_get_query_channels(uint32_t channels)
@@ -69,14 +66,25 @@ uint32_t gldb_channel_get_query_channels(uint32_t channels)
     return 0;
 }
 
-GLenum gldb_channel_get_query_token(uint32_t channels)
+GLenum gldb_channel_get_texture_token(uint32_t channels)
 {
     int i;
 
     if (!channels) return GL_NONE; /* Dubious query to begin with */
     for (i = 0; gldb_channel_table[i].channel; i++)
         if (channels == gldb_channel_table[i].channel)
-            return gldb_channel_table[i].query_token;
+            return gldb_channel_table[i].texture_token;
+    return GL_NONE;
+}
+
+GLenum gldb_channel_get_framebuffer_token(uint32_t channels)
+{
+    int i;
+
+    if (!channels) return GL_NONE; /* Dubious query to begin with */
+    for (i = 0; gldb_channel_table[i].channel; i++)
+        if (channels == gldb_channel_table[i].channel)
+            return gldb_channel_table[i].framebuffer_token;
     return GL_NONE;
 }
 
