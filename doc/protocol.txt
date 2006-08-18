@@ -61,6 +61,12 @@ REQ_DATA:    Requests a readback of some large chunk of state, such as
                level
                format
                type
+             REQ_DATA_FRAMEBUFFER: followed by
+               id
+               target
+               buffer (GL_FRONT etc)
+               format
+               type
 
 The following responses are defined
 
@@ -107,6 +113,8 @@ RESP_DATA:   The response depends on the subtype of the request. In
              convenience, and the second is the data. The rest are
              REQ_DATA_TEXTURE:
                width, height, depth (all present even for 1D, 2D etc)
+             REQ_DATA_FRAMEBUFFER:
+               width, height
              REQ_DATA_SHADER:
                none
 

@@ -122,6 +122,13 @@ enum
     COLUMN_FRAMEBUFFER_CHANNEL_TEXT
 };
 
+enum
+{
+    COLUMN_FRAMEBUFFER_ZOOM_VALUE,
+    COLUMN_FRAMEBUFFER_ZOOM_TEXT,
+    COLUMN_FRAMEBUFFER_ZOOM_SENSITIVE
+};
+
 #endif
 
 struct GldbWindow;
@@ -146,12 +153,12 @@ typedef struct
     int height;
     uint32_t channels;
     GLfloat *pixels;
-} GldbTextureLevel;
+} GldbImage;
 
 typedef struct
 {
     int levels;
-    GldbTextureLevel images[1000];
+    GldbImage images[1000];
 } GldbTexture;
 
 #if HAVE_GTKGLEXT
@@ -179,9 +186,13 @@ typedef struct
     bool dirty;
     GtkWidget *page;
     GtkWidget *draw;
-    GtkWidget *id;
-    GtkWidget *buffer;
-    GtkWidget *channel;
+    GtkWidget *id, *buffer, *channel, *zoom;
+    GtkToolItem *zoom_in, *zoom_out, *zoom_100;
+
+    GLint texture_width, texture_height;
+    GLint max_viewport_dims[2];
+    gint pixel_status_id;
+    GldbImage active;
 } GldbWindowFramebuffer;
 #endif
 
@@ -246,6 +257,12 @@ typedef struct
 } texture_callback_data;
 
 static GtkTreeModel *texture_mag_filters, *texture_min_filters;
+
+typedef struct
+{
+    uint32_t channels;
+    guint32 flags;  /* not used at present */
+} framebuffer_callback_data;
 
 #endif /* HAVE_GTKGLEXT */
 
@@ -862,9 +879,6 @@ static gboolean response_callback_texture(GldbWindow *context,
     uint32_t channels;
 
     r = (gldb_response_data_texture *) response;
-    data = (texture_callback_data *) user_data;
-    channels = data->channels;
-    format = gldb_channel_get_display_token(channels);
 
     if (data->flags & TEXTURE_CALLBACK_FLAG_FIRST)
     {
@@ -890,6 +904,9 @@ static gboolean response_callback_texture(GldbWindow *context,
         GdkGLContext *glcontext;
         GdkGLDrawable *gldrawable;
 
+        data = (texture_callback_data *) user_data;
+        channels = data->channels;
+        format = gldb_channel_get_display_token(channels);
         if (data->flags & TEXTURE_CALLBACK_FLAG_FIRST)
         {
             context->texture.width = r->width;
@@ -1029,6 +1046,228 @@ static void texture_update(GldbWindow *context)
      * cascade of updates.
      */
     update_texture_ids(context);
+}
+
+/***********************************************************************/
+
+static void framebuffer_draw_realize(GtkWidget *widget, gpointer user_data)
+{
+    GdkGLContext *glcontext;
+    GdkGLDrawable *gldrawable;
+    GldbWindow *context;
+
+    context = (GldbWindow *) user_data;
+    glcontext = gtk_widget_get_gl_context(widget);
+    gldrawable = gtk_widget_get_gl_drawable(widget);
+    if (!gdk_gl_drawable_gl_begin(gldrawable, glcontext)) return;
+
+    glViewport(0, 0, widget->allocation.width, widget->allocation.height);
+    glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+    glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR); /* FIXME: do mip levels */
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glEnable(GL_TEXTURE_2D);
+    glGetIntegerv(GL_MAX_VIEWPORT_DIMS, context->framebuffer.max_viewport_dims);
+
+    gdk_gl_drawable_gl_end(gldrawable);
+
+    gdk_window_set_events(widget->window,
+                          gdk_window_get_events(widget->window)
+                          | GDK_POINTER_MOTION_MASK
+                          | GDK_ENTER_NOTIFY_MASK
+                          | GDK_LEAVE_NOTIFY_MASK);
+}
+
+static gboolean framebuffer_draw_configure(GtkWidget *widget,
+                                           GdkEventConfigure *event,
+                                           gpointer user_data)
+{
+    GdkGLContext *glcontext;
+    GdkGLDrawable *gldrawable;
+
+    glcontext = gtk_widget_get_gl_context(widget);
+    gldrawable = gtk_widget_get_gl_drawable(widget);
+    if (!gdk_gl_drawable_gl_begin(gldrawable, glcontext)) return FALSE;
+
+    glViewport(0, 0, widget->allocation.width, widget->allocation.height);
+
+    gdk_gl_drawable_gl_end(gldrawable);
+    return TRUE;
+}
+
+static gboolean framebuffer_draw_expose(GtkWidget *widget,
+                                        GdkEventExpose *event,
+                                        gpointer user_data)
+{
+    GldbWindow *context;
+    GdkGLContext *glcontext;
+    GdkGLDrawable *gldrawable;
+    GLfloat s, t;
+
+    glcontext = gtk_widget_get_gl_context(widget);
+    gldrawable = gtk_widget_get_gl_drawable(widget);
+    if (!gdk_gl_drawable_gl_begin(gldrawable, glcontext)) return FALSE;
+    glClear(GL_COLOR_BUFFER_BIT);
+
+    context = (GldbWindow *) user_data;
+    if (context->framebuffer.active.pixels)
+    {
+        s = (GLfloat) context->framebuffer.active.width / context->framebuffer.texture_width;
+        t = (GLfloat) context->framebuffer.active.height / context->framebuffer.texture_height;
+
+        glBegin(GL_QUADS);
+        glTexCoord2f(0.0f, 0.0f);
+        glVertex2f(0.0f, -1.0f);
+        glTexCoord2f(s, 0.0f);
+        glVertex2f(1.0f, -1.0f);
+        glTexCoord2f(s, t);
+        glVertex2f(1.0f, 1.0f);
+        glTexCoord2f(0.0f, t);
+        glVertex2f(0.0f, 1.0f);
+    }
+    gdk_gl_drawable_swap_buffers(gldrawable);
+    gdk_gl_drawable_gl_end(gldrawable);
+    return TRUE;
+}
+
+static void resize_framebuffer_draw(GldbWindow *context)
+{
+    GtkWidget *aspect, *alignment, *draw;
+    GtkTreeModel *zoom_model;
+    GtkTreeIter iter;
+    gdouble zoom;
+    int width, height;
+
+    if (!context->framebuffer.active.pixels) return;
+
+    draw = context->framebuffer.draw;
+    aspect = gtk_widget_get_parent(draw);
+    alignment = gtk_widget_get_parent(aspect);
+    width = context->framebuffer.active.width;
+    height = context->framebuffer.active.height;
+
+    zoom_model = gtk_combo_box_get_model(GTK_COMBO_BOX(context->framebuffer.zoom));
+    if (gtk_combo_box_get_active_iter(GTK_COMBO_BOX(context->framebuffer.zoom),
+                                      &iter))
+    {
+        gtk_tree_model_get(zoom_model, &iter,
+                           COLUMN_FRAMEBUFFER_ZOOM_VALUE, &zoom, -1);
+        if (zoom < 0.0)
+        {
+            /* Fit */
+            gtk_widget_set_size_request(draw, 1, 1);
+            gtk_alignment_set(GTK_ALIGNMENT(alignment), 0.5f, 0.5f, 1.0f, 1.0f);
+            gtk_aspect_frame_set(GTK_ASPECT_FRAME(aspect),
+                                 0.5f, 0.5f, (gfloat) width / height, FALSE);
+        }
+        else
+        {
+            /* fixed */
+            width = (int) ceil(width * zoom);
+            height = (int) ceil(height * zoom);
+            gtk_widget_set_size_request(draw, width, height);
+            gtk_alignment_set(GTK_ALIGNMENT(alignment), 0.5f, 0.5f, 0.0f, 0.0f);
+            gtk_aspect_frame_set(GTK_ASPECT_FRAME(aspect),
+                                 0.5f, 0.5f, 1.0f, TRUE);
+        }
+    }
+}
+
+static gboolean response_callback_framebuffer(GldbWindow *context,
+                                              gldb_response *response,
+                                              gpointer user_data)
+{
+    gldb_response_data_framebuffer *r;
+    framebuffer_callback_data *data;
+    GLenum format;
+    uint32_t channels;
+    GLint width, height, width2, height2;
+    GtkTreeModel *model;
+    GtkTreeIter iter;
+    gboolean more, valid;
+
+    r = (gldb_response_data_framebuffer *) response;
+
+    context->framebuffer.active.width = 0;
+    context->framebuffer.active.height = 0;
+    if (context->framebuffer.active.pixels)
+    {
+        free(context->framebuffer.active.pixels);
+        context->framebuffer.active.pixels = NULL;
+    }
+    if (response->code != RESP_DATA || !r->length)
+    {
+        /* FIXME: tag the framebuffer as invalid and display error */
+    }
+    else
+    {
+        GdkGLContext *glcontext;
+        GdkGLDrawable *gldrawable;
+
+        data = (framebuffer_callback_data *) user_data;
+        channels = data->channels;
+        format = gldb_channel_get_display_token(channels);
+        width = r->width;
+        height = r->height;
+        for (width2 = 4; width2 < width; width2 *= 2) {}
+        for (height2 = 4; height2 < height; height2 *= 2) {}
+        glcontext = gtk_widget_get_gl_context(context->framebuffer.draw);
+        gldrawable = gtk_widget_get_gl_drawable(context->framebuffer.draw);
+
+        /* FIXME: check runtime support for all extensions */
+        if (gdk_gl_drawable_gl_begin(gldrawable, glcontext))
+        {
+            /* Allow NPOT framebuffers on POT textures by filling into one corner */
+            /* FIXME: create mip levels for zoom-out */
+            glTexImage2D(GL_TEXTURE_2D, 0, format, width2, height2, 0, format, GL_FLOAT, NULL);
+            glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, width, height, format, GL_FLOAT, r->data);
+            gdk_gl_drawable_gl_end(gldrawable);
+        }
+
+        /* Save our copy of the data */
+        context->framebuffer.texture_width = width2;
+        context->framebuffer.texture_height = height2;
+        context->framebuffer.active.width = width;
+        context->framebuffer.active.height = height;
+        context->framebuffer.active.channels = channels;
+        context->framebuffer.active.pixels = (GLfloat *) r->data;
+        r->data = NULL; /* stops gldb_free_response from freeing data */
+    }
+
+    model = gtk_combo_box_get_model(GTK_COMBO_BOX(context->framebuffer.zoom));
+    more = gtk_tree_model_get_iter_first(model, &iter);
+    while (more)
+    {
+        gdouble zoom;
+
+        gtk_tree_model_get(model, &iter, COLUMN_FRAMEBUFFER_ZOOM_VALUE, &zoom, -1);
+        if (zoom > 0.0)
+        {
+            valid = zoom * width < context->framebuffer.max_viewport_dims[0]
+                && zoom * height < context->framebuffer.max_viewport_dims[1]
+                && zoom * width >= 1.0
+                && zoom * height >= 1.0;
+            gtk_list_store_set(GTK_LIST_STORE(model), &iter,
+                               COLUMN_FRAMEBUFFER_ZOOM_SENSITIVE, valid, -1);
+        }
+        more = gtk_tree_model_iter_next(model, &iter);
+    }
+    valid = FALSE;
+    if (gtk_combo_box_get_active_iter(GTK_COMBO_BOX(context->framebuffer.zoom), &iter))
+        gtk_tree_model_get(model, &iter, COLUMN_FRAMEBUFFER_ZOOM_SENSITIVE, &valid, -1);
+    /* FIXME: pick nearest zoom level rather than "Fit" */
+    if (!valid)
+        gtk_combo_box_set_active(GTK_COMBO_BOX(context->framebuffer.zoom), 0);
+    else
+        /* Updates the sensitivity of the zoom buttons if necessary */
+        g_signal_emit_by_name(G_OBJECT(context->framebuffer.zoom), "changed", context);
+    resize_framebuffer_draw(context);
+
+    gtk_widget_queue_draw(context->framebuffer.draw);
+    gldb_free_response(response);
+    return TRUE;
 }
 
 static void update_framebuffer_ids(GldbWindow *context);
@@ -1540,7 +1779,7 @@ static void update_texture_ids(GldbWindow *context)
     GValue old[2];
     const gldb_state *root, *s, *t, *l, *f, *param;
     GtkTreeModel *model;
-    GtkTreeIter iter, old_iter;
+    GtkTreeIter iter;
     bugle_list_node *nt, *nl;
     gchar *name;
     guint levels;
@@ -2037,9 +2276,9 @@ static GtkWidget *build_texture_page_level(GldbWindow *context)
     return level;
 }
 
-static gboolean texture_zoom_row_separator(GtkTreeModel *model,
-                                           GtkTreeIter *iter,
-                                           gpointer data)
+static gboolean zoom_row_separator(GtkTreeModel *model,
+                                   GtkTreeIter *iter,
+                                   gpointer data)
 {
     gdouble value;
 
@@ -2108,7 +2347,7 @@ static GtkWidget *build_texture_page_zoom(GldbWindow *context)
                                    "sensitive", COLUMN_TEXTURE_ZOOM_SENSITIVE,
                                    NULL);
     gtk_combo_box_set_row_separator_func(GTK_COMBO_BOX(zoom),
-                                         texture_zoom_row_separator,
+                                         zoom_row_separator,
                                          NULL, NULL);
     gtk_combo_box_set_active(GTK_COMBO_BOX(zoom), 0);
     g_signal_connect(G_OBJECT(zoom), "changed",
@@ -2269,7 +2508,7 @@ static GtkWidget *build_texture_page_draw(GldbWindow *context)
 static void build_texture_page(GldbWindow *context)
 {
     GtkWidget *label, *draw, *toolbar;
-    GtkWidget *vbox, *hbox, *combos, *view, *scrolled;
+    GtkWidget *vbox, *hbox, *combos, *scrolled;
     gint page;
 
     combos = build_texture_page_combos(context);
@@ -2354,8 +2593,7 @@ static void update_framebuffer_ids(GldbWindow *context)
                                COLUMN_FRAMEBUFFER_ID_TEXT, name,
                                -1);
             free(name);
-            /* FIXME: provide access to aux buffers */
-
+            /* FIXME: provide access to aux buffers, color attachments */
         }
     }
     else
@@ -2451,22 +2689,177 @@ static void framebuffer_id_changed(GtkWidget *widget, gpointer user_data)
     }
 }
 
-static void framebuffer_buffer_changed(GtkWidget *widget, gpointer user_data)
+static void framebuffer_buffer_channel_changed(GtkWidget *widget, gpointer user_data)
 {
     GldbWindow *context;
+    framebuffer_callback_data *data;
+    GtkTreeModel *model;
+    GtkTreeIter iter;
+    guint id, target, buffer, channel;
 
     context = (GldbWindow *) user_data;
-    /* FIXME: query new data */
-    gtk_widget_queue_draw(context->framebuffer.draw);
+
+    model = gtk_combo_box_get_model(GTK_COMBO_BOX(context->framebuffer.id));
+    if (!gtk_combo_box_get_active_iter(GTK_COMBO_BOX(context->framebuffer.id), &iter))
+        return;
+    gtk_tree_model_get(model, &iter,
+                       COLUMN_FRAMEBUFFER_ID_ID, &id,
+                       COLUMN_FRAMEBUFFER_ID_TARGET, &target,
+                       -1);
+    model = gtk_combo_box_get_model(GTK_COMBO_BOX(context->framebuffer.buffer));
+    if (!gtk_combo_box_get_active_iter(GTK_COMBO_BOX(context->framebuffer.buffer), &iter))
+        return;
+    gtk_tree_model_get(model, &iter,
+                       COLUMN_FRAMEBUFFER_BUFFER_VALUE, &buffer,
+                       -1);
+    model = gtk_combo_box_get_model(GTK_COMBO_BOX(context->framebuffer.channel));
+    if (!gtk_combo_box_get_active_iter(GTK_COMBO_BOX(context->framebuffer.channel), &iter))
+        return;
+    gtk_tree_model_get(model, &iter,
+                       COLUMN_FRAMEBUFFER_CHANNEL_VALUE, &channel,
+                       -1);
+
+    data = (framebuffer_callback_data *) bugle_malloc(sizeof(framebuffer_callback_data));
+    data->channels = gldb_channel_get_query_channels(channel);
+    data->flags = 0;
+    set_response_handler(context, seq, response_callback_framebuffer, data);
+    gldb_send_data_framebuffer(seq++, id, target, buffer,
+                               gldb_channel_get_framebuffer_token(data->channels),
+                               GL_FLOAT);
 }
 
-static void framebuffer_channel_changed(GtkWidget *widget, gpointer user_data)
+static void framebuffer_zoom_changed(GtkWidget *zoom, gpointer user_data)
+{
+    GldbWindow *context;
+    GtkTreeModel *model;
+    GtkTreePath *path;
+    GtkTreeIter iter, next;
+    gboolean sensitive_in = FALSE;
+    gboolean sensitive_out = FALSE;
+    gboolean sensitive_100 = FALSE;
+    gboolean sensitive;
+    gboolean more;
+    gdouble value;
+
+    context = (GldbWindow *) user_data;
+
+    model = gtk_combo_box_get_model(GTK_COMBO_BOX(zoom));
+    if (gtk_combo_box_get_active_iter(GTK_COMBO_BOX(zoom), &iter))
+    {
+        next = iter;
+        if (gtk_tree_model_iter_next(model, &next))
+            gtk_tree_model_get(model, &next, COLUMN_FRAMEBUFFER_ZOOM_SENSITIVE, &sensitive_in, -1);
+        path = gtk_tree_model_get_path(model, &iter);
+        if (gtk_tree_path_prev(path))
+        {
+            gtk_tree_model_get_iter(model, &iter, path);
+            gtk_tree_model_get(model, &iter, COLUMN_FRAMEBUFFER_ZOOM_SENSITIVE, &sensitive_out, -1);
+        }
+        gtk_tree_path_free(path);
+    }
+
+    more = gtk_tree_model_get_iter_first(model, &iter);
+    while (more)
+    {
+        gtk_tree_model_get(model, &iter,
+                           COLUMN_FRAMEBUFFER_ZOOM_VALUE, &value,
+                           COLUMN_FRAMEBUFFER_ZOOM_SENSITIVE, &sensitive,
+                           -1);
+        if (value == 1.0)
+        {
+            sensitive_100 = sensitive;
+            break;
+        }
+        more = gtk_tree_model_iter_next(model, &iter);
+    }
+    gtk_widget_set_sensitive(GTK_WIDGET(context->framebuffer.zoom_in), sensitive_in);
+    gtk_widget_set_sensitive(GTK_WIDGET(context->framebuffer.zoom_out), sensitive_out);
+    gtk_widget_set_sensitive(GTK_WIDGET(context->framebuffer.zoom_100), sensitive_100);
+
+    resize_framebuffer_draw(context);
+}
+
+static void framebuffer_zoom_in_clicked(GtkToolButton *toolbutton,
+                                        gpointer user_data)
+{
+    GtkTreeModel *model;
+    GtkTreeIter iter;
+    GldbWindow *context;
+    gboolean sensitive;
+
+    context = (GldbWindow *) user_data;
+    model = gtk_combo_box_get_model(GTK_COMBO_BOX(context->framebuffer.zoom));
+    if (gtk_combo_box_get_active_iter(GTK_COMBO_BOX(context->framebuffer.zoom), &iter)
+        && gtk_tree_model_iter_next(model, &iter))
+    {
+        gtk_tree_model_get(model, &iter, COLUMN_FRAMEBUFFER_ZOOM_SENSITIVE, &sensitive, -1);
+        if (sensitive)
+            gtk_combo_box_set_active_iter(GTK_COMBO_BOX(context->framebuffer.zoom), &iter);
+    }
+}
+
+static void framebuffer_zoom_out_clicked(GtkToolButton *toolbutton,
+                                         gpointer user_data)
+{
+    GtkTreeModel *model;
+    GtkTreeIter iter;
+    GtkTreePath *path;
+    GldbWindow *context;
+    gboolean sensitive;
+
+    context = (GldbWindow *) user_data;
+    model = gtk_combo_box_get_model(GTK_COMBO_BOX(context->framebuffer.zoom));
+    if (gtk_combo_box_get_active_iter(GTK_COMBO_BOX(context->framebuffer.zoom), &iter))
+    {
+        /* There is no gtk_tree_model_iter_prev, so we have to go via tree paths. */
+        path = gtk_tree_model_get_path(model, &iter);
+        if (gtk_tree_path_prev(path))
+        {
+            gtk_tree_model_get_iter(model, &iter, path);
+            gtk_tree_model_get(model, &iter, COLUMN_FRAMEBUFFER_ZOOM_SENSITIVE, &sensitive, -1);
+            if (sensitive)
+                gtk_combo_box_set_active_iter(GTK_COMBO_BOX(context->framebuffer.zoom), &iter);
+        }
+        gtk_tree_path_free(path);
+    }
+}
+
+static void framebuffer_zoom_100_clicked(GtkToolButton *toolbutton,
+                                         gpointer user_data)
+{
+    GtkTreeModel *model;
+    GtkTreeIter iter;
+    GldbWindow *context;
+    gdouble zoom;
+    gboolean sensitive, more;
+
+    context = (GldbWindow *) user_data;
+    model = gtk_combo_box_get_model(GTK_COMBO_BOX(context->framebuffer.zoom));
+    more = gtk_tree_model_get_iter_first(model, &iter);
+    while (more)
+    {
+        gtk_tree_model_get(model, &iter,
+                           COLUMN_FRAMEBUFFER_ZOOM_VALUE, &zoom,
+                           COLUMN_FRAMEBUFFER_ZOOM_SENSITIVE, &sensitive,
+                           -1);
+        if (zoom == 1.0)
+        {
+            if (sensitive)
+                gtk_combo_box_set_active_iter(GTK_COMBO_BOX(context->framebuffer.zoom), &iter);
+            return;
+        }
+
+        more = gtk_tree_model_iter_next(model, &iter);
+    }
+}
+
+static void framebuffer_zoom_fit_clicked(GtkToolButton *toolbutton,
+                                         gpointer user_data)
 {
     GldbWindow *context;
 
     context = (GldbWindow *) user_data;
-    /* FIXME: query new data? */
-    gtk_widget_queue_draw(context->framebuffer.draw);
+    gtk_combo_box_set_active(GTK_COMBO_BOX(context->framebuffer.zoom), 0);
 }
 
 static GtkWidget *build_framebuffer_page_id(GldbWindow *context)
@@ -2508,25 +2901,14 @@ static GtkWidget *build_framebuffer_page_buffer(GldbWindow *context)
     GtkCellRenderer *cell;
 
     store = gtk_list_store_new(2, G_TYPE_UINT, G_TYPE_STRING);
-    gtk_list_store_append(store, &iter);
-    gtk_list_store_set(store, &iter,
-                       COLUMN_FRAMEBUFFER_BUFFER_VALUE, GL_FRONT,
-                       COLUMN_FRAMEBUFFER_BUFFER_TEXT, _("Front"),
-                       -1);
-    gtk_list_store_append(store, &iter);
-    gtk_list_store_set(store, &iter,
-                       COLUMN_FRAMEBUFFER_BUFFER_VALUE, GL_BACK,
-                       COLUMN_FRAMEBUFFER_BUFFER_TEXT, _("Back"),
-                       -1);
 
     context->framebuffer.buffer = buffer = gtk_combo_box_new_with_model(GTK_TREE_MODEL(store));
     cell = gtk_cell_renderer_text_new();
     gtk_cell_layout_pack_start(GTK_CELL_LAYOUT(buffer), cell, TRUE);
     gtk_cell_layout_set_attributes(GTK_CELL_LAYOUT(buffer), cell,
                                    "text", COLUMN_FRAMEBUFFER_BUFFER_TEXT, NULL);
-    gtk_combo_box_set_active(GTK_COMBO_BOX(buffer), 0);
     g_signal_connect(G_OBJECT(buffer), "changed",
-                     G_CALLBACK(framebuffer_buffer_changed), context);
+                     G_CALLBACK(framebuffer_buffer_channel_changed), context);
     g_object_unref(G_OBJECT(store));
     return buffer;
 }
@@ -2534,7 +2916,6 @@ static GtkWidget *build_framebuffer_page_buffer(GldbWindow *context)
 static GtkWidget *build_framebuffer_page_channel(GldbWindow *context)
 {
     GtkListStore *store;
-    GtkTreeIter iter;
     GtkWidget *channel;
     GtkCellRenderer *cell;
 
@@ -2546,17 +2927,87 @@ static GtkWidget *build_framebuffer_page_channel(GldbWindow *context)
     gtk_cell_layout_set_attributes(GTK_CELL_LAYOUT(channel), cell,
                                    "text", COLUMN_FRAMEBUFFER_CHANNEL_TEXT, NULL);
     g_signal_connect(G_OBJECT(channel), "changed",
-                     G_CALLBACK(framebuffer_channel_changed), context);
+                     G_CALLBACK(framebuffer_buffer_channel_changed), context);
     g_object_unref(G_OBJECT(store));
     return channel;
+}
+
+static GtkWidget *build_framebuffer_page_zoom(GldbWindow *context)
+{
+    GtkListStore *store;
+    GtkTreeIter iter;
+    GtkWidget *zoom;
+    GtkCellRenderer *cell;
+    int i;
+
+    store = gtk_list_store_new(3, G_TYPE_DOUBLE, G_TYPE_STRING, G_TYPE_BOOLEAN);
+    gtk_list_store_append(store, &iter);
+    gtk_list_store_set(store, &iter,
+                       COLUMN_FRAMEBUFFER_ZOOM_VALUE, -1.0,
+                       COLUMN_FRAMEBUFFER_ZOOM_TEXT, _("Fit"),
+                       COLUMN_FRAMEBUFFER_ZOOM_SENSITIVE, TRUE,
+                       -1);
+
+    /* Note: separator must be non-sensitive, because the zoom-out button
+     * examines its sensitivity to see if it can zoom out further.
+     */
+    gtk_list_store_append(store, &iter);
+    gtk_list_store_set(store, &iter,
+                       COLUMN_FRAMEBUFFER_ZOOM_VALUE, -2.0, /* -2.0 is magic separator value - see above function */
+                       COLUMN_FRAMEBUFFER_ZOOM_TEXT, "Separator",
+                       COLUMN_FRAMEBUFFER_ZOOM_SENSITIVE, FALSE,
+                       -1);
+
+    for (i = 5; i >= 0; i--)
+    {
+        gchar *caption;
+
+        bugle_asprintf(&caption, "1:%d", (1 << i));
+        gtk_list_store_append(store, &iter);
+        gtk_list_store_set(store, &iter,
+                           COLUMN_FRAMEBUFFER_ZOOM_VALUE, (gdouble) 1.0 / (1 << i),
+                           COLUMN_FRAMEBUFFER_ZOOM_TEXT, caption,
+                           COLUMN_FRAMEBUFFER_ZOOM_SENSITIVE, FALSE,
+                           -1);
+        free(caption);
+    }
+    for (i = 1; i <= 5; i++)
+    {
+        gchar *caption;
+
+        bugle_asprintf(&caption, "%d:1", (1 << i));
+        gtk_list_store_append(store, &iter);
+        gtk_list_store_set(store, &iter,
+                           COLUMN_FRAMEBUFFER_ZOOM_VALUE, (gdouble) (1 << i),
+                           COLUMN_FRAMEBUFFER_ZOOM_TEXT, caption,
+                           COLUMN_FRAMEBUFFER_ZOOM_SENSITIVE, FALSE,
+                           -1);
+        free(caption);
+    }
+
+    context->framebuffer.zoom = zoom = gtk_combo_box_new_with_model(GTK_TREE_MODEL(store));
+    cell = gtk_cell_renderer_text_new();
+    gtk_cell_layout_pack_start(GTK_CELL_LAYOUT(zoom), cell, TRUE);
+    gtk_cell_layout_set_attributes(GTK_CELL_LAYOUT(zoom), cell,
+                                   "text", COLUMN_TEXTURE_ZOOM_TEXT,
+                                   "sensitive", COLUMN_TEXTURE_ZOOM_SENSITIVE,
+                                   NULL);
+    gtk_combo_box_set_row_separator_func(GTK_COMBO_BOX(zoom),
+                                         zoom_row_separator,
+                                         NULL, NULL);
+    gtk_combo_box_set_active(GTK_COMBO_BOX(zoom), 0);
+    g_signal_connect(G_OBJECT(zoom), "changed",
+                     G_CALLBACK(framebuffer_zoom_changed), context);
+    g_object_unref(G_OBJECT(store));
+    return zoom;
 }
 
 static GtkWidget *build_framebuffer_page_combos(GldbWindow *context)
 {
     GtkWidget *combos;
-    GtkWidget *label, *id, *buffer, *channel;
+    GtkWidget *label, *id, *buffer, *channel, *zoom;
 
-    combos = gtk_table_new(3, 2, FALSE);
+    combos = gtk_table_new(4, 2, FALSE);
 
     label = gtk_label_new(_("Framebuffer"));
     id = build_framebuffer_page_id(context);
@@ -2573,7 +3024,53 @@ static GtkWidget *build_framebuffer_page_combos(GldbWindow *context)
     gtk_table_attach(GTK_TABLE(combos), label, 0, 1, 2, 3, 0, 0, 0, 0);
     gtk_table_attach(GTK_TABLE(combos), channel, 1, 2, 2, 3, GTK_EXPAND | GTK_FILL, 0, 0, 0);
 
+    label = gtk_label_new(_("Zoom"));
+    zoom = build_framebuffer_page_zoom(context);
+    gtk_table_attach(GTK_TABLE(combos), label, 0, 1, 3, 4, 0, 0, 0, 0);
+    gtk_table_attach(GTK_TABLE(combos), zoom, 1, 2, 3, 4, GTK_EXPAND | GTK_FILL, 0, 0, 0);
+
     return combos;
+}
+
+static GtkWidget *build_framebuffer_page_toolbar(GldbWindow *context)
+{
+    GtkWidget *toolbar;
+    GtkToolItem *item;
+
+    toolbar = gtk_toolbar_new();
+    gtk_toolbar_set_style(GTK_TOOLBAR(toolbar), GTK_TOOLBAR_ICONS);
+
+    /* FIXME!
+    item = gtk_tool_button_new_from_stock(GTK_STOCK_COPY);
+    g_signal_connect(G_OBJECT(item), "clicked",
+                     G_CALLBACK(framebuffer_copy_clicked), context);
+    gtk_toolbar_insert(GTK_TOOLBAR(toolbar), item, -1);
+
+    gtk_toolbar_insert(GTK_TOOLBAR(toolbar), gtk_separator_tool_item_new(), -1);
+    */
+    context->framebuffer.zoom_in = item = gtk_tool_button_new_from_stock(GTK_STOCK_ZOOM_IN);
+    g_signal_connect(G_OBJECT(item), "clicked",
+                     G_CALLBACK(framebuffer_zoom_in_clicked), context);
+    gtk_widget_set_sensitive(GTK_WIDGET(item), FALSE);
+    gtk_toolbar_insert(GTK_TOOLBAR(toolbar), item, -1);
+
+    context->framebuffer.zoom_out = item = gtk_tool_button_new_from_stock(GTK_STOCK_ZOOM_OUT);
+    g_signal_connect(G_OBJECT(item), "clicked",
+                     G_CALLBACK(framebuffer_zoom_out_clicked), context);
+    gtk_widget_set_sensitive(GTK_WIDGET(item), FALSE);
+    gtk_toolbar_insert(GTK_TOOLBAR(toolbar), item, -1);
+
+    context->framebuffer.zoom_100 = item = gtk_tool_button_new_from_stock(GTK_STOCK_ZOOM_100);
+    g_signal_connect(G_OBJECT(item), "clicked",
+                     G_CALLBACK(framebuffer_zoom_100_clicked), context);
+    gtk_toolbar_insert(GTK_TOOLBAR(toolbar), item, -1);
+
+    item = gtk_tool_button_new_from_stock(GTK_STOCK_ZOOM_FIT);
+    g_signal_connect(G_OBJECT(item), "clicked",
+                     G_CALLBACK(framebuffer_zoom_fit_clicked), context);
+    gtk_toolbar_insert(GTK_TOOLBAR(toolbar), item, -1);
+
+    return toolbar;
 }
 
 static GtkWidget *build_framebuffer_page_draw(GldbWindow *context)
@@ -2594,13 +3091,13 @@ static GtkWidget *build_framebuffer_page_draw(GldbWindow *context)
     draw = gtk_drawing_area_new();
     gtk_widget_set_size_request(draw, 1, 1);
     gtk_widget_set_gl_capability(draw, glconfig, NULL, TRUE, GDK_GL_RGBA_TYPE);
-    /*
     g_signal_connect_after(G_OBJECT(draw), "realize",
-                           G_CALLBACK(texture_draw_realize), context);
+                           G_CALLBACK(framebuffer_draw_realize), context);
     g_signal_connect(G_OBJECT(draw), "configure-event",
-                     G_CALLBACK(texture_draw_configure), context);
+                     G_CALLBACK(framebuffer_draw_configure), context);
     g_signal_connect(G_OBJECT(draw), "expose-event",
-                     G_CALLBACK(texture_draw_expose), context);
+                     G_CALLBACK(framebuffer_draw_expose), context);
+    /* FIXME!
     g_signal_connect(G_OBJECT(draw), "motion-notify-event",
                      G_CALLBACK(texture_draw_motion), context);
     g_signal_connect(G_OBJECT(draw), "enter-notify-event",
@@ -2621,10 +3118,11 @@ static GtkWidget *build_framebuffer_page_draw(GldbWindow *context)
 
 static void build_framebuffer_page(GldbWindow *context)
 {
-    GtkWidget *vbox, *hbox, *label, *draw, *combos, *scrolled;
+    GtkWidget *hbox, *vbox, *label, *draw, *combos, *scrolled, *toolbar;
     gint page;
 
     combos = build_framebuffer_page_combos(context);
+    toolbar = build_framebuffer_page_toolbar(context);
     draw = build_framebuffer_page_draw(context);
 
     scrolled = gtk_scrolled_window_new(NULL, NULL);
@@ -2641,9 +3139,13 @@ static void build_framebuffer_page(GldbWindow *context)
     gtk_box_pack_start(GTK_BOX(hbox), combos, FALSE, FALSE, 0);
     gtk_box_pack_start(GTK_BOX(hbox), scrolled, TRUE, TRUE, 0);
 
+    vbox = gtk_vbox_new(FALSE, 0);
+    gtk_box_pack_start(GTK_BOX(vbox), toolbar, FALSE, FALSE, 0);
+    gtk_box_pack_start(GTK_BOX(vbox), hbox, TRUE, TRUE, 0);
+
     label = gtk_label_new(_("Framebuffers"));
     page = gtk_notebook_append_page(GTK_NOTEBOOK(context->notebook),
-                                    hbox, label);
+                                    vbox, label);
 
     context->framebuffer.dirty = false;
     context->framebuffer.page = gtk_notebook_get_nth_page(GTK_NOTEBOOK(context->notebook), page);

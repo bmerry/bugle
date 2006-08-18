@@ -319,6 +319,23 @@ static gldb_response *gldb_get_response_data_texture(uint32_t code, uint32_t id,
     return (gldb_response *) r;
 }
 
+static gldb_response *gldb_get_response_data_framebuffer(uint32_t code, uint32_t id,
+                                                         uint32_t subtype,
+                                                         uint32_t length, char *data)
+{
+    gldb_response_data_framebuffer *r;
+
+    r = bugle_malloc(sizeof(gldb_response_data_texture));
+    r->code = code;
+    r->id = id;
+    r->subtype = subtype;
+    r->length = length;
+    r->data = data;
+    gldb_protocol_recv_code(lib_in, &r->width);
+    gldb_protocol_recv_code(lib_in, &r->height);
+    return (gldb_response *) r;
+}
+
 static gldb_response *gldb_get_response_data_shader(uint32_t code, uint32_t id,
                                                     uint32_t subtype,
                                                     uint32_t length, char *data)
@@ -346,6 +363,8 @@ static gldb_response *gldb_get_response_data(uint32_t code, uint32_t id)
     {
     case REQ_DATA_TEXTURE:
         return gldb_get_response_data_texture(code, id, subtype, length, data);
+    case REQ_DATA_FRAMEBUFFER:
+        return gldb_get_response_data_framebuffer(code, id, subtype, length, data);
     case REQ_DATA_SHADER:
         return gldb_get_response_data_shader(code, id, subtype, length, data);
     default:
@@ -402,6 +421,9 @@ void gldb_free_response(gldb_response *r)
         break;
     case RESP_STATE_NODE_BEGIN:
         state_destroy(((gldb_response_state_tree *) r)->root);
+        break;
+    case RESP_DATA:
+        free(((gldb_response_data *) r)->data);
         break;
     }
     free(r);
@@ -545,6 +567,20 @@ void gldb_send_data_texture(uint32_t id, GLuint tex_id, GLenum target,
     gldb_protocol_send_code(lib_out, target);
     gldb_protocol_send_code(lib_out, face);
     gldb_protocol_send_code(lib_out, level);
+    gldb_protocol_send_code(lib_out, format);
+    gldb_protocol_send_code(lib_out, type);
+}
+
+void gldb_send_data_framebuffer(uint32_t id, GLuint fbo_id, GLenum target,
+                                GLenum buffer, GLenum format, GLenum type)
+{
+    assert(status != GLDB_STATUS_DEAD);
+    gldb_protocol_send_code(lib_out, REQ_DATA);
+    gldb_protocol_send_code(lib_out, id);
+    gldb_protocol_send_code(lib_out, REQ_DATA_FRAMEBUFFER);
+    gldb_protocol_send_code(lib_out, fbo_id);
+    gldb_protocol_send_code(lib_out, target);
+    gldb_protocol_send_code(lib_out, buffer);
     gldb_protocol_send_code(lib_out, format);
     gldb_protocol_send_code(lib_out, type);
 }

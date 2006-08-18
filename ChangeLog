@@ -1,6 +1,7 @@
 * Framebuffer viewer (incomplete)
-* (Possibly) eliminate double fetch of texture
+* (Possibly) eliminate double fetch of texture in gldb
   FIXME: test with streaming texture before releasing
+* Fix numerous memory leaks in gldb
 
 0.0.20060813
 ------------

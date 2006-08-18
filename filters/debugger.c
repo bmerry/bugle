@@ -38,6 +38,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 #include <errno.h>
+#include <assert.h>
 #if HAVE_SYS_SELECT_H
 # include <sys/select.h>
 #endif
@@ -150,6 +151,81 @@ static void dump_any_call_string_io(FILE *out, void *data)
     budgie_dump_any_call(&((const function_call *) data)->generic, 0, out);
 }
 
+/* Utility functions and structures for image grabbers. When doing
+ * grabbing from the primary context, we need to save the current pixel
+ * client state so that it can be set to known values, then restored.
+ * This is done in a pixel_state struct.
+ */
+typedef struct
+{
+    GLboolean swap_bytes, lsb_first;
+    GLint row_length, skip_rows;
+    GLint skip_pixels, alignment;
+#ifdef GL_EXT_texture3D
+    GLint image_height, skip_images;
+#endif
+#ifdef GL_EXT_pixel_buffer_object
+    GLint pbo;
+#endif
+} pixel_state;
+
+/* Save all the old pack state to old and set default state with
+ * alignment of 1.
+ */
+static void pixel_pack_reset(pixel_state *old)
+{
+    CALL_glGetBooleanv(GL_PACK_SWAP_BYTES, &old->swap_bytes);
+    CALL_glGetBooleanv(GL_PACK_LSB_FIRST, &old->lsb_first);
+    CALL_glGetIntegerv(GL_PACK_ROW_LENGTH, &old->row_length);
+    CALL_glGetIntegerv(GL_PACK_SKIP_ROWS, &old->skip_rows);
+    CALL_glGetIntegerv(GL_PACK_SKIP_PIXELS, &old->skip_pixels);
+    CALL_glGetIntegerv(GL_PACK_ALIGNMENT, &old->alignment);
+    CALL_glPixelStorei(GL_PACK_SWAP_BYTES, GL_FALSE);
+    CALL_glPixelStorei(GL_PACK_LSB_FIRST, GL_FALSE);
+    CALL_glPixelStorei(GL_PACK_ROW_LENGTH, 0);
+    CALL_glPixelStorei(GL_PACK_SKIP_ROWS, 0);
+    CALL_glPixelStorei(GL_PACK_SKIP_PIXELS, 0);
+    CALL_glPixelStorei(GL_PACK_ALIGNMENT, 1);
+#ifdef GL_EXT_texture3D
+    if (bugle_gl_has_extension_group(BUGLE_GL_EXT_texture3D))
+    {
+        CALL_glGetIntegerv(GL_PACK_IMAGE_HEIGHT, &old->image_height);
+        CALL_glGetIntegerv(GL_PACK_SKIP_IMAGES, &old->skip_images);
+        CALL_glPixelStorei(GL_PACK_IMAGE_HEIGHT, 0);
+        CALL_glPixelStorei(GL_PACK_SKIP_IMAGES, 0);
+    }
+#endif
+#ifdef GL_EXT_pixel_buffer_object
+    if (bugle_gl_has_extension_group(BUGLE_GL_EXT_pixel_buffer_object))
+    {
+        CALL_glGetIntegerv(GL_PIXEL_PACK_BUFFER_BINDING_EXT, &old->pbo);
+        CALL_glBindBufferARB(GL_PIXEL_PACK_BUFFER_EXT, 0);
+    }
+#endif
+}
+
+/* Sets the pixel pack state specified in old */
+static void pixel_pack_restore(const pixel_state *old)
+{
+    CALL_glPixelStorei(GL_PACK_SWAP_BYTES, old->swap_bytes);
+    CALL_glPixelStorei(GL_PACK_LSB_FIRST, old->lsb_first);
+    CALL_glPixelStorei(GL_PACK_ROW_LENGTH, old->row_length);
+    CALL_glPixelStorei(GL_PACK_SKIP_ROWS, old->skip_rows);
+    CALL_glPixelStorei(GL_PACK_SKIP_PIXELS, old->skip_pixels);
+    CALL_glPixelStorei(GL_PACK_ALIGNMENT, old->alignment);
+#ifdef GL_EXT_texture3D
+    if (bugle_gl_has_extension_group(BUGLE_GL_EXT_texture3D))
+    {
+        CALL_glPixelStorei(GL_PACK_IMAGE_HEIGHT, old->image_height);
+        CALL_glPixelStorei(GL_PACK_SKIP_IMAGES, old->skip_images);
+    }
+#endif
+#ifdef GL_EXT_pixel_buffer_object
+    if (bugle_gl_has_extension_group(BUGLE_GL_EXT_pixel_buffer_object))
+        CALL_glBindBufferARB(GL_PIXEL_PACK_BUFFER_EXT, old->pbo);
+#endif
+}
+
 /* Wherever possible we use the aux context. However, default textures
  * are not shared between contexts, so we sometimes have to take our
  * chances with setting up the default readback state and restoring it
@@ -166,15 +242,7 @@ static bool send_data_texture(uint32_t id, GLuint texid, GLenum target,
     Display *dpy = NULL;
     GLXContext aux = NULL, real = NULL;
     GLXDrawable old_read = 0, old_write = 0;
-
-    GLboolean old_pack_swap_bytes, old_pack_lsb_first;
-    GLint old_pack_row_length, old_pack_skip_rows, old_pack_skip_pixels, old_pack_alignment;
-#ifdef GL_EXT_texture3D
-    GLint old_pack_image_height, old_pack_skip_images;
-#endif
-#ifdef GL_EXT_pixel_buffer_object
-    GLint old_buffer;
-#endif
+    pixel_state old_pack;
 
     if (!bugle_begin_internal_render())
     {
@@ -196,83 +264,25 @@ static bool send_data_texture(uint32_t id, GLuint texid, GLenum target,
 
         CALL_glPushAttrib(GL_ALL_ATTRIB_BITS);
         CALL_glPushClientAttrib(GL_CLIENT_PIXEL_STORE_BIT);
+        CALL_glPixelStorei(GL_PACK_ALIGNMENT, 1);
     }
     else
-    {
-        CALL_glGetBooleanv(GL_PACK_SWAP_BYTES, &old_pack_swap_bytes);
-        CALL_glGetBooleanv(GL_PACK_LSB_FIRST, &old_pack_lsb_first);
-        CALL_glGetIntegerv(GL_PACK_ROW_LENGTH, &old_pack_row_length);
-        CALL_glGetIntegerv(GL_PACK_SKIP_ROWS, &old_pack_skip_rows);
-        CALL_glGetIntegerv(GL_PACK_SKIP_PIXELS, &old_pack_skip_pixels);
-        CALL_glGetIntegerv(GL_PACK_ALIGNMENT, &old_pack_alignment);
-        CALL_glPixelStorei(GL_PACK_SWAP_BYTES, GL_FALSE);
-        CALL_glPixelStorei(GL_PACK_LSB_FIRST, GL_FALSE);
-        CALL_glPixelStorei(GL_PACK_ROW_LENGTH, 0);
-        CALL_glPixelStorei(GL_PACK_SKIP_ROWS, 0);
-        CALL_glPixelStorei(GL_PACK_SKIP_PIXELS, 0);
-#ifdef GL_EXT_texture3D
-        if (bugle_gl_has_extension(BUGLE_GL_EXT_texture3D))
-        {
-            CALL_glGetIntegerv(GL_PACK_IMAGE_HEIGHT, &old_pack_image_height);
-            CALL_glGetIntegerv(GL_PACK_SKIP_IMAGES, &old_pack_skip_images);
-            CALL_glPixelStorei(GL_PACK_IMAGE_HEIGHT, 0);
-            CALL_glPixelStorei(GL_PACK_SKIP_IMAGES, 0);
-        }
-#endif
-#ifdef GL_EXT_pixel_buffer_object
-        if (bugle_gl_has_extension(BUGLE_GL_EXT_pixel_buffer_object))
-        {
-            CALL_glGetIntegerv(GL_PIXEL_PACK_BUFFER_BINDING_EXT, &old_buffer);
-            CALL_glBindBufferARB(GL_PIXEL_PACK_BUFFER_EXT, 0);
-        }
-#endif
-    }
+        pixel_pack_reset(&old_pack);
 
     CALL_glBindTexture(target, texid);
-    CALL_glPixelStorei(GL_PACK_ALIGNMENT, 1);
 
     CALL_glGetTexLevelParameteriv(face, level, GL_TEXTURE_WIDTH, &width);
     if (face != GL_TEXTURE_1D)
         CALL_glGetTexLevelParameteriv(face, level, GL_TEXTURE_HEIGHT, &height);
 #ifdef GL_EXT_texture3D
-    if (face == GL_TEXTURE_3D && bugle_gl_has_extension(BUGLE_GL_EXT_texture3D))
+    if (face == GL_TEXTURE_3D_EXT && bugle_gl_has_extension_group(BUGLE_GL_EXT_texture3D))
         CALL_glGetTexLevelParameteriv(face, level, GL_TEXTURE_DEPTH_EXT, &depth);
 #endif
     length = bugle_gl_type_to_size(type) * bugle_gl_format_to_count(format, type)
         * width * height * depth;
     data = bugle_malloc(length);
 
-#if 0 /* Disabled by default because it breaks non-rendered textures */
-#ifdef GL_EXT_framebuffer_object
-    /* NVIDIA driver 76.76 has a bug where glGetTexImage does not reflect
-     * the results of render-to-texture. This is fixed in 81.74, hence the
-     * following limitations will likely never be addressed:
-     * - should also apply to default textures, in which case we
-     *   need to save various FBO state.
-     * - only handles 2D and RECTANGLE targets
-     */
-    if (strcmp(CALL_glGetString(GL_VERSION), "2.0.0 NVIDIA 76.76") == 0
-        && texid
-        && bugle_gl_has_extension(BUGLE_GL_EXT_framebuffer_object)
-        && (target == GL_TEXTURE_2D || target == GL_TEXTURE_RECTANGLE_NV))
-    {
-        GLuint fbo;
-
-        CALL_glBindTexture(target, 0);
-        CALL_glGenFramebuffersEXT(1, &fbo);
-        CALL_glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, fbo);
-        CALL_glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT,
-                                       target, texid, level);
-        CALL_glReadPixels(0, 0, width, height, format, type, data);
-        CALL_glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
-        CALL_glDeleteFramebuffersEXT(1, &fbo);
-    }
-    else
-#endif
-#endif
-    {
-        CALL_glGetTexImage(face, level, format, type, data);
-    }
+    CALL_glGetTexImage(face, level, format, type, data);
 
     if (aux && texid)
     {
@@ -284,25 +294,7 @@ static bool send_data_texture(uint32_t id, GLuint texid, GLenum target,
         CALL_glXMakeContextCurrent(dpy, old_write, old_read, real);
     }
     else
-    {
-        CALL_glPixelStorei(GL_PACK_SWAP_BYTES, old_pack_swap_bytes);
-        CALL_glPixelStorei(GL_PACK_LSB_FIRST, old_pack_lsb_first);
-        CALL_glPixelStorei(GL_PACK_ROW_LENGTH, old_pack_row_length);
-        CALL_glPixelStorei(GL_PACK_SKIP_ROWS, old_pack_skip_rows);
-        CALL_glPixelStorei(GL_PACK_SKIP_PIXELS, old_pack_skip_pixels);
-        CALL_glPixelStorei(GL_PACK_ALIGNMENT, old_pack_alignment);
-#ifdef GL_EXT_texture3D
-        if (bugle_gl_has_extension(BUGLE_GL_EXT_texture3D))
-        {
-            CALL_glPixelStorei(GL_PACK_IMAGE_HEIGHT, old_pack_image_height);
-            CALL_glPixelStorei(GL_PACK_SKIP_IMAGES, old_pack_skip_images);
-        }
-#endif
-#ifdef GL_EXT_pixel_buffer_object
-        if (bugle_gl_has_extension(BUGLE_GL_EXT_pixel_buffer_object))
-            CALL_glBindBufferARB(GL_PIXEL_PACK_BUFFER_EXT, old_buffer);
-#endif
-    }
+        pixel_pack_restore(&old_pack);
 
     gldb_protocol_send_code(out_pipe, RESP_DATA);
     gldb_protocol_send_code(out_pipe, id);
@@ -312,6 +304,162 @@ static bool send_data_texture(uint32_t id, GLuint texid, GLenum target,
     gldb_protocol_send_code(out_pipe, height);
     gldb_protocol_send_code(out_pipe, depth);
     bugle_end_internal_render("send_data_texture", true);
+    free(data);
+    return true;
+}
+
+/* This function is complicated by GL_EXT_framebuffer_object and
+ * GL_EXT_framebuffer_blit. The latter defines separate read and draw
+ * framebuffers, and also modifies the semantics of the former (even if
+ * the latter is never actually used!)
+ *
+ * The target is currently not used. It is expected to be either 0
+ * (for the window-system-defined framebuffer) or GL_FRAMEBUFFER_EXT
+ * (for application-defined framebuffers). In the future it may be used
+ * to allow other types of framebuffers e.g. pbuffers.
+ */
+static bool send_data_framebuffer(uint32_t id, GLuint fbo, GLenum target,
+                                  GLenum buffer, GLenum format, GLenum type)
+{
+    Display *dpy = NULL;
+    GLXContext aux = NULL, real = NULL;
+    GLXDrawable old_read = 0, old_write = 0;
+    pixel_state old_pack;
+    GLint old_fbo = 0, old_read_buffer;
+    GLint width, height;
+    size_t length;
+    char *data;
+    bool illegal;
+
+    if (!bugle_begin_internal_render())
+    {
+        gldb_protocol_send_code(out_pipe, RESP_ERROR);
+        gldb_protocol_send_code(out_pipe, id);
+        gldb_protocol_send_code(out_pipe, 0);
+        gldb_protocol_send_string(out_pipe, "inside glBegin/glEnd");
+        return false;
+    }
+
+
+#ifdef GL_EXT_framebuffer_object
+    illegal = !bugle_gl_has_extension(BUGLE_GL_EXT_framebuffer_object) && fbo;
+#else
+    illegal = fbo != 0;
+#endif
+    if (illegal)
+    {
+        gldb_protocol_send_code(out_pipe, RESP_ERROR);
+        gldb_protocol_send_code(out_pipe, id);
+        gldb_protocol_send_code(out_pipe, 0);
+        gldb_protocol_send_string(out_pipe, "GL_EXT_framebuffer_object is not available");
+        return false;
+    }
+
+    if (fbo && (aux = bugle_get_aux_context()) != NULL)
+    {
+        real = CALL_glXGetCurrentContext();
+        old_write = CALL_glXGetCurrentDrawable();
+        old_read = CALL_glXGetCurrentReadDrawable();
+        dpy = CALL_glXGetCurrentDisplay();
+        CALL_glXMakeContextCurrent(dpy, old_write, old_write, aux);
+
+        CALL_glPushAttrib(GL_ALL_ATTRIB_BITS);
+        CALL_glPushClientAttrib(GL_CLIENT_PIXEL_STORE_BIT);
+        CALL_glPixelStorei(GL_PACK_ALIGNMENT, 1);
+    }
+    else
+    {
+        pixel_pack_reset(&old_pack);
+#ifdef GL_EXT_framebuffer_blit
+        if (bugle_gl_has_extension(BUGLE_GL_EXT_framebuffer_blit))
+        {
+            CALL_glGetIntegerv(GL_READ_FRAMEBUFFER_BINDING_EXT, &old_fbo);
+            if ((GLint) fbo != old_fbo)
+                CALL_glBindFramebufferEXT(GL_READ_FRAMEBUFFER_EXT, fbo);
+        }
+        else
+#endif
+        {
+#ifdef GL_EXT_framebuffer_object
+            if (bugle_gl_has_extension(BUGLE_GL_EXT_framebuffer_object))
+            {
+                CALL_glGetIntegerv(GL_FRAMEBUFFER_BINDING_EXT, &old_fbo);
+                if ((GLint) fbo != old_fbo)
+                    CALL_glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, fbo);
+            }
+#endif
+        }
+    }
+
+    /* Note: GL_READ_BUFFER belongs to the FBO where an application-created
+     * FBO is in use. Thus, we must save the old value even if we are
+     * using the aux context. We're also messing with shared object state,
+     * so if anyone was insane enough to be using the FBO for readback in
+     * another thread at the same time, things might go pear-shaped. The
+     * workaround would be to query all the bindings of the FBO and clone
+     * a brand new FBO, but that seems like a lot of work and quite
+     * fragile to future changes in the way FBO's are handled.
+     */
+    glGetIntegerv(GL_READ_BUFFER, &old_read_buffer);
+    glReadBuffer(buffer);
+
+    /* FIXME! */
+    width = 64;
+    height = 64;
+    length = bugle_gl_type_to_size(type) * bugle_gl_format_to_count(format, type)
+        * width * height;
+    data = bugle_malloc(length);
+    CALL_glReadPixels(0, 0, width, height, format, type, data);
+
+    /* Restore the old state. glPushAttrib currently does NOT save FBO
+     * bindings, so we have to do that manually even for the aux context. */
+    glReadBuffer(old_read_buffer);
+    if (aux && fbo)
+    {
+        GLenum error;
+        while ((error = CALL_glGetError()) != GL_NO_ERROR)
+            fprintf(stderr, "Warning: GL error %#04x generated by send_data_framebuffer in aux context\n", error);
+#ifdef GL_EXT_framebuffer_blit
+        if (bugle_gl_has_extension(BUGLE_GL_EXT_framebuffer_blit))
+            CALL_glBindFramebufferEXT(GL_READ_FRAMEBUFFER_EXT, 0);
+        else
+#endif
+        {
+#ifdef GL_EXT_framebuffer_object
+            /* No runtime check needed, since fbo != 0 */
+            CALL_glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
+#endif
+        }
+        CALL_glPopClientAttrib();
+        CALL_glPopAttrib();
+        CALL_glXMakeContextCurrent(dpy, old_write, old_read, real);
+    }
+    else
+    {
+        if ((GLint) fbo != old_fbo)
+        {
+#ifdef GL_EXT_framebuffer_blit
+            if (bugle_gl_has_extension(BUGLE_GL_EXT_framebuffer_blit))
+                CALL_glBindFramebufferEXT(GL_READ_FRAMEBUFFER_EXT, old_fbo);
+            else
+#endif
+            {
+#ifdef GL_EXT_framebuffer_object
+                CALL_glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, old_fbo);
+#endif
+            }
+        }
+        pixel_pack_restore(&old_pack);
+    }
+
+    gldb_protocol_send_code(out_pipe, RESP_DATA);
+    gldb_protocol_send_code(out_pipe, id);
+    gldb_protocol_send_code(out_pipe, REQ_DATA_FRAMEBUFFER);
+    gldb_protocol_send_binary_string(out_pipe, length, data);
+    gldb_protocol_send_code(out_pipe, width);
+    gldb_protocol_send_code(out_pipe, height);
+    bugle_end_internal_render("send_data_framebuffer", true);
+    free(data);
     return true;
 }
 
@@ -531,6 +679,7 @@ static void process_single_command(function_call *call)
     case REQ_DATA:
         {
             uint32_t subtype, tex_id, shader_id, target, face, level, format, type;
+            uint32_t fbo_id, buffer;
 
             gldb_protocol_recv_code(in_pipe, &subtype);
             switch (subtype)
@@ -544,6 +693,14 @@ static void process_single_command(function_call *call)
                 gldb_protocol_recv_code(in_pipe, &type);
                 send_data_texture(id, tex_id, target, face, level,
                                   format, type);
+                break;
+            case REQ_DATA_FRAMEBUFFER:
+                gldb_protocol_recv_code(in_pipe, &fbo_id);
+                gldb_protocol_recv_code(in_pipe, &target);
+                gldb_protocol_recv_code(in_pipe, &buffer);
+                gldb_protocol_recv_code(in_pipe, &format);
+                gldb_protocol_recv_code(in_pipe, &type);
+                send_data_framebuffer(id, fbo_id, target, buffer, format, type);
                 break;
             case REQ_DATA_SHADER:
                 gldb_protocol_recv_code(in_pipe, &shader_id);

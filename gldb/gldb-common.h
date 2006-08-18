@@ -154,6 +154,17 @@ typedef struct
     uint32_t subtype;
     char *data;
     uint32_t length;
+    uint32_t width;
+    uint32_t height;
+} gldb_response_data_framebuffer;
+
+typedef struct
+{
+    uint32_t code;
+    uint32_t id;
+    uint32_t subtype;
+    char *data;
+    uint32_t length;
 } gldb_response_data_shader;
 
 typedef struct
@@ -195,6 +206,8 @@ void gldb_send_state_tree(uint32_t id);
 void gldb_send_data_texture(uint32_t id, GLuint tex_id, GLenum target,
                             GLenum face, GLint level, GLenum format,
                             GLenum type);
+void gldb_send_data_framebuffer(uint32_t id, GLuint fbo_id, GLenum target,
+                                GLenum buffer, GLenum format, GLenum type);
 void gldb_send_data_shader(uint32_t id, GLuint shader_id, GLenum target);
 void gldb_set_break_error(uint32_t id, bool brk);
 void gldb_set_break(uint32_t id, const char *function, bool brk);

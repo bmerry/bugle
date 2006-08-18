@@ -80,6 +80,11 @@ uint32_t gldb_channel_get_query_channels(uint32_t channels);
 GLenum gldb_channel_get_texture_token(uint32_t channels);
 GLenum gldb_channel_get_framebuffer_token(uint32_t channels);
 
+/* Determines what token to use to load channel data into a texture for
+ * display. Non-colour channels are mapped to colour channels.
+ */
+GLenum gldb_channel_get_display_token(uint32_t channels);
+
 /* Similar to the above, but returns the abbreviation, or NULL */
 const char *gldb_channel_get_abbr(uint32_t channels);
 
