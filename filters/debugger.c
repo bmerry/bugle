@@ -308,6 +308,37 @@ static bool send_data_texture(uint32_t id, GLuint texid, GLenum target,
     return true;
 }
 
+/* Unfortunately, FBO cannot have a size query, because while incomplete
+ * it could have different sizes for different buffers. Thus, we have to
+ * do the query on the underlying attachment. The return is false if there
+ * is no attachment.
+ */
+static bool get_framebuffer_size(GLuint fbo, GLenum target, GLenum attachment,
+                                 GLint *width, GLint *height)
+{
+    if (!fbo)
+    {
+        Display *dpy;
+        GLXDrawable draw;
+        unsigned int value;
+
+        dpy = CALL_glXGetCurrentDisplay();
+        draw = CALL_glXGetCurrentReadDrawable();
+        /* Window-system framebuffer */
+        CALL_glXQueryDrawable(dpy, draw, GLX_WIDTH, &value);
+        *width = value;
+        CALL_glXQueryDrawable(dpy, draw, GLX_HEIGHT, &value);
+        *height = value;
+    }
+    else
+    {
+        /* FIXME! */
+        *width = 64;
+        *height = 64;
+    }
+    return true;
+}
+
 /* This function is complicated by GL_EXT_framebuffer_object and
  * GL_EXT_framebuffer_blit. The latter defines separate read and draw
  * framebuffers, and also modifies the semantics of the former (even if
@@ -403,9 +434,7 @@ static bool send_data_framebuffer(uint32_t id, GLuint fbo, GLenum target,
     glGetIntegerv(GL_READ_BUFFER, &old_read_buffer);
     glReadBuffer(buffer);
 
-    /* FIXME! */
-    width = 64;
-    height = 64;
+    get_framebuffer_size(fbo, target, buffer, &width, &height);
     length = bugle_gl_type_to_size(type) * bugle_gl_format_to_count(format, type)
         * width * height;
     data = bugle_malloc(length);

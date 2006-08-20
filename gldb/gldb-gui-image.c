@@ -543,8 +543,8 @@ static void image_copy_clicked(GtkWidget *button, gpointer user_data)
             for (c = 0; c < nout; c++)
                 *p++ = FLOAT_TO_UBYTE(plane->pixels[((y * width) + x) * nin + (c % nin)]);
 
-    pixbuf = gdk_pixbuf_new_from_data(pixels, GDK_COLORSPACE_RGB, TRUE, 8,
-                                      width, height, width * 4,
+    pixbuf = gdk_pixbuf_new_from_data(pixels, GDK_COLORSPACE_RGB, nout == 4, 8,
+                                      width, height, width * nout,
                                       free_pixbuf_data, NULL);
     if (!pixbuf) return;
 

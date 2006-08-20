@@ -85,21 +85,14 @@ enum
 {
     COLUMN_FRAMEBUFFER_ID_ID,
     COLUMN_FRAMEBUFFER_ID_TARGET,
-    COLUMN_FRAMEBUFFER_ID_DOUBLEBUFFER,
-    COLUMN_FRAMEBUFFER_ID_CHANNELS,
     COLUMN_FRAMEBUFFER_ID_TEXT
 };
 
 enum
 {
-    COLUMN_FRAMEBUFFER_BUFFER_VALUE,
+    COLUMN_FRAMEBUFFER_BUFFER_ID,
+    COLUMN_FRAMEBUFFER_BUFFER_CHANNELS,
     COLUMN_FRAMEBUFFER_BUFFER_TEXT
-};
-
-enum
-{
-    COLUMN_FRAMEBUFFER_CHANNEL_VALUE,
-    COLUMN_FRAMEBUFFER_CHANNEL_TEXT
 };
 
 #endif
@@ -135,7 +128,7 @@ typedef struct
 {
     bool dirty;
     GtkWidget *page;
-    GtkWidget *id, *buffer, *channel;
+    GtkWidget *id, *buffer;
 
     GldbGuiImage active;
     GldbGuiImageViewer *viewer;
@@ -1688,7 +1681,7 @@ static void update_framebuffer_ids(GldbWindow *context)
 {
     GValue old[2];
     GtkTreeIter iter;
-    const gldb_state *root, *fbo, *sz;
+    const gldb_state *root, *framebuffer, *sz;
     GtkTreeModel *model;
     char *name;
     int c;
@@ -1700,63 +1693,35 @@ static void update_framebuffer_ids(GldbWindow *context)
     root = gldb_state_update();
 
 #ifdef GL_EXT_framebuffer_object
-    if ((fbo = state_find_child_enum(root, GL_FRAMEBUFFER_EXT)) != NULL)
+    if ((framebuffer = state_find_child_enum(root, GL_FRAMEBUFFER_EXT)) != NULL)
     {
-        bugle_list_node *nf;
-        const gldb_state *f;
+        bugle_list_node *pfbo;
+        const gldb_state *fbo;
 
-        for (nf = bugle_list_head(&fbo->children); nf != NULL; nf = bugle_list_next(nf))
+        for (pfbo = bugle_list_head(&framebuffer->children); pfbo != NULL; pfbo = bugle_list_next(pfbo))
         {
-            f = (const gldb_state *) bugle_list_data(nf);
-            guint channels = 0;
-            gboolean doublebuffer = FALSE;
-            for (c = 0; gldb_channel_table[c].channel; c++)
-                if (gldb_channel_table[c].framebuffer_size_token
-                    && (sz = state_find_child_enum(f, gldb_channel_table[c].framebuffer_size_token)) != NULL
-                    && strcmp(sz->value, "0") != 0)
-                    channels |= gldb_channel_table[c].channel;
+            fbo = (const gldb_state *) bugle_list_data(pfbo);
 
-            if ((sz = state_find_child_enum(f, GL_DOUBLEBUFFER)) != NULL
-                && strcmp(sz->value, "GL_FALSE") != 0)
-                doublebuffer = TRUE;
-
-            if (f->numeric_name == 0)
+            if (fbo->numeric_name == 0)
                 bugle_asprintf(&name, _("Default"));
             else
-                bugle_asprintf(&name, "%u", (unsigned int) f->numeric_name);
+                bugle_asprintf(&name, "%u", (unsigned int) fbo->numeric_name);
             gtk_list_store_append(GTK_LIST_STORE(model), &iter);
             gtk_list_store_set(GTK_LIST_STORE(model), &iter,
-                               COLUMN_FRAMEBUFFER_ID_ID, f->numeric_name,
+                               COLUMN_FRAMEBUFFER_ID_ID, fbo->numeric_name,
                                COLUMN_FRAMEBUFFER_ID_TARGET, GL_FRAMEBUFFER_EXT,
-                               COLUMN_FRAMEBUFFER_ID_DOUBLEBUFFER, doublebuffer,
-                               COLUMN_FRAMEBUFFER_ID_CHANNELS, channels,
                                COLUMN_FRAMEBUFFER_ID_TEXT, name,
                                -1);
             free(name);
-            /* FIXME: provide access to aux buffers, color attachments */
         }
     }
     else
 #endif
     {
-        guint channels = 0;
-        gboolean doublebuffer = FALSE;
-        for (c = 0; gldb_channel_table[c].channel; c++)
-            if (gldb_channel_table[c].framebuffer_size_token
-                && (sz = state_find_child_enum(root, gldb_channel_table[c].framebuffer_size_token)) != NULL
-                && strcmp(sz->value, "0") != 0)
-                channels |= gldb_channel_table[c].channel;
-
-        if ((sz = state_find_child_enum(root, GL_DOUBLEBUFFER)) != NULL
-            && strcmp(sz->value, "GL_FALSE") != 0)
-            doublebuffer = TRUE;
-
         gtk_list_store_append(GTK_LIST_STORE(model), &iter);
         gtk_list_store_set(GTK_LIST_STORE(model), &iter,
                            COLUMN_FRAMEBUFFER_ID_ID, 0,
                            COLUMN_FRAMEBUFFER_ID_TARGET, 0,
-                           COLUMN_FRAMEBUFFER_ID_DOUBLEBUFFER, doublebuffer,
-                           COLUMN_FRAMEBUFFER_ID_CHANNELS, channels,
                            COLUMN_FRAMEBUFFER_ID_TEXT, _("Default"),
                            -1);
     }
@@ -1770,66 +1735,179 @@ static void framebuffer_id_changed(GtkWidget *widget, gpointer user_data)
     GldbWindow *context;
     GtkTreeModel *model;
     GtkTreeIter iter;
-    gboolean doublebuffer;
-    guint channels;
-    GValue old_buffer, old_channel;
-    int c;
+    gboolean stereo = false, doublebuffer = false;
+    guint channels = 0, color_channels;
+    guint id;
+    GValue old_buffer;
+    const gldb_state *root, *framebuffer, *fbo, *parameter;
+    int i, attachments;
+    char *name;
 
     if (gldb_get_status() == GLDB_STATUS_STOPPED)
     {
         context = (GldbWindow *) user_data;
+        root = gldb_state_update();
 
         model = gtk_combo_box_get_model(GTK_COMBO_BOX(context->framebuffer.id));
         if (!gtk_combo_box_get_active_iter(GTK_COMBO_BOX(context->framebuffer.id), &iter))
             return;
         gtk_tree_model_get(model, &iter,
-                           COLUMN_FRAMEBUFFER_ID_DOUBLEBUFFER, &doublebuffer,
-                           COLUMN_FRAMEBUFFER_ID_CHANNELS, &channels,
+                           COLUMN_FRAMEBUFFER_ID_ID, &id,
                            -1);
 
         combo_box_get_old(GTK_COMBO_BOX(context->framebuffer.buffer), &old_buffer,
-                          COLUMN_FRAMEBUFFER_BUFFER_VALUE, -1);
-        combo_box_get_old(GTK_COMBO_BOX(context->framebuffer.channel), &old_channel,
-                          COLUMN_FRAMEBUFFER_CHANNEL_VALUE, -1);
-
+                          COLUMN_FRAMEBUFFER_BUFFER_ID, -1);
         model = gtk_combo_box_get_model(GTK_COMBO_BOX(context->framebuffer.buffer));
         gtk_list_store_clear(GTK_LIST_STORE(model));
-        gtk_list_store_append(GTK_LIST_STORE(model), &iter);
-        gtk_list_store_set(GTK_LIST_STORE(model), &iter,
-                           COLUMN_FRAMEBUFFER_BUFFER_VALUE, (guint) GL_FRONT,
-                           COLUMN_FRAMEBUFFER_BUFFER_TEXT, _("Front"),
-                           -1);
-        if (doublebuffer)
-        {
-            gtk_list_store_append(GTK_LIST_STORE(model), &iter);
-            gtk_list_store_set(GTK_LIST_STORE(model), &iter,
-                               COLUMN_FRAMEBUFFER_BUFFER_VALUE, (guint) GL_BACK,
-                               COLUMN_FRAMEBUFFER_BUFFER_TEXT, _("Back"),
-                               -1);
-        }
 
-        model = gtk_combo_box_get_model(GTK_COMBO_BOX(context->framebuffer.channel));
-        gtk_list_store_clear(GTK_LIST_STORE(model));
-        for (c = 0; gldb_channel_table[c].channel; c++)
-            if (gldb_channel_table[c].framebuffer_token
-                && gldb_channel_table[c].text
-                && !(gldb_channel_table[c].channel & ~channels))
+        if (id != 0)
+        {
+#ifdef GL_EXT_framebuffer_object
+            framebuffer = state_find_child_enum(root, GL_FRAMEBUFFER_EXT);
+            g_assert(framebuffer != NULL);
+            fbo = state_find_child_numeric(root, id);
+            g_assert(fbo != NULL);
+
+            for (i = 0; gldb_channel_table[i].channel; i++)
+                if (gldb_channel_table[i].framebuffer_size_token
+                    && (parameter = state_find_child_enum(fbo, gldb_channel_table[i].framebuffer_size_token)) != NULL
+                    && strcmp(parameter->value, "0") != 0)
+                {
+                    channels |= gldb_channel_table[i].channel;
+                }
+            color_channels = gldb_channel_get_query_channels(channels & ~GLDB_CHANNEL_DEPTH_STENCIL);
+
+            parameter = state_find_child_enum(fbo, GL_MAX_COLOR_ATTACHMENTS_EXT);
+            g_assert(parameter != NULL);
+            attachments = atoi(parameter->value);
+            /* FIXME: check the attachments to determine whether anything is
+             * attached.
+             */
+            for (i = 0; i < attachments; i++)
+            {
+                bugle_asprintf(&name, _("Color %d"), i);
+                gtk_list_store_append(GTK_LIST_STORE(model), &iter);
+                gtk_list_store_set(GTK_LIST_STORE(model), &iter,
+                                   COLUMN_FRAMEBUFFER_BUFFER_ID, (guint) (GL_COLOR_ATTACHMENT0_EXT + i),
+                                   COLUMN_FRAMEBUFFER_BUFFER_CHANNELS, color_channels,
+                                   COLUMN_FRAMEBUFFER_BUFFER_TEXT, name,
+                                   -1);
+                free(name);
+            }
+
+            if (channels & GLDB_CHANNEL_DEPTH)
             {
                 gtk_list_store_append(GTK_LIST_STORE(model), &iter);
                 gtk_list_store_set(GTK_LIST_STORE(model), &iter,
-                                   COLUMN_FRAMEBUFFER_CHANNEL_VALUE, (guint) gldb_channel_table[c].channel,
-                                   COLUMN_FRAMEBUFFER_CHANNEL_TEXT, gldb_channel_table[c].text,
+                                   COLUMN_FRAMEBUFFER_BUFFER_ID, (guint) GL_DEPTH_ATTACHMENT_EXT,
+                                   COLUMN_FRAMEBUFFER_BUFFER_CHANNELS, (guint) GLDB_CHANNEL_DEPTH,
+                                   COLUMN_FRAMEBUFFER_BUFFER_TEXT, _("Depth"),
                                    -1);
             }
+            if (channels & GLDB_CHANNEL_STENCIL)
+            {
+                gtk_list_store_append(GTK_LIST_STORE(model), &iter);
+                gtk_list_store_set(GTK_LIST_STORE(model), &iter,
+                                   COLUMN_FRAMEBUFFER_BUFFER_ID, (guint) GL_STENCIL_ATTACHMENT_EXT,
+                                   COLUMN_FRAMEBUFFER_BUFFER_CHANNELS, (guint) GLDB_CHANNEL_STENCIL,
+                                   COLUMN_FRAMEBUFFER_BUFFER_TEXT, _("Stencil"),
+                                   -1);
+            }
+#else
+            g_assert_not_reached();
+#endif
+        }
+        else
+        {
+            for (i = 0; gldb_channel_table[i].channel; i++)
+                if (gldb_channel_table[i].framebuffer_size_token
+                    && (parameter = state_find_child_enum(root, gldb_channel_table[i].framebuffer_size_token)) != NULL
+                    && strcmp(parameter->value, "0") != 0)
+                {
+                    channels |= gldb_channel_table[i].channel;
+                }
+            color_channels = gldb_channel_get_query_channels(channels & ~GLDB_CHANNEL_DEPTH_STENCIL);
 
+            if ((parameter = state_find_child_enum(root, GL_DOUBLEBUFFER)) != NULL
+                && strcmp(parameter->value, "GL_TRUE") == 0)
+                doublebuffer = true;
+            if ((parameter = state_find_child_enum(root, GL_STEREO)) != NULL
+                && strcmp(parameter->value, "GL_TRUE") == 0)
+                stereo = true;
+
+            gtk_list_store_append(GTK_LIST_STORE(model), &iter);
+            gtk_list_store_set(GTK_LIST_STORE(model), &iter,
+                               COLUMN_FRAMEBUFFER_BUFFER_ID, (guint) (stereo ? GL_FRONT_LEFT : GL_FRONT),
+                               COLUMN_FRAMEBUFFER_BUFFER_CHANNELS, color_channels,
+                               COLUMN_FRAMEBUFFER_BUFFER_TEXT, stereo ? _("Front Left") : _("Front"),
+                               -1);
+            if (stereo)
+            {
+                gtk_list_store_append(GTK_LIST_STORE(model), &iter);
+                gtk_list_store_set(GTK_LIST_STORE(model), &iter,
+                                   COLUMN_FRAMEBUFFER_BUFFER_ID, (guint) GL_FRONT_RIGHT,
+                                   COLUMN_FRAMEBUFFER_BUFFER_CHANNELS, color_channels,
+                                   COLUMN_FRAMEBUFFER_BUFFER_TEXT, _("Front Right"),
+                                   -1);
+            }
+            if (doublebuffer)
+            {
+                gtk_list_store_append(GTK_LIST_STORE(model), &iter);
+                gtk_list_store_set(GTK_LIST_STORE(model), &iter,
+                                   COLUMN_FRAMEBUFFER_BUFFER_ID, (guint) (stereo ? GL_BACK_LEFT : GL_BACK),
+                                   COLUMN_FRAMEBUFFER_BUFFER_CHANNELS, color_channels,
+                                   COLUMN_FRAMEBUFFER_BUFFER_TEXT, stereo ? _("Back Left") : _("Back"),
+                                   -1);
+                if (stereo)
+                {
+                    gtk_list_store_append(GTK_LIST_STORE(model), &iter);
+                    gtk_list_store_set(GTK_LIST_STORE(model), &iter,
+                                       COLUMN_FRAMEBUFFER_BUFFER_ID, (guint) GL_BACK_RIGHT,
+                                       COLUMN_FRAMEBUFFER_BUFFER_CHANNELS, color_channels,
+                                       COLUMN_FRAMEBUFFER_BUFFER_TEXT, _("Back Right"),
+                                       -1);
+                }
+            }
+            if ((parameter = state_find_child_enum(root, GL_AUX_BUFFERS)) != NULL)
+            {
+                attachments = atoi(parameter->value);
+                for (i = 0; i < attachments; i++)
+                {
+                    bugle_asprintf(&name, _("GL_AUX%d"), i);
+                    gtk_list_store_append(GTK_LIST_STORE(model), &iter);
+                    gtk_list_store_set(GTK_LIST_STORE(model), &iter,
+                                       COLUMN_FRAMEBUFFER_BUFFER_ID, (guint) (GL_AUX0 + i),
+                                       COLUMN_FRAMEBUFFER_BUFFER_CHANNELS, color_channels,
+                                       COLUMN_FRAMEBUFFER_BUFFER_TEXT, name,
+                                       -1);
+                    free(name);
+                }
+            }
+
+            /* For depth and stencil, the buffer does not matter, but we
+             * need to use a unique identifier for combo_box_restore_old to
+             * work as intended. We filter out these illegal values later.
+             */
+            channels &= GLDB_CHANNEL_DEPTH_STENCIL;
+            for (i = 0; gldb_channel_table[i].channel; i++)
+                if ((gldb_channel_table[i].channel & channels) != 0
+                    && gldb_channel_table[i].framebuffer_size_token /* avoid depth-stencil */
+                    && gldb_channel_table[i].text)
+                {
+                    gtk_list_store_append(GTK_LIST_STORE(model), &iter);
+                    gtk_list_store_set(GTK_LIST_STORE(model), &iter,
+                                       COLUMN_FRAMEBUFFER_BUFFER_ID, gldb_channel_table[i].channel,
+                                       COLUMN_FRAMEBUFFER_BUFFER_CHANNELS, gldb_channel_table[i].channel,
+                                       COLUMN_FRAMEBUFFER_BUFFER_TEXT, gldb_channel_table[i].text,
+                                       -1);
+                }
+        }
         combo_box_restore_old(GTK_COMBO_BOX(context->framebuffer.buffer), &old_buffer,
-                              COLUMN_FRAMEBUFFER_BUFFER_VALUE, -1);
-        combo_box_restore_old(GTK_COMBO_BOX(context->framebuffer.channel), &old_channel,
-                              COLUMN_FRAMEBUFFER_CHANNEL_VALUE, -1);
+                              COLUMN_FRAMEBUFFER_BUFFER_ID, -1);
     }
 }
 
-static void framebuffer_buffer_channel_changed(GtkWidget *widget, gpointer user_data)
+static void framebuffer_buffer_changed(GtkWidget *widget, gpointer user_data)
 {
     GldbWindow *context;
     framebuffer_callback_data *data;
@@ -1850,14 +1928,18 @@ static void framebuffer_buffer_channel_changed(GtkWidget *widget, gpointer user_
     if (!gtk_combo_box_get_active_iter(GTK_COMBO_BOX(context->framebuffer.buffer), &iter))
         return;
     gtk_tree_model_get(model, &iter,
-                       COLUMN_FRAMEBUFFER_BUFFER_VALUE, &buffer,
+                       COLUMN_FRAMEBUFFER_BUFFER_ID, &buffer,
+                       COLUMN_FRAMEBUFFER_BUFFER_CHANNELS, &channel,
                        -1);
-    model = gtk_combo_box_get_model(GTK_COMBO_BOX(context->framebuffer.channel));
-    if (!gtk_combo_box_get_active_iter(GTK_COMBO_BOX(context->framebuffer.channel), &iter))
-        return;
-    gtk_tree_model_get(model, &iter,
-                       COLUMN_FRAMEBUFFER_CHANNEL_VALUE, &channel,
-                       -1);
+
+    if (!id && (channel & GLDB_CHANNEL_DEPTH_STENCIL))
+    {
+        /* We used an illegal but unique value for id to assist
+         * combo_box_restore_old. Put in GL_FRONT, which is always legal.
+         * The debugger filter-set may eventually ignore the value.
+         */
+        buffer = GL_FRONT;
+    }
 
     data = (framebuffer_callback_data *) bugle_malloc(sizeof(framebuffer_callback_data));
     data->channels = gldb_channel_get_query_channels(channel);
@@ -1874,11 +1956,9 @@ static GtkWidget *build_framebuffer_page_id(GldbWindow *context)
     GtkWidget *id;
     GtkCellRenderer *cell;
 
-    store = gtk_list_store_new(5,
+    store = gtk_list_store_new(3,
                                G_TYPE_UINT,  /* ID */
                                G_TYPE_UINT,  /* target */
-                               G_TYPE_BOOLEAN, /* doublebuffer */
-                               G_TYPE_UINT,  /* channels */
                                G_TYPE_STRING);
 
     gtk_tree_sortable_set_sort_column_id(GTK_TREE_SORTABLE(store),
@@ -1906,7 +1986,10 @@ static GtkWidget *build_framebuffer_page_buffer(GldbWindow *context)
     GtkWidget *buffer;
     GtkCellRenderer *cell;
 
-    store = gtk_list_store_new(2, G_TYPE_UINT, G_TYPE_STRING);
+    store = gtk_list_store_new(3,
+                               G_TYPE_UINT,    /* id */
+                               G_TYPE_UINT,    /* channels */
+                               G_TYPE_STRING); /* text */
 
     context->framebuffer.buffer = buffer = gtk_combo_box_new_with_model(GTK_TREE_MODEL(store));
     cell = gtk_cell_renderer_text_new();
@@ -1914,34 +1997,15 @@ static GtkWidget *build_framebuffer_page_buffer(GldbWindow *context)
     gtk_cell_layout_set_attributes(GTK_CELL_LAYOUT(buffer), cell,
                                    "text", COLUMN_FRAMEBUFFER_BUFFER_TEXT, NULL);
     g_signal_connect(G_OBJECT(buffer), "changed",
-                     G_CALLBACK(framebuffer_buffer_channel_changed), context);
+                     G_CALLBACK(framebuffer_buffer_changed), context);
     g_object_unref(G_OBJECT(store));
     return buffer;
-}
-
-static GtkWidget *build_framebuffer_page_channel(GldbWindow *context)
-{
-    GtkListStore *store;
-    GtkWidget *channel;
-    GtkCellRenderer *cell;
-
-    store = gtk_list_store_new(2, G_TYPE_UINT, G_TYPE_STRING);
-
-    context->framebuffer.channel = channel = gtk_combo_box_new_with_model(GTK_TREE_MODEL(store));
-    cell = gtk_cell_renderer_text_new();
-    gtk_cell_layout_pack_start(GTK_CELL_LAYOUT(channel), cell, TRUE);
-    gtk_cell_layout_set_attributes(GTK_CELL_LAYOUT(channel), cell,
-                                   "text", COLUMN_FRAMEBUFFER_CHANNEL_TEXT, NULL);
-    g_signal_connect(G_OBJECT(channel), "changed",
-                     G_CALLBACK(framebuffer_buffer_channel_changed), context);
-    g_object_unref(G_OBJECT(store));
-    return channel;
 }
 
 static GtkWidget *build_framebuffer_page_combos(GldbWindow *context)
 {
     GtkWidget *combos;
-    GtkWidget *label, *id, *buffer, *channel, *zoom;
+    GtkWidget *label, *id, *buffer, *zoom;
 
     combos = gtk_table_new(4, 2, FALSE);
 
@@ -1954,11 +2018,6 @@ static GtkWidget *build_framebuffer_page_combos(GldbWindow *context)
     buffer = build_framebuffer_page_buffer(context);
     gtk_table_attach(GTK_TABLE(combos), label, 0, 1, 1, 2, 0, 0, 0, 0);
     gtk_table_attach(GTK_TABLE(combos), buffer, 1, 2, 1, 2, GTK_EXPAND | GTK_FILL, 0, 0, 0);
-
-    label = gtk_label_new(_("Channel"));
-    channel = build_framebuffer_page_channel(context);
-    gtk_table_attach(GTK_TABLE(combos), label, 0, 1, 2, 3, 0, 0, 0, 0);
-    gtk_table_attach(GTK_TABLE(combos), channel, 1, 2, 2, 3, GTK_EXPAND | GTK_FILL, 0, 0, 0);
 
     label = gtk_label_new(_("Zoom"));
     zoom = context->framebuffer.viewer->zoom;
