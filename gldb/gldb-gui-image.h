@@ -42,20 +42,72 @@
 #include "gldb/gldb-common.h"
 #include "gldb/gldb-channels.h"
 
+typedef enum
+{
+    GLDB_GUI_IMAGE_TYPE_2D,   /* also includes framebuffer */
+    GLDB_GUI_IMAGE_TYPE_3D,
+    GLDB_GUI_IMAGE_TYPE_CUBE
+} GldbGuiImageType;
+
+/* A simple 2D image. This is
+ * - a level of a 2D texture
+ * - a face of a level of a cube-map
+ * - a level of a 3D texture.
+ * - a framebuffer
+ */
 typedef struct
 {
     int width;
     int height;
     uint32_t channels;
     GLfloat *pixels;
+    bool owns_pixels;
+} GldbGuiImagePlane;
+
+/* A bag of 2D images that occur at the same level of a texture. This is
+ * - a level of a 2D texture (nplanes = 1)
+ * - a level of a cube-map (nplanes = 6)
+ * - a level of a 3D texture (nplanes = depth)
+ * - a framebuffer (nplanes = 1)
+ */
+typedef struct
+{
+    int nplanes;
+    GldbGuiImagePlane *planes;
+} GldbGuiImageLevel;
+
+/* A multiresolution set of levels. For textures, this contains one or
+ * more levels. For framebuffers, it currently contains exactly 1, which
+ * may one day be extended to cater for multisample framebuffers (I don't
+ * even know if it is possible to directly read such a buffer).
+ *
+ * A GldbGuiImage always corresponds to a single texture, whose type is
+ * matched to that of the image. The texture is put in the default
+ * texture object.
+ */
+typedef struct
+{
+    GldbGuiImageType type;
+
+    int nlevels;
+    GldbGuiImageLevel *levels;
+
+    /* Top-right corner of the usable image data. This is needed when
+     * displaying NPOT textures or framebuffers on POT-only hardware,
+     * where the texture size is rounded up.
+     */
+    GLfloat s, t;
+    GLenum texture_target;
 } GldbGuiImage;
 
 typedef struct
 {
     GldbGuiImage *current;
-    int texture_width;
-    int texture_height;
+    int current_level;  /* -1 means "all levels" */
+    int current_plane;  /* -1 means all faces for a cubemap */
+
     GLint max_viewport_dims[2];
+    GLenum texture_mag_filter, texture_min_filter;
 
     GtkWidget *draw, *alignment;
     GtkWidget *zoom;
@@ -63,11 +115,56 @@ typedef struct
 
     GtkStatusbar *statusbar;
     guint statusbar_context_id;
-    gint pixel_status_id;
+    guint pixel_status_id;
+
+    /* These are optional widgets that are allocated by the respective
+     * function.
+     */
+    GtkWidget *level;
+    GtkWidget *mag_filter, *min_filter;
+    GtkCellRenderer *min_filter_renderer;
 } GldbGuiImageViewer;
 
 GldbGuiImageViewer *gldb_gui_image_viewer_new(GtkStatusbar *statusbar,
                                               guint statusbar_context_id);
+
+/* Creates an add-on level widget to control the level */
+GtkWidget *gldb_gui_image_viewer_level_new(GldbGuiImageViewer *viewer);
+
+/* Creates add-on widgets to control the filtering */
+GtkWidget *gldb_gui_image_viewer_filter_new(GldbGuiImageViewer *viewer, bool mag);
+
+/* Clears the memory allocated to the structure, but not the structure itself */
+void gldb_gui_image_plane_clear(GldbGuiImagePlane *plane);
+void gldb_gui_image_level_clear(GldbGuiImageLevel *level);
+void gldb_gui_image_clear(GldbGuiImage *image);
+
+/* Updates the sensitivity of the zoom combo items and zoom button, and
+ * switches to a legal zoom level if the previous level is now illegal.
+ */
+void gldb_gui_image_viewer_update_zoom(GldbGuiImageViewer *viewer);
+
+/* Rebuilds the levels widget with the appropriate levels for the
+ * current texture. A levels widget must be present.
+ */
+void gldb_gui_image_viewer_update_levels(GldbGuiImageViewer *viewer);
+
+/* Sets the sensitivity of the mipmapping min-filters. */
+void gldb_gui_image_viewer_update_min_filter(GldbGuiImageViewer *viewer,
+                                             bool sensitive);
+
+
+/* Creates all the memory for nlevels levels, each with nplanes planes.
+ * The image should be uninitialised i.e., no existing memory will be freed.
+ */
+void gldb_gui_image_allocate(GldbGuiImage *image, GldbGuiImageType type,
+                             int nlevels, int nplanes);
+
+/* General initialisation function; call before all others */
+void gldb_gui_image_initialise(void);
+
+/* Corresponding shutdown function */
+void gldb_gui_image_shutdown(void);
 
 #endif /* HAVE_GTKGLEXT */
 #endif /* !BUGLE_GLDB_GLDB_GUI_IMAGE_H */

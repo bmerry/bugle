@@ -50,6 +50,21 @@ enum
     COLUMN_IMAGE_ZOOM_SENSITIVE
 };
 
+enum
+{
+    COLUMN_IMAGE_LEVEL_VALUE,
+    COLUMN_IMAGE_LEVEL_TEXT
+};
+
+enum
+{
+    COLUMN_IMAGE_FILTER_VALUE,
+    COLUMN_IMAGE_FILTER_TEXT,
+    COLUMN_IMAGE_FILTER_NON_MIP
+};
+
+static GtkTreeModel *mag_filter_model, *min_filter_model;
+
 static void image_draw_realize(GtkWidget *widget, gpointer user_data)
 {
     GdkGLContext *glcontext;
@@ -64,13 +79,33 @@ static void image_draw_realize(GtkWidget *widget, gpointer user_data)
     glViewport(0, 0, widget->allocation.width, widget->allocation.height);
     glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
     glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
-    /* FIXME: check for existence of clamp_to_edge first */
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-    /* FIXME: convert to mipmapping when supported by framebuffers */
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glEnable(GL_TEXTURE_2D);
+    /* NVIDIA do not expose GL_SGIS_texture_edge_clamp (instead they
+     * expose the unregistered GL_EXT_texture_edge_clamp), so we use
+     * the OpenGL version as the test instead.
+     */
+#ifdef GL_VERSION_1_2
+    if (strcmp(glGetString(GL_VERSION), "1.2") >= 0)
+    {
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+    }
+    else
+#endif
+    {
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
+#ifdef GL_EXT_texture3D
+        if (gdk_gl_query_gl_extension("GL_EXT_texture3D"))
+        {
+            glTexParameteri(GL_TEXTURE_3D_EXT, GL_TEXTURE_WRAP_S, GL_CLAMP);
+            glTexParameteri(GL_TEXTURE_3D_EXT, GL_TEXTURE_WRAP_T, GL_CLAMP);
+            glTexParameteri(GL_TEXTURE_3D_EXT, GL_TEXTURE_WRAP_R_EXT, GL_CLAMP);
+        }
+#endif
+    }
     glGetIntegerv(GL_MAX_VIEWPORT_DIMS, viewer->max_viewport_dims);
 
     gdk_gl_drawable_gl_end(gldrawable);
@@ -115,10 +150,29 @@ static gboolean image_draw_expose(GtkWidget *widget,
     glClear(GL_COLOR_BUFFER_BIT);
 
     viewer = (GldbGuiImageViewer *) user_data;
-    if (viewer->current && viewer->current->pixels)
+    if (viewer->current)
     {
-        s = (GLfloat) viewer->current->width / viewer->texture_width;
-        t = (GLfloat) viewer->current->height / viewer->texture_height;
+        glEnable(viewer->current->texture_target);
+#ifdef GL_VERSION_1_2
+        if (strcmp(glGetString(GL_VERSION), "1.2") >= 0)
+        {
+            if (viewer->current_level >= 0)
+            {
+                glTexParameteri(viewer->current->texture_target, GL_TEXTURE_BASE_LEVEL, viewer->current_level);
+                glTexParameteri(viewer->current->texture_target, GL_TEXTURE_MAX_LEVEL, viewer->current_level);
+            }
+            else
+            {
+                glTexParameteri(viewer->current->texture_target, GL_TEXTURE_BASE_LEVEL, 0);
+                glTexParameteri(viewer->current->texture_target, GL_TEXTURE_MAX_LEVEL, 1000);
+            }
+        }
+#endif
+        glTexParameteri(viewer->current->texture_target, GL_TEXTURE_MAG_FILTER, viewer->texture_mag_filter);
+        glTexParameteri(viewer->current->texture_target, GL_TEXTURE_MIN_FILTER, viewer->texture_min_filter);
+
+        s = viewer->current->s;
+        t = viewer->current->t;
 
         glBegin(GL_QUADS);
         glTexCoord2f(0.0f, 0.0f);
@@ -129,6 +183,9 @@ static gboolean image_draw_expose(GtkWidget *widget,
         glVertex2f(1.0f, 1.0f);
         glTexCoord2f(0.0f, t);
         glVertex2f(-1.0f, 1.0f);
+        glEnd();
+
+        glDisable(viewer->current->texture_target);
     }
     gdk_gl_drawable_swap_buffers(gldrawable);
     gdk_gl_drawable_gl_end(gldrawable);
@@ -137,12 +194,12 @@ static gboolean image_draw_expose(GtkWidget *widget,
 
 static void image_draw_motion_clear_status(GldbGuiImageViewer *viewer)
 {
-    if (viewer->pixel_status_id != -1)
+    if (viewer->pixel_status_id != 0)
     {
         gtk_statusbar_remove(viewer->statusbar,
                              viewer->statusbar_context_id,
                              viewer->pixel_status_id);
-        viewer->pixel_status_id = -1;
+        viewer->pixel_status_id = 0;
     }
 }
 
@@ -151,28 +208,34 @@ static void image_draw_motion_update(GldbGuiImageViewer *viewer,
                                      gdouble x, gdouble y)
 {
     int width, height;
+    int level;
     int u, v;
     GLfloat *pixel;
     char *msg, *tmp_msg;
     int nchannels, p;
     uint32_t channels, channel;
+    const GldbGuiImagePlane *plane;
 
     image_draw_motion_clear_status(viewer);
     /* FIXME: handle cube and 3D textures */
-    if (!viewer->current || !viewer->current->pixels)
+    if (!viewer->current)
+        return;
+    if (viewer->current_plane < 0)
         return;
 
-    width = viewer->current->width;
-    height = viewer->current->height;
+    level = MAX(viewer->current_level, 0);
+    plane = &viewer->current->levels[level].planes[viewer->current_plane];
+    width = plane->width;
+    height = plane->height;
     x = (x + 0.5) / draw->allocation.width * width;
     y = (1.0 - (y + 0.5) / draw->allocation.height) * height;
     u = CLAMP((int) x, 0, width - 1);
     v = CLAMP((int) y, 0, height - 1);
-    nchannels = gldb_channel_count(viewer->current->channels);
-    pixel = viewer->current->pixels + nchannels * (v * width + u);
+    nchannels = gldb_channel_count(plane->channels);
+    pixel = plane->pixels + nchannels * (v * width + u);
     bugle_asprintf(&msg, "u: %d v: %d ", u, v);
 
-    channels = viewer->current->channels;
+    channels = plane->channels;
     for (p = 0; channels; channels &= ~channel, p++)
     {
         channel = channels & ~(channels - 1);
@@ -212,12 +275,12 @@ static gboolean image_draw_leave(GtkWidget *widget,
     GldbGuiImageViewer *viewer;
 
     viewer = (GldbGuiImageViewer *) user_data;
-    if (viewer->pixel_status_id != -1)
+    if (viewer->pixel_status_id != 0)
     {
         gtk_statusbar_remove(viewer->statusbar,
                              viewer->statusbar_context_id,
                              viewer->pixel_status_id);
-        viewer->pixel_status_id = -1;
+        viewer->pixel_status_id = 0;
     }
     return FALSE;
 }
@@ -279,15 +342,20 @@ static void resize_image_draw(GldbGuiImageViewer *viewer)
     GtkTreeIter iter;
     gdouble zoom;
     int width, height;
+    int level;
+    const GldbGuiImagePlane *plane;
 
-    if (!viewer->current || !viewer->current->pixels)
+    if (!viewer->current)
         return;
 
     draw = viewer->draw;
     aspect = gtk_widget_get_parent(draw);
     alignment = viewer->alignment;
-    width = viewer->current->width;
-    height = viewer->current->height;
+
+    level = MAX(viewer->current_level, 0);
+    plane = &viewer->current->levels[level].planes[MAX(viewer->current_plane, 0)];
+    width = MAX(plane->width, 1);
+    height = MAX(plane->height, 1);
 
     zoom_model = gtk_combo_box_get_model(GTK_COMBO_BOX(viewer->zoom));
     if (gtk_combo_box_get_active_iter(GTK_COMBO_BOX(viewer->zoom),
@@ -451,24 +519,29 @@ static void image_copy_clicked(GtkWidget *button, gpointer user_data)
     GtkClipboard *clipboard;
     GldbGuiImageViewer *viewer;
     int y, x, c;
+    int level;
+    GldbGuiImagePlane *plane;
 
-    /* FIXME: support cube map and 3D */
+    /* FIXME: support cube map and 3D, or disable button when appropriate */
 
     viewer = (GldbGuiImageViewer *) user_data;
-    if (!viewer->current || !viewer->current->pixels)
+    if (!viewer->current)
+        return;
+    if (viewer->current_plane < 0)
         return;
 
-    width = viewer->current->width;
-    height = viewer->current->height;
-    nin = gldb_channel_count(viewer->current->channels);
+    level = MAX(viewer->current_level, 0);
+    plane = &viewer->current->levels[level].planes[MAX(viewer->current_plane, 0)];
+    width = plane->width;
+    height = plane->height;
+    nin = gldb_channel_count(plane->channels);
     nout = CLAMP(nin, 3, 4);
     pixels = bugle_malloc(width * height * nout * sizeof(guint8));
     p = pixels;
-    /* FIXME: disable button when appropriate */
     for (y = height - 1; y >= 0; y--)
         for (x = 0; x < width; x++)
             for (c = 0; c < nout; c++)
-                *p++ = FLOAT_TO_UBYTE(viewer->current->pixels[((y * width) + x) * nin + (c % nin)]);
+                *p++ = FLOAT_TO_UBYTE(plane->pixels[((y * width) + x) * nin + (c % nin)]);
 
     pixbuf = gdk_pixbuf_new_from_data(pixels, GDK_COLORSPACE_RGB, TRUE, 8,
                                       width, height, width * 4,
@@ -590,6 +663,122 @@ static void gldb_gui_image_viewer_new_toolbuttons(GldbGuiImageViewer *viewer)
                      G_CALLBACK(image_zoom_fit_clicked), viewer);
 }
 
+static void image_level_changed(GtkWidget *widget, gpointer user_data)
+{
+    GldbGuiImageViewer *viewer;
+    GtkTreeModel *model;
+    GtkTreeIter iter;
+    gint level;
+
+    viewer = (GldbGuiImageViewer *) user_data;
+    if (!viewer->current)
+        return;
+    if (!gtk_combo_box_get_active_iter(GTK_COMBO_BOX(widget), &iter))
+        return;
+
+    model = gtk_combo_box_get_model(GTK_COMBO_BOX(widget));
+    gtk_tree_model_get(model, &iter,
+                       COLUMN_IMAGE_LEVEL_VALUE, &level,
+                       -1);
+    viewer->current_level = level;
+    gldb_gui_image_viewer_update_zoom(viewer);
+    gtk_widget_queue_draw(viewer->draw);
+}
+
+static gboolean level_row_separator(GtkTreeModel *model,
+                                    GtkTreeIter *iter,
+                                    gpointer user_data)
+{
+    gint value;
+
+    gtk_tree_model_get(model, iter, COLUMN_IMAGE_LEVEL_VALUE, &value, -1);
+    return value == -2;
+}
+
+GtkWidget *gldb_gui_image_viewer_level_new(GldbGuiImageViewer *viewer)
+{
+    GtkListStore *store;
+    GtkTreeIter iter;
+    GtkWidget *level;
+    GtkCellRenderer *cell;
+
+    g_assert(viewer->level == NULL);
+
+    store = gtk_list_store_new(2, G_TYPE_INT, G_TYPE_STRING);
+    gtk_list_store_append(store, &iter);
+    gtk_list_store_set(store, &iter,
+                       COLUMN_IMAGE_LEVEL_VALUE, -1,
+                       COLUMN_IMAGE_LEVEL_TEXT, _("Auto"),
+                       -1);
+    gtk_list_store_append(store, &iter);
+    gtk_list_store_set(store, &iter,
+                       COLUMN_IMAGE_LEVEL_VALUE, -2, /* -2 is magic separator value */
+                       COLUMN_IMAGE_LEVEL_TEXT, "Separator",
+                       -1);
+
+    level = gtk_combo_box_new_with_model(GTK_TREE_MODEL(store));
+    cell = gtk_cell_renderer_text_new();
+    gtk_cell_layout_pack_start(GTK_CELL_LAYOUT(level), cell, TRUE);
+    gtk_cell_layout_set_attributes(GTK_CELL_LAYOUT(level), cell,
+                                   "text", COLUMN_IMAGE_LEVEL_TEXT, NULL);
+    gtk_combo_box_set_row_separator_func(GTK_COMBO_BOX(level),
+                                         level_row_separator,
+                                         NULL, NULL);
+    gtk_combo_box_set_active(GTK_COMBO_BOX(level), 0);
+    g_signal_connect(G_OBJECT(level), "changed",
+                     G_CALLBACK(image_level_changed), viewer);
+    g_object_unref(G_OBJECT(store));
+    return viewer->level = level;
+}
+
+static void image_filter_changed(GtkWidget *widget, gpointer user_data)
+{
+    GldbGuiImageViewer *viewer;
+    GtkTreeModel *model;
+    GtkTreeIter iter;
+    guint value;
+
+    viewer = (GldbGuiImageViewer *) user_data;
+    model = gtk_combo_box_get_model(GTK_COMBO_BOX(widget));
+    if (!gtk_combo_box_get_active_iter(GTK_COMBO_BOX(widget), &iter))
+        return;
+    gtk_tree_model_get(model, &iter,
+                       COLUMN_IMAGE_FILTER_VALUE, &value,
+                       -1);
+    if (widget == viewer->mag_filter)
+        viewer->texture_mag_filter = value;
+    else
+        viewer->texture_min_filter = value;
+    gtk_widget_queue_draw(viewer->draw);
+}
+
+GtkWidget *gldb_gui_image_viewer_filter_new(GldbGuiImageViewer *viewer, bool mag)
+{
+    GtkCellRenderer *cell;
+    GtkWidget *filter;
+
+    filter = gtk_combo_box_new_with_model(mag ? mag_filter_model : min_filter_model);
+    cell = gtk_cell_renderer_text_new();
+    gtk_cell_layout_pack_start(GTK_CELL_LAYOUT(filter), cell, TRUE);
+    gtk_cell_layout_set_attributes(GTK_CELL_LAYOUT(filter), cell,
+                                   "text", COLUMN_IMAGE_FILTER_TEXT, NULL);
+    gtk_combo_box_set_active(GTK_COMBO_BOX(filter), 0);
+    if (mag)
+    {
+        g_assert(viewer->mag_filter == NULL);
+        viewer->mag_filter = filter;
+    }
+    else
+    {
+        g_assert(viewer->min_filter == NULL);
+        viewer->min_filter = filter;
+        viewer->min_filter_renderer = cell;
+    }
+    g_signal_connect(G_OBJECT(filter), "changed",
+                     G_CALLBACK(image_filter_changed), viewer);
+    return filter;
+}
+
 GldbGuiImageViewer *gldb_gui_image_viewer_new(GtkStatusbar *statusbar,
                                               guint statusbar_context_id)
 {
@@ -597,15 +786,261 @@ GldbGuiImageViewer *gldb_gui_image_viewer_new(GtkStatusbar *statusbar,
     GtkWidget *zoom, *zoom_in, *zoom_out, *zoom_100;
     GtkWidget *copy;
 
-    viewer = (GldbGuiImageViewer *) bugle_malloc(sizeof(GldbGuiImageViewer));
-    viewer->current = NULL;
+    viewer = (GldbGuiImageViewer *) bugle_calloc(1, sizeof(GldbGuiImageViewer));
     viewer->statusbar = statusbar;
     viewer->statusbar_context_id = statusbar_context_id;
+    viewer->current_level = -1;
+    viewer->current_plane = 0;
+    viewer->texture_mag_filter = GL_NEAREST;
+    viewer->texture_min_filter = GL_NEAREST;
     gldb_gui_image_viewer_new_draw(viewer);
     gldb_gui_image_viewer_new_zoom_combo(viewer);
     gldb_gui_image_viewer_new_toolbuttons(viewer);
 
     return viewer;
+}
+
+void gldb_gui_image_viewer_update_levels(GldbGuiImageViewer *viewer)
+{
+    GtkTreeModel *model;
+    GtkTreeIter iter;
+    gint old;
+    gint levels, i;
+
+    if (!viewer->current)
+        return;
+    levels = viewer->current->nlevels;
+
+    g_assert(viewer->level);
+    model = gtk_combo_box_get_model(GTK_COMBO_BOX(viewer->level));
+    old = gtk_combo_box_get_active(GTK_COMBO_BOX(viewer->level));
+    gtk_list_store_clear(GTK_LIST_STORE(model));
+    gtk_list_store_append(GTK_LIST_STORE(model), &iter);
+    gtk_list_store_set(GTK_LIST_STORE(model), &iter,
+                       COLUMN_IMAGE_LEVEL_VALUE, -1,
+                       COLUMN_IMAGE_LEVEL_TEXT, _("Auto"),
+                       -1);
+    gtk_list_store_append(GTK_LIST_STORE(model), &iter);
+    gtk_list_store_set(GTK_LIST_STORE(model), &iter,
+                       COLUMN_IMAGE_LEVEL_VALUE, -2, /* -2 is magic separator value */
+                       COLUMN_IMAGE_LEVEL_TEXT, "Separator",
+                       -1);
+    for (i = 0; i < levels; i++)
+    {
+        char *text;
+
+        bugle_asprintf(&text, "%d", i);
+        gtk_list_store_append(GTK_LIST_STORE(model), &iter);
+        gtk_list_store_set(GTK_LIST_STORE(model), &iter,
+                           COLUMN_IMAGE_LEVEL_VALUE, i,
+                           COLUMN_IMAGE_LEVEL_TEXT, text,
+                           -1);
+        free(text);
+    }
+    if (old <= levels)
+        gtk_combo_box_set_active(GTK_COMBO_BOX(viewer->level), old);
+    else
+        gtk_combo_box_set_active(GTK_COMBO_BOX(viewer->level), levels);
+}
+
+void gldb_gui_image_viewer_update_min_filter(GldbGuiImageViewer *viewer,
+                                             bool sensitive)
+{
+    gboolean valid;
+    GtkTreeModel *model;
+    GtkTreeIter iter;
+
+    g_assert(viewer->min_filter != NULL);
+
+    if (!sensitive)
+    {
+        gtk_cell_layout_set_attributes(GTK_CELL_LAYOUT(viewer->min_filter),
+                                       viewer->min_filter_renderer,
+                                       "text", COLUMN_IMAGE_FILTER_TEXT,
+                                       "sensitive", COLUMN_IMAGE_FILTER_NON_MIP,
+                                       NULL);
+        model = gtk_combo_box_get_model(GTK_COMBO_BOX(viewer->min_filter));
+        valid = FALSE;
+        if (gtk_combo_box_get_active_iter(GTK_COMBO_BOX(viewer->min_filter), &iter))
+            gtk_tree_model_get(model, &iter,
+                               COLUMN_IMAGE_FILTER_NON_MIP, &valid,
+                               -1);
+        if (!valid)
+            gtk_combo_box_set_active(GTK_COMBO_BOX(viewer->min_filter), 0);
+    }
+    else
+        gtk_cell_layout_set_attributes(GTK_CELL_LAYOUT(viewer->min_filter),
+                                       viewer->min_filter_renderer,
+                                       "text", COLUMN_IMAGE_FILTER_TEXT,
+                                       NULL);
+}
+
+void gldb_gui_image_viewer_update_zoom(GldbGuiImageViewer *viewer)
+{
+    GtkTreeModel *model;
+    GtkTreeIter iter;
+    int width, height, level;
+    const GldbGuiImagePlane *plane;
+    gboolean more, valid;
+
+    if (!viewer->current)
+        return;
+
+    level = MAX(viewer->current_level, 0);
+    plane = &viewer->current->levels[level].planes[MAX(viewer->current_plane, 0)];
+    width = MAX(plane->width, 1);
+    height = MAX(plane->height, 1);
+
+    model = gtk_combo_box_get_model(GTK_COMBO_BOX(viewer->zoom));
+    more = gtk_tree_model_get_iter_first(model, &iter);
+    while (more)
+    {
+        gdouble zoom;
+
+        gtk_tree_model_get(model, &iter, COLUMN_IMAGE_ZOOM_VALUE, &zoom, -1);
+        if (zoom > 0.0)
+        {
+            valid = zoom * width < viewer->max_viewport_dims[0]
+                && zoom * height < viewer->max_viewport_dims[1]
+                && zoom * width >= 1.0
+                && zoom * height >= 1.0;
+            gtk_list_store_set(GTK_LIST_STORE(model), &iter,
+                               COLUMN_IMAGE_ZOOM_SENSITIVE, valid, -1);
+        }
+        more = gtk_tree_model_iter_next(model, &iter);
+    }
+    valid = FALSE;
+    if (gtk_combo_box_get_active_iter(GTK_COMBO_BOX(viewer->zoom), &iter))
+        gtk_tree_model_get(model, &iter, COLUMN_IMAGE_ZOOM_SENSITIVE, &valid, -1);
+    /* FIXME: pick nearest zoom level rather than "Fit" */
+    if (!valid)
+        gtk_combo_box_set_active(GTK_COMBO_BOX(viewer->zoom), 0);
+    else
+        /* Updates the sensitivity of the zoom buttons if necessary */
+        g_signal_emit_by_name(G_OBJECT(viewer->zoom), "changed", viewer);
+}
+
+void gldb_gui_image_plane_clear(GldbGuiImagePlane *plane)
+{
+    if (plane)
+    {
+        if (plane->owns_pixels && plane->pixels) free(plane->pixels);
+        plane->pixels = NULL;
+    }
+}
+
+void gldb_gui_image_level_clear(GldbGuiImageLevel *level)
+{
+    if (level)
+    {
+        int i;
+        for (i = 0; i < level->nplanes; i++)
+            gldb_gui_image_plane_clear(&level->planes[i]);
+        if (level->planes)
+            free(level->planes);
+        level->planes = NULL;
+        level->nplanes = 0;
+    }
+}
+
+void gldb_gui_image_clear(GldbGuiImage *image)
+{
+    if (image)
+    {
+        int i;
+        for (i = 0; i < image->nlevels; i++)
+            gldb_gui_image_level_clear(&image->levels[i]);
+        if (image->levels)
+            free(image->levels);
+        image->levels = NULL;
+        image->nlevels = 0;
+    }
+}
+
+void gldb_gui_image_allocate(GldbGuiImage *image, GldbGuiImageType type,
+                             int nlevels, int nplanes)
+{
+    int i;
+
+    image->type = type;
+    switch (type)
+    {
+    case GLDB_GUI_IMAGE_TYPE_2D:
+        image->texture_target = GL_TEXTURE_2D;
+        break;
+#ifdef GL_EXT_texture3D
+    case GLDB_GUI_IMAGE_TYPE_3D:
+        image->texture_target = GL_TEXTURE_3D_EXT;
+        break;
+#endif
+#ifdef GL_EXT_texture_cube
+    case GLDB_GUI_IMAGE_TYPE_CUBE:
+        image->texture_target = GL_TEXTURE_CUBE_MAP_EXT;
+        break;
+#endif
+    default:
+        g_error("Image type is not supported - update glext.h and recompile");
+    }
+
+    image->nlevels = nlevels;
+    if (nlevels)
+        image->levels = bugle_malloc(nlevels * sizeof(GldbGuiImageLevel));
+    else
+        image->levels = NULL;
+    for (i = 0; i < nlevels; i++)
+    {
+        image->levels[i].nplanes = nplanes;
+        if (nplanes)
+            image->levels[i].planes = bugle_calloc(nplanes, sizeof(GldbGuiImagePlane));
+        else
+            image->levels[i].planes = NULL;
+    }
+}
+
+static GtkTreeModel *build_filter_model(bool mag)
+{
+    GtkListStore *store;
+    GtkTreeIter iter;
+    int count, i;
+    const struct
+    {
+        GLuint value;
+        const gchar *text;
+        gboolean non_mip;
+    } filters[6] =
+    {
+        { GL_NEAREST,                "GL_NEAREST",                TRUE },
+        { GL_LINEAR,                 "GL_LINEAR",                 TRUE },
+        { GL_NEAREST_MIPMAP_NEAREST, "GL_NEAREST_MIPMAP_NEAREST", FALSE },
+        { GL_LINEAR_MIPMAP_NEAREST,  "GL_LINEAR_MIPMAP_NEAREST",  FALSE },
+        { GL_NEAREST_MIPMAP_LINEAR,  "GL_NEAREST_MIPMAP_LINEAR",  FALSE },
+        { GL_LINEAR_MIPMAP_LINEAR,   "GL_LINEAR_MIPMAP_LINEAR",   FALSE }
+    };
+
+    store = gtk_list_store_new(4, G_TYPE_UINT, G_TYPE_STRING, G_TYPE_BOOLEAN, G_TYPE_BOOLEAN);
+    count = mag ? 2 : 6;
+    for (i = 0; i < count; i++)
+    {
+        gtk_list_store_append(store, &iter);
+        gtk_list_store_set(store, &iter,
+                           COLUMN_IMAGE_FILTER_VALUE, filters[i].value,
+                           COLUMN_IMAGE_FILTER_TEXT, filters[i].text,
+                           COLUMN_IMAGE_FILTER_NON_MIP, filters[i].non_mip,
+                           -1);
+    }
+    return GTK_TREE_MODEL(store);
+}
+
+void gldb_gui_image_initialise(void)
+{
+    mag_filter_model = build_filter_model(true);
+    min_filter_model = build_filter_model(false);
+}
+
+void gldb_gui_image_shutdown(void)
+{
+    g_object_unref(mag_filter_model);
+    g_object_unref(min_filter_model);
 }
 
 #endif /* HAVE_GTKGLEXT */
