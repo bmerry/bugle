@@ -544,6 +544,18 @@ void bugle_trackobjects_walk(bugle_trackobjects_type type,
     unlock();
 }
 
+GLenum bugle_trackobjects_get_target(bugle_trackobjects_type type, GLuint id)
+{
+    bugle_radix_tree *table;
+    GLenum ans;
+
+    lock();
+    table = get_table(type);
+    ans = (GLenum) (size_t) bugle_radix_tree_get(table, id);
+    unlock();
+    return ans;
+}
+
 void trackobjects_initialise(void)
 {
     static const filter_set_info trackobjects_info =

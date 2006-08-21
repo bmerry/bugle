@@ -667,7 +667,6 @@ static gboolean response_callback_texture(GldbWindow *context,
         glcontext = gtk_widget_get_gl_context(context->texture.viewer->draw);
         gldrawable = gtk_widget_get_gl_drawable(context->texture.viewer->draw);
 
-        /* FIXME: check runtime support for all extensions */
         if (gdk_gl_drawable_gl_begin(gldrawable, glcontext))
         {
 #ifdef GL_ARB_texture_non_power_of_two
@@ -816,7 +815,6 @@ static gboolean response_callback_framebuffer(GldbWindow *context,
 
         glcontext = gtk_widget_get_gl_context(context->framebuffer.viewer->draw);
         gldrawable = gtk_widget_get_gl_drawable(context->framebuffer.viewer->draw);
-        /* FIXME: check runtime support for all extensions */
         if (gdk_gl_drawable_gl_begin(gldrawable, glcontext))
         {
             gldb_gui_image_allocate(&context->framebuffer.active,
@@ -836,7 +834,13 @@ static gboolean response_callback_framebuffer(GldbWindow *context,
             }
 
             /* Allow NPOT framebuffers on POT textures by filling into one corner */
-            /* FIXME: create mip levels for zoom-out */
+#ifdef GL_SGIS_generate_mipmap
+            if (gdk_gl_query_gl_extension("GL_SGIS_generate_mipmap"))
+            {
+                glTexParameteri(GL_TEXTURE_2D, GL_GENERATE_MIPMAP_SGIS, GL_TRUE);
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+            }
+#endif
             glTexImage2D(GL_TEXTURE_2D, 0, format, texture_width, texture_height, 0, format, GL_FLOAT, NULL);
             glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, width, height, format, GL_FLOAT, r->data);
             gdk_gl_drawable_gl_end(gldrawable);
@@ -1765,7 +1769,7 @@ static void framebuffer_id_changed(GtkWidget *widget, gpointer user_data)
 #ifdef GL_EXT_framebuffer_object
             framebuffer = state_find_child_enum(root, GL_FRAMEBUFFER_EXT);
             g_assert(framebuffer != NULL);
-            fbo = state_find_child_numeric(root, id);
+            fbo = state_find_child_numeric(framebuffer, id);
             g_assert(fbo != NULL);
 
             for (i = 0; gldb_channel_table[i].channel; i++)
@@ -1780,19 +1784,19 @@ static void framebuffer_id_changed(GtkWidget *widget, gpointer user_data)
             parameter = state_find_child_enum(fbo, GL_MAX_COLOR_ATTACHMENTS_EXT);
             g_assert(parameter != NULL);
             attachments = atoi(parameter->value);
-            /* FIXME: check the attachments to determine whether anything is
-             * attached.
-             */
             for (i = 0; i < attachments; i++)
             {
-                bugle_asprintf(&name, _("Color %d"), i);
-                gtk_list_store_append(GTK_LIST_STORE(model), &iter);
-                gtk_list_store_set(GTK_LIST_STORE(model), &iter,
-                                   COLUMN_FRAMEBUFFER_BUFFER_ID, (guint) (GL_COLOR_ATTACHMENT0_EXT + i),
-                                   COLUMN_FRAMEBUFFER_BUFFER_CHANNELS, color_channels,
-                                   COLUMN_FRAMEBUFFER_BUFFER_TEXT, name,
-                                   -1);
-                free(name);
+                if (state_find_child_enum(fbo, GL_COLOR_ATTACHMENT0_EXT + i))
+                {
+                    bugle_asprintf(&name, _("Color %d"), i);
+                    gtk_list_store_append(GTK_LIST_STORE(model), &iter);
+                    gtk_list_store_set(GTK_LIST_STORE(model), &iter,
+                                       COLUMN_FRAMEBUFFER_BUFFER_ID, (guint) (GL_COLOR_ATTACHMENT0_EXT + i),
+                                       COLUMN_FRAMEBUFFER_BUFFER_CHANNELS, color_channels,
+                                       COLUMN_FRAMEBUFFER_BUFFER_TEXT, name,
+                                       -1);
+                    free(name);
+                }
             }
 
             if (channels & GLDB_CHANNEL_DEPTH)

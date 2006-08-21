@@ -69,6 +69,10 @@ void *bugle_displaylist_get(GLuint list);
 void bugle_trackobjects_walk(bugle_trackobjects_type type,
                              void (*walker)(GLuint, GLenum, void *),
                              void *);
+/* Determines the target associated with a particular object, or GL_NONE
+ * if none is known.
+ */
+GLenum bugle_trackobjects_get_target(bugle_trackobjects_type type, GLuint id);
 
 /* Checks for GL extensions by #define from glexts.h */
 bool bugle_gl_has_extension(int ext);

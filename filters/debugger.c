@@ -311,12 +311,75 @@ static bool send_data_texture(uint32_t id, GLuint texid, GLenum target,
 /* Unfortunately, FBO cannot have a size query, because while incomplete
  * it could have different sizes for different buffers. Thus, we have to
  * do the query on the underlying attachment. The return is false if there
- * is no attachment.
+ * is no attachment or a size could not be established.
+ *
+ * It is assumed that the appropriate framebuffer (if any) is already current.
  */
 static bool get_framebuffer_size(GLuint fbo, GLenum target, GLenum attachment,
                                  GLint *width, GLint *height)
 {
-    if (!fbo)
+#ifdef GL_EXT_framebuffer_object
+    if (fbo)
+    {
+        GLint type, name, old_name;
+        GLenum texture_target, texture_binding;
+        GLint level = 0, face;
+
+        CALL_glGetFramebufferAttachmentParameterivEXT(target, attachment,
+                                                      GL_FRAMEBUFFER_ATTACHMENT_OBJECT_TYPE_EXT, &type);
+        CALL_glGetFramebufferAttachmentParameterivEXT(target, attachment,
+                                                      GL_FRAMEBUFFER_ATTACHMENT_OBJECT_NAME_EXT, &name);
+        if (type == GL_RENDERBUFFER_EXT)
+        {
+            CALL_glGetInteger(GL_RENDERBUFFER_BINDING_EXT, &old_name);
+            CALL_glBindRenderbufferEXT(GL_RENDERBUFFER_EXT, name);
+            glGetRenderbufferParameterivEXT(GL_RENDERBUFFER_EXT, GL_RENDERBUFFER_WIDTH_EXT, width);
+            glGetRenderbufferParameterivEXT(GL_RENDERBUFFER_EXT, GL_RENDERBUFFER_WIDTH_EXT, height);
+            CALL_glBindRenderbufferEXT(GL_RENDERBUFFER_EXT, old_name);
+        }
+        else if (type == GL_TEXTURE)
+        {
+            CALL_glGetFramebufferAttachmentParameterivEXT(target, attachment,
+                                                          GL_FRAMEBUFFER_ATTACHMENT_TEXTURE_LEVEL_EXT, &level);
+            texture_target = bugle_trackobjects_get_target(BUGLE_TRACKOBJECTS_TEXTURE, name);
+            switch (texture_target)
+            {
+            case GL_TEXTURE_1D: texture_binding = GL_TEXTURE_BINDING_1D; break;
+            case GL_TEXTURE_2D: texture_binding = GL_TEXTURE_BINDING_2D; break;
+#ifdef GL_EXT_texture3D
+            case GL_TEXTURE_3D: texture_binding = GL_TEXTURE_BINDING_3D; break;
+#endif
+#ifdef GL_EXT_texture_cube_map
+            case GL_TEXTURE_CUBE_MAP_EXT: texture_binding = GL_TEXTURE_BINDING_CUBE_MAP_EXT; break;
+#endif
+#ifdef GL_NV_texture_rectangle
+            case GL_TEXTURE_RECTANGLE_NV: texture_binding = GL_TEXTURE_BINDING_RECTANGLE_NV; break;
+#endif
+            default:
+                return false;
+            }
+
+            CALL_glGetIntegerv(texture_binding, &old_name);
+            CALL_glBindTexture(texture_target, name);
+#ifdef GL_EXT_texture_cube_map
+            if (target == GL_TEXTURE_CUBE_MAP_EXT)
+            {
+                CALL_glGetFramebufferAttachmentParameteriv(target, attachment,
+                                                           GL_FRAMEBUFFER_ATTACHMENT_TEXTURE_CUBE_MAP_FACE_EXT, &face);
+            }
+            else
+#endif
+            {
+                face = texture_target;
+            }
+            glGetTexLevelParameteriv(face, level, GL_TEXTURE_WIDTH, width);
+            glGetTexLevelParameteriv(face, level, GL_TEXTURE_HEIGHT, height);
+        }
+        else
+            return false;
+    }
+    else
+#endif
     {
         Display *dpy;
         GLXDrawable draw;
@@ -329,12 +392,6 @@ static bool get_framebuffer_size(GLuint fbo, GLenum target, GLenum attachment,
         *width = value;
         CALL_glXQueryDrawable(dpy, draw, GLX_HEIGHT, &value);
         *height = value;
-    }
-    else
-    {
-        /* FIXME! */
-        *width = 64;
-        *height = 64;
     }
     return true;
 }
@@ -403,23 +460,30 @@ static bool send_data_framebuffer(uint32_t id, GLuint fbo, GLenum target,
         pixel_pack_reset(&old_pack);
 #ifdef GL_EXT_framebuffer_blit
         if (bugle_gl_has_extension(BUGLE_GL_EXT_framebuffer_blit))
-        {
             CALL_glGetIntegerv(GL_READ_FRAMEBUFFER_BINDING_EXT, &old_fbo);
-            if ((GLint) fbo != old_fbo)
-                CALL_glBindFramebufferEXT(GL_READ_FRAMEBUFFER_EXT, fbo);
-        }
         else
 #endif
         {
 #ifdef GL_EXT_framebuffer_object
             if (bugle_gl_has_extension(BUGLE_GL_EXT_framebuffer_object))
-            {
                 CALL_glGetIntegerv(GL_FRAMEBUFFER_BINDING_EXT, &old_fbo);
-                if ((GLint) fbo != old_fbo)
-                    CALL_glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, fbo);
-            }
 #endif
         }
+    }
+
+    if ((GLint) fbo != old_fbo)
+    {
+#ifdef GL_EXT_framebuffer_blit
+        if (bugle_gl_has_extension(BUGLE_GL_EXT_framebuffer_blit))
+            CALL_glBindFramebufferEXT(GL_READ_FRAMEBUFFER_EXT, fbo);
+        else
+#endif
+        {
+#ifdef GL_EXT_framebuffer_object
+            if (bugle_gl_has_extension(BUGLE_GL_EXT_framebuffer_object))
+                CALL_glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, fbo);
+        }
+#endif
     }
 
     /* Note: GL_READ_BUFFER belongs to the FBO where an application-created
@@ -431,8 +495,11 @@ static bool send_data_framebuffer(uint32_t id, GLuint fbo, GLenum target,
      * a brand new FBO, but that seems like a lot of work and quite
      * fragile to future changes in the way FBO's are handled.
      */
-    glGetIntegerv(GL_READ_BUFFER, &old_read_buffer);
-    glReadBuffer(buffer);
+    if (format != GL_DEPTH_COMPONENT && format != GL_STENCIL_INDEX)
+    {
+        glGetIntegerv(GL_READ_BUFFER, &old_read_buffer);
+        glReadBuffer(buffer);
+    }
 
     get_framebuffer_size(fbo, target, buffer, &width, &height);
     length = bugle_gl_type_to_size(type) * bugle_gl_format_to_count(format, type)
@@ -442,7 +509,8 @@ static bool send_data_framebuffer(uint32_t id, GLuint fbo, GLenum target,
 
     /* Restore the old state. glPushAttrib currently does NOT save FBO
      * bindings, so we have to do that manually even for the aux context. */
-    glReadBuffer(old_read_buffer);
+    if (format != GL_DEPTH_COMPONENT && format != GL_STENCIL_INDEX)
+        glReadBuffer(old_read_buffer);
     if (aux && fbo)
     {
         GLenum error;

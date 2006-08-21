@@ -149,7 +149,7 @@ void *bugle_radix_tree_get(const bugle_radix_tree *tree, bugle_radix_tree_type k
     if (key > tree_max(tree->bits)) return NULL; /* Beyond range of tree */
     bit = tree_bit(tree->bits);
     n = tree->root;
-    for (i = 0; i <= tree->bits; i++)
+    for (i = 0; i < tree->bits; i++)
     {
         if (!n) return NULL;
         if (key & bit) n = n->right;
