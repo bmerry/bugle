@@ -24,6 +24,8 @@
 #include "common/bool.h"
 #include "common/threads.h"
 #include <stdio.h>
+#include <sys/types.h>
+#include <unistd.h>
 
 static char *log_filename = NULL;
 static char *log_format = NULL;
