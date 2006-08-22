@@ -632,14 +632,9 @@ static gboolean response_callback_texture(GldbWindow *context,
 {
     gldb_response_data_texture *r;
     texture_callback_data *data;
-    GtkTreeModel *model;
-    GtkTreeIter iter;
-    gboolean valid, more;
-    gint sensitive;
     GLenum format;
     uint32_t channels;
     GldbGuiImageLevel *level;
-    int i;
 
     r = (gldb_response_data_texture *) response;
     data = (texture_callback_data *) user_data;
@@ -790,9 +785,6 @@ static gboolean response_callback_framebuffer(GldbWindow *context,
     GLenum format;
     uint32_t channels;
     GLint width, height, texture_width, texture_height;
-    GtkTreeModel *model;
-    GtkTreeIter iter;
-    gboolean more, valid;
 
     r = (gldb_response_data_framebuffer *) response;
 
@@ -1480,7 +1472,6 @@ static void texture_id_changed(GtkComboBox *id_box, gpointer user_data)
     guint i, l;
     GldbWindow *context;
     texture_callback_data *data;
-    gint old;
 
     if (gldb_get_status() == GLDB_STATUS_STOPPED)
     {
@@ -1685,10 +1676,9 @@ static void update_framebuffer_ids(GldbWindow *context)
 {
     GValue old[2];
     GtkTreeIter iter;
-    const gldb_state *root, *framebuffer, *sz;
+    const gldb_state *root, *framebuffer;
     GtkTreeModel *model;
     char *name;
-    int c;
 
     combo_box_get_old(GTK_COMBO_BOX(context->framebuffer.id), old,
                       COLUMN_FRAMEBUFFER_ID_ID, COLUMN_FRAMEBUFFER_ID_TARGET, -1);
@@ -1986,7 +1976,6 @@ static GtkWidget *build_framebuffer_page_id(GldbWindow *context)
 static GtkWidget *build_framebuffer_page_buffer(GldbWindow *context)
 {
     GtkListStore *store;
-    GtkTreeIter iter;
     GtkWidget *buffer;
     GtkCellRenderer *cell;
 

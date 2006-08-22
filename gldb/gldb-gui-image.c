@@ -35,7 +35,10 @@
 #include <gtk/gtk.h>
 #include <glib.h>
 #include <glib/gi18n-lib.h>
+#include <math.h>
 #include <gdk-pixbuf/gdk-pixbuf.h>
+#include <string.h>
+#include <stdlib.h>
 #include "common/safemem.h"
 #include "common/bool.h"
 #include "src/names.h"
@@ -285,7 +288,7 @@ static gboolean image_draw_leave(GtkWidget *widget,
     return FALSE;
 }
 
-static void *gldb_gui_image_viewer_new_draw(GldbGuiImageViewer *viewer)
+static void gldb_gui_image_viewer_new_draw(GldbGuiImageViewer *viewer)
 {
     GdkGLConfig *glconfig;
     GtkWidget *aspect, *alignment, *draw;
@@ -783,8 +786,6 @@ GldbGuiImageViewer *gldb_gui_image_viewer_new(GtkStatusbar *statusbar,
                                               guint statusbar_context_id)
 {
     GldbGuiImageViewer *viewer;
-    GtkWidget *zoom, *zoom_in, *zoom_out, *zoom_100;
-    GtkWidget *copy;
 
     viewer = (GldbGuiImageViewer *) bugle_calloc(1, sizeof(GldbGuiImageViewer));
     viewer->statusbar = statusbar;
