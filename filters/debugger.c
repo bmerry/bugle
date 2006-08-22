@@ -331,10 +331,10 @@ static bool get_framebuffer_size(GLuint fbo, GLenum target, GLenum attachment,
                                                       GL_FRAMEBUFFER_ATTACHMENT_OBJECT_NAME_EXT, &name);
         if (type == GL_RENDERBUFFER_EXT)
         {
-            CALL_glGetInteger(GL_RENDERBUFFER_BINDING_EXT, &old_name);
+            CALL_glGetIntegerv(GL_RENDERBUFFER_BINDING_EXT, &old_name);
             CALL_glBindRenderbufferEXT(GL_RENDERBUFFER_EXT, name);
-            glGetRenderbufferParameterivEXT(GL_RENDERBUFFER_EXT, GL_RENDERBUFFER_WIDTH_EXT, width);
-            glGetRenderbufferParameterivEXT(GL_RENDERBUFFER_EXT, GL_RENDERBUFFER_WIDTH_EXT, height);
+            CALL_glGetRenderbufferParameterivEXT(GL_RENDERBUFFER_EXT, GL_RENDERBUFFER_WIDTH_EXT, width);
+            CALL_glGetRenderbufferParameterivEXT(GL_RENDERBUFFER_EXT, GL_RENDERBUFFER_HEIGHT_EXT, height);
             CALL_glBindRenderbufferEXT(GL_RENDERBUFFER_EXT, old_name);
         }
         else if (type == GL_TEXTURE)
@@ -372,8 +372,8 @@ static bool get_framebuffer_size(GLuint fbo, GLenum target, GLenum attachment,
             {
                 face = texture_target;
             }
-            glGetTexLevelParameteriv(face, level, GL_TEXTURE_WIDTH, width);
-            glGetTexLevelParameteriv(face, level, GL_TEXTURE_HEIGHT, height);
+            CALL_glGetTexLevelParameteriv(face, level, GL_TEXTURE_WIDTH, width);
+            CALL_glGetTexLevelParameteriv(face, level, GL_TEXTURE_HEIGHT, height);
         }
         else
             return false;
@@ -443,7 +443,16 @@ static bool send_data_framebuffer(uint32_t id, GLuint fbo, GLenum target,
         return false;
     }
 
-    if (fbo && (aux = bugle_get_aux_context()) != NULL)
+    if (fbo)
+    {
+        /* This version doesn't share renderbuffers between contexts.
+         * Older versions have even buggier FBO implementations, so we
+         * don't bother to work around them.
+         */
+        if (strcmp(CALL_glGetString(GL_VERSION), "2.0.2 NVIDIA 87.62") != 0)
+            aux = bugle_get_aux_context();
+    }
+    if (aux)
     {
         real = CALL_glXGetCurrentContext();
         old_write = CALL_glXGetCurrentDrawable();
@@ -511,7 +520,7 @@ static bool send_data_framebuffer(uint32_t id, GLuint fbo, GLenum target,
      * bindings, so we have to do that manually even for the aux context. */
     if (format != GL_DEPTH_COMPONENT && format != GL_STENCIL_INDEX)
         glReadBuffer(old_read_buffer);
-    if (aux && fbo)
+    if (aux)
     {
         GLenum error;
         while ((error = CALL_glGetError()) != GL_NO_ERROR)
