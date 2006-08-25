@@ -40,7 +40,6 @@ static void trace_callback_error_callback(void *error, FILE *f)
 static bool trace_callback(function_call *call, const callback_data *data)
 {
     GLenum error;
-    FILE *f;
 
     bugle_log_callback("trace", "call",
                        trace_callback_call_callback, &call->generic);

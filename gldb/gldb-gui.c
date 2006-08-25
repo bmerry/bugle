@@ -443,189 +443,6 @@ static void combo_box_restore_old(GtkComboBox *box, GValue *save, ...)
 
 #if HAVE_GTKGLEXT
 
-#if 0 /* FIXME: incorporate into image viewer code */
-static gboolean texture_draw_expose(GtkWidget *widget,
-                                    GdkEventExpose *event,
-                                    gpointer user_data)
-{
-    GldbWindow *context;
-    GdkGLContext *glcontext;
-    GdkGLDrawable *gldrawable;
-    GLint width, height;
-    GtkTreeModel *model;
-    GtkTreeIter iter;
-    gint level;
-    guint mag, min;
-    static const GLint vertices[8] =
-    {
-        -1, -1,
-        1, -1,
-        1, 1,
-        -1, 1
-    };
-    static const GLint texcoords[8] =
-    {
-        0, 0,
-        1, 0,
-        1, 1,
-        0, 1
-    };
-
-    static const GLint cube_vertices[24] =
-    {
-        -1, -1, -1,
-        -1, -1, +1,
-        -1, +1, -1,
-        -1, +1, +1,
-        +1, -1, -1,
-        +1, -1, +1,
-        +1, +1, -1,
-        +1, +1, +1
-    };
-    static const GLubyte cube_indices[24] =
-    {
-        0, 1, 3, 2,
-        0, 4, 5, 1,
-        0, 2, 6, 4,
-        7, 5, 4, 6,
-        7, 6, 2, 3,
-        7, 3, 1, 5
-    };
-
-#define GLDB_ISQRT2 0.70710678118654752440
-#define GLDB_ISQRT3 0.57735026918962576451
-#define GLDB_ISQRT6 0.40824829046386301636
-    /* Rotation for looking at the (1, 1, 1) corner of the cube while
-     * maintaining an up direction.
-     */
-    static const GLdouble cube_matrix1[16] =
-    {
-         GLDB_ISQRT2, -GLDB_ISQRT6,        GLDB_ISQRT3,  0.0,
-         0.0,          2.0 * GLDB_ISQRT6,  GLDB_ISQRT3,  0.0,
-        -GLDB_ISQRT2, -GLDB_ISQRT6,        GLDB_ISQRT3,  0.0,
-         0.0,          0.0,                0.0,          1.0
-    };
-    /* Similar, but looking at (-1, -1, -1) */
-    static const GLdouble cube_matrix2[16] =
-    {
-        -GLDB_ISQRT2, -GLDB_ISQRT6,       -GLDB_ISQRT3,  0.0,
-         0.0,          2.0 * GLDB_ISQRT6, -GLDB_ISQRT3,  0.0,
-         GLDB_ISQRT2, -GLDB_ISQRT6,       -GLDB_ISQRT3,  0.0,
-         0.0,          0.0,                0.0,          1.0
-    };
-
-    context = (GldbWindow *) user_data;
-
-    glcontext = gtk_widget_get_gl_context(widget);
-    gldrawable = gtk_widget_get_gl_drawable(widget);
-    if (!gdk_gl_drawable_gl_begin(gldrawable, glcontext)) return FALSE;
-    glClear(GL_COLOR_BUFFER_BIT);
-
-    if (context->texture.display_target == GL_NONE) goto no_texture;
-    model = gtk_combo_box_get_model(GTK_COMBO_BOX(context->texture.level));
-    if (!gtk_combo_box_get_active_iter(GTK_COMBO_BOX(context->texture.level), &iter))
-        goto no_texture;
-    gtk_tree_model_get(model, &iter, COLUMN_TEXTURE_LEVEL_VALUE, &level, -1);
-    model = gtk_combo_box_get_model(GTK_COMBO_BOX(context->texture.mag_filter));
-    if (!gtk_combo_box_get_active_iter(GTK_COMBO_BOX(context->texture.mag_filter), &iter))
-        goto no_texture;
-    gtk_tree_model_get(model, &iter, COLUMN_TEXTURE_FILTER_VALUE, &mag, -1);
-    model = gtk_combo_box_get_model(GTK_COMBO_BOX(context->texture.min_filter));
-    if (!gtk_combo_box_get_active_iter(GTK_COMBO_BOX(context->texture.min_filter), &iter))
-        goto no_texture;
-    gtk_tree_model_get(model, &iter, COLUMN_TEXTURE_FILTER_VALUE, &min, -1);
-
-    glPushAttrib(GL_CURRENT_BIT | GL_ENABLE_BIT);
-    glPushClientAttrib(GL_CLIENT_VERTEX_ARRAY_BIT);
-    glMatrixMode(GL_PROJECTION);
-    glLoadIdentity();
-    glMatrixMode(GL_TEXTURE);
-    glLoadIdentity();
-    glMatrixMode(GL_MODELVIEW);
-    glLoadIdentity();
-
-    /* FIXME: 3D textures */
-    glEnable(context->texture.display_target);
-    glEnableClientState(GL_VERTEX_ARRAY);
-    glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-
-#ifdef GL_NV_texture_rectangle
-    if (context->texture.display_target != GL_TEXTURE_RECTANGLE_NV)
-#endif
-    {
-        if (level == -1)
-        {
-            glTexParameteri(context->texture.display_target, GL_TEXTURE_BASE_LEVEL, 0);
-            glTexParameteri(context->texture.display_target, GL_TEXTURE_MAX_LEVEL, 1000);
-        }
-        else
-        {
-            glTexParameteri(context->texture.display_target, GL_TEXTURE_BASE_LEVEL, level);
-            glTexParameteri(context->texture.display_target, GL_TEXTURE_MAX_LEVEL, level);
-        }
-    }
-
-    switch (context->texture.display_target)
-    {
-#ifdef GL_NV_texture_rectangle
-    case GL_TEXTURE_RECTANGLE_NV:
-        glGetTexLevelParameteriv(GL_TEXTURE_RECTANGLE_NV, 0, GL_TEXTURE_WIDTH, &width);
-        glGetTexLevelParameteriv(GL_TEXTURE_RECTANGLE_NV, 0, GL_TEXTURE_HEIGHT, &height);
-        glMatrixMode(GL_TEXTURE);
-        glScalef(width, height, 1.0);
-        glMatrixMode(GL_MODELVIEW);
-        /* fall through */
-#endif
-    case GL_TEXTURE_1D:
-    case GL_TEXTURE_2D:
-        glTexParameteri(context->texture.display_target, GL_TEXTURE_MAG_FILTER, mag);
-        glTexParameteri(context->texture.display_target, GL_TEXTURE_MIN_FILTER, min);
-        glVertexPointer(2, GL_INT, 0, vertices);
-        glTexCoordPointer(2, GL_INT, 0, texcoords);
-        glDrawArrays(GL_QUADS, 0, 4);
-        break;
-#ifdef GL_ARB_texture_cube_map
-    case GL_TEXTURE_CUBE_MAP_ARB:
-        /* Force all Z coordinates to 0 to avoid face clipping, and
-         * scale down to fit in left half of window */
-        glTranslatef(-0.5f, 0.0f, 0.0f);
-        glScalef(0.25f, 0.5f, 0.0f);
-        glMultMatrixd(cube_matrix1);
-
-        glEnable(GL_CULL_FACE);
-        glTexParameteri(context->texture.display_target, GL_TEXTURE_MAG_FILTER, mag);
-        glTexParameteri(context->texture.display_target, GL_TEXTURE_MIN_FILTER, min);
-        glVertexPointer(3, GL_INT, 0, cube_vertices);
-        glTexCoordPointer(3, GL_INT, 0, cube_vertices);
-        glDrawElements(GL_QUADS, 24, GL_UNSIGNED_BYTE, cube_indices);
-
-        /* Draw second view */
-        glLoadIdentity();
-        glTranslatef(0.5f, 0.0f, 0.0f);
-        glScalef(0.25f, 0.5, 0.5f);
-        glMultMatrixd(cube_matrix2);
-        glDrawElements(GL_QUADS, 24, GL_UNSIGNED_BYTE, cube_indices);
-        break;
-#endif
-    default:
-        break;
-    }
-
-    glPopClientAttrib();
-    glPopAttrib();
-
-    gdk_gl_drawable_swap_buffers(gldrawable);
-    gdk_gl_drawable_gl_end(gldrawable);
-    return TRUE;
-
-no_texture:
-    glClear(GL_COLOR_BUFFER_BIT);
-    gdk_gl_drawable_swap_buffers(gldrawable);
-    gdk_gl_drawable_gl_end(gldrawable);
-    return TRUE;
-}
-#endif /* 0 */
-
 static gboolean response_callback_texture(GldbWindow *context,
                                           gldb_response *response,
                                           gpointer user_data)
@@ -686,7 +503,7 @@ static gboolean response_callback_texture(GldbWindow *context,
             switch (context->texture.progressive.type)
             {
 #ifdef GL_EXT_texture_cube_map
-            case GLDB_GUI_IMAGE_TYPE_CUBE:
+            case GLDB_GUI_IMAGE_TYPE_CUBE_MAP:
                 plane = data->face - GL_TEXTURE_CUBE_MAP_POSITIVE_X;
                 face = data->face;
                 /* Fall through */
@@ -746,6 +563,8 @@ static gboolean response_callback_texture(GldbWindow *context,
         gldb_gui_image_clear(&context->texture.active);
         context->texture.active = context->texture.progressive;
         context->texture.viewer->current = &context->texture.active;
+        context->texture.viewer->current_plane =
+            (context->texture.active.type == GLDB_GUI_IMAGE_TYPE_CUBE_MAP) ? -1 : 0;
         memset(&context->texture.progressive, 0, sizeof(context->texture.progressive));
 
 #ifdef GL_NV_texture_rectangle
@@ -1381,8 +1200,8 @@ static void update_texture_ids(GldbWindow *context)
 #ifdef GL_EXT_texture3D
         GL_TEXTURE_3D_EXT,
 #endif
-#ifdef GL_ARB_texture_cube_map
-        GL_TEXTURE_CUBE_MAP_ARB,
+#ifdef GL_EXT_texture_cube_map
+        GL_TEXTURE_CUBE_MAP_EXT,
 #endif
 #ifdef GL_NV_texture_rectangle
         GL_TEXTURE_RECTANGLE_NV
@@ -1394,7 +1213,7 @@ static void update_texture_ids(GldbWindow *context)
 #ifdef GL_EXT_texture3D
         "3D",
 #endif
-#ifdef GL_ARB_texture_cube_map
+#ifdef GL_EXT_texture_cube_map
         "cube",
 #endif
 #ifdef GL_NV_texture_rectangle
@@ -1421,9 +1240,9 @@ static void update_texture_ids(GldbWindow *context)
             {
                 /* Count the levels */
                 f = t;
-#ifdef GL_ARB_texture_cube_map
-                if (targets[trg] == GL_TEXTURE_CUBE_MAP_ARB)
-                    f = state_find_child_enum(t, GL_TEXTURE_CUBE_MAP_POSITIVE_X_ARB);
+#ifdef GL_EXT_texture_cube_map
+                if (targets[trg] == GL_TEXTURE_CUBE_MAP_EXT)
+                    f = state_find_child_enum(t, GL_TEXTURE_CUBE_MAP_POSITIVE_X_EXT);
 #endif
                 levels = 0;
                 channels = 0;
@@ -1488,14 +1307,14 @@ static void texture_id_changed(GtkComboBox *id_box, gpointer user_data)
 
         for (l = 0; l < levels; l++)
         {
-#ifdef GL_ARB_texture_cube_map
-            if (target == GL_TEXTURE_CUBE_MAP_ARB)
+#ifdef GL_EXT_texture_cube_map
+            if (target == GL_TEXTURE_CUBE_MAP_EXT)
             {
                 for (i = 0; i < 6; i++)
                 {
                     data = (texture_callback_data *) bugle_malloc(sizeof(texture_callback_data));
                     data->target = target;
-                    data->face = GL_TEXTURE_CUBE_MAP_POSITIVE_X_ARB + i;
+                    data->face = GL_TEXTURE_CUBE_MAP_POSITIVE_X_EXT + i;
                     data->level = l;
                     data->channels = channels;
                     data->flags = 0;
@@ -1504,7 +1323,7 @@ static void texture_id_changed(GtkComboBox *id_box, gpointer user_data)
                         data->flags |= TEXTURE_CALLBACK_FLAG_FIRST;
                         data->nlevels = levels;
                         data->nplanes = 6;
-                        data->type = GLDB_GUI_IMAGE_TYPE_CUBE;
+                        data->type = GLDB_GUI_IMAGE_TYPE_CUBE_MAP;
                     }
                     if (l == levels - 1 && i == 5) data->flags |= TEXTURE_CALLBACK_FLAG_LAST;
                     set_response_handler(context, seq, response_callback_texture, data);

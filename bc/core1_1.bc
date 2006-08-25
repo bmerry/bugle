@@ -82,6 +82,7 @@ TYPE PARAMETER glGetString -1 TYPE_PKc
 
 # Dumping overrides
 DUMP TYPE GLenum bugle_dump_GLenum($$, $F)
+DUMP TYPE +K6GLenum bugle_dump_GLenum($$, $F)
 DUMP TYPE GLboolean bugle_dump_GLboolean($$, $F)
 DUMP TYPE GLerror bugle_dump_GLerror($$, $F)
 DUMP TYPE GLalternateenum bugle_dump_GLalternateenum($$, $F)

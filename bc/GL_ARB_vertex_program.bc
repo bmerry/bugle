@@ -6,8 +6,8 @@ LENGTH PARAMETER glGetProgramStringARB 2 bugle_count_program_string($0, $1)
 TYPE PARAMETER glGetProgramStringARB 2 TYPE_PKc
 DUMP PARAMETER glGetProgramStringARB 2 budgie_dump_string_length($$, $l, $F)
 
-LENGTH PARAMETER glVertexAttrib(1|2|3|4)(N?)(b|s|i|ub|us|ui|f|d)ARB 1 \1
-LENGTH PARAMETER gl(Get)?Program(Env|Local)Parameter4[df]ARB 2 4
+LENGTH PARAMETER glVertexAttrib(1|2|3|4)(N?)(b|s|i|ub|us|ui|f|d)vARB 1 \1
+LENGTH PARAMETER gl(Get)?Program(Env|Local)Parameter4[df]vARB 2 4
 LENGTH PARAMETER glGetVertexAttrib[dfi]vARB 2 bugle_count_gl($f, $1)
 DUMP PARAMETER glGetVertexAttrib[dfi]vARB 2 bugle_dump_convert($1, &$$, $t$, $F)
 LENGTH PARAMETER glGetProgramivARB 2 bugle_count_gl($f, $1)

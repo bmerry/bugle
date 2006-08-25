@@ -46,7 +46,7 @@ typedef enum
 {
     GLDB_GUI_IMAGE_TYPE_2D,   /* also includes framebuffer */
     GLDB_GUI_IMAGE_TYPE_3D,
-    GLDB_GUI_IMAGE_TYPE_CUBE
+    GLDB_GUI_IMAGE_TYPE_CUBE_MAP
 } GldbGuiImageType;
 
 /* A simple 2D image. This is
@@ -104,7 +104,7 @@ typedef struct
 {
     GldbGuiImage *current;
     int current_level;  /* -1 means "all levels" */
-    int current_plane;  /* -1 means all faces for a cubemap */
+    int current_plane;  /* -1 means all faces for a cube-map */
 
     GLint max_viewport_dims[2];
     GLenum texture_mag_filter, texture_min_filter;

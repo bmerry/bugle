@@ -18,6 +18,7 @@ INCLUDE @srcdir@/bc/GL_ARB_imaging.bc
 INCLUDE @srcdir@/bc/GL_ARB_occlusion_query.bc
 INCLUDE @srcdir@/bc/GL_ARB_vertex_buffer_object.bc
 INCLUDE @srcdir@/bc/GL_ARB_vertex_program.bc
+INCLUDE @srcdir@/bc/GL_ATI_draw_buffers.bc
 INCLUDE @srcdir@/bc/GL_EXT_blend_func_separate.bc
 INCLUDE @srcdir@/bc/GL_EXT_draw_range_elements.bc
 INCLUDE @srcdir@/bc/GL_EXT_multi_draw_arrays.bc

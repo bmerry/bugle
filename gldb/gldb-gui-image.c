@@ -111,6 +111,9 @@ static void image_draw_realize(GtkWidget *widget, gpointer user_data)
     }
     glGetIntegerv(GL_MAX_VIEWPORT_DIMS, viewer->max_viewport_dims);
 
+    glEnableClientState(GL_VERTEX_ARRAY);
+    glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+
     gdk_gl_drawable_gl_end(gldrawable);
 
     gdk_window_set_events(widget->window,
@@ -137,6 +140,146 @@ static gboolean image_draw_configure(GtkWidget *widget,
     return TRUE;
 }
 
+static void image_draw_expose_2d(GldbGuiImageViewer *viewer)
+{
+    GLfloat s, t;
+    GLfloat tex_coords[8] =
+    {
+        0.0f, 0.0f,
+        1.0f, 0.0f,
+        1.0f, 1.0f,
+        0.0f, 1.0f
+    };
+    static const GLint vertex_coords[8] =
+    {
+        -1, -1,
+        +1, -1,
+        +1, +1,
+        -1, +1
+    };
+
+    s = viewer->current->s;
+    t = viewer->current->t;
+    tex_coords[2] = tex_coords[4] = s;
+    tex_coords[5] = tex_coords[7] = t;
+
+    glVertexPointer(2, GL_INT, 0, vertex_coords);
+    glTexCoordPointer(2, GL_FLOAT, 0, tex_coords);
+    glDrawArrays(GL_QUADS, 0, 4);
+}
+
+static void image_draw_expose_3d(GldbGuiImageViewer *viewer)
+{
+    int i;
+    GLfloat s, t, r;
+    GLfloat tex_coords[12] =
+    {
+        0.0f, 0.0f, 0.0f,
+        1.0f, 0.0f, 0.0f,
+        1.0f, 1.0f, 0.0f,
+        0.0f, 1.0f, 0.0f
+    };
+    static const GLint vertex_coords[8] =
+    {
+        -1, -1,
+        +1, -1,
+        +1, +1,
+        -1, +1
+    };
+
+    s = viewer->current->s;
+    t = viewer->current->t;
+    r = (MAX(viewer->current_level, 0) + 0.5f) / viewer->current->nlevels;
+    tex_coords[3] = tex_coords[6] = s;
+    tex_coords[7] = tex_coords[10] = t;
+    for (i = 2; i < 12; i += 3)
+        tex_coords[i] = r;
+
+    glVertexPointer(2, GL_INT, 0, vertex_coords);
+    glTexCoordPointer(3, GL_FLOAT, 0, tex_coords);
+    glDrawArrays(GL_QUADS, 0, 4);
+}
+
+static void image_draw_expose_cube_map(GldbGuiImageViewer *viewer)
+{
+    static const GLint cube_vertices[24] =
+    {
+        -1, -1, -1,
+        -1, -1, +1,
+        -1, +1, -1,
+        -1, +1, +1,
+        +1, -1, -1,
+        +1, -1, +1,
+        +1, +1, -1,
+        +1, +1, +1
+    };
+    static const GLubyte cube_indices[24] =
+    {
+        0, 1, 3, 2,
+        0, 4, 5, 1,
+        0, 2, 6, 4,
+        7, 5, 4, 6,
+        7, 6, 2, 3,
+        7, 3, 1, 5
+    };
+
+#define GLDB_ISQRT2 0.70710678118654752440
+#define GLDB_ISQRT3 0.57735026918962576451
+#define GLDB_ISQRT6 0.40824829046386301636
+    /* Rotation for looking at the (1, 1, 1) corner of the cube while
+     * maintaining an up direction.
+     */
+    static const GLdouble cube_matrix1[16] =
+    {
+         GLDB_ISQRT2, -GLDB_ISQRT6,        GLDB_ISQRT3,  0.0,
+         0.0,          2.0 * GLDB_ISQRT6,  GLDB_ISQRT3,  0.0,
+        -GLDB_ISQRT2, -GLDB_ISQRT6,        GLDB_ISQRT3,  0.0,
+         0.0,          0.0,                0.0,          1.0
+    };
+    /* Similar, but looking at (-1, -1, -1) */
+    static const GLdouble cube_matrix2[16] =
+    {
+        -GLDB_ISQRT2, -GLDB_ISQRT6,       -GLDB_ISQRT3,  0.0,
+         0.0,          2.0 * GLDB_ISQRT6, -GLDB_ISQRT3,  0.0,
+         GLDB_ISQRT2, -GLDB_ISQRT6,       -GLDB_ISQRT3,  0.0,
+         0.0,          0.0,                0.0,          1.0
+    };
+
+
+#ifdef GL_EXT_texture_cube_map
+    if (gdk_gl_query_gl_extension("GL_EXT_texture_cube_map"))
+    {
+        if (viewer->current->s == 1.0f && viewer->current->t == 1.0f)
+        {
+            /* Force all Z coordinates to 0 to avoid face clipping, and
+             * scale down to fit in left half of window */
+            glTranslatef(-0.5f, 0.0f, 0.0f);
+            glScalef(0.25f, 0.5f, 0.0f);
+            glMultMatrixd(cube_matrix1);
+
+            glEnable(GL_CULL_FACE);
+            glVertexPointer(3, GL_INT, 0, cube_vertices);
+            glTexCoordPointer(3, GL_INT, 0, cube_vertices);
+            glDrawElements(GL_QUADS, 24, GL_UNSIGNED_BYTE, cube_indices);
+
+            /* Draw second view */
+            glLoadIdentity();
+            glTranslatef(0.5f, 0.0f, 0.0f);
+            glScalef(0.25f, 0.5, 0.5f);
+            glMultMatrixd(cube_matrix2);
+            glDrawElements(GL_QUADS, 24, GL_UNSIGNED_BYTE, cube_indices);
+
+            /* restore state */
+            glLoadIdentity();
+            glDisable(GL_CULL_FACE);
+        }
+    }
+    else
+#endif
+    {
+    }
+}
+
 /* FIXME: handle cube-map and 3D textures */
 static gboolean image_draw_expose(GtkWidget *widget,
                                   GdkEventExpose *event,
@@ -145,7 +288,6 @@ static gboolean image_draw_expose(GtkWidget *widget,
     GldbGuiImageViewer *viewer;
     GdkGLContext *glcontext;
     GdkGLDrawable *gldrawable;
-    GLfloat s, t;
 
     glcontext = gtk_widget_get_gl_context(widget);
     gldrawable = gtk_widget_get_gl_drawable(widget);
@@ -174,20 +316,14 @@ static gboolean image_draw_expose(GtkWidget *widget,
         glTexParameteri(viewer->current->texture_target, GL_TEXTURE_MAG_FILTER, viewer->texture_mag_filter);
         glTexParameteri(viewer->current->texture_target, GL_TEXTURE_MIN_FILTER, viewer->texture_min_filter);
 
-        s = viewer->current->s;
-        t = viewer->current->t;
-
-        glBegin(GL_QUADS);
-        glTexCoord2f(0.0f, 0.0f);
-        glVertex2f(-1.0f, -1.0f);
-        glTexCoord2f(s, 0.0f);
-        glVertex2f(1.0f, -1.0f);
-        glTexCoord2f(s, t);
-        glVertex2f(1.0f, 1.0f);
-        glTexCoord2f(0.0f, t);
-        glVertex2f(-1.0f, 1.0f);
-        glEnd();
-
+        if (viewer->current->type == GLDB_GUI_IMAGE_TYPE_2D)
+            image_draw_expose_2d(viewer);
+        else if (viewer->current->type == GLDB_GUI_IMAGE_TYPE_3D)
+            image_draw_expose_3d(viewer);
+        else if (viewer->current->type == GLDB_GUI_IMAGE_TYPE_CUBE_MAP)
+            image_draw_expose_cube_map(viewer);
+        else
+            g_assert_not_reached();
         glDisable(viewer->current->texture_target);
     }
     gdk_gl_drawable_swap_buffers(gldrawable);
@@ -220,11 +356,11 @@ static void image_draw_motion_update(GldbGuiImageViewer *viewer,
     const GldbGuiImagePlane *plane;
 
     image_draw_motion_clear_status(viewer);
-    /* FIXME: handle cube and 3D textures */
+    /* FIXME: handle cube-map and 3D textures */
     if (!viewer->current)
         return;
     if (viewer->current_plane < 0)
-        return;
+        return;  /* cube map - currently no raytracing to recover the pixel */
 
     level = MAX(viewer->current_level, 0);
     plane = &viewer->current->levels[level].planes[viewer->current_plane];
@@ -359,6 +495,9 @@ static void resize_image_draw(GldbGuiImageViewer *viewer)
     plane = &viewer->current->levels[level].planes[MAX(viewer->current_plane, 0)];
     width = MAX(plane->width, 1);
     height = MAX(plane->height, 1);
+    if (viewer->current->type == GLDB_GUI_IMAGE_TYPE_CUBE_MAP
+        && viewer->current_plane == -1)
+        width *= 2; /* allow for two views of the cube */
 
     zoom_model = gtk_combo_box_get_model(GTK_COMBO_BOX(viewer->zoom));
     if (gtk_combo_box_get_active_iter(GTK_COMBO_BOX(viewer->zoom),
@@ -525,7 +664,7 @@ static void image_copy_clicked(GtkWidget *button, gpointer user_data)
     int level;
     GldbGuiImagePlane *plane;
 
-    /* FIXME: support cube map and 3D, or disable button when appropriate */
+    /* FIXME: support cube-map and 3D, or disable button when appropriate */
 
     viewer = (GldbGuiImageViewer *) user_data;
     if (!viewer->current)
@@ -891,6 +1030,9 @@ void gldb_gui_image_viewer_update_zoom(GldbGuiImageViewer *viewer)
     plane = &viewer->current->levels[level].planes[MAX(viewer->current_plane, 0)];
     width = MAX(plane->width, 1);
     height = MAX(plane->height, 1);
+    if (viewer->current->type == GLDB_GUI_IMAGE_TYPE_CUBE_MAP
+        && viewer->current_plane == -1)
+        width *= 2; /* allow for two views of the cube */
 
     model = gtk_combo_box_get_model(GTK_COMBO_BOX(viewer->zoom));
     more = gtk_tree_model_get_iter_first(model, &iter);
@@ -974,8 +1116,8 @@ void gldb_gui_image_allocate(GldbGuiImage *image, GldbGuiImageType type,
         image->texture_target = GL_TEXTURE_3D_EXT;
         break;
 #endif
-#ifdef GL_EXT_texture_cube
-    case GLDB_GUI_IMAGE_TYPE_CUBE:
+#ifdef GL_EXT_texture_cube_map
+    case GLDB_GUI_IMAGE_TYPE_CUBE_MAP:
         image->texture_target = GL_TEXTURE_CUBE_MAP_EXT;
         break;
 #endif
