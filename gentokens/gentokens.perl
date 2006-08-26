@@ -63,6 +63,9 @@ sub compare_token_values
     # will do want we want (core first, ARB second, other after), but if
     # the token was renamed then we have a problem. The table below forces
     # certain names to sort later.
+    # We also control the sort order for core tokens with values 0 or 1,
+    # since there is a lot of aliasing there. The tokens that are sorted
+    # later are handled by special dumping functions.
     my %name_map = ("GL_ATTRIB_ARRAY_SIZE_NV" => 1,
                     "GL_ATTRIB_ARRAY_STRIDE_NV" => 1,
                     "GL_ATTRIB_ARRAY_TYPE_NV" => 1,
@@ -72,10 +75,16 @@ sub compare_token_values
                     "GL_CURRENT_OCCLUSION_QUERY_ID_NV" => 1,
                     "GL_PIXEL_COUNTER_BITS_NV" => 1,
                     "GL_TEXTURE_COMPONENTS" => 1,
-                    "GL_CURRENT_ATTRIB_NV" => 1);
-    
+                    "GL_CURRENT_ATTRIB_NV" => 1,
+
+                    "GL_TRUE" => 1,
+                    "GL_FALSE" => 1,
+                    "GL_NO_ERROR" => 1,
+                    "GL_ZERO" => 1,
+                    "GL_ONE" => 1);
+
     return $a->[1] <=> $b->[1] if $a->[1] != $b->[1];
-    
+
     return 0 if (exists $name_map{$a->[0]} && exists $name_map{$b->[0]});
     return 1 if (exists $name_map{$a->[0]});
     return -1 if (exists $name_map{$b->[0]});
@@ -89,7 +98,7 @@ sub dump_toks(@)
     {
         my ($group, $value, $ver, $ext) = @$i;
         ($ver, $ext) = text_versions($ver, $ext);
-        
+
         print ",\n" unless $first; $first = 0;
         printf("    { \"%s\", 0x%.4x, %s, %s }", $group, $value, $ver, $ext);
     }

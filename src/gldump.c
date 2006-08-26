@@ -329,7 +329,6 @@ bool bugle_dump_GLerror(GLenum err, FILE *out)
     return true;
 }
 
-/* FIXME: redo definition of alternate enums, based on sort order */
 bool bugle_dump_GLalternateenum(GLenum token, FILE *out)
 {
     switch (token)
