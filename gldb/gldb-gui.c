@@ -649,14 +649,16 @@ static gboolean response_callback_framebuffer(GldbWindow *context,
                 while (texture_height < height) texture_height *= 2;
             }
 
-            /* Allow NPOT framebuffers on POT textures by filling into one corner */
 #ifdef GL_SGIS_generate_mipmap
             if (gdk_gl_query_gl_extension("GL_SGIS_generate_mipmap"))
             {
                 glTexParameteri(GL_TEXTURE_2D, GL_GENERATE_MIPMAP_SGIS, GL_TRUE);
-                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+                context->framebuffer.viewer->texture_min_filter = GL_LINEAR_MIPMAP_LINEAR;
             }
+            else
+                context->framebuffer.viewer->texture_min_filter = GL_LINEAR;
 #endif
+            /* Allow NPOT framebuffers on POT textures by filling into one corner */
             glTexImage2D(GL_TEXTURE_2D, 0, format, texture_width, texture_height, 0, format, GL_FLOAT, NULL);
             glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, width, height, format, GL_FLOAT, r->data);
             gdk_gl_drawable_gl_end(gldrawable);
