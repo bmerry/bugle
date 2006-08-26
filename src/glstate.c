@@ -20,9 +20,9 @@
  * - paletted textures (need to extend color_table_parameter, which is
  *   complicated by the fact that the palette belongs to the texture not
  *   the target).
- * - pixel buffer objects
- * - find EXT_framebuffer_object support
- * - all the image state (texures, color tables, maps, pixel maps, convolution, stipple etc)
+ * - EXT_framebuffer_blit and EXT_framebuffer_multisample
+ * - matrix stacks
+ * - all the image state (textures, color tables, maps, pixel maps, convolution, stipple etc)
  */
 
 #if HAVE_CONFIG_H
@@ -189,11 +189,11 @@ static const state_info global_state[] =
     { STATE_NAME(GL_COLOR_ARRAY_STRIDE), TYPE_5GLint, -1, BUGLE_GL_VERSION_1_1, -1, STATE_GLOBAL },
     { STATE_NAME(GL_COLOR_ARRAY_POINTER), TYPE_P6GLvoid, -1, BUGLE_GL_VERSION_1_1, -1, STATE_GLOBAL },
 #ifdef GL_EXT_secondary_color
-    { STATE_NAME_EXT(GL_SECONDARY_COLOR_ARRAY, _EXT), TYPE_9GLboolean, -1, BUGLE_GL_EXT_fog_coord, -1, STATE_ENABLED },
-    { STATE_NAME_EXT(GL_SECONDARY_COLOR_ARRAY_SIZE, _EXT), TYPE_5GLint, -1, BUGLE_GL_EXT_fog_coord, -1, STATE_GLOBAL },
-    { STATE_NAME_EXT(GL_SECONDARY_COLOR_ARRAY_TYPE, _EXT), TYPE_6GLenum, -1, BUGLE_GL_EXT_fog_coord, -1, STATE_GLOBAL },
-    { STATE_NAME_EXT(GL_SECONDARY_COLOR_ARRAY_STRIDE, _EXT), TYPE_5GLint, -1, BUGLE_GL_EXT_fog_coord, -1, STATE_GLOBAL },
-    { STATE_NAME_EXT(GL_SECONDARY_COLOR_ARRAY_POINTER, _EXT), TYPE_P6GLvoid, -1, BUGLE_GL_EXT_fog_coord, -1, STATE_GLOBAL },
+    { STATE_NAME_EXT(GL_SECONDARY_COLOR_ARRAY, _EXT), TYPE_9GLboolean, -1, BUGLE_GL_EXT_secondary_color, -1, STATE_ENABLED },
+    { STATE_NAME_EXT(GL_SECONDARY_COLOR_ARRAY_SIZE, _EXT), TYPE_5GLint, -1, BUGLE_GL_EXT_secondary_color, -1, STATE_GLOBAL },
+    { STATE_NAME_EXT(GL_SECONDARY_COLOR_ARRAY_TYPE, _EXT), TYPE_6GLenum, -1, BUGLE_GL_EXT_secondary_color, -1, STATE_GLOBAL },
+    { STATE_NAME_EXT(GL_SECONDARY_COLOR_ARRAY_STRIDE, _EXT), TYPE_5GLint, -1, BUGLE_GL_EXT_secondary_color, -1, STATE_GLOBAL },
+    { STATE_NAME_EXT(GL_SECONDARY_COLOR_ARRAY_POINTER, _EXT), TYPE_P6GLvoid, -1, BUGLE_GL_EXT_secondary_color, -1, STATE_GLOBAL },
 #endif
     { STATE_NAME(GL_INDEX_ARRAY), TYPE_9GLboolean, -1, BUGLE_GL_VERSION_1_1, -1, STATE_ENABLED },
     { STATE_NAME(GL_INDEX_ARRAY_TYPE), TYPE_6GLenum, -1, BUGLE_GL_VERSION_1_1, -1, STATE_GLOBAL },
@@ -261,6 +261,9 @@ static const state_info global_state[] =
     { STATE_NAME_EXT(GL_POINT_SIZE_MAX, _EXT), TYPE_8GLdouble, -1, BUGLE_GL_EXT_point_parameters, -1, STATE_GLOBAL },
     { STATE_NAME_EXT(GL_POINT_FADE_THRESHOLD_SIZE, _EXT), TYPE_8GLdouble, -1, BUGLE_GL_EXT_point_parameters, -1, STATE_GLOBAL },
     { "GL_POINT_DISTANCE_ATTENUATION", GL_DISTANCE_ATTENUATION_EXT, TYPE_8GLdouble, 3, BUGLE_GL_EXT_point_parameters, -1, STATE_GLOBAL },
+#endif
+#ifdef GL_VERSION_2_0
+    { STATE_NAME(GL_POINT_SPRITE_COORD_ORIGIN), TYPE_6GLenum, -1, BUGLE_GL_VERSION_2_0, -1, STATE_GLOBAL },
 #endif
     { STATE_NAME(GL_LINE_WIDTH), TYPE_8GLdouble, -1, BUGLE_GL_VERSION_1_1, -1, STATE_GLOBAL },
     { STATE_NAME(GL_LINE_SMOOTH), TYPE_9GLboolean, -1, BUGLE_GL_VERSION_1_1, -1, STATE_ENABLED },
@@ -372,6 +375,10 @@ static const state_info global_state[] =
     { STATE_NAME(GL_PACK_SKIP_ROWS), TYPE_5GLint, -1, BUGLE_GL_VERSION_1_1, -1, STATE_GLOBAL },
     { STATE_NAME(GL_PACK_SKIP_PIXELS), TYPE_5GLint, -1, BUGLE_GL_VERSION_1_1, -1, STATE_GLOBAL },
     { STATE_NAME(GL_PACK_ALIGNMENT), TYPE_5GLint, -1, BUGLE_GL_VERSION_1_1, -1, STATE_GLOBAL },
+#ifdef GL_EXT_pixel_buffer_object
+    { STATE_NAME_EXT(GL_PIXEL_PACK_BUFFER_BINDING, _EXT), TYPE_5GLint, -1, BUGLE_GL_EXT_pixel_buffer_object, -1, STATE_GLOBAL },
+    { STATE_NAME_EXT(GL_PIXEL_UNPACK_BUFFER_BINDING, _EXT), TYPE_5GLint, -1, BUGLE_GL_EXT_pixel_buffer_object, -1, STATE_GLOBAL },
+#endif
     { STATE_NAME(GL_MAP_COLOR), TYPE_9GLboolean, -1, BUGLE_GL_VERSION_1_1, -1, STATE_GLOBAL },
     { STATE_NAME(GL_MAP_STENCIL), TYPE_9GLboolean, -1, BUGLE_GL_VERSION_1_1, -1, STATE_GLOBAL },
     { STATE_NAME(GL_INDEX_SHIFT), TYPE_5GLint, -1, BUGLE_GL_VERSION_1_1, -1, STATE_GLOBAL },
@@ -487,8 +494,8 @@ static const state_info global_state[] =
 #ifdef GL_EXT_texture_lod_bias
     { STATE_NAME_EXT(GL_MAX_TEXTURE_LOD_BIAS, _EXT), TYPE_8GLdouble, -1, BUGLE_GL_EXT_texture_lod_bias, -1, STATE_GLOBAL },
 #endif
-#ifdef GL_ARB_texture_cube_map
-    { STATE_NAME_EXT(GL_MAX_CUBE_MAP_TEXTURE_SIZE, _ARB), TYPE_5GLint, -1, BUGLE_GL_ARB_texture_cube_map, -1, STATE_GLOBAL },
+#ifdef GL_EXT_texture_cube_map
+    { STATE_NAME_EXT(GL_MAX_CUBE_MAP_TEXTURE_SIZE, _EXT), TYPE_5GLint, -1, BUGLE_GL_EXT_texture_cube_map, -1, STATE_GLOBAL },
 #endif
     { STATE_NAME(GL_MAX_PIXEL_MAP_TABLE), TYPE_5GLint, -1, BUGLE_GL_VERSION_1_1, -1, STATE_GLOBAL },
     { STATE_NAME(GL_MAX_NAME_STACK_DEPTH), TYPE_5GLint, -1, BUGLE_GL_VERSION_1_1, -1, STATE_GLOBAL },
@@ -739,8 +746,8 @@ static const state_info tex_unit_state[] =
 #ifdef GL_EXT_texture3D
     { STATE_NAME_EXT(GL_TEXTURE_3D, _EXT), TYPE_9GLboolean, -1, BUGLE_GL_EXT_texture3D, -1, STATE_TEX_UNIT_ENABLED | STATE_SELECT_TEXTURE_ENV },
 #endif
-#ifdef GL_ARB_texture_cube_map
-    { STATE_NAME_EXT(GL_TEXTURE_CUBE_MAP, _ARB), TYPE_9GLboolean, -1, BUGLE_GL_ARB_texture_cube_map, -1, STATE_TEX_UNIT_ENABLED | STATE_SELECT_TEXTURE_ENV },
+#ifdef GL_EXT_texture_cube_map
+    { STATE_NAME_EXT(GL_TEXTURE_CUBE_MAP, _EXT), TYPE_9GLboolean, -1, BUGLE_GL_EXT_texture_cube_map, -1, STATE_TEX_UNIT_ENABLED | STATE_SELECT_TEXTURE_ENV },
 #endif
 #ifdef GL_NV_texture_rectangle
     { STATE_NAME_EXT(GL_TEXTURE_RECTANGLE, _NV), TYPE_9GLboolean, -1, BUGLE_GL_NV_texture_rectangle, -1, STATE_TEX_UNIT_ENABLED | STATE_SELECT_TEXTURE_ENV },
@@ -750,8 +757,8 @@ static const state_info tex_unit_state[] =
 #ifdef GL_VERSION_1_2
     { STATE_NAME(GL_TEXTURE_BINDING_3D), TYPE_5GLint, -1, BUGLE_GL_VERSION_1_2, -1, STATE_TEX_UNIT | STATE_SELECT_TEXTURE_IMAGE }, /* Note: GL_EXT_texture3D doesn't define this! */
 #endif
-#ifdef GL_ARB_texture_cube_map
-    { STATE_NAME_EXT(GL_TEXTURE_BINDING_CUBE_MAP, _ARB), TYPE_5GLint, -1, BUGLE_GL_ARB_texture_cube_map, -1, STATE_TEX_UNIT | STATE_SELECT_TEXTURE_IMAGE },
+#ifdef GL_EXT_texture_cube_map
+    { STATE_NAME_EXT(GL_TEXTURE_BINDING_CUBE_MAP, _EXT), TYPE_5GLint, -1, BUGLE_GL_EXT_texture_cube_map, -1, STATE_TEX_UNIT | STATE_SELECT_TEXTURE_IMAGE },
 #endif
 #ifdef GL_NV_texture_rectangle
     { STATE_NAME_EXT(GL_TEXTURE_BINDING_RECTANGLE, _NV), TYPE_5GLint, -1, BUGLE_GL_NV_texture_rectangle, -1, STATE_TEX_UNIT | STATE_SELECT_TEXTURE_IMAGE },
@@ -1064,74 +1071,78 @@ typedef struct
 {
     const char *name;
     GLenum token;
-} enum_pair;
+    int extensions;
+} enum_list;
 
-static const enum_pair material_pairs[] =
+static const enum_list material_enums[] =
 {
-    { STATE_NAME(GL_FRONT) },
-    { STATE_NAME(GL_BACK) },
-    { NULL, GL_NONE }
+    { STATE_NAME(GL_FRONT), BUGLE_GL_VERSION_1_1 },
+    { STATE_NAME(GL_BACK), BUGLE_GL_VERSION_1_1 },
+    { NULL, GL_NONE, 0 }
 };
 
-#ifdef GL_ARB_texture_cube_map
-static const enum_pair cube_map_face_pairs[] =
+static const enum_list cube_map_face_enums[] =
 {
-    { STATE_NAME_EXT(GL_TEXTURE_CUBE_MAP_POSITIVE_X, _ARB) },
-    { STATE_NAME_EXT(GL_TEXTURE_CUBE_MAP_NEGATIVE_X, _ARB) },
-    { STATE_NAME_EXT(GL_TEXTURE_CUBE_MAP_POSITIVE_Y, _ARB) },
-    { STATE_NAME_EXT(GL_TEXTURE_CUBE_MAP_NEGATIVE_Y, _ARB) },
-    { STATE_NAME_EXT(GL_TEXTURE_CUBE_MAP_POSITIVE_Z, _ARB) },
-    { STATE_NAME_EXT(GL_TEXTURE_CUBE_MAP_NEGATIVE_Z, _ARB) },
-    { NULL, GL_NONE }
-};
+#ifdef GL_EXT_texture_cube_map
+    { STATE_NAME_EXT(GL_TEXTURE_CUBE_MAP_POSITIVE_X, _EXT), BUGLE_GL_EXT_texture_cube_map },
+    { STATE_NAME_EXT(GL_TEXTURE_CUBE_MAP_NEGATIVE_X, _EXT), BUGLE_GL_EXT_texture_cube_map },
+    { STATE_NAME_EXT(GL_TEXTURE_CUBE_MAP_POSITIVE_Y, _EXT), BUGLE_GL_EXT_texture_cube_map },
+    { STATE_NAME_EXT(GL_TEXTURE_CUBE_MAP_NEGATIVE_Y, _EXT), BUGLE_GL_EXT_texture_cube_map },
+    { STATE_NAME_EXT(GL_TEXTURE_CUBE_MAP_POSITIVE_Z, _EXT), BUGLE_GL_EXT_texture_cube_map },
+    { STATE_NAME_EXT(GL_TEXTURE_CUBE_MAP_NEGATIVE_Z, _EXT), BUGLE_GL_EXT_texture_cube_map },
 #endif
-
-static const enum_pair tex_gen_pairs[] =
-{
-    { STATE_NAME(GL_S) },
-    { STATE_NAME(GL_T) },
-    { STATE_NAME(GL_R) },
-    { STATE_NAME(GL_Q) },
-    { NULL, GL_NONE }
+    { NULL, GL_NONE, 0 }
 };
 
-static const enum_pair color_table_parameter_pairs[] =
+static const enum_list tex_gen_enums[] =
 {
-    { STATE_NAME(GL_COLOR_TABLE) },
-    { STATE_NAME(GL_POST_CONVOLUTION_COLOR_TABLE) },
-    { STATE_NAME(GL_POST_COLOR_MATRIX_COLOR_TABLE) },
-    { STATE_NAME(GL_PROXY_COLOR_TABLE) },
-    { STATE_NAME(GL_PROXY_POST_CONVOLUTION_COLOR_TABLE) },
-    { STATE_NAME(GL_PROXY_POST_COLOR_MATRIX_COLOR_TABLE) },
-    { NULL, GL_NONE }
+    { STATE_NAME(GL_S), BUGLE_GL_VERSION_1_1 },
+    { STATE_NAME(GL_T), BUGLE_GL_VERSION_1_1 },
+    { STATE_NAME(GL_R), BUGLE_GL_VERSION_1_1 },
+    { STATE_NAME(GL_Q), BUGLE_GL_VERSION_1_1 },
+    { NULL, GL_NONE, 0 }
 };
 
-static const enum_pair convolution_parameter_pairs[] =
+static const enum_list color_table_parameter_enums[] =
 {
-    { STATE_NAME(GL_CONVOLUTION_1D) },
-    { STATE_NAME(GL_CONVOLUTION_2D) },
-    { NULL, GL_NONE }
+    { STATE_NAME(GL_COLOR_TABLE), BUGLE_GL_ARB_imaging },
+    { STATE_NAME(GL_POST_CONVOLUTION_COLOR_TABLE), BUGLE_GL_ARB_imaging },
+    { STATE_NAME(GL_POST_COLOR_MATRIX_COLOR_TABLE), BUGLE_GL_ARB_imaging },
+    { STATE_NAME(GL_PROXY_COLOR_TABLE), BUGLE_GL_ARB_imaging },
+    { STATE_NAME(GL_PROXY_POST_CONVOLUTION_COLOR_TABLE), BUGLE_GL_ARB_imaging },
+    { STATE_NAME(GL_PROXY_POST_COLOR_MATRIX_COLOR_TABLE), BUGLE_GL_ARB_imaging },
+    { NULL, GL_NONE, 0 }
 };
 
-static const enum_pair histogram_parameter_pairs[] =
+static const enum_list convolution_parameter_enums[] =
 {
-    { STATE_NAME(GL_HISTOGRAM) },
-    { STATE_NAME(GL_PROXY_HISTOGRAM) },
-    { NULL, GL_NONE }
+    { STATE_NAME(GL_CONVOLUTION_1D), BUGLE_GL_ARB_imaging },
+    { STATE_NAME(GL_CONVOLUTION_2D), BUGLE_GL_ARB_imaging },
+    { NULL, GL_NONE, 0 }
 };
 
-static const enum_pair minmax_parameter_pairs[] =
+static const enum_list histogram_parameter_enums[] =
 {
-    { STATE_NAME(GL_MINMAX) },
-    { NULL, GL_NONE }
+    { STATE_NAME(GL_HISTOGRAM), BUGLE_GL_ARB_imaging },
+    { STATE_NAME(GL_PROXY_HISTOGRAM), BUGLE_GL_ARB_imaging },
+    { NULL, GL_NONE, 0 }
 };
 
-static const enum_pair query_pairs[] =
+static const enum_list minmax_parameter_enums[] =
+{
+    { STATE_NAME(GL_MINMAX), BUGLE_GL_ARB_imaging },
+    { NULL, GL_NONE, 0 }
+};
+
+static const enum_list query_enums[] =
 {
 #ifdef GL_ARB_occlusion_query
-    { STATE_NAME_EXT(GL_SAMPLES_PASSED, _ARB) },
+    { STATE_NAME_EXT(GL_SAMPLES_PASSED, _ARB), BUGLE_GL_ARB_occlusion_query },
 #endif
-    { NULL, GL_NONE }
+#ifdef GL_EXT_timer_query
+    { STATE_NAME_EXT(GL_TIME_ELAPSED, _EXT), BUGLE_GL_EXT_timer_query },
+#endif
+    { NULL, GL_NONE, 0 }
 };
 
 /* This exists to simplify the work of gldump.c */
@@ -1858,7 +1869,7 @@ static void make_leaves(const glstate *self, const state_info *table,
 }
 
 static void make_fixed(const glstate *self,
-                       const enum_pair *pairs,
+                       const enum_list *enums,
                        size_t offset,
                        void (*spawn)(const glstate *, bugle_linked_list *),
                        bugle_linked_list *children)
@@ -1866,17 +1877,18 @@ static void make_fixed(const glstate *self,
     size_t i;
     glstate *child;
 
-    for (i = 0; pairs[i].name; i++)
-    {
-        child = bugle_malloc(sizeof(glstate));
-        *child = *self;
-        child->info = NULL;
-        child->name = bugle_strdup(pairs[i].name);
-        child->enum_name = pairs[i].token;
-        *(GLenum *) (((char *) child) + offset) = pairs[i].token;
-        child->spawn_children = spawn;
-        bugle_list_append(children, child);
-    }
+    for (i = 0; enums[i].name; i++)
+        if (bugle_gl_has_extension_group(enums[i].extensions))
+        {
+            child = bugle_malloc(sizeof(glstate));
+            *child = *self;
+            child->info = NULL;
+            child->name = bugle_strdup(enums[i].name);
+            child->enum_name = enums[i].token;
+            *(GLenum *) (((char *) child) + offset) = enums[i].token;
+            child->spawn_children = spawn;
+            bugle_list_append(children, child);
+        }
 }
 
 static void make_counted(const glstate *self,
@@ -2085,7 +2097,7 @@ static void spawn_children_tex_unit(const glstate *self, bugle_linked_list *chil
     }
 
     if (!(mask & STATE_SELECT_TEXTURE_COORD))
-        make_fixed(self, tex_gen_pairs, offsetof(glstate, target),
+        make_fixed(self, tex_gen_enums, offsetof(glstate, target),
                    spawn_children_tex_gen, children);
 }
 
@@ -2102,9 +2114,9 @@ static uint32_t texture_mask(GLenum target)
     case GL_TEXTURE_1D: mask |= STATE_SELECT_NO_1D; break;
     case GL_PROXY_TEXTURE_2D: mask |= STATE_SELECT_NO_PROXY; /* Fall through */
     case GL_TEXTURE_2D: mask |= STATE_SELECT_NO_2D; break;
-#ifdef GL_ARB_texture_cube_map
-    case GL_PROXY_TEXTURE_CUBE_MAP_ARB: mask |= STATE_SELECT_NO_PROXY; /* Fall through */
-    case GL_TEXTURE_CUBE_MAP_ARB: mask |= STATE_SELECT_NO_2D; break;
+#ifdef GL_EXT_texture_cube_map
+    case GL_PROXY_TEXTURE_CUBE_MAP_EXT: mask |= STATE_SELECT_NO_PROXY; /* Fall through */
+    case GL_TEXTURE_CUBE_MAP_EXT: mask |= STATE_SELECT_NO_2D; break;
 #endif
 #ifdef GL_NV_texture_rectangle
     case GL_PROXY_TEXTURE_RECTANGLE_NV: mask |= STATE_SELECT_NO_PROXY; /* Fall through */
@@ -2144,7 +2156,7 @@ static void spawn_children_tex_level_parameter(const glstate *self, bugle_linked
                             mask | texture_mask(self->target), children);
 }
 
-#ifdef GL_ARB_texture_cube_map
+#ifdef GL_EXT_texture_cube_map
 static void spawn_children_cube_map_faces(const glstate *self, bugle_linked_list *children)
 {
     bugle_list_init(children, true);
@@ -2158,10 +2170,10 @@ static void spawn_children_tex_parameter(const glstate *self, bugle_linked_list 
     if (self->binding) /* Zero indicates a proxy, which have no texture parameter state */
         make_leaves_conditional(self, tex_parameter_state, 0,
                                 texture_mask(self->target), children);
-#ifdef GL_ARB_texture_cube_map
-    if (self->target == GL_TEXTURE_CUBE_MAP_ARB)
+#ifdef GL_EXT_texture_cube_map
+    if (self->target == GL_TEXTURE_CUBE_MAP_EXT)
     {
-        make_fixed(self, cube_map_face_pairs, offsetof(glstate, face),
+        make_fixed(self, cube_map_face_enums, offsetof(glstate, face),
                    spawn_children_cube_map_faces, children);
         return;
     }
@@ -2595,15 +2607,15 @@ static void spawn_children_global(const glstate *self, bugle_linked_list *childr
     }
 #endif
 
-    make_fixed(self, material_pairs, offsetof(glstate, target),
+    make_fixed(self, material_enums, offsetof(glstate, target),
                spawn_children_material, children);
-    make_fixed(self, color_table_parameter_pairs, offsetof(glstate, target),
+    make_fixed(self, color_table_parameter_enums, offsetof(glstate, target),
                spawn_children_color_table_parameter, children);
-    make_fixed(self, convolution_parameter_pairs, offsetof(glstate, target),
+    make_fixed(self, convolution_parameter_enums, offsetof(glstate, target),
                spawn_children_convolution_parameter, children);
-    make_fixed(self, histogram_parameter_pairs, offsetof(glstate, target),
+    make_fixed(self, histogram_parameter_enums, offsetof(glstate, target),
                spawn_children_histogram_parameter, children);
-    make_fixed(self, minmax_parameter_pairs, offsetof(glstate, target),
+    make_fixed(self, minmax_parameter_enums, offsetof(glstate, target),
                spawn_children_minmax_parameter, children);
 
 #ifdef GL_ARB_vertex_program
@@ -2632,15 +2644,15 @@ static void spawn_children_global(const glstate *self, bugle_linked_list *childr
                         0, spawn_children_tex_target, NULL, children);
     }
 #endif
-#ifdef GL_ARB_texture_cube_map
-    if (bugle_gl_has_extension_group(BUGLE_GL_ARB_texture_cube_map))
+#ifdef GL_EXT_texture_cube_map
+    if (bugle_gl_has_extension_group(BUGLE_GL_EXT_texture_cube_map))
     {
         make_target(self, "GL_TEXTURE_CUBE_MAP",
-                    GL_TEXTURE_CUBE_MAP_ARB,
-                    GL_TEXTURE_BINDING_CUBE_MAP_ARB,
+                    GL_TEXTURE_CUBE_MAP_EXT,
+                    GL_TEXTURE_BINDING_CUBE_MAP_EXT,
                     spawn_children_tex_target, NULL, children);
         make_target(self, "GL_PROXY_TEXTURE_CUBE_MAP",
-                    GL_PROXY_TEXTURE_CUBE_MAP_ARB,
+                    GL_PROXY_TEXTURE_CUBE_MAP_EXT,
                     0,
                     spawn_children_tex_target, NULL, children);
     }
@@ -2662,7 +2674,7 @@ static void spawn_children_global(const glstate *self, bugle_linked_list *childr
 #ifdef GL_ARB_occlusion_query
     if (bugle_gl_has_extension_group(BUGLE_GL_ARB_occlusion_query))
     {
-        make_fixed(self, query_pairs, offsetof(glstate, target),
+        make_fixed(self, query_enums, offsetof(glstate, target),
                    spawn_children_query, children);
         make_objects(self, BUGLE_TRACKOBJECTS_QUERY, GL_NONE, false,
                      "Query[%lu]", spawn_children_query_object, NULL, children);
@@ -2699,11 +2711,11 @@ static void spawn_children_global(const glstate *self, bugle_linked_list *childr
 #ifdef GL_EXT_framebuffer_object
     if (bugle_gl_has_extension_group(BUGLE_GL_EXT_framebuffer_object))
     {
-        make_target(self, "GL_FRAMEBUFFER",
+        make_target(self, "GL_FRAMEBUFFER_EXT",
                     GL_FRAMEBUFFER_EXT,
                     GL_FRAMEBUFFER_BINDING_EXT,
                     spawn_children_framebuffer, NULL, children);
-        make_target(self, "GL_RENDERBUFFER",
+        make_target(self, "GL_RENDERBUFFER_EXT",
                     GL_RENDERBUFFER_EXT,
                     GL_RENDERBUFFER_BINDING_EXT,
                     spawn_children_renderbuffer, NULL, children);
