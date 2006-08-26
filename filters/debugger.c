@@ -151,6 +151,26 @@ static void dump_any_call_string_io(FILE *out, void *data)
     budgie_dump_any_call(&((const function_call *) data)->generic, 0, out);
 }
 
+static GLenum target_to_binding(GLenum target)
+{
+    switch (target)
+    {
+    case GL_TEXTURE_1D: return GL_TEXTURE_BINDING_1D;
+    case GL_TEXTURE_2D: return GL_TEXTURE_BINDING_2D;
+#if defined(GL_EXT_texture_object) && defined(GL_EXT_texture3D)
+    case GL_TEXTURE_3D_EXT: return GL_TEXTURE_3D_BINDING_EXT;
+#endif
+#ifdef GL_ARB_texture_cube_map
+    case GL_TEXTURE_CUBE_MAP_ARB: return GL_TEXTURE_BINDING_CUBE_MAP_ARB;
+#endif
+#ifdef GL_NV_texture_rectangle
+    case GL_TEXTURE_RECTANGLE_NV: return GL_TEXTURE_BINDING_RECTANGLE_NV;
+#endif
+    default:
+        return GL_NONE;
+    }
+}
+
 /* Utility functions and structures for image grabbers. When doing
  * grabbing from the primary context, we need to save the current pixel
  * client state so that it can be set to known values, then restored.
@@ -238,6 +258,7 @@ static bool send_data_texture(uint32_t id, GLuint texid, GLenum target,
     char *data;
     size_t length;
     GLint width = 1, height = 1, depth = 1;
+    GLint old_tex;
 
     Display *dpy = NULL;
     GLXContext aux = NULL, real = NULL;
@@ -267,7 +288,10 @@ static bool send_data_texture(uint32_t id, GLuint texid, GLenum target,
         CALL_glPixelStorei(GL_PACK_ALIGNMENT, 1);
     }
     else
+    {
+        CALL_glGetIntegerv(target_to_binding(target), &old_tex);
         pixel_pack_reset(&old_pack);
+    }
 
     CALL_glBindTexture(target, texid);
 
@@ -294,7 +318,10 @@ static bool send_data_texture(uint32_t id, GLuint texid, GLenum target,
         CALL_glXMakeContextCurrent(dpy, old_write, old_read, real);
     }
     else
+    {
+        glBindTexture(target, old_tex);
         pixel_pack_restore(&old_pack);
+    }
 
     gldb_protocol_send_code(out_pipe, RESP_DATA);
     gldb_protocol_send_code(out_pipe, id);
@@ -342,22 +369,8 @@ static bool get_framebuffer_size(GLuint fbo, GLenum target, GLenum attachment,
             CALL_glGetFramebufferAttachmentParameterivEXT(target, attachment,
                                                           GL_FRAMEBUFFER_ATTACHMENT_TEXTURE_LEVEL_EXT, &level);
             texture_target = bugle_trackobjects_get_target(BUGLE_TRACKOBJECTS_TEXTURE, name);
-            switch (texture_target)
-            {
-            case GL_TEXTURE_1D: texture_binding = GL_TEXTURE_BINDING_1D; break;
-            case GL_TEXTURE_2D: texture_binding = GL_TEXTURE_BINDING_2D; break;
-#ifdef GL_EXT_texture3D
-            case GL_TEXTURE_3D: texture_binding = GL_TEXTURE_BINDING_3D; break;
-#endif
-#ifdef GL_EXT_texture_cube_map
-            case GL_TEXTURE_CUBE_MAP_EXT: texture_binding = GL_TEXTURE_BINDING_CUBE_MAP_EXT; break;
-#endif
-#ifdef GL_NV_texture_rectangle
-            case GL_TEXTURE_RECTANGLE_NV: texture_binding = GL_TEXTURE_BINDING_RECTANGLE_NV; break;
-#endif
-            default:
-                return false;
-            }
+            texture_binding = target_to_enum(texture_target);
+            if (!texture_binding) return false;
 
             CALL_glGetIntegerv(texture_binding, &old_name);
             CALL_glBindTexture(texture_target, name);

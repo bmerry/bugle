@@ -1,8 +1,9 @@
 * Framebuffer viewer
-* (Possibly) eliminate double fetch of texture in gldb
-  FIXME: test with streaming texture before releasing
-* Fix numerous memory leaks in gldb
+* Eliminate double fetch of texture in gldb-gui
+* Restore texture binding when not using aux context for texture fetch
+* Fix numerous memory leaks in gldb-gui
 * Fix some reporting in trace filter-set
+* Fix GL_NONE displaying as GL_FALSE in some places
 * Added some missing state to the state display
 
 0.0.20060813

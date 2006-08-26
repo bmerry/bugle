@@ -26,6 +26,12 @@ static void display(void)
         1, 1,
         0, 1
     };
+    GLubyte color[3];
+
+    color[0] = rand() & 0xff;
+    color[1] = rand() & 0xff;
+    color[2] = rand() & 0xff;
+    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 1, 1, GL_RGB, GL_UNSIGNED_BYTE, color);
 
     glClearColor(0.0, 0.0, 1.0, 0.0);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -132,6 +138,13 @@ static void init_gl()
         glTexParameteri(GL_TEXTURE_3D_EXT, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     }
 #endif
+
+    /* A 1-pixel texture that is updated every frame, to test that the
+     * viewer updates properly.
+     */
+    glGenTextures(1, &id);
+    glBindTexture(GL_TEXTURE_2D, id);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB8, 1, 1, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
 
     glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
     glEnable(GL_TEXTURE_2D);

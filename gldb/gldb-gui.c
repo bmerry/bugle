@@ -502,9 +502,9 @@ static gboolean response_callback_texture(GldbWindow *context,
             level = &context->texture.progressive.levels[data->level];
             switch (context->texture.progressive.type)
             {
-#ifdef GL_EXT_texture_cube_map
+#ifdef GL_ARB_texture_cube_map
             case GLDB_GUI_IMAGE_TYPE_CUBE_MAP:
-                plane = data->face - GL_TEXTURE_CUBE_MAP_POSITIVE_X;
+                plane = data->face - GL_TEXTURE_CUBE_MAP_POSITIVE_X_ARB;
                 face = data->face;
                 /* Fall through */
                 /* FIXME: test for cube map extension first */
@@ -1207,8 +1207,8 @@ static void update_texture_ids(GldbWindow *context)
 #ifdef GL_EXT_texture3D
         GL_TEXTURE_3D_EXT,
 #endif
-#ifdef GL_EXT_texture_cube_map
-        GL_TEXTURE_CUBE_MAP_EXT,
+#ifdef GL_ARB_texture_cube_map
+        GL_TEXTURE_CUBE_MAP_ARB,
 #endif
 #ifdef GL_NV_texture_rectangle
         GL_TEXTURE_RECTANGLE_NV
@@ -1220,8 +1220,8 @@ static void update_texture_ids(GldbWindow *context)
 #ifdef GL_EXT_texture3D
         "3D",
 #endif
-#ifdef GL_EXT_texture_cube_map
-        "cube",
+#ifdef GL_ARB_texture_cube_map
+        "cube-map",
 #endif
 #ifdef GL_NV_texture_rectangle
         "rect"
@@ -1247,9 +1247,9 @@ static void update_texture_ids(GldbWindow *context)
             {
                 /* Count the levels */
                 f = t;
-#ifdef GL_EXT_texture_cube_map
-                if (targets[trg] == GL_TEXTURE_CUBE_MAP_EXT)
-                    f = state_find_child_enum(t, GL_TEXTURE_CUBE_MAP_POSITIVE_X_EXT);
+#ifdef GL_ARB_texture_cube_map
+                if (targets[trg] == GL_TEXTURE_CUBE_MAP_ARB)
+                    f = state_find_child_enum(t, GL_TEXTURE_CUBE_MAP_POSITIVE_X_ARB);
 #endif
                 levels = 0;
                 channels = 0;
@@ -1314,14 +1314,14 @@ static void texture_id_changed(GtkComboBox *id_box, gpointer user_data)
 
         for (l = 0; l < levels; l++)
         {
-#ifdef GL_EXT_texture_cube_map
-            if (target == GL_TEXTURE_CUBE_MAP_EXT)
+#ifdef GL_ARB_texture_cube_map
+            if (target == GL_TEXTURE_CUBE_MAP_ARB)
             {
                 for (i = 0; i < 6; i++)
                 {
                     data = (texture_callback_data *) bugle_malloc(sizeof(texture_callback_data));
                     data->target = target;
-                    data->face = GL_TEXTURE_CUBE_MAP_POSITIVE_X_EXT + i;
+                    data->face = GL_TEXTURE_CUBE_MAP_POSITIVE_X_ARB + i;
                     data->level = l;
                     data->channels = channels;
                     data->flags = 0;

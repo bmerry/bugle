@@ -494,8 +494,8 @@ static const state_info global_state[] =
 #ifdef GL_EXT_texture_lod_bias
     { STATE_NAME_EXT(GL_MAX_TEXTURE_LOD_BIAS, _EXT), TYPE_8GLdouble, -1, BUGLE_GL_EXT_texture_lod_bias, -1, STATE_GLOBAL },
 #endif
-#ifdef GL_EXT_texture_cube_map
-    { STATE_NAME_EXT(GL_MAX_CUBE_MAP_TEXTURE_SIZE, _EXT), TYPE_5GLint, -1, BUGLE_GL_EXT_texture_cube_map, -1, STATE_GLOBAL },
+#ifdef GL_ARB_texture_cube_map
+    { STATE_NAME_EXT(GL_MAX_CUBE_MAP_TEXTURE_SIZE, _ARB), TYPE_5GLint, -1, BUGLE_GL_ARB_texture_cube_map, -1, STATE_GLOBAL },
 #endif
     { STATE_NAME(GL_MAX_PIXEL_MAP_TABLE), TYPE_5GLint, -1, BUGLE_GL_VERSION_1_1, -1, STATE_GLOBAL },
     { STATE_NAME(GL_MAX_NAME_STACK_DEPTH), TYPE_5GLint, -1, BUGLE_GL_VERSION_1_1, -1, STATE_GLOBAL },
@@ -746,8 +746,8 @@ static const state_info tex_unit_state[] =
 #ifdef GL_EXT_texture3D
     { STATE_NAME_EXT(GL_TEXTURE_3D, _EXT), TYPE_9GLboolean, -1, BUGLE_GL_EXT_texture3D, -1, STATE_TEX_UNIT_ENABLED | STATE_SELECT_TEXTURE_ENV },
 #endif
-#ifdef GL_EXT_texture_cube_map
-    { STATE_NAME_EXT(GL_TEXTURE_CUBE_MAP, _EXT), TYPE_9GLboolean, -1, BUGLE_GL_EXT_texture_cube_map, -1, STATE_TEX_UNIT_ENABLED | STATE_SELECT_TEXTURE_ENV },
+#ifdef GL_ARB_texture_cube_map
+    { STATE_NAME_EXT(GL_TEXTURE_CUBE_MAP, _ARB), TYPE_9GLboolean, -1, BUGLE_GL_ARB_texture_cube_map, -1, STATE_TEX_UNIT_ENABLED | STATE_SELECT_TEXTURE_ENV },
 #endif
 #ifdef GL_NV_texture_rectangle
     { STATE_NAME_EXT(GL_TEXTURE_RECTANGLE, _NV), TYPE_9GLboolean, -1, BUGLE_GL_NV_texture_rectangle, -1, STATE_TEX_UNIT_ENABLED | STATE_SELECT_TEXTURE_ENV },
@@ -757,8 +757,8 @@ static const state_info tex_unit_state[] =
 #ifdef GL_VERSION_1_2
     { STATE_NAME(GL_TEXTURE_BINDING_3D), TYPE_5GLint, -1, BUGLE_GL_VERSION_1_2, -1, STATE_TEX_UNIT | STATE_SELECT_TEXTURE_IMAGE }, /* Note: GL_EXT_texture3D doesn't define this! */
 #endif
-#ifdef GL_EXT_texture_cube_map
-    { STATE_NAME_EXT(GL_TEXTURE_BINDING_CUBE_MAP, _EXT), TYPE_5GLint, -1, BUGLE_GL_EXT_texture_cube_map, -1, STATE_TEX_UNIT | STATE_SELECT_TEXTURE_IMAGE },
+#ifdef GL_ARB_texture_cube_map
+    { STATE_NAME_EXT(GL_TEXTURE_BINDING_CUBE_MAP, _ARB), TYPE_5GLint, -1, BUGLE_GL_ARB_texture_cube_map, -1, STATE_TEX_UNIT | STATE_SELECT_TEXTURE_IMAGE },
 #endif
 #ifdef GL_NV_texture_rectangle
     { STATE_NAME_EXT(GL_TEXTURE_BINDING_RECTANGLE, _NV), TYPE_5GLint, -1, BUGLE_GL_NV_texture_rectangle, -1, STATE_TEX_UNIT | STATE_SELECT_TEXTURE_IMAGE },
@@ -1083,13 +1083,13 @@ static const enum_list material_enums[] =
 
 static const enum_list cube_map_face_enums[] =
 {
-#ifdef GL_EXT_texture_cube_map
-    { STATE_NAME_EXT(GL_TEXTURE_CUBE_MAP_POSITIVE_X, _EXT), BUGLE_GL_EXT_texture_cube_map },
-    { STATE_NAME_EXT(GL_TEXTURE_CUBE_MAP_NEGATIVE_X, _EXT), BUGLE_GL_EXT_texture_cube_map },
-    { STATE_NAME_EXT(GL_TEXTURE_CUBE_MAP_POSITIVE_Y, _EXT), BUGLE_GL_EXT_texture_cube_map },
-    { STATE_NAME_EXT(GL_TEXTURE_CUBE_MAP_NEGATIVE_Y, _EXT), BUGLE_GL_EXT_texture_cube_map },
-    { STATE_NAME_EXT(GL_TEXTURE_CUBE_MAP_POSITIVE_Z, _EXT), BUGLE_GL_EXT_texture_cube_map },
-    { STATE_NAME_EXT(GL_TEXTURE_CUBE_MAP_NEGATIVE_Z, _EXT), BUGLE_GL_EXT_texture_cube_map },
+#ifdef GL_ARB_texture_cube_map
+    { STATE_NAME_EXT(GL_TEXTURE_CUBE_MAP_POSITIVE_X, _ARB), BUGLE_GL_ARB_texture_cube_map },
+    { STATE_NAME_EXT(GL_TEXTURE_CUBE_MAP_NEGATIVE_X, _ARB), BUGLE_GL_ARB_texture_cube_map },
+    { STATE_NAME_EXT(GL_TEXTURE_CUBE_MAP_POSITIVE_Y, _ARB), BUGLE_GL_ARB_texture_cube_map },
+    { STATE_NAME_EXT(GL_TEXTURE_CUBE_MAP_NEGATIVE_Y, _ARB), BUGLE_GL_ARB_texture_cube_map },
+    { STATE_NAME_EXT(GL_TEXTURE_CUBE_MAP_POSITIVE_Z, _ARB), BUGLE_GL_ARB_texture_cube_map },
+    { STATE_NAME_EXT(GL_TEXTURE_CUBE_MAP_NEGATIVE_Z, _ARB), BUGLE_GL_ARB_texture_cube_map },
 #endif
     { NULL, GL_NONE, 0 }
 };
@@ -2114,9 +2114,9 @@ static uint32_t texture_mask(GLenum target)
     case GL_TEXTURE_1D: mask |= STATE_SELECT_NO_1D; break;
     case GL_PROXY_TEXTURE_2D: mask |= STATE_SELECT_NO_PROXY; /* Fall through */
     case GL_TEXTURE_2D: mask |= STATE_SELECT_NO_2D; break;
-#ifdef GL_EXT_texture_cube_map
-    case GL_PROXY_TEXTURE_CUBE_MAP_EXT: mask |= STATE_SELECT_NO_PROXY; /* Fall through */
-    case GL_TEXTURE_CUBE_MAP_EXT: mask |= STATE_SELECT_NO_2D; break;
+#ifdef GL_ARB_texture_cube_map
+    case GL_PROXY_TEXTURE_CUBE_MAP_ARB: mask |= STATE_SELECT_NO_PROXY; /* Fall through */
+    case GL_TEXTURE_CUBE_MAP_ARB: mask |= STATE_SELECT_NO_2D; break;
 #endif
 #ifdef GL_NV_texture_rectangle
     case GL_PROXY_TEXTURE_RECTANGLE_NV: mask |= STATE_SELECT_NO_PROXY; /* Fall through */
@@ -2156,7 +2156,7 @@ static void spawn_children_tex_level_parameter(const glstate *self, bugle_linked
                             mask | texture_mask(self->target), children);
 }
 
-#ifdef GL_EXT_texture_cube_map
+#ifdef GL_ARB_texture_cube_map
 static void spawn_children_cube_map_faces(const glstate *self, bugle_linked_list *children)
 {
     bugle_list_init(children, true);
@@ -2170,8 +2170,8 @@ static void spawn_children_tex_parameter(const glstate *self, bugle_linked_list 
     if (self->binding) /* Zero indicates a proxy, which have no texture parameter state */
         make_leaves_conditional(self, tex_parameter_state, 0,
                                 texture_mask(self->target), children);
-#ifdef GL_EXT_texture_cube_map
-    if (self->target == GL_TEXTURE_CUBE_MAP_EXT)
+#ifdef GL_ARB_texture_cube_map
+    if (self->target == GL_TEXTURE_CUBE_MAP_ARB)
     {
         make_fixed(self, cube_map_face_enums, offsetof(glstate, face),
                    spawn_children_cube_map_faces, children);
@@ -2644,15 +2644,15 @@ static void spawn_children_global(const glstate *self, bugle_linked_list *childr
                         0, spawn_children_tex_target, NULL, children);
     }
 #endif
-#ifdef GL_EXT_texture_cube_map
-    if (bugle_gl_has_extension_group(BUGLE_GL_EXT_texture_cube_map))
+#ifdef GL_ARB_texture_cube_map
+    if (bugle_gl_has_extension_group(BUGLE_GL_ARB_texture_cube_map))
     {
         make_target(self, "GL_TEXTURE_CUBE_MAP",
-                    GL_TEXTURE_CUBE_MAP_EXT,
-                    GL_TEXTURE_BINDING_CUBE_MAP_EXT,
+                    GL_TEXTURE_CUBE_MAP_ARB,
+                    GL_TEXTURE_BINDING_CUBE_MAP_ARB,
                     spawn_children_tex_target, NULL, children);
         make_target(self, "GL_PROXY_TEXTURE_CUBE_MAP",
-                    GL_PROXY_TEXTURE_CUBE_MAP_EXT,
+                    GL_PROXY_TEXTURE_CUBE_MAP_ARB,
                     0,
                     spawn_children_tex_target, NULL, children);
     }
