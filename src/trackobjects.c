@@ -382,7 +382,7 @@ static bool trackobjects_glDeleteFramebuffers(function_call *call, const callbac
 
 static bool trackobjects_glBindRenderbuffer(function_call *call, const callback_data *data)
 {
-    trackobjects_add_single(BUGLE_TRACKOBJECTS_FRAMEBUFFER,
+    trackobjects_add_single(BUGLE_TRACKOBJECTS_RENDERBUFFER,
                             *call->typed.glBindRenderbufferEXT.arg0,
                             *call->typed.glBindRenderbufferEXT.arg1,
                             FUNC_glIsRenderbufferEXT);
@@ -391,7 +391,7 @@ static bool trackobjects_glBindRenderbuffer(function_call *call, const callback_
 
 static bool trackobjects_glDeleteRenderbuffers(function_call *call, const callback_data *data)
 {
-    trackobjects_delete_multiple(BUGLE_TRACKOBJECTS_FRAMEBUFFER,
+    trackobjects_delete_multiple(BUGLE_TRACKOBJECTS_RENDERBUFFER,
                                  *call->typed.glDeleteRenderbuffersEXT.arg0,
                                  *call->typed.glDeleteRenderbuffersEXT.arg1,
                                  FUNC_glIsRenderbufferEXT);
