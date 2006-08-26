@@ -3,6 +3,7 @@
   FIXME: test with streaming texture before releasing
 * Fix numerous memory leaks in gldb
 * Fix some reporting in trace filter-set
+* Added some missing state to the state display
 
 0.0.20060813
 ------------

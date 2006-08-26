@@ -96,7 +96,7 @@ typedef struct
      * displaying NPOT textures or framebuffers on POT-only hardware,
      * where the texture size is rounded up.
      */
-    GLfloat s, t;
+    GLfloat s, t, r;
     GLenum texture_target;
 } GldbGuiImage;
 
@@ -120,7 +120,7 @@ typedef struct
     /* These are optional widgets that are allocated by the respective
      * function.
      */
-    GtkWidget *level;
+    GtkWidget *level, *face, *zoffset;
     GtkWidget *mag_filter, *min_filter;
     GtkCellRenderer *min_filter_renderer;
 } GldbGuiImageViewer;
@@ -130,6 +130,11 @@ GldbGuiImageViewer *gldb_gui_image_viewer_new(GtkStatusbar *statusbar,
 
 /* Creates an add-on level widget to control the level */
 GtkWidget *gldb_gui_image_viewer_level_new(GldbGuiImageViewer *viewer);
+
+/* Create add-on widgets to control the face on cube maps or the zoffset
+ * on 3D textures. */
+GtkWidget *gldb_gui_image_viewer_face_new(GldbGuiImageViewer *viewer);
+GtkWidget *gldb_gui_image_viewer_zoffset_new(GldbGuiImageViewer *viewer);
 
 /* Creates add-on widgets to control the filtering */
 GtkWidget *gldb_gui_image_viewer_filter_new(GldbGuiImageViewer *viewer, bool mag);
@@ -145,9 +150,14 @@ void gldb_gui_image_clear(GldbGuiImage *image);
 void gldb_gui_image_viewer_update_zoom(GldbGuiImageViewer *viewer);
 
 /* Rebuilds the levels widget with the appropriate levels for the
- * current texture. A levels widget must be present.
+ * current texture. A levels widget need not be present.
  */
 void gldb_gui_image_viewer_update_levels(GldbGuiImageViewer *viewer);
+
+/* Updates the sensitivity and range of the face and zoffset widgets, if
+ * any. This routine may or may not schedule a redraw.
+ */
+void gldb_gui_image_viewer_update_face_zoffset(GldbGuiImageViewer *viewer);
 
 /* Sets the sensitivity of the mipmapping min-filters. */
 void gldb_gui_image_viewer_update_min_filter(GldbGuiImageViewer *viewer,

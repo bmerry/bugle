@@ -527,7 +527,7 @@ static gboolean response_callback_texture(GldbWindow *context,
                 }
                 break;
 #ifdef GL_EXT_texture3D
-            case GL_TEXTURE_3D_EXT:
+            case GLDB_GUI_IMAGE_TYPE_3D:
                 if (gdk_gl_query_gl_extension("GL_EXT_texture3D"))
                 {
                     glTexImage3DEXT(face, data->level, format,
@@ -544,7 +544,13 @@ static gboolean response_callback_texture(GldbWindow *context,
                         level->planes[plane].height = r->width;
                         level->planes[plane].channels = data->channels;
                         level->planes[plane].owns_pixels = (plane == 0);
-                        level->planes[plane].pixels = ((GLfloat *) r->data) + r->width * r->height * gldb_channel_count(data->channels);
+                        level->planes[plane].pixels = ((GLfloat *) r->data) + plane * r->width * r->height * gldb_channel_count(data->channels);
+                    }
+                    if (data->flags & TEXTURE_CALLBACK_FLAG_FIRST)
+                    {
+                        context->texture.progressive.s = (GLfloat) r->width / texture_width;
+                        context->texture.progressive.t = (GLfloat) r->height / texture_height;
+                        context->texture.progressive.r = (GLfloat) r->depth / texture_depth;
                     }
                     break;
                 }
@@ -563,8 +569,6 @@ static gboolean response_callback_texture(GldbWindow *context,
         gldb_gui_image_clear(&context->texture.active);
         context->texture.active = context->texture.progressive;
         context->texture.viewer->current = &context->texture.active;
-        context->texture.viewer->current_plane =
-            (context->texture.active.type == GLDB_GUI_IMAGE_TYPE_CUBE_MAP) ? -1 : 0;
         memset(&context->texture.progressive, 0, sizeof(context->texture.progressive));
 
 #ifdef GL_NV_texture_rectangle
@@ -572,6 +576,7 @@ static gboolean response_callback_texture(GldbWindow *context,
                                                 data->target != GL_TEXTURE_RECTANGLE_NV);
 #endif
         gldb_gui_image_viewer_update_levels(context->texture.viewer);
+        gldb_gui_image_viewer_update_face_zoffset(context->texture.viewer);
         gtk_widget_queue_draw(context->texture.viewer->draw);
     }
 
@@ -1347,7 +1352,7 @@ static void texture_id_changed(GtkComboBox *id_box, gpointer user_data)
                     data->nlevels = levels;
                     data->nplanes = 1;
                     data->type = GLDB_GUI_IMAGE_TYPE_2D;
-#ifdef GL_EXT_texture_3D
+#ifdef GL_EXT_texture3D
                     if (target == GL_TEXTURE_3D_EXT)
                     {
                         data->type = GLDB_GUI_IMAGE_TYPE_3D;
@@ -1397,9 +1402,9 @@ static GtkWidget *build_texture_page_id(GldbWindow *context)
 static GtkWidget *build_texture_page_combos(GldbWindow *context)
 {
     GtkWidget *combos;
-    GtkWidget *label, *id, *level, *zoom, *min, *mag;
+    GtkWidget *label, *id, *level, *face, *zoffset, *zoom, *min, *mag;
 
-    combos = gtk_table_new(3, 2, FALSE);
+    combos = gtk_table_new(7, 2, FALSE);
 
     label = gtk_label_new(_("Texture"));
     id = build_texture_page_id(context);
@@ -1411,20 +1416,30 @@ static GtkWidget *build_texture_page_combos(GldbWindow *context)
     gtk_table_attach(GTK_TABLE(combos), label, 0, 1, 1, 2, 0, 0, 0, 0);
     gtk_table_attach(GTK_TABLE(combos), level, 1, 2, 1, 2, GTK_EXPAND | GTK_FILL, 0, 0, 0);
 
+    label = gtk_label_new(_("Face"));
+    face = gldb_gui_image_viewer_face_new(context->texture.viewer);
+    gtk_table_attach(GTK_TABLE(combos), label, 0, 1, 2, 3, 0, 0, 0, 0);
+    gtk_table_attach(GTK_TABLE(combos), face, 1, 2, 2, 3, GTK_EXPAND | GTK_FILL, 0, 0, 0);
+
+    label = gtk_label_new(_("Z"));
+    zoffset = gldb_gui_image_viewer_zoffset_new(context->texture.viewer);
+    gtk_table_attach(GTK_TABLE(combos), label, 0, 1, 3, 4, 0, 0, 0, 0);
+    gtk_table_attach(GTK_TABLE(combos), zoffset, 1, 2, 3, 4, GTK_EXPAND | GTK_FILL, 0, 0, 0);
+
     label = gtk_label_new(_("Zoom"));
     zoom = context->texture.viewer->zoom;
-    gtk_table_attach(GTK_TABLE(combos), label, 0, 1, 2, 3, 0, 0, 0, 0);
-    gtk_table_attach(GTK_TABLE(combos), zoom, 1, 2, 2, 3, GTK_EXPAND | GTK_FILL, 0, 0, 0);
+    gtk_table_attach(GTK_TABLE(combos), label, 0, 1, 4, 5, 0, 0, 0, 0);
+    gtk_table_attach(GTK_TABLE(combos), zoom, 1, 2, 4, 5, GTK_EXPAND | GTK_FILL, 0, 0, 0);
 
     label = gtk_label_new(_("Mag filter"));
     mag = gldb_gui_image_viewer_filter_new(context->texture.viewer, true);
-    gtk_table_attach(GTK_TABLE(combos), label, 0, 1, 3, 4, 0, 0, 0, 0);
-    gtk_table_attach(GTK_TABLE(combos), mag, 1, 2, 3, 4, GTK_EXPAND | GTK_FILL, 0, 0, 0);
+    gtk_table_attach(GTK_TABLE(combos), label, 0, 1, 5, 6, 0, 0, 0, 0);
+    gtk_table_attach(GTK_TABLE(combos), mag, 1, 2, 5, 6, GTK_EXPAND | GTK_FILL, 0, 0, 0);
 
     label = gtk_label_new(_("Min filter"));
     min = gldb_gui_image_viewer_filter_new(context->texture.viewer, false);
-    gtk_table_attach(GTK_TABLE(combos), label, 0, 1, 4, 5, 0, 0, 0, 0);
-    gtk_table_attach(GTK_TABLE(combos), min, 1, 2, 4, 5, GTK_EXPAND | GTK_FILL, 0, 0, 0);
+    gtk_table_attach(GTK_TABLE(combos), label, 0, 1, 6, 7, 0, 0, 0, 0);
+    gtk_table_attach(GTK_TABLE(combos), min, 1, 2, 6, 7, GTK_EXPAND | GTK_FILL, 0, 0, 0);
     return combos;
 }
 

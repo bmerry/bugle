@@ -61,12 +61,18 @@ enum
 
 enum
 {
+    COLUMN_IMAGE_FACE_VALUE,
+    COLUMN_IMAGE_FACE_TEXT
+};
+
+enum
+{
     COLUMN_IMAGE_FILTER_VALUE,
     COLUMN_IMAGE_FILTER_TEXT,
     COLUMN_IMAGE_FILTER_NON_MIP
 };
 
-static GtkTreeModel *mag_filter_model, *min_filter_model;
+static GtkTreeModel *mag_filter_model, *min_filter_model, *face_model;
 
 static void image_draw_realize(GtkWidget *widget, gpointer user_data)
 {
@@ -171,6 +177,8 @@ static void image_draw_expose_2d(GldbGuiImageViewer *viewer)
 static void image_draw_expose_3d(GldbGuiImageViewer *viewer)
 {
     int i;
+    int level;
+    int nplanes;
     GLfloat s, t, r;
     GLfloat tex_coords[12] =
     {
@@ -187,9 +195,11 @@ static void image_draw_expose_3d(GldbGuiImageViewer *viewer)
         -1, +1
     };
 
+    level = MAX(viewer->current_level, 0);
+    nplanes = viewer->current->levels[level].nplanes;
     s = viewer->current->s;
     t = viewer->current->t;
-    r = (MAX(viewer->current_level, 0) + 0.5f) / viewer->current->nlevels;
+    r = viewer->current->r * (CLAMP(viewer->current_plane, 0, nplanes - 1) + 0.5f) / nplanes;
     tex_coords[3] = tex_coords[6] = s;
     tex_coords[7] = tex_coords[10] = t;
     for (i = 2; i < 12; i += 3)
@@ -202,6 +212,17 @@ static void image_draw_expose_3d(GldbGuiImageViewer *viewer)
 
 static void image_draw_expose_cube_map(GldbGuiImageViewer *viewer)
 {
+    /* Note: this is intentionally inverted to make the texture appear the
+     * right way round i.e. in the layout passed to glTexImage2D when
+     * specifying the cube-map.
+     */
+    static const GLint square_vertices[8] =
+    {
+        +1, -1,
+        -1, -1,
+        -1, +1,
+        +1, +1
+    };
     static const GLint cube_vertices[24] =
     {
         -1, -1, -1,
@@ -215,12 +236,12 @@ static void image_draw_expose_cube_map(GldbGuiImageViewer *viewer)
     };
     static const GLubyte cube_indices[24] =
     {
-        0, 1, 3, 2,
-        0, 4, 5, 1,
-        0, 2, 6, 4,
-        7, 5, 4, 6,
-        7, 6, 2, 3,
-        7, 3, 1, 5
+        6, 7, 5, 4,
+        3, 2, 0, 1,
+        6, 2, 3, 7,
+        5, 1, 0, 4,
+        7, 3, 1, 5,
+        2, 6, 4, 0
     };
 
 #define GLDB_ISQRT2 0.70710678118654752440
@@ -245,21 +266,21 @@ static void image_draw_expose_cube_map(GldbGuiImageViewer *viewer)
          0.0,          0.0,                0.0,          1.0
     };
 
-
 #ifdef GL_EXT_texture_cube_map
     if (gdk_gl_query_gl_extension("GL_EXT_texture_cube_map"))
     {
-        if (viewer->current->s == 1.0f && viewer->current->t == 1.0f)
+        if (viewer->current_plane < 0)
         {
+            glEnable(GL_CULL_FACE);
+            glVertexPointer(3, GL_INT, 0, cube_vertices);
+            glTexCoordPointer(3, GL_INT, 0, cube_vertices);
+
             /* Force all Z coordinates to 0 to avoid face clipping, and
              * scale down to fit in left half of window */
             glTranslatef(-0.5f, 0.0f, 0.0f);
             glScalef(0.25f, 0.5f, 0.0f);
             glMultMatrixd(cube_matrix1);
 
-            glEnable(GL_CULL_FACE);
-            glVertexPointer(3, GL_INT, 0, cube_vertices);
-            glTexCoordPointer(3, GL_INT, 0, cube_vertices);
             glDrawElements(GL_QUADS, 24, GL_UNSIGNED_BYTE, cube_indices);
 
             /* Draw second view */
@@ -273,10 +294,24 @@ static void image_draw_expose_cube_map(GldbGuiImageViewer *viewer)
             glLoadIdentity();
             glDisable(GL_CULL_FACE);
         }
+        else
+        {
+            int i, index;
+
+            glBegin(GL_QUADS);
+            for (i = 0; i < 4; i++)
+            {
+                index = cube_indices[4 * viewer->current_plane + i];
+                glTexCoord3iv(cube_vertices + 3 * index);
+                glVertex2iv(square_vertices + 2 * i);
+            }
+            glEnd();
+        }
     }
     else
 #endif
     {
+        g_warning("No cube-map support in OpenGL!");
     }
 }
 
@@ -813,8 +848,6 @@ static void image_level_changed(GtkWidget *widget, gpointer user_data)
     gint level;
 
     viewer = (GldbGuiImageViewer *) user_data;
-    if (!viewer->current)
-        return;
     if (!gtk_combo_box_get_active_iter(GTK_COMBO_BOX(widget), &iter))
         return;
 
@@ -827,9 +860,9 @@ static void image_level_changed(GtkWidget *widget, gpointer user_data)
     gtk_widget_queue_draw(viewer->draw);
 }
 
-static gboolean level_row_separator(GtkTreeModel *model,
-                                    GtkTreeIter *iter,
-                                    gpointer user_data)
+static gboolean image_level_row_separator(GtkTreeModel *model,
+                                          GtkTreeIter *iter,
+                                          gpointer user_data)
 {
     gint value;
 
@@ -864,13 +897,87 @@ GtkWidget *gldb_gui_image_viewer_level_new(GldbGuiImageViewer *viewer)
     gtk_cell_layout_set_attributes(GTK_CELL_LAYOUT(level), cell,
                                    "text", COLUMN_IMAGE_LEVEL_TEXT, NULL);
     gtk_combo_box_set_row_separator_func(GTK_COMBO_BOX(level),
-                                         level_row_separator,
+                                         image_level_row_separator,
                                          NULL, NULL);
     gtk_combo_box_set_active(GTK_COMBO_BOX(level), 0);
     g_signal_connect(G_OBJECT(level), "changed",
                      G_CALLBACK(image_level_changed), viewer);
     g_object_unref(G_OBJECT(store));
     return viewer->level = level;
+}
+
+static void image_face_changed(GtkWidget *widget, gpointer user_data)
+{
+    GtkTreeModel *model;
+    GtkTreeIter iter;
+    GldbGuiImageViewer *viewer;
+    gint face;
+
+    viewer = (GldbGuiImageViewer *) user_data;
+    model = gtk_combo_box_get_model(GTK_COMBO_BOX(widget));
+    if (!gtk_combo_box_get_active_iter(GTK_COMBO_BOX(widget), &iter))
+        return;
+
+    gtk_tree_model_get(model, &iter, COLUMN_IMAGE_FACE_VALUE, &face, -1);
+    if (face >= -1)
+    {
+        viewer->current_plane = face;
+        gldb_gui_image_viewer_update_zoom(viewer);
+        gtk_widget_queue_draw(viewer->draw);
+    }
+}
+
+static gboolean image_face_row_separator(GtkTreeModel *model,
+                                         GtkTreeIter *iter,
+                                         gpointer user_data)
+{
+    gint value;
+
+    gtk_tree_model_get(model, iter, COLUMN_IMAGE_FACE_VALUE, &value, -1);
+    return value == -2;
+}
+
+GtkWidget *gldb_gui_image_viewer_face_new(GldbGuiImageViewer *viewer)
+{
+    GtkWidget *face;
+    GtkCellRenderer *cell;
+
+    g_assert(viewer->face == NULL);
+    face = gtk_combo_box_new_with_model(face_model);
+    cell = gtk_cell_renderer_text_new();
+    gtk_cell_layout_pack_start(GTK_CELL_LAYOUT(face), cell, TRUE);
+    gtk_cell_layout_set_attributes(GTK_CELL_LAYOUT(face), cell,
+                                   "text", COLUMN_IMAGE_FACE_TEXT, NULL);
+    gtk_combo_box_set_row_separator_func(GTK_COMBO_BOX(face),
+                                         image_face_row_separator,
+                                         NULL, NULL);
+    gtk_combo_box_set_active(GTK_COMBO_BOX(face), 0);
+    g_signal_connect(G_OBJECT(face), "changed",
+                     G_CALLBACK(image_face_changed), viewer);
+    gtk_widget_set_sensitive(face, FALSE);
+    return viewer->face = face;
+}
+
+static void image_viewer_zoffset_changed(GtkSpinButton *zoffset,
+                                         gpointer user_data)
+{
+    GldbGuiImageViewer *viewer;
+
+    viewer = (GldbGuiImageViewer *) user_data;
+    viewer->current_plane = gtk_spin_button_get_value_as_int(zoffset);
+    gtk_widget_queue_draw(viewer->draw);
+}
+
+GtkWidget *gldb_gui_image_viewer_zoffset_new(GldbGuiImageViewer *viewer)
+{
+    GtkWidget *zoffset;
+
+    g_assert(viewer->zoffset == NULL);
+    zoffset = gtk_spin_button_new_with_range(0, 0, 1);
+    gtk_spin_button_set_snap_to_ticks(GTK_SPIN_BUTTON(zoffset), TRUE);
+    g_signal_connect(G_OBJECT(zoffset), "value-changed",
+                     G_CALLBACK(image_viewer_zoffset_changed), viewer);
+    return viewer->zoffset = zoffset;
 }
 
 static void image_filter_changed(GtkWidget *widget, gpointer user_data)
@@ -947,11 +1054,10 @@ void gldb_gui_image_viewer_update_levels(GldbGuiImageViewer *viewer)
     gint old;
     gint levels, i;
 
-    if (!viewer->current)
+    if (!viewer->current || !viewer->level)
         return;
     levels = viewer->current->nlevels;
 
-    g_assert(viewer->level);
     model = gtk_combo_box_get_model(GTK_COMBO_BOX(viewer->level));
     old = gtk_combo_box_get_active(GTK_COMBO_BOX(viewer->level));
     gtk_list_store_clear(GTK_LIST_STORE(model));
@@ -981,6 +1087,50 @@ void gldb_gui_image_viewer_update_levels(GldbGuiImageViewer *viewer)
         gtk_combo_box_set_active(GTK_COMBO_BOX(viewer->level), old);
     else
         gtk_combo_box_set_active(GTK_COMBO_BOX(viewer->level), levels);
+}
+
+void gldb_gui_image_viewer_update_face_zoffset(GldbGuiImageViewer *viewer)
+{
+    if (!viewer->current)
+        return;
+
+    switch (viewer->current->type)
+    {
+    case GLDB_GUI_IMAGE_TYPE_CUBE_MAP:
+        if (viewer->zoffset)
+            gtk_widget_set_sensitive(viewer->zoffset, FALSE);
+        if (viewer->face)
+        {
+            gtk_widget_set_sensitive(viewer->face, TRUE);
+            /* Updates the current_plane if necessary */
+            g_signal_emit_by_name(G_OBJECT(viewer->face), "changed", viewer);
+        }
+        else
+            viewer->current_plane = 0;
+        break;
+    case GLDB_GUI_IMAGE_TYPE_3D:
+        if (viewer->face)
+            gtk_widget_set_sensitive(viewer->face, FALSE);
+        if (viewer->zoffset)
+        {
+            gtk_widget_set_sensitive(viewer->zoffset, TRUE);
+            gtk_spin_button_set_range(GTK_SPIN_BUTTON(viewer->zoffset),
+                                      0, viewer->current->levels[MAX(viewer->current_level, 0)].nplanes - 1);
+            /* Updates the current_plane if necessary */
+            g_signal_emit_by_name(G_OBJECT(viewer->zoffset), "value-changed", viewer);
+        }
+        else
+            viewer->current_plane = 0;
+        break;
+    default:
+        if (viewer->face)
+            gtk_widget_set_sensitive(viewer->face, FALSE);
+        if (viewer->zoffset)
+            gtk_widget_set_sensitive(viewer->zoffset, FALSE);
+        viewer->current_plane = 0;
+        gldb_gui_image_viewer_update_zoom(viewer);
+        break;
+    }
 }
 
 void gldb_gui_image_viewer_update_min_filter(GldbGuiImageViewer *viewer,
@@ -1160,7 +1310,7 @@ static GtkTreeModel *build_filter_model(bool mag)
         { GL_LINEAR_MIPMAP_LINEAR,   "GL_LINEAR_MIPMAP_LINEAR",   FALSE }
     };
 
-    store = gtk_list_store_new(4, G_TYPE_UINT, G_TYPE_STRING, G_TYPE_BOOLEAN, G_TYPE_BOOLEAN);
+    store = gtk_list_store_new(3, G_TYPE_UINT, G_TYPE_STRING, G_TYPE_BOOLEAN);
     count = mag ? 2 : 6;
     for (i = 0; i < count; i++)
     {
@@ -1174,10 +1324,41 @@ static GtkTreeModel *build_filter_model(bool mag)
     return GTK_TREE_MODEL(store);
 }
 
+static GtkTreeModel *build_face_model()
+{
+    GtkListStore *store;
+    GtkTreeIter iter;
+    static const char *names[] = { "+X", "-X", "+Y", "-Y", "+Z", "-Z" };
+    int i;
+
+    store = gtk_list_store_new(2, G_TYPE_INT, G_TYPE_STRING);
+    gtk_list_store_append(store, &iter);
+    gtk_list_store_set(store, &iter,
+                       COLUMN_IMAGE_FACE_VALUE, -1,  /* magic "all" value */
+                       COLUMN_IMAGE_FACE_TEXT, "All",
+                       -1);
+    gtk_list_store_append(store, &iter);
+    gtk_list_store_set(store, &iter,
+                       COLUMN_IMAGE_FACE_VALUE, -2,  /* magic separator value */
+                       COLUMN_IMAGE_FACE_TEXT, "Separator",
+                       -1);
+
+    for (i = 0; i < 6; i++)
+    {
+        gtk_list_store_append(store, &iter);
+        gtk_list_store_set(store, &iter,
+                           COLUMN_IMAGE_FACE_VALUE, i,
+                           COLUMN_IMAGE_FACE_TEXT, names[i],
+                           -1);
+    }
+    return GTK_TREE_MODEL(store);
+}
+
 void gldb_gui_image_initialise(void)
 {
     mag_filter_model = build_filter_model(true);
     min_filter_model = build_filter_model(false);
+    face_model = build_face_model();
 }
 
 void gldb_gui_image_shutdown(void)
