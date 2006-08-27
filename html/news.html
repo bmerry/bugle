@@ -14,6 +14,20 @@
     </div>
     <div class="body">
     <h1>BuGLe News</h1>
+    <h2>Framebuffer viewer (27/08/2006)</h2>
+    <p>
+    gldb-gui now has a framebuffer viewer! You can view the front and back
+    buffers, plus depth, stencil and auxiliary buffers as well as
+    framebuffer objects. There is also better support for 3D textures in
+    the texture viewer, and assorted bug-fixes.
+    </p>
+    <p><strong>Warning:</strong> I've just found that the framebuffer viewer
+    crashes if used on a framebuffer with a texture (rather than renderbuffer)
+    attachment. I'll post a new version soon (once I've played with this
+    version and found out what else is broken), but in the meantime you can
+    fix the problem by replacing <code>target_to_enum</code> with
+    <code>target_to_binding</code> in <tt>filters/debugger.c</tt>.
+    </p>
     <h2>Texture viewer improvements (13/08/2006)</h2>
     <p>
     This release makes some improvements to the texture viewer - in

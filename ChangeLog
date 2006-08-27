@@ -1,4 +1,10 @@
+* Fix framebuffer viewer for texture attachments
+* Fix count for glGenQueries/glDeleteQueries
+
+0.0.20060827
+------------
 * Framebuffer viewer
+* Improvements to the texture viewer
 * Eliminate double fetch of texture in gldb-gui
 * Restore texture binding when not using aux context for texture fetch
 * Fix numerous memory leaks in gldb-gui

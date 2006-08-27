@@ -369,7 +369,7 @@ static bool get_framebuffer_size(GLuint fbo, GLenum target, GLenum attachment,
             CALL_glGetFramebufferAttachmentParameterivEXT(target, attachment,
                                                           GL_FRAMEBUFFER_ATTACHMENT_TEXTURE_LEVEL_EXT, &level);
             texture_target = bugle_trackobjects_get_target(BUGLE_TRACKOBJECTS_TEXTURE, name);
-            texture_binding = target_to_enum(texture_target);
+            texture_binding = target_to_binding(texture_target);
             if (!texture_binding) return false;
 
             CALL_glGetIntegerv(texture_binding, &old_name);
@@ -392,7 +392,7 @@ static bool get_framebuffer_size(GLuint fbo, GLenum target, GLenum attachment,
             return false;
     }
     else
-#endif
+#endif /* GL_EXT_framebuffer_object */
     {
         Display *dpy;
         GLXDrawable draw;
@@ -504,8 +504,8 @@ static bool send_data_framebuffer(uint32_t id, GLuint fbo, GLenum target,
 #ifdef GL_EXT_framebuffer_object
             if (bugle_gl_has_extension(BUGLE_GL_EXT_framebuffer_object))
                 CALL_glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, fbo);
-        }
 #endif
+        }
     }
 
     /* Note: GL_READ_BUFFER belongs to the FBO where an application-created
@@ -662,7 +662,7 @@ static bool send_data_shader(uint32_t id, GLuint shader_id,
     bugle_end_internal_render("send_data_shader", true);
     return true;
 }
-#endif
+#endif /* defined(GL_ARB_vertex_program) || defined(GL_ARB_fragment_program) || defined(GL_ARB_vertex_shader) || defined(GL_ARB_fragment_shader) */
 
 static void process_single_command(function_call *call)
 {

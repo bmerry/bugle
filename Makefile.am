@@ -36,7 +36,7 @@ pkglib_LTLIBRARIES = \
 	filters/validate.la \
 	filters/debugger.la \
 	filters/capture.la \
-        filters/stats.la
+	filters/stats.la
 
 INCLUDES = -I$(srcdir)/budgielib $(LTDLINCL)
 AM_CFLAGS = -DLIBDIR=\"$(libdir)\" -DPKGLIBDIR=\"$(pkglibdir)\" $(X_CFLAGS)
@@ -78,12 +78,12 @@ src_libbugleutils_la_SOURCES = \
 	common/bool.h common/protocol.h common/protocol.c \
 	common/hashtable.c common/hashtable.h \
 	common/linkedlist.c common/linkedlist.h \
-        common/radixtree.c common/radixtree.h \
-        common/threads.h
+	common/radixtree.c common/radixtree.h \
+	common/threads.h
 nodist_src_libbugleutils_la_SOURCES = \
 	src/names.c src/names.h \
 	src/gltokens.c src/glfuncs.c src/glfuncs.h \
-        src/glexts.c src/glexts.h
+	src/glexts.c src/glexts.h
 src_libbugleutils_la_LIBADD = $(LTLIBOBJS) $(THREAD_LIBS)
 src_libbugleutils_la_LDFLAGS = -thread-safe -export-dynamic $(SYMBOLFLAGS) -version-info 0:0:0
 
@@ -95,9 +95,9 @@ src_libbugle_la_SOURCES = \
 	src/interceptor.c \
 	src/filters.c src/filters.h \
 	src/trackcontext.c src/trackdisplaylist.c src/trackobjects.c \
-        src/trackbeginend.c src/trackextensions.c src/tracker.h \
+	src/trackbeginend.c src/trackextensions.c src/tracker.h \
 	src/log.c src/log.h \
-        src/objects.c src/objects.h \
+	src/objects.c src/objects.h \
 	src/xevent.c src/xevent.h \
 	budgielib/budgieutils.c budgielib/budgieutils.h
 nodist_src_libbugle_la_SOURCES = \
@@ -117,13 +117,14 @@ src/data/gl.tu: src/data/gl.c src/data/overrides.h
 
 BCFILES = bc/core1_1.bc bc/glsl1_20.bc bc/glx.bc \
 	bc/GL_ARB_multitexture.bc bc/GL_ARB_imaging.bc \
-        bc/GL_ARB_shader_objects.bc bc/GL_ARB_occlusion_query.bc \
-        bc/GL_ARB_texture_compression.bc bc/GL_ARB_vertex_buffer_object.bc \
-        bc/GL_ARB_vertex_program.bc bc/GL_EXT_blend_func_separate.bc \
-        bc/GL_EXT_draw_range_elements.bc bc/GL_EXT_multi_draw_arrays.bc \
-        bc/GL_EXT_secondary_color.bc bc/GL_EXT_texture3D.bc \
+	bc/GL_ARB_shader_objects.bc bc/GL_ARB_occlusion_query.bc \
+	bc/GL_ARB_texture_compression.bc bc/GL_ARB_vertex_buffer_object.bc \
+	bc/GL_ARB_vertex_program.bc bc/GL_ATI_draw_buffers.bc \
+	bc/GL_EXT_blend_func_separate.bc \
+	bc/GL_EXT_draw_range_elements.bc bc/GL_EXT_multi_draw_arrays.bc \
+	bc/GL_EXT_secondary_color.bc bc/GL_EXT_texture3D.bc \
 	bc/GL_EXT_framebuffer_object.bc \
-        bc/GLX_ARB_get_proc_address.bc
+	bc/GLX_ARB_get_proc_address.bc
 
 src/names.c src/names.h src/utils.c src/utils.h src/lib.c src/lib.h: budgie/budgie src/data/gl.tu gl.bc bc/alias.bc $(BCFILES)
 	$(INSTALL) -d src
@@ -167,7 +168,7 @@ filters_capture_la_LDFLAGS = -thread-safe -module -avoid-version -export-dynamic
 check_PROGRAMS = \
 	tests/errors tests/threads1 tests/threads2 tests/queries \
 	tests/misc tests/setstate tests/triangles \
-        tests/pointers tests/objects tests/textest \
+	tests/pointers tests/objects tests/textest \
 	tests/pbo
 dist_check_SCRIPTS = tests/errors.sh tests/misc.sh tests/queries.sh tests/setstate.sh tests/pointers.sh tests/triangles.sh tests/pbo.sh tests/comparelog.sh tests/comparelog.perl
 tests_errors_SOURCES = tests/errors.c
@@ -199,7 +200,7 @@ TESTS_ENVIRONMENT = BUGLE_FILTERS=$(srcdir)/tests/filters BUGLE_FILTER_DIR=filte
 EXTRA_DIST = gl.bc.in $(BCFILES) src/data/gl.c src/data/overrides.h \
 	FAQ TROUBLESHOOTING LICENSE \
 	doc/filters.html doc/objects.html doc/locks.txt \
-        doc/protocol.txt doc/examples/filters doc/extensions.txt \
+	doc/protocol.txt doc/examples/filters doc/extensions.txt \
 	glee/readme.txt \
 	gl2ps/TODO gl2ps/COPYING.GL2PS gl2ps/COPYING.LGPL gl2ps/gl2ps.pdf \
 	gl2ps/gl2psTestSimple.c gl2ps/gl2psTest.c \
@@ -210,17 +211,17 @@ EXTRA_DIST = gl.bc.in $(BCFILES) src/data/gl.c src/data/overrides.h \
 CLEANFILES = \
 	src/names.c src/names.h src/utils.c src/utils.h src/lib.c src/lib.h \
 	src/gltokens.c src/glfuncs.c src/glfuncs.h src/glexts.c src/glexts.h \
-        src/data/gl.tu bc/alias.bc \
+	src/data/gl.tu bc/alias.bc \
 	doc/gldb.1.gz doc/bugle.3.gz \
 	gldb/.libs/gldb gldb/.libs/gldb-gui \
-        tests/.libs/threads1 \
-        tests/.libs/threads2 \
+	tests/.libs/threads1 \
+	tests/.libs/threads2 \
 	tests/.libs/errors tests/.libs/lt-errors \
-        tests/.libs/queries tests/.libs/lt-queries \
-        tests/.libs/misc tests/.libs/lt-misc \
+	tests/.libs/queries tests/.libs/lt-queries \
+	tests/.libs/misc tests/.libs/lt-misc \
 	tests/.libs/setstate tests/.libs/lt-setstate \
-        tests/.libs/triangles tests/.libs/lt-triangles \
-        tests/.libs/pointers tests/.libs/lt-pointers \
+	tests/.libs/triangles tests/.libs/lt-triangles \
+	tests/.libs/pointers tests/.libs/lt-pointers \
 	tests/.libs/pbo tests/.libs/lt-pbo \
-        tests/.libs/objects \
+	tests/.libs/objects \
 DISTCLEANFILES = tests/*.log
