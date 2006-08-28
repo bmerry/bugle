@@ -1,3 +1,10 @@
+0.0.20060828
+------------
+This release fixes a serious bug in the framebuffer viewer that would
+cause it to crash on applications doing render-to-texture. If your
+application does not use render-to-texture via
+GL_EXT_framebuffer_object you do not need to upgrade.
+
 0.0.20060827
 ------------
 gldb-gui now has a framebuffer viewer! You can view the front and back
