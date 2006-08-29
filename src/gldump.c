@@ -329,12 +329,30 @@ bool bugle_dump_GLerror(GLenum err, FILE *out)
     return true;
 }
 
-bool bugle_dump_GLalternateenum(GLenum token, FILE *out)
+bool bugle_dump_GLblendenum(GLenum token, FILE *out)
 {
     switch (token)
     {
     case GL_ZERO: fputs("GL_ZERO", out); break;
     case GL_ONE: fputs("GL_ONE", out); break;
+    default: bugle_dump_GLenum(token, out);
+    }
+    return true;
+}
+
+bool bugle_dump_GLprimitiveenum(GLenum token, FILE *out)
+{
+    switch (token)
+    {
+    case GL_POINTS: fputs("GL_POINTS", out); break;
+    case GL_LINES: fputs("GL_LINES", out); break;
+    case GL_LINE_LOOP: fputs("GL_LINE_LOOP", out); break;
+    case GL_LINE_STRIP: fputs("GL_LINE_STRIP", out); break;
+    case GL_TRIANGLES: fputs("GL_TRIANGLES", out); break;
+    case GL_TRIANGLE_STRIP: fputs("GL_TRIANGLE_STRIP", out); break;
+    case GL_TRIANGLE_FAN: fputs("GL_TRIANGLE_FAN", out); break;
+    case GL_QUADS: fputs("GL_QUADS", out); break;
+    case GL_POLYGON: fputs("GL_POLYGON", out); break;
     default: bugle_dump_GLenum(token, out);
     }
     return true;

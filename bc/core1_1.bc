@@ -9,7 +9,8 @@ EXTRATYPE pGLdoublematrix
 EXTRATYPE GLfloatmatrix
 EXTRATYPE pGLfloatmatrix
 EXTRATYPE GLerror
-EXTRATYPE GLalternateenum
+EXTRATYPE GLblendenum
+EXTRATYPE GLprimitiveenum
 EXTRATYPE GLcomponentsenum
 EXTRATYPE GLpolygonstipple
 EXTRATYPE pGLpolygonstipple
@@ -69,8 +70,11 @@ TYPE PARAMETER gl(Mult|Load)Matrixd 0 TYPE_15pGLdoublematrix
 TYPE PARAMETER glPushAttrib 0 TYPE_10attribbits
 TYPE PARAMETER glPushClientAttrib 0 TYPE_16clientattribbits
 TYPE PARAMETER glGetError -1 TYPE_7GLerror
-TYPE PARAMETER glBlendFunc 0 TYPE_15GLalternateenum
-TYPE PARAMETER glBlendFunc 1 TYPE_15GLalternateenum
+TYPE PARAMETER glBlendFunc 0 TYPE_11GLblendenum
+TYPE PARAMETER glBlendFunc 1 TYPE_11GLblendenum
+TYPE PARAMETER glBegin 0 TYPE_15GLprimitiveenum
+TYPE PARAMETER glDrawArrays 0 TYPE_15GLprimitiveenum
+TYPE PARAMETER glDrawElements 0 TYPE_15GLprimitiveenum
 
 TYPE PARAMETER glTexImage(1|2)D 2 TYPE_16GLcomponentsenum
 
@@ -85,7 +89,8 @@ DUMP TYPE GLenum bugle_dump_GLenum($$, $F)
 DUMP TYPE +K6GLenum bugle_dump_GLenum($$, $F)
 DUMP TYPE GLboolean bugle_dump_GLboolean($$, $F)
 DUMP TYPE GLerror bugle_dump_GLerror($$, $F)
-DUMP TYPE GLalternateenum bugle_dump_GLalternateenum($$, $F)
+DUMP TYPE GLblendenum bugle_dump_GLblendenum($$, $F)
+DUMP TYPE GLprimitiveenum bugle_dump_GLprimitiveenum($$, $F)
 DUMP TYPE GLcomponentsenum bugle_dump_GLcomponentsenum($$, $F)
 DUMP TYPE +PKc budgie_dump_string($$, $F)
 DUMP TYPE +Pc budgie_dump_string($$, $F)

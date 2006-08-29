@@ -46,14 +46,10 @@ THREADS=BUGLE_THREADS_PTHREADS
 AC_CHECK_LIB([pthread], [pthread_create], [
   THREAD_LIBS="-lpthread $THREAD_LIBS"], [THREADS=BUGLE_THREADS_SINGLE], [])
 
-AVCODEC_LIBS="-lm"
 HAVE_LAVC=1
-AC_CHECK_LIB([avutil], [ff_log2_tab], [
-  AVCODEC_LIBS="-lavutil $AVCODEC_LIBS"], [], [$AVCODEC_LIBS])
-AC_CHECK_LIB([avcodec], [avcodec_open], [
-  AVCODEC_LIBS="-lavcodec $AVCODEC_LIBS"], [HAVE_LAVC=0], [$AVCODEC_LIBS])
-AC_CHECK_LIB([avformat], [av_write_frame], [
-  AVCODEC_LIBS="-lavformat $AVCODEC_LIBS"], [HAVE_LAVC=0], [$AVCODEC_LIBS])
+AVCODEC_CFLAGS=""
+AVCODEC_LIBS=""
+PKG_CHECK_MODULES([avcodec], [libavcodec libavformat], [], [HAVE_LAVC=0; AC_MSG_RESULT([no])])
 
 # Sadly, FreeBSD does not implement libraries depending on libraries, and
 # OpenGL uses X and maths functions. Hence the -lm and all the X rubbish.
@@ -69,7 +65,6 @@ AC_HEADER_STDC
 AC_HEADER_DIRENT
 AC_HEADER_STDBOOL
 AC_CHECK_HEADERS([sys/types.h stdlib.h stddef.h regex.h sys/select.h])
-AC_CHECK_HEADERS([ffmpeg/avformat.h ffmpeg/avcodec.h], [], [HAVE_LAVC=0])
 AC_CHECK_HEADERS([readline/readline.h readline/history.h], [], [HAVE_READLINE=0])
 AC_CHECK_HEADERS([pthread.h], [], [THREADS=BUGLE_THREADS_SINGLE])
 
@@ -117,8 +112,12 @@ AC_DEFINE_UNQUOTED(ENABLE_XEVENT, $ENABLE_XEVENT, [non-zero when X key and mouse
 
 AC_ARG_WITH([lavc], AC_HELP_STRING([--without-lavc], [do not use libavcodec]),
             [test $withval = no && HAVE_LAVC=0], [])
+AVCODEC_LIBS="$avcodec_LIBS"
+AVCODEC_CFLAGS="$avcodec_CFLAGS"
 test $HAVE_LAVC = 1 || AVCODEC_LIBS=""
+test $HAVE_LAVC = 1 || AVCODEC_CFLAGS=""
 AC_SUBST(AVCODEC_LIBS)
+AC_SUBST(AVCODEC_CFLAGS)
 AC_DEFINE_UNQUOTED(HAVE_LAVC, $HAVE_LAVC, [non-zero when libavcodec is being used])
 
 AC_ARG_WITH([readline], AC_HELP_STRING([--without-readline], [do not use libreadline]),

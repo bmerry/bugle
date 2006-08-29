@@ -66,28 +66,30 @@ sub compare_token_values
     # We also control the sort order for core tokens with values 0 or 1,
     # since there is a lot of aliasing there. The tokens that are sorted
     # later are handled by special dumping functions.
-    my %name_map = ("GL_ATTRIB_ARRAY_SIZE_NV" => 1,
-                    "GL_ATTRIB_ARRAY_STRIDE_NV" => 1,
-                    "GL_ATTRIB_ARRAY_TYPE_NV" => 1,
-                    "GL_ATTRIB_ARRAY_POINTER_NV" => 1,
-                    "GL_PIXEL_COUNT_AVAILABLE_NV" => 1,
-                    "GL_PIXEL_COUNT_NV" => 1,
-                    "GL_CURRENT_OCCLUSION_QUERY_ID_NV" => 1,
-                    "GL_PIXEL_COUNTER_BITS_NV" => 1,
-                    "GL_TEXTURE_COMPONENTS" => 1,
-                    "GL_CURRENT_ATTRIB_NV" => 1,
+    my $name_regex = qr/
+        GL_ATTRIB_ARRAY_SIZE_NV
+        |GL_ATTRIB_ARRAY_STRIDE_NV
+        |GL_ATTRIB_ARRAY_TYPE_NV
+        |GL_ATTRIB_ARRAY_POINTER_NV
+        |GL_PIXEL_COUNT_AVAILABLE_NV
+        |GL_PIXEL_COUNT_NV
+        |GL_CURRENT_OCCLUSION_QUERY_ID_NV
+        |GL_PIXEL_COUNTER_BITS_NV
+        |GL_TEXTURE_COMPONENTS
+        |GL_CURRENT_ATTRIB_NV
+        |GL_MAP._VERTEX_ATTRIB._._NV  # heavily reused by ARB_vertex_program
 
-                    "GL_TRUE" => 1,
-                    "GL_FALSE" => 1,
-                    "GL_NO_ERROR" => 1,
-                    "GL_ZERO" => 1,
-                    "GL_ONE" => 1);
+        |GL_TRUE
+        |GL_FALSE
+        |GL_NO_ERROR
+        |GL_ZERO
+        |GL_ONE/x;
 
     return $a->[1] <=> $b->[1] if $a->[1] != $b->[1];
 
-    return 0 if (exists $name_map{$a->[0]} && exists $name_map{$b->[0]});
-    return 1 if (exists $name_map{$a->[0]});
-    return -1 if (exists $name_map{$b->[0]});
+    return 0 if ($a->[0] =~ $name_regex && $b->[0] =~ $name_regex);
+    return 1 if ($a->[0] =~ $name_regex);
+    return -1 if ($b->[0] =~ $name_regex);
     return $a->[0] cmp $b->[0];
 }
 

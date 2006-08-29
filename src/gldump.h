@@ -52,7 +52,8 @@ int bugle_count_program_string(GLenum target, GLenum pname);
 #endif
 
 bool bugle_dump_GLenum(GLenum e, FILE *out);
-bool bugle_dump_GLalternateenum(GLenum e, FILE *out);
+bool bugle_dump_GLblendenum(GLenum e, FILE *out);
+bool bugle_dump_GLprimitiveenum(GLenum e, FILE *out);
 bool bugle_dump_GLcomponentsenum(GLenum e, FILE *out);
 bool bugle_dump_GLerror(GLenum e, FILE *out);
 bool bugle_dump_GLboolean(GLboolean b, FILE *out);

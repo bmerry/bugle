@@ -1,4 +1,4 @@
-TYPE PARAMETER glBlendFuncSeparateEXT 0 TYPE_15GLalternateenum
-TYPE PARAMETER glBlendFuncSeparateEXT 1 TYPE_15GLalternateenum
-TYPE PARAMETER glBlendFuncSeparateEXT 2 TYPE_15GLalternateenum
-TYPE PARAMETER glBlendFuncSeparateEXT 3 TYPE_15GLalternateenum
+TYPE PARAMETER glBlendFuncSeparateEXT 0 TYPE_11GLblendenum
+TYPE PARAMETER glBlendFuncSeparateEXT 1 TYPE_11GLblendenum
+TYPE PARAMETER glBlendFuncSeparateEXT 2 TYPE_11GLblendenum
+TYPE PARAMETER glBlendFuncSeparateEXT 3 TYPE_11GLblendenum

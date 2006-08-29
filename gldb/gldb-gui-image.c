@@ -324,9 +324,14 @@ static gboolean image_draw_expose(GtkWidget *widget,
     GdkGLContext *glcontext;
     GdkGLDrawable *gldrawable;
 
+    g_assert(gtk_widget_is_gl_capable(widget));
     glcontext = gtk_widget_get_gl_context(widget);
     gldrawable = gtk_widget_get_gl_drawable(widget);
-    if (!gdk_gl_drawable_gl_begin(gldrawable, glcontext)) return FALSE;
+    if (!gdk_gl_drawable_gl_begin(gldrawable, glcontext))
+    {
+        g_warning("Not able to update image");
+        return FALSE;
+    }
     glClear(GL_COLOR_BUFFER_BIT);
 
     viewer = (GldbGuiImageViewer *) user_data;
@@ -361,9 +366,15 @@ static gboolean image_draw_expose(GtkWidget *widget,
             g_assert_not_reached();
         glDisable(viewer->current->texture_target);
     }
+    /* A finish should absolutely not be needed here, but apparently there
+     * are some bugs somewhere on my machine that cause repaints to have
+     * no effect when switching from a pane without 3D (e.g. state) to
+     * a pane with an image viewer, IF a tearoff menu is currently torn off.
+     */
+    glFinish();
     gdk_gl_drawable_swap_buffers(gldrawable);
     gdk_gl_drawable_gl_end(gldrawable);
-    return TRUE;
+    return FALSE;
 }
 
 static void image_draw_motion_clear_status(GldbGuiImageViewer *viewer)

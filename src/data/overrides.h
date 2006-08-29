@@ -57,9 +57,11 @@ typedef GLmat4x2 *pGLmat4x2;
 typedef GLmat3x4 *pGLmat3x4;
 typedef GLmat4x3 *pGLmat4x3;
 
-/* Other ways to interpret enums */
-typedef GLenum GLerror;          /* since GL_NO_ERROR conflicts with other tokens */
-typedef GLenum GLalternateenum;  /* handles general conflicts */
-typedef GLenum GLcomponentsenum; /* reinterpret 1, 2, 3, 4 */
+/* Other ways to interpret enums. Enums have up to 5 different interpretations,
+ * with the most serious aliasing being that of 0 and 1. */
+typedef GLenum GLerror;          /* 0 = GL_NO_ERROR */
+typedef GLenum GLblendenum;      /* 0 = GL_ZERO, 1 = GL_ONE */
+typedef GLenum GLprimitiveenum;  /* 0 = GL_POINTS, 1 = GL_LINES */
+typedef GLenum GLcomponentsenum; /* reinterpret 1, 2, 3, 4 as numerical */
 
 #endif

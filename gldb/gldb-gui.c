@@ -1590,10 +1590,10 @@ static void framebuffer_id_changed(GtkWidget *widget, gpointer user_data)
         model = gtk_combo_box_get_model(GTK_COMBO_BOX(context->framebuffer.buffer));
         gtk_list_store_clear(GTK_LIST_STORE(model));
 
+        framebuffer = state_find_child_enum(root, GL_FRAMEBUFFER_EXT);
         if (id != 0)
         {
 #ifdef GL_EXT_framebuffer_object
-            framebuffer = state_find_child_enum(root, GL_FRAMEBUFFER_EXT);
             g_assert(framebuffer != NULL);
             fbo = state_find_child_numeric(framebuffer, id);
             g_assert(fbo != NULL);
@@ -1649,19 +1649,22 @@ static void framebuffer_id_changed(GtkWidget *widget, gpointer user_data)
         }
         else
         {
+            if (!framebuffer
+                || (fbo = state_find_child_numeric(framebuffer, 0)) == NULL)
+                fbo = root;
             for (i = 0; gldb_channel_table[i].channel; i++)
                 if (gldb_channel_table[i].framebuffer_size_token
-                    && (parameter = state_find_child_enum(root, gldb_channel_table[i].framebuffer_size_token)) != NULL
+                    && (parameter = state_find_child_enum(fbo, gldb_channel_table[i].framebuffer_size_token)) != NULL
                     && strcmp(parameter->value, "0") != 0)
                 {
                     channels |= gldb_channel_table[i].channel;
                 }
             color_channels = gldb_channel_get_query_channels(channels & ~GLDB_CHANNEL_DEPTH_STENCIL);
 
-            if ((parameter = state_find_child_enum(root, GL_DOUBLEBUFFER)) != NULL
+            if ((parameter = state_find_child_enum(fbo, GL_DOUBLEBUFFER)) != NULL
                 && strcmp(parameter->value, "GL_TRUE") == 0)
                 doublebuffer = true;
-            if ((parameter = state_find_child_enum(root, GL_STEREO)) != NULL
+            if ((parameter = state_find_child_enum(fbo, GL_STEREO)) != NULL
                 && strcmp(parameter->value, "GL_TRUE") == 0)
                 stereo = true;
 
@@ -1698,7 +1701,7 @@ static void framebuffer_id_changed(GtkWidget *widget, gpointer user_data)
                                        -1);
                 }
             }
-            if ((parameter = state_find_child_enum(root, GL_AUX_BUFFERS)) != NULL)
+            if ((parameter = state_find_child_enum(fbo, GL_AUX_BUFFERS)) != NULL)
             {
                 attachments = atoi(parameter->value);
                 for (i = 0; i < attachments; i++)

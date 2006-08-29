@@ -47,8 +47,8 @@
 
 #if HAVE_LAVC
 # include <inttypes.h>
-# include <ffmpeg/avcodec.h>
-# include <ffmpeg/avformat.h>
+# include <avcodec.h>
+# include <avformat.h>
 # define CAPTURE_AV_FMT PIX_FMT_RGB24
 # define CAPTURE_GL_FMT GL_RGB
 #endif

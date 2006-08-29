@@ -317,15 +317,15 @@ static const state_info global_state[] =
     { STATE_NAME(GL_DEPTH_FUNC), TYPE_6GLenum, -1, BUGLE_GL_VERSION_1_1, -1, STATE_GLOBAL },
     { STATE_NAME(GL_BLEND), TYPE_9GLboolean, -1, BUGLE_GL_VERSION_1_1, -1, STATE_ENABLED },
 #ifdef GL_EXT_blend_func_separate
-    { STATE_NAME_EXT(GL_BLEND_SRC_RGB, _EXT), TYPE_15GLalternateenum, -1, BUGLE_GL_EXT_blend_func_separate, -1, STATE_GLOBAL },
-    { STATE_NAME_EXT(GL_BLEND_SRC_ALPHA, _EXT), TYPE_15GLalternateenum, -1, BUGLE_GL_EXT_blend_func_separate, -1, STATE_GLOBAL },
-    { STATE_NAME_EXT(GL_BLEND_DST_RGB, _EXT), TYPE_15GLalternateenum, -1, BUGLE_GL_EXT_blend_func_separate, -1, STATE_GLOBAL },
-    { STATE_NAME_EXT(GL_BLEND_DST_ALPHA, _EXT), TYPE_15GLalternateenum, -1, BUGLE_GL_EXT_blend_func_separate, -1, STATE_GLOBAL },
-    { STATE_NAME(GL_BLEND_SRC), TYPE_15GLalternateenum, -1, BUGLE_GL_VERSION_1_1, BUGLE_GL_EXT_blend_func_separate, STATE_GLOBAL },
-    { STATE_NAME(GL_BLEND_DST), TYPE_15GLalternateenum, -1, BUGLE_GL_VERSION_1_1, BUGLE_GL_EXT_blend_func_separate, STATE_GLOBAL },
+    { STATE_NAME_EXT(GL_BLEND_SRC_RGB, _EXT), TYPE_11GLblendenum, -1, BUGLE_GL_EXT_blend_func_separate, -1, STATE_GLOBAL },
+    { STATE_NAME_EXT(GL_BLEND_SRC_ALPHA, _EXT), TYPE_11GLblendenum, -1, BUGLE_GL_EXT_blend_func_separate, -1, STATE_GLOBAL },
+    { STATE_NAME_EXT(GL_BLEND_DST_RGB, _EXT), TYPE_11GLblendenum, -1, BUGLE_GL_EXT_blend_func_separate, -1, STATE_GLOBAL },
+    { STATE_NAME_EXT(GL_BLEND_DST_ALPHA, _EXT), TYPE_11GLblendenum, -1, BUGLE_GL_EXT_blend_func_separate, -1, STATE_GLOBAL },
+    { STATE_NAME(GL_BLEND_SRC), TYPE_11GLblendenum, -1, BUGLE_GL_VERSION_1_1, BUGLE_GL_EXT_blend_func_separate, STATE_GLOBAL },
+    { STATE_NAME(GL_BLEND_DST), TYPE_11GLblendenum, -1, BUGLE_GL_VERSION_1_1, BUGLE_GL_EXT_blend_func_separate, STATE_GLOBAL },
 #else
-    { STATE_NAME(GL_BLEND_SRC), TYPE_15GLalternateenum, -1, BUGLE_GL_VERSION_1_1, -1, STATE_GLOBAL },
-    { STATE_NAME(GL_BLEND_DST), TYPE_15GLalternateenum, -1, BUGLE_GL_VERSION_1_1, -1, STATE_GLOBAL },
+    { STATE_NAME(GL_BLEND_SRC), TYPE_11GLblendenum, -1, BUGLE_GL_VERSION_1_1, -1, STATE_GLOBAL },
+    { STATE_NAME(GL_BLEND_DST), TYPE_11GLblendenum, -1, BUGLE_GL_VERSION_1_1, -1, STATE_GLOBAL },
 #endif
     { "GL_BLEND_EQUATION_RGB", GL_BLEND_EQUATION, TYPE_6GLenum, -1, BUGLE_GL_VERSION_1_1, -1, STATE_GLOBAL },
 #ifdef GL_EXT_blend_equation_separate
@@ -612,9 +612,9 @@ static const state_info global_state[] =
     { STATE_NAME_EXT(GL_RASTER_POSITION_UNCLIPPED, _IBM), TYPE_9GLboolean, -1, BUGLE_GL_IBM_rasterpos_clip, -1, STATE_ENABLED },
 #endif
 #ifdef GL_EXT_framebuffer_object
-    { STATE_NAME_EXT(GL_RENDERBUFFER_BINDING, _EXT), TYPE_5GLint, -1, BUGLE_GL_EXT_framebuffer_object, -1, STATE_GLOBAL },
-    { STATE_NAME_EXT(GL_FRAMEBUFFER_BINDING, _EXT), TYPE_5GLint, -1, BUGLE_GL_EXT_framebuffer_object, -1, STATE_GLOBAL },
-    { STATE_NAME_EXT(GL_MAX_RENDERBUFFER_SIZE, _EXT), TYPE_5GLint, -1, BUGLE_GL_EXT_framebuffer_object, -1, STATE_GLOBAL },
+    { STATE_NAME(GL_RENDERBUFFER_BINDING_EXT), TYPE_5GLint, -1, BUGLE_GL_EXT_framebuffer_object, -1, STATE_GLOBAL },
+    { STATE_NAME(GL_FRAMEBUFFER_BINDING_EXT), TYPE_5GLint, -1, BUGLE_GL_EXT_framebuffer_object, -1, STATE_GLOBAL },
+    { STATE_NAME(GL_MAX_RENDERBUFFER_SIZE_EXT), TYPE_5GLint, -1, BUGLE_GL_EXT_framebuffer_object, -1, STATE_GLOBAL },
 #endif
     { NULL, GL_NONE, NULL_TYPE, 0, -1, -1, 0 }
 };

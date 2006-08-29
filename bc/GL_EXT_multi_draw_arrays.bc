@@ -1,4 +1,6 @@
 # FIXME: cannot specify the length of each pointer in glMultiDrawElements
+TYPE PARAMETER glMultiDrawArraysEXT 0 TYPE_15GLprimitiveenum
+TYPE PARAMETER glMultiDrawElementsEXT 0 TYPE_15GLprimitiveenum
 LENGTH PARAMETER glMultiDrawArraysEXT 1 $3
 LENGTH PARAMETER glMultiDrawArraysEXT 2 $3
 LENGTH PARAMETER glMultiDrawElementsEXT 1 $4

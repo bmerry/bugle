@@ -1,3 +1,8 @@
+* Fix display of various aliased tokens
+* Use pkg-config to get libavcodec configuration
+* Fix reported names for GL_POINTS and GL_LINES
+* Work around a bug that causes texture and framebuffer repaints to fail
+
 0.0.20060828
 ------------
 * Fix framebuffer viewer for texture attachments
