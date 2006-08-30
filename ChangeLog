@@ -1,7 +1,9 @@
 * Fix display of various aliased tokens
 * Use pkg-config to get libavcodec configuration
 * Fix reported names for GL_POINTS and GL_LINES
+* Fix some duplicated GL_ARB_imaging state
 * Work around a bug that causes texture and framebuffer repaints to fail
+* Highlight state changes
 
 0.0.20060828
 ------------

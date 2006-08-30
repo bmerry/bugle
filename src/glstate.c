@@ -393,9 +393,10 @@ static const state_info global_state[] =
     { STATE_NAME(GL_BLUE_BIAS), TYPE_8GLdouble, -1, BUGLE_GL_VERSION_1_1, -1, STATE_GLOBAL },
     { STATE_NAME(GL_ALPHA_BIAS), TYPE_8GLdouble, -1, BUGLE_GL_VERSION_1_1, -1, STATE_GLOBAL },
     { STATE_NAME(GL_DEPTH_BIAS), TYPE_8GLdouble, -1, BUGLE_GL_VERSION_1_1, -1, STATE_GLOBAL },
-    { STATE_NAME(GL_COLOR_TABLE), TYPE_9GLboolean, -1, BUGLE_GL_ARB_imaging, -1, STATE_ENABLED },
-    { STATE_NAME(GL_POST_CONVOLUTION_COLOR_TABLE), TYPE_9GLboolean, -1, BUGLE_GL_ARB_imaging, -1, STATE_ENABLED },
-    { STATE_NAME(GL_POST_COLOR_MATRIX_COLOR_TABLE), TYPE_9GLboolean, -1, BUGLE_GL_ARB_imaging, -1, STATE_ENABLED },
+    /* Note: GL_COLOR_TABLE, GL_POST_CONVOLUTION_COLOR_TABLE and
+     * GL_POST_COLOR_MATRIX_COLOR_TABLE are handled in make_global, since
+     * they have child state.
+     */
     /* FIXME: glGetColorTable */
     /* FIXME: glConvolution_xD enable missing */
     /* FIXME: glGetConvolutionFilter */
@@ -416,9 +417,10 @@ static const state_info global_state[] =
     { STATE_NAME(GL_POST_COLOR_MATRIX_GREEN_BIAS), TYPE_8GLdouble, -1, BUGLE_GL_ARB_imaging, -1, STATE_GLOBAL },
     { STATE_NAME(GL_POST_COLOR_MATRIX_BLUE_BIAS), TYPE_8GLdouble, -1, BUGLE_GL_ARB_imaging, -1, STATE_GLOBAL },
     { STATE_NAME(GL_POST_COLOR_MATRIX_ALPHA_BIAS), TYPE_8GLdouble, -1, BUGLE_GL_ARB_imaging, -1, STATE_GLOBAL },
-    { STATE_NAME(GL_HISTOGRAM), TYPE_9GLboolean, -1, BUGLE_GL_ARB_imaging, -1, STATE_ENABLED },
+    /* Note: GL_HISTOGRAM and GL_MINMAX have child state and are handled in
+     * make_global
+     */
     /* FIXME: glGetHistogram */
-    { STATE_NAME(GL_MINMAX), TYPE_9GLboolean, -1, BUGLE_GL_ARB_imaging, -1, STATE_ENABLED },
     /* FIXME: glGetMinmax */
     { STATE_NAME(GL_ZOOM_X), TYPE_8GLdouble, -1, BUGLE_GL_VERSION_1_1, -1, STATE_GLOBAL },
     { STATE_NAME(GL_ZOOM_Y), TYPE_8GLdouble, -1, BUGLE_GL_VERSION_1_1, -1, STATE_GLOBAL },
@@ -1108,6 +1110,11 @@ static const enum_list color_table_parameter_enums[] =
     { STATE_NAME(GL_COLOR_TABLE), BUGLE_GL_ARB_imaging },
     { STATE_NAME(GL_POST_CONVOLUTION_COLOR_TABLE), BUGLE_GL_ARB_imaging },
     { STATE_NAME(GL_POST_COLOR_MATRIX_COLOR_TABLE), BUGLE_GL_ARB_imaging },
+    { NULL, GL_NONE, 0 }
+};
+
+static const enum_list proxy_color_table_parameter_enums[] =
+{
     { STATE_NAME(GL_PROXY_COLOR_TABLE), BUGLE_GL_ARB_imaging },
     { STATE_NAME(GL_PROXY_POST_CONVOLUTION_COLOR_TABLE), BUGLE_GL_ARB_imaging },
     { STATE_NAME(GL_PROXY_POST_COLOR_MATRIX_COLOR_TABLE), BUGLE_GL_ARB_imaging },
@@ -1124,6 +1131,11 @@ static const enum_list convolution_parameter_enums[] =
 static const enum_list histogram_parameter_enums[] =
 {
     { STATE_NAME(GL_HISTOGRAM), BUGLE_GL_ARB_imaging },
+    { NULL, GL_NONE, 0 }
+};
+
+static const enum_list proxy_histogram_parameter_enums[] =
+{
     { STATE_NAME(GL_PROXY_HISTOGRAM), BUGLE_GL_ARB_imaging },
     { NULL, GL_NONE, 0 }
 };
@@ -1872,6 +1884,7 @@ static void make_fixed(const glstate *self,
                        const enum_list *enums,
                        size_t offset,
                        void (*spawn)(const glstate *, bugle_linked_list *),
+                       const state_info *info,
                        bugle_linked_list *children)
 {
     size_t i;
@@ -1882,8 +1895,9 @@ static void make_fixed(const glstate *self,
         {
             child = bugle_malloc(sizeof(glstate));
             *child = *self;
-            child->info = NULL;
+            child->info = info;
             child->name = bugle_strdup(enums[i].name);
+            child->numeric_name = 0;
             child->enum_name = enums[i].token;
             *(GLenum *) (((char *) child) + offset) = enums[i].token;
             child->spawn_children = spawn;
@@ -2098,7 +2112,7 @@ static void spawn_children_tex_unit(const glstate *self, bugle_linked_list *chil
 
     if (!(mask & STATE_SELECT_TEXTURE_COORD))
         make_fixed(self, tex_gen_enums, offsetof(glstate, target),
-                   spawn_children_tex_gen, children);
+                   spawn_children_tex_gen, NULL, children);
 }
 
 /* Returns a mask of flags not to select from state tables, based on the
@@ -2174,7 +2188,7 @@ static void spawn_children_tex_parameter(const glstate *self, bugle_linked_list 
     if (self->target == GL_TEXTURE_CUBE_MAP_ARB)
     {
         make_fixed(self, cube_map_face_enums, offsetof(glstate, face),
-                   spawn_children_cube_map_faces, children);
+                   spawn_children_cube_map_faces, NULL, children);
         return;
     }
 #endif
@@ -2608,15 +2622,19 @@ static void spawn_children_global(const glstate *self, bugle_linked_list *childr
 #endif
 
     make_fixed(self, material_enums, offsetof(glstate, target),
-               spawn_children_material, children);
+               spawn_children_material, NULL, children);
     make_fixed(self, color_table_parameter_enums, offsetof(glstate, target),
-               spawn_children_color_table_parameter, children);
+               spawn_children_color_table_parameter, &enable, children);
+    make_fixed(self, proxy_color_table_parameter_enums, offsetof(glstate, target),
+               spawn_children_color_table_parameter, NULL, children);
     make_fixed(self, convolution_parameter_enums, offsetof(glstate, target),
-               spawn_children_convolution_parameter, children);
+               spawn_children_convolution_parameter, &enable, children);
     make_fixed(self, histogram_parameter_enums, offsetof(glstate, target),
-               spawn_children_histogram_parameter, children);
+               spawn_children_histogram_parameter, &enable, children);
+    make_fixed(self, proxy_histogram_parameter_enums, offsetof(glstate, target),
+               spawn_children_histogram_parameter, NULL, children);
     make_fixed(self, minmax_parameter_enums, offsetof(glstate, target),
-               spawn_children_minmax_parameter, children);
+               spawn_children_minmax_parameter, &enable, children);
 
 #ifdef GL_ARB_vertex_program
     if (bugle_gl_has_extension_group(BUGLE_EXTGROUP_vertex_attrib))
@@ -2675,7 +2693,7 @@ static void spawn_children_global(const glstate *self, bugle_linked_list *childr
     if (bugle_gl_has_extension_group(BUGLE_GL_ARB_occlusion_query))
     {
         make_fixed(self, query_enums, offsetof(glstate, target),
-                   spawn_children_query, children);
+                   spawn_children_query, NULL, children);
         make_objects(self, BUGLE_TRACKOBJECTS_QUERY, GL_NONE, false,
                      "Query[%lu]", spawn_children_query_object, NULL, children);
     }

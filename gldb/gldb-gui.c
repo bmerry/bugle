@@ -63,7 +63,8 @@
 enum
 {
     COLUMN_STATE_NAME,
-    COLUMN_STATE_VALUE
+    COLUMN_STATE_VALUE,
+    COLUMN_STATE_BOLD      /* Used to highlight updated state */
 };
 
 enum
@@ -231,6 +232,9 @@ static void set_response_handler(GldbWindow *context, guint32 id,
  * take each state in the store and try to match it with state in the
  * gldb state tree. If it fails, we delete the state. Any new state also
  * has to be placed in the correct position.
+ *
+ * As an added bonus, this approach makes it really easy to highlight
+ * state that has changed.
  */
 static void update_state_r(const gldb_state *root, GtkTreeStore *store,
                            GtkTreeIter *parent)
@@ -242,13 +246,21 @@ static void update_state_r(const gldb_state *root, GtkTreeStore *store,
     const gldb_state *child;
     gchar *name;
 
+    static int rep = 0;
+    if (!parent) rep++;
+
     bugle_hash_init(&lookup, false);
 
     /* Build lookup table */
     for (i = bugle_list_head(&root->children); i; i = bugle_list_next(i))
     {
         child = (const gldb_state *) bugle_list_data(i);
-        if (child->name) bugle_hash_set(&lookup, child->name, (void *) child);
+        if (child->name)
+        {
+            if (bugle_hash_get(&lookup, child->name))
+                g_warning("State %s is duplicated", child->name);
+            bugle_hash_set(&lookup, child->name, (void *) child);
+        }
     }
 
     /* Update common, and remove items from store not present in state */
@@ -256,18 +268,30 @@ static void update_state_r(const gldb_state *root, GtkTreeStore *store,
     while (valid)
     {
         gtk_tree_model_get(GTK_TREE_MODEL(store), &iter, COLUMN_STATE_NAME, &name, -1);
+        if (name == "GL_MINMAX_SINK")
+            printf("");
         child = (const gldb_state *) bugle_hash_get(&lookup, name);
         g_free(name);
         if (child)
         {
             gchar *value;
-            gchar *value_utf8;
+            gchar *value_utf8, *old_utf8;
+            int cmp;
 
             value = child->value ? child->value : "";
             value_utf8 = g_convert(value, -1, "UTF8", "ASCII", NULL, NULL, NULL);
-            gtk_tree_store_set(store, &iter, COLUMN_STATE_VALUE, value_utf8 ? value_utf8 : "", -1);
+            gtk_tree_model_get(GTK_TREE_MODEL(store), &iter,
+                               COLUMN_STATE_VALUE, &old_utf8,
+                               -1);
+            cmp = strcmp(old_utf8, value_utf8);
+            gtk_tree_store_set(store, &iter,
+                               COLUMN_STATE_VALUE, value_utf8 ? value_utf8 : "",
+                               COLUMN_STATE_BOLD, cmp == 0 ? PANGO_WEIGHT_NORMAL : PANGO_WEIGHT_BOLD,
+                               -1);
+            g_free(old_utf8);
             g_free(value_utf8);
             update_state_r(child, store, &iter);
+            /* Mark as seen for the next phase */
             bugle_hash_set(&lookup, child->name, NULL);
             valid = gtk_tree_model_iter_next(GTK_TREE_MODEL(store), &iter);
         }
@@ -282,6 +306,7 @@ static void update_state_r(const gldb_state *root, GtkTreeStore *store,
         child = (const gldb_state *) bugle_list_data(i);
 
         if (!child->name) continue;
+        /* The hash is cleared for items that have been seen; thus "if new" */
         if (bugle_hash_get(&lookup, child->name))
         {
             gchar *value;
@@ -294,6 +319,7 @@ static void update_state_r(const gldb_state *root, GtkTreeStore *store,
             gtk_tree_store_set(store, &iter2,
                                COLUMN_STATE_NAME, child->name,
                                COLUMN_STATE_VALUE, value_utf8 ? value_utf8 : "",
+                               COLUMN_STATE_BOLD, PANGO_WEIGHT_BOLD,
                                -1);
             g_free(value_utf8);
             update_state_r(child, store, &iter2);
@@ -1155,13 +1181,17 @@ static void build_state_page(GldbWindow *context)
     GtkTreeViewColumn *column;
     gint page;
 
-    context->state.state_store = gtk_tree_store_new(2, G_TYPE_STRING, G_TYPE_STRING);
+    context->state.state_store = gtk_tree_store_new(3,
+                                                    G_TYPE_STRING,  /* name */
+                                                    G_TYPE_STRING,  /* value */
+                                                    G_TYPE_INT);    /* boldness */
     tree_view = gtk_tree_view_new_with_model(GTK_TREE_MODEL(context->state.state_store));
     cell = gtk_cell_renderer_text_new();
     g_object_set(cell, "yalign", 0.0, NULL);
     column = gtk_tree_view_column_new_with_attributes(_("Name"),
                                                       cell,
                                                       "text", COLUMN_STATE_NAME,
+                                                      "weight", COLUMN_STATE_BOLD,
                                                       NULL);
     gtk_tree_view_column_set_sort_column_id(column, COLUMN_STATE_NAME);
     gtk_tree_view_append_column(GTK_TREE_VIEW(tree_view), column);
@@ -1169,6 +1199,7 @@ static void build_state_page(GldbWindow *context)
     column = gtk_tree_view_column_new_with_attributes(_("Value"),
                                                       cell,
                                                       "text", COLUMN_STATE_VALUE,
+                                                      "weight", COLUMN_STATE_BOLD,
                                                       NULL);
     gtk_tree_view_append_column(GTK_TREE_VIEW(tree_view), column);
     gtk_tree_view_set_enable_search(GTK_TREE_VIEW(tree_view), TRUE);
