@@ -268,8 +268,6 @@ static void update_state_r(const gldb_state *root, GtkTreeStore *store,
     while (valid)
     {
         gtk_tree_model_get(GTK_TREE_MODEL(store), &iter, COLUMN_STATE_NAME, &name, -1);
-        if (name == "GL_MINMAX_SINK")
-            printf("");
         child = (const gldb_state *) bugle_hash_get(&lookup, name);
         g_free(name);
         if (child)
