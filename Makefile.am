@@ -48,6 +48,7 @@ gldb_gldb_LDFLAGS = -thread-safe
 
 gldb_gldb_gui_SOURCES = gldb/gldb-gui.c \
 	gldb/gldb-gui-image.c gldb/gldb-gui-image.h \
+	gldb/gldb-gui-state.c gldb/gldb-gui-state.h \
 	gldb/gldb-common.c gldb/gldb-common.h \
 	gldb/gldb-channels.c gldb/gldb-channels.h
 if HAVE_GTKGLEXT

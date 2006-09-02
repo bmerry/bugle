@@ -2,7 +2,7 @@ Q. I am getting the error 'Invalid option -fdump-translation-unit' or
 similar.
 A. You need to use a version of GCC that supports this flag. Version
 3.2 and newer are known to, but 3.0 and 2.95 do not. I'm not sure about
-3.1. In version 4.0 the support is broken.
+3.1. In version 4.0 the support is broken, but 4.1 fixes it.
 
 Q. I get an error trying to move gl.c.tu, saying that the file does not
 exist.
@@ -12,9 +12,9 @@ A. You are probably using GCC 4.0, which has broken support for
 Q. I am getting the error "could not find GL/glext.h"
 A. You need to have this file, as it defines extensions to OpenGL that
 an application might use. You can obtain the latest copy from
-http://oss.sgi.com/projects/ogl-sample/registry. If you don't want to
-put it in your system include directories, you can create a GL
-subdirectory of your source directory and put it there.
+http://www.opengl.org/registry. If you don't want to put it in your
+system include directories, you can create a GL subdirectory of the
+bugle source directory and put it there.
 
 Q. I am using the NVIDIA header files, and I am getting errors about
 conflicting definitions.
@@ -43,18 +43,27 @@ older systems) as root.
 copy), compile and install it.
 4. Switch back to the NVIDIA OpenGL driver (`eselect opengl set nvidia')
 
-Q. I have an x86_64 (Athlon 64/Opteron/EM64T) machine with 64-bit OS,
+Q. I have an x86-64 (Athlon 64/Opteron/EM64T) machine with 64-bit OS,
+and compilation fails with the message
+/usr/lib/libGL.so: could not read symbols: File in wrong format
+A. This has been reported on Fedora Core 5, where libtool incorrectly
+tries to link against the 32-bit version of libGL.so. The workaround is
+to run (in the build directory)
+sed -i 's#sys_lib_search_path_spec="#sys_lib_search_path_spec="/usr/lib64 #' libtool
+and re-run make. If this still doesn't work, see if your 64-bit
+libGL.so is in a different directory and use that in place of
+/usr/lib64 above.
+
+Q. I have an x86-64 (Athlon 64/Opteron/EM64T) machine with 64-bit OS,
 and BuGLe fails to work with Quake3/Doom3.
 A. Quake3 and Doom3 are 32-bit apps, while you probably have a 64-bit
 version of BuGLe. You will need to compile a 32-bit version. See the
 FAQ for more details.
 
 Q. I am using GL_EXT_framebuffer_object to render to texture, but the
-results do not appear in the texture pane of gldb-gui.
+results do not appear in the texture viewer of gldb-gui.
 A. This is a known bug in NVIDIA's 76.76 driver. It is fixed in the 80
-series drivers. As a workaround, you can change the "#if 0" to "#if 1"
-on line 241 of filters/debugger.c, but be aware that this then breaks
-display of non-rendered textures.
+series drivers. The results should appear in the framebuffer viewer.
 
 Q. I am using ATI drivers and when I run configure, it does not find
 glBegin in -lGL.

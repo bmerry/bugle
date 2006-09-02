@@ -81,4 +81,5 @@ information, it is necessary to parse the OpenGL header files. It would
 be very difficult to write a parser to do this robustly, but gcc
 already knows how to do this. Unfortunately, the ability to extract a
 parse tree from gcc (the -fdump-translation-unit option)
-was only added sometime after 3.0.
+was only added sometime after 3.0, and is also broken in 4.0 (fixed in
+4.1).

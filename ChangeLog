@@ -4,6 +4,7 @@
 * Fix some duplicated GL_ARB_imaging state
 * Work around a bug that causes texture and framebuffer repaints to fail
 * Highlight state changes
+* Options to filter state
 
 0.0.20060828
 ------------

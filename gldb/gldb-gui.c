@@ -46,6 +46,7 @@
 #include "gldb/gldb-common.h"
 #include "gldb/gldb-channels.h"
 #include "gldb/gldb-gui-image.h"
+#include "gldb/gldb-gui-state.h"
 
 #if defined(GL_ARB_vertex_program) || defined(GL_ARB_fragment_program)
 # define GLDB_GUI_SHADER_OLD
@@ -59,13 +60,6 @@
 #if defined(GLDB_GUI_SHADER_OLD) || defined(GLDB_GUI_SHADER_GLSL_ARB) || defined(GLDB_GUI_SHADER_GLSL_2_0)
 # define GLDB_GUI_SHADER
 #endif
-
-enum
-{
-    COLUMN_STATE_NAME,
-    COLUMN_STATE_VALUE,
-    COLUMN_STATE_BOLD      /* Used to highlight updated state */
-};
 
 enum
 {
@@ -106,13 +100,6 @@ typedef struct
     gboolean (*callback)(struct GldbWindow *, gldb_response *, gpointer user_data);
     gpointer user_data;
 } response_handler;
-
-typedef struct
-{
-    bool dirty;
-    GtkWidget *page;
-    GtkTreeStore *state_store;
-} GldbWindowState;
 
 #if HAVE_GTKGLEXT
 typedef struct
@@ -225,116 +212,6 @@ static void set_response_handler(GldbWindow *context, guint32 id,
     h->callback = callback;
     h->user_data = user_data;
     bugle_list_append(&context->response_handlers, h);
-}
-
-/* We can't just rip out all the old state and plug in the new, because
- * that loses any expansions that may have been active. Instead, we
- * take each state in the store and try to match it with state in the
- * gldb state tree. If it fails, we delete the state. Any new state also
- * has to be placed in the correct position.
- *
- * As an added bonus, this approach makes it really easy to highlight
- * state that has changed.
- */
-static void update_state_r(const gldb_state *root, GtkTreeStore *store,
-                           GtkTreeIter *parent)
-{
-    bugle_hash_table lookup;
-    GtkTreeIter iter, iter2;
-    gboolean valid;
-    bugle_list_node *i;
-    const gldb_state *child;
-    gchar *name;
-
-    static int rep = 0;
-    if (!parent) rep++;
-
-    bugle_hash_init(&lookup, false);
-
-    /* Build lookup table */
-    for (i = bugle_list_head(&root->children); i; i = bugle_list_next(i))
-    {
-        child = (const gldb_state *) bugle_list_data(i);
-        if (child->name)
-        {
-            if (bugle_hash_get(&lookup, child->name))
-                g_warning("State %s is duplicated", child->name);
-            bugle_hash_set(&lookup, child->name, (void *) child);
-        }
-    }
-
-    /* Update common, and remove items from store not present in state */
-    valid = gtk_tree_model_iter_children(GTK_TREE_MODEL(store), &iter, parent);
-    while (valid)
-    {
-        gtk_tree_model_get(GTK_TREE_MODEL(store), &iter, COLUMN_STATE_NAME, &name, -1);
-        child = (const gldb_state *) bugle_hash_get(&lookup, name);
-        g_free(name);
-        if (child)
-        {
-            gchar *value;
-            gchar *value_utf8, *old_utf8;
-            int cmp;
-
-            value = child->value ? child->value : "";
-            value_utf8 = g_convert(value, -1, "UTF8", "ASCII", NULL, NULL, NULL);
-            gtk_tree_model_get(GTK_TREE_MODEL(store), &iter,
-                               COLUMN_STATE_VALUE, &old_utf8,
-                               -1);
-            cmp = strcmp(old_utf8, value_utf8);
-            gtk_tree_store_set(store, &iter,
-                               COLUMN_STATE_VALUE, value_utf8 ? value_utf8 : "",
-                               COLUMN_STATE_BOLD, cmp == 0 ? PANGO_WEIGHT_NORMAL : PANGO_WEIGHT_BOLD,
-                               -1);
-            g_free(old_utf8);
-            g_free(value_utf8);
-            update_state_r(child, store, &iter);
-            /* Mark as seen for the next phase */
-            bugle_hash_set(&lookup, child->name, NULL);
-            valid = gtk_tree_model_iter_next(GTK_TREE_MODEL(store), &iter);
-        }
-        else
-            valid = gtk_tree_store_remove(store, &iter);
-    }
-
-    /* Fill in missing items */
-    valid = gtk_tree_model_iter_children(GTK_TREE_MODEL(store), &iter, parent);
-    for (i = bugle_list_head(&root->children); i; i = bugle_list_next(i))
-    {
-        child = (const gldb_state *) bugle_list_data(i);
-
-        if (!child->name) continue;
-        /* The hash is cleared for items that have been seen; thus "if new" */
-        if (bugle_hash_get(&lookup, child->name))
-        {
-            gchar *value;
-            gchar *value_utf8;
-
-            value = child->value ? child->value : "";
-            value_utf8 = g_convert(value, -1, "UTF8", "ASCII", NULL, NULL, NULL);
-            gtk_tree_store_insert_before(store, &iter2, parent,
-                                         valid ? &iter : NULL);
-            gtk_tree_store_set(store, &iter2,
-                               COLUMN_STATE_NAME, child->name,
-                               COLUMN_STATE_VALUE, value_utf8 ? value_utf8 : "",
-                               COLUMN_STATE_BOLD, PANGO_WEIGHT_BOLD,
-                               -1);
-            g_free(value_utf8);
-            update_state_r(child, store, &iter2);
-        }
-        else if (valid)
-            valid = gtk_tree_model_iter_next(GTK_TREE_MODEL(store), &iter);
-    }
-
-    bugle_hash_clear(&lookup);
-}
-
-static void state_update(GldbWindow *context)
-{
-    if (!context->state.dirty) return;
-    context->state.dirty = FALSE;
-
-    update_state_r(gldb_state_update(), context->state.state_store, NULL);
 }
 
 static const gldb_state *state_find_child_numeric(const gldb_state *parent,
@@ -829,7 +706,7 @@ static void notebook_update(GldbWindow *context, gint new_page)
     if (new_page >= 0) page = new_page;
     else page = gtk_notebook_get_current_page(notebook);
     if (page == gtk_notebook_page_num(notebook, context->state.page))
-        state_update(context);
+        state_update(&context->state);
 #if HAVE_GTKGLEXT
     else if (page == gtk_notebook_page_num(notebook, context->texture.page))
         texture_update(context);
@@ -860,7 +737,7 @@ static void update_status_bar(GldbWindow *context, const gchar *text)
 
 static void stopped(GldbWindow *context, const gchar *text)
 {
-    context->state.dirty = true;
+    state_mark_dirty(&context->state);
 #if HAVE_GTKGLEXT
     context->texture.dirty = true;
     context->framebuffer.dirty = true;
@@ -1170,52 +1047,6 @@ static void breakpoints_action(GtkAction *action, gpointer user_data)
     if (result == GTK_RESPONSE_ACCEPT)
         gldb_set_break_error(seq++, gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(toggle)));
     gtk_widget_destroy(context.dialog);
-}
-
-static void build_state_page(GldbWindow *context)
-{
-    GtkWidget *scrolled, *tree_view, *label;
-    GtkCellRenderer *cell;
-    GtkTreeViewColumn *column;
-    gint page;
-
-    context->state.state_store = gtk_tree_store_new(3,
-                                                    G_TYPE_STRING,  /* name */
-                                                    G_TYPE_STRING,  /* value */
-                                                    G_TYPE_INT);    /* boldness */
-    tree_view = gtk_tree_view_new_with_model(GTK_TREE_MODEL(context->state.state_store));
-    cell = gtk_cell_renderer_text_new();
-    g_object_set(cell, "yalign", 0.0, NULL);
-    column = gtk_tree_view_column_new_with_attributes(_("Name"),
-                                                      cell,
-                                                      "text", COLUMN_STATE_NAME,
-                                                      "weight", COLUMN_STATE_BOLD,
-                                                      NULL);
-    gtk_tree_view_column_set_sort_column_id(column, COLUMN_STATE_NAME);
-    gtk_tree_view_append_column(GTK_TREE_VIEW(tree_view), column);
-    cell = gtk_cell_renderer_text_new();
-    column = gtk_tree_view_column_new_with_attributes(_("Value"),
-                                                      cell,
-                                                      "text", COLUMN_STATE_VALUE,
-                                                      "weight", COLUMN_STATE_BOLD,
-                                                      NULL);
-    gtk_tree_view_append_column(GTK_TREE_VIEW(tree_view), column);
-    gtk_tree_view_set_enable_search(GTK_TREE_VIEW(tree_view), TRUE);
-    gtk_tree_view_set_search_column(GTK_TREE_VIEW(tree_view), COLUMN_STATE_NAME);
-    gtk_tree_view_set_rules_hint(GTK_TREE_VIEW(tree_view), TRUE);
-
-    scrolled = gtk_scrolled_window_new(NULL, NULL);
-    gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(scrolled),
-                                   GTK_POLICY_AUTOMATIC,
-                                   GTK_POLICY_AUTOMATIC);
-    gtk_container_add(GTK_CONTAINER(scrolled), tree_view);
-    gtk_widget_show(scrolled);
-    g_object_unref(G_OBJECT(context->state.state_store)); /* So that it dies with the view */
-
-    label = gtk_label_new(_("State"));
-    page = gtk_notebook_append_page(GTK_NOTEBOOK(context->notebook), scrolled, label);
-    context->state.dirty = false;
-    context->state.page = gtk_notebook_get_nth_page(GTK_NOTEBOOK(context->notebook), page);
 }
 
 #if HAVE_GTKGLEXT
@@ -2387,7 +2218,7 @@ static void build_main_window(GldbWindow *context)
     context->statusbar_context_id = gtk_statusbar_get_context_id(GTK_STATUSBAR(context->statusbar), _("Program status"));
     gtk_statusbar_push(GTK_STATUSBAR(context->statusbar), context->statusbar_context_id, _("Not running"));
 
-    build_state_page(context);
+    state_page_new(&context->state, GTK_NOTEBOOK(context->notebook));
 #if HAVE_GTKGLEXT
     build_texture_page(context);
     build_framebuffer_page(context);
