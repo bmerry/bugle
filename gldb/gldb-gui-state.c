@@ -38,9 +38,67 @@ enum
 {
     COLUMN_STATE_NAME,
     COLUMN_STATE_VALUE,
-    COLUMN_STATE_BOLD,      /* Used to highlight updated state */
-    COLUMN_STATE_SELECTED
+    COLUMN_STATE_SELECTED,
+    COLUMN_STATE_MODIFIED,
+    COLUMN_STATE_SELECTED_TOTAL,
+    COLUMN_STATE_MODIFIED_TOTAL,
+    COLUMN_STATE_BOLD
 };
+
+/* Utility functions for dealing with columns that hold totalling
+ * information about sub-trees.
+ */
+
+/* Adds X to column of iter and all its ancestors, from the top down. */
+static void add_total_column(GtkTreeStore *store, GtkTreeIter *iter,
+                             gint column, gint value)
+{
+    gint old;
+
+    if (iter)
+    {
+        GtkTreeIter parent;
+        if (gtk_tree_model_iter_parent(GTK_TREE_MODEL(store), &parent, iter))
+            add_total_column(store, &parent, column, value);
+    }
+    gtk_tree_model_get(GTK_TREE_MODEL(store), iter, column, &old, -1);
+    gtk_tree_store_set(store, iter, column, old + value, -1);
+}
+
+/* Sets base_column (a boolean) to value, and updates the count in
+ * total_column.
+ */
+static set_column(GtkTreeStore *store, GtkTreeIter *iter,
+                  gint base_column, gint total_column, gboolean value)
+{
+    gboolean old;
+
+    gtk_tree_model_get(GTK_TREE_MODEL(store), iter, base_column, &old, -1);
+    if (old != value)
+        gtk_tree_store_set(store, iter, base_column, value, -1);
+    if (old && !value)
+        add_total_column(store, iter, total_column, -1);
+    else if (!old && value)
+        add_total_column(store, iter, total_column, 1);
+}
+
+/* Removes iter and all descendants from the tree, keeping the total
+ * counts intact. It modifies iter to point to the next child as for
+ * gtk_tree_store_remove, and returns the same boolean.
+ */
+static gboolean state_remove_r(GtkTreeStore *store, GtkTreeIter *iter)
+{
+    GtkTreeIter child;
+    gboolean valid;
+    gboolean old_selected, old_modified;
+
+    valid = gtk_tree_model_iter_children(GTK_TREE_MODEL(store), &child, iter);
+    while (valid)
+        valid = state_remove_r(store, &child);
+    set_column(store, iter, COLUMN_STATE_SELECTED, COLUMN_STATE_SELECTED_TOTAL, FALSE);
+    set_column(store, iter, COLUMN_STATE_MODIFIED, COLUMN_STATE_MODIFIED_TOTAL, FALSE);
+    return gtk_tree_store_remove(store, iter);
+}
 
 /* We can't just rip out all the old state and plug in the new, because
  * that loses any expansions and selections that may have been active.
@@ -86,18 +144,29 @@ static void update_state_r(const gldb_state *root, GtkTreeStore *store,
         {
             gchar *value;
             gchar *value_utf8, *old_utf8;
-            int cmp;
+            gboolean changed;
 
             value = child->value ? child->value : "";
             value_utf8 = g_convert(value, -1, "UTF8", "ASCII", NULL, NULL, NULL);
             gtk_tree_model_get(GTK_TREE_MODEL(store), &iter,
                                COLUMN_STATE_VALUE, &old_utf8,
                                -1);
-            cmp = strcmp(old_utf8, value_utf8);
-            gtk_tree_store_set(store, &iter,
-                               COLUMN_STATE_VALUE, value_utf8 ? value_utf8 : "",
-                               COLUMN_STATE_BOLD, cmp == 0 ? PANGO_WEIGHT_NORMAL : PANGO_WEIGHT_BOLD,
-                               -1);
+            changed = strcmp(old_utf8, value_utf8) != 0;
+            if (changed)
+            {
+                gtk_tree_store_set(store, &iter,
+                                   COLUMN_STATE_VALUE, value_utf8,
+                                   COLUMN_STATE_BOLD, PANGO_WEIGHT_BOLD,
+                                   -1);
+                set_column(store, &iter, COLUMN_STATE_MODIFIED, COLUMN_STATE_MODIFIED_TOTAL, TRUE);
+            }
+            else
+            {
+                gtk_tree_store_set(store, &iter,
+                                   COLUMN_STATE_BOLD, PANGO_WEIGHT_NORMAL,
+                                   -1);
+                set_column(store, &iter, COLUMN_STATE_MODIFIED, COLUMN_STATE_MODIFIED_TOTAL, FALSE);
+            }
             g_free(old_utf8);
             g_free(value_utf8);
             update_state_r(child, store, &iter);
@@ -106,7 +175,7 @@ static void update_state_r(const gldb_state *root, GtkTreeStore *store,
             valid = gtk_tree_model_iter_next(GTK_TREE_MODEL(store), &iter);
         }
         else
-            valid = gtk_tree_store_remove(store, &iter);
+            valid = state_remove_r(store, &iter);
     }
 
     /* Fill in missing items */
@@ -130,8 +199,10 @@ static void update_state_r(const gldb_state *root, GtkTreeStore *store,
                                COLUMN_STATE_NAME, child->name,
                                COLUMN_STATE_VALUE, value_utf8 ? value_utf8 : "",
                                COLUMN_STATE_BOLD, PANGO_WEIGHT_BOLD,
+                               COLUMN_STATE_MODIFIED, FALSE,  /* will update */
                                COLUMN_STATE_SELECTED, FALSE,
                                -1);
+            set_column(store, &iter2, COLUMN_STATE_MODIFIED, COLUMN_STATE_MODIFIED_TOTAL, TRUE);
             g_free(value_utf8);
             update_state_r(child, store, &iter2);
         }
@@ -172,8 +243,7 @@ static void state_select_toggled(GtkCellRendererToggle *cell,
         gtk_tree_model_filter_convert_iter_to_child_iter(filter, &store_iter, &filter_iter);
         gtk_tree_model_get(GTK_TREE_MODEL(store), &store_iter,
                            COLUMN_STATE_SELECTED, &selected, -1);
-        gtk_tree_store_set(store, &store_iter,
-                           COLUMN_STATE_SELECTED, !selected, -1);
+        set_column(store, &store_iter, COLUMN_STATE_SELECTED, COLUMN_STATE_SELECTED_TOTAL, !selected);
     }
 }
 
@@ -185,41 +255,25 @@ static void state_filter_toggled(GtkWidget *widget,
     gtk_tree_model_filter_refilter(GTK_TREE_MODEL_FILTER(state->state_filter));
 }
 
-/* FIXME: this is horribly slow. However, my attempts to keep a visible field
- * have been dismal failures resulting in mysterious segfaults. A better
- * approach may be to keep counts of selected and modified descendants.
- * FIXME: when the state of X is changed, the ancestors of X need to be
- * refiltered.
- * FIXME: the expansion state of filtered-out rows is lost
+/* FIXME: the expansion state of filtered-out rows is lost
  */
 static gboolean state_visible(GtkTreeModel *model, GtkTreeIter *iter,
                               gpointer user_data)
 {
     GldbWindowState *state;
-    gboolean only_selected;
-    gboolean only_modified;
-    gboolean selected;
-    gint bold;
-    GtkTreeIter child;
-    gboolean valid;
+    gboolean only_selected, only_modified;
+    gint selected, modified;
 
     state = (GldbWindowState *) user_data;
 
-    valid = gtk_tree_model_iter_children(model, &child, iter);
-    while (valid)
-    {
-        if (state_visible(model, &child, user_data)) return TRUE;
-        valid = gtk_tree_model_iter_next(model, &child);
-    }
-
     gtk_tree_model_get(model, iter,
-                       COLUMN_STATE_SELECTED, &selected,
-                       COLUMN_STATE_BOLD, &bold,
+                       COLUMN_STATE_SELECTED_TOTAL, &selected,
+                       COLUMN_STATE_MODIFIED_TOTAL, &modified,
                        -1);
     only_selected = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(state->only_selected));
     only_modified = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(state->only_modified));
     if (only_selected && !selected) return FALSE;
-    if (only_modified && bold != PANGO_WEIGHT_BOLD) return FALSE;
+    if (only_modified && !modified) return FALSE;
     return TRUE;
 }
 
@@ -232,11 +286,14 @@ void state_page_new(GldbWindowState *state, GtkNotebook *notebook)
 
     vbox = gtk_vbox_new(FALSE, 0);
 
-    state->state_store = gtk_tree_store_new(4,
+    state->state_store = gtk_tree_store_new(7,
                                             G_TYPE_STRING,   /* name */
                                             G_TYPE_STRING,   /* value */
-                                            G_TYPE_INT,      /* boldness */
-                                            G_TYPE_BOOLEAN); /* selected */
+                                            G_TYPE_BOOLEAN,  /* selected */
+                                            G_TYPE_BOOLEAN,  /* modified */
+                                            G_TYPE_INT,      /* selected-total */
+                                            G_TYPE_INT,      /* modified-total */
+                                            G_TYPE_INT);     /* boldness */
     state->state_filter = gtk_tree_model_filter_new(GTK_TREE_MODEL(state->state_store), NULL);
     gtk_tree_model_filter_set_visible_func(GTK_TREE_MODEL_FILTER(state->state_filter),
                                            state_visible, state, NULL);

@@ -36,6 +36,7 @@ typedef struct
     GtkTreeModel *state_filter;  /* Filter that shows only chosen state */
 } GldbWindowState;
 
+void state_update(GldbWindowState *state);
 void state_mark_dirty(GldbWindowState *state);
 void state_page_new(GldbWindowState *state, GtkNotebook *notebook);
 
