@@ -31,6 +31,7 @@
 #include <glib/gi18n-lib.h>
 #include "common/linkedlist.h"
 #include "common/hashtable.h"
+#include "common/safemem.h"
 #include "gldb/gldb-common.h"
 #include "gldb/gldb-gui-state.h"
 
@@ -42,7 +43,8 @@ enum
     COLUMN_STATE_MODIFIED,
     COLUMN_STATE_SELECTED_TOTAL,
     COLUMN_STATE_MODIFIED_TOTAL,
-    COLUMN_STATE_BOLD
+    COLUMN_STATE_BOLD,
+    COLUMN_STATE_EXPANDED
 };
 
 /* Utility functions for dealing with columns that hold totalling
@@ -201,6 +203,7 @@ static void update_state_r(const gldb_state *root, GtkTreeStore *store,
                                COLUMN_STATE_BOLD, PANGO_WEIGHT_BOLD,
                                COLUMN_STATE_MODIFIED, FALSE,  /* will update */
                                COLUMN_STATE_SELECTED, FALSE,
+                               COLUMN_STATE_EXPANDED, FALSE,
                                -1);
             set_column(store, &iter2, COLUMN_STATE_MODIFIED, COLUMN_STATE_MODIFIED_TOTAL, TRUE);
             g_free(value_utf8);
@@ -247,16 +250,44 @@ static void state_select_toggled(GtkCellRendererToggle *cell,
     }
 }
 
+static void state_expand_r(GtkTreeView *view, GtkTreeModel *model, GtkTreeIter *root)
+{
+    GtkTreePath *path;
+    GtkTreeIter child;
+    gboolean valid;
+
+    if (root)
+    {
+        gboolean expanded;
+
+        gtk_tree_model_get(model, root, COLUMN_STATE_EXPANDED, &expanded, -1);
+        if (expanded)
+        {
+            path = gtk_tree_model_get_path(model, root);
+            gtk_tree_view_expand_row(view, path, FALSE);
+            gtk_tree_path_free(path);
+        }
+    }
+
+    valid = gtk_tree_model_iter_children(model, &child, root);
+    while (valid)
+    {
+        state_expand_r(view, model, &child);
+        valid = gtk_tree_model_iter_next(model, &child);
+    }
+}
+
 static void state_filter_toggled(GtkWidget *widget,
                                  gpointer user_data)
 {
     GldbGuiState *state;
     state = (GldbGuiState *) user_data;
     gtk_tree_model_filter_refilter(GTK_TREE_MODEL_FILTER(state->state_filter));
+    state_expand_r(GTK_TREE_VIEW(state->tree_view),
+                   gtk_tree_view_get_model(GTK_TREE_VIEW(state->tree_view)),
+                   NULL);
 }
 
-/* FIXME: the expansion state of filtered-out rows is lost
- */
 static gboolean state_visible(GtkTreeModel *model, GtkTreeIter *iter,
                               gpointer user_data)
 {
@@ -277,6 +308,35 @@ static gboolean state_visible(GtkTreeModel *model, GtkTreeIter *iter,
     return TRUE;
 }
 
+/* Tracks whether each row is expanded or collapsed within the model.
+ * This is necessary because when removing a filter, the rows that are
+ * added back to the tree have lost their expansion state.
+ */
+static void state_row_expanded_collapsed(GtkTreeView *view, GtkTreeIter *iter,
+                                         GtkTreePath *path, gpointer user_data)
+{
+    GtkTreeModel *filter, *store;
+    GtkTreeIter filter_iter, store_iter;
+    gboolean valid;
+
+    filter = gtk_tree_view_get_model(view);
+    store = gtk_tree_model_filter_get_model(GTK_TREE_MODEL_FILTER(filter));
+    if (!iter)
+    {
+        valid = gtk_tree_model_get_iter(filter, &filter_iter, path);
+        g_return_if_fail(valid);
+    }
+    else
+        filter_iter = *iter;
+
+    gtk_tree_model_filter_convert_iter_to_child_iter(GTK_TREE_MODEL_FILTER(filter),
+                                                     &store_iter, &filter_iter);
+
+    gtk_tree_store_set(GTK_TREE_STORE(store), &store_iter,
+                       COLUMN_STATE_EXPANDED, (gboolean) GPOINTER_TO_INT(user_data),
+                       -1);
+}
+
 GldbGuiState *gldb_gui_state_new(GtkNotebook *notebook)
 {
     GtkWidget *scrolled, *tree_view, *label, *vbox, *check;
@@ -289,18 +349,19 @@ GldbGuiState *gldb_gui_state_new(GtkNotebook *notebook)
 
     state = (GldbGuiState *) bugle_calloc(1, sizeof(GldbGuiState));
 
-    state->state_store = gtk_tree_store_new(7,
+    state->state_store = gtk_tree_store_new(8,
                                             G_TYPE_STRING,   /* name */
                                             G_TYPE_STRING,   /* value */
                                             G_TYPE_BOOLEAN,  /* selected */
                                             G_TYPE_BOOLEAN,  /* modified */
                                             G_TYPE_INT,      /* selected-total */
                                             G_TYPE_INT,      /* modified-total */
-                                            G_TYPE_INT);     /* boldness */
+                                            G_TYPE_INT,      /* boldness */
+                                            G_TYPE_BOOLEAN); /* expanded */
     state->state_filter = gtk_tree_model_filter_new(GTK_TREE_MODEL(state->state_store), NULL);
     gtk_tree_model_filter_set_visible_func(GTK_TREE_MODEL_FILTER(state->state_filter),
                                            state_visible, state, NULL);
-    tree_view = gtk_tree_view_new_with_model(GTK_TREE_MODEL(state->state_filter));
+    state->tree_view = tree_view = gtk_tree_view_new_with_model(GTK_TREE_MODEL(state->state_filter));
 
     cell = gtk_cell_renderer_toggle_new();
     g_object_set(cell, "yalign", 0.0, NULL);
@@ -312,6 +373,10 @@ GldbGuiState *gldb_gui_state_new(GtkNotebook *notebook)
                                                       NULL);
     gtk_tree_view_column_set_sort_column_id(column, COLUMN_STATE_SELECTED);
     gtk_tree_view_append_column(GTK_TREE_VIEW(tree_view), column);
+    g_signal_connect(G_OBJECT(tree_view), "row-expanded",
+                     G_CALLBACK(state_row_expanded_collapsed), GINT_TO_POINTER(1));
+    g_signal_connect(G_OBJECT(tree_view), "row-collapsed",
+                     G_CALLBACK(state_row_expanded_collapsed), GINT_TO_POINTER(0));
 
     cell = gtk_cell_renderer_text_new();
     g_object_set(cell, "yalign", 0.0, NULL);

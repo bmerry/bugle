@@ -32,6 +32,7 @@ typedef struct
     gboolean dirty;
     GtkWidget *page;
     GtkWidget *only_selected, *only_modified;
+    GtkWidget *tree_view;
     GtkTreeStore *state_store;
     GtkTreeModel *state_filter;  /* Filter that shows only chosen state */
 } GldbGuiState;
