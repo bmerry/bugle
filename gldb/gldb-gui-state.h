@@ -34,10 +34,11 @@ typedef struct
     GtkWidget *only_selected, *only_modified;
     GtkTreeStore *state_store;
     GtkTreeModel *state_filter;  /* Filter that shows only chosen state */
-} GldbWindowState;
+} GldbGuiState;
 
-void state_update(GldbWindowState *state);
-void state_mark_dirty(GldbWindowState *state);
-void state_page_new(GldbWindowState *state, GtkNotebook *notebook);
+void gldb_gui_state_update(GldbGuiState *state);
+void gldb_gui_state_mark_dirty(GldbGuiState *state);
+GldbGuiState *gldb_gui_state_new(GtkNotebook *notebook);
+void gldb_gui_state_destroy(GldbGuiState *state);
 
 #endif /* !BUGLE_GLDB_GLDB_GUI_STATE_H */

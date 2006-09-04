@@ -187,6 +187,10 @@ typedef struct
  * generate_commands.
  */
 gldb_state *gldb_state_find(gldb_state *root, const char *name, size_t n);
+/* Finds the immediate child with the given numeric/enum name, or NULL */
+gldb_state *gldb_state_find_child_numeric(gldb_state *parent, GLint name);
+gldb_state *gldb_state_find_child_enum(gldb_state *parent, GLenum name);
+
 /* Updates the internal state tree if necessary, and returns the tree */
 gldb_state *gldb_state_update();
 

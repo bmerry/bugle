@@ -213,14 +213,14 @@ static void update_state_r(const gldb_state *root, GtkTreeStore *store,
     bugle_hash_clear(&lookup);
 }
 
-void state_update(GldbWindowState *state)
+void gldb_gui_state_update(GldbGuiState *state)
 {
     if (!state->dirty) return;
     state->dirty = FALSE;
     update_state_r(gldb_state_update(), state->state_store, NULL);
 }
 
-void state_mark_dirty(GldbWindowState *state)
+void gldb_gui_state_mark_dirty(GldbGuiState *state)
 {
     state->dirty = TRUE;
 }
@@ -229,13 +229,13 @@ static void state_select_toggled(GtkCellRendererToggle *cell,
                                  gchar *path,
                                  gpointer user_data)
 {
-    GldbWindowState *state;
+    GldbGuiState *state;
     GtkTreeStore *store;
     GtkTreeModelFilter *filter;
     GtkTreeIter filter_iter, store_iter;
     gboolean selected;
 
-    state = (GldbWindowState *) user_data;
+    state = (GldbGuiState *) user_data;
     filter = GTK_TREE_MODEL_FILTER(state->state_filter);
     store = GTK_TREE_STORE(state->state_store);
     if (gtk_tree_model_get_iter_from_string(GTK_TREE_MODEL(filter), &filter_iter, path))
@@ -250,8 +250,8 @@ static void state_select_toggled(GtkCellRendererToggle *cell,
 static void state_filter_toggled(GtkWidget *widget,
                                  gpointer user_data)
 {
-    GldbWindowState *state;
-    state = (GldbWindowState *) user_data;
+    GldbGuiState *state;
+    state = (GldbGuiState *) user_data;
     gtk_tree_model_filter_refilter(GTK_TREE_MODEL_FILTER(state->state_filter));
 }
 
@@ -260,11 +260,11 @@ static void state_filter_toggled(GtkWidget *widget,
 static gboolean state_visible(GtkTreeModel *model, GtkTreeIter *iter,
                               gpointer user_data)
 {
-    GldbWindowState *state;
+    GldbGuiState *state;
     gboolean only_selected, only_modified;
     gint selected, modified;
 
-    state = (GldbWindowState *) user_data;
+    state = (GldbGuiState *) user_data;
 
     gtk_tree_model_get(model, iter,
                        COLUMN_STATE_SELECTED_TOTAL, &selected,
@@ -277,14 +277,17 @@ static gboolean state_visible(GtkTreeModel *model, GtkTreeIter *iter,
     return TRUE;
 }
 
-void state_page_new(GldbWindowState *state, GtkNotebook *notebook)
+GldbGuiState *gldb_gui_state_new(GtkNotebook *notebook)
 {
     GtkWidget *scrolled, *tree_view, *label, *vbox, *check;
     GtkCellRenderer *cell;
     GtkTreeViewColumn *column;
     gint page;
+    GldbGuiState *state;
 
     vbox = gtk_vbox_new(FALSE, 0);
+
+    state = (GldbGuiState *) bugle_calloc(1, sizeof(GldbGuiState));
 
     state->state_store = gtk_tree_store_new(7,
                                             G_TYPE_STRING,   /* name */
@@ -351,4 +354,11 @@ void state_page_new(GldbWindowState *state, GtkNotebook *notebook)
     page = gtk_notebook_append_page(GTK_NOTEBOOK(notebook), vbox, label);
     state->dirty = FALSE;
     state->page = gtk_notebook_get_nth_page(GTK_NOTEBOOK(notebook), page);
+
+    return state;
+}
+
+void gldb_gui_state_destroy(GldbGuiState *state)
+{
+    free(state);
 }

@@ -153,7 +153,7 @@ typedef struct GldbWindow
     guint channel_watch;
     bugle_linked_list response_handlers;
 
-    GldbWindowState state;
+    GldbGuiState *state;
 #if HAVE_GTKGLEXT
     GldbWindowTexture texture;
     GldbWindowFramebuffer framebuffer;
@@ -212,36 +212,6 @@ static void set_response_handler(GldbWindow *context, guint32 id,
     h->callback = callback;
     h->user_data = user_data;
     bugle_list_append(&context->response_handlers, h);
-}
-
-static const gldb_state *state_find_child_numeric(const gldb_state *parent,
-                                                  GLint name)
-{
-    const gldb_state *child;
-    bugle_list_node *i;
-
-    /* FIXME: build indices on the state */
-    for (i = bugle_list_head(&parent->children); i; i = bugle_list_next(i))
-    {
-        child = (const gldb_state *) bugle_list_data(i);
-        if (child->numeric_name == name) return child;
-    }
-    return NULL;
-}
-
-static const gldb_state *state_find_child_enum(const gldb_state *parent,
-                                               GLenum name)
-{
-    const gldb_state *child;
-    bugle_list_node *i;
-
-    /* FIXME: build indices on the state */
-    for (i = bugle_list_head(&parent->children); i; i = bugle_list_next(i))
-    {
-        child = (const gldb_state *) bugle_list_data(i);
-        if (child->enum_name == name) return child;
-    }
-    return NULL;
 }
 
 /* Saves some of the current state of a combo box into the given array.
@@ -705,8 +675,8 @@ static void notebook_update(GldbWindow *context, gint new_page)
     notebook = GTK_NOTEBOOK(context->notebook);
     if (new_page >= 0) page = new_page;
     else page = gtk_notebook_get_current_page(notebook);
-    if (page == gtk_notebook_page_num(notebook, context->state.page))
-        state_update(&context->state);
+    if (page == gtk_notebook_page_num(notebook, context->state->page))
+        gldb_gui_state_update(context->state);
 #if HAVE_GTKGLEXT
     else if (page == gtk_notebook_page_num(notebook, context->texture.page))
         texture_update(context);
@@ -737,7 +707,7 @@ static void update_status_bar(GldbWindow *context, const gchar *text)
 
 static void stopped(GldbWindow *context, const gchar *text)
 {
-    state_mark_dirty(&context->state);
+    gldb_gui_state_mark_dirty(context->state);
 #if HAVE_GTKGLEXT
     context->texture.dirty = true;
     context->framebuffer.dirty = true;
@@ -1053,7 +1023,7 @@ static void breakpoints_action(GtkAction *action, gpointer user_data)
 static void update_texture_ids(GldbWindow *context)
 {
     GValue old[2];
-    const gldb_state *root, *s, *t, *l, *f, *param;
+    gldb_state *root, *s, *t, *l, *f, *param;
     GtkTreeModel *model;
     GtkTreeIter iter;
     bugle_list_node *nt, *nl;
@@ -1098,24 +1068,24 @@ static void update_texture_ids(GldbWindow *context)
 
     for (trg = 0; trg < G_N_ELEMENTS(targets); trg++)
     {
-        s = state_find_child_enum(root, targets[trg]);
+        s = gldb_state_find_child_enum(root, targets[trg]);
         if (!s) continue;
         for (nt = bugle_list_head(&s->children); nt != NULL; nt = bugle_list_next(nt))
         {
-            t = (const gldb_state *) bugle_list_data(nt);
+            t = (gldb_state *) bugle_list_data(nt);
             if (t->enum_name == 0)
             {
                 /* Count the levels */
                 f = t;
 #ifdef GL_ARB_texture_cube_map
                 if (targets[trg] == GL_TEXTURE_CUBE_MAP_ARB)
-                    f = state_find_child_enum(t, GL_TEXTURE_CUBE_MAP_POSITIVE_X_ARB);
+                    f = gldb_state_find_child_enum(t, GL_TEXTURE_CUBE_MAP_POSITIVE_X_ARB);
 #endif
                 levels = 0;
                 channels = 0;
                 for (nl = bugle_list_head(&f->children); nl != NULL; nl = bugle_list_next(nl))
                 {
-                    l = (const gldb_state *) bugle_list_data(nl);
+                    l = (gldb_state *) bugle_list_data(nl);
                     if (l->enum_name == 0)
                     {
                         int i;
@@ -1123,7 +1093,7 @@ static void update_texture_ids(GldbWindow *context)
                         levels = MAX(levels, (guint) l->numeric_name + 1);
                         for (i = 0; gldb_channel_table[i].channel; i++)
                             if (gldb_channel_table[i].texture_size_token
-                                && (param = state_find_child_enum(l, gldb_channel_table[i].texture_size_token)) != NULL
+                                && (param = gldb_state_find_child_enum(l, gldb_channel_table[i].texture_size_token)) != NULL
                                 && strcmp(param->value, "0") != 0)
                             {
                                 channels |= gldb_channel_table[i].channel;
@@ -1372,7 +1342,7 @@ static void update_framebuffer_ids(GldbWindow *context)
 {
     GValue old[2];
     GtkTreeIter iter;
-    const gldb_state *root, *framebuffer;
+    gldb_state *root, *framebuffer;
     GtkTreeModel *model;
     char *name;
 
@@ -1383,14 +1353,14 @@ static void update_framebuffer_ids(GldbWindow *context)
     root = gldb_state_update();
 
 #ifdef GL_EXT_framebuffer_object
-    if ((framebuffer = state_find_child_enum(root, GL_FRAMEBUFFER_EXT)) != NULL)
+    if ((framebuffer = gldb_state_find_child_enum(root, GL_FRAMEBUFFER_EXT)) != NULL)
     {
         bugle_list_node *pfbo;
-        const gldb_state *fbo;
+        gldb_state *fbo;
 
         for (pfbo = bugle_list_head(&framebuffer->children); pfbo != NULL; pfbo = bugle_list_next(pfbo))
         {
-            fbo = (const gldb_state *) bugle_list_data(pfbo);
+            fbo = (gldb_state *) bugle_list_data(pfbo);
 
             if (fbo->numeric_name == 0)
                 bugle_asprintf(&name, _("Default"));
@@ -1429,7 +1399,7 @@ static void framebuffer_id_changed(GtkWidget *widget, gpointer user_data)
     guint channels = 0, color_channels;
     guint id;
     GValue old_buffer;
-    const gldb_state *root, *framebuffer, *fbo, *parameter;
+    gldb_state *root, *framebuffer, *fbo, *parameter;
     int i, attachments;
     char *name;
 
@@ -1450,29 +1420,29 @@ static void framebuffer_id_changed(GtkWidget *widget, gpointer user_data)
         model = gtk_combo_box_get_model(GTK_COMBO_BOX(context->framebuffer.buffer));
         gtk_list_store_clear(GTK_LIST_STORE(model));
 
-        framebuffer = state_find_child_enum(root, GL_FRAMEBUFFER_EXT);
+        framebuffer = gldb_state_find_child_enum(root, GL_FRAMEBUFFER_EXT);
         if (id != 0)
         {
 #ifdef GL_EXT_framebuffer_object
             g_assert(framebuffer != NULL);
-            fbo = state_find_child_numeric(framebuffer, id);
+            fbo = gldb_state_find_child_numeric(framebuffer, id);
             g_assert(fbo != NULL);
 
             for (i = 0; gldb_channel_table[i].channel; i++)
                 if (gldb_channel_table[i].framebuffer_size_token
-                    && (parameter = state_find_child_enum(fbo, gldb_channel_table[i].framebuffer_size_token)) != NULL
+                    && (parameter = gldb_state_find_child_enum(fbo, gldb_channel_table[i].framebuffer_size_token)) != NULL
                     && strcmp(parameter->value, "0") != 0)
                 {
                     channels |= gldb_channel_table[i].channel;
                 }
             color_channels = gldb_channel_get_query_channels(channels & ~GLDB_CHANNEL_DEPTH_STENCIL);
 
-            parameter = state_find_child_enum(fbo, GL_MAX_COLOR_ATTACHMENTS_EXT);
+            parameter = gldb_state_find_child_enum(fbo, GL_MAX_COLOR_ATTACHMENTS_EXT);
             g_assert(parameter != NULL);
             attachments = atoi(parameter->value);
             for (i = 0; i < attachments; i++)
             {
-                if (state_find_child_enum(fbo, GL_COLOR_ATTACHMENT0_EXT + i))
+                if (gldb_state_find_child_enum(fbo, GL_COLOR_ATTACHMENT0_EXT + i))
                 {
                     bugle_asprintf(&name, _("Color %d"), i);
                     gtk_list_store_append(GTK_LIST_STORE(model), &iter);
@@ -1510,21 +1480,21 @@ static void framebuffer_id_changed(GtkWidget *widget, gpointer user_data)
         else
         {
             if (!framebuffer
-                || (fbo = state_find_child_numeric(framebuffer, 0)) == NULL)
+                || (fbo = gldb_state_find_child_numeric(framebuffer, 0)) == NULL)
                 fbo = root;
             for (i = 0; gldb_channel_table[i].channel; i++)
                 if (gldb_channel_table[i].framebuffer_size_token
-                    && (parameter = state_find_child_enum(fbo, gldb_channel_table[i].framebuffer_size_token)) != NULL
+                    && (parameter = gldb_state_find_child_enum(fbo, gldb_channel_table[i].framebuffer_size_token)) != NULL
                     && strcmp(parameter->value, "0") != 0)
                 {
                     channels |= gldb_channel_table[i].channel;
                 }
             color_channels = gldb_channel_get_query_channels(channels & ~GLDB_CHANNEL_DEPTH_STENCIL);
 
-            if ((parameter = state_find_child_enum(fbo, GL_DOUBLEBUFFER)) != NULL
+            if ((parameter = gldb_state_find_child_enum(fbo, GL_DOUBLEBUFFER)) != NULL
                 && strcmp(parameter->value, "GL_TRUE") == 0)
                 doublebuffer = true;
-            if ((parameter = state_find_child_enum(fbo, GL_STEREO)) != NULL
+            if ((parameter = gldb_state_find_child_enum(fbo, GL_STEREO)) != NULL
                 && strcmp(parameter->value, "GL_TRUE") == 0)
                 stereo = true;
 
@@ -1561,7 +1531,7 @@ static void framebuffer_id_changed(GtkWidget *widget, gpointer user_data)
                                        -1);
                 }
             }
-            if ((parameter = state_find_child_enum(fbo, GL_AUX_BUFFERS)) != NULL)
+            if ((parameter = gldb_state_find_child_enum(fbo, GL_AUX_BUFFERS)) != NULL)
             {
                 attachments = atoi(parameter->value);
                 for (i = 0; i < attachments; i++)
@@ -1786,7 +1756,7 @@ static void build_framebuffer_page(GldbWindow *context)
 #ifdef GLDB_GUI_SHADER
 static void update_shader_ids(GldbWindow *context, GLenum target)
 {
-    const gldb_state *s, *t, *u;
+    gldb_state *s, *t, *u;
     GtkTreeModel *model;
     GtkTreeIter iter, old_iter;
     guint old;
@@ -1811,11 +1781,11 @@ static void update_shader_ids(GldbWindow *context, GLenum target)
     case GL_FRAGMENT_PROGRAM_ARB:
 #endif
 #ifdef GLDB_GUI_SHADER_OLD
-        s = state_find_child_enum(s, target);
+        s = gldb_state_find_child_enum(s, target);
         if (!s) return;
         for (nt = bugle_list_head(&s->children); nt != NULL; nt = bugle_list_next(nt))
         {
-            t = (const gldb_state *) bugle_list_data(nt);
+            t = (gldb_state *) bugle_list_data(nt);
             if (t->enum_name == 0 && t->name[0] >= '0' && t->name[0] <= '9')
             {
                 gtk_list_store_append(GTK_LIST_STORE(model), &iter);
@@ -1849,8 +1819,8 @@ static void update_shader_ids(GldbWindow *context, GLenum target)
             case GL_FRAGMENT_SHADER_ARB: target_string = "GL_FRAGMENT_SHADER"; break;
 #endif
             }
-            t = (const gldb_state *) bugle_list_data(nt);
-            u = state_find_child_enum(t, GL_OBJECT_SUBTYPE_ARB);
+            t = (gldb_state *) bugle_list_data(nt);
+            u = gldb_state_find_child_enum(t, GL_OBJECT_SUBTYPE_ARB);
             if (u && !strcmp(u->value, target_string))
             {
                 gtk_list_store_append(GTK_LIST_STORE(model), &iter);
@@ -2218,7 +2188,7 @@ static void build_main_window(GldbWindow *context)
     context->statusbar_context_id = gtk_statusbar_get_context_id(GTK_STATUSBAR(context->statusbar), _("Program status"));
     gtk_statusbar_push(GTK_STATUSBAR(context->statusbar), context->statusbar_context_id, _("Not running"));
 
-    state_page_new(&context->state, GTK_NOTEBOOK(context->notebook));
+    context->state = gldb_gui_state_new(GTK_NOTEBOOK(context->notebook));
 #if HAVE_GTKGLEXT
     build_texture_page(context);
     build_framebuffer_page(context);

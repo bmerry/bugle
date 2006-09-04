@@ -470,6 +470,34 @@ gldb_state *gldb_state_find(gldb_state *root, const char *name, size_t n)
     return root;
 }
 
+gldb_state *gldb_state_find_child_numeric(gldb_state *parent, GLint name)
+{
+    gldb_state *child;
+    bugle_list_node *i;
+
+    /* FIXME: build indices on the state */
+    for (i = bugle_list_head(&parent->children); i; i = bugle_list_next(i))
+    {
+        child = (gldb_state *) bugle_list_data(i);
+        if (child->numeric_name == name) return child;
+    }
+    return NULL;
+}
+
+gldb_state *gldb_state_find_child_enum(gldb_state *parent, GLenum name)
+{
+    gldb_state *child;
+    bugle_list_node *i;
+
+    /* FIXME: build indices on the state */
+    for (i = bugle_list_head(&parent->children); i; i = bugle_list_next(i))
+    {
+        child = (gldb_state *) bugle_list_data(i);
+        if (child->enum_name == name) return child;
+    }
+    return NULL;
+}
+
 /* Checks that the result of a system call is not -1, otherwise throws
  * an error.
  */
