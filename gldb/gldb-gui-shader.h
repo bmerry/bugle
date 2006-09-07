@@ -30,22 +30,6 @@
 typedef struct _GldbShaderPane GldbShaderPane;
 typedef struct _GldbShaderPaneClass GldbShaderPaneClass;
 
-struct _GldbShaderPane
-{
-    GldbPane parent;
-
-    /* private */
-    gboolean dirty;
-    GtkWidget *top_widget;
-    GtkWidget *target, *id;
-    GtkWidget *source;
-};
-
-struct _GldbShaderPaneClass
-{
-    GldbPaneClass parent;
-};
-
 #define GLDB_SHADER_PANE_TYPE (gldb_shader_pane_get_type())
 #define GLDB_SHADER_PANE(obj) (G_TYPE_CHECK_INSTANCE_CAST((obj), GLDB_SHADER_PANE_TYPE, GldbShaderPane))
 #define GLDB_SHADER_PANE_CLASS(klass) (G_TYPE_CHECK_CLASS_CAST((klass), GLDB_SHADER_PANE_TYPE, GldbShaderPaneClass))

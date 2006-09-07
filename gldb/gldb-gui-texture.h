@@ -31,25 +31,6 @@
 typedef struct _GldbTexturePane GldbTexturePane;
 typedef struct _GldbTexturePaneClass GldbTexturePaneClass;
 
-struct _GldbTexturePane
-{
-    GldbPane parent;
-
-    /* private */
-    gboolean dirty;
-    GtkWidget *top_widget;
-    GtkWidget *id, *level;
-
-    GldbGuiImageViewer *viewer;
-    GldbGuiImage active;           /* visible on the screen */
-    GldbGuiImage progressive;      /* currently being assembled */
-};
-
-struct _GldbTexturePaneClass
-{
-    GldbPaneClass parent;
-};
-
 #define GLDB_TEXTURE_PANE_TYPE (gldb_texture_pane_get_type())
 #define GLDB_TEXTURE_PANE(obj) (G_TYPE_CHECK_INSTANCE_CAST((obj), GLDB_TEXTURE_PANE_TYPE, GldbTexturePane))
 #define GLDB_TEXTURE_PANE_CLASS(klass) (G_TYPE_CHECK_CLASS_CAST((klass), GLDB_TEXTURE_PANE_TYPE, GldbTexturePaneClass))

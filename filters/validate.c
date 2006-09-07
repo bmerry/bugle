@@ -107,6 +107,7 @@ static bool initialise_error(filter_set *handle)
     f = bugle_register_filter(handle, "error");
     bugle_register_filter_catches_all(f, true, error_callback);
     bugle_register_filter_depends("error", "invoke");
+    bugle_register_filter_depends("error", "trackbeginend");
     /* We don't call filter_post_renders, because that would make the
      * error filterset depend on itself.
      */

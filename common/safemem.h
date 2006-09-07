@@ -38,6 +38,7 @@ void *bugle_malloc(size_t size);
 void *bugle_calloc(size_t nmemb, size_t size);
 void *bugle_realloc(void *ptr, size_t size);
 char *bugle_strdup(const char *s);
+char *bugle_strndup(const char *s, size_t size);
 
 /* Appends src to dest, possibly bugle_realloc()ing, and returns the pointer.
  * It assumes that dest was malloc()ed with a size that is the smallest

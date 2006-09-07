@@ -33,6 +33,22 @@
 #include "gldb/gldb-gui.h"
 #include "gldb/gldb-gui-shader.h"
 
+struct _GldbShaderPane
+{
+    GldbPane parent;
+
+    /* private */
+    gboolean dirty;
+    GtkWidget *top_widget;
+    GtkWidget *target, *id;
+    GtkWidget *source;
+};
+
+struct _GldbShaderPaneClass
+{
+    GldbPaneClass parent;
+};
+
 static gboolean gldb_shader_pane_response_callback(gldb_response *response,
                                                    gpointer user_data)
 {

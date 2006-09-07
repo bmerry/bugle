@@ -2,6 +2,7 @@
 * Use pkg-config to get libavcodec configuration
 * Fix reported names for GL_POINTS and GL_LINES
 * Fix some duplicated GL_ARB_imaging state
+* Fix spurious errors due to mis-ordering of error and trackbeginend
 * Work around a bug that causes texture and framebuffer repaints to fail
 * Highlight state changes
 * Options to filter state

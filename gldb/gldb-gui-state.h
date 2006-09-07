@@ -30,24 +30,6 @@
 typedef struct _GldbStatePane GldbStatePane;
 typedef struct _GldbStatePaneClass GldbStatePaneClass;
 
-struct _GldbStatePane
-{
-    GldbPane parent;
-
-    /* private */
-    gboolean dirty;
-    GtkWidget *top_widget;
-    GtkWidget *only_selected, *only_modified;
-    GtkWidget *tree_view;
-    GtkTreeStore *state_store;
-    GtkTreeModel *state_filter;  /* Filter that shows only chosen state */
-};
-
-struct _GldbStatePaneClass
-{
-    GldbPaneClass parent;
-};
-
 #define GLDB_STATE_PANE_TYPE (gldb_state_pane_get_type())
 #define GLDB_STATE_PANE(obj) (G_TYPE_CHECK_INSTANCE_CAST((obj), GLDB_STATE_PANE_TYPE, GldbStatePane))
 #define GLDB_STATE_PANE_CLASS(klass) (G_TYPE_CHECK_CLASS_CAST((klass), GLDB_STATE_PANE_TYPE, GldbStatePaneClass))

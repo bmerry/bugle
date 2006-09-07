@@ -30,21 +30,6 @@
 typedef struct _GldbBacktracePane GldbBacktracePane;
 typedef struct _GldbBacktracePaneClass GldbBacktracePaneClass;
 
-struct _GldbBacktracePane
-{
-    GldbPane parent;
-
-    /* private */
-    gboolean dirty;
-    GtkWidget *top_widget;
-    GtkListStore *backtrace_store;
-};
-
-struct _GldbBacktracePaneClass
-{
-    GldbPaneClass parent;
-};
-
 #define GLDB_BACKTRACE_PANE_TYPE (gldb_backtrace_pane_get_type())
 #define GLDB_BACKTRACE_PANE(obj) (G_TYPE_CHECK_INSTANCE_CAST((obj), GLDB_BACKTRACE_PANE_TYPE, GldbBacktracePane))
 #define GLDB_BACKTRACE_PANE_CLASS(klass) (G_TYPE_CHECK_CLASS_CAST((klass), GLDB_BACKTRACE_PANE_TYPE, GldbBacktracePaneClass))

@@ -44,6 +44,7 @@ struct _GldbPaneClass
     GObjectClass parent;
     /* class members */
     void (*do_real_update)(GldbPane *self);
+    void (*do_status_changed)(GldbPane *self, gldb_status status);
 };
 
 #define GLDB_PANE_TYPE (gldb_pane_get_type())
@@ -63,6 +64,8 @@ GtkWidget *gldb_pane_get_widget(GldbPane *);
 /* Sets the top-level widget associated with the pane. Should only be
  * called by the subclasses */
 void gldb_pane_set_widget(GldbPane *self, GtkWidget *widget);
+/* Notify the pane that the program has started/stopped/quit/etc */
+void gldb_pane_status_changed(GldbPane *self, gldb_status new_status);
 
 /* Exported functions for panes. Refer to the source for documentation */
 void gldb_gui_combo_box_get_old(GtkComboBox *box, GValue *save, ...);

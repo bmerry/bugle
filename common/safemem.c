@@ -75,6 +75,19 @@ char *bugle_strdup(const char *s)
     return n;
 }
 
+char *bugle_strndup(const char *s, size_t size)
+{
+    char *n;
+    size_t len;
+
+    len = strlen(s);
+    if (len < size) size = len;
+    n = bugle_malloc(size + 1);
+    memcpy(n, s, size);
+    n[size] = '\0';
+    return n;
+}
+
 char *bugle_strcat(char *dest, const char *src)
 {
     size_t dlen, dsize, slen, tsize;

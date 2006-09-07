@@ -43,6 +43,25 @@
 #include "gldb/gldb-gui-image.h"
 #include "gldb/gldb-gui-texture.h"
 
+struct _GldbTexturePane
+{
+    GldbPane parent;
+
+    /* private */
+    gboolean dirty;
+    GtkWidget *top_widget;
+    GtkWidget *id, *level;
+
+    GldbGuiImageViewer *viewer;
+    GldbGuiImage active;           /* visible on the screen */
+    GldbGuiImage progressive;      /* currently being assembled */
+};
+
+struct _GldbTexturePaneClass
+{
+    GldbPaneClass parent;
+};
+
 #define TEXTURE_CALLBACK_FLAG_FIRST 1
 #define TEXTURE_CALLBACK_FLAG_LAST 2
 

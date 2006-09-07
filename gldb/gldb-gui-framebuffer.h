@@ -35,24 +35,6 @@
 typedef struct _GldbFramebufferPane GldbFramebufferPane;
 typedef struct _GldbFramebufferPaneClass GldbFramebufferPaneClass;
 
-struct _GldbFramebufferPane
-{
-    GldbPane parent;
-
-    /* private */
-    gboolean dirty;
-    GtkWidget *top_widget;
-    GtkWidget *id, *buffer;
-
-    GldbGuiImage active;
-    GldbGuiImageViewer *viewer;
-};
-
-struct _GldbFramebufferPaneClass
-{
-    GldbPaneClass parent;
-};
-
 #define GLDB_FRAMEBUFFER_PANE_TYPE (gldb_framebuffer_pane_get_type())
 #define GLDB_FRAMEBUFFER_PANE(obj) (G_TYPE_CHECK_INSTANCE_CAST((obj), GLDB_FRAMEBUFFER_PANE_TYPE, GldbFramebufferPane))
 #define GLDB_FRAMEBUFFER_PANE_CLASS(klass) (G_TYPE_CHECK_CLASS_CAST((klass), GLDB_FRAMEBUFFER_PANE_TYPE, GldbFramebufferPaneClass))

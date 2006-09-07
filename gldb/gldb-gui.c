@@ -52,9 +52,14 @@
  * split out into separate windows.
  */
 
+static void gldb_pane_real_status_changed(GldbPane *self, gldb_status new_status)
+{
+}
+
 static void gldb_pane_class_init(GldbPaneClass *klass)
 {
     klass->do_real_update = NULL;    /* pure virtual function */
+    klass->do_status_changed = gldb_pane_real_status_changed; /* no-op */
 }
 
 static void gldb_pane_init(GldbPane *self)
@@ -112,6 +117,11 @@ void gldb_pane_set_widget(GldbPane *self, GtkWidget *widget)
     self->top_widget = widget;
 }
 
+void gldb_pane_status_changed(GldbPane *self, gldb_status new_status)
+{
+    GLDB_PANE_GET_CLASS(self)->do_status_changed(self, new_status);
+}
+
 enum
 {
     COLUMN_BREAKPOINTS_FUNCTION
@@ -156,6 +166,8 @@ typedef struct
 static bugle_linked_list response_handlers;
 static GtkListStore *function_names;
 static guint32 seq = 0;
+
+/* Utility functions for panes to call */
 
 /* Registers a callback for when a particular response is received. The
  * return value is a sequence number that may be passed to functions like
@@ -272,27 +284,9 @@ void gldb_gui_combo_box_restore_old(GtkComboBox *box, GValue *save, ...)
     gtk_combo_box_set_active(box, 0);
 }
 
-static void notebook_update(GldbWindow *context, gint new_page)
-{
-    gint page;
-    GtkNotebook *notebook;
-    GldbPane *pane;
+/******************************************************/
 
-    notebook = GTK_NOTEBOOK(context->notebook);
-    if (new_page >= 0) page = new_page;
-    else page = gtk_notebook_get_current_page(notebook);
-
-    pane = GLDB_PANE(g_ptr_array_index(context->panes, page));
-    gldb_pane_update(pane);
-}
-
-static void notebook_switch_page(GtkNotebook *notebook,
-                                 GtkNotebookPage *page,
-                                 guint page_num,
-                                 gpointer user_data)
-{
-    notebook_update((GldbWindow *) user_data, page_num);
-}
+/* Internal utility functions */
 
 static void update_status_bar(GldbWindow *context, const gchar *text)
 {
@@ -305,13 +299,64 @@ static void pane_invalidate_helper(gpointer item, gpointer user_data)
     gldb_pane_invalidate(GLDB_PANE(item));
 }
 
+static void pane_status_changed_helper(gpointer item, gpointer user_data)
+{
+    gldb_status *statuses = (gldb_status *) user_data;
+    gldb_pane_status_changed(GLDB_PANE(item), gldb_get_status());
+}
+
+static void pane_status_changed(GldbWindow *context)
+{
+    g_ptr_array_foreach(context->panes, pane_status_changed_helper, NULL);
+}
+
+static void notebook_update(GldbWindow *context, gint new_page)
+{
+    gint page;
+    GtkNotebook *notebook;
+    GldbPane *pane;
+
+    notebook = GTK_NOTEBOOK(context->notebook);
+    if (new_page >= 0) page = new_page;
+    else page = gtk_notebook_get_current_page(notebook);
+
+    pane_status_changed(context);
+    pane = GLDB_PANE(g_ptr_array_index(context->panes, page));
+    gldb_pane_update(pane);
+}
+
 static void stopped(GldbWindow *context, const gchar *text)
 {
+    gldb_status statuses[2];
+
     g_ptr_array_foreach(context->panes, pane_invalidate_helper, NULL);
     notebook_update(context, -1);
     gtk_action_group_set_sensitive(context->running_actions, FALSE);
     gtk_action_group_set_sensitive(context->stopped_actions, TRUE);
     update_status_bar(context, text);
+    pane_status_changed(context);
+}
+
+static void main_window_add_pane(GldbWindow *context, gchar *title, GldbPane *pane)
+{
+    GtkWidget *label;
+
+    label = gtk_label_new(title);
+    gtk_notebook_append_page(GTK_NOTEBOOK(context->notebook),
+                             gldb_pane_get_widget(pane), label);
+    g_ptr_array_add(context->panes, pane);
+}
+
+/************************************************************/
+
+/* Signal handlers */
+
+static void notebook_switch_page(GtkNotebook *notebook,
+                                 GtkNotebookPage *page,
+                                 guint page_num,
+                                 gpointer user_data)
+{
+    notebook_update((GldbWindow *) user_data, page_num);
 }
 
 static void child_exit_callback(GPid pid, gint status, gpointer user_data)
@@ -333,9 +378,7 @@ static void child_exit_callback(GPid pid, gint status, gpointer user_data)
     gtk_action_group_set_sensitive(context->stopped_actions, FALSE);
     gtk_action_group_set_sensitive(context->live_actions, FALSE);
     gtk_action_group_set_sensitive(context->dead_actions, TRUE);
-    /* FIXME!
-    gtk_list_store_clear(context->backtrace.backtrace_store);
-    */
+    pane_status_changed(context);
 }
 
 static gboolean response_callback(GIOChannel *channel, GIOCondition condition,
@@ -396,6 +439,7 @@ static gboolean response_callback(GIOChannel *channel, GIOCondition condition,
         gtk_action_group_set_sensitive(context->stopped_actions, FALSE);
         gtk_action_group_set_sensitive(context->live_actions, TRUE);
         gtk_action_group_set_sensitive(context->dead_actions, FALSE);
+        pane_status_changed(context);
         break;
     }
 
@@ -744,16 +788,6 @@ static GtkUIManager *build_ui(GldbWindow *context)
         g_error_free(error);
     }
     return ui;
-}
-
-static void main_window_add_pane(GldbWindow *context, gchar *title, GldbPane *pane)
-{
-    GtkWidget *label;
-
-    label = gtk_label_new(title);
-    gtk_notebook_append_page(GTK_NOTEBOOK(context->notebook),
-                             gldb_pane_get_widget(pane), label);
-    g_ptr_array_add(context->panes, pane);
 }
 
 static void build_main_window(GldbWindow *context)

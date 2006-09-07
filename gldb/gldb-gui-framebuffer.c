@@ -43,6 +43,24 @@
 #include "gldb/gldb-gui-image.h"
 #include "gldb/gldb-gui-framebuffer.h"
 
+struct _GldbFramebufferPane
+{
+    GldbPane parent;
+
+    /* private */
+    gboolean dirty;
+    GtkWidget *top_widget;
+    GtkWidget *id, *buffer;
+
+    GldbGuiImage active;
+    GldbGuiImageViewer *viewer;
+};
+
+struct _GldbFramebufferPaneClass
+{
+    GldbPaneClass parent;
+};
+
 enum
 {
     COLUMN_FRAMEBUFFER_ID_ID,

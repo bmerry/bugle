@@ -35,6 +35,24 @@
 #include "gldb/gldb-gui.h"
 #include "gldb/gldb-gui-state.h"
 
+struct _GldbStatePane
+{
+    GldbPane parent;
+
+    /* private */
+    gboolean dirty;
+    GtkWidget *top_widget;
+    GtkWidget *only_selected, *only_modified;
+    GtkWidget *tree_view;
+    GtkTreeStore *state_store;
+    GtkTreeModel *state_filter;  /* Filter that shows only chosen state */
+};
+
+struct _GldbStatePaneClass
+{
+    GldbPaneClass parent;
+};
+
 enum
 {
     COLUMN_STATE_NAME,
