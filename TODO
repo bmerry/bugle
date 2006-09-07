@@ -18,12 +18,12 @@ gldb
 
 gldb-gui
 --------
-- split into separate files
-- state viewer:
-  - make filtering more efficient and correct
+- remove dependence on GTK+ 2.6
+- allow breakpoints to be disabled
+- use GDB/MI to extract backtrace
+- move breakpoints into a pane
 - VBO decode
 - convert state names to UTF8
-- gdb launch
 - enabling and disabling filter sets, and setting variables
 - texture viewer:
   - interaction with cube map cube
@@ -44,6 +44,7 @@ gldb-gui
 
 bugle
 -----
+- dump backtrace on error
 - check whether all dependencies on trackextensions are listed
 - exploit per-context, per-filter state e.g. for video
 - option to use pid in log filename or log file
@@ -65,7 +66,7 @@ budgie
 ------
 - more autoconf tests (e.g. regex)
 - robust logging, to avoid segfaulting
-- move filter framework into budgie?
+- move filter framework into budgie? May suck in xevent stuff
 
 tests
 -----

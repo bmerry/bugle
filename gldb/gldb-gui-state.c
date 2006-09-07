@@ -15,9 +15,7 @@
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-/* Functions in gldb-gui that deal with the state viewer. Other
- * (non-GUI) state-handling is done in gldb-common.c
- */
+/* State pane. Note that non-GUI state handling is in gldb-common.c */
 
 #if HAVE_CONFIG_H
 # include <config.h>
@@ -32,7 +30,9 @@
 #include "common/linkedlist.h"
 #include "common/hashtable.h"
 #include "common/safemem.h"
+#include "common/bool.h"
 #include "gldb/gldb-common.h"
+#include "gldb/gldb-gui.h"
 #include "gldb/gldb-gui-state.h"
 
 enum
@@ -216,31 +216,19 @@ static void update_state_r(const gldb_state *root, GtkTreeStore *store,
     bugle_hash_clear(&lookup);
 }
 
-void gldb_gui_state_update(GldbGuiState *state)
-{
-    if (!state->dirty) return;
-    state->dirty = FALSE;
-    update_state_r(gldb_state_update(), state->state_store, NULL);
-}
-
-void gldb_gui_state_mark_dirty(GldbGuiState *state)
-{
-    state->dirty = TRUE;
-}
-
 static void state_select_toggled(GtkCellRendererToggle *cell,
                                  gchar *path,
                                  gpointer user_data)
 {
-    GldbGuiState *state;
+    GldbStatePane *pane;
     GtkTreeStore *store;
     GtkTreeModelFilter *filter;
     GtkTreeIter filter_iter, store_iter;
     gboolean selected;
 
-    state = (GldbGuiState *) user_data;
-    filter = GTK_TREE_MODEL_FILTER(state->state_filter);
-    store = GTK_TREE_STORE(state->state_store);
+    pane = GLDB_STATE_PANE(user_data);
+    filter = GTK_TREE_MODEL_FILTER(pane->state_filter);
+    store = GTK_TREE_STORE(pane->state_store);
     if (gtk_tree_model_get_iter_from_string(GTK_TREE_MODEL(filter), &filter_iter, path))
     {
         gtk_tree_model_filter_convert_iter_to_child_iter(filter, &store_iter, &filter_iter);
@@ -280,29 +268,29 @@ static void state_expand_r(GtkTreeView *view, GtkTreeModel *model, GtkTreeIter *
 static void state_filter_toggled(GtkWidget *widget,
                                  gpointer user_data)
 {
-    GldbGuiState *state;
-    state = (GldbGuiState *) user_data;
-    gtk_tree_model_filter_refilter(GTK_TREE_MODEL_FILTER(state->state_filter));
-    state_expand_r(GTK_TREE_VIEW(state->tree_view),
-                   gtk_tree_view_get_model(GTK_TREE_VIEW(state->tree_view)),
+    GldbStatePane *pane;
+    pane = GLDB_STATE_PANE(user_data);
+    gtk_tree_model_filter_refilter(GTK_TREE_MODEL_FILTER(pane->state_filter));
+    state_expand_r(GTK_TREE_VIEW(pane->tree_view),
+                   gtk_tree_view_get_model(GTK_TREE_VIEW(pane->tree_view)),
                    NULL);
 }
 
 static gboolean state_visible(GtkTreeModel *model, GtkTreeIter *iter,
                               gpointer user_data)
 {
-    GldbGuiState *state;
+    GldbStatePane *pane;
     gboolean only_selected, only_modified;
     gint selected, modified;
 
-    state = (GldbGuiState *) user_data;
+    pane = GLDB_STATE_PANE(user_data);
 
     gtk_tree_model_get(model, iter,
                        COLUMN_STATE_SELECTED_TOTAL, &selected,
                        COLUMN_STATE_MODIFIED_TOTAL, &modified,
                        -1);
-    only_selected = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(state->only_selected));
-    only_modified = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(state->only_modified));
+    only_selected = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(pane->only_selected));
+    only_modified = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(pane->only_modified));
     if (only_selected && !selected) return FALSE;
     if (only_modified && !modified) return FALSE;
     return TRUE;
@@ -337,36 +325,33 @@ static void state_row_expanded_collapsed(GtkTreeView *view, GtkTreeIter *iter,
                        -1);
 }
 
-GldbGuiState *gldb_gui_state_new(GtkNotebook *notebook)
+GldbPane *gldb_state_pane_new(void)
 {
-    GtkWidget *scrolled, *tree_view, *label, *vbox, *check;
+    GtkWidget *scrolled, *tree_view, *vbox, *check;
     GtkCellRenderer *cell;
     GtkTreeViewColumn *column;
-    gint page;
-    GldbGuiState *state;
+    GldbStatePane *pane;
 
-    vbox = gtk_vbox_new(FALSE, 0);
+    pane = GLDB_STATE_PANE(g_object_new(GLDB_STATE_PANE_TYPE, NULL));
 
-    state = (GldbGuiState *) bugle_calloc(1, sizeof(GldbGuiState));
-
-    state->state_store = gtk_tree_store_new(8,
-                                            G_TYPE_STRING,   /* name */
-                                            G_TYPE_STRING,   /* value */
-                                            G_TYPE_BOOLEAN,  /* selected */
-                                            G_TYPE_BOOLEAN,  /* modified */
-                                            G_TYPE_INT,      /* selected-total */
-                                            G_TYPE_INT,      /* modified-total */
-                                            G_TYPE_INT,      /* boldness */
-                                            G_TYPE_BOOLEAN); /* expanded */
-    state->state_filter = gtk_tree_model_filter_new(GTK_TREE_MODEL(state->state_store), NULL);
-    gtk_tree_model_filter_set_visible_func(GTK_TREE_MODEL_FILTER(state->state_filter),
-                                           state_visible, state, NULL);
-    state->tree_view = tree_view = gtk_tree_view_new_with_model(GTK_TREE_MODEL(state->state_filter));
+    pane->state_store = gtk_tree_store_new(8,
+                                           G_TYPE_STRING,   /* name */
+                                           G_TYPE_STRING,   /* value */
+                                           G_TYPE_BOOLEAN,  /* selected */
+                                           G_TYPE_BOOLEAN,  /* modified */
+                                           G_TYPE_INT,      /* selected-total */
+                                           G_TYPE_INT,      /* modified-total */
+                                           G_TYPE_INT,      /* boldness */
+                                           G_TYPE_BOOLEAN); /* expanded */
+    pane->state_filter = gtk_tree_model_filter_new(GTK_TREE_MODEL(pane->state_store), NULL);
+    gtk_tree_model_filter_set_visible_func(GTK_TREE_MODEL_FILTER(pane->state_filter),
+                                           state_visible, pane, NULL);
+    pane->tree_view = tree_view = gtk_tree_view_new_with_model(GTK_TREE_MODEL(pane->state_filter));
 
     cell = gtk_cell_renderer_toggle_new();
     g_object_set(cell, "yalign", 0.0, NULL);
     g_signal_connect(G_OBJECT(cell), "toggled",
-                     G_CALLBACK(state_select_toggled), state);
+                     G_CALLBACK(state_select_toggled), pane);
     column = gtk_tree_view_column_new_with_attributes(_("Selected"),
                                                       cell,
                                                       "active", COLUMN_STATE_SELECTED,
@@ -397,33 +382,76 @@ GldbGuiState *gldb_gui_state_new(GtkNotebook *notebook)
     gtk_tree_view_set_enable_search(GTK_TREE_VIEW(tree_view), TRUE);
     gtk_tree_view_set_search_column(GTK_TREE_VIEW(tree_view), COLUMN_STATE_NAME);
 
+    vbox = gtk_vbox_new(FALSE, 0);
     scrolled = gtk_scrolled_window_new(NULL, NULL);
     gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(scrolled),
                                    GTK_POLICY_AUTOMATIC,
                                    GTK_POLICY_AUTOMATIC);
     gtk_container_add(GTK_CONTAINER(scrolled), tree_view);
-    g_object_unref(G_OBJECT(state->state_filter)); /* So that it dies with the view */
+    g_object_unref(G_OBJECT(pane->state_filter)); /* So that it dies with the view */
     gtk_box_pack_start(GTK_BOX(vbox), scrolled, TRUE, TRUE, 0);
 
-    state->only_selected = check = gtk_check_button_new_with_label(_("Show only selected"));
+    pane->only_selected = check = gtk_check_button_new_with_label(_("Show only selected"));
     g_signal_connect(G_OBJECT(check), "toggled",
-                     G_CALLBACK(state_filter_toggled), state);
+                     G_CALLBACK(state_filter_toggled), pane);
     gtk_box_pack_start(GTK_BOX(vbox), check, FALSE, FALSE, 0);
 
-    state->only_modified = check = gtk_check_button_new_with_label(_("Show only modified"));
+    pane->only_modified = check = gtk_check_button_new_with_label(_("Show only modified"));
     g_signal_connect(G_OBJECT(check), "toggled",
-                     G_CALLBACK(state_filter_toggled), state);
+                     G_CALLBACK(state_filter_toggled), pane);
     gtk_box_pack_start(GTK_BOX(vbox), check, FALSE, FALSE, 0);
 
-    label = gtk_label_new(_("State"));
-    page = gtk_notebook_append_page(GTK_NOTEBOOK(notebook), vbox, label);
-    state->dirty = FALSE;
-    state->page = gtk_notebook_get_nth_page(GTK_NOTEBOOK(notebook), page);
-
-    return state;
+    gldb_pane_set_widget(GLDB_PANE(pane), vbox);
+    return GLDB_PANE(pane);
 }
 
-void gldb_gui_state_destroy(GldbGuiState *state)
+static void gldb_state_pane_real_update(GldbPane *self)
 {
-    free(state);
+    GldbStatePane *pane;
+
+    pane = GLDB_STATE_PANE(self);
+    update_state_r(gldb_state_update(), pane->state_store, NULL);
+}
+
+/* GObject stuff */
+
+static void gldb_state_pane_class_init(GldbStatePaneClass *klass)
+{
+    GldbPaneClass *pane_class = GLDB_PANE_CLASS(klass);
+
+    pane_class->do_real_update = gldb_state_pane_real_update;
+}
+
+static void gldb_state_pane_init(GldbStatePane *self, gpointer g_class)
+{
+    self->only_selected = NULL;
+    self->only_modified = NULL;
+    self->tree_view = NULL;
+    self->state_store = NULL;
+    self->state_filter = NULL;
+}
+
+GType gldb_state_pane_get_type(void)
+{
+    static GType type = 0;
+    if (type == 0)
+    {
+        static const GTypeInfo info =
+        {
+            sizeof(GldbStatePaneClass),
+            NULL,                       /* base_init */
+            NULL,                       /* base_finalize */
+            (GClassInitFunc) gldb_state_pane_class_init,
+            NULL,                       /* class_finalize */
+            NULL,                       /* class_data */
+            sizeof(GldbStatePane),
+            0,                          /* n_preallocs */
+            (GInstanceInitFunc) gldb_state_pane_init,
+            NULL                        /* value table */
+        };
+        type = g_type_register_static(GLDB_PANE_TYPE,
+                                      "GldbStatePaneType",
+                                      &info, 0);
+    }
+    return type;
 }

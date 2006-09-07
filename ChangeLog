@@ -5,6 +5,8 @@
 * Work around a bug that causes texture and framebuffer repaints to fail
 * Highlight state changes
 * Options to filter state
+* Option to attach GDB
+* Internal redesign of gldb-gui
 
 0.0.20060828
 ------------

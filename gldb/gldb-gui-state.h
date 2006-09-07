@@ -15,9 +15,7 @@
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-/* Functions in gldb-gui that deal with the state viewer. Other
- * (non-GUI) state-handling is done in gldb-common.c
- */
+/* State pane. Note that non-GUI state handling is in gldb-common.c */
 
 #ifndef BUGLE_GLDB_GLDB_GUI_STATE_H
 #define BUGLE_GLDB_GLDB_GUI_STATE_H
@@ -26,20 +24,38 @@
 # include <config.h>
 #endif
 #include <gtk/gtk.h>
+#include <glib.h>
+#include "gldb-gui.h"
 
-typedef struct
+typedef struct _GldbStatePane GldbStatePane;
+typedef struct _GldbStatePaneClass GldbStatePaneClass;
+
+struct _GldbStatePane
 {
+    GldbPane parent;
+
+    /* private */
     gboolean dirty;
-    GtkWidget *page;
+    GtkWidget *top_widget;
     GtkWidget *only_selected, *only_modified;
     GtkWidget *tree_view;
     GtkTreeStore *state_store;
     GtkTreeModel *state_filter;  /* Filter that shows only chosen state */
-} GldbGuiState;
+};
 
-void gldb_gui_state_update(GldbGuiState *state);
-void gldb_gui_state_mark_dirty(GldbGuiState *state);
-GldbGuiState *gldb_gui_state_new(GtkNotebook *notebook);
-void gldb_gui_state_destroy(GldbGuiState *state);
+struct _GldbStatePaneClass
+{
+    GldbPaneClass parent;
+};
+
+#define GLDB_STATE_PANE_TYPE (gldb_state_pane_get_type())
+#define GLDB_STATE_PANE(obj) (G_TYPE_CHECK_INSTANCE_CAST((obj), GLDB_STATE_PANE_TYPE, GldbStatePane))
+#define GLDB_STATE_PANE_CLASS(klass) (G_TYPE_CHECK_CLASS_CAST((klass), GLDB_STATE_PANE_TYPE, GldbStatePaneClass))
+#define GLDB_IS_STATE_PANE(obj) (G_TYPE_CHECK_INSTANCE_TYPE((obj), GLDB_STATE_PANE_TYPE))
+#define GLDB_IS_STATE_PANE_CLASS(obj) (G_TYPE_CHECK_CLASS_TYPE((obj), GLDB_STATE_PANE_TYPE))
+#define GLDB_STATE_PANE_GET_CLASS(obj) (G_TYPE_INSTANCE_GET_CLASS((obj), GLDB_STATE_PANE_TYPE, GldbStatePaneClass))
+GType gldb_state_pane_get_type(void);
+
+GldbPane *gldb_state_pane_new(void);
 
 #endif /* !BUGLE_GLDB_GLDB_GUI_STATE_H */

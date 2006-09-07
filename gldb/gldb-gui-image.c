@@ -92,7 +92,6 @@ static void image_draw_realize(GtkWidget *widget, gpointer user_data)
      * expose the unregistered GL_EXT_texture_edge_clamp), so we use
      * the OpenGL version as the test instead.
      */
-#ifdef GL_VERSION_1_2
     if (strcmp(glGetString(GL_VERSION), "1.2") >= 0)
     {
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
@@ -102,18 +101,15 @@ static void image_draw_realize(GtkWidget *widget, gpointer user_data)
         glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
     }
     else
-#endif
     {
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
-#ifdef GL_EXT_texture3D
         if (gdk_gl_query_gl_extension("GL_EXT_texture3D"))
         {
             glTexParameteri(GL_TEXTURE_3D_EXT, GL_TEXTURE_WRAP_S, GL_CLAMP);
             glTexParameteri(GL_TEXTURE_3D_EXT, GL_TEXTURE_WRAP_T, GL_CLAMP);
             glTexParameteri(GL_TEXTURE_3D_EXT, GL_TEXTURE_WRAP_R_EXT, GL_CLAMP);
         }
-#endif
     }
     glGetIntegerv(GL_MAX_VIEWPORT_DIMS, viewer->max_viewport_dims);
 
@@ -266,8 +262,7 @@ static void image_draw_expose_cube_map(GldbGuiImageViewer *viewer)
          0.0,          0.0,                0.0,          1.0
     };
 
-#ifdef GL_EXT_texture_cube_map
-    if (gdk_gl_query_gl_extension("GL_EXT_texture_cube_map"))
+    if (gdk_gl_query_gl_extension("GL_ARB_texture_cube_map"))
     {
         if (viewer->current_plane < 0)
         {
@@ -309,10 +304,7 @@ static void image_draw_expose_cube_map(GldbGuiImageViewer *viewer)
         }
     }
     else
-#endif
-    {
         g_warning("No cube-map support in OpenGL!");
-    }
 }
 
 /* FIXME: handle cube-map and 3D textures */
@@ -338,7 +330,6 @@ static gboolean image_draw_expose(GtkWidget *widget,
     if (viewer->current)
     {
         glEnable(viewer->current->texture_target);
-#ifdef GL_VERSION_1_2
         if (strcmp(glGetString(GL_VERSION), "1.2") >= 0)
         {
             if (viewer->current_level >= 0)
@@ -352,7 +343,6 @@ static gboolean image_draw_expose(GtkWidget *widget,
                 glTexParameteri(viewer->current->texture_target, GL_TEXTURE_MAX_LEVEL, 1000);
             }
         }
-#endif
         glTexParameteri(viewer->current->texture_target, GL_TEXTURE_MAG_FILTER, viewer->texture_mag_filter);
         glTexParameteri(viewer->current->texture_target, GL_TEXTURE_MIN_FILTER, viewer->texture_min_filter);
 
@@ -1272,16 +1262,12 @@ void gldb_gui_image_allocate(GldbGuiImage *image, GldbGuiImageType type,
     case GLDB_GUI_IMAGE_TYPE_2D:
         image->texture_target = GL_TEXTURE_2D;
         break;
-#ifdef GL_EXT_texture3D
     case GLDB_GUI_IMAGE_TYPE_3D:
         image->texture_target = GL_TEXTURE_3D_EXT;
         break;
-#endif
-#ifdef GL_EXT_texture_cube_map
     case GLDB_GUI_IMAGE_TYPE_CUBE_MAP:
         image->texture_target = GL_TEXTURE_CUBE_MAP_EXT;
         break;
-#endif
     default:
         g_error("Image type is not supported - update glext.h and recompile");
     }

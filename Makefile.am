@@ -46,9 +46,13 @@ gldb_gldb_SOURCES = gldb/gldb.c gldb/gldb-common.c gldb/gldb-common.h
 gldb_gldb_LDADD = src/libbugleutils.la $(READLINE_LIBS)
 gldb_gldb_LDFLAGS = -thread-safe
 
-gldb_gldb_gui_SOURCES = gldb/gldb-gui.c \
-	gldb/gldb-gui-image.c gldb/gldb-gui-image.h \
+gldb_gldb_gui_SOURCES = gldb/gldb-gui.c gldb/gldb-gui.h \
 	gldb/gldb-gui-state.c gldb/gldb-gui-state.h \
+	gldb/gldb-gui-image.c gldb/gldb-gui-image.h \
+	gldb/gldb-gui-texture.c gldb/gldb-gui-texture.h \
+	gldb/gldb-gui-framebuffer.c gldb/gldb-gui-framebuffer.h \
+	gldb/gldb-gui-shader.c gldb/gldb-gui-shader.h \
+	gldb/gldb-gui-backtrace.c gldb/gldb-gui-backtrace.h \
 	gldb/gldb-common.c gldb/gldb-common.h \
 	gldb/gldb-channels.c gldb/gldb-channels.h
 if HAVE_GTKGLEXT
