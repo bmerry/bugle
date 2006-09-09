@@ -53,6 +53,7 @@ gldb_gldb_gui_SOURCES = gldb/gldb-gui.c gldb/gldb-gui.h \
 	gldb/gldb-gui-framebuffer.c gldb/gldb-gui-framebuffer.h \
 	gldb/gldb-gui-shader.c gldb/gldb-gui-shader.h \
 	gldb/gldb-gui-backtrace.c gldb/gldb-gui-backtrace.h \
+	gldb/gldb-gui-breakpoint.c gldb/gldb-gui-breakpoint.h \
 	gldb/gldb-common.c gldb/gldb-common.h \
 	gldb/gldb-channels.c gldb/gldb-channels.h
 if HAVE_GTKGLEXT

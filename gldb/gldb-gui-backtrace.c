@@ -581,8 +581,9 @@ GldbPane *gldb_backtrace_pane_new(void)
 
 static void gldb_backtrace_pane_class_init(GldbBacktracePaneClass *klass)
 {
-    GldbPaneClass *pane_class = GLDB_PANE_CLASS(klass);
+    GldbPaneClass *pane_class;
 
+    pane_class = GLDB_PANE_CLASS(klass);
     pane_class->do_real_update = gldb_backtrace_pane_real_update;
     pane_class->do_status_changed = gldb_backtrace_pane_status_changed;
 }

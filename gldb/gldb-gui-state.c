@@ -427,16 +427,20 @@ static void gldb_state_pane_real_update(GldbPane *self)
 {
     GldbStatePane *pane;
 
-    pane = GLDB_STATE_PANE(self);
-    update_state_r(gldb_state_update(), pane->state_store, NULL);
+    if (gldb_get_status() != GLDB_STATUS_DEAD)
+    {
+        pane = GLDB_STATE_PANE(self);
+        update_state_r(gldb_state_update(), pane->state_store, NULL);
+    }
 }
 
 /* GObject stuff */
 
 static void gldb_state_pane_class_init(GldbStatePaneClass *klass)
 {
-    GldbPaneClass *pane_class = GLDB_PANE_CLASS(klass);
+    GldbPaneClass *pane_class;
 
+    pane_class = GLDB_PANE_CLASS(klass);
     pane_class->do_real_update = gldb_state_pane_real_update;
 }
 

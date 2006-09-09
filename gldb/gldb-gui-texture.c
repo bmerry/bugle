@@ -540,8 +540,9 @@ static void gldb_texture_pane_real_update(GldbPane *self)
 
 static void gldb_texture_pane_class_init(GldbTexturePaneClass *klass)
 {
-    GldbPaneClass *pane_class = GLDB_PANE_CLASS(klass);
+    GldbPaneClass *pane_class;
 
+    pane_class = GLDB_PANE_CLASS(klass);
     pane_class->do_real_update = gldb_texture_pane_real_update;
 }
 

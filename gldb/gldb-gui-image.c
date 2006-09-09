@@ -500,6 +500,7 @@ static void gldb_gui_image_viewer_new_draw(GldbGuiImageViewer *viewer)
     viewer->draw = draw;
 }
 
+#if HAVE_GTK2_6
 static gboolean zoom_row_separator(GtkTreeModel *model,
                                    GtkTreeIter *iter,
                                    gpointer data)
@@ -509,6 +510,7 @@ static gboolean zoom_row_separator(GtkTreeModel *model,
     gtk_tree_model_get(model, iter, COLUMN_IMAGE_ZOOM_VALUE, &value, -1);
     return value == -2.0;
 }
+#endif
 
 static void resize_image_draw(GldbGuiImageViewer *viewer)
 {
@@ -587,7 +589,12 @@ static void image_zoom_changed(GtkWidget *zoom, gpointer user_data)
         if (gtk_tree_path_prev(path))
         {
             gtk_tree_model_get_iter(model, &iter, path);
-            gtk_tree_model_get(model, &iter, COLUMN_IMAGE_ZOOM_SENSITIVE, &sensitive_out, -1);
+            /* Check that we haven't hit the top */
+            gtk_tree_model_get(model, &iter,
+                               COLUMN_IMAGE_ZOOM_SENSITIVE, &sensitive_out,
+                               COLUMN_IMAGE_ZOOM_VALUE, &value,
+                               -1);
+            if (value < 0.0) sensitive_out = FALSE;
         }
         gtk_tree_path_free(path);
     }
@@ -629,15 +636,14 @@ static void gldb_gui_image_viewer_new_zoom_combo(GldbGuiImageViewer *viewer)
                        COLUMN_IMAGE_ZOOM_SENSITIVE, TRUE,
                        -1);
 
-    /* Note: separator must be non-sensitive, because the zoom-out button
-     * examines its sensitivity to see if it can zoom out further.
-     */
+#if HAVE_GTK2_6
     gtk_list_store_append(store, &iter);
     gtk_list_store_set(store, &iter,
                        COLUMN_IMAGE_ZOOM_VALUE, -2.0, /* -2.0 is magic separator value - see above function */
                        COLUMN_IMAGE_ZOOM_TEXT, "Separator",
                        COLUMN_IMAGE_ZOOM_SENSITIVE, FALSE,
                        -1);
+#endif
 
     for (i = 5; i >= 0; i--)
     {
@@ -673,9 +679,11 @@ static void gldb_gui_image_viewer_new_zoom_combo(GldbGuiImageViewer *viewer)
                                    "text", COLUMN_IMAGE_ZOOM_TEXT,
                                    "sensitive", COLUMN_IMAGE_ZOOM_SENSITIVE,
                                    NULL);
+#if HAVE_GTK2_6
     gtk_combo_box_set_row_separator_func(GTK_COMBO_BOX(zoom),
                                          zoom_row_separator,
                                          NULL, NULL);
+#endif
     gtk_combo_box_set_active(GTK_COMBO_BOX(zoom), 0);
     g_signal_connect(G_OBJECT(zoom), "changed",
                      G_CALLBACK(image_zoom_changed), viewer);
@@ -691,6 +699,7 @@ static void free_pixbuf_data(guchar *pixels, gpointer user_data)
 
 static void image_copy_clicked(GtkWidget *button, gpointer user_data)
 {
+#if HAVE_GTK2_6
     GLint width, height, nin, nout;
     guchar *pixels, *p;
     GdkPixbuf *pixbuf = NULL;
@@ -730,6 +739,20 @@ static void image_copy_clicked(GtkWidget *button, gpointer user_data)
                                               GDK_SELECTION_CLIPBOARD);
     gtk_clipboard_set_image(clipboard, pixbuf);
     g_object_unref(pixbuf);
+#else  /* HAVE_GTK2_6 */
+
+    GtkWidget *dialog;
+    GtkWidget *window;
+
+    window = gtk_widget_get_toplevel(button);
+    dialog = gtk_message_dialog_new(GTK_WINDOW(window),
+                                    GTK_DIALOG_DESTROY_WITH_PARENT,
+                                    GTK_MESSAGE_ERROR,
+                                    GTK_BUTTONS_CLOSE,
+                                    _("Copy to clipboard requires GTK+ 2.6 or later. Upgrade GTK+ then recompile gldb-gui."));
+    gtk_dialog_run(GTK_DIALOG(dialog));
+    gtk_widget_destroy(dialog);
+#endif /* !HAVE_GTK2_6 */
 }
 
 static void image_zoom_in_clicked(GtkToolButton *toolbutton,
@@ -861,6 +884,7 @@ static void image_level_changed(GtkWidget *widget, gpointer user_data)
     gtk_widget_queue_draw(viewer->draw);
 }
 
+#if HAVE_GTK2_6
 static gboolean image_level_row_separator(GtkTreeModel *model,
                                           GtkTreeIter *iter,
                                           gpointer user_data)
@@ -870,6 +894,7 @@ static gboolean image_level_row_separator(GtkTreeModel *model,
     gtk_tree_model_get(model, iter, COLUMN_IMAGE_LEVEL_VALUE, &value, -1);
     return value == -2;
 }
+#endif
 
 GtkWidget *gldb_gui_image_viewer_level_new(GldbGuiImageViewer *viewer)
 {
@@ -886,20 +911,24 @@ GtkWidget *gldb_gui_image_viewer_level_new(GldbGuiImageViewer *viewer)
                        COLUMN_IMAGE_LEVEL_VALUE, -1,
                        COLUMN_IMAGE_LEVEL_TEXT, _("Auto"),
                        -1);
+#if HAVE_GTK2_6
     gtk_list_store_append(store, &iter);
     gtk_list_store_set(store, &iter,
                        COLUMN_IMAGE_LEVEL_VALUE, -2, /* -2 is magic separator value */
                        COLUMN_IMAGE_LEVEL_TEXT, "Separator",
                        -1);
+#endif
 
     level = gtk_combo_box_new_with_model(GTK_TREE_MODEL(store));
     cell = gtk_cell_renderer_text_new();
     gtk_cell_layout_pack_start(GTK_CELL_LAYOUT(level), cell, TRUE);
     gtk_cell_layout_set_attributes(GTK_CELL_LAYOUT(level), cell,
                                    "text", COLUMN_IMAGE_LEVEL_TEXT, NULL);
+#if HAVE_GTK2_6
     gtk_combo_box_set_row_separator_func(GTK_COMBO_BOX(level),
                                          image_level_row_separator,
                                          NULL, NULL);
+#endif
     gtk_combo_box_set_active(GTK_COMBO_BOX(level), 0);
     g_signal_connect(G_OBJECT(level), "changed",
                      G_CALLBACK(image_level_changed), viewer);
@@ -928,6 +957,7 @@ static void image_face_changed(GtkWidget *widget, gpointer user_data)
     }
 }
 
+#if HAVE_GTK2_6
 static gboolean image_face_row_separator(GtkTreeModel *model,
                                          GtkTreeIter *iter,
                                          gpointer user_data)
@@ -937,6 +967,7 @@ static gboolean image_face_row_separator(GtkTreeModel *model,
     gtk_tree_model_get(model, iter, COLUMN_IMAGE_FACE_VALUE, &value, -1);
     return value == -2;
 }
+#endif
 
 GtkWidget *gldb_gui_image_viewer_face_new(GldbGuiImageViewer *viewer)
 {
@@ -949,9 +980,11 @@ GtkWidget *gldb_gui_image_viewer_face_new(GldbGuiImageViewer *viewer)
     gtk_cell_layout_pack_start(GTK_CELL_LAYOUT(face), cell, TRUE);
     gtk_cell_layout_set_attributes(GTK_CELL_LAYOUT(face), cell,
                                    "text", COLUMN_IMAGE_FACE_TEXT, NULL);
+#if HAVE_GTK2_6
     gtk_combo_box_set_row_separator_func(GTK_COMBO_BOX(face),
                                          image_face_row_separator,
                                          NULL, NULL);
+#endif
     gtk_combo_box_set_active(GTK_COMBO_BOX(face), 0);
     g_signal_connect(G_OBJECT(face), "changed",
                      G_CALLBACK(image_face_changed), viewer);
@@ -1067,11 +1100,13 @@ void gldb_gui_image_viewer_update_levels(GldbGuiImageViewer *viewer)
                        COLUMN_IMAGE_LEVEL_VALUE, -1,
                        COLUMN_IMAGE_LEVEL_TEXT, _("Auto"),
                        -1);
+#if HAVE_GTK2_6
     gtk_list_store_append(GTK_LIST_STORE(model), &iter);
     gtk_list_store_set(GTK_LIST_STORE(model), &iter,
                        COLUMN_IMAGE_LEVEL_VALUE, -2, /* -2 is magic separator value */
                        COLUMN_IMAGE_LEVEL_TEXT, "Separator",
                        -1);
+#endif
     for (i = 0; i < levels; i++)
     {
         char *text;
@@ -1334,11 +1369,13 @@ static GtkTreeModel *build_face_model()
                        COLUMN_IMAGE_FACE_VALUE, -1,  /* magic "all" value */
                        COLUMN_IMAGE_FACE_TEXT, "All",
                        -1);
+#if HAVE_GTK2_6
     gtk_list_store_append(store, &iter);
     gtk_list_store_set(store, &iter,
                        COLUMN_IMAGE_FACE_VALUE, -2,  /* magic separator value */
                        COLUMN_IMAGE_FACE_TEXT, "Separator",
                        -1);
+#endif
 
     for (i = 0; i < 6; i++)
     {

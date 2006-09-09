@@ -18,10 +18,6 @@ gldb
 
 gldb-gui
 --------
-- remove dependence on GTK+ 2.6
-- allow breakpoints to be disabled
-- use GDB/MI to extract backtrace
-- move breakpoints into a pane
 - VBO decode
 - convert state names to UTF8
 - enabling and disabling filter sets, and setting variables

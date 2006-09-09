@@ -45,6 +45,7 @@
 #include "gldb/gldb-gui-framebuffer.h"
 #include "gldb/gldb-gui-shader.h"
 #include "gldb/gldb-gui-backtrace.h"
+#include "gldb/gldb-gui-breakpoint.h"
 
 /* gldb-gui is broken into a number of separate modules, which are unified by
  * the GldbPane type. A GldbPane encapsulates a widget plus internal state,
@@ -122,13 +123,6 @@ void gldb_pane_status_changed(GldbPane *self, gldb_status new_status)
     GLDB_PANE_GET_CLASS(self)->do_status_changed(self, new_status);
 }
 
-enum
-{
-    COLUMN_BREAKPOINTS_FUNCTION
-};
-
-struct GldbWindow;
-
 typedef struct
 {
     guint32 id;
@@ -153,18 +147,9 @@ typedef struct GldbWindow
     guint channel_watch;
 
     GPtrArray *panes;
-
-    GtkListStore *breakpoints_store;
 } GldbWindow;
 
-typedef struct
-{
-    GldbWindow *parent;
-    GtkWidget *dialog, *list;
-} GldbBreakpointsDialog;
-
 static bugle_linked_list response_handlers;
-static GtkListStore *function_names;
 static guint32 seq = 0;
 
 /* Utility functions for panes to call */
@@ -431,7 +416,17 @@ static gboolean response_callback(GIOChannel *channel, GIOCondition condition,
         free(msg);
         break;
     case RESP_ERROR:
-        /* FIXME: display the error */
+        {
+            GtkWidget *dialog;
+            dialog = gtk_message_dialog_new(GTK_WINDOW(context->window),
+                                            GTK_DIALOG_DESTROY_WITH_PARENT,
+                                            GTK_MESSAGE_ERROR,
+                                            GTK_BUTTONS_CLOSE,
+                                            "%s",
+                                            ((gldb_response_error *) r)->error);
+            gtk_dialog_run(GTK_DIALOG(dialog));
+            gtk_widget_destroy(dialog);
+        }
         break;
     case RESP_RUNNING:
         update_status_bar(context, _("Running"));
@@ -533,125 +528,6 @@ static void chain_action(GtkAction *action, gpointer user_data)
     gtk_widget_destroy(dialog);
 }
 
-static void breakpoints_add_action(GtkButton *button, gpointer user_data)
-{
-    GldbBreakpointsDialog *context;
-    GtkWidget *dialog, *entry;
-    GtkEntryCompletion *completion;
-    gint result;
-
-    context = (GldbBreakpointsDialog *) user_data;
-
-    dialog = gtk_dialog_new_with_buttons(_("Add breakpoint"),
-                                         GTK_WINDOW(context->dialog),
-                                         GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
-                                         GTK_STOCK_OK, GTK_RESPONSE_ACCEPT,
-                                         GTK_STOCK_CANCEL, GTK_RESPONSE_REJECT,
-                                         NULL);
-    gtk_dialog_set_default_response(GTK_DIALOG(dialog), GTK_RESPONSE_ACCEPT);
-
-    entry = gtk_entry_new();
-    completion = gtk_entry_completion_new();
-    gtk_entry_completion_set_model(completion, GTK_TREE_MODEL(function_names));
-    gtk_entry_completion_set_minimum_key_length(completion, 4);
-    gtk_entry_completion_set_text_column(completion, 0);
-    gtk_entry_set_completion(GTK_ENTRY(entry), completion);
-    gtk_widget_show(entry);
-    gtk_box_pack_start(GTK_BOX(GTK_DIALOG(dialog)->vbox), entry, TRUE, FALSE, 0);
-
-    result = gtk_dialog_run(GTK_DIALOG(dialog));
-    if (result == GTK_RESPONSE_ACCEPT)
-    {
-        GtkTreeIter iter;
-
-        gtk_list_store_append(context->parent->breakpoints_store, &iter);
-        gtk_list_store_set(context->parent->breakpoints_store, &iter,
-                           COLUMN_BREAKPOINTS_FUNCTION, gtk_entry_get_text(GTK_ENTRY(entry)),
-                           -1);
-        gldb_set_break(seq++, gtk_entry_get_text(GTK_ENTRY(entry)), true);
-    }
-    gtk_widget_destroy(dialog);
-}
-
-static void breakpoints_remove_action(GtkButton *button, gpointer user_data)
-{
-    GldbBreakpointsDialog *context;
-    GtkTreeSelection *selection;
-    GtkTreeIter iter;
-    GtkTreeModel *model;
-    const gchar *func;
-
-    context = (GldbBreakpointsDialog *) user_data;
-    selection = gtk_tree_view_get_selection(GTK_TREE_VIEW(context->list));
-    if (gtk_tree_selection_get_selected(selection, &model, &iter))
-    {
-        gtk_tree_model_get(model, &iter, 0, &func, -1);
-        gldb_set_break(seq++, func, false);
-        gtk_list_store_remove(GTK_LIST_STORE(model), &iter);
-    }
-}
-
-static void breakpoints_action(GtkAction *action, gpointer user_data)
-{
-    GldbWindow *pcontext;
-    GldbBreakpointsDialog context;
-    GtkWidget *hbox, *bbox, *btn, *toggle;
-    GtkCellRenderer *cell;
-    GtkTreeViewColumn *column;
-    gint result;
-
-    pcontext = (GldbWindow *) user_data;
-    context.parent = pcontext;
-    context.dialog = gtk_dialog_new_with_buttons(_("Breakpoints"),
-                                                 GTK_WINDOW(pcontext->window),
-                                                 GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
-                                                 GTK_STOCK_OK, GTK_RESPONSE_ACCEPT,
-                                                 GTK_STOCK_CANCEL, GTK_RESPONSE_REJECT,
-                                                 NULL);
-    gtk_dialog_set_default_response(GTK_DIALOG(context.dialog), GTK_RESPONSE_ACCEPT);
-
-    hbox = gtk_hbox_new(FALSE, 0);
-
-    context.list = gtk_tree_view_new_with_model(GTK_TREE_MODEL(pcontext->breakpoints_store));
-    cell = gtk_cell_renderer_text_new();
-    column = gtk_tree_view_column_new_with_attributes(_("Function"),
-                                                      cell,
-                                                      "text", COLUMN_BREAKPOINTS_FUNCTION,
-                                                      NULL);
-    gtk_tree_view_append_column(GTK_TREE_VIEW(context.list), column);
-    gtk_tree_view_set_headers_visible(GTK_TREE_VIEW(context.list), FALSE);
-    gtk_widget_set_size_request(context.list, 300, 200);
-    gtk_box_pack_start(GTK_BOX(hbox), context.list, TRUE, TRUE, 0);
-    gtk_widget_show(context.list);
-
-    bbox = gtk_vbutton_box_new();
-    gtk_button_box_set_layout(GTK_BUTTON_BOX(bbox), GTK_BUTTONBOX_SPREAD);
-    btn = gtk_button_new_from_stock(GTK_STOCK_ADD);
-    g_signal_connect(G_OBJECT(btn), "clicked", G_CALLBACK(breakpoints_add_action), &context);
-    gtk_widget_show(btn);
-    gtk_box_pack_start(GTK_BOX(bbox), btn, TRUE, FALSE, 0);
-    btn = gtk_button_new_from_stock(GTK_STOCK_REMOVE);
-    g_signal_connect(G_OBJECT(btn), "clicked", G_CALLBACK(breakpoints_remove_action), &context);
-    gtk_widget_show(btn);
-    gtk_box_pack_start(GTK_BOX(bbox), btn, TRUE, FALSE, 0);
-    gtk_widget_show(bbox);
-    gtk_box_pack_start(GTK_BOX(hbox), bbox, FALSE, FALSE, 0);
-    gtk_widget_show(hbox);
-    gtk_box_pack_start(GTK_BOX(GTK_DIALOG(context.dialog)->vbox), hbox, TRUE, TRUE, 0);
-
-    toggle = gtk_check_button_new_with_mnemonic(_("Break on _errors"));
-    gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(toggle), gldb_get_break_error());
-    gtk_box_pack_start(GTK_BOX(GTK_DIALOG(context.dialog)->vbox), toggle, FALSE, FALSE, 0);
-    gtk_widget_show(toggle);
-
-    gtk_dialog_set_default_response(GTK_DIALOG(context.dialog), GTK_RESPONSE_ACCEPT);
-
-    result = gtk_dialog_run(GTK_DIALOG(context.dialog));
-    if (result == GTK_RESPONSE_ACCEPT)
-        gldb_set_break_error(seq++, gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(toggle)));
-    gtk_widget_destroy(context.dialog);
-}
-
 static void attach_gdb_action(GtkAction *action, gpointer user_data)
 {
     GldbWindow *context;
@@ -681,7 +557,7 @@ static void attach_gdb_action(GtkAction *action, gpointer user_data)
                                         GTK_DIALOG_DESTROY_WITH_PARENT,
                                         GTK_MESSAGE_ERROR,
                                         GTK_BUTTONS_CLOSE,
-                                        "Error launching gdb: %s",
+                                        _("Error launching gdb: %s"),
                                         error->message);
         gtk_dialog_run(GTK_DIALOG(dialog));
         gtk_widget_destroy(dialog);
@@ -710,8 +586,6 @@ static const gchar *ui_desc =
 "      <menuitem action='Step' />"
 "      <menuitem action='Kill' />"
 "      <separator />"
-"      <menuitem action='Breakpoints' />"
-"      <separator />"
 "      <menuitem action='AttachGDB' />"
 "    </menu>"
 "  </menubar>"
@@ -725,8 +599,7 @@ static GtkActionEntry action_desc[] =
     { "OptionsMenu", NULL, "_Options", NULL, NULL, NULL },
     { "Chain", NULL, "Filter _Chain", NULL, NULL, G_CALLBACK(chain_action) },
 
-    { "RunMenu", NULL, "_Run", NULL, NULL, NULL },
-    { "Breakpoints", NULL, "_Breakpoints...", NULL, NULL, G_CALLBACK(breakpoints_action) }
+    { "RunMenu", NULL, "_Run", NULL, NULL, NULL }
 };
 
 static GtkActionEntry running_action_desc[] =
@@ -805,7 +678,6 @@ static void build_main_window(GldbWindow *context)
     gtk_box_pack_start(GTK_BOX(vbox), gtk_ui_manager_get_widget(ui, "/MenuBar"),
                        FALSE, FALSE, 0);
 
-    context->breakpoints_store = gtk_list_store_new(1, G_TYPE_STRING);
     context->notebook = gtk_notebook_new();
     /* Statusbar must be built early, because it is passed to image viewers */
     context->statusbar = gtk_statusbar_new();
@@ -824,6 +696,7 @@ static void build_main_window(GldbWindow *context)
 #endif
     main_window_add_pane(context, _("Shaders"), gldb_shader_pane_new());
     main_window_add_pane(context, _("Backtrace"), gldb_backtrace_pane_new());
+    main_window_add_pane(context, _("Breakpoints"), gldb_breakpoint_pane_new());
 
     gtk_box_pack_start(GTK_BOX(vbox), context->notebook, TRUE, TRUE, 0);
     g_signal_connect(G_OBJECT(context->notebook), "switch-page",
@@ -836,19 +709,6 @@ static void build_main_window(GldbWindow *context)
     gtk_window_add_accel_group (GTK_WINDOW(context->window),
                                 gtk_ui_manager_get_accel_group(ui));
     gtk_widget_show_all(context->window);
-}
-
-static void build_function_names(void)
-{
-    gsize i;
-    GtkTreeIter iter;
-
-    function_names = gtk_list_store_new(1, G_TYPE_STRING);
-    for (i = 0; i < NUMBER_OF_FUNCTIONS; i++)
-    {
-        gtk_list_store_append(function_names, &iter);
-        gtk_list_store_set(function_names, &iter, 0, budgie_function_names[i], -1);
-    }
 }
 
 static void unref_helper(gpointer pane, gpointer data)
@@ -869,21 +729,17 @@ int main(int argc, char **argv)
     bugle_initialise_hashing();
     bugle_list_init(&response_handlers, true);
 
-    build_function_names();
     memset(&context, 0, sizeof(context));
     build_main_window(&context);
 
     gtk_main();
 
     gldb_shutdown();
-    g_object_unref(G_OBJECT(function_names));
 #if HAVE_GTKGLEXT
     gldb_gui_image_shutdown();
 #endif
-    /* FIXME: create separate function to dispose of a context */
     g_ptr_array_foreach(context.panes, unref_helper, NULL);
     g_ptr_array_free(context.panes, TRUE);
-    g_object_unref(G_OBJECT(context.breakpoints_store));
     bugle_list_clear(&response_handlers);
     return 0;
 }
