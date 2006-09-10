@@ -10,7 +10,8 @@
 * Internal redesign of gldb-gui
 * Fix support for GTK+ 2.4 (hopefully)
 * Move breakpoints into a tab
-* Make it possible to disable breakpoints
+* Make it possible to disable breakpoints without deleting them
+* Prevent crash when querying state in glBegin/glEnd
 
 0.0.20060828
 ------------

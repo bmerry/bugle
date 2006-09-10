@@ -144,15 +144,16 @@ gldb_state *gldb_state_update(uint32_t id)
         {
             if (r) gldb_free_response(r);
             r = gldb_get_response();
-        } while (r && r->code != RESP_STATE_NODE_BEGIN);
+        } while (r && r->code != RESP_STATE_NODE_BEGIN && r->code != RESP_ERROR);
         if (!r)
             state_root = NULL;
-        else
+        else if (r->code == RESP_STATE_NODE_BEGIN)
         {
             state_root = ((gldb_response_state_tree *) r)->root;
             free(r);
         }
         state_dirty = false;
+        /* FIXME: report the error to the GUI */
     }
     return state_root;
 }

@@ -27,6 +27,7 @@
 #include <gtk/gtk.h>
 #include <glib.h>
 #include <glib/gi18n-lib.h>
+#include <string.h>
 #include "common/linkedlist.h"
 #include "common/hashtable.h"
 #include "common/safemem.h"
@@ -88,8 +89,8 @@ static void add_total_column(GtkTreeStore *store, GtkTreeIter *iter,
 /* Sets base_column (a boolean) to value, and updates the count in
  * total_column.
  */
-static set_column(GtkTreeStore *store, GtkTreeIter *iter,
-                  gint base_column, gint total_column, gboolean value)
+static void set_column(GtkTreeStore *store, GtkTreeIter *iter,
+                       gint base_column, gint total_column, gboolean value)
 {
     gboolean old;
 
@@ -110,7 +111,6 @@ static gboolean state_remove_r(GtkTreeStore *store, GtkTreeIter *iter)
 {
     GtkTreeIter child;
     gboolean valid;
-    gboolean old_selected, old_modified;
 
     valid = gtk_tree_model_iter_children(GTK_TREE_MODEL(store), &child, iter);
     while (valid)

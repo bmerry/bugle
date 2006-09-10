@@ -26,6 +26,11 @@
 #include <sys/time.h>
 #include <math.h>
 
+#if !HAVE_SINF
+# define sinf(x) ((float) (sin((double) (x))))
+# define cosf(x) ((float) (cos((double) (x))))
+#endif
+
 /*** Wireframe filter-set ***/
 
 static filter_set *wireframe_filterset;

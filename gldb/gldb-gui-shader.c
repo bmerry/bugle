@@ -27,6 +27,8 @@
 #include <gtk/gtk.h>
 #include <glib.h>
 #include <glib/gi18n-lib.h>
+#include <string.h>
+#include <stdlib.h>
 #include "common/protocol.h"
 #include "common/safemem.h"
 #include "gldb/gldb-common.h"
@@ -62,14 +64,7 @@ static gboolean gldb_shader_pane_response_callback(gldb_response *response,
     if (response->code != RESP_DATA || !r->length)
         gtk_text_buffer_set_text(buffer, "", 0);
     else
-    {
-        /* FIXME: is the tag stuff still needed? */
-        GtkTextIter start, end;
-
         gtk_text_buffer_set_text(buffer, r->data, r->length);
-        gtk_text_buffer_get_bounds(buffer, &start, &end);
-        gtk_text_buffer_apply_tag_by_name(buffer, "default", &start, &end);
-    }
     gldb_free_response(response);
     return TRUE;
 }
@@ -309,23 +304,24 @@ GldbPane *gldb_shader_pane_new(void)
 {
     GldbShaderPane *pane;
     GtkWidget *vbox, *hbox, *target, *id, *source, *scrolled;
+    PangoFontDescription *font;
 
     pane = GLDB_SHADER_PANE(g_object_new(GLDB_SHADER_PANE_TYPE, NULL));
     target = gldb_shader_pane_target_new(pane);
     id = gldb_shader_pane_id_new(pane);
+
+    font = pango_font_description_new();
+    pango_font_description_set_family_static(font, "Monospace");
     source = gtk_text_view_new();
     gtk_text_view_set_editable(GTK_TEXT_VIEW(source), FALSE);
     gtk_text_view_set_cursor_visible(GTK_TEXT_VIEW(source), FALSE);
     gtk_text_view_set_border_window_size(GTK_TEXT_VIEW(source),
                                          GTK_TEXT_WINDOW_LEFT,
                                          40);
+    gtk_widget_modify_font(GTK_WIDGET(source), font);
+    pango_font_description_free(font);
     g_signal_connect(G_OBJECT(source), "expose-event", G_CALLBACK(gldb_shader_pane_source_expose), NULL);
 
-    /* FIXME: can't we just set default attributes? */
-    gtk_text_buffer_create_tag(gtk_text_view_get_buffer(GTK_TEXT_VIEW(source)),
-                               "default",
-                               "family", "Monospace",
-                               NULL);
     scrolled = gtk_scrolled_window_new(NULL, NULL);
     gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(scrolled),
                                    GTK_POLICY_AUTOMATIC,

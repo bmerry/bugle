@@ -34,6 +34,7 @@
 #include <glib/gi18n-lib.h>
 #include <gtk/gtkgl.h>
 #include <string.h>
+#include <stdlib.h>
 #include "common/safemem.h"
 #include "common/protocol.h"
 #include "common/safemem.h"

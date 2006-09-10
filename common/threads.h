@@ -43,6 +43,7 @@
 #if (THREADS == BUGLE_THREADS_PTHREADS)
 
 #include <pthread.h>
+#include <signal.h>
 
 /* Types */
 typedef pthread_mutex_t bugle_thread_mutex_t;
@@ -87,7 +88,11 @@ static inline int bugle_thread_once(bugle_thread_once_t *once_control, void (*in
 /* Not a pthread function, but a thread-safe wrapper around raise(3) */
 static inline int bugle_thread_raise(int sig)
 {
+#if HAVE_PTHREAD_KILL
     return pthread_kill(pthread_self(), sig);
+#else
+    return raise(sig);
+#endif
 }
 
 #endif /* THREADS == BUGLE_THREADS_PTHREADS */

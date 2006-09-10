@@ -84,6 +84,7 @@ static GQuark gldb_gdb_error_quark(void)
     static GQuark q = 0;
     if (q == 0)
         q = g_quark_from_static_string("gldb-gdb-error-quark");
+    return q;
 }
 
 #define GLDB_GDB_ERROR (gldb_gdb_error_quark())

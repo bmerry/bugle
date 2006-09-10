@@ -125,7 +125,6 @@ static void gldb_breakpoint_pane_remove(GtkButton *button, gpointer user_data)
 static void gldb_breakpoint_pane_error_toggled(GtkWidget *toggle, gpointer user_data)
 {
     GldbBreakpointPane *pane;
-    gboolean enabled;
 
     pane = GLDB_BREAKPOINT_PANE(user_data);
     gldb_set_break_error(0, gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(toggle)));

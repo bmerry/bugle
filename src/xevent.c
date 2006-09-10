@@ -246,9 +246,9 @@ typedef struct
     long event_mask;
     Bool (*predicate)(Display *, XEvent *, XPointer);
     XPointer arg;
-    int use_w : 1;
-    int use_event_mask : 1;
-    int use_predicate : 1;
+    int use_w;
+    int use_event_mask;
+    int use_predicate;
 } if_block_data;
 
 Bool matches_mask(XEvent *event, unsigned long mask)

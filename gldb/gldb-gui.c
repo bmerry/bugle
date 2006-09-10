@@ -286,7 +286,6 @@ static void pane_invalidate_helper(gpointer item, gpointer user_data)
 
 static void pane_status_changed_helper(gpointer item, gpointer user_data)
 {
-    gldb_status *statuses = (gldb_status *) user_data;
     gldb_pane_status_changed(GLDB_PANE(item), gldb_get_status());
 }
 
@@ -312,8 +311,6 @@ static void notebook_update(GldbWindow *context, gint new_page)
 
 static void stopped(GldbWindow *context, const gchar *text)
 {
-    gldb_status statuses[2];
-
     g_ptr_array_foreach(context->panes, pane_invalidate_helper, NULL);
     notebook_update(context, -1);
     gtk_action_group_set_sensitive(context->running_actions, FALSE);
@@ -666,7 +663,7 @@ static GtkUIManager *build_ui(GldbWindow *context)
 static void build_main_window(GldbWindow *context)
 {
     GtkUIManager *ui;
-    GtkWidget *vbox, *label;
+    GtkWidget *vbox;
 
     context->window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
     gtk_window_set_title(GTK_WINDOW(context->window), "gldb-gui");
@@ -725,8 +722,12 @@ int main(int argc, char **argv)
     gtk_gl_init(&argc, &argv);
     gldb_gui_image_initialise();
 #endif
+    if (argc < 2)
+    {
+        fputs("Usage: gldb-gui <program> [<arguments>]\n", stderr);
+        return 1;
+    }
     gldb_initialise(argc, argv);
-    bugle_initialise_hashing();
     bugle_list_init(&response_handlers, true);
 
     memset(&context, 0, sizeof(context));

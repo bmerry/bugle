@@ -462,7 +462,7 @@ static bool send_data_framebuffer(uint32_t id, GLuint fbo, GLenum target,
          * Older versions have even buggier FBO implementations, so we
          * don't bother to work around them.
          */
-        if (strcmp(CALL_glGetString(GL_VERSION), "2.0.2 NVIDIA 87.62") != 0)
+        if (strcmp((char *) CALL_glGetString(GL_VERSION), "2.0.2 NVIDIA 87.62") != 0)
             aux = bugle_get_aux_context();
     }
     if (aux)
@@ -782,7 +782,18 @@ static void process_single_command(function_call *call)
         free(req_str);
         break;
     case REQ_STATE_TREE:
-        send_state(bugle_state_get_root(), id);
+        if (bugle_begin_internal_render())
+        {
+            send_state(bugle_state_get_root(), id);
+            bugle_end_internal_render("send_state", true);
+        }
+        else
+        {
+            gldb_protocol_send_code(out_pipe, RESP_ERROR);
+            gldb_protocol_send_code(out_pipe, id);
+            gldb_protocol_send_code(out_pipe, 0);
+            gldb_protocol_send_string(out_pipe, "In glBegin/glEnd; no state available");
+        }
         break;
     case REQ_SCREENSHOT:
         if (!debugger_screenshot(out_pipe))

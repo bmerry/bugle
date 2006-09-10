@@ -92,7 +92,7 @@ static void image_draw_realize(GtkWidget *widget, gpointer user_data)
      * expose the unregistered GL_EXT_texture_edge_clamp), so we use
      * the OpenGL version as the test instead.
      */
-    if (strcmp(glGetString(GL_VERSION), "1.2") >= 0)
+    if (strcmp((char *) glGetString(GL_VERSION), "1.2") >= 0)
     {
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
@@ -330,7 +330,7 @@ static gboolean image_draw_expose(GtkWidget *widget,
     if (viewer->current)
     {
         glEnable(viewer->current->texture_target);
-        if (strcmp(glGetString(GL_VERSION), "1.2") >= 0)
+        if (strcmp((char *) glGetString(GL_VERSION), "1.2") >= 0)
         {
             if (viewer->current_level >= 0)
             {
