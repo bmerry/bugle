@@ -1,2 +1,2 @@
 #!/bin/sh
-exec $srcdir/tests/comparelog.sh pointers checks
+exec "$srcdir/tests/comparelog.sh" pointers checks

@@ -2,6 +2,7 @@
 
 #include "glee/GLee.h"
 #include <GL/glut.h>
+#include <stdlib.h>
 
 #ifndef LOG_TEXTURE_SIZE
 # define LOG_TEXTURE_SIZE 6

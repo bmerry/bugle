@@ -1076,7 +1076,7 @@ static void write_type_dumpers()
         case INTEGER_TYPE:
             fprintf(util_c,
                     "%s"
-                    "    fprintf(out, \"%%\" PRI%c%d, (%sint%d_t) *value);\n",
+                    "    fprintf(out, \"%%\" PRI%c%ld, (%sint%ld_t) *value);\n",
                     custom_code.c_str(),
                     (i->node->flag_unsigned ? 'u' : 'd'),
                     i->node->size->low,
@@ -1538,8 +1538,7 @@ static void write_interceptors()
                 "    if (!check_set_reentrance())\n"
                 "    {\n"
                 "        initialise_real();\n"
-                "        ",
-                proto.c_str());
+                "        ");
         if (i->group->has_retn)
             fprintf(lib_c, "return ");
         fprintf(lib_c, "CALL_%s(", name.c_str());
