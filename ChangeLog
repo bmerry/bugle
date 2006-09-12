@@ -12,6 +12,7 @@
 * Move breakpoints into a tab
 * Make it possible to disable breakpoints without deleting them
 * Prevent crash when querying state in glBegin/glEnd
+* Fix tracing of glReadPixels
 
 0.0.20060828
 ------------

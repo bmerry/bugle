@@ -616,6 +616,19 @@ static void query_renderbuffers(void)
 #endif /* GL_EXT_framebuffer_object */
 }
 
+static void query_readpixels(void)
+{
+    GLubyte ans[12];
+    int i;
+
+    glReadPixels(1, 1, 2, 2, GL_RGB, GL_UNSIGNED_BYTE, ans);
+    fprintf(ref, "trace\\.call: glReadPixels\\(1, 1, 2, 2, GL_RGB, GL_UNSIGNED_BYTE, %p -> { ",
+            ans);
+    for (i = 0; i < 11; i++)
+        fprintf(ref, "%d, ", (int) ans[i]);
+    fprintf(ref, "%d }\\)\n", ans[11]);
+}
+
 int main(int argc, char **argv)
 {
     ref = fdopen(3, "w");
@@ -650,5 +663,6 @@ int main(int argc, char **argv)
     query_ll_programs();
     query_framebuffers();
     query_renderbuffers();
+    query_readpixels();
     return 0;
 }

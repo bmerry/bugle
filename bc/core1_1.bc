@@ -49,8 +49,8 @@ LENGTH PARAMETER glTexSubImage2D 8 bugle_image_element_count($4, $5, -1, $6, $7,
 
 TYPE PARAMETER glGetTexImage 4 bugle_gl_type_to_type_ptr_pbo_sink($3)
 LENGTH PARAMETER glGetTexImage 4 bugle_texture_element_count($0, $1, $2, $3)
-TYPE PARAMETER glReadPixels 6 bugle_gl_type_to_type_ptr_pbo_sink($4)
-LENGTH PARAMETER glReadPixels 6 ($2 * $3)
+TYPE PARAMETER glReadPixels 6 bugle_gl_type_to_type_ptr_pbo_sink($5)
+LENGTH PARAMETER glReadPixels 6 bugle_image_element_count($2, $3, -1, $4, $5, false)
 
 # Both count and interpretation of type depend on the token
 # Note that we only override length for the vector versions
