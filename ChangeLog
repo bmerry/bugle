@@ -3,17 +3,18 @@
 * Fix reported names for GL_POINTS and GL_LINES
 * Fix some duplicated GL_ARB_imaging state
 * Fix spurious errors due to mis-ordering of error and trackbeginend
-* Work around a bug that caused texture and framebuffer repaints to fail
-* Highlight state changes
-* Options to filter state
-* Option to attach GDB
-* Internal redesign of gldb-gui
-* Fix support for GTK+ 2.4 (hopefully)
-* Move breakpoints into a tab
-* Make it possible to disable breakpoints without deleting them
 * Prevent crash when querying state in glBegin/glEnd
 * Fix tracing of glReadPixels
-* Show an appropriate cursor while doing slow updates
+* gldb-gui:
+  * Work around a bug that caused texture and framebuffer repaints to fail
+  * Highlight state changes
+  * Options to filter state
+  * Option to attach GDB
+  * Internal redesign
+  * Fix support for GTK+ 2.4 (hopefully)
+  * Move breakpoints into a tab
+  * Make it possible to disable breakpoints without deleting them
+  * Show an appropriate cursor while doing slow updates
 
 0.0.20060828
 ------------
