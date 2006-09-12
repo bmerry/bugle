@@ -47,12 +47,16 @@
 #include "gldb/gldb-gui-backtrace.h"
 #include "gldb/gldb-gui-breakpoint.h"
 
+/* Global variables */
+static bugle_linked_list response_handlers;
+static guint32 seq = 0;
+static GdkCursor *wait_cursor = NULL;
+
 /* gldb-gui is broken into a number of separate modules, which are unified by
  * the GldbPane type. A GldbPane encapsulates a widget plus internal state,
  * which is inserted into the notebook. Future work may allow panes to be
  * split out into separate windows.
  */
-
 static void gldb_pane_real_status_changed(GldbPane *self, gldb_status new_status)
 {
 }
@@ -98,8 +102,21 @@ void gldb_pane_update(GldbPane *self)
 {
     if (self->dirty)
     {
+        GdkWindow *window = NULL;
+        GtkWidget *widget;
+
         self->dirty = FALSE;
+        /* Show an hourglass/watch while waiting for potentially slow update */
+        widget = gtk_widget_get_toplevel(gldb_pane_get_widget(self));
+        if (GTK_WIDGET_REALIZED(widget))
+        {
+            window = widget->window;
+            gdk_window_set_cursor(window, wait_cursor);
+            gdk_display_flush(gtk_widget_get_display(widget));
+        }
         GLDB_PANE_GET_CLASS(self)->do_real_update(self);
+        if (window)
+            gdk_window_set_cursor(window, NULL);
     }
 }
 
@@ -148,9 +165,6 @@ typedef struct GldbWindow
 
     GPtrArray *panes;
 } GldbWindow;
-
-static bugle_linked_list response_handlers;
-static guint32 seq = 0;
 
 /* Utility functions for panes to call */
 
@@ -705,6 +719,7 @@ static void build_main_window(GldbWindow *context)
     gtk_window_set_default_size(GTK_WINDOW(context->window), 640, 480);
     gtk_window_add_accel_group (GTK_WINDOW(context->window),
                                 gtk_ui_manager_get_accel_group(ui));
+
     gtk_widget_show_all(context->window);
 }
 
@@ -718,6 +733,7 @@ int main(int argc, char **argv)
     GldbWindow context;
 
     gtk_init(&argc, &argv);
+    wait_cursor = gdk_cursor_new(GDK_WATCH);
 #if HAVE_GTKGLEXT
     gtk_gl_init(&argc, &argv);
     gldb_gui_image_initialise();
@@ -742,5 +758,6 @@ int main(int argc, char **argv)
     g_ptr_array_foreach(context.panes, unref_helper, NULL);
     g_ptr_array_free(context.panes, TRUE);
     bugle_list_clear(&response_handlers);
+    gdk_cursor_unref(wait_cursor);
     return 0;
 }

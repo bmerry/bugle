@@ -13,6 +13,7 @@
 * Make it possible to disable breakpoints without deleting them
 * Prevent crash when querying state in glBegin/glEnd
 * Fix tracing of glReadPixels
+* Show an appropriate cursor while doing slow updates
 
 0.0.20060828
 ------------
