@@ -8,5 +8,6 @@
 - do a 'fakeroot make dist'
 - upload to sourceforge
 - post details on freshmeat
-- update project webpage
+- update project news webpage
+- upload new docs to project webpage
 - tag in svn

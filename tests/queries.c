@@ -618,13 +618,14 @@ static void query_renderbuffers(void)
 
 static void query_readpixels(void)
 {
-    GLubyte ans[12];
+    GLubyte ans[14];
     int i;
 
     glReadPixels(1, 1, 2, 2, GL_RGB, GL_UNSIGNED_BYTE, ans);
     fprintf(ref, "trace\\.call: glReadPixels\\(1, 1, 2, 2, GL_RGB, GL_UNSIGNED_BYTE, %p -> { ",
             ans);
-    for (i = 0; i < 11; i++)
+    /* 14 elements because of the padding due to alignment */
+    for (i = 0; i < 13; i++)
         fprintf(ref, "%d, ", (int) ans[i]);
     fprintf(ref, "%d }\\)\n", ans[11]);
 }

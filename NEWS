@@ -1,3 +1,15 @@
+0.0.20060913
+------------
+While there is no one feature that makes this release special, it has a
+huge number of minor bug-fixes and improvements, mostly to the GUI
+debugger. See the ChangeLog for details.
+
+The GUI debugger has almost achieved feature-parity with the text debugger
+(run-time enabling and disabling of filter-sets being one missing feature).
+I haven't really been maintaining the text debugger, and I'm thinking of
+discontinuing it. If there are reasons why you still prefer the text
+debugger, let me know soon so that I can reconsider.
+
 0.0.20060828
 ------------
 This release fixes a serious bug in the framebuffer viewer that would

@@ -1,3 +1,5 @@
+0.0.20060913
+------------
 * Fix display of various aliased tokens
 * Use pkg-config to get libavcodec configuration
 * Fix reported names for GL_POINTS and GL_LINES
