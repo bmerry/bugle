@@ -337,6 +337,13 @@ static bool initialise_stats(filter_set *handle)
     return true;
 }
 
+static void destroy_stats(filter_set *handle)
+{
+    bugle_list_clear(&registered_statistics);
+    bugle_list_clear(&registered_samplers);
+    bugle_list_clear(&active_samplers);
+}
+
 /*** Default statistics ***/
 
 static statistic *stats_basic_frames, *stats_basic_seconds, *stats_basic_milliseconds;
@@ -384,8 +391,6 @@ static bool initialise_stats_basic(filter_set *handle)
     bugle_register_sampler_rate("frame_time", "milliseconds", "frames", "frame time: %.2fms");
     return true;
 }
-
-/* FIXME: shutdown should free the stats and sampler memory */
 
 /*** Primitive counts ***/
 
@@ -619,6 +624,15 @@ static void initialise_stats_fragments_struct(const void *key, void *data)
     }
 }
 
+static void destroy_stats_fragments_struct(void *data)
+{
+    stats_fragments_struct *s;
+
+    s = (stats_fragments_struct *) data;
+    if (s->query)
+        CALL_glDeleteQueries(1, &s->query);
+}
+
 static bool stats_fragments_glXSwapBuffers(function_call *call, const callback_data *data)
 {
     stats_fragments_struct *s;
@@ -630,9 +644,22 @@ static bool stats_fragments_glXSwapBuffers(function_call *call, const callback_d
     {
         CALL_glEndQueryARB(GL_SAMPLES_PASSED_ARB);
         CALL_glGetQueryObjectuivARB(s->query, GL_QUERY_RESULT_ARB, &fragments);
-        CALL_glBeginQueryARB(GL_SAMPLES_PASSED_ARB, s->query);
         bugle_end_internal_render("stats_fragments_glXSwapBuffers", true);
         stats_fragments_fragments->value += fragments;
+    }
+    return true;
+}
+
+static bool stats_fragments_post_glXSwapBuffers(function_call *call, const callback_data *data)
+{
+    stats_fragments_struct *s;
+
+    s = bugle_object_get_current_data(&bugle_context_class, stats_fragments_view);
+    if (stats_fragments_fragments->initialised
+        && s && s->query && bugle_begin_internal_render())
+    {
+        CALL_glBeginQueryARB(GL_SAMPLES_PASSED_ARB, s->query);
+        bugle_end_internal_render("stats_fragments_post_glXSwapBuffers", true);
     }
     return true;
 }
@@ -660,7 +687,7 @@ static bool initialise_stats_fragments(filter_set *handle)
 
     stats_fragments_view = bugle_object_class_register(&bugle_context_class,
                                                        initialise_stats_fragments_struct,
-                                                       NULL,
+                                                       destroy_stats_fragments_struct,
                                                        sizeof(stats_fragments_struct));
 
     f = bugle_register_filter(handle, "stats_fragments");
@@ -669,6 +696,10 @@ static bool initialise_stats_fragments(filter_set *handle)
     bugle_register_filter_catches(f, GROUP_glEndQueryARB, false, stats_fragments_query);
     bugle_register_filter_depends("invoke", "stats_fragments");
     bugle_register_filter_depends("stats", "stats_fragments");
+
+    f = bugle_register_filter(handle, "stats_fragments_post");
+    bugle_register_filter_catches(f, GROUP_glXSwapBuffers, false, stats_fragments_post_glXSwapBuffers);
+    bugle_register_filter_depends("stats_fragments_post", "invoke");
 
     stats_fragments_fragments = bugle_register_statistic(STATISTIC_ACCUMULATING, "fragments", NULL, NULL);
     bugle_register_sampler_rate("fragments", "fragments", "frames", "fragments: %.0f");
@@ -682,13 +713,21 @@ static bool initialise_stats_fragments(filter_set *handle)
 #if ENABLE_STATS_NV
 #include <NVPerfSDK.h>
 
+typedef enum
+{
+    STATISTIC_NV_RAW,
+    STATISTIC_NV_CYCLES,
+    STATISTIC_NV_CONTINUOUS
+} statistic_nv_type;
+
 typedef struct
 {
     UINT index;
-    bool cycles; /* if this is a cycle-counting statistic */
+    statistic_nv_type type;
 } statistic_nv;
 
 static bugle_linked_list stats_nv_active;
+static bugle_linked_list stats_nv_registered;
 static lt_dlhandle stats_nv_dl = NULL;
 
 static NVPMRESULT (*fNVPMInit)(void);
@@ -696,7 +735,9 @@ static NVPMRESULT (*fNVPMShutdown)(void);
 static NVPMRESULT (*fNVPMEnumCounters)(NVPMEnumFunc);
 static NVPMRESULT (*fNVPMSample)(NVPMSampleValue *, UINT *);
 static NVPMRESULT (*fNVPMAddCounter)(UINT);
+static NVPMRESULT (*fNVPMRemoveAllCounters)(void);
 static NVPMRESULT (*fNVPMGetCounterValue)(UINT, int, UINT64 *, UINT64 *);
+static NVPMRESULT (*fNVPMGetCounterAttribute)(UINT, NVPMATTRIBUTE, UINT64 *);
 
 static bool stats_nv_glXSwapBuffers(function_call *call, const callback_data *data)
 {
@@ -714,8 +755,18 @@ static bool stats_nv_glXSwapBuffers(function_call *call, const callback_data *da
         nv = (statistic_nv *) st->user_data;
 
         fNVPMGetCounterValue(nv->index, 0, &value, &cycles);
-        if (nv->cycles) st->value += cycles;
-        else st->value += value;
+        switch (nv->type)
+        {
+        case STATISTIC_NV_RAW:
+            st->value += value;
+            break;
+        case STATISTIC_NV_CYCLES:
+            st->value += cycles;
+            break;
+        case STATISTIC_NV_CONTINUOUS:
+            st->value = value;
+            break;
+        }
     }
     return true;
 }
@@ -735,31 +786,53 @@ static int stats_nv_enumerate(UINT index, char *name)
     char *value_name, *cycles_name, *sampler_name, *format;
     statistic *st;
     statistic_nv *nv;
+    UINT64 cv_attr, cdh_attr;
 
-    bugle_asprintf(&value_name, "nv_value:%s", name);
-    bugle_asprintf(&cycles_name, "nv_cycles:%s", name);
     bugle_asprintf(&sampler_name, "nv:%s", name);
     bugle_asprintf(&format, "%s: %%f", name);
+    fNVPMGetCounterAttribute(index, NVPMA_COUNTER_VALUE, &cv_attr);
+    fNVPMGetCounterAttribute(index, NVPMA_COUNTER_DISPLAY_HINT, &cdh_attr);
+    if (cdh_attr == NVPM_CDH_PERCENT)
+    {
+        bugle_asprintf(&value_name, "nv_value:%s", name);
+        bugle_asprintf(&cycles_name, "nv_cycles:%s", name);
 
-    nv = bugle_malloc(sizeof(statistic_nv));
-    nv->index = index;
-    nv->cycles = false;
-    st = bugle_register_statistic(STATISTIC_ACCUMULATING,
-                                  value_name,
-                                  nv,
-                                  stats_nv_statistic_initialise);
-    nv = bugle_malloc(sizeof(statistic_nv));
-    nv->index = index;
-    nv->cycles = true;
-    st = bugle_register_statistic(STATISTIC_ACCUMULATING,
-                                  cycles_name,
-                                  nv,
-                                  stats_nv_statistic_initialise);
+        nv = bugle_malloc(sizeof(statistic_nv));
+        nv->index = index;
+        nv->type = STATISTIC_NV_RAW;
+        st = bugle_register_statistic(STATISTIC_ACCUMULATING,
+                                      value_name,
+                                      nv,
+                                      stats_nv_statistic_initialise);
+        bugle_list_append(&stats_nv_registered, st);
 
-    bugle_register_sampler_rate(sampler_name, value_name, cycles_name, format);
+        nv = bugle_malloc(sizeof(statistic_nv));
+        nv->index = index;
+        nv->type = STATISTIC_NV_CYCLES;
+        st = bugle_register_statistic(STATISTIC_ACCUMULATING,
+                                      cycles_name,
+                                      nv,
+                                      stats_nv_statistic_initialise);
+        bugle_list_append(&stats_nv_registered, st);
+
+        bugle_register_sampler_rate(sampler_name, value_name, cycles_name, format);
+        free(value_name);
+        free(cycles_name);
+    }
+    else
+    {
+        nv = bugle_malloc(sizeof(statistic_nv));
+        nv->index = index;
+        nv->type = STATISTIC_NV_CONTINUOUS;
+        st = bugle_register_statistic(STATISTIC_CONTINUOUS,
+                                      sampler_name,
+                                      nv,
+                                      stats_nv_statistic_initialise);
+        bugle_list_append(&stats_nv_registered, st);
+
+        bugle_register_sampler_continuous(sampler_name, sampler_name, format);
+    }
     free(sampler_name);
-    free(value_name);
-    free(cycles_name);
     free(format);
     return NVPM_OK;
 }
@@ -769,6 +842,7 @@ static bool initialise_stats_nv(filter_set *handle)
     filter *f;
 
     bugle_list_init(&stats_nv_active, false);
+    bugle_list_init(&stats_nv_registered, false);
     stats_nv_dl = lt_dlopenext("libNVPerfSDK");
     if (stats_nv_dl == NULL) return true;
 
@@ -776,15 +850,19 @@ static bool initialise_stats_nv(filter_set *handle)
     fNVPMShutdown = (NVPMRESULT (*)(void)) lt_dlsym(stats_nv_dl, "NVPMShutdown");
     fNVPMEnumCounters = (NVPMRESULT (*)(NVPMEnumFunc)) lt_dlsym(stats_nv_dl, "NVPMEnumCounters");
     fNVPMSample = (NVPMRESULT (*)(NVPMSampleValue *, UINT *)) lt_dlsym(stats_nv_dl, "NVPMSample");
+    fNVPMRemoveAllCounters = (NVPMRESULT (*)(void)) lt_dlsym(stats_nv_dl, "NVPMRemoveAllCounters");
     fNVPMAddCounter = (NVPMRESULT (*)(UINT)) lt_dlsym(stats_nv_dl, "NVPMAddCounter");
     fNVPMGetCounterValue = (NVPMRESULT (*)(UINT, int, UINT64 *, UINT64 *)) lt_dlsym(stats_nv_dl, "NVPMGetCounterValue");
+    fNVPMGetCounterAttribute = (NVPMRESULT (*)(UINT, NVPMATTRIBUTE, UINT64 *)) lt_dlsym(stats_nv_dl, "NVPMGetCounterAttribute");
 
     if (!fNVPMInit
         || !fNVPMShutdown
         || !fNVPMEnumCounters
         || !fNVPMSample
         || !fNVPMAddCounter
-        || !fNVPMGetCounterValue)
+        || !fNVPMRemoveAllCounters
+        || !fNVPMGetCounterValue
+        || !fNVPMGetCounterAttribute)
     {
         fputs("Failed to load symbols for NVPerfSDK\n", stderr);
         goto cancel1;
@@ -813,6 +891,23 @@ cancel1:
     lt_dlclose(stats_nv_dl);
     stats_nv_dl = NULL;
     return false;
+}
+
+static void destroy_stats_nv(filter_set *handle)
+{
+    bugle_list_node *i;
+    statistic *st;
+
+    for (i = bugle_list_head(&stats_nv_registered); i; i = bugle_list_next(i))
+    {
+        st = (statistic *) bugle_list_data(i);
+        free(st->user_data);
+    }
+    fNVPMRemoveAllCounters();
+    fNVPMShutdown();
+    lt_dlclose(stats_nv_dl);
+    bugle_list_clear(&stats_nv_registered);
+    bugle_list_clear(&stats_nv_active);
 }
 
 #endif /* ENABLE_STATS_NV */
@@ -865,6 +960,13 @@ static void initialise_showstats_struct(const void *key, void *data)
     ss->last_show_time.tv_sec = 0;
     ss->last_show_time.tv_usec = 0;
     ss->accumulating = 0;
+}
+
+static void destroy_showstats_struct(void *data)
+{
+    showstats_struct *ss;
+    ss = (showstats_struct *) data;
+    CALL_glDeleteLists(1, ss->font_base);
 }
 
 static bool showstats_callback(function_call *call, const callback_data *data)
@@ -964,7 +1066,7 @@ static bool initialise_showstats(filter_set *handle)
     bugle_register_filter_catches(f, GROUP_glXSwapBuffers, false, showstats_callback);
     showstats_view = bugle_object_class_register(&bugle_context_class,
                                                  initialise_showstats_struct,
-                                                 NULL,
+                                                 destroy_showstats_struct,
                                                  sizeof(showstats_struct));
 
     /* Value of arg is irrelevant, only truth value */
@@ -1053,7 +1155,7 @@ void bugle_initialise_filter_library(void)
     {
         "stats_nv",
         initialise_stats_nv,
-        NULL,
+        destroy_stats_nv,
         NULL,
         NULL,
         NULL,
@@ -1066,7 +1168,7 @@ void bugle_initialise_filter_library(void)
     {
         "stats",
         initialise_stats,
-        NULL,
+        destroy_stats,
         NULL,
         NULL,
         NULL,
