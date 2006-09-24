@@ -116,6 +116,7 @@ static void destroy_filter_set_r(filter_set *handle)
 
     if (handle->loaded)
     {
+        handle->loaded = false;
         /* deps */
         for (i = bugle_list_head(&filter_set_dependencies[0]),
              j = bugle_list_head(&filter_set_dependencies[1]);
@@ -132,7 +133,7 @@ static void destroy_filter_set_r(filter_set *handle)
         bugle_deactivate_filter_set_nolock(handle);
         if (handle->unload) (*handle->unload)(handle);
 
-        for (j = bugle_list_head(&s->filters); j; j = bugle_list_next(j))
+        for (j = bugle_list_head(&handle->filters); j; j = bugle_list_next(j))
         {
             f = (filter *) bugle_list_data(j);
             dep = (bugle_linked_list *) bugle_hash_get(&filter_dependencies, f->name);
@@ -144,9 +145,7 @@ static void destroy_filter_set_r(filter_set *handle)
             bugle_list_clear(&f->callbacks);
             free(f);
         }
-        bugle_list_clear(&s->filters);
-
-        handle->loaded = false;
+        bugle_list_clear(&handle->filters);
     }
 }
 
@@ -169,7 +168,10 @@ static void destroy_filters(void *dummy)
             destroy_filter_set_r(s);
     }
     for (i = bugle_list_head(&filter_sets); i; i = bugle_list_next(i))
+    {
+        s = (filter_set *) bugle_list_data(i);
         free(s);
+    }
     bugle_list_clear(&filter_sets);
     bugle_hash_clear(&filter_dependencies);
 
