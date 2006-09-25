@@ -1063,6 +1063,7 @@ static bool initialise_showstats(filter_set *handle)
     /* make sure that screenshots capture the stats */
     bugle_register_filter_depends("debugger", "showstats");
     bugle_register_filter_depends("screenshot", "showstats");
+    bugle_register_filter_depends("showstats", "stats");
     bugle_register_filter_catches(f, GROUP_glXSwapBuffers, false, showstats_callback);
     showstats_view = bugle_object_class_register(&bugle_context_class,
                                                  initialise_showstats_struct,
