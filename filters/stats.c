@@ -90,7 +90,9 @@ typedef struct sampler_s
 {
     sampler_type type;
     char *name;                /* name for config file */
+    char *description;
     char *format;              /* For printf - should have one %f */
+    double multiplier;
 
     /* arrays of size 2 contain info for numerator and denominator when
      * a rate, or data only in element 0 for the other types.
@@ -144,6 +146,7 @@ statistic *bugle_statistic_find(const char *name)
 sampler *bugle_register_sampler_rate(const char *name,
                                      const char *numerator,
                                      const char *denominator,
+                                     const char *description,
                                      const char *format)
 {
     sampler *sa;
@@ -156,9 +159,11 @@ sampler *bugle_register_sampler_rate(const char *name,
         sa = bugle_calloc(1, sizeof(sampler));
         sa->type = SAMPLER_RATE;
         sa->name = bugle_strdup(name);
-        sa->format = bugle_strdup(format);
+        sa->description = bugle_strdup(description);
+        bugle_asprintf(&sa->format, "%%s: %s", format);
         sa->basis[0] = n;
         sa->basis[1] = d;
+        sa->multiplier = 1.0;
 
         bugle_list_append(&registered_samplers, sa);
         return sa;
@@ -167,8 +172,24 @@ sampler *bugle_register_sampler_rate(const char *name,
         return NULL;
 }
 
+/* As for the above, but the result is multiplied by 100 for display */
+sampler *bugle_register_sampler_percentage(const char *name,
+                                           const char *numerator,
+                                           const char *denominator,
+                                           const char *description,
+                                           const char *format)
+{
+    sampler *sa;
+
+    sa = bugle_register_sampler_rate(name, numerator, denominator, description, format);
+    if (sa)
+        sa->multiplier = 100.0;
+    return sa;
+}
+
 sampler *bugle_register_sampler_continuous(const char *name,
                                            const char *stat,
+                                           const char *description,
                                            const char *format)
 {
     sampler *sa;
@@ -180,8 +201,10 @@ sampler *bugle_register_sampler_continuous(const char *name,
         sa = bugle_calloc(1, sizeof(sampler));
         sa->type = SAMPLER_CONTINUOUS;
         sa->name = bugle_strdup(name);
-        sa->format = bugle_strdup(format);
+        sa->description = bugle_strdup(description);
+        bugle_asprintf(&sa->format, "%%s: %s", format);
         sa->basis[0] = st;
+        sa->multiplier = 1.0;
 
         bugle_list_append(&registered_samplers, sa);
         return sa;
@@ -387,8 +410,8 @@ static bool initialise_stats_basic(filter_set *handle)
     stats_basic_frames = bugle_register_statistic(STATISTIC_ACCUMULATING, "frames", NULL, NULL);
     stats_basic_seconds = bugle_register_statistic(STATISTIC_ACCUMULATING, "seconds", NULL, stats_basic_initialise_seconds);
     stats_basic_milliseconds = bugle_register_statistic(STATISTIC_ACCUMULATING, "milliseconds", NULL, stats_basic_initialise_milliseconds);
-    bugle_register_sampler_rate("frame_rate", "frames", "seconds", "frame rate: %.2ffps");
-    bugle_register_sampler_rate("frame_time", "milliseconds", "frames", "frame time: %.2fms");
+    bugle_register_sampler_rate("frame_rate", "frames", "seconds", "frame rate", "%.2ffps");
+    bugle_register_sampler_rate("frame_time", "milliseconds", "frames", "frame time", "%.2fms");
     return true;
 }
 
@@ -588,10 +611,10 @@ static bool initialise_stats_primitives(filter_set *handle)
 
     stats_primitives_batches = bugle_register_statistic(STATISTIC_ACCUMULATING, "batches", NULL, NULL);
     stats_primitives_triangles = bugle_register_statistic(STATISTIC_ACCUMULATING, "triangles", NULL, NULL);
-    bugle_register_sampler_rate("triangles", "triangles", "frames", "triangles: %.0f");
-    bugle_register_sampler_rate("triangle_rate", "triangles", "seconds", "triangle rate: %.1f/s");
-    bugle_register_sampler_rate("batches", "batches", "frames", "batches: %.0f");
-    bugle_register_sampler_rate("batch_rate", "batches", "seconds", "batch rate: %.1f/s");
+    bugle_register_sampler_rate("triangles", "triangles", "frames", "triangles", "%.0f");
+    bugle_register_sampler_rate("triangle_rate", "triangles", "seconds", "triangle rate", "%.1f/s");
+    bugle_register_sampler_rate("batches", "batches", "frames", "batches", "%.0f");
+    bugle_register_sampler_rate("batch_rate", "batches", "seconds", "batch rate", "%.1f/s");
 
     return true;
 }
@@ -702,8 +725,8 @@ static bool initialise_stats_fragments(filter_set *handle)
     bugle_register_filter_depends("stats_fragments_post", "invoke");
 
     stats_fragments_fragments = bugle_register_statistic(STATISTIC_ACCUMULATING, "fragments", NULL, NULL);
-    bugle_register_sampler_rate("fragments", "fragments", "frames", "fragments: %.0f");
-    bugle_register_sampler_rate("fragment_rate", "fragments", "seconds", "fragment rate: %.1f/s");
+    bugle_register_sampler_rate("fragments", "fragments", "frames", "fragments", "%.0f");
+    bugle_register_sampler_rate("fragment_rate", "fragments", "seconds", "fragment rate", "%.1f/s");
     return true;
 }
 #endif /* GL_ARB_occlusion_query */
@@ -713,31 +736,44 @@ static bool initialise_stats_fragments(filter_set *handle)
 #if ENABLE_STATS_NV
 #include <NVPerfSDK.h>
 
-typedef enum
-{
-    STATISTIC_NV_RAW,
-    STATISTIC_NV_CYCLES,
-    STATISTIC_NV_CONTINUOUS
-} statistic_nv_type;
-
 typedef struct
 {
     UINT index;
-    statistic_nv_type type;
+    bool use_cycles;
+    bool accumulate;
+    bool experiment;
 } statistic_nv;
 
 static bugle_linked_list stats_nv_active;
 static bugle_linked_list stats_nv_registered;
 static lt_dlhandle stats_nv_dl = NULL;
+static bool stats_nv_experiment_mode = false; /* True if using simplified experiments */
+static int stats_nv_num_passes = -1, stats_nv_pass = -1;
 
 static NVPMRESULT (*fNVPMInit)(void);
 static NVPMRESULT (*fNVPMShutdown)(void);
 static NVPMRESULT (*fNVPMEnumCounters)(NVPMEnumFunc);
 static NVPMRESULT (*fNVPMSample)(NVPMSampleValue *, UINT *);
+static NVPMRESULT (*fNVPMBeginExperiment)(int *);
+static NVPMRESULT (*fNVPMEndExperiment)(void);
+static NVPMRESULT (*fNVPMBeginPass)(int);
+static NVPMRESULT (*fNVPMEndPass)(int);
 static NVPMRESULT (*fNVPMAddCounter)(UINT);
 static NVPMRESULT (*fNVPMRemoveAllCounters)(void);
 static NVPMRESULT (*fNVPMGetCounterValue)(UINT, int, UINT64 *, UINT64 *);
 static NVPMRESULT (*fNVPMGetCounterAttribute)(UINT, NVPMATTRIBUTE, UINT64 *);
+
+static NVPMRESULT check_nvpm(NVPMRESULT status, const char *file, int line)
+{
+    if (status != NVPM_OK)
+    {
+        fprintf(stderr, "%s:%d: NVPM error %d\n", file, line, (int) status);
+        exit(1);
+    }
+    return status;
+}
+
+#define CHECK_NVPM(x) (check_nvpm((x), __FILE__, __LINE__))
 
 static bool stats_nv_glXSwapBuffers(function_call *call, const callback_data *data)
 {
@@ -746,27 +782,48 @@ static bool stats_nv_glXSwapBuffers(function_call *call, const callback_data *da
     statistic_nv *nv;
     UINT samples;
     UINT64 value, cycles;
+    bool experiment_done = false;
 
     if (bugle_list_head(&stats_nv_active))
-        fNVPMSample(NULL, &samples);
-    for (i = bugle_list_head(&stats_nv_active); i; i = bugle_list_next(i))
     {
-        st = (statistic *) bugle_list_data(i);
-        nv = (statistic_nv *) st->user_data;
-
-        fNVPMGetCounterValue(nv->index, 0, &value, &cycles);
-        switch (nv->type)
+        if (stats_nv_experiment_mode)
         {
-        case STATISTIC_NV_RAW:
-            st->value += value;
-            break;
-        case STATISTIC_NV_CYCLES:
-            st->value += cycles;
-            break;
-        case STATISTIC_NV_CONTINUOUS:
-            st->value = value;
-            break;
+            if (stats_nv_pass >= 0)
+            {
+                CHECK_NVPM(fNVPMEndPass(stats_nv_pass));
+                if (stats_nv_pass + 1 == stats_nv_num_passes)
+                {
+                    CHECK_NVPM(fNVPMEndExperiment());
+                    experiment_done = true;
+                    stats_nv_pass = -1;    /* tag as not-in-experiment */
+                }
+            }
         }
+
+        CHECK_NVPM(fNVPMSample(NULL, &samples));
+        for (i = bugle_list_head(&stats_nv_active); i; i = bugle_list_next(i))
+        {
+            st = (statistic *) bugle_list_data(i);
+            nv = (statistic_nv *) st->user_data;
+            if (nv->experiment && !experiment_done) continue;
+
+            CHECK_NVPM(fNVPMGetCounterValue(nv->index, 0, &value, &cycles));
+            if (nv->use_cycles) value = cycles;
+            if (nv->accumulate) st->value += value;
+            else st->value = value;
+        }
+    }
+    return true;
+}
+
+static bool stats_nv_post_glXSwapBuffers(function_call *call, const callback_data *data)
+{
+    if (stats_nv_experiment_mode)
+    {
+        stats_nv_pass++;
+        if (stats_nv_pass == 0)
+            CHECK_NVPM(fNVPMBeginExperiment(&stats_nv_num_passes));
+        CHECK_NVPM(fNVPMBeginPass(stats_nv_pass));
     }
     return true;
 }
@@ -777,63 +834,36 @@ static bool stats_nv_statistic_initialise(statistic *st)
 
     nv = (statistic_nv *) st->user_data;
     if (fNVPMAddCounter(nv->index) != NVPM_OK) return false;
+    if (nv->experiment) stats_nv_experiment_mode = true;
     bugle_list_append(&stats_nv_active, st);
     return true;
 }
 
 static int stats_nv_enumerate(UINT index, char *name)
 {
-    char *value_name, *cycles_name, *sampler_name, *format;
+    char *stat_name;
     statistic *st;
     statistic_nv *nv;
-    UINT64 cv_attr, cdh_attr;
+    UINT64 counter_type;
+    int accum, cycles;
 
-    bugle_asprintf(&sampler_name, "nv:%s", name);
-    bugle_asprintf(&format, "%s: %%f", name);
-    fNVPMGetCounterAttribute(index, NVPMA_COUNTER_VALUE, &cv_attr);
-    fNVPMGetCounterAttribute(index, NVPMA_COUNTER_DISPLAY_HINT, &cdh_attr);
-    if (cdh_attr == NVPM_CDH_PERCENT)
-    {
-        bugle_asprintf(&value_name, "nv_value:%s", name);
-        bugle_asprintf(&cycles_name, "nv_cycles:%s", name);
-
-        nv = bugle_malloc(sizeof(statistic_nv));
-        nv->index = index;
-        nv->type = STATISTIC_NV_RAW;
-        st = bugle_register_statistic(STATISTIC_ACCUMULATING,
-                                      value_name,
-                                      nv,
-                                      stats_nv_statistic_initialise);
-        bugle_list_append(&stats_nv_registered, st);
-
-        nv = bugle_malloc(sizeof(statistic_nv));
-        nv->index = index;
-        nv->type = STATISTIC_NV_CYCLES;
-        st = bugle_register_statistic(STATISTIC_ACCUMULATING,
-                                      cycles_name,
-                                      nv,
-                                      stats_nv_statistic_initialise);
-        bugle_list_append(&stats_nv_registered, st);
-
-        bugle_register_sampler_rate(sampler_name, value_name, cycles_name, format);
-        free(value_name);
-        free(cycles_name);
-    }
-    else
-    {
-        nv = bugle_malloc(sizeof(statistic_nv));
-        nv->index = index;
-        nv->type = STATISTIC_NV_CONTINUOUS;
-        st = bugle_register_statistic(STATISTIC_CONTINUOUS,
-                                      sampler_name,
-                                      nv,
-                                      stats_nv_statistic_initialise);
-        bugle_list_append(&stats_nv_registered, st);
-
-        bugle_register_sampler_continuous(sampler_name, sampler_name, format);
-    }
-    free(sampler_name);
-    free(format);
+    fNVPMGetCounterAttribute(index, NVPMA_COUNTER_TYPE, &counter_type);
+    for (accum = 0; accum < 2; accum++)
+        for (cycles = 0; cycles < 2; cycles++)
+        {
+            bugle_asprintf(&stat_name, "nv_%d_%d:%s", accum, cycles, name);
+            nv = bugle_malloc(sizeof(statistic_nv));
+            nv->index = index;
+            nv->accumulate = (accum == 1);
+            nv->use_cycles = (cycles == 1);
+            nv->experiment = (counter_type == NVPM_CT_SIMEXP);
+            st = bugle_register_statistic(accum ? STATISTIC_ACCUMULATING : STATISTIC_CONTINUOUS,
+                                          stat_name,
+                                          nv,
+                                          stats_nv_statistic_initialise);
+            bugle_list_append(&stats_nv_registered, st);
+            free(stat_name);
+        }
     return NVPM_OK;
 }
 
@@ -850,6 +880,10 @@ static bool initialise_stats_nv(filter_set *handle)
     fNVPMShutdown = (NVPMRESULT (*)(void)) lt_dlsym(stats_nv_dl, "NVPMShutdown");
     fNVPMEnumCounters = (NVPMRESULT (*)(NVPMEnumFunc)) lt_dlsym(stats_nv_dl, "NVPMEnumCounters");
     fNVPMSample = (NVPMRESULT (*)(NVPMSampleValue *, UINT *)) lt_dlsym(stats_nv_dl, "NVPMSample");
+    fNVPMBeginExperiment = (NVPMRESULT (*)(int *)) lt_dlsym(stats_nv_dl, "NVPMBeginExperiment");
+    fNVPMEndExperiment = (NVPMRESULT (*)(void)) lt_dlsym(stats_nv_dl, "NVPMEndExperiment");
+    fNVPMBeginPass = (NVPMRESULT (*)(int)) lt_dlsym(stats_nv_dl, "NVPMBeginPass");
+    fNVPMEndPass = (NVPMRESULT (*)(int)) lt_dlsym(stats_nv_dl, "NVPMEndPass");
     fNVPMRemoveAllCounters = (NVPMRESULT (*)(void)) lt_dlsym(stats_nv_dl, "NVPMRemoveAllCounters");
     fNVPMAddCounter = (NVPMRESULT (*)(UINT)) lt_dlsym(stats_nv_dl, "NVPMAddCounter");
     fNVPMGetCounterValue = (NVPMRESULT (*)(UINT, int, UINT64 *, UINT64 *)) lt_dlsym(stats_nv_dl, "NVPMGetCounterValue");
@@ -859,8 +893,9 @@ static bool initialise_stats_nv(filter_set *handle)
         || !fNVPMShutdown
         || !fNVPMEnumCounters
         || !fNVPMSample
-        || !fNVPMAddCounter
-        || !fNVPMRemoveAllCounters
+        || !fNVPMBeginExperiment || !fNVPMEndExperiment
+        || !fNVPMBeginPass || !fNVPMEndPass
+        || !fNVPMAddCounter || !fNVPMRemoveAllCounters
         || !fNVPMGetCounterValue
         || !fNVPMGetCounterAttribute)
     {
@@ -879,10 +914,73 @@ static bool initialise_stats_nv(filter_set *handle)
         goto cancel2;
     }
 
+    /* Driver variables */
+    bugle_register_sampler_continuous("nvogl:frame_rate", "nv_0_0:OGL FPS", "frame rate (NV-OGL)", "%.2ffps");
+    bugle_register_sampler_continuous("nvogl:frame_time", "nv_0_0:OGL frame time", "frame time (NV-OGL)", "%.2fms");
+    bugle_register_sampler_continuous("nvogl:driver_sleeping", "nv_0_0:OGL driver sleeping", "driver sleeping (NV-OGL)", "%.1f%%");
+    bugle_register_sampler_continuous("nvogl:driver_waiting", "nv_0_0:OGL % driver waiting", "driver waiting (NV-OGL)", "%.1f%%");
+    bugle_register_sampler_continuous("nvogl:agp_bytes", "nv_0_0:OGL AGP/PCI-E usage (bytes)", "AGP memory (NV-OGL)", "%.1fB");
+    bugle_register_sampler_continuous("nvogl:agp_mb", "nv_0_0:OGL AGP/PCI-E usage (MB)", "AGP memory (NV-OGL)", "%.1fMB");
+    bugle_register_sampler_continuous("nvogl:vidmem_bytes", "nv_0_0:OGL vidmem bytes", "video memory (NV-OGL)", "%.1fB");
+    bugle_register_sampler_continuous("nvogl:vidmem_mb", "nv_0_0:OGL vidmem MB", "video memory (NV-OGL)", "%.1fMB");
+    bugle_register_sampler_continuous("nvogl:vidmem_total_bytes", "nv_0_0:OGL vidmem total bytes", "total video memory (NV-OGL)", "%.1fB");
+    bugle_register_sampler_continuous("nvogl:vidmem_total_mb", "nv_0_0:OGL vidmem total MB", "total video memory (NV-OGL)", "%.1fMB");
+    bugle_register_sampler_rate("nvogl:batches", "nv_1_0:OGL Frame Batch Count", "frames", "batches (NV-OGL)", "%.0f");
+    bugle_register_sampler_rate("nvogl:batch_rate", "nv_1_0:OGL Frame Batch Count", "seconds", "batch rate (NV-OGL)", "%.1f/s");
+    bugle_register_sampler_rate("nvogl:vertices", "nv_1_0:OGL Frame Vertex Count", "frames", "vertices (NV-OGL)", "%.0f");
+    bugle_register_sampler_rate("nvogl:vertex_rate", "nv_1_0:OGL Frame Vertex Count", "seconds", "vertex rate (NV-OGL)", "%.1f/s");
+    bugle_register_sampler_rate("nvogl:primitives", "nv_1_0:OGL Frame Primitive Count", "frames", "primitives (NV-OGL)", "%.0f");
+    bugle_register_sampler_rate("nvogl:primitive_rate", "nv_1_0:OGL Frame Primitive Count", "seconds", "primitive rate (NV-OGL)", "%.1f/s");
+
+    /* Counts and rates derived from counts */
+    bugle_register_sampler_rate("nvhw:triangles", "nv_1_0:triangle_count", "frames", "triangles (NV-HW)", "%.0f");
+    bugle_register_sampler_rate("nvhw:triangle_rate", "nv_1_0:triangle_count", "seconds", "triangle rate (NV-HW)", "%.1f/s");
+    bugle_register_sampler_rate("nvhw:primitives", "nv_1_0:primitive_count", "frames", "primitives (NV-HW)", "%.0f");
+    bugle_register_sampler_rate("nvhw:primitive_rate", "nv_1_0:primitive_count", "seconds", "primitive rate (NV-HW)", "%.1f/s");
+    bugle_register_sampler_rate("nvhw:fast_z", "nv_1_0:fast_z_count", "frames", "fast Z (NV-HW)", "%.0f");
+    bugle_register_sampler_rate("nvhw:fragments", "nv_1_0:shaded_pixel_count", "frames", "fragments (NV-HW)", "%.0f");
+    bugle_register_sampler_rate("nvhw:fragment_rate", "nv_1_0:shaded_pixel_count", "seconds", "fragment rate (NV-HW)", "%.1f/s");
+    bugle_register_sampler_rate("nvhw:vertices", "nv_1_0:vertex_count", "frames", "vertices (NV-HW)", "%.0f");
+    bugle_register_sampler_rate("nvhw:vertex_rate", "nv_1_0:vertex_count", "seconds", "vertex rate (NV-HW)", "%.1f/s");
+    bugle_register_sampler_rate("nvhw:vertex_attributes", "nv_1_0:vertex_attribute_count", "frames", "vertex attributes (NV-HW)", "%.0f");
+    bugle_register_sampler_rate("nvhw:vertex_attribute_rate", "nv_1_0:vertex_attribute_count", "seconds", "vertex attribute rate (NV-HW)", "%.1f/s");
+    bugle_register_sampler_rate("nvhw:culled_primitives", "nv_1_0:culled_primitive_count", "frames", "culled primitives (NV-HW)", "%.0f");
+
+    /* Percentages */
+    bugle_register_sampler_percentage("nvhw:gpu_idle", "nv_1_0:gpu_idle", "nv_1_1:gpu_idle", "GPU idle (NV-HW)", "%.1f%%");
+    bugle_register_sampler_percentage("nvhw:vertex_shader_busy", "nv_1_0:vertex_shader_busy", "nv_1_1:vertex_shader_busy", "vertex shader busy (NV-HW)", "%.1f%%");
+    bugle_register_sampler_percentage("nvhw:pixel_shader_busy", "nv_1_0:pixel_shader_busy", "nv_1_1:pixel_shader_busy", "pixel shader busy (NV-HW)", "%.1f%%");
+    bugle_register_sampler_percentage("nvhw:rop_busy", "nv_1_0:rop_busy", "nv_1_1:rop_busy", "rop busy (NV-HW)", "%.1f%%");
+    bugle_register_sampler_percentage("nvhw:shader_waits_for_texture", "nv_1_0:shader_waits_for_texture", "nv_1_1:shader_waits_for_texture", "shader waits for texture (NV-HW)", "%.1f%%");
+    bugle_register_sampler_percentage("nvhw:culled_primitives_percent", "nv_1_0:culled_primitive_count", "nv_1_0:primitive_count", "culled primitives (NV-HW)", "%.1f%%");
+
+    /* Simplified Experiments */
+    bugle_register_sampler_continuous("nvhw:2d_bottleneck", "nv_0_0:2D Bottleneck", "2D bottleneck (NW-HW)", "%.1f%%");
+    bugle_register_sampler_continuous("nvhw:2d_sol", "nv_0_0:2D SOL", "2D SOL (NV-HW)", "%.1f%%");
+    bugle_register_sampler_continuous("nvhw:idx_bottleneck", "nv_0_0:IDX Bottleneck", "IDX bottleneck (NW-HW)", "%.1f%%");
+    bugle_register_sampler_continuous("nvhw:idx_sol", "nv_0_0:IDX SOL", "IDX SOL (NV-HW)", "%.1f%%");
+    bugle_register_sampler_continuous("nvhw:geom_bottleneck", "nv_0_0:GEOM Bottleneck", "GEOM bottleneck (NW-HW)", "%.1f%%");
+    bugle_register_sampler_continuous("nvhw:geom_sol", "nv_0_0:GEOM SOL", "GEOM SOL (NV-HW)", "%.1f%%");
+    bugle_register_sampler_continuous("nvhw:zcull_bottleneck", "nv_0_0:ZCULL Bottleneck", "ZCULL bottleneck (NW-HW)", "%.1f%%");
+    bugle_register_sampler_continuous("nvhw:zcull_sol", "nv_0_0:ZCULL SOL", "ZCULL SOL (NV-HW)", "%.1f%%");
+    bugle_register_sampler_continuous("nvhw:tex_bottleneck", "nv_0_0:TEX Bottleneck", "TEX bottleneck (NW-HW)", "%.1f%%");
+    bugle_register_sampler_continuous("nvhw:tex_sol", "nv_0_0:TEX SOL", "TEX SOL (NV-HW)", "%.1f%%");
+    bugle_register_sampler_continuous("nvhw:rop_bottleneck", "nv_0_0:ROP Bottleneck", "ROP bottleneck (NW-HW)", "%.1f%%");
+    bugle_register_sampler_continuous("nvhw:rop_sol", "nv_0_0:ROP SOL", "ROP SOL (NV-HW)", "%.1f%%");
+    bugle_register_sampler_continuous("nvhw:shd_bottleneck", "nv_0_0:SHD Bottleneck", "SHD bottleneck (NW-HW)", "%.1f%%");
+    bugle_register_sampler_continuous("nvhw:shd_sol", "nv_0_0:SHD SOL", "SHD SOL (NV-HW)", "%.1f%%");
+    bugle_register_sampler_continuous("nvhw:fb_bottleneck", "nv_0_0:FB Bottleneck", "FB bottleneck (NW-HW)", "%.1f%%");
+    bugle_register_sampler_continuous("nvhw:fb_sol", "nv_0_0:FB SOL", "FB SOL (NV-HW)", "%.1f%%");
+    bugle_register_sampler_continuous("nvhw:gpu_bottleneck", "nv_0_0:GPU Bottleneck", "GPU Bottleneck (NV-HW)", "%.0f");
+
     f = bugle_register_filter(handle, "stats_nv");
     bugle_register_filter_catches(f, GROUP_glXSwapBuffers, false, stats_nv_glXSwapBuffers);
     bugle_register_filter_depends("invoke", "stats_nv");
     bugle_register_filter_depends("stats", "stats_nv");
+
+    f = bugle_register_filter(handle, "stats_nv_post");
+    bugle_register_filter_catches(f, GROUP_glXSwapBuffers, false, stats_nv_post_glXSwapBuffers);
+    bugle_register_filter_depends("stats_nv_post", "invoke");
     return true;
 
 cancel2:
@@ -1025,7 +1123,7 @@ static bool showstats_callback(function_call *call, const callback_data *data)
         {
             sa = (sampler *) bugle_list_data(i);
             if (sa->value != HUGE_VAL) /* Skip broken stats */
-                render_stats(ss, sa->format, sa->value);
+                render_stats(ss, sa->format, sa->description, sa->value * sa->multiplier);
         }
         CALL_glPopAttrib();
         CALL_glXMakeContextCurrent(dpy, old_write, old_read, real);
