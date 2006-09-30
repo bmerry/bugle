@@ -164,12 +164,14 @@ filters_validate_la_SOURCES = filters/validate.c
 filters_validate_la_LDFLAGS = -thread-safe -module -avoid-version -export-dynamic $(SYMBOLFLAGS)
 filters_debugger_la_SOURCES = filters/debugger.c
 filters_debugger_la_LDFLAGS = -thread-safe -module -avoid-version -export-dynamic $(SYMBOLFLAGS)
-filters_stats_la_SOURCES = filters/stats.c
+filters_stats_la_SOURCES = filters/statslex.l filters/statsparse.y filters/stats.c filters/stats.h
 filters_stats_la_LDFLAGS = -thread-safe -module -avoid-version -export-dynamic $(SYMBOLFLAGS)
 filters_capture_la_SOURCES = filters/capture.c gl2ps/gl2ps.c gl2ps/gl2ps.h
 filters_capture_la_CFLAGS = $(AM_CFLAGS) $(AVCODEC_CFLAGS)
 filters_capture_la_LIBADD = $(AVCODEC_LIBS)
 filters_capture_la_LDFLAGS = -thread-safe -module -avoid-version -export-dynamic $(SYMBOLFLAGS)
+
+BUILT_SOURCES += filters/statsparse.h
 
 # Demo/Test programs
 check_PROGRAMS = \

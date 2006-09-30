@@ -1,0 +1,60 @@
+"frames per second" = d("frames") / d("seconds")
+{
+    precision 1
+    label "fps"
+}
+
+"ms per frame" = 1000 * d("seconds") / d("frames")
+{
+    precision 2
+    label "ms/frame"
+}
+
+"triangles per frame" = d("triangles") / d("frames")
+{
+    precision 0
+    label "triangles/frame"
+}
+
+"triangles per second" = d("triangles") / d("seconds")
+{
+    precision 1
+    label "triangles/s"
+}
+
+"fragments per frame" = d("fragments") / d("frames")
+{
+    precision 0
+    label "fragments/frame"
+}
+
+"fragments per second" = d("fragments") / d("seconds")
+{
+    precision 1
+    label "fragments/s"
+}
+
+"NV:OGL vidmem %" = 100 * a("nv:OGL vidmem (bytes)") / e("nv:OGL vidmem total (bytes)")
+{
+    max 100
+    precision 0
+    label "% video memory [NV-OGL]"
+}
+
+"NV:GPU Bottleneck" = e("nv:GPU Bottleneck")
+{
+    precision 0
+    substitute 0 "2D"
+}
+
+"NV:fragments per frame" = d("nv:accum:shaded_pixel_count") / d("frames")
+{
+    precision 0
+    label "fragments/frame [NV-HW]"
+}
+
+"NV:fragments per second" = d("nv:accum:shaded_pixel_count") / d("seconds")
+{
+    precision 1
+    label "fragments/s [NV-HW]"
+}

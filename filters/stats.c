@@ -15,342 +15,371 @@
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-/* Raw statistics come in three flavours:
- * - accumulating: a count that only goes up over time, such as frames,
- *   seconds, triangles etc
- * - continuous: a value that may go up and down over time, but is not
- *   a rate e.g. memory used or GPU utilisation
- *
- * Things that are displayed are called 'samplers'. A sampler measures
- * something over a particular period of time. There are three types of
- * sampler:
- * - rate: the ratio of the change in two accumulating statistics over
- *   the sampling period
- * - continuous: the average value over the sampling period. The value is
- *   sampled at the end of each frame, but the samples are weighted by
- *   time.
- */
-
 #if HAVE_CONFIG_H
 # include <config.h>
 #endif
-#define _XOPEN_SOURCE 500
-#include "src/filters.h"
-#include "src/utils.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/time.h>
+#include <sys/types.h>
+#include <assert.h>
 #include "src/glutils.h"
 #include "src/tracker.h"
+#include "src/filters.h"
 #include "src/log.h"
-#include "src/glexts.h"
 #include "src/xevent.h"
+#include "src/glexts.h"
+#include "filters/stats.h"
+#include "filters/statsparse.h"
 #include "common/safemem.h"
+#include "common/hashtable.h"
 #include "common/bool.h"
-#include "common/linkedlist.h"
-#include <stdio.h>
-#include <GL/glx.h>
-#include <GL/gl.h>
-#include <sys/time.h>
-#include <stdarg.h>
-#include <math.h>
-#include <ltdl.h>
 
-#define ENABLE_STATS_NV 1 /* FIXME */
+#define STATISTICSFILE "/.bugle/statistics"
 
-typedef enum
+extern FILE *yyin;
+extern int stats_yyparse(void);
+
+typedef struct
 {
-    STATISTIC_ACCUMULATING,
-    STATISTIC_CONTINUOUS,
-} statistic_type;
-
-typedef enum
-{
-    SAMPLER_RATE,
-    SAMPLER_CONTINUOUS,
-} sampler_type;
-
-/* Child classes that need extra data should allocate a larger structure
- * that contains this one. char * fields are malloc'ed.
- *
- * A statistic may be set to 'uninitialised' after it is initialised. This
- * indicates that it has failed for some reason, and samplers based on it
- * should be disabled.
- */
-typedef struct statistic_s
-{
-    bool initialised;
-    statistic_type type;
-    char *name;                /* short name (for internal use) - malloc'ed */
     double value;
-    void *user_data;
+    double integral;
+} stats_signal_value;
 
-    /* Called if the stat is used. May be NULL if no initialisation is needed */
-    bool (*initialise)(struct statistic_s *);
-} statistic;
-
-typedef struct sampler_s
+typedef struct
 {
-    sampler_type type;
-    char *name;                /* name for config file */
-    char *description;
-    char *format;              /* For printf - should have one %f */
-    double multiplier;
+    int allocated;
+    stats_signal_value *values;
+    struct timeval last_updated;
+} stats_signal_values;
 
-    /* arrays of size 2 contain info for numerator and denominator when
-     * a rate, or data only in element 0 for the other types.
-     */
-    statistic *basis[2];
-    double first_value[2], last_value[2];
-    struct timeval first_time, last_time;
+static bugle_hash_table stats_signals;
+static size_t stats_signals_num_active = 0;
+static bugle_linked_list stats_signals_active;
+static bugle_linked_list *stats_statistics = NULL;
+static bugle_hash_table stats_statistics_table;
 
-    double value;
-} sampler;
+/*** Low-level utilities ***/
 
-static bugle_linked_list registered_statistics;
-static bugle_linked_list registered_samplers;
-static bugle_linked_list active_samplers;
-
-statistic *bugle_register_statistic(statistic_type type,
-                                    const char *name,
-                                    void *user_data,
-                                    bool (*initialise)(struct statistic_s *))
+static double time_elapsed(struct timeval *old, struct timeval *now)
 {
-    statistic *st;
-
-    st = bugle_malloc(sizeof(statistic));
-    st->initialised = false;
-    st->type = type;
-    st->name = bugle_strdup(name);
-    st->value = 0.0;
-    st->user_data = user_data;
-    st->initialise = initialise;
-
-    bugle_list_append(&registered_statistics, st);
-    return st;
+    return (now->tv_sec - old->tv_sec) + 1e-6 * (now->tv_usec - old->tv_usec);
 }
 
-/* Searches for a registered statistic with the given name, returning
- * it if found or NULL if not.
+/* If the signal does not exist, it is created. Newly created signals do
+ * not have a slot number (slot -1); only activated signals get slots.
+ * This allows the configuration file to specify non-existant signals.
+ * FIXME: we really should warn when this happens, since otherwise stats
+ * will be silently omitted if the generator is missing from the chain.
  */
-statistic *bugle_statistic_find(const char *name)
+static stats_signal *stats_signal_get(const char *name)
 {
-    bugle_list_node *i;
-    statistic *cur;
+    stats_signal *si;
 
-    for (i = bugle_list_head(&registered_statistics); i; i = bugle_list_next(i))
+    si = bugle_hash_get(&stats_signals, name);
+    if (!si)
     {
-        cur = (statistic *) bugle_list_data(i);
-        if (strcmp(cur->name, name) == 0) return cur;
+        si = (stats_signal *) bugle_malloc(sizeof(stats_signal));
+        si->value = 0.0 / 0.0;  /* NaN - see stats.h for explanation */
+        si->integral = 0.0;
+        si->last_updated.tv_sec = 0;
+        si->last_updated.tv_usec = 0;
+        si->active = false;
+        si->offset = -1;
+        si->user_data = NULL;
+        si->activate = NULL;
+        bugle_hash_set(&stats_signals, name, si);
     }
-    return NULL;
+    return si;
 }
 
-sampler *bugle_register_sampler_rate(const char *name,
-                                     const char *numerator,
-                                     const char *denominator,
-                                     const char *description,
-                                     const char *format)
+static stats_signal *stats_signal_register(const char *name, void *user_data,
+                                           bool (*activate)(stats_signal *))
 {
-    sampler *sa;
-    statistic *n, *d;
+    stats_signal *si;
 
-    n = bugle_statistic_find(numerator);
-    d = bugle_statistic_find(denominator);
-    if (n && d)
-    {
-        sa = bugle_calloc(1, sizeof(sampler));
-        sa->type = SAMPLER_RATE;
-        sa->name = bugle_strdup(name);
-        sa->description = bugle_strdup(description);
-        bugle_asprintf(&sa->format, "%%s: %s", format);
-        sa->basis[0] = n;
-        sa->basis[1] = d;
-        sa->multiplier = 1.0;
-
-        bugle_list_append(&registered_samplers, sa);
-        return sa;
-    }
-    else
-        return NULL;
+    si = stats_signal_get(name);
+    si->user_data = user_data;
+    si->activate = activate;
+    return si;
 }
 
-/* As for the above, but the result is multiplied by 100 for display */
-sampler *bugle_register_sampler_percentage(const char *name,
-                                           const char *numerator,
-                                           const char *denominator,
-                                           const char *description,
-                                           const char *format)
+/* Evaluates the expression. If a signal is missing, the return is NaN. */
+static double stats_expression_evaluate(const stats_expression *expr,
+                                        stats_signal_values *old_signals,
+                                        stats_signal_values *new_signals)
 {
-    sampler *sa;
-
-    sa = bugle_register_sampler_rate(name, numerator, denominator, description, format);
-    if (sa)
-        sa->multiplier = 100.0;
-    return sa;
-}
-
-sampler *bugle_register_sampler_continuous(const char *name,
-                                           const char *stat,
-                                           const char *description,
-                                           const char *format)
-{
-    sampler *sa;
-    statistic *st;
-
-    st = bugle_statistic_find(stat);
-    if (st)
-    {
-        sa = bugle_calloc(1, sizeof(sampler));
-        sa->type = SAMPLER_CONTINUOUS;
-        sa->name = bugle_strdup(name);
-        sa->description = bugle_strdup(description);
-        bugle_asprintf(&sa->format, "%%s: %s", format);
-        sa->basis[0] = st;
-        sa->multiplier = 1.0;
-
-        bugle_list_append(&registered_samplers, sa);
-        return sa;
-    }
-    else
-        return NULL;
-}
-
-/* Like bugle_statistic_find, but for samplers. It looks through registered
- * rather than active samplers.
- */
-sampler *bugle_sampler_find(const char *name)
-{
-    bugle_list_node *i;
-    sampler *cur;
-
-    for (i = bugle_list_head(&registered_samplers); i; i = bugle_list_next(i))
-    {
-        cur = (sampler *) bugle_list_data(i);
-        if (strcmp(cur->name, name) == 0) return cur;
-    }
-    return NULL;
-}
-
-/*** Utilities ***/
-
-static void sampler_initialise(sampler *sa)
-{
-    int j;
-
-    for (j = 0; j < 2; j++)
-        if (sa->basis[j] && !sa->basis[j]->initialised)
-        {
-            sa->basis[j]->initialised = true;
-            if (sa->basis[j]->initialise)
-                (*sa->basis[j]->initialise)(sa->basis[j]);
-        }
-
-    switch (sa->type)
-    {
-    case SAMPLER_RATE:
-        sa->last_value[0] = sa->first_value[0] = sa->basis[0]->value;
-        sa->last_value[1] = sa->first_value[1] = sa->basis[1]->value;
-        break;
-    case SAMPLER_CONTINUOUS:
-        sa->last_value[0] = sa->first_value[0] = 0.0;
-        break;
-    }
-    gettimeofday(&sa->first_time, NULL);
-    sa->last_time = sa->first_time;
-    sa->value = 0.0;
-}
-
-/* Moves the first_time forward to match the last_time. It does not
- * reset the value field (see below for explanation) */
-static void sampler_reset(sampler *sa)
-{
-    switch (sa->type)
-    {
-    case SAMPLER_RATE:
-        sa->first_value[0] = sa->last_value[0];
-        sa->first_value[1] = sa->last_value[1];
-        break;
-    case SAMPLER_CONTINUOUS:
-        sa->first_value[0] = sa->last_value[0] = 0.0;
-        sa->first_time = sa->last_time;
-        break;
-    }
-}
-
-/* Returns the time between first and last in the sampler */
-static double sampler_elapsed(sampler *sa)
-{
-    return (sa->last_time.tv_sec - sa->first_time.tv_sec)
-        + 1e-6 * (sa->last_time.tv_usec - sa->first_time.tv_usec);
-}
-
-/* Updates the internal statistics, but does *not* update the value field.
- * This allows continuous variables to be sampled with arbitrary
- * granularity, while updating the displayed value on a different
- * timescale.
- */
-static void sampler_update(sampler *sa)
-{
+    double l = 0.0, r = 0.0;
     double elapsed;
+
+    elapsed = time_elapsed(&old_signals->last_updated, &new_signals->last_updated);
+    switch (expr->type)
+    {
+    case STATS_EXPRESSION_NUMBER:
+        return expr->value;
+    case STATS_EXPRESSION_OPERATION:
+        if (expr->left)
+            l = stats_expression_evaluate(expr->left, old_signals, new_signals);
+        if (expr->right)
+            r = stats_expression_evaluate(expr->right, old_signals, new_signals);
+        switch (expr->op)
+        {
+        case STATS_OPERATION_PLUS: return l + r;
+        case STATS_OPERATION_MINUS: return l - r;
+        case STATS_OPERATION_TIMES: return l * r;
+        case STATS_OPERATION_DIVIDE: return l / r;
+        case STATS_OPERATION_UMINUS: return -l;
+        default: abort(); /* Should never be reached */
+        }
+    case STATS_EXPRESSION_SIGNAL:
+        /* Generate a NaN, and let good old IEEE 754 take care of propagating it. */
+        if (!expr->signal->active) return 0.0 / 0.0;
+        switch (expr->op)
+        {
+        case STATS_OPERATION_DELTA:
+            return new_signals->values[expr->signal->offset].value - old_signals->values[expr->signal->offset].value;
+        case STATS_OPERATION_AVERAGE:
+            return (new_signals->values[expr->signal->offset].integral - old_signals->values[expr->signal->offset].integral) / elapsed;
+        case STATS_OPERATION_START:
+            return old_signals->values[expr->signal->offset].value;
+        case STATS_OPERATION_END:
+            return new_signals->values[expr->signal->offset].value;
+        default:
+            abort(); /* Should never be reached */
+        }
+    }
+    abort(); /* Should never be reached */
+}
+
+static void stats_signal_update(stats_signal *si, double v)
+{
     struct timeval now;
 
-    switch (sa->type)
+    gettimeofday(&now, NULL);
+    /* Integrate over time; a NaN indicates that this is the first time */
+    if (si->value == si->value)
+        si->integral += time_elapsed(&si->last_updated, &now) * si->value;
+    si->value = v;
+    si->last_updated = now;
+}
+
+/* Convenience for accumulating signals */
+static void stats_signal_add(stats_signal *si, double dv)
+{
+    /* NaN check */
+    if (si->value != si->value)
+        stats_signal_update(si, dv);
+    else
+        stats_signal_update(si, si->value + dv);
+}
+
+static void stats_signal_activate(stats_signal *si)
+{
+    if (!si->active)
     {
-    case SAMPLER_RATE:
-        sa->last_value[0] = sa->basis[0]->value;
-        sa->last_value[1] = sa->basis[1]->value;
+        si->active = true;
+        if (si->activate)
+            si->active = (*si->activate)(si);
+        if (si->active)
+        {
+            si->offset = stats_signals_num_active++;
+            bugle_list_append(&stats_signals_active, si);
+        }
+    }
+}
+
+static void stats_signal_values_init(stats_signal_values *sv)
+{
+    sv->allocated = 0;
+    sv->values = NULL;
+    sv->last_updated.tv_sec = 0;
+    sv->last_updated.tv_usec = 0;
+}
+
+static void stats_signal_values_clear(stats_signal_values *sv)
+{
+    free(sv->values);
+    sv->values = NULL;
+    sv->allocated = 0;
+    sv->last_updated.tv_sec = 0;
+    sv->last_updated.tv_usec = 0;
+}
+
+static void stats_signal_values_gather(stats_signal_values *sv)
+{
+    stats_signal *si;
+    bugle_list_node *s;
+    int i;
+
+    if (sv->allocated < stats_signals_num_active)
+    {
+        sv->allocated = stats_signals_num_active;
+        sv->values = bugle_realloc(sv->values, stats_signals_num_active * sizeof(stats_signal_value));
+    }
+    /* Make sure that everything is initialised to an insane value (NaN) */
+    for (i = 0; i < stats_signals_num_active; i++)
+        sv->values[i].value = sv->values[i].integral = 0.0 / 0.0;
+    for (s = bugle_list_head(&stats_signals_active); s; s = bugle_list_next(s))
+    {
+        si = (stats_signal *) bugle_list_data(s);
+        if (si->active && si->offset >= 0)
+        {
+            sv->values[si->offset].value = si->value;
+            sv->values[si->offset].integral = si->integral;
+        }
+    }
+    gettimeofday(&sv->last_updated, NULL);
+}
+
+/* Fills in the signal field of signal expressions */
+static void stats_expression_initialise_signals(stats_expression *expr)
+{
+    switch (expr->type)
+    {
+    case STATS_EXPRESSION_NUMBER: break;
+    case STATS_EXPRESSION_OPERATION:
+        if (expr->left) stats_expression_initialise_signals(expr->left);
+        if (expr->right) stats_expression_initialise_signals(expr->right);
         break;
-    case SAMPLER_CONTINUOUS:
-        /* Update the time-integral */
-        gettimeofday(&now, NULL);
-        elapsed = (now.tv_sec - sa->last_time.tv_sec)
-            + 1e-6 * (now.tv_usec - sa->last_time.tv_usec);
-        sa->last_value[0] += elapsed * sa->basis[0]->value;
-        sa->last_time = now;
+    case STATS_EXPRESSION_SIGNAL:
+        expr->signal = stats_signal_get(expr->signal_name);
         break;
     }
 }
 
-/* Updates the value in a sampler, without updating the sampler itself */
-static double sampler_update_value(sampler *sa)
+/* Activates all signals that are this expression depends on */
+static void stats_expression_activate_signals(stats_expression *expr)
 {
-    switch (sa->type)
+    switch (expr->type)
     {
-    case SAMPLER_RATE:
-        if (!sa->basis[0]->initialised || !sa->basis[1]->initialised)
-            return sa->value = HUGE_VAL;
-        else
-            return sa->value = (sa->last_value[0] - sa->first_value[0])
-                / (sa->last_value[1] - sa->first_value[1]);
-    case SAMPLER_CONTINUOUS:
-        if (!sa->basis[0]->initialised)
-            return sa->value = HUGE_VAL;
-        else
-            return sa->value = (sa->last_value[0] - sa->first_value[0])
-                / sampler_elapsed(sa);
+    case STATS_EXPRESSION_NUMBER: break;
+    case STATS_EXPRESSION_OPERATION:
+        if (expr->left) stats_expression_activate_signals(expr->left);
+        if (expr->right) stats_expression_activate_signals(expr->right);
+        break;
+    case STATS_EXPRESSION_SIGNAL:
+        stats_signal_activate(expr->signal);
+        break;
     }
-    return 0.0; /* Should never be reached */
 }
 
-static void bugle_sampler_activate(sampler *sa)
+/* Frees the expression object itself and its children */
+static void stats_expression_free(stats_expression *expr)
 {
+    assert(expr);
+    switch (expr->type)
+    {
+    case STATS_EXPRESSION_NUMBER: break;
+    case STATS_EXPRESSION_OPERATION:
+        if (expr->left) stats_expression_free(expr->left);
+        if (expr->right) stats_expression_free(expr->right);
+        break;
+    case STATS_EXPRESSION_SIGNAL:
+        free(expr->signal_name);
+    }
+    free(expr);
+}
+
+static void stats_statistic_free(stats_statistic *st)
+{
+    free(st->name);
+    stats_expression_free(st->value);
+    free(st->label);
+    bugle_list_clear(&st->substitutions);
+    free(st);
+}
+
+/* Returns the statistic if it is registered, or NULL if not. Note that
+ * it is returned even if some signals are missing; call
+ * stats_statistic_complete to determine whether this is the case.
+ * FIXME: that function does not yet exist.
+ */
+static stats_statistic *stats_statistic_find(const char *name)
+{
+    return (stats_statistic *) bugle_hash_get(&stats_statistics_table, name);
+}
+
+/* List the registered statistics, for when an illegal one is mentioned */
+static void stats_statistic_list(const char *caller)
+{
+    bugle_list_node *j;
+    stats_statistic *st;
+
+    fputs("The registered statistics are:\n", stderr);
+
+    for (j = bugle_list_head(stats_statistics); j; j = bugle_list_next(j))
+    {
+        st = (stats_statistic *) bugle_list_data(j);
+        fprintf(stderr, "  %s\n", st->name);
+    }
+    if (caller)
+        fprintf(stderr, "Note: statistics generators should be listed before %s\n", caller);
+}
+
+/*** stats filterset ***/
+
+/* Reads the statistics configuration file. On error, prints a message
+ * to stderr and returns false.
+ */
+static bool stats_load_config(void)
+{
+    const char *home;
+    char *config = NULL;
     bugle_list_node *i;
-    sampler *cur;
+    stats_statistic *st;
 
-    for (i = bugle_list_head(&active_samplers); i; i = bugle_list_next(i))
+    if (getenv("BUGLE_STATISTICS"))
+        config = bugle_strdup(getenv("BUGLE_STATISTICS"));
+    home = getenv("HOME");
+    /* If using the debugger and no chain is specified, we use passthrough
+     * mode.
+     */
+    if (!config && !home)
     {
-        cur = (sampler *) bugle_list_data(i);
-        if (cur == sa) return;  /* already selected */
+        fputs("Please set BUGLE_STATISTICS\n", stderr);
+        return false;
     }
-    bugle_list_append(&active_samplers, sa);
-    sampler_initialise(sa);
+    if (!config)
+    {
+        config = bugle_malloc(strlen(home) + strlen(STATISTICSFILE) + 1);
+        sprintf(config, "%s%s", home, STATISTICSFILE);
+    }
+    if ((yyin = fopen(config, "r")) != NULL)
+    {
+        if (stats_yyparse() == 0)
+        {
+            stats_statistics = stats_statistics_get_list();
+            for (i = bugle_list_head(stats_statistics); i; i = bugle_list_next(i))
+            {
+                st = (stats_statistic *) bugle_list_data(i);
+                stats_expression_initialise_signals(st->value);
+                bugle_hash_set(&stats_statistics_table, st->name, st);
+            }
+            free(config);
+            return true;
+        }
+        else
+        {
+            fprintf(stderr, "Parse error in %s\n", config);
+            free(config);
+            return false;
+        }
+    }
+    else
+    {
+        fprintf(stderr, "Failed to open %s\n", config);
+        free(config);
+        return false;
+    }
 }
 
-/*** 'stats' filter-set: driver code ***/
-
-static bool initialise_stats(filter_set *handle)
+static bool stats_initialise(filter_set *handle)
 {
-    bugle_list_init(&registered_statistics, true);
-    bugle_list_init(&registered_samplers, true);
-    bugle_list_init(&active_samplers, false);
+    bugle_hash_init(&stats_signals, true);
+    bugle_list_init(&stats_signals_active, false);
+    bugle_hash_init(&stats_statistics_table, false);
+    if (!stats_load_config()) return false;
 
     /* This filter does no interception, but it provides a sequence point
      * to allow display modules (showstats, logstats) to occur after
@@ -360,30 +389,34 @@ static bool initialise_stats(filter_set *handle)
     return true;
 }
 
-static void destroy_stats(filter_set *handle)
+static void stats_destroy(filter_set *handle)
 {
-    bugle_list_clear(&registered_statistics);
-    bugle_list_clear(&registered_samplers);
-    bugle_list_clear(&active_samplers);
+    bugle_list_node *i;
+    stats_statistic *st;
+
+    if (stats_statistics)
+    {
+        for (i = bugle_list_head(stats_statistics); i; i = bugle_list_next(i))
+        {
+            st = (stats_statistic *) bugle_list_data(i);
+            stats_statistic_free(st);
+        }
+        bugle_list_clear(stats_statistics);
+    }
+    bugle_list_clear(&stats_signals_active);
+    bugle_hash_clear(&stats_signals);
+    bugle_hash_clear(&stats_statistics_table);
 }
 
-/*** Default statistics ***/
+/*** Generators ***/
 
-static statistic *stats_basic_frames, *stats_basic_seconds, *stats_basic_milliseconds;
+static stats_signal *stats_basic_frames, *stats_basic_seconds;
 
-static bool stats_basic_initialise_seconds(statistic *st)
+static bool stats_basic_seconds_activate(stats_signal *si)
 {
     struct timeval t;
     gettimeofday(&t, NULL);
-    st->value = t.tv_sec + 1e-6 * t.tv_usec;
-    return true;
-}
-
-static bool stats_basic_initialise_milliseconds(statistic *st)
-{
-    struct timeval t;
-    gettimeofday(&t, NULL);
-    st->value = 1e3 * t.tv_sec + 1e-3 * t.tv_usec;
+    stats_signal_update(si, t.tv_sec + 1e-6 * t.tv_usec);
     return true;
 }
 
@@ -392,13 +425,12 @@ static bool stats_basic_glXSwapBuffers(function_call *call, const callback_data 
     struct timeval now;
 
     gettimeofday(&now, NULL);
-    stats_basic_seconds->value = now.tv_sec + 1e-6 * now.tv_usec;
-    stats_basic_milliseconds->value = 1e3 * now.tv_sec + 1e-3 * now.tv_usec;
-    stats_basic_frames->value++;
+    stats_signal_update(stats_basic_seconds, now.tv_sec + 1e-6 * now.tv_usec);
+    stats_signal_add(stats_basic_frames, 1.0);
     return true;
 }
 
-static bool initialise_stats_basic(filter_set *handle)
+static bool stats_basic_initialise(filter_set *handle)
 {
     filter *f;
 
@@ -407,19 +439,15 @@ static bool initialise_stats_basic(filter_set *handle)
     bugle_register_filter_depends("invoke", "stats_basic");
     bugle_register_filter_depends("stats", "stats_basic");
 
-    stats_basic_frames = bugle_register_statistic(STATISTIC_ACCUMULATING, "frames", NULL, NULL);
-    stats_basic_seconds = bugle_register_statistic(STATISTIC_ACCUMULATING, "seconds", NULL, stats_basic_initialise_seconds);
-    stats_basic_milliseconds = bugle_register_statistic(STATISTIC_ACCUMULATING, "milliseconds", NULL, stats_basic_initialise_milliseconds);
-    bugle_register_sampler_rate("frame_rate", "frames", "seconds", "frame rate", "%.2ffps");
-    bugle_register_sampler_rate("frame_time", "milliseconds", "frames", "frame time", "%.2fms");
+    stats_basic_frames = stats_signal_register("frames", NULL, NULL);
+    stats_basic_seconds = stats_signal_register("seconds", NULL, stats_basic_seconds_activate);
     return true;
 }
 
-/*** Primitive counts ***/
 
 static bugle_object_view stats_primitives_view;  /* begin/end counting */
 static bugle_object_view stats_primitives_displaylist_view;
-static statistic *stats_primitives_batches, *stats_primitives_triangles;
+static stats_signal *stats_primitives_batches, *stats_primitives_triangles;
 
 typedef struct
 {
@@ -433,8 +461,8 @@ typedef struct
     GLsizei batches;
 } stats_primitives_displaylist_struct;
 
-/* Increments the triangle count according to mode */
-static void update_triangles(GLenum mode, GLsizei count)
+/* Increments the triangle and batch count according to mode */
+static void stats_primitives_update(GLenum mode, GLsizei count)
 {
     size_t t = 0;
     stats_primitives_displaylist_struct *displaylist;
@@ -455,17 +483,16 @@ static void update_triangles(GLenum mode, GLsizei count)
             t = count - 2;
         break;
     }
-    if (!t) return;
 
     switch (bugle_displaylist_mode())
     {
     case GL_NONE:
-        stats_primitives_triangles->value += t;
-        stats_primitives_batches->value++;
+        stats_signal_add(stats_primitives_triangles, t);
+        stats_signal_add(stats_primitives_batches, 1);
         break;
     case GL_COMPILE_AND_EXECUTE:
-        stats_primitives_triangles->value += t;
-        stats_primitives_batches->value++;
+        stats_signal_add(stats_primitives_triangles, t);
+        stats_signal_add(stats_primitives_batches, 1);
         /* Fall through */
     case GL_COMPILE:
         displaylist = bugle_object_get_current_data(&bugle_displaylist_class, stats_primitives_displaylist_view);
@@ -505,7 +532,7 @@ static bool stats_primitives_glEnd(function_call *call, const callback_data *dat
     stats_primitives_struct *s;
 
     s = bugle_object_get_current_data(&bugle_context_class, stats_primitives_view);
-    update_triangles(s->begin_mode, s->begin_count);
+    stats_primitives_update(s->begin_mode, s->begin_count);
     s->begin_mode = GL_NONE;
     s->begin_count = 0;
     return true;
@@ -513,20 +540,20 @@ static bool stats_primitives_glEnd(function_call *call, const callback_data *dat
 
 static bool stats_primitives_glDrawArrays(function_call *call, const callback_data *data)
 {
-    update_triangles(*call->typed.glDrawArrays.arg0, *call->typed.glDrawArrays.arg2);
+    stats_primitives_update(*call->typed.glDrawArrays.arg0, *call->typed.glDrawArrays.arg2);
     return true;
 }
 
 static bool stats_primitives_glDrawElements(function_call *call, const callback_data *data)
 {
-    update_triangles(*call->typed.glDrawElements.arg0, *call->typed.glDrawElements.arg1);
+    stats_primitives_update(*call->typed.glDrawElements.arg0, *call->typed.glDrawElements.arg1);
     return true;
 }
 
 #ifdef GL_EXT_draw_range_elements
 static bool stats_primitives_glDrawRangeElements(function_call *call, const callback_data *data)
 {
-    update_triangles(*call->typed.glDrawRangeElementsEXT.arg0, *call->typed.glDrawRangeElementsEXT.arg3);
+    stats_primitives_update(*call->typed.glDrawRangeElementsEXT.arg0, *call->typed.glDrawRangeElementsEXT.arg3);
     return true;
 }
 #endif
@@ -538,8 +565,8 @@ static bool stats_primitives_glMultiDrawArrays(function_call *call, const callba
 
     primcount = *call->typed.glMultiDrawArrays.arg3;
     for (i = 0; i < primcount; i++)
-        update_triangles(*call->typed.glMultiDrawArrays.arg0,
-                         (*call->typed.glMultiDrawArrays.arg2)[i]);
+        stats_primitives_update(*call->typed.glMultiDrawArrays.arg0,
+                                (*call->typed.glMultiDrawArrays.arg2)[i]);
     return true;
 }
 
@@ -549,8 +576,8 @@ static bool stats_primitives_glMultiDrawElements(function_call *call, const call
 
     primcount = *call->typed.glMultiDrawElements.arg4;
     for (i = 0; i < primcount; i++)
-        update_triangles(*call->typed.glMultiDrawElements.arg0,
-                         (*call->typed.glMultiDrawElements.arg1)[i]);
+        stats_primitives_update(*call->typed.glMultiDrawElements.arg0,
+                                (*call->typed.glMultiDrawElements.arg1)[i]);
     return true;
 }
 #endif
@@ -566,8 +593,8 @@ static bool stats_primitives_glCallList(function_call *call, const callback_data
                                    stats_primitives_displaylist_view);
     if (counts)
     {
-        stats_primitives_triangles->value += counts->triangles;
-        stats_primitives_batches->value += counts->batches;
+        stats_signal_add(stats_primitives_triangles, counts->triangles);
+        stats_signal_add(stats_primitives_batches, counts->batches);
     }
     return true;
 }
@@ -578,7 +605,7 @@ static bool stats_primitives_glCallLists(function_call *call, const callback_dat
     return true;
 }
 
-static bool initialise_stats_primitives(filter_set *handle)
+static bool stats_primitives_initialise(filter_set *handle)
 {
     filter *f;
 
@@ -609,17 +636,12 @@ static bool initialise_stats_primitives(filter_set *handle)
     bugle_register_filter_depends("invoke", "stats_primitives");
     bugle_register_filter_depends("stats", "stats_primitives");
 
-    stats_primitives_batches = bugle_register_statistic(STATISTIC_ACCUMULATING, "batches", NULL, NULL);
-    stats_primitives_triangles = bugle_register_statistic(STATISTIC_ACCUMULATING, "triangles", NULL, NULL);
-    bugle_register_sampler_rate("triangles", "triangles", "frames", "triangles", "%.0f");
-    bugle_register_sampler_rate("triangle_rate", "triangles", "seconds", "triangle rate", "%.1f/s");
-    bugle_register_sampler_rate("batches", "batches", "frames", "batches", "%.0f");
-    bugle_register_sampler_rate("batch_rate", "batches", "seconds", "batch rate", "%.1f/s");
+    stats_primitives_batches = stats_signal_register("batches", NULL, NULL);
+    stats_primitives_triangles = stats_signal_register("triangles", NULL, NULL);
 
     return true;
 }
 
-/*** Fragment counts ***/
 
 #ifdef GL_ARB_occlusion_query
 
@@ -628,26 +650,26 @@ typedef struct
     GLuint query;
 } stats_fragments_struct;
 
-static statistic *stats_fragments_fragments;
+static stats_signal *stats_fragments_fragments;
 static bugle_object_view stats_fragments_view;
 
-static void initialise_stats_fragments_struct(const void *key, void *data)
+static void stats_fragments_struct_initialise(const void *key, void *data)
 {
     stats_fragments_struct *s;
 
     s = (stats_fragments_struct *) data;
-    if (stats_fragments_fragments->initialised
+    if (stats_fragments_fragments->active
         && bugle_gl_has_extension(BUGLE_GL_ARB_occlusion_query)
         && bugle_begin_internal_render())
     {
         CALL_glGenQueriesARB(1, &s->query);
         if (s->query)
             CALL_glBeginQueryARB(GL_SAMPLES_PASSED_ARB, s->query);
-        bugle_end_internal_render("initialise_stats_fragments_struct", true);
+        bugle_end_internal_render("stats_fragments_struct_initialise", true);
     }
 }
 
-static void destroy_stats_fragments_struct(void *data)
+static void stats_fragments_struct_destroy(void *data)
 {
     stats_fragments_struct *s;
 
@@ -662,13 +684,13 @@ static bool stats_fragments_glXSwapBuffers(function_call *call, const callback_d
     GLuint fragments;
 
     s = bugle_object_get_current_data(&bugle_context_class, stats_fragments_view);
-    if (stats_fragments_fragments->initialised
+    if (stats_fragments_fragments->active
         && s && s->query && bugle_begin_internal_render())
     {
         CALL_glEndQueryARB(GL_SAMPLES_PASSED_ARB);
         CALL_glGetQueryObjectuivARB(s->query, GL_QUERY_RESULT_ARB, &fragments);
         bugle_end_internal_render("stats_fragments_glXSwapBuffers", true);
-        stats_fragments_fragments->value += fragments;
+        stats_signal_add(stats_fragments_fragments, fragments);
     }
     return true;
 }
@@ -678,7 +700,7 @@ static bool stats_fragments_post_glXSwapBuffers(function_call *call, const callb
     stats_fragments_struct *s;
 
     s = bugle_object_get_current_data(&bugle_context_class, stats_fragments_view);
-    if (stats_fragments_fragments->initialised
+    if (stats_fragments_fragments->active
         && s && s->query && bugle_begin_internal_render())
     {
         CALL_glBeginQueryARB(GL_SAMPLES_PASSED_ARB, s->query);
@@ -692,25 +714,25 @@ static bool stats_fragments_query(function_call *call, const callback_data *data
     stats_fragments_struct *s;
 
     s = bugle_object_get_current_data(&bugle_context_class, stats_fragments_view);
-    if (stats_fragments_fragments->initialised
+    if (stats_fragments_fragments->active
         && s->query)
     {
         fputs("App is using occlusion queries, disabling fragment counting\n", stderr);
         CALL_glEndQueryARB(GL_SAMPLES_PASSED_ARB);
         CALL_glDeleteQueriesARB(1, &s->query);
         s->query = 0;
-        stats_fragments_fragments->initialised = false;
+        stats_fragments_fragments->active = false;
     }
     return true;
 }
 
-static bool initialise_stats_fragments(filter_set *handle)
+static bool stats_fragments_initialise(filter_set *handle)
 {
     filter *f;
 
     stats_fragments_view = bugle_object_class_register(&bugle_context_class,
-                                                       initialise_stats_fragments_struct,
-                                                       destroy_stats_fragments_struct,
+                                                       stats_fragments_struct_initialise,
+                                                       stats_fragments_struct_destroy,
                                                        sizeof(stats_fragments_struct));
 
     f = bugle_register_filter(handle, "stats_fragments");
@@ -724,17 +746,15 @@ static bool initialise_stats_fragments(filter_set *handle)
     bugle_register_filter_catches(f, GROUP_glXSwapBuffers, false, stats_fragments_post_glXSwapBuffers);
     bugle_register_filter_depends("stats_fragments_post", "invoke");
 
-    stats_fragments_fragments = bugle_register_statistic(STATISTIC_ACCUMULATING, "fragments", NULL, NULL);
-    bugle_register_sampler_rate("fragments", "fragments", "frames", "fragments", "%.0f");
-    bugle_register_sampler_rate("fragment_rate", "fragments", "seconds", "fragment rate", "%.1f/s");
+    stats_fragments_fragments = stats_signal_register("fragments", NULL, NULL);
     return true;
 }
 #endif /* GL_ARB_occlusion_query */
 
-/*** NV stats ***/
 
-#if ENABLE_STATS_NV
+#if HAVE_NVPERFSDK_H
 #include <NVPerfSDK.h>
+#include <ltdl.h>
 
 typedef struct
 {
@@ -742,7 +762,7 @@ typedef struct
     bool use_cycles;
     bool accumulate;
     bool experiment;
-} statistic_nv;
+} stats_signal_nv;
 
 static bugle_linked_list stats_nv_active;
 static bugle_linked_list stats_nv_registered;
@@ -778,8 +798,8 @@ static NVPMRESULT check_nvpm(NVPMRESULT status, const char *file, int line)
 static bool stats_nv_glXSwapBuffers(function_call *call, const callback_data *data)
 {
     bugle_list_node *i;
-    statistic *st;
-    statistic_nv *nv;
+    stats_signal *si;
+    stats_signal_nv *nv;
     UINT samples;
     UINT64 value, cycles;
     bool experiment_done = false;
@@ -803,14 +823,14 @@ static bool stats_nv_glXSwapBuffers(function_call *call, const callback_data *da
         CHECK_NVPM(fNVPMSample(NULL, &samples));
         for (i = bugle_list_head(&stats_nv_active); i; i = bugle_list_next(i))
         {
-            st = (statistic *) bugle_list_data(i);
-            nv = (statistic_nv *) st->user_data;
+            si = (stats_signal *) bugle_list_data(i);
+            nv = (stats_signal_nv *) si->user_data;
             if (nv->experiment && !experiment_done) continue;
 
             CHECK_NVPM(fNVPMGetCounterValue(nv->index, 0, &value, &cycles));
             if (nv->use_cycles) value = cycles;
-            if (nv->accumulate) st->value += value;
-            else st->value = value;
+            if (nv->accumulate) stats_signal_add(si, value);
+            else stats_signal_update(si, value);
         }
     }
     return true;
@@ -828,11 +848,11 @@ static bool stats_nv_post_glXSwapBuffers(function_call *call, const callback_dat
     return true;
 }
 
-static bool stats_nv_statistic_initialise(statistic *st)
+static bool stats_nv_signal_activate(stats_signal *st)
 {
-    statistic_nv *nv;
+    stats_signal_nv *nv;
 
-    nv = (statistic_nv *) st->user_data;
+    nv = (stats_signal_nv *) st->user_data;
     if (fNVPMAddCounter(nv->index) != NVPM_OK) return false;
     if (nv->experiment) stats_nv_experiment_mode = true;
     bugle_list_append(&stats_nv_active, st);
@@ -842,8 +862,8 @@ static bool stats_nv_statistic_initialise(statistic *st)
 static int stats_nv_enumerate(UINT index, char *name)
 {
     char *stat_name;
-    statistic *st;
-    statistic_nv *nv;
+    stats_signal *si;
+    stats_signal_nv *nv;
     UINT64 counter_type;
     int accum, cycles;
 
@@ -851,23 +871,23 @@ static int stats_nv_enumerate(UINT index, char *name)
     for (accum = 0; accum < 2; accum++)
         for (cycles = 0; cycles < 2; cycles++)
         {
-            bugle_asprintf(&stat_name, "nv_%d_%d:%s", accum, cycles, name);
-            nv = bugle_malloc(sizeof(statistic_nv));
+            bugle_asprintf(&stat_name, "nv%s%s:%s",
+                           accum ? ":accum" : "",
+                           cycles ? ":cycles" : "", name);
+            nv = bugle_malloc(sizeof(stats_signal_nv));
             nv->index = index;
             nv->accumulate = (accum == 1);
             nv->use_cycles = (cycles == 1);
             nv->experiment = (counter_type == NVPM_CT_SIMEXP);
-            st = bugle_register_statistic(accum ? STATISTIC_ACCUMULATING : STATISTIC_CONTINUOUS,
-                                          stat_name,
-                                          nv,
-                                          stats_nv_statistic_initialise);
-            bugle_list_append(&stats_nv_registered, st);
+            si = stats_signal_register(stat_name, nv,
+                                       stats_nv_signal_activate);
+            bugle_list_append(&stats_nv_registered, si);
             free(stat_name);
         }
     return NVPM_OK;
 }
 
-static bool initialise_stats_nv(filter_set *handle)
+static bool stats_nv_initialise(filter_set *handle)
 {
     filter *f;
 
@@ -914,65 +934,6 @@ static bool initialise_stats_nv(filter_set *handle)
         goto cancel2;
     }
 
-    /* Driver variables */
-    bugle_register_sampler_continuous("nvogl:frame_rate", "nv_0_0:OGL FPS", "frame rate (NV-OGL)", "%.2ffps");
-    bugle_register_sampler_continuous("nvogl:frame_time", "nv_0_0:OGL frame time", "frame time (NV-OGL)", "%.2fms");
-    bugle_register_sampler_continuous("nvogl:driver_sleeping", "nv_0_0:OGL driver sleeping", "driver sleeping (NV-OGL)", "%.1f%%");
-    bugle_register_sampler_continuous("nvogl:driver_waiting", "nv_0_0:OGL % driver waiting", "driver waiting (NV-OGL)", "%.1f%%");
-    bugle_register_sampler_continuous("nvogl:agp_bytes", "nv_0_0:OGL AGP/PCI-E usage (bytes)", "AGP memory (NV-OGL)", "%.1fB");
-    bugle_register_sampler_continuous("nvogl:agp_mb", "nv_0_0:OGL AGP/PCI-E usage (MB)", "AGP memory (NV-OGL)", "%.1fMB");
-    bugle_register_sampler_continuous("nvogl:vidmem_bytes", "nv_0_0:OGL vidmem bytes", "video memory (NV-OGL)", "%.1fB");
-    bugle_register_sampler_continuous("nvogl:vidmem_mb", "nv_0_0:OGL vidmem MB", "video memory (NV-OGL)", "%.1fMB");
-    bugle_register_sampler_continuous("nvogl:vidmem_total_bytes", "nv_0_0:OGL vidmem total bytes", "total video memory (NV-OGL)", "%.1fB");
-    bugle_register_sampler_continuous("nvogl:vidmem_total_mb", "nv_0_0:OGL vidmem total MB", "total video memory (NV-OGL)", "%.1fMB");
-    bugle_register_sampler_rate("nvogl:batches", "nv_1_0:OGL Frame Batch Count", "frames", "batches (NV-OGL)", "%.0f");
-    bugle_register_sampler_rate("nvogl:batch_rate", "nv_1_0:OGL Frame Batch Count", "seconds", "batch rate (NV-OGL)", "%.1f/s");
-    bugle_register_sampler_rate("nvogl:vertices", "nv_1_0:OGL Frame Vertex Count", "frames", "vertices (NV-OGL)", "%.0f");
-    bugle_register_sampler_rate("nvogl:vertex_rate", "nv_1_0:OGL Frame Vertex Count", "seconds", "vertex rate (NV-OGL)", "%.1f/s");
-    bugle_register_sampler_rate("nvogl:primitives", "nv_1_0:OGL Frame Primitive Count", "frames", "primitives (NV-OGL)", "%.0f");
-    bugle_register_sampler_rate("nvogl:primitive_rate", "nv_1_0:OGL Frame Primitive Count", "seconds", "primitive rate (NV-OGL)", "%.1f/s");
-
-    /* Counts and rates derived from counts */
-    bugle_register_sampler_rate("nvhw:triangles", "nv_1_0:triangle_count", "frames", "triangles (NV-HW)", "%.0f");
-    bugle_register_sampler_rate("nvhw:triangle_rate", "nv_1_0:triangle_count", "seconds", "triangle rate (NV-HW)", "%.1f/s");
-    bugle_register_sampler_rate("nvhw:primitives", "nv_1_0:primitive_count", "frames", "primitives (NV-HW)", "%.0f");
-    bugle_register_sampler_rate("nvhw:primitive_rate", "nv_1_0:primitive_count", "seconds", "primitive rate (NV-HW)", "%.1f/s");
-    bugle_register_sampler_rate("nvhw:fast_z", "nv_1_0:fast_z_count", "frames", "fast Z (NV-HW)", "%.0f");
-    bugle_register_sampler_rate("nvhw:fragments", "nv_1_0:shaded_pixel_count", "frames", "fragments (NV-HW)", "%.0f");
-    bugle_register_sampler_rate("nvhw:fragment_rate", "nv_1_0:shaded_pixel_count", "seconds", "fragment rate (NV-HW)", "%.1f/s");
-    bugle_register_sampler_rate("nvhw:vertices", "nv_1_0:vertex_count", "frames", "vertices (NV-HW)", "%.0f");
-    bugle_register_sampler_rate("nvhw:vertex_rate", "nv_1_0:vertex_count", "seconds", "vertex rate (NV-HW)", "%.1f/s");
-    bugle_register_sampler_rate("nvhw:vertex_attributes", "nv_1_0:vertex_attribute_count", "frames", "vertex attributes (NV-HW)", "%.0f");
-    bugle_register_sampler_rate("nvhw:vertex_attribute_rate", "nv_1_0:vertex_attribute_count", "seconds", "vertex attribute rate (NV-HW)", "%.1f/s");
-    bugle_register_sampler_rate("nvhw:culled_primitives", "nv_1_0:culled_primitive_count", "frames", "culled primitives (NV-HW)", "%.0f");
-
-    /* Percentages */
-    bugle_register_sampler_percentage("nvhw:gpu_idle", "nv_1_0:gpu_idle", "nv_1_1:gpu_idle", "GPU idle (NV-HW)", "%.1f%%");
-    bugle_register_sampler_percentage("nvhw:vertex_shader_busy", "nv_1_0:vertex_shader_busy", "nv_1_1:vertex_shader_busy", "vertex shader busy (NV-HW)", "%.1f%%");
-    bugle_register_sampler_percentage("nvhw:pixel_shader_busy", "nv_1_0:pixel_shader_busy", "nv_1_1:pixel_shader_busy", "pixel shader busy (NV-HW)", "%.1f%%");
-    bugle_register_sampler_percentage("nvhw:rop_busy", "nv_1_0:rop_busy", "nv_1_1:rop_busy", "rop busy (NV-HW)", "%.1f%%");
-    bugle_register_sampler_percentage("nvhw:shader_waits_for_texture", "nv_1_0:shader_waits_for_texture", "nv_1_1:shader_waits_for_texture", "shader waits for texture (NV-HW)", "%.1f%%");
-    bugle_register_sampler_percentage("nvhw:culled_primitives_percent", "nv_1_0:culled_primitive_count", "nv_1_0:primitive_count", "culled primitives (NV-HW)", "%.1f%%");
-
-    /* Simplified Experiments */
-    bugle_register_sampler_continuous("nvhw:2d_bottleneck", "nv_0_0:2D Bottleneck", "2D bottleneck (NW-HW)", "%.1f%%");
-    bugle_register_sampler_continuous("nvhw:2d_sol", "nv_0_0:2D SOL", "2D SOL (NV-HW)", "%.1f%%");
-    bugle_register_sampler_continuous("nvhw:idx_bottleneck", "nv_0_0:IDX Bottleneck", "IDX bottleneck (NW-HW)", "%.1f%%");
-    bugle_register_sampler_continuous("nvhw:idx_sol", "nv_0_0:IDX SOL", "IDX SOL (NV-HW)", "%.1f%%");
-    bugle_register_sampler_continuous("nvhw:geom_bottleneck", "nv_0_0:GEOM Bottleneck", "GEOM bottleneck (NW-HW)", "%.1f%%");
-    bugle_register_sampler_continuous("nvhw:geom_sol", "nv_0_0:GEOM SOL", "GEOM SOL (NV-HW)", "%.1f%%");
-    bugle_register_sampler_continuous("nvhw:zcull_bottleneck", "nv_0_0:ZCULL Bottleneck", "ZCULL bottleneck (NW-HW)", "%.1f%%");
-    bugle_register_sampler_continuous("nvhw:zcull_sol", "nv_0_0:ZCULL SOL", "ZCULL SOL (NV-HW)", "%.1f%%");
-    bugle_register_sampler_continuous("nvhw:tex_bottleneck", "nv_0_0:TEX Bottleneck", "TEX bottleneck (NW-HW)", "%.1f%%");
-    bugle_register_sampler_continuous("nvhw:tex_sol", "nv_0_0:TEX SOL", "TEX SOL (NV-HW)", "%.1f%%");
-    bugle_register_sampler_continuous("nvhw:rop_bottleneck", "nv_0_0:ROP Bottleneck", "ROP bottleneck (NW-HW)", "%.1f%%");
-    bugle_register_sampler_continuous("nvhw:rop_sol", "nv_0_0:ROP SOL", "ROP SOL (NV-HW)", "%.1f%%");
-    bugle_register_sampler_continuous("nvhw:shd_bottleneck", "nv_0_0:SHD Bottleneck", "SHD bottleneck (NW-HW)", "%.1f%%");
-    bugle_register_sampler_continuous("nvhw:shd_sol", "nv_0_0:SHD SOL", "SHD SOL (NV-HW)", "%.1f%%");
-    bugle_register_sampler_continuous("nvhw:fb_bottleneck", "nv_0_0:FB Bottleneck", "FB bottleneck (NW-HW)", "%.1f%%");
-    bugle_register_sampler_continuous("nvhw:fb_sol", "nv_0_0:FB SOL", "FB SOL (NV-HW)", "%.1f%%");
-    bugle_register_sampler_continuous("nvhw:gpu_bottleneck", "nv_0_0:GPU Bottleneck", "GPU Bottleneck (NV-HW)", "%.0f");
-
     f = bugle_register_filter(handle, "stats_nv");
     bugle_register_filter_catches(f, GROUP_glXSwapBuffers, false, stats_nv_glXSwapBuffers);
     bugle_register_filter_depends("invoke", "stats_nv");
@@ -991,15 +952,15 @@ cancel1:
     return false;
 }
 
-static void destroy_stats_nv(filter_set *handle)
+static void stats_nv_destroy(filter_set *handle)
 {
     bugle_list_node *i;
-    statistic *st;
+    stats_signal *si;
 
     for (i = bugle_list_head(&stats_nv_registered); i; i = bugle_list_next(i))
     {
-        st = (statistic *) bugle_list_data(i);
-        free(st->user_data);
+        si = (stats_signal *) bugle_list_data(i);
+        free(si->user_data);
     }
     fNVPMRemoveAllCounters();
     fNVPMShutdown();
@@ -1008,41 +969,130 @@ static void destroy_stats_nv(filter_set *handle)
     bugle_list_clear(&stats_nv_active);
 }
 
-#endif /* ENABLE_STATS_NV */
+#endif /* HAVE_NVPERFSDK_H */
 
-/*** Showstats ***/
+/*** Printers ***/
+
+static bugle_linked_list logstats_show;    /* actual stats */
+static bugle_linked_list logstats_show_requested;  /* names in config file */
+static stats_signal_values logstats_prev, logstats_cur;
+
+/* Callback to assign the "show" pseudo-variable */
+static bool logstats_show_set(const struct filter_set_variable_info_s *var,
+                              const char *text, const void *value)
+{
+    bugle_list_append(&logstats_show_requested, bugle_strdup(text));
+    return true;
+}
+
+static bool logstats_glXSwapBuffers(function_call *call, const callback_data *data)
+{
+    char *msg;
+    bugle_list_node *i;
+    stats_statistic *st;
+    stats_signal_values tmp;
+
+    tmp = logstats_prev;
+    logstats_prev = logstats_cur;
+    logstats_cur = tmp;
+    stats_signal_values_gather(&logstats_cur);
+    if (logstats_prev.allocated)
+    {
+        for (i = bugle_list_head(&logstats_show); i; i = bugle_list_next(i))
+        {
+            st = (stats_statistic *) bugle_list_data(i);
+            double v = stats_expression_evaluate(st->value, &logstats_prev, &logstats_cur);
+            if (v == v) /* NaN check */
+            {
+                /* FIXME: substitution */
+                bugle_asprintf(&msg, "%.*f %s", st->precision, v,
+                               st->label ? st->label : "");
+                bugle_log("logstats", st->name, msg);
+            }
+        }
+    }
+    return true;
+}
+
+static bool logstats_initialise(filter_set *handle)
+{
+    filter *f;
+    bugle_list_node *i;
+    stats_statistic *st;
+
+    f = bugle_register_filter(handle, "stats_log");
+    bugle_register_filter_catches(f, GROUP_glXSwapBuffers, false, logstats_glXSwapBuffers);
+    bugle_log_register_filter("stats_log");
+
+    bugle_list_clear(&logstats_show);
+    for (i = bugle_list_head(&logstats_show_requested); i; i = bugle_list_next(i))
+    {
+        char *name;
+        name = (char *) bugle_list_data(i);
+        st = stats_statistic_find(name);
+        if (!st)
+        {
+            fprintf(stderr, "Statistic '%s' not found.\n", name);
+            stats_statistic_list("logstats");
+            return false;
+        }
+        else
+        {
+            stats_expression_activate_signals(st->value);
+            bugle_list_append(&logstats_show, st);
+        }
+    }
+    bugle_list_clear(&logstats_show_requested);
+    stats_signal_values_init(&logstats_prev);
+    stats_signal_values_init(&logstats_cur);
+    return true;
+}
+
+static void logstats_destroy(filter_set *handle)
+{
+    stats_signal_values_clear(&logstats_prev);
+    stats_signal_values_clear(&logstats_cur);
+    bugle_list_clear(&logstats_show);
+}
+
 
 typedef struct
 {
     GLuint font_base;
-    struct timeval last_show_time;
+    struct timeval last_update;
     int accumulating;  /* 0: no  1: yes  2: yes, reset counters */
 } showstats_struct;
 
 static bugle_object_view showstats_view;
-static bugle_linked_list showstats_requested;
+static bugle_linked_list showstats_show;     /* actual statistics */
+static bugle_linked_list showstats_show_requested; /* names */
 static xevent_key key_showstats_accumulate = { NoSymbol, 0, true };
 static xevent_key key_showstats_noaccumulate = { NoSymbol, 0, true };
 
-/* Renders a line of text to screen, and moves down one line */
-static void render_stats(showstats_struct *ss, const char *fmt, ...)
+static stats_signal_values showstats_prev, showstats_cur;
+static char *showstats_display = NULL;
+
+/* Renders a string of text to screen. The raster position is destroyed */
+static void showstats_render(showstats_struct *ss, const char *msg)
 {
-    va_list ap;
-    char buffer[128];
-    char *ch;
+    const char *ch;
 
-    va_start(ap, fmt);
-    vsnprintf(buffer, sizeof(buffer), fmt, ap);
-    va_end(ap);
-
-    CALL_glPushAttrib(GL_CURRENT_BIT);
-    for (ch = buffer; *ch; ch++)
-        CALL_glCallList(ss->font_base + *ch);
+    CALL_glPushAttrib(GL_CURRENT_BIT); /* Save start of line pos */
+    for (ch = msg; *ch; ch++)
+    {
+        if (*ch == '\n')
+        {
+            CALL_glPopAttrib(); /* Move back to start of line */
+            CALL_glBitmap(0, 0, 0, 0, 0, -16, NULL); /* Move to next line */
+            CALL_glPushAttrib(GL_CURRENT_BIT);  /* Re-save start of line pos */
+        }
+        else
+            CALL_glCallList(ss->font_base + *ch);
+    }
     CALL_glPopAttrib();
-    CALL_glBitmap(0, 0, 0, 0, 0, -16, NULL);
 }
 
-static void initialise_showstats_struct(const void *key, void *data)
+static void showstats_struct_initialise(const void *key, void *data)
 {
     Display *dpy;
     Font f;
@@ -1055,35 +1105,69 @@ static void initialise_showstats_struct(const void *key, void *data)
     CALL_glXUseXFont(f, 0, 256, ss->font_base);
     XUnloadFont(dpy, f);
 
-    ss->last_show_time.tv_sec = 0;
-    ss->last_show_time.tv_usec = 0;
+    ss->last_update.tv_sec = 0;
+    ss->last_update.tv_usec = 0;
     ss->accumulating = 0;
 }
 
-static void destroy_showstats_struct(void *data)
+static void showstats_struct_destroy(void *data)
 {
     showstats_struct *ss;
     ss = (showstats_struct *) data;
     CALL_glDeleteLists(1, ss->font_base);
 }
 
-static bool showstats_callback(function_call *call, const callback_data *data)
+static bool showstats_glXSwapBuffers(function_call *call, const callback_data *data)
 {
     Display *dpy;
     GLXDrawable old_read, old_write;
     GLXContext aux, real;
     showstats_struct *ss;
-    double elapsed;
-    struct timeval now;
     GLint viewport[4];
     bugle_list_node *i;
-    sampler *sa;
+    stats_statistic *st;
+    stats_signal_values tmp;
+    char *old;
+    double v;
+    struct timeval now;
 
-    for (i = bugle_list_head(&active_samplers); i; i = bugle_list_next(i))
+    ss = bugle_object_get_current_data(&bugle_context_class, showstats_view);
+    gettimeofday(&now, NULL);
+    if (time_elapsed(&ss->last_update, &now) >= 0.2)
     {
-        sa = (sampler *) bugle_list_data(i);
-        sampler_update(sa);
+        ss->last_update = showstats_cur.last_updated;
+        stats_signal_values_gather(&showstats_cur);
+
+        if (showstats_prev.allocated)
+        {
+            free(showstats_display);
+            showstats_display = NULL;
+            for (i = bugle_list_head(&showstats_show); i; i = bugle_list_next(i))
+            {
+                st = (stats_statistic *) bugle_list_data(i);
+                v = stats_expression_evaluate(st->value, &showstats_prev, &showstats_cur);
+                if (v == v) /* NaN check */
+                {
+                    old = showstats_display;
+                    bugle_asprintf(&showstats_display, "%s%10.*f %s\n",
+                                   old ? old : "", st->precision, v, st->label);
+                    free(old);
+                }
+            }
+        }
+        if (ss->accumulating != 1 || !showstats_prev.allocated)
+        {
+            /* Bring prev up to date for next time. Swap so that we recycle
+             * memory for next time.
+             */
+            tmp = showstats_prev;
+            showstats_prev = showstats_cur;
+            showstats_cur = tmp;
+        }
+        if (ss->accumulating == 2) ss->accumulating = 1;
     }
+
+    if (!showstats_display) return true;
 
     aux = bugle_get_aux_context();
     if (aux && bugle_begin_internal_render())
@@ -1094,23 +1178,6 @@ static bool showstats_callback(function_call *call, const callback_data *data)
         old_read = CALL_glXGetCurrentReadDrawable();
         dpy = CALL_glXGetCurrentDisplay();
         CALL_glXMakeContextCurrent(dpy, old_write, old_write, aux);
-        ss = bugle_object_get_current_data(&bugle_context_class, showstats_view);
-
-        gettimeofday(&now, NULL);
-        elapsed = (now.tv_sec - ss->last_show_time.tv_sec)
-            + 1.0e-6 * (now.tv_usec - ss->last_show_time.tv_usec);
-        if (elapsed >= 0.2)
-        {
-            ss->last_show_time = now;
-            for (i = bugle_list_head(&active_samplers); i; i = bugle_list_next(i))
-            {
-                sa = (sampler *) bugle_list_data(i);
-                sampler_update_value(sa);
-                if (ss->accumulating != 1)
-                    sampler_reset(sa);
-            }
-            if (ss->accumulating == 2) ss->accumulating = 1;
-        }
 
         /* We don't want to depend on glWindowPos since it
          * needs OpenGL 1.4, but fortunately the aux context
@@ -1119,12 +1186,7 @@ static bool showstats_callback(function_call *call, const callback_data *data)
         CALL_glPushAttrib(GL_CURRENT_BIT | GL_VIEWPORT_BIT);
         CALL_glViewport(viewport[0], viewport[1], viewport[2], viewport[3]);
         CALL_glRasterPos2f(-0.9, 0.9);
-        for (i = bugle_list_head(&active_samplers); i; i = bugle_list_next(i))
-        {
-            sa = (sampler *) bugle_list_data(i);
-            if (sa->value != HUGE_VAL) /* Skip broken stats */
-                render_stats(ss, sa->format, sa->description, sa->value * sa->multiplier);
-        }
+        showstats_render(ss, showstats_display);
         CALL_glPopAttrib();
         CALL_glXMakeContextCurrent(dpy, old_write, old_read, real);
         bugle_end_internal_render("showstats_callback", true);
@@ -1142,18 +1204,18 @@ static void showstats_accumulate_callback(const xevent_key *key, void *arg, XEve
 }
 
 /* Callback to assign the "show" pseudo-variable */
-static bool showstats_show(const struct filter_set_variable_info_s *var,
-                           const char *text, const void *value)
+static bool showstats_show_set(const struct filter_set_variable_info_s *var,
+                               const char *text, const void *value)
 {
-    bugle_list_append(&showstats_requested, bugle_strdup(text));
+    bugle_list_append(&showstats_show_requested, bugle_strdup(text));
     return true;
 }
 
-static bool initialise_showstats(filter_set *handle)
+static bool showstats_initialise(filter_set *handle)
 {
     filter *f;
-    bugle_list_node *i, *j;
-    sampler *sa;
+    bugle_list_node *i;
+    stats_statistic *st;
 
     f = bugle_register_filter(handle, "showstats");
     bugle_register_filter_depends("invoke", "showstats");
@@ -1162,10 +1224,10 @@ static bool initialise_showstats(filter_set *handle)
     bugle_register_filter_depends("debugger", "showstats");
     bugle_register_filter_depends("screenshot", "showstats");
     bugle_register_filter_depends("showstats", "stats");
-    bugle_register_filter_catches(f, GROUP_glXSwapBuffers, false, showstats_callback);
+    bugle_register_filter_catches(f, GROUP_glXSwapBuffers, false, showstats_glXSwapBuffers);
     showstats_view = bugle_object_class_register(&bugle_context_class,
-                                                 initialise_showstats_struct,
-                                                 destroy_showstats_struct,
+                                                 showstats_struct_initialise,
+                                                 showstats_struct_destroy,
                                                  sizeof(showstats_struct));
 
     /* Value of arg is irrelevant, only truth value */
@@ -1175,58 +1237,70 @@ static bool initialise_showstats(filter_set *handle)
                               showstats_accumulate_callback, NULL);
 
 
-    for (i = bugle_list_head(&showstats_requested); i; i = bugle_list_next(i))
+    for (i = bugle_list_head(&showstats_show_requested); i; i = bugle_list_next(i))
     {
         char *name;
         name = (char *) bugle_list_data(i);
-        sa = bugle_sampler_find(name);
-        if (!sa)
+        st = stats_statistic_find(name);
+        if (!st)
         {
-            fprintf(stderr, "Statistic '%s' not found.\nThe registered statistics are:\n", name);
-            for (j = bugle_list_head(&registered_samplers); j; j = bugle_list_next(j))
-            {
-                sa = (sampler *) bugle_list_data(j);
-                fprintf(stderr, "  %s\n", sa->name);
-            }
-            fprintf(stderr, "Note: stats_* should be listed before showstats\n");
+            fprintf(stderr, "Statistic '%s' not found.\n", name);
+            stats_statistic_list("showstats");
             return false;
         }
         else
-            bugle_sampler_activate(sa);
+        {
+            stats_expression_activate_signals(st->value);
+            bugle_list_append(&showstats_show, st);
+        }
     }
-    bugle_list_clear(&showstats_requested);
+    bugle_list_clear(&showstats_show_requested);
+    stats_signal_values_init(&showstats_prev);
+    stats_signal_values_init(&showstats_cur);
 
     return true;
 }
 
-/*** Loader code ***/
+static void showstats_destroy(filter_set *handle)
+{
+    free(showstats_display);
+    stats_signal_values_clear(&showstats_prev);
+    stats_signal_values_clear(&showstats_cur);
+    bugle_list_clear(&showstats_show);
+}
+
+/*** Global initialisation */
 
 void bugle_initialise_filter_library(void)
 {
-    static const filter_set_variable_info showstats_variables[] =
+    static const filter_set_info stats_info =
     {
-        { "show", "repeat with each item to display", FILTER_SET_VARIABLE_CUSTOM, NULL, showstats_show },
-        { "key_accumulate", "frame rate is averaged from time key is pressed [none]", FILTER_SET_VARIABLE_KEY, &key_showstats_accumulate, NULL },
-        { "key_noaccumulate", "return frame rate to instantaneous display [none]", FILTER_SET_VARIABLE_KEY, &key_showstats_noaccumulate, NULL },
-        { NULL, NULL, 0, NULL, NULL }
+        "stats",
+        stats_initialise,
+        stats_destroy,
+        NULL,
+        NULL,
+        NULL,
+        0,
+        NULL
     };
 
     static const filter_set_info stats_basic_info =
     {
         "stats_basic",
-        initialise_stats_basic,
+        stats_basic_initialise,
         NULL,
         NULL,
         NULL,
         NULL,
         0,
-        "stats module: frames and time"
+        "stats module: frames and timing"
     };
 
     static const filter_set_info stats_primitives_info =
     {
         "stats_primitives",
-        initialise_stats_primitives,
+        stats_primitives_initialise,
         NULL,
         NULL,
         NULL,
@@ -1239,7 +1313,7 @@ void bugle_initialise_filter_library(void)
     static const filter_set_info stats_fragments_info =
     {
         "stats_fragments",
-        initialise_stats_fragments,
+        stats_fragments_initialise,
         NULL,
         NULL,
         NULL,
@@ -1249,43 +1323,57 @@ void bugle_initialise_filter_library(void)
     };
 #endif
 
-#if ENABLE_STATS_NV
+#if HAVE_NVPERFSDK_H
     static const filter_set_info stats_nv_info =
     {
         "stats_nv",
-        initialise_stats_nv,
-        destroy_stats_nv,
+        stats_nv_initialise,
+        stats_nv_destroy,
         NULL,
         NULL,
         NULL,
         0,
         "stats module: get counters from NVPerfSDK"
     };
-#endif /* ENABLE_STATS_NV */
+#endif /* HAVE_NVPERFSDK_H */
 
-    static const filter_set_info stats_info =
+    static const filter_set_variable_info logstats_variables[] =
     {
-        "stats",
-        initialise_stats,
-        destroy_stats,
+        { "show", "repeat with each item to log", FILTER_SET_VARIABLE_CUSTOM, NULL, logstats_show_set },
+        { NULL, NULL, 0, NULL, NULL }
+    };
+
+    static const filter_set_info logstats_info =
+    {
+        "logstats",
+        logstats_initialise,
+        logstats_destroy,
         NULL,
         NULL,
-        NULL,
+        logstats_variables,
         0,
-        NULL
+        "reports statistics to the log"
+    };
+
+    static const filter_set_variable_info showstats_variables[] =
+    {
+        { "show", "repeat with each item to render", FILTER_SET_VARIABLE_CUSTOM, NULL, showstats_show_set },
+        { NULL, NULL, 0, NULL, NULL }
     };
 
     static const filter_set_info showstats_info =
     {
         "showstats",
-        initialise_showstats,
-        NULL,
+        showstats_initialise,
+        showstats_destroy,
         NULL,
         NULL,
         showstats_variables,
         0,
-        "renders information collected by `stats' onto the screen"
+        "renders statistics onto the screen"
     };
+
+    bugle_register_filter_set(&stats_info);
 
     bugle_register_filter_set(&stats_basic_info);
     bugle_register_filter_set_depends("stats_basic", "stats");
@@ -1305,15 +1393,19 @@ void bugle_initialise_filter_library(void)
     bugle_register_filter_set_renders("stats_fragments");
 #endif
 
-#if ENABLE_STATS_NV
+#if HAVE_NVPERFSDK_H
     bugle_register_filter_set(&stats_nv_info);
     bugle_register_filter_set_depends("stats_nv", "stats");
     bugle_register_filter_set_depends("stats_nv", "stats_basic");
 #endif
 
-    bugle_register_filter_set(&stats_info);
+    bugle_register_filter_set(&logstats_info);
+    bugle_register_filter_set_depends("logstats", "stats");
+    bugle_register_filter_set_depends("logstats", "log");
+    bugle_list_init(&logstats_show_requested, false);
+
     bugle_register_filter_set(&showstats_info);
     bugle_register_filter_set_depends("showstats", "stats");
     bugle_register_filter_set_renders("showstats");
-    bugle_list_init(&showstats_requested, true);
+    bugle_list_init(&showstats_show_requested, false);
 }
