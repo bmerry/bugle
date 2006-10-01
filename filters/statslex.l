@@ -118,7 +118,7 @@ d|a|s|e|"{"|"}"|"+"|"-"|"*"|"/"|"="|"("|")" { return yytext[0]; }
 \"		{ BEGIN(STRING_MODE); }
 #.*$		/* Do nothing: eats comments */
 [ \t\r\n]      	/* Do nothing: eats whitespace */
-[0-9]+(\.[0-9]*)?|\.[0-9]+ {
+-?[0-9]+(\.[0-9]*)?|\.[0-9]+ {
                         yylval.num = atof(yytext);
                         return ST_NUMBER;
                 }

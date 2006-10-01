@@ -26,8 +26,9 @@
 #define BUGLE_COMMON_SAFEMEM_H
 
 #if HAVE_CONFIG_H
-# include <stddef.h>
+# include <config.h>
 #endif
+#include <stddef.h>
 #include <stdio.h>
 
 #ifdef __cplusplus
@@ -48,6 +49,13 @@ char *bugle_strndup(const char *s, size_t size);
 char *bugle_strcat(char *dest, const char *src);
 
 int bugle_asprintf(char **strp, const char *format, ...);
+
+/* Appends to *strp using the format, reallocating if necessary. The
+ * current size is *sz, and will be updated on reallocation. *strp may
+ * be NULL, in which case this reduces to asprintf. The return value is
+ * the length of the string, including the original portion.
+ */
+int bugle_appendf(char **strp, size_t *sz, const char *format, ...);
 
 /* Like fgets, but creates the memory. The return value has the same
  * meaning as for fgets, but must be free()ed if non-NULL

@@ -212,6 +212,8 @@ static void stats_signal_values_gather(stats_signal_values *sv)
     bugle_list_node *s;
     int i;
 
+    gettimeofday(&sv->last_updated, NULL);
+
     if (sv->allocated < stats_signals_num_active)
     {
         sv->allocated = stats_signals_num_active;
@@ -227,9 +229,14 @@ static void stats_signal_values_gather(stats_signal_values *sv)
         {
             sv->values[si->offset].value = si->value;
             sv->values[si->offset].integral = si->integral;
+            /* Have to update the integral from when the signal was updated
+             * until this instant. */
+            if (si->value == si->value) /* NaN check */
+                sv->values[si->offset].integral +=
+                    si->value * time_elapsed(&si->last_updated,
+                                             &sv->last_updated);
         }
     }
-    gettimeofday(&sv->last_updated, NULL);
 }
 
 /* Fills in the signal field of signal expressions */
@@ -1071,6 +1078,7 @@ static xevent_key key_showstats_noaccumulate = { NoSymbol, 0, true };
 
 static stats_signal_values showstats_prev, showstats_cur;
 static char *showstats_display = NULL;
+static size_t showstats_display_size = 0;
 
 /* Renders a string of text to screen. The raster position is destroyed */
 static void showstats_render(showstats_struct *ss, const char *msg)
@@ -1127,7 +1135,6 @@ static bool showstats_glXSwapBuffers(function_call *call, const callback_data *d
     bugle_list_node *i;
     stats_statistic *st;
     stats_signal_values tmp;
-    char *old;
     double v;
     struct timeval now;
 
@@ -1135,23 +1142,20 @@ static bool showstats_glXSwapBuffers(function_call *call, const callback_data *d
     gettimeofday(&now, NULL);
     if (time_elapsed(&ss->last_update, &now) >= 0.2)
     {
-        ss->last_update = showstats_cur.last_updated;
+        ss->last_update = now;
         stats_signal_values_gather(&showstats_cur);
 
         if (showstats_prev.allocated)
         {
-            free(showstats_display);
-            showstats_display = NULL;
+            if (showstats_display) showstats_display[0] = '\0';
             for (i = bugle_list_head(&showstats_show); i; i = bugle_list_next(i))
             {
                 st = (stats_statistic *) bugle_list_data(i);
                 v = stats_expression_evaluate(st->value, &showstats_prev, &showstats_cur);
                 if (v == v) /* NaN check */
                 {
-                    old = showstats_display;
-                    bugle_asprintf(&showstats_display, "%s%10.*f %s\n",
-                                   old ? old : "", st->precision, v, st->label);
-                    free(old);
+                    bugle_appendf(&showstats_display, &showstats_display_size,
+                                  "%10.*f %s\n", st->precision, v, st->label);
                 }
             }
         }
@@ -1358,6 +1362,8 @@ void bugle_initialise_filter_library(void)
     static const filter_set_variable_info showstats_variables[] =
     {
         { "show", "repeat with each item to render", FILTER_SET_VARIABLE_CUSTOM, NULL, showstats_show_set },
+        { "key_accumulate", "frame rate is averaged from time key is pressed [none]", FILTER_SET_VARIABLE_KEY, &key_showstats_accumulate, NULL },
+        { "key_noaccumulate", "return frame rate to instantaneous display [none]", FILTER_SET_VARIABLE_KEY, &key_showstats_noaccumulate, NULL },
         { NULL, NULL, 0, NULL, NULL }
     };
 

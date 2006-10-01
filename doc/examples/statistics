@@ -1,3 +1,7 @@
+#
+# Core statistics
+#
+
 "frames per second" = d("frames") / d("seconds")
 {
     precision 1
@@ -10,6 +14,10 @@
     label "ms/frame"
 }
 
+#
+# stats_primitives statistics
+#
+
 "triangles per frame" = d("triangles") / d("frames")
 {
     precision 0
@@ -18,9 +26,31 @@
 
 "triangles per second" = d("triangles") / d("seconds")
 {
-    precision 1
+    precision 0
     label "triangles/s"
 }
+
+"batches per frame" = d("batches") / d("frames")
+{
+    precision 0
+    label "batches/frame"
+}
+
+"batches per second" = d("batches") / d("seconds")
+{
+    precision 0
+    label "batches/s"
+}
+
+"triangles per batch" = d("triangles") / d("batches")
+{
+    precision 1
+    label "triangles/batch"
+}
+
+#
+# stats_fragments statistics (requires GL_ARB_occlusion_query)
+#
 
 "fragments per frame" = d("fragments") / d("frames")
 {
@@ -34,17 +64,152 @@
     label "fragments/s"
 }
 
-"NV:OGL vidmem %" = 100 * a("nv:OGL vidmem (bytes)") / e("nv:OGL vidmem total (bytes)")
+"fragments per triangle" = d("fragments") / d("triangles")
+{
+    precision 1
+    label "fragments/triangle"
+}
+
+#
+# NVPerfSDK driver statistics
+#
+
+"NV:OGL FPS" = a("nv:OGL FPS")
+{
+    precision 1
+    label "fps [NV-OGL]"
+}
+
+"NV:OGL frame time" = a("nv:OGL frame time")
+{
+    precision 1
+    label "ms/frame [NV-OGL]"
+}
+
+"NV:OGL driver sleeping" = a("nv:OGL driver sleeping")
+{
+    precision 1
+    label "driver sleeping [NV-OGL]"
+}
+
+"NV:OGL % driver waiting" = a("nv:OGL % driver waiting")
+{
+    precision 1
+    max 100
+    label "% driver waiting [NV-OGL]"
+}
+
+"NV:OGL AGP/PCI-E usage (bytes)" = a("nv:OGL AGP/PCI-E usage (bytes)")
+{
+    precision 0
+    label "bytes AGP/PCI-E [NV-OGL]"
+}
+
+"NV:OGL AGP/PCI-E usage (MB)" = a("nv:OGL AGP/PCI-E usage (bytes)") / 1048576.0
+{
+    precision 2
+    label "MB AGP/PCI-E [NV-OGL]"
+}
+
+"NV:OGL vidmem bytes" = a("nv:OGL vidmem bytes")
+{
+    precision 0
+    label "bytes vidmem [NV-OGL]" 
+}
+
+"NV:OGL vidmem MB" = a("nv:OGL vidmem bytes") / 1048576.0
+{
+    precision 2
+    label "MB vidmem [NV-OGL]"
+}
+
+"NV:OGL vidmem total bytes" = e("nv:OGL vidmem total bytes")
+{
+    precision 0
+    label "bytes total vidmem [NV-OGL]"
+}
+
+"NV:OGL vidmem total MB" = e("nv:OGL vidmem total MB")
+{
+    precision 0
+    label "MB total vidmem [NV-OGL]"
+}
+
+"NV:OGL vidmem %" = 100 * a("nv:OGL vidmem bytes") / e("nv:OGL vidmem total bytes")
 {
     max 100
     precision 0
     label "% video memory [NV-OGL]"
 }
 
-"NV:GPU Bottleneck" = e("nv:GPU Bottleneck")
+"NV:OGL batches per frame" = d("nv:accum:OGL Frame Batch Count") / d("frames")
 {
     precision 0
-    substitute 0 "2D"
+    label "batches/frame [NV-OGL]"
+}
+
+"NV:OGL batches per second" = d("nv:accum:OGL Frame Batch Count") / d("seconds")
+{
+    precision 0
+    label "batches/s [NV-OGL]"
+}
+
+"NV:OGL vertices per frame" = d("nv:accum:OGL Frame Vertex Count") / d("frames")
+{
+    precision 0
+    label "vertices/frame [NV-OGL]"
+}
+
+"NV:OGL vertices per second" = d("nv:accum:OGL Frame Vertex Count") / d("seconds")
+{
+    precision 0
+    label "vertices/s [NV-OGL]"
+}
+
+"NV:OGL primitives per frame" = d("nv:accum:OGL Frame Primitive Count") / d("frames")
+{
+    precision 0
+    label "primitives/frame [NV-OGL]"
+}
+
+"NV:OGL primitives per second" = d("nv:accum:OGL Frame Primitive Count") / d("seconds")
+{
+    precision 0
+    label "primitives/s [NV-OGL]"
+}
+
+#
+# NVPerfSDK hardware statistics
+#
+
+"NV:triangles per frame" = d("nv:accum:triangle_count") / d("frames")
+{
+    precision 0
+    label "triangles/frame [NV-HW]"
+}
+
+"NV:triangles per second" = d("nv:accum:triangle_count") / d("seconds")
+{
+    precision 0
+    label "triangles/s [NV-HW]"
+}
+
+"NV:primitives per frame" = d("nv:accum:primitive_count") / d("frames")
+{
+    precision 0
+    label "primitives/frame [NV-HW]"
+}
+
+"NV:primitives per second" = d("nv:accum:primitive_count") / d("seconds")
+{
+    precision 0
+    label "primitives/s [NV-HW]"
+}
+
+"NV:fast Z per frame" = d("nv:accum:fast_z") / d("frames")
+{
+    precision 0
+    label "fast Z/frame"
 }
 
 "NV:fragments per frame" = d("nv:accum:shaded_pixel_count") / d("frames")
@@ -55,6 +220,207 @@
 
 "NV:fragments per second" = d("nv:accum:shaded_pixel_count") / d("seconds")
 {
-    precision 1
+    precision 0
     label "fragments/s [NV-HW]"
+}
+
+"NV:fragments per primitive" = d("nv:accum:shaded_pixel_count") / d("nv:accum:primitive_count")
+{
+    precision 1
+    label "fragments/primitive [NV-HW]"
+}
+
+"NV:vertices per frame" = d("nv:accum:vertex_count") / d("frames")
+{
+    precision 0
+    label "vertices/frame [NV-HW]"
+}
+
+"NV:vertices per second" = d("nv:accum:vertex_count") / d("seconds")
+{
+    precision 0
+    label "vertices/s [NV-HW]"
+}
+
+"NV:vertex attributes per frame" = d("nv:accum:vertex_attribute_count") / d("frames")
+{
+    precision 0
+    label "vertex attributes/frame [NV-HW]"
+}
+
+"NV:vertex attributes per second" = d("nv:accum:vertex_attribute_count") / d("seconds")
+{
+    precision 0
+    label "vertex attributes/s [NV-HW]"
+}
+
+"NV:culled primitives" = d("nv:accum:culled_primitives") / d("frames")
+{
+    precision 0
+    label "culled primitives/frame [NV-HW]"
+}
+
+"NV:culled primitives %" = 100.0 * d("nv:accum:culled_primitives") / d("nv:accum:primitive_count")
+{
+    precision 1
+    max 100
+    label "% primitives culled [NV-HW]"
+}
+
+"NV:GPU idle" = 100.0 * d("nv:accum:gpu_idle") / d("nv:accum:cycles:gpu_idle")
+{
+    precision 0
+    max 100
+    label "% GPU idle [NV-HW]"
+}
+
+"NV:vertex shader busy" = 100.0 * d("nv:accum:vertex_shader_busy") / d("nv:accum:cycles:vertex_shader_busy")
+{
+    precision 0
+    max 100
+    label "% VS busy [NV-HW]"
+}
+
+"NV:pixel shader busy" = 100.0 * d("nv:accum:pixel_shader_busy") / d("nv:accum:cycles:pixel_shader_busy")
+{
+    precision 0
+    max 100
+    label "% PS busy [NV-HW]"
+}
+
+"NV:rop busy" = 100.0 * d("nv:accum:rop_busy") / d("nv:accum:cycles:rop_busy")
+{
+    precision 0
+    max 100
+    label "% ROP busy [NV-HW]"
+}
+
+"NV:shader waits for texture" = 100.0 * d("nv:accum:shader_waits_for_texture") / d("nv:accum:cycles:shader_waits_for_texture")
+{
+    precision 0
+    max 100
+    label "% PS stall [NV-HW]"
+}
+
+#
+# NVPerfSDK simplified experiments
+#
+
+"NV:2D Bottleneck" = a("nv:2D Bottleneck")
+{
+    precision 0
+    max 100
+    label "% 2D Bottleneck [NV-HW]"
+}
+
+"NV:2D SOL" = a("nv:2D SOL")
+{
+    precision 0
+    max 100
+    label "% 2D [NV-HW]"
+}
+
+"NV:IDX Bottleneck" = a("nv:IDX Bottleneck")
+{
+    precision 0
+    max 100
+    label "% IDX Bottleneck [NV-HW]"
+}
+
+"NV:IDX SOL" = a("nv:IDX SOL")
+{
+    precision 0
+    max 100
+    label "% IDX [NV-HW]"
+}
+
+"NV:GEOM Bottleneck" = a("nv:GEOM Bottleneck")
+{
+    precision 0
+    max 100
+    label "% GEOM Bottleneck [NV-HW]"
+}
+
+"NV:GEOM SOL" = a("nv:GEOM SOL")
+{
+    precision 0
+    max 100
+    label "% GEOM [NV-HW]"
+}
+
+"NV:ZCULL Bottleneck" = a("nv:ZCULL Bottleneck")
+{
+    precision 0
+    max 100
+    label "% ZCULL Bottleneck [NV-HW]"
+}
+
+"NV:ZCULL SOL" = a("nv:ZCULL SOL")
+{
+    precision 0
+    max 100
+    label "% ZCULL [NV-HW]"
+}
+
+"NV:TEX Bottleneck" = a("nv:TEX Bottleneck")
+{
+    precision 0
+    max 100
+    label "% TEX Bottleneck [NV-HW]"
+}
+
+"NV:TEX SOL" = a("nv:TEX SOL")
+{
+    precision 0
+    max 100
+    label "% TEX [NV-HW]"
+}
+
+"NV:ROP Bottleneck" = a("nv:ROP Bottleneck")
+{
+    precision 0
+    max 100
+    label "% ROP Bottleneck [NV-HW]"
+}
+
+"NV:ROP SOL" = a("nv:ROP SOL")
+{
+    precision 0
+    max 100
+    label "% ROP [NV-HW]"
+}
+
+"NV:SHD Bottleneck" = a("nv:SHD Bottleneck")
+{
+    precision 0
+    max 100
+    label "% SHD Bottleneck [NV-HW]"
+}
+
+"NV:SHD SOL" = a("nv:SHD SOL")
+{
+    precision 0
+    max 100
+    label "% SHD [NV-HW]"
+}
+
+"NV:FB Bottleneck" = a("nv:FB Bottleneck")
+{
+    precision 0
+    max 100
+    label "% FB Bottleneck [NV-HW]"
+}
+
+"NV:FB SOL" = a("nv:FB SOL")
+{
+    precision 0
+    max 100
+    label "% FB [NV-HW]"
+}
+
+"NV:GPU Bottleneck" = e("nv:GPU Bottleneck")
+{
+    precision 0
+    substitute 0 "2D"
+    label "GPU Bottleneck [NV-HW]"
 }
