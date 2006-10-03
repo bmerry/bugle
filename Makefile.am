@@ -165,6 +165,7 @@ filters_validate_la_LDFLAGS = -thread-safe -module -avoid-version -export-dynami
 filters_debugger_la_SOURCES = filters/debugger.c
 filters_debugger_la_LDFLAGS = -thread-safe -module -avoid-version -export-dynamic $(SYMBOLFLAGS)
 filters_stats_la_SOURCES = filters/statslex.l filters/statsparse.y filters/stats.c filters/stats.h
+filters_stats_la_LIBADD = -lm
 filters_stats_la_LDFLAGS = -thread-safe -module -avoid-version -export-dynamic $(SYMBOLFLAGS)
 filters_capture_la_SOURCES = filters/capture.c gl2ps/gl2ps.c gl2ps/gl2ps.h
 filters_capture_la_CFLAGS = $(AM_CFLAGS) $(AVCODEC_CFLAGS)

@@ -124,6 +124,16 @@ static stats_statistic *stats_statistic_new()
     return st;
 }
 
+static stats_substitution *stats_substitution_new(double value, char *replacement)
+{
+    stats_substitution *sub;
+
+    sub = (stats_substitution *) bugle_malloc(sizeof(stats_substitution));
+    sub->value = value;
+    sub->replacement = replacement;
+    return sub;
+}
+
 static bugle_linked_list stats_statistics_list;
 
 bugle_linked_list *stats_statistics_get_list(void)
@@ -193,7 +203,7 @@ attributes: /* empty */           { $$ = stats_statistic_new(); }
         | attributes ST_MAX ST_NUMBER
                                   { $$ = $1; $$->maximum = $3; }
         | attributes ST_SUBSTITUTE ST_NUMBER ST_STRING 
-                                  { $$ = $1; /* FIXME */ }
+                                  { $$ = $1; bugle_list_append(&$$->substitutions, stats_substitution_new($3, $4)); }
 ;
 
 %%

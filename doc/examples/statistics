@@ -178,6 +178,12 @@
     label "primitives/s [NV-OGL]"
 }
 
+"NV:OGL primitives per batch" = d("nv:accum:OGL Frame Primitive Count") / d("NV:accum:OGL Frame Batch Count")
+{
+    precision 0
+    label "primitives/batch [NV-OGL]"
+}
+
 #
 # NVPerfSDK hardware statistics
 #
@@ -254,13 +260,13 @@
     label "vertex attributes/s [NV-HW]"
 }
 
-"NV:culled primitives" = d("nv:accum:culled_primitives") / d("frames")
+"NV:culled primitives per frame" = d("nv:accum:culled_primitive_count") / d("frames")
 {
     precision 0
     label "culled primitives/frame [NV-HW]"
 }
 
-"NV:culled primitives %" = 100.0 * d("nv:accum:culled_primitives") / d("nv:accum:primitive_count")
+"NV:culled primitives %" = 100.0 * d("nv:accum:culled_primitive_count") / d("nv:accum:primitive_count")
 {
     precision 1
     max 100
@@ -422,5 +428,12 @@
 {
     precision 0
     substitute 0 "2D"
+    substitute 1 "V Fetch"
+    substitute 2 "V Attrib"
+    substitute 3 "V Prog"
+    substitute 4 "F Prog"
+    substitute 5 "TEX"
+    substitute 6 "FB"
+    substitute 7 "ROP"
     label "GPU Bottleneck [NV-HW]"
 }

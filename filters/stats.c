@@ -24,6 +24,7 @@
 #include <sys/time.h>
 #include <sys/types.h>
 #include <assert.h>
+#include <math.h>
 #include "src/glutils.h"
 #include "src/tracker.h"
 #include "src/filters.h"
@@ -284,15 +285,37 @@ static void stats_expression_free(stats_expression *expr)
         break;
     case STATS_EXPRESSION_SIGNAL:
         free(expr->signal_name);
+        break;
     }
     free(expr);
 }
 
+static stats_substitution *stats_statistic_find_substitution(stats_statistic *st, double v)
+{
+    bugle_list_node *i;
+    stats_substitution *cur;
+
+    for (i = bugle_list_head(&st->substitutions); i; i = bugle_list_next(i))
+    {
+        cur = (stats_substitution *) bugle_list_data(i);
+        if (fabs(cur->value - v) < 1e-9) return cur;
+    }
+    return NULL;
+}
+
 static void stats_statistic_free(stats_statistic *st)
 {
+    bugle_list_node *i;
+    stats_substitution *sub;
+
     free(st->name);
     stats_expression_free(st->value);
     free(st->label);
+    for (i = bugle_list_head(&st->substitutions); i; i = bugle_list_next(i))
+    {
+        sub = (stats_substitution *) bugle_list_data(i);
+        free(sub->replacement);
+    }
     bugle_list_clear(&st->substitutions);
     free(st);
 }
@@ -776,6 +799,7 @@ static bugle_linked_list stats_nv_registered;
 static lt_dlhandle stats_nv_dl = NULL;
 static bool stats_nv_experiment_mode = false; /* True if using simplified experiments */
 static int stats_nv_num_passes = -1, stats_nv_pass = -1;
+static bool stats_nv_flush = false;
 
 static NVPMRESULT (*fNVPMInit)(void);
 static NVPMRESULT (*fNVPMShutdown)(void);
@@ -818,6 +842,7 @@ static bool stats_nv_glXSwapBuffers(function_call *call, const callback_data *da
             if (stats_nv_pass >= 0)
             {
                 CHECK_NVPM(fNVPMEndPass(stats_nv_pass));
+                if (stats_nv_flush) CALL_glFinish();
                 if (stats_nv_pass + 1 == stats_nv_num_passes)
                 {
                     CHECK_NVPM(fNVPMEndExperiment());
@@ -827,6 +852,7 @@ static bool stats_nv_glXSwapBuffers(function_call *call, const callback_data *da
             }
         }
 
+        if (stats_nv_flush) CALL_glFinish();
         CHECK_NVPM(fNVPMSample(NULL, &samples));
         for (i = bugle_list_head(&stats_nv_active); i; i = bugle_list_next(i))
         {
@@ -998,6 +1024,7 @@ static bool logstats_glXSwapBuffers(function_call *call, const callback_data *da
     bugle_list_node *i;
     stats_statistic *st;
     stats_signal_values tmp;
+    stats_substitution *sub;
 
     tmp = logstats_prev;
     logstats_prev = logstats_cur;
@@ -1011,9 +1038,13 @@ static bool logstats_glXSwapBuffers(function_call *call, const callback_data *da
             double v = stats_expression_evaluate(st->value, &logstats_prev, &logstats_cur);
             if (v == v) /* NaN check */
             {
-                /* FIXME: substitution */
-                bugle_asprintf(&msg, "%.*f %s", st->precision, v,
-                               st->label ? st->label : "");
+                sub = stats_statistic_find_substitution(st, v);
+                if (sub)
+                    bugle_asprintf(&msg, "%s %s", sub->replacement,
+                                   st->label ? st->label : "");
+                else
+                    bugle_asprintf(&msg, "%.*f %s", st->precision, v,
+                                   st->label ? st->label : "");
                 bugle_log("logstats", st->name, msg);
             }
         }
@@ -1134,6 +1165,7 @@ static bool showstats_glXSwapBuffers(function_call *call, const callback_data *d
     GLint viewport[4];
     bugle_list_node *i;
     stats_statistic *st;
+    stats_substitution *sub;
     stats_signal_values tmp;
     double v;
     struct timeval now;
@@ -1154,8 +1186,13 @@ static bool showstats_glXSwapBuffers(function_call *call, const callback_data *d
                 v = stats_expression_evaluate(st->value, &showstats_prev, &showstats_cur);
                 if (v == v) /* NaN check */
                 {
-                    bugle_appendf(&showstats_display, &showstats_display_size,
-                                  "%10.*f %s\n", st->precision, v, st->label);
+                    sub = stats_statistic_find_substitution(st, v);
+                    if (sub)
+                        bugle_appendf(&showstats_display, &showstats_display_size,
+                                      "%10s %s\n", sub->replacement, st->label);
+                    else
+                        bugle_appendf(&showstats_display, &showstats_display_size,
+                                      "%10.*f %s\n", st->precision, v, st->label);
                 }
             }
         }
@@ -1328,6 +1365,12 @@ void bugle_initialise_filter_library(void)
 #endif
 
 #if HAVE_NVPERFSDK_H
+    static const filter_set_variable_info stats_nv_variables[] =
+    {
+        { "flush", "flush OpenGL after each frame (more accurate but slower)", FILTER_SET_VARIABLE_BOOL, &stats_nv_flush, NULL },
+        { NULL, NULL, 0, NULL, NULL }
+    };
+
     static const filter_set_info stats_nv_info =
     {
         "stats_nv",
@@ -1335,7 +1378,7 @@ void bugle_initialise_filter_library(void)
         stats_nv_destroy,
         NULL,
         NULL,
-        NULL,
+        stats_nv_variables,
         0,
         "stats module: get counters from NVPerfSDK"
     };

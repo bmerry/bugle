@@ -75,6 +75,12 @@ typedef struct stats_expression_s
 
 typedef struct
 {
+    double value;
+    char *replacement;
+} stats_substitution;
+
+typedef struct
+{
     char *name;
     stats_expression *value;
 
