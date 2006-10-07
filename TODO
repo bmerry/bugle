@@ -57,6 +57,7 @@ bugle
 - capture more information about call lists
 - capture and replay
 - use textured quads rather than bitmaps for showstats?
+- remove dependence of stats graphing on shadow textures
 
 budgie
 ------

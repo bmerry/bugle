@@ -39,6 +39,26 @@
 
 #define STATISTICSFILE "/.bugle/statistics"
 
+#if HAVE_FINITE
+# define FINITE(x) (finite(x))
+#elif HAVE_ISFINITE
+# define FINITE(x) (isfinite(x))
+#else
+# define FINITE(x) ((x) != (x) && (x) != HUGE_VAL && (x) != -HUGE_VAL)
+#endif
+
+#if HAVE_ISNAN
+# define ISNAN(x) isnan(x)
+#else
+# define ISNAN(x) ((x) != (x))
+#endif
+
+#if HAVE_NAN
+# define NAN() (nan(""))
+#else
+# define NAN() (0.0 / 0.0)
+#endif
+
 extern FILE *yyin;
 extern int stats_yyparse(void);
 
@@ -82,7 +102,7 @@ static stats_signal *stats_signal_get(const char *name)
     if (!si)
     {
         si = (stats_signal *) bugle_malloc(sizeof(stats_signal));
-        si->value = 0.0 / 0.0;  /* NaN - see stats.h for explanation */
+        si->value = NAN();
         si->integral = 0.0;
         si->last_updated.tv_sec = 0;
         si->last_updated.tv_usec = 0;
@@ -135,7 +155,7 @@ static double stats_expression_evaluate(const stats_expression *expr,
         }
     case STATS_EXPRESSION_SIGNAL:
         /* Generate a NaN, and let good old IEEE 754 take care of propagating it. */
-        if (!expr->signal->active) return 0.0 / 0.0;
+        if (!expr->signal->active) return NAN();
         switch (expr->op)
         {
         case STATS_OPERATION_DELTA:
@@ -159,7 +179,7 @@ static void stats_signal_update(stats_signal *si, double v)
 
     gettimeofday(&now, NULL);
     /* Integrate over time; a NaN indicates that this is the first time */
-    if (si->value == si->value)
+    if (FINITE(si->value))
         si->integral += time_elapsed(&si->last_updated, &now) * si->value;
     si->value = v;
     si->last_updated = now;
@@ -168,8 +188,7 @@ static void stats_signal_update(stats_signal *si, double v)
 /* Convenience for accumulating signals */
 static void stats_signal_add(stats_signal *si, double dv)
 {
-    /* NaN check */
-    if (si->value != si->value)
+    if (!FINITE(si->value))
         stats_signal_update(si, dv);
     else
         stats_signal_update(si, si->value + dv);
@@ -232,7 +251,7 @@ static void stats_signal_values_gather(stats_signal_values *sv)
             sv->values[si->offset].integral = si->integral;
             /* Have to update the integral from when the signal was updated
              * until this instant. */
-            if (si->value == si->value) /* NaN check */
+            if (FINITE(si->value))
                 sv->values[si->offset].integral +=
                     si->value * time_elapsed(&si->last_updated,
                                              &sv->last_updated);
@@ -646,7 +665,7 @@ static bool stats_primitives_initialise(filter_set *handle)
     stats_primitives_displaylist_view = bugle_object_class_register(&bugle_displaylist_class,
                                                                     NULL,
                                                                     NULL,
-                                                                    sizeof(size_t));
+                                                                    sizeof(stats_primitives_struct));
 
     f = bugle_register_filter(handle, "stats_primitives");
     bugle_register_filter_catches_drawing_immediate(f, false, stats_primitives_immediate);
@@ -1036,7 +1055,7 @@ static bool logstats_glXSwapBuffers(function_call *call, const callback_data *da
         {
             st = (stats_statistic *) bugle_list_data(i);
             double v = stats_expression_evaluate(st->value, &logstats_prev, &logstats_cur);
-            if (v == v) /* NaN check */
+            if (FINITE(v))
             {
                 sub = stats_statistic_find_substitution(st, v);
                 if (sub)
@@ -1101,9 +1120,31 @@ typedef struct
     int accumulating;  /* 0: no  1: yes  2: yes, reset counters */
 } showstats_struct;
 
+typedef enum
+{
+    SHOWSTATS_TEXT,
+    SHOWSTATS_GRAPH
+} showstats_mode;
+
+typedef struct
+{
+    char *name;
+    showstats_mode mode;
+    stats_statistic *st;
+    bool initialised;
+
+    /* Graph-specific stuff */
+    double graph_scale;     /* Largest value on graph */
+    GLsizei graph_size;     /* Number of history samples */
+    double *graph_history;  /* Raw (unscaled) history values */
+    GLushort *graph_scaled; /* Scaled according to graph_scale for OpenGL */
+    int graph_offset;       /* place to put next sample */
+
+    GLuint graph_tex;       /* 1D shadow texture to determine graph height */
+} showstats_statistic;
+
 static bugle_object_view showstats_view;
-static bugle_linked_list showstats_show;     /* actual statistics */
-static bugle_linked_list showstats_show_requested; /* names */
+static bugle_linked_list showstats_stats;  /* List of showstats_statistic */
 static xevent_key key_showstats_accumulate = { NoSymbol, 0, true };
 static xevent_key key_showstats_noaccumulate = { NoSymbol, 0, true };
 
@@ -1114,7 +1155,18 @@ static size_t showstats_display_size = 0;
 /* Renders a string of text to screen. The raster position is destroyed */
 static void showstats_render(showstats_struct *ss, const char *msg)
 {
+    Display *dpy;
+    Font f;
     const char *ch;
+
+    if (!ss->font_base)
+    {
+        dpy = CALL_glXGetCurrentDisplay();
+        ss->font_base = CALL_glGenLists(256);
+        f = XLoadFont(dpy, "-*-courier-medium-r-normal--10-*");
+        CALL_glXUseXFont(f, 0, 256, ss->font_base);
+        XUnloadFont(dpy, f);
+    }
 
     CALL_glPushAttrib(GL_CURRENT_BIT); /* Save start of line pos */
     for (ch = msg; *ch; ch++)
@@ -1133,17 +1185,13 @@ static void showstats_render(showstats_struct *ss, const char *msg)
 
 static void showstats_struct_initialise(const void *key, void *data)
 {
-    Display *dpy;
-    Font f;
     showstats_struct *ss;
 
+    /* We want to create the display lists in the unshared context, so
+     * we defer until the first call to showstats_render.
+     */
     ss = (showstats_struct *) data;
-    dpy = CALL_glXGetCurrentDisplay();
-    ss->font_base = CALL_glGenLists(256);
-    f = XLoadFont(dpy, "-*-courier-medium-r-normal--10-*");
-    CALL_glXUseXFont(f, 0, 256, ss->font_base);
-    XUnloadFont(dpy, f);
-
+    ss->font_base = 0;
     ss->last_update.tv_sec = 0;
     ss->last_update.tv_usec = 0;
     ss->accumulating = 0;
@@ -1156,6 +1204,86 @@ static void showstats_struct_destroy(void *data)
     CALL_glDeleteLists(1, ss->font_base);
 }
 
+/* Creates the extended data (e.g. OpenGL objects) that depend on having
+ * the aux context active. FIXME: cleanup of this state.
+ */
+static void showstats_statistic_initialise(showstats_statistic *sst)
+{
+    if (sst->initialised) return;
+    switch (sst->mode)
+    {
+    case SHOWSTATS_TEXT:
+        sst->initialised = true;
+        break;
+    case SHOWSTATS_GRAPH:
+#if defined(GL_ARB_shadow) && defined(GL_ARB_depth_texture)
+        if (!bugle_gl_has_extension(BUGLE_GL_ARB_shadow)
+            || !bugle_gl_has_extension(BUGLE_GL_ARB_depth_texture))
+#endif
+        {
+            fputs("Graphing currently required shadow map support. Fallback code\n"
+                  "is on the TODO list.\n", stderr);
+            exit(1);
+        }
+#if defined(GL_ARB_shadow) && defined(GL_ARB_depth_texture)
+        else if (bugle_begin_internal_render())
+        {
+            GLint max_size;
+
+            sst->graph_size = 128;
+            CALL_glGetIntegerv(GL_MAX_TEXTURE_SIZE, &max_size);
+            if (max_size < sst->graph_size)
+                sst->graph_size = max_size;
+            sst->graph_history = (double *) bugle_calloc(sst->graph_size, sizeof(double));
+            sst->graph_scaled = (GLushort *) bugle_calloc(sst->graph_size, sizeof(GLushort));
+            sst->graph_scale = sst->st->maximum;
+
+            CALL_glGenTextures(1, &sst->graph_tex);
+            CALL_glBindTexture(GL_TEXTURE_1D, sst->graph_tex);
+            CALL_glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+            CALL_glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+            CALL_glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+            CALL_glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_COMPARE_MODE, GL_COMPARE_R_TO_TEXTURE);
+            CALL_glTexImage1D(GL_TEXTURE_1D, 0, GL_DEPTH_COMPONENT16_ARB,
+                              sst->graph_size, 0, GL_DEPTH_COMPONENT, GL_UNSIGNED_SHORT, sst->graph_scaled);
+            CALL_glBindTexture(GL_TEXTURE_1D, 0);
+            bugle_end_internal_render("showstats_statistic_initialise", true);
+            sst->initialised = true;
+        }
+#endif
+        break;
+    }
+}
+
+static void showstats_graph_rescale(showstats_statistic *sst, double new_scale)
+{
+    double p10 = 1.0;
+    double s = 0.0, v;
+    int i;
+    /* Find a suitably large, "nice" value */
+
+    while (new_scale > 5.0)
+    {
+        p10 *= 10.0;
+        new_scale /= 10.0;
+    }
+    if (new_scale <= 1.0) s = p10;
+    else if (new_scale <= 2.0) s = 2.0 * p10;
+    else s = 5.0 * p10;
+
+    sst->graph_scale = s;
+    /* Regenerate the texture at the new scale */
+    for (i = 0; i < sst->graph_size; i++)
+    {
+        v = sst->graph_history[i] >= 0.0 ? sst->graph_history[i] : 0.0;
+        sst->graph_scaled[i] = (GLushort) rint(v * 65535.0 / s);
+    }
+    CALL_glBindTexture(GL_TEXTURE_1D, sst->graph_tex);
+    CALL_glTexSubImage1D(GL_TEXTURE_1D, 0, 0, sst->graph_size,
+                         GL_DEPTH_COMPONENT, GL_UNSIGNED_SHORT, sst->graph_scaled);
+    CALL_glBindTexture(GL_TEXTURE_1D, 0);
+}
+
 static bool showstats_glXSwapBuffers(function_call *call, const callback_data *data)
 {
     Display *dpy;
@@ -1164,7 +1292,7 @@ static bool showstats_glXSwapBuffers(function_call *call, const callback_data *d
     showstats_struct *ss;
     GLint viewport[4];
     bugle_list_node *i;
-    stats_statistic *st;
+    showstats_statistic *sst;
     stats_substitution *sub;
     stats_signal_values tmp;
     double v;
@@ -1172,45 +1300,7 @@ static bool showstats_glXSwapBuffers(function_call *call, const callback_data *d
 
     ss = bugle_object_get_current_data(&bugle_context_class, showstats_view);
     gettimeofday(&now, NULL);
-    if (time_elapsed(&ss->last_update, &now) >= 0.2)
-    {
-        ss->last_update = now;
-        stats_signal_values_gather(&showstats_cur);
-
-        if (showstats_prev.allocated)
-        {
-            if (showstats_display) showstats_display[0] = '\0';
-            for (i = bugle_list_head(&showstats_show); i; i = bugle_list_next(i))
-            {
-                st = (stats_statistic *) bugle_list_data(i);
-                v = stats_expression_evaluate(st->value, &showstats_prev, &showstats_cur);
-                if (v == v) /* NaN check */
-                {
-                    sub = stats_statistic_find_substitution(st, v);
-                    if (sub)
-                        bugle_appendf(&showstats_display, &showstats_display_size,
-                                      "%10s %s\n", sub->replacement, st->label);
-                    else
-                        bugle_appendf(&showstats_display, &showstats_display_size,
-                                      "%10.*f %s\n", st->precision, v, st->label);
-                }
-            }
-        }
-        if (ss->accumulating != 1 || !showstats_prev.allocated)
-        {
-            /* Bring prev up to date for next time. Swap so that we recycle
-             * memory for next time.
-             */
-            tmp = showstats_prev;
-            showstats_prev = showstats_cur;
-            showstats_cur = tmp;
-        }
-        if (ss->accumulating == 2) ss->accumulating = 1;
-    }
-
-    if (!showstats_display) return true;
-
-    aux = bugle_get_aux_context();
+    aux = bugle_get_aux_context(false);
     if (aux && bugle_begin_internal_render())
     {
         CALL_glGetIntegerv(GL_VIEWPORT, viewport);
@@ -1220,15 +1310,115 @@ static bool showstats_glXSwapBuffers(function_call *call, const callback_data *d
         dpy = CALL_glXGetCurrentDisplay();
         CALL_glXMakeContextCurrent(dpy, old_write, old_write, aux);
 
-        /* We don't want to depend on glWindowPos since it
-         * needs OpenGL 1.4, but fortunately the aux context
-         * has identity MVP matrix.
-         */
-        CALL_glPushAttrib(GL_CURRENT_BIT | GL_VIEWPORT_BIT);
+        /* FIXME: make the time interval tunable */
+        if (time_elapsed(&ss->last_update, &now) >= 0.2)
+        {
+            ss->last_update = now;
+            stats_signal_values_gather(&showstats_cur);
+
+            if (showstats_prev.allocated)
+            {
+                if (showstats_display) showstats_display[0] = '\0';
+                for (i = bugle_list_head(&showstats_stats); i; i = bugle_list_next(i))
+                {
+                    sst = (showstats_statistic *) bugle_list_data(i);
+                    if (!sst->initialised) showstats_statistic_initialise(sst);
+                    v = stats_expression_evaluate(sst->st->value, &showstats_prev, &showstats_cur);
+                    switch (sst->mode)
+                    {
+                    case SHOWSTATS_TEXT:
+                        if (FINITE(v))
+                        {
+                            sub = stats_statistic_find_substitution(sst->st, v);
+                            if (sub)
+                                bugle_appendf(&showstats_display, &showstats_display_size,
+                                              "%10s %s\n", sub->replacement, sst->st->label);
+                            else
+                                bugle_appendf(&showstats_display, &showstats_display_size,
+                                              "%10.*f %s\n", sst->st->precision, v, sst->st->label);
+                        }
+                        break;
+                    case SHOWSTATS_GRAPH:
+                        if (sst->graph_tex)
+                        {
+                            GLushort vs;
+
+                            if (!FINITE(v)) v = 0.0;
+                            sst->graph_history[sst->graph_offset] = v;
+                            /* Check if we need to rescale */
+                            if (v > sst->graph_scale)
+                                showstats_graph_rescale(sst, v);
+                            v /= sst->graph_scale;
+                            if (v < 0.0) v = 0.0;
+                            vs = (GLushort) rint(v * 65535.0);
+                            CALL_glBindTexture(GL_TEXTURE_1D, sst->graph_tex);
+                            CALL_glTexSubImage1D(GL_TEXTURE_1D, 0, sst->graph_offset, 1, GL_DEPTH_COMPONENT, GL_UNSIGNED_SHORT, &vs);
+                            CALL_glBindTexture(GL_TEXTURE_1D, 0);
+
+                            sst->graph_scaled[sst->graph_offset] = vs;
+                            sst->graph_offset++;
+                            if (sst->graph_offset >= sst->graph_size)
+                                sst->graph_offset = 0;
+                        }
+                        break;
+                    }
+                }
+            }
+            if (ss->accumulating != 1 || !showstats_prev.allocated)
+            {
+                /* Bring prev up to date for next time. Swap so that we recycle
+                 * memory for next time.
+                 */
+                tmp = showstats_prev;
+                showstats_prev = showstats_cur;
+                showstats_cur = tmp;
+            }
+            if (ss->accumulating == 2) ss->accumulating = 1;
+        }
+
+        if (showstats_display)
+        {
+            /* We don't want to depend on glWindowPos since it
+             * needs OpenGL 1.4, but fortunately the aux context
+             * has identity MVP matrix.
+             */
+            CALL_glPushAttrib(GL_CURRENT_BIT | GL_VIEWPORT_BIT);
+            CALL_glViewport(viewport[0], viewport[1], viewport[2], viewport[3]);
+            CALL_glRasterPos2f(-0.9, 0.9);
+            showstats_render(ss, showstats_display);
+            CALL_glPopAttrib();
+        }
+
+        CALL_glPushAttrib(GL_VIEWPORT_BIT);
         CALL_glViewport(viewport[0], viewport[1], viewport[2], viewport[3]);
-        CALL_glRasterPos2f(-0.9, 0.9);
-        showstats_render(ss, showstats_display);
+        CALL_glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
+        CALL_glEnable(GL_TEXTURE_1D);
+        for (i = bugle_list_head(&showstats_stats); i; i = bugle_list_next(i))
+        {
+            sst = (showstats_statistic *) bugle_list_data(i);
+            if (sst->mode == SHOWSTATS_GRAPH && sst->graph_tex)
+            {
+                GLfloat s;
+
+                s = (GLfloat) sst->graph_offset / sst->graph_size;
+                CALL_glBindTexture(GL_TEXTURE_1D, sst->graph_tex);
+                CALL_glBegin(GL_QUADS);
+                CALL_glTexCoord3f(s, 0.0f, 0.0f);
+                CALL_glVertex2f(-0.95f, -0.95f);
+                CALL_glTexCoord3f(s + 1.0f, 0.0f, 0.0f);
+                CALL_glVertex2f(-0.6f, -0.95f);
+                CALL_glTexCoord3f(s + 1.0f, 0.0f, 1.0f);
+                CALL_glVertex2f(-0.6f, -0.75f);
+                CALL_glTexCoord3f(s, 0.0f, 1.0f);
+                CALL_glVertex2f(-0.95f, -0.75f);
+                CALL_glEnd();
+            }
+        }
+        CALL_glDisable(GL_TEXTURE_1D);
+        CALL_glBindTexture(GL_TEXTURE_1D, 0);
+        CALL_glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
         CALL_glPopAttrib();
+
         CALL_glXMakeContextCurrent(dpy, old_write, old_read, real);
         bugle_end_internal_render("showstats_callback", true);
     }
@@ -1248,7 +1438,25 @@ static void showstats_accumulate_callback(const xevent_key *key, void *arg, XEve
 static bool showstats_show_set(const struct filter_set_variable_info_s *var,
                                const char *text, const void *value)
 {
-    bugle_list_append(&showstats_show_requested, bugle_strdup(text));
+    showstats_statistic *sst;
+
+    sst = (showstats_statistic *) bugle_calloc(1, sizeof(showstats_statistic));
+    sst->name = bugle_strdup(text);
+    sst->mode = SHOWSTATS_TEXT;
+    bugle_list_append(&showstats_stats, sst);
+    return true;
+}
+
+/* Same as above but for graphing */
+static bool showstats_graph_set(const struct filter_set_variable_info_s *var,
+                                const char *text, const void *value)
+{
+    showstats_statistic *sst;
+
+    sst = (showstats_statistic *) bugle_calloc(1, sizeof(showstats_statistic));
+    sst->name = bugle_strdup(text);
+    sst->mode = SHOWSTATS_GRAPH;
+    bugle_list_append(&showstats_stats, sst);
     return true;
 }
 
@@ -1256,7 +1464,7 @@ static bool showstats_initialise(filter_set *handle)
 {
     filter *f;
     bugle_list_node *i;
-    stats_statistic *st;
+    showstats_statistic *sst;
 
     f = bugle_register_filter(handle, "showstats");
     bugle_register_filter_depends("invoke", "showstats");
@@ -1278,24 +1486,19 @@ static bool showstats_initialise(filter_set *handle)
                               showstats_accumulate_callback, NULL);
 
 
-    for (i = bugle_list_head(&showstats_show_requested); i; i = bugle_list_next(i))
+    for (i = bugle_list_head(&showstats_stats); i; i = bugle_list_next(i))
     {
-        char *name;
-        name = (char *) bugle_list_data(i);
-        st = stats_statistic_find(name);
-        if (!st)
+        sst = (showstats_statistic *) bugle_list_data(i);
+        sst->st = stats_statistic_find(sst->name);
+        if (!sst->st)
         {
-            fprintf(stderr, "Statistic '%s' not found.\n", name);
+            fprintf(stderr, "Statistic '%s' not found.\n", sst->name);
             stats_statistic_list("showstats");
             return false;
         }
         else
-        {
-            stats_expression_activate_signals(st->value);
-            bugle_list_append(&showstats_show, st);
-        }
+            stats_expression_activate_signals(sst->st->value);
     }
-    bugle_list_clear(&showstats_show_requested);
     stats_signal_values_init(&showstats_prev);
     stats_signal_values_init(&showstats_cur);
 
@@ -1304,10 +1507,18 @@ static bool showstats_initialise(filter_set *handle)
 
 static void showstats_destroy(filter_set *handle)
 {
+    bugle_list_node *i;
+    showstats_statistic *sst;
+
     free(showstats_display);
     stats_signal_values_clear(&showstats_prev);
     stats_signal_values_clear(&showstats_cur);
-    bugle_list_clear(&showstats_show);
+    for (i = bugle_list_head(&showstats_stats); i; i = bugle_list_next(i))
+    {
+        sst = (showstats_statistic *) bugle_list_data(i);
+        free(sst->name);
+    }
+    bugle_list_clear(&showstats_stats);
 }
 
 /*** Global initialisation */
@@ -1405,6 +1616,7 @@ void bugle_initialise_filter_library(void)
     static const filter_set_variable_info showstats_variables[] =
     {
         { "show", "repeat with each item to render", FILTER_SET_VARIABLE_CUSTOM, NULL, showstats_show_set },
+        { "graph", "repeat with each item to graph", FILTER_SET_VARIABLE_CUSTOM, NULL, showstats_graph_set },
         { "key_accumulate", "frame rate is averaged from time key is pressed [none]", FILTER_SET_VARIABLE_KEY, &key_showstats_accumulate, NULL },
         { "key_noaccumulate", "return frame rate to instantaneous display [none]", FILTER_SET_VARIABLE_KEY, &key_showstats_noaccumulate, NULL },
         { NULL, NULL, 0, NULL, NULL }
@@ -1451,10 +1663,11 @@ void bugle_initialise_filter_library(void)
     bugle_register_filter_set(&logstats_info);
     bugle_register_filter_set_depends("logstats", "stats");
     bugle_register_filter_set_depends("logstats", "log");
-    bugle_list_init(&logstats_show_requested, false);
+    bugle_list_init(&logstats_show_requested, true);
 
     bugle_register_filter_set(&showstats_info);
     bugle_register_filter_set_depends("showstats", "stats");
+    bugle_register_filter_set_depends("showstats", "trackextensions");
     bugle_register_filter_set_renders("showstats");
-    bugle_list_init(&showstats_show_requested, false);
+    bugle_list_init(&showstats_stats, true);
 }

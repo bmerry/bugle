@@ -2,6 +2,8 @@
   - Configuration file for statistics
   - Statistics from NVPerfSDK
   - Prettier showstats
+* Reduce GL namespace pollution from internal objects
+* Fix some shutdown code including shutdown ordering
 
 0.0.20060913
 ------------

@@ -46,14 +46,17 @@ static bugle_thread_mutex_t context_mutex = BUGLE_THREAD_MUTEX_INITIALIZER;
 
 typedef struct
 {
-    GLXContext root_context;  /* context that owns the namespace - possibly self*/
-    GLXContext aux_context;
+    Display *dpy;
+    GLXContext root_context;  /* context that owns the namespace - possibly self */
+    GLXContext aux_shared;
+    GLXContext aux_unshared;
     XVisualInfo visual_info;
     bool use_visual_info;
 } trackcontext_data;
 
 static bool trackcontext_newcontext(function_call *call, const callback_data *data)
 {
+    Display *dpy;
     GLXContext self, parent;
     trackcontext_data *base, *up;
 
@@ -61,11 +64,13 @@ static bool trackcontext_newcontext(function_call *call, const callback_data *da
     {
 #ifdef GLX_VERSION_1_3
     case GROUP_glXCreateNewContext:
+        dpy = *call->typed.glXCreateNewContext.arg0;
         self = *call->typed.glXCreateNewContext.retn;
         parent = *call->typed.glXCreateNewContext.arg3;
         break;
 #endif
     case GROUP_glXCreateContext:
+        dpy = *call->typed.glXCreateContext.arg0;
         self = *call->typed.glXCreateContext.retn;
         parent = *call->typed.glXCreateContext.arg2;
         break;
@@ -78,7 +83,9 @@ static bool trackcontext_newcontext(function_call *call, const callback_data *da
         bugle_thread_mutex_lock(&context_mutex);
 
         base = (trackcontext_data *) bugle_malloc(sizeof(trackcontext_data));
-        base->aux_context = NULL;
+        base->dpy = dpy;
+        base->aux_shared = NULL;
+        base->aux_unshared = NULL;
         if (parent)
         {
             up = (trackcontext_data *) bugle_hashptr_get(&initial_values, parent);
@@ -159,9 +166,24 @@ static bool trackcontext_callback(function_call *call, const callback_data *data
     return true;
 }
 
+static void destroy_trackcontext_data(void *data)
+{
+    trackcontext_data *d;
+
+    d = (trackcontext_data *) data;
+    if (d->aux_shared) glXDestroyContext(d->dpy, d->aux_shared);
+    if (d->aux_unshared) glXDestroyContext(d->dpy, d->aux_unshared);
+}
+
 static bool initialise_trackcontext(filter_set *handle)
 {
     filter *f;
+
+    bugle_object_class_init(&bugle_context_class, NULL);
+    bugle_object_class_init(&bugle_namespace_class, &bugle_context_class);
+    bugle_hashptr_init(&context_objects, false);
+    bugle_hashptr_init(&namespace_objects, false);
+    bugle_hashptr_init(&initial_values, true);
 
     f = bugle_register_filter(handle, "trackcontext");
     bugle_register_filter_depends("trackcontext", "invoke");
@@ -173,15 +195,33 @@ static bool initialise_trackcontext(filter_set *handle)
 #endif
     trackcontext_view = bugle_object_class_register(&bugle_context_class,
                                                     NULL,
-                                                    NULL,
+                                                    destroy_trackcontext_data,
                                                     sizeof(trackcontext_data));
     return true;
 }
 
-GLXContext bugle_get_aux_context()
+static void destroy_trackcontext(filter_set *handle)
+{
+    const bugle_hashptr_entry *i;
+
+    for (i = bugle_hashptr_begin(&namespace_objects); i; i = bugle_hashptr_next(&namespace_objects, i))
+        if (i->value)
+            bugle_object_delete(&bugle_namespace_class, (bugle_object *) i->value);
+    for (i = bugle_hashptr_begin(&context_objects); i; i = bugle_hashptr_next(&context_objects, i))
+        if (i->value)
+            bugle_object_delete(&bugle_context_class, (bugle_object *) i->value);
+    bugle_hashptr_clear(&context_objects);
+    bugle_hashptr_clear(&namespace_objects);
+    bugle_hashptr_clear(&initial_values);
+    bugle_object_class_clear(&bugle_namespace_class);
+    bugle_object_class_clear(&bugle_context_class);
+}
+
+GLXContext bugle_get_aux_context(bool shared)
 {
     trackcontext_data *data;
     GLXContext old_ctx, ctx;
+    GLXContext *aux;
     int render_type = 0, screen;
     int n;
     int attribs[3] = {GLX_FBCONFIG_ID, 0, None};
@@ -191,7 +231,8 @@ GLXContext bugle_get_aux_context()
 
     data = bugle_object_get_current_data(&bugle_context_class, trackcontext_view);
     if (!data) return NULL; /* no current context, hence no aux context */
-    if (data->aux_context == NULL)
+    aux = shared ? &data->aux_shared : &data->aux_unshared;
+    if (*aux == NULL)
     {
         dpy = CALL_glXGetCurrentDisplay();
         old_ctx = CALL_glXGetCurrentContext();
@@ -216,7 +257,8 @@ GLXContext bugle_get_aux_context()
                 return NULL;
             }
             ctx = CALL_glXCreateNewContext(dpy, cfgs[0], render_type,
-                                           old_ctx, CALL_glXIsDirect(dpy, old_ctx));
+                                           shared ? old_ctx : NULL,
+                                           CALL_glXIsDirect(dpy, old_ctx));
             XFree(cfgs);
             if (ctx == NULL)
                 fprintf(stderr, "Warning: could not create an auxiliary context: creation failed\n");
@@ -226,7 +268,8 @@ GLXContext bugle_get_aux_context()
         {
             if (data->use_visual_info)
             {
-                ctx = CALL_glXCreateContext(dpy, &data->visual_info, old_ctx,
+                ctx = CALL_glXCreateContext(dpy, &data->visual_info,
+                                            shared ? old_ctx : NULL,
                                             CALL_glXIsDirect(dpy, old_ctx));
                 if (ctx == NULL)
                     fprintf(stderr, "Warning: could not create an auxiliary context: creation failed\n");
@@ -237,9 +280,9 @@ GLXContext bugle_get_aux_context()
                 return NULL;
             }
         }
-        data->aux_context = ctx;
+        *aux = ctx;
     }
-    return data->aux_context;
+    return *aux;
 }
 
 void trackcontext_initialise(void)
@@ -248,7 +291,7 @@ void trackcontext_initialise(void)
     {
         "trackcontext",
         initialise_trackcontext,
-        NULL,
+        destroy_trackcontext,
         NULL,
         NULL,
         NULL,
@@ -256,13 +299,5 @@ void trackcontext_initialise(void)
         NULL /* No documentation */
     };
 
-    bugle_object_class_init(&bugle_context_class, NULL);
-    bugle_object_class_init(&bugle_namespace_class, &bugle_context_class);
-    bugle_hashptr_init(&context_objects, true);
-    bugle_hashptr_init(&namespace_objects, true);
-    bugle_hashptr_init(&initial_values, true);
-    bugle_atexit((void (*)(void *)) bugle_hashptr_clear, &context_objects);
-    bugle_atexit((void (*)(void *)) bugle_hashptr_clear, &namespace_objects);
-    bugle_atexit((void (*)(void *)) bugle_hashptr_clear, &initial_values);
     bugle_register_filter_set(&trackcontext_info);
 }

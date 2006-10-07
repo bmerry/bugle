@@ -50,8 +50,13 @@ extern bugle_object_class bugle_displaylist_class;
  */
 bool bugle_in_begin_end(void);
 
-/* Gets a context with the same config. Please leave all state as default */
-GLXContext bugle_get_aux_context();
+/* Gets a context with the same config. Please leave all state as default.
+ * There is a choice of a shared or an unshared context, which refers to
+ * whether object state is shared with the primary context. The former is
+ * best for querying object state, the latter for creating internal objects
+ * so as not to pollute the primary namespace.
+ */
+GLXContext bugle_get_aux_context(bool shared);
 
 /* The number and mode of the current display list being compiled,
  * or 0 and GL_NONE if none.

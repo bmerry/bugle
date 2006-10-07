@@ -112,7 +112,6 @@ static void destroy_filter_set_r(filter_set *handle)
     bugle_list_node *i, *j;
     filter *f;
     filter_set *s;
-    bugle_linked_list *dep;
 
     if (handle->loaded)
     {
@@ -136,12 +135,6 @@ static void destroy_filter_set_r(filter_set *handle)
         for (j = bugle_list_head(&handle->filters); j; j = bugle_list_next(j))
         {
             f = (filter *) bugle_list_data(j);
-            dep = (bugle_linked_list *) bugle_hash_get(&filter_dependencies, f->name);
-            if (dep)
-            {
-                bugle_list_clear(dep);
-                free(dep);
-            }
             bugle_list_clear(&f->callbacks);
             free(f);
         }
@@ -152,11 +145,11 @@ static void destroy_filter_set_r(filter_set *handle)
 static void destroy_filters(void *dummy)
 {
     bugle_list_node *i;
+    const bugle_hash_entry *j;
     filter_set *s;
     budgie_function k;
+    bugle_linked_list *dep;
 
-    bugle_list_clear(&filter_set_dependencies[0]);
-    bugle_list_clear(&filter_set_dependencies[1]);
     bugle_list_clear(&loaded_filters);
     for (k = 0; k < NUMBER_OF_FUNCTIONS; k++)
         bugle_list_clear(&active_callbacks[k]);
@@ -172,8 +165,18 @@ static void destroy_filters(void *dummy)
         s = (filter_set *) bugle_list_data(i);
         free(s);
     }
+    for (j = bugle_hash_begin(&filter_dependencies); j; j = bugle_hash_next(&filter_dependencies, j))
+        if (j->value)
+        {
+            dep = (bugle_linked_list *) j->value;
+            bugle_list_clear(dep);
+            free(dep);
+        }
+
     bugle_list_clear(&filter_sets);
     bugle_hash_clear(&filter_dependencies);
+    bugle_list_clear(&filter_set_dependencies[0]);
+    bugle_list_clear(&filter_set_dependencies[1]);
 
     lt_dlexit();
 }

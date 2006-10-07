@@ -118,7 +118,7 @@ static stats_statistic *stats_statistic_new()
     st->name = NULL;
     st->value = NULL;
     st->precision = 1;
-    st->maximum = HUGE_VAL;
+    st->maximum = 0.0;
     st->label = NULL;
     bugle_list_init(&st->substitutions, true);
     return st;

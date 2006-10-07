@@ -401,7 +401,7 @@ static bool do_screenshot(GLenum format, int test_width, int test_height,
             return false;
         }
 
-    aux = bugle_get_aux_context();
+    aux = bugle_get_aux_context(false);
     if (!aux) return false;
     if (!bugle_begin_internal_render())
     {

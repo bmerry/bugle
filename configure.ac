@@ -93,7 +93,7 @@ AC_C_CHAR_UNSIGNED
 
 dnl Checks for library functions
 AC_CHECK_FUNCS([regcomp strrchr vasprintf vsnprintf open_memstream pthread_kill])
-AC_CHECK_FUNCS([cosf sinf finite isfinite])
+AC_CHECK_FUNCS([cosf sinf finite isfinite nan isnan])
 AC_REPLACE_FUNCS([bsearch])
 AC_FUNC_MEMCMP
 # Readline used to call this completion_matches

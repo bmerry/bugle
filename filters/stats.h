@@ -85,7 +85,7 @@ typedef struct
     stats_expression *value;
 
     int precision;                      /* default value if unset */
-    double maximum;                     /* HUGE_VAL for unset */
+    double maximum;                     /* 0.0 for unset */
     char *label;
     bugle_linked_list substitutions;
 } stats_statistic;
