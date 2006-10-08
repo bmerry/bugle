@@ -36,7 +36,7 @@ references to /usr/lib with /usr/lib32 and /usr/X11R6/lib with
 Q. How do you get SDL-based apps to use BuGLe?
 A. Run them as
 
-LD_PRELOAD=/path/to/libbugle.so SDL_GL_VIDEO_DRIVER=/path/to/libbugle.so tuxracer
+LD_PRELOAD=/path/to/libbugle.so SDL_VIDEO_GL_DRIVER=/path/to/libbugle.so tuxracer
 
 Q. How do you get Quake3 or Doom3 to use BuGLe?
 A. Run it as
