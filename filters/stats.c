@@ -1115,7 +1115,6 @@ static void logstats_destroy(filter_set *handle)
 
 typedef struct
 {
-    GLuint font_base;
     struct timeval last_update;
     int accumulating;  /* 0: no  1: yes  2: yes, reset counters */
 } showstats_struct;
@@ -1137,72 +1136,21 @@ typedef struct
     double graph_scale;     /* Largest value on graph */
     GLsizei graph_size;     /* Number of history samples */
     double *graph_history;  /* Raw (unscaled) history values */
-    GLushort *graph_scaled; /* Scaled according to graph_scale for OpenGL */
+    GLubyte *graph_scaled;  /* Scaled according to graph_scale for OpenGL */
     int graph_offset;       /* place to put next sample */
 
-    GLuint graph_tex;       /* 1D shadow texture to determine graph height */
+    GLuint graph_tex;       /* 1D texture to determine graph height */
 } showstats_statistic;
 
 static bugle_object_view showstats_view;
 static bugle_linked_list showstats_stats;  /* List of showstats_statistic */
+static int showstats_num_show, showstats_num_graph;
 static xevent_key key_showstats_accumulate = { NoSymbol, 0, true };
 static xevent_key key_showstats_noaccumulate = { NoSymbol, 0, true };
 
 static stats_signal_values showstats_prev, showstats_cur;
 static char *showstats_display = NULL;
 static size_t showstats_display_size = 0;
-
-/* Renders a string of text to screen. The raster position is destroyed */
-static void showstats_render(showstats_struct *ss, const char *msg)
-{
-    Display *dpy;
-    Font f;
-    const char *ch;
-
-    if (!ss->font_base)
-    {
-        dpy = CALL_glXGetCurrentDisplay();
-        ss->font_base = CALL_glGenLists(256);
-        f = XLoadFont(dpy, "-*-courier-medium-r-normal--10-*");
-        CALL_glXUseXFont(f, 0, 256, ss->font_base);
-        XUnloadFont(dpy, f);
-    }
-
-    CALL_glPushAttrib(GL_CURRENT_BIT); /* Save start of line pos */
-    for (ch = msg; *ch; ch++)
-    {
-        if (*ch == '\n')
-        {
-            CALL_glPopAttrib(); /* Move back to start of line */
-            CALL_glBitmap(0, 0, 0, 0, 0, -16, NULL); /* Move to next line */
-            CALL_glPushAttrib(GL_CURRENT_BIT);  /* Re-save start of line pos */
-        }
-        else
-            CALL_glCallList(ss->font_base + *ch);
-    }
-    CALL_glPopAttrib();
-}
-
-static void showstats_struct_initialise(const void *key, void *data)
-{
-    showstats_struct *ss;
-
-    /* We want to create the display lists in the unshared context, so
-     * we defer until the first call to showstats_render.
-     */
-    ss = (showstats_struct *) data;
-    ss->font_base = 0;
-    ss->last_update.tv_sec = 0;
-    ss->last_update.tv_usec = 0;
-    ss->accumulating = 0;
-}
-
-static void showstats_struct_destroy(void *data)
-{
-    showstats_struct *ss;
-    ss = (showstats_struct *) data;
-    CALL_glDeleteLists(1, ss->font_base);
-}
 
 /* Creates the extended data (e.g. OpenGL objects) that depend on having
  * the aux context active. FIXME: cleanup of this state.
@@ -1214,38 +1162,39 @@ static void showstats_statistic_initialise(showstats_statistic *sst)
     {
     case SHOWSTATS_TEXT:
         sst->initialised = true;
+        showstats_num_show++;
         break;
     case SHOWSTATS_GRAPH:
-#if defined(GL_ARB_shadow) && defined(GL_ARB_depth_texture)
-        if (!bugle_gl_has_extension(BUGLE_GL_ARB_shadow)
-            || !bugle_gl_has_extension(BUGLE_GL_ARB_depth_texture))
+#ifdef GL_ARB_texture_env_combine
+        if (!bugle_gl_has_extension(BUGLE_GL_ARB_texture_env_combine))
 #endif
         {
-            fputs("Graphing currently required shadow map support. Fallback code\n"
-                  "is on the TODO list.\n", stderr);
+            fputs("Graphing currently requires GL_ARB_texture_env_combine.\n"
+                  "Fallback code is on the TODO list.\n", stderr);
             exit(1);
         }
-#if defined(GL_ARB_shadow) && defined(GL_ARB_depth_texture)
+#ifdef GL_ARB_texture_env_combine
         else if (bugle_begin_internal_render())
         {
             GLint max_size;
 
+            showstats_num_graph++;
             sst->graph_size = 128;
             CALL_glGetIntegerv(GL_MAX_TEXTURE_SIZE, &max_size);
             if (max_size < sst->graph_size)
                 sst->graph_size = max_size;
             sst->graph_history = (double *) bugle_calloc(sst->graph_size, sizeof(double));
-            sst->graph_scaled = (GLushort *) bugle_calloc(sst->graph_size, sizeof(GLushort));
+            sst->graph_scaled = (GLubyte *) bugle_calloc(sst->graph_size, sizeof(GLubyte));
             sst->graph_scale = sst->st->maximum;
 
             CALL_glGenTextures(1, &sst->graph_tex);
             CALL_glBindTexture(GL_TEXTURE_1D, sst->graph_tex);
             CALL_glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-            CALL_glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+            CALL_glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
             CALL_glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_WRAP_S, GL_REPEAT);
             CALL_glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_COMPARE_MODE, GL_COMPARE_R_TO_TEXTURE);
-            CALL_glTexImage1D(GL_TEXTURE_1D, 0, GL_DEPTH_COMPONENT16_ARB,
-                              sst->graph_size, 0, GL_DEPTH_COMPONENT, GL_UNSIGNED_SHORT, sst->graph_scaled);
+            CALL_glTexImage1D(GL_TEXTURE_1D, 0, GL_ALPHA8,
+                              sst->graph_size, 0, GL_ALPHA, GL_UNSIGNED_BYTE, sst->graph_scaled);
             CALL_glBindTexture(GL_TEXTURE_1D, 0);
             bugle_end_internal_render("showstats_statistic_initialise", true);
             sst->initialised = true;
@@ -1276,12 +1225,132 @@ static void showstats_graph_rescale(showstats_statistic *sst, double new_scale)
     for (i = 0; i < sst->graph_size; i++)
     {
         v = sst->graph_history[i] >= 0.0 ? sst->graph_history[i] : 0.0;
-        sst->graph_scaled[i] = (GLushort) rint(v * 65535.0 / s);
+        sst->graph_scaled[i] = (GLubyte) rint(v * 255.0 / s);
     }
     CALL_glBindTexture(GL_TEXTURE_1D, sst->graph_tex);
     CALL_glTexSubImage1D(GL_TEXTURE_1D, 0, 0, sst->graph_size,
-                         GL_DEPTH_COMPONENT, GL_UNSIGNED_SHORT, sst->graph_scaled);
+                         GL_ALPHA, GL_UNSIGNED_BYTE, sst->graph_scaled);
     CALL_glBindTexture(GL_TEXTURE_1D, 0);
+}
+
+/* Helper function to apply one pass of the graph-drawing to all graphs.
+ * If graph_tex is true, the graph texture is bound before each draw
+ * call. If graph_texcoords is not NULL, it is populated with the
+ * appropriate texture coordinates before each draw call.
+ */
+static void showstats_graph_draw(GLenum mode, int xofs0, int yofs0,
+                                 bool graph_tex, GLfloat *graph_texcoords)
+{
+    showstats_statistic *sst;
+    bugle_list_node *i;
+    int xofs, yofs;
+
+    xofs = xofs0;
+    yofs = yofs0;
+    for (i = bugle_list_head(&showstats_stats); i; i = bugle_list_next(i))
+    {
+        sst = (showstats_statistic *) bugle_list_data(i);
+        if (sst->mode == SHOWSTATS_GRAPH && sst->graph_tex)
+        {
+            if (graph_texcoords)
+            {
+                GLfloat s1, s2;
+
+                s1 = (sst->graph_offset + 0.5f) / sst->graph_size;
+                s2 = (sst->graph_offset - 0.5f) / sst->graph_size + 1.0f;
+                graph_texcoords[0] = s1;
+                graph_texcoords[1] = s2;
+                graph_texcoords[2] = s2;
+                graph_texcoords[3] = s1;
+            }
+            CALL_glPushMatrix();
+            CALL_glTranslatef(xofs, yofs, 0.0f);
+            CALL_glScalef(sst->graph_size, 32.0f, 1.0f);
+            if (graph_tex)
+                CALL_glBindTexture(GL_TEXTURE_1D, sst->graph_tex);
+            CALL_glDrawArrays(mode, 0, 4);
+            CALL_glPopMatrix();
+            yofs -= 64;
+        }
+    }
+}
+
+static void showstats_update(showstats_struct *ss)
+{
+    struct timeval now;
+    bugle_list_node *i;
+    showstats_statistic *sst;
+    stats_substitution *sub;
+    double v;
+
+    gettimeofday(&now, NULL);
+    /* FIXME: make the time interval tunable */
+    /* FIXME: showstats_cur, showstats_prev, showstats_display should be part of ss */
+    if (time_elapsed(&ss->last_update, &now) >= 0.2)
+    {
+        ss->last_update = now;
+        stats_signal_values_gather(&showstats_cur);
+
+        if (showstats_prev.allocated)
+        {
+            if (showstats_display) showstats_display[0] = '\0';
+            for (i = bugle_list_head(&showstats_stats); i; i = bugle_list_next(i))
+            {
+                sst = (showstats_statistic *) bugle_list_data(i);
+                if (!sst->initialised) showstats_statistic_initialise(sst);
+                v = stats_expression_evaluate(sst->st->value, &showstats_prev, &showstats_cur);
+                switch (sst->mode)
+                {
+                case SHOWSTATS_TEXT:
+                    if (FINITE(v))
+                    {
+                        sub = stats_statistic_find_substitution(sst->st, v);
+                        if (sub)
+                            bugle_appendf(&showstats_display, &showstats_display_size,
+                                          "%10s %s\n", sub->replacement, sst->st->label);
+                        else
+                            bugle_appendf(&showstats_display, &showstats_display_size,
+                                          "%10.*f %s\n", sst->st->precision, v, sst->st->label);
+                    }
+                    break;
+                case SHOWSTATS_GRAPH:
+                    if (sst->graph_tex)
+                    {
+                        GLubyte vs;
+
+                        if (!FINITE(v)) v = 0.0;
+                        sst->graph_history[sst->graph_offset] = v;
+                        /* Check if we need to rescale */
+                        if (v > sst->graph_scale)
+                            showstats_graph_rescale(sst, v);
+                        v /= sst->graph_scale;
+                        if (v < 0.0) v = 0.0;
+                        vs = (GLubyte) rint(v * 255.0);
+                        CALL_glBindTexture(GL_TEXTURE_1D, sst->graph_tex);
+                        CALL_glTexSubImage1D(GL_TEXTURE_1D, 0, sst->graph_offset, 1, GL_ALPHA, GL_UNSIGNED_BYTE, &vs);
+                        CALL_glBindTexture(GL_TEXTURE_1D, 0);
+
+                        sst->graph_scaled[sst->graph_offset] = vs;
+                        sst->graph_offset++;
+                        if (sst->graph_offset >= sst->graph_size)
+                            sst->graph_offset = 0;
+                    }
+                    break;
+                }
+            }
+        }
+        if (ss->accumulating != 1 || !showstats_prev.allocated)
+        {
+            /* Bring prev up to date for next time. Swap so that we recycle
+             * memory for next time.
+             */
+            stats_signal_values tmp;
+            tmp = showstats_prev;
+            showstats_prev = showstats_cur;
+            showstats_cur = tmp;
+        }
+        if (ss->accumulating == 2) ss->accumulating = 1;
+    }
 }
 
 static bool showstats_glXSwapBuffers(function_call *call, const callback_data *data)
@@ -1293,13 +1362,26 @@ static bool showstats_glXSwapBuffers(function_call *call, const callback_data *d
     GLint viewport[4];
     bugle_list_node *i;
     showstats_statistic *sst;
-    stats_substitution *sub;
-    stats_signal_values tmp;
-    double v;
-    struct timeval now;
+    int xofs, yofs, xofs0, yofs0;
+
+    /* Canonical rectangle - scaled by matrix transforms */
+    GLfloat graph_vertices[8] =
+    {
+        0.0f, 0.0f,
+        1.0f, 0.0f,
+        1.0f, 1.0f,
+        0.0f, 1.0f
+    };
+    GLfloat graph_texcoords[4];
+    GLubyte graph_colors[16] =
+    {
+        0, 255, 0, 0,
+        0, 255, 0, 0,
+        0, 255, 0, 255,
+        0, 255, 0, 255
+    };
 
     ss = bugle_object_get_current_data(&bugle_context_class, showstats_view);
-    gettimeofday(&now, NULL);
     aux = bugle_get_aux_context(false);
     if (aux && bugle_begin_internal_render())
     {
@@ -1310,113 +1392,81 @@ static bool showstats_glXSwapBuffers(function_call *call, const callback_data *d
         dpy = CALL_glXGetCurrentDisplay();
         CALL_glXMakeContextCurrent(dpy, old_write, old_write, aux);
 
-        /* FIXME: make the time interval tunable */
-        if (time_elapsed(&ss->last_update, &now) >= 0.2)
-        {
-            ss->last_update = now;
-            stats_signal_values_gather(&showstats_cur);
+        showstats_update(ss);
 
-            if (showstats_prev.allocated)
-            {
-                if (showstats_display) showstats_display[0] = '\0';
-                for (i = bugle_list_head(&showstats_stats); i; i = bugle_list_next(i))
-                {
-                    sst = (showstats_statistic *) bugle_list_data(i);
-                    if (!sst->initialised) showstats_statistic_initialise(sst);
-                    v = stats_expression_evaluate(sst->st->value, &showstats_prev, &showstats_cur);
-                    switch (sst->mode)
-                    {
-                    case SHOWSTATS_TEXT:
-                        if (FINITE(v))
-                        {
-                            sub = stats_statistic_find_substitution(sst->st, v);
-                            if (sub)
-                                bugle_appendf(&showstats_display, &showstats_display_size,
-                                              "%10s %s\n", sub->replacement, sst->st->label);
-                            else
-                                bugle_appendf(&showstats_display, &showstats_display_size,
-                                              "%10.*f %s\n", sst->st->precision, v, sst->st->label);
-                        }
-                        break;
-                    case SHOWSTATS_GRAPH:
-                        if (sst->graph_tex)
-                        {
-                            GLushort vs;
-
-                            if (!FINITE(v)) v = 0.0;
-                            sst->graph_history[sst->graph_offset] = v;
-                            /* Check if we need to rescale */
-                            if (v > sst->graph_scale)
-                                showstats_graph_rescale(sst, v);
-                            v /= sst->graph_scale;
-                            if (v < 0.0) v = 0.0;
-                            vs = (GLushort) rint(v * 65535.0);
-                            CALL_glBindTexture(GL_TEXTURE_1D, sst->graph_tex);
-                            CALL_glTexSubImage1D(GL_TEXTURE_1D, 0, sst->graph_offset, 1, GL_DEPTH_COMPONENT, GL_UNSIGNED_SHORT, &vs);
-                            CALL_glBindTexture(GL_TEXTURE_1D, 0);
-
-                            sst->graph_scaled[sst->graph_offset] = vs;
-                            sst->graph_offset++;
-                            if (sst->graph_offset >= sst->graph_size)
-                                sst->graph_offset = 0;
-                        }
-                        break;
-                    }
-                }
-            }
-            if (ss->accumulating != 1 || !showstats_prev.allocated)
-            {
-                /* Bring prev up to date for next time. Swap so that we recycle
-                 * memory for next time.
-                 */
-                tmp = showstats_prev;
-                showstats_prev = showstats_cur;
-                showstats_cur = tmp;
-            }
-            if (ss->accumulating == 2) ss->accumulating = 1;
-        }
+        CALL_glPushAttrib(GL_CURRENT_BIT | GL_VIEWPORT_BIT);
+        /* Expand viewport to whole window */
+        CALL_glViewport(viewport[0], viewport[1], viewport[2], viewport[3]);
+        /* Make coordinates correspond to pixel offsets */
+        CALL_glTranslatef(-1.0f, -1.0f, 0.0f);
+        CALL_glScalef(2.0f / viewport[2], 2.0f / viewport[3], 1.0f);
 
         if (showstats_display)
-        {
-            /* We don't want to depend on glWindowPos since it
-             * needs OpenGL 1.4, but fortunately the aux context
-             * has identity MVP matrix.
-             */
-            CALL_glPushAttrib(GL_CURRENT_BIT | GL_VIEWPORT_BIT);
-            CALL_glViewport(viewport[0], viewport[1], viewport[2], viewport[3]);
-            CALL_glRasterPos2f(-0.9, 0.9);
-            showstats_render(ss, showstats_display);
-            CALL_glPopAttrib();
-        }
+            bugle_text_render(showstats_display, 16, viewport[3] - 16);
 
-        CALL_glPushAttrib(GL_VIEWPORT_BIT);
-        CALL_glViewport(viewport[0], viewport[1], viewport[2], viewport[3]);
-        CALL_glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
+#ifdef GL_ARB_texture_env_combine
+        /* The graph drawing is done in several passes, to avoid multiple
+         * state changes.
+         */
+        xofs0 = 16;
+        yofs0 = 16 + 64 * (showstats_num_graph - 1);
+
+        /* Common state to first several passes */
+        CALL_glAlphaFunc(GL_GREATER, 0.0f);
+        CALL_glVertexPointer(2, GL_FLOAT, 0, graph_vertices);
+        CALL_glTexCoordPointer(1, GL_FLOAT, 0, graph_texcoords);
+        CALL_glColorPointer(4, GL_UNSIGNED_BYTE, 0, graph_colors);
+        CALL_glEnableClientState(GL_VERTEX_ARRAY);
+
+        /* Pass 1: clear the background */
+        CALL_glColor3f(0.0f, 0.0f, 0.0f);
+        showstats_graph_draw(GL_QUADS, xofs0, yofs0, false, NULL);
+
+        /* Pass 2: draw the graphs */
+        CALL_glEnable(GL_ALPHA_TEST);
         CALL_glEnable(GL_TEXTURE_1D);
+        CALL_glEnableClientState(GL_COLOR_ARRAY);
+        CALL_glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+        CALL_glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_COMBINE_ARB);
+        CALL_glTexEnvi(GL_TEXTURE_ENV, GL_SOURCE0_RGB_ARB, GL_PREVIOUS);
+        CALL_glTexEnvi(GL_TEXTURE_ENV, GL_COMBINE_RGB_ARB, GL_REPLACE);
+        CALL_glTexEnvi(GL_TEXTURE_ENV, GL_COMBINE_ALPHA_ARB, GL_SUBTRACT_ARB);
+        showstats_graph_draw(GL_QUADS, xofs0, yofs0, true, graph_texcoords);
+        CALL_glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
+        CALL_glTexEnvi(GL_TEXTURE_ENV, GL_SOURCE0_RGB_ARB, GL_TEXTURE);
+        CALL_glTexEnvi(GL_TEXTURE_ENV, GL_COMBINE_RGB_ARB, GL_MODULATE);
+        CALL_glTexEnvi(GL_TEXTURE_ENV, GL_COMBINE_ALPHA_ARB, GL_MODULATE);
+        CALL_glDisableClientState(GL_TEXTURE_COORD_ARRAY);
+        CALL_glDisableClientState(GL_COLOR_ARRAY);
+        CALL_glDisable(GL_TEXTURE_1D);
+        CALL_glDisable(GL_ALPHA_TEST);
+        CALL_glBindTexture(GL_TEXTURE_1D, 0);
+
+        /* Pass 3: draw the border */
+        CALL_glColor3f(1.0f, 1.0f, 1.0f);
+        showstats_graph_draw(GL_LINE_LOOP, xofs0, yofs0, false, NULL);
+
+        /* Pass 4: labels */
+        xofs = xofs0;
+        yofs = yofs0;
         for (i = bugle_list_head(&showstats_stats); i; i = bugle_list_next(i))
         {
             sst = (showstats_statistic *) bugle_list_data(i);
             if (sst->mode == SHOWSTATS_GRAPH && sst->graph_tex)
             {
-                GLfloat s;
-
-                s = (GLfloat) sst->graph_offset / sst->graph_size;
-                CALL_glBindTexture(GL_TEXTURE_1D, sst->graph_tex);
-                CALL_glBegin(GL_QUADS);
-                CALL_glTexCoord3f(s, 0.0f, 0.0f);
-                CALL_glVertex2f(-0.95f, -0.95f);
-                CALL_glTexCoord3f(s + 1.0f, 0.0f, 0.0f);
-                CALL_glVertex2f(-0.6f, -0.95f);
-                CALL_glTexCoord3f(s + 1.0f, 0.0f, 1.0f);
-                CALL_glVertex2f(-0.6f, -0.75f);
-                CALL_glTexCoord3f(s, 0.0f, 1.0f);
-                CALL_glVertex2f(-0.95f, -0.75f);
-                CALL_glEnd();
+                bugle_text_render(sst->st->label, xofs, yofs + 48);
+                yofs -= 64;
             }
         }
-        CALL_glDisable(GL_TEXTURE_1D);
-        CALL_glBindTexture(GL_TEXTURE_1D, 0);
-        CALL_glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
+
+        /* Clean up */
+        CALL_glDisableClientState(GL_VERTEX_ARRAY);
+        CALL_glVertexPointer(4, GL_FLOAT, 0, NULL);
+        CALL_glTexCoordPointer(4, GL_FLOAT, 0, NULL);
+        CALL_glColorPointer(4, GL_FLOAT, 0, NULL);
+        CALL_glAlphaFunc(GL_ALWAYS, 0.0f);
+#endif
+        CALL_glLoadIdentity();
         CALL_glPopAttrib();
 
         CALL_glXMakeContextCurrent(dpy, old_write, old_read, real);
@@ -1475,8 +1525,8 @@ static bool showstats_initialise(filter_set *handle)
     bugle_register_filter_depends("showstats", "stats");
     bugle_register_filter_catches(f, GROUP_glXSwapBuffers, false, showstats_glXSwapBuffers);
     showstats_view = bugle_object_class_register(&bugle_context_class,
-                                                 showstats_struct_initialise,
-                                                 showstats_struct_destroy,
+                                                 NULL,
+                                                 NULL,
                                                  sizeof(showstats_struct));
 
     /* Value of arg is irrelevant, only truth value */
@@ -1485,7 +1535,8 @@ static bool showstats_initialise(filter_set *handle)
     bugle_register_xevent_key(&key_showstats_noaccumulate, NULL,
                               showstats_accumulate_callback, NULL);
 
-
+    showstats_num_show = 0;
+    showstats_num_graph = 0;
     for (i = bugle_list_head(&showstats_stats); i; i = bugle_list_next(i))
     {
         sst = (showstats_statistic *) bugle_list_data(i);

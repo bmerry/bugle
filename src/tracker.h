@@ -58,6 +58,21 @@ bool bugle_in_begin_end(void);
  */
 GLXContext bugle_get_aux_context(bool shared);
 
+/* Draws text at the specified location. The current colour is used to
+ * render the text. The text is rendered with alpha, so alpha-test or
+ * alpha-blending can be used to obtain a transparent background.
+ * Pre-conditions:
+ * - the unshared aux context is active
+ * - the projection matrix is the identity
+ * - the modelview matrix is the identity, scaled and optionally translated
+ *   such that one unit is one pixel
+ * - the pixel unpack state is the default
+ * - no textures are enabled
+ * - must be inside begin_internal_render/end_internal_render
+ * - there must be room for one push on the attribute stack
+ */
+void bugle_text_render(const char *msg, int x, int y);
+
 /* The number and mode of the current display list being compiled,
  * or 0 and GL_NONE if none.
  * trackdisplaylist is required.

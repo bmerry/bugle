@@ -1,7 +1,11 @@
-* Rewrite of the statistics engine:
+* Rewrite of the statistics engine
   - Configuration file for statistics
   - Statistics from NVPerfSDK
-  - Prettier showstats
+* Rewrite of showstats filterset
+  - Opaque background (now readable over a white scene)
+  - Faster text rendering via textured quads
+  - Aligned layout
+  - Graphing
 * Reduce GL namespace pollution from internal objects
 * Fix some shutdown code including shutdown ordering
 

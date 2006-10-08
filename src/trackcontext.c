@@ -29,6 +29,9 @@
 #include <assert.h>
 #include <stddef.h>
 #include <GL/glx.h>
+#include <GL/gl.h>
+#include <X11/Xlib.h>
+#include <X11/Xutil.h>
 
 /* Some constructors like the context to be current when they are run.
  * To facilitate this, the object is not constructed until the first
@@ -46,12 +49,21 @@ static bugle_thread_mutex_t context_mutex = BUGLE_THREAD_MUTEX_INITIALIZER;
 
 typedef struct
 {
+    GLuint texture;
+    int char_width, char_height;
+    int texture_width, texture_height;
+} trackcontext_font;
+
+typedef struct
+{
     Display *dpy;
     GLXContext root_context;  /* context that owns the namespace - possibly self */
     GLXContext aux_shared;
     GLXContext aux_unshared;
     XVisualInfo visual_info;
     bool use_visual_info;
+
+    trackcontext_font font;
 } trackcontext_data;
 
 static bool trackcontext_newcontext(function_call *call, const callback_data *data)
@@ -283,6 +295,141 @@ GLXContext bugle_get_aux_context(bool shared)
         *aux = ctx;
     }
     return *aux;
+}
+
+/* FIXME: corresponding shutdown code */
+static bool trackcontext_font_init(trackcontext_font *font)
+{
+    Display *dpy;
+    Pixmap pixmap;
+    XImage *image;
+    char **font_names;
+    int font_count;
+    XFontStruct *fs;
+    XGCValues values;
+    GC gc;
+    int x, y;
+    int i;
+    GLubyte *texture_data;
+
+    dpy = CALL_glXGetCurrentDisplay();
+    if (!dpy) return NULL;
+
+    /* Locate the font */
+    font_names = XListFonts(dpy, "-*-courier-medium-r-normal--10-*", 1, &font_count);
+    if (!font_count)
+        return false;
+    fs = XLoadQueryFont(dpy, font_names[0]);
+
+    font->char_width = fs->max_bounds.rbearing - fs->min_bounds.lbearing;
+    font->char_height = fs->max_bounds.ascent + fs->max_bounds.descent;
+    /*
+    font->char_x = -fs->min_bounds.lbearing;
+    font->char_y = fs->descent - 1;
+    */
+    font->texture_width = 4;
+    font->texture_height = 4;
+    while (font->texture_width < 16 * font->char_width)
+        font->texture_width *= 2;
+    while (font->texture_height < 16 * font->char_height)
+        font->texture_height *= 2;
+
+    /* Allocate X structures */
+    pixmap = XCreatePixmap(dpy, glXGetCurrentDrawable(),
+                           font->texture_width, font->texture_height, 1);
+    values.foreground = BlackPixel(dpy, DefaultScreen(dpy));
+    values.foreground = WhitePixel(dpy, DefaultScreen(dpy));
+    values.font = fs->fid;
+    gc = XCreateGC(dpy, pixmap, GCForeground | GCBackground | GCFont, &values);
+    /* Clear to black */
+    XSetForeground(dpy, gc, 0);
+    XFillRectangle(dpy, pixmap, gc, 0, 0, font->texture_width, font->texture_height);
+    XSetForeground(dpy, gc, 1); /* white */
+    for (i = 0; i < 256; i++)
+    {
+        int r, c;
+        char ch;
+
+        r = (i >> 4) & 0xf;
+        c = i & 0xf;
+        ch = i;
+        XDrawString(dpy, pixmap, gc,
+                    -fs->min_bounds.lbearing + font->char_width * c,
+                    fs->max_bounds.ascent + font->texture_height - font->char_height * (r + 1),
+                    &ch, 1);
+    }
+
+    image = XGetImage(dpy, pixmap, 0, 0, font->texture_width, font->texture_height, 1, XYPixmap);
+    texture_data = (GLubyte *) bugle_calloc(font->texture_width * font->texture_height, sizeof(GLubyte));
+    for (y = 0; y < font->texture_height; y++)
+        for (x = 0; x < font->texture_width; x++)
+            if (XGetPixel(image, x, y))
+                texture_data[(font->texture_height - 1 - y) * font->texture_width + x] = 255;
+    /* FIXME: use a proxy to check if texture size is supported */
+    CALL_glGenTextures(1, &font->texture);
+    CALL_glPushAttrib(GL_TEXTURE_BIT);
+    CALL_glBindTexture(GL_TEXTURE_2D, font->texture);
+    CALL_glTexImage2D(GL_TEXTURE_2D, 0, GL_INTENSITY4,
+                      font->texture_width, font->texture_height, 0,
+                      GL_LUMINANCE, GL_UNSIGNED_BYTE, texture_data);
+    CALL_glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    CALL_glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    CALL_glPopAttrib();
+
+    free(texture_data);
+    XDestroyImage(image);
+    XFreePixmap(dpy, pixmap);
+    XFreeGC(dpy, gc);
+    XUnloadFont(dpy, fs->fid);
+    XFreeFontInfo(font_names, fs, 1);
+    return true;
+}
+
+void bugle_text_render(const char *msg, int x, int y)
+{
+    trackcontext_data *data;
+    int x0;
+
+    data = bugle_object_get_current_data(&bugle_context_class, trackcontext_view);
+    assert(data);
+
+    if (!data->font.texture)
+        trackcontext_font_init(&data->font);
+
+    x0 = x;
+    CALL_glPushAttrib(GL_CURRENT_BIT | GL_TEXTURE_BIT | GL_ENABLE_BIT);
+    CALL_glBindTexture(GL_TEXTURE_2D, data->font.texture);
+    CALL_glEnable(GL_TEXTURE_2D);
+    CALL_glBegin(GL_QUADS);
+    for (; *msg; msg++)
+    {
+        int r, c;
+        GLfloat s1, s2, t1, t2;
+
+        if (*msg == '\n')
+        {
+            x = x0;
+            y -= data->font.char_height;
+            continue;
+        }
+        r = (*msg >> 4) & 0xf;
+        c = *msg & 0xf;
+        s1 = data->font.char_width * c / (GLfloat) data->font.texture_width;
+        s2 = data->font.char_width * (c + 1) / (GLfloat) data->font.texture_width;
+        t1 = data->font.char_height * r / (GLfloat) data->font.texture_height;
+        t2 = data->font.char_height * (r + 1) / (GLfloat) data->font.texture_height;
+        CALL_glTexCoord2f(s1, t1);
+        CALL_glVertex2i(x, y - data->font.char_height);
+        CALL_glTexCoord2f(s2, t1);
+        CALL_glVertex2i(x + data->font.char_width, y - data->font.char_height);
+        CALL_glTexCoord2f(s2, t2);
+        CALL_glVertex2i(x + data->font.char_width, y);
+        CALL_glTexCoord2f(s1, t2);
+        CALL_glVertex2i(x, y);
+        x += data->font.char_width;
+    }
+    CALL_glEnd();
+    CALL_glPopAttrib();
 }
 
 void trackcontext_initialise(void)
