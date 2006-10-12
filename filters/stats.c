@@ -1134,6 +1134,7 @@ typedef struct
 
     /* Graph-specific stuff */
     double graph_scale;     /* Largest value on graph */
+    char graph_scale_label[64]; /* Text equivalent of graph_scale */
     GLsizei graph_size;     /* Number of history samples */
     double *graph_history;  /* Raw (unscaled) history values */
     GLubyte *graph_scaled;  /* Scaled according to graph_scale for OpenGL */
@@ -1186,6 +1187,7 @@ static void showstats_statistic_initialise(showstats_statistic *sst)
             sst->graph_history = (double *) bugle_calloc(sst->graph_size, sizeof(double));
             sst->graph_scaled = (GLubyte *) bugle_calloc(sst->graph_size, sizeof(GLubyte));
             sst->graph_scale = sst->st->maximum;
+            sst->graph_scale_label[0] = '\0';
 
             CALL_glGenTextures(1, &sst->graph_tex);
             CALL_glBindTexture(GL_TEXTURE_1D, sst->graph_tex);
@@ -1208,17 +1210,34 @@ static void showstats_graph_rescale(showstats_statistic *sst, double new_scale)
 {
     double p10 = 1.0;
     double s = 0.0, v;
-    int i;
+    int i, e = 0;
     /* Find a suitably large, "nice" value */
 
     while (new_scale > 5.0)
     {
         p10 *= 10.0;
         new_scale /= 10.0;
+        e++;
     }
     if (new_scale <= 1.0) s = p10;
     else if (new_scale <= 2.0) s = 2.0 * p10;
     else s = 5.0 * p10;
+
+    if (e > 11)
+        snprintf(sst->graph_scale_label, sizeof(sst->graph_scale_label),
+                 "%.0e", s);
+    else if (e >= 9)
+        snprintf(sst->graph_scale_label, sizeof(sst->graph_scale_label),
+                 "%.0fG", s * 1e-9);
+    else if (e >= 6)
+        snprintf(sst->graph_scale_label, sizeof(sst->graph_scale_label),
+                 "%.0fM", s * 1e-6);
+    else if (e >= 3)
+        snprintf(sst->graph_scale_label, sizeof(sst->graph_scale_label),
+                 "%.0fK", s * 1e-3);
+    else
+        snprintf(sst->graph_scale_label, sizeof(sst->graph_scale_label),
+                 "%.0f", s);
 
     sst->graph_scale = s;
     /* Regenerate the texture at the new scale */
@@ -1231,48 +1250,6 @@ static void showstats_graph_rescale(showstats_statistic *sst, double new_scale)
     CALL_glTexSubImage1D(GL_TEXTURE_1D, 0, 0, sst->graph_size,
                          GL_ALPHA, GL_UNSIGNED_BYTE, sst->graph_scaled);
     CALL_glBindTexture(GL_TEXTURE_1D, 0);
-}
-
-/* Helper function to apply one pass of the graph-drawing to all graphs.
- * If graph_tex is true, the graph texture is bound before each draw
- * call. If graph_texcoords is not NULL, it is populated with the
- * appropriate texture coordinates before each draw call.
- */
-static void showstats_graph_draw(GLenum mode, int xofs0, int yofs0,
-                                 bool graph_tex, GLfloat *graph_texcoords)
-{
-    showstats_statistic *sst;
-    bugle_list_node *i;
-    int xofs, yofs;
-
-    xofs = xofs0;
-    yofs = yofs0;
-    for (i = bugle_list_head(&showstats_stats); i; i = bugle_list_next(i))
-    {
-        sst = (showstats_statistic *) bugle_list_data(i);
-        if (sst->mode == SHOWSTATS_GRAPH && sst->graph_tex)
-        {
-            if (graph_texcoords)
-            {
-                GLfloat s1, s2;
-
-                s1 = (sst->graph_offset + 0.5f) / sst->graph_size;
-                s2 = (sst->graph_offset - 0.5f) / sst->graph_size + 1.0f;
-                graph_texcoords[0] = s1;
-                graph_texcoords[1] = s2;
-                graph_texcoords[2] = s2;
-                graph_texcoords[3] = s1;
-            }
-            CALL_glPushMatrix();
-            CALL_glTranslatef(xofs, yofs, 0.0f);
-            CALL_glScalef(sst->graph_size, 32.0f, 1.0f);
-            if (graph_tex)
-                CALL_glBindTexture(GL_TEXTURE_1D, sst->graph_tex);
-            CALL_glDrawArrays(mode, 0, 4);
-            CALL_glPopMatrix();
-            yofs -= 64;
-        }
-    }
 }
 
 static void showstats_update(showstats_struct *ss)
@@ -1350,6 +1327,48 @@ static void showstats_update(showstats_struct *ss)
             showstats_cur = tmp;
         }
         if (ss->accumulating == 2) ss->accumulating = 1;
+    }
+}
+
+/* Helper function to apply one pass of the graph-drawing to all graphs.
+ * If graph_tex is true, the graph texture is bound before each draw
+ * call. If graph_texcoords is not NULL, it is populated with the
+ * appropriate texture coordinates before each draw call.
+ */
+static void showstats_graph_draw(GLenum mode, int xofs0, int yofs0,
+                                 bool graph_tex, GLfloat *graph_texcoords)
+{
+    showstats_statistic *sst;
+    bugle_list_node *i;
+    int xofs, yofs;
+
+    xofs = xofs0;
+    yofs = yofs0;
+    for (i = bugle_list_head(&showstats_stats); i; i = bugle_list_next(i))
+    {
+        sst = (showstats_statistic *) bugle_list_data(i);
+        if (sst->mode == SHOWSTATS_GRAPH && sst->graph_tex)
+        {
+            if (graph_texcoords)
+            {
+                GLfloat s1, s2;
+
+                s1 = (sst->graph_offset + 0.5f) / sst->graph_size;
+                s2 = (sst->graph_offset - 0.5f) / sst->graph_size + 1.0f;
+                graph_texcoords[0] = s1;
+                graph_texcoords[1] = s2;
+                graph_texcoords[2] = s2;
+                graph_texcoords[3] = s1;
+            }
+            CALL_glPushMatrix();
+            CALL_glTranslatef(xofs, yofs, 0.0f);
+            CALL_glScalef(sst->graph_size, 32.0f, 1.0f);
+            if (graph_tex)
+                CALL_glBindTexture(GL_TEXTURE_1D, sst->graph_tex);
+            CALL_glDrawArrays(mode, 0, 4);
+            CALL_glPopMatrix();
+            yofs -= 64;
+        }
     }
 }
 
@@ -1455,6 +1474,7 @@ static bool showstats_glXSwapBuffers(function_call *call, const callback_data *d
             if (sst->mode == SHOWSTATS_GRAPH && sst->graph_tex)
             {
                 bugle_text_render(sst->st->label, xofs, yofs + 48);
+                bugle_text_render(sst->graph_scale_label, xofs + sst->graph_size + 2, yofs + 40);
                 yofs -= 64;
             }
         }
