@@ -94,7 +94,7 @@ static bool trackcontext_newcontext(function_call *call, const callback_data *da
     {
         bugle_thread_mutex_lock(&context_mutex);
 
-        base = (trackcontext_data *) bugle_malloc(sizeof(trackcontext_data));
+        base = (trackcontext_data *) bugle_calloc(1, sizeof(trackcontext_data));
         base->dpy = dpy;
         base->aux_shared = NULL;
         base->aux_unshared = NULL;
