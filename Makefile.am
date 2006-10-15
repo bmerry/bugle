@@ -19,8 +19,12 @@ dist_man_MANS = doc/man1/gldb.1 doc/man3/bugle.3 \
 	doc/man7/bugle-screenshot.7 \
 	doc/man7/bugle-showerror.7 \
 	doc/man7/bugle-showextensions.7 \
+	doc/man7/bugle-stats_basic.7 \
+	doc/man7/bugle-stats_primitives.7 \
+	doc/man7/bugle-stats_fragments.7 \
+	doc/man7/bugle-stats_nv.7 \
 	doc/man7/bugle-showstats.7 \
-	doc/man7/bugle-stats.7 \
+	doc/man7/bugle-logstats.7 \
 	doc/man7/bugle-trace.7 \
 	doc/man7/bugle-unwindstack.7 \
 	doc/man7/bugle-wireframe.7

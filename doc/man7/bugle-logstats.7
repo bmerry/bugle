@@ -1,0 +1,50 @@
+.TH logstats 7 "October 2006" BUGLE "User manual"
+.SH NAME
+logstats \- log statistics to file
+.SH SYNOPSIS
+.nf
+filterset logstats
+{
+    show "statistic1"
+    show "statistic2"
+}
+.SH DESCRIPTION
+The
+.B logstats
+filter-set writes statistics to the BuGLe log (see
+.BR bugle-log (3)).
+The statistics are gathered from other filter-sets, which must be listed in
+the chain ahead of
+.BR logstats .
+
+The statistics to display are selected by the
+.B show
+pseudo-variable in the
+.B filters
+file. These reference statistics that are defined in
+.BR ~/.bugle/statistics .
+Most users should just copy this file from the example in the BuGLe
+documentation; it lists most of the statistics that one might wish to
+use.
+.SH BUGS
+The filter-set has some overhead, although it is less than 1ms if just
+showing the frame rate (graphing is a lot more expensive). In addition,
+the act of displaying the statistics can modify them, particularly
+those gathered from hardware counters.
+.SH FILES
+.TP
+.B $HOME/.bugle/statistics
+Formulae and metadata for statistics
+.SH AUTHOR
+.B gldb
+and the
+.B bugle
+library are written and maintained by Bruce Merry
+<bmerry@users.sourceforge.net>.
+.SH SEE ALSO
+.BR bugle (3),
+.BR bugle-stats_basic (3),
+.BR bugle-stats_primitives (3),
+.BR bugle-stats_fragments (3),
+.BR bugle-stats_nv (3),
+.BR bugle-logstats (3)
