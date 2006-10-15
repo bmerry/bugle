@@ -185,12 +185,7 @@ budgie_type bugle_gl_type_to_type(GLenum gl_type)
     case GL_SAMPLER_2D_RECT_SHADOW:
         return TYPE_5GLint;
 #endif
-    /* The 2.1 spec doesn't define tokens for these. I'm guessing it will be
-     * GL_FLOAT_MATaXb, but I don't want to break compilation if I have it
-     * wrong. The second condition can go away once we see what occurs in
-     * glext.h.
-     */
-#if defined(GL_VERSION_2_1) && defined(GL_FLOAT_MAT2X3)
+#if defined(GL_VERSION_2_1)
     case GL_FLOAT_MAT2X3: return TYPE_8GLmat2x3; break;
     case GL_FLOAT_MAT3X2: return TYPE_8GLmat3x2; break;
     case GL_FLOAT_MAT2X4: return TYPE_8GLmat2x4; break;
@@ -286,14 +281,23 @@ int bugle_gl_format_to_count(GLenum format, GLenum type)
         case GL_BLUE:
         case GL_ALPHA:
         case GL_LUMINANCE:
+#ifdef GL_EXT_texture_sRGB
+        case GL_SLUMINANCE_EXT:
+#endif
         case GL_STENCIL_INDEX:
         case GL_DEPTH_COMPONENT:
             return 1;
         case GL_LUMINANCE_ALPHA:
+#ifdef GL_EXT_texture_sRGB
+        case GL_SLUMINANCE_ALPHA_EXT:
+#endif
             return 2;
         case GL_RGB:
 #ifdef GL_EXT_bgra
         case GL_BGR:
+#endif
+#ifdef GL_EXT_texture_sRGB
+            case GL_S
 #endif
             return 3;
         case GL_RGBA:
@@ -302,6 +306,9 @@ int bugle_gl_format_to_count(GLenum format, GLenum type)
 #endif
 #ifdef GL_EXT_abgr
         case GL_ABGR_EXT:
+#endif
+#ifdef GL_EXT_texture_sRGB
+        case GL_SRGB_ALPHA_EXT:
 #endif
             return 4;
         default:
