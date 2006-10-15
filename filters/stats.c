@@ -88,41 +88,29 @@ static double time_elapsed(struct timeval *old, struct timeval *now)
     return (now->tv_sec - old->tv_sec) + 1e-6 * (now->tv_usec - old->tv_usec);
 }
 
-/* If the signal does not exist, it is created. Newly created signals do
- * not have a slot number (slot -1); only activated signals get slots.
- * This allows the configuration file to specify non-existant signals.
- * FIXME: we really should warn when this happens, since otherwise stats
- * will be silently omitted if the generator is missing from the chain.
- */
+/* Finds the named signal object. If it does not exist, NULL is returned. */
 static stats_signal *stats_signal_get(const char *name)
 {
-    stats_signal *si;
-
-    si = bugle_hash_get(&stats_signals, name);
-    if (!si)
-    {
-        si = (stats_signal *) bugle_malloc(sizeof(stats_signal));
-        si->value = NAN();
-        si->integral = 0.0;
-        si->last_updated.tv_sec = 0;
-        si->last_updated.tv_usec = 0;
-        si->active = false;
-        si->offset = -1;
-        si->user_data = NULL;
-        si->activate = NULL;
-        bugle_hash_set(&stats_signals, name, si);
-    }
-    return si;
+    return bugle_hash_get(&stats_signals, name);
 }
 
+/* Used by providers to list signals that they expose. Signals may not
+ * be multiply registered. Slots are only assigned when signals are
+ * activated.
+ */
 static stats_signal *stats_signal_register(const char *name, void *user_data,
                                            bool (*activate)(stats_signal *))
 {
     stats_signal *si;
 
-    si = stats_signal_get(name);
+    assert(!stats_signal_get(name));
+    si = (stats_signal *) bugle_calloc(1, sizeof(stats_signal));
+    si->value = NAN();
+    si->integral = 0.0;
+    si->offset = -1;
     si->user_data = user_data;
     si->activate = activate;
+    bugle_hash_set(&stats_signals, name, si);
     return si;
 }
 
@@ -155,7 +143,8 @@ static double stats_expression_evaluate(const stats_expression *expr,
         }
     case STATS_EXPRESSION_SIGNAL:
         /* Generate a NaN, and let good old IEEE 754 take care of propagating it. */
-        if (!expr->signal->active) return NAN();
+        if (!expr->signal)
+            return NAN();
         switch (expr->op)
         {
         case STATS_OPERATION_DELTA:
@@ -194,7 +183,7 @@ static void stats_signal_add(stats_signal *si, double dv)
         stats_signal_update(si, si->value + dv);
 }
 
-static void stats_signal_activate(stats_signal *si)
+static bool stats_signal_activate(stats_signal *si)
 {
     if (!si->active)
     {
@@ -207,6 +196,7 @@ static void stats_signal_activate(stats_signal *si)
             bugle_list_append(&stats_signals_active, si);
         }
     }
+    return si->active;
 }
 
 static void stats_signal_values_init(stats_signal_values *sv)
@@ -259,36 +249,34 @@ static void stats_signal_values_gather(stats_signal_values *sv)
     }
 }
 
-/* Fills in the signal field of signal expressions */
-static void stats_expression_initialise_signals(stats_expression *expr)
+/* Initialises and activates all signals that are this expression depends on.
+ * It returns true if they were successfully activated, or false if any
+ * failed to activate or were unregistered.
+ */
+static bool stats_expression_activate_signals(stats_expression *expr)
 {
+    bool ans = true;
     switch (expr->type)
     {
-    case STATS_EXPRESSION_NUMBER: break;
+    case STATS_EXPRESSION_NUMBER:
+        return true;
     case STATS_EXPRESSION_OPERATION:
-        if (expr->left) stats_expression_initialise_signals(expr->left);
-        if (expr->right) stats_expression_initialise_signals(expr->right);
-        break;
+        if (expr->left)
+            ans = stats_expression_activate_signals(expr->left) && ans;
+        if (expr->right)
+            ans = stats_expression_activate_signals(expr->right) && ans;
+        return ans;
     case STATS_EXPRESSION_SIGNAL:
         expr->signal = stats_signal_get(expr->signal_name);
-        break;
+        if (!expr->signal)
+        {
+            fprintf(stderr, "Signal %s is not registered - missing filter-set?\n",
+                    expr->signal_name);
+            return false;
+        }
+        return stats_signal_activate(expr->signal);
     }
-}
-
-/* Activates all signals that are this expression depends on */
-static void stats_expression_activate_signals(stats_expression *expr)
-{
-    switch (expr->type)
-    {
-    case STATS_EXPRESSION_NUMBER: break;
-    case STATS_EXPRESSION_OPERATION:
-        if (expr->left) stats_expression_activate_signals(expr->left);
-        if (expr->right) stats_expression_activate_signals(expr->right);
-        break;
-    case STATS_EXPRESSION_SIGNAL:
-        stats_signal_activate(expr->signal);
-        break;
-    }
+    return false;  /* should never be reached */
 }
 
 /* Frees the expression object itself and its children */
@@ -339,11 +327,7 @@ static void stats_statistic_free(stats_statistic *st)
     free(st);
 }
 
-/* Returns the statistic if it is registered, or NULL if not. Note that
- * it is returned even if some signals are missing; call
- * stats_statistic_complete to determine whether this is the case.
- * FIXME: that function does not yet exist.
- */
+/* Returns the statistic if it is registered, or NULL if not. */
 static stats_statistic *stats_statistic_find(const char *name)
 {
     return (stats_statistic *) bugle_hash_get(&stats_statistics_table, name);
@@ -402,7 +386,6 @@ static bool stats_load_config(void)
             for (i = bugle_list_head(stats_statistics); i; i = bugle_list_next(i))
             {
                 st = (stats_statistic *) bugle_list_data(i);
-                stats_expression_initialise_signals(st->value);
                 bugle_hash_set(&stats_statistics_table, st->name, st);
             }
             free(config);
@@ -811,6 +794,7 @@ typedef struct
     bool use_cycles;
     bool accumulate;
     bool experiment;
+    char *name;
 } stats_signal_nv;
 
 static bugle_linked_list stats_nv_active;
@@ -905,7 +889,11 @@ static bool stats_nv_signal_activate(stats_signal *st)
     stats_signal_nv *nv;
 
     nv = (stats_signal_nv *) st->user_data;
-    if (fNVPMAddCounter(nv->index) != NVPM_OK) return false;
+    if (fNVPMAddCounter(nv->index) != NVPM_OK)
+    {
+        fprintf(stderr, "Error: failed to add NVPM counter %s\n", nv->name);
+        return false;
+    }
     if (nv->experiment) stats_nv_experiment_mode = true;
     bugle_list_append(&stats_nv_active, st);
     return true;
@@ -931,6 +919,7 @@ static int stats_nv_enumerate(UINT index, char *name)
             nv->accumulate = (accum == 1);
             nv->use_cycles = (cycles == 1);
             nv->experiment = (counter_type == NVPM_CT_SIMEXP);
+            nv->name = bugle_strdup(name);
             si = stats_signal_register(stat_name, nv,
                                        stats_nv_signal_activate);
             bugle_list_append(&stats_nv_registered, si);
@@ -1008,11 +997,14 @@ static void stats_nv_destroy(filter_set *handle)
 {
     bugle_list_node *i;
     stats_signal *si;
+    stats_signal_nv *nv;
 
     for (i = bugle_list_head(&stats_nv_registered); i; i = bugle_list_next(i))
     {
         si = (stats_signal *) bugle_list_data(i);
-        free(si->user_data);
+        nv = (stats_signal_nv *) si->user_data;
+        free(nv->name);
+        free(nv);
     }
     fNVPMRemoveAllCounters();
     fNVPMShutdown();
@@ -1089,14 +1081,17 @@ static bool logstats_initialise(filter_set *handle)
         st = stats_statistic_find(name);
         if (!st)
         {
-            fprintf(stderr, "Statistic '%s' not found.\n", name);
+            fprintf(stderr, "Error: statistic '%s' not found.\n", name);
             stats_statistic_list("logstats");
             return false;
         }
+        else if (stats_expression_activate_signals(st->value))
+            bugle_list_append(&logstats_show, st);
         else
         {
-            stats_expression_activate_signals(st->value);
-            bugle_list_append(&logstats_show, st);
+            fprintf(stderr, "Error: could not initialise statistic '%s'\n",
+                    st->name);
+            exit(1);
         }
     }
     bugle_list_clear(&logstats_show_requested);
@@ -1117,6 +1112,10 @@ typedef struct
 {
     struct timeval last_update;
     int accumulating;  /* 0: no  1: yes  2: yes, reset counters */
+
+    stats_signal_values showstats_prev, showstats_cur;
+    char *showstats_display;
+    size_t showstats_display_size;
 } showstats_struct;
 
 typedef enum
@@ -1148,13 +1147,10 @@ static bugle_linked_list showstats_stats;  /* List of showstats_statistic */
 static int showstats_num_show, showstats_num_graph;
 static xevent_key key_showstats_accumulate = { NoSymbol, 0, true };
 static xevent_key key_showstats_noaccumulate = { NoSymbol, 0, true };
-
-static stats_signal_values showstats_prev, showstats_cur;
-static char *showstats_display = NULL;
-static size_t showstats_display_size = 0;
+static double showstats_time = 0.2;
 
 /* Creates the extended data (e.g. OpenGL objects) that depend on having
- * the aux context active. FIXME: cleanup of this state.
+ * the aux context active.
  */
 static void showstats_statistic_initialise(showstats_statistic *sst)
 {
@@ -1262,20 +1258,19 @@ static void showstats_update(showstats_struct *ss)
 
     gettimeofday(&now, NULL);
     /* FIXME: make the time interval tunable */
-    /* FIXME: showstats_cur, showstats_prev, showstats_display should be part of ss */
-    if (time_elapsed(&ss->last_update, &now) >= 0.2)
+    if (time_elapsed(&ss->last_update, &now) >= showstats_time)
     {
         ss->last_update = now;
-        stats_signal_values_gather(&showstats_cur);
+        stats_signal_values_gather(&ss->showstats_cur);
 
-        if (showstats_prev.allocated)
+        if (ss->showstats_prev.allocated)
         {
-            if (showstats_display) showstats_display[0] = '\0';
+            if (ss->showstats_display) ss->showstats_display[0] = '\0';
             for (i = bugle_list_head(&showstats_stats); i; i = bugle_list_next(i))
             {
                 sst = (showstats_statistic *) bugle_list_data(i);
                 if (!sst->initialised) showstats_statistic_initialise(sst);
-                v = stats_expression_evaluate(sst->st->value, &showstats_prev, &showstats_cur);
+                v = stats_expression_evaluate(sst->st->value, &ss->showstats_prev, &ss->showstats_cur);
                 switch (sst->mode)
                 {
                 case SHOWSTATS_TEXT:
@@ -1283,10 +1278,10 @@ static void showstats_update(showstats_struct *ss)
                     {
                         sub = stats_statistic_find_substitution(sst->st, v);
                         if (sub)
-                            bugle_appendf(&showstats_display, &showstats_display_size,
+                            bugle_appendf(&ss->showstats_display, &ss->showstats_display_size,
                                           "%10s %s\n", sub->replacement, sst->st->label);
                         else
-                            bugle_appendf(&showstats_display, &showstats_display_size,
+                            bugle_appendf(&ss->showstats_display, &ss->showstats_display_size,
                                           "%10.*f %s\n", sst->st->precision, v, sst->st->label);
                     }
                     break;
@@ -1316,15 +1311,15 @@ static void showstats_update(showstats_struct *ss)
                 }
             }
         }
-        if (ss->accumulating != 1 || !showstats_prev.allocated)
+        if (ss->accumulating != 1 || !ss->showstats_prev.allocated)
         {
             /* Bring prev up to date for next time. Swap so that we recycle
              * memory for next time.
              */
             stats_signal_values tmp;
-            tmp = showstats_prev;
-            showstats_prev = showstats_cur;
-            showstats_cur = tmp;
+            tmp = ss->showstats_prev;
+            ss->showstats_prev = ss->showstats_cur;
+            ss->showstats_cur = tmp;
         }
         if (ss->accumulating == 2) ss->accumulating = 1;
     }
@@ -1420,71 +1415,74 @@ static bool showstats_glXSwapBuffers(function_call *call, const callback_data *d
         CALL_glTranslatef(-1.0f, -1.0f, 0.0f);
         CALL_glScalef(2.0f / viewport[2], 2.0f / viewport[3], 1.0f);
 
-        if (showstats_display)
-            bugle_text_render(showstats_display, 16, viewport[3] - 16);
+        if (ss->showstats_display)
+            bugle_text_render(ss->showstats_display, 16, viewport[3] - 16);
 
 #ifdef GL_ARB_texture_env_combine
-        /* The graph drawing is done in several passes, to avoid multiple
-         * state changes.
-         */
-        xofs0 = 16;
-        yofs0 = 16 + 64 * (showstats_num_graph - 1);
-
-        /* Common state to first several passes */
-        CALL_glAlphaFunc(GL_GREATER, 0.0f);
-        CALL_glVertexPointer(2, GL_FLOAT, 0, graph_vertices);
-        CALL_glTexCoordPointer(1, GL_FLOAT, 0, graph_texcoords);
-        CALL_glColorPointer(4, GL_UNSIGNED_BYTE, 0, graph_colors);
-        CALL_glEnableClientState(GL_VERTEX_ARRAY);
-
-        /* Pass 1: clear the background */
-        CALL_glColor3f(0.0f, 0.0f, 0.0f);
-        showstats_graph_draw(GL_QUADS, xofs0, yofs0, false, NULL);
-
-        /* Pass 2: draw the graphs */
-        CALL_glEnable(GL_ALPHA_TEST);
-        CALL_glEnable(GL_TEXTURE_1D);
-        CALL_glEnableClientState(GL_COLOR_ARRAY);
-        CALL_glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-        CALL_glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_COMBINE_ARB);
-        CALL_glTexEnvi(GL_TEXTURE_ENV, GL_SOURCE0_RGB_ARB, GL_PREVIOUS);
-        CALL_glTexEnvi(GL_TEXTURE_ENV, GL_COMBINE_RGB_ARB, GL_REPLACE);
-        CALL_glTexEnvi(GL_TEXTURE_ENV, GL_COMBINE_ALPHA_ARB, GL_SUBTRACT_ARB);
-        showstats_graph_draw(GL_QUADS, xofs0, yofs0, true, graph_texcoords);
-        CALL_glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
-        CALL_glTexEnvi(GL_TEXTURE_ENV, GL_SOURCE0_RGB_ARB, GL_TEXTURE);
-        CALL_glTexEnvi(GL_TEXTURE_ENV, GL_COMBINE_RGB_ARB, GL_MODULATE);
-        CALL_glTexEnvi(GL_TEXTURE_ENV, GL_COMBINE_ALPHA_ARB, GL_MODULATE);
-        CALL_glDisableClientState(GL_TEXTURE_COORD_ARRAY);
-        CALL_glDisableClientState(GL_COLOR_ARRAY);
-        CALL_glDisable(GL_TEXTURE_1D);
-        CALL_glDisable(GL_ALPHA_TEST);
-        CALL_glBindTexture(GL_TEXTURE_1D, 0);
-
-        /* Pass 3: draw the border */
-        CALL_glColor3f(1.0f, 1.0f, 1.0f);
-        showstats_graph_draw(GL_LINE_LOOP, xofs0, yofs0, false, NULL);
-
-        /* Pass 4: labels */
-        xofs = xofs0;
-        yofs = yofs0;
-        for (i = bugle_list_head(&showstats_stats); i; i = bugle_list_next(i))
+        if (showstats_num_graph)
         {
-            sst = (showstats_statistic *) bugle_list_data(i);
-            if (sst->mode == SHOWSTATS_GRAPH && sst->graph_tex)
-            {
-                bugle_text_render(sst->st->label, xofs, yofs + 48);
-                bugle_text_render(sst->graph_scale_label, xofs + sst->graph_size + 2, yofs + 40);
-                yofs -= 64;
-            }
-        }
+            /* The graph drawing is done in several passes, to avoid multiple
+             * state changes.
+             */
+            xofs0 = 16;
+            yofs0 = 16 + 64 * (showstats_num_graph - 1);
 
-        /* Clean up */
-        CALL_glDisableClientState(GL_VERTEX_ARRAY);
-        CALL_glVertexPointer(4, GL_FLOAT, 0, NULL);
-        CALL_glTexCoordPointer(4, GL_FLOAT, 0, NULL);
-        CALL_glColorPointer(4, GL_FLOAT, 0, NULL);
-        CALL_glAlphaFunc(GL_ALWAYS, 0.0f);
+            /* Common state to first several passes */
+            CALL_glAlphaFunc(GL_GREATER, 0.0f);
+            CALL_glVertexPointer(2, GL_FLOAT, 0, graph_vertices);
+            CALL_glTexCoordPointer(1, GL_FLOAT, 0, graph_texcoords);
+            CALL_glColorPointer(4, GL_UNSIGNED_BYTE, 0, graph_colors);
+            CALL_glEnableClientState(GL_VERTEX_ARRAY);
+
+            /* Pass 1: clear the background */
+            CALL_glColor3f(0.0f, 0.0f, 0.0f);
+            showstats_graph_draw(GL_QUADS, xofs0, yofs0, false, NULL);
+
+            /* Pass 2: draw the graphs */
+            CALL_glEnable(GL_ALPHA_TEST);
+            CALL_glEnable(GL_TEXTURE_1D);
+            CALL_glEnableClientState(GL_COLOR_ARRAY);
+            CALL_glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+            CALL_glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_COMBINE_ARB);
+            CALL_glTexEnvi(GL_TEXTURE_ENV, GL_SOURCE0_RGB_ARB, GL_PREVIOUS);
+            CALL_glTexEnvi(GL_TEXTURE_ENV, GL_COMBINE_RGB_ARB, GL_REPLACE);
+            CALL_glTexEnvi(GL_TEXTURE_ENV, GL_COMBINE_ALPHA_ARB, GL_SUBTRACT_ARB);
+            showstats_graph_draw(GL_QUADS, xofs0, yofs0, true, graph_texcoords);
+            CALL_glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
+            CALL_glTexEnvi(GL_TEXTURE_ENV, GL_SOURCE0_RGB_ARB, GL_TEXTURE);
+            CALL_glTexEnvi(GL_TEXTURE_ENV, GL_COMBINE_RGB_ARB, GL_MODULATE);
+            CALL_glTexEnvi(GL_TEXTURE_ENV, GL_COMBINE_ALPHA_ARB, GL_MODULATE);
+            CALL_glDisableClientState(GL_TEXTURE_COORD_ARRAY);
+            CALL_glDisableClientState(GL_COLOR_ARRAY);
+            CALL_glDisable(GL_TEXTURE_1D);
+            CALL_glDisable(GL_ALPHA_TEST);
+            CALL_glBindTexture(GL_TEXTURE_1D, 0);
+
+            /* Pass 3: draw the border */
+            CALL_glColor3f(1.0f, 1.0f, 1.0f);
+            showstats_graph_draw(GL_LINE_LOOP, xofs0, yofs0, false, NULL);
+
+            /* Pass 4: labels */
+            xofs = xofs0;
+            yofs = yofs0;
+            for (i = bugle_list_head(&showstats_stats); i; i = bugle_list_next(i))
+            {
+                sst = (showstats_statistic *) bugle_list_data(i);
+                if (sst->mode == SHOWSTATS_GRAPH && sst->graph_tex)
+                {
+                    bugle_text_render(sst->st->label, xofs, yofs + 48);
+                    bugle_text_render(sst->graph_scale_label, xofs + sst->graph_size + 2, yofs + 40);
+                    yofs -= 64;
+                }
+            }
+
+            /* Clean up */
+            CALL_glDisableClientState(GL_VERTEX_ARRAY);
+            CALL_glVertexPointer(4, GL_FLOAT, 0, NULL);
+            CALL_glTexCoordPointer(4, GL_FLOAT, 0, NULL);
+            CALL_glColorPointer(4, GL_FLOAT, 0, NULL);
+            CALL_glAlphaFunc(GL_ALWAYS, 0.0f);
+        }
 #endif
         CALL_glLoadIdentity();
         CALL_glPopAttrib();
@@ -1530,6 +1528,16 @@ static bool showstats_graph_set(const struct filter_set_variable_info_s *var,
     return true;
 }
 
+static void showstats_struct_destroy(void *data)
+{
+    showstats_struct *ss;
+
+    ss = (showstats_struct *) data;
+    stats_signal_values_clear(&ss->showstats_prev);
+    stats_signal_values_clear(&ss->showstats_cur);
+    free(ss->showstats_display);
+}
+
 static bool showstats_initialise(filter_set *handle)
 {
     filter *f;
@@ -1546,7 +1554,7 @@ static bool showstats_initialise(filter_set *handle)
     bugle_register_filter_catches(f, GROUP_glXSwapBuffers, false, showstats_glXSwapBuffers);
     showstats_view = bugle_object_class_register(&bugle_context_class,
                                                  NULL,
-                                                 NULL,
+                                                 showstats_struct_destroy,
                                                  sizeof(showstats_struct));
 
     /* Value of arg is irrelevant, only truth value */
@@ -1563,15 +1571,17 @@ static bool showstats_initialise(filter_set *handle)
         sst->st = stats_statistic_find(sst->name);
         if (!sst->st)
         {
-            fprintf(stderr, "Statistic '%s' not found.\n", sst->name);
+            fprintf(stderr, "Error: statistic '%s' not found.\n", sst->name);
             stats_statistic_list("showstats");
             return false;
         }
-        else
-            stats_expression_activate_signals(sst->st->value);
+        else if (!stats_expression_activate_signals(sst->st->value))
+        {
+            fprintf(stderr, "Error: could not initialise statistic '%s'\n",
+                    sst->st->name);
+            exit(1);
+        }
     }
-    stats_signal_values_init(&showstats_prev);
-    stats_signal_values_init(&showstats_cur);
 
     return true;
 }
@@ -1581,9 +1591,6 @@ static void showstats_destroy(filter_set *handle)
     bugle_list_node *i;
     showstats_statistic *sst;
 
-    free(showstats_display);
-    stats_signal_values_clear(&showstats_prev);
-    stats_signal_values_clear(&showstats_cur);
     for (i = bugle_list_head(&showstats_stats); i; i = bugle_list_next(i))
     {
         sst = (showstats_statistic *) bugle_list_data(i);
@@ -1690,6 +1697,7 @@ void bugle_initialise_filter_library(void)
         { "graph", "repeat with each item to graph", FILTER_SET_VARIABLE_CUSTOM, NULL, showstats_graph_set },
         { "key_accumulate", "frame rate is averaged from time key is pressed [none]", FILTER_SET_VARIABLE_KEY, &key_showstats_accumulate, NULL },
         { "key_noaccumulate", "return frame rate to instantaneous display [none]", FILTER_SET_VARIABLE_KEY, &key_showstats_noaccumulate, NULL },
+        { "time", "time interval between updates", FILTER_SET_VARIABLE_FLOAT, &showstats_time, NULL },
         { NULL, NULL, 0, NULL, NULL }
     };
 
