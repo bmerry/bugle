@@ -8,6 +8,7 @@
   - Graphing
 * Reduce GL namespace pollution from internal objects
 * Fix some shutdown code including shutdown ordering
+* Minor improvements in OpenGL 2.1 support
 
 0.0.20060913
 ------------

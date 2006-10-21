@@ -41,14 +41,14 @@ static void triangles_immediate(GLenum mode, int count)
     glVertex3sv(s);
     glVertex4dv(d);
     glEnd();
-    fprintf(ref, "stats\\.fps: [0-9.]+\nstats\\.triangles: %d\n", count);
+    fprintf(ref, "logstats\\.triangles per frame: %d triangles per frame\n", count);
 }
 
 static void triangles_draw_arrays(GLenum mode, int count)
 {
     glVertexPointer(GL_FLOAT, 3, 0, float_data);
     glDrawArrays(mode, 0, 6);
-    fprintf(ref, "stats\\.fps: [0-9.]+\nstats\\.triangles: %d\n", count);
+    fprintf(ref, "logstats\\.triangles per frame: %d triangles per frame\n", count);
 }
 
 static void triangles_draw_elements(GLenum mode, int count)
@@ -57,7 +57,7 @@ static void triangles_draw_elements(GLenum mode, int count)
 
     glVertexPointer(GL_FLOAT, 3, 0, float_data);
     glDrawElements(mode, 6, GL_UNSIGNED_SHORT, indices);
-    fprintf(ref, "stats\\.fps: [0-9.]+\nstats\\.triangles: %d\n", count);
+    fprintf(ref, "logstats\\.triangles per frame: %d triangles per frame\n", count);
 }
 
 static void triangles_draw_range_elements(GLenum mode, int count)
@@ -69,9 +69,13 @@ static void triangles_draw_range_elements(GLenum mode, int count)
     if (GLEE_EXT_draw_range_elements)
     {
         glDrawRangeElementsEXT(mode, 0, 5, 6, GL_UNSIGNED_SHORT, indices);
-        fprintf(ref, "stats\\.fps: [0-9.]+\nstats\\.triangles: %d\n", count);
+        fprintf(ref, "logstats\\.triangles per frame: %d triangles per frame\n", count);
     }
+    else
 #endif
+    {
+        fprintf(ref, "logstats\\.triangles per frame: 0 triangles per frame\n");
+    }
 }
 
 static void run(void (*func)(GLenum, int))
@@ -98,6 +102,7 @@ int main(int argc, char **argv)
     glutCreateWindow("triangle count test");
     GLeeInit();
 
+    glutSwapBuffers(); /* No counts on first frame */
     run(triangles_immediate);
     run(triangles_draw_arrays);
     run(triangles_draw_elements);

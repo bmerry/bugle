@@ -27,14 +27,16 @@ Most users should just copy this file from the example in the BuGLe
 documentation; it lists most of the statistics that one might wish to
 use.
 .SH BUGS
-The filter-set has some overhead, although it is less than 1ms if just
-showing the frame rate (graphing is a lot more expensive). In addition,
-the act of displaying the statistics can modify them, particularly
-those gathered from hardware counters.
+No statistics are reported for the first frame.
 .SH FILES
 .TP
 .B $HOME/.bugle/statistics
 Formulae and metadata for statistics
+.SH ENVIRONMENT
+.TP
+.B BUGLE_STATISTICS
+If set, defines the location of the statistics file instead of
+.BR $HOME/.bugle/statistics .
 .SH AUTHOR
 .B gldb
 and the

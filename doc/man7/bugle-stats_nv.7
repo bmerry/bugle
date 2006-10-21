@@ -13,8 +13,7 @@ The
 filter-set extracts data from certain NVIDIA GPUs using NVPerfSDK. This
 filter-set is only built if the appropriate header file is present at
 compile time, and also requires a suitably configured driver and GPU
-(refer to NVPerfSDK documentation). Note that at the time of writing,
-NVPerfSDK is not publicly available on any platform supported by BuGLe.
+(refer to NVPerfSDK documentation).
 
 The possible statistics can be seen in the example
 .B statistics
@@ -33,7 +32,7 @@ cause pipeline stalls.
 Because NVPerfSDK operates across OpenGL contexts, it will count events
 from outside the debugged application. In particular, using the
 .B showstats
-filter-set will bias the statistics.
+filter-set will alter the statistics.
 .SH AUTHOR
 .B gldb
 and the

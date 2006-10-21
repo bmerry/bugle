@@ -186,12 +186,12 @@ budgie_type bugle_gl_type_to_type(GLenum gl_type)
         return TYPE_5GLint;
 #endif
 #if defined(GL_VERSION_2_1)
-    case GL_FLOAT_MAT2X3: return TYPE_8GLmat2x3; break;
-    case GL_FLOAT_MAT3X2: return TYPE_8GLmat3x2; break;
-    case GL_FLOAT_MAT2X4: return TYPE_8GLmat2x4; break;
-    case GL_FLOAT_MAT4X2: return TYPE_8GLmat4x2; break;
-    case GL_FLOAT_MAT3X4: return TYPE_8GLmat3x4; break;
-    case GL_FLOAT_MAT4X3: return TYPE_8GLmat4x3; break;
+    case GL_FLOAT_MAT2x3: return TYPE_8GLmat2x3; break;
+    case GL_FLOAT_MAT3x2: return TYPE_8GLmat3x2; break;
+    case GL_FLOAT_MAT2x4: return TYPE_8GLmat2x4; break;
+    case GL_FLOAT_MAT4x2: return TYPE_8GLmat4x2; break;
+    case GL_FLOAT_MAT3x4: return TYPE_8GLmat3x4; break;
+    case GL_FLOAT_MAT4x3: return TYPE_8GLmat4x3; break;
 #endif
     default:
         fprintf(stderr,
@@ -297,7 +297,7 @@ int bugle_gl_format_to_count(GLenum format, GLenum type)
         case GL_BGR:
 #endif
 #ifdef GL_EXT_texture_sRGB
-            case GL_S
+        case GL_SRGB_EXT:
 #endif
             return 3;
         case GL_RGBA:

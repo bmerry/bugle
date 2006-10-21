@@ -1,3 +1,11 @@
+The statistics system has been completely rewritten and is now a lot
+more powerful, supporting customisable statistics, graphs, batch
+counts and lower overhead.
+
+You will need to update your ~/.bugle/filters file to use any
+statistics (see the examples in doc/examples/filters), and you will
+also need to copy doc/examples/statistics to ~/.bugle/statistics.
+
 0.0.20060913
 ------------
 While there is no one feature that makes this release special, it has a

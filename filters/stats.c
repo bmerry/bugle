@@ -183,6 +183,13 @@ static void stats_signal_add(stats_signal *si, double dv)
         stats_signal_update(si, si->value + dv);
 }
 
+/* Generic activator that simply sets the value to zero. */
+static bool stats_signal_activate_zero(stats_signal *si)
+{
+    stats_signal_update(si, 0.0);
+    return true;
+}
+
 static bool stats_signal_activate(stats_signal *si)
 {
     if (!si->active)
@@ -471,7 +478,7 @@ static bool stats_basic_initialise(filter_set *handle)
     bugle_register_filter_depends("invoke", "stats_basic");
     bugle_register_filter_depends("stats", "stats_basic");
 
-    stats_basic_frames = stats_signal_register("frames", NULL, NULL);
+    stats_basic_frames = stats_signal_register("frames", NULL, stats_signal_activate_zero);
     stats_basic_seconds = stats_signal_register("seconds", NULL, stats_basic_seconds_activate);
     return true;
 }
@@ -668,8 +675,8 @@ static bool stats_primitives_initialise(filter_set *handle)
     bugle_register_filter_depends("invoke", "stats_primitives");
     bugle_register_filter_depends("stats", "stats_primitives");
 
-    stats_primitives_batches = stats_signal_register("batches", NULL, NULL);
-    stats_primitives_triangles = stats_signal_register("triangles", NULL, NULL);
+    stats_primitives_batches = stats_signal_register("batches", NULL, stats_signal_activate_zero);
+    stats_primitives_triangles = stats_signal_register("triangles", NULL, stats_signal_activate_zero);
 
     return true;
 }
@@ -778,7 +785,7 @@ static bool stats_fragments_initialise(filter_set *handle)
     bugle_register_filter_catches(f, GROUP_glXSwapBuffers, false, stats_fragments_post_glXSwapBuffers);
     bugle_register_filter_depends("stats_fragments_post", "invoke");
 
-    stats_fragments_fragments = stats_signal_register("fragments", NULL, NULL);
+    stats_fragments_fragments = stats_signal_register("fragments", NULL, stats_signal_activate_zero);
     return true;
 }
 #endif /* GL_ARB_occlusion_query */
@@ -1257,7 +1264,6 @@ static void showstats_update(showstats_struct *ss)
     double v;
 
     gettimeofday(&now, NULL);
-    /* FIXME: make the time interval tunable */
     if (time_elapsed(&ss->last_update, &now) >= showstats_time)
     {
         ss->last_update = now;

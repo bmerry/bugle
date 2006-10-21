@@ -1,3 +1,26 @@
+# Statistics file
+#
+# This file defines the statistics that can be displayed by the showstats
+# or logstats filtersets. The format is
+# <name> = <expr>
+# {
+#     <attribute> <value>
+#     <attribute> <value>
+#     ...
+# }
+#
+# Expressions consist of real numbers, the standard arithmetic operations
+# (including precedence and parentheses), and signal expressions. A "signal"
+# is a raw counter provided by a filter-set such as stats_basic e.g.
+# frames. A signal expression indicates how a counter over a particular
+# period of time. Valid expressions are:
+# d("frames"): the change in the signal (end - start)
+# a("frames"): the average value of the signal
+# s("frames"): the value at the start
+# e("frames"): the value at the end
+#
+# See the examples below for further details
+
 #
 # Core statistics
 #
