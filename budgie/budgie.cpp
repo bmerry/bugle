@@ -24,7 +24,6 @@
 #include "tree.h"
 #include "treeutils.h"
 #include "budgie.h"
-#include "getopt.h"
 #include <iostream>
 #include <fstream>
 #include <sstream>
@@ -38,6 +37,7 @@
 #include <cstdio>
 #include <cassert>
 #include <regex.h>
+#include <unistd.h>
 
 using namespace std;
 

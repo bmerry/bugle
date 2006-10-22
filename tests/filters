@@ -18,13 +18,14 @@ chain trace
 
 chain triangles
 {
+    filterset stats_primitives
+    filterset logstats
+    {
+        show "triangles per frame"
+    }
     filterset log
     {
         flush yes
-    }
-    filterset stats
-    {
-        triangles yes
     }
 }
 

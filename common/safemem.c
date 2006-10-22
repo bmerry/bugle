@@ -125,7 +125,7 @@ int bugle_asprintf(char **strp, const char *format, ...)
 #if HAVE_VASPRINTF
     va_start(ap, format);
     ans = vasprintf(strp, format, ap);
-    if (!*strp)
+    if (ans < 0 || !*strp)
     {
         fputs("out of memory in vasprintf\n", stderr);
         exit(1);
@@ -134,22 +134,53 @@ int bugle_asprintf(char **strp, const char *format, ...)
     return ans;
 #elif HAVE_VSNPRINTF
     size = 128;
-    *strp = bugle_malloc(size);
+    *strp = bugle_malloc(size * sizeof(char));
     while (1)
     {
         va_start(ap, format);
         ans = vsnprintf(*strp, size, format, ap);
         va_end(ap);
-        if (ans > -1 && n < size) /* Worked */
+        if (ans > -1 && ans < size)   /* Worked */
             return ans;
-        else if (ans > -1)        /* C99 standard: number of bytes */
+        else if (ans > -1)            /* C99 standard: number of characters */
             size = ans + 1;
-        else                      /* Older e.g. glibc 2.0 */
+        else                          /* Older e.g. glibc 2.0 */
             size *= 2;
-        *strp = bugle_realloc(*strp, size);
+        *strp = bugle_realloc(*strp, size * sizeof(char));
     }
 #else
 #error "you have no safe way to format strings"
+#endif
+}
+
+int bugle_appendf(char **strp, size_t *sz, const char *format, ...)
+{
+#if HAVE_VSNPRINTF
+    va_list ap;
+    size_t len;       /* of initial portion */
+    int ans;
+
+    if (!*strp)
+    {
+        *sz = 128;
+        *strp = bugle_malloc(*sz * sizeof(char));
+        **strp = '\0';
+    }
+    len = strlen(*strp);
+    while (1)
+    {
+        va_start(ap, format);
+        ans = vsnprintf(*strp + len, *sz - len, format, ap);
+        va_end(ap);
+        if (ans > -1 && ans < *sz - len)    /* Worked */
+            return ans + len;
+
+        *sz *= 2;
+        if (*sz < ans + 1) *sz = ans + 1;
+        *strp = bugle_realloc(*strp, *sz * sizeof(char));
+    }
+#else
+#error "you have no safe way to print strings"
 #endif
 }
 

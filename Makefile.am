@@ -19,8 +19,12 @@ dist_man_MANS = doc/man1/gldb.1 doc/man3/bugle.3 \
 	doc/man7/bugle-screenshot.7 \
 	doc/man7/bugle-showerror.7 \
 	doc/man7/bugle-showextensions.7 \
+	doc/man7/bugle-stats_basic.7 \
+	doc/man7/bugle-stats_primitives.7 \
+	doc/man7/bugle-stats_fragments.7 \
+	doc/man7/bugle-stats_nv.7 \
 	doc/man7/bugle-showstats.7 \
-	doc/man7/bugle-stats.7 \
+	doc/man7/bugle-logstats.7 \
 	doc/man7/bugle-trace.7 \
 	doc/man7/bugle-unwindstack.7 \
 	doc/man7/bugle-wireframe.7
@@ -129,7 +133,7 @@ BCFILES = bc/core1_1.bc bc/glsl1_20.bc bc/glx.bc \
 	bc/GL_EXT_blend_func_separate.bc \
 	bc/GL_EXT_draw_range_elements.bc bc/GL_EXT_multi_draw_arrays.bc \
 	bc/GL_EXT_secondary_color.bc bc/GL_EXT_texture3D.bc \
-	bc/GL_EXT_framebuffer_object.bc \
+	bc/GL_EXT_framebuffer_object.bc bc/GL_EXT_gpu_program_parameters.bc \
 	bc/GLX_ARB_get_proc_address.bc
 
 src/names.c src/names.h src/utils.c src/utils.h src/lib.c src/lib.h: budgie/budgie src/data/gl.tu gl.bc bc/alias.bc $(BCFILES)
@@ -164,12 +168,15 @@ filters_validate_la_SOURCES = filters/validate.c
 filters_validate_la_LDFLAGS = -thread-safe -module -avoid-version -export-dynamic $(SYMBOLFLAGS)
 filters_debugger_la_SOURCES = filters/debugger.c
 filters_debugger_la_LDFLAGS = -thread-safe -module -avoid-version -export-dynamic $(SYMBOLFLAGS)
-filters_stats_la_SOURCES = filters/stats.c
+filters_stats_la_SOURCES = filters/statslex.l filters/statsparse.y filters/stats.c filters/stats.h
+filters_stats_la_LIBADD = -lm
 filters_stats_la_LDFLAGS = -thread-safe -module -avoid-version -export-dynamic $(SYMBOLFLAGS)
 filters_capture_la_SOURCES = filters/capture.c gl2ps/gl2ps.c gl2ps/gl2ps.h
 filters_capture_la_CFLAGS = $(AM_CFLAGS) $(AVCODEC_CFLAGS)
 filters_capture_la_LIBADD = $(AVCODEC_LIBS)
 filters_capture_la_LDFLAGS = -thread-safe -module -avoid-version -export-dynamic $(SYMBOLFLAGS)
+
+BUILT_SOURCES += filters/statsparse.h
 
 # Demo/Test programs
 check_PROGRAMS = \
@@ -201,17 +208,18 @@ tests_objects_LDADD = -lglut -lGLU $(GL_LIBS) $(X_PRE_LIBS) $(X_LIBS) -lX11 $(X_
 tests_textest_SOURCES = tests/textest.c glee/GLee.c glee/GLee.h
 tests_textest_LDADD = -lglut -lGLU $(GL_LIBS) $(X_PRE_LIBS) $(X_LIBS) -lX11 $(X_EXTRA_LIBS)
 TESTS = tests/errors.sh tests/misc.sh tests/queries.sh tests/setstate.sh tests/triangles.sh tests/pointers.sh tests/pbo.sh
-TESTS_ENVIRONMENT = BUGLE_FILTERS=$(srcdir)/tests/filters BUGLE_FILTER_DIR=filters/.libs BUGLE_LIB=src/.libs/libbugle.so
+TESTS_ENVIRONMENT = BUGLE_FILTERS=$(srcdir)/tests/filters BUGLE_STATISTICS=$(srcdir)/tests/statistics BUGLE_FILTER_DIR=filters/.libs BUGLE_LIB=src/.libs/libbugle.so
 
 # Extra files to distribute
 EXTRA_DIST = gl.bc.in $(BCFILES) src/data/gl.c src/data/overrides.h \
 	FAQ TROUBLESHOOTING LICENSE \
 	doc/filters.html doc/objects.html doc/locks.txt \
-	doc/protocol.txt doc/examples/filters doc/extensions.txt \
+	doc/protocol.txt doc/extensions.txt \
+	doc/examples/filters doc/examples/statistics \
 	glee/readme.txt \
 	gl2ps/TODO gl2ps/COPYING.GL2PS gl2ps/COPYING.LGPL gl2ps/gl2ps.pdf \
 	gl2ps/gl2psTestSimple.c gl2ps/gl2psTest.c \
-	tests/filters
+	tests/filters tests/statistics
 
 # Note: automake ought to clean the various files in the .libs directories,
 # but for some reason does not.

@@ -1,0 +1,22 @@
+.TH stats_basic 7 "October 2006" BUGLE "User manual"
+.SH NAME
+stats_basic \- gather frame rate statistics
+.SH SYNOPSIS
+.nf
+filterset stats_basic
+.SH DESCRIPTION
+The
+.B stats_basic
+filter-set provides signals for the number and frames and the elapsed
+time to other filter-sets. It is sufficient for capturing frame rate or
+frame time, and is needed for most other statistics filter-sets.
+.SH AUTHOR
+.B gldb
+and the
+.B bugle
+library are written and maintained by Bruce Merry
+<bmerry@users.sourceforge.net>.
+.SH SEE ALSO
+.BR bugle (3),
+.BR bugle-logstats (3),
+.BR bugle-showstats (3)

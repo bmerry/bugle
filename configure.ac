@@ -1,4 +1,4 @@
-AC_INIT(bugle, 0.0.20060913, bmerry@users.sourceforge.net)
+AC_INIT(bugle, 0.0.20061022, bmerry@users.sourceforge.net)
 AC_CONFIG_SRCDIR([src/interceptor.c])
 AM_INIT_AUTOMAKE([1.7 dist-bzip2 subdir-objects])
 AM_CONFIG_HEADER(config.h)
@@ -65,7 +65,7 @@ dnl Checks for header files
 AC_HEADER_STDC
 AC_HEADER_DIRENT
 AC_HEADER_STDBOOL
-AC_CHECK_HEADERS([sys/types.h stdlib.h stddef.h regex.h sys/select.h])
+AC_CHECK_HEADERS([sys/types.h stdlib.h stddef.h regex.h sys/select.h NVPerfSDK.h])
 AC_CHECK_HEADERS([readline/readline.h readline/history.h], [], [HAVE_READLINE=0])
 AC_CHECK_HEADERS([pthread.h], [], [THREADS=BUGLE_THREADS_SINGLE])
 
@@ -93,7 +93,7 @@ AC_C_CHAR_UNSIGNED
 
 dnl Checks for library functions
 AC_CHECK_FUNCS([regcomp strrchr vasprintf vsnprintf open_memstream pthread_kill])
-AC_CHECK_FUNCS([cosf sinf finite isfinite])
+AC_CHECK_FUNCS([cosf sinf finite isfinite nan isnan])
 AC_REPLACE_FUNCS([bsearch])
 AC_FUNC_MEMCMP
 # Readline used to call this completion_matches

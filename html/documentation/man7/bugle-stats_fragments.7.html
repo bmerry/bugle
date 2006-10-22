@@ -1,39 +1,38 @@
-<HTML><HEAD><TITLE>Manpage of frontbuffer</TITLE>
+<HTML><HEAD><TITLE>Manpage of stats_fragments</TITLE>
 </HEAD><BODY>
-<H1>frontbuffer</H1>
-Section: User manual (7)<BR>Updated: May 2006<BR><A HREF="#index">Index</A>
+<H1>stats_fragments</H1>
+Section: User manual (7)<BR>Updated: October 2006<BR><A HREF="#index">Index</A>
 <A HREF="../index.html">Return to Main Contents</A><HR>
 
 <A NAME="lbAB">&nbsp;</A>
 <H2>NAME</H2>
 
-frontbuffer - force rendering to the front buffer
+stats_fragments - gather fragment counts
 <A NAME="lbAC">&nbsp;</A>
 <H2>SYNOPSIS</H2>
 
 <PRE>
-filterset frontbuffer
+filterset stats_fragments
 </PRE><A NAME="lbAD">&nbsp;</A>
 <H2>DESCRIPTION</H2>
 
 The
-<B>frontbuffer</B>
+<B>stats_fragment</B>
 
-filter-set overrides the draw buffer, setting it to
-<B>GL_FRONT</B>.
+filter-set provides signals for the number of fragments to
+other filter-sets. It must be listed in a chain that uses any
+statistics related to fragment counts.
+<P>
+It is simply a wrapper around
+<B>GL_ARB_occlusion_query</B>,
 
-This is most useful when used within
-<B><A HREF="../man1/gldb.1.html">gldb</A></B>(1),
-
-in order to see how a scene is built up batch by batch.
+so a ``fragment'' is defined exactly as in that extension (and OpenGL
+1.5), and will not work unless that extension is supported.
 <A NAME="lbAE">&nbsp;</A>
 <H2>BUGS</H2>
 
-As with any filter-set that modifies OpenGL state, it will break
-complex rendering techniques like render-to-vertex-buffer.
-<P>
-Rendering to off-screen buffers (such as pbuffers) and multiple render
-targets are not tested and may fail.
+Fragment counting will not work in applications that use occlusion
+queries. A warning is displayed when this condition is detected.
 <A NAME="lbAF">&nbsp;</A>
 <H2>AUTHOR</H2>
 
@@ -49,9 +48,11 @@ library are written and maintained by Bruce Merry
 
 <B><A HREF="../man3/bugle.3.html">bugle</A></B>(3),
 
-<B><A HREF="../man1/gldb.1.html">gldb</A></B>(1),
+<B><A HREF="../man3/bugle-stats_basic.3.html">bugle-stats_basic</A></B>(3),
 
-<B><A HREF="../man3/glDrawBuffer.3.html">glDrawBuffer</A></B>(3)
+<B><A HREF="../man3/bugle-logstats.3.html">bugle-logstats</A></B>(3),
+
+<B><A HREF="../man3/bugle-showstats.3.html">bugle-showstats</A></B>(3)
 
 <P>
 

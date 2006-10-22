@@ -1,3 +1,18 @@
+0.0.20061022
+------------
+* Rewrite of the statistics engine
+  - Configuration file for statistics
+  - Statistics from NVPerfSDK
+* Rewrite of showstats filterset
+  - Opaque background (now readable over a white scene)
+  - Faster text rendering via textured quads
+  - Aligned layout
+  - Graphing
+* Reduce GL namespace pollution from internal objects
+* Fix some shutdown code including shutdown ordering
+* Remove unnecessary include of getopt.h
+* Minor improvements in OpenGL 2.1 support
+
 0.0.20060913
 ------------
 * Fix display of various aliased tokens

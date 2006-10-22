@@ -13,6 +13,7 @@
 #include <stddef.h>
 #include <string.h>
 #include <ctype.h>
+#include "common/bool.h"
 
 /* Still TODO (how depressing)
  * - GetConvolutionFilter
@@ -31,7 +32,6 @@
  * - GetProgramInfoLog
  * - GetShaderSource
  * - GetUniform
- * - GetActiveUniforms
  * - GetUniformLocation
  */
 
@@ -390,11 +390,50 @@ static void query_minmax(void)
 #endif
 }
 
+static void shader_source(GLhandleARB shader, const char *source)
+{
+    GLint status;
+
+    glShaderSourceARB(shader, 1, &source, NULL);
+    fprintf(ref, "trace\\.call: glShaderSourceARB\\(%u, 1, %p -> { ",
+            (unsigned int) shader, &source);
+    dump_string(ref, source);
+    fprintf(ref, " }, \\(nil\\)\\)\n");
+
+    glCompileShaderARB(shader);
+    fprintf(ref, "trace\\.call: glCompileShaderARB\\(%u\\)\n",
+            (unsigned int) shader);
+
+    glGetObjectParameterivARB(shader, GL_OBJECT_COMPILE_STATUS_ARB, &status);
+    fprintf(ref, "trace\\.call: glGetObjectParameterivARB\\(%u, (GL_OBJECT_COMPILE_STATUS_ARB|GL_COMPILE_STATUS), %p -> GL_TRUE\\)\n",
+            (unsigned int) shader, &status);
+}
+
 static void query_shaders(void)
 {
 #if defined(GL_ARB_shader_objects) && defined(GL_ARB_vertex_shader)
     GLhandleARB v1, v2, p, attached[2];
     GLsizei count;
+    GLint location;
+    GLsizei length, size;
+    GLenum type;
+    const char *language_version;
+    const char *source100 =
+        "uniform mat4 m;\n"
+        "void main()\n"
+        "{\n"
+        "    gl_Position = m * gl_Vertex;\n"
+        "}\n";
+    const char *source120 =
+        "#version 120\n"
+        "uniform mat3x4 m;\n"
+        "void main()\n"
+        "{\n"
+        "    gl_Position = m * gl_Vertex.xyz;\n"
+        "}\n";
+    const char *source;
+    char name[128];
+    bool lang120;
 
     if (GLEE_ARB_shader_objects
         && GLEE_ARB_vertex_shader)
@@ -418,6 +457,31 @@ static void query_shaders(void)
         glGetAttachedObjectsARB(p, 2, &count, attached);
         fprintf(ref, "trace\\.call: glGetAttachedObjectsARB\\(%u, 2, %p -> 2, %p -> { %u, %u }\\)\n",
                 (unsigned int) p, (void *) &count, (void *) attached, (unsigned int) v1, (unsigned int) v2);
+
+        language_version = (const char *) glGetString(GL_SHADING_LANGUAGE_VERSION_ARB);
+        fprintf(ref, "trace\\.call: glGetString\\(GL_SHADING_LANGUAGE_VERSION(_ARB)?\\) = ");
+        dump_string(ref, language_version);
+        fprintf(ref, "\n");
+
+        lang120 = strcmp(language_version, "1.20") >= 0;
+        source = lang120 ? source120 : source100;
+        shader_source(v1, source);
+        shader_source(v2, "uniform float4 a[10];\n");
+        glLinkProgramARB(p);
+        fprintf(ref, "trace\\.call: glLinkProgramARB\\(%u\\)\n",
+                (unsigned int) p);
+
+        location = glGetUniformLocationARB(p, "m");
+        fprintf(ref, "trace\\.call: glGetUniformLocationARB\\(%u, \"m\"\\) = %d\n",
+                (unsigned int) p, location);
+        glGetActiveUniformARB(p, location, sizeof(name), &length, &size, &type, name);
+        /* Prerelease OpenGL 2.1 drivers from NVIDIA return GL_FLOAT_MAT3 in
+         * this situation.
+         */
+        fprintf(ref, "trace\\.call: glGetActiveUniformARB\\(%u, %d, %u, %p -> 1, %p -> 1, %p -> %s, \"m\"\\)\n",
+                (unsigned int) p, (int) location, (unsigned int) sizeof(name),
+                &length, &size, &type,
+                lang120 ? (type == GL_FLOAT_MAT3 ? "GL_FLOAT_MAT3" : "GL_FLOAT_MAT3x4") : "GL_FLOAT_MAT4");
     }
 #endif
     /* FIXME: test lots more things e.g. source */

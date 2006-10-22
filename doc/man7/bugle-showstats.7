@@ -1,32 +1,57 @@
-.TH showstats 7 "May 2006" BUGLE "User manual"
+.TH showstats 7 "October 2006" BUGLE "User manual"
 .SH NAME
 showstats \- render statistics over the display
 .SH SYNOPSIS
 .nf
-filterset frontbuffer
+filterset showstats
+{
+    show "statistic1"
+    show "statistic2"
+    graph "statistic3"
+}
 .SH DESCRIPTION
 The
-.B stats
-filter-set gathers statistics about the rendering, such as frame rate.
-When this filter-set is also used, the statistics are displayed in the
-rendered window.
+.B showstats
+filter-set displays statistics gathered by other filter-sets over the
+rendered display. These filter-sets must be listed in the chain ahead
+of
+.BR showstats .
+Statistics can be displayed either as text or as graphs.
 
-This filter-set has two parameters,
-.B key_accumulate
+The statistics to display are selected by the
+.B show
 and
-.BR key_noaccumulate .
-To obtain an average (rather than instantaneous) frame-rate, press the
-first key. The frame-rate will then be an average since the key was
-pressed. To return to the default display, press the second key.
-.SH BUGS
-The filter-set has some overhead. You should use the
-.B log
-filterset to record statistics to file if you want to get accurate
-frame-rate measurements.
-
-The triangle and fragment counts are not accumulated.
-
-If the background is white it is impossible to see the statistics.
+.B graph
+pseudo-variables in the
+.B filters
+file. These reference statistics that are defined in
+.BR $HOME/.bugle/statistics .
+Most users should just copy this file from the example in the BuGLe
+documentation; it lists most of the statistics that one might wish to
+use.
+.SH OPTIONS
+.TP
+.B time
+The time interval between updating the statistics display.
+.TP
+.B key_accumulate
+By default, statistics are averaged over the time interval specified
+above, making them approximately instantaneous rates. Pressing this
+key will cause the display to instead show the average from the time
+the key was pressed until the current moment.
+.TP
+.B key_unaccumulate
+This key restores the default behaviour of showing instantaneous
+rate.
+.SH FILES
+.TP
+.B $HOME/.bugle/statistics
+Formulae and metadata for statistics
+.SH ENVIRONMENT
+.TP
+.B BUGLE_STATISTICS
+If set, defines the location of the statistics file instead of
+.BR $HOME/.bugle/statistics .
 .SH AUTHOR
 .B gldb
 and the
@@ -35,4 +60,8 @@ library are written and maintained by Bruce Merry
 <bmerry@users.sourceforge.net>.
 .SH SEE ALSO
 .BR bugle (3),
-.BR bugle-stats (3)
+.BR bugle-stats_basic (3),
+.BR bugle-stats_primitives (3),
+.BR bugle-stats_fragments (3),
+.BR bugle-stats_nv (3),
+.BR bugle-showstats (3)

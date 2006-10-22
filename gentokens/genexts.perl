@@ -62,6 +62,7 @@ my %chains = ("GL_ATI_draw_buffers" => "GL_ARB_draw_buffers",
               "GL_EXT_texture_filter_anisotropic" => undef,
               "GL_EXT_texture_lod_bias" => "GL_VERSION_1_4",
               "GL_EXT_texture_rectangle" => "GL_ARB_texture_rectangle",
+              "GL_EXT_texture_sRGB" => "GL_VERSION_2_1",
               "GL_SGIS_generate_mipmap" => "GL_VERSION_1_4",
               "GL_SGIS_texture_lod" => "GL_VERSION_1_2",
               "GL_NV_texture_rectangle" => "GL_EXT_texture_rectangle"

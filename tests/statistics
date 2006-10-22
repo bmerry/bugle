@@ -1,0 +1,5 @@
+"triangles per frame" = d("triangles") / d("frames")
+{
+    precision 0
+    label "triangles per frame"
+}

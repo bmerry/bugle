@@ -86,6 +86,7 @@ static void dump_ppm_header(FILE *f, void *data)
     fprintf(f, "P6\n%d %d\n255\n", wh[0], wh[1]);
 }
 
+/* FIXME: eliminate this in favour of the framebuffer grabber */
 static bool debugger_screenshot(int pipe)
 {
     Display *dpy;
@@ -98,7 +99,7 @@ static bool debugger_screenshot(int pipe)
     char *data, *in, *out;
     unsigned int i;
 
-    aux = bugle_get_aux_context();
+    aux = bugle_get_aux_context(false);
     if (!aux || !bugle_begin_internal_render()) return false;
     real = CALL_glXGetCurrentContext();
     old_write = CALL_glXGetCurrentDrawable();
@@ -274,7 +275,7 @@ static bool send_data_texture(uint32_t id, GLuint texid, GLenum target,
         return false;
     }
 
-    aux = bugle_get_aux_context();
+    aux = bugle_get_aux_context(true);
     if (aux && texid)
     {
         real = CALL_glXGetCurrentContext();
@@ -463,7 +464,7 @@ static bool send_data_framebuffer(uint32_t id, GLuint fbo, GLenum target,
          * don't bother to work around them.
          */
         if (strcmp((char *) CALL_glGetString(GL_VERSION), "2.0.2 NVIDIA 87.62") != 0)
-            aux = bugle_get_aux_context();
+            aux = bugle_get_aux_context(true);
     }
     if (aux)
     {
@@ -593,7 +594,7 @@ static bool send_data_shader(uint32_t id, GLuint shader_id,
     GLint length;
     char *text;
 
-    aux = bugle_get_aux_context();
+    aux = bugle_get_aux_context(true);
     if (!aux || !bugle_begin_internal_render())
     {
         gldb_protocol_send_code(out_pipe, RESP_ERROR);

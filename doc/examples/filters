@@ -20,29 +20,37 @@ chain trace
 }
 
 # Shows a fps counter on screen
-chain showstats
+chain showfps
 {
-    filterset stats
-    {
-        # Uncomment to count fragments that pass the depth test. This
-        # requires GL_ARB_occlusion_query and will have a performance
-        # penalty.
-        
-        # fragments yes
+    filterset stats_basic
 
-        # Uncomment to count triangles.
-
-        # triangles yes
-    }
-
-    # Replace showstats with log to log stats to file
+    # Replace showstats with logstats to write to the log instead
     filterset showstats
     {
+        show "frames per second"
+
         # Uncomment this and press 'A' to accumulate FPS. The FPS shown
         # will be the average from when the key was pressed.
         # key_accumulate "A"
         # Uncomment this and press 'I' to return to the default display
         # key_noaccumulate "I"
+    }
+}
+
+# Show assorted stats. This is just an example; see the statistics
+# example file to see what statistics are available.
+chain showstats
+{
+    filterset stats_basic
+    filterset stats_primitives
+    # Note: stats_fragments requires GL_ARB_occlusion_query
+    filterset stats_fragments
+    filterset showstats
+    {
+        show "frames per second"
+        show "batches per frame"
+        graph "triangles per second"
+        graph "fragments per second"
     }
 }
 

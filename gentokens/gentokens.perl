@@ -39,7 +39,7 @@ sub text_versions($$)
 {
     my $ver = $_[0];
     my $ext = $_[1];
-    
+
     if (defined($ver)) { $ver = '"' . $ver . '"'; }
     elsif (defined($ext)) { $ver = "NULL"; }
     else { $ver = '"GL_VERSION_1_1"'; }
@@ -127,7 +127,8 @@ while (<>)
         $ext = $suffix = undef;
         $ver = "GL_VERSION_1_1";
     }
-    elsif (/^#define (GL_[0-9A-Z_]+)\s+((0x)?[0-9A-Fa-f]+)/ && is_enum_name($1))
+    elsif (/^#define (GL_[0-9A-Za-z_]+)\s+((0x)?[0-9A-Fa-f]+)/
+           && is_enum_name($1) && $2 ne '1')
     {
         my $name = $1;
         my $base = $name;

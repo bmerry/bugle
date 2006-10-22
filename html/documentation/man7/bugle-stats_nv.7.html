@@ -1,0 +1,98 @@
+<HTML><HEAD><TITLE>Manpage of stats_nv</TITLE>
+</HEAD><BODY>
+<H1>stats_nv</H1>
+Section: User manual (7)<BR>Updated: October 2006<BR><A HREF="#index">Index</A>
+<A HREF="../index.html">Return to Main Contents</A><HR>
+
+<A NAME="lbAB">&nbsp;</A>
+<H2>NAME</H2>
+
+stats_nv - gather performance data from NVPerfSDK
+<A NAME="lbAC">&nbsp;</A>
+<H2>SYNOPSIS</H2>
+
+<PRE>
+filterset stats_nv
+{
+    flush &quot;yes&quot;
+}
+</PRE><A NAME="lbAD">&nbsp;</A>
+<H2>DESCRIPTION</H2>
+
+The
+<B>stats_nv</B>
+
+filter-set extracts data from certain NVIDIA GPUs using NVPerfSDK. This
+filter-set is only built if the appropriate header file is present at
+compile time, and also requires a suitably configured driver and GPU
+(refer to NVPerfSDK documentation).
+<P>
+The possible statistics can be seen in the example
+<B>statistics</B>
+
+file. It is important to read the NVPerfSDK documentation to understand
+what the different types of statistics are, what they mean, and the
+limitations of the hardware interface.
+<A NAME="lbAE">&nbsp;</A>
+<H2>OPTIONS</H2>
+
+<DL COMPACT>
+<DT><B>flush</B>
+
+<DD>
+If set, a
+<B><A HREF="../man3/glFinish.3.html">glFinish</A></B>(3)
+
+will be issued immediately prior to sampling the counters. This
+guarantees that events will be accounted to the correct frame, but will
+cause pipeline stalls.
+</DL>
+<A NAME="lbAF">&nbsp;</A>
+<H2>BUGS</H2>
+
+Because NVPerfSDK operates across OpenGL contexts, it will count events
+from outside the debugged application. In particular, using the
+<B>showstats</B>
+
+filter-set will alter the statistics.
+<A NAME="lbAG">&nbsp;</A>
+<H2>AUTHOR</H2>
+
+<B>gldb</B>
+
+and the
+<B>bugle</B>
+
+library are written and maintained by Bruce Merry
+&lt;<A HREF="mailto:bmerry@users.sourceforge.net">bmerry@users.sourceforge.net</A>&gt;.
+<A NAME="lbAH">&nbsp;</A>
+<H2>SEE ALSO</H2>
+
+<B><A HREF="../man3/bugle.3.html">bugle</A></B>(3),
+
+<B><A HREF="../man3/bugle-stats_basic.3.html">bugle-stats_basic</A></B>(3),
+
+<B><A HREF="../man3/bugle-logstats.3.html">bugle-logstats</A></B>(3),
+
+<B><A HREF="../man3/bugle-showstats.3.html">bugle-showstats</A></B>(3)
+
+<P>
+
+<HR>
+<A NAME="index">&nbsp;</A><H2>Index</H2>
+<DL>
+<DT><A HREF="#lbAB">NAME</A><DD>
+<DT><A HREF="#lbAC">SYNOPSIS</A><DD>
+<DT><A HREF="#lbAD">DESCRIPTION</A><DD>
+<DT><A HREF="#lbAE">OPTIONS</A><DD>
+<DT><A HREF="#lbAF">BUGS</A><DD>
+<DT><A HREF="#lbAG">AUTHOR</A><DD>
+<DT><A HREF="#lbAH">SEE ALSO</A><DD>
+</DL>
+<HR>
+This document was created by
+<A HREF="http://localhost/cgi-bin/man/man2html">man2html</A>,
+using the manual pages.<BR>
+Time: 14:01:47 GMT, October 22, 2006
+</BODY>
+</HTML>
