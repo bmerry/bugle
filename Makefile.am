@@ -214,11 +214,12 @@ TESTS_ENVIRONMENT = BUGLE_FILTERS=$(srcdir)/tests/filters BUGLE_STATISTICS=$(src
 EXTRA_DIST = gl.bc.in $(BCFILES) src/data/gl.c src/data/overrides.h \
 	FAQ TROUBLESHOOTING LICENSE \
 	doc/filters.html doc/objects.html doc/locks.txt \
-	doc/protocol.txt doc/examples/filters doc/extensions.txt \
+	doc/protocol.txt doc/extensions.txt \
+	doc/examples/filters doc/examples/statistics \
 	glee/readme.txt \
 	gl2ps/TODO gl2ps/COPYING.GL2PS gl2ps/COPYING.LGPL gl2ps/gl2ps.pdf \
 	gl2ps/gl2psTestSimple.c gl2ps/gl2psTest.c \
-	tests/filters
+	tests/filters tests/statistics
 
 # Note: automake ought to clean the various files in the .libs directories,
 # but for some reason does not.

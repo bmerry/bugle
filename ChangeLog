@@ -1,3 +1,5 @@
+0.0.20061022
+------------
 * Rewrite of the statistics engine
   - Configuration file for statistics
   - Statistics from NVPerfSDK
@@ -8,6 +10,7 @@
   - Graphing
 * Reduce GL namespace pollution from internal objects
 * Fix some shutdown code including shutdown ordering
+* Remove unnecessary include of getopt.h
 * Minor improvements in OpenGL 2.1 support
 
 0.0.20060913

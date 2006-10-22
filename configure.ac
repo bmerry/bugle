@@ -1,4 +1,4 @@
-AC_INIT(bugle, 0.0.20060913, bmerry@users.sourceforge.net)
+AC_INIT(bugle, 0.0.20061022, bmerry@users.sourceforge.net)
 AC_CONFIG_SRCDIR([src/interceptor.c])
 AM_INIT_AUTOMAKE([1.7 dist-bzip2 subdir-objects])
 AM_CONFIG_HEADER(config.h)

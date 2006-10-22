@@ -1,39 +1,36 @@
-<HTML><HEAD><TITLE>Manpage of frontbuffer</TITLE>
+<HTML><HEAD><TITLE>Manpage of stats_primitives</TITLE>
 </HEAD><BODY>
-<H1>frontbuffer</H1>
-Section: User manual (7)<BR>Updated: May 2006<BR><A HREF="#index">Index</A>
+<H1>stats_primitives</H1>
+Section: User manual (7)<BR>Updated: October 2006<BR><A HREF="#index">Index</A>
 <A HREF="../index.html">Return to Main Contents</A><HR>
 
 <A NAME="lbAB">&nbsp;</A>
 <H2>NAME</H2>
 
-frontbuffer - force rendering to the front buffer
+stats_primitives - gather triangle and batch counts
 <A NAME="lbAC">&nbsp;</A>
 <H2>SYNOPSIS</H2>
 
 <PRE>
-filterset frontbuffer
+filterset stats_primitives
 </PRE><A NAME="lbAD">&nbsp;</A>
 <H2>DESCRIPTION</H2>
 
 The
-<B>frontbuffer</B>
+<B>stats_basic</B>
 
-filter-set overrides the draw buffer, setting it to
-<B>GL_FRONT</B>.
-
-This is most useful when used within
-<B><A HREF="../man1/gldb.1.html">gldb</A></B>(1),
-
-in order to see how a scene is built up batch by batch.
+filter-set provides signals for the number of triangles and batches to
+other filter-sets. It must be listed in a chain that uses any
+statistics related to triangle or batch counts.
 <A NAME="lbAE">&nbsp;</A>
 <H2>BUGS</H2>
 
-As with any filter-set that modifies OpenGL state, it will break
-complex rendering techniques like render-to-vertex-buffer.
+Display lists that call other display lists are not handled.
 <P>
-Rendering to off-screen buffers (such as pbuffers) and multiple render
-targets are not tested and may fail.
+Use of the
+<B>GL_NV_primitive_restart</B>
+
+extension will yield incorrect results.
 <A NAME="lbAF">&nbsp;</A>
 <H2>AUTHOR</H2>
 
@@ -49,9 +46,11 @@ library are written and maintained by Bruce Merry
 
 <B><A HREF="../man3/bugle.3.html">bugle</A></B>(3),
 
-<B><A HREF="../man1/gldb.1.html">gldb</A></B>(1),
+<B><A HREF="../man3/bugle-stats_basic.3.html">bugle-stats_basic</A></B>(3),
 
-<B><A HREF="../man3/glDrawBuffer.3.html">glDrawBuffer</A></B>(3)
+<B><A HREF="../man3/bugle-logstats.3.html">bugle-logstats</A></B>(3),
+
+<B><A HREF="../man3/bugle-showstats.3.html">bugle-showstats</A></B>(3)
 
 <P>
 
