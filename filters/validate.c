@@ -443,10 +443,10 @@ static void checks_attributes(size_t first, size_t count)
 #ifdef GL_ARB_vertex_program
     if (bugle_gl_has_extension(BUGLE_GL_ARB_vertex_program))
     {
-        GLint count, i;
+        GLint attribs, i;
 
-        CALL_glGetIntegerv(GL_MAX_VERTEX_ATTRIBS_ARB, &count);
-        for (i = 0; i < count; i++)
+        CALL_glGetIntegerv(GL_MAX_VERTEX_ATTRIBS_ARB, &attribs);
+        for (i = 0; i < attribs; i++)
             checks_generic_attribute(first, count, i);
     }
 #endif
