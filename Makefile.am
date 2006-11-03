@@ -119,9 +119,10 @@ BUILT_SOURCES += src/lib.h src/utils.h src/names.h src/confparse.h
 
 # Generated files that generate other files
 
+# ccache doesn't play nice with -fdump-translation-unit, so we disable it
 src/data/gl.tu: src/data/gl.c src/data/overrides.h
 	$(INSTALL) -d src/data
-	$(COMPILE) -fdump-translation-unit -c $(srcdir)/src/data/gl.c -o src/data/gl.o
+	CCACHE_DISPLAY=1 $(COMPILE) -fdump-translation-unit -c $(srcdir)/src/data/gl.c -o src/data/gl.o
 	rm -f src/data/gl.o
 	mv gl.c.`test -f gl.c.t00.tu && echo t00.`tu src/data/gl.tu
 
