@@ -327,7 +327,8 @@ static void checks_attribute(size_t first, size_t count,
 static void checks_generic_attribute(size_t first, size_t count,
                                      GLint number)
 {
-    GLint stride, gltype, enabled, size;
+    /* See comment about Mesa below */
+    GLint stride, gltype, enabled = GL_RED_BITS, size;
     size_t group_size;
     GLvoid *ptr;
     budgie_type type;
@@ -337,8 +338,17 @@ static void checks_generic_attribute(size_t first, size_t count,
 #endif
 
     CALL_glGetVertexAttribivARB(number, GL_VERTEX_ATTRIB_ARRAY_ENABLED_ARB, &enabled);
+    /* Mesa (up to at least 6.5.1) returns an error when querying attribute 0.
+     * In this case clear the error and just assume that everything is valid.
+     */
+    if (enabled == GL_RED_BITS)
+    {
+        enabled = GL_FALSE;
+        CALL_glGetError();
+    }
     if (enabled)
     {
+        /* FIXME: output which attribute */
         checks_error = "vertex attribute array";
         CALL_glGetVertexAttribivARB(number, GL_VERTEX_ATTRIB_ARRAY_SIZE_ARB, &size);
         CALL_glGetVertexAttribivARB(number, GL_VERTEX_ATTRIB_ARRAY_TYPE_ARB, &gltype);

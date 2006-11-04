@@ -1,4 +1,5 @@
-* Fix incorrect count for generic attributes in validate filterset
+* Fix incorrect count for generic attributes in checks filterset
+* Work around Mesa bug in checks filterset
 * Make things work when ccache is in use (thanks to Wolfgang Frisch)
 
 0.0.20061022
