@@ -37,6 +37,12 @@ the call is ignored. There is currently no convenient way to trap the
 errors in a debugger (you can, however, find the message in the
 .B bugle
 source and set a breakpoint on the appropriate line).
+.SH BUGS
+Due to the design of C, there is no way to perfectly reliably check
+for vertex array overruns, although memory debuggers can help.
+
+Mesa, up to 6.5.1, has a bug that prevents generic attribute vertex
+from being validated.
 .SH AUTHOR
 .B gldb
 and the
