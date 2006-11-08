@@ -60,6 +60,7 @@ typedef struct
     size_t stride;         /* bytes between rows */
     GLubyte *pixels;
     GLuint pbo;
+    bool pbo_mapped;       /* true during glMapBuffer/glUnmapBuffer */
     int multiplicity;      /* number of times to write to video stream */
 } screenshot_data;
 
@@ -303,9 +304,19 @@ static void finalise_lavc(void)
 
 #endif /* HAVE_LAVC */
 
+/* There are three use cases:
+ * 1. There is no PBO. There is nothing to do.
+ * 2. Use glMapBufferARB. In this case, data->pixels is NULL on entry, and
+ * we set it to the mapped value and set pbo_mapped to true. If glMapBufferARB
+ * fails, we allocate system memory and fall back to case 3.
+ * 3. We use glGetBufferSubDataARB. In this case, data->pixels is non-NULL on
+ * entry and of the correct size, and we read straight into it and set
+ * pbo_mapped to false.
+ */
 static bool map_screenshot(screenshot_data *data)
 {
 #ifdef GL_EXT_pixel_buffer_object
+    GLint size = 0;
     if (data->pbo)
     {
         /* Mapping is done from the real context, so we must save the
@@ -321,19 +332,27 @@ static bool map_screenshot(screenshot_data *data)
 
         CALL_glGetIntegerv(GL_PIXEL_PACK_BUFFER_BINDING_EXT, &old_id);
         CALL_glBindBufferARB(GL_PIXEL_PACK_BUFFER_EXT, data->pbo);
-        data->pixels = CALL_glMapBuffer(GL_PIXEL_PACK_BUFFER_EXT, GL_READ_ONLY_ARB);
+
         if (!data->pixels)
         {
-            CALL_glGetError(); /* hide the error from end_internal_render() */
-            CALL_glBindBufferARB(GL_PIXEL_PACK_BUFFER_EXT, old_id);
-            bugle_end_internal_render("map_screenshot", true);
-            return false;
+            data->pixels = CALL_glMapBufferARB(GL_PIXEL_PACK_BUFFER_EXT, GL_READ_ONLY_ARB);
+            if (!data->pixels)
+                CALL_glGetError(); /* hide the error from end_internal_render() */
+            else
+            {
+                data->pbo_mapped = true;
+                bugle_end_internal_render("map_screenshot", true);
+                return true;
+            }
         }
-        else
-        {
-            CALL_glBindBufferARB(GL_PIXEL_PACK_BUFFER_EXT, old_id);
-            bugle_end_internal_render("map_screenshot", true);
-        }
+        // If we get here, we're in case 3
+        CALL_glGetBufferParameterivARB(GL_PIXEL_PACK_BUFFER_EXT, GL_BUFFER_SIZE_ARB, &size);
+        if (!data->pixels)
+            data->pixels = bugle_malloc(size);
+        CALL_glGetBufferSubDataARB(GL_PIXEL_PACK_BUFFER_EXT, 0, size, data->pixels);
+        data->pbo_mapped = false;
+        CALL_glBindBufferARB(GL_PIXEL_PACK_BUFFER_EXT, old_id);
+        bugle_end_internal_render("map_screenshot", true);
     }
 #endif
     return true;
@@ -342,7 +361,7 @@ static bool map_screenshot(screenshot_data *data)
 static bool unmap_screenshot(screenshot_data *data)
 {
 #ifdef GL_EXT_pixel_buffer_object
-    if (data->pbo)
+    if (data->pbo && data->pbo_mapped)
     {
         /* Mapping is done from the real context, so we must save the
          * old binding.
@@ -401,7 +420,12 @@ static bool do_screenshot(GLenum format, int test_width, int test_height,
             return false;
         }
 
-    aux = bugle_get_aux_context(false);
+    /* FIXME: it would be cleaner to make this an unshared aux context and
+     * keep the PBO out of the main namespace, but that will require some
+     * redesign; basically moving the context switches to cover a much wider
+     * scope, and have map_screenshot/unmap_screenshot run in the aux context.
+     */
+    aux = bugle_get_aux_context(true);
     if (!aux) return false;
     if (!bugle_begin_internal_render())
     {
@@ -421,7 +445,7 @@ static bool do_screenshot(GLenum format, int test_width, int test_height,
         CALL_glBindBufferARB(GL_PIXEL_PACK_BUFFER_EXT, cur->pbo);
 #endif
     CALL_glReadPixels(0, 0, width, height, format,
-                      GL_UNSIGNED_BYTE, cur->pixels);
+                      GL_UNSIGNED_BYTE, cur->pbo ? NULL : cur->pixels);
 #ifdef GL_EXT_pixel_buffer_object
     if (cur->pbo)
         CALL_glBindBufferARB(GL_PIXEL_PACK_BUFFER_EXT, 0);
@@ -448,7 +472,7 @@ static bool screenshot_stream(FILE *out, bool check_size)
 
     if (fetch->width > 0)
     {
-        map_screenshot(fetch);
+        if (!map_screenshot(fetch)) return false;
         fprintf(out, "P6\n%d %d\n255\n",
                 fetch->width, fetch->height);
         cur = fetch->pixels + fetch->stride * (fetch->height - 1);
@@ -514,12 +538,12 @@ static void screenshot_video()
 #else
         c = &video_stream->codec;
 #endif
-        map_screenshot(fetch);
+        if (!map_screenshot(fetch)) return;
         video_raw->data[0] = fetch->pixels + fetch->stride * (fetch->height - 1);
         video_raw->linesize[0] = -fetch->stride;
         img_convert((AVPicture *) video_yuv, c->pix_fmt,
-                    (AVPicture *) video_raw, CAPTURE_AV_FMT,
-                    fetch->width, fetch->height);
+                (AVPicture *) video_raw, CAPTURE_AV_FMT,
+                fetch->width, fetch->height);
         for (i = 0; i < fetch->multiplicity; i++)
         {
 #if LIBAVFORMAT_VERSION_INT >= 0x00310000
