@@ -1,3 +1,7 @@
+A number of bugs are fixed in this release. The most important is that
+screenshots and video capture are working again, having been broken in
+the previous release.
+
 0.0.20061022
 ------------
 The statistics system has been completely rewritten and is now a lot

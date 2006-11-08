@@ -64,6 +64,15 @@ typedef struct
     int multiplicity;      /* number of times to write to video stream */
 } screenshot_data;
 
+/* Data that must be kept while in screenshot code, to allow restoration.
+ * It is not directly related to an OpenGL context.
+ */
+typedef struct
+{
+    GLXContext old_context;
+    GLXDrawable old_read, old_write;
+} screenshot_context;
+
 /* General settings */
 static bool video = false;
 static char *video_filename = NULL;
@@ -103,6 +112,7 @@ static char *interpolate_filename(const char *pattern, int frame)
 /* If data->pixels == NULL and pbo = 0,
  * or if data->width and data->height do not match the current frame,
  * new memory is allocated. Otherwise the existing memory is reused.
+ * This function must be called from the aux context.
  */
 static void prepare_screenshot_data(screenshot_data *data,
                                     int width, int height,
@@ -140,6 +150,41 @@ static void prepare_screenshot_data(screenshot_data *data,
             data->pbo = 0;
         }
     }
+}
+
+/* These two functions should bracket all screenshot-using code. They are
+ * responsible for checking for in begin/end and switching to the aux
+ * context. If screenshot_start returns false, do not continue.
+ *
+ * The argument must point to a structure which screenshot_start will
+ * populate with data that should then be passed to screenshot_stop.
+ */
+static bool screenshot_start(screenshot_context *ssctx)
+{
+    GLXContext aux;
+    Display *dpy;
+
+    ssctx->old_context = CALL_glXGetCurrentContext();
+    ssctx->old_write = CALL_glXGetCurrentDrawable();
+    ssctx->old_read = CALL_glXGetCurrentReadDrawable();
+    dpy = CALL_glXGetCurrentDisplay();
+    aux = bugle_get_aux_context(false);
+    if (!aux) return false;
+    if (!bugle_begin_internal_render())
+    {
+        fputs("warning: glXSwapBuffers called inside begin/end - skipping frame\n", stderr);
+        return false;
+    }
+    CALL_glXMakeContextCurrent(dpy, ssctx->old_write, ssctx->old_write, aux);
+    return true;
+}
+
+static void screenshot_stop(screenshot_context *ssctx)
+{
+    Display *dpy;
+
+    dpy = CALL_glXGetCurrentDisplay();
+    CALL_glXMakeContextCurrent(dpy, ssctx->old_write, ssctx->old_read, ssctx->old_context);
 }
 
 /* FIXME: we do not currently free the PBO, since we have no way of knowing
@@ -319,18 +364,6 @@ static bool map_screenshot(screenshot_data *data)
     GLint size = 0;
     if (data->pbo)
     {
-        /* Mapping is done from the real context, so we must save the
-         * old binding.
-         */
-        GLint old_id;
-
-        if (!bugle_begin_internal_render())
-        {
-            fputs("warning: glXSwapBuffers called inside begin/end. Dropping frame\n", stderr);
-            return false;
-        }
-
-        CALL_glGetIntegerv(GL_PIXEL_PACK_BUFFER_BINDING_EXT, &old_id);
         CALL_glBindBufferARB(GL_PIXEL_PACK_BUFFER_EXT, data->pbo);
 
         if (!data->pixels)
@@ -342,6 +375,7 @@ static bool map_screenshot(screenshot_data *data)
             {
                 data->pbo_mapped = true;
                 bugle_end_internal_render("map_screenshot", true);
+                CALL_glBindBufferARB(GL_PIXEL_PACK_BUFFER_EXT, 0);
                 return true;
             }
         }
@@ -351,7 +385,7 @@ static bool map_screenshot(screenshot_data *data)
             data->pixels = bugle_malloc(size);
         CALL_glGetBufferSubDataARB(GL_PIXEL_PACK_BUFFER_EXT, 0, size, data->pixels);
         data->pbo_mapped = false;
-        CALL_glBindBufferARB(GL_PIXEL_PACK_BUFFER_EXT, old_id);
+        CALL_glBindBufferARB(GL_PIXEL_PACK_BUFFER_EXT, 0);
         bugle_end_internal_render("map_screenshot", true);
     }
 #endif
@@ -363,22 +397,11 @@ static bool unmap_screenshot(screenshot_data *data)
 #ifdef GL_EXT_pixel_buffer_object
     if (data->pbo && data->pbo_mapped)
     {
-        /* Mapping is done from the real context, so we must save the
-         * old binding.
-         */
-        GLint old_id;
         bool ret;
 
-        if (!bugle_begin_internal_render())
-        {
-            fputs("warning: glXSwapBuffers called inside begin/end. Dropping frame\n", stderr);
-            return false;
-        }
-
-        CALL_glGetIntegerv(GL_PIXEL_PACK_BUFFER_BINDING_EXT, &old_id);
         CALL_glBindBufferARB(GL_PIXEL_PACK_BUFFER_EXT, data->pbo);
         ret = CALL_glUnmapBufferARB(GL_PIXEL_PACK_BUFFER_EXT);
-        CALL_glBindBufferARB(GL_PIXEL_PACK_BUFFER_EXT, old_id);
+        CALL_glBindBufferARB(GL_PIXEL_PACK_BUFFER_EXT, 0);
         bugle_end_internal_render("unmap_screenshot", true);
         data->pixels = NULL;
         return ret;
@@ -393,8 +416,7 @@ static bool unmap_screenshot(screenshot_data *data)
 static bool do_screenshot(GLenum format, int test_width, int test_height,
                           screenshot_data **data)
 {
-    GLXContext aux, real;
-    GLXDrawable old_read, old_write;
+    GLXDrawable drawable;
     Display *dpy;
     screenshot_data *cur;
     unsigned int w, h;
@@ -404,12 +426,10 @@ static bool do_screenshot(GLenum format, int test_width, int test_height,
     cur = &video_data[video_cur];
     video_cur = (video_cur + 1) % video_lag;
 
-    real = CALL_glXGetCurrentContext();
-    old_write = CALL_glXGetCurrentDrawable();
-    old_read = CALL_glXGetCurrentReadDrawable();
+    drawable = CALL_glXGetCurrentDrawable();
     dpy = CALL_glXGetCurrentDisplay();
-    CALL_glXQueryDrawable(dpy, old_write, GLX_WIDTH, &w);
-    CALL_glXQueryDrawable(dpy, old_write, GLX_HEIGHT, &h);
+    CALL_glXQueryDrawable(dpy, drawable, GLX_WIDTH, &w);
+    CALL_glXQueryDrawable(dpy, drawable, GLX_HEIGHT, &h);
     width = w;
     height = h;
     if (test_width != -1 || test_height != -1)
@@ -420,26 +440,9 @@ static bool do_screenshot(GLenum format, int test_width, int test_height,
             return false;
         }
 
-    /* FIXME: it would be cleaner to make this an unshared aux context and
-     * keep the PBO out of the main namespace, but that will require some
-     * redesign; basically moving the context switches to cover a much wider
-     * scope, and have map_screenshot/unmap_screenshot run in the aux context.
-     */
-    aux = bugle_get_aux_context(true);
-    if (!aux) return false;
-    if (!bugle_begin_internal_render())
-    {
-        fputs("warning: glXSwapBuffers called inside begin/end - corrupting frame\n", stderr);
-        return true;
-    }
-    CALL_glXMakeContextCurrent(dpy, old_write, old_write, aux);
-
     prepare_screenshot_data(cur, width, height, 4, true);
 
-    /* FIXME: if we set up all the glReadPixels state, it may be faster
-     * due to not having to context switch. It's probably not worth
-     * the risk due to unknown extensions though
-     */
+    if (!bugle_begin_internal_render()) return false;
 #ifdef GL_EXT_pixel_buffer_object
     if (cur->pbo)
         CALL_glBindBufferARB(GL_PIXEL_PACK_BUFFER_EXT, cur->pbo);
@@ -450,7 +453,6 @@ static bool do_screenshot(GLenum format, int test_width, int test_height,
     if (cur->pbo)
         CALL_glBindBufferARB(GL_PIXEL_PACK_BUFFER_EXT, 0);
 #endif
-    CALL_glXMakeContextCurrent(dpy, old_write, old_read, real);
     bugle_end_internal_render("do_screenshot", true);
 
     return true;
@@ -502,6 +504,7 @@ static void screenshot_video()
     int i, ret;
     struct timeval tv;
     double t = 0.0;
+    screenshot_context ssctx;
 
     if (!video_sample_all)
     {
@@ -523,6 +526,12 @@ static void screenshot_video()
     else
         video_data[video_cur].multiplicity = 1;
 
+    /* We only do this here, because it is potentially expensive and if we
+     * are rendering faster than capturing we don't want the hit if we're
+     * just dropping the frame.
+     */
+    if (!screenshot_start(&ssctx)) return;
+
     if (!video_first)
         video_done = !do_screenshot(CAPTURE_GL_FMT, video_data[0].width, video_data[0].height, &fetch);
     else
@@ -538,7 +547,11 @@ static void screenshot_video()
 #else
         c = &video_stream->codec;
 #endif
-        if (!map_screenshot(fetch)) return;
+        if (!map_screenshot(fetch))
+        {
+            screenshot_stop(&ssctx);
+            return;
+        }
         video_raw->data[0] = fetch->pixels + fetch->stride * (fetch->height - 1);
         video_raw->linesize[0] = -fetch->stride;
         img_convert((AVPicture *) video_yuv, c->pix_fmt,
@@ -581,17 +594,22 @@ static void screenshot_video()
         }
         unmap_screenshot(fetch);
     }
+    screenshot_stop(&ssctx);
 }
 
 #else /* !HAVE_LAVC */
 
 static void screenshot_video(int frameno)
 {
+    screenshot_context ssctx;
+    if (!screenshot_start(&ssctx)) return;
+
     if (!screenshot_stream(video_pipe, true))
     {
         pclose(video_pipe);
         video_pipe = NULL;
     }
+    screenshot_stop(&ssctx);
 }
 
 #endif /* !HAVE_LAVC */
@@ -600,18 +618,22 @@ static void screenshot_file(int frameno)
 {
     char *fname;
     FILE *out;
+    screenshot_context ssctx;
 
+    if (!screenshot_start(&ssctx)) return;
     fname = interpolate_filename(video_filename, frameno);
     out = fopen(fname, "wb");
     free(fname);
     if (!out)
     {
         perror("failed to open screenshot file");
+        screenshot_stop(&ssctx);
         return;
     }
-    if (!screenshot_stream(out, false)) return;
+    screenshot_stream(out, false);
     if (fclose(out) != 0)
         perror("write error");
+    screenshot_stop(&ssctx);
 }
 
 bool screenshot_callback(function_call *call, const callback_data *data)
