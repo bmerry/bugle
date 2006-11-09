@@ -53,10 +53,10 @@
 # define ISNAN(x) ((x) != (x))
 #endif
 
-#if HAVE_NAN
-# define NAN() (nan(""))
+#if !defined(NAN) && HAVE_NAN
+# define NAN (nan(""))
 #else
-# define NAN() (0.0 / 0.0)
+# define NAN (0.0 / 0.0)
 #endif
 
 extern FILE *yyin;
@@ -105,7 +105,7 @@ static stats_signal *stats_signal_register(const char *name, void *user_data,
 
     assert(!stats_signal_get(name));
     si = (stats_signal *) bugle_calloc(1, sizeof(stats_signal));
-    si->value = NAN();
+    si->value = NAN;
     si->integral = 0.0;
     si->offset = -1;
     si->user_data = user_data;
@@ -144,7 +144,7 @@ static double stats_expression_evaluate(const stats_expression *expr,
     case STATS_EXPRESSION_SIGNAL:
         /* Generate a NaN, and let good old IEEE 754 take care of propagating it. */
         if (!expr->signal)
-            return NAN();
+            return NAN;
         switch (expr->op)
         {
         case STATS_OPERATION_DELTA:

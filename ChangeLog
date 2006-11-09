@@ -1,7 +1,10 @@
+0.0.20061109
+------------
 * Fix incorrect count for generic attributes in checks filterset
 * Work around Mesa bug (#8883) in checks filterset
 * Make things work when ccache is in use (thanks to Wolfgang Frisch)
 * Fix video capture and screenshot (broken in previous release)
+* Fix redefinition of NAN
 
 0.0.20061022
 ------------
