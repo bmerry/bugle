@@ -1,3 +1,7 @@
+0.0.20061110
+------------
+* Fix the ccache workaround properly
+
 0.0.20061109
 ------------
 * Fix incorrect count for generic attributes in checks filterset

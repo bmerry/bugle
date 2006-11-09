@@ -1,3 +1,8 @@
+0.0.20061110
+------------
+This is a quick-fix release for ccache. If you have successfully
+installed 0.0.20061109 there is no need to upgrade.
+
 0.0.20061109
 ------------
 A number of bugs are fixed in this release. The most important is that
