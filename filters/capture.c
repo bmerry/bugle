@@ -379,7 +379,7 @@ static bool map_screenshot(screenshot_data *data)
                 return true;
             }
         }
-        // If we get here, we're in case 3
+        /* If we get here, we're in case 3 */
         CALL_glGetBufferParameterivARB(GL_PIXEL_PACK_BUFFER_EXT, GL_BUFFER_SIZE_ARB, &size);
         if (!data->pixels)
             data->pixels = bugle_malloc(size);
@@ -659,6 +659,9 @@ bool screenshot_callback(function_call *call, const callback_data *data)
 static bool initialise_screenshot(filter_set *handle)
 {
     filter *f;
+#if !HAVE_LAVC
+    char *cmdline;
+#endif
 
     f = bugle_register_filter(handle, "screenshot");
     bugle_register_filter_catches(f, GROUP_glXSwapBuffers, false, screenshot_callback);
@@ -673,8 +676,6 @@ static bool initialise_screenshot(filter_set *handle)
         if (!video_filename)
             video_filename = bugle_strdup("/tmp/bugle.avi");
 #if !HAVE_LAVC
-        char *cmdline;
-
         bugle_asprintf(&cmdline, "ppmtoy4m | ffmpeg -f yuv4mpegpipe -i - -vcodec %s -strict -1 -y %s",
                        video_codec, video_filename);
         video_pipe = popen(cmdline, "w");
