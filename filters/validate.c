@@ -224,12 +224,28 @@ static bool initialise_unwindstack(filter_set *handle)
  * causes a SIGSEGV it is used to describe the error.
  */
 static const char *checks_error;
+static int checks_error_attribute;  /* generic attribute number for error */
+static bool checks_error_vbo;
 static sigjmp_buf checks_buf;
 static bugle_thread_mutex_t checks_mutex = BUGLE_THREAD_MUTEX_INITIALIZER;
 
 static void checks_sigsegv_handler(int sig)
 {
     siglongjmp(checks_buf, 1);
+}
+
+static void checks_pointer_message(const char *function)
+{
+    if (checks_error_attribute != -1)
+        fprintf(stderr, "WARNING: illegal generic attribute array %d caught in %s (%s); call will be ignored.\n",
+                checks_error_attribute,
+                function,
+                checks_error_vbo ? "VBO overrun" : "unreadable memory");
+    else
+        fprintf(stderr, "WARNING: illegal %s caught in %s (%s); call will be ignored.\n",
+                checks_error ? checks_error : "pointer",
+                function,
+                checks_error_vbo ? "VBO overrun" : "unreadable memory");
 }
 
 /* Just reads every byte of the given address range. We use the volatile
@@ -263,6 +279,7 @@ static void checks_buffer_vbo(size_t size, const void *data,
     GLint tmp, bsize;
     size_t end;
 
+    checks_error_vbo = true;
     assert(buffer && !bugle_in_begin_end() && bugle_gl_has_extension(BUGLE_GL_ARB_vertex_buffer_object));
 
     CALL_glGetIntegerv(GL_ARRAY_BUFFER_BINDING_ARB, &tmp);
@@ -287,6 +304,7 @@ static void checks_buffer(size_t size, const void *data,
     else
 #endif
     {
+        checks_error_vbo = false;
         checks_memory(size, data);
     }
 }
@@ -306,6 +324,7 @@ static void checks_attribute(size_t first, size_t count,
     if (CALL_glIsEnabled(name))
     {
         checks_error = text;
+        checks_error_attribute = -1;
         if (size_name) CALL_glGetIntegerv(size_name, &size);
         if (type_name)
         {
@@ -348,8 +367,8 @@ static void checks_generic_attribute(size_t first, size_t count,
     }
     if (enabled)
     {
-        /* FIXME: output which attribute */
-        checks_error = "vertex attribute array";
+        checks_error = NULL;
+        checks_error_attribute = number;
         CALL_glGetVertexAttribivARB(number, GL_VERTEX_ATTRIB_ARRAY_SIZE_ARB, &size);
         CALL_glGetVertexAttribivARB(number, GL_VERTEX_ATTRIB_ARRAY_TYPE_ARB, &gltype);
         type = bugle_gl_type_to_type(gltype);
@@ -537,6 +556,8 @@ static void checks_min_max(GLsizei count, GLenum gltype, const GLvoid *indices,
     \
     bugle_thread_mutex_lock(&checks_mutex); \
     checks_error = NULL; \
+    checks_error_attribute - 1; \
+    checks_error_vbo = false; \
     if (sigsetjmp(checks_buf, 1) == 1) ret = false; \
     if (ret) \
     { \
@@ -573,8 +594,7 @@ static bool checks_glDrawArrays(function_call *call, const callback_data *data)
 
     if (CHECKS_START())
     {
-        fprintf(stderr, "WARNING: illegal %s caught in glDrawArrays; call will be ignored.\n",
-                checks_error ? checks_error : "pointer");
+        checks_pointer_message("glDrawArrays");
     }
     else
     {
@@ -588,8 +608,7 @@ static bool checks_glDrawElements(function_call *call, const callback_data *data
 {
     if (CHECKS_START())
     {
-        fprintf(stderr, "WARNING: illegal %s caught in glDrawElements; call will be ignored.\n",
-                checks_error ? checks_error : "pointer");
+        checks_pointer_message("glDrawElements");
     }
     else
     {
@@ -599,6 +618,7 @@ static bool checks_glDrawElements(function_call *call, const callback_data *data
         GLuint min, max;
 
         checks_error = "index array";
+        checks_error_attribute = -1;
         count = *call->typed.glDrawElements.arg1;
         type = *call->typed.glDrawElements.arg2;
         indices = *call->typed.glDrawElements.arg3;
@@ -616,8 +636,7 @@ static bool checks_glDrawRangeElements(function_call *call, const callback_data 
 {
     if (CHECKS_START())
     {
-        fprintf(stderr, "WARNING: illegal %s caught in glDrawRangeElements; call will be ignored.\n",
-                checks_error ? checks_error : "pointer");
+        checks_pointer_message("glDrawRangeElements");
     }
     else
     {
@@ -627,6 +646,7 @@ static bool checks_glDrawRangeElements(function_call *call, const callback_data 
         GLuint min, max;
 
         checks_error = "index array";
+        checks_error_attribute = -1;
         count = *call->typed.glDrawRangeElementsEXT.arg3;
         type = *call->typed.glDrawRangeElementsEXT.arg4;
         indices = *call->typed.glDrawRangeElementsEXT.arg5;
@@ -656,8 +676,7 @@ static bool checks_glMultiDrawArrays(function_call *call, const callback_data *d
 {
     if (CHECKS_START())
     {
-        fprintf(stderr, "WARNING: illegal %s caught in glMultiDrawArrays; call will be ignored.\n",
-                checks_error ? checks_error : "pointer");
+        checks_pointer_message("glMultiDrawArrays");
     }
     else
     {
@@ -670,8 +689,10 @@ static bool checks_glMultiDrawArrays(function_call *call, const callback_data *d
         count_ptr = *call->typed.glMultiDrawArraysEXT.arg2;
 
         checks_error = "first array";
+        checks_error_attribute = -1;
         checks_memory(sizeof(GLint) * count, first_ptr);
         checks_error = "count array";
+        checks_error_attribute = -1;
         checks_memory(sizeof(GLsizei) * count, count_ptr);
 
         for (i = 0; i < count; i++)
@@ -684,8 +705,7 @@ static bool checks_glMultiDrawElements(function_call *call, const callback_data 
 {
     if (CHECKS_START())
     {
-        fprintf(stderr, "WARNING: illegal %s caught in glMultiDrawElements; call will be ignored.\n",
-                checks_error ? checks_error : "pointer");
+        checks_pointer_message("glMultiDrawElements");
     }
     else
     {
@@ -701,10 +721,13 @@ static bool checks_glMultiDrawElements(function_call *call, const callback_data 
         indices_ptr = *call->typed.glMultiDrawElements.arg3;
 
         checks_error = "count array";
+        checks_error_attribute = -1;
         checks_memory(sizeof(GLsizei) * count, count_ptr);
         checks_error = "indices array";
+        checks_error_attribute = -1;
         checks_memory(sizeof(GLvoid *) * count, indices_ptr);
         checks_error = "index array";
+        checks_error_attribute = -1;
 
         for (i = 0; i < count; i++)
         {
