@@ -1,3 +1,6 @@
+* Misc tweaks to configure.ac and Makefile.am
+* Add missing state GL_VERTEX_ATTRIB_ARRAY_BUFFER_BINDING
+
 0.0.20061110
 ------------
 * Fix the ccache workaround properly
