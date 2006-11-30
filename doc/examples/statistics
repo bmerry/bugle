@@ -271,6 +271,12 @@
     label "vertices/s [NV-HW]"
 }
 
+"NV:vertex cache hit %" = 100.0 * (1.0 - d("nv:accum:vertex_count") / (3.0 * d("nv:accum:triangle_count")))
+{
+    precision 1
+    label "% vertex cache hit [NV-HW]"
+}
+
 "NV:vertex attributes per frame" = d("nv:accum:vertex_attribute_count") / d("frames")
 {
     precision 0
