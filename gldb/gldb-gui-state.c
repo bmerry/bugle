@@ -47,6 +47,7 @@ struct _GldbStatePane
     GtkWidget *tree_view;
     GtkTreeStore *state_store;
     GtkTreeModel *state_filter;  /* Filter that shows only chosen state */
+    GtkTreeModel *state_sort;    /* GtkTreeModelSort over the filter */
 };
 
 struct _GldbStatePaneClass
@@ -241,14 +242,17 @@ static void state_select_toggled(GtkCellRendererToggle *cell,
     GldbStatePane *pane;
     GtkTreeStore *store;
     GtkTreeModelFilter *filter;
-    GtkTreeIter filter_iter, store_iter;
+    GtkTreeModelSort *sort;
+    GtkTreeIter sort_iter, filter_iter, store_iter;
     gboolean selected;
 
     pane = GLDB_STATE_PANE(user_data);
+    sort = GTK_TREE_MODEL_SORT(pane->state_sort);
     filter = GTK_TREE_MODEL_FILTER(pane->state_filter);
     store = GTK_TREE_STORE(pane->state_store);
-    if (gtk_tree_model_get_iter_from_string(GTK_TREE_MODEL(filter), &filter_iter, path))
+    if (gtk_tree_model_get_iter_from_string(pane->state_sort, &sort_iter, path))
     {
+        gtk_tree_model_sort_convert_iter_to_child_iter(sort, &filter_iter, &sort_iter);
         gtk_tree_model_filter_convert_iter_to_child_iter(filter, &store_iter, &filter_iter);
         gtk_tree_model_get(GTK_TREE_MODEL(store), &store_iter,
                            COLUMN_STATE_SELECTED, &selected, -1);
@@ -321,20 +325,23 @@ static gboolean state_visible(GtkTreeModel *model, GtkTreeIter *iter,
 static void state_row_expanded_collapsed(GtkTreeView *view, GtkTreeIter *iter,
                                          GtkTreePath *path, gpointer user_data)
 {
-    GtkTreeModel *filter, *store;
-    GtkTreeIter filter_iter, store_iter;
+    GtkTreeModel *sort, *filter, *store;
+    GtkTreeIter sort_iter, filter_iter, store_iter;
     gboolean valid;
 
-    filter = gtk_tree_view_get_model(view);
+    sort = gtk_tree_view_get_model(view);
+    filter = gtk_tree_model_sort_get_model(GTK_TREE_MODEL_SORT(sort));
     store = gtk_tree_model_filter_get_model(GTK_TREE_MODEL_FILTER(filter));
     if (!iter)
     {
-        valid = gtk_tree_model_get_iter(filter, &filter_iter, path);
+        valid = gtk_tree_model_get_iter(filter, &sort_iter, path);
         g_return_if_fail(valid);
     }
     else
-        filter_iter = *iter;
+        sort_iter = *iter;
 
+    gtk_tree_model_sort_convert_iter_to_child_iter(GTK_TREE_MODEL_SORT(sort),
+                                                   &filter_iter, &sort_iter);
     gtk_tree_model_filter_convert_iter_to_child_iter(GTK_TREE_MODEL_FILTER(filter),
                                                      &store_iter, &filter_iter);
 
@@ -364,7 +371,8 @@ GldbPane *gldb_state_pane_new(void)
     pane->state_filter = gtk_tree_model_filter_new(GTK_TREE_MODEL(pane->state_store), NULL);
     gtk_tree_model_filter_set_visible_func(GTK_TREE_MODEL_FILTER(pane->state_filter),
                                            state_visible, pane, NULL);
-    pane->tree_view = tree_view = gtk_tree_view_new_with_model(GTK_TREE_MODEL(pane->state_filter));
+    pane->state_sort = gtk_tree_model_sort_new_with_model(pane->state_filter);
+    pane->tree_view = tree_view = gtk_tree_view_new_with_model(pane->state_sort);
 
     cell = gtk_cell_renderer_toggle_new();
     g_object_set(cell, "yalign", 0.0, NULL);
@@ -406,7 +414,7 @@ GldbPane *gldb_state_pane_new(void)
                                    GTK_POLICY_AUTOMATIC,
                                    GTK_POLICY_AUTOMATIC);
     gtk_container_add(GTK_CONTAINER(scrolled), tree_view);
-    g_object_unref(G_OBJECT(pane->state_filter)); /* So that it dies with the view */
+    g_object_unref(G_OBJECT(pane->state_sort)); /* So that it dies with the view */
     gtk_box_pack_start(GTK_BOX(vbox), scrolled, TRUE, TRUE, 0);
 
     pane->only_selected = check = gtk_check_button_new_with_label(_("Show only selected"));
@@ -451,6 +459,7 @@ static void gldb_state_pane_init(GldbStatePane *self, gpointer g_class)
     self->tree_view = NULL;
     self->state_store = NULL;
     self->state_filter = NULL;
+    self->state_sort = NULL;
 }
 
 GType gldb_state_pane_get_type(void)

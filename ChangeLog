@@ -1,6 +1,7 @@
 * Misc tweaks to configure.ac and Makefile.am
 * Add missing state GL_VERTEX_ATTRIB_ARRAY_BUFFER_BINDING
 * More verbose reporting from the 'checks' filterset
+* Fix sort of columns in the state viewer
 
 0.0.20061110
 ------------
