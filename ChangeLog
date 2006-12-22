@@ -2,6 +2,8 @@
 * Add missing state GL_VERTEX_ATTRIB_ARRAY_BUFFER_BINDING
 * More verbose reporting from the 'checks' filterset
 * Fix sort of columns in the state viewer
+* Fix display of GL_INTENSITY textures
+* Fix GL_PROGRAM_BINDING_ARB state
 
 0.0.20061110
 ------------

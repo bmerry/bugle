@@ -280,6 +280,7 @@ int bugle_gl_format_to_count(GLenum format, GLenum type)
         case GL_GREEN:
         case GL_BLUE:
         case GL_ALPHA:
+        case GL_INTENSITY:
         case GL_LUMINANCE:
 #ifdef GL_EXT_texture_sRGB
         case GL_SLUMINANCE_EXT:

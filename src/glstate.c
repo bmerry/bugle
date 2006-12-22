@@ -939,7 +939,7 @@ static const state_info old_program_object_state[] =
 static const state_info old_program_state[] =
 {
 #if defined(GL_ARB_vertex_program) || defined(GL_ARB_fragment_program)
-    { STATE_NAME(GL_PROGRAM_BINDING_ARB), TYPE_5GLint, -1, BUGLE_EXTGROUP_old_program, -1, STATE_OLD_PROGRAM },
+    { STATE_NAME(GL_PROGRAM_BINDING_ARB), TYPE_5GLint, -1, BUGLE_EXTGROUP_old_program, -1, STATE_MODE_OLD_PROGRAM },
     { STATE_NAME(GL_MAX_PROGRAM_ENV_PARAMETERS_ARB), TYPE_5GLint, -1, BUGLE_EXTGROUP_old_program, -1, STATE_OLD_PROGRAM },
     { STATE_NAME(GL_MAX_PROGRAM_LOCAL_PARAMETERS_ARB), TYPE_5GLint, -1, BUGLE_EXTGROUP_old_program, -1, STATE_OLD_PROGRAM },
     { STATE_NAME(GL_MAX_PROGRAM_INSTRUCTIONS_ARB), TYPE_5GLint, -1, BUGLE_EXTGROUP_old_program, -1, STATE_OLD_PROGRAM },
