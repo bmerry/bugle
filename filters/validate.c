@@ -556,7 +556,7 @@ static void checks_min_max(GLsizei count, GLenum gltype, const GLvoid *indices,
     \
     bugle_thread_mutex_lock(&checks_mutex); \
     checks_error = NULL; \
-    checks_error_attribute - 1; \
+    checks_error_attribute = -1; \
     checks_error_vbo = false; \
     if (sigsetjmp(checks_buf, 1) == 1) ret = false; \
     if (ret) \
