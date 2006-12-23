@@ -122,6 +122,7 @@ typedef struct
      */
     GtkWidget *level, *face, *zoffset;
     GtkWidget *mag_filter, *min_filter;
+    GtkWidget *remap;
     GtkCellRenderer *min_filter_renderer;
 } GldbGuiImageViewer;
 
@@ -131,18 +132,14 @@ GldbGuiImageViewer *gldb_gui_image_viewer_new(GtkStatusbar *statusbar,
 /* Creates an add-on level widget to control the level */
 GtkWidget *gldb_gui_image_viewer_level_new(GldbGuiImageViewer *viewer);
 
-/* Create add-on widgets to control the face on cube maps or the zoffset
- * on 3D textures. */
+/* Create add-on widgets to control the face on cube maps, the zoffset
+ * on 3D textures, or to remap the colour range. */
 GtkWidget *gldb_gui_image_viewer_face_new(GldbGuiImageViewer *viewer);
 GtkWidget *gldb_gui_image_viewer_zoffset_new(GldbGuiImageViewer *viewer);
+GtkWidget *gldb_gui_image_viewer_remap_new(GldbGuiImageViewer *viewer);
 
 /* Creates add-on widgets to control the filtering */
 GtkWidget *gldb_gui_image_viewer_filter_new(GldbGuiImageViewer *viewer, bool mag);
-
-/* Clears the memory allocated to the structure, but not the structure itself */
-void gldb_gui_image_plane_clear(GldbGuiImagePlane *plane);
-void gldb_gui_image_level_clear(GldbGuiImageLevel *level);
-void gldb_gui_image_clear(GldbGuiImage *image);
 
 /* Updates the sensitivity of the zoom combo items and zoom button, and
  * switches to a legal zoom level if the previous level is now illegal.
@@ -169,6 +166,14 @@ void gldb_gui_image_viewer_update_min_filter(GldbGuiImageViewer *viewer,
  */
 void gldb_gui_image_allocate(GldbGuiImage *image, GldbGuiImageType type,
                              int nlevels, int nplanes);
+
+/* Clears the memory allocated to the structure, but not the structure itself */
+void gldb_gui_image_plane_clear(GldbGuiImagePlane *plane);
+void gldb_gui_image_level_clear(GldbGuiImageLevel *level);
+void gldb_gui_image_clear(GldbGuiImage *image);
+
+/* Copies the internal image data into OpenGL texture memory */
+void gldb_gui_image_upload(GldbGuiImage *image, bool remap);
 
 /* General initialisation function; call before all others */
 void gldb_gui_image_initialise(void);

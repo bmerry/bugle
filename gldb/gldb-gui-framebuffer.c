@@ -91,7 +91,7 @@ static gboolean gldb_framebuffer_pane_response_callback(gldb_response *response,
     framebuffer_callback_data *data;
     GLenum format;
     uint32_t channels;
-    GLint width, height, texture_width, texture_height;
+    GLint width, height;
 
     r = (gldb_response_data_framebuffer *) response;
     data = (framebuffer_callback_data *) user_data;
@@ -113,24 +113,20 @@ static gboolean gldb_framebuffer_pane_response_callback(gldb_response *response,
         width = r->width;
         height = r->height;
 
+        /* Save our copy of the data */
+        gldb_gui_image_allocate(&pane->active,
+                                GLDB_GUI_IMAGE_TYPE_2D, 1, 1);
+        pane->active.levels[0].planes[0].width = width;
+        pane->active.levels[0].planes[0].height = height;
+        pane->active.levels[0].planes[0].channels = channels;
+        pane->active.levels[0].planes[0].owns_pixels = true;
+        pane->active.levels[0].planes[0].pixels = (GLfloat *) r->data;
+        r->data = NULL; /* stops gldb_free_response from freeing data */
+
         glcontext = gtk_widget_get_gl_context(pane->viewer->draw);
         gldrawable = gtk_widget_get_gl_drawable(pane->viewer->draw);
         if (gdk_gl_drawable_gl_begin(gldrawable, glcontext))
         {
-            gldb_gui_image_allocate(&pane->active,
-                                    GLDB_GUI_IMAGE_TYPE_2D, 1, 1);
-            if (gdk_gl_query_gl_extension("GL_ARB_texture_non_power_of_two"))
-            {
-                texture_width = width;
-                texture_height = height;
-            }
-            else
-            {
-                texture_width = texture_height = 1;
-                while (texture_width < width) texture_width *= 2;
-                while (texture_height < height) texture_height *= 2;
-            }
-
             if (gdk_gl_query_gl_extension("GL_SGIS_generate_mipmap"))
             {
                 glTexParameteri(GL_TEXTURE_2D, GL_GENERATE_MIPMAP_SGIS, GL_TRUE);
@@ -138,21 +134,10 @@ static gboolean gldb_framebuffer_pane_response_callback(gldb_response *response,
             }
             else
                 pane->viewer->texture_min_filter = GL_LINEAR;
-            /* Allow NPOT framebuffers on POT textures by filling into one corner */
-            glTexImage2D(GL_TEXTURE_2D, 0, format, texture_width, texture_height, 0, format, GL_FLOAT, NULL);
-            glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, width, height, format, GL_FLOAT, r->data);
+            gldb_gui_image_upload(&pane->active,
+                                  gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(pane->viewer->remap)));
             gdk_gl_drawable_gl_end(gldrawable);
         }
-
-        /* Save our copy of the data */
-        pane->active.s = (GLfloat) width / texture_width;
-        pane->active.t = (GLfloat) height / texture_height;
-        pane->active.levels[0].planes[0].width = width;
-        pane->active.levels[0].planes[0].height = height;
-        pane->active.levels[0].planes[0].channels = channels;
-        pane->active.levels[0].planes[0].owns_pixels = true;
-        pane->active.levels[0].planes[0].pixels = (GLfloat *) r->data;
-        r->data = NULL; /* stops gldb_free_response from freeing data */
 
         /* Prepare for rendering */
         pane->viewer->current = &pane->active;
@@ -492,9 +477,9 @@ static GtkWidget *gldb_framebuffer_pane_buffer_new(GldbFramebufferPane *pane)
 static GtkWidget *gldb_framebuffer_pane_combo_table_new(GldbFramebufferPane *pane)
 {
     GtkWidget *combos;
-    GtkWidget *label, *id, *buffer, *zoom;
+    GtkWidget *label, *id, *buffer, *zoom, *remap;
 
-    combos = gtk_table_new(4, 2, FALSE);
+    combos = gtk_table_new(5, 2, FALSE);
 
     label = gtk_label_new(_("Framebuffer"));
     id = gldb_framebuffer_pane_id_new(pane);
@@ -510,6 +495,9 @@ static GtkWidget *gldb_framebuffer_pane_combo_table_new(GldbFramebufferPane *pan
     zoom = pane->viewer->zoom;
     gtk_table_attach(GTK_TABLE(combos), label, 0, 1, 3, 4, 0, 0, 0, 0);
     gtk_table_attach(GTK_TABLE(combos), zoom, 1, 2, 3, 4, GTK_EXPAND | GTK_FILL, 0, 0, 0);
+
+    remap = gldb_gui_image_viewer_remap_new(pane->viewer);
+    gtk_table_attach(GTK_TABLE(combos), remap, 0, 2, 4, 5, GTK_EXPAND | GTK_FILL, 0, 0, 0);
 
     return combos;
 }

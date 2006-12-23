@@ -39,6 +39,7 @@
 #include <gdk-pixbuf/gdk-pixbuf.h>
 #include <string.h>
 #include <stdlib.h>
+#include <math.h>
 #include "common/safemem.h"
 #include "common/bool.h"
 #include "src/names.h"
@@ -1014,6 +1015,36 @@ GtkWidget *gldb_gui_image_viewer_zoffset_new(GldbGuiImageViewer *viewer)
     return viewer->zoffset = zoffset;
 }
 
+static void image_viewer_remap_toggled(GtkToggleButton *widget, gpointer user_data)
+{
+    GldbGuiImageViewer *viewer;
+    GdkGLContext *glcontext;
+    GdkGLDrawable *gldrawable;
+
+    viewer = (GldbGuiImageViewer *) user_data;
+    if (!viewer->current)
+        return;
+    glcontext = gtk_widget_get_gl_context(viewer->draw);
+    gldrawable = gtk_widget_get_gl_drawable(viewer->draw);
+    if (!gdk_gl_drawable_gl_begin(gldrawable, glcontext))
+        return;
+    gldb_gui_image_upload(viewer->current, gtk_toggle_button_get_active(widget));
+    gdk_gl_drawable_gl_end(gldrawable);
+
+    gtk_widget_queue_draw(viewer->draw);
+}
+
+GtkWidget *gldb_gui_image_viewer_remap_new(GldbGuiImageViewer *viewer)
+{
+    GtkWidget *remap;
+
+    g_assert(viewer->remap == NULL);
+    remap = gtk_check_button_new_with_label("Remap range");
+    g_signal_connect(G_OBJECT(remap), "toggled",
+                     G_CALLBACK(image_viewer_remap_toggled), viewer);
+    return viewer->remap = remap;
+}
+
 static void image_filter_changed(GtkWidget *widget, gpointer user_data)
 {
     GldbGuiImageViewer *viewer;
@@ -1084,16 +1115,17 @@ GldbGuiImageViewer *gldb_gui_image_viewer_new(GtkStatusbar *statusbar,
 void gldb_gui_image_viewer_update_levels(GldbGuiImageViewer *viewer)
 {
     GtkTreeModel *model;
-    GtkTreeIter iter;
-    gint old;
+    GtkTreeIter iter, new_iter;
     gint levels, i;
+    gint old = -1;
 
     if (!viewer->current || !viewer->level)
         return;
     levels = viewer->current->nlevels;
 
     model = gtk_combo_box_get_model(GTK_COMBO_BOX(viewer->level));
-    old = gtk_combo_box_get_active(GTK_COMBO_BOX(viewer->level));
+    if (gtk_combo_box_get_active_iter(GTK_COMBO_BOX(viewer->level), &iter))
+        gtk_tree_model_get(model, &iter, COLUMN_IMAGE_LEVEL_VALUE, &old, -1);
     gtk_list_store_clear(GTK_LIST_STORE(model));
     gtk_list_store_append(GTK_LIST_STORE(model), &iter);
     gtk_list_store_set(GTK_LIST_STORE(model), &iter,
@@ -1118,11 +1150,15 @@ void gldb_gui_image_viewer_update_levels(GldbGuiImageViewer *viewer)
                            COLUMN_IMAGE_LEVEL_TEXT, text,
                            -1);
         free(text);
+        if (i == old) new_iter = iter;
     }
-    if (old <= levels)
-        gtk_combo_box_set_active(GTK_COMBO_BOX(viewer->level), old);
+
+    if (old < 0) /* No previous value or auto */
+        gtk_combo_box_set_active(GTK_COMBO_BOX(viewer->level), 0);
+    else if (old >= levels)  /* Not enough levels any more, take the last */
+        gtk_combo_box_set_active_iter(GTK_COMBO_BOX(viewer->level), &iter);
     else
-        gtk_combo_box_set_active(GTK_COMBO_BOX(viewer->level), levels);
+        gtk_combo_box_set_active_iter(GTK_COMBO_BOX(viewer->level), &new_iter);
 }
 
 void gldb_gui_image_viewer_update_face_zoffset(GldbGuiImageViewer *viewer)
@@ -1319,6 +1355,155 @@ void gldb_gui_image_allocate(GldbGuiImage *image, GldbGuiImageType type,
             image->levels[i].planes = bugle_calloc(nplanes, sizeof(GldbGuiImagePlane));
         else
             image->levels[i].planes = NULL;
+    }
+}
+
+/* Rounds up to a power of 2 */
+static int round_up_two(int x)
+{
+    int y = 1;
+    while (y < x)
+        y *= 2;
+    return y;
+}
+
+void gldb_gui_image_upload(GldbGuiImage *image, bool remap)
+{
+    GLenum face, format;
+    int l, p, i;
+    bool have_npot;
+    GLint texture_width, texture_height, texture_depth;
+    GldbGuiImagePlane *plane;
+
+    if (remap)
+    {
+        GLfloat low = HUGE_VAL, high = -HUGE_VAL;
+        GLfloat scale, bias;
+
+        for (l = 0; l < image->nlevels; l++)
+            for (p = 0; p < image->levels[l].nplanes; p++)
+            {
+                plane = &image->levels[l].planes[p];
+                int c = gldb_channel_count(plane->channels);
+                for (i = 0; i < plane->width * plane->height * c; i++)
+                {
+                    low = MIN(low, plane->pixels[i]);
+                    high = MAX(high, plane->pixels[i]);
+                }
+            }
+        if (high == HUGE_VAL || high - low < 1e-8)
+            remap = false;
+
+        scale = 1.0f / (high - low);
+        bias = -low * scale;
+        glPixelTransferf(GL_RED_SCALE, scale);
+        glPixelTransferf(GL_GREEN_SCALE, scale);
+        glPixelTransferf(GL_BLUE_SCALE, scale);
+        glPixelTransferf(GL_ALPHA_SCALE, scale);
+        glPixelTransferf(GL_RED_BIAS, bias);
+        glPixelTransferf(GL_GREEN_BIAS, bias);
+        glPixelTransferf(GL_BLUE_BIAS, bias);
+        glPixelTransferf(GL_ALPHA_BIAS, bias);
+    }
+
+    have_npot = gdk_gl_query_gl_extension("GL_ARB_texture_non_power_of_two");
+    switch (image->type)
+    {
+    case GLDB_GUI_IMAGE_TYPE_2D:
+        for (l = 0; l < image->nlevels; l++)
+        {
+            plane = &image->levels[l].planes[0];
+            texture_width = have_npot ? plane->width : round_up_two(plane->width);
+            texture_height = have_npot ? plane->height : round_up_two(plane->height);
+            format = gldb_channel_get_display_token(plane->channels);
+            glTexImage2D(image->texture_target, l, format,
+                         texture_width, texture_height,
+                         0, format, GL_FLOAT, NULL);
+            glTexSubImage2D(image->texture_target, l,
+                            0, 0, plane->width, plane->height,
+                            format, GL_FLOAT, plane->pixels);
+            if (l == 0)
+            {
+                image->s = (GLfloat) plane->width / texture_width;
+                image->t = (GLfloat) plane->height / texture_height;
+            }
+        }
+        break;
+#ifdef GL_ARB_texture_cube_map
+    case GLDB_GUI_IMAGE_TYPE_CUBE_MAP:
+        if (gdk_gl_query_gl_extension("GL_ARB_texture_cube_map"))
+        {
+            for (l = 0; l < image->nlevels; l++)
+                for (p = 0; p < 6; p++)
+                {
+                    face = GL_TEXTURE_CUBE_MAP_POSITIVE_X_ARB + p;
+                    GldbGuiImagePlane *plane = &image->levels[l].planes[p];
+                    texture_width = have_npot ? plane->width : round_up_two(plane->width);
+                    texture_height = have_npot ? plane->height : round_up_two(plane->height);
+                    format = gldb_channel_get_display_token(plane->channels);
+                    glTexImage2D(face, l, format,
+                                 texture_width, texture_height,
+                                 0, format, GL_FLOAT, NULL);
+                    glTexSubImage2D(face, l,
+                                    0, 0, plane->width, plane->height,
+                                    format, GL_FLOAT, plane->pixels);
+                    if (l == 0 && p == 0)
+                    {
+                        image->s = (GLfloat) plane->width / texture_width;
+                        image->t = (GLfloat) plane->height / texture_height;
+                    }
+                }
+        }
+        break;
+#endif
+#ifdef GL_EXT_texture3D
+    case GLDB_GUI_IMAGE_TYPE_3D:
+        if (gdk_gl_query_gl_extension("GL_EXT_texture3D"))
+        {
+            for (l = 0; l < image->nlevels; l++)
+            {
+                int depth = image->levels[l].nplanes;
+                GldbGuiImagePlane *plane = &image->levels[l].planes[0];
+                texture_width = have_npot ? plane->width : round_up_two(plane->width);
+                texture_height = have_npot ? plane->height : round_up_two(plane->height);
+                texture_depth = have_npot ? depth : round_up_two(depth);
+                format = gldb_channel_get_display_token(plane->channels);
+                glTexImage3D(image->texture_target, l, format,
+                             texture_width, texture_height, texture_depth,
+                             0, format, GL_FLOAT, NULL);
+                for (p = 0; p < depth; p++)
+                {
+                    GldbGuiImagePlane *plane2 = &image->levels[l].planes[p];
+                    glTexSubImage3D(image->texture_target, l,
+                                    0, 0, p, plane2->width, plane2->height, 1,
+                                    format, GL_FLOAT, plane2->pixels);
+                }
+                if (l == 0)
+                {
+                    image->s = (GLfloat) plane->width / texture_width;
+                    image->t = (GLfloat) plane->height / texture_height;
+                    image->r = (GLfloat) depth / texture_depth;
+                }
+            }
+        }
+        else
+            g_error("3D textures not supported");
+        break;
+#endif
+    default:
+        g_error("Image type not supported - please update glext.h");
+    }
+
+    if (remap)
+    {
+        glPixelTransferf(GL_RED_SCALE, 1.0f);
+        glPixelTransferf(GL_GREEN_SCALE, 1.0f);
+        glPixelTransferf(GL_BLUE_SCALE, 1.0f);
+        glPixelTransferf(GL_ALPHA_SCALE, 1.0f);
+        glPixelTransferf(GL_RED_BIAS, 0.0f);
+        glPixelTransferf(GL_GREEN_BIAS, 0.0f);
+        glPixelTransferf(GL_BLUE_BIAS, 0.0f);
+        glPixelTransferf(GL_ALPHA_BIAS, 0.0f);
     }
 }
 

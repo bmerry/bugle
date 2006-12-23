@@ -65,6 +65,7 @@ struct _GldbTexturePaneClass
 
 #define TEXTURE_CALLBACK_FLAG_FIRST 1
 #define TEXTURE_CALLBACK_FLAG_LAST 2
+#define TEXTURE_CALLBACK_FLAG_REMAP 4
 
 enum
 {
@@ -102,6 +103,8 @@ static gboolean gldb_texture_pane_response_callback(gldb_response *response,
     uint32_t channels;
     GldbGuiImageLevel *level;
     GldbTexturePane *pane;
+    GdkGLContext *glcontext;
+    GdkGLDrawable *gldrawable;
 
     r = (gldb_response_data_texture *) response;
     data = (texture_callback_data *) user_data;
@@ -120,92 +123,40 @@ static gboolean gldb_texture_pane_response_callback(gldb_response *response,
     }
     else
     {
-        GdkGLContext *glcontext;
-        GdkGLDrawable *gldrawable;
-        GLuint texture_width, texture_height, texture_depth, plane;
-        GLenum face;
+        GLuint plane;
 
         channels = data->channels;
         format = gldb_channel_get_display_token(channels);
-        glcontext = gtk_widget_get_gl_context(pane->viewer->draw);
-        gldrawable = gtk_widget_get_gl_drawable(pane->viewer->draw);
 
-        if (gdk_gl_drawable_gl_begin(gldrawable, glcontext))
+        plane = 0;
+        level = &pane->progressive.levels[data->level];
+        switch (pane->progressive.type)
         {
-            if (gdk_gl_query_gl_extension("GL_ARB_texture_non_power_of_two"))
+        case GLDB_GUI_IMAGE_TYPE_CUBE_MAP:
+            plane = data->face - GL_TEXTURE_CUBE_MAP_POSITIVE_X_ARB;
+            /* Fall through */
+        case GLDB_GUI_IMAGE_TYPE_2D:
+            level->planes[plane].width = r->width;
+            level->planes[plane].height = r->height;
+            level->planes[plane].channels = data->channels;
+            level->planes[plane].owns_pixels = true;
+            level->planes[plane].pixels = (GLfloat *) r->data;
+            break;
+        case GLDB_GUI_IMAGE_TYPE_3D:
+            level->nplanes = r->depth;
+            level->planes = bugle_calloc(r->depth, sizeof(GldbGuiImagePlane));
+            for (plane = 0; plane < r->depth; plane++)
             {
-                texture_width = r->width;
-                texture_height = r->height;
-                texture_depth = r->depth;
-            }
-            else
-            {
-                texture_width = texture_height = texture_depth = 1;
-                while (texture_width < r->width) texture_width *= 2;
-                while (texture_height < r->height) texture_height *= 2;
-                while (texture_depth < r->depth) texture_depth *= 2;
-            }
-
-            face = pane->progressive.texture_target;
-            plane = 0;
-            level = &pane->progressive.levels[data->level];
-            switch (pane->progressive.type)
-            {
-            case GLDB_GUI_IMAGE_TYPE_CUBE_MAP:
-                plane = data->face - GL_TEXTURE_CUBE_MAP_POSITIVE_X_ARB;
-                face = data->face;
-                /* Fall through */
-                /* FIXME: test for cube map extension first */
-            case GLDB_GUI_IMAGE_TYPE_2D:
-                glTexImage2D(face, data->level, format,
-                             texture_width, texture_height, 0,
-                             format, GL_FLOAT, NULL);
-                glTexSubImage2D(face, data->level, 0, 0,
-                                r->width, r->height, format, GL_FLOAT, r->data);
                 level->planes[plane].width = r->width;
-                level->planes[plane].height = r->height;
+                level->planes[plane].height = r->width;
                 level->planes[plane].channels = data->channels;
-                level->planes[plane].owns_pixels = true;
-                level->planes[plane].pixels = (GLfloat *) r->data;
-                if (data->flags & TEXTURE_CALLBACK_FLAG_FIRST)
-                {
-                    pane->progressive.s = (GLfloat) r->width / texture_width;
-                    pane->progressive.t = (GLfloat) r->height / texture_height;
-                }
-                break;
-            case GLDB_GUI_IMAGE_TYPE_3D:
-                if (gdk_gl_query_gl_extension("GL_EXT_texture3D"))
-                {
-                    glTexImage3DEXT(face, data->level, format,
-                                    texture_width, texture_height, texture_depth, 0,
-                                    format, GL_FLOAT, NULL);
-                    glTexSubImage3DEXT(face, data->level, 0, 0, 0,
-                                       r->width, r->height, r->depth,
-                                       format, GL_FLOAT, r->data);
-                    level->nplanes = r->depth;
-                    level->planes = bugle_calloc(r->depth, sizeof(GldbGuiImagePlane));
-                    for (plane = 0; plane < r->depth; plane++)
-                    {
-                        level->planes[plane].width = r->width;
-                        level->planes[plane].height = r->width;
-                        level->planes[plane].channels = data->channels;
-                        level->planes[plane].owns_pixels = (plane == 0);
-                        level->planes[plane].pixels = ((GLfloat *) r->data) + plane * r->width * r->height * gldb_channel_count(data->channels);
-                    }
-                    if (data->flags & TEXTURE_CALLBACK_FLAG_FIRST)
-                    {
-                        pane->progressive.s = (GLfloat) r->width / texture_width;
-                        pane->progressive.t = (GLfloat) r->height / texture_height;
-                        pane->progressive.r = (GLfloat) r->depth / texture_depth;
-                    }
-                    break;
-                }
-            default:
-                g_error("Image type is not supported.");
+                level->planes[plane].owns_pixels = (plane == 0);
+                level->planes[plane].pixels = ((GLfloat *) r->data) + plane * r->width * r->height * gldb_channel_count(data->channels);
             }
-            gdk_gl_drawable_gl_end(gldrawable);
+            break;
+        default:
+            g_assert_not_reached();
         }
-
         r->data = NULL; /* Prevents gldb_free_response from freeing the data */
     }
 
@@ -215,6 +166,15 @@ static gboolean gldb_texture_pane_response_callback(gldb_response *response,
         pane->active = pane->progressive;
         pane->viewer->current = &pane->active;
         memset(&pane->progressive, 0, sizeof(pane->progressive));
+
+        glcontext = gtk_widget_get_gl_context(pane->viewer->draw);
+        gldrawable = gtk_widget_get_gl_drawable(pane->viewer->draw);
+        if (gdk_gl_drawable_gl_begin(gldrawable, glcontext))
+        {
+            gldb_gui_image_upload(&pane->active,
+                                  gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(pane->viewer->remap)));
+            gdk_gl_drawable_gl_end(gldrawable);
+        }
 
         gldb_gui_image_viewer_update_min_filter(pane->viewer,
                                                 data->target != GL_TEXTURE_RECTANGLE_NV);
@@ -426,9 +386,9 @@ static GtkWidget *gldb_texture_pane_id_new(GldbTexturePane *pane)
 static GtkWidget *gldb_texture_pane_combo_table_new(GldbTexturePane *pane)
 {
     GtkWidget *combos;
-    GtkWidget *label, *id, *level, *face, *zoffset, *zoom, *min, *mag;
+    GtkWidget *label, *id, *level, *face, *zoffset, *zoom, *min, *mag, *remap;
 
-    combos = gtk_table_new(7, 2, FALSE);
+    combos = gtk_table_new(8, 2, FALSE);
 
     label = gtk_label_new(_("Texture"));
     id = gldb_texture_pane_id_new(pane);
@@ -464,6 +424,9 @@ static GtkWidget *gldb_texture_pane_combo_table_new(GldbTexturePane *pane)
     min = gldb_gui_image_viewer_filter_new(pane->viewer, false);
     gtk_table_attach(GTK_TABLE(combos), label, 0, 1, 6, 7, 0, 0, 0, 0);
     gtk_table_attach(GTK_TABLE(combos), min, 1, 2, 6, 7, GTK_EXPAND | GTK_FILL, 0, 0, 0);
+
+    remap = gldb_gui_image_viewer_remap_new(pane->viewer);
+    gtk_table_attach(GTK_TABLE(combos), remap, 0, 2, 7, 8, GTK_EXPAND | GTK_FILL, 0, 0, 0);
     return combos;
 }
 
