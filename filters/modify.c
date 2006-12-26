@@ -172,8 +172,8 @@ static bool initialise_wireframe(filter_set *handle)
     bugle_register_filter_catches(f, GROUP_glPolygonMode, false, wireframe_glPolygonMode);
     bugle_register_filter_catches(f, GROUP_glEnable, false, wireframe_glEnable);
     bugle_register_filter_catches(f, GROUP_glXMakeCurrent, true, wireframe_make_current);
-#ifdef GLX_VERSION_1_3
-    bugle_register_filter_catches(f, GROUP_glXMakeContextCurrent, true, wireframe_make_current);
+#ifdef GLX_SGI_make_current_read
+    bugle_register_filter_catches(f, GROUP_glXMakeCurrentReadSGI, true, wireframe_make_current);
 #endif
     bugle_register_filter_depends("wireframe", "invoke");
     bugle_register_filter_post_renders("wireframe");
@@ -291,8 +291,8 @@ static bool initialise_frontbuffer(filter_set *handle)
     bugle_register_filter_depends("frontbuffer", "invoke");
     bugle_register_filter_catches(f, GROUP_glDrawBuffer, false, frontbuffer_glDrawBuffer);
     bugle_register_filter_catches(f, GROUP_glXMakeCurrent, true, frontbuffer_make_current);
-#ifdef GLX_VERSION_1_3
-    bugle_register_filter_catches(f, GROUP_glXMakeContextCurrent, true, frontbuffer_make_current);
+#ifdef GLX_SGI_make_current_read
+    bugle_register_filter_catches(f, GROUP_glXMakeCurrentReadSGI, true, frontbuffer_make_current);
 #endif
     bugle_register_filter_post_renders("frontbuffer");
 
@@ -668,8 +668,8 @@ static bool initialise_camera(filter_set *handle)
     bugle_register_filter_post_renders("camera_post");
     bugle_register_filter_depends("camera_post", "invoke");
     bugle_register_filter_catches(f, GROUP_glXMakeCurrent, true, camera_make_current);
-#ifdef GLX_VERSION_1_3
-    bugle_register_filter_catches(f, GROUP_glXMakeContextCurrent, true, camera_make_current);
+#ifdef GLX_SGI_make_current_read
+    bugle_register_filter_catches(f, GROUP_glXMakeCurrentReadSGI, true, camera_make_current);
 #endif
     bugle_register_filter_catches(f, GROUP_glLoadIdentity, false, camera_override);
     bugle_register_filter_catches(f, GROUP_glLoadMatrixf, false, camera_override);

@@ -119,6 +119,8 @@ ALIAS glUseProgramObjectARB glUseProgram
 ALIAS glAttachObjectARB glAttachShader
 ALIAS glDetachObjectARB glDetachShader
 ALIAS glGetAttachedObjectsARB glGetAttachedShaders
+ALIAS glXCreateContextWithConfigSGIX glXCreateNewContext
+ALIAS glXMakeCurrentReadSGI glXMakeContextCurrent
 EOF
     exit 0;
 }

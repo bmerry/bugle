@@ -65,7 +65,10 @@ my %chains = ("GL_ATI_draw_buffers" => "GL_ARB_draw_buffers",
               "GL_EXT_texture_sRGB" => "GL_VERSION_2_1",
               "GL_SGIS_generate_mipmap" => "GL_VERSION_1_4",
               "GL_SGIS_texture_lod" => "GL_VERSION_1_2",
-              "GL_NV_texture_rectangle" => "GL_EXT_texture_rectangle"
+              "GL_NV_texture_rectangle" => "GL_EXT_texture_rectangle",
+              "GLX_SGI_make_current_read" => "GLX_VERSION_1_3",
+              "GLX_SGIX_fbconfig" => "GLX_VERSION_1_3",
+              "GLX_EXT_import_context" => "GLX_VERSION_1_3"
              );
 
 my %groups = (# This got promoted to core from imaging subset in 1.4
@@ -85,7 +88,7 @@ my %glext_hash = ("GL_VERSION_1_1" => 1, map { $_ => 1 } @force);
 my %indices = ();
 while (<>)
 {
-    if (/^#ifndef (GL_[0-9A-Z]+_\w+)/) { $glext_hash{$1} = 1; }
+    if (/^#ifndef (GLX?_[0-9A-Z]+_\w+)/) { $glext_hash{$1} = 1; }
 }
 my @glext = sort { $a cmp $b } keys %glext_hash;
 
@@ -101,11 +104,13 @@ if ($outheader)
 # include <config.h>
 #endif
 #include <stddef.h>
+#include "common/bool.h"
 
 typedef struct
 {
     const char *gl_string;
     const char *glext_string;
+    bool glx;
 } bugle_ext;
 EOF
 ;
@@ -144,13 +149,14 @@ EOF
     print "{\n";
     for my $e (@glext)
     {
-        if ($e =~ /^GL_VERSION_([0-9]+)_([0-9]+)/)
+        my $glx = ($e =~ /^GLX/) ? "true" : "false";
+        if ($e =~ /^GLX?_VERSION_([0-9]+)_([0-9]+)/)
         {
-            print "    { \"$1.$2\", NULL },\n";
+            print "    { \"$1.$2\", NULL, $glx },\n";
         }
         else
         {
-            print "    { NULL, \"$e\" },\n";
+            print "    { NULL, \"$e\", $glx },\n";
         }
     }
     print join(",\n", ("    { NULL, NULL }") x scalar(keys %groups)), "\n";

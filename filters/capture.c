@@ -166,8 +166,8 @@ static bool screenshot_start(screenshot_context *ssctx)
 
     ssctx->old_context = CALL_glXGetCurrentContext();
     ssctx->old_write = CALL_glXGetCurrentDrawable();
-    ssctx->old_read = CALL_glXGetCurrentReadDrawable();
-    dpy = CALL_glXGetCurrentDisplay();
+    ssctx->old_read = bugle_get_current_read_drawable();
+    dpy = bugle_get_current_display();
     aux = bugle_get_aux_context(false);
     if (!aux) return false;
     if (!bugle_begin_internal_render())
@@ -175,7 +175,7 @@ static bool screenshot_start(screenshot_context *ssctx)
         fputs("warning: glXSwapBuffers called inside begin/end - skipping frame\n", stderr);
         return false;
     }
-    CALL_glXMakeContextCurrent(dpy, ssctx->old_write, ssctx->old_write, aux);
+    bugle_make_context_current(dpy, ssctx->old_write, ssctx->old_write, aux);
     return true;
 }
 
@@ -183,8 +183,8 @@ static void screenshot_stop(screenshot_context *ssctx)
 {
     Display *dpy;
 
-    dpy = CALL_glXGetCurrentDisplay();
-    CALL_glXMakeContextCurrent(dpy, ssctx->old_write, ssctx->old_read, ssctx->old_context);
+    dpy = bugle_get_current_display();
+    bugle_make_context_current(dpy, ssctx->old_write, ssctx->old_read, ssctx->old_context);
 }
 
 /* FIXME: we do not currently free the PBO, since we have no way of knowing
@@ -1028,6 +1028,7 @@ void bugle_initialise_filter_library(void)
     bugle_register_filter_set(&eps_info);
 
     bugle_register_filter_set_renders("screenshot");
+    bugle_register_filter_set_depends("screenshot", "trackcontext");
     bugle_register_filter_set_depends("screenshot", "trackextensions");
     bugle_register_filter_set_renders("eps");
     bugle_register_filter_set_depends("eps", "trackcontext");

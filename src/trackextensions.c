@@ -26,39 +26,68 @@
 #include "common/bool.h"
 #include <string.h>
 #include <assert.h>
+#include <GL/glx.h>
 
 static bugle_object_view trackextensions_view = 0;
 
+static bool string_contains_extension(const char *exts, const char *ext)
+{
+    const char *cur;
+    size_t len;
+
+    cur = exts;
+    len = strlen(ext);
+    while ((cur = strstr(cur, ext)) != NULL)
+    {
+        if ((cur == exts || cur[-1] == ' ')
+            && (cur[len] == ' ' || cur[len] == '\0'))
+            return true;
+        else
+            cur += len;
+    }
+    return false;
+}
+
 static void context_initialise(const void *key, void *data)
 {
-    const char *glver, *glexts;
-    const char *cur;
+    const char *glver, *glexts, *glxexts = NULL;
+    int glx_major = 0, glx_minor = 0;
     bool *flags;
     int i;
-    size_t len;
+    Display *dpy;
 
     flags = (bool *) data;
     memset(flags, 0, sizeof(bool) * BUGLE_EXT_COUNT);
     glexts = (const char *) CALL_glGetString(GL_EXTENSIONS);
     glver = (const char *) CALL_glGetString(GL_VERSION);
+    /* Don't lock, because we're already inside a lock */
+    dpy = bugle_get_current_display_internal(false);
+    if (dpy)
+    {
+        glXQueryVersion(dpy, &glx_major, &glx_minor);
+        glxexts = glXQueryExtensionsString(dpy, 0); /* FIXME: get screen number */
+    }
     for (i = 0; i < BUGLE_EXT_COUNT; i++)
-        if (bugle_exts[i].gl_string)
-            flags[i] = strcmp(glver, bugle_exts[i].gl_string) >= 0;
-        else if (bugle_exts[i].glext_string)
+        if (bugle_exts[i].glx)
         {
-            cur = glexts;
-            len = strlen(bugle_exts[i].glext_string);
-            while ((cur = strstr(cur, bugle_exts[i].glext_string)) != NULL)
+            if (!dpy)
+                continue;
+            if (bugle_exts[i].gl_string)
             {
-                if ((cur == glexts || cur[-1] == ' ')
-                    && (cur[len] == ' ' || cur[len] == '\0'))
-                {
-                    flags[i] = true;
-                    break;
-                }
-                else
-                    cur += len;
+                int major = 0, minor = 0;
+                sscanf(bugle_exts[i].gl_string, "%d.%d", &major, &minor);
+                flags[i] = glx_major > major
+                    || (glx_major == major && glx_minor >= minor);
             }
+            else if (bugle_exts[i].glext_string)
+                flags[i] = string_contains_extension(glxexts, bugle_exts[i].glext_string);
+        }
+        else
+        {
+            if (bugle_exts[i].gl_string)
+                flags[i] = strcmp(glver, bugle_exts[i].gl_string) >= 0;
+            else if (bugle_exts[i].glext_string)
+                flags[i] = string_contains_extension(glexts, bugle_exts[i].glext_string);
         }
 }
 

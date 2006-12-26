@@ -23,6 +23,7 @@
 #endif
 #include <stddef.h>
 #include <GL/gl.h>
+#include <GL/glx.h>
 #include "common/radixtree.h"
 #include "common/bool.h"
 #include "src/filters.h"
@@ -57,6 +58,22 @@ bool bugle_in_begin_end(void);
  * so as not to pollute the primary namespace.
  */
 GLXContext bugle_get_aux_context(bool shared);
+
+/* Determines the current display if possible. It may return NULL in some
+ * cases even if there is an active extension. Depends on trackcontext and
+ * trackextensions.
+ */
+Display *bugle_get_current_display(void);
+Display *bugle_get_current_display_internal(bool lock);
+
+/* Determines the current read drawable. Depends on trackcontext and
+ * trackextensions.
+ */
+GLXDrawable bugle_get_current_read_drawable(void);
+
+/* Wrapper around glXMakeContextCurrent that handles pre-GLX 1.3 */
+Bool bugle_make_context_current(Display *dpy, GLXDrawable draw,
+                                GLXDrawable read, GLXContext ctx);
 
 /* Draws text at the specified location. The current colour is used to
  * render the text. The text is rendered with alpha, so alpha-test or
@@ -94,7 +111,7 @@ void bugle_trackobjects_walk(bugle_trackobjects_type type,
  */
 GLenum bugle_trackobjects_get_target(bugle_trackobjects_type type, GLuint id);
 
-/* Checks for GL extensions by #define from glexts.h */
+/* Checks for GL extensions by #define from glexts.h or glxexts.h */
 bool bugle_gl_has_extension(int ext);
 bool bugle_gl_has_extension_group(int ext);
 

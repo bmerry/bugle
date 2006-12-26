@@ -38,6 +38,7 @@
 #include "common/safemem.h"
 #include "common/protocol.h"
 #include "common/bool.h"
+#include "common/radixtree.h"
 #include "gldb/gldb-common.h"
 #include "gldb/gldb-channels.h"
 #include "gldb/gldb-gui.h"
@@ -73,6 +74,7 @@ enum
     COLUMN_TEXTURE_ID_TARGET,
     COLUMN_TEXTURE_ID_LEVELS,
     COLUMN_TEXTURE_ID_CHANNELS,
+    COLUMN_TEXTURE_ID_BOLD,
     COLUMN_TEXTURE_ID_TEXT
 };
 
@@ -198,13 +200,25 @@ static void gldb_texture_pane_update_ids(GldbTexturePane *pane)
     gchar *name;
     guint levels;
     uint32_t channels;
+    guint trg;
+    bugle_radix_tree active;
+    GLenum unit;
 
-    const GLenum targets[] = {
+    const GLenum targets[] =
+    {
         GL_TEXTURE_1D,
         GL_TEXTURE_2D,
         GL_TEXTURE_3D_EXT,
         GL_TEXTURE_CUBE_MAP_ARB,
         GL_TEXTURE_RECTANGLE_NV
+    };
+    const GLenum binding[] =
+    {
+        GL_TEXTURE_BINDING_1D,
+        GL_TEXTURE_BINDING_2D,
+        GL_TEXTURE_BINDING_3D,
+        GL_TEXTURE_BINDING_CUBE_MAP_ARB,
+        GL_TEXTURE_BINDING_RECTANGLE_NV
     };
     const gchar * const target_names[] = {
         "1D",
@@ -213,19 +227,31 @@ static void gldb_texture_pane_update_ids(GldbTexturePane *pane)
         "cube-map",
         "rect"
     };
-    guint trg;
+
+    root = gldb_state_update();
+    g_return_if_fail(root != NULL);
 
     gldb_gui_combo_box_get_old(GTK_COMBO_BOX(pane->id), old,
                                COLUMN_TEXTURE_ID_ID, COLUMN_TEXTURE_ID_TARGET, -1);
     model = gtk_combo_box_get_model(GTK_COMBO_BOX(pane->id));
     gtk_list_store_clear(GTK_LIST_STORE(model));
 
-    root = gldb_state_update();
-
     for (trg = 0; trg < G_N_ELEMENTS(targets); trg++)
     {
         s = gldb_state_find_child_enum(root, targets[trg]);
         if (!s) continue;
+
+        /* Identify active textures */
+        bugle_radix_tree_init(&active, false);
+        unit = GL_TEXTURE0_ARB;
+        while ((t = gldb_state_find_child_enum(root, unit)) != NULL)
+        {
+            l = gldb_state_find_child_enum(t, binding[trg]);
+            if (l)
+                bugle_radix_tree_set(&active, atoi(l->value), root); /* arbitrary non-NULL value */
+            unit++;
+        }
+
         for (nt = bugle_list_head(&s->children); nt != NULL; nt = bugle_list_next(nt))
         {
             t = (gldb_state *) bugle_list_data(nt);
@@ -263,11 +289,13 @@ static void gldb_texture_pane_update_ids(GldbTexturePane *pane)
                                    COLUMN_TEXTURE_ID_TARGET, (guint) targets[trg],
                                    COLUMN_TEXTURE_ID_LEVELS, levels,
                                    COLUMN_TEXTURE_ID_CHANNELS, channels,
+                                   COLUMN_TEXTURE_ID_BOLD, bugle_radix_tree_get(&active, t->numeric_name) ? PANGO_WEIGHT_BOLD : PANGO_WEIGHT_NORMAL,
                                    COLUMN_TEXTURE_ID_TEXT, name,
                                    -1);
                 free(name);
             }
         }
+        bugle_radix_tree_clear(&active);
     }
 
     gldb_gui_combo_box_restore_old(GTK_COMBO_BOX(pane->id), old,
@@ -361,11 +389,12 @@ static GtkWidget *gldb_texture_pane_id_new(GldbTexturePane *pane)
     GtkWidget *id;
     GtkCellRenderer *cell;
 
-    store = gtk_list_store_new(5,
+    store = gtk_list_store_new(6,
                                G_TYPE_UINT,  /* ID */
                                G_TYPE_UINT,  /* target */
                                G_TYPE_UINT,  /* level */
                                G_TYPE_UINT,  /* channels */
+                               G_TYPE_INT,   /* bold */
                                G_TYPE_STRING);
     gtk_tree_sortable_set_sort_column_id(GTK_TREE_SORTABLE(store),
                                          COLUMN_TEXTURE_ID_ID,
@@ -376,7 +405,9 @@ static GtkWidget *gldb_texture_pane_id_new(GldbTexturePane *pane)
     cell = gtk_cell_renderer_text_new();
     gtk_cell_layout_pack_start(GTK_CELL_LAYOUT(id), cell, TRUE);
     gtk_cell_layout_set_attributes(GTK_CELL_LAYOUT(id), cell,
-                                   "text", COLUMN_TEXTURE_ID_TEXT, NULL);
+                                   "text", COLUMN_TEXTURE_ID_TEXT,
+                                   "weight", COLUMN_TEXTURE_ID_BOLD,
+                                   NULL);
     g_signal_connect(G_OBJECT(id), "changed",
                      G_CALLBACK(gldb_texture_pane_id_changed), pane);
     g_object_unref(G_OBJECT(store));

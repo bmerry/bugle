@@ -53,10 +53,12 @@
 # define ISNAN(x) ((x) != (x))
 #endif
 
-#if !defined(NAN) && HAVE_NAN
-# define NAN (nan(""))
-#else
-# define NAN (0.0 / 0.0)
+#ifndef NAN
+# if HAVE_NAN
+#  define NAN (nan(""))
+# else
+#  define NAN (0.0 / 0.0)
+# endif
 #endif
 
 extern FILE *yyin;
@@ -1408,9 +1410,9 @@ static bool showstats_glXSwapBuffers(function_call *call, const callback_data *d
         CALL_glGetIntegerv(GL_VIEWPORT, viewport);
         real = CALL_glXGetCurrentContext();
         old_write = CALL_glXGetCurrentDrawable();
-        old_read = CALL_glXGetCurrentReadDrawable();
-        dpy = CALL_glXGetCurrentDisplay();
-        CALL_glXMakeContextCurrent(dpy, old_write, old_write, aux);
+        old_read = bugle_get_current_read_drawable();
+        dpy = bugle_get_current_display();
+        CALL_glXMakeCurrent(dpy, old_write, aux);
 
         showstats_update(ss);
 
@@ -1493,7 +1495,7 @@ static bool showstats_glXSwapBuffers(function_call *call, const callback_data *d
         CALL_glLoadIdentity();
         CALL_glPopAttrib();
 
-        CALL_glXMakeContextCurrent(dpy, old_write, old_read, real);
+        bugle_make_context_current(dpy, old_write, old_read, real);
         bugle_end_internal_render("showstats_callback", true);
     }
     return true;

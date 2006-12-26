@@ -1906,14 +1906,14 @@ static void make_fixed(const glstate *self,
         }
 }
 
-static void make_counted(const glstate *self,
-                         GLint count,
-                         const char *format,
-                         GLenum base,
-                         size_t offset,
-                         void (*spawn)(const glstate *, bugle_linked_list *),
-                         const state_info *info,
-                         bugle_linked_list *children)
+static void make_counted2(const glstate *self,
+                          GLint count,
+                          const char *format,
+                          GLenum base,
+                          size_t offset1, size_t offset2,
+                          void (*spawn)(const glstate *, bugle_linked_list *),
+                          const state_info *info,
+                          bugle_linked_list *children)
 {
     GLint i;
     glstate *child;
@@ -1926,10 +1926,24 @@ static void make_counted(const glstate *self,
         bugle_asprintf(&child->name, format, (unsigned long) i);
         child->numeric_name = i;
         child->enum_name = 0;
-        *(GLenum *) (((char *) child) + offset) = base + i;
+        *(GLenum *) (((char *) child) + offset1) = base + i;
+        *(GLenum *) (((char *) child) + offset2) = base + i;
         child->spawn_children = spawn;
         bugle_list_append(children, child);
     }
+}
+
+
+static void make_counted(const glstate *self,
+                         GLint count,
+                         const char *format,
+                         GLenum base,
+                         size_t offset,
+                         void (*spawn)(const glstate *, bugle_linked_list *),
+                         const state_info *info,
+                         bugle_linked_list *children)
+{
+    make_counted2(self, count, format, base, offset, offset, spawn, info, children);
 }
 
 static void make_object(const glstate *self,
@@ -2588,9 +2602,10 @@ static void spawn_children_global(const glstate *self, bugle_linked_list *childr
     if (bugle_gl_has_extension_group(BUGLE_GL_ARB_multitexture))
     {
         count = get_total_texture_units();
-        make_counted(self, count, "GL_TEXTURE%lu", GL_TEXTURE0_ARB,
-                     offsetof(glstate, unit), spawn_children_tex_unit,
-                     NULL, children);
+        make_counted2(self, count, "GL_TEXTURE%lu", GL_TEXTURE0_ARB,
+                      offsetof(glstate, unit), offsetof(glstate, enum_name),
+                      spawn_children_tex_unit,
+                      NULL, children);
     }
     else
 #endif
@@ -2598,14 +2613,16 @@ static void spawn_children_global(const glstate *self, bugle_linked_list *childr
         make_leaves(self, tex_unit_state, children);
     }
     CALL_glGetIntegerv(GL_MAX_LIGHTS, &count);
-    make_counted(self, count, "GL_LIGHT%lu", GL_LIGHT0,
-                 offsetof(glstate, target), spawn_children_light,
-                 &enable, children);
+    make_counted2(self, count, "GL_LIGHT%lu", GL_LIGHT0,
+                  offsetof(glstate, target), offsetof(glstate, enum_name),
+                  spawn_children_light,
+                  &enable, children);
 
     CALL_glGetIntegerv(GL_MAX_CLIP_PLANES, &count);
-    make_counted(self, count, "GL_CLIP_PLANE%lu", GL_CLIP_PLANE0,
-                 offsetof(glstate, target), NULL,
-                 &clip_plane_state, children);
+    make_counted2(self, count, "GL_CLIP_PLANE%lu", GL_CLIP_PLANE0,
+                  offsetof(glstate, target), offsetof(glstate, enum_name),
+                  NULL,
+                  &clip_plane_state, children);
 
 #if defined(GL_ATI_draw_buffers)
     if (bugle_gl_has_extension_group(BUGLE_GL_ATI_draw_buffers))

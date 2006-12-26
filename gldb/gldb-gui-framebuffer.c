@@ -66,6 +66,7 @@ enum
 {
     COLUMN_FRAMEBUFFER_ID_ID,
     COLUMN_FRAMEBUFFER_ID_TARGET,
+    COLUMN_FRAMEBUFFER_ID_BOLD,
     COLUMN_FRAMEBUFFER_ID_TEXT
 };
 
@@ -155,16 +156,22 @@ static void gldb_framebuffer_pane_update_ids(GldbFramebufferPane *pane)
 {
     GValue old[2];
     GtkTreeIter iter;
-    gldb_state *root, *framebuffer;
+    gldb_state *root, *framebuffer, *binding;
     GtkTreeModel *model;
     char *name;
+    GLint active = -1;
+
+    root = gldb_state_update();
+    g_return_if_fail(root != NULL);
 
     gldb_gui_combo_box_get_old(GTK_COMBO_BOX(pane->id), old,
                                COLUMN_FRAMEBUFFER_ID_ID, COLUMN_FRAMEBUFFER_ID_TARGET, -1);
     model = gtk_combo_box_get_model(GTK_COMBO_BOX(pane->id));
     gtk_list_store_clear(GTK_LIST_STORE(model));
-    root = gldb_state_update();
 
+    binding = gldb_state_find_child_enum(root, GL_FRAMEBUFFER_BINDING_EXT);
+    if (binding)
+        active = atoi(binding->value);
     if ((framebuffer = gldb_state_find_child_enum(root, GL_FRAMEBUFFER_EXT)) != NULL)
     {
         bugle_list_node *pfbo;
@@ -182,6 +189,7 @@ static void gldb_framebuffer_pane_update_ids(GldbFramebufferPane *pane)
             gtk_list_store_set(GTK_LIST_STORE(model), &iter,
                                COLUMN_FRAMEBUFFER_ID_ID, fbo->numeric_name,
                                COLUMN_FRAMEBUFFER_ID_TARGET, GL_FRAMEBUFFER_EXT,
+                               COLUMN_FRAMEBUFFER_ID_BOLD, fbo->numeric_name == active ? PANGO_WEIGHT_BOLD : PANGO_WEIGHT_NORMAL,
                                COLUMN_FRAMEBUFFER_ID_TEXT, name,
                                -1);
             free(name);
@@ -193,6 +201,7 @@ static void gldb_framebuffer_pane_update_ids(GldbFramebufferPane *pane)
         gtk_list_store_set(GTK_LIST_STORE(model), &iter,
                            COLUMN_FRAMEBUFFER_ID_ID, 0,
                            COLUMN_FRAMEBUFFER_ID_TARGET, 0,
+                           COLUMN_FRAMEBUFFER_ID_BOLD, PANGO_WEIGHT_BOLD,
                            COLUMN_FRAMEBUFFER_ID_TEXT, _("Default"),
                            -1);
     }
@@ -389,39 +398,42 @@ static void gldb_framebuffer_pane_buffer_changed(GtkWidget *widget, gpointer use
 
     pane = (GldbFramebufferPane *) user_data;
 
-    model = gtk_combo_box_get_model(GTK_COMBO_BOX(pane->id));
-    if (!gtk_combo_box_get_active_iter(GTK_COMBO_BOX(pane->id), &iter))
-        return;
-    gtk_tree_model_get(model, &iter,
-                       COLUMN_FRAMEBUFFER_ID_ID, &id,
-                       COLUMN_FRAMEBUFFER_ID_TARGET, &target,
-                       -1);
-    model = gtk_combo_box_get_model(GTK_COMBO_BOX(pane->buffer));
-    if (!gtk_combo_box_get_active_iter(GTK_COMBO_BOX(pane->buffer), &iter))
-        return;
-    gtk_tree_model_get(model, &iter,
-                       COLUMN_FRAMEBUFFER_BUFFER_ID, &buffer,
-                       COLUMN_FRAMEBUFFER_BUFFER_CHANNELS, &channel,
-                       -1);
-
-    if (!id && (channel & GLDB_CHANNEL_DEPTH_STENCIL))
+    if (gldb_get_status() == GLDB_STATUS_STOPPED)
     {
-        /* We used an illegal but unique value for id to assist
-         * gldb_gui_combo_box_restore_old. Put in GL_FRONT, which is
-         * always legal. The debugger filter-set may eventually ignore
-         * the value.
-         */
-        buffer = GL_FRONT;
-    }
+        model = gtk_combo_box_get_model(GTK_COMBO_BOX(pane->id));
+        if (!gtk_combo_box_get_active_iter(GTK_COMBO_BOX(pane->id), &iter))
+            return;
+        gtk_tree_model_get(model, &iter,
+                           COLUMN_FRAMEBUFFER_ID_ID, &id,
+                           COLUMN_FRAMEBUFFER_ID_TARGET, &target,
+                           -1);
+        model = gtk_combo_box_get_model(GTK_COMBO_BOX(pane->buffer));
+        if (!gtk_combo_box_get_active_iter(GTK_COMBO_BOX(pane->buffer), &iter))
+            return;
+        gtk_tree_model_get(model, &iter,
+                           COLUMN_FRAMEBUFFER_BUFFER_ID, &buffer,
+                           COLUMN_FRAMEBUFFER_BUFFER_CHANNELS, &channel,
+                           -1);
 
-    data = (framebuffer_callback_data *) bugle_malloc(sizeof(framebuffer_callback_data));
-    data->channels = gldb_channel_get_query_channels(channel);
-    data->flags = 0;
-    data->pane = pane;
-    seq = gldb_gui_set_response_handler(gldb_framebuffer_pane_response_callback, data);
-    gldb_send_data_framebuffer(seq, id, target, buffer,
-                               gldb_channel_get_framebuffer_token(data->channels),
-                               GL_FLOAT);
+        if (!id && (channel & GLDB_CHANNEL_DEPTH_STENCIL))
+        {
+            /* We used an illegal but unique value for id to assist
+             * gldb_gui_combo_box_restore_old. Put in GL_FRONT, which is
+             * always legal. The debugger filter-set may eventually ignore
+             * the value.
+             */
+            buffer = GL_FRONT;
+        }
+
+        data = (framebuffer_callback_data *) bugle_malloc(sizeof(framebuffer_callback_data));
+        data->channels = gldb_channel_get_query_channels(channel);
+        data->flags = 0;
+        data->pane = pane;
+        seq = gldb_gui_set_response_handler(gldb_framebuffer_pane_response_callback, data);
+        gldb_send_data_framebuffer(seq, id, target, buffer,
+                                   gldb_channel_get_framebuffer_token(data->channels),
+                                   GL_FLOAT);
+    }
 }
 
 static GtkWidget *gldb_framebuffer_pane_id_new(GldbFramebufferPane *pane)
@@ -430,9 +442,10 @@ static GtkWidget *gldb_framebuffer_pane_id_new(GldbFramebufferPane *pane)
     GtkWidget *id;
     GtkCellRenderer *cell;
 
-    store = gtk_list_store_new(3,
+    store = gtk_list_store_new(4,
                                G_TYPE_UINT,  /* ID */
                                G_TYPE_UINT,  /* target */
+                               G_TYPE_INT,   /* bold */
                                G_TYPE_STRING);
 
     gtk_tree_sortable_set_sort_column_id(GTK_TREE_SORTABLE(store),
@@ -444,7 +457,9 @@ static GtkWidget *gldb_framebuffer_pane_id_new(GldbFramebufferPane *pane)
     cell = gtk_cell_renderer_text_new();
     gtk_cell_layout_pack_start(GTK_CELL_LAYOUT(id), cell, TRUE);
     gtk_cell_layout_set_attributes(GTK_CELL_LAYOUT(id), cell,
-                                   "text", COLUMN_FRAMEBUFFER_ID_TEXT, NULL);
+                                   "text", COLUMN_FRAMEBUFFER_ID_TEXT,
+                                   "weight", COLUMN_FRAMEBUFFER_ID_BOLD,
+                                   NULL);
     g_signal_connect(G_OBJECT(id), "changed",
                      G_CALLBACK(gldb_framebuffer_pane_id_changed), pane);
 
@@ -467,7 +482,8 @@ static GtkWidget *gldb_framebuffer_pane_buffer_new(GldbFramebufferPane *pane)
     cell = gtk_cell_renderer_text_new();
     gtk_cell_layout_pack_start(GTK_CELL_LAYOUT(buffer), cell, TRUE);
     gtk_cell_layout_set_attributes(GTK_CELL_LAYOUT(buffer), cell,
-                                   "text", COLUMN_FRAMEBUFFER_BUFFER_TEXT, NULL);
+                                   "text", COLUMN_FRAMEBUFFER_BUFFER_TEXT,
+                                   NULL);
     g_signal_connect(G_OBJECT(buffer), "changed",
                      G_CALLBACK(gldb_framebuffer_pane_buffer_changed), pane);
     g_object_unref(G_OBJECT(store));

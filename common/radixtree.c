@@ -35,10 +35,10 @@ typedef struct bugle_radix_node_t
 
 static inline bugle_radix_tree_type tree_max(int bits)
 {
-    /* We rely on wraparound for the case where bits is the number of
-     * bits in the type itself.
-     */
-    return (((bugle_radix_tree_type) 1) << bits) - 1;
+    if (bits == sizeof(bugle_radix_tree_type) * 8)
+        return (bugle_radix_tree_type) -1;
+    else
+        return (((bugle_radix_tree_type) 1) << bits) - 1;
 }
 
 static inline bugle_radix_tree_type tree_bit(int bits)
@@ -156,7 +156,7 @@ void *bugle_radix_tree_get(const bugle_radix_tree *tree, bugle_radix_tree_type k
         else n = n->left;
         bit >>= 1;
     }
-    return n->value;
+    return n ? n->value : NULL;
 }
 
 static void clear_recurse(bugle_radix_node *node,

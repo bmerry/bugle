@@ -434,11 +434,25 @@ GldbPane *gldb_state_pane_new(void)
 static void gldb_state_pane_real_update(GldbPane *self)
 {
     GldbStatePane *pane;
+    const gldb_state *root;
 
     if (gldb_get_status() != GLDB_STATUS_DEAD)
     {
         pane = GLDB_STATE_PANE(self);
-        update_state_r(gldb_state_update(), pane->state_store, NULL);
+        root = gldb_state_update();
+        if (root)
+            update_state_r(root, pane->state_store, NULL);
+        else
+        {
+            GtkWidget *dialog;
+            dialog = gtk_message_dialog_new(GTK_WINDOW(gtk_widget_get_toplevel(self->top_widget)),
+                                            GTK_DIALOG_DESTROY_WITH_PARENT,
+                                            GTK_MESSAGE_ERROR,
+                                            GTK_BUTTONS_CLOSE,
+                                            "Could not update state");
+            gtk_dialog_run(GTK_DIALOG(dialog));
+            gtk_widget_destroy(dialog);
+        }
     }
 }
 

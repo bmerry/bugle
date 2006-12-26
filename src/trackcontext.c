@@ -22,6 +22,7 @@
 #include "src/utils.h"
 #include "src/tracker.h"
 #include "src/objects.h"
+#include "src/glexts.h"
 #include "common/bool.h"
 #include "common/hashtable.h"
 #include "common/threads.h"
@@ -74,11 +75,11 @@ static bool trackcontext_newcontext(function_call *call, const callback_data *da
 
     switch (call->generic.group)
     {
-#ifdef GLX_VERSION_1_3
-    case GROUP_glXCreateNewContext:
-        dpy = *call->typed.glXCreateNewContext.arg0;
-        self = *call->typed.glXCreateNewContext.retn;
-        parent = *call->typed.glXCreateNewContext.arg3;
+#ifdef GLX_SGIX_fbconfig
+    case GROUP_glXCreateContextWithConfigSGIX:
+        dpy = *call->typed.glXCreateContextWithConfigSGIX.arg0;
+        self = *call->typed.glXCreateContextWithConfigSGIX.retn;
+        parent = *call->typed.glXCreateContextWithConfigSGIX.arg3;
         break;
 #endif
     case GROUP_glXCreateContext:
@@ -111,8 +112,8 @@ static bool trackcontext_newcontext(function_call *call, const callback_data *da
         }
         switch (call->generic.group)
         {
-#ifdef GLX_VERSION_1_3
-        case GROUP_glXCreateNewContext:
+#ifdef GLX_SGIX_fbconfig
+        case GROUP_glXCreateContextWithConfigSGIX:
             base->use_visual_info = false;
             break;
 #endif
@@ -201,9 +202,11 @@ static bool initialise_trackcontext(filter_set *handle)
     bugle_register_filter_depends("trackcontext", "invoke");
     bugle_register_filter_catches(f, GROUP_glXMakeCurrent, true, trackcontext_callback);
     bugle_register_filter_catches(f, GROUP_glXCreateContext, true, trackcontext_newcontext);
-#ifdef GLX_VERSION_1_3
-    bugle_register_filter_catches(f, GROUP_glXMakeContextCurrent, true, trackcontext_callback);
-    bugle_register_filter_catches(f, GROUP_glXCreateNewContext, true, trackcontext_newcontext);
+#ifdef GLX_SGI_make_current_read
+    bugle_register_filter_catches(f, GROUP_glXMakeCurrentReadSGI, true, trackcontext_callback);
+#endif
+#ifdef GLX_SGIX_fbconfig
+    bugle_register_filter_catches(f, GROUP_glXCreateContextWithConfigSGIX, true, trackcontext_newcontext);
 #endif
     trackcontext_view = bugle_object_class_register(&bugle_context_class,
                                                     NULL,
@@ -296,6 +299,64 @@ GLXContext bugle_get_aux_context(bool shared)
     }
     return *aux;
 }
+
+Display *bugle_get_current_display_internal(bool lock)
+{
+    trackcontext_data *data;
+    GLXContext ctx;
+
+    ctx = glXGetCurrentContext();
+    if (!ctx)
+        return NULL;
+    if (lock) bugle_thread_mutex_lock(&context_mutex);
+    data = (trackcontext_data *) bugle_hashptr_get(&initial_values, ctx);
+    if (lock) bugle_thread_mutex_unlock(&context_mutex);
+    if (data)
+        return data->dpy;
+#ifdef GLX_EXT_import_context
+    else if (budgie_function_table[FUNC_glXGetCurrentDisplayEXT].real)
+        return CALL_glXGetCurrentDisplayEXT();
+#endif
+#ifdef GLX_VERSION_1_3
+    else if (budgie_function_table[FUNC_glXGetCurrentDisplay].real)
+        return CALL_glXGetCurrentDisplay();
+#endif
+    return NULL;
+}
+
+Display *bugle_get_current_display(void)
+{
+    return bugle_get_current_display_internal(true);
+}
+
+GLXDrawable bugle_get_current_read_drawable(void)
+{
+#ifdef GLX_VERSION_1_3
+    if (bugle_gl_has_extension(BUGLE_GLX_VERSION_1_3))
+        return CALL_glXGetCurrentReadDrawable();
+#endif
+#ifdef GLX_SGI_make_current_read
+    if (bugle_gl_has_extension(BUGLE_GLX_SGI_make_current_read))
+        return CALL_glXGetCurrentReadDrawableSGI();
+#endif
+    return CALL_glXGetCurrentDrawable();
+}
+
+Bool bugle_make_context_current(Display *dpy, GLXDrawable draw,
+                                GLXDrawable read, GLXContext ctx)
+{
+    /* FIXME: should depend on the capabilities of the target context */
+#ifdef GLX_VERSION_1_3
+    if (bugle_gl_has_extension(BUGLE_GLX_VERSION_1_3))
+        return CALL_glXMakeContextCurrent(dpy, draw, read, ctx);
+#endif
+#ifdef GLX_SGI_make_current_read
+    if (bugle_gl_has_extension(BUGLE_GLX_SGI_make_current_read))
+        return CALL_glXMakeCurrentReadSGI(dpy, draw, read, ctx);
+#endif
+    return CALL_glXMakeCurrent(dpy, draw, ctx);
+}
+
 
 /* FIXME: corresponding shutdown code */
 static bool trackcontext_font_init(trackcontext_font *font)

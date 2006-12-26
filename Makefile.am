@@ -182,7 +182,7 @@ BUILT_SOURCES += filters/statsparse.h
 check_PROGRAMS = \
 	tests/errors tests/threads1 tests/threads2 tests/queries \
 	tests/misc tests/setstate tests/triangles \
-	tests/pointers tests/objects tests/textest \
+	tests/pointers tests/objects tests/textest tests/shadertest \
 	tests/pbo
 dist_check_SCRIPTS = tests/errors.sh tests/misc.sh tests/queries.sh tests/setstate.sh tests/pointers.sh tests/triangles.sh tests/pbo.sh tests/comparelog.sh tests/comparelog.perl
 tests_errors_SOURCES = tests/errors.c
@@ -207,6 +207,8 @@ tests_objects_SOURCES = tests/objects.c glee/GLee.c glee/GLee.h
 tests_objects_LDADD = -lglut -lGLU $(GL_LIBS) $(X_PRE_LIBS) $(X_LIBS) -lX11 $(X_EXTRA_LIBS)
 tests_textest_SOURCES = tests/textest.c glee/GLee.c glee/GLee.h
 tests_textest_LDADD = -lglut -lGLU $(GL_LIBS) $(X_PRE_LIBS) $(X_LIBS) -lX11 $(X_EXTRA_LIBS)
+tests_shadertest_SOURCES = tests/shadertest.c glee/GLee.c glee/GLee.h
+tests_shadertest_LDADD = -lglut -lGLU $(GL_LIBS) $(X_PRE_LIBS) $(X_LIBS) -lX11 $(X_EXTRA_LIBS)
 TESTS = tests/errors.sh tests/misc.sh tests/queries.sh tests/setstate.sh tests/triangles.sh tests/pointers.sh tests/pbo.sh
 TESTS_ENVIRONMENT = BUGLE_FILTERS=$(srcdir)/tests/filters BUGLE_STATISTICS=$(srcdir)/tests/statistics BUGLE_FILTER_DIR=filters/.libs BUGLE_LIB=src/.libs/libbugle.so
 

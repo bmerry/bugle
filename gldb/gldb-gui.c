@@ -239,14 +239,16 @@ void gldb_gui_combo_box_restore_old(GtkComboBox *box, GValue *save, ...)
     }
     va_end(ap);
 
+    model = gtk_combo_box_get_model(box);
     if (!G_IS_VALUE(&save[0]))
     {
-        gtk_combo_box_set_active(box, 0);
+        /* No previous, so set to first item */
+        if (gtk_tree_model_get_iter_first(model, &iter))
+            gtk_combo_box_set_active_iter(box, &iter);
         return;
     }
 
     memset(&cur, 0, sizeof(cur));
-    model = gtk_combo_box_get_model(box);
     more = gtk_tree_model_get_iter_first(model, &iter);
     while (more)
     {

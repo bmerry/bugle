@@ -31,6 +31,7 @@
 #include <stdlib.h>
 #include "common/protocol.h"
 #include "common/safemem.h"
+#include "common/radixtree.h"
 #include "gldb/gldb-common.h"
 #include "gldb/gldb-gui.h"
 #include "gldb/gldb-gui-shader.h"
@@ -42,13 +43,21 @@ struct _GldbShaderPane
     /* private */
     gboolean dirty;
     GtkWidget *top_widget;
-    GtkWidget *target, *id;
+    GtkWidget *id;
     GtkWidget *source;
 };
 
 struct _GldbShaderPaneClass
 {
     GldbPaneClass parent;
+};
+
+enum
+{
+    COLUMN_SHADER_ID_ID,
+    COLUMN_SHADER_ID_TARGET,
+    COLUMN_SHADER_ID_BOLD,
+    COLUMN_SHADER_ID_TEXT
 };
 
 static gboolean gldb_shader_pane_response_callback(gldb_response *response,
@@ -69,96 +78,138 @@ static gboolean gldb_shader_pane_response_callback(gldb_response *response,
     return TRUE;
 }
 
-static void gldb_shader_pane_update_ids(GldbShaderPane *pane, GLenum target)
+static void gldb_shader_pane_update_ids(GldbShaderPane *pane)
 {
-    gldb_state *s, *t, *u;
+    gldb_state *root, *s, *t, *u;
     GtkTreeModel *model;
-    GtkTreeIter iter, old_iter;
-    guint old;
-    gboolean have_old = FALSE, have_old_iter = FALSE;
+    GtkTreeIter iter;
+    GValue old[2];
     bugle_list_node *nt;
+    guint trg;
+    char *name;
+    guint active_arb[2] = {0, 0};
+    bugle_radix_tree active_glsl;
+    GLuint program;
 
-    model = gtk_combo_box_get_model(GTK_COMBO_BOX(pane->id));
-    if (gtk_combo_box_get_active_iter(GTK_COMBO_BOX(pane->id), &iter))
+    const GLenum targets[4] =
     {
-        have_old = TRUE;
-        gtk_tree_model_get(model, &iter, 0, &old, -1);
-    }
+        GL_VERTEX_PROGRAM_ARB,
+        GL_FRAGMENT_PROGRAM_ARB,
+        GL_VERTEX_SHADER_ARB,
+        GL_FRAGMENT_SHADER_ARB
+    };
+    const gchar *target_names[4] =
+    {
+        "ARB VP",
+        "ARB FP",
+        "GLSL VS",
+        "GLSL FS"
+    };
+
+    gldb_gui_combo_box_get_old(GTK_COMBO_BOX(pane->id), old,
+                               COLUMN_SHADER_ID_ID, COLUMN_SHADER_ID_TARGET, -1);
+    model = gtk_combo_box_get_model(GTK_COMBO_BOX(pane->id));
     gtk_list_store_clear(GTK_LIST_STORE(model));
 
-    s = gldb_state_update(); /* FIXME: manage state tree ourselves */
-    switch (target)
+    root = gldb_state_update();
+
+    /* Identify active shaders */
+    for (trg = 0; trg < 2; trg++)
     {
-    case GL_VERTEX_PROGRAM_ARB:
-    case GL_FRAGMENT_PROGRAM_ARB:
-        s = gldb_state_find_child_enum(s, target);
-        if (!s) return;
-        for (nt = bugle_list_head(&s->children); nt != NULL; nt = bugle_list_next(nt))
-        {
-            t = (gldb_state *) bugle_list_data(nt);
-            if (t->enum_name == 0 && t->name[0] >= '0' && t->name[0] <= '9')
-            {
-                gtk_list_store_append(GTK_LIST_STORE(model), &iter);
-                gtk_list_store_set(GTK_LIST_STORE(model), &iter,
-                                   0, (guint) t->numeric_name, -1);
-                if (have_old && t->numeric_name == (GLint) old)
-                {
-                    old_iter = iter;
-                    have_old_iter = TRUE;
-                }
-            }
-        }
-        break;
-    case GL_VERTEX_SHADER_ARB:
-    case GL_FRAGMENT_SHADER_ARB:
-        for (nt = bugle_list_head(&s->children); nt != NULL; nt = bugle_list_next(nt))
-        {
-            const char *target_string = "";
-            switch (target)
-            {
-            case GL_VERTEX_SHADER_ARB: target_string = "GL_VERTEX_SHADER"; break;
-            case GL_FRAGMENT_SHADER_ARB: target_string = "GL_FRAGMENT_SHADER"; break;
-            }
-            t = (gldb_state *) bugle_list_data(nt);
-            u = gldb_state_find_child_enum(t, GL_OBJECT_SUBTYPE_ARB);
-            if (u && !strcmp(u->value, target_string))
-            {
-                gtk_list_store_append(GTK_LIST_STORE(model), &iter);
-                gtk_list_store_set(GTK_LIST_STORE(model), &iter,
-                                   0, (guint) t->numeric_name, -1);
-                if (have_old && t->numeric_name == (GLint) old)
-                {
-                    old_iter = iter;
-                    have_old_iter = TRUE;
-                }
-            }
-        }
-        break;
+        s = gldb_state_find_child_enum(root, targets[trg]);
+        if (!s) continue;
+        t = gldb_state_find_child_enum(s, GL_PROGRAM_BINDING_ARB);
+        if (t)
+            active_arb[trg] = atoi(t->value);
     }
-    /* FIXME: use save/restore */
-    if (have_old_iter)
-        gtk_combo_box_set_active_iter(GTK_COMBO_BOX(pane->id),
-                                      &old_iter);
-    else
-        gtk_combo_box_set_active(GTK_COMBO_BOX(pane->id), 0);
-}
 
-static void gldb_shader_pane_target_changed(GtkComboBox *target_box, gpointer user_data)
-{
-    GtkTreeIter iter;
-    GtkTreeModel *model;
-    guint target;
-    GldbShaderPane *pane;
+    bugle_radix_tree_init(&active_glsl, false);
+    s = gldb_state_find_child_enum(root, GL_CURRENT_PROGRAM);
+    program = s ? atoi(s->value) : 0;
+    if (program)
+    {
+        bugle_asprintf(&name, "Program[%d]", program);
+        s = gldb_state_find(root, name, strlen(name));
+        free(name);
+        if (s)
+        {
+            t = gldb_state_find(s, "Attached", strlen("Attached"));
+            if (t)
+            {
+                name = t->value;
+                while (*name)
+                {
+                    long int id;
+                    while (*name && (*name < '0' || *name > '9'))
+                        name++;
+                    if (!*name) break;
+                    id = strtol(name, &name, 10);
+                    bugle_radix_tree_set(&active_glsl, id, root); /* arbitrary non-NULL */
+                }
+            }
+        }
+    }
 
-    pane = GLDB_SHADER_PANE(user_data);
-    model = gtk_combo_box_get_model(target_box);
-    if (!gtk_combo_box_get_active_iter(target_box, &iter)) return;
-    gtk_tree_model_get(model, &iter, 1, &target, -1);
+    for (trg = 0; trg < G_N_ELEMENTS(targets); trg++)
+        switch (targets[trg])
+        {
+        case GL_VERTEX_PROGRAM_ARB:
+        case GL_FRAGMENT_PROGRAM_ARB:
+            s = gldb_state_find_child_enum(root, targets[trg]);
+            if (!s) continue;
+            for (nt = bugle_list_head(&s->children); nt != NULL; nt = bugle_list_next(nt))
+            {
+                t = (gldb_state *) bugle_list_data(nt);
+                if (t->enum_name == 0 && t->name[0] >= '0' && t->name[0] <= '9')
+                {
+                    bugle_asprintf(&name, "%d (%s)",
+                                   t->numeric_name, target_names[trg]);
+                    gtk_list_store_append(GTK_LIST_STORE(model), &iter);
+                    gtk_list_store_set(GTK_LIST_STORE(model), &iter,
+                                       COLUMN_SHADER_ID_ID, (guint) t->numeric_name,
+                                       COLUMN_SHADER_ID_TARGET, targets[trg],
+                                       COLUMN_SHADER_ID_BOLD, (t->numeric_name == active_arb[trg]) ? PANGO_WEIGHT_BOLD : PANGO_WEIGHT_NORMAL,
+                                       COLUMN_SHADER_ID_TEXT, name,
+                                       -1);
+                    free(name);
+                }
+            }
+            break;
+        case GL_VERTEX_SHADER_ARB:
+        case GL_FRAGMENT_SHADER_ARB:
+            for (nt = bugle_list_head(&root->children); nt != NULL; nt = bugle_list_next(nt))
+            {
+                const char *target_string = "";
+                switch (targets[trg])
+                {
+                case GL_VERTEX_SHADER_ARB: target_string = "GL_VERTEX_SHADER"; break;
+                case GL_FRAGMENT_SHADER_ARB: target_string = "GL_FRAGMENT_SHADER"; break;
+                }
+                t = (gldb_state *) bugle_list_data(nt);
+                u = gldb_state_find_child_enum(t, GL_OBJECT_SUBTYPE_ARB);
+                if (u && !strcmp(u->value, target_string))
+                {
+                    bool active;
 
-    if (gldb_get_status() == GLDB_STATUS_STOPPED)
-        gldb_shader_pane_update_ids(pane, target);
-    else if (gtk_combo_box_get_active(GTK_COMBO_BOX(pane->id)) == -1)
-        gtk_combo_box_set_active(GTK_COMBO_BOX(pane->id), 0);
+                    active = bugle_radix_tree_get(&active_glsl, t->numeric_name);
+                    bugle_asprintf(&name, "%d (%s)",
+                                   t->numeric_name, target_names[trg]);
+                    gtk_list_store_append(GTK_LIST_STORE(model), &iter);
+                    gtk_list_store_set(GTK_LIST_STORE(model), &iter,
+                                       COLUMN_SHADER_ID_ID, (guint) t->numeric_name,
+                                       COLUMN_SHADER_ID_TARGET, targets[trg],
+                                       COLUMN_SHADER_ID_BOLD, active ? PANGO_WEIGHT_BOLD : PANGO_WEIGHT_NORMAL,
+                                       COLUMN_SHADER_ID_TEXT, name,
+                                       -1);
+                    free(name);
+                }
+            }
+            break;
+        }
+
+    gldb_gui_combo_box_restore_old(GTK_COMBO_BOX(pane->id), old,
+                                   COLUMN_SHADER_ID_ID, COLUMN_SHADER_ID_TARGET, -1);
+    bugle_radix_tree_clear(&active_glsl);
 }
 
 static void gldb_shader_pane_id_changed(GtkComboBox *id_box, gpointer user_data)
@@ -169,18 +220,18 @@ static void gldb_shader_pane_id_changed(GtkComboBox *id_box, gpointer user_data)
     GldbShaderPane *pane;
     guint32 seq;
 
-    pane = GLDB_SHADER_PANE(user_data);
-
-    model = gtk_combo_box_get_model(GTK_COMBO_BOX(pane->target));
-    if (!gtk_combo_box_get_active_iter(GTK_COMBO_BOX(pane->target), &iter)) return;
-    gtk_tree_model_get(model, &iter, 1, &target, -1);
-
-    model = gtk_combo_box_get_model(GTK_COMBO_BOX(pane->id));
-    if (!gtk_combo_box_get_active_iter(GTK_COMBO_BOX(pane->id), &iter)) return;
-    gtk_tree_model_get(model, &iter, 0, &id, -1);
-
     if (gldb_get_status() == GLDB_STATUS_STOPPED)
     {
+        pane = GLDB_SHADER_PANE(user_data);
+
+        model = gtk_combo_box_get_model(GTK_COMBO_BOX(pane->id));
+        if (!gtk_combo_box_get_active_iter(GTK_COMBO_BOX(pane->id), &iter))
+            return;
+        gtk_tree_model_get(model, &iter,
+                           COLUMN_SHADER_ID_ID, &id,
+                           COLUMN_SHADER_ID_TARGET, &target,
+                           -1);
+
         seq = gldb_gui_set_response_handler(gldb_shader_pane_response_callback, pane);
         gldb_send_data_shader(seq, id, target);
     }
@@ -244,55 +295,23 @@ static gboolean gldb_shader_pane_source_expose(GtkWidget *widget,
     return FALSE;
 }
 
-static GtkWidget *gldb_shader_pane_target_new(GldbShaderPane *pane)
-{
-    GtkListStore *store;
-    GtkWidget *target;
-    GtkCellRenderer *cell;
-    GtkTreeIter iter;
-
-    store = gtk_list_store_new(2, G_TYPE_STRING, G_TYPE_UINT);
-    gtk_list_store_append(store, &iter);
-    gtk_list_store_set(store, &iter,
-                       0, "GL_VERTEX_PROGRAM_ARB",
-                       1, (gint) GL_VERTEX_PROGRAM_ARB, -1);
-    gtk_list_store_append(store, &iter);
-    gtk_list_store_set(store, &iter,
-                       0, "GL_FRAGMENT_PROGRAM_ARB",
-                       1, (gint) GL_FRAGMENT_PROGRAM_ARB, -1);
-    gtk_list_store_append(store, &iter);
-    gtk_list_store_set(store, &iter,
-                       0, "GL_VERTEX_SHADER",
-                       1, (gint) GL_VERTEX_SHADER_ARB, -1);
-    gtk_list_store_append(store, &iter);
-    gtk_list_store_set(store, &iter,
-                       0, "GL_FRAGMENT_SHADER",
-                       1, (gint) GL_FRAGMENT_SHADER_ARB, -1);
-    target = gtk_combo_box_new_with_model(GTK_TREE_MODEL(store));
-    gtk_combo_box_set_active(GTK_COMBO_BOX(target), 0);
-    cell = gtk_cell_renderer_text_new();
-    gtk_cell_layout_pack_start(GTK_CELL_LAYOUT(target), cell, TRUE);
-    gtk_cell_layout_set_attributes(GTK_CELL_LAYOUT(target), cell,
-                                   "text", 0, NULL);
-    g_signal_connect(G_OBJECT(target), "changed",
-                     G_CALLBACK(gldb_shader_pane_target_changed), pane);
-    g_object_unref(G_OBJECT(store));
-
-    return pane->target = target;
-}
-
 static GtkWidget *gldb_shader_pane_id_new(GldbShaderPane *pane)
 {
     GtkListStore *store;
     GtkWidget *id;
     GtkCellRenderer *cell;
 
-    store = gtk_list_store_new(1, G_TYPE_UINT);
+    store = gtk_list_store_new(4, G_TYPE_UINT, G_TYPE_UINT, G_TYPE_INT, G_TYPE_STRING);
+    gtk_tree_sortable_set_sort_column_id(GTK_TREE_SORTABLE(store),
+                                         COLUMN_SHADER_ID_ID,
+                                         GTK_SORT_ASCENDING);
     id = gtk_combo_box_new_with_model(GTK_TREE_MODEL(store));
     cell = gtk_cell_renderer_text_new();
     gtk_cell_layout_pack_start(GTK_CELL_LAYOUT(id), cell, TRUE);
     gtk_cell_layout_set_attributes(GTK_CELL_LAYOUT(id), cell,
-                                   "text", 0, NULL);
+                                   "text", COLUMN_SHADER_ID_TEXT,
+                                   "weight", COLUMN_SHADER_ID_BOLD,
+                                   NULL);
     g_signal_connect(G_OBJECT(id), "changed",
                      G_CALLBACK(gldb_shader_pane_id_changed), pane);
     g_object_unref(G_OBJECT(store));
@@ -303,11 +322,10 @@ static GtkWidget *gldb_shader_pane_id_new(GldbShaderPane *pane)
 GldbPane *gldb_shader_pane_new(void)
 {
     GldbShaderPane *pane;
-    GtkWidget *vbox, *hbox, *target, *id, *source, *scrolled;
+    GtkWidget *vbox, *hbox, *id, *source, *scrolled;
     PangoFontDescription *font;
 
     pane = GLDB_SHADER_PANE(g_object_new(GLDB_SHADER_PANE_TYPE, NULL));
-    target = gldb_shader_pane_target_new(pane);
     id = gldb_shader_pane_id_new(pane);
 
     font = pango_font_description_new();
@@ -330,7 +348,6 @@ GldbPane *gldb_shader_pane_new(void)
 
     vbox = gtk_vbox_new(FALSE, 0);
     hbox = gtk_hbox_new(FALSE, 0);
-    gtk_box_pack_start(GTK_BOX(vbox), target, FALSE, FALSE, 0);
     gtk_box_pack_start(GTK_BOX(vbox), id, FALSE, FALSE, 0);
     gtk_box_pack_start(GTK_BOX(hbox), vbox, FALSE, FALSE, 0);
     gtk_box_pack_start(GTK_BOX(hbox), scrolled, TRUE, TRUE, 0);
@@ -345,10 +362,7 @@ static void gldb_shader_pane_real_update(GldbPane *self)
     GldbShaderPane *pane;
 
     pane = GLDB_SHADER_PANE(self);
-    /* Simply invoke a change event on the target. This launches a
-     * cascade of updates.
-     */
-    g_signal_emit_by_name(G_OBJECT(pane->target), "changed", NULL, NULL);
+    gldb_shader_pane_update_ids(pane);
 }
 
 /* GObject stuff */
@@ -363,7 +377,6 @@ static void gldb_shader_pane_class_init(GldbShaderPaneClass *klass)
 
 static void gldb_shader_pane_init(GldbShaderPane *self, gpointer g_class)
 {
-    self->target = NULL;
     self->id = NULL;
 }
 
