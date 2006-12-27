@@ -1,7 +1,7 @@
 BuGLe alpha release
 ===================
 
-This is an alpha release, and may not due what you want. However, I am
+This is an alpha release, and may not do what you want. However, I am
 successfully using BuGLe in my work. If you have problems installing,
 please refer to the TROUBLESHOOTING file. It has, however, been tested
 on GNU/Linux and on FreeBSD.  I would like to support all POSIX
@@ -28,14 +28,13 @@ To build, you will need the following:
   are those from xorg/Mesa (pre-installed on many systems).
 - To do video capture, you will need libavcodec/libavformat from ffmpeg.
 - readline is recommended for the console debugger
+- For the GUI debugger, GTK+ is required and gtkglext is needed for the
+  texture and framebuffer viewers.
 
-There is also a preliminary version of a GUI debugger - it depends on
-GTK+ and for best effect you should also have gtkglext.
-
-If you are upgrading, you MUST uninstall the previous version first. If
+If you are upgrading, you should uninstall the previous version first. If
 you don't have the built tree around to do `make uninstall', then at
 the very least remove all the files from /usr/local/lib/bugle/ (or
-wherever you install them). Newer versions may install fewer libraries
+wherever you installed them). Newer versions may install fewer libraries
 here, and old libraries will confuse bugle.
 
 If you have trouble with your system headers, see the file

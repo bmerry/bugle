@@ -87,56 +87,10 @@ static void dump_ppm_header(FILE *f, void *data)
     fprintf(f, "P6\n%d %d\n255\n", wh[0], wh[1]);
 }
 
-/* FIXME: eliminate this in favour of the framebuffer grabber */
 static bool debugger_screenshot(int pipe)
 {
-    Display *dpy;
-    GLXContext aux, real;
-    GLXDrawable old_read, old_write;
-    unsigned int width, height, stride;
-    int wh[2];
-    size_t header_len;
-    char *header;
-    char *data, *in, *out;
-    unsigned int i;
-
-    aux = bugle_get_aux_context(false);
-    if (!aux || !bugle_begin_internal_render()) return false;
-    real = CALL_glXGetCurrentContext();
-    old_write = CALL_glXGetCurrentDrawable();
-    old_read = bugle_get_current_read_drawable();
-    dpy = bugle_get_current_display();
-    /* FIXME: eliminate GLX 1.3 dependency */
-    CALL_glXQueryDrawable(dpy, old_write, GLX_WIDTH, &width);
-    CALL_glXQueryDrawable(dpy, old_write, GLX_HEIGHT, &height);
-    bugle_make_context_current(dpy, old_write, old_write, aux);
-
-    wh[0] = width;
-    wh[1] = height;
-    stride = ((3 * width + 3) & ~3);
-    header = budgie_string_io(dump_ppm_header, wh);
-    data = bugle_malloc(stride * height);
-    CALL_glReadPixels(0, 0, width, height, GL_RGB, GL_UNSIGNED_BYTE, data);
-
-    header_len = strlen(header);
-    header = bugle_realloc(header, header_len + width * height * 3);
-    in = data + (height - 1) * stride;
-    out = header + header_len;
-    for (i = 0; i < height; i++)
-    {
-        memcpy(out, in, width * 3);
-        out += width * 3;
-        in -= stride;
-    }
-
-    gldb_protocol_send_code(pipe, RESP_SCREENSHOT);
-    gldb_protocol_send_binary_string(pipe, header_len + width * height * 3, header);
-    free(header);
-    free(data);
-
-    bugle_make_context_current(dpy, old_write, old_read, real);
-    bugle_end_internal_render("debugger_screenshot", true);
-    return true;
+    fputs("The screenshot interface has been removed. Please upgrade gldb.\n", stderr);
+    return false;
 }
 
 static budgie_function find_function(const char *name)
@@ -419,9 +373,10 @@ static bool get_framebuffer_size(GLuint fbo, GLenum target, GLenum attachment,
             Window root;
             int x, y;
             unsigned int uwidth = 0, uheight = 0, border, depth;
-            /* FIXME: a pbuffer in case this will break. This can
+            /* FIXME: a pbuffer here will break. This can
              * only be fixed by tracking the type of drawables
              * as they are created, which will be a huge pain.
+             * Note: this code is duplicates in capture.c and debugger.c
              */
             XGetGeometry(dpy, draw, &root, &x, &y,
                          &uwidth, &uheight, &border, &depth);

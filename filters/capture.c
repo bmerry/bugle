@@ -413,13 +413,43 @@ static bool unmap_screenshot(screenshot_data *data)
     }
 }
 
+static void get_drawable_size(Display *dpy, GLXDrawable draw,
+                              int *width, int *height)
+{
+    unsigned int value = 0;
+
+#ifdef GLX_VERSION_1_3
+    if (bugle_gl_has_extension(GLX_VERSION_1_3))
+    {
+        CALL_glXQueryDrawable(dpy, draw, GLX_WIDTH, &value);
+        *width = value;
+        CALL_glXQueryDrawable(dpy, draw, GLX_HEIGHT, &value);
+        *height = value;
+    }
+    else
+#endif
+    {
+        Window root;
+        int x, y;
+        unsigned int uwidth = 0, uheight = 0, border, depth;
+        /* FIXME: a pbuffer here will break. This can
+         * only be fixed by tracking the type of drawables
+         * as they are created, which will be a huge pain.
+         * Note: this code is duplicates in capture.c and debugger.c
+         */
+        XGetGeometry(dpy, draw, &root, &x, &y,
+                     &uwidth, &uheight, &border, &depth);
+        *width = uwidth;
+        *height = uheight;
+    }
+}
+
 static bool do_screenshot(GLenum format, int test_width, int test_height,
                           screenshot_data **data)
 {
     GLXDrawable drawable;
     Display *dpy;
     screenshot_data *cur;
-    unsigned int w, h;
     int width, height;
 
     *data = &video_data[(video_cur + video_lag - 1) % video_lag];
@@ -427,11 +457,8 @@ static bool do_screenshot(GLenum format, int test_width, int test_height,
     video_cur = (video_cur + 1) % video_lag;
 
     drawable = CALL_glXGetCurrentDrawable();
-    dpy = CALL_glXGetCurrentDisplay();
-    CALL_glXQueryDrawable(dpy, drawable, GLX_WIDTH, &w);
-    CALL_glXQueryDrawable(dpy, drawable, GLX_HEIGHT, &h);
-    width = w;
-    height = h;
+    dpy = bugle_get_current_display();
+    get_drawable_size(dpy, drawable, &width, &height);
     if (test_width != -1 || test_height != -1)
         if (width != test_width || height != test_height)
         {

@@ -221,10 +221,10 @@ static bool handle_commands(void)
 static int handle_responses(void)
 {
     gldb_response *r;
+    gldb_response_data_framebuffer *fb;
 
     FILE *f;
-    char *data;
-    uint32_t len;
+    int i;
 
     r = gldb_get_response();
     /* For some reason select() sometimes claims that there is data
@@ -249,23 +249,37 @@ static int handle_responses(void)
     case RESP_RUNNING:
         printf("Running.\n");
         return 0;
-    case RESP_SCREENSHOT:
+    case RESP_DATA:
         if (!screenshot_file)
         {
-            fputs("Unexpected screenshot data. Please contact the author.\n", stderr);
+            fputs("Unexpected screenshot data. This is a bug.\n", stderr);
             break;
         }
+        fb = (gldb_response_data_framebuffer *) r;
+        if (fb->subtype != REQ_DATA_FRAMEBUFFER)
+        {
+            fputs("Unexpected non-screenshot data. This is a bug.\n", stderr);
+            break;
+        }
+
         f = fopen(screenshot_file, "wb");
         if (!f)
-        {
             fprintf(stderr, "Cannot open %s: %s\n", screenshot_file, strerror(errno));
-            free(screenshot_file);
-            break;
+        else
+        {
+            fprintf(f, "P6\n# Captured by gldb\n%d %d\n255\n",
+                    fb->width, fb->height);
+            for (i = 0; i < fb->height; i++)
+                if (fwrite(fb->data + (fb->height - 1 - i) * fb->width * 3,
+                           1, fb->width * 3, f) != fb->width * 3)
+                {
+                    fprintf(stderr, "Error writing %s: %s\n", screenshot_file, strerror(errno));
+                    break;
+                }
+            if (fclose(f) == EOF && i == fb->height)
+                fprintf(stderr, "Error writing %s: %s\n", screenshot_file, strerror(errno));
         }
-        data = ((gldb_response_screenshot *) r)->data;
-        len = ((gldb_response_screenshot *) r)->length;
-        if (fwrite(data, 1, len, f) != len || fclose(f) == EOF)
-            fprintf(stderr, "Error writing %s: %s\n", screenshot_file, strerror(errno));
+        free(screenshot_file);
         screenshot_file = NULL;
         break;
     }
@@ -696,7 +710,7 @@ static bool command_screenshot(const char *cmd,
     }
     if (screenshot_file) free(screenshot_file);
     screenshot_file = bugle_strdup(tokens[1]);
-    gldb_send_screenshot(0);
+    gldb_send_data_framebuffer(0, 0, 0, GL_FRONT, GL_RGB, GL_UNSIGNED_BYTE);
     return true;
 }
 

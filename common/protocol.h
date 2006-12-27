@@ -31,6 +31,7 @@
 #define REQ_STATE              0xdcba0005UL
 #define REQ_QUIT               0xdcba0006UL
 #define REQ_ASYNC              0xdcba0007UL
+/* SCREENSHOT is no longer used */
 #define REQ_SCREENSHOT         0xdcba0008UL
 #define REQ_ACTIVATE_FILTERSET 0xdcba0009UL
 #define REQ_DEACTIVATE_FILTERSET  0xdcba000aUL

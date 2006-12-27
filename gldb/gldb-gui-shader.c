@@ -124,6 +124,7 @@ static void gldb_shader_pane_update_ids(GldbShaderPane *pane)
     }
 
     bugle_radix_tree_init(&active_glsl, false);
+#ifdef GL_VERSION_2_0
     s = gldb_state_find_child_enum(root, GL_CURRENT_PROGRAM);
     program = s ? atoi(s->value) : 0;
     if (program)
@@ -149,6 +150,7 @@ static void gldb_shader_pane_update_ids(GldbShaderPane *pane)
             }
         }
     }
+#endif
 
     for (trg = 0; trg < G_N_ELEMENTS(targets); trg++)
         switch (targets[trg])

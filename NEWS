@@ -1,3 +1,10 @@
+0.0.20061227
+------------
+There is now an option in the texture and framebuffer viewers to remap the
+range. This is useful for viewing textures with data outside the [0, 1]
+range as well as images with low dynamic range. There are also many bugfixes;
+in particular, BuGLe should now work much better on ATI cards.
+
 0.0.20061110
 ------------
 This is a quick-fix release for ccache. If you have successfully
