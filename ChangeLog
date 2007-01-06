@@ -1,5 +1,7 @@
 * Fix display of FBOs on drivers supporting GL_EXT_framebuffer_blit
 * Fix crash when using a floating-point PBuffer
+* Fix display of per-framebuffer state
+* Add an option to show the original frustum in the camera filterset
 
 0.0.20061227
 ------------
