@@ -78,6 +78,13 @@ This key alternately releases and recaptures the mouse. It can be
 useful if you need to use the mouse in another window without
 completely disabling the filter-set (which would also restore the
 camera position). There is no default.
+.TP
+.B key_frustum
+This toggles display of the original view frustum. If this driver
+supports
+.BR GL_NV_depth_clamp ,
+depth clamping is used to prevent the frustum from being clipped to the
+near and far clip planes. There is no default.
 .SH AUTHOR
 .B gldb
 and the

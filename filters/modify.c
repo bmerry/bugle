@@ -21,6 +21,7 @@
 #include "src/objects.h"
 #include "src/tracker.h"
 #include "src/xevent.h"
+#include "src/glexts.h"
 #include "common/bool.h"
 #include <GL/glx.h>
 #include <sys/time.h>
@@ -317,13 +318,15 @@ static bool initialise_frontbuffer(filter_set *handle)
 #define CAMERA_KEY_SLOWER 5
 #define CAMERA_KEY_RESET 6
 #define CAMERA_KEY_TOGGLE 7
-#define CAMERA_KEYS 8
+#define CAMERA_KEY_FRUSTUM 8
+#define CAMERA_KEYS 9
 
 static filter_set *camera_filterset;
 static bugle_object_view camera_view;
 static float camera_speed = 1.0f;
 static bool camera_dga = false;
 static bool camera_intercept = true;
+static bool camera_frustum = false;
 
 static xevent_key key_camera[CAMERA_KEYS] =
 {
@@ -371,6 +374,160 @@ static void invalidate_window(XEvent *event)
         dirty.xexpose.height = height;
     }
     XSendEvent(dpy, PointerWindow, True, ExposureMask, &dirty);
+}
+
+/* Determinant of a 4x4 matrix */
+static GLfloat determinant(const GLfloat *m)
+{
+    return m[0] * (  m[5]  * (m[10] * m[15] - m[11] * m[14])
+                   + m[6]  * (m[11] * m[13] - m[9]  * m[15])
+                   + m[7]  * (m[9]  * m[14] - m[10] * m[13]))
+        -  m[1] * (  m[6]  * (m[11] * m[12] - m[8]  * m[15])
+                   + m[7]  * (m[8]  * m[14] - m[10] * m[12])
+                   + m[4]  * (m[10] * m[15] - m[11] * m[14]))
+        +  m[2] * (  m[7]  * (m[8]  * m[13] - m[9]  * m[12])
+                   + m[4]  * (m[9]  * m[15] - m[11] * m[13])
+                   + m[5]  * (m[11] * m[12] - m[8]  * m[15]))
+        -  m[3] * (  m[4]  * (m[9]  * m[14] - m[10] * m[13])
+                   + m[5]  * (m[10] * m[12] - m[8]  * m[14])
+                   + m[6]  * (m[8]  * m[13] - m[9]  * m[12]));
+}
+
+/* Solves mx = b|m| i.e. divide by determinant to get denominator */
+static void solve_numerator(const GLfloat *m, const GLfloat *b, GLfloat *x)
+{
+    GLfloat tmp[16];
+    int i;
+
+    /* Cramer's rule: replace each row in turn with b and take the
+     * determinants.
+     */
+    memcpy(tmp, m, 16 * sizeof(GLfloat));
+    for (i = 0; i < 4; i++)
+    {
+        memcpy(tmp + i * 4, b, 4 * sizeof(GLfloat));
+        x[i] = determinant(tmp);
+        memcpy(tmp + i * 4, m + i * 4, 4 * sizeof(GLfloat));
+    }
+}
+
+/* Generates 8 4-vectors corresponding to the 8 vertices */
+static void frustum_vertices(const GLfloat *m, GLfloat *x)
+{
+    GLfloat b[4] = {0.0f, 0.0f, 0.0f, 1.0f};
+    GLfloat w;
+    int i, j;
+    for (i = 0; i < 8; i++)
+    {
+        b[0] = (i & 1) ? -1.0f : 1.0f;
+        b[1] = (i & 2) ? -1.0f : 1.0f;
+        b[2] = (i & 4) ? -1.0f : 1.0f;
+        solve_numerator(m, b, x + 4 * i);
+        w = x[4 * i + 3];
+        if (w)
+        {
+            for (j = 0; j < 4; j++)
+                x[4 * i + j] /= w;
+        }
+    }
+}
+
+static void camera_draw_frustum(const GLfloat *original)
+{
+    Display *dpy;
+    GLXDrawable old_read, old_write;
+    GLXContext real, aux;
+    int i, j, k;
+
+    GLubyte indices[24] =
+    {
+        0, 2, 3, 1,
+        4, 5, 7, 6,
+        0, 1, 5, 4,
+        2, 6, 7, 3,
+        0, 4, 6, 2,
+        1, 3, 7, 5
+    };
+    GLfloat vertices[32];
+    GLfloat modelview[16];
+    GLfloat projection[16];
+    GLfloat mvp[16];
+    GLint viewport[4];
+
+    aux = bugle_get_aux_context(true);
+    if (!aux) return;
+
+    CALL_glGetIntegerv(GL_VIEWPORT, viewport);
+    CALL_glGetFloatv(GL_MODELVIEW_MATRIX, modelview);
+    CALL_glGetFloatv(GL_PROJECTION_MATRIX, projection);
+    for (i = 0; i < 4; i++)
+        for (j = 0; j < 4; j++)
+        {
+            mvp[i * 4 + j] = 0.0f;
+            for (k = 0; k < 4; k++)
+                mvp[i * 4 + j] += projection[k * 4 + j] * original[i * 4 + k];
+        }
+    frustum_vertices(mvp, vertices);
+
+    real = CALL_glXGetCurrentContext();
+    old_write = CALL_glXGetCurrentDrawable();
+    old_read = bugle_get_current_read_drawable();
+    dpy = bugle_get_current_display();
+    CALL_glXMakeCurrent(dpy, old_write, aux);
+
+    CALL_glPushAttrib(GL_VIEWPORT_BIT);
+    CALL_glViewport(viewport[0], viewport[1], viewport[2], viewport[3]);
+    CALL_glMatrixMode(GL_PROJECTION);
+    CALL_glLoadMatrixf(projection);
+    CALL_glMatrixMode(GL_MODELVIEW);
+    CALL_glLoadMatrixf(modelview);
+    CALL_glEnable(GL_BLEND);
+    CALL_glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    CALL_glEnable(GL_CULL_FACE);
+    CALL_glEnable(GL_DEPTH_TEST);
+    CALL_glDepthMask(GL_FALSE);
+    CALL_glVertexPointer(4, GL_FLOAT, 0, vertices);
+    CALL_glEnableClientState(GL_VERTEX_ARRAY);
+#ifdef GL_NV_depth_clamp
+    if (bugle_gl_has_extension(BUGLE_GL_NV_depth_clamp))
+    {
+        glEnable(GL_DEPTH_CLAMP_NV);
+        glDepthFunc(GL_LEQUAL);
+    }
+#endif
+
+    for (i = 0; i < 2; i++)
+    {
+        CALL_glFrontFace(i ? GL_CCW : GL_CW);
+        CALL_glColor4f(0.2f, 0.2f, 1.0f, 0.5f);
+        CALL_glDrawElements(GL_QUADS, 24, GL_UNSIGNED_BYTE, indices);
+        CALL_glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+        CALL_glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+        CALL_glDrawElements(GL_QUADS, 24, GL_UNSIGNED_BYTE, indices);
+        CALL_glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+    }
+
+#ifdef GL_NV_depth_clamp
+    if (bugle_gl_has_extension(BUGLE_GL_NV_depth_clamp))
+    {
+        glDepthFunc(GL_LESS);
+        glDisable(GL_DEPTH_CLAMP_NV);
+    }
+#endif
+    CALL_glMatrixMode(GL_PROJECTION);
+    CALL_glLoadIdentity();
+    CALL_glMatrixMode(GL_MODELVIEW);
+    CALL_glLoadIdentity();
+    CALL_glDisable(GL_DEPTH_TEST);
+    CALL_glBlendFunc(GL_ONE, GL_ZERO);
+    CALL_glDisable(GL_BLEND);
+    CALL_glDisable(GL_CULL_FACE);
+    CALL_glDepthMask(GL_TRUE);
+    CALL_glVertexPointer(4, GL_FLOAT, 0, NULL);
+    CALL_glDisableClientState(GL_VERTEX_ARRAY);
+    CALL_glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+    CALL_glPopAttrib();
+    bugle_make_context_current(dpy, old_write, old_read, real);
 }
 
 static void camera_mouse_callback(int dx, int dy, XEvent *event)
@@ -465,8 +622,17 @@ static void camera_key_callback(const xevent_key *key, void *arg, XEvent *event)
                 bugle_xevent_release_pointer();
             }
             break;
+        case CAMERA_KEY_FRUSTUM:
+            camera_frustum = !camera_frustum;
+            invalidate_window(event);
+            break;
         }
     }
+}
+
+static void camera_get_original(camera_context *ctx)
+{
+    CALL_glGetFloatv(GL_MODELVIEW_MATRIX, ctx->original);
 }
 
 static void initialise_camera_context(const void *key, void *data)
@@ -482,7 +648,7 @@ static void initialise_camera_context(const void *key, void *data)
         && bugle_begin_internal_render())
     {
         ctx->active = true;
-        CALL_glGetFloatv(GL_MODELVIEW_MATRIX, ctx->original);
+        camera_get_original(ctx);
         bugle_end_internal_render("initialise_camera_context", true);
     }
 }
@@ -519,7 +685,7 @@ static bool camera_override(function_call *call, const callback_data *data)
             CALL_glGetIntegerv(GL_MATRIX_MODE, &mode);
             if (mode == GL_MODELVIEW)
             {
-                CALL_glGetFloatv(GL_MODELVIEW_MATRIX, ctx->original);
+                camera_get_original(ctx);
                 CALL_glLoadMatrixf(ctx->modifier);
                 CALL_glMultMatrixf(ctx->original);
             }
@@ -560,6 +726,9 @@ static bool camera_glXSwapBuffers(function_call *call, const callback_data *data
     if (ctx && bugle_begin_internal_render())
     {
         int f = 0, l = 0;
+
+        if (camera_frustum)
+            camera_draw_frustum(ctx->original);
         if (ctx->pressed[CAMERA_KEY_FORWARD]) f++;
         if (ctx->pressed[CAMERA_KEY_BACK]) f--;
         if (ctx->pressed[CAMERA_KEY_LEFT]) l++;
@@ -588,7 +757,7 @@ static void camera_handle_activation(bool active, camera_context *ctx)
     {
         if (bugle_begin_internal_render())
         {
-            CALL_glGetFloatv(GL_MODELVIEW_MATRIX, ctx->original);
+            camera_get_original(ctx);
             ctx->active = true;
             ctx->dirty = true;
             bugle_end_internal_render("camera_handle_activation", true);
@@ -663,6 +832,7 @@ static bool initialise_camera(filter_set *handle)
     bugle_register_filter_catches(f, GROUP_glMultTransposeMatrixf, false, camera_restore);
     bugle_register_filter_catches(f, GROUP_glMultTransposeMatrixd, false, camera_restore);
 #endif
+    bugle_register_filter_catches(f, GROUP_glXSwapBuffers, false, camera_glXSwapBuffers);
 
     f = bugle_register_filter(handle, "camera_post");
     bugle_register_filter_post_renders("camera_post");
@@ -693,7 +863,6 @@ static bool initialise_camera(filter_set *handle)
 #endif
     bugle_register_filter_catches(f, GROUP_glGetFloatv, false, camera_get);
     bugle_register_filter_catches(f, GROUP_glGetDoublev, false, camera_get);
-    bugle_register_filter_catches(f, GROUP_glXSwapBuffers, false, camera_glXSwapBuffers);
 
     camera_view = bugle_object_class_register(&bugle_context_class, initialise_camera_context,
                                               NULL, sizeof(camera_context));
@@ -745,6 +914,7 @@ void bugle_initialise_filter_library(void)
         { "key_faster", "key to double camera speed [PgUp]", FILTER_SET_VARIABLE_KEY, &key_camera[CAMERA_KEY_FASTER], NULL },
         { "key_slower", "key to halve camera speed [PgDn]", FILTER_SET_VARIABLE_KEY, &key_camera[CAMERA_KEY_SLOWER], NULL },
         { "key_reset", "key to undo adjustments [none]", FILTER_SET_VARIABLE_KEY, &key_camera[CAMERA_KEY_RESET], NULL },
+        { "key_frustum", "key to enable drawing the frustum [none]", FILTER_SET_VARIABLE_KEY, &key_camera[CAMERA_KEY_FRUSTUM], NULL },
         { "key_toggle", "key to toggle mouse grab [none]", FILTER_SET_VARIABLE_KEY, &key_camera[CAMERA_KEY_TOGGLE], NULL },
         { "speed", "initial speed of camera [1.0]", FILTER_SET_VARIABLE_FLOAT, &camera_speed, NULL },
         { NULL, NULL, 0, NULL, NULL }
@@ -770,4 +940,6 @@ void bugle_initialise_filter_library(void)
     bugle_register_filter_set_renders("frontbuffer");
     bugle_register_filter_set_renders("camera");
     bugle_register_filter_set_depends("camera", "trackdisplaylist");
+    bugle_register_filter_set_depends("camera", "trackcontext");
+    bugle_register_filter_set_depends("camera", "trackextensions");
 }
