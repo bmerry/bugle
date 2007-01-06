@@ -257,14 +257,21 @@ GLXContext bugle_get_aux_context(bool shared)
         if (major >= 1 && (major > 1 || minor >= 3))
         {
             /* Have all the facilities to extract the necessary information */
-            CALL_glXQueryContext(dpy, old_ctx, GLX_RENDER_TYPE_SGIX, &render_type);
-            CALL_glXQueryContext(dpy, old_ctx, GLX_SCREEN_EXT, &screen);
-            CALL_glXQueryContext(dpy, old_ctx, GLX_FBCONFIG_ID_SGIX, &attribs[1]);
-            /* It seems that render_type comes back as a boolean, although
-             * the spec seems to indicate that it should be otherwise.
+            CALL_glXQueryContext(dpy, old_ctx, GLX_RENDER_TYPE, &render_type);
+            CALL_glXQueryContext(dpy, old_ctx, GLX_SCREEN, &screen);
+            CALL_glXQueryContext(dpy, old_ctx, GLX_FBCONFIG_ID, &attribs[1]);
+            /* I haven't quite figured out the return values, but I'm guessing
+             * that it is returning one of the GLX_RGBA_BIT values rather than
+             * GL_RGBA_TYPE etc.
              */
-            if (render_type <= 1)
-                render_type = render_type ? GLX_RGBA_TYPE_SGIX : GLX_COLOR_INDEX_TYPE_SGIX;
+            if (render_type == GLX_RGBA_BIT)
+                render_type = GLX_RGBA_TYPE;
+            else if (render_type == GLX_COLOR_INDEX_BIT)
+                render_type = GLX_COLOR_INDEX_TYPE;
+#ifdef GLX_ARB_fbconfig_float
+            else if (render_type == GLX_RGBA_FLOAT_BIT_ARB)
+                render_type = GLX_RGBA_FLOAT_TYPE_ARB;
+#endif
             cfgs = CALL_glXChooseFBConfig(dpy, screen, attribs, &n);
             if (cfgs == NULL)
             {

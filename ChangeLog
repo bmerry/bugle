@@ -1,3 +1,6 @@
+* Fix display of FBOs on drivers supporting GL_EXT_framebuffer_blit
+* Fix crash when using a floating-point PBuffer
+
 0.0.20061227
 ------------
 * Misc tweaks to configure.ac and Makefile.am
