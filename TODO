@@ -25,14 +25,12 @@ gldb-gui
   - interaction with cube map cube
   - display of pixel values on cube map
   - stats
-  - range mapping
   - LOD bias
-  - alpha blending
+  - alpha blending / display of alpha
   - test sRGB textures
-  - better support for non [0,1] colours e.g. OpenEXR export
+  - better export for non [0,1] colours e.g. OpenEXR export
 - shader viewer
-  - show metadata like uniforms
-  - use texture viewer layout
+  - show metadata like uniforms, info log
 - test for all extensions before using them
 - trace window?
 - figure out why BadValue is sometimes generated on exit
@@ -56,7 +54,6 @@ bugle
 - improve support for GLSL (more type information)
 - capture more information about call lists
 - capture and replay
-- use textured quads rather than bitmaps for showstats?
 
 budgie
 ------
@@ -74,7 +71,7 @@ long term
 ---------
 - replace GLee with something C89 compliant
 - internationalisation
-- OpenEXR
+- OpenEXR export
 - Windows support
 - write support for state
 - network debugging
