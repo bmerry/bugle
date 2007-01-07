@@ -1,3 +1,5 @@
+0.0.20070107
+------------
 * Fix display of FBOs on drivers supporting GL_EXT_framebuffer_blit
 * Fix crash when using a floating-point PBuffer
 * Fix display of per-framebuffer state

@@ -1,3 +1,10 @@
+0.0.20070107
+------------
+There are several bug-fixes related to using gldb-gui with pbuffers and
+framebuffer objects. In addition, it is possible to save the current
+state to an XML file, and the camera filter-set has the option to
+drawing the original view frustum.
+
 0.0.20061227
 ------------
 There is now an option in the texture and framebuffer viewers to remap the
