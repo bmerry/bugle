@@ -2,6 +2,7 @@
 * Fix crash when using a floating-point PBuffer
 * Fix display of per-framebuffer state
 * Add an option to show the original frustum in the camera filterset
+* Add option to export the current state to XML
 
 0.0.20061227
 ------------

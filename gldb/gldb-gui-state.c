@@ -67,6 +67,50 @@ enum
     COLUMN_STATE_EXPANDED
 };
 
+static void dump_state_xml_r(const gldb_state *root, GString *f, gboolean top)
+{
+    gchar *header;
+    gchar *name_utf8, *value_utf8;
+    gchar *value;
+    bugle_list_node *i;
+    const gldb_state *child;
+
+    if (top)
+        g_string_append(f, "<state-tree>");
+    else
+    {
+        value = root->value ? root->value : "";
+        value_utf8 = g_convert(value, -1, "UTF8", "ASCII", NULL, NULL, NULL);
+        name_utf8 = g_convert(root->name, -1, "UTF8", "ASCII", NULL, NULL, NULL);
+        header = g_markup_printf_escaped("<state name=\"%s\">%s",
+                                         name_utf8, value_utf8);
+        g_string_append(f, header);
+        g_free(name_utf8);
+        g_free(value_utf8);
+        g_free(header);
+    }
+
+    for (i = bugle_list_head(&root->children); i; i = bugle_list_next(i))
+    {
+        child = (const gldb_state *) bugle_list_data(i);
+        dump_state_xml_r(child, f, FALSE);
+    }
+
+    g_string_append(f, top ? "</state-tree>" : "</state>");
+}
+
+static gchar *dump_state_xml(const gldb_state *root)
+{
+    GString *f;
+    gchar *data;
+
+    f = g_string_new("<?xml version=\"1.0\"?>");
+    dump_state_xml_r(root, f, TRUE);
+    data = f->str;
+    g_string_free(f, FALSE);
+    return data;
+}
+
 /* Utility functions for dealing with columns that hold totalling
  * information about sub-trees.
  */
@@ -350,14 +394,119 @@ static void state_row_expanded_collapsed(GtkTreeView *view, GtkTreeIter *iter,
                        -1);
 }
 
+static void state_save(GtkToolButton *toolbutton,
+                       gpointer user_data)
+{
+    const gldb_state *root;
+    GtkWidget *dialog;
+    GtkWindow *parent;
+    GtkFileFilter *xml_filter, *all_filter;
+
+    parent = GTK_WINDOW(gtk_widget_get_toplevel(GTK_WIDGET(toolbutton)));
+    if (gldb_get_status() != GLDB_STATUS_STOPPED)
+    {
+        dialog = gtk_message_dialog_new(parent,
+                                        GTK_DIALOG_DESTROY_WITH_PARENT,
+                                        GTK_MESSAGE_ERROR,
+                                        GTK_BUTTONS_CLOSE,
+                                        "Program is not stopped");
+        gtk_dialog_run(GTK_DIALOG(dialog));
+        gtk_widget_destroy(dialog);
+        return;
+    }
+    root = gldb_state_update();
+    if (!root)
+    {
+        dialog = gtk_message_dialog_new(parent,
+                                        GTK_DIALOG_DESTROY_WITH_PARENT,
+                                        GTK_MESSAGE_ERROR,
+                                        GTK_BUTTONS_CLOSE,
+                                        "Could not update state");
+        gtk_dialog_run(GTK_DIALOG(dialog));
+        gtk_widget_destroy(dialog);
+        return;
+    }
+
+    xml_filter = gtk_file_filter_new();
+    gtk_file_filter_set_name(xml_filter, "XML files");
+    gtk_file_filter_add_mime_type(xml_filter, "text/xml");
+    all_filter = gtk_file_filter_new();
+    gtk_file_filter_set_name(all_filter, "All files");
+    gtk_file_filter_add_pattern(all_filter, "*");
+
+    dialog = gtk_file_chooser_dialog_new("Save State",
+                                         parent,
+                                         GTK_FILE_CHOOSER_ACTION_SAVE,
+                                         GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
+                                         GTK_STOCK_SAVE, GTK_RESPONSE_ACCEPT,
+                                         NULL);
+    gtk_file_chooser_set_do_overwrite_confirmation(GTK_FILE_CHOOSER(dialog), TRUE);
+    gtk_file_chooser_set_current_name(GTK_FILE_CHOOSER(dialog), "state.xml");
+    gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(dialog), xml_filter);
+    gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(dialog), all_filter);
+    if (gtk_dialog_run(GTK_DIALOG (dialog)) == GTK_RESPONSE_ACCEPT)
+    {
+        gchar *filename;
+        gchar *state;
+        FILE *f;
+        gboolean error = false;
+
+        filename = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(dialog));
+        f = fopen(filename, "w");
+        gtk_widget_destroy(dialog);
+        if (f)
+        {
+            state = dump_state_xml(root);
+            if (fwrite(state, 1, strlen(state), f) != strlen(state))
+                error = true;
+            g_free(state);
+        }
+        else
+            error = true;
+        if (error)
+        {
+            dialog = gtk_message_dialog_new(parent,
+                                            GTK_DIALOG_DESTROY_WITH_PARENT,
+                                            GTK_MESSAGE_ERROR,
+                                            GTK_BUTTONS_CLOSE,
+                                            "Error writing to %s", filename);
+            gtk_dialog_run(GTK_DIALOG(dialog));
+            gtk_widget_destroy(dialog);
+        }
+        g_free(filename);
+    }
+    else
+        gtk_widget_destroy (dialog);
+}
+
+static GtkWidget *gldb_state_pane_toolbar_new(GldbStatePane *pane)
+{
+    GtkWidget *toolbar;
+    GtkToolItem *item;
+
+    toolbar = gtk_toolbar_new();
+    gtk_toolbar_set_style(GTK_TOOLBAR(toolbar), GTK_TOOLBAR_ICONS);
+
+    item = gtk_tool_button_new_from_stock(GTK_STOCK_SAVE);
+    g_signal_connect(G_OBJECT(item), "clicked",
+                     G_CALLBACK(state_save), pane);
+    gtk_toolbar_insert(GTK_TOOLBAR(toolbar), item, -1);
+
+    return toolbar;
+}
+
 GldbPane *gldb_state_pane_new(void)
 {
-    GtkWidget *scrolled, *tree_view, *vbox, *check;
+    GtkWidget *toolbar, *scrolled, *tree_view, *vbox, *check;
     GtkCellRenderer *cell;
     GtkTreeViewColumn *column;
     GldbStatePane *pane;
 
     pane = GLDB_STATE_PANE(g_object_new(GLDB_STATE_PANE_TYPE, NULL));
+    vbox = gtk_vbox_new(FALSE, 0);
+
+    toolbar = gldb_state_pane_toolbar_new(pane);
+    gtk_box_pack_start(GTK_BOX(vbox), toolbar, FALSE, FALSE, 0);
 
     pane->state_store = gtk_tree_store_new(8,
                                            G_TYPE_STRING,   /* name */
@@ -408,7 +557,6 @@ GldbPane *gldb_state_pane_new(void)
     gtk_tree_view_set_enable_search(GTK_TREE_VIEW(tree_view), TRUE);
     gtk_tree_view_set_search_column(GTK_TREE_VIEW(tree_view), COLUMN_STATE_NAME);
 
-    vbox = gtk_vbox_new(FALSE, 0);
     scrolled = gtk_scrolled_window_new(NULL, NULL);
     gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(scrolled),
                                    GTK_POLICY_AUTOMATIC,
