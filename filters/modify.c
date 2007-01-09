@@ -22,6 +22,7 @@
 #include "src/tracker.h"
 #include "src/xevent.h"
 #include "src/glexts.h"
+#include "common/safemem.h"
 #include "common/bool.h"
 #include <GL/glx.h>
 #include <sys/time.h>
@@ -32,6 +33,106 @@
 # define cosf(x) ((float) (cos((double) (x))))
 #endif
 
+/*** Classify filter-set ***/
+/* This is a helper filter-set that tries to guess whether the current
+ * rendering is in 3D or not. Non-3D rendering includes building
+ * non-graphical textures, depth-of-field and similar post-processing,
+ * and deferred shading.
+ *
+ * The current heuristic is that FBOs are for non-3D and the window-system
+ * framebuffer is for 3D. This is clearly less than perfect. Other possible
+ * heuristics would involve transformation matrices (e.g. orthographic
+ * projection matrix is most likely non-3D) and framebuffer and texture
+ * sizes (drawing to a window-sized framebuffer is probably 3D, while
+ * drawing from a window-sized framebuffer is probably non-3D).
+ */
+
+static bugle_object_view classify_view;
+static bugle_linked_list classify_callbacks;
+
+typedef struct
+{
+    bool real;
+} classify_context;
+
+typedef struct
+{
+    void (*callback)(bool, void *);
+    void *arg;
+} classify_callback;
+
+static void register_classify_callback(void (*callback)(bool, void *), void *arg)
+{
+    classify_callback *cb;
+
+    cb = (classify_callback *) bugle_malloc(sizeof(classify_callback));
+    cb->callback = callback;
+    cb->arg = arg;
+    bugle_list_append(&classify_callbacks, cb);
+}
+
+static void initialise_classify_context(const void *key, void *data)
+{
+    classify_context *ctx;
+
+    ctx = (classify_context *) data;
+    ctx->real = true;
+}
+
+#ifdef GL_EXT_framebuffer_object
+static bool classify_glBindFramebufferEXT(function_call *call, const callback_data *data)
+{
+    classify_context *ctx;
+    GLint fbo;
+    bugle_list_node *i;
+    classify_callback *cb;
+
+    ctx = (classify_context *) bugle_object_get_current_data(&bugle_context_class, classify_view);
+    if (ctx && bugle_begin_internal_render())
+    {
+#ifdef GL_EXT_framebuffer_blit
+        if (bugle_gl_has_extension(BUGLE_GL_EXT_framebuffer_blit))
+        {
+            CALL_glGetIntegerv(GL_DRAW_FRAMEBUFFER_BINDING_EXT, &fbo);
+        }
+        else
+#endif
+        {
+            CALL_glGetIntegerv(GL_FRAMEBUFFER_BINDING_EXT, &fbo);
+        }
+        ctx->real = (fbo == 0);
+        bugle_end_internal_render("classify_glBindFramebufferEXT", true);
+        for (i = bugle_list_head(&classify_callbacks); i; i = bugle_list_next(i))
+        {
+            cb = (classify_callback *) bugle_list_data(i);
+            (*cb->callback)(ctx->real, cb->arg);
+        }
+    }
+    return true;
+}
+#endif
+
+static bool initialise_classify(filter_set *handle)
+{
+    filter *f;
+
+    f = bugle_register_filter(handle, "classify");
+#ifdef GL_EXT_framebuffer_object
+    bugle_register_filter_catches(f, GROUP_glBindFramebufferEXT, true, classify_glBindFramebufferEXT);
+#endif
+    bugle_register_filter_depends("classify", "invoke");
+    bugle_register_filter_post_renders("classify");
+    classify_view = bugle_object_class_register(&bugle_context_class, initialise_classify_context,
+                                                NULL, sizeof(classify_context));
+    bugle_list_init(&classify_callbacks, true);
+    return true;
+}
+
+static void destroy_classify(filter_set *handle)
+{
+    bugle_list_clear(&classify_callbacks);
+}
+
 /*** Wireframe filter-set ***/
 
 static filter_set *wireframe_filterset;
@@ -39,7 +140,8 @@ static bugle_object_view wireframe_view;
 
 typedef struct
 {
-    bool active; /* True if polygon mode has been adjusted */
+    bool active;            /* True if polygon mode has been adjusted */
+    bool real;              /* True unless this is a render-to-X preprocess */
     GLint polygon_mode[2];  /* The app polygon mode, for front and back */
 } wireframe_context;
 
@@ -49,6 +151,7 @@ static void initialise_wireframe_context(const void *key, void *data)
 
     ctx = (wireframe_context *) data;
     ctx->active = false;
+    ctx->real = true;
     ctx->polygon_mode[0] = GL_FILL;
     ctx->polygon_mode[1] = GL_FILL;
 
@@ -56,7 +159,7 @@ static void initialise_wireframe_context(const void *key, void *data)
         && bugle_begin_internal_render())
     {
         CALL_glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-        ctx->active = true;
+        ctx->real = true;
         bugle_end_internal_render("initialise_wireframe_context", true);
     }
 }
@@ -64,6 +167,7 @@ static void initialise_wireframe_context(const void *key, void *data)
 /* Handles on the fly activation and deactivation */
 static void wireframe_handle_activation(bool active, wireframe_context *ctx)
 {
+    active &= ctx->real;
     if (active && !ctx->active)
     {
         if (bugle_begin_internal_render())
@@ -102,7 +206,8 @@ static bool wireframe_make_current(function_call *call, const callback_data *dat
 
 static bool wireframe_glXSwapBuffers(function_call *call, const callback_data *data)
 {
-    CALL_glClear(GL_COLOR_BUFFER_BIT); /* hopefully bypass z-trick */
+    /* apps that render the entire frame don't always bother to clear */
+    CALL_glClear(GL_COLOR_BUFFER_BIT);
     return true;
 }
 
@@ -111,6 +216,8 @@ static bool wireframe_glPolygonMode(function_call *call, const callback_data *da
     wireframe_context *ctx;
 
     ctx = (wireframe_context *) bugle_object_get_current_data(&bugle_context_class, wireframe_view);
+    if (ctx && !ctx->real)
+        return true;
     if (bugle_begin_internal_render())
     {
         if (ctx)
@@ -123,8 +230,14 @@ static bool wireframe_glPolygonMode(function_call *call, const callback_data *da
 
 static bool wireframe_glEnable(function_call *call, const callback_data *data)
 {
+    wireframe_context *ctx;
+
+    ctx = (wireframe_context *) bugle_object_get_current_data(&bugle_context_class, wireframe_view);
+    if (ctx && !ctx->real)
+        return true;
     /* FIXME: need to track this state to restore it on deactivation */
     /* FIXME: also need to nuke it at activation */
+    /* FIXME: has no effect when using a fragment shader */
     switch (*call->typed.glEnable.arg0)
     {
     case GL_TEXTURE_1D:
@@ -143,6 +256,18 @@ static bool wireframe_glEnable(function_call *call, const callback_data *data)
     default: /* avoids compiler warning if GLenum is a C enum */ ;
     }
     return true;
+}
+
+static void wireframe_classify_callback(bool real, void *arg)
+{
+    wireframe_context *ctx;
+
+    ctx = (wireframe_context *) bugle_object_get_current_data(&bugle_context_class, wireframe_view);
+    if (ctx)
+    {
+        ctx->real = real;
+        wireframe_handle_activation(bugle_filter_set_is_active((filter_set *) arg), ctx);
+    }
 }
 
 static void wireframe_activation(filter_set *handle)
@@ -180,6 +305,7 @@ static bool initialise_wireframe(filter_set *handle)
     bugle_register_filter_post_renders("wireframe");
     wireframe_view = bugle_object_class_register(&bugle_context_class, initialise_wireframe_context,
                                                  NULL, sizeof(wireframe_context));
+    register_classify_callback(wireframe_classify_callback, handle);
     return true;
 }
 
@@ -882,6 +1008,17 @@ static bool initialise_camera(filter_set *handle)
 
 void bugle_initialise_filter_library(void)
 {
+    static const filter_set_info classify_info =
+    {
+        "classify",
+        initialise_classify,
+        destroy_classify,
+        NULL,
+        NULL,
+        NULL,
+        0,
+        NULL
+    };
     static const filter_set_info wireframe_info =
     {
         "wireframe",
@@ -932,13 +1069,20 @@ void bugle_initialise_filter_library(void)
         "allows the camera position to be changed on the fly"
     };
 
+    bugle_register_filter_set(&classify_info);
     bugle_register_filter_set(&wireframe_info);
     bugle_register_filter_set(&frontbuffer_info);
     bugle_register_filter_set(&camera_info);
 
+    bugle_register_filter_set_renders("classify");
+    bugle_register_filter_set_depends("classify", "trackcontext");
+    bugle_register_filter_set_depends("classify", "trackextensions");
     bugle_register_filter_set_renders("wireframe");
+    bugle_register_filter_set_depends("wireframe", "trackcontext");
+    bugle_register_filter_set_depends("wireframe", "classify");
     bugle_register_filter_set_renders("frontbuffer");
     bugle_register_filter_set_renders("camera");
+    bugle_register_filter_set_depends("camera", "classify");
     bugle_register_filter_set_depends("camera", "trackdisplaylist");
     bugle_register_filter_set_depends("camera", "trackcontext");
     bugle_register_filter_set_depends("camera", "trackextensions");
