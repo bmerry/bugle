@@ -1,7 +1,7 @@
 <HTML><HEAD><TITLE>Manpage of camera</TITLE>
 </HEAD><BODY>
 <H1>camera</H1>
-Section: User manual (7)<BR>Updated: May 2006<BR><A HREF="#index">Index</A>
+Section: User manual (7)<BR>Updated: January 2007<BR><A HREF="#index">Index</A>
 <A HREF="../index.html">Return to Main Contents</A><HR>
 
 <A NAME="lbAB">&nbsp;</A>
@@ -107,6 +107,15 @@ This key alternately releases and recaptures the mouse. It can be
 useful if you need to use the mouse in another window without
 completely disabling the filter-set (which would also restore the
 camera position). There is no default.
+<DT><B>key_frustum</B>
+
+<DD>
+This toggles display of the original view frustum. If this driver
+supports
+<B>GL_NV_depth_clamp</B>,
+
+depth clamping is used to prevent the frustum from being clipped to the
+near and far clip planes. There is no default.
 </DL>
 <A NAME="lbAF">&nbsp;</A>
 <H2>AUTHOR</H2>
@@ -139,6 +148,6 @@ library are written and maintained by Bruce Merry
 This document was created by
 <A HREF="http://localhost/cgi-bin/man/man2html">man2html</A>,
 using the manual pages.<BR>
-Time: 14:01:47 GMT, October 22, 2006
+Last Changed Date: 2007-01-06 13:59:53 +0200 (Sat, 06 Jan 2007)
 </BODY>
 </HTML>

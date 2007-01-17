@@ -12,7 +12,7 @@ checks - check for errors that OpenGL defines as undefined behaviour
 <H2>SYNOPSIS</H2>
 
 <PRE>
-filterset unwindstack
+filterset checks
 </PRE>
 
 <A NAME="lbAD">&nbsp;</A>
@@ -57,6 +57,14 @@ errors in a debugger (you can, however, find the message in the
 source and set a breakpoint on the appropriate line).
 </DL>
 <A NAME="lbAE">&nbsp;</A>
+<H2>BUGS</H2>
+
+Due to the design of C, there is no way to perfectly reliably check
+for vertex array overruns, although memory debuggers can help.
+<P>
+Mesa, up to 6.5.1, has a bug that prevents generic attribute vertex
+from being validated.
+<A NAME="lbAF">&nbsp;</A>
 <H2>AUTHOR</H2>
 
 <B>gldb</B>
@@ -66,7 +74,7 @@ and the
 
 library are written and maintained by Bruce Merry
 &lt;<A HREF="mailto:bmerry@users.sourceforge.net">bmerry@users.sourceforge.net</A>&gt;.
-<A NAME="lbAF">&nbsp;</A>
+<A NAME="lbAG">&nbsp;</A>
 <H2>SEE ALSO</H2>
 
 <B><A HREF="../man3/bugle.3.html">bugle</A></B>(3),
@@ -81,13 +89,14 @@ library are written and maintained by Bruce Merry
 <DT><A HREF="#lbAB">NAME</A><DD>
 <DT><A HREF="#lbAC">SYNOPSIS</A><DD>
 <DT><A HREF="#lbAD">DESCRIPTION</A><DD>
-<DT><A HREF="#lbAE">AUTHOR</A><DD>
-<DT><A HREF="#lbAF">SEE ALSO</A><DD>
+<DT><A HREF="#lbAE">BUGS</A><DD>
+<DT><A HREF="#lbAF">AUTHOR</A><DD>
+<DT><A HREF="#lbAG">SEE ALSO</A><DD>
 </DL>
 <HR>
 This document was created by
 <A HREF="http://localhost/cgi-bin/man/man2html">man2html</A>,
 using the manual pages.<BR>
-Time: 14:01:47 GMT, October 22, 2006
+Last Changed Date: 2006-11-04 22:42:48 +0200 (Sat, 04 Nov 2006)
 </BODY>
 </HTML>
