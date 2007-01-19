@@ -9,14 +9,15 @@
 use strict;
 use Getopt::Long;
 
-sub text_versions($$)
+sub text_versions($$$)
 {
-    my $ver = $_[0];
-    my $ext = $_[1];
+    my ($name, $ver, $ext) = @_;
 
     if (defined($ver)) { $ver = '"' . $ver . '"'; }
     elsif (defined($ext)) { $ver = "NULL"; }
-    else { $ver = '"GL_VERSION_1_1"'; }
+    elsif ($name =~ /GL_/) { $ver = '"GL_VERSION_1_1"'; }
+    else { $ver = '"GLX_VERSION_1_1"'; }
+
     if (defined($ext)) { $ext = '"' . $ext . '"'; }
     else { $ext = "NULL"; }
     return ($ver, $ext);
@@ -46,8 +47,8 @@ if ($header)
 # Load input
 while (<>)
 {
-    if (/^#ifndef (GL_VERSION_[0-9_]+)/) { $ver = $1; }
-    elsif (/^#ifndef (GL_([0-9A-Z]+)_\w+)/)
+    if (/^#ifndef (GLX?_VERSION_[0-9_]+)/) { $ver = $1; }
+    elsif (/^#ifndef (GLX?_([0-9A-Z]+)_\w+)/)
     { 
         $ext = $1;
         $suffix = $2;
@@ -61,7 +62,7 @@ while (<>)
            && (!$header || exists($index{$1})))
     {
         my $name = $1;
-        my ($t_ver, $t_ext) = text_versions($ver, $ext);
+        my ($t_ver, $t_ext) = text_versions($name, $ver, $ext);
         if (!exists($index{$name})) 
         {
             $index{$name} = [$name, undef, undef, undef];
@@ -93,10 +94,10 @@ if ($aliases)
                            "glTexCoordPointerEXT" => 1,
                            "glVertexPointerEXT" => 1,
                            "glVertexAttribPointerNV" => 1,
-                           
+
                            # This takes a GLint, not a GLenum
                            "glHintPGI" => 1,
-                           
+
                            # These have totally unrelated semantics to the core 2.0 version
                            # (but they should alias each other, which is handled later)
                            "glGetProgramivARB" => 1,

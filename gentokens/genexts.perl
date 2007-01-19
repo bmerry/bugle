@@ -66,9 +66,10 @@ my %chains = ("GL_ATI_draw_buffers" => "GL_ARB_draw_buffers",
               "GL_SGIS_generate_mipmap" => "GL_VERSION_1_4",
               "GL_SGIS_texture_lod" => "GL_VERSION_1_2",
               "GL_NV_texture_rectangle" => "GL_EXT_texture_rectangle",
+              "GLX_ARB_get_proc_address" => "GLX_VERSION_1_4",
+              "GLX_EXT_import_context" => "GLX_VERSION_1_3",
               "GLX_SGI_make_current_read" => "GLX_VERSION_1_3",
-              "GLX_SGIX_fbconfig" => "GLX_VERSION_1_3",
-              "GLX_EXT_import_context" => "GLX_VERSION_1_3"
+              "GLX_SGIX_fbconfig" => "GLX_VERSION_1_3"
              );
 
 my %groups = (# This got promoted to core from imaging subset in 1.4
