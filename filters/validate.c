@@ -257,6 +257,7 @@ static void checks_memory(size_t size, const void *data)
     const char *cdata;
     size_t i;
 
+    checks_error_vbo = false;
     cdata = (const char *) data;
     for (i = 0; i < size; i++)
         dummy = cdata[i];
@@ -304,7 +305,6 @@ static void checks_buffer(size_t size, const void *data,
     else
 #endif
     {
-        checks_error_vbo = false;
         checks_memory(size, data);
     }
 }
