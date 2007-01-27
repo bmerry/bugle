@@ -1,9 +1,6 @@
 camera filter-set
 -----------------
 - handle display lists properly
-- do not modify camera when attached to pbuffer or when using
-  GL_EXT_framebuffer_object
-- do not modify camera when in feedback mode
 - do the right thing when event handling is in a different
   thread to rendering
 - invalidate every frame when a motion key is depressed
@@ -34,7 +31,6 @@ gldb-gui
 - test for all extensions before using them
 - trace window?
 - figure out why BadValue is sometimes generated on exit
-- ability to save state
 
 bugle
 -----
