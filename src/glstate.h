@@ -52,9 +52,26 @@ typedef struct glstate
     void (*spawn_children)(const struct glstate *, bugle_linked_list *);
 } glstate;
 
+/* A structure used to return values from bugle_state_get_raw. data
+ * is a pointer to a binary blob. type is the base type of the data, while
+ * length is the number of elements of type (-1 if it is not an array).
+ * The caller is responsible for freeing the data. If data is NULL then the
+ * data could not be queried.
+ *
+ * In the case of a string, the type is TYPE_Pc (even if from an OpenGL
+ * function that returns GLchar or GLubyte) and the length is strlen(data).
+ */
+typedef struct
+{
+    void *data;
+    budgie_type type;
+    int length;
+} bugle_state_raw;
+
 /* Must be in a valid state to make GL calls.
  * Must also have trackextensions and trackobjects.
  */
+void bugle_state_get_raw(const glstate *, bugle_state_raw *);
 char *bugle_state_get_string(const glstate *); /* caller frees */
 void bugle_state_get_children(const glstate *, bugle_linked_list *);
 void bugle_state_clear(glstate *);
