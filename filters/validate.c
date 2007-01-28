@@ -20,7 +20,7 @@
 #endif
 #define _POSIX_SOURCE
 #include "src/filters.h"
-#include "src/utils.h"
+#include "src/types.h"
 #include "src/glutils.h"
 #include "src/gldump.h"
 #include "src/tracker.h"

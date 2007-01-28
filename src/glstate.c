@@ -28,14 +28,15 @@
 #if HAVE_CONFIG_H
 # include <config.h>
 #endif
-#include "src/utils.h"
+#include "src/types.h"
 #include "src/glstate.h"
 #include "src/glutils.h"
 #include "src/glexts.h"
 #include "src/tracker.h"
 #include "src/glsl.h"
 #include "common/safemem.h"
-#include "budgielib/budgieutils.h"
+#include "budgielib/typeutils.h"
+#include "budgielib/ioutils.h"
 #include <GL/gl.h>
 #include <GL/glext.h>
 #include <string.h>
@@ -1819,11 +1820,6 @@ static void dump_wrapper(FILE *f, void *data)
     budgie_dump_any_type_extended(w->type, w->data, -1, length, NULL, f);
 }
 
-static void dump_string_wrapper(FILE *f, void *data)
-{
-    budgie_dump_string((const char *) data, f);
-}
-
 char *bugle_state_get_string(const glstate *state)
 {
     bugle_state_raw wrapper;
@@ -1835,7 +1831,7 @@ char *bugle_state_get_string(const glstate *state)
         return "<GL error>";
 
     if (wrapper.type == TYPE_Pc)
-        ans = bugle_strdup((char *) wrapper.data); // budgie_string_io(dump_string_wrapper, (char *) wrapper.data);
+        ans = bugle_strdup((const char *) wrapper.data); // budgie_string_io(dump_string_wrapper, (char *) wrapper.data);
     else
         ans = budgie_string_io(dump_wrapper, &wrapper);
     free(wrapper.data);

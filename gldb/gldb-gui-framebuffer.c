@@ -171,7 +171,7 @@ static void gldb_framebuffer_pane_update_ids(GldbFramebufferPane *pane)
 
     binding = gldb_state_find_child_enum(root, GL_FRAMEBUFFER_BINDING_EXT);
     if (binding)
-        active = atoi(binding->value);
+        active = gldb_state_GLint(binding);
     if ((framebuffer = gldb_state_find_child_enum(root, GL_FRAMEBUFFER_EXT)) != NULL)
     {
         bugle_list_node *pfbo;
@@ -250,7 +250,7 @@ static void gldb_framebuffer_pane_id_changed(GtkWidget *widget, gpointer user_da
             for (i = 0; gldb_channel_table[i].channel; i++)
                 if (gldb_channel_table[i].framebuffer_size_token
                     && (parameter = gldb_state_find_child_enum(fbo, gldb_channel_table[i].framebuffer_size_token)) != NULL
-                    && strcmp(parameter->value, "0") != 0)
+                    && gldb_state_GLint(parameter) != 0)
                 {
                     channels |= gldb_channel_table[i].channel;
                 }
@@ -258,7 +258,7 @@ static void gldb_framebuffer_pane_id_changed(GtkWidget *widget, gpointer user_da
 
             parameter = gldb_state_find_child_enum(fbo, GL_MAX_COLOR_ATTACHMENTS_EXT);
             g_assert(parameter != NULL);
-            attachments = atoi(parameter->value);
+            attachments = gldb_state_GLint(parameter);
             for (i = 0; i < attachments; i++)
             {
                 if (gldb_state_find_child_enum(fbo, GL_COLOR_ATTACHMENT0_EXT + i))
@@ -301,17 +301,17 @@ static void gldb_framebuffer_pane_id_changed(GtkWidget *widget, gpointer user_da
             for (i = 0; gldb_channel_table[i].channel; i++)
                 if (gldb_channel_table[i].framebuffer_size_token
                     && (parameter = gldb_state_find_child_enum(fbo, gldb_channel_table[i].framebuffer_size_token)) != NULL
-                    && strcmp(parameter->value, "0") != 0)
+                    && gldb_state_GLint(parameter) != 0)
                 {
                     channels |= gldb_channel_table[i].channel;
                 }
             color_channels = gldb_channel_get_query_channels(channels & ~GLDB_CHANNEL_DEPTH_STENCIL);
 
             if ((parameter = gldb_state_find_child_enum(fbo, GL_DOUBLEBUFFER)) != NULL
-                && strcmp(parameter->value, "GL_TRUE") == 0)
+                && gldb_state_GLboolean(parameter))
                 doublebuffer = TRUE;
             if ((parameter = gldb_state_find_child_enum(fbo, GL_STEREO)) != NULL
-                && strcmp(parameter->value, "GL_TRUE") == 0)
+                && gldb_state_GLboolean(parameter))
                 stereo = TRUE;
 
             gtk_list_store_append(GTK_LIST_STORE(model), &iter);
@@ -349,7 +349,7 @@ static void gldb_framebuffer_pane_id_changed(GtkWidget *widget, gpointer user_da
             }
             if ((parameter = gldb_state_find_child_enum(fbo, GL_AUX_BUFFERS)) != NULL)
             {
-                attachments = atoi(parameter->value);
+                attachments = gldb_state_GLint(parameter);
                 for (i = 0; i < attachments; i++)
                 {
                     bugle_asprintf(&name, _("GL_AUX%d"), i);

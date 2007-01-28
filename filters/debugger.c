@@ -26,10 +26,12 @@
 #include "src/glstate.h"
 #include "src/glexts.h"
 #include "src/glsl.h"
+#include "src/gltypes.h"
 #include "common/hashtable.h"
 #include "common/protocol.h"
 #include "common/bool.h"
 #include "common/safemem.h"
+#include "budgielib/ioutils.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -79,10 +81,43 @@ static void send_state(const glstate *state, uint32_t id)
     gldb_protocol_send_code(out_pipe, id);
 }
 
-static bool debugger_screenshot(int pipe)
+static void send_state_raw(const glstate *state, uint32_t id)
 {
-    fputs("The screenshot interface has been removed. Please upgrade gldb.\n", stderr);
-    return false;
+    bugle_linked_list children;
+    bugle_list_node *cur;
+    bugle_state_raw wrapper = {NULL};
+
+    bugle_state_get_raw(state, &wrapper);
+    gldb_protocol_send_code(out_pipe, RESP_STATE_NODE_BEGIN_RAW);
+    gldb_protocol_send_code(out_pipe, id);
+    if (state->name) gldb_protocol_send_string(out_pipe, state->name);
+    else gldb_protocol_send_string(out_pipe, "");
+    gldb_protocol_send_code(out_pipe, state->numeric_name);
+    gldb_protocol_send_code(out_pipe, state->enum_name);
+    if (wrapper.data || !state->info)  /* root is valid but has no data */
+    {
+        gldb_protocol_send_code(out_pipe, wrapper.type);
+        gldb_protocol_send_code(out_pipe, wrapper.length);
+        gldb_protocol_send_binary_string(out_pipe, budgie_type_table[wrapper.type].size * abs(wrapper.length), (const char *) wrapper.data);
+    }
+    else
+    {
+        gldb_protocol_send_code(out_pipe, 0);
+        gldb_protocol_send_code(out_pipe, -2); /* Magic invalid value */
+        gldb_protocol_send_binary_string(out_pipe, 0, (const char *) wrapper.data);
+    }
+    free(wrapper.data);
+
+    bugle_state_get_children(state, &children);
+    for (cur = bugle_list_head(&children); cur; cur = bugle_list_next(cur))
+    {
+        send_state_raw((const glstate *) bugle_list_data(cur), id);
+        bugle_state_clear((glstate *) bugle_list_data(cur));
+    }
+    bugle_list_clear(&children);
+
+    gldb_protocol_send_code(out_pipe, RESP_STATE_NODE_END_RAW);
+    gldb_protocol_send_code(out_pipe, id);
 }
 
 static budgie_function find_function(const char *name)
@@ -747,14 +782,25 @@ static void process_single_command(function_call *call)
             gldb_protocol_send_string(out_pipe, "In glBegin/glEnd; no state available");
         }
         break;
-    case REQ_SCREENSHOT:
-        if (!debugger_screenshot(out_pipe))
+    case REQ_STATE_TREE_RAW:
+        if (bugle_begin_internal_render())
+        {
+            send_state_raw(bugle_state_get_root(), id);
+            bugle_end_internal_render("send_state_raw", true);
+        }
+        else
         {
             gldb_protocol_send_code(out_pipe, RESP_ERROR);
             gldb_protocol_send_code(out_pipe, id);
             gldb_protocol_send_code(out_pipe, 0);
-            gldb_protocol_send_string(out_pipe, "Not able to call GL at this time");
+            gldb_protocol_send_string(out_pipe, "In glBegin/glEnd; no state available");
         }
+        break;
+    case REQ_SCREENSHOT:
+        gldb_protocol_send_code(out_pipe, RESP_ERROR);
+        gldb_protocol_send_code(out_pipe, id);
+        gldb_protocol_send_code(out_pipe, 0);
+        gldb_protocol_send_string(out_pipe, "Screenshot interface has been removed. Please upgrade gldb.");
         break;
     case REQ_QUIT:
         exit(1);

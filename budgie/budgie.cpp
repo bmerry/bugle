@@ -118,7 +118,7 @@ static list<Function> functions;
 static list<Type> types;
 
 /* Configuration and command line stuff */
-static string tufile, utilbase, namebase, libbase;
+static string tufile, typesbase, utilbase, namebase, libbase;
 static string limit = "";
 static list<string> headers, libraries;
 static list<Override> overrides;
@@ -131,7 +131,8 @@ extern FILE *bc_yyin;
 extern int yyparse();
 
 /* File handles */
-static FILE *name_h, *name_c, *util_h, *util_c, *lib_h, *lib_c;
+static FILE *name_h, *util_h, *types_h, *lib_h;
+static FILE *name_c, *util_c, *types_c, *lib_c;
 
 /* Utility data */
 static map<string, list<Function>::iterator> function_map;
@@ -207,12 +208,15 @@ static void process_args(int argc, char * const argv[])
 {
     int opt;
 
-    while ((opt = getopt(argc, argv, "n:t:o:l:")) != -1)
+    while ((opt = getopt(argc, argv, "n:t:T:o:l:")) != -1)
     {
         switch (opt)
         {
         case 't':
             tufile = optarg;
+            break;
+        case 'T':
+            typesbase = optarg;
             break;
         case 'o':
             utilbase = optarg;
@@ -657,6 +661,10 @@ static void write_headers()
     if (!util_c) pdie("Failed to open " + utilbase + ".c");
     util_h = fopen((utilbase + ".h").c_str(), "w");
     if (!util_h) pdie("Failed to open " + utilbase + ".h");
+    types_c = fopen((typesbase + ".c").c_str(), "w");
+    if (!types_c) pdie("Failed to open " + typesbase + ".c");
+    types_h = fopen((typesbase + ".h").c_str(), "w");
+    if (!types_h) pdie("Failed to open " + typesbase + ".h");
     name_c = fopen((namebase + ".c").c_str(), "w");
     if (!name_c) pdie("Failed to open " + namebase + ".c");
     name_h = fopen((namebase + ".h").c_str(), "w");
@@ -664,16 +672,32 @@ static void write_headers()
 
     fprintf(util_c,
             "#include \"%s.h\"\n"
+            "#include \"%s.h\"\n"
             "#include \"budgieutils.h\"\n"
             "#include <assert.h>\n"
             "#include <dlfcn.h>\n"
             "#include <stddef.h>\n"   // for offsetof
-            "#include <inttypes.h>\n" // for PRIu8 etc
             "\n",
-            utilbase.c_str());
+            utilbase.c_str(),
+            typesbase.c_str());
     fprintf(util_h,
             "#ifndef UTILS_H\n"
             "#define UTILS_H\n"
+            "\n"
+            "#include <stdio.h>\n"
+            "#include \"common/bool.h\"\n"
+            "#include <stdlib.h>\n"
+            "#include <string.h>\n"
+            "\n");
+    fprintf(types_c,
+            "#include \"%s.h\"\n"
+            "#include <stddef.h>\n"
+            "#include <inttypes.h>\n"
+            "\n",
+            typesbase.c_str());
+    fprintf(types_h,
+            "#ifndef TYPES_H\n"
+            "#define TYPES_H\n"
             "\n"
             "#include <stdio.h>\n"
             "#include \"common/bool.h\"\n"
@@ -707,6 +731,7 @@ static void write_trailers()
 {
     fprintf(name_h, "#endif /* !NAMES_H */\n");
     fprintf(util_h, "#endif /* !UTILS_H */\n");
+    fprintf(types_h, "#endif /* !TYPES_H */\n");
     fprintf(lib_h, "#endif /* !LIB_H */\n");
 
     fclose(name_c);
@@ -715,6 +740,8 @@ static void write_trailers()
     fclose(lib_h);
     fclose(util_c);
     fclose(util_h);
+    fclose(types_c);
+    fclose(types_h);
 }
 
 static void write_enums()
@@ -741,16 +768,16 @@ static void write_enums()
     {
         string name = i->type_name();
         string define = i->define();
-        fprintf(util_h,
+        fprintf(types_h,
                 "/* %s */\n"
                 "#define %s %d\n",
                 name.c_str(), define.c_str(), i->index);
     }
-    fprintf(util_h,
+    fprintf(types_h,
             "#define NUMBER_OF_TYPES %d\n"
             "extern int number_of_types;\n"
             "\n", (int) types.size());
-    fprintf(util_c,
+    fprintf(types_c,
             "int number_of_types = NUMBER_OF_TYPES;\n"
             "\n");
 }
@@ -774,16 +801,20 @@ static void write_function_to_group_table()
 static void write_includes()
 {
     for (list<string>::iterator i = headers.begin(); i != headers.end(); i++)
+    {
         fprintf(util_h, "#include \"%s\"\n", i->c_str());
+        fprintf(types_h, "#include \"%s\"\n", i->c_str());
+    }
     fprintf(util_h, "\n");
+    fprintf(types_h, "\n");
 }
 
 static void write_typedefs()
 {
     for (list<Bitfield>::iterator i = bitfields.begin(); i != bitfields.end(); i++)
-        fprintf(util_h, "typedef %s %s;\n",
+        fprintf(types_h, "typedef %s %s;\n",
                 i->old_type.c_str(), i->new_type.c_str());
-    fprintf(util_h, "\n");
+    fprintf(types_h, "\n");
 }
 
 static void write_function_table()
@@ -881,7 +912,7 @@ static void write_type_table()
         {
             string name = i->name();
             string type = i->type_name();
-            fprintf(util_c,
+            fprintf(types_c,
                     "static const type_record_data fields_%s[] =\n"
                     "{\n",
                     name.c_str());
@@ -893,21 +924,21 @@ static void write_type_table()
                 {
                     string field_type = get_type_map(TREE_TYPE(cur))->define();
                     string field = IDENTIFIER_POINTER(DECL_NAME(cur));
-                    fprintf(util_c,
+                    fprintf(types_c,
                             "    { %s, offsetof(%s, %s) },\n",
                             field_type.c_str(), type.c_str(), field.c_str());
                 }
                 cur = TREE_CHAIN(cur);
             }
-            fprintf(util_c,
+            fprintf(types_c,
                     "    { NULL_TYPE, -1 }\n"
                     "};\n\n");
         }
     }
 
     // main type table
-    fprintf(util_h, "extern const type_data budgie_type_table[NUMBER_OF_TYPES];\n");
-    fprintf(util_c,
+    fprintf(types_h, "extern const type_data budgie_type_table[NUMBER_OF_TYPES];\n");
+    fprintf(types_c,
             "const type_data budgie_type_table[NUMBER_OF_TYPES] =\n"
             "{\n");
     for (list<Type>::iterator i = types.begin(); i != types.end(); i++)
@@ -958,8 +989,8 @@ static void write_type_table()
         if (i->overrides.count(OVERRIDE_LENGTH))
             get_length = "budgie_get_length_" + define;
 
-        if (i != types.begin()) fprintf(util_c, ",\n");
-        fprintf(util_c,
+        if (i != types.begin()) fprintf(types_c, ",\n");
+        fprintf(types_c,
                 "    { %s, %s, %s, %s, sizeof(%s), %d,\n"
                 "      (type_dumper) budgie_dump_%s,\n"
                 "      (type_get_type) %s,\n"
@@ -968,7 +999,7 @@ static void write_type_table()
                 type.c_str(), (int) length, define.c_str(),
                 get_type.c_str(), get_length.c_str());
     }
-    fprintf(util_c, "\n};\n\n");
+    fprintf(types_c, "\n};\n\n");
 }
 
 static void write_library_table()
@@ -1004,10 +1035,10 @@ static void write_type_dumpers()
         string custom_code;
         destroy_temporary(ptr);
 
-        fprintf(util_h,
+        fprintf(types_h,
                 "void budgie_dump_%s(%s, int count, FILE *out);\n",
                 define.c_str(), arg.c_str());
-        fprintf(util_c,
+        fprintf(types_c,
                 "void budgie_dump_%s(%s, int count, FILE *out)\n"
                 "{\n",
                 define.c_str(), arg.c_str());
@@ -1020,17 +1051,17 @@ static void write_type_dumpers()
         if (bitfield_map.count(i->node))
         {
             list<Bitfield>::iterator b = bitfield_map[i->node];
-            fprintf(util_c,
+            fprintf(types_c,
                     "    static const bitfield_pair tokens[] =\n"
                     "    {\n");
             for (list<string>::iterator j = b->bits.begin(); j != b->bits.end(); j++)
             {
-                if (j != b->bits.begin()) fprintf(util_c, ",\n");
-                fprintf(util_c,
+                if (j != b->bits.begin()) fprintf(types_c, ",\n");
+                fprintf(types_c,
                         "        { %s, \"%s\" }",
                         j->c_str(), j->c_str());
             }
-            fprintf(util_c,
+            fprintf(types_c,
                     "\n"
                     "    };\n"
                     "%s"
@@ -1050,7 +1081,7 @@ static void write_type_dumpers()
         switch (TREE_CODE(i->node))
         {
         case ENUMERAL_TYPE:
-            fprintf(util_c,
+            fprintf(types_c,
                     "%s"
                     "    switch (*value)\n"
                     "    {",
@@ -1062,19 +1093,19 @@ static void write_type_dumpers()
                 value = TREE_INT_CST_LOW(TREE_VALUE(tmp));
                 if (!seen_enums.count(value))
                 {
-                    fprintf(util_c,
+                    fprintf(types_c,
                             "    case %s: fputs(\"%s\", out); break;\n",
                             name.c_str(), name.c_str());
                     seen_enums.insert(value);
                 }
                 tmp = TREE_CHAIN(tmp);
             }
-            fprintf(util_c,
+            fprintf(types_c,
                     "    default: fprintf(out, \"%%ld\", (long) *value);\n"
                     "    }\n");
             break;
         case INTEGER_TYPE:
-            fprintf(util_c,
+            fprintf(types_c,
                     "%s"
                     "    fprintf(out, \"%%\" PRI%c%ld, (%sint%ld_t) *value);\n",
                     custom_code.c_str(),
@@ -1086,19 +1117,19 @@ static void write_type_dumpers()
         case REAL_TYPE:
             // FIXME: long double
 #if HAVE_LONG_DOUBLE
-            fprintf(util_c,
+            fprintf(types_c,
                     "%s"
                     "    fprintf(out, \"%%Lg\", (long double) *value);\n",
                     custom_code.c_str());
 #else
-            fprintf(util_c,
+            fprintf(types_c,
                     "%s"
                     "    fprintf(out, \"%%g\", (double) *value);\n",
                     custom_code.c_str());
 #endif
             break;
         case ARRAY_TYPE:
-            fprintf(util_c,
+            fprintf(types_c,
                     "    long size;\n"
                     "    long i;\n"
                     "%s",
@@ -1106,26 +1137,26 @@ static void write_type_dumpers()
             if (TYPE_DOMAIN(i->node) != NULL_TREE) // find size
             {
                 long size = TREE_INT_CST_LOW(TYPE_MAX_VALUE(TYPE_DOMAIN(i->node))) + 1;
-                fprintf(util_c, "    size = %ld;\n", size);
+                fprintf(types_c, "    size = %ld;\n", size);
             }
             else
-                fprintf(util_c, "    size = count;\n");
+                fprintf(types_c, "    size = count;\n");
             child = TREE_TYPE(i->node); // array element type
-            fprintf(util_c,
+            fprintf(types_c,
                     "    fputs(\"{ \", out);\n"
                     "    for (i = 0; i < size; i++)\n"
                     "    {\n");
             if (type_map.count(child))
             {
                 define = get_type_map(child)->define();
-                fprintf(util_c,
+                fprintf(types_c,
                         "        budgie_dump_any_type(%s, &(*value)[i], -1, out);\n",
                         define.c_str());
             }
             else
-                fprintf(util_c,
+                fprintf(types_c,
                         "        fputs(\"<unknown>\", out);\n");
-            fprintf(util_c,
+            fprintf(types_c,
                     "        if (i < size - 1) fputs(\", \", out);\n"
                     "    }\n"
                     "    if (size < 0) fputs(\"<unknown size array>\", out);\n"
@@ -1134,15 +1165,15 @@ static void write_type_dumpers()
         case POINTER_TYPE:
             child = TREE_TYPE(i->node); // pointed to type
             if (type_map.count(child))
-                fprintf(util_c, "    int i;\n");
-            fprintf(util_c,
+                fprintf(types_c, "    int i;\n");
+            fprintf(types_c,
                     "%s"
                     "    fprintf(out, \"%%p\", (void *) *value);\n",
                     custom_code.c_str());
             if (type_map.count(child))
             {
                 string define = get_type_map(child)->define();
-                fprintf(util_c,
+                fprintf(types_c,
                         "    if (*value)\n"
                         "    {\n"
                         "        fputs(\" -> \", out);\n"
@@ -1167,7 +1198,7 @@ static void write_type_dumpers()
         case RECORD_TYPE:
         case UNION_TYPE:
             { // block to allow "first" to be declared in this scope
-                fprintf(util_c,
+                fprintf(types_c,
                         "%s"
                         "    fputs(\"{ \", out);\n",
                         custom_code.c_str());
@@ -1179,28 +1210,28 @@ static void write_type_dumpers()
                     {
                         name = IDENTIFIER_POINTER(DECL_NAME(tmp));
                         if (!first)
-                            fprintf(util_c,
+                            fprintf(types_c,
                                     "    fputs(\", \", out);\n");
                         else first = false;
                         child = TREE_TYPE(tmp);
                         define = get_type_map(child)->define();
-                        fprintf(util_c,
+                        fprintf(types_c,
                                 "    budgie_dump_any_type(%s, &value->%s, -1, out);\n",
                                 define.c_str(), name.c_str());
                     }
                     tmp = TREE_CHAIN(tmp);
                 }
-                fprintf(util_c,
+                fprintf(types_c,
                         "    fputs(\" }\", out);\n");
             }
             break;
         default:
-            fprintf(util_c,
+            fprintf(types_c,
                     "%s"
                     "    fputs(\"<unknown>\", out);\n",
                     custom_code.c_str());
         }
-        fprintf(util_c, "\n}\n\n");
+        fprintf(types_c, "\n}\n\n");
     }
 }
 
@@ -1215,10 +1246,10 @@ static void write_type_get_types()
         string subst = search_replace(i->overrides[OVERRIDE_TYPE],
                                       "$$", "(*(" + type + ") value)");
 
-        fprintf(util_h,
+        fprintf(types_h,
                 "budgie_type budgie_get_type_%s(const void *value);\n",
                 define.c_str());
-        fprintf(util_c,
+        fprintf(types_c,
                 "budgie_type budgie_get_type_%s(const void *value)"
                 "{\n"
                 "    return (%s);\n"
@@ -1239,10 +1270,10 @@ static void write_type_get_lengths()
         string subst = search_replace(i->overrides[OVERRIDE_LENGTH],
                                       "$$", "(*(" + type + ") value)");
 
-        fprintf(util_h,
+        fprintf(types_h,
                 "int budgie_get_length_%s(const void *value);\n",
                 define.c_str());
-        fprintf(util_c,
+        fprintf(types_c,
                 "int budgie_get_length_%s(const void *value)"
                 "{\n"
                 "    return (%s);\n"
@@ -1311,9 +1342,9 @@ static void write_converter()
 {
     tree_node_p tmp;
 
-    fprintf(util_h,
+    fprintf(types_h,
             "void budgie_type_convert(void *out, budgie_type out_type, const void *in, budgie_type in_type, size_t count);\n");
-    fprintf(util_c,
+    fprintf(types_c,
             "void budgie_type_convert(void *out, budgie_type out_type, const void *in, budgie_type in_type, size_t count)\n"
             "{\n"
             "    long double value;\n"
@@ -1341,16 +1372,16 @@ static void write_converter()
         case INTEGER_TYPE:
             tmp = make_pointer(make_const(i->node));
             cast = type_to_string(tmp, "", false);
-            fprintf(util_c,
-                    "        case %s: value = (long double) ((%s) in)[i]; break;",
+            fprintf(types_c,
+                    "        case %s: value = (long double) ((%s) in)[i]; break;\n",
                     define.c_str(), cast.c_str());
             destroy_temporary(tmp);
             break;
-        default:;
+        default: ;
         }
     }
 
-    fprintf(util_c,
+    fprintf(types_c,
             "        default: abort();\n"
             "        }\n"
             "        switch (out_type)\n"
@@ -1369,15 +1400,16 @@ static void write_converter()
         case INTEGER_TYPE:
             tmp = make_pointer(i->node);
             cast = type_to_string(tmp, "", false);
-            fprintf(util_c,
+            fprintf(types_c,
                     "        case %s: ((%s) out)[i] = (%s) value; break;\n",
                     define.c_str(), cast.c_str(), type.c_str());
             destroy_temporary(tmp);
+            break;
         default: ;
         }
     }
 
-    fprintf(util_c,
+    fprintf(types_c,
             "        default: abort();\n"
             "        }\n"
             "    }\n"

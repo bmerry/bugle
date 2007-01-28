@@ -46,11 +46,9 @@ REQ_ASYNC:   Requests the program to stop at the next available point.
              conditions, this request is ignored if the program is already
              stopped. It does not generate an explicit response, but will
              cause a RESP_STOP response.
-REQ_SCREENSHOT: Requests a screenshot from the program. Reply is
-             RESP_SCREENSHOT on success, or RESP_ERROR if the screenshot
-             could not be taken for some reason.
 REQ_QUIT:    Requests that the program exit.
 REQ_STATE_TREE: Requests the state tree. No parameters.
+REQ_STATE_TREE_RAW: Requests the state tree with binary (not string) data.
 REQ_DATA:    Requests a readback of some large chunk of state, such as
              a texture, framebuffer, buffer object etc. The first parameter
              is a type code, which determines the remaining parameters:
@@ -88,9 +86,6 @@ RESP_RUNNING:
              Sent at initialisation, in response to REQ_RUN. No extra
              data. This response aids in separating the responses to
              the initialisation commands from everything else.
-RESP_SCREENSHOT:
-             Sent when a screenshot is requested. Contains a string in
-             PPM (P6) format that can be dumped directly to file.
 RESP_STATE_NODE_BEGIN
 RESP_STATE_NODE_END:
              New-style state response. BEGIN is followed by 
@@ -101,10 +96,19 @@ RESP_STATE_NODE_END:
                a pname parameter to a get function.
              - (str) the value (empty if there is no value)
              - the children, recursively (separate responses)
-             - RESP_STATE_NODE_END response
+             - RESP_STATE_NODE_END response (no parameters)
 
              The entire tree will be sent as a contiguous block, without
              interruption from asynchronous responses.
+RESP_STATE_NODE_BEGIN_RAW
+RESP_STATE_NODE_END_RAW:
+             Similar to RESP_STATE_NODE_BEGIN, but in response to
+             REQ_STATE_TREE_RAW. The string field is replaced by:
+             - (uint32) type code
+             - (int32) number of elements, or -1 for non-array
+             - (str) the raw data
+             If the data could not be obtained, the number of elements is
+             given as -2.
 RESP_DATA:   The response depends on the subtype of the request. In
              every case though, the data itself is returned as a binary
              string. GL_PACK_ALIGNMENT is 1, other state is default,
@@ -128,8 +132,7 @@ REQ_STEP:  none
 REQ_BREAK: RESP_ANS, RESP_ERROR
 REQ_BREAK_ERROR: RESP_ANS
 REQ_ASYNC: none
-REQ_STATE: RESP_STATE, RESP_ERROR
-REQ_SCREENSHOT: RESP_SCREENSHOT, RESP_ERROR.
-REQ_STATE: RESP_STATE_BEGIN, RESP_STATE_END.
+REQ_STATE_TREE: RESP_STATE_BEGIN, RESP_STATE_END (multiple)
+REQ_STATE_TREE_RAW: RESP_STATE_BEGIN_RAW, RESP_STATE_END_RAW (multiple)
 REQ_QUIT:  none
 REQ_DATA:  RESP_DATA, RESP_ERROR

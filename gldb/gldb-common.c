@@ -1,5 +1,5 @@
 /*  BuGLe: an OpenGL debugging tool
- *  Copyright (C) 2004-2006  Bruce Merry
+ *  Copyright (C) 2004-2007  Bruce Merry
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -29,6 +29,8 @@
 #include <errno.h>
 #include <sys/types.h>
 #include <sys/wait.h>
+#include "budgielib/ioutils.h"
+#include "src/types.h"
 #include "common/bool.h"
 #include "common/protocol.h"
 #include "common/safemem.h"
@@ -106,8 +108,8 @@ static void state_destroy(gldb_state *s)
     for (i = bugle_list_head(&s->children); i; i = bugle_list_next(i))
         state_destroy((gldb_state *) bugle_list_data(i));
     bugle_list_clear(&s->children);
-    if (s->name) free(s->name);
-    if (s->value) free(s->value);
+    free(s->name);
+    free(s->data);
     free(s);
 }
 
@@ -144,16 +146,16 @@ gldb_state *gldb_state_update(uint32_t id)
         {
             if (r) gldb_free_response(r);
             r = gldb_get_response();
-        } while (r && r->code != RESP_STATE_NODE_BEGIN && r->code != RESP_ERROR);
+        } while (r && r->code != RESP_STATE_NODE_BEGIN_RAW && r->code != RESP_ERROR);
         if (!r)
             state_root = NULL;
-        else if (r->code == RESP_STATE_NODE_BEGIN)
+        else if (r->code == RESP_STATE_NODE_BEGIN_RAW)
         {
             state_root = ((gldb_response_state_tree *) r)->root;
             free(r);
         }
         state_dirty = false;
-        /* FIXME: report the error to the GUI */
+        /* FIXME: report any error to the GUI */
     }
     return state_root;
 }
@@ -255,7 +257,10 @@ static gldb_state *state_get(void)
 {
     gldb_state *s, *child;
     uint32_t resp, id;
-    uint32_t numeric_name, enum_name;
+    uint32_t numeric_name, enum_name, type;
+    int32_t length;
+    char *data;
+    uint32_t data_len;
 
     s = bugle_malloc(sizeof(gldb_state));
     /* The list actually does own the memory, but we do the free as
@@ -265,9 +270,14 @@ static gldb_state *state_get(void)
     gldb_protocol_recv_string(lib_in, &s->name);
     gldb_protocol_recv_code(lib_in, &numeric_name);
     gldb_protocol_recv_code(lib_in, &enum_name);
+    gldb_protocol_recv_code(lib_in, &type);
+    gldb_protocol_recv_code(lib_in, (uint32_t *) &length);
+    gldb_protocol_recv_binary_string(lib_in, &data_len, &data);
     s->numeric_name = numeric_name;
     s->enum_name = enum_name;
-    gldb_protocol_recv_string(lib_in, &s->value);
+    s->type = type;
+    s->length = length;
+    s->data = data;
 
     do
     {
@@ -275,18 +285,18 @@ static gldb_state *state_get(void)
         gldb_protocol_recv_code(lib_in, &id);
         switch (resp)
         {
-        case RESP_STATE_NODE_BEGIN:
+        case RESP_STATE_NODE_BEGIN_RAW:
             child = state_get();
             bugle_list_append(&s->children, child);
             break;
-        case RESP_STATE_NODE_END:
+        case RESP_STATE_NODE_END_RAW:
             break;
         default:
-            fprintf(stderr, "Unexpected code %lu in state tree\n",
+            fprintf(stderr, "Unexpected code %08lx in state tree\n",
                    (unsigned long) resp);
             exit(1);
         }
-    } while (resp != RESP_STATE_NODE_END);
+    } while (resp != RESP_STATE_NODE_END_RAW);
 
     return s;
 }
@@ -392,7 +402,7 @@ gldb_response *gldb_get_response(void)
     case RESP_ERROR: return gldb_get_response_error(code, id);
     case RESP_RUNNING: return gldb_get_response_running(code, id);
     case RESP_SCREENSHOT: return gldb_get_response_screenshot(code, id);
-    case RESP_STATE_NODE_BEGIN: return gldb_get_response_state_tree(code, id);
+    case RESP_STATE_NODE_BEGIN_RAW: return gldb_get_response_state_tree(code, id);
     case RESP_DATA: return gldb_get_response_data(code, id);
     default:
         fprintf(stderr, "Unexpected response %#08x\n", code);
@@ -499,6 +509,62 @@ gldb_state *gldb_state_find_child_enum(gldb_state *parent, GLenum name)
     return NULL;
 }
 
+static void dump_wrapper(FILE *f, void *data)
+{
+    const gldb_state *w;
+
+    w = (const gldb_state *) data;
+    budgie_dump_any_type_extended(w->type, w->data, -1, w->length, NULL, f);
+}
+
+char *gldb_state_string(const gldb_state *state)
+{
+    if (state->length == 0)
+        return bugle_strdup("");
+    if (state->length == -2)
+        return bugle_strdup("<GL error>");
+    if (state->type == TYPE_Pc)
+        return bugle_strdup((const char *) state->data);
+    else
+        return budgie_string_io(dump_wrapper, (void *) state);
+}
+
+GLint gldb_state_GLint(const gldb_state *state)
+{
+    if (state->type == TYPE_5GLint || state->type == TYPE_6GLuint)
+        return *(GLint *) state->data;
+    else
+    {
+        GLint out;
+        budgie_type_convert(&out, TYPE_5GLint, state->data, state->type, 1);
+        return out;
+    }
+}
+
+GLenum gldb_state_GLenum(const gldb_state *state)
+{
+    if (state->type == TYPE_6GLenum)
+        return *(GLenum *) state->data;
+    else
+    {
+        GLenum out;
+        budgie_type_convert(&out, TYPE_6GLenum, state->data, state->type, 1);
+        return out;
+    }
+}
+
+GLboolean gldb_state_GLboolean(const gldb_state *state)
+{
+    if (state->type == TYPE_9GLboolean)
+        return *(GLboolean *) state->data;
+    else
+    {
+        GLboolean out;
+        budgie_type_convert(&out, TYPE_9GLboolean, state->data, state->type, 1);
+        return out;
+    }
+}
+
 /* Checks that the result of a system call is not -1, otherwise throws
  * an error.
  */
@@ -580,7 +646,7 @@ void gldb_send_async(uint32_t id)
 void gldb_send_state_tree(uint32_t id)
 {
     assert(status != GLDB_STATUS_DEAD);
-    gldb_protocol_send_code(lib_out, REQ_STATE_TREE);
+    gldb_protocol_send_code(lib_out, REQ_STATE_TREE_RAW);
     gldb_protocol_send_code(lib_out, id);
 }
 

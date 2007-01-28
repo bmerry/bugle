@@ -27,9 +27,10 @@
 #endif
 #define _XOPEN_SOURCE 500
 #include "src/filters.h"
-#include "src/utils.h"
+#include "src/types.h"
 #include "src/glutils.h"
 #include "src/glfuncs.h"
+#include "src/gltypes.h"
 #include "src/glexts.h"
 #include "src/tracker.h"
 #include "src/xevent.h"

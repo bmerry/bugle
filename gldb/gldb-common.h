@@ -1,5 +1,5 @@
 /*  BuGLe: an OpenGL debugging tool
- *  Copyright (C) 2004-2006  Bruce Merry
+ *  Copyright (C) 2004-2007  Bruce Merry
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -66,7 +66,9 @@ typedef struct
     char *name;
     GLint numeric_name;
     GLenum enum_name;
-    char *value;
+    int type;   /* types.h and GLee.h are incompatible, hence not budgie_type */
+    int length;
+    void *data;
     bugle_linked_list children;
 } gldb_state;
 
@@ -190,6 +192,11 @@ gldb_state *gldb_state_find(gldb_state *root, const char *name, size_t n);
 /* Finds the immediate child with the given numeric/enum name, or NULL */
 gldb_state *gldb_state_find_child_numeric(gldb_state *parent, GLint name);
 gldb_state *gldb_state_find_child_enum(gldb_state *parent, GLenum name);
+/* Converts a state to a string representation, which the caller must free */
+char *gldb_state_string(const gldb_state *state);
+GLint gldb_state_GLint(const gldb_state *state);
+GLenum gldb_state_GLenum(const gldb_state *state);
+GLboolean gldb_state_GLboolean(const gldb_state *state);
 
 /* Updates the internal state tree if necessary, and returns the tree */
 gldb_state *gldb_state_update();

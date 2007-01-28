@@ -1,5 +1,5 @@
 /*  BuGLe: an OpenGL debugging tool
- *  Copyright (C) 2004-2006  Bruce Merry
+ *  Copyright (C) 2004-2007  Bruce Merry
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -25,11 +25,6 @@
 #include <GL/glx.h>
 #include "budgieutils.h"
 #include "common/bool.h"
-#include "src/gltokens.h"
-
-GLenum bugle_gl_token_to_enum(const char *name);
-const gl_token *bugle_gl_enum_to_token_struct(GLenum e);
-const char *bugle_gl_enum_to_token(GLenum e);
 
 /* Takes a type specified by a GL token e.g. GL_FLOAT and returns the budgie_type.
  * The _ptr variant returns the budgie_type returns the variant for a pointer to
@@ -51,14 +46,6 @@ int bugle_count_gl(budgie_function func, GLenum token);
 int bugle_count_program_string(GLenum target, GLenum pname);
 #endif
 
-bool bugle_dump_GLenum(GLenum e, FILE *out);
-bool bugle_dump_GLblendenum(GLenum e, FILE *out);
-bool bugle_dump_GLprimitiveenum(GLenum e, FILE *out);
-bool bugle_dump_GLcomponentsenum(GLenum e, FILE *out);
-bool bugle_dump_GLerror(GLenum e, FILE *out);
-bool bugle_dump_GLboolean(GLboolean b, FILE *out);
-bool bugle_dump_GLXDrawable(GLXDrawable d, FILE *out);
-bool bugle_dump_GLpolygonstipple(const GLubyte (*pattern)[4], FILE *out);
 bool bugle_dump_convert(GLenum pname, const void *value,
                         budgie_type in_type, FILE *out);
 

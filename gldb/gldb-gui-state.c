@@ -28,6 +28,7 @@
 #include <glib.h>
 #include <glib/gi18n-lib.h>
 #include <string.h>
+#include <stdlib.h>
 #include "common/linkedlist.h"
 #include "common/hashtable.h"
 #include "common/safemem.h"
@@ -71,7 +72,7 @@ static void dump_state_xml_r(const gldb_state *root, GString *f, gboolean top)
 {
     gchar *header;
     gchar *name_utf8, *value_utf8;
-    gchar *value;
+    char *value;
     bugle_list_node *i;
     const gldb_state *child;
 
@@ -79,12 +80,13 @@ static void dump_state_xml_r(const gldb_state *root, GString *f, gboolean top)
         g_string_append(f, "<state-tree>");
     else
     {
-        value = root->value ? root->value : "";
+        value = gldb_state_string(root);
         value_utf8 = g_convert(value, -1, "UTF8", "ASCII", NULL, NULL, NULL);
         name_utf8 = g_convert(root->name, -1, "UTF8", "ASCII", NULL, NULL, NULL);
         header = g_markup_printf_escaped("<state name=\"%s\">%s",
                                          name_utf8, value_utf8);
         g_string_append(f, header);
+        free(value);
         g_free(name_utf8);
         g_free(value_utf8);
         g_free(header);
@@ -207,11 +209,11 @@ static void update_state_r(const gldb_state *root, GtkTreeStore *store,
         g_free(name);
         if (child)
         {
-            gchar *value;
+            char *value;
             gchar *value_utf8, *old_utf8;
             gboolean changed;
 
-            value = child->value ? child->value : "";
+            value = gldb_state_string(child);
             value_utf8 = g_convert(value, -1, "UTF8", "ASCII", NULL, NULL, NULL);
             gtk_tree_model_get(GTK_TREE_MODEL(store), &iter,
                                COLUMN_STATE_VALUE, &old_utf8,
@@ -232,6 +234,7 @@ static void update_state_r(const gldb_state *root, GtkTreeStore *store,
                                    -1);
                 set_column(store, &iter, COLUMN_STATE_MODIFIED, COLUMN_STATE_MODIFIED_TOTAL, FALSE);
             }
+            free(value);
             g_free(old_utf8);
             g_free(value_utf8);
             update_state_r(child, store, &iter);
@@ -253,10 +256,10 @@ static void update_state_r(const gldb_state *root, GtkTreeStore *store,
         /* The hash is cleared for items that have been seen; thus "if new" */
         if (bugle_hash_get(&lookup, child->name))
         {
-            gchar *value;
+            char *value;
             gchar *value_utf8;
 
-            value = child->value ? child->value : "";
+            value = gldb_state_string(child);
             value_utf8 = g_convert(value, -1, "UTF8", "ASCII", NULL, NULL, NULL);
             gtk_tree_store_insert_before(store, &iter2, parent,
                                          valid ? &iter : NULL);
@@ -269,6 +272,7 @@ static void update_state_r(const gldb_state *root, GtkTreeStore *store,
                                COLUMN_STATE_EXPANDED, FALSE,
                                -1);
             set_column(store, &iter2, COLUMN_STATE_MODIFIED, COLUMN_STATE_MODIFIED_TOTAL, TRUE);
+            free(value);
             g_free(value_utf8);
             update_state_r(child, store, &iter2);
         }

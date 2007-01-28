@@ -120,13 +120,13 @@ static void gldb_shader_pane_update_ids(GldbShaderPane *pane)
         if (!s) continue;
         t = gldb_state_find_child_enum(s, GL_PROGRAM_BINDING_ARB);
         if (t)
-            active_arb[trg] = atoi(t->value);
+            active_arb[trg] = *(GLint *) t->data;
     }
 
     bugle_radix_tree_init(&active_glsl, false);
 #ifdef GL_VERSION_2_0
     s = gldb_state_find_child_enum(root, GL_CURRENT_PROGRAM);
-    program = s ? atoi(s->value) : 0;
+    program = s ? gldb_state_GLint(s) : 0;
     if (program)
     {
         bugle_asprintf(&name, "Program[%d]", program);
@@ -137,16 +137,11 @@ static void gldb_shader_pane_update_ids(GldbShaderPane *pane)
             t = gldb_state_find(s, "Attached", strlen("Attached"));
             if (t)
             {
-                name = t->value;
-                while (*name)
-                {
-                    long int id;
-                    while (*name && (*name < '0' || *name > '9'))
-                        name++;
-                    if (!*name) break;
-                    id = strtol(name, &name, 10);
-                    bugle_radix_tree_set(&active_glsl, id, root); /* arbitrary non-NULL */
-                }
+                size_t i;
+                GLuint *ids;
+                ids = (GLuint *) t->data;
+                for (i = 0; i < t->length; i++)
+                    bugle_radix_tree_set(&active_glsl, ids[i], root); /* arbitrary non-NULL */
             }
         }
     }
@@ -181,15 +176,9 @@ static void gldb_shader_pane_update_ids(GldbShaderPane *pane)
         case GL_FRAGMENT_SHADER_ARB:
             for (nt = bugle_list_head(&root->children); nt != NULL; nt = bugle_list_next(nt))
             {
-                const char *target_string = "";
-                switch (targets[trg])
-                {
-                case GL_VERTEX_SHADER_ARB: target_string = "GL_VERTEX_SHADER"; break;
-                case GL_FRAGMENT_SHADER_ARB: target_string = "GL_FRAGMENT_SHADER"; break;
-                }
                 t = (gldb_state *) bugle_list_data(nt);
                 u = gldb_state_find_child_enum(t, GL_OBJECT_SUBTYPE_ARB);
-                if (u && !strcmp(u->value, target_string))
+                if (u && gldb_state_GLenum(u) == targets[trg])
                 {
                     bool active;
 

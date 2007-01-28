@@ -2,6 +2,9 @@
 * Fix reporting of VBO overrun vs invalid memory
 * Fix handling of function aliases in GLX (fixes encapsulation when
   glXGetProcAddress and not glXGetProcAddressARB is used).
+* Split type-related functions out of libbugle into libbugleutils
+* Communicate state to gldb in raw, not string form
+* Display strings in gldb without escaping
 
 0.0.20070107
 ------------

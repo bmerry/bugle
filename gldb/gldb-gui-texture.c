@@ -248,7 +248,7 @@ static void gldb_texture_pane_update_ids(GldbTexturePane *pane)
         {
             l = gldb_state_find_child_enum(t, binding[trg]);
             if (l)
-                bugle_radix_tree_set(&active, atoi(l->value), root); /* arbitrary non-NULL value */
+                bugle_radix_tree_set(&active, gldb_state_GLint(l), root); /* arbitrary non-NULL value */
             unit++;
         }
 
@@ -274,7 +274,7 @@ static void gldb_texture_pane_update_ids(GldbTexturePane *pane)
                         for (i = 0; gldb_channel_table[i].channel; i++)
                             if (gldb_channel_table[i].texture_size_token
                                 && (param = gldb_state_find_child_enum(l, gldb_channel_table[i].texture_size_token)) != NULL
-                                && strcmp(param->value, "0") != 0)
+                                && gldb_state_GLint(param) != 0)
                             {
                                 channels |= gldb_channel_table[i].channel;
                             }

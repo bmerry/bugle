@@ -21,6 +21,7 @@
 #include "common/bool.h"
 #include "src/filters.h"
 #include "src/glutils.h"
+#include "src/gltypes.h"
 #include "src/tracker.h"
 #include "src/utils.h"
 #include "src/glfuncs.h"

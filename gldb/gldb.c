@@ -1,5 +1,5 @@
 /*  BuGLe: an OpenGL debugging tool
- *  Copyright (C) 2004-2006  Bruce Merry
+ *  Copyright (C) 2004-2007  Bruce Merry
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -433,15 +433,18 @@ static void make_indent(int indent, FILE *out)
 static void state_dump(const gldb_state *root, int depth)
 {
     bugle_list_node *i;
+    char *str;
 
     if (root->name && root->name[0])
     {
         make_indent(depth * 4, stdout);
         fputs(root->name, stdout);
-        if (root->value && root->value[0])
-            printf(" = %s\n", root->value);
+        str = gldb_state_string(root);
+        if (str && str[0])
+            printf(" = %s\n", str);
         else
             fputc('\n', stdout);
+        free(str);
     }
     if (bugle_list_head(&root->children))
     {
