@@ -312,7 +312,7 @@ Display *bugle_get_current_display_internal(bool lock)
     trackcontext_data *data;
     GLXContext ctx;
 
-    ctx = glXGetCurrentContext();
+    ctx = CALL_glXGetCurrentContext();
     if (!ctx)
         return NULL;
     if (lock) bugle_thread_mutex_lock(&context_mutex);
@@ -403,7 +403,7 @@ static bool trackcontext_font_init(trackcontext_font *font)
         font->texture_height *= 2;
 
     /* Allocate X structures */
-    pixmap = XCreatePixmap(dpy, glXGetCurrentDrawable(),
+    pixmap = XCreatePixmap(dpy, CALL_glXGetCurrentDrawable(),
                            font->texture_width, font->texture_height, 1);
     values.foreground = BlackPixel(dpy, DefaultScreen(dpy));
     values.foreground = WhitePixel(dpy, DefaultScreen(dpy));

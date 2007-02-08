@@ -64,8 +64,8 @@ static void context_initialise(const void *key, void *data)
     dpy = bugle_get_current_display_internal(false);
     if (dpy)
     {
-        glXQueryVersion(dpy, &glx_major, &glx_minor);
-        glxexts = glXQueryExtensionsString(dpy, 0); /* FIXME: get screen number */
+        CALL_glXQueryVersion(dpy, &glx_major, &glx_minor);
+        glxexts = CALL_glXQueryExtensionsString(dpy, 0); /* FIXME: get screen number */
     }
     for (i = 0; i < BUGLE_EXT_COUNT; i++)
         if (bugle_exts[i].glx)

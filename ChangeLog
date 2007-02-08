@@ -5,6 +5,8 @@
 * Split type-related functions out of libbugle into libbugleutils
 * Communicate state to gldb in raw, not string form
 * Display strings in gldb without escaping
+* Add extra extensions to genexts.pl
+* Avoid recursing in assorted calls to glX
 
 0.0.20070107
 ------------
