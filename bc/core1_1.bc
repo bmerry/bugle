@@ -14,6 +14,7 @@ EXTRATYPE GLprimitiveenum
 EXTRATYPE GLcomponentsenum
 EXTRATYPE GLpolygonstipple
 EXTRATYPE pGLpolygonstipple
+EXTRATYPE XBool
 
 # Functions taking pointers to fixed length arrays
 LENGTH PARAMETER gl(RasterPos|EvalCoord|Vertex|Normal|TexCoord|Color)([234])u?[sifdb]v 0 \2

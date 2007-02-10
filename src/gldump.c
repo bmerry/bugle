@@ -510,3 +510,10 @@ size_t bugle_texture_element_count(GLenum target,
 #endif
     return bugle_image_element_count(width, height, depth, format, type, false);
 }
+
+int bugle_count_glx_attributes(const int *attr)
+{
+    int i = 0;
+    while (attr[i]) i += 2;
+    return i + 1;
+}

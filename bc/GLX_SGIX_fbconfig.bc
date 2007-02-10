@@ -1,0 +1,4 @@
+TYPE PARAMETER glXCreateContextWithConfigSGIX 4 TYPE_5XBool
+
+LENGTH PARAMETER glXChooseFBConfigSGIX 2 bugle_count_glx_attributes($$)
+LENGTH PARAMETER glXChooseFBConfigSGIX -1 ($$ ? *$3 : 0)

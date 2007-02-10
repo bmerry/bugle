@@ -67,4 +67,8 @@ size_t bugle_texture_element_count(GLenum target,
                                    GLenum format,
                                    GLenum type);
 
+/* Return a count for an attribute list consisting of pairs terminated
+ * by None.
+ */
+int bugle_count_glx_attributes(const int *attr);
 #endif /* !BUGLE_SRC_GLDUMP_H */

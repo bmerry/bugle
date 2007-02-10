@@ -145,6 +145,15 @@ bool bugle_dump_GLboolean(GLboolean b, FILE *out)
     return true;
 }
 
+bool bugle_dump_Bool(Bool b, FILE *out)
+{
+    if (b == 0 || b == 1)
+        fputs(b ? "True" : "False", out);
+    else
+        fprintf(out, "(Bool) %u", (unsigned int) b);
+    return true;
+}
+
 bool bugle_dump_GLXDrawable(GLXDrawable d, FILE *out)
 {
     fprintf(out, "0x%08x", (unsigned int) d);

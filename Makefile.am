@@ -136,7 +136,8 @@ BCFILES = bc/core1_1.bc bc/glsl1_20.bc bc/glx.bc \
 	bc/GL_EXT_draw_range_elements.bc bc/GL_EXT_multi_draw_arrays.bc \
 	bc/GL_EXT_secondary_color.bc bc/GL_EXT_texture3D.bc \
 	bc/GL_EXT_framebuffer_object.bc bc/GL_EXT_gpu_program_parameters.bc \
-	bc/GLX_ARB_get_proc_address.bc
+	bc/GLX_ARB_get_proc_address.bc bc/GLX_SGI_make_current_read.bc \
+	bc/GLX_SGIX_fbconfig.bc bc/GLX_SGIX_pbuffer.bc
 
 src/names.c src/names.h src/types.c src/types.h src/utils.c src/utils.h src/lib.c src/lib.h: budgie/budgie src/data/gl.tu gl.bc bc/alias.bc $(BCFILES)
 	$(mkdir_p) src

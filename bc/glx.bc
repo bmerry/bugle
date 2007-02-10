@@ -1,1 +1,13 @@
 DUMP TYPE GLXDrawable bugle_dump_GLXDrawable($$, $F)
+DUMP TYPE XBool bugle_dump_Bool($$, $F)
+
+TYPE PARAMETER glXCreateContext 3 TYPE_5XBool
+TYPE PARAMETER glXIsDirect -1 TYPE_5XBool
+TYPE PARAMETER glXMakeCurrent -1 TYPE_5XBool
+TYPE PARAMETER glXQueryExtension -1 TYPE_5XBool
+TYPE PARAMETER glXQueryVersion -1 TYPE_5XBool
+
+LENGTH PARAMETER glXChooseVisual 2 bugle_count_glx_attributes($$)
+LENGTH PARAMETER glXCreate(Window|Pixmap) 3 bugle_count_glx_attributes($$)
+LENGTH PARAMETER glXCreatePbuffer 2 bugle_count_glx_attributes($$)
+LENGTH PARAMETER glXGetFBConfigs -1 ($$ ? *$2 : 0)
