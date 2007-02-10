@@ -80,7 +80,7 @@ void budgie_dump_any_call(const generic_function_call *call, int indent, FILE *o
 
 void (*budgie_get_function_wrapper(const char *name))(void)
 {
-    int l, r, m, d;
+    int l, r, m;
 
     l = 0;
     r = budgie_number_of_functions;

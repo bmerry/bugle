@@ -36,6 +36,7 @@
 #include <map>
 #include <cstdio>
 #include <cassert>
+#include <memory>
 #include <regex.h>
 #include <unistd.h>
 
@@ -166,10 +167,13 @@ static void pdie(const string &error)
 
 static void die_regex(int errcode, const regex_t *preg)
 {
-    int sz = regerror(errcode, preg, NULL, 0);
-    char buffer[sz];
-    regerror(errcode, preg, buffer, sz);
-    die(string(buffer) + "\n");
+    size_t sz = regerror(errcode, preg, NULL, 0);
+    char *buffer = new char[sz + 1];
+    auto_ptr<char> buffer_wrapper(buffer);
+    sz = regerror(errcode, preg, buffer, sz); /* sz includes the NULL */
+    buffer[sz] = '\0';
+    buffer[sz - 1] = '\n';
+    die(buffer);
 }
 
 static tree_node_p get_type_node_test(const string &type)
@@ -550,12 +554,12 @@ static void make_overrides()
                 bool matches = false;
                 list<Function>::iterator match;
                 size_t nmatch = regex.re_nsub + 1;
-                regmatch_t pmatch[nmatch];
+                vector<regmatch_t> pmatch(nmatch);
                 for (Group::iterator k = j->functions.begin(); k != j->functions.end(); k++)
                 {
                     string name = (*k)->name();
                     result = regexec(&regex, name.c_str(),
-                                     nmatch, pmatch, 0);
+                                     nmatch, &pmatch[0], 0);
                     if (result != 0 && result != REG_NOMATCH)
                         die_regex(result, &regex);
                     if (result == 0 && pmatch[0].rm_so == 0
@@ -568,7 +572,7 @@ static void make_overrides()
                 }
                 if (matches)
                 {
-                    string subst = group_substitute(*i, *j, match->name(), nmatch, pmatch);
+                    string subst = group_substitute(*i, *j, match->name(), nmatch, &pmatch[0]);
                     if (i->param == -1)
                         j->retn.overrides[i->mode] = subst;
                     else
@@ -880,7 +884,7 @@ static void write_group_table()
     {
         string name = i->name();
         if (i != groups.begin()) fprintf(util_c, ",\n");
-        fprintf(util_c, "    { %d, ", i->parameters.size());
+        fprintf(util_c, "    { %d, ", (int) i->parameters.size());
         if (!i->parameters.empty())
             fprintf(util_c, "parameters_%s, ", name.c_str());
         else
@@ -1016,7 +1020,7 @@ static void write_library_table()
             "};\n"
             "int budgie_number_of_libraries = %d;\n"
             "\n",
-            libraries.size());
+            (int) libraries.size());
 }
 
 static void write_type_dumpers()
@@ -1531,7 +1535,7 @@ static void write_invoke()
         for (size_t j = 0; j < i->group->parameters.size(); j++)
         {
             if (j) fprintf(util_c, ", ");
-            fprintf(util_c, "*call->typed.%s.arg%d", name.c_str(), j);
+            fprintf(util_c, "*call->typed.%s.arg%d", name.c_str(), (int) j);
         }
         fprintf(util_c,
                 ");\n"
@@ -1547,12 +1551,6 @@ static void write_invoke()
 
 static void write_interceptors()
 {
-    fprintf(lib_h,
-            "#ifdef __GNUC__\n"
-            "# define GCC_PROTECTED __attribute__((visibility(\"protected\")))\n"
-            "#else\n"
-            "# define GCC_PROTECTED\n"
-            "#endif\n");
     for (list<Function>::iterator i = functions.begin(); i != functions.end(); i++)
     {
         string name = i->name();
@@ -1560,7 +1558,7 @@ static void write_interceptors()
         string group = i->group_define();
         string proto = function_type_to_string(TREE_TYPE(i->node), i->name(),
                                                false, "arg");
-        fprintf(lib_h, "%s GCC_PROTECTED;\n", proto.c_str());
+        fprintf(lib_h, "%s BUGLE_GCC_VISIBILITY(\"protected\");\n", proto.c_str());
         fprintf(lib_c,
                 "%s\n"
                 "{\n"
