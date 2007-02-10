@@ -78,6 +78,26 @@ void budgie_dump_any_call(const generic_function_call *call, int indent, FILE *o
     }
 }
 
+void (*budgie_get_function_wrapper(const char *name))(void)
+{
+    int l, r, m, d;
+
+    l = 0;
+    r = budgie_number_of_functions;
+    while (r - l > 1)
+    {
+        m = (l + r) / 2;
+        if (strcmp(name, budgie_function_name_table[m].name) >= 0)
+            l = m;
+        else
+            r = m;
+    }
+    if (strcmp(name, budgie_function_name_table[m].name) == 0)
+        return budgie_function_name_table[m].wrapper;
+    else
+        return (void (*)(void)) NULL;
+}
+
 static bugle_thread_once_t initialise_real_once = BUGLE_THREAD_ONCE_INIT;
 
 static void initialise_real_work(void)
@@ -86,8 +106,8 @@ static void initialise_real_work(void)
     size_t i, j;
     size_t N, F;
 
-    N = number_of_libraries;
-    F = number_of_functions;
+    N = budgie_number_of_libraries;
+    F = budgie_number_of_functions;
 
     lt_dlmalloc = bugle_malloc;
     lt_dlrealloc = bugle_realloc;

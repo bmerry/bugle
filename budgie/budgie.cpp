@@ -750,19 +750,19 @@ static void write_enums()
         fprintf(util_h, "#define %s %d\n", i->define().c_str(), i->index);
     fprintf(util_h,
             "#define NUMBER_OF_FUNCTIONS %d\n"
-            "extern int number_of_functions;\n"
+            "extern int budgie_number_of_functions;\n"
             "\n", (int) functions.size());
     fprintf(util_c,
-            "int number_of_functions = NUMBER_OF_FUNCTIONS;\n");
+            "int budgie_number_of_functions = NUMBER_OF_FUNCTIONS;\n");
 
     for (list<Function>::iterator i = functions.begin(); i != functions.end(); i++)
         fprintf(util_h, "#define %s %d\n", i->group_define().c_str(), i->group->index);
     fprintf(util_h,
             "#define NUMBER_OF_GROUPS %d\n"
-            "extern int number_of_groups;\n"
+            "extern int budgie_number_of_groups;\n"
             "\n", (int) groups.size());
     fprintf(util_c,
-            "int number_of_groups = NUMBER_OF_GROUPS;\n");
+            "int budgie_number_of_groups = NUMBER_OF_GROUPS;\n");
 
     for (list<Type>::iterator i = types.begin(); i != types.end(); i++)
     {
@@ -775,10 +775,10 @@ static void write_enums()
     }
     fprintf(types_h,
             "#define NUMBER_OF_TYPES %d\n"
-            "extern int number_of_types;\n"
+            "extern int budgie_number_of_types;\n"
             "\n", (int) types.size());
     fprintf(types_c,
-            "int number_of_types = NUMBER_OF_TYPES;\n"
+            "int budgie_number_of_types = NUMBER_OF_TYPES;\n"
             "\n");
 }
 
@@ -1014,7 +1014,7 @@ static void write_library_table()
     }
     fprintf(util_c,
             "};\n"
-            "int number_of_libraries = %d;\n"
+            "int budgie_number_of_libraries = %d;\n"
             "\n",
             libraries.size());
 }
@@ -1621,6 +1621,27 @@ static void write_interceptors()
     }
 }
 
+static void write_function_name_table()
+{
+    fprintf(lib_h, "extern function_name_data budgie_function_name_table[NUMBER_OF_FUNCTIONS];\n");
+    fprintf(lib_c,
+            "function_name_data budgie_function_name_table[NUMBER_OF_FUNCTIONS] =\n"
+            "{\n");
+    vector<string> funcs;
+    for (list<Function>::iterator i = functions.begin(); i != functions.end(); i++)
+        funcs.push_back(i->name());
+    sort(funcs.begin(), funcs.end());
+    for (vector<string>::iterator i = funcs.begin(); i != funcs.end(); i++)
+    {
+        if (i != funcs.begin()) fprintf(lib_c, ",\n");
+        string name = *i;
+        fprintf(lib_c,
+                "    { \"%s\", (void (*)(void)) %s }",
+                name.c_str(), name.c_str());
+    }
+    fprintf(lib_c, "\n};\n\n");
+}
+
 static void write_name_table()
 {
     fprintf(name_h,
@@ -1672,6 +1693,7 @@ int main(int argc, char * const argv[])
     write_call_structs();
     write_invoke();
     write_interceptors();
+    write_function_name_table();
     write_name_table();
     write_trailers();
 }

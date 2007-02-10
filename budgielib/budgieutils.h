@@ -64,19 +64,29 @@ typedef struct
     budgie_group group;
 } function_data;
 
+typedef struct
+{
+    const char *name;
+    void (*wrapper)(void);
+} function_name_data;
+
 /* Not const due to "real" field.
  * FIXME: split that field out for better efficiency */
 extern function_data budgie_function_table[];
+extern function_name_data budgie_function_name_table[]; /* Holds wrappers in alphabetical order */
 extern const group_data budgie_group_table[];
 extern const char * const library_names[];
-extern int number_of_groups, number_of_functions;
-extern int number_of_libraries;
+extern int budgie_number_of_groups, budgie_number_of_functions;
+extern int budgie_number_of_libraries;
 
 bool check_set_reentrance(void);
 void clear_reentrance(void);
 
 /* Dumps a call, including arguments and return. Does not include a newline */
 void budgie_dump_any_call(const generic_function_call *call, int indent, FILE *out);
+
+/* Maps an overridden function name to a wrapper function, or NULL if none */
+void (*budgie_get_function_wrapper(const char *name))(void);
 
 void initialise_real(void);
 

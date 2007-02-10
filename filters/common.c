@@ -55,8 +55,7 @@ static bool procaddress_callback(function_call *call, const callback_data *data)
     void (*sym)(void);
 
     if (!*call->typed.glXGetProcAddressARB.retn) return true;
-    sym = (void (*)(void))
-        bugle_get_filter_set_symbol(NULL, (const char *) *call->typed.glXGetProcAddressARB.arg0);
+    sym = budgie_get_function_wrapper((const char *) *call->typed.glXGetProcAddressARB.arg0);
     if (sym) *call->typed.glXGetProcAddressARB.retn = sym;
 #endif
     return true;
