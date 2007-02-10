@@ -1547,6 +1547,12 @@ static void write_invoke()
 
 static void write_interceptors()
 {
+    fprintf(lib_h,
+            "#ifdef __GNUC__\n"
+            "# define GCC_PROTECTED __attribute__((visibility(\"protected\")))\n"
+            "#else\n"
+            "# define GCC_PROTECTED\n"
+            "#endif\n");
     for (list<Function>::iterator i = functions.begin(); i != functions.end(); i++)
     {
         string name = i->name();
@@ -1554,7 +1560,7 @@ static void write_interceptors()
         string group = i->group_define();
         string proto = function_type_to_string(TREE_TYPE(i->node), i->name(),
                                                false, "arg");
-        fprintf(lib_h, "%s;\n", proto.c_str());
+        fprintf(lib_h, "%s GCC_PROTECTED;\n", proto.c_str());
         fprintf(lib_c,
                 "%s\n"
                 "{\n"
@@ -1569,8 +1575,9 @@ static void write_interceptors()
         fprintf(lib_c,
                 "    if (!check_set_reentrance())\n"
                 "    {\n"
+                "        fputs(\"Warning: %s was re-entered\\n\", stderr);\n"
                 "        initialise_real();\n"
-                "        ");
+                "        ", name.c_str());
         if (i->group->has_retn)
             fprintf(lib_c, "return ");
         fprintf(lib_c, "CALL_%s(", name.c_str());

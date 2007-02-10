@@ -98,6 +98,9 @@ if ($aliases)
                            # This takes a GLint, not a GLenum
                            "glHintPGI" => 1,
 
+                           # Mesa takes a colormap
+                           "glXCreateGLXPixmapMESA" => 1,
+
                            # These have totally unrelated semantics to the core 2.0 version
                            # (but they should alias each other, which is handled later)
                            "glGetProgramivARB" => 1,

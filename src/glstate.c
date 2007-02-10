@@ -1595,7 +1595,7 @@ void bugle_state_get_raw(const glstate *state, bugle_state_raw *wrapper)
         }
         else
         {
-            glsl_glGetShaderiv(state->object, pname, i);
+            bugle_glGetShaderiv(state->object, pname, i);
             in_type = TYPE_5GLint;
         }
         break;
@@ -1607,49 +1607,49 @@ void bugle_state_get_raw(const glstate *state, bugle_state_raw *wrapper)
         }
         else
         {
-            glsl_glGetProgramiv(state->object, pname, i);
+            bugle_glGetProgramiv(state->object, pname, i);
             in_type = TYPE_5GLint;
         }
         break;
     case STATE_MODE_SHADER_INFO_LOG:
-        glsl_glGetShaderiv(state->object, GL_OBJECT_INFO_LOG_LENGTH_ARB, &max_length);
+        bugle_glGetShaderiv(state->object, GL_OBJECT_INFO_LOG_LENGTH_ARB, &max_length);
         str = bugle_malloc(max_length * sizeof(GLcharARB));
-        glsl_glGetShaderInfoLog(state->object, max_length, &length, (GLcharARB *) str);
+        bugle_glGetShaderInfoLog(state->object, max_length, &length, (GLcharARB *) str);
         break;
     case STATE_MODE_PROGRAM_INFO_LOG:
-        glsl_glGetProgramiv(state->object, GL_OBJECT_INFO_LOG_LENGTH_ARB, &max_length);
+        bugle_glGetProgramiv(state->object, GL_OBJECT_INFO_LOG_LENGTH_ARB, &max_length);
         str = bugle_malloc(max_length * sizeof(GLcharARB));
-        glsl_glGetProgramInfoLog(state->object, max_length, &length, (GLcharARB *) str);
+        bugle_glGetProgramInfoLog(state->object, max_length, &length, (GLcharARB *) str);
         break;
     case STATE_MODE_SHADER_SOURCE:
-        glsl_glGetShaderiv(state->object, GL_OBJECT_SHADER_SOURCE_LENGTH_ARB, &max_length);
+        bugle_glGetShaderiv(state->object, GL_OBJECT_SHADER_SOURCE_LENGTH_ARB, &max_length);
         str = bugle_malloc(max_length * sizeof(GLcharARB));
-        glsl_glGetShaderSource(state->object, max_length, &length, (GLcharARB *) str);
+        bugle_glGetShaderSource(state->object, max_length, &length, (GLcharARB *) str);
         break;
     case STATE_MODE_UNIFORM:
         {
             GLsizei size;
             GLenum type;
 
-            glsl_glGetActiveUniform(state->object, state->level, 0, NULL,
-                                    &size, &type, NULL);
+            bugle_glGetActiveUniform(state->object, state->level, 0, NULL,
+                                     &size, &type, NULL);
             uniform_types(type, &in_type, &out_type, &in_length);
             if (in_type == TYPE_7GLfloat)
-                glsl_glGetUniformfv(state->object, state->level, f);
+                bugle_glGetUniformfv(state->object, state->level, f);
             else
-                glsl_glGetUniformiv(state->object, state->level, i);
+                bugle_glGetUniformiv(state->object, state->level, i);
         }
         break;
     case STATE_MODE_ATTRIB_LOCATION:
-        i[0] = glsl_glGetAttribLocation(state->object, state->name);
+        i[0] = bugle_glGetAttribLocation(state->object, state->name);
         break;
     case STATE_MODE_ATTACHED_SHADERS:
         {
             GLuint *attached;
 
-            glsl_glGetProgramiv(state->object, GL_OBJECT_ATTACHED_OBJECTS_ARB, &max_length);
+            bugle_glGetProgramiv(state->object, GL_OBJECT_ATTACHED_OBJECTS_ARB, &max_length);
             attached = bugle_malloc(max_length * sizeof(GLuint));
-            glsl_glGetAttachedShaders(state->object, max_length, NULL, attached);
+            bugle_glGetAttachedShaders(state->object, max_length, NULL, attached);
             wrapper->data = attached;
             wrapper->length = max_length;
             wrapper->type = TYPE_6GLuint;
@@ -2340,8 +2340,8 @@ static void spawn_children_program(const glstate *self, bugle_linked_list *child
 #endif
     make_leaves(self, program_state, children);
 
-    glsl_glGetProgramiv(self->object, GL_OBJECT_ACTIVE_UNIFORMS_ARB, &count);
-    glsl_glGetProgramiv(self->object, GL_OBJECT_ACTIVE_UNIFORM_MAX_LENGTH_ARB, &max);
+    bugle_glGetProgramiv(self->object, GL_OBJECT_ACTIVE_UNIFORMS_ARB, &count);
+    bugle_glGetProgramiv(self->object, GL_OBJECT_ACTIVE_UNIFORM_MAX_LENGTH_ARB, &max);
     for (i = 0; i < count; i++)
     {
         child = bugle_malloc(sizeof(glstate));
@@ -2353,14 +2353,14 @@ static void spawn_children_program(const glstate *self, bugle_linked_list *child
         child->numeric_name = i;
         child->enum_name = 0;
         child->level = i;
-        glsl_glGetActiveUniform(self->object, i, max, &length, &size,
-                                &type, child->name);
+        bugle_glGetActiveUniform(self->object, i, max, &length, &size,
+                                 &type, child->name);
         if (length)
         {
             /* Check for built-in state, which is returned by glGetActiveUniformARB
              * but cannot be queried.
              */
-            child->level = glsl_glGetUniformLocation(self->object, child->name);
+            child->level = bugle_glGetUniformLocation(self->object, child->name);
             if (child->level == -1) length = 0;
         }
         if (length) bugle_list_append(children, child);
@@ -2370,10 +2370,10 @@ static void spawn_children_program(const glstate *self, bugle_linked_list *child
 #ifdef GL_ARB_vertex_shader
     if (bugle_gl_has_extension_group(BUGLE_GL_ARB_vertex_shader))
     {
-        glsl_glGetProgramiv(self->object, GL_OBJECT_ACTIVE_ATTRIBUTES_ARB,
-                            &count);
-        glsl_glGetProgramiv(self->object, GL_OBJECT_ACTIVE_ATTRIBUTE_MAX_LENGTH_ARB,
-                            &max);
+        bugle_glGetProgramiv(self->object, GL_OBJECT_ACTIVE_ATTRIBUTES_ARB,
+                             &count);
+        bugle_glGetProgramiv(self->object, GL_OBJECT_ACTIVE_ATTRIBUTE_MAX_LENGTH_ARB,
+                             &max);
 
         for (i = 0; i < count; i++)
         {
@@ -2386,8 +2386,8 @@ static void spawn_children_program(const glstate *self, bugle_linked_list *child
             child->numeric_name = i;
             child->enum_name = 0;
             child->level = i;
-            glsl_glGetActiveAttrib(self->object, i, max, &length, &size,
-                                   &type, child->name);
+            bugle_glGetActiveAttrib(self->object, i, max, &length, &size,
+                                    &type, child->name);
             if (length) bugle_list_append(children, child);
             else free(child->name);
         }
@@ -2598,7 +2598,7 @@ static void spawn_children_global(const glstate *self, bugle_linked_list *childr
     GLint count, i;
     const char *version;
 
-    version = (const char *) glGetString(GL_VERSION);
+    version = (const char *) CALL_glGetString(GL_VERSION);
     bugle_list_init(children, true);
     make_leaves(self, global_state, children);
 

@@ -1,7 +1,7 @@
 ## Process with automake 1.7 or newer
 SUBDIRS = libltdl
 
-SYMBOLFLAGS = -export-symbol-regex '^(gl[A-Z]|budgie_|bugle_|gldb_|X)'
+SYMBOLFLAGS = -export-symbols-regex '^(gl[A-Z]|budgie_|bugle_|gldb_|X)'
 
 # Utility programs, used for generating other files
 noinst_PROGRAMS = budgie/budgie
@@ -65,7 +65,7 @@ endif
 EXTRA_gldb_gldb_gui_SOURCES = glee/GLee.c glee/GLee.h
 gldb_gldb_gui_LDADD = src/libbugleutils.la $(GTKGLEXT_LIBS) $(GTK_LIBS) -lm
 gldb_gldb_gui_LDFLAGS = -thread-safe
-gldb_gldb_gui_CFLAGS = $(AM_CFLAGS) $(GTKGLEXT_CFLAGS) $(GTK_CFLAGS)
+gldb_gldb_gui_CFLAGS = $(GTKGLEXT_CFLAGS) $(GTK_CFLAGS)
 
 budgie_budgie_SOURCES = \
 	budgie/budgie.cpp budgie/budgie.h \
@@ -81,7 +81,6 @@ budgie/bclexer.cc: budgie/bclexer.ll
 BUILT_SOURCES = budgie/bcparser.h
 
 src_libbugleutils_la_SOURCES = \
-	src/confparse.y src/conflex.l src/conffile.h \
 	src/gltokens.h \
 	common/safemem.c common/safemem.h \
 	common/bool.h common/protocol.h common/protocol.c \
@@ -99,6 +98,7 @@ src_libbugleutils_la_LIBADD = $(LTLIBOBJS) $(THREAD_LIBS)
 src_libbugleutils_la_LDFLAGS = -thread-safe -export-dynamic $(SYMBOLFLAGS) -version-info 1:0:1
 
 src_libbugle_la_SOURCES = \
+	src/confparse.y src/conflex.l src/conffile.h \
 	src/gldump.c src/gldump.h \
 	src/glutils.c src/glutils.h \
 	src/glstate.c src/glstate.h \
@@ -174,7 +174,7 @@ filters_stats_la_SOURCES = filters/statslex.l filters/statsparse.y filters/stats
 filters_stats_la_LIBADD = -lm
 filters_stats_la_LDFLAGS = -thread-safe -module -avoid-version -export-dynamic $(SYMBOLFLAGS)
 filters_capture_la_SOURCES = filters/capture.c gl2ps/gl2ps.c gl2ps/gl2ps.h
-filters_capture_la_CFLAGS = $(AM_CFLAGS) $(AVCODEC_CFLAGS)
+filters_capture_la_CFLAGS = $(AVCODEC_CFLAGS)
 filters_capture_la_LIBADD = $(AVCODEC_LIBS)
 filters_capture_la_LDFLAGS = -thread-safe -module -avoid-version -export-dynamic $(SYMBOLFLAGS)
 

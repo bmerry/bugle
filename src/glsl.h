@@ -27,18 +27,18 @@
 #include <GL/glext.h>
 
 #ifdef GL_ARB_shader_objects
-void glsl_glGetProgramiv(GLuint program, GLenum pname, GLint *param);
-void glsl_glGetShaderiv(GLuint shader, GLenum pname, GLint *param);
-void glsl_glGetAttachedShaders(GLuint program, GLsizei max_length, GLsizei *length, GLuint *shaders);
-void glsl_glGetProgramInfoLog(GLuint program, GLsizei max_length, GLsizei *length, GLcharARB *log);
-void glsl_glGetShaderInfoLog(GLuint shader, GLsizei max_length, GLsizei *length, GLcharARB *log);
-void glsl_glGetShaderSource(GLuint shader, GLsizei max_length, GLsizei *length, GLcharARB *source);
-void glsl_glGetActiveUniform(GLuint program, GLuint index, GLsizei max_length, GLsizei *length, GLint *size, GLenum *type, GLcharARB *name);
-void glsl_glGetActiveAttrib(GLuint program, GLuint index, GLsizei max_length, GLsizei *length, GLint *size, GLenum *type, GLcharARB *name);
-void glsl_glGetUniformfv(GLuint program, GLint location, GLfloat *params);
-void glsl_glGetUniformiv(GLuint program, GLint location, GLint *params);
-GLint glsl_glGetUniformLocation(GLuint program, const GLcharARB *name);
-GLint glsl_glGetAttribLocation(GLuint program, const GLcharARB *name);
+void bugle_glGetProgramiv(GLuint program, GLenum pname, GLint *param);
+void bugle_glGetShaderiv(GLuint shader, GLenum pname, GLint *param);
+void bugle_glGetAttachedShaders(GLuint program, GLsizei max_length, GLsizei *length, GLuint *shaders);
+void bugle_glGetProgramInfoLog(GLuint program, GLsizei max_length, GLsizei *length, GLcharARB *log);
+void bugle_glGetShaderInfoLog(GLuint shader, GLsizei max_length, GLsizei *length, GLcharARB *log);
+void bugle_glGetShaderSource(GLuint shader, GLsizei max_length, GLsizei *length, GLcharARB *source);
+void bugle_glGetActiveUniform(GLuint program, GLuint index, GLsizei max_length, GLsizei *length, GLint *size, GLenum *type, GLcharARB *name);
+void bugle_glGetActiveAttrib(GLuint program, GLuint index, GLsizei max_length, GLsizei *length, GLint *size, GLenum *type, GLcharARB *name);
+void bugle_glGetUniformfv(GLuint program, GLint location, GLfloat *params);
+void bugle_glGetUniformiv(GLuint program, GLint location, GLint *params);
+GLint bugle_glGetUniformLocation(GLuint program, const GLcharARB *name);
+GLint bugle_glGetAttribLocation(GLuint program, const GLcharARB *name);
 #endif /* GL_ARB_shader_objects */
 
 #endif /* !BUGLE_SRC_GLSL_H */

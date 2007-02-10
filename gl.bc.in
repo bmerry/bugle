@@ -7,7 +7,7 @@ HEADER src/gldump.h
 HEADER src/gltypes.h
 HEADER src/glstate.h
 LIBRARY libGL.so
-LIMIT gl[A-Z][a-z].*|glXSwapBuffers|glXGetProcAddress(ARB)?|glXCreateContext|glXCreate(NewContext|ContextWithConfigSGIX)|glXDestroyContext|glXMakeCurrent|glXMakeContextCurrent|glXMakeCurrentReadSGI|glXQueryContext(InfoEXT)?|glXGetCurrentDisplay(EXT)?|glXGetCurrentContext|glXGetCurrentDrawable|glXGetCurrentReadDrawable(SGI)?|glXChooseFBConfig(SGIX)?|glXUseXFont|glXQueryDrawable|glXQueryVersion|glXQueryExtensionsString|glXQueryServerString|glXIsDirect
+LIMIT gl[A-Z][a-z].*|glX.*
 
 INCLUDE bc/alias.bc
 

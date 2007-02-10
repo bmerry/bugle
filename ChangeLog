@@ -6,7 +6,9 @@
 * Communicate state to gldb in raw, not string form
 * Display strings in gldb without escaping
 * Add extra extensions to genexts.pl
-* Avoid recursing in assorted calls to glX
+* Add missing CALL_ prefix to multiple calls
+* Reduce symbol pollution
+* Fix case of programs that define symbols that conflict with OpenGL
 
 0.0.20070107
 ------------

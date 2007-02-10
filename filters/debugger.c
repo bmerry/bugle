@@ -303,7 +303,7 @@ static bool send_data_texture(uint32_t id, GLuint texid, GLenum target,
     }
     else
     {
-        glBindTexture(target, old_tex);
+        CALL_glBindTexture(target, old_tex);
         pixel_pack_restore(&old_pack);
     }
 
@@ -522,8 +522,8 @@ static bool send_data_framebuffer(uint32_t id, GLuint fbo, GLenum target,
      */
     if (format != GL_DEPTH_COMPONENT && format != GL_STENCIL_INDEX)
     {
-        glGetIntegerv(GL_READ_BUFFER, &old_read_buffer);
-        glReadBuffer(buffer);
+        CALL_glGetIntegerv(GL_READ_BUFFER, &old_read_buffer);
+        CALL_glReadBuffer(buffer);
     }
 
     get_framebuffer_size(fbo, fbo_target, buffer, &width, &height);
@@ -535,7 +535,7 @@ static bool send_data_framebuffer(uint32_t id, GLuint fbo, GLenum target,
     /* Restore the old state. glPushAttrib currently does NOT save FBO
      * bindings, so we have to do that manually even for the aux context. */
     if (format != GL_DEPTH_COMPONENT && format != GL_STENCIL_INDEX)
-        glReadBuffer(old_read_buffer);
+        CALL_glReadBuffer(old_read_buffer);
     if (aux)
     {
         GLenum error;
@@ -619,11 +619,11 @@ static bool send_data_shader(uint32_t id, GLuint shader_id,
     case GL_FRAGMENT_SHADER_ARB:
 #endif
 #ifdef GL_ARB_shader_objects
-        glsl_glGetShaderiv(shader_id, GL_OBJECT_SHADER_SOURCE_LENGTH_ARB, &length);
+        bugle_glGetShaderiv(shader_id, GL_OBJECT_SHADER_SOURCE_LENGTH_ARB, &length);
         if (length != 0)
         {
             text = bugle_malloc(length);
-            glsl_glGetShaderSource(shader_id, length, NULL, (GLcharARB *) text);
+            bugle_glGetShaderSource(shader_id, length, NULL, (GLcharARB *) text);
             length--; /* Don't count NULL terminator */
         }
         else

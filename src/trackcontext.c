@@ -184,8 +184,8 @@ static void destroy_trackcontext_data(void *data)
     trackcontext_data *d;
 
     d = (trackcontext_data *) data;
-    if (d->aux_shared) glXDestroyContext(d->dpy, d->aux_shared);
-    if (d->aux_unshared) glXDestroyContext(d->dpy, d->aux_unshared);
+    if (d->aux_shared) CALL_glXDestroyContext(d->dpy, d->aux_shared);
+    if (d->aux_unshared) CALL_glXDestroyContext(d->dpy, d->aux_unshared);
 }
 
 static bool initialise_trackcontext(filter_set *handle)
