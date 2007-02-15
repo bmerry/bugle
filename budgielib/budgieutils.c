@@ -92,8 +92,8 @@ void (*budgie_get_function_wrapper(const char *name))(void)
         else
             r = m;
     }
-    if (strcmp(name, budgie_function_name_table[m].name) == 0)
-        return budgie_function_name_table[m].wrapper;
+    if (strcmp(name, budgie_function_name_table[l].name) == 0)
+        return budgie_function_name_table[l].wrapper;
     else
         return (void (*)(void)) NULL;
 }
