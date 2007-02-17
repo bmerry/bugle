@@ -655,6 +655,25 @@ static void make_bitfields()
     }
 }
 
+/* Prevents the user-included headers from defining the functions that we
+ * wish to override, as that interferes with the ELF visibility attributes.
+ */
+static void write_redirects(FILE *f, bool set)
+{
+    /* We need the user-specified headers in here to get the types, but
+     * we don't want the function defined since we redefine them with
+     * protected visibility. Redirect them to harmless names.
+     */
+    fprintf(f, "#ifdef BUDGIE_REDIRECT_FUNCTIONS\n");
+    for (list<Function>::iterator i = functions.begin(); i != functions.end(); i++)
+        if (set)
+            fprintf(f, "# define %s _budgie_redirect_%s\n",
+                    i->name().c_str(), i->name().c_str());
+        else
+            fprintf(f, "# undef %s\n", i->name().c_str());
+    fprintf(f, "#endif /* BUDGIE_REDIRECT_FUNCTIONS */\n");
+}
+
 static void write_headers()
 {
     lib_c = fopen((libbase + ".c").c_str(), "w");
@@ -718,6 +737,7 @@ static void write_headers()
             "#ifndef LIB_H\n"
             "#define LIB_H\n"
             "\n"
+            "#define BUDGIE_REDIRECT_FUNCTIONS\n"
             "#include \"%s.h\"\n"
             "\n",
             utilbase.c_str());
@@ -804,13 +824,15 @@ static void write_function_to_group_table()
 
 static void write_includes()
 {
+    write_redirects(util_h, true);
+    write_redirects(types_h, true);
     for (list<string>::iterator i = headers.begin(); i != headers.end(); i++)
     {
         fprintf(util_h, "#include \"%s\"\n", i->c_str());
         fprintf(types_h, "#include \"%s\"\n", i->c_str());
     }
-    fprintf(util_h, "\n");
-    fprintf(types_h, "\n");
+    write_redirects(util_h, false);
+    write_redirects(types_h, false);
 }
 
 static void write_typedefs()

@@ -18,8 +18,8 @@
 #if HAVE_CONFIG_H
 # include <config.h>
 #endif
-#include "src/utils.h"
 #include "src/lib.h"
+#include "src/utils.h"
 #include "src/glfuncs.h"
 #include "filters.h"
 #include "conffile.h"
