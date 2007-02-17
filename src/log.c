@@ -1,5 +1,5 @@
 /*  BuGLe: an OpenGL debugging tool
- *  Copyright (C) 2004-2006  Bruce Merry
+ *  Copyright (C) 2004-2007  Bruce Merry
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -70,7 +70,9 @@ void bugle_log(const char *filterset, const char *event, const char *message)
 
 static bool log_pre_callback(function_call *call, const callback_data *data)
 {
+#ifdef _POSIX_THREAD_SAFE_FUNCTIONS
     if (log_file) flockfile(log_file);
+#endif
     return true;
 }
 
@@ -79,7 +81,9 @@ static bool log_post_callback(function_call *call, const callback_data *data)
     if (log_file)
     {
         if (log_flush) fflush(log_file);
+#ifdef _POSIX_THREAD_SAFE_FUNCTIONS
         funlockfile(log_file);
+#endif
     }
     return true;
 }

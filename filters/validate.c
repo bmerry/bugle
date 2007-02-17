@@ -57,11 +57,15 @@ static bool error_callback(function_call *call, const callback_data *data)
         stored_error = bugle_object_get_current_data(&bugle_context_class, error_context_view);
         if (*call->typed.glGetError.retn != GL_NO_ERROR)
         {
+#ifdef _POSIX_THREAD_SAFE_FUNCTIONS
             flockfile(stderr);
+#endif
             fputs("Warning: glGetError() returned ", stderr);
             bugle_dump_GLerror(*call->typed.glGetError.retn, stderr);
             fputs("\n", stderr);
+#ifdef _POSIX_THREAD_SAFE_FUNCTIONS
             funlockfile(stderr);
+#endif
         }
         else if (!bugle_in_begin_end() && *stored_error)
         {

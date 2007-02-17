@@ -11,6 +11,7 @@
 * Add missing CALL_ prefix to multiple calls
 * Reduce symbol pollution
 * Fix case of programs that define symbols that conflict with OpenGL
+* Fix wrapping of GLSL when OpenGL 2.0 headers are not available
 
 0.0.20070107
 ------------
