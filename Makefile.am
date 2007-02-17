@@ -74,26 +74,26 @@ budgie_budgie_SOURCES = \
 	budgie/tulexer.ll \
 	budgie/bclexer.ll budgie/bcparser.yy
 
-# Unfortunately this introduces a dependence open flex
+# Unfortunately this introduces a dependence on flex
 budgie/bclexer.cc: budgie/bclexer.ll
 	$(SHELL) $(YLWRAP) `test -f budgie/bclexer.ll || echo '$(srcdir)/'`budgie/bclexer.ll lex.bc_yy.c budgie/bclexer.cc -- $(LEXCOMPILE) -Pbc_yy
 
 BUILT_SOURCES = budgie/bcparser.h
 
 src_libbugleutils_la_SOURCES = \
-	src/gltokens.h \
+	src/gltokens.h src/gltypes.c src/gltypes.h \
 	common/safemem.c common/safemem.h \
 	common/bool.h common/protocol.h common/protocol.c \
 	common/hashtable.c common/hashtable.h \
 	common/linkedlist.c common/linkedlist.h \
 	common/radixtree.c common/radixtree.h \
-	common/threads.h
+	common/threads.h \
+	budgielib/typeutils.c budgielib/typeutils.h \
+	budgielib/ioutils.c budgielib/ioutils.h
 nodist_src_libbugleutils_la_SOURCES = \
 	src/names.c src/names.h src/types.c src/types.h \
 	src/gltokens.c src/glfuncs.c src/glfuncs.h \
-	src/glexts.c src/glexts.h src/gltypes.c src/gltypes.h \
-	budgielib/typeutils.c budgielib/budgieutils.h \
-	budgielib/ioutils.c budgielib/ioutils.h
+	src/glexts.c src/glexts.h
 src_libbugleutils_la_LIBADD = $(LTLIBOBJS) $(THREAD_LIBS)
 src_libbugleutils_la_LDFLAGS = -thread-safe -export-dynamic $(SYMBOLFLAGS) -version-info 1:0:1
 
@@ -230,6 +230,7 @@ EXTRA_DIST = gl.bc.in $(BCFILES) src/data/gl.c src/data/overrides.h \
 # but for some reason does not.
 CLEANFILES = \
 	src/names.c src/names.h src/utils.c src/utils.h src/lib.c src/lib.h \
+	src/types.c src/types.h \
 	src/gltokens.c src/glfuncs.c src/glfuncs.h src/glexts.c src/glexts.h \
 	src/data/gl.tu bc/alias.bc \
 	doc/gldb.1.gz doc/bugle.3.gz \
