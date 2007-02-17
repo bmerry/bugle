@@ -44,7 +44,7 @@
         } \
     } while (0)
 #else
-#define call1(gl,arb,params) arb params
+#define call1(gl,arb,params) CALL_ ## arb params
 #endif
 
 #ifdef GL_ARB_shader_objects
