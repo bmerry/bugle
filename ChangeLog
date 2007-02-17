@@ -1,3 +1,5 @@
+0.0.20070217
+------------
 * Fix display of ARB program local parameters
 * Fix reporting of VBO overrun vs invalid memory
 * Fix handling of function aliases in GLX (fixes encapsulation when
