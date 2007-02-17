@@ -1592,10 +1592,13 @@ static void write_interceptors()
                                             "retn", false);
             fprintf(lib_c, "    %s;\n", ret_var.c_str());
         }
+        /* The fputs is commented out because it is not always possible to
+         * avoid the re-entrance. In bugle, this occurs because gl2ps is
+         * used unmodified and hence calls to OpenGL functions. */
         fprintf(lib_c,
                 "    if (!check_set_reentrance())\n"
                 "    {\n"
-                "        fputs(\"Warning: %s was re-entered\\n\", stderr);\n"
+//              "        fputs(\"Warning: %s was re-entered\\n\", stderr);\n"
                 "        initialise_real();\n"
                 "        ", name.c_str());
         if (i->group->has_retn)
