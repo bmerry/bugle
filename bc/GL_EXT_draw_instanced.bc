@@ -1,0 +1,4 @@
+TYPE PARAMETER glDrawArraysInstancedEXT 0 TYPE_15GLprimitiveenum
+
+TYPE PARAMETER glDrawElementsInstancedEXT 0 TYPE_15GLprimitiveenum
+LENGTH PARAMETER glDrawElementsInstancedEXT 3 bugle_gl_type_to_size($2) * $1

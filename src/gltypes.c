@@ -120,6 +120,9 @@ bool bugle_dump_GLprimitiveenum(GLenum token, FILE *out)
     default: bugle_dump_GLenum(token, out);
     }
     return true;
+    /* Note: doesn't include GL_EXT_geometry_shader4 primitives, but those
+     * are unique anyway.
+     */
 }
 
 bool bugle_dump_GLcomponentsenum(GLenum token, FILE *out)

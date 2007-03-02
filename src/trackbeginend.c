@@ -49,6 +49,12 @@ static bool trackbeginend_glBegin(function_call *call, const callback_data *data
     case GL_QUADS:
     case GL_QUAD_STRIP:
     case GL_POLYGON:
+#ifdef GL_EXT_geometry_shader4
+    case GL_LINES_ADJACENCY_EXT:
+    case GL_LINE_STRIP_ADJACENCY_EXT:
+    case GL_TRIANGLES_ADJACENCY_EXT:
+    case GL_TRIANGLE_STRIP_ADJACENCY_EXT:
+#endif
         begin_end = (bool *) bugle_object_get_current_data(&bugle_context_class, trackbeginend_view);
         if (begin_end != NULL) *begin_end = true;
     default: /* Avoids compiler warning if GLenum is a C enum */ ;

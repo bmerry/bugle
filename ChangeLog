@@ -1,3 +1,11 @@
+* Add state for GL_EXT_texture_buffer_object
+* Add partial state for GL_EXT_bindable_uniform
+* Support for GL_EXT_packed_float
+* Support for GL_EXT_draw_instanced
+* Support for GL_EXT_texture_shared_exponent
+* Support for GL_EXT_framebuffer_sRGB
+* Support for GL_EXT_geometry_shader4
+
 0.0.20070217
 ------------
 * Fix display of ARB program local parameters

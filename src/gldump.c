@@ -79,6 +79,12 @@ budgie_type bugle_gl_type_to_type(GLenum gl_type)
     case GL_UNSIGNED_INT_S8_S8_8_8_NV:
     case GL_UNSIGNED_INT_8_8_S8_S8_REV_NV:
 #endif
+#ifdef GL_EXT_packed_float
+    case GL_UNSIGNED_INT_10F_11F_11F_REV_EXT:
+#endif
+#ifdef GL_EXT_texture_shared_exponent
+    case GL_UNSIGNED_INT_5_9_9_9_REV_EXT:
+#endif
     case GL_UNSIGNED_INT:
         return TYPE_6GLuint;
     case GL_INT:
@@ -240,10 +246,20 @@ int bugle_gl_format_to_count(GLenum format, GLenum type)
 #endif
         case GL_STENCIL_INDEX:
         case GL_DEPTH_COMPONENT:
+#ifdef GL_EXT_texture_integer
+        case GL_RED_INTEGER_EXT:
+        case GL_GREEN_INTEGER_EXT:
+        case GL_BLUE_INTEGER_EXT:
+        case GL_ALPHA_INTEGER_EXT:
+        case GL_LUMINANCE_INTEGER_EXT:
+#endif
             return 1;
         case GL_LUMINANCE_ALPHA:
 #ifdef GL_EXT_texture_sRGB
         case GL_SLUMINANCE_ALPHA_EXT:
+#endif
+#ifdef GL_EXT_texture_integer
+        case GL_LUMINANCE_ALPHA_INTEGER_EXT:
 #endif
             return 2;
         case GL_RGB:

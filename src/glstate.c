@@ -21,6 +21,7 @@
  *   complicated by the fact that the palette belongs to the texture not
  *   the target).
  * - EXT_framebuffer_blit and EXT_framebuffer_multisample
+ * - all the 4th-gen extensions (DX10 equivalents)
  * - matrix stacks
  * - all the image state (textures, color tables, maps, pixel maps, convolution, stipple etc)
  */
@@ -335,6 +336,9 @@ static const state_info global_state[] =
 #ifdef GL_EXT_blend_color
     { STATE_NAME_EXT(GL_BLEND_COLOR, _EXT), TYPE_8GLdouble, 4, BUGLE_EXTGROUP_blend_color, -1, STATE_GLOBAL },
 #endif
+#ifdef GL_EXT_framebuffer_sRGB
+    { STATE_NAME_EXT(GL_FRAMEBUFFER_SRGB, _EXT), TYPE_9GLboolean, -1, BUGLE_GL_EXT_framebuffer_sRGB, -1, STATE_ENABLED },
+#endif
     { STATE_NAME(GL_DITHER), TYPE_9GLboolean, -1, BUGLE_GL_VERSION_1_1, -1, STATE_ENABLED },
     { STATE_NAME(GL_INDEX_LOGIC_OP), TYPE_9GLboolean, -1, BUGLE_GL_VERSION_1_1, -1, STATE_ENABLED },
     { STATE_NAME(GL_COLOR_LOGIC_OP), TYPE_9GLboolean, -1, BUGLE_GL_VERSION_1_1, -1, STATE_ENABLED },
@@ -379,6 +383,9 @@ static const state_info global_state[] =
 #ifdef GL_EXT_pixel_buffer_object
     { STATE_NAME_EXT(GL_PIXEL_PACK_BUFFER_BINDING, _EXT), TYPE_5GLint, -1, BUGLE_GL_EXT_pixel_buffer_object, -1, STATE_GLOBAL },
     { STATE_NAME_EXT(GL_PIXEL_UNPACK_BUFFER_BINDING, _EXT), TYPE_5GLint, -1, BUGLE_GL_EXT_pixel_buffer_object, -1, STATE_GLOBAL },
+#endif
+#ifdef GL_EXT_bindable_uniform
+    { STATE_NAME_EXT(GL_UNIFORM_BUFFER_BINDING, _EXT), TYPE_5GLint, -1, BUGLE_GL_EXT_bindable_uniform, -1, STATE_GLOBAL },
 #endif
     { STATE_NAME(GL_MAP_COLOR), TYPE_9GLboolean, -1, BUGLE_GL_VERSION_1_1, -1, STATE_GLOBAL },
     { STATE_NAME(GL_MAP_STENCIL), TYPE_9GLboolean, -1, BUGLE_GL_VERSION_1_1, -1, STATE_GLOBAL },
@@ -466,7 +473,7 @@ static const state_info global_state[] =
 #endif
 #ifdef GL_ARB_vertex_program
     { STATE_NAME_EXT(GL_VERTEX_PROGRAM_TWO_SIDE, _ARB), TYPE_9GLboolean, -1, BUGLE_EXTGROUP_vp_options, -1, STATE_ENABLED },
-    { STATE_NAME_EXT(GL_VERTEX_PROGRAM_POINT_SIZE, _ARB), TYPE_9GLboolean, -1, BUGLE_EXTGROUP_vp_options, -1, STATE_ENABLED },
+    { "GL_PROGRAM_POINT_SIZE", GL_VERTEX_PROGRAM_POINT_SIZE_ARB, TYPE_9GLboolean, -1, BUGLE_EXTGROUP_vp_options, -1, STATE_ENABLED },
 #endif
     { STATE_NAME(GL_PERSPECTIVE_CORRECTION_HINT), TYPE_6GLenum, -1, BUGLE_GL_VERSION_1_1, -1, STATE_GLOBAL },
     { STATE_NAME(GL_POINT_SMOOTH_HINT), TYPE_6GLenum, -1, BUGLE_GL_VERSION_1_1, -1, STATE_GLOBAL },
@@ -500,6 +507,9 @@ static const state_info global_state[] =
 #ifdef GL_ARB_texture_cube_map
     { STATE_NAME_EXT(GL_MAX_CUBE_MAP_TEXTURE_SIZE, _ARB), TYPE_5GLint, -1, BUGLE_GL_ARB_texture_cube_map, -1, STATE_GLOBAL },
 #endif
+#ifdef GL_EXT_texture_buffer_object
+    { STATE_NAME_EXT(GL_MAX_TEXTURE_BUFFER_SIZE, _EXT), TYPE_5GLint, -1, BUGLE_GL_EXT_texture_buffer_object, -1, STATE_GLOBAL },
+#endif
     { STATE_NAME(GL_MAX_PIXEL_MAP_TABLE), TYPE_5GLint, -1, BUGLE_GL_VERSION_1_1, -1, STATE_GLOBAL },
     { STATE_NAME(GL_MAX_NAME_STACK_DEPTH), TYPE_5GLint, -1, BUGLE_GL_VERSION_1_1, -1, STATE_GLOBAL },
     { STATE_NAME(GL_MAX_LIST_NESTING), TYPE_5GLint, -1, BUGLE_GL_VERSION_1_1, -1, STATE_GLOBAL },
@@ -512,6 +522,12 @@ static const state_info global_state[] =
     { STATE_NAME(GL_INDEX_MODE), TYPE_9GLboolean, -1, BUGLE_GL_VERSION_1_1, -1, STATE_GLOBAL },
     { STATE_NAME(GL_DOUBLEBUFFER), TYPE_9GLboolean, -1, BUGLE_GL_VERSION_1_1, -1, STATE_GLOBAL },
     { STATE_NAME(GL_STEREO), TYPE_9GLboolean, -1, BUGLE_GL_VERSION_1_1, -1, STATE_GLOBAL },
+#ifdef GL_EXT_packed_float
+    { STATE_NAME_EXT(GL_RGBA_SIGNED_COMPONENTS, _EXT), TYPE_9GLboolean, 4, BUGLE_GL_EXT_packed_float, -1, STATE_GLOBAL },
+#endif
+#ifdef GL_EXT_framebuffer_sRGB
+    { STATE_NAME_EXT(GL_FRAMEBUFFER_SRGB_CAPABLE, _EXT), TYPE_9GLboolean, 4, BUGLE_GL_EXT_framebuffer_sRGB, -1, STATE_GLOBAL },
+#endif
     { STATE_NAME(GL_ALIASED_POINT_SIZE_RANGE), TYPE_8GLdouble, 2, BUGLE_GL_VERSION_1_2, -1, STATE_GLOBAL },
     { "GL_SMOOTH_POINT_SIZE_RANGE", GL_POINT_SIZE_RANGE, TYPE_8GLdouble, 2, BUGLE_GL_VERSION_1_1, -1, STATE_GLOBAL },
     { "GL_SMOOTH_POINT_SIZE_GRANULARITY", GL_POINT_SIZE_GRANULARITY, TYPE_8GLdouble, -1, BUGLE_GL_VERSION_1_1, -1, STATE_GLOBAL },
@@ -544,9 +560,17 @@ static const state_info global_state[] =
 #endif
 #ifdef GL_ARB_vertex_shader
     { STATE_NAME_EXT(GL_MAX_VERTEX_UNIFORM_COMPONENTS, _ARB), TYPE_5GLint, -1, BUGLE_GL_ARB_vertex_shader, -1, STATE_GLOBAL },
-    { STATE_NAME_EXT(GL_MAX_VARYING_FLOATS, _ARB), TYPE_5GLint, -1, BUGLE_GL_ARB_vertex_shader, -1, STATE_GLOBAL },
+    { "GL_MAX_VARYING_COMPONENTS", GL_MAX_VARYING_FLOATS_ARB, TYPE_5GLint, -1, BUGLE_GL_ARB_vertex_shader, -1, STATE_GLOBAL },
     { STATE_NAME_EXT(GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS, _ARB), TYPE_5GLint, -1, BUGLE_GL_ARB_vertex_shader, -1, STATE_GLOBAL },
     { STATE_NAME_EXT(GL_MAX_VERTEX_TEXTURE_IMAGE_UNITS, _ARB), TYPE_5GLint, -1, BUGLE_GL_ARB_vertex_shader, -1, STATE_GLOBAL },
+#endif
+#ifdef GL_EXT_geometry_shader4
+    { STATE_NAME_EXT(GL_MAX_GEOMETRY_TEXTURE_IMAGE_UNITS, _EXT), TYPE_5GLint, -1, BUGLE_GL_EXT_geometry_shader4, -1, STATE_GLOBAL },
+    { STATE_NAME_EXT(GL_MAX_GEOMETRY_OUTPUT_VERTICES, _EXT), TYPE_5GLint, -1, BUGLE_GL_EXT_geometry_shader4, -1, STATE_GLOBAL },
+    { STATE_NAME_EXT(GL_MAX_GEOMETRY_TOTAL_OUTPUT_COMPONENTS, _EXT), TYPE_5GLint, -1, BUGLE_GL_EXT_geometry_shader4, -1, STATE_GLOBAL },
+    { STATE_NAME_EXT(GL_MAX_GEOMETRY_UNIFORM_COMPONENTS, _EXT), TYPE_5GLint, -1, BUGLE_GL_EXT_geometry_shader4, -1, STATE_GLOBAL },
+    { STATE_NAME_EXT(GL_MAX_GEOMETRY_VARYING_COMPONENTS, _EXT), TYPE_5GLint, -1, BUGLE_GL_EXT_geometry_shader4, -1, STATE_GLOBAL },
+    { STATE_NAME_EXT(GL_MAX_VERTEX_VARYING_COMPONENTS, _EXT), TYPE_5GLint, -1, BUGLE_GL_EXT_geometry_shader4, -1, STATE_GLOBAL },
 #endif
 #ifdef GL_ARB_fragment_program
     { STATE_NAME_EXT(GL_MAX_TEXTURE_IMAGE_UNITS, _ARB), TYPE_5GLint, -1, BUGLE_EXTGROUP_texunits, -1, STATE_GLOBAL },
@@ -554,6 +578,12 @@ static const state_info global_state[] =
 #endif
 #ifdef GL_ARB_fragment_shader
     { STATE_NAME_EXT(GL_MAX_FRAGMENT_UNIFORM_COMPONENTS, _ARB), TYPE_5GLint, -1, BUGLE_GL_ARB_fragment_shader, -1, STATE_GLOBAL },
+#endif
+#ifdef GL_EXT_bindable_uniform
+    { STATE_NAME_EXT(GL_MAX_VERTEX_BINDABLE_UNIFORMS, _EXT), TYPE_5GLint, -1, BUGLE_GL_EXT_bindable_uniform, -1, STATE_GLOBAL },
+    { STATE_NAME_EXT(GL_MAX_GEOMETRY_BINDABLE_UNIFORMS, _EXT), TYPE_5GLint, -1, BUGLE_GL_EXT_bindable_uniform, -1, STATE_GLOBAL },
+    { STATE_NAME_EXT(GL_MAX_FRAGMENT_BINDABLE_UNIFORMS, _EXT), TYPE_5GLint, -1, BUGLE_GL_EXT_bindable_uniform, -1, STATE_GLOBAL },
+    { STATE_NAME_EXT(GL_MAX_BINDABLE_UNIFORM_SIZE, _EXT), TYPE_5GLint, -1, BUGLE_GL_EXT_bindable_uniform, -1, STATE_GLOBAL },
 #endif
     /* Note: The GL 2.0 spec duplicates some entries at this point */
 #ifdef GL_ATI_draw_buffers
@@ -691,12 +721,24 @@ static const state_info tex_level_parameter_state[] =
 #ifdef GL_EXT_palette_texture
     { STATE_NAME_EXT(GL_TEXTURE_INDEX_SIZE, _EXT), TYPE_5GLint, -1, BUGLE_GL_EXT_palette_texture, -1, STATE_TEX_LEVEL_PARAMETER },
 #endif
+#ifdef GL_EXT_texture_shared_exponent
+    { STATE_NAME_EXT(GL_TEXTURE_SHARED_SIZE, _EXT), TYPE_5GLint, -1, BUGLE_GL_EXT_texture_shared_exponent, -1, STATE_TEX_LEVEL_PARAMETER },
+#endif
 #ifdef GL_ARB_texture_compression
     { STATE_NAME_EXT(GL_TEXTURE_COMPRESSED, _ARB), TYPE_9GLboolean, -1, BUGLE_GL_ARB_texture_compression, -1, STATE_TEX_LEVEL_PARAMETER },
 #ifdef GL_TEXTURE_COMPRESSED_IMAGE_SIZE_ARB /* Not defined in glext.h version 21??? */
     { STATE_NAME_EXT(GL_TEXTURE_COMPRESSED_IMAGE_SIZE, _ARB), TYPE_5GLint, -1, BUGLE_GL_ARB_texture_compression, -1, STATE_TEX_LEVEL_PARAMETER | STATE_SELECT_NO_PROXY | STATE_SELECT_COMPRESSED },
 #endif
 #endif /* GL_ARB_texture_compression */
+    { NULL, GL_NONE, NULL_TYPE, 0, -1, -1, 0 }
+};
+
+static const state_info tex_buffer_state[] =
+{
+#ifdef GL_EXT_texture_buffer_object
+    { STATE_NAME_EXT(GL_TEXTURE_BUFFER_DATA_STORE_BINDING, _EXT), TYPE_5GLint, -1, BUGLE_GL_EXT_texture_buffer_object, -1, STATE_GLOBAL | STATE_MULTIPLEX_BIND_TEXTURE },
+    { STATE_NAME_EXT(GL_TEXTURE_BUFFER_FORMAT, _EXT), TYPE_6GLenum, -1, BUGLE_GL_EXT_texture_buffer_object, -1, STATE_GLOBAL | STATE_MULTIPLEX_BIND_TEXTURE },
+#endif
     { NULL, GL_NONE, NULL_TYPE, 0, -1, -1, 0 }
 };
 
@@ -765,6 +807,9 @@ static const state_info tex_unit_state[] =
 #endif
 #ifdef GL_NV_texture_rectangle
     { STATE_NAME_EXT(GL_TEXTURE_BINDING_RECTANGLE, _NV), TYPE_5GLint, -1, BUGLE_GL_NV_texture_rectangle, -1, STATE_TEX_UNIT | STATE_SELECT_TEXTURE_IMAGE },
+#endif
+#ifdef GL_EXT_texture_buffer_object
+    { STATE_NAME_EXT(GL_TEXTURE_BINDING_BUFFER, _EXT), TYPE_5GLint, -1, BUGLE_GL_EXT_texture_buffer_object, -1, STATE_TEX_UNIT | STATE_SELECT_TEXTURE_IMAGE },
 #endif
     /* FIXME: GetTexImage */
     { NULL, GL_NONE, NULL_TYPE, 0, -1, -1, 0 }
@@ -884,8 +929,13 @@ static const state_info program_state[] =
     { "Attached", GL_NONE, TYPE_11GLhandleARB, 0, BUGLE_GL_ARB_shader_objects, -1, STATE_ATTACHED_SHADERS },
 #endif
 #ifdef GL_ARB_vertex_shader
-    { "GL_ACTIVE_ATTRIBUTES", GL_OBJECT_ACTIVE_ATTRIBUTES_ARB, TYPE_5GLint, -1, BUGLE_GL_ARB_vertex_shader, -1, STATE_PROGRAM | STATE_SELECT_VERTEX },
-    { "GL_ACTIVE_ATTRIBUTE_MAX_LENGTH", GL_OBJECT_ACTIVE_ATTRIBUTE_MAX_LENGTH_ARB, TYPE_5GLint, -1, BUGLE_GL_ARB_vertex_shader, -1, STATE_PROGRAM | STATE_SELECT_VERTEX },
+    { "GL_ACTIVE_ATTRIBUTES", GL_OBJECT_ACTIVE_ATTRIBUTES_ARB, TYPE_5GLint, -1, BUGLE_GL_ARB_vertex_shader, -1, STATE_PROGRAM },
+    { "GL_ACTIVE_ATTRIBUTE_MAX_LENGTH", GL_OBJECT_ACTIVE_ATTRIBUTE_MAX_LENGTH_ARB, TYPE_5GLint, -1, BUGLE_GL_ARB_vertex_shader, -1, STATE_PROGRAM },
+#endif
+#ifdef GL_EXT_geometry_shader4
+    { STATE_NAME_EXT(GL_GEOMETRY_VERTICES_OUT, _EXT), TYPE_5GLint, -1, BUGLE_GL_EXT_geometry_shader4, -1, STATE_PROGRAM },
+    { STATE_NAME_EXT(GL_GEOMETRY_INPUT_TYPE, _EXT), TYPE_6GLenum, -1, BUGLE_GL_EXT_geometry_shader4, -1, STATE_PROGRAM },
+    { STATE_NAME_EXT(GL_GEOMETRY_OUTPUT_TYPE, _EXT), TYPE_6GLenum, -1, BUGLE_GL_EXT_geometry_shader4, -1, STATE_PROGRAM },
 #endif
     { NULL, GL_NONE, NULL_TYPE, 0, -1, -1, 0 }
 };
@@ -900,7 +950,7 @@ static const state_info shader_state[] =
     { "GL_SHADER_TYPE", GL_OBJECT_SUBTYPE_ARB, TYPE_6GLenum, -1, BUGLE_GL_ARB_shader_objects, -1, STATE_SHADER },
     { "GL_COMPILE_STATUS", GL_OBJECT_COMPILE_STATUS_ARB, TYPE_9GLboolean, -1, BUGLE_GL_ARB_shader_objects, -1, STATE_SHADER },
     { "GL_SHADER_SOURCE_LENGTH", GL_OBJECT_SHADER_SOURCE_LENGTH_ARB, TYPE_5GLint, -1, BUGLE_GL_ARB_shader_objects, -1, STATE_SHADER },
-#endif
+#endif /* GL_ARB_shader_objects */
     { NULL, GL_NONE, NULL_TYPE, 0, -1, -1, 0 }
 };
 
@@ -1057,7 +1107,10 @@ static const state_info framebuffer_parameter_state[] =
     { STATE_NAME(GL_ACCUM_ALPHA_BITS), TYPE_5GLint, -1, BUGLE_GL_VERSION_1_1, -1, STATE_FRAMEBUFFER_PARAMETER },
     { STATE_NAME(GL_STENCIL_REF), TYPE_5GLint, -1, BUGLE_GL_VERSION_1_1, -1, STATE_FRAMEBUFFER_PARAMETER },
     { STATE_NAME(GL_MAX_COLOR_ATTACHMENTS_EXT), TYPE_5GLint, -1, BUGLE_GL_VERSION_1_1, -1, STATE_FRAMEBUFFER_PARAMETER },
+#ifdef GL_EXT_packed_float
+    { STATE_NAME_EXT(GL_RGBA_SIGNED_COMPONENTS, _EXT), TYPE_9GLboolean, 4, BUGLE_GL_EXT_packed_float, -1, STATE_GLOBAL },
 #endif
+#endif /* GL_EXT_framebuffer_object */
     { NULL, GL_NONE, NULL_TYPE, 0, -1, -1, 0 }
 };
 
@@ -1068,8 +1121,11 @@ static const state_info framebuffer_attachment_parameter_state[] =
     { STATE_NAME_EXT(GL_FRAMEBUFFER_ATTACHMENT_OBJECT_NAME, _EXT), TYPE_5GLint, -1, BUGLE_GL_EXT_framebuffer_object, -1, STATE_FRAMEBUFFER_ATTACHMENT_PARAMETER },
     { STATE_NAME_EXT(GL_FRAMEBUFFER_ATTACHMENT_TEXTURE_LEVEL, _EXT), TYPE_5GLint, -1, BUGLE_GL_EXT_framebuffer_object, -1, STATE_FRAMEBUFFER_ATTACHMENT_PARAMETER },
     { STATE_NAME_EXT(GL_FRAMEBUFFER_ATTACHMENT_TEXTURE_CUBE_MAP_FACE, _EXT), TYPE_6GLenum, -1, BUGLE_GL_EXT_framebuffer_object, -1, STATE_FRAMEBUFFER_ATTACHMENT_PARAMETER },
-    { STATE_NAME_EXT(GL_FRAMEBUFFER_ATTACHMENT_TEXTURE_3D_ZOFFSET, _EXT), TYPE_5GLint, -1, BUGLE_GL_EXT_framebuffer_object, -1, STATE_FRAMEBUFFER_ATTACHMENT_PARAMETER },
+    { "GL_FRAMEBUFFER_ATTACHMENT_TEXTURE_LAYER", GL_FRAMEBUFFER_ATTACHMENT_TEXTURE_3D_ZOFFSET_EXT, TYPE_5GLint, -1, BUGLE_GL_EXT_framebuffer_object, -1, STATE_FRAMEBUFFER_ATTACHMENT_PARAMETER },
+#ifdef GL_EXT_geometry_shader4
+    { STATE_NAME_EXT(GL_FRAMEBUFFER_ATTACHMENT_LAYERED, _EXT), TYPE_9GLboolean, -1, BUGLE_GL_EXT_geometry_shader4, -1, STATE_FRAMEBUFFER_ATTACHMENT_PARAMETER },
 #endif
+#endif /* GL_EXT_framebuffer_object */
     { NULL, GL_NONE, NULL_TYPE, 0, -1, -1, 0 }
 };
 
@@ -1166,6 +1222,7 @@ const state_info * const all_state[] =
 {
     global_state,
     tex_parameter_state,
+    tex_buffer_state,
     tex_level_parameter_state,
     tex_unit_state,
     tex_gen_state,
@@ -2226,6 +2283,19 @@ static void spawn_children_tex_target(const glstate *self, bugle_linked_list *ch
         spawn_children_tex_parameter(self, children);
 }
 
+static void spawn_children_tex_buffer(const glstate *self, bugle_linked_list *children)
+{
+    bugle_list_init(children, true);
+    make_leaves(self, tex_buffer_state, children);
+}
+
+static void spawn_children_tex_buffer_target(const glstate *self, bugle_linked_list *children)
+{
+    bugle_list_init(children, true);
+    make_objects(self, BUGLE_TRACKOBJECTS_TEXTURE, self->target, true, "%lu",
+                 spawn_children_tex_buffer, NULL, children);
+}
+
 static void spawn_children_light(const glstate *self, bugle_linked_list *children)
 {
     bugle_list_init(children, true);
@@ -2309,18 +2379,12 @@ static void spawn_children_buffer_parameter(const glstate *self, bugle_linked_li
 #ifdef GL_ARB_shader_objects
 static void spawn_children_shader(const glstate *self, bugle_linked_list *children)
 {
-    uint32_t mask = STATE_SELECT_VERTEX;
-
     bugle_list_init(children, true);
-#ifdef GL_ARB_vertex_shader
-    if (bugle_gl_has_extension_group(BUGLE_GL_ARB_vertex_shader)) mask = 0;
-#endif
-    make_leaves_conditional(self, shader_state, 0, mask, children);
+    make_leaves(self, shader_state, children);
 }
 
 static void spawn_children_program(const glstate *self, bugle_linked_list *children)
 {
-    uint32_t mask = STATE_SELECT_VERTEX;
     GLint i, count, max;
     GLenum type;
     GLsizei length, size;
@@ -2335,9 +2399,6 @@ static void spawn_children_program(const glstate *self, bugle_linked_list *child
     };
 
     bugle_list_init(children, true);
-#ifdef GL_ARB_vertex_shader
-    if (bugle_gl_has_extension_group(BUGLE_GL_ARB_vertex_shader)) mask = 0;
-#endif
     make_leaves(self, program_state, children);
 
     bugle_glGetProgramiv(self->object, GL_OBJECT_ACTIVE_UNIFORMS_ARB, &count);
@@ -2594,6 +2655,12 @@ static void spawn_children_global(const glstate *self, bugle_linked_list *childr
         NULL, GL_NONE, TYPE_6GLenum, -1, BUGLE_GL_ATI_draw_buffers, -1, STATE_GLOBAL
     };
 #endif
+#if defined(GL_EXT_texture_buffer_object)
+    static const state_info texture_buffer =
+    {
+        NULL, GL_NONE, TYPE_5GLint, -1, BUGLE_GL_EXT_texture_buffer_object, -1, STATE_GLOBAL
+    };
+#endif
 
     GLint count, i;
     const char *version;
@@ -2708,6 +2775,15 @@ static void spawn_children_global(const glstate *self, bugle_linked_list *childr
                     GL_PROXY_TEXTURE_RECTANGLE_NV,
                     0,
                     spawn_children_tex_target, NULL, children);
+    }
+#endif
+#ifdef GL_EXT_texture_buffer_object
+    if (bugle_gl_has_extension_group(BUGLE_GL_EXT_texture_buffer_object))
+    {
+        make_target(self, "GL_TEXTURE_BUFFER",
+                    GL_TEXTURE_BUFFER_EXT,
+                    GL_TEXTURE_BINDING_BUFFER_EXT,
+                    spawn_children_tex_buffer_target, &texture_buffer, children);
     }
 #endif
 

@@ -1600,7 +1600,7 @@ static void write_interceptors()
                 "    {\n"
 //              "        fputs(\"Warning: %s was re-entered\\n\", stderr);\n"
                 "        initialise_real();\n"
-                "        ", name.c_str());
+                "        "); // name.c_str());
         if (i->group->has_retn)
             fprintf(lib_c, "return ");
         fprintf(lib_c, "CALL_%s(", name.c_str());

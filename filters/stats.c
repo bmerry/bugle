@@ -523,6 +523,15 @@ static void stats_primitives_update(GLenum mode, GLsizei count)
         if (count >= 3)
             t = count - 2;
         break;
+#ifdef GL_EXT_geometry_shader4
+    case GL_TRIANGLES_ADJACENCY_EXT:
+        t = count / 6;
+        break;
+    case GL_TRIANGLE_STRIP_ADJACENCY_EXT:
+        if (count >= 6)
+            t = count / 2 - 2;
+        break;
+#endif
     }
 
     switch (bugle_displaylist_mode())

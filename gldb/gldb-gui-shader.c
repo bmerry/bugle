@@ -91,18 +91,24 @@ static void gldb_shader_pane_update_ids(GldbShaderPane *pane)
     bugle_radix_tree active_glsl;
     GLuint program;
 
-    const GLenum targets[4] =
+    const GLenum targets[] =
     {
         GL_VERTEX_PROGRAM_ARB,
         GL_FRAGMENT_PROGRAM_ARB,
         GL_VERTEX_SHADER_ARB,
-        GL_FRAGMENT_SHADER_ARB
+#ifdef GL_EXT_geometry_shader
+        GL_GEOMETRY_SHADER_EXT,
+#endif
+        GL_FRAGMENT_SHADER_ARB,
     };
-    const gchar *target_names[4] =
+    const gchar *target_names[] =
     {
         "ARB VP",
         "ARB FP",
         "GLSL VS",
+#ifdef GL_EXT_geometry_shader
+        "GLSL GS",
+#endif
         "GLSL FS"
     };
 
@@ -174,6 +180,9 @@ static void gldb_shader_pane_update_ids(GldbShaderPane *pane)
             break;
         case GL_VERTEX_SHADER_ARB:
         case GL_FRAGMENT_SHADER_ARB:
+#ifdef GL_EXT_geometry_shader4
+        case GL_GEOMETRY_SHADER_EXT:
+#endif
             for (nt = bugle_list_head(&root->children); nt != NULL; nt = bugle_list_next(nt))
             {
                 t = (gldb_state *) bugle_list_data(nt);
