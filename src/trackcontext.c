@@ -181,11 +181,20 @@ static bool trackcontext_callback(function_call *call, const callback_data *data
 
 static void destroy_trackcontext_data(void *data)
 {
+#if 0
     trackcontext_data *d;
 
     d = (trackcontext_data *) data;
+    /* This is disabled for now because it causes problems when the
+     * X connection is shut down but the context is never explicitly
+     * destroyed. SDL does this.
+     *
+     * Unfortunately, this means that an application that creates and
+     * explicitly destroys many contexts will leak aux contexts.
+     */
     if (d->aux_shared) CALL_glXDestroyContext(d->dpy, d->aux_shared);
     if (d->aux_unshared) CALL_glXDestroyContext(d->dpy, d->aux_unshared);
+#endif
 }
 
 static bool initialise_trackcontext(filter_set *handle)
