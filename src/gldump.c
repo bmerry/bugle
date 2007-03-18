@@ -347,8 +347,14 @@ void initialise_dump_tables(void)
             {
                 cur->key = s->pname;
                 cur->type = NULL_TYPE;
-                if (s->type == TYPE_9GLboolean || s->type == TYPE_6GLenum)
+                switch (s->type)
+                {
+                case TYPE_9GLboolean:
+                case TYPE_6GLenum:
+                case TYPE_11GLxfbattrib:
                     cur->type = s->type;
+                    break;
+                }
                 cur->length = (s->length == 1) ? -1 : s->length;
                 cur++;
             }
@@ -395,7 +401,13 @@ bool bugle_dump_convert(GLenum pname, const void *value,
     length = entry->length;
     alength = (length == -1) ? 1 : length;
     out_data = bugle_malloc(budgie_type_table[out_type].size * alength);
-    budgie_type_convert(out_data, out_type, in, in_type, alength);
+    if (out_type == TYPE_11GLxfbattrib)
+    {
+        /* budgie_type_convert doesn't do array-to-struct conversion */
+        memcpy(out_data, in, sizeof(GLxfbattrib));
+    }
+    else
+        budgie_type_convert(out_data, out_type, in, in_type, alength);
     if (ptr)
         budgie_dump_any_type_extended(out_type, out_data, -1, length, ptr, out);
     else

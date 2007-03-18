@@ -21,6 +21,7 @@ INCLUDE @srcdir@/bc/GL_ARB_vertex_buffer_object.bc
 INCLUDE @srcdir@/bc/GL_ARB_vertex_program.bc
 INCLUDE @srcdir@/bc/GL_ATI_draw_buffers.bc
 INCLUDE @srcdir@/bc/GL_EXT_blend_func_separate.bc
+INCLUDE @srcdir@/bc/GL_EXT_draw_buffers2.bc
 INCLUDE @srcdir@/bc/GL_EXT_draw_instanced.bc
 INCLUDE @srcdir@/bc/GL_EXT_draw_range_elements.bc
 INCLUDE @srcdir@/bc/GL_EXT_geometry_shader4.bc
@@ -28,6 +29,7 @@ INCLUDE @srcdir@/bc/GL_EXT_multi_draw_arrays.bc
 INCLUDE @srcdir@/bc/GL_EXT_secondary_color.bc
 INCLUDE @srcdir@/bc/GL_EXT_texture3D.bc
 INCLUDE @srcdir@/bc/GL_EXT_framebuffer_object.bc
+INCLUDE @srcdir@/bc/GL_NV_transform_feedback.bc
 INCLUDE @srcdir@/bc/glsl1_20.bc
 
 INCLUDE @srcdir@/bc/glx.bc

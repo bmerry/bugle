@@ -64,6 +64,18 @@ typedef GLenum GLblendenum;      /* 0 = GL_ZERO, 1 = GL_ONE */
 typedef GLenum GLprimitiveenum;  /* 0 = GL_POINTS, 1 = GL_LINES */
 typedef GLenum GLcomponentsenum; /* reinterpret 1, 2, 3, 4 as numerical */
 
+/* Values passed to and from GL_NV_transform_feedback to specify an
+ * attribute for feedback.
+ */
+typedef struct
+{
+    GLint attribute;
+    GLint components;
+    GLint index;
+} GLxfbattrib;
+typedef GLxfbattrib *pGLxfbattrib;
+typedef const GLxfbattrib *pkGLxfbattrib;
+
 /* X #defines this rather than typedefing it. Unfortunately this means that
  * we have to give it a new type and explicitly tag uses.
  */

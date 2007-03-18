@@ -33,6 +33,7 @@
  * - GetShaderSource
  * - GetUniform
  * - GetUniformLocation
+ * - G80 extensions
  */
 
 static FILE *ref;
@@ -156,13 +157,11 @@ static void query_tex_level_parameter(void)
     /* ATI rather suspiciously return 0 here, which is why 0 is included in the regex */
     glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_INTERNAL_FORMAT, &i);
     fprintf(ref, "trace\\.call: glGetTexLevelParameteriv\\(GL_TEXTURE_2D, 0, GL_TEXTURE_INTERNAL_FORMAT, %p -> ([0-4]|GL_[A-Z0-9_]+)\\)\n", (void *) &i);
-#ifdef GL_ARB_texture_compression
     if (GLEE_ARB_texture_compression)
     {
         glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_COMPRESSED_ARB, &i);
         fprintf(ref, "trace\\.call: glGetTexLevelParameteriv\\(GL_TEXTURE_2D, 0, GL_TEXTURE_COMPRESSED(_ARB)?, %p -> (GL_TRUE|GL_FALSE)\\)\n", (void *) &i);
     }
-#endif
 }
 
 static void query_tex_gen(void)
@@ -190,22 +189,18 @@ static void query_tex_env(void)
     fprintf(ref, "trace\\.call: glGetTexEnvfv\\(GL_TEXTURE_ENV, GL_TEXTURE_ENV_COLOR, %p -> { 0, 0, 0, 0 }\\)\n",
             (void *) color);
 
-#ifdef GL_EXT_texture_lod_bias
     if (GLEE_EXT_texture_lod_bias)
     {
         glGetTexEnvfv(GL_TEXTURE_FILTER_CONTROL_EXT, GL_TEXTURE_LOD_BIAS_EXT, color);
         fprintf(ref, "trace\\.call: glGetTexEnvfv\\(GL_TEXTURE_FILTER_CONTROL(_EXT)?, GL_TEXTURE_LOD_BIAS(_EXT)?, %p -> 0\\)\n",
                 (void *) color);
     }
-#endif
-#ifdef GL_ARB_point_sprite
     if (GLEE_ARB_point_sprite)
     {
         glGetTexEnviv(GL_POINT_SPRITE_ARB, GL_COORD_REPLACE_ARB, &mode);
         fprintf(ref, "trace\\.call: glGetTexEnviv\\(GL_POINT_SPRITE(_ARB)?, GL_COORD_REPLACE(_ARB)?, %p -> GL_FALSE\\)\n",
                 (void *) &mode);
     }
-#endif
 }
 
 static void query_light(void)
@@ -235,7 +230,6 @@ static void query_clip_plane(void)
 
 static void query_vertex_attrib(void)
 {
-#ifdef GL_ARB_vertex_program
     GLvoid *p;
     GLint i;
     GLdouble d[4];
@@ -252,12 +246,10 @@ static void query_vertex_attrib(void)
         glGetVertexAttribivARB(6, GL_VERTEX_ATTRIB_ARRAY_TYPE_ARB, &i);
         fprintf(ref, "trace\\.call: glGetVertexAttribivARB\\(6, (GL_VERTEX_ATTRIB_ARRAY_TYPE(_ARB)?|GL_ATTRIB_ARRAY_TYPE_NV), %p -> GL_FLOAT\\)\n", (void *) &i);
     }
-#endif
 }
 
 static void query_query(void)
 {
-#ifdef GL_ARB_occlusion_query
     GLint res;
     GLuint count;
 
@@ -278,12 +270,10 @@ static void query_query(void)
         fprintf(ref, "trace\\.call: glGetQueryObjectuivARB\\(1, GL_QUERY_RESULT(_ARB)?, %p -> 0\\)\n",
                 (void *) &count);
     }
-#endif
 }
 
 static void query_buffer_parameter(void)
 {
-#ifdef GL_ARB_vertex_buffer_object
     GLubyte data[8] = {0, 1, 2, 3, 4, 5, 6, 7};
     GLint res;
     GLvoid *ptr;
@@ -302,12 +292,10 @@ static void query_buffer_parameter(void)
         fprintf(ref, "trace\\.call: glGetBufferPointervARB\\(GL_ARRAY_BUFFER(_ARB)?, GL_BUFFER_MAP_POINTER(_ARB)?, %p -> \\(nil\\)\\)\n",
                 (void *) &ptr);
     }
-#endif
 }
 
 static void query_color_table(void)
 {
-#ifdef GL_ARB_imaging
     GLubyte data[12] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11};
     GLfloat scale[4];
     GLint format;
@@ -327,12 +315,10 @@ static void query_color_table(void)
         fprintf(ref, "trace\\.call: glGetColorTable\\(GL_COLOR_TABLE, GL_RGB, GL_UNSIGNED_BYTE, %p\\)\n",
                 (void *) data);
     }
-#endif
 }
 
 static void query_convolution(void)
 {
-#ifdef GL_ARB_imaging
     GLubyte data[3] = {0, 1, 2};
     GLfloat bias[4];
     GLint border_mode;
@@ -349,12 +335,10 @@ static void query_convolution(void)
         fprintf(ref, "trace\\.call: glGetConvolutionParameteriv\\(GL_CONVOLUTION_1D, GL_CONVOLUTION_BORDER_MODE, %p -> GL_REDUCE\\)\n",
                 (void *) &border_mode);
     }
-#endif
 }
 
 static void query_histogram(void)
 {
-#ifdef GL_ARB_imaging
     GLint format, sink;
 
     if (GLEE_ARB_imaging)
@@ -368,12 +352,10 @@ static void query_histogram(void)
         fprintf(ref, "trace\\.call: glGetHistogramParameteriv\\(GL_HISTOGRAM, GL_HISTOGRAM_SINK, %p -> GL_FALSE\\)\n",
                 (void *) &sink);
     }
-#endif
 }
 
 static void query_minmax(void)
 {
-#ifdef GL_ARB_imaging
     GLint format, sink;
 
     if (GLEE_ARB_imaging)
@@ -387,7 +369,6 @@ static void query_minmax(void)
         fprintf(ref, "trace\\.call: glGetMinmaxParameteriv\\(GL_MINMAX, GL_MINMAX_SINK, %p -> GL_FALSE\\)\n",
                 (void *) &sink);
     }
-#endif
 }
 
 static void shader_source(GLhandleARB shader, const char *source)
@@ -411,7 +392,6 @@ static void shader_source(GLhandleARB shader, const char *source)
 
 static void query_shaders(void)
 {
-#if defined(GL_ARB_shader_objects) && defined(GL_ARB_vertex_shader)
     GLhandleARB v1, v2, p, attached[2];
     GLsizei count;
     GLint location;
@@ -483,13 +463,11 @@ static void query_shaders(void)
                 &length, &size, &type,
                 lang120 ? (type == GL_FLOAT_MAT3 ? "GL_FLOAT_MAT3" : "GL_FLOAT_MAT3x4") : "GL_FLOAT_MAT4");
     }
-#endif
     /* FIXME: test lots more things e.g. source */
 }
 
 static void query_ll_programs(void)
 {
-#if defined(GL_ARB_vertex_program)
     static const char *vp = "!!ARBvp1.0\nMOV result.position, vertex.position;\nEND\n";
     char *source;
 
@@ -528,10 +506,8 @@ static void query_ll_programs(void)
         fprintf(ref, "trace\\.call: glDeleteProgramsARB\\(1, %p -> { %u }\\)\n",
                 (void *) &program, (unsigned int) program);
     }
-#endif
 }
 
-#ifdef GL_EXT_framebuffer_object
 /* Generates empty contents for a texture */
 static void texture2D(GLenum target, const char *target_regex)
 {
@@ -539,19 +515,15 @@ static void texture2D(GLenum target, const char *target_regex)
     fprintf(ref, "trace\\.call: glTexImage2D\\(%s, 0, GL_RGBA, 4, 4, 0, GL_RGBA, GL_UNSIGNED_BYTE, \\(nil\\)\\)\n", target_regex);
 }
 
-#ifdef GL_EXT_texture3D
 /* Same but for 3D */
 static void texture3D(GLenum target, const char *target_regex)
 {
     glTexImage3DEXT(target, 0, GL_RGBA, 4, 4, 4, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
     fprintf(ref, "trace\\.call: glTexImage3DEXT\\(%s, 0, GL_RGBA, 4, 4, 4, 0, GL_RGBA, GL_UNSIGNED_BYTE, \\(nil\\)\\)\n", target_regex);
 }
-#endif /* GL_EXT_texture3D */
-#endif /* GL_EXT_framebuffer_object */
 
 static void query_framebuffers(void)
 {
-#ifdef GL_EXT_framebuffer_object
     GLuint fb, tex[3];
     GLint i;
 
@@ -593,7 +565,6 @@ static void query_framebuffers(void)
                 (void *) &i);
 
         /* 3D texture */
-#ifdef GL_EXT_texture3D
         if (GLEE_EXT_texture3D)
         {
             glBindTexture(GL_TEXTURE_3D_EXT, tex[1]);
@@ -609,10 +580,8 @@ static void query_framebuffers(void)
             fprintf(ref, "trace\\.call: glGetFramebufferAttachmentParameterivEXT\\(GL_FRAMEBUFFER(_EXT)?, GL_COLOR_ATTACHMENT0(_EXT)?, GL_FRAMEBUFFER_ATTACHMENT_TEXTURE_3D_ZOFFSET(_EXT), %p -> 1\\)\n",
                     (void *) &i);
         }
-#endif
 
         /* Cube map texture */
-#ifdef GL_ARB_texture_cube_map
         if (GLEE_ARB_texture_cube_map)
         {
             glBindTexture(GL_TEXTURE_CUBE_MAP_ARB, tex[2]);
@@ -633,7 +602,6 @@ static void query_framebuffers(void)
             fprintf(ref, "trace\\.call: glGetFramebufferAttachmentParameterivEXT\\(GL_FRAMEBUFFER(_EXT)?, GL_COLOR_ATTACHMENT0(_EXT)?, GL_FRAMEBUFFER_ATTACHMENT_TEXTURE_CUBE_MAP_FACE(_EXT), %p -> GL_TEXTURE_CUBE_MAP_NEGATIVE_X(_ARB)?\\)\n",
                     (void *) &i);
         }
-#endif
 
         glDeleteFramebuffersEXT(1, &fb);
         fprintf(ref, "trace\\.call: glDeleteFramebuffersEXT\\(1, %p -> { %u }\\)\n",
@@ -642,12 +610,10 @@ static void query_framebuffers(void)
         fprintf(ref, "trace\\.call: glDeleteTextures\\(3, %p -> { %u, %u, %u }\\)\n",
                 (void *) tex, (unsigned int) tex[0], (unsigned int) tex[1], (unsigned int) tex[2]);
     }
-#endif /* GL_EXT_framebuffer_object */
 }
 
 static void query_renderbuffers(void)
 {
-#ifdef GL_EXT_framebuffer_object
     GLuint rb;
     GLint i;
 
@@ -667,17 +633,13 @@ static void query_renderbuffers(void)
         glGetRenderbufferParameterivEXT(GL_RENDERBUFFER_EXT, GL_RENDERBUFFER_INTERNAL_FORMAT_EXT, &i);
         fprintf(ref, "trace\\.call: glGetRenderbufferParameterivEXT\\(GL_RENDERBUFFER(_EXT)?, GL_RENDERBUFFER_INTERNAL_FORMAT(_EXT)?, %p -> GL_RGBA8\\)\n",
                 (void *) &i);
-        /* FIXME: Disabled for now because NVIDIA 76.76 doesn't support it */
-#if 0
         glGetRenderbufferParameterivEXT(GL_RENDERBUFFER_EXT, GL_RENDERBUFFER_RED_SIZE_EXT, &i);
         fprintf(ref, "trace\\.call: glGetRenderbufferParameterivEXT\\(GL_RENDERBUFFER(_EXT)?, GL_RENDERBUFFER_RED_SIZE(_EXT)?, %p -> %d\\)\n",
                 (void *) &i, (int) i);
-#endif
         glDeleteRenderbuffersEXT(1, &rb);
         fprintf(ref, "trace\\.call: glDeleteRenderbuffersEXT\\(1, %p -> { %u }\\)\n",
                 (void *) &rb, (unsigned int) rb);
     }
-#endif /* GL_EXT_framebuffer_object */
 }
 
 static void query_readpixels(void)
@@ -692,6 +654,52 @@ static void query_readpixels(void)
     for (i = 0; i < 13; i++)
         fprintf(ref, "%d, ", (int) ans[i]);
     fprintf(ref, "%d }\\)\n", ans[11]);
+}
+
+static void query_transform_feedback(void)
+{
+    if (GLEE_NV_transform_feedback)
+    {
+        GLuint buffers[4];
+        GLint bound;
+        GLint record[3];
+
+        const GLint attribs[12] =
+        {
+            GL_POSITION, 4, 0,
+            GL_TEXTURE_COORD_NV, 2, 0,
+            GL_TEXTURE_COORD_NV, 2, 1,
+            GL_POINT_SIZE, 1, 0
+        };
+
+        glGenBuffers(4, buffers);
+        fprintf(ref, "trace\\.call: glGenBuffers\\(4, %p -> { %u, %u, %u, %u }\\)\n",
+                buffers, buffers[0], buffers[1], buffers[2], buffers[3]);
+        for (int i = 0; i < 4; i++)
+        {
+            glBindBuffer(GL_TRANSFORM_FEEDBACK_BUFFER_NV, buffers[i]);
+            fprintf(ref, "trace\\.call: glBindBuffer\\(GL_TRANSFORM_FEEDBACK_BUFFER_NV, %u\\)\n",
+                    buffers[i]);
+            glBufferData(GL_TRANSFORM_FEEDBACK_BUFFER_NV, 1024, NULL, GL_STREAM_COPY);
+            fprintf(ref, "trace\\.call: glBufferData\\(GL_TRANSFORM_FEEDBACK_BUFFER_NV, 1024, \\(nil\\), GL_STREAM_COPY(_ARB)?\\)\n");
+            glBindBufferBaseNV(GL_TRANSFORM_FEEDBACK_BUFFER_NV, i, i);
+            fprintf(ref, "trace\\.call: glBindBufferBaseNV\\(GL_TRANSFORM_FEEDBACK_BUFFER_NV, %d, %d\\)\n",
+                    i, i);
+        }
+        glGetIntegerv(GL_TRANSFORM_FEEDBACK_BUFFER_BINDING_NV, &bound);
+        fprintf(ref, "trace\\.call: glGetIntegerv\\(GL_TRANSFORM_FEEDBACK_BUFFER_BINDING_NV, %p -> %d\\)\n",
+                &bound, bound);
+        glTransformFeedbackAttribsNV(4, attribs, GL_SEPARATE_ATTRIBS_NV);
+        fprintf(ref, "trace\\.call: glTransformFeedbackAttribsNV\\(4, %p -> { "
+                "{ GL_POSITION, 4, 0 }, "
+                "{ GL_TEXTURE_COORD_NV, 2, 0 }, "
+                "{ GL_TEXTURE_COORD_NV, 2, 1 }, "
+                "{ GL_POINT_SIZE, 1, 0 } }, GL_SEPARATE_ATTRIBS_NV\\)\n",
+                attribs);
+        glGetIntegerIndexedvEXT(GL_TRANSFORM_FEEDBACK_RECORD_NV, 0, record);
+        fprintf(ref, "trace\\.call: glGetIntegerIndexedvEXT\\(GL_TRANSFORM_FEEDBACK_RECORD_NV, 0, %p -> { GL_POSITION, 4, 0 }\\)\n",
+                record);
+    }
 }
 
 int main(int argc, char **argv)
@@ -729,5 +737,6 @@ int main(int argc, char **argv)
     query_framebuffers();
     query_renderbuffers();
     query_readpixels();
+    query_transform_feedback();
     return 0;
 }

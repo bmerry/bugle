@@ -30,6 +30,7 @@
 #include <stdio.h>
 #include "common/bool.h"
 #include "src/gltokens.h"
+#include "src/data/overrides.h"
 
 GLenum bugle_gl_token_to_enum(const char *name);
 const gl_token *bugle_gl_enum_to_token_struct(GLenum e);
@@ -44,5 +45,6 @@ bool bugle_dump_GLboolean(GLboolean b, FILE *out);
 bool bugle_dump_Bool(Bool b, FILE *out);
 bool bugle_dump_GLXDrawable(GLXDrawable d, FILE *out);
 bool bugle_dump_GLpolygonstipple(const GLubyte (*pattern)[4], FILE *out);
+bool bugle_dump_GLxfbattrib(const GLxfbattrib *a, FILE *out);
 
 #endif /* !BUGLE_SRC_GLTYPES_H */

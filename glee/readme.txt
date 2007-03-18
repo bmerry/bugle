@@ -1,6 +1,6 @@
 GLee
 GL Easy Extension Library
-Version 5.04
+Version 5.21
 
 By Ben Woodhouse
 http://elf-stone.com
@@ -8,7 +8,7 @@ http://elf-stone.com
 
 LICENSE
 
-Copyright (c)2005  Ben Woodhouse  All rights reserved.
+Copyright (c)2006  Ben Woodhouse  All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are 
@@ -36,10 +36,13 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 CONTACT
 
 Send any general questions, bug reports etc to me (Ben Woodhouse):
-  ben [at] elf-stone.com
+  bw [at] elf-stone.com
 
 Questions about the D port for GLee should go to Joel Anderson: 
   anderson [at] badmama.com.au
+  
+Questions about GLee on OS X should go to Tristam MacDonald
+  swiftcoder [at] gmail.com
   
 
 
@@ -48,7 +51,7 @@ INTRODUCTION
 GLee provides a simple interface for using extensions and core OpenGL 
 functionality beyond OpenGL version 1.1, and automates the otherwise tedious 
 process of linking function pointers. GLee works with both C and C++ 
-compilers (as of version 2.3).
+compilers.
 
 Because the code is automatically generated, the latest extensions can 
 be included rapidly in new versions. Currently there is support 
@@ -60,19 +63,33 @@ For extension specifications, please visit:
    http://oss.sgi.com/projects/ogl-sample/registry/
 
 
+CREDITS
+
+Thanks to Tristam MacDonald for adding OS-X compatibility.
+
+Thanks to Martin Büchler (LousyPhreak on the GameDev.net forums) for 
+a huge amount of testing, tweaking, suggestions and advice to get GLee to 
+work properly with Linux. 
+
+Thanks to Daniel Jo (Ostsol on the OpenGL.org forums) for helping to get  
+GLEE 2.1 working with the OGLSL extensions (ARB_shader_objects, 
+ARB_vertex_shader and ARB_fragment_shader). 
+
+Thanks to Joel Anderson for his for his D port of GLee 3.0
+
 
 WHAT'S NEW IN GLEE 5.0
 
-Some big changes have been made to GLee since version 4.0: 
+Some big changes have been made since version 4.0: 
 
 GLeeGen, the program that generates the code for the GLee library, has been
-rewritten from the ground up. As a result, GLee 5.0 and upwards support 
+rewritten to support parsing of extension specifications. As a result, GLee 5.0 and upwards support 
 all extensions for which there is a specification, regardless of that 
 extension's inclusion in glext.h, wglext.h or glxext.h. 
 
-GLee 5.0 has support for experimental extension loading through the 
+GLee 5.0 adds support for forced extension loading through the 
 GLeeForceLink function. This makes it possible to force the linking of 
-extension functions which are not reported by the video driver. 
+extension functions (or core functions) which are not reported by the video driver. 
 
 GLee now supports lazy loading of extensions, meaning it is no longer 
 necessary to call GLeeInit() at initialisation time. 
@@ -162,15 +179,24 @@ corresponding extension list string.
 
 
 
-EXPERIMENTAL EXTENSION SUPPORT - NEW
+FORCED EXTENSION SUPPORT
 
 By default, only those extensions reported by OpenGL's 
-glGetString(GL_EXTENSIONS) are loaded by GLeeInit(). 
+glGetString(GL_EXTENSIONS) are loaded by GLeeInit(). Likewise, 
+only core functions whose version doesn't exceed the version number 
+returned by glGetString(GL_VERSION) are loaded.
 
-However, GLee 5.0 and above can load additional extensions. To
-attempt to force the loading of such an extension, call:
+However, GLee 5.0 and above can load additional extension and core 
+functions using the GLeeForceLink function:
 
 	GLint GLeeForceLink(const char * extensionName)
+
+For example, GLeeForceLink("GL_ARB_point_parameters") will attempt to 
+load the ARB_point_parameters function. 
+
+For core functions, you can use the GL version string for the version 
+you wish to initialise. For example, GLeeForceLink( "GL_VERSION_2_0" ) 
+will attempt to initialise OpenGL 2.0 core functions. 
 	
 Return Value:
   GLEE_LINK_COMPLETE is returned if all functions were 
@@ -182,11 +208,11 @@ Return Value:
   GLEE_LINK_FAIL is returned if no functions could be linked
   successfully. 
   
-Note:
 Functions which could not be linked will be set to NULL. 
 
 A successful link does not guarantee that a function will work 
-correctly. 
+correctly. If you want to be safe, only use extensions which are
+reported by the driver. 
 
 
 
@@ -233,26 +259,17 @@ You can contact me (Joel Anderson) at anderson@badmama.com.au
 (21/01/2004) - AU
 
 
-
-CREDITS
-
-Big thanks to Martin Büchler (LousyPhreak on the GameDev.net forums) for 
-a huge amount of testing, tweaking, suggestions and advice to get GLee to 
-work properly with Linux. The cross-platform version would not have 
-been possible without him. 
-
-Thanks to Daniel Jo (Ostsol on the OpenGL.org forums) for helping to get  
-GLEE 2.1 working with the OGLSL extensions (ARB_shader_objects, 
-ARB_vertex_shader and ARB_fragment_shader). 
-
-Thanks to Joel Anderson for his for his D port of GLee 3.0
-
-Also everyone on the gamedev.net OpenGL forum who gave suggestions or 
-reported bugs.
-
-
-
 CHANGES
+
+5.21  : New nvidia extensions
+
+5.2   : OS-X support
+
+5.1   : Fixed some ansi-C compatibility issues. 
+		New GLeeGen version
+		Added 5 new GL extensions and 1 new WGL extension. 
+
+5.04  : Added the latest extensions
 
 5.03  : Some minor compatibility fixes. 
 

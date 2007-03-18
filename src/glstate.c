@@ -80,14 +80,16 @@
 #define STATE_MODE_PROGRAM_INFO_LOG         0x00000018    /* glGetProgramInfoLog */
 #define STATE_MODE_SHADER_SOURCE            0x00000019    /* glGetShaderSource */
 #define STATE_MODE_UNIFORM                  0x0000001a    /* glGetActiveUniform, glGetUniform */
-#define STATE_MODE_ATTRIB_LOCATION          0x00000020    /* glGetAttribLocation */
-#define STATE_MODE_ATTACHED_SHADERS         0x00000022    /* glGetAttachedShaders */
-#define STATE_MODE_OLD_PROGRAM              0x00000023    /* glGetProgramivARB */
-#define STATE_MODE_PROGRAM_ENV_PARAMETER    0x00000024    /* glGetProgramEnvParameterARB */
-#define STATE_MODE_PROGRAM_LOCAL_PARAMETER  0x00000025    /* glGetProgramLocalParameterARB */
-#define STATE_MODE_COMPRESSED_TEXTURE_FORMATS 0x00000026  /* glGetIntegerv(GL_COMPRESSED_TEXTURE_FORMATS, ...) */
-#define STATE_MODE_RENDERBUFFER_PARAMETER   0x00000027    /* glGetRenderbufferParameterivEXT */
-#define STATE_MODE_FRAMEBUFFER_ATTACHMENT_PARAMETER 0x00000028 /* glGetFramebufferAttachmentPArameterivEXT */
+#define STATE_MODE_ATTRIB_LOCATION          0x0000001b    /* glGetAttribLocation */
+#define STATE_MODE_ATTACHED_SHADERS         0x0000001c    /* glGetAttachedShaders */
+#define STATE_MODE_OLD_PROGRAM              0x0000001d    /* glGetProgramivARB */
+#define STATE_MODE_PROGRAM_ENV_PARAMETER    0x0000001e    /* glGetProgramEnvParameterARB */
+#define STATE_MODE_PROGRAM_LOCAL_PARAMETER  0x0000001f    /* glGetProgramLocalParameterARB */
+#define STATE_MODE_COMPRESSED_TEXTURE_FORMATS 0x00000020  /* glGetIntegerv(GL_COMPRESSED_TEXTURE_FORMATS, ...) */
+#define STATE_MODE_RENDERBUFFER_PARAMETER   0x00000021    /* glGetRenderbufferParameterivEXT */
+#define STATE_MODE_FRAMEBUFFER_ATTACHMENT_PARAMETER 0x00000022 /* glGetFramebufferAttachmentPArameterivEXT */
+#define STATE_MODE_INDEXED                  0x00000023    /* glGetIntegerIndexedvEXT etc */
+#define STATE_MODE_ENABLED_INDEXED          0x00000024    /* glIsEnabledIndexedEXT */
 #define STATE_MODE_MASK                     0x000000ff
 
 #define STATE_MULTIPLEX_ACTIVE_TEXTURE      0x00000100    /* Set active texture */
@@ -146,6 +148,8 @@
 #define STATE_FRAMEBUFFER_ATTACHMENT_PARAMETER (STATE_MODE_FRAMEBUFFER_ATTACHMENT_PARAMETER | STATE_MULTIPLEX_BIND_FRAMEBUFFER)
 #define STATE_FRAMEBUFFER_PARAMETER (STATE_MODE_GLOBAL | STATE_MULTIPLEX_BIND_FRAMEBUFFER)
 #define STATE_RENDERBUFFER_PARAMETER (STATE_MODE_RENDERBUFFER_PARAMETER | STATE_MULTIPLEX_BIND_RENDERBUFFER)
+#define STATE_INDEXED STATE_MODE_INDEXED
+#define STATE_ENABLED_INDEXED STATE_MODE_ENABLED_INDEXED
 
 static const state_info global_state[] =
 {
@@ -336,9 +340,6 @@ static const state_info global_state[] =
 #ifdef GL_EXT_blend_color
     { STATE_NAME_EXT(GL_BLEND_COLOR, _EXT), TYPE_8GLdouble, 4, BUGLE_EXTGROUP_blend_color, -1, STATE_GLOBAL },
 #endif
-#ifdef GL_EXT_framebuffer_sRGB
-    { STATE_NAME_EXT(GL_FRAMEBUFFER_SRGB, _EXT), TYPE_9GLboolean, -1, BUGLE_GL_EXT_framebuffer_sRGB, -1, STATE_ENABLED },
-#endif
     { STATE_NAME(GL_DITHER), TYPE_9GLboolean, -1, BUGLE_GL_VERSION_1_1, -1, STATE_ENABLED },
     { STATE_NAME(GL_INDEX_LOGIC_OP), TYPE_9GLboolean, -1, BUGLE_GL_VERSION_1_1, -1, STATE_ENABLED },
     { STATE_NAME(GL_COLOR_LOGIC_OP), TYPE_9GLboolean, -1, BUGLE_GL_VERSION_1_1, -1, STATE_ENABLED },
@@ -383,9 +384,6 @@ static const state_info global_state[] =
 #ifdef GL_EXT_pixel_buffer_object
     { STATE_NAME_EXT(GL_PIXEL_PACK_BUFFER_BINDING, _EXT), TYPE_5GLint, -1, BUGLE_GL_EXT_pixel_buffer_object, -1, STATE_GLOBAL },
     { STATE_NAME_EXT(GL_PIXEL_UNPACK_BUFFER_BINDING, _EXT), TYPE_5GLint, -1, BUGLE_GL_EXT_pixel_buffer_object, -1, STATE_GLOBAL },
-#endif
-#ifdef GL_EXT_bindable_uniform
-    { STATE_NAME_EXT(GL_UNIFORM_BUFFER_BINDING, _EXT), TYPE_5GLint, -1, BUGLE_GL_EXT_bindable_uniform, -1, STATE_GLOBAL },
 #endif
     { STATE_NAME(GL_MAP_COLOR), TYPE_9GLboolean, -1, BUGLE_GL_VERSION_1_1, -1, STATE_GLOBAL },
     { STATE_NAME(GL_MAP_STENCIL), TYPE_9GLboolean, -1, BUGLE_GL_VERSION_1_1, -1, STATE_GLOBAL },
@@ -507,9 +505,6 @@ static const state_info global_state[] =
 #ifdef GL_ARB_texture_cube_map
     { STATE_NAME_EXT(GL_MAX_CUBE_MAP_TEXTURE_SIZE, _ARB), TYPE_5GLint, -1, BUGLE_GL_ARB_texture_cube_map, -1, STATE_GLOBAL },
 #endif
-#ifdef GL_EXT_texture_buffer_object
-    { STATE_NAME_EXT(GL_MAX_TEXTURE_BUFFER_SIZE, _EXT), TYPE_5GLint, -1, BUGLE_GL_EXT_texture_buffer_object, -1, STATE_GLOBAL },
-#endif
     { STATE_NAME(GL_MAX_PIXEL_MAP_TABLE), TYPE_5GLint, -1, BUGLE_GL_VERSION_1_1, -1, STATE_GLOBAL },
     { STATE_NAME(GL_MAX_NAME_STACK_DEPTH), TYPE_5GLint, -1, BUGLE_GL_VERSION_1_1, -1, STATE_GLOBAL },
     { STATE_NAME(GL_MAX_LIST_NESTING), TYPE_5GLint, -1, BUGLE_GL_VERSION_1_1, -1, STATE_GLOBAL },
@@ -522,12 +517,6 @@ static const state_info global_state[] =
     { STATE_NAME(GL_INDEX_MODE), TYPE_9GLboolean, -1, BUGLE_GL_VERSION_1_1, -1, STATE_GLOBAL },
     { STATE_NAME(GL_DOUBLEBUFFER), TYPE_9GLboolean, -1, BUGLE_GL_VERSION_1_1, -1, STATE_GLOBAL },
     { STATE_NAME(GL_STEREO), TYPE_9GLboolean, -1, BUGLE_GL_VERSION_1_1, -1, STATE_GLOBAL },
-#ifdef GL_EXT_packed_float
-    { STATE_NAME_EXT(GL_RGBA_SIGNED_COMPONENTS, _EXT), TYPE_9GLboolean, 4, BUGLE_GL_EXT_packed_float, -1, STATE_GLOBAL },
-#endif
-#ifdef GL_EXT_framebuffer_sRGB
-    { STATE_NAME_EXT(GL_FRAMEBUFFER_SRGB_CAPABLE, _EXT), TYPE_9GLboolean, 4, BUGLE_GL_EXT_framebuffer_sRGB, -1, STATE_GLOBAL },
-#endif
     { STATE_NAME(GL_ALIASED_POINT_SIZE_RANGE), TYPE_8GLdouble, 2, BUGLE_GL_VERSION_1_2, -1, STATE_GLOBAL },
     { "GL_SMOOTH_POINT_SIZE_RANGE", GL_POINT_SIZE_RANGE, TYPE_8GLdouble, 2, BUGLE_GL_VERSION_1_1, -1, STATE_GLOBAL },
     { "GL_SMOOTH_POINT_SIZE_GRANULARITY", GL_POINT_SIZE_GRANULARITY, TYPE_8GLdouble, -1, BUGLE_GL_VERSION_1_1, -1, STATE_GLOBAL },
@@ -564,14 +553,6 @@ static const state_info global_state[] =
     { STATE_NAME_EXT(GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS, _ARB), TYPE_5GLint, -1, BUGLE_GL_ARB_vertex_shader, -1, STATE_GLOBAL },
     { STATE_NAME_EXT(GL_MAX_VERTEX_TEXTURE_IMAGE_UNITS, _ARB), TYPE_5GLint, -1, BUGLE_GL_ARB_vertex_shader, -1, STATE_GLOBAL },
 #endif
-#ifdef GL_EXT_geometry_shader4
-    { STATE_NAME_EXT(GL_MAX_GEOMETRY_TEXTURE_IMAGE_UNITS, _EXT), TYPE_5GLint, -1, BUGLE_GL_EXT_geometry_shader4, -1, STATE_GLOBAL },
-    { STATE_NAME_EXT(GL_MAX_GEOMETRY_OUTPUT_VERTICES, _EXT), TYPE_5GLint, -1, BUGLE_GL_EXT_geometry_shader4, -1, STATE_GLOBAL },
-    { STATE_NAME_EXT(GL_MAX_GEOMETRY_TOTAL_OUTPUT_COMPONENTS, _EXT), TYPE_5GLint, -1, BUGLE_GL_EXT_geometry_shader4, -1, STATE_GLOBAL },
-    { STATE_NAME_EXT(GL_MAX_GEOMETRY_UNIFORM_COMPONENTS, _EXT), TYPE_5GLint, -1, BUGLE_GL_EXT_geometry_shader4, -1, STATE_GLOBAL },
-    { STATE_NAME_EXT(GL_MAX_GEOMETRY_VARYING_COMPONENTS, _EXT), TYPE_5GLint, -1, BUGLE_GL_EXT_geometry_shader4, -1, STATE_GLOBAL },
-    { STATE_NAME_EXT(GL_MAX_VERTEX_VARYING_COMPONENTS, _EXT), TYPE_5GLint, -1, BUGLE_GL_EXT_geometry_shader4, -1, STATE_GLOBAL },
-#endif
 #ifdef GL_ARB_fragment_program
     { STATE_NAME_EXT(GL_MAX_TEXTURE_IMAGE_UNITS, _ARB), TYPE_5GLint, -1, BUGLE_EXTGROUP_texunits, -1, STATE_GLOBAL },
     { STATE_NAME_EXT(GL_MAX_TEXTURE_COORDS, _ARB), TYPE_5GLint, -1, BUGLE_EXTGROUP_texunits, -1, STATE_GLOBAL },
@@ -579,13 +560,6 @@ static const state_info global_state[] =
 #ifdef GL_ARB_fragment_shader
     { STATE_NAME_EXT(GL_MAX_FRAGMENT_UNIFORM_COMPONENTS, _ARB), TYPE_5GLint, -1, BUGLE_GL_ARB_fragment_shader, -1, STATE_GLOBAL },
 #endif
-#ifdef GL_EXT_bindable_uniform
-    { STATE_NAME_EXT(GL_MAX_VERTEX_BINDABLE_UNIFORMS, _EXT), TYPE_5GLint, -1, BUGLE_GL_EXT_bindable_uniform, -1, STATE_GLOBAL },
-    { STATE_NAME_EXT(GL_MAX_GEOMETRY_BINDABLE_UNIFORMS, _EXT), TYPE_5GLint, -1, BUGLE_GL_EXT_bindable_uniform, -1, STATE_GLOBAL },
-    { STATE_NAME_EXT(GL_MAX_FRAGMENT_BINDABLE_UNIFORMS, _EXT), TYPE_5GLint, -1, BUGLE_GL_EXT_bindable_uniform, -1, STATE_GLOBAL },
-    { STATE_NAME_EXT(GL_MAX_BINDABLE_UNIFORM_SIZE, _EXT), TYPE_5GLint, -1, BUGLE_GL_EXT_bindable_uniform, -1, STATE_GLOBAL },
-#endif
-    /* Note: The GL 2.0 spec duplicates some entries at this point */
 #ifdef GL_ATI_draw_buffers
     { STATE_NAME_EXT(GL_MAX_DRAW_BUFFERS, _ATI), TYPE_5GLint, -1, BUGLE_GL_ATI_draw_buffers, -1, STATE_GLOBAL },
 #endif
@@ -614,10 +588,8 @@ static const state_info global_state[] =
     { STATE_NAME(GL_FEEDBACK_BUFFER_TYPE), TYPE_6GLenum, -1, BUGLE_GL_VERSION_1_1, -1, STATE_GLOBAL },
     /* FIXME: glGetError */
 
-    /* The remaining state is not part of the GL 2.0 state, but pure
-     * extensions. The vertex and fragment program stuff are named with _ARB
-     * suffix, to avoid confusion with the GLSL. They can probably never
-     * be promoted to core, since this would lead to name collisions with GLSL.
+    /* The remaining state is not part of the GL 2.1 state, but pure
+     * extensions.
      */
 #if defined(GL_ARB_vertex_program) || defined(GL_ARB_fragment_program)
     { STATE_NAME(GL_PROGRAM_ERROR_POSITION_ARB), TYPE_5GLint, -1, BUGLE_EXTGROUP_old_program, -1, STATE_GLOBAL },
@@ -626,29 +598,72 @@ static const state_info global_state[] =
     { STATE_NAME(GL_MAX_PROGRAM_MATRIX_STACK_DEPTH_ARB), TYPE_5GLint, -1, BUGLE_EXTGROUP_old_program, -1, STATE_GLOBAL },
 #endif
 #ifdef GL_EXT_texture_filter_anisotropic
-    { STATE_NAME_EXT(GL_MAX_TEXTURE_MAX_ANISOTROPY, _EXT), TYPE_8GLdouble, -1, BUGLE_GL_EXT_texture_filter_anisotropic, -1, STATE_GLOBAL },
+    { STATE_NAME(GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT), TYPE_8GLdouble, -1, BUGLE_GL_EXT_texture_filter_anisotropic, -1, STATE_GLOBAL },
 #endif
 #ifdef GL_NV_texture_rectangle
-    { STATE_NAME_EXT(GL_MAX_RECTANGLE_TEXTURE_SIZE, _NV), TYPE_5GLint, -1, BUGLE_GL_NV_texture_rectangle, -1, STATE_GLOBAL },
+    { STATE_NAME(GL_MAX_RECTANGLE_TEXTURE_SIZE_NV), TYPE_5GLint, -1, BUGLE_GL_NV_texture_rectangle, -1, STATE_GLOBAL },
 #endif
 #ifdef GL_NV_depth_clamp
-    { STATE_NAME_EXT(GL_DEPTH_CLAMP, _NV), TYPE_9GLboolean, -1, BUGLE_GL_NV_depth_clamp, -1, STATE_ENABLED },
+    { STATE_NAME(GL_DEPTH_CLAMP_NV), TYPE_9GLboolean, -1, BUGLE_GL_NV_depth_clamp, -1, STATE_ENABLED },
 #endif
 #ifdef GL_NV_light_max_exponent
-    { STATE_NAME_EXT(GL_MAX_SHININESS, _NV), TYPE_5GLint, -1, BUGLE_GL_NV_light_max_exponent, -1, STATE_GLOBAL },
-    { STATE_NAME_EXT(GL_MAX_SPOT_EXPONENT, _NV), TYPE_5GLint, -1, BUGLE_GL_NV_light_max_exponent, -1, STATE_GLOBAL },
+    { STATE_NAME(GL_MAX_SHININESS_NV), TYPE_5GLint, -1, BUGLE_GL_NV_light_max_exponent, -1, STATE_GLOBAL },
+    { STATE_NAME(GL_MAX_SPOT_EXPONENT_NV), TYPE_5GLint, -1, BUGLE_GL_NV_light_max_exponent, -1, STATE_GLOBAL },
 #endif
 #ifdef GL_NV_multisample_filter_hint
-    { STATE_NAME_EXT(GL_MULTISAMPLE_FILTER_HINT, _NV), TYPE_6GLenum, -1, BUGLE_GL_NV_multisample_filter_hint, -1, STATE_GLOBAL },
+    { STATE_NAME(GL_MULTISAMPLE_FILTER_HINT_NV), TYPE_6GLenum, -1, BUGLE_GL_NV_multisample_filter_hint, -1, STATE_GLOBAL },
 #endif
 #ifdef GL_IBM_rasterpos_clip
-    { STATE_NAME_EXT(GL_RASTER_POSITION_UNCLIPPED, _IBM), TYPE_9GLboolean, -1, BUGLE_GL_IBM_rasterpos_clip, -1, STATE_ENABLED },
+    { STATE_NAME(GL_RASTER_POSITION_UNCLIPPED_IBM), TYPE_9GLboolean, -1, BUGLE_GL_IBM_rasterpos_clip, -1, STATE_ENABLED },
 #endif
 #ifdef GL_EXT_framebuffer_object
     { STATE_NAME(GL_RENDERBUFFER_BINDING_EXT), TYPE_5GLint, -1, BUGLE_GL_EXT_framebuffer_object, -1, STATE_GLOBAL },
     { STATE_NAME(GL_FRAMEBUFFER_BINDING_EXT), TYPE_5GLint, -1, BUGLE_GL_EXT_framebuffer_object, -1, STATE_GLOBAL },
     { STATE_NAME(GL_MAX_RENDERBUFFER_SIZE_EXT), TYPE_5GLint, -1, BUGLE_GL_EXT_framebuffer_object, -1, STATE_GLOBAL },
 #endif
+#ifdef GL_EXT_depth_bounds_test
+    { STATE_NAME(GL_DEPTH_BOUNDS_TEST_EXT), TYPE_9GLboolean, -1, BUGLE_GL_EXT_depth_bounds_test, -1, STATE_ENABLED },
+    { STATE_NAME(GL_DEPTH_BOUNDS_EXT), TYPE_8GLdouble, 2, BUGLE_GL_EXT_depth_bounds_test, -1, STATE_GLOBAL },
+#endif
+    /* G80 extensions */
+#ifdef GL_EXT_texture_buffer_object
+    { STATE_NAME(GL_MAX_TEXTURE_BUFFER_SIZE_EXT), TYPE_5GLint, -1, BUGLE_GL_EXT_texture_buffer_object, -1, STATE_GLOBAL },
+#endif
+#ifdef GL_EXT_geometry_shader4
+    { STATE_NAME(GL_MAX_GEOMETRY_TEXTURE_IMAGE_UNITS_EXT), TYPE_5GLint, -1, BUGLE_GL_EXT_geometry_shader4, -1, STATE_GLOBAL },
+    { STATE_NAME(GL_MAX_GEOMETRY_OUTPUT_VERTICES_EXT), TYPE_5GLint, -1, BUGLE_GL_EXT_geometry_shader4, -1, STATE_GLOBAL },
+    { STATE_NAME(GL_MAX_GEOMETRY_TOTAL_OUTPUT_COMPONENTS_EXT), TYPE_5GLint, -1, BUGLE_GL_EXT_geometry_shader4, -1, STATE_GLOBAL },
+    { STATE_NAME(GL_MAX_GEOMETRY_UNIFORM_COMPONENTS_EXT), TYPE_5GLint, -1, BUGLE_GL_EXT_geometry_shader4, -1, STATE_GLOBAL },
+    { STATE_NAME(GL_MAX_GEOMETRY_VARYING_COMPONENTS_EXT), TYPE_5GLint, -1, BUGLE_GL_EXT_geometry_shader4, -1, STATE_GLOBAL },
+    { STATE_NAME(GL_MAX_VERTEX_VARYING_COMPONENTS_EXT), TYPE_5GLint, -1, BUGLE_GL_EXT_geometry_shader4, -1, STATE_GLOBAL },
+#endif
+#ifdef GL_EXT_bindable_uniform
+    { STATE_NAME(GL_MAX_VERTEX_BINDABLE_UNIFORMS_EXT), TYPE_5GLint, -1, BUGLE_GL_EXT_bindable_uniform, -1, STATE_GLOBAL },
+    { STATE_NAME(GL_MAX_GEOMETRY_BINDABLE_UNIFORMS_EXT), TYPE_5GLint, -1, BUGLE_GL_EXT_bindable_uniform, -1, STATE_GLOBAL },
+    { STATE_NAME(GL_MAX_FRAGMENT_BINDABLE_UNIFORMS_EXT), TYPE_5GLint, -1, BUGLE_GL_EXT_bindable_uniform, -1, STATE_GLOBAL },
+    { STATE_NAME(GL_MAX_BINDABLE_UNIFORM_SIZE_EXT), TYPE_5GLint, -1, BUGLE_GL_EXT_bindable_uniform, -1, STATE_GLOBAL },
+    { STATE_NAME(GL_UNIFORM_BUFFER_BINDING_EXT), TYPE_5GLint, -1, BUGLE_GL_EXT_bindable_uniform, -1, STATE_GLOBAL },
+#endif
+#ifdef GL_EXT_packed_float
+    { STATE_NAME(GL_RGBA_SIGNED_COMPONENTS_EXT), TYPE_9GLboolean, 4, BUGLE_GL_EXT_packed_float, -1, STATE_GLOBAL },
+#endif
+#ifdef GL_EXT_framebuffer_sRGB
+    { STATE_NAME(GL_FRAMEBUFFER_SRGB_CAPABLE_EXT), TYPE_9GLboolean, 4, BUGLE_GL_EXT_framebuffer_sRGB, -1, STATE_GLOBAL },
+    { STATE_NAME(GL_FRAMEBUFFER_SRGB_EXT), TYPE_9GLboolean, -1, BUGLE_GL_EXT_framebuffer_sRGB, -1, STATE_ENABLED },
+#endif
+#ifdef GL_NV_transform_feedback
+    /* glext.h gets the name wrong */
+#ifdef GL_MAX_TRANSFORM_FEEDBACK_INTERLEAVED_COMPONENTS_NV
+    { STATE_NAME(GL_MAX_TRANSFORM_FEEDBACK_INTERLEAVED_COMPONENTS_NV), TYPE_5GLint, -1, BUGLE_GL_NV_transform_feedback, -1, STATE_GLOBAL },
+#else
+    { "GL_MAX_TRANSFORM_FEEDBACK_INTERLEAVED_COMPONENTS_NV", 0x8C8A, TYPE_5GLint, -1, BUGLE_GL_NV_transform_feedback, -1, STATE_GLOBAL },
+#endif
+    { STATE_NAME(GL_MAX_TRANSFORM_FEEDBACK_SEPARATE_ATTRIBS_NV), TYPE_5GLint, -1, BUGLE_GL_NV_transform_feedback, -1, STATE_GLOBAL },
+    { STATE_NAME(GL_MAX_TRANSFORM_FEEDBACK_SEPARATE_COMPONENTS_NV), TYPE_5GLint, -1, BUGLE_GL_NV_transform_feedback, -1, STATE_GLOBAL },
+    { STATE_NAME(GL_TRANSFORM_FEEDBACK_BUFFER_MODE_NV), TYPE_6GLenum -1, BUGLE_GL_NV_transform_feedback, -1, STATE_GLOBAL },
+    { STATE_NAME(GL_TRANSFORM_FEEDBACK_ATTRIBS_NV), TYPE_5GLint, -1, BUGLE_GL_NV_transform_feedback, -1, STATE_GLOBAL },
+    { STATE_NAME(GL_RASTERIZER_DISCARD_NV), TYPE_9GLboolean, -1, BUGLE_GL_NV_transform_feedback, -1, STATE_ENABLED },
+#endif /* GL_NV_transform_feedback */
     { NULL, GL_NONE, NULL_TYPE, 0, -1, -1, 0 }
 };
 
@@ -670,10 +685,6 @@ static const state_info tex_parameter_state[] =
     { STATE_NAME_EXT(GL_TEXTURE_BASE_LEVEL, _SGIS), TYPE_5GLint, -1, BUGLE_GL_SGIS_texture_lod, -1, STATE_TEX_PARAMETER },
     { STATE_NAME_EXT(GL_TEXTURE_MAX_LEVEL, _SGIS), TYPE_5GLint, -1, BUGLE_GL_SGIS_texture_lod, -1, STATE_TEX_PARAMETER },
 #endif
-#ifdef GL_EXT_depth_bounds_test
-    { STATE_NAME_EXT(GL_DEPTH_BOUNDS_TEST, _EXT), TYPE_9GLboolean, -1, BUGLE_GL_EXT_depth_bounds_test, -1, STATE_ENABLED },
-    { STATE_NAME_EXT(GL_DEPTH_BOUNDS, _EXT), TYPE_8GLdouble, 2, BUGLE_GL_EXT_depth_bounds_test, -1, STATE_GLOBAL },
-#endif
 #ifdef GL_EXT_texture_lod_bias
     { STATE_NAME_EXT(GL_TEXTURE_LOD_BIAS, _EXT), TYPE_8GLdouble, -1, BUGLE_GL_EXT_texture_lod_bias, -1, STATE_TEX_PARAMETER },
 #endif
@@ -688,9 +699,9 @@ static const state_info tex_parameter_state[] =
     { STATE_NAME_EXT(GL_GENERATE_MIPMAP, _SGIS), TYPE_9GLboolean, -1, BUGLE_GL_SGIS_generate_mipmap, -1, STATE_TEX_PARAMETER },
 #endif
 
-    /* Non-GL2.0 state */
+    /* Non-GL2.1 state */
 #ifdef GL_EXT_texture_filter_anisotropic
-    { STATE_NAME_EXT(GL_TEXTURE_MAX_ANISOTROPY, _EXT), TYPE_8GLdouble, -1, BUGLE_GL_EXT_texture_filter_anisotropic, -1, STATE_TEX_PARAMETER },
+    { STATE_NAME(GL_TEXTURE_MAX_ANISOTROPY_EXT), TYPE_8GLdouble, -1, BUGLE_GL_EXT_texture_filter_anisotropic, -1, STATE_TEX_PARAMETER },
 #endif
 #ifdef GL_NV_texture_expand_normal
     /* Disabled for now because it causes errors.
@@ -719,10 +730,10 @@ static const state_info tex_level_parameter_state[] =
     { STATE_NAME_EXT(GL_TEXTURE_DEPTH_SIZE, _ARB), TYPE_5GLint, -1, BUGLE_GL_ARB_depth_texture, -1, STATE_TEX_LEVEL_PARAMETER },
 #endif
 #ifdef GL_EXT_palette_texture
-    { STATE_NAME_EXT(GL_TEXTURE_INDEX_SIZE, _EXT), TYPE_5GLint, -1, BUGLE_GL_EXT_palette_texture, -1, STATE_TEX_LEVEL_PARAMETER },
+    { STATE_NAME(GL_TEXTURE_INDEX_SIZE_EXT), TYPE_5GLint, -1, BUGLE_GL_EXT_palette_texture, -1, STATE_TEX_LEVEL_PARAMETER },
 #endif
 #ifdef GL_EXT_texture_shared_exponent
-    { STATE_NAME_EXT(GL_TEXTURE_SHARED_SIZE, _EXT), TYPE_5GLint, -1, BUGLE_GL_EXT_texture_shared_exponent, -1, STATE_TEX_LEVEL_PARAMETER },
+    { STATE_NAME(GL_TEXTURE_SHARED_SIZE_EXT), TYPE_5GLint, -1, BUGLE_GL_EXT_texture_shared_exponent, -1, STATE_TEX_LEVEL_PARAMETER },
 #endif
 #ifdef GL_ARB_texture_compression
     { STATE_NAME_EXT(GL_TEXTURE_COMPRESSED, _ARB), TYPE_9GLboolean, -1, BUGLE_GL_ARB_texture_compression, -1, STATE_TEX_LEVEL_PARAMETER },
@@ -736,8 +747,8 @@ static const state_info tex_level_parameter_state[] =
 static const state_info tex_buffer_state[] =
 {
 #ifdef GL_EXT_texture_buffer_object
-    { STATE_NAME_EXT(GL_TEXTURE_BUFFER_DATA_STORE_BINDING, _EXT), TYPE_5GLint, -1, BUGLE_GL_EXT_texture_buffer_object, -1, STATE_GLOBAL | STATE_MULTIPLEX_BIND_TEXTURE },
-    { STATE_NAME_EXT(GL_TEXTURE_BUFFER_FORMAT, _EXT), TYPE_6GLenum, -1, BUGLE_GL_EXT_texture_buffer_object, -1, STATE_GLOBAL | STATE_MULTIPLEX_BIND_TEXTURE },
+    { STATE_NAME(GL_TEXTURE_BUFFER_DATA_STORE_BINDING_EXT), TYPE_5GLint, -1, BUGLE_GL_EXT_texture_buffer_object, -1, STATE_GLOBAL | STATE_MULTIPLEX_BIND_TEXTURE },
+    { STATE_NAME(GL_TEXTURE_BUFFER_FORMAT_EXT), TYPE_6GLenum, -1, BUGLE_GL_EXT_texture_buffer_object, -1, STATE_GLOBAL | STATE_MULTIPLEX_BIND_TEXTURE },
 #endif
     { NULL, GL_NONE, NULL_TYPE, 0, -1, -1, 0 }
 };
@@ -795,7 +806,7 @@ static const state_info tex_unit_state[] =
     { STATE_NAME_EXT(GL_TEXTURE_CUBE_MAP, _ARB), TYPE_9GLboolean, -1, BUGLE_GL_ARB_texture_cube_map, -1, STATE_TEX_UNIT_ENABLED | STATE_SELECT_TEXTURE_ENV },
 #endif
 #ifdef GL_NV_texture_rectangle
-    { STATE_NAME_EXT(GL_TEXTURE_RECTANGLE, _NV), TYPE_9GLboolean, -1, BUGLE_GL_NV_texture_rectangle, -1, STATE_TEX_UNIT_ENABLED | STATE_SELECT_TEXTURE_ENV },
+    { "GL_TEXTURE_RECTANGLE_ARB", GL_TEXTURE_RECTANGLE_NV, TYPE_9GLboolean, -1, BUGLE_GL_NV_texture_rectangle, -1, STATE_TEX_UNIT_ENABLED | STATE_SELECT_TEXTURE_ENV },
 #endif
     { STATE_NAME(GL_TEXTURE_BINDING_1D), TYPE_5GLint, -1, BUGLE_GL_VERSION_1_1, -1, STATE_TEX_UNIT | STATE_SELECT_TEXTURE_IMAGE },
     { STATE_NAME(GL_TEXTURE_BINDING_2D), TYPE_5GLint, -1, BUGLE_GL_VERSION_1_1, -1, STATE_TEX_UNIT | STATE_SELECT_TEXTURE_IMAGE },
@@ -806,10 +817,10 @@ static const state_info tex_unit_state[] =
     { STATE_NAME_EXT(GL_TEXTURE_BINDING_CUBE_MAP, _ARB), TYPE_5GLint, -1, BUGLE_GL_ARB_texture_cube_map, -1, STATE_TEX_UNIT | STATE_SELECT_TEXTURE_IMAGE },
 #endif
 #ifdef GL_NV_texture_rectangle
-    { STATE_NAME_EXT(GL_TEXTURE_BINDING_RECTANGLE, _NV), TYPE_5GLint, -1, BUGLE_GL_NV_texture_rectangle, -1, STATE_TEX_UNIT | STATE_SELECT_TEXTURE_IMAGE },
+    { "GL_TEXTURE_BINDING_RECTANGLE_ARB", GL_TEXTURE_BINDING_RECTANGLE_NV, TYPE_5GLint, -1, BUGLE_GL_NV_texture_rectangle, -1, STATE_TEX_UNIT | STATE_SELECT_TEXTURE_IMAGE },
 #endif
 #ifdef GL_EXT_texture_buffer_object
-    { STATE_NAME_EXT(GL_TEXTURE_BINDING_BUFFER, _EXT), TYPE_5GLint, -1, BUGLE_GL_EXT_texture_buffer_object, -1, STATE_TEX_UNIT | STATE_SELECT_TEXTURE_IMAGE },
+    { STATE_NAME(GL_TEXTURE_BINDING_BUFFER_EXT), TYPE_5GLint, -1, BUGLE_GL_EXT_texture_buffer_object, -1, STATE_TEX_UNIT | STATE_SELECT_TEXTURE_IMAGE },
 #endif
     /* FIXME: GetTexImage */
     { NULL, GL_NONE, NULL_TYPE, 0, -1, -1, 0 }
@@ -933,9 +944,15 @@ static const state_info program_state[] =
     { "GL_ACTIVE_ATTRIBUTE_MAX_LENGTH", GL_OBJECT_ACTIVE_ATTRIBUTE_MAX_LENGTH_ARB, TYPE_5GLint, -1, BUGLE_GL_ARB_vertex_shader, -1, STATE_PROGRAM },
 #endif
 #ifdef GL_EXT_geometry_shader4
-    { STATE_NAME_EXT(GL_GEOMETRY_VERTICES_OUT, _EXT), TYPE_5GLint, -1, BUGLE_GL_EXT_geometry_shader4, -1, STATE_PROGRAM },
-    { STATE_NAME_EXT(GL_GEOMETRY_INPUT_TYPE, _EXT), TYPE_6GLenum, -1, BUGLE_GL_EXT_geometry_shader4, -1, STATE_PROGRAM },
-    { STATE_NAME_EXT(GL_GEOMETRY_OUTPUT_TYPE, _EXT), TYPE_6GLenum, -1, BUGLE_GL_EXT_geometry_shader4, -1, STATE_PROGRAM },
+    { STATE_NAME(GL_GEOMETRY_VERTICES_OUT_EXT), TYPE_5GLint, -1, BUGLE_GL_EXT_geometry_shader4, -1, STATE_PROGRAM },
+    { STATE_NAME(GL_GEOMETRY_INPUT_TYPE_EXT), TYPE_6GLenum, -1, BUGLE_GL_EXT_geometry_shader4, -1, STATE_PROGRAM },
+    { STATE_NAME(GL_GEOMETRY_OUTPUT_TYPE_EXT), TYPE_6GLenum, -1, BUGLE_GL_EXT_geometry_shader4, -1, STATE_PROGRAM },
+#endif
+#ifdef GL_NV_transform_feedback
+    { STATE_NAME(GL_ACTIVE_VARYINGS_NV), TYPE_5GLint, -1, BUGLE_GL_NV_transform_feedback, -1, STATE_PROGRAM },
+    { STATE_NAME(GL_ACTIVE_VARYING_MAX_LENGTH_NV), TYPE_5GLint, -1, BUGLE_GL_NV_transform_feedback, -1, STATE_PROGRAM },
+    { STATE_NAME(GL_TRANSFORM_FEEDBACK_BUFFER_MODE_NV), TYPE_6GLenum, -1, BUGLE_GL_NV_transform_feedback, -1, STATE_PROGRAM },
+    { STATE_NAME(GL_TRANSFORM_FEEDBACK_VARYINGS_NV), TYPE_5GLint, -1, BUGLE_GL_NV_transform_feedback, -1, STATE_PROGRAM },
 #endif
     { NULL, GL_NONE, NULL_TYPE, 0, -1, -1, 0 }
 };
@@ -1056,16 +1073,16 @@ static const state_info buffer_parameter_state[] =
 static const state_info renderbuffer_parameter_state[] =
 {
 #ifdef GL_EXT_framebuffer_object
-    { STATE_NAME_EXT(GL_RENDERBUFFER_WIDTH, _EXT), TYPE_5GLint, -1, BUGLE_GL_EXT_framebuffer_object, -1, STATE_RENDERBUFFER_PARAMETER },
-    { STATE_NAME_EXT(GL_RENDERBUFFER_HEIGHT, _EXT), TYPE_5GLint, -1, BUGLE_GL_EXT_framebuffer_object, -1, STATE_RENDERBUFFER_PARAMETER },
-    { STATE_NAME_EXT(GL_RENDERBUFFER_INTERNAL_FORMAT, _EXT), TYPE_6GLenum, -1, BUGLE_GL_EXT_framebuffer_object, -1, STATE_RENDERBUFFER_PARAMETER },
+    { STATE_NAME(GL_RENDERBUFFER_WIDTH_EXT), TYPE_5GLint, -1, BUGLE_GL_EXT_framebuffer_object, -1, STATE_RENDERBUFFER_PARAMETER },
+    { STATE_NAME(GL_RENDERBUFFER_HEIGHT_EXT), TYPE_5GLint, -1, BUGLE_GL_EXT_framebuffer_object, -1, STATE_RENDERBUFFER_PARAMETER },
+    { STATE_NAME(GL_RENDERBUFFER_INTERNAL_FORMAT_EXT), TYPE_6GLenum, -1, BUGLE_GL_EXT_framebuffer_object, -1, STATE_RENDERBUFFER_PARAMETER },
 #ifdef GL_RENDERBUFFER_RED_SIZE_EXT /* glext.h version 26 is missing these */
-    { STATE_NAME_EXT(GL_RENDERBUFFER_RED_SIZE, _EXT), TYPE_5GLint, -1, BUGLE_GL_EXT_framebuffer_object, -1, STATE_RENDERBUFFER_PARAMETER },
-    { STATE_NAME_EXT(GL_RENDERBUFFER_GREEN_SIZE, _EXT), TYPE_5GLint, -1, BUGLE_GL_EXT_framebuffer_object, -1, STATE_RENDERBUFFER_PARAMETER },
-    { STATE_NAME_EXT(GL_RENDERBUFFER_BLUE_SIZE, _EXT), TYPE_5GLint, -1, BUGLE_GL_EXT_framebuffer_object, -1, STATE_RENDERBUFFER_PARAMETER },
-    { STATE_NAME_EXT(GL_RENDERBUFFER_ALPHA_SIZE, _EXT), TYPE_5GLint, -1, BUGLE_GL_EXT_framebuffer_object, -1, STATE_RENDERBUFFER_PARAMETER },
-    { STATE_NAME_EXT(GL_RENDERBUFFER_DEPTH_SIZE, _EXT), TYPE_5GLint, -1, BUGLE_GL_EXT_framebuffer_object, -1, STATE_RENDERBUFFER_PARAMETER },
-    { STATE_NAME_EXT(GL_RENDERBUFFER_STENCIL_SIZE, _EXT), TYPE_5GLint, -1, BUGLE_GL_EXT_framebuffer_object, -1, STATE_RENDERBUFFER_PARAMETER },
+    { STATE_NAME(GL_RENDERBUFFER_RED_SIZE_EXT), TYPE_5GLint, -1, BUGLE_GL_EXT_framebuffer_object, -1, STATE_RENDERBUFFER_PARAMETER },
+    { STATE_NAME(GL_RENDERBUFFER_GREEN_SIZE_EXT), TYPE_5GLint, -1, BUGLE_GL_EXT_framebuffer_object, -1, STATE_RENDERBUFFER_PARAMETER },
+    { STATE_NAME(GL_RENDERBUFFER_BLUE_SIZE_EXT), TYPE_5GLint, -1, BUGLE_GL_EXT_framebuffer_object, -1, STATE_RENDERBUFFER_PARAMETER },
+    { STATE_NAME(GL_RENDERBUFFER_ALPHA_SIZE_EXT), TYPE_5GLint, -1, BUGLE_GL_EXT_framebuffer_object, -1, STATE_RENDERBUFFER_PARAMETER },
+    { STATE_NAME(GL_RENDERBUFFER_DEPTH_SIZE_EXT), TYPE_5GLint, -1, BUGLE_GL_EXT_framebuffer_object, -1, STATE_RENDERBUFFER_PARAMETER },
+    { STATE_NAME(GL_RENDERBUFFER_STENCIL_SIZE_EXT), TYPE_5GLint, -1, BUGLE_GL_EXT_framebuffer_object, -1, STATE_RENDERBUFFER_PARAMETER },
 #endif
 #endif
     { NULL, GL_NONE, NULL_TYPE, 0, -1, -1, 0 }
@@ -1108,7 +1125,7 @@ static const state_info framebuffer_parameter_state[] =
     { STATE_NAME(GL_STENCIL_REF), TYPE_5GLint, -1, BUGLE_GL_VERSION_1_1, -1, STATE_FRAMEBUFFER_PARAMETER },
     { STATE_NAME(GL_MAX_COLOR_ATTACHMENTS_EXT), TYPE_5GLint, -1, BUGLE_GL_VERSION_1_1, -1, STATE_FRAMEBUFFER_PARAMETER },
 #ifdef GL_EXT_packed_float
-    { STATE_NAME_EXT(GL_RGBA_SIGNED_COMPONENTS, _EXT), TYPE_9GLboolean, 4, BUGLE_GL_EXT_packed_float, -1, STATE_GLOBAL },
+    { STATE_NAME(GL_RGBA_SIGNED_COMPONENTS_EXT), TYPE_9GLboolean, 4, BUGLE_GL_EXT_packed_float, -1, STATE_FRAMEBUFFER_PARAMETER },
 #endif
 #endif /* GL_EXT_framebuffer_object */
     { NULL, GL_NONE, NULL_TYPE, 0, -1, -1, 0 }
@@ -1117,15 +1134,26 @@ static const state_info framebuffer_parameter_state[] =
 static const state_info framebuffer_attachment_parameter_state[] =
 {
 #ifdef GL_EXT_framebuffer_object
-    { STATE_NAME_EXT(GL_FRAMEBUFFER_ATTACHMENT_OBJECT_TYPE, _EXT), TYPE_6GLenum, -1, BUGLE_GL_EXT_framebuffer_object, -1, STATE_FRAMEBUFFER_ATTACHMENT_PARAMETER },
-    { STATE_NAME_EXT(GL_FRAMEBUFFER_ATTACHMENT_OBJECT_NAME, _EXT), TYPE_5GLint, -1, BUGLE_GL_EXT_framebuffer_object, -1, STATE_FRAMEBUFFER_ATTACHMENT_PARAMETER },
-    { STATE_NAME_EXT(GL_FRAMEBUFFER_ATTACHMENT_TEXTURE_LEVEL, _EXT), TYPE_5GLint, -1, BUGLE_GL_EXT_framebuffer_object, -1, STATE_FRAMEBUFFER_ATTACHMENT_PARAMETER },
-    { STATE_NAME_EXT(GL_FRAMEBUFFER_ATTACHMENT_TEXTURE_CUBE_MAP_FACE, _EXT), TYPE_6GLenum, -1, BUGLE_GL_EXT_framebuffer_object, -1, STATE_FRAMEBUFFER_ATTACHMENT_PARAMETER },
-    { "GL_FRAMEBUFFER_ATTACHMENT_TEXTURE_LAYER", GL_FRAMEBUFFER_ATTACHMENT_TEXTURE_3D_ZOFFSET_EXT, TYPE_5GLint, -1, BUGLE_GL_EXT_framebuffer_object, -1, STATE_FRAMEBUFFER_ATTACHMENT_PARAMETER },
+    { STATE_NAME(GL_FRAMEBUFFER_ATTACHMENT_OBJECT_TYPE_EXT), TYPE_6GLenum, -1, BUGLE_GL_EXT_framebuffer_object, -1, STATE_FRAMEBUFFER_ATTACHMENT_PARAMETER },
+    { STATE_NAME(GL_FRAMEBUFFER_ATTACHMENT_OBJECT_NAME_EXT), TYPE_5GLint, -1, BUGLE_GL_EXT_framebuffer_object, -1, STATE_FRAMEBUFFER_ATTACHMENT_PARAMETER },
+    { STATE_NAME(GL_FRAMEBUFFER_ATTACHMENT_TEXTURE_LEVEL_EXT), TYPE_5GLint, -1, BUGLE_GL_EXT_framebuffer_object, -1, STATE_FRAMEBUFFER_ATTACHMENT_PARAMETER },
+    { STATE_NAME(GL_FRAMEBUFFER_ATTACHMENT_TEXTURE_CUBE_MAP_FACE_EXT), TYPE_6GLenum, -1, BUGLE_GL_EXT_framebuffer_object, -1, STATE_FRAMEBUFFER_ATTACHMENT_PARAMETER },
+    { "GL_FRAMEBUFFER_ATTACHMENT_TEXTURE_LAYER_EXT", GL_FRAMEBUFFER_ATTACHMENT_TEXTURE_3D_ZOFFSET_EXT, TYPE_5GLint, -1, BUGLE_GL_EXT_framebuffer_object, -1, STATE_FRAMEBUFFER_ATTACHMENT_PARAMETER },
 #ifdef GL_EXT_geometry_shader4
-    { STATE_NAME_EXT(GL_FRAMEBUFFER_ATTACHMENT_LAYERED, _EXT), TYPE_9GLboolean, -1, BUGLE_GL_EXT_geometry_shader4, -1, STATE_FRAMEBUFFER_ATTACHMENT_PARAMETER },
+    { STATE_NAME(GL_FRAMEBUFFER_ATTACHMENT_LAYERED_EXT), TYPE_9GLboolean, -1, BUGLE_GL_EXT_geometry_shader4, -1, STATE_FRAMEBUFFER_ATTACHMENT_PARAMETER },
 #endif
 #endif /* GL_EXT_framebuffer_object */
+    { NULL, GL_NONE, NULL_TYPE, 0, -1, -1, 0 }
+};
+
+static const state_info transform_feedback_buffer_state[] =
+{
+#ifdef GL_NV_transform_feedback
+    { STATE_NAME(GL_TRANSFORM_FEEDBACK_RECORD_NV), TYPE_11GLxfbattrib, -1, BUGLE_GL_NV_transform_feedback, -1, STATE_INDEXED },
+    { STATE_NAME(GL_TRANSFORM_FEEDBACK_BUFFER_BINDING_NV), TYPE_5GLint, -1, BUGLE_GL_NV_transform_feedback, -1, STATE_INDEXED },
+    { STATE_NAME(GL_TRANSFORM_FEEDBACK_BUFFER_START_NV), TYPE_5GLint, -1, BUGLE_GL_NV_transform_feedback, -1, STATE_INDEXED },
+    { STATE_NAME(GL_TRANSFORM_FEEDBACK_BUFFER_SIZE_NV), TYPE_5GLint, -1, BUGLE_GL_NV_transform_feedback, -1, STATE_INDEXED },
+#endif /* GL_NV_transform_feedback */
     { NULL, GL_NONE, NULL_TYPE, 0, -1, -1, 0 }
 };
 
@@ -1212,7 +1240,11 @@ static const enum_list query_enums[] =
     { STATE_NAME_EXT(GL_SAMPLES_PASSED, _ARB), BUGLE_GL_ARB_occlusion_query },
 #endif
 #ifdef GL_EXT_timer_query
-    { STATE_NAME_EXT(GL_TIME_ELAPSED, _EXT), BUGLE_GL_EXT_timer_query },
+    { STATE_NAME(GL_TIME_ELAPSED_EXT), BUGLE_GL_EXT_timer_query },
+#endif
+#ifdef GL_NV_transform_feedback
+    { STATE_NAME(GL_PRIMITIVES_GENERATED_NV), BUGLE_GL_NV_transform_feedback },
+    { STATE_NAME(GL_TRANSFORM_FEEDBACK_PRIMITIVES_WRITTEN_NV), BUGLE_GL_NV_transform_feedback },
 #endif
     { NULL, GL_NONE, 0 }
 };
@@ -1243,6 +1275,7 @@ const state_info * const all_state[] =
     framebuffer_attachment_parameter_state,
     framebuffer_parameter_state,
     renderbuffer_parameter_state,
+    transform_feedback_buffer_state,
     NULL
 };
 
@@ -1305,6 +1338,14 @@ static void uniform_types(GLenum type,
     case GL_SAMPLER_2D_RECT_ARB:
     case GL_SAMPLER_2D_RECT_SHADOW_ARB:
         *in_type = TYPE_5GLint; *out_type = TYPE_5GLint; *length = -1; break;
+#endif
+#ifdef GL_VERSION_2_1
+    case GL_FLOAT_MAT2x3: *in_type = TYPE_7GLfloat; *out_type = TYPE_7GLfloat; *length = 6; break;
+    case GL_FLOAT_MAT2x4: *in_type = TYPE_7GLfloat; *out_type = TYPE_7GLfloat; *length = 8; break;
+    case GL_FLOAT_MAT3x2: *in_type = TYPE_7GLfloat; *out_type = TYPE_7GLfloat; *length = 6; break;
+    case GL_FLOAT_MAT3x4: *in_type = TYPE_7GLfloat; *out_type = TYPE_7GLfloat; *length = 12; break;
+    case GL_FLOAT_MAT4x2: *in_type = TYPE_7GLfloat; *out_type = TYPE_7GLfloat; *length = 8; break;
+    case GL_FLOAT_MAT4x3: *in_type = TYPE_7GLfloat; *out_type = TYPE_7GLfloat; *length = 12; break;
 #endif
     default:
         abort();
@@ -1417,6 +1458,7 @@ void bugle_state_get_raw(const glstate *state, bugle_state_raw *wrapper)
     GLboolean b[16];
     GLvoid *p[16];
     GLpolygonstipple stipple;
+    GLxfbattrib xfbattrib;
 #ifdef GL_ARB_shader_objects
     GLhandleARB h[16];
     GLsizei length;
@@ -1545,6 +1587,23 @@ void bugle_state_get_raw(const glstate *state, bugle_state_raw *wrapper)
         b[0] = CALL_glIsEnabled(pname);
         in_type = TYPE_9GLboolean;
         break;
+#ifdef GL_EXT_draw_buffers2
+    case STATE_MODE_INDEXED:
+        if (state->info->type == TYPE_9GLboolean)
+            CALL_glGetBooleanIndexedvEXT(pname, state->level, b);
+        else if (state->info->type == TYPE_11GLxfbattrib)
+            CALL_glGetIntegerIndexedvEXT(pname, state->level, &xfbattrib);
+        else
+        {
+            CALL_glGetIntegerIndexedvEXT(pname, state->level, i);
+            in_type = TYPE_5GLint;
+        }
+        break;
+    case STATE_MODE_ENABLED_INDEXED:
+        b[0] = CALL_glIsEnabledIndexedEXT(pname, state->numeric_name);
+        in_type = TYPE_9GLboolean;
+        break;
+#endif
     case STATE_MODE_TEXTURE_ENV:
     case STATE_MODE_TEXTURE_FILTER_CONTROL:
     case STATE_MODE_POINT_SPRITE:
@@ -1857,6 +1916,7 @@ void bugle_state_get_raw(const glstate *state, bugle_state_raw *wrapper)
         case TYPE_9GLboolean: in = b; break;
         case TYPE_P6GLvoid: in = p; break;
         case TYPE_16GLpolygonstipple: in = stipple; break;
+        case TYPE_11GLxfbattrib: in = &xfbattrib; break;
         default: abort();
         }
 
@@ -2638,6 +2698,24 @@ static void spawn_children_renderbuffer(const glstate *self, bugle_linked_list *
 }
 #endif /* GL_EXT_framebuffer_object */
 
+#ifdef GL_NV_transform_feedback
+static void spawn_children_transform_feedback_buffer(const glstate *self, bugle_linked_list *children)
+{
+    bugle_list_init(children, true);
+    make_leaves(self, transform_feedback_buffer_state, children);
+}
+
+static void spawn_children_transform_feedback(const glstate *self, bugle_linked_list *children)
+{
+    GLint buffers;
+
+    glGetIntegerv(GL_MAX_TRANSFORM_FEEDBACK_SEPARATE_ATTRIBS_NV, &buffers);
+    bugle_list_init(children, true);
+    make_counted(self, buffers, "%lu", 0, offsetof(glstate, level),
+                 spawn_children_transform_feedback_buffer, NULL, children);
+}
+#endif /* GL_NV_transform_feedback */
+
 static void spawn_children_global(const glstate *self, bugle_linked_list *children)
 {
     static const state_info enable =
@@ -2835,6 +2913,15 @@ static void spawn_children_global(const glstate *self, bugle_linked_list *childr
                     GL_RENDERBUFFER_EXT,
                     GL_RENDERBUFFER_BINDING_EXT,
                     spawn_children_renderbuffer, NULL, children);
+    }
+#endif
+#ifdef GL_NV_transform_feedback
+    if (bugle_gl_has_extension_group(BUGLE_GL_NV_transform_feedback))
+    {
+        make_target(self, "TransformFeedbackBuffers",
+                    0,
+                    GL_TRANSFORM_FEEDBACK_BUFFER_BINDING_NV,
+                    spawn_children_transform_feedback, NULL, children);
     }
 #endif
 }

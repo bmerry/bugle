@@ -132,10 +132,11 @@ BCFILES = bc/core1_1.bc bc/glsl1_20.bc bc/glx.bc \
 	bc/GL_ARB_shader_objects.bc bc/GL_ARB_occlusion_query.bc \
 	bc/GL_ARB_texture_compression.bc bc/GL_ARB_vertex_buffer_object.bc \
 	bc/GL_ARB_vertex_program.bc bc/GL_ATI_draw_buffers.bc \
-	bc/GL_EXT_blend_func_separate.bc \
+	bc/GL_EXT_blend_func_separate.bc bc/GL_EXT_draw_buffers2.bc \
 	bc/GL_EXT_draw_range_elements.bc bc/GL_EXT_multi_draw_arrays.bc \
 	bc/GL_EXT_secondary_color.bc bc/GL_EXT_texture3D.bc \
 	bc/GL_EXT_framebuffer_object.bc bc/GL_EXT_gpu_program_parameters.bc \
+	bc/GL_NV_transform_feedback.bc \
 	bc/GLX_ARB_get_proc_address.bc bc/GLX_SGI_make_current_read.bc \
 	bc/GLX_SGIX_fbconfig.bc bc/GLX_SGIX_pbuffer.bc
 

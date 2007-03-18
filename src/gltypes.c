@@ -180,3 +180,11 @@ bool bugle_dump_GLpolygonstipple(const GLubyte (*pattern)[4], FILE *out)
     fputs("}", out);
     return true;
 }
+
+bool bugle_dump_GLxfbattrib(const GLxfbattrib *a, FILE *out)
+{
+    fputs("{ ", out);
+    bugle_dump_GLenum(a->attribute, out);
+    fprintf(out, ", %d, %d }", (int) a->components, (int) a->index);
+    return true;
+}
