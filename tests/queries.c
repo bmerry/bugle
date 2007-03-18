@@ -446,7 +446,7 @@ static void query_shaders(void)
         lang120 = strcmp(language_version, "1.20") >= 0;
         source = lang120 ? source120 : source100;
         shader_source(v1, source);
-        shader_source(v2, "uniform float4 a[10];\n");
+        shader_source(v2, "uniform vec4 a[10];\n");
         glLinkProgramARB(p);
         fprintf(ref, "trace\\.call: glLinkProgramARB\\(%u\\)\n",
                 (unsigned int) p);
