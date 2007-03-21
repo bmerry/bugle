@@ -25,6 +25,8 @@
 #include <GL/gl.h>
 #include "common/linkedlist.h"
 
+struct glstate;
+
 typedef struct state_info
 {
     const char *name;
@@ -34,6 +36,13 @@ typedef struct state_info
     int extensions;
     int exclude;
     unsigned int flags;
+    /* Optional: arguments are the parent, the children list, and the state_info
+     * that contained the callback. If present, the other fields are ignored
+     * and can be used to pass information to the callback. However,
+     * extensions and exclude are still tested to determine whether to
+     * invoke the callback.
+     */
+    void (*spawn)(const struct glstate *, bugle_linked_list *, const struct state_info *);
 } state_info;
 
 typedef struct glstate
