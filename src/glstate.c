@@ -1192,6 +1192,50 @@ static void spawn_textures(const glstate *self,
 #endif
 }
 
+static void spawn_children_blend(const struct glstate *self,
+                                 bugle_linked_list *children)
+{
+#ifdef GL_EXT_draw_buffers2
+    static const state_info blend = { STATE_NAME(GL_BLEND), TYPE_9GLboolean, -1, BUGLE_GL_EXT_draw_buffers2, -1, STATE_ENABLED_INDEXED };
+
+    GLint count;
+    CALL_glGetIntegerv(GL_MAX_DRAW_BUFFERS_ATI, &count);
+    bugle_list_init(children, true);
+    make_counted(self, count, "%lu", 0, offsetof(glstate, numeric_name), NULL,
+                 &blend, children);
+#endif
+}
+
+static void spawn_blend(const struct glstate *self,
+                        bugle_linked_list *children,
+                        const struct state_info *info)
+{
+    make_target(self, "GL_BLEND", GL_BLEND, GL_BLEND,
+                spawn_children_blend, NULL, children);
+}
+
+static void spawn_children_color_writemask(const struct glstate *self,
+                                           bugle_linked_list *children)
+{
+#ifdef GL_EXT_draw_buffers2
+    static const state_info color_writemask = { STATE_NAME(GL_COLOR_WRITEMASK), TYPE_9GLboolean, 4, BUGLE_GL_EXT_draw_buffers2, -1, STATE_INDEXED };
+
+    GLint count;
+    CALL_glGetIntegerv(GL_MAX_DRAW_BUFFERS_ATI, &count);
+    bugle_list_init(children, true);
+    make_counted(self, count, "%lu", 0, offsetof(glstate, numeric_name), NULL,
+                 &color_writemask, children);
+#endif
+}
+
+static void spawn_color_writemask(const struct glstate *self,
+                                  bugle_linked_list *children,
+                                  const struct state_info *info)
+{
+    make_target(self, "GL_COLOR_WRITEMASK", GL_COLOR_WRITEMASK, GL_COLOR_WRITEMASK,
+                spawn_children_color_writemask, NULL, children);
+}
+
 static void spawn_draw_buffers(const struct glstate *self,
                                bugle_linked_list *children,
                                const struct state_info *info)
@@ -1564,7 +1608,12 @@ static const state_info global_state[] =
 #endif
     { STATE_NAME(GL_DEPTH_TEST), TYPE_9GLboolean, -1, BUGLE_GL_VERSION_1_1, -1, STATE_ENABLED },
     { STATE_NAME(GL_DEPTH_FUNC), TYPE_6GLenum, -1, BUGLE_GL_VERSION_1_1, -1, STATE_GLOBAL },
+#ifdef GL_EXT_draw_buffers2
+    { STATE_NAME(GL_BLEND), TYPE_9GLboolean, -1, BUGLE_GL_EXT_draw_buffers2, -1, STATE_ENABLED, spawn_blend },
+    { STATE_NAME(GL_BLEND), TYPE_9GLboolean, -1, BUGLE_GL_VERSION_1_1, BUGLE_GL_EXT_draw_buffers2, STATE_ENABLED },
+#else
     { STATE_NAME(GL_BLEND), TYPE_9GLboolean, -1, BUGLE_GL_VERSION_1_1, -1, STATE_ENABLED },
+#endif /* !GL_EXT_draw_buffers2 */
 #ifdef GL_EXT_blend_func_separate
     { STATE_NAME_EXT(GL_BLEND_SRC_RGB, _EXT), TYPE_11GLblendenum, -1, BUGLE_GL_EXT_blend_func_separate, -1, STATE_GLOBAL },
     { STATE_NAME_EXT(GL_BLEND_SRC_ALPHA, _EXT), TYPE_11GLblendenum, -1, BUGLE_GL_EXT_blend_func_separate, -1, STATE_GLOBAL },
@@ -1594,7 +1643,12 @@ static const state_info global_state[] =
     { STATE_NAME(GL_DRAW_BUFFER), TYPE_6GLenum, -1, GL_VERSION_1_1, -1, STATE_GLOBAL },
 #endif
     { STATE_NAME(GL_INDEX_WRITEMASK), TYPE_5GLint, -1, BUGLE_GL_VERSION_1_1, -1, STATE_GLOBAL },
+#ifdef GL_EXT_draw_buffers2
+    { STATE_NAME(GL_COLOR_WRITEMASK), TYPE_9GLboolean, 4, BUGLE_GL_EXT_draw_buffers2, -1, STATE_GLOBAL, spawn_color_writemask },
+    { STATE_NAME(GL_COLOR_WRITEMASK), TYPE_9GLboolean, 4, BUGLE_GL_VERSION_1_1, BUGLE_GL_EXT_draw_buffers2, STATE_GLOBAL },
+#else
     { STATE_NAME(GL_COLOR_WRITEMASK), TYPE_9GLboolean, 4, BUGLE_GL_VERSION_1_1, -1, STATE_GLOBAL },
+#endif
     { STATE_NAME(GL_DEPTH_WRITEMASK), TYPE_9GLboolean, -1, BUGLE_GL_VERSION_1_1, -1, STATE_GLOBAL },
     { STATE_NAME(GL_STENCIL_WRITEMASK), TYPE_5GLint, -1, BUGLE_GL_VERSION_1_1, -1, STATE_GLOBAL },
 #ifdef GL_VERSION_2_0

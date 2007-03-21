@@ -1,7 +1,7 @@
 * Add incorrectly omitted vendor suffices from extension state
 * Add state for GL_EXT_texture_buffer_object
 * Add partial state for GL_EXT_bindable_uniform
-* Trace support GL_EXT_draw_buffers2
+* Support for GL_EXT_draw_buffers2
 * Support for GL_EXT_packed_float
 * Support for GL_EXT_draw_instanced
 * Support for GL_EXT_texture_shared_exponent
