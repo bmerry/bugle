@@ -140,6 +140,23 @@ static void init_gl()
     }
 #endif
 
+#ifdef GL_EXT_texture_array
+    if (GLEE_EXT_texture_array)
+    {
+        glGenTextures(1, &id);
+        glBindTexture(GL_TEXTURE_1D_ARRAY_EXT, id);
+        glTexImage2D(GL_TEXTURE_1D_ARRAY_EXT, 0, GL_RGB,
+                     TEXTURE_SIZE, TEXTURE_SIZE,
+                     0, GL_RGB, GL_UNSIGNED_BYTE, data);
+
+        glGenTextures(1, &id);
+        glBindTexture(GL_TEXTURE_2D_ARRAY_EXT, id);
+        glTexImage3DEXT(GL_TEXTURE_2D_ARRAY_EXT, 0, GL_RGB,
+                        TEXTURE_SIZE_3D, TEXTURE_SIZE_3D, TEXTURE_SIZE_3D,
+                        0, GL_RGB, GL_UNSIGNED_BYTE, data);
+    }
+#endif
+
     /* A 1-pixel texture that is updated every frame, to test that the
      * viewer updates properly.
      */

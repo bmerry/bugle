@@ -210,7 +210,9 @@ static void gldb_texture_pane_update_ids(GldbTexturePane *pane)
         GL_TEXTURE_2D,
         GL_TEXTURE_3D_EXT,
         GL_TEXTURE_CUBE_MAP_ARB,
-        GL_TEXTURE_RECTANGLE_NV
+        GL_TEXTURE_RECTANGLE_NV,
+        GL_TEXTURE_1D_ARRAY_EXT,
+        GL_TEXTURE_2D_ARRAY_EXT
     };
     const GLenum binding[] =
     {
@@ -218,14 +220,18 @@ static void gldb_texture_pane_update_ids(GldbTexturePane *pane)
         GL_TEXTURE_BINDING_2D,
         GL_TEXTURE_BINDING_3D,
         GL_TEXTURE_BINDING_CUBE_MAP_ARB,
-        GL_TEXTURE_BINDING_RECTANGLE_NV
+        GL_TEXTURE_BINDING_RECTANGLE_NV,
+        GL_TEXTURE_BINDING_1D_ARRAY_EXT,
+        GL_TEXTURE_BINDING_2D_ARRAY_EXT
     };
     const gchar * const target_names[] = {
         "1D",
         "2D",
         "3D",
         "cube-map",
-        "rect"
+        "rect",
+        "1D array",
+        "2D array"
     };
 
     root = gldb_state_update();
@@ -367,7 +373,9 @@ static void gldb_texture_pane_id_changed(GtkComboBox *id_box, gpointer user_data
                     data->nlevels = levels;
                     data->nplanes = 1;
                     data->type = GLDB_GUI_IMAGE_TYPE_2D;
-                    if (target == GL_TEXTURE_3D_EXT)
+                    switch (target)
+                    case GL_TEXTURE_3D_EXT:
+                    case GL_TEXTURE_2D_ARRAY_EXT:
                     {
                         data->type = GLDB_GUI_IMAGE_TYPE_3D;
                         data->nplanes = 0;

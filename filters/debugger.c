@@ -150,6 +150,13 @@ static GLenum target_to_binding(GLenum target)
 #ifdef GL_NV_texture_rectangle
     case GL_TEXTURE_RECTANGLE_NV: return GL_TEXTURE_BINDING_RECTANGLE_NV;
 #endif
+#ifdef GL_EXT_texture_array
+    case GL_TEXTURE_1D_ARRAY_EXT: return GL_TEXTURE_BINDING_1D_ARRAY_EXT;
+    case GL_TEXTURE_2D_ARRAY_EXT: return GL_TEXTURE_BINDING_2D_ARRAY_EXT;
+#endif
+#ifdef GL_EXT_texture_buffer_object
+    case GL_TEXTURE_BUFFER_EXT: return GL_TEXTURE_BINDING_BUFFER_EXT;
+#endif
     default:
         return GL_NONE;
     }
@@ -280,12 +287,31 @@ static bool send_data_texture(uint32_t id, GLuint texid, GLenum target,
     CALL_glBindTexture(target, texid);
 
     CALL_glGetTexLevelParameteriv(face, level, GL_TEXTURE_WIDTH, &width);
-    if (face != GL_TEXTURE_1D)
-        CALL_glGetTexLevelParameteriv(face, level, GL_TEXTURE_HEIGHT, &height);
-#ifdef GL_EXT_texture3D
-    if (face == GL_TEXTURE_3D_EXT && bugle_gl_has_extension_group(BUGLE_GL_EXT_texture3D))
-        CALL_glGetTexLevelParameteriv(face, level, GL_TEXTURE_DEPTH_EXT, &depth);
+    switch (face)
+    {
+    case GL_TEXTURE_1D:
+#ifdef GL_EXT_texture_buffer_object
+    case GL_TEXTURE_BUFFER_EXT:
 #endif
+        break;
+#ifdef GL_EXT_texture3D
+    case GL_TEXTURE_3D_EXT:
+        CALL_glGetTexLevelParameteriv(face, level, GL_TEXTURE_HEIGHT, &height);
+        if (bugle_gl_has_extension_group(BUGLE_GL_EXT_texture3D))
+            CALL_glGetTexLevelParameteriv(face, level, GL_TEXTURE_DEPTH_EXT, &depth);
+        break;
+#endif
+#ifdef GL_EXT_texture_array
+    case GL_TEXTURE_2D_ARRAY_EXT:
+        CALL_glGetTexLevelParameteriv(face, level, GL_TEXTURE_HEIGHT, &height);
+        if (bugle_gl_has_extension_group(BUGLE_GL_EXT_texture_array))
+            CALL_glGetTexLevelParameteriv(face, level, GL_TEXTURE_DEPTH_EXT, &depth);
+        break;
+#endif
+    default: /* 2D-like: 2D, RECTANGLE and 1D_ARRAY at the moment */
+        CALL_glGetTexLevelParameteriv(face, level, GL_TEXTURE_HEIGHT, &height);
+    }
+
     length = bugle_gl_type_to_size(type) * bugle_gl_format_to_count(format, type)
         * width * height * depth;
     data = bugle_malloc(length);

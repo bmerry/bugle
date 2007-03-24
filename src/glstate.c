@@ -352,6 +352,10 @@ static const state_info tex_unit_state[] =
 #ifdef GL_NV_texture_rectangle
     { "GL_TEXTURE_BINDING_RECTANGLE_ARB", GL_TEXTURE_BINDING_RECTANGLE_NV, TYPE_5GLint, -1, BUGLE_GL_NV_texture_rectangle, -1, STATE_TEX_UNIT | STATE_SELECT_TEXTURE_IMAGE },
 #endif
+#ifdef GL_EXT_texture_array
+    { STATE_NAME(GL_TEXTURE_BINDING_1D_ARRAY_EXT), TYPE_5GLint, -1, BUGLE_GL_EXT_texture_array, -1, STATE_TEX_UNIT | STATE_SELECT_TEXTURE_IMAGE },
+    { STATE_NAME(GL_TEXTURE_BINDING_2D_ARRAY_EXT), TYPE_5GLint, -1, BUGLE_GL_EXT_texture_array, -1, STATE_TEX_UNIT | STATE_SELECT_TEXTURE_IMAGE },
+#endif
 #ifdef GL_EXT_texture_buffer_object
     { STATE_NAME(GL_TEXTURE_BINDING_BUFFER_EXT), TYPE_5GLint, -1, BUGLE_GL_EXT_texture_buffer_object, -1, STATE_TEX_UNIT | STATE_SELECT_TEXTURE_IMAGE },
 #endif
@@ -871,6 +875,15 @@ static uint32_t texture_mask(GLenum target)
 #ifdef GL_EXT_texture3D
     case GL_PROXY_TEXTURE_3D_EXT: mask |= STATE_SELECT_NO_PROXY; break;
 #endif
+#ifdef GL_EXT_texture_array
+    case GL_PROXY_TEXTURE_1D_ARRAY_EXT: mask |= STATE_SELECT_NO_PROXY; /* Fall through */
+    case GL_TEXTURE_1D_ARRAY_EXT: mask |= STATE_SELECT_NO_2D; break;
+    case GL_PROXY_TEXTURE_2D_ARRAY_EXT: mask |= STATE_SELECT_NO_PROXY; break;
+#endif
+#ifdef GL_EXT_texture_buffer_object
+    /* GL_TEXTURE_BUFFER_EXT has no proxy */
+    case GL_TEXTURE_BUFFER_EXT: mask |= STATE_SELECT_NO_1D; break;
+#endif
     }
     return mask;
 }
@@ -1131,7 +1144,7 @@ static void spawn_textures(const glstate *self,
                            bugle_linked_list *children,
                            const struct state_info *info)
 {
-#if defined(GL_EXT_texture_buffer_object)
+#ifdef GL_EXT_texture_buffer_object
     static const state_info texture_buffer =
     {
         NULL, GL_NONE, TYPE_5GLint, -1, BUGLE_GL_EXT_texture_buffer_object, -1, STATE_GLOBAL
@@ -1171,12 +1184,33 @@ static void spawn_textures(const glstate *self,
 #ifdef GL_NV_texture_rectangle
     if (bugle_gl_has_extension_group(BUGLE_GL_NV_texture_rectangle))
     {
-        make_target(self, "GL_TEXTURE_RECTANGLE",
+        make_target(self, "GL_TEXTURE_RECTANGLE_ARB",
                     GL_TEXTURE_RECTANGLE_NV,
                     GL_TEXTURE_BINDING_RECTANGLE_NV,
                     spawn_children_tex_target, NULL, children);
-        make_target(self, "GL_PROXY_TEXTURE_RECTANGLE",
+        make_target(self, "GL_PROXY_TEXTURE_RECTANGLE_ARB",
                     GL_PROXY_TEXTURE_RECTANGLE_NV,
+                    0,
+                    spawn_children_tex_target, NULL, children);
+    }
+#endif
+#ifdef GL_EXT_texture_array
+    if (bugle_gl_has_extension_group(BUGLE_GL_EXT_texture_array))
+    {
+        make_target(self, "GL_TEXTURE_1D_ARRAY_EXT",
+                    GL_TEXTURE_1D_ARRAY_EXT,
+                    GL_TEXTURE_BINDING_1D_ARRAY_EXT,
+                    spawn_children_tex_target, NULL, children);
+        make_target(self, "GL_PROXY_TEXTURE_1D_ARRAY_EXT",
+                    GL_PROXY_TEXTURE_1D_ARRAY_EXT,
+                    0,
+                    spawn_children_tex_target, NULL, children);
+        make_target(self, "GL_TEXTURE_2D_ARRAY_EXT",
+                    GL_TEXTURE_2D_ARRAY_EXT,
+                    GL_TEXTURE_BINDING_2D_ARRAY_EXT,
+                    spawn_children_tex_target, NULL, children);
+        make_target(self, "GL_PROXY_TEXTURE_2D_ARRAY_EXT",
+                    GL_PROXY_TEXTURE_2D_ARRAY_EXT,
                     0,
                     spawn_children_tex_target, NULL, children);
     }
@@ -1184,7 +1218,7 @@ static void spawn_textures(const glstate *self,
 #ifdef GL_EXT_texture_buffer_object
     if (bugle_gl_has_extension_group(BUGLE_GL_EXT_texture_buffer_object))
     {
-        make_target(self, "GL_TEXTURE_BUFFER",
+        make_target(self, "GL_TEXTURE_BUFFER_EXT",
                     GL_TEXTURE_BUFFER_EXT,
                     GL_TEXTURE_BINDING_BUFFER_EXT,
                     spawn_children_tex_buffer_target, &texture_buffer, children);
@@ -1927,6 +1961,9 @@ static const state_info global_state[] =
     { STATE_NAME(GL_DEPTH_BOUNDS_EXT), TYPE_8GLdouble, 2, BUGLE_GL_EXT_depth_bounds_test, -1, STATE_GLOBAL },
 #endif
     /* G80 extensions */
+#ifdef GL_EXT_texture_array
+    { STATE_NAME(GL_MAX_ARRAY_TEXTURE_LAYERS_EXT), TYPE_5GLint, -1, BUGLE_GL_EXT_texture_array, -1, STATE_GLOBAL },
+#endif
 #ifdef GL_EXT_texture_buffer_object
     { STATE_NAME(GL_MAX_TEXTURE_BUFFER_SIZE_EXT), TYPE_5GLint, -1, BUGLE_GL_EXT_texture_buffer_object, -1, STATE_GLOBAL },
 #endif
@@ -2243,8 +2280,14 @@ static void uniform_types(GLenum type,
     case GL_SAMPLER_2D_SHADOW_ARB:
     case GL_SAMPLER_2D_RECT_ARB:
     case GL_SAMPLER_2D_RECT_SHADOW_ARB:
-        *in_type = TYPE_5GLint; *out_type = TYPE_5GLint; *length = -1; break;
+#ifdef GL_EXT_texture_array
+    case GL_SAMPLER_1D_ARRAY_EXT:
+    case GL_SAMPLER_2D_ARRAY_EXT:
+    case GL_SAMPLER_1D_ARRAY_SHADOW_EXT:
+    case GL_SAMPLER_2D_ARRAY_SHADOW_EXT:
 #endif
+        *in_type = TYPE_5GLint; *out_type = TYPE_5GLint; *length = -1; break;
+#endif /* GL_SAMPLER_1D_ARB */
 #ifdef GL_VERSION_2_1
     case GL_FLOAT_MAT2x3: *in_type = TYPE_7GLfloat; *out_type = TYPE_7GLfloat; *length = 6; break;
     case GL_FLOAT_MAT2x4: *in_type = TYPE_7GLfloat; *out_type = TYPE_7GLfloat; *length = 8; break;
@@ -2983,7 +3026,6 @@ static void spawn_children_global(const glstate *self, bugle_linked_list *childr
         NULL, GL_NONE, TYPE_9GLboolean, -1, BUGLE_GL_VERSION_1_1, -1, STATE_ENABLED
     };
 
-    GLint count;
     const char *version;
 
     version = (const char *) CALL_glGetString(GL_VERSION);
