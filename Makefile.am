@@ -95,7 +95,7 @@ nodist_src_libbugleutils_la_SOURCES = \
 	src/gltokens.c src/glfuncs.c src/glfuncs.h \
 	src/glexts.c src/glexts.h
 src_libbugleutils_la_LIBADD = $(LTLIBOBJS) $(THREAD_LIBS)
-src_libbugleutils_la_LDFLAGS = -thread-safe -export-dynamic $(SYMBOLFLAGS) -version-info 1:0:1
+src_libbugleutils_la_LDFLAGS = -thread-safe -export-dynamic $(SYMBOLFLAGS) -version-info 1:1:1
 
 src_libbugle_la_SOURCES = \
 	src/confparse.y src/conflex.l src/conffile.h \
@@ -114,7 +114,7 @@ src_libbugle_la_SOURCES = \
 nodist_src_libbugle_la_SOURCES = \
 	src/utils.c src/utils.h src/lib.c src/lib.h
 src_libbugle_la_LIBADD = $(LIBLTDL) src/libbugleutils.la -lGL $(X_PRE_LIBS) $(X_LIBS) -lX11 $(X_EXTRA_LIBS) $(THREAD_LIBS)
-src_libbugle_la_LDFLAGS = -thread-safe -export-dynamic $(SYMBOLFLAGS) -version-info 1:0:0
+src_libbugle_la_LDFLAGS = -thread-safe -export-dynamic $(SYMBOLFLAGS) -version-info 1:1:0
 
 BUILT_SOURCES += src/lib.h src/types.h src/utils.h src/names.h src/confparse.h
 
@@ -133,7 +133,8 @@ BCFILES = bc/core1_1.bc bc/glsl1_20.bc bc/glx.bc \
 	bc/GL_ARB_texture_compression.bc bc/GL_ARB_vertex_buffer_object.bc \
 	bc/GL_ARB_vertex_program.bc bc/GL_ATI_draw_buffers.bc \
 	bc/GL_EXT_blend_func_separate.bc bc/GL_EXT_draw_buffers2.bc \
-	bc/GL_EXT_draw_range_elements.bc bc/GL_EXT_multi_draw_arrays.bc \
+	bc/GL_EXT_draw_instanced.bc bc/GL_EXT_draw_range_elements.bc \
+	bc/GL_EXT_geometry_shader4.bc bc/GL_EXT_multi_draw_arrays.bc \
 	bc/GL_EXT_secondary_color.bc bc/GL_EXT_texture3D.bc \
 	bc/GL_EXT_framebuffer_object.bc bc/GL_EXT_gpu_program_parameters.bc \
 	bc/GL_NV_transform_feedback.bc \

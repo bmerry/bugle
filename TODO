@@ -36,6 +36,7 @@ bugle
 -----
 - dump backtrace on error
 - check whether all dependencies on trackextensions are listed
+- fix leak of aux contexts on glXDestroyContext
 - exploit per-context, per-filter state e.g. for video
 - option to use pid in log filename or log file
 - proper support for enabled but inactive filtersets

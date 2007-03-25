@@ -1,3 +1,5 @@
+0.0.20070325
+------------
 * Add incorrectly omitted vendor suffices from extension state
 * Add state for GL_EXT_texture_buffer_object
 * Add partial state for GL_EXT_bindable_uniform
@@ -6,7 +8,7 @@
 * Support for GL_EXT_draw_instanced
 * Support for GL_EXT_texture_shared_exponent
 * Support for GL_EXT_framebuffer_sRGB
-* Support for GL_EXT_geometry_shader4
+* Support for GL_EXT_geometry_shader4 (untested)
 * Support for GL_EXT_texture_array
 * Support for GL_NV_transform_feedback
 * Refactor glstate.c to allow callbacks in the middle of a table

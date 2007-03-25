@@ -1,3 +1,15 @@
+0.0.20070325
+------------
+I've added support for several of the new extensions exposed by the G80
+(aka GeForce 8800); see the ChangeLog for details. These are not fully
+tested, especially where NVIDIA haven't released support in the
+drivers, so let me know if anything breaks.
+
+The state viewer will also look a little different: some missing
+extension suffices have been added (e.g., GL_TEXTURE_RECTANGLE_ARB was
+missing the _ARB) and the ordering has been changed to better mirror
+the order in the OpenGL 2.1 state tables.
+
 0.0.20070217
 ------------
 This release fixed a number of bugs and makes some internal redesigns.
