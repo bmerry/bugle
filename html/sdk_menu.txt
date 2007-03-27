@@ -1,0 +1,63 @@
+<div id="navigation_menu">
+<ul>
+<li class="left"><a target="_top" href="/sdk/">SDK Home</a></li>
+<li><a target="_top" href="/sdk/docs/" onmouseover="cssdropdown.dropit(this,event,'dropmenu1')">Documentation</a></li>
+<li><a target="_top" href="/sdk/libs/" onmouseover="cssdropdown.dropit(this,event,'dropmenu2')">Libraries</a></li>
+<li><a target="_top" href="/sdk/docs/tutorials/" onmouseover="cssdropdown.dropit(this,event,'dropmenu3')">Tutorials</a></li>
+<!--<li><a target="_top" href="/sdk/samples/" onmouseover="cssdropdown.dropit(this,event,'dropmenu4')">Samples</a></li>-->
+<li><a target="_top" href="/sdk/tools/" onmouseover="cssdropdown.dropit(this,event,'dropmenu5')">Tools</a></li>
+<li><a target="_top" onmouseover="cssdropdown.dropit(this,event,'dropmenuSix')">Communications</a></li>
+<li class="right">&nbsp;</li>
+</ul>
+</div>
+<div id="navigation_menu_after"></div>
+<!--1st drop down menu -->                                                   
+<div id="dropmenu1" class="dropmenudiv">
+<a target="_top" href="/sdk/docs/">Documentation Index</a>
+<hr noshade />
+<a target="_top" href="/sdk/docs/man/">Reference Pages</a>
+<a target="_new" href="/sdk/libs/OpenSceneGraph/glsl_quickref.pdf">GLSL Quick Ref. Guide (PDF)</a>
+<a target="_new" href="/documentation/specs/">Specifications&nbsp;&nbsp;<img alt="Link exits OpenGL SDK" src="/sdk/inc/img/star.gif" /></a>
+<a target="_new" href="/registry/">Extensions & Headers&nbsp;&nbsp;<img alt="Link exits OpenGL SDK" src="/sdk/inc/img/star.gif" /></a>
+</div>
+
+<!--2nd drop down menu -->                                                
+<div id="dropmenu2" class="dropmenudiv">
+<a target="_top" href="/sdk/libs/">Libraries Index</a>
+<hr noshade />
+<a target="_top" href="/sdk/libs/Equalizer/">Equalizer</a>
+<a target="_top" href="/sdk/libs/GLee/">GLee</a>
+<a target="_top" href="/sdk/libs/GLEW/">GLEW</a>
+<a target="_top" href="/sdk/libs/OpenSceneGraph/">OpenSceneGraph</a>
+</div>
+
+<!--3rd drop down menu -->                                                
+<div id="dropmenu3" class="dropmenudiv">
+<a target="_top" href="/sdk/docs/tutorials/">Tutorials Index</a>
+<hr noshade />
+<a target="_top" href="/sdk/docs/tutorials/ClockworkCoders">ClockworkCoders</a>
+<a target="_top" href="/sdk/docs/tutorials/CodeColony">CodeColony</a>
+<a target="_top" href="/sdk/docs/tutorials/Lighthouse3D">Lighthouse 3D</a>
+</div>
+
+<!--4th anchor link and menu -->                                                 
+<div id="dropmenu4" class="dropmenudiv">
+<a target="_top" href="/sdk/samples/">Samples Index</a>
+<hr noshade />
+<a target="_top" href="/sdk/samples/CodeColony">CodeColony</a>
+</div>
+
+<!--5th anchor link and menu -->                                                 
+<div id="dropmenu5" class="dropmenudiv">
+<a target="_top" href="/sdk/tools/">Tools Index</a>
+<hr noshade />
+<a target="_top" href="/sdk/tools/BuGLe">BuGLe</a>
+<a target="_top" href="/sdk/tools/gDEBugger">gDEBugger</a>
+<a target="_top" href="/sdk/tools/GLIntercept">GLIntercept</a>
+</div>
+
+<!--6th anchor link and menu with special name because dropmenu6 has special-case lack of borders -->                                                 
+<div id="dropmenuSix" class="dropmenudiv" style="width:180px;">
+<a target="_new" href="/pipeline/">OpenGL Pipeline Newsletter&nbsp;&nbsp;<img alt="Link exits OpenGL SDK" src="/sdk/inc/img/star.gif" /></a>
+<a target="_new" href="/message_boards/">OpenGL Message Boards&nbsp;&nbsp;<img alt="Link exits OpenGL SDK" src="/sdk/inc/img/star.gif" /></a>
+</div>

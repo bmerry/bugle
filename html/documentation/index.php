@@ -1,18 +1,27 @@
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en">
 <head>
-    <title>BuGLe: documentation</title>
-    <link rel="stylesheet" type="text/css" href="../styles.css">
+    <title>BuGLe documentation</title>
+<?php
+if (file_exists("/home/virtual/opengl.org/var/www/html/sdk/inc/sdk_head.txt"))
+    include("/home/virtual/opengl.org/var/www/html/sdk/inc/sdk_head.txt");
+else
+    include("sdk_head.txt");
+?>
 </head>
 <body>
-    <div class="menu">
-        <span>
-           <a href="../index.html">[About]</a>
-           <a href="../news.html">[News]</a>
-           <a href="../documentation/index.html">[Documentation]</a>
-           <a href="../screenshots.html">[Screenshots]</a>
-        </span>
-    </div>
-    <div class="body">
+<?php
+if (file_exists("/home/virtual/opengl.org/var/www/html/sdk/inc/sdk_body_start.txt"))
+    include("/home/virtual/opengl.org/var/www/html/sdk/inc/sdk_body_start.txt");
+else
+    include("sdk_body_start.txt");
+?>
+    <p>
+    <a href="index.php">[About]</a>
+    <a href="news.php">[News]</a>
+    <a href="documentation/index.php">[Documentation]</a>
+    <a href="screenshots.php">[Screenshots]</a>
+    </p>
     <h1>Documentation</h1>
     <h2>General documentation</h2>
     <ul>
@@ -46,16 +55,17 @@
         <li><a href="man7/bugle-unwindstack.7.html">unwindstack filter-set</a></li>
         <li><a href="man7/bugle-wireframe.7.html">wireframe filter-set</a></li>
     </ul>
-    <hr>
+    <hr />
     <p>
     <a href="http://sourceforge.net"><img 
         src="http://sourceforge.net/sflogo.php?group_id=110905&amp;type=1" 
-        width="88" height="31" alt="SourceForge.net Logo"></a>
-
-    <a href="http://validator.w3.org/check?uri=referer"><img
-        src="http://www.w3.org/Icons/valid-html401"
-        alt="Valid HTML 4.01!" height="31" width="88"></a>
+        width="88" height="31" alt="SourceForge.net Logo" /></a>
     </p>
-    </div>
+<?php
+if (file_exists("/home/virtual/opengl.org/var/www/html/sdk/inc/sdk_footer.txt"))
+    include("/home/virtual/opengl.org/var/www/html/sdk/inc/sdk_footer.txt");
+else
+    include("sdk_footer.txt");
+?>
 </body>
 </html>

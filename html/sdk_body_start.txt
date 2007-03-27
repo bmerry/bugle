@@ -1,0 +1,16 @@
+<div id="header-frame">
+<div id="header">
+<table border="0" class="branding"><tr>
+<td>
+<a target="_top" href="http://www.opengl.org"><img src="http://www.opengl.org/sdk/inc/img/opengl_logo.gif" alt="Return to opengl.org" title="The Industry's Foundation for High Performance Graphics" height="114" width="200" /></a>
+</td><td>
+<h1>OpenGL Software Development Kit</h1>
+<h4>Documentation, Sample Code, Libraries, and Tools<br />for creating OpenGL-based Applications</h4>
+</td>
+</tr></table>
+<table id="nav"></table>
+<?php include("sdk_menu.txt"); ?>
+</div>	
+</div>
+<div id="container">
+<div id="content">

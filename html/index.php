@@ -1,18 +1,27 @@
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en">
 <head>
     <title>BuGLe: an OpenGL debugging tool</title>
-    <link rel="stylesheet" type="text/css" href="styles.css">
+<?php
+if (file_exists("/home/virtual/opengl.org/var/www/html/sdk/inc/sdk_head.txt"))
+    include("/home/virtual/opengl.org/var/www/html/sdk/inc/sdk_head.txt");
+else
+    include("sdk_head.txt");
+?>
 </head>
 <body>
-    <div class="menu">
-        <span>
-           <a href="index.html">[About]</a>
-           <a href="news.html">[News]</a>
-           <a href="documentation/index.html">[Documentation]</a>
-           <a href="screenshots.html">[Screenshots]</a>
-        </span>
-    </div>
-    <div class="body">
+<?php
+if (file_exists("/home/virtual/opengl.org/var/www/html/sdk/inc/sdk_body_start.txt"))
+    include("/home/virtual/opengl.org/var/www/html/sdk/inc/sdk_body_start.txt");
+else
+    include("sdk_body_start.txt");
+?>
+    <p>
+    <a href="index.php">[About]</a>
+    <a href="news.php">[News]</a>
+    <a href="documentation/index.php">[Documentation]</a>
+    <a href="screenshots.php">[Screenshots]</a>
+    </p>
     <h1>About BuGLe</h1>
     <p>
     BuGLe is a tool for OpenGL debugging, implemented as a wrapper library
@@ -42,11 +51,12 @@
     <p>
     You can download the source from the
     <a href="http://sourceforge.net/projects/bugle/">project page</a>,
-    or view the <a href="documentation/index.html">documentation</a>
-    online.
+    or view the <a href="documentation/index.php">documentation</a>
+    online. BuGLe is also available in Gentoo portage and the BSD ports
+    collection.
     </p>
 
-    <hr>
+    <hr />
 
     <h2>Requirements</h2>
     <ul>
@@ -62,42 +72,43 @@
         not work)</li>
     </ul>
 
-    <hr>
+    <hr />
     <h2>Example</h2>
     <p>
     Here is an extract from a log, generated from an application I am writing.
     Note that <tt>GLenum</tt>s are displayed by name, and pointers are followed
     to the correct number of elements.
     </p>
-<pre>
-stats.fps: 22.671
-stats.fragments: 52335
-stats.triangles: 99732
-trace.call: glXSwapBuffers(0x8117720, 0x01c00021)
-trace.call: glXMakeCurrent(0x8117720, 0x01c00021, 0x8444800) = 1
-trace.call: glBindBufferARB(GL_ARRAY_BUFFER, 1)
-trace.call: glMapBufferARB(GL_ARRAY_BUFFER, GL_READ_WRITE) = 0x45c3c000
-trace.call: glUnmapBufferARB(GL_ARRAY_BUFFER) = GL_TRUE
-trace.call: glBindBufferARB(GL_ARRAY_BUFFER, 0)
-trace.call: glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
-trace.call: glLoadMatrixd(0xbfffe610 -> { { 0, -0.29661, 1.22295, 0 }, { 1.22295, 0, 0, 0 }, { 0, 1.18644, 0.305739, 0 }, { 0.037888, 1.61781, -1.52576, 1 } })
-trace.call: glActiveTextureARB(GL_TEXTURE0)
-trace.call: glTexEnvfv(GL_TEXTURE_ENV, GL_TEXTURE_ENV_COLOR, 0xbfffe5d0 -> { 0.778524, 0.778524, 0.569631, 0 })
-trace.call: glGetIntegerv(GL_MAX_TEXTURE_UNITS, 0xbfffe688 -> 4)
-trace.call: glBindBufferARB(GL_ARRAY_BUFFER, 1)
-trace.call: glVertexPointer(3, GL_FLOAT, 32, (nil))
-</pre>
+<blockquote><tt>
+stats.fps: 22.671<br />
+stats.fragments: 52335<br />
+stats.triangles: 99732<br />
+trace.call: glXSwapBuffers(0x8117720, 0x01c00021)<br />
+trace.call: glXMakeCurrent(0x8117720, 0x01c00021, 0x8444800) = 1<br />
+trace.call: glBindBufferARB(GL_ARRAY_BUFFER, 1)<br />
+trace.call: glMapBufferARB(GL_ARRAY_BUFFER, GL_READ_WRITE) = 0x45c3c000<br />
+trace.call: glUnmapBufferARB(GL_ARRAY_BUFFER) = GL_TRUE<br />
+trace.call: glBindBufferARB(GL_ARRAY_BUFFER, 0)<br />
+trace.call: glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)<br />
+trace.call: glLoadMatrixd(0xbfffe610 -&gt; { { 0, -0.29661, 1.22295, 0 }, { 1.22295, 0, 0, 0 }, { 0, 1.18644, 0.305739, 0 }, { 0.037888, 1.61781, -1.52576, 1 } })<br />
+trace.call: glActiveTextureARB(GL_TEXTURE0)<br />
+trace.call: glTexEnvfv(GL_TEXTURE_ENV, GL_TEXTURE_ENV_COLOR, 0xbfffe5d0 -&gt; { 0.778524, 0.778524, 0.569631, 0 })<br />
+trace.call: glGetIntegerv(GL_MAX_TEXTURE_UNITS, 0xbfffe688 -&gt; 4)<br />
+trace.call: glBindBufferARB(GL_ARRAY_BUFFER, 1)<br />
+trace.call: glVertexPointer(3, GL_FLOAT, 32, (nil))<br />
+</tt></blockquote>
 
-    <hr>
+    <hr />
     <p>
     <a href="http://sourceforge.net"><img 
         src="http://sourceforge.net/sflogo.php?group_id=110905&amp;type=1" 
-        width="88" height="31" alt="SourceForge.net Logo"></a>
-
-    <a href="http://validator.w3.org/check?uri=referer"><img
-        src="http://www.w3.org/Icons/valid-html401"
-        alt="Valid HTML 4.01!" height="31" width="88"></a>
+        width="88" height="31" alt="SourceForge.net Logo" /></a>
     </p>
-    </div>
+<?php
+if (file_exists("/home/virtual/opengl.org/var/www/html/sdk/inc/sdk_footer.txt"))
+    include("/home/virtual/opengl.org/var/www/html/sdk/inc/sdk_footer.txt");
+else
+    include("sdk_footer.txt");
+?>
 </body>
 </html>

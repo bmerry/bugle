@@ -1,0 +1,9 @@
+<link rel="stylesheet" href="http://www.opengl.org/sdk/inc/sdk.css" type="text/css" media="screen" />
+<link rel="stylesheet" href="http://www.opengl.org/sdk/inc/sdk_menu.css" type="text/css" />
+<link rel="shortcut icon" href="http://www.opengl.org/img/favicon.ico" type="image/ico" />
+<!--[if lt IE 7]>
+	<link rel="stylesheet" type="text/css" href="http://www.opengl.org/css/global_ie.css" />
+<![endif]-->
+<script type="text/javascript" src="http://www.opengl.org/js/global.js"></script>
+<script type="text/javascript" src="http://www.opengl.org/sdk/inc/sdk_layout.js"></script>
+<script type="text/javascript" src="http://www.opengl.org/js/menu.js"></script>
