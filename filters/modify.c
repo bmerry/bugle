@@ -22,8 +22,12 @@
 #include "src/tracker.h"
 #include "src/xevent.h"
 #include "src/glexts.h"
+#include "src/glfuncs.h"
+#include "src/log.h"
 #include "common/safemem.h"
 #include "common/bool.h"
+#include "common/linkedlist.h"
+#include "common/hashtable.h"
 #include <GL/glx.h>
 #include <sys/time.h>
 #include <math.h>
@@ -1006,6 +1010,196 @@ static bool initialise_camera(filter_set *handle)
     return true;
 }
 
+/*** extoverride extension ***/
+
+/* The design is that extensions that we have never heard of may be
+ * suppressed; hence we use the two hash-tables rather than a boolean array.
+ */
+static bool extoverride_disable_all = false;
+static char *extoverride_max_version = NULL;
+static bugle_hash_table extoverride_disabled;
+static bugle_hash_table extoverride_enabled;
+static bugle_object_view extoverride_view;
+
+typedef struct
+{
+    const GLubyte *version; /* Filtered version of glGetString(GL_VERSION) */
+    GLubyte *extensions;    /* Filtered version of glGetString(GL_EXTENSIONS) */
+} extoverride_context;
+
+static bool extoverride_suppressed(const char *ext)
+{
+    if (extoverride_disable_all)
+        return !bugle_hash_count(&extoverride_enabled, ext);
+    else
+        return bugle_hash_count(&extoverride_disabled, ext);
+}
+
+static void initialise_extoverride_context(const void *key, void *data)
+{
+    const char *real_version, *real_exts, *p, *q;
+    char *exts, *ext, *exts_ptr;
+    extoverride_context *self;
+
+    real_version = (const char *) CALL_glGetString(GL_VERSION);
+    real_exts = (const char *) CALL_glGetString(GL_EXTENSIONS);
+    self = (extoverride_context *) data;
+
+    if (extoverride_max_version && strcmp(real_version, extoverride_max_version) > 0)
+        self->version = (const GLubyte *) extoverride_max_version;
+    else
+        self->version = (const GLubyte *) real_version;
+
+    exts_ptr = exts = bugle_malloc(strlen(real_exts) + 1);
+    ext = bugle_malloc(strlen(real_exts) + 1); /* Current extension */
+    p = real_exts;
+    while (*p == ' ') p++;
+    while (*p)
+    {
+        q = p;
+        while (*q != ' ' && *q != '\0') q++;
+        memcpy(ext, p, q - p);
+        ext[q - p] = '\0';
+        if (!extoverride_suppressed(ext))
+        {
+            memcpy(exts_ptr, ext, q - p);
+            exts_ptr += q - p;
+            *exts_ptr++ = ' ';
+        }
+        p = q;
+        while (*p == ' ') p++;
+    }
+
+    /* Back up over the trailing space */
+    if (exts_ptr != exts) exts_ptr--;
+    *exts_ptr = '\0';
+    self->extensions = (GLubyte *) exts;
+    free(ext);
+}
+
+static void destroy_extoverride_context(void *data)
+{
+    extoverride_context *self;
+
+    self = (extoverride_context *) data;
+    /* self->version is always a shallow copy of another string */
+    free(self->extensions);
+}
+
+static bool extoverride_glGetString(function_call *call, const callback_data *data)
+{
+    extoverride_context *ctx;
+
+    ctx = (extoverride_context *) bugle_object_get_current_data(&bugle_context_class, extoverride_view);
+    if (!ctx) return true; /* Nothing can be overridden */
+    switch (*call->typed.glGetString.arg0)
+    {
+    case GL_VERSION:
+        *call->typed.glGetString.retn = ctx->version;
+        break;
+    case GL_EXTENSIONS:
+        *call->typed.glGetString.retn = ctx->extensions;
+        break;
+    }
+    return true;
+}
+
+static bool extoverride_warn(function_call *call, const callback_data *data)
+{
+    char *msg;
+    bugle_asprintf(&msg, "%f was called, although the corresponding extension was suppressed",
+                   budgie_function_table[call->generic.id].name);
+    bugle_log("extoverride", "warn", msg);
+    free(msg);
+    return true;
+}
+
+static bool initialise_extoverride(filter_set *handle)
+{
+    filter *f;
+
+    f = bugle_register_filter(handle, "extoverride_get");
+    bugle_register_filter_depends("extoverride_get", "invoke");
+    bugle_register_filter_depends("trace", "extoverride_get");
+    bugle_register_filter_catches(f, GROUP_glGetString, false, extoverride_glGetString);
+
+    f = bugle_register_filter(handle, "extoverride_warn");
+    bugle_register_filter_depends("invoke", "extoverride_warn");
+    bugle_log_register_filter("extoverride_warn");
+    for (budgie_function i = 0; i < budgie_number_of_functions; i++)
+    {
+        if (bugle_gl_function_table[i].extension
+            && extoverride_suppressed(bugle_gl_function_table[i].extension))
+            bugle_register_filter_catches_function(f, i, false, extoverride_warn);
+        else if (extoverride_max_version
+                 && bugle_gl_function_table[i].version
+                 && bugle_gl_function_table[i].version[2] == '_' /* filter out GLX */
+                 && strcmp(bugle_gl_function_table[i].version, extoverride_max_version) > 1)
+            bugle_register_filter_catches_function(f, i, false, extoverride_warn);
+    }
+
+    extoverride_view = bugle_object_class_register(&bugle_context_class, initialise_extoverride_context,
+                                                   destroy_extoverride_context, sizeof(extoverride_context));
+    return true;
+}
+
+static void destroy_extoverride(filter_set *handle)
+{
+    bugle_hash_clear(&extoverride_disabled);
+    bugle_hash_clear(&extoverride_enabled);
+    free(extoverride_max_version);
+}
+
+static bool extoverride_variable_disable(const struct filter_set_variable_info_s *var,
+                                         const char *text, const void *value)
+{
+    bool found = false;
+
+    if (strcmp(text, "all") == 0)
+    {
+        extoverride_disable_all = true;
+        return true;
+    }
+
+    bugle_hash_set(&extoverride_disabled, text, NULL);
+    for (size_t i = 0; i < BUGLE_EXT_COUNT; i++)
+        if (!bugle_exts[i].glx && bugle_exts[i].glext_string
+            && strcmp(bugle_exts[i].glext_string, text) == 0)
+        {
+            found = true;
+            break;
+        }
+    if (!found)
+        fprintf(stderr, "Extension %s is unknown (typo?)\n",
+                text);
+    return true;
+}
+
+static bool extoverride_variable_enable(const struct filter_set_variable_info_s *var,
+                                        const char *text, const void *value)
+{
+    bool found = false;
+
+    if (strcmp(text, "all") == 0)
+    {
+        extoverride_disable_all = false;
+        return true;
+    }
+
+    bugle_hash_set(&extoverride_enabled, text, NULL);
+    for (size_t i = 0; i < BUGLE_EXT_COUNT; i++)
+        if (!bugle_exts[i].glx && bugle_exts[i].glext_string
+            && strcmp(bugle_exts[i].glext_string, text) == 0)
+        {
+            found = true;
+            break;
+        }
+    if (!found)
+        fprintf(stderr, "Extension %s is unknown (typo?)\n",
+                text);
+    return true;
+}
+
 void bugle_initialise_filter_library(void)
 {
     static const filter_set_info classify_info =
@@ -1069,10 +1263,31 @@ void bugle_initialise_filter_library(void)
         "allows the camera position to be changed on the fly"
     };
 
+    static const filter_set_variable_info extoverride_variables[] =
+    {
+        { "disable", "name of an extension to suppress, or 'all'", FILTER_SET_VARIABLE_CUSTOM, NULL, extoverride_variable_disable },
+        { "enable", "name of an extension to enable, or 'all'", FILTER_SET_VARIABLE_CUSTOM, NULL, extoverride_variable_enable },
+        { "version", "maximum OpenGL version to expose", FILTER_SET_VARIABLE_STRING, &extoverride_max_version, NULL },
+        { NULL, NULL, 0, NULL, NULL }
+    };
+
+    static const filter_set_info extoverride_info =
+    {
+        "extoverride",
+        initialise_extoverride,
+        destroy_extoverride,
+        NULL,
+        NULL,
+        extoverride_variables,
+        0,
+        "suppresses extensions or OpenGL versions"
+    };
+
     bugle_register_filter_set(&classify_info);
     bugle_register_filter_set(&wireframe_info);
     bugle_register_filter_set(&frontbuffer_info);
     bugle_register_filter_set(&camera_info);
+    bugle_register_filter_set(&extoverride_info);
 
     bugle_register_filter_set_renders("classify");
     bugle_register_filter_set_depends("classify", "trackcontext");
@@ -1086,4 +1301,5 @@ void bugle_initialise_filter_library(void)
     bugle_register_filter_set_depends("camera", "trackdisplaylist");
     bugle_register_filter_set_depends("camera", "trackcontext");
     bugle_register_filter_set_depends("camera", "trackextensions");
+    bugle_register_filter_set_depends("extoverride", "trackextensions");
 }

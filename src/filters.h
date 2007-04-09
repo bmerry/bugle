@@ -135,6 +135,10 @@ filter_set *bugle_register_filter_set(const filter_set_info *info);
 filter *bugle_register_filter(filter_set *handle, const char *name);
 void bugle_register_filter_catches(filter *handle, budgie_group g, bool inactive, filter_callback callback);
 void bugle_register_filter_catches_all(filter *handle, bool inactive, filter_callback callback);
+/* Like bugle_register_filter_catches, but on a per-function rather than
+ * per-group basis.
+ */
+void bugle_register_filter_catches_function(filter *handle, budgie_function f, bool inactive, filter_callback callback);
 void bugle_register_filter_set_depends(const char *base, const char *dep);
 void bugle_register_filter_depends(const char *after, const char *before);
 void *bugle_get_filter_set_call_state(struct function_call_s *call, filter_set *handle);

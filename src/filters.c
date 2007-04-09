@@ -696,23 +696,30 @@ filter *bugle_register_filter(filter_set *handle, const char *name)
     return f;
 }
 
+void bugle_register_filter_catches_function(filter *handle, budgie_function f,
+                                            bool inactive,
+                                            filter_callback callback)
+{
+    filter_catcher *cb;
+
+    cb = (filter_catcher *) bugle_malloc(sizeof(filter_catcher));
+    cb->parent = handle;
+    cb->function = f;
+    cb->inactive = inactive;
+    cb->callback = callback;
+    bugle_list_append(&handle->callbacks, cb);
+}
+
 void bugle_register_filter_catches(filter *handle, budgie_group g,
                                    bool inactive,
                                    filter_callback callback)
 {
     budgie_function i;
-    filter_catcher *cb;
 
+    /* FIXME: there should be a way to speed this up */
     for (i = 0; i < NUMBER_OF_FUNCTIONS; i++)
         if (budgie_function_to_group[i] == g)
-        {
-            cb = (filter_catcher *) bugle_malloc(sizeof(filter_catcher));
-            cb->parent = handle;
-            cb->function = i;
-            cb->inactive = inactive;
-            cb->callback = callback;
-            bugle_list_append(&handle->callbacks, cb);
-        }
+            bugle_register_filter_catches_function(handle, i, inactive, callback);
 }
 
 void bugle_register_filter_catches_all(filter *handle, bool inactive,
