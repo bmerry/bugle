@@ -26,7 +26,11 @@ different entry points are used for the core and extension versions of
 the same function. The latter is necessary to detect extensions such as
 .B GL_SGIS_generate_mipmap
 which do not introduce new function calls, but it is less reliable as
-many enumerants share values.
+many enumerants share values. Some extensions are not detected at all:
+GL_ARB_texture_non_power_of_two does not introduce any tokens or
+functions, and some promoted extensions (like
+GL_ARB_pixel_buffer_object) have additional semantics to their
+predecessors but again introduce no new tokens or functions.
 .SH OUTPUT
 A typical output is the following:
 .IP

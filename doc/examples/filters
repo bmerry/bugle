@@ -60,6 +60,23 @@ chain showextensions
     filterset showextensions
 }
 
+chain extoverride
+{
+    filterset extoverride
+    {
+        version "1.5"   # Set maximum OpenGL version
+
+        # Option 1: enabled by default, list disables
+        disable "GL_EXT_framebuffer_object"
+        disable "GL_EXT_framebuffer_blit"
+
+        # Option 2: disabled by default, list enables
+        disable "all"
+        enable "GL_ARB_multitexture"
+        enable "GL_ARB_imaging"
+    }
+}
+
 # Captures a screenshot when a key is pressed
 chain screenshot
 {
