@@ -1,0 +1,52 @@
+.TH extoverride 7 "May 2006" BUGLE "User manual"
+.SH NAME
+extoverride \- hide OpenGL extensions from an application
+.SH SYNOPSIS
+.nf
+filterset extoverride
+{
+    version "1.5"
+    disable "all"
+    enable "GL_ARB_multitexture"
+    enable "GL_ARB_imaging"
+}
+.fi
+.SH DESCRIPTION
+The
+.B extoverride
+filter-set modifies the OpenGL version and extension strings to hide
+driver capabilities from the application. The primary use is to test an
+application to ensure that it works correctly on drivers that do not
+offer these capabilities.
+
+Apart from modifying these strings, a warning is printed to the log if
+any function from one of these extensions is called.
+.SH OPTIONS
+.TP
+.B version
+Set the version string to return, provided that it is smaller
+(lexicographically) than the true version string.
+.TP
+.B disable """all"""
+By default, extensions are exposed unless explicitly disabled. This
+option reverses the behaviour to hide all extensions that are not
+explicitly enabled.
+.TP
+.BI "disable " extension
+Hides the named extension from the application. A warning is printed if
+the extension was not known at the time BuGLe was compiled; in this
+case it will still be hidden, but there will not be any warning if it
+is used anyway.
+.TP
+.BI "enable " extension
+Like the 
+.B disable
+directive, but enables an extension when the default is disabled.
+.SH AUTHOR
+.B gldb
+and the
+.B bugle
+library are written and maintained by Bruce Merry
+<bmerry@users.sourceforge.net>.
+.SH SEE ALSO
+.BR bugle (3), bugle-log (7)
