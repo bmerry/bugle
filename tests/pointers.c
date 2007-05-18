@@ -23,13 +23,13 @@ static void invalid_direct(void)
     glVertexPointer(3, GL_FLOAT, 0, v);
     glEnableClientState(GL_VERTEX_ARRAY);
     glDrawElements(GL_POINTS, 500, GL_UNSIGNED_INT, NULL);
-    fprintf(ref, "WARNING: illegal index array caught in glDrawElements \\(unreadable memory\\); call will be ignored\\.\n");
+    fprintf(ref, "checks\\.error: illegal index array caught in glDrawElements \\(unreadable memory\\); call will be ignored\\.\n");
     glDrawElements(GL_POINTS, 4, GL_UNSIGNED_INT, i); /* legal */
 #ifdef GL_EXT_draw_range_elements
     if (GLEE_EXT_draw_range_elements)
     {
         glDrawRangeElementsEXT(GL_POINTS, 0, 0, 500, GL_UNSIGNED_INT, NULL);
-        fprintf(ref, "WARNING: illegal index array caught in glDrawRangeElements \\(unreadable memory\\); call will be ignored\\.\n");
+        fprintf(ref, "checks\\.error: illegal index array caught in glDrawRangeElements \\(unreadable memory\\); call will be ignored\\.\n");
         glDrawRangeElementsEXT(GL_POINTS, 0, 0, 4, GL_UNSIGNED_INT, i); /* legal */
     }
 #endif
@@ -38,13 +38,13 @@ static void invalid_direct(void)
     glTexCoordPointer(3, GL_FLOAT, 0, v);
     glEnableClientState(GL_TEXTURE_COORD_ARRAY);
     glDrawElements(GL_POINTS, 500, GL_UNSIGNED_INT, NULL);
-    fprintf(ref, "WARNING: illegal index array caught in glDrawElements \\(unreadable memory\\); call will be ignored\\.\n");
+    fprintf(ref, "checks\\.error: illegal index array caught in glDrawElements \\(unreadable memory\\); call will be ignored\\.\n");
 #ifdef GL_ARB_multitexture
     if (GLEE_ARB_multitexture)
     {
         glClientActiveTextureARB(GL_TEXTURE1_ARB);
         glDrawElements(GL_POINTS, 500, GL_UNSIGNED_INT, NULL);
-        fprintf(ref, "WARNING: illegal index array caught in glDrawElements \\(unreadable memory\\); call will be ignored\\.\n");
+        fprintf(ref, "checks\\.error: illegal index array caught in glDrawElements \\(unreadable memory\\); call will be ignored\\.\n");
         glClientActiveTextureARB(GL_TEXTURE0_ARB);
     }
 #endif
@@ -68,13 +68,13 @@ static void invalid_direct_vbo(void)
         glBufferDataARB(GL_ELEMENT_ARRAY_BUFFER_ARB, sizeof(indices),
                         indices, GL_STATIC_DRAW_ARB);
         glDrawElements(GL_POINTS, 500, GL_UNSIGNED_INT, NULL);
-        fprintf(ref, "WARNING: illegal index array caught in glDrawElements \\(VBO overrun\\); call will be ignored\\.\n");
+        fprintf(ref, "checks\\.error: illegal index array caught in glDrawElements \\(VBO overrun\\); call will be ignored\\.\n");
         glDrawElements(GL_POINTS, 4, GL_UNSIGNED_INT, NULL); /* legal */
 #ifdef GL_EXT_draw_range_elements
         if (GLEE_EXT_draw_range_elements)
         {
             glDrawRangeElementsEXT(GL_POINTS, 0, 0, 500, GL_UNSIGNED_INT, NULL);
-            fprintf(ref, "WARNING: illegal index array caught in glDrawRangeElements \\(VBO overrun\\); call will be ignored\\.\n");
+            fprintf(ref, "checks\\.error: illegal index array caught in glDrawRangeElements \\(VBO overrun\\); call will be ignored\\.\n");
             glDrawRangeElementsEXT(GL_POINTS, 0, 0, 4, GL_UNSIGNED_INT, NULL); /* legal */
         }
 #endif
@@ -84,7 +84,7 @@ static void invalid_direct_vbo(void)
             GLsizei count = 500;
             const GLvoid *indices = NULL;
             glMultiDrawElementsEXT(GL_POINTS, &count, GL_UNSIGNED_INT, &indices, 1);
-            fprintf(ref, "WARNING: illegal index array caught in glMultiDrawElements \\(VBO overrun\\); call will be ignored\\.\n");
+            fprintf(ref, "checks\\.error: illegal index array caught in glMultiDrawElements \\(VBO overrun\\); call will be ignored\\.\n");
 
             count = 4;
             glMultiDrawElementsEXT(GL_POINTS, &count, GL_UNSIGNED_INT, &indices, 1);
@@ -107,14 +107,14 @@ static void invalid_indirect(void)
     glEnableClientState(GL_VERTEX_ARRAY);
 
     glDrawArrays(GL_POINTS, 0, 500);
-    fprintf(ref, "WARNING: illegal vertex array caught in glDrawArrays \\(unreadable memory\\); call will be ignored\\.\n");
+    fprintf(ref, "checks\\.error: illegal vertex array caught in glDrawArrays \\(unreadable memory\\); call will be ignored\\.\n");
     glDrawElements(GL_POINTS, 4, GL_UNSIGNED_INT, i);
-    fprintf(ref, "WARNING: illegal vertex array caught in glDrawElements \\(unreadable memory\\); call will be ignored\\.\n");
+    fprintf(ref, "checks\\.error: illegal vertex array caught in glDrawElements \\(unreadable memory\\); call will be ignored\\.\n");
 #ifdef GL_EXT_draw_range_elements
     if (GLEE_EXT_draw_range_elements)
     {
         glDrawRangeElementsEXT(GL_POINTS, 0, 0, 4, GL_UNSIGNED_INT, i);
-        fprintf(ref, "WARNING: illegal vertex array caught in glDrawRangeElements \\(unreadable memory\\); call will be ignored\\.\n");
+        fprintf(ref, "checks\\.error: illegal vertex array caught in glDrawRangeElements \\(unreadable memory\\); call will be ignored\\.\n");
     }
 #endif
 #ifdef GL_EXT_multi_draw_arrays
@@ -124,9 +124,9 @@ static void invalid_indirect(void)
         GLsizei count = 1;
         const GLvoid *indices = &i;
         glMultiDrawArraysEXT(GL_POINTS, &first, &count, 1);
-        fprintf(ref, "WARNING: illegal vertex array caught in glMultiDrawArrays \\(unreadable memory\\); call will be ignored\\.\n");
+        fprintf(ref, "checks\\.error: illegal vertex array caught in glMultiDrawArrays \\(unreadable memory\\); call will be ignored\\.\n");
         glMultiDrawElementsEXT(GL_POINTS, &count, GL_UNSIGNED_INT, &indices, 1);
-        fprintf(ref, "WARNING: illegal vertex array caught in glMultiDrawElements \\(unreadable memory\\); call will be ignored\\.\n");
+        fprintf(ref, "checks\\.error: illegal vertex array caught in glMultiDrawElements \\(unreadable memory\\); call will be ignored\\.\n");
     }
 #endif
     glDisableClientState(GL_VERTEX_ARRAY);
@@ -137,7 +137,7 @@ static void invalid_indirect(void)
         glVertexAttribPointer(6, 3, GL_FLOAT, GL_FALSE, 0, NULL);
         glEnableVertexAttribArray(3);
         glDrawArrays(GL_POINTS, 0, 500);
-        fprintf(ref, "WARNING: illegal generic attribute array 3 caught in glDrawArrays \\(unreadable memory\\); call will be ignored\\.\n");
+        fprintf(ref, "checks\\.error: illegal generic attribute array 3 caught in glDrawArrays \\(unreadable memory\\); call will be ignored\\.\n");
         glDisableVertexAttribArray(3);
     }
 #endif
@@ -154,11 +154,11 @@ static void invalid_range(void)
     if (GLEE_EXT_draw_range_elements)
     {
         glDrawRangeElementsEXT(GL_POINTS, 0, 0, 4, GL_UNSIGNED_INT, i);
-        fprintf(ref, "WARNING: glDrawRangeElements indices fall outside range; call will be ignored\\.\n");
+        fprintf(ref, "checks\\.error: glDrawRangeElements indices fall outside range; call will be ignored\\.\n");
         glDrawRangeElementsEXT(GL_POINTS, 1, 1, 4, GL_UNSIGNED_INT, i);
-        fprintf(ref, "WARNING: glDrawRangeElements indices fall outside range; call will be ignored\\.\n");
+        fprintf(ref, "checks\\.error: glDrawRangeElements indices fall outside range; call will be ignored\\.\n");
         glDrawRangeElementsEXT(GL_POINTS, 0, 0xffffff, 4, GL_UNSIGNED_INT, i);
-        fprintf(ref, "WARNING: illegal vertex array caught in glDrawRangeElements \\(unreadable memory\\); call will be ignored\\.\n");
+        fprintf(ref, "checks\\.error: illegal vertex array caught in glDrawRangeElements \\(unreadable memory\\); call will be ignored\\.\n");
     }
 #endif
 }

@@ -19,11 +19,13 @@
 # include <config.h>
 #endif
 #define _POSIX_SOURCE /* for flockfile */
+#include "src/log.h"
 #include "src/filters.h"
 #include "common/safemem.h"
 #include "common/bool.h"
 #include "common/threads.h"
 #include <stdio.h>
+#include <stdarg.h>
 #include <sys/types.h>
 #include <unistd.h>
 
@@ -31,41 +33,105 @@ static char *log_filename = NULL;
 static char *log_format = NULL;
 static bool log_flush = false;
 static FILE *log_file = NULL;
+static int log_level = BUGLE_LOG_INFO;
 
-void bugle_log_callback(const char *filterset, const char *event,
-                        void (*callback)(void *arg, FILE *f), void *arg)
+static const char *log_level_names[] =
 {
-    const char *format;
+    "DEBUG",
+    "INFO",
+    "NOTICE",
+    "WARNING",
+    "ERROR",
+};
 
-    if (!log_file) return;
-    format = log_format;
-    while (*format)
+/* Processes tokens from *format until it hits something it cannot
+ * handle itself (i.e., %m). The return value indicates what was hit:
+ * 0: all done
+ * 1: %m (format is advanced past the %m)
+ */
+static int log_next(const char **format, const char *filterset, const char *event, int severity)
+{
+    while (**format)
     {
-        if (*format == '%')
+        if (**format == '%')
         {
-            switch (format[1])
+            switch ((*format)[1])
             {
+            case 'l': fputs(log_level_names[severity], log_file); break;
             case 'f': fputs(filterset, log_file); break;
             case 'e': fputs(event, log_file); break;
-            case 'm': (*callback)(arg, log_file); break;
+            case 'm': *format += 2; return 1;
             case 'p': fprintf(log_file, "%lu", (unsigned long) getpid()); break;
             case 't': fprintf(log_file, "%lu", bugle_thread_self()); break;
             case '%': fputc('%', log_file); break;
             default: /* Unrecognised escape, treat it as literal */
                 fputc('%', log_file);
-                format--;
+                (*format)--;
             }
-            format += 2;
+            *format += 2;
         }
         else
-            fputc(*format++, log_file);
+        {
+            fputc(**format, log_file);
+            (*format)++;
+        }
     }
     fputc('\n', log_file);
+    return 0;
 }
 
-void bugle_log(const char *filterset, const char *event, const char *message)
+void bugle_log_callback(const char *filterset, const char *event, int severity,
+                        void (*callback)(void *arg, FILE *f), void *arg)
 {
-    bugle_log_callback(filterset, event, (void (*)(void *, FILE *)) fputs, (void *) message);
+    const char *format;
+    int special;
+
+    if (!log_file || severity < log_level) return;
+    format = log_format;
+    while ((special = log_next(&format, filterset, event, severity)) != 0)
+        switch (special)
+        {
+        case 1:
+            (*callback)(arg, log_file);
+            break;
+        }
+}
+
+void bugle_log_printf(const char *filterset, const char *event, int severity,
+                      const char *msg_format, ...)
+{
+    va_list ap;
+    const char *format;
+    int special;
+
+    if (!log_file || severity < log_level) return;
+    format = log_format;
+    while ((special = log_next(&format, filterset, event, severity)) != 0)
+        switch (special)
+        {
+        case 1:
+            va_start(ap, msg_format);
+            vfprintf(log_file, msg_format, ap);
+            va_end(ap);
+            break;
+        }
+}
+
+void bugle_log(const char *filterset, const char *event, int severity,
+               const char *message)
+{
+    const char *format;
+    int special;
+
+    if (!log_file || severity < log_level) return;
+    format = log_format;
+    while ((special = log_next(&format, filterset, event, severity)) != 0)
+        switch (special)
+        {
+        case 1:
+            fputs(message, log_file);
+            break;
+        }
 }
 
 static bool log_pre_callback(function_call *call, const callback_data *data)
@@ -131,7 +197,8 @@ void log_initialise(void)
     {
         { "filename", "filename of the log to write [stderr]", FILTER_SET_VARIABLE_STRING, &log_filename, NULL },
         { "flush", "flush log after every call [no]", FILTER_SET_VARIABLE_BOOL, &log_flush, NULL },
-        { "format", "template for log lines [%f.%e: %m]", FILTER_SET_VARIABLE_STRING, &log_format, NULL },
+        { "format", "template for log lines [[%l] %f.%e: %m]", FILTER_SET_VARIABLE_STRING, &log_format, NULL },
+        { "level", "how much information to log [1] (0 is most, 5 is none)", FILTER_SET_VARIABLE_UINT, &log_level, NULL },
         { NULL, NULL, 0, NULL, NULL }
     };
 
@@ -148,5 +215,5 @@ void log_initialise(void)
     };
 
     bugle_register_filter_set(&log_info);
-    log_format = bugle_strdup("%f.%e: %m");
+    log_format = bugle_strdup("[%l] %f.%e: %m");
 }

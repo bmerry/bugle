@@ -25,6 +25,7 @@
 #include "src/gldump.h"
 #include "src/tracker.h"
 #include "src/glexts.h"
+#include "src/log.h"
 #include "common/bool.h"
 #include "common/safemem.h"
 #include "common/threads.h"
@@ -241,15 +242,17 @@ static void checks_sigsegv_handler(int sig)
 static void checks_pointer_message(const char *function)
 {
     if (checks_error_attribute != -1)
-        fprintf(stderr, "WARNING: illegal generic attribute array %d caught in %s (%s); call will be ignored.\n",
-                checks_error_attribute,
-                function,
-                checks_error_vbo ? "VBO overrun" : "unreadable memory");
+        bugle_log_printf("checks", "error", BUGLE_LOG_NOTICE,
+                         "illegal generic attribute array %d caught in %s (%s); call will be ignored.",
+                         checks_error_attribute,
+                         function,
+                         checks_error_vbo ? "VBO overrun" : "unreadable memory");
     else
-        fprintf(stderr, "WARNING: illegal %s caught in %s (%s); call will be ignored.\n",
-                checks_error ? checks_error : "pointer",
-                function,
-                checks_error_vbo ? "VBO overrun" : "unreadable memory");
+        bugle_log_printf("checks", "error", BUGLE_LOG_NOTICE,
+                         "illegal %s caught in %s (%s); call will be ignored.",
+                         checks_error ? checks_error : "pointer",
+                         function,
+                         checks_error_vbo ? "VBO overrun" : "unreadable memory");
 }
 
 /* Just reads every byte of the given address range. We use the volatile
@@ -333,7 +336,15 @@ static void checks_attribute(size_t first, size_t count,
         if (type_name)
         {
             CALL_glGetIntegerv(type_name, &gltype);
-            type = bugle_gl_type_to_type(gltype);
+            if (gltype <= 1)
+            {
+                bugle_log("checks", "warning", BUGLE_LOG_WARNING,
+                          "An incorrect value was returned for a vertex array type. "
+                          "This is a known bug in Mesa <= 6.5.3. GL_FLOAT will be assumed.");
+                gltype = GL_FLOAT;
+            }
+            else
+                type = bugle_gl_type_to_type(gltype);
         }
         CALL_glGetIntegerv(stride_name, &stride);
         CALL_glGetPointerv(ptr_name, &ptr);
@@ -375,6 +386,13 @@ static void checks_generic_attribute(size_t first, size_t count,
         checks_error_attribute = number;
         CALL_glGetVertexAttribivARB(number, GL_VERTEX_ATTRIB_ARRAY_SIZE_ARB, &size);
         CALL_glGetVertexAttribivARB(number, GL_VERTEX_ATTRIB_ARRAY_TYPE_ARB, &gltype);
+        if (gltype <= 1)
+        {
+            bugle_log("checks", "warning", BUGLE_LOG_WARNING,
+                      "An incorrect value was returned for a vertex array type. "
+                      "This is a known bug in Mesa <= 6.5.3. GL_FLOAT will be assumed.");
+            gltype = GL_FLOAT;
+        }
         type = bugle_gl_type_to_type(gltype);
         CALL_glGetVertexAttribivARB(number, GL_VERTEX_ATTRIB_ARRAY_STRIDE_ARB, &stride);
         CALL_glGetVertexAttribPointervARB(number, GL_VERTEX_ATTRIB_ARRAY_POINTER_ARB, &ptr);
@@ -592,7 +610,8 @@ static bool checks_glDrawArrays(function_call *call, const callback_data *data)
 {
     if (*call->typed.glDrawArrays.arg1 < 0)
     {
-        fprintf(stderr, "WARNING: glDrawArrays called with a negative argument; call will be ignored.\n");
+        bugle_log("checks", "error", BUGLE_LOG_NOTICE,
+                  "glDrawArrays called with a negative argument; call will be ignored.");
         return false;
     }
 
@@ -661,7 +680,8 @@ static bool checks_glDrawRangeElements(function_call *call, const callback_data 
         if (min < *call->typed.glDrawRangeElementsEXT.arg1
             || max > *call->typed.glDrawRangeElementsEXT.arg2)
         {
-            fprintf(stderr, "WARNING: glDrawRangeElements indices fall outside range; call will be ignored.\n");
+            bugle_log("checks", "error", BUGLE_LOG_NOTICE,
+                      "glDrawRangeElements indices fall outside range; call will be ignored.");
             ret = false;
         }
         else
@@ -753,8 +773,9 @@ static bool checks_no_begin_end(function_call *call, const callback_data *data)
 {
     if (bugle_in_begin_end())
     {
-        fprintf(stderr, "WARNING: %s called inside glBegin/glEnd; call will be ignored.\n",
-                budgie_function_table[call->generic.id].name);
+        bugle_log_printf("checks", "error", BUGLE_LOG_NOTICE,
+                         "%s called inside glBegin/glEnd; call will be ignored.",
+                         budgie_function_table[call->generic.id].name);
         return false;
     }
     else return true;
@@ -778,8 +799,9 @@ static bool checks_begin_end(function_call *call, const callback_data *data)
             if (attrib) return true;
         }
 #endif
-        fprintf(stderr, "WARNING: %s called outside glBegin/glEnd; call will be ignored.\n",
-                name);
+        bugle_log_printf("checks", "error", BUGLE_LOG_NOTICE,
+                         "%s called outside glBegin/glEnd; call will be ignored.",
+                         name);
         return false;
     }
     else
@@ -790,7 +812,8 @@ static bool checks_glArrayElement(function_call *call, const callback_data *data
 {
     if (*call->typed.glArrayElement.arg0 < 0)
     {
-        fprintf(stderr, "WARNING: glArrayElement called with a negative argument; call will be ignored.\n");
+        bugle_log("checks", "error", BUGLE_LOG_NOTICE,
+                  "glArrayElement called with a negative argument; call will be ignored.");
         return false;
     }
     return true;
@@ -830,8 +853,9 @@ static bool checks_glMultiTexCoord(function_call *call, const callback_data *dat
 
     if (texture < GL_TEXTURE0_ARB || texture >= GL_TEXTURE0_ARB + (GLenum) max)
     {
-        fprintf(stderr, "WARNING: %s called with out of range texture unit; call will be ignored.\n",
-                budgie_function_table[call->generic.id].name);
+        bugle_log_printf("checks", "error", BUGLE_LOG_NOTICE,
+                         "%s called with out of range texture unit; call will be ignored.",
+                         budgie_function_table[call->generic.id].name);
         return false;
     }
     return true;
@@ -928,10 +952,11 @@ static bool initialise_checks(filter_set *handle)
      */
     bugle_register_filter_depends("invoke", "checks");
     bugle_register_filter_depends("stats", "checks");
-    bugle_register_filter_depends("log_pre", "checks");
+    bugle_register_filter_depends("trace", "checks");
     bugle_register_filter_depends("trackcontext", "checks");
     bugle_register_filter_depends("trackbeginend", "checks");
     bugle_register_filter_depends("trackdisplaylist", "checks");
+    bugle_log_register_filter("checks");
     return true;
 }
 

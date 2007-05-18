@@ -34,6 +34,7 @@
 #include "src/glexts.h"
 #include "src/tracker.h"
 #include "src/xevent.h"
+#include "src/log.h"
 #include "gl2ps/gl2ps.h"
 #include "common/hashtable.h"
 #include "common/safemem.h"
@@ -173,7 +174,8 @@ static bool screenshot_start(screenshot_context *ssctx)
     if (!aux) return false;
     if (!bugle_begin_internal_render())
     {
-        fputs("warning: glXSwapBuffers called inside begin/end - skipping frame\n", stderr);
+        bugle_log("screenshot", "grab", BUGLE_LOG_NOTICE,
+                  "glXSwapBuffers called inside begin/end; skipping frame");
         return false;
     }
     bugle_make_context_current(dpy, ssctx->old_write, ssctx->old_write, aux);
@@ -214,7 +216,8 @@ static AVFrame *allocate_video_frame(int fmt, int width, int height,
     f = avcodec_alloc_frame();
     if (!f)
     {
-        fprintf(stderr, "failed to allocate frame\n");
+        bugle_log("screenshot", "video", BUGLE_LOG_ERROR,
+                  "failed to allocate frame");
         exit(1);
     }
     size = avpicture_get_size(fmt, width, height);
@@ -277,8 +280,9 @@ static bool initialise_lavc(int width, int height)
     video_yuv = allocate_video_frame(c->pix_fmt, width, height, true);
     if (url_fopen(&video_context->pb, video_filename, URL_WRONLY) < 0)
     {
-        fprintf(stderr, "failed to open video output file %s\n", video_filename);
-        return false;
+        bugle_log_printf("screenshot", "video", BUGLE_LOG_ERROR,
+                         "failed to open video output file %s", video_filename);
+        exit(1);
     }
     av_write_header(video_context);
     return true;
@@ -317,7 +321,8 @@ static void finalise_lavc(void)
             ret = av_write_frame(video_context, &pkt);
             if (ret != 0)
             {
-                fprintf(stderr, "encoding failed\n");
+                bugle_log("screenshot", "video", BUGLE_LOG_ERROR,
+                          "encoding failed");
                 exit(1);
             }
         }
@@ -463,8 +468,9 @@ static bool do_screenshot(GLenum format, int test_width, int test_height,
     if (test_width != -1 || test_height != -1)
         if (width != test_width || height != test_height)
         {
-            fprintf(stderr, "size changed from %dx%d to %dx%d, stopping recording\n",
-                    test_width, test_height, width, height);
+            bugle_log_printf("screenshot", "video", BUGLE_LOG_WARNING,
+                             "size changed from %dx%d to %dx%d, stopping recording",
+                             test_width, test_height, width, height);
             return false;
         }
 
@@ -615,7 +621,7 @@ static void screenshot_video()
 #endif
                 if (ret != 0)
                 {
-                    fprintf(stderr, "encoding failed\n");
+                    bugle_log("screenshot", "video", BUGLE_LOG_ERROR, "encoding failed");
                     exit(1);
                 }
             }
@@ -694,6 +700,7 @@ static bool initialise_screenshot(filter_set *handle)
     f = bugle_register_filter(handle, "screenshot");
     bugle_register_filter_catches(f, GROUP_glXSwapBuffers, false, screenshot_callback);
     bugle_register_filter_depends("invoke", "screenshot");
+    bugle_log_register_filter("screenshot");
 
     video_data = bugle_calloc(video_lag, sizeof(screenshot_data));
     video_cur = 0;
@@ -786,18 +793,19 @@ static bool initialise_showextensions(filter_set *handle)
      * reduces the risk of another filter aborting the call.
      */
     bugle_register_filter_depends("invoke", "showextensions");
+    bugle_log_register_filter("showextensions");
     bugle_hash_init(&seen_extensions, false);
     return true;
 }
 
-static void destroy_showextensions(filter_set *handle)
+static void showextensions_print(void *seen, FILE *log)
 {
+    bugle_hash_table *seen_extensions;
     int i;
     budgie_function f;
 
-    printf("Min GL version: %s\n", gl_version);
-    printf("Min GLX version: %s\n", glx_version);
-    printf("Used extensions:");
+    seen_extensions = (bugle_hash_table *) seen;
+    fprintf(log, "Used extensions:");
     for (i = 0; i < bugle_gl_token_count; i++)
     {
         const char *ver, *ext;
@@ -805,10 +813,10 @@ static void destroy_showextensions(filter_set *handle)
         ver = bugle_gl_tokens_name[i].version;
         ext = bugle_gl_tokens_name[i].extension;
         if ((!ver || strcmp(ver, gl_version) > 0)
-            && ext && bugle_hash_get(&seen_extensions, ext) == &seen_extensions)
+            && ext && bugle_hash_get(seen_extensions, ext) == seen_extensions)
         {
-            printf(" %s", ext);
-            bugle_hash_set(&seen_extensions, ext, NULL);
+            fprintf(log, " %s", ext);
+            bugle_hash_set(seen_extensions, ext, NULL);
         }
     }
     for (f = 0; f < NUMBER_OF_FUNCTIONS; f++)
@@ -816,15 +824,24 @@ static void destroy_showextensions(filter_set *handle)
         const char *ext;
 
         ext = bugle_gl_function_table[f].extension;
-        if (ext && bugle_hash_get(&seen_extensions, ext) == &seen_extensions)
+        if (ext && bugle_hash_get(seen_extensions, ext) == seen_extensions)
         {
-            printf(" %s", ext);
-            bugle_hash_set(&seen_extensions, ext, NULL);
+            fprintf(log, " %s", ext);
+            bugle_hash_set(seen_extensions, ext, NULL);
         }
     }
+}
+
+static void destroy_showextensions(filter_set *handle)
+{
+    bugle_log_printf("showextensions", "gl", BUGLE_LOG_INFO,
+                     "Min GL version: %s", gl_version);
+    bugle_log_printf("showextensions", "glx", BUGLE_LOG_INFO,
+                     "Min GLX version: %s", glx_version);
+    bugle_log_callback("showextensions", "ext", BUGLE_LOG_INFO,
+                       showextensions_print, &seen_extensions);
 
     bugle_hash_clear(&seen_extensions);
-    printf("\n");
 }
 
 typedef struct
@@ -869,16 +886,20 @@ static bool eps_glXSwapBuffers(function_call *call, const callback_data *data)
             switch (status)
             {
             case GL2PS_OVERFLOW:
-                fprintf(stderr, "Feedback buffer overflowed; size will be doubled (can be increased in configuration)\n");
+                bugle_log("eps", "gl2ps", BUGLE_LOG_NOTICE,
+                          "Feedback buffer overflowed; size will be doubled (can be increased in configuration)");
                 break;
             case GL2PS_NO_FEEDBACK:
-                fprintf(stderr, "No primitives were generated!\n");
+                bugle_log("eps", "gl2ps", BUGLE_LOG_WARNING,
+                          "No primitives were generated!");
                 break;
             case GL2PS_UNINITIALIZED:
-                fprintf(stderr, "gl2ps was not initialised. This indicates a bug in bugle.\n");
+                bugle_log("eps", "gl2ps", BUGLE_LOG_WARNING,
+                          "gl2ps was not initialised. This indicates a bug in bugle.");
                 break;
             case GL2PS_ERROR:
-                fprintf(stderr, "An unknown gl2ps error occurred.\n");
+                bugle_log("eps", "gl2ps", BUGLE_LOG_WARNING,
+                          "An unknown gl2ps error occurred.");
                 break;
             case GL2PS_SUCCESS:
                 break;
@@ -888,7 +909,8 @@ static bool eps_glXSwapBuffers(function_call *call, const callback_data *data)
             return false; /* Don't swap, since it isn't a real frame */
         }
         else
-            fprintf(stderr, "Warning: glXSwapBuffers called from inside glBegin/glEnd\nSnapshot may be corrupted.\n");
+            bugle_log("eps", "gl2ps", BUGLE_LOG_NOTICE,
+                      "glXSwapBuffers called inside glBegin/glEnd; snapshot may be corrupted.");
     }
     else if (keypress_eps && bugle_begin_internal_render())
     {
@@ -910,7 +932,8 @@ static bool eps_glXSwapBuffers(function_call *call, const callback_data *data)
         if (!f)
         {
             free(fname);
-            fprintf(stderr, "Cannot open %s\n", eps_filename);
+            bugle_log_printf("eps", "file", BUGLE_LOG_WARNING,
+                             "Cannot open %s", eps_filename);
             return true;
         }
 
@@ -922,7 +945,8 @@ static bool eps_glXSwapBuffers(function_call *call, const callback_data *data)
                                 f, fname);
         if (status != GL2PS_SUCCESS)
         {
-            fprintf(stderr, "gl2psBeginPage failed\n");
+            bugle_log("eps", "gl2ps", BUGLE_LOG_WARNING,
+                      "gl2psBeginPage failed");
             fclose(f);
             free(fname);
             return true;
@@ -982,6 +1006,7 @@ static bool initialise_eps(filter_set *handle)
     bugle_register_filter_depends("invoke", "eps_pre");
     bugle_register_filter_depends("eps", "invoke");
     bugle_register_filter_post_renders("eps");
+    bugle_log_register_filter("eps_pre");
     eps_view = bugle_object_class_register(&bugle_context_class, initialise_eps_context,
                                            NULL, sizeof(eps_struct));
     bugle_register_xevent_key(&key_eps, NULL, bugle_xevent_key_callback_flag, &keypress_eps);
@@ -1058,6 +1083,9 @@ void bugle_initialise_filter_library(void)
     bugle_register_filter_set_renders("screenshot");
     bugle_register_filter_set_depends("screenshot", "trackcontext");
     bugle_register_filter_set_depends("screenshot", "trackextensions");
+    bugle_register_filter_set_depends("screenshot", "log");
+    bugle_register_filter_set_depends("showextensions", "log");
     bugle_register_filter_set_renders("eps");
     bugle_register_filter_set_depends("eps", "trackcontext");
+    bugle_register_filter_set_depends("eps", "log");
 }

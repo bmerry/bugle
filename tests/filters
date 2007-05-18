@@ -10,6 +10,8 @@ chain trace
 {
     filterset log
     {
+        format "%f.%e: %m"
+        level 1
         flush yes
     }
     filterset trace
@@ -25,6 +27,8 @@ chain triangles
     }
     filterset log
     {
+        format "%f.%e: %m"
+        level 1
         flush yes
     }
 }
@@ -32,4 +36,9 @@ chain triangles
 chain checks
 {
     filterset checks
+    filterset log
+    {
+        format "%f.%e: %m"
+        flush yes
+    }
 }

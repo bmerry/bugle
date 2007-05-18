@@ -1049,7 +1049,6 @@ static bool logstats_show_set(const struct filter_set_variable_info_s *var,
 
 static bool logstats_glXSwapBuffers(function_call *call, const callback_data *data)
 {
-    char *msg;
     bugle_list_node *i;
     stats_statistic *st;
     stats_signal_values tmp;
@@ -1069,12 +1068,15 @@ static bool logstats_glXSwapBuffers(function_call *call, const callback_data *da
             {
                 sub = stats_statistic_find_substitution(st, v);
                 if (sub)
-                    bugle_asprintf(&msg, "%s %s", sub->replacement,
-                                   st->label ? st->label : "");
+                    bugle_log_printf("logstats", st->name, BUGLE_LOG_INFO,
+                                     "%s %s",
+                                     sub->replacement,
+                                     st->label ? st->label : "");
                 else
-                    bugle_asprintf(&msg, "%.*f %s", st->precision, v,
-                                   st->label ? st->label : "");
-                bugle_log("logstats", st->name, msg);
+                    bugle_log_printf("logstats", st->name, BUGLE_LOG_INFO,
+                                     "%.*f %s",
+                                     st->precision, v,
+                                     st->label ? st->label : "");
             }
         }
     }

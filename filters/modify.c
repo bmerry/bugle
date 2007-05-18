@@ -1106,11 +1106,9 @@ static bool extoverride_glGetString(function_call *call, const callback_data *da
 
 static bool extoverride_warn(function_call *call, const callback_data *data)
 {
-    char *msg;
-    bugle_asprintf(&msg, "%f was called, although the corresponding extension was suppressed",
-                   budgie_function_table[call->generic.id].name);
-    bugle_log("extoverride", "warn", msg);
-    free(msg);
+    bugle_log_printf("extoverride", "warn", BUGLE_LOG_NOTICE,
+                     "%s was called, although the corresponding extension was suppressed",
+                     budgie_function_table[call->generic.id].name);
     return true;
 }
 

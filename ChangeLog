@@ -1,4 +1,8 @@
 * extoverride filterset
+* Rework of the logging system
+  - most references to stderr have been replaced by logging
+  - option to control the log level
+  - new bugle_log_printf helper function and more efficient bugle_log
 
 0.0.20070325
 ------------

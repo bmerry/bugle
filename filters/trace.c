@@ -41,10 +41,10 @@ static bool trace_callback(function_call *call, const callback_data *data)
 {
     GLenum error;
 
-    bugle_log_callback("trace", "call",
+    bugle_log_callback("trace", "call", BUGLE_LOG_INFO,
                        trace_callback_call_callback, &call->generic);
     if ((error = bugle_get_call_error(call)))
-        bugle_log_callback("trace", "error",
+        bugle_log_callback("trace", "error", BUGLE_LOG_WARNING,
                            trace_callback_error_callback, &error);
     return true;
 }

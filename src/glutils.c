@@ -25,6 +25,7 @@
 #include "src/tracker.h"
 #include "src/utils.h"
 #include "src/glfuncs.h"
+#include "src/log.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <GL/gl.h>
@@ -51,16 +52,31 @@ bool bugle_begin_internal_render(void)
     return true;
 }
 
+struct internal_render_warning_struct
+{
+    const char *name;
+    GLenum error;
+};
+
+static void internal_render_warning(void *data, FILE *log)
+{
+    const struct internal_render_warning_struct *s;
+    s = (const struct internal_render_warning_struct *) data;
+    fprintf(log, "%s internally generated ", s->name);
+    bugle_dump_GLerror(s->error, log);
+    fputc('.', log);
+}
+
 void bugle_end_internal_render(const char *name, bool warn)
 {
-    GLenum error;
-    while ((error = CALL_glGetError()) != GL_NO_ERROR)
+    struct internal_render_warning_struct s;
+    s.name = name;
+    while ((s.error = CALL_glGetError()) != GL_NO_ERROR)
     {
         if (warn)
         {
-            fprintf(stderr, "Warning: %s internally generated ", name);
-            bugle_dump_GLerror(error, stderr);
-            fputs(".\n", stderr);
+            bugle_log_callback("glutils", "internalrender", BUGLE_LOG_WARNING,
+                               internal_render_warning, (void *) &s);
         }
     }
 }
@@ -226,12 +242,14 @@ void bugle_register_filter_set_renders(const char *name)
 {
     bugle_register_filter_set_depends(name, "trackcontext");
     bugle_register_filter_set_depends(name, "trackbeginend");
+    bugle_register_filter_set_depends(name, "log");
 }
 
 void bugle_register_filter_post_renders(const char *name)
 {
     bugle_register_filter_depends(name, "error");
     bugle_register_filter_depends(name, "trackbeginend");
+    bugle_log_register_filter(name);
 }
 
 void bugle_register_filter_set_queries_error(const char *name)

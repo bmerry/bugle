@@ -92,6 +92,7 @@ AC_C_VOLATILE
 AC_C_INLINE
 AC_C_CHAR_UNSIGNED
 BUGLE_C_GCC_VISIBILITY
+BUGLE_C_GCC_FORMAT_PRINTF
 
 dnl Checks for library functions
 AC_CHECK_FUNCS([regcomp strrchr vasprintf vsnprintf open_memstream pthread_kill])
