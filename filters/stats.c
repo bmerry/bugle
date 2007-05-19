@@ -279,8 +279,9 @@ static bool stats_expression_activate_signals(stats_expression *expr)
         expr->signal = stats_signal_get(expr->signal_name);
         if (!expr->signal)
         {
-            fprintf(stderr, "Signal %s is not registered - missing filter-set?\n",
-                    expr->signal_name);
+            bugle_log_printf("stats", "expression", BUGLE_LOG_WARNING,
+                             "Signal %s is not registered - missing filter-set?",
+                             expr->signal_name);
             return false;
         }
         return stats_signal_activate(expr->signal);
@@ -362,7 +363,7 @@ static void stats_statistic_list(const char *caller)
 /*** stats filterset ***/
 
 /* Reads the statistics configuration file. On error, prints a message
- * to stderr and returns false.
+ * to the log and returns false.
  */
 static bool stats_load_config(void)
 {
@@ -379,7 +380,8 @@ static bool stats_load_config(void)
      */
     if (!config && !home)
     {
-        fputs("Please set BUGLE_STATISTICS\n", stderr);
+        bugle_log("stats", "config", BUGLE_LOG_ERROR,
+                  "$HOME is not set; please set $HOME or $BUGLE_STATISTICS");
         return false;
     }
     if (!config)
@@ -402,14 +404,16 @@ static bool stats_load_config(void)
         }
         else
         {
-            fprintf(stderr, "Parse error in %s\n", config);
+            bugle_log_printf("stats", "config", BUGLE_LOG_ERROR,
+                             "Parse error in %s", config);
             free(config);
             return false;
         }
     }
     else
     {
-        fprintf(stderr, "Failed to open %s\n", config);
+        bugle_log_printf("stats", "config", BUGLE_LOG_ERROR,
+                         "Failed to open %s", config);
         free(config);
         return false;
     }
@@ -651,7 +655,8 @@ static bool stats_primitives_glCallList(function_call *call, const callback_data
 
 static bool stats_primitives_glCallLists(function_call *call, const callback_data *data)
 {
-    fputs("FIXME: triangle counting in glCallLists not implemented!\n", stderr);
+    bugle_log("stats_primitives", "glCallLists", BUGLE_LOG_WARNING,
+              "triangle counting in glCallLists is not implemented!");
     return true;
 }
 
@@ -685,6 +690,7 @@ static bool stats_primitives_initialise(filter_set *handle)
     bugle_register_filter_catches(f, GROUP_glCallLists, false, stats_primitives_glCallLists);
     bugle_register_filter_depends("invoke", "stats_primitives");
     bugle_register_filter_depends("stats", "stats_primitives");
+    bugle_log_register_filter("stats_primitives");
 
     stats_primitives_batches = stats_signal_register("batches", NULL, stats_signal_activate_zero);
     stats_primitives_triangles = stats_signal_register("triangles", NULL, stats_signal_activate_zero);
@@ -767,7 +773,8 @@ static bool stats_fragments_query(function_call *call, const callback_data *data
     if (stats_fragments_fragments->active
         && s->query)
     {
-        fputs("App is using occlusion queries, disabling fragment counting\n", stderr);
+        bugle_log_printf("stats_fragments", "query", BUGLE_LOG_NOTICE,
+                         "Application is using occlusion queries; disabling fragment counting");
         CALL_glEndQueryARB(GL_SAMPLES_PASSED_ARB);
         CALL_glDeleteQueriesARB(1, &s->query);
         s->query = 0;
@@ -791,10 +798,12 @@ static bool stats_fragments_initialise(filter_set *handle)
     bugle_register_filter_catches(f, GROUP_glEndQueryARB, false, stats_fragments_query);
     bugle_register_filter_depends("invoke", "stats_fragments");
     bugle_register_filter_depends("stats", "stats_fragments");
+    bugle_log_register_filter("stats_fragments");
 
     f = bugle_register_filter(handle, "stats_fragments_post");
     bugle_register_filter_catches(f, GROUP_glXSwapBuffers, false, stats_fragments_post_glXSwapBuffers);
     bugle_register_filter_depends("stats_fragments_post", "invoke");
+    bugle_log_register_filter("stats_fragments_post");
 
     stats_fragments_fragments = stats_signal_register("fragments", NULL, stats_signal_activate_zero);
     return true;
@@ -839,7 +848,9 @@ static NVPMRESULT check_nvpm(NVPMRESULT status, const char *file, int line)
 {
     if (status != NVPM_OK)
     {
-        fprintf(stderr, "%s:%d: NVPM error %d\n", file, line, (int) status);
+        bugle_log_printf("stats_nv", "nvpm", BUGLE_LOG_ERROR,
+                         "NVPM error %d at %s:%d",
+                         (int) status, file, line);
         exit(1);
     }
     return status;
@@ -909,7 +920,8 @@ static bool stats_nv_signal_activate(stats_signal *st)
     nv = (stats_signal_nv *) st->user_data;
     if (fNVPMAddCounter(nv->index) != NVPM_OK)
     {
-        fprintf(stderr, "Error: failed to add NVPM counter %s\n", nv->name);
+        bugle_log_printf("stats_nv", "nvpm", BUGLE_LOG_ERROR,
+                         "failed to add NVPM counter %s", nv->name);
         return false;
     }
     if (nv->experiment) stats_nv_experiment_mode = true;
@@ -978,18 +990,21 @@ static bool stats_nv_initialise(filter_set *handle)
         || !fNVPMGetCounterValue
         || !fNVPMGetCounterAttribute)
     {
-        fputs("Failed to load symbols for NVPerfSDK\n", stderr);
+        bugle_log("stats_nv", "ltdl", BUGLE_LOG_ERROR,
+                  "Failed to load symbols for NVPerfSDK");
         goto cancel1;
     }
 
     if (fNVPMInit() != NVPM_OK)
     {
-        fputs("Failed to initialise NVPM\n", stderr);
+        bugle_log("stats_nv", "nvpm", BUGLE_LOG_ERROR,
+                  "Failed to initialise NVPM");
         goto cancel1;
     }
     if (fNVPMEnumCounters(stats_nv_enumerate) != NVPM_OK)
     {
-        fputs("Failed to enumerate NVPM counters\n", stderr);
+        bugle_log("stats_nv", "nvpm", BUGLE_LOG_ERROR,
+                  "Failed to enumerate NVPM counters");
         goto cancel2;
     }
 
@@ -997,10 +1012,12 @@ static bool stats_nv_initialise(filter_set *handle)
     bugle_register_filter_catches(f, GROUP_glXSwapBuffers, false, stats_nv_glXSwapBuffers);
     bugle_register_filter_depends("invoke", "stats_nv");
     bugle_register_filter_depends("stats", "stats_nv");
+    bugle_log_register_filter("stats_nv");
 
     f = bugle_register_filter(handle, "stats_nv_post");
     bugle_register_filter_catches(f, GROUP_glXSwapBuffers, false, stats_nv_post_glXSwapBuffers);
     bugle_register_filter_depends("stats_nv_post", "invoke");
+    bugle_log_register_filter("stats_nv_post");
     return true;
 
 cancel2:
@@ -1101,7 +1118,8 @@ static bool logstats_initialise(filter_set *handle)
         st = stats_statistic_find(name);
         if (!st)
         {
-            fprintf(stderr, "Error: statistic '%s' not found.\n", name);
+            bugle_log_printf("logstats", "initialise", BUGLE_LOG_ERROR,
+                             "statistic '%s' not found.", name);
             stats_statistic_list("logstats");
             return false;
         }
@@ -1109,9 +1127,10 @@ static bool logstats_initialise(filter_set *handle)
             bugle_list_append(&logstats_show, st);
         else
         {
-            fprintf(stderr, "Error: could not initialise statistic '%s'\n",
-                    st->name);
-            exit(1);
+            bugle_log_printf("logstats", "initialise", BUGLE_LOG_ERROR,
+                             "could not initialise statistic '%s'",
+                             st->name);
+            return false;
         }
     }
     bugle_list_clear(&logstats_show_requested);
@@ -1186,8 +1205,8 @@ static void showstats_statistic_initialise(showstats_statistic *sst)
         if (!bugle_gl_has_extension(BUGLE_GL_ARB_texture_env_combine))
 #endif
         {
-            fputs("Graphing currently requires GL_ARB_texture_env_combine.\n"
-                  "Fallback code is on the TODO list.\n", stderr);
+            bugle_log("showstats", "graph", BUGLE_LOG_ERROR,
+                      "Graphing currently requires GL_ARB_texture_env_combine.");
             exit(1);
         }
 #ifdef GL_ARB_texture_env_combine
@@ -1570,6 +1589,7 @@ static bool showstats_initialise(filter_set *handle)
     bugle_register_filter_depends("debugger", "showstats");
     bugle_register_filter_depends("screenshot", "showstats");
     bugle_register_filter_depends("showstats", "stats");
+    bugle_log_register_filter("showstats");
     bugle_register_filter_catches(f, GROUP_glXSwapBuffers, false, showstats_glXSwapBuffers);
     showstats_view = bugle_object_class_register(&bugle_context_class,
                                                  NULL,
@@ -1590,15 +1610,17 @@ static bool showstats_initialise(filter_set *handle)
         sst->st = stats_statistic_find(sst->name);
         if (!sst->st)
         {
-            fprintf(stderr, "Error: statistic '%s' not found.\n", sst->name);
+            bugle_log_printf("showstats", "initialise", BUGLE_LOG_ERROR,
+                             "statistic '%s' not found.", sst->name);
             stats_statistic_list("showstats");
             return false;
         }
         else if (!stats_expression_activate_signals(sst->st->value))
         {
-            fprintf(stderr, "Error: could not initialise statistic '%s'\n",
-                    sst->st->name);
-            exit(1);
+            bugle_log_printf("showstats", "initialise", BUGLE_LOG_ERROR,
+                             "could not initialise statistic '%s'",
+                             sst->st->name);
+            return false;
         }
     }
 
@@ -1733,6 +1755,10 @@ void bugle_initialise_filter_library(void)
     };
 
     bugle_register_filter_set(&stats_info);
+    bugle_register_filter_set_depends("stats", "log");
+    /* We don't explicitly list other dependencies on log, since they
+     * are all incorporated by the dependence on stats.
+     */
 
     bugle_register_filter_set(&stats_basic_info);
     bugle_register_filter_set_depends("stats_basic", "stats");
@@ -1760,7 +1786,6 @@ void bugle_initialise_filter_library(void)
 
     bugle_register_filter_set(&logstats_info);
     bugle_register_filter_set_depends("logstats", "stats");
-    bugle_register_filter_set_depends("logstats", "log");
     bugle_list_init(&logstats_show_requested, true);
 
     bugle_register_filter_set(&showstats_info);

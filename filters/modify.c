@@ -1168,8 +1168,8 @@ static bool extoverride_variable_disable(const struct filter_set_variable_info_s
             break;
         }
     if (!found)
-        fprintf(stderr, "Extension %s is unknown (typo?)\n",
-                text);
+        bugle_log_printf("extoverride", "disable", BUGLE_LOG_WARNING,
+                         "Extension %s is unknown (typo?)", text);
     return true;
 }
 
@@ -1193,8 +1193,8 @@ static bool extoverride_variable_enable(const struct filter_set_variable_info_s 
             break;
         }
     if (!found)
-        fprintf(stderr, "Extension %s is unknown (typo?)\n",
-                text);
+        bugle_log_printf("extoverride", "enable", BUGLE_LOG_WARNING,
+                         "Extension %s is unknown (typo?)", text);
     return true;
 }
 
@@ -1300,4 +1300,5 @@ void bugle_initialise_filter_library(void)
     bugle_register_filter_set_depends("camera", "trackcontext");
     bugle_register_filter_set_depends("camera", "trackextensions");
     bugle_register_filter_set_depends("extoverride", "trackextensions");
+    bugle_register_filter_set_depends("extoverride", "log");
 }
