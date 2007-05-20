@@ -41,6 +41,13 @@ static bool trap = false;
 static filter_set *error_handle = NULL;
 static bugle_object_view error_context_view;
 
+static void error_callback_warning(void *data, FILE *f)
+{
+    fprintf(f, "glGetError() returned ");
+    bugle_dump_GLerror(*(const GLenum *) data, f);
+    fprintf(f, " when GL_NO_ERROR was expected");
+}
+
 static bool error_callback(function_call *call, const callback_data *data)
 {
     GLenum error;
@@ -58,15 +65,8 @@ static bool error_callback(function_call *call, const callback_data *data)
         stored_error = bugle_object_get_current_data(&bugle_context_class, error_context_view);
         if (*call->typed.glGetError.retn != GL_NO_ERROR)
         {
-#ifdef _POSIX_THREAD_SAFE_FUNCTIONS
-            flockfile(stderr);
-#endif
-            fputs("Warning: glGetError() returned ", stderr);
-            bugle_dump_GLerror(*call->typed.glGetError.retn, stderr);
-            fputs("\n", stderr);
-#ifdef _POSIX_THREAD_SAFE_FUNCTIONS
-            funlockfile(stderr);
-#endif
+            bugle_log_callback("error", "callback", BUGLE_LOG_WARNING,
+                               error_callback_warning, call->typed.glGetError.retn);
         }
         else if (!bugle_in_begin_end() && *stored_error)
         {
@@ -160,7 +160,6 @@ static bool initialise_showerror(filter_set *handle)
     bugle_register_filter_catches_all(f, false, showerror_callback);
     bugle_register_filter_depends("showerror", "error");
     bugle_register_filter_depends("showerror", "invoke");
-    bugle_register_filter_queries_error("showerror");
     return true;
 }
 
@@ -1029,6 +1028,7 @@ void bugle_initialise_filter_library(void)
 
     bugle_register_filter_set_renders("error");
     bugle_register_filter_set_depends("showerror", "error");
+    bugle_register_filter_set_queries_error("showerror");
     bugle_register_filter_set_renders("checks");
     bugle_register_filter_set_depends("checks", "trackextensions");
 }

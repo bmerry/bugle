@@ -1,5 +1,5 @@
 /*  BuGLe: an OpenGL debugging tool
- *  Copyright (C) 2004-2006  Bruce Merry
+ *  Copyright (C) 2004-2007  Bruce Merry
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -23,6 +23,7 @@
 #include "common/safemem.h"
 #include "src/filters.h"
 #include "src/xevent.h"
+#include "src/log.h"
 #include <X11/Xlib.h>
 #include <ltdl.h>
 #include <stdio.h>
@@ -109,10 +110,9 @@ static void handle_event(Display *dpy, XEvent *event)
     {
         if (mouse_dga)
         {
-#ifdef XEVENT_LOG
-            fprintf(stderr, "DGA mouse moved by (%d, %d)\n",
-                    event->xmotion.x, event->xmotion.y);
-#endif
+            bugle_log_printf("xevent", "mouse", BUGLE_LOG_DEBUG,
+                             "DGA mouse moved by (%d, %d)",
+                             event->xmotion.x, event->xmotion.y);
             (*mouse_callback)(event->xmotion.x, event->xmotion.y, event);
         }
         else if (mouse_first)
@@ -132,11 +132,10 @@ static void handle_event(Display *dpy, XEvent *event)
             XWarpPointer(dpy, None, mouse_window, 0, 0, 0, 0, mouse_x, mouse_y);
         else if (mouse_x != event->xmotion.x || mouse_y != event->xmotion.y)
         {
-#ifdef XEVENT_LOG
-            fprintf(stderr, "Mouse moved by (%d, %d) ref = (%d, %d)\n",
-                    event->xmotion.x - mouse_x, event->xmotion.y - mouse_y,
-                    mouse_x, mouse_y);
-#endif
+            bugle_log_printf("xevent", "mouse", BUGLE_LOG_DEBUG,
+                             "mouse moved by (%d, %d) ref = (%d, %d)",
+                             event->xmotion.x - mouse_x, event->xmotion.y - mouse_y,
+                             mouse_x, mouse_y);
             (*mouse_callback)(event->xmotion.x - mouse_x, event->xmotion.y - mouse_y, event);
             XWarpPointer(dpy, None, event->xmotion.window, 0, 0, 0, 0, mouse_x, mouse_y);
             XFlush(dpy); /* try to ensure that XWarpPointer gets to server before next motion */
@@ -179,26 +178,20 @@ int XNextEvent(Display *dpy, XEvent *event)
 {
     int ret;
 
-#ifdef XEVENT_LOG
-    fputs("-> XNextEvent\n", stderr);
-#endif
     bugle_initialise_all();
+    bugle_log("xevent", "XNextEvent", BUGLE_LOG_DEBUG, "enter");
     if (!active) return (*real_XNextEvent)(dpy, event);
     extract_events(dpy);
     while ((ret = (*real_XNextEvent)(dpy, event)) != 0)
     {
         if (!event_predicate(dpy, event, NULL))
         {
-#ifdef XEVENT_LOG
-            fputs("<- XNextEvent\n", stderr);
-#endif
+            bugle_log("xevent", "XNextEvent", BUGLE_LOG_DEBUG, "exit");
             return ret;
         }
         handle_event(dpy, event);
     }
-#ifdef XEVENT_LOG
-    fputs("<- XNextEvent\n", stderr);
-#endif
+    bugle_log("xevent", "XNextEvent", BUGLE_LOG_DEBUG, "exit");
     return ret;
 }
 
@@ -206,28 +199,22 @@ int XPeekEvent(Display *dpy, XEvent *event)
 {
     int ret;
 
-#ifdef XEVENT_LOG
-    fputs("-> XPeekEvent\n", stderr);
-#endif
     bugle_initialise_all();
+    bugle_log("xevent", "XPeekEvent", BUGLE_LOG_DEBUG, "enter");
     if (!active) return (*real_XPeekEvent)(dpy, event);
     extract_events(dpy);
     while ((ret = (*real_XPeekEvent)(dpy, event)) != 0)
     {
         if (!event_predicate(dpy, event, NULL))
         {
-#ifdef XEVENT_LOG
-            fputs("<- XPeekEvent\n", stderr);
-#endif
+            bugle_log("xevent", "XPeekEvent", BUGLE_LOG_DEBUG, "exit");
             return ret;
         }
         /* Peek doesn't remove the event, so do another extract run to
          * clear it */
         extract_events(dpy);
     }
-#ifdef XEVENT_LOG
-    fputs("<- XPeekEvent\n", stderr);
-#endif
+    bugle_log("xevent", "XPeekEvent", BUGLE_LOG_DEBUG, "exit");
     return ret;
 }
 
@@ -325,10 +312,8 @@ int XWindowEvent(Display *dpy, Window w, long event_mask, XEvent *event)
     int ret;
     if_block_data data;
 
-#ifdef XEVENT_LOG
-    fputs("-> XWindowEvent\n", stderr);
-#endif
     bugle_initialise_all();
+    bugle_log("xevent", "XWindowEvent", BUGLE_LOG_DEBUG, "enter");
     if (!active) return (*real_XWindowEvent)(dpy, w, event_mask, event);
     extract_events(dpy);
     data.use_w = 1;
@@ -340,16 +325,12 @@ int XWindowEvent(Display *dpy, Window w, long event_mask, XEvent *event)
     {
         if (!event_predicate(dpy, event, NULL))
         {
-#ifdef XEVENT_LOG
-            fputs("<- XWindowEvent\n", stderr);
-#endif
+            bugle_log("xevent", "XWindowEvent", BUGLE_LOG_DEBUG, "exit");
             return ret;
         }
         handle_event(dpy, event);
     }
-#ifdef XEVENT_LOG
-    fputs("<- XWindowEvent\n", stderr);
-#endif
+    bugle_log("xevent", "XWindowEvent", BUGLE_LOG_DEBUG, "exit");
     return ret;
 }
 
@@ -357,26 +338,20 @@ Bool XCheckWindowEvent(Display *dpy, Window w, long event_mask, XEvent *event)
 {
     Bool ret;
 
-#ifdef XEVENT_LOG
-    fputs("-> XCheckWindowEvent\n", stderr);
-#endif
     bugle_initialise_all();
+    bugle_log("xevent", "XCheckWindowEvent", BUGLE_LOG_DEBUG, "enter");
     if (!active) return (*real_XCheckWindowEvent)(dpy, w, event_mask, event);
     extract_events(dpy);
     while ((ret = (*real_XCheckWindowEvent)(dpy, w, event_mask, event)) == True)
     {
         if (!event_predicate(dpy, event, NULL))
         {
-#ifdef XEVENT_LOG
-            fputs("<- XCheckWindowEvent\n", stderr);
-#endif
+            bugle_log("xevent", "XCheckWindowEvent", BUGLE_LOG_DEBUG, "exit");
             return ret;
         }
         handle_event(dpy, event);
     }
-#ifdef XEVENT_LOG
-    fputs("<- XCheckWindowEvent\n", stderr);
-#endif
+    bugle_log("xevent", "XCheckWindowEvent", BUGLE_LOG_DEBUG, "exit");
     return ret;
 }
 
@@ -385,10 +360,8 @@ int XMaskEvent(Display *dpy, long event_mask, XEvent *event)
     int ret;
     if_block_data data;
 
-#ifdef XEVENT_LOG
-    fputs("-> XMaskEvent\n", stderr);
-#endif
     bugle_initialise_all();
+    bugle_log("xevent", "XMaskEvent", BUGLE_LOG_DEBUG, "enter");
     if (!active) return (*real_XMaskEvent)(dpy, event_mask, event);
     extract_events(dpy);
     data.use_w = 0;
@@ -399,16 +372,12 @@ int XMaskEvent(Display *dpy, long event_mask, XEvent *event)
     {
         if (!event_predicate(dpy, event, NULL))
         {
-#ifdef XEVENT_LOG
-            fputs("<- XMaskEvent\n", stderr);
-#endif
+            bugle_log("xevent", "XMaskEvent", BUGLE_LOG_DEBUG, "exit");
             return ret;
         }
         handle_event(dpy, event);
     }
-#ifdef XEVENT_LOG
-    fputs("<- XMaskEvent\n", stderr);
-#endif
+    bugle_log("xevent", "XMaskEvent", BUGLE_LOG_DEBUG, "exit");
     return ret;
 }
 
@@ -416,26 +385,20 @@ Bool XCheckMaskEvent(Display *dpy, long event_mask, XEvent *event)
 {
     Bool ret;
 
-#ifdef XEVENT_LOG
-    fputs("-> XCheckMaskEvent\n", stderr);
-#endif
     bugle_initialise_all();
+    bugle_log("xevent", "XCheckMaskEvent", BUGLE_LOG_DEBUG, "enter");
     if (!active) return (*real_XCheckMaskEvent)(dpy, event_mask, event);
     extract_events(dpy);
     while ((ret = (*real_XCheckMaskEvent)(dpy, event_mask, event)) == True)
     {
         if (!event_predicate(dpy, event, NULL))
         {
-#ifdef XEVENT_LOG
-            fputs("<- XCheckMaskEvent\n", stderr);
-#endif
+            bugle_log("xevent", "XCheckMaskEvent", BUGLE_LOG_DEBUG, "exit");
             return ret;
         }
         handle_event(dpy, event);
     }
-#ifdef XEVENT_LOG
-    fputs("<- XCheckMaskEvent\n", stderr);
-#endif
+    bugle_log("xevent", "XCheckMaskEvent", BUGLE_LOG_DEBUG, "exit");
     return ret;
 }
 
@@ -443,26 +406,20 @@ Bool XCheckTypedEvent(Display *dpy, int type, XEvent *event)
 {
     Bool ret;
 
-#ifdef XEVENT_LOG
-    fputs("-> XCheckTypedEvent\n", stderr);
-#endif
     bugle_initialise_all();
+    bugle_log("xevent", "XCheckTypedEvent", BUGLE_LOG_DEBUG, "enter");
     if (!active) return (*real_XCheckTypedEvent)(dpy, type, event);
     extract_events(dpy);
     while ((ret = (*real_XCheckTypedEvent)(dpy, type, event)) == True)
     {
         if (!event_predicate(dpy, event, NULL))
         {
-#ifdef XEVENT_LOG
-            fputs("<- XCheckTypedEvent\n", stderr);
-#endif
+            bugle_log("xevent", "XCheckTypedEvent", BUGLE_LOG_DEBUG, "exit");
             return ret;
         }
         handle_event(dpy, event);
     }
-#ifdef XEVENT_LOG
-    fputs("<- XCheckTypedEvent\n", stderr);
-#endif
+    bugle_log("xevent", "XCheckTypedEvent", BUGLE_LOG_DEBUG, "exit");
     return ret;
 }
 
@@ -470,26 +427,20 @@ Bool XCheckTypedWindowEvent(Display *dpy, Window w, int type, XEvent *event)
 {
     Bool ret;
 
-#ifdef XEVENT_LOG
-    fputs("-> XCheckTypedWindowEvent\n", stderr);
-#endif
     bugle_initialise_all();
+    bugle_log("xevent", "XCheckTypedWindowEvent", BUGLE_LOG_DEBUG, "enter");
     if (!active) return (*real_XCheckTypedWindowEvent)(dpy, w, type, event);
     extract_events(dpy);
     while ((ret = (*real_XCheckTypedWindowEvent)(dpy, w, type, event)) == True)
     {
         if (!event_predicate(dpy, event, NULL))
         {
-#ifdef XEVENT_LOG
-            fputs("<- XCheckTypedWindowEvent\n", stderr);
-#endif
+            bugle_log("xevent", "XCheckTypedWindowEvent", BUGLE_LOG_DEBUG, "exit");
             return ret;
         }
         handle_event(dpy, event);
     }
-#ifdef XEVENT_LOG
-    fputs("<- XCheckTypedWindowEvent\n", stderr);
-#endif
+    bugle_log("xevent", "XCheckTypedWindowEvent", BUGLE_LOG_DEBUG, "exit");
     return ret;
 }
 
@@ -498,10 +449,8 @@ int XIfEvent(Display *dpy, XEvent *event, Bool (*predicate)(Display *, XEvent *,
     int ret;
     if_block_data data;
 
-#ifdef XEVENT_LOG
-    fputs("-> XIfEvent\n", stderr);
-#endif
     bugle_initialise_all();
+    bugle_log("xevent", "XIfEvent", BUGLE_LOG_DEBUG, "enter");
     if (!active) return (*real_XIfEvent)(dpy, event, predicate, arg);
     extract_events(dpy);
     data.use_w = 0;
@@ -513,16 +462,12 @@ int XIfEvent(Display *dpy, XEvent *event, Bool (*predicate)(Display *, XEvent *,
     {
         if (!event_predicate(dpy, event, NULL))
         {
-#ifdef XEVENT_LOG
-            fputs("<- XIfEvent\n", stderr);
-#endif
+            bugle_log("xevent", "XIfEvent", BUGLE_LOG_DEBUG, "exit");
             return ret;
         }
         handle_event(dpy, event);
     }
-#ifdef XEVENT_LOG
-    fputs("<- XIfEvent\n", stderr);
-#endif
+    bugle_log("xevent", "XIfEvent", BUGLE_LOG_DEBUG, "exit");
     return ret;
 }
 
@@ -530,26 +475,20 @@ Bool XCheckIfEvent(Display *dpy, XEvent *event, Bool (*predicate)(Display *, XEv
 {
     Bool ret;
 
-#ifdef XEVENT_LOG
-    fputs("-> XCheckIfEvent\n", stderr);
-#endif
     bugle_initialise_all();
+    bugle_log("xevent", "XCheckIfEvent", BUGLE_LOG_DEBUG, "enter");
     if (!active) return (*real_XCheckIfEvent)(dpy, event, predicate, arg);
     extract_events(dpy);
     while ((ret = (*real_XCheckIfEvent)(dpy, event, predicate, arg)) == True)
     {
         if (!event_predicate(dpy, event, NULL))
         {
-#ifdef XEVENT_LOG
-            fputs("<- XCheckIfEvent\n", stderr);
-#endif
+            bugle_log("xevent", "XCheckIfEvent", BUGLE_LOG_DEBUG, "exit");
             return ret;
         }
         handle_event(dpy, event);
     }
-#ifdef XEVENT_LOG
-    fputs("<- XCheckIfEvent\n", stderr);
-#endif
+    bugle_log("xevent", "XCheckIfEvent", BUGLE_LOG_DEBUG, "exit");
     return ret;
 }
 
@@ -558,10 +497,8 @@ int XPeekIfEvent(Display *dpy, XEvent *event, Bool (*predicate)(Display *, XEven
     int ret;
     if_block_data data;
 
-#ifdef XEVENT_LOG
-    fputs("-> XPeekIfEvent\n", stderr);
-#endif
     bugle_initialise_all();
+    bugle_log("xevent", "XPeekIfEvent", BUGLE_LOG_DEBUG, "enter");
     if (!active) return (*real_XPeekIfEvent)(dpy, event, predicate, arg);
     extract_events(dpy);
     data.use_w = 0;
@@ -573,18 +510,14 @@ int XPeekIfEvent(Display *dpy, XEvent *event, Bool (*predicate)(Display *, XEven
     {
         if (!event_predicate(dpy, event, NULL))
         {
-#ifdef XEVENT_LOG
-            fputs("<- XPeekIfEvent\n", stderr);
-#endif
+            bugle_log("xevent", "XPeekIfEvent", BUGLE_LOG_DEBUG, "exit");
             return ret;
         }
         /* Peek doesn't remove the event, so do another extract run to
          * clear it */
         extract_events(dpy);
     }
-#ifdef XEVENT_LOG
-    fputs("<- XPeekIfEvent\n", stderr);
-#endif
+    bugle_log("xevent", "XPeekIfEvent", BUGLE_LOG_DEBUG, "exit");
     return ret;
 }
 
@@ -592,38 +525,31 @@ int XEventsQueued(Display *dpy, int mode)
 {
     int events;
 
-#ifdef XEVENT_LOG
-    fputs("-> XEventsQueued\n", stderr);
-#endif
     bugle_initialise_all();
+    bugle_log("xevent", "XEventsQueued", BUGLE_LOG_DEBUG, "enter");
     if (!active) return (*real_XEventsQueued)(dpy, mode);
 
     do
     {
         events = (*real_XEventsQueued)(dpy, mode);
     } while (events > 0 && extract_events(dpy));
-#ifdef XEVENT_LOG
-    fputs("<- XEventsQueued\n", stderr);
-#endif
+    bugle_log("xevent", "XEventsQueued", BUGLE_LOG_DEBUG, "exit");
     return events;
 }
 
 int XPending(Display *dpy)
 {
     int events;
-#ifdef XEVENT_LOG
-    fputs("-> XPending\n", stderr);
-#endif
+
     bugle_initialise_all();
+    bugle_log("xevent", "XPending", BUGLE_LOG_DEBUG, "enter");
     if (!active) return (*real_XPending)(dpy);
 
     do
     {
         events = (*real_XPending)(dpy);
     } while (events > 0 && extract_events(dpy));
-#ifdef XEVENT_LOG
-    fprintf(stderr, "<- XPending = %d\n", events);
-#endif
+    bugle_log("xevent", "XPending", BUGLE_LOG_DEBUG, "exit");
     return events;
 }
 
@@ -652,18 +578,14 @@ Window XCreateWindow(Display *dpy, Window parent, int x, int y,
 {
     Window ret;
 
-#ifdef XEVENT_LOG
-    fputs("-> XCreateWindow\n", stderr);
-#endif
     bugle_initialise_all();
+    bugle_log("xevent", "XCreateWindow", BUGLE_LOG_DEBUG, "enter");
     ret = (*real_XCreateWindow)(dpy, parent, x, y, width, height,
                                 border_width, depth, c_class, visual,
                                 valuemask, attributes);
     if (active && ret != None)
         adjust_event_mask(dpy, ret);
-#ifdef XEVENT_LOG
-    fputs("<- XCreateWindow\n", stderr);
-#endif
+    bugle_log("xevent", "XCreateWindow", BUGLE_LOG_DEBUG, "exit");
     return ret;
 }
 
@@ -674,17 +596,13 @@ Window XCreateSimpleWindow(Display *dpy, Window parent, int x, int y,
 {
     Window ret;
 
-#ifdef XEVENT_LOG
-    fputs("-> XCreateSimpleWindow\n", stderr);
-#endif
     bugle_initialise_all();
+    bugle_log("xevent", "XCreateSimpleWindow", BUGLE_LOG_DEBUG, "enter");
     ret = (*real_XCreateSimpleWindow)(dpy, parent, x, y, width, height,
                                       border_width, border, background);
     if (active && ret != None)
         adjust_event_mask(dpy, ret);
-#ifdef XEVENT_LOG
-    fputs("<- XCreateSimpleWindow\n", stderr);
-#endif
+    bugle_log("xevent", "XCreateSimpleWindow", BUGLE_LOG_DEBUG, "exit");
     return ret;
 }
 
@@ -692,18 +610,14 @@ Window XCreateSimpleWindow(Display *dpy, Window parent, int x, int y,
 
 int XSelectInput(Display *dpy, Window w, long event_mask)
 {
-#ifdef XEVENT_LONG
-    fputs("-> XSelectInput\n");
-#endif
     bugle_initialise_all();
+    bugle_log("xevent", "XSelectInput", BUGLE_LOG_DEBUG, "enter");
     if (active)
     {
         event_mask |= EVENT_MASK;
         event_mask &= ~EVENT_UNMASK;
     }
-#ifdef XEVENT_LONG
-    fputs("<- XSelectInput\n");
-#endif
+    bugle_log("xevent", "XSelectInput", BUGLE_LOG_DEBUG, "exit");
     return (*real_XSelectInput)(dpy, w, event_mask);
 }
 
@@ -730,17 +644,13 @@ void bugle_xevent_grab_pointer(bool dga, void (*callback)(int, int, XEvent *))
     mouse_callback = callback;
     mouse_active = true;
     mouse_first = true;
-#ifdef XEVENT_LOG
-    fputs("Mouse grabbed\n", stderr);
-#endif
+    bugle_log("xevent", "mouse", BUGLE_LOG_DEBUG, "grabbed");
 }
 
 void bugle_xevent_release_pointer(void)
 {
     mouse_active = false;
-#ifdef XEVENT_LOG
-    fputs("Mouse released\n", stderr);
-#endif
+    bugle_log("xevent", "mouse", BUGLE_LOG_DEBUG, "released");
 }
 
 void initialise_xevent(void)

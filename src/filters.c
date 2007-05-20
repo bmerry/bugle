@@ -18,13 +18,14 @@
 #if HAVE_CONFIG_H
 # include <config.h>
 #endif
-#define _POSIX_SOURCE
+#define _POSIX_SOURCE /* For flockfile */
 #define _BSD_SOURCE /* For finite() */
 #define _XOPEN_SOURCE 600 /* For strtof */
 #include "src/utils.h"
 #include "src/glfuncs.h"
 #include "src/xevent.h"
 #include "src/filters.h"
+#include "src/log.h"
 #include "common/linkedlist.h"
 #include "common/hashtable.h"
 #include "common/safemem.h"
@@ -192,8 +193,9 @@ static int initialise_filter_library(const char *filename, lt_ptr data)
     init = (void (*)(void)) lt_dlsym(handle, "bugle_initialise_filter_library");
     if (init == NULL)
     {
-        fprintf(stderr, "Warning: library %s did not export initialisation symbol\n",
-                filename);
+        bugle_log_printf("filters", "initialise", BUGLE_LOG_WARNING,
+                         "library %s did not export initialisation symbol",
+                         filename);
         return 0;
     }
     current_dl_handle = handle;
@@ -226,7 +228,8 @@ void initialise_filters(void)
     dir = opendir(libdir);
     if (!dir)
     {
-        fprintf(stderr, "failed to open %s: %s", libdir, strerror(errno));
+        bugle_log_printf("filters", "initialise", BUGLE_LOG_ERROR,
+                         "failed to open %s: %s", libdir, strerror(errno));
         exit(1);
     }
     closedir(dir);
@@ -246,6 +249,7 @@ bool filter_set_variable(filter_set *handle, const char *name, const char *value
     char *end;
     xevent_key key_value;
     void *value_ptr = NULL;
+    bool finite_value;
 
     for (v = handle->variables; v && v->name; v++)
     {
@@ -264,8 +268,9 @@ bool filter_set_variable(filter_set *handle, const char *name, const char *value
                     bool_value = false;
                 else
                 {
-                    fprintf(stderr, "Expected 1|0|yes|no|true|false for %s in filter-set %s\n",
-                            name, handle->name);
+                    bugle_log_printf(handle->name, "initialise", BUGLE_LOG_ERROR,
+                                     "Expected 1|0|yes|no|true|false for %s in filter-set %s",
+                                     name, handle->name);
                     return false;
                 }
                 value_ptr = &bool_value;
@@ -277,20 +282,23 @@ bool filter_set_variable(filter_set *handle, const char *name, const char *value
                 int_value = strtol(value, &end, 0);
                 if (errno || !*value || *end)
                 {
-                    fprintf(stderr, "Expected an integer for %s in filter-set %s\n",
-                            name, handle->name);
+                    bugle_log_printf(handle->name, "initialise", BUGLE_LOG_ERROR,
+                                     "Expected an integer for %s in filter-set %s",
+                                     name, handle->name);
                     return false;
                 }
                 if (v->type == FILTER_SET_VARIABLE_UINT && int_value < 0)
                 {
-                    fprintf(stderr, "Expected a non-negative integer for %s in filter-set %s\n",
-                            name, handle->name);
+                    bugle_log_printf(handle->name, "initialise", BUGLE_LOG_ERROR,
+                                     "Expected a non-negative integer for %s in filter-set %s",
+                                     name, handle->name);
                     return false;
                 }
                 else if (v->type == FILTER_SET_VARIABLE_POSITIVE_INT && int_value <= 0)
                 {
-                    fprintf(stderr, "Expected a positive integer for %s in filter-set %s\n",
-                            name, handle->name);
+                    bugle_log_printf(handle->name, "initialise", BUGLE_LOG_ERROR,
+                                     "Expected a positive integer for %s in filter-set %s",
+                                     name, handle->name);
                     return false;
                 }
                 value_ptr = &int_value;
@@ -304,25 +312,26 @@ bool filter_set_variable(filter_set *handle, const char *name, const char *value
 #endif
                 if (errno || !*value || *end)
                 {
-                    fprintf(stderr, "Expected a real number for %s in filter-set %s\n",
-                            name, handle->name);
+                    bugle_log_printf(handle->name, "initialise", BUGLE_LOG_ERROR,
+                                     "Expected a real number for %s in filter-set %s",
+                                     name, handle->name);
                     return false;
                 }
+
 #if HAVE_ISFINITE
-                if (!isfinite(float_value))
-                {
-                    fprintf(stderr, "Expected a finite real number for %s in filter-set %s\n",
-                            name, handle->name);
-                    return false;
-                }
+                finite_value = isfinite(float_value);
 #elif HAVE_FINITE
-                if (!finite(float_value))
+                finite_value = finite(float_value);
+#else
+                finite_value = true;
+#endif
+                if (!finite_value)
                 {
-                    fprintf(stderr, "Expected a finite real number for %s in filter-set %s\n",
-                            name, handle->name);
+                    bugle_log_printf(handle->name, "initialise", BUGLE_LOG_ERROR,
+                                     "Expected a finite real number for %s in filter-set %s",
+                                     name, handle->name);
                     return false;
                 }
-#endif
                 value_ptr = &float_value;
                 break;
             case FILTER_SET_VARIABLE_STRING:
@@ -332,7 +341,8 @@ bool filter_set_variable(filter_set *handle, const char *name, const char *value
             case FILTER_SET_VARIABLE_KEY:
                 if (!bugle_xevent_key_lookup(value, &key_value))
                 {
-                    fprintf(stderr, "Unknown key %s for %s in filter-set %s\n", value, name, handle->name);
+                    bugle_log_printf(handle->name, "initialise", BUGLE_LOG_ERROR,
+                                     "Unknown key %s for %s in filter-set %s", value, name, handle->name);
                     return false;
                 }
                 value_ptr = &key_value;
@@ -380,8 +390,9 @@ bool filter_set_variable(filter_set *handle, const char *name, const char *value
             }
         }
     }
-    fprintf(stderr, "Unknown variable %s in filter-set %s\n",
-            name, handle->name);
+    bugle_log_printf(handle->name, "initialise", BUGLE_LOG_ERROR,
+                     "Unknown variable %s in filter-set %s",
+                     name, handle->name);
     return false;
 }
 
@@ -428,10 +439,10 @@ static void load_filter_set_r(filter_set *handle, bool activate)
                 s = bugle_get_filter_set_handle((const char *) bugle_list_data(j));
                 if (!s)
                 {
-                    fprintf(stderr, "filter-set %s depends on unknown filter-set %s\n",
-                            ((const char *) bugle_list_data(i)),
-                            ((const char *) bugle_list_data(j)));
-                    exit(1);
+                    bugle_log_printf("filters", "load", BUGLE_LOG_ERROR,
+                                     "filter-set %s depends on unknown filter-set %s",
+                                     ((const char *) bugle_list_data(i)),
+                                     ((const char *) bugle_list_data(j)));
                 }
                 load_filter_set_r(s, activate);
             }
@@ -439,7 +450,8 @@ static void load_filter_set_r(filter_set *handle, bool activate)
         /* Initialisation */
         if (!(*handle->load)(handle))
         {
-            fprintf(stderr, "Failed to initialise filter-set %s\n", handle->name);
+            bugle_log_printf(handle->name, "load", BUGLE_LOG_ERROR,
+                             "failed to initialise filter-set %s", handle->name);
             exit(1);
         }
         handle->loaded = true;
@@ -572,7 +584,8 @@ void filter_compute_order(void)
 
     if (count > 0)
     {
-        fprintf(stderr, "cyclic dependency between filters, aborting\n");
+        bugle_log("filters", "load", BUGLE_LOG_ERROR,
+                  "cyclic dependency between filters");
         exit(1);
     }
     /* clean up and replace old version */
@@ -812,7 +825,9 @@ void bugle_filters_help(void)
     const filter_set_variable_info *j;
     filter_set *cur;
 
+#ifdef _POSIX_THREAD_SAFE_FUNCTIONS
     flockfile(stderr);
+#endif
     fprintf(stderr, "Usage: BUGLE_CHAIN=<chain> LD_PRELOAD=libbugle.so <program> <args>\n");
     fprintf(stderr, "The following filter-sets are available:\n");
     for (i = bugle_list_head(&filter_sets); i; i = bugle_list_next(i))
@@ -851,5 +866,7 @@ void bugle_filters_help(void)
                         j->name, type_str, j->help);
             }
     }
+#ifdef _POSIX_THREAD_SAFE_FUNCTIONS
     funlockfile(stderr);
+#endif
 }

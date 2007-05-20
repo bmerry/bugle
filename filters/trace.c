@@ -32,15 +32,8 @@ static void trace_callback_call_callback(void *call, FILE *f)
     budgie_dump_any_call((generic_function_call *) call, 0, f);
 }
 
-static void trace_callback_error_callback(void *error, FILE *f)
-{
-    bugle_dump_GLerror(*(GLenum *) error, f);
-}
-
 static bool trace_callback(function_call *call, const callback_data *data)
 {
-    GLenum error;
-
     bugle_log_callback("trace", "call", BUGLE_LOG_INFO,
                        trace_callback_call_callback, &call->generic);
     return true;

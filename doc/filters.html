@@ -104,7 +104,7 @@ bool callback(const filter_set_variable_info *info, const char *text, void *valu
                 structure provides a <code>value</code> of <code>NULL</code>). The
                 <code>value</code> may be overridden by the callback. The return value should
                 be <code>true</code> unless the value is determined to be illegal, in which
-                case it should print a message to <code>stderr</code> and return
+                case it should print a message to the log and return
                 <code>false</code>. The callback may also be <code>NULL</code> (and usually will be).
                 </dd>
             </dl>

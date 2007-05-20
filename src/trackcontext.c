@@ -23,6 +23,7 @@
 #include "src/tracker.h"
 #include "src/objects.h"
 #include "src/glexts.h"
+#include "src/log.h"
 #include "common/bool.h"
 #include "common/hashtable.h"
 #include "common/threads.h"
@@ -104,7 +105,8 @@ static bool trackcontext_newcontext(function_call *call, const callback_data *da
             up = (trackcontext_data *) bugle_hashptr_get(&initial_values, parent);
             if (!up)
             {
-                fprintf(stderr, "CRITICAL: share context %p unknown\n", (void *) parent);
+                bugle_log_printf("trackcontext", "newcontext", BUGLE_LOG_WARNING,
+                                 "share context %p unknown", (void *) parent);
                 base->root_context = self;
             }
             else
@@ -155,8 +157,9 @@ static bool trackcontext_callback(function_call *call, const callback_data *data
             initial = bugle_hashptr_get(&initial_values, ctx);
             if (initial == NULL)
             {
-                fprintf(stderr, "CRITICAL: context %p used but not created\n",
-                        (void *) ctx);
+                bugle_log_printf("trackcontext", "makecurrent", BUGLE_LOG_WARNING,
+                                 "context %p used but not created",
+                                 (void *) ctx);
             }
             else
             {
@@ -284,7 +287,8 @@ GLXContext bugle_get_aux_context(bool shared)
             cfgs = CALL_glXChooseFBConfig(dpy, screen, attribs, &n);
             if (cfgs == NULL)
             {
-                fprintf(stderr, "Warning: could not create an auxiliary context: no matching FBConfig\n");
+                bugle_log("trackcontext", "aux", BUGLE_LOG_WARNING,
+                          "could not create an auxiliary context: no matching FBConfig");
                 return NULL;
             }
             ctx = CALL_glXCreateNewContext(dpy, cfgs[0], render_type,
@@ -292,7 +296,8 @@ GLXContext bugle_get_aux_context(bool shared)
                                            CALL_glXIsDirect(dpy, old_ctx));
             XFree(cfgs);
             if (ctx == NULL)
-                fprintf(stderr, "Warning: could not create an auxiliary context: creation failed\n");
+                bugle_log("trackcontext", "aux", BUGLE_LOG_WARNING,
+                          "could not create an auxiliary context: creation failed");
         }
         else
 #endif
@@ -302,12 +307,13 @@ GLXContext bugle_get_aux_context(bool shared)
                 ctx = CALL_glXCreateContext(dpy, &data->visual_info,
                                             shared ? old_ctx : NULL,
                                             CALL_glXIsDirect(dpy, old_ctx));
-                if (ctx == NULL)
-                    fprintf(stderr, "Warning: could not create an auxiliary context: creation failed\n");
+                bugle_log("trackcontext", "aux", BUGLE_LOG_WARNING,
+                          "could not create an auxiliary context: creation failed");
             }
             else
             {
-                fprintf(stderr, "Warning: could not create an auxiliary context: missing extensions\n");
+                bugle_log("trackcontext", "aux", BUGLE_LOG_WARNING,
+                          "could not create an auxiliary context: missing GLX extensions");
                 return NULL;
             }
         }
