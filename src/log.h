@@ -1,5 +1,5 @@
 /*  BuGLe: an OpenGL debugging tool
- *  Copyright (C) 2004-2006  Bruce Merry
+ *  Copyright (C) 2004-2007  Bruce Merry
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -34,11 +34,11 @@
 
 enum
 {
-    BUGLE_LOG_DEBUG = 0,
-    BUGLE_LOG_INFO,
-    BUGLE_LOG_NOTICE,
+    BUGLE_LOG_ERROR = 0,
     BUGLE_LOG_WARNING,
-    BUGLE_LOG_ERROR
+    BUGLE_LOG_NOTICE,
+    BUGLE_LOG_INFO,
+    BUGLE_LOG_DEBUG
 };
 
 /* Write a message to the log. Do not include a trailing newline; this will
@@ -57,9 +57,6 @@ void bugle_log_printf(const char *filterset, const char *event, int severity,
  */
 void bugle_log_callback(const char *filterset, const char *event, int severity,
                         void (*callback)(void *arg, FILE *f), void *arg);
-
-/* Call this for filter sets that use logging */
-void bugle_log_register_filter(const char *filter);
 
 /* Used internally by the initialisation code */
 void log_initialise(void);

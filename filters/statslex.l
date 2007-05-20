@@ -1,6 +1,6 @@
 %{
 /*  BuGLe: an OpenGL debugging tool
- *  Copyright (C) 2004-2006  Bruce Merry
+ *  Copyright (C) 2004-2007  Bruce Merry
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -70,6 +70,7 @@
 #include "common/safemem.h"
 #include "filters/stats.h"
 #include "filters/statsparse.h"
+#include "src/log.h"
 
 static char *current_string = NULL;
 static int current_string_length = 0;
@@ -123,7 +124,7 @@ d|a|s|e|"{"|"}"|"+"|"-"|"*"|"/"|"="|"("|")" { return yytext[0]; }
                         return ST_NUMBER;
                 }
 .		{
-			fprintf(stderr, "unexpected character in statistics file: %c\n", yytext[0]);
+			bugle_log_printf("stats", "parse", BUGLE_LOG_ERROR, "unexpected character in statistics file: %c", yytext[0]);
                         exit(1);
 		}
 
@@ -134,7 +135,7 @@ d|a|s|e|"{"|"}"|"+"|"-"|"*"|"/"|"="|"("|")" { return yytext[0]; }
 			clear_string();
 			return ST_STRING; }
 <STRING_MODE><<EOF>>	{
-			fprintf(stderr, "End of file in string in statistics file\n");
+			bugle_log_printf("stats", "parse", BUGLE_LOG_ERROR, "End of file in string in statistics file");
                         exit(1);
 		}
 <STRING_MODE>.	{ append_char(yytext[0]); }

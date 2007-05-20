@@ -11,7 +11,7 @@ chain trace
     filterset log
     {
         format "%f.%e: %m"
-        level 1
+        stderr_level 4
         flush yes
     }
     filterset trace
@@ -28,7 +28,7 @@ chain triangles
     filterset log
     {
         format "%f.%e: %m"
-        level 1
+        stderr_level 4 
         flush yes
     }
 }

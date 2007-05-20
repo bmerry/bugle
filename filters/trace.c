@@ -1,5 +1,5 @@
 /*  BuGLe: an OpenGL debugging tool
- *  Copyright (C) 2004-2006  Bruce Merry
+ *  Copyright (C) 2004-2007  Bruce Merry
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -43,9 +43,6 @@ static bool trace_callback(function_call *call, const callback_data *data)
 
     bugle_log_callback("trace", "call", BUGLE_LOG_INFO,
                        trace_callback_call_callback, &call->generic);
-    if ((error = bugle_get_call_error(call)))
-        bugle_log_callback("trace", "error", BUGLE_LOG_WARNING,
-                           trace_callback_error_callback, &error);
     return true;
 }
 
@@ -55,10 +52,8 @@ static bool initialise_trace(filter_set *handle)
 
     f = bugle_register_filter(handle, "trace");
     bugle_register_filter_depends("trace", "invoke");
-    bugle_log_register_filter("trace");
     bugle_register_filter_catches_all(f, false, trace_callback);
     bugle_register_filter_post_renders("trace");
-    bugle_register_filter_set_queries_error("trace");
     return true;
 }
 

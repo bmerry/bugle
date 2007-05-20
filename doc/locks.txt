@@ -32,8 +32,7 @@ FIXME: there probably need to be a few more volatile keywords.
 4. Log files
 
 The logging filters use flockfile/funlockfile to guarantee that each
-call occupies a contiguous piece of log. This is why you should use
-bugle_log_register_filter() for each filter that intends to do logging.
+call occupies a contiguous piece of log.
 
 5. Debugger: The debugger is not thread-safe.
 

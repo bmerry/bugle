@@ -1,5 +1,5 @@
 /*  BuGLe: an OpenGL debugging tool
- *  Copyright (C) 2004-2006  Bruce Merry
+ *  Copyright (C) 2004-2007  Bruce Merry
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -681,6 +681,11 @@ filter_set *bugle_register_filter_set(const filter_set_info *info)
     else s->call_state_offset = (ptrdiff_t) -1;
 
     bugle_list_append(&filter_sets, s);
+    /* FIXME: dirty hack. To make sure that 'log' is loaded and loaded
+     * first, make sure every filterset depends on it
+     */
+    if (strcmp(s->name, "log") != 0)
+        bugle_register_filter_set_depends(s->name, "log");
     return s;
 }
 

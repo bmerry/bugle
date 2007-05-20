@@ -690,7 +690,6 @@ static bool stats_primitives_initialise(filter_set *handle)
     bugle_register_filter_catches(f, GROUP_glCallLists, false, stats_primitives_glCallLists);
     bugle_register_filter_depends("invoke", "stats_primitives");
     bugle_register_filter_depends("stats", "stats_primitives");
-    bugle_log_register_filter("stats_primitives");
 
     stats_primitives_batches = stats_signal_register("batches", NULL, stats_signal_activate_zero);
     stats_primitives_triangles = stats_signal_register("triangles", NULL, stats_signal_activate_zero);
@@ -798,12 +797,10 @@ static bool stats_fragments_initialise(filter_set *handle)
     bugle_register_filter_catches(f, GROUP_glEndQueryARB, false, stats_fragments_query);
     bugle_register_filter_depends("invoke", "stats_fragments");
     bugle_register_filter_depends("stats", "stats_fragments");
-    bugle_log_register_filter("stats_fragments");
 
     f = bugle_register_filter(handle, "stats_fragments_post");
     bugle_register_filter_catches(f, GROUP_glXSwapBuffers, false, stats_fragments_post_glXSwapBuffers);
     bugle_register_filter_depends("stats_fragments_post", "invoke");
-    bugle_log_register_filter("stats_fragments_post");
 
     stats_fragments_fragments = stats_signal_register("fragments", NULL, stats_signal_activate_zero);
     return true;
@@ -1012,12 +1009,10 @@ static bool stats_nv_initialise(filter_set *handle)
     bugle_register_filter_catches(f, GROUP_glXSwapBuffers, false, stats_nv_glXSwapBuffers);
     bugle_register_filter_depends("invoke", "stats_nv");
     bugle_register_filter_depends("stats", "stats_nv");
-    bugle_log_register_filter("stats_nv");
 
     f = bugle_register_filter(handle, "stats_nv_post");
     bugle_register_filter_catches(f, GROUP_glXSwapBuffers, false, stats_nv_post_glXSwapBuffers);
     bugle_register_filter_depends("stats_nv_post", "invoke");
-    bugle_log_register_filter("stats_nv_post");
     return true;
 
 cancel2:
@@ -1108,7 +1103,6 @@ static bool logstats_initialise(filter_set *handle)
 
     f = bugle_register_filter(handle, "stats_log");
     bugle_register_filter_catches(f, GROUP_glXSwapBuffers, false, logstats_glXSwapBuffers);
-    bugle_log_register_filter("stats_log");
 
     bugle_list_clear(&logstats_show);
     for (i = bugle_list_head(&logstats_show_requested); i; i = bugle_list_next(i))
@@ -1589,7 +1583,6 @@ static bool showstats_initialise(filter_set *handle)
     bugle_register_filter_depends("debugger", "showstats");
     bugle_register_filter_depends("screenshot", "showstats");
     bugle_register_filter_depends("showstats", "stats");
-    bugle_log_register_filter("showstats");
     bugle_register_filter_catches(f, GROUP_glXSwapBuffers, false, showstats_glXSwapBuffers);
     showstats_view = bugle_object_class_register(&bugle_context_class,
                                                  NULL,
@@ -1755,10 +1748,6 @@ void bugle_initialise_filter_library(void)
     };
 
     bugle_register_filter_set(&stats_info);
-    bugle_register_filter_set_depends("stats", "log");
-    /* We don't explicitly list other dependencies on log, since they
-     * are all incorporated by the dependence on stats.
-     */
 
     bugle_register_filter_set(&stats_basic_info);
     bugle_register_filter_set_depends("stats_basic", "stats");

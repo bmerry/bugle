@@ -1,6 +1,6 @@
 %{
 /*  BuGLe: an OpenGL debugging tool
- *  Copyright (C) 2004-2006  Bruce Merry
+ *  Copyright (C) 2004-2007  Bruce Merry
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -71,6 +71,7 @@
 #include "filters/stats.h"
 #include "common/linkedlist.h"
 #include "common/safemem.h"
+#include "src/log.h"
 
 int yyerror(const char *msg);
 extern int yylex(void);
@@ -210,6 +211,7 @@ attributes: /* empty */           { $$ = stats_statistic_new(); }
 
 int yyerror(const char *msg)
 {
-    fprintf(stderr, "parse error in statistics file: %s\n", msg);
+    bugle_log_printf("stats", "parse", BUGLE_LOG_ERROR,
+                     "parse error in statistics file: %s", msg);
     return 0;
 }

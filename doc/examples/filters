@@ -3,18 +3,17 @@ chain pass
 {
 }
 
-# Checks for errors (written to stderr), and logs all calls to file.
-# The errors are also logged to file. Changing "showerror" to "error"
-# will suppress printing to strerr. Uncomment the "flush" line to have
-# the log flushed after every call. This is slow but will guarantee as
-# complete as possible a log in the event of a crash.
+# Logs all calls to file. OpenGL errors are logged to both the file and
+# stderr. Uncomment the "flush" line to have the log flushed after
+# every call. This is slow but will guarantee as complete as possible a
+# log in the event of a crash.
 chain trace
 {
     filterset trace
     filterset showerror
     filterset log
     {
-    	filename "/tmp/bugle.log"
+    	filename "bugle.log"
         # flush "yes"
     }
 }
@@ -58,6 +57,10 @@ chain showstats
 chain showextensions
 {
     filterset showextensions
+    filterset log
+    {
+        stderr_level 4
+    }
 }
 
 chain extoverride
@@ -71,9 +74,9 @@ chain extoverride
         disable "GL_EXT_framebuffer_blit"
 
         # Option 2: disabled by default, list enables
-        disable "all"
-        enable "GL_ARB_multitexture"
-        enable "GL_ARB_imaging"
+        # disable "all"
+        # enable "GL_ARB_multitexture"
+        # enable "GL_ARB_imaging"
     }
 }
 
@@ -82,7 +85,7 @@ chain screenshot
 {
     filterset screenshot
     {
-        filename "/tmp/bugle%d.ppm" # A %d will be filled in with the frame number
+        filename "bugle%d.ppm" # A %d will be filled in with the frame number
 
         # Sets the key (default: Ctrl-Alt-Shift-S). Key names are based on
         # X11; see /usr/include/X11/keysymdefs.h for a list.
@@ -98,7 +101,7 @@ chain video
     filterset screenshot C-V inactive
     {
         video "yes"
-        filename "/tmp/bugle.avi"
+        filename "bugle.avi"
 
         # You can in theory use any codec supported by ffmpeg
         codec "mpeg4"
@@ -122,7 +125,7 @@ chain eps
 {
     filterset eps
     {
-        filename "/tmp/bugle.eps"  # Can use %d to obtain frame number
+        filename "bugle.eps"  # Can use %d to obtain frame number
         key_eps "C-A-S-W"          # Key to press to take snapshot
     }
 }
@@ -184,5 +187,4 @@ chain validate
 {
     filterset checks
     filterset showerror
-    filterset log
 }

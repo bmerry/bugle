@@ -1123,7 +1123,6 @@ static bool initialise_extoverride(filter_set *handle)
 
     f = bugle_register_filter(handle, "extoverride_warn");
     bugle_register_filter_depends("invoke", "extoverride_warn");
-    bugle_log_register_filter("extoverride_warn");
     for (budgie_function i = 0; i < budgie_number_of_functions; i++)
     {
         if (bugle_gl_function_table[i].extension
@@ -1300,5 +1299,4 @@ void bugle_initialise_filter_library(void)
     bugle_register_filter_set_depends("camera", "trackcontext");
     bugle_register_filter_set_depends("camera", "trackextensions");
     bugle_register_filter_set_depends("extoverride", "trackextensions");
-    bugle_register_filter_set_depends("extoverride", "log");
 }

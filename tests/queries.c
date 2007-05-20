@@ -572,11 +572,11 @@ static void query_framebuffers(void)
                     (unsigned int) tex[1]);
             texture3D(GL_TEXTURE_3D_EXT, "GL_TEXTURE_3D(_EXT)?");
             glFramebufferTexture3DEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT,
-                                           GL_TEXTURE_3D, tex[1], 1, 1);
+                                      GL_TEXTURE_3D, tex[1], 1, 1);
             fprintf(ref, "trace\\.call: glFramebufferTexture3DEXT\\(GL_FRAMEBUFFER(_EXT)?, GL_COLOR_ATTACHMENT0(_EXT)?, GL_TEXTURE_3D(_EXT)?, %u, 1, 1\\)\n",
                     (unsigned int) tex[1]);
             glGetFramebufferAttachmentParameterivEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT,
-                                                          GL_FRAMEBUFFER_ATTACHMENT_TEXTURE_3D_ZOFFSET_EXT, &i);
+                                                     GL_FRAMEBUFFER_ATTACHMENT_TEXTURE_3D_ZOFFSET_EXT, &i);
             fprintf(ref, "trace\\.call: glGetFramebufferAttachmentParameterivEXT\\(GL_FRAMEBUFFER(_EXT)?, GL_COLOR_ATTACHMENT0(_EXT)?, GL_FRAMEBUFFER_ATTACHMENT_TEXTURE_3D_ZOFFSET(_EXT), %p -> 1\\)\n",
                     (void *) &i);
         }

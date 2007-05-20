@@ -44,9 +44,10 @@ bool bugle_begin_internal_render(void)
     error = CALL_glGetError();
     if (error != GL_NO_ERROR)
     {
-        fputs("An OpenGL error was detected but will be lost to the app.\n"
-              "Use the 'error' filterset to allow the app to see it.\n",
-              stderr);
+        bugle_log("glutils", "internalrender", BUGLE_LOG_WARNING,
+                  "An OpenGL error was detected but will be lost to the application.");
+        bugle_log("glutils", "internalrender", BUGLE_LOG_WARNING,
+                  "Use the 'error' filterset to allow the application to see errors.");
         while ((error = CALL_glGetError()) != GL_NO_ERROR);
     }
     return true;
@@ -249,7 +250,6 @@ void bugle_register_filter_post_renders(const char *name)
 {
     bugle_register_filter_depends(name, "error");
     bugle_register_filter_depends(name, "trackbeginend");
-    bugle_log_register_filter(name);
 }
 
 void bugle_register_filter_set_queries_error(const char *name)

@@ -27,6 +27,7 @@
 #include "gltypes.h"
 #include "filters.h"
 #include "tracker.h"
+#include "log.h"
 #include "common/safemem.h"
 #include "budgielib/typeutils.h"
 #include "src/types.h"
@@ -282,8 +283,9 @@ int bugle_gl_format_to_count(GLenum format, GLenum type)
 #endif
             return 4;
         default:
-            fprintf(stderr, "unknown format %s; assuming 4 components\n",
-                    bugle_gl_enum_to_token(format));
+            bugle_log_printf("gldump", "format_to_count", BUGLE_LOG_WARNING,
+                             "unknown format %s; assuming 4 components",
+                             bugle_gl_enum_to_token(format));
             return 4; /* conservative */
         }
         break;

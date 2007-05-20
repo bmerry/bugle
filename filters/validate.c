@@ -123,15 +123,31 @@ static bool initialise_error(filter_set *handle)
     return true;
 }
 
+struct showerror_callback_s
+{
+    GLenum error;
+    budgie_function function;
+};
+
+static void showerror_log_callback(void *data, FILE *f)
+{
+    const struct showerror_callback_s *s;
+
+    s = (struct showerror_callback_s *) s;
+    budgie_dump_any_type(TYPE_7GLerror, &s->error, -1, f);
+    fprintf(f, " in %s", budgie_function_table[s->function].name);
+}
+
 static bool showerror_callback(function_call *call, const callback_data *data)
 {
     GLenum error;
-    if ((error = *(GLenum *) bugle_get_filter_set_call_state(call, error_handle)) != GL_NO_ERROR)
+    if ((error = bugle_get_call_error(call)) != GL_NO_ERROR)
     {
-        flockfile(stderr);
-        budgie_dump_any_type(TYPE_7GLerror, &error, -1, stderr);
-        fprintf(stderr, " in %s\n", budgie_function_table[call->generic.id].name);
-        funlockfile(stderr);
+        struct showerror_callback_s s;
+        s.error = error;
+        s.function = call->generic.id;
+        bugle_log_callback("showerror", "gl", BUGLE_LOG_NOTICE,
+                           showerror_log_callback, (void *) &s);
     }
     return true;
 }
@@ -144,6 +160,7 @@ static bool initialise_showerror(filter_set *handle)
     bugle_register_filter_catches_all(f, false, showerror_callback);
     bugle_register_filter_depends("showerror", "error");
     bugle_register_filter_depends("showerror", "invoke");
+    bugle_register_filter_queries_error("showerror");
     return true;
 }
 
@@ -956,7 +973,6 @@ static bool initialise_checks(filter_set *handle)
     bugle_register_filter_depends("trackcontext", "checks");
     bugle_register_filter_depends("trackbeginend", "checks");
     bugle_register_filter_depends("trackdisplaylist", "checks");
-    bugle_log_register_filter("checks");
     return true;
 }
 

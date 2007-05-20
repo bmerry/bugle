@@ -700,7 +700,6 @@ static bool initialise_screenshot(filter_set *handle)
     f = bugle_register_filter(handle, "screenshot");
     bugle_register_filter_catches(f, GROUP_glXSwapBuffers, false, screenshot_callback);
     bugle_register_filter_depends("invoke", "screenshot");
-    bugle_log_register_filter("screenshot");
 
     video_data = bugle_calloc(video_lag, sizeof(screenshot_data));
     video_cur = 0;
@@ -793,7 +792,6 @@ static bool initialise_showextensions(filter_set *handle)
      * reduces the risk of another filter aborting the call.
      */
     bugle_register_filter_depends("invoke", "showextensions");
-    bugle_log_register_filter("showextensions");
     bugle_hash_init(&seen_extensions, false);
     return true;
 }
@@ -1006,7 +1004,6 @@ static bool initialise_eps(filter_set *handle)
     bugle_register_filter_depends("invoke", "eps_pre");
     bugle_register_filter_depends("eps", "invoke");
     bugle_register_filter_post_renders("eps");
-    bugle_log_register_filter("eps_pre");
     eps_view = bugle_object_class_register(&bugle_context_class, initialise_eps_context,
                                            NULL, sizeof(eps_struct));
     bugle_register_xevent_key(&key_eps, NULL, bugle_xevent_key_callback_flag, &keypress_eps);
@@ -1083,9 +1080,6 @@ void bugle_initialise_filter_library(void)
     bugle_register_filter_set_renders("screenshot");
     bugle_register_filter_set_depends("screenshot", "trackcontext");
     bugle_register_filter_set_depends("screenshot", "trackextensions");
-    bugle_register_filter_set_depends("screenshot", "log");
-    bugle_register_filter_set_depends("showextensions", "log");
     bugle_register_filter_set_renders("eps");
     bugle_register_filter_set_depends("eps", "trackcontext");
-    bugle_register_filter_set_depends("eps", "log");
 }
