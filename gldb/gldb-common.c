@@ -281,8 +281,12 @@ static gldb_state *state_get(void)
 
     do
     {
-        gldb_protocol_recv_code(lib_in, &resp);
-        gldb_protocol_recv_code(lib_in, &id);
+        if (!gldb_protocol_recv_code(lib_in, &resp)
+            || !gldb_protocol_recv_code(lib_in, &id))
+        {
+            fprintf(stderr, "Pipe closed unexpectedly\n");
+            exit(1); /* FIXME: can this be handled better? */
+        }
         switch (resp)
         {
         case RESP_STATE_NODE_BEGIN_RAW:
