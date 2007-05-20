@@ -28,7 +28,7 @@ chain triangles
     filterset log
     {
         format "%f.%e: %m"
-        stderr_level 4 
+        stderr_level 4
         flush yes
     }
 }

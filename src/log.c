@@ -34,8 +34,8 @@ static char *log_filename = NULL;
 static char *log_format = NULL;
 static bool log_flush = false;
 static FILE *log_file = NULL;
-static int log_file_level = BUGLE_LOG_INFO;
-static int log_stderr_level = BUGLE_LOG_NOTICE;
+static int log_file_level = BUGLE_LOG_INFO + 1;
+static int log_stderr_level = BUGLE_LOG_NOTICE + 1;
 
 static const char *log_level_names[] =
 {
@@ -43,7 +43,7 @@ static const char *log_level_names[] =
     "WARNING",
     "NOTICE",
     "INFO",
-    "DEBUG",
+    "DEBUG"
 };
 
 static inline void log_start(FILE *f)
@@ -237,5 +237,4 @@ void log_initialise(void)
 
     bugle_register_filter_set(&log_info);
     log_format = bugle_strdup("[%l] %f.%e: %m");
-    log_file = stderr;
 }

@@ -545,22 +545,22 @@ static void query_framebuffers(void)
                 (unsigned int) tex[0]);
         texture2D(GL_TEXTURE_2D, "GL_TEXTURE_2D");
         glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT,
-                                       GL_TEXTURE_2D, tex[0], 1);
+                                  GL_TEXTURE_2D, tex[0], 1);
         fprintf(ref, "trace\\.call: glFramebufferTexture2DEXT\\(GL_FRAMEBUFFER(_EXT)?, GL_COLOR_ATTACHMENT0(_EXT)?, GL_TEXTURE_2D, %u, 1\\)\n",
                (unsigned int) tex[0]);
         glGetIntegerv(GL_FRAMEBUFFER_BINDING_EXT, &i);
         fprintf(ref, "trace\\.call: glGetIntegerv\\(GL_FRAMEBUFFER_BINDING(_EXT)?, %p -> %i\\)\n",
                 (void *) &i, (int) fb);
         glGetFramebufferAttachmentParameterivEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT,
-                                                      GL_FRAMEBUFFER_ATTACHMENT_OBJECT_TYPE_EXT, &i);
+                                                 GL_FRAMEBUFFER_ATTACHMENT_OBJECT_TYPE_EXT, &i);
         fprintf(ref, "trace\\.call: glGetFramebufferAttachmentParameterivEXT\\(GL_FRAMEBUFFER(_EXT)?, GL_COLOR_ATTACHMENT0(_EXT)?, GL_FRAMEBUFFER_ATTACHMENT_OBJECT_TYPE(_EXT), %p -> GL_TEXTURE\\)\n",
                 (void *) &i);
         glGetFramebufferAttachmentParameterivEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT,
-                                                      GL_FRAMEBUFFER_ATTACHMENT_OBJECT_NAME_EXT, &i);
+                                                 GL_FRAMEBUFFER_ATTACHMENT_OBJECT_NAME_EXT, &i);
         fprintf(ref, "trace\\.call: glGetFramebufferAttachmentParameterivEXT\\(GL_FRAMEBUFFER(_EXT)?, GL_COLOR_ATTACHMENT0(_EXT)?, GL_FRAMEBUFFER_ATTACHMENT_OBJECT_NAME(_EXT), %p -> %i\\)\n",
                 (void *) &i, (int) tex[0]);
         glGetFramebufferAttachmentParameterivEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT,
-                                                      GL_FRAMEBUFFER_ATTACHMENT_TEXTURE_LEVEL_EXT, &i);
+                                                 GL_FRAMEBUFFER_ATTACHMENT_TEXTURE_LEVEL_EXT, &i);
         fprintf(ref, "trace\\.call: glGetFramebufferAttachmentParameterivEXT\\(GL_FRAMEBUFFER(_EXT)?, GL_COLOR_ATTACHMENT0(_EXT)?, GL_FRAMEBUFFER_ATTACHMENT_TEXTURE_LEVEL(_EXT), %p -> 1\\)\n",
                 (void *) &i);
 
@@ -594,11 +594,11 @@ static void query_framebuffers(void)
             texture2D(GL_TEXTURE_CUBE_MAP_POSITIVE_Y_ARB, "GL_TEXTURE_CUBE_MAP_POSITIVE_Y(_ARB)?");
             texture2D(GL_TEXTURE_CUBE_MAP_POSITIVE_Z_ARB, "GL_TEXTURE_CUBE_MAP_POSITIVE_Z(_ARB)?");
             glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT,
-                                           GL_TEXTURE_CUBE_MAP_NEGATIVE_X_ARB, tex[2], 1);
+                                      GL_TEXTURE_CUBE_MAP_NEGATIVE_X_ARB, tex[2], 1);
             fprintf(ref, "trace\\.call: glFramebufferTexture2DEXT\\(GL_FRAMEBUFFER(_EXT)?, GL_COLOR_ATTACHMENT0(_EXT)?, GL_TEXTURE_CUBE_MAP_NEGATIVE_X(_ARB)?, %u, 1\\)\n",
                    (unsigned int) tex[2]);
             glGetFramebufferAttachmentParameterivEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT,
-                                                          GL_FRAMEBUFFER_ATTACHMENT_TEXTURE_CUBE_MAP_FACE_EXT, &i);
+                                                     GL_FRAMEBUFFER_ATTACHMENT_TEXTURE_CUBE_MAP_FACE_EXT, &i);
             fprintf(ref, "trace\\.call: glGetFramebufferAttachmentParameterivEXT\\(GL_FRAMEBUFFER(_EXT)?, GL_COLOR_ATTACHMENT0(_EXT)?, GL_FRAMEBUFFER_ATTACHMENT_TEXTURE_CUBE_MAP_FACE(_EXT), %p -> GL_TEXTURE_CUBE_MAP_NEGATIVE_X(_ARB)?\\)\n",
                     (void *) &i);
         }
