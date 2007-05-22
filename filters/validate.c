@@ -22,6 +22,7 @@
 #include "src/filters.h"
 #include "src/types.h"
 #include "src/glutils.h"
+#include "src/gltypes.h"
 #include "src/gldump.h"
 #include "src/tracker.h"
 #include "src/glexts.h"
@@ -41,13 +42,6 @@ static bool trap = false;
 static filter_set *error_handle = NULL;
 static bugle_object_view error_context_view;
 
-static void error_callback_warning(void *data, FILE *f)
-{
-    fprintf(f, "glGetError() returned ");
-    bugle_dump_GLerror(*(const GLenum *) data, f);
-    fprintf(f, " when GL_NO_ERROR was expected");
-}
-
 static bool error_callback(function_call *call, const callback_data *data)
 {
     GLenum error;
@@ -65,8 +59,16 @@ static bool error_callback(function_call *call, const callback_data *data)
         stored_error = bugle_object_get_current_data(&bugle_context_class, error_context_view);
         if (*call->typed.glGetError.retn != GL_NO_ERROR)
         {
-            bugle_log_callback("error", "callback", BUGLE_LOG_WARNING,
-                               error_callback_warning, call->typed.glGetError.retn);
+            const char *name;
+            name = bugle_gl_enum_to_token(*call->typed.glGetError.retn);
+            if (name)
+                bugle_log_printf("error", "callback", BUGLE_LOG_WARNING,
+                                 "glGetError() returned %s when GL_NO_ERROR was expected",
+                                 name);
+            else
+                bugle_log_printf("error", "callback", BUGLE_LOG_WARNING,
+                                 "glGetError() returned %#08x when GL_NO_ERROR was expected",
+                                 (unsigned int) *call->typed.glGetError.retn);
         }
         else if (!bugle_in_begin_end() && *stored_error)
         {
@@ -123,31 +125,21 @@ static bool initialise_error(filter_set *handle)
     return true;
 }
 
-struct showerror_callback_s
-{
-    GLenum error;
-    budgie_function function;
-};
-
-static void showerror_log_callback(void *data, FILE *f)
-{
-    const struct showerror_callback_s *s;
-
-    s = (struct showerror_callback_s *) s;
-    budgie_dump_any_type(TYPE_7GLerror, &s->error, -1, f);
-    fprintf(f, " in %s", budgie_function_table[s->function].name);
-}
-
 static bool showerror_callback(function_call *call, const callback_data *data)
 {
     GLenum error;
     if ((error = bugle_get_call_error(call)) != GL_NO_ERROR)
     {
-        struct showerror_callback_s s;
-        s.error = error;
-        s.function = call->generic.id;
-        bugle_log_callback("showerror", "gl", BUGLE_LOG_NOTICE,
-                           showerror_log_callback, (void *) &s);
+        const char *name;
+        name = bugle_gl_enum_to_token(error);
+        if (name)
+            bugle_log_printf("showerror", "gl", BUGLE_LOG_NOTICE,
+                             "%s in %s", name,
+                             budgie_function_table[call->generic.id].name);
+        else
+            bugle_log_printf("showerror", "gl", BUGLE_LOG_NOTICE,
+                             "%#08x in %s", (unsigned int) error,
+                             budgie_function_table[call->generic.id].name);
     }
     return true;
 }

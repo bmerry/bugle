@@ -53,31 +53,23 @@ bool bugle_begin_internal_render(void)
     return true;
 }
 
-struct internal_render_warning_struct
-{
-    const char *name;
-    GLenum error;
-};
-
-static void internal_render_warning(void *data, FILE *log)
-{
-    const struct internal_render_warning_struct *s;
-    s = (const struct internal_render_warning_struct *) data;
-    fprintf(log, "%s internally generated ", s->name);
-    bugle_dump_GLerror(s->error, log);
-    fputc('.', log);
-}
-
 void bugle_end_internal_render(const char *name, bool warn)
 {
-    struct internal_render_warning_struct s;
-    s.name = name;
-    while ((s.error = CALL_glGetError()) != GL_NO_ERROR)
+    GLenum error;
+    while ((error = CALL_glGetError()) != GL_NO_ERROR)
     {
         if (warn)
         {
-            bugle_log_callback("glutils", "internalrender", BUGLE_LOG_WARNING,
-                               internal_render_warning, (void *) &s);
+            const char *error_name;
+            error_name = bugle_gl_enum_to_token(error);
+            if (error_name)
+                bugle_log_printf("glutils", "internalrender", BUGLE_LOG_WARNING,
+                                 "%s internally generated %s",
+                                 name, error_name);
+            else
+                bugle_log_printf("glutils", "internalrender", BUGLE_LOG_WARNING,
+                                 "%s internally generated error %#08x",
+                                 name, (unsigned int) error);
         }
     }
 }
