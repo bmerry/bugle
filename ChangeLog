@@ -7,6 +7,8 @@
 * default filenames are now current directory rather than /tmp, for
   security
 * Fix gldb crash on systems without transform feedback
+* Add F8 key for Step in gldb-gui
+* Update misc bits of documentation
 
 0.0.20070325
 ------------

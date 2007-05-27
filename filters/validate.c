@@ -989,7 +989,7 @@ void bugle_initialise_filter_library(void)
         NULL,
         NULL,
         0,
-        "prints any OpenGL errors to standard error"
+        "logs OpenGL errors"
     };
     static const filter_set_info unwindstack_info =
     {
