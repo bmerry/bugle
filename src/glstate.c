@@ -2529,8 +2529,13 @@ void bugle_state_get_raw(const glstate *state, bugle_state_raw *wrapper)
             CALL_glGetVertexAttribfvARB(state->object, pname, f);
         else
         {
-            CALL_glGetVertexAttribivARB(state->object, pname, i);
-            in_type = TYPE_5GLint;
+            /* xorg-server 1.2.0 maps the iv and fv forms to the NV
+             * variant, which does not support the two boolean queries
+             * (_ENABLED and _NORMALIZED). We work around that by using
+             * the dv form.
+             */
+            CALL_glGetVertexAttribdvARB(state->object, pname, d);
+            in_type = TYPE_8GLdouble;
         }
         break;
 #endif

@@ -6,9 +6,10 @@
 * trace filterset no longer reports errors (use showerror)
 * default filenames are now current directory rather than /tmp, for
   security
-* Fix gldb crash on systems without transform feedback
-* Add F8 key for Step in gldb-gui
-* Update misc bits of documentation
+* fix gldb crash on systems without transform feedback
+* add F8 key for Step in gldb-gui
+* update misc bits of documentation
+* work around some Mesa bugs
 
 0.0.20070325
 ------------
