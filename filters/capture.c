@@ -708,7 +708,7 @@ static bool initialise_screenshot(filter_set *handle)
     {
         video_done = false; /* becomes true if we resize */
         if (!video_filename)
-            video_filename = bugle_strdup("/tmp/bugle.avi");
+            video_filename = bugle_strdup("bugle.avi");
 #if !HAVE_LAVC
         bugle_asprintf(&cmdline, "ppmtoy4m | ffmpeg -f yuv4mpegpipe -i - -vcodec %s -strict -1 -y %s",
                        video_codec, video_filename);
@@ -723,7 +723,7 @@ static bool initialise_screenshot(filter_set *handle)
     else
     {
         if (!video_filename)
-            video_filename = bugle_strdup("/tmp/bugle.ppm");
+            video_filename = bugle_strdup("bugle.ppm");
         video_lag = 1;
         /* FIXME: should only intercept the key when enabled */
         bugle_register_xevent_key(&key_screenshot, NULL, bugle_xevent_key_callback_flag, &keypress_screenshot);
@@ -1015,7 +1015,7 @@ void bugle_initialise_filter_library(void)
     static const filter_set_variable_info screenshot_variables[] =
     {
         { "video", "record a video", FILTER_SET_VARIABLE_BOOL, &video, NULL },
-        { "filename", "file to write video/screenshot to [/tmp/bugle.avi | /tmp/bugle.ppm]", FILTER_SET_VARIABLE_STRING, &video_filename, NULL },
+        { "filename", "file to write video/screenshot to [bugle.avi | bugle.ppm]", FILTER_SET_VARIABLE_STRING, &video_filename, NULL },
         { "codec", "video codec to use [mpeg4]", FILTER_SET_VARIABLE_STRING, &video_codec, NULL },
         { "bitrate", "video bitrate (bytes/s) [7.5MB/s]", FILTER_SET_VARIABLE_POSITIVE_INT, &video_bitrate, NULL },
         { "allframes", "capture every frame, ignoring framerate [no]", FILTER_SET_VARIABLE_BOOL, &video_sample_all, NULL },
@@ -1033,7 +1033,7 @@ void bugle_initialise_filter_library(void)
         NULL,
         screenshot_variables,
         0,
-        "captures screenshots every frame, or a video clip"
+        "captures screenshots or a video clip"
     };
 
     static const filter_set_info showextensions_info =
@@ -1050,7 +1050,7 @@ void bugle_initialise_filter_library(void)
 
     static const filter_set_variable_info eps_variables[] =
     {
-        { "filename", "file to write to (extension determines format) [/tmp/bugle.eps]", FILTER_SET_VARIABLE_STRING, &eps_filename, NULL },
+        { "filename", "file to write to (extension determines format) [bugle.eps]", FILTER_SET_VARIABLE_STRING, &eps_filename, NULL },
         { "key_eps", "key to trigger snapshot [C-A-S-W]", FILTER_SET_VARIABLE_KEY, &key_eps, NULL },
         { "title", "title in EPS file [Unnamed scene]", FILTER_SET_VARIABLE_STRING, &eps_title, NULL },
         { "bsp", "use BSP sorting (slower but more accurate) [no]", FILTER_SET_VARIABLE_BOOL, &eps_bsp, NULL },
@@ -1071,7 +1071,7 @@ void bugle_initialise_filter_library(void)
     };
 
     video_codec = bugle_strdup("mpeg4");
-    eps_filename = bugle_strdup("/tmp/bugle.eps");
+    eps_filename = bugle_strdup("bugle.eps");
 
     bugle_register_filter_set(&screenshot_info);
     bugle_register_filter_set(&showextensions_info);

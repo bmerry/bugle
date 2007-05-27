@@ -3,6 +3,10 @@
   - most references to stderr have been replaced by logging
   - option to control the log level
   - new bugle_log_printf helper function and more efficient bugle_log
+* trace filterset no longer reports errors (use showerror)
+* default filenames are now current directory rather than /tmp, for
+  security
+* Fix gldb crash on systems without transform feedback
 
 0.0.20070325
 ------------
