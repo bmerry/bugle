@@ -1,4 +1,4 @@
-.TH extoverride 7 "May 2006" BUGLE "User manual"
+.TH extoverride 7 "May 2007" BUGLE "User manual"
 .SH NAME
 extoverride \- hide OpenGL extensions from an application
 .SH SYNOPSIS
@@ -42,6 +42,21 @@ is used anyway.
 Like the 
 .B disable
 directive, but enables an extension when the default is disabled.
+.SH BUGS
+Warnings are only printed if 
+.I functions 
+from the disabled extensions are called. At present, no warning will be
+printed if tokens from those extensions are passed (which is difficult
+to determine, since multiple tokens may share the same numeric value).
+Furthermore, some extensions alter semantics without explicit functions
+or tokens, such as
+.BR GL_ARB_texture_non_power_of_two ";"
+no warnings are issued if these extensions are used.
+
+Also note that extension loader libraries may interfere with this
+warning mechanism. For example,
+.B GLee
+uses wrappers that cause illegal function calls to be silently ignored.
 .SH AUTHOR
 .B gldb
 and the
@@ -49,4 +64,6 @@ and the
 library are written and maintained by Bruce Merry
 <bmerry@users.sourceforge.net>.
 .SH SEE ALSO
-.BR bugle (3), bugle-log (7)
+.BR bugle (3),
+.BR bugle-log (7), 
+.BR bugle-showextensions (7)

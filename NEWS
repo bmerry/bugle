@@ -1,3 +1,12 @@
+0.0.20070528
+------------
+The logging system has been heavily reworked. If you are upgrading,
+please read the manpage for bugle-log(7) and bugle-trace(7) and update
+your ~/.bugle/filters as appropriate.
+
+There is also a new filter-set for hiding extensions (extoverride) and
+miscellaneous bugfixes.
+
 0.0.20070325
 ------------
 I've added support for several of the new extensions exposed by the G80

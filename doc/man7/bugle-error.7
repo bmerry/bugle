@@ -1,24 +1,23 @@
-.TH error 7 "May 2006" BUGLE "User manual"
+.TH error 7 "May 2007" BUGLE "User manual"
 .SH NAME
 error \- detect errors in OpenGL calls
 .SH SYNOPSIS
 .nf
 filterset error
-filterset showerror
 .fi
 .SH DESCRIPTION
 This filter-set does not take any visible action on its own, but
 provides a service to other filter-sets. It calls
 .BR glGetError (3)
 after every OpenGL call to detect OpenGL errors (it does not detect X
-errors). The
-.B showerror
-filter-set will display any errors on standard error, while the
-.B trace
-filter-set will report errors in the log.
+errors).
 
-Apart from this explicit error reporting, you may occasionally see the
-message
+Usually you will not need to explicitly load this filter-set; if you
+want to be informed of OpenGL errors, either use the
+.B showerror
+filterset, or
+.BR gldb (1).
+However, you may occasionally see the message
 .IP
 An OpenGL error was detected but will be lost to the app
 .P
