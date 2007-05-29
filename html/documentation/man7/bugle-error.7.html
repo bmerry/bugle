@@ -1,7 +1,7 @@
 <HTML><HEAD><TITLE>Manpage of error</TITLE>
 </HEAD><BODY>
 <H1>error</H1>
-Section: User manual (7)<BR>Updated: May 2006<BR><A HREF="#index">Index</A>
+Section: User manual (7)<BR>Updated: May 2007<BR><A HREF="#index">Index</A>
 <A HREF="../index.html">Return to Main Contents</A><HR>
 
 <A NAME="lbAB">&nbsp;</A>
@@ -13,7 +13,6 @@ error - detect errors in OpenGL calls
 
 <PRE>
 filterset error
-filterset showerror
 </PRE>
 
 <A NAME="lbAD">&nbsp;</A>
@@ -24,16 +23,16 @@ provides a service to other filter-sets. It calls
 <B><A HREF="../man3/glGetError.3.html">glGetError</A></B>(3)
 
 after every OpenGL call to detect OpenGL errors (it does not detect X
-errors). The
+errors).
+<P>
+Usually you will not need to explicitly load this filter-set; if you
+want to be informed of OpenGL errors, either use the
 <B>showerror</B>
 
-filter-set will display any errors on standard error, while the
-<B>trace</B>
+filterset, or
+<B><A HREF="../man1/gldb.1.html">gldb</A></B>(1).
 
-filter-set will report errors in the log.
-<P>
-Apart from this explicit error reporting, you may occasionally see the
-message
+However, you may occasionally see the message
 <DL COMPACT>
 <DT><DD>
 An OpenGL error was detected but will be lost to the app
@@ -99,6 +98,6 @@ library are written and maintained by Bruce Merry
 This document was created by
 <A HREF="http://localhost/cgi-bin/man/man2html">man2html</A>,
 using the manual pages.<BR>
-Last Changed Date: 2006-05-30 09:25:09 +0200 (Tue, 30 May 2006)
+Last Changed Date: 2007-05-28 17:58:22 +0200 (Mon, 28 May 2007)
 </BODY>
 </HTML>

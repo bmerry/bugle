@@ -1,7 +1,7 @@
 <HTML><HEAD><TITLE>Manpage of log</TITLE>
 </HEAD><BODY>
 <H1>log</H1>
-Section: User manual (7)<BR>Updated: May 2006<BR><A HREF="#index">Index</A>
+Section: User manual (7)<BR>Updated: May 2007<BR><A HREF="#index">Index</A>
 <A HREF="../index.html">Return to Main Contents</A><HR>
 
 <A NAME="lbAB">&nbsp;</A>
@@ -15,8 +15,10 @@ log - configure logging output from other filter-sets
 filterset log
 {
     filename &quot;bugle.log&quot;
+    file_level 4
+    stderr_level 3
     flush &quot;no&quot;
-    format &quot;%f.%e: %m&quot;
+    format &quot;[%l] %f.%e: %m&quot;
 }
 </PRE>
 
@@ -24,8 +26,10 @@ filterset log
 <H2>DESCRIPTION</H2>
 
 The log filter-set does not do any logging itself; instead, it provides
-logging services to other filter-sets. It is automatically loaded when
-needed, but explicitly loading it allows options to be set.
+logging services to other filter-sets. It is always loaded, but it may be
+explicitly listed in the configuration file to set options. The log is always
+written to standard error, but it can be written to file as well. It is also
+possible to control the log level.
 <A NAME="lbAE">&nbsp;</A>
 <H2>OPTIONS</H2>
 
@@ -33,14 +37,59 @@ needed, but explicitly loading it allows options to be set.
 <DT><B>filename</B>
 
 <DD>
-This sets the filename for logging. If not filename is given, the log
-is written to standard error.
+This sets the file for logging. Logging is still done to standard error. Note
+that with the default settings, the file log is more verbose than the standard
+error log.
 <DT><B>flush</B>
 
 <DD>
-If this is enabled (it is not by default) then the log is flushed to
+If this boolean is enabled (it is not by default) then the log is flushed to
 disk after every entry. This may be required to obtain a complete log
 if the program crashes.
+<DT><B>file_level</B>
+
+<DD>
+The log level for the log file, where a higher number means more verbose
+logging. The levels are
+<DL COMPACT><DT><DD>
+<DL COMPACT>
+<DT><B>0</B>
+
+<DD>
+No logging at all
+<DT><B>1</B>
+
+<DD>
+Errors, usually leading to immediate termination
+<DT><B>2</B>
+
+<DD>
+Warnings, usually affecting BuGLe functionality
+<DT><B>3</B>
+
+<DD>
+Notices, usually OpenGL errors or undefined behaviour
+<DT><B>4</B>
+
+<DD>
+Info from filtersets that generate logs, such as
+<B><A HREF="../man3/bugle-trace.3.html">bugle-trace</A></B>(3).
+
+<DT><B>5</B>
+
+<DD>
+Debugging messages
+</DL>
+</DL>
+
+<DT><B>stderr_level</B>
+
+<DD>
+Similar to
+<B>file_level</B>,
+
+but for logging to standard error. The default is 4 for a file and 3 for
+standard error.
 <DT><B>format</B>
 
 <DD>
@@ -48,10 +97,14 @@ This optional string overrides the default log format. The following
 printf-style escapes are recognised:
 <DL COMPACT><DT><DD>
 <DL COMPACT>
+<DT><B>%l</B>
+
+<DD>
+log level
 <DT><B>%f</B>
 
 <DD>
-filterset
+filter-set
 <DT><B>%e</B>
 
 <DD>
@@ -109,6 +162,6 @@ library are written and maintained by Bruce Merry
 This document was created by
 <A HREF="http://localhost/cgi-bin/man/man2html">man2html</A>,
 using the manual pages.<BR>
-Last Changed Date: 2006-05-30 09:25:09 +0200 (Tue, 30 May 2006)
+Last Changed Date: 2007-05-28 17:58:22 +0200 (Mon, 28 May 2007)
 </BODY>
 </HTML>
