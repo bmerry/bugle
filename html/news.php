@@ -23,6 +23,19 @@ else
     <a href="screenshots.php">[Screenshots]</a>
     </p>
     <h1>BuGLe News</h1>
+    <h2>Logging rewritten, extoverride filterset, bugfixes (29/5/2007)</h2>
+    <p>
+    The logging system has been heavily reworked. If you are upgrading,
+    please read the manpage for
+    <a href="documentation/man7/bugle-log.7.html">bugle-log(7)</a> and 
+    <a href="documentation/man7/bugle-trace.7.html">bugle-trace(7)</a> and
+    update your <tt>~/.bugle/filters</tt> as appropriate.
+    </p>
+    <p>
+    There is also a new filter-set for hiding extensions
+    (<a href="documentation/man7/bugle-extoverride.7.html">extoverride</a>)
+    and miscellaneous bugfixes.
+    </p>
     <h2>BuGLe now available in Gentoo portage (27/3/2007)</h2>
     <p>
     As a Gentoo user myself, I'm especially happy to announce that Gentoo

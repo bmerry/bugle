@@ -1999,8 +1999,9 @@ static const state_info global_state[] =
 #endif
     { STATE_NAME(GL_MAX_TRANSFORM_FEEDBACK_SEPARATE_ATTRIBS_NV), TYPE_5GLint, -1, BUGLE_GL_NV_transform_feedback, -1, STATE_GLOBAL },
     { STATE_NAME(GL_MAX_TRANSFORM_FEEDBACK_SEPARATE_COMPONENTS_NV), TYPE_5GLint, -1, BUGLE_GL_NV_transform_feedback, -1, STATE_GLOBAL },
-    { STATE_NAME(GL_TRANSFORM_FEEDBACK_BUFFER_MODE_NV), TYPE_6GLenum -1, BUGLE_GL_NV_transform_feedback, -1, STATE_GLOBAL },
+    { STATE_NAME(GL_TRANSFORM_FEEDBACK_BUFFER_MODE_NV), TYPE_6GLenum, -1, BUGLE_GL_NV_transform_feedback, -1, STATE_GLOBAL },
     { STATE_NAME(GL_TRANSFORM_FEEDBACK_ATTRIBS_NV), TYPE_5GLint, -1, BUGLE_GL_NV_transform_feedback, -1, STATE_GLOBAL },
+    { STATE_NAME(GL_TRANSFORM_FEEDBACK_BUFFER_BINDING_NV), TYPE_5GLint, -1, BUGLE_GL_NV_transform_feedback, -1, STATE_GLOBAL },
     { STATE_NAME(GL_RASTERIZER_DISCARD_NV), TYPE_9GLboolean, -1, BUGLE_GL_NV_transform_feedback, -1, STATE_ENABLED },
 #endif /* GL_NV_transform_feedback */
     { NULL, GL_NONE, NULL_TYPE, 0, -1, -1, 0 }
@@ -2528,8 +2529,13 @@ void bugle_state_get_raw(const glstate *state, bugle_state_raw *wrapper)
             CALL_glGetVertexAttribfvARB(state->object, pname, f);
         else
         {
-            CALL_glGetVertexAttribivARB(state->object, pname, i);
-            in_type = TYPE_5GLint;
+            /* xorg-server 1.2.0 maps the iv and fv forms to the NV
+             * variant, which does not support the two boolean queries
+             * (_ENABLED and _NORMALIZED). We work around that by using
+             * the dv form.
+             */
+            CALL_glGetVertexAttribdvARB(state->object, pname, d);
+            in_type = TYPE_8GLdouble;
         }
         break;
 #endif

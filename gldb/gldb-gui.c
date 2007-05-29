@@ -623,7 +623,7 @@ static GtkActionEntry running_action_desc[] =
 static GtkActionEntry stopped_action_desc[] =
 {
     { "Continue", NULL, "_Continue", "<control>F9", NULL, G_CALLBACK(continue_action) },
-    { "Step", NULL, "_Step", NULL, NULL, G_CALLBACK(step_action) },
+    { "Step", NULL, "_Step", "F8", NULL, G_CALLBACK(step_action) },
     { "Kill", NULL, "_Kill", "<control>F2", NULL, G_CALLBACK(kill_action) }
 };
 

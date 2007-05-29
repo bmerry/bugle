@@ -1,68 +1,28 @@
 <HTML><HEAD><TITLE>Manpage of error</TITLE>
 </HEAD><BODY>
 <H1>error</H1>
-Section: User manual (7)<BR>Updated: May 2006<BR><A HREF="#index">Index</A>
+Section: User manual (7)<BR>Updated: May 2007<BR><A HREF="#index">Index</A>
 <A HREF="../index.html">Return to Main Contents</A><HR>
 
 <A NAME="lbAB">&nbsp;</A>
 <H2>NAME</H2>
 
-error - detect errors in OpenGL calls
+showerror - reports errors in OpenGL calls
 <A NAME="lbAC">&nbsp;</A>
 <H2>SYNOPSIS</H2>
 
 <PRE>
-filterset error
 filterset showerror
 </PRE>
 
 <A NAME="lbAD">&nbsp;</A>
 <H2>DESCRIPTION</H2>
 
-This filter-set does not take any visible action on its own, but
-provides a service to other filter-sets. It calls
-<B><A HREF="../man3/glGetError.3.html">glGetError</A></B>(3)
+This filter-set detects OpenGL errors and writes them to the log (see
+<B><A HREF="../man7/bugle-log.7.html">bugle-log</A></B>(7)).
 
-after every OpenGL call to detect OpenGL errors (it does not detect X
-errors). The
-<B>showerror</B>
-
-filter-set will display any errors on standard error, while the
-<B>trace</B>
-
-filter-set will report errors in the log.
-<P>
-Apart from this explicit error reporting, you may occasionally see the
-message
-<DL COMPACT>
-<DT><DD>
-An OpenGL error was detected but will be lost to the app
-
-This means that
-<B>bugle</B>'s
-
-internal error-checking code accidentally collected an error caused by
-one of your calls, and thus if your application later called
-<B><A HREF="../man3/glGetError.3.html">glGetError</A></B>(3)
-
-it would not be informed of the error. However, if you add the
-<B>error</B>
-
-filter-set, it will catch the error first and your application will be
-correctly informed of the error.
-</DL>
+With the default log settings, the error will be reported to standard error.
 <A NAME="lbAE">&nbsp;</A>
-<H2>BUGS</H2>
-
-Because the error reporting semantics of OpenGL are not completely
-defined (in particular, an implementation may choose how many error
-flags it has), it is impossible to guarantee that this filter-set is
-completely transparent to the application. However, the first call to
-<B>glGetError (3)</B>
-
-after generating an error will always return an error, and in practice
-this is all that is necessary.
-<A NAME="lbAF">&nbsp;</A>
 <H2>AUTHOR</H2>
 
 <B>gldb</B>
@@ -72,17 +32,16 @@ and the
 
 library are written and maintained by Bruce Merry
 &lt;<A HREF="mailto:bmerry@users.sourceforge.net">bmerry@users.sourceforge.net</A>&gt;.
-<A NAME="lbAG">&nbsp;</A>
+<A NAME="lbAF">&nbsp;</A>
 <H2>SEE ALSO</H2>
 
 <B><A HREF="../man3/bugle.3.html">bugle</A></B>(3),
 
-<B><A HREF="../man7/bugle-showerror.7.html">bugle-showerror</A></B>(7),
+<B><A HREF="../man7/bugle-error.7.html">bugle-error</A></B>(7),
 
-<B><A HREF="../man7/bugle-trace.7.html">bugle-trace</A></B>(7),
+<B><A HREF="../man7/bugle-log.7.html">bugle-log</A></B>(7),
 
 <B><A HREF="../man3/glGetError.3.html">glGetError</A></B>(3)
-
 
 <P>
 
@@ -92,14 +51,13 @@ library are written and maintained by Bruce Merry
 <DT><A HREF="#lbAB">NAME</A><DD>
 <DT><A HREF="#lbAC">SYNOPSIS</A><DD>
 <DT><A HREF="#lbAD">DESCRIPTION</A><DD>
-<DT><A HREF="#lbAE">BUGS</A><DD>
-<DT><A HREF="#lbAF">AUTHOR</A><DD>
-<DT><A HREF="#lbAG">SEE ALSO</A><DD>
+<DT><A HREF="#lbAE">AUTHOR</A><DD>
+<DT><A HREF="#lbAF">SEE ALSO</A><DD>
 </DL>
 <HR>
 This document was created by
 <A HREF="http://localhost/cgi-bin/man/man2html">man2html</A>,
 using the manual pages.<BR>
-Last Changed Date: 2006-05-30 09:25:09 +0200 (Tue, 30 May 2006)
+Last Changed Date: 2007-05-28 17:58:22 +0200 (Mon, 28 May 2007)
 </BODY>
 </HTML>

@@ -1,8 +1,17 @@
+0.0.20070528
+------------
 * extoverride filterset
 * Rework of the logging system
   - most references to stderr have been replaced by logging
   - option to control the log level
   - new bugle_log_printf helper function and more efficient bugle_log
+* trace filterset no longer reports errors (use showerror)
+* default filenames are now current directory rather than /tmp, for
+  security
+* fix gldb crash on systems without transform feedback
+* add F8 key for Step in gldb-gui
+* update misc bits of documentation
+* work around some Mesa bugs
 
 0.0.20070325
 ------------

@@ -1,7 +1,7 @@
 <HTML><HEAD><TITLE>Manpage of showextensions</TITLE>
 </HEAD><BODY>
 <H1>showextensions</H1>
-Section: User manual (7)<BR>Updated: May 2006<BR><A HREF="#index">Index</A>
+Section: User manual (7)<BR>Updated: May 2007<BR><A HREF="#index">Index</A>
 <A HREF="../index.html">Return to Main Contents</A><HR>
 
 <A NAME="lbAB">&nbsp;</A>
@@ -40,7 +40,11 @@ the same function. The latter is necessary to detect extensions such as
 <B>GL_SGIS_generate_mipmap</B>
 
 which do not introduce new function calls, but it is less reliable as
-many enumerants share values.
+many enumerants share values. Some extensions are not detected at all:
+GL_ARB_texture_non_power_of_two does not introduce any tokens or
+functions, and some promoted extensions (like
+GL_ARB_pixel_buffer_object) have additional semantics to their
+predecessors but again introduce no new tokens or functions.
 <A NAME="lbAE">&nbsp;</A>
 <H2>OUTPUT</H2>
 
@@ -100,6 +104,6 @@ library are written and maintained by Bruce Merry
 This document was created by
 <A HREF="http://localhost/cgi-bin/man/man2html">man2html</A>,
 using the manual pages.<BR>
-Last Changed Date: 2006-05-30 09:25:09 +0200 (Tue, 30 May 2006)
+Last Changed Date: 2007-05-28 17:58:22 +0200 (Mon, 28 May 2007)
 </BODY>
 </HTML>

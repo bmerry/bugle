@@ -1,4 +1,4 @@
-# Simply pass commands through to OpenGL
+# Simply pass commands through to OpenGL (default chain)
 chain pass
 {
 }
@@ -63,6 +63,10 @@ chain showextensions
     }
 }
 
+# Removes extensions from GL_EXTENSIONS, and disables their functions.
+# This does not prevent tokens from being passed to functions in the
+# core or in other extensions, or semantic changes such as
+# GL_ARB_texture_non_power_of_two.
 chain extoverride
 {
     filterset extoverride
@@ -78,6 +82,7 @@ chain extoverride
         # enable "GL_ARB_multitexture"
         # enable "GL_ARB_imaging"
     }
+    filterset showerror
 }
 
 # Captures a screenshot when a key is pressed
@@ -93,7 +98,7 @@ chain screenshot
     }
 }
 
-# Captures every frame into a video file.
+# Captures a video file.
 chain video
 {
     # Press C-V to start and to stop recording. By removing the "inactive"
@@ -121,11 +126,13 @@ chain video
     }
 }
 
+# Capture a vector graphic screenshot
 chain eps
 {
     filterset eps
     {
-        filename "bugle.eps"  # Can use %d to obtain frame number
+        filename "bugle.eps"       # Can use %d to obtain frame number
+        # SVG and PDF are also supported
         key_eps "C-A-S-W"          # Key to press to take snapshot
     }
 }
@@ -155,15 +162,17 @@ chain camera
         # key_faster "Page_Up"   # speeds up motion
         # key_slower "Page_Down" # slows down motion
         # The following have no defaults
-        # key_reset "R"          # resets the camera to the app's view (no default)
-        # key_toggle "T"         # toggles mouse capture (no default)
-        # key_frustum "F"        # toggles display of the view frustum
-        # speed "1.0"            # initial keyboard motion speed
+        key_reset "R"          # resets the camera to the app's view (no default)
+        key_toggle "T"         # toggles mouse capture (no default)
+        key_frustum "F"        # toggles display of the view frustum
+        # The default of 1.0 is too fast for some apps
+        speed "0.1"            # initial keyboard motion speed
     }
 }
 
 # Forces rendering to the frontbuffer rather than the backbuffer. This
-# is useful to see how a scene is built up in the debugger
+# is useful to see how a scene is built up in the debugger (although it is
+# largely superceded by the buffer viewer in the debugger).
 chain frontbuffer
 {
     filterset frontbuffer

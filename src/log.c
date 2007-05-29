@@ -215,10 +215,10 @@ void log_initialise(void)
 {
     static const filter_set_variable_info log_variables[] =
     {
-        { "filename", "filename of the log to write [stderr]", FILTER_SET_VARIABLE_STRING, &log_filename, NULL },
+        { "filename", "filename of the log to write [none]", FILTER_SET_VARIABLE_STRING, &log_filename, NULL },
         { "flush", "flush log after every call [no]", FILTER_SET_VARIABLE_BOOL, &log_flush, NULL },
         { "format", "template for log lines [[%l] %f.%e: %m]", FILTER_SET_VARIABLE_STRING, &log_format, NULL },
-        { "file_level", "how much information to log in file [4] (0 is none, 5 is all)", FILTER_SET_VARIABLE_UINT, &log_file_level, NULL },
+        { "file_level", "how much information to log to file [4] (0 is none, 5 is all)", FILTER_SET_VARIABLE_UINT, &log_file_level, NULL },
         { "stderr_level", "how much information to log to stderr [3]", FILTER_SET_VARIABLE_UINT, &log_stderr_level, NULL },
         { NULL, NULL, 0, NULL, NULL }
     };
