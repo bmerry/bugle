@@ -530,11 +530,11 @@ static bool send_data_framebuffer(uint32_t id, GLuint fbo, GLenum target,
     else
     {
         pixel_pack_reset(&old_pack);
-        if (fbo)
+        if (fbo_binding)
             CALL_glGetIntegerv(fbo_binding, &old_fbo);
     }
 
-#ifdef GL_EXT_framebuffer_blit
+#ifdef GL_EXT_framebuffer_object
     if ((GLint) fbo != old_fbo)
         CALL_glBindFramebufferEXT(fbo_target, fbo);
 #endif
@@ -646,6 +646,9 @@ static bool send_data_shader(uint32_t id, GLuint shader_id,
 #endif
 #ifdef GL_ARB_fragment_shader
     case GL_FRAGMENT_SHADER_ARB:
+#endif
+#ifdef GL_EXT_geometry_shader4
+    case GL_GEOMETRY_SHADER_EXT:
 #endif
 #ifdef GL_ARB_shader_objects
         bugle_glGetShaderiv(shader_id, GL_OBJECT_SHADER_SOURCE_LENGTH_ARB, &length);

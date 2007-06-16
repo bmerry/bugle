@@ -1,3 +1,6 @@
+* Add geometry shader support to the shader viewer
+* Fix display of window system framebuffer when an FBO is bound
+
 0.0.20070528
 ------------
 * extoverride filterset
