@@ -10,6 +10,11 @@ A. Use the "log" filterset, and turn on the flush option (see the example
 in doc/examples/filters). Then after your program crashes, the last entry
 in the log file will most likely be the one just before the crash.
 
+Q. I wrote LD_PRELOAD=libbugle.so glxgears and it failed, what's up?
+A. You either need to specify a full path to libbugle.so, or else place it
+somewhere that the linker will find. On GNU systems, you can add the
+appropriate path to /etc/ld.so.conf.
+
 Q. I don't want to have to set BUGLE_CHAIN all the time; can't I
 specify a default?
 A. The first chain in the configuration file is the default.
