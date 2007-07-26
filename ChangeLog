@@ -1,3 +1,5 @@
+0.0.20070718
+------------
 * Add geometry shader support to the shader viewer
 * Fix display of window system framebuffer when an FBO is bound
 

@@ -23,6 +23,13 @@ else
     <a href="screenshots.php">[Screenshots]</a>
     </p>
     <h1>BuGLe News</h1>
+    <h2>Geometry shader viewer, forums (18/7/2007)</h2>
+    <p>It is now possible to view high-level geometry shaders in the shader
+    viewer. There is also a minor bug-fix for the framebuffer viewer when
+    using FBOs.</p>
+    <p>I've also switched on the Sourceforge
+    <a href="http://sourceforge.net/forum/?group_id=110905">forums</a>
+    for the project.</p>
     <h2>Logging rewritten, extoverride filterset, bugfixes (29/5/2007)</h2>
     <p>
     The logging system has been heavily reworked. If you are upgrading,
