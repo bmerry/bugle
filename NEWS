@@ -1,3 +1,9 @@
+0.0.20070718
+------------
+It is now possible to view high-level geometry shaders in the shader
+viewer. There is also a minor bug-fix for the framebuffer viewer when
+using FBOs.
+
 0.0.20070528
 ------------
 The logging system has been heavily reworked. If you are upgrading,

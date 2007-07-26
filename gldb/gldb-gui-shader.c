@@ -96,7 +96,7 @@ static void gldb_shader_pane_update_ids(GldbShaderPane *pane)
         GL_VERTEX_PROGRAM_ARB,
         GL_FRAGMENT_PROGRAM_ARB,
         GL_VERTEX_SHADER_ARB,
-#ifdef GL_EXT_geometry_shader
+#ifdef GL_EXT_geometry_shader4
         GL_GEOMETRY_SHADER_EXT,
 #endif
         GL_FRAGMENT_SHADER_ARB,
@@ -106,7 +106,7 @@ static void gldb_shader_pane_update_ids(GldbShaderPane *pane)
         "ARB VP",
         "ARB FP",
         "GLSL VS",
-#ifdef GL_EXT_geometry_shader
+#ifdef GL_EXT_geometry_shader4
         "GLSL GS",
 #endif
         "GLSL FS"
