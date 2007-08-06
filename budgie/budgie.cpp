@@ -1580,6 +1580,28 @@ static void write_interceptors()
         string group = i->group_define();
         string proto = function_type_to_string(TREE_TYPE(i->node), i->name(),
                                                false, "arg");
+        /* Why protected visibility? It's because of the way some extension
+         * loaders work. They define functions called, say, glActiveTexture,
+         * which quietly wrap the "real" glActiveTexture. The latter is
+         * obtain by calling glXGetProcAddressARB or similar. Our wrapper of
+         * glXGetProcAddressARB then returns the function pointer for
+         * our glActiveTexture wrapper. If, however, the function had default
+         * visibility, then the glActiveTexture in the main program would
+         * take precedence, and we would return that function pointer instead.
+         * This leads to an infinite loop.
+         *
+         * The only alternatives I can think of are
+         * 1. Have our glActiveTexture be a one-liner wrapper around
+         * budgie_wrapper_glActiveTexture, and have the symbol lookup
+         * return budgie_wrapper_glActiveTexture directly. The disadvantage
+         * is that it adds an extra layer of function call to EVERYTHING
+         * we wrap, even if we don't filter it.
+         * 2. The same as the above, but make glActiveTexture a symbol
+         * with the same address, rather than a one-liner wrapper. This
+         * would be the ideal solution, but I couldn't figure out how to
+         * encode this in the source file. If you figure it out, let me
+         * know.
+         */
         fprintf(lib_h, "%s BUGLE_GCC_VISIBILITY(\"protected\");\n", proto.c_str());
         fprintf(lib_c,
                 "%s\n"
