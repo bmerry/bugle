@@ -1571,6 +1571,19 @@ static void write_invoke()
             "\n");
 }
 
+/* What's with all the "hidden alias" stuff? Start by taking a look at
+ * http://people.redhat.com/drepper/dsohowto.pdf. Briefly, it's a symbol
+ * which maps to the same function, but which doesn't appear in the
+ * symbol table for the DSO. It's a bit more efficient for some applications,
+ * but that's not why we use it. Some extension loaders (I think just ones
+ * that people cobble together, rather than the major ones like GLEW and GLEE)
+ * work by having a function called, say, glMapBuffer, which uses
+ * glXGetProcAddressARB("glMapBuffer") to get the pointer it wants before
+ * calling it. The catch is that if our implementation of glXGetProcAddressARB
+ * just returns &glMapBuffer, it's going to return the extension wrapper,
+ * rather than our interception. But if we return the alias, it is always
+ * going to map to the correct function.
+ */
 static void write_interceptors()
 {
     for (list<Function>::iterator i = functions.begin(); i != functions.end(); i++)
@@ -1580,29 +1593,8 @@ static void write_interceptors()
         string group = i->group_define();
         string proto = function_type_to_string(TREE_TYPE(i->node), i->name(),
                                                false, "arg");
-        /* Why protected visibility? It's because of the way some extension
-         * loaders work. They define functions called, say, glActiveTexture,
-         * which quietly wrap the "real" glActiveTexture. The latter is
-         * obtain by calling glXGetProcAddressARB or similar. Our wrapper of
-         * glXGetProcAddressARB then returns the function pointer for
-         * our glActiveTexture wrapper. If, however, the function had default
-         * visibility, then the glActiveTexture in the main program would
-         * take precedence, and we would return that function pointer instead.
-         * This leads to an infinite loop.
-         *
-         * The only alternatives I can think of are
-         * 1. Have our glActiveTexture be a one-liner wrapper around
-         * budgie_wrapper_glActiveTexture, and have the symbol lookup
-         * return budgie_wrapper_glActiveTexture directly. The disadvantage
-         * is that it adds an extra layer of function call to EVERYTHING
-         * we wrap, even if we don't filter it.
-         * 2. The same as the above, but make glActiveTexture a symbol
-         * with the same address, rather than a one-liner wrapper. This
-         * would be the ideal solution, but I couldn't figure out how to
-         * encode this in the source file. If you figure it out, let me
-         * know.
-         */
-        fprintf(lib_h, "%s BUGLE_GCC_VISIBILITY(\"protected\");\n", proto.c_str());
+        fprintf(lib_h, "%s;BUGLE_GCC_DECLARE_HIDDEN_ALIAS(%s)\n",
+                proto.c_str(), name.c_str());
         fprintf(lib_c,
                 "%s\n"
                 "{\n"
@@ -1661,8 +1653,9 @@ static void write_interceptors()
                 "    budgie_interceptor(&call);\n"
                 "    clear_reentrance();\n"
                 "%s"
-                "}\n\n",
-                i->group->has_retn ? "    return retn;\n" : "");
+                "}\n"
+                "BUGLE_GCC_DEFINE_HIDDEN_ALIAS(%s)\n\n",
+                i->group->has_retn ? "    return retn;\n" : "", name.c_str());
     }
 }
 
@@ -1681,7 +1674,7 @@ static void write_function_name_table()
         if (i != funcs.begin()) fprintf(lib_c, ",\n");
         string name = *i;
         fprintf(lib_c,
-                "    { \"%s\", (void (*)(void)) %s }",
+                "    { \"%s\", (void (*)(void)) BUGLE_GCC_HIDDEN_ALIAS(%s) }",
                 name.c_str(), name.c_str());
     }
     fprintf(lib_c, "\n};\n\n");

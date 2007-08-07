@@ -53,3 +53,25 @@ void myprintf(const char *format, ...) __attribute__((format(printf, 1, 2)));
             AC_DEFINE([BUGLE_GCC_FORMAT_PRINTF(a, b)], [], [Specify printf semantics])
           fi
 ])
+
+
+# Checks whether we can define a hidden alias with GCC attribute magic
+AC_DEFUN([BUGLE_C_GCC_HIDDEN_ALIAS],
+         [AC_REQUIRE([AC_PROG_CC])[]dnl
+          AC_CACHE_CHECK([for GCC alias and visibility attributes], bugle_cv_c_gcc_hidden_alias,
+                         [bugle_cv_c_gcc_hidden_alias=no
+                          AC_COMPILE_IFELSE([AC_LANG_PROGRAM(
+[
+extern void mypublic(int x) {}
+extern __typeof(mypublic) myalias __attribute__((alias("mypublic"), visibility("hidden")));
+], [])], [bugle_cv_c_gcc_hidden_alias=yes])])
+         if test $bugle_cv_c_gcc_hidden_alias = yes; then
+           AC_DEFINE([BUGLE_GCC_HIDDEN_ALIAS(f)], [bugle_hidden_alias_ ## f], [name for the internal alias of f])
+           AC_DEFINE([BUGLE_GCC_DECLARE_HIDDEN_ALIAS(f)], [__typeof(f) BUGLE_GCC_HIDDEN_ALIAS(f);], [declares a hidden alias of f])
+           AC_DEFINE([BUGLE_GCC_DEFINE_HIDDEN_ALIAS(f)], [extern __typeof(f) BUGLE_GCC_HIDDEN_ALIAS(f) __attribute__((alias(#f), visibility("hidden")));], [defines a hidden alias of f])
+         else
+           AC_DEFINE([BUGLE_GCC_HIDDEN_ALIAS(f)], [f], [name for the internal alias of f])
+           AC_DEFINE([BUGLE_GCC_DECLARE_HIDDEN_ALIAS(f)], [], [declares a hidden alias of f])
+           AC_DEFINE([BUGLE_GCC_DEFINE_HIDDEN_ALIAS(f)], [], [defines a hidden alias of f])
+         fi
+])

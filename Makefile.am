@@ -189,7 +189,7 @@ check_PROGRAMS = \
 	tests/errors tests/threads1 tests/threads2 tests/queries \
 	tests/misc tests/setstate tests/triangles \
 	tests/pointers tests/objects tests/textest tests/shadertest \
-	tests/pbo
+	tests/pbo tests/interpose
 dist_check_SCRIPTS = tests/errors.sh tests/misc.sh tests/queries.sh tests/setstate.sh tests/pointers.sh tests/triangles.sh tests/pbo.sh tests/comparelog.sh tests/comparelog.perl
 tests_errors_SOURCES = tests/errors.c
 tests_errors_LDADD = -lglut -lGLU $(GL_LIBS) $(X_PRE_LIBS) $(X_LIBS) -lX11 $(X_EXTRA_LIBS)
@@ -207,6 +207,8 @@ tests_triangles_SOURCES = tests/triangles.c glee/GLee.c glee/GLee.h
 tests_triangles_LDADD = -lglut -lGLU $(GL_LIBS) $(X_PRE_LIBS) $(X_LIBS) -lX11 $(X_EXTRA_LIBS)
 tests_misc_SOURCES = tests/misc.c
 tests_misc_LDADD = -lglut -lGLU $(GL_LIBS) $(X_PRE_LIBS) $(X_LIBS) -lX11 $(X_EXTRA_LIBS)
+tests_interpose_SOURCES = tests/interpose.c
+tests_interpose_LDADD = -lglut -lGLU $(GL_LIBS) $(X_PRE_LIBS) $(X_LIBS) -lX11 $(X_EXTRA_LIBS)
 tests_setstate_SOURCES = tests/setstate.c glee/GLee.c glee/GLee.h
 tests_setstate_LDADD = src/libbugle.la -lglut -lGLU $(GL_LIBS) $(X_PRE_LIBS) $(X_LIBS) -lX11 $(X_EXTRA_LIBS)
 tests_objects_SOURCES = tests/objects.c glee/GLee.c glee/GLee.h
@@ -215,7 +217,7 @@ tests_textest_SOURCES = tests/textest.c glee/GLee.c glee/GLee.h
 tests_textest_LDADD = -lglut -lGLU $(GL_LIBS) $(X_PRE_LIBS) $(X_LIBS) -lX11 $(X_EXTRA_LIBS)
 tests_shadertest_SOURCES = tests/shadertest.c glee/GLee.c glee/GLee.h
 tests_shadertest_LDADD = -lglut -lGLU $(GL_LIBS) $(X_PRE_LIBS) $(X_LIBS) -lX11 $(X_EXTRA_LIBS)
-TESTS = tests/errors.sh tests/misc.sh tests/queries.sh tests/setstate.sh tests/triangles.sh tests/pointers.sh tests/pbo.sh
+TESTS = tests/errors.sh tests/misc.sh tests/queries.sh tests/setstate.sh tests/triangles.sh tests/pointers.sh tests/pbo.sh tests/interpose.sh
 TESTS_ENVIRONMENT = BUGLE_FILTERS=$(srcdir)/tests/filters BUGLE_STATISTICS=$(srcdir)/tests/statistics BUGLE_FILTER_DIR=filters/.libs BUGLE_LIB=src/.libs/libbugle.so
 
 # Extra files to distribute
