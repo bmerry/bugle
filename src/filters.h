@@ -126,6 +126,7 @@ void bugle_deactivate_filter_set(filter_set *handle);
 void bugle_activate_filter_set_deferred(filter_set *handle);
 void bugle_deactivate_filter_set_deferred(filter_set *handle);
 void filter_compute_order(void); /* Called after all filtersets loaded to determine filter order */
+void filter_set_bypass(void);    /* Called after all filtersets loaded to set values in budgie_bypass */
 void run_filters(struct function_call_s *call);
 void bugle_filters_help(void);
 

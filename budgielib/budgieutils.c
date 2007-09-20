@@ -98,9 +98,7 @@ void (*budgie_get_function_wrapper(const char *name))(void)
         return (void (*)(void)) NULL;
 }
 
-static bugle_thread_once_t initialise_real_once = BUGLE_THREAD_ONCE_INIT;
-
-static void initialise_real_work(void)
+void initialise_real(void)
 {
     lt_dlhandle handle;
     size_t i, j;
@@ -132,15 +130,6 @@ static void initialise_real_work(void)
     }
 }
 
-void initialise_real(void)
-{
-    /* We have to provide this protection, because the interceptor functions
-     * call initialise_real if they are re-entered so that they can bypass
-     * the filter chain.
-     */
-    bugle_thread_once(&initialise_real_once, initialise_real_work);
-}
-
 /* Re-entrance protection. Note that we still wish to allow other threads
  * to enter from the user application; it is just that we do not want the
  * real library to call our fake functions.
@@ -169,7 +158,7 @@ bool check_set_reentrance(void)
 
     bugle_thread_once(&reentrance_once, initialise_reentrance);
     ans = bugle_thread_getspecific(reentrance_key) == NULL;
-    bugle_thread_setspecific(reentrance_key, &ans);
+    bugle_thread_setspecific(reentrance_key, &ans); /* arbitrary non-NULL value */
     return ans;
 }
 

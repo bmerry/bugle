@@ -12,8 +12,8 @@
 # Expressions consist of real numbers, the standard arithmetic operations
 # (including precedence and parentheses), and signal expressions. A "signal"
 # is a raw counter provided by a filter-set such as stats_basic e.g.
-# frames. A signal expression indicates how a counter over a particular
-# period of time. Valid expressions are:
+# frames. A signal expression indicates how a counter is measured over a
+# particular period of time. Valid expressions are:
 # d("frames"): the change in the signal (end - start)
 # a("frames"): the average value of the signal
 # s("frames"): the value at the start

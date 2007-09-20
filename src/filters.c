@@ -22,6 +22,7 @@
 #define _BSD_SOURCE /* For finite() */
 #define _XOPEN_SOURCE 600 /* For strtof */
 #include "src/utils.h"
+#include "src/lib.h"
 #include "src/glfuncs.h"
 #include "src/xevent.h"
 #include "src/filters.h"
@@ -593,6 +594,27 @@ void filter_compute_order(void)
     bugle_hash_clear(&byname);
     bugle_list_clear(&loaded_filters);
     loaded_filters = ordered;
+}
+
+void filter_set_bypass(void)
+{
+    bugle_list_node *i, *j;
+    bool bypass[NUMBER_OF_FUNCTIONS];
+    filter *cur;
+    filter_catcher *catcher;
+
+    memset(bypass, 1, sizeof(bypass));
+    for (i = bugle_list_head(&loaded_filters); i; i = bugle_list_next(i))
+    {
+        cur = (filter *) bugle_list_data(i);
+        for (j = bugle_list_tail(&cur->callbacks); j; j = bugle_list_prev(j))
+        {
+            catcher = (filter_catcher *) bugle_list_data(j);
+            if (strcmp(catcher->parent->name, "invoke") != 0)
+                bypass[catcher->function] = false;
+        }
+    }
+    memcpy(budgie_bypass, bypass, sizeof(budgie_bypass));
 }
 
 /* Note: caller must take mutexes */

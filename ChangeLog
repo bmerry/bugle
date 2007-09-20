@@ -1,3 +1,5 @@
+* Do a fast bypass on functions that are never intercepted
+
 0.0.20070718
 ------------
 * Add geometry shader support to the shader viewer

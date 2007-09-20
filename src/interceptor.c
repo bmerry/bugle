@@ -208,6 +208,7 @@ static void initialise_all(void)
     initialise_dump_tables();
     load_config();
     filter_compute_order();
+    filter_set_bypass();
 }
 
 /* Used by xevents */

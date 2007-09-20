@@ -1586,6 +1586,8 @@ static void write_invoke()
  */
 static void write_interceptors()
 {
+    fprintf(lib_h, "extern bool budgie_bypass[NUMBER_OF_FUNCTIONS];\n\n");
+    fprintf(lib_c, "bool budgie_bypass[NUMBER_OF_FUNCTIONS];\n\n");
     for (list<Function>::iterator i = functions.begin(); i != functions.end(); i++)
     {
         string name = i->name();
@@ -1608,13 +1610,15 @@ static void write_interceptors()
         }
         /* The fputs is commented out because it is not always possible to
          * avoid the re-entrance. In bugle, this occurs because gl2ps is
-         * used unmodified and hence calls to OpenGL functions. */
+         * used unmodified and hence calls to OpenGL functions. Note that
+         * this code can only be entered after calling initialise_real, so
+         * the CALL_ will work.
+         */
         fprintf(lib_c,
-                "    if (!check_set_reentrance())\n"
+                "    if (budgie_bypass[FUNC_%s] || !check_set_reentrance())\n"
                 "    {\n"
-//              "        fputs(\"Warning: %s was re-entered\\n\", stderr);\n"
-                "        initialise_real();\n"
-                "        "); // name.c_str());
+//                "        fputs(\"Warning: %s was re-entered\\n\", stderr);\n"
+                "        ", name.c_str()); //, name.c_str());
         if (i->group->has_retn)
             fprintf(lib_c, "return ");
         fprintf(lib_c, "CALL_%s(", name.c_str());
