@@ -28,7 +28,7 @@ flags, such as -L/path/to/bugle -Wl,-rpath -Wl,/path/to/bugle
 Q. How do I build a 32-bit version of BuGLe on an AMD64 system?
 A. The exact details will depend on your OS. Here is what I do on Gentoo:
 
-./configure --x-libraries=/emul/linux/x86/usr/lib32 CC="gcc -m32" CXX="g++ -m32" \
+./configure --x-libraries=/emul/linux/x86/usr/lib CC="gcc -m32" CXX="g++ -m32" \
    --libdir=/usr/local/lib32 --bindir=/usr/local/bin32
 
 Gentoo also tries to be clever by putting in a libGL.la to make linking
@@ -57,23 +57,25 @@ paths to it and probably set LD_LIBRARY_PATH to cover 32-bit libraries
 Q. What is the performance penalty?
 A. That depends on what you're doing with the library. If you only use
 filter-sets that intercept a few functions (like showstats), then all
-other functions suffer only a very small penalty. Using filter-sets that
+other functions suffer only a small penalty. Using filter-sets that
 check for error after every function (including showerror and the
 debugger) adds a much bigger penalty.
 
 To give you an example, here are some rough numbers for Quake3 1.32 on
-demo 'four' (not even remotely scientificly collected, and definitely
-out of date - Quake3 no longer works on my machine with or without
-bugle).
+demo 'four'.
 
-without BuGLe: 167fps
-with no filter-sets: 167fps
-with the showstats filter-set: 166.2fps
-with no filter-sets, but in the debugger: 137.4fps
-with tracing: 47.8fps
+without BuGLe: 668.8fps
+with no filter-sets: 654.fps
+with the logfps chain: 647.5fps
+with the showfps chain: 599.1fps
+with no filter-sets, but in the debugger: 124.2fps
+with tracing: 175.5fps
 
 Tracing is particularly slow because it does file I/O, as well as a lot
 of text formatting.
+
+The overhead will also depend on the CPU/GPU balance. GPU-bound
+programs are less likely to be affected by overheads.
 
 Q. Why is there a mix of C and C++ code?
 A. The library itself is written entirely in C. This is mainly because

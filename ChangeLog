@@ -1,4 +1,5 @@
 * Do a fast bypass on functions that are never intercepted
+* Updated the benchmarks in the README
 
 0.0.20070718
 ------------
