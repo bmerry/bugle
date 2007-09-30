@@ -18,7 +18,7 @@
 /* Each message written to the log has three associated attributes:
  * - the filterset that generated it
  * - a submodule of the filterset (filterset dependent)
- * - a severity, which determines whether it is logged to stderr
+ * - a severity, which determines whether it is actually logged
  * The different logging methods all take these as parameters.
  */
 
@@ -47,7 +47,7 @@ enum
 void bugle_log(const char *filterset, const char *event, int severity,
                const char *message);
 
-/* Variable of bugle_log with printf-style semantics */
+/* Variant of bugle_log with printf-style semantics */
 void bugle_log_printf(const char *filterset, const char *event, int severity,
                       const char *format, ...) BUGLE_GCC_FORMAT_PRINTF(4, 5);
 

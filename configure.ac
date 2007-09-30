@@ -94,6 +94,7 @@ AC_C_CHAR_UNSIGNED
 BUGLE_C_GCC_VISIBILITY
 BUGLE_C_GCC_HIDDEN_ALIAS
 BUGLE_C_GCC_FORMAT_PRINTF
+BUGLE_C_GCC_CONSTRUCTOR_ATTRIBUTE
 
 dnl Checks for library functions
 AC_CHECK_FUNCS([regcomp strrchr vasprintf vsnprintf open_memstream pthread_kill])

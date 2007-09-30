@@ -75,3 +75,24 @@ extern __typeof(mypublic) myalias __attribute__((alias("mypublic"), visibility("
            AC_DEFINE([BUGLE_GCC_DEFINE_HIDDEN_ALIAS(f)], [], [defines a hidden alias of f])
          fi
 ])
+
+
+# Checks whether we can define startup code with GCC attribute magic
+AC_DEFUN([BUGLE_C_GCC_CONSTRUCTOR_ATTRIBUTE],
+         [AC_REQUIRE([AC_PROG_CC])[]dnl
+          AC_CACHE_CHECK([for GCC constructor attribute], bugle_cv_c_gcc_constructor_attribute,
+                         [bugle_cv_c_gcc_constructor_attribute=no
+                          AC_COMPILE_IFELSE([AC_LANG_PROGRAM(
+[
+static void constructor(void) __attribute__((constructor));
+static void constructor(void)
+{
+}
+], [])], [bugle_cv_c_gcc_constructor_attribute=yes])])
+         if test $bugle_cv_c_gcc_constructor_attribute = yes; then
+           AC_DEFINE([BUGLE_GCC_CONSTRUCTOR_ATTRIBUTE], [__attribute__((constructor))], [function declaration suffix for constructors])
+           AC_DEFINE([BUGLE_GCC_HAVE_CONSTRUCTOR_ATTRIBUTE], 1, [Define if __attribute__((constructor)) is supported])
+         else
+           AC_DEFINE([BUGLE_GCC_CONSTRUCTOR_ATTRIBUTE], [], [function declaration suffix for constructors])
+         fi
+])

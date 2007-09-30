@@ -196,7 +196,8 @@ static void initialise_addresses(void)
             budgie_function_table[i].real = CALL_glXGetProcAddressARB((const GLubyte *) budgie_function_table[i].name);
 }
 
-static bugle_thread_once_t init_key_once = BUGLE_THREAD_ONCE_INIT;
+BUGLE_CONSTRUCTOR(initialise_all);
+
 static void initialise_all(void)
 {
     bugle_initialise_hashing();
@@ -214,11 +215,11 @@ static void initialise_all(void)
 /* Used by xevents */
 void bugle_initialise_all(void)
 {
-    bugle_thread_once(&init_key_once, initialise_all);
+    BUGLE_RUN_CONSTRUCTOR(initialise_all);
 }
 
 void budgie_interceptor(function_call *call)
 {
-    bugle_thread_once(&init_key_once, initialise_all);
+    BUGLE_RUN_CONSTRUCTOR(bugle_initialise_all);
     run_filters(call);
 }

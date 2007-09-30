@@ -139,8 +139,8 @@ void initialise_real(void)
  */
 
 static bugle_thread_key_t reentrance_key;
-static bugle_thread_once_t reentrance_once = BUGLE_THREAD_ONCE_INIT;
 
+BUGLE_CONSTRUCTOR(initialise_reentrance);
 static void initialise_reentrance(void)
 {
     bugle_thread_key_create(&reentrance_key, NULL);
@@ -156,7 +156,7 @@ bool check_set_reentrance(void)
      */
     bool ans;
 
-    bugle_thread_once(&reentrance_once, initialise_reentrance);
+    BUGLE_RUN_CONSTRUCTOR(initialise_reentrace);
     ans = bugle_thread_getspecific(reentrance_key) == NULL;
     bugle_thread_setspecific(reentrance_key, &ans); /* arbitrary non-NULL value */
     return ans;

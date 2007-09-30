@@ -177,6 +177,7 @@ rest of the record, find the length, then replace what we don't need.
 "low : "@{DIGIT}+	| /* This is the low : for case_label */
 <ASM>"strg: "@{DIGIT}+	| /* See comments about ASM above */
 "outs: "@{DIGIT}+	|
+"vars: "@{DIGIT}+       |
 "algn: "{DIGIT}+	/* Ignore these fields, which are mainly code body */
 
 "tag : struct"		{ yylnode->flag_struct = true; }

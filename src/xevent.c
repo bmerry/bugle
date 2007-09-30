@@ -30,7 +30,11 @@
 #include <stddef.h>
 
 #define STATE_MASK (ControlMask | ShiftMask | Mod1Mask)
+
+/* Events we want to get, even if the app doesn't ask for them */
 #define EVENT_MASK (KeyPressMask | KeyReleaseMask | PointerMotionMask)
+
+/* Events we don't want to know about */
 #define EVENT_UNMASK (PointerMotionHintMask)
 
 /* #define XEVENT_LOG */
@@ -75,7 +79,11 @@ static Window (*real_XCreateWindow)(Display *, Window, int, int, unsigned int, u
 static Window (*real_XCreateSimpleWindow)(Display *, Window, int, int, unsigned int, unsigned int, unsigned int, unsigned long, unsigned long);
 static int (*real_XSelectInput)(Display *, Window, long);
 
+#if BUGLE_GCC_HAVE_CONSTRUCTOR_ATTRIBUTE
+# define bugle_initialise_all() ((void) 0)
+#else
 extern void bugle_initialise_all(void);
+#endif
 
 /* Determines whether bugle wants to intercept an event */
 static Bool event_predicate(Display *dpy, XEvent *event, XPointer arg)
@@ -179,8 +187,8 @@ int XNextEvent(Display *dpy, XEvent *event)
     int ret;
 
     bugle_initialise_all();
-    bugle_log("xevent", "XNextEvent", BUGLE_LOG_DEBUG, "enter");
     if (!active) return (*real_XNextEvent)(dpy, event);
+    bugle_log("xevent", "XNextEvent", BUGLE_LOG_DEBUG, "enter");
     extract_events(dpy);
     while ((ret = (*real_XNextEvent)(dpy, event)) != 0)
     {
@@ -200,8 +208,8 @@ int XPeekEvent(Display *dpy, XEvent *event)
     int ret;
 
     bugle_initialise_all();
-    bugle_log("xevent", "XPeekEvent", BUGLE_LOG_DEBUG, "enter");
     if (!active) return (*real_XPeekEvent)(dpy, event);
+    bugle_log("xevent", "XPeekEvent", BUGLE_LOG_DEBUG, "enter");
     extract_events(dpy);
     while ((ret = (*real_XPeekEvent)(dpy, event)) != 0)
     {
@@ -313,8 +321,8 @@ int XWindowEvent(Display *dpy, Window w, long event_mask, XEvent *event)
     if_block_data data;
 
     bugle_initialise_all();
-    bugle_log("xevent", "XWindowEvent", BUGLE_LOG_DEBUG, "enter");
     if (!active) return (*real_XWindowEvent)(dpy, w, event_mask, event);
+    bugle_log("xevent", "XWindowEvent", BUGLE_LOG_DEBUG, "enter");
     extract_events(dpy);
     data.use_w = 1;
     data.use_event_mask = 1;
@@ -339,8 +347,8 @@ Bool XCheckWindowEvent(Display *dpy, Window w, long event_mask, XEvent *event)
     Bool ret;
 
     bugle_initialise_all();
-    bugle_log("xevent", "XCheckWindowEvent", BUGLE_LOG_DEBUG, "enter");
     if (!active) return (*real_XCheckWindowEvent)(dpy, w, event_mask, event);
+    bugle_log("xevent", "XCheckWindowEvent", BUGLE_LOG_DEBUG, "enter");
     extract_events(dpy);
     while ((ret = (*real_XCheckWindowEvent)(dpy, w, event_mask, event)) == True)
     {
@@ -361,8 +369,8 @@ int XMaskEvent(Display *dpy, long event_mask, XEvent *event)
     if_block_data data;
 
     bugle_initialise_all();
-    bugle_log("xevent", "XMaskEvent", BUGLE_LOG_DEBUG, "enter");
     if (!active) return (*real_XMaskEvent)(dpy, event_mask, event);
+    bugle_log("xevent", "XMaskEvent", BUGLE_LOG_DEBUG, "enter");
     extract_events(dpy);
     data.use_w = 0;
     data.use_event_mask = 1;
@@ -386,8 +394,8 @@ Bool XCheckMaskEvent(Display *dpy, long event_mask, XEvent *event)
     Bool ret;
 
     bugle_initialise_all();
-    bugle_log("xevent", "XCheckMaskEvent", BUGLE_LOG_DEBUG, "enter");
     if (!active) return (*real_XCheckMaskEvent)(dpy, event_mask, event);
+    bugle_log("xevent", "XCheckMaskEvent", BUGLE_LOG_DEBUG, "enter");
     extract_events(dpy);
     while ((ret = (*real_XCheckMaskEvent)(dpy, event_mask, event)) == True)
     {
@@ -407,8 +415,8 @@ Bool XCheckTypedEvent(Display *dpy, int type, XEvent *event)
     Bool ret;
 
     bugle_initialise_all();
-    bugle_log("xevent", "XCheckTypedEvent", BUGLE_LOG_DEBUG, "enter");
     if (!active) return (*real_XCheckTypedEvent)(dpy, type, event);
+    bugle_log("xevent", "XCheckTypedEvent", BUGLE_LOG_DEBUG, "enter");
     extract_events(dpy);
     while ((ret = (*real_XCheckTypedEvent)(dpy, type, event)) == True)
     {
@@ -428,8 +436,8 @@ Bool XCheckTypedWindowEvent(Display *dpy, Window w, int type, XEvent *event)
     Bool ret;
 
     bugle_initialise_all();
-    bugle_log("xevent", "XCheckTypedWindowEvent", BUGLE_LOG_DEBUG, "enter");
     if (!active) return (*real_XCheckTypedWindowEvent)(dpy, w, type, event);
+    bugle_log("xevent", "XCheckTypedWindowEvent", BUGLE_LOG_DEBUG, "enter");
     extract_events(dpy);
     while ((ret = (*real_XCheckTypedWindowEvent)(dpy, w, type, event)) == True)
     {
@@ -450,8 +458,8 @@ int XIfEvent(Display *dpy, XEvent *event, Bool (*predicate)(Display *, XEvent *,
     if_block_data data;
 
     bugle_initialise_all();
-    bugle_log("xevent", "XIfEvent", BUGLE_LOG_DEBUG, "enter");
     if (!active) return (*real_XIfEvent)(dpy, event, predicate, arg);
+    bugle_log("xevent", "XIfEvent", BUGLE_LOG_DEBUG, "enter");
     extract_events(dpy);
     data.use_w = 0;
     data.use_event_mask = 0;
@@ -476,8 +484,8 @@ Bool XCheckIfEvent(Display *dpy, XEvent *event, Bool (*predicate)(Display *, XEv
     Bool ret;
 
     bugle_initialise_all();
-    bugle_log("xevent", "XCheckIfEvent", BUGLE_LOG_DEBUG, "enter");
     if (!active) return (*real_XCheckIfEvent)(dpy, event, predicate, arg);
+    bugle_log("xevent", "XCheckIfEvent", BUGLE_LOG_DEBUG, "enter");
     extract_events(dpy);
     while ((ret = (*real_XCheckIfEvent)(dpy, event, predicate, arg)) == True)
     {
@@ -498,8 +506,8 @@ int XPeekIfEvent(Display *dpy, XEvent *event, Bool (*predicate)(Display *, XEven
     if_block_data data;
 
     bugle_initialise_all();
-    bugle_log("xevent", "XPeekIfEvent", BUGLE_LOG_DEBUG, "enter");
     if (!active) return (*real_XPeekIfEvent)(dpy, event, predicate, arg);
+    bugle_log("xevent", "XPeekIfEvent", BUGLE_LOG_DEBUG, "enter");
     extract_events(dpy);
     data.use_w = 0;
     data.use_event_mask = 0;
@@ -526,8 +534,8 @@ int XEventsQueued(Display *dpy, int mode)
     int events;
 
     bugle_initialise_all();
-    bugle_log("xevent", "XEventsQueued", BUGLE_LOG_DEBUG, "enter");
     if (!active) return (*real_XEventsQueued)(dpy, mode);
+    bugle_log("xevent", "XEventsQueued", BUGLE_LOG_DEBUG, "enter");
 
     do
     {
@@ -542,8 +550,8 @@ int XPending(Display *dpy)
     int events;
 
     bugle_initialise_all();
-    bugle_log("xevent", "XPending", BUGLE_LOG_DEBUG, "enter");
     if (!active) return (*real_XPending)(dpy);
+    bugle_log("xevent", "XPending", BUGLE_LOG_DEBUG, "enter");
 
     do
     {
@@ -579,11 +587,15 @@ Window XCreateWindow(Display *dpy, Window parent, int x, int y,
     Window ret;
 
     bugle_initialise_all();
+    if (!active)
+        return (*real_XCreateWindow)(dpy, parent, x, y, width, height,
+                                     border_width, depth, c_class, visual,
+                                     valuemask, attributes);
     bugle_log("xevent", "XCreateWindow", BUGLE_LOG_DEBUG, "enter");
     ret = (*real_XCreateWindow)(dpy, parent, x, y, width, height,
                                 border_width, depth, c_class, visual,
                                 valuemask, attributes);
-    if (active && ret != None)
+    if (ret != None)
         adjust_event_mask(dpy, ret);
     bugle_log("xevent", "XCreateWindow", BUGLE_LOG_DEBUG, "exit");
     return ret;
@@ -597,10 +609,13 @@ Window XCreateSimpleWindow(Display *dpy, Window parent, int x, int y,
     Window ret;
 
     bugle_initialise_all();
+    if (!active)
+        return (*real_XCreateSimpleWindow)(dpy, parent, x, y, width, height,
+                                           border_width, border, background);
     bugle_log("xevent", "XCreateSimpleWindow", BUGLE_LOG_DEBUG, "enter");
     ret = (*real_XCreateSimpleWindow)(dpy, parent, x, y, width, height,
                                       border_width, border, background);
-    if (active && ret != None)
+    if (ret != None)
         adjust_event_mask(dpy, ret);
     bugle_log("xevent", "XCreateSimpleWindow", BUGLE_LOG_DEBUG, "exit");
     return ret;
@@ -610,15 +625,16 @@ Window XCreateSimpleWindow(Display *dpy, Window parent, int x, int y,
 
 int XSelectInput(Display *dpy, Window w, long event_mask)
 {
+    int ret;
+
     bugle_initialise_all();
+    if (!active) return (*real_XSelectInput)(dpy, w, event_mask);
     bugle_log("xevent", "XSelectInput", BUGLE_LOG_DEBUG, "enter");
-    if (active)
-    {
-        event_mask |= EVENT_MASK;
-        event_mask &= ~EVENT_UNMASK;
-    }
+    event_mask |= EVENT_MASK;
+    event_mask &= ~EVENT_UNMASK;
+    ret = (*real_XSelectInput)(dpy, w, event_mask);
     bugle_log("xevent", "XSelectInput", BUGLE_LOG_DEBUG, "exit");
-    return (*real_XSelectInput)(dpy, w, event_mask);
+    return ret;
 }
 
 void bugle_register_xevent_key(const xevent_key *key,

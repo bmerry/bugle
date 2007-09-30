@@ -61,21 +61,21 @@ other functions suffer only a small penalty. Using filter-sets that
 check for error after every function (including showerror and the
 debugger) adds a much bigger penalty.
 
-To give you an example, here are some rough numbers for Quake3 1.32 on
+To give you an example, here are some rough numbers for Quake3 1.32c on
 demo 'four'.
 
-without BuGLe: 668.8fps
-with no filter-sets: 654.fps
-with the logfps chain: 647.5fps
-with the showfps chain: 599.1fps
-with no filter-sets, but in the debugger: 124.2fps
-with tracing: 175.5fps
+without BuGLe: 683.7fps
+with no filter-sets: 668.4fps
+with the logfps chain: 661.8fps
+with the showfps chain: 616.7fps
+with no filter-sets, but in the debugger: 131.3fps
+with tracing: 181.6fps
 
 Tracing is particularly slow because it does file I/O, as well as a lot
 of text formatting.
 
 The overhead will also depend on the CPU/GPU balance. GPU-bound
-programs are less likely to be affected by overheads.
+programs will be less affected by overheads.
 
 Q. Why is there a mix of C and C++ code?
 A. The library itself is written entirely in C. This is mainly because

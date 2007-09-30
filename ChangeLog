@@ -1,5 +1,6 @@
 * Do a fast bypass on functions that are never intercepted
 * Updated the benchmarks in the README
+* Use a constructor attribute to call initialise_all
 
 0.0.20070718
 ------------

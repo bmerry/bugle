@@ -26,6 +26,10 @@
  * - thread-specific data
  * - run-onces
  * - unsigned long thread ID
+ *
+ * Apart from the functions modelled on pthreads, there are also some
+ * macros for functions that must be run like constructors, which uses
+ * __attribute__((constructor)) where available, and a run-once otherwise.
  */
 
 #ifndef BUGLE_COMMON_THREADS_H
@@ -174,5 +178,19 @@ static inline int bugle_thread_raise(int sig)
 }
 
 #endif /* THREADS == BUGLE_THREADS_SINGLE */
+
+/*** Higher-level stuff that doesn't depend on the threading implementation ***/
+
+/* This initialise mechanism is only valid for static constructor. Any code
+ * that depends on the initialisation being complete must call
+ * BUGLE_RUN_CONSTRUCTOR on the constructor first.
+ */
+#if BUGLE_GCC_HAVE_CONSTRUCTOR_ATTRIBUTE
+# define BUGLE_CONSTRUCTOR(fn) static void fn(void) BUGLE_GCC_CONSTRUCTOR_ATTRIBUTE
+# define BUGLE_RUN_CONSTRUCTOR(fn) (0)
+#else
+# define BUGLE_CONSTRUCTOR(fn) static bugle_thread_once_t fn ## _once = BUGLE_THREAD_ONCE_INIT
+# define BUGLE_RUN_CONSTRUCTOR(fn) (bugle_thread_once(&(fn ## _once), (fn)))
+#endif
 
 #endif /* !BUGLE_COMMON_THREADS_H */
