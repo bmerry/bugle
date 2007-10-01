@@ -15,6 +15,7 @@ gldb
 
 gldb-gui
 --------
+- write a manual
 - VBO decode
 - convert state names to UTF8
 - enabling and disabling filter sets, and setting variables
@@ -31,6 +32,9 @@ gldb-gui
 - test for all extensions before using them
 - trace window?
 - figure out why BadValue is sometimes generated on exit
+- statistics tab
+- state diffs
+  - diff to the default
 
 bugle
 -----
@@ -44,7 +48,9 @@ bugle
 - make segfault handling adhere better to POSIX
 - rewrite some things to use hash tables
 - autoconf test for GLENUM_IS_GLUINT
-- cap and extension overrides
+- cap overrides
+- call statistics
+- memory use statistics
 - better handling of texture proxies
 - fill in the rest of the state (image state, mainly)
 - handle GL shared and unshared objects correctly (queries unshared)
@@ -70,7 +76,10 @@ long term
 - internationalisation
 - OpenEXR export
 - Windows support
+- OpenGL 3.0 support
+- make gldb-gui tabs totally modular (separate shared objects)
 - write support for state
-- network debugging
+- debugging over the network
+- shader debugging
 - better movie capture
   - option of a separate thread, for parallel encoding
