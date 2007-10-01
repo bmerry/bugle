@@ -1,6 +1,7 @@
 * Do a fast bypass on functions that are never intercepted
 * Updated the benchmarks in the README
 * Use a constructor attribute to call initialise_all
+* Overload dlopen to better handle engines that dlopen("libGL.so")
 
 0.0.20070718
 ------------

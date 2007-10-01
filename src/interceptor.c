@@ -26,6 +26,7 @@
 #include "tracker.h"
 #include "xevent.h"
 #include "log.h"
+#include "dlopen.h"
 #include "common/hashtable.h"
 #include "common/safemem.h"
 #include "common/threads.h"
@@ -35,6 +36,8 @@
 #include <stdio.h>
 
 #define FILTERFILE "/.bugle/filters"
+
+static bool bypass_dlopen = false;
 
 extern FILE *yyin;
 extern int yyparse(void);
@@ -207,6 +210,7 @@ static void initialise_all(void)
     initialise_filters();
     initialise_core_filters();
     initialise_dump_tables();
+    initialise_dlopen();
     load_config();
     filter_compute_order();
     filter_set_bypass();

@@ -1,7 +1,7 @@
 ## Process with automake 1.7 or newer
 SUBDIRS = libltdl
 
-SYMBOLFLAGS = -export-symbols-regex '^(gl[A-Z]|budgie_|bugle_|gldb_|X)'
+SYMBOLFLAGS = -export-symbols-regex '^(gl[A-Z]|budgie_|bugle_|gldb_|X|dlopen)'
 
 # Utility programs, used for generating other files
 noinst_PROGRAMS = budgie/budgie
@@ -105,6 +105,7 @@ src_libbugle_la_SOURCES = \
 	src/glstate.c src/glstate.h \
 	src/glsl.c src/glsl.h \
 	src/interceptor.c \
+	src/dlopen.c src/dlopen.h \
 	src/filters.c src/filters.h \
 	src/trackcontext.c src/trackdisplaylist.c src/trackobjects.c \
 	src/trackbeginend.c src/trackextensions.c src/tracker.h \
@@ -189,7 +190,7 @@ check_PROGRAMS = \
 	tests/errors tests/threads1 tests/threads2 tests/queries \
 	tests/misc tests/setstate tests/triangles \
 	tests/pointers tests/objects tests/textest tests/shadertest \
-	tests/pbo tests/interpose
+	tests/pbo tests/interpose tests/dlopen
 dist_check_SCRIPTS = tests/errors.sh tests/misc.sh tests/queries.sh tests/setstate.sh tests/pointers.sh tests/triangles.sh tests/pbo.sh tests/comparelog.sh tests/comparelog.perl
 tests_errors_SOURCES = tests/errors.c
 tests_errors_LDADD = -lglut -lGLU $(GL_LIBS) $(X_PRE_LIBS) $(X_LIBS) -lX11 $(X_EXTRA_LIBS)
@@ -209,6 +210,8 @@ tests_misc_SOURCES = tests/misc.c
 tests_misc_LDADD = -lglut -lGLU $(GL_LIBS) $(X_PRE_LIBS) $(X_LIBS) -lX11 $(X_EXTRA_LIBS)
 tests_interpose_SOURCES = tests/interpose.c
 tests_interpose_LDADD = -lglut -lGLU $(GL_LIBS) $(X_PRE_LIBS) $(X_LIBS) -lX11 $(X_EXTRA_LIBS)
+tests_dlopen_SOURCES = tests/dlopen.c
+tests_dlopen_LDADD = $(GL_LIBS) $(X_PRE_LIBS) $(X_LIBS) -lX11 $(X_EXTRA_LIBS)
 tests_setstate_SOURCES = tests/setstate.c glee/GLee.c glee/GLee.h
 tests_setstate_LDADD = src/libbugle.la -lglut -lGLU $(GL_LIBS) $(X_PRE_LIBS) $(X_LIBS) -lX11 $(X_EXTRA_LIBS)
 tests_objects_SOURCES = tests/objects.c glee/GLee.c glee/GLee.h
@@ -217,7 +220,7 @@ tests_textest_SOURCES = tests/textest.c glee/GLee.c glee/GLee.h
 tests_textest_LDADD = -lglut -lGLU $(GL_LIBS) $(X_PRE_LIBS) $(X_LIBS) -lX11 $(X_EXTRA_LIBS)
 tests_shadertest_SOURCES = tests/shadertest.c glee/GLee.c glee/GLee.h
 tests_shadertest_LDADD = -lglut -lGLU $(GL_LIBS) $(X_PRE_LIBS) $(X_LIBS) -lX11 $(X_EXTRA_LIBS)
-TESTS = tests/errors.sh tests/misc.sh tests/queries.sh tests/setstate.sh tests/triangles.sh tests/pointers.sh tests/pbo.sh tests/interpose.sh
+TESTS = tests/errors.sh tests/misc.sh tests/queries.sh tests/setstate.sh tests/triangles.sh tests/pointers.sh tests/pbo.sh tests/interpose.sh tests/dlopen.sh
 TESTS_ENVIRONMENT = BUGLE_FILTERS=$(srcdir)/tests/filters BUGLE_STATISTICS=$(srcdir)/tests/statistics BUGLE_FILTER_DIR=filters/.libs BUGLE_LIB=src/.libs/libbugle.so
 
 # Extra files to distribute

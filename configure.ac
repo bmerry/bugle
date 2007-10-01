@@ -66,7 +66,7 @@ dnl Checks for header files
 AC_HEADER_STDC
 AC_HEADER_DIRENT
 AC_HEADER_STDBOOL
-AC_CHECK_HEADERS([sys/types.h stdlib.h stddef.h regex.h sys/select.h NVPerfSDK.h])
+AC_CHECK_HEADERS([sys/types.h stdlib.h stddef.h regex.h sys/select.h NVPerfSDK.h dlfcn.h])
 AC_CHECK_HEADERS([readline/readline.h readline/history.h], [], [HAVE_READLINE=0])
 AC_CHECK_HEADERS([pthread.h], [], [THREADS=BUGLE_THREADS_SINGLE])
 

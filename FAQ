@@ -28,31 +28,34 @@ flags, such as -L/path/to/bugle -Wl,-rpath -Wl,/path/to/bugle
 Q. How do I build a 32-bit version of BuGLe on an AMD64 system?
 A. The exact details will depend on your OS. Here is what I do on Gentoo:
 
-./configure --x-libraries=/emul/linux/x86/usr/lib CC="gcc -m32" CXX="g++ -m32" \
+./configure --x-libraries=/usr/lib32 CC="gcc -m32" CXX="g++ -m32" \
    --libdir=/usr/local/lib32 --bindir=/usr/local/bin32
 
 Gentoo also tries to be clever by putting in a libGL.la to make linking
 against OpenGL work better, but in some cases it causes libtool to pick
 up the 64-bit version of OpenGL. I work around this by copying
 /usr/lib/libGL.la into the compilation directory, and replacing all
-references to /usr/lib with /usr/lib32 and /usr/X11R6/lib with
-/usr/X11R6/lib32.
+references to /usr/lib with /usr/lib32.
 
 Q. How do you get SDL-based apps to use BuGLe?
-A. Run them as
+A. On GNU systems, they should work as is. On some systems, it may be
+necessary to run them as
 
 LD_PRELOAD=/path/to/libbugle.so SDL_VIDEO_GL_DRIVER=/path/to/libbugle.so tuxracer
 
 Q. How do you get Quake3 or Doom3 to use BuGLe?
-A. Run it as
+A. On GNU systems, they should work as is. On some systems, run it as
 
 LD_PRELOAD=/path/to/libbugle.so quake3 +set r_glDriver /path/to/libbugle.so
 
-(the LD_PRELOAD is new - without it the keyboard interception will not work)
 Note that Quake3 and Doom3 are 32-bit binaries, so if you have an AMD64
 system you will need to compile a 32-bit bugle, specify the correct
 paths to it and probably set LD_LIBRARY_PATH to cover 32-bit libraries
 (give paths to find libGL.so, libX11.so and libbugle.so to be safe).
+
+Q. How do you get QT-based apps to use BuGLe?
+A. On GNU systems, they should work as is. There is currently no known
+workaround for systems that don't support dlsym with the RTLD_NEXT flag.
 
 Q. What is the performance penalty?
 A. That depends on what you're doing with the library. If you only use
