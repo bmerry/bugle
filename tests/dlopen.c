@@ -4,7 +4,7 @@
 #include <GL/glx.h>
 
 static PFNGLXGETPROCADDRESSARBPROC dl_glXGetProcAddressARB;
-static PFNGLXCREATEWINDOWPROC glx_glXCreateWindow;
+static void (*glx_glEnd)(void);
 
 int main()
 {
@@ -22,9 +22,9 @@ int main()
         return 1;
     }
     dl_glXGetProcAddressARB = (PFNGLXGETPROCADDRESSARBPROC) dlsym(handle, "glXGetProcAddressARB");
-    glx_glXCreateWindow = dl_glXGetProcAddressARB("glXCreateWindow");
-    fprintf(ref, "trace\\.call: glXGetProcAddressARB\\(\"glXCreateWindow\"\\) = %p\n",
-            glx_glXCreateWindow);
+    glx_glEnd = dl_glXGetProcAddressARB("glEnd");
+    fprintf(ref, "trace\\.call: glXGetProcAddressARB\\(\"glEnd\"\\) = %p\n",
+            glx_glEnd);
     dlclose(handle);
 #endif
     return 0;
