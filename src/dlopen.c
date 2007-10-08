@@ -44,10 +44,14 @@ void initialise_dlopen()
 
 void *dlopen(const char *filename, int flag)
 {
-    if (bypass_dlopen && strcmp(filename, "libGL.so") == 0)
+    if (bypass_dlopen)
     {
-        filename = NULL;
-        flag = (flag & ~RTLD_GLOBAL) | RTLD_LOCAL;
+        if (strcmp(filename, "libGL.so") == 0
+            || strcmp(filename, "libGL.so.1") == 0)
+        {
+            filename = NULL;
+            flag = (flag & ~RTLD_GLOBAL) | RTLD_LOCAL;
+        }
     }
     if (!real_dlopen)
     {
