@@ -96,7 +96,7 @@ nodist_src_libbugleutils_la_SOURCES = \
 	src/gltokens.c src/glfuncs.c src/glfuncs.h \
 	src/glexts.c src/glexts.h
 src_libbugleutils_la_LIBADD = $(LTLIBOBJS) $(THREAD_LIBS)
-src_libbugleutils_la_LDFLAGS = -thread-safe -export-dynamic $(SYMBOLFLAGS) -version-info 2:0:0
+src_libbugleutils_la_LDFLAGS = -thread-safe -export-dynamic $(SYMBOLFLAGS) -version-info 3:0:1
 
 src_libbugle_la_SOURCES = \
 	src/confparse.y src/conflex.l src/conffile.h \
@@ -116,7 +116,7 @@ src_libbugle_la_SOURCES = \
 nodist_src_libbugle_la_SOURCES = \
 	src/utils.c src/utils.h src/lib.c src/lib.h
 src_libbugle_la_LIBADD = $(LIBLTDL) src/libbugleutils.la -lGL $(X_PRE_LIBS) $(X_LIBS) -lX11 $(X_EXTRA_LIBS) $(THREAD_LIBS)
-src_libbugle_la_LDFLAGS = -thread-safe -export-dynamic $(SYMBOLFLAGS) -version-info 2:0:0
+src_libbugle_la_LDFLAGS = -thread-safe -export-dynamic $(SYMBOLFLAGS) -version-info 3:0:1
 
 BUILT_SOURCES += src/lib.h src/types.h src/utils.h src/names.h src/confparse.h
 
@@ -191,7 +191,11 @@ check_PROGRAMS = \
 	tests/misc tests/setstate tests/triangles \
 	tests/pointers tests/objects tests/textest tests/shadertest \
 	tests/pbo tests/interpose tests/dlopen
-dist_check_SCRIPTS = tests/errors.sh tests/misc.sh tests/queries.sh tests/setstate.sh tests/pointers.sh tests/triangles.sh tests/pbo.sh tests/comparelog.sh tests/comparelog.perl
+dist_check_SCRIPTS = \
+        tests/errors.sh tests/misc.sh tests/queries.sh tests/setstate.sh \
+	tests/pointers.sh tests/triangles.sh tests/pbo.sh tests/comparelog.sh \
+	tests/interpose.sh tests/dlopen.sh \
+	tests/comparelog.perl
 tests_errors_SOURCES = tests/errors.c
 tests_errors_LDADD = -lglut -lGLU $(GL_LIBS) $(X_PRE_LIBS) $(X_LIBS) -lX11 $(X_EXTRA_LIBS)
 tests_pointers_SOURCES = tests/pointers.c glee/GLee.c glee/GLee.h

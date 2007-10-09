@@ -1,3 +1,15 @@
+0.0.20071009
+------------
+Interception of functions that are not filtered is now significantly
+faster (showfps will have far less overhead, for example, since it only
+acts on glXSwapBuffers).
+
+This release also changes the way startup is handled to better
+facilitate libraries like QT and SDL that dynamically load libGL.so.
+You no longer need to set an environment variable for SDL applications.
+Please let me know of any regressions, particularly on non-GNU
+systems.
+
 0.0.20070718
 ------------
 It is now possible to view high-level geometry shaders in the shader
