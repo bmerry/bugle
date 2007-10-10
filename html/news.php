@@ -23,6 +23,11 @@ else
     <a href="screenshots.php">[Screenshots]</a>
     </p>
     <h1>BuGLe News</h1>
+    <h2>Improved performance startup code (10/10/2007)</h2>
+    <p>I've done some work on reducing the overhead in bugle. The new release
+    will be significantly faster when intercepting only a few functions.</p>
+    <p>The startup code has also been reworked to handle programs that
+    dynamically load OpenGL using <code>dlopen</code>.
     <h2>Geometry shader viewer, forums (18/7/2007)</h2>
     <p>It is now possible to view high-level geometry shaders in the shader
     viewer. There is also a minor bug-fix for the framebuffer viewer when
