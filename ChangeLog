@@ -1,3 +1,5 @@
+* Fix segfault if dlopen is called with NULL filename (thanks Ilan Aelion)
+
 0.0.20071009
 ------------
 * Do a fast bypass on functions that are never intercepted

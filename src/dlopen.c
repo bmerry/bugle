@@ -44,7 +44,7 @@ void initialise_dlopen()
 
 void *dlopen(const char *filename, int flag)
 {
-    if (bypass_dlopen)
+    if (bypass_dlopen && filename != NULL)
     {
         if (strcmp(filename, "libGL.so") == 0
             || strcmp(filename, "libGL.so.1") == 0)
