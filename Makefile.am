@@ -1,5 +1,9 @@
 ## Process with automake 1.7 or newer
-SUBDIRS = libltdl
+if DO_DOCBOOK
+  SUBDIRS = libltdl doc/DocBook
+else
+  SUBDIRS = libltdl
+endif
 
 SYMBOLFLAGS = -export-symbols-regex '^(gl[A-Z]|budgie_|bugle_|gldb_|X|dlopen)'
 

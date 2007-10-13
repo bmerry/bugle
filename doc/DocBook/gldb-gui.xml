@@ -1,0 +1,233 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE article PUBLIC "-//OASIS//DTD DocBook XML V4.1.2//EN" "http://www.oasis-open.org/docbook/xml/4.1.2/docbookx.dtd" []>
+<article>
+    <articleinfo>
+        <title><command>gldb-gui</command> user manual</title>
+        <author>
+            <firstname>Bruce</firstname>
+            <surname>Merry</surname>
+            <affiliation>
+                <address><email>bmerry@users.sourceforge.net</email></address>
+            </affiliation>
+        </author>
+    </articleinfo>
+    <sect1 id="gldb-gui-intro">
+        <title>Introduction</title>
+        <para>Blah</para>
+    </sect1>
+    <sect1 id="gldb-gui-start">
+        <title>Getting started</title>
+        <para>To run <command>gldb-gui</command>, invoke it as:</para>
+        <cmdsynopsis>
+            <command>gldb-gui</command>
+            <arg choice="plain"><replaceable>your-program</replaceable></arg>
+            <arg rep="repeat"><replaceable>argument</replaceable></arg>
+        </cmdsynopsis>
+        <para>This will start <command>gldb-gui</command>, but will not start
+            your program. To do that, use 
+            <menuchoice>
+                <guimenu>Run</guimenu>
+                <guimenuitem>Run</guimenuitem>
+            </menuchoice>. Your program will automatically stop if it
+            generates an OpenGL error. You can also stop it manually by
+            selecting
+            <menuchoice>
+                <shortcut>
+                    <keycombo><keycap>Ctrl</keycap><keycap>Break</keycap></keycombo>
+                </shortcut>
+                <guimenu>Run</guimenu>
+                <guimenuitem>Stop</guimenuitem>
+            </menuchoice>. See <xref linkend="gldb-gui-breakpoints"/> for
+            information on stopping your program when it calls particular
+            OpenGL functions. You can continue your program with
+            <menuchoice>
+                <shortcut>
+                    <keycombo><keycap>Ctrl</keycap><keycap>F9</keycap></keycombo>
+                </shortcut>
+                <guimenu>Run</guimenu>
+                <guimenuitem>Continue</guimenuitem>
+            </menuchoice>,
+            continue until the next OpenGL function call with
+            <menuchoice>
+                <shortcut>
+                    <keycap>F8</keycap>
+                </shortcut>
+                <guimenu>Run</guimenu>
+                <guimenuitem>Step</guimenuitem>
+            </menuchoice>,
+            or kill it with
+            <menuchoice>
+                <shortcut>
+                    <keycombo><keycap>Ctrl</keycap><keycap>F2</keycap></keycombo>
+                </shortcut>
+                <guimenu>Run</guimenu>
+                <guimenuitem>Kill</guimenuitem>
+            </menuchoice>.
+        </para>
+        <tip>
+            <para>
+                Your program can only be stopped or killed when it calls an OpenGL
+                function. If your program updates its display only when necessary,
+                it may not stop immediately. You can often force it an update by
+                placing another window over your program and then removing it
+                again.
+            </para>
+        </tip>
+        <!-- FIXME: document the chain option -->
+        <para>
+            The interface is separated into a number of tabs. You can browse
+            them at any time, but the information will only be up-to-date when
+            your program is stopped. When your program is running, the status
+            bar will contain the text
+            <computeroutput>Running</computeroutput>.
+        </para>
+    </sect1>
+    <sect1 id="gldb-gui-state">
+        <title>Examining OpenGL state</title>
+        <para>
+            The initial tab is the <guilabel>State</guilabel> tab. It shows
+            all OpenGL state that is textual rather than an image. The state
+            is organised roughly more or less according to the state tables in
+            the OpenGL specification. <!-- FIXME: link this --> OpenGL has an
+            overwhelming amount of state, so some tools are provided to make
+            it easier to find answers:
+        </para>
+        <itemizedlist>
+            <listitem><para>To find a specific state, press
+                    <keycombo><keycap>Ctrl</keycap><keycap>F</keycap></keycombo>.
+                    This opens a text entry box where you can type in the name
+                    of the state.</para></listitem>
+            <listitem><para>To show only the states that
+                    changed since the last time the program was stopped, check
+                    the <guilabel>Show only modified</guilabel> checkbox.
+                    These states are also shown in bold.</para></listitem>
+            <listitem><para>To track only a small set of states, check the
+                    checkboxes next to those states, then check the
+                    <guilabel>Show only selected</guilabel>
+                    checkbox.</para></listitem>
+            <listitem><para>To save all the states to an XML file, click the
+                    <guibutton>Save</guibutton> button.</para></listitem>
+        </itemizedlist>
+        <sect2 id="gldb-gui-state-texture">
+            <title>Examining textures</title>
+            <para>
+                The <guilabel>Texture</guilabel> tab shows OpenGL textures.
+                The <guilabel>Texture</guilabel> combobox allows a texture to
+                be selected, with the currently bound texture of each type
+                shown in bold. For cubemap textures, the
+                <guilabel>Face</guilabel> combobox allows one of the sides to
+                be examined in detail; the default is to show two views of the
+                cube itself. For 3D textures, a slice may be selected with the
+                <guilabel>Z</guilabel> combobox.
+            </para>
+            <para>The apparent size of the texture is controlled through the
+                <guilabel>Zoom</guilabel> combobox. <guilabel>Fit</guilabel>
+                makes the texture as large as possible while still fitting the
+                window. The other settings set a ratio between texels and
+                screen pixels. The toolbar also has buttons to zoom in, zoom
+                out, set a 1:1 ratio, or choose the <guilabel>Fit</guilabel>
+                option.
+            </para>
+            <para>The appearance of the texture may be controlled with the
+                <guilabel>Mag filter</guilabel> and <guilabel>Min
+                    filter</guilabel> comboboxes. These settings correspond to
+                the <constant>GL_TEXTURE_MAG_FILTER</constant> and
+                <constant>GL_TEXTURE_MIN_FILTER</constant> in OpenGL. However,
+                these settings are only used for displaying the texture, and
+                do not affect your program. The <guilabel>Level</guilabel>
+                combobox makes it possible to examine specific texture levels.
+                The default (<guilabel>Auto</guilabel>) uses mipmapping as
+                defined by <guilabel>Min filter</guilabel>.
+            </para>
+            <para>In some cases, there may not be enough contrast in the
+                texture to see any details (this is particularly true of
+                textures that encode non-graphical information, such as lookup
+                tables). Checking <guilabel>Remap range</guilabel> will scale
+                the colour range up (or down) to cover the whole [0, 1] range.
+                To perform more detailed image analysis, use the
+                <guibutton>Copy</guibutton> button <!-- FIXME: image --> to
+                copy the texture to the clipboard, and paste it into an
+                external application such as the GIMP.
+            </para>
+            <note><para>The copy feature is only available when compiled with
+                    GTK+ 2.6 or later.</para></note>
+        </sect2>
+        <sect2 id="gldb-gui-state-framebuffer">
+            <title>Examining framebuffers</title>
+            <para>Framebuffers may be viewed in much the same way as textures
+                (see <xref linkend="gldb-gui-state-texture"/>). The
+                <guilabel>Framebuffer</guilabel> may be set to either the
+                current window-system framebuffer, or to a framebuffer
+                created with <function>glCreateFramebufferEXT</function>.
+                Pbuffers that are no the current drawable are not supported.
+            </para>
+            <para>Within a framebuffer, <guilabel>Buffer</guilabel> may be set
+                to the front buffer, back buffer, depth buffer, stencil buffer
+                or an auxiliary buffer, depending on which buffers actually
+                exist.
+            </para>
+        </sect2>
+        <sect2 id="gldb-gui-state-shaders">
+            <title>Examining shaders</title>
+            <para>
+                The <guilabel>Shaders</guilabel> tab shows the source of
+                low-level ARB shaders and high-level GLSL shaders.
+                Vendor-specific shader extensions are not supported. The
+                current shader of each type is shown in bold in the combobox.
+            </para>
+            <para>Further information about the shader may be found on the
+                <guilabel>State</guilabel> tab.
+            </para>
+        </sect2>
+    </sect1>
+    <sect1 id="gldb-gui-breakpoints">
+        <title>Setting breakpoints</title>
+        <para>The <guilabel>Breakpoints</guilabel> allows breakpoints to be
+            set on specific OpenGL functions. Immediately before calling the
+            function, your program will be stopped and the status bar will
+            indicate which function caused the breakpoint.
+        </para>
+        <para>Click <guibutton>Add</guibutton> to set a new breakpoint, and
+            enter the name of the function into the dialog box that appears.
+            To remove a function from the list, click
+            <guibutton>Remove</guibutton>. If you are likely to want to break
+            on that function later, it is easier to deselect the
+            <guilabel>Enabled</guilabel> checkbox for the function, and select
+            it again later.
+        </para>
+        <tip><para>Keep in mind that a function may have multiple aliases (for
+                example, <function>glBeginQuery</function> and
+                <function>glBeginQueryARB</function>), and you need to select
+                the right one.</para></tip>
+        <para>By default, <command>gldb-gui</command> will stop when a
+            function generates an OpenGL error. This can be disabled by
+            deselecting <guilabel>Break on errors</guilabel>. Note that
+            function breakpoints occur before the function is called, but
+            errors occur afterwards, so <command>gldb-gui</command> may stop
+            twice for the same function.
+        </para>
+    </sect1>
+    <sect1 id="gldb-gui-gdb">
+        <title>Interacting with gdb</title>
+        <para>When your program is stopped, the <guilabel>Backtrace</guilabel>
+            tab shows the current call stack of your program, as
+            <command>gdb</command> would. The first few frames (usually those
+            up to <function>run_filters</function>) will be internal to
+            <application>bugle</application>.
+        </para>
+        <para>To further examine the state of your program, select
+            <menuchoice>
+                <guimenu>Run</guimenu>
+                <guimenuitem>Attach GDB</guimenuitem>
+            </menuchoice>. Provided that you have <command>xterm</command> and
+            <command>gdb</command> installed, this will open a terminal window
+            running <command>gdb</command>, already attached to your program.
+            Once you have finished, you may either quit <command>gdb</command>
+            and detach it from your program, or keep it open and
+            <userinput>continue</userinput> in <command>gdb</command>.
+        </para>
+        <note><para>Your program needs to be running from the point of view of
+                <command>gdb</command> for <command>gldb-gui</command> to
+                function correctly.</para></note>
+    </sect1>
+</article>

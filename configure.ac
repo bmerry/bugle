@@ -109,6 +109,14 @@ LIBS="$real_libs"
 
 dnl Checks for system services
 AC_PATH_XTRA
+DOCBOOK=0
+BUGLE_DOCBOOK_XHTML_STYLESHEET([DOCBOOK=1], [DOCBOOK=0])
+AC_ARG_VAR([XSLTPROC], [Path to xsltproc])
+AC_PATH_PROG([XSLTPROC], [xsltproc])
+if test "x$XSLTPROC" = "x"
+then
+  DOCBOOK=0
+fi
 
 dnl Set up some extra stuff
 
@@ -155,8 +163,16 @@ test $THREADS != BUGLE_THREADS_SINGLE || THREAD_LIBS=""
 AC_SUBST(THREAD_LIBS)
 AC_DEFINE_UNQUOTED(THREADS, $THREADS, [threading model])
 
+AC_ARG_WITH([docbook], AC_HELP_STRING([--with-docbook], [Compile DocBook documentation [[auto]]]), [
+case $withval in
+  yes) DOCBOOK=1 ;;
+  no)  DOCBOOK=0 ;;
+  *) AC_MSG_ERROR([--with-docbook must be either yes or no]) ;;
+esac], [])
+AM_CONDITIONAL(DO_DOCBOOK, test x$DOCBOOK = x1)
+
 dnl Write out files
-AC_CONFIG_FILES([Makefile gl.bc])
+AC_CONFIG_FILES([Makefile gl.bc doc/DocBook/Makefile doc/DocBook/xhtml-single.xsl])
 AC_OUTPUT
 
 dnl Display configuration
@@ -184,6 +200,10 @@ esac
 case $ENABLE_XEVENT in
   0) echo "        X event interception: no" ;;
   1) echo "        X event interception: yes" ;;
+esac
+case $DOCBOOK in
+  0) echo "        DocBook documentation: no" ;;
+  1) echo "        DocBook documentation: yes" ;;
 esac
 if [[ $HAVE_GTK = 1 ]] && [[ $HAVE_GTK2_6 = 0 ]]
 then

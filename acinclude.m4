@@ -96,3 +96,36 @@ static void constructor(void)
            AC_DEFINE([BUGLE_GCC_CONSTRUCTOR_ATTRIBUTE], [], [function declaration suffix for constructors])
          fi
 ])
+
+# Finds the XSL stylesheet for DocBook -> XHTML
+AC_DEFUN([BUGLE_DOCBOOK_XHTML_STYLESHEET],
+         [AC_CACHE_CHECK([for DocBook XHTML stylesheet], bugle_cv_docbook_xsl_stylesheet,
+                         [
+bugle_cv_docbook_xsl_stylesheet=''
+# This list is taken from mplayer
+for _try_docbook_xsl in \
+  /usr/share/sgml/docbook/stylesheet/xsl/nwalsh/html/docbook.xsl \
+  /usr/share/sgml/docbook/yelp/docbook/html/docbook.xsl \
+  /usr/local/share/sgml/docbook/stylesheet/xsl/nwalsh/html/docbook.xsl \
+  /usr/local/share/sgml/docbook/yelp/docbook/html/docbook.xsl \
+  /usr/share/docbook-xsl/html/docbook.xsl \
+  /usr/share/sgml/docbook/xsl-stylesheets*/html/docbook.xsl \
+  /usr/share/xml/docbook/stylesheet/nwalsh/current/html/docbook.xsl \
+  /opt/local/share/xsl/docbook-xsl/html/docbook.xsl
+do
+  if test -f "$_try_docbook_xsl"
+  then
+    bugle_cv_docbook_xsl_stylesheet=$_try_docbook_xsl
+    break
+  fi
+done
+])
+if test "x$bugle_cv_docbook_xsl_stylesheet" != "x"
+then
+  DOCBOOK_XHTML_STYLESHEET="$bugle_cv_docbook_xsl_stylesheet"
+  AC_SUBST(DOCBOOK_XHTML_STYLESHEET)
+  $1
+else
+  $2
+fi
+])

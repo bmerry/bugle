@@ -1,4 +1,5 @@
 * Fix segfault if dlopen is called with NULL filename (thanks Ilan Aelion)
+* Add DocBook documentation on gldb-gui
 
 0.0.20071009
 ------------
