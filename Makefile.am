@@ -258,46 +258,57 @@ CLEANFILES = \
 	tests/.libs/pbo tests/.libs/lt-pbo \
 	tests/.libs/objects
 MAINTAINERCLEANFILES = \
-	doc/DocBook/gldb-gui.html \
-	doc/man1/gldb-gui.1 \
-	doc/man3/bugle.3
+	$(DOCBOOK_MAN_MANPAGES) \
+	$(DOCBOOK_MAN_HTML) \
+	doc/DocBook/man/man.stamp \
+	doc/DocBook/man/html.stamp
 DISTCLEANFILES = tests/*.log
 
-# Docs
-EXTRA_DIST += \
-	doc/DocBook/gldb-gui.xml \
-	doc/DocBook/xhtml-single.xsl \
-	doc/DocBook/xhtml-common.xsl
-dist_man_MANS += \
+# man pages, sources
+DOCBOOK_MAN_SOURCES = \
+	doc/DocBook/man/bugle.xml \
+	doc/DocBook/man/gldb-gui.xml \
+	doc/DocBook/man/manpages.xml
+DOCBOOK_MAN_STYLES = \
+	doc/DocBook/man/xhtml-man.xsl \
+	doc/DocBook/man/manpages.xsl
+EXTRA_DIST += $(DOCBOOK_MAN_SOURCES) $(DOCBOOK_MAN_STYLES)
+
+# man pages, man format
+DOCBOOK_MAN_MANPAGES = \
 	doc/man1/gldb-gui.1 \
 	doc/man3/bugle.3
+$(DOCBOOK_MAN_MANPAGES): doc/DocBook/man/man.stamp
+	@:
+doc/DocBook/man/man.stamp: $(DOCBOOK_MAN_SOURCES) doc/DocBook/man/manpages.xsl
+	$(XSLTPROC) $(srcdir)/doc/DocBook/man/manpages.xsl $(srcdir)/doc/DocBook/man/manpages.xml
+	$(mkdir_p) doc/DocBook/man
+	echo timestamp > doc/DocBook/man/man.stamp
+dist_man_MANS += $(DOCBOOK_MAN_PAGES)
+EXTRA_DIST += doc/DocBook/man/man.stamp
 
-if DO_DOCBOOK
-# HTML
+# man pages, HTML format
+DOCBOOK_MAN_HTML = doc/html/man/index.html \
+	doc/html/man/gldb-gui.1.html \
+	doc/html/man/bugle.3.html
+$(DOCBOOK_MAN_HTML): doc/DocBook/man/html.stamp
+	@:
+doc/DocBook/man/html.stamp: $(DOCBOOK_MAN_SOURCES) doc/DocBook/man/xhtml-man.xsl
+	$(XSLTPROC) $(srcdir)/doc/DocBook/man/xhtml-man.xsl $(srcdir)/doc/DocBook/man/manpages.xml
+	$(mkdir_p) doc/DocBook/man
+	echo timestamp > doc/DocBook/man/html.stamp
 htmldocdir = $(htmldir)/html
+htmlmandir = $(htmldir)/html/man
 htmlimagesdir = $(htmldir)/html/images
-dist_htmldoc_DATA = \
-	doc/DocBook/gldb-gui.html doc/DocBook/bugle.css
+dist_htmldoc_DATA = doc/DocBook/bugle.css
+dist_htmlman_DATA = $(DOCBOOK_MAN_HTML)
 dist_htmlimages_DATA = \
 	doc/DocBook/images/gtk-copy.png \
 	doc/DocBook/images/gtk-zoom-in.png \
 	doc/DocBook/images/gtk-zoom-out.png \
 	doc/DocBook/images/gtk-zoom-fit.png \
 	doc/DocBook/images/gtk-zoom-100.png
-DOCBOOK_XHTML_HELPERS = doc/DocBook/xhtml-single.xsl doc/DocBook/xhtml-common.xsl
-doc/DocBook/gldb-gui.html: doc/DocBook/gldb-gui.xml $(DOCBOOK_XHTML_HELPERS)
-	$(mkdir_p) doc/DocBook/
-	$(XSLTPROC) -o doc/DocBook/gldb-gui.html $(srcdir)/doc/DocBook/xhtml-single.xsl $(srcdir)/doc/DocBook/gldb-gui.xml
-
-# man pages
-DOCBOOK_MAN_STYLESHEET = http://docbook.sourceforge.net/release/xsl/current/manpages/docbook.xsl
-doc/man1/gldb-gui.1: doc/DocBook/gldb-gui.xml
-	$(mkdir_p) doc/man1
-	$(XSLTPROC) -o doc/man1/gldb-gui.1 $(DOCBOOK_MAN_STYLESHEET) $(srcdir)/doc/DocBook/gldb-gui.xml
-doc/man3/bugle.3: doc/DocBook/bugle.xml
-	$(mkdir_p) doc/man3
-	$(XSLTPROC) -o doc/man3/bugle.3 $(DOCBOOK_MAN_STYLESHEET) $(srcdir)/doc/DocBook/bugle.xml
-endif
+EXTRA_DIST += doc/DocBook/man/html.stamp
 
 libtool: @LIBTOOL_DEPS@
 	$(SHELL) ./config.status --recheck
