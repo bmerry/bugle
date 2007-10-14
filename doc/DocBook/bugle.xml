@@ -1,0 +1,260 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE refentry PUBLIC "-//OASIS//DTD DocBook XML V4.2//EN" "http://www.oasis-open.org/docbook/xml/4.2/docbookx.dtd" [
+<!ENTITY mp-gldb-gui "<citerefentry><refentrytitle>gldb-gui</refentrytitle><manvolnum>1</manvolnum></citerefentry>">
+<!ENTITY mp-camera "<citerefentry><refentrytitle>bugle-camera</refentrytitle><manvolnum>7</manvolnum></citerefentry>">
+<!ENTITY mp-checks "<citerefentry><refentrytitle>bugle-checks</refentrytitle><manvolnum>7</manvolnum></citerefentry>">
+<!ENTITY mp-eps "<citerefentry><refentrytitle>bugle-eps</refentrytitle><manvolnum>7</manvolnum></citerefentry>">
+<!ENTITY mp-error "<citerefentry><refentrytitle>bugle-error</refentrytitle><manvolnum>7</manvolnum></citerefentry>">
+<!ENTITY mp-frontbuffer "<citerefentry><refentrytitle>bugle-frontbuffer</refentrytitle><manvolnum>7</manvolnum></citerefentry>">
+<!ENTITY mp-log "<citerefentry><refentrytitle>bugle-frontbuffer</refentrytitle><manvolnum>7</manvolnum></citerefentry>">
+<!ENTITY mp-screenshot "<citerefentry><refentrytitle>bugle-screenshot</refentrytitle><manvolnum>7</manvolnum></citerefentry>">
+<!ENTITY mp-showerror "<citerefentry><refentrytitle>bugle-showerror</refentrytitle><manvolnum>7</manvolnum></citerefentry>">
+<!ENTITY mp-showextensions "<citerefentry><refentrytitle>bugle-showextensions</refentrytitle><manvolnum>7</manvolnum></citerefentry>">
+<!ENTITY mp-showstats "<citerefentry><refentrytitle>bugle-showstats</refentrytitle><manvolnum>7</manvolnum></citerefentry>">
+<!ENTITY mp-stats "<citerefentry><refentrytitle>bugle-stats</refentrytitle><manvolnum>7</manvolnum></citerefentry>">
+<!ENTITY mp-trace "<citerefentry><refentrytitle>bugle-trace</refentrytitle><manvolnum>7</manvolnum></citerefentry>">
+<!ENTITY mp-unwindstack "<citerefentry><refentrytitle>bugle-unwindstack</refentrytitle><manvolnum>7</manvolnum></citerefentry>">
+<!ENTITY mp-wireframe "<citerefentry><refentrytitle>bugle-wireframe</refentrytitle><manvolnum>7</manvolnum></citerefentry>">
+]>
+<refentry>
+    <refentryinfo>
+        <date>October 2007</date>
+        <productname>BUGLE</productname>
+    </refentryinfo>
+    <refmeta>
+        <refentrytitle>bugle</refentrytitle>
+        <manvolnum>3</manvolnum>
+        <refmiscinfo class="manual">User manual</refmiscinfo>
+    </refmeta>
+
+    <refnamediv>
+        <refname>bugle</refname>
+        <refpurpose>An OpenGL debugging library</refpurpose>
+    </refnamediv>
+
+    <refsynopsisdiv>
+        <cmdsynopsis>
+            <command><envar>BUGLE_CHAIN</envar>=<replaceable>chain</replaceable> <envar>LD_PRELOAD</envar>=<filename>libbugle.so</filename> <replaceable>program</replaceable></command> <arg rep="repeat"><replaceable>argument</replaceable></arg>
+        </cmdsynopsis>
+    </refsynopsisdiv>
+
+    <refsect1>
+        <title>Description</title>
+        <para>
+            <application>bugle</application> is a library that intercepts
+            calls to OpenGL functions, in much the same way that many memory
+            debuggers do. Calls are run through a number of user-specified
+            <firstterm>filter-sets</firstterm>, including one that invokes the
+            original call.
+        </para>
+        <para>
+            In addition, &mp-gldb-gui; allows an OpenGL application to be
+            debugged by detecting OpenGL errors and showing OpenGL state. For
+            common usage this may be the most convenient way to use
+            <application>bugle</application>.
+        </para>
+        <para>
+            The <envar>BUGLE_CHAIN</envar> environment variable specifies a
+            <firstterm>filter-set chain</firstterm>, which is simply a
+            collection of filter-sets with options. Chains are
+            defined in the configuration file,
+            <filename>$HOME/.bugle/filters</filename> (see <xref
+                linkend="bugle-configuration"/>).
+        </para>
+    </refsect1>
+
+    <refsect1 id="bugle-configuration">
+        <title>Configuration</title>
+        <para>
+            You can create filter-set chains in the file
+            <filename>$HOME/.bugle/filters</filename>. It is possible to use
+            <application>bugle</application> without creating this file, but
+            it will simply pass all calls straight through to the real OpenGL
+            library. This is not particularly useful unless you are using
+            &mp-gldb-gui;. A sample file is available in
+            <filename>doc/examples/filters</filename> in the source
+            distribution.
+        </para>
+        <para>
+            The file is text-based. Comments begin with a <literal>#</literal>
+            and continue to the end of the line. Strings should be quoted with
+            double-quotes, and backslash acts as an escape character in the
+            usual way (including escaping of newlines). Other white-space is
+            ignored.
+
+            Each chain is specified as
+            <programlisting>
+chain <replaceable>chain</replaceable>
+{
+    <replaceable>filter-set</replaceable>
+    <replaceable>filter-set</replaceable>
+    <replaceable>filter-set</replaceable>
+    ...
+}</programlisting>
+            Filter-sets are specified as
+            <programlisting>
+filterset <replaceable>filterset</replaceable> <optional><replaceable>key</replaceable> <optional>inactive</optional></optional>
+{
+    <replaceable>option</replaceable> <quote><replaceable>value</replaceable></quote>
+    <replaceable>option</replaceable> <quote><replaceable>value</replaceable></quote>
+    <replaceable>option</replaceable> <quote><replaceable>value</replaceable></quote>
+    ...
+}
+</programlisting>
+        </para>
+        <para>
+            The <replaceable>key</replaceable> may be used to toggle the
+            filter-set at run-time (not all filter-sets support this yet, and
+            those that do will not always work). Key names are based on X
+            KeySyms (see <filename>&lt;X11/keysymdefs.h&gt;</filename> for a
+            list). They may also be prefixed with <literal>C-</literal>,
+            <literal>A-</literal> or <literal>S-</literal> to indicate that
+            the key must be combined with <keycap>Ctrl</keycap>,
+            <keycap>Alt</keycap> or <keycap>Shift</keycap> respectively. Some
+            filter-sets have options which are keys; these take the same
+            format.
+        </para>
+        <para>
+            If you don't need to specify any options, it is also legal to omit
+            the braces.  Boolean options may be specified as
+            <literal>yes</literal>/<literal>no</literal>, as
+            <literal>true</literal>/<literal>false</literal> or as
+            <literal>1</literal>/<literal>0</literal>.
+        </para>
+    </refsect1>
+
+    <refsect1 id="bugle-filtersets">
+        <title>Filter-sets</title>
+        <para>
+            Each filter-set is documented in its own manual page e.g., the
+            <command>trace</command> filter-set is documented in
+            <citerefentry>
+                <refentrytitle>bugle-trace</refentrytitle>
+                <manvolnum>7</manvolnum>
+            </citerefentry>.
+            You can get a brief list of available filter-sets and their
+            options by specifying an undefined chain e.g.,
+            <screen><prompt>$</prompt> <envar>BUGLE_CHAIN</envar>=help <envar>LD_PRELOAD</envar>=<filename>libbugle.so</filename> <command>glxgears</command></screen>
+        </para>
+    </refsect1>
+
+    <refsect1 id="bugle-environment">
+        <title>Environment</title>
+        <variablelist>
+            <varlistentry>
+                <term><envar>BUGLE_CHAIN</envar></term>
+                <listitem><para>
+                        Specifies the filter-set chain to use. If absent, the
+                        first chain in the configuration file is used.
+                </para></listitem>
+            </varlistentry>
+            <varlistentry>
+                <term><envar>BUGLE_FILTERS</envar></term>
+                <listitem><para>
+                        If set, specifies an alternative configuration file to
+                        use instead of
+                        <filename>$HOME/.bugle/filters</filename>.
+                </para></listitem>
+            </varlistentry>
+            <varlistentry>
+                <term><envar>BUGLE_FILTER_DIR</envar></term>
+                <listitem><para>
+                        If set, specifies an alternative directory in which to
+                        find modules. This option is currently used by the
+                        test suite, and is not intended for general use.
+                </para></listitem>
+            </varlistentry>
+            <varlistentry>
+                <term><envar>LD_PRELOAD</envar></term>
+                <listitem><para>
+                        Tells the linker to load
+                        <application>bugle</application>.
+                </para></listitem>
+            </varlistentry>
+        </variablelist>
+    </refsect1>
+
+    <refsect1 id="bugle-files">
+        <title>Files</title>
+        <variablelist>
+            <varlistentry>
+                <term><filename>$HOME/.bugle/filters</filename></term>
+                <listitem><para>
+                        Lists the possible filter-set chains. See <xref
+                            linkend="bugle-configuration"/> for a description
+                        of the format.
+                </para></listitem>
+            </varlistentry>
+            <varlistentry>
+                <term><filename>$HOME/.bugle/statistics</filename></term>
+                <listitem><para>
+                        Definitions of statistics for the
+                        <citerefentry>
+                            <refentrytitle>showstats</refentrytitle>
+                            <manvolnum>3</manvolnum>
+                        </citerefentry>
+                        and
+                        <citerefentry>
+                            <refentrytitle>logstats</refentrytitle>
+                            <manvolnum>3</manvolnum>
+                        </citerefentry>
+                        filter-sets.
+                </para></listitem>
+            </varlistentry>
+        </variablelist>
+    </refsect1>
+
+    <refsect1 id="bugle-bugs">
+        <title>Bugs</title>
+        <itemizedlist>
+            <listitem><para>
+                    OpenGL color-index mode is not well supported.
+            </para></listitem>
+            <listitem><para>
+                    Multi-threaded applications that call the GL from more
+                    than one thread will break in various ways. The debugger
+                    filter-set is particularly fragile.
+            </para></listitem>
+            <listitem><para>
+                    Display lists may cause things to go wrong, depending on
+                    how they are created and what calls go into them.
+            </para></listitem>
+        </itemizedlist>
+        <para>
+            See the pages for individual filter-sets for specific bugs
+            affecting each.
+        </para>
+    </refsect1>
+
+    <refsect1 id="bugle-author">
+        <title>Author</title>
+        <para><application>bugle</application>
+            is written and maintained by
+            <author>
+                <firstname>Bruce</firstname>
+                <surname>Merry</surname>
+                <email>bmerry@users.sourceforge.net</email>
+            </author>.
+        </para>
+    </refsect1>
+    <refsect1>
+        <title>See also</title>
+        <itemizedlist>
+            <listitem><para>&mp-gldb-gui;</para></listitem>
+            <listitem><para>&mp-camera;</para></listitem>
+            <listitem><para>&mp-checks;</para></listitem>
+            <listitem><para>&mp-eps;</para></listitem>
+            <listitem><para>&mp-error;</para></listitem>
+            <listitem><para>&mp-frontbuffer;</para></listitem>
+            <listitem><para>&mp-log;</para></listitem>
+            <listitem><para>&mp-screenshot;</para></listitem>
+            <listitem><para>&mp-showerror;</para></listitem>
+            <listitem><para>&mp-showextensions;</para></listitem>
+            <listitem><para>&mp-showstats;</para></listitem>
+            <listitem><para>&mp-stats;</para></listitem>
+            <listitem><para>&mp-trace;</para></listitem>
+            <listitem><para>&mp-unwindstack;</para></listitem>
+            <listitem><para>&mp-wireframe;</para></listitem>
+        </itemizedlist>
+    </refsect1>
+</refentry>

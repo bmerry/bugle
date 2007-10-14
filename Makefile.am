@@ -258,7 +258,9 @@ CLEANFILES = \
 	tests/.libs/pbo tests/.libs/lt-pbo \
 	tests/.libs/objects
 MAINTAINERCLEANFILES = \
-	doc/DocBook/gldb-gui.html
+	doc/DocBook/gldb-gui.html \
+	doc/man1/gldb-gui.1 \
+	doc/man3/bugle.3
 DISTCLEANFILES = tests/*.log
 
 # Docs
@@ -266,7 +268,12 @@ EXTRA_DIST += \
 	doc/DocBook/gldb-gui.xml \
 	doc/DocBook/xhtml-single.xsl \
 	doc/DocBook/xhtml-common.xsl
+dist_man_MANS += \
+	doc/man1/gldb-gui.1 \
+	doc/man3/bugle.3
+
 if DO_DOCBOOK
+# HTML
 htmldocdir = $(htmldir)/html
 htmlimagesdir = $(htmldir)/html/images
 dist_htmldoc_DATA = \
@@ -277,10 +284,19 @@ dist_htmlimages_DATA = \
 	doc/DocBook/images/gtk-zoom-out.png \
 	doc/DocBook/images/gtk-zoom-fit.png \
 	doc/DocBook/images/gtk-zoom-100.png
-DOCBOOK_HELPERS = doc/DocBook/xhtml-single.xsl doc/DocBook/xhtml-common.xsl
-doc/DocBook/gldb-gui.html: doc/DocBook/gldb-gui.xml $(DOCBOOK_HELPERS)
+DOCBOOK_XHTML_HELPERS = doc/DocBook/xhtml-single.xsl doc/DocBook/xhtml-common.xsl
+doc/DocBook/gldb-gui.html: doc/DocBook/gldb-gui.xml $(DOCBOOK_XHTML_HELPERS)
 	$(mkdir_p) doc/DocBook/
 	$(XSLTPROC) -o doc/DocBook/gldb-gui.html $(srcdir)/doc/DocBook/xhtml-single.xsl $(srcdir)/doc/DocBook/gldb-gui.xml
+
+# man pages
+DOCBOOK_MAN_STYLESHEET = http://docbook.sourceforge.net/release/xsl/current/manpages/docbook.xsl
+doc/man1/gldb-gui.1: doc/DocBook/gldb-gui.xml
+	$(mkdir_p) doc/man1
+	$(XSLTPROC) -o doc/man1/gldb-gui.1 $(DOCBOOK_MAN_STYLESHEET) $(srcdir)/doc/DocBook/gldb-gui.xml
+doc/man3/bugle.3: doc/DocBook/bugle.xml
+	$(mkdir_p) doc/man3
+	$(XSLTPROC) -o doc/man3/bugle.3 $(DOCBOOK_MAN_STYLESHEET) $(srcdir)/doc/DocBook/bugle.xml
 endif
 
 libtool: @LIBTOOL_DEPS@

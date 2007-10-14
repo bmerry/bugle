@@ -1,34 +1,33 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE article PUBLIC "-//OASIS//DTD DocBook XML V4.1.2//EN" "http://www.oasis-open.org/docbook/xml/4.1.2/docbookx.dtd" []>
-<article>
-    <articleinfo>
-        <title><command>gldb-gui</command> user manual</title>
-        <author>
-            <firstname>Bruce</firstname>
-            <surname>Merry</surname>
-            <affiliation>
-                <address><email>bmerry@users.sourceforge.net</email></address>
-            </affiliation>
-        </author>
-        <copyright>
-            <year>2007</year>
-            <holder>Bruce Merry</holder>
-        </copyright>
-    </articleinfo>
-    <sect1 id="gldb-gui-intro">
-        <title>Introduction</title>
-        <para>Blah</para>
-    </sect1>
-    <sect1 id="gldb-gui-start">
-        <title>Getting started</title>
-        <para>To run <command>gldb-gui</command>, invoke it as:</para>
+<!DOCTYPE refentry PUBLIC "-//OASIS//DTD DocBook XML V4.1.2//EN" "http://www.oasis-open.org/docbook/xml/4.1.2/docbookx.dtd" []>
+<refentry>
+    <refentryinfo>
+        <date>October 2007</date>
+        <productname>BUGLE</productname>
+    </refentryinfo>
+    <refmeta>
+        <refentrytitle>gldb-gui</refentrytitle>
+        <manvolnum>1</manvolnum>
+        <refmiscinfo class="manual">User manual</refmiscinfo>
+    </refmeta>
+
+    <refnamediv>
+        <refname>gldb-gui</refname>
+        <refpurpose>graphical OpenGL debugger</refpurpose>
+    </refnamediv>
+
+    <refsynopsisdiv>
         <cmdsynopsis>
             <command>gldb-gui</command>
             <arg choice="plain"><replaceable>your-program</replaceable></arg>
             <arg rep="repeat"><replaceable>argument</replaceable></arg>
         </cmdsynopsis>
-        <para>This will start <command>gldb-gui</command>, but will not start
-            your program. To do that, use 
+    </refsynopsisdiv>
+
+    <refsect1 id="gldb-gui-start">
+        <title>Getting started</title>
+        <para>The command above will start <command>gldb-gui</command>, but
+            will not start your program. To do that, use 
             <menuchoice>
                 <guimenu>Run</guimenu>
                 <guimenuitem>Run</guimenuitem>
@@ -85,8 +84,8 @@
             bar will contain the text
             <computeroutput>Running</computeroutput>.
         </para>
-    </sect1>
-    <sect1 id="gldb-gui-state">
+    </refsect1>
+    <refsect1 id="gldb-gui-state">
         <title>Examining OpenGL state</title>
         <para>
             The initial tab is the <guilabel>State</guilabel> tab. It shows
@@ -114,7 +113,7 @@
             <listitem><para>To save all the states to an XML file, click the
                     <guibutton>Save</guibutton> button.</para></listitem>
         </itemizedlist>
-        <sect2 id="gldb-gui-state-texture">
+        <refsect2 id="gldb-gui-state-texture">
             <title>Examining textures</title>
             <para>
                 The <guilabel>Texture</guilabel> tab shows OpenGL textures.
@@ -219,8 +218,8 @@
             </para>
             <note><para>The copy feature is only available when compiled with
                     GTK+ 2.6 or later.</para></note>
-        </sect2>
-        <sect2 id="gldb-gui-state-framebuffer">
+        </refsect2>
+        <refsect2 id="gldb-gui-state-framebuffer">
             <title>Examining framebuffers</title>
             <para>Framebuffers may be viewed in much the same way as textures
                 (see <xref linkend="gldb-gui-state-texture"/>). The
@@ -234,8 +233,8 @@
                 or an auxiliary buffer, depending on which buffers actually
                 exist.
             </para>
-        </sect2>
-        <sect2 id="gldb-gui-state-shaders">
+        </refsect2>
+        <refsect2 id="gldb-gui-state-shaders">
             <title>Examining shaders</title>
             <para>
                 The <guilabel>Shaders</guilabel> tab shows the source of
@@ -246,9 +245,9 @@
             <para>Further information about the shader may be found on the
                 <guilabel>State</guilabel> tab.
             </para>
-        </sect2>
-    </sect1>
-    <sect1 id="gldb-gui-breakpoints">
+        </refsect2>
+    </refsect1>
+    <refsect1 id="gldb-gui-breakpoints">
         <title>Setting breakpoints</title>
         <para>The <guilabel>Breakpoints</guilabel> allows breakpoints to be
             set on specific OpenGL functions. Immediately before calling the
@@ -274,8 +273,8 @@
             errors occur afterwards, so <command>gldb-gui</command> may stop
             twice for the same function.
         </para>
-    </sect1>
-    <sect1 id="gldb-gui-gdb">
+    </refsect1>
+    <refsect1 id="gldb-gui-gdb">
         <title>Interacting with gdb</title>
         <para>When your program is stopped, the <guilabel>Backtrace</guilabel>
             tab shows the current call stack of your program, as
@@ -297,5 +296,5 @@
         <note><para>Your program needs to be running from the point of view of
                 <command>gdb</command> for <command>gldb-gui</command> to
                 function correctly.</para></note>
-    </sect1>
-</article>
+    </refsect1>
+</refentry>
