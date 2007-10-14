@@ -1,0 +1,30 @@
+div.note, div.tip
+{
+    background-color: #dddddd;
+    padding: 0pt 3pt;
+}
+
+div.note .title, div.tip .title
+{
+    color: black;
+}
+
+/* These are set up to roughly match the OpenGL SDK style */
+
+body
+{
+    text: black;
+    background: white;
+    font-size: .85em;
+    font-family: sans-serif;
+}
+
+h1, h2, h3
+{
+    font-weight: bold;
+    color: red;
+}
+
+h1 { font-size: 1.5em; }
+h2 { font-size: 1.2em; }
+h3 { font-size: 1em;   }

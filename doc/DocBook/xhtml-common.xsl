@@ -4,5 +4,10 @@
     <xsl:param name="make.valid.html" select="'1'"/>
     <xsl:param name="html.stylesheet" select="'bugle.css'"/>
     <xsl:param name="html.stylesheet.type" select="'text/css'"/>
-    <!-- <xsl:param name="admon.graphics" select="'1'"/> -->
+
+    <!--
+    <xsl:param name="admon.graphics.path" select="'images/'"/>
+    <xsl:param name="admon.graphics.extension" select="'.png'"/>
+    <xsl:param name="admon.graphics" select="'1'"/>
+    -->
 </xsl:stylesheet>

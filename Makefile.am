@@ -1,9 +1,5 @@
 ## Process with automake 1.7 or newer
-if DO_DOCBOOK
-  SUBDIRS = libltdl doc/DocBook
-else
-  SUBDIRS = libltdl
-endif
+SUBDIRS = libltdl
 
 SYMBOLFLAGS = -export-symbols-regex '^(gl[A-Z]|budgie_|bugle_|gldb_|X|dlopen)'
 
@@ -260,8 +256,32 @@ CLEANFILES = \
 	tests/.libs/triangles tests/.libs/lt-triangles \
 	tests/.libs/pointers tests/.libs/lt-pointers \
 	tests/.libs/pbo tests/.libs/lt-pbo \
-	tests/.libs/objects \
+	tests/.libs/objects
+MAINTAINERCLEANFILES = \
+	doc/DocBook/gldb-gui.html
 DISTCLEANFILES = tests/*.log
+
+# Docs
+EXTRA_DIST += \
+	doc/DocBook/gldb-gui.xml \
+	doc/DocBook/xhtml-single.xsl \
+	doc/DocBook/xhtml-common.xsl
+if DO_DOCBOOK
+htmldocdir = $(htmldir)/html
+htmlimagesdir = $(htmldir)/html/images
+dist_htmldoc_DATA = \
+	doc/DocBook/gldb-gui.html doc/DocBook/bugle.css
+dist_htmlimages_DATA = \
+	doc/DocBook/images/gtk-copy.png \
+	doc/DocBook/images/gtk-zoom-in.png \
+	doc/DocBook/images/gtk-zoom-out.png \
+	doc/DocBook/images/gtk-zoom-fit.png \
+	doc/DocBook/images/gtk-zoom-100.png
+DOCBOOK_HELPERS = doc/DocBook/xhtml-single.xsl doc/DocBook/xhtml-common.xsl
+doc/DocBook/gldb-gui.html: doc/DocBook/gldb-gui.xml $(DOCBOOK_HELPERS)
+	$(mkdir_p) doc/DocBook/
+	$(XSLTPROC) -o doc/DocBook/gldb-gui.html $(srcdir)/doc/DocBook/xhtml-single.xsl $(srcdir)/doc/DocBook/gldb-gui.xml
+endif
 
 libtool: @LIBTOOL_DEPS@
 	$(SHELL) ./config.status --recheck

@@ -109,13 +109,22 @@ LIBS="$real_libs"
 
 dnl Checks for system services
 AC_PATH_XTRA
-DOCBOOK=0
-BUGLE_DOCBOOK_XHTML_STYLESHEET([DOCBOOK=1], [DOCBOOK=0])
+DOCBOOK=1
 AC_ARG_VAR([XSLTPROC], [Path to xsltproc])
+AC_ARG_VAR([XMLCATALOG], [Path to xmlcatalog])
 AC_PATH_PROG([XSLTPROC], [xsltproc])
-if test "x$XSLTPROC" = "x"
+AC_PATH_PROG([XMLCATALOG], [xmlcatalog])
+# FIXME: this should be made into a proper test in acinclude.m4
+if test "x$XSLTPROC" = "x" || test "x$XMLCATALOG" = "x"
 then
   DOCBOOK=0
+fi
+if test "$DOCBOOK" = "1"
+then
+  if ! "$XMLCATALOG" /etc/xml/catalog 'http://docbook.sourceforge.net/release/xsl/current/xhtml/docbook.xsl' &>/dev/null
+  then
+    DOCBOOK=0
+  fi
 fi
 
 dnl Set up some extra stuff
@@ -172,7 +181,7 @@ esac], [])
 AM_CONDITIONAL(DO_DOCBOOK, test x$DOCBOOK = x1)
 
 dnl Write out files
-AC_CONFIG_FILES([Makefile gl.bc doc/DocBook/Makefile doc/DocBook/xhtml-single.xsl])
+AC_CONFIG_FILES([Makefile gl.bc])
 AC_OUTPUT
 
 dnl Display configuration

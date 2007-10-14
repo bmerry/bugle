@@ -10,6 +10,10 @@
                 <address><email>bmerry@users.sourceforge.net</email></address>
             </affiliation>
         </author>
+        <copyright>
+            <year>2007</year>
+            <holder>Bruce Merry</holder>
+        </copyright>
     </articleinfo>
     <sect1 id="gldb-gui-intro">
         <title>Introduction</title>
@@ -88,7 +92,9 @@
             The initial tab is the <guilabel>State</guilabel> tab. It shows
             all OpenGL state that is textual rather than an image. The state
             is organised roughly more or less according to the state tables in
-            the OpenGL specification. <!-- FIXME: link this --> OpenGL has an
+            the <ulink
+                url="http://www.opengl.org/registry/doc/glspec21.20061201.pdf">OpenGL
+                specification.</ulink> OpenGL has an
             overwhelming amount of state, so some tools are provided to make
             it easier to find answers:
         </para>
@@ -124,9 +130,59 @@
                 <guilabel>Zoom</guilabel> combobox. <guilabel>Fit</guilabel>
                 makes the texture as large as possible while still fitting the
                 window. The other settings set a ratio between texels and
-                screen pixels. The toolbar also has buttons to zoom in, zoom
-                out, set a 1:1 ratio, or choose the <guilabel>Fit</guilabel>
-                option.
+                screen pixels. The toolbar also has buttons to 
+                <guiicon>
+                    <inlinemediaobject>
+                        <imageobject>
+                            <objectinfo>
+                                <corpauthor>GTK+</corpauthor>
+                            </objectinfo>
+                            <imagedata fileref="images/gtk-zoom-in.png"
+                                format="PNG"/>
+                        </imageobject>
+                        <textobject><phrase></phrase></textobject>
+                    </inlinemediaobject>
+                </guiicon>
+                zoom in,
+                <guiicon>
+                    <inlinemediaobject>
+                        <imageobject>
+                            <objectinfo>
+                                <corpauthor>GTK+</corpauthor>
+                            </objectinfo>
+                            <imagedata fileref="images/gtk-zoom-out.png"
+                                format="PNG"/>
+                        </imageobject>
+                        <textobject><phrase></phrase></textobject>
+                    </inlinemediaobject>
+                </guiicon>
+                zoom out, set a 
+                <guiicon>
+                    <inlinemediaobject>
+                        <imageobject>
+                            <objectinfo>
+                                <corpauthor>GTK+</corpauthor>
+                            </objectinfo>
+                            <imagedata fileref="images/gtk-zoom-100.png"
+                                format="PNG"/>
+                        </imageobject>
+                        <textobject><phrase></phrase></textobject>
+                    </inlinemediaobject>
+                </guiicon>
+                1:1 ratio, or
+                <guiicon>
+                    <inlinemediaobject>
+                        <imageobject>
+                            <objectinfo>
+                                <corpauthor>GTK+</corpauthor>
+                            </objectinfo>
+                            <imagedata fileref="images/gtk-zoom-fit.png"
+                                format="PNG"/>
+                        </imageobject>
+                        <textobject><phrase></phrase></textobject>
+                    </inlinemediaobject>
+                </guiicon>
+                fit to the window size.
             </para>
             <para>The appearance of the texture may be controlled with the
                 <guilabel>Mag filter</guilabel> and <guilabel>Min
@@ -145,7 +201,19 @@
                 tables). Checking <guilabel>Remap range</guilabel> will scale
                 the colour range up (or down) to cover the whole [0, 1] range.
                 To perform more detailed image analysis, use the
-                <guibutton>Copy</guibutton> button <!-- FIXME: image --> to
+                <guiicon>
+                    <inlinemediaobject>
+                        <imageobject>
+                            <objectinfo>
+                                <corpauthor>GTK+</corpauthor>
+                            </objectinfo>
+                            <imagedata fileref="images/gtk-copy.png"
+                                format="PNG"/>
+                        </imageobject>
+                        <textobject><phrase>Copy</phrase></textobject>
+                    </inlinemediaobject>
+                </guiicon>
+                button to
                 copy the texture to the clipboard, and paste it into an
                 external application such as the GIMP.
             </para>
