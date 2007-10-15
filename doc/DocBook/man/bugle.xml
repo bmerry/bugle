@@ -89,7 +89,7 @@ filterset <replaceable>filterset</replaceable> <optional><replaceable>key</repla
             The <replaceable>key</replaceable> may be used to toggle the
             filter-set at run-time (not all filter-sets support this yet, and
             those that do will not always work). Key names are based on X
-            KeySyms (see <filename>&lt;X11/keysymdefs.h&gt;</filename> for a
+            KeySyms (see <filename class="headerfile">&lt;X11/keysymdefs.h&gt;</filename> for a
             list). They may also be prefixed with <literal>C-</literal>,
             <literal>A-</literal> or <literal>S-</literal> to indicate that
             the key must be combined with <keycap>Ctrl</keycap>,

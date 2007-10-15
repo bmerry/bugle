@@ -257,58 +257,83 @@ CLEANFILES = \
 	tests/.libs/pointers tests/.libs/lt-pointers \
 	tests/.libs/pbo tests/.libs/lt-pbo \
 	tests/.libs/objects
-MAINTAINERCLEANFILES = \
-	$(DOCBOOK_MAN_MANPAGES) \
-	$(DOCBOOK_MAN_HTML) \
-	doc/DocBook/man/man.stamp \
-	doc/DocBook/man/html.stamp
 DISTCLEANFILES = tests/*.log
+MAINTAINERCLEANFILES =
 
-# man pages, sources
-DOCBOOK_MAN_SOURCES = \
-	doc/DocBook/man/bugle.xml \
-	doc/DocBook/man/gldb-gui.xml \
-	doc/DocBook/man/manpages.xml
-DOCBOOK_MAN_STYLES = \
-	doc/DocBook/man/xhtml-man.xsl \
-	doc/DocBook/man/manpages.xsl
-EXTRA_DIST += $(DOCBOOK_MAN_SOURCES) $(DOCBOOK_MAN_STYLES)
+### Documentation starts here
 
-# man pages, man format
-DOCBOOK_MAN_MANPAGES = \
-	doc/man1/gldb-gui.1 \
-	doc/man3/bugle.3
-$(DOCBOOK_MAN_MANPAGES): doc/DocBook/man/man.stamp
-	@:
-doc/DocBook/man/man.stamp: $(DOCBOOK_MAN_SOURCES) doc/DocBook/man/manpages.xsl
-	$(XSLTPROC) $(srcdir)/doc/DocBook/man/manpages.xsl $(srcdir)/doc/DocBook/man/manpages.xml
-	$(mkdir_p) doc/DocBook/man
-	echo timestamp > doc/DocBook/man/man.stamp
-dist_man_MANS += $(DOCBOOK_MAN_PAGES)
-EXTRA_DIST += doc/DocBook/man/man.stamp
-
-# man pages, HTML format
-DOCBOOK_MAN_HTML = doc/html/man/index.html \
-	doc/html/man/gldb-gui.1.html \
-	doc/html/man/bugle.3.html
-$(DOCBOOK_MAN_HTML): doc/DocBook/man/html.stamp
-	@:
-doc/DocBook/man/html.stamp: $(DOCBOOK_MAN_SOURCES) doc/DocBook/man/xhtml-man.xsl
-	$(XSLTPROC) $(srcdir)/doc/DocBook/man/xhtml-man.xsl $(srcdir)/doc/DocBook/man/manpages.xml
-	$(mkdir_p) doc/DocBook/man
-	echo timestamp > doc/DocBook/man/html.stamp
+# HTML shared files
 htmldocdir = $(htmldir)/html
-htmlmandir = $(htmldir)/html/man
 htmlimagesdir = $(htmldir)/html/images
 dist_htmldoc_DATA = doc/DocBook/bugle.css
-dist_htmlman_DATA = $(DOCBOOK_MAN_HTML)
 dist_htmlimages_DATA = \
 	doc/DocBook/images/gtk-copy.png \
 	doc/DocBook/images/gtk-zoom-in.png \
 	doc/DocBook/images/gtk-zoom-out.png \
 	doc/DocBook/images/gtk-zoom-fit.png \
 	doc/DocBook/images/gtk-zoom-100.png
+
+# man pages, sources
+DOCBOOK_MAN_SRCS = \
+	doc/DocBook/man/bugle.xml \
+	doc/DocBook/man/gldb-gui.xml \
+	doc/DocBook/man/unwindstack.xml \
+	doc/DocBook/man/manpages.xml
+DOCBOOK_MAN_STYLES = \
+	doc/DocBook/man/xhtml-man.xsl \
+	doc/DocBook/man/manpages.xsl
+EXTRA_DIST += $(DOCBOOK_MAN_SRCS) $(DOCBOOK_MAN_STYLES)
+
+# man pages, man format
+DOCBOOK_MAN_MANPAGES = \
+	doc/man1/gldb-gui.1 \
+	doc/man3/bugle.3 \
+	doc/man7/bugle-unwindstack.7
+$(DOCBOOK_MAN_MANPAGES): doc/DocBook/man/man.stamp
+	@:
+doc/DocBook/man/man.stamp: $(DOCBOOK_MAN_SRCS) doc/DocBook/man/manpages.xsl
+	$(XMLLINT) --noent --noout --valid $(srcdir)/doc/DocBook/man/manpages.xml
+	$(XSLTPROC) $(srcdir)/doc/DocBook/man/manpages.xsl $(srcdir)/doc/DocBook/man/manpages.xml
+	$(mkdir_p) doc/DocBook/man
+	echo timestamp > doc/DocBook/man/man.stamp
+dist_man_MANS += $(DOCBOOK_MAN_MANPAGES)
+EXTRA_DIST += doc/DocBook/man/man.stamp
+MAINTAINERCLEANFILES += doc/DocBook/man/man.stamp $(DOCBOOK_MAN_MANPAGES)
+
+# man pages, HTML format
+DOCBOOK_MAN_HTML = doc/html/man/index.html \
+	doc/html/man/gldb-gui.1.html \
+	doc/html/man/bugle.3.html \
+	doc/html/man/unwindstack.7.html
+$(DOCBOOK_MAN_HTML): doc/DocBook/man/html.stamp
+	touch $@
+doc/DocBook/man/html.stamp: $(DOCBOOK_MAN_SRCS) doc/DocBook/man/xhtml-man.xsl
+	$(XMLLINT) --noent --noout --valid $(srcdir)/doc/DocBook/man/manpages.xml
+	$(XSLTPROC) $(srcdir)/doc/DocBook/man/xhtml-man.xsl $(srcdir)/doc/DocBook/man/manpages.xml
+	$(mkdir_p) doc/DocBook/man
+	echo timestamp > doc/DocBook/man/html.stamp
+htmlmandir = $(htmldir)/html/man
+dist_htmlman_DATA = $(DOCBOOK_MAN_HTML)
 EXTRA_DIST += doc/DocBook/man/html.stamp
+MAINTAINERCLEANFILES += doc/DocBook/man.html.stamp $(DOCBOOK_MAN_HTML)
+
+# other docs, sources
+DOCBOOK_SRCS = doc/DocBook/bugle.xml \
+	       doc/DocBook/faq.xml
+DOCBOOK_HTML = doc/html/index.html \
+	       doc/html/faq.html
+$(DOCBOOK_HTML): doc/DocBook/html.stamp
+	touch $@
+doc/DocBook/html.stamp: $(DOCBOOK_SRCS) doc/DocBook/xhtml-chunk.xsl doc/DocBook/xhtml-common.xsl
+	$(XMLLINT) --noent --noout --valid $(srcdir)/doc/DocBook/bugle.xml
+	$(XSLTPROC) $(srcdir)/doc/DocBook/xhtml-chunk.xsl $(srcdir)/doc/DocBook/bugle.xml
+	$(mkdir_p) doc/DocBook
+	echo timestamp > doc/DocBook/html.stamp
+htmldoc_DATA = $(DOCBOOK_HTML)
+EXTRA_DIST += doc/DocBook/html.stamp \
+	      $(DOCBOOK_SRCS) \
+	      $(DOCBOOK_HTML)
+MAINTAINERCLEANFILES += doc/DocBook/html.stamp $(DOCBOOK_HTML)
 
 libtool: @LIBTOOL_DEPS@
 	$(SHELL) ./config.status --recheck

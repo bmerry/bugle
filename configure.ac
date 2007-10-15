@@ -109,23 +109,10 @@ LIBS="$real_libs"
 
 dnl Checks for system services
 AC_PATH_XTRA
-DOCBOOK=1
 AC_ARG_VAR([XSLTPROC], [Path to xsltproc])
-AC_ARG_VAR([XMLCATALOG], [Path to xmlcatalog])
-AC_PATH_PROG([XSLTPROC], [xsltproc])
-AC_PATH_PROG([XMLCATALOG], [xmlcatalog])
-# FIXME: this should be made into a proper test in acinclude.m4
-if test "x$XSLTPROC" = "x" || test "x$XMLCATALOG" = "x"
-then
-  DOCBOOK=0
-fi
-if test "$DOCBOOK" = "1"
-then
-  if ! "$XMLCATALOG" /etc/xml/catalog 'http://docbook.sourceforge.net/release/xsl/current/xhtml/docbook.xsl' &>/dev/null
-  then
-    DOCBOOK=0
-  fi
-fi
+AC_ARG_VAR([XMLLINT], [Path to xmllint])
+AC_PATH_PROG([XSLTPROC], [xsltproc], [xsltproc_is_required_to_update_documentation])
+AC_PATH_PROG([XMLLINT], [xmllint], [true])
 
 dnl Set up some extra stuff
 
@@ -172,14 +159,6 @@ test $THREADS != BUGLE_THREADS_SINGLE || THREAD_LIBS=""
 AC_SUBST(THREAD_LIBS)
 AC_DEFINE_UNQUOTED(THREADS, $THREADS, [threading model])
 
-AC_ARG_WITH([docbook], AC_HELP_STRING([--with-docbook], [Compile DocBook documentation [[auto]]]), [
-case $withval in
-  yes) DOCBOOK=1 ;;
-  no)  DOCBOOK=0 ;;
-  *) AC_MSG_ERROR([--with-docbook must be either yes or no]) ;;
-esac], [])
-AM_CONDITIONAL(DO_DOCBOOK, test x$DOCBOOK = x1)
-
 dnl Write out files
 AC_CONFIG_FILES([Makefile gl.bc])
 AC_OUTPUT
@@ -209,10 +188,6 @@ esac
 case $ENABLE_XEVENT in
   0) echo "        X event interception: no" ;;
   1) echo "        X event interception: yes" ;;
-esac
-case $DOCBOOK in
-  0) echo "        DocBook documentation: no" ;;
-  1) echo "        DocBook documentation: yes" ;;
 esac
 if [[ $HAVE_GTK = 1 ]] && [[ $HAVE_GTK2_6 = 0 ]]
 then

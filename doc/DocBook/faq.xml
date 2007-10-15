@@ -1,0 +1,401 @@
+<chapter id="faq">
+    <title>FAQ</title>
+    <para>
+        Note that compilation problems are addressed in TROUBLESHOOTING.
+        FIXME: relink this
+    </para>
+    <sect1 id="faq-compiling">
+        <title>Compiling</title>
+        <qandaset defaultlabel="qanda">
+            <qandaentry id="compile-32-bit">
+                <question><para>
+                        How do I build a 32-bit version of
+                        <application>bugle</application> on an AMD64 system?
+                </para></question>
+                <answer>
+                    <para>
+                        The exact details will depend on your OS. Here is what
+                        I do on Gentoo:
+                    </para>
+                    <screen><prompt>$</prompt> <userinput>./configure --x-libraries=/usr/lib32 CC="gcc -m32" CXX="g++ -m32" \
+    --libdir=/usr/local/lib32 --bindir=/usr/local/bin32</userinput></screen>
+                    <para>
+                        Gentoo also tries to be clever by putting in a
+                        <filename>libGL.la</filename> to make linking
+                        against OpenGL work better, but in some cases it
+                        causes <application>libtool</application> to pick
+                        up the 64-bit version of OpenGL. I work around this by copying
+                        <filename>/usr/lib/libGL.la</filename> into the compilation directory, and replacing all
+                        references to <filename
+                            class="directory">/usr/lib</filename> with
+                        <filename>/usr/lib32</filename>.
+                    </para>
+                </answer>
+            </qandaentry>
+
+            <qandaentry id="faq-gcc-version">
+                <question><para>
+                        Why is a recent (&gt;3.0) version of
+                        <application>GCC</application> required?
+                </para></question>
+                <answer><para>
+                        <application>Bugle</application> is driven by a number
+                        of tables that list all the information about the
+                        various types and functions in OpenGL. To capture this
+                        information, it is necessary to parse the OpenGL
+                        header files. It would be very difficult to write a
+                        parser to do this robustly, but GCC already knows how
+                        to do this. Unfortunately, the ability to extract a
+                        parse tree from GCC (the
+                        <option>-fdump-translation-unit</option> option) was
+                        only added sometime after 3.0, and is also broken in
+                        4.0 (fixed in 4.1).
+                </para></answer>
+            </qandaentry>
+
+            <qandaentry>
+                <question><para>
+                        Why I am getting an error like <computeroutput>Invalid
+                            option -fdump-translation-unit</computeroutput>?
+                </para></question>
+                <answer><para>
+                        You need to use a version of GCC that supports this
+                        flag. See the <link linkend="faq-gcc-version">previous
+                            question</link> for details.
+                </para></answer>
+            </qandaentry>
+
+            <qandaentry>
+                <question><para>
+                        I get an error trying to move
+                        <filename>gl.c.tu</filename>, saying that the file
+                        does not exist.
+                </para></question>
+                <answer><para>
+                        You are probably using <application>GCC</application>
+                        4.0, which has broken support for
+                        <option>-fdump-translation-unit</option>
+                        (<application>GCC</application> bug <ulink
+                            url="http://gcc.gnu.org/bugzilla/show_bug.cgi?id=18279">18279</ulink>).
+                        Use <application>GCC</application>
+                        3.<replaceable>x</replaceable> or 4.1 instead.
+                </para></answer>
+            </qandaentry>
+
+            <qandaentry>
+                <question><para>
+                        I am getting the error <computeroutput>could not find
+                            GL/glext.h</computeroutput>.
+                </para></question>
+                <answer><para>
+                        You need to have this file, as it defines extensions
+                        to OpenGL that an application might use. You can
+                        obtain the latest copy from <ulink
+                            url="http://www.opengl.org/registry"/>. If you
+                        don't want to put it in your system include
+                        directories, you can create a <filename
+                            class="directory">GL</filename> subdirectory of
+                        the <application>bugle</application> source directory
+                        and put it there.
+                </para></answer>
+            </qandaentry>
+
+            <qandaentry>
+                <question><para>
+                        I am using the NVIDIA header files, and I am getting
+                        errors about conflicting definitions.
+                </para></question>
+                <answer>
+                    <para>
+                        Try upgrading to the latest NVIDIA drivers. The 60
+                        series seem to fix many of the problems in older
+                        header files.
+                    </para>
+                    <para>
+                        Alternatively, use the headers from <ulink
+                            url="http://www.mesa3d.org">Mesa</ulink>. You can
+                        place them into a <filename
+                            class="directory">GL</filename> subdirectory of
+                        the source if you prefer not to overwrite the system
+                        headers.
+                    </para>
+                </answer>
+            </qandaentry>
+
+            <qandaentry>
+                <question><para>
+                        I am using Gentoo, and during compilation of bugle I
+                        get errors similar to this:
+                        <computeroutput>/usr/lib/opengl/nvidia/lib/libGLcore.so.1:
+                            undefined reference to
+                            `_nv000016gl'</computeroutput>.
+                </para></question>
+                <answer>
+                    <para>
+                        This seems to be a problem with Gentoo's system for
+                        switching between OpenGL drivers, that causes part of
+                        the build process to use the X11 software drivers. A
+                        workaround is to switch to the X11 drivers for
+                        compilation and installation of
+                        <application>bugle</application>:
+                    </para>
+                    <procedure>
+                        <step><para>
+                                Run <userinput>eselect opengl set
+                                    xorg-x11</userinput> (or
+                                <userinput>opengl-update xorg-x11</userinput>
+                                on older systems) as <systemitem
+                                    class="username">root</systemitem>.
+                        </para></step>
+                        <step><para>
+                                Ensure that your environment is up to date
+                                e.g., <userinput>source
+                                    /etc/profile</userinput> in the shell you
+                                will use to compile
+                                <application>bugle</application>.
+                        </para></step>
+                        <step><para>
+                                Unpack a fresh copy of
+                                <application>bugle</application> (do not use a
+                                previously configured copy), compile and
+                                install it.
+                        </para></step>
+                        <step><para>
+                                Switch back to the NVIDIA OpenGL driver
+                                (<userinput>eselect opengl set
+                                    nvidia</userinput>).
+                        </para></step>
+                    </procedure>
+                </answer>
+            </qandaentry>
+
+            <qandaentry>
+                <question><para>
+                        I have an x86-64 (Athlon 64/Opteron/EM64T) machine
+                        with 64-bit OS, and compilation fails with the message
+                        <computeroutput>/usr/lib/libGL.so: could not read
+                            symbols: File in wrong format</computeroutput>.
+                </para></question>
+                <answer><para>
+                        This has been reported on Fedora Core 5, where
+                        <application>libtool</application> incorrectly
+                        tries to link against the 32-bit version of <filename
+                            class="libraryfile">libGL.so</filename>. The workaround is
+                        to run (in the build directory)
+                        <userinput>sed -i
+                            's#sys_lib_search_path_spec="#sys_lib_search_path_spec="/usr/lib64
+                            #' libtool</userinput>
+                        and re-run <command>make</command>. If this still
+                        doesn't work, see if your 64-bit <filename
+                            class="libraryfile">libGL.so</filename> is in a
+                        different directory and use that in place of <filename
+                            class="directory">/usr/lib64</filename> above.
+                </para></answer>
+            </qandaentry>
+        </qandaset>
+    </sect1>
+
+    <sect1 id="faq-running">
+        <title>Running</title>
+        <qandaset defaultlabel="qanda">
+            <qandaentry>
+                <question><para>
+                        What is the performance penalty?
+                </para></question>
+                <answer>
+                    <para>
+                        That depends on what you're doing with the library. If
+                        you only use filter-sets that intercept a few
+                        functions (like showstats), then all other functions
+                        suffer only a small penalty. Using filter-sets that
+                        check for error after every function (including
+                        showerror and the debugger) adds a much bigger
+                        penalty.
+                    </para>
+                    <para>
+                        To give you an example, here are some rough numbers for Quake3 1.32c on
+                        demo <systemitem>four</systemitem>:
+                    </para>
+                    <informaltable>
+                        <tgroup cols="2">
+                            <tbody>
+                                <row><entry>without <application>bugle</application></entry><entry>683.7</entry></row>
+                                <row><entry>none</entry><entry>668.4</entry></row>
+                                <row><entry>logfps</entry><entry>661.8</entry></row>
+                                <row><entry>showfps</entry><entry>616.7</entry></row>
+                                <row><entry>trace</entry><entry>181.6</entry></row>
+                                <row><entry><command>gldb-gui</command></entry><entry>131.3</entry></row>
+                            </tbody>
+                        </tgroup>
+                    </informaltable>
+                    <para>
+                        Tracing is particularly slow because it does file I/O,
+                        as well as a lot of text formatting. The overhead will
+                        also depend on the CPU/GPU balance. GPU-bound programs
+                        will be less affected by overheads.
+                    </para>
+                </answer>
+            </qandaentry>
+
+            <qandaentry>
+                <question><para>
+                        I wrote
+                        <envar>LD_PRELOAD</envar>=<filename class="libraryfile">libbugle.so</filename>
+                        <command><replaceable>program</replaceable></command> and it
+                        failed, what's up?
+                </para></question>
+                <answer><para>
+                        You either need to specify a full path to
+                        <filename class="libraryfile">libbugle.so</filename>, or else place it
+                        somewhere that the linker will find. On GNU systems, you can
+                        add the appropriate path to
+                        <filename>/etc/ld.so.conf</filename>.
+                </para></answer>
+            </qandaentry>
+
+            <qandaentry>
+                <question><para>
+                        How do I get a stack trace when my program crashes
+                        inside the OpenGL driver?
+                </para></question>
+                <answer><para>
+                        Use the <!-- FIXME &mp-unwindstack; --> filter-set.
+                        See the manual page for more information.
+                </para></answer>
+                <answer><para>
+                        Use the <!-- FIXME &mp-log; --> filter-set, and turn
+                        on the <varname>flush</varname> option (see the example in
+                        <filename>doc/examples/filters</filename>).  Then
+                        after your program crashes, the last entry in the log
+                        file will most likely be the one just before the
+                        crash.
+                </para></answer>
+            </qandaentry>
+
+            <qandaentry>
+                <question><para>
+                        Do I need to always set <envar>BUGLE_CHAIN</envar>?
+                </para></question>
+                <answer><para>
+                        No, the first chain in the configuration file is the
+                        default.
+                </para></answer>
+            </qandaentry>
+
+            <qandaentry>
+                <question><para>
+                        Can I avoid using <envar>LD_PRELOAD</envar>?
+                </para></question>
+                <answer><para>
+                        Yes, you can specify <option>-lbugle</option> in place of
+                        <option>-lGL</option> when you link your program. If it is
+                        not installed in a standard directory, you may need extra
+                        compiler flags, such as
+                        <option>-L<replaceable>/path/to/bugle</replaceable></option>
+                        <option>-Wl,-rpath</option>
+                        <option>-Wl,<replaceable>/path/to/bugle</replaceable></option>.
+                </para></answer>
+            </qandaentry>
+
+            <qandaentry>
+                <question><para>
+                        How do you get SDL-based apps to use BuGLe?
+                </para></question>
+                <answer>
+                    <para>
+                        On GNU systems, they should work as is. On some
+                        systems, it may be necessary to run them as
+                    </para>
+                    <screen><userinput>LD_PRELOAD=<replaceable>/path/to/libbugle.so</replaceable> SDL_VIDEO_GL_DRIVER=<replaceable>/path/to/libbugle.so</replaceable> <command><replaceable>program</replaceable></command></userinput></screen>
+                </answer>
+            </qandaentry>
+
+            <qandaentry>
+                <question><para>
+                        How do you get Quake3 or Doom3 to use BuGLe?
+                </para></question>
+                <answer>
+                    <para>
+                        On GNU systems, they should work as is. On some systems, run it as
+                    </para>
+                    <screen><userinput>LD_PRELOAD=<replaceable>/path/to/libbugle.so</replaceable> quake3 +set r_glDriver <replaceable>/path/to/libbugle.so</replaceable></userinput></screen>
+                    <para>
+                        Note that <application>Quake3</application> and
+                        <application>Doom3</application> are 32-bit binaries, so if
+                        you have an AMD64 system you will need to <link
+                            linkend="compile-32-bit">compile a 32-bit
+                            <application>bugle</application></link>.
+                    </para>
+                </answer>
+            </qandaentry>
+
+            <qandaentry>
+                <question><para>
+                        How do you get QT-based apps to use BuGLe?
+                </para></question>
+                <answer><para>
+                        On GNU systems, they should work as is. There is
+                        currently no known workaround for systems that don't
+                        support <function>dlsym</function> with the
+                        <symbol>RTLD_NEXT</symbol> flag.
+                </para></answer>
+            </qandaentry>
+
+            <qandaentry>
+                <question><para>
+                        I am using <symbol>GL_EXT_framebuffer_object</symbol>
+                        to render to texture, but the results do not appear in
+                        the texture viewer of <command>gldb-gui</command>.
+                </para></question>
+                <answer><para>
+                        This is a known bug in NVIDIA's 76.76 driver. It is
+                        fixed in the 80 series drivers. The results should
+                        appear in the framebuffer viewer.
+                </para></answer>
+            </qandaentry>
+
+            <qandaentry>
+                <question><para>
+                        I am using ATI drivers and when I run configure, it
+                        does not find <function>glBegin</function> in
+                        <option>-lGL</option>.
+                </para></question>
+                <answer><para>
+                        I have had this reported by one Debian user, but
+                        didn't get further details on hardware or driver
+                        version. It appears that this version depended on but
+                        did not link to libpthread. While it is possible to
+                        hack this in <filename>configure.ac</filename>, the
+                        same user reported other problems with this driver,
+                        and it is probably best to upgrade to a newer driver.
+                </para></answer>
+            </qandaentry>
+        </qandaset>
+    </sect1>
+
+    <sect1 id="faq-misc">
+        <title>Miscellaneous</title>
+        <qandaset defaultlabel="qanda">
+            <qandaentry>
+                <question><para>
+                        Why is there a mix of C and C++ code?
+                </para></question>
+                <answer><para>
+                        The library itself is written entirely in C. This is
+                        mainly because a C++ library will drag <systemitem
+                            class="library">libstdc++</systemitem> in with it,
+                        and this has been found to create some problems when
+                        forcing linking to an application that already depends on
+                        a conflicting version of <systemitem
+                            class="library">libstdc++</systemitem>. There is
+                        still a dependence on <systemitem
+                            class="library">libc</systemitem>, but <systemitem
+                            class="library">libc</systemitem> is less of a
+                        moving target. The code generator is written in C++, since
+                        it makes the coding easier and does not introduce the
+                        dependency issues above.
+                </para></answer>
+            </qandaentry>
+        </qandaset>
+    </sect1>
+</chapter>

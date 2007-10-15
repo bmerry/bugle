@@ -185,8 +185,8 @@
             <para>The appearance of the texture may be controlled with the
                 <guilabel>Mag filter</guilabel> and <guilabel>Min
                     filter</guilabel> comboboxes. These settings correspond to
-                the <constant>GL_TEXTURE_MAG_FILTER</constant> and
-                <constant>GL_TEXTURE_MIN_FILTER</constant> in OpenGL. However,
+                the <symbol>GL_TEXTURE_MAG_FILTER</symbol> and
+                <symbol>GL_TEXTURE_MIN_FILTER</symbol> in OpenGL. However,
                 these settings are only used for displaying the texture, and
                 do not affect your program. The <guilabel>Level</guilabel>
                 combobox makes it possible to examine specific texture levels.

@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="utf-8"?>
+<refentry id="unwindstack.7">
+    <refentryinfo>
+        <date>October 2007</date>
+        <productname>BUGLE</productname>
+    </refentryinfo>
+    <refmeta>
+        <refentrytitle>bugle-unwindstack</refentrytitle>
+        <manvolnum>7</manvolnum>
+        <refmiscinfo class="manual">User manual</refmiscinfo>
+    </refmeta>
+
+    <refnamediv>
+        <refname>bugle-unwindstack</refname>
+        <refpurpose>recover a stack trace after a segmentation fault</refpurpose>
+    </refnamediv>
+
+    <refsynopsisdiv>
+        <screen>filterset unwindstack</screen>
+    </refsynopsisdiv>
+
+    <refsect1>
+        <title>Description</title>
+        <para>
+            Some OpenGL drivers (particularly proprietry drivers) are compiled
+            without frame pointer information. The result is that if you pass a
+            bad pointer to the driver, causing it to segfault, 
+            <citerefentry>
+                <refentrytitle>gdb</refentrytitle><manvolnum>1</manvolnum>
+            </citerefentry> is
+            unable to produce a stack trace showing that location of the fault.
+            This filter-set uses some ugly hacks to try to correct this.
+        </para>
+        <para>
+            When using this filter-set and debugging your application in
+            <application>gdb</application>, the segmentation fault will still
+            leave you without a stack trace.  However, if you continue
+            running, you will get a second segmentation fault, at which point
+            a stack trace is available.
+        </para>
+        <para>
+            Note that the call that causes the segmentation fault may not be
+            the direct cause; for example, a bad pointer passed to
+            <function>glVertexPointer</function> might only cause a
+            segmentation fault in <function>glDrawArrays</function>. See also
+            the &mp-checks; filter-set, which does
+            some aggressive error-checking and can detect some of these
+            conditions.
+        </para>
+    </refsect1>
+
+    <refsect1>
+        <title>Bugs</title>
+        <para>
+            The method used to recover the stack trace violates POSIX rules
+            (and common sense) about the use of <function>setjmp</function>.
+            It works for me under Linux with NVIDIA drivers, but your mileage
+            might vary.
+        </para>
+    </refsect1>
+
+    &author;
+
+    <refsect1>
+        <title>See also</title>
+        <itemizedlist>
+            <listitem><para>&mp-bugle;</para></listitem>
+            <listitem><para>&mp-checks;</para></listitem>
+            <listitem><para>
+                    <citerefentry>
+                        <refentrytitle>setjmp</refentrytitle>
+                        <manvolnum>3</manvolnum>
+                    </citerefentry>
+            </para></listitem>
+        </itemizedlist>
+    </refsect1>
+</refentry>

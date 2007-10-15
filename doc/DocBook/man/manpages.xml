@@ -2,28 +2,48 @@
 <!DOCTYPE reference PUBLIC "-//OASIS//DTD DocBook XML V4.2//EN" "http://www.oasis-open.org/docbook/xml/4.2/docbookx.dtd" [
 <!ENTITY mp-bugle "<xref linkend='bugle.3'/>">
 <!ENTITY mp-gldb-gui "<xref linkend='gldb-gui.1'/>">
-<!ENTITY mp-camera "<xref linkend='bugle-camera.7'/>">
-<!ENTITY mp-checks "<xref linkend='bugle-checks.7'/>">
-<!ENTITY mp-eps "<xref linkend='bugle-eps.7'/>">
-<!ENTITY mp-error "<xref linkend='bugle-error.7'/>">
-<!ENTITY mp-frontbuffer "<xref linkend='bugle-frontbuffer.7'/>">
-<!ENTITY mp-log "<xref linkend='bugle-frontbuffer.7'/>">
-<!ENTITY mp-screenshot "<xref linkend='bugle-screenshot.7'/>">
-<!ENTITY mp-showerror "<xref linkend='bugle-showerror.7'/>">
-<!ENTITY mp-showextensions "<xref linkend='bugle-showextensions.7'/>">
-<!ENTITY mp-showstats "<xref linkend='bugle-showstats.7'/>">
-<!ENTITY mp-stats "<xref linkend='bugle-stats.7'/>">
-<!ENTITY mp-trace "<xref linkend='bugle-trace.7'/>">
-<!ENTITY mp-unwindstack "<xref linkend='bugle-unwindstack.7'/>">
-<!ENTITY mp-wireframe "<xref linkend='bugle-wireframe.7'/>">
+<!-- FIXME
+<!ENTITY mp-camera "<xref linkend='camera.7'/>">
+<!ENTITY mp-checks "<xref linkend='checks.7'/>">
+<!ENTITY mp-eps "<xref linkend='eps.7'/>">
+<!ENTITY mp-error "<xref linkend='error.7'/>">
+<!ENTITY mp-frontbuffer "<xref linkend='frontbuffer.7'/>">
+<!ENTITY mp-log "<xref linkend='frontbuffer.7'/>">
+<!ENTITY mp-screenshot "<xref linkend='screenshot.7'/>">
+<!ENTITY mp-showerror "<xref linkend='showerror.7'/>">
+<!ENTITY mp-showextensions "<xref linkend='showextensions.7'/>">
+<!ENTITY mp-showstats "<xref linkend='showstats.7'/>">
+<!ENTITY mp-stats "<xref linkend='stats.7'/>">
+<!ENTITY mp-trace "<xref linkend='trace.7'/>">
+-->
+<!ENTITY mp-unwindstack "<xref linkend='unwindstack.7'/>">
+<!--
+<!ENTITY mp-wireframe "<xref linkend='wireframe.7'/>">
+-->
+<!ENTITY mp-checks "[FIXME]bugle-checks(7)">
+<!ENTITY mp-camera "[FIXME]bugle-camera(7)">
+<!ENTITY mp-checks "[FIXME]bugle-checks(7)">
+<!ENTITY mp-eps "[FIXME]bugle-eps(7)">
+<!ENTITY mp-error "[FIXME]bugle-error(7)">
+<!ENTITY mp-frontbuffer "[FIXME]bugle-frontbuffer(7)">
+<!ENTITY mp-log "[FIXME]bugle-frontbuffer(7)">
+<!ENTITY mp-screenshot "[FIXME]bugle-screenshot(7)">
+<!ENTITY mp-showerror "[FIXME]bugle-showerror(7)">
+<!ENTITY mp-showextensions "[FIXME]bugle-showextensions(7)">
+<!ENTITY mp-showstats "[FIXME]bugle-showstats(7)">
+<!ENTITY mp-stats "[FIXME]bugle-stats(7)">
+<!ENTITY mp-trace "[FIXME]bugle-trace(7)">
+<!ENTITY mp-wireframe "[FIXME]bugle-wireframe(7)">
 
 <!ENTITY author "<refsect1><title>Author</title><para><application>bugle</application> is written and maintained by <author><firstname>Bruce</firstname> <surname>Merry</surname> <email>bmerry@users.sourceforge.net</email></author>.</para></refsect1>">
 
 <!ENTITY ref-bugle SYSTEM "bugle.xml">
 <!ENTITY ref-gldb-gui SYSTEM "gldb-gui.xml">
+<!ENTITY ref-unwindstack SYSTEM "unwindstack.xml">
 ]>
 <reference>
     <title>bugle manual pages</title>
     &ref-bugle;
     &ref-gldb-gui;
+    &ref-unwindstack;
 </reference>
