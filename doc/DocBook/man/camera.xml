@@ -1,0 +1,160 @@
+<?xml version="1.0" encoding="utf-8"?>
+<refentry id="camera.7">
+    <refentryinfo>
+        <date>October 2007</date>
+        <productname>BUGLE</productname>
+    </refentryinfo>
+    <refmeta>
+        <refentrytitle>bugle-camera</refentrytitle>
+        <manvolnum>7</manvolnum>
+        <refmiscinfo class="manual">User manual</refmiscinfo>
+    </refmeta>
+
+    <refnamediv>
+        <refname>bugle-camera</refname>
+        <refpurpose>allow the camera to be manipulated</refpurpose>
+    </refnamediv>
+
+    <refsynopsisdiv>
+        <screen>filterset camera <optional><replaceable>key</replaceable> inactive</optional>
+{
+    <option>speed</option> "<replaceable>1.0</replaceable>"
+    <option>mouse_dga</option> "<replaceable>no</replaceable>"
+}</screen>
+    </refsynopsisdiv>
+
+    <refsect1>
+        <title>Description</title>
+        <para>
+            This filter-set allows you to take over the camera in an OpenGL
+            application and move it about. This is particularly useful for
+            testing visibility culling and level-of-detail (LOD), as these
+            will not change as the camera is moved.
+        </para>
+        <para>
+            To use it, make sure it is activated, then move to the mouse to
+            control the camera angle and the <keycap>Up</keycap>,
+            <keycap>Down</keycap>, <keycap>Left</keycap> and
+            <keycap>Right</keycap> keys to move the viewpoint. The camera
+            model is a free camera, so it will not maintain a defined up
+            direction. There are a few other useful keys, described in <xref
+                linkend="camera.7.options"/>.
+        </para>
+        <para>
+            This filter-set supports activation and deactivation; the
+            recommended use is to have it initially inactive and use a key to
+            take over control when desired (see &mp-bugle;).
+        </para>
+        <para>
+            Since this filter-set is based on modifying OpenGL state without
+            telling the application, there are significant limitations:
+        </para>
+        <itemizedlist>
+            <listitem><para>
+                    The projection matrix, and in particular, the near
+                    and far clip planes, are not altered. Thus, trying to move
+                    in too close or out too far could cause objects to be
+                    clipped away.
+            </para></listitem>
+            <listitem><para>
+                    Various fancy rendering techniques involve
+                    rendering a quad that is carefully aligned to the screen;
+                    altering the camera will break such techniques. There is
+                    ultimately no general fix as it is impossible to know when
+                    an application is dealing with the real world. If you are
+                    writing such an application and wish it to work with this
+                    filter-set, you should use a vertex program that ignores
+                    the model-view matrix in situations where you do not want
+                    this filter-set to interfere.
+            </para></listitem>
+            <listitem><para>
+                    Applications that rely on the feedback buffer are likely
+                    to break.
+            </para></listitem>
+        </itemizedlist>
+    </refsect1>
+
+    <refsect1 id="camera.7.options">
+        <title>Options</title>
+        <variablelist>
+            <varlistentry>
+                <term><option>mouse_dga</option></term>
+                <listitem><para>
+                        This is a boolean option which should be enabled when debugging an
+                        application that uses
+                        <citerefentry>
+                            <refentrytitle>XDGA</refentrytitle>
+                            <manvolnum>3</manvolnum>
+                        </citerefentry>
+                        to get relative motion data from the mouse. If the
+                        camera goes all over the place as soon as you move the
+                        mouse, try enabling this option (SDL-based
+                        applications are the main culprits).
+                </para></listitem>
+            </varlistentry>
+            <varlistentry>
+                <term><option>speed</option></term>
+                <listitem><para>
+                        This sets the speed at which the camera moves. Since
+                        each application has a different scale, you will need
+                        to adjust the value for each application (but dynamic
+                        control is also possible; see below).
+                </para></listitem>
+            </varlistentry>
+            <varlistentry>
+                <term><option>key_forward</option></term>
+                <term><option>key_back</option></term>
+                <term><option>key_left</option></term>
+                <term><option>key_right</option></term>
+                <listitem><para>
+                        These are the keys for moving the camera. They default
+                        to the arrow keys.
+                </para></listitem>
+            </varlistentry>
+            <varlistentry>
+                <term><option>key_faster</option></term>
+                <term><option>key_slower</option></term>
+                <listitem><para>
+                        These keys control the speed of the camera, doubling
+                        or halving it respectively. They default to
+                        <keycap>PageUp</keycap> and <keycap>PageDown</keycap>.
+                </para></listitem>
+            </varlistentry>
+            <varlistentry>
+                <term><option>key_reset</option></term>
+                <listitem><para>
+                        This key cancels any alterations made, restoring the
+                        camera to where the application thinks it is. There is
+                        no default.
+                </para></listitem>
+            </varlistentry>
+            <varlistentry>
+                <term><option>key_toggle</option></term>
+                <listitem><para>
+                        This key alternately releases and recaptures the
+                        mouse. It can be useful if you need to use the mouse
+                        in another window without completely disabling the
+                        filter-set (which would also restore the camera
+                        position). There is no default.
+                </para></listitem>
+            </varlistentry>
+            <varlistentry>
+                <term><option></option></term>
+                <listitem><para>
+                        This toggles display of the original view frustum. If
+                        this driver supports
+                        <symbol>GL_NV_depth_clamp</symbol>, depth clamping is
+                        used to prevent the frustum from being clipped to the
+                        near and far clip planes. There is no default.
+                </para></listitem>
+            </varlistentry>
+        </variablelist>
+    </refsect1>
+
+    &author;
+
+    <refsect1>
+        <title>See also</title>
+        <para>&mp-bugle;</para>
+    </refsect1>
+</refentry>

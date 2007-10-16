@@ -2,8 +2,8 @@
 <!DOCTYPE reference PUBLIC "-//OASIS//DTD DocBook XML V4.2//EN" "http://www.oasis-open.org/docbook/xml/4.2/docbookx.dtd" [
 <!ENTITY mp-bugle "<xref linkend='bugle.3'/>">
 <!ENTITY mp-gldb-gui "<xref linkend='gldb-gui.1'/>">
-<!-- FIXME
 <!ENTITY mp-camera "<xref linkend='camera.7'/>">
+<!-- FIXME
 <!ENTITY mp-checks "<xref linkend='checks.7'/>">
 <!ENTITY mp-eps "<xref linkend='eps.7'/>">
 <!ENTITY mp-error "<xref linkend='error.7'/>">
@@ -21,7 +21,6 @@
 <!ENTITY mp-wireframe "<xref linkend='wireframe.7'/>">
 -->
 <!ENTITY mp-checks "[FIXME]bugle-checks(7)">
-<!ENTITY mp-camera "[FIXME]bugle-camera(7)">
 <!ENTITY mp-checks "[FIXME]bugle-checks(7)">
 <!ENTITY mp-eps "[FIXME]bugle-eps(7)">
 <!ENTITY mp-error "[FIXME]bugle-error(7)">
@@ -39,11 +38,20 @@
 
 <!ENTITY ref-bugle SYSTEM "bugle.xml">
 <!ENTITY ref-gldb-gui SYSTEM "gldb-gui.xml">
+<!ENTITY ref-camera SYSTEM "camera.xml">
 <!ENTITY ref-unwindstack SYSTEM "unwindstack.xml">
 ]>
 <reference>
+    <referenceinfo>
+        <author>
+            <firstname>Bruce</firstname>
+            <surname>Merry</surname>
+            <email>bmerry@users.sourceforge.net</email>
+        </author>
+    </referenceinfo>
     <title>bugle manual pages</title>
     &ref-bugle;
     &ref-gldb-gui;
+    &ref-camera;
     &ref-unwindstack;
 </reference>

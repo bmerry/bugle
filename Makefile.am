@@ -277,6 +277,7 @@ dist_htmlimages_DATA = \
 DOCBOOK_MAN_SRCS = \
 	doc/DocBook/man/bugle.xml \
 	doc/DocBook/man/gldb-gui.xml \
+	doc/DocBook/man/camera.xml \
 	doc/DocBook/man/unwindstack.xml \
 	doc/DocBook/man/manpages.xml
 DOCBOOK_MAN_STYLES = \
@@ -288,6 +289,7 @@ EXTRA_DIST += $(DOCBOOK_MAN_SRCS) $(DOCBOOK_MAN_STYLES)
 DOCBOOK_MAN_MANPAGES = \
 	doc/man1/gldb-gui.1 \
 	doc/man3/bugle.3 \
+	doc/man7/bugle-camera.7
 	doc/man7/bugle-unwindstack.7
 $(DOCBOOK_MAN_MANPAGES): doc/DocBook/man/man.stamp
 	@:
@@ -304,6 +306,7 @@ MAINTAINERCLEANFILES += doc/DocBook/man/man.stamp $(DOCBOOK_MAN_MANPAGES)
 DOCBOOK_MAN_HTML = doc/html/man/index.html \
 	doc/html/man/gldb-gui.1.html \
 	doc/html/man/bugle.3.html \
+	doc/html/man/camera.7.html \
 	doc/html/man/unwindstack.7.html
 $(DOCBOOK_MAN_HTML): doc/DocBook/man/html.stamp
 	touch $@
