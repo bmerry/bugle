@@ -1,7 +1,62 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.2//EN" "http://www.oasis-open.org/docbook/xml/4.2/docbookx.dtd" [
+<!ENTITY mp-bugle "<xref linkend='bugle.3'/>">
+<!ENTITY mp-gldb-gui "<xref linkend='gldb-gui.1'/>">
+<!ENTITY mp-camera "<xref linkend='camera.7'/>">
+<!-- FIXME
+<!ENTITY mp-checks "<xref linkend='checks.7'/>">
+<!ENTITY mp-eps "<xref linkend='eps.7'/>">
+<!ENTITY mp-error "<xref linkend='error.7'/>">
+<!ENTITY mp-frontbuffer "<xref linkend='frontbuffer.7'/>">
+<!ENTITY mp-log "<xref linkend='frontbuffer.7'/>">
+<!ENTITY mp-screenshot "<xref linkend='screenshot.7'/>">
+<!ENTITY mp-showerror "<xref linkend='showerror.7'/>">
+<!ENTITY mp-showextensions "<xref linkend='showextensions.7'/>">
+<!ENTITY mp-showstats "<xref linkend='showstats.7'/>">
+<!ENTITY mp-stats "<xref linkend='stats.7'/>">
+<!ENTITY mp-trace "<xref linkend='trace.7'/>">
+-->
+<!ENTITY mp-unwindstack "<xref linkend='unwindstack.7'/>">
+<!--
+<!ENTITY mp-wireframe "<xref linkend='wireframe.7'/>">
+-->
+<!ENTITY mp-checks "[FIXME]bugle-checks(7)">
+<!ENTITY mp-eps "[FIXME]bugle-eps(7)">
+<!ENTITY mp-error "[FIXME]bugle-error(7)">
+<!ENTITY mp-frontbuffer "[FIXME]bugle-frontbuffer(7)">
+<!ENTITY mp-log "[FIXME]bugle-frontbuffer(7)">
+<!ENTITY mp-screenshot "[FIXME]bugle-screenshot(7)">
+<!ENTITY mp-showerror "[FIXME]bugle-showerror(7)">
+<!ENTITY mp-showextensions "[FIXME]bugle-showextensions(7)">
+<!ENTITY mp-showstats "[FIXME]bugle-showstats(7)">
+<!ENTITY mp-stats "[FIXME]bugle-stats(7)">
+<!ENTITY mp-trace "[FIXME]bugle-trace(7)">
+<!ENTITY mp-wireframe "[FIXME]bugle-wireframe(7)">
+
+<!ENTITY author "<refsect1><title>Author</title><para><application>bugle</application> is written and maintained by <author><firstname>Bruce</firstname> <surname>Merry</surname> <email>bmerry@users.sourceforge.net</email></author>.</para></refsect1>">
+
+<!ENTITY ref-bugle SYSTEM "man/bugle.xml">
+<!ENTITY ref-gldb-gui SYSTEM "man/gldb-gui.xml">
+<!ENTITY ref-camera SYSTEM "man/camera.xml">
+<!ENTITY ref-unwindstack SYSTEM "man/unwindstack.xml">
+<!ENTITY ch-install SYSTEM "install.xml">
 <!ENTITY ch-faq SYSTEM "faq.xml">
+<!ENTITY ch-man SYSTEM "man/manpages.xml">
 ]>
 <book>
+    <title>Bugle user manual</title>
+    <bookinfo>
+        <author>
+            <firstname>Bruce</firstname>
+            <surname>Merry</surname>
+            <email>bmerry@users.sourceforge.net</email>
+        </author>
+        <copyright>
+            <year>2007</year>
+            <holder>Bruce Merry</holder>
+        </copyright>
+    </bookinfo>
+    &ch-install;
     &ch-faq;
+    &ch-man;
 </book>

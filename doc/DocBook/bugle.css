@@ -4,7 +4,7 @@ div.note, div.tip
     padding: 0pt 3pt;
 }
 
-div.note .title, div.tip .title
+div.note .title, div.tip .title, h3.author
 {
     color: black;
 }

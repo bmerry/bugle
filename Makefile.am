@@ -273,17 +273,23 @@ dist_htmlimages_DATA = \
 	doc/DocBook/images/gtk-zoom-fit.png \
 	doc/DocBook/images/gtk-zoom-100.png
 
-# man pages, sources
+# Documentation sources
 DOCBOOK_MAN_SRCS = \
 	doc/DocBook/man/bugle.xml \
 	doc/DocBook/man/gldb-gui.xml \
 	doc/DocBook/man/camera.xml \
 	doc/DocBook/man/unwindstack.xml \
 	doc/DocBook/man/manpages.xml
-DOCBOOK_MAN_STYLES = \
-	doc/DocBook/man/xhtml-man.xsl \
-	doc/DocBook/man/manpages.xsl
-EXTRA_DIST += $(DOCBOOK_MAN_SRCS) $(DOCBOOK_MAN_STYLES)
+DOCBOOK_SRCS = $(DOCBOOK_MAN_SRCS) \
+	       doc/DocBook/bugle.xml \
+	       doc/DocBook/install.xml \
+	       doc/DocBook/faq.xml
+DOCBOOK_MAN_STYLES = doc/DocBook/manpages.xsl
+DOCBOOK_STYLES = $(DOCBOOK_MAN_STYLES) \
+		 doc/DocBook/xhtml-common.xsl \
+		 doc/DocBook/xhtml-chunk.xsl \
+		 doc/DocBook/xhtml-single.xsl
+EXTRA_DIST += $(DOCBOOK_SRCS) $(DOCBOOK_STYLES)
 
 # man pages, man format
 DOCBOOK_MAN_MANPAGES = \
@@ -291,51 +297,34 @@ DOCBOOK_MAN_MANPAGES = \
 	doc/man3/bugle.3 \
 	doc/man7/bugle-camera.7
 	doc/man7/bugle-unwindstack.7
-$(DOCBOOK_MAN_MANPAGES): doc/DocBook/man/man.stamp
-	@:
-doc/DocBook/man/man.stamp: $(DOCBOOK_MAN_SRCS) doc/DocBook/man/manpages.xsl
-	$(XMLLINT) --noent --noout --valid $(srcdir)/doc/DocBook/man/manpages.xml
-	$(XSLTPROC) $(srcdir)/doc/DocBook/man/manpages.xsl $(srcdir)/doc/DocBook/man/manpages.xml
-	$(mkdir_p) doc/DocBook/man
-	echo timestamp > doc/DocBook/man/man.stamp
+$(DOCBOOK_MAN_MANPAGES): doc/DocBook/man.stamp
+	@touch "$@"
+doc/DocBook/man.stamp: $(DOCBOOK_MAN_SRCS) doc/DocBook/bugle.xml doc/DocBook/manpages.xsl
+	$(XMLLINT) --noent --noout --valid $(srcdir)/doc/DocBook/bugle.xml
+	$(XSLTPROC) $(srcdir)/doc/DocBook/manpages.xsl $(srcdir)/doc/DocBook/bugle.xml
+	$(mkdir_p) doc/DocBook
+	echo timestamp > doc/DocBook/man.stamp
 dist_man_MANS += $(DOCBOOK_MAN_MANPAGES)
-EXTRA_DIST += doc/DocBook/man/man.stamp
-MAINTAINERCLEANFILES += doc/DocBook/man/man.stamp $(DOCBOOK_MAN_MANPAGES)
+EXTRA_DIST += doc/DocBook/man.stamp
+MAINTAINERCLEANFILES += doc/DocBook/man.stamp $(DOCBOOK_MAN_MANPAGES)
 
-# man pages, HTML format
-DOCBOOK_MAN_HTML = doc/html/man/index.html \
-	doc/html/man/gldb-gui.1.html \
-	doc/html/man/bugle.3.html \
-	doc/html/man/camera.7.html \
-	doc/html/man/unwindstack.7.html
-$(DOCBOOK_MAN_HTML): doc/DocBook/man/html.stamp
-	touch $@
-doc/DocBook/man/html.stamp: $(DOCBOOK_MAN_SRCS) doc/DocBook/man/xhtml-man.xsl
-	$(XMLLINT) --noent --noout --valid $(srcdir)/doc/DocBook/man/manpages.xml
-	$(XSLTPROC) $(srcdir)/doc/DocBook/man/xhtml-man.xsl $(srcdir)/doc/DocBook/man/manpages.xml
-	$(mkdir_p) doc/DocBook/man
-	echo timestamp > doc/DocBook/man/html.stamp
-htmlmandir = $(htmldir)/html/man
-dist_htmlman_DATA = $(DOCBOOK_MAN_HTML)
-EXTRA_DIST += doc/DocBook/man/html.stamp
-MAINTAINERCLEANFILES += doc/DocBook/man.html.stamp $(DOCBOOK_MAN_HTML)
-
-# other docs, sources
-DOCBOOK_SRCS = doc/DocBook/bugle.xml \
-	       doc/DocBook/faq.xml
+# HTML documentation
 DOCBOOK_HTML = doc/html/index.html \
-	       doc/html/faq.html
+	       doc/html/install.html \
+	       doc/html/faq.html \
+	       doc/html/gldb-gui.1.html \
+	       doc/html/bugle.3.html \
+	       doc/html/camera.7.html \
+	       doc/html/unwindstack.7.html
 $(DOCBOOK_HTML): doc/DocBook/html.stamp
-	touch $@
+	@touch $@
 doc/DocBook/html.stamp: $(DOCBOOK_SRCS) doc/DocBook/xhtml-chunk.xsl doc/DocBook/xhtml-common.xsl
 	$(XMLLINT) --noent --noout --valid $(srcdir)/doc/DocBook/bugle.xml
 	$(XSLTPROC) $(srcdir)/doc/DocBook/xhtml-chunk.xsl $(srcdir)/doc/DocBook/bugle.xml
 	$(mkdir_p) doc/DocBook
 	echo timestamp > doc/DocBook/html.stamp
 htmldoc_DATA = $(DOCBOOK_HTML)
-EXTRA_DIST += doc/DocBook/html.stamp \
-	      $(DOCBOOK_SRCS) \
-	      $(DOCBOOK_HTML)
+EXTRA_DIST += doc/DocBook/html.stamp $(DOCBOOK_HTML)
 MAINTAINERCLEANFILES += doc/DocBook/html.stamp $(DOCBOOK_HTML)
 
 libtool: @LIBTOOL_DEPS@

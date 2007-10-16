@@ -1,9 +1,5 @@
-<chapter id="faq">
+<appendix id="faq">
     <title>FAQ</title>
-    <para>
-        Note that compilation problems are addressed in TROUBLESHOOTING.
-        FIXME: relink this
-    </para>
     <sect1 id="faq-compiling">
         <title>Compiling</title>
         <qandaset defaultlabel="qanda">
@@ -182,9 +178,7 @@
                         tries to link against the 32-bit version of <filename
                             class="libraryfile">libGL.so</filename>. The workaround is
                         to run (in the build directory)
-                        <userinput>sed -i
-                            's#sys_lib_search_path_spec="#sys_lib_search_path_spec="/usr/lib64
-                            #' libtool</userinput>
+                        <screen><userinput>sed -i 's#sys_lib_search_path_spec="#sys_lib_search_path_spec="/usr/lib64#' libtool</userinput></screen>
                         and re-run <command>make</command>. If this still
                         doesn't work, see if your 64-bit <filename
                             class="libraryfile">libGL.so</filename> is in a
@@ -259,11 +253,11 @@
                         inside the OpenGL driver?
                 </para></question>
                 <answer><para>
-                        Use the <!-- FIXME &mp-unwindstack; --> filter-set.
+                        Use the &mp-unwindstack; filter-set.
                         See the manual page for more information.
                 </para></answer>
                 <answer><para>
-                        Use the <!-- FIXME &mp-log; --> filter-set, and turn
+                        Use the &mp-log; filter-set, and turn
                         on the <varname>flush</varname> option (see the example in
                         <filename>doc/examples/filters</filename>).  Then
                         after your program crashes, the last entry in the log
@@ -398,4 +392,4 @@
             </qandaentry>
         </qandaset>
     </sect1>
-</chapter>
+</appendix>

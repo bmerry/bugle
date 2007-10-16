@@ -1,0 +1,116 @@
+<chapter id="install">
+    <title>Installing Bugle</title>
+    <sect1 id="install-requirements">
+        <title>Requirements</title>
+        <para>
+            The following packages are required to compile Bugle:
+        </para>
+        <itemizedlist>
+            <listitem><para>
+                    GCC, at least version 3.2, and <emphasis>not</emphasis>
+                    4.0 (see the <link linkend="faq-gcc-version">FAQ</link>
+                    for an explanation of why).
+            </para></listitem>
+            <listitem><para>
+                    A C++ compiler (generally <application>g++</application>)
+            </para></listitem>
+            <listitem><para>OpenGL header files, including a recent version of <ulink
+                        url="http://www.opengl.org/registry/api/glext.h">glext.h</ulink>
+                    (older versions should work, but it will be difficult to
+                    debug any code that uses newer features).
+            </para></listitem>
+            <listitem><para>Perl 5</para></listitem>
+        </itemizedlist>
+        <para>
+            The following packages are not required, but if present, will
+            enable extra functionality:
+        </para>
+        <variablelist>
+            <varlistentry>
+                <term><ulink url="http://cnswww.cns.cwru.edu/php/chet/readline/rltop.html">readline</ulink></term>
+                <listitem><para>
+                        This will enable line editing in the console debugger.
+                        The GUI debugger is the preferred method of debugging.
+                </para></listitem>
+            </varlistentry>
+            <varlistentry>
+                <term><ulink url="http://www.gtk.org/">GTK+</ulink></term>
+                <listitem><para>
+                        This is needed for the GUI debugger.
+                </para></listitem>
+            </varlistentry>
+            <varlistentry>
+                <term><ulink url="http://gtkglext.sourceforge.net/">gtkglext</ulink></term>
+                <listitem><para>
+                        This is needed for the texture and framebuffer viewers
+                        in the GUI debugger.
+                </para></listitem>
+            </varlistentry>
+            <varlistentry>
+                <term><ulink url="http://ffmpeg.org/">FFmpeg</ulink></term>
+                <listitem><para>
+                        If FFmpeg is available, the included <systemitem
+                            class="library">libavcodec</systemitem> is used
+                        for video capture.
+                </para></listitem>
+            </varlistentry>
+        </variablelist>
+    </sect1>
+    <sect1 id="install-configure">
+        <title>Configuring</title>
+        <para>
+            Bugle uses the standard <command>configure</command> command for
+            compile-time configuration. Generic instructions may be found in
+            <filename>INSTALL</filename> in the root of the source directory.
+            In general, <command>configure</command> will auto-detect optional
+            packages and use them only if present, but you can also prevent it
+            from depending on certain packages with the following flags:
+        </para>
+        <itemizedlist>
+            <listitem><para><option>--without-lavc</option></para></listitem>
+            <listitem><para><option>--without-readline</option></para></listitem>
+            <listitem><para><option>--without-gtk</option></para></listitem>
+            <listitem><para><option>--without-gtkglext</option></para></listitem>
+        </itemizedlist>
+        <para>
+            Bugle does not use threads itself, but applications that it
+            debugs might, and bugle needs to use appropriate locking and
+            thread-local storage libraries. The correct option should be
+            auto-detected, but you can force it with
+            <option>--with-threads</option>=<replaceable>model</replaceable>.
+            Valid models are <literal>pthreads</literal> and
+            <literal>single</literal> (i.e., no threads).
+        </para>
+        <para>
+            Finally, bugle intercepts events from X11. While there are no
+            known cases of this causing problems, it is difficult to make
+            the interception completely transparent, and so the
+            <option>--disable-xevent</option> option is
+            available to disable it at compile time.
+        </para>
+    </sect1>
+
+    <sect1 id="install-compile">
+        <title>Compiling and installing</title>
+        <para>
+            Compilation is as simple as running <userinput>make</userinput>.
+            Before installing, you should remove any previous installation of
+            bugle to avoid leaving old versions of files around. If you do not
+            have your original installation tree to run <userinput>make
+                uninstall</userinput>, you should at least remove the files in
+            <filename><replaceable>/usr/local/lib/</replaceable>bugle</filename>
+            and
+            <filename><replaceable>/usr/local/lib/</replaceable>libbugle*</filename>.
+            To install the new version, run <userinput>make
+                install</userinput> as <systemitem
+                class="username">root</systemitem>.
+        </para>
+        <para>
+            Next, you need to install some files for the user that will run
+            bugle. Create a directory <filename
+                class="directory">$HOME/.bugle</filename>, and copy
+            <filename>doc/examples/filters</filename> and
+            <filename>doc/examples/statistics</filename> into it.
+        </para>
+    </sect1>
+</chapter>
