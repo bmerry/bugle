@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="utf-8"?>
+<refentry id="checks.7">
+    <refentryinfo>
+        <date>October 2007</date>
+        <productname>BUGLE</productname>
+    </refentryinfo>
+    <refmeta>
+        <refentrytitle>bugle-checks</refentrytitle>
+        <manvolnum>7</manvolnum>
+    </refmeta>
+
+    <refnamediv>
+        <refname>bugle-checks</refname>
+        <refpurpose>check for errors that OpenGL defines as undefined
+            behaviour</refpurpose>
+    </refnamediv>
+
+    <refsynopsisdiv>
+        <screen>filterset checks</screen>
+    </refsynopsisdiv>
+
+    <refsect1>
+        <title>Description</title>
+        <para>
+            While OpenGL checks for many error conditions, there are some for
+            which the specification does not define behaviour. These instances
+            are usually in performance-critical paths where error-checking
+            would impact on performance. This filter-set checks for some of
+            these conditions.  Because of the high cost of the checks, it is
+            only intended for debugging.
+        </para>
+        <para>
+            The checks that are made are for:
+        </para>
+        <itemizedlist>
+            <listitem><para>
+                    Sourcing vertex or index data from unreadable client
+                    memory.
+            </para></listitem>
+            <listitem><para>
+                    Sourcing vertex or index data from outside the valid range
+                    of a vertex buffer object.
+            </para></listitem>
+            <listitem><para>
+                    Calling <function>glVertex</function> from outside
+                    <function>glBegin</function>/<function>glEnd</function>.
+            </para></listitem>
+            <listitem><para>
+                    Setting client state from inside
+                    <function>glBegin</function>/<function>glEnd</function>.
+            </para></listitem>
+            <listitem><para>
+                    Specifying indices to
+                    <function>glDrawRangeElements</function> that are outside
+                    the specified range.
+            </para></listitem>
+        </itemizedlist>
+        <para>
+            When an error is detected, a warning is written to standard error
+            and the call is ignored. There is currently no convenient way to
+            trap the errors in a debugger (you can, however, find the message
+            in the <application>bugle</application> source and set a
+            breakpoint on the appropriate line).
+        </para>
+    </refsect1>
+
+    <refsect1>
+        <title>Bugs</title>
+        <para>
+            Due to the design of C, there is no way to perfectly reliably
+            check for vertex array overruns, although memory debuggers can
+            help.
+        </para>
+        <para>
+            Mesa, up to 6.5.1, has a bug that prevents generic vertex
+            attributes from being validated.
+        </para>
+    </refsect1>
+
+    &author;
+
+    <refsect1>
+        <title>See also</title>
+        <para>&mp-bugle;, &mp-unwindstack;</para>
+    </refsect1>
+</refentry>

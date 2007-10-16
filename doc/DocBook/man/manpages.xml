@@ -1,8 +1,25 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<!-- Steps to add a new manual page:
+- write the page
+- svn add it
+- add it to this list
+- in ../bugle.xml:
+  - add the &ref-xxx entity
+  - add the &mp-xxx entity
+- in ../../../Makefile.am
+  - add the XML file to DOCBOOK_MAN_SRCS
+  - add the HTML file to DOCBOOK_HTML
+  - add the manpage to DOCBOOK_MAN_MANPAGES
+-->
 <appendix id="manpages">
     <title>Bugle manual pages</title>
     &ref-bugle;
     &ref-gldb-gui;
     &ref-camera;
+    &ref-checks;
+    &ref-eps;
+    &ref-error;
+    &ref-extoverride;
+    &ref-frontbuffer;
     &ref-unwindstack;
 </appendix>

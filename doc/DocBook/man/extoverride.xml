@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="utf-8"?>
+<refentry id="extoverride.7">
+    <refentryinfo>
+        <date>October 2007</date>
+        <productname>BUGLE</productname>
+    </refentryinfo>
+    <refmeta>
+        <refentrytitle>bugle-extoverride</refentrytitle>
+        <manvolnum>7</manvolnum>
+    </refmeta>
+
+    <refnamediv>
+        <refname>bugle-extoverride</refname>
+        <refpurpose>hide OpenGL extensions from an application</refpurpose>
+    </refnamediv>
+
+    <refsynopsisdiv>
+        <screen>filterset extoverride
+{
+    version "1.5"
+    disable "all"
+    disable "<replaceable>extension</replaceable>"
+    enable "<replaceable>extension</replaceable>"
+}</screen>
+    </refsynopsisdiv>
+
+    <refsect1>
+        <title>Description</title>
+        <para>
+            The <systemitem>extoverride</systemitem> filter-set modifies the
+            version and extension strings to hide driver capabilities from the
+            application. The primary use is to test an application to ensure
+            that it works correctly on drivers that do not offer these
+            capabilities. 
+        </para>
+        <para>
+            Apart from modifying these strings, a warning is printed to the
+            log if any function from one of these extensions is called.
+        </para>
+    </refsect1>
+
+    <refsect1>
+        <title>Options</title>
+        <variablelist>
+            <varlistentry>
+                <term><option>version</option></term>
+                <listitem><para>
+                        Sets a new value for <symbol>GL_VERSION</symbol>.
+                        However, if the true value is lexicographically
+                        smaller than this value, the true value is used.
+                </para></listitem>
+            </varlistentry>
+            <varlistentry>
+                <term><option>disable</option> "<literal>all</literal>"</term>
+                <listitem><para>
+                        By default, extensions are exposed unless explicitly
+                        disabled. This option reverses the behaviour to hide
+                        all extensions that are not explicitly enabled.
+                </para></listitem>
+            </varlistentry>
+            <varlistentry>
+                <term><option>disable</option> "<replaceable>extension</replaceable>"</term>
+                <listitem><para>
+                        Hides the named extension from the application. A warning is printed if
+                        the extension was not known at the time
+                        <application>bugle</application> was compiled; in this
+                        case it will still be hidden, but there will not be
+                        any warning if it is used anyway.
+                </para></listitem>
+            </varlistentry>
+            <varlistentry>
+                <term><option>enable</option> "<replaceable>extension</replaceable>"</term>
+                <listitem><para>
+                        Like the <option>disable</option> option, but
+                        enables an extension when the default is disabled.
+                </para></listitem>
+            </varlistentry>
+        </variablelist>
+    </refsect1>
+
+    <refsect1>
+        <title>Bugs</title>
+        <para>
+            Warnings are only printed if <emphasis>functions</emphasis> from
+            the disabled extensions are called. At present, no warning will be
+            printed if tokens from those extensions are passed (which is
+            difficult to determine, since multiple tokens may share the same
+            numeric value).  Furthermore, some extensions alter semantics
+            without explicit functions or tokens, such as
+            <symbol>GL_ARB_texture_non_power_of_two</symbol>; no warnings are
+            issued if these extensions are used.
+        </para>
+        <para>
+            Also note that extension loader libraries may interfere with the
+            warning mechanism. For example, <application>GLee</application>
+            uses wrappers that cause illegal function calls to be silently
+            ignored.
+        </para>
+    </refsect1>
+
+    &author;
+
+    <refsect1>
+        <title>See also</title>
+        <para>&mp-bugle;, &mp-log;, &mp-showextensions;</para>
+    </refsect1>
+</refentry>

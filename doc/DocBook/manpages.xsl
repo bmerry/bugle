@@ -5,9 +5,11 @@
     <xsl:param name="man.output.base.dir" select="'doc/'"/>
     <xsl:param name="man.output.subdirs" select="'1'"/>
     <xsl:param name="man.authors.section.enabled" select="'0'"/>
+    <xsl:param name="man.copyright.section.enabled" select="'0'"/>
     <xsl:param name="man.charmap.enabled" select="'1'"/>
     <xsl:param name="man.charmap.use.subset" select="'0'"/>
 
     <!-- man.authors.section.enabled requires a recent stylesheet -->
     <xsl:template name="author.section"/>
+    <xsl:template name="copyright.section"/>
 </xsl:stylesheet>

@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="utf-8"?>
+<refentry id="eps.7">
+    <refentryinfo>
+        <date>October 2007</date>
+        <productname>BUGLE</productname>
+    </refentryinfo>
+    <refmeta>
+        <refentrytitle>bugle-eps</refentrytitle>
+        <manvolnum>7</manvolnum>
+    </refmeta>
+
+    <refnamediv>
+        <refname>bugle-eps</refname>
+        <refpurpose>recover a stack trace after a segmentation fault</refpurpose>
+    </refnamediv>
+
+    <refsynopsisdiv>
+        <screen>filterset eps
+{
+    filename "<filename><replaceable>screenshot.eps</replaceable></filename>"
+    key_eps "<replaceable>key</replaceable>"
+    title "<replaceable>My screenshot</replaceable>"
+    bsp "<replaceable>no</replaceable>"
+    buffer "<replaceable>10000000</replaceable>"
+}</screen>
+    </refsynopsisdiv>
+
+    <refsect1>
+        <title>Description</title>
+        <para>
+            This screenshot is similar to &mp-screenshot;, but instead of
+            a raster image, it produces a vector graphic suitable for
+            printing. This is achieved through <ulink
+                url="http://www.geuz.org/gl2ps/"><application>gl2ps</application></ulink>,
+            which is incorporated into <application>bugle</application>. The
+            supported formats are Postscript, Encapsulated Postscript
+            (<acronym>EPS</acronym>), Portable Document Format
+            (<acronym>PDF</acronym>) and Scalable Vector Graphic
+            <acronym>SVG</acronym>).
+        </para>
+        <para>
+            The capturing process utilises the OpenGL feedback buffer (see
+            <citerefentry>
+                <refentrytitle>glFeedbackBuffer</refentrytitle>
+                <manvolnum>3</manvolnum>
+            </citerefentry>,
+            which creates some inherent limitations. No per-fragment effects
+            (such as texturing or bitmap rendering) are captured, not will
+            vertex programs work correctly. Essentially, the colour of each
+            vertex must be either directly specified or determined by the
+            OpenGL lighting model.
+        </para>
+    </refsect1>
+
+    <refsect1 id="eps-options">
+        <title>Options</title>
+        <variablelist>
+            <varlistentry>
+                <term><option>filename</option></term>
+                <listitem><para>
+                        The file to which the screenshot will be written. The
+                        extension is used to determine the file format. Valid
+                        extensions are 
+                        <filename class="extension">.ps</filename>,
+                        <filename class="extension">.eps</filename>,
+                        <filename class="extension">.pdf</filename> and
+                        <filename class="extension">.svg</filename>.
+                </para></listitem>
+            </varlistentry>
+            <varlistentry>
+                <term><option>key_eps</option></term>
+                <listitem><para>
+                        The key-press which triggers the snapshot.
+                </para></listitem>
+            </varlistentry>
+            <varlistentry>
+                <term><option>title</option></term>
+                <listitem><para>
+                        The title that is embedded in Postscript and
+                        <acronym>EPS</acronym> files.
+                </para></listitem>
+            </varlistentry>
+            <varlistentry>
+                <term><option>bsp</option></term>
+                <listitem><para>
+                        If this boolean is enabled, the depth sorting is done
+                        with a <acronym>BSP</acronym> tree to give accurate
+                        results. This may be necessary to get correct results
+                        in scenes with complex occlusion, but it is much
+                        slower.
+                </para></listitem>
+            </varlistentry>
+            <varlistentry>
+                <term><option>buffer</option></term>
+                <listitem><para>
+                        The number of entries to allocate for the feedback
+                        buffer. If this is too low, the feedback buffer will
+                        overflow and the screenshot will fail. The default
+                        should be enough for most simple scenes, but for
+                        highly complex scenes it may be necessary to create a
+                        larger buffer.
+                </para></listitem>
+            </varlistentry>
+        </variablelist>
+    </refsect1>
+
+    &author;
+
+    <refsect1>
+        <title>See also</title>
+        <para>
+            &mp-bugle;,
+            <citerefentry>
+                <refentrytitle>glFeedbackBuffer</refentrytitle>
+                <manvolnum>3</manvolnum>
+            </citerefentry>.
+        </para>
+    </refsect1>
+</refentry>

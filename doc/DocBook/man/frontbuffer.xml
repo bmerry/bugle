@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<refentry id="frontbuffer.7">
+    <refentryinfo>
+        <date>October 2007</date>
+        <productname>BUGLE</productname>
+    </refentryinfo>
+    <refmeta>
+        <refentrytitle>bugle-frontbuffer</refentrytitle>
+        <manvolnum>7</manvolnum>
+    </refmeta>
+
+    <refnamediv>
+        <refname>bugle-frontbuffer</refname>
+        <refpurpose>force rendering to the front buffer</refpurpose>
+    </refnamediv>
+
+    <refsynopsisdiv>
+        <screen>filterset frontbuffer</screen>
+    </refsynopsisdiv>
+
+    <refsect1>
+        <title>Description</title>
+        <para>
+            The <systemitem>frontbuffer</systemitem> filter-set overrides the
+            draw buffer, setting it to <symbol>GL_FRONT</symbol>. This is most
+            useful when used within &mp-gldb-gui; in order to see how a scene
+            is built up batch by batch.
+        </para>
+    </refsect1>
+    
+    <refsect1>
+        <title>Bugs</title>
+        <para>
+            As with any filter-set that modifies OpenGL state, it may break
+            complex rendering techniques like render-to-vertex-buffer.
+        </para>
+    </refsect1>
+
+    &author;
+
+    <refsect1>
+        <title>See also</title>
+        <para>&mp-bugle;, &mp-gldb-gui;,
+            <citerefentry>
+                <refentrytitle>glDrawBuffer</refentrytitle>
+                <manvolnum>3</manvolnum>
+            </citerefentry>
+        </para>
+    </refsect1>
+</refentry>

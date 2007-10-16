@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="utf-8"?>
+<refentry id="error.7">
+    <refentryinfo>
+        <date>October 2007</date>
+        <productname>BUGLE</productname>
+    </refentryinfo>
+    <refmeta>
+        <refentrytitle>bugle-error</refentrytitle>
+        <manvolnum>7</manvolnum>
+    </refmeta>
+
+    <refnamediv>
+        <refname>bugle-error</refname>
+        <refpurpose>detect errors in OpenGL calls</refpurpose>
+    </refnamediv>
+
+    <refsynopsisdiv>
+        <screen>filterset error</screen>
+    </refsynopsisdiv>
+
+    <refsect1>
+        <title>Description</title>
+        <para>
+            This filter-set does not take any visible action on its own, but
+            provides a service to other filter-sets. It calls
+            <citerefentry>
+                <refentrytitle>glGetError</refentrytitle>
+                <manvolnum>3</manvolnum>
+            </citerefentry>
+            after every OpenGL call to detect OpenGL errors (it does not
+            detect X errors).
+        </para>
+        <para>
+            Usually you will not need to explicitly load this filter-set; if
+            you want to be informed of OpenGL errors, either use the
+            <systemitem>showerror</systemitem> filterset, or
+            &mp-gldb-gui;. However, you may
+            occasionally see the message
+            <screen><computeroutput>An OpenGL error was detected but will be lost to the application.</computeroutput></screen>
+            This means that <application>bugle</application>'s internal
+            error-checking code accidentally collected an error caused by one
+            of your calls, and thus if your application later called
+            <citerefentry>
+                <refentrytitle>glGetError</refentrytitle>
+                <manvolnum>3</manvolnum>
+            </citerefentry>
+            it would not be informed of the error. However, if you add the
+            <systemitem>error</systemitem> filter-set, it will catch the error
+            first and your application will be correctly informed of the
+            error.
+        </para>
+    </refsect1>
+
+    <refsect1>
+        <title>Bugs</title>
+        <para>
+            Because the error reporting semantics of OpenGL are not completely
+            defined (in particular, an implementation may choose how many
+            error flags it has), it is impossible to guarantee that this
+            filter-set is completely transparent to the application. However,
+            the first call to
+            <citerefentry>
+                <refentrytitle>glGetError</refentrytitle>
+                <manvolnum>3</manvolnum>
+            </citerefentry> after generating an error will
+            always return an error, and in practice this is all that is
+            necessary.
+        </para>
+    </refsect1>
+
+    &author;
+
+    <refsect1>
+        <title>See also</title>
+        <para>&mp-bugle;, &mp-showerror;, &mp-trace;,
+            <citerefentry>
+                <refentrytitle>glGetError</refentrytitle>
+                <manvolnum>3</manvolnum>
+            </citerefentry>
+        </para>
+    </refsect1>
+</refentry>
+
