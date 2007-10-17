@@ -7,9 +7,17 @@
     <xsl:param name="man.authors.section.enabled" select="'0'"/>
     <xsl:param name="man.copyright.section.enabled" select="'0'"/>
     <xsl:param name="man.charmap.enabled" select="'1'"/>
-    <xsl:param name="man.charmap.use.subset" select="'0'"/>
+    <xsl:param name="man.charmap.use.subset" select="'1'"/>
+    <xsl:param name="man.charmap.subset.profile">
+        @*[local-name() = 'name'] = 'RIGHTWARDS ARROW'
+    </xsl:param>
 
     <!-- man.authors.section.enabled requires a recent stylesheet -->
     <xsl:template name="author.section"/>
     <xsl:template name="copyright.section"/>
+
+    <!-- insert the version number from a command-line parameter -->
+    <xsl:template name="get.refentry.version">
+        <xsl:value-of select="$bugle.version"/>
+    </xsl:template>
 </xsl:stylesheet>

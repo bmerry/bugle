@@ -274,6 +274,7 @@ dist_htmlimages_DATA = \
 	doc/DocBook/images/gtk-zoom-100.png
 
 # Documentation sources
+XSLTPROC_OPTIONS = --stringparam bugle.version $(PACKAGE_VERSION)
 DOCBOOK_MAN_SRCS = \
 	doc/DocBook/man/bugle.xml \
 	doc/DocBook/man/gldb-gui.xml \
@@ -313,7 +314,7 @@ $(DOCBOOK_MAN_MANPAGES): doc/DocBook/man.stamp
 	@touch "$@"
 doc/DocBook/man.stamp: $(DOCBOOK_MAN_SRCS) doc/DocBook/bugle.xml doc/DocBook/manpages.xsl
 	$(XMLLINT) --noent --noout --valid $(srcdir)/doc/DocBook/bugle.xml
-	$(XSLTPROC) $(srcdir)/doc/DocBook/manpages.xsl $(srcdir)/doc/DocBook/bugle.xml
+	$(XSLTPROC) $(XSLTPROC_OPTIONS) $(srcdir)/doc/DocBook/manpages.xsl $(srcdir)/doc/DocBook/bugle.xml
 	$(mkdir_p) doc/DocBook
 	echo timestamp > doc/DocBook/man.stamp
 dist_man_MANS += $(DOCBOOK_MAN_MANPAGES)
@@ -338,12 +339,20 @@ $(DOCBOOK_HTML): doc/DocBook/html.stamp
 	@touch $@
 doc/DocBook/html.stamp: $(DOCBOOK_SRCS) doc/DocBook/xhtml-chunk.xsl doc/DocBook/xhtml-common.xsl
 	$(XMLLINT) --noent --noout --valid $(srcdir)/doc/DocBook/bugle.xml
-	$(XSLTPROC) $(srcdir)/doc/DocBook/xhtml-chunk.xsl $(srcdir)/doc/DocBook/bugle.xml
+	$(XSLTPROC) $(XSLTPROC_OPTIONS) $(srcdir)/doc/DocBook/xhtml-chunk.xsl $(srcdir)/doc/DocBook/bugle.xml
 	$(mkdir_p) doc/DocBook
 	echo timestamp > doc/DocBook/html.stamp
 htmldoc_DATA = $(DOCBOOK_HTML)
 EXTRA_DIST += doc/DocBook/html.stamp $(DOCBOOK_HTML)
 MAINTAINERCLEANFILES += doc/DocBook/html.stamp $(DOCBOOK_HTML)
+
+# HTML documentation, single document
+doc/html/single.html: $(DOCBOOK_SRCS) doc/DocBook/xhtml-single.xsl doc/DocBook/xhtml-common.xsl
+	$(XMLLINT) --noent --noout --valid $(srcdir)/doc/DocBook/bugle.xml
+	$(XSLTPROC) $(XSLTPROC_OPTIONS) -o doc/html/single.html $(srcdir)/doc/DocBook/xhtml-single.xsl $(srcdir)/doc/DocBook/bugle.xml
+htmldoc_DATA += doc/html/single.html
+EXTRA_DIST += doc/html/single.html
+MAINTAINERCLEANFILES += doc/html/single.html
 
 libtool: @LIBTOOL_DEPS@
 	$(SHELL) ./config.status --recheck
