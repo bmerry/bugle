@@ -283,6 +283,7 @@ DOCBOOK_MAN_SRCS = \
 	doc/DocBook/man/error.xml \
 	doc/DocBook/man/extoverride.xml \
 	doc/DocBook/man/frontbuffer.xml \
+	doc/DocBook/man/log.xml \
 	doc/DocBook/man/unwindstack.xml \
 	doc/DocBook/man/manpages.xml
 DOCBOOK_SRCS = $(DOCBOOK_MAN_SRCS) \
@@ -306,6 +307,7 @@ DOCBOOK_MAN_MANPAGES = \
 	doc/man7/bugle-error.7 \
 	doc/man7/bugle-extoverride.7 \
 	doc/man7/bugle-frontbuffer.7 \
+	doc/man7/bugle-log.7 \
 	doc/man7/bugle-unwindstack.7
 $(DOCBOOK_MAN_MANPAGES): doc/DocBook/man.stamp
 	@touch "$@"
@@ -330,6 +332,7 @@ DOCBOOK_HTML = doc/html/index.html \
 	       doc/html/error.7.html \
 	       doc/html/extoverride.7.html \
 	       doc/html/frontbuffer.7.html \
+	       doc/html/log.7.html \
 	       doc/html/unwindstack.7.html
 $(DOCBOOK_HTML): doc/DocBook/html.stamp
 	@touch $@

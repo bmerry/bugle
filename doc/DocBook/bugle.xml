@@ -8,8 +8,8 @@
 <!ENTITY mp-error "<link linkend='error.7'><citerefentry><refentrytitle>bugle-error</refentrytitle><manvolnum>7</manvolnum></citerefentry></link>">
 <!ENTITY mp-extoverride "<link linkend='extoverride.7'><citerefentry><refentrytitle>bugle-extoverride</refentrytitle><manvolnum>7</manvolnum></citerefentry></link>">
 <!ENTITY mp-frontbuffer "<link linkend='frontbuffer.7'><citerefentry><refentrytitle>bugle-frontbuffer</refentrytitle><manvolnum>7</manvolnum></citerefentry></link>">
+<!ENTITY mp-log "<link linkend='log.7'><citerefentry><refentrytitle>bugle-log</refentrytitle><manvolnum>7</manvolnum></citerefentry></link>">
 <!-- FIXME
-<!ENTITY mp-log "<xref linkend='frontbuffer.7'/>">
 <!ENTITY mp-screenshot "<xref linkend='screenshot.7'/>">
 <!ENTITY mp-showerror "<xref linkend='showerror.7'/>">
 <!ENTITY mp-showextensions "<xref linkend='showextensions.7'/>">
@@ -21,7 +21,7 @@
 <!--
 <!ENTITY mp-wireframe "<xref linkend='wireframe.7'/>">
 -->
-<!ENTITY mp-log "[FIXME]bugle-frontbuffer(7)">
+<!ENTITY mp-logstats "[FIXME]bugle-logstats(7)">
 <!ENTITY mp-screenshot "[FIXME]bugle-screenshot(7)">
 <!ENTITY mp-showerror "[FIXME]bugle-showerror(7)">
 <!ENTITY mp-showextensions "[FIXME]bugle-showextensions(7)">
@@ -40,6 +40,7 @@
 <!ENTITY ref-error SYSTEM "man/error.xml">
 <!ENTITY ref-extoverride SYSTEM "man/extoverride.xml">
 <!ENTITY ref-frontbuffer SYSTEM "man/frontbuffer.xml">
+<!ENTITY ref-log SYSTEM "man/log.xml">
 <!ENTITY ref-unwindstack SYSTEM "man/unwindstack.xml">
 <!ENTITY ch-install SYSTEM "install.xml">
 <!ENTITY ch-faq SYSTEM "faq.xml">

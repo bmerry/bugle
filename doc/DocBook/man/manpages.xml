@@ -21,5 +21,6 @@
     &ref-error;
     &ref-extoverride;
     &ref-frontbuffer;
+    &ref-log;
     &ref-unwindstack;
 </appendix>
