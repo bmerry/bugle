@@ -1,0 +1,148 @@
+<?xml version="1.0" encoding="utf-8"?>
+<refentry id="screenshot.7">
+    <refentryinfo>
+        <date>October 2007</date>
+        <productname>BUGLE</productname>
+    </refentryinfo>
+    <refmeta>
+        <refentrytitle>bugle-screenshot</refentrytitle>
+        <manvolnum>7</manvolnum>
+    </refmeta>
+
+    <refnamediv>
+        <refname>bugle-screenshot</refname>
+        <refpurpose>takes screenshots and captures video</refpurpose>
+    </refnamediv>
+
+    <refsynopsisdiv>
+        <screen>filterset screenshot
+{
+    filename "<replaceable>screenshot.ppm</replaceable>"
+    key_screenshot "<replaceable>C-A-S-S</replaceable>"
+}</screen>
+    <screen>filterset screenshot <replaceable>C-V</replaceable> inactive
+{
+    video "yes"
+    filename "<replaceable>video.avi</replaceable>"
+    codec "<replaceable>mpeg4</replaceable>"
+    bitrate "<replaceable>1000000</replaceable>"
+    allframes "<replaceable>no</replaceable>"
+}</screen>
+    </refsynopsisdiv>
+
+    <refsect1>
+        <title>Description</title>
+        <para>The <systemitem>screenshot</systemitem> filter-set can be used
+            in one of two modes, corresponding to the two examples above. In
+            the first, a particular key-press causes a screenshot to be taken,
+            which is written to file in
+            <citerefentry>
+                <refentrytitle>ppm</refentrytitle>
+                <manvolnum>5</manvolnum>
+            </citerefentry>
+            format. In the second, a video stream is captured and encoded to
+            one of a range of formats with
+            <citerefentry>
+                <refentrytitle>ffmpeg</refentrytitle>
+                <manvolnum>1</manvolnum>
+            </citerefentry>.
+        </para>
+    </refsect1>
+
+    <refsect1>
+        <title>Options</title>
+        <variablelist>
+            <varlistentry>
+                <term><option>video</option></term>
+                <listitem><para>
+                        This option controls the mode: either screenshots on
+                        request or a video stream. This filter-set supports
+                        activation and deactivation, so it is possible to
+                        record video only on demand.
+                </para></listitem>
+            </varlistentry>
+            <varlistentry>
+                <term><option>filename</option></term>
+                <listitem><para>
+                        The file to which the image/video is written. In the
+                        case of an image, if the filename contains a
+                        <literal>%</literal> it is
+                        used as a format string for 
+                        <citerefentry>
+                            <refentrytitle>sprintf</refentrytitle>
+                            <manvolnum>3</manvolnum>
+                        </citerefentry> with the frame number passed as the
+                        parameter.
+                </para></listitem>
+            </varlistentry>
+            <varlistentry>
+                <term><option>key_screenshot</option></term>
+                <listitem><para>
+                        The key combination used to capture a screenshot.
+                </para></listitem>
+            </varlistentry>
+            <varlistentry>
+                <term><option>codec</option></term>
+                <listitem><para>
+                        The codec to use when capturing a video. Refer to the
+                        documentation for
+                        <citerefentry>
+                            <refentrytitle>ffmpeg</refentrytitle>
+                            <manvolnum>1</manvolnum>
+                        </citerefentry>
+                        for a list of valid codecs. Some codecs require
+                        special setup and may not work, but common codecs such
+                        as <systemitem>mpeg4</systemitem> and
+                        <systemitem>huffyuv</systemitem> should work.
+                </para></listitem>
+            </varlistentry>
+            <varlistentry>
+                <term><option>bitrate</option></term>
+                <listitem><para>
+                        The approximate number of bits per second to use for
+                        video encoding.
+                </para></listitem>
+            </varlistentry>
+            <varlistentry>
+                <term><option>allframes</option></term>
+                <listitem><para>
+                        By default, a frame is captured 30 times per second.
+                        If this option is set, every frame is captured. Note
+                        that the video file will still play at 30fps, so the
+                        speed will vary unless the application has been
+                        written to use a fixed time-step between frames for
+                        its internal animation (this is a useful way to
+                        produce smooth video if the capturing overhead is
+                        otherwise too high).
+                </para></listitem>
+            </varlistentry>
+            <varlistentry>
+                <term><option>lag</option></term>
+                <listitem><para>
+                        Sets the latency between frame capture and encoding.
+                        If <symbol>GL_EXT_pixel_buffer_object</symbol> is
+                        available, setting this option to a value greater than
+                        1 can help mask readback latency, at the expense of
+                        video memory.
+                </para></listitem>
+            </varlistentry>
+        </variablelist>
+    </refsect1>
+
+    &author;
+
+    <refsect1>
+        <title>See also</title>
+        <para>
+            &mp-bugle;,
+            <citerefentry>
+                <refentrytitle>ppm</refentrytitle>
+                <manvolnum>5</manvolnum>
+            </citerefentry>,
+            <citerefentry>
+                <refentrytitle>ffmpeg</refentrytitle>
+                <manvolnum>1</manvolnum>
+            </citerefentry>.
+        </para>
+    </refsect1>
+</refentry>

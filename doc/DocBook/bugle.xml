@@ -9,10 +9,11 @@
 <!ENTITY mp-extoverride "<link linkend='extoverride.7'><citerefentry><refentrytitle>bugle-extoverride</refentrytitle><manvolnum>7</manvolnum></citerefentry></link>">
 <!ENTITY mp-frontbuffer "<link linkend='frontbuffer.7'><citerefentry><refentrytitle>bugle-frontbuffer</refentrytitle><manvolnum>7</manvolnum></citerefentry></link>">
 <!ENTITY mp-log "<link linkend='log.7'><citerefentry><refentrytitle>bugle-log</refentrytitle><manvolnum>7</manvolnum></citerefentry></link>">
+<!ENTITY mp-logstats "<link linkend='logstats.7'><citerefentry><refentrytitle>bugle-logstats</refentrytitle><manvolnum>7</manvolnum></citerefentry></link>">
+<!ENTITY mp-screenshot "<link linkend='screenshot.7'><citerefentry><refentrytitle>bugle-screenshot</refentrytitle><manvolnum>7</manvolnum></citerefentry></link>">
+<!ENTITY mp-showerror "<link linkend='showerror.7'><citerefentry><refentrytitle>bugle-showerror</refentrytitle><manvolnum>7</manvolnum></citerefentry></link>">
+<!ENTITY mp-showextensions "<link linkend='showextensions.7'><citerefentry><refentrytitle>bugle-showextensions</refentrytitle><manvolnum>7</manvolnum></citerefentry></link>">
 <!-- FIXME
-<!ENTITY mp-screenshot "<xref linkend='screenshot.7'/>">
-<!ENTITY mp-showerror "<xref linkend='showerror.7'/>">
-<!ENTITY mp-showextensions "<xref linkend='showextensions.7'/>">
 <!ENTITY mp-showstats "<xref linkend='showstats.7'/>">
 <!ENTITY mp-stats "<xref linkend='stats.7'/>">
 <!ENTITY mp-trace "<xref linkend='trace.7'/>">
@@ -21,12 +22,11 @@
 <!--
 <!ENTITY mp-wireframe "<xref linkend='wireframe.7'/>">
 -->
-<!ENTITY mp-logstats "[FIXME]bugle-logstats(7)">
-<!ENTITY mp-screenshot "[FIXME]bugle-screenshot(7)">
-<!ENTITY mp-showerror "[FIXME]bugle-showerror(7)">
-<!ENTITY mp-showextensions "[FIXME]bugle-showextensions(7)">
 <!ENTITY mp-showstats "[FIXME]bugle-showstats(7)">
-<!ENTITY mp-stats "[FIXME]bugle-stats(7)">
+<!ENTITY mp-stats_basic "[FIXME]bugle-stats_basic(7)">
+<!ENTITY mp-stats_fragments "[FIXME]bugle-stats_fragments(7)">
+<!ENTITY mp-stats_primitives "[FIXME]bugle-stats_primitives(7)">
+<!ENTITY mp-stats_nv "[FIXME]bugle-stats_nv(7)">
 <!ENTITY mp-trace "[FIXME]bugle-trace(7)">
 <!ENTITY mp-wireframe "[FIXME]bugle-wireframe(7)">
 
@@ -41,6 +41,10 @@
 <!ENTITY ref-extoverride SYSTEM "man/extoverride.xml">
 <!ENTITY ref-frontbuffer SYSTEM "man/frontbuffer.xml">
 <!ENTITY ref-log SYSTEM "man/log.xml">
+<!ENTITY ref-logstats SYSTEM "man/logstats.xml">
+<!ENTITY ref-screenshot SYSTEM "man/screenshot.xml">
+<!ENTITY ref-showerror SYSTEM "man/showerror.xml">
+<!ENTITY ref-showextensions SYSTEM "man/showextensions.xml">
 <!ENTITY ref-unwindstack SYSTEM "man/unwindstack.xml">
 <!ENTITY ch-install SYSTEM "install.xml">
 <!ENTITY ch-faq SYSTEM "faq.xml">

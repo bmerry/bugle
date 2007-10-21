@@ -210,24 +210,4 @@ filterset <replaceable>filterset</replaceable> <optional><replaceable>key</repla
     
     &author;
 
-    <refsect1>
-        <title>See also</title>
-        <itemizedlist>
-            <listitem><para>&mp-gldb-gui;</para></listitem>
-            <listitem><para>&mp-camera;</para></listitem>
-            <listitem><para>&mp-checks;</para></listitem>
-            <listitem><para>&mp-eps;</para></listitem>
-            <listitem><para>&mp-error;</para></listitem>
-            <listitem><para>&mp-frontbuffer;</para></listitem>
-            <listitem><para>&mp-log;</para></listitem>
-            <listitem><para>&mp-screenshot;</para></listitem>
-            <listitem><para>&mp-showerror;</para></listitem>
-            <listitem><para>&mp-showextensions;</para></listitem>
-            <listitem><para>&mp-showstats;</para></listitem>
-            <listitem><para>&mp-stats;</para></listitem>
-            <listitem><para>&mp-trace;</para></listitem>
-            <listitem><para>&mp-unwindstack;</para></listitem>
-            <listitem><para>&mp-wireframe;</para></listitem>
-        </itemizedlist>
-    </refsect1>
 </refentry>

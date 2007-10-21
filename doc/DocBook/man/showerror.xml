@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<refentry id="showerror.7">
+    <refentryinfo>
+        <date>October 2007</date>
+        <productname>BUGLE</productname>
+    </refentryinfo>
+    <refmeta>
+        <refentrytitle>bugle-showerror</refentrytitle>
+        <manvolnum>7</manvolnum>
+    </refmeta>
+
+    <refnamediv>
+        <refname>bugle-showerror</refname>
+        <refpurpose>reports errors in OpenGL calls</refpurpose>
+    </refnamediv>
+
+    <refsynopsisdiv>
+        <screen>filterset showerror</screen>
+    </refsynopsisdiv>
+
+    <refsect1>
+        <title>Description</title>
+        <para>
+            This filter-set is a light-weight method of detecting OpenGL
+            errors in applications, where &mp-gldb-gui; is not useable for
+            some reason (for example, when debugging a full-screen
+            application). It writes OpenGL errors to the log (see &mp-log; for
+            details of the log). With the default log settings, the error will
+            be reported to standard error.
+        </para>
+    </refsect1>
+
+    &author;
+
+    <refsect1>
+        <title>See also</title>
+        <para>&mp-bugle;, &mp-error;, &mp-log;, &mp-gldb-gui;,
+            <citerefentry>
+                <refentrytitle>glGetError</refentrytitle>
+                <manvolnum>3</manvolnum>
+            </citerefentry>
+        </para>
+    </refsect1>
+</refentry>

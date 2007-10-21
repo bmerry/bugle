@@ -22,5 +22,9 @@
     &ref-extoverride;
     &ref-frontbuffer;
     &ref-log;
+    &ref-logstats;
+    &ref-screenshot;
+    &ref-showerror;
+    &ref-showextensions;
     &ref-unwindstack;
 </appendix>
