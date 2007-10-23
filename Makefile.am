@@ -289,6 +289,7 @@ DOCBOOK_MAN_SRCS = \
 	doc/DocBook/man/screenshot.xml \
 	doc/DocBook/man/showerror.xml \
 	doc/DocBook/man/showextensions.xml \
+	doc/DocBook/man/showstats.xml \
 	doc/DocBook/man/unwindstack.xml \
 	doc/DocBook/man/manpages.xml
 DOCBOOK_SRCS = $(DOCBOOK_MAN_SRCS) \
@@ -317,6 +318,7 @@ DOCBOOK_MAN_MANPAGES = \
 	doc/man7/bugle-screenshot.7 \
 	doc/man7/bugle-showerror.7 \
 	doc/man7/bugle-showextensions.7 \
+	doc/man7/bugle-showstats.7 \
 	doc/man7/bugle-unwindstack.7
 $(DOCBOOK_MAN_MANPAGES): doc/DocBook/man.stamp
 	@touch "$@"
@@ -346,6 +348,7 @@ DOCBOOK_HTML = doc/html/index.html \
 	       doc/html/screenshot.7.html \
 	       doc/html/showerror.7.html \
 	       doc/html/showextensions.7.html \
+	       doc/html/showstats.7.html \
 	       doc/html/unwindstack.7.html
 $(DOCBOOK_HTML): doc/DocBook/html.stamp
 	@touch $@

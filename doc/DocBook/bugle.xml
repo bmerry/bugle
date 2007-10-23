@@ -13,8 +13,8 @@
 <!ENTITY mp-screenshot "<link linkend='screenshot.7'><citerefentry><refentrytitle>bugle-screenshot</refentrytitle><manvolnum>7</manvolnum></citerefentry></link>">
 <!ENTITY mp-showerror "<link linkend='showerror.7'><citerefentry><refentrytitle>bugle-showerror</refentrytitle><manvolnum>7</manvolnum></citerefentry></link>">
 <!ENTITY mp-showextensions "<link linkend='showextensions.7'><citerefentry><refentrytitle>bugle-showextensions</refentrytitle><manvolnum>7</manvolnum></citerefentry></link>">
+<!ENTITY mp-showstats "<link linkend='showstats.7'><citerefentry><refentrytitle>bugle-showstats</refentrytitle><manvolnum>7</manvolnum></citerefentry></link>">
 <!-- FIXME
-<!ENTITY mp-showstats "<xref linkend='showstats.7'/>">
 <!ENTITY mp-stats "<xref linkend='stats.7'/>">
 <!ENTITY mp-trace "<xref linkend='trace.7'/>">
 -->
@@ -22,7 +22,6 @@
 <!--
 <!ENTITY mp-wireframe "<xref linkend='wireframe.7'/>">
 -->
-<!ENTITY mp-showstats "[FIXME]bugle-showstats(7)">
 <!ENTITY mp-stats_basic "[FIXME]bugle-stats_basic(7)">
 <!ENTITY mp-stats_fragments "[FIXME]bugle-stats_fragments(7)">
 <!ENTITY mp-stats_primitives "[FIXME]bugle-stats_primitives(7)">
@@ -45,6 +44,7 @@
 <!ENTITY ref-screenshot SYSTEM "man/screenshot.xml">
 <!ENTITY ref-showerror SYSTEM "man/showerror.xml">
 <!ENTITY ref-showextensions SYSTEM "man/showextensions.xml">
+<!ENTITY ref-showstats SYSTEM "man/showstats.xml">
 <!ENTITY ref-unwindstack SYSTEM "man/unwindstack.xml">
 <!ENTITY ch-install SYSTEM "install.xml">
 <!ENTITY ch-faq SYSTEM "faq.xml">

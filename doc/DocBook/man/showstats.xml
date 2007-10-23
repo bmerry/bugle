@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="utf-8"?>
+<refentry id="showstats.7">
+    <refentryinfo>
+        <date>October 2007</date>
+        <productname>BUGLE</productname>
+    </refentryinfo>
+    <refmeta>
+        <refentrytitle>bugle-showstats</refentrytitle>
+        <manvolnum>7</manvolnum>
+    </refmeta>
+
+    <refnamediv>
+        <refname>bugle-showstats</refname>
+        <refpurpose>render statistics over the display</refpurpose>
+    </refnamediv>
+
+    <refsynopsisdiv>
+        <screen>filterset showstats
+{
+    show "<replaceable>statistic1</replaceable>"
+    show "<replaceable>statistic2</replaceable>"
+    graph "<replaceable>statistic3</replaceable>"
+}</screen>
+    </refsynopsisdiv>
+
+    <refsect1>
+        <title>Description</title>
+        <para>
+            The <systemitem>showstats</systemitem> filter-set
+            displaystatistics gathered by other filter-sets over the rendered
+            display. These filter-sets must be listed in the chain ahead of
+            <systemitem>showstats</systemitem>.  Statistics can be displayed
+            either as text or as graphs.
+        </para>
+    </refsect1>
+
+    <refsect1>
+        <title>Options</title>
+        <variablelist>
+            <varlistentry>
+                <term><option>show</option></term>
+                <listitem><para>
+                        Specifies a statistic to display as text. The name
+                        must match an entry in
+                        <filename>~/.bugle/statistics</filename>.
+                </para></listitem>
+            </varlistentry>
+            <varlistentry>
+                <term><option>graph</option></term>
+                <listitem><para>
+                        This is like the <option>show</option> option above,
+                        but displays a graph rather than text.
+                </para></listitem>
+            </varlistentry>
+            <varlistentry>
+                <term><option>time</option></term>
+                <listitem><para>
+                        The interval (in seconds) between updating the
+                        statistics. The default is one second.
+                </para></listitem>
+            </varlistentry>
+            <varlistentry>
+                <term><option>key_accumulate</option></term>
+                <listitem><para>
+                        By default, statistics are averaged over the time
+                        interval specified above, making them approximately
+                        instantaneous rates. Pressing this key will cause the
+                        display to instead show the average from the time the
+                        key was pressed until the current moment.
+                </para></listitem>
+            </varlistentry>
+            <varlistentry>
+                <term><option>key_unaccumulate</option></term>
+                <listitem><para>
+                        This key cancels the effect of
+                        <option>key_accumulate</option>.
+                </para></listitem>
+            </varlistentry>
+        </variablelist>
+    </refsect1>
+
+    <refsect1>
+        <title>Files</title>
+        <variablelist>
+            <varlistentry>
+                <term><filename>~/.bugle/statistics</filename></term>
+                <listitem><para>
+                        Formulae and metadata for statistics
+                </para></listitem>
+            </varlistentry>
+        </variablelist>
+    </refsect1>
+
+    <refsect1>
+        <title>Environment</title>
+        <variablelist>
+            <varlistentry>
+                <term><envar>BUGLE_STATISTICS</envar></term>
+                <listitem><para>
+                        If set, defines the location of the statistics file,
+                        overriding the default above.
+                </para></listitem>
+            </varlistentry>
+        </variablelist>
+    </refsect1>
+
+    &author;
+
+    <refsect1>
+        <title>See also</title>
+        <para>
+            &mp-bugle;,
+            &mp-stats_basic;
+            &mp-stats_primitives;
+            &mp-stats_fragments;
+            &mp-stats_nv;
+            &mp-logstats;
+        </para>
+    </refsect1>
+</refentry>
