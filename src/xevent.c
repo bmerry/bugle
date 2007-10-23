@@ -644,6 +644,7 @@ void bugle_register_xevent_key(const xevent_key *key,
 {
     handler *h;
 
+    if (key->keysym == NoSymbol) return;
     h = (handler *) bugle_malloc(sizeof(handler));
     h->key = *key;
     h->wanted = wanted;

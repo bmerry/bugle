@@ -466,3 +466,15 @@
     substitute 7 "ROP"
     label "GPU Bottleneck [NV-HW]"
 }
+
+#
+# Call count statistics
+#
+
+# The divide+multiply causes a NaN if the count is 0, avoiding a flood
+# of 0's.
+"calls per frame" = d("calls:*") / d("calls:*") * d("calls:*") / d("frames")
+{
+    precision 0
+    label "*"
+}

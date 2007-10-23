@@ -1,5 +1,5 @@
 /*  BuGLe: an OpenGL debugging tool
- *  Copyright (C) 2004-2006  Bruce Merry
+ *  Copyright (C) 2004-2007  Bruce Merry
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -80,8 +80,16 @@ typedef struct
 static bugle_hash_table stats_signals;
 static size_t stats_signals_num_active = 0;
 static bugle_linked_list stats_signals_active;
+
+/* Flat list of available statistics. Initially it is the statistics
+ * specified in the file, but later rewritten to instantiate any generics.
+ * The instances are complete clones with no shared memory. Instances are
+ * also sequential in the linked list.
+ */
 static bugle_linked_list *stats_statistics = NULL;
-static bugle_hash_table stats_statistics_table;
+/* Maps a name to the first instance and last instance of a statistic in stats_statistics. */
+static bugle_hash_table stats_statistics_first;
+static bugle_hash_table stats_statistics_last;
 
 /*** Low-level utilities ***/
 
@@ -240,7 +248,7 @@ static void stats_signal_values_gather(stats_signal_values *sv)
     }
     /* Make sure that everything is initialised to an insane value (NaN) */
     for (i = 0; i < stats_signals_num_active; i++)
-        sv->values[i].value = sv->values[i].integral = 0.0 / 0.0;
+        sv->values[i].value = sv->values[i].integral = NAN;
     for (s = bugle_list_head(&stats_signals_active); s; s = bugle_list_next(s))
     {
         si = (stats_signal *) bugle_list_data(s);
@@ -258,35 +266,174 @@ static void stats_signal_values_gather(stats_signal_values *sv)
     }
 }
 
-/* Initialises and activates all signals that are this expression depends on.
- * It returns true if they were successfully activated, or false if any
- * failed to activate or were unregistered.
+/* Calls the callback function for each signal sub-expression in the
+ * expression. The return value is the AND of the return values of all
+ * the callbacks. If shortcut is true, the function returns as soon as
+ * any callback return false, without calling the rest.
  */
-static bool stats_expression_activate_signals(stats_expression *expr)
+static bool stats_expression_forall(stats_expression *expr, bool shortcut,
+                                    bool (*callback)(stats_expression *, void *),
+                                    void *arg)
 {
-    bool ans = true;
+    bool ans;
     switch (expr->type)
     {
     case STATS_EXPRESSION_NUMBER:
         return true;
     case STATS_EXPRESSION_OPERATION:
-        if (expr->left)
-            ans = stats_expression_activate_signals(expr->left) && ans;
+        ans = stats_expression_forall(expr->left, shortcut, callback, arg);
+        if (shortcut && !ans) return ans;
         if (expr->right)
-            ans = stats_expression_activate_signals(expr->right) && ans;
+            ans = stats_expression_forall(expr->right, shortcut, callback, arg) && ans;
         return ans;
     case STATS_EXPRESSION_SIGNAL:
-        expr->signal = stats_signal_get(expr->signal_name);
-        if (!expr->signal)
-        {
-            bugle_log_printf("stats", "expression", BUGLE_LOG_WARNING,
-                             "Signal %s is not registered - missing filter-set?",
-                             expr->signal_name);
-            return false;
-        }
-        return stats_signal_activate(expr->signal);
+        return callback(expr, arg);
     }
     return false;  /* should never be reached */
+}
+
+/* Callback for stats_expression_activate_signals */
+static bool stats_expression_activate_signals1(stats_expression *expr, void *arg)
+{
+    expr->signal = stats_signal_get(expr->signal_name);
+    if (!expr->signal)
+    {
+        bugle_log_printf("stats", "expression", BUGLE_LOG_WARNING,
+                         "Signal %s is not registered - missing filter-set?",
+                         expr->signal_name);
+        return false;
+    }
+    return stats_signal_activate(expr->signal);
+}
+
+/* Initialises and activates all signals that this expression depends on.
+ * It returns true if they were successfully activated, or false if any
+ * failed to activate or were unregistered.
+ */
+static bool stats_expression_activate_signals(stats_expression *expr)
+{
+    return stats_expression_forall(expr, false, stats_expression_activate_signals1, NULL);
+}
+
+/* Checks whether this signal_name does NOT contain a *. This is because
+ * the forall takes an AND rather than an OR. If the signal is generic, it
+ * copies a pointer to the name into the arg, if not already present.
+ */
+static bool stats_expression_generic1(stats_expression *expr, void *arg)
+{
+    if (strchr(expr->signal_name, '*') != NULL)
+    {
+        char **out;
+        out = (char **) arg;
+        if (!*out) *out = expr->signal_name;
+        return false;
+    }
+    else return true;
+}
+
+/* If the expression is generic, returns a pointer to a generic signal name
+ * (which should NOT be freed). Otherwise, returns NULL.
+ */
+static char *stats_expression_generic(stats_expression *expr)
+{
+    char *generic_name = NULL;
+    stats_expression_forall(expr, true, stats_expression_generic1, &generic_name);
+    return generic_name;
+}
+
+/* Creates a new string by substituting rep for the first * in pattern.
+ * The caller must free the memory.
+ */
+static char *pattern_replace(const char *pattern, const char *rep)
+{
+    size_t l_pattern, l_rep;
+    char *wildcard;
+    char *full;
+
+    wildcard = strchr(pattern, '*');
+    if (!wildcard) return bugle_strdup(pattern);
+    l_pattern = strlen(pattern);
+    l_rep = strlen(rep);
+    full = bugle_malloc(l_pattern + l_rep);
+    memcpy(full, pattern, wildcard - pattern);
+    memcpy(full + (wildcard - pattern), rep, l_rep);
+    strcpy(full + (wildcard - pattern) + l_rep, wildcard + 1);
+    return full;
+}
+
+/* Checks whether instance matches pattern, where the first * is a wildcard. */
+static bool pattern_match(const char *pattern, const char *instance)
+{
+    char *wildcard;
+    size_t l_pattern, l_instance;
+    size_t size1, size2;
+
+    wildcard = strchr(pattern, '*');
+    if (!wildcard)
+        return strcmp(pattern, instance) == 0;
+
+    l_pattern = strlen(pattern);
+    l_instance = strlen(instance);
+    if (l_instance + 1 < l_pattern) return false;  /* instance too short */
+    size1 = wildcard - pattern;
+    size2 = l_pattern - 1 - size1;
+    return memcmp(pattern, instance, size1) == 0
+        && memcmp(wildcard + 1, instance + l_instance - size2, size2) == 0;
+}
+
+/* Assumes that pattern_match is true, and returns the string that is the
+ * substitution for the *. The caller must free the memory.
+ */
+static char *pattern_match_rep(const char *pattern, const char *instance)
+{
+    char *wildcard;
+    size_t l_pattern, l_instance;
+
+    assert(pattern_match(pattern, instance));
+    wildcard = strchr(pattern, '*');
+    l_pattern = strlen(pattern);
+    l_instance = strlen(instance);
+    return bugle_strndup(instance + (wildcard - pattern), l_instance + 1 - l_pattern);
+}
+
+/* For a generic expression, checks whether substituting arg (a char *)
+ * will yield a registered expression.
+ */
+static bool stats_expression_match1(stats_expression *expr, void *arg)
+{
+    char *full;
+    bool found;
+
+    if (!strchr(expr->signal_name, '*')) return true; /* Not a generic */
+    full = pattern_replace(expr->signal_name, (const char *) arg);
+    found = stats_signal_get(full) != NULL;
+    free(full);
+    return found;
+}
+
+/* Instantiates a generic expression. */
+static stats_expression *stats_expression_instantiate(stats_expression *base, const char *rep)
+{
+    stats_expression *n;
+
+    assert(base);
+    n = (stats_expression *) bugle_malloc(sizeof(stats_expression));
+    *n = *base;
+    switch (base->type)
+    {
+    case STATS_EXPRESSION_NUMBER:
+        break;
+    case STATS_EXPRESSION_OPERATION:
+        if (n->left) n->left = stats_expression_instantiate(n->left, rep);
+        if (n->right) n->right = stats_expression_instantiate(n->right, rep);
+        break;
+    case STATS_EXPRESSION_SIGNAL:
+        n->signal = NULL;
+        n->signal_name = pattern_replace(n->signal_name, rep);
+        break;
+    default: abort(); /* should never be reached */
+    }
+    return n;
 }
 
 /* Frees the expression object itself and its children */
@@ -337,10 +484,38 @@ static void stats_statistic_free(stats_statistic *st)
     free(st);
 }
 
-/* Returns the statistic if it is registered, or NULL if not. */
-static stats_statistic *stats_statistic_find(const char *name)
+static stats_statistic *stats_statistic_instantiate(stats_statistic *st, const char *rep)
 {
-    return (stats_statistic *) bugle_hash_get(&stats_statistics_table, name);
+    stats_statistic *n;
+    bugle_list_node *i;
+
+    n = (stats_statistic *) bugle_malloc(sizeof(stats_statistic));
+    *n = *st;
+    n->name = bugle_strdup(n->name);
+    n->label = pattern_replace(n->label, rep);
+    n->value = stats_expression_instantiate(st->value, rep);
+
+    bugle_list_init(&n->substitutions, true);
+    for (i = bugle_list_head(&st->substitutions); i; i = bugle_list_next(i))
+    {
+        stats_substitution *su_old, *su_new;
+        su_old = bugle_list_data(i);
+        su_new = (stats_substitution *) bugle_malloc(sizeof(stats_substitution));
+        *su_new = *su_old;
+        su_new->replacement = pattern_replace(su_old->replacement, rep);
+        bugle_list_append(&n->substitutions, su_new);
+    }
+    return n;
+}
+
+/* Returns the first and last statistic of a set if it exists, or a pair
+ * of NULLs if not. */
+static void stats_statistic_find(const char *name,
+                                 bugle_list_node **first,
+                                 bugle_list_node **last)
+{
+    *first = bugle_hash_get(&stats_statistics_first, name);
+    *last = bugle_hash_get(&stats_statistics_last, name);
 }
 
 /* List the registered statistics, for when an illegal one is mentioned */
@@ -369,15 +544,10 @@ static bool stats_load_config(void)
 {
     const char *home;
     char *config = NULL;
-    bugle_list_node *i;
-    stats_statistic *st;
 
     if (getenv("BUGLE_STATISTICS"))
         config = bugle_strdup(getenv("BUGLE_STATISTICS"));
     home = getenv("HOME");
-    /* If using the debugger and no chain is specified, we use passthrough
-     * mode.
-     */
     if (!config && !home)
     {
         bugle_log("stats", "config", BUGLE_LOG_ERROR,
@@ -394,11 +564,6 @@ static bool stats_load_config(void)
         if (stats_yyparse() == 0)
         {
             stats_statistics = stats_statistics_get_list();
-            for (i = bugle_list_head(stats_statistics); i; i = bugle_list_next(i))
-            {
-                st = (stats_statistic *) bugle_list_data(i);
-                bugle_hash_set(&stats_statistics_table, st->name, st);
-            }
             free(config);
             return true;
         }
@@ -423,7 +588,8 @@ static bool stats_initialise(filter_set *handle)
 {
     bugle_hash_init(&stats_signals, true);
     bugle_list_init(&stats_signals_active, false);
-    bugle_hash_init(&stats_statistics_table, false);
+    bugle_hash_init(&stats_statistics_first, false);
+    bugle_hash_init(&stats_statistics_last, false);
     if (!stats_load_config()) return false;
 
     /* This filter does no interception, but it provides a sequence point
@@ -432,6 +598,71 @@ static bool stats_initialise(filter_set *handle)
      */
     bugle_register_filter(handle, "stats");
     return true;
+}
+
+/* Replaces each generic statistic from the config file with one or more
+ * instances, and sets up stats_statistics_first and stats_statistics_last.
+ */
+static void stats_finalise_signals()
+{
+    static bool done = false;
+    bugle_list_node *i, *first, *last, *tmp;
+
+    if (done) return; /* FIXME: protect against future generators */
+    done = true;
+    for (i = bugle_list_head(stats_statistics); i; i = bugle_list_next(i))
+    {
+        stats_statistic *st;
+        char *pattern;
+        int count = 1;
+
+        st = (stats_statistic *) bugle_list_data(i);
+        pattern = stats_expression_generic(st->value);
+        first = last = i;
+        if (pattern)
+        {
+            bugle_log_printf("stats", "finalise_signals", BUGLE_LOG_DEBUG, "found a pattern rule: %s", st->name);
+            const bugle_hash_entry *j;
+
+            count--;
+            for (j = bugle_hash_begin(&stats_signals); j; j = bugle_hash_next(&stats_signals, j))
+            {
+                bugle_log_printf("stats", "finalise_signals", BUGLE_LOG_DEBUG, "attempting to match %s to %s", j->key, pattern);
+                if (pattern_match(pattern, j->key))
+                {
+                    char *rep;
+                    stats_statistic *n;
+                    
+                    bugle_log_printf("stats", "finalise_signals", BUGLE_LOG_DEBUG, "matched %s to %s", j->key, pattern);
+                    rep = pattern_match_rep(pattern, j->key);
+                    if (stats_expression_forall(st->value, true,
+                                                stats_expression_match1, rep))
+                    {
+                        n = stats_statistic_instantiate(st, rep);
+                        i = bugle_list_insert_after(stats_statistics, i, n);
+                        count++;
+                    }
+                    free(rep);
+                }
+            }
+            stats_statistic_free(st);
+
+            last = i;
+            tmp = first;   /* The original, generic item */
+            first = bugle_list_next(first);  /* The first instance */
+            bugle_list_erase(stats_statistics, tmp);
+        }
+        if (count)
+        {
+            stats_statistic *st;
+            st = bugle_list_data(first);
+            bugle_hash_set(&stats_statistics_first, st->name, first);
+            bugle_hash_set(&stats_statistics_last, st->name, last);
+            bugle_log_printf("stats", "stats_finalise_signals", BUGLE_LOG_DEBUG,
+                             "Set %p:%p for %s",
+                             first, last, st->name);
+        }
+    }
 }
 
 static void stats_destroy(filter_set *handle)
@@ -450,7 +681,8 @@ static void stats_destroy(filter_set *handle)
     }
     bugle_list_clear(&stats_signals_active);
     bugle_hash_clear(&stats_signals);
-    bugle_hash_clear(&stats_statistics_table);
+    bugle_hash_clear(&stats_statistics_first);
+    bugle_hash_clear(&stats_statistics_last);
 }
 
 /*** Generators ***/
@@ -486,6 +718,33 @@ static bool stats_basic_initialise(filter_set *handle)
 
     stats_basic_frames = stats_signal_register("frames", NULL, stats_signal_activate_zero);
     stats_basic_seconds = stats_signal_register("seconds", NULL, stats_basic_seconds_activate);
+    return true;
+}
+
+
+static stats_signal *stats_calls_counts[NUMBER_OF_FUNCTIONS];
+
+static bool stats_calls_callback(function_call *call, const callback_data *data)
+{
+    stats_signal_add(stats_calls_counts[call->generic.id], 1.0);
+    return true;
+}
+
+static bool stats_calls_initialise(filter_set *handle)
+{
+    filter *f;
+
+    f = bugle_register_filter(handle, "stats_calls");
+    bugle_register_filter_catches_all(f, false, stats_calls_callback);
+
+    for (int i = 0; i < NUMBER_OF_FUNCTIONS; i++)
+    {
+        char *name;
+        bugle_asprintf(&name, "calls:%s", budgie_function_table[i].name);
+        stats_calls_counts[i] = stats_signal_register(name, NULL,
+                                                      stats_signal_activate_zero);
+        free(name);
+    }
     return true;
 }
 
@@ -1098,8 +1357,10 @@ static bool logstats_glXSwapBuffers(function_call *call, const callback_data *da
 static bool logstats_initialise(filter_set *handle)
 {
     filter *f;
-    bugle_list_node *i;
+    bugle_list_node *i, *j, *first, *last;
     stats_statistic *st;
+
+    stats_finalise_signals();
 
     f = bugle_register_filter(handle, "stats_log");
     bugle_register_filter_catches(f, GROUP_glXSwapBuffers, false, logstats_glXSwapBuffers);
@@ -1109,22 +1370,28 @@ static bool logstats_initialise(filter_set *handle)
     {
         char *name;
         name = (char *) bugle_list_data(i);
-        st = stats_statistic_find(name);
-        if (!st)
+        stats_statistic_find(name, &first, &last);
+        if (!first)
         {
             bugle_log_printf("logstats", "initialise", BUGLE_LOG_ERROR,
                              "statistic '%s' not found.", name);
             stats_statistic_list("logstats");
             return false;
         }
-        else if (stats_expression_activate_signals(st->value))
-            bugle_list_append(&logstats_show, st);
-        else
+        j = first;
+        for (j = first; ; j = bugle_list_next(j))
         {
-            bugle_log_printf("logstats", "initialise", BUGLE_LOG_ERROR,
-                             "could not initialise statistic '%s'",
-                             st->name);
-            return false;
+            st = (stats_statistic *) bugle_list_data(j);
+            if (stats_expression_activate_signals(st->value))
+                bugle_list_append(&logstats_show, st);
+            else
+            {
+                bugle_log_printf("logstats", "initialise", BUGLE_LOG_ERROR,
+                                 "could not initialise statistic '%s'",
+                                 st->name);
+                return false;
+            }
+            if (j == last) break;
         }
     }
     bugle_list_clear(&logstats_show_requested);
@@ -1159,7 +1426,6 @@ typedef enum
 
 typedef struct
 {
-    char *name;
     showstats_mode mode;
     stats_statistic *st;
     bool initialised;
@@ -1175,12 +1441,20 @@ typedef struct
     GLuint graph_tex;       /* 1D texture to determine graph height */
 } showstats_statistic;
 
+typedef struct
+{
+    showstats_mode mode;
+    char *name;
+} showstats_statistic_request; /* Items in the config file */
+
 static bugle_object_view showstats_view;
 static bugle_linked_list showstats_stats;  /* List of showstats_statistic */
-static int showstats_num_show, showstats_num_graph;
+static int showstats_num_graph;
 static xevent_key key_showstats_accumulate = { NoSymbol, 0, true };
 static xevent_key key_showstats_noaccumulate = { NoSymbol, 0, true };
 static double showstats_time = 0.2;
+
+static bugle_linked_list showstats_stats_requested;
 
 /* Creates the extended data (e.g. OpenGL objects) that depend on having
  * the aux context active.
@@ -1192,7 +1466,6 @@ static void showstats_statistic_initialise(showstats_statistic *sst)
     {
     case SHOWSTATS_TEXT:
         sst->initialised = true;
-        showstats_num_show++;
         break;
     case SHOWSTATS_GRAPH:
 #ifdef GL_ARB_texture_env_combine
@@ -1538,12 +1811,12 @@ static void showstats_accumulate_callback(const xevent_key *key, void *arg, XEve
 static bool showstats_show_set(const struct filter_set_variable_info_s *var,
                                const char *text, const void *value)
 {
-    showstats_statistic *sst;
+    showstats_statistic_request *req;
 
-    sst = (showstats_statistic *) bugle_calloc(1, sizeof(showstats_statistic));
-    sst->name = bugle_strdup(text);
-    sst->mode = SHOWSTATS_TEXT;
-    bugle_list_append(&showstats_stats, sst);
+    req = (showstats_statistic_request *) bugle_malloc(sizeof(showstats_statistic_request));
+    req->name = bugle_strdup(text);
+    req->mode = SHOWSTATS_TEXT;
+    bugle_list_append(&showstats_stats_requested, req);
     return true;
 }
 
@@ -1551,12 +1824,12 @@ static bool showstats_show_set(const struct filter_set_variable_info_s *var,
 static bool showstats_graph_set(const struct filter_set_variable_info_s *var,
                                 const char *text, const void *value)
 {
-    showstats_statistic *sst;
+    showstats_statistic_request *req;
 
-    sst = (showstats_statistic *) bugle_calloc(1, sizeof(showstats_statistic));
-    sst->name = bugle_strdup(text);
-    sst->mode = SHOWSTATS_GRAPH;
-    bugle_list_append(&showstats_stats, sst);
+    req = (showstats_statistic_request *) bugle_malloc(sizeof(showstats_statistic_request));
+    req->name = bugle_strdup(text);
+    req->mode = SHOWSTATS_GRAPH;
+    bugle_list_append(&showstats_stats_requested, req);
     return true;
 }
 
@@ -1574,7 +1847,8 @@ static bool showstats_initialise(filter_set *handle)
 {
     filter *f;
     bugle_list_node *i;
-    showstats_statistic *sst;
+
+    stats_finalise_signals();
 
     f = bugle_register_filter(handle, "showstats");
     bugle_register_filter_depends("invoke", "showstats");
@@ -1595,25 +1869,35 @@ static bool showstats_initialise(filter_set *handle)
     bugle_register_xevent_key(&key_showstats_noaccumulate, NULL,
                               showstats_accumulate_callback, NULL);
 
-    showstats_num_show = 0;
     showstats_num_graph = 0;
-    for (i = bugle_list_head(&showstats_stats); i; i = bugle_list_next(i))
+    for (i = bugle_list_head(&showstats_stats_requested); i; i = bugle_list_next(i))
     {
-        sst = (showstats_statistic *) bugle_list_data(i);
-        sst->st = stats_statistic_find(sst->name);
-        if (!sst->st)
+        showstats_statistic_request *req;
+        showstats_statistic *sst;
+        bugle_list_node *first, *last, *j;
+
+        req = (showstats_statistic_request *) bugle_list_data(i);
+        stats_statistic_find(req->name, &first, &last);
+        if (!first)
         {
             bugle_log_printf("showstats", "initialise", BUGLE_LOG_ERROR,
-                             "statistic '%s' not found.", sst->name);
+                             "statistic '%s' not found.", req->name);
             stats_statistic_list("showstats");
             return false;
         }
-        else if (!stats_expression_activate_signals(sst->st->value))
+        for (j = first; ; j = bugle_list_next(j))
         {
-            bugle_log_printf("showstats", "initialise", BUGLE_LOG_ERROR,
-                             "could not initialise statistic '%s'",
-                             sst->st->name);
-            return false;
+            sst = (showstats_statistic *) bugle_calloc(1, sizeof(showstats_statistic));
+            sst->st = (stats_statistic *) bugle_list_data(j);
+            if (!stats_expression_activate_signals(sst->st->value))
+            {
+                bugle_log_printf("showstats", "initialise", BUGLE_LOG_ERROR,
+                                 "could not initialise statistic '%s'",
+                                 sst->st->name);
+                return false;
+            }
+            bugle_list_append(&showstats_stats, sst);
+            if (j == last) break;
         }
     }
 
@@ -1623,13 +1907,14 @@ static bool showstats_initialise(filter_set *handle)
 static void showstats_destroy(filter_set *handle)
 {
     bugle_list_node *i;
-    showstats_statistic *sst;
+    showstats_statistic_request *req;
 
-    for (i = bugle_list_head(&showstats_stats); i; i = bugle_list_next(i))
+    for (i = bugle_list_head(&showstats_stats_requested); i; i = bugle_list_next(i))
     {
-        sst = (showstats_statistic *) bugle_list_data(i);
-        free(sst->name);
+        req = (showstats_statistic_request *) bugle_list_data(i);
+        free(req->name);
     }
+    bugle_list_clear(&showstats_stats_requested);
     bugle_list_clear(&showstats_stats);
 }
 
@@ -1659,6 +1944,18 @@ void bugle_initialise_filter_library(void)
         NULL,
         0,
         "stats module: frames and timing"
+    };
+
+    static const filter_set_info stats_calls_info =
+    {
+        "stats_calls",
+        stats_calls_initialise,
+        NULL,
+        NULL,
+        NULL,
+        NULL,
+        0,
+        "stats module: call counts"
     };
 
     static const filter_set_info stats_primitives_info =
@@ -1752,6 +2049,9 @@ void bugle_initialise_filter_library(void)
     bugle_register_filter_set(&stats_basic_info);
     bugle_register_filter_set_depends("stats_basic", "stats");
 
+    bugle_register_filter_set(&stats_calls_info);
+    bugle_register_filter_set_depends("stats_calls", "stats");
+
     bugle_register_filter_set(&stats_primitives_info);
     bugle_register_filter_set_depends("stats_primitives", "stats");
     bugle_register_filter_set_depends("stats_primitives", "stats_basic");
@@ -1781,5 +2081,6 @@ void bugle_initialise_filter_library(void)
     bugle_register_filter_set_depends("showstats", "stats");
     bugle_register_filter_set_depends("showstats", "trackextensions");
     bugle_register_filter_set_renders("showstats");
+    bugle_list_init(&showstats_stats_requested, true);
     bugle_list_init(&showstats_stats, true);
 }

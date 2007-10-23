@@ -216,7 +216,7 @@
                                 <row><entry>without <application>bugle</application></entry><entry>683.7</entry></row>
                                 <row><entry>none</entry><entry>668.4</entry></row>
                                 <row><entry>logfps</entry><entry>661.8</entry></row>
-                                <row><entry>showfps</entry><entry>616.7</entry></row>
+                                <row><entry>showfps</entry><entry>625.6</entry></row>
                                 <row><entry>trace</entry><entry>181.6</entry></row>
                                 <row><entry><command>gldb-gui</command></entry><entry>131.3</entry></row>
                             </tbody>

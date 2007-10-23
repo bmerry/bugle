@@ -91,6 +91,9 @@ struct Function
     string name() const;
     string define() const;
     string group_define() const;
+
+    bool operator <(const Function &b) const
+    { return name() < b.name(); }
 };
 
 struct Group
@@ -373,6 +376,7 @@ static void identify()
 
 static void make_function_map()
 {
+    functions.sort();
     for (list<Function>::iterator i = functions.begin(); i != functions.end(); i++)
         function_map[i->name()] = i;
 }
