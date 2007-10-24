@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="utf-8"?>
+<refentry id="trace.7">
+    <refentryinfo>
+        <date>October 2007</date>
+        <productname>BUGLE</productname>
+    </refentryinfo>
+    <refmeta>
+        <refentrytitle>bugle-trace</refentrytitle>
+        <manvolnum>7</manvolnum>
+    </refmeta>
+
+    <refnamediv>
+        <refname>bugle-trace</refname>
+        <refpurpose>record a log of OpenGL calls made</refpurpose>
+    </refnamediv>
+
+    <refsynopsisdiv>
+        <screen>filterset trace
+filterset log
+{
+    filename "<replaceable>trace.txt</replaceable>"
+}</screen>
+    </refsynopsisdiv>
+
+    <refsect1>
+        <title>Description</title>
+        <para>
+            This filter-set provides a log of the OpenGL calls made. For each
+            call, the function name, the parameters and the return value (if
+            any) are recorded. Where appropriate, symbolic names are shown for
+            <type>GLenum</type> parameters, and pointers are followed to show
+            the correct number of elements.
+        </para>
+    </refsect1>
+
+    <refsect1>
+        <title>Options</title>
+        <para>
+            There are no options to control this filter-set. All logging is
+            done through bugle's logging system (see &mp-log;), and options
+            such as filename and log format can be modified there.
+        </para>
+    </refsect1>
+
+    <refsect1>
+        <title>Output</title>
+        <para>Here is a sample log output</para>
+        <screen><computeroutput>[INFO] trace.call: glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
+[INFO] trace.call: glLoadMatrixd(0xbfffe610 -> { { 0, -0.29661, 1.22295, 0 }, { 1.22295, 0, 0, 0 }, { 0, 1.18644, 0.305739, 0 }, { 0.037888, 1.61781, -1.52576, 1 } })
+[INFO] trace.call: glActiveTextureARB(GL_TEXTURE0)
+[INFO] trace.call: glTexEnvfv(GL_TEXTURE_ENV, GL_TEXTURE_ENV_COLOR, 0xbfffe5d0 -> { 0.778524, 0.778524, 0.569631, 0 })</computeroutput></screen>
+    </refsect1>
+
+    <refsect1>
+        <title>Bugs</title>
+        <para>
+            Some enumerants share values, so you may see a different symbolic
+            name in the log than in your source code. It is believed that this
+            should be limited to cases where extensions share a value for
+            semanticly equivalent symbols; if you find a case where this is not
+            true, please inform the author.
+        </para>
+        <para>
+            Because the filter-set examines arguments and follows pointers, it
+            is possible to crash it by passing invalid values, particularly
+            invalid pointers.
+        </para>
+    </refsect1>
+
+    <refsect1>
+        <title>Backwards compatibility</title>
+        <para>
+            In previous versions, the <systemitem>trace</systemitem> filter-set
+            also reported OpenGL errors to the log. This is now handled by the
+            <systemitem>showerror</systemitem> filter-set (see &mp-showerror;).
+        </para>
+    </refsect1>
+
+    &author;
+
+    <refsect1>
+        <title>See also</title>
+        <para>&mp-bugle;, &mp-log;, &mp-showerror;</para>
+    </refsect1>
+</refentry>

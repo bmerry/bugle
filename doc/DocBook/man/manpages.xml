@@ -27,5 +27,7 @@
     &ref-showerror;
     &ref-showextensions;
     &ref-showstats;
+    <!-- FIXME: stats filtersets -->
+    &ref-trace;
     &ref-unwindstack;
 </appendix>
