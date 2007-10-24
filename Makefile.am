@@ -292,6 +292,7 @@ DOCBOOK_MAN_SRCS = \
 	doc/DocBook/man/showstats.xml \
 	doc/DocBook/man/trace.xml \
 	doc/DocBook/man/unwindstack.xml \
+	doc/DocBook/man/wireframe.xml \
 	doc/DocBook/man/manpages.xml
 DOCBOOK_SRCS = $(DOCBOOK_MAN_SRCS) \
 	       doc/DocBook/bugle.xml \
@@ -321,7 +322,8 @@ DOCBOOK_MAN_MANPAGES = \
 	doc/man7/bugle-showextensions.7 \
 	doc/man7/bugle-showstats.7 \
 	doc/man7/bugle-trace.7 \
-	doc/man7/bugle-unwindstack.7
+	doc/man7/bugle-unwindstack.7 \
+	doc/man7/bugle-wireframe.7
 $(DOCBOOK_MAN_MANPAGES): doc/DocBook/man.stamp
 	@touch "$@"
 doc/DocBook/man.stamp: $(DOCBOOK_MAN_SRCS) doc/DocBook/bugle.xml doc/DocBook/manpages.xsl
@@ -352,7 +354,8 @@ DOCBOOK_HTML = doc/html/index.html \
 	       doc/html/showextensions.7.html \
 	       doc/html/showstats.7.html \
 	       doc/html/trace.7.html \
-	       doc/html/unwindstack.7.html
+	       doc/html/unwindstack.7.html \
+	       doc/html/wireframe.7.html
 $(DOCBOOK_HTML): doc/DocBook/html.stamp
 	@touch $@
 doc/DocBook/html.stamp: $(DOCBOOK_SRCS) doc/DocBook/xhtml-chunk.xsl doc/DocBook/xhtml-common.xsl

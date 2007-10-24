@@ -14,19 +14,15 @@
 <!ENTITY mp-showerror "<link linkend='showerror.7'><citerefentry><refentrytitle>bugle-showerror</refentrytitle><manvolnum>7</manvolnum></citerefentry></link>">
 <!ENTITY mp-showextensions "<link linkend='showextensions.7'><citerefentry><refentrytitle>bugle-showextensions</refentrytitle><manvolnum>7</manvolnum></citerefentry></link>">
 <!ENTITY mp-showstats "<link linkend='showstats.7'><citerefentry><refentrytitle>bugle-showstats</refentrytitle><manvolnum>7</manvolnum></citerefentry></link>">
+<!-- FIXME: all the stats stuff -->
 <!ENTITY mp-trace "<link linkend='trace.7'><citerefentry><refentrytitle>bugle-trace</refentrytitle><manvolnum>7</manvolnum></citerefentry></link>">
-<!-- FIXME
-<!ENTITY mp-stats "<xref linkend='stats.7'/>">
--->
 <!ENTITY mp-unwindstack "<link linkend='unwindstack.7'><citerefentry><refentrytitle>bugle-unwindstack</refentrytitle><manvolnum>7</manvolnum></citerefentry></link>">
-<!--
-<!ENTITY mp-wireframe "<xref linkend='wireframe.7'/>">
--->
+<!ENTITY mp-wireframe "<link linkend='wireframe.7'><citerefentry><refentrytitle>bugle-wireframe</refentrytitle><manvolnum>7</manvolnum></citerefentry></link>">
+
 <!ENTITY mp-stats_basic "[FIXME]bugle-stats_basic(7)">
 <!ENTITY mp-stats_fragments "[FIXME]bugle-stats_fragments(7)">
 <!ENTITY mp-stats_primitives "[FIXME]bugle-stats_primitives(7)">
 <!ENTITY mp-stats_nv "[FIXME]bugle-stats_nv(7)">
-<!ENTITY mp-wireframe "[FIXME]bugle-wireframe(7)">
 
 <!ENTITY author "<refsect1><title>Author</title><para><application>bugle</application> is written and maintained by <author><firstname>Bruce</firstname> <surname>Merry</surname> <email>bmerry@users.sourceforge.net</email></author>.</para></refsect1>">
 
@@ -46,6 +42,7 @@
 <!ENTITY ref-showstats SYSTEM "man/showstats.xml">
 <!ENTITY ref-trace SYSTEM "man/trace.xml">
 <!ENTITY ref-unwindstack SYSTEM "man/unwindstack.xml">
+<!ENTITY ref-wireframe SYSTEM "man/wireframe.xml">
 <!ENTITY ch-install SYSTEM "install.xml">
 <!ENTITY ch-faq SYSTEM "faq.xml">
 <!ENTITY ch-man SYSTEM "man/manpages.xml">

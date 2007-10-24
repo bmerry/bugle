@@ -30,4 +30,5 @@
     <!-- FIXME: stats filtersets -->
     &ref-trace;
     &ref-unwindstack;
+    &ref-wireframe;
 </appendix>

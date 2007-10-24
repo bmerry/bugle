@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8"?>
+<refentry id="wireframe.7">
+    <refentryinfo>
+        <date>October 2007</date>
+        <productname>BUGLE</productname>
+    </refentryinfo>
+    <refmeta>
+        <refentrytitle>bugle-wireframe</refentrytitle>
+        <manvolnum>7</manvolnum>
+    </refmeta>
+
+    <refnamediv>
+        <refname>bugle-wireframe</refname>
+        <refpurpose>force rendering in wireframe mode</refpurpose>
+    </refnamediv>
+
+    <refsynopsisdiv>
+        <screen>filterset wireframe</screen>
+    </refsynopsisdiv>
+
+    <refsect1>
+        <title>Description</title>
+        <para>
+            The <systemitem>wireframe</systemitem> filter-set overrides the
+            polygon mode, setting it to <symbol>GL_LINES</symbol>. This is
+            useful for visualising the triangulation of models.
+        </para>
+    </refsect1>
+
+    <refsect1>
+        <title>Bugs</title>
+        <itemizedlist>
+            <listitem><para>
+                    Run-time activation and deactivation are not fully
+                    supported.
+            </para></listitem>
+            <listitem><para>
+                    Display lists that alter the polygon mode will cause
+                    problems.
+            </para></listitem>
+            <listitem><para>
+                    As with any filter-set that modifies OpenGL state, it will
+                    break complex rendering techniques like
+                    render-to-vertex-buffer.
+            </para></listitem>
+            <listitem><para>
+                    Texturing is generally disabled to make the lines more
+                    visible, but fragment programs will nevertheless continue
+                    to apply textures.
+            </para></listitem>
+        </itemizedlist>
+    </refsect1>
+
+    &author;
+
+    <refsect1>
+        <title>See also</title>
+        <para>&mp-bugle;,
+            <citerefentry>
+                <refentrytitle>glPolygonMode</refentrytitle>
+                <manvolnum>3</manvolnum>
+            </citerefentry>
+        </para>
+    </refsect1>
+</refentry>
