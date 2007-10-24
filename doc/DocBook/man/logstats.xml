@@ -27,8 +27,7 @@
         <para>
             The <systemitem>logstats</systemitem> filter-set writes statistics
             to the bugle log (see &mp-log;). The statistics are gathered from
-            other filter-sets, which must be listed in the chain ahead of
-            <systemitem>logstats</systemitem>.
+            other filter-sets.
         </para>
         <para>
             Use the <option>show</option> option for each statistic that

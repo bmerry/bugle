@@ -519,7 +519,7 @@ static void stats_statistic_find(const char *name,
 }
 
 /* List the registered statistics, for when an illegal one is mentioned */
-static void stats_statistic_list(const char *caller)
+static void stats_statistic_list(void)
 {
     bugle_list_node *j;
     stats_statistic *st;
@@ -531,8 +531,6 @@ static void stats_statistic_list(const char *caller)
         st = (stats_statistic *) bugle_list_data(j);
         fprintf(stderr, "  %s\n", st->name);
     }
-    if (caller)
-        fprintf(stderr, "Note: statistics generators should be listed before %s\n", caller);
 }
 
 /*** stats filterset ***/
@@ -603,13 +601,10 @@ static bool stats_initialise(filter_set *handle)
 /* Replaces each generic statistic from the config file with one or more
  * instances, and sets up stats_statistics_first and stats_statistics_last.
  */
-static void stats_finalise_signals()
+static bool stats_ordering_initialise(filter_set *handle)
 {
-    static bool done = false;
     bugle_list_node *i, *first, *last, *tmp;
 
-    if (done) return; /* FIXME: protect against future generators */
-    done = true;
     for (i = bugle_list_head(stats_statistics); i; i = bugle_list_next(i))
     {
         stats_statistic *st;
@@ -621,19 +616,16 @@ static void stats_finalise_signals()
         first = last = i;
         if (pattern)
         {
-            bugle_log_printf("stats", "finalise_signals", BUGLE_LOG_DEBUG, "found a pattern rule: %s", st->name);
             const bugle_hash_entry *j;
 
             count--;
             for (j = bugle_hash_begin(&stats_signals); j; j = bugle_hash_next(&stats_signals, j))
             {
-                bugle_log_printf("stats", "finalise_signals", BUGLE_LOG_DEBUG, "attempting to match %s to %s", j->key, pattern);
                 if (pattern_match(pattern, j->key))
                 {
                     char *rep;
                     stats_statistic *n;
-                    
-                    bugle_log_printf("stats", "finalise_signals", BUGLE_LOG_DEBUG, "matched %s to %s", j->key, pattern);
+
                     rep = pattern_match_rep(pattern, j->key);
                     if (stats_expression_forall(st->value, true,
                                                 stats_expression_match1, rep))
@@ -658,11 +650,9 @@ static void stats_finalise_signals()
             st = bugle_list_data(first);
             bugle_hash_set(&stats_statistics_first, st->name, first);
             bugle_hash_set(&stats_statistics_last, st->name, last);
-            bugle_log_printf("stats", "stats_finalise_signals", BUGLE_LOG_DEBUG,
-                             "Set %p:%p for %s",
-                             first, last, st->name);
         }
     }
+    return true;
 }
 
 static void stats_destroy(filter_set *handle)
@@ -1360,8 +1350,6 @@ static bool logstats_initialise(filter_set *handle)
     bugle_list_node *i, *j, *first, *last;
     stats_statistic *st;
 
-    stats_finalise_signals();
-
     f = bugle_register_filter(handle, "stats_log");
     bugle_register_filter_catches(f, GROUP_glXSwapBuffers, false, logstats_glXSwapBuffers);
 
@@ -1375,7 +1363,7 @@ static bool logstats_initialise(filter_set *handle)
         {
             bugle_log_printf("logstats", "initialise", BUGLE_LOG_ERROR,
                              "statistic '%s' not found.", name);
-            stats_statistic_list("logstats");
+            stats_statistic_list();
             return false;
         }
         j = first;
@@ -1848,8 +1836,6 @@ static bool showstats_initialise(filter_set *handle)
     filter *f;
     bugle_list_node *i;
 
-    stats_finalise_signals();
-
     f = bugle_register_filter(handle, "showstats");
     bugle_register_filter_depends("invoke", "showstats");
     bugle_register_filter_depends("screenshot", "showstats");
@@ -1882,7 +1868,7 @@ static bool showstats_initialise(filter_set *handle)
         {
             bugle_log_printf("showstats", "initialise", BUGLE_LOG_ERROR,
                              "statistic '%s' not found.", req->name);
-            stats_statistic_list("showstats");
+            stats_statistic_list();
             return false;
         }
         for (j = first; ; j = bugle_list_next(j))
@@ -1920,6 +1906,18 @@ static void showstats_destroy(filter_set *handle)
 
 /*** Global initialisation */
 
+static void bugle_register_filter_set_stats_generator(const char *name)
+{
+    bugle_register_filter_set_depends(name, "stats");
+    bugle_register_filter_set_depends("stats_ordering", name);
+}
+
+static void bugle_register_filter_set_stats_logger(const char *name)
+{
+    bugle_register_filter_set_depends(name, "stats");
+    bugle_register_filter_set_depends(name, "stats_ordering");
+}
+
 void bugle_initialise_filter_library(void)
 {
     static const filter_set_info stats_info =
@@ -1927,6 +1925,22 @@ void bugle_initialise_filter_library(void)
         "stats",
         stats_initialise,
         stats_destroy,
+        NULL,
+        NULL,
+        NULL,
+        0,
+        NULL
+    };
+
+    /* Filter-set which exists for dependencies: every logger depends on
+     * it and it depends on every generator. The initialisation also takes
+     * care of expanding any generic statistics.
+     */
+    static const filter_set_info stats_ordering_info =
+    {
+        "stats_ordering",
+        stats_ordering_initialise,
+        NULL,
         NULL,
         NULL,
         NULL,
@@ -2045,42 +2059,43 @@ void bugle_initialise_filter_library(void)
     };
 
     bugle_register_filter_set(&stats_info);
+    bugle_register_filter_set(&stats_ordering_info);
 
     bugle_register_filter_set(&stats_basic_info);
-    bugle_register_filter_set_depends("stats_basic", "stats");
+    bugle_register_filter_set_stats_generator("stats_basic");
 
     bugle_register_filter_set(&stats_calls_info);
-    bugle_register_filter_set_depends("stats_calls", "stats");
+    bugle_register_filter_set_stats_generator("stats_calls");
 
     bugle_register_filter_set(&stats_primitives_info);
-    bugle_register_filter_set_depends("stats_primitives", "stats");
     bugle_register_filter_set_depends("stats_primitives", "stats_basic");
     bugle_register_filter_set_depends("stats_primitives", "trackcontext");
     bugle_register_filter_set_depends("stats_primitives", "trackdisplaylist");
     bugle_register_filter_set_depends("stats_primitives", "trackbeginend");
+    bugle_register_filter_set_stats_generator("stats_primitives");
 
 #ifdef GL_ARB_occlusion_query
     bugle_register_filter_set(&stats_fragments_info);
-    bugle_register_filter_set_depends("stats_fragments", "stats");
     bugle_register_filter_set_depends("stats_fragments", "stats_basic");
     bugle_register_filter_set_depends("stats_fragments", "trackextensions");
     bugle_register_filter_set_renders("stats_fragments");
+    bugle_register_filter_set_stats_generator("stats_fragments");
 #endif
 
 #if HAVE_NVPERFSDK_H
     bugle_register_filter_set(&stats_nv_info);
-    bugle_register_filter_set_depends("stats_nv", "stats");
     bugle_register_filter_set_depends("stats_nv", "stats_basic");
+    bugle_register_filter_set_stats_generator("stats_nv");
 #endif
 
     bugle_register_filter_set(&logstats_info);
-    bugle_register_filter_set_depends("logstats", "stats");
+    bugle_register_filter_set_stats_logger("logstats");
     bugle_list_init(&logstats_show_requested, true);
 
     bugle_register_filter_set(&showstats_info);
-    bugle_register_filter_set_depends("showstats", "stats");
     bugle_register_filter_set_depends("showstats", "trackextensions");
     bugle_register_filter_set_renders("showstats");
+    bugle_register_filter_set_stats_logger("showstats");
     bugle_list_init(&showstats_stats_requested, true);
     bugle_list_init(&showstats_stats, true);
 }

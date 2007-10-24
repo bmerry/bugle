@@ -449,7 +449,7 @@ static void load_filter_set_r(filter_set *handle, bool activate)
             }
         }
         /* Initialisation */
-        if (!(*handle->load)(handle))
+        if (handle->load && !(*handle->load)(handle))
         {
             bugle_log_printf(handle->name, "load", BUGLE_LOG_ERROR,
                              "failed to initialise filter-set %s", handle->name);

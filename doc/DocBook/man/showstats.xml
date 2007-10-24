@@ -27,10 +27,8 @@
         <title>Description</title>
         <para>
             The <systemitem>showstats</systemitem> filter-set
-            displaystatistics gathered by other filter-sets over the rendered
-            display. These filter-sets must be listed in the chain ahead of
-            <systemitem>showstats</systemitem>.  Statistics can be displayed
-            either as text or as graphs.
+            display statistics gathered by other filter-sets over the rendered
+            display. Statistics can be displayed either as text or as graphs.
         </para>
     </refsect1>
 
