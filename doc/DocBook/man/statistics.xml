@@ -1,0 +1,200 @@
+<?xml version="1.0" encoding="utf-8"?>
+<refentry id="statistics.7">
+    <refentryinfo>
+        <date>October 2007</date>
+        <productname>BUGLE</productname>
+    </refentryinfo>
+    <refmeta>
+        <refentrytitle>bugle-statistics</refentrytitle>
+        <manvolnum>5</manvolnum>
+    </refmeta>
+
+    <refnamediv>
+        <refname>bugle-statistics</refname>
+        <refpurpose>specify formulae and metadata for bugle statistics</refpurpose>
+    </refnamediv>
+
+    <refsynopsisdiv>
+        <screen>"<replaceable>name</replaceable>" = <replaceable>expression</replaceable>
+{
+    precision <replaceable>1</replaceable>
+    label "<replaceable>label</replaceable>"
+    max <replaceable>100</replaceable>
+}</screen>
+    </refsynopsisdiv>
+
+    <refsect1>
+        <title>Description</title>
+        <para>
+            By default, &mp-bugle; gets statistics from
+            <filename>~/.bugle/statistics</filename>, although an alternative
+            location may be specified in the <envar>BUGLE_STATISTICS</envar>
+            environment variable. Most users will just copy the example file
+            <filename>doc/examples/statistics</filename> from the source
+            distribution. This manual page describes the format in more detail
+            for those who want to set up custom statistics.
+        </para>
+        <para>
+            In order to understand bugle's statistics system, one must first
+            understand how it uses <firstterm>signals</firstterm> and
+            <firstterm>statistics</firstterm>.
+        </para>
+        <variablelist>
+            <varlistentry>
+                <term>signals</term>
+                <listitem><para>
+                        A <firstterm>signal</firstterm> is a raw count of
+                        something, like number of frames, memory use, or load.
+                        For events, these are usually the total number of that
+                        event (like frame changes), and
+                        <emphasis>not</emphasis> a rate. Signals are produced
+                        by generator filter-sets like &mp-stats_basic; or
+                        &mp-stats_primitives;.
+                </para></listitem>
+            </varlistentry>
+            <varlistentry>
+                <term>statistics</term>
+                <listitem>
+                    <para>
+                        Statistics are high-level information computed from
+                        signals. For example, frame rate is computed from the
+                        number of frames signal and the time signal.
+                        Statistics also contain some metadata, such as the
+                        label to display with the statistic, and the number of
+                        significant digits to print. Logging filter-sets
+                        (&mp-logstats; and &mp-showstats;) use this
+                        information to display the statistics.
+                    </para>
+                    <para>
+                        The statistics file contains the formulae used to
+                        compute statistics from signals, as well as the
+                        metadata mentioned above.
+                    </para>
+                </listitem>
+            </varlistentry>
+        </variablelist>
+    </refsect1>
+
+    <refsect1>
+        <title>Syntax</title>
+        <para>
+            Blank lines and lines beginning with a <literal>#</literal> are
+            ignored. Statistics have the basic format shown in the synopsis.
+            The expression consists of standard arithmetic operations
+            (including parentheses), numbers, and signal expressions. When a
+            signal expression is evaluated, it is done so over some interval
+            of time (usually one frame), but <option>key_accumulate</option>
+            in &mp-showstats; allows for longer intervals). Several types of
+            signal expressions are available to determine how the signal is
+            measured over that time: 
+        </para>
+        <variablelist>
+            <varlistentry>
+                <term><userinput>d("<replaceable>signal</replaceable>")</userinput></term>
+                <listitem><para>
+                        measures the change in the signal over the interval
+                </para></listitem>
+            </varlistentry>
+            <varlistentry>
+                <term><userinput>a("<replaceable>signal</replaceable>")</userinput></term>
+                <listitem><para>
+                        measures the average value of the signal during the
+                        interval
+                </para></listitem>
+            </varlistentry>
+            <varlistentry>
+                <term><userinput>s("<replaceable>signal</replaceable>")</userinput></term>
+                <listitem><para>
+                        measures the value at the start of the interval
+                </para></listitem>
+            </varlistentry>
+            <varlistentry>
+                <term><userinput>e("<replaceable>signal</replaceable>")</userinput></term>
+                <listitem><para>
+                        measures the value at the end of the interval
+                </para></listitem>
+            </varlistentry>
+        </variablelist>
+        <para>
+            For measuring rates, use the ratio of two <userinput>d</userinput>
+            expressions. For example, the default configuration defines the
+            frame rate as
+        </para>
+        <screen>"frames per second" = d("frames") / d("seconds")
+{
+    precision 1
+    label "fps"
+}</screen>
+        <para>
+            For statistics not defined by rates (such as memory consumption),
+            an <userinput>a</userinput> expression is generally sufficient.
+        </para>
+
+        <para>The lines between the <literal>{</literal> and
+            <literal>}</literal> contain metadata. The metadata keywords are:
+        </para>
+        <variablelist>
+            <varlistentry>
+                <term><option>precision</option> <replaceable>digits</replaceable></term>
+                <listitem><para>
+                        the number of digits to show after the decimal point
+                </para></listitem>
+            </varlistentry>
+            <varlistentry>
+                <term><option>label</option> "<replaceable>text</replaceable>"</term>
+                <listitem><para>
+                        the text to show with the statistic when logging
+                </para></listitem>
+            </varlistentry>
+            <varlistentry>
+                <term><option>max</option> <replaceable>number</replaceable></term>
+                <listitem><para>
+                        a maximum value for the statistic, used to scale
+                        graphs to the correct height
+                </para></listitem>
+            </varlistentry>
+            <varlistentry>
+                <term><option>substitute</option>
+                    <replaceable>number</replaceable>
+                    "<replaceable>label</replaceable>"</term>
+                <listitem><para>
+                        causes <replaceable>label</replaceable> to be used as
+                        the value if the numerical value was
+                        <replaceable>number</replaceable>
+                </para></listitem>
+            </varlistentry>
+        </variablelist>
+    </refsect1>
+
+    <refsect1>
+        <title>Files</title>
+        <variablelist>
+            <varlistentry>
+                <term><filename>~/.bugle/statistics</filename></term>
+                <listitem><para>
+                        Formulae and metadata for statistics
+                </para></listitem>
+            </varlistentry>
+        </variablelist>
+    </refsect1>
+
+    <refsect1>
+        <title>Environment</title>
+        <variablelist>
+            <varlistentry>
+                <term><envar>BUGLE_STATISTICS</envar></term>
+                <listitem><para>
+                        If set, defines the location of the statistics file,
+                        overriding the default above.
+                </para></listitem>
+            </varlistentry>
+        </variablelist>
+    </refsect1>
+
+    &author;
+
+    <refsect1>
+        <title>See also</title>
+        <para>&mp-bugle;, &mp-logstats;, &mp-showstats;</para>
+    </refsect1>
+</refentry>

@@ -14,6 +14,7 @@
 <!ENTITY mp-showerror "<link linkend='showerror.7'><citerefentry><refentrytitle>bugle-showerror</refentrytitle><manvolnum>7</manvolnum></citerefentry></link>">
 <!ENTITY mp-showextensions "<link linkend='showextensions.7'><citerefentry><refentrytitle>bugle-showextensions</refentrytitle><manvolnum>7</manvolnum></citerefentry></link>">
 <!ENTITY mp-showstats "<link linkend='showstats.7'><citerefentry><refentrytitle>bugle-showstats</refentrytitle><manvolnum>7</manvolnum></citerefentry></link>">
+<!ENTITY mp-statistics "<link linkend='statistics.7'><citerefentry><refentrytitle>bugle-statistics</refentrytitle><manvolnum>7</manvolnum></citerefentry></link>">
 <!-- FIXME: all the stats stuff -->
 <!ENTITY mp-trace "<link linkend='trace.7'><citerefentry><refentrytitle>bugle-trace</refentrytitle><manvolnum>7</manvolnum></citerefentry></link>">
 <!ENTITY mp-unwindstack "<link linkend='unwindstack.7'><citerefentry><refentrytitle>bugle-unwindstack</refentrytitle><manvolnum>7</manvolnum></citerefentry></link>">
@@ -40,6 +41,7 @@
 <!ENTITY ref-showerror SYSTEM "man/showerror.xml">
 <!ENTITY ref-showextensions SYSTEM "man/showextensions.xml">
 <!ENTITY ref-showstats SYSTEM "man/showstats.xml">
+<!ENTITY ref-statistics SYSTEM "man/statistics.xml">
 <!ENTITY ref-trace SYSTEM "man/trace.xml">
 <!ENTITY ref-unwindstack SYSTEM "man/unwindstack.xml">
 <!ENTITY ref-wireframe SYSTEM "man/wireframe.xml">

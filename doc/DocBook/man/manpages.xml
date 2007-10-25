@@ -28,6 +28,7 @@
     &ref-showextensions;
     &ref-showstats;
     <!-- FIXME: stats filtersets -->
+    &ref-statistics;
     &ref-trace;
     &ref-unwindstack;
     &ref-wireframe;

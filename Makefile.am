@@ -290,6 +290,7 @@ DOCBOOK_MAN_SRCS = \
 	doc/DocBook/man/showerror.xml \
 	doc/DocBook/man/showextensions.xml \
 	doc/DocBook/man/showstats.xml \
+	doc/DocBook/man/statistics.xml \
 	doc/DocBook/man/trace.xml \
 	doc/DocBook/man/unwindstack.xml \
 	doc/DocBook/man/wireframe.xml \
@@ -309,6 +310,7 @@ EXTRA_DIST += $(DOCBOOK_SRCS) $(DOCBOOK_STYLES)
 DOCBOOK_MAN_MANPAGES = \
 	doc/man1/gldb-gui.1 \
 	doc/man3/bugle.3 \
+	doc/man7/bugle-statistics.5 \
 	doc/man7/bugle-camera.7 \
 	doc/man7/bugle-checks.7 \
 	doc/man7/bugle-eps.7 \
@@ -340,6 +342,7 @@ DOCBOOK_HTML = doc/html/index.html \
 	       doc/html/install.html \
 	       doc/html/faq.html \
 	       doc/html/gldb-gui.1.html \
+	       doc/html/showstats.5.html \
 	       doc/html/bugle.3.html \
 	       doc/html/camera.7.html \
 	       doc/html/checks.7.html \
@@ -352,7 +355,7 @@ DOCBOOK_HTML = doc/html/index.html \
 	       doc/html/screenshot.7.html \
 	       doc/html/showerror.7.html \
 	       doc/html/showextensions.7.html \
-	       doc/html/showstats.7.html \
+	       doc/html/statistics.7.html \
 	       doc/html/trace.7.html \
 	       doc/html/unwindstack.7.html \
 	       doc/html/wireframe.7.html
