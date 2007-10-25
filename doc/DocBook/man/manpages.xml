@@ -1,4 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE refentry PUBLIC "-//OASIS//DTD DocBook XML V4.3//EN" "http://www.oasis-open.org/docbook/xml/4.3/docbookx.dtd" [
+<!ENTITY % myentities SYSTEM "../bugle.ent">
+%myentities;
+]>
 <!-- Steps to add a new manual page:
 - write the page
 - svn add it
@@ -13,23 +17,23 @@
 -->
 <appendix id="manpages">
     <title>Bugle manual pages</title>
-    &ref-bugle;
-    &ref-gldb-gui;
-    &ref-camera;
-    &ref-checks;
-    &ref-eps;
-    &ref-error;
-    &ref-extoverride;
-    &ref-frontbuffer;
-    &ref-log;
-    &ref-logstats;
-    &ref-screenshot;
-    &ref-showerror;
-    &ref-showextensions;
-    &ref-showstats;
+    <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="bugle.xml"/>
+    <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="gldb-gui.xml"/>
+    <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="camera.xml"/>
+    <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="checks.xml"/>
+    <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="eps.xml"/>
+    <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="error.xml"/>
+    <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="extoverride.xml"/>
+    <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="frontbuffer.xml"/>
+    <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="log.xml"/>
+    <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="logstats.xml"/>
+    <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="screenshot.xml"/>
+    <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="showerror.xml"/>
+    <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="showextensions.xml"/>
+    <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="showstats.xml"/>
     <!-- FIXME: stats filtersets -->
-    &ref-statistics;
-    &ref-trace;
-    &ref-unwindstack;
-    &ref-wireframe;
+    <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="statistics.xml"/>
+    <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="trace.xml"/>
+    <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="unwindstack.xml"/>
+    <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="wireframe.xml"/>
 </appendix>

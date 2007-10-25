@@ -1,4 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE refentry PUBLIC "-//OASIS//DTD DocBook XML V4.3//EN" "http://www.oasis-open.org/docbook/xml/4.3/docbookx.dtd" [
+<!ENTITY % myentities SYSTEM "../bugle.ent" >
+%myentities;
+]>
 <refentry id="wireframe.7">
     <refentryinfo>
         <date>October 2007</date>

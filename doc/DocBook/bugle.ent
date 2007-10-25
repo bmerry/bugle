@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!ENTITY mp-bugle "<link linkend='bugle.3'><citerefentry><refentrytitle>bugle</refentrytitle><manvolnum>3</manvolnum></citerefentry></link>">
+<!ENTITY mp-gldb-gui "<link linkend='gldb-gui.1'><citerefentry><refentrytitle>gldb-gui</refentrytitle><manvolnum>1</manvolnum></citerefentry></link>">
+<!ENTITY mp-camera "<link linkend='camera.7'><citerefentry><refentrytitle>bugle-camera</refentrytitle><manvolnum>7</manvolnum></citerefentry></link>">
+<!ENTITY mp-checks "<link linkend='checks.7'><citerefentry><refentrytitle>bugle-checks</refentrytitle><manvolnum>7</manvolnum></citerefentry></link>">
+<!ENTITY mp-eps "<link linkend='eps.7'><citerefentry><refentrytitle>bugle-eps</refentrytitle><manvolnum>7</manvolnum></citerefentry></link>">
+<!ENTITY mp-error "<link linkend='error.7'><citerefentry><refentrytitle>bugle-error</refentrytitle><manvolnum>7</manvolnum></citerefentry></link>">
+<!ENTITY mp-extoverride "<link linkend='extoverride.7'><citerefentry><refentrytitle>bugle-extoverride</refentrytitle><manvolnum>7</manvolnum></citerefentry></link>">
+<!ENTITY mp-frontbuffer "<link linkend='frontbuffer.7'><citerefentry><refentrytitle>bugle-frontbuffer</refentrytitle><manvolnum>7</manvolnum></citerefentry></link>">
+<!ENTITY mp-log "<link linkend='log.7'><citerefentry><refentrytitle>bugle-log</refentrytitle><manvolnum>7</manvolnum></citerefentry></link>">
+<!ENTITY mp-logstats "<link linkend='logstats.7'><citerefentry><refentrytitle>bugle-logstats</refentrytitle><manvolnum>7</manvolnum></citerefentry></link>">
+<!ENTITY mp-screenshot "<link linkend='screenshot.7'><citerefentry><refentrytitle>bugle-screenshot</refentrytitle><manvolnum>7</manvolnum></citerefentry></link>">
+<!ENTITY mp-showerror "<link linkend='showerror.7'><citerefentry><refentrytitle>bugle-showerror</refentrytitle><manvolnum>7</manvolnum></citerefentry></link>">
+<!ENTITY mp-showextensions "<link linkend='showextensions.7'><citerefentry><refentrytitle>bugle-showextensions</refentrytitle><manvolnum>7</manvolnum></citerefentry></link>">
+<!ENTITY mp-showstats "<link linkend='showstats.7'><citerefentry><refentrytitle>bugle-showstats</refentrytitle><manvolnum>7</manvolnum></citerefentry></link>">
+<!ENTITY mp-statistics "<link linkend='statistics.7'><citerefentry><refentrytitle>bugle-statistics</refentrytitle><manvolnum>7</manvolnum></citerefentry></link>">
+<!-- FIXME: all the stats stuff -->
+<!ENTITY mp-trace "<link linkend='trace.7'><citerefentry><refentrytitle>bugle-trace</refentrytitle><manvolnum>7</manvolnum></citerefentry></link>">
+<!ENTITY mp-unwindstack "<link linkend='unwindstack.7'><citerefentry><refentrytitle>bugle-unwindstack</refentrytitle><manvolnum>7</manvolnum></citerefentry></link>">
+<!ENTITY mp-wireframe "<link linkend='wireframe.7'><citerefentry><refentrytitle>bugle-wireframe</refentrytitle><manvolnum>7</manvolnum></citerefentry></link>">
+
+<!ENTITY mp-stats_basic "[FIXME]bugle-stats_basic(7)">
+<!ENTITY mp-stats_fragments "[FIXME]bugle-stats_fragments(7)">
+<!ENTITY mp-stats_primitives "[FIXME]bugle-stats_primitives(7)">
+<!ENTITY mp-stats_nv "[FIXME]bugle-stats_nv(7)">
+
+<!ENTITY author "<refsect1><title>Author</title><para><application>bugle</application> is written and maintained by <author><firstname>Bruce</firstname> <surname>Merry</surname> <email>bmerry@users.sourceforge.net</email></author>.</para></refsect1>">

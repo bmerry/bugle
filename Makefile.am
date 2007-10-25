@@ -1,4 +1,4 @@
-## Process with automake 1.7 or newer
+# Process with automake 1.7 or newer
 SUBDIRS = libltdl
 
 SYMBOLFLAGS = -export-symbols-regex '^(gl[A-Z]|budgie_|bugle_|gldb_|X|dlopen)'
@@ -261,6 +261,8 @@ DISTCLEANFILES = tests/*.log
 MAINTAINERCLEANFILES =
 
 ### Documentation starts here
+XMLLINT_OPTIONS = --noent --noout --xinclude --postvalid
+XSLTPROC_OPTIONS = --xinclude --stringparam bugle.version $(PACKAGE_VERSION)
 
 # HTML shared files
 htmldocdir = $(htmldir)/html
@@ -274,7 +276,6 @@ dist_htmlimages_DATA = \
 	doc/DocBook/images/gtk-zoom-100.png
 
 # Documentation sources
-XSLTPROC_OPTIONS = --stringparam bugle.version $(PACKAGE_VERSION)
 DOCBOOK_MAN_SRCS = \
 	doc/DocBook/man/bugle.xml \
 	doc/DocBook/man/gldb-gui.xml \
@@ -304,7 +305,8 @@ DOCBOOK_STYLES = $(DOCBOOK_MAN_STYLES) \
 		 doc/DocBook/xhtml-common.xsl \
 		 doc/DocBook/xhtml-chunk.xsl \
 		 doc/DocBook/xhtml-single.xsl
-EXTRA_DIST += $(DOCBOOK_SRCS) $(DOCBOOK_STYLES)
+DOCBOOK_ENTS = doc/DocBook/bugle.ent
+EXTRA_DIST += $(DOCBOOK_SRCS) $(DOCBOOK_STYLES) $(DOCBOOK_ENTS)
 
 # man pages, man format
 DOCBOOK_MAN_MANPAGES = \
@@ -329,7 +331,7 @@ DOCBOOK_MAN_MANPAGES = \
 $(DOCBOOK_MAN_MANPAGES): doc/DocBook/man.stamp
 	@touch "$@"
 doc/DocBook/man.stamp: $(DOCBOOK_MAN_SRCS) doc/DocBook/bugle.xml doc/DocBook/manpages.xsl
-	$(XMLLINT) --noent --noout --valid $(srcdir)/doc/DocBook/bugle.xml
+	$(XMLLINT) $(XMLLINT_OPTIONS) $(srcdir)/doc/DocBook/bugle.xml
 	$(XSLTPROC) $(XSLTPROC_OPTIONS) $(srcdir)/doc/DocBook/manpages.xsl $(srcdir)/doc/DocBook/bugle.xml
 	$(mkdir_p) doc/DocBook
 	echo timestamp > doc/DocBook/man.stamp
@@ -362,7 +364,7 @@ DOCBOOK_HTML = doc/html/index.html \
 $(DOCBOOK_HTML): doc/DocBook/html.stamp
 	@touch $@
 doc/DocBook/html.stamp: $(DOCBOOK_SRCS) doc/DocBook/xhtml-chunk.xsl doc/DocBook/xhtml-common.xsl
-	$(XMLLINT) --noent --noout --valid $(srcdir)/doc/DocBook/bugle.xml
+	$(XMLLINT) $(XMLLINT_OPTIONS) $(srcdir)/doc/DocBook/bugle.xml
 	$(XSLTPROC) $(XSLTPROC_OPTIONS) $(srcdir)/doc/DocBook/xhtml-chunk.xsl $(srcdir)/doc/DocBook/bugle.xml
 	$(mkdir_p) doc/DocBook
 	echo timestamp > doc/DocBook/html.stamp
@@ -372,7 +374,7 @@ MAINTAINERCLEANFILES += doc/DocBook/html.stamp $(DOCBOOK_HTML)
 
 # HTML documentation, single document
 doc/html/single.html: $(DOCBOOK_SRCS) doc/DocBook/xhtml-single.xsl doc/DocBook/xhtml-common.xsl
-	$(XMLLINT) --noent --noout --valid $(srcdir)/doc/DocBook/bugle.xml
+	$(XMLLINT) $(XMLLINT_OPTIONS) $(srcdir)/doc/DocBook/bugle.xml
 	$(XSLTPROC) $(XSLTPROC_OPTIONS) -o doc/html/single.html $(srcdir)/doc/DocBook/xhtml-single.xsl $(srcdir)/doc/DocBook/bugle.xml
 htmldoc_DATA += doc/html/single.html
 EXTRA_DIST += doc/html/single.html
