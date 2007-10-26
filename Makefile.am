@@ -292,6 +292,10 @@ DOCBOOK_MAN_SRCS = \
 	doc/DocBook/man/showextensions.xml \
 	doc/DocBook/man/showstats.xml \
 	doc/DocBook/man/statistics.xml \
+	doc/DocBook/man/stats_basic.xml \
+	doc/DocBook/man/stats_calls.xml \
+	doc/DocBook/man/stats_fragments.xml \
+	doc/DocBook/man/stats_primitives.xml \
 	doc/DocBook/man/trace.xml \
 	doc/DocBook/man/unwindstack.xml \
 	doc/DocBook/man/wireframe.xml \
@@ -325,6 +329,10 @@ DOCBOOK_MAN_MANPAGES = \
 	doc/man7/bugle-showerror.7 \
 	doc/man7/bugle-showextensions.7 \
 	doc/man7/bugle-showstats.7 \
+	doc/man7/bugle-stats_basic.7 \
+	doc/man7/bugle-stats_calls.7 \
+	doc/man7/bugle-stats_fragments.7 \
+	doc/man7/bugle-stats_primitives.7 \
 	doc/man7/bugle-trace.7 \
 	doc/man7/bugle-unwindstack.7 \
 	doc/man7/bugle-wireframe.7
@@ -344,8 +352,8 @@ DOCBOOK_HTML = doc/html/index.html \
 	       doc/html/install.html \
 	       doc/html/faq.html \
 	       doc/html/gldb-gui.1.html \
-	       doc/html/showstats.5.html \
 	       doc/html/bugle.3.html \
+	       doc/html/statistics.5.html \
 	       doc/html/camera.7.html \
 	       doc/html/checks.7.html \
 	       doc/html/eps.7.html \
@@ -357,7 +365,11 @@ DOCBOOK_HTML = doc/html/index.html \
 	       doc/html/screenshot.7.html \
 	       doc/html/showerror.7.html \
 	       doc/html/showextensions.7.html \
-	       doc/html/statistics.7.html \
+	       doc/html/showstats.7.html \
+	       doc/html/stats_basic.7.html \
+	       doc/html/stats_calls.7.html \
+	       doc/html/stats_fragments.7.html \
+	       doc/html/stats_primitives.7.html \
 	       doc/html/trace.7.html \
 	       doc/html/unwindstack.7.html \
 	       doc/html/wireframe.7.html

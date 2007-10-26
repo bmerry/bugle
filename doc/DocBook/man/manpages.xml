@@ -9,6 +9,7 @@
 - add it to this list
 - in ../bugle.ent:
   - add the &mp-xxx entity
+- if it's a statistics filter-set, add it to statistics.xml See Also
 - in ../../../Makefile.am
   - add the XML file to DOCBOOK_MAN_SRCS
   - add the HTML file to DOCBOOK_HTML
@@ -30,9 +31,9 @@
     <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="showerror.xml"/>
     <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="showextensions.xml"/>
     <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="showstats.xml"/>
-    <!-- FIXME: stats filtersets -->
     <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="statistics.xml"/>
     <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="stats_basic.xml"/>
+    <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="stats_calls.xml"/>
     <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="stats_fragments.xml"/>
     <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="stats_primitives.xml"/>
     <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="trace.xml"/>

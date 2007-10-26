@@ -33,7 +33,7 @@
             By default, &mp-bugle; gets statistics from
             <filename>~/.bugle/statistics</filename>, although an alternative
             location may be specified in the <envar>BUGLE_STATISTICS</envar>
-            environment variable. Most users will just copy the example file
+            environment variable. Most users will just copy the sample file
             <filename>doc/examples/statistics</filename> from the source
             distribution. This manual page describes the format in more detail
             for those who want to set up custom statistics.
@@ -50,8 +50,8 @@
                         A <firstterm>signal</firstterm> is a raw count of
                         something, like number of frames, memory use, or load.
                         For events, these are usually the total number of that
-                        event (like frame changes), and
-                        <emphasis>not</emphasis> a rate. Signals are produced
+                        event (like frame changes), rather than a rate.
+                        Signals are produced
                         by generator filter-sets like &mp-stats_basic; or
                         &mp-stats_primitives;.
                 </para></listitem>
@@ -133,6 +133,19 @@
             For statistics not defined by rates (such as memory consumption),
             an <userinput>a</userinput> expression is generally sufficient.
         </para>
+        <para>
+            Expressions are evaluated using floating-point arithmetic,
+            applying the usual rules of operator precedence. If an
+            expression evaluates to a non-finite value (infinity or
+            <acronym>NaN</acronym>) it will not be shown at all. A non-obvious
+            application this is that given two expressions
+            <replaceable>E</replaceable> and <replaceable>F</replaceable>, the
+            compound expression <code><replaceable>E</replaceable> /
+                <replaceable>E</replaceable> *
+                <replaceable>F</replaceable></code> means
+            <quote><replaceable>F</replaceable> unless
+                <replaceable>E</replaceable> is zero</quote>.
+        </para>
 
         <para>The lines between the <literal>{</literal> and
             <literal>}</literal> contain metadata. The metadata keywords are:
@@ -168,19 +181,46 @@
                 </para></listitem>
             </varlistentry>
         </variablelist>
+
+        <refsect2>
+            <title>Wildcards</title>
+            <para>
+                A <literal>*</literal> may be used in the name of a signal. If
+                the expression for a statistic contains any wildcards, it is a
+                <firstterm>wildcard statistic</firstterm>. When a wildcard
+                statistic is selected for logging, it is instantiated zero or
+                more times, with every possible replacement for the wildcard
+                which yields a valid expression (in the sense that all the
+                resulting signals must exist). If <literal>*</literal> appears
+                several times in the expression, all occurrences are replaced
+                with the <emphasis>same</emphasis> value in each instance.
+            </para>
+            <para>
+                In order to differentiate the instanced statistics, a
+                <literal>*</literal> may also appear in the
+                <option>label</option>. This is again replaced with the same
+                string used to replace the wildcards in the expressions.
+            </para>
+            <para>
+                For an example of a wildcard statistic in practise, see the
+                <systemitem>calls per frame</systemitem> statistic in the
+                sample statistics file.
+            </para>
+        </refsect2>
     </refsect1>
 
     &stats-files;
     &stats-environment;
     &author;
 
-    <refsect1 id="statistics-seealso">
+    <refsect1>
         <title>See also</title>
         <itemizedlist>
             <listitem><para>&mp-bugle;</para></listitem>
             <listitem><para>&mp-logstats;</para></listitem>
             <listitem><para>&mp-showstats;</para></listitem>
             <listitem><para>&mp-stats_basic;</para></listitem>
+            <listitem><para>&mp-stats_calls;</para></listitem>
             <listitem><para>&mp-stats_primitives;</para></listitem>
             <listitem><para>&mp-stats_fragments;</para></listitem>
             <listitem><para>&mp-stats_calls;</para></listitem>

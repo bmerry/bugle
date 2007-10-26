@@ -13,20 +13,18 @@
 <!ENTITY mp-showerror "<link linkend='showerror.7'><citerefentry><refentrytitle>bugle-showerror</refentrytitle><manvolnum>7</manvolnum></citerefentry></link>">
 <!ENTITY mp-showextensions "<link linkend='showextensions.7'><citerefentry><refentrytitle>bugle-showextensions</refentrytitle><manvolnum>7</manvolnum></citerefentry></link>">
 <!ENTITY mp-showstats "<link linkend='showstats.7'><citerefentry><refentrytitle>bugle-showstats</refentrytitle><manvolnum>7</manvolnum></citerefentry></link>">
-<!ENTITY mp-statistics "<link linkend='statistics.7'><citerefentry><refentrytitle>bugle-statistics</refentrytitle><manvolnum>7</manvolnum></citerefentry></link>">
+<!ENTITY mp-statistics "<link linkend='statistics.5'><citerefentry><refentrytitle>bugle-statistics</refentrytitle><manvolnum>5</manvolnum></citerefentry></link>">
+<!ENTITY mp-stats_basic "<link linkend='stats_basic.7'><citerefentry><refentrytitle>bugle-stats_basic</refentrytitle><manvolnum>7</manvolnum></citerefentry></link>">
+<!ENTITY mp-stats_calls "<link linkend='stats_calls.7'><citerefentry><refentrytitle>bugle-stats_calls</refentrytitle><manvolnum>7</manvolnum></citerefentry></link>">
+<!ENTITY mp-stats_fragments "<link linkend='stats_fragments.7'><citerefentry><refentrytitle>bugle-stats_fragments</refentrytitle><manvolnum>7</manvolnum></citerefentry></link>">
+<!ENTITY mp-stats_primitives "<link linkend='stats_primitives.7'><citerefentry><refentrytitle>bugle-stats_primitives</refentrytitle><manvolnum>7</manvolnum></citerefentry></link>">
 <!-- FIXME: all the stats stuff -->
 <!ENTITY mp-trace "<link linkend='trace.7'><citerefentry><refentrytitle>bugle-trace</refentrytitle><manvolnum>7</manvolnum></citerefentry></link>">
 <!ENTITY mp-unwindstack "<link linkend='unwindstack.7'><citerefentry><refentrytitle>bugle-unwindstack</refentrytitle><manvolnum>7</manvolnum></citerefentry></link>">
 <!ENTITY mp-wireframe "<link linkend='wireframe.7'><citerefentry><refentrytitle>bugle-wireframe</refentrytitle><manvolnum>7</manvolnum></citerefentry></link>">
 
-<!ENTITY mp-stats_basic "[FIXME]bugle-stats_basic(7)">
-<!ENTITY mp-stats_fragments "[FIXME]bugle-stats_fragments(7)">
-<!ENTITY mp-stats_primitives "[FIXME]bugle-stats_primitives(7)">
 <!ENTITY mp-stats_calls "[FIXME]bugle-stats_nv(7)">
 <!ENTITY mp-stats_nv "[FIXME]bugle-stats_nv(7)">
-
-<!ENTITY mp-stats_all "&mp-stats_basic;, &mp-stats_fragments;, &mp-stats_primitives;, &mp-stats_calls;, &mp-stats_nv;">
-<!ENTITY mp-allstats "&mp-logstats;, &mp-showstats;">
 
 <!ENTITY author "<refsect1><title>Author</title><para><application>bugle</application> is written and maintained by <author><firstname>Bruce</firstname> <surname>Merry</surname> <email>bmerry@users.sourceforge.net</email></author>.</para></refsect1>">
 <!ENTITY stats-files "<refsect1><title>Files</title><variablelist><varlistentry><term><filename>~/.bugle/statistics</filename></term><listitem><para>Formulae and metadata for statistics</para></listitem></varlistentry></variablelist></refsect1>">

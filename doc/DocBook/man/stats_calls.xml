@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE refentry PUBLIC "-//OASIS//DTD DocBook XML V4.3//EN" "http://www.oasis-open.org/docbook/xml/4.3/docbookx.dtd" [
+<!ENTITY % myentities SYSTEM "../bugle.ent" >
+%myentities;
+]>
+<refentry id="stats_calls.7">
+    <refentryinfo>
+        <date>October 2007</date>
+        <productname>BUGLE</productname>
+    </refentryinfo>
+    <refmeta>
+        <refentrytitle>bugle-stats_calls</refentrytitle>
+        <manvolnum>7</manvolnum>
+    </refmeta>
+
+    <refnamediv>
+        <refname>bugle-stats_calls</refname>
+        <refpurpose>gather call frequency count</refpurpose>
+    </refnamediv>
+
+    <refsynopsisdiv>
+        <screen>filterset stats_calls</screen>
+    </refsynopsisdiv>
+
+    <refsect1>
+        <title>Description</title>
+        <para>
+            This filter-set generates a count of the number of times each
+            OpenGL function is called. The signal associated with
+            <replaceable>glSomeFunction</replaceable> is called
+            <varname>calls:<replaceable>glSomeFunction</replaceable></varname>.
+        </para>
+        <para>
+            The expected use is with the <systemitem>calls per
+                frame</systemitem> statistic defined in the sample statistics
+            file, which shows the counts for all functions called at least
+            once during the frame.
+        </para>
+    </refsect1>
+
+    &author;
+
+    <refsect1>
+        <title>See also</title>
+        <para>&mp-bugle;, &mp-statistics;</para>
+    </refsect1>
+</refentry>
