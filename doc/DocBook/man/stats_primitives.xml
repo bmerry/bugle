@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE refentry PUBLIC "-//OASIS//DTD DocBook XML V4.3//EN" "http://www.oasis-open.org/docbook/xml/4.3/docbookx.dtd" [
+<!ENTITY % myentities SYSTEM "../bugle.ent" >
+%myentities;
+]>
+<refentry id="stats_primitives.7">
+    <refentryinfo>
+        <date>October 2007</date>
+        <productname>BUGLE</productname>
+    </refentryinfo>
+    <refmeta>
+        <refentrytitle>bugle-stats_primitives</refentrytitle>
+        <manvolnum>7</manvolnum>
+    </refmeta>
+
+    <refnamediv>
+        <refname>bugle-stats_primitives</refname>
+        <refpurpose>gather triangle and batch counts</refpurpose>
+    </refnamediv>
+
+    <refsynopsisdiv>
+        <screen>filterset stats_primitives</screen>
+    </refsynopsisdiv>
+
+    <refsect1>
+        <title>Description</title>
+        <para>
+            The <systemitem>stats_primitives</systemitem> filter-set provides
+            signals for the number of triangles and batches to other
+            filter-sets. It must be listed in a chain that uses any statistics
+            related to triangle or batch counts.
+        </para>
+    </refsect1>
+
+    <refsect1>
+        <title>Bugs</title>
+        <itemizedlist>
+            <listitem>
+                <para>
+                    Display lists that call other display lists are not handled
+                    correctly, and if these secondary lists make any draw calls they
+                    will not be included in statistics.
+                </para>
+            </listitem>
+            <listitem>
+                <para>
+                    Use of the <symbol>GL_NV_primitive_restart</symbol>
+                    extension will yield incorrect results.
+                </para>
+            </listitem>
+        </itemizedlist>
+    </refsect1>
+
+    &author;
+
+    <refsect1>
+        <title>See also</title>
+        <para>&mp-bugle;, &mp-statistics;</para>
+    </refsect1>
+</refentry>

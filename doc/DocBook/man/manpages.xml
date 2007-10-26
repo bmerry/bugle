@@ -7,7 +7,7 @@
 - write the page
 - svn add it
 - add it to this list
-- in ../bugle.xml:
+- in ../bugle.ent:
   - add the &mp-xxx entity
 - in ../../../Makefile.am
   - add the XML file to DOCBOOK_MAN_SRCS
@@ -32,6 +32,9 @@
     <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="showstats.xml"/>
     <!-- FIXME: stats filtersets -->
     <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="statistics.xml"/>
+    <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="stats_basic.xml"/>
+    <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="stats_fragments.xml"/>
+    <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="stats_primitives.xml"/>
     <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="trace.xml"/>
     <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="unwindstack.xml"/>
     <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="wireframe.xml"/>

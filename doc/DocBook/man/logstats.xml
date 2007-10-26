@@ -51,6 +51,6 @@
 
     <refsect1>
         <title>See also</title>
-        <para>&mp-bugle;, &mp-stats_all;, &mp-allstats;</para>
+        <para>&mp-bugle;, &mp-statistics;</para>
     </refsect1>
 </refentry>

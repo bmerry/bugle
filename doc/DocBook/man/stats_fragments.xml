@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE refentry PUBLIC "-//OASIS//DTD DocBook XML V4.3//EN" "http://www.oasis-open.org/docbook/xml/4.3/docbookx.dtd" [
+<!ENTITY % myentities SYSTEM "../bugle.ent" >
+%myentities;
+]>
+<refentry id="stats_fragments.7">
+    <refentryinfo>
+        <date>October 2007</date>
+        <productname>BUGLE</productname>
+    </refentryinfo>
+    <refmeta>
+        <refentrytitle>bugle-stats_fragments</refentrytitle>
+        <manvolnum>7</manvolnum>
+    </refmeta>
+
+    <refnamediv>
+        <refname>bugle-stats_fragments</refname>
+        <refpurpose>gather fragment counts</refpurpose>
+    </refnamediv>
+
+    <refsynopsisdiv>
+        <screen>filterset stats_fragments</screen>
+    </refsynopsisdiv>
+
+    <refsect1>
+        <title>Description</title>
+        <para>
+            The <systemitem>stats_fragments</systemitem> filter-set provides
+            signals for the number of fragments to other filter-sets. It must
+            be listed in a chain that uses any statistics related to fragment
+            counts.
+        </para>
+        <para>
+            It is simply a wrapper around
+            <symbol>GL_ARB_occlusion_query</symbol>, so a
+            <firstterm>fragment</firstterm> is defined exactly as in that
+            <ulink
+                url="http://www.opengl.org/registry/ARB/occlusion_query.txt">extension</ulink>
+            (and OpenGL 1.5), and will not work unless that extension is
+            supported.
+        </para>
+    </refsect1>
+
+    <refsect1>
+        <title>Bugs</title>
+        <para>
+            Fragment counting will not work in applications that use occlusion
+            queries. A warning is displayed when this is detected.
+        </para>
+    </refsect1>
+
+    &author;
+
+    <refsect1>
+        <title>See also</title>
+        <para>&mp-bugle;, &mp-statistics;</para>
+    </refsect1>
+</refentry>

@@ -3,7 +3,7 @@
 <!ENTITY % myentities SYSTEM "../bugle.ent" >
 %myentities;
 ]>
-<refentry id="statistics.7">
+<refentry id="statistics.5">
     <refentryinfo>
         <date>October 2007</date>
         <productname>BUGLE</productname>
