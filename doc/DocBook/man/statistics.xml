@@ -170,35 +170,21 @@
         </variablelist>
     </refsect1>
 
-    <refsect1>
-        <title>Files</title>
-        <variablelist>
-            <varlistentry>
-                <term><filename>~/.bugle/statistics</filename></term>
-                <listitem><para>
-                        Formulae and metadata for statistics
-                </para></listitem>
-            </varlistentry>
-        </variablelist>
-    </refsect1>
-
-    <refsect1>
-        <title>Environment</title>
-        <variablelist>
-            <varlistentry>
-                <term><envar>BUGLE_STATISTICS</envar></term>
-                <listitem><para>
-                        If set, defines the location of the statistics file,
-                        overriding the default above.
-                </para></listitem>
-            </varlistentry>
-        </variablelist>
-    </refsect1>
-
+    &stats-files;
+    &stats-environment;
     &author;
 
-    <refsect1>
+    <refsect1 id="statistics-seealso">
         <title>See also</title>
-        <para>&mp-bugle;, &mp-logstats;, &mp-showstats;</para>
+        <itemizedlist>
+            <listitem><para>&mp-bugle;</para></listitem>
+            <listitem><para>&mp-logstats;</para></listitem>
+            <listitem><para>&mp-showstats;</para></listitem>
+            <listitem><para>&mp-stats_basic;</para></listitem>
+            <listitem><para>&mp-stats_primitives;</para></listitem>
+            <listitem><para>&mp-stats_fragments;</para></listitem>
+            <listitem><para>&mp-stats_calls;</para></listitem>
+            <listitem><para>&mp-stats_nv;</para></listitem>
+        </itemizedlist>
     </refsect1>
 </refentry>

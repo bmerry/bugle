@@ -8,7 +8,6 @@
 - svn add it
 - add it to this list
 - in ../bugle.xml:
-  - add the &ref-xxx entity
   - add the &mp-xxx entity
 - in ../../../Makefile.am
   - add the XML file to DOCBOOK_MAN_SRCS

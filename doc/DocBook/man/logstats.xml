@@ -45,42 +45,12 @@
         <para>No statistics are reported for the first frame.</para>
     </refsect1>
 
-    <refsect1>
-        <title>Files</title>
-        <variablelist>
-            <varlistentry>
-                <term><filename>~/.bugle/statistics</filename></term>
-                <listitem><para>
-                        Formulae and metadata for statistics.
-                </para></listitem>
-            </varlistentry>
-        </variablelist>
-    </refsect1>
-
-    <refsect1>
-        <title>Environment</title>
-        <variablelist>
-            <varlistentry>
-                <term><envar>BUGLE_STATISTICS</envar></term>
-                <listitem><para>
-                        If set, defines the location of the statistics file,
-                        overriding the default above.
-                </para></listitem>
-            </varlistentry>
-        </variablelist>
-    </refsect1>
-
+    &stats-files;
+    &stats-environment;
     &author;
 
     <refsect1>
         <title>See also</title>
-        <para>
-            &mp-bugle;,
-            &mp-stats_basic;
-            &mp-stats_primitives;
-            &mp-stats_fragments;
-            &mp-stats_nv;
-            &mp-showstats;
-        </para>
+        <para>&mp-bugle;, &mp-stats_all;, &mp-allstats;</para>
     </refsect1>
 </refentry>

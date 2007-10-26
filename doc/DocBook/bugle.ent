@@ -22,6 +22,12 @@
 <!ENTITY mp-stats_basic "[FIXME]bugle-stats_basic(7)">
 <!ENTITY mp-stats_fragments "[FIXME]bugle-stats_fragments(7)">
 <!ENTITY mp-stats_primitives "[FIXME]bugle-stats_primitives(7)">
+<!ENTITY mp-stats_calls "[FIXME]bugle-stats_nv(7)">
 <!ENTITY mp-stats_nv "[FIXME]bugle-stats_nv(7)">
 
+<!ENTITY mp-stats_all "&mp-stats_basic;, &mp-stats_fragments;, &mp-stats_primitives;, &mp-stats_calls;, &mp-stats_nv;">
+<!ENTITY mp-allstats "&mp-logstats;, &mp-showstats;">
+
 <!ENTITY author "<refsect1><title>Author</title><para><application>bugle</application> is written and maintained by <author><firstname>Bruce</firstname> <surname>Merry</surname> <email>bmerry@users.sourceforge.net</email></author>.</para></refsect1>">
+<!ENTITY stats-files "<refsect1><title>Files</title><variablelist><varlistentry><term><filename>~/.bugle/statistics</filename></term><listitem><para>Formulae and metadata for statistics</para></listitem></varlistentry></variablelist></refsect1>">
+<!ENTITY stats-environment "<refsect1><title>Environment</title><variablelist><varlistentry><term><envar>BUGLE_STATISTICS</envar></term><listitem><para>If set, defines the location of the statistics file, overriding the default above.</para></listitem></varlistentry></variablelist></refsect1>">
