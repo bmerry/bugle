@@ -1,3 +1,8 @@
+WARNINGS: most of this file is untrue. Please bug me to rewrite it as
+part of the DocBook documentation.
+
+
+
 This file describes the locking mechanisms used internally to prevent
 interference between threads inside libbugle, and lists outstanding
 bugs.

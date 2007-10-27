@@ -209,7 +209,7 @@ TESTS_ENVIRONMENT = BUGLE_FILTERS=$(srcdir)/tests/filters BUGLE_STATISTICS=$(src
 
 # Extra files to distribute
 EXTRA_DIST = gl.bc.in $(BCFILES) src/data/gl.c src/data/overrides.h \
-	FAQ TROUBLESHOOTING LICENSE \
+	LICENSE \
 	doc/filters.html doc/objects.html doc/locks.txt \
 	doc/protocol.txt doc/extensions.txt \
 	doc/examples/filters doc/examples/statistics \
