@@ -114,10 +114,7 @@ filterset <replaceable>filterset</replaceable> <optional><replaceable>key</repla
         <para>
             Each filter-set is documented in its own manual page e.g., the
             <command>trace</command> filter-set is documented in
-            <citerefentry>
-                <refentrytitle>bugle-trace</refentrytitle>
-                <manvolnum>7</manvolnum>
-            </citerefentry>.
+            &mp-trace;.
             You can get a brief list of available filter-sets and their
             options by specifying an undefined chain e.g.,
             <screen><prompt>$</prompt> <envar>BUGLE_CHAIN</envar>=help <envar>LD_PRELOAD</envar>=<filename>libbugle.so</filename> <command>glxgears</command></screen>
@@ -174,17 +171,8 @@ filterset <replaceable>filterset</replaceable> <optional><replaceable>key</repla
             <varlistentry>
                 <term><filename>$HOME/.bugle/statistics</filename></term>
                 <listitem><para>
-                        Definitions of statistics for the
-                        <citerefentry>
-                            <refentrytitle>showstats</refentrytitle>
-                            <manvolnum>3</manvolnum>
-                        </citerefentry>
-                        and
-                        <citerefentry>
-                            <refentrytitle>logstats</refentrytitle>
-                            <manvolnum>3</manvolnum>
-                        </citerefentry>
-                        filter-sets.
+                        Definitions of statistics; see &mp-statistics; for
+                        more information.
                 </para></listitem>
             </varlistentry>
         </variablelist>

@@ -37,8 +37,6 @@
 
 #define FILTERFILE "/.bugle/filters"
 
-static bool bypass_dlopen = false;
-
 extern FILE *yyin;
 extern int yyparse(void);
 

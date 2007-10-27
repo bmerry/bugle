@@ -26,11 +26,7 @@
         <title>Description</title>
         <para>
             This filter-set does not take any visible action on its own, but
-            provides a service to other filter-sets. It calls
-            <citerefentry>
-                <refentrytitle>glGetError</refentrytitle>
-                <manvolnum>3</manvolnum>
-            </citerefentry>
+            provides a service to other filter-sets. It calls &mp-glGetError;
             after every OpenGL call to detect OpenGL errors (it does not
             detect X errors).
         </para>
@@ -44,10 +40,7 @@
             This means that <application>bugle</application>'s internal
             error-checking code accidentally collected an error caused by one
             of your calls, and thus if your application later called
-            <citerefentry>
-                <refentrytitle>glGetError</refentrytitle>
-                <manvolnum>3</manvolnum>
-            </citerefentry>
+            &mp-glGetError;
             it would not be informed of the error. However, if you add the
             <systemitem>error</systemitem> filter-set, it will catch the error
             first and your application will be correctly informed of the
@@ -62,11 +55,7 @@
             defined (in particular, an implementation may choose how many
             error flags it has), it is impossible to guarantee that this
             filter-set is completely transparent to the application. However,
-            the first call to
-            <citerefentry>
-                <refentrytitle>glGetError</refentrytitle>
-                <manvolnum>3</manvolnum>
-            </citerefentry> after generating an error will
+            the first call to &mp-glGetError;
             always return an error, and in practice this is all that is
             necessary.
         </para>
@@ -76,11 +65,7 @@
 
     <refsect1>
         <title>See also</title>
-        <para>&mp-bugle;, &mp-showerror;, &mp-trace;,
-            <citerefentry>
-                <refentrytitle>glGetError</refentrytitle>
-                <manvolnum>3</manvolnum>
-            </citerefentry>
+        <para>&mp-bugle;, &mp-showerror;, &mp-trace;, &mp-glGetError;
         </para>
     </refsect1>
 </refentry>

@@ -29,9 +29,15 @@
 <!-- citations of external manual pages -->
 <!ENTITY mp-gdb "<citerefentry><refentrytitle>gdb</refentrytitle><manvolnum>1</manvolnum></citerefentry>">
 <!ENTITY mp-ppm "<citerefentry><refentrytitle>ppm</refentrytitle><manvolnum>5</manvolnum></citerefentry>">
+<!ENTITY mp-ffmpeg "<citerefentry><refentrytitle>ffmpeg</refentrytitle><manvolnum>1</manvolnum></citerefentry>">
+<!ENTITY mp-glDrawBuffer "<citerefentry><refentrytitle>glDrawBuffer</refentrytitle><manvolnum>3</manvolnum></citerefentry>">
 <!ENTITY mp-glFinish "<citerefentry><refentrytitle>glFinish</refentrytitle><manvolnum>3</manvolnum></citerefentry>">
+<!ENTITY mp-glFeedbackBuffer "<citerefentry><refentrytitle>glFeedbackBuffer</refentrytitle><manvolnum>3</manvolnum></citerefentry>">
+<!ENTITY mp-glGetError "<citerefentry><refentrytitle>glGetError</refentrytitle><manvolnum>3</manvolnum></citerefentry>">
 
 <!-- Misc shorter common pieces of text or links -->
+<!ENTITY bugle "<application>bugle</application>">
+<!ENTITY Bugle "<application>Bugle</application>">
 <!ENTITY nvperfsdk "<ulink url='http://developer.nvidia.com/object/nvperfsdk_home.html'>NVPerfSDK</ulink>">
 
 <!-- Misc longer common pieces of text -->

@@ -44,10 +44,7 @@
         </para>
         <para>
             The capturing process utilises the OpenGL feedback buffer (see
-            <citerefentry>
-                <refentrytitle>glFeedbackBuffer</refentrytitle>
-                <manvolnum>3</manvolnum>
-            </citerefentry>,
+            &mp-glFeedbackBuffer;),
             which creates some inherent limitations. No per-fragment effects
             (such as texturing or bitmap rendering) are captured, not will
             vertex programs work correctly. Essentially, the colour of each
@@ -112,12 +109,6 @@
 
     <refsect1>
         <title>See also</title>
-        <para>
-            &mp-bugle;,
-            <citerefentry>
-                <refentrytitle>glFeedbackBuffer</refentrytitle>
-                <manvolnum>3</manvolnum>
-            </citerefentry>.
-        </para>
+        <para>&mp-bugle;, &mp-glFeedbackBuffer;</para>
     </refsect1>
 </refentry>

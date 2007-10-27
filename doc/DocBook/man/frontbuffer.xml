@@ -44,11 +44,6 @@
 
     <refsect1>
         <title>See also</title>
-        <para>&mp-bugle;, &mp-gldb-gui;,
-            <citerefentry>
-                <refentrytitle>glDrawBuffer</refentrytitle>
-                <manvolnum>3</manvolnum>
-            </citerefentry>
-        </para>
+        <para>&mp-bugle;, &mp-gldb-gui;, &mp-glDrawBuffer;</para>
     </refsect1>
 </refentry>

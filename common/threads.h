@@ -89,6 +89,14 @@ static inline void *bugle_thread_getspecific(bugle_thread_key_t key)
 static inline int bugle_thread_once(bugle_thread_once_t *once_control, void (*init_routine)(void))
 { return pthread_once(once_control, init_routine); }
 
+/* glibc doesn't define pthread_kill unless you set the right feature macros.
+ * Rather than trying to do that from a header file (which is futile), just
+ * redefine it ourselves.
+ */
+#if HAVE_PTHREAD_KILL
+extern int pthread_kill(pthread_t, int);
+#endif
+
 /* Not a pthread function, but a thread-safe wrapper around raise(3) */
 static inline int bugle_thread_raise(int sig)
 {
@@ -187,7 +195,7 @@ static inline int bugle_thread_raise(int sig)
  */
 #if BUGLE_GCC_HAVE_CONSTRUCTOR_ATTRIBUTE
 # define BUGLE_CONSTRUCTOR(fn) static void fn(void) BUGLE_GCC_CONSTRUCTOR_ATTRIBUTE
-# define BUGLE_RUN_CONSTRUCTOR(fn) (0)
+# define BUGLE_RUN_CONSTRUCTOR(fn) ((void) 0)
 #else
 # define BUGLE_CONSTRUCTOR(fn) static bugle_thread_once_t fn ## _once = BUGLE_THREAD_ONCE_INIT
 # define BUGLE_RUN_CONSTRUCTOR(fn) (bugle_thread_once(&(fn ## _once), (fn)))

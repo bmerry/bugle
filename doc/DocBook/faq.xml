@@ -85,6 +85,23 @@
 
             <qandaentry>
                 <question><para>
+                        When I compile with GCC 4.2, compilation seems to hang
+                        on <filename>src/lib.c</filename>.
+                </para></question>
+                <answer><para>
+                        There is a performance bug in GCC 4.2.2, possibly
+                        <ulink
+                            url="http://gcc.gnu.org/bugzilla/show_bug.cgi?id=30052">#30052</ulink>
+                        but possibly not. Either downgrade to 4.1, upgrade to
+                        a version where the bug is fixed (none are released at
+                        the time of writing), or compile without optimisation
+                        (<option>-O0</option>).
+                    </para>
+                </answer>
+            </qandaentry>
+
+            <qandaentry>
+                <question><para>
                         I am getting the error <computeroutput>could not find
                             GL/glext.h</computeroutput>.
                 </para></question>

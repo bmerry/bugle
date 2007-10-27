@@ -27,16 +27,13 @@
         <para>
             Some OpenGL drivers (particularly proprietry drivers) are compiled
             without frame pointer information. The result is that if you pass a
-            bad pointer to the driver, causing it to segfault, 
-            <citerefentry>
-                <refentrytitle>gdb</refentrytitle><manvolnum>1</manvolnum>
-            </citerefentry> is
+            bad pointer to the driver, causing it to segfault, &mp-gdb; is
             unable to produce a stack trace showing that location of the fault.
             This filter-set uses some ugly hacks to try to correct this.
         </para>
         <para>
             When using this filter-set and debugging your application in
-            <application>gdb</application>, the segmentation fault will still
+            &mp-gdb;, the segmentation fault will still
             leave you without a stack trace.  However, if you continue
             running, you will get a second segmentation fault, at which point
             a stack trace is available.

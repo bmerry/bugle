@@ -8,6 +8,14 @@
     <sect1 id="install-requirements">
         <title>Requirements</title>
         <para>
+            Bugle is intended to work on any POSIX-compliant operating system
+            that use the X Windowing System, dynamic linking, and
+            <envar>LD_PRELOAD</envar> for library interposition. If it fails
+            to work on such an operating system, please let me know (I only
+            use it on GNU/Linux). Windows and Mac OSX are not currently
+            supported as they are not based on X.
+        </para>
+        <para>
             The following packages are required to compile Bugle:
         </para>
         <itemizedlist>

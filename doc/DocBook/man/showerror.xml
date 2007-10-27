@@ -38,11 +38,8 @@
 
     <refsect1>
         <title>See also</title>
-        <para>&mp-bugle;, &mp-error;, &mp-log;, &mp-gldb-gui;,
-            <citerefentry>
-                <refentrytitle>glGetError</refentrytitle>
-                <manvolnum>3</manvolnum>
-            </citerefentry>
+        <para>
+            &mp-bugle;, &mp-error;, &mp-log;, &mp-gldb-gui;, &mp-glGetError;
         </para>
     </refsect1>
 </refentry>

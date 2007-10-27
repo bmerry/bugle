@@ -39,17 +39,9 @@
         <para>The <systemitem>screenshot</systemitem> filter-set can be used
             in one of two modes, corresponding to the two examples above. In
             the first, a particular key-press causes a screenshot to be taken,
-            which is written to file in
-            <citerefentry>
-                <refentrytitle>ppm</refentrytitle>
-                <manvolnum>5</manvolnum>
-            </citerefentry>
+            which is written to file in &mp-ppm;
             format. In the second, a video stream is captured and encoded to
-            one of a range of formats with
-            <citerefentry>
-                <refentrytitle>ffmpeg</refentrytitle>
-                <manvolnum>1</manvolnum>
-            </citerefentry>.
+            one of a range of formats with &mp-ffmpeg;.
         </para>
     </refsect1>
 
@@ -89,11 +81,7 @@
                 <term><option>codec</option></term>
                 <listitem><para>
                         The codec to use when capturing a video. Refer to the
-                        documentation for
-                        <citerefentry>
-                            <refentrytitle>ffmpeg</refentrytitle>
-                            <manvolnum>1</manvolnum>
-                        </citerefentry>
+                        documentation for &mp-ffmpeg;
                         for a list of valid codecs. Some codecs require
                         special setup and may not work, but common codecs such
                         as <systemitem>mpeg4</systemitem> and
@@ -138,15 +126,7 @@
     <refsect1>
         <title>See also</title>
         <para>
-            &mp-bugle;,
-            <citerefentry>
-                <refentrytitle>ppm</refentrytitle>
-                <manvolnum>5</manvolnum>
-            </citerefentry>,
-            <citerefentry>
-                <refentrytitle>ffmpeg</refentrytitle>
-                <manvolnum>1</manvolnum>
-            </citerefentry>.
+            &mp-bugle;, &mp-ppm;, &mp-ffmpeg;
         </para>
     </refsect1>
 </refentry>

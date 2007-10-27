@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE chapter PUBLIC "-//OASIS//DTD DocBook XML V4.3//EN" "http://www.oasis-open.org/docbook/xml/4.3/docbookx.dtd" [
+<!ENTITY % myentities SYSTEM "bugle.ent" >
+%myentities;
+]>
+<chapter id="introduction">
+    <title>Introduction</title>
+    <para>
+        &Bugle; is an toolkit for debugging and profiling OpenGL applications
+        running on UNIX-like systems. It consists of two parts: a collection
+        of <firstterm>filter-sets</firstterm> that observe and sometimes
+        modify calls to the OpenGL API, and a graphical <link
+            linkend="gldb-gui.1">debugger</link> that helps in examining
+        state, setting breakpoints, and capturing errors.
+    </para>
+    <para>
+        &Bugle; is still in active development, and is considered
+        <quote>alpha</quote>. What this means is that while there are a lot of
+        features, any given one of them might be broken on any given day. If
+        you do find a bug, please let me know
+        (<email>bmerry@users.sourceforge.net</email>).
+    </para>
+    <para>
+        To get started with &bugle;, first read the <link
+            linkend="install">installation instructions</link>, and refer to
+        the <link linkend="faq">FAQ</link> if you run into any problems. If
+        you just want to use the debugger, you can skip straight to its <link
+            linkend="gldb-gui.1">manual page</link>. Otherwise, start with the
+        overview <link linkend="bugle.3">manual page</link> for &bugle; to
+        learn how to use it, then find the filter-sets you want in the <link
+            linkend="manpages">reference manual</link>.
+    </para>
+</chapter>
