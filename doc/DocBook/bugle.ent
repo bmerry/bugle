@@ -1,6 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
+
+<!-- Links to internal man pages -->
 <!ENTITY mp-bugle "<link linkend='bugle.3'><citerefentry><refentrytitle>bugle</refentrytitle><manvolnum>3</manvolnum></citerefentry></link>">
 <!ENTITY mp-gldb-gui "<link linkend='gldb-gui.1'><citerefentry><refentrytitle>gldb-gui</refentrytitle><manvolnum>1</manvolnum></citerefentry></link>">
+<!ENTITY mp-gldb "<link linkend='gldb.1'><citerefentry><refentrytitle>gldb</refentrytitle><manvolnum>1</manvolnum></citerefentry></link>">
 <!ENTITY mp-camera "<link linkend='camera.7'><citerefentry><refentrytitle>bugle-camera</refentrytitle><manvolnum>7</manvolnum></citerefentry></link>">
 <!ENTITY mp-checks "<link linkend='checks.7'><citerefentry><refentrytitle>bugle-checks</refentrytitle><manvolnum>7</manvolnum></citerefentry></link>">
 <!ENTITY mp-eps "<link linkend='eps.7'><citerefentry><refentrytitle>bugle-eps</refentrytitle><manvolnum>7</manvolnum></citerefentry></link>">
@@ -17,15 +20,74 @@
 <!ENTITY mp-stats_basic "<link linkend='stats_basic.7'><citerefentry><refentrytitle>bugle-stats_basic</refentrytitle><manvolnum>7</manvolnum></citerefentry></link>">
 <!ENTITY mp-stats_calls "<link linkend='stats_calls.7'><citerefentry><refentrytitle>bugle-stats_calls</refentrytitle><manvolnum>7</manvolnum></citerefentry></link>">
 <!ENTITY mp-stats_fragments "<link linkend='stats_fragments.7'><citerefentry><refentrytitle>bugle-stats_fragments</refentrytitle><manvolnum>7</manvolnum></citerefentry></link>">
+<!ENTITY mp-stats_nv "<link linkend='stats_nv.7'><citerefentry><refentrytitle>bugle-stats_nv</refentrytitle><manvolnum>7</manvolnum></citerefentry></link>">
 <!ENTITY mp-stats_primitives "<link linkend='stats_primitives.7'><citerefentry><refentrytitle>bugle-stats_primitives</refentrytitle><manvolnum>7</manvolnum></citerefentry></link>">
-<!-- FIXME: all the stats stuff -->
 <!ENTITY mp-trace "<link linkend='trace.7'><citerefentry><refentrytitle>bugle-trace</refentrytitle><manvolnum>7</manvolnum></citerefentry></link>">
 <!ENTITY mp-unwindstack "<link linkend='unwindstack.7'><citerefentry><refentrytitle>bugle-unwindstack</refentrytitle><manvolnum>7</manvolnum></citerefentry></link>">
 <!ENTITY mp-wireframe "<link linkend='wireframe.7'><citerefentry><refentrytitle>bugle-wireframe</refentrytitle><manvolnum>7</manvolnum></citerefentry></link>">
 
-<!ENTITY mp-stats_calls "[FIXME]bugle-stats_nv(7)">
-<!ENTITY mp-stats_nv "[FIXME]bugle-stats_nv(7)">
+<!-- citations of external manual pages -->
+<!ENTITY mp-gdb "<citerefentry><refentrytitle>gdb</refentrytitle><manvolnum>1</manvolnum></citerefentry>">
+<!ENTITY mp-ppm "<citerefentry><refentrytitle>ppm</refentrytitle><manvolnum>5</manvolnum></citerefentry>">
+<!ENTITY mp-glFinish "<citerefentry><refentrytitle>glFinish</refentrytitle><manvolnum>3</manvolnum></citerefentry>">
 
-<!ENTITY author "<refsect1><title>Author</title><para><application>bugle</application> is written and maintained by <author><firstname>Bruce</firstname> <surname>Merry</surname> <email>bmerry@users.sourceforge.net</email></author>.</para></refsect1>">
-<!ENTITY stats-files "<refsect1><title>Files</title><variablelist><varlistentry><term><filename>~/.bugle/statistics</filename></term><listitem><para>Formulae and metadata for statistics</para></listitem></varlistentry></variablelist></refsect1>">
-<!ENTITY stats-environment "<refsect1><title>Environment</title><variablelist><varlistentry><term><envar>BUGLE_STATISTICS</envar></term><listitem><para>If set, defines the location of the statistics file, overriding the default above.</para></listitem></varlistentry></variablelist></refsect1>">
+<!-- Misc shorter common pieces of text or links -->
+<!ENTITY nvperfsdk "<ulink url='http://developer.nvidia.com/object/nvperfsdk_home.html'>NVPerfSDK</ulink>">
+
+<!-- Misc longer common pieces of text -->
+
+<!ENTITY author "
+<refsect1>
+    <title>Author</title>
+    <para>
+        <application>bugle</application> is written and maintained by
+        <author><firstname>Bruce</firstname> <surname>Merry</surname>
+        <email>bmerry@users.sourceforge.net</email></author>.
+    </para>
+</refsect1>">
+<!ENTITY stats-files "
+<refsect1>
+    <title>Files</title>
+    <variablelist>
+        <varlistentry>
+            <term><filename>~/.bugle/statistics</filename></term>
+            <listitem><para>Formulae and metadata for statistics</para></listitem>
+        </varlistentry>
+    </variablelist>
+</refsect1>">
+<!ENTITY stats-environment "
+<refsect1>
+    <title>Environment</title>
+    <variablelist>
+        <varlistentry>
+            <term><envar>BUGLE_STATISTICS</envar></term>
+            <listitem><para>
+                    If set, defines the location of the statistics file,
+                    overriding the default
+                    above.
+            </para></listitem>
+        </varlistentry>
+    </variablelist>
+</refsect1>">
+<!ENTITY gldb-environment "
+<refsect1>
+    <title>Environment</title>
+    <variablelist>
+        <varlistentry>
+            <term><envar>BUGLE_CHAIN</envar></term>
+            <term><envar>BUGLE_DEBUGGER</envar></term>
+            <term><envar>BUGLE_DEBUGGER_FD_IN</envar></term>
+            <term><envar>BUGLE_DEBUGGER_FD_OUT</envar></term>
+            <listitem><para>
+                    Internal environment variables used to communicate between
+                    the debugger and the library.
+            </para></listitem>
+        </varlistentry>
+        <varlistentry>
+            <term><envar>LD_PRELOAD</envar></term>
+            <listitem><para>
+                    Used internally to force loading of the library.
+            </para></listitem>
+        </varlistentry>
+    </variablelist>
+</refsect1>">

@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE refentry PUBLIC "-//OASIS//DTD DocBook XML V4.3//EN" "http://www.oasis-open.org/docbook/xml/4.3/docbookx.dtd" [
+<!ENTITY % myentities SYSTEM "../bugle.ent" >
+%myentities;
+]>
+<refentry id="stats_nv.7">
+    <refentryinfo>
+        <date>October 2007</date>
+        <productname>BUGLE</productname>
+    </refentryinfo>
+    <refmeta>
+        <refentrytitle>bugle-stats_nv</refentrytitle>
+        <manvolnum>7</manvolnum>
+    </refmeta>
+
+    <refnamediv>
+        <refname>bugle-stats_nv</refname>
+        <refpurpose>gather performance data from NVPerfSDK</refpurpose>
+    </refnamediv>
+
+    <refsynopsisdiv>
+        <screen>filterset stats_nv
+{
+    flush "<replaceable>yes</replaceable>"
+}</screen>
+    </refsynopsisdiv>
+
+    <refsect1>
+        <title>Description</title>
+        <para>
+            The <systemitem>stats_nv</systemitem> filter-set extracts data
+            from certain NVIDIA GPUs using NVPerfSDK. This filter-set is only
+            built if the appropriate header file is present at compile time,
+            and also requires a suitably configured driver and GPU (refer to
+            the &nvperfsdk; documentation).
+        </para>
+        <para>
+            The possible statistics can be seen in the example
+            statistics file (<filename>doc/examples/statistics</filename> in
+            the bugle source distribution). It is important to read the
+            NVPerfSDK documentation to understand what the different types of
+            statistics are, what they mean, and the limitations of the
+            hardware interface.
+        </para>
+    </refsect1>
+
+    <refsect1>
+        <title>Options</title>
+        <variablelist>
+            <varlistentry>
+                <term><option>flush</option></term>
+                <listitem><para>
+                        If set, a
+                        &mp-glFinish; will be issued immediately prior to
+                        sampling the counters. This guarantees that events
+                        will be accounted to the correct frame, but will cause
+                        pipeline stalls.
+                </para></listitem>
+            </varlistentry>
+        </variablelist>
+    </refsect1>
+
+    <refsect1>
+        <title>Bugs</title>
+        <para>
+            Because NVPerfSDK operates across OpenGL contexts, it will count
+            events from outside the debugged application. In particular, using
+            &mp-showstats; to view the results will alter the statistics.
+        </para>
+    </refsect1>
+
+    &author;
+
+    <refsect1>
+        <title>See also</title>
+        <para>&mp-bugle;, &mp-statistics;, &nvperfsdk; documentation</para>
+    </refsect1>
+</refentry>

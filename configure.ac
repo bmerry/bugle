@@ -97,7 +97,7 @@ BUGLE_C_GCC_FORMAT_PRINTF
 BUGLE_C_GCC_CONSTRUCTOR_ATTRIBUTE
 
 dnl Checks for library functions
-AC_CHECK_FUNCS([regcomp strrchr vasprintf vsnprintf open_memstream pthread_kill])
+AC_CHECK_FUNCS([regcomp strrchr vasprintf vsnprintf open_memstream])
 AC_CHECK_FUNCS([cosf sinf finite isfinite nan isnan])
 AC_REPLACE_FUNCS([bsearch])
 AC_FUNC_MEMCMP
@@ -105,6 +105,9 @@ AC_FUNC_MEMCMP
 real_libs="$LIBS"
 LIBS="$READLINE_LIBS $LIBS"
 AC_CHECK_FUNCS([rl_completion_matches], [], [])
+LIBS="$real_libs"
+LIBS="$THREAD_LIBS $LIBS"
+AC_CHECK_FUNCS([pthread_kill], [], [])
 LIBS="$real_libs"
 
 dnl Checks for system services

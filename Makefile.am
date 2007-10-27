@@ -8,27 +8,7 @@ noinst_PROGRAMS = budgie/budgie
 # Misc extra files to include
 noinst_HEADERS = budgie/tree.def budgie/c-common.def
 dist_noinst_SCRIPTS = gentokens/gentokens.perl gentokens/genfunctions.perl \
-	gentokens/find_header.perl gentokens/genexts.perl
-dist_man_MANS = doc/man1/gldb.1 doc/man3/bugle.3 \
-	doc/man7/bugle-camera.7 \
-	doc/man7/bugle-checks.7 \
-	doc/man7/bugle-eps.7 \
-	doc/man7/bugle-error.7 \
-	doc/man7/bugle-frontbuffer.7 \
-	doc/man7/bugle-log.7 \
-	doc/man7/bugle-screenshot.7 \
-	doc/man7/bugle-showerror.7 \
-	doc/man7/bugle-showextensions.7 \
-	doc/man7/bugle-stats_basic.7 \
-	doc/man7/bugle-stats_primitives.7 \
-	doc/man7/bugle-stats_fragments.7 \
-	doc/man7/bugle-stats_nv.7 \
-	doc/man7/bugle-showstats.7 \
-	doc/man7/bugle-logstats.7 \
-	doc/man7/bugle-trace.7 \
-	doc/man7/bugle-unwindstack.7 \
-	doc/man7/bugle-wireframe.7 \
-	doc/man7/bugle-extoverride.7
+	gentokens/find_header.perl gentokens/genexts.perl mvtu.sh
 # The real things
 lib_LTLIBRARIES = src/libbugleutils.la src/libbugle.la
 bin_PROGRAMS = gldb/gldb @GLDB_GUI@
@@ -127,7 +107,7 @@ src/data/gl.tu: src/data/gl.c src/data/overrides.h
 	$(mkdir_p) src/data
 	CCACHE_DISABLE=1 $(COMPILE) -fdump-translation-unit -c $(srcdir)/src/data/gl.c -o src/data/gl.o
 	rm -f src/data/gl.o
-	mv gl.c.`test -f gl.c.t00.tu && echo t00.`tu src/data/gl.tu
+	$(srcdir)/mvtu.sh gl.c src/data/gl.tu
 
 BCFILES = bc/core1_1.bc bc/glsl1_20.bc bc/glx.bc \
 	bc/GL_ARB_multitexture.bc bc/GL_ARB_imaging.bc \
@@ -279,6 +259,7 @@ dist_htmlimages_DATA = \
 DOCBOOK_MAN_SRCS = \
 	doc/DocBook/man/bugle.xml \
 	doc/DocBook/man/gldb-gui.xml \
+	doc/DocBook/man/gldb.xml \
 	doc/DocBook/man/camera.xml \
 	doc/DocBook/man/checks.xml \
 	doc/DocBook/man/eps.xml \
@@ -295,6 +276,7 @@ DOCBOOK_MAN_SRCS = \
 	doc/DocBook/man/stats_basic.xml \
 	doc/DocBook/man/stats_calls.xml \
 	doc/DocBook/man/stats_fragments.xml \
+	doc/DocBook/man/stats_nv.xml \
 	doc/DocBook/man/stats_primitives.xml \
 	doc/DocBook/man/trace.xml \
 	doc/DocBook/man/unwindstack.xml \
@@ -303,18 +285,19 @@ DOCBOOK_MAN_SRCS = \
 DOCBOOK_SRCS = $(DOCBOOK_MAN_SRCS) \
 	       doc/DocBook/bugle.xml \
 	       doc/DocBook/install.xml \
-	       doc/DocBook/faq.xml
+	       doc/DocBook/faq.xml \
+	       doc/DocBook/bugle.ent
 DOCBOOK_MAN_STYLES = doc/DocBook/manpages.xsl
 DOCBOOK_STYLES = $(DOCBOOK_MAN_STYLES) \
 		 doc/DocBook/xhtml-common.xsl \
 		 doc/DocBook/xhtml-chunk.xsl \
 		 doc/DocBook/xhtml-single.xsl
-DOCBOOK_ENTS = doc/DocBook/bugle.ent
-EXTRA_DIST += $(DOCBOOK_SRCS) $(DOCBOOK_STYLES) $(DOCBOOK_ENTS)
+EXTRA_DIST += $(DOCBOOK_SRCS) $(DOCBOOK_STYLES)
 
 # man pages, man format
 DOCBOOK_MAN_MANPAGES = \
 	doc/man1/gldb-gui.1 \
+	doc/man1/gldb.1 \
 	doc/man3/bugle.3 \
 	doc/man7/bugle-statistics.5 \
 	doc/man7/bugle-camera.7 \
@@ -332,6 +315,7 @@ DOCBOOK_MAN_MANPAGES = \
 	doc/man7/bugle-stats_basic.7 \
 	doc/man7/bugle-stats_calls.7 \
 	doc/man7/bugle-stats_fragments.7 \
+	doc/man7/bugle-stats_nv.7 \
 	doc/man7/bugle-stats_primitives.7 \
 	doc/man7/bugle-trace.7 \
 	doc/man7/bugle-unwindstack.7 \
@@ -343,7 +327,7 @@ doc/DocBook/man.stamp: $(DOCBOOK_MAN_SRCS) doc/DocBook/bugle.xml doc/DocBook/man
 	$(XSLTPROC) $(XSLTPROC_OPTIONS) $(srcdir)/doc/DocBook/manpages.xsl $(srcdir)/doc/DocBook/bugle.xml
 	$(mkdir_p) doc/DocBook
 	echo timestamp > doc/DocBook/man.stamp
-dist_man_MANS += $(DOCBOOK_MAN_MANPAGES)
+dist_man_MANS = $(DOCBOOK_MAN_MANPAGES)
 EXTRA_DIST += doc/DocBook/man.stamp
 MAINTAINERCLEANFILES += doc/DocBook/man.stamp $(DOCBOOK_MAN_MANPAGES)
 
@@ -352,6 +336,7 @@ DOCBOOK_HTML = doc/html/index.html \
 	       doc/html/install.html \
 	       doc/html/faq.html \
 	       doc/html/gldb-gui.1.html \
+	       doc/html/gldb.1.html \
 	       doc/html/bugle.3.html \
 	       doc/html/statistics.5.html \
 	       doc/html/camera.7.html \
@@ -369,6 +354,7 @@ DOCBOOK_HTML = doc/html/index.html \
 	       doc/html/stats_basic.7.html \
 	       doc/html/stats_calls.7.html \
 	       doc/html/stats_fragments.7.html \
+	       doc/html/stats_nv.7.html \
 	       doc/html/stats_primitives.7.html \
 	       doc/html/trace.7.html \
 	       doc/html/unwindstack.7.html \

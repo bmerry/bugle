@@ -1,0 +1,210 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE refentry PUBLIC "-//OASIS//DTD DocBook XML V4.3//EN" "http://www.oasis-open.org/docbook/xml/4.3/docbookx.dtd" [
+<!ENTITY % myentities SYSTEM "../bugle.ent" >
+%myentities;
+]>
+<refentry id="gldb.1">
+    <refentryinfo>
+        <date>October 2007</date>
+        <productname>BUGLE</productname>
+    </refentryinfo>
+    <refmeta>
+        <refentrytitle>gldb</refentrytitle>
+        <manvolnum>1</manvolnum>
+    </refmeta>
+
+    <refnamediv>
+        <refname>gldb</refname>
+        <refpurpose>console-based OpenGL debugger</refpurpose>
+    </refnamediv>
+
+    <refsynopsisdiv>
+        <cmdsynopsis>
+            <command>gldb</command>
+            <arg choice="plain"><replaceable>your-program</replaceable></arg>
+            <arg rep="repeat"><replaceable>argument</replaceable></arg>
+        </cmdsynopsis>
+    </refsynopsisdiv>
+
+    <refsect1>
+        <title>Description</title>
+        <note>
+            <para>
+                &mp-gldb; has been almost entirely superseded by
+                &mp-gldb-gui;, and is not actively maintained. You should try
+                &mp-gldb-gui; first and only use &mp-gldb; if &mp-gldb-gui;
+                does not work.
+            </para>
+        </note>
+        <para>
+            <command>gldb</command> is a front-end debugger to &mp-bugle;,
+            modelled on &mp-gdb;.
+            It can set breakpoints on OpenGL functions, and by default will
+            stop whenever the program causes a GL error. Pressing 
+            <keycombo>
+                <keycap>Ctrl</keycap><keycap>C</keycap>
+            </keycombo> will also cause the running program to stop.
+        </para>
+    </refsect1>
+
+    <refsect1>
+        <title>Commands</title>
+        <variablelist>
+            <varlistentry>
+                <term><command>chain <replaceable>name</replaceable></command></term>
+                <listitem><para>
+                        Specifies the name of the filter-set chain to use from
+                        the configuration file
+                        <filename>~/.bugle/filters</filename>. If
+                        <replaceable>name</replaceable> is
+                        <literal>none</literal> then the default (no filters)
+                        is used.
+                </para></listitem>
+            </varlistentry>
+            <varlistentry>
+                <term><command>help</command></term>
+                <listitem><para>
+                        Shows the list of commands, with brief descriptions.
+                </para></listitem>
+            </varlistentry>
+            <varlistentry>
+                <term><command>run</command></term>
+                <listitem><para>
+                        Starts the program.
+                </para></listitem>
+            </varlistentry>
+            <varlistentry>
+                <term><command>continue</command></term>
+                <listitem><para>
+                        Continues running the program.
+                </para></listitem>
+            </varlistentry>
+            <varlistentry>
+                <term><command>step</command></term>
+                <listitem><para>
+                        Runs the program until the next OpenGL call.
+                </para></listitem>
+            </varlistentry>
+            <varlistentry>
+                <term><command>kill</command></term>
+                <listitem><para>
+                        Kills the running program.
+                </para></listitem>
+            </varlistentry>
+            <varlistentry>
+                <term><command>break <replaceable>function</replaceable></command></term>
+                <listitem><para>
+                        Sets a breakpoint on the OpenGL function
+                        <replaceable>function</replaceable>.
+                </para></listitem>
+            </varlistentry>
+            <varlistentry>
+                <term><command>break error</command></term>
+                <listitem><para>
+                        Breaks on OpenGL errors. This is the default
+                        behaviour.
+                </para></listitem>
+            </varlistentry>
+            <varlistentry>
+                <term><command>unbreak <replaceable>function</replaceable></command></term>
+                <listitem><para>
+                        Clears a breakpoint on
+                        <replaceable>function</replaceable>.
+                </para></listitem>
+            </varlistentry>
+            <varlistentry>
+                <term><command>unbreak error</command></term>
+                <listitem><para>
+                        Prevents breaking on OpenGL errors.
+                </para></listitem>
+            </varlistentry>
+            <varlistentry>
+                <term><command>quit</command></term>
+                <listitem><para>
+                        Exits <command>gldb</command>.
+                </para></listitem>
+            </varlistentry>
+            <varlistentry>
+                <term><command>backtrace</command></term>
+                <listitem><para>
+                        Prints a stack trace using &mp-gdb;
+                </para></listitem>
+            </varlistentry>
+            <varlistentry>
+                <term><command>gdb</command></term>
+                <listitem>
+                    <para>
+                        Starts &mp-gdb; and attaches it to the program.
+                    </para>
+                    <note><para>
+                            The program will be waiting for commands from
+                            <command>gldb</command>, so continuing the program
+                            will have no effect.
+                    </para></note>
+                </listitem>
+            </varlistentry>
+            <varlistentry>
+                <term><command>state <replaceable>state</replaceable></command></term>
+                <listitem><para>
+                        Queries the OpenGL state
+                        <replaceable>state</replaceable>.
+                        If <replaceable>state</replaceable> is omitted, all
+                        state for the current context is shown. Try first
+                        running the command without argument to see how the
+                        states are arranged, as some state is nested. For
+                        example, the width of the default 2D texture is
+                        referenced as
+                        <command>GL_TEXTURE_2D.0.0.GL_TEXTURE_WIDTH</command>.
+                        Tab completion is also supported.
+                </para></listitem>
+            </varlistentry>
+            <varlistentry>
+                <term><command>screenshot
+                        <filename><replaceable>filename</replaceable>.ppm</filename></command></term>
+                <listitem><para>
+                        Captures a screenshot from the back buffer, and saves
+                        it to
+                        <filename><replaceable>filename</replaceable>.ppm</filename>
+                        in &mp-ppm; format. Since the back buffer is used, you
+                        are not guaranteed a complete picture. For a complete
+                        picture, put a breakpoint on
+                        <function>glXSwapBuffers</function>
+                        and call this command from there.
+                </para></listitem>
+            </varlistentry>
+            <varlistentry>
+                <term><command>enable <replaceable>filter-set</replaceable></command></term>
+                <term><command>disable <replaceable>filter-set</replaceable></command></term>
+                <listitem><para>
+                        Enables or disables a filter-set on the fly. This is
+                        still experimental, and won't work for most
+                        filter-sets (because they expect to perform
+                        initialisation when the context is created). Dependent
+                        filter-sets will automatically be enabled, but will not
+                        be automatically disabled.
+                </para></listitem>
+            </varlistentry>
+        </variablelist>
+    </refsect1>
+
+    &gldb-environment;
+
+    <refsect1>
+        <title>Bugs</title>
+        <para>
+            On some systems, the <command>gdb</command> command will cause
+            some of the processes involved to be stopped. The cause is
+            currently unknown. The work-around is to use another terminal to
+            manually connect &mp-gdb; to the process.
+        </para>
+    </refsect1>
+
+    &author;
+
+    <refsect1>
+        <title>See also</title>
+        <para>
+            &mp-bugle;, &mp-gldb-gui;
+        </para>
+    </refsect1>
+</refentry>
