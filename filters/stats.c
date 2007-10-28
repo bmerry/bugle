@@ -1278,6 +1278,8 @@ static void stats_nv_destroy(filter_set *handle)
     stats_signal *si;
     stats_signal_nv *nv;
 
+    if (stats_nv_dl == NULL) return; /* NVPerfSDK not installed */
+
     for (i = bugle_list_head(&stats_nv_registered); i; i = bugle_list_next(i))
     {
         si = (stats_signal *) bugle_list_data(i);
