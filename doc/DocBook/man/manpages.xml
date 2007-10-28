@@ -17,17 +17,17 @@
 -->
 <appendix id="manpages">
     <title>Bugle manual pages</title>
-    <sect1>
+    <sect1 id="manpages-overview">
         <title>Overview pages</title>
         <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="bugle.xml"/>
         <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="statistics.xml"/>
     </sect1>
-    <sect1>
+    <sect1 id="manpages-commands">
         <title>Commands</title>
         <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="gldb-gui.xml"/>
         <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="gldb.xml"/>
     </sect1>
-    <sect1>
+    <sect1 id="manpages-filtersets">
         <title>Filter-sets</title>
         <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="camera.xml"/>
         <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="checks.xml"/>

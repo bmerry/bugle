@@ -5,7 +5,6 @@
     <xsl:param name="html.stylesheet" select="'bugle.css'"/>
     <xsl:param name="html.stylesheet.type" select="'text/css'"/>
     <xsl:param name="use.id.as.filename" select="'1'"/>
-    <xsl:param name="base.dir" select="'doc/html/'"/>
     <xsl:param name="img.src.path" select="'images/'"/>
     <xsl:param name="section.label.includes.component.label" select="'1'"/>
 

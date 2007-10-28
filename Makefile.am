@@ -287,12 +287,17 @@ DOCBOOK_SRCS = $(DOCBOOK_MAN_SRCS) \
 	       doc/DocBook/introduction.xml \
 	       doc/DocBook/install.xml \
 	       doc/DocBook/faq.xml \
+	       doc/DocBook/releasenotes.xml \
+	       doc/DocBook/changelog.xml \
 	       doc/DocBook/bugle.ent
 DOCBOOK_MAN_STYLES = doc/DocBook/manpages.xsl
 DOCBOOK_STYLES = $(DOCBOOK_MAN_STYLES) \
 		 doc/DocBook/xhtml-common.xsl \
 		 doc/DocBook/xhtml-chunk.xsl \
-		 doc/DocBook/xhtml-single.xsl
+		 doc/DocBook/xhtml-single.xsl \
+		 doc/DocBook/xhtml-local.xsl \
+		 doc/DocBook/xhtml-php.xsl \
+		 doc/DocBook/xhtml-chunk-php.xsl
 EXTRA_DIST += $(DOCBOOK_SRCS) $(DOCBOOK_STYLES)
 
 # man pages, man format
@@ -363,7 +368,7 @@ DOCBOOK_HTML = doc/html/index.html \
 	       doc/html/wireframe.7.html
 $(DOCBOOK_HTML): doc/DocBook/html.stamp
 	@touch $@
-doc/DocBook/html.stamp: $(DOCBOOK_SRCS) doc/DocBook/xhtml-chunk.xsl doc/DocBook/xhtml-common.xsl
+doc/DocBook/html.stamp: $(DOCBOOK_SRCS) doc/DocBook/xhtml-chunk.xsl doc/DocBook/xhtml-common.xsl doc/DocBook/xhtml-local.xsl
 	$(XMLLINT) $(XMLLINT_OPTIONS) $(srcdir)/doc/DocBook/bugle.xml
 	$(XSLTPROC) $(XSLTPROC_OPTIONS) $(srcdir)/doc/DocBook/xhtml-chunk.xsl $(srcdir)/doc/DocBook/bugle.xml
 	$(mkdir_p) doc/DocBook
@@ -373,7 +378,7 @@ EXTRA_DIST += doc/DocBook/html.stamp $(DOCBOOK_HTML)
 MAINTAINERCLEANFILES += doc/DocBook/html.stamp $(DOCBOOK_HTML)
 
 # HTML documentation, single document
-doc/html/single.html: $(DOCBOOK_SRCS) doc/DocBook/xhtml-single.xsl doc/DocBook/xhtml-common.xsl
+doc/html/single.html: $(DOCBOOK_SRCS) doc/DocBook/xhtml-single.xsl doc/DocBook/xhtml-common.xsl doc/DocBook/xhtml-local.xsl
 	$(XMLLINT) $(XMLLINT_OPTIONS) $(srcdir)/doc/DocBook/bugle.xml
 	$(XSLTPROC) $(XSLTPROC_OPTIONS) -o doc/html/single.html $(srcdir)/doc/DocBook/xhtml-single.xsl $(srcdir)/doc/DocBook/bugle.xml
 htmldoc_DATA += doc/html/single.html
