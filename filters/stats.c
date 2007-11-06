@@ -1911,7 +1911,12 @@ static void showstats_destroy(filter_set *handle)
 static void bugle_register_filter_set_stats_generator(const char *name)
 {
     bugle_register_filter_set_depends(name, "stats");
+    /* FIXME: need an ordering dependency that is not also a load
+     * dependency.
+     */
+#if 0
     bugle_register_filter_set_depends("stats_ordering", name);
+#endif
 }
 
 static void bugle_register_filter_set_stats_logger(const char *name)

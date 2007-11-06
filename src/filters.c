@@ -99,9 +99,15 @@ static bugle_linked_list activations_deferred;
 static bugle_linked_list deactivations_deferred;
 static bugle_thread_mutex_t active_callbacks_mutex = BUGLE_THREAD_MUTEX_INITIALIZER;
 
-/* hash table of linked lists of strings */
-static bugle_hash_table filter_dependencies;
+/* hash tables of linked lists of strings */
+static bugle_hash_table filter_orders; /* A comes before B */
+#if 0
+static bugle_hash_table filter_set_dependencies; /* A requires B */
+static bugle_hash_table filter_set_orders;       /* A is loaded before B */
+#else
 static bugle_linked_list filter_set_dependencies[2];
+#endif
+
 static void *call_data = NULL;
 static size_t call_data_size = 0; /* FIXME: turn into an object */
 
@@ -167,7 +173,9 @@ static void destroy_filters(void *dummy)
         s = (filter_set *) bugle_list_data(i);
         free(s);
     }
-    for (j = bugle_hash_begin(&filter_dependencies); j; j = bugle_hash_next(&filter_dependencies, j))
+
+
+    for (j = bugle_hash_begin(&filter_orders); j; j = bugle_hash_next(&filter_orders, j))
         if (j->value)
         {
             dep = (bugle_linked_list *) j->value;
@@ -176,10 +184,14 @@ static void destroy_filters(void *dummy)
         }
 
     bugle_list_clear(&filter_sets);
-    bugle_hash_clear(&filter_dependencies);
+    bugle_hash_clear(&filter_orders);
+#if 0
+    /* Clean up filter_set_orders and filter_set_dependencies properly */
+    bugle_hash_clear(&filter_set_orders);
+#else
     bugle_list_clear(&filter_set_dependencies[0]);
     bugle_list_clear(&filter_set_dependencies[1]);
-
+#endif
     lt_dlexit();
 }
 
@@ -220,7 +232,7 @@ void initialise_filters(void)
         bugle_list_init(&active_callbacks[f], false);
     bugle_list_init(&activations_deferred, false);
     bugle_list_init(&deactivations_deferred, false);
-    bugle_hash_init(&filter_dependencies, false);
+    bugle_hash_init(&filter_orders, false);
     bugle_list_init(&filter_set_dependencies[0], true);
     bugle_list_init(&filter_set_dependencies[1], true);
 
@@ -509,41 +521,50 @@ typedef struct
     int valence;
 } order_data;
 
-void filter_compute_order(void)
+/* Returns true on success, false if there was a cycle.
+ * - present: linked list of the binary items (not names); it is rewritten
+ *   in place on success.
+ * - order: name-name ordering dependencies, as a hash table of linked
+ *   lists. If B is in A's linked list, then A must come before B.
+ * - get_name: maps an item pointer to the name of the item
+ */
+static bool compute_order(bugle_linked_list *present,
+                          bugle_hash_table *order,
+                          const char *(*get_name)(void *))
 {
     bugle_linked_list ordered;
     bugle_linked_list queue;
     bugle_linked_list *deps;
-    bugle_hash_table byname;  /* table of order_data structs for each filter by name */
+    bugle_hash_table byname;  /* maps names to order_data structs */
     const char *name;
-    int count = 0;            /* checks that everything made it without cycles */
+    int count = 0;            /* count of outstanding items, to detect cycles */
     bugle_list_node *i, *j;
-    filter *cur;
+    void *cur;
     order_data *info;
 
     bugle_list_init(&ordered, false);
     bugle_hash_init(&byname, true);
-    for (i = bugle_list_head(&loaded_filters); i; i = bugle_list_next(i))
+    for (i = bugle_list_head(present); i; i = bugle_list_next(i))
     {
         count++;
         info = (order_data *) bugle_malloc(sizeof(order_data));
-        info->f = (filter *) bugle_list_data(i);
+        info->f = bugle_list_data(i);
         info->valence = 0;
-        bugle_hash_set(&byname, info->f->name, info);
+        bugle_hash_set(&byname, get_name(info->f), info);
     }
 
     /* fill in valences */
-    for (i = bugle_list_head(&loaded_filters); i; i = bugle_list_next(i))
+    for (i = bugle_list_head(present); i; i = bugle_list_next(i))
     {
-        cur = (filter *) bugle_list_data(i);
-        deps = (bugle_linked_list *) bugle_hash_get(&filter_dependencies, cur->name);
+        cur = bugle_list_data(i);
+        deps = (bugle_linked_list *) bugle_hash_get(order, get_name(cur));
         if (deps)
         {
             for (j = bugle_list_head(deps); j; j = bugle_list_next(j))
             {
                 name = (const char *) bugle_list_data(j);
                 info = (order_data *) bugle_hash_get(&byname, name);
-                if (info) /* otherwise a non-loaded filter */
+                if (info) /* otherwise a non-existent object */
                     info->valence++;
             }
         }
@@ -551,10 +572,10 @@ void filter_compute_order(void)
 
     /* prime the queue */
     bugle_list_init(&queue, false);
-    for (i = bugle_list_head(&loaded_filters); i; i = bugle_list_next(i))
+    for (i = bugle_list_head(present); i; i = bugle_list_next(i))
     {
         cur = (filter *) bugle_list_data(i);
-        info = (order_data *) bugle_hash_get(&byname, cur->name);
+        info = (order_data *) bugle_hash_get(&byname, get_name(cur));
         if (info->valence == 0)
             bugle_list_append(&queue, cur);
     }
@@ -563,16 +584,16 @@ void filter_compute_order(void)
     while (bugle_list_head(&queue))
     {
         count--;
-        cur = (filter *) bugle_list_data(bugle_list_head(&queue));
+        cur = bugle_list_data(bugle_list_head(&queue));
         bugle_list_erase(&queue, bugle_list_head(&queue));
-        deps = (bugle_linked_list *) bugle_hash_get(&filter_dependencies, cur->name);
+        deps = (bugle_linked_list *) bugle_hash_get(order, get_name(cur));
         if (deps)
         {
             for (j = bugle_list_head(deps); j; j = bugle_list_next(j))
             {
                 name = (const char *) bugle_list_data(j);
                 info = (order_data *) bugle_hash_get(&byname, name);
-                if (info) /* otherwise not a loaded filter */
+                if (info) /* otherwise a non-existent object */
                 {
                     info->valence--;
                     if (info->valence == 0)
@@ -583,17 +604,38 @@ void filter_compute_order(void)
         bugle_list_prepend(&ordered, cur);
     }
 
+    /* clean up */
+    bugle_list_clear(&queue);
+    bugle_hash_clear(&byname);
     if (count > 0)
+    {
+        bugle_list_clear(&ordered);
+        return false;
+    }
+    else
+    {
+        bugle_list_clear(present);
+        *present = ordered;
+        return true;
+    }
+}
+
+static const char *get_name_filter(void *f)
+{
+    return ((filter *) f)->name;
+}
+
+void filter_compute_order(void)
+{
+    bool success;
+
+    success = compute_order(&loaded_filters, &filter_orders, get_name_filter);
+    if (!success)
     {
         bugle_log("filters", "load", BUGLE_LOG_ERROR,
                   "cyclic dependency between filters");
         exit(1);
     }
-    /* clean up and replace old version */
-    bugle_list_clear(&queue);
-    bugle_hash_clear(&byname);
-    bugle_list_clear(&loaded_filters);
-    loaded_filters = ordered;
 }
 
 void filter_set_bypass(void)
@@ -782,12 +824,12 @@ void bugle_register_filter_catches_all(filter *handle, bool inactive,
 void bugle_register_filter_depends(const char *after, const char *before)
 {
     bugle_linked_list *deps;
-    deps = (bugle_linked_list *) bugle_hash_get(&filter_dependencies, after);
+    deps = (bugle_linked_list *) bugle_hash_get(&filter_orders, after);
     if (!deps)
     {
         deps = bugle_malloc(sizeof(bugle_linked_list));
         bugle_list_init(deps, true);
-        bugle_hash_set(&filter_dependencies, after, deps);
+        bugle_hash_set(&filter_orders, after, deps);
     }
     bugle_list_append(deps, bugle_strdup(before));
 }
