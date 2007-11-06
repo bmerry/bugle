@@ -293,10 +293,7 @@ static void destroy_filters(void *dummy)
 
     destroy_order_table(&filter_orders);
     destroy_order_table(&filter_set_dependencies);
-#if 0
-    /* FIXME: enable when ready */
     destroy_order_table(&filter_set_orders);
-#endif
 
     bugle_list_clear(&filter_sets);
     bugle_list_clear(&added_filter_sets);
@@ -582,10 +579,8 @@ void load_filter_sets(void)
     bugle_list_node *i, *j;
     filter_set *handle;
     filter *f;
-#if 0
-    /* FIXME */
-    compute_order(&added_filter_sets, &filter_set_order, get_name_filter_set);
-#endif
+
+    compute_order(&added_filter_sets, &filter_set_orders, get_name_filter_set);
     for (i = bugle_list_head(&added_filter_sets); i; i = bugle_list_next(i))
     {
         handle = (filter_set *) bugle_list_data(i);
@@ -862,6 +857,12 @@ void bugle_register_filter_order(const char *before, const char *after)
 void bugle_register_filter_set_depends(const char *base, const char *dep)
 {
     register_order(&filter_set_dependencies, dep, base);
+    register_order(&filter_set_orders, dep, base);
+}
+
+void bugle_register_filter_set_order(const char *before, const char *after)
+{
+    register_order(&filter_set_orders, before, after);
 }
 
 bool bugle_filter_set_is_loaded(const filter_set *handle)

@@ -140,7 +140,9 @@ void bugle_register_filter_catches_all(filter *handle, bool inactive, filter_cal
  * per-group basis.
  */
 void bugle_register_filter_catches_function(filter *handle, budgie_function f, bool inactive, filter_callback callback);
+
 void bugle_register_filter_set_depends(const char *base, const char *dep);
+void bugle_register_filter_set_order(const char *before, const char *after);
 void bugle_register_filter_order(const char *before, const char *after);
 void *bugle_get_filter_set_call_state(struct function_call_s *call, filter_set *handle);
 filter_set *bugle_get_filter_set_handle(const char *name);

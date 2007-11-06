@@ -1,14 +1,15 @@
 * Fix segfault if dlopen is called with NULL filename (thanks Ilan Aelion)
 * Avoid activating xevent when registering for NoSymbol
-* Wrote a manual page for gldb-gui
 * Converted all manual pages and some other documentation to DocBook
 * Add DocBook documentation on gldb-gui
 * Add support for wildcards in statistics
 * Add "calls per frame" statistics
 * Add partial support for GCC 4.2
 * Fix check for pthread_kill
-* Fix dlopen regression test
+* Fix bugs in dlopen and interposition regression tests
 * Fix shutdown crash if stats_nv is loaded without the NVPerfSDK DLL
+* Support non-load ordering dependencies between filter-sets, and use it
+  to allow stats_* to be listed after showstats/logstats
 
 0.0.20071009
 ------------

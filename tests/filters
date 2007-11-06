@@ -20,7 +20,6 @@ chain trace
 
 chain triangles
 {
-    filterset stats_primitives
     filterset logstats
     {
         show "triangles per frame"
@@ -31,6 +30,7 @@ chain triangles
         stderr_level 4
         flush yes
     }
+    filterset stats_primitives
 }
 
 chain checks
