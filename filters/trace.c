@@ -44,7 +44,7 @@ static bool initialise_trace(filter_set *handle)
     filter *f;
 
     f = bugle_register_filter(handle, "trace");
-    bugle_register_filter_depends("trace", "invoke");
+    bugle_register_filter_order("invoke", "trace");
     bugle_register_filter_catches_all(f, false, trace_callback);
     bugle_register_filter_post_renders("trace");
     return true;

@@ -189,11 +189,11 @@ static inline int bugle_thread_raise(int sig)
 
 /*** Higher-level stuff that doesn't depend on the threading implementation ***/
 
-/* This initialise mechanism is only valid for static constructor. Any code
- * that depends on the initialisation being complete must call
+/* This initialisation mechanism is only valid for static constructor functions.
+ * Any code that depends on the initialisation being complete must call
  * BUGLE_RUN_CONSTRUCTOR on the constructor first.
  */
-#if BUGLE_GCC_HAVE_CONSTRUCTOR_ATTRIBUTE
+#if BUGLE_GCC_HAVE_CONSTRUCTOR_ATTRIBUTE && !DEBUG_CONSTRUCTOR
 # define BUGLE_CONSTRUCTOR(fn) static void fn(void) BUGLE_GCC_CONSTRUCTOR_ATTRIBUTE
 # define BUGLE_RUN_CONSTRUCTOR(fn) ((void) 0)
 #else

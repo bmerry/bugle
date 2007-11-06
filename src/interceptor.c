@@ -129,7 +129,7 @@ static void load_config(void)
                         f = bugle_get_filter_set_handle(set->name);
                         if (f)
                         {
-                            bugle_load_filter_set(f, set->active);
+                            bugle_add_filter_set(f, set->active);
                             if (set->key)
                             {
                                 if (!bugle_xevent_key_lookup(set->key, &key))
@@ -159,7 +159,7 @@ static void load_config(void)
         fputs("could not find the 'invoke' filter-set; aborting\n", stderr);
         exit(1);
     }
-    bugle_load_filter_set(f, true);
+    bugle_add_filter_set(f, true);
     /* Auto-load the debugger filter-set if using the debugger */
     if (debugging)
     {
@@ -169,7 +169,7 @@ static void load_config(void)
             fputs("could not find the 'debugger' filter-set; aborting\n", stderr);
             exit(1);
         }
-        bugle_load_filter_set(f, true);
+        bugle_add_filter_set(f, true);
     }
 }
 
@@ -210,8 +210,7 @@ static void initialise_all(void)
     initialise_dump_tables();
     initialise_dlopen();
     load_config();
-    filter_compute_order();
-    filter_set_bypass();
+    filters_finalise();
 }
 
 /* Used by xevents */
@@ -222,6 +221,6 @@ void bugle_initialise_all(void)
 
 void budgie_interceptor(function_call *call)
 {
-    BUGLE_RUN_CONSTRUCTOR(bugle_initialise_all);
+    BUGLE_RUN_CONSTRUCTOR(initialise_all);
     run_filters(call);
 }

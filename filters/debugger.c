@@ -1025,9 +1025,9 @@ static bool initialise_debugger(filter_set *handle)
     bugle_register_filter_catches_all(f, false, debugger_callback);
     f = bugle_register_filter(handle, "debugger_error");
     bugle_register_filter_catches_all(f, false, debugger_error_callback);
-    bugle_register_filter_depends("invoke", "debugger");
-    bugle_register_filter_depends("debugger_error", "invoke");
-    bugle_register_filter_depends("debugger_error", "error");
+    bugle_register_filter_order("debugger", "invoke");
+    bugle_register_filter_order("invoke", "debugger_error");
+    bugle_register_filter_order("error", "debugger_error");
     bugle_register_filter_post_renders("debugger_error");
     bugle_register_filter_set_queries_error("debugger");
 

@@ -240,8 +240,8 @@ void bugle_register_filter_set_renders(const char *name)
 
 void bugle_register_filter_post_renders(const char *name)
 {
-    bugle_register_filter_depends(name, "error");
-    bugle_register_filter_depends(name, "trackbeginend");
+    bugle_register_filter_order("error", name);
+    bugle_register_filter_order("trackbeginend", name);
 }
 
 void bugle_register_filter_set_queries_error(const char *name)

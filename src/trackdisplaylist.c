@@ -133,7 +133,7 @@ static bool initialise_trackdisplaylist(filter_set *handle)
     bugle_object_class_init(&bugle_displaylist_class, &bugle_context_class);
 
     f = bugle_register_filter(handle, "trackdisplaylist");
-    bugle_register_filter_depends("trackdisplaylist", "invoke");
+    bugle_register_filter_order("invoke", "trackdisplaylist");
     bugle_register_filter_catches(f, GROUP_glNewList, true, trackdisplaylist_glNewList);
     bugle_register_filter_catches(f, GROUP_glEndList, true, trackdisplaylist_glEndList);
 

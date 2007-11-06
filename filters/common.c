@@ -67,8 +67,8 @@ static bool initialise_procaddress(filter_set *handle)
 
 #ifdef GLX_ARB_get_proc_address
     f = bugle_register_filter(handle, "procaddress");
-    bugle_register_filter_depends("procaddress", "invoke");
-    bugle_register_filter_depends("trace", "procaddress");
+    bugle_register_filter_order("invoke", "procaddress");
+    bugle_register_filter_order("procaddress", "trace");
     bugle_register_filter_catches(f, GROUP_glXGetProcAddressARB, false, procaddress_callback);
 #endif
     return true;

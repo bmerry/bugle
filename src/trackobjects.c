@@ -501,8 +501,8 @@ static bool initialise_trackobjects(filter_set *handle)
     bugle_register_filter_catches(f, GROUP_glBindFramebufferEXT, true, trackobjects_glBindFramebuffer);
     bugle_register_filter_catches(f, GROUP_glDeleteFramebuffersEXT, true, trackobjects_glDeleteFramebuffers);
 #endif
-    bugle_register_filter_depends("trackobjects", "invoke");
-    bugle_register_filter_depends("invoke", "trackobjects_pre");
+    bugle_register_filter_order("invoke", "trackobjects");
+    bugle_register_filter_order("trackobjects_pre", "invoke");
     bugle_register_filter_post_renders("trackobjects");
     view = bugle_object_class_register(&bugle_namespace_class,
                                        initialise_objects,

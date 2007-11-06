@@ -703,8 +703,8 @@ static bool stats_basic_initialise(filter_set *handle)
 
     f = bugle_register_filter(handle, "stats_basic");
     bugle_register_filter_catches(f, GROUP_glXSwapBuffers, false, stats_basic_glXSwapBuffers);
-    bugle_register_filter_depends("invoke", "stats_basic");
-    bugle_register_filter_depends("stats", "stats_basic");
+    bugle_register_filter_order("stats_basic", "invoke");
+    bugle_register_filter_order("stats_basic", "stats");
 
     stats_basic_frames = stats_signal_register("frames", NULL, stats_signal_activate_zero);
     stats_basic_seconds = stats_signal_register("seconds", NULL, stats_basic_seconds_activate);
@@ -937,8 +937,8 @@ static bool stats_primitives_initialise(filter_set *handle)
     bugle_register_filter_catches(f, GROUP_glEnd, false, stats_primitives_glEnd);
     bugle_register_filter_catches(f, GROUP_glCallList, false, stats_primitives_glCallList);
     bugle_register_filter_catches(f, GROUP_glCallLists, false, stats_primitives_glCallLists);
-    bugle_register_filter_depends("invoke", "stats_primitives");
-    bugle_register_filter_depends("stats", "stats_primitives");
+    bugle_register_filter_order("stats_primitives", "invoke");
+    bugle_register_filter_order("stats_primitives", "stats");
 
     stats_primitives_batches = stats_signal_register("batches", NULL, stats_signal_activate_zero);
     stats_primitives_triangles = stats_signal_register("triangles", NULL, stats_signal_activate_zero);
@@ -1044,12 +1044,12 @@ static bool stats_fragments_initialise(filter_set *handle)
     bugle_register_filter_catches(f, GROUP_glXSwapBuffers, false, stats_fragments_glXSwapBuffers);
     bugle_register_filter_catches(f, GROUP_glBeginQueryARB, false, stats_fragments_query);
     bugle_register_filter_catches(f, GROUP_glEndQueryARB, false, stats_fragments_query);
-    bugle_register_filter_depends("invoke", "stats_fragments");
-    bugle_register_filter_depends("stats", "stats_fragments");
+    bugle_register_filter_order("stats_fragments", "invoke");
+    bugle_register_filter_order("stats_fragments", "stats");
 
     f = bugle_register_filter(handle, "stats_fragments_post");
     bugle_register_filter_catches(f, GROUP_glXSwapBuffers, false, stats_fragments_post_glXSwapBuffers);
-    bugle_register_filter_depends("stats_fragments_post", "invoke");
+    bugle_register_filter_order("invoke", "stats_fragments_post");
 
     stats_fragments_fragments = stats_signal_register("fragments", NULL, stats_signal_activate_zero);
     return true;
@@ -1256,12 +1256,12 @@ static bool stats_nv_initialise(filter_set *handle)
 
     f = bugle_register_filter(handle, "stats_nv");
     bugle_register_filter_catches(f, GROUP_glXSwapBuffers, false, stats_nv_glXSwapBuffers);
-    bugle_register_filter_depends("invoke", "stats_nv");
-    bugle_register_filter_depends("stats", "stats_nv");
+    bugle_register_filter_order("stats_nv", "invoke");
+    bugle_register_filter_order("stats_nv", "stats");
 
     f = bugle_register_filter(handle, "stats_nv_post");
     bugle_register_filter_catches(f, GROUP_glXSwapBuffers, false, stats_nv_post_glXSwapBuffers);
-    bugle_register_filter_depends("stats_nv_post", "invoke");
+    bugle_register_filter_order("invoke", "stats_nv_post");
     return true;
 
 cancel2:
@@ -1839,12 +1839,12 @@ static bool showstats_initialise(filter_set *handle)
     bugle_list_node *i;
 
     f = bugle_register_filter(handle, "showstats");
-    bugle_register_filter_depends("invoke", "showstats");
-    bugle_register_filter_depends("screenshot", "showstats");
+    bugle_register_filter_order("showstats", "invoke");
+    bugle_register_filter_order("showstats", "screenshot");
     /* make sure that screenshots capture the stats */
-    bugle_register_filter_depends("debugger", "showstats");
-    bugle_register_filter_depends("screenshot", "showstats");
-    bugle_register_filter_depends("showstats", "stats");
+    bugle_register_filter_order("showstats", "debugger");
+    bugle_register_filter_order("showstats", "screenshot");
+    bugle_register_filter_order("stats", "showstats");
     bugle_register_filter_catches(f, GROUP_glXSwapBuffers, false, showstats_glXSwapBuffers);
     showstats_view = bugle_object_class_register(&bugle_context_class,
                                                  NULL,

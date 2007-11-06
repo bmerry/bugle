@@ -124,7 +124,7 @@ static bool initialise_classify(filter_set *handle)
 #ifdef GL_EXT_framebuffer_object
     bugle_register_filter_catches(f, GROUP_glBindFramebufferEXT, true, classify_glBindFramebufferEXT);
 #endif
-    bugle_register_filter_depends("classify", "invoke");
+    bugle_register_filter_order("invoke", "classify");
     bugle_register_filter_post_renders("classify");
     classify_view = bugle_object_class_register(&bugle_context_class, initialise_classify_context,
                                                 NULL, sizeof(classify_context));
@@ -305,7 +305,7 @@ static bool initialise_wireframe(filter_set *handle)
 #ifdef GLX_SGI_make_current_read
     bugle_register_filter_catches(f, GROUP_glXMakeCurrentReadSGI, true, wireframe_make_current);
 #endif
-    bugle_register_filter_depends("wireframe", "invoke");
+    bugle_register_filter_order("invoke", "wireframe");
     bugle_register_filter_post_renders("wireframe");
     wireframe_view = bugle_object_class_register(&bugle_context_class, initialise_wireframe_context,
                                                  NULL, sizeof(wireframe_context));
@@ -419,7 +419,7 @@ static bool initialise_frontbuffer(filter_set *handle)
 
     frontbuffer_filterset = handle;
     f = bugle_register_filter(handle, "frontbuffer");
-    bugle_register_filter_depends("frontbuffer", "invoke");
+    bugle_register_filter_order("invoke", "frontbuffer");
     bugle_register_filter_catches(f, GROUP_glDrawBuffer, false, frontbuffer_glDrawBuffer);
     bugle_register_filter_catches(f, GROUP_glXMakeCurrent, true, frontbuffer_make_current);
 #ifdef GLX_SGI_make_current_read
@@ -428,7 +428,7 @@ static bool initialise_frontbuffer(filter_set *handle)
     bugle_register_filter_post_renders("frontbuffer");
 
     f = bugle_register_filter(handle, "frontbuffer_pre");
-    bugle_register_filter_depends("invoke", "frontbuffer_pre");
+    bugle_register_filter_order("frontbuffer_pre", "invoke");
     bugle_register_filter_catches(f, GROUP_glXSwapBuffers, false, frontbuffer_glXSwapBuffers);
 
     frontbuffer_view = bugle_object_class_register(&bugle_context_class, initialise_frontbuffer_context,
@@ -946,7 +946,7 @@ static bool initialise_camera(filter_set *handle)
 
     camera_filterset = handle;
     f = bugle_register_filter(handle, "camera_pre");
-    bugle_register_filter_depends("invoke", "camera_pre");
+    bugle_register_filter_order("camera_pre", "invoke");
     bugle_register_filter_catches(f, GROUP_glMultMatrixf, false, camera_restore);
     bugle_register_filter_catches(f, GROUP_glMultMatrixd, false, camera_restore);
     bugle_register_filter_catches(f, GROUP_glTranslatef, false, camera_restore);
@@ -966,7 +966,7 @@ static bool initialise_camera(filter_set *handle)
 
     f = bugle_register_filter(handle, "camera_post");
     bugle_register_filter_post_renders("camera_post");
-    bugle_register_filter_depends("camera_post", "invoke");
+    bugle_register_filter_order("invoke", "camera_post");
     bugle_register_filter_catches(f, GROUP_glXMakeCurrent, true, camera_make_current);
 #ifdef GLX_SGI_make_current_read
     bugle_register_filter_catches(f, GROUP_glXMakeCurrentReadSGI, true, camera_make_current);
@@ -1117,12 +1117,12 @@ static bool initialise_extoverride(filter_set *handle)
     filter *f;
 
     f = bugle_register_filter(handle, "extoverride_get");
-    bugle_register_filter_depends("extoverride_get", "invoke");
-    bugle_register_filter_depends("trace", "extoverride_get");
+    bugle_register_filter_order("invoke", "extoverride_get");
+    bugle_register_filter_order("extoverride_get", "trace");
     bugle_register_filter_catches(f, GROUP_glGetString, false, extoverride_glGetString);
 
     f = bugle_register_filter(handle, "extoverride_warn");
-    bugle_register_filter_depends("invoke", "extoverride_warn");
+    bugle_register_filter_order("extoverride_warn", "invoke");
     for (budgie_function i = 0; i < budgie_number_of_functions; i++)
     {
         if (bugle_gl_function_table[i].extension

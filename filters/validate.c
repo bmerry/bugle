@@ -113,8 +113,8 @@ static bool initialise_error(filter_set *handle)
     error_handle = handle;
     f = bugle_register_filter(handle, "error");
     bugle_register_filter_catches_all(f, true, error_callback);
-    bugle_register_filter_depends("error", "invoke");
-    bugle_register_filter_depends("error", "trackbeginend");
+    bugle_register_filter_order("invoke", "error");
+    bugle_register_filter_order("trackbeginend", "error");
     /* We don't call filter_post_renders, because that would make the
      * error filterset depend on itself.
      */
@@ -150,8 +150,8 @@ static bool initialise_showerror(filter_set *handle)
 
     f = bugle_register_filter(handle, "showerror");
     bugle_register_filter_catches_all(f, false, showerror_callback);
-    bugle_register_filter_depends("showerror", "error");
-    bugle_register_filter_depends("showerror", "invoke");
+    bugle_register_filter_order("error", "showerror");
+    bugle_register_filter_order("invoke", "showerror");
     return true;
 }
 
@@ -228,8 +228,8 @@ static bool initialise_unwindstack(filter_set *handle)
     bugle_register_filter_catches_all(f, false, unwindstack_pre_callback);
     f = bugle_register_filter(handle, "unwindstack_post");
     bugle_register_filter_catches_all(f, false, unwindstack_post_callback);
-    bugle_register_filter_depends("unwindstack_post", "invoke");
-    bugle_register_filter_depends("invoke", "unwindstack_pre");
+    bugle_register_filter_order("invoke", "unwindstack_post");
+    bugle_register_filter_order("unwindstack_pre", "invoke");
     return true;
 }
 
@@ -958,12 +958,12 @@ static bool initialise_checks(filter_set *handle)
     /* We try to push this early, since it would defeat the whole thing if
      * bugle crashed while examining the data in another filter.
      */
-    bugle_register_filter_depends("invoke", "checks");
-    bugle_register_filter_depends("stats", "checks");
-    bugle_register_filter_depends("trace", "checks");
-    bugle_register_filter_depends("trackcontext", "checks");
-    bugle_register_filter_depends("trackbeginend", "checks");
-    bugle_register_filter_depends("trackdisplaylist", "checks");
+    bugle_register_filter_order("checks", "invoke");
+    bugle_register_filter_order("checks", "stats");
+    bugle_register_filter_order("checks", "trace");
+    bugle_register_filter_order("checks", "trackcontext");
+    bugle_register_filter_order("checks", "trackbeginend");
+    bugle_register_filter_order("checks", "trackdisplaylist");
     return true;
 }
 

@@ -84,7 +84,7 @@ static bool initialise_trackbeginend(filter_set *handle)
     filter *f;
 
     f = bugle_register_filter(handle, "trackbeginend");
-    bugle_register_filter_depends("trackbeginend", "invoke");
+    bugle_register_filter_order("invoke", "trackbeginend");
     bugle_register_filter_catches(f, GROUP_glBegin, true, trackbeginend_glBegin);
     bugle_register_filter_catches(f, GROUP_glEnd, true, trackbeginend_glEnd);
 

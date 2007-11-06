@@ -699,7 +699,7 @@ static bool initialise_screenshot(filter_set *handle)
 
     f = bugle_register_filter(handle, "screenshot");
     bugle_register_filter_catches(f, GROUP_glXSwapBuffers, false, screenshot_callback);
-    bugle_register_filter_depends("invoke", "screenshot");
+    bugle_register_filter_order("screenshot", "invoke");
 
     video_data = bugle_calloc(video_lag, sizeof(screenshot_data));
     video_cur = 0;
@@ -791,7 +791,7 @@ static bool initialise_showextensions(filter_set *handle)
     /* The order mainly doesn't matter, but making it a pre-filter
      * reduces the risk of another filter aborting the call.
      */
-    bugle_register_filter_depends("invoke", "showextensions");
+    bugle_register_filter_order("showextensions", "invoke");
     bugle_hash_init(&seen_extensions, false);
     return true;
 }
@@ -1001,8 +1001,8 @@ static bool initialise_eps(filter_set *handle)
     f = bugle_register_filter(handle, "eps");
     bugle_register_filter_catches(f, GROUP_glPointSize, false, eps_glPointSize);
     bugle_register_filter_catches(f, GROUP_glLineWidth, false, eps_glLineWidth);
-    bugle_register_filter_depends("invoke", "eps_pre");
-    bugle_register_filter_depends("eps", "invoke");
+    bugle_register_filter_order("eps_pre", "invoke");
+    bugle_register_filter_order("invoke", "eps");
     bugle_register_filter_post_renders("eps");
     eps_view = bugle_object_class_register(&bugle_context_class, initialise_eps_context,
                                            NULL, sizeof(eps_struct));

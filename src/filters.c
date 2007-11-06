@@ -65,6 +65,7 @@ typedef struct
 } filter_catcher;
 
 static bugle_linked_list filter_sets;
+static bugle_linked_list added_filter_sets; /* Those specified in the config, plus dependents */
 
 /* As the filter-sets are loaded, loaded_filters is populated with
  * the loaded filters in arbitrary order. Once all filter-sets are
@@ -99,14 +100,10 @@ static bugle_linked_list activations_deferred;
 static bugle_linked_list deactivations_deferred;
 static bugle_thread_mutex_t active_callbacks_mutex = BUGLE_THREAD_MUTEX_INITIALIZER;
 
-/* hash tables of linked lists of strings */
-static bugle_hash_table filter_orders; /* A comes before B */
-#if 0
+/* hash tables of linked lists of strings; A is the key, B is the linked list element */
+static bugle_hash_table filter_orders;           /* A is called after B */
 static bugle_hash_table filter_set_dependencies; /* A requires B */
-static bugle_hash_table filter_set_orders;       /* A is loaded before B */
-#else
-static bugle_linked_list filter_set_dependencies[2];
-#endif
+static bugle_hash_table filter_set_orders;       /* A is initialised after B */
 
 static void *call_data = NULL;
 static size_t call_data_size = 0; /* FIXME: turn into an object */
@@ -115,34 +112,157 @@ static lt_dlhandle current_dl_handle = NULL;
 
 static void bugle_deactivate_filter_set_nolock(filter_set *handle);
 
-static void destroy_filter_set_r(filter_set *handle)
+/*** Order management helper code ***/
+
+typedef struct
 {
+    void *f;
+    int valence;
+} order_data;
+
+static void register_order(bugle_hash_table *orders, const char *before, const char *after)
+{
+    bugle_linked_list *deps;
+    deps = (bugle_linked_list *) bugle_hash_get(orders, after);
+    if (!deps)
+    {
+        deps = bugle_malloc(sizeof(bugle_linked_list));
+        bugle_list_init(deps, true);
+        bugle_hash_set(orders, after, deps);
+    }
+    bugle_list_append(deps, bugle_strdup(before));
+}
+
+/* Returns true on success, false if there was a cycle.
+ * - present: linked list of the binary items (not names); it is rewritten
+ *   in place on success.
+ * - order: name-name ordering dependencies, as a hash table of linked
+ *   lists. If B is in A's linked list, then A must come before B.
+ * - get_name: maps an item pointer to the name of the item
+ */
+static bool compute_order(bugle_linked_list *present,
+                          bugle_hash_table *order,
+                          const char *(*get_name)(void *))
+{
+    bugle_linked_list ordered;
+    bugle_linked_list queue;
+    bugle_linked_list *deps;
+    bugle_hash_table byname;  /* maps names to order_data structs */
+    const char *name;
+    int count = 0;            /* count of outstanding items, to detect cycles */
     bugle_list_node *i, *j;
+    void *cur;
+    order_data *info;
+
+    bugle_list_init(&ordered, false);
+    bugle_hash_init(&byname, true);
+    for (i = bugle_list_head(present); i; i = bugle_list_next(i))
+    {
+        count++;
+        info = (order_data *) bugle_malloc(sizeof(order_data));
+        info->f = bugle_list_data(i);
+        info->valence = 0;
+        bugle_hash_set(&byname, get_name(info->f), info);
+    }
+
+    /* fill in valences */
+    for (i = bugle_list_head(present); i; i = bugle_list_next(i))
+    {
+        cur = bugle_list_data(i);
+        deps = (bugle_linked_list *) bugle_hash_get(order, get_name(cur));
+        if (deps)
+        {
+            for (j = bugle_list_head(deps); j; j = bugle_list_next(j))
+            {
+                name = (const char *) bugle_list_data(j);
+                info = (order_data *) bugle_hash_get(&byname, name);
+                if (info) /* otherwise a non-existent object */
+                    info->valence++;
+            }
+        }
+    }
+
+    /* prime the queue */
+    bugle_list_init(&queue, false);
+    for (i = bugle_list_head(present); i; i = bugle_list_next(i))
+    {
+        cur = (filter *) bugle_list_data(i);
+        info = (order_data *) bugle_hash_get(&byname, get_name(cur));
+        if (info->valence == 0)
+            bugle_list_append(&queue, cur);
+    }
+
+    /* do a topological walk, starting at the back */
+    while (bugle_list_head(&queue))
+    {
+        count--;
+        cur = bugle_list_data(bugle_list_head(&queue));
+        bugle_list_erase(&queue, bugle_list_head(&queue));
+        deps = (bugle_linked_list *) bugle_hash_get(order, get_name(cur));
+        if (deps)
+        {
+            for (j = bugle_list_head(deps); j; j = bugle_list_next(j))
+            {
+                name = (const char *) bugle_list_data(j);
+                info = (order_data *) bugle_hash_get(&byname, name);
+                if (info) /* otherwise a non-existent object */
+                {
+                    info->valence--;
+                    if (info->valence == 0)
+                        bugle_list_append(&queue, info->f);
+                }
+            }
+        }
+        bugle_list_prepend(&ordered, cur);
+    }
+
+    /* clean up */
+    bugle_list_clear(&queue);
+    bugle_hash_clear(&byname);
+    if (count > 0)
+    {
+        bugle_list_clear(&ordered);
+        return false;
+    }
+    else
+    {
+        bugle_list_clear(present);
+        *present = ordered;
+        return true;
+    }
+}
+
+static void destroy_order_table(bugle_hash_table *orders)
+{
+    bugle_linked_list *dep;
+    const bugle_hash_entry *i;
+
+    for (i = bugle_hash_begin(orders); i; i = bugle_hash_next(orders, i))
+        if (i->value)
+        {
+            dep = (bugle_linked_list *) i->value;
+            bugle_list_clear(dep);
+            free(dep);
+        }
+    bugle_hash_clear(orders);
+}
+
+/*** End of order management helper code ***/
+
+static void destroy_filter_set(filter_set *handle)
+{
+    bugle_list_node *i;
     filter *f;
-    filter_set *s;
 
     if (handle->loaded)
     {
         handle->loaded = false;
-        /* deps */
-        for (i = bugle_list_head(&filter_set_dependencies[0]),
-             j = bugle_list_head(&filter_set_dependencies[1]);
-             i;
-             i = bugle_list_next(i), j = bugle_list_next(j))
-        {
-            if (strcmp(handle->name, (const char *) bugle_list_data(j)) == 0)
-            {
-                s = bugle_get_filter_set_handle((const char *) bugle_list_data(i));
-                destroy_filter_set_r(s);
-            }
-        }
-
         bugle_deactivate_filter_set_nolock(handle);
         if (handle->unload) (*handle->unload)(handle);
 
-        for (j = bugle_list_head(&handle->filters); j; j = bugle_list_next(j))
+        for (i = bugle_list_head(&handle->filters); i; i = bugle_list_next(i))
         {
-            f = (filter *) bugle_list_data(j);
+            f = (filter *) bugle_list_data(i);
             bugle_list_clear(&f->callbacks);
             free(f);
         }
@@ -153,20 +273,17 @@ static void destroy_filter_set_r(filter_set *handle)
 static void destroy_filters(void *dummy)
 {
     bugle_list_node *i;
-    const bugle_hash_entry *j;
     filter_set *s;
     budgie_function k;
-    bugle_linked_list *dep;
 
     bugle_list_clear(&loaded_filters);
     for (k = 0; k < NUMBER_OF_FUNCTIONS; k++)
         bugle_list_clear(&active_callbacks[k]);
 
-    for (i = bugle_list_head(&filter_sets); i; i = bugle_list_next(i))
+    for (i = bugle_list_tail(&added_filter_sets); i; i = bugle_list_prev(i))
     {
         s = (filter_set *) bugle_list_data(i);
-        if (s->loaded)
-            destroy_filter_set_r(s);
+        destroy_filter_set(s);
     }
     for (i = bugle_list_head(&filter_sets); i; i = bugle_list_next(i))
     {
@@ -174,24 +291,15 @@ static void destroy_filters(void *dummy)
         free(s);
     }
 
-
-    for (j = bugle_hash_begin(&filter_orders); j; j = bugle_hash_next(&filter_orders, j))
-        if (j->value)
-        {
-            dep = (bugle_linked_list *) j->value;
-            bugle_list_clear(dep);
-            free(dep);
-        }
+    destroy_order_table(&filter_orders);
+    destroy_order_table(&filter_set_dependencies);
+#if 0
+    /* FIXME: enable when ready */
+    destroy_order_table(&filter_set_orders);
+#endif
 
     bugle_list_clear(&filter_sets);
-    bugle_hash_clear(&filter_orders);
-#if 0
-    /* Clean up filter_set_orders and filter_set_dependencies properly */
-    bugle_hash_clear(&filter_set_orders);
-#else
-    bugle_list_clear(&filter_set_dependencies[0]);
-    bugle_list_clear(&filter_set_dependencies[1]);
-#endif
+    bugle_list_clear(&added_filter_sets);
     lt_dlexit();
 }
 
@@ -227,14 +335,14 @@ void initialise_filters(void)
     budgie_function f;
 
     bugle_list_init(&filter_sets, false);
+    bugle_list_init(&added_filter_sets, false);
     bugle_list_init(&loaded_filters, false);
     for (f = 0; f < NUMBER_OF_FUNCTIONS; f++)
         bugle_list_init(&active_callbacks[f], false);
     bugle_list_init(&activations_deferred, false);
     bugle_list_init(&deactivations_deferred, false);
     bugle_hash_init(&filter_orders, false);
-    bugle_list_init(&filter_set_dependencies[0], true);
-    bugle_list_init(&filter_set_dependencies[1], true);
+    bugle_hash_init(&filter_set_dependencies, false);
 
     libdir = getenv("BUGLE_FILTER_DIR");
     if (!libdir) libdir = PKGLIBDIR;
@@ -433,34 +541,54 @@ static void bugle_deactivate_filter_set_nolock(filter_set *handle)
     }
 }
 
-static void load_filter_set_r(filter_set *handle, bool activate)
+static void add_filter_set_r(filter_set *handle, bool activate)
 {
-    bugle_list_node *i, *j;
+    bugle_linked_list *deps;
+    bugle_list_node *i;
     filter_set *s;
-    filter *f;
 
-    if (!handle->loaded)
+    if (!handle->added)
     {
-        /* deps */
-        for (i = bugle_list_head(&filter_set_dependencies[0]),
-             j = bugle_list_head(&filter_set_dependencies[1]);
-             i;
-             i = bugle_list_next(i), j = bugle_list_next(j))
+        handle->added = true;
+        deps = (bugle_linked_list *) bugle_hash_get(&filter_set_dependencies, handle->name);
+        if (deps)
         {
-            if (strcmp(handle->name, (const char *) bugle_list_data(i)) == 0)
+            for (i = bugle_list_head(deps); i; i = bugle_list_next(i))
             {
-                s = bugle_get_filter_set_handle((const char *) bugle_list_data(j));
+                s = bugle_get_filter_set_handle((const char *) bugle_list_data(i));
                 if (!s)
                 {
                     bugle_log_printf("filters", "load", BUGLE_LOG_ERROR,
                                      "filter-set %s depends on unknown filter-set %s",
-                                     ((const char *) bugle_list_data(i)),
-                                     ((const char *) bugle_list_data(j)));
+                                     handle->name,
+                                     ((const char *) bugle_list_data(i)));
                 }
-                load_filter_set_r(s, activate);
+                add_filter_set_r(s, activate);
             }
         }
-        /* Initialisation */
+        bugle_list_append(&added_filter_sets, handle);
+        handle->active = activate;
+    }
+}
+
+static const char *get_name_filter_set(void *f)
+{
+    return ((filter_set *) f)->name;
+}
+
+/* Puts filter-sets into the proper order and initialises them */
+void load_filter_sets(void)
+{
+    bugle_list_node *i, *j;
+    filter_set *handle;
+    filter *f;
+#if 0
+    /* FIXME */
+    compute_order(&added_filter_sets, &filter_set_order, get_name_filter_set);
+#endif
+    for (i = bugle_list_head(&added_filter_sets); i; i = bugle_list_next(i))
+    {
+        handle = (filter_set *) bugle_list_data(i);
         if (handle->load && !(*handle->load)(handle))
         {
             bugle_log_printf(handle->name, "load", BUGLE_LOG_ERROR,
@@ -469,13 +597,13 @@ static void load_filter_set_r(filter_set *handle, bool activate)
         }
         handle->loaded = true;
 
-        for (i = bugle_list_head(&handle->filters); i; i = bugle_list_next(i))
+        for (j = bugle_list_head(&handle->filters); j; j = bugle_list_next(j))
         {
-            f = (filter *) bugle_list_data(i);
+            f = (filter *) bugle_list_data(j);
             bugle_list_append(&loaded_filters, f);
         }
 
-        if (activate)
+        if (handle->active)
         {
             bugle_activate_filter_set_nolock(handle);
             active_dirty = true;
@@ -483,9 +611,9 @@ static void load_filter_set_r(filter_set *handle, bool activate)
     }
 }
 
-void bugle_load_filter_set(filter_set *handle, bool activate)
+void bugle_add_filter_set(filter_set *handle, bool activate)
 {
-    load_filter_set_r(handle, activate);
+    add_filter_set_r(handle, activate);
 }
 
 void bugle_activate_filter_set(filter_set *handle)
@@ -504,6 +632,8 @@ void bugle_deactivate_filter_set(filter_set *handle)
 
 /* Note: these should be called only from within a callback, in which
  * case the lock is already held.
+ * FIXME: a single queue should be used for activate and deactivate, to
+ * allow for arbitrary ordering.
  */
 void bugle_activate_filter_set_deferred(filter_set *handle)
 {
@@ -515,117 +645,12 @@ void bugle_deactivate_filter_set_deferred(filter_set *handle)
     bugle_list_append(&deactivations_deferred, handle);
 }
 
-typedef struct
-{
-    filter *f;
-    int valence;
-} order_data;
-
-/* Returns true on success, false if there was a cycle.
- * - present: linked list of the binary items (not names); it is rewritten
- *   in place on success.
- * - order: name-name ordering dependencies, as a hash table of linked
- *   lists. If B is in A's linked list, then A must come before B.
- * - get_name: maps an item pointer to the name of the item
- */
-static bool compute_order(bugle_linked_list *present,
-                          bugle_hash_table *order,
-                          const char *(*get_name)(void *))
-{
-    bugle_linked_list ordered;
-    bugle_linked_list queue;
-    bugle_linked_list *deps;
-    bugle_hash_table byname;  /* maps names to order_data structs */
-    const char *name;
-    int count = 0;            /* count of outstanding items, to detect cycles */
-    bugle_list_node *i, *j;
-    void *cur;
-    order_data *info;
-
-    bugle_list_init(&ordered, false);
-    bugle_hash_init(&byname, true);
-    for (i = bugle_list_head(present); i; i = bugle_list_next(i))
-    {
-        count++;
-        info = (order_data *) bugle_malloc(sizeof(order_data));
-        info->f = bugle_list_data(i);
-        info->valence = 0;
-        bugle_hash_set(&byname, get_name(info->f), info);
-    }
-
-    /* fill in valences */
-    for (i = bugle_list_head(present); i; i = bugle_list_next(i))
-    {
-        cur = bugle_list_data(i);
-        deps = (bugle_linked_list *) bugle_hash_get(order, get_name(cur));
-        if (deps)
-        {
-            for (j = bugle_list_head(deps); j; j = bugle_list_next(j))
-            {
-                name = (const char *) bugle_list_data(j);
-                info = (order_data *) bugle_hash_get(&byname, name);
-                if (info) /* otherwise a non-existent object */
-                    info->valence++;
-            }
-        }
-    }
-
-    /* prime the queue */
-    bugle_list_init(&queue, false);
-    for (i = bugle_list_head(present); i; i = bugle_list_next(i))
-    {
-        cur = (filter *) bugle_list_data(i);
-        info = (order_data *) bugle_hash_get(&byname, get_name(cur));
-        if (info->valence == 0)
-            bugle_list_append(&queue, cur);
-    }
-
-    /* do a topological walk, starting at the back */
-    while (bugle_list_head(&queue))
-    {
-        count--;
-        cur = bugle_list_data(bugle_list_head(&queue));
-        bugle_list_erase(&queue, bugle_list_head(&queue));
-        deps = (bugle_linked_list *) bugle_hash_get(order, get_name(cur));
-        if (deps)
-        {
-            for (j = bugle_list_head(deps); j; j = bugle_list_next(j))
-            {
-                name = (const char *) bugle_list_data(j);
-                info = (order_data *) bugle_hash_get(&byname, name);
-                if (info) /* otherwise a non-existent object */
-                {
-                    info->valence--;
-                    if (info->valence == 0)
-                        bugle_list_append(&queue, info->f);
-                }
-            }
-        }
-        bugle_list_prepend(&ordered, cur);
-    }
-
-    /* clean up */
-    bugle_list_clear(&queue);
-    bugle_hash_clear(&byname);
-    if (count > 0)
-    {
-        bugle_list_clear(&ordered);
-        return false;
-    }
-    else
-    {
-        bugle_list_clear(present);
-        *present = ordered;
-        return true;
-    }
-}
-
 static const char *get_name_filter(void *f)
 {
     return ((filter *) f)->name;
 }
 
-void filter_compute_order(void)
+static void filter_compute_order(void)
 {
     bool success;
 
@@ -638,7 +663,7 @@ void filter_compute_order(void)
     }
 }
 
-void filter_set_bypass(void)
+static void set_bypass(void)
 {
     bugle_list_node *i, *j;
     bool bypass[NUMBER_OF_FUNCTIONS];
@@ -657,6 +682,13 @@ void filter_set_bypass(void)
         }
     }
     memcpy(budgie_bypass, bypass, sizeof(budgie_bypass));
+}
+
+void filters_finalise(void)
+{
+    load_filter_sets();
+    filter_compute_order();
+    set_bypass();
 }
 
 /* Note: caller must take mutexes */
@@ -748,6 +780,7 @@ filter_set *bugle_register_filter_set(const filter_set_info *info)
     s->variables = info->variables;
     s->loaded = false;
     s->active = false;
+    s->added = false;
     s->dl_handle = current_dl_handle;
     if (info->call_state_space)
     {
@@ -821,23 +854,14 @@ void bugle_register_filter_catches_all(filter *handle, bool inactive,
         }
 }
 
-void bugle_register_filter_depends(const char *after, const char *before)
+void bugle_register_filter_order(const char *before, const char *after)
 {
-    bugle_linked_list *deps;
-    deps = (bugle_linked_list *) bugle_hash_get(&filter_orders, after);
-    if (!deps)
-    {
-        deps = bugle_malloc(sizeof(bugle_linked_list));
-        bugle_list_init(deps, true);
-        bugle_hash_set(&filter_orders, after, deps);
-    }
-    bugle_list_append(deps, bugle_strdup(before));
+    register_order(&filter_orders, before, after);
 }
 
 void bugle_register_filter_set_depends(const char *base, const char *dep)
 {
-    bugle_list_append(&filter_set_dependencies[0], bugle_strdup(base));
-    bugle_list_append(&filter_set_dependencies[1], bugle_strdup(dep));
+    register_order(&filter_set_dependencies, dep, base);
 }
 
 bool bugle_filter_set_is_loaded(const filter_set *handle)

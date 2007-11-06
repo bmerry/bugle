@@ -156,7 +156,7 @@ bool check_set_reentrance(void)
      */
     bool ans;
 
-    BUGLE_RUN_CONSTRUCTOR(initialise_reentrace);
+    BUGLE_RUN_CONSTRUCTOR(initialise_reentrance);
     ans = bugle_thread_getspecific(reentrance_key) == NULL;
     bugle_thread_setspecific(reentrance_key, &ans); /* arbitrary non-NULL value */
     return ans;
