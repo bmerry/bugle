@@ -11,12 +11,14 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+extern void (*glXGetProcAddressARB(const GLubyte *))(void);
+
 void glGetIntegerv(GLenum pname, GLint *out)
 {
     fprintf(stderr,
             "bugle will not work if the application defines symbols with the\n"
             "same names as OpenGL functions. If you are using GCC and an ELF\n"
-            "linker, this indicates that GCC was not linked correctly.\n");
+            "linker, this indicates that bugle was not linked correctly.\n");
     exit(1);
 }
 
