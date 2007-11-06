@@ -87,9 +87,8 @@ static bugle_linked_list stats_signals_active;
  * also sequential in the linked list.
  */
 static bugle_linked_list *stats_statistics = NULL;
-/* Maps a name to the first instance and last instance of a statistic in stats_statistics. */
+/* Maps a name to the first instance of a statistic in stats_statistics. */
 static bugle_hash_table stats_statistics_first;
-static bugle_hash_table stats_statistics_last;
 
 /*** Low-level utilities ***/
 
@@ -494,6 +493,7 @@ static stats_statistic *stats_statistic_instantiate(stats_statistic *st, const c
     n->name = bugle_strdup(n->name);
     n->label = pattern_replace(n->label, rep);
     n->value = stats_expression_instantiate(st->value, rep);
+    n->last = false;
 
     bugle_list_init(&n->substitutions, true);
     for (i = bugle_list_head(&st->substitutions); i; i = bugle_list_next(i))
@@ -508,14 +508,10 @@ static stats_statistic *stats_statistic_instantiate(stats_statistic *st, const c
     return n;
 }
 
-/* Returns the first and last statistic of a set if it exists, or a pair
- * of NULLs if not. */
-static void stats_statistic_find(const char *name,
-                                 bugle_list_node **first,
-                                 bugle_list_node **last)
+/* Returns the first of a set if it exists, or NULL if not. */
+static bugle_list_node *stats_statistic_find(const char *name)
 {
-    *first = bugle_hash_get(&stats_statistics_first, name);
-    *last = bugle_hash_get(&stats_statistics_last, name);
+    return bugle_hash_get(&stats_statistics_first, name);
 }
 
 /* List the registered statistics, for when an illegal one is mentioned */
@@ -529,7 +525,8 @@ static void stats_statistic_list(void)
     for (j = bugle_list_head(stats_statistics); j; j = bugle_list_next(j))
     {
         st = (stats_statistic *) bugle_list_data(j);
-        fprintf(stderr, "  %s\n", st->name);
+        if (st->last)
+            fprintf(stderr, "  %s\n", st->name);
     }
 }
 
@@ -587,7 +584,6 @@ static bool stats_initialise(filter_set *handle)
     bugle_hash_init(&stats_signals, true);
     bugle_list_init(&stats_signals_active, false);
     bugle_hash_init(&stats_statistics_first, false);
-    bugle_hash_init(&stats_statistics_last, false);
     if (!stats_load_config()) return false;
 
     /* This filter does no interception, but it provides a sequence point
@@ -599,7 +595,7 @@ static bool stats_initialise(filter_set *handle)
 }
 
 /* Replaces each generic statistic from the config file with one or more
- * instances, and sets up stats_statistics_first and stats_statistics_last.
+ * instances, and sets up stats_statistics_first.
  */
 static bool stats_ordering_initialise(filter_set *handle)
 {
@@ -649,7 +645,8 @@ static bool stats_ordering_initialise(filter_set *handle)
             stats_statistic *st;
             st = bugle_list_data(first);
             bugle_hash_set(&stats_statistics_first, st->name, first);
-            bugle_hash_set(&stats_statistics_last, st->name, last);
+            st = bugle_list_data(last);
+            st->last = true;
         }
     }
     return true;
@@ -672,7 +669,6 @@ static void stats_destroy(filter_set *handle)
     bugle_list_clear(&stats_signals_active);
     bugle_hash_clear(&stats_signals);
     bugle_hash_clear(&stats_statistics_first);
-    bugle_hash_clear(&stats_statistics_last);
 }
 
 /*** Generators ***/
@@ -1349,7 +1345,7 @@ static bool logstats_glXSwapBuffers(function_call *call, const callback_data *da
 static bool logstats_initialise(filter_set *handle)
 {
     filter *f;
-    bugle_list_node *i, *j, *first, *last;
+    bugle_list_node *i, *j;
     stats_statistic *st;
 
     f = bugle_register_filter(handle, "stats_log");
@@ -1360,16 +1356,15 @@ static bool logstats_initialise(filter_set *handle)
     {
         char *name;
         name = (char *) bugle_list_data(i);
-        stats_statistic_find(name, &first, &last);
-        if (!first)
+        j = stats_statistic_find(name);
+        if (!j)
         {
             bugle_log_printf("logstats", "initialise", BUGLE_LOG_ERROR,
                              "statistic '%s' not found.", name);
             stats_statistic_list();
             return false;
         }
-        j = first;
-        for (j = first; ; j = bugle_list_next(j))
+        for (; j; j = bugle_list_next(j))
         {
             st = (stats_statistic *) bugle_list_data(j);
             if (stats_expression_activate_signals(st->value))
@@ -1381,7 +1376,7 @@ static bool logstats_initialise(filter_set *handle)
                                  st->name);
                 return false;
             }
-            if (j == last) break;
+            if (st->last) break;
         }
     }
     bugle_list_clear(&logstats_show_requested);
@@ -1862,18 +1857,18 @@ static bool showstats_initialise(filter_set *handle)
     {
         showstats_statistic_request *req;
         showstats_statistic *sst;
-        bugle_list_node *first, *last, *j;
+        bugle_list_node *j;
 
         req = (showstats_statistic_request *) bugle_list_data(i);
-        stats_statistic_find(req->name, &first, &last);
-        if (!first)
+        j = stats_statistic_find(req->name);
+        if (!j)
         {
             bugle_log_printf("showstats", "initialise", BUGLE_LOG_ERROR,
                              "statistic '%s' not found.", req->name);
             stats_statistic_list();
             return false;
         }
-        for (j = first; ; j = bugle_list_next(j))
+        for (; j; j = bugle_list_next(j))
         {
             sst = (showstats_statistic *) bugle_calloc(1, sizeof(showstats_statistic));
             sst->st = (stats_statistic *) bugle_list_data(j);
@@ -1885,7 +1880,7 @@ static bool showstats_initialise(filter_set *handle)
                 return false;
             }
             bugle_list_append(&showstats_stats, sst);
-            if (j == last) break;
+            if (sst->st->last) break;
         }
     }
 

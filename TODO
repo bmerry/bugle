@@ -1,9 +1,3 @@
-regressions
------------
-- currently ALL stats generators are sucked in - go back to config file order
-- tag statistics as "last in set" rather than using first+last pointers
-- only print one copy of instance when listing available stats
-
 camera filter-set
 -----------------
 - handle display lists properly
