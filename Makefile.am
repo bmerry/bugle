@@ -96,7 +96,7 @@ src_libbugle_la_SOURCES = \
 nodist_src_libbugle_la_SOURCES = \
 	src/utils.c src/utils.h src/lib.c src/lib.h
 src_libbugle_la_LIBADD = $(LIBLTDL) src/libbugleutils.la -lGL $(X_PRE_LIBS) $(X_LIBS) -lX11 $(X_EXTRA_LIBS) $(THREAD_LIBS)
-src_libbugle_la_LDFLAGS = -thread-safe -export-dynamic $(SYMBOLFLAGS) -version-info 3:0:1
+src_libbugle_la_LDFLAGS = -thread-safe -export-dynamic $(SYMBOLFLAGS) -version-info 4:0:0
 
 BUILT_SOURCES += src/lib.h src/types.h src/utils.h src/names.h src/confparse.h
 

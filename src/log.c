@@ -18,7 +18,7 @@
 #if HAVE_CONFIG_H
 # include <config.h>
 #endif
-#define _POSIX_SOURCE /* for flockfile */
+#define _POSIX_C_SOURCE 200112L /* for flockfile */
 #include "src/log.h"
 #include "src/filters.h"
 #include "common/safemem.h"

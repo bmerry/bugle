@@ -18,7 +18,7 @@
 #if HAVE_CONFIG_H
 # include <config.h>
 #endif
-#define _POSIX_SOURCE /* For flockfile */
+#define _POSIX_C_SOURCE 200112L /* For flockfile */
 #define _BSD_SOURCE /* For finite() */
 #define _XOPEN_SOURCE 600 /* For strtof */
 #include "src/utils.h"

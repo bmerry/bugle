@@ -1,3 +1,5 @@
+0.0.20071107
+------------
 * Fix segfault if dlopen is called with NULL filename (thanks Ilan Aelion)
 * Avoid activating xevent when registering for NoSymbol
 * Converted all manual pages and some other documentation to DocBook

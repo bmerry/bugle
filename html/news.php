@@ -23,6 +23,14 @@ else
     <a href="screenshots.php">[Screenshots]</a>
     </p>
     <h1>BuGLe News</h1>
+    <h2>Redesigned documentation (7/11/2007)</h2>
+    <p>This release fixes a number of compilation failes, crashes, and
+    performance bugs. The manual pages have all been converted to DocBook,
+    giving much higher quality HTML versions. Some improvements were made
+    to the documentation at the same time.</p>
+    <p>Some internals were redesigned, and so some new bugs may have been
+    introduced. If you find any new bugs, please email me (bmerry
+    users.sourceforge.net).</p>
     <h2>Improved performance startup code (10/10/2007)</h2>
     <p>I've done some work on reducing the overhead in bugle. The new release
     will be significantly faster when intercepting only a few functions.</p>

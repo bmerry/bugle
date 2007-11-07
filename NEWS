@@ -1,3 +1,5 @@
+0.0.20071107
+------------
 This release fixes a number of compilation failes, crashes, and
 performance bugs. The manual pages have all been converted to DocBook,
 giving much higher quality HTML versions. Some improvements were made
