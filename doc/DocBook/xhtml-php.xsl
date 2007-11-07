@@ -19,10 +19,10 @@ else
     include("../sdk_body_start.txt");
         </xsl:processing-instruction>
         <p>
-            <a href="index.php">[About]</a><xsl:text> </xsl:text>
-            <a href="news.php">[News]</a><xsl:text> </xsl:text>
-            <a href="documentation/index.php">[Documentation]</a><xsl:text> </xsl:text>
-            <a href="screenshots.php">[Screenshots]</a><xsl:text> </xsl:text>
+            <a href="../index.php">[About]</a><xsl:text> </xsl:text>
+            <a href="../news.php">[News]</a><xsl:text> </xsl:text>
+            <a href="index.php">[Documentation]</a><xsl:text> </xsl:text>
+            <a href="../screenshots.php">[Screenshots]</a><xsl:text> </xsl:text>
         </p>
     </xsl:template>
 
