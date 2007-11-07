@@ -4,5 +4,6 @@
     <xsl:include href="xhtml-common.xsl"/>
     <xsl:include href="xhtml-php.xsl"/>
     <xsl:param name="chunk.section.depth" select="0"/>
+    <xsl:param name="chunker.output.omit-xml-declaration" select="'yes'"/>
 </xsl:stylesheet>
 

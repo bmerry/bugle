@@ -24,7 +24,7 @@ else
     </p>
     <h1>BuGLe News</h1>
     <h2>Redesigned documentation (7/11/2007)</h2>
-    <p>This release fixes a number of compilation failes, crashes, and
+    <p>This release fixes a number of compilation failures, crashes, and
     performance bugs. The manual pages have all been converted to DocBook,
     giving much higher quality HTML versions. Some improvements were made
     to the documentation at the same time.</p>
