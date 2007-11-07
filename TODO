@@ -15,7 +15,6 @@ gldb
 
 gldb-gui
 --------
-- write a manual
 - VBO decode
 - convert state names to UTF8
 - enabling and disabling filter sets, and setting variables
@@ -49,7 +48,6 @@ bugle
 - rewrite some things to use hash tables
 - autoconf test for GLENUM_IS_GLUINT
 - cap overrides
-- call statistics
 - memory use statistics
 - better handling of texture proxies
 - fill in the rest of the state (image state, mainly)
@@ -57,6 +55,7 @@ bugle
 - improve support for GLSL (more type information)
 - capture more information about call lists
 - capture and replay
+- make statistics a public interface
 
 budgie
 ------
@@ -83,3 +82,4 @@ long term
 - shader debugging
 - better movie capture
   - option of a separate thread, for parallel encoding
+- install headers and pkgconfig files to simplify 3rd party filter-sets
