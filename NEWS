@@ -1,3 +1,8 @@
+0.0.20071108
+------------
+This release just fixes the generation and installation of the
+documentation.
+
 0.0.20071107
 ------------
 This release fixes a number of compilation failes, crashes, and

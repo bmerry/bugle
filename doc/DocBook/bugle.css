@@ -1,4 +1,4 @@
-div.note, div.tip, pre.screen
+div.warning, div.caution, div.note, div.tip, pre.screen
 {
     background-color: #dddddd;
     padding: 0pt 3pt;
