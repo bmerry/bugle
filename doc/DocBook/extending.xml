@@ -1,0 +1,287 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE chapter PUBLIC "-//OASIS//DTD DocBook XML V4.3//EN" "http://www.oasis-open.org/docbook/xml/4.3/docbookx.dtd" [
+<!ENTITY % myentities SYSTEM "bugle.ent" >
+%myentities;
+]>
+<chapter id="extending">
+    <title>Extending &bugle;</title>
+
+    <sect1 id="extending-introduction">
+        <title>Introduction</title>
+        <para>
+            This chapter is aimed at developers who wish to implement new
+            filter-sets for &bugle;. &Bugle; uses a module system to make this
+            relatively easy to do without making intrusive changes to the base
+            system.
+        </para>
+        <para>
+            It is also worth reading for anyone interested in hacking on the
+            &bugle; core.
+        </para>
+    </sect1>
+
+    <sect1 id="extending-state-api">
+        <title>State of the API</title>
+        <para>
+            At present, there are two ways to distribute plugins for &bugle;.
+            The first is as a dynamic shared library (<filename
+                class="extension">.so</filename> file), which is copied into
+            the plugin directory (<filename
+                class="directory">/usr/local/lib/bugle</filename> in a default
+            installation). Such a module will work only with the version of
+            &bugle; against which it was compiled, and should
+            <emphasis>only</emphasis> be done within a binary package
+            management system which can ensure that the matching version of
+            &bugle; is used.
+        </para>
+        <warning>
+            <para>
+                Compiling &bugle; on two machines with the same architecture
+                and compiler may still lead to incompatible ABIs, if the
+                OpenGL headers differ.
+            </para>
+        </warning>
+        <para>
+            The other alternative is as a patch against the &bugle; source
+            code (which is also how a custom filter-set is likely to be
+            maintained). This form is robust to different versions of
+            <filename>GL/glext.h</filename> and may even apply to multiple
+            versions of &bugle; if they are not too disparate. This is the
+            recommended form of distribution.
+        </para>
+        <warning>
+            <para>
+                The API is still changing regularly.
+            </para>
+        </warning>
+        <para>
+            A public API, with installed headers and
+            <application>pkgconfig</application> support may appear in future.
+        </para>
+    </sect1>
+
+    <sect1 id="extending-concepts">
+        <title>Concepts</title>
+        <sect2>
+            <title>Callbacks, filter-sets, filters and libraries</title>
+            <para>
+                The mechanisms for intercepting and modifying OpenGL function
+                calls are arranged in a four-level hierarchy. From largest to
+                smallest, these are:
+            </para>
+            <itemizedlist>
+                <listitem><para>
+                        Filter libraries, which are a loose collection of
+                        filter-sets.  These allow filter-sets to be grouped
+                        together to avoid having hundreds of files. It also
+                        makes shared access to data easier.
+                </para></listitem>
+                <listitem><para>
+                        Filter-sets, which are tightly coupled groups of
+                        filters. Each filter-set may have state, may depend
+                        upon other filter-sets and may only be loaded or
+                        unloaded as a unit.
+                </para></listitem>
+                <listitem><para>
+                        Filters, which are used to control sequencing. For
+                        example, some filter-sets need to have some code run
+                        before calls are executed and other code after. These
+                        pieces of code would be placed in separate filters.
+                        The plugin author may list ordering dependencies
+                        between filters.
+                </para></listitem>
+                <listitem><para>
+                        Callbacks, which are the actual functions that act on
+                        calls. A filter may register multiple callbacks, each
+                        of which acts on some subset of the possible calls.
+                </para></listitem>
+            </itemizedlist>
+        </sect2>
+        <sect2>
+            <title>Functions and groups</title>
+            <para>
+                In &bugle; terminology, a <firstterm>function</firstterm> is
+                simply an OpenGL function. Both
+                <function>glActiveTexture</function> and
+                <function>glActiveTextureARB</function> are functions, and
+                they are referred to by the symbols
+                <symbol>FUNC_glActiveTexture</symbol> and
+                <symbol>FUNC_glActiveTextureARB</symbol> respectively.
+            </para>
+            <para>
+                At this point, you're probably thinking <quote>but they're
+                    the same function!</quote> &Bugle; deals with this using
+                <firstterm>groups</firstterm>, which are sets of functions
+                with different names but the same signatures and semantics.
+                The group that contains these two functions may be referred to
+                as either <symbol>GROUP_glActiveTexture</symbol> or
+                <symbol>GROUP_glActiveTextureARB</symbol>. The symbols expand
+                to the same value.
+            </para>
+        </sect2>
+    </sect1>
+
+    <sect1 id="extending-extensions">
+        <title>Guidelines</title>
+        <para>
+            This section contains stylistic guidelines and best practices. You
+            should follow them if you hope to get your filter-sets included in
+            the &bugle; source code, or want them to be generally useful to
+            other users.
+        </para>
+        <sect2>
+            <title>Coding style</title>
+            <itemizedlist>
+                <listitem><para>Indenting is four spaces</para></listitem>
+                <listitem><para>Use spaces not tabs</para></listitem>
+                <listitem><para>Both opening and closing braces go on their
+                        own line</para></listitem>
+                <listitem><para>Function return types go on the same line as
+                        the rest of the prototype</para></listitem>
+                <listitem><para>Filter-sets, and any other code that will be
+                        preloaded into a user program, should link against as
+                        few libraries as possible, since if the user program
+                        uses a different version there will be conflicts. As a
+                        result, C++ code cannot be used if it links against
+                        <systemitem class="library">libstdc++</systemitem>.
+                </para></listitem>
+                <listitem><para>C files should contain conforming C89 syntax as
+                        far as possible. That means no variable initialisers,
+                        no variable-length arrays, and C++-style
+                        <literal>//</literal> comments are not allowed.
+                </para></listitem>
+                <listitem><para>
+                        POSIX, BSD and X/OPEN library functions are
+                        acceptable if the appropriate feature macros are
+                        defined (<symbol>_POSIX_C_SOURCE</symbol> and so on).
+                </para></listitem>
+            </itemizedlist>
+        </sect2>
+        <sect2>
+            <title>OpenGL extensions</title>
+            <para>
+                BuGLe tries to support systems that only have header files and
+                runtime support for <application>OpenGL</application> 1.1 (so
+                that a Win32 port will be possible one day, but also to
+                support other systems with old headers).  Thus for any
+                functions introduces after 1.1, you should favour the
+                <symbol>GROUP_<replaceable>glFunction</replaceable></symbol>
+                definition with the oldest name, which is generally an
+                extension function. You should also protect any such code with
+                a test for the GL extension define e.g.
+                <symbol>GL_ARB_multitexture</symbol>.
+            </para>
+        </sect2>
+    </sect1>
+
+    <sect1 id="extending-api">
+        <title>Filter-set API</title>
+
+        <sect2 id="extending-api-library-init">
+            <title>Library initialisation</title>
+            <para>
+                Each library must contain an initialisation function with the
+                following signature:
+            </para>
+            <funcsynopsis>
+                <funcsynopsisinfo language="cpp">void bugle_initialise_filter_library(void);</funcsynopsisinfo>
+            </funcsynopsis>
+            <para>
+                This is the literal name of the function. It will be called by
+                &bugle;'s loader code, and you should not mark it as a
+                constructor or anything similar.
+            </para>
+            <para>
+                This function does any global initialisation required,
+                registers filter-sets, and registers ordering requirements
+                between filter-sets:
+            </para>
+            <funcsynopsis>
+                <funcsynopsisinfo language="cpp">#include &lt;src/filters.h&gt;
+                    
+filter_set *bugle_register_filter_set(filter_set_info *info);</funcsynopsisinfo>
+            </funcsynopsis>
+            <para>
+                The <structname>filter_set_info</structname> must be constant and have
+                global lifetime, since &bugle; will continue to refer to it
+                after the call returns. It has the following fields:
+            </para>
+            <programlisting language="C">typedef struct
+{
+    const char *                     name;
+    filter_set_loader                load;
+    filter_set_unloader              unload;
+    filter_set_activator             activate;
+    filter_set_deactivator           deactivate;
+    const filter_set_variable_info * variables;
+    size_t                           call_state_space;
+    const char *                     help;
+} filter_set_info;</programlisting>
+            <para>The fields have the following meanings:</para>
+            <variablelist>
+                <varlistentry>
+                    <term><structfield>name</structfield></term>
+                    <listitem><para>
+                            The name of the filter-set, as it will appear in
+                            <filename>~/.bugle/filters</filename>.
+                    </para></listitem>
+                </varlistentry>
+                <varlistentry>
+                    <term><structfield>load</structfield></term>
+                    <term><structfield>unload</structfield></term>
+                    <term><structfield>activate</structfield></term>
+                    <term><structfield>deactivate</structfield></term>
+                    <listitem><para>
+                            Callback functions that are used to load, unload,
+                            activate and deactivate the filter-set. They are
+                            described in more detail later (FIXME: link).
+                    </para></listitem>
+                </varlistentry>
+                <varlistentry>
+                    <term><structfield>variables</structfield></term>
+                    <listitem><para>
+                    </para></listitem>
+                </varlistentry>
+                <varlistentry>
+                    <term><structfield>call_state_space</structfield></term>
+                    <listitem><para>
+                            An amount of space to reserve in the data
+                            structure that holds the parameters for each
+                            OpenGL function call. This feature is deprecated
+                            and should not be used in newly written code; use
+                            the object layer instead. You should always set
+                            this field to zero.
+                    </para></listitem>
+                </varlistentry>
+                <varlistentry>
+                    <term><structfield>help</structfield></term>
+                    <listitem><para>
+                            A one-line description of the filter-set, which is
+                            displayed if an unknown chain is requested by the
+                            user.
+                    </para></listitem>
+                </varlistentry>
+            </variablelist>
+        </sect2>
+
+        <sect2 id="extending-api-filterset-variables">
+            <title>Filter-set variables</title>
+            <para>
+            </para>
+        </sect2>
+
+        <sect2 id="extending-api-filterset-init">
+            <title>Filter-set initialisation and destruction</title>
+            <para>
+                Foo
+            </para>
+        </sect2>
+
+        <sect2 id="extending-api-callbacks">
+            <title>Writing callbacks</title>
+            <para>
+                Foo
+            </para>
+        </sect2>
+    </sect1>
+</chapter>

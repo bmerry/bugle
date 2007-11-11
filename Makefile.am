@@ -286,6 +286,7 @@ DOCBOOK_SRCS = $(DOCBOOK_MAN_SRCS) \
 	       doc/DocBook/bugle.xml \
 	       doc/DocBook/introduction.xml \
 	       doc/DocBook/install.xml \
+	       doc/DocBook/extending.xml \
 	       doc/DocBook/faq.xml \
 	       doc/DocBook/releasenotes.xml \
 	       doc/DocBook/changelog.xml \
@@ -341,6 +342,7 @@ MAINTAINERCLEANFILES += doc/DocBook/man.stamp $(DOCBOOK_MAN_MANPAGES)
 DOCBOOK_HTML = doc/html/index.html \
 	       doc/html/introduction.html \
 	       doc/html/install.html \
+	       doc/html/extending.html \
 	       doc/html/faq.html \
 	       doc/html/gldb-gui.1.html \
 	       doc/html/gldb.1.html \
