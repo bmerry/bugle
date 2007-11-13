@@ -34,8 +34,8 @@ static char *log_filename = NULL;
 static char *log_format = NULL;
 static bool log_flush = false;
 static FILE *log_file = NULL;
-static int log_file_level = BUGLE_LOG_INFO + 1;
-static int log_stderr_level = BUGLE_LOG_NOTICE + 1;
+static long log_file_level = BUGLE_LOG_INFO + 1;
+static long log_stderr_level = BUGLE_LOG_NOTICE + 1;
 
 static const char *log_level_names[] =
 {

@@ -62,7 +62,7 @@
 
     <sect1 id="extending-concepts">
         <title>Concepts</title>
-        <sect2>
+        <sect2 id="extending-concepts-hierarchy">
             <title>Callbacks, filter-sets, filters and libraries</title>
             <para>
                 The mechanisms for intercepting and modifying OpenGL function
@@ -97,7 +97,7 @@
                 </para></listitem>
             </itemizedlist>
         </sect2>
-        <sect2>
+        <sect2 id="extending-concepts-groups">
             <title>Functions and groups</title>
             <para>
                 In &bugle; terminology, a <firstterm>function</firstterm> is
@@ -121,7 +121,7 @@
         </sect2>
     </sect1>
 
-    <sect1 id="extending-extensions">
+    <sect1 id="extending-guidelines">
         <title>Guidelines</title>
         <para>
             This section contains stylistic guidelines and best practices. You
@@ -129,7 +129,7 @@
             the &bugle; source code, or want them to be generally useful to
             other users.
         </para>
-        <sect2>
+        <sect2 id="extending-guidelines-style">
             <title>Coding style</title>
             <itemizedlist>
                 <listitem><para>Indenting is four spaces</para></listitem>
@@ -157,7 +157,7 @@
                 </para></listitem>
             </itemizedlist>
         </sect2>
-        <sect2>
+        <sect2 id="extending-guidelines-opengl">
             <title>OpenGL extensions</title>
             <para>
                 BuGLe tries to support systems that only have header files and
@@ -177,7 +177,7 @@
     <sect1 id="extending-api">
         <title>Filter-set API</title>
 
-        <sect2 id="extending-api-library-init">
+        <sect2 id="extending-api-libraryinit">
             <title>Library initialisation</title>
             <para>
                 Each library must contain an initialisation function with the
@@ -234,12 +234,16 @@ filter_set *bugle_register_filter_set(filter_set_info *info);</funcsynopsisinfo>
                     <listitem><para>
                             Callback functions that are used to load, unload,
                             activate and deactivate the filter-set. They are
-                            described in more detail later (FIXME: link).
+                            described in more detail in <xref
+                                linkend="extending-api-filtersetinit"/>.
                     </para></listitem>
                 </varlistentry>
                 <varlistentry>
                     <term><structfield>variables</structfield></term>
                     <listitem><para>
+                            An array describing the variables that may be
+                            configured by the user. This is described in <xref
+                                linkend="extending-api-filtersetvariables"/>.
                     </para></listitem>
                 </varlistentry>
                 <varlistentry>
@@ -264,13 +268,78 @@ filter_set *bugle_register_filter_set(filter_set_info *info);</funcsynopsisinfo>
             </variablelist>
         </sect2>
 
-        <sect2 id="extending-api-filterset-variables">
+        <sect2 id="extending-api-filtersetvariables">
             <title>Filter-set variables</title>
             <para>
+                Many filter-sets are configurable via variables that are set
+                in the configuration file. The
+                <structfield>variables</structfield> field of a
+                <structname>filter_set_info</structname> points to an array of
+                <structname>filter_set_variable_info</structname> structures,
+                which have the following format:
+            </para>
+            <programlisting language="C">typedef struct
+{
+    const char *             name;
+    const char *             help;
+    filter_set_variable_type type;
+    void *                   value;
+    bool                   (*callback)(const filter_set_variable_info *var, const char *text, const void *value);
+} filter_set_info;</programlisting>
+            <para>
+                The <structfield>name</structfield> and
+                <structfield>help</structfield> fields have the same use as
+                they do in <structname>filter_set_info</structname>. The
+                <structfield>type</structfield> is one of the enumerants in
+                <xref linkend="TBL:extending-api-filtersetvariables-types"/>.
+            </para>
+            <table frame="all" id="TBL:extending-api-filtersetvariables-types">
+                <title>Filter-set variable types</title>
+                <tgroup cols="3" colsep="1" rowsep="1">
+                    <thead>
+                        <row><entry>Enumerant</entry><entry>C type</entry><entry>Checks</entry></row>
+                    </thead>
+                    <tbody>
+                        <row><entry><symbol>FILTER_SET_VARIABLE_BOOL</symbol></entry><entry><type>bool</type></entry><entry></entry></row>
+                        <row><entry><symbol>FILTER_SET_VARIABLE_INT</symbol></entry><entry><type>long</type></entry><entry></entry></row>
+                        <row><entry><symbol>FILTER_SET_VARIABLE_UINT</symbol></entry><entry><type>long</type></entry><entry>&ge; 0</entry></row>
+                        <row><entry><symbol>FILTER_SET_VARIABLE_INT</symbol></entry><entry><type>long</type></entry><entry>&gt; 0</entry></row>
+                        <row><entry><symbol>FILTER_SET_VARIABLE_FLOAT</symbol></entry><entry><type>float</type></entry><entry>finite</entry></row>
+                        <row><entry><symbol>FILTER_SET_VARIABLE_STRING</symbol></entry><entry><type>char *</type></entry><entry></entry></row>
+                        <row><entry><symbol>FILTER_SET_VARIABLE_KEY</symbol></entry><entry><type>xevent_key</type></entry><entry>valid</entry></row>
+                        <row><entry><symbol>FILTER_SET_VARIABLE_CUSTOM</symbol></entry><entry>any</entry><entry></entry></row>
+                    </tbody>
+                </tgroup>
+            </table>
+            <para>
+                With the exception of the
+                <symbol>FILTER_SET_VARIABLE_CUSTOM</symbol> custom type, each
+                enumerant corresponds to a C type. Set the
+                <structfield>value</structfield> field to a pointer to a
+                C variable of this type, and it will be overwritten with the
+                value specified by the user. The C variable is not modified if
+                the user does not specify a value, so it is best to initialise
+                the C with an appropriate default value.
+            </para>
+            <para>
+                Sometimes it is necessary to perform some extra validation or
+                initialisation when a variable is passed. For example,
+                &mp-showstats; accepts the <varname>show</varname> variable
+                multiple times to indicate which statistics should be
+                displayed. The <structfield>callback</structfield> field may be
+                set to a callback function, which is passed a pointer to the
+                corresponding
+                <structname>filter_set_variable_info</structname> object, the
+                raw string present in the configuration file, and a pointer to
+                the interpreted value. Note that at the time of the callback,
+                the variable passed will <emphasis>not</emphasis> have been
+                modified. The callback should return
+                <symbol>false</symbol> if the value was invalid and
+                <symbol>true</symbol> otherwise.
             </para>
         </sect2>
 
-        <sect2 id="extending-api-filterset-init">
+        <sect2 id="extending-api-filtersetinit">
             <title>Filter-set initialisation and destruction</title>
             <para>
                 Foo

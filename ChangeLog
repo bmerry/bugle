@@ -1,3 +1,6 @@
+* Fix an int vs. long mismatch
+* Update documentation on writing new filter-sets
+
 0.0.20071108
 ------------
 * Fix chunk granularity in generated documentation
