@@ -69,14 +69,14 @@ typedef struct
      * GldbGdbValue does and is responsible for freeing it recursively
      */
     char *const_value;
-    bugle_linked_list list_value;   /* currently only a list of GldbGdbValue */
-    bugle_hash_table tuple_value;   /* table of name => GldbGdbValue */
+    linked_list list_value;   /* currently only a list of GldbGdbValue */
+    hash_table tuple_value;   /* table of name => GldbGdbValue */
 } GldbGdbValue;
 
 typedef struct
 {
     GldbGdbResultClass result_class;
-    bugle_hash_table results;
+    hash_table results;
 } GldbGdbResultRecord;
 
 static GQuark gldb_gdb_error_quark(void)
@@ -91,8 +91,8 @@ static GQuark gldb_gdb_error_quark(void)
 
 static void gldb_gdb_value_free(GldbGdbValue *value)
 {
-    bugle_list_node *l;
-    const bugle_hash_entry *h;
+    linked_list_node *l;
+    const hash_table_entry *h;
 
     switch (value->type)
     {
@@ -130,7 +130,7 @@ static char *gldb_gdb_value_get_string_field(GldbGdbValue *tuple, const char *na
 
 static void gldb_gdb_result_record_free(GldbGdbResultRecord *record)
 {
-    const bugle_hash_entry *h;
+    const hash_table_entry *h;
 
     for (h = bugle_hash_begin(&record->results); h; h = bugle_hash_next(&record->results, h))
         gldb_gdb_value_free((GldbGdbValue *) h->value);
@@ -385,7 +385,7 @@ static void gldb_backtrace_pane_populate(GldbBacktracePane *pane,
                                          gchar *response)
 {
     GtkTreeIter iter;
-    bugle_list_node *l;
+    linked_list_node *l;
     GldbGdbValue *stack;
     GldbGdbValue *frame;
     const char *level, *addr, *func, *file, *line, *from;

@@ -1,5 +1,5 @@
 /*  BuGLe: an OpenGL debugging tool
- *  Copyright (C) 2004-2006  Bruce Merry
+ *  Copyright (C) 2004-2007  Bruce Merry
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -38,25 +38,25 @@ typedef struct
     size_t size;
 } object_class_info;
 
-void bugle_object_class_init(bugle_object_class *klass, bugle_object_class *parent)
+void bugle_object_class_init(object_class *klass, object_class *parent)
 {
     bugle_list_init(&klass->info, true);
     klass->parent = parent;
     klass->count = 0;
     if (parent)
-        klass->parent_view = bugle_object_class_register(parent, NULL, NULL, sizeof(bugle_object *));
+        klass->parent_view = bugle_object_view_register(parent, NULL, NULL, sizeof(object *));
     else
         bugle_thread_key_create(&klass->current, NULL);
 }
 
-void bugle_object_class_clear(bugle_object_class *klass)
+void bugle_object_class_clear(object_class *klass)
 {
     bugle_list_clear(&klass->info);
     if (!klass->parent)
         bugle_thread_key_delete(klass->current);
 }
 
-bugle_object_view bugle_object_class_register(bugle_object_class *klass,
+object_view bugle_object_view_register(object_class *klass,
                                               void (*constructor)(const void *key, void *data),
                                               void (*destructor)(void *data),
                                               size_t size)
@@ -71,14 +71,14 @@ bugle_object_view bugle_object_class_register(bugle_object_class *klass,
     return klass->count++;
 }
 
-bugle_object *bugle_object_new(const bugle_object_class *klass, const void *key, bool make_current)
+object *bugle_object_new(const object_class *klass, const void *key, bool make_current)
 {
-    bugle_object *obj;
-    bugle_list_node *i;
+    object *obj;
+    linked_list_node *i;
     const object_class_info *info;
     size_t j;
 
-    obj = bugle_malloc(sizeof(bugle_object) + klass->count * sizeof(void *) - sizeof(void *));
+    obj = bugle_malloc(sizeof(object) + klass->count * sizeof(void *) - sizeof(void *));
     obj->klass = klass;
     obj->count = klass->count;
 
@@ -105,13 +105,13 @@ bugle_object *bugle_object_new(const bugle_object_class *klass, const void *key,
     return obj;
 }
 
-void bugle_object_delete(const bugle_object_class *klass, bugle_object *obj)
+void bugle_object_destroy(object *obj)
 {
-    bugle_list_node *i;
+    linked_list_node *i;
     size_t j;
     const object_class_info *info;
 
-    for (i = bugle_list_head(&klass->info), j = 0; i; i = bugle_list_next(i), j++)
+    for (i = bugle_list_head(&obj->klass->info), j = 0; i; i = bugle_list_next(i), j++)
     {
         info = (const object_class_info *) bugle_list_data(i);
         if (info->destructor)
@@ -121,7 +121,7 @@ void bugle_object_delete(const bugle_object_class *klass, bugle_object *obj)
     free(obj);
 }
 
-bugle_object *bugle_object_get_current(const bugle_object_class *klass)
+object *bugle_object_get_current(const object_class *klass)
 {
     void *ans;
 
@@ -129,31 +129,31 @@ bugle_object *bugle_object_get_current(const bugle_object_class *klass)
     {
         ans = bugle_object_get_current_data(klass->parent, klass->parent_view);
         if (!ans) return NULL;
-        else return *(bugle_object **) ans;
+        else return *(object **) ans;
     }
     else
-        return (bugle_object *) bugle_thread_getspecific(klass->current);
+        return (object *) bugle_thread_getspecific(klass->current);
 }
 
-void *bugle_object_get_current_data(const bugle_object_class *klass, bugle_object_view view)
+void *bugle_object_get_current_data(const object_class *klass, object_view view)
 {
-    return bugle_object_get_data(klass, bugle_object_get_current(klass), view);
+    return bugle_object_get_data(bugle_object_get_current(klass), view);
 }
 
-void bugle_object_set_current(const bugle_object_class *klass, bugle_object *obj)
+void bugle_object_set_current(const object_class *klass, object *obj)
 {
     void *tmp;
 
     if (klass->parent)
     {
         tmp = bugle_object_get_current_data(klass->parent, klass->parent_view);
-        if (tmp) *(bugle_object **) tmp = obj;
+        if (tmp) *(object **) tmp = obj;
     }
     else
         bugle_thread_setspecific(klass->current, (void *) obj);
 }
 
-void *bugle_object_get_data(const bugle_object_class *klass, bugle_object *obj, bugle_object_view view)
+void *bugle_object_get_data(object *obj, object_view view)
 {
     if (!obj) return NULL;
     else return obj->views[view];

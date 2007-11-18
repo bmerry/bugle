@@ -28,7 +28,7 @@
 #include <assert.h>
 #include <GL/glx.h>
 
-static bugle_object_view trackextensions_view = 0;
+static object_view trackextensions_view = 0;
 
 static bool string_contains_extension(const char *exts, const char *ext)
 {
@@ -93,7 +93,7 @@ static void context_initialise(const void *key, void *data)
 
 static bool initialise_trackextensions(filter_set *handle)
 {
-    trackextensions_view = bugle_object_class_register(&bugle_context_class,
+    trackextensions_view = bugle_object_view_register(&bugle_context_class,
                                                        context_initialise,
                                                        NULL,
                                                        sizeof(bool) * BUGLE_EXT_COUNT);
@@ -145,11 +145,10 @@ void trackextensions_initialise(void)
         NULL,
         NULL,
         NULL,
-        0,
         NULL /* No documentation */
     };
 
-    bugle_register_filter_set(&trackextensions_info);
+    bugle_filter_set_register(&trackextensions_info);
 
-    bugle_register_filter_set_renders("trackextensions");
+    bugle_filter_set_register_renders("trackextensions");
 }

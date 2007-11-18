@@ -31,7 +31,7 @@
 #include <stddef.h>
 #include <GL/gl.h>
 
-static bugle_object_view trackbeginend_view;
+static object_view trackbeginend_view;
 
 static bool trackbeginend_glBegin(function_call *call, const callback_data *data)
 {
@@ -83,12 +83,12 @@ static bool initialise_trackbeginend(filter_set *handle)
 {
     filter *f;
 
-    f = bugle_register_filter(handle, "trackbeginend");
-    bugle_register_filter_order("invoke", "trackbeginend");
-    bugle_register_filter_catches(f, GROUP_glBegin, true, trackbeginend_glBegin);
-    bugle_register_filter_catches(f, GROUP_glEnd, true, trackbeginend_glEnd);
+    f = bugle_filter_register(handle, "trackbeginend");
+    bugle_filter_order("invoke", "trackbeginend");
+    bugle_filter_catches(f, GROUP_glBegin, true, trackbeginend_glBegin);
+    bugle_filter_catches(f, GROUP_glEnd, true, trackbeginend_glEnd);
 
-    trackbeginend_view = bugle_object_class_register(&bugle_context_class,
+    trackbeginend_view = bugle_object_view_register(&bugle_context_class,
                                                      NULL,
                                                      NULL,
                                                      sizeof(bool));
@@ -105,11 +105,10 @@ void trackbeginend_initialise(void)
         NULL,
         NULL,
         NULL,
-        0,
         NULL /* no documentation */
     };
 
-    bugle_register_filter_set(&trackbeginend_info);
+    bugle_filter_set_register(&trackbeginend_info);
 
-    bugle_register_filter_set_depends("trackbeginend", "trackcontext");
+    bugle_filter_set_depends("trackbeginend", "trackcontext");
 }

@@ -1,5 +1,5 @@
 /*  BuGLe: an OpenGL debugging tool
- *  Copyright (C) 2004-2006  Bruce Merry
+ *  Copyright (C) 2004-2007  Bruce Merry
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -26,41 +26,41 @@
 #include "common/bool.h"
 #include "common/threads.h"
 
-typedef size_t bugle_object_view;
+typedef size_t object_view;
 
 typedef struct object_class_s
 {
-    size_t count;     /* number of registrants */
-    bugle_linked_list info;
+    size_t count;       /* number of registrants */
+    linked_list info;   /* list of object_class_info, defined in objects.c */
     bugle_thread_key_t current;
 
     struct object_class_s *parent;
-    bugle_object_view parent_view; /* view where we store current of this class in parent */
-} bugle_object_class;
+    object_view parent_view; /* view where we store current of this class in parent */
+} object_class;
 
 typedef struct
 {
-    const bugle_object_class *klass;
+    const object_class *klass;
     size_t count;
     void *views[1]; /* actually [count] at runtime */
-} bugle_object;
+} object;
 
-void bugle_object_class_init(bugle_object_class *klass, bugle_object_class *parent);
-void bugle_object_class_clear(bugle_object_class *klass);
+void bugle_object_class_init(object_class *klass, object_class *parent);
+void bugle_object_class_clear(object_class *klass);
 /* Returns an offset into the structure, which should be passed back to
  * object_get_current to get the data associated with this registration.
  * The key passed to the structure is determined by the individual classes,
  * and may give more information about the abstract object.
  */
-bugle_object_view bugle_object_class_register(bugle_object_class *klass,
-                                              void (*constructor)(const void *key, void *data),
-                                              void (*destructor)(void *data),
-                                              size_t size);
-bugle_object *bugle_object_new(const bugle_object_class *klass, const void *key, bool make_current);
-void bugle_object_delete(const bugle_object_class *klass, bugle_object *obj);
-bugle_object *bugle_object_get_current(const bugle_object_class *klass);
-void *bugle_object_get_current_data(const bugle_object_class *klass, bugle_object_view view);
-void bugle_object_set_current(const bugle_object_class *klass, bugle_object *obj);
-void *bugle_object_get_data(const bugle_object_class *klass, bugle_object *obj, bugle_object_view view);
+object_view bugle_object_view_register(object_class *klass,
+                                       void (*constructor)(const void *key, void *data),
+                                       void (*destructor)(void *data),
+                                       size_t size);
+object *    bugle_object_new(const object_class *klass, const void *key, bool make_current);
+void        bugle_object_destroy(object *obj);
+object *    bugle_object_get_current(const object_class *klass);
+void *      bugle_object_get_current_data(const object_class *klass, object_view view);
+void        bugle_object_set_current(const object_class *klass, object *obj);
+void *      bugle_object_get_data(object *obj, object_view view);
 
 #endif /* !BUGLE_SRC_OBJECTS_H */

@@ -1,5 +1,5 @@
 /*  BuGLe: an OpenGL debugging tool
- *  Copyright (C) 2004-2006  Bruce Merry
+ *  Copyright (C) 2004-2007  Bruce Merry
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -25,10 +25,10 @@
 #include "hashtable.h"
 #include "common/safemem.h"
 #include "common/bool.h"
+#include "common/threads.h"
 
 /* Primes are used for hash table sizes */
 static size_t primes[sizeof(size_t) * 8];
-static bool primes_initialised = false;
 
 static bool is_prime(int x)
 {
@@ -39,7 +39,8 @@ static bool is_prime(int x)
     return true;
 }
 
-void bugle_initialise_hashing(void)
+BUGLE_CONSTRUCTOR(initialise_primes);
+static void initialise_primes(void)
 {
     int i;
 
@@ -50,10 +51,9 @@ void bugle_initialise_hashing(void)
     {
         primes[i + 1] = primes[i] * 2 + 1;
         i++;
-        while (!is_prime(primes[i])) primes[i]++;
+        while (!is_prime(primes[i])) primes[i] += 2;
     }
     primes[i + 1] = (size_t) -1;
-    primes_initialised = true;
 }
 
 static inline size_t hash(const char *str)
@@ -66,7 +66,7 @@ static inline size_t hash(const char *str)
     return h;
 }
 
-void bugle_hash_init(bugle_hash_table *table, bool owns_memory)
+void bugle_hash_init(hash_table *table, bool owns_memory)
 {
     table->size = table->count = 0;
     table->size_index = 0;
@@ -81,7 +81,7 @@ void bugle_hash_init(bugle_hash_table *table, bool owns_memory)
  * - check for duplicate keys
  * It should only be used for rehashing
  */
-static void hash_set_fast(bugle_hash_table *table, char *key, void *value)
+static void hash_set_fast(hash_table *table, char *key, void *value)
 {
     size_t h;
 
@@ -92,19 +92,19 @@ static void hash_set_fast(bugle_hash_table *table, char *key, void *value)
     table->entries[h].value = value;
 }
 
-void bugle_hash_set(bugle_hash_table *table, const char *key, void *value)
+void bugle_hash_set(hash_table *table, const char *key, void *value)
 {
-    bugle_hash_table big;
+    hash_table big;
     size_t i;
     size_t h;
 
     if (table->count >= table->size / 2
         && table->size < (size_t) -1)
     {
-        assert(primes_initialised);
+        BUGLE_RUN_CONSTRUCTOR(initialise_primes);
         big.size_index = table->size_index + 1;
         big.size = primes[big.size_index];
-        big.entries = (bugle_hash_entry *) bugle_calloc(big.size, sizeof(bugle_hash_entry));
+        big.entries = (hash_table_entry *) bugle_calloc(big.size, sizeof(hash_table_entry));
         big.count = 0;
         big.owns_memory = table->owns_memory;
         for (i = 0; i < table->size; i++)
@@ -128,7 +128,7 @@ void bugle_hash_set(bugle_hash_table *table, const char *key, void *value)
     table->entries[h].value = value;
 }
 
-bool bugle_hash_count(const bugle_hash_table *table, const char *key)
+bool bugle_hash_count(const hash_table *table, const char *key)
 {
     size_t h;
 
@@ -139,7 +139,7 @@ bool bugle_hash_count(const bugle_hash_table *table, const char *key)
     return table->entries[h].key != NULL;
 }
 
-void *bugle_hash_get(const bugle_hash_table *table, const char *key)
+void *bugle_hash_get(const hash_table *table, const char *key)
 {
     size_t h;
 
@@ -151,7 +151,7 @@ void *bugle_hash_get(const bugle_hash_table *table, const char *key)
     else return NULL;
 }
 
-void bugle_hash_clear(bugle_hash_table *table)
+void bugle_hash_clear(hash_table *table)
 {
     size_t i;
 
@@ -171,9 +171,9 @@ void bugle_hash_clear(bugle_hash_table *table)
     table->size_index = 0;
 }
 
-const bugle_hash_entry *bugle_hash_next(bugle_hash_table *table, const bugle_hash_entry *e)
+const hash_table_entry *bugle_hash_next(hash_table *table, const hash_table_entry *e)
 {
-    const bugle_hash_entry *end;
+    const hash_table_entry *end;
 
     e++;
     end = table->entries + table->size;
@@ -182,7 +182,7 @@ const bugle_hash_entry *bugle_hash_next(bugle_hash_table *table, const bugle_has
     else return e;
 }
 
-const bugle_hash_entry *bugle_hash_begin(bugle_hash_table *table)
+const hash_table_entry *bugle_hash_begin(hash_table *table)
 {
     if (!table->entries) return NULL;
     else if (table->entries->key) return table->entries;
@@ -196,7 +196,7 @@ static inline size_t hashptr(const void *str)
     return (const char *) str - (const char *) NULL;
 }
 
-void bugle_hashptr_init(bugle_hashptr_table *table, bool owns_memory)
+void bugle_hashptr_init(hashptr_table *table, bool owns_memory)
 {
     table->size = table->count = 0;
     table->size_index = 0;
@@ -211,7 +211,7 @@ void bugle_hashptr_init(bugle_hashptr_table *table, bool owns_memory)
  * - check for duplicate keys
  * It should only be used for rehashing
  */
-static void hashptr_set_fast(bugle_hashptr_table *table, const void *key, void *value)
+static void hashptr_set_fast(hashptr_table *table, const void *key, void *value)
 {
     size_t h;
 
@@ -222,19 +222,19 @@ static void hashptr_set_fast(bugle_hashptr_table *table, const void *key, void *
     table->entries[h].value = value;
 }
 
-void bugle_hashptr_set(bugle_hashptr_table *table, const void *key, void *value)
+void bugle_hashptr_set(hashptr_table *table, const void *key, void *value)
 {
-    bugle_hashptr_table big;
+    hashptr_table big;
     size_t i;
     size_t h;
 
     if (table->count >= table->size / 2
         && table->size < (size_t) -1)
     {
-        assert(primes_initialised);
+        BUGLE_RUN_CONSTRUCTOR(initialise_primes);
         big.size_index = table->size_index + 1;
         big.size = primes[big.size_index];
-        big.entries = (bugle_hashptr_entry *) bugle_calloc(big.size, sizeof(bugle_hashptr_entry));
+        big.entries = (hashptr_table_entry *) bugle_calloc(big.size, sizeof(hashptr_table_entry));
         big.count = 0;
         big.owns_memory = table->owns_memory;
         for (i = 0; i < table->size; i++)
@@ -258,7 +258,7 @@ void bugle_hashptr_set(bugle_hashptr_table *table, const void *key, void *value)
     table->entries[h].value = value;
 }
 
-bool bugle_hashptr_count(const bugle_hashptr_table *table, const void *key)
+bool bugle_hashptr_count(const hashptr_table *table, const void *key)
 {
     size_t h;
 
@@ -269,7 +269,7 @@ bool bugle_hashptr_count(const bugle_hashptr_table *table, const void *key)
     return table->entries[h].key != NULL;
 }
 
-void *bugle_hashptr_get(const bugle_hashptr_table *table, const void *key)
+void *bugle_hashptr_get(const hashptr_table *table, const void *key)
 {
     size_t h;
 
@@ -281,7 +281,7 @@ void *bugle_hashptr_get(const bugle_hashptr_table *table, const void *key)
     else return NULL;
 }
 
-void bugle_hashptr_clear(bugle_hashptr_table *table)
+void bugle_hashptr_clear(hashptr_table *table)
 {
     size_t i;
 
@@ -300,9 +300,9 @@ void bugle_hashptr_clear(bugle_hashptr_table *table)
     table->size_index = 0;
 }
 
-const bugle_hashptr_entry *bugle_hashptr_next(bugle_hashptr_table *table, const bugle_hashptr_entry *e)
+const hashptr_table_entry *bugle_hashptr_next(hashptr_table *table, const hashptr_table_entry *e)
 {
-    const bugle_hashptr_entry *end;
+    const hashptr_table_entry *end;
 
     e++;
     end = table->entries + table->size;
@@ -311,7 +311,7 @@ const bugle_hashptr_entry *bugle_hashptr_next(bugle_hashptr_table *table, const 
     else return e;
 }
 
-const bugle_hashptr_entry *bugle_hashptr_begin(bugle_hashptr_table *table)
+const hashptr_table_entry *bugle_hashptr_begin(hashptr_table *table)
 {
     if (!table->entries) return NULL;
     else if (table->entries->key) return table->entries;

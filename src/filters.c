@@ -64,8 +64,8 @@ typedef struct
     filter_callback callback;
 } filter_catcher;
 
-static bugle_linked_list filter_sets;
-static bugle_linked_list added_filter_sets; /* Those specified in the config, plus dependents */
+static linked_list filter_sets;
+static linked_list added_filter_sets; /* Those specified in the config, plus dependents */
 
 /* As the filter-sets are loaded, loaded_filters is populated with
  * the loaded filters in arbitrary order. Once all filter-sets are
@@ -86,31 +86,30 @@ static bugle_linked_list added_filter_sets; /* Those specified in the config, pl
  * until the end of the call.
  *
  * If a filter wishes to activate or deactivative a filter-set (its own
- * or another), it should call bugle_activate_filter_set_deferred
- * or bugle_deactivate_filter_set_deferred. This causes the change to
+ * or another), it should call bugle_filter_set_activate_deferred
+ * or bugle_filter_set_deactivate_deferred. This causes the change to
  * happen only after the current call has completed processing (which
  * removes the need to recompute the active filters while processing
  * them), and also prevents a self-deadlock.
  */
-static bugle_linked_list loaded_filters;
+static linked_list loaded_filters;
 
-static bugle_linked_list active_callbacks[NUMBER_OF_FUNCTIONS];
+static linked_list active_callbacks[NUMBER_OF_FUNCTIONS];
 static bool active_dirty = false;
-static bugle_linked_list activations_deferred;
-static bugle_linked_list deactivations_deferred;
+static linked_list activations_deferred;
+static linked_list deactivations_deferred;
 static bugle_thread_mutex_t active_callbacks_mutex = BUGLE_THREAD_MUTEX_INITIALIZER;
 
 /* hash tables of linked lists of strings; A is the key, B is the linked list element */
-static bugle_hash_table filter_orders;           /* A is called after B */
-static bugle_hash_table filter_set_dependencies; /* A requires B */
-static bugle_hash_table filter_set_orders;       /* A is initialised after B */
-
-static void *call_data = NULL;
-static size_t call_data_size = 0; /* FIXME: turn into an object */
+static hash_table filter_orders;           /* A is called after B */
+static hash_table filter_set_dependencies; /* A requires B */
+static hash_table filter_set_orders;       /* A is initialised after B */
 
 static lt_dlhandle current_dl_handle = NULL;
 
-static void bugle_deactivate_filter_set_nolock(filter_set *handle);
+object_class bugle_call_class;
+
+static void filter_set_deactivate_nolock(filter_set *handle);
 
 /*** Order management helper code ***/
 
@@ -120,13 +119,13 @@ typedef struct
     int valence;
 } order_data;
 
-static void register_order(bugle_hash_table *orders, const char *before, const char *after)
+static void register_order(hash_table *orders, const char *before, const char *after)
 {
-    bugle_linked_list *deps;
-    deps = (bugle_linked_list *) bugle_hash_get(orders, after);
+    linked_list *deps;
+    deps = (linked_list *) bugle_hash_get(orders, after);
     if (!deps)
     {
-        deps = bugle_malloc(sizeof(bugle_linked_list));
+        deps = bugle_malloc(sizeof(linked_list));
         bugle_list_init(deps, true);
         bugle_hash_set(orders, after, deps);
     }
@@ -140,17 +139,17 @@ static void register_order(bugle_hash_table *orders, const char *before, const c
  *   lists. If B is in A's linked list, then A must come before B.
  * - get_name: maps an item pointer to the name of the item
  */
-static bool compute_order(bugle_linked_list *present,
-                          bugle_hash_table *order,
+static bool compute_order(linked_list *present,
+                          hash_table *order,
                           const char *(*get_name)(void *))
 {
-    bugle_linked_list ordered;
-    bugle_linked_list queue;
-    bugle_linked_list *deps;
-    bugle_hash_table byname;  /* maps names to order_data structs */
+    linked_list ordered;
+    linked_list queue;
+    linked_list *deps;
+    hash_table byname;  /* maps names to order_data structs */
     const char *name;
     int count = 0;            /* count of outstanding items, to detect cycles */
-    bugle_list_node *i, *j;
+    linked_list_node *i, *j;
     void *cur;
     order_data *info;
 
@@ -169,7 +168,7 @@ static bool compute_order(bugle_linked_list *present,
     for (i = bugle_list_head(present); i; i = bugle_list_next(i))
     {
         cur = bugle_list_data(i);
-        deps = (bugle_linked_list *) bugle_hash_get(order, get_name(cur));
+        deps = (linked_list *) bugle_hash_get(order, get_name(cur));
         if (deps)
         {
             for (j = bugle_list_head(deps); j; j = bugle_list_next(j))
@@ -198,7 +197,7 @@ static bool compute_order(bugle_linked_list *present,
         count--;
         cur = bugle_list_data(bugle_list_head(&queue));
         bugle_list_erase(&queue, bugle_list_head(&queue));
-        deps = (bugle_linked_list *) bugle_hash_get(order, get_name(cur));
+        deps = (linked_list *) bugle_hash_get(order, get_name(cur));
         if (deps)
         {
             for (j = bugle_list_head(deps); j; j = bugle_list_next(j))
@@ -232,15 +231,15 @@ static bool compute_order(bugle_linked_list *present,
     }
 }
 
-static void destroy_order_table(bugle_hash_table *orders)
+static void destroy_order_table(hash_table *orders)
 {
-    bugle_linked_list *dep;
-    const bugle_hash_entry *i;
+    linked_list *dep;
+    const hash_table_entry *i;
 
     for (i = bugle_hash_begin(orders); i; i = bugle_hash_next(orders, i))
         if (i->value)
         {
-            dep = (bugle_linked_list *) i->value;
+            dep = (linked_list *) i->value;
             bugle_list_clear(dep);
             free(dep);
         }
@@ -249,15 +248,15 @@ static void destroy_order_table(bugle_hash_table *orders)
 
 /*** End of order management helper code ***/
 
-static void destroy_filter_set(filter_set *handle)
+static void filter_set_destroy(filter_set *handle)
 {
-    bugle_list_node *i;
+    linked_list_node *i;
     filter *f;
 
     if (handle->loaded)
     {
         handle->loaded = false;
-        bugle_deactivate_filter_set_nolock(handle);
+        filter_set_deactivate_nolock(handle);
         if (handle->unload) (*handle->unload)(handle);
 
         for (i = bugle_list_head(&handle->filters); i; i = bugle_list_next(i))
@@ -270,9 +269,9 @@ static void destroy_filter_set(filter_set *handle)
     }
 }
 
-static void destroy_filters(void *dummy)
+static void filters_destroy(void *dummy)
 {
-    bugle_list_node *i;
+    linked_list_node *i;
     filter_set *s;
     budgie_function k;
 
@@ -283,7 +282,7 @@ static void destroy_filters(void *dummy)
     for (i = bugle_list_tail(&added_filter_sets); i; i = bugle_list_prev(i))
     {
         s = (filter_set *) bugle_list_data(i);
-        destroy_filter_set(s);
+        filter_set_destroy(s);
     }
     for (i = bugle_list_head(&filter_sets); i; i = bugle_list_next(i))
     {
@@ -297,6 +296,7 @@ static void destroy_filters(void *dummy)
 
     bugle_list_clear(&filter_sets);
     bugle_list_clear(&added_filter_sets);
+    bugle_object_class_clear(&bugle_call_class);
     lt_dlexit();
 }
 
@@ -340,6 +340,7 @@ void initialise_filters(void)
     bugle_list_init(&deactivations_deferred, false);
     bugle_hash_init(&filter_orders, false);
     bugle_hash_init(&filter_set_dependencies, false);
+    bugle_object_class_init(&bugle_call_class, NULL);
 
     libdir = getenv("BUGLE_FILTER_DIR");
     if (!libdir) libdir = PKGLIBDIR;
@@ -354,7 +355,7 @@ void initialise_filters(void)
 
     lt_dlforeachfile(libdir, initialise_filter_library, NULL);
 
-    bugle_atexit(destroy_filters, NULL);
+    bugle_atexit(filters_destroy, NULL);
 }
 
 bool filter_set_variable(filter_set *handle, const char *name, const char *value)
@@ -515,7 +516,7 @@ bool filter_set_variable(filter_set *handle, const char *name, const char *value
 }
 
 /* FIXME: deps should also be activated */
-static void bugle_activate_filter_set_nolock(filter_set *handle)
+static void filter_set_activate_nolock(filter_set *handle)
 {
     assert(handle);
     if (!handle->active)
@@ -527,7 +528,7 @@ static void bugle_activate_filter_set_nolock(filter_set *handle)
 }
 
 /* FIXME: reverse deps should also be deactivated */
-static void bugle_deactivate_filter_set_nolock(filter_set *handle)
+static void filter_set_deactivate_nolock(filter_set *handle)
 {
     assert(handle);
     if (handle->active)
@@ -538,21 +539,21 @@ static void bugle_deactivate_filter_set_nolock(filter_set *handle)
     }
 }
 
-static void add_filter_set_r(filter_set *handle, bool activate)
+void filter_set_add(filter_set *handle, bool activate)
 {
-    bugle_linked_list *deps;
-    bugle_list_node *i;
+    linked_list *deps;
+    linked_list_node *i;
     filter_set *s;
 
     if (!handle->added)
     {
         handle->added = true;
-        deps = (bugle_linked_list *) bugle_hash_get(&filter_set_dependencies, handle->name);
+        deps = (linked_list *) bugle_hash_get(&filter_set_dependencies, handle->name);
         if (deps)
         {
             for (i = bugle_list_head(deps); i; i = bugle_list_next(i))
             {
-                s = bugle_get_filter_set_handle((const char *) bugle_list_data(i));
+                s = bugle_filter_set_get_handle((const char *) bugle_list_data(i));
                 if (!s)
                 {
                     bugle_log_printf("filters", "load", BUGLE_LOG_ERROR,
@@ -560,7 +561,7 @@ static void add_filter_set_r(filter_set *handle, bool activate)
                                      handle->name,
                                      ((const char *) bugle_list_data(i)));
                 }
-                add_filter_set_r(s, activate);
+                filter_set_add(s, activate);
             }
         }
         bugle_list_append(&added_filter_sets, handle);
@@ -576,7 +577,7 @@ static const char *get_name_filter_set(void *f)
 /* Puts filter-sets into the proper order and initialises them */
 void load_filter_sets(void)
 {
-    bugle_list_node *i, *j;
+    linked_list_node *i, *j;
     filter_set *handle;
     filter *f;
 
@@ -600,28 +601,23 @@ void load_filter_sets(void)
 
         if (handle->active)
         {
-            bugle_activate_filter_set_nolock(handle);
+            filter_set_activate_nolock(handle);
             active_dirty = true;
         }
     }
 }
 
-void bugle_add_filter_set(filter_set *handle, bool activate)
-{
-    add_filter_set_r(handle, activate);
-}
-
-void bugle_activate_filter_set(filter_set *handle)
+void filter_set_activate(filter_set *handle)
 {
     bugle_thread_mutex_lock(&active_callbacks_mutex);
-    bugle_activate_filter_set_nolock(handle);
+    filter_set_activate_nolock(handle);
     bugle_thread_mutex_unlock(&active_callbacks_mutex);
 }
 
-void bugle_deactivate_filter_set(filter_set *handle)
+void filter_set_deactivate(filter_set *handle)
 {
     bugle_thread_mutex_lock(&active_callbacks_mutex);
-    bugle_deactivate_filter_set_nolock(handle);
+    filter_set_deactivate_nolock(handle);
     bugle_thread_mutex_unlock(&active_callbacks_mutex);
 }
 
@@ -630,17 +626,17 @@ void bugle_deactivate_filter_set(filter_set *handle)
  * FIXME: a single queue should be used for activate and deactivate, to
  * allow for arbitrary ordering.
  */
-void bugle_activate_filter_set_deferred(filter_set *handle)
+void bugle_filter_set_activate_deferred(filter_set *handle)
 {
     bugle_list_append(&activations_deferred, handle);
 }
 
-void bugle_deactivate_filter_set_deferred(filter_set *handle)
+void bugle_filter_set_deactivate_deferred(filter_set *handle)
 {
     bugle_list_append(&deactivations_deferred, handle);
 }
 
-static const char *get_name_filter(void *f)
+static const char *filter_get_name(void *f)
 {
     return ((filter *) f)->name;
 }
@@ -649,7 +645,7 @@ static void filter_compute_order(void)
 {
     bool success;
 
-    success = compute_order(&loaded_filters, &filter_orders, get_name_filter);
+    success = compute_order(&loaded_filters, &filter_orders, filter_get_name);
     if (!success)
     {
         bugle_log("filters", "load", BUGLE_LOG_ERROR,
@@ -660,11 +656,14 @@ static void filter_compute_order(void)
 
 static void set_bypass(void)
 {
-    bugle_list_node *i, *j;
+    linked_list_node *i, *j;
     bool bypass[NUMBER_OF_FUNCTIONS];
     filter *cur;
     filter_catcher *catcher;
 
+    /* We use this temporary instead of modifying values directly, because
+     * we don't want other threads to see intermediate values.
+     */
     memset(bypass, 1, sizeof(bypass));
     for (i = bugle_list_head(&loaded_filters); i; i = bugle_list_next(i))
     {
@@ -689,7 +688,7 @@ void filters_finalise(void)
 /* Note: caller must take mutexes */
 static void compute_active_callbacks(void)
 {
-    bugle_list_node *i, *j;
+    linked_list_node *i, *j;
     filter *cur;
     budgie_function func;
     filter_catcher *catcher;
@@ -710,17 +709,9 @@ static void compute_active_callbacks(void)
     }
 }
 
-void *bugle_get_filter_set_call_state(function_call *call, filter_set *handle)
+void filters_run(function_call *call)
 {
-    if (handle && handle->call_state_offset >= 0)
-        return (void *)(((char *) call->generic.user_data) + handle->call_state_offset);
-    else
-        return NULL;
-}
-
-void run_filters(function_call *call)
-{
-    bugle_list_node *i;
+    linked_list_node *i;
     filter_catcher *cur;
     callback_data data;
 
@@ -736,31 +727,31 @@ void run_filters(function_call *call)
         active_dirty = false;
     }
 
-    call->generic.user_data = call_data;
+    data.call_object = bugle_object_new(&bugle_call_class, NULL, true);
     for (i = bugle_list_head(&active_callbacks[call->generic.id]); i; i = bugle_list_next(i))
     {
         cur = (filter_catcher *) bugle_list_data(i);
-        data.call_data = bugle_get_filter_set_call_state(call, cur->parent->parent);
         data.filter_set_handle = cur->parent->parent;
         if (!(*cur->callback)(call, &data)) break;
     }
+    bugle_object_destroy(data.call_object);
 
     while (bugle_list_head(&activations_deferred))
     {
         i = bugle_list_head(&activations_deferred);
-        bugle_activate_filter_set_nolock((filter_set *) bugle_list_data(i));
+        filter_set_activate_nolock((filter_set *) bugle_list_data(i));
         bugle_list_erase(&activations_deferred, i);
     }
     while (bugle_list_head(&deactivations_deferred))
     {
         i = bugle_list_head(&deactivations_deferred);
-        bugle_deactivate_filter_set_nolock((filter_set *) bugle_list_data(i));
+        filter_set_deactivate_nolock((filter_set *) bugle_list_data(i));
         bugle_list_erase(&deactivations_deferred, i);
     }
     bugle_thread_mutex_unlock(&active_callbacks_mutex);
 }
 
-filter_set *bugle_register_filter_set(const filter_set_info *info)
+filter_set *bugle_filter_set_register(const filter_set_info *info)
 {
     filter_set *s;
 
@@ -777,24 +768,20 @@ filter_set *bugle_register_filter_set(const filter_set_info *info)
     s->active = false;
     s->added = false;
     s->dl_handle = current_dl_handle;
-    if (info->call_state_space)
-    {
-        s->call_state_offset = call_data_size;
-        call_data_size += info->call_state_space;
-        call_data = bugle_realloc(call_data, call_data_size);
-    }
-    else s->call_state_offset = (ptrdiff_t) -1;
 
     bugle_list_append(&filter_sets, s);
     /* FIXME: dirty hack. To make sure that 'log' is loaded and loaded
      * first, make sure every filterset depends on it
      */
     if (strcmp(s->name, "log") != 0)
-        bugle_register_filter_set_depends(s->name, "log");
+    {
+        bugle_filter_set_depends(s->name, "log");
+        bugle_filter_set_order("log", s->name);
+    }
     return s;
 }
 
-filter *bugle_register_filter(filter_set *handle, const char *name)
+filter *bugle_filter_register(filter_set *handle, const char *name)
 {
     filter *f;
 
@@ -806,7 +793,7 @@ filter *bugle_register_filter(filter_set *handle, const char *name)
     return f;
 }
 
-void bugle_register_filter_catches_function(filter *handle, budgie_function f,
+void bugle_filter_catches_function(filter *handle, budgie_function f,
                                             bool inactive,
                                             filter_callback callback)
 {
@@ -820,7 +807,7 @@ void bugle_register_filter_catches_function(filter *handle, budgie_function f,
     bugle_list_append(&handle->callbacks, cb);
 }
 
-void bugle_register_filter_catches(filter *handle, budgie_group g,
+void bugle_filter_catches(filter *handle, budgie_group g,
                                    bool inactive,
                                    filter_callback callback)
 {
@@ -829,10 +816,10 @@ void bugle_register_filter_catches(filter *handle, budgie_group g,
     /* FIXME: there should be a way to speed this up */
     for (i = 0; i < NUMBER_OF_FUNCTIONS; i++)
         if (budgie_function_to_group[i] == g)
-            bugle_register_filter_catches_function(handle, i, inactive, callback);
+            bugle_filter_catches_function(handle, i, inactive, callback);
 }
 
-void bugle_register_filter_catches_all(filter *handle, bool inactive,
+void bugle_filter_catches_all(filter *handle, bool inactive,
                                        filter_callback callback)
 {
     budgie_function i;
@@ -849,18 +836,18 @@ void bugle_register_filter_catches_all(filter *handle, bool inactive,
         }
 }
 
-void bugle_register_filter_order(const char *before, const char *after)
+void bugle_filter_order(const char *before, const char *after)
 {
     register_order(&filter_orders, before, after);
 }
 
-void bugle_register_filter_set_depends(const char *base, const char *dep)
+void bugle_filter_set_depends(const char *base, const char *dep)
 {
     register_order(&filter_set_dependencies, dep, base);
     register_order(&filter_set_orders, dep, base);
 }
 
-void bugle_register_filter_set_order(const char *before, const char *after)
+void bugle_filter_set_order(const char *before, const char *after)
 {
     register_order(&filter_set_orders, before, after);
 }
@@ -877,9 +864,9 @@ bool bugle_filter_set_is_active(const filter_set *handle)
     return handle->active;
 }
 
-filter_set *bugle_get_filter_set_handle(const char *name)
+filter_set *bugle_filter_set_get_handle(const char *name)
 {
-    bugle_list_node *i;
+    linked_list_node *i;
     filter_set *cur;
 
     for (i = bugle_list_head(&filter_sets); i; i = bugle_list_next(i))
@@ -891,7 +878,7 @@ filter_set *bugle_get_filter_set_handle(const char *name)
     return NULL;
 }
 
-void *bugle_get_filter_set_symbol(filter_set *handle, const char *name)
+void *bugle_filter_set_get_symbol(filter_set *handle, const char *name)
 {
     if (handle)
         return lt_dlsym(handle->dl_handle, name);
@@ -908,9 +895,9 @@ void *bugle_get_filter_set_symbol(filter_set *handle, const char *name)
     }
 }
 
-void bugle_filters_help(void)
+void filters_help(void)
 {
-    bugle_list_node *i;
+    linked_list_node *i;
     const filter_set_variable_info *j;
     filter_set *cur;
 

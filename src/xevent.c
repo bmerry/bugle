@@ -50,7 +50,7 @@ typedef struct
 } handler;
 
 static bool active = false;
-static bugle_linked_list handlers;
+static linked_list handlers;
 
 static bool mouse_active = false;
 static bool mouse_first = true;
@@ -89,7 +89,7 @@ extern void bugle_initialise_all(void);
 static Bool event_predicate(Display *dpy, XEvent *event, XPointer arg)
 {
     xevent_key key;
-    bugle_list_node *i;
+    linked_list_node *i;
     handler *h;
 
     if (mouse_active && event->type == MotionNotify) return True;
@@ -111,7 +111,7 @@ static Bool event_predicate(Display *dpy, XEvent *event, XPointer arg)
 static void handle_event(Display *dpy, XEvent *event)
 {
     xevent_key key;
-    bugle_list_node *i;
+    linked_list_node *i;
     handler *h;
 
     if (mouse_active && event->type == MotionNotify)

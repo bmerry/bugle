@@ -53,7 +53,7 @@ static gldb_state *state_root = NULL;
 static bool state_dirty = true;
 
 static bool break_on_error = true;
-static bugle_hash_table break_on;
+static hash_table break_on;
 
 /* Spawns off the program, and returns the pid */
 static pid_t execute(void (*child_init)(void))
@@ -103,7 +103,7 @@ static pid_t execute(void (*child_init)(void))
 
 static void state_destroy(gldb_state *s)
 {
-    bugle_list_node *i;
+    linked_list_node *i;
 
     for (i = bugle_list_head(&s->children); i; i = bugle_list_next(i))
         state_destroy((gldb_state *) bugle_list_data(i));
@@ -450,7 +450,7 @@ void gldb_free_response(gldb_response *r)
 gldb_state *gldb_state_find(gldb_state *root, const char *name, size_t n)
 {
     const char *split;
-    bugle_list_node *i;
+    linked_list_node *i;
     gldb_state *child;
     bool found;
 
@@ -488,7 +488,7 @@ gldb_state *gldb_state_find(gldb_state *root, const char *name, size_t n)
 gldb_state *gldb_state_find_child_numeric(gldb_state *parent, GLint name)
 {
     gldb_state *child;
-    bugle_list_node *i;
+    linked_list_node *i;
 
     /* FIXME: build indices on the state */
     for (i = bugle_list_head(&parent->children); i; i = bugle_list_next(i))
@@ -502,7 +502,7 @@ gldb_state *gldb_state_find_child_numeric(gldb_state *parent, GLint name)
 gldb_state *gldb_state_find_child_enum(gldb_state *parent, GLenum name)
 {
     gldb_state *child;
-    bugle_list_node *i;
+    linked_list_node *i;
 
     /* FIXME: build indices on the state */
     for (i = bugle_list_head(&parent->children); i; i = bugle_list_next(i))
@@ -583,7 +583,7 @@ void gldb_safe_syscall(int r, const char *str)
 
 void gldb_run(uint32_t id, void (*child_init)(void))
 {
-    const bugle_hash_entry *h;
+    const hash_table_entry *h;
 
     child_pid = execute(child_init);
     /* Send breakpoints */
@@ -774,7 +774,6 @@ void gldb_initialise(int argc, char * const *argv)
     for (i = 1; i < argc; i++)
         prog_argv[i - 1] = argv[i];
 
-    bugle_initialise_hashing();
     bugle_hash_init(&break_on, false);
 }
 

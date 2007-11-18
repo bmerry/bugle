@@ -1,5 +1,5 @@
 /*  BuGLe: an OpenGL debugging tool
- *  Copyright (C) 2004-2006  Bruce Merry
+ *  Copyright (C) 2004-2007  Bruce Merry
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -22,27 +22,27 @@
 #include "linkedlist.h"
 #include "common/safemem.h"
 
-void bugle_list_init(bugle_linked_list *l, bool owns_memory)
+void bugle_list_init(linked_list *l, bool owns_memory)
 {
     l->head = l->tail = NULL;
     l->owns_memory = owns_memory;
 }
 
-void *bugle_list_data(const bugle_list_node *node)
+void *bugle_list_data(const linked_list_node *node)
 {
     return node->data;
 }
 
-void bugle_list_set_data(bugle_list_node *node, void *data)
+void bugle_list_set_data(linked_list_node *node, void *data)
 {
     node->data = data;
 }
 
-bugle_list_node *bugle_list_prepend(bugle_linked_list *l, void *data)
+linked_list_node *bugle_list_prepend(linked_list *l, void *data)
 {
-    bugle_list_node *n;
+    linked_list_node *n;
 
-    n = (bugle_list_node *) bugle_malloc(sizeof(bugle_list_node));
+    n = (linked_list_node *) bugle_malloc(sizeof(linked_list_node));
     n->prev = NULL;
     n->next = l->head;
     n->data = data;
@@ -52,10 +52,10 @@ bugle_list_node *bugle_list_prepend(bugle_linked_list *l, void *data)
     return n;
 }
 
-bugle_list_node *bugle_list_append(bugle_linked_list *l, void *data)
+linked_list_node *bugle_list_append(linked_list *l, void *data)
 {
-    bugle_list_node *n;
-    n = (bugle_list_node *) bugle_malloc(sizeof(bugle_list_node));
+    linked_list_node *n;
+    n = (linked_list_node *) bugle_malloc(sizeof(linked_list_node));
     n->next = NULL;
     n->prev = l->tail;
     n->data = data;
@@ -65,14 +65,14 @@ bugle_list_node *bugle_list_append(bugle_linked_list *l, void *data)
     return n;
 }
 
-bugle_list_node *bugle_list_insert_before(bugle_linked_list *l,
-                                          bugle_list_node *node,
+linked_list_node *bugle_list_insert_before(linked_list *l,
+                                          linked_list_node *node,
                                           void *data)
 {
-    bugle_list_node *n;
+    linked_list_node *n;
 
     if (node == l->head) return bugle_list_prepend(l, data);
-    n = (bugle_list_node *) bugle_malloc(sizeof(bugle_list_node));
+    n = (linked_list_node *) bugle_malloc(sizeof(linked_list_node));
     n->data = data;
     n->prev = node->prev;
     n->prev->next = n;
@@ -81,14 +81,14 @@ bugle_list_node *bugle_list_insert_before(bugle_linked_list *l,
     return n;
 }
 
-bugle_list_node *bugle_list_insert_after(bugle_linked_list *l,
-                                         bugle_list_node *node,
+linked_list_node *bugle_list_insert_after(linked_list *l,
+                                         linked_list_node *node,
                                          void *data)
 {
-    bugle_list_node *n;
+    linked_list_node *n;
 
     if (node == l->tail) return bugle_list_append(l, data);
-    n = (bugle_list_node *) bugle_malloc(sizeof(bugle_list_node));
+    n = (linked_list_node *) bugle_malloc(sizeof(linked_list_node));
     n->data = data;
     n->next = node->next;
     n->next->prev = n;
@@ -97,27 +97,27 @@ bugle_list_node *bugle_list_insert_after(bugle_linked_list *l,
     return n;
 }
 
-bugle_list_node *bugle_list_head(const bugle_linked_list *l)
+linked_list_node *bugle_list_head(const linked_list *l)
 {
     return l->head;
 }
 
-bugle_list_node *bugle_list_tail(const bugle_linked_list *l)
+linked_list_node *bugle_list_tail(const linked_list *l)
 {
     return l->tail;
 }
 
-bugle_list_node *bugle_list_next(const bugle_list_node *node)
+linked_list_node *bugle_list_next(const linked_list_node *node)
 {
     return node->next;
 }
 
-bugle_list_node *bugle_list_prev(const bugle_list_node *node)
+linked_list_node *bugle_list_prev(const linked_list_node *node)
 {
     return node->prev;
 }
 
-void bugle_list_erase(bugle_linked_list *l, bugle_list_node *node)
+void bugle_list_erase(linked_list *l, linked_list_node *node)
 {
     if (l->owns_memory) free(node->data);
 
@@ -130,9 +130,9 @@ void bugle_list_erase(bugle_linked_list *l, bugle_list_node *node)
     free(node);
 }
 
-void bugle_list_clear(bugle_linked_list *l)
+void bugle_list_clear(linked_list *l)
 {
-    bugle_list_node *cur, *nxt;
+    linked_list_node *cur, *nxt;
 
     cur = l->head;
     while (cur)

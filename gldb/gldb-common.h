@@ -69,7 +69,7 @@ typedef struct
     int type;   /* types.h and GLee.h are incompatible, hence not budgie_type */
     int length;
     void *data;
-    bugle_linked_list children;
+    linked_list children;
 } gldb_state;
 
 typedef struct

@@ -83,7 +83,7 @@ typedef struct
  * command names, and the values are the command_data structs defined above.
  * Ambiguous commands have a NULL command field.
  */
-static bugle_hash_table command_table;
+static hash_table command_table;
 static char *screenshot_file = NULL;
 static int chld_pipes[2], int_pipes[2];
 static sigset_t blocked, unblocked;
@@ -432,7 +432,7 @@ static void make_indent(int indent, FILE *out)
 
 static void state_dump(const gldb_state *root, int depth)
 {
-    bugle_list_node *i;
+    linked_list_node *i;
     char *str;
 
     if (root->name && root->name[0])
@@ -800,7 +800,7 @@ static char *generate_functions(const char *text, int state)
 static char *generate_state(const char *text, int state)
 {
     static const gldb_state *root; /* total state we have */
-    static bugle_list_node *node;  /* walk of children */
+    static linked_list_node *node;  /* walk of children */
     static const char *split;
     gldb_state *state_root;
     const gldb_state *child;
@@ -938,7 +938,6 @@ static void initialise(void)
     sort_commands();
     pipe(chld_pipes);
     pipe(int_pipes);
-    bugle_initialise_hashing();
     bugle_hash_init(&command_table, true);
     for (cmd = commands; cmd->name; cmd++)
         register_command(cmd);

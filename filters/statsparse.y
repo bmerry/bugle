@@ -135,9 +135,9 @@ static stats_substitution *stats_substitution_new(double value, char *replacemen
     return sub;
 }
 
-static bugle_linked_list stats_statistics_list;
+static linked_list stats_statistics_list;
 
-bugle_linked_list *stats_statistics_get_list(void)
+linked_list *stats_statistics_get_list(void)
 {
     return &stats_statistics_list;
 }
@@ -148,7 +148,7 @@ bugle_linked_list *stats_statistics_get_list(void)
 {
         double num;
         char *str;
-        bugle_linked_list list;
+        linked_list list;
         stats_statistic *stat;
         stats_expression *expr;
 }

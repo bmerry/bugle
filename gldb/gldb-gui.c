@@ -48,7 +48,7 @@
 #include "gldb/gldb-gui-breakpoint.h"
 
 /* Global variables */
-static bugle_linked_list response_handlers;
+static linked_list response_handlers;
 static guint32 seq = 0;
 static GdkCursor *wait_cursor = NULL;
 
@@ -386,7 +386,7 @@ static gboolean response_callback(GIOChannel *channel, GIOCondition condition,
     gldb_response *r;
     char *msg;
     gboolean done = FALSE;
-    bugle_list_node *n;
+    linked_list_node *n;
     response_handler *h;
 
     context = (GldbWindow *) user_data;

@@ -9,6 +9,11 @@ div.note .title, div.tip .title, h3.author
     color: black;
 }
 
+span.symbol, span.type, span.structname
+{
+    font-family: monospace;
+}
+
 /* These are set up to roughly match the OpenGL SDK style */
 
 body

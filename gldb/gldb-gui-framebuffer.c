@@ -174,7 +174,7 @@ static void gldb_framebuffer_pane_update_ids(GldbFramebufferPane *pane)
         active = gldb_state_GLint(binding);
     if ((framebuffer = gldb_state_find_child_enum(root, GL_FRAMEBUFFER_EXT)) != NULL)
     {
-        bugle_list_node *pfbo;
+        linked_list_node *pfbo;
         gldb_state *fbo;
 
         for (pfbo = bugle_list_head(&framebuffer->children); pfbo != NULL; pfbo = bugle_list_next(pfbo))

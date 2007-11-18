@@ -42,7 +42,7 @@ typedef struct state_info
      * extensions and exclude are still tested to determine whether to
      * invoke the callback.
      */
-    void (*spawn)(const struct glstate *, bugle_linked_list *, const struct state_info *);
+    void (*spawn)(const struct glstate *, linked_list *, const struct state_info *);
 } state_info;
 
 typedef struct glstate
@@ -58,7 +58,7 @@ typedef struct glstate
     GLint level;
     const struct state_info *info;
 
-    void (*spawn_children)(const struct glstate *, bugle_linked_list *);
+    void (*spawn_children)(const struct glstate *, linked_list *);
 } glstate;
 
 /* A structure used to return values from bugle_state_get_raw. data
@@ -82,7 +82,7 @@ typedef struct
  */
 void bugle_state_get_raw(const glstate *, bugle_state_raw *);
 char *bugle_state_get_string(const glstate *); /* caller frees */
-void bugle_state_get_children(const glstate *, bugle_linked_list *);
+void bugle_state_get_children(const glstate *, linked_list *);
 void bugle_state_clear(glstate *);
 const glstate *bugle_state_get_root(void);
 

@@ -559,7 +559,7 @@ static const state_info generic_enable = { NULL, GL_NONE, TYPE_9GLboolean, -1, B
  */
 static void make_leaves_conditional(const glstate *self, const state_info *table,
                                     uint32_t flags, unsigned int mask,
-                                    bugle_linked_list *children)
+                                    linked_list *children)
 {
     const char *version;
     glstate *child;
@@ -590,7 +590,7 @@ static void make_leaves_conditional(const glstate *self, const state_info *table
 }
 
 static void make_leaves(const glstate *self, const state_info *table,
-                        bugle_linked_list *children)
+                        linked_list *children)
 {
     make_leaves_conditional(self, table, 0, 0, children);
 }
@@ -598,9 +598,9 @@ static void make_leaves(const glstate *self, const state_info *table,
 static void make_fixed(const glstate *self,
                        const enum_list *enums,
                        size_t offset,
-                       void (*spawn)(const glstate *, bugle_linked_list *),
+                       void (*spawn)(const glstate *, linked_list *),
                        const state_info *info,
-                       bugle_linked_list *children)
+                       linked_list *children)
 {
     size_t i;
     glstate *child;
@@ -625,9 +625,9 @@ static void make_counted2(const glstate *self,
                           const char *format,
                           GLenum base,
                           size_t offset1, size_t offset2,
-                          void (*spawn)(const glstate *, bugle_linked_list *),
+                          void (*spawn)(const glstate *, linked_list *),
                           const state_info *info,
-                          bugle_linked_list *children)
+                          linked_list *children)
 {
     GLint i;
     glstate *child;
@@ -652,9 +652,9 @@ static void make_counted(const glstate *self,
                          const char *format,
                          GLenum base,
                          size_t offset,
-                         void (*spawn)(const glstate *, bugle_linked_list *),
+                         void (*spawn)(const glstate *, linked_list *),
                          const state_info *info,
-                         bugle_linked_list *children)
+                         linked_list *children)
 {
     make_counted2(self, count, format, base, offset, offset, spawn, info, children);
 }
@@ -663,9 +663,9 @@ static void make_object(const glstate *self,
                         GLenum target,
                         const char *format,
                         GLuint id,
-                        void (*spawn)(const glstate *, bugle_linked_list *),
+                        void (*spawn)(const glstate *, linked_list *),
                         const state_info *info,
-                        bugle_linked_list *children)
+                        linked_list *children)
 {
     glstate *child;
 
@@ -686,9 +686,9 @@ typedef struct
     const glstate *self;
     GLenum target;
     const char *format;
-    void (*spawn_children)(const glstate *, bugle_linked_list *);
+    void (*spawn_children)(const glstate *, linked_list *);
     state_info *info;
-    bugle_linked_list *children;
+    linked_list *children;
 } make_objects_data;
 
 static void make_objects_walker(GLuint object,
@@ -709,9 +709,9 @@ static void make_objects(const glstate *self,
                          GLenum target,
                          bool add_zero,
                          const char *format,
-                         void (*spawn_children)(const glstate *, bugle_linked_list *),
+                         void (*spawn_children)(const glstate *, linked_list *),
                          state_info *info,
-                         bugle_linked_list *children)
+                         linked_list *children)
 {
     make_objects_data data;
 
@@ -731,9 +731,9 @@ static void make_target(const glstate *self,
                         const char *name,
                         GLenum target,
                         GLenum binding,
-                        void (*spawn_children)(const glstate *, bugle_linked_list *),
+                        void (*spawn_children)(const glstate *, linked_list *),
                         const state_info *info,
-                        bugle_linked_list *children)
+                        linked_list *children)
 {
     glstate *child;
 
@@ -755,7 +755,7 @@ static void make_target(const glstate *self,
  * a state_info with a callback (3-argument form).
  */
 
-static void spawn_children_vertex_attrib(const glstate *self, bugle_linked_list *children)
+static void spawn_children_vertex_attrib(const glstate *self, linked_list *children)
 {
     bugle_list_init(children, true);
     make_leaves_conditional(self, vertex_attrib_state,
@@ -765,7 +765,7 @@ static void spawn_children_vertex_attrib(const glstate *self, bugle_linked_list 
 }
 
 static void spawn_vertex_attrib_arrays(const struct glstate *self,
-                                       bugle_linked_list *children,
+                                       linked_list *children,
                                        const struct state_info *info)
 {
 #ifdef GL_ARB_vertex_program
@@ -777,7 +777,7 @@ static void spawn_vertex_attrib_arrays(const struct glstate *self,
 }
 
 static void spawn_clip_planes(const struct glstate *self,
-                              bugle_linked_list *children,
+                              linked_list *children,
                               const struct state_info *info)
 {
     GLint count;
@@ -787,28 +787,28 @@ static void spawn_clip_planes(const struct glstate *self,
                   NULL, info, children);
 }
 
-static void spawn_children_material(const glstate *self, bugle_linked_list *children)
+static void spawn_children_material(const glstate *self, linked_list *children)
 {
     bugle_list_init(children, true);
     make_leaves(self, material_state, children);
 }
 
 static void spawn_materials(const struct glstate *self,
-                            bugle_linked_list *children,
+                            linked_list *children,
                             const struct state_info *info)
 {
     make_fixed(self, material_enums, offsetof(glstate, target),
                spawn_children_material, NULL, children);
 }
 
-static void spawn_children_light(const glstate *self, bugle_linked_list *children)
+static void spawn_children_light(const glstate *self, linked_list *children)
 {
     bugle_list_init(children, true);
     make_leaves(self, light_state, children);
 }
 
 static void spawn_lights(const glstate *self,
-                         bugle_linked_list *children,
+                         linked_list *children,
                          const struct state_info *info)
 {
     GLint count;
@@ -953,7 +953,7 @@ static unsigned int get_texture_coord_units(void)
     return max;
 }
 
-static void spawn_children_tex_level_parameter(const glstate *self, bugle_linked_list *children)
+static void spawn_children_tex_level_parameter(const glstate *self, linked_list *children)
 {
     uint32_t mask = STATE_SELECT_COMPRESSED;
 
@@ -981,7 +981,7 @@ static void spawn_children_tex_level_parameter(const glstate *self, bugle_linked
 }
 
 static void make_tex_levels(const glstate *self,
-                            bugle_linked_list *children)
+                            linked_list *children)
 {
     GLint base, max, i;
     glstate *child;
@@ -1023,14 +1023,14 @@ static void make_tex_levels(const glstate *self,
 }
 
 #ifdef GL_ARB_texture_cube_map
-static void spawn_children_cube_map_faces(const glstate *self, bugle_linked_list *children)
+static void spawn_children_cube_map_faces(const glstate *self, linked_list *children)
 {
     bugle_list_init(children, true);
     make_tex_levels(self, children);
 }
 #endif
 
-static void spawn_children_tex_parameter(const glstate *self, bugle_linked_list *children)
+static void spawn_children_tex_parameter(const glstate *self, linked_list *children)
 {
     bugle_list_init(children, true);
     if (self->binding) /* Zero indicates a proxy, which have no texture parameter state */
@@ -1047,7 +1047,7 @@ static void spawn_children_tex_parameter(const glstate *self, bugle_linked_list 
     make_tex_levels(self, children);
 }
 
-static void spawn_children_tex_target(const glstate *self, bugle_linked_list *children)
+static void spawn_children_tex_target(const glstate *self, linked_list *children)
 {
     if (self->binding) /* Zero here indicates a proxy target */
     {
@@ -1059,28 +1059,28 @@ static void spawn_children_tex_target(const glstate *self, bugle_linked_list *ch
         spawn_children_tex_parameter(self, children);
 }
 
-static void spawn_children_tex_buffer(const glstate *self, bugle_linked_list *children)
+static void spawn_children_tex_buffer(const glstate *self, linked_list *children)
 {
     bugle_list_init(children, true);
     make_leaves(self, tex_buffer_state, children);
 }
 
-static void spawn_children_tex_buffer_target(const glstate *self, bugle_linked_list *children)
+static void spawn_children_tex_buffer_target(const glstate *self, linked_list *children)
 {
     bugle_list_init(children, true);
     make_objects(self, BUGLE_TRACKOBJECTS_TEXTURE, self->target, true, "%lu",
                  spawn_children_tex_buffer, NULL, children);
 }
 
-static void spawn_children_tex_gen(const glstate *self, bugle_linked_list *children)
+static void spawn_children_tex_gen(const glstate *self, linked_list *children)
 {
     bugle_list_init(children, true);
     make_leaves(self, tex_gen_state, children);
 }
 
-static void spawn_children_tex_unit(const glstate *self, bugle_linked_list *children)
+static void spawn_children_tex_unit(const glstate *self, linked_list *children)
 {
-    bugle_list_node *i;
+    linked_list_node *i;
     glstate *child;
     uint32_t mask = 0;
 
@@ -1121,7 +1121,7 @@ static void spawn_children_tex_unit(const glstate *self, bugle_linked_list *chil
 }
 
 static void spawn_texture_units(const glstate *self,
-                                bugle_linked_list *children,
+                                linked_list *children,
                                 const struct state_info *info)
 {
 #ifdef GL_ARB_multitexture
@@ -1142,7 +1142,7 @@ static void spawn_texture_units(const glstate *self,
 }
 
 static void spawn_textures(const glstate *self,
-                           bugle_linked_list *children,
+                           linked_list *children,
                            const struct state_info *info)
 {
 #ifdef GL_EXT_texture_buffer_object
@@ -1228,7 +1228,7 @@ static void spawn_textures(const glstate *self,
 }
 
 static void spawn_children_blend(const struct glstate *self,
-                                 bugle_linked_list *children)
+                                 linked_list *children)
 {
 #ifdef GL_EXT_draw_buffers2
     static const state_info blend = { STATE_NAME(GL_BLEND), TYPE_9GLboolean, -1, BUGLE_GL_EXT_draw_buffers2, -1, STATE_ENABLED_INDEXED };
@@ -1242,7 +1242,7 @@ static void spawn_children_blend(const struct glstate *self,
 }
 
 static void spawn_blend(const struct glstate *self,
-                        bugle_linked_list *children,
+                        linked_list *children,
                         const struct state_info *info)
 {
     make_target(self, "GL_BLEND", GL_BLEND, GL_BLEND,
@@ -1250,7 +1250,7 @@ static void spawn_blend(const struct glstate *self,
 }
 
 static void spawn_children_color_writemask(const struct glstate *self,
-                                           bugle_linked_list *children)
+                                           linked_list *children)
 {
 #ifdef GL_EXT_draw_buffers2
     static const state_info color_writemask = { STATE_NAME(GL_COLOR_WRITEMASK), TYPE_9GLboolean, 4, BUGLE_GL_EXT_draw_buffers2, -1, STATE_INDEXED };
@@ -1264,7 +1264,7 @@ static void spawn_children_color_writemask(const struct glstate *self,
 }
 
 static void spawn_color_writemask(const struct glstate *self,
-                                  bugle_linked_list *children,
+                                  linked_list *children,
                                   const struct state_info *info)
 {
     make_target(self, "GL_COLOR_WRITEMASK", GL_COLOR_WRITEMASK, GL_COLOR_WRITEMASK,
@@ -1272,7 +1272,7 @@ static void spawn_color_writemask(const struct glstate *self,
 }
 
 static void spawn_draw_buffers(const struct glstate *self,
-                               bugle_linked_list *children,
+                               linked_list *children,
                                const struct state_info *info)
 {
 #ifdef GL_ATI_draw_buffers
@@ -1284,7 +1284,7 @@ static void spawn_draw_buffers(const struct glstate *self,
 #endif
 }
 
-static void spawn_children_color_table_parameter(const glstate *self, bugle_linked_list *children)
+static void spawn_children_color_table_parameter(const glstate *self, linked_list *children)
 {
     bugle_list_init(children, true);
     switch (self->target)
@@ -1304,7 +1304,7 @@ static void spawn_children_color_table_parameter(const glstate *self, bugle_link
 }
 
 static void spawn_color_tables(const struct glstate *self,
-                               bugle_linked_list *children,
+                               linked_list *children,
                                const struct state_info *info)
 {
     make_fixed(self, color_table_parameter_enums, offsetof(glstate, target),
@@ -1313,7 +1313,7 @@ static void spawn_color_tables(const struct glstate *self,
                spawn_children_color_table_parameter, NULL, children);
 }
 
-static void spawn_children_convolution_parameter(const glstate *self, bugle_linked_list *children)
+static void spawn_children_convolution_parameter(const glstate *self, linked_list *children)
 {
     bugle_list_init(children, true);
     if (self->target == GL_CONVOLUTION_1D)
@@ -1324,21 +1324,21 @@ static void spawn_children_convolution_parameter(const glstate *self, bugle_link
 }
 
 static void spawn_convolutions(const struct glstate *self,
-                               bugle_linked_list *children,
+                               linked_list *children,
                                const struct state_info *info)
 {
     make_fixed(self, convolution_parameter_enums, offsetof(glstate, target),
                spawn_children_convolution_parameter, &generic_enable, children);
 }
 
-static void spawn_children_histogram_parameter(const glstate *self, bugle_linked_list *children)
+static void spawn_children_histogram_parameter(const glstate *self, linked_list *children)
 {
     bugle_list_init(children, true);
     make_leaves(self, histogram_parameter_state, children);
 }
 
 static void spawn_histograms(const struct glstate *self,
-                               bugle_linked_list *children,
+                               linked_list *children,
                              const struct state_info *info)
 {
     make_fixed(self, histogram_parameter_enums, offsetof(glstate, target),
@@ -1347,14 +1347,14 @@ static void spawn_histograms(const struct glstate *self,
                spawn_children_histogram_parameter, NULL, children);
 }
 
-static void spawn_children_minmax_parameter(const glstate *self, bugle_linked_list *children)
+static void spawn_children_minmax_parameter(const glstate *self, linked_list *children)
 {
     bugle_list_init(children, true);
     make_leaves(self, minmax_parameter_state, children);
 }
 
 static void spawn_minmax(const struct glstate *self,
-                         bugle_linked_list *children,
+                         linked_list *children,
                          const struct state_info *info)
 {
     make_fixed(self, minmax_parameter_enums, offsetof(glstate, target),
@@ -1362,13 +1362,13 @@ static void spawn_minmax(const struct glstate *self,
 }
 
 #ifdef GL_ARB_shader_objects
-static void spawn_children_shader(const glstate *self, bugle_linked_list *children)
+static void spawn_children_shader(const glstate *self, linked_list *children)
 {
     bugle_list_init(children, true);
     make_leaves(self, shader_state, children);
 }
 
-static void spawn_children_program(const glstate *self, bugle_linked_list *children)
+static void spawn_children_program(const glstate *self, linked_list *children)
 {
     GLint i, count, max;
     GLenum type;
@@ -1443,7 +1443,7 @@ static void spawn_children_program(const glstate *self, bugle_linked_list *child
 #endif /* GL_ARB_shader_objects */
 
 static void spawn_shaders(const struct glstate *self,
-                          bugle_linked_list *children,
+                          linked_list *children,
                           const struct state_info *info)
 {
 #ifdef GL_ARB_shader_objects
@@ -1453,7 +1453,7 @@ static void spawn_shaders(const struct glstate *self,
 }
 
 static void spawn_programs(const struct glstate *self,
-                           bugle_linked_list *children,
+                           linked_list *children,
                            const struct state_info *info)
 {
 #ifdef GL_ARB_shader_objects
@@ -2824,7 +2824,7 @@ char *bugle_state_get_string(const glstate *state)
     return ans;
 }
 
-void bugle_state_get_children(const glstate *self, bugle_linked_list *children)
+void bugle_state_get_children(const glstate *self, linked_list *children)
 {
     if (self->spawn_children) (*self->spawn_children)(self, children);
     else bugle_list_init(children, true);
@@ -2835,26 +2835,26 @@ void bugle_state_clear(glstate *self)
     if (self->name) free(self->name);
 }
 
-static void spawn_children_query(const glstate *self, bugle_linked_list *children)
+static void spawn_children_query(const glstate *self, linked_list *children)
 {
     bugle_list_init(children, true);
     make_leaves(self, query_state, children);
 }
 
-static void spawn_children_query_object(const glstate *self, bugle_linked_list *children)
+static void spawn_children_query_object(const glstate *self, linked_list *children)
 {
     bugle_list_init(children, true);
     make_leaves(self, query_object_state, children);
 }
 
-static void spawn_children_buffer_parameter(const glstate *self, bugle_linked_list *children)
+static void spawn_children_buffer_parameter(const glstate *self, linked_list *children)
 {
     bugle_list_init(children, true);
     make_leaves(self, buffer_parameter_state, children);
 }
 
 #if defined(GL_ARB_vertex_program) || defined(GL_ARB_fragment_program)
-static void spawn_children_old_program_object(const glstate *self, bugle_linked_list *children)
+static void spawn_children_old_program_object(const glstate *self, linked_list *children)
 {
     uint32_t mask = 0;
     GLint max_local, i;
@@ -2894,7 +2894,7 @@ static void spawn_children_old_program_object(const glstate *self, bugle_linked_
     }
 }
 
-static void spawn_children_old_program(const glstate *self, bugle_linked_list *children)
+static void spawn_children_old_program(const glstate *self, linked_list *children)
 {
     uint32_t mask = 0;
     GLint max_env, i;
@@ -2937,7 +2937,7 @@ static void spawn_children_old_program(const glstate *self, bugle_linked_list *c
 #endif /* GL_ARB_vertex_program || GL_ARB_fragment_program */
 
 #ifdef GL_EXT_framebuffer_object
-static void spawn_children_framebuffer_attachment(const glstate *self, bugle_linked_list *children)
+static void spawn_children_framebuffer_attachment(const glstate *self, linked_list *children)
 {
     bugle_list_init(children, true);
     make_leaves(self, framebuffer_attachment_parameter_state, children);
@@ -2947,7 +2947,7 @@ static void make_framebuffer_attachment(const glstate *self,
                                         GLenum attachment,
                                         const char *format,
                                         long int index,
-                                        bugle_linked_list *children)
+                                        linked_list *children)
 {
     GLint type;
     glstate *child;
@@ -2970,7 +2970,7 @@ static void make_framebuffer_attachment(const glstate *self,
     }
 }
 
-static void spawn_children_framebuffer_object(const glstate *self, bugle_linked_list *children)
+static void spawn_children_framebuffer_object(const glstate *self, linked_list *children)
 {
     GLint old;
     GLint attachments;
@@ -2996,20 +2996,20 @@ static void spawn_children_framebuffer_object(const glstate *self, bugle_linked_
     CALL_glBindFramebufferEXT(self->target, old);
 }
 
-static void spawn_children_framebuffer(const glstate *self, bugle_linked_list *children)
+static void spawn_children_framebuffer(const glstate *self, linked_list *children)
 {
     bugle_list_init(children, true);
     make_objects(self, BUGLE_TRACKOBJECTS_FRAMEBUFFER, self->target, true,
                  "%lu", spawn_children_framebuffer_object, NULL, children);
 }
 
-static void spawn_children_renderbuffer_object(const glstate *self, bugle_linked_list *children)
+static void spawn_children_renderbuffer_object(const glstate *self, linked_list *children)
 {
     bugle_list_init(children, true);
     make_leaves(self, renderbuffer_parameter_state, children);
 }
 
-static void spawn_children_renderbuffer(const glstate *self, bugle_linked_list *children)
+static void spawn_children_renderbuffer(const glstate *self, linked_list *children)
 {
     bugle_list_init(children, true);
     make_objects(self, BUGLE_TRACKOBJECTS_RENDERBUFFER, self->target, false,
@@ -3018,13 +3018,13 @@ static void spawn_children_renderbuffer(const glstate *self, bugle_linked_list *
 #endif /* GL_EXT_framebuffer_object */
 
 #ifdef GL_NV_transform_feedback
-static void spawn_children_transform_feedback_buffer(const glstate *self, bugle_linked_list *children)
+static void spawn_children_transform_feedback_buffer(const glstate *self, linked_list *children)
 {
     bugle_list_init(children, true);
     make_leaves(self, transform_feedback_buffer_state, children);
 }
 
-static void spawn_children_transform_feedback(const glstate *self, bugle_linked_list *children)
+static void spawn_children_transform_feedback(const glstate *self, linked_list *children)
 {
     GLint buffers;
 
@@ -3035,7 +3035,7 @@ static void spawn_children_transform_feedback(const glstate *self, bugle_linked_
 }
 #endif /* GL_NV_transform_feedback */
 
-static void spawn_children_global(const glstate *self, bugle_linked_list *children)
+static void spawn_children_global(const glstate *self, linked_list *children)
 {
     static const state_info enable =
     {

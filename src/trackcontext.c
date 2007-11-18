@@ -42,11 +42,11 @@
  * a trackcontext_data struct in the initial_values hash.
  */
 
-bugle_object_class bugle_context_class;
-bugle_object_class bugle_namespace_class;
-static bugle_hashptr_table context_objects, namespace_objects;
-static bugle_hashptr_table initial_values;
-static bugle_object_view trackcontext_view;
+object_class bugle_context_class;
+object_class bugle_namespace_class;
+static hashptr_table context_objects, namespace_objects;
+static hashptr_table initial_values;
+static object_view trackcontext_view;
 static bugle_thread_mutex_t context_mutex = BUGLE_THREAD_MUTEX_INITIALIZER;
 
 typedef struct
@@ -137,7 +137,7 @@ static bool trackcontext_newcontext(function_call *call, const callback_data *da
 static bool trackcontext_callback(function_call *call, const callback_data *data)
 {
     GLXContext ctx;
-    bugle_object *obj, *ns;
+    object *obj, *ns;
     trackcontext_data *initial, *view;
 
     /* These calls may fail, so we must explicitly check for the
@@ -163,7 +163,7 @@ static bool trackcontext_callback(function_call *call, const callback_data *data
             }
             else
             {
-                view = bugle_object_get_data(&bugle_context_class, obj, trackcontext_view);
+                view = bugle_object_get_data(obj, trackcontext_view);
                 *view = *initial;
                 ns = bugle_hashptr_get(&namespace_objects, view->root_context);
                 if (!ns)
@@ -210,17 +210,17 @@ static bool initialise_trackcontext(filter_set *handle)
     bugle_hashptr_init(&namespace_objects, false);
     bugle_hashptr_init(&initial_values, true);
 
-    f = bugle_register_filter(handle, "trackcontext");
-    bugle_register_filter_order("invoke", "trackcontext");
-    bugle_register_filter_catches(f, GROUP_glXMakeCurrent, true, trackcontext_callback);
-    bugle_register_filter_catches(f, GROUP_glXCreateContext, true, trackcontext_newcontext);
+    f = bugle_filter_register(handle, "trackcontext");
+    bugle_filter_order("invoke", "trackcontext");
+    bugle_filter_catches(f, GROUP_glXMakeCurrent, true, trackcontext_callback);
+    bugle_filter_catches(f, GROUP_glXCreateContext, true, trackcontext_newcontext);
 #ifdef GLX_SGI_make_current_read
-    bugle_register_filter_catches(f, GROUP_glXMakeCurrentReadSGI, true, trackcontext_callback);
+    bugle_filter_catches(f, GROUP_glXMakeCurrentReadSGI, true, trackcontext_callback);
 #endif
 #ifdef GLX_SGIX_fbconfig
-    bugle_register_filter_catches(f, GROUP_glXCreateContextWithConfigSGIX, true, trackcontext_newcontext);
+    bugle_filter_catches(f, GROUP_glXCreateContextWithConfigSGIX, true, trackcontext_newcontext);
 #endif
-    trackcontext_view = bugle_object_class_register(&bugle_context_class,
+    trackcontext_view = bugle_object_view_register(&bugle_context_class,
                                                     NULL,
                                                     destroy_trackcontext_data,
                                                     sizeof(trackcontext_data));
@@ -229,14 +229,14 @@ static bool initialise_trackcontext(filter_set *handle)
 
 static void destroy_trackcontext(filter_set *handle)
 {
-    const bugle_hashptr_entry *i;
+    const hashptr_table_entry *i;
 
     for (i = bugle_hashptr_begin(&namespace_objects); i; i = bugle_hashptr_next(&namespace_objects, i))
         if (i->value)
-            bugle_object_delete(&bugle_namespace_class, (bugle_object *) i->value);
+            bugle_object_destroy((object *) i->value);
     for (i = bugle_hashptr_begin(&context_objects); i; i = bugle_hashptr_next(&context_objects, i))
         if (i->value)
-            bugle_object_delete(&bugle_context_class, (bugle_object *) i->value);
+            bugle_object_destroy((object *) i->value);
     bugle_hashptr_clear(&context_objects);
     bugle_hashptr_clear(&namespace_objects);
     bugle_hashptr_clear(&initial_values);
@@ -525,9 +525,8 @@ void trackcontext_initialise(void)
         NULL,
         NULL,
         NULL,
-        0,
         NULL /* No documentation */
     };
 
-    bugle_register_filter_set(&trackcontext_info);
+    bugle_filter_set_register(&trackcontext_info);
 }

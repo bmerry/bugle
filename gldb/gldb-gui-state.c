@@ -73,7 +73,7 @@ static void dump_state_xml_r(const gldb_state *root, GString *f, gboolean top)
     gchar *header;
     gchar *name_utf8, *value_utf8;
     char *value;
-    bugle_list_node *i;
+    linked_list_node *i;
     const gldb_state *child;
 
     if (top)
@@ -179,10 +179,10 @@ static gboolean state_remove_r(GtkTreeStore *store, GtkTreeIter *iter)
 static void update_state_r(const gldb_state *root, GtkTreeStore *store,
                            GtkTreeIter *parent)
 {
-    bugle_hash_table lookup;
+    hash_table lookup;
     GtkTreeIter iter, iter2;
     gboolean valid;
-    bugle_list_node *i;
+    linked_list_node *i;
     const gldb_state *child;
     gchar *name;
 

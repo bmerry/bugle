@@ -231,10 +231,9 @@ void log_initialise(void)
         NULL,
         NULL,
         log_variables,
-        0,
         "provides logging services to other filter-sets"
     };
 
-    bugle_register_filter_set(&log_info);
+    bugle_filter_set_register(&log_info);
     log_format = bugle_strdup("[%l] %f.%e: %m");
 }

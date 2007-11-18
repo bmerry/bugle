@@ -77,18 +77,18 @@ typedef struct
     struct timeval last_updated;
 } stats_signal_values;
 
-static bugle_hash_table stats_signals;
+static hash_table stats_signals;
 static size_t stats_signals_num_active = 0;
-static bugle_linked_list stats_signals_active;
+static linked_list stats_signals_active;
 
 /* Flat list of available statistics. Initially it is the statistics
  * specified in the file, but later rewritten to instantiate any generics.
  * The instances are complete clones with no shared memory. Instances are
  * also sequential in the linked list.
  */
-static bugle_linked_list *stats_statistics = NULL;
+static linked_list *stats_statistics = NULL;
 /* Maps a name to the first instance of a statistic in stats_statistics. */
-static bugle_hash_table stats_statistics_first;
+static hash_table stats_statistics_first;
 
 /*** Low-level utilities ***/
 
@@ -235,7 +235,7 @@ static void stats_signal_values_clear(stats_signal_values *sv)
 static void stats_signal_values_gather(stats_signal_values *sv)
 {
     stats_signal *si;
-    bugle_list_node *s;
+    linked_list_node *s;
     int i;
 
     gettimeofday(&sv->last_updated, NULL);
@@ -455,7 +455,7 @@ static void stats_expression_free(stats_expression *expr)
 
 static stats_substitution *stats_statistic_find_substitution(stats_statistic *st, double v)
 {
-    bugle_list_node *i;
+    linked_list_node *i;
     stats_substitution *cur;
 
     for (i = bugle_list_head(&st->substitutions); i; i = bugle_list_next(i))
@@ -468,7 +468,7 @@ static stats_substitution *stats_statistic_find_substitution(stats_statistic *st
 
 static void stats_statistic_free(stats_statistic *st)
 {
-    bugle_list_node *i;
+    linked_list_node *i;
     stats_substitution *sub;
 
     free(st->name);
@@ -486,7 +486,7 @@ static void stats_statistic_free(stats_statistic *st)
 static stats_statistic *stats_statistic_instantiate(stats_statistic *st, const char *rep)
 {
     stats_statistic *n;
-    bugle_list_node *i;
+    linked_list_node *i;
 
     n = (stats_statistic *) bugle_malloc(sizeof(stats_statistic));
     *n = *st;
@@ -509,7 +509,7 @@ static stats_statistic *stats_statistic_instantiate(stats_statistic *st, const c
 }
 
 /* Returns the first of a set if it exists, or NULL if not. */
-static bugle_list_node *stats_statistic_find(const char *name)
+static linked_list_node *stats_statistic_find(const char *name)
 {
     return bugle_hash_get(&stats_statistics_first, name);
 }
@@ -517,7 +517,7 @@ static bugle_list_node *stats_statistic_find(const char *name)
 /* List the registered statistics, for when an illegal one is mentioned */
 static void stats_statistic_list(void)
 {
-    bugle_list_node *j;
+    linked_list_node *j;
     stats_statistic *st;
 
     fputs("The registered statistics are:\n", stderr);
@@ -590,7 +590,7 @@ static bool stats_initialise(filter_set *handle)
      * to allow display modules (showstats, logstats) to occur after
      * statistics modules (stats_basic etc).
      */
-    bugle_register_filter(handle, "stats");
+    bugle_filter_register(handle, "stats");
     return true;
 }
 
@@ -599,7 +599,7 @@ static bool stats_initialise(filter_set *handle)
  */
 static bool stats_ordering_initialise(filter_set *handle)
 {
-    bugle_list_node *i, *first, *last, *tmp;
+    linked_list_node *i, *first, *last, *tmp;
 
     for (i = bugle_list_head(stats_statistics); i; i = bugle_list_next(i))
     {
@@ -612,7 +612,7 @@ static bool stats_ordering_initialise(filter_set *handle)
         first = last = i;
         if (pattern)
         {
-            const bugle_hash_entry *j;
+            const hash_table_entry *j;
 
             count--;
             for (j = bugle_hash_begin(&stats_signals); j; j = bugle_hash_next(&stats_signals, j))
@@ -654,7 +654,7 @@ static bool stats_ordering_initialise(filter_set *handle)
 
 static void stats_destroy(filter_set *handle)
 {
-    bugle_list_node *i;
+    linked_list_node *i;
     stats_statistic *st;
 
     if (stats_statistics)
@@ -697,10 +697,10 @@ static bool stats_basic_initialise(filter_set *handle)
 {
     filter *f;
 
-    f = bugle_register_filter(handle, "stats_basic");
-    bugle_register_filter_catches(f, GROUP_glXSwapBuffers, false, stats_basic_glXSwapBuffers);
-    bugle_register_filter_order("stats_basic", "invoke");
-    bugle_register_filter_order("stats_basic", "stats");
+    f = bugle_filter_register(handle, "stats_basic");
+    bugle_filter_catches(f, GROUP_glXSwapBuffers, false, stats_basic_glXSwapBuffers);
+    bugle_filter_order("stats_basic", "invoke");
+    bugle_filter_order("stats_basic", "stats");
 
     stats_basic_frames = stats_signal_register("frames", NULL, stats_signal_activate_zero);
     stats_basic_seconds = stats_signal_register("seconds", NULL, stats_basic_seconds_activate);
@@ -720,8 +720,8 @@ static bool stats_calls_initialise(filter_set *handle)
 {
     filter *f;
 
-    f = bugle_register_filter(handle, "stats_calls");
-    bugle_register_filter_catches_all(f, false, stats_calls_callback);
+    f = bugle_filter_register(handle, "stats_calls");
+    bugle_filter_catches_all(f, false, stats_calls_callback);
 
     for (int i = 0; i < NUMBER_OF_FUNCTIONS; i++)
     {
@@ -735,8 +735,8 @@ static bool stats_calls_initialise(filter_set *handle)
 }
 
 
-static bugle_object_view stats_primitives_view;  /* begin/end counting */
-static bugle_object_view stats_primitives_displaylist_view;
+static object_view stats_primitives_view;  /* begin/end counting */
+static object_view stats_primitives_displaylist_view;
 static stats_signal *stats_primitives_batches, *stats_primitives_triangles;
 
 typedef struct
@@ -887,8 +887,7 @@ static bool stats_primitives_glCallList(function_call *call, const callback_data
     stats_primitives_displaylist_struct *counts;
 
     s = bugle_object_get_current_data(&bugle_context_class, stats_primitives_view);
-    counts = bugle_object_get_data(&bugle_displaylist_class,
-                                   bugle_displaylist_get(*call->typed.glCallList.arg0),
+    counts = bugle_object_get_data(bugle_displaylist_get(*call->typed.glCallList.arg0),
                                    stats_primitives_displaylist_view);
     if (counts)
     {
@@ -909,32 +908,32 @@ static bool stats_primitives_initialise(filter_set *handle)
 {
     filter *f;
 
-    stats_primitives_view = bugle_object_class_register(&bugle_context_class,
+    stats_primitives_view = bugle_object_view_register(&bugle_context_class,
                                                         NULL,
                                                         NULL,
                                                         sizeof(stats_primitives_struct));
-    stats_primitives_displaylist_view = bugle_object_class_register(&bugle_displaylist_class,
+    stats_primitives_displaylist_view = bugle_object_view_register(&bugle_displaylist_class,
                                                                     NULL,
                                                                     NULL,
                                                                     sizeof(stats_primitives_struct));
 
-    f = bugle_register_filter(handle, "stats_primitives");
-    bugle_register_filter_catches_drawing_immediate(f, false, stats_primitives_immediate);
-    bugle_register_filter_catches(f, GROUP_glDrawElements, false, stats_primitives_glDrawElements);
-    bugle_register_filter_catches(f, GROUP_glDrawArrays, false, stats_primitives_glDrawArrays);
+    f = bugle_filter_register(handle, "stats_primitives");
+    bugle_filter_catches_drawing_immediate(f, false, stats_primitives_immediate);
+    bugle_filter_catches(f, GROUP_glDrawElements, false, stats_primitives_glDrawElements);
+    bugle_filter_catches(f, GROUP_glDrawArrays, false, stats_primitives_glDrawArrays);
 #ifdef GL_EXT_draw_range_elements
-    bugle_register_filter_catches(f, GROUP_glDrawRangeElementsEXT, false, stats_primitives_glDrawRangeElements);
+    bugle_filter_catches(f, GROUP_glDrawRangeElementsEXT, false, stats_primitives_glDrawRangeElements);
 #endif
 #ifdef GL_EXT_multi_draw_arrays
-    bugle_register_filter_catches(f, GROUP_glMultiDrawElementsEXT, false, stats_primitives_glMultiDrawElements);
-    bugle_register_filter_catches(f, GROUP_glMultiDrawArraysEXT, false, stats_primitives_glMultiDrawArrays);
+    bugle_filter_catches(f, GROUP_glMultiDrawElementsEXT, false, stats_primitives_glMultiDrawElements);
+    bugle_filter_catches(f, GROUP_glMultiDrawArraysEXT, false, stats_primitives_glMultiDrawArrays);
 #endif
-    bugle_register_filter_catches(f, GROUP_glBegin, false, stats_primitives_glBegin);
-    bugle_register_filter_catches(f, GROUP_glEnd, false, stats_primitives_glEnd);
-    bugle_register_filter_catches(f, GROUP_glCallList, false, stats_primitives_glCallList);
-    bugle_register_filter_catches(f, GROUP_glCallLists, false, stats_primitives_glCallLists);
-    bugle_register_filter_order("stats_primitives", "invoke");
-    bugle_register_filter_order("stats_primitives", "stats");
+    bugle_filter_catches(f, GROUP_glBegin, false, stats_primitives_glBegin);
+    bugle_filter_catches(f, GROUP_glEnd, false, stats_primitives_glEnd);
+    bugle_filter_catches(f, GROUP_glCallList, false, stats_primitives_glCallList);
+    bugle_filter_catches(f, GROUP_glCallLists, false, stats_primitives_glCallLists);
+    bugle_filter_order("stats_primitives", "invoke");
+    bugle_filter_order("stats_primitives", "stats");
 
     stats_primitives_batches = stats_signal_register("batches", NULL, stats_signal_activate_zero);
     stats_primitives_triangles = stats_signal_register("triangles", NULL, stats_signal_activate_zero);
@@ -951,7 +950,7 @@ typedef struct
 } stats_fragments_struct;
 
 static stats_signal *stats_fragments_fragments;
-static bugle_object_view stats_fragments_view;
+static object_view stats_fragments_view;
 
 static void stats_fragments_struct_initialise(const void *key, void *data)
 {
@@ -1031,21 +1030,21 @@ static bool stats_fragments_initialise(filter_set *handle)
 {
     filter *f;
 
-    stats_fragments_view = bugle_object_class_register(&bugle_context_class,
+    stats_fragments_view = bugle_object_view_register(&bugle_context_class,
                                                        stats_fragments_struct_initialise,
                                                        stats_fragments_struct_destroy,
                                                        sizeof(stats_fragments_struct));
 
-    f = bugle_register_filter(handle, "stats_fragments");
-    bugle_register_filter_catches(f, GROUP_glXSwapBuffers, false, stats_fragments_glXSwapBuffers);
-    bugle_register_filter_catches(f, GROUP_glBeginQueryARB, false, stats_fragments_query);
-    bugle_register_filter_catches(f, GROUP_glEndQueryARB, false, stats_fragments_query);
-    bugle_register_filter_order("stats_fragments", "invoke");
-    bugle_register_filter_order("stats_fragments", "stats");
+    f = bugle_filter_register(handle, "stats_fragments");
+    bugle_filter_catches(f, GROUP_glXSwapBuffers, false, stats_fragments_glXSwapBuffers);
+    bugle_filter_catches(f, GROUP_glBeginQueryARB, false, stats_fragments_query);
+    bugle_filter_catches(f, GROUP_glEndQueryARB, false, stats_fragments_query);
+    bugle_filter_order("stats_fragments", "invoke");
+    bugle_filter_order("stats_fragments", "stats");
 
-    f = bugle_register_filter(handle, "stats_fragments_post");
-    bugle_register_filter_catches(f, GROUP_glXSwapBuffers, false, stats_fragments_post_glXSwapBuffers);
-    bugle_register_filter_order("invoke", "stats_fragments_post");
+    f = bugle_filter_register(handle, "stats_fragments_post");
+    bugle_filter_catches(f, GROUP_glXSwapBuffers, false, stats_fragments_post_glXSwapBuffers);
+    bugle_filter_order("invoke", "stats_fragments_post");
 
     stats_fragments_fragments = stats_signal_register("fragments", NULL, stats_signal_activate_zero);
     return true;
@@ -1066,8 +1065,8 @@ typedef struct
     char *name;
 } stats_signal_nv;
 
-static bugle_linked_list stats_nv_active;
-static bugle_linked_list stats_nv_registered;
+static linked_list stats_nv_active;
+static linked_list stats_nv_registered;
 static lt_dlhandle stats_nv_dl = NULL;
 static bool stats_nv_experiment_mode = false; /* True if using simplified experiments */
 static int stats_nv_num_passes = -1, stats_nv_pass = -1;
@@ -1102,7 +1101,7 @@ static NVPMRESULT check_nvpm(NVPMRESULT status, const char *file, int line)
 
 static bool stats_nv_glXSwapBuffers(function_call *call, const callback_data *data)
 {
-    bugle_list_node *i;
+    linked_list_node *i;
     stats_signal *si;
     stats_signal_nv *nv;
     UINT samples;
@@ -1250,14 +1249,14 @@ static bool stats_nv_initialise(filter_set *handle)
         goto cancel2;
     }
 
-    f = bugle_register_filter(handle, "stats_nv");
-    bugle_register_filter_catches(f, GROUP_glXSwapBuffers, false, stats_nv_glXSwapBuffers);
-    bugle_register_filter_order("stats_nv", "invoke");
-    bugle_register_filter_order("stats_nv", "stats");
+    f = bugle_filter_register(handle, "stats_nv");
+    bugle_filter_catches(f, GROUP_glXSwapBuffers, false, stats_nv_glXSwapBuffers);
+    bugle_filter_order("stats_nv", "invoke");
+    bugle_filter_order("stats_nv", "stats");
 
-    f = bugle_register_filter(handle, "stats_nv_post");
-    bugle_register_filter_catches(f, GROUP_glXSwapBuffers, false, stats_nv_post_glXSwapBuffers);
-    bugle_register_filter_order("invoke", "stats_nv_post");
+    f = bugle_filter_register(handle, "stats_nv_post");
+    bugle_filter_catches(f, GROUP_glXSwapBuffers, false, stats_nv_post_glXSwapBuffers);
+    bugle_filter_order("invoke", "stats_nv_post");
     return true;
 
 cancel2:
@@ -1270,7 +1269,7 @@ cancel1:
 
 static void stats_nv_destroy(filter_set *handle)
 {
-    bugle_list_node *i;
+    linked_list_node *i;
     stats_signal *si;
     stats_signal_nv *nv;
 
@@ -1294,8 +1293,8 @@ static void stats_nv_destroy(filter_set *handle)
 
 /*** Printers ***/
 
-static bugle_linked_list logstats_show;    /* actual stats */
-static bugle_linked_list logstats_show_requested;  /* names in config file */
+static linked_list logstats_show;    /* actual stats */
+static linked_list logstats_show_requested;  /* names in config file */
 static stats_signal_values logstats_prev, logstats_cur;
 
 /* Callback to assign the "show" pseudo-variable */
@@ -1308,7 +1307,7 @@ static bool logstats_show_set(const struct filter_set_variable_info_s *var,
 
 static bool logstats_glXSwapBuffers(function_call *call, const callback_data *data)
 {
-    bugle_list_node *i;
+    linked_list_node *i;
     stats_statistic *st;
     stats_signal_values tmp;
     stats_substitution *sub;
@@ -1345,11 +1344,11 @@ static bool logstats_glXSwapBuffers(function_call *call, const callback_data *da
 static bool logstats_initialise(filter_set *handle)
 {
     filter *f;
-    bugle_list_node *i, *j;
+    linked_list_node *i, *j;
     stats_statistic *st;
 
-    f = bugle_register_filter(handle, "stats_log");
-    bugle_register_filter_catches(f, GROUP_glXSwapBuffers, false, logstats_glXSwapBuffers);
+    f = bugle_filter_register(handle, "stats_log");
+    bugle_filter_catches(f, GROUP_glXSwapBuffers, false, logstats_glXSwapBuffers);
 
     bugle_list_clear(&logstats_show);
     for (i = bugle_list_head(&logstats_show_requested); i; i = bugle_list_next(i))
@@ -1432,14 +1431,14 @@ typedef struct
     char *name;
 } showstats_statistic_request; /* Items in the config file */
 
-static bugle_object_view showstats_view;
-static bugle_linked_list showstats_stats;  /* List of showstats_statistic */
+static object_view showstats_view;
+static linked_list showstats_stats;  /* List of showstats_statistic */
 static int showstats_num_graph;
 static xevent_key key_showstats_accumulate = { NoSymbol, 0, true };
 static xevent_key key_showstats_noaccumulate = { NoSymbol, 0, true };
 static double showstats_time = 0.2;
 
-static bugle_linked_list showstats_stats_requested;
+static linked_list showstats_stats_requested;
 
 /* Creates the extended data (e.g. OpenGL objects) that depend on having
  * the aux context active.
@@ -1542,7 +1541,7 @@ static void showstats_graph_rescale(showstats_statistic *sst, double new_scale)
 static void showstats_update(showstats_struct *ss)
 {
     struct timeval now;
-    bugle_list_node *i;
+    linked_list_node *i;
     showstats_statistic *sst;
     stats_substitution *sub;
     double v;
@@ -1624,7 +1623,7 @@ static void showstats_graph_draw(GLenum mode, int xofs0, int yofs0,
                                  bool graph_tex, GLfloat *graph_texcoords)
 {
     showstats_statistic *sst;
-    bugle_list_node *i;
+    linked_list_node *i;
     int xofs, yofs;
 
     xofs = xofs0;
@@ -1664,7 +1663,7 @@ static bool showstats_glXSwapBuffers(function_call *call, const callback_data *d
     GLXContext aux, real;
     showstats_struct *ss;
     GLint viewport[4];
-    bugle_list_node *i;
+    linked_list_node *i;
     showstats_statistic *sst;
     int xofs, yofs, xofs0, yofs0;
 
@@ -1831,17 +1830,17 @@ static void showstats_struct_destroy(void *data)
 static bool showstats_initialise(filter_set *handle)
 {
     filter *f;
-    bugle_list_node *i;
+    linked_list_node *i;
 
-    f = bugle_register_filter(handle, "showstats");
-    bugle_register_filter_order("showstats", "invoke");
-    bugle_register_filter_order("showstats", "screenshot");
+    f = bugle_filter_register(handle, "showstats");
+    bugle_filter_order("showstats", "invoke");
+    bugle_filter_order("showstats", "screenshot");
     /* make sure that screenshots capture the stats */
-    bugle_register_filter_order("showstats", "debugger");
-    bugle_register_filter_order("showstats", "screenshot");
-    bugle_register_filter_order("stats", "showstats");
-    bugle_register_filter_catches(f, GROUP_glXSwapBuffers, false, showstats_glXSwapBuffers);
-    showstats_view = bugle_object_class_register(&bugle_context_class,
+    bugle_filter_order("showstats", "debugger");
+    bugle_filter_order("showstats", "screenshot");
+    bugle_filter_order("stats", "showstats");
+    bugle_filter_catches(f, GROUP_glXSwapBuffers, false, showstats_glXSwapBuffers);
+    showstats_view = bugle_object_view_register(&bugle_context_class,
                                                  NULL,
                                                  showstats_struct_destroy,
                                                  sizeof(showstats_struct));
@@ -1857,7 +1856,7 @@ static bool showstats_initialise(filter_set *handle)
     {
         showstats_statistic_request *req;
         showstats_statistic *sst;
-        bugle_list_node *j;
+        linked_list_node *j;
 
         req = (showstats_statistic_request *) bugle_list_data(i);
         j = stats_statistic_find(req->name);
@@ -1889,7 +1888,7 @@ static bool showstats_initialise(filter_set *handle)
 
 static void showstats_destroy(filter_set *handle)
 {
-    bugle_list_node *i;
+    linked_list_node *i;
     showstats_statistic_request *req;
 
     for (i = bugle_list_head(&showstats_stats_requested); i; i = bugle_list_next(i))
@@ -1903,16 +1902,16 @@ static void showstats_destroy(filter_set *handle)
 
 /*** Global initialisation */
 
-static void bugle_register_filter_set_stats_generator(const char *name)
+static void bugle_filter_set_register_stats_generator(const char *name)
 {
-    bugle_register_filter_set_depends(name, "stats");
-    bugle_register_filter_set_order(name, "stats_ordering");
+    bugle_filter_set_depends(name, "stats");
+    bugle_filter_set_order(name, "stats_ordering");
 }
 
-static void bugle_register_filter_set_stats_logger(const char *name)
+static void bugle_filter_set_register_stats_logger(const char *name)
 {
-    bugle_register_filter_set_depends(name, "stats");
-    bugle_register_filter_set_depends(name, "stats_ordering");
+    bugle_filter_set_depends(name, "stats");
+    bugle_filter_set_depends(name, "stats_ordering");
 }
 
 void bugle_initialise_filter_library(void)
@@ -1925,7 +1924,6 @@ void bugle_initialise_filter_library(void)
         NULL,
         NULL,
         NULL,
-        0,
         NULL
     };
 
@@ -1941,7 +1939,6 @@ void bugle_initialise_filter_library(void)
         NULL,
         NULL,
         NULL,
-        0,
         NULL
     };
 
@@ -1953,7 +1950,6 @@ void bugle_initialise_filter_library(void)
         NULL,
         NULL,
         NULL,
-        0,
         "stats module: frames and timing"
     };
 
@@ -1965,7 +1961,6 @@ void bugle_initialise_filter_library(void)
         NULL,
         NULL,
         NULL,
-        0,
         "stats module: call counts"
     };
 
@@ -1977,7 +1972,6 @@ void bugle_initialise_filter_library(void)
         NULL,
         NULL,
         NULL,
-        0,
         "stats module: triangles and batches"
     };
 
@@ -1990,7 +1984,6 @@ void bugle_initialise_filter_library(void)
         NULL,
         NULL,
         NULL,
-        0,
         "stats module: fragments that pass the depth test"
     };
 #endif
@@ -2010,7 +2003,6 @@ void bugle_initialise_filter_library(void)
         NULL,
         NULL,
         stats_nv_variables,
-        0,
         "stats module: get counters from NVPerfSDK"
     };
 #endif /* HAVE_NVPERFSDK_H */
@@ -2029,7 +2021,6 @@ void bugle_initialise_filter_library(void)
         NULL,
         NULL,
         logstats_variables,
-        0,
         "reports statistics to the log"
     };
 
@@ -2051,48 +2042,47 @@ void bugle_initialise_filter_library(void)
         NULL,
         NULL,
         showstats_variables,
-        0,
         "renders statistics onto the screen"
     };
 
-    bugle_register_filter_set(&stats_info);
-    bugle_register_filter_set(&stats_ordering_info);
+    bugle_filter_set_register(&stats_info);
+    bugle_filter_set_register(&stats_ordering_info);
 
-    bugle_register_filter_set(&stats_basic_info);
-    bugle_register_filter_set_stats_generator("stats_basic");
+    bugle_filter_set_register(&stats_basic_info);
+    bugle_filter_set_register_stats_generator("stats_basic");
 
-    bugle_register_filter_set(&stats_calls_info);
-    bugle_register_filter_set_stats_generator("stats_calls");
+    bugle_filter_set_register(&stats_calls_info);
+    bugle_filter_set_register_stats_generator("stats_calls");
 
-    bugle_register_filter_set(&stats_primitives_info);
-    bugle_register_filter_set_depends("stats_primitives", "stats_basic");
-    bugle_register_filter_set_depends("stats_primitives", "trackcontext");
-    bugle_register_filter_set_depends("stats_primitives", "trackdisplaylist");
-    bugle_register_filter_set_depends("stats_primitives", "trackbeginend");
-    bugle_register_filter_set_stats_generator("stats_primitives");
+    bugle_filter_set_register(&stats_primitives_info);
+    bugle_filter_set_depends("stats_primitives", "stats_basic");
+    bugle_filter_set_depends("stats_primitives", "trackcontext");
+    bugle_filter_set_depends("stats_primitives", "trackdisplaylist");
+    bugle_filter_set_depends("stats_primitives", "trackbeginend");
+    bugle_filter_set_register_stats_generator("stats_primitives");
 
 #ifdef GL_ARB_occlusion_query
-    bugle_register_filter_set(&stats_fragments_info);
-    bugle_register_filter_set_depends("stats_fragments", "stats_basic");
-    bugle_register_filter_set_depends("stats_fragments", "trackextensions");
-    bugle_register_filter_set_renders("stats_fragments");
-    bugle_register_filter_set_stats_generator("stats_fragments");
+    bugle_filter_set_register(&stats_fragments_info);
+    bugle_filter_set_depends("stats_fragments", "stats_basic");
+    bugle_filter_set_depends("stats_fragments", "trackextensions");
+    bugle_filter_set_register_renders("stats_fragments");
+    bugle_filter_set_register_stats_generator("stats_fragments");
 #endif
 
 #if HAVE_NVPERFSDK_H
-    bugle_register_filter_set(&stats_nv_info);
-    bugle_register_filter_set_depends("stats_nv", "stats_basic");
-    bugle_register_filter_set_stats_generator("stats_nv");
+    bugle_filter_set_register(&stats_nv_info);
+    bugle_filter_set_depends("stats_nv", "stats_basic");
+    bugle_filter_set_register_stats_generator("stats_nv");
 #endif
 
-    bugle_register_filter_set(&logstats_info);
-    bugle_register_filter_set_stats_logger("logstats");
+    bugle_filter_set_register(&logstats_info);
+    bugle_filter_set_register_stats_logger("logstats");
     bugle_list_init(&logstats_show_requested, true);
 
-    bugle_register_filter_set(&showstats_info);
-    bugle_register_filter_set_depends("showstats", "trackextensions");
-    bugle_register_filter_set_renders("showstats");
-    bugle_register_filter_set_stats_logger("showstats");
+    bugle_filter_set_register(&showstats_info);
+    bugle_filter_set_depends("showstats", "trackextensions");
+    bugle_filter_set_register_renders("showstats");
+    bugle_filter_set_register_stats_logger("showstats");
     bugle_list_init(&showstats_stats_requested, true);
     bugle_list_init(&showstats_stats, true);
 }

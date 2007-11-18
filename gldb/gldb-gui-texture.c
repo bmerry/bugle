@@ -196,7 +196,7 @@ static void gldb_texture_pane_update_ids(GldbTexturePane *pane)
     gldb_state *root, *s, *t, *l, *f, *param;
     GtkTreeModel *model;
     GtkTreeIter iter;
-    bugle_list_node *nt, *nl;
+    linked_list_node *nt, *nl;
     gchar *name;
     guint levels;
     uint32_t channels;

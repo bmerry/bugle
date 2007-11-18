@@ -46,21 +46,21 @@ static void toggle_filterset(const xevent_key *key, void *arg, XEvent *event)
 
     set = (filter_set *) arg;
     if (bugle_filter_set_is_active(set))
-        bugle_deactivate_filter_set(set);
+        filter_set_deactivate(set);
     else
-        bugle_activate_filter_set(set);
+        filter_set_activate(set);
 }
 
 static void load_config(void)
 {
     const char *home;
     char *config = NULL, *chain_name;
-    const bugle_linked_list *root;
+    const linked_list *root;
     const config_chain *chain;
     const config_filterset *set;
     const config_variable *var;
     filter_set *f;
-    bugle_list_node *i, *j;
+    linked_list_node *i, *j;
     bool debugging;
     xevent_key key;
 
@@ -90,7 +90,7 @@ static void load_config(void)
                     if (!chain)
                     {
                         fprintf(stderr, "no such chain %s\n", chain_name);
-                        bugle_filters_help();
+                        filters_help();
                         exit(1);
                     }
                 }
@@ -107,7 +107,7 @@ static void load_config(void)
                     for (i = bugle_list_head(&chain->filtersets); i; i = bugle_list_next(i))
                     {
                         set = (const config_filterset *) bugle_list_data(i);
-                        f = bugle_get_filter_set_handle(set->name);
+                        f = bugle_filter_set_get_handle(set->name);
                         if (!f)
                         {
                             fprintf(stderr, "warning: ignoring unknown filter-set %s\n",
@@ -126,10 +126,10 @@ static void load_config(void)
                     for (i = bugle_list_head(&chain->filtersets); i; i = bugle_list_next(i))
                     {
                         set = (const config_filterset *) bugle_list_data(i);
-                        f = bugle_get_filter_set_handle(set->name);
+                        f = bugle_filter_set_get_handle(set->name);
                         if (f)
                         {
-                            bugle_add_filter_set(f, set->active);
+                            filter_set_add(f, set->active);
                             if (set->key)
                             {
                                 if (!bugle_xevent_key_lookup(set->key, &key))
@@ -153,23 +153,23 @@ static void load_config(void)
         fputs("$HOME not defined; running in passthrough mode\n", stderr);
 
     /* Always load the invoke filter-set */
-    f = bugle_get_filter_set_handle("invoke");
+    f = bugle_filter_set_get_handle("invoke");
     if (!f)
     {
         fputs("could not find the 'invoke' filter-set; aborting\n", stderr);
         exit(1);
     }
-    bugle_add_filter_set(f, true);
+    filter_set_add(f, true);
     /* Auto-load the debugger filter-set if using the debugger */
     if (debugging)
     {
-        f = bugle_get_filter_set_handle("debugger");
+        f = bugle_filter_set_get_handle("debugger");
         if (!f)
         {
             fputs("could not find the 'debugger' filter-set; aborting\n", stderr);
             exit(1);
         }
-        bugle_add_filter_set(f, true);
+        filter_set_add(f, true);
     }
 }
 
@@ -201,7 +201,6 @@ BUGLE_CONSTRUCTOR(initialise_all);
 
 static void initialise_all(void)
 {
-    bugle_initialise_hashing();
     initialise_real();
     initialise_addresses();
     initialise_xevent();
@@ -222,5 +221,5 @@ void bugle_initialise_all(void)
 void budgie_interceptor(function_call *call)
 {
     BUGLE_RUN_CONSTRUCTOR(initialise_all);
-    run_filters(call);
+    filters_run(call);
 }

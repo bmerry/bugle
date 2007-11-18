@@ -36,8 +36,8 @@ static bool invoke_callback(function_call *call, const callback_data *data)
 static bool initialise_invoke(filter_set *handle)
 {
     filter *f;
-    f = bugle_register_filter(handle, "invoke");
-    bugle_register_filter_catches_all(f, false, invoke_callback);
+    f = bugle_filter_register(handle, "invoke");
+    bugle_filter_catches_all(f, false, invoke_callback);
     return true;
 }
 
@@ -66,10 +66,10 @@ static bool initialise_procaddress(filter_set *handle)
     filter *f;
 
 #ifdef GLX_ARB_get_proc_address
-    f = bugle_register_filter(handle, "procaddress");
-    bugle_register_filter_order("invoke", "procaddress");
-    bugle_register_filter_order("procaddress", "trace");
-    bugle_register_filter_catches(f, GROUP_glXGetProcAddressARB, false, procaddress_callback);
+    f = bugle_filter_register(handle, "procaddress");
+    bugle_filter_order("invoke", "procaddress");
+    bugle_filter_order("procaddress", "trace");
+    bugle_filter_catches(f, GROUP_glXGetProcAddressARB, false, procaddress_callback);
 #endif
     return true;
 }
@@ -86,7 +86,6 @@ void bugle_initialise_filter_library(void)
         NULL,
         NULL,
         NULL,
-        0,
         NULL /* no documentation */
     };
     static const filter_set_info procaddress_info =
@@ -97,11 +96,10 @@ void bugle_initialise_filter_library(void)
         NULL,
         NULL,
         NULL,
-        0,
         NULL /* no documentation */
     };
-    bugle_register_filter_set(&invoke_info);
-    bugle_register_filter_set(&procaddress_info);
+    bugle_filter_set_register(&invoke_info);
+    bugle_filter_set_register(&procaddress_info);
 
-    bugle_register_filter_set_depends("invoke", "procaddress");
+    bugle_filter_set_depends("invoke", "procaddress");
 }

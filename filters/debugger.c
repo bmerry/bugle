@@ -56,8 +56,8 @@ static uint32_t start_id = 0;
 static void send_state(const glstate *state, uint32_t id)
 {
     char *str;
-    bugle_linked_list children;
-    bugle_list_node *cur;
+    linked_list children;
+    linked_list_node *cur;
 
     str = bugle_state_get_string(state);
     gldb_protocol_send_code(out_pipe, RESP_STATE_NODE_BEGIN);
@@ -84,8 +84,8 @@ static void send_state(const glstate *state, uint32_t id)
 
 static void send_state_raw(const glstate *state, uint32_t id)
 {
-    bugle_linked_list children;
-    bugle_list_node *cur;
+    linked_list children;
+    linked_list_node *cur;
     bugle_state_raw wrapper = {NULL};
 
     bugle_state_get_raw(state, &wrapper);
@@ -743,7 +743,7 @@ static void process_single_command(function_call *call)
     case REQ_DEACTIVATE_FILTERSET:
         activate = (req == REQ_ACTIVATE_FILTERSET);
         gldb_protocol_recv_string(in_pipe, &req_str);
-        f = bugle_get_filter_set_handle(req_str);
+        f = bugle_filter_set_get_handle(req_str);
         if (!f)
         {
             bugle_asprintf(&resp_str, "Unknown filter-set %s", req_str);
@@ -782,15 +782,15 @@ static void process_single_command(function_call *call)
         }
         else
         {
-            if (activate) bugle_activate_filter_set_deferred(f);
-            else bugle_deactivate_filter_set_deferred(f);
-            if (!bugle_filter_set_is_active(bugle_get_filter_set_handle("debugger")))
+            if (activate) bugle_filter_set_activate_deferred(f);
+            else bugle_filter_set_deactivate_deferred(f);
+            if (!bugle_filter_set_is_active(bugle_filter_set_get_handle("debugger")))
             {
                 gldb_protocol_send_code(out_pipe, RESP_ERROR);
                 gldb_protocol_send_code(out_pipe, id);
                 gldb_protocol_send_code(out_pipe, 0);
                 gldb_protocol_send_string(out_pipe, "Debugger was disabled; re-enabling");
-                bugle_activate_filter_set(bugle_get_filter_set_handle("debugger"));
+                bugle_filter_set_activate_deferred(bugle_filter_set_get_handle("debugger"));
             }
             else
             {
@@ -971,7 +971,7 @@ static bool debugger_error_callback(function_call *call, const callback_data *da
     char *resp_str;
 
     if (break_on_error
-        && (error = bugle_get_call_error(call)))
+        && (error = bugle_get_call_error(data->call_object)))
     {
         resp_str = budgie_string_io(dump_any_call_string_io, call);
         gldb_protocol_send_code(out_pipe, RESP_BREAK_ERROR);
@@ -1021,15 +1021,15 @@ static bool initialise_debugger(filter_set *handle)
     }
     debugger_loop(NULL);
 
-    f = bugle_register_filter(handle, "debugger");
-    bugle_register_filter_catches_all(f, false, debugger_callback);
-    f = bugle_register_filter(handle, "debugger_error");
-    bugle_register_filter_catches_all(f, false, debugger_error_callback);
-    bugle_register_filter_order("debugger", "invoke");
-    bugle_register_filter_order("invoke", "debugger_error");
-    bugle_register_filter_order("error", "debugger_error");
+    f = bugle_filter_register(handle, "debugger");
+    bugle_filter_catches_all(f, false, debugger_callback);
+    f = bugle_filter_register(handle, "debugger_error");
+    bugle_filter_catches_all(f, false, debugger_error_callback);
+    bugle_filter_order("debugger", "invoke");
+    bugle_filter_order("invoke", "debugger_error");
+    bugle_filter_order("error", "debugger_error");
     bugle_register_filter_post_renders("debugger_error");
-    bugle_register_filter_set_queries_error("debugger");
+    bugle_filter_set_register_queries_error("debugger");
 
     return true;
 }
@@ -1044,16 +1044,15 @@ void bugle_initialise_filter_library(void)
         NULL,
         NULL,
         NULL,
-        0,
         NULL /* no documentation */
     };
 
     memset(break_on, 0, sizeof(break_on));
-    bugle_register_filter_set(&debugger_info);
+    bugle_filter_set_register(&debugger_info);
 
-    bugle_register_filter_set_depends("debugger", "error");
-    bugle_register_filter_set_depends("debugger", "trackextensions");
-    bugle_register_filter_set_depends("debugger", "trackobjects");
-    bugle_register_filter_set_depends("debugger", "trackbeginend");
-    bugle_register_filter_set_renders("debugger");
+    bugle_filter_set_depends("debugger", "error");
+    bugle_filter_set_depends("debugger", "trackextensions");
+    bugle_filter_set_depends("debugger", "trackobjects");
+    bugle_filter_set_depends("debugger", "trackbeginend");
+    bugle_filter_set_register_renders("debugger");
 }

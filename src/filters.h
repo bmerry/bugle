@@ -24,6 +24,7 @@
 #include <stddef.h>
 #include <ltdl.h>
 #include "src/utils.h"
+#include "src/objects.h"
 #include "common/linkedlist.h"
 #include "common/bool.h"
 
@@ -32,7 +33,7 @@ struct function_call_s;
 
 typedef struct
 {
-    void *call_data;
+    object *call_object;
     struct filter_set_s *filter_set_handle;
 } callback_data;
 
@@ -84,20 +85,19 @@ typedef struct
     const char *name;
     struct filter_set_s *parent;
     /* List of filter_catcher structs. The list owns the struct memory */
-    bugle_linked_list callbacks;
+    linked_list callbacks;
 } filter;
 
 typedef struct filter_set_s
 {
     const char *name;
     const char *help;
-    bugle_linked_list filters;
+    linked_list filters;
     filter_set_loader load;
     filter_set_unloader unload;
     filter_set_activator activate;
     filter_set_deactivator deactivate;
     const filter_set_variable_info *variables;
-    ptrdiff_t call_state_offset;
     lt_dlhandle dl_handle;
 
     bool added;         /* Is listed in the config file or is depended upon */
@@ -113,41 +113,39 @@ typedef struct
     filter_set_activator activate;
     filter_set_deactivator deactivate;
     const filter_set_variable_info *variables; /* NULL-terminated array */
-    size_t call_state_space;
     const char *help;
 } filter_set_info;
 
-/* Functions to be used by the interceptor */
-
+/* Functions to be used by the interceptor only */
 void initialise_filters(void);
 bool filter_set_variable(filter_set *handle, const char *name, const char *text);
-void bugle_add_filter_set(filter_set *handle, bool activate);
-void bugle_activate_filter_set(filter_set *handle);
-void bugle_deactivate_filter_set(filter_set *handle);
-void bugle_activate_filter_set_deferred(filter_set *handle);
-void bugle_deactivate_filter_set_deferred(filter_set *handle);
+void filter_set_add(filter_set *handle, bool activate);
+void filter_set_activate(filter_set *handle);
+void filter_set_deactivate(filter_set *handle);
 void filters_finalise(void); /* Called after all filtersets added to do last initialisation */
-void run_filters(struct function_call_s *call);
-void bugle_filters_help(void);
+void filters_run(struct function_call_s *call);
+void filters_help(void);
 
-/* Functions to be used by the filter libraries, and perhaps the interceptor */
+/* Initialisation functions to be used by the filter libraries, and perhaps the interceptor */
+filter_set *bugle_filter_set_register(const filter_set_info *info);
+void        bugle_filter_set_depends(const char *base, const char *dep);
+void        bugle_filter_set_order(const char *before, const char *after);
 
-filter_set *bugle_register_filter_set(const filter_set_info *info);
-filter *bugle_register_filter(filter_set *handle, const char *name);
-void bugle_register_filter_catches(filter *handle, budgie_group g, bool inactive, filter_callback callback);
-void bugle_register_filter_catches_all(filter *handle, bool inactive, filter_callback callback);
-/* Like bugle_register_filter_catches, but on a per-function rather than
- * per-group basis.
- */
-void bugle_register_filter_catches_function(filter *handle, budgie_function f, bool inactive, filter_callback callback);
+filter *    bugle_filter_register(filter_set *handle, const char *name);
+void        bugle_filter_order(const char *before, const char *after);
+void        bugle_filter_catches(filter *handle, budgie_group g, bool inactive, filter_callback callback);
+/* Like bugle_filter_catches, but per-function rather than per-group. */
+void        bugle_filter_catches_function(filter *handle, budgie_function f, bool inactive, filter_callback callback);
+void        bugle_filter_catches_all(filter *handle, bool inactive, filter_callback callback);
 
-void bugle_register_filter_set_depends(const char *base, const char *dep);
-void bugle_register_filter_set_order(const char *before, const char *after);
-void bugle_register_filter_order(const char *before, const char *after);
-void *bugle_get_filter_set_call_state(struct function_call_s *call, filter_set *handle);
-filter_set *bugle_get_filter_set_handle(const char *name);
-bool bugle_filter_set_is_loaded(const filter_set *handle);
-bool bugle_filter_set_is_active(const filter_set *handle);
-void *bugle_get_filter_set_symbol(filter_set *handle, const char *name);
+extern object_class bugle_call_class;
+
+/* Other run-time functions */
+filter_set *bugle_filter_set_get_handle(const char *name);
+bool        bugle_filter_set_is_loaded(const filter_set *handle);
+bool        bugle_filter_set_is_active(const filter_set *handle);
+void *      bugle_filter_set_get_symbol(filter_set *handle, const char *name);
+void        bugle_filter_set_activate_deferred(filter_set *handle);
+void        bugle_filter_set_deactivate_deferred(filter_set *handle);
 
 #endif /* BUGLE_SRC_FILTERS_H */

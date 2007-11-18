@@ -43,9 +43,9 @@ static bool initialise_trace(filter_set *handle)
 {
     filter *f;
 
-    f = bugle_register_filter(handle, "trace");
-    bugle_register_filter_order("invoke", "trace");
-    bugle_register_filter_catches_all(f, false, trace_callback);
+    f = bugle_filter_register(handle, "trace");
+    bugle_filter_order("invoke", "trace");
+    bugle_filter_catches_all(f, false, trace_callback);
     bugle_register_filter_post_renders("trace");
     return true;
 }
@@ -60,14 +60,13 @@ void bugle_initialise_filter_library(void)
         NULL,
         NULL,
         NULL,
-        0,
         "captures a text trace of all calls made"
     };
-    bugle_register_filter_set(&trace_info);
+    bugle_filter_set_register(&trace_info);
 
     /* No direct rendering, but some of the length functions query state */
-    bugle_register_filter_set_renders("trace");
+    bugle_filter_set_register_renders("trace");
     /* Some of the queries depend on extensions */
-    bugle_register_filter_set_depends("trace", "trackbeginend");
-    bugle_register_filter_set_depends("trace", "trackextensions");
+    bugle_filter_set_depends("trace", "trackbeginend");
+    bugle_filter_set_depends("trace", "trackextensions");
 }

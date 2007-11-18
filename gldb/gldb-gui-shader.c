@@ -84,7 +84,7 @@ static void gldb_shader_pane_update_ids(GldbShaderPane *pane)
     GtkTreeModel *model;
     GtkTreeIter iter;
     GValue old[2];
-    bugle_list_node *nt;
+    linked_list_node *nt;
     guint trg;
     char *name;
     guint active_arb[2] = {0, 0};

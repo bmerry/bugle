@@ -60,6 +60,86 @@
         </para>
     </sect1>
 
+    <sect1 id="extending-guidelines">
+        <title>Guidelines</title>
+        <para>
+            This section contains stylistic guidelines and best practices. You
+            should follow them if you hope to get your filter-sets included in
+            the &bugle; source code, or want them to be generally useful to
+            other users.
+        </para>
+        <sect2 id="extending-guidelines-style">
+            <title>Coding style</title>
+            <itemizedlist>
+                <listitem><para>Indenting is four spaces.</para></listitem>
+                <listitem><para>Use spaces not tabs.</para></listitem>
+                <listitem><para>Both opening and closing braces go on their
+                        own line.</para></listitem>
+                <listitem><para>Function return types go on the same line as
+                        the rest of the prototype.</para></listitem>
+                <listitem><para>Filter-sets, and any other code that will be
+                        preloaded into a user program, should link against as
+                        few libraries as possible, since if the user program
+                        uses a different version there will be conflicts. As a
+                        result, C++ code cannot be used if it links against
+                        <systemitem class="library">libstdc++</systemitem>.
+                </para></listitem>
+                <listitem><para>Functions that act on
+                        <replaceable>type</replaceable> should be named
+                        <function><replaceable>type</replaceable>_<replaceable>action</replaceable></function>.
+                        See below for when to prefix the name with
+                        <literal>bugle_</literal>.
+                </para></listitem>
+                <listitem><para>Names of types should generally not have a
+                        <literal>bugle_</literal> prefix, unless it is needed
+                        to clearly disambiguate it.
+                </para></listitem>
+                <listitem><para>Functions in the core code should have a
+                        <literal>bugle_</literal> prefix if and only if they
+                        are meant to be called from filter-sets or from the
+                        debugger. Such functions are generally safe for
+                        filter-sets to use unless marked otherwise.
+                </para></listitem>
+                <listitem><para>
+                        Functions in filter-sets should be declared <code
+                            language="C">static</code>, unless they are to be
+                        exported to other filter-sets. These functions must
+                        have some vendor prefix. This is
+                        <literal>bugle_</literal> for the filter-sets
+                        distributed with &bugle;, but should be something else
+                        for other filter-sets to avoid conflicts.
+                </para></listitem>
+                <listitem><para>C files should contain conforming C89 syntax as
+                        far as possible. That means no variable initialisers,
+                        no variable-length arrays, and no C++-style
+                        (<literal>//</literal>) comments.
+                </para></listitem>
+                <listitem><para>
+                        POSIX, BSD and X/OPEN library functions are
+                        acceptable if the appropriate feature macros are
+                        defined (<symbol>_POSIX_C_SOURCE</symbol> and so on).
+                        GNU-specific library functions should be avoided or
+                        abstracted (like <function>bugle_asprintf</function>).
+                </para></listitem>
+            </itemizedlist>
+        </sect2>
+        <sect2 id="extending-guidelines-opengl">
+            <title>OpenGL extensions</title>
+            <para>
+                BuGLe tries to support systems that only have header files and
+                runtime support for <application>OpenGL</application> 1.1 (so
+                that a Win32 port will be possible one day, but also to
+                support other systems with old headers).  Thus for any
+                functions introduces after 1.1, you should favour the
+                <symbol>GROUP_<replaceable>glFunction</replaceable></symbol>
+                definition with the oldest name, which is generally an
+                extension function. You should also protect any such code with
+                a test for the GL extension define e.g.
+                <symbol>GL_ARB_multitexture</symbol>.
+            </para>
+        </sect2>
+    </sect1>
+
     <sect1 id="extending-concepts">
         <title>Concepts</title>
         <sect2 id="extending-concepts-hierarchy">
@@ -97,6 +177,22 @@
                 </para></listitem>
             </itemizedlist>
         </sect2>
+        <sect2 id="extending-concepts-load-activate">
+            <title>Loading and activation</title>
+            <para>
+                In order to allow modifiers to be turned on or off on the fly,
+                there is a distinction between loading and activation. All
+                filter-sets listed in the chain are loaded, but should alter
+                the behaviour of the program only when active. Filter-sets are
+                loaded only at startup and unloaded at program termination,
+                but can be activated or deactivated arbitrarily. Most
+                callbacks are only called when the filter-set is active, but
+                it is possible to register callbacks that are called even when
+                the filter-set is inactive. This allows the filter-set to
+                monitor state so that it can do the right thing during
+                activation, or to execute cleanup code after deactivation.
+            </para>
+        </sect2>
         <sect2 id="extending-concepts-groups">
             <title>Functions and groups</title>
             <para>
@@ -121,59 +217,6 @@
         </sect2>
     </sect1>
 
-    <sect1 id="extending-guidelines">
-        <title>Guidelines</title>
-        <para>
-            This section contains stylistic guidelines and best practices. You
-            should follow them if you hope to get your filter-sets included in
-            the &bugle; source code, or want them to be generally useful to
-            other users.
-        </para>
-        <sect2 id="extending-guidelines-style">
-            <title>Coding style</title>
-            <itemizedlist>
-                <listitem><para>Indenting is four spaces</para></listitem>
-                <listitem><para>Use spaces not tabs</para></listitem>
-                <listitem><para>Both opening and closing braces go on their
-                        own line</para></listitem>
-                <listitem><para>Function return types go on the same line as
-                        the rest of the prototype</para></listitem>
-                <listitem><para>Filter-sets, and any other code that will be
-                        preloaded into a user program, should link against as
-                        few libraries as possible, since if the user program
-                        uses a different version there will be conflicts. As a
-                        result, C++ code cannot be used if it links against
-                        <systemitem class="library">libstdc++</systemitem>.
-                </para></listitem>
-                <listitem><para>C files should contain conforming C89 syntax as
-                        far as possible. That means no variable initialisers,
-                        no variable-length arrays, and C++-style
-                        <literal>//</literal> comments are not allowed.
-                </para></listitem>
-                <listitem><para>
-                        POSIX, BSD and X/OPEN library functions are
-                        acceptable if the appropriate feature macros are
-                        defined (<symbol>_POSIX_C_SOURCE</symbol> and so on).
-                </para></listitem>
-            </itemizedlist>
-        </sect2>
-        <sect2 id="extending-guidelines-opengl">
-            <title>OpenGL extensions</title>
-            <para>
-                BuGLe tries to support systems that only have header files and
-                runtime support for <application>OpenGL</application> 1.1 (so
-                that a Win32 port will be possible one day, but also to
-                support other systems with old headers).  Thus for any
-                functions introduces after 1.1, you should favour the
-                <symbol>GROUP_<replaceable>glFunction</replaceable></symbol>
-                definition with the oldest name, which is generally an
-                extension function. You should also protect any such code with
-                a test for the GL extension define e.g.
-                <symbol>GL_ARB_multitexture</symbol>.
-            </para>
-        </sect2>
-    </sect1>
-
     <sect1 id="extending-api">
         <title>Filter-set API</title>
 
@@ -189,7 +232,9 @@
             <para>
                 This is the literal name of the function. It will be called by
                 &bugle;'s loader code, and you should not mark it as a
-                constructor or anything similar.
+                constructor or anything similar. Note that it will always be
+                called, even if the corresponding filter-sets are not
+                requested by the user.
             </para>
             <para>
                 This function does any global initialisation required,
@@ -199,7 +244,7 @@
             <funcsynopsis>
                 <funcsynopsisinfo language="cpp">#include &lt;src/filters.h&gt;
                     
-filter_set *bugle_register_filter_set(filter_set_info *info);</funcsynopsisinfo>
+filter_set *bugle_filter_set_register(filter_set_info *info);</funcsynopsisinfo>
             </funcsynopsis>
             <para>
                 The <structname>filter_set_info</structname> must be constant and have
@@ -214,7 +259,6 @@ filter_set *bugle_register_filter_set(filter_set_info *info);</funcsynopsisinfo>
     filter_set_activator             activate;
     filter_set_deactivator           deactivate;
     const filter_set_variable_info * variables;
-    size_t                           call_state_space;
     const char *                     help;
 } filter_set_info;</programlisting>
             <para>The fields have the following meanings:</para>
@@ -244,17 +288,6 @@ filter_set *bugle_register_filter_set(filter_set_info *info);</funcsynopsisinfo>
                             An array describing the variables that may be
                             configured by the user. This is described in <xref
                                 linkend="extending-api-filtersetvariables"/>.
-                    </para></listitem>
-                </varlistentry>
-                <varlistentry>
-                    <term><structfield>call_state_space</structfield></term>
-                    <listitem><para>
-                            An amount of space to reserve in the data
-                            structure that holds the parameters for each
-                            OpenGL function call. This feature is deprecated
-                            and should not be used in newly written code; use
-                            the object layer instead. You should always set
-                            this field to zero.
                     </para></listitem>
                 </varlistentry>
                 <varlistentry>
@@ -342,14 +375,79 @@ filter_set *bugle_register_filter_set(filter_set_info *info);</funcsynopsisinfo>
         <sect2 id="extending-api-filtersetinit">
             <title>Filter-set initialisation and destruction</title>
             <para>
-                Foo
+                Apart from initialising internal structures, a filter-set
+                loader registers filters and callbacks. The function to
+                register a filter within a filter-set is
+            </para>
+            <funcsynopsis>
+                <funcsynopsisinfo language="cpp">filter * bugle_filter_register(filter_set *handle, const char *name);</funcsynopsisinfo>
+            </funcsynopsis>
+            <para>
+                A <type>filter *</type> is an opaque handle to a filter. It is
+                passed to the following functions to register callbacks:
+            </para>
+            <funcsynopsis>
+                <funcsynopsisinfo language="cpp">void bugle_filter_catches(filter *f, budgie_group group, bool inactive, filter_callback callback);
+void bugle_filter_catches_function(filter *f, budgie_function function, bool inactive, filter_callback callback);
+void bugle_filter_catches_all(filter *f, bool inactive, filter_callback callback);</funcsynopsisinfo>
+            </funcsynopsis>
+            <para>
+                These respectively register callbacks for a single group, a
+                single function, or all functions. The
+                <parameter>inactive</parameter> says whether the callback
+                should apply when the filter-set is inactive. Usually you will
+                want to set this to <symbol>false</symbol>, but in some cases
+                it is necessary to track some state even when the filter-set
+                is inactive.
             </para>
         </sect2>
 
         <sect2 id="extending-api-callbacks">
             <title>Writing callbacks</title>
             <para>
-                Foo
+                In the functions above, <parameter>callback</parameter> is a
+                function with the signature
+            </para>
+            <funcsynopsis>
+                <funcsynopsisinfo>bool callback(function_call *call, const callback_data *data);</funcsynopsisinfo>
+            </funcsynopsis>
+            <para>
+                The callback should generally return <symbol>true</symbol>.
+                Returning <symbol>false</symbol>
+                aborts any further processing of the call (including
+                execution if the <systemitem>invoke</systemitem> filter has not yet run). This can
+                be useful if you want to suppress a call, but if possible
+                it is better to allow execution and undo the effects
+                afterwards so that later filters get a chance to run.
+            </para>
+            <para> Callbacks that handle multiple OpenGL functions will need
+                to know which function was called; the function is found in
+                <code language="cpp">call->generic.id</code>, but more useful
+                is the group found in <code
+                    language="cpp">call->generic.group</code>. One can also
+                get access to the arguments: if the call is known to be
+                <function>gl<replaceable>Function</replaceable></function>,
+                then <code
+                    language="cpp">*call->typed.gl<replaceable>Function</replaceable>.arg<replaceable>i</replaceable></code>
+                is the <replaceable>i</replaceable>th argument, and <code
+                    language="cpp">*call->typed.gl<replaceable>Function</replaceable>.retn</code>
+                is the return value. If the function is not known at compile
+                time, then the arguments can be accessed via the
+                <type>void</type> pointers <code
+                    language="cpp">call->generic.args<replaceable>[i</replaceable>]</code>
+                and <code language="cpp">call->generic.retn</code>. These
+                values can also be modified to change the arguments used or
+                the value returned to the application, respectively.
+            </para>
+            <para>
+                The <parameter>data</parameter> is currently still undergoing
+                revision, so it will not be documented yet.
+            </para>
+        </sect2>
+
+        <sect2 id="extending-api-utilities">
+            <title>Utility functions and filter-sets</title>
+            <para>Foo
             </para>
         </sect2>
     </sect1>

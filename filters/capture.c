@@ -697,9 +697,9 @@ static bool initialise_screenshot(filter_set *handle)
     char *cmdline;
 #endif
 
-    f = bugle_register_filter(handle, "screenshot");
-    bugle_register_filter_catches(f, GROUP_glXSwapBuffers, false, screenshot_callback);
-    bugle_register_filter_order("screenshot", "invoke");
+    f = bugle_filter_register(handle, "screenshot");
+    bugle_filter_catches(f, GROUP_glXSwapBuffers, false, screenshot_callback);
+    bugle_filter_order("screenshot", "invoke");
 
     video_data = bugle_calloc(video_lag, sizeof(screenshot_data));
     video_cur = 0;
@@ -744,7 +744,7 @@ static void destroy_screenshot(filter_set *handle)
 /* The values are set to &seen_extensions to indicate presence, then
  * lazily deleted by setting to NULL.
  */
-static bugle_hash_table seen_extensions;
+static hash_table seen_extensions;
 static const char *gl_version = "GL_VERSION_1_1";
 static const char *glx_version = "GLX_VERSION_1_2";
 
@@ -786,23 +786,23 @@ static bool initialise_showextensions(filter_set *handle)
 {
     filter *f;
 
-    f = bugle_register_filter(handle, "showextensions");
-    bugle_register_filter_catches_all(f, false, showextensions_callback);
+    f = bugle_filter_register(handle, "showextensions");
+    bugle_filter_catches_all(f, false, showextensions_callback);
     /* The order mainly doesn't matter, but making it a pre-filter
      * reduces the risk of another filter aborting the call.
      */
-    bugle_register_filter_order("showextensions", "invoke");
+    bugle_filter_order("showextensions", "invoke");
     bugle_hash_init(&seen_extensions, false);
     return true;
 }
 
 static void showextensions_print(void *seen, FILE *log)
 {
-    bugle_hash_table *seen_extensions;
+    hash_table *seen_extensions;
     int i;
     budgie_function f;
 
-    seen_extensions = (bugle_hash_table *) seen;
+    seen_extensions = (hash_table *) seen;
     fprintf(log, "Used extensions:");
     for (i = 0; i < bugle_gl_token_count; i++)
     {
@@ -849,7 +849,7 @@ typedef struct
     FILE *stream;
 } eps_struct;
 
-static bugle_object_view eps_view;
+static object_view eps_view;
 static bool keypress_eps = false;
 static xevent_key key_eps = { XK_W, ControlMask | ShiftMask | Mod1Mask, true };
 static char *eps_filename = NULL;
@@ -996,15 +996,15 @@ static bool initialise_eps(filter_set *handle)
 {
     filter *f;
 
-    f = bugle_register_filter(handle, "eps_pre");
-    bugle_register_filter_catches(f, GROUP_glXSwapBuffers, false, eps_glXSwapBuffers);
-    f = bugle_register_filter(handle, "eps");
-    bugle_register_filter_catches(f, GROUP_glPointSize, false, eps_glPointSize);
-    bugle_register_filter_catches(f, GROUP_glLineWidth, false, eps_glLineWidth);
-    bugle_register_filter_order("eps_pre", "invoke");
-    bugle_register_filter_order("invoke", "eps");
+    f = bugle_filter_register(handle, "eps_pre");
+    bugle_filter_catches(f, GROUP_glXSwapBuffers, false, eps_glXSwapBuffers);
+    f = bugle_filter_register(handle, "eps");
+    bugle_filter_catches(f, GROUP_glPointSize, false, eps_glPointSize);
+    bugle_filter_catches(f, GROUP_glLineWidth, false, eps_glLineWidth);
+    bugle_filter_order("eps_pre", "invoke");
+    bugle_filter_order("invoke", "eps");
     bugle_register_filter_post_renders("eps");
-    eps_view = bugle_object_class_register(&bugle_context_class, initialise_eps_context,
+    eps_view = bugle_object_view_register(&bugle_context_class, initialise_eps_context,
                                            NULL, sizeof(eps_struct));
     bugle_register_xevent_key(&key_eps, NULL, bugle_xevent_key_callback_flag, &keypress_eps);
     return true;
@@ -1032,7 +1032,6 @@ void bugle_initialise_filter_library(void)
         NULL,
         NULL,
         screenshot_variables,
-        0,
         "captures screenshots or a video clip"
     };
 
@@ -1044,7 +1043,6 @@ void bugle_initialise_filter_library(void)
         NULL,
         NULL,
         NULL,
-        0,
         "reports extensions used at program termination"
     };
 
@@ -1066,20 +1064,19 @@ void bugle_initialise_filter_library(void)
         NULL,
         NULL,
         eps_variables,
-        0,
         "dumps scene to EPS/PS/PDF/SVG format"
     };
 
     video_codec = bugle_strdup("mpeg4");
     eps_filename = bugle_strdup("bugle.eps");
 
-    bugle_register_filter_set(&screenshot_info);
-    bugle_register_filter_set(&showextensions_info);
-    bugle_register_filter_set(&eps_info);
+    bugle_filter_set_register(&screenshot_info);
+    bugle_filter_set_register(&showextensions_info);
+    bugle_filter_set_register(&eps_info);
 
-    bugle_register_filter_set_renders("screenshot");
-    bugle_register_filter_set_depends("screenshot", "trackcontext");
-    bugle_register_filter_set_depends("screenshot", "trackextensions");
-    bugle_register_filter_set_renders("eps");
-    bugle_register_filter_set_depends("eps", "trackcontext");
+    bugle_filter_set_register_renders("screenshot");
+    bugle_filter_set_depends("screenshot", "trackcontext");
+    bugle_filter_set_depends("screenshot", "trackextensions");
+    bugle_filter_set_register_renders("eps");
+    bugle_filter_set_depends("eps", "trackcontext");
 }

@@ -30,10 +30,10 @@
 #include <stddef.h>
 #include <GL/gl.h>
 
-bugle_object_class bugle_displaylist_class;
+object_class bugle_displaylist_class;
 static bugle_thread_mutex_t displaylist_lock = BUGLE_THREAD_MUTEX_INITIALIZER;
-static bugle_object_view displaylist_view;
-static bugle_object_view namespace_view;   /* handle of the hash table */
+static object_view displaylist_view;
+static object_view namespace_view;   /* handle of the hash table */
 
 typedef struct
 {
@@ -43,12 +43,12 @@ typedef struct
 
 static void initialise_namespace(const void *key, void *data)
 {
-    bugle_hashptr_init((bugle_hashptr_table *) data, true);
+    bugle_hashptr_init((hashptr_table *) data, true);
 }
 
 static void destroy_namespace(void *data)
 {
-    bugle_hashptr_clear((bugle_hashptr_table *) data);
+    bugle_hashptr_clear((hashptr_table *) data);
 }
 
 static void initialise_displaylist_struct(const void *key, void *data)
@@ -77,7 +77,7 @@ GLuint bugle_displaylist_list(void)
 void *bugle_displaylist_get(GLuint list)
 {
     void *ans = NULL;
-    bugle_hashptr_table *objects;
+    hashptr_table *objects;
 
     bugle_thread_mutex_lock(&displaylist_lock);
     objects = bugle_object_get_current_data(&bugle_namespace_class, namespace_view);
@@ -89,7 +89,7 @@ void *bugle_displaylist_get(GLuint list)
 static bool trackdisplaylist_glNewList(function_call *call, const callback_data *data)
 {
     displaylist_struct info;
-    bugle_object *obj;
+    object *obj;
     GLint value;
 
     if (bugle_displaylist_list()) return true; /* Nested call */
@@ -108,12 +108,12 @@ static bool trackdisplaylist_glNewList(function_call *call, const callback_data 
 
 static bool trackdisplaylist_glEndList(function_call *call, const callback_data *data)
 {
-    bugle_object *obj;
+    object *obj;
     displaylist_struct *info_ptr;
-    bugle_hashptr_table *objects;
+    hashptr_table *objects;
 
     obj = bugle_object_get_current(&bugle_displaylist_class);
-    info_ptr = bugle_object_get_data(&bugle_displaylist_class, obj, displaylist_view);
+    info_ptr = bugle_object_get_data(obj, displaylist_view);
     /* Note: we update the hash table when we end the list, since this is when OpenGL
      * says the new name comes into effect.
      */
@@ -132,19 +132,19 @@ static bool initialise_trackdisplaylist(filter_set *handle)
 
     bugle_object_class_init(&bugle_displaylist_class, &bugle_context_class);
 
-    f = bugle_register_filter(handle, "trackdisplaylist");
-    bugle_register_filter_order("invoke", "trackdisplaylist");
-    bugle_register_filter_catches(f, GROUP_glNewList, true, trackdisplaylist_glNewList);
-    bugle_register_filter_catches(f, GROUP_glEndList, true, trackdisplaylist_glEndList);
+    f = bugle_filter_register(handle, "trackdisplaylist");
+    bugle_filter_order("invoke", "trackdisplaylist");
+    bugle_filter_catches(f, GROUP_glNewList, true, trackdisplaylist_glNewList);
+    bugle_filter_catches(f, GROUP_glEndList, true, trackdisplaylist_glEndList);
 
-    displaylist_view = bugle_object_class_register(&bugle_displaylist_class,
+    displaylist_view = bugle_object_view_register(&bugle_displaylist_class,
                                                    initialise_displaylist_struct,
                                                    NULL,
                                                    sizeof(displaylist_struct));
-    namespace_view = bugle_object_class_register(&bugle_namespace_class,
+    namespace_view = bugle_object_view_register(&bugle_namespace_class,
                                                  initialise_namespace,
                                                  destroy_namespace,
-                                                 sizeof(bugle_hashptr_table));
+                                                 sizeof(hashptr_table));
     return true;
 }
 
@@ -158,11 +158,10 @@ void trackdisplaylist_initialise(void)
         NULL,
         NULL,
         NULL,
-        0,
         NULL /* No documentation */
     };
 
-    bugle_register_filter_set(&trackdisplaylist_info);
+    bugle_filter_set_register(&trackdisplaylist_info);
 
-    bugle_register_filter_set_depends("trackdisplaylist", "trackcontext");
+    bugle_filter_set_depends("trackdisplaylist", "trackcontext");
 }

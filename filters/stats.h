@@ -87,10 +87,10 @@ typedef struct
     int precision;                      /* default value if unset */
     double maximum;                     /* 0.0 for unset */
     char *label;
-    bugle_linked_list substitutions;
+    linked_list substitutions;
     bool last;                          /* Last in an instance set */
 } stats_statistic;
 
-bugle_linked_list *stats_statistics_get_list(void);
+linked_list *stats_statistics_get_list(void);
 
 #endif /* BUGLE_FILTERS_STATS_H */

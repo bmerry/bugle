@@ -29,7 +29,7 @@
 #include "common/linkedlist.h"
 #include "common/safemem.h"
 
-static bugle_linked_list config_root;
+static linked_list config_root;
 int yyerror(const char *msg);
 extern int yylex(void);
 
@@ -38,7 +38,7 @@ extern int yylex(void);
 %union
 {
 	char *str;
-        bugle_linked_list list;
+        linked_list list;
         config_chain *chain;
         config_filterset *filterset;
         config_variable *variable;
@@ -144,14 +144,14 @@ int yyerror(const char *msg)
     return 0;
 }
 
-const bugle_linked_list *bugle_config_get_root(void)
+const linked_list *bugle_config_get_root(void)
 {
     return &config_root;
 }
 
 const config_chain *bugle_config_get_chain(const char *name)
 {
-    bugle_list_node *i;
+    linked_list_node *i;
     for (i = bugle_list_head(&config_root); i; i = bugle_list_next(i))
         if (strcmp(((config_chain *) bugle_list_data(i))->name, name) == 0)
             return (const config_chain *) bugle_list_data(i);
@@ -167,7 +167,7 @@ static void destroy_variable(config_variable *variable)
 
 static void destroy_filterset(config_filterset *filterset)
 {
-    bugle_list_node *i;
+    linked_list_node *i;
     free(filterset->name);
     if (filterset->key) free(filterset->key);
     for (i = bugle_list_head(&filterset->variables); i; i = bugle_list_next(i))
@@ -178,7 +178,7 @@ static void destroy_filterset(config_filterset *filterset)
 
 static void destroy_chain(config_chain *chain)
 {
-    bugle_list_node *i;
+    linked_list_node *i;
     free(chain->name);
     for (i = bugle_list_head(&chain->filtersets); i; i = bugle_list_next(i))
         destroy_filterset((config_filterset *) bugle_list_data(i));
@@ -188,7 +188,7 @@ static void destroy_chain(config_chain *chain)
 
 void bugle_config_destroy(void)
 {
-    bugle_list_node *i;
+    linked_list_node *i;
     for (i = bugle_list_head(&config_root); i; i = bugle_list_next(i))
         destroy_chain((config_chain *) bugle_list_data(i));
     bugle_list_clear(&config_root);

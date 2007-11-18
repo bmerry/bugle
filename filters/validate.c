@@ -40,14 +40,25 @@
 
 static bool trap = false;
 static filter_set *error_handle = NULL;
-static bugle_object_view error_context_view;
+static object_view error_context_view, error_call_view;
+
+GLenum bugle_get_call_error_internal(object *call_object)
+{
+    GLenum *call_error;
+    call_error = bugle_object_get_data(call_object, error_call_view);
+    return call_error ? *call_error : GL_NO_ERROR;
+}
 
 static bool error_callback(function_call *call, const callback_data *data)
 {
     GLenum error;
     GLenum *stored_error;
+    GLenum *call_error;
 
-    *(GLenum *) data->call_data = GL_NO_ERROR;
+    stored_error = bugle_object_get_current_data(&bugle_context_class, error_context_view);
+    call_error = bugle_object_get_current_data(&bugle_call_class, error_call_view);
+    *call_error = GL_NO_ERROR;
+
     if (budgie_function_table[call->generic.id].name[2] == 'X') return true; /* GLX */
     if (call->generic.group == GROUP_glGetError)
     {
@@ -56,7 +67,6 @@ static bool error_callback(function_call *call, const callback_data *data)
          * rather than whatever we have saved. Also, we must make sure to
          * return nothing else inside begin/end.
          */
-        stored_error = bugle_object_get_current_data(&bugle_context_class, error_context_view);
         if (*call->typed.glGetError.retn != GL_NO_ERROR)
         {
             const char *name;
@@ -70,7 +80,11 @@ static bool error_callback(function_call *call, const callback_data *data)
                                  "glGetError() returned %#08x when GL_NO_ERROR was expected",
                                  (unsigned int) *call->typed.glGetError.retn);
         }
-        else if (!bugle_in_begin_end() && *stored_error)
+        else if (bugle_in_begin_end())
+        {
+            *call_error = GL_INVALID_OPERATION;
+        }
+        else if (*stored_error)
         {
             *call->typed.glGetError.retn = *stored_error;
             *stored_error = GL_NO_ERROR;
@@ -81,12 +95,11 @@ static bool error_callback(function_call *call, const callback_data *data)
         /* Note: we deliberately don't call begin_internal_render here,
          * since it will beat us to calling glGetError().
          */
-        stored_error = bugle_object_get_current_data(&bugle_context_class, error_context_view);
         while ((error = CALL_glGetError()) != GL_NO_ERROR)
         {
             if (stored_error && !*stored_error)
                 *stored_error = error;
-            *(GLenum *) data->call_data = error;
+            *call_error = error;
             if (trap && bugle_filter_set_is_active(data->filter_set_handle))
             {
                 fflush(stderr);
@@ -96,7 +109,7 @@ static bool error_callback(function_call *call, const callback_data *data)
                  * than try all possibilities we just SIGABRT instead.
                  */
 #ifdef SIGTRAP
-                raise(SIGTRAP);
+                bugle_thread_raise(SIGTRAP);
 #else
                 abort();
 #endif
@@ -111,24 +124,28 @@ static bool initialise_error(filter_set *handle)
     filter *f;
 
     error_handle = handle;
-    f = bugle_register_filter(handle, "error");
-    bugle_register_filter_catches_all(f, true, error_callback);
-    bugle_register_filter_order("invoke", "error");
-    bugle_register_filter_order("trackbeginend", "error");
+    f = bugle_filter_register(handle, "error");
+    bugle_filter_catches_all(f, true, error_callback);
+    bugle_filter_order("invoke", "error");
+    bugle_filter_order("trackbeginend", "error");
     /* We don't call filter_post_renders, because that would make the
-     * error filterset depend on itself.
+     * error filter-set depend on itself.
      */
-    error_context_view = bugle_object_class_register(&bugle_context_class,
-                                                     NULL,
-                                                     NULL,
-                                                     sizeof(GLenum));
+    error_context_view = bugle_object_view_register(&bugle_context_class,
+                                                    NULL,
+                                                    NULL,
+                                                    sizeof(GLenum));
+    error_call_view = bugle_object_view_register(&bugle_call_class,
+                                                 NULL,
+                                                 NULL,
+                                                 sizeof(GLenum));
     return true;
 }
 
 static bool showerror_callback(function_call *call, const callback_data *data)
 {
     GLenum error;
-    if ((error = bugle_get_call_error(call)) != GL_NO_ERROR)
+    if ((error = bugle_get_call_error_internal(data->call_object)) != GL_NO_ERROR)
     {
         const char *name;
         name = bugle_gl_enum_to_token(error);
@@ -148,10 +165,10 @@ static bool initialise_showerror(filter_set *handle)
 {
     filter *f;
 
-    f = bugle_register_filter(handle, "showerror");
-    bugle_register_filter_catches_all(f, false, showerror_callback);
-    bugle_register_filter_order("error", "showerror");
-    bugle_register_filter_order("invoke", "showerror");
+    f = bugle_filter_register(handle, "showerror");
+    bugle_filter_catches_all(f, false, showerror_callback);
+    bugle_filter_order("error", "showerror");
+    bugle_filter_order("invoke", "showerror");
     return true;
 }
 
@@ -193,7 +210,7 @@ static bool unwindstack_pre_callback(function_call *call, const callback_data *d
                 perror("failed to set SIGSEGV handler");
                 exit(1);
             }
-        raise(SIGSEGV);
+        bugle_thread_raise(SIGSEGV);
         exit(1); /* make sure we don't recover */
     }
     act.sa_handler = unwindstack_sigsegv_handler;
@@ -224,12 +241,12 @@ static bool initialise_unwindstack(filter_set *handle)
 {
     filter *f;
 
-    f = bugle_register_filter(handle, "unwindstack_pre");
-    bugle_register_filter_catches_all(f, false, unwindstack_pre_callback);
-    f = bugle_register_filter(handle, "unwindstack_post");
-    bugle_register_filter_catches_all(f, false, unwindstack_post_callback);
-    bugle_register_filter_order("invoke", "unwindstack_post");
-    bugle_register_filter_order("unwindstack_pre", "invoke");
+    f = bugle_filter_register(handle, "unwindstack_pre");
+    bugle_filter_catches_all(f, false, unwindstack_pre_callback);
+    f = bugle_filter_register(handle, "unwindstack_post");
+    bugle_filter_catches_all(f, false, unwindstack_post_callback);
+    bugle_filter_order("invoke", "unwindstack_post");
+    bugle_filter_order("unwindstack_pre", "invoke");
     return true;
 }
 
@@ -874,81 +891,81 @@ static bool initialise_checks(filter_set *handle)
 {
     filter *f;
 
-    f = bugle_register_filter(handle, "checks");
+    f = bugle_filter_register(handle, "checks");
     /* Pointer checks */
-    bugle_register_filter_catches(f, GROUP_glDrawArrays, false, checks_glDrawArrays);
-    bugle_register_filter_catches(f, GROUP_glDrawElements, false, checks_glDrawElements);
+    bugle_filter_catches(f, GROUP_glDrawArrays, false, checks_glDrawArrays);
+    bugle_filter_catches(f, GROUP_glDrawElements, false, checks_glDrawElements);
 #ifdef GL_EXT_draw_range_elements
-    bugle_register_filter_catches(f, GROUP_glDrawRangeElementsEXT, false, checks_glDrawRangeElements);
+    bugle_filter_catches(f, GROUP_glDrawRangeElementsEXT, false, checks_glDrawRangeElements);
 #endif
 #ifdef GL_EXT_multi_draw_arrays
-    bugle_register_filter_catches(f, GROUP_glMultiDrawArraysEXT, false, checks_glMultiDrawArrays);
-    bugle_register_filter_catches(f, GROUP_glMultiDrawElementsEXT, false, checks_glMultiDrawElements);
+    bugle_filter_catches(f, GROUP_glMultiDrawArraysEXT, false, checks_glMultiDrawArrays);
+    bugle_filter_catches(f, GROUP_glMultiDrawElementsEXT, false, checks_glMultiDrawElements);
 #endif
     /* Checks that we are outside begin/end */
-    bugle_register_filter_catches(f, GROUP_glEnableClientState, false, checks_no_begin_end);
-    bugle_register_filter_catches(f, GROUP_glDisableClientState, false, checks_no_begin_end);
-    bugle_register_filter_catches(f, GROUP_glPushClientAttrib, false, checks_no_begin_end);
-    bugle_register_filter_catches(f, GROUP_glPopClientAttrib, false, checks_no_begin_end);
-    bugle_register_filter_catches(f, GROUP_glColorPointer, false, checks_no_begin_end);
+    bugle_filter_catches(f, GROUP_glEnableClientState, false, checks_no_begin_end);
+    bugle_filter_catches(f, GROUP_glDisableClientState, false, checks_no_begin_end);
+    bugle_filter_catches(f, GROUP_glPushClientAttrib, false, checks_no_begin_end);
+    bugle_filter_catches(f, GROUP_glPopClientAttrib, false, checks_no_begin_end);
+    bugle_filter_catches(f, GROUP_glColorPointer, false, checks_no_begin_end);
 #ifdef GL_EXT_fog_coord
-    bugle_register_filter_catches(f, GROUP_glFogCoordPointerEXT, false, checks_no_begin_end);
+    bugle_filter_catches(f, GROUP_glFogCoordPointerEXT, false, checks_no_begin_end);
 #endif
-    bugle_register_filter_catches(f, GROUP_glEdgeFlagPointer, false, checks_no_begin_end);
-    bugle_register_filter_catches(f, GROUP_glIndexPointer, false, checks_no_begin_end);
-    bugle_register_filter_catches(f, GROUP_glNormalPointer, false, checks_no_begin_end);
-    bugle_register_filter_catches(f, GROUP_glTexCoordPointer, false, checks_no_begin_end);
+    bugle_filter_catches(f, GROUP_glEdgeFlagPointer, false, checks_no_begin_end);
+    bugle_filter_catches(f, GROUP_glIndexPointer, false, checks_no_begin_end);
+    bugle_filter_catches(f, GROUP_glNormalPointer, false, checks_no_begin_end);
+    bugle_filter_catches(f, GROUP_glTexCoordPointer, false, checks_no_begin_end);
 #ifdef GL_EXT_secondary_color
-    bugle_register_filter_catches(f, GROUP_glSecondaryColorPointerEXT, false, checks_no_begin_end);
+    bugle_filter_catches(f, GROUP_glSecondaryColorPointerEXT, false, checks_no_begin_end);
 #endif
-    bugle_register_filter_catches(f, GROUP_glVertexPointer, false, checks_no_begin_end);
+    bugle_filter_catches(f, GROUP_glVertexPointer, false, checks_no_begin_end);
 #ifdef GL_ARB_vertex_program
-    bugle_register_filter_catches(f, GROUP_glVertexAttribPointerARB, false, checks_no_begin_end);
+    bugle_filter_catches(f, GROUP_glVertexAttribPointerARB, false, checks_no_begin_end);
 #endif
 #ifdef GL_ARB_multitexture
-    bugle_register_filter_catches(f, GROUP_glClientActiveTextureARB, false, checks_no_begin_end);
+    bugle_filter_catches(f, GROUP_glClientActiveTextureARB, false, checks_no_begin_end);
 #endif
-    bugle_register_filter_catches(f, GROUP_glInterleavedArrays, false, checks_no_begin_end);
-    bugle_register_filter_catches(f, GROUP_glPixelStorei, false, checks_no_begin_end);
-    bugle_register_filter_catches(f, GROUP_glPixelStoref, false, checks_no_begin_end);
+    bugle_filter_catches(f, GROUP_glInterleavedArrays, false, checks_no_begin_end);
+    bugle_filter_catches(f, GROUP_glPixelStorei, false, checks_no_begin_end);
+    bugle_filter_catches(f, GROUP_glPixelStoref, false, checks_no_begin_end);
     /* Checks that we are inside begin/end */
-    bugle_register_filter_catches_drawing_immediate(f, false, checks_begin_end);
+    bugle_filter_catches_drawing_immediate(f, false, checks_begin_end);
     /* This call has undefined behaviour if given a negative argument */
-    bugle_register_filter_catches(f, GROUP_glArrayElement, false, checks_glArrayElement);
+    bugle_filter_catches(f, GROUP_glArrayElement, false, checks_glArrayElement);
     /* Other */
 #ifdef GL_ARB_multitexture
-    bugle_register_filter_catches(f, GROUP_glMultiTexCoord1s, false, checks_glMultiTexCoord);
-    bugle_register_filter_catches(f, GROUP_glMultiTexCoord1i, false, checks_glMultiTexCoord);
-    bugle_register_filter_catches(f, GROUP_glMultiTexCoord1f, false, checks_glMultiTexCoord);
-    bugle_register_filter_catches(f, GROUP_glMultiTexCoord1d, false, checks_glMultiTexCoord);
-    bugle_register_filter_catches(f, GROUP_glMultiTexCoord2s, false, checks_glMultiTexCoord);
-    bugle_register_filter_catches(f, GROUP_glMultiTexCoord2i, false, checks_glMultiTexCoord);
-    bugle_register_filter_catches(f, GROUP_glMultiTexCoord2f, false, checks_glMultiTexCoord);
-    bugle_register_filter_catches(f, GROUP_glMultiTexCoord2d, false, checks_glMultiTexCoord);
-    bugle_register_filter_catches(f, GROUP_glMultiTexCoord3s, false, checks_glMultiTexCoord);
-    bugle_register_filter_catches(f, GROUP_glMultiTexCoord3i, false, checks_glMultiTexCoord);
-    bugle_register_filter_catches(f, GROUP_glMultiTexCoord3f, false, checks_glMultiTexCoord);
-    bugle_register_filter_catches(f, GROUP_glMultiTexCoord3d, false, checks_glMultiTexCoord);
-    bugle_register_filter_catches(f, GROUP_glMultiTexCoord4s, false, checks_glMultiTexCoord);
-    bugle_register_filter_catches(f, GROUP_glMultiTexCoord4i, false, checks_glMultiTexCoord);
-    bugle_register_filter_catches(f, GROUP_glMultiTexCoord4f, false, checks_glMultiTexCoord);
-    bugle_register_filter_catches(f, GROUP_glMultiTexCoord4d, false, checks_glMultiTexCoord);
-    bugle_register_filter_catches(f, GROUP_glMultiTexCoord1sv, false, checks_glMultiTexCoord);
-    bugle_register_filter_catches(f, GROUP_glMultiTexCoord1iv, false, checks_glMultiTexCoord);
-    bugle_register_filter_catches(f, GROUP_glMultiTexCoord1fv, false, checks_glMultiTexCoord);
-    bugle_register_filter_catches(f, GROUP_glMultiTexCoord1dv, false, checks_glMultiTexCoord);
-    bugle_register_filter_catches(f, GROUP_glMultiTexCoord2sv, false, checks_glMultiTexCoord);
-    bugle_register_filter_catches(f, GROUP_glMultiTexCoord2iv, false, checks_glMultiTexCoord);
-    bugle_register_filter_catches(f, GROUP_glMultiTexCoord2fv, false, checks_glMultiTexCoord);
-    bugle_register_filter_catches(f, GROUP_glMultiTexCoord2dv, false, checks_glMultiTexCoord);
-    bugle_register_filter_catches(f, GROUP_glMultiTexCoord3sv, false, checks_glMultiTexCoord);
-    bugle_register_filter_catches(f, GROUP_glMultiTexCoord3iv, false, checks_glMultiTexCoord);
-    bugle_register_filter_catches(f, GROUP_glMultiTexCoord3fv, false, checks_glMultiTexCoord);
-    bugle_register_filter_catches(f, GROUP_glMultiTexCoord3dv, false, checks_glMultiTexCoord);
-    bugle_register_filter_catches(f, GROUP_glMultiTexCoord4sv, false, checks_glMultiTexCoord);
-    bugle_register_filter_catches(f, GROUP_glMultiTexCoord4iv, false, checks_glMultiTexCoord);
-    bugle_register_filter_catches(f, GROUP_glMultiTexCoord4fv, false, checks_glMultiTexCoord);
-    bugle_register_filter_catches(f, GROUP_glMultiTexCoord4dv, false, checks_glMultiTexCoord);
+    bugle_filter_catches(f, GROUP_glMultiTexCoord1s, false, checks_glMultiTexCoord);
+    bugle_filter_catches(f, GROUP_glMultiTexCoord1i, false, checks_glMultiTexCoord);
+    bugle_filter_catches(f, GROUP_glMultiTexCoord1f, false, checks_glMultiTexCoord);
+    bugle_filter_catches(f, GROUP_glMultiTexCoord1d, false, checks_glMultiTexCoord);
+    bugle_filter_catches(f, GROUP_glMultiTexCoord2s, false, checks_glMultiTexCoord);
+    bugle_filter_catches(f, GROUP_glMultiTexCoord2i, false, checks_glMultiTexCoord);
+    bugle_filter_catches(f, GROUP_glMultiTexCoord2f, false, checks_glMultiTexCoord);
+    bugle_filter_catches(f, GROUP_glMultiTexCoord2d, false, checks_glMultiTexCoord);
+    bugle_filter_catches(f, GROUP_glMultiTexCoord3s, false, checks_glMultiTexCoord);
+    bugle_filter_catches(f, GROUP_glMultiTexCoord3i, false, checks_glMultiTexCoord);
+    bugle_filter_catches(f, GROUP_glMultiTexCoord3f, false, checks_glMultiTexCoord);
+    bugle_filter_catches(f, GROUP_glMultiTexCoord3d, false, checks_glMultiTexCoord);
+    bugle_filter_catches(f, GROUP_glMultiTexCoord4s, false, checks_glMultiTexCoord);
+    bugle_filter_catches(f, GROUP_glMultiTexCoord4i, false, checks_glMultiTexCoord);
+    bugle_filter_catches(f, GROUP_glMultiTexCoord4f, false, checks_glMultiTexCoord);
+    bugle_filter_catches(f, GROUP_glMultiTexCoord4d, false, checks_glMultiTexCoord);
+    bugle_filter_catches(f, GROUP_glMultiTexCoord1sv, false, checks_glMultiTexCoord);
+    bugle_filter_catches(f, GROUP_glMultiTexCoord1iv, false, checks_glMultiTexCoord);
+    bugle_filter_catches(f, GROUP_glMultiTexCoord1fv, false, checks_glMultiTexCoord);
+    bugle_filter_catches(f, GROUP_glMultiTexCoord1dv, false, checks_glMultiTexCoord);
+    bugle_filter_catches(f, GROUP_glMultiTexCoord2sv, false, checks_glMultiTexCoord);
+    bugle_filter_catches(f, GROUP_glMultiTexCoord2iv, false, checks_glMultiTexCoord);
+    bugle_filter_catches(f, GROUP_glMultiTexCoord2fv, false, checks_glMultiTexCoord);
+    bugle_filter_catches(f, GROUP_glMultiTexCoord2dv, false, checks_glMultiTexCoord);
+    bugle_filter_catches(f, GROUP_glMultiTexCoord3sv, false, checks_glMultiTexCoord);
+    bugle_filter_catches(f, GROUP_glMultiTexCoord3iv, false, checks_glMultiTexCoord);
+    bugle_filter_catches(f, GROUP_glMultiTexCoord3fv, false, checks_glMultiTexCoord);
+    bugle_filter_catches(f, GROUP_glMultiTexCoord3dv, false, checks_glMultiTexCoord);
+    bugle_filter_catches(f, GROUP_glMultiTexCoord4sv, false, checks_glMultiTexCoord);
+    bugle_filter_catches(f, GROUP_glMultiTexCoord4iv, false, checks_glMultiTexCoord);
+    bugle_filter_catches(f, GROUP_glMultiTexCoord4fv, false, checks_glMultiTexCoord);
+    bugle_filter_catches(f, GROUP_glMultiTexCoord4dv, false, checks_glMultiTexCoord);
 #endif
 
     /* FIXME: still perhaps to do:
@@ -958,12 +975,12 @@ static bool initialise_checks(filter_set *handle)
     /* We try to push this early, since it would defeat the whole thing if
      * bugle crashed while examining the data in another filter.
      */
-    bugle_register_filter_order("checks", "invoke");
-    bugle_register_filter_order("checks", "stats");
-    bugle_register_filter_order("checks", "trace");
-    bugle_register_filter_order("checks", "trackcontext");
-    bugle_register_filter_order("checks", "trackbeginend");
-    bugle_register_filter_order("checks", "trackdisplaylist");
+    bugle_filter_order("checks", "invoke");
+    bugle_filter_order("checks", "stats");
+    bugle_filter_order("checks", "trace");
+    bugle_filter_order("checks", "trackcontext");
+    bugle_filter_order("checks", "trackbeginend");
+    bugle_filter_order("checks", "trackdisplaylist");
     return true;
 }
 
@@ -977,7 +994,6 @@ void bugle_initialise_filter_library(void)
         NULL,
         NULL,
         NULL,
-        sizeof(GLenum),
         "checks for OpenGL errors after each call (see also `showerror')"
     };
     static const filter_set_info showerror_info =
@@ -988,7 +1004,6 @@ void bugle_initialise_filter_library(void)
         NULL,
         NULL,
         NULL,
-        0,
         "logs OpenGL errors"
     };
     static const filter_set_info unwindstack_info =
@@ -999,7 +1014,6 @@ void bugle_initialise_filter_library(void)
         NULL,
         NULL,
         NULL,
-        0,
         "catches segfaults and allows recovery of the stack (see docs)"
     };
     static const filter_set_info checks_info =
@@ -1010,17 +1024,16 @@ void bugle_initialise_filter_library(void)
         NULL,
         NULL,
         NULL,
-        0,
         "checks for illegal values passed to OpenGL in some places"
     };
-    bugle_register_filter_set(&error_info);
-    bugle_register_filter_set(&showerror_info);
-    bugle_register_filter_set(&unwindstack_info);
-    bugle_register_filter_set(&checks_info);
+    bugle_filter_set_register(&error_info);
+    bugle_filter_set_register(&showerror_info);
+    bugle_filter_set_register(&unwindstack_info);
+    bugle_filter_set_register(&checks_info);
 
-    bugle_register_filter_set_renders("error");
-    bugle_register_filter_set_depends("showerror", "error");
-    bugle_register_filter_set_queries_error("showerror");
-    bugle_register_filter_set_renders("checks");
-    bugle_register_filter_set_depends("checks", "trackextensions");
+    bugle_filter_set_register_renders("error");
+    bugle_filter_set_depends("showerror", "error");
+    bugle_filter_set_register_queries_error("showerror");
+    bugle_filter_set_register_renders("checks");
+    bugle_filter_set_depends("checks", "trackextensions");
 }

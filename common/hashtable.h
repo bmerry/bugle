@@ -1,5 +1,5 @@
 /*  BuGLe: an OpenGL debugging tool
- *  Copyright (C) 2004-2006  Bruce Merry
+ *  Copyright (C) 2004-2007  Bruce Merry
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -22,41 +22,39 @@
 # include <config.h>
 #endif
 #include "common/bool.h"
+#include <stddef.h>
 
 typedef struct
 {
     char *key;
     void *value;
-} bugle_hash_entry;
+} hash_table_entry;
 
 typedef struct
 {
-    bugle_hash_entry *entries;
+    hash_table_entry *entries;
     size_t size;
     size_t count;
     int size_index;
     bool owns_memory;
-} bugle_hash_table;
-
-/* Must be called before any other hash functions */
-void bugle_initialise_hashing(void);
+} hash_table;
 
 /* A hash table that owns its memory will call free() on values that
  * are deleted or overwritten.
  */
-void bugle_hash_init(bugle_hash_table *table, bool owns_memory);
-void bugle_hash_set(bugle_hash_table *table, const char *key, void *value);
+void bugle_hash_init(hash_table *table, bool owns_memory);
+void bugle_hash_set(hash_table *table, const char *key, void *value);
 /* Determines whether the key is present */
-bool bugle_hash_count(const bugle_hash_table *table, const char *key);
+bool bugle_hash_count(const hash_table *table, const char *key);
 /* Returns NULL if key absent OR if value is NULL */
-void *bugle_hash_get(const bugle_hash_table *table, const char *key);
-void bugle_hash_clear(bugle_hash_table *table);
+void *bugle_hash_get(const hash_table *table, const char *key);
+void bugle_hash_clear(hash_table *table);
 
 /* Walk the hash table. A walker loop looks like this:
  * for (h = bugle_hash_begin(&table); h; h = bugle_hash_next(&table, h))
  */
-const bugle_hash_entry *bugle_hash_begin(bugle_hash_table *table);
-const bugle_hash_entry *bugle_hash_next(bugle_hash_table *table, const bugle_hash_entry *e);
+const hash_table_entry *bugle_hash_begin(hash_table *table);
+const hash_table_entry *bugle_hash_next(hash_table *table, const hash_table_entry *e);
 
 /* A similar implementation but with void * instead of string keys.
  * The data in the void * is irrelevant and in fact the void * is
@@ -66,24 +64,24 @@ typedef struct
 {
     const void *key;
     void *value;
-} bugle_hashptr_entry;
+} hashptr_table_entry;
 
 typedef struct
 {
-    bugle_hashptr_entry *entries;
+    hashptr_table_entry *entries;
     size_t size;
     size_t count;
     int size_index;
     bool owns_memory;
-} bugle_hashptr_table;
+} hashptr_table;
 
-void bugle_hashptr_init(bugle_hashptr_table *table, bool owns_memory);
-void bugle_hashptr_set(bugle_hashptr_table *table, const void *key, void *value);
-bool bugle_hashptr_count(const bugle_hashptr_table *table, const void *key);
-void *bugle_hashptr_get(const bugle_hashptr_table *table, const void *key);
-void bugle_hashptr_clear(bugle_hashptr_table *table);
+void bugle_hashptr_init(hashptr_table *table, bool owns_memory);
+void bugle_hashptr_set(hashptr_table *table, const void *key, void *value);
+bool bugle_hashptr_count(const hashptr_table *table, const void *key);
+void *bugle_hashptr_get(const hashptr_table *table, const void *key);
+void bugle_hashptr_clear(hashptr_table *table);
 
-const bugle_hashptr_entry *bugle_hashptr_begin(bugle_hashptr_table *table);
-const bugle_hashptr_entry *bugle_hashptr_next(bugle_hashptr_table *table, const bugle_hashptr_entry *e);
+const hashptr_table_entry *bugle_hashptr_begin(hashptr_table *table);
+const hashptr_table_entry *bugle_hashptr_next(hashptr_table *table, const hashptr_table_entry *e);
 
 #endif /* !BUGLE_COMMON_HASHTABLE_H */

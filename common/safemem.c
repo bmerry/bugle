@@ -225,13 +225,13 @@ typedef struct
     void *arg;
 } shutdown_call;
 
-static bugle_linked_list shutdown_calls;
+static linked_list shutdown_calls;
 static bugle_thread_mutex_t shutdown_mutex = BUGLE_THREAD_MUTEX_INITIALIZER;
 static bugle_thread_once_t shutdown_once = BUGLE_THREAD_ONCE_INIT;
 
 static void bugle_atexit_handler(void)
 {
-    bugle_list_node *i;
+    linked_list_node *i;
     shutdown_call *call;
 
     for (i = bugle_list_head(&shutdown_calls); i; i = bugle_list_next(i))
