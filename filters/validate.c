@@ -42,7 +42,7 @@ static bool trap = false;
 static filter_set *error_handle = NULL;
 static object_view error_context_view, error_call_view;
 
-GLenum bugle_get_call_error_internal(object *call_object)
+GLenum bugle_call_get_error_internal(object *call_object)
 {
     GLenum *call_error;
     call_error = bugle_object_get_data(call_object, error_call_view);
@@ -127,7 +127,7 @@ static bool initialise_error(filter_set *handle)
     f = bugle_filter_register(handle, "error");
     bugle_filter_catches_all(f, true, error_callback);
     bugle_filter_order("invoke", "error");
-    bugle_filter_order("trackbeginend", "error");
+    bugle_filter_post_queries_begin_end("error");
     /* We don't call filter_post_renders, because that would make the
      * error filter-set depend on itself.
      */
@@ -145,7 +145,7 @@ static bool initialise_error(filter_set *handle)
 static bool showerror_callback(function_call *call, const callback_data *data)
 {
     GLenum error;
-    if ((error = bugle_get_call_error_internal(data->call_object)) != GL_NO_ERROR)
+    if ((error = bugle_call_get_error_internal(data->call_object)) != GL_NO_ERROR)
     {
         const char *name;
         name = bugle_gl_enum_to_token(error);
@@ -1031,9 +1031,9 @@ void bugle_initialise_filter_library(void)
     bugle_filter_set_register(&unwindstack_info);
     bugle_filter_set_register(&checks_info);
 
-    bugle_filter_set_register_renders("error");
+    bugle_filter_set_renders("error");
     bugle_filter_set_depends("showerror", "error");
-    bugle_filter_set_register_queries_error("showerror");
-    bugle_filter_set_register_renders("checks");
+    bugle_filter_set_queries_error("showerror");
+    bugle_filter_set_renders("checks");
     bugle_filter_set_depends("checks", "trackextensions");
 }

@@ -33,6 +33,10 @@
 
 static object_view trackbeginend_view;
 
+/* Note: we can't use glGetError to determine whether an error occurred,
+ * because if the call was successful then doing so is itself an error. So
+ * we are forced to do the validation ourselves.
+ */
 static bool trackbeginend_glBegin(function_call *call, const callback_data *data)
 {
     bool *begin_end;
@@ -66,6 +70,7 @@ static bool trackbeginend_glEnd(function_call *call, const callback_data *data)
 {
     bool *begin_end;
 
+    /* glEnd can only fail if we weren't in begin/end anyway. */
     begin_end = (bool *) bugle_object_get_current_data(&bugle_context_class, trackbeginend_view);
     if (begin_end != NULL) *begin_end = false;
     return true;
@@ -77,6 +82,11 @@ bool bugle_in_begin_end(void)
 
     begin_end = (bool *) bugle_object_get_current_data(&bugle_context_class, trackbeginend_view);
     return !begin_end || *begin_end;
+}
+
+void bugle_filter_post_queries_begin_end(const char *name)
+{
+    bugle_filter_order("trackbeginend", name);
 }
 
 static bool initialise_trackbeginend(filter_set *handle)

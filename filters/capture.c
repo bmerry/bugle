@@ -1003,7 +1003,7 @@ static bool initialise_eps(filter_set *handle)
     bugle_filter_catches(f, GROUP_glLineWidth, false, eps_glLineWidth);
     bugle_filter_order("eps_pre", "invoke");
     bugle_filter_order("invoke", "eps");
-    bugle_register_filter_post_renders("eps");
+    bugle_filter_post_renders("eps");
     eps_view = bugle_object_view_register(&bugle_context_class, initialise_eps_context,
                                            NULL, sizeof(eps_struct));
     bugle_register_xevent_key(&key_eps, NULL, bugle_xevent_key_callback_flag, &keypress_eps);
@@ -1074,9 +1074,9 @@ void bugle_initialise_filter_library(void)
     bugle_filter_set_register(&showextensions_info);
     bugle_filter_set_register(&eps_info);
 
-    bugle_filter_set_register_renders("screenshot");
+    bugle_filter_set_renders("screenshot");
     bugle_filter_set_depends("screenshot", "trackcontext");
     bugle_filter_set_depends("screenshot", "trackextensions");
-    bugle_filter_set_register_renders("eps");
+    bugle_filter_set_renders("eps");
     bugle_filter_set_depends("eps", "trackcontext");
 }

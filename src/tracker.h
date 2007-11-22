@@ -51,6 +51,11 @@ extern object_class bugle_displaylist_class;
  */
 bool bugle_in_begin_end(void);
 
+/* Must be used for filter-sets that call bugle_in_begin_end() to guarantee
+ * correct answers when intercepting glBegin or glEnd.
+ */
+void bugle_filter_post_queries_begin_end(const char *name);
+
 /* Gets a context with the same config. Please leave all state as default.
  * There is a choice of a shared or an unshared context, which refers to
  * whether object state is shared with the primary context. The former is

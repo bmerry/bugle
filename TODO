@@ -56,6 +56,8 @@ bugle
 - capture more information about call lists
 - capture and replay
 - make statistics a public interface
+- improve bugle_call_get_error and bugle_begin_internal_render so that using
+  them doesn't require every single function call to be intercepted
 
 budgie
 ------

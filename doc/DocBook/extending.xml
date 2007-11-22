@@ -123,7 +123,24 @@
                 </para></listitem>
             </itemizedlist>
         </sect2>
-        <sect2 id="extending-guidelines-opengl">
+        <sect2 id="extending-guidelines-oglcontexts">
+            <title>OpenGL contexts and threads</title>
+            <para>
+                Most of the state in OpenGL is associated with a particular
+                <firstterm>context</firstterm>. Each thread may have a
+                different current context, or no context. Each context can be
+                current in at most one thread. You should keep this in mind
+                when you attempt to track any particular OpenGL state. If you
+                are using a global variable then your code is almost certainly
+                not current for multi-threaded or multi-context applications.
+            </para>
+            <para>
+                The (FIXME: link) object sub-system in &bugle; makes it easy
+                to associate data with a particular context, and is the
+                recommended method.
+            </para>
+        </sect2>
+        <sect2 id="extending-guidelines-oglextensions">
             <title>OpenGL extensions</title>
             <para>
                 BuGLe tries to support systems that only have header files and
@@ -134,7 +151,7 @@
                 <symbol>GROUP_<replaceable>glFunction</replaceable></symbol>
                 definition with the oldest name, which is generally an
                 extension function. You should also protect any such code with
-                a test for the GL extension define e.g.
+                a test for the GL extension define e.g.,
                 <symbol>GL_ARB_multitexture</symbol>.
             </para>
         </sect2>
@@ -218,7 +235,7 @@
     </sect1>
 
     <sect1 id="extending-api">
-        <title>Filter-set API</title>
+        <title>Basic filter-set API</title>
 
         <sect2 id="extending-api-libraryinit">
             <title>Library initialisation</title>
@@ -400,6 +417,22 @@ void bugle_filter_catches_all(filter *f, bool inactive, filter_callback callback
                 it is necessary to track some state even when the filter-set
                 is inactive.
             </para>
+            <para>
+                A filter-set should also indicate ordering dependencies
+                between filters. This is done by calling
+            </para>
+            <funcsynopsis>
+                <funcsynopsisinfo language="cpp">void bugle_filter_order(const char *first, const char *second);</funcsynopsisinfo>
+            </funcsynopsis>
+            <para>
+                This does not require that either filter is actually loaded.
+                It simply indicates that if both are present, then they are to
+                be run in the specified order. The most common use is to
+                specify an ordering relative to
+                <systemitem>invoke</systemitem>, the filter that is
+                responsible for passing a function call on to the real OpenGL
+                library.
+            </para>
         </sect2>
 
         <sect2 id="extending-api-callbacks">
@@ -444,10 +477,78 @@ void bugle_filter_catches_all(filter *f, bool inactive, filter_callback callback
                 revision, so it will not be documented yet.
             </para>
         </sect2>
+    </sect1>
 
-        <sect2 id="extending-api-utilities">
-            <title>Utility functions and filter-sets</title>
-            <para>Foo
+    <sect1>
+        <title>Utility functions and filter-sets</title>
+        <para>
+            The functions listed above are the minimal set needed to write a
+            filter-set. This section describes a number of utilities which
+            simplify the job of writing a more powerful filter-set. Most of
+            the functions described here are defined in <filename
+                class="headerfile">src/glutils.h</filename>.
+        </para>
+        <sect2 id="extending-utility-beginend">
+            <title>Begin/end checking</title>
+            <para>
+                Many OpenGL functions may not be called between
+                <function>glBegin</function> and <function>glEnd</function>.
+                To facilitate checking for this, the
+                <systemitem>trackbeginend</systemitem> filter-set provides the
+                boolean function <function>bugle_in_begin_end</function> which
+                indicates whether the current context is in this state. This
+                function is defined in the header <filename
+                    class="headerfile">src/tracker.h</filename>. You must also
+                also call <code
+                    language="cpp">bugle_filter_post_queries_begin_end("<replaceable>filtername</replaceable>")</code>
+                as part of the filter-set initialisation, for filters that run
+                after invocation. Failing to do so may yield incorrect results
+                during interception of <function>glBegin</function> or
+                <function>glEnd</function>.
+            </para>
+            <warning>
+                <para>
+                    Do not call
+                    <function>bugle_filter_post_queries_begin_end</function>
+                    for filters that run before invocation, or you will
+                    generate a cyclic dependency.
+                </para>
+            </warning>
+            <para>
+                If there is no current OpenGL context, this call will return
+                <symbol>true</symbol>. This means that whenever the call
+                returns false, it should be safe to issue OpenGL query
+                commands. For it to be safe to issue drawing commands, you
+                will also need to worry about display list generation,
+                feedback and selection. Refer to (FIXME:xref
+                linkend="extending-utility-calling"/) for more information
+                about making OpenGL calls from within a filter-set.
+            </para>
+        </sect2>
+        <sect2 id="extending-utility-error">
+            <title>Error checking</title>
+            <para>
+                It is often useful to know whether an OpenGL call generated an
+                OpenGL error. If your filter-set
+                <replaceable>filterset</replaceable> wishes to do this, it
+                must call <code
+                    language="cpp">bugle_filter_set_queries_error("<replaceable>filterset</replaceable>")</code>
+                during library initialisation. To actually retrieve the error,
+                call <code
+                    language="cpp">bugle_call_get_error(data->call_object)</code>.
+            </para>
+            <para>
+                This mechanism is not totally reliable. It is illegal to call
+                <function>glGetError</function> when there is no OpenGL
+                context or when between <function>glBegin</function> and
+                <function>glEnd</function>. In these cases,
+                <symbol>GL_NO_ERROR</symbol> may be returned even though the
+                call did not succeed.
+            </para>
+            <para>
+                In the current implementation, enabling this mechanism also
+                drasticly reduces performance, as every function call is
+                intercepted to call <function>glGetError</function>.
             </para>
         </sect2>
     </sect1>

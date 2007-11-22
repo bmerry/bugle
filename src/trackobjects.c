@@ -502,7 +502,7 @@ static bool initialise_trackobjects(filter_set *handle)
 #endif
     bugle_filter_order("invoke", "trackobjects");
     bugle_filter_order("trackobjects_pre", "invoke");
-    bugle_register_filter_post_renders("trackobjects");
+    bugle_filter_post_renders("trackobjects");
     ns_view = bugle_object_view_register(&bugle_namespace_class,
                                          initialise_objects,
                                          destroy_objects,
@@ -575,5 +575,5 @@ void trackobjects_initialise(void)
     bugle_filter_set_register(&trackobjects_info);
     bugle_filter_set_depends("trackobjects", "trackcontext");
     bugle_filter_set_depends("trackobjects", "trackextensions");
-    bugle_filter_set_register_renders("trackobjects");
+    bugle_filter_set_renders("trackobjects");
 }

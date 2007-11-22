@@ -2065,7 +2065,7 @@ void bugle_initialise_filter_library(void)
     bugle_filter_set_register(&stats_fragments_info);
     bugle_filter_set_depends("stats_fragments", "stats_basic");
     bugle_filter_set_depends("stats_fragments", "trackextensions");
-    bugle_filter_set_register_renders("stats_fragments");
+    bugle_filter_set_renders("stats_fragments");
     bugle_filter_set_register_stats_generator("stats_fragments");
 #endif
 
@@ -2081,7 +2081,7 @@ void bugle_initialise_filter_library(void)
 
     bugle_filter_set_register(&showstats_info);
     bugle_filter_set_depends("showstats", "trackextensions");
-    bugle_filter_set_register_renders("showstats");
+    bugle_filter_set_renders("showstats");
     bugle_filter_set_register_stats_logger("showstats");
     bugle_list_init(&showstats_stats_requested, true);
     bugle_list_init(&showstats_stats, true);

@@ -150,5 +150,5 @@ void trackextensions_initialise(void)
 
     bugle_filter_set_register(&trackextensions_info);
 
-    bugle_filter_set_register_renders("trackextensions");
+    bugle_filter_set_renders("trackextensions");
 }

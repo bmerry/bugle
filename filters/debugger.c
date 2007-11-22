@@ -971,7 +971,7 @@ static bool debugger_error_callback(function_call *call, const callback_data *da
     char *resp_str;
 
     if (break_on_error
-        && (error = bugle_get_call_error(data->call_object)))
+        && (error = bugle_call_get_error(data->call_object)))
     {
         resp_str = budgie_string_io(dump_any_call_string_io, call);
         gldb_protocol_send_code(out_pipe, RESP_BREAK_ERROR);
@@ -1028,8 +1028,8 @@ static bool initialise_debugger(filter_set *handle)
     bugle_filter_order("debugger", "invoke");
     bugle_filter_order("invoke", "debugger_error");
     bugle_filter_order("error", "debugger_error");
-    bugle_register_filter_post_renders("debugger_error");
-    bugle_filter_set_register_queries_error("debugger");
+    bugle_filter_post_renders("debugger_error");
+    bugle_filter_set_queries_error("debugger");
 
     return true;
 }
@@ -1053,6 +1053,5 @@ void bugle_initialise_filter_library(void)
     bugle_filter_set_depends("debugger", "error");
     bugle_filter_set_depends("debugger", "trackextensions");
     bugle_filter_set_depends("debugger", "trackobjects");
-    bugle_filter_set_depends("debugger", "trackbeginend");
-    bugle_filter_set_register_renders("debugger");
+    bugle_filter_set_renders("debugger");
 }

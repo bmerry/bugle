@@ -125,7 +125,7 @@ static bool initialise_classify(filter_set *handle)
     bugle_filter_catches(f, GROUP_glBindFramebufferEXT, true, classify_glBindFramebufferEXT);
 #endif
     bugle_filter_order("invoke", "classify");
-    bugle_register_filter_post_renders("classify");
+    bugle_filter_post_renders("classify");
     classify_view = bugle_object_view_register(&bugle_context_class, initialise_classify_context,
                                                 NULL, sizeof(classify_context));
     bugle_list_init(&classify_callbacks, true);
@@ -306,7 +306,7 @@ static bool initialise_wireframe(filter_set *handle)
     bugle_filter_catches(f, GROUP_glXMakeCurrentReadSGI, true, wireframe_make_current);
 #endif
     bugle_filter_order("invoke", "wireframe");
-    bugle_register_filter_post_renders("wireframe");
+    bugle_filter_post_renders("wireframe");
     wireframe_view = bugle_object_view_register(&bugle_context_class, initialise_wireframe_context,
                                                  NULL, sizeof(wireframe_context));
     register_classify_callback(wireframe_classify_callback, handle);
@@ -425,7 +425,7 @@ static bool initialise_frontbuffer(filter_set *handle)
 #ifdef GLX_SGI_make_current_read
     bugle_filter_catches(f, GROUP_glXMakeCurrentReadSGI, true, frontbuffer_make_current);
 #endif
-    bugle_register_filter_post_renders("frontbuffer");
+    bugle_filter_post_renders("frontbuffer");
 
     f = bugle_filter_register(handle, "frontbuffer_pre");
     bugle_filter_order("frontbuffer_pre", "invoke");
@@ -965,7 +965,7 @@ static bool initialise_camera(filter_set *handle)
     bugle_filter_catches(f, GROUP_glXSwapBuffers, false, camera_glXSwapBuffers);
 
     f = bugle_filter_register(handle, "camera_post");
-    bugle_register_filter_post_renders("camera_post");
+    bugle_filter_post_renders("camera_post");
     bugle_filter_order("invoke", "camera_post");
     bugle_filter_catches(f, GROUP_glXMakeCurrent, true, camera_make_current);
 #ifdef GLX_SGI_make_current_read
@@ -1281,14 +1281,14 @@ void bugle_initialise_filter_library(void)
     bugle_filter_set_register(&camera_info);
     bugle_filter_set_register(&extoverride_info);
 
-    bugle_filter_set_register_renders("classify");
+    bugle_filter_set_renders("classify");
     bugle_filter_set_depends("classify", "trackcontext");
     bugle_filter_set_depends("classify", "trackextensions");
-    bugle_filter_set_register_renders("wireframe");
+    bugle_filter_set_renders("wireframe");
     bugle_filter_set_depends("wireframe", "trackcontext");
     bugle_filter_set_depends("wireframe", "classify");
-    bugle_filter_set_register_renders("frontbuffer");
-    bugle_filter_set_register_renders("camera");
+    bugle_filter_set_renders("frontbuffer");
+    bugle_filter_set_renders("camera");
     bugle_filter_set_depends("camera", "classify");
     bugle_filter_set_depends("camera", "trackdisplaylist");
     bugle_filter_set_depends("camera", "trackcontext");

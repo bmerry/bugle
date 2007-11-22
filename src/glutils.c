@@ -32,7 +32,7 @@
 #include <assert.h>
 
 static filter_set *error_handle = NULL;
-static GLenum (*bugle_get_call_error_ptr)(object *) = NULL;
+static GLenum (*bugle_call_get_error_ptr)(object *) = NULL;
 
 bool bugle_begin_internal_render(void)
 {
@@ -232,34 +232,34 @@ bool bugle_call_is_immediate(function_call *call)
     }
 }
 
-void bugle_filter_set_register_renders(const char *name)
+void bugle_filter_set_renders(const char *name)
 {
     bugle_filter_set_depends(name, "trackcontext");
     bugle_filter_set_depends(name, "trackbeginend");
     bugle_filter_set_depends(name, "log");
 }
 
-void bugle_register_filter_post_renders(const char *name)
+void bugle_filter_post_renders(const char *name)
 {
     bugle_filter_order("error", name);
-    bugle_filter_order("trackbeginend", name);
+    bugle_filter_post_queries_begin_end(name);
 }
 
-void bugle_filter_set_register_queries_error(const char *name)
+void bugle_filter_set_queries_error(const char *name)
 {
     if (!error_handle)
     {
         error_handle = bugle_filter_set_get_handle("error");
-        bugle_get_call_error_ptr = (GLenum (*)(object *)) bugle_filter_set_get_symbol(error_handle, "bugle_get_call_error_internal");
+        bugle_call_get_error_ptr = (GLenum (*)(object *)) bugle_filter_set_get_symbol(error_handle, "bugle_call_get_error_internal");
     }
 }
 
-GLenum bugle_get_call_error(object *call_object)
+GLenum bugle_call_get_error(object *call_object)
 {
     if (error_handle
         && bugle_filter_set_is_active(error_handle)
-        && bugle_get_call_error_ptr)
-        return bugle_get_call_error_ptr(call_object);
+        && bugle_call_get_error_ptr)
+        return bugle_call_get_error_ptr(call_object);
     else
         return GL_NO_ERROR;
 }
