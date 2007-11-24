@@ -517,11 +517,9 @@ void bugle_filter_catches_all(filter *f, bool inactive, filter_callback callback
             <para>
                 If there is no current OpenGL context, this call will return
                 <symbol>true</symbol>. This means that whenever the call
-                returns false, it should be safe to issue OpenGL query
-                commands. For it to be safe to issue drawing commands, you
-                will also need to worry about display list generation,
-                feedback and selection. Refer to (FIXME:xref
-                linkend="extending-utility-calling"/) for more information
+                returns false, it should be safe to issue OpenGL
+                commands. Refer to <xref linkend="extending-utility-calling"/>
+                for more information
                 about making OpenGL calls from within a filter-set.
             </para>
         </sect2>
@@ -549,6 +547,51 @@ void bugle_filter_catches_all(filter *f, bool inactive, filter_callback callback
                 In the current implementation, enabling this mechanism also
                 drasticly reduces performance, as every function call is
                 intercepted to call <function>glGetError</function>.
+            </para>
+        </sect2>
+        <sect2 id="extending-utility-calling">
+            <title>Making calls to OpenGL</title>
+            <para>
+                If you attempt to call an OpenGL function directly, the
+                interception system will intercept the call and &bugle; will
+                be entered recursively. There is protection against this (the
+                call will be forwarded to the real OpenGL library without
+                further action), but it is nevertheless a performance hit. To
+                call an OpenGL function, you should prefix the name with
+                <literal>CALL_</literal>, for example,
+                <function>CALL_glGetIntegerv</function>. This will also work
+                for extension functions, but you must ensure that the
+                extension is available at both compile and run time; this is
+                described in FIXME:linkend=extending-utility-extensions.
+            </para>
+            <para>
+                For OpenGL (as opposed to GLX) functions, it is also important
+                to have a valid context which is not inside begin/end. Some
+                utilities are provided to simplify the interaction with
+                begin/end checking. A filter-set that wishes to make OpenGL
+                calls must be registered at library initialisation time with
+            </para>
+            <programlisting>bugle_filter_set_renders("<replaceable>filter-set</replaceable>");</programlisting>
+            <para>
+                and any filters that make such calls and which ran after
+                invocation must be registered during filter-set initialisation
+                with
+            </para>
+            <programlisting>bugle_filter_post_renders("<replaceable>filter</replaceable>");</programlisting>
+            <para>
+                To begin a section of code that wishes to make OpenGL function
+                calls, call <code>bugle_begin_internal_render()</code>. It
+                will return a boolean, indicating whether it is safe to
+                proceed. If it is, you must terminate that block of code by
+                calling
+                <code>bugle_end_internal_render("<replaceable>name</replaceable>", true);</code>
+                The first parameter is
+                a descriptive name for the section of code (typically the
+                name of the containing function), which is logged if the code
+                generates any OpenGL errors. Setting the second parameter to
+                false, however, suppresses the warning, which should only be
+                done if you have intentionally written code that may generate
+                OpenGL errors.
             </para>
         </sect2>
     </sect1>
