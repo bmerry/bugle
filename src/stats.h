@@ -26,6 +26,28 @@
 #include "common/linkedlist.h"
 #include "common/bool.h"
 
+#if HAVE_FINITE
+# define FINITE(x) (finite(x))
+#elif HAVE_ISFINITE
+# define FINITE(x) (isfinite(x))
+#else
+# define FINITE(x) ((x) != (x) && (x) != HUGE_VAL && (x) != -HUGE_VAL)
+#endif
+
+#if HAVE_ISNAN
+# define ISNAN(x) isnan(x)
+#else
+# define ISNAN(x) ((x) != (x))
+#endif
+
+#ifndef NAN
+# if HAVE_NAN
+#  define NAN (nan(""))
+# else
+#  define NAN (0.0 / 0.0)
+# endif
+#endif
+
 typedef enum
 {
     STATS_EXPRESSION_NUMBER,
@@ -91,6 +113,58 @@ typedef struct
     bool last;                          /* Last in an instance set */
 } stats_statistic;
 
+/*** Internal functions for the lexer and parser code ***/
+
 linked_list *stats_statistics_get_list(void);
+void statistics_initialise(void);
+
+/*** Public API for generators ***/
+
+/* Used by generators to list signals that they expose. Signals may not
+ * be multiply registered. Slots are only assigned when signals are
+ * activated.
+ */
+stats_signal *bugle_stats_signal_register(const char *name, void *user_data,
+                                          bool (*activate)(stats_signal *));
+/* Sets a new value, replacing any previous one */
+void bugle_stats_signal_update(stats_signal *si, double v);
+
+/* Convenience for accumulating signals */
+void bugle_stats_signal_add(stats_signal *si, double dv);
+
+void bugle_filter_set_stats_generator(const char *name);
+
+/*** Public API for loggers ***/
+
+typedef struct
+{
+    double value;
+    double integral;
+} stats_signal_value;
+
+typedef struct
+{
+    int allocated;
+    stats_signal_value *values;
+    struct timeval last_updated;
+} stats_signal_values;
+
+void bugle_stats_signal_values_init(stats_signal_values *sv);
+void bugle_stats_signal_values_clear(stats_signal_values *sv);
+void bugle_stats_signal_values_gather(stats_signal_values *sv);
+
+/* Evaluates the expression. If a signal is missing, the return is NaN. */
+double bugle_stats_expression_evaluate(const stats_expression *expr,
+                                       stats_signal_values *old_signals,
+                                       stats_signal_values *new_signals);
+
+stats_substitution *bugle_stats_statistic_find_substitution(stats_statistic *st, double v);
+/* Returns the first of a set if it exists, or NULL if not. */
+linked_list_node *bugle_stats_statistic_find(const char *name);
+/* List the registered statistics, for when an illegal one is mentioned */
+void bugle_stats_statistic_list(void);
+
+bool bugle_stats_expression_activate_signals(stats_expression *expr);
+void bugle_filter_set_stats_logger(const char *name);
 
 #endif /* BUGLE_FILTERS_STATS_H */

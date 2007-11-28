@@ -1,5 +1,5 @@
 /*  BuGLe: an OpenGL debugging tool
- *  Copyright (C) 2004-2006  Bruce Merry
+ *  Copyright (C) 2004-2007  Bruce Merry
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -27,6 +27,7 @@
 #include "xevent.h"
 #include "log.h"
 #include "dlopen.h"
+#include "stats.h"
 #include "common/hashtable.h"
 #include "common/safemem.h"
 #include "common/threads.h"
@@ -181,6 +182,7 @@ static void initialise_core_filters(void)
     trackextensions_initialise();
     trackobjects_initialise();
     log_initialise();
+    statistics_initialise();
 }
 
 /* The Linux ABI requires that OpenGL 1.2 functions be accessible by

@@ -21,7 +21,13 @@ pkglib_LTLIBRARIES = \
 	filters/validate.la \
 	filters/debugger.la \
 	filters/capture.la \
-	filters/stats.la
+	filters/stats_basic.la \
+	filters/stats_calls.la \
+	filters/stats_fragments.la \
+	filters/stats_nv.la \
+	filters/stats_primitives.la \
+	filters/logstats.la \
+	filters/showstats.la
 
 AM_CPPFLAGS = -I$(srcdir)/budgielib $(LTDLINCL) -DLIBDIR=\"$(libdir)\" -DPKGLIBDIR=\"$(pkglibdir)\" $(X_CFLAGS)
 AM_YFLAGS = -d
@@ -89,13 +95,14 @@ src_libbugle_la_SOURCES = \
 	src/filters.c src/filters.h \
 	src/trackcontext.c src/trackdisplaylist.c src/trackobjects.c \
 	src/trackbeginend.c src/trackextensions.c src/tracker.h \
+	src/stats.c src/stats.h src/statslex.l src/statsparse.y \
 	src/log.c src/log.h \
 	src/objects.c src/objects.h \
 	src/xevent.c src/xevent.h \
 	budgielib/budgieutils.c budgielib/budgieutils.h
 nodist_src_libbugle_la_SOURCES = \
 	src/utils.c src/utils.h src/lib.c src/lib.h
-src_libbugle_la_LIBADD = $(LIBLTDL) src/libbugleutils.la -lGL $(X_PRE_LIBS) $(X_LIBS) -lX11 $(X_EXTRA_LIBS) $(THREAD_LIBS)
+src_libbugle_la_LIBADD = $(LIBLTDL) src/libbugleutils.la -lGL $(X_PRE_LIBS) $(X_LIBS) -lX11 $(X_EXTRA_LIBS) $(THREAD_LIBS) -lm
 src_libbugle_la_LDFLAGS = -thread-safe -export-dynamic $(SYMBOLFLAGS) -version-info 4:0:0
 
 BUILT_SOURCES += src/lib.h src/types.h src/utils.h src/names.h src/confparse.h
@@ -155,15 +162,28 @@ filters_validate_la_SOURCES = filters/validate.c
 filters_validate_la_LDFLAGS = -thread-safe -module -avoid-version -export-dynamic $(SYMBOLFLAGS)
 filters_debugger_la_SOURCES = filters/debugger.c
 filters_debugger_la_LDFLAGS = -thread-safe -module -avoid-version -export-dynamic $(SYMBOLFLAGS)
-filters_stats_la_SOURCES = filters/statslex.l filters/statsparse.y filters/stats.c filters/stats.h
-filters_stats_la_LIBADD = -lm
-filters_stats_la_LDFLAGS = -thread-safe -module -avoid-version -export-dynamic $(SYMBOLFLAGS)
+filters_stats_basic_la_SOURCES = filters/stats_basic.c
+filters_stats_basic_la_LDFLAGS = -thread-safe -module -avoid-version -export-dynamic $(SYMBOLFLAGS)
+filters_stats_calls_la_SOURCES = filters/stats_calls.c
+filters_stats_calls_la_LDFLAGS = -thread-safe -module -avoid-version -export-dynamic $(SYMBOLFLAGS)
+filters_stats_fragments_la_SOURCES = filters/stats_fragments.c
+filters_stats_fragments_la_LDFLAGS = -thread-safe -module -avoid-version -export-dynamic $(SYMBOLFLAGS)
+filters_stats_nv_la_SOURCES = filters/stats_nv.c
+filters_stats_nv_la_LDFLAGS = -thread-safe -module -avoid-version -export-dynamic $(SYMBOLFLAGS)
+filters_stats_primitives_la_SOURCES = filters/stats_primitives.c
+filters_stats_primitives_la_LDFLAGS = -thread-safe -module -avoid-version -export-dynamic $(SYMBOLFLAGS)
+filters_logstats_la_SOURCES = filters/logstats.c
+filters_logstats_la_LDFLAGS = -thread-safe -module -avoid-version -export-dynamic $(SYMBOLFLAGS)
+filters_logstats_la_LIBADD = -lm
+filters_showstats_la_SOURCES = filters/showstats.c
+filters_showstats_la_LDFLAGS = -thread-safe -module -avoid-version -export-dynamic $(SYMBOLFLAGS)
+filters_showstats_la_LIBADD = -lm
 filters_capture_la_SOURCES = filters/capture.c gl2ps/gl2ps.c gl2ps/gl2ps.h
 filters_capture_la_CFLAGS = $(AVCODEC_CFLAGS)
 filters_capture_la_LIBADD = $(AVCODEC_LIBS)
 filters_capture_la_LDFLAGS = -thread-safe -module -avoid-version -export-dynamic $(SYMBOLFLAGS)
 
-BUILT_SOURCES += filters/statsparse.h
+BUILT_SOURCES += src/statsparse.h
 
 # Demo/Test programs
 check_PROGRAMS = \

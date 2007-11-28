@@ -7,6 +7,9 @@
   naming to the API.
 * Eliminate initialise_hashing in favour of the constructor macros
 * Replace some raise()s with bugle_thread_raise()
+* Move stats support code into the core and split out modules
+* Change the way statslex.l and statsparse.y avoid namespace collisions
+  (now more dependent on flex and bison)
 
 0.0.20071108
 ------------
