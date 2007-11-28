@@ -888,6 +888,11 @@ static void process_single_command(function_call *call)
             free(resp_str);
         }
         break;
+    default:
+        bugle_log_printf("debugger", "process_single_command",
+                         BUGLE_LOG_WARNING,
+                         "Unknown debug command %#08x received",
+                         req);
     }
 }
 

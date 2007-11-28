@@ -10,6 +10,15 @@
 #include <unistd.h>
 #include <errno.h>
 #include <string.h>
+#if HAVE_NETINET_IN_H
+# include <netinet/in.h>
+#endif
+#if HAVE_ARPA_INET_H
+# include <arpa/inet.h>
+#endif
+
+#define TO_NETWORK(x) htonl(x)
+#define TO_HOST(x) ntohl(x)
 
 static bool safe_write(int fd, const void *buf, size_t count)
 {
@@ -73,7 +82,13 @@ bool gldb_protocol_send_binary_string(int fd, uint32_t len, const char *str)
 {
     uint32_t len2;
 
-    /* FIXME: on 64-bit systems, length could in theory be >2^32 */
+    /* FIXME: on 64-bit systems, length could in theory be >=2^32. This is
+     * not as unlikely as it sounds, since textures are retrieved in floating
+     * point and so might be several times larger on the wire than on the
+     * video card. If this happens, the logical thing is to make a packet size
+     * of exactly 2^32-1 signal that a continuation packet will follow, which
+     * avoid breaking backwards compatibility.
+     */
     len2 = TO_NETWORK(len);
     if (!safe_write(fd, &len2, sizeof(uint32_t))) return false;
     if (!safe_write(fd, str, len)) return false;

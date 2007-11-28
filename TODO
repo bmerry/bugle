@@ -12,6 +12,7 @@ gldb
 - enable reporting of segfaults
 - break on particular GL errors, not just 'all errors'
 - fix display of uniform arrays
+- make the protocol totally endian-agnostic, without damaging efficiency
 
 gldb-gui
 --------

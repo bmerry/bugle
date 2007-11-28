@@ -1,5 +1,5 @@
 /*  BuGLe: an OpenGL debugging tool
- *  Copyright (C) 2004-2006  Bruce Merry
+ *  Copyright (C) 2004-2007  Bruce Merry
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -583,6 +583,37 @@ static void attach_gdb_action(GtkAction *action, gpointer user_data)
     free(argv[4]);
 }
 
+#if HAVE_GTK2_6
+static void about_action(GtkAction *action, gpointer user_data)
+{
+    /* static const char *authors[] = {"Bruce Merry <bmerry@users.sourceforge.net>", NULL}; */
+    static const char license[] =
+        "This program is free software; you can redistribute it and/or modify\n"
+        "it under the terms of the GNU General Public License as published by\n"
+        "the Free Software Foundation; version 2.\n\n"
+        "This program is distributed in the hope that it will be useful,\n"
+        "but WITHOUT ANY WARRANTY; without even the implied warranty of\n"
+        "MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the\n"
+        "GNU General Public License for more details.\n\n"
+        "You should have received a copy of the GNU General Public License\n"
+        "along with this program; if not, write to the Free Software\n"
+        "Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA";
+    GldbWindow *context;
+
+    context = (GldbWindow *) user_data;
+    gtk_show_about_dialog(GTK_WINDOW(context->window),
+                          "title", _("About gldb-gui"),
+                          "program-name", "gldb-gui",
+                          /* "authors", authors, */
+                          "comments", "An open-source OpenGL debugger",
+                          "copyright", "2004-2007 Bruce Merry",
+                          "license", license,
+                          "version", PACKAGE_VERSION,
+                          "website", "http://www.opengl.org/sdk/tools/BuGLe/",
+                          NULL);
+}
+#endif
+
 static const gchar *ui_desc =
 "<ui>"
 "  <menubar name='MenuBar'>"
@@ -601,6 +632,11 @@ static const gchar *ui_desc =
 "      <separator />"
 "      <menuitem action='AttachGDB' />"
 "    </menu>"
+#if HAVE_GTK2_6
+"    <menu action='HelpMenu'>"
+"      <menuitem action='About' />"
+"    </menu>"
+#endif
 "  </menubar>"
 "</ui>";
 
@@ -612,7 +648,12 @@ static GtkActionEntry action_desc[] =
     { "OptionsMenu", NULL, "_Options", NULL, NULL, NULL },
     { "Chain", NULL, "Filter _Chain", NULL, NULL, G_CALLBACK(chain_action) },
 
-    { "RunMenu", NULL, "_Run", NULL, NULL, NULL }
+    { "RunMenu", NULL, "_Run", NULL, NULL, NULL },
+
+#if HAVE_GTK2_6
+    { "HelpMenu", NULL, "_Help", NULL, NULL, NULL },
+    { "About", NULL, "_About", NULL, NULL, G_CALLBACK(about_action) }
+#endif
 };
 
 static GtkActionEntry running_action_desc[] =

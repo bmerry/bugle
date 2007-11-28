@@ -10,6 +10,8 @@
 * Move stats support code into the core and split out modules
 * Change the way statslex.l and statsparse.y avoid namespace collisions
   (now more dependent on flex and bison)
+* Added About dialog to the debugger
+* Use ntohl and htonl in debugger protocol
 
 0.0.20071108
 ------------

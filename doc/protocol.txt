@@ -10,10 +10,10 @@ layer. The former are easier to use with features like select(), but
 are not very for text-based protocols.
 
 Values are all 32-bit except where otherwise specified. Strings are a
-32-bit count followed by the characters (no explicit terminator). At
-present values are not byte-ordered consistently. However, they are all
-run through TO_NETWORK() and TO_HOST() so that these macros may later
-map to htonl and ntohl for network transparency. 
+32-bit count followed by the characters (no explicit terminator).
+Values are passed in network byte order (big-endian), which is handled
+by TO_NETWORK and TO_HOST. However, at present raw data (such as
+texture or framebuffer dumps) are passed unconverted for performance.
 
 The protocol is partially asynchronous. gldb may send requests at any
 time, but the library will answer them as soon as possible and in the

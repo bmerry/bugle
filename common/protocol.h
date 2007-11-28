@@ -44,9 +44,6 @@
 #define REQ_DATA_SHADER                0xedbc0001UL
 #define REQ_DATA_FRAMEBUFFER           0xedbc0002UL
 
-#define TO_NETWORK(x) (x)
-#define TO_HOST(x) (x)
-
 bool gldb_protocol_send_code(int fd, uint32_t code);
 bool gldb_protocol_send_binary_string(int fd, uint32_t len, const char *str);
 bool gldb_protocol_send_string(int fd, const char *str);
