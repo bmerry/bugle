@@ -62,6 +62,8 @@ struct Type
     string type_name() const;  /* e.g. "int *" */
     string name() const;
     string define() const;
+
+    bool operator <(const Type &b) const { return name() < b.name(); }
 };
 
 struct Bitfield
@@ -372,6 +374,7 @@ static void identify()
                 }
             }
         }
+    types.sort();
 }
 
 static void make_function_map()

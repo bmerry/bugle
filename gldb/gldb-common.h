@@ -241,7 +241,11 @@ const char *gldb_get_program(void);
 int gldb_get_in_pipe(void);
 int gldb_get_out_pipe(void);
 
-void gldb_initialise(int argc, char * const *argv);
+void gldb_program_set_local(int argc, const char * const *argv);
+void gldb_program_set_remote(const char *command, const char *host, const char *display);
+void gldb_program_clear();
+
+void gldb_initialise(int argc, const char * const *argv);
 void gldb_shutdown(void);
 
 #endif /* !BUGLE_GLDB_GLDB_COMMON_H */

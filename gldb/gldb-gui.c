@@ -39,6 +39,7 @@
 #include "src/names.h"
 #include "gldb/gldb-common.h"
 #include "gldb/gldb-channels.h"
+#include "gldb/gldb-gui-target.h"
 #include "gldb/gldb-gui-image.h"
 #include "gldb/gldb-gui-state.h"
 #include "gldb/gldb-gui-texture.h"
@@ -541,6 +542,14 @@ static void chain_action(GtkAction *action, gpointer user_data)
     gtk_widget_destroy(dialog);
 }
 
+static void target_action(GtkAction *action, gpointer user_data)
+{
+    GldbWindow *context;
+
+    context = (GldbWindow *) user_data;
+    gldb_gui_do_target_dialog(context->window);
+}
+
 static void attach_gdb_action(GtkAction *action, gpointer user_data)
 {
     GldbWindow *context;
@@ -622,6 +631,7 @@ static const gchar *ui_desc =
 "    </menu>"
 "    <menu action='OptionsMenu'>"
 "      <menuitem action='Chain' />"
+"      <menuitem action='Target' />"
 "    </menu>"
 "    <menu action='RunMenu'>"
 "      <menuitem action='Run' />"
@@ -647,6 +657,7 @@ static GtkActionEntry action_desc[] =
 
     { "OptionsMenu", NULL, "_Options", NULL, NULL, NULL },
     { "Chain", NULL, "Filter _Chain", NULL, NULL, G_CALLBACK(chain_action) },
+    { "Target", NULL, "_Target", NULL, NULL, G_CALLBACK(target_action) },
 
     { "RunMenu", NULL, "_Run", NULL, NULL, NULL },
 
