@@ -34,6 +34,8 @@
 <!ENTITY mp-glFinish "<citerefentry><refentrytitle>glFinish</refentrytitle><manvolnum>3</manvolnum></citerefentry>">
 <!ENTITY mp-glFeedbackBuffer "<citerefentry><refentrytitle>glFeedbackBuffer</refentrytitle><manvolnum>3</manvolnum></citerefentry>">
 <!ENTITY mp-glGetError "<citerefentry><refentrytitle>glGetError</refentrytitle><manvolnum>3</manvolnum></citerefentry>">
+<!ENTITY mp-ssh "<citerefentry><refentrytitle>ssh</refentrytitle><manvolnum>1</manvolnum></citerefentry>">
+<!ENTITY mp-security "<citerefentry><refentrytitle>security</refentrytitle><manvolnum>7</manvolnum></citerefentry>">
 
 <!-- Misc shorter common pieces of text or links -->
 <!ENTITY bugle "<application>bugle</application>">
