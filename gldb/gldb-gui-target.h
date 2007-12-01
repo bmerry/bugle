@@ -23,8 +23,7 @@
 #endif
 
 #include <gtk/gtk.h>
-#include <glib.h>
 
-void gldb_gui_do_target_dialog(GtkWindow *parent);
+void gldb_gui_target_dialog_run(GtkWidget *parent);
 
 #endif

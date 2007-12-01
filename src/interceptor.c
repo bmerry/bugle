@@ -69,6 +69,7 @@ static void load_config(void)
         config = bugle_strdup(getenv("BUGLE_FILTERS"));
     home = getenv("HOME");
     chain_name = getenv("BUGLE_CHAIN");
+    if (chain_name && !*chain_name) chain_name = NULL;
     debugging = getenv("BUGLE_DEBUGGER") != NULL;
     /* If using the debugger and no chain is specified, we use passthrough
      * mode.

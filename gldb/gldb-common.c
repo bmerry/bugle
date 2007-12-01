@@ -45,10 +45,9 @@ static int lib_in, lib_out;
  */
 static gldb_status status = GLDB_STATUS_DEAD;
 static pid_t child_pid = -1;
-static char *filter_chain = NULL;
 
-static char **prog_argv = NULL;
-static bool prog_remote = false;
+static char *prog_settings[GLDB_PROGRAM_SETTING_COUNT];
+static gldb_program_type prog_type;
 
 static gldb_state *state_root = NULL;
 static bool state_dirty = true;
@@ -60,49 +59,33 @@ void gldb_program_clear(void)
 {
     int i;
 
-    if (prog_argv)
-    {
-        for (i = 0; prog_argv[i]; i++)
-            free(prog_argv[i]);
-        free(prog_argv);
-    }
-    prog_argv = NULL;
-    prog_remote = false;
+    for (i = 0; i < GLDB_PROGRAM_SETTING_COUNT; i++)
+        free(prog_settings[i]);
+    prog_type = GLDB_PROGRAM_LOCAL;
 }
 
-void gldb_program_set_local(int argc, const char * const *argv)
+void gldb_program_set_setting(gldb_program_setting setting, const char *value)
 {
-    int i;
-
-    gldb_program_clear();
-    prog_argv = bugle_malloc((argc + 1) * sizeof(char *));
-    for (i = 0; i < argc; i++)
-        prog_argv[i] = bugle_strdup(argv[i]);
-    prog_argv[argc] = NULL;
-    prog_remote = false;
+    assert(setting >= 0 && setting < GLDB_PROGRAM_SETTING_COUNT);
+    free(prog_settings[setting]);
+    if (value && !*value) value = NULL;
+    prog_settings[setting] = value ? strdup(value) : NULL;
 }
 
-/* Sets up the arguments for remote execution over ssh. display may be
- * NULL, in which case the display is not explicitly set
- */
-void gldb_program_set_remote(const char *command, const char *host,
-                             const char *display)
+void gldb_program_set_type(gldb_program_type type)
 {
-    /* ssh host 'DISPLAY=display LD_PRELOAD=libbugle.so BUGLE_DEBUGGER=1 \
-     *           BUGLE_DEBUGGER_FD_IN=3 BUGLE_DEBUGGER_FD_OUT=4 \
-     *           command 3<&0 4>&1 </dev/null 1>&2'
-     */
-    gldb_program_clear();
+    prog_type = type;
+}
 
-    prog_argv = bugle_malloc((3 + 1) * sizeof(char *));
-    prog_argv[0] = bugle_strdup("ssh");
-    prog_argv[1] = bugle_strdup(host);
-    bugle_asprintf(&prog_argv[2], "%s%s LD_PRELOAD=libbugle.so BUGLE_DEBUGGER=1 BUGLE_DEBUGGER_FD_IN=3 BUGLE_DEBUGGER_FD_OUT=4 %s 3<&0 4>&1 </dev/null 1>&2",
-                   display ? "DISPLAY=" : "",
-                   display ? display : "",
-                   command);
-    prog_argv[3] = NULL;
-    prog_remote = true;
+const char *gldb_program_get_setting(gldb_program_setting setting)
+{
+    assert(setting >= 0 && setting < GLDB_PROGRAM_SETTING_COUNT);
+    return prog_settings[setting];
+}
+
+gldb_program_type gldb_program_get_type(void)
+{
+    return prog_type;
 }
 
 /* Spawns off the program, and returns the pid */
@@ -111,7 +94,8 @@ static pid_t execute(void (*child_init)(void))
     pid_t pid;
     /* in/out refers to our view, not child view */
     int in_pipe[2], out_pipe[2];
-    char *env;
+    char *prog_argv[10];
+    char *command, *chain, *display, *host;
 
     gldb_safe_syscall(pipe(in_pipe), "pipe");
     gldb_safe_syscall(pipe(out_pipe), "pipe");
@@ -123,31 +107,40 @@ static pid_t execute(void (*child_init)(void))
     case 0: /* Child */
         (*child_init)();
 
-        if (prog_remote)
+        command = prog_settings[GLDB_PROGRAM_SETTING_COMMAND];
+        if (!command) command = "/bin/true";
+        display = prog_settings[GLDB_PROGRAM_SETTING_DISPLAY];
+        chain = prog_settings[GLDB_PROGRAM_SETTING_CHAIN];
+        host = prog_settings[GLDB_PROGRAM_SETTING_HOST];
+        switch (prog_type)
         {
+        case GLDB_PROGRAM_LOCAL:
+            prog_argv[0] = "/bin/sh";
+            prog_argv[1] = "-c";
+            bugle_asprintf(&prog_argv[2],
+                           "%s%s BUGLE_CHAIN=%s LD_PRELOAD=libbugle.so BUGLE_DEBUGGER=1 BUGLE_DEBUGGER_FD_IN=%d BUGLE_DEBUGGER_FD_OUT=%d %s",
+                           display ? "DISPLAY=" : "", display ? display : "",
+                           chain ? chain : "",
+                           out_pipe[0], in_pipe[1], command);
+            prog_argv[3] = NULL;
+            break;
+        case GLDB_PROGRAM_SSH:
+            /* Insert the environment variables into the command. */
+            prog_argv[0] = "/usr/bin/ssh";
+            prog_argv[1] = host ? host : "localhost";
+            bugle_asprintf(&prog_argv[2],
+                           "%s%s BUGLE_CHAIN=%s LD_PRELOAD=libbugle.so BUGLE_DEBUGGER=1 BUGLE_DEBUGGER_FD_IN=3 BUGLE_DEBUGGER_FD_OUT=4 %s 3<&0 4>&1 </dev/null 1>&2",
+                           display ? "DISPLAY=" : "", display ? display : "",
+                           chain ? chain : "",
+                           command);
+            prog_argv[3] = NULL;
             dup2(in_pipe[1], 1);
             dup2(out_pipe[0], 0);
-            /* FIXME: pass filter_chain */
-        }
-        else
-        {
-            if (filter_chain)
-                gldb_safe_syscall(setenv("BUGLE_CHAIN", filter_chain, 1), "setenv");
-            else
-                unsetenv("BUGLE_CHAIN");
-            gldb_safe_syscall(setenv("LD_PRELOAD", LIBDIR "/libbugle.so", 1), "setenv");
-            gldb_safe_syscall(setenv("BUGLE_DEBUGGER", "1", 1), "setenv");
-            bugle_asprintf(&env, "%d", in_pipe[1]);
-            gldb_safe_syscall(setenv("BUGLE_DEBUGGER_FD_OUT", env, 1), "setenv");
-            free(env);
-            bugle_asprintf(&env, "%d", out_pipe[0]);
-            gldb_safe_syscall(setenv("BUGLE_DEBUGGER_FD_IN", env, 1), "setenv");
-            free(env);
+            break;
         }
 
         close(in_pipe[0]);
         close(out_pipe[1]);
-        execvp(prog_argv[0], prog_argv);
         execv(prog_argv[0], prog_argv);
         perror("failed to execute program");
         exit(1);
@@ -786,18 +779,6 @@ void gldb_notify_child_dead(void)
     set_status(GLDB_STATUS_DEAD);
 }
 
-const char *gldb_get_chain(void)
-{
-    return filter_chain;
-}
-
-void gldb_set_chain(const char *chain)
-{
-    if (filter_chain) free(filter_chain);
-    if (chain) filter_chain = bugle_strdup(chain);
-    else chain = NULL;
-}
-
 gldb_status gldb_get_status(void)
 {
     return status;
@@ -806,11 +787,6 @@ gldb_status gldb_get_status(void)
 pid_t gldb_get_child_pid(void)
 {
     return child_pid;
-}
-
-const char *gldb_get_program(void)
-{
-    return prog_argv[0];
 }
 
 int gldb_get_in_pipe(void)
@@ -825,7 +801,23 @@ int gldb_get_out_pipe(void)
 
 void gldb_initialise(int argc, const char * const *argv)
 {
-    gldb_program_set_local(argc - 1, argv + 1);
+    int i;
+    char *command, *ptr;
+    size_t len = 0;
+
+    for (i = 1; i < argc; i++)
+        len += strlen(argv[i]) + 1;
+    ptr = command = bugle_malloc(len * sizeof(char));
+    for (i = 1; i < argc; i++)
+    {
+        len = strlen(argv[i]);
+        memcpy(ptr, argv[i], len);
+        ptr += len;
+        *ptr++ = ' ';
+    }
+    ptr[-1] = '\0';
+    gldb_program_set_setting(GLDB_PROGRAM_SETTING_COMMAND, command);
+    free(command);
     bugle_hash_init(&break_on, false);
 }
 

@@ -477,7 +477,7 @@ static void gldb_backtrace_pane_real_update(GldbPane *self)
     argv[2] = (gchar *) "-nw";   /* no windows */
     argv[3] = (gchar *) "-q";    /* quiet */
     argv[4] = (gchar *) "--interpreter=mi2";
-    argv[5] = (gchar *) gldb_get_program();
+    argv[5] = (gchar *) "-p";
     bugle_asprintf(&argv[6], "%lu", (unsigned long) gldb_get_child_pid());
     argv[7] = NULL;
     if (g_spawn_async_with_pipes(NULL,    /* working directory */

@@ -515,39 +515,12 @@ static void kill_action(GtkAction *action, gpointer user_data)
     gldb_send_quit(seq++);
 }
 
-static void chain_action(GtkAction *action, gpointer user_data)
-{
-    GtkWidget *dialog, *entry;
-    GldbWindow *context;
-    gint result;
-
-    context = (GldbWindow *) user_data;
-    dialog = gtk_dialog_new_with_buttons(_("Filter chain"),
-                                         GTK_WINDOW(context->window),
-                                         GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
-                                         GTK_STOCK_OK, GTK_RESPONSE_ACCEPT,
-                                         GTK_STOCK_CANCEL, GTK_RESPONSE_REJECT,
-                                         NULL);
-    gtk_dialog_set_default_response(GTK_DIALOG(dialog), GTK_RESPONSE_ACCEPT);
-
-    entry = gtk_entry_new();
-    if (gldb_get_chain())
-        gtk_entry_set_text(GTK_ENTRY(entry), gldb_get_chain());
-    gtk_widget_show(entry);
-    gtk_box_pack_start(GTK_BOX(GTK_DIALOG(dialog)->vbox), entry, TRUE, FALSE, 0);
-
-    result = gtk_dialog_run(GTK_DIALOG(dialog));
-    if (result == GTK_RESPONSE_ACCEPT)
-        gldb_set_chain(gtk_entry_get_text(GTK_ENTRY(entry)));
-    gtk_widget_destroy(dialog);
-}
-
 static void target_action(GtkAction *action, gpointer user_data)
 {
     GldbWindow *context;
 
     context = (GldbWindow *) user_data;
-    gldb_gui_do_target_dialog(context->window);
+    gldb_gui_target_dialog_run(context->window);
 }
 
 static void attach_gdb_action(GtkAction *action, gpointer user_data)
@@ -556,10 +529,10 @@ static void attach_gdb_action(GtkAction *action, gpointer user_data)
     GError *error = NULL;
     gchar *argv[6];
 
-    argv[0] = g_strdup("xterm");
-    argv[1] = g_strdup("-e");
-    argv[2] = g_strdup("gdb");
-    argv[3] = g_strdup(gldb_get_program());
+    argv[0] = (gchar *) "xterm";
+    argv[1] = (gchar *) "-e";
+    argv[2] = (gchar *) "gdb";
+    argv[3] = (gchar *) "-p";
     bugle_asprintf(&argv[4], "%lu", (unsigned long) gldb_get_child_pid());
     argv[5] = NULL;
 
@@ -585,10 +558,6 @@ static void attach_gdb_action(GtkAction *action, gpointer user_data)
         gtk_widget_destroy(dialog);
         g_error_free(error);
     }
-    g_free(argv[0]);
-    g_free(argv[1]);
-    g_free(argv[2]);
-    g_free(argv[3]);
     free(argv[4]);
 }
 
@@ -630,7 +599,6 @@ static const gchar *ui_desc =
 "      <menuitem action='Quit' />"
 "    </menu>"
 "    <menu action='OptionsMenu'>"
-"      <menuitem action='Chain' />"
 "      <menuitem action='Target' />"
 "    </menu>"
 "    <menu action='RunMenu'>"
@@ -656,7 +624,6 @@ static GtkActionEntry action_desc[] =
     { "Quit", GTK_STOCK_QUIT, "_Quit", "<control>Q", NULL, G_CALLBACK(quit_action) },
 
     { "OptionsMenu", NULL, "_Options", NULL, NULL, NULL },
-    { "Chain", NULL, "Filter _Chain", NULL, NULL, G_CALLBACK(chain_action) },
     { "Target", NULL, "_Target", NULL, NULL, G_CALLBACK(target_action) },
 
     { "RunMenu", NULL, "_Run", NULL, NULL, NULL },
@@ -797,7 +764,7 @@ int main(int argc, char **argv)
         fputs("Usage: gldb-gui <program> [<arguments>]\n", stderr);
         return 1;
     }
-    gldb_initialise(argc, argv);
+    gldb_initialise(argc, (const char * const *) argv);
     bugle_list_init(&response_handlers, true);
 
     memset(&context, 0, sizeof(context));

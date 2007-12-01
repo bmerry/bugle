@@ -61,6 +61,21 @@ typedef enum
     GLDB_STATUS_STOPPED
 } gldb_status;
 
+typedef enum
+{
+    GLDB_PROGRAM_SETTING_COMMAND = 0,
+    GLDB_PROGRAM_SETTING_CHAIN,
+    GLDB_PROGRAM_SETTING_DISPLAY,
+    GLDB_PROGRAM_SETTING_HOST,
+    GLDB_PROGRAM_SETTING_COUNT
+} gldb_program_setting;
+
+typedef enum
+{
+    GLDB_PROGRAM_LOCAL,
+    GLDB_PROGRAM_SSH
+} gldb_program_type;
+
 typedef struct
 {
     char *name;
@@ -233,7 +248,6 @@ void gldb_free_response(gldb_response *response);
 bool gldb_get_break_error(void);
 gldb_status gldb_get_status(void);
 pid_t gldb_get_child_pid(void);
-const char *gldb_get_program(void);
 /* These should only be used for select() and the like, never read from.
  * All protocol details are abstracted by gldb_send_*, gldb_set_* and
  * gldb_get_response.
@@ -241,9 +255,11 @@ const char *gldb_get_program(void);
 int gldb_get_in_pipe(void);
 int gldb_get_out_pipe(void);
 
-void gldb_program_set_local(int argc, const char * const *argv);
-void gldb_program_set_remote(const char *command, const char *host, const char *display);
 void gldb_program_clear();
+void gldb_program_set_setting(gldb_program_setting setting, const char *value);
+void gldb_program_set_type(gldb_program_type type);
+const char *gldb_program_get_setting(gldb_program_setting setting);
+gldb_program_type gldb_program_get_type(void);
 
 void gldb_initialise(int argc, const char * const *argv);
 void gldb_shutdown(void);

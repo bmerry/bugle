@@ -12,6 +12,7 @@
   (now more dependent on flex and bison)
 * Added About dialog to the debugger
 * Use ntohl and htonl in debugger protocol
+* Target option in gldb-gui
 
 0.0.20071108
 ------------

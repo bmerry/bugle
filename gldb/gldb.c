@@ -18,7 +18,6 @@
 #if HAVE_CONFIG_H
 # include <config.h>
 #endif
-#define _XOPEN_SOURCE 600 /* for unsetenv */
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -568,7 +567,7 @@ static bool command_backtrace(const char *cmd,
         if (in_pipe[1] != 0 && in_pipe[1] != 1) gldb_safe_syscall(close(in_pipe[1]), "close");
         if (out_pipe[0] != 0 && out_pipe[0] != 1) gldb_safe_syscall(close(out_pipe[0]), "close");
         if (out_pipe[0] != 1 && out_pipe[1] != 1) gldb_safe_syscall(close(out_pipe[1]), "close");
-        execlp("gdb", "gdb", "-batch", "-nx", "-command", "/dev/stdin", gldb_get_program(), pid_str, NULL);
+        execlp("gdb", "gdb", "-batch", "-nx", "-command", "/dev/stdin", "-p", pid_str, NULL);
         perror("could not invoke gdb");
         free(pid_str);
         exit(1);
@@ -607,12 +606,12 @@ static bool command_chain(const char *cmd,
     }
     if (strcmp(tokens[1], "none") == 0)
     {
-        gldb_set_chain(NULL);
+        gldb_program_set_setting(GLDB_PROGRAM_SETTING_CHAIN, NULL);
         fputs("Chain cleared.\n", stdout);
     }
     else
     {
-        gldb_set_chain(tokens[1]);
+        gldb_program_set_setting(GLDB_PROGRAM_SETTING_CHAIN, tokens[1]);
         printf("Chain set to %s.\n", tokens[1]);
     }
     if (gldb_get_status() != GLDB_STATUS_DEAD)
@@ -666,7 +665,7 @@ static bool command_gdb(const char *cmd,
         sigprocmask(SIG_SETMASK, &unblocked, NULL);
 
         bugle_asprintf(&pid_str, "%lu", (unsigned long) gldb_get_child_pid());
-        execlp("gdb", "gdb", gldb_get_program(), pid_str, NULL);
+        execlp("gdb", "gdb", "-p", pid_str, NULL);
         perror("could not invoke gdb");
         free(pid_str);
         exit(1);
@@ -948,7 +947,7 @@ static void initialise(void)
     atexit(shutdown);
 }
 
-int main(int argc, char * const *argv)
+int main(int argc, const char * const *argv)
 {
     if (argc < 2)
     {

@@ -78,7 +78,6 @@
                 again.
             </para>
         </tip>
-        <!-- FIXME: document the chain option -->
         <para>
             The interface is separated into a number of tabs. You can browse
             them at any time, but the information will only be up-to-date when
@@ -300,10 +299,117 @@
                 function correctly.</para></note>
     </refsect1>
 
+    <refsect1 id="gldb-gui-MAN-remote">
+        <title>Remote debugging</title>
+        <para>
+            Debugging on a single machine is not always practical, because the
+            target application may run full-screen, or take over the keyboard or
+            mouse.
+        </para>
+        <para>
+            Several options exist to use <command>gldb-gui</command> on a
+            separate machine to the target application. However,
+            <emphasis>all</emphasis> of them require trust between the two
+            machines involved as the debugging protocol is not error-checked
+            and so it would be easy for either a rogue target to attack
+            <command>gldb-gui</command> or vice versa.
+        </para>
+
+        <para>
+            Regardless of the method used, the X11 display running the
+            debugger must in some respects be at least as capable as the
+            display running the target application. Specifically, any
+            texture that you view is loaded into an equivalent texture in
+            the debugger, and so the texture target and dimensions must be
+            supported there.
+        </para>
+
+        <refsect2 id="gldb-gui-MAN-remote-x11">
+            <title>Remote X11, target on local display</title>
+            <para>
+                The easiest and most robust option is to rely on the networking
+                in the X Windowing System. From the machine containing the
+                target, start <command>gldb-gui</command> with a suitable
+                <envar>DISPLAY</envar> to place the GUI on a remote machine.
+                Then go to
+                <menuchoice>
+                    <guimenu>Options</guimenu>
+                    <guimenuitem>Target</guimenuitem>
+                </menuchoice> and set the display to the local machine
+                (usually :0.0).
+            </para>
+            <para>
+                Although X11 can directly connect to a remote display over the
+                network, this is not an encrypted connection and may not be
+                secure. SSH has an X-forwarding option (<option>-x</option>),
+                but with the default setting it does not forward GLX and so it
+                will not work if you have compiled gldb-gui with OpenGL
+                support. However, the <option>-Y</option> forwards the
+                connection as <firstterm>trusted</firstterm>, and in this mode
+                GLX is supported.  Please see &mp-security; to understand the
+                security implications of this before you proceed.
+            </para>
+        </refsect2>
+
+        <refsect2 id="gldb-gui-MAN-remote-x11-rev">
+            <title>Remote X11, target on remote display</title>
+            <para>
+                The same setup as above may be used in reverse: the target
+                runs on a remote display, while <command>gldb-gui</command>
+                runs on the local display.  The disadvantage of this is that
+                the application is now using indirect rendering, which may
+                affect its performance as well as its behaviour.
+            </para>
+        </refsect2>
+
+        <refsect2 id="gldb-gui-MAN-remote-ssh">
+            <title>SSH-tunnelled debugger protocol</title>
+            <para>
+                This scenario is highly experimental and extremely fragile.
+                The debugger and target execute on separate machines, and
+                communicate over SSH rather than through a local pipe. Because
+                the debugger protocol was not designed for networking, this
+                currently places severe restrictions on the machines used:
+            </para>
+            <itemizedlist>
+                <listitem><para>They must use the same byte representations for
+                        types. In particular, they must have the same endianness,
+                        and it may be necessary for them to have the same word size.
+                </para></listitem>
+                <listitem><para>They must the same internal enumeration of types.
+                        Generally this is only guaranteed if they are the same
+                        version of &bugle;, compiled with the same compiler and
+                        the same OpenGL headers. In some cases it may be
+                        sufficient to copy <filename>src/data/gl.tu</filename>
+                        from one build to another and re-build (but do not
+                        <emphasis>not</emphasis> run <command>make
+                            clean</command>, as this will cause the copied
+                        file to be regenerated).
+                </para></listitem>
+                <listitem><para>The <guilabel>Backtrace</guilabel> tab and the
+                        <guimenuitem>Attach GDB</guimenuitem> action will not
+                        work.
+                </para></listitem>
+            </itemizedlist>
+            <para>
+                To use this mode, go to 
+                <menuchoice>
+                    <guimenu>Options</guimenu>
+                    <guimenuitem>Target</guimenuitem>
+                </menuchoice>
+                and change the mode to <guilabel>Remote via SSH</guilabel>. In
+                the remote host, put the hostname as it will be passed to
+                &mp-ssh; (it can also contain a username). You must also
+                configure <application>ssh</application> to log into the
+                machine without prompting for a password.
+            </para>
+        </refsect2>
+    </refsect1>
+
     &author;
 
     <refsect1>
         <title>See also</title>
-        <para>&mp-bugle;</para>
+        <para>&mp-bugle;, &mp-ssh;, &mp-security;</para>
     </refsect1>
 </refentry>
