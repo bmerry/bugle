@@ -12,7 +12,6 @@ gldb
 - enable reporting of segfaults
 - break on particular GL errors, not just 'all errors'
 - fix display of uniform arrays
-- make the protocol totally endian-agnostic, without damaging efficiency
 
 gldb-gui
 --------
@@ -53,12 +52,14 @@ bugle
 - better handling of texture proxies
 - fill in the rest of the state (image state, mainly)
 - handle GL shared and unshared objects correctly (queries unshared)
+- mirror GL objects (textures etc) in the bugle object system
 - improve support for GLSL (more type information)
 - capture more information about call lists
 - capture and replay
-- make statistics a public interface
 - improve bugle_call_get_error and bugle_begin_internal_render so that using
   them doesn't require every single function call to be intercepted
+- support for GL_GREMEDY_string_marker and GL_GREMEDY_frame_terminator
+- finish documenting API in DocBook
 
 budgie
 ------
@@ -81,7 +82,7 @@ long term
 - OpenGL 3.0 support
 - make gldb-gui tabs totally modular (separate shared objects)
 - write support for state
-- debugging over the network
+- robust network debugging protocol
 - shader debugging
 - better movie capture
   - option of a separate thread, for parallel encoding

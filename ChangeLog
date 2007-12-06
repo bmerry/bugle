@@ -1,5 +1,5 @@
 * Fix an int vs. long mismatch
-* Update documentation on writing new filter-sets (out of date already!)
+* Update documentation on writing new filter-sets
 * Removed old kludge for filter-sets to register space in each call (which
   was non-threadsafe and had potential alignment issues) in favour of
   a per-call object.
