@@ -64,11 +64,12 @@ int main(int argc, char **argv)
     generate_pbos();
     source_pbo();
     sink_pbo();
-    
+
     return 0;
 }
 
 #else
+
 int main()
 {
     return 0;
