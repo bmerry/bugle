@@ -1,8 +1,10 @@
+0.0.20071206
+------------
 This release has a lot of changes, but it's mostly under the hood to
 start bringing bugle to a point where 3rd parties can easily write and
 ship filter-sets. The most obvious change for users is that remote
 (network) debugging is now easier to do. See gldb-gui(1) for details
-(seriously, read it, as its still very experimental and the best way
+(seriously, read it, as it's still very experimental and the best way
 isn't what the GUI might suggest).
 
 NB: if you are upgrading, you MUST delete

@@ -23,6 +23,21 @@ else
     <a href="screenshots.php">[Screenshots]</a>
     </p>
     <h1>BuGLe News</h1>
+    <h2>Remote debugging (6/12/2007)</h2>
+    <p>
+    This release has a lot of changes, but it's mostly under the hood to
+    start bringing bugle to a point where 3rd parties can easily write and
+    ship filter-sets. The most obvious change for users is that remote
+    (network) debugging is now easier to do. See
+    <a href="documentation/gldb-gui.1.php#gldb-gui-MAN-remote">gldb-gui(1)</a> for details
+    (seriously, read it, as it's still very experimental and the best way
+    isn't what the GUI might suggest).
+    </p>
+    <p>
+    NB: if you are upgrading, you MUST delete
+    <tt>/usr/local/lib/bugle/stats.so</tt>, otherwise you will get an error
+    about cyclic dependencies on startup.
+    </p>
     <h2>Redesigned documentation (7/11/2007)</h2>
     <p>This release fixes a number of compilation failures, crashes, and
     performance bugs. The manual pages have all been converted to DocBook,

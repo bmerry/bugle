@@ -1,3 +1,5 @@
+0.0.20071206
+------------
 * Fix an int vs. long mismatch
 * Update documentation on writing new filter-sets
 * Removed old kludge for filter-sets to register space in each call (which
