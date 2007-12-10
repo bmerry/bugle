@@ -37,6 +37,8 @@
 #include "common/hashtable.h"
 #include "common/bool.h"
 #include "xalloc.h"
+#include "xstrndup.h"
+#include "xvasprintf.h"
 
 #define STATISTICSFILE "/.bugle/statistics"
 
@@ -353,7 +355,7 @@ static char *pattern_match_rep(const char *pattern, const char *instance)
     wildcard = strchr(pattern, '*');
     l_pattern = strlen(pattern);
     l_instance = strlen(instance);
-    return bugle_strndup(instance + (wildcard - pattern), l_instance + 1 - l_pattern);
+    return xstrndup(instance + (wildcard - pattern), l_instance + 1 - l_pattern);
 }
 
 /* For a generic expression, checks whether substituting arg (a char *)

@@ -35,17 +35,12 @@
 extern "C" {
 #endif
 
-char *bugle_strdup(const char *s);
-char *bugle_strndup(const char *s, size_t size);
-
 /* Appends src to dest, possibly bugle_realloc()ing, and returns the pointer.
  * It assumes that dest was malloc()ed with a size that is the smallest
  * power of 2 large enough to hold it, and this will also hold as a
  * post-condition.
  */
 char *bugle_strcat(char *dest, const char *src);
-
-int bugle_asprintf(char **strp, const char *format, ...);
 
 /* Appends to *strp using the format, reallocating if necessary. The
  * current size is *sz, and will be updated on reallocation. *strp may

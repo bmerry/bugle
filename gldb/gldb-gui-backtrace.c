@@ -29,6 +29,7 @@
 #include <glib/gi18n-lib.h>
 #include <string.h>
 #include <stdlib.h>
+#include <stdio.h>
 #include "common/safemem.h"
 #include "common/linkedlist.h"
 #include "common/hashtable.h"
@@ -36,6 +37,8 @@
 #include "gldb/gldb-gui.h"
 #include "gldb/gldb-gui-backtrace.h"
 #include "xalloc.h"
+#include "xstrndup.h"
+#include "xvasprintf.h"
 
 /* Functions and structures to parse GDB/MI output. Split this out of
  * gldb-gui one day.
@@ -168,7 +171,7 @@ static GldbGdbValue *gldb_gdb_value_parse(const char **record_ptr, GError **erro
                         "Failed to parse value: expected '\"'");
             return NULL;
         }
-        v->const_value = bugle_strndup(record, end - record);
+        v->const_value = xstrndup(record, end - record);
         g_return_val_if_fail(end[0] == '"', NULL);
         record = end + 1;
     }
@@ -193,7 +196,7 @@ static GldbGdbValue *gldb_gdb_value_parse(const char **record_ptr, GError **erro
                                 "Failed to parse value: expected '='");
                     return NULL;
                 }
-                name = bugle_strndup(record, end - record);
+                name = xstrndup(record, end - record);
                 record = end + 1;
                 value = gldb_gdb_value_parse(&record, error);
                 if (!value)
@@ -341,7 +344,7 @@ static GldbGdbResultRecord *gldb_gdb_result_record_parse(const char *record, GEr
             return NULL;
         }
 
-        name = bugle_strndup(record, end - record);
+        name = xstrndup(record, end - record);
         record = end + 1;
         value = gldb_gdb_value_parse(&record, error);
         if (!value)
@@ -439,7 +442,7 @@ static void gldb_backtrace_pane_populate(GldbBacktracePane *pane,
         from = gldb_gdb_value_get_string_field(frame, "from");
 
         if (file && line)
-            bugle_asprintf(&location, "%s:%s", file, line);
+            location = xasprintf("%s:%s", file, line);
         else if (from)
             location = xstrdup(from);
         else
@@ -479,7 +482,7 @@ static void gldb_backtrace_pane_real_update(GldbPane *self)
     argv[3] = (gchar *) "-q";    /* quiet */
     argv[4] = (gchar *) "--interpreter=mi2";
     argv[5] = (gchar *) "-p";
-    bugle_asprintf(&argv[6], "%lu", (unsigned long) gldb_get_child_pid());
+    argv[6] = xasprintf("%lu", (unsigned long) gldb_get_child_pid());
     argv[7] = NULL;
     if (g_spawn_async_with_pipes(NULL,    /* working directory */
                                  argv,

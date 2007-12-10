@@ -27,31 +27,6 @@
 #include <stdarg.h>
 #include "xalloc.h"
 
-char *bugle_strdup(const char *s)
-{
-    /* strdup is not ANSI or POSIX, so we reimplement it */
-    char *n;
-    size_t len;
-
-    len = strlen(s);
-    n = XNMALLOC(len + 1, char);
-    memcpy(n, s, len + 1);
-    return n;
-}
-
-char *bugle_strndup(const char *s, size_t size)
-{
-    char *n;
-    size_t len;
-
-    len = strlen(s);
-    if (len < size) size = len;
-    n = XNMALLOC(size + 1, char);
-    memcpy(n, s, size);
-    n[size] = '\0';
-    return n;
-}
-
 char *bugle_strcat(char *dest, const char *src)
 {
     size_t dlen, dsize, slen, tsize;
@@ -76,45 +51,6 @@ char *bugle_strcat(char *dest, const char *src)
         memcpy(dest + dlen, src, slen + 1);
         return dest;
     }
-}
-
-int bugle_asprintf(char **strp, const char *format, ...)
-{
-    int ans;
-#if !HAVE_VASPRINTF && HAVE_VSNPRINTF
-    size_t size;
-#endif
-
-    va_list ap;
-#if HAVE_VASPRINTF
-    va_start(ap, format);
-    ans = vasprintf(strp, format, ap);
-    if (ans < 0 || !*strp)
-    {
-        fputs("out of memory in vasprintf\n", stderr);
-        exit(1);
-    }
-    va_end(ap);
-    return ans;
-#elif HAVE_VSNPRINTF
-    size = 128;
-    *strp = XNMALLOC(size, char);
-    while (1)
-    {
-        va_start(ap, format);
-        ans = vsnprintf(*strp, size, format, ap);
-        va_end(ap);
-        if (ans > -1 && ans < size)   /* Worked */
-            return ans;
-        else if (ans > -1)            /* C99 standard: number of characters */
-            size = ans + 1;
-        else                          /* Older e.g. glibc 2.0 */
-            size *= 2;
-        *strp = xnrealloc(*strp, size, sizeof(char));
-    }
-#else
-#error "you have no safe way to format strings"
-#endif
 }
 
 int bugle_appendf(char **strp, size_t *sz, const char *format, ...)

@@ -35,6 +35,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "xalloc.h"
+#include "xvasprintf.h"
 
 typedef struct
 {
@@ -162,15 +163,15 @@ static int stats_nv_enumerate(UINT index, char *name)
     for (accum = 0; accum < 2; accum++)
         for (cycles = 0; cycles < 2; cycles++)
         {
-            bugle_asprintf(&stat_name, "nv%s%s:%s",
-                           accum ? ":accum" : "",
-                           cycles ? ":cycles" : "", name);
+            stat_name = xasprintf("nv%s%s:%s",
+                                  accum ? ":accum" : "",
+                                  cycles ? ":cycles" : "", name);
             nv = XMALLOC(stats_signal_nv);
             nv->index = index;
             nv->accumulate = (accum == 1);
             nv->use_cycles = (cycles == 1);
             nv->experiment = (counter_type == NVPM_CT_SIMEXP);
-            nv->name = bugle_strdup(name);
+            nv->name = xstrdup(name);
             si = bugle_stats_signal_register(stat_name, nv,
                                              stats_nv_signal_activate);
             bugle_list_append(&stats_nv_registered, si);

@@ -99,7 +99,7 @@ BUGLE_C_GCC_FORMAT_PRINTF
 BUGLE_C_GCC_CONSTRUCTOR_ATTRIBUTE
 
 dnl Checks for library functions
-AC_CHECK_FUNCS([regcomp strrchr vasprintf vsnprintf open_memstream])
+AC_CHECK_FUNCS([regcomp strrchr vsnprintf open_memstream])
 AC_CHECK_FUNCS([cosf sinf finite isfinite nan isnan])
 # Readline used to call this completion_matches
 real_libs="$LIBS"

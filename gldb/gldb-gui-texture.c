@@ -35,6 +35,7 @@
 #include <gtk/gtkgl.h>
 #include <string.h>
 #include <stdlib.h>
+#include <stdio.h>
 #include "common/safemem.h"
 #include "common/protocol.h"
 #include "common/bool.h"
@@ -45,6 +46,7 @@
 #include "gldb/gldb-gui-image.h"
 #include "gldb/gldb-gui-texture.h"
 #include "xalloc.h"
+#include "xvasprintf.h"
 
 struct _GldbTexturePane
 {
@@ -289,7 +291,7 @@ static void gldb_texture_pane_update_ids(GldbTexturePane *pane)
                 }
                 channels = gldb_channel_get_query_channels(channels);
                 if (!levels || !channels) continue;
-                bugle_asprintf(&name, "%u (%s)", (unsigned int) t->numeric_name, target_names[trg]);
+                name = xasprintf("%u (%s)", (unsigned int) t->numeric_name, target_names[trg]);
                 gtk_list_store_append(GTK_LIST_STORE(model), &iter);
                 gtk_list_store_set(GTK_LIST_STORE(model), &iter,
                                    COLUMN_TEXTURE_ID_ID, (guint) t->numeric_name,

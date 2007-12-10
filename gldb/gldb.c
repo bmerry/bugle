@@ -47,6 +47,7 @@
 #include "common/hashtable.h"
 #include "gldb/gldb-common.h"
 #include "xalloc.h"
+#include "xvasprintf.h"
 /* Uncomment these lines to test the legacy I/O support
 #undef HAVE_READLINE
 #define HAVE_READLINE
@@ -560,7 +561,7 @@ static bool command_backtrace(const char *cmd,
         exit(1);
     case 0: /* child */
         sigprocmask(SIG_SETMASK, &unblocked, NULL);
-        bugle_asprintf(&pid_str, "%lu", (unsigned long) gldb_get_child_pid());
+        pid_str = xasprintf("%lu", (unsigned long) gldb_get_child_pid());
         /* FIXME: if in_pipe[1] or out_pipe[0] is already 0 or 1 */
         gldb_safe_syscall(dup2(in_pipe[1], 1), "dup2");
         gldb_safe_syscall(dup2(out_pipe[0], 0), "dup2");
@@ -665,7 +666,7 @@ static bool command_gdb(const char *cmd,
         if (fore) tcsetpgrp(1, getpgrp());
         sigprocmask(SIG_SETMASK, &unblocked, NULL);
 
-        bugle_asprintf(&pid_str, "%lu", (unsigned long) gldb_get_child_pid());
+        pid_str = xasprintf("%lu", (unsigned long) gldb_get_child_pid());
         execlp("gdb", "gdb", "-p", pid_str, NULL);
         perror("could not invoke gdb");
         free(pid_str);

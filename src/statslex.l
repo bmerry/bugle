@@ -95,7 +95,7 @@ d|a|s|e|"{"|"}"|"+"|"-"|"*"|"/"|"="|"("|")" { return yytext[0]; }
 <STRING_MODE>\\\n	/* Do nothing */
 <STRING_MODE>\\.	{ append_char(yytext[1]); }
 <STRING_MODE>\"	{ BEGIN(INITIAL);
-			stats_yylval.str = bugle_strdup(current_string);
+			stats_yylval.str = xstrdup(current_string);
 			clear_string();
 			return ST_STRING; }
 <STRING_MODE><<EOF>>	{

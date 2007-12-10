@@ -118,8 +118,10 @@
                         POSIX, BSD and X/OPEN library functions are
                         acceptable if the appropriate feature macros are
                         defined (<symbol>_POSIX_C_SOURCE</symbol> and so on).
-                        GNU-specific library functions should be avoided or
-                        abstracted (like <function>bugle_asprintf</function>).
+                        Gnulib should be used for memory-allocating functions
+                        (<function>xmalloc</function> and
+                        <function>xasprintf</function>, for example) and for
+                        non-portable functions.
                 </para></listitem>
             </itemizedlist>
         </sect2>

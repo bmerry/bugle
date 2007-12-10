@@ -47,6 +47,7 @@
 #include <assert.h>
 #include <inttypes.h>
 #include "xalloc.h"
+#include "xvasprintf.h"
 
 #define STATE_NAME(x) #x, x
 #define STATE_NAME_EXT(x, ext) #x, x ## ext
@@ -639,7 +640,7 @@ static void make_counted2(const glstate *self,
         child = XMALLOC(glstate);
         *child = *self;
         child->info = info;
-        bugle_asprintf(&child->name, format, (unsigned long) i);
+        child->name = xasprintf(format, (unsigned long) i);
         child->numeric_name = i;
         child->enum_name = 0;
         *(GLenum *) (((char *) child) + offset1) = base + i;
@@ -675,7 +676,7 @@ static void make_object(const glstate *self,
     *child = *self;
     child->target = target;
     child->info = info;
-    bugle_asprintf(&child->name, format, (unsigned long) id);
+    child->name = xasprintf(format, (unsigned long) id);
     child->numeric_name = id;
     child->enum_name = 0;
     child->object = id;
@@ -1012,7 +1013,7 @@ static void make_tex_levels(const glstate *self,
 
         child = XMALLOC(glstate);
         *child = *self;
-        bugle_asprintf(&child->name, "level[%lu]", (unsigned long) i);
+        child->name = xasprintf("level[%lu]", (unsigned long) i);
         child->numeric_name = i;
         child->enum_name = 0;
         child->info = NULL;
@@ -2888,7 +2889,7 @@ static void spawn_children_old_program_object(const glstate *self, linked_list *
             child->level = i;
             child->info = &program_local_state;
             child->spawn_children = NULL;
-            bugle_asprintf(&child->name, "Local[%lu]", (unsigned long) i);
+            child->name = xasprintf("Local[%lu]", (unsigned long) i);
             child->numeric_name = i;
             child->enum_name = 0;
             bugle_list_append(children, child);
@@ -2927,7 +2928,7 @@ static void spawn_children_old_program(const glstate *self, linked_list *childre
             child->level = i;
             child->info = &program_env_state;
             child->spawn_children = NULL;
-            bugle_asprintf(&child->name, "Env[%lu]", (unsigned long) i);
+            child->name = xasprintf("Env[%lu]", (unsigned long) i);
             child->numeric_name = i;
             child->enum_name = 0;
             bugle_list_append(children, child);
@@ -2962,7 +2963,7 @@ static void make_framebuffer_attachment(const glstate *self,
         child = XMALLOC(glstate);
         *child = *self;
         if (index < 0) child->name = xstrdup(format);
-        else bugle_asprintf(&child->name, format, index);
+        else child->name = xasprintf(format, index);
         child->info = NULL;
         child->numeric_name = index;
         child->enum_name = attachment;

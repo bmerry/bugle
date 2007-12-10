@@ -19,6 +19,8 @@
 # include <config.h>
 #endif
 #include <math.h>
+#include <stdlib.h>
+#include <string.h>
 #include "common/bool.h"
 #include "common/linkedlist.h"
 #include "common/safemem.h"
@@ -26,6 +28,7 @@
 #include "src/utils.h"
 #include "src/filters.h"
 #include "src/log.h"
+#include "xalloc.h"
 
 static linked_list logstats_show;    /* actual stats */
 static linked_list logstats_show_requested;  /* names in config file */
@@ -35,7 +38,7 @@ static stats_signal_values logstats_prev, logstats_cur;
 static bool logstats_show_set(const struct filter_set_variable_info_s *var,
                               const char *text, const void *value)
 {
-    bugle_list_append(&logstats_show_requested, bugle_strdup(text));
+    bugle_list_append(&logstats_show_requested, xstrdup(text));
     return true;
 }
 

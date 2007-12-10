@@ -29,12 +29,14 @@
 #include <glib/gi18n-lib.h>
 #include <string.h>
 #include <stdlib.h>
+#include <stdio.h>
 #include "common/protocol.h"
 #include "common/safemem.h"
 #include "common/radixtree.h"
 #include "gldb/gldb-common.h"
 #include "gldb/gldb-gui.h"
 #include "gldb/gldb-gui-shader.h"
+#include "xvasprintf.h"
 
 struct _GldbShaderPane
 {
@@ -135,7 +137,7 @@ static void gldb_shader_pane_update_ids(GldbShaderPane *pane)
     program = s ? gldb_state_GLint(s) : 0;
     if (program)
     {
-        bugle_asprintf(&name, "Program[%d]", program);
+        name = xasprintf("Program[%d]", program);
         s = gldb_state_find(root, name, strlen(name));
         free(name);
         if (s)
@@ -165,8 +167,8 @@ static void gldb_shader_pane_update_ids(GldbShaderPane *pane)
                 t = (gldb_state *) bugle_list_data(nt);
                 if (t->enum_name == 0 && t->name[0] >= '0' && t->name[0] <= '9')
                 {
-                    bugle_asprintf(&name, "%d (%s)",
-                                   t->numeric_name, target_names[trg]);
+                    name = xasprintf("%d (%s)",
+                                     t->numeric_name, target_names[trg]);
                     gtk_list_store_append(GTK_LIST_STORE(model), &iter);
                     gtk_list_store_set(GTK_LIST_STORE(model), &iter,
                                        COLUMN_SHADER_ID_ID, (guint) t->numeric_name,
@@ -192,8 +194,8 @@ static void gldb_shader_pane_update_ids(GldbShaderPane *pane)
                     bool active;
 
                     active = bugle_radix_tree_get(&active_glsl, t->numeric_name);
-                    bugle_asprintf(&name, "%d (%s)",
-                                   t->numeric_name, target_names[trg]);
+                    name = xasprintf("%d (%s)",
+                                     t->numeric_name, target_names[trg]);
                     gtk_list_store_append(GTK_LIST_STORE(model), &iter);
                     gtk_list_store_set(GTK_LIST_STORE(model), &iter,
                                        COLUMN_SHADER_ID_ID, (guint) t->numeric_name,
@@ -281,7 +283,7 @@ static gboolean gldb_shader_pane_source_expose(GtkWidget *widget,
         gtk_text_view_buffer_to_window_coords(GTK_TEXT_VIEW(widget),
                                               GTK_TEXT_WINDOW_LEFT,
                                               0, y, &winx, &winy);
-        bugle_asprintf(&no, "%d", (int) gtk_text_iter_get_line(&line) + 1);
+        no = xasprintf("%d", (int) gtk_text_iter_get_line(&line) + 1);
         pango_layout_set_text(layout, no, -1);
         free(no);
         pango_layout_get_pixel_size(layout, &text_width, &text_height);

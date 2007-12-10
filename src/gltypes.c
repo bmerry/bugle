@@ -18,12 +18,12 @@
 #if HAVE_CONFIG_H
 # include <config.h>
 #endif
+#include "src/types.h"
 #include <GL/gl.h>
 #include <GL/glx.h>
 #include <stdio.h>
 #include "gltypes.h"
 #include "common/bool.h"
-#include "src/types.h"
 
 const gl_token *bugle_gl_enum_to_token_struct(GLenum e)
 {

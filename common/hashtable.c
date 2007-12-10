@@ -121,7 +121,7 @@ void bugle_hash_set(hash_table *table, const char *key, void *value)
         if (++h == table->size) h = 0;
     if (!table->entries[h].key)
     {
-        table->entries[h].key = bugle_strdup(key);
+        table->entries[h].key = xstrdup(key);
         table->count++;
     }
     else if (table->owns_memory && table->entries[h].value)

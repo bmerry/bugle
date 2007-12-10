@@ -72,7 +72,7 @@ chain		{ return CHAIN; }
 filterset	{ return FILTERSET; }
 active          { return ACTIVE; }
 inactive        { return INACTIVE; }
-[A-Za-z0-9_-]+	{ yylval.str = bugle_strdup(yytext); return WORD; }
+[A-Za-z0-9_-]+	{ yylval.str = xstrdup(yytext); return WORD; }
 \"		{ BEGIN(STRING_MODE); }
 #.*$		/* Do nothing: eats comments */
 "{"|"}"		{ return yytext[0]; }
@@ -85,7 +85,7 @@ inactive        { return INACTIVE; }
 <STRING_MODE>\\\n	/* Do nothing */
 <STRING_MODE>\\.	{ append_char(yytext[1]); }
 <STRING_MODE>\"	{ BEGIN(INITIAL);
-			yylval.str = bugle_strdup(current_string);
+			yylval.str = xstrdup(current_string);
 			clear_string();
 			return STRING; }
 <STRING_MODE><<EOF>>	{

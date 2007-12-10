@@ -39,6 +39,7 @@
 #include <gdk-pixbuf/gdk-pixbuf.h>
 #include <string.h>
 #include <stdlib.h>
+#include <stdio.h>
 #include <math.h>
 #include "common/safemem.h"
 #include "common/bool.h"
@@ -47,6 +48,7 @@
 #include "gldb/gldb-channels.h"
 #include "gldb/gldb-gui-image.h"
 #include "xalloc.h"
+#include "xvasprintf.h"
 
 enum
 {
@@ -410,7 +412,7 @@ static void image_draw_motion_update(GldbGuiImageViewer *viewer,
     v = CLAMP((int) y, 0, height - 1);
     nchannels = gldb_channel_count(plane->channels);
     pixel = plane->pixels + nchannels * (v * width + u);
-    bugle_asprintf(&msg, "u: %d v: %d ", u, v);
+    msg = xasprintf("u: %d v: %d ", u, v);
 
     channels = plane->channels;
     for (p = 0; channels; channels &= ~channel, p++)
@@ -418,7 +420,7 @@ static void image_draw_motion_update(GldbGuiImageViewer *viewer,
         channel = channels & ~(channels - 1);
         const char *abbr = gldb_channel_get_abbr(channel);
         tmp_msg = msg;
-        bugle_asprintf(&msg, " %s %s: %f", tmp_msg, abbr ? abbr : "?", pixel[p]);
+        msg = xasprintf(" %s %s: %f", tmp_msg, abbr ? abbr : "?", pixel[p]);
         free(tmp_msg);
     }
     viewer->pixel_status_id = gtk_statusbar_push(viewer->statusbar,
@@ -651,7 +653,7 @@ static void gldb_gui_image_viewer_new_zoom_combo(GldbGuiImageViewer *viewer)
     {
         gchar *caption;
 
-        bugle_asprintf(&caption, "1:%d", (1 << i));
+        caption = xasprintf("1:%d", (1 << i));
         gtk_list_store_append(store, &iter);
         gtk_list_store_set(store, &iter,
                            COLUMN_IMAGE_ZOOM_VALUE, (gdouble) 1.0 / (1 << i),
@@ -664,7 +666,7 @@ static void gldb_gui_image_viewer_new_zoom_combo(GldbGuiImageViewer *viewer)
     {
         gchar *caption;
 
-        bugle_asprintf(&caption, "%d:1", (1 << i));
+        caption = xasprintf("%d:1", (1 << i));
         gtk_list_store_append(store, &iter);
         gtk_list_store_set(store, &iter,
                            COLUMN_IMAGE_ZOOM_VALUE, (gdouble) (1 << i),
@@ -1144,7 +1146,7 @@ void gldb_gui_image_viewer_update_levels(GldbGuiImageViewer *viewer)
     {
         char *text;
 
-        bugle_asprintf(&text, "%d", i);
+        text = xasprintf("%d", i);
         gtk_list_store_append(GTK_LIST_STORE(model), &iter);
         gtk_list_store_set(GTK_LIST_STORE(model), &iter,
                            COLUMN_IMAGE_LEVEL_VALUE, i,

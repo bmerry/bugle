@@ -18,11 +18,15 @@
 #if HAVE_CONFIG_H
 # include <config.h>
 #endif
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include "common/bool.h"
 #include "common/safemem.h"
 #include "src/stats.h"
 #include "src/utils.h"
 #include "src/filters.h"
+#include "xvasprintf.h"
 
 static stats_signal *stats_calls_counts[NUMBER_OF_FUNCTIONS];
 
@@ -43,7 +47,7 @@ static bool stats_calls_initialise(filter_set *handle)
     for (i = 0; i < NUMBER_OF_FUNCTIONS; i++)
     {
         char *name;
-        bugle_asprintf(&name, "calls:%s", budgie_function_table[i].name);
+        name = xasprintf("calls:%s", budgie_function_table[i].name);
         stats_calls_counts[i] = bugle_stats_signal_register(name, NULL, NULL);
         free(name);
     }

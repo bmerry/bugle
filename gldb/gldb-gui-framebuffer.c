@@ -35,6 +35,7 @@
 #include <gtk/gtkgl.h>
 #include <string.h>
 #include <stdlib.h>
+#include <stdio.h>
 #include "common/safemem.h"
 #include "common/protocol.h"
 #include "common/safemem.h"
@@ -44,6 +45,7 @@
 #include "gldb/gldb-gui-image.h"
 #include "gldb/gldb-gui-framebuffer.h"
 #include "xalloc.h"
+#include "xvasprintf.h"
 
 struct _GldbFramebufferPane
 {
@@ -183,9 +185,9 @@ static void gldb_framebuffer_pane_update_ids(GldbFramebufferPane *pane)
             fbo = (gldb_state *) bugle_list_data(pfbo);
 
             if (fbo->numeric_name == 0)
-                bugle_asprintf(&name, _("Default"));
+                name = xstrdup(_("Default"));
             else
-                bugle_asprintf(&name, "%u", (unsigned int) fbo->numeric_name);
+                name = xasprintf("%u", (unsigned int) fbo->numeric_name);
             gtk_list_store_append(GTK_LIST_STORE(model), &iter);
             gtk_list_store_set(GTK_LIST_STORE(model), &iter,
                                COLUMN_FRAMEBUFFER_ID_ID, fbo->numeric_name,
@@ -264,7 +266,7 @@ static void gldb_framebuffer_pane_id_changed(GtkWidget *widget, gpointer user_da
             {
                 if (gldb_state_find_child_enum(fbo, GL_COLOR_ATTACHMENT0_EXT + i))
                 {
-                    bugle_asprintf(&name, _("Color %d"), i);
+                    name = xasprintf(_("Color %d"), i);
                     gtk_list_store_append(GTK_LIST_STORE(model), &iter);
                     gtk_list_store_set(GTK_LIST_STORE(model), &iter,
                                        COLUMN_FRAMEBUFFER_BUFFER_ID, (guint) (GL_COLOR_ATTACHMENT0_EXT + i),
@@ -353,7 +355,7 @@ static void gldb_framebuffer_pane_id_changed(GtkWidget *widget, gpointer user_da
                 attachments = gldb_state_GLint(parameter);
                 for (i = 0; i < attachments; i++)
                 {
-                    bugle_asprintf(&name, _("GL_AUX%d"), i);
+                    name = xasprintf(_("GL_AUX%d"), i);
                     gtk_list_store_append(GTK_LIST_STORE(model), &iter);
                     gtk_list_store_set(GTK_LIST_STORE(model), &iter,
                                        COLUMN_FRAMEBUFFER_BUFFER_ID, (guint) (GL_AUX0 + i),

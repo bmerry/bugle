@@ -25,10 +25,13 @@
 #include "common/bool.h"
 #include "common/threads.h"
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include <stdarg.h>
 #include <sys/types.h>
 #include <unistd.h>
 #include <assert.h>
+#include "xalloc.h"
 
 static char *log_filename = NULL;
 static char *log_format = NULL;
@@ -235,5 +238,5 @@ void log_initialise(void)
     };
 
     bugle_filter_set_register(&log_info);
-    log_format = bugle_strdup("[%l] %f.%e: %m");
+    log_format = xstrdup("[%l] %f.%e: %m");
 }

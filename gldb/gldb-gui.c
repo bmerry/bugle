@@ -48,6 +48,7 @@
 #include "gldb/gldb-gui-backtrace.h"
 #include "gldb/gldb-gui-breakpoint.h"
 #include "xalloc.h"
+#include "xvasprintf.h"
 
 /* Global variables */
 static linked_list response_handlers;
@@ -414,19 +415,19 @@ static gboolean response_callback(GIOChannel *channel, GIOCondition condition,
     switch (r->code)
     {
     case RESP_STOP:
-        bugle_asprintf(&msg, _("Stopped in %s"), ((gldb_response_stop *) r)->call);
+        msg = xasprintf(_("Stopped in %s"), ((gldb_response_stop *) r)->call);
         stopped(context, msg);
         free(msg);
         break;
     case RESP_BREAK:
-        bugle_asprintf(&msg, _("Break on %s"), ((gldb_response_break *) r)->call);
+        msg = xasprintf(_("Break on %s"), ((gldb_response_break *) r)->call);
         stopped(context, msg);
         free(msg);
         break;
     case RESP_BREAK_ERROR:
-        bugle_asprintf(&msg, _("%s in %s"),
-                       ((gldb_response_break_error *) r)->error,
-                       ((gldb_response_break_error *) r)->call);
+        msg = xasprintf( _("%s in %s"),
+                        ((gldb_response_break_error *) r)->error,
+                        ((gldb_response_break_error *) r)->call);
         stopped(context, msg);
         free(msg);
         break;
@@ -534,7 +535,7 @@ static void attach_gdb_action(GtkAction *action, gpointer user_data)
     argv[1] = (gchar *) "-e";
     argv[2] = (gchar *) "gdb";
     argv[3] = (gchar *) "-p";
-    bugle_asprintf(&argv[4], "%lu", (unsigned long) gldb_get_child_pid());
+    argv[4] = xasprintf("%lu", (unsigned long) gldb_get_child_pid());
     argv[5] = NULL;
 
     context = (GldbWindow *) user_data;

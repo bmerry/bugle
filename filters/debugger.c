@@ -47,6 +47,7 @@
 #endif
 #include <X11/Xlib.h>
 #include "xalloc.h"
+#include "xvasprintf.h"
 
 static int in_pipe = -1, out_pipe = -1;
 static bool break_on[NUMBER_OF_FUNCTIONS];
@@ -727,7 +728,7 @@ static void process_single_command(function_call *call)
             gldb_protocol_send_code(out_pipe, RESP_ERROR);
             gldb_protocol_send_code(out_pipe, id);
             gldb_protocol_send_code(out_pipe, 0);
-            bugle_asprintf(&resp_str, "Unknown function %s", req_str);
+            resp_str = xasprintf("Unknown function %s", req_str);
             gldb_protocol_send_string(out_pipe, resp_str);
             free(resp_str);
         }
@@ -747,7 +748,7 @@ static void process_single_command(function_call *call)
         f = bugle_filter_set_get_handle(req_str);
         if (!f)
         {
-            bugle_asprintf(&resp_str, "Unknown filter-set %s", req_str);
+            resp_str = xasprintf("Unknown filter-set %s", req_str);
             gldb_protocol_send_code(out_pipe, RESP_ERROR);
             gldb_protocol_send_code(out_pipe, id);
             gldb_protocol_send_code(out_pipe, 0);
@@ -763,8 +764,8 @@ static void process_single_command(function_call *call)
         }
         else if (!bugle_filter_set_is_loaded(f))
         {
-            bugle_asprintf(&resp_str, "Filter-set %s is not loaded; it must be loaded at program start",
-                           req_str);
+            resp_str = xasprintf("Filter-set %s is not loaded; it must be loaded at program start",
+                                 req_str);
             gldb_protocol_send_code(out_pipe, RESP_ERROR);
             gldb_protocol_send_code(out_pipe, id);
             gldb_protocol_send_code(out_pipe, 0);
@@ -773,8 +774,8 @@ static void process_single_command(function_call *call)
         }
         else if (bugle_filter_set_is_active(f) == activate)
         {
-            bugle_asprintf(&resp_str, "Filter-set %s is already %s",
-                           req_str, activate ? "active" : "inactive");
+            resp_str = xasprintf("Filter-set %s is already %s",
+                                 req_str, activate ? "active" : "inactive");
             gldb_protocol_send_code(out_pipe, RESP_ERROR);
             gldb_protocol_send_code(out_pipe, id);
             gldb_protocol_send_code(out_pipe, 0);

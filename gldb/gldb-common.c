@@ -38,6 +38,7 @@
 #include "common/hashtable.h"
 #include "gldb/gldb-common.h"
 #include "xalloc.h"
+#include "xvasprintf.h"
 
 static int lib_in, lib_out;
 /* Started is set to true only after receiving RESP_RUNNING. When
@@ -118,22 +119,20 @@ static pid_t execute(void (*child_init)(void))
         case GLDB_PROGRAM_LOCAL:
             prog_argv[0] = "/bin/sh";
             prog_argv[1] = "-c";
-            bugle_asprintf(&prog_argv[2],
-                           "%s%s BUGLE_CHAIN=%s LD_PRELOAD=libbugle.so BUGLE_DEBUGGER=1 BUGLE_DEBUGGER_FD_IN=%d BUGLE_DEBUGGER_FD_OUT=%d %s",
-                           display ? "DISPLAY=" : "", display ? display : "",
-                           chain ? chain : "",
-                           out_pipe[0], in_pipe[1], command);
+            prog_argv[2] = xasprintf("%s%s BUGLE_CHAIN=%s LD_PRELOAD=libbugle.so BUGLE_DEBUGGER=1 BUGLE_DEBUGGER_FD_IN=%d BUGLE_DEBUGGER_FD_OUT=%d %s",
+                                     display ? "DISPLAY=" : "", display ? display : "",
+                                     chain ? chain : "",
+                                     out_pipe[0], in_pipe[1], command);
             prog_argv[3] = NULL;
             break;
         case GLDB_PROGRAM_SSH:
             /* Insert the environment variables into the command. */
             prog_argv[0] = "/usr/bin/ssh";
             prog_argv[1] = host ? host : "localhost";
-            bugle_asprintf(&prog_argv[2],
-                           "%s%s BUGLE_CHAIN=%s LD_PRELOAD=libbugle.so BUGLE_DEBUGGER=1 BUGLE_DEBUGGER_FD_IN=3 BUGLE_DEBUGGER_FD_OUT=4 %s 3<&0 4>&1 </dev/null 1>&2",
-                           display ? "DISPLAY=" : "", display ? display : "",
-                           chain ? chain : "",
-                           command);
+            prog_argv[2] = xasprintf("%s%s BUGLE_CHAIN=%s LD_PRELOAD=libbugle.so BUGLE_DEBUGGER=1 BUGLE_DEBUGGER_FD_IN=3 BUGLE_DEBUGGER_FD_OUT=4 %s 3<&0 4>&1 </dev/null 1>&2",
+                                     display ? "DISPLAY=" : "", display ? display : "",
+                                     chain ? chain : "",
+                                     command);
             prog_argv[3] = NULL;
             dup2(in_pipe[1], 1);
             dup2(out_pipe[0], 0);

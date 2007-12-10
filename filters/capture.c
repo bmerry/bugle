@@ -47,6 +47,7 @@
 #include <GL/glx.h>
 #include <sys/time.h>
 #include "xalloc.h"
+#include "xvasprintf.h"
 
 #if HAVE_LAVC
 # include <inttypes.h>
@@ -101,12 +102,9 @@ static double video_frame_step = 1.0 / 30.0; /* FIXME: depends on frame rate */
 
 static char *interpolate_filename(const char *pattern, int frame)
 {
-    char *out;
-
     if (strchr(pattern, '%'))
     {
-        bugle_asprintf(&out, pattern, frame);
-        return out;
+        return xasprintf(pattern, frame);
     }
     else
         return xstrdup(pattern);
@@ -711,8 +709,8 @@ static bool initialise_screenshot(filter_set *handle)
         if (!video_filename)
             video_filename = xstrdup("bugle.avi");
 #if !HAVE_LAVC
-        bugle_asprintf(&cmdline, "ppmtoy4m | ffmpeg -f yuv4mpegpipe -i - -vcodec %s -strict -1 -y %s",
-                       video_codec, video_filename);
+        cmdline = xasprintf("ppmtoy4m | ffmpeg -f yuv4mpegpipe -i - -vcodec %s -strict -1 -y %s",
+                            video_codec, video_filename);
         video_pipe = popen(cmdline, "w");
         free(cmdline);
         if (!video_pipe) return false;
