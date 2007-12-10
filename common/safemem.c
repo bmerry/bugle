@@ -1,5 +1,5 @@
 /*  BuGLe: an OpenGL debugging tool
- *  Copyright (C) 2004-2006  Bruce Merry
+ *  Copyright (C) 2004-2007  Bruce Merry
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -86,37 +86,17 @@ int bugle_appendf(char **strp, size_t *sz, const char *format, ...)
 
 char *bugle_afgets(FILE *stream)
 {
-    char *str, *ret;
-    int size, have;
+    char *str = NULL;
+    size_t n = 0;
+    ssize_t result;
 
-    size = 16;
-    have = 0;
-    str = XNMALLOC(size, char);
-    while (1)
+    result = getline(&str, &n, stream);
+    if (result <= 0)
     {
-        ret = fgets(str + have, size - have, stream);
-        if (!ret)
-        {
-            /* Error or EOF before anything new written */
-            if (have == 0)
-            {
-                free(str);
-                return NULL;
-            }
-            else
-            {
-                str[have] = '\0'; /* just to be safe; fgets might do this */
-                return str;
-            }
-        }
-        have += strlen(str + have);
-        /* We can (and must) terminate in two cases: a short read, or a
-         * full read with a newline at the end. */
-        if (have < size - 1 || str[size - 2] == '\n')
-            return str;
-        size *= 2;
-        str = xnrealloc(str, size, sizeof(char));
+        free(str);
+        return NULL;
     }
+    return str;
 }
 
 typedef struct

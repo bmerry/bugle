@@ -10,6 +10,10 @@
 #include <unistd.h>
 #include <errno.h>
 #include <string.h>
+#include "full-read.h"
+#include "full-write.h"
+#include "error.h"
+#include "exitfail.h"
 #include "xalloc.h"
 #if HAVE_NETINET_IN_H
 # include <netinet/in.h>
@@ -21,54 +25,36 @@
 #define TO_NETWORK(x) htonl(x)
 #define TO_HOST(x) ntohl(x)
 
-static bool safe_write(int fd, const void *buf, size_t count)
+/* Returns false on EOF, aborts on failure */
+static bool my_safe_write(int fd, const void *buf, size_t count)
 {
     ssize_t out;
 
-    while ((out = write(fd, buf, count)) < (ssize_t) count)
+    out = full_write(fd, buf, count);
+    if (out < count)
     {
-        if (out == 0) return false; /* EOF */
-        else if (out == -1)
-        {
-            if (errno == EINTR) continue;
-            else
-            {
-                perror("write failed");
-                exit(1);
-            }
-        }
-        else
-        {
-            count -= out;
-            buf = (const void *)(((const char *) buf) + out);
-        }
+        if (errno)
+            error(exit_failure, errno, "write failed");
+        return false;
     }
-    return true;
+    else
+        return true;
 }
 
-static bool safe_read(int fd, void *buf, size_t count)
+/* Returns false on EOF, aborts on failure */
+static bool my_safe_read(int fd, void *buf, size_t count)
 {
-    ssize_t in;
+    ssize_t out;
 
-    while ((in = read(fd, buf, count)) < (ssize_t) count)
+    out = full_read(fd, buf, count);
+    if (out < count)
     {
-        if (in == 0) return false; /* EOF */
-        else if (in == -1)
-        {
-            if (errno == EINTR) continue;
-            else
-            {
-                perror("read failed");
-                exit(1);
-            }
-        }
-        else
-        {
-            count -= in;
-            buf = (void *)(((char *) buf) + in);
-        }
+        if (errno)
+            error(exit_failure, errno, "read failed");
+        return false;
     }
-    return true;
+    else
+        return true;
 }
 
 bool gldb_protocol_send_code(int fd, uint32_t code)
@@ -76,7 +62,7 @@ bool gldb_protocol_send_code(int fd, uint32_t code)
     uint32_t code2;
 
     code2 = TO_NETWORK(code);
-    return safe_write(fd, &code2, sizeof(uint32_t));
+    return my_safe_write(fd, &code2, sizeof(uint32_t));
 }
 
 bool gldb_protocol_send_binary_string(int fd, uint32_t len, const char *str)
@@ -88,11 +74,12 @@ bool gldb_protocol_send_binary_string(int fd, uint32_t len, const char *str)
      * point and so might be several times larger on the wire than on the
      * video card. If this happens, the logical thing is to make a packet size
      * of exactly 2^32-1 signal that a continuation packet will follow, which
-     * avoid breaking backwards compatibility.
+     * avoid breaking backwards compatibility. Alternatively, it might be
+     * better to just break backwards compatibility.
      */
     len2 = TO_NETWORK(len);
-    if (!safe_write(fd, &len2, sizeof(uint32_t))) return false;
-    if (!safe_write(fd, str, len)) return false;
+    if (!my_safe_write(fd, &len2, sizeof(uint32_t))) return false;
+    if (!my_safe_write(fd, str, len)) return false;
     return true;
 }
 
@@ -104,7 +91,7 @@ bool gldb_protocol_send_string(int fd, const char *str)
 bool gldb_protocol_recv_code(int fd, uint32_t *code)
 {
     uint32_t code2;
-    if (safe_read(fd, &code2, sizeof(uint32_t)))
+    if (my_safe_read(fd, &code2, sizeof(uint32_t)))
     {
         *code = TO_HOST(code2);
         return true;
@@ -118,10 +105,10 @@ bool gldb_protocol_recv_binary_string(int fd, uint32_t *len, char **data)
     uint32_t len2;
     int old_errno;
 
-    if (!safe_read(fd, &len2, sizeof(uint32_t))) return false;
+    if (!my_safe_read(fd, &len2, sizeof(uint32_t))) return false;
     *len = TO_HOST(len2);
     *data = xmalloc(*len + 1);
-    if (!safe_read(fd, *data, *len))
+    if (!my_safe_read(fd, *data, *len))
     {
         old_errno = errno;
         free(*data);
