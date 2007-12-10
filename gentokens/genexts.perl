@@ -124,7 +124,7 @@ if ($outheader)
 # include <config.h>
 #endif
 #include <stddef.h>
-#include "common/bool.h"
+#include <stdbool.h>
 
 typedef struct
 {

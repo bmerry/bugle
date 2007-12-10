@@ -20,7 +20,7 @@
 
 #include <stdio.h>
 #include <stddef.h>
-#include "common/bool.h"
+#include <stdbool.h>
 #include "typeutils.h"
 
 typedef int budgie_group;   /* function group */

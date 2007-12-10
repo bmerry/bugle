@@ -26,7 +26,7 @@
 #include <inttypes.h>
 #include <signal.h>
 #include <unistd.h>
-#include "common/bool.h"
+#include <stdbool.h>
 #include "common/linkedlist.h"
 
 #if HAVE_READLINE && !HAVE_RL_COMPLETION_MATCHES

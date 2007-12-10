@@ -28,7 +28,7 @@
 #include "src/utils.h"
 #include "src/glutils.h"
 #include "src/glexts.h"
-#include "common/bool.h"
+#include <stdbool.h>
 #include "common/threads.h"
 #include "common/safemem.h"
 #include "common/radixtree.h"

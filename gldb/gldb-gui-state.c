@@ -32,7 +32,7 @@
 #include "common/linkedlist.h"
 #include "common/hashtable.h"
 #include "common/safemem.h"
-#include "common/bool.h"
+#include <stdbool.h>
 #include "gldb/gldb-common.h"
 #include "gldb/gldb-gui.h"
 #include "gldb/gldb-gui-state.h"

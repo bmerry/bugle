@@ -2,8 +2,8 @@
 # include <config.h>
 #endif
 #include "protocol.h"
-#include "bool.h"
 #include "safemem.h"
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <inttypes.h>

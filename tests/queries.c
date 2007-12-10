@@ -13,7 +13,7 @@
 #include <stddef.h>
 #include <string.h>
 #include <ctype.h>
-#include "common/bool.h"
+#include <stdbool.h>
 
 /* Still TODO (how depressing)
  * - GetConvolutionFilter

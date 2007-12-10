@@ -715,7 +715,7 @@ static void write_headers()
             "#define UTILS_H\n"
             "\n"
             "#include <stdio.h>\n"
-            "#include \"common/bool.h\"\n"
+            "#include <stdbool.h>\n"
             "#include <stdlib.h>\n"
             "#include <string.h>\n"
             "\n");
@@ -730,7 +730,7 @@ static void write_headers()
             "#define TYPES_H\n"
             "\n"
             "#include <stdio.h>\n"
-            "#include \"common/bool.h\"\n"
+            "#include <stdbool.h>\n"
             "#include <stdlib.h>\n"
             "#include <string.h>\n"
             "\n");

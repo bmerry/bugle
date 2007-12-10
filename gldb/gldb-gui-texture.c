@@ -38,7 +38,7 @@
 #include <stdio.h>
 #include "common/safemem.h"
 #include "common/protocol.h"
-#include "common/bool.h"
+#include <stdbool.h>
 #include "common/radixtree.h"
 #include "gldb/gldb-common.h"
 #include "gldb/gldb-channels.h"

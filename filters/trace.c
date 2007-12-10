@@ -23,7 +23,7 @@
 #include "src/glutils.h"
 #include "src/log.h"
 #include "common/safemem.h"
-#include "common/bool.h"
+#include <stdbool.h>
 #include <stdio.h>
 
 /* Callback passed to bugle_log */

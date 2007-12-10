@@ -24,7 +24,7 @@
 #include "src/objects.h"
 #include "src/glexts.h"
 #include "src/log.h"
-#include "common/bool.h"
+#include <stdbool.h>
 #include "common/hashtable.h"
 #include "common/threads.h"
 #include "common/safemem.h"

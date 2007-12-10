@@ -27,7 +27,7 @@
 #include "src/utils.h"
 #include "src/tracker.h"
 #include "src/objects.h"
-#include "common/bool.h"
+#include <stdbool.h>
 #include <stddef.h>
 #include <GL/gl.h>
 

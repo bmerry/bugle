@@ -31,7 +31,7 @@
 #include "budgieutils.h"
 #include "typeutils.h"
 #include "ioutils.h"
-#include "common/bool.h"
+#include <stdbool.h>
 #include "common/threads.h"
 #include "common/safemem.h"
 #include "xalloc.h"

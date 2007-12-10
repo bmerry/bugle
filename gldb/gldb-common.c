@@ -31,7 +31,7 @@
 #include <sys/wait.h>
 #include "budgielib/ioutils.h"
 #include "src/types.h"
-#include "common/bool.h"
+#include <stdbool.h>
 #include "common/protocol.h"
 #include "common/safemem.h"
 #include "common/linkedlist.h"

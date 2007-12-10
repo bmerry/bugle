@@ -72,7 +72,7 @@ BUILT_SOURCES = budgie/bcparser.h
 src_libbugleutils_la_SOURCES = \
 	src/gltokens.h src/gltypes.c src/gltypes.h \
 	common/safemem.c common/safemem.h \
-	common/bool.h common/protocol.h common/protocol.c \
+	common/protocol.h common/protocol.c \
 	common/hashtable.c common/hashtable.h \
 	common/linkedlist.c common/linkedlist.h \
 	common/radixtree.c common/radixtree.h \

@@ -24,7 +24,7 @@
 #include <sys/time.h>
 #include <sys/types.h>
 #include "common/linkedlist.h"
-#include "common/bool.h"
+#include <stdbool.h>
 
 #if HAVE_FINITE
 # define FINITE(x) (finite(x))

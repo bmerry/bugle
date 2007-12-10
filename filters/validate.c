@@ -27,7 +27,7 @@
 #include "src/tracker.h"
 #include "src/glexts.h"
 #include "src/log.h"
-#include "common/bool.h"
+#include <stdbool.h>
 #include "common/safemem.h"
 #include "common/threads.h"
 #include <stdio.h>

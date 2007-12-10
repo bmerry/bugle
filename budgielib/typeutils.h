@@ -23,7 +23,7 @@
 #endif
 #include <stdio.h>
 #include <stddef.h>
-#include "common/bool.h"
+#include <stdbool.h>
 
 typedef int budgie_type;
 #define NULL_TYPE (-1)

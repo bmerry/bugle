@@ -23,7 +23,7 @@
 #include "src/objects.h"
 #include "src/glexts.h"
 #include "src/glutils.h"
-#include "common/bool.h"
+#include <stdbool.h>
 #include <string.h>
 #include <assert.h>
 #include <GL/glx.h>

@@ -41,7 +41,7 @@
 #endif
 #include "src/names.h"
 #include "src/glfuncs.h"
-#include "common/bool.h"
+#include <stdbool.h>
 #include "common/safemem.h"
 #include "common/protocol.h"
 #include "common/hashtable.h"

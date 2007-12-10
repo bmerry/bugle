@@ -29,7 +29,7 @@
 #if HAVE_DLFCN_H
 # include <dlfcn.h>
 # include <string.h>
-# include "common/bool.h"
+# include <stdbool.h>
 
 # ifdef RTLD_NEXT
 #  define BUGLE_DEFINED_DLOPEN

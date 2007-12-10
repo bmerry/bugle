@@ -35,7 +35,7 @@
 #include "src/statsparse.h"
 #include "common/safemem.h"
 #include "common/hashtable.h"
-#include "common/bool.h"
+#include <stdbool.h>
 #include "xalloc.h"
 #include "xstrndup.h"
 #include "xvasprintf.h"

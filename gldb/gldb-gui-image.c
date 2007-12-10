@@ -42,7 +42,7 @@
 #include <stdio.h>
 #include <math.h>
 #include "common/safemem.h"
-#include "common/bool.h"
+#include <stdbool.h>
 #include "src/names.h"
 #include "gldb/gldb-common.h"
 #include "gldb/gldb-channels.h"

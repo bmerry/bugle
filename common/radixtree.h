@@ -30,7 +30,7 @@
 #if HAVE_CONFIG_H
 # include <config.h>
 #endif
-#include "common/bool.h"
+#include <stdbool.h>
 #include <limits.h>
 
 #ifdef __cplusplus

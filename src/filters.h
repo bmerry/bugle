@@ -26,7 +26,7 @@
 #include "src/utils.h"
 #include "src/objects.h"
 #include "common/linkedlist.h"
-#include "common/bool.h"
+#include <stdbool.h>
 
 struct filter_set_s;
 struct function_call_s;

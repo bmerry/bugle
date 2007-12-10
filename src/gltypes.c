@@ -23,7 +23,7 @@
 #include <GL/glx.h>
 #include <stdio.h>
 #include "gltypes.h"
-#include "common/bool.h"
+#include <stdbool.h>
 
 const gl_token *bugle_gl_enum_to_token_struct(GLenum e)
 {

@@ -23,7 +23,7 @@
 #include "src/objects.h"
 #include "src/tracker.h"
 #include "src/glutils.h"
-#include "common/bool.h"
+#include <stdbool.h>
 #include "common/hashtable.h"
 #include "common/threads.h"
 #include "common/safemem.h"

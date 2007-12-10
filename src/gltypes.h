@@ -28,7 +28,7 @@
 #include <GL/gl.h>
 #include <GL/glx.h>
 #include <stdio.h>
-#include "common/bool.h"
+#include <stdbool.h>
 #include "src/gltokens.h"
 #include "src/data/overrides.h"
 

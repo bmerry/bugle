@@ -20,7 +20,7 @@
 #if HAVE_CONFIG_H
 # include <config.h>
 #endif
-#include "common/bool.h"
+#include <stdbool.h>
 
 #ifdef __cplusplus
 extern "C" {

@@ -18,7 +18,7 @@
 #if HAVE_CONFIG_H
 # include <config.h>
 #endif
-#include "common/bool.h"
+#include <stdbool.h>
 #include "src/filters.h"
 #include "src/glutils.h"
 #include "src/gltypes.h"

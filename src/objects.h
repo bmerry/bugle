@@ -23,7 +23,7 @@
 #endif
 #include <stddef.h>
 #include "common/linkedlist.h"
-#include "common/bool.h"
+#include <stdbool.h>
 #include "common/threads.h"
 
 typedef size_t object_view;

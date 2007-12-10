@@ -23,7 +23,7 @@
 #include <string.h>
 #include <ctype.h>
 #include <assert.h>
-#include "common/bool.h"
+#include <stdbool.h>
 #include "typeutils.h"
 
 void budgie_dump_bitfield(unsigned int value, FILE *out,

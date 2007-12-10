@@ -23,7 +23,7 @@
 #endif
 #include <GL/gl.h>
 #include <GL/glx.h>
-#include "common/bool.h"
+#include <stdbool.h>
 #include "src/utils.h"
 #include "src/filters.h"
 #include <assert.h>

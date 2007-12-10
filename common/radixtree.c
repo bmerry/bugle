@@ -22,7 +22,7 @@
 #include <string.h>
 #include "common/radixtree.h"
 #include "common/safemem.h"
-#include "common/bool.h"
+#include <stdbool.h>
 #include "xalloc.h"
 
 /* The presence or absence of leaf nodes indicates whether the

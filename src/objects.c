@@ -24,7 +24,7 @@
 #endif
 #include "common/linkedlist.h"
 #include "common/safemem.h"
-#include "common/bool.h"
+#include <stdbool.h>
 #include "common/threads.h"
 #include "src/objects.h"
 #include <stddef.h>

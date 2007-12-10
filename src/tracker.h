@@ -25,7 +25,7 @@
 #include <GL/gl.h>
 #include <GL/glx.h>
 #include "common/radixtree.h"
-#include "common/bool.h"
+#include <stdbool.h>
 #include "src/filters.h"
 #include "src/utils.h"
 #include "src/objects.h"

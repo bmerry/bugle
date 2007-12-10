@@ -21,7 +21,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "common/bool.h"
+#include <stdbool.h>
 #include "common/safemem.h"
 #include "src/stats.h"
 #include "src/utils.h"

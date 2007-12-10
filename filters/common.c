@@ -23,7 +23,7 @@
 #include "src/glutils.h"
 #include "src/glfuncs.h"
 #include "common/safemem.h"
-#include "common/bool.h"
+#include <stdbool.h>
 
 /* Invoke filter-set */
 

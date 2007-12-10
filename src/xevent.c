@@ -19,7 +19,7 @@
 # include <config.h>
 #endif
 #include "common/linkedlist.h"
-#include "common/bool.h"
+#include <stdbool.h>
 #include "common/safemem.h"
 #include "src/filters.h"
 #include "src/xevent.h"
