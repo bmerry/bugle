@@ -10,6 +10,7 @@
 #include <unistd.h>
 #include <errno.h>
 #include <string.h>
+#include "xalloc.h"
 #if HAVE_NETINET_IN_H
 # include <netinet/in.h>
 #endif
@@ -119,7 +120,7 @@ bool gldb_protocol_recv_binary_string(int fd, uint32_t *len, char **data)
 
     if (!safe_read(fd, &len2, sizeof(uint32_t))) return false;
     *len = TO_HOST(len2);
-    *data = bugle_malloc(*len + 1);
+    *data = xmalloc(*len + 1);
     if (!safe_read(fd, *data, *len))
     {
         old_errno = errno;

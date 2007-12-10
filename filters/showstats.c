@@ -32,6 +32,9 @@
 #include "src/glexts.h"
 #include <GL/gl.h>
 #include <GL/glext.h>
+#include <stdlib.h>
+#include <string.h>
+#include "xalloc.h"
 
 typedef struct
 {
@@ -116,8 +119,8 @@ static void showstats_statistic_initialise(showstats_statistic *sst)
             CALL_glGetIntegerv(GL_MAX_TEXTURE_SIZE, &max_size);
             if (max_size < sst->graph_size)
                 sst->graph_size = max_size;
-            sst->graph_history = (double *) bugle_calloc(sst->graph_size, sizeof(double));
-            sst->graph_scaled = (GLubyte *) bugle_calloc(sst->graph_size, sizeof(GLubyte));
+            sst->graph_history = XCALLOC(sst->graph_size, double);
+            sst->graph_scaled = XCALLOC(sst->graph_size, GLubyte);
             sst->graph_scale = sst->st->maximum;
             sst->graph_scale_label[0] = '\0';
 
@@ -443,8 +446,8 @@ static bool showstats_show_set(const struct filter_set_variable_info_s *var,
 {
     showstats_statistic_request *req;
 
-    req = (showstats_statistic_request *) bugle_malloc(sizeof(showstats_statistic_request));
-    req->name = bugle_strdup(text);
+    req = XMALLOC(showstats_statistic_request);
+    req->name = xstrdup(text);
     req->mode = SHOWSTATS_TEXT;
     bugle_list_append(&showstats_stats_requested, req);
     return true;
@@ -456,8 +459,8 @@ static bool showstats_graph_set(const struct filter_set_variable_info_s *var,
 {
     showstats_statistic_request *req;
 
-    req = (showstats_statistic_request *) bugle_malloc(sizeof(showstats_statistic_request));
-    req->name = bugle_strdup(text);
+    req = XMALLOC(showstats_statistic_request);
+    req->name = xstrdup(text);
     req->mode = SHOWSTATS_GRAPH;
     bugle_list_append(&showstats_stats_requested, req);
     return true;
@@ -515,7 +518,7 @@ static bool showstats_initialise(filter_set *handle)
         }
         for (; j; j = bugle_list_next(j))
         {
-            sst = (showstats_statistic *) bugle_calloc(1, sizeof(showstats_statistic));
+            sst = XZALLOC(showstats_statistic);
             sst->st = (stats_statistic *) bugle_list_data(j);
             if (!bugle_stats_expression_activate_signals(sst->st->value))
             {

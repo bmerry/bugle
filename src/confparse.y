@@ -28,6 +28,7 @@
 #include "src/conffile.h"
 #include "common/linkedlist.h"
 #include "common/safemem.h"
+#include "xalloc.h"
 
 static linked_list config_root;
 int yyerror(const char *msg);
@@ -69,7 +70,7 @@ input: 		/* empty */ { bugle_list_init(&$$, false); config_root = $$; }
 ;
 
 chainitem:	CHAIN WORD '{' chainspec '}' {
-			$$ = bugle_malloc(sizeof(config_chain));
+			$$ = XMALLOC(config_chain);
                         $$->name = $2;
                         $$->filtersets = $4;
 	        }
@@ -113,7 +114,7 @@ filtersetactive: filtersetallocator {
 ;
 
 filtersetallocator: /* empty */ {
-                	$$ = bugle_malloc(sizeof(config_filterset));
+                	$$ = XMALLOC(config_filterset);
                         $$->name = NULL;
                         $$->key = NULL;
                         $$->active = 1;
@@ -126,7 +127,7 @@ filtersetspec:	/* empty */ { bugle_list_init(&$$, false); }
 ;
 
 variableitem:	WORD string {
-			$$ = bugle_malloc(sizeof(config_variable));
+			$$ = XMALLOC(config_variable);
                         $$->name = $1;
                         $$->value = $2;
 		}

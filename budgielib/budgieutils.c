@@ -34,6 +34,7 @@
 #include "common/bool.h"
 #include "common/threads.h"
 #include "common/safemem.h"
+#include "xalloc.h"
 
 void budgie_dump_any_call(const generic_function_call *call, int indent, FILE *out)
 {
@@ -107,8 +108,8 @@ void initialise_real(void)
     N = budgie_number_of_libraries;
     F = budgie_number_of_functions;
 
-    lt_dlmalloc = bugle_malloc;
-    lt_dlrealloc = bugle_realloc;
+    lt_dlmalloc = xmalloc;
+    lt_dlrealloc = xrealloc;
     lt_dlinit();
     for (i = 0; i < N; i++)
     {

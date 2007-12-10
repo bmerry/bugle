@@ -671,6 +671,7 @@ static void query_transform_feedback(void)
         GLuint buffers[4];
         GLint bound;
         GLint record[3];
+        int i;
 
         const GLint attribs[12] =
         {
@@ -683,7 +684,7 @@ static void query_transform_feedback(void)
         glGenBuffers(4, buffers);
         fprintf(ref, "trace\\.call: glGenBuffers\\(4, %p -> { %u, %u, %u, %u }\\)\n",
                 buffers, buffers[0], buffers[1], buffers[2], buffers[3]);
-        for (int i = 0; i < 4; i++)
+        for (i = 0; i < 4; i++)
         {
             glBindBuffer(GL_TRANSFORM_FEEDBACK_BUFFER_NV, buffers[i]);
             fprintf(ref, "trace\\.call: glBindBuffer\\(GL_TRANSFORM_FEEDBACK_BUFFER_NV, %u\\)\n",

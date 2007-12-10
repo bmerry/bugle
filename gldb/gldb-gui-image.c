@@ -46,6 +46,7 @@
 #include "gldb/gldb-common.h"
 #include "gldb/gldb-channels.h"
 #include "gldb/gldb-gui-image.h"
+#include "xalloc.h"
 
 enum
 {
@@ -702,7 +703,7 @@ static void image_copy_clicked(GtkWidget *button, gpointer user_data)
 {
 #if HAVE_GTK2_6
     GLint width, height, nin, nout;
-    guchar *pixels, *p;
+    guint8 *pixels, *p;
     GdkPixbuf *pixbuf = NULL;
     GtkClipboard *clipboard;
     GldbGuiImageViewer *viewer;
@@ -724,7 +725,7 @@ static void image_copy_clicked(GtkWidget *button, gpointer user_data)
     height = plane->height;
     nin = gldb_channel_count(plane->channels);
     nout = CLAMP(nin, 3, 4);
-    pixels = bugle_malloc(width * height * nout * sizeof(guint8));
+    pixels = XNMALLOC(width * height * nout, guint8);
     p = pixels;
     for (y = height - 1; y >= 0; y--)
         for (x = 0; x < width; x++)
@@ -1098,7 +1099,7 @@ GldbGuiImageViewer *gldb_gui_image_viewer_new(GtkStatusbar *statusbar,
 {
     GldbGuiImageViewer *viewer;
 
-    viewer = (GldbGuiImageViewer *) bugle_calloc(1, sizeof(GldbGuiImageViewer));
+    viewer = XZALLOC(GldbGuiImageViewer);
     viewer->statusbar = statusbar;
     viewer->statusbar_context_id = statusbar_context_id;
     viewer->current_level = -1;
@@ -1345,14 +1346,14 @@ void gldb_gui_image_allocate(GldbGuiImage *image, GldbGuiImageType type,
 
     image->nlevels = nlevels;
     if (nlevels)
-        image->levels = bugle_malloc(nlevels * sizeof(GldbGuiImageLevel));
+        image->levels = XNMALLOC(nlevels, GldbGuiImageLevel);
     else
         image->levels = NULL;
     for (i = 0; i < nlevels; i++)
     {
         image->levels[i].nplanes = nplanes;
         if (nplanes)
-            image->levels[i].planes = bugle_calloc(nplanes, sizeof(GldbGuiImagePlane));
+            image->levels[i].planes = XCALLOC(nplanes, GldbGuiImagePlane);
         else
             image->levels[i].planes = NULL;
     }

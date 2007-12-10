@@ -25,11 +25,14 @@
 #endif
 #include <GL/gl.h>
 #include <GL/glext.h>
+#include <stdlib.h>
+#include <string.h>
 #include "src/tracker.h"
 #include "src/glutils.h"
 #include "src/utils.h"
 #include "src/glexts.h"
 #include "common/safemem.h"
+#include "xalloc.h"
 
 #ifdef GL_VERSION_2_0
 #define call1(gl,arb,params) \
@@ -72,7 +75,7 @@ void bugle_glGetAttachedShaders(GLuint program, GLsizei max_length, GLsizei *len
         GLsizei i;
         GLsizei my_length;
 
-        handles = bugle_malloc(max_length * sizeof(GLhandleARB));
+        handles = XNMALLOC(max_length, GLhandleARB);
         CALL_glGetAttachedObjectsARB(program, max_length, &my_length, handles);
         for (i = 0; i < my_length; i++)
             shaders[i] = handles[i];

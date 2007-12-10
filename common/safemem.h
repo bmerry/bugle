@@ -35,9 +35,6 @@
 extern "C" {
 #endif
 
-void *bugle_malloc(size_t size);
-void *bugle_calloc(size_t nmemb, size_t size);
-void *bugle_realloc(void *ptr, size_t size);
 char *bugle_strdup(const char *s);
 char *bugle_strndup(const char *s, size_t size);
 

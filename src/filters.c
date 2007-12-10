@@ -55,6 +55,7 @@
 #  include <ndir.h>
 # endif
 #endif
+#include "xalloc.h"
 
 typedef struct
 {
@@ -125,11 +126,11 @@ static void register_order(hash_table *orders, const char *before, const char *a
     deps = (linked_list *) bugle_hash_get(orders, after);
     if (!deps)
     {
-        deps = bugle_malloc(sizeof(linked_list));
+        deps = XMALLOC(linked_list);
         bugle_list_init(deps, true);
         bugle_hash_set(orders, after, deps);
     }
-    bugle_list_append(deps, bugle_strdup(before));
+    bugle_list_append(deps, xstrdup(before));
 }
 
 /* Returns true on success, false if there was a cycle.
@@ -158,7 +159,7 @@ static bool compute_order(linked_list *present,
     for (i = bugle_list_head(present); i; i = bugle_list_next(i))
     {
         count++;
-        info = (order_data *) bugle_malloc(sizeof(order_data));
+        info = XMALLOC(order_data);
         info->f = bugle_list_data(i);
         info->valence = 0;
         bugle_hash_set(&byname, get_name(info->f), info);
@@ -454,7 +455,7 @@ bool filter_set_variable(filter_set *handle, const char *name, const char *value
                 value_ptr = &float_value;
                 break;
             case FILTER_SET_VARIABLE_STRING:
-                string_value = bugle_strdup(value);
+                string_value = xstrdup(value);
                 value_ptr = &string_value;
                 break;
             case FILTER_SET_VARIABLE_KEY:
@@ -755,7 +756,7 @@ filter_set *bugle_filter_set_register(const filter_set_info *info)
 {
     filter_set *s;
 
-    s = (filter_set *) bugle_malloc(sizeof(filter_set));
+    s = XMALLOC(filter_set);
     s->name = info->name;
     s->help = info->help;
     bugle_list_init(&s->filters, false);
@@ -785,7 +786,7 @@ filter *bugle_filter_register(filter_set *handle, const char *name)
 {
     filter *f;
 
-    f = (filter *) bugle_malloc(sizeof(filter));
+    f = XMALLOC(filter);
     f->name = name;
     f->parent = handle;
     bugle_list_init(&f->callbacks, true);
@@ -799,7 +800,7 @@ void bugle_filter_catches_function(filter *handle, budgie_function f,
 {
     filter_catcher *cb;
 
-    cb = (filter_catcher *) bugle_malloc(sizeof(filter_catcher));
+    cb = XMALLOC(filter_catcher);
     cb->parent = handle;
     cb->function = f;
     cb->inactive = inactive;
@@ -826,14 +827,14 @@ void bugle_filter_catches_all(filter *handle, bool inactive,
     filter_catcher *cb;
 
     for (i = 0; i < NUMBER_OF_FUNCTIONS; i++)
-        {
-            cb = (filter_catcher *) bugle_malloc(sizeof(filter_catcher));
-            cb->parent = handle;
-            cb->function = i;
-            cb->inactive = inactive;
-            cb->callback = callback;
-            bugle_list_append(&handle->callbacks, cb);
-        }
+    {
+        cb = XMALLOC(filter_catcher);
+        cb->parent = handle;
+        cb->function = i;
+        cb->inactive = inactive;
+        cb->callback = callback;
+        bugle_list_append(&handle->callbacks, cb);
+    }
 }
 
 void bugle_filter_order(const char *before, const char *after)

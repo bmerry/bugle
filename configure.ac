@@ -4,7 +4,8 @@ AM_INIT_AUTOMAKE([1.7 dist-bzip2 subdir-objects])
 AM_CONFIG_HEADER(config.h)
 
 dnl Checks for programs
-AC_PROG_CC_STDC
+AC_PROG_CC
+gl_EARLY
 AM_PROG_CC_C_O
 AC_PROG_CPP
 AC_PROG_CXX
@@ -63,6 +64,7 @@ if test "x$GL_LIBS" = "x"; then
 fi
 
 dnl Checks for header files
+gl_INIT
 AC_HEADER_STDC
 AC_HEADER_DIRENT
 AC_HEADER_STDBOOL
@@ -99,8 +101,6 @@ BUGLE_C_GCC_CONSTRUCTOR_ATTRIBUTE
 dnl Checks for library functions
 AC_CHECK_FUNCS([regcomp strrchr vasprintf vsnprintf open_memstream])
 AC_CHECK_FUNCS([cosf sinf finite isfinite nan isnan])
-AC_REPLACE_FUNCS([bsearch])
-AC_FUNC_MEMCMP
 # Readline used to call this completion_matches
 real_libs="$LIBS"
 LIBS="$READLINE_LIBS $LIBS"
@@ -163,7 +163,7 @@ AC_SUBST(THREAD_LIBS)
 AC_DEFINE_UNQUOTED(THREADS, $THREADS, [threading model])
 
 dnl Write out files
-AC_CONFIG_FILES([Makefile gl.bc])
+AC_CONFIG_FILES([Makefile lib/Makefile gl.bc])
 AC_OUTPUT
 
 dnl Display configuration

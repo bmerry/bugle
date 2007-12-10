@@ -46,6 +46,7 @@
 #include <math.h>
 #include <GL/glx.h>
 #include <sys/time.h>
+#include "xalloc.h"
 
 #if HAVE_LAVC
 # include <inttypes.h>
@@ -108,7 +109,7 @@ static char *interpolate_filename(const char *pattern, int frame)
         return out;
     }
     else
-        return bugle_strdup(pattern);
+        return xstrdup(pattern);
 }
 
 /* If data->pixels == NULL and pbo = 0,
@@ -148,7 +149,7 @@ static void prepare_screenshot_data(screenshot_data *data,
         else
 #endif
         {
-            data->pixels = bugle_malloc(stride * height);
+            data->pixels = xmalloc(stride * height);
             data->pbo = 0;
         }
     }
@@ -221,7 +222,7 @@ static AVFrame *allocate_video_frame(int fmt, int width, int height,
         exit(1);
     }
     size = avpicture_get_size(fmt, width, height);
-    if (create) buffer = bugle_malloc(size);
+    if (create) buffer = xmalloc(size);
     avpicture_fill((AVPicture *) f, buffer, fmt, width, height);
     return f;
 }
@@ -275,7 +276,7 @@ static bool initialise_lavc(int width, int height)
     /* FIXME: what does the NULL do? */
     if (av_set_parameters(video_context, NULL) < 0) return false;
     if (avcodec_open(c, codec) < 0) return false;
-    video_buffer = bugle_malloc(video_buffer_size);
+    video_buffer = xmalloc(video_buffer_size);
     video_raw = allocate_video_frame(CAPTURE_AV_FMT, width, height, false);
     video_yuv = allocate_video_frame(c->pix_fmt, width, height, true);
     if (url_fopen(&video_context->pb, video_filename, URL_WRONLY) < 0)
@@ -388,7 +389,7 @@ static bool map_screenshot(screenshot_data *data)
         /* If we get here, we're in case 3 */
         CALL_glGetBufferParameterivARB(GL_PIXEL_PACK_BUFFER_EXT, GL_BUFFER_SIZE_ARB, &size);
         if (!data->pixels)
-            data->pixels = bugle_malloc(size);
+            data->pixels = xmalloc(size);
         CALL_glGetBufferSubDataARB(GL_PIXEL_PACK_BUFFER_EXT, 0, size, data->pixels);
         data->pbo_mapped = false;
         CALL_glBindBufferARB(GL_PIXEL_PACK_BUFFER_EXT, 0);
@@ -701,14 +702,14 @@ static bool initialise_screenshot(filter_set *handle)
     bugle_filter_catches(f, GROUP_glXSwapBuffers, false, screenshot_callback);
     bugle_filter_order("screenshot", "invoke");
 
-    video_data = bugle_calloc(video_lag, sizeof(screenshot_data));
+    video_data = XCALLOC(video_lag, screenshot_data);
     video_cur = 0;
     video_first = true;
     if (video)
     {
         video_done = false; /* becomes true if we resize */
         if (!video_filename)
-            video_filename = bugle_strdup("bugle.avi");
+            video_filename = xstrdup("bugle.avi");
 #if !HAVE_LAVC
         bugle_asprintf(&cmdline, "ppmtoy4m | ffmpeg -f yuv4mpegpipe -i - -vcodec %s -strict -1 -y %s",
                        video_codec, video_filename);
@@ -723,7 +724,7 @@ static bool initialise_screenshot(filter_set *handle)
     else
     {
         if (!video_filename)
-            video_filename = bugle_strdup("bugle.ppm");
+            video_filename = xstrdup("bugle.ppm");
         video_lag = 1;
         /* FIXME: should only intercept the key when enabled */
         bugle_register_xevent_key(&key_screenshot, NULL, bugle_xevent_key_callback_flag, &keypress_screenshot);
@@ -1067,8 +1068,8 @@ void bugle_initialise_filter_library(void)
         "dumps scene to EPS/PS/PDF/SVG format"
     };
 
-    video_codec = bugle_strdup("mpeg4");
-    eps_filename = bugle_strdup("bugle.eps");
+    video_codec = xstrdup("mpeg4");
+    eps_filename = xstrdup("bugle.eps");
 
     bugle_filter_set_register(&screenshot_info);
     bugle_filter_set_register(&showextensions_info);

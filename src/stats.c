@@ -36,6 +36,7 @@
 #include "common/safemem.h"
 #include "common/hashtable.h"
 #include "common/bool.h"
+#include "xalloc.h"
 
 #define STATISTICSFILE "/.bugle/statistics"
 
@@ -78,7 +79,7 @@ stats_signal *bugle_stats_signal_register(const char *name, void *user_data,
     stats_signal *si;
 
     assert(!stats_signal_get(name));
-    si = (stats_signal *) bugle_calloc(1, sizeof(stats_signal));
+    si = XZALLOC(stats_signal);
     si->value = NAN;
     si->integral = 0.0;
     si->offset = -1;
@@ -203,7 +204,7 @@ void bugle_stats_signal_values_gather(stats_signal_values *sv)
     if (sv->allocated < stats_signals_num_active)
     {
         sv->allocated = stats_signals_num_active;
-        sv->values = bugle_realloc(sv->values, stats_signals_num_active * sizeof(stats_signal_value));
+        sv->values = xnrealloc(sv->values, stats_signals_num_active, sizeof(stats_signal_value));
     }
     /* Make sure that everything is initialised to an insane value (NaN) */
     for (i = 0; i < stats_signals_num_active; i++)
@@ -310,10 +311,10 @@ static char *pattern_replace(const char *pattern, const char *rep)
     char *full;
 
     wildcard = strchr(pattern, '*');
-    if (!wildcard) return bugle_strdup(pattern);
+    if (!wildcard) return xstrdup(pattern);
     l_pattern = strlen(pattern);
     l_rep = strlen(rep);
-    full = bugle_malloc(l_pattern + l_rep);
+    full = XNMALLOC(l_pattern + l_rep, char);
     memcpy(full, pattern, wildcard - pattern);
     memcpy(full + (wildcard - pattern), rep, l_rep);
     strcpy(full + (wildcard - pattern) + l_rep, wildcard + 1);
@@ -376,7 +377,7 @@ static stats_expression *stats_expression_instantiate(stats_expression *base, co
     stats_expression *n;
 
     assert(base);
-    n = (stats_expression *) bugle_malloc(sizeof(stats_expression));
+    n = XMALLOC(stats_expression);
     *n = *base;
     switch (base->type)
     {
@@ -448,9 +449,9 @@ static stats_statistic *stats_statistic_instantiate(stats_statistic *st, const c
     stats_statistic *n;
     linked_list_node *i;
 
-    n = (stats_statistic *) bugle_malloc(sizeof(stats_statistic));
+    n = XMALLOC(stats_statistic);
     *n = *st;
-    n->name = bugle_strdup(n->name);
+    n->name = xstrdup(n->name);
     n->label = pattern_replace(n->label, rep);
     n->value = stats_expression_instantiate(st->value, rep);
     n->last = false;
@@ -460,7 +461,7 @@ static stats_statistic *stats_statistic_instantiate(stats_statistic *st, const c
     {
         stats_substitution *su_old, *su_new;
         su_old = bugle_list_data(i);
-        su_new = (stats_substitution *) bugle_malloc(sizeof(stats_substitution));
+        su_new = XMALLOC(stats_substitution);
         *su_new = *su_old;
         su_new->replacement = pattern_replace(su_old->replacement, rep);
         bugle_list_append(&n->substitutions, su_new);
@@ -501,7 +502,7 @@ static bool stats_load_config(void)
     char *config = NULL;
 
     if (getenv("BUGLE_STATISTICS"))
-        config = bugle_strdup(getenv("BUGLE_STATISTICS"));
+        config = xstrdup(getenv("BUGLE_STATISTICS"));
     home = getenv("HOME");
     if (!config && !home)
     {
@@ -511,7 +512,7 @@ static bool stats_load_config(void)
     }
     if (!config)
     {
-        config = bugle_malloc(strlen(home) + strlen(STATISTICSFILE) + 1);
+        config = XNMALLOC(strlen(home) + strlen(STATISTICSFILE) + 1, char);
         sprintf(config, "%s%s", home, STATISTICSFILE);
     }
     if ((stats_yyin = fopen(config, "r")) != NULL)

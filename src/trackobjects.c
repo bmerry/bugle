@@ -21,6 +21,7 @@
 #include <GL/gl.h>
 #include <GL/glext.h>
 #include <stdlib.h>
+#include <string.h>
 #include <stddef.h>
 #include "src/filters.h"
 #include "src/tracker.h"
@@ -31,6 +32,7 @@
 #include "common/threads.h"
 #include "common/safemem.h"
 #include "common/radixtree.h"
+#include "xalloc.h"
 
 typedef struct
 {
@@ -237,7 +239,7 @@ static void add_check(object *call_object,
 {
     check_data *c;
 
-    c = bugle_malloc(sizeof(check_data));
+    c = XMALLOC(check_data);
     c->type = type;
     c->object = object;
     bugle_list_append((linked_list *) bugle_object_get_data(call_object, call_view), c);
@@ -278,7 +280,7 @@ static bool trackobjects_pre_glDeleteObjectARB(function_call *call, const callba
             CALL_glGetObjectParameterivARB(object, GL_OBJECT_ATTACHED_OBJECTS_ARB, &count);
             if (count)
             {
-                attached = bugle_malloc(sizeof(GLhandleARB) * count);
+                attached = XNMALLOC(count, GLhandleARB);
                 CALL_glGetAttachedObjectsARB(object, count, NULL, attached);
                 for (i = 0; i < count; i++)
                     add_check(data->call_object, BUGLE_TRACKOBJECTS_SHADER, attached[i]);
@@ -308,7 +310,7 @@ static bool trackobjects_pre_glUseProgramObjectARB(function_call *call, const ca
         {
             add_check(data->call_object, BUGLE_TRACKOBJECTS_PROGRAM, program);
             CALL_glGetObjectParameterivARB(program, GL_OBJECT_ATTACHED_OBJECTS_ARB, &count);
-            attached = bugle_malloc(count * sizeof(GLhandleARB));
+            attached = XNMALLOC(count, GLhandleARB);
             CALL_glGetAttachedObjectsARB(program, count, NULL, attached);
             for (i = 0; i < count; i++)
                 add_check(data->call_object, BUGLE_TRACKOBJECTS_SHADER, attached[i]);
@@ -347,7 +349,7 @@ static bool trackobjects_pre_glDeleteProgram(function_call *call, const callback
         CALL_glGetProgramiv(object, GL_ATTACHED_SHADERS, &count);
         if (count)
         {
-            attached = bugle_malloc(sizeof(GLuint) * count);
+            attached = XNMALLOC(count, GLuint);
             CALL_glGetAttachedShaders(object, count, NULL, attached);
             for (i = 0; i < count; i++)
                 add_check(data->call_object, BUGLE_TRACKOBJECTS_SHADER, attached[i]);

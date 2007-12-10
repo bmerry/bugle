@@ -44,6 +44,7 @@
 #include "gldb/gldb-gui.h"
 #include "gldb/gldb-gui-image.h"
 #include "gldb/gldb-gui-texture.h"
+#include "xalloc.h"
 
 struct _GldbTexturePane
 {
@@ -146,7 +147,7 @@ static gboolean gldb_texture_pane_response_callback(gldb_response *response,
             break;
         case GLDB_GUI_IMAGE_TYPE_3D:
             level->nplanes = r->depth;
-            level->planes = bugle_calloc(r->depth, sizeof(GldbGuiImagePlane));
+            level->planes = XCALLOC(r->depth, GldbGuiImagePlane);
             for (plane = 0; plane < r->depth; plane++)
             {
                 level->planes[plane].width = r->width;
@@ -337,7 +338,7 @@ static void gldb_texture_pane_id_changed(GtkComboBox *id_box, gpointer user_data
             {
                 for (i = 0; i < 6; i++)
                 {
-                    data = (texture_callback_data *) bugle_malloc(sizeof(texture_callback_data));
+                    data = XMALLOC(texture_callback_data);
                     data->target = target;
                     data->face = GL_TEXTURE_CUBE_MAP_POSITIVE_X_ARB + i;
                     data->level = l;
@@ -360,7 +361,7 @@ static void gldb_texture_pane_id_changed(GtkComboBox *id_box, gpointer user_data
             }
             else
             {
-                data = (texture_callback_data *) bugle_malloc(sizeof(texture_callback_data));
+                data = XMALLOC(texture_callback_data);
                 data->target = target;
                 data->face = target;
                 data->level = l;

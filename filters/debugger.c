@@ -46,6 +46,7 @@
 # include <sys/select.h>
 #endif
 #include <X11/Xlib.h>
+#include "xalloc.h"
 
 static int in_pipe = -1, out_pipe = -1;
 static bool break_on[NUMBER_OF_FUNCTIONS];
@@ -315,7 +316,7 @@ static bool send_data_texture(uint32_t id, GLuint texid, GLenum target,
 
     length = bugle_gl_type_to_size(type) * bugle_gl_format_to_count(format, type)
         * width * height * depth;
-    data = bugle_malloc(length);
+    data = xmalloc(length);
 
     CALL_glGetTexImage(face, level, format, type, data);
 
@@ -557,7 +558,7 @@ static bool send_data_framebuffer(uint32_t id, GLuint fbo, GLenum target,
     get_framebuffer_size(fbo, fbo_target, buffer, &width, &height);
     length = bugle_gl_type_to_size(type) * bugle_gl_format_to_count(format, type)
         * width * height;
-    data = bugle_malloc(length);
+    data = xmalloc(length);
     CALL_glReadPixels(0, 0, width, height, format, type, data);
 
     /* Restore the old state. glPushAttrib currently does NOT save FBO
@@ -637,7 +638,7 @@ static bool send_data_shader(uint32_t id, GLuint shader_id,
 #if defined(GL_ARB_vertex_program) || defined(GL_ARB_fragment_program)
         CALL_glBindProgramARB(target, shader_id);
         CALL_glGetProgramivARB(target, GL_PROGRAM_LENGTH_ARB, &length);
-        text = bugle_malloc(length);
+        text = XNMALLOC(length, char);
         CALL_glGetProgramStringARB(target, GL_PROGRAM_STRING_ARB, text);
         break;
 #endif
@@ -654,17 +655,17 @@ static bool send_data_shader(uint32_t id, GLuint shader_id,
         bugle_glGetShaderiv(shader_id, GL_OBJECT_SHADER_SOURCE_LENGTH_ARB, &length);
         if (length != 0)
         {
-            text = bugle_malloc(length);
+            text = XNMALLOC(length, char);
             bugle_glGetShaderSource(shader_id, length, NULL, (GLcharARB *) text);
             length--; /* Don't count NULL terminator */
         }
         else
-            text = bugle_malloc(1);
+            text = XNMALLOC(1, char);
 #endif
         break;
     default:
         /* Should never get here */
-        text = bugle_malloc(1);
+        text = XNMALLOC(1, char);
         length = 0;
     }
 

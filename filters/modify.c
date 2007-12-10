@@ -31,6 +31,9 @@
 #include <GL/glx.h>
 #include <sys/time.h>
 #include <math.h>
+#include <stdlib.h>
+#include <string.h>
+#include "xalloc.h"
 
 #if !HAVE_SINF
 # define sinf(x) ((float) (sin((double) (x))))
@@ -69,7 +72,7 @@ static void register_classify_callback(void (*callback)(bool, void *), void *arg
 {
     classify_callback *cb;
 
-    cb = (classify_callback *) bugle_malloc(sizeof(classify_callback));
+    cb = XMALLOC(classify_callback);
     cb->callback = callback;
     cb->arg = arg;
     bugle_list_append(&classify_callbacks, cb);
@@ -1050,8 +1053,8 @@ static void initialise_extoverride_context(const void *key, void *data)
     else
         self->version = (const GLubyte *) real_version;
 
-    exts_ptr = exts = bugle_malloc(strlen(real_exts) + 1);
-    ext = bugle_malloc(strlen(real_exts) + 1); /* Current extension */
+    exts_ptr = exts = XNMALLOC(strlen(real_exts) + 1, char);
+    ext = XNMALLOC(strlen(real_exts) + 1, char); /* Current extension */
     p = real_exts;
     while (*p == ' ') p++;
     while (*p)
@@ -1115,6 +1118,7 @@ static bool extoverride_warn(function_call *call, const callback_data *data)
 static bool initialise_extoverride(filter_set *handle)
 {
     filter *f;
+    budgie_function i;
 
     f = bugle_filter_register(handle, "extoverride_get");
     bugle_filter_order("invoke", "extoverride_get");
@@ -1123,7 +1127,7 @@ static bool initialise_extoverride(filter_set *handle)
 
     f = bugle_filter_register(handle, "extoverride_warn");
     bugle_filter_order("extoverride_warn", "invoke");
-    for (budgie_function i = 0; i < budgie_number_of_functions; i++)
+    for (i = 0; i < budgie_number_of_functions; i++)
     {
         if (bugle_gl_function_table[i].extension
             && extoverride_suppressed(bugle_gl_function_table[i].extension))
@@ -1151,6 +1155,7 @@ static bool extoverride_variable_disable(const struct filter_set_variable_info_s
                                          const char *text, const void *value)
 {
     bool found = false;
+    size_t i;
 
     if (strcmp(text, "all") == 0)
     {
@@ -1159,7 +1164,7 @@ static bool extoverride_variable_disable(const struct filter_set_variable_info_s
     }
 
     bugle_hash_set(&extoverride_disabled, text, NULL);
-    for (size_t i = 0; i < BUGLE_EXT_COUNT; i++)
+    for (i = 0; i < BUGLE_EXT_COUNT; i++)
         if (!bugle_exts[i].glx && bugle_exts[i].glext_string
             && strcmp(bugle_exts[i].glext_string, text) == 0)
         {
@@ -1176,6 +1181,7 @@ static bool extoverride_variable_enable(const struct filter_set_variable_info_s 
                                         const char *text, const void *value)
 {
     bool found = false;
+    size_t i;
 
     if (strcmp(text, "all") == 0)
     {
@@ -1184,7 +1190,7 @@ static bool extoverride_variable_enable(const struct filter_set_variable_info_s 
     }
 
     bugle_hash_set(&extoverride_enabled, text, NULL);
-    for (size_t i = 0; i < BUGLE_EXT_COUNT; i++)
+    for (i = 0; i < BUGLE_EXT_COUNT; i++)
         if (!bugle_exts[i].glx && bugle_exts[i].glext_string
             && strcmp(bugle_exts[i].glext_string, text) == 0)
         {

@@ -48,6 +48,9 @@
 
 #include <pthread.h>
 #include <signal.h>
+#include <stdlib.h>
+#include <string.h>
+#include "xalloc.h"
 
 /* Types */
 typedef pthread_mutex_t bugle_thread_mutex_t;
@@ -146,7 +149,7 @@ static inline int bugle_thread_key_create(bugle_thread_key_t *key,
      * pthread_exit or thread cancellation, neither of which can happen
      * in a single-threaded model. So we ignore the destructor.
      */
-    *key = (bugle_thread_key_t) bugle_malloc(sizeof(struct bugle_thread_key_s));
+    *key = XMALLOC(bugle_thread_key_t);
     (*key)->value = NULL;
     return 0;
 }

@@ -30,10 +30,13 @@
 #include "common/safemem.h"
 #include <assert.h>
 #include <stddef.h>
+#include <stdlib.h>
+#include <string.h>
 #include <GL/glx.h>
 #include <GL/gl.h>
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
+#include "xalloc.h"
 
 /* Some constructors like the context to be current when they are run.
  * To facilitate this, the object is not constructed until the first
@@ -96,7 +99,7 @@ static bool trackcontext_newcontext(function_call *call, const callback_data *da
     {
         bugle_thread_mutex_lock(&context_mutex);
 
-        base = (trackcontext_data *) bugle_calloc(1, sizeof(trackcontext_data));
+        base = XZALLOC(trackcontext_data);
         base->dpy = dpy;
         base->aux_shared = NULL;
         base->aux_unshared = NULL;
@@ -443,7 +446,7 @@ static bool trackcontext_font_init(trackcontext_font *font)
     }
 
     image = XGetImage(dpy, pixmap, 0, 0, font->texture_width, font->texture_height, 1, XYPixmap);
-    texture_data = (GLubyte *) bugle_calloc(font->texture_width * font->texture_height, sizeof(GLubyte));
+    texture_data = XCALLOC(font->texture_width * font->texture_height, GLubyte);
     for (y = 0; y < font->texture_height; y++)
         for (x = 0; x < font->texture_width; x++)
             if (XGetPixel(image, x, y))

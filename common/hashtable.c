@@ -26,6 +26,7 @@
 #include "common/safemem.h"
 #include "common/bool.h"
 #include "common/threads.h"
+#include "xalloc.h"
 
 /* Primes are used for hash table sizes */
 static size_t primes[sizeof(size_t) * 8];
@@ -104,7 +105,7 @@ void bugle_hash_set(hash_table *table, const char *key, void *value)
         BUGLE_RUN_CONSTRUCTOR(initialise_primes);
         big.size_index = table->size_index + 1;
         big.size = primes[big.size_index];
-        big.entries = (hash_table_entry *) bugle_calloc(big.size, sizeof(hash_table_entry));
+        big.entries = XCALLOC(big.size, hash_table_entry);
         big.count = 0;
         big.owns_memory = table->owns_memory;
         for (i = 0; i < table->size; i++)
@@ -234,7 +235,7 @@ void bugle_hashptr_set(hashptr_table *table, const void *key, void *value)
         BUGLE_RUN_CONSTRUCTOR(initialise_primes);
         big.size_index = table->size_index + 1;
         big.size = primes[big.size_index];
-        big.entries = (hashptr_table_entry *) bugle_calloc(big.size, sizeof(hashptr_table_entry));
+        big.entries = XCALLOC(big.size, hashptr_table_entry);
         big.count = 0;
         big.owns_memory = table->owns_memory;
         for (i = 0; i < table->size; i++)

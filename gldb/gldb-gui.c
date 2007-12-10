@@ -47,6 +47,7 @@
 #include "gldb/gldb-gui-shader.h"
 #include "gldb/gldb-gui-backtrace.h"
 #include "gldb/gldb-gui-breakpoint.h"
+#include "xalloc.h"
 
 /* Global variables */
 static linked_list response_handlers;
@@ -178,7 +179,7 @@ guint32 gldb_gui_set_response_handler(gboolean (*callback)(gldb_response *r, gpo
 {
     response_handler *h;
 
-    h = bugle_malloc(sizeof(response_handler));
+    h = XMALLOC(response_handler);
     h->id = seq++;
     h->callback = callback;
     h->user_data = user_data;

@@ -32,6 +32,9 @@
 #include "src/glutils.h"
 #include <NVPerfSDK.h>
 #include <ltdl.h>
+#include <stdlib.h>
+#include <string.h>
+#include "xalloc.h"
 
 typedef struct
 {
@@ -162,7 +165,7 @@ static int stats_nv_enumerate(UINT index, char *name)
             bugle_asprintf(&stat_name, "nv%s%s:%s",
                            accum ? ":accum" : "",
                            cycles ? ":cycles" : "", name);
-            nv = bugle_malloc(sizeof(stats_signal_nv));
+            nv = XMALLOC(stats_signal_nv);
             nv->index = index;
             nv->accumulate = (accum == 1);
             nv->use_cycles = (cycles == 1);

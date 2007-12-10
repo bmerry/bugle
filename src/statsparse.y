@@ -31,6 +31,7 @@
 #include "common/linkedlist.h"
 #include "common/safemem.h"
 #include "src/log.h"
+#include "xalloc.h"
 
 int stats_yyerror(const char *msg);
 extern int stats_yylex(void);
@@ -39,7 +40,7 @@ static stats_expression *stats_expression_new_number(double value)
 {
     stats_expression *expr;
 
-    expr = (stats_expression *) bugle_malloc(sizeof(stats_expression));
+    expr = XMALLOC(stats_expression);
     expr->type = STATS_EXPRESSION_NUMBER;
     expr->op = STATS_OPERATION_NUMBER;
     expr->value = value;
@@ -50,7 +51,7 @@ static stats_expression *stats_expression_new_op(stats_operation_type op, stats_
 {
     stats_expression *expr;
 
-    expr = (stats_expression *) bugle_malloc(sizeof(stats_expression));
+    expr = XMALLOC(stats_expression);
     expr->type = STATS_EXPRESSION_OPERATION;
     expr->op = op;
     expr->left = left;
@@ -62,7 +63,7 @@ static stats_expression *stats_expression_new_signal(stats_operation_type op, ch
 {
     stats_expression *expr;
 
-    expr = (stats_expression *) bugle_malloc(sizeof(stats_expression));
+    expr = XMALLOC(stats_expression);
     expr->type = STATS_EXPRESSION_SIGNAL;
     expr->op = op;
     expr->signal_name = signal;
@@ -74,7 +75,7 @@ static stats_statistic *stats_statistic_new()
 {
     stats_statistic *st;
 
-    st = (stats_statistic *) bugle_malloc(sizeof(stats_statistic));
+    st = XMALLOC(stats_statistic);
     st->name = NULL;
     st->value = NULL;
     st->precision = 1;
@@ -88,7 +89,7 @@ static stats_substitution *stats_substitution_new(double value, char *replacemen
 {
     stats_substitution *sub;
 
-    sub = (stats_substitution *) bugle_malloc(sizeof(stats_substitution));
+    sub = XMALLOC(stats_substitution);
     sub->value = value;
     sub->replacement = replacement;
     return sub;

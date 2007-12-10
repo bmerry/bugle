@@ -19,9 +19,11 @@
 # include <config.h>
 #endif
 #include <stdlib.h>
+#include <string.h>
 #include "common/radixtree.h"
 #include "common/safemem.h"
 #include "common/bool.h"
+#include "xalloc.h"
 
 /* The presence or absence of leaf nodes indicates whether the
  * corresponding integers are in the radix tree.
@@ -62,7 +64,7 @@ static void radix_tree_set(bugle_radix_tree *tree, bugle_radix_tree_type key,
 
     while (key > tree_max(tree->bits))
     {
-        n = bugle_malloc(sizeof(bugle_radix_node));
+        n = XMALLOC(bugle_radix_node);
         n->left = tree->root;
         n->right = NULL;
         n->value = NULL;
@@ -77,7 +79,7 @@ static void radix_tree_set(bugle_radix_tree *tree, bugle_radix_tree_type key,
         n = *cur;
         if (!n)
         {
-            n = bugle_malloc(sizeof(bugle_radix_node));
+            n = XMALLOC(bugle_radix_node);
             n->left = NULL;
             n->right = NULL;
             n->value = NULL;

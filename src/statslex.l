@@ -30,6 +30,7 @@
 #include "src/stats.h"
 #include "src/statsparse.h"
 #include "src/log.h"
+#include "xalloc.h"
 
 static char *current_string = NULL;
 static int current_string_length = 0;
@@ -50,7 +51,7 @@ static void append_char(char ch)
             current_string_memory = 64;
             atexit(free_string);
         }
-        current_string = bugle_realloc(current_string, current_string_memory);
+        current_string = xnrealloc(current_string, current_string_memory, sizeof(char));
     }
     current_string[current_string_length - 1] = ch;
     current_string[current_string_length] = '\0';

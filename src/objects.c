@@ -30,6 +30,7 @@
 #include <stddef.h>
 #include <string.h>
 #include <stdlib.h>
+#include "xalloc.h"
 
 typedef struct
 {
@@ -63,7 +64,7 @@ object_view bugle_object_view_register(object_class *klass,
 {
     object_class_info *info;
 
-    info = bugle_malloc(sizeof(object_class_info));
+    info = XMALLOC(object_class_info);
     info->constructor = constructor;
     info->destructor = destructor;
     info->size = size;
@@ -78,7 +79,7 @@ object *bugle_object_new(const object_class *klass, const void *key, bool make_c
     const object_class_info *info;
     size_t j;
 
-    obj = bugle_malloc(sizeof(object) + klass->count * sizeof(void *) - sizeof(void *));
+    obj = xmalloc(sizeof(object) + klass->count * sizeof(void *) - sizeof(void *));
     obj->klass = klass;
     obj->count = klass->count;
 
@@ -87,7 +88,7 @@ object *bugle_object_new(const object_class *klass, const void *key, bool make_c
         info = (const object_class_info *) bugle_list_data(i);
         if (info->size)
         {
-            obj->views[j] = bugle_malloc(info->size);
+            obj->views[j] = xmalloc(info->size);
             memset(obj->views[j], 0, info->size);
         }
         else

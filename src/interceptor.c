@@ -35,6 +35,7 @@
 #include <string.h>
 #include <errno.h>
 #include <stdio.h>
+#include "xalloc.h"
 
 #define FILTERFILE "/.bugle/filters"
 
@@ -66,7 +67,7 @@ static void load_config(void)
     xevent_key key;
 
     if (getenv("BUGLE_FILTERS"))
-        config = bugle_strdup(getenv("BUGLE_FILTERS"));
+        config = xstrdup(getenv("BUGLE_FILTERS"));
     home = getenv("HOME");
     chain_name = getenv("BUGLE_CHAIN");
     if (chain_name && !*chain_name) chain_name = NULL;
@@ -78,7 +79,7 @@ static void load_config(void)
     {
         if (!config)
         {
-            config = bugle_malloc(strlen(home) + strlen(FILTERFILE) + 1);
+            config = XNMALLOC(strlen(home) + strlen(FILTERFILE) + 1, char);
             sprintf(config, "%s%s", home, FILTERFILE);
         }
         if ((yyin = fopen(config, "r")))

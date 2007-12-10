@@ -43,6 +43,7 @@
 #include "gldb/gldb-gui.h"
 #include "gldb/gldb-gui-image.h"
 #include "gldb/gldb-gui-framebuffer.h"
+#include "xalloc.h"
 
 struct _GldbFramebufferPane
 {
@@ -425,7 +426,7 @@ static void gldb_framebuffer_pane_buffer_changed(GtkWidget *widget, gpointer use
             buffer = GL_FRONT;
         }
 
-        data = (framebuffer_callback_data *) bugle_malloc(sizeof(framebuffer_callback_data));
+        data = XMALLOC(framebuffer_callback_data);
         data->channels = gldb_channel_get_query_channels(channel);
         data->flags = 0;
         data->pane = pane;

@@ -19,6 +19,7 @@
 # include <config.h>
 #endif
 #include <GL/gl.h>
+#include <stdlib.h>
 #include <string.h>
 #include <assert.h>
 #include "gltokens.h"
@@ -32,6 +33,7 @@
 #include "budgielib/typeutils.h"
 #include "src/types.h"
 #include "src/glexts.h"
+#include "xalloc.h"
 
 budgie_type bugle_gl_type_to_type(GLenum gl_type)
 {
@@ -340,7 +342,7 @@ void initialise_dump_tables(void)
             if (s->type == TYPE_9GLboolean || s->type == TYPE_6GLenum
                 || s->length != 1) dump_table_size++;
 
-    dump_table = bugle_malloc(sizeof(dump_table_entry) * dump_table_size);
+    dump_table = XNMALLOC(dump_table_size, dump_table_entry);
     cur = dump_table;
     for (t = all_state; *t; t++)
         for (s = *t; s->name; s++)
@@ -402,7 +404,7 @@ bool bugle_dump_convert(GLenum pname, const void *value,
 
     length = entry->length;
     alength = (length == -1) ? 1 : length;
-    out_data = bugle_malloc(budgie_type_table[out_type].size * alength);
+    out_data = xnmalloc(alength, budgie_type_table[out_type].size);
     if (out_type == TYPE_11GLxfbattrib)
     {
         /* budgie_type_convert doesn't do array-to-struct conversion */

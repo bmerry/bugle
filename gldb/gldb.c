@@ -46,6 +46,7 @@
 #include "common/protocol.h"
 #include "common/hashtable.h"
 #include "gldb/gldb-common.h"
+#include "xalloc.h"
 /* Uncomment these lines to test the legacy I/O support
 #undef HAVE_READLINE
 #define HAVE_READLINE
@@ -161,12 +162,12 @@ static bool handle_commands(void)
             if (!*line && prev_line != NULL)
             {
                 free(line);
-                line = bugle_strdup(prev_line);
+                line = xstrdup(prev_line);
             }
             if (*line)
             {
                 if (prev_line) free(prev_line);
-                prev_line = bugle_strdup(line);
+                prev_line = xstrdup(line);
 
                 /* Tokenise */
                 num_tokens = 0;
@@ -176,7 +177,7 @@ static bool handle_commands(void)
                         num_tokens++;
                 if (num_tokens)
                 {
-                    tokens = bugle_malloc((num_tokens + 1) * sizeof(char *));
+                    tokens = XNMALLOC(num_tokens + 1, char *);
                     tokens[num_tokens] = NULL;
                     i = 0;
                     for (cur = line; *cur; cur++)
@@ -185,7 +186,7 @@ static bool handle_commands(void)
                         {
                             base = cur;
                             while (*cur && !isspace(*cur)) cur++;
-                            tokens[i] = bugle_malloc(cur - base + 1);
+                            tokens[i] = XNMALLOC(cur - base + 1, char);
                             memcpy(tokens[i], base, cur - base);
                             tokens[i][cur - base] = '\0';
                             i++;
@@ -711,7 +712,7 @@ static bool command_screenshot(const char *cmd,
         return false;
     }
     if (screenshot_file) free(screenshot_file);
-    screenshot_file = bugle_strdup(tokens[1]);
+    screenshot_file = xstrdup(tokens[1]);
     gldb_send_data_framebuffer(0, 0, 0, GL_FRONT, GL_RGB, GL_UNSIGNED_BYTE);
     return true;
 }
@@ -733,12 +734,12 @@ static void register_command(const command_info *cmd)
     command_data *data;
     char *key, *end;
 
-    key = bugle_strdup(cmd->name);
+    key = xstrdup(cmd->name);
     data = (command_data *) bugle_hash_get(&command_table, key);
     if (data)
         assert(!data->root); /* can't redefine commands */
     else
-        data = (command_data *) bugle_malloc(sizeof(command_data));
+        data = XMALLOC(command_data);
     data->root = true;
     data->command = cmd;
     bugle_hash_set(&command_table, key, data);
@@ -751,7 +752,7 @@ static void register_command(const command_info *cmd)
         data = (command_data *) bugle_hash_get(&command_table, key);
         if (!data)
         {
-            data = (command_data *) bugle_malloc(sizeof(command_data));
+            data = XMALLOC(command_data);
             data->root = false;
             data->command = cmd;
             bugle_hash_set(&command_table, key, data);
@@ -776,7 +777,7 @@ static char *generate_commands(const char *text, int state)
 
     for (; ptr->name; ptr++)
         if (strncmp(ptr->name, text, len) == 0)
-            return bugle_strdup((ptr++)->name);
+            return xstrdup((ptr++)->name);
     return NULL;
 }
 
@@ -792,7 +793,7 @@ static char *generate_functions(const char *text, int state)
     }
     for (; i < NUMBER_OF_FUNCTIONS; i++)
         if (strncmp(budgie_function_names[i], text, len) == 0)
-            return bugle_strdup(budgie_function_names[i++]);
+            return xstrdup(budgie_function_names[i++]);
     return NULL;
 }
 
@@ -834,7 +835,7 @@ static char *generate_state(const char *text, int state)
         if (child->name && strncmp(child->name, split, strlen(split)) == 0)
         {
             node = bugle_list_next(node);
-            ans = bugle_malloc(strlen(child->name) + (split - text) + 1);
+            ans = XNMALLOC(strlen(child->name) + (split - text) + 1, char);
             strncpy(ans, text, split - text);
             strcpy(ans + (split - text), child->name);
             return ans;
@@ -861,7 +862,7 @@ static char **completion(const char *text, int start, int end)
     else
     {
         /* try to find the command */
-        key = bugle_malloc(last - first + 1);
+        key = XNMALLOC(last - first + 1, char);
         strncpy(key, rl_line_buffer + first, last - first);
         key[last - first] = '\0';
         data = bugle_hash_get(&command_table, key);

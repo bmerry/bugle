@@ -37,6 +37,7 @@
 #include "common/linkedlist.h"
 #include "common/hashtable.h"
 #include "gldb/gldb-common.h"
+#include "xalloc.h"
 
 static int lib_in, lib_out;
 /* Started is set to true only after receiving RESP_RUNNING. When
@@ -69,7 +70,7 @@ void gldb_program_set_setting(gldb_program_setting setting, const char *value)
     assert(setting >= 0 && setting < GLDB_PROGRAM_SETTING_COUNT);
     free(prog_settings[setting]);
     if (value && !*value) value = NULL;
-    prog_settings[setting] = value ? strdup(value) : NULL;
+    prog_settings[setting] = value ? xstrdup(value) : NULL;
 }
 
 void gldb_program_set_type(gldb_program_type type)
@@ -216,7 +217,7 @@ static gldb_response *gldb_get_response_ans(uint32_t code, uint32_t id)
 {
     gldb_response_ans *r;
 
-    r = bugle_malloc(sizeof(gldb_response_ans));
+    r = XMALLOC(gldb_response_ans);
     r->code = code;
     r->id = id;
     gldb_protocol_recv_code(lib_in, &r->value);
@@ -228,7 +229,7 @@ static gldb_response *gldb_get_response_stop(uint32_t code, uint32_t id)
     gldb_response_stop *r;
 
     set_status(GLDB_STATUS_STOPPED);
-    r = bugle_malloc(sizeof(gldb_response_stop));
+    r = XMALLOC(gldb_response_stop);
     r->code = code;
     r->id = id;
     gldb_protocol_recv_string(lib_in, &r->call);
@@ -240,7 +241,7 @@ static gldb_response *gldb_get_response_break(uint32_t code, uint32_t id)
     gldb_response_break *r;
 
     set_status(GLDB_STATUS_STOPPED);
-    r = bugle_malloc(sizeof(gldb_response_break));
+    r = XMALLOC(gldb_response_break);
     r->code = code;
     r->id = id;
     gldb_protocol_recv_string(lib_in, &r->call);
@@ -252,7 +253,7 @@ static gldb_response *gldb_get_response_break_error(uint32_t code, uint32_t id)
     gldb_response_break_error *r;
 
     set_status(GLDB_STATUS_STOPPED);
-    r = bugle_malloc(sizeof(gldb_response_break_error));
+    r = XMALLOC(gldb_response_break_error);
     r->code = code;
     r->id = id;
     gldb_protocol_recv_string(lib_in, &r->call);
@@ -264,7 +265,7 @@ static gldb_response *gldb_get_response_state(uint32_t code, uint32_t id)
 {
     gldb_response_state *r;
 
-    r = bugle_malloc(sizeof(gldb_response_state));
+    r = XMALLOC(gldb_response_state);
     r->code = code;
     r->id = id;
     gldb_protocol_recv_string(lib_in, &r->state);
@@ -275,7 +276,7 @@ static gldb_response *gldb_get_response_error(uint32_t code, uint32_t id)
 {
     gldb_response_error *r;
 
-    r = bugle_malloc(sizeof(gldb_response_error));
+    r = XMALLOC(gldb_response_error);
     r->code = code;
     r->id = id;
     gldb_protocol_recv_code(lib_in, &r->error_code);
@@ -288,7 +289,7 @@ static gldb_response *gldb_get_response_running(uint32_t code, uint32_t id)
     gldb_response_running *r;
 
     set_status(GLDB_STATUS_RUNNING);
-    r = bugle_malloc(sizeof(gldb_response_running));
+    r = XMALLOC(gldb_response_running);
     r->code = code;
     r->id = id;
     return (gldb_response *) r;
@@ -298,7 +299,7 @@ static gldb_response *gldb_get_response_screenshot(uint32_t code, uint32_t id)
 {
     gldb_response_screenshot *r;
 
-    r = bugle_malloc(sizeof(gldb_response_screenshot));
+    r = XMALLOC(gldb_response_screenshot);
     r->code = code;
     r->id = id;
     gldb_protocol_recv_binary_string(lib_in, &r->length, &r->data);
@@ -314,7 +315,7 @@ static gldb_state *state_get(void)
     char *data;
     uint32_t data_len;
 
-    s = bugle_malloc(sizeof(gldb_state));
+    s = XMALLOC(gldb_state);
     /* The list actually does own the memory, but we do the free as
      * part of state_destroy.
      */
@@ -361,7 +362,7 @@ static gldb_response *gldb_get_response_state_tree(uint32_t code, uint32_t id)
 {
     gldb_response_state_tree *r;
 
-    r = bugle_malloc(sizeof(gldb_response_state_tree));
+    r = XMALLOC(gldb_response_state_tree);
     r->code = code;
     r->id = id;
     r->root = state_get();
@@ -374,7 +375,7 @@ static gldb_response *gldb_get_response_data_texture(uint32_t code, uint32_t id,
 {
     gldb_response_data_texture *r;
 
-    r = bugle_malloc(sizeof(gldb_response_data_texture));
+    r = XMALLOC(gldb_response_data_texture);
     r->code = code;
     r->id = id;
     r->subtype = subtype;
@@ -392,7 +393,7 @@ static gldb_response *gldb_get_response_data_framebuffer(uint32_t code, uint32_t
 {
     gldb_response_data_framebuffer *r;
 
-    r = bugle_malloc(sizeof(gldb_response_data_texture));
+    r = XMALLOC(gldb_response_data_framebuffer);
     r->code = code;
     r->id = id;
     r->subtype = subtype;
@@ -409,7 +410,7 @@ static gldb_response *gldb_get_response_data_shader(uint32_t code, uint32_t id,
 {
     gldb_response_data_shader *r;
 
-    r = bugle_malloc(sizeof(gldb_response_data_shader));
+    r = XMALLOC(gldb_response_data_shader);
     r->code = code;
     r->id = id;
     r->subtype = subtype;
@@ -576,11 +577,11 @@ static void dump_wrapper(FILE *f, void *data)
 char *gldb_state_string(const gldb_state *state)
 {
     if (state->length == 0)
-        return bugle_strdup("");
+        return xstrdup("");
     if (state->length == -2)
-        return bugle_strdup("<GL error>");
+        return xstrdup("<GL error>");
     if (state->type == TYPE_Pc)
-        return bugle_strdup((const char *) state->data);
+        return xstrdup((const char *) state->data);
     else
         return budgie_string_io(dump_wrapper, (void *) state);
 }
@@ -807,7 +808,7 @@ void gldb_initialise(int argc, const char * const *argv)
 
     for (i = 1; i < argc; i++)
         len += strlen(argv[i]) + 1;
-    ptr = command = bugle_malloc(len * sizeof(char));
+    ptr = command = XNMALLOC(len, char);
     for (i = 1; i < argc; i++)
     {
         len = strlen(argv[i]);

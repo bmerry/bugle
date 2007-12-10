@@ -35,11 +35,12 @@ static bool stats_calls_callback(function_call *call, const callback_data *data)
 static bool stats_calls_initialise(filter_set *handle)
 {
     filter *f;
+    int i;
 
     f = bugle_filter_register(handle, "stats_calls");
     bugle_filter_catches_all(f, false, stats_calls_callback);
 
-    for (int i = 0; i < NUMBER_OF_FUNCTIONS; i++)
+    for (i = 0; i < NUMBER_OF_FUNCTIONS; i++)
     {
         char *name;
         bugle_asprintf(&name, "calls:%s", budgie_function_table[i].name);

@@ -18,7 +18,6 @@
 #if HAVE_CONFIG_H
 # include <config.h>
 #endif
-#define _GNU_SOURCE
 #include "safemem.h"
 #include "linkedlist.h"
 #include "threads.h"
@@ -26,42 +25,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdarg.h>
-
-void *bugle_malloc(size_t size)
-{
-    void *ptr;
-    if (size == 0) size = 1;
-    ptr = malloc(size);
-    if (!ptr)
-    {
-        fputs("out of memory in malloc\n", stderr);
-        exit(1);
-    }
-    return ptr;
-}
-
-void *bugle_calloc(size_t nmemb, size_t size)
-{
-    void *ptr;
-    ptr = calloc(nmemb, size);
-    if (!ptr)
-    {
-        fputs("out of memory in calloc\n", stderr);
-        exit(1);
-    }
-    return ptr;
-}
-
-void *bugle_realloc(void *ptr, size_t size)
-{
-    ptr = realloc(ptr, size);
-    if (size && !ptr)
-    {
-        fputs("out of memory in realloc\n", stderr);
-        exit(1);
-    }
-    return ptr;
-}
+#include "xalloc.h"
 
 char *bugle_strdup(const char *s)
 {
@@ -70,7 +34,7 @@ char *bugle_strdup(const char *s)
     size_t len;
 
     len = strlen(s);
-    n = bugle_malloc(len + 1);
+    n = XNMALLOC(len + 1, char);
     memcpy(n, s, len + 1);
     return n;
 }
@@ -82,7 +46,7 @@ char *bugle_strndup(const char *s, size_t size)
 
     len = strlen(s);
     if (len < size) size = len;
-    n = bugle_malloc(size + 1);
+    n = XNMALLOC(size + 1, char);
     memcpy(n, s, size);
     n[size] = '\0';
     return n;
@@ -101,7 +65,7 @@ char *bugle_strcat(char *dest, const char *src)
     if (tsize <= slen + dlen)
     {
         while (tsize <= slen + dlen) tsize *= 2;
-        tmp = bugle_malloc(tsize);
+        tmp = XNMALLOC(tsize, char);
         memcpy(tmp, dest, dlen);
         memcpy(tmp + dlen, src, slen + 1);
         free(dest);
@@ -134,7 +98,7 @@ int bugle_asprintf(char **strp, const char *format, ...)
     return ans;
 #elif HAVE_VSNPRINTF
     size = 128;
-    *strp = bugle_malloc(size * sizeof(char));
+    *strp = XNMALLOC(size, char);
     while (1)
     {
         va_start(ap, format);
@@ -146,7 +110,7 @@ int bugle_asprintf(char **strp, const char *format, ...)
             size = ans + 1;
         else                          /* Older e.g. glibc 2.0 */
             size *= 2;
-        *strp = bugle_realloc(*strp, size * sizeof(char));
+        *strp = xnrealloc(*strp, size, sizeof(char));
     }
 #else
 #error "you have no safe way to format strings"
@@ -163,7 +127,7 @@ int bugle_appendf(char **strp, size_t *sz, const char *format, ...)
     if (!*strp)
     {
         *sz = 128;
-        *strp = bugle_malloc(*sz * sizeof(char));
+        *strp = XNMALLOC(*sz, char);
         **strp = '\0';
     }
     len = strlen(*strp);
@@ -177,7 +141,7 @@ int bugle_appendf(char **strp, size_t *sz, const char *format, ...)
 
         *sz *= 2;
         if (*sz < ans + 1) *sz = ans + 1;
-        *strp = bugle_realloc(*strp, *sz * sizeof(char));
+        *strp = xnrealloc(*strp, *sz, sizeof(char));
     }
 #else
 #error "you have no safe way to print strings"
@@ -191,7 +155,7 @@ char *bugle_afgets(FILE *stream)
 
     size = 16;
     have = 0;
-    str = bugle_malloc(size);
+    str = XNMALLOC(size, char);
     while (1)
     {
         ret = fgets(str + have, size - have, stream);
@@ -215,7 +179,7 @@ char *bugle_afgets(FILE *stream)
         if (have < size - 1 || str[size - 2] == '\n')
             return str;
         size *= 2;
-        str = bugle_realloc(str, size);
+        str = xnrealloc(str, size, sizeof(char));
     }
 }
 
@@ -252,7 +216,7 @@ void bugle_atexit(void (*shutdown_function)(void *), void *arg)
 {
     shutdown_call *call;
 
-    call = bugle_malloc(sizeof(shutdown_call));
+    call = XMALLOC(shutdown_call);
     call->shutdown_function = shutdown_function;
     call->arg = arg;
     bugle_thread_once(&shutdown_once, bugle_atexit_once);

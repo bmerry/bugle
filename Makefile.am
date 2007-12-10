@@ -1,5 +1,6 @@
 # Process with automake 1.7 or newer
-SUBDIRS = libltdl
+SUBDIRS = lib libltdl
+ACLOCAL_AMFLAGS = -I m4
 
 SYMBOLFLAGS = -export-symbols-regex '^(gl[A-Z]|budgie_|bugle_|gldb_|X|dlopen)'
 
@@ -29,11 +30,11 @@ pkglib_LTLIBRARIES = \
 	filters/logstats.la \
 	filters/showstats.la
 
-AM_CPPFLAGS = -I$(srcdir)/budgielib $(LTDLINCL) -DLIBDIR=\"$(libdir)\" -DPKGLIBDIR=\"$(pkglibdir)\" $(X_CFLAGS)
+AM_CPPFLAGS = -I$(srcdir)/lib -I lib -I$(srcdir)/budgielib $(LTDLINCL) -DLIBDIR=\"$(libdir)\" -DPKGLIBDIR=\"$(pkglibdir)\" $(X_CFLAGS)
 AM_YFLAGS = -d
 
 gldb_gldb_SOURCES = gldb/gldb.c gldb/gldb-common.c gldb/gldb-common.h
-gldb_gldb_LDADD = src/libbugleutils.la $(READLINE_LIBS)
+gldb_gldb_LDADD = src/libbugleutils.la $(READLINE_LIBS) $(LTLIBINTL) lib/libgnu.la
 gldb_gldb_LDFLAGS = -thread-safe
 
 gldb_gldb_gui_SOURCES = gldb/gldb-gui.c gldb/gldb-gui.h \
@@ -51,7 +52,7 @@ if HAVE_GTKGLEXT
   gldb_gldb_gui_SOURCES += glee/GLee.c glee/GLee.h
 endif
 EXTRA_gldb_gldb_gui_SOURCES = glee/GLee.c glee/GLee.h
-gldb_gldb_gui_LDADD = src/libbugleutils.la $(GTKGLEXT_LIBS) $(GTK_LIBS) -lm
+gldb_gldb_gui_LDADD = src/libbugleutils.la -lm $(GTKGLEXT_LIBS) $(GTK_LIBS) $(LTLIBINTL) lib/libgnu.la
 gldb_gldb_gui_LDFLAGS = -thread-safe
 gldb_gldb_gui_CFLAGS = $(GTKGLEXT_CFLAGS) $(GTK_CFLAGS)
 
@@ -82,7 +83,7 @@ nodist_src_libbugleutils_la_SOURCES = \
 	src/names.c src/names.h src/types.c src/types.h \
 	src/gltokens.c src/glfuncs.c src/glfuncs.h \
 	src/glexts.c src/glexts.h
-src_libbugleutils_la_LIBADD = $(LTLIBOBJS) $(THREAD_LIBS)
+src_libbugleutils_la_LIBADD = $(LTLIBOBJS) $(THREAD_LIBS) $(LTLIBINTL) lib/libgnu.la
 src_libbugleutils_la_LDFLAGS = -thread-safe -export-dynamic $(SYMBOLFLAGS) -version-info 3:0:1
 
 src_libbugle_la_SOURCES = \
@@ -103,7 +104,7 @@ src_libbugle_la_SOURCES = \
 	budgielib/budgieutils.c budgielib/budgieutils.h
 nodist_src_libbugle_la_SOURCES = \
 	src/utils.c src/utils.h src/lib.c src/lib.h
-src_libbugle_la_LIBADD = $(LIBLTDL) src/libbugleutils.la -lGL $(X_PRE_LIBS) $(X_LIBS) -lX11 $(X_EXTRA_LIBS) $(THREAD_LIBS) -lm
+src_libbugle_la_LIBADD = $(LIBLTDL) src/libbugleutils.la -lm -lGL $(X_PRE_LIBS) $(X_LIBS) -lX11 $(X_EXTRA_LIBS) $(THREAD_LIBS) $(LTLIBINTL) lib/libgnu.la
 src_libbugle_la_LDFLAGS = -thread-safe -export-dynamic $(SYMBOLFLAGS) -version-info 4:0:0
 
 BUILT_SOURCES += src/lib.h src/types.h src/utils.h src/names.h src/confparse.h
@@ -154,34 +155,55 @@ bc/alias.bc: gentokens/genfunctions.perl
 # Filters
 filters_common_la_SOURCES = filters/common.c
 filters_common_la_LDFLAGS = -thread-safe -module -avoid-version -export-dynamic $(SYMBOLFLAGS)
+filters_common_la_LIBADD = lib/libgnu.la
+
 filters_trace_la_SOURCES = filters/trace.c
 filters_trace_la_LDFLAGS = -thread-safe -module -avoid-version -export-dynamic $(SYMBOLFLAGS)
+filters_trace_la_LIBADD = lib/libgnu.la
+
 filters_modify_la_SOURCES = filters/modify.c
-filters_modify_la_LIBADD = -lm
+filters_modify_la_LIBADD = lib/libgnu.la -lm
 filters_modify_la_LDFLAGS = -thread-safe -module -avoid-version -export-dynamic $(SYMBOLFLAGS)
+
 filters_validate_la_SOURCES = filters/validate.c
 filters_validate_la_LDFLAGS = -thread-safe -module -avoid-version -export-dynamic $(SYMBOLFLAGS)
+filters_validate_la_LIBADD = lib/libgnu.la
+
 filters_debugger_la_SOURCES = filters/debugger.c
 filters_debugger_la_LDFLAGS = -thread-safe -module -avoid-version -export-dynamic $(SYMBOLFLAGS)
+filters_debugger_la_LIBADD = lib/libgnu.la
+
 filters_stats_basic_la_SOURCES = filters/stats_basic.c
 filters_stats_basic_la_LDFLAGS = -thread-safe -module -avoid-version -export-dynamic $(SYMBOLFLAGS)
+filters_stats_basic_la_LIBADD = lib/libgnu.la
+
 filters_stats_calls_la_SOURCES = filters/stats_calls.c
 filters_stats_calls_la_LDFLAGS = -thread-safe -module -avoid-version -export-dynamic $(SYMBOLFLAGS)
+filters_stats_calls_la_LIBADD = lib/libgnu.la
+
 filters_stats_fragments_la_SOURCES = filters/stats_fragments.c
 filters_stats_fragments_la_LDFLAGS = -thread-safe -module -avoid-version -export-dynamic $(SYMBOLFLAGS)
+filters_stats_fragments_la_LIBADD = lib/libgnu.la
+
 filters_stats_nv_la_SOURCES = filters/stats_nv.c
 filters_stats_nv_la_LDFLAGS = -thread-safe -module -avoid-version -export-dynamic $(SYMBOLFLAGS)
+filters_stats_nv_la_LIBADD = lib/libgnu.la
+
 filters_stats_primitives_la_SOURCES = filters/stats_primitives.c
 filters_stats_primitives_la_LDFLAGS = -thread-safe -module -avoid-version -export-dynamic $(SYMBOLFLAGS)
+filters_stats_primitives_la_LIBADD = lib/libgnu.la
+
 filters_logstats_la_SOURCES = filters/logstats.c
 filters_logstats_la_LDFLAGS = -thread-safe -module -avoid-version -export-dynamic $(SYMBOLFLAGS)
-filters_logstats_la_LIBADD = -lm
+filters_logstats_la_LIBADD = lib/libgnu.la -lm
+
 filters_showstats_la_SOURCES = filters/showstats.c
 filters_showstats_la_LDFLAGS = -thread-safe -module -avoid-version -export-dynamic $(SYMBOLFLAGS)
-filters_showstats_la_LIBADD = -lm
+filters_showstats_la_LIBADD = lib/libgnu.la -lm
+
 filters_capture_la_SOURCES = filters/capture.c gl2ps/gl2ps.c gl2ps/gl2ps.h
 filters_capture_la_CFLAGS = $(AVCODEC_CFLAGS)
-filters_capture_la_LIBADD = $(AVCODEC_LIBS)
+filters_capture_la_LIBADD = lib/libgnu.la $(AVCODEC_LIBS)
 filters_capture_la_LDFLAGS = -thread-safe -module -avoid-version -export-dynamic $(SYMBOLFLAGS)
 
 BUILT_SOURCES += src/statsparse.h

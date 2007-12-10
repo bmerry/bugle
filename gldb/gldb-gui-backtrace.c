@@ -35,6 +35,7 @@
 #include "gldb/gldb-common.h"
 #include "gldb/gldb-gui.h"
 #include "gldb/gldb-gui-backtrace.h"
+#include "xalloc.h"
 
 /* Functions and structures to parse GDB/MI output. Split this out of
  * gldb-gui one day.
@@ -149,7 +150,7 @@ static GldbGdbValue *gldb_gdb_value_parse(const char **record_ptr, GError **erro
     g_return_val_if_fail(error == NULL || *error == NULL, NULL);
 
     record = *record_ptr;
-    v = (GldbGdbValue *) bugle_malloc(sizeof(GldbGdbValue));
+    v = XMALLOC(GldbGdbValue);
     if (record[0] == '"')
     {
         v->type = GLDB_GDB_VALUE_CONST;
@@ -317,7 +318,7 @@ static GldbGdbResultRecord *gldb_gdb_result_record_parse(const char *record, GEr
         return NULL;
     }
 
-    rr = (GldbGdbResultRecord *) bugle_malloc(sizeof(GldbGdbResultRecord));
+    rr = XMALLOC(GldbGdbResultRecord);
     rr->result_class = rc;
     bugle_hash_init(&rr->results, false);
 
@@ -440,9 +441,9 @@ static void gldb_backtrace_pane_populate(GldbBacktracePane *pane,
         if (file && line)
             bugle_asprintf(&location, "%s:%s", file, line);
         else if (from)
-            location = bugle_strdup(from);
+            location = xstrdup(from);
         else
-            location = bugle_strdup("??");
+            location = xstrdup("??");
 
         gtk_list_store_append(pane->backtrace_store, &iter);
         gtk_list_store_set(pane->backtrace_store, &iter,

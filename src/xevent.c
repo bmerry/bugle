@@ -28,6 +28,9 @@
 #include <ltdl.h>
 #include <stdio.h>
 #include <stddef.h>
+#include <stdlib.h>
+#include <string.h>
+#include "xalloc.h"
 
 #define STATE_MASK (ControlMask | ShiftMask | Mod1Mask)
 
@@ -645,7 +648,7 @@ void bugle_register_xevent_key(const xevent_key *key,
     handler *h;
 
     if (key->keysym == NoSymbol) return;
-    h = (handler *) bugle_malloc(sizeof(handler));
+    h = XMALLOC(handler);
     h->key = *key;
     h->wanted = wanted;
     h->callback = callback;

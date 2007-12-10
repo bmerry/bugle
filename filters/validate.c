@@ -37,6 +37,7 @@
 #include <setjmp.h>
 #include <errno.h>
 #include <assert.h>
+#include "xalloc.h"
 
 static bool trap = false;
 static filter_set *error_handle = NULL;
@@ -565,7 +566,7 @@ static void checks_min_max(GLsizei count, GLenum gltype, const GLvoid *indices,
             if (mapped) return;
 
             size = count * budgie_type_table[type].size;
-            vbo_indices = bugle_malloc(size);
+            vbo_indices = xmalloc(size);
             CALL_glGetBufferSubDataARB(GL_ELEMENT_ARRAY_BUFFER_ARB,
                                        (const char *) indices - (const char *) NULL,
                                        size, vbo_indices);
@@ -574,7 +575,7 @@ static void checks_min_max(GLsizei count, GLenum gltype, const GLvoid *indices,
     }
 #endif
 
-    out = (GLuint *) bugle_malloc(count * sizeof(GLuint));
+    out = XNMALLOC(count, GLuint);
     budgie_type_convert(out, TYPE_6GLuint, indices, type, count);
     min = max = out[0];
     for (i = 0; i < count; i++)
