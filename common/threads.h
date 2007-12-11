@@ -116,7 +116,6 @@ static inline int bugle_thread_raise(int sig)
 
 #include <stdlib.h>
 #include <signal.h>
-#include "common/safemem.h"
 
 /* Types */
 typedef int bugle_thread_mutex_t;

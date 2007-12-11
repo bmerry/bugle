@@ -23,7 +23,6 @@
 # include <config.h>
 #endif
 #include "common/linkedlist.h"
-#include "common/safemem.h"
 #include <stdbool.h>
 #include "common/threads.h"
 #include "src/objects.h"

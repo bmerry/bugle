@@ -35,7 +35,6 @@
 #include "common/protocol.h"
 #include "common/linkedlist.h"
 #include "common/hashtable.h"
-#include "common/safemem.h"
 #include "src/names.h"
 #include "gldb/gldb-common.h"
 #include "gldb/gldb-channels.h"

@@ -28,7 +28,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include "gldb-common.h"
-#include "common/safemem.h"
 
 #define COLUMN_MODE_NAME 0
 #define COLUMN_MODE_ENUM 1

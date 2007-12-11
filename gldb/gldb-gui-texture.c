@@ -36,7 +36,6 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
-#include "common/safemem.h"
 #include "common/protocol.h"
 #include <stdbool.h>
 #include "common/radixtree.h"

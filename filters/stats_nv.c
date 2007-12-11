@@ -22,7 +22,6 @@
 #if HAVE_NVPERFSDK_H
 
 #include <stdbool.h>
-#include "common/safemem.h"
 #include "src/stats.h"
 #include "src/utils.h"
 #include "src/filters.h"

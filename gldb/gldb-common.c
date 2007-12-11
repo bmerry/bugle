@@ -33,7 +33,6 @@
 #include "src/types.h"
 #include <stdbool.h>
 #include "common/protocol.h"
-#include "common/safemem.h"
 #include "common/linkedlist.h"
 #include "common/hashtable.h"
 #include "gldb/gldb-common.h"

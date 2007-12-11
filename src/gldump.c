@@ -29,7 +29,6 @@
 #include "filters.h"
 #include "tracker.h"
 #include "log.h"
-#include "common/safemem.h"
 #include "budgielib/typeutils.h"
 #include "src/types.h"
 #include "src/glexts.h"

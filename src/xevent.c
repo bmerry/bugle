@@ -20,7 +20,6 @@
 #endif
 #include "common/linkedlist.h"
 #include <stdbool.h>
-#include "common/safemem.h"
 #include "src/filters.h"
 #include "src/xevent.h"
 #include "src/log.h"

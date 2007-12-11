@@ -33,7 +33,6 @@
 #include "src/glexts.h"
 #include "src/stats.h"
 #include "src/statsparse.h"
-#include "common/safemem.h"
 #include "common/hashtable.h"
 #include <stdbool.h>
 #include "xalloc.h"

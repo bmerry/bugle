@@ -23,7 +23,6 @@
 #include <string.h>
 #include <stdbool.h>
 #include "common/linkedlist.h"
-#include "common/safemem.h"
 #include "src/stats.h"
 #include "src/utils.h"
 #include "src/filters.h"

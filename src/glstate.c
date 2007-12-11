@@ -36,7 +36,6 @@
 #include "src/tracker.h"
 #include "src/glsl.h"
 #include "src/log.h"
-#include "common/safemem.h"
 #include "budgielib/typeutils.h"
 #include "budgielib/ioutils.h"
 #include <GL/gl.h>

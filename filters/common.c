@@ -22,7 +22,6 @@
 #include "src/utils.h"
 #include "src/glutils.h"
 #include "src/glfuncs.h"
-#include "common/safemem.h"
 #include <stdbool.h>
 
 /* Invoke filter-set */

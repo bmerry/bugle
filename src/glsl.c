@@ -31,7 +31,6 @@
 #include "src/glutils.h"
 #include "src/utils.h"
 #include "src/glexts.h"
-#include "common/safemem.h"
 #include "xalloc.h"
 
 #ifdef GL_VERSION_2_0

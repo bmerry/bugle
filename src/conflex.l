@@ -25,7 +25,6 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
-#include "common/safemem.h"
 #include "src/conffile.h"
 #include "src/confparse.h"
 #include "xalloc.h"

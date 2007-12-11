@@ -41,7 +41,6 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <math.h>
-#include "common/safemem.h"
 #include <stdbool.h>
 #include "src/names.h"
 #include "gldb/gldb-common.h"

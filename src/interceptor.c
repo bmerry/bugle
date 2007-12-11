@@ -29,7 +29,6 @@
 #include "dlopen.h"
 #include "stats.h"
 #include "common/hashtable.h"
-#include "common/safemem.h"
 #include "common/threads.h"
 #include <stdlib.h>
 #include <string.h>

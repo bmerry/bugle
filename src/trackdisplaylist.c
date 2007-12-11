@@ -26,7 +26,6 @@
 #include <stdbool.h>
 #include "common/hashtable.h"
 #include "common/threads.h"
-#include "common/safemem.h"
 #include <stddef.h>
 #include <GL/gl.h>
 

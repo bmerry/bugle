@@ -36,9 +36,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
-#include "common/safemem.h"
 #include "common/protocol.h"
-#include "common/safemem.h"
 #include "gldb/gldb-common.h"
 #include "gldb/gldb-channels.h"
 #include "gldb/gldb-gui.h"

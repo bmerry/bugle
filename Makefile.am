@@ -62,6 +62,7 @@ budgie_budgie_SOURCES = \
 	budgie/treeutils.cpp budgie/treeutils.h \
 	budgie/tulexer.ll \
 	budgie/bclexer.ll budgie/bcparser.yy
+budgie_budgie_LDADD = lib/libgnu.la
 
 # Unfortunately this introduces a dependence on flex
 budgie/bclexer.cc: budgie/bclexer.ll

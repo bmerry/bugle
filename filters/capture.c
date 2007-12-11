@@ -37,7 +37,6 @@
 #include "src/log.h"
 #include "gl2ps/gl2ps.h"
 #include "common/hashtable.h"
-#include "common/safemem.h"
 #include <stdbool.h>
 #include <stdio.h>
 #include <string.h>

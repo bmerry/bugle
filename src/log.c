@@ -21,7 +21,6 @@
 #define _POSIX_C_SOURCE 200112L /* for flockfile */
 #include "src/log.h"
 #include "src/filters.h"
-#include "common/safemem.h"
 #include <stdbool.h>
 #include "common/threads.h"
 #include <stdio.h>

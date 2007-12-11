@@ -29,7 +29,6 @@
 #include <math.h>
 #include "src/stats.h"
 #include "common/linkedlist.h"
-#include "common/safemem.h"
 #include "src/log.h"
 #include "xalloc.h"
 

@@ -29,7 +29,6 @@
 #include "src/log.h"
 #include "common/linkedlist.h"
 #include "common/hashtable.h"
-#include "common/safemem.h"
 #include "common/threads.h"
 #include <stdio.h>
 #include <stddef.h>
@@ -270,7 +269,7 @@ static void filter_set_destroy(filter_set *handle)
     }
 }
 
-static void filters_destroy(void *dummy)
+static void filters_destroy(void)
 {
     linked_list_node *i;
     filter_set *s;
@@ -356,7 +355,7 @@ void initialise_filters(void)
 
     lt_dlforeachfile(libdir, initialise_filter_library, NULL);
 
-    bugle_atexit(filters_destroy, NULL);
+    atexit(filters_destroy);
 }
 
 bool filter_set_variable(filter_set *handle, const char *name, const char *value)

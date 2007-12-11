@@ -27,7 +27,6 @@
 #include <gtk/gtk.h>
 #include <glib.h>
 #include <glib/gi18n-lib.h>
-#include "common/safemem.h"
 #include "gldb/gldb-common.h"
 #include "gldb/gldb-gui.h"
 #include "gldb/gldb-gui-breakpoint.h"

@@ -27,7 +27,6 @@
 #include <stdlib.h>
 #include "src/conffile.h"
 #include "common/linkedlist.h"
-#include "common/safemem.h"
 #include "xalloc.h"
 
 static linked_list config_root;

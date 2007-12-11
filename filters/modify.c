@@ -24,7 +24,6 @@
 #include "src/glexts.h"
 #include "src/glfuncs.h"
 #include "src/log.h"
-#include "common/safemem.h"
 #include <stdbool.h>
 #include "common/linkedlist.h"
 #include "common/hashtable.h"

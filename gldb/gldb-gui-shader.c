@@ -31,7 +31,6 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include "common/protocol.h"
-#include "common/safemem.h"
 #include "common/radixtree.h"
 #include "gldb/gldb-common.h"
 #include "gldb/gldb-gui.h"

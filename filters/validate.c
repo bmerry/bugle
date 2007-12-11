@@ -28,7 +28,6 @@
 #include "src/glexts.h"
 #include "src/log.h"
 #include <stdbool.h>
-#include "common/safemem.h"
 #include "common/threads.h"
 #include <stdio.h>
 #include <stdlib.h>

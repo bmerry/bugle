@@ -21,7 +21,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include "linkedlist.h"
-#include "common/safemem.h"
 #include "xalloc.h"
 
 void bugle_list_init(linked_list *l, bool owns_memory)

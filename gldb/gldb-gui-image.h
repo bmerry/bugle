@@ -36,7 +36,6 @@
 #include <glib.h>
 #include <glib/gi18n-lib.h>
 #include <gdk-pixbuf/gdk-pixbuf.h>
-#include "common/safemem.h"
 #include <stdbool.h>
 #include "src/names.h"
 #include "gldb/gldb-common.h"

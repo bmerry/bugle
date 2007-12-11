@@ -30,7 +30,6 @@
 #include "src/glexts.h"
 #include <stdbool.h>
 #include "common/threads.h"
-#include "common/safemem.h"
 #include "common/radixtree.h"
 #include "xalloc.h"
 

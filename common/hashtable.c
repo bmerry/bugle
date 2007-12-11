@@ -23,7 +23,6 @@
 #include <stddef.h>
 #include <assert.h>
 #include "hashtable.h"
-#include "common/safemem.h"
 #include <stdbool.h>
 #include "common/threads.h"
 #include "xalloc.h"

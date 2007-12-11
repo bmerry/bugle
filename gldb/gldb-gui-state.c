@@ -31,7 +31,6 @@
 #include <stdlib.h>
 #include "common/linkedlist.h"
 #include "common/hashtable.h"
-#include "common/safemem.h"
 #include <stdbool.h>
 #include "gldb/gldb-common.h"
 #include "gldb/gldb-gui.h"

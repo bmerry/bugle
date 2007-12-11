@@ -33,7 +33,6 @@
 #include "ioutils.h"
 #include <stdbool.h>
 #include "common/threads.h"
-#include "common/safemem.h"
 #include "xalloc.h"
 
 void budgie_dump_any_call(const generic_function_call *call, int indent, FILE *out)

@@ -15,15 +15,12 @@
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-/* The function names and functionality are modelled on libiberty,
- * but are independently implemented. They are light wrappers around
- * the similarly named standard functions, but they display an error
- * and exit if memory could not be allocated. In some cases they also
- * reimplement non-portable functionality.
- */
-
 #ifndef BUGLE_COMMON_SAFEMEM_H
 #define BUGLE_COMMON_SAFEMEM_H
+
+/* This file is misnamed: it should eventually become misc.h or something
+ * similar.
+ */
 
 #if HAVE_CONFIG_H
 # include <config.h>
@@ -31,37 +28,17 @@
 #include <stddef.h>
 #include <stdio.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-/* Appends src to dest, possibly bugle_realloc()ing, and returns the pointer.
- * It assumes that dest was malloc()ed with a size that is the smallest
- * power of 2 large enough to hold it, and this will also hold as a
- * post-condition.
- */
-char *bugle_strcat(char *dest, const char *src);
-
 /* Appends to *strp using the format, reallocating if necessary. The
  * current size is *sz, and will be updated on reallocation. *strp may
  * be NULL, in which case this reduces to asprintf. The return value is
- * the length of the string, including the original portion.
+ * the length of the string, including the original portion. The string
+ * length is at least doubled each time to ensure progress is made.
  */
-int bugle_appendf(char **strp, size_t *sz, const char *format, ...);
+int bugle_appendf(char **strp, size_t *sz, const char *format, ...) BUGLE_GCC_FORMAT_PRINTF(3, 4);
 
 /* Like fgets, but creates the memory. The return value has the same
  * meaning as for fgets, but must be free()ed if non-NULL
  */
 char *bugle_afgets(FILE *stream);
-
-/* Only sort of memory related: a shutdown handler that has an unlimited
- * number of entries and will pass arbitrary pointers to the shutdown
- * functions.
- */
-void bugle_atexit(void (*shutdown_function)(void *), void *arg);
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif /* !BUGLE_COMMON_SAFEMEM_H */

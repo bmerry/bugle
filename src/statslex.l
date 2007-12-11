@@ -26,7 +26,6 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
-#include "common/safemem.h"
 #include "src/stats.h"
 #include "src/statsparse.h"
 #include "src/log.h"

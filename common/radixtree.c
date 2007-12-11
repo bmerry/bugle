@@ -21,7 +21,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include "common/radixtree.h"
-#include "common/safemem.h"
 #include <stdbool.h>
 #include "xalloc.h"
 

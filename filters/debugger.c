@@ -31,7 +31,6 @@
 #include "common/hashtable.h"
 #include "common/protocol.h"
 #include <stdbool.h>
-#include "common/safemem.h"
 #include "budgielib/ioutils.h"
 #include <stdio.h>
 #include <stdlib.h>
