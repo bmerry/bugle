@@ -28,12 +28,13 @@
 #include <errno.h>
 #include <setjmp.h>
 #include <ltdl.h>
+#include "common/threads.h"
 #include "budgieutils.h"
 #include "typeutils.h"
 #include "ioutils.h"
 #include <stdbool.h>
-#include "common/threads.h"
 #include "xalloc.h"
+#include "tls.h"
 
 void budgie_dump_any_call(const generic_function_call *call, int indent, FILE *out)
 {
@@ -138,12 +139,12 @@ void initialise_real(void)
  * the interceptor, so we cannot rely on the interceptor to initialise us.
  */
 
-static bugle_thread_key_t reentrance_key;
+static gl_tls_key_t reentrance_key;
 
 BUGLE_CONSTRUCTOR(initialise_reentrance);
 static void initialise_reentrance(void)
 {
-    bugle_thread_key_create(&reentrance_key, NULL);
+    gl_tls_key_init(reentrance_key, NULL);
 }
 
 /* Sets the flag to mark entry, and returns true if we should call
@@ -157,12 +158,12 @@ bool check_set_reentrance(void)
     bool ans;
 
     BUGLE_RUN_CONSTRUCTOR(initialise_reentrance);
-    ans = bugle_thread_getspecific(reentrance_key) == NULL;
-    bugle_thread_setspecific(reentrance_key, &ans); /* arbitrary non-NULL value */
+    ans = gl_tls_get(reentrance_key) == NULL;
+    gl_tls_set(reentrance_key, &ans); /* arbitrary non-NULL value */
     return ans;
 }
 
 void clear_reentrance(void)
 {
-    bugle_thread_setspecific(reentrance_key, NULL);
+    gl_tls_set(reentrance_key, NULL);
 }

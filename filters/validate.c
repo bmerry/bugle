@@ -27,8 +27,8 @@
 #include "src/tracker.h"
 #include "src/glexts.h"
 #include "src/log.h"
-#include <stdbool.h>
 #include "common/threads.h"
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -37,6 +37,7 @@
 #include <errno.h>
 #include <assert.h>
 #include "xalloc.h"
+#include "lock.h"
 
 static bool trap = false;
 static filter_set *error_handle = NULL;
@@ -257,7 +258,7 @@ static const char *checks_error;
 static int checks_error_attribute;  /* generic attribute number for error */
 static bool checks_error_vbo;
 static sigjmp_buf checks_buf;
-static bugle_thread_mutex_t checks_mutex = BUGLE_THREAD_MUTEX_INITIALIZER;
+gl_lock_define_initialized(static, checks_mutex);
 
 static void checks_sigsegv_handler(int sig)
 {
@@ -601,7 +602,7 @@ static void checks_min_max(GLsizei count, GLenum gltype, const GLvoid *indices,
     struct sigaction act, old_act; \
     volatile bool ret = true; \
     \
-    bugle_thread_mutex_lock(&checks_mutex); \
+    gl_lock_lock(checks_mutex); \
     checks_error = NULL; \
     checks_error_attribute = -1; \
     checks_error_vbo = false; \
@@ -627,7 +628,7 @@ static void checks_min_max(GLsizei count, GLenum gltype, const GLvoid *indices,
             perror("failed to restore SIGSEGV handler"); \
             exit(1); \
         } \
-    bugle_thread_mutex_unlock(&checks_mutex); \
+    gl_lock_unlock(checks_mutex); \
     return ret; \
     } else (void) 0
 

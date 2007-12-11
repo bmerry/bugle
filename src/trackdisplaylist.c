@@ -23,14 +23,14 @@
 #include "src/objects.h"
 #include "src/tracker.h"
 #include "src/glutils.h"
-#include <stdbool.h>
 #include "common/hashtable.h"
-#include "common/threads.h"
+#include <stdbool.h>
 #include <stddef.h>
 #include <GL/gl.h>
+#include "lock.h"
 
 object_class bugle_displaylist_class;
-static bugle_thread_mutex_t displaylist_lock = BUGLE_THREAD_MUTEX_INITIALIZER;
+gl_lock_define_initialized(static, displaylist_lock);
 static object_view displaylist_view;
 static object_view namespace_view;   /* handle of the hash table */
 
@@ -78,10 +78,10 @@ void *bugle_displaylist_get(GLuint list)
     void *ans = NULL;
     hashptr_table *objects;
 
-    bugle_thread_mutex_lock(&displaylist_lock);
+    gl_lock_lock(displaylist_lock);
     objects = bugle_object_get_current_data(&bugle_namespace_class, namespace_view);
     if (objects) ans = bugle_hashptr_get(objects, (void *) (size_t) list);
-    bugle_thread_mutex_unlock(&displaylist_lock);
+    gl_lock_unlock(displaylist_lock);
     return ans;
 }
 
@@ -116,11 +116,11 @@ static bool trackdisplaylist_glEndList(function_call *call, const callback_data 
     /* Note: we update the hash table when we end the list, since this is when OpenGL
      * says the new name comes into effect.
      */
-    bugle_thread_mutex_lock(&displaylist_lock);
+    gl_lock_lock(displaylist_lock);
     objects = bugle_object_get_current_data(&bugle_namespace_class, namespace_view);
     if (objects)
         bugle_hashptr_set(objects, (void *) (size_t) info_ptr->list, obj);
-    bugle_thread_mutex_unlock(&displaylist_lock);
+    gl_lock_unlock(displaylist_lock);
     bugle_object_set_current(&bugle_displaylist_class, NULL);
     return true;
 }

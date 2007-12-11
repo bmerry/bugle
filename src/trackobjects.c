@@ -1,5 +1,5 @@
 /*  BuGLe: an OpenGL debugging tool
- *  Copyright (C) 2004-2006  Bruce Merry
+ *  Copyright (C) 2004-2007  Bruce Merry
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -29,13 +29,13 @@
 #include "src/glutils.h"
 #include "src/glexts.h"
 #include <stdbool.h>
-#include "common/threads.h"
 #include "common/radixtree.h"
 #include "xalloc.h"
+#include "lock.h"
 
 typedef struct
 {
-    bugle_thread_mutex_t mutex;
+    gl_lock_define(, mutex);
     bugle_radix_tree objects[BUGLE_TRACKOBJECTS_COUNT];
 } trackobjects_data;
 
@@ -54,12 +54,12 @@ static bugle_radix_tree *get_table(bugle_trackobjects_type type)
 
 static inline void lock(void)
 {
-    bugle_thread_mutex_lock(&((trackobjects_data *) bugle_object_get_current_data(&bugle_namespace_class, ns_view))->mutex);
+    gl_lock_lock(((trackobjects_data *) bugle_object_get_current_data(&bugle_namespace_class, ns_view))->mutex);
 }
 
 static inline void unlock(void)
 {
-    bugle_thread_mutex_unlock(&((trackobjects_data *) bugle_object_get_current_data(&bugle_namespace_class, ns_view))->mutex);
+    gl_lock_unlock(((trackobjects_data *) bugle_object_get_current_data(&bugle_namespace_class, ns_view))->mutex);
 }
 
 /* We don't rely entirely on glBindTexture and glDeleteTextures etc to
@@ -438,7 +438,7 @@ static void initialise_objects(const void *key, void *data)
     size_t i;
 
     d = (trackobjects_data *) data;
-    bugle_thread_mutex_init(&d->mutex, NULL);
+    gl_lock_init(d->mutex);
     for (i = 0; i < BUGLE_TRACKOBJECTS_COUNT; i++)
         bugle_radix_tree_init(&d->objects[i], false);
 }
@@ -449,7 +449,7 @@ static void destroy_objects(void *data)
     size_t i;
 
     d = (trackobjects_data *) data;
-
+    gl_lock_destroy(d->mutex);
     for (i = 0; i < BUGLE_TRACKOBJECTS_COUNT; i++)
         bugle_radix_tree_clear(&d->objects[i]);
 }

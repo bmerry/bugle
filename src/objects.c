@@ -23,9 +23,8 @@
 # include <config.h>
 #endif
 #include "common/linkedlist.h"
-#include <stdbool.h>
-#include "common/threads.h"
 #include "src/objects.h"
+#include <stdbool.h>
 #include <stddef.h>
 #include <string.h>
 #include <stdlib.h>
@@ -46,14 +45,14 @@ void bugle_object_class_init(object_class *klass, object_class *parent)
     if (parent)
         klass->parent_view = bugle_object_view_register(parent, NULL, NULL, sizeof(object *));
     else
-        bugle_thread_key_create(&klass->current, NULL);
+        gl_tls_key_init(klass->current, NULL);
 }
 
 void bugle_object_class_clear(object_class *klass)
 {
     bugle_list_clear(&klass->info);
     if (!klass->parent)
-        bugle_thread_key_delete(klass->current);
+        gl_tls_key_destroy(klass->current);
 }
 
 object_view bugle_object_view_register(object_class *klass,
@@ -132,7 +131,7 @@ object *bugle_object_get_current(const object_class *klass)
         else return *(object **) ans;
     }
     else
-        return (object *) bugle_thread_getspecific(klass->current);
+        return (object *) gl_tls_get(klass->current);
 }
 
 void *bugle_object_get_current_data(const object_class *klass, object_view view)
@@ -140,7 +139,7 @@ void *bugle_object_get_current_data(const object_class *klass, object_view view)
     return bugle_object_get_data(bugle_object_get_current(klass), view);
 }
 
-void bugle_object_set_current(const object_class *klass, object *obj)
+void bugle_object_set_current(object_class *klass, object *obj)
 {
     void *tmp;
 
@@ -150,7 +149,7 @@ void bugle_object_set_current(const object_class *klass, object *obj)
         if (tmp) *(object **) tmp = obj;
     }
     else
-        bugle_thread_setspecific(klass->current, (void *) obj);
+        gl_tls_set(klass->current, (void *) obj);
 }
 
 void *bugle_object_get_data(object *obj, object_view view)

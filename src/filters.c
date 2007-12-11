@@ -29,7 +29,6 @@
 #include "src/log.h"
 #include "common/linkedlist.h"
 #include "common/hashtable.h"
-#include "common/threads.h"
 #include <stdio.h>
 #include <stddef.h>
 #include <string.h>
@@ -55,6 +54,7 @@
 # endif
 #endif
 #include "xalloc.h"
+#include "lock.h"
 
 typedef struct
 {
@@ -98,7 +98,7 @@ static linked_list active_callbacks[NUMBER_OF_FUNCTIONS];
 static bool active_dirty = false;
 static linked_list activations_deferred;
 static linked_list deactivations_deferred;
-static bugle_thread_mutex_t active_callbacks_mutex = BUGLE_THREAD_MUTEX_INITIALIZER;
+gl_lock_define_initialized(static, active_callbacks_mutex);
 
 /* hash tables of linked lists of strings; A is the key, B is the linked list element */
 static hash_table filter_orders;           /* A is called after B */
@@ -609,16 +609,16 @@ void load_filter_sets(void)
 
 void filter_set_activate(filter_set *handle)
 {
-    bugle_thread_mutex_lock(&active_callbacks_mutex);
+    gl_lock_lock(active_callbacks_mutex);
     filter_set_activate_nolock(handle);
-    bugle_thread_mutex_unlock(&active_callbacks_mutex);
+    gl_lock_unlock(active_callbacks_mutex);
 }
 
 void filter_set_deactivate(filter_set *handle)
 {
-    bugle_thread_mutex_lock(&active_callbacks_mutex);
+    gl_lock_lock(active_callbacks_mutex);
     filter_set_deactivate_nolock(handle);
-    bugle_thread_mutex_unlock(&active_callbacks_mutex);
+    gl_lock_unlock(active_callbacks_mutex);
 }
 
 /* Note: these should be called only from within a callback, in which
@@ -720,7 +720,7 @@ void filters_run(function_call *call)
      * active_dirty are rare. We would prefer a read-write lock or
      * a read-copy process or something.
      */
-    bugle_thread_mutex_lock(&active_callbacks_mutex);
+    gl_lock_lock(active_callbacks_mutex);
     if (active_dirty)
     {
         compute_active_callbacks();
@@ -748,7 +748,7 @@ void filters_run(function_call *call)
         filter_set_deactivate_nolock((filter_set *) bugle_list_data(i));
         bugle_list_erase(&deactivations_deferred, i);
     }
-    bugle_thread_mutex_unlock(&active_callbacks_mutex);
+    gl_lock_unlock(active_callbacks_mutex);
 }
 
 filter_set *bugle_filter_set_register(const filter_set_info *info)

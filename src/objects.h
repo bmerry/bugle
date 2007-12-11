@@ -22,9 +22,9 @@
 # include <config.h>
 #endif
 #include <stddef.h>
-#include "common/linkedlist.h"
 #include <stdbool.h>
-#include "common/threads.h"
+#include "common/linkedlist.h"
+#include "tls.h"
 
 typedef size_t object_view;
 
@@ -32,7 +32,7 @@ typedef struct object_class_s
 {
     size_t count;       /* number of registrants */
     linked_list info;   /* list of object_class_info, defined in objects.c */
-    bugle_thread_key_t current;
+    gl_tls_key_t current;
 
     struct object_class_s *parent;
     object_view parent_view; /* view where we store current of this class in parent */
@@ -60,7 +60,7 @@ object *    bugle_object_new(const object_class *klass, const void *key, bool ma
 void        bugle_object_destroy(object *obj);
 object *    bugle_object_get_current(const object_class *klass);
 void *      bugle_object_get_current_data(const object_class *klass, object_view view);
-void        bugle_object_set_current(const object_class *klass, object *obj);
+void        bugle_object_set_current(object_class *klass, object *obj);
 void *      bugle_object_get_data(object *obj, object_view view);
 
 #endif /* !BUGLE_SRC_OBJECTS_H */

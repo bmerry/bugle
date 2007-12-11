@@ -26,7 +26,6 @@
 #include "src/log.h"
 #include <stdbool.h>
 #include "common/hashtable.h"
-#include "common/threads.h"
 #include <assert.h>
 #include <stddef.h>
 #include <stdlib.h>
@@ -36,6 +35,7 @@
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
 #include "xalloc.h"
+#include "lock.h"
 
 /* Some constructors like the context to be current when they are run.
  * To facilitate this, the object is not constructed until the first
@@ -49,7 +49,7 @@ object_class bugle_namespace_class;
 static hashptr_table context_objects, namespace_objects;
 static hashptr_table initial_values;
 static object_view trackcontext_view;
-static bugle_thread_mutex_t context_mutex = BUGLE_THREAD_MUTEX_INITIALIZER;
+gl_lock_define_initialized(static, context_mutex);
 
 typedef struct
 {
@@ -96,7 +96,7 @@ static bool trackcontext_newcontext(function_call *call, const callback_data *da
 
     if (self)
     {
-        bugle_thread_mutex_lock(&context_mutex);
+        gl_lock_lock(context_mutex);
 
         base = XZALLOC(trackcontext_data);
         base->dpy = dpy;
@@ -130,7 +130,7 @@ static bool trackcontext_newcontext(function_call *call, const callback_data *da
         }
 
         bugle_hashptr_set(&initial_values, self, base);
-        bugle_thread_mutex_unlock(&context_mutex);
+        gl_lock_unlock(context_mutex);
     }
 
     return true;
@@ -150,7 +150,7 @@ static bool trackcontext_callback(function_call *call, const callback_data *data
         bugle_object_set_current(&bugle_context_class, NULL);
     else
     {
-        bugle_thread_mutex_lock(&context_mutex);
+        gl_lock_lock(context_mutex);
         obj = bugle_hashptr_get(&context_objects, ctx);
         if (!obj)
         {
@@ -179,7 +179,7 @@ static bool trackcontext_callback(function_call *call, const callback_data *data
         }
         else
             bugle_object_set_current(&bugle_context_class, obj);
-        bugle_thread_mutex_unlock(&context_mutex);
+        gl_lock_unlock(context_mutex);
     }
     return true;
 }
@@ -332,9 +332,9 @@ Display *bugle_get_current_display_internal(bool lock)
     ctx = CALL_glXGetCurrentContext();
     if (!ctx)
         return NULL;
-    if (lock) bugle_thread_mutex_lock(&context_mutex);
+    if (lock) gl_lock_lock(context_mutex);
     data = (trackcontext_data *) bugle_hashptr_get(&initial_values, ctx);
-    if (lock) bugle_thread_mutex_unlock(&context_mutex);
+    if (lock) gl_lock_unlock(context_mutex);
     if (data)
         return data->dpy;
 #ifdef GLX_EXT_import_context
