@@ -28,6 +28,11 @@
 #include <stddef.h>
 #include <stdio.h>
 
+#define LIST_FOR(list, it, val) \
+    for ((it) = gl_list_iterator((list)); gl_list_iterator_next(&(it), (const void **) &(val), NULL) ;)
+#define LIST_CREATE(destructor) \
+    (gl_list_create_empty(GL_LINKED_LIST, NULL, NULL, (gl_listelement_dispose_fn) (destructor), true))
+
 /* Appends to *strp using the format, reallocating if necessary. The
  * current size is *sz, and will be updated on reallocation. *strp may
  * be NULL, in which case this reduces to asprintf. The return value is

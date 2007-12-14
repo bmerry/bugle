@@ -15,11 +15,11 @@
 
 
 # Specification in the form of a command-line invocation:
-#   gnulib-tool --import --dir=. --lib=libgnu --source-base=lib --m4-base=m4 --doc-base=doc --aux-dir=. --libtool --macro-prefix=gl atexit error exitfail free full-read full-write getline lock malloc memcmp realloc stdbool tls vsnprintf vsnprintf-posix xalloc-die xstrndup xvasprintf
+#   gnulib-tool --import --dir=. --lib=libgnu --source-base=lib --m4-base=m4 --doc-base=doc --aux-dir=. --libtool --macro-prefix=gl atexit error exitfail free full-read full-write getline linked-list lock malloc memcmp realloc stdbool tls vsnprintf vsnprintf-posix xalloc-die xstrndup xvasprintf
 
 # Specification in the form of a few gnulib-tool.m4 macro invocations:
 gl_LOCAL_DIR([])
-gl_MODULES([atexit error exitfail free full-read full-write getline lock malloc memcmp realloc stdbool tls vsnprintf vsnprintf-posix xalloc-die xstrndup xvasprintf])
+gl_MODULES([atexit error exitfail free full-read full-write getline linked-list lock malloc memcmp realloc stdbool tls vsnprintf vsnprintf-posix xalloc-die xstrndup xvasprintf])
 gl_AVOID([])
 gl_SOURCE_BASE([lib])
 gl_M4_BASE([m4])
