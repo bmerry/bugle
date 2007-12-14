@@ -46,7 +46,7 @@ extern int stats_yyparse(void);
 
 static hash_table stats_signals;
 static size_t stats_signals_num_active = 0;
-static linked_list stats_signals_active;
+static linked_list stats_signals_active; /* Pointers into stats_signals */
 
 /* Flat list of available statistics. Initially it is the statistics
  * specified in the file, but later rewritten to instantiate any generics.
@@ -428,19 +428,11 @@ stats_substitution *bugle_stats_statistic_find_substitution(stats_statistic *st,
     return NULL;
 }
 
-static void stats_statistic_free(stats_statistic *st)
+void stats_statistic_free(stats_statistic *st)
 {
-    linked_list_node *i;
-    stats_substitution *sub;
-
     free(st->name);
     stats_expression_free(st->value);
     free(st->label);
-    for (i = bugle_list_head(&st->substitutions); i; i = bugle_list_next(i))
-    {
-        sub = (stats_substitution *) bugle_list_data(i);
-        free(sub->replacement);
-    }
     bugle_list_clear(&st->substitutions);
     free(st);
 }
@@ -616,18 +608,8 @@ static bool stats_ordering_initialise(filter_set *handle)
 
 static void stats_destroy(filter_set *handle)
 {
-    linked_list_node *i;
-    stats_statistic *st;
-
     if (stats_statistics)
-    {
-        for (i = bugle_list_head(stats_statistics); i; i = bugle_list_next(i))
-        {
-            st = (stats_statistic *) bugle_list_data(i);
-            stats_statistic_free(st);
-        }
         bugle_list_clear(stats_statistics);
-    }
     bugle_list_clear(&stats_signals_active);
     bugle_hash_clear(&stats_signals);
     bugle_hash_clear(&stats_statistics_first);

@@ -70,6 +70,12 @@ static stats_expression *stats_expression_new_signal(stats_operation_type op, ch
     return expr;
 }
 
+static void stats_substitution_free(stats_substitution *sub)
+{
+    free(sub->replacement);
+    free(sub);
+}
+
 static stats_statistic *stats_statistic_new()
 {
     stats_statistic *st;
@@ -80,7 +86,7 @@ static stats_statistic *stats_statistic_new()
     st->precision = 1;
     st->maximum = 0.0;
     st->label = NULL;
-    bugle_list_init(&st->substitutions, free);
+    bugle_list_init(&st->substitutions, (void (*)(void *)) stats_substitution_free);
     return st;
 }
 
@@ -133,7 +139,7 @@ linked_list *stats_statistics_get_list(void)
 
 %%
 
-statistics: /* empty */           { bugle_list_init(&$$, NULL); stats_statistics_list = $$; }
+statistics: /* empty */           { bugle_list_init(&$$, (void (*)(void *)) stats_statistic_free); stats_statistics_list = $$; }
 	| statistics statistic    { bugle_list_append(&$1, $2); stats_statistics_list = $$ = $1; }
 ;
 

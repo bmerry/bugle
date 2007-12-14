@@ -33,6 +33,10 @@ static linked_list config_root;
 int yyerror(const char *msg);
 extern int yylex(void);
 
+static void destroy_variable(config_variable *variable);
+static void destroy_filterset(config_filterset *filterset);
+static void destroy_chain(config_chain *chain);
+
 %}
 
 %union
@@ -64,7 +68,7 @@ extern int yylex(void);
 
 %%
 
-input: 		/* empty */ { bugle_list_init(&$$, NULL); config_root = $$; }
+input: 		/* empty */ { bugle_list_init(&$$, (void (*)(void *)) destroy_chain); config_root = $$; }
 		| input chainitem { bugle_list_append(&$1, $2); config_root = $$ = $1; }
 ;
 
@@ -75,14 +79,14 @@ chainitem:	CHAIN WORD '{' chainspec '}' {
 	        }
 ;
 
-chainspec:	/* empty */ { bugle_list_init(&$$, NULL); }
+chainspec:	/* empty */ { bugle_list_init(&$$, (void (*)(void *)) destroy_filterset); }
 		| chainspec filtersetitem { bugle_list_append(&$1, $2); $$ = $1; }
 ;
 
 filtersetitem:	FILTERSET WORD filtersetoptions {
 			$$ = $3;
                         $$->name = $2;
-                        bugle_list_init(&$$->variables, NULL);
+                        bugle_list_init(&$$->variables, (void (*)(void *)) destroy_variable);
 		}
 		| FILTERSET WORD filtersetoptions '{' filtersetspec '}' {
 			$$ = $3;
@@ -117,11 +121,11 @@ filtersetallocator: /* empty */ {
                         $$->name = NULL;
                         $$->key = NULL;
                         $$->active = 1;
-                        bugle_list_init(&$$->variables, NULL);
+                        bugle_list_init(&$$->variables, (void (*)(void *)) destroy_variable);
 		}
 ;
 
-filtersetspec:	/* empty */ { bugle_list_init(&$$, NULL); }
+filtersetspec:	/* empty */ { bugle_list_init(&$$, (void (*)(void *)) destroy_variable); }
 		| filtersetspec variableitem { bugle_list_append(&$1, $2); $$ = $1; }
 ;
 
@@ -167,29 +171,20 @@ static void destroy_variable(config_variable *variable)
 
 static void destroy_filterset(config_filterset *filterset)
 {
-    linked_list_node *i;
     free(filterset->name);
     if (filterset->key) free(filterset->key);
-    for (i = bugle_list_head(&filterset->variables); i; i = bugle_list_next(i))
-        destroy_variable((config_variable *) bugle_list_data(i));
     bugle_list_clear(&filterset->variables);
     free(filterset);
 }
 
 static void destroy_chain(config_chain *chain)
 {
-    linked_list_node *i;
     free(chain->name);
-    for (i = bugle_list_head(&chain->filtersets); i; i = bugle_list_next(i))
-        destroy_filterset((config_filterset *) bugle_list_data(i));
     bugle_list_clear(&chain->filtersets);
     free(chain);
 }
 
 void bugle_config_destroy(void)
 {
-    linked_list_node *i;
-    for (i = bugle_list_head(&config_root); i; i = bugle_list_next(i))
-        destroy_chain((config_chain *) bugle_list_data(i));
     bugle_list_clear(&config_root);
 }

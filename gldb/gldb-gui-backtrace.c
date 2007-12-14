@@ -68,9 +68,6 @@ typedef struct
 {
     GldbGdbValueType type;
 
-    /* The list/hashtable do not internally "own" their memory; the
-     * GldbGdbValue does and is responsible for freeing it recursively
-     */
     char *const_value;
     linked_list list_value;   /* currently only a list of GldbGdbValue */
     hash_table tuple_value;   /* table of name => GldbGdbValue */
@@ -94,7 +91,6 @@ static GQuark gldb_gdb_error_quark(void)
 
 static void gldb_gdb_value_free(GldbGdbValue *value)
 {
-    linked_list_node *l;
     const hash_table_entry *h;
 
     switch (value->type)
@@ -103,11 +99,10 @@ static void gldb_gdb_value_free(GldbGdbValue *value)
         free(value->const_value);
         break;
     case GLDB_GDB_VALUE_LIST:
-        for (l = bugle_list_head(&value->list_value); l; l = bugle_list_next(l))
-            gldb_gdb_value_free((GldbGdbValue *) bugle_list_data(l));
         bugle_list_clear(&value->list_value);
         break;
     case GLDB_GDB_VALUE_TUPLE:
+        /* FIXME: still need destructors for hash tables */
         for (h = bugle_hash_begin(&value->tuple_value); h; h = bugle_hash_next(&value->tuple_value, h))
             gldb_gdb_value_free((GldbGdbValue *) h->value);
         bugle_hash_clear(&value->tuple_value);
@@ -227,7 +222,7 @@ static GldbGdbValue *gldb_gdb_value_parse(const char **record_ptr, GError **erro
          * each entry.
          */
         v->type = GLDB_GDB_VALUE_LIST;
-        bugle_list_init(&v->list_value, NULL);
+        bugle_list_init(&v->list_value, (void (*)(void *)) gldb_gdb_value_free);
         if (record[1] != ']')
         {
             do

@@ -70,7 +70,7 @@ object_view bugle_object_view_register(object_class *klass,
     return klass->count++;
 }
 
-object *bugle_object_new(const object_class *klass, const void *key, bool make_current)
+object *bugle_object_new(object_class *klass, const void *key, bool make_current)
 {
     object *obj;
     linked_list_node *i;

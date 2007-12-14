@@ -179,12 +179,21 @@ static int stats_nv_enumerate(UINT index, char *name)
     return NVPM_OK;
 }
 
+static void stats_nv_free(stats_signal *si)
+{
+    stats_signal_nv *nv;
+
+    nv = (stats_signal_nv *) si->user_data;
+    free(nv->name);
+    free(nv);
+}
+
 static bool stats_nv_initialise(filter_set *handle)
 {
     filter *f;
 
     bugle_list_init(&stats_nv_active, NULL);
-    bugle_list_init(&stats_nv_registered, NULL);
+    bugle_list_init(&stats_nv_registered, (void (*)(void *)) stats_nv_free);
     stats_nv_dl = lt_dlopenext("libNVPerfSDK");
     if (stats_nv_dl == NULL) return true;
 
@@ -255,13 +264,6 @@ static void stats_nv_destroy(filter_set *handle)
 
     if (stats_nv_dl == NULL) return; /* NVPerfSDK not installed */
 
-    for (i = bugle_list_head(&stats_nv_registered); i; i = bugle_list_next(i))
-    {
-        si = (stats_signal *) bugle_list_data(i);
-        nv = (stats_signal_nv *) si->user_data;
-        free(nv->name);
-        free(nv);
-    }
     fNVPMRemoveAllCounters();
     fNVPMShutdown();
     lt_dlclose(stats_nv_dl);

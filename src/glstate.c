@@ -2452,7 +2452,7 @@ void bugle_state_get_raw(const glstate *state, bugle_state_raw *wrapper)
         if (state->info->type == TYPE_9GLboolean)
             CALL_glGetBooleanIndexedvEXT(pname, state->level, b);
         else if (state->info->type == TYPE_11GLxfbattrib)
-            CALL_glGetIntegerIndexedvEXT(pname, state->level, &xfbattrib);
+            CALL_glGetIntegerIndexedvEXT(pname, state->level, (GLint *) &xfbattrib);
         else
         {
             CALL_glGetIntegerIndexedvEXT(pname, state->level, i);

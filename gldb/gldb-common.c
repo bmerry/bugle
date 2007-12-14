@@ -56,6 +56,14 @@ static bool state_dirty = true;
 static bool break_on_error = true;
 static hash_table break_on;
 
+static void state_destroy(gldb_state *s)
+{
+    bugle_list_clear(&s->children);
+    free(s->name);
+    free(s->data);
+    free(s);
+}
+
 void gldb_program_clear(void)
 {
     int i;
@@ -150,18 +158,6 @@ static pid_t execute(void (*child_init)(void))
         close(out_pipe[0]);
         return pid;
     }
-}
-
-static void state_destroy(gldb_state *s)
-{
-    linked_list_node *i;
-
-    for (i = bugle_list_head(&s->children); i; i = bugle_list_next(i))
-        state_destroy((gldb_state *) bugle_list_data(i));
-    bugle_list_clear(&s->children);
-    free(s->name);
-    free(s->data);
-    free(s);
 }
 
 void set_status(gldb_status s)
@@ -314,10 +310,7 @@ static gldb_state *state_get(void)
     uint32_t data_len;
 
     s = XMALLOC(gldb_state);
-    /* The list actually does own the memory, but we do the free as
-     * part of state_destroy.
-     */
-    bugle_list_init(&s->children, NULL);
+    bugle_list_init(&s->children, (void (*)(void *)) state_destroy);
     gldb_protocol_recv_string(lib_in, &s->name);
     gldb_protocol_recv_code(lib_in, &numeric_name);
     gldb_protocol_recv_code(lib_in, &enum_name);

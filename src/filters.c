@@ -175,7 +175,7 @@ static bool compute_order(linked_list *present,
             {
                 name = (const char *) bugle_list_data(j);
                 info = (order_data *) bugle_hash_get(&byname, name);
-                if (info) /* otherwise a non-existent object */
+                if (info) /* otherwise a non-existant object */
                     info->valence++;
             }
         }
@@ -225,8 +225,16 @@ static bool compute_order(linked_list *present,
     }
     else
     {
+        void (*destructor)(void *);
+
+        /* Some fiddling to prevent anything from being destroyed while we
+         * shuffle the list structures around
+         */
+        destructor = present->destructor;
+        present->destructor = NULL;
         bugle_list_clear(present);
         *present = ordered;
+        present->destructor = destructor;
         return true;
     }
 }
@@ -248,23 +256,20 @@ static void destroy_order_table(hash_table *orders)
 
 /*** End of order management helper code ***/
 
+static void filter_destroy(filter *f)
+{
+    bugle_list_clear(&f->callbacks);
+    free(f);
+}
+
 static void filter_set_destroy(filter_set *handle)
 {
-    linked_list_node *i;
-    filter *f;
-
     if (handle->loaded)
     {
         handle->loaded = false;
         filter_set_deactivate_nolock(handle);
         if (handle->unload) (*handle->unload)(handle);
 
-        for (i = bugle_list_head(&handle->filters); i; i = bugle_list_next(i))
-        {
-            f = (filter *) bugle_list_data(i);
-            bugle_list_clear(&f->callbacks);
-            free(f);
-        }
         bugle_list_clear(&handle->filters);
     }
 }
@@ -279,23 +284,22 @@ static void filters_destroy(void)
     for (k = 0; k < NUMBER_OF_FUNCTIONS; k++)
         bugle_list_clear(&active_callbacks[k]);
 
+    /* NB: this list runs backwards to obtain the correct shutdown order.
+     * Don't try to turn it into a list destructor or the shutdown order
+     * will be wrong.
+     */
     for (i = bugle_list_tail(&added_filter_sets); i; i = bugle_list_prev(i))
     {
         s = (filter_set *) bugle_list_data(i);
         filter_set_destroy(s);
-    }
-    for (i = bugle_list_head(&filter_sets); i; i = bugle_list_next(i))
-    {
-        s = (filter_set *) bugle_list_data(i);
-        free(s);
     }
 
     destroy_order_table(&filter_orders);
     destroy_order_table(&filter_set_dependencies);
     destroy_order_table(&filter_set_orders);
 
-    bugle_list_clear(&filter_sets);
     bugle_list_clear(&added_filter_sets);
+    bugle_list_clear(&filter_sets);
     bugle_object_class_clear(&bugle_call_class);
     lt_dlexit();
 }
@@ -331,7 +335,7 @@ void initialise_filters(void)
     const char *libdir;
     budgie_function f;
 
-    bugle_list_init(&filter_sets, NULL);
+    bugle_list_init(&filter_sets, free);
     bugle_list_init(&added_filter_sets, NULL);
     bugle_list_init(&loaded_filters, NULL);
     for (f = 0; f < NUMBER_OF_FUNCTIONS; f++)
@@ -758,7 +762,7 @@ filter_set *bugle_filter_set_register(const filter_set_info *info)
     s = XMALLOC(filter_set);
     s->name = info->name;
     s->help = info->help;
-    bugle_list_init(&s->filters, NULL);
+    bugle_list_init(&s->filters, (void (*)(void *)) filter_destroy);
     s->load = info->load;
     s->unload = info->unload;
     s->activate = info->activate;

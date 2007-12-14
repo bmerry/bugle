@@ -117,6 +117,7 @@ typedef struct
 
 linked_list *stats_statistics_get_list(void);
 void statistics_initialise(void);
+void stats_statistic_free(stats_statistic *st);
 
 /*** Public API for generators ***/
 
