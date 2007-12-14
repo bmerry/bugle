@@ -21,7 +21,7 @@
 #if HAVE_CONFIG_H
 # include <config.h>
 #endif
-#include "gl_list.h"
+#include "common/linkedlist.h"
 
 typedef struct
 {
@@ -32,7 +32,7 @@ typedef struct
 typedef struct
 {
     char *name;
-    gl_list_t variables;
+    linked_list variables;
     char *key;
     int active;
 } config_filterset;
@@ -40,11 +40,11 @@ typedef struct
 typedef struct
 {
     char *name;
-    gl_list_t filtersets;
+    linked_list filtersets;
 } config_chain;
 
 void bugle_config_destroy(void);
 const config_chain *bugle_config_get_chain(const char *name);
-gl_list_t bugle_config_get_root(void);
+const linked_list *bugle_config_get_root(void);
 
 #endif /* !BUGLE_SRC_CONFFILE_H */

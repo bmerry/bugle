@@ -26,24 +26,19 @@
 #include <string.h>
 #include <stdlib.h>
 #include "src/conffile.h"
-#include "gl_linked_list.h"
-#include "common/safemem.h"
+#include "common/linkedlist.h"
 #include "xalloc.h"
 
-static gl_list_t config_root;
+static linked_list config_root;
 int yyerror(const char *msg);
 extern int yylex(void);
-
-static void destroy_variable(config_variable *variable);
-static void destroy_filterset(config_filterset *filterset);
-static void destroy_chain(config_chain *chain);
 
 %}
 
 %union
 {
 	char *str;
-        gl_list_t list;
+        linked_list list;
         config_chain *chain;
         config_filterset *filterset;
         config_variable *variable;
@@ -69,9 +64,8 @@ static void destroy_chain(config_chain *chain);
 
 %%
 
-input: 		/* empty */
-                { config_root = $$ = LIST_CREATE(destroy_chain); }
-		| input chainitem { gl_list_add_last($1, $2); config_root = $$ = $1; }
+input: 		/* empty */ { bugle_list_init(&$$, false); config_root = $$; }
+		| input chainitem { bugle_list_append(&$1, $2); config_root = $$ = $1; }
 ;
 
 chainitem:	CHAIN WORD '{' chainspec '}' {
@@ -81,14 +75,14 @@ chainitem:	CHAIN WORD '{' chainspec '}' {
 	        }
 ;
 
-chainspec:	/* empty */ { $$ = LIST_CREATE(destroy_filterset); }
-		| chainspec filtersetitem { gl_list_add_last($1, $2); $$ = $1; }
+chainspec:	/* empty */ { bugle_list_init(&$$, false); }
+		| chainspec filtersetitem { bugle_list_append(&$1, $2); $$ = $1; }
 ;
 
 filtersetitem:	FILTERSET WORD filtersetoptions {
 			$$ = $3;
                         $$->name = $2;
-                        $$->variables = LIST_CREATE(destroy_variable);
+                        bugle_list_init(&$$->variables, false);
 		}
 		| FILTERSET WORD filtersetoptions '{' filtersetspec '}' {
 			$$ = $3;
@@ -123,12 +117,12 @@ filtersetallocator: /* empty */ {
                         $$->name = NULL;
                         $$->key = NULL;
                         $$->active = 1;
-                        $$->variables = NULL;
+                        bugle_list_init(&$$->variables, false);
 		}
 ;
 
-filtersetspec:	/* empty */ { $$ = LIST_CREATE(destroy_variable); }
-		| filtersetspec variableitem { gl_list_add_last($1, $2); $$ = $1; }
+filtersetspec:	/* empty */ { bugle_list_init(&$$, false); }
+		| filtersetspec variableitem { bugle_list_append(&$1, $2); $$ = $1; }
 ;
 
 variableitem:	WORD string {
@@ -150,19 +144,17 @@ int yyerror(const char *msg)
     return 0;
 }
 
-gl_list_t bugle_config_get_root(void)
+const linked_list *bugle_config_get_root(void)
 {
-    return config_root;
+    return &config_root;
 }
 
 const config_chain *bugle_config_get_chain(const char *name)
 {
-    gl_list_iterator_t i;
-    const config_chain *c;
-
-    LIST_FOR(config_root, i, c)
-        if (strcmp(c->name, name) == 0)
-            return c;
+    linked_list_node *i;
+    for (i = bugle_list_head(&config_root); i; i = bugle_list_next(i))
+        if (strcmp(((config_chain *) bugle_list_data(i))->name, name) == 0)
+            return (const config_chain *) bugle_list_data(i);
     return NULL;
 }
 
@@ -175,20 +167,29 @@ static void destroy_variable(config_variable *variable)
 
 static void destroy_filterset(config_filterset *filterset)
 {
+    linked_list_node *i;
     free(filterset->name);
-    free(filterset->key);
-    gl_list_free(filterset->variables);
+    if (filterset->key) free(filterset->key);
+    for (i = bugle_list_head(&filterset->variables); i; i = bugle_list_next(i))
+        destroy_variable((config_variable *) bugle_list_data(i));
+    bugle_list_clear(&filterset->variables);
     free(filterset);
 }
 
 static void destroy_chain(config_chain *chain)
 {
+    linked_list_node *i;
     free(chain->name);
-    gl_list_free(chain->filtersets);
+    for (i = bugle_list_head(&chain->filtersets); i; i = bugle_list_next(i))
+        destroy_filterset((config_filterset *) bugle_list_data(i));
+    bugle_list_clear(&chain->filtersets);
     free(chain);
 }
 
 void bugle_config_destroy(void)
 {
-    gl_list_free(config_root);
+    linked_list_node *i;
+    for (i = bugle_list_head(&config_root); i; i = bugle_list_next(i))
+        destroy_chain((config_chain *) bugle_list_data(i));
+    bugle_list_clear(&config_root);
 }

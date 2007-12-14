@@ -56,7 +56,7 @@ object_view bugle_object_view_register(object_class *klass,
                                        void (*constructor)(const void *key, void *data),
                                        void (*destructor)(void *data),
                                        size_t size);
-object *    bugle_object_new(object_class *klass, const void *key, bool make_current);
+object *    bugle_object_new(const object_class *klass, const void *key, bool make_current);
 void        bugle_object_destroy(object *obj);
 object *    bugle_object_get_current(const object_class *klass);
 void *      bugle_object_get_current_data(const object_class *klass, object_view view);

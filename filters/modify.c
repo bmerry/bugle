@@ -25,15 +25,14 @@
 #include "src/glfuncs.h"
 #include "src/log.h"
 #include <stdbool.h>
+#include "common/linkedlist.h"
 #include "common/hashtable.h"
-#include "common/safemem.h"
 #include <GL/glx.h>
 #include <sys/time.h>
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>
 #include "xalloc.h"
-#include "gl_linked_list.h"
 
 #if !HAVE_SINF
 # define sinf(x) ((float) (sin((double) (x))))
@@ -55,7 +54,7 @@
  */
 
 static object_view classify_view;
-static gl_list_t classify_callbacks;
+static linked_list classify_callbacks;
 
 typedef struct
 {
@@ -75,7 +74,7 @@ static void register_classify_callback(void (*callback)(bool, void *), void *arg
     cb = XMALLOC(classify_callback);
     cb->callback = callback;
     cb->arg = arg;
-    gl_list_add_last(classify_callbacks, cb);
+    bugle_list_append(&classify_callbacks, cb);
 }
 
 static void initialise_classify_context(const void *key, void *data)
@@ -91,8 +90,8 @@ static bool classify_glBindFramebufferEXT(function_call *call, const callback_da
 {
     classify_context *ctx;
     GLint fbo;
-    gl_list_iterator_t i;
-    const classify_callback *cb;
+    linked_list_node *i;
+    classify_callback *cb;
 
     ctx = (classify_context *) bugle_object_get_current_data(&bugle_context_class, classify_view);
     if (ctx && bugle_begin_internal_render())
@@ -109,8 +108,11 @@ static bool classify_glBindFramebufferEXT(function_call *call, const callback_da
         }
         ctx->real = (fbo == 0);
         bugle_end_internal_render("classify_glBindFramebufferEXT", true);
-        LIST_FOR(classify_callbacks, i, cb)
+        for (i = bugle_list_head(&classify_callbacks); i; i = bugle_list_next(i))
+        {
+            cb = (classify_callback *) bugle_list_data(i);
             (*cb->callback)(ctx->real, cb->arg);
+        }
     }
     return true;
 }
@@ -128,13 +130,13 @@ static bool initialise_classify(filter_set *handle)
     bugle_filter_post_renders("classify");
     classify_view = bugle_object_view_register(&bugle_context_class, initialise_classify_context,
                                                 NULL, sizeof(classify_context));
-    classify_callbacks = LIST_CREATE(free);
+    bugle_list_init(&classify_callbacks, true);
     return true;
 }
 
 static void destroy_classify(filter_set *handle)
 {
-    gl_list_free(classify_callbacks);
+    bugle_list_clear(&classify_callbacks);
 }
 
 /*** Wireframe filter-set ***/

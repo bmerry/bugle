@@ -30,13 +30,11 @@
 #include "stats.h"
 #include "common/hashtable.h"
 #include "common/threads.h"
-#include "common/safemem.h"
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
 #include <stdio.h>
 #include "xalloc.h"
-#include "gl_list.h"
 
 #define FILTERFILE "/.bugle/filters"
 
@@ -58,12 +56,12 @@ static void load_config(void)
 {
     const char *home;
     char *config = NULL, *chain_name;
-    gl_list_t root;
+    const linked_list *root;
     const config_chain *chain;
     const config_filterset *set;
     const config_variable *var;
     filter_set *f;
-    gl_list_iterator_t i, j;
+    linked_list_node *i, *j;
     bool debugging;
     xevent_key key;
 
@@ -101,15 +99,16 @@ static void load_config(void)
                 if (!chain)
                 {
                     root = bugle_config_get_root();
-                    if (gl_list_size(root))
-                        chain = (const config_chain *) gl_list_get_at(root, 0);
+                    if (bugle_list_head(root))
+                        chain = (const config_chain *) bugle_list_data(bugle_list_head(root));
                     if (!chain)
                         fputs("no chains defined; running in passthrough mode\n", stderr);
                 }
                 if (chain)
                 {
-                    LIST_FOR(chain->filtersets, i, set)
+                    for (i = bugle_list_head(&chain->filtersets); i; i = bugle_list_next(i))
                     {
+                        set = (const config_filterset *) bugle_list_data(i);
                         f = bugle_filter_set_get_handle(set->name);
                         if (!f)
                         {
@@ -117,16 +116,18 @@ static void load_config(void)
                                     set->name);
                             continue;
                         }
-                        LIST_FOR(set->variables, j, var)
+                        for (j = bugle_list_head(&set->variables); j; j = bugle_list_next(j))
                         {
+                            var = (const config_variable *) bugle_list_data(j);
                             if (!filter_set_variable(f,
                                                      var->name,
                                                      var->value))
                                 exit(1);
                         }
                     }
-                    LIST_FOR(chain->filtersets, i, set)
+                    for (i = bugle_list_head(&chain->filtersets); i; i = bugle_list_next(i))
                     {
+                        set = (const config_filterset *) bugle_list_data(i);
                         f = bugle_filter_set_get_handle(set->name);
                         if (f)
                         {
