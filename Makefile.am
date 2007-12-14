@@ -83,7 +83,7 @@ nodist_src_libbugleutils_la_SOURCES = \
 	src/names.c src/names.h src/types.c src/types.h \
 	src/gltokens.c src/glfuncs.c src/glfuncs.h \
 	src/glexts.c src/glexts.h
-src_libbugleutils_la_LIBADD = $(LTLIBOBJS) $(THREAD_LIBS) $(LTLIBTHREAD) $(LTLIBINTL) lib/libgnu.la
+src_libbugleutils_la_LIBADD = $(LTLIBOBJS) $(LTLIBTHREAD) $(LTLIBINTL) lib/libgnu.la
 src_libbugleutils_la_LDFLAGS = -thread-safe -export-dynamic $(SYMBOLFLAGS) -version-info 3:0:1
 
 src_libbugle_la_SOURCES = \
@@ -104,7 +104,7 @@ src_libbugle_la_SOURCES = \
 	budgielib/budgieutils.c budgielib/budgieutils.h
 nodist_src_libbugle_la_SOURCES = \
 	src/utils.c src/utils.h src/lib.c src/lib.h
-src_libbugle_la_LIBADD = $(LIBLTDL) src/libbugleutils.la -lm -lGL $(X_PRE_LIBS) $(X_LIBS) -lX11 $(X_EXTRA_LIBS) $(THREAD_LIBS) $(LTLIBTHREAD) $(LTLIBINTL) lib/libgnu.la
+src_libbugle_la_LIBADD = $(LIBLTDL) src/libbugleutils.la -lm -lGL $(X_PRE_LIBS) $(X_LIBS) -lX11 $(X_EXTRA_LIBS) $(LTLIBTHREAD) $(LTLIBINTL) lib/libgnu.la
 src_libbugle_la_LDFLAGS = -thread-safe -export-dynamic $(SYMBOLFLAGS) -version-info 4:0:0
 
 BUILT_SOURCES += src/lib.h src/types.h src/utils.h src/names.h src/confparse.h
@@ -226,9 +226,9 @@ tests_pointers_LDADD = -lglut -lGLU $(GL_LIBS) $(X_PRE_LIBS) $(X_LIBS) -lX11 $(X
 tests_pbo_SOURCES = tests/pbo.c glee/GLee.c glee/GLee.h
 tests_pbo_LDADD = -lglut -lGLU $(GL_LIBS) $(X_PRE_LIBS) $(X_LIBS) -lX11 $(X_EXTRA_LIBS)
 tests_threads1_SOURCES = tests/threads1.c
-tests_threads1_LDADD = $(GL_LIBS) $(X_PRE_LIBS) $(X_LIBS) $(X_EXTRA_LIBS) -lX11 $(THREAD_LIBS) $(LTLIBTHREAD)
+tests_threads1_LDADD = $(GL_LIBS) $(X_PRE_LIBS) $(X_LIBS) $(X_EXTRA_LIBS) -lX11 $(LIBMULTITHREAD)
 tests_threads2_SOURCES = tests/threads2.c
-tests_threads2_LDADD = $(GL_LIBS) $(X_PRE_LIBS) $(X_LIBS) $(X_EXTRA_LIBS) -lX11 $(THREAD_LIBS) $(LTLIBTHREAD)
+tests_threads2_LDADD = $(GL_LIBS) $(X_PRE_LIBS) $(X_LIBS) $(X_EXTRA_LIBS) -lX11 -lpthread $(LIBMULTITHREAD)
 tests_queries_SOURCES = tests/queries.c glee/GLee.c glee/GLee.h
 tests_queries_LDADD = -lglut -lGLU $(GL_LIBS) $(X_PRE_LIBS) $(X_LIBS) -lX11 $(X_EXTRA_LIBS)
 tests_triangles_SOURCES = tests/triangles.c glee/GLee.c glee/GLee.h

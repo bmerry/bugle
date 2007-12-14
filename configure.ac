@@ -44,11 +44,6 @@ AC_CHECK_LIB([history], [add_history], [
   READLINE_LIBS="-lhistory $READLINE_LIBS"], [HAVE_READLINE=0], [$READLINE_LIBS])
 AC_SUBST(READLINE_LIBS)
 
-THREAD_LIBS=""
-THREADS=BUGLE_THREADS_PTHREADS
-AC_CHECK_LIB([pthread], [pthread_create], [
-  THREAD_LIBS="-lpthread $THREAD_LIBS"], [THREADS=BUGLE_THREADS_SINGLE], [])
-
 HAVE_LAVC=1
 AVCODEC_CFLAGS=""
 AVCODEC_LIBS=""
@@ -70,7 +65,6 @@ AC_HEADER_DIRENT
 AC_HEADER_STDBOOL
 AC_CHECK_HEADERS([sys/types.h stdlib.h stddef.h regex.h sys/select.h arpa/inet.h netinet/in.h NVPerfSDK.h dlfcn.h])
 AC_CHECK_HEADERS([readline/readline.h readline/history.h], [], [HAVE_READLINE=0])
-AC_CHECK_HEADERS([pthread.h], [], [THREADS=BUGLE_THREADS_SINGLE])
 
 GLEXTINCLUDE="`CPP=\"$CPP\" srcdir=\"$srcdir\" $PERL -w $srcdir/gentokens/find_header.perl GL/glext.h`"
 AC_SUBST(GLEXTINCLUDE)
@@ -105,9 +99,6 @@ AC_CHECK_FUNCS([cosf sinf finite isfinite nan isnan])
 real_libs="$LIBS"
 LIBS="$READLINE_LIBS $LIBS"
 AC_CHECK_FUNCS([rl_completion_matches], [], [])
-LIBS="$real_libs"
-LIBS="$THREAD_LIBS $LIBS"
-AC_CHECK_FUNCS([pthread_kill], [], [])
 LIBS="$real_libs"
 
 dnl Checks for system services
@@ -152,16 +143,6 @@ AC_ARG_WITH([gtkglext], AC_HELP_STRING([--without-gtkglext], [do not use OpenGL 
 AM_CONDITIONAL(HAVE_GTKGLEXT, test x$HAVE_GTKGLEXT = x1)
 AC_DEFINE_UNQUOTED(HAVE_GTKGLEXT, $HAVE_GTKGLEXT, [non-zero when all the requirements for GtkGLExt are met])
 
-AC_ARG_WITH([threads], AC_HELP_STRING([--with-threads=pthreads|single], [choose threading model [[auto]]]), [
-case $withval in
-  pthreads) THREADS=BUGLE_THREADS_PTHREADS ;;
-  single) THREADS=BUGLE_THREADS_SINGLE ;;
-  *) AC_MSG_ERROR([--with-threads must be either pthreads or single]) ;;
-esac], [])
-test $THREADS != BUGLE_THREADS_SINGLE || THREAD_LIBS=""
-AC_SUBST(THREAD_LIBS)
-AC_DEFINE_UNQUOTED(THREADS, $THREADS, [threading model])
-
 dnl Write out files
 AC_CONFIG_FILES([Makefile lib/Makefile gl.bc])
 AC_OUTPUT
@@ -183,10 +164,6 @@ case $HAVE_GTK in
      0) echo "        GUI: yes (without OpenGL - install GtkGLExt for OpenGL support)" ;;
      1) echo "        GUI: yes (with OpenGL)" ;;
      esac ;;
-esac
-case $THREADS in
-  BUGLE_THREADS_PTHREADS) echo "        threads: pthreads" ;;
-  BUGLE_THREADS_SINGLE) echo "        threads: single-threaded" ;;
 esac
 case $ENABLE_XEVENT in
   0) echo "        X event interception: no" ;;
