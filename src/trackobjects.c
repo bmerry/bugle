@@ -224,7 +224,7 @@ typedef struct
 
 static void init_checks(const void *key, void *data)
 {
-    bugle_list_init((linked_list *) data, true);
+    bugle_list_init((linked_list *) data, free);
 }
 
 static void done_checks(void *data)

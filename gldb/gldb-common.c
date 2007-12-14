@@ -317,7 +317,7 @@ static gldb_state *state_get(void)
     /* The list actually does own the memory, but we do the free as
      * part of state_destroy.
      */
-    bugle_list_init(&s->children, false);
+    bugle_list_init(&s->children, NULL);
     gldb_protocol_recv_string(lib_in, &s->name);
     gldb_protocol_recv_code(lib_in, &numeric_name);
     gldb_protocol_recv_code(lib_in, &enum_name);

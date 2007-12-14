@@ -227,7 +227,7 @@ static GldbGdbValue *gldb_gdb_value_parse(const char **record_ptr, GError **erro
          * each entry.
          */
         v->type = GLDB_GDB_VALUE_LIST;
-        bugle_list_init(&v->list_value, false);
+        bugle_list_init(&v->list_value, NULL);
         if (record[1] != ']')
         {
             do

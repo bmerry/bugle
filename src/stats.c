@@ -457,7 +457,7 @@ static stats_statistic *stats_statistic_instantiate(stats_statistic *st, const c
     n->value = stats_expression_instantiate(st->value, rep);
     n->last = false;
 
-    bugle_list_init(&n->substitutions, true);
+    bugle_list_init(&n->substitutions, free);
     for (i = bugle_list_head(&st->substitutions); i; i = bugle_list_next(i))
     {
         stats_substitution *su_old, *su_new;
@@ -544,7 +544,7 @@ static bool stats_load_config(void)
 static bool stats_initialise(filter_set *handle)
 {
     bugle_hash_init(&stats_signals, true);
-    bugle_list_init(&stats_signals_active, false);
+    bugle_list_init(&stats_signals_active, NULL);
     bugle_hash_init(&stats_statistics_first, false);
     return true;
 }

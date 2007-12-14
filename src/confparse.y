@@ -64,7 +64,7 @@ extern int yylex(void);
 
 %%
 
-input: 		/* empty */ { bugle_list_init(&$$, false); config_root = $$; }
+input: 		/* empty */ { bugle_list_init(&$$, NULL); config_root = $$; }
 		| input chainitem { bugle_list_append(&$1, $2); config_root = $$ = $1; }
 ;
 
@@ -75,14 +75,14 @@ chainitem:	CHAIN WORD '{' chainspec '}' {
 	        }
 ;
 
-chainspec:	/* empty */ { bugle_list_init(&$$, false); }
+chainspec:	/* empty */ { bugle_list_init(&$$, NULL); }
 		| chainspec filtersetitem { bugle_list_append(&$1, $2); $$ = $1; }
 ;
 
 filtersetitem:	FILTERSET WORD filtersetoptions {
 			$$ = $3;
                         $$->name = $2;
-                        bugle_list_init(&$$->variables, false);
+                        bugle_list_init(&$$->variables, NULL);
 		}
 		| FILTERSET WORD filtersetoptions '{' filtersetspec '}' {
 			$$ = $3;
@@ -117,11 +117,11 @@ filtersetallocator: /* empty */ {
                         $$->name = NULL;
                         $$->key = NULL;
                         $$->active = 1;
-                        bugle_list_init(&$$->variables, false);
+                        bugle_list_init(&$$->variables, NULL);
 		}
 ;
 
-filtersetspec:	/* empty */ { bugle_list_init(&$$, false); }
+filtersetspec:	/* empty */ { bugle_list_init(&$$, NULL); }
 		| filtersetspec variableitem { bugle_list_append(&$1, $2); $$ = $1; }
 ;
 

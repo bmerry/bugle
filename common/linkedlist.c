@@ -23,10 +23,10 @@
 #include "linkedlist.h"
 #include "xalloc.h"
 
-void bugle_list_init(linked_list *l, bool owns_memory)
+void bugle_list_init(linked_list *l, void (*destructor)(void *))
 {
     l->head = l->tail = NULL;
-    l->owns_memory = owns_memory;
+    l->destructor = destructor;
 }
 
 void *bugle_list_data(const linked_list_node *node)
@@ -120,7 +120,7 @@ linked_list_node *bugle_list_prev(const linked_list_node *node)
 
 void bugle_list_erase(linked_list *l, linked_list_node *node)
 {
-    if (l->owns_memory) free(node->data);
+    if (l->destructor) l->destructor(node->data);
 
     if (node->next) node->next->prev = node->prev;
     else l->tail = node->prev;
@@ -139,7 +139,7 @@ void bugle_list_clear(linked_list *l)
     while (cur)
     {
         nxt = cur->next;
-        if (l->owns_memory) free(cur->data);
+        if (l->destructor) l->destructor(cur->data);
         free(cur);
         cur = nxt;
     }

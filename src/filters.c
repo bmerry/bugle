@@ -126,7 +126,7 @@ static void register_order(hash_table *orders, const char *before, const char *a
     if (!deps)
     {
         deps = XMALLOC(linked_list);
-        bugle_list_init(deps, true);
+        bugle_list_init(deps, free);
         bugle_hash_set(orders, after, deps);
     }
     bugle_list_append(deps, xstrdup(before));
@@ -153,7 +153,7 @@ static bool compute_order(linked_list *present,
     void *cur;
     order_data *info;
 
-    bugle_list_init(&ordered, false);
+    bugle_list_init(&ordered, NULL);
     bugle_hash_init(&byname, true);
     for (i = bugle_list_head(present); i; i = bugle_list_next(i))
     {
@@ -182,7 +182,7 @@ static bool compute_order(linked_list *present,
     }
 
     /* prime the queue */
-    bugle_list_init(&queue, false);
+    bugle_list_init(&queue, NULL);
     for (i = bugle_list_head(present); i; i = bugle_list_next(i))
     {
         cur = (filter *) bugle_list_data(i);
@@ -331,13 +331,13 @@ void initialise_filters(void)
     const char *libdir;
     budgie_function f;
 
-    bugle_list_init(&filter_sets, false);
-    bugle_list_init(&added_filter_sets, false);
-    bugle_list_init(&loaded_filters, false);
+    bugle_list_init(&filter_sets, NULL);
+    bugle_list_init(&added_filter_sets, NULL);
+    bugle_list_init(&loaded_filters, NULL);
     for (f = 0; f < NUMBER_OF_FUNCTIONS; f++)
-        bugle_list_init(&active_callbacks[f], false);
-    bugle_list_init(&activations_deferred, false);
-    bugle_list_init(&deactivations_deferred, false);
+        bugle_list_init(&active_callbacks[f], NULL);
+    bugle_list_init(&activations_deferred, NULL);
+    bugle_list_init(&deactivations_deferred, NULL);
     bugle_hash_init(&filter_orders, false);
     bugle_hash_init(&filter_set_dependencies, false);
     bugle_object_class_init(&bugle_call_class, NULL);
@@ -758,7 +758,7 @@ filter_set *bugle_filter_set_register(const filter_set_info *info)
     s = XMALLOC(filter_set);
     s->name = info->name;
     s->help = info->help;
-    bugle_list_init(&s->filters, false);
+    bugle_list_init(&s->filters, NULL);
     s->load = info->load;
     s->unload = info->unload;
     s->activate = info->activate;
@@ -788,7 +788,7 @@ filter *bugle_filter_register(filter_set *handle, const char *name)
     f = XMALLOC(filter);
     f->name = name;
     f->parent = handle;
-    bugle_list_init(&f->callbacks, true);
+    bugle_list_init(&f->callbacks, free);
     bugle_list_append(&handle->filters, f);
     return f;
 }

@@ -37,15 +37,15 @@ typedef struct
 {
     linked_list_node *head;
     linked_list_node *tail;
-    bool owns_memory;
+    void (*destructor)(void *);
 } linked_list;
 
 /* Fills in the data for a linked list, which must already have allocated
  * memory (in most cases, linked lists live on the stack or in global
- * memory). If owns_memory is true, bugle_list_erase and bugle_list_clear
- * will automatically call free() on the values.
+ * memory). If destructor is non-NULL, bugle_list_erase and bugle_list_clear
+ * will automatically call it on the values.
  */
-void bugle_list_init(linked_list *l, bool owns_memory);
+void bugle_list_init(linked_list *l, void (*destructor)(void *));
 void *bugle_list_data(const linked_list_node *node);
 void bugle_list_set_data(linked_list_node *node, void *data);
 linked_list_node *bugle_list_prepend(linked_list *l, void *data);

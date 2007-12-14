@@ -728,7 +728,7 @@ void initialise_xevent(void)
               "features. Please contact the author to help him resolve this issue.\n", stderr);
         exit(1);
     }
-    bugle_list_init(&handlers, true);
+    bugle_list_init(&handlers, free);
 }
 
 #else /* !ENABLE_XEVENT */

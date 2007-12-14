@@ -130,7 +130,7 @@ static bool initialise_classify(filter_set *handle)
     bugle_filter_post_renders("classify");
     classify_view = bugle_object_view_register(&bugle_context_class, initialise_classify_context,
                                                 NULL, sizeof(classify_context));
-    bugle_list_init(&classify_callbacks, true);
+    bugle_list_init(&classify_callbacks, free);
     return true;
 }
 

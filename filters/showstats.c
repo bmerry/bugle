@@ -576,6 +576,6 @@ void bugle_initialise_filter_library(void)
     bugle_filter_set_depends("showstats", "trackextensions");
     bugle_filter_set_renders("showstats");
     bugle_filter_set_stats_logger("showstats");
-    bugle_list_init(&showstats_stats_requested, true);
-    bugle_list_init(&showstats_stats, true);
+    bugle_list_init(&showstats_stats_requested, free);
+    bugle_list_init(&showstats_stats, free);
 }

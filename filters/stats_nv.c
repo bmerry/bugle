@@ -183,8 +183,8 @@ static bool stats_nv_initialise(filter_set *handle)
 {
     filter *f;
 
-    bugle_list_init(&stats_nv_active, false);
-    bugle_list_init(&stats_nv_registered, false);
+    bugle_list_init(&stats_nv_active, NULL);
+    bugle_list_init(&stats_nv_registered, NULL);
     stats_nv_dl = lt_dlopenext("libNVPerfSDK");
     if (stats_nv_dl == NULL) return true;
 

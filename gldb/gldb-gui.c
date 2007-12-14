@@ -766,7 +766,7 @@ int main(int argc, char **argv)
         return 1;
     }
     gldb_initialise(argc, (const char * const *) argv);
-    bugle_list_init(&response_handlers, true);
+    bugle_list_init(&response_handlers, free);
 
     memset(&context, 0, sizeof(context));
     build_main_window(&context);

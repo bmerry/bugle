@@ -39,7 +39,7 @@ typedef struct
 
 void bugle_object_class_init(object_class *klass, object_class *parent)
 {
-    bugle_list_init(&klass->info, true);
+    bugle_list_init(&klass->info, free);
     klass->parent = parent;
     klass->count = 0;
     if (parent)
