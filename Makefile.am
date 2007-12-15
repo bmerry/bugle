@@ -260,7 +260,7 @@ EXTRA_DIST = gl.bc.in $(BCFILES) src/data/gl.c src/data/overrides.h \
 	gl2ps/TODO gl2ps/COPYING.GL2PS gl2ps/COPYING.LGPL gl2ps/gl2ps.pdf \
 	gl2ps/gl2psTestSimple.c gl2ps/gl2psTest.c \
 	tests/filters tests/statistics \
-	gnulib-local/lib/xalloc-die.c gnulib-local/lib/xalloc-die
+	gnulib-local/lib/xalloc-die.c gnulib-local/modules/xalloc-die
 
 # Note: automake ought to clean the various files in the .libs directories,
 # but for some reason does not.
