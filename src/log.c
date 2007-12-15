@@ -239,3 +239,9 @@ void log_initialise(void)
     bugle_filter_set_register(&log_info);
     log_format = xstrdup("[%l] %f.%e: %m");
 }
+
+void bugle_log_xalloc_die(void)
+{
+    bugle_log("core", "xalloc", BUGLE_LOG_ERROR, "memory allocation failed");
+    abort();
+}

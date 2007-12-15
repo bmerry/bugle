@@ -58,6 +58,11 @@ void bugle_log_printf(const char *filterset, const char *event, int severity,
 void bugle_log_callback(const char *filterset, const char *event, int severity,
                         void (*callback)(void *arg, FILE *f), void *arg);
 
+/* An implementation of xalloc_die. The actual xalloc_die symbol is in
+ * src/xalloc-die-log.c.
+ */
+void bugle_log_xalloc_die(void);
+
 /* Used internally by the initialisation code */
 void log_initialise(void);
 
