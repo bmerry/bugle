@@ -810,7 +810,7 @@ void gldb_initialise(int argc, const char * const *argv)
     ptr[-1] = '\0';
     gldb_program_set_setting(GLDB_PROGRAM_SETTING_COMMAND, command);
     free(command);
-    bugle_hash_init(&break_on, false);
+    bugle_hash_init(&break_on, NULL);
 }
 
 void gldb_shutdown(void)

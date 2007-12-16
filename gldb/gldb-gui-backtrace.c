@@ -1,4 +1,4 @@
-/*  BuGLe: an OpenGL debugging tool
+/*  BuGLe an OpenGL debugging tool
  *  Copyright (C) 2004-2006  Bruce Merry
  *
  *  This program is free software; you can redistribute it and/or modify
@@ -91,8 +91,6 @@ static GQuark gldb_gdb_error_quark(void)
 
 static void gldb_gdb_value_free(GldbGdbValue *value)
 {
-    const hash_table_entry *h;
-
     switch (value->type)
     {
     case GLDB_GDB_VALUE_CONST:
@@ -102,9 +100,6 @@ static void gldb_gdb_value_free(GldbGdbValue *value)
         bugle_list_clear(&value->list_value);
         break;
     case GLDB_GDB_VALUE_TUPLE:
-        /* FIXME: still need destructors for hash tables */
-        for (h = bugle_hash_begin(&value->tuple_value); h; h = bugle_hash_next(&value->tuple_value, h))
-            gldb_gdb_value_free((GldbGdbValue *) h->value);
         bugle_hash_clear(&value->tuple_value);
         break;
     }
@@ -128,10 +123,7 @@ static char *gldb_gdb_value_get_string_field(GldbGdbValue *tuple, const char *na
 
 static void gldb_gdb_result_record_free(GldbGdbResultRecord *record)
 {
-    const hash_table_entry *h;
-
-    for (h = bugle_hash_begin(&record->results); h; h = bugle_hash_next(&record->results, h))
-        gldb_gdb_value_free((GldbGdbValue *) h->value);
+    bugle_hash_clear(&record->results);
     free(record);
 }
 
@@ -172,7 +164,7 @@ static GldbGdbValue *gldb_gdb_value_parse(const char **record_ptr, GError **erro
     else if (record[0] == '{')
     {
         v->type = GLDB_GDB_VALUE_TUPLE;
-        bugle_hash_init(&v->tuple_value, false);
+        bugle_hash_init(&v->tuple_value, (void (*)(void *)) gldb_gdb_value_free);
         if (record[1] != '}')
         {
             do
@@ -317,7 +309,7 @@ static GldbGdbResultRecord *gldb_gdb_result_record_parse(const char *record, GEr
 
     rr = XMALLOC(GldbGdbResultRecord);
     rr->result_class = rc;
-    bugle_hash_init(&rr->results, false);
+    bugle_hash_init(&rr->results, (void (*)(void *)) gldb_gdb_value_free);
 
     /* Extract the results */
     record = end;

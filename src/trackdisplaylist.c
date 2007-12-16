@@ -42,7 +42,7 @@ typedef struct
 
 static void initialise_namespace(const void *key, void *data)
 {
-    bugle_hashptr_init((hashptr_table *) data, true);
+    bugle_hashptr_init((hashptr_table *) data, free);
 }
 
 static void destroy_namespace(void *data)

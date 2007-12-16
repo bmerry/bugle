@@ -185,7 +185,7 @@ static void update_state_r(const gldb_state *root, GtkTreeStore *store,
     const gldb_state *child;
     gchar *name;
 
-    bugle_hash_init(&lookup, false);
+    bugle_hash_init(&lookup, NULL);
 
     /* Build lookup table */
     for (i = bugle_list_head(&root->children); i; i = bugle_list_next(i))

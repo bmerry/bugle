@@ -66,12 +66,12 @@ static inline size_t hash(const char *str)
     return h;
 }
 
-void bugle_hash_init(hash_table *table, bool owns_memory)
+void bugle_hash_init(hash_table *table, void (*destructor)(void *))
 {
     table->size = table->count = 0;
     table->size_index = 0;
     table->entries = 0;
-    table->owns_memory = owns_memory;
+    table->destructor = destructor;
 }
 
 /* Does not
@@ -106,7 +106,7 @@ void bugle_hash_set(hash_table *table, const char *key, void *value)
         big.size = primes[big.size_index];
         big.entries = XCALLOC(big.size, hash_table_entry);
         big.count = 0;
-        big.owns_memory = table->owns_memory;
+        big.destructor = table->destructor;
         for (i = 0; i < table->size; i++)
             if (table->entries[i].key)
                 hash_set_fast(&big, table->entries[i].key,
@@ -123,8 +123,8 @@ void bugle_hash_set(hash_table *table, const char *key, void *value)
         table->entries[h].key = xstrdup(key);
         table->count++;
     }
-    else if (table->owns_memory && table->entries[h].value)
-        free(table->entries[h].value);
+    else if (table->destructor)
+        table->destructor(table->entries[h].value);
     table->entries[h].value = value;
 }
 
@@ -161,8 +161,8 @@ void bugle_hash_clear(hash_table *table)
             if (table->entries[i].key)
             {
                 free(table->entries[i].key);
-                if (table->owns_memory && table->entries[i].value)
-                    free(table->entries[i].value);
+                if (table->destructor)
+                    table->destructor(table->entries[i].value);
             }
         free(table->entries);
     }
@@ -196,12 +196,12 @@ static inline size_t hashptr(const void *str)
     return (const char *) str - (const char *) NULL;
 }
 
-void bugle_hashptr_init(hashptr_table *table, bool owns_memory)
+void bugle_hashptr_init(hashptr_table *table, void (*destructor)(void *))
 {
     table->size = table->count = 0;
     table->size_index = 0;
     table->entries = 0;
-    table->owns_memory = owns_memory;
+    table->destructor = destructor;
 }
 
 /* Does not
@@ -236,7 +236,7 @@ void bugle_hashptr_set(hashptr_table *table, const void *key, void *value)
         big.size = primes[big.size_index];
         big.entries = XCALLOC(big.size, hashptr_table_entry);
         big.count = 0;
-        big.owns_memory = table->owns_memory;
+        big.destructor = table->destructor;
         for (i = 0; i < table->size; i++)
             if (table->entries[i].key)
                 hashptr_set_fast(&big, table->entries[i].key,
@@ -253,8 +253,8 @@ void bugle_hashptr_set(hashptr_table *table, const void *key, void *value)
         table->entries[h].key = key;
         table->count++;
     }
-    else if (table->owns_memory && table->entries[h].value)
-        free(table->entries[h].value);
+    else if (table->destructor)
+        table->destructor(table->entries[h].value);
     table->entries[h].value = value;
 }
 
@@ -290,8 +290,8 @@ void bugle_hashptr_clear(hashptr_table *table)
         for (i = 0; i < table->size; i++)
             if (table->entries[i].key)
             {
-                if (table->owns_memory && table->entries[i].value)
-                    free(table->entries[i].value);
+                if (table->destructor)
+                    table->destructor(table->entries[i].value);
             }
         free(table->entries);
     }

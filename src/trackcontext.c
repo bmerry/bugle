@@ -208,9 +208,9 @@ static bool initialise_trackcontext(filter_set *handle)
 
     bugle_object_class_init(&bugle_context_class, NULL);
     bugle_object_class_init(&bugle_namespace_class, &bugle_context_class);
-    bugle_hashptr_init(&context_objects, false);
-    bugle_hashptr_init(&namespace_objects, false);
-    bugle_hashptr_init(&initial_values, true);
+    bugle_hashptr_init(&context_objects, (void (*)(void *)) bugle_object_destroy);
+    bugle_hashptr_init(&namespace_objects, (void (*)(void *)) bugle_object_destroy);
+    bugle_hashptr_init(&initial_values, free);
 
     f = bugle_filter_register(handle, "trackcontext");
     bugle_filter_order("invoke", "trackcontext");
@@ -233,12 +233,6 @@ static void destroy_trackcontext(filter_set *handle)
 {
     const hashptr_table_entry *i;
 
-    for (i = bugle_hashptr_begin(&namespace_objects); i; i = bugle_hashptr_next(&namespace_objects, i))
-        if (i->value)
-            bugle_object_destroy((object *) i->value);
-    for (i = bugle_hashptr_begin(&context_objects); i; i = bugle_hashptr_next(&context_objects, i))
-        if (i->value)
-            bugle_object_destroy((object *) i->value);
     bugle_hashptr_clear(&context_objects);
     bugle_hashptr_clear(&namespace_objects);
     bugle_hashptr_clear(&initial_values);

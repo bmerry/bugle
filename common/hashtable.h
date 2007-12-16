@@ -36,13 +36,13 @@ typedef struct
     size_t size;
     size_t count;
     int size_index;
-    bool owns_memory;
+    void (*destructor)(void *);
 } hash_table;
 
-/* A hash table that owns its memory will call free() on values that
- * are deleted or overwritten.
+/* Destructor may be NULL, free, or something custom. It will be called
+ * even if the value is NULL.
  */
-void bugle_hash_init(hash_table *table, bool owns_memory);
+void bugle_hash_init(hash_table *table, void (*destructor)(void *));
 void bugle_hash_set(hash_table *table, const char *key, void *value);
 /* Determines whether the key is present */
 bool bugle_hash_count(const hash_table *table, const char *key);
@@ -72,10 +72,10 @@ typedef struct
     size_t size;
     size_t count;
     int size_index;
-    bool owns_memory;
+    void (*destructor)(void *);
 } hashptr_table;
 
-void bugle_hashptr_init(hashptr_table *table, bool owns_memory);
+void bugle_hashptr_init(hashptr_table *table, void (*destructor)(void *));
 void bugle_hashptr_set(hashptr_table *table, const void *key, void *value);
 bool bugle_hashptr_count(const hashptr_table *table, const void *key);
 void *bugle_hashptr_get(const hashptr_table *table, const void *key);

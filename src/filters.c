@@ -154,7 +154,7 @@ static bool compute_order(linked_list *present,
     order_data *info;
 
     bugle_list_init(&ordered, NULL);
-    bugle_hash_init(&byname, true);
+    bugle_hash_init(&byname, free);
     for (i = bugle_list_head(present); i; i = bugle_list_next(i))
     {
         count++;
@@ -239,21 +239,6 @@ static bool compute_order(linked_list *present,
     }
 }
 
-static void destroy_order_table(hash_table *orders)
-{
-    linked_list *dep;
-    const hash_table_entry *i;
-
-    for (i = bugle_hash_begin(orders); i; i = bugle_hash_next(orders, i))
-        if (i->value)
-        {
-            dep = (linked_list *) i->value;
-            bugle_list_clear(dep);
-            free(dep);
-        }
-    bugle_hash_clear(orders);
-}
-
 /*** End of order management helper code ***/
 
 static void filter_destroy(filter *f)
@@ -294,10 +279,9 @@ static void filters_destroy(void)
         filter_set_destroy(s);
     }
 
-    destroy_order_table(&filter_orders);
-    destroy_order_table(&filter_set_dependencies);
-    destroy_order_table(&filter_set_orders);
-
+    bugle_hash_clear(&filter_orders);
+    bugle_hash_clear(&filter_set_dependencies);
+    bugle_hash_clear(&filter_set_orders);
     bugle_list_clear(&added_filter_sets);
     bugle_list_clear(&filter_sets);
     bugle_object_class_clear(&bugle_call_class);
@@ -326,6 +310,16 @@ static int initialise_filter_library(const char *filename, lt_ptr data)
     return 0;
 }
 
+static void list_free(void *l)
+{
+    linked_list *list;
+
+    list = (linked_list *) l;
+    if (!list) return;
+    bugle_list_clear(list);
+    free(list);
+}
+
 /* Note: initialise_filters is called after initialise_real, which sets
  * up ltdl. Hence we don't call lt_dlinit.
  */
@@ -342,8 +336,9 @@ void initialise_filters(void)
         bugle_list_init(&active_callbacks[f], NULL);
     bugle_list_init(&activations_deferred, NULL);
     bugle_list_init(&deactivations_deferred, NULL);
-    bugle_hash_init(&filter_orders, false);
-    bugle_hash_init(&filter_set_dependencies, false);
+    bugle_hash_init(&filter_orders, list_free);
+    bugle_hash_init(&filter_set_dependencies, list_free);
+    bugle_hash_init(&filter_set_orders, list_free);
     bugle_object_class_init(&bugle_call_class, NULL);
 
     libdir = getenv("BUGLE_FILTER_DIR");

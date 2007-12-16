@@ -939,7 +939,7 @@ static void initialise(void)
     sort_commands();
     pipe(chld_pipes);
     pipe(int_pipes);
-    bugle_hash_init(&command_table, true);
+    bugle_hash_init(&command_table, free);
     for (cmd = commands; cmd->name; cmd++)
         register_command(cmd);
 #if HAVE_READLINE

@@ -110,6 +110,7 @@ void bugle_object_destroy(object *obj)
     size_t j;
     const object_class_info *info;
 
+    if (!obj) return;
     for (i = bugle_list_head(&obj->klass->info), j = 0; i; i = bugle_list_next(i), j++)
     {
         info = (const object_class_info *) bugle_list_data(i);

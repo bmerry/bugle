@@ -790,7 +790,7 @@ static bool initialise_showextensions(filter_set *handle)
      * reduces the risk of another filter aborting the call.
      */
     bugle_filter_order("showextensions", "invoke");
-    bugle_hash_init(&seen_extensions, false);
+    bugle_hash_init(&seen_extensions, NULL);
     return true;
 }
 

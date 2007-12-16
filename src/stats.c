@@ -535,9 +535,9 @@ static bool stats_load_config(void)
 
 static bool stats_initialise(filter_set *handle)
 {
-    bugle_hash_init(&stats_signals, true);
+    bugle_hash_init(&stats_signals, free);
     bugle_list_init(&stats_signals_active, NULL);
-    bugle_hash_init(&stats_statistics_first, false);
+    bugle_hash_init(&stats_statistics_first, NULL);
     return true;
 }
 
