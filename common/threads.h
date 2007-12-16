@@ -32,38 +32,11 @@
 #endif
 #include <signal.h>
 #include <stdlib.h>
+#include "lock.h"
 
 #if USE_POSIX_THREADS
 
 #include <pthread.h>
-#include <config.h>
-
-#if PTHREAD_IN_USE_DETECTION_HARD
-#define pthread_in_use() glthread_in_use()
-/* The implementation is in lock.c */
-extern int glthread_in_use(void);
-#endif
-
-/* Based on the setup of lock.h from gnulib */
-#if USE_POSIX_THREADS_WEAK
-
-#pragma weak pthread_kill
-#ifndef pthread_self
-# pragma weak pthread_self
-#endif
-
-#if !PTHREAD_IN_USE_DETECTION_HARD
-# pragma weak pthread_cancel
-# define pthread_in_use() (pthread_cancel != NULL)
-#endif
-
-#else /* USE_POSIX_THREADS_WEAK */
-
-#if !PTHREAD_IN_USE_DETECTION_HARD
-# define pthread_in_use() (1)
-#endif
-
-#endif /* !USE_POSIX_THREADS_WEAK */
 
 #if BUGLE_PTHREAD_T_INTEGRAL
 # define bugle_thread_self() (pthread_in_use() ? (unsigned long) pthread_self() : 0UL)
