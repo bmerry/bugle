@@ -1,3 +1,5 @@
+* Replace a lot of custom functionality with gnulib
+
 0.0.20071206
 ------------
 * Fix an int vs. long mismatch

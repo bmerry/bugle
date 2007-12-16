@@ -12,8 +12,6 @@
 #include <string.h>
 #include "full-read.h"
 #include "full-write.h"
-#include "error.h"
-#include "exitfail.h"
 #include "xalloc.h"
 #if HAVE_NETINET_IN_H
 # include <netinet/in.h>
@@ -34,7 +32,10 @@ static bool my_safe_write(int fd, const void *buf, size_t count)
     if (out < count)
     {
         if (errno)
-            error(exit_failure, errno, "write failed");
+        {
+            perror("write failed");
+            exit(1);
+        }
         return false;
     }
     else
@@ -50,7 +51,10 @@ static bool my_safe_read(int fd, void *buf, size_t count)
     if (out < count)
     {
         if (errno)
-            error(exit_failure, errno, "read failed");
+        {
+            perror("read failed");
+            exit(1);
+        }
         return false;
     }
     else
