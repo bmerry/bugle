@@ -18,7 +18,7 @@
 #if HAVE_CONFIG_H
 # include <config.h>
 #endif
-#include "safemem.h"
+#include "misc.h"
 #include "linkedlist.h"
 #include "threads.h"
 #include <stdlib.h>

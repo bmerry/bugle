@@ -21,7 +21,7 @@
 #include <math.h>
 #include <stdbool.h>
 #include "common/linkedlist.h"
-#include "common/safemem.h"
+#include "common/misc.h"
 #include "src/stats.h"
 #include "src/utils.h"
 #include "src/filters.h"

@@ -20,6 +20,7 @@
 #endif
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdbool.h>
 #include <string.h>
 #include <unistd.h>
 #include <sys/wait.h>
@@ -41,8 +42,7 @@
 #endif
 #include "src/names.h"
 #include "src/glfuncs.h"
-#include <stdbool.h>
-#include "common/safemem.h"
+#include "common/misc.h"
 #include "common/protocol.h"
 #include "common/hashtable.h"
 #include "gldb/gldb-common.h"

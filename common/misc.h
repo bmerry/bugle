@@ -15,12 +15,10 @@
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
+/* Miscellaneous utility functions that don't fit anywhere else */
+
 #ifndef BUGLE_COMMON_SAFEMEM_H
 #define BUGLE_COMMON_SAFEMEM_H
-
-/* This file is misnamed: it should eventually become misc.h or something
- * similar.
- */
 
 #if HAVE_CONFIG_H
 # include <config.h>

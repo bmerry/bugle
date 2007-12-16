@@ -1,8 +1,8 @@
 #if HAVE_CONFIG_H
 # include <config.h>
 #endif
-#include "protocol.h"
-#include "safemem.h"
+#include "common/protocol.h"
+#include "common/misc.h"
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
