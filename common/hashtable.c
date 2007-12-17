@@ -190,6 +190,10 @@ const hash_table_entry *bugle_hash_begin(hash_table *table)
 }
 
 /* void * based hashing */
+/* FIXME: a lot of this code should be unified with the regular hash code;
+ * either using actually shared code, or hacks with #includes or inlines
+ * to maintain efficiency but still cut down maintainence
+ */
 
 static inline size_t hashptr(const void *str)
 {

@@ -75,7 +75,6 @@ src_libbugleutils_la_SOURCES = \
 	common/protocol.h common/protocol.c \
 	common/hashtable.c common/hashtable.h \
 	common/linkedlist.c common/linkedlist.h \
-	common/radixtree.c common/radixtree.h \
 	common/threads.h \
 	budgielib/typeutils.c budgielib/typeutils.h \
 	budgielib/ioutils.c budgielib/ioutils.h

@@ -31,7 +31,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include "common/protocol.h"
-#include "common/radixtree.h"
+#include "common/hashtable.h"
 #include "gldb/gldb-common.h"
 #include "gldb/gldb-gui.h"
 #include "gldb/gldb-gui-shader.h"
@@ -89,7 +89,7 @@ static void gldb_shader_pane_update_ids(GldbShaderPane *pane)
     guint trg;
     char *name;
     guint active_arb[2] = {0, 0};
-    bugle_radix_tree active_glsl;
+    hashptr_table active_glsl;
     GLuint program;
 
     const GLenum targets[] =
@@ -130,7 +130,7 @@ static void gldb_shader_pane_update_ids(GldbShaderPane *pane)
             active_arb[trg] = *(GLint *) t->data;
     }
 
-    bugle_radix_tree_init(&active_glsl, false);
+    bugle_hashptr_init(&active_glsl, NULL);
 #ifdef GL_VERSION_2_0
     s = gldb_state_find_child_enum(root, GL_CURRENT_PROGRAM);
     program = s ? gldb_state_GLint(s) : 0;
@@ -148,7 +148,7 @@ static void gldb_shader_pane_update_ids(GldbShaderPane *pane)
                 GLuint *ids;
                 ids = (GLuint *) t->data;
                 for (i = 0; i < t->length; i++)
-                    bugle_radix_tree_set(&active_glsl, ids[i], root); /* arbitrary non-NULL */
+                    bugle_hashptr_set_int(&active_glsl, ids[i], root); /* arbitrary non-NULL */
             }
         }
     }
@@ -192,7 +192,7 @@ static void gldb_shader_pane_update_ids(GldbShaderPane *pane)
                 {
                     bool active;
 
-                    active = bugle_radix_tree_get(&active_glsl, t->numeric_name);
+                    active = bugle_hashptr_get_int(&active_glsl, t->numeric_name);
                     name = xasprintf("%d (%s)",
                                      t->numeric_name, target_names[trg]);
                     gtk_list_store_append(GTK_LIST_STORE(model), &iter);
@@ -210,7 +210,7 @@ static void gldb_shader_pane_update_ids(GldbShaderPane *pane)
 
     gldb_gui_combo_box_restore_old(GTK_COMBO_BOX(pane->id), old,
                                    COLUMN_SHADER_ID_ID, COLUMN_SHADER_ID_TARGET, -1);
-    bugle_radix_tree_clear(&active_glsl);
+    bugle_hashptr_clear(&active_glsl);
 }
 
 static void gldb_shader_pane_id_changed(GtkComboBox *id_box, gpointer user_data)

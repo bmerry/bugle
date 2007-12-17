@@ -84,4 +84,14 @@ void bugle_hashptr_clear(hashptr_table *table);
 const hashptr_table_entry *bugle_hashptr_begin(hashptr_table *table);
 const hashptr_table_entry *bugle_hashptr_next(hashptr_table *table, const hashptr_table_entry *e);
 
+static inline void bugle_hashptr_set_int(hashptr_table *table, size_t key, void *value)
+{
+    bugle_hashptr_set(table, (const void *) key, value);
+}
+
+static inline void *bugle_hashptr_get_int(hashptr_table *table, size_t key)
+{
+    return bugle_hashptr_get(table, (const void *) key);
+}
+
 #endif /* !BUGLE_COMMON_HASHTABLE_H */

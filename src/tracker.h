@@ -24,7 +24,6 @@
 #include <stddef.h>
 #include <GL/gl.h>
 #include <GL/glx.h>
-#include "common/radixtree.h"
 #include <stdbool.h>
 #include "src/filters.h"
 #include "src/utils.h"

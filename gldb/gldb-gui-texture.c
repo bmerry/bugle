@@ -36,9 +36,9 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
-#include "common/protocol.h"
 #include <stdbool.h>
-#include "common/radixtree.h"
+#include "common/protocol.h"
+#include "common/hashtable.h"
 #include "gldb/gldb-common.h"
 #include "gldb/gldb-channels.h"
 #include "gldb/gldb-gui.h"
@@ -203,7 +203,7 @@ static void gldb_texture_pane_update_ids(GldbTexturePane *pane)
     guint levels;
     uint32_t channels;
     guint trg;
-    bugle_radix_tree active;
+    hashptr_table active;
     GLenum unit;
 
     const GLenum targets[] =
@@ -250,13 +250,13 @@ static void gldb_texture_pane_update_ids(GldbTexturePane *pane)
         if (!s) continue;
 
         /* Identify active textures */
-        bugle_radix_tree_init(&active, false);
+        bugle_hashptr_init(&active, NULL);
         unit = GL_TEXTURE0_ARB;
         while ((t = gldb_state_find_child_enum(root, unit)) != NULL)
         {
             l = gldb_state_find_child_enum(t, binding[trg]);
             if (l)
-                bugle_radix_tree_set(&active, gldb_state_GLint(l), root); /* arbitrary non-NULL value */
+                bugle_hashptr_set_int(&active, gldb_state_GLint(l), root); /* arbitrary non-NULL value */
             unit++;
         }
 
@@ -297,13 +297,13 @@ static void gldb_texture_pane_update_ids(GldbTexturePane *pane)
                                    COLUMN_TEXTURE_ID_TARGET, (guint) targets[trg],
                                    COLUMN_TEXTURE_ID_LEVELS, levels,
                                    COLUMN_TEXTURE_ID_CHANNELS, channels,
-                                   COLUMN_TEXTURE_ID_BOLD, bugle_radix_tree_get(&active, t->numeric_name) ? PANGO_WEIGHT_BOLD : PANGO_WEIGHT_NORMAL,
+                                   COLUMN_TEXTURE_ID_BOLD, bugle_hashptr_get_int(&active, t->numeric_name) ? PANGO_WEIGHT_BOLD : PANGO_WEIGHT_NORMAL,
                                    COLUMN_TEXTURE_ID_TEXT, name,
                                    -1);
                 free(name);
             }
         }
-        bugle_radix_tree_clear(&active);
+        bugle_hashptr_clear(&active);
     }
 
     gldb_gui_combo_box_restore_old(GTK_COMBO_BOX(pane->id), old,

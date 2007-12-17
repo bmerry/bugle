@@ -3,6 +3,7 @@
   destructor function instead of a boolean
 * Rename safemem.h to misc.h, since all the safemem functionality got
   subsumed by gnulib
+* Eliminated radix tree code in favour of hashptr_table
 
 0.0.20071206
 ------------

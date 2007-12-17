@@ -23,27 +23,27 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stddef.h>
+#include <stdbool.h>
 #include "src/filters.h"
 #include "src/tracker.h"
 #include "src/utils.h"
 #include "src/glutils.h"
 #include "src/glexts.h"
-#include <stdbool.h>
-#include "common/radixtree.h"
+#include "common/hashtable.h"
 #include "xalloc.h"
 #include "lock.h"
 
 typedef struct
 {
     gl_lock_define(, mutex);
-    bugle_radix_tree objects[BUGLE_TRACKOBJECTS_COUNT];
+    hashptr_table objects[BUGLE_TRACKOBJECTS_COUNT];
 } trackobjects_data;
 
 /* FIXME: check which types of objects are shared between contexts (all but queries I think) */
 
 static object_view ns_view, call_view;
 
-static bugle_radix_tree *get_table(bugle_trackobjects_type type)
+static hashptr_table *get_table(bugle_trackobjects_type type)
 {
     trackobjects_data *data;
 
@@ -77,14 +77,14 @@ static void trackobjects_add_single(bugle_trackobjects_type type,
                                     GLuint object,
                                     budgie_function is)
 {
-    bugle_radix_tree *table;
+    hashptr_table *table;
 
     lock();
     table = get_table(type);
     if (table && bugle_begin_internal_render())
     {
         if (is == -1 || (*(GLboolean (*)(GLuint)) budgie_function_table[is].real)(object))
-            bugle_radix_tree_set(table, object, (void *) (size_t) target);
+            bugle_hashptr_set_int(table, object, (void *) (size_t) target);
         bugle_end_internal_render("trackobjects_add_single", true);
     }
     unlock();
@@ -93,13 +93,13 @@ static void trackobjects_add_single(bugle_trackobjects_type type,
 static void trackobjects_delete_single(bugle_trackobjects_type type,
                                        GLuint object)
 {
-    bugle_radix_tree *table;
+    hashptr_table *table;
 
     lock();
     table = get_table(type);
     if (table && bugle_begin_internal_render())
     {
-        bugle_radix_tree_set(table, object, NULL);
+        bugle_hashptr_set_int(table, object, NULL);
         bugle_end_internal_render("trackobjects_delete_single", true);
     }
     unlock();
@@ -111,7 +111,7 @@ static void trackobjects_delete_multiple(bugle_trackobjects_type type,
                                          budgie_function is)
 {
     GLsizei i;
-    bugle_radix_tree *table;
+    hashptr_table *table;
 
     lock();
     table = get_table(type);
@@ -119,7 +119,7 @@ static void trackobjects_delete_multiple(bugle_trackobjects_type type,
     {
         for (i = 0; i < count; i++)
             if (is == -1 || !(*(GLboolean (*)(GLuint)) budgie_function_table[is].real)(objects[i]))
-                bugle_radix_tree_set(table, objects[i], NULL);
+                bugle_hashptr_set_int(table, objects[i], NULL);
         bugle_end_internal_render("trackobjects_delete_multiple", true);
     }
     unlock();
@@ -440,7 +440,7 @@ static void initialise_objects(const void *key, void *data)
     d = (trackobjects_data *) data;
     gl_lock_init(d->mutex);
     for (i = 0; i < BUGLE_TRACKOBJECTS_COUNT; i++)
-        bugle_radix_tree_init(&d->objects[i], false);
+        bugle_hashptr_init(&d->objects[i], NULL);
 }
 
 static void destroy_objects(void *data)
@@ -451,7 +451,7 @@ static void destroy_objects(void *data)
     d = (trackobjects_data *) data;
     gl_lock_destroy(d->mutex);
     for (i = 0; i < BUGLE_TRACKOBJECTS_COUNT; i++)
-        bugle_radix_tree_clear(&d->objects[i]);
+        bugle_hashptr_clear(&d->objects[i]);
 }
 
 static bool initialise_trackobjects(filter_set *handle)
@@ -521,14 +521,12 @@ typedef struct
     void *data;
 } trackobjects_walker;
 
-static void trackobjects_walk(bugle_radix_tree_type object,
-                              void *target,
-                              void *real)
+static int cmp_size_t(const void *a, const void *b)
 {
-    trackobjects_walker *w;
-
-    w = (trackobjects_walker *) real;
-    (*w->walker)(object, (GLenum) (size_t) target, w->data);
+    size_t A, B;
+    A = *(const size_t *) a;
+    B = *(const size_t *) b;
+    return (A == B) ? 0 : (A < B) ? -1 : 1;
 }
 
 void bugle_trackobjects_walk(bugle_trackobjects_type type,
@@ -537,25 +535,37 @@ void bugle_trackobjects_walk(bugle_trackobjects_type type,
                                             void *),
                              void *data)
 {
-    bugle_radix_tree *table;
+    hashptr_table *table;
     trackobjects_walker w;
+    const hashptr_table_entry *i;
+    size_t count = 0, j;
+    size_t (*keyvalues)[2]; /* pointer to 2 size_t's */
 
     lock();
     table = get_table(type);
-    w.walker = walker;
-    w.data = data;
-    bugle_radix_tree_walk(table, trackobjects_walk, &w);
+    for (i = bugle_hashptr_begin(table); i; i = bugle_hashptr_next(table, i))
+        count++;
+    keyvalues = (size_t (*)[2]) xnmalloc(count, sizeof(size_t [2]));
+    for (i = bugle_hashptr_begin(table), j = 0; i; i = bugle_hashptr_next(table, i), j++)
+    {
+        keyvalues[j][0] = (size_t) i->key;
+        keyvalues[j][1] = (size_t) i->value;
+    }
+    qsort(keyvalues, count, 2 * sizeof(size_t), cmp_size_t);
+    for (j = 0; j < count; j++)
+        (*walker)(keyvalues[j][0], keyvalues[j][1], data);
+    free(keyvalues);
     unlock();
 }
 
 GLenum bugle_trackobjects_get_target(bugle_trackobjects_type type, GLuint id)
 {
-    bugle_radix_tree *table;
+    hashptr_table *table;
     GLenum ans;
 
     lock();
     table = get_table(type);
-    ans = (GLenum) (size_t) bugle_radix_tree_get(table, id);
+    ans = (GLenum) (size_t) bugle_hashptr_get_int(table, id);
     unlock();
     return ans;
 }
