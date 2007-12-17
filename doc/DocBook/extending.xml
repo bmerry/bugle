@@ -444,7 +444,7 @@ void bugle_filter_catches_all(filter *f, bool inactive, filter_callback callback
                 function with the signature
             </para>
             <funcsynopsis>
-                <funcsynopsisinfo>bool callback(function_call *call, const callback_data *data);</funcsynopsisinfo>
+                <funcsynopsisinfo language="cpp">bool callback(function_call *call, const callback_data *data);</funcsynopsisinfo>
             </funcsynopsis>
             <para>
                 The callback should generally return <symbol>true</symbol>.
@@ -594,6 +594,58 @@ void bugle_filter_catches_all(filter *f, bool inactive, filter_callback callback
                 false, however, suppresses the warning, which should only be
                 done if you have intentionally written code that may generate
                 OpenGL errors.
+            </para>
+        </sect2>
+        <sect2>
+            <title>Checking for OpenGL extensions</title>
+            <para>
+                The following functions simplify checking for the presence
+                of an OpenGL extension in the current context:
+            </para>
+            <funcsynopsis>
+                <funcsynopsisinfo language="cpp">#include "src/tracker.h"
+
+bool bugle_gl_has_extension(<replaceable>BUGLE_GL_EXT_some_extension</replaceable>);
+bool bugle_gl_has_extension_group(<replaceable>BUGLE_GL_EXT_some_extension</replaceable>);
+
+bugle_filter_set_depends(<replaceable>"myfilterset"</replaceable>, "trackextensions");</funcsynopsisinfo>
+            </funcsynopsis>
+            <para>
+                An extension group is a set of extensions with similar
+                functionality. For example, when passing
+                <symbol>BUGLE_GL_EXT_pixel_buffer_object</symbol> to
+                <function>bugle_gl_has_extension_group</function> will return
+                <symbol>true</symbol> if any one of
+                <symbol>GL_EXT_pixel_buffer_object</symbol>,
+                <symbol>GL_ARB_pixel_buffer_object</symbol>, or OpenGL 2.1 is
+                available.
+            </para>
+            <note>
+                <para>
+                    Unlike with function groups, there associations are not
+                    usually symmetric, because extensions supersede others
+                    rather than having identical functionality.
+                </para>
+            </note>
+            <para>
+                There are also some special extension groups, defined in
+                <filename>gentokens/genexts.perl</filename>, that are
+                convenient ways to test for certain functionality that is
+                provided by several extensions but is not the sole function of
+                any of them.
+            </para>
+            <para>
+                Apart from extensions, you can also check for OpenGL versions
+                using symbols such as <symbol>BUGLE_GL_VERSION_2_0</symbol>.
+                The list of extensions is parsed once per context, so these
+                checks are quite cheap. If there is no current context, the
+                function returns <symbol>false</symbol>.
+            </para>
+            <para>
+                Remember that you also need to do a compile-time check before
+                using any of these symbols; see 
+                <xref linkend="extending-guidelines-oglextensions"/> for
+                details.
             </para>
         </sect2>
     </sect1>
