@@ -3,6 +3,15 @@ chain pass
 {
 }
 
+chain debug
+{
+    filterset log
+    {
+        filename "/home/bruce/bugle-debug.log"
+        file_level "5"
+    }
+}
+
 # Logs all calls to file. OpenGL errors are logged to both the file and
 # stderr. Uncomment the "flush" line to have the log flushed after
 # every call. This is slow but will guarantee as complete as possible a

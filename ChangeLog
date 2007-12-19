@@ -6,6 +6,8 @@
 * Eliminated radix tree code in favour of hashptr_table
 * Added more documentation on writing filter-sets
 * Fixed crash when examining uniforms on ATI
+* Avoid querying state for attributes and uniforms only programs that have
+  not been successfully linked
 
 0.0.20071206
 ------------
