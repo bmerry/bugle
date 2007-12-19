@@ -4,6 +4,8 @@
 * Rename safemem.h to misc.h, since all the safemem functionality got
   subsumed by gnulib
 * Eliminated radix tree code in favour of hashptr_table
+* Added more documentation on writing filter-sets
+* Fixed crash when examining uniforms on ATI
 
 0.0.20071206
 ------------

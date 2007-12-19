@@ -2611,9 +2611,10 @@ void bugle_state_get_raw(const glstate *state, bugle_state_raw *wrapper)
         {
             GLsizei size;
             GLenum type;
+            GLcharARB dummy[1];
 
-            bugle_glGetActiveUniform(state->object, state->level, 0, NULL,
-                                     &size, &type, NULL);
+            bugle_glGetActiveUniform(state->object, state->level, 1, NULL,
+                                     &size, &type, dummy);
             uniform_types(type, &in_type, &out_type, &in_length);
             if (in_type == TYPE_7GLfloat)
                 bugle_glGetUniformfv(state->object, state->level, f);
