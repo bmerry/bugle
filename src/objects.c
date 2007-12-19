@@ -28,6 +28,7 @@
 #include <stddef.h>
 #include <string.h>
 #include <stdlib.h>
+#include <assert.h>
 #include "xalloc.h"
 
 typedef struct
@@ -111,6 +112,8 @@ void bugle_object_destroy(object *obj)
     const object_class_info *info;
 
     if (!obj) return;
+    if (obj == bugle_object_get_current(obj->klass))
+        bugle_object_set_current(obj->klass, NULL);
     for (i = bugle_list_head(&obj->klass->info), j = 0; i; i = bugle_list_next(i), j++)
     {
         info = (const object_class_info *) bugle_list_data(i);

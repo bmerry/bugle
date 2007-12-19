@@ -137,9 +137,9 @@
                 not current for multi-threaded or multi-context applications.
             </para>
             <para>
-                The (FIXME: link) object sub-system in &bugle; makes it easy
-                to associate data with a particular context, and is the
-                recommended method.
+                The <link linkend="extending-objects">object sub-system</link>
+                in &bugle; makes it easy to associate data with a particular
+                context, and is the recommended method.
             </para>
         </sect2>
         <sect2 id="extending-guidelines-oglextensions">
@@ -481,7 +481,229 @@ void bugle_filter_catches_all(filter *f, bool inactive, filter_callback callback
         </sect2>
     </sect1>
 
-    <sect1>
+    <sect1 id="extending-objects">
+        <title>Object shadowing</title>
+        <para>
+            &Bugle; has support for associating data with OpenGL objects such
+            as contexts, textures, calls and so on. It is implemented using a
+            generic interface that is not OpenGL-specific, and utility code to
+            deal with specific types of objects is implemented on top of this.
+        </para>
+        <sect2 id="extending-objects-concepts">
+            <title>Concepts</title>
+            <variablelist>
+                <varlistentry>
+                    <term>class (<type>object_class</type>)</term>
+                    <listitem><para>
+                            A class is like an OOP class, in that
+                            objects are instantiations of classes with data.
+                    </para></listitem>
+                </varlistentry>
+                <varlistentry>
+                    <term>registrant</term>
+                    <listitem><para>
+                            Several units of code may wish to attach storage
+                            to an object, and they need to be kept separate
+                            from each other. Each such unit is known as a
+                            registrant. There is no explicit structure to
+                            represent registrants: it's just a piece of
+                            terminology for the documentation.
+                    </para></listitem>
+                </varlistentry>
+                <varlistentry>
+                    <term>object (<type>object *</type>)</term>
+                    <listitem><para>
+                            An <firstterm>object</firstterm> holds all the
+                            data that all registrants have attached to a
+                            single OpenGL object. It should be treated as
+                            being opaque.
+                    </para></listitem>
+                </varlistentry>
+                <varlistentry>
+                    <term>view (<type>object_view</type>)</term>
+                    <listitem>
+                        <para>
+                            This term is somewhat ambiguous. The
+                            <type>object_view</type> type is a key used to
+                            fetch a particular registrant's data from objects
+                            of a particular class. In some places, however, it
+                            also means the actual data that is stored in the
+                            object.
+                        </para>
+                        <para>
+                            Each registrant is free to define these data in
+                            any way it likes. The memory will be suitably
+                            aligned for all built-in data types (at present
+                            the memory is allocated with
+                            <function>malloc</function>, but this may well
+                            change for efficiency reasons).
+                        </para>
+                    </listitem>
+                </varlistentry>
+                <varlistentry>
+                    <term>scope</term>
+                    <listitem><para>
+                            This has nothing to do with inheritence. It refers
+                            to the scope at which an object can be considered
+                            to be <firstterm>current</firstterm>. For example,
+                            each thread has a current context, and each
+                            context may have a current display list, so
+                            display lists have context scope. &Bugle; allows
+                            you so specify what the current object for each
+                            class is (which may be <symbol>NULL</symbol>), and
+                            retrieve it later.
+                    </para></listitem>
+                </varlistentry>
+            </variablelist>
+        </sect2>
+        <sect2 id="extending-objects-classes">
+            <title>Class management functions</title>
+            <para>
+                Class structs are generally declared as globals with external
+                linkage, so that code that uses them may access them directly.
+                There may be reasons to use other allocation policies, but
+                regardless, the functions documented here will no attempt to
+                allocate or free memory for the struct itself.
+            </para>
+            <funcsynopsis>
+                <funcsynopsisinfo language="cpp">#include "src/objects.h"
+                    
+void bugle_object_class_init(object_class *klass, object_class *parent);
+void bugle_object_class_clear(object_class *klass);</funcsynopsisinfo>
+            </funcsynopsis>
+            <para>
+                These are the constructor and destructor for classes. The
+                <parameter>parent</parameter> is either the class defining the scope of
+                the new class, or <symbol>NULL</symbol> to indicate that the
+                new class has thread scope (like an OpenGL context).
+            </para>
+            <warning>
+                <para>
+                    The <function>bugle_object_class_clear</function> function
+                    does not delete instances of the class. They must be
+                    manually deleted first. Attempting to manipulate objects
+                    once their class (or any ancestor class in the scope tree)
+                    has been deleted will lead to undefined behaviour.
+                </para>
+            </warning>
+            <funcsynopsis>
+                <funcsynopsisinfo language="cpp">object_view bugle_object_view_register(object_class *klass, 
+                                       void (*constructor)(const void *, void *), 
+                                       void (*destructor)(void *), 
+                                       size_t size)</funcsynopsisinfo>
+            </funcsynopsis>
+            <para>
+                This function creates a new view on an existing class. The
+                constructor is described later. The destructor is simply
+                called when the object goes away, and receives a pointer to
+                the view data. It is responsible for cleaning up, but it must
+                <emphasis>not</emphasis> attempt to <function>free</function>
+                the pointer.
+            </para>
+            <para>
+                The <parameter>size</parameter> is the number of
+                bytes that the registrant wishes to associate with each
+                instance of this class. It is legal for the size to be zero,
+                in which case no data is associated but the constructor and
+                destructor will still be called to provide notification of
+                object creation and destruction.
+            </para>
+        </sect2>
+        <sect2 id="extending-objects-objects">
+            <title>Object management functions</title>
+            <para>
+                Since the object system has no knowledge of OpenGL, each type
+                of object requires some management code to shadow creation and
+                destruction of OpenGL objects, and to keep track of which
+                object is current.
+            </para>
+            <funcsynopsis>
+                <funcsynopsisinfo language="cpp">object *bugle_object_new(object_class *klass, const void *key, bool make_current);</funcsynopsisinfo>
+            </funcsynopsis>
+            <para>
+                This instantiates a new instance of the given class.
+                Instantiate an instance of the given class. Firstly, if
+                <parameter>make_current</parameter> is <symbol>true</symbol>
+                then the new object is immediately made the current object of
+                its class. Then, for each registrant the constructor is called
+                to initialise the data in its view. The constructor is passed
+                <parameter>key</parameter> and the view data (the
+                <parameter>key</parameter> parameter exists
+                only to pass extra information to the constructor, usually
+                about the associated GL object). Before calling the
+                constructor, the view data is filled with zero bytes. The
+                constructor is optional and may be <symbol>NULL</symbol>.
+            </para>
+            <funcsynopsis>
+                <funcsynopsisinfo language="cpp">void bugle_object_destroy(object *obj);</funcsynopsisinfo>
+            </funcsynopsis>
+            <para>
+                For each registrant of the class, calls the destructor (if
+                any), passing a pointer to the view data.  It then frees the
+                memory associated with the object.  Don't forget that some
+                OpenGL objects don't actually die when you delete them, only
+                when they are no longer referenced.
+            </para>
+            <funcsynopsis>
+                <funcsynopsisinfo language="cpp">object *bugle_object_get_current(const object_class *klass);
+void bugle_object_set_current(object_class *klass, object *obj);</funcsynopsisinfo>
+            </funcsynopsis>
+            <para>
+                These functions get and set the current object, within the
+                context of that class. For example, when setting the current
+                display list, it is made current within the current OpenGL
+                context, and switching OpenGL contexts will yield a new
+                current display list. It is legal for the current object to be
+                <symbol>NULL</symbol>, and in fact this is the initial state.
+            </para>
+            <para>
+                If the current object is destroyed, then <symbol>NULL</symbol>
+                becomes the new current object.
+            </para>
+            <funcsynopsis>
+                <funcsynopsisinfo language="cpp">void *bugle_object_get_data(object *obj, object_view *view);
+void *bugle_object_get_current_data(object_class *klass, object *obj);</funcsynopsisinfo>
+            </funcsynopsis>
+            <para>
+                This retrieves the view data stored in
+                <parameter>obj</parameter>. The <parameter>view</parameter> is
+                the handle returned by
+                <function>bugle_object_view_register</function>. One can get
+                the data from the current object with the convenience function
+                <function>bugle_object_get_current_data</function> (if it is
+                certain that the current object is not <symbol>NULL</symbol>).
+            </para>
+        </sect2>
+        <sect2 id="extending-objects-threads">
+            <title>Thread safety</title>
+            <para>
+                Manipulations of a particular class must be serialised, as
+                there is no internal protection against concurrent access.
+                This is seldom a problem since modification of a class is
+                usually done during startup and shutdown, which are
+                serialised.
+            </para>
+            <para>
+                The object manipulation functions are safe to use
+                concurrently, since the object structures are not modified.
+                Setting the current object is thread-safe unless the class has
+                a parent in the scope tree and an instance of that parent is
+                current in more than one thread. Even then, it is safe on most
+                reasonable machines, since setting the current object amounts
+                to overwriting a single pointer. Note that
+                <function>bugle_object_new</function> and
+                <function>bugle_object_destroy</function> may both set the
+                current object implicitly.
+            </para>
+            <para>
+                Manipulation of the view data is of course up to each
+                individual registrant, and it is responsible for managing any
+                concurrency issues that arise.
+            </para>
+        </sect2>
+    </sect1>
+
+    <sect1 id="extending-utility">
         <title>Utility functions and filter-sets</title>
         <para>
             The functions listed above are the minimal set needed to write a
@@ -564,7 +786,7 @@ void bugle_filter_catches_all(filter *f, bool inactive, filter_callback callback
                 <function>CALL_glGetIntegerv</function>. This will also work
                 for extension functions, but you must ensure that the
                 extension is available at both compile and run time; this is
-                described in FIXME:linkend=extending-utility-extensions.
+                described in <xref linkend="extending-utility-extensions"/>.
             </para>
             <para>
                 For OpenGL (as opposed to GLX) functions, it is also important
@@ -596,7 +818,7 @@ void bugle_filter_catches_all(filter *f, bool inactive, filter_callback callback
                 OpenGL errors.
             </para>
         </sect2>
-        <sect2>
+        <sect2 id="extending-utility-extensions">
             <title>Checking for OpenGL extensions</title>
             <para>
                 The following functions simplify checking for the presence
