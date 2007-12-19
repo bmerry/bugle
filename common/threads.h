@@ -68,7 +68,7 @@
 # define BUGLE_RUN_CONSTRUCTOR(fn) ((void) 0)
 #else
 # define BUGLE_CONSTRUCTOR(fn) gl_once_define(static, fn ## _once)
-# define BUGLE_RUN_CONSTRUCTOR(fn) (gl_once(fn ## _once, (fn)))
+# define BUGLE_RUN_CONSTRUCTOR(fn) gl_once(fn ## _once, (fn))
 #endif
 
 #endif /* !BUGLE_COMMON_THREADS_H */

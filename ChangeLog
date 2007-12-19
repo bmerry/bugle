@@ -6,6 +6,9 @@
 * Eliminated radix tree code in favour of hashptr_table
 * Added more documentation on writing filter-sets
 * Fixed crash when examining uniforms on ATI
+* Fixed display of stats graphs
+* Fixed bogus warning about failing to create aux context when GLX < 1.3
+* Fixed access to freed memory in stats core code
 * Avoid querying state for attributes and uniforms only programs that have
   not been successfully linked
 

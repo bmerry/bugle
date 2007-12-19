@@ -536,7 +536,6 @@ void bugle_trackobjects_walk(bugle_trackobjects_type type,
                              void *data)
 {
     hashptr_table *table;
-    trackobjects_walker w;
     const hashptr_table_entry *i;
     size_t count = 0, j;
     size_t (*keyvalues)[2]; /* pointer to 2 size_t's */

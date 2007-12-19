@@ -520,6 +520,7 @@ static bool showstats_initialise(filter_set *handle)
         {
             sst = XZALLOC(showstats_statistic);
             sst->st = (stats_statistic *) bugle_list_data(j);
+            sst->mode = req->mode;
             if (!bugle_stats_expression_activate_signals(sst->st->value))
             {
                 bugle_log_printf("showstats", "initialise", BUGLE_LOG_ERROR,

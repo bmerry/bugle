@@ -231,8 +231,6 @@ static bool initialise_trackcontext(filter_set *handle)
 
 static void destroy_trackcontext(filter_set *handle)
 {
-    const hashptr_table_entry *i;
-
     bugle_hashptr_clear(&context_objects);
     bugle_hashptr_clear(&namespace_objects);
     bugle_hashptr_clear(&initial_values);
@@ -303,8 +301,12 @@ GLXContext bugle_get_aux_context(bool shared)
                 ctx = CALL_glXCreateContext(dpy, &data->visual_info,
                                             shared ? old_ctx : NULL,
                                             CALL_glXIsDirect(dpy, old_ctx));
-                bugle_log("trackcontext", "aux", BUGLE_LOG_WARNING,
-                          "could not create an auxiliary context: creation failed");
+                if (!ctx)
+                {
+                    bugle_log("trackcontext", "aux", BUGLE_LOG_WARNING,
+                              "could not create an auxiliary context: creation failed");
+                    return NULL;
+                }
             }
             else
             {

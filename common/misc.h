@@ -17,8 +17,8 @@
 
 /* Miscellaneous utility functions that don't fit anywhere else */
 
-#ifndef BUGLE_COMMON_SAFEMEM_H
-#define BUGLE_COMMON_SAFEMEM_H
+#ifndef BUGLE_COMMON_MISC_H
+#define BUGLE_COMMON_MISC_H
 
 #if HAVE_CONFIG_H
 # include <config.h>
@@ -39,4 +39,4 @@ int bugle_appendf(char **strp, size_t *sz, const char *format, ...) BUGLE_GCC_FO
  */
 char *bugle_afgets(FILE *stream);
 
-#endif /* !BUGLE_COMMON_SAFEMEM_H */
+#endif /* !BUGLE_COMMON_MISC_H */

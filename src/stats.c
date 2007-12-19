@@ -549,7 +549,12 @@ static bool stats_ordering_initialise(filter_set *handle)
     linked_list_node *i, *first, *last, *tmp;
 
     if (!stats_load_config()) return false;
-    for (i = bugle_list_head(stats_statistics); i; i = bugle_list_next(i))
+
+    /* We don't do i = bugle_list_next(i) here, because if we have a
+     * pattern with no instances then we have to do the iteration before
+     * the old i is deleted.
+     */
+    for (i = bugle_list_head(stats_statistics); i; )
     {
         stats_statistic *st;
         char *pattern;
@@ -581,13 +586,15 @@ static bool stats_ordering_initialise(filter_set *handle)
                     free(rep);
                 }
             }
-            stats_statistic_free(st);
 
             last = i;
             tmp = first;   /* The original, generic item */
             first = bugle_list_next(first);  /* The first instance */
+            i = bugle_list_next(i);
             bugle_list_erase(stats_statistics, tmp);
         }
+        else
+            i = bugle_list_next(i);
         if (count)
         {
             stats_statistic *st;
