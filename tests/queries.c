@@ -392,51 +392,58 @@ static void shader_source(GLhandleARB shader, const char *source)
 
 static void query_shaders(void)
 {
-    GLhandleARB v1, v2, p, attached[2];
+    GLhandleARB vs, fs, p, attached[2];
     GLsizei count;
     GLint location;
     GLsizei length, size;
     GLenum type;
     const char *language_version;
-    const char *source100 =
+    const char *vs_source100 =
         "uniform mat4 m;\n"
         "void main()\n"
         "{\n"
         "    gl_Position = m * gl_Vertex;\n"
         "}\n";
-    const char *source120 =
+    const char *vs_source120 =
         "#version 120\n"
         "uniform mat3x4 m;\n"
         "void main()\n"
         "{\n"
-        "    gl_Position = m * gl_Vertex.xyz;\n"
+        "    gl_Position.xyz = m * gl_Vertex;\n"
+        "    gl_Position.w = 1.0;\n"
         "}\n";
-    const char *source;
+    const char *fs_source =
+        "void main()\n"
+        "{\n"
+        "    gl_FragColor = 1.0;\n"
+        "}\n";
+    const char *vs_source;
     char name[128];
     bool lang120;
 
     if (GLEE_ARB_shader_objects
-        && GLEE_ARB_vertex_shader)
+        && GLEE_ARB_vertex_shader
+        && GLEE_ARB_fragment_shader)
     {
-        v1 = glCreateShaderObjectARB(GL_VERTEX_SHADER_ARB);
+        vs = glCreateShaderObjectARB(GL_VERTEX_SHADER_ARB);
         fprintf(ref, "trace\\.call: glCreateShaderObjectARB\\(GL_VERTEX_SHADER(_ARB)?\\) = %u\n",
-                (unsigned int) v1);
-        v2 = glCreateShaderObjectARB(GL_VERTEX_SHADER_ARB);
-        fprintf(ref, "trace\\.call: glCreateShaderObjectARB\\(GL_VERTEX_SHADER(_ARB)?\\) = %u\n",
-                (unsigned int) v2);
+                (unsigned int) vs);
+        fs = glCreateShaderObjectARB(GL_FRAGMENT_SHADER_ARB);
+        fprintf(ref, "trace\\.call: glCreateShaderObjectARB\\(GL_FRAGMENT_SHADER(_ARB)?\\) = %u\n",
+                (unsigned int) fs);
         p = glCreateProgramObjectARB();
         fprintf(ref, "trace\\.call: glCreateProgramObjectARB\\(\\) = %u\n",
                 (unsigned int) p);
 
-        glAttachObjectARB(p, v1);
+        glAttachObjectARB(p, vs);
         fprintf(ref, "trace\\.call: glAttachObjectARB\\(%u, %u\\)\n",
-                (unsigned int) p, (unsigned int) v1);
-        glAttachObjectARB(p, v2);
+                (unsigned int) p, (unsigned int) vs);
+        glAttachObjectARB(p, fs);
         fprintf(ref, "trace\\.call: glAttachObjectARB\\(%u, %u\\)\n",
-                (unsigned int) p, (unsigned int) v2);
+                (unsigned int) p, (unsigned int) fs);
         glGetAttachedObjectsARB(p, 2, &count, attached);
         fprintf(ref, "trace\\.call: glGetAttachedObjectsARB\\(%u, 2, %p -> 2, %p -> { %u, %u }\\)\n",
-                (unsigned int) p, (void *) &count, (void *) attached, (unsigned int) v1, (unsigned int) v2);
+                (unsigned int) p, (void *) &count, (void *) attached, (unsigned int) vs, (unsigned int) fs);
 
         language_version = (const char *) glGetString(GL_SHADING_LANGUAGE_VERSION_ARB);
         fprintf(ref, "trace\\.call: glGetString\\(GL_SHADING_LANGUAGE_VERSION(_ARB)?\\) = ");
@@ -444,9 +451,9 @@ static void query_shaders(void)
         fprintf(ref, "\n");
 
         lang120 = strcmp(language_version, "1.20") >= 0;
-        source = lang120 ? source120 : source100;
-        shader_source(v1, source);
-        shader_source(v2, "uniform vec4 a[10];\n");
+        vs_source = lang120 ? vs_source120 : vs_source100;
+        shader_source(vs, vs_source);
+        shader_source(fs, fs_source);
         glLinkProgramARB(p);
         fprintf(ref, "trace\\.call: glLinkProgramARB\\(%u\\)\n",
                 (unsigned int) p);
@@ -456,11 +463,11 @@ static void query_shaders(void)
                 (unsigned int) p, location);
         glGetActiveUniformARB(p, location, sizeof(name), &length, &size, &type, name);
         /* Prerelease OpenGL 2.1 drivers from NVIDIA return GL_FLOAT_MAT3 in
-         * this situation.
+         * this situation. Mesa 7.0.2 returns the size as 16 instead of 1.
          */
-        fprintf(ref, "trace\\.call: glGetActiveUniformARB\\(%u, %d, %u, %p -> 1, %p -> 1, %p -> %s, \"m\"\\)\n",
+        fprintf(ref, "trace\\.call: glGetActiveUniformARB\\(%u, %d, %u, %p -> 1, %p -> %d, %p -> %s, \"m\"\\)\n",
                 (unsigned int) p, (int) location, (unsigned int) sizeof(name),
-                &length, &size, &type,
+                &length, &size, (int) size, &type,
                 lang120 ? (type == GL_FLOAT_MAT3 ? "GL_FLOAT_MAT3" : "GL_FLOAT_MAT3x4") : "GL_FLOAT_MAT4");
     }
     /* FIXME: test lots more things e.g. source */
