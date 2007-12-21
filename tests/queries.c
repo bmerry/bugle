@@ -406,7 +406,7 @@ static void query_shaders(void)
         "}\n";
     const char *vs_source120 =
         "#version 120\n"
-        "uniform mat3x4 m;\n"
+        "uniform mat4x3 m;\n"
         "void main()\n"
         "{\n"
         "    gl_Position.xyz = m * gl_Vertex;\n"
@@ -415,7 +415,7 @@ static void query_shaders(void)
     const char *fs_source =
         "void main()\n"
         "{\n"
-        "    gl_FragColor = 1.0;\n"
+        "    gl_FragColor = vec4(1.0, 1.0, 1.0, 1.0);\n"
         "}\n";
     const char *vs_source;
     char name[128];
@@ -461,14 +461,15 @@ static void query_shaders(void)
         location = glGetUniformLocationARB(p, "m");
         fprintf(ref, "trace\\.call: glGetUniformLocationARB\\(%u, \"m\"\\) = %d\n",
                 (unsigned int) p, location);
-        glGetActiveUniformARB(p, location, sizeof(name), &length, &size, &type, name);
+        glGetActiveUniformARB(p, 0, sizeof(name), &length, &size, &type, name);
         /* Prerelease OpenGL 2.1 drivers from NVIDIA return GL_FLOAT_MAT3 in
          * this situation. Mesa 7.0.2 returns the size as 16 instead of 1.
          */
         fprintf(ref, "trace\\.call: glGetActiveUniformARB\\(%u, %d, %u, %p -> 1, %p -> %d, %p -> %s, \"m\"\\)\n",
                 (unsigned int) p, (int) location, (unsigned int) sizeof(name),
                 &length, &size, (int) size, &type,
-                lang120 ? (type == GL_FLOAT_MAT3 ? "GL_FLOAT_MAT3" : "GL_FLOAT_MAT3x4") : "GL_FLOAT_MAT4");
+                lang120 ? (type == GL_FLOAT_MAT3 ? "GL_FLOAT_MAT3" : "GL_FLOAT_MAT4x3") : "GL_FLOAT_MAT4",
+                name);
     }
     /* FIXME: test lots more things e.g. source */
 }
