@@ -241,13 +241,13 @@ static bool compute_order(linked_list *present,
 
 /*** End of order management helper code ***/
 
-static void filter_destroy(filter *f)
+static void filter_free(filter *f)
 {
     bugle_list_clear(&f->callbacks);
     free(f);
 }
 
-static void filter_set_destroy(filter_set *handle)
+static void filter_set_free(filter_set *handle)
 {
     if (handle->loaded)
     {
@@ -259,7 +259,7 @@ static void filter_set_destroy(filter_set *handle)
     }
 }
 
-static void filters_destroy(void)
+static void filters_shutdown(void)
 {
     linked_list_node *i;
     filter_set *s;
@@ -276,7 +276,7 @@ static void filters_destroy(void)
     for (i = bugle_list_tail(&added_filter_sets); i; i = bugle_list_prev(i))
     {
         s = (filter_set *) bugle_list_data(i);
-        filter_set_destroy(s);
+        filter_set_free(s);
     }
 
     bugle_hash_clear(&filter_orders);
@@ -288,7 +288,7 @@ static void filters_destroy(void)
     lt_dlexit();
 }
 
-static int initialise_filter_library(const char *filename, lt_ptr data)
+static int filter_library_init(const char *filename, lt_ptr data)
 {
     lt_dlhandle handle;
     void (*init)(void);
@@ -320,10 +320,10 @@ static void list_free(void *l)
     free(list);
 }
 
-/* Note: initialise_filters is called after initialise_real, which sets
+/* Note: filters_initialise is called after initialise_real, which sets
  * up ltdl. Hence we don't call lt_dlinit.
  */
-void initialise_filters(void)
+void filters_initialise(void)
 {
     DIR *dir;
     const char *libdir;
@@ -352,9 +352,9 @@ void initialise_filters(void)
     }
     closedir(dir);
 
-    lt_dlforeachfile(libdir, initialise_filter_library, NULL);
+    lt_dlforeachfile(libdir, filter_library_init, NULL);
 
-    atexit(filters_destroy);
+    atexit(filters_shutdown);
 }
 
 bool filter_set_variable(filter_set *handle, const char *name, const char *value)
@@ -733,7 +733,7 @@ void filters_run(function_call *call)
         data.filter_set_handle = cur->parent->parent;
         if (!(*cur->callback)(call, &data)) break;
     }
-    bugle_object_destroy(data.call_object);
+    bugle_object_free(data.call_object);
 
     while (bugle_list_head(&activations_deferred))
     {
@@ -757,7 +757,7 @@ filter_set *bugle_filter_set_register(const filter_set_info *info)
     s = XMALLOC(filter_set);
     s->name = info->name;
     s->help = info->help;
-    bugle_list_init(&s->filters, (void (*)(void *)) filter_destroy);
+    bugle_list_init(&s->filters, (void (*)(void *)) filter_free);
     s->load = info->load;
     s->unload = info->unload;
     s->activate = info->activate;

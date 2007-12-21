@@ -40,7 +40,7 @@ typedef struct object_class_s
 
 typedef struct
 {
-    const object_class *klass;
+    object_class *klass;
     size_t count;
     void *views[1]; /* actually [count] at runtime */
 } object;
@@ -57,7 +57,7 @@ object_view bugle_object_view_register(object_class *klass,
                                        void (*destructor)(void *data),
                                        size_t size);
 object *    bugle_object_new(object_class *klass, const void *key, bool make_current);
-void        bugle_object_destroy(object *obj);
+void        bugle_object_free(object *obj);
 object *    bugle_object_get_current(const object_class *klass);
 void *      bugle_object_get_current_data(const object_class *klass, object_view view);
 void        bugle_object_set_current(object_class *klass, object *obj);

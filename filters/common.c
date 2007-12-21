@@ -32,7 +32,7 @@ static bool invoke_callback(function_call *call, const callback_data *data)
     return true;
 }
 
-static bool initialise_invoke(filter_set *handle)
+static bool invoke_initialise(filter_set *handle)
 {
     filter *f;
     f = bugle_filter_register(handle, "invoke");
@@ -60,7 +60,7 @@ static bool procaddress_callback(function_call *call, const callback_data *data)
     return true;
 }
 
-static bool initialise_procaddress(filter_set *handle)
+static bool procaddress_initialise(filter_set *handle)
 {
     filter *f;
 
@@ -80,7 +80,7 @@ void bugle_initialise_filter_library(void)
     static const filter_set_info invoke_info =
     {
         "invoke",
-        initialise_invoke,
+        invoke_initialise,
         NULL,
         NULL,
         NULL,
@@ -90,7 +90,7 @@ void bugle_initialise_filter_library(void)
     static const filter_set_info procaddress_info =
     {
         "procaddress",
-        initialise_procaddress,
+        procaddress_initialise,
         NULL,
         NULL,
         NULL,

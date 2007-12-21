@@ -43,7 +43,7 @@ typedef struct
     linked_list filtersets;
 } config_chain;
 
-void bugle_config_destroy(void);
+void bugle_config_shutdown(void);
 const config_chain *bugle_config_get_chain(const char *name);
 const linked_list *bugle_config_get_root(void);
 

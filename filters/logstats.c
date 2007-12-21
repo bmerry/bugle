@@ -120,7 +120,7 @@ static bool logstats_initialise(filter_set *handle)
     return true;
 }
 
-static void logstats_destroy(filter_set *handle)
+static void logstats_shutdown(filter_set *handle)
 {
     bugle_stats_signal_values_clear(&logstats_prev);
     bugle_stats_signal_values_clear(&logstats_cur);
@@ -139,7 +139,7 @@ void bugle_initialise_filter_library(void)
     {
         "logstats",
         logstats_initialise,
-        logstats_destroy,
+        logstats_shutdown,
         NULL,
         NULL,
         logstats_variables,

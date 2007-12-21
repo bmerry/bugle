@@ -77,7 +77,7 @@ static void register_classify_callback(void (*callback)(bool, void *), void *arg
     bugle_list_append(&classify_callbacks, cb);
 }
 
-static void initialise_classify_context(const void *key, void *data)
+static void classify_context_init(const void *key, void *data)
 {
     classify_context *ctx;
 
@@ -118,7 +118,7 @@ static bool classify_glBindFramebufferEXT(function_call *call, const callback_da
 }
 #endif
 
-static bool initialise_classify(filter_set *handle)
+static bool classify_initialise(filter_set *handle)
 {
     filter *f;
 
@@ -128,13 +128,15 @@ static bool initialise_classify(filter_set *handle)
 #endif
     bugle_filter_order("invoke", "classify");
     bugle_filter_post_renders("classify");
-    classify_view = bugle_object_view_register(&bugle_context_class, initialise_classify_context,
-                                                NULL, sizeof(classify_context));
+    classify_view = bugle_object_view_register(&bugle_context_class,
+                                               classify_context_init,
+                                               NULL,
+                                               sizeof(classify_context));
     bugle_list_init(&classify_callbacks, free);
     return true;
 }
 
-static void destroy_classify(filter_set *handle)
+static void classify_shutdown(filter_set *handle)
 {
     bugle_list_clear(&classify_callbacks);
 }
@@ -151,7 +153,7 @@ typedef struct
     GLint polygon_mode[2];  /* The app polygon mode, for front and back */
 } wireframe_context;
 
-static void initialise_wireframe_context(const void *key, void *data)
+static void wireframe_context_init(const void *key, void *data)
 {
     wireframe_context *ctx;
 
@@ -166,7 +168,7 @@ static void initialise_wireframe_context(const void *key, void *data)
     {
         CALL_glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
         ctx->real = true;
-        bugle_end_internal_render("initialise_wireframe_context", true);
+        bugle_end_internal_render("wireframe_context_init", true);
     }
 }
 
@@ -294,7 +296,7 @@ static void wireframe_deactivation(filter_set *handle)
         wireframe_handle_activation(false, ctx);
 }
 
-static bool initialise_wireframe(filter_set *handle)
+static bool wireframe_initialise(filter_set *handle)
 {
     filter *f;
 
@@ -309,8 +311,10 @@ static bool initialise_wireframe(filter_set *handle)
 #endif
     bugle_filter_order("invoke", "wireframe");
     bugle_filter_post_renders("wireframe");
-    wireframe_view = bugle_object_view_register(&bugle_context_class, initialise_wireframe_context,
-                                                 NULL, sizeof(wireframe_context));
+    wireframe_view = bugle_object_view_register(&bugle_context_class,
+                                                wireframe_context_init,
+                                                NULL,
+                                                sizeof(wireframe_context));
     register_classify_callback(wireframe_classify_callback, handle);
     return true;
 }
@@ -326,7 +330,7 @@ typedef struct
     GLint draw_buffer;
 } frontbuffer_context;
 
-static void initialise_frontbuffer_context(const void *key, void *data)
+static void frontbuffer_context_init(const void *key, void *data)
 {
     frontbuffer_context *ctx;
 
@@ -337,7 +341,7 @@ static void initialise_frontbuffer_context(const void *key, void *data)
         ctx->active = true;
         CALL_glGetIntegerv(GL_DRAW_BUFFER, &ctx->draw_buffer);
         CALL_glDrawBuffer(GL_FRONT);
-        bugle_end_internal_render("initialise_frontbuffer_context", true);
+        bugle_end_internal_render("frontbuffer_context_init", true);
     }
 }
 
@@ -415,7 +419,7 @@ static void frontbuffer_deactivation(filter_set *handle)
         frontbuffer_handle_activation(false, ctx);
 }
 
-static bool initialise_frontbuffer(filter_set *handle)
+static bool frontbuffer_initialise(filter_set *handle)
 {
     filter *f;
 
@@ -433,8 +437,10 @@ static bool initialise_frontbuffer(filter_set *handle)
     bugle_filter_order("frontbuffer_pre", "invoke");
     bugle_filter_catches(f, GROUP_glXSwapBuffers, false, frontbuffer_glXSwapBuffers);
 
-    frontbuffer_view = bugle_object_view_register(&bugle_context_class, initialise_frontbuffer_context,
-                                                   NULL, sizeof(frontbuffer_context));
+    frontbuffer_view = bugle_object_view_register(&bugle_context_class,
+                                                  frontbuffer_context_init,
+                                                  NULL,
+                                                  sizeof(frontbuffer_context));
     return true;
 }
 
@@ -767,7 +773,7 @@ static void camera_get_original(camera_context *ctx)
     CALL_glGetFloatv(GL_MODELVIEW_MATRIX, ctx->original);
 }
 
-static void initialise_camera_context(const void *key, void *data)
+static void camera_context_init(const void *key, void *data)
 {
     camera_context *ctx;
     int i;
@@ -781,7 +787,7 @@ static void initialise_camera_context(const void *key, void *data)
     {
         ctx->active = true;
         camera_get_original(ctx);
-        bugle_end_internal_render("initialise_camera_context", true);
+        bugle_end_internal_render("camera_context_init", true);
     }
 }
 
@@ -941,7 +947,7 @@ static void camera_deactivation(filter_set *handle)
         bugle_xevent_release_pointer();
 }
 
-static bool initialise_camera(filter_set *handle)
+static bool camera_initialise(filter_set *handle)
 {
     filter *f;
     int i;
@@ -996,8 +1002,9 @@ static bool initialise_camera(filter_set *handle)
     bugle_filter_catches(f, GROUP_glGetFloatv, false, camera_get);
     bugle_filter_catches(f, GROUP_glGetDoublev, false, camera_get);
 
-    camera_view = bugle_object_view_register(&bugle_context_class, initialise_camera_context,
-                                              NULL, sizeof(camera_context));
+    camera_view = bugle_object_view_register(&bugle_context_class,
+                                             camera_context_init,
+                                             NULL, sizeof(camera_context));
 
     for (i = 0; i < CAMERA_KEYS; i++)
     {
@@ -1037,7 +1044,7 @@ static bool extoverride_suppressed(const char *ext)
         return bugle_hash_count(&extoverride_disabled, ext);
 }
 
-static void initialise_extoverride_context(const void *key, void *data)
+static void extoverride_context_init(const void *key, void *data)
 {
     const char *real_version, *real_exts, *p, *q;
     char *exts, *ext, *exts_ptr;
@@ -1079,7 +1086,7 @@ static void initialise_extoverride_context(const void *key, void *data)
     free(ext);
 }
 
-static void destroy_extoverride_context(void *data)
+static void extoverride_context_clear(void *data)
 {
     extoverride_context *self;
 
@@ -1114,7 +1121,7 @@ static bool extoverride_warn(function_call *call, const callback_data *data)
     return true;
 }
 
-static bool initialise_extoverride(filter_set *handle)
+static bool extoverride_initialise(filter_set *handle)
 {
     filter *f;
     budgie_function i;
@@ -1138,12 +1145,14 @@ static bool initialise_extoverride(filter_set *handle)
             bugle_filter_catches_function(f, i, false, extoverride_warn);
     }
 
-    extoverride_view = bugle_object_view_register(&bugle_context_class, initialise_extoverride_context,
-                                                   destroy_extoverride_context, sizeof(extoverride_context));
+    extoverride_view = bugle_object_view_register(&bugle_context_class,
+                                                  extoverride_context_init,
+                                                  extoverride_context_clear,
+                                                  sizeof(extoverride_context));
     return true;
 }
 
-static void destroy_extoverride(filter_set *handle)
+static void extoverride_shutdown(filter_set *handle)
 {
     bugle_hash_clear(&extoverride_disabled);
     bugle_hash_clear(&extoverride_enabled);
@@ -1207,8 +1216,8 @@ void bugle_initialise_filter_library(void)
     static const filter_set_info classify_info =
     {
         "classify",
-        initialise_classify,
-        destroy_classify,
+        classify_initialise,
+        classify_shutdown,
         NULL,
         NULL,
         NULL,
@@ -1217,7 +1226,7 @@ void bugle_initialise_filter_library(void)
     static const filter_set_info wireframe_info =
     {
         "wireframe",
-        initialise_wireframe,
+        wireframe_initialise,
         NULL,
         wireframe_activation,
         wireframe_deactivation,
@@ -1227,7 +1236,7 @@ void bugle_initialise_filter_library(void)
     static const filter_set_info frontbuffer_info =
     {
         "frontbuffer",
-        initialise_frontbuffer,
+        frontbuffer_initialise,
         NULL,
         frontbuffer_activation,
         frontbuffer_deactivation,
@@ -1253,7 +1262,7 @@ void bugle_initialise_filter_library(void)
     static const filter_set_info camera_info =
     {
         "camera",
-        initialise_camera,
+        camera_initialise,
         NULL,
         camera_activation,
         camera_deactivation,
@@ -1272,8 +1281,8 @@ void bugle_initialise_filter_library(void)
     static const filter_set_info extoverride_info =
     {
         "extoverride",
-        initialise_extoverride,
-        destroy_extoverride,
+        extoverride_initialise,
+        extoverride_shutdown,
         NULL,
         NULL,
         extoverride_variables,

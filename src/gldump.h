@@ -39,7 +39,7 @@ size_t bugle_gl_type_to_size(GLenum gl_type);
 int bugle_gl_format_to_count(GLenum format, GLenum type);
 
 /* Initialiser for certain dumping function */
-void initialise_dump_tables(void);
+void dump_initialise(void);
 
 int bugle_count_gl(budgie_function func, GLenum token);
 #ifdef GL_ARB_vertex_program

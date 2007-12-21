@@ -89,7 +89,7 @@ void bugle_filter_post_queries_begin_end(const char *name)
     bugle_filter_order("trackbeginend", name);
 }
 
-static bool initialise_trackbeginend(filter_set *handle)
+static bool trackbeginend_filter_set_initialise(filter_set *handle)
 {
     filter *f;
 
@@ -110,7 +110,7 @@ void trackbeginend_initialise(void)
     static const filter_set_info trackbeginend_info =
     {
         "trackbeginend",
-        initialise_trackbeginend,
+        trackbeginend_filter_set_initialise,
         NULL,
         NULL,
         NULL,

@@ -22,6 +22,6 @@
 # include <config.h>
 #endif
 
-void initialise_dlopen();
+void dlopen_initialise();
 
 #endif /* BUGLE_SRC_DLOPEN_H */

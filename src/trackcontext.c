@@ -184,7 +184,7 @@ static bool trackcontext_callback(function_call *call, const callback_data *data
     return true;
 }
 
-static void destroy_trackcontext_data(void *data)
+static void trackcontext_data_clear(void *data)
 {
 #if 0
     trackcontext_data *d;
@@ -202,14 +202,14 @@ static void destroy_trackcontext_data(void *data)
 #endif
 }
 
-static bool initialise_trackcontext(filter_set *handle)
+static bool trackcontext_filter_set_initialise(filter_set *handle)
 {
     filter *f;
 
     bugle_object_class_init(&bugle_context_class, NULL);
     bugle_object_class_init(&bugle_namespace_class, &bugle_context_class);
-    bugle_hashptr_init(&context_objects, (void (*)(void *)) bugle_object_destroy);
-    bugle_hashptr_init(&namespace_objects, (void (*)(void *)) bugle_object_destroy);
+    bugle_hashptr_init(&context_objects, (void (*)(void *)) bugle_object_free);
+    bugle_hashptr_init(&namespace_objects, (void (*)(void *)) bugle_object_free);
     bugle_hashptr_init(&initial_values, free);
 
     f = bugle_filter_register(handle, "trackcontext");
@@ -224,12 +224,12 @@ static bool initialise_trackcontext(filter_set *handle)
 #endif
     trackcontext_view = bugle_object_view_register(&bugle_context_class,
                                                     NULL,
-                                                    destroy_trackcontext_data,
+                                                    trackcontext_data_clear,
                                                     sizeof(trackcontext_data));
     return true;
 }
 
-static void destroy_trackcontext(filter_set *handle)
+static void trackcontext_filter_set_shutdown(filter_set *handle)
 {
     bugle_hashptr_clear(&context_objects);
     bugle_hashptr_clear(&namespace_objects);
@@ -518,8 +518,8 @@ void trackcontext_initialise(void)
     static const filter_set_info trackcontext_info =
     {
         "trackcontext",
-        initialise_trackcontext,
-        destroy_trackcontext,
+        trackcontext_filter_set_initialise,
+        trackcontext_filter_set_shutdown,
         NULL,
         NULL,
         NULL,

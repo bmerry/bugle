@@ -222,14 +222,9 @@ typedef struct
     GLuint object;
 } check_data;
 
-static void init_checks(const void *key, void *data)
+static void checks_init(const void *key, void *data)
 {
     bugle_list_init((linked_list *) data, free);
-}
-
-static void done_checks(void *data)
-{
-    bugle_list_clear((linked_list *) data);
 }
 
 static void add_check(object *call_object,
@@ -432,7 +427,7 @@ static bool trackobjects_checks(function_call *call, const callback_data *data)
     return true;
 }
 
-static void initialise_objects(const void *key, void *data)
+static void trackobjects_data_init(const void *key, void *data)
 {
     trackobjects_data *d;
     size_t i;
@@ -443,7 +438,7 @@ static void initialise_objects(const void *key, void *data)
         bugle_hashptr_init(&d->objects[i], NULL);
 }
 
-static void destroy_objects(void *data)
+static void trackobjects_data_clear(void *data)
 {
     trackobjects_data *d;
     size_t i;
@@ -454,7 +449,7 @@ static void destroy_objects(void *data)
         bugle_hashptr_clear(&d->objects[i]);
 }
 
-static bool initialise_trackobjects(filter_set *handle)
+static bool trackobjects_filter_set_initialise(filter_set *handle)
 {
     filter *f;
 
@@ -505,12 +500,12 @@ static bool initialise_trackobjects(filter_set *handle)
     bugle_filter_order("trackobjects_pre", "invoke");
     bugle_filter_post_renders("trackobjects");
     ns_view = bugle_object_view_register(&bugle_namespace_class,
-                                         initialise_objects,
-                                         destroy_objects,
+                                         trackobjects_data_init,
+                                         trackobjects_data_clear,
                                          sizeof(trackobjects_data));
     call_view = bugle_object_view_register(&bugle_call_class,
-                                           init_checks,
-                                           done_checks,
+                                           checks_init,
+                                           (void (*)(void *)) bugle_list_clear,
                                            sizeof(linked_list));
     return true;
 }
@@ -574,7 +569,7 @@ void trackobjects_initialise(void)
     static const filter_set_info trackobjects_info =
     {
         "trackobjects",
-        initialise_trackobjects,
+        trackobjects_filter_set_initialise,
         NULL,
         NULL,
         NULL,

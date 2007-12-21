@@ -40,7 +40,7 @@ typedef struct
 static stats_signal *stats_fragments_fragments;
 static object_view stats_fragments_view;
 
-static void stats_fragments_struct_initialise(const void *key, void *data)
+static void stats_fragments_struct_init(const void *key, void *data)
 {
     stats_fragments_struct *s;
 
@@ -56,7 +56,7 @@ static void stats_fragments_struct_initialise(const void *key, void *data)
     }
 }
 
-static void stats_fragments_struct_destroy(void *data)
+static void stats_fragments_struct_clear(void *data)
 {
     stats_fragments_struct *s;
 
@@ -119,8 +119,8 @@ static bool stats_fragments_initialise(filter_set *handle)
     filter *f;
 
     stats_fragments_view = bugle_object_view_register(&bugle_context_class,
-                                                       stats_fragments_struct_initialise,
-                                                       stats_fragments_struct_destroy,
+                                                       stats_fragments_struct_init,
+                                                       stats_fragments_struct_clear,
                                                        sizeof(stats_fragments_struct));
 
     f = bugle_filter_register(handle, "stats_fragments");

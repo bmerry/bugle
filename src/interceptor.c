@@ -143,7 +143,7 @@ static void load_config(void)
                         }
                     }
                 }
-                bugle_config_destroy();
+                bugle_config_shutdown();
             }
             fclose(yyin);
         }
@@ -206,11 +206,11 @@ static void initialise_all(void)
 {
     initialise_real();
     initialise_addresses();
-    initialise_xevent();
-    initialise_filters();
+    xevent_initialise();
+    filters_initialise();
     initialise_core_filters();
-    initialise_dump_tables();
-    initialise_dlopen();
+    dump_initialise();
+    dlopen_initialise();
     load_config();
     filters_finalise();
 }

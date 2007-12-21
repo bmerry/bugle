@@ -120,7 +120,7 @@ static bool error_callback(function_call *call, const callback_data *data)
     return true;
 }
 
-static bool initialise_error(filter_set *handle)
+static bool error_initialise(filter_set *handle)
 {
     filter *f;
 
@@ -162,7 +162,7 @@ static bool showerror_callback(function_call *call, const callback_data *data)
     return true;
 }
 
-static bool initialise_showerror(filter_set *handle)
+static bool showerror_initialise(filter_set *handle)
 {
     filter *f;
 
@@ -238,7 +238,7 @@ static bool unwindstack_post_callback(function_call *call, const callback_data *
     return true;
 }
 
-static bool initialise_unwindstack(filter_set *handle)
+static bool unwindstack_initialise(filter_set *handle)
 {
     filter *f;
 
@@ -888,7 +888,7 @@ static bool checks_glMultiTexCoord(function_call *call, const callback_data *dat
 }
 #endif
 
-static bool initialise_checks(filter_set *handle)
+static bool checks_initialise(filter_set *handle)
 {
     filter *f;
 
@@ -990,7 +990,7 @@ void bugle_initialise_filter_library(void)
     static const filter_set_info error_info =
     {
         "error",
-        initialise_error,
+        error_initialise,
         NULL,
         NULL,
         NULL,
@@ -1000,7 +1000,7 @@ void bugle_initialise_filter_library(void)
     static const filter_set_info showerror_info =
     {
         "showerror",
-        initialise_showerror,
+        showerror_initialise,
         NULL,
         NULL,
         NULL,
@@ -1010,7 +1010,7 @@ void bugle_initialise_filter_library(void)
     static const filter_set_info unwindstack_info =
     {
         "unwindstack",
-        initialise_unwindstack,
+        unwindstack_initialise,
         NULL,
         NULL,
         NULL,
@@ -1020,7 +1020,7 @@ void bugle_initialise_filter_library(void)
     static const filter_set_info checks_info =
     {
         "checks",
-        initialise_checks,
+        checks_initialise,
         NULL,
         NULL,
         NULL,

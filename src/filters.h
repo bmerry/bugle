@@ -117,7 +117,7 @@ typedef struct
 } filter_set_info;
 
 /* Functions to be used by the interceptor only */
-void initialise_filters(void);
+void filters_initialise(void);
 bool filter_set_variable(filter_set *handle, const char *name, const char *text);
 void filter_set_add(filter_set *handle, bool activate);
 void filter_set_activate(filter_set *handle);

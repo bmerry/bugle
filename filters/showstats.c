@@ -466,7 +466,7 @@ static bool showstats_graph_set(const struct filter_set_variable_info_s *var,
     return true;
 }
 
-static void showstats_struct_destroy(void *data)
+static void showstats_struct_clear(void *data)
 {
     showstats_struct *ss;
 
@@ -491,7 +491,7 @@ static bool showstats_initialise(filter_set *handle)
     bugle_filter_catches(f, GROUP_glXSwapBuffers, false, showstats_glXSwapBuffers);
     showstats_view = bugle_object_view_register(&bugle_context_class,
                                                  NULL,
-                                                 showstats_struct_destroy,
+                                                 showstats_struct_clear,
                                                  sizeof(showstats_struct));
 
     /* Value of arg is irrelevant, only truth value */
@@ -536,7 +536,7 @@ static bool showstats_initialise(filter_set *handle)
     return true;
 }
 
-static void showstats_destroy(filter_set *handle)
+static void showstats_shutdown(filter_set *handle)
 {
     linked_list_node *i;
     showstats_statistic_request *req;
@@ -566,7 +566,7 @@ void bugle_initialise_filter_library(void)
     {
         "showstats",
         showstats_initialise,
-        showstats_destroy,
+        showstats_shutdown,
         NULL,
         NULL,
         showstats_variables,

@@ -38,7 +38,7 @@ static bool trace_callback(function_call *call, const callback_data *data)
     return true;
 }
 
-static bool initialise_trace(filter_set *handle)
+static bool trace_initialise(filter_set *handle)
 {
     filter *f;
 
@@ -54,7 +54,7 @@ void bugle_initialise_filter_library(void)
     static const filter_set_info trace_info =
     {
         "trace",
-        initialise_trace,
+        trace_initialise,
         NULL,
         NULL,
         NULL,

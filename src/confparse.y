@@ -33,9 +33,9 @@ static linked_list config_root;
 int yyerror(const char *msg);
 extern int yylex(void);
 
-static void destroy_variable(config_variable *variable);
-static void destroy_filterset(config_filterset *filterset);
-static void destroy_chain(config_chain *chain);
+static void variable_free(config_variable *variable);
+static void filterset_free(config_filterset *filterset);
+static void chain_free(config_chain *chain);
 
 %}
 
@@ -68,7 +68,7 @@ static void destroy_chain(config_chain *chain);
 
 %%
 
-input: 		/* empty */ { bugle_list_init(&$$, (void (*)(void *)) destroy_chain); config_root = $$; }
+input: 		/* empty */ { bugle_list_init(&$$, (void (*)(void *)) chain_free); config_root = $$; }
 		| input chainitem { bugle_list_append(&$1, $2); config_root = $$ = $1; }
 ;
 
@@ -79,14 +79,14 @@ chainitem:	CHAIN WORD '{' chainspec '}' {
 	        }
 ;
 
-chainspec:	/* empty */ { bugle_list_init(&$$, (void (*)(void *)) destroy_filterset); }
+chainspec:	/* empty */ { bugle_list_init(&$$, (void (*)(void *)) filterset_free); }
 		| chainspec filtersetitem { bugle_list_append(&$1, $2); $$ = $1; }
 ;
 
 filtersetitem:	FILTERSET WORD filtersetoptions {
 			$$ = $3;
                         $$->name = $2;
-                        bugle_list_init(&$$->variables, (void (*)(void *)) destroy_variable);
+                        bugle_list_init(&$$->variables, (void (*)(void *)) variable_free);
 		}
 		| FILTERSET WORD filtersetoptions '{' filtersetspec '}' {
 			$$ = $3;
@@ -121,11 +121,11 @@ filtersetallocator: /* empty */ {
                         $$->name = NULL;
                         $$->key = NULL;
                         $$->active = 1;
-                        bugle_list_init(&$$->variables, (void (*)(void *)) destroy_variable);
+                        bugle_list_init(&$$->variables, (void (*)(void *)) variable_free);
 		}
 ;
 
-filtersetspec:	/* empty */ { bugle_list_init(&$$, (void (*)(void *)) destroy_variable); }
+filtersetspec:	/* empty */ { bugle_list_init(&$$, (void (*)(void *)) variable_free); }
 		| filtersetspec variableitem { bugle_list_append(&$1, $2); $$ = $1; }
 ;
 
@@ -162,14 +162,14 @@ const config_chain *bugle_config_get_chain(const char *name)
     return NULL;
 }
 
-static void destroy_variable(config_variable *variable)
+static void variable_free(config_variable *variable)
 {
     free(variable->name);
     free(variable->value);
     free(variable);
 }
 
-static void destroy_filterset(config_filterset *filterset)
+static void filterset_free(config_filterset *filterset)
 {
     free(filterset->name);
     if (filterset->key) free(filterset->key);
@@ -177,14 +177,14 @@ static void destroy_filterset(config_filterset *filterset)
     free(filterset);
 }
 
-static void destroy_chain(config_chain *chain)
+static void chain_free(config_chain *chain)
 {
     free(chain->name);
     bugle_list_clear(&chain->filtersets);
     free(chain);
 }
 
-void bugle_config_destroy(void)
+void bugle_config_shutdown(void)
 {
     bugle_list_clear(&config_root);
 }

@@ -105,7 +105,7 @@ object *bugle_object_new(object_class *klass, const void *key, bool make_current
     return obj;
 }
 
-void bugle_object_destroy(object *obj)
+void bugle_object_free(object *obj)
 {
     linked_list_node *i;
     size_t j;

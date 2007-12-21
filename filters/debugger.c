@@ -991,7 +991,7 @@ static bool debugger_error_callback(function_call *call, const callback_data *da
     return true;
 }
 
-static bool initialise_debugger(filter_set *handle)
+static bool debugger_initialise(filter_set *handle)
 {
     const char *env;
     char *last;
@@ -1045,7 +1045,7 @@ void bugle_initialise_filter_library(void)
     static const filter_set_info debugger_info =
     {
         "debugger",
-        initialise_debugger,
+        debugger_initialise,
         NULL,
         NULL,
         NULL,

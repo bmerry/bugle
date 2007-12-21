@@ -189,7 +189,7 @@ void bugle_log(const char *filterset, const char *event, int severity,
     }
 }
 
-static bool initialise_log(filter_set *handle)
+static bool log_filter_set_initialise(filter_set *handle)
 {
     if (log_filename)
     {
@@ -203,7 +203,7 @@ static bool initialise_log(filter_set *handle)
     return true;
 }
 
-static void destroy_log(filter_set *handle)
+static void log_filter_set_shutdown(filter_set *handle)
 {
     if (log_filename)
     {
@@ -228,8 +228,8 @@ void log_initialise(void)
     static const filter_set_info log_info =
     {
         "log",
-        initialise_log,
-        destroy_log,
+        log_filter_set_initialise,
+        log_filter_set_shutdown,
         NULL,
         NULL,
         log_variables,

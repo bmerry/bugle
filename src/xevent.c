@@ -672,7 +672,7 @@ void bugle_xevent_release_pointer(void)
     bugle_log("xevent", "mouse", BUGLE_LOG_DEBUG, "released");
 }
 
-void initialise_xevent(void)
+void xevent_initialise(void)
 {
     lt_dlhandle handle;
 
@@ -748,7 +748,7 @@ void bugle_xevent_release_pointer(void)
 {
 }
 
-void initialise_xevent(void)
+void xevent_initialise(void)
 {
 }
 

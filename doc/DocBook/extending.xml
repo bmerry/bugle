@@ -100,6 +100,23 @@
                         debugger. Such functions are generally safe for
                         filter-sets to use unless marked otherwise.
                 </para></listitem>
+                <listitem><para>A constructor for a type that returns a
+                        <function>malloc</function>ed instance should be named
+                        <function><replaceable>type</replaceable>_new</function>,
+                        whereas a constructor that modifies existing memory is
+                        called
+                        <function><replaceable>type</replaceable>_init</function>.
+                        The corresponding destructors are
+                        <function><replaceable>type</replaceable>_free</function>
+                        and
+                        <function><replaceable>type</replaceable>_clear</function>.
+                        For a module of code, initialisation and shutdown
+                        functions should be named
+                        <function><replaceable>module</replaceable>_initialise</function>
+                        (note spelling) and 
+                        <function><replaceable>module</replaceable>_shutdown</function>.
+                        This in particular applies to filter-sets.
+                </para></listitem>
                 <listitem><para>
                         Functions in filter-sets should be declared <code
                             language="C">static</code>, unless they are to be
@@ -635,7 +652,7 @@ void bugle_object_class_clear(object_class *klass);</funcsynopsisinfo>
                 constructor is optional and may be <symbol>NULL</symbol>.
             </para>
             <funcsynopsis>
-                <funcsynopsisinfo language="cpp">void bugle_object_destroy(object *obj);</funcsynopsisinfo>
+                <funcsynopsisinfo language="cpp">void bugle_object_free(object *obj);</funcsynopsisinfo>
             </funcsynopsis>
             <para>
                 For each registrant of the class, calls the destructor (if
@@ -692,7 +709,7 @@ void *bugle_object_get_current_data(object_class *klass, object *obj);</funcsyno
                 reasonable machines, since setting the current object amounts
                 to overwriting a single pointer. Note that
                 <function>bugle_object_new</function> and
-                <function>bugle_object_destroy</function> may both set the
+                <function>bugle_object_free</function> may both set the
                 current object implicitly.
             </para>
             <para>

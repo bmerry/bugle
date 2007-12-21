@@ -613,7 +613,7 @@ static bool stats_ordering_initialise(filter_set *handle)
     return true;
 }
 
-static void stats_destroy(filter_set *handle)
+static void stats_shutdown(filter_set *handle)
 {
     if (stats_statistics)
         bugle_list_clear(stats_statistics);
@@ -642,7 +642,7 @@ void statistics_initialise(void)
     {
         "stats",
         stats_initialise,
-        stats_destroy,
+        stats_shutdown,
         NULL,
         NULL,
         NULL,

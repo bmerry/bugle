@@ -40,17 +40,17 @@ typedef struct
     GLenum mode;
 } displaylist_struct;
 
-static void initialise_namespace(const void *key, void *data)
+static void namespace_init(const void *key, void *data)
 {
     bugle_hashptr_init((hashptr_table *) data, free);
 }
 
-static void destroy_namespace(void *data)
+static void namespace_clear(void *data)
 {
     bugle_hashptr_clear((hashptr_table *) data);
 }
 
-static void initialise_displaylist_struct(const void *key, void *data)
+static void displaylist_struct_init(const void *key, void *data)
 {
     memcpy(data, key, sizeof(displaylist_struct));
 }
@@ -125,7 +125,7 @@ static bool trackdisplaylist_glEndList(function_call *call, const callback_data 
     return true;
 }
 
-static bool initialise_trackdisplaylist(filter_set *handle)
+static bool trackdisplaylist_filter_set_initialise(filter_set *handle)
 {
     filter *f;
 
@@ -137,12 +137,12 @@ static bool initialise_trackdisplaylist(filter_set *handle)
     bugle_filter_catches(f, GROUP_glEndList, true, trackdisplaylist_glEndList);
 
     displaylist_view = bugle_object_view_register(&bugle_displaylist_class,
-                                                   initialise_displaylist_struct,
+                                                   displaylist_struct_init,
                                                    NULL,
                                                    sizeof(displaylist_struct));
     namespace_view = bugle_object_view_register(&bugle_namespace_class,
-                                                 initialise_namespace,
-                                                 destroy_namespace,
+                                                 namespace_init,
+                                                 namespace_clear,
                                                  sizeof(hashptr_table));
     return true;
 }
@@ -152,7 +152,7 @@ void trackdisplaylist_initialise(void)
     static const filter_set_info trackdisplaylist_info =
     {
         "trackdisplaylist",
-        initialise_trackdisplaylist,
+        trackdisplaylist_filter_set_initialise,
         NULL,
         NULL,
         NULL,

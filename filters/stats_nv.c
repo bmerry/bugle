@@ -256,7 +256,7 @@ cancel1:
     return false;
 }
 
-static void stats_nv_destroy(filter_set *handle)
+static void stats_nv_shutdown(filter_set *handle)
 {
     linked_list_node *i;
     stats_signal *si;
@@ -283,7 +283,7 @@ void bugle_initialise_filter_library(void)
     {
         "stats_nv",
         stats_nv_initialise,
-        stats_nv_destroy,
+        stats_nv_shutdown,
         NULL,
         NULL,
         stats_nv_variables,

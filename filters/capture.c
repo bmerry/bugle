@@ -224,7 +224,7 @@ static AVFrame *allocate_video_frame(int fmt, int width, int height,
     return f;
 }
 
-static bool initialise_lavc(int width, int height)
+static bool lavc_initialise(int width, int height)
 {
     AVOutputFormat *fmt;
     AVCodecContext *c;
@@ -286,7 +286,7 @@ static bool initialise_lavc(int width, int height)
     return true;
 }
 
-static void finalise_lavc(void)
+static void lavc_shutdown(void)
 {
     int i;
     AVCodecContext *c;
@@ -573,7 +573,7 @@ static void screenshot_video()
     if (fetch->width > 0)
     {
         if (!video_context)
-            initialise_lavc(fetch->width, fetch->height);
+            lavc_initialise(fetch->width, fetch->height);
 #if LIBAVFORMAT_VERSION_INT >= 0x00310000
         c = video_stream->codec;
 #else
@@ -688,7 +688,7 @@ bool screenshot_callback(function_call *call, const callback_data *data)
     return true;
 }
 
-static bool initialise_screenshot(filter_set *handle)
+static bool screenshot_initialise(filter_set *handle)
 {
     filter *f;
 #if !HAVE_LAVC
@@ -729,11 +729,11 @@ static bool initialise_screenshot(filter_set *handle)
     return true;
 }
 
-static void destroy_screenshot(filter_set *handle)
+static void screenshot_shutdown(filter_set *handle)
 {
 #if HAVE_LAVC
     if (video_context)
-        finalise_lavc();
+        lavc_shutdown();
 #endif
     if (video_pipe) pclose(video_pipe);
     if (video_codec) free(video_codec);
@@ -780,7 +780,7 @@ static bool showextensions_callback(function_call *call, const callback_data *da
     return true;
 }
 
-static bool initialise_showextensions(filter_set *handle)
+static bool showextensions_initialise(filter_set *handle)
 {
     filter *f;
 
@@ -828,7 +828,7 @@ static void showextensions_print(void *seen, FILE *log)
     }
 }
 
-static void destroy_showextensions(filter_set *handle)
+static void showextensions_shutdown(filter_set *handle)
 {
     bugle_log_printf("showextensions", "gl", BUGLE_LOG_INFO,
                      "Min GL version: %s", gl_version);
@@ -855,7 +855,7 @@ static char *eps_title = NULL;
 static bool eps_bsp = false;
 static long eps_feedback_size = 0x100000;
 
-static void initialise_eps_context(const void *key, void *data)
+static void eps_context_init(const void *key, void *data)
 {
     eps_struct *d;
 
@@ -990,7 +990,7 @@ static bool eps_glLineWidth(function_call *call, const callback_data *data)
     return true;
 }
 
-static bool initialise_eps(filter_set *handle)
+static bool eps_initialise(filter_set *handle)
 {
     filter *f;
 
@@ -1002,8 +1002,10 @@ static bool initialise_eps(filter_set *handle)
     bugle_filter_order("eps_pre", "invoke");
     bugle_filter_order("invoke", "eps");
     bugle_filter_post_renders("eps");
-    eps_view = bugle_object_view_register(&bugle_context_class, initialise_eps_context,
-                                           NULL, sizeof(eps_struct));
+    eps_view = bugle_object_view_register(&bugle_context_class,
+                                          eps_context_init,
+                                          NULL,
+                                          sizeof(eps_struct));
     bugle_register_xevent_key(&key_eps, NULL, bugle_xevent_key_callback_flag, &keypress_eps);
     return true;
 }
@@ -1025,8 +1027,8 @@ void bugle_initialise_filter_library(void)
     static const filter_set_info screenshot_info =
     {
         "screenshot",
-        initialise_screenshot,
-        destroy_screenshot,
+        screenshot_initialise,
+        screenshot_shutdown,
         NULL,
         NULL,
         screenshot_variables,
@@ -1036,8 +1038,8 @@ void bugle_initialise_filter_library(void)
     static const filter_set_info showextensions_info =
     {
         "showextensions",
-        initialise_showextensions,
-        destroy_showextensions,
+        showextensions_initialise,
+        showextensions_shutdown,
         NULL,
         NULL,
         NULL,
@@ -1057,7 +1059,7 @@ void bugle_initialise_filter_library(void)
     static const filter_set_info eps_info =
     {
         "eps",
-        initialise_eps,
+        eps_initialise,
         NULL,
         NULL,
         NULL,

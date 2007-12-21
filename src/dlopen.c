@@ -37,7 +37,7 @@
 static bool bypass_dlopen;
 static void *(*real_dlopen)(const char *, int) = NULL;
 
-void initialise_dlopen()
+void dlopen_initialise()
 {
     bypass_dlopen = true;
 }
@@ -68,7 +68,7 @@ void *dlopen(const char *filename, int flag)
 #endif /* HAVE_DLFCN_H */
 
 #ifndef BUGLE_DEFINED_DLOPEN
-void initialise_dlopen()
+void dlopen_initialise()
 {
 }
 #endif

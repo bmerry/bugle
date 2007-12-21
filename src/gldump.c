@@ -328,7 +328,7 @@ static size_t dump_table_size = 0;
  * that both queries and sets take. This routine processes the state
  * specifications to build a lookup table.
  */
-void initialise_dump_tables(void)
+void dump_initialise(void)
 {
     dump_table_entry *cur;
     const state_info * const *t;

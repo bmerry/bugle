@@ -91,7 +91,7 @@ static void context_initialise(const void *key, void *data)
         }
 }
 
-static bool initialise_trackextensions(filter_set *handle)
+static bool trackextensions_filter_set_initialise(filter_set *handle)
 {
     trackextensions_view = bugle_object_view_register(&bugle_context_class,
                                                        context_initialise,
@@ -140,7 +140,7 @@ void trackextensions_initialise(void)
     static const filter_set_info trackextensions_info =
     {
         "trackextensions",
-        initialise_trackextensions,
+        trackextensions_filter_set_initialise,
         NULL,
         NULL,
         NULL,
