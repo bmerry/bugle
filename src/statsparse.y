@@ -27,9 +27,9 @@
 #include <string.h>
 #include <stdlib.h>
 #include <math.h>
-#include "src/stats.h"
-#include "common/linkedlist.h"
-#include "src/log.h"
+#include <bugle/stats.h>
+#include <bugle/linkedlist.h>
+#include <bugle/log.h>
 #include "xalloc.h"
 
 int stats_yyerror(const char *msg);

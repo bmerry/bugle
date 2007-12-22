@@ -19,16 +19,16 @@
 # include <config.h>
 #endif
 #include <stdbool.h>
-#include "src/stats.h"
-#include "src/utils.h"
-#include "src/filters.h"
-#include "src/objects.h"
-#include "src/tracker.h"
-#include "src/log.h"
-#include "src/glutils.h"
-#include "src/glexts.h"
 #include <GL/gl.h>
 #include <GL/glext.h>
+#include <bugle/stats.h>
+#include <bugle/filters.h>
+#include <bugle/objects.h>
+#include <bugle/tracker.h>
+#include <bugle/log.h>
+#include <bugle/glutils.h>
+#include "src/utils.h"
+#include "src/glexts.h"
 
 #ifdef GL_ARB_occlusion_query
 

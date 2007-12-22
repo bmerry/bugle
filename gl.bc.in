@@ -3,9 +3,9 @@ HEADER GL/gl.h
 HEADER GL/glext.h
 HEADER GL/glx.h
 HEADER src/data/overrides.h
-HEADER src/gldump.h
-HEADER src/gltypes.h
-HEADER src/glstate.h
+HEADER bugle/gldump.h
+HEADER bugle/gltypes.h
+HEADER bugle/glstate.h
 LIBRARY libGL.so
 LIMIT gl[A-Z][a-z].*|glX.*
 

@@ -19,19 +19,7 @@
 # include <config.h>
 #endif
 #define _XOPEN_SOURCE 500
-#include "src/filters.h"
-#include "src/utils.h"
-#include "src/glutils.h"
-#include "src/tracker.h"
-#include "src/glstate.h"
-#include "src/glexts.h"
-#include "src/glsl.h"
-#include "src/gltypes.h"
-#include "src/log.h"
-#include "common/hashtable.h"
-#include "common/protocol.h"
 #include <stdbool.h>
-#include "budgielib/ioutils.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -45,6 +33,18 @@
 # include <sys/select.h>
 #endif
 #include <X11/Xlib.h>
+#include <bugle/filters.h>
+#include <bugle/glutils.h>
+#include <bugle/tracker.h>
+#include <bugle/glstate.h>
+#include <bugle/glsl.h>
+#include <bugle/gltypes.h>
+#include <bugle/log.h>
+#include <bugle/hashtable.h>
+#include "common/protocol.h"
+#include <budgie/ioutils.h>
+#include "src/utils.h"
+#include "src/glexts.h"
 #include "xalloc.h"
 #include "xvasprintf.h"
 

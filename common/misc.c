@@ -18,13 +18,13 @@
 #if HAVE_CONFIG_H
 # include <config.h>
 #endif
-#include "misc.h"
-#include "linkedlist.h"
-#include "threads.h"
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
 #include <stdarg.h>
+#include <bugle/misc.h>
+#include <bugle/linkedlist.h>
+#include <bugle/threads.h>
 #include "xalloc.h"
 
 int bugle_appendf(char **strp, size_t *sz, const char *format, ...)

@@ -24,7 +24,7 @@
 #include <ctype.h>
 #include <assert.h>
 #include <stdbool.h>
-#include "typeutils.h"
+#include <budgie/typeutils.h>
 
 void budgie_dump_bitfield(unsigned int value, FILE *out,
                           const bitfield_pair *tags, int count)

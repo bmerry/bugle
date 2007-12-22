@@ -29,15 +29,6 @@
 #if HAVE_CONFIG_H
 # include <config.h>
 #endif
-#include "src/types.h"
-#include "src/glstate.h"
-#include "src/glutils.h"
-#include "src/glexts.h"
-#include "src/tracker.h"
-#include "src/glsl.h"
-#include "src/log.h"
-#include "budgielib/typeutils.h"
-#include "budgielib/ioutils.h"
 #include <GL/gl.h>
 #include <GL/glext.h>
 #include <stdlib.h>
@@ -47,6 +38,16 @@
 #include <inttypes.h>
 #include "xalloc.h"
 #include "xvasprintf.h"
+#include <budgie/typeutils.h>
+#include <budgie/ioutils.h>
+#include <bugle/glutils.h>
+#include <bugle/tracker.h>
+#include <bugle/glsl.h>
+#include <bugle/log.h>
+#include <bugle/glstate.h>
+#include "src/types.h"
+#include "src/utils.h"
+#include "src/glexts.h"
 
 #define STATE_NAME(x) #x, x
 #define STATE_NAME_EXT(x, ext) #x, x ## ext

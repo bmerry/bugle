@@ -23,9 +23,9 @@
 #endif
 #include <stddef.h>
 #include <ltdl.h>
-#include "src/utils.h"
-#include "src/objects.h"
-#include "common/linkedlist.h"
+#include <bugle/linkedlist.h>
+#include <bugle/objects.h>
+#include <budgie/budgieutils.h>
 #include <stdbool.h>
 
 struct filter_set_s;

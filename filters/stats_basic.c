@@ -19,11 +19,11 @@
 # include <config.h>
 #endif
 #include <stdbool.h>
-#include "src/stats.h"
-#include "src/utils.h"
-#include "src/filters.h"
 #include <sys/time.h>
 #include <sys/types.h>
+#include <bugle/stats.h>
+#include <bugle/filters.h>
+#include "src/utils.h"
 
 static stats_signal *stats_basic_frames, *stats_basic_seconds;
 

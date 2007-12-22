@@ -186,7 +186,7 @@ print <<'EOF'
 #include <GL/gl.h>
 #include <GL/glext.h>
 #include <stdlib.h> /* for NULL */
-#include "src/gltokens.h"
+#include <bugle/gltokens.h>
 
 const gl_token bugle_gl_tokens_name[] =
 {

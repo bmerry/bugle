@@ -29,12 +29,12 @@
 #include <errno.h>
 #include <sys/types.h>
 #include <sys/wait.h>
-#include "budgielib/ioutils.h"
-#include "src/types.h"
 #include <stdbool.h>
+#include <budgie/ioutils.h>
+#include <bugle/linkedlist.h>
+#include <bugle/hashtable.h>
+#include "src/types.h"
 #include "common/protocol.h"
-#include "common/linkedlist.h"
-#include "common/hashtable.h"
 #include "gldb/gldb-common.h"
 #include "xalloc.h"
 #include "xvasprintf.h"

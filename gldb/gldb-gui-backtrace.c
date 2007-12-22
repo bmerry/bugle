@@ -30,8 +30,8 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
-#include "common/linkedlist.h"
-#include "common/hashtable.h"
+#include <bugle/hashtable.h>
+#include <bugle/linkedlist.h>
 #include "gldb/gldb-common.h"
 #include "gldb/gldb-gui.h"
 #include "gldb/gldb-gui-backtrace.h"

@@ -18,17 +18,17 @@
 #if HAVE_CONFIG_H
 # include <config.h>
 #endif
-#include "common/linkedlist.h"
 #include <stdbool.h>
-#include "src/filters.h"
-#include "src/xevent.h"
-#include "src/log.h"
 #include <X11/Xlib.h>
 #include <ltdl.h>
 #include <stdio.h>
 #include <stddef.h>
 #include <stdlib.h>
 #include <string.h>
+#include <bugle/linkedlist.h>
+#include <bugle/filters.h>
+#include <bugle/xevent.h>
+#include <bugle/log.h>
 #include "xalloc.h"
 
 #define STATE_MASK (ControlMask | ShiftMask | Mod1Mask)

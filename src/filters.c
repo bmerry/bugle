@@ -24,11 +24,11 @@
 #include "src/utils.h"
 #include "src/lib.h"
 #include "src/glfuncs.h"
-#include "src/xevent.h"
-#include "src/filters.h"
-#include "src/log.h"
-#include "common/linkedlist.h"
-#include "common/hashtable.h"
+#include <bugle/xevent.h>
+#include <bugle/filters.h>
+#include <bugle/log.h>
+#include <bugle/linkedlist.h>
+#include <bugle/hashtable.h>
 #include <stdio.h>
 #include <stddef.h>
 #include <string.h>

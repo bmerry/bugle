@@ -18,22 +18,22 @@
 #if HAVE_CONFIG_H
 # include <config.h>
 #endif
-#include "src/lib.h"
-#include "src/utils.h"
-#include "src/glfuncs.h"
-#include "filters.h"
-#include "conffile.h"
-#include "tracker.h"
-#include "xevent.h"
-#include "log.h"
-#include "dlopen.h"
-#include "stats.h"
-#include "common/hashtable.h"
-#include "common/threads.h"
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
 #include <stdio.h>
+#include <bugle/filters.h>
+#include <bugle/tracker.h>
+#include <bugle/xevent.h>
+#include <bugle/log.h>
+#include <bugle/stats.h>
+#include <bugle/hashtable.h>
+#include <bugle/threads.h>
+#include "conffile.h"
+#include "dlopen.h"
+#include "src/lib.h"
+#include "src/utils.h"
+#include "src/glfuncs.h"
 #include "xalloc.h"
 
 #define FILTERFILE "/.bugle/filters"

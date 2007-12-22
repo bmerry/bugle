@@ -26,7 +26,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include "src/conffile.h"
-#include "common/linkedlist.h"
+#include <bugle/linkedlist.h>
 #include "xalloc.h"
 
 static linked_list config_root;

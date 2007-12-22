@@ -20,7 +20,7 @@
 #endif
 #include <stdlib.h>
 #include <string.h>
-#include "linkedlist.h"
+#include <bugle/linkedlist.h>
 #include "xalloc.h"
 
 void bugle_list_init(linked_list *l, void (*destructor)(void *))

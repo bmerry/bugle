@@ -23,7 +23,7 @@
 #endif
 #include <sys/time.h>
 #include <sys/types.h>
-#include "common/linkedlist.h"
+#include <bugle/linkedlist.h>
 #include <stdbool.h>
 
 #if HAVE_FINITE

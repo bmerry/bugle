@@ -24,12 +24,12 @@
 #include <string.h>
 #include <stddef.h>
 #include <stdbool.h>
-#include "src/filters.h"
-#include "src/tracker.h"
+#include <bugle/filters.h>
+#include <bugle/tracker.h>
 #include "src/utils.h"
-#include "src/glutils.h"
+#include <bugle/glutils.h>
 #include "src/glexts.h"
-#include "common/hashtable.h"
+#include <bugle/hashtable.h>
 #include "xalloc.h"
 #include "lock.h"
 

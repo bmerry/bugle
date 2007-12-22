@@ -27,7 +27,7 @@
 #include <signal.h>
 #include <unistd.h>
 #include <stdbool.h>
-#include "common/linkedlist.h"
+#include <bugle/linkedlist.h>
 
 #if HAVE_READLINE && !HAVE_RL_COMPLETION_MATCHES
 # define rl_completion_matches completion_matches

@@ -19,15 +19,6 @@
 # include <config.h>
 #endif
 #define _POSIX_SOURCE
-#include "src/filters.h"
-#include "src/types.h"
-#include "src/glutils.h"
-#include "src/gltypes.h"
-#include "src/gldump.h"
-#include "src/tracker.h"
-#include "src/glexts.h"
-#include "src/log.h"
-#include "common/threads.h"
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -36,6 +27,16 @@
 #include <setjmp.h>
 #include <errno.h>
 #include <assert.h>
+#include <bugle/filters.h>
+#include <bugle/glutils.h>
+#include <bugle/gltypes.h>
+#include <bugle/gldump.h>
+#include <bugle/tracker.h>
+#include <bugle/log.h>
+#include <bugle/threads.h>
+#include "src/glexts.h"
+#include "src/types.h"
+#include "src/utils.h"
 #include "xalloc.h"
 #include "lock.h"
 

@@ -29,9 +29,9 @@
 #include <glib/gi18n-lib.h>
 #include <string.h>
 #include <stdlib.h>
-#include "common/linkedlist.h"
-#include "common/hashtable.h"
 #include <stdbool.h>
+#include <bugle/linkedlist.h>
+#include <bugle/hashtable.h>
 #include "gldb/gldb-common.h"
 #include "gldb/gldb-gui.h"
 #include "gldb/gldb-gui-state.h"

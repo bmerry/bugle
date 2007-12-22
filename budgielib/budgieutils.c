@@ -28,10 +28,10 @@
 #include <errno.h>
 #include <setjmp.h>
 #include <ltdl.h>
-#include "common/threads.h"
-#include "budgieutils.h"
-#include "typeutils.h"
-#include "ioutils.h"
+#include <bugle/threads.h>
+#include <budgie/budgieutils.h>
+#include <budgie/typeutils.h>
+#include <budgie/ioutils.h>
 #include <stdbool.h>
 #include "xalloc.h"
 #include "tls.h"

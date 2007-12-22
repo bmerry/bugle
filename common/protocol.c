@@ -1,8 +1,6 @@
 #if HAVE_CONFIG_H
 # include <config.h>
 #endif
-#include "common/protocol.h"
-#include "common/misc.h"
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -19,6 +17,8 @@
 #if HAVE_ARPA_INET_H
 # include <arpa/inet.h>
 #endif
+#include "protocol.h"
+#include <bugle/misc.h>
 
 #define TO_NETWORK(x) htonl(x)
 #define TO_HOST(x) ntohl(x)

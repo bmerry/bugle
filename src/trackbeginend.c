@@ -23,10 +23,10 @@
 #if HAVE_CONFIG_H
 # include <config.h>
 #endif
-#include "src/filters.h"
+#include <bugle/filters.h>
 #include "src/utils.h"
-#include "src/tracker.h"
-#include "src/objects.h"
+#include <bugle/tracker.h>
+#include <bugle/objects.h>
 #include <stdbool.h>
 #include <stddef.h>
 #include <GL/gl.h>

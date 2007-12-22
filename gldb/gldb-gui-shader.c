@@ -30,8 +30,8 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <bugle/hashtable.h>
 #include "common/protocol.h"
-#include "common/hashtable.h"
 #include "gldb/gldb-common.h"
 #include "gldb/gldb-gui.h"
 #include "gldb/gldb-gui-shader.h"

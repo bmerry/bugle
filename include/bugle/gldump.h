@@ -23,11 +23,11 @@
 #endif
 #include <GL/gl.h>
 #include <GL/glx.h>
-#include "budgieutils.h"
 #include <stdbool.h>
+#include <budgie/budgieutils.h>
 
 /* Takes a type specified by a GL token e.g. GL_FLOAT and returns the budgie_type.
- * The _ptr variant returns the budgie_type returns the variant for a pointer to
+ * The _ptr variant returns the budgie_type variant for a pointer to
  * that type. The _pbo_source and _pbo_sink variant first check if a PBO
  * source/sink is active, and if so returns an integral type of suitable size.
  */
@@ -38,7 +38,7 @@ budgie_type bugle_gl_type_to_type_ptr_pbo_sink(GLenum gl_type);
 size_t bugle_gl_type_to_size(GLenum gl_type);
 int bugle_gl_format_to_count(GLenum format, GLenum type);
 
-/* Initialiser for certain dumping function */
+/* Initialiser for certain dumping functions */
 void dump_initialise(void);
 
 int bugle_count_gl(budgie_function func, GLenum token);

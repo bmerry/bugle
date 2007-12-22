@@ -18,12 +18,12 @@
 #if HAVE_CONFIG_H
 # include <config.h>
 #endif
-#include "src/filters.h"
-#include "src/utils.h"
-#include "src/glutils.h"
-#include "src/log.h"
 #include <stdbool.h>
 #include <stdio.h>
+#include <bugle/filters.h>
+#include <bugle/glutils.h>
+#include <bugle/log.h>
+#include "src/utils.h"
 
 /* Callback passed to bugle_log */
 static void trace_callback_call_callback(void *call, FILE *f)

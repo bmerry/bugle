@@ -22,17 +22,17 @@
 #if HAVE_NVPERFSDK_H
 
 #include <stdbool.h>
-#include "src/stats.h"
-#include "src/utils.h"
-#include "src/filters.h"
-#include "src/objects.h"
-#include "src/tracker.h"
-#include "src/log.h"
-#include "src/glutils.h"
-#include <NVPerfSDK.h>
 #include <ltdl.h>
 #include <stdlib.h>
 #include <string.h>
+#include <NVPerfSDK.h>
+#include <bugle/stats.h>
+#include <bugle/filters.h>
+#include <bugle/objects.h>
+#include <bugle/tracker.h>
+#include <bugle/log.h>
+#include <bugle/glutils.h>
+#include "src/utils.h"
 #include "xalloc.h"
 #include "xvasprintf.h"
 

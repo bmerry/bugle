@@ -26,17 +26,6 @@
 # include <config.h>
 #endif
 #define _XOPEN_SOURCE 500
-#include "src/filters.h"
-#include "src/types.h"
-#include "src/glutils.h"
-#include "src/glfuncs.h"
-#include "src/gltypes.h"
-#include "src/glexts.h"
-#include "src/tracker.h"
-#include "src/xevent.h"
-#include "src/log.h"
-#include "gl2ps/gl2ps.h"
-#include "common/hashtable.h"
 #include <stdbool.h>
 #include <stdio.h>
 #include <string.h>
@@ -45,6 +34,17 @@
 #include <math.h>
 #include <GL/glx.h>
 #include <sys/time.h>
+#include <bugle/hashtable.h>
+#include <bugle/filters.h>
+#include <bugle/glutils.h>
+#include <bugle/gltypes.h>
+#include <bugle/tracker.h>
+#include <bugle/xevent.h>
+#include <bugle/log.h>
+#include "src/types.h"
+#include "src/glfuncs.h"
+#include "src/glexts.h"
+#include "gl2ps/gl2ps.h"
 #include "xalloc.h"
 #include "xvasprintf.h"
 

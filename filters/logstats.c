@@ -22,11 +22,11 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdbool.h>
-#include "common/linkedlist.h"
-#include "src/stats.h"
+#include <bugle/linkedlist.h>
+#include <bugle/stats.h>
+#include <bugle/filters.h>
+#include <bugle/log.h>
 #include "src/utils.h"
-#include "src/filters.h"
-#include "src/log.h"
 #include "xalloc.h"
 
 static linked_list logstats_show;    /* actual stats */

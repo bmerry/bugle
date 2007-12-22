@@ -29,8 +29,7 @@
 # include <config.h>
 #endif
 #include <stdbool.h>
-#include "src/utils.h"
-#include "src/filters.h"
+#include <bugle/filters.h>
 
 enum
 {

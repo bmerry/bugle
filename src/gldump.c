@@ -22,15 +22,16 @@
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
-#include "gltokens.h"
-#include "gldump.h"
-#include "glutils.h"
-#include "gltypes.h"
-#include "filters.h"
-#include "tracker.h"
-#include "log.h"
-#include "budgielib/typeutils.h"
+#include <bugle/filters.h>
+#include <bugle/gltokens.h>
+#include <bugle/gldump.h>
+#include <bugle/glutils.h>
+#include <bugle/gltypes.h>
+#include <bugle/tracker.h>
+#include <bugle/log.h>
+#include <budgie/typeutils.h>
 #include "src/types.h"
+#include "src/utils.h"
 #include "src/glexts.h"
 #include "xalloc.h"
 

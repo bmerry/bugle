@@ -22,9 +22,9 @@
 #include <string.h>
 #include <stddef.h>
 #include <assert.h>
-#include "hashtable.h"
 #include <stdbool.h>
-#include "common/threads.h"
+#include <bugle/hashtable.h>
+#include <bugle/threads.h>
 #include "xalloc.h"
 
 /* Primes are used for hash table sizes */

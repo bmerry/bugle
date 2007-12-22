@@ -18,16 +18,16 @@
 #if HAVE_CONFIG_H
 # include <config.h>
 #endif
-#include <stdbool.h>
-#include "src/stats.h"
-#include "src/utils.h"
-#include "src/filters.h"
-#include "src/objects.h"
-#include "src/tracker.h"
-#include "src/log.h"
-#include "src/glutils.h"
 #include <GL/gl.h>
 #include <assert.h>
+#include <stdbool.h>
+#include <bugle/stats.h>
+#include <bugle/filters.h>
+#include <bugle/objects.h>
+#include <bugle/tracker.h>
+#include <bugle/log.h>
+#include <bugle/glutils.h>
+#include "src/utils.h"
 
 static object_view stats_primitives_view;  /* begin/end counting */
 static object_view stats_primitives_displaylist_view;

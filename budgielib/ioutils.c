@@ -23,7 +23,7 @@
 #endif
 #include <stdlib.h>
 #include <stddef.h>
-#include "ioutils.h"
+#include <budgie/ioutils.h>
 
 void budgie_make_indent(int indent, FILE *out)
 {

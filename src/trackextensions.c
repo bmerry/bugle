@@ -18,11 +18,12 @@
 #if HAVE_CONFIG_H
 # include <config.h>
 #endif
-#include "src/tracker.h"
-#include "src/filters.h"
-#include "src/objects.h"
+#include <bugle/tracker.h>
+#include <bugle/filters.h>
+#include <bugle/objects.h>
+#include <bugle/glutils.h>
 #include "src/glexts.h"
-#include "src/glutils.h"
+#include "src/utils.h"
 #include <stdbool.h>
 #include <string.h>
 #include <assert.h>

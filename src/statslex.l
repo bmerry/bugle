@@ -26,9 +26,9 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
-#include "src/stats.h"
+#include <bugle/stats.h>
 #include "src/statsparse.h"
-#include "src/log.h"
+#include <bugle/log.h>
 #include "xalloc.h"
 
 static char *current_string = NULL;

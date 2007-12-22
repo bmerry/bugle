@@ -27,8 +27,8 @@
 #include <GL/glext.h>
 #include <stdlib.h>
 #include <string.h>
-#include "src/tracker.h"
-#include "src/glutils.h"
+#include <bugle/tracker.h>
+#include <bugle/glutils.h>
 #include "src/utils.h"
 #include "src/glexts.h"
 #include "xalloc.h"

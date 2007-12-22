@@ -40,11 +40,11 @@
 # include <readline/readline.h>
 # include <readline/history.h>
 #endif
+#include <bugle/misc.h>
+#include <bugle/hashtable.h>
 #include "src/names.h"
 #include "src/glfuncs.h"
-#include "common/misc.h"
 #include "common/protocol.h"
-#include "common/hashtable.h"
 #include "gldb/gldb-common.h"
 #include "xalloc.h"
 #include "xvasprintf.h"

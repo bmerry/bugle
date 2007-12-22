@@ -25,9 +25,8 @@
 #include <GL/gl.h>
 #include <GL/glx.h>
 #include <stdbool.h>
-#include "src/filters.h"
-#include "src/utils.h"
-#include "src/objects.h"
+#include <bugle/filters.h>
+#include <bugle/objects.h>
 
 typedef enum
 {

@@ -23,7 +23,7 @@
 #endif
 #include <stddef.h>
 #include <GL/gl.h>
-#include "common/linkedlist.h"
+#include <bugle/linkedlist.h>
 
 struct glstate;
 

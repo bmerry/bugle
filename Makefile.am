@@ -30,7 +30,7 @@ pkglib_LTLIBRARIES = \
 	filters/logstats.la \
 	filters/showstats.la
 
-AM_CPPFLAGS = -I$(srcdir)/lib -I lib -I$(srcdir)/budgielib $(LTDLINCL) -DLIBDIR=\"$(libdir)\" -DPKGLIBDIR=\"$(pkglibdir)\" $(X_CFLAGS)
+AM_CPPFLAGS = -I$(srcdir)/lib -Ilib -I$(srcdir)/include -I$(srcdir)/budgielib $(LTDLINCL) -DLIBDIR=\"$(libdir)\" -DPKGLIBDIR=\"$(pkglibdir)\" $(X_CFLAGS)
 AM_YFLAGS = -d
 
 gldb_gldb_SOURCES = gldb/gldb.c gldb/gldb-common.c gldb/gldb-common.h
@@ -70,14 +70,14 @@ budgie/bclexer.cc: budgie/bclexer.ll
 BUILT_SOURCES = budgie/bcparser.h
 
 src_libbugleutils_la_SOURCES = \
-	src/gltokens.h src/gltypes.c src/gltypes.h \
-	common/misc.c common/misc.h \
+	include/bugle/gltokens.h src/gltypes.c include/bugle/gltypes.h \
+	common/misc.c include/bugle/misc.h \
 	common/protocol.h common/protocol.c \
-	common/hashtable.c common/hashtable.h \
-	common/linkedlist.c common/linkedlist.h \
-	common/threads.h \
-	budgielib/typeutils.c budgielib/typeutils.h \
-	budgielib/ioutils.c budgielib/ioutils.h
+	common/hashtable.c include/bugle/hashtable.h \
+	common/linkedlist.c include/bugle/linkedlist.h \
+	include/bugle/threads.h \
+	budgielib/typeutils.c include/budgie/typeutils.h \
+	budgielib/ioutils.c include/budgie/ioutils.h
 nodist_src_libbugleutils_la_SOURCES = \
 	src/names.c src/names.h src/types.c src/types.h \
 	src/gltokens.c src/glfuncs.c src/glfuncs.h \
@@ -87,20 +87,20 @@ src_libbugleutils_la_LDFLAGS = -thread-safe -export-dynamic $(SYMBOLFLAGS) -vers
 
 src_libbugle_la_SOURCES = \
 	src/confparse.y src/conflex.l src/conffile.h \
-	src/gldump.c src/gldump.h \
-	src/glutils.c src/glutils.h \
-	src/glstate.c src/glstate.h \
-	src/glsl.c src/glsl.h \
+	src/gldump.c include/bugle/gldump.h \
+	src/glutils.c include/bugle/glutils.h \
+	src/glstate.c include/bugle/glstate.h \
+	src/glsl.c include/bugle/glsl.h \
 	src/interceptor.c \
 	src/dlopen.c src/dlopen.h \
-	src/filters.c src/filters.h \
+	src/filters.c include/bugle/filters.h \
 	src/trackcontext.c src/trackdisplaylist.c src/trackobjects.c \
-	src/trackbeginend.c src/trackextensions.c src/tracker.h \
-	src/stats.c src/stats.h src/statslex.l src/statsparse.y \
-	src/log.c src/log.h \
-	src/objects.c src/objects.h \
-	src/xevent.c src/xevent.h \
-	budgielib/budgieutils.c budgielib/budgieutils.h
+	src/trackbeginend.c src/trackextensions.c include/bugle/tracker.h \
+	src/stats.c include/bugle/stats.h src/statslex.l src/statsparse.y \
+	src/log.c include/bugle/log.h \
+	src/objects.c include/bugle/objects.h \
+	src/xevent.c include/bugle/xevent.h \
+	budgielib/budgieutils.c include/budgie/budgieutils.h
 nodist_src_libbugle_la_SOURCES = \
 	src/utils.c src/utils.h src/lib.c src/lib.h
 src_libbugle_la_LIBADD = $(LIBLTDL) src/libbugleutils.la -lm -lGL $(X_PRE_LIBS) $(X_LIBS) -lX11 $(X_EXTRA_LIBS) $(LTLIBTHREAD) $(LTLIBINTL) lib/libgnu.la
@@ -252,7 +252,7 @@ TESTS_ENVIRONMENT = BUGLE_FILTERS=$(srcdir)/tests/filters BUGLE_STATISTICS=$(src
 # Extra files to distribute
 EXTRA_DIST = gl.bc.in $(BCFILES) src/data/gl.c src/data/overrides.h \
 	LICENSE \
-	doc/filters.html doc/objects.html doc/locks.txt \
+	doc/filters.html doc/locks.txt \
 	doc/protocol.txt doc/extensions.txt \
 	doc/examples/filters doc/examples/statistics \
 	glee/readme.txt \

@@ -21,7 +21,7 @@
 #include <stdio.h>
 #include <stddef.h>
 #include <stdbool.h>
-#include "typeutils.h"
+#include <budgie/typeutils.h>
 
 typedef int budgie_group;   /* function group */
 typedef int budgie_function;

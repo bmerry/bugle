@@ -21,7 +21,7 @@
 #if HAVE_CONFIG_H
 # include <config.h>
 #endif
-#include "common/linkedlist.h"
+#include <bugle/linkedlist.h>
 
 typedef struct
 {

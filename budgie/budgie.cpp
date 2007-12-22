@@ -703,10 +703,10 @@ static void write_headers()
     fprintf(util_c,
             "#include \"%s.h\"\n"
             "#include \"%s.h\"\n"
-            "#include \"budgieutils.h\"\n"
             "#include <assert.h>\n"
             "#include <dlfcn.h>\n"
             "#include <stddef.h>\n"   // for offsetof
+            "#include <budgie/budgieutils.h>\n"
             "\n",
             utilbase.c_str(),
             typesbase.c_str());
@@ -737,7 +737,7 @@ static void write_headers()
     fprintf(lib_c,
             "#include \"%s.h\"\n"
             "#include \"%s.h\"\n"
-            "#include \"budgieutils.h\"\n"
+            "#include <budgie/budgieutils.h>\n"
             "\n",
             libbase.c_str(), utilbase.c_str());
     fprintf(lib_h,

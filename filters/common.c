@@ -18,11 +18,11 @@
 #if HAVE_CONFIG_H
 # include <config.h>
 #endif
-#include "src/filters.h"
-#include "src/utils.h"
-#include "src/glutils.h"
-#include "src/glfuncs.h"
 #include <stdbool.h>
+#include <bugle/filters.h>
+#include <bugle/glutils.h>
+#include "src/glfuncs.h"
+#include "src/utils.h"
 
 /* Invoke filter-set */
 

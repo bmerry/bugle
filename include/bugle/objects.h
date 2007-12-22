@@ -23,7 +23,7 @@
 #endif
 #include <stddef.h>
 #include <stdbool.h>
-#include "common/linkedlist.h"
+#include <bugle/linkedlist.h>
 #include "tls.h"
 
 typedef size_t object_view;
@@ -38,7 +38,7 @@ typedef struct object_class_s
     object_view parent_view; /* view where we store current of this class in parent */
 } object_class;
 
-typedef struct
+typedef struct object_s
 {
     object_class *klass;
     size_t count;

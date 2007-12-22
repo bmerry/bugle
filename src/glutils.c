@@ -19,17 +19,17 @@
 # include <config.h>
 #endif
 #include <stdbool.h>
-#include "src/filters.h"
-#include "src/glutils.h"
-#include "src/gltypes.h"
-#include "src/tracker.h"
-#include "src/utils.h"
-#include "src/glfuncs.h"
-#include "src/log.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <GL/gl.h>
 #include <assert.h>
+#include <bugle/filters.h>
+#include <bugle/glutils.h>
+#include <bugle/tracker.h>
+#include <bugle/gltypes.h>
+#include <bugle/log.h>
+#include "src/utils.h"
+#include "src/glfuncs.h"
 
 static filter_set *error_handle = NULL;
 static GLenum (*bugle_call_get_error_ptr)(object *) = NULL;

@@ -15,24 +15,24 @@
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#include "src/filters.h"
-#include "src/utils.h"
-#include "src/glutils.h"
-#include "src/objects.h"
-#include "src/tracker.h"
-#include "src/xevent.h"
-#include "src/glexts.h"
-#include "src/glfuncs.h"
-#include "src/log.h"
-#include <stdbool.h>
-#include "common/linkedlist.h"
-#include "common/hashtable.h"
 #include <GL/glx.h>
 #include <sys/time.h>
 #include <math.h>
 #include <stdlib.h>
+#include <stdbool.h>
 #include <string.h>
 #include "xalloc.h"
+#include <bugle/linkedlist.h>
+#include <bugle/hashtable.h>
+#include <bugle/filters.h>
+#include <bugle/glutils.h>
+#include <bugle/objects.h>
+#include <bugle/tracker.h>
+#include <bugle/xevent.h>
+#include <bugle/log.h>
+#include "src/glexts.h"
+#include "src/glfuncs.h"
+#include "src/utils.h"
 
 #if !HAVE_SINF
 # define sinf(x) ((float) (sin((double) (x))))

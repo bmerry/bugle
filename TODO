@@ -1,3 +1,62 @@
+Plan for making API public and ABI stable
+-----------------------------------------
+Everything exported by budgie should be masked by budgielib, with the
+exception of 
+- the function_call union (which does not affect the ABI),
+- the macros for calling original functions (which are guarded against ABI
+  changes by weak symbols)
+- the function_call type
+
+- stuff that is public and non-generated
+  - types.h
+    - budgie_function
+    - budgie_group
+    - budgie_type
+    - generic_function_call
+    - #includes types2.h to pull in function_call
+  - freflect.c and freflect.h
+    - budgie_function_count(), budgie_group_count()
+    - budgie_function_name(index)
+    - budgie_group_name(index) ???
+    - budgie_function_index(name)
+    - budgie_group_index(name)
+    - budgie_function_address(index, real)
+    - budgie_function_has_return(index)
+    - budgie_function_parameter_count(index)
+    - budgie_function_parameter_type(index, pindex)
+    - stuff to query the functions in a group?
+    - budgie_dump_any_call
+    - initialise_real
+  - treflect.c and treflect.h
+    - budgie_dump_any_type[_extended]
+  - utils.h and utils.c
+    - dumper helpers
+    - ?
+- stuff that is public but generated
+  - call.c and call.h
+    - wrapper functions for calling the original OpenGL
+- stuff that is private but not generated
+  - internal.h, possibly internal.c
+    - types for the dump tables
+    - anything else that is only used by generated code
+- stuff that is private and generated
+  - lib.c and lib.h
+    - wrapper functions
+    - aliases to wrappers
+  - defines.h
+    - #defines for functions, types, groups
+  - tables.c and tables.h
+    - function prototype info
+    - type info
+    - generated length and dumper functions
+
+Still outstanding:
+- state tables rely heavily on TYPE_ defines - not critical since they're
+  in the core, but maybe need some reflection to aid debugger
+
+General TODO
+------------
+
 camera filter-set
 -----------------
 - handle display lists properly

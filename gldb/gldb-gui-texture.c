@@ -37,8 +37,8 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdbool.h>
+#include <bugle/hashtable.h>
 #include "common/protocol.h"
-#include "common/hashtable.h"
 #include "gldb/gldb-common.h"
 #include "gldb/gldb-channels.h"
 #include "gldb/gldb-gui.h"

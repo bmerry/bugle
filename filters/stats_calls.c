@@ -22,9 +22,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdbool.h>
-#include "src/stats.h"
+#include <bugle/stats.h>
+#include <bugle/filters.h>
 #include "src/utils.h"
-#include "src/filters.h"
 #include "xvasprintf.h"
 
 static stats_signal *stats_calls_counts[NUMBER_OF_FUNCTIONS];

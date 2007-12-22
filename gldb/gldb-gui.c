@@ -32,9 +32,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
+#include <bugle/linkedlist.h>
+#include <bugle/hashtable.h>
 #include "common/protocol.h"
-#include "common/linkedlist.h"
-#include "common/hashtable.h"
 #include "src/names.h"
 #include "gldb/gldb-common.h"
 #include "gldb/gldb-channels.h"

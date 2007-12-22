@@ -18,22 +18,22 @@
 #if HAVE_CONFIG_H
 # include <config.h>
 #endif
-#include <math.h>
-#include <stdbool.h>
-#include "common/linkedlist.h"
-#include "common/misc.h"
-#include "src/stats.h"
-#include "src/utils.h"
-#include "src/filters.h"
-#include "src/log.h"
-#include "src/glutils.h"
-#include "src/xevent.h"
-#include "src/tracker.h"
-#include "src/glexts.h"
 #include <GL/gl.h>
 #include <GL/glext.h>
 #include <stdlib.h>
 #include <string.h>
+#include <math.h>
+#include <stdbool.h>
+#include <bugle/linkedlist.h>
+#include <bugle/misc.h>
+#include <bugle/stats.h>
+#include <bugle/filters.h>
+#include <bugle/log.h>
+#include <bugle/glutils.h>
+#include <bugle/xevent.h>
+#include <bugle/tracker.h>
+#include "src/glexts.h"
+#include "src/utils.h"
 #include "xalloc.h"
 
 typedef struct
