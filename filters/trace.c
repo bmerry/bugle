@@ -23,7 +23,8 @@
 #include <bugle/filters.h>
 #include <bugle/glutils.h>
 #include <bugle/log.h>
-#include "src/utils.h"
+#include <budgie/reflect.h>
+#include <budgie/addresses.h>
 
 /* Callback passed to bugle_log */
 static void trace_callback_call_callback(void *call, FILE *f)

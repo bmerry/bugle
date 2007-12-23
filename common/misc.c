@@ -27,6 +27,30 @@
 #include <bugle/threads.h>
 #include "xalloc.h"
 
+char *bugle_string_io(void (*call)(FILE *, void *), void *data)
+{
+    FILE *f;
+    size_t size;
+    char *buffer;
+
+#if HAVE_OPEN_MEMSTREAM
+    f = open_memstream(&buffer, &size);
+    (*call)(f, data);
+    fclose(f);
+#else
+    f = tmpfile();
+    (*call)(f, data);
+    size = ftell(f);
+    fseek(f, 0, SEEK_SET);
+    buffer = malloc(size + 1);
+    fread(buffer, 1, size, f);
+    buffer[size] = '\0';
+    fclose(f);
+#endif
+
+    return buffer;
+}
+
 int bugle_appendf(char **strp, size_t *sz, const char *format, ...)
 {
     va_list ap;

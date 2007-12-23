@@ -41,15 +41,19 @@
 #include <bugle/gltypes.h>
 #include <bugle/log.h>
 #include <bugle/hashtable.h>
+#include <bugle/misc.h>
+#include <budgie/types.h>
+#include <budgie/call.h>
+#include <budgie/reflect.h>
+#include <budgie/addresses.h>
+#include "budgielib/defines.h"
 #include "common/protocol.h"
-#include <budgie/ioutils.h>
-#include "src/utils.h"
 #include "src/glexts.h"
 #include "xalloc.h"
 #include "xvasprintf.h"
 
 static int in_pipe = -1, out_pipe = -1;
-static bool break_on[NUMBER_OF_FUNCTIONS];
+static bool break_on[FUNCTION_COUNT];
 static bool break_on_error = true, break_on_next = false;
 static bool stopped = true;
 static uint32_t start_id = 0;
@@ -100,7 +104,7 @@ static void send_state_raw(const glstate *state, uint32_t id)
     {
         gldb_protocol_send_code(out_pipe, wrapper.type);
         gldb_protocol_send_code(out_pipe, wrapper.length);
-        gldb_protocol_send_binary_string(out_pipe, budgie_type_table[wrapper.type].size * abs(wrapper.length), (const char *) wrapper.data);
+        gldb_protocol_send_binary_string(out_pipe, budgie_type_size(wrapper.type) * abs(wrapper.length), (const char *) wrapper.data);
     }
     else
     {
@@ -120,16 +124,6 @@ static void send_state_raw(const glstate *state, uint32_t id)
 
     gldb_protocol_send_code(out_pipe, RESP_STATE_NODE_END_RAW);
     gldb_protocol_send_code(out_pipe, id);
-}
-
-static budgie_function find_function(const char *name)
-{
-    int i;
-
-    for (i = 0; i < NUMBER_OF_FUNCTIONS; i++)
-        if (strcmp(budgie_function_table[i].name, name) == 0)
-            return i;
-    return NULL_FUNCTION;
 }
 
 static void dump_any_call_string_io(FILE *out, void *data)
@@ -714,7 +708,7 @@ static void process_single_command(function_call *call)
     case REQ_BREAK:
         gldb_protocol_recv_string(in_pipe, &req_str);
         gldb_protocol_recv_code(in_pipe, &req_val);
-        func = find_function(req_str);
+        func = budgie_function_id(req_str);
         if (func != NULL_FUNCTION)
         {
             gldb_protocol_send_code(out_pipe, RESP_ANS);
@@ -881,7 +875,7 @@ static void process_single_command(function_call *call)
     case REQ_ASYNC:
         if (!stopped)
         {
-            resp_str = budgie_string_io(dump_any_call_string_io, call);
+            resp_str = bugle_string_io(dump_any_call_string_io, call);
             stopped = true;
             gldb_protocol_send_code(out_pipe, RESP_STOP);
             gldb_protocol_send_code(out_pipe, start_id);
@@ -949,7 +943,7 @@ static bool debugger_callback(function_call *call, const callback_data *data)
 
     if (break_on[call->generic.id])
     {
-        resp_str = budgie_string_io(dump_any_call_string_io, call);
+        resp_str = bugle_string_io(dump_any_call_string_io, call);
         stopped = true;
         break_on_next = false;
         gldb_protocol_send_code(out_pipe, RESP_BREAK);
@@ -959,7 +953,7 @@ static bool debugger_callback(function_call *call, const callback_data *data)
     }
     else if (break_on_next)
     {
-        resp_str = budgie_string_io(dump_any_call_string_io, call);
+        resp_str = bugle_string_io(dump_any_call_string_io, call);
         break_on_next = false;
         stopped = true;
         gldb_protocol_send_code(out_pipe, RESP_STOP);
@@ -979,7 +973,7 @@ static bool debugger_error_callback(function_call *call, const callback_data *da
     if (break_on_error
         && (error = bugle_call_get_error(data->call_object)))
     {
-        resp_str = budgie_string_io(dump_any_call_string_io, call);
+        resp_str = bugle_string_io(dump_any_call_string_io, call);
         gldb_protocol_send_code(out_pipe, RESP_BREAK_ERROR);
         gldb_protocol_send_code(out_pipe, start_id);
         gldb_protocol_send_string(out_pipe, resp_str);

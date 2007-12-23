@@ -22,8 +22,8 @@
 #include <bugle/filters.h>
 #include <bugle/objects.h>
 #include <bugle/glutils.h>
+#include <budgie/call.h>
 #include "src/glexts.h"
-#include "src/utils.h"
 #include <stdbool.h>
 #include <string.h>
 #include <assert.h>

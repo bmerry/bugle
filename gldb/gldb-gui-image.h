@@ -37,7 +37,6 @@
 #include <glib/gi18n-lib.h>
 #include <gdk-pixbuf/gdk-pixbuf.h>
 #include <stdbool.h>
-#include "src/names.h"
 #include "gldb/gldb-common.h"
 #include "gldb/gldb-channels.h"
 

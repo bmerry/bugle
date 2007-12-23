@@ -23,13 +23,14 @@
 #if HAVE_CONFIG_H
 # include <config.h>
 #endif
-#include <bugle/filters.h>
-#include "src/utils.h"
-#include <bugle/tracker.h>
-#include <bugle/objects.h>
 #include <stdbool.h>
 #include <stddef.h>
 #include <GL/gl.h>
+#include <bugle/filters.h>
+#include <bugle/tracker.h>
+#include <bugle/objects.h>
+#include <budgie/call.h>
+#include <budgie/types.h>
 
 static object_view trackbeginend_view;
 
@@ -41,7 +42,7 @@ static bool trackbeginend_glBegin(function_call *call, const callback_data *data
 {
     bool *begin_end;
 
-    switch (*call->typed.glBegin.arg0)
+    switch (*call->glBegin.arg0)
     {
     case GL_POINTS:
     case GL_LINES:
@@ -95,8 +96,8 @@ static bool trackbeginend_filter_set_initialise(filter_set *handle)
 
     f = bugle_filter_register(handle, "trackbeginend");
     bugle_filter_order("invoke", "trackbeginend");
-    bugle_filter_catches(f, GROUP_glBegin, true, trackbeginend_glBegin);
-    bugle_filter_catches(f, GROUP_glEnd, true, trackbeginend_glEnd);
+    bugle_filter_catches(f, "glBegin", true, trackbeginend_glBegin);
+    bugle_filter_catches(f, "glEnd", true, trackbeginend_glEnd);
 
     trackbeginend_view = bugle_object_view_register(&bugle_context_class,
                                                      NULL,

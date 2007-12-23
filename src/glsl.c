@@ -29,7 +29,7 @@
 #include <string.h>
 #include <bugle/tracker.h>
 #include <bugle/glutils.h>
-#include "src/utils.h"
+#include <budgie/call.h>
 #include "src/glexts.h"
 #include "xalloc.h"
 

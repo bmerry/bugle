@@ -26,6 +26,13 @@
 #include <stddef.h>
 #include <stdio.h>
 
+/* Calls "call" with a FILE * and "data". The data that "call" writes into
+ * the file is returned in as a malloc'ed string.
+ * FIXME: error checking.
+ * FIXME: is ftell portable on _binary_ streams (which tmpfile is)?
+ */
+char *bugle_string_io(void (*call)(FILE *, void *), void *data);
+
 /* Appends to *strp using the format, reallocating if necessary. The
  * current size is *sz, and will be updated on reallocation. *strp may
  * be NULL, in which case this reduces to asprintf. The return value is

@@ -30,10 +30,11 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <stdbool.h>
-#include <budgie/ioutils.h>
 #include <bugle/linkedlist.h>
 #include <bugle/hashtable.h>
-#include "src/types.h"
+#include <bugle/misc.h>
+#include <budgie/reflect.h>
+#include "budgielib/defines.h"
 #include "common/protocol.h"
 #include "gldb/gldb-common.h"
 #include "xalloc.h"
@@ -574,7 +575,7 @@ char *gldb_state_string(const gldb_state *state)
     if (state->type == TYPE_Pc)
         return xstrdup((const char *) state->data);
     else
-        return budgie_string_io(dump_wrapper, (void *) state);
+        return bugle_string_io(dump_wrapper, (void *) state);
 }
 
 GLint gldb_state_GLint(const gldb_state *state)

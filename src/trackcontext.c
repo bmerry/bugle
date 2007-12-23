@@ -18,12 +18,6 @@
 #if HAVE_CONFIG_H
 # include <config.h>
 #endif
-#include <bugle/filters.h>
-#include "src/utils.h"
-#include <bugle/tracker.h>
-#include <bugle/objects.h>
-#include "src/glexts.h"
-#include <bugle/log.h>
 #include <stdbool.h>
 #include <bugle/hashtable.h>
 #include <assert.h>
@@ -34,6 +28,15 @@
 #include <GL/gl.h>
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
+#include <bugle/filters.h>
+#include <bugle/tracker.h>
+#include <bugle/objects.h>
+#include <bugle/log.h>
+#include <budgie/types.h>
+#include <budgie/call.h>
+#include <budgie/addresses.h>
+#include "budgielib/defines.h"
+#include "src/glexts.h"
 #include "xalloc.h"
 #include "lock.h"
 
@@ -80,15 +83,15 @@ static bool trackcontext_newcontext(function_call *call, const callback_data *da
     {
 #ifdef GLX_SGIX_fbconfig
     case GROUP_glXCreateContextWithConfigSGIX:
-        dpy = *call->typed.glXCreateContextWithConfigSGIX.arg0;
-        self = *call->typed.glXCreateContextWithConfigSGIX.retn;
-        parent = *call->typed.glXCreateContextWithConfigSGIX.arg3;
+        dpy = *call->glXCreateContextWithConfigSGIX.arg0;
+        self = *call->glXCreateContextWithConfigSGIX.retn;
+        parent = *call->glXCreateContextWithConfigSGIX.arg3;
         break;
 #endif
     case GROUP_glXCreateContext:
-        dpy = *call->typed.glXCreateContext.arg0;
-        self = *call->typed.glXCreateContext.retn;
-        parent = *call->typed.glXCreateContext.arg2;
+        dpy = *call->glXCreateContext.arg0;
+        self = *call->glXCreateContext.retn;
+        parent = *call->glXCreateContext.arg2;
         break;
     default:
         abort();
@@ -122,7 +125,7 @@ static bool trackcontext_newcontext(function_call *call, const callback_data *da
             break;
 #endif
         case GROUP_glXCreateContext:
-            base->visual_info = **call->typed.glXCreateContext.arg1;
+            base->visual_info = **call->glXCreateContext.arg1;
             base->use_visual_info = true;
             break;
         default:
@@ -214,13 +217,13 @@ static bool trackcontext_filter_set_initialise(filter_set *handle)
 
     f = bugle_filter_register(handle, "trackcontext");
     bugle_filter_order("invoke", "trackcontext");
-    bugle_filter_catches(f, GROUP_glXMakeCurrent, true, trackcontext_callback);
-    bugle_filter_catches(f, GROUP_glXCreateContext, true, trackcontext_newcontext);
+    bugle_filter_catches(f, "glXMakeCurrent", true, trackcontext_callback);
+    bugle_filter_catches(f, "glXCreateContext", true, trackcontext_newcontext);
 #ifdef GLX_SGI_make_current_read
-    bugle_filter_catches(f, GROUP_glXMakeCurrentReadSGI, true, trackcontext_callback);
+    bugle_filter_catches(f, "glXMakeCurrentReadSGI", true, trackcontext_callback);
 #endif
 #ifdef GLX_SGIX_fbconfig
-    bugle_filter_catches(f, GROUP_glXCreateContextWithConfigSGIX, true, trackcontext_newcontext);
+    bugle_filter_catches(f, "glXCreateContextWithConfigSGIX", true, trackcontext_newcontext);
 #endif
     trackcontext_view = bugle_object_view_register(&bugle_context_class,
                                                     NULL,
@@ -334,11 +337,11 @@ Display *bugle_get_current_display_internal(bool lock)
     if (data)
         return data->dpy;
 #ifdef GLX_EXT_import_context
-    else if (budgie_function_table[FUNC_glXGetCurrentDisplayEXT].real)
+    else if (budgie_function_address_real(FUNC_glXGetCurrentDisplayEXT))
         return CALL_glXGetCurrentDisplayEXT();
 #endif
 #ifdef GLX_VERSION_1_3
-    else if (budgie_function_table[FUNC_glXGetCurrentDisplay].real)
+    else if (budgie_function_address_real(FUNC_glXGetCurrentDisplay))
         return CALL_glXGetCurrentDisplay();
 #endif
     return NULL;

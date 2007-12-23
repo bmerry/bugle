@@ -21,14 +21,6 @@
 #define _POSIX_C_SOURCE 200112L /* For flockfile */
 #define _BSD_SOURCE /* For finite() */
 #define _XOPEN_SOURCE 600 /* For strtof */
-#include "src/utils.h"
-#include "src/lib.h"
-#include "src/glfuncs.h"
-#include <bugle/xevent.h>
-#include <bugle/filters.h>
-#include <bugle/log.h>
-#include <bugle/linkedlist.h>
-#include <bugle/hashtable.h>
 #include <stdio.h>
 #include <stddef.h>
 #include <string.h>
@@ -53,6 +45,17 @@
 #  include <ndir.h>
 # endif
 #endif
+#include <bugle/xevent.h>
+#include <bugle/filters.h>
+#include <bugle/log.h>
+#include <bugle/linkedlist.h>
+#include <bugle/hashtable.h>
+#include <budgie/types.h>
+#include <budgie/call.h>
+#include <budgie/reflect.h>
+#include <budgie/addresses.h>
+#include "budgielib/defines.h"
+#include "src/glfuncs.h"
 #include "xalloc.h"
 #include "lock.h"
 
@@ -94,7 +97,8 @@ static linked_list added_filter_sets; /* Those specified in the config, plus dep
  */
 static linked_list loaded_filters;
 
-static linked_list active_callbacks[NUMBER_OF_FUNCTIONS];
+/* FIXME: remove the dependence on defines.h */
+static linked_list active_callbacks[FUNCTION_COUNT];
 static bool active_dirty = false;
 static linked_list activations_deferred;
 static linked_list deactivations_deferred;
@@ -266,7 +270,7 @@ static void filters_shutdown(void)
     budgie_function k;
 
     bugle_list_clear(&loaded_filters);
-    for (k = 0; k < NUMBER_OF_FUNCTIONS; k++)
+    for (k = 0; k < budgie_function_count(); k++)
         bugle_list_clear(&active_callbacks[k]);
 
     /* NB: this list runs backwards to obtain the correct shutdown order.
@@ -332,7 +336,7 @@ void filters_initialise(void)
     bugle_list_init(&filter_sets, free);
     bugle_list_init(&added_filter_sets, NULL);
     bugle_list_init(&loaded_filters, NULL);
-    for (f = 0; f < NUMBER_OF_FUNCTIONS; f++)
+    for (f = 0; f < budgie_function_count(); f++)
         bugle_list_init(&active_callbacks[f], NULL);
     bugle_list_init(&activations_deferred, NULL);
     bugle_list_init(&deactivations_deferred, NULL);
@@ -656,14 +660,16 @@ static void filter_compute_order(void)
 static void set_bypass(void)
 {
     linked_list_node *i, *j;
-    bool bypass[NUMBER_OF_FUNCTIONS];
+    int k;
+    bool *bypass;
     filter *cur;
     filter_catcher *catcher;
 
+    bypass = XNMALLOC(budgie_function_count(), bool);
     /* We use this temporary instead of modifying values directly, because
      * we don't want other threads to see intermediate values.
      */
-    memset(bypass, 1, sizeof(bypass));
+    memset(bypass, 1, budgie_function_count() * sizeof(bool));
     for (i = bugle_list_head(&loaded_filters); i; i = bugle_list_next(i))
     {
         cur = (filter *) bugle_list_data(i);
@@ -674,7 +680,9 @@ static void set_bypass(void)
                 bypass[catcher->function] = false;
         }
     }
-    memcpy(budgie_bypass, bypass, sizeof(budgie_bypass));
+    for (k = 0; k < budgie_function_count(); k++)
+        budgie_function_set_bypass(k, bypass[k]);
+    free(bypass);
 }
 
 void filters_finalise(void)
@@ -693,7 +701,7 @@ static void compute_active_callbacks(void)
     filter_catcher *catcher;
 
     /* Clear the old active_callback lists */
-    for (func = 0; func < NUMBER_OF_FUNCTIONS; func++)
+    for (func = 0; func < budgie_function_count(); func++)
         bugle_list_clear(&active_callbacks[func]);
 
     for (i = bugle_list_head(&loaded_filters); i; i = bugle_list_next(i))
@@ -792,39 +800,62 @@ filter *bugle_filter_register(filter_set *handle, const char *name)
     return f;
 }
 
-void bugle_filter_catches_function(filter *handle, budgie_function f,
-                                            bool inactive,
-                                            filter_callback callback)
+void bugle_filter_catches_function_id(filter *handle, budgie_function id,
+                                      bool inactive,
+                                      filter_callback callback)
 {
     filter_catcher *cb;
 
     cb = XMALLOC(filter_catcher);
     cb->parent = handle;
-    cb->function = f;
+    cb->function = id;
     cb->inactive = inactive;
     cb->callback = callback;
     bugle_list_append(&handle->callbacks, cb);
 }
 
-void bugle_filter_catches(filter *handle, budgie_group g,
+void bugle_filter_catches_function(filter *handle, const char *f,
                                    bool inactive,
                                    filter_callback callback)
 {
-    budgie_function i;
+    budgie_function id;
 
+    id = budgie_function_id(f);
+    if (id != NULL_FUNCTION)
+        bugle_filter_catches_function_id(handle, id, inactive, callback);
+    else
+        bugle_log_printf(handle->parent->name, handle->name, BUGLE_LOG_WARNING,
+                         "Attempt to catch unknown function %s", f);
+}
+
+void bugle_filter_catches(filter *handle, const char *group,
+                          bool inactive,
+                          filter_callback callback)
+{
+    budgie_function i;
+    budgie_group g;
+
+    i = budgie_function_id(group);
+    if (i == NULL_FUNCTION)
+    {
+        bugle_log_printf(handle->parent->name, handle->name, BUGLE_LOG_WARNING,
+                         "Attempt to catch unknown function %s", group);
+        return;
+    }
+    g = budgie_function_group(i);
     /* FIXME: there should be a way to speed this up */
-    for (i = 0; i < NUMBER_OF_FUNCTIONS; i++)
-        if (budgie_function_to_group[i] == g)
-            bugle_filter_catches_function(handle, i, inactive, callback);
+    for (i = 0; i < budgie_function_count(); i++)
+        if (budgie_function_group(i) == g)
+            bugle_filter_catches_function_id(handle, i, inactive, callback);
 }
 
 void bugle_filter_catches_all(filter *handle, bool inactive,
-                                       filter_callback callback)
+                              filter_callback callback)
 {
     budgie_function i;
     filter_catcher *cb;
 
-    for (i = 0; i < NUMBER_OF_FUNCTIONS; i++)
+    for (i = 0; i < budgie_function_count(); i++)
     {
         cb = XMALLOC(filter_catcher);
         cb->parent = handle;

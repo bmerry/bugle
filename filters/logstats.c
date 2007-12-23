@@ -26,7 +26,6 @@
 #include <bugle/stats.h>
 #include <bugle/filters.h>
 #include <bugle/log.h>
-#include "src/utils.h"
 #include "xalloc.h"
 
 static linked_list logstats_show;    /* actual stats */
@@ -84,7 +83,7 @@ static bool logstats_initialise(filter_set *handle)
     stats_statistic *st;
 
     f = bugle_filter_register(handle, "stats_log");
-    bugle_filter_catches(f, GROUP_glXSwapBuffers, false, logstats_glXSwapBuffers);
+    bugle_filter_catches(f, "glXSwapBuffers", false, logstats_glXSwapBuffers);
 
     bugle_list_clear(&logstats_show);
     for (i = bugle_list_head(&logstats_show_requested); i; i = bugle_list_next(i))

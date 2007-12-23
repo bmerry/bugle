@@ -29,9 +29,10 @@
 #include <bugle/gltypes.h>
 #include <bugle/tracker.h>
 #include <bugle/log.h>
-#include <budgie/typeutils.h>
-#include "src/types.h"
-#include "src/utils.h"
+#include <budgie/types.h>
+#include <budgie/reflect.h>
+#include <budgie/call.h>
+#include "budgielib/defines.h"
 #include "src/glexts.h"
 #include "xalloc.h"
 
@@ -172,7 +173,7 @@ budgie_type bugle_gl_type_to_type_ptr(GLenum gl_type)
 {
     budgie_type ans;
 
-    ans = budgie_type_table[bugle_gl_type_to_type(gl_type)].pointer;
+    ans = budgie_type_pointer(bugle_gl_type_to_type(gl_type));
     assert(ans != NULL_TYPE);
     return ans;
 }
@@ -215,7 +216,7 @@ budgie_type bugle_gl_type_to_type_ptr_pbo_sink(GLenum gl_type)
 
 size_t bugle_gl_type_to_size(GLenum gl_type)
 {
-    return budgie_type_table[bugle_gl_type_to_type(gl_type)].size;
+    return budgie_type_size(bugle_gl_type_to_type(gl_type));
 }
 
 int bugle_gl_format_to_count(GLenum format, GLenum type)
@@ -388,15 +389,17 @@ bool bugle_dump_convert(GLenum pname, const void *value,
     int length = -1, alength;
     void *out_data;
     const void *ptr = NULL;
+    budgie_type base_type;
 
     entry = get_dump_table_entry(pname);
     if (entry->type == NULL_TYPE) return false;
     out_type = entry->type;
 
-    if (budgie_type_table[in_type].code == CODE_POINTER)
+    base_type = budgie_type_pointer_base(in_type);
+    if (base_type != NULL_TYPE)
     {
         in = *(const void * const *) value;
-        in_type = budgie_type_table[in_type].type;
+        in_type = base_type;
         ptr = in;
     }
     else
@@ -404,7 +407,7 @@ bool bugle_dump_convert(GLenum pname, const void *value,
 
     length = entry->length;
     alength = (length == -1) ? 1 : length;
-    out_data = xnmalloc(alength, budgie_type_table[out_type].size);
+    out_data = xnmalloc(alength, budgie_type_size(out_type));
     if (out_type == TYPE_11GLxfbattrib)
     {
         /* budgie_type_convert doesn't do array-to-struct conversion */

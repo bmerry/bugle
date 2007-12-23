@@ -18,96 +18,90 @@
 #if HAVE_CONFIG_H
 # include <config.h>
 #endif
+#include <stdlib.h>
 #include <stdio.h>
-#include <stddef.h>
 #include <string.h>
-#include <ctype.h>
 #include <assert.h>
-#include <stdbool.h>
-#include <budgie/typeutils.h>
+#include <ltdl.h>
+#include <budgie/types.h>
+#include <budgie/reflect.h>
+#include "internal.h"
 
-void budgie_dump_bitfield(unsigned int value, FILE *out,
-                          const bitfield_pair *tags, int count)
+int budgie_function_count()
 {
-    bool first = true;
-    int i;
-    for (i = 0; i < count; i++)
-        if (value & tags[i].value)
-        {
-            if (!first) fputs(" | ", out); else first = false;
-            fputs(tags[i].name, out);
-            value &= ~tags[i].value;
-        }
-    if (value)
-    {
-        if (!first) fputs(" | ", out);
-        fprintf(out, "%08x", value);
-    }
+    return _budgie_function_count;
 }
 
-bool budgie_dump_string(const char *value, FILE *out)
+const char *budgie_function_name(budgie_function id)
 {
-    /* FIXME: handle illegal dereferences */
-    if (value == NULL) fputs("NULL", out);
+    assert(id >= 0 && id < _budgie_function_count);
+    return _budgie_function_table[id].name;
+}
+
+static int compare_function_name(const void *key, const void *data)
+{
+    const char *key2;
+    const function_name_data *data2;
+
+    key2 = (const char *) key;
+    data2 = (const function_name_data *) data;
+    return strcmp(key2, data2->name);
+}
+
+budgie_function budgie_function_id(const char *name)
+{
+    const void *target;
+
+    target = bsearch(name, _budgie_function_name_table, _budgie_function_count,
+                     sizeof(function_name_data), compare_function_name);
+    if (target)
+        return ((const function_name_data *) target)->function;
+    else
+        return NULL_FUNCTION;
+}
+
+budgie_group budgie_function_group(budgie_function id)
+{
+    assert(id >= 0 && id < _budgie_function_count);
+    return _budgie_function_table[id].group;
+}
+
+int budgie_group_parameter_count(budgie_group id)
+{
+    assert(id >= 0 && id < _budgie_group_count);
+    return _budgie_group_table[id].num_parameters;
+}
+
+budgie_type budgie_group_parameter_type(budgie_group id, int param)
+{
+    assert(id >= 0 && id < _budgie_group_count);
+    if (param == -1)
+        return _budgie_group_table[id].has_retn
+            ? _budgie_group_table[id].retn_type : NULL_TYPE;
     else
     {
-        fputc('"', out);
-        while (value[0])
-        {
-            switch (value[0])
-            {
-            case '"': fputs("\\\"", out); break;
-            case '\\': fputs("\\\\", out); break;
-            case '\n': fputs("\\n", out); break;
-            case '\r': fputs("\\r", out); break;
-            default:
-                if (iscntrl(value[0]))
-                    fprintf(out, "\\%03o", (int) value[0]);
-                else
-                    fputc(value[0], out);
-            }
-            value++;
-        }
-        fputc('"', out);
+        assert(0 <= param && param < _budgie_group_table[id].num_parameters);
+        return _budgie_group_table[id].parameter_types[param];
     }
-    return true;
 }
 
-bool budgie_dump_string_length(const char *value, size_t length, FILE *out)
+budgie_type budgie_type_pointer(budgie_type type)
 {
-    size_t i;
-    /* FIXME: handle illegal dereferences */
-    if (value == NULL) fputs("NULL", out);
-    else
-    {
-        fputc('"', out);
-        for (i = 0; i < length; i++)
-        {
-            switch (value[0])
-            {
-            case '"': fputs("\\\"", out); break;
-            case '\\': fputs("\\\\", out); break;
-            case '\n': fputs("\\n", out); break;
-            case '\r': fputs("\\r", out); break;
-            default:
-                if (iscntrl(value[0]))
-                    fprintf(out, "\\%03o", (int) value[0]);
-                else
-                    fputc(value[0], out);
-            }
-            value++;
-        }
-        fputc('"', out);
-    }
-    return true;
+    assert(type >= 0 && type < _budgie_type_count);
+    return _budgie_type_table[type].pointer;
 }
 
-int budgie_count_string(const char *value)
+budgie_type budgie_type_pointer_base(budgie_type type)
 {
-    /* FIXME: handle illegal dereferences */
-    const char *str = (const char *) value;
-    if (str == NULL) return 0;
-    else return strlen(str) + 1;
+    assert(type >= 0 && type < _budgie_type_count);
+    return _budgie_type_table[type].code == CODE_POINTER
+        ? _budgie_type_table[type].type : NULL_TYPE;
+}
+
+size_t budgie_type_size(budgie_type type)
+{
+    assert(type >= 0 && type < _budgie_type_count);
+    return _budgie_type_table[type].size;
 }
 
 void budgie_dump_any_type(budgie_type type, const void *value, int length, FILE *out)
@@ -116,7 +110,7 @@ void budgie_dump_any_type(budgie_type type, const void *value, int length, FILE 
     budgie_type new_type;
 
     assert(type >= 0);
-    info = &budgie_type_table[type];
+    info = &_budgie_type_table[type];
     if (info->get_type) /* highly unlikely */
     {
         new_type = (*info->get_type)(value);
@@ -158,9 +152,8 @@ void budgie_dump_any_type_extended(budgie_type type,
         {
             if (i) fputs(", ", out);
             budgie_dump_any_type(type, (const void *) v, length, out);
-            v += budgie_type_table[type].size;
+            v += _budgie_type_table[type].size;
         }
         fputs(" }", out);
     }
 }
-

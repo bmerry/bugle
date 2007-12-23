@@ -22,6 +22,7 @@
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <unistd.h>
 #include <signal.h>
 #include <setjmp.h>
@@ -34,9 +35,11 @@
 #include <bugle/tracker.h>
 #include <bugle/log.h>
 #include <bugle/threads.h>
+#include <budgie/call.h>
+#include <budgie/types.h>
+#include <budgie/reflect.h>
+#include "budgielib/defines.h"
 #include "src/glexts.h"
-#include "src/types.h"
-#include "src/utils.h"
 #include "xalloc.h"
 #include "lock.h"
 
@@ -61,7 +64,7 @@ static bool error_callback(function_call *call, const callback_data *data)
     call_error = bugle_object_get_current_data(&bugle_call_class, error_call_view);
     *call_error = GL_NO_ERROR;
 
-    if (budgie_function_table[call->generic.id].name[2] == 'X') return true; /* GLX */
+    if (budgie_function_name(call->generic.id)[2] == 'X') return true; /* GLX */
     if (call->generic.group == GROUP_glGetError)
     {
         /* We hope that it returns GL_NO_ERROR, since otherwise something
@@ -69,10 +72,10 @@ static bool error_callback(function_call *call, const callback_data *data)
          * rather than whatever we have saved. Also, we must make sure to
          * return nothing else inside begin/end.
          */
-        if (*call->typed.glGetError.retn != GL_NO_ERROR)
+        if (*call->glGetError.retn != GL_NO_ERROR)
         {
             const char *name;
-            name = bugle_gl_enum_to_token(*call->typed.glGetError.retn);
+            name = bugle_gl_enum_to_token(*call->glGetError.retn);
             if (name)
                 bugle_log_printf("error", "callback", BUGLE_LOG_WARNING,
                                  "glGetError() returned %s when GL_NO_ERROR was expected",
@@ -80,7 +83,7 @@ static bool error_callback(function_call *call, const callback_data *data)
             else
                 bugle_log_printf("error", "callback", BUGLE_LOG_WARNING,
                                  "glGetError() returned %#08x when GL_NO_ERROR was expected",
-                                 (unsigned int) *call->typed.glGetError.retn);
+                                 (unsigned int) *call->glGetError.retn);
         }
         else if (bugle_in_begin_end())
         {
@@ -88,7 +91,7 @@ static bool error_callback(function_call *call, const callback_data *data)
         }
         else if (*stored_error)
         {
-            *call->typed.glGetError.retn = *stored_error;
+            *call->glGetError.retn = *stored_error;
             *stored_error = GL_NO_ERROR;
         }
     }
@@ -154,11 +157,11 @@ static bool showerror_callback(function_call *call, const callback_data *data)
         if (name)
             bugle_log_printf("showerror", "gl", BUGLE_LOG_NOTICE,
                              "%s in %s", name,
-                             budgie_function_table[call->generic.id].name);
+                             budgie_function_name(call->generic.id));
         else
             bugle_log_printf("showerror", "gl", BUGLE_LOG_NOTICE,
                              "%#08x in %s", (unsigned int) error,
-                             budgie_function_table[call->generic.id].name);
+                             budgie_function_name(call->generic.id));
     }
     return true;
 }
@@ -375,7 +378,7 @@ static void checks_attribute(size_t first, size_t count,
         }
         CALL_glGetIntegerv(stride_name, &stride);
         CALL_glGetPointerv(ptr_name, &ptr);
-        group_size = budgie_type_table[type].size * size;
+        group_size = budgie_type_size(type) * size;
         if (!stride) stride = group_size;
         cptr = (const char *) ptr;
         cptr += group_size * first;
@@ -423,7 +426,7 @@ static void checks_generic_attribute(size_t first, size_t count,
         type = bugle_gl_type_to_type(gltype);
         CALL_glGetVertexAttribivARB(number, GL_VERTEX_ATTRIB_ARRAY_STRIDE_ARB, &stride);
         CALL_glGetVertexAttribPointervARB(number, GL_VERTEX_ATTRIB_ARRAY_POINTER_ARB, &ptr);
-        group_size = budgie_type_table[type].size * size;
+        group_size = budgie_type_size(type) * size;
         if (!stride) stride = group_size;
         cptr = (const char *) ptr;
         cptr += group_size * first;
@@ -566,7 +569,7 @@ static void checks_min_max(GLsizei count, GLenum gltype, const GLvoid *indices,
                                            &mapped);
             if (mapped) return;
 
-            size = count * budgie_type_table[type].size;
+            size = count * budgie_type_size(type);
             vbo_indices = xmalloc(size);
             CALL_glGetBufferSubDataARB(GL_ELEMENT_ARRAY_BUFFER_ARB,
                                        (const char *) indices - (const char *) NULL,
@@ -635,7 +638,7 @@ static void checks_min_max(GLsizei count, GLenum gltype, const GLvoid *indices,
 
 static bool checks_glDrawArrays(function_call *call, const callback_data *data)
 {
-    if (*call->typed.glDrawArrays.arg1 < 0)
+    if (*call->glDrawArrays.arg1 < 0)
     {
         bugle_log("checks", "error", BUGLE_LOG_NOTICE,
                   "glDrawArrays called with a negative argument; call will be ignored.");
@@ -648,8 +651,8 @@ static bool checks_glDrawArrays(function_call *call, const callback_data *data)
     }
     else
     {
-        checks_attributes(*call->typed.glDrawArrays.arg1,
-                          *call->typed.glDrawArrays.arg2);
+        checks_attributes(*call->glDrawArrays.arg1,
+                          *call->glDrawArrays.arg2);
     }
     CHECKS_STOP();
 }
@@ -669,9 +672,9 @@ static bool checks_glDrawElements(function_call *call, const callback_data *data
 
         checks_error = "index array";
         checks_error_attribute = -1;
-        count = *call->typed.glDrawElements.arg1;
-        type = *call->typed.glDrawElements.arg2;
-        indices = *call->typed.glDrawElements.arg3;
+        count = *call->glDrawElements.arg1;
+        type = *call->glDrawElements.arg2;
+        indices = *call->glDrawElements.arg3;
         checks_buffer(count * bugle_gl_type_to_size(type),
                       indices,
                       VBO_ENUM(GL_ELEMENT_ARRAY_BUFFER_BINDING_ARB));
@@ -697,15 +700,15 @@ static bool checks_glDrawRangeElements(function_call *call, const callback_data 
 
         checks_error = "index array";
         checks_error_attribute = -1;
-        count = *call->typed.glDrawRangeElementsEXT.arg3;
-        type = *call->typed.glDrawRangeElementsEXT.arg4;
-        indices = *call->typed.glDrawRangeElementsEXT.arg5;
+        count = *call->glDrawRangeElementsEXT.arg3;
+        type = *call->glDrawRangeElementsEXT.arg4;
+        indices = *call->glDrawRangeElementsEXT.arg5;
         checks_buffer(count * bugle_gl_type_to_size(type),
                       indices,
                       VBO_ENUM(GL_ELEMENT_ARRAY_BUFFER_BINDING_ARB));
         checks_min_max(count, type, indices, &min, &max);
-        if (min < *call->typed.glDrawRangeElementsEXT.arg1
-            || max > *call->typed.glDrawRangeElementsEXT.arg2)
+        if (min < *call->glDrawRangeElementsEXT.arg1
+            || max > *call->glDrawRangeElementsEXT.arg2)
         {
             bugle_log("checks", "error", BUGLE_LOG_NOTICE,
                       "glDrawRangeElements indices fall outside range; call will be ignored.");
@@ -713,8 +716,8 @@ static bool checks_glDrawRangeElements(function_call *call, const callback_data 
         }
         else
         {
-            min = *call->typed.glDrawRangeElementsEXT.arg1;
-            max = *call->typed.glDrawRangeElementsEXT.arg2;
+            min = *call->glDrawRangeElementsEXT.arg1;
+            max = *call->glDrawRangeElementsEXT.arg2;
             checks_attributes(min, max - min + 1);
         }
     }
@@ -735,9 +738,9 @@ static bool checks_glMultiDrawArrays(function_call *call, const callback_data *d
         const GLsizei *count_ptr;
         GLsizei count, i;
 
-        count = *call->typed.glMultiDrawArraysEXT.arg3;
-        first_ptr = *call->typed.glMultiDrawArraysEXT.arg1;
-        count_ptr = *call->typed.glMultiDrawArraysEXT.arg2;
+        count = *call->glMultiDrawArraysEXT.arg3;
+        first_ptr = *call->glMultiDrawArraysEXT.arg1;
+        count_ptr = *call->glMultiDrawArraysEXT.arg2;
 
         checks_error = "first array";
         checks_error_attribute = -1;
@@ -766,10 +769,10 @@ static bool checks_glMultiDrawElements(function_call *call, const callback_data 
         GLenum type;
         GLuint min, max;
 
-        count = *call->typed.glMultiDrawElements.arg4;
-        type = *call->typed.glMultiDrawElements.arg2;
-        count_ptr = *call->typed.glMultiDrawElements.arg1;
-        indices_ptr = *call->typed.glMultiDrawElements.arg3;
+        count = *call->glMultiDrawElements.arg4;
+        type = *call->glMultiDrawElements.arg2;
+        count_ptr = *call->glMultiDrawElements.arg1;
+        indices_ptr = *call->glMultiDrawElements.arg3;
 
         checks_error = "count array";
         checks_error_attribute = -1;
@@ -802,7 +805,7 @@ static bool checks_no_begin_end(function_call *call, const callback_data *data)
     {
         bugle_log_printf("checks", "error", BUGLE_LOG_NOTICE,
                          "%s called inside glBegin/glEnd; call will be ignored.",
-                         budgie_function_table[call->generic.id].name);
+                         budgie_function_name(call->generic.id));
         return false;
     }
     else return true;
@@ -816,7 +819,7 @@ static bool checks_begin_end(function_call *call, const callback_data *data)
     if (!bugle_in_begin_end())
     {
         /* VertexAttrib commands are ok if they are not affecting attrib 0 */
-        name = budgie_function_table[call->generic.id].name;
+        name = budgie_function_name(call->generic.id);
 #ifdef GL_ARB_vertex_program
         if (strncmp(name, "glVertexAttrib", 14) == 0)
         {
@@ -837,7 +840,7 @@ static bool checks_begin_end(function_call *call, const callback_data *data)
 
 static bool checks_glArrayElement(function_call *call, const callback_data *data)
 {
-    if (*call->typed.glArrayElement.arg0 < 0)
+    if (*call->glArrayElement.arg0 < 0)
     {
         bugle_log("checks", "error", BUGLE_LOG_NOTICE,
                   "glArrayElement called with a negative argument; call will be ignored.");
@@ -882,7 +885,7 @@ static bool checks_glMultiTexCoord(function_call *call, const callback_data *dat
     {
         bugle_log_printf("checks", "error", BUGLE_LOG_NOTICE,
                          "%s called with out of range texture unit; call will be ignored.",
-                         budgie_function_table[call->generic.id].name);
+                         budgie_function_name(call->generic.id));
         return false;
     }
     return true;
@@ -895,79 +898,79 @@ static bool checks_initialise(filter_set *handle)
 
     f = bugle_filter_register(handle, "checks");
     /* Pointer checks */
-    bugle_filter_catches(f, GROUP_glDrawArrays, false, checks_glDrawArrays);
-    bugle_filter_catches(f, GROUP_glDrawElements, false, checks_glDrawElements);
+    bugle_filter_catches(f, "glDrawArrays", false, checks_glDrawArrays);
+    bugle_filter_catches(f, "glDrawElements", false, checks_glDrawElements);
 #ifdef GL_EXT_draw_range_elements
-    bugle_filter_catches(f, GROUP_glDrawRangeElementsEXT, false, checks_glDrawRangeElements);
+    bugle_filter_catches(f, "glDrawRangeElementsEXT", false, checks_glDrawRangeElements);
 #endif
 #ifdef GL_EXT_multi_draw_arrays
-    bugle_filter_catches(f, GROUP_glMultiDrawArraysEXT, false, checks_glMultiDrawArrays);
-    bugle_filter_catches(f, GROUP_glMultiDrawElementsEXT, false, checks_glMultiDrawElements);
+    bugle_filter_catches(f, "glMultiDrawArraysEXT", false, checks_glMultiDrawArrays);
+    bugle_filter_catches(f, "glMultiDrawElementsEXT", false, checks_glMultiDrawElements);
 #endif
     /* Checks that we are outside begin/end */
-    bugle_filter_catches(f, GROUP_glEnableClientState, false, checks_no_begin_end);
-    bugle_filter_catches(f, GROUP_glDisableClientState, false, checks_no_begin_end);
-    bugle_filter_catches(f, GROUP_glPushClientAttrib, false, checks_no_begin_end);
-    bugle_filter_catches(f, GROUP_glPopClientAttrib, false, checks_no_begin_end);
-    bugle_filter_catches(f, GROUP_glColorPointer, false, checks_no_begin_end);
+    bugle_filter_catches(f, "glEnableClientState", false, checks_no_begin_end);
+    bugle_filter_catches(f, "glDisableClientState", false, checks_no_begin_end);
+    bugle_filter_catches(f, "glPushClientAttrib", false, checks_no_begin_end);
+    bugle_filter_catches(f, "glPopClientAttrib", false, checks_no_begin_end);
+    bugle_filter_catches(f, "glColorPointer", false, checks_no_begin_end);
 #ifdef GL_EXT_fog_coord
-    bugle_filter_catches(f, GROUP_glFogCoordPointerEXT, false, checks_no_begin_end);
+    bugle_filter_catches(f, "glFogCoordPointerEXT", false, checks_no_begin_end);
 #endif
-    bugle_filter_catches(f, GROUP_glEdgeFlagPointer, false, checks_no_begin_end);
-    bugle_filter_catches(f, GROUP_glIndexPointer, false, checks_no_begin_end);
-    bugle_filter_catches(f, GROUP_glNormalPointer, false, checks_no_begin_end);
-    bugle_filter_catches(f, GROUP_glTexCoordPointer, false, checks_no_begin_end);
+    bugle_filter_catches(f, "glEdgeFlagPointer", false, checks_no_begin_end);
+    bugle_filter_catches(f, "glIndexPointer", false, checks_no_begin_end);
+    bugle_filter_catches(f, "glNormalPointer", false, checks_no_begin_end);
+    bugle_filter_catches(f, "glTexCoordPointer", false, checks_no_begin_end);
 #ifdef GL_EXT_secondary_color
-    bugle_filter_catches(f, GROUP_glSecondaryColorPointerEXT, false, checks_no_begin_end);
+    bugle_filter_catches(f, "glSecondaryColorPointerEXT", false, checks_no_begin_end);
 #endif
-    bugle_filter_catches(f, GROUP_glVertexPointer, false, checks_no_begin_end);
+    bugle_filter_catches(f, "glVertexPointer", false, checks_no_begin_end);
 #ifdef GL_ARB_vertex_program
-    bugle_filter_catches(f, GROUP_glVertexAttribPointerARB, false, checks_no_begin_end);
+    bugle_filter_catches(f, "glVertexAttribPointerARB", false, checks_no_begin_end);
 #endif
 #ifdef GL_ARB_multitexture
-    bugle_filter_catches(f, GROUP_glClientActiveTextureARB, false, checks_no_begin_end);
+    bugle_filter_catches(f, "glClientActiveTextureARB", false, checks_no_begin_end);
 #endif
-    bugle_filter_catches(f, GROUP_glInterleavedArrays, false, checks_no_begin_end);
-    bugle_filter_catches(f, GROUP_glPixelStorei, false, checks_no_begin_end);
-    bugle_filter_catches(f, GROUP_glPixelStoref, false, checks_no_begin_end);
+    bugle_filter_catches(f, "glInterleavedArrays", false, checks_no_begin_end);
+    bugle_filter_catches(f, "glPixelStorei", false, checks_no_begin_end);
+    bugle_filter_catches(f, "glPixelStoref", false, checks_no_begin_end);
     /* Checks that we are inside begin/end */
     bugle_filter_catches_drawing_immediate(f, false, checks_begin_end);
     /* This call has undefined behaviour if given a negative argument */
-    bugle_filter_catches(f, GROUP_glArrayElement, false, checks_glArrayElement);
+    bugle_filter_catches(f, "glArrayElement", false, checks_glArrayElement);
     /* Other */
 #ifdef GL_ARB_multitexture
-    bugle_filter_catches(f, GROUP_glMultiTexCoord1s, false, checks_glMultiTexCoord);
-    bugle_filter_catches(f, GROUP_glMultiTexCoord1i, false, checks_glMultiTexCoord);
-    bugle_filter_catches(f, GROUP_glMultiTexCoord1f, false, checks_glMultiTexCoord);
-    bugle_filter_catches(f, GROUP_glMultiTexCoord1d, false, checks_glMultiTexCoord);
-    bugle_filter_catches(f, GROUP_glMultiTexCoord2s, false, checks_glMultiTexCoord);
-    bugle_filter_catches(f, GROUP_glMultiTexCoord2i, false, checks_glMultiTexCoord);
-    bugle_filter_catches(f, GROUP_glMultiTexCoord2f, false, checks_glMultiTexCoord);
-    bugle_filter_catches(f, GROUP_glMultiTexCoord2d, false, checks_glMultiTexCoord);
-    bugle_filter_catches(f, GROUP_glMultiTexCoord3s, false, checks_glMultiTexCoord);
-    bugle_filter_catches(f, GROUP_glMultiTexCoord3i, false, checks_glMultiTexCoord);
-    bugle_filter_catches(f, GROUP_glMultiTexCoord3f, false, checks_glMultiTexCoord);
-    bugle_filter_catches(f, GROUP_glMultiTexCoord3d, false, checks_glMultiTexCoord);
-    bugle_filter_catches(f, GROUP_glMultiTexCoord4s, false, checks_glMultiTexCoord);
-    bugle_filter_catches(f, GROUP_glMultiTexCoord4i, false, checks_glMultiTexCoord);
-    bugle_filter_catches(f, GROUP_glMultiTexCoord4f, false, checks_glMultiTexCoord);
-    bugle_filter_catches(f, GROUP_glMultiTexCoord4d, false, checks_glMultiTexCoord);
-    bugle_filter_catches(f, GROUP_glMultiTexCoord1sv, false, checks_glMultiTexCoord);
-    bugle_filter_catches(f, GROUP_glMultiTexCoord1iv, false, checks_glMultiTexCoord);
-    bugle_filter_catches(f, GROUP_glMultiTexCoord1fv, false, checks_glMultiTexCoord);
-    bugle_filter_catches(f, GROUP_glMultiTexCoord1dv, false, checks_glMultiTexCoord);
-    bugle_filter_catches(f, GROUP_glMultiTexCoord2sv, false, checks_glMultiTexCoord);
-    bugle_filter_catches(f, GROUP_glMultiTexCoord2iv, false, checks_glMultiTexCoord);
-    bugle_filter_catches(f, GROUP_glMultiTexCoord2fv, false, checks_glMultiTexCoord);
-    bugle_filter_catches(f, GROUP_glMultiTexCoord2dv, false, checks_glMultiTexCoord);
-    bugle_filter_catches(f, GROUP_glMultiTexCoord3sv, false, checks_glMultiTexCoord);
-    bugle_filter_catches(f, GROUP_glMultiTexCoord3iv, false, checks_glMultiTexCoord);
-    bugle_filter_catches(f, GROUP_glMultiTexCoord3fv, false, checks_glMultiTexCoord);
-    bugle_filter_catches(f, GROUP_glMultiTexCoord3dv, false, checks_glMultiTexCoord);
-    bugle_filter_catches(f, GROUP_glMultiTexCoord4sv, false, checks_glMultiTexCoord);
-    bugle_filter_catches(f, GROUP_glMultiTexCoord4iv, false, checks_glMultiTexCoord);
-    bugle_filter_catches(f, GROUP_glMultiTexCoord4fv, false, checks_glMultiTexCoord);
-    bugle_filter_catches(f, GROUP_glMultiTexCoord4dv, false, checks_glMultiTexCoord);
+    bugle_filter_catches(f, "glMultiTexCoord1s", false, checks_glMultiTexCoord);
+    bugle_filter_catches(f, "glMultiTexCoord1i", false, checks_glMultiTexCoord);
+    bugle_filter_catches(f, "glMultiTexCoord1f", false, checks_glMultiTexCoord);
+    bugle_filter_catches(f, "glMultiTexCoord1d", false, checks_glMultiTexCoord);
+    bugle_filter_catches(f, "glMultiTexCoord2s", false, checks_glMultiTexCoord);
+    bugle_filter_catches(f, "glMultiTexCoord2i", false, checks_glMultiTexCoord);
+    bugle_filter_catches(f, "glMultiTexCoord2f", false, checks_glMultiTexCoord);
+    bugle_filter_catches(f, "glMultiTexCoord2d", false, checks_glMultiTexCoord);
+    bugle_filter_catches(f, "glMultiTexCoord3s", false, checks_glMultiTexCoord);
+    bugle_filter_catches(f, "glMultiTexCoord3i", false, checks_glMultiTexCoord);
+    bugle_filter_catches(f, "glMultiTexCoord3f", false, checks_glMultiTexCoord);
+    bugle_filter_catches(f, "glMultiTexCoord3d", false, checks_glMultiTexCoord);
+    bugle_filter_catches(f, "glMultiTexCoord4s", false, checks_glMultiTexCoord);
+    bugle_filter_catches(f, "glMultiTexCoord4i", false, checks_glMultiTexCoord);
+    bugle_filter_catches(f, "glMultiTexCoord4f", false, checks_glMultiTexCoord);
+    bugle_filter_catches(f, "glMultiTexCoord4d", false, checks_glMultiTexCoord);
+    bugle_filter_catches(f, "glMultiTexCoord1sv", false, checks_glMultiTexCoord);
+    bugle_filter_catches(f, "glMultiTexCoord1iv", false, checks_glMultiTexCoord);
+    bugle_filter_catches(f, "glMultiTexCoord1fv", false, checks_glMultiTexCoord);
+    bugle_filter_catches(f, "glMultiTexCoord1dv", false, checks_glMultiTexCoord);
+    bugle_filter_catches(f, "glMultiTexCoord2sv", false, checks_glMultiTexCoord);
+    bugle_filter_catches(f, "glMultiTexCoord2iv", false, checks_glMultiTexCoord);
+    bugle_filter_catches(f, "glMultiTexCoord2fv", false, checks_glMultiTexCoord);
+    bugle_filter_catches(f, "glMultiTexCoord2dv", false, checks_glMultiTexCoord);
+    bugle_filter_catches(f, "glMultiTexCoord3sv", false, checks_glMultiTexCoord);
+    bugle_filter_catches(f, "glMultiTexCoord3iv", false, checks_glMultiTexCoord);
+    bugle_filter_catches(f, "glMultiTexCoord3fv", false, checks_glMultiTexCoord);
+    bugle_filter_catches(f, "glMultiTexCoord3dv", false, checks_glMultiTexCoord);
+    bugle_filter_catches(f, "glMultiTexCoord4sv", false, checks_glMultiTexCoord);
+    bugle_filter_catches(f, "glMultiTexCoord4iv", false, checks_glMultiTexCoord);
+    bugle_filter_catches(f, "glMultiTexCoord4fv", false, checks_glMultiTexCoord);
+    bugle_filter_catches(f, "glMultiTexCoord4dv", false, checks_glMultiTexCoord);
 #endif
 
     /* FIXME: still perhaps to do:

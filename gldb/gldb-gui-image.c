@@ -42,7 +42,6 @@
 #include <stdio.h>
 #include <math.h>
 #include <stdbool.h>
-#include "src/names.h"
 #include "gldb/gldb-common.h"
 #include "gldb/gldb-channels.h"
 #include "gldb/gldb-gui-image.h"

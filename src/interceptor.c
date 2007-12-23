@@ -29,10 +29,11 @@
 #include <bugle/stats.h>
 #include <bugle/hashtable.h>
 #include <bugle/threads.h>
+#include <budgie/call.h>
+#include <budgie/reflect.h>
+#include <budgie/addresses.h>
 #include "conffile.h"
 #include "dlopen.h"
-#include "src/lib.h"
-#include "src/utils.h"
 #include "src/glfuncs.h"
 #include "xalloc.h"
 
@@ -190,22 +191,22 @@ static void initialise_core_filters(void)
  * direct dynamic linking, but everything else should be accessed by
  * glXGetProcAddressARB. We deal with that here.
  */
-static void initialise_addresses(void)
+static void initialise_addresses_glx(void)
 {
     size_t i;
 
-    for (i = 0; i < NUMBER_OF_FUNCTIONS; i++)
+    for (i = 0; i < budgie_function_count(); i++)
         if (!bugle_gl_function_table[i].version
             || strcmp(bugle_gl_function_table[i].version, "GL_VERSION_1_2") > 0)
-            budgie_function_table[i].real = CALL_glXGetProcAddressARB((const GLubyte *) budgie_function_table[i].name);
+            budgie_function_address_set_real(i, CALL_glXGetProcAddressARB((const GLubyte *) budgie_function_name(i)));
 }
 
 BUGLE_CONSTRUCTOR(initialise_all);
 
 static void initialise_all(void)
 {
-    initialise_real();
-    initialise_addresses();
+    budgie_function_address_initialise();
+    initialise_addresses_glx();
     xevent_initialise();
     filters_initialise();
     initialise_core_filters();

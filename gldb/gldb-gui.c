@@ -35,7 +35,6 @@
 #include <bugle/linkedlist.h>
 #include <bugle/hashtable.h>
 #include "common/protocol.h"
-#include "src/names.h"
 #include "gldb/gldb-common.h"
 #include "gldb/gldb-channels.h"
 #include "gldb/gldb-gui-target.h"

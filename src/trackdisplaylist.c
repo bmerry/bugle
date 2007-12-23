@@ -18,15 +18,16 @@
 #if HAVE_CONFIG_H
 # include <config.h>
 #endif
+#include <stdbool.h>
+#include <stddef.h>
+#include <GL/gl.h>
+#include <string.h>
 #include <bugle/filters.h>
-#include "src/utils.h"
 #include <bugle/objects.h>
 #include <bugle/tracker.h>
 #include <bugle/glutils.h>
 #include <bugle/hashtable.h>
-#include <stdbool.h>
-#include <stddef.h>
-#include <GL/gl.h>
+#include <budgie/call.h>
 #include "lock.h"
 
 object_class bugle_displaylist_class;
@@ -133,8 +134,8 @@ static bool trackdisplaylist_filter_set_initialise(filter_set *handle)
 
     f = bugle_filter_register(handle, "trackdisplaylist");
     bugle_filter_order("invoke", "trackdisplaylist");
-    bugle_filter_catches(f, GROUP_glNewList, true, trackdisplaylist_glNewList);
-    bugle_filter_catches(f, GROUP_glEndList, true, trackdisplaylist_glEndList);
+    bugle_filter_catches(f, "glNewList", true, trackdisplaylist_glNewList);
+    bugle_filter_catches(f, "glEndList", true, trackdisplaylist_glEndList);
 
     displaylist_view = bugle_object_view_register(&bugle_displaylist_class,
                                                    displaylist_struct_init,

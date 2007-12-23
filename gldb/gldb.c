@@ -42,7 +42,7 @@
 #endif
 #include <bugle/misc.h>
 #include <bugle/hashtable.h>
-#include "src/names.h"
+#include <budgie/reflect.h>
 #include "src/glfuncs.h"
 #include "common/protocol.h"
 #include "gldb/gldb-common.h"
@@ -792,9 +792,9 @@ static char *generate_functions(const char *text, int state)
         len = strlen(text);
         i = 0;
     }
-    for (; i < NUMBER_OF_FUNCTIONS; i++)
-        if (strncmp(budgie_function_names[i], text, len) == 0)
-            return xstrdup(budgie_function_names[i++]);
+    for (; i < budgie_function_count(); i++)
+        if (strncmp(budgie_function_name(i), text, len) == 0)
+            return xstrdup(budgie_function_name(i++));
     return NULL;
 }
 

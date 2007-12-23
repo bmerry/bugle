@@ -26,10 +26,11 @@
 #include <stdbool.h>
 #include <bugle/filters.h>
 #include <bugle/tracker.h>
-#include "src/utils.h"
 #include <bugle/glutils.h>
-#include "src/glexts.h"
 #include <bugle/hashtable.h>
+#include <budgie/types.h>
+#include <budgie/call.h>
+#include "src/glexts.h"
 #include "xalloc.h"
 #include "lock.h"
 
@@ -75,7 +76,7 @@ static inline void unlock(void)
 static void trackobjects_add_single(bugle_trackobjects_type type,
                                     GLenum target,
                                     GLuint object,
-                                    budgie_function is)
+                                    GLboolean (*is)(GLuint))
 {
     hashptr_table *table;
 
@@ -83,7 +84,7 @@ static void trackobjects_add_single(bugle_trackobjects_type type,
     table = get_table(type);
     if (table && bugle_begin_internal_render())
     {
-        if (is == -1 || (*(GLboolean (*)(GLuint)) budgie_function_table[is].real)(object))
+        if (is == NULL || is(object))
             bugle_hashptr_set_int(table, object, (void *) (size_t) target);
         bugle_end_internal_render("trackobjects_add_single", true);
     }
@@ -108,7 +109,7 @@ static void trackobjects_delete_single(bugle_trackobjects_type type,
 static void trackobjects_delete_multiple(bugle_trackobjects_type type,
                                          GLsizei count,
                                          const GLuint *objects,
-                                         budgie_function is)
+                                         GLboolean (*is)(GLuint))
 {
     GLsizei i;
     hashptr_table *table;
@@ -118,7 +119,7 @@ static void trackobjects_delete_multiple(bugle_trackobjects_type type,
     if (table && bugle_begin_internal_render())
     {
         for (i = 0; i < count; i++)
-            if (is == -1 || !(*(GLboolean (*)(GLuint)) budgie_function_table[is].real)(objects[i]))
+            if (is == NULL || !is(objects[i]))
                 bugle_hashptr_set_int(table, objects[i], NULL);
         bugle_end_internal_render("trackobjects_delete_multiple", true);
     }
@@ -128,18 +129,18 @@ static void trackobjects_delete_multiple(bugle_trackobjects_type type,
 static bool trackobjects_glBindTexture(function_call *call, const callback_data *data)
 {
     trackobjects_add_single(BUGLE_TRACKOBJECTS_TEXTURE,
-                            *call->typed.glBindTexture.arg0,
-                            *call->typed.glBindTexture.arg1,
-                            FUNC_glIsTexture);
+                            *call->glBindTexture.arg0,
+                            *call->glBindTexture.arg1,
+                            budgie_CALL_glIsTexture);
     return true;
 }
 
 static bool trackobjects_glDeleteTextures(function_call *call, const callback_data *data)
 {
     trackobjects_delete_multiple(BUGLE_TRACKOBJECTS_TEXTURE,
-                                 *call->typed.glDeleteTextures.arg0,
-                                 *call->typed.glDeleteTextures.arg1,
-                                 FUNC_glIsTexture);
+                                 *call->glDeleteTextures.arg0,
+                                 *call->glDeleteTextures.arg1,
+                                 budgie_CALL_glIsTexture);
     return true;
 }
 
@@ -147,18 +148,18 @@ static bool trackobjects_glDeleteTextures(function_call *call, const callback_da
 static bool trackobjects_glBindBuffer(function_call *call, const callback_data *data)
 {
     trackobjects_add_single(BUGLE_TRACKOBJECTS_BUFFER,
-                            *call->typed.glBindBufferARB.arg0,
-                            *call->typed.glBindBufferARB.arg1,
-                            FUNC_glIsBufferARB);
+                            *call->glBindBufferARB.arg0,
+                            *call->glBindBufferARB.arg1,
+                            budgie_CALL_glIsBufferARB);
     return true;
 }
 
 static bool trackobjects_glDeleteBuffers(function_call *call, const callback_data *data)
 {
     trackobjects_delete_multiple(BUGLE_TRACKOBJECTS_BUFFER,
-                                 *call->typed.glDeleteBuffersARB.arg0,
-                                 *call->typed.glDeleteBuffersARB.arg1,
-                                 FUNC_glIsBufferARB);
+                                 *call->glDeleteBuffersARB.arg0,
+                                 *call->glDeleteBuffersARB.arg1,
+                                 budgie_CALL_glIsBufferARB);
     return true;
 }
 #endif
@@ -167,18 +168,18 @@ static bool trackobjects_glDeleteBuffers(function_call *call, const callback_dat
 static bool trackobjects_glBeginQuery(function_call *call, const callback_data *data)
 {
     trackobjects_add_single(BUGLE_TRACKOBJECTS_QUERY,
-                            *call->typed.glBeginQueryARB.arg0,
-                            *call->typed.glBeginQueryARB.arg1,
-                            FUNC_glIsQueryARB);
+                            *call->glBeginQueryARB.arg0,
+                            *call->glBeginQueryARB.arg1,
+                            budgie_CALL_glIsQueryARB);
     return true;
 }
 
 static bool trackobjects_glDeleteQueries(function_call *call, const callback_data *data)
 {
     trackobjects_delete_multiple(BUGLE_TRACKOBJECTS_QUERY,
-                                 *call->typed.glDeleteQueriesARB.arg0,
-                                 *call->typed.glDeleteQueriesARB.arg1,
-                                 FUNC_glIsQueryARB);
+                                 *call->glDeleteQueriesARB.arg0,
+                                 *call->glDeleteQueriesARB.arg1,
+                                 budgie_CALL_glIsQueryARB);
     return true;
 }
 #endif
@@ -191,20 +192,20 @@ static bool trackobjects_glBindProgramARB(function_call *call, const callback_da
      * by blindly assuming that the bind succeeded, unless it is a bind
      * to object 0.
      */
-    if (*call->typed.glBindProgramARB.arg1 != 0)
+    if (*call->glBindProgramARB.arg1 != 0)
         trackobjects_add_single(BUGLE_TRACKOBJECTS_OLD_PROGRAM,
-                                *call->typed.glBindProgramARB.arg0,
-                                *call->typed.glBindProgramARB.arg1,
-                                -1);
+                                *call->glBindProgramARB.arg0,
+                                *call->glBindProgramARB.arg1,
+                                NULL);
     return true;
 }
 
 static bool trackobjects_glDeleteProgramsARB(function_call *call, const callback_data *data)
 {
     trackobjects_delete_multiple(BUGLE_TRACKOBJECTS_OLD_PROGRAM,
-                                 *call->typed.glDeleteProgramsARB.arg0,
-                                 *call->typed.glDeleteProgramsARB.arg1,
-                                 FUNC_glIsProgramARB);
+                                 *call->glDeleteProgramsARB.arg0,
+                                 *call->glDeleteProgramsARB.arg1,
+                                 budgie_CALL_glIsProgramARB);
     return true;
 }
 #endif
@@ -243,9 +244,9 @@ static void add_check(object *call_object,
 static bool trackobjects_glCreateShaderObjectARB(function_call *call, const callback_data *data)
 {
     trackobjects_add_single(BUGLE_TRACKOBJECTS_SHADER,
-                            *call->typed.glCreateShaderObjectARB.arg0,
-                            *call->typed.glCreateShaderObjectARB.retn,
-                            NULL_FUNCTION);
+                            *call->glCreateShaderObjectARB.arg0,
+                            *call->glCreateShaderObjectARB.retn,
+                            NULL);
     return true;
 }
 
@@ -253,8 +254,8 @@ static bool trackobjects_glCreateProgramObjectARB(function_call *call, const cal
 {
     trackobjects_add_single(BUGLE_TRACKOBJECTS_PROGRAM,
                             GL_PROGRAM_OBJECT_ARB,
-                            *call->typed.glCreateProgramObjectARB.retn,
-                            NULL_FUNCTION);
+                            *call->glCreateProgramObjectARB.retn,
+                            NULL);
     return true;
 }
 
@@ -266,7 +267,7 @@ static bool trackobjects_pre_glDeleteObjectARB(function_call *call, const callba
 
     if (bugle_begin_internal_render())
     {
-        object = *call->typed.glDeleteObjectARB.arg0;
+        object = *call->glDeleteObjectARB.arg0;
         CALL_glGetObjectParameterivARB(object, GL_OBJECT_TYPE_ARB, &type);
         switch (type)
         {
@@ -318,7 +319,7 @@ static bool trackobjects_pre_glUseProgramObjectARB(function_call *call, const ca
 static bool trackobjects_pre_glDetachObjectARB(function_call *call, const callback_data *data)
 {
     add_check(data->call_object, BUGLE_TRACKOBJECTS_SHADER,
-              *call->typed.glDetachObjectARB.arg1);
+              *call->glDetachObjectARB.arg1);
     return true;
 }
 
@@ -327,7 +328,7 @@ static bool trackobjects_pre_glDetachObjectARB(function_call *call, const callba
 #ifdef GL_VERSION_2_0
 static bool trackobjects_pre_glDeleteShader(function_call *call, const callback_data *data)
 {
-    add_check(data->call_object, BUGLE_TRACKOBJECTS_SHADER, *call->typed.glDeleteShader.arg0);
+    add_check(data->call_object, BUGLE_TRACKOBJECTS_SHADER, *call->glDeleteShader.arg0);
     return true;
 }
 
@@ -337,7 +338,7 @@ static bool trackobjects_pre_glDeleteProgram(function_call *call, const callback
     GLuint *attached;
     GLuint object;
 
-    object = *call->typed.glDeleteProgram.arg0;
+    object = *call->glDeleteProgram.arg0;
     if (bugle_begin_internal_render())
     {
         CALL_glGetProgramiv(object, GL_ATTACHED_SHADERS, &count);
@@ -361,36 +362,36 @@ static bool trackobjects_pre_glDeleteProgram(function_call *call, const callback
 static bool trackobjects_glBindFramebuffer(function_call *call, const callback_data *data)
 {
     trackobjects_add_single(BUGLE_TRACKOBJECTS_FRAMEBUFFER,
-                            *call->typed.glBindFramebufferEXT.arg0,
-                            *call->typed.glBindFramebufferEXT.arg1,
-                            FUNC_glIsFramebufferEXT);
+                            *call->glBindFramebufferEXT.arg0,
+                            *call->glBindFramebufferEXT.arg1,
+                            budgie_CALL_glIsFramebufferEXT);
     return true;
 }
 
 static bool trackobjects_glDeleteFramebuffers(function_call *call, const callback_data *data)
 {
     trackobjects_delete_multiple(BUGLE_TRACKOBJECTS_FRAMEBUFFER,
-                                 *call->typed.glDeleteFramebuffersEXT.arg0,
-                                 *call->typed.glDeleteFramebuffersEXT.arg1,
-                                 FUNC_glIsFramebufferEXT);
+                                 *call->glDeleteFramebuffersEXT.arg0,
+                                 *call->glDeleteFramebuffersEXT.arg1,
+                                 budgie_CALL_glIsFramebufferEXT);
     return true;
 }
 
 static bool trackobjects_glBindRenderbuffer(function_call *call, const callback_data *data)
 {
     trackobjects_add_single(BUGLE_TRACKOBJECTS_RENDERBUFFER,
-                            *call->typed.glBindRenderbufferEXT.arg0,
-                            *call->typed.glBindRenderbufferEXT.arg1,
-                            FUNC_glIsRenderbufferEXT);
+                            *call->glBindRenderbufferEXT.arg0,
+                            *call->glBindRenderbufferEXT.arg1,
+                            budgie_CALL_glIsRenderbufferEXT);
     return true;
 }
 
 static bool trackobjects_glDeleteRenderbuffers(function_call *call, const callback_data *data)
 {
     trackobjects_delete_multiple(BUGLE_TRACKOBJECTS_RENDERBUFFER,
-                                 *call->typed.glDeleteRenderbuffersEXT.arg0,
-                                 *call->typed.glDeleteRenderbuffersEXT.arg1,
-                                 FUNC_glIsRenderbufferEXT);
+                                 *call->glDeleteRenderbuffersEXT.arg0,
+                                 *call->glDeleteRenderbuffersEXT.arg1,
+                                 budgie_CALL_glIsRenderbufferEXT);
     return true;
 }
 #endif /* GL_EXT_framebuffer_object */
@@ -455,46 +456,46 @@ static bool trackobjects_filter_set_initialise(filter_set *handle)
 
     f = bugle_filter_register(handle, "trackobjects_pre");
 #ifdef GL_ARB_shader_objects
-    bugle_filter_catches(f, GROUP_glDeleteObjectARB, true, trackobjects_pre_glDeleteObjectARB);
-    bugle_filter_catches(f, GROUP_glUseProgramObjectARB, true, trackobjects_pre_glUseProgramObjectARB);
-    bugle_filter_catches(f, GROUP_glDetachObjectARB, true, trackobjects_pre_glDetachObjectARB);
+    bugle_filter_catches(f, "glDeleteObjectARB", true, trackobjects_pre_glDeleteObjectARB);
+    bugle_filter_catches(f, "glUseProgramObjectARB", true, trackobjects_pre_glUseProgramObjectARB);
+    bugle_filter_catches(f, "glDetachObjectARB", true, trackobjects_pre_glDetachObjectARB);
 #endif
 #ifdef GL_VERSION_2_0
-    bugle_filter_catches(f, GROUP_glDeleteShader, true, trackobjects_pre_glDeleteShader);
-    bugle_filter_catches(f, GROUP_glDeleteProgram, true, trackobjects_pre_glDeleteProgram);
+    bugle_filter_catches(f, "glDeleteShader", true, trackobjects_pre_glDeleteShader);
+    bugle_filter_catches(f, "glDeleteProgram", true, trackobjects_pre_glDeleteProgram);
 #endif
 
     f = bugle_filter_register(handle, "trackobjects");
-    bugle_filter_catches(f, GROUP_glBindTexture, true, trackobjects_glBindTexture);
-    bugle_filter_catches(f, GROUP_glDeleteTextures, true, trackobjects_glDeleteTextures);
+    bugle_filter_catches(f, "glBindTexture", true, trackobjects_glBindTexture);
+    bugle_filter_catches(f, "glDeleteTextures", true, trackobjects_glDeleteTextures);
 #ifdef GL_ARB_vertex_buffer_object
-    bugle_filter_catches(f, GROUP_glBindBufferARB, true, trackobjects_glBindBuffer);
-    bugle_filter_catches(f, GROUP_glDeleteBuffersARB, true, trackobjects_glDeleteBuffers);
+    bugle_filter_catches(f, "glBindBufferARB", true, trackobjects_glBindBuffer);
+    bugle_filter_catches(f, "glDeleteBuffersARB", true, trackobjects_glDeleteBuffers);
 #endif
 #ifdef GL_ARB_occlusion_query
-    bugle_filter_catches(f, GROUP_glBeginQueryARB, true, trackobjects_glBeginQuery);
-    bugle_filter_catches(f, GROUP_glDeleteQueriesARB, true, trackobjects_glDeleteQueries);
+    bugle_filter_catches(f, "glBeginQueryARB", true, trackobjects_glBeginQuery);
+    bugle_filter_catches(f, "glDeleteQueriesARB", true, trackobjects_glDeleteQueries);
 #endif
 #if defined(GL_ARB_vertex_program) || defined(GL_ARB_fragment_program)
-    bugle_filter_catches(f, GROUP_glBindProgramARB, true, trackobjects_glBindProgramARB);
-    bugle_filter_catches(f, GROUP_glDeleteProgramsARB, true, trackobjects_glDeleteProgramsARB);
+    bugle_filter_catches(f, "glBindProgramARB", true, trackobjects_glBindProgramARB);
+    bugle_filter_catches(f, "glDeleteProgramsARB", true, trackobjects_glDeleteProgramsARB);
 #endif
 #ifdef GL_ARB_shader_objects
-    bugle_filter_catches(f, GROUP_glCreateShaderObjectARB, true, trackobjects_glCreateShaderObjectARB);
-    bugle_filter_catches(f, GROUP_glCreateProgramObjectARB, true, trackobjects_glCreateProgramObjectARB);
-    bugle_filter_catches(f, GROUP_glDeleteObjectARB, true, trackobjects_checks);
-    bugle_filter_catches(f, GROUP_glUseProgramObjectARB, true, trackobjects_checks);
-    bugle_filter_catches(f, GROUP_glDetachObjectARB, true, trackobjects_checks);
+    bugle_filter_catches(f, "glCreateShaderObjectARB", true, trackobjects_glCreateShaderObjectARB);
+    bugle_filter_catches(f, "glCreateProgramObjectARB", true, trackobjects_glCreateProgramObjectARB);
+    bugle_filter_catches(f, "glDeleteObjectARB", true, trackobjects_checks);
+    bugle_filter_catches(f, "glUseProgramObjectARB", true, trackobjects_checks);
+    bugle_filter_catches(f, "glDetachObjectARB", true, trackobjects_checks);
 #endif
 #ifdef GL_VERSION_2_0
-    bugle_filter_catches(f, GROUP_glDeleteShader, true, trackobjects_checks);
-    bugle_filter_catches(f, GROUP_glDeleteProgram, true, trackobjects_checks);
+    bugle_filter_catches(f, "glDeleteShader", true, trackobjects_checks);
+    bugle_filter_catches(f, "glDeleteProgram", true, trackobjects_checks);
 #endif
 #ifdef GL_EXT_framebuffer_object
-    bugle_filter_catches(f, GROUP_glBindRenderbufferEXT, true, trackobjects_glBindRenderbuffer);
-    bugle_filter_catches(f, GROUP_glDeleteRenderbuffersEXT, true, trackobjects_glDeleteRenderbuffers);
-    bugle_filter_catches(f, GROUP_glBindFramebufferEXT, true, trackobjects_glBindFramebuffer);
-    bugle_filter_catches(f, GROUP_glDeleteFramebuffersEXT, true, trackobjects_glDeleteFramebuffers);
+    bugle_filter_catches(f, "glBindRenderbufferEXT", true, trackobjects_glBindRenderbuffer);
+    bugle_filter_catches(f, "glDeleteRenderbuffersEXT", true, trackobjects_glDeleteRenderbuffers);
+    bugle_filter_catches(f, "glBindFramebufferEXT", true, trackobjects_glBindFramebuffer);
+    bugle_filter_catches(f, "glDeleteFramebuffersEXT", true, trackobjects_glDeleteFramebuffers);
 #endif
     bugle_filter_order("invoke", "trackobjects");
     bugle_filter_order("trackobjects_pre", "invoke");

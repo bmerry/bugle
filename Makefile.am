@@ -30,7 +30,7 @@ pkglib_LTLIBRARIES = \
 	filters/logstats.la \
 	filters/showstats.la
 
-AM_CPPFLAGS = -I$(srcdir)/lib -Ilib -I$(srcdir)/include -I$(srcdir)/budgielib $(LTDLINCL) -DLIBDIR=\"$(libdir)\" -DPKGLIBDIR=\"$(pkglibdir)\" $(X_CFLAGS)
+AM_CPPFLAGS = -I$(srcdir)/lib -Ilib -I$(srcdir)/include -Iinclude $(LTDLINCL) -DLIBDIR=\"$(libdir)\" -DPKGLIBDIR=\"$(pkglibdir)\" $(X_CFLAGS)
 AM_YFLAGS = -d
 
 gldb_gldb_SOURCES = gldb/gldb.c gldb/gldb-common.c gldb/gldb-common.h
@@ -76,10 +76,10 @@ src_libbugleutils_la_SOURCES = \
 	common/hashtable.c include/bugle/hashtable.h \
 	common/linkedlist.c include/bugle/linkedlist.h \
 	include/bugle/threads.h \
-	budgielib/typeutils.c include/budgie/typeutils.h \
-	budgielib/ioutils.c include/budgie/ioutils.h
+	include/budgie/types.h include/budgie/reflect.h \
+	budgielib/internal.c budgielib/internal.h budgielib/reflect.c
 nodist_src_libbugleutils_la_SOURCES = \
-	src/names.c src/names.h src/types.c src/types.h \
+	include/budgie/types2.h budgielib/defines.h budgielib/tables.c \
 	src/gltokens.c src/glfuncs.c src/glfuncs.h \
 	src/glexts.c src/glexts.h
 src_libbugleutils_la_LIBADD = $(LTLIBOBJS) $(LTLIBTHREAD) $(LTLIBINTL) lib/libgnu.la
@@ -100,13 +100,17 @@ src_libbugle_la_SOURCES = \
 	src/log.c include/bugle/log.h \
 	src/objects.c include/bugle/objects.h \
 	src/xevent.c include/bugle/xevent.h \
-	budgielib/budgieutils.c include/budgie/budgieutils.h
+	budgielib/addresses.c include/budgie/addresses.h \
+	budgielib/lib.h
 nodist_src_libbugle_la_SOURCES = \
-	src/utils.c src/utils.h src/lib.c src/lib.h
+	budgielib/lib.c include/budgie/call.h
 src_libbugle_la_LIBADD = $(LIBLTDL) src/libbugleutils.la -lm -lGL $(X_PRE_LIBS) $(X_LIBS) -lX11 $(X_EXTRA_LIBS) $(LTLIBTHREAD) $(LTLIBINTL) lib/libgnu.la
 src_libbugle_la_LDFLAGS = -thread-safe -export-dynamic $(SYMBOLFLAGS) -version-info 4:0:0
 
-BUILT_SOURCES += src/lib.h src/types.h src/utils.h src/names.h src/confparse.h
+BUDGIE_BUILT_SRCS = \
+        budgielib/lib.c budgielib/tables.c \
+        include/budgie/call.h include/budgie/types2.h budgielib/defines.h
+BUILT_SOURCES += $(BUDGIE_BUILT_SRCS)
 
 # Generated files that generate other files
 
@@ -131,18 +135,18 @@ BCFILES = bc/core1_1.bc bc/glsl1_20.bc bc/glx.bc \
 	bc/GLX_ARB_get_proc_address.bc bc/GLX_SGI_make_current_read.bc \
 	bc/GLX_SGIX_fbconfig.bc bc/GLX_SGIX_pbuffer.bc
 
-src/names.c src/names.h src/types.c src/types.h src/utils.c src/utils.h src/lib.c src/lib.h: budgie/budgie src/data/gl.tu gl.bc bc/alias.bc $(BCFILES)
-	$(mkdir_p) src
-	budgie/budgie -t `test -f src/data/gl.tu || echo '$(srcdir)/'`src/data/gl.tu -T src/types -o src/utils -n src/names -l src/lib gl.bc
+$(BUDGIE_BUILT_SRCS): budgie/budgie src/data/gl.tu gl.bc bc/alias.bc $(BCFILES)
+	$(mkdir_p) include/budgie
+	budgie/budgie -T `test -f src/data/gl.tu || echo '$(srcdir)/'`src/data/gl.tu gl.bc
 
 BUILT_SOURCES += src/glfuncs.h src/glexts.h
 
 src/gltokens.c: gentokens/gentokens.perl
 	$(PERL) -w $(srcdir)/gentokens/gentokens.perl $(GLINCLUDES) > $@
-src/glfuncs.h: gentokens/genfunctions.perl src/utils.h
-	$(PERL) -w $(srcdir)/gentokens/genfunctions.perl --out-header --header src/utils.h $(GLINCLUDES) > $@
-src/glfuncs.c: gentokens/genfunctions.perl src/utils.h
-	$(PERL) -w $(srcdir)/gentokens/genfunctions.perl --header src/utils.h $(GLINCLUDES) > $@
+src/glfuncs.h: gentokens/genfunctions.perl $(BUDGIE_BUILT_SRCS)
+	$(PERL) -w $(srcdir)/gentokens/genfunctions.perl --out-header --header budgielib/defines.h $(GLINCLUDES) > $@
+src/glfuncs.c: gentokens/genfunctions.perl $(BUDGIE_BUILT_SRCS)
+	$(PERL) -w $(srcdir)/gentokens/genfunctions.perl --header budgielib/defines.h $(GLINCLUDES) > $@
 src/glexts.h: gentokens/genexts.perl
 	$(PERL) -w $(srcdir)/gentokens/genexts.perl --out-header $(GLINCLUDES) > $@
 src/glexts.c: gentokens/genexts.perl
@@ -265,8 +269,7 @@ EXTRA_DIST = gl.bc.in $(BCFILES) src/data/gl.c src/data/overrides.h \
 # Note: automake ought to clean the various files in the .libs directories,
 # but for some reason does not.
 CLEANFILES = \
-	src/names.c src/names.h src/utils.c src/utils.h src/lib.c src/lib.h \
-	src/types.c src/types.h \
+	$(BUDGIE_BUILT_SRCS) \
 	src/gltokens.c src/glfuncs.c src/glfuncs.h src/glexts.c src/glexts.h \
 	src/data/gl.tu bc/alias.bc \
 	doc/gldb.1.gz doc/bugle.3.gz \

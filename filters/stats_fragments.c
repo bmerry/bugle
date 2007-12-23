@@ -27,7 +27,7 @@
 #include <bugle/tracker.h>
 #include <bugle/log.h>
 #include <bugle/glutils.h>
-#include "src/utils.h"
+#include <budgie/call.h>
 #include "src/glexts.h"
 
 #ifdef GL_ARB_occlusion_query
@@ -124,14 +124,14 @@ static bool stats_fragments_initialise(filter_set *handle)
                                                        sizeof(stats_fragments_struct));
 
     f = bugle_filter_register(handle, "stats_fragments");
-    bugle_filter_catches(f, GROUP_glXSwapBuffers, false, stats_fragments_glXSwapBuffers);
-    bugle_filter_catches(f, GROUP_glBeginQueryARB, false, stats_fragments_query);
-    bugle_filter_catches(f, GROUP_glEndQueryARB, false, stats_fragments_query);
+    bugle_filter_catches(f, "glXSwapBuffers", false, stats_fragments_glXSwapBuffers);
+    bugle_filter_catches(f, "glBeginQueryARB", false, stats_fragments_query);
+    bugle_filter_catches(f, "glEndQueryARB", false, stats_fragments_query);
     bugle_filter_order("stats_fragments", "invoke");
     bugle_filter_order("stats_fragments", "stats");
 
     f = bugle_filter_register(handle, "stats_fragments_post");
-    bugle_filter_catches(f, GROUP_glXSwapBuffers, false, stats_fragments_post_glXSwapBuffers);
+    bugle_filter_catches(f, "glXSwapBuffers", false, stats_fragments_post_glXSwapBuffers);
     bugle_filter_order("invoke", "stats_fragments_post");
 
     stats_fragments_fragments = bugle_stats_signal_register("fragments", NULL, NULL);

@@ -27,7 +27,7 @@
 #include <bugle/tracker.h>
 #include <bugle/log.h>
 #include <bugle/glutils.h>
-#include "src/utils.h"
+#include <budgie/types.h>
 
 static object_view stats_primitives_view;  /* begin/end counting */
 static object_view stats_primitives_displaylist_view;
@@ -115,7 +115,7 @@ static bool stats_primitives_glBegin(function_call *call, const callback_data *d
     stats_primitives_struct *s;
 
     s = bugle_object_get_current_data(&bugle_context_class, stats_primitives_view);
-    s->begin_mode = *call->typed.glBegin.arg0;
+    s->begin_mode = *call->glBegin.arg0;
     s->begin_count = 0;
     return true;
 }
@@ -133,20 +133,20 @@ static bool stats_primitives_glEnd(function_call *call, const callback_data *dat
 
 static bool stats_primitives_glDrawArrays(function_call *call, const callback_data *data)
 {
-    stats_primitives_update(*call->typed.glDrawArrays.arg0, *call->typed.glDrawArrays.arg2);
+    stats_primitives_update(*call->glDrawArrays.arg0, *call->glDrawArrays.arg2);
     return true;
 }
 
 static bool stats_primitives_glDrawElements(function_call *call, const callback_data *data)
 {
-    stats_primitives_update(*call->typed.glDrawElements.arg0, *call->typed.glDrawElements.arg1);
+    stats_primitives_update(*call->glDrawElements.arg0, *call->glDrawElements.arg1);
     return true;
 }
 
 #ifdef GL_EXT_draw_range_elements
 static bool stats_primitives_glDrawRangeElements(function_call *call, const callback_data *data)
 {
-    stats_primitives_update(*call->typed.glDrawRangeElementsEXT.arg0, *call->typed.glDrawRangeElementsEXT.arg3);
+    stats_primitives_update(*call->glDrawRangeElementsEXT.arg0, *call->glDrawRangeElementsEXT.arg3);
     return true;
 }
 #endif
@@ -156,10 +156,10 @@ static bool stats_primitives_glMultiDrawArrays(function_call *call, const callba
 {
     GLsizei i, primcount;
 
-    primcount = *call->typed.glMultiDrawArrays.arg3;
+    primcount = *call->glMultiDrawArrays.arg3;
     for (i = 0; i < primcount; i++)
-        stats_primitives_update(*call->typed.glMultiDrawArrays.arg0,
-                                (*call->typed.glMultiDrawArrays.arg2)[i]);
+        stats_primitives_update(*call->glMultiDrawArrays.arg0,
+                                (*call->glMultiDrawArrays.arg2)[i]);
     return true;
 }
 
@@ -167,10 +167,10 @@ static bool stats_primitives_glMultiDrawElements(function_call *call, const call
 {
     GLsizei i, primcount;
 
-    primcount = *call->typed.glMultiDrawElements.arg4;
+    primcount = *call->glMultiDrawElements.arg4;
     for (i = 0; i < primcount; i++)
-        stats_primitives_update(*call->typed.glMultiDrawElements.arg0,
-                                (*call->typed.glMultiDrawElements.arg1)[i]);
+        stats_primitives_update(*call->glMultiDrawElements.arg0,
+                                (*call->glMultiDrawElements.arg1)[i]);
     return true;
 }
 #endif
@@ -181,7 +181,7 @@ static bool stats_primitives_glCallList(function_call *call, const callback_data
     stats_primitives_displaylist_struct *counts;
 
     s = bugle_object_get_current_data(&bugle_context_class, stats_primitives_view);
-    counts = bugle_object_get_data(bugle_displaylist_get(*call->typed.glCallList.arg0),
+    counts = bugle_object_get_data(bugle_displaylist_get(*call->glCallList.arg0),
                                    stats_primitives_displaylist_view);
     if (counts)
     {
@@ -213,19 +213,19 @@ static bool stats_primitives_initialise(filter_set *handle)
 
     f = bugle_filter_register(handle, "stats_primitives");
     bugle_filter_catches_drawing_immediate(f, false, stats_primitives_immediate);
-    bugle_filter_catches(f, GROUP_glDrawElements, false, stats_primitives_glDrawElements);
-    bugle_filter_catches(f, GROUP_glDrawArrays, false, stats_primitives_glDrawArrays);
+    bugle_filter_catches(f, "glDrawElements", false, stats_primitives_glDrawElements);
+    bugle_filter_catches(f, "glDrawArrays", false, stats_primitives_glDrawArrays);
 #ifdef GL_EXT_draw_range_elements
-    bugle_filter_catches(f, GROUP_glDrawRangeElementsEXT, false, stats_primitives_glDrawRangeElements);
+    bugle_filter_catches(f, "glDrawRangeElementsEXT", false, stats_primitives_glDrawRangeElements);
 #endif
 #ifdef GL_EXT_multi_draw_arrays
-    bugle_filter_catches(f, GROUP_glMultiDrawElementsEXT, false, stats_primitives_glMultiDrawElements);
-    bugle_filter_catches(f, GROUP_glMultiDrawArraysEXT, false, stats_primitives_glMultiDrawArrays);
+    bugle_filter_catches(f, "glMultiDrawElementsEXT", false, stats_primitives_glMultiDrawElements);
+    bugle_filter_catches(f, "glMultiDrawArraysEXT", false, stats_primitives_glMultiDrawArrays);
 #endif
-    bugle_filter_catches(f, GROUP_glBegin, false, stats_primitives_glBegin);
-    bugle_filter_catches(f, GROUP_glEnd, false, stats_primitives_glEnd);
-    bugle_filter_catches(f, GROUP_glCallList, false, stats_primitives_glCallList);
-    bugle_filter_catches(f, GROUP_glCallLists, false, stats_primitives_glCallLists);
+    bugle_filter_catches(f, "glBegin", false, stats_primitives_glBegin);
+    bugle_filter_catches(f, "glEnd", false, stats_primitives_glEnd);
+    bugle_filter_catches(f, "glCallList", false, stats_primitives_glCallList);
+    bugle_filter_catches(f, "glCallLists", false, stats_primitives_glCallLists);
     bugle_filter_order("stats_primitives", "invoke");
     bugle_filter_order("stats_primitives", "stats");
 

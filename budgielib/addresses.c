@@ -18,23 +18,17 @@
 #if HAVE_CONFIG_H
 # include <config.h>
 #endif
-#define _POSIX_SOURCE
-#include <stdio.h>
 #include <stddef.h>
-#include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
-#include <signal.h>
-#include <errno.h>
-#include <setjmp.h>
+#include <assert.h>
 #include <ltdl.h>
+#include <stdio.h>
+#include <budgie/types.h>
+#include <budgie/addresses.h>
+#include <budgie/reflect.h>
 #include <bugle/threads.h>
-#include <budgie/budgieutils.h>
-#include <budgie/typeutils.h>
-#include <budgie/ioutils.h>
-#include <stdbool.h>
-#include "xalloc.h"
+#include "budgielib/lib.h"
 #include "tls.h"
+#include "xalloc.h"
 
 static void make_indent(int indent, FILE *out)
 {
@@ -46,15 +40,15 @@ static void make_indent(int indent, FILE *out)
 void budgie_dump_any_call(const generic_function_call *call, int indent, FILE *out)
 {
     size_t i;
-    const group_data *data;
+    const group_dump *data;
     arg_dumper cur_dumper;
     budgie_type type;
     int length;
-    const group_parameter_data *info;
+    const group_dump_parameter *info;
 
     make_indent(indent, out);
-    fprintf(out, "%s(", budgie_function_table[call->id].name);
-    data = &budgie_group_table[call->group];
+    fprintf(out, "%s(", budgie_function_name(call->id));
+    data = &_budgie_group_dump_table[call->group];
     info = &data->parameters[0];
     for (i = 0; i < data->num_parameters; i++, info++)
     {
@@ -86,47 +80,40 @@ void budgie_dump_any_call(const generic_function_call *call, int indent, FILE *o
     }
 }
 
-void (*budgie_get_function_wrapper(const char *name))(void)
+void (*budgie_function_address_real(budgie_function id))(void)
 {
-    int l, r, m;
-
-    l = 0;
-    r = budgie_number_of_functions;
-    while (r - l > 1)
-    {
-        m = (l + r) / 2;
-        if (strcmp(name, budgie_function_name_table[m].name) >= 0)
-            l = m;
-        else
-            r = m;
-    }
-    if (strcmp(name, budgie_function_name_table[l].name) == 0)
-        return budgie_function_name_table[l].wrapper;
-    else
-        return (void (*)(void)) NULL;
+    assert(id >= 0 && id < budgie_function_count());
+    return _budgie_function_address_real[id];
 }
 
-void initialise_real(void)
+void (*budgie_function_address_wrapper(budgie_function id))(void)
+{
+    assert(id >= 0 && id < budgie_function_count());
+    return _budgie_function_address_wrapper[id];
+}
+
+void budgie_function_address_initialise(void)
 {
     lt_dlhandle handle;
     size_t i, j;
     size_t N, F;
 
-    N = budgie_number_of_libraries;
-    F = budgie_number_of_functions;
+    N = _budgie_library_count;
+    F = budgie_function_count();
 
     lt_dlmalloc = xmalloc;
     lt_dlrealloc = xrealloc;
     lt_dlinit();
     for (i = 0; i < N; i++)
     {
-        handle = lt_dlopen(library_names[i]);
+        handle = lt_dlopen(_budgie_library_names[i]);
         if (handle)
         {
             for (j = 0; j < F; j++)
-                if (!budgie_function_table[j].real)
+                if (!_budgie_function_address_real[j])
                 {
-                    budgie_function_table[j].real = (void (*)(void)) lt_dlsym(handle, budgie_function_table[j].name);
+                    _budgie_function_address_real[j] =
+                        (void (*)(void)) lt_dlsym(handle, budgie_function_name(j));
                     lt_dlerror(); /* clear the error flag */
                 }
         }
@@ -138,18 +125,33 @@ void initialise_real(void)
     }
 }
 
+void budgie_function_address_set_real(budgie_function id, void (*addr)(void))
+{
+    assert(id >= 0 && id < budgie_function_count());
+    _budgie_function_address_real[id] = addr;
+}
+
+void budgie_function_set_bypass(budgie_function id, bool bypass)
+{
+    assert(id >= 0 && id < budgie_function_count());
+    _budgie_bypass[id] = bypass;
+}
+
 /* Re-entrance protection. Note that we still wish to allow other threads
  * to enter from the user application; it is just that we do not want the
  * real library to call our fake functions.
  *
  * Also note that the protection is called *before* we first encounter
  * the interceptor, so we cannot rely on the interceptor to initialise us.
+ *
+ * The declaraion for these methods is in lib.h, but they're implemented
+ * here to avoid quoting them for generation in lib.c.
  */
 
 static gl_tls_key_t reentrance_key;
 
-BUGLE_CONSTRUCTOR(initialise_reentrance);
-static void initialise_reentrance(void)
+BUGLE_CONSTRUCTOR(reentrance_initialise);
+static void reentrance_initialise(void)
 {
     gl_tls_key_init(reentrance_key, NULL);
 }
@@ -157,20 +159,20 @@ static void initialise_reentrance(void)
 /* Sets the flag to mark entry, and returns true if we should call
  * the interceptor. We set an arbitrary non-NULL pointer.
  */
-bool check_set_reentrance(void)
+bool _budgie_reentrance_init(void)
 {
     /* Note that since the data is thread-specific, we need not worry
      * about contention.
      */
     bool ans;
 
-    BUGLE_RUN_CONSTRUCTOR(initialise_reentrance);
+    BUGLE_RUN_CONSTRUCTOR(reentrance_initialise);
     ans = gl_tls_get(reentrance_key) == NULL;
     gl_tls_set(reentrance_key, &ans); /* arbitrary non-NULL value */
     return ans;
 }
 
-void clear_reentrance(void)
+void _budgie_reentrance_clear(void)
 {
     gl_tls_set(reentrance_key, NULL);
 }

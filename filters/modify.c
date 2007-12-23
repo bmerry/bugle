@@ -30,9 +30,10 @@
 #include <bugle/tracker.h>
 #include <bugle/xevent.h>
 #include <bugle/log.h>
+#include <budgie/reflect.h>
+#include <budgie/call.h>
 #include "src/glexts.h"
 #include "src/glfuncs.h"
-#include "src/utils.h"
 
 #if !HAVE_SINF
 # define sinf(x) ((float) (sin((double) (x))))
@@ -124,7 +125,7 @@ static bool classify_initialise(filter_set *handle)
 
     f = bugle_filter_register(handle, "classify");
 #ifdef GL_EXT_framebuffer_object
-    bugle_filter_catches(f, GROUP_glBindFramebufferEXT, true, classify_glBindFramebufferEXT);
+    bugle_filter_catches(f, "glBindFramebufferEXT", true, classify_glBindFramebufferEXT);
 #endif
     bugle_filter_order("invoke", "classify");
     bugle_filter_post_renders("classify");
@@ -246,7 +247,7 @@ static bool wireframe_glEnable(function_call *call, const callback_data *data)
     /* FIXME: need to track this state to restore it on deactivation */
     /* FIXME: also need to nuke it at activation */
     /* FIXME: has no effect when using a fragment shader */
-    switch (*call->typed.glEnable.arg0)
+    switch (*call->glEnable.arg0)
     {
     case GL_TEXTURE_1D:
     case GL_TEXTURE_2D:
@@ -258,7 +259,7 @@ static bool wireframe_glEnable(function_call *call, const callback_data *data)
 #endif
         if (bugle_begin_internal_render())
         {
-            CALL_glDisable(*call->typed.glEnable.arg0);
+            CALL_glDisable(*call->glEnable.arg0);
             bugle_end_internal_render("wireframe_callback", true);
         }
     default: /* avoids compiler warning if GLenum is a C enum */ ;
@@ -302,12 +303,12 @@ static bool wireframe_initialise(filter_set *handle)
 
     wireframe_filterset = handle;
     f = bugle_filter_register(handle, "wireframe");
-    bugle_filter_catches(f, GROUP_glXSwapBuffers, false, wireframe_glXSwapBuffers);
-    bugle_filter_catches(f, GROUP_glPolygonMode, false, wireframe_glPolygonMode);
-    bugle_filter_catches(f, GROUP_glEnable, false, wireframe_glEnable);
-    bugle_filter_catches(f, GROUP_glXMakeCurrent, true, wireframe_make_current);
+    bugle_filter_catches(f, "glXSwapBuffers", false, wireframe_glXSwapBuffers);
+    bugle_filter_catches(f, "glPolygonMode", false, wireframe_glPolygonMode);
+    bugle_filter_catches(f, "glEnable", false, wireframe_glEnable);
+    bugle_filter_catches(f, "glXMakeCurrent", true, wireframe_make_current);
 #ifdef GLX_SGI_make_current_read
-    bugle_filter_catches(f, GROUP_glXMakeCurrentReadSGI, true, wireframe_make_current);
+    bugle_filter_catches(f, "glXMakeCurrentReadSGI", true, wireframe_make_current);
 #endif
     bugle_filter_order("invoke", "wireframe");
     bugle_filter_post_renders("wireframe");
@@ -426,16 +427,16 @@ static bool frontbuffer_initialise(filter_set *handle)
     frontbuffer_filterset = handle;
     f = bugle_filter_register(handle, "frontbuffer");
     bugle_filter_order("invoke", "frontbuffer");
-    bugle_filter_catches(f, GROUP_glDrawBuffer, false, frontbuffer_glDrawBuffer);
-    bugle_filter_catches(f, GROUP_glXMakeCurrent, true, frontbuffer_make_current);
+    bugle_filter_catches(f, "glDrawBuffer", false, frontbuffer_glDrawBuffer);
+    bugle_filter_catches(f, "glXMakeCurrent", true, frontbuffer_make_current);
 #ifdef GLX_SGI_make_current_read
-    bugle_filter_catches(f, GROUP_glXMakeCurrentReadSGI, true, frontbuffer_make_current);
+    bugle_filter_catches(f, "glXMakeCurrentReadSGI", true, frontbuffer_make_current);
 #endif
     bugle_filter_post_renders("frontbuffer");
 
     f = bugle_filter_register(handle, "frontbuffer_pre");
     bugle_filter_order("frontbuffer_pre", "invoke");
-    bugle_filter_catches(f, GROUP_glXSwapBuffers, false, frontbuffer_glXSwapBuffers);
+    bugle_filter_catches(f, "glXSwapBuffers", false, frontbuffer_glXSwapBuffers);
 
     frontbuffer_view = bugle_object_view_register(&bugle_context_class,
                                                   frontbuffer_context_init,
@@ -845,11 +846,11 @@ static bool camera_get(function_call *call, const callback_data *data)
     {
     case GROUP_glGetFloatv:
         for (i = 0; i < 16; i++)
-            (*call->typed.glGetFloatv.arg1)[i] = ctx->original[i];
+            (*call->glGetFloatv.arg1)[i] = ctx->original[i];
         break;
     case GROUP_glGetDoublev:
         for (i = 0; i < 16; i++)
-            (*call->typed.glGetDoublev.arg1)[i] = ctx->original[i];
+            (*call->glGetDoublev.arg1)[i] = ctx->original[i];
         break;
     }
     return true;
@@ -955,52 +956,52 @@ static bool camera_initialise(filter_set *handle)
     camera_filterset = handle;
     f = bugle_filter_register(handle, "camera_pre");
     bugle_filter_order("camera_pre", "invoke");
-    bugle_filter_catches(f, GROUP_glMultMatrixf, false, camera_restore);
-    bugle_filter_catches(f, GROUP_glMultMatrixd, false, camera_restore);
-    bugle_filter_catches(f, GROUP_glTranslatef, false, camera_restore);
-    bugle_filter_catches(f, GROUP_glTranslated, false, camera_restore);
-    bugle_filter_catches(f, GROUP_glScalef, false, camera_restore);
-    bugle_filter_catches(f, GROUP_glScaled, false, camera_restore);
-    bugle_filter_catches(f, GROUP_glRotatef, false, camera_restore);
-    bugle_filter_catches(f, GROUP_glRotated, false, camera_restore);
-    bugle_filter_catches(f, GROUP_glFrustum, false, camera_restore);
-    bugle_filter_catches(f, GROUP_glPushMatrix, false, camera_restore);
-    bugle_filter_catches(f, GROUP_glPopMatrix, false, camera_restore);
+    bugle_filter_catches(f, "glMultMatrixf", false, camera_restore);
+    bugle_filter_catches(f, "glMultMatrixd", false, camera_restore);
+    bugle_filter_catches(f, "glTranslatef", false, camera_restore);
+    bugle_filter_catches(f, "glTranslated", false, camera_restore);
+    bugle_filter_catches(f, "glScalef", false, camera_restore);
+    bugle_filter_catches(f, "glScaled", false, camera_restore);
+    bugle_filter_catches(f, "glRotatef", false, camera_restore);
+    bugle_filter_catches(f, "glRotated", false, camera_restore);
+    bugle_filter_catches(f, "glFrustum", false, camera_restore);
+    bugle_filter_catches(f, "glPushMatrix", false, camera_restore);
+    bugle_filter_catches(f, "glPopMatrix", false, camera_restore);
 #ifdef GL_ARB_transpose_matrix
-    bugle_filter_catches(f, GROUP_glMultTransposeMatrixf, false, camera_restore);
-    bugle_filter_catches(f, GROUP_glMultTransposeMatrixd, false, camera_restore);
+    bugle_filter_catches(f, "glMultTransposeMatrixf", false, camera_restore);
+    bugle_filter_catches(f, "glMultTransposeMatrixd", false, camera_restore);
 #endif
-    bugle_filter_catches(f, GROUP_glXSwapBuffers, false, camera_glXSwapBuffers);
+    bugle_filter_catches(f, "glXSwapBuffers", false, camera_glXSwapBuffers);
 
     f = bugle_filter_register(handle, "camera_post");
     bugle_filter_post_renders("camera_post");
     bugle_filter_order("invoke", "camera_post");
-    bugle_filter_catches(f, GROUP_glXMakeCurrent, true, camera_make_current);
+    bugle_filter_catches(f, "glXMakeCurrent", true, camera_make_current);
 #ifdef GLX_SGI_make_current_read
-    bugle_filter_catches(f, GROUP_glXMakeCurrentReadSGI, true, camera_make_current);
+    bugle_filter_catches(f, "glXMakeCurrentReadSGI", true, camera_make_current);
 #endif
-    bugle_filter_catches(f, GROUP_glLoadIdentity, false, camera_override);
-    bugle_filter_catches(f, GROUP_glLoadMatrixf, false, camera_override);
-    bugle_filter_catches(f, GROUP_glLoadMatrixd, false, camera_override);
-    bugle_filter_catches(f, GROUP_glMultMatrixf, false, camera_override);
-    bugle_filter_catches(f, GROUP_glMultMatrixd, false, camera_override);
-    bugle_filter_catches(f, GROUP_glTranslatef, false, camera_override);
-    bugle_filter_catches(f, GROUP_glTranslated, false, camera_override);
-    bugle_filter_catches(f, GROUP_glScalef, false, camera_override);
-    bugle_filter_catches(f, GROUP_glScaled, false, camera_override);
-    bugle_filter_catches(f, GROUP_glRotatef, false, camera_override);
-    bugle_filter_catches(f, GROUP_glRotated, false, camera_override);
-    bugle_filter_catches(f, GROUP_glFrustum, false, camera_override);
-    bugle_filter_catches(f, GROUP_glPushMatrix, false, camera_override);
-    bugle_filter_catches(f, GROUP_glPopMatrix, false, camera_override);
+    bugle_filter_catches(f, "glLoadIdentity", false, camera_override);
+    bugle_filter_catches(f, "glLoadMatrixf", false, camera_override);
+    bugle_filter_catches(f, "glLoadMatrixd", false, camera_override);
+    bugle_filter_catches(f, "glMultMatrixf", false, camera_override);
+    bugle_filter_catches(f, "glMultMatrixd", false, camera_override);
+    bugle_filter_catches(f, "glTranslatef", false, camera_override);
+    bugle_filter_catches(f, "glTranslated", false, camera_override);
+    bugle_filter_catches(f, "glScalef", false, camera_override);
+    bugle_filter_catches(f, "glScaled", false, camera_override);
+    bugle_filter_catches(f, "glRotatef", false, camera_override);
+    bugle_filter_catches(f, "glRotated", false, camera_override);
+    bugle_filter_catches(f, "glFrustum", false, camera_override);
+    bugle_filter_catches(f, "glPushMatrix", false, camera_override);
+    bugle_filter_catches(f, "glPopMatrix", false, camera_override);
 #ifdef GL_ARB_transpose_matrix
-    bugle_filter_catches(f, GROUP_glLoadTransposeMatrixf, false, camera_override);
-    bugle_filter_catches(f, GROUP_glLoadTransposeMatrixd, false, camera_override);
-    bugle_filter_catches(f, GROUP_glMultTransposeMatrixf, false, camera_override);
-    bugle_filter_catches(f, GROUP_glMultTransposeMatrixd, false, camera_override);
+    bugle_filter_catches(f, "glLoadTransposeMatrixf", false, camera_override);
+    bugle_filter_catches(f, "glLoadTransposeMatrixd", false, camera_override);
+    bugle_filter_catches(f, "glMultTransposeMatrixf", false, camera_override);
+    bugle_filter_catches(f, "glMultTransposeMatrixd", false, camera_override);
 #endif
-    bugle_filter_catches(f, GROUP_glGetFloatv, false, camera_get);
-    bugle_filter_catches(f, GROUP_glGetDoublev, false, camera_get);
+    bugle_filter_catches(f, "glGetFloatv", false, camera_get);
+    bugle_filter_catches(f, "glGetDoublev", false, camera_get);
 
     camera_view = bugle_object_view_register(&bugle_context_class,
                                              camera_context_init,
@@ -1101,13 +1102,13 @@ static bool extoverride_glGetString(function_call *call, const callback_data *da
 
     ctx = (extoverride_context *) bugle_object_get_current_data(&bugle_context_class, extoverride_view);
     if (!ctx) return true; /* Nothing can be overridden */
-    switch (*call->typed.glGetString.arg0)
+    switch (*call->glGetString.arg0)
     {
     case GL_VERSION:
-        *call->typed.glGetString.retn = ctx->version;
+        *call->glGetString.retn = ctx->version;
         break;
     case GL_EXTENSIONS:
-        *call->typed.glGetString.retn = ctx->extensions;
+        *call->glGetString.retn = ctx->extensions;
         break;
     }
     return true;
@@ -1117,7 +1118,7 @@ static bool extoverride_warn(function_call *call, const callback_data *data)
 {
     bugle_log_printf("extoverride", "warn", BUGLE_LOG_NOTICE,
                      "%s was called, although the corresponding extension was suppressed",
-                     budgie_function_table[call->generic.id].name);
+                     budgie_function_name(call->generic.id));
     return true;
 }
 
@@ -1129,20 +1130,20 @@ static bool extoverride_initialise(filter_set *handle)
     f = bugle_filter_register(handle, "extoverride_get");
     bugle_filter_order("invoke", "extoverride_get");
     bugle_filter_order("extoverride_get", "trace");
-    bugle_filter_catches(f, GROUP_glGetString, false, extoverride_glGetString);
+    bugle_filter_catches(f, "glGetString", false, extoverride_glGetString);
 
     f = bugle_filter_register(handle, "extoverride_warn");
     bugle_filter_order("extoverride_warn", "invoke");
-    for (i = 0; i < budgie_number_of_functions; i++)
+    for (i = 0; i < budgie_function_count(); i++)
     {
         if (bugle_gl_function_table[i].extension
             && extoverride_suppressed(bugle_gl_function_table[i].extension))
-            bugle_filter_catches_function(f, i, false, extoverride_warn);
+            bugle_filter_catches_function_id(f, i, false, extoverride_warn);
         else if (extoverride_max_version
                  && bugle_gl_function_table[i].version
                  && bugle_gl_function_table[i].version[2] == '_' /* filter out GLX */
                  && strcmp(bugle_gl_function_table[i].version, extoverride_max_version) > 1)
-            bugle_filter_catches_function(f, i, false, extoverride_warn);
+            bugle_filter_catches_function_id(f, i, false, extoverride_warn);
     }
 
     extoverride_view = bugle_object_view_register(&bugle_context_class,

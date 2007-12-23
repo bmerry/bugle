@@ -21,6 +21,7 @@
 #if HAVE_CONFIG_H
 # include <config.h>
 #endif
+#include <stdbool.h>
 #include <X11/Xlib.h>
 #include <X11/keysym.h> /* Convenience for including files */
 

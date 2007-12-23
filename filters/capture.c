@@ -41,7 +41,9 @@
 #include <bugle/tracker.h>
 #include <bugle/xevent.h>
 #include <bugle/log.h>
-#include "src/types.h"
+#include <budgie/call.h>
+#include <budgie/reflect.h>
+#include "budgielib/defines.h"
 #include "src/glfuncs.h"
 #include "src/glexts.h"
 #include "gl2ps/gl2ps.h"
@@ -696,7 +698,7 @@ static bool screenshot_initialise(filter_set *handle)
 #endif
 
     f = bugle_filter_register(handle, "screenshot");
-    bugle_filter_catches(f, GROUP_glXSwapBuffers, false, screenshot_callback);
+    bugle_filter_catches(f, "glXSwapBuffers", false, screenshot_callback);
     bugle_filter_order("screenshot", "invoke");
 
     video_data = XCALLOC(video_lag, screenshot_data);
@@ -749,10 +751,8 @@ static const char *glx_version = "GLX_VERSION_1_2";
 static bool showextensions_callback(function_call *call, const callback_data *data)
 {
     size_t i;
-    const group_data *info;
     const gl_function *glinfo;
 
-    info = &budgie_group_table[call->generic.group];
     glinfo = &bugle_gl_function_table[call->generic.id];
     if (glinfo->extension)
         bugle_hash_set(&seen_extensions, glinfo->extension, &seen_extensions);
@@ -764,9 +764,9 @@ static bool showextensions_callback(function_call *call, const callback_data *da
             gl_version = glinfo->version;
     }
 
-    for (i = 0; i < info->num_parameters; i++)
+    for (i = 0; i < budgie_group_parameter_count(call->generic.group); i++)
     {
-        if (info->parameters[i].type == TYPE_6GLenum)
+        if (budgie_group_parameter_type(call->generic.group, i) == TYPE_6GLenum)
         {
             GLenum e;
             const gl_token *t;
@@ -815,7 +815,7 @@ static void showextensions_print(void *seen, FILE *log)
             bugle_hash_set(seen_extensions, ext, NULL);
         }
     }
-    for (f = 0; f < NUMBER_OF_FUNCTIONS; f++)
+    for (f = 0; f < budgie_function_count(); f++)
     {
         const char *ext;
 
@@ -995,10 +995,10 @@ static bool eps_initialise(filter_set *handle)
     filter *f;
 
     f = bugle_filter_register(handle, "eps_pre");
-    bugle_filter_catches(f, GROUP_glXSwapBuffers, false, eps_glXSwapBuffers);
+    bugle_filter_catches(f, "glXSwapBuffers", false, eps_glXSwapBuffers);
     f = bugle_filter_register(handle, "eps");
-    bugle_filter_catches(f, GROUP_glPointSize, false, eps_glPointSize);
-    bugle_filter_catches(f, GROUP_glLineWidth, false, eps_glLineWidth);
+    bugle_filter_catches(f, "glPointSize", false, eps_glPointSize);
+    bugle_filter_catches(f, "glLineWidth", false, eps_glLineWidth);
     bugle_filter_order("eps_pre", "invoke");
     bugle_filter_order("invoke", "eps");
     bugle_filter_post_renders("eps");

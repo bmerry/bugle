@@ -32,7 +32,7 @@ GetOptions('header=s' => \$header, 'out-header' => \$outheader, 'alias' => \$ali
 # Load known function names
 if ($header)
 {
-    open(H, "<$header");
+    open(H, "<$header") or die("Could not open $header: $!");
     while (<H>)
     {
         if (/^#define FUNC_(\w+)\s+(\d+)/)
@@ -139,7 +139,8 @@ if ($outheader)
 #if HAVE_CONFIG_H
 # include <config.h>
 #endif
-#include "src/utils.h"
+#include <budgie/types.h>
+#include "budgielib/defines.h"
 
 typedef struct
 {
@@ -147,7 +148,7 @@ typedef struct
     const char *extension;   /* Extension that defines this function (NULL for core) */
 } gl_function;
 
-extern const gl_function bugle_gl_function_table[NUMBER_OF_FUNCTIONS];
+extern const gl_function bugle_gl_function_table[FUNCTION_COUNT];
 
 EOF
     print "\n";
@@ -161,10 +162,10 @@ else
 #endif
 #include <GL/gl.h>
 #include <GL/glext.h>
-#include "src/utils.h"
+#include <budgie/types.h>
 #include "src/glfuncs.h"
 EOF
-    print "gl_function const bugle_gl_function_table[NUMBER_OF_FUNCTIONS] =\n{\n";
+    print "gl_function const bugle_gl_function_table[FUNCTION_COUNT] =\n{\n";
     my $first = 1;
     for my $i (@table)
     {

@@ -21,8 +21,10 @@
 #include <stdbool.h>
 #include <bugle/filters.h>
 #include <bugle/glutils.h>
+#include <budgie/types.h>
+#include <budgie/addresses.h>
+#include <budgie/reflect.h>
 #include "src/glfuncs.h"
-#include "src/utils.h"
 
 /* Invoke filter-set */
 
@@ -52,10 +54,12 @@ static bool procaddress_callback(function_call *call, const callback_data *data)
      */
 #ifdef GLX_ARB_get_proc_address
     void (*sym)(void);
+    budgie_function func;
 
-    if (!*call->typed.glXGetProcAddressARB.retn) return true;
-    sym = budgie_get_function_wrapper((const char *) *call->typed.glXGetProcAddressARB.arg0);
-    if (sym) *call->typed.glXGetProcAddressARB.retn = sym;
+    if (!*call->glXGetProcAddressARB.retn) return true;
+    func = budgie_function_id((const char *) *call->glXGetProcAddressARB.arg0);
+    sym = (func == NULL_FUNCTION) ? NULL : budgie_function_address_wrapper(func);
+    if (sym) *call->glXGetProcAddressARB.retn = sym;
 #endif
     return true;
 }
@@ -68,7 +72,7 @@ static bool procaddress_initialise(filter_set *handle)
     f = bugle_filter_register(handle, "procaddress");
     bugle_filter_order("invoke", "procaddress");
     bugle_filter_order("procaddress", "trace");
-    bugle_filter_catches(f, GROUP_glXGetProcAddressARB, false, procaddress_callback);
+    bugle_filter_catches(f, "glXGetProcAddressARB", false, procaddress_callback);
 #endif
     return true;
 }

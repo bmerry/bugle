@@ -25,7 +25,7 @@
 #include <ltdl.h>
 #include <bugle/linkedlist.h>
 #include <bugle/objects.h>
-#include <budgie/budgieutils.h>
+#include <budgie/types.h>
 #include <stdbool.h>
 
 struct filter_set_s;
@@ -41,7 +41,7 @@ typedef bool (*filter_set_loader)(struct filter_set_s *);
 typedef void (*filter_set_unloader)(struct filter_set_s *);
 typedef void (*filter_set_activator)(struct filter_set_s *);
 typedef void (*filter_set_deactivator)(struct filter_set_s *);
-typedef bool (*filter_callback)(struct function_call_s *call, const callback_data *data);
+typedef bool (*filter_callback)(function_call *call, const callback_data *data);
 
 typedef enum
 {
@@ -123,7 +123,7 @@ void filter_set_add(filter_set *handle, bool activate);
 void filter_set_activate(filter_set *handle);
 void filter_set_deactivate(filter_set *handle);
 void filters_finalise(void); /* Called after all filtersets added to do last initialisation */
-void filters_run(struct function_call_s *call);
+void filters_run(function_call *call);
 void filters_help(void);
 
 /* Initialisation functions to be used by the filter libraries, and perhaps the interceptor */
@@ -133,9 +133,11 @@ void        bugle_filter_set_order(const char *before, const char *after);
 
 filter *    bugle_filter_register(filter_set *handle, const char *name);
 void        bugle_filter_order(const char *before, const char *after);
-void        bugle_filter_catches(filter *handle, budgie_group g, bool inactive, filter_callback callback);
+void        bugle_filter_catches(filter *handle, const char *group, bool inactive, filter_callback callback);
 /* Like bugle_filter_catches, but per-function rather than per-group. */
-void        bugle_filter_catches_function(filter *handle, budgie_function f, bool inactive, filter_callback callback);
+void        bugle_filter_catches_function(filter *handle, const char *f, bool inactive, filter_callback callback);
+/* Like bugle_filter_catch_function, but takes a budgie_function not a string */
+void        bugle_filter_catches_function_id(filter *handle, budgie_function, bool inactive, filter_callback callback);
 void        bugle_filter_catches_all(filter *handle, bool inactive, filter_callback callback);
 
 extern object_class bugle_call_class;

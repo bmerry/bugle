@@ -15,18 +15,39 @@
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#ifndef BUDGIELIB_TYPEUTILS_H
-#define BUDGIELIB_TYPEUTILS_H
+#ifndef BUGLE_BUDGIE_INTERNAL_H
+#define BUGLE_BUDGIE_INTERNAL_H
 
 #if HAVE_CONFIG_H
 # include <config.h>
 #endif
 #include <stdio.h>
-#include <stddef.h>
-#include <stdbool.h>
+#include <budgie/types.h>
 
-typedef int budgie_type;
-#define NULL_TYPE (-1)
+typedef struct
+{
+    budgie_type type;
+} group_parameter_data;
+
+typedef struct
+{
+    size_t num_parameters;
+    const budgie_type *parameter_types;
+    budgie_type retn_type;
+    bool has_retn;
+} group_data;
+
+typedef struct
+{
+    const char *name;
+    budgie_group group;
+} function_data;
+
+typedef struct
+{
+    const char *name;
+    budgie_function function;
+} function_name_data;
 
 typedef enum
 {
@@ -69,33 +90,25 @@ typedef struct
     const char *name;
 } bitfield_pair;
 
-extern const type_data budgie_type_table[];
-extern int number_of_types;
+extern const type_data _budgie_type_table[];
+extern int _budgie_type_count;
 
-/* Code used by budgie output */
+extern int _budgie_function_count;
+extern const function_data _budgie_function_table[];
+extern const function_name_data _budgie_function_name_table[]; /* Holds wrappers in alphabetical order */
+extern bool _budgie_bypass[];
 
-void budgie_dump_bitfield(unsigned int value, FILE *out,
-                          const bitfield_pair *tags, int count);
+extern int _budgie_group_count;
+extern const group_data _budgie_group_table[];
 
-/* User functions */
+void _budgie_dump_bitfield(unsigned int value, FILE *out,
+                           const bitfield_pair *tags, int count);
+
+/* User functions for .bc files */
 
 bool budgie_dump_string(const char *value, FILE *out);
 int budgie_count_string(const char *value);
 /* Like dump_string but takes an explicit length rather than NULL terminator */
 bool budgie_dump_string_length(const char *value, size_t length, FILE *out);
 
-void budgie_dump_any_type(budgie_type type, const void *value, int length, FILE *out);
-/* Calls budgie_dump_any_type, BUT:
- * if outer_length != -1, then it considers the type as if it were an
- * array of that type, of length outer_length. If pointer is
- * non-NULL, then it outputs "<pointer> -> " first as if dumping a
- * pointer to the array.
- */
-void budgie_dump_any_type_extended(budgie_type type,
-                                   const void *value,
-                                   int length,
-                                   int outer_length,
-                                   const void *pointer,
-                                   FILE *out);
-
-#endif /* !BUDGIELIB_TYPEUTILS_H */
+#endif /* BUGLE_BUDGIE_INTERNAL_H */

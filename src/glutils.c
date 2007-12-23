@@ -28,7 +28,8 @@
 #include <bugle/tracker.h>
 #include <bugle/gltypes.h>
 #include <bugle/log.h>
-#include "src/utils.h"
+#include <budgie/call.h>
+#include "budgielib/defines.h"
 #include "src/glfuncs.h"
 
 static filter_set *error_handle = NULL;
@@ -78,83 +79,83 @@ void bugle_end_internal_render(const char *name, bool warn)
 void bugle_filter_catches_drawing_immediate(filter *f, bool inactive, filter_callback callback)
 {
 #ifdef GL_ARB_vertex_program
-    bugle_filter_catches(f, GROUP_glVertexAttrib1sARB, inactive, callback);
-    bugle_filter_catches(f, GROUP_glVertexAttrib1fARB, inactive, callback);
-    bugle_filter_catches(f, GROUP_glVertexAttrib1dARB, inactive, callback);
-    bugle_filter_catches(f, GROUP_glVertexAttrib2sARB, inactive, callback);
-    bugle_filter_catches(f, GROUP_glVertexAttrib2fARB, inactive, callback);
-    bugle_filter_catches(f, GROUP_glVertexAttrib2dARB, inactive, callback);
-    bugle_filter_catches(f, GROUP_glVertexAttrib3sARB, inactive, callback);
-    bugle_filter_catches(f, GROUP_glVertexAttrib3fARB, inactive, callback);
-    bugle_filter_catches(f, GROUP_glVertexAttrib3dARB, inactive, callback);
-    bugle_filter_catches(f, GROUP_glVertexAttrib4sARB, inactive, callback);
-    bugle_filter_catches(f, GROUP_glVertexAttrib4fARB, inactive, callback);
-    bugle_filter_catches(f, GROUP_glVertexAttrib4dARB, inactive, callback);
-    bugle_filter_catches(f, GROUP_glVertexAttrib4NubARB, inactive, callback);
-    bugle_filter_catches(f, GROUP_glVertexAttrib1svARB, inactive, callback);
-    bugle_filter_catches(f, GROUP_glVertexAttrib1fvARB, inactive, callback);
-    bugle_filter_catches(f, GROUP_glVertexAttrib1dvARB, inactive, callback);
-    bugle_filter_catches(f, GROUP_glVertexAttrib2svARB, inactive, callback);
-    bugle_filter_catches(f, GROUP_glVertexAttrib2fvARB, inactive, callback);
-    bugle_filter_catches(f, GROUP_glVertexAttrib2dvARB, inactive, callback);
-    bugle_filter_catches(f, GROUP_glVertexAttrib3svARB, inactive, callback);
-    bugle_filter_catches(f, GROUP_glVertexAttrib3fvARB, inactive, callback);
-    bugle_filter_catches(f, GROUP_glVertexAttrib3dvARB, inactive, callback);
-    bugle_filter_catches(f, GROUP_glVertexAttrib4bvARB, inactive, callback);
-    bugle_filter_catches(f, GROUP_glVertexAttrib4svARB, inactive, callback);
-    bugle_filter_catches(f, GROUP_glVertexAttrib4ivARB, inactive, callback);
-    bugle_filter_catches(f, GROUP_glVertexAttrib4ubvARB, inactive, callback);
-    bugle_filter_catches(f, GROUP_glVertexAttrib4usvARB, inactive, callback);
-    bugle_filter_catches(f, GROUP_glVertexAttrib4uivARB, inactive, callback);
-    bugle_filter_catches(f, GROUP_glVertexAttrib4fvARB, inactive, callback);
-    bugle_filter_catches(f, GROUP_glVertexAttrib4dvARB, inactive, callback);
-    bugle_filter_catches(f, GROUP_glVertexAttrib4NbvARB, inactive, callback);
-    bugle_filter_catches(f, GROUP_glVertexAttrib4NsvARB, inactive, callback);
-    bugle_filter_catches(f, GROUP_glVertexAttrib4NivARB, inactive, callback);
-    bugle_filter_catches(f, GROUP_glVertexAttrib4NubvARB, inactive, callback);
-    bugle_filter_catches(f, GROUP_glVertexAttrib4NusvARB, inactive, callback);
-    bugle_filter_catches(f, GROUP_glVertexAttrib4NuivARB, inactive, callback);
+    bugle_filter_catches(f, "glVertexAttrib1sARB", inactive, callback);
+    bugle_filter_catches(f, "glVertexAttrib1fARB", inactive, callback);
+    bugle_filter_catches(f, "glVertexAttrib1dARB", inactive, callback);
+    bugle_filter_catches(f, "glVertexAttrib2sARB", inactive, callback);
+    bugle_filter_catches(f, "glVertexAttrib2fARB", inactive, callback);
+    bugle_filter_catches(f, "glVertexAttrib2dARB", inactive, callback);
+    bugle_filter_catches(f, "glVertexAttrib3sARB", inactive, callback);
+    bugle_filter_catches(f, "glVertexAttrib3fARB", inactive, callback);
+    bugle_filter_catches(f, "glVertexAttrib3dARB", inactive, callback);
+    bugle_filter_catches(f, "glVertexAttrib4sARB", inactive, callback);
+    bugle_filter_catches(f, "glVertexAttrib4fARB", inactive, callback);
+    bugle_filter_catches(f, "glVertexAttrib4dARB", inactive, callback);
+    bugle_filter_catches(f, "glVertexAttrib4NubARB", inactive, callback);
+    bugle_filter_catches(f, "glVertexAttrib1svARB", inactive, callback);
+    bugle_filter_catches(f, "glVertexAttrib1fvARB", inactive, callback);
+    bugle_filter_catches(f, "glVertexAttrib1dvARB", inactive, callback);
+    bugle_filter_catches(f, "glVertexAttrib2svARB", inactive, callback);
+    bugle_filter_catches(f, "glVertexAttrib2fvARB", inactive, callback);
+    bugle_filter_catches(f, "glVertexAttrib2dvARB", inactive, callback);
+    bugle_filter_catches(f, "glVertexAttrib3svARB", inactive, callback);
+    bugle_filter_catches(f, "glVertexAttrib3fvARB", inactive, callback);
+    bugle_filter_catches(f, "glVertexAttrib3dvARB", inactive, callback);
+    bugle_filter_catches(f, "glVertexAttrib4bvARB", inactive, callback);
+    bugle_filter_catches(f, "glVertexAttrib4svARB", inactive, callback);
+    bugle_filter_catches(f, "glVertexAttrib4ivARB", inactive, callback);
+    bugle_filter_catches(f, "glVertexAttrib4ubvARB", inactive, callback);
+    bugle_filter_catches(f, "glVertexAttrib4usvARB", inactive, callback);
+    bugle_filter_catches(f, "glVertexAttrib4uivARB", inactive, callback);
+    bugle_filter_catches(f, "glVertexAttrib4fvARB", inactive, callback);
+    bugle_filter_catches(f, "glVertexAttrib4dvARB", inactive, callback);
+    bugle_filter_catches(f, "glVertexAttrib4NbvARB", inactive, callback);
+    bugle_filter_catches(f, "glVertexAttrib4NsvARB", inactive, callback);
+    bugle_filter_catches(f, "glVertexAttrib4NivARB", inactive, callback);
+    bugle_filter_catches(f, "glVertexAttrib4NubvARB", inactive, callback);
+    bugle_filter_catches(f, "glVertexAttrib4NusvARB", inactive, callback);
+    bugle_filter_catches(f, "glVertexAttrib4NuivARB", inactive, callback);
 #endif
-    bugle_filter_catches(f, GROUP_glVertex2d, inactive, callback);
-    bugle_filter_catches(f, GROUP_glVertex2dv, inactive, callback);
-    bugle_filter_catches(f, GROUP_glVertex2f, inactive, callback);
-    bugle_filter_catches(f, GROUP_glVertex2fv, inactive, callback);
-    bugle_filter_catches(f, GROUP_glVertex2i, inactive, callback);
-    bugle_filter_catches(f, GROUP_glVertex2iv, inactive, callback);
-    bugle_filter_catches(f, GROUP_glVertex2s, inactive, callback);
-    bugle_filter_catches(f, GROUP_glVertex2sv, inactive, callback);
-    bugle_filter_catches(f, GROUP_glVertex3d, inactive, callback);
-    bugle_filter_catches(f, GROUP_glVertex3dv, inactive, callback);
-    bugle_filter_catches(f, GROUP_glVertex3f, inactive, callback);
-    bugle_filter_catches(f, GROUP_glVertex3fv, inactive, callback);
-    bugle_filter_catches(f, GROUP_glVertex3i, inactive, callback);
-    bugle_filter_catches(f, GROUP_glVertex3iv, inactive, callback);
-    bugle_filter_catches(f, GROUP_glVertex3s, inactive, callback);
-    bugle_filter_catches(f, GROUP_glVertex3sv, inactive, callback);
-    bugle_filter_catches(f, GROUP_glVertex4d, inactive, callback);
-    bugle_filter_catches(f, GROUP_glVertex4dv, inactive, callback);
-    bugle_filter_catches(f, GROUP_glVertex4f, inactive, callback);
-    bugle_filter_catches(f, GROUP_glVertex4fv, inactive, callback);
-    bugle_filter_catches(f, GROUP_glVertex4i, inactive, callback);
-    bugle_filter_catches(f, GROUP_glVertex4iv, inactive, callback);
-    bugle_filter_catches(f, GROUP_glVertex4s, inactive, callback);
-    bugle_filter_catches(f, GROUP_glVertex4sv, inactive, callback);
+    bugle_filter_catches(f, "glVertex2d", inactive, callback);
+    bugle_filter_catches(f, "glVertex2dv", inactive, callback);
+    bugle_filter_catches(f, "glVertex2f", inactive, callback);
+    bugle_filter_catches(f, "glVertex2fv", inactive, callback);
+    bugle_filter_catches(f, "glVertex2i", inactive, callback);
+    bugle_filter_catches(f, "glVertex2iv", inactive, callback);
+    bugle_filter_catches(f, "glVertex2s", inactive, callback);
+    bugle_filter_catches(f, "glVertex2sv", inactive, callback);
+    bugle_filter_catches(f, "glVertex3d", inactive, callback);
+    bugle_filter_catches(f, "glVertex3dv", inactive, callback);
+    bugle_filter_catches(f, "glVertex3f", inactive, callback);
+    bugle_filter_catches(f, "glVertex3fv", inactive, callback);
+    bugle_filter_catches(f, "glVertex3i", inactive, callback);
+    bugle_filter_catches(f, "glVertex3iv", inactive, callback);
+    bugle_filter_catches(f, "glVertex3s", inactive, callback);
+    bugle_filter_catches(f, "glVertex3sv", inactive, callback);
+    bugle_filter_catches(f, "glVertex4d", inactive, callback);
+    bugle_filter_catches(f, "glVertex4dv", inactive, callback);
+    bugle_filter_catches(f, "glVertex4f", inactive, callback);
+    bugle_filter_catches(f, "glVertex4fv", inactive, callback);
+    bugle_filter_catches(f, "glVertex4i", inactive, callback);
+    bugle_filter_catches(f, "glVertex4iv", inactive, callback);
+    bugle_filter_catches(f, "glVertex4s", inactive, callback);
+    bugle_filter_catches(f, "glVertex4sv", inactive, callback);
 
-    bugle_filter_catches(f, GROUP_glArrayElement, inactive, callback);
+    bugle_filter_catches(f, "glArrayElement", inactive, callback);
 }
 
 void bugle_filter_catches_drawing(filter *f, bool inactive, filter_callback callback)
 {
     bugle_filter_catches_drawing_immediate(f, inactive, callback);
 
-    bugle_filter_catches(f, GROUP_glDrawElements, inactive, callback);
-    bugle_filter_catches(f, GROUP_glDrawArrays, inactive, callback);
+    bugle_filter_catches(f, "glDrawElements", inactive, callback);
+    bugle_filter_catches(f, "glDrawArrays", inactive, callback);
 #ifdef GL_EXT_draw_range_elements
-    bugle_filter_catches(f, GROUP_glDrawRangeElementsEXT, inactive, callback);
+    bugle_filter_catches(f, "glDrawRangeElementsEXT", inactive, callback);
 #endif
 #ifdef GL_EXT_multi_draw_arrays
-    bugle_filter_catches(f, GROUP_glMultiDrawElementsEXT, inactive, callback);
-    bugle_filter_catches(f, GROUP_glMultiDrawArraysEXT, inactive, callback);
+    bugle_filter_catches(f, "glMultiDrawElementsEXT", inactive, callback);
+    bugle_filter_catches(f, "glMultiDrawArraysEXT", inactive, callback);
 #endif
 }
 

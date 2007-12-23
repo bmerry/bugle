@@ -24,7 +24,8 @@
 #include <GL/gl.h>
 #include <GL/glx.h>
 #include <stdbool.h>
-#include <budgie/budgieutils.h>
+#include <stdio.h>
+#include <budgie/types.h>
 
 /* Takes a type specified by a GL token e.g. GL_FLOAT and returns the budgie_type.
  * The _ptr variant returns the budgie_type variant for a pointer to

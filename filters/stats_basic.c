@@ -23,7 +23,6 @@
 #include <sys/types.h>
 #include <bugle/stats.h>
 #include <bugle/filters.h>
-#include "src/utils.h"
 
 static stats_signal *stats_basic_frames, *stats_basic_seconds;
 
@@ -50,7 +49,7 @@ static bool stats_basic_initialise(filter_set *handle)
     filter *f;
 
     f = bugle_filter_register(handle, "stats_basic");
-    bugle_filter_catches(f, GROUP_glXSwapBuffers, false, stats_basic_glXSwapBuffers);
+    bugle_filter_catches(f, "glXSwapBuffers", false, stats_basic_glXSwapBuffers);
     bugle_filter_order("stats_basic", "invoke");
     bugle_filter_order("stats_basic", "stats");
 

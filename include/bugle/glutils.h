@@ -26,6 +26,7 @@
 #include <stdbool.h>
 #include <bugle/filters.h>
 #include <bugle/objects.h>
+#include <budgie/types.h>
 #include <assert.h>
 
 /* The intended use is:
@@ -55,7 +56,7 @@ void bugle_filter_catches_drawing_immediate(filter *f, bool inactive, filter_cal
  * 0. These are the calls that generate a vertex in immediate mode.
  * f must be canonicalised.
  */
-bool bugle_call_is_immediate(struct function_call_s *call);
+bool bugle_call_is_immediate(function_call *call);
 
 void bugle_filter_set_renders(const char *name);
 void bugle_filter_post_renders(const char *name);

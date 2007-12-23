@@ -1,5 +1,5 @@
 /*  BuGLe: an OpenGL debugging tool
- *  Copyright (C) 2004-2006  Bruce Merry
+ *  Copyright (C) 2004-2007  Bruce Merry
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -27,10 +27,10 @@
 #include <gtk/gtk.h>
 #include <glib.h>
 #include <glib/gi18n-lib.h>
+#include <budgie/reflect.h>
 #include "gldb/gldb-common.h"
 #include "gldb/gldb-gui.h"
 #include "gldb/gldb-gui-breakpoint.h"
-#include "src/names.h"
 
 struct _GldbBreakpointPane
 {
@@ -164,10 +164,10 @@ GldbPane *gldb_breakpoint_pane_new(void)
     pane = GLDB_BREAKPOINT_PANE(g_object_new(GLDB_BREAKPOINT_PANE_TYPE, NULL));
     pane->breakpoint_store = gtk_list_store_new(2, G_TYPE_BOOLEAN, G_TYPE_STRING);
     pane->function_store = gtk_list_store_new(1, G_TYPE_STRING);
-    for (i = 0; i < NUMBER_OF_FUNCTIONS; i++)
+    for (i = 0; i < budgie_function_count(); i++)
     {
         gtk_list_store_append(pane->function_store, &iter);
-        gtk_list_store_set(pane->function_store, &iter, 0, budgie_function_names[i], -1);
+        gtk_list_store_set(pane->function_store, &iter, 0, budgie_function_name(i), -1);
     }
 
     hbox = gtk_hbox_new(FALSE, 0);

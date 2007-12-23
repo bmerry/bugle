@@ -22,7 +22,7 @@
 #include <GL/glx.h>
 #include <stdio.h>
 #include <stdbool.h>
-#include "src/types.h"
+#include <string.h>
 #include <bugle/gltypes.h>
 
 const gl_token *bugle_gl_enum_to_token_struct(GLenum e)
@@ -127,13 +127,8 @@ bool bugle_dump_GLprimitiveenum(GLenum token, FILE *out)
 
 bool bugle_dump_GLcomponentsenum(GLenum token, FILE *out)
 {
-    int token2;
-
     if (token >= 1 && token <= 4)
-    {
-        token2 = token;
-        budgie_dump_TYPE_i(&token2, -1, out);
-    }
+        fprintf(out, "%d", (int) token);
     else
         bugle_dump_GLenum(token,  out);
     return true;

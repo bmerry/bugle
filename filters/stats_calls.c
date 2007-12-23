@@ -24,10 +24,11 @@
 #include <stdbool.h>
 #include <bugle/stats.h>
 #include <bugle/filters.h>
-#include "src/utils.h"
+#include <budgie/reflect.h>
+#include "budgielib/defines.h"
 #include "xvasprintf.h"
 
-static stats_signal *stats_calls_counts[NUMBER_OF_FUNCTIONS];
+static stats_signal *stats_calls_counts[FUNCTION_COUNT];
 
 static bool stats_calls_callback(function_call *call, const callback_data *data)
 {
@@ -43,10 +44,10 @@ static bool stats_calls_initialise(filter_set *handle)
     f = bugle_filter_register(handle, "stats_calls");
     bugle_filter_catches_all(f, false, stats_calls_callback);
 
-    for (i = 0; i < NUMBER_OF_FUNCTIONS; i++)
+    for (i = 0; i < budgie_function_count(); i++)
     {
         char *name;
-        name = xasprintf("calls:%s", budgie_function_table[i].name);
+        name = xasprintf("calls:%s", budgie_function_name(i));
         stats_calls_counts[i] = bugle_stats_signal_register(name, NULL, NULL);
         free(name);
     }

@@ -15,44 +15,36 @@
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#ifndef _GNU_SOURCE
-# define _GNU_SOURCE /* For open_memstream */
-#endif
+#ifndef BUGLE_BUDGIE_TYPES_H
+#define BUGLE_BUDGIE_TYPES_H
+
 #if HAVE_CONFIG_H
 # include <config.h>
 #endif
-#include <stdlib.h>
-#include <stddef.h>
-#include <budgie/ioutils.h>
 
-void budgie_make_indent(int indent, FILE *out)
+typedef int budgie_function;
+typedef int budgie_group;
+typedef int budgie_type;
+
+#define NULL_FUNCTION (-1)
+#define NULL_GROUP (-1)
+#define NULL_TYPE (-1)
+
+#define BUDGIE_MAX_ARGS 16
+
+/* If you modify this, be sure to upload write_call_structs to set up the
+ * function_call union with compatible memory layout.
+ */
+typedef struct
 {
-    int i;
-    for (i = 0; i < indent; i++)
-        fputc(' ', out);
-}
+    budgie_group group;
+    budgie_function id;
+    int num_args;
+    void *user_data;
+    void *retn;
+    void *args[BUDGIE_MAX_ARGS];
+} generic_function_call;
 
-char *budgie_string_io(void (*call)(FILE *, void *), void *data)
-{
-    FILE *f;
-    size_t size;
-    char *buffer;
+#include <budgie/types2.h>
 
-#if HAVE_OPEN_MEMSTREAM
-    f = open_memstream(&buffer, &size);
-    (*call)(f, data);
-    fclose(f);
-#else
-    f = tmpfile();
-    (*call)(f, data);
-    size = ftell(f);
-    fseek(f, 0, SEEK_SET);
-    buffer = malloc(size + 1);
-    fread(buffer, 1, size, f);
-    buffer[size] = '\0';
-    fclose(f);
-#endif
-
-    return buffer;
-}
-
+#endif /* BUGLE_BUDGIE_TYPES_H */

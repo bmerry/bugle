@@ -38,15 +38,16 @@
 #include <inttypes.h>
 #include "xalloc.h"
 #include "xvasprintf.h"
-#include <budgie/typeutils.h>
-#include <budgie/ioutils.h>
 #include <bugle/glutils.h>
 #include <bugle/tracker.h>
 #include <bugle/glsl.h>
 #include <bugle/log.h>
 #include <bugle/glstate.h>
-#include "src/types.h"
-#include "src/utils.h"
+#include <bugle/misc.h>
+#include <budgie/types.h>
+#include <budgie/reflect.h>
+#include <budgie/call.h>
+#include "budgielib/defines.h"
 #include "src/glexts.h"
 
 #define STATE_NAME(x) #x, x
@@ -2233,24 +2234,24 @@ const state_info * const all_state[] =
 static void get_helper(const glstate *state,
                        GLdouble *d, GLfloat *f, GLint *i,
                        budgie_type *in_type,
-                       budgie_function get_double,
-                       budgie_function get_float,
-                       budgie_function get_int)
+                       void (*get_double)(GLenum, GLenum, GLdouble *),
+                       void (*get_float)(GLenum, GLenum, GLfloat *),
+                       void (*get_int)(GLenum, GLenum, GLint *))
 {
-    if (state->info->type == TYPE_8GLdouble && get_double != NULL_FUNCTION)
+    if (state->info->type == TYPE_8GLdouble && get_double != NULL)
     {
-        (*(void (*)(GLenum, GLenum, GLdouble *)) budgie_function_table[get_double].real)(state->target, state->info->pname, d);
+        get_double(state->target, state->info->pname, d);
         *in_type = TYPE_8GLdouble;
     }
     else if ((state->info->type == TYPE_8GLdouble || state->info->type == TYPE_7GLfloat)
-        && get_float != NULL_FUNCTION)
+        && get_float != NULL)
     {
-        (*(void (*)(GLenum, GLenum, GLfloat *)) budgie_function_table[get_float].real)(state->target, state->info->pname, f);
+        get_float(state->target, state->info->pname, f);
         *in_type = TYPE_7GLfloat;
     }
     else
     {
-        (*(void (*)(GLenum, GLenum, GLint *)) budgie_function_table[get_int].real)(state->target, state->info->pname, i);
+        get_int(state->target, state->info->pname, i);
         *in_type = TYPE_5GLint;
     }
 }
@@ -2479,12 +2480,12 @@ void bugle_state_get_raw(const glstate *state, bugle_state_raw *wrapper)
     case STATE_MODE_TEXTURE_ENV:
     case STATE_MODE_TEXTURE_FILTER_CONTROL:
     case STATE_MODE_POINT_SPRITE:
-        get_helper(state, d, f, i, &in_type, NULL_FUNCTION,
-                   FUNC_glGetTexEnvfv, FUNC_glGetTexEnviv);
+        get_helper(state, d, f, i, &in_type, NULL,
+                   budgie_CALL_glGetTexEnvfv, budgie_CALL_glGetTexEnviv);
         break;
     case STATE_MODE_TEX_PARAMETER:
-        get_helper(state, d, f, i, &in_type, NULL_FUNCTION,
-                   FUNC_glGetTexParameterfv, FUNC_glGetTexParameteriv);
+        get_helper(state, d, f, i, &in_type, NULL,
+                   budgie_CALL_glGetTexParameterfv, budgie_CALL_glGetTexParameteriv);
         break;
     case STATE_MODE_TEX_LEVEL_PARAMETER:
         if (state->info->type == TYPE_8GLdouble || state->info->type == TYPE_7GLfloat)
@@ -2499,16 +2500,16 @@ void bugle_state_get_raw(const glstate *state, bugle_state_raw *wrapper)
         }
         break;
     case STATE_MODE_TEX_GEN:
-        get_helper(state, d, f, i, &in_type, FUNC_glGetTexGendv,
-                   FUNC_glGetTexGenfv, FUNC_glGetTexGeniv);
+        get_helper(state, d, f, i, &in_type, budgie_CALL_glGetTexGendv,
+                   budgie_CALL_glGetTexGenfv, budgie_CALL_glGetTexGeniv);
         break;
     case STATE_MODE_LIGHT:
-        get_helper(state, d, f, i, &in_type, NULL_FUNCTION,
-                   FUNC_glGetLightfv, FUNC_glGetLightiv);
+        get_helper(state, d, f, i, &in_type, NULL,
+                   budgie_CALL_glGetLightfv, budgie_CALL_glGetLightiv);
         break;
     case STATE_MODE_MATERIAL:
-        get_helper(state, d, f, i, &in_type, NULL_FUNCTION,
-                   FUNC_glGetMaterialfv, FUNC_glGetMaterialiv);
+        get_helper(state, d, f, i, &in_type, NULL,
+                   budgie_CALL_glGetMaterialfv, budgie_CALL_glGetMaterialiv);
         break;
     case STATE_MODE_CLIP_PLANE:
         CALL_glGetClipPlane(state->target, d);
@@ -2518,20 +2519,20 @@ void bugle_state_get_raw(const glstate *state, bugle_state_raw *wrapper)
         CALL_glGetPolygonStipple((GLubyte *) stipple);
         break;
     case STATE_MODE_COLOR_TABLE_PARAMETER:
-        get_helper(state, d, f, i, &in_type, NULL_FUNCTION,
-                   FUNC_glGetColorTableParameterfv, FUNC_glGetColorTableParameteriv);
+        get_helper(state, d, f, i, &in_type, NULL,
+                   budgie_CALL_glGetColorTableParameterfv, budgie_CALL_glGetColorTableParameteriv);
         break;
     case STATE_MODE_CONVOLUTION_PARAMETER:
-        get_helper(state, d, f, i, &in_type, NULL_FUNCTION,
-                   FUNC_glGetConvolutionParameterfv, FUNC_glGetConvolutionParameteriv);
+        get_helper(state, d, f, i, &in_type, NULL,
+                   budgie_CALL_glGetConvolutionParameterfv, budgie_CALL_glGetConvolutionParameteriv);
         break;
     case STATE_MODE_HISTOGRAM_PARAMETER:
-        get_helper(state, d, f, i, &in_type, NULL_FUNCTION,
-                   FUNC_glGetHistogramParameterfv, FUNC_glGetHistogramParameteriv);
+        get_helper(state, d, f, i, &in_type, NULL,
+                   budgie_CALL_glGetHistogramParameterfv, budgie_CALL_glGetHistogramParameteriv);
         break;
     case STATE_MODE_MINMAX_PARAMETER:
-        get_helper(state, d, f, i, &in_type, NULL_FUNCTION,
-                   FUNC_glGetMinmaxParameterfv, FUNC_glGetMinmaxParameteriv);
+        get_helper(state, d, f, i, &in_type, NULL,
+                   budgie_CALL_glGetMinmaxParameterfv, budgie_CALL_glGetMinmaxParameteriv);
         break;
 #ifdef GL_ARB_vertex_program
     case STATE_MODE_VERTEX_ATTRIB:
@@ -2806,7 +2807,7 @@ void bugle_state_get_raw(const glstate *state, bugle_state_raw *wrapper)
         default: abort();
         }
 
-        wrapper->data = xnmalloc(abs(in_length), budgie_type_table[out_type].size);
+        wrapper->data = xnmalloc(abs(in_length), budgie_type_size(out_type));
         wrapper->type = out_type;
         wrapper->length = in_length;
         budgie_type_convert(wrapper->data, wrapper->type, in, in_type, abs(wrapper->length));
@@ -2834,9 +2835,9 @@ char *bugle_state_get_string(const glstate *state)
         return "<GL error>";
 
     if (wrapper.type == TYPE_Pc)
-        ans = xstrdup((const char *) wrapper.data); // budgie_string_io(dump_string_wrapper, (char *) wrapper.data);
+        ans = xstrdup((const char *) wrapper.data); // bugle_string_io(dump_string_wrapper, (char *) wrapper.data);
     else
-        ans = budgie_string_io(dump_wrapper, &wrapper);
+        ans = bugle_string_io(dump_wrapper, &wrapper);
     free(wrapper.data);
     return ans;
 }

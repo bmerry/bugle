@@ -32,8 +32,8 @@
 #include <bugle/glutils.h>
 #include <bugle/xevent.h>
 #include <bugle/tracker.h>
+#include <budgie/call.h>
 #include "src/glexts.h"
-#include "src/utils.h"
 #include "xalloc.h"
 
 typedef struct
@@ -488,7 +488,7 @@ static bool showstats_initialise(filter_set *handle)
     bugle_filter_order("showstats", "debugger");
     bugle_filter_order("showstats", "screenshot");
     bugle_filter_order("stats", "showstats");
-    bugle_filter_catches(f, GROUP_glXSwapBuffers, false, showstats_glXSwapBuffers);
+    bugle_filter_catches(f, "glXSwapBuffers", false, showstats_glXSwapBuffers);
     showstats_view = bugle_object_view_register(&bugle_context_class,
                                                  NULL,
                                                  showstats_struct_clear,

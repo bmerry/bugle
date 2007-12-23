@@ -40,6 +40,16 @@
 #include <regex.h>
 #include <unistd.h>
 
+typedef enum
+{
+    FILE_CALL_H,
+    FILE_TYPES2_H,
+    FILE_DEFINES_H,
+    FILE_LIB_C,
+    FILE_TABLES_C,
+    FILE_COUNT
+};
+
 using namespace std;
 
 /* Raw text */
@@ -124,7 +134,6 @@ static list<Function> functions;
 static list<Type> types;
 
 /* Configuration and command line stuff */
-static string tufile, typesbase, utilbase, namebase, libbase;
 static string limit = "";
 static list<string> headers, libraries;
 static list<Override> overrides;
@@ -137,8 +146,9 @@ extern FILE *bc_yyin;
 extern int yyparse();
 
 /* File handles */
-static FILE *name_h, *util_h, *types_h, *lib_h;
-static FILE *name_c, *util_c, *types_c, *lib_c;
+static string tufile;
+static string filenames[FILE_COUNT];
+static FILE *files[FILE_COUNT];
 
 /* Utility data */
 static map<string, list<Function>::iterator> function_map;
@@ -217,24 +227,32 @@ static void process_args(int argc, char * const argv[])
 {
     int opt;
 
-    while ((opt = getopt(argc, argv, "n:t:T:o:l:")) != -1)
+    filenames[FILE_CALL_H] = "include/budgie/call.h";
+    filenames[FILE_TYPES2_H] = "include/budgie/types2.h";
+    filenames[FILE_DEFINES_H] = "budgielib/defines.h";
+    filenames[FILE_TABLES_C] = "budgielib/tables.c";
+    filenames[FILE_LIB_C] = "budgielib/lib.c";
+    while ((opt = getopt(argc, argv, "T:c:2:t:l:d:")) != -1)
     {
         switch (opt)
         {
-        case 't':
+        case 'T':
             tufile = optarg;
             break;
-        case 'T':
-            typesbase = optarg;
+        case 'c':
+            filenames[FILE_CALL_H] = optarg;
             break;
-        case 'o':
-            utilbase = optarg;
-            break;
-        case 'n':
-            namebase = optarg;
+        case '2':
+            filenames[FILE_TYPES2_H] = optarg;
             break;
         case 'l':
-            libbase = optarg;
+            filenames[FILE_LIB_C] = optarg;
+            break;
+        case 't':
+            filenames[FILE_TABLES_C] = optarg;
+            break;
+        case 'd':
+            filenames[FILE_DEFINES_H] = optarg;
             break;
         case '?':
         case ':':
@@ -683,28 +701,60 @@ static void write_redirects(FILE *f, bool set)
 
 static void write_headers()
 {
-    lib_c = fopen((libbase + ".c").c_str(), "w");
-    if (!lib_c) pdie("Failed to open " + libbase + ".c");
-    lib_h = fopen((libbase + ".h").c_str(), "w");
-    if (!lib_h) pdie("Failed to open " + libbase + ".h");
-    util_c = fopen((utilbase + ".c").c_str(), "w");
-    if (!util_c) pdie("Failed to open " + utilbase + ".c");
-    util_h = fopen((utilbase + ".h").c_str(), "w");
-    if (!util_h) pdie("Failed to open " + utilbase + ".h");
-    types_c = fopen((typesbase + ".c").c_str(), "w");
-    if (!types_c) pdie("Failed to open " + typesbase + ".c");
-    types_h = fopen((typesbase + ".h").c_str(), "w");
-    if (!types_h) pdie("Failed to open " + typesbase + ".h");
-    name_c = fopen((namebase + ".c").c_str(), "w");
-    if (!name_c) pdie("Failed to open " + namebase + ".c");
-    name_h = fopen((namebase + ".h").c_str(), "w");
-    if (!name_h) pdie("Failed to open " + namebase + ".h");
+    for (int i = 0; i < (int) FILE_COUNT; i++)
+    {
+        files[i] = fopen(filenames[i].c_str(), "w");
+        if (!files[i]) pdie("Failed to open " + filenames[i]);
+    }
 
+    fprintf(files[FILE_CALL_H],
+            "#ifndef BUDGIE_CALL_H\n"
+            "#define BUDGIE_CALL_H\n",
+            "#if HAVE_CONFIG_H\n"
+            "# include <config.h>\n"
+            "#endif\n"
+            "#include <budgie/types.h>\n");
+    fprintf(files[FILE_DEFINES_H],
+            "#ifndef BUDGIE_DEFINES_H\n"
+            "#define BUDGIE_DEFINES_H\n"
+            "#if HAVE_CONFIG_H\n"
+            "# include <config.h>\n"
+            "#endif\n");
+    fprintf(files[FILE_TYPES2_H],
+            "#ifndef BUDGIE_TYPES2_H\n"
+            "#define BUDGIE_TYPES2_H\n"
+            "#if HAVE_CONFIG_H\n"
+            "# include <config.h>\n"
+            "#endif\n"
+            "#include <budgie/types.h>\n");
+
+    fprintf(files[FILE_TABLES_C],
+            "#if HAVE_CONFIG_H\n"
+            "# include <config.h>\n"
+            "#endif\n"
+            "#include <stdio.h>\n"
+            "#include <stdlib.h>\n"
+            "#include <string.h>\n"
+            "#include <budgie/types.h>\n"
+            "#include <budgie/reflect.h>\n"
+            "#include \"%s\"\n"
+            "#include \"budgielib/internal.h\"\n",
+            filenames[FILE_DEFINES_H].c_str());
+    fprintf(files[FILE_LIB_C],
+            "#if HAVE_CONFIG_H\n"
+            "# include <config.h>\n"
+            "#endif\n"
+            "#include <stdlib.h>\n"
+            "#include <budgie/types.h>\n"
+            "#include <budgie/call.h>\n"
+            "#include \"budgielib/defines.h\"\n"
+            "#include \"budgielib/internal.h\"\n"
+            "#include \"budgielib/lib.h\"\n");
+#if 0
     fprintf(util_c,
             "#include \"%s.h\"\n"
             "#include \"%s.h\"\n"
             "#include <assert.h>\n"
-            "#include <dlfcn.h>\n"
             "#include <stddef.h>\n"   // for offsetof
             "#include <budgie/budgieutils.h>\n"
             "\n",
@@ -756,178 +806,177 @@ static void write_headers()
             "#ifndef NAMES_H\n"
             "#define NAMES_H\n"
             "\n");
+#endif
 }
 
 static void write_trailers()
 {
-    fprintf(name_h, "#endif /* !NAMES_H */\n");
-    fprintf(util_h, "#endif /* !UTILS_H */\n");
-    fprintf(types_h, "#endif /* !TYPES_H */\n");
-    fprintf(lib_h, "#endif /* !LIB_H */\n");
+    fprintf(files[FILE_CALL_H], "#endif /* !BUDGIE_CALL_H */\n");
+    fprintf(files[FILE_DEFINES_H], "#endif /* !BUDGIE_DEFINES_H */\n");
+    fprintf(files[FILE_TYPES2_H], "#endif /* !BUDGIE_TYPES2_H */\n");
 
-    fclose(name_c);
-    fclose(name_h);
-    fclose(lib_c);
-    fclose(lib_h);
-    fclose(util_c);
-    fclose(util_h);
-    fclose(types_c);
-    fclose(types_h);
+    for (int i = 0; i < (int) FILE_COUNT; i++)
+        fclose(files[i]);
 }
 
-static void write_enums()
+static void write_defines(FILE *f)
 {
     for (list<Function>::iterator i = functions.begin(); i != functions.end(); i++)
-        fprintf(util_h, "#define %s %d\n", i->define().c_str(), i->index);
-    fprintf(util_h,
-            "#define NUMBER_OF_FUNCTIONS %d\n"
-            "extern int budgie_number_of_functions;\n"
+        fprintf(f, "#define %s %d\n", i->define().c_str(), i->index);
+    fprintf(f,
+            "#define FUNCTION_COUNT %d\n"
             "\n", (int) functions.size());
-    fprintf(util_c,
-            "int budgie_number_of_functions = NUMBER_OF_FUNCTIONS;\n");
 
     for (list<Function>::iterator i = functions.begin(); i != functions.end(); i++)
-        fprintf(util_h, "#define %s %d\n", i->group_define().c_str(), i->group->index);
-    fprintf(util_h,
-            "#define NUMBER_OF_GROUPS %d\n"
-            "extern int budgie_number_of_groups;\n"
+        fprintf(f, "#define %s %d\n", i->group_define().c_str(), i->group->index);
+    fprintf(f,
+            "#define GROUP_COUNT %d\n"
             "\n", (int) groups.size());
-    fprintf(util_c,
-            "int budgie_number_of_groups = NUMBER_OF_GROUPS;\n");
 
     for (list<Type>::iterator i = types.begin(); i != types.end(); i++)
     {
         string name = i->type_name();
         string define = i->define();
-        fprintf(types_h,
+        fprintf(f,
                 "/* %s */\n"
                 "#define %s %d\n",
                 name.c_str(), define.c_str(), i->index);
     }
-    fprintf(types_h,
-            "#define NUMBER_OF_TYPES %d\n"
-            "extern int budgie_number_of_types;\n"
+    fprintf(f,
+            "#define TYPE_COUNT %d\n"
             "\n", (int) types.size());
-    fprintf(types_c,
-            "int budgie_number_of_types = NUMBER_OF_TYPES;\n"
-            "\n");
-}
-
-static void write_function_to_group_table()
-{
-    fprintf(util_h,
-            "extern const int budgie_function_to_group[NUMBER_OF_FUNCTIONS];\n");
-    fprintf(util_c,
-            "const int budgie_function_to_group[NUMBER_OF_FUNCTIONS] =\n"
-            "{\n");
-    for (list<Function>::iterator i = functions.begin(); i != functions.end(); i++)
-    {
-        string group = i->group_define();
-        if (i != functions.begin()) fprintf(util_c, ",\n");
-        fprintf(util_c, "    %s", group.c_str());
-    }
-    fprintf(util_c, "\n};\n\n");
 }
 
 static void write_includes()
 {
-    write_redirects(util_h, true);
-    write_redirects(types_h, true);
+    write_redirects(files[FILE_TYPES2_H], true);
     for (list<string>::iterator i = headers.begin(); i != headers.end(); i++)
-    {
-        fprintf(util_h, "#include \"%s\"\n", i->c_str());
-        fprintf(types_h, "#include \"%s\"\n", i->c_str());
-    }
-    write_redirects(util_h, false);
-    write_redirects(types_h, false);
+        fprintf(files[FILE_TYPES2_H], "#include \"%s\"\n", i->c_str());
+    write_redirects(files[FILE_TYPES2_H], false);
 }
 
-static void write_typedefs()
+static void write_typedefs(FILE *f)
 {
     for (list<Bitfield>::iterator i = bitfields.begin(); i != bitfields.end(); i++)
-        fprintf(types_h, "typedef %s %s;\n",
+        fprintf(f, "typedef %s %s;\n",
                 i->old_type.c_str(), i->new_type.c_str());
-    fprintf(types_h, "\n");
+    fprintf(f, "\n");
 }
 
-static void write_function_table()
+static void write_function_table(FILE *f)
 {
-    fprintf(util_h, "extern function_data budgie_function_table[NUMBER_OF_FUNCTIONS];\n");
-    fprintf(util_c,
-            "function_data budgie_function_table[NUMBER_OF_FUNCTIONS] =\n"
+    fprintf(f,
+            "const function_data _budgie_function_table[FUNCTION_COUNT] =\n"
             "{\n");
     for (list<Function>::iterator i = functions.begin(); i != functions.end(); i++)
     {
         string name = i->name();
         string group = i->group_define();
-        if (i != functions.begin()) fprintf(util_c, ",\n");
-        fprintf(util_c,
-                "    { \"%s\", NULL, %s }",
+        if (i != functions.begin()) fprintf(f, ",\n");
+        fprintf(f,
+                "    { \"%s\", %s }",
                 name.c_str(), group.c_str());
     }
-    fprintf(util_c, "\n};\n\n");
+    fprintf(f, "\n};\n\n");
 }
 
-static void write_parameter_entry(FILE *out, const Group &g,
-                                  const Parameter &p,
-                                  int index)
+static void write_group_table(FILE *f)
+{
+    for (list<Group>::iterator i = groups.begin(); i != groups.end(); i++)
+    {
+        string name = i->name();
+        if (i->parameters.empty()) continue;
+        fprintf(f,
+                "static const budgie_type parameters_%s[] =\n"
+                "{\n",
+                name.c_str());
+        for (size_t j = 0; j < i->parameters.size(); j++)
+        {
+            if (j) fprintf(f, ",\n");
+            fprintf(f, "    %s", i->parameters[j].type->define().c_str());
+        }
+        fprintf(f, "\n};\n\n");
+    }
+
+    fprintf(f,
+            "const group_data _budgie_group_table[GROUP_COUNT] =\n"
+            "{\n");
+    for (list<Group>::iterator i = groups.begin(); i != groups.end(); i++)
+    {
+        string name = i->name();
+        if (i != groups.begin()) fprintf(f, ",\n");
+        fprintf(f, "    { %d, ", (int) i->parameters.size());
+        if (!i->parameters.empty())
+            fprintf(f, "parameters_%s, ", name.c_str());
+        else
+            fprintf(f, "NULL, ");
+        if (i->has_retn)
+            fprintf(f, "%s, true }", i->retn.type->define().c_str());
+        else
+            fprintf(f, "NULL_TYPE, false }");
+    }
+    fprintf(f, "\n};\n\n");
+}
+
+static void write_dump_parameter_entry(FILE *out, const Group &g,
+                                       const Parameter &p,
+                                       int index)
 {
     string type = p.type->define();
     string dumper = "NULL", get_type = "NULL", get_length = "NULL";
     string ind = parameter_number(index);
 
     if (p.overrides.count(OVERRIDE_DUMP))
-        dumper = "budgie_dump_" + ind + "_" + g.define();
+        dumper = "_budgie_dump_" + ind + "_" + g.define();
     if (p.overrides.count(OVERRIDE_TYPE))
-        get_type = "budgie_get_type_" + ind + "_" + g.define();
+        get_type = "_budgie_get_type_" + ind + "_" + g.define();
     if (p.overrides.count(OVERRIDE_LENGTH))
-        get_length = "budgie_get_length_" + ind + "_" + g.define();
+        get_length = "_budgie_get_length_" + ind + "_" + g.define();
     fprintf(out, "{ %s, %s, %s, %s }",
             type.c_str(), dumper.c_str(), get_type.c_str(), get_length.c_str());
 }
 
-static void write_group_table()
+static void write_group_dump_table(FILE *f)
 {
     for (list<Group>::iterator i = groups.begin(); i != groups.end(); i++)
     {
         string name = i->name();
         if (i->parameters.empty()) continue;
-        fprintf(util_c,
-                "static const group_parameter_data parameters_%s[] =\n"
+        fprintf(f,
+                "static const group_dump_parameter parameters_%s[] =\n"
                 "{\n",
                 name.c_str());
         for (size_t j = 0; j < i->parameters.size(); j++)
         {
-            if (j) fprintf(util_c, ",\n");
-            fprintf(util_c, "    ");
-            write_parameter_entry(util_c, *i, i->parameters[j], j);
+            if (j) fprintf(f, ",\n");
+            fprintf(f, "    ");
+            write_dump_parameter_entry(f, *i, i->parameters[j], j);
         }
-        fprintf(util_c, "\n};\n\n");
+        fprintf(f, "\n};\n\n");
     }
 
-    fprintf(util_h, "extern const group_data budgie_group_table[NUMBER_OF_GROUPS];\n");
-    fprintf(util_c,
-            "const group_data budgie_group_table[NUMBER_OF_GROUPS] =\n"
+    fprintf(f,
+            "const group_dump _budgie_group_dump_table[GROUP_COUNT] =\n"
             "{\n");
     for (list<Group>::iterator i = groups.begin(); i != groups.end(); i++)
     {
         string name = i->name();
-        if (i != groups.begin()) fprintf(util_c, ",\n");
-        fprintf(util_c, "    { %d, ", (int) i->parameters.size());
+        if (i != groups.begin()) fprintf(f, ",\n");
+        fprintf(f, "    { %d, ", (int) i->parameters.size());
         if (!i->parameters.empty())
-            fprintf(util_c, "parameters_%s, ", name.c_str());
+            fprintf(f, "parameters_%s, ", name.c_str());
         else
-            fprintf(util_c, "NULL, ");
+            fprintf(f, "NULL, ");
         if (i->has_retn)
-            write_parameter_entry(util_c, *i, i->retn, -1);
+            write_dump_parameter_entry(f, *i, i->retn, -1);
         else
-            fprintf(util_c, "{ NULL_TYPE, NULL, NULL, NULL }");
-        fprintf(util_c, i->has_retn ? ", true }" : ", false }");
+            fprintf(f, "{ NULL_TYPE, NULL, NULL, NULL }");
+        fprintf(f, i->has_retn ? ", true }" : ", false }");
     }
-    fprintf(util_c, "\n};\n\n");
+    fprintf(f, "\n};\n\n");
 }
 
-static void write_type_table()
+static void write_type_table(FILE *f)
 {
     map<tree_node_p, tree_node_p> inverse_pointer;
 
@@ -945,7 +994,7 @@ static void write_type_table()
         {
             string name = i->name();
             string type = i->type_name();
-            fprintf(types_c,
+            fprintf(f,
                     "static const type_record_data fields_%s[] =\n"
                     "{\n",
                     name.c_str());
@@ -957,22 +1006,21 @@ static void write_type_table()
                 {
                     string field_type = get_type_map(TREE_TYPE(cur))->define();
                     string field = IDENTIFIER_POINTER(DECL_NAME(cur));
-                    fprintf(types_c,
+                    fprintf(f,
                             "    { %s, offsetof(%s, %s) },\n",
                             field_type.c_str(), type.c_str(), field.c_str());
                 }
                 cur = TREE_CHAIN(cur);
             }
-            fprintf(types_c,
+            fprintf(f,
                     "    { NULL_TYPE, -1 }\n"
                     "};\n\n");
         }
     }
 
     // main type table
-    fprintf(types_h, "extern const type_data budgie_type_table[NUMBER_OF_TYPES];\n");
-    fprintf(types_c,
-            "const type_data budgie_type_table[NUMBER_OF_TYPES] =\n"
+    fprintf(f,
+            "const type_data _budgie_type_table[TYPE_COUNT] =\n"
             "{\n");
     for (list<Type>::iterator i = types.begin(); i != types.end(); i++)
     {
@@ -1018,41 +1066,41 @@ static void write_type_table()
         else
             length = 1; // FIXME: should this perhaps be -1?
         if (i->overrides.count(OVERRIDE_TYPE))
-            get_type = "budgie_get_type_" + define;
+            get_type = "_budgie_get_type_" + define;
         if (i->overrides.count(OVERRIDE_LENGTH))
-            get_length = "budgie_get_length_" + define;
+            get_length = "_budgie_get_length_" + define;
 
-        if (i != types.begin()) fprintf(types_c, ",\n");
-        fprintf(types_c,
+        if (i != types.begin()) fprintf(f, ",\n");
+        fprintf(f,
                 "    { %s, %s, %s, %s, sizeof(%s), %d,\n"
-                "      (type_dumper) budgie_dump_%s,\n"
+                "      (type_dumper) _budgie_dump_%s,\n"
                 "      (type_get_type) %s,\n"
                 "      (type_get_length) %s }",
                 code, base_type.c_str(), ptr.c_str(), fields.c_str(),
                 type.c_str(), (int) length, define.c_str(),
                 get_type.c_str(), get_length.c_str());
     }
-    fprintf(types_c, "\n};\n\n");
+    fprintf(f, "\n};\n\n");
 }
 
-static void write_library_table()
+static void write_library_table(FILE *f)
 {
-    fprintf(util_c,
-            "const char * const library_names[] =\n"
+    fprintf(f,
+            "const char * const _budgie_library_names[] =\n"
             "{\n");
     for (list<string>::iterator i = libraries.begin(); i != libraries.end(); i++)
     {
-        if (i != libraries.begin()) fprintf(util_c, ",\n");
-        fprintf(util_c, "\"%s\"", i->c_str());
+        if (i != libraries.begin()) fprintf(f, ",\n");
+        fprintf(f, "\"%s\"", i->c_str());
     }
-    fprintf(util_c,
-            "};\n"
-            "int budgie_number_of_libraries = %d;\n"
+    fprintf(f,
+            "\n};\n\n"
+            "int _budgie_library_count = %d;\n"
             "\n",
             (int) libraries.size());
 }
 
-static void write_type_dumpers()
+static void write_type_dumpers(FILE *f)
 {
     map<tree_node_p, list<Bitfield>::iterator> bitfield_map;
 
@@ -1068,11 +1116,8 @@ static void write_type_dumpers()
         string custom_code;
         destroy_temporary(ptr);
 
-        fprintf(types_h,
-                "void budgie_dump_%s(%s, int count, FILE *out);\n",
-                define.c_str(), arg.c_str());
-        fprintf(types_c,
-                "void budgie_dump_%s(%s, int count, FILE *out)\n"
+        fprintf(f,
+                "static void _budgie_dump_%s(%s, int count, FILE *out)\n"
                 "{\n",
                 define.c_str(), arg.c_str());
 
@@ -1084,21 +1129,21 @@ static void write_type_dumpers()
         if (bitfield_map.count(i->node))
         {
             list<Bitfield>::iterator b = bitfield_map[i->node];
-            fprintf(types_c,
+            fprintf(f,
                     "    static const bitfield_pair tokens[] =\n"
                     "    {\n");
             for (list<string>::iterator j = b->bits.begin(); j != b->bits.end(); j++)
             {
-                if (j != b->bits.begin()) fprintf(types_c, ",\n");
-                fprintf(types_c,
+                if (j != b->bits.begin()) fprintf(f, ",\n");
+                fprintf(f,
                         "        { %s, \"%s\" }",
                         j->c_str(), j->c_str());
             }
-            fprintf(types_c,
+            fprintf(f,
                     "\n"
                     "    };\n"
                     "%s"
-                    "    budgie_dump_bitfield(*value, out, tokens, %d);\n"
+                    "    _budgie_dump_bitfield(*value, out, tokens, %d);\n"
                     "}\n"
                     "\n",
                     custom_code.c_str(), (int) b->bits.size());
@@ -1114,7 +1159,7 @@ static void write_type_dumpers()
         switch (TREE_CODE(i->node))
         {
         case ENUMERAL_TYPE:
-            fprintf(types_c,
+            fprintf(f,
                     "%s"
                     "    switch (*value)\n"
                     "    {",
@@ -1126,19 +1171,19 @@ static void write_type_dumpers()
                 value = TREE_INT_CST_LOW(TREE_VALUE(tmp));
                 if (!seen_enums.count(value))
                 {
-                    fprintf(types_c,
+                    fprintf(f,
                             "    case %s: fputs(\"%s\", out); break;\n",
                             name.c_str(), name.c_str());
                     seen_enums.insert(value);
                 }
                 tmp = TREE_CHAIN(tmp);
             }
-            fprintf(types_c,
+            fprintf(f,
                     "    default: fprintf(out, \"%%ld\", (long) *value);\n"
                     "    }\n");
             break;
         case INTEGER_TYPE:
-            fprintf(types_c,
+            fprintf(f,
                     "%s"
                     "    fprintf(out, \"%%\" PRI%c%ld, (%sint%ld_t) *value);\n",
                     custom_code.c_str(),
@@ -1150,19 +1195,19 @@ static void write_type_dumpers()
         case REAL_TYPE:
             // FIXME: long double
 #if HAVE_LONG_DOUBLE
-            fprintf(types_c,
+            fprintf(f,
                     "%s"
                     "    fprintf(out, \"%%Lg\", (long double) *value);\n",
                     custom_code.c_str());
 #else
-            fprintf(types_c,
+            fprintf(f,
                     "%s"
                     "    fprintf(out, \"%%g\", (double) *value);\n",
                     custom_code.c_str());
 #endif
             break;
         case ARRAY_TYPE:
-            fprintf(types_c,
+            fprintf(f,
                     "    long size;\n"
                     "    long i;\n"
                     "%s",
@@ -1170,26 +1215,26 @@ static void write_type_dumpers()
             if (TYPE_DOMAIN(i->node) != NULL_TREE) // find size
             {
                 long size = TREE_INT_CST_LOW(TYPE_MAX_VALUE(TYPE_DOMAIN(i->node))) + 1;
-                fprintf(types_c, "    size = %ld;\n", size);
+                fprintf(f, "    size = %ld;\n", size);
             }
             else
-                fprintf(types_c, "    size = count;\n");
+                fprintf(f, "    size = count;\n");
             child = TREE_TYPE(i->node); // array element type
-            fprintf(types_c,
+            fprintf(f,
                     "    fputs(\"{ \", out);\n"
                     "    for (i = 0; i < size; i++)\n"
                     "    {\n");
             if (type_map.count(child))
             {
                 define = get_type_map(child)->define();
-                fprintf(types_c,
+                fprintf(f,
                         "        budgie_dump_any_type(%s, &(*value)[i], -1, out);\n",
                         define.c_str());
             }
             else
-                fprintf(types_c,
+                fprintf(f,
                         "        fputs(\"<unknown>\", out);\n");
-            fprintf(types_c,
+            fprintf(f,
                     "        if (i < size - 1) fputs(\", \", out);\n"
                     "    }\n"
                     "    if (size < 0) fputs(\"<unknown size array>\", out);\n"
@@ -1198,15 +1243,15 @@ static void write_type_dumpers()
         case POINTER_TYPE:
             child = TREE_TYPE(i->node); // pointed to type
             if (type_map.count(child))
-                fprintf(types_c, "    int i;\n");
-            fprintf(types_c,
+                fprintf(f, "    int i;\n");
+            fprintf(f,
                     "%s"
                     "    fprintf(out, \"%%p\", (void *) *value);\n",
                     custom_code.c_str());
             if (type_map.count(child))
             {
                 string define = get_type_map(child)->define();
-                fprintf(types_c,
+                fprintf(f,
                         "    if (*value)\n"
                         "    {\n"
                         "        fputs(\" -> \", out);\n"
@@ -1231,7 +1276,7 @@ static void write_type_dumpers()
         case RECORD_TYPE:
         case UNION_TYPE:
             { // block to allow "first" to be declared in this scope
-                fprintf(types_c,
+                fprintf(f,
                         "%s"
                         "    fputs(\"{ \", out);\n",
                         custom_code.c_str());
@@ -1243,32 +1288,32 @@ static void write_type_dumpers()
                     {
                         name = IDENTIFIER_POINTER(DECL_NAME(tmp));
                         if (!first)
-                            fprintf(types_c,
+                            fprintf(f,
                                     "    fputs(\", \", out);\n");
                         else first = false;
                         child = TREE_TYPE(tmp);
                         define = get_type_map(child)->define();
-                        fprintf(types_c,
+                        fprintf(f,
                                 "    budgie_dump_any_type(%s, &value->%s, -1, out);\n",
                                 define.c_str(), name.c_str());
                     }
                     tmp = TREE_CHAIN(tmp);
                 }
-                fprintf(types_c,
+                fprintf(f,
                         "    fputs(\" }\", out);\n");
             }
             break;
         default:
-            fprintf(types_c,
+            fprintf(f,
                     "%s"
                     "    fputs(\"<unknown>\", out);\n",
                     custom_code.c_str());
         }
-        fprintf(types_c, "\n}\n\n");
+        fprintf(f, "\n}\n\n");
     }
 }
 
-static void write_type_get_types()
+static void write_type_get_types(FILE *f)
 {
     for (list<Type>::iterator i = types.begin(); i != types.end(); i++)
     {
@@ -1279,11 +1324,8 @@ static void write_type_get_types()
         string subst = search_replace(i->overrides[OVERRIDE_TYPE],
                                       "$$", "(*(" + type + ") value)");
 
-        fprintf(types_h,
-                "budgie_type budgie_get_type_%s(const void *value);\n",
-                define.c_str());
-        fprintf(types_c,
-                "budgie_type budgie_get_type_%s(const void *value)"
+        fprintf(f,
+                "static budgie_type _budgie_get_type_%s(const void *value)"
                 "{\n"
                 "    return (%s);\n"
                 "}\n"
@@ -1292,7 +1334,7 @@ static void write_type_get_types()
     }
 }
 
-static void write_type_get_lengths()
+static void write_type_get_lengths(FILE *f)
 {
     for (list<Type>::iterator i = types.begin(); i != types.end(); i++)
     {
@@ -1303,11 +1345,8 @@ static void write_type_get_lengths()
         string subst = search_replace(i->overrides[OVERRIDE_LENGTH],
                                       "$$", "(*(" + type + ") value)");
 
-        fprintf(types_h,
-                "int budgie_get_length_%s(const void *value);\n",
-                define.c_str());
-        fprintf(types_c,
-                "int budgie_get_length_%s(const void *value)"
+        fprintf(f,
+                "static int _budgie_get_length_%s(const void *value)"
                 "{\n"
                 "    return (%s);\n"
                 "}\n"
@@ -1316,7 +1355,7 @@ static void write_type_get_lengths()
     }
 }
 
-static void write_parameter_overrides()
+static void write_parameter_overrides(FILE *f)
 {
     for (list<Group>::iterator i = groups.begin(); i != groups.end(); i++)
     {
@@ -1328,11 +1367,8 @@ static void write_parameter_overrides()
 
             if (p.overrides.count(OVERRIDE_DUMP))
             {
-                fprintf(util_h,
-                        "bool budgie_dump_%s_%s(const generic_function_call *call, int arg, const void *value, int length, FILE *out);\n",
-                        ind.c_str(), define.c_str());
-                fprintf(util_c,
-                        "bool budgie_dump_%s_%s(const generic_function_call *call, int arg, const void *value, int length, FILE *out)\n"
+                fprintf(f,
+                        "static bool _budgie_dump_%s_%s(const generic_function_call *call, int arg, const void *value, int length, FILE *out)\n"
                         "{\n"
                         "    return (%s);\n"
                         "}\n"
@@ -1342,11 +1378,8 @@ static void write_parameter_overrides()
 
             if (p.overrides.count(OVERRIDE_TYPE))
             {
-                fprintf(util_h,
-                        "budgie_type budgie_get_type_%s_%s(const generic_function_call *call, int arg, const void *value);\n",
-                        ind.c_str(), define.c_str());
-                fprintf(util_c,
-                        "budgie_type budgie_get_type_%s_%s(const generic_function_call *call, int arg, const void *value)\n"
+                fprintf(f,
+                        "static budgie_type _budgie_get_type_%s_%s(const generic_function_call *call, int arg, const void *value)\n"
                         "{\n"
                         "    return (%s);\n"
                         "}\n"
@@ -1356,11 +1389,8 @@ static void write_parameter_overrides()
 
             if (p.overrides.count(OVERRIDE_LENGTH))
             {
-                fprintf(util_h,
-                        "int budgie_get_length_%s_%s(const generic_function_call *call, int arg, const void *value);\n",
-                        ind.c_str(), define.c_str());
-                fprintf(util_c,
-                        "int budgie_get_length_%s_%s(const generic_function_call *call, int arg, const void *value)\n"
+                fprintf(f,
+                        "static int _budgie_get_length_%s_%s(const generic_function_call *call, int arg, const void *value)\n"
                         "{\n"
                         "    return (%s);\n"
                         "}\n"
@@ -1371,22 +1401,20 @@ static void write_parameter_overrides()
     }
 }
 
-static void write_converter()
+static void write_converter(FILE *f)
 {
     tree_node_p tmp;
 
-    fprintf(types_h,
-            "void budgie_type_convert(void *out, budgie_type out_type, const void *in, budgie_type in_type, size_t count);\n");
-    fprintf(types_c,
+    fprintf(f,
             "void budgie_type_convert(void *out, budgie_type out_type, const void *in, budgie_type in_type, size_t count)\n"
             "{\n"
             "    long double value;\n"
             "    size_t i;\n"
             "    if (in_type == out_type\n"
-            "        || (budgie_type_table[in_type].code == budgie_type_table[out_type].code\n"
-            "            && budgie_type_table[in_type].size == budgie_type_table[out_type].size))\n"
+            "        || (_budgie_type_table[in_type].code == _budgie_type_table[out_type].code\n"
+            "            && _budgie_type_table[in_type].size == _budgie_type_table[out_type].size))\n"
             "    {\n"
-            "        memcpy(out, in, budgie_type_table[in_type].size * count);\n"
+            "        memcpy(out, in, _budgie_type_table[in_type].size * count);\n"
             "        return;\n"
             "    }\n"
             "    for (i = 0; i < count; i++)\n"
@@ -1405,7 +1433,7 @@ static void write_converter()
         case INTEGER_TYPE:
             tmp = make_pointer(make_const(i->node));
             cast = type_to_string(tmp, "", false);
-            fprintf(types_c,
+            fprintf(f,
                     "        case %s: value = (long double) ((%s) in)[i]; break;\n",
                     define.c_str(), cast.c_str());
             destroy_temporary(tmp);
@@ -1414,7 +1442,7 @@ static void write_converter()
         }
     }
 
-    fprintf(types_c,
+    fprintf(f,
             "        default: abort();\n"
             "        }\n"
             "        switch (out_type)\n"
@@ -1433,7 +1461,7 @@ static void write_converter()
         case INTEGER_TYPE:
             tmp = make_pointer(i->node);
             cast = type_to_string(tmp, "", false);
-            fprintf(types_c,
+            fprintf(f,
                     "        case %s: ((%s) out)[i] = (%s) value; break;\n",
                     define.c_str(), cast.c_str(), type.c_str());
             destroy_temporary(tmp);
@@ -1442,55 +1470,76 @@ static void write_converter()
         }
     }
 
-    fprintf(types_c,
+    fprintf(f,
             "        default: abort();\n"
             "        }\n"
             "    }\n"
             "}\n\n");
 }
 
-static void write_call_wrappers()
+static void write_call_wrappers(FILE *h, FILE *c)
 {
+#if 0
+    // NB: still need to put in weak symbol trickery
+    // Also need to make sure that interceptors inline the function when
+    // in bypass mode
+#endif
     for (list<Function>::iterator i = functions.begin(); i != functions.end(); i++)
     {
         tree_node_p ptr = make_pointer(TREE_TYPE(i->node));
 
+        string proto = function_type_to_string(TREE_TYPE(i->node), "budgie_CALL_" + i->name(),
+                                               false, "arg");
         string name = i->name();
         string type = type_to_string(ptr, "", false);
         string define = i->define();
-        fprintf(util_h,
-                "#define CALL_%s(", name.c_str());
-        for (size_t j = 0; j < i->group->parameters.size(); j++)
-        {
-            if (j) fprintf(util_h, ", ");
-            fprintf(util_h, "arg%d", (int) j);
-        }
-        fprintf(util_h,
-                ") ((*(%s) budgie_function_table[%s].real)(",
+        fprintf(h, "%s;\n", proto.c_str());
+        fprintf(h, "#define CALL_%s budgie_CALL_%s\n",
+                i->name().c_str(), i->name().c_str());
+        fprintf(c, "%s\n{\n    ", proto.c_str());
+        if (i->group->has_retn)
+            fprintf(c, "return ");
+        fprintf(c,
+                "(*(%s) _budgie_function_address_real[%s])(",
                 type.c_str(), define.c_str());
         for (size_t j = 0; j < i->group->parameters.size(); j++)
         {
-            if (j) fprintf(util_h, ", ");
-            fprintf(util_h, "arg%d", (int) j);
+            if (j) fprintf(c, ", ");
+            fprintf(c, "arg%d", (int) j);
         }
-        fprintf(util_h, "))\n");
+        fprintf(c, ");\n}\n\n");
 
         destroy_temporary(ptr);
     }
 }
 
-static void write_call_structs()
+static void write_call_structs(FILE *f)
 {
-    size_t max_args = 0;
-
+    fprintf(f,
+            "typedef union\n"
+            "{\n"
+            "    generic_function_call generic;\n");
     for (list<Function>::iterator i = functions.begin(); i != functions.end(); i++)
     {
         // avoid empty structs
         if (i->group->parameters.empty() && !i->group->has_retn) continue;
         string name = i->name();
-        fprintf(util_h,
-                "typedef struct\n"
-                "{\n");
+        fprintf(f,
+                "    struct\n"
+                "    {\n"
+                "        budgie_group group;\n"
+                "        budgie_function id;\n"
+                "        int num_args;\n"
+                "        void *user_data;\n");
+        if (i->group->has_retn)
+        {
+            tree_node_p ptr = make_pointer(i->group->retn.type->node);
+            string p = type_to_string(ptr, "retn", true);
+            fprintf(f, "        %s;\n", p.c_str());
+            destroy_temporary(ptr);
+        }
+        else
+            fprintf(f, "        void *padding;\n");
         for (size_t j = 0; j < i->group->parameters.size(); j++)
         {
             ostringstream arg;
@@ -1499,52 +1548,28 @@ static void write_call_structs()
             ptr = make_pointer(i->group->parameters[j].type->node);
             arg << "arg" << j;
             string p = type_to_string(ptr, arg.str(), true);
-            fprintf(util_h, "    %s;\n", p.c_str());
+            fprintf(f, "        %s;\n", p.c_str());
 
             destroy_temporary(ptr);
         }
-        if (i->group->has_retn)
-        {
-            tree_node_p ptr = make_pointer(i->group->retn.type->node);
-            string p = type_to_string(ptr, "retn", true);
-            fprintf(util_h, "    %s;\n", p.c_str());
-            destroy_temporary(ptr);
-        }
-        fprintf(util_h, "} budgie_call_struct_%s;\n\n", name.c_str());
-
-        max_args = max(max_args, i->group->parameters.size());
+        fprintf(f, "    } %s;\n\n", name.c_str());
     }
 
-    fprintf(util_h,
-            "typedef struct function_call_s\n"
-            "{\n"
-            "    generic_function_call generic;\n"
-            "    const void *args[%d];\n"
-            "    union\n"
-            "    {\n",
-            (int) max_args);
-    for (list<Function>::iterator i = functions.begin(); i != functions.end(); i++)
-    {
-        if (i->group->parameters.empty() && !i->group->has_retn) continue;
-        string name = i->name();
-        fprintf(util_h, "        budgie_call_struct_%s %s;\n",
-                name.c_str(), name.c_str());
-    }
-    fprintf(util_h,
-            "    } typed;\n"
+    fprintf(f,
             "} function_call;\n"
             "\n");
 }
 
-static void write_invoke()
+static void write_invoke(FILE *f)
 {
+#if 0
     // the prototype isn't part of the invoker, but fits in best here
     fprintf(util_h,
             "void budgie_interceptor(function_call *call);\n"
             "\n");
+#endif
 
-    fprintf(util_h, "void budgie_invoke(function_call *call);\n");
-    fprintf(util_c,
+    fprintf(f,
             "void budgie_invoke(function_call *call)\n"
             "{\n"
             "    switch (call->generic.id)\n"
@@ -1554,23 +1579,23 @@ static void write_invoke()
     {
         string name = i->name();
         string define = i->define();
-        fprintf(util_c,
+        fprintf(f,
                 "    case %s:\n"
                 "        ",
                 define.c_str());
         if (i->group->has_retn)
-            fprintf(util_c, "*call->typed.%s.retn = ", name.c_str());
-        fprintf(util_c, "CALL_%s(", name.c_str());
+            fprintf(f, "*call->%s.retn = ", name.c_str());
+        fprintf(f, "CALL_%s(", name.c_str());
         for (size_t j = 0; j < i->group->parameters.size(); j++)
         {
-            if (j) fprintf(util_c, ", ");
-            fprintf(util_c, "*call->typed.%s.arg%d", name.c_str(), (int) j);
+            if (j) fprintf(f, ", ");
+            fprintf(f, "*call->%s.arg%d", name.c_str(), (int) j);
         }
-        fprintf(util_c,
+        fprintf(f,
                 ");\n"
                 "        break;\n");
     }
-    fprintf(util_c,
+    fprintf(f,
             "    default:\n"
             "        abort();\n"
             "    }\n"
@@ -1591,10 +1616,9 @@ static void write_invoke()
  * rather than our interception. But if we return the alias, it is always
  * going to map to the correct function.
  */
-static void write_interceptors()
+static void write_interceptors(FILE *f)
 {
-    fprintf(lib_h, "extern bool budgie_bypass[NUMBER_OF_FUNCTIONS];\n\n");
-    fprintf(lib_c, "bool budgie_bypass[NUMBER_OF_FUNCTIONS];\n\n");
+    fprintf(f, "bool _budgie_bypass[FUNCTION_COUNT];\n\n");
     for (list<Function>::iterator i = functions.begin(); i != functions.end(); i++)
     {
         string name = i->name();
@@ -1602,9 +1626,7 @@ static void write_interceptors()
         string group = i->group_define();
         string proto = function_type_to_string(TREE_TYPE(i->node), i->name(),
                                                false, "arg");
-        fprintf(lib_h, "%s;BUGLE_GCC_DECLARE_HIDDEN_ALIAS(%s)\n",
-                proto.c_str(), name.c_str());
-        fprintf(lib_c,
+        fprintf(f,
                 "%s\n"
                 "{\n"
                 "    function_call call;\n",
@@ -1613,7 +1635,7 @@ static void write_interceptors()
         {
             string ret_var = type_to_string(i->group->retn.type->node,
                                             "retn", false);
-            fprintf(lib_c, "    %s;\n", ret_var.c_str());
+            fprintf(f, "    %s;\n", ret_var.c_str());
         }
         /* The fputs is commented out because it is not always possible to
          * avoid the re-entrance. In bugle, this occurs because gl2ps is
@@ -1621,27 +1643,26 @@ static void write_interceptors()
          * this code can only be entered after calling initialise_real, so
          * the CALL_ will work.
          */
-        fprintf(lib_c,
-                "    if (budgie_bypass[FUNC_%s] || !check_set_reentrance())\n"
+        fprintf(f,
+                "    if (_budgie_bypass[FUNC_%s] || !_budgie_reentrance_init())\n"
                 "    {\n"
 //                "        fputs(\"Warning: %s was re-entered\\n\", stderr);\n"
                 "        ", name.c_str()); //, name.c_str());
         if (i->group->has_retn)
-            fprintf(lib_c, "return ");
-        fprintf(lib_c, "CALL_%s(", name.c_str());
+            fprintf(f, "return ");
+        fprintf(f, "CALL_%s(", name.c_str());
         for (size_t j = 0; j < i->group->parameters.size(); j++)
         {
-            if (j) fprintf(lib_c, ", ");
-            fprintf(lib_c, "arg%d", (int) j);
+            if (j) fprintf(f, ", ");
+            fprintf(f, "arg%d", (int) j);
         }
-        fprintf(lib_c, ");\n");
-        if (!i->group->has_retn) fprintf(lib_c, "        return;\n");
+        fprintf(f, ");\n");
+        if (!i->group->has_retn) fprintf(f, "        return;\n");
 
-        fprintf(lib_c,
+        fprintf(f,
                 "    }\n"
                 "    call.generic.id = %s;\n"
                 "    call.generic.group = %s;\n"
-                "    call.generic.args = call.args;\n"
                 "    call.generic.retn = %s;\n"
                 "    call.generic.num_args = %d;\n",
                 define.c_str(), group.c_str(),
@@ -1650,64 +1671,55 @@ static void write_interceptors()
 
         for (size_t j = 0; j < i->group->parameters.size(); j++)
         {
-            fprintf(lib_c,
-                    "    call.args[%d] = &arg%d;\n"
-                    "    call.typed.%s.arg%d = &arg%d;\n",
+            fprintf(f,
+                    "    call.generic.args[%d] = &arg%d;\n",
                     (int) j, (int) j, name.c_str(), (int) j, (int) j);
         }
         if (i->group->has_retn)
-            fprintf(lib_c,
-                    "    call.typed.%s.retn = &retn;\n",
+            fprintf(f,
+                    "    call.generic.retn = &retn;\n",
                     name.c_str());
 
-        fprintf(lib_c,
+        fprintf(f,
                 "    budgie_interceptor(&call);\n"
-                "    clear_reentrance();\n"
+                "    _budgie_reentrance_clear();\n"
                 "%s"
                 "}\n"
+                "BUGLE_GCC_DECLARE_HIDDEN_ALIAS(%s)\n"
                 "BUGLE_GCC_DEFINE_HIDDEN_ALIAS(%s)\n\n",
-                i->group->has_retn ? "    return retn;\n" : "", name.c_str());
-    }
-}
-
-static void write_function_name_table()
-{
-    fprintf(lib_h, "extern function_name_data budgie_function_name_table[NUMBER_OF_FUNCTIONS];\n");
-    fprintf(lib_c,
-            "function_name_data budgie_function_name_table[NUMBER_OF_FUNCTIONS] =\n"
-            "{\n");
-    vector<string> funcs;
-    for (list<Function>::iterator i = functions.begin(); i != functions.end(); i++)
-        funcs.push_back(i->name());
-    sort(funcs.begin(), funcs.end());
-    for (vector<string>::iterator i = funcs.begin(); i != funcs.end(); i++)
-    {
-        if (i != funcs.begin()) fprintf(lib_c, ",\n");
-        string name = *i;
-        fprintf(lib_c,
-                "    { \"%s\", (void (*)(void)) BUGLE_GCC_HIDDEN_ALIAS(%s) }",
+                i->group->has_retn ? "    return retn;\n" : "",
                 name.c_str(), name.c_str());
     }
-    fprintf(lib_c, "\n};\n\n");
-}
 
-static void write_name_table()
-{
-    fprintf(name_h,
-            "#define NUMBER_OF_FUNCTIONS %d\n"
-            "extern const char * const budgie_function_names[NUMBER_OF_FUNCTIONS];\n"
-            "\n",
-            (int) functions.size());
-    fprintf(name_c,
-            "const char * const budgie_function_names[NUMBER_OF_FUNCTIONS] =\n"
+    fprintf(f,
+            "void (*_budgie_function_address_real[FUNCTION_COUNT])(void);\n"
+            "void (*_budgie_function_address_wrapper[FUNCTION_COUNT])(void) =\n"
             "{\n");
     for (list<Function>::iterator i = functions.begin(); i != functions.end(); i++)
     {
-        string name = i->name();
-        if (i != functions.begin()) fprintf(name_c, ",\n");
-        fprintf(name_c, "    \"%s\"", name.c_str());
+        if (i != functions.begin())
+            fprintf(f, ",\n");
+        fprintf(f, "    (void (*)(void)) BUGLE_GCC_HIDDEN_ALIAS(%s)",
+                i->name().c_str());
     }
-    fprintf(name_c, "\n};\n\n");
+    fprintf(f, "\n};\n\n");
+}
+
+static void write_function_name_table(FILE *f)
+{
+    fprintf(f,
+            "const function_name_data _budgie_function_name_table[FUNCTION_COUNT] =\n"
+            "{\n");
+    vector<pair<string, int> > funcs;
+    for (list<Function>::iterator i = functions.begin(); i != functions.end(); i++)
+        funcs.push_back(make_pair(i->name(), i->index));
+    sort(funcs.begin(), funcs.end());
+    for (vector<pair<string, int> >::iterator i = funcs.begin(); i != funcs.end(); i++)
+    {
+        if (i != funcs.begin()) fprintf(f, ",\n");
+        fprintf(f, "    { \"%s\", %d }", i->first.c_str(), i->second);
+    }
+    fprintf(f, "\n};\n\n");
 }
 
 int main(int argc, char * const argv[])
@@ -1725,25 +1737,27 @@ int main(int argc, char * const argv[])
     make_indices();
 
     write_headers();
-    write_enums();
-    write_function_to_group_table();
+    write_defines(files[FILE_DEFINES_H]);
     write_includes();
-    write_typedefs();
-    write_function_table();
-    write_group_table();
-    write_type_table();
-    write_library_table();
-    write_type_dumpers();
-    write_type_get_types();
-    write_type_get_lengths();
-    write_parameter_overrides();
-    write_converter();
-    write_call_wrappers();
-    write_call_structs();
-    write_invoke();
-    write_interceptors();
-    write_function_name_table();
-    write_name_table();
+
+    write_typedefs(files[FILE_TABLES_C]);
+    write_type_dumpers(files[FILE_TABLES_C]);
+    write_type_get_types(files[FILE_TABLES_C]);
+    write_type_get_lengths(files[FILE_TABLES_C]);
+    write_parameter_overrides(files[FILE_LIB_C]);
+
+    write_function_table(files[FILE_TABLES_C]);
+    write_group_table(files[FILE_TABLES_C]);
+    write_group_dump_table(files[FILE_LIB_C]);
+    write_type_table(files[FILE_TABLES_C]);
+    write_library_table(files[FILE_LIB_C]);
+    write_function_name_table(files[FILE_TABLES_C]);
+    write_converter(files[FILE_TABLES_C]);
+
+    write_call_wrappers(files[FILE_CALL_H], files[FILE_LIB_C]);
+    write_call_structs(files[FILE_TYPES2_H]);
+    write_invoke(files[FILE_LIB_C]);
+    write_interceptors(files[FILE_LIB_C]);
     write_trailers();
 }
 
