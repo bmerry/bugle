@@ -1072,11 +1072,11 @@ static void write_type_table(FILE *f)
 
         if (i != types.begin()) fprintf(f, ",\n");
         fprintf(f,
-                "    { %s, %s, %s, %s, sizeof(%s), %d,\n"
+                "    { \"%s\", %s, %s, %s, %s, sizeof(%s), %d,\n"
                 "      (type_dumper) _budgie_dump_%s,\n"
                 "      (type_get_type) %s,\n"
                 "      (type_get_length) %s }",
-                code, base_type.c_str(), ptr.c_str(), fields.c_str(),
+                type.c_str(), code, base_type.c_str(), ptr.c_str(), fields.c_str(),
                 type.c_str(), (int) length, define.c_str(),
                 get_type.c_str(), get_length.c_str());
     }
@@ -1705,23 +1705,6 @@ static void write_interceptors(FILE *f)
     fprintf(f, "\n};\n\n");
 }
 
-static void write_function_name_table(FILE *f)
-{
-    fprintf(f,
-            "const function_name_data _budgie_function_name_table[FUNCTION_COUNT] =\n"
-            "{\n");
-    vector<pair<string, int> > funcs;
-    for (list<Function>::iterator i = functions.begin(); i != functions.end(); i++)
-        funcs.push_back(make_pair(i->name(), i->index));
-    sort(funcs.begin(), funcs.end());
-    for (vector<pair<string, int> >::iterator i = funcs.begin(); i != funcs.end(); i++)
-    {
-        if (i != funcs.begin()) fprintf(f, ",\n");
-        fprintf(f, "    { \"%s\", %d }", i->first.c_str(), i->second);
-    }
-    fprintf(f, "\n};\n\n");
-}
-
 int main(int argc, char * const argv[])
 {
     process_args(argc, argv);
@@ -1751,7 +1734,6 @@ int main(int argc, char * const argv[])
     write_group_dump_table(files[FILE_LIB_C]);
     write_type_table(files[FILE_TABLES_C]);
     write_library_table(files[FILE_LIB_C]);
-    write_function_name_table(files[FILE_TABLES_C]);
     write_converter(files[FILE_TABLES_C]);
 
     write_call_wrappers(files[FILE_CALL_H], files[FILE_LIB_C]);

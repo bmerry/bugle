@@ -171,8 +171,8 @@ static int stats_nv_enumerate(UINT index, char *name)
             nv->use_cycles = (cycles == 1);
             nv->experiment = (counter_type == NVPM_CT_SIMEXP);
             nv->name = xstrdup(name);
-            si = bugle_stats_signal_register(stat_name, nv,
-                                             stats_nv_signal_activate);
+            si = bugle_stats_signal_new(stat_name, nv,
+                                        stats_nv_signal_activate);
             bugle_list_append(&stats_nv_registered, si);
             free(stat_name);
         }

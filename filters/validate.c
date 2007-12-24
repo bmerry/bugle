@@ -38,7 +38,6 @@
 #include <budgie/call.h>
 #include <budgie/types.h>
 #include <budgie/reflect.h>
-#include "budgielib/defines.h"
 #include "src/glexts.h"
 #include "xalloc.h"
 #include "lock.h"
@@ -59,13 +58,17 @@ static bool error_callback(function_call *call, const callback_data *data)
     GLenum error;
     GLenum *stored_error;
     GLenum *call_error;
+    static budgie_group glGetError_group = NULL_GROUP;
+
+    if (glGetError_group == NULL_GROUP)
+        glGetError_group = budgie_group_id("glGetError");
 
     stored_error = bugle_object_get_current_data(&bugle_context_class, error_context_view);
     call_error = bugle_object_get_current_data(&bugle_call_class, error_call_view);
     *call_error = GL_NO_ERROR;
 
     if (budgie_function_name(call->generic.id)[2] == 'X') return true; /* GLX */
-    if (call->generic.group == GROUP_glGetError)
+    if (call->generic.group == glGetError_group)
     {
         /* We hope that it returns GL_NO_ERROR, since otherwise something
          * slipped through our own net. If not, we return it to the app
@@ -349,7 +352,7 @@ static void checks_buffer(size_t size, const void *data,
 static void checks_attribute(size_t first, size_t count,
                              const char *text, GLenum name,
                              GLenum size_name, GLint size,
-                             GLenum type_name, budgie_type type,
+                             GLenum type_name, GLenum type,
                              GLenum stride_name,
                              GLenum ptr_name, GLenum binding)
 {
@@ -373,12 +376,11 @@ static void checks_attribute(size_t first, size_t count,
                           "This is a known bug in Mesa <= 6.5.3. GL_FLOAT will be assumed.");
                 gltype = GL_FLOAT;
             }
-            else
-                type = bugle_gl_type_to_type(gltype);
+            type = gltype;
         }
         CALL_glGetIntegerv(stride_name, &stride);
         CALL_glGetPointerv(ptr_name, &ptr);
-        group_size = budgie_type_size(type) * size;
+        group_size = bugle_gl_type_to_size(type) * size;
         if (!stride) stride = group_size;
         cptr = (const char *) ptr;
         cptr += group_size * first;
@@ -482,7 +484,7 @@ static void checks_attributes(size_t first, size_t count)
     checks_attribute(first, count,
                      "edge flag array", GL_EDGE_FLAG_ARRAY,
                      0, 1,
-                     0, TYPE_9GLboolean,
+                     0, GL_BOOL,
                      GL_EDGE_FLAG_ARRAY_STRIDE,
                      GL_EDGE_FLAG_ARRAY_POINTER,
                      VBO_ENUM(GL_EDGE_FLAG_ARRAY_BUFFER_BINDING_ARB));
@@ -580,7 +582,7 @@ static void checks_min_max(GLsizei count, GLenum gltype, const GLvoid *indices,
 #endif
 
     out = XNMALLOC(count, GLuint);
-    budgie_type_convert(out, TYPE_6GLuint, indices, type, count);
+    budgie_type_convert(out, bugle_gl_type_to_type(GL_UNSIGNED_INT), indices, type, count);
     min = max = out[0];
     for (i = 0; i < count; i++)
     {

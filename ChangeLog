@@ -9,8 +9,13 @@
 * Fixed display of stats graphs
 * Fixed bogus warning about failing to create aux context when GLX < 1.3
 * Fixed access to freed memory in stats core code
-* Avoid querying state for attributes and uniforms only programs that have
+* Avoid querying state for attributes and uniforms on programs that have
   not been successfully linked
+* Move public includes into include/ directory
+* Refactor and abstract all the generated tables
+* Eliminate ABI dependence on the generated code from the filter API
+* Fix potential race conditions with initialisation order
+* Some more renaming
 
 0.0.20071206
 ------------

@@ -32,6 +32,7 @@ budgie_function budgie_function_id(const char *name);
 void          (*budgie_function_address(budgie_function id, bool real))(void);
 budgie_group    budgie_function_group(budgie_function id);
 
+budgie_group    budgie_group_id(const char *name); /* Takes a function name from the group */
 int             budgie_group_parameter_count(budgie_group id);
 /* Query -1 for the return type; void is returned as NULL_TYPE */
 budgie_type     budgie_group_parameter_type(budgie_group id, int param);
@@ -40,13 +41,13 @@ budgie_type     budgie_group_parameter_type(budgie_group id, int param);
  * type was not found when running budgie.
  */
 budgie_type     budgie_type_pointer(budgie_type type);
-
 /* Returns the type that this type points to, if NULL_TYPE is this type
  * is not a pointer type.
  */
 budgie_type     budgie_type_pointer_base(budgie_type type);
-
 size_t          budgie_type_size(budgie_type type);
+const char *    budgie_type_name(budgie_type type);
+budgie_type     budgie_type_id(const char *name);
 
 void budgie_dump_any_type(budgie_type type, const void *value, int length, FILE *out);
 /* Calls budgie_dump_any_type, BUT:

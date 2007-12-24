@@ -134,7 +134,7 @@ static bool stats_fragments_initialise(filter_set *handle)
     bugle_filter_catches(f, "glXSwapBuffers", false, stats_fragments_post_glXSwapBuffers);
     bugle_filter_order("invoke", "stats_fragments_post");
 
-    stats_fragments_fragments = bugle_stats_signal_register("fragments", NULL, NULL);
+    stats_fragments_fragments = bugle_stats_signal_new("fragments", NULL, NULL);
     return true;
 }
 

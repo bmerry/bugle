@@ -23,9 +23,38 @@
 #include <string.h>
 #include <assert.h>
 #include <ltdl.h>
+#include <bugle/hashtable.h>
 #include <budgie/types.h>
 #include <budgie/reflect.h>
 #include "internal.h"
+#include "lock.h"
+
+static hash_table function_id_map;
+static hash_table type_id_map;
+gl_once_define(static, reflect_once);
+
+static void reflect_shutdown(void)
+{
+    bugle_hash_clear(&function_id_map);
+    bugle_hash_clear(&type_id_map);
+}
+
+static void reflect_initialise(void)
+{
+    int i;
+
+    bugle_hash_init(&function_id_map, NULL);
+    for (i = 0; i < _budgie_function_count; i++)
+        bugle_hash_set(&function_id_map, _budgie_function_table[i].name,
+                       (void *) (size_t) (i + 1));
+
+    bugle_hash_init(&type_id_map, NULL);
+    for (i = 0; i < _budgie_type_count; i++)
+        bugle_hash_set(&type_id_map, _budgie_type_table[i].name,
+                       (void *) (size_t) (i + 1));
+
+    atexit(reflect_shutdown);
+}
 
 int budgie_function_count()
 {
@@ -38,26 +67,10 @@ const char *budgie_function_name(budgie_function id)
     return _budgie_function_table[id].name;
 }
 
-static int compare_function_name(const void *key, const void *data)
-{
-    const char *key2;
-    const function_name_data *data2;
-
-    key2 = (const char *) key;
-    data2 = (const function_name_data *) data;
-    return strcmp(key2, data2->name);
-}
-
 budgie_function budgie_function_id(const char *name)
 {
-    const void *target;
-
-    target = bsearch(name, _budgie_function_name_table, _budgie_function_count,
-                     sizeof(function_name_data), compare_function_name);
-    if (target)
-        return ((const function_name_data *) target)->function;
-    else
-        return NULL_FUNCTION;
+    gl_once(reflect_once, reflect_initialise);
+    return (budgie_function) (size_t) bugle_hash_get(&function_id_map, name) - 1;
 }
 
 budgie_group budgie_function_group(budgie_function id)
@@ -85,6 +98,13 @@ budgie_type budgie_group_parameter_type(budgie_group id, int param)
     }
 }
 
+budgie_group budgie_group_id(const char *name)
+{
+    budgie_function f;
+    f = budgie_function_id(name);
+    return f == NULL_FUNCTION ? NULL_GROUP : budgie_function_group(f);
+}
+
 budgie_type budgie_type_pointer(budgie_type type)
 {
     assert(type >= 0 && type < _budgie_type_count);
@@ -102,6 +122,18 @@ size_t budgie_type_size(budgie_type type)
 {
     assert(type >= 0 && type < _budgie_type_count);
     return _budgie_type_table[type].size;
+}
+
+const char *budgie_type_name(budgie_type type)
+{
+    assert(type >= 0 && type < _budgie_type_count);
+    return _budgie_type_table[type].name;
+}
+
+budgie_type budgie_type_id(const char *name)
+{
+    gl_once(reflect_once, reflect_initialise);
+    return (budgie_type) (size_t) bugle_hash_get(&type_id_map, name) - 1;
 }
 
 void budgie_dump_any_type(budgie_type type, const void *value, int length, FILE *out)

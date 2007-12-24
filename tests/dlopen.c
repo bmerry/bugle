@@ -9,7 +9,7 @@ static void (*glx_glEnd)(void);
 
 int main()
 {
-#ifdef RTLD_NEXT
+#if defined(RTLD_NEXT) && !defined(DEBUG_CONSTRUCTOR)
     void *handle;
     FILE *ref;
 
@@ -23,7 +23,7 @@ int main()
         return 1;
     }
     dl_glXGetProcAddressARB = (PFNGLXGETPROCADDRESSARBPROC) dlsym(handle, "glXGetProcAddressARB");
-    glx_glEnd = dl_glXGetProcAddressARB("glEnd");
+    glx_glEnd = dl_glXGetProcAddressARB((const GLubyte *) "glEnd");
     fprintf(ref, "trace\\.call: glXGetProcAddressARB\\(\"glEnd\"\\) = %p\n",
             glx_glEnd);
     dlclose(handle);

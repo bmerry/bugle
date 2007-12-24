@@ -53,8 +53,8 @@ static bool stats_basic_initialise(filter_set *handle)
     bugle_filter_order("stats_basic", "invoke");
     bugle_filter_order("stats_basic", "stats");
 
-    stats_basic_frames = bugle_stats_signal_register("frames", NULL, NULL);
-    stats_basic_seconds = bugle_stats_signal_register("seconds", NULL, stats_basic_seconds_activate);
+    stats_basic_frames = bugle_stats_signal_new("frames", NULL, NULL);
+    stats_basic_seconds = bugle_stats_signal_new("seconds", NULL, stats_basic_seconds_activate);
     return true;
 }
 

@@ -46,14 +46,13 @@
 #include <budgie/call.h>
 #include <budgie/reflect.h>
 #include <budgie/addresses.h>
-#include "budgielib/defines.h"
 #include "common/protocol.h"
 #include "src/glexts.h"
 #include "xalloc.h"
 #include "xvasprintf.h"
 
 static int in_pipe = -1, out_pipe = -1;
-static bool break_on[FUNCTION_COUNT];
+static bool *break_on;
 static bool break_on_error = true, break_on_next = false;
 static bool stopped = true;
 static uint32_t start_id = 0;
@@ -991,6 +990,8 @@ static bool debugger_initialise(filter_set *handle)
     char *last;
     filter *f;
 
+    break_on = XCALLOC(budgie_function_count(), bool);
+
     if (!getenv("BUGLE_DEBUGGER")
         || !getenv("BUGLE_DEBUGGER_FD_IN")
         || !getenv("BUGLE_DEBUGGER_FD_OUT"))
@@ -1034,20 +1035,24 @@ static bool debugger_initialise(filter_set *handle)
     return true;
 }
 
+static void debugger_shutdown(filter_set *handle)
+{
+    free(break_on);
+}
+
 void bugle_initialise_filter_library(void)
 {
     static const filter_set_info debugger_info =
     {
         "debugger",
         debugger_initialise,
-        NULL,
+        debugger_shutdown,
         NULL,
         NULL,
         NULL,
         NULL /* no documentation */
     };
 
-    memset(break_on, 0, sizeof(break_on));
     bugle_filter_set_register(&debugger_info);
 
     bugle_filter_set_depends("debugger", "error");

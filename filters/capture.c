@@ -43,7 +43,6 @@
 #include <bugle/log.h>
 #include <budgie/call.h>
 #include <budgie/reflect.h>
-#include "budgielib/defines.h"
 #include "src/glfuncs.h"
 #include "src/glexts.h"
 #include "gl2ps/gl2ps.h"
@@ -766,7 +765,8 @@ static bool showextensions_callback(function_call *call, const callback_data *da
 
     for (i = 0; i < budgie_group_parameter_count(call->generic.group); i++)
     {
-        if (budgie_group_parameter_type(call->generic.group, i) == TYPE_6GLenum)
+        if (strcmp(budgie_type_name(budgie_group_parameter_type(call->generic.group, i)),
+                   "GLenum") == 0)
         {
             GLenum e;
             const gl_token *t;

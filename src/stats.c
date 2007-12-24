@@ -74,8 +74,8 @@ static stats_signal *stats_signal_get(const char *name)
  * be multiply registered. Slots are only assigned when signals are
  * activated.
  */
-stats_signal *bugle_stats_signal_register(const char *name, void *user_data,
-                                          bool (*activate)(stats_signal *))
+stats_signal *bugle_stats_signal_new(const char *name, void *user_data,
+                                     bool (*activate)(stats_signal *))
 {
     stats_signal *si;
 

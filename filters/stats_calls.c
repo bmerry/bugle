@@ -25,10 +25,10 @@
 #include <bugle/stats.h>
 #include <bugle/filters.h>
 #include <budgie/reflect.h>
-#include "budgielib/defines.h"
+#include "xalloc.h"
 #include "xvasprintf.h"
 
-static stats_signal *stats_calls_counts[FUNCTION_COUNT];
+static stats_signal **stats_calls_counts;
 
 static bool stats_calls_callback(function_call *call, const callback_data *data)
 {
@@ -44,14 +44,20 @@ static bool stats_calls_initialise(filter_set *handle)
     f = bugle_filter_register(handle, "stats_calls");
     bugle_filter_catches_all(f, false, stats_calls_callback);
 
+    stats_calls_counts = XNMALLOC(budgie_function_count(), stats_signal *);
     for (i = 0; i < budgie_function_count(); i++)
     {
         char *name;
         name = xasprintf("calls:%s", budgie_function_name(i));
-        stats_calls_counts[i] = bugle_stats_signal_register(name, NULL, NULL);
+        stats_calls_counts[i] = bugle_stats_signal_new(name, NULL, NULL);
         free(name);
     }
     return true;
+}
+
+static void stats_calls_shutdown(filter_set *handle)
+{
+    free(stats_calls_counts);
 }
 
 void bugle_initialise_filter_library(void)
@@ -60,7 +66,7 @@ void bugle_initialise_filter_library(void)
     {
         "stats_calls",
         stats_calls_initialise,
-        NULL,
+        stats_calls_shutdown,
         NULL,
         NULL,
         NULL,

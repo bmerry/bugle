@@ -229,8 +229,8 @@ static bool stats_primitives_initialise(filter_set *handle)
     bugle_filter_order("stats_primitives", "invoke");
     bugle_filter_order("stats_primitives", "stats");
 
-    stats_primitives_batches = bugle_stats_signal_register("batches", NULL, NULL);
-    stats_primitives_triangles = bugle_stats_signal_register("triangles", NULL, NULL);
+    stats_primitives_batches = bugle_stats_signal_new("batches", NULL, NULL);
+    stats_primitives_triangles = bugle_stats_signal_new("triangles", NULL, NULL);
 
     return true;
 }

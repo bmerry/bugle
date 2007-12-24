@@ -24,7 +24,7 @@
 #include <assert.h>
 #include <stdbool.h>
 #include <bugle/hashtable.h>
-#include <bugle/threads.h>
+#include "lock.h"
 #include "xalloc.h"
 
 /* Primes are used for hash table sizes */
@@ -39,7 +39,8 @@ static bool is_prime(int x)
     return true;
 }
 
-BUGLE_CONSTRUCTOR(hash_initialise);
+gl_once_define(static, hash_once);
+
 static void hash_initialise(void)
 {
     int i;
@@ -101,7 +102,7 @@ void bugle_hash_set(hash_table *table, const char *key, void *value)
     if (table->count >= table->size / 2
         && table->size < (size_t) -1)
     {
-        BUGLE_RUN_CONSTRUCTOR(hash_initialise);
+        gl_once(hash_once, hash_initialise);
         big.size_index = table->size_index + 1;
         big.size = primes[big.size_index];
         big.entries = XCALLOC(big.size, hash_table_entry);
@@ -235,7 +236,7 @@ void bugle_hashptr_set(hashptr_table *table, const void *key, void *value)
     if (table->count >= table->size / 2
         && table->size < (size_t) -1)
     {
-        BUGLE_RUN_CONSTRUCTOR(hash_initialise);
+        gl_once(hash_once, hash_initialise);
         big.size_index = table->size_index + 1;
         big.size = primes[big.size_index];
         big.entries = XCALLOC(big.size, hashptr_table_entry);
