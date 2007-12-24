@@ -15,6 +15,33 @@ lib_LTLIBRARIES = src/libbugleutils.la src/libbugle.la
 bin_PROGRAMS = gldb/gldb @GLDB_GUI@
 EXTRA_PROGRAMS = gldb/gldb-gui
 
+includebugledir = $(includedir)/bugle/bugle
+includebudgiedir = $(includedir)/bugle/budgie
+includebugle_HEADERS = \
+	include/bugle/hashtable.h \
+	include/bugle/linkedlist.h \
+	include/bugle/misc.h \
+	include/bugle/threads.h \
+        include/bugle/filters.h \
+	include/bugle/gldump.h \
+	include/bugle/glsl.h \
+	include/bugle/glstate.h \
+	include/bugle/gltokens.h \
+	include/bugle/gltypes.h \
+	include/bugle/glutils.h \
+	include/bugle/log.h \
+	include/bugle/objects.h \
+	include/bugle/stats.h \
+	include/bugle/tracker.h \
+	include/bugle/xevent.h \
+	include/bugle/overrides.h
+nodist_includebudgie_HEADERS = \
+        include/budgie/types.h \
+	include/budgie/addresses.h \
+	include/budgie/reflect.h \
+	include/budgie/call.h \
+	include/budgie/types2.h
+
 pkglib_LTLIBRARIES = \
 	filters/common.la \
 	filters/trace.la \
@@ -115,7 +142,7 @@ BUILT_SOURCES += $(BUDGIE_BUILT_SRCS)
 # Generated files that generate other files
 
 # ccache doesn't play nice with -fdump-translation-unit, so we disable it
-src/data/gl.tu: src/data/gl.c src/data/overrides.h
+src/data/gl.tu: src/data/gl.c include/bugle/overrides.h
 	$(mkdir_p) src/data
 	CCACHE_DISABLE=1 $(COMPILE) -fdump-translation-unit -c $(srcdir)/src/data/gl.c -o src/data/gl.o
 	rm -f src/data/gl.o
@@ -254,7 +281,7 @@ TESTS = tests/errors.sh tests/misc.sh tests/queries.sh tests/setstate.sh tests/t
 TESTS_ENVIRONMENT = BUGLE_FILTERS=$(srcdir)/tests/filters BUGLE_STATISTICS=$(srcdir)/tests/statistics BUGLE_FILTER_DIR=filters/.libs BUGLE_LIB=src/.libs/libbugle.so
 
 # Extra files to distribute
-EXTRA_DIST = gl.bc.in $(BCFILES) src/data/gl.c src/data/overrides.h \
+EXTRA_DIST = gl.bc.in $(BCFILES) src/data/gl.c \
 	LICENSE \
 	doc/filters.html doc/locks.txt \
 	doc/protocol.txt doc/extensions.txt \

@@ -869,7 +869,7 @@ static bool eps_glXSwapBuffers(function_call *call, const callback_data *data)
     size_t frame;
     eps_struct *d;
 
-    d = (eps_struct *) bugle_object_get_current_data(&bugle_context_class, eps_view);
+    d = (eps_struct *) bugle_object_get_current_data(bugle_context_class, eps_view);
     if (!d) return true;
     frame = d->frame++;
     if (d->capture)
@@ -964,7 +964,7 @@ static bool eps_glPointSize(function_call *call, const callback_data *data)
 {
     eps_struct *d;
 
-    d = (eps_struct *) bugle_object_get_current_data(&bugle_context_class, eps_view);
+    d = (eps_struct *) bugle_object_get_current_data(bugle_context_class, eps_view);
     if (d && d->capture && bugle_begin_internal_render())
     {
         GLfloat size;
@@ -979,7 +979,7 @@ static bool eps_glLineWidth(function_call *call, const callback_data *data)
 {
     eps_struct *d;
 
-    d = (eps_struct *) bugle_object_get_current_data(&bugle_context_class, eps_view);
+    d = (eps_struct *) bugle_object_get_current_data(bugle_context_class, eps_view);
     if (d && d->capture && bugle_begin_internal_render())
     {
         GLfloat width;
@@ -1002,7 +1002,7 @@ static bool eps_initialise(filter_set *handle)
     bugle_filter_order("eps_pre", "invoke");
     bugle_filter_order("invoke", "eps");
     bugle_filter_post_renders("eps");
-    eps_view = bugle_object_view_register(&bugle_context_class,
+    eps_view = bugle_object_view_register(bugle_context_class,
                                           eps_context_init,
                                           NULL,
                                           sizeof(eps_struct));

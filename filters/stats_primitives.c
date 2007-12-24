@@ -21,6 +21,7 @@
 #include <GL/gl.h>
 #include <assert.h>
 #include <stdbool.h>
+#include <stdlib.h>
 #include <bugle/stats.h>
 #include <bugle/filters.h>
 #include <bugle/objects.h>
@@ -88,7 +89,7 @@ static void stats_primitives_update(GLenum mode, GLsizei count)
         bugle_stats_signal_add(stats_primitives_batches, 1);
         /* Fall through */
     case GL_COMPILE:
-        displaylist = bugle_object_get_current_data(&bugle_displaylist_class, stats_primitives_displaylist_view);
+        displaylist = bugle_object_get_current_data(bugle_displaylist_class, stats_primitives_displaylist_view);
         assert(displaylist);
         displaylist->triangles += t;
         displaylist->batches++;
@@ -104,7 +105,7 @@ static bool stats_primitives_immediate(function_call *call, const callback_data 
 
     if (bugle_in_begin_end())
     {
-        s = bugle_object_get_current_data(&bugle_context_class, stats_primitives_view);
+        s = bugle_object_get_current_data(bugle_context_class, stats_primitives_view);
         s->begin_count++;
     }
     return true;
@@ -114,7 +115,7 @@ static bool stats_primitives_glBegin(function_call *call, const callback_data *d
 {
     stats_primitives_struct *s;
 
-    s = bugle_object_get_current_data(&bugle_context_class, stats_primitives_view);
+    s = bugle_object_get_current_data(bugle_context_class, stats_primitives_view);
     s->begin_mode = *call->glBegin.arg0;
     s->begin_count = 0;
     return true;
@@ -124,7 +125,7 @@ static bool stats_primitives_glEnd(function_call *call, const callback_data *dat
 {
     stats_primitives_struct *s;
 
-    s = bugle_object_get_current_data(&bugle_context_class, stats_primitives_view);
+    s = bugle_object_get_current_data(bugle_context_class, stats_primitives_view);
     stats_primitives_update(s->begin_mode, s->begin_count);
     s->begin_mode = GL_NONE;
     s->begin_count = 0;
@@ -180,7 +181,7 @@ static bool stats_primitives_glCallList(function_call *call, const callback_data
     stats_primitives_struct *s;
     stats_primitives_displaylist_struct *counts;
 
-    s = bugle_object_get_current_data(&bugle_context_class, stats_primitives_view);
+    s = bugle_object_get_current_data(bugle_context_class, stats_primitives_view);
     counts = bugle_object_get_data(bugle_displaylist_get(*call->glCallList.arg0),
                                    stats_primitives_displaylist_view);
     if (counts)
@@ -202,14 +203,14 @@ static bool stats_primitives_initialise(filter_set *handle)
 {
     filter *f;
 
-    stats_primitives_view = bugle_object_view_register(&bugle_context_class,
-                                                        NULL,
-                                                        NULL,
-                                                        sizeof(stats_primitives_struct));
-    stats_primitives_displaylist_view = bugle_object_view_register(&bugle_displaylist_class,
-                                                                    NULL,
-                                                                    NULL,
-                                                                    sizeof(stats_primitives_struct));
+    stats_primitives_view = bugle_object_view_register(bugle_context_class,
+                                                       NULL,
+                                                       NULL,
+                                                       sizeof(stats_primitives_struct));
+    stats_primitives_displaylist_view = bugle_object_view_register(bugle_displaylist_class,
+                                                                   NULL,
+                                                                   NULL,
+                                                                   sizeof(stats_primitives_struct));
 
     f = bugle_filter_register(handle, "stats_primitives");
     bugle_filter_catches_drawing_immediate(f, false, stats_primitives_immediate);

@@ -140,7 +140,7 @@ void        bugle_filter_catches_function(filter *handle, const char *f, bool in
 void        bugle_filter_catches_function_id(filter *handle, budgie_function, bool inactive, filter_callback callback);
 void        bugle_filter_catches_all(filter *handle, bool inactive, filter_callback callback);
 
-extern object_class bugle_call_class;
+extern object_class *bugle_call_class;
 
 /* Other run-time functions */
 filter_set *bugle_filter_set_get_handle(const char *name);

@@ -29,7 +29,25 @@
 #include <string.h>
 #include <stdlib.h>
 #include <assert.h>
+#include "tls.h"
 #include "xalloc.h"
+
+struct object_class
+{
+    size_t count;       /* number of registrants */
+    linked_list info;   /* list of object_class_info, defined in objects.c */
+    gl_tls_key_t current;
+
+    struct object_class *parent;
+    object_view parent_view; /* view where we store current of this class in parent */
+};
+
+struct object
+{
+    object_class *klass;
+    size_t count;
+    void *views[1]; /* actually [count] at runtime */
+};
 
 typedef struct
 {
@@ -38,8 +56,11 @@ typedef struct
     size_t size;
 } object_class_info;
 
-void bugle_object_class_init(object_class *klass, object_class *parent)
+object_class * bugle_object_class_new(object_class *parent)
 {
+    object_class *klass;
+
+    klass = XMALLOC(object_class);
     bugle_list_init(&klass->info, free);
     klass->parent = parent;
     klass->count = 0;
@@ -47,13 +68,15 @@ void bugle_object_class_init(object_class *klass, object_class *parent)
         klass->parent_view = bugle_object_view_register(parent, NULL, NULL, sizeof(object *));
     else
         gl_tls_key_init(klass->current, NULL);
+    return klass;
 }
 
-void bugle_object_class_clear(object_class *klass)
+void bugle_object_class_free(object_class *klass)
 {
     bugle_list_clear(&klass->info);
     if (!klass->parent)
         gl_tls_key_destroy(klass->current);
+    free(klass);
 }
 
 object_view bugle_object_view_register(object_class *klass,

@@ -60,7 +60,7 @@ static bool trackbeginend_glBegin(function_call *call, const callback_data *data
     case GL_TRIANGLES_ADJACENCY_EXT:
     case GL_TRIANGLE_STRIP_ADJACENCY_EXT:
 #endif
-        begin_end = (bool *) bugle_object_get_current_data(&bugle_context_class, trackbeginend_view);
+        begin_end = (bool *) bugle_object_get_current_data(bugle_context_class, trackbeginend_view);
         if (begin_end != NULL) *begin_end = true;
     default: /* Avoids compiler warning if GLenum is a C enum */ ;
     }
@@ -72,7 +72,7 @@ static bool trackbeginend_glEnd(function_call *call, const callback_data *data)
     bool *begin_end;
 
     /* glEnd can only fail if we weren't in begin/end anyway. */
-    begin_end = (bool *) bugle_object_get_current_data(&bugle_context_class, trackbeginend_view);
+    begin_end = (bool *) bugle_object_get_current_data(bugle_context_class, trackbeginend_view);
     if (begin_end != NULL) *begin_end = false;
     return true;
 }
@@ -81,7 +81,7 @@ bool bugle_in_begin_end(void)
 {
     bool *begin_end;
 
-    begin_end = (bool *) bugle_object_get_current_data(&bugle_context_class, trackbeginend_view);
+    begin_end = (bool *) bugle_object_get_current_data(bugle_context_class, trackbeginend_view);
     return !begin_end || *begin_end;
 }
 
@@ -99,10 +99,10 @@ static bool trackbeginend_filter_set_initialise(filter_set *handle)
     bugle_filter_catches(f, "glBegin", true, trackbeginend_glBegin);
     bugle_filter_catches(f, "glEnd", true, trackbeginend_glEnd);
 
-    trackbeginend_view = bugle_object_view_register(&bugle_context_class,
-                                                     NULL,
-                                                     NULL,
-                                                     sizeof(bool));
+    trackbeginend_view = bugle_object_view_register(bugle_context_class,
+                                                    NULL,
+                                                    NULL,
+                                                    sizeof(bool));
     return true;
 }
 

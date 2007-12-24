@@ -47,8 +47,8 @@
  * a trackcontext_data struct in the initial_values hash.
  */
 
-object_class bugle_context_class;
-object_class bugle_namespace_class;
+object_class *bugle_context_class;
+object_class *bugle_namespace_class;
 static hashptr_table context_objects, namespace_objects;
 static hashptr_table initial_values;
 static object_view trackcontext_view;
@@ -150,14 +150,14 @@ static bool trackcontext_callback(function_call *call, const callback_data *data
      */
     ctx = CALL_glXGetCurrentContext();
     if (!ctx)
-        bugle_object_set_current(&bugle_context_class, NULL);
+        bugle_object_set_current(bugle_context_class, NULL);
     else
     {
         gl_lock_lock(context_mutex);
         obj = bugle_hashptr_get(&context_objects, ctx);
         if (!obj)
         {
-            obj = bugle_object_new(&bugle_context_class, ctx, true);
+            obj = bugle_object_new(bugle_context_class, ctx, true);
             bugle_hashptr_set(&context_objects, ctx, obj);
             initial = bugle_hashptr_get(&initial_values, ctx);
             if (initial == NULL)
@@ -173,15 +173,15 @@ static bool trackcontext_callback(function_call *call, const callback_data *data
                 ns = bugle_hashptr_get(&namespace_objects, view->root_context);
                 if (!ns)
                 {
-                    ns = bugle_object_new(&bugle_namespace_class, ctx, true);
+                    ns = bugle_object_new(bugle_namespace_class, ctx, true);
                     bugle_hashptr_set(&namespace_objects, ctx, ns);
                 }
                 else
-                    bugle_object_set_current(&bugle_namespace_class, ns);
+                    bugle_object_set_current(bugle_namespace_class, ns);
             }
         }
         else
-            bugle_object_set_current(&bugle_context_class, obj);
+            bugle_object_set_current(bugle_context_class, obj);
         gl_lock_unlock(context_mutex);
     }
     return true;
@@ -209,8 +209,8 @@ static bool trackcontext_filter_set_initialise(filter_set *handle)
 {
     filter *f;
 
-    bugle_object_class_init(&bugle_context_class, NULL);
-    bugle_object_class_init(&bugle_namespace_class, &bugle_context_class);
+    bugle_context_class = bugle_object_class_new(NULL);
+    bugle_namespace_class = bugle_object_class_new(bugle_context_class);
     bugle_hashptr_init(&context_objects, (void (*)(void *)) bugle_object_free);
     bugle_hashptr_init(&namespace_objects, (void (*)(void *)) bugle_object_free);
     bugle_hashptr_init(&initial_values, free);
@@ -225,10 +225,10 @@ static bool trackcontext_filter_set_initialise(filter_set *handle)
 #ifdef GLX_SGIX_fbconfig
     bugle_filter_catches(f, "glXCreateContextWithConfigSGIX", true, trackcontext_newcontext);
 #endif
-    trackcontext_view = bugle_object_view_register(&bugle_context_class,
-                                                    NULL,
-                                                    trackcontext_data_clear,
-                                                    sizeof(trackcontext_data));
+    trackcontext_view = bugle_object_view_register(bugle_context_class,
+                                                   NULL,
+                                                   trackcontext_data_clear,
+                                                   sizeof(trackcontext_data));
     return true;
 }
 
@@ -237,8 +237,8 @@ static void trackcontext_filter_set_shutdown(filter_set *handle)
     bugle_hashptr_clear(&context_objects);
     bugle_hashptr_clear(&namespace_objects);
     bugle_hashptr_clear(&initial_values);
-    bugle_object_class_clear(&bugle_namespace_class);
-    bugle_object_class_clear(&bugle_context_class);
+    bugle_object_class_free(bugle_namespace_class);
+    bugle_object_class_free(bugle_context_class);
 }
 
 GLXContext bugle_get_aux_context(bool shared)
@@ -253,7 +253,7 @@ GLXContext bugle_get_aux_context(bool shared)
     Display *dpy;
     int major = -1, minor = -1;
 
-    data = bugle_object_get_current_data(&bugle_context_class, trackcontext_view);
+    data = bugle_object_get_current_data(bugle_context_class, trackcontext_view);
     if (!data) return NULL; /* no current context, hence no aux context */
     aux = shared ? &data->aux_shared : &data->aux_unshared;
     if (*aux == NULL)
@@ -474,7 +474,7 @@ void bugle_text_render(const char *msg, int x, int y)
     trackcontext_data *data;
     int x0;
 
-    data = bugle_object_get_current_data(&bugle_context_class, trackcontext_view);
+    data = bugle_object_get_current_data(bugle_context_class, trackcontext_view);
     assert(data);
 
     if (!data->font.texture)

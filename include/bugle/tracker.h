@@ -41,8 +41,8 @@ typedef enum
     BUGLE_TRACKOBJECTS_COUNT
 } bugle_trackobjects_type;
 
-extern object_class bugle_context_class, bugle_namespace_class;
-extern object_class bugle_displaylist_class;
+extern object_class *bugle_context_class, *bugle_namespace_class;
+extern object_class *bugle_displaylist_class;
 
 /* True if we are in begin/end, OR if there is no current context.
  * trackbeginend is required.

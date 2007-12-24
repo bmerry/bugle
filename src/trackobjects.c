@@ -48,19 +48,19 @@ static hashptr_table *get_table(bugle_trackobjects_type type)
 {
     trackobjects_data *data;
 
-    data = bugle_object_get_current_data(&bugle_namespace_class, ns_view);
+    data = bugle_object_get_current_data(bugle_namespace_class, ns_view);
     if (!data) return NULL;
     return &data->objects[type];
 }
 
 static inline void lock(void)
 {
-    gl_lock_lock(((trackobjects_data *) bugle_object_get_current_data(&bugle_namespace_class, ns_view))->mutex);
+    gl_lock_lock(((trackobjects_data *) bugle_object_get_current_data(bugle_namespace_class, ns_view))->mutex);
 }
 
 static inline void unlock(void)
 {
-    gl_lock_unlock(((trackobjects_data *) bugle_object_get_current_data(&bugle_namespace_class, ns_view))->mutex);
+    gl_lock_unlock(((trackobjects_data *) bugle_object_get_current_data(bugle_namespace_class, ns_view))->mutex);
 }
 
 /* We don't rely entirely on glBindTexture and glDeleteTextures etc to
@@ -500,11 +500,11 @@ static bool trackobjects_filter_set_initialise(filter_set *handle)
     bugle_filter_order("invoke", "trackobjects");
     bugle_filter_order("trackobjects_pre", "invoke");
     bugle_filter_post_renders("trackobjects");
-    ns_view = bugle_object_view_register(&bugle_namespace_class,
+    ns_view = bugle_object_view_register(bugle_namespace_class,
                                          trackobjects_data_init,
                                          trackobjects_data_clear,
                                          sizeof(trackobjects_data));
-    call_view = bugle_object_view_register(&bugle_call_class,
+    call_view = bugle_object_view_register(bugle_call_class,
                                            checks_init,
                                            (void (*)(void *)) bugle_list_clear,
                                            sizeof(linked_list));

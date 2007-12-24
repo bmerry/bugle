@@ -2,7 +2,7 @@
 HEADER GL/gl.h
 HEADER GL/glext.h
 HEADER GL/glx.h
-HEADER src/data/overrides.h
+HEADER bugle/overrides.h
 HEADER bugle/gldump.h
 HEADER bugle/gltypes.h
 HEADER bugle/glstate.h

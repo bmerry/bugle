@@ -333,7 +333,7 @@ static bool showstats_glXSwapBuffers(function_call *call, const callback_data *d
         0, 255, 0, 255
     };
 
-    ss = bugle_object_get_current_data(&bugle_context_class, showstats_view);
+    ss = bugle_object_get_current_data(bugle_context_class, showstats_view);
     aux = bugle_get_aux_context(false);
     if (aux && bugle_begin_internal_render())
     {
@@ -434,7 +434,7 @@ static bool showstats_glXSwapBuffers(function_call *call, const callback_data *d
 static void showstats_accumulate_callback(const xevent_key *key, void *arg, XEvent *event)
 {
     showstats_struct *ss;
-    ss = bugle_object_get_current_data(&bugle_context_class, showstats_view);
+    ss = bugle_object_get_current_data(bugle_context_class, showstats_view);
     if (!ss) return;
     /* Value of arg is irrelevant, only truth value */
     ss->accumulating = arg ? 2 : 0;
@@ -489,10 +489,10 @@ static bool showstats_initialise(filter_set *handle)
     bugle_filter_order("showstats", "screenshot");
     bugle_filter_order("stats", "showstats");
     bugle_filter_catches(f, "glXSwapBuffers", false, showstats_glXSwapBuffers);
-    showstats_view = bugle_object_view_register(&bugle_context_class,
-                                                 NULL,
-                                                 showstats_struct_clear,
-                                                 sizeof(showstats_struct));
+    showstats_view = bugle_object_view_register(bugle_context_class,
+                                                NULL,
+                                                showstats_struct_clear,
+                                                sizeof(showstats_struct));
 
     /* Value of arg is irrelevant, only truth value */
     bugle_register_xevent_key(&key_showstats_accumulate, NULL,

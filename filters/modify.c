@@ -94,7 +94,7 @@ static bool classify_glBindFramebufferEXT(function_call *call, const callback_da
     linked_list_node *i;
     classify_callback *cb;
 
-    ctx = (classify_context *) bugle_object_get_current_data(&bugle_context_class, classify_view);
+    ctx = (classify_context *) bugle_object_get_current_data(bugle_context_class, classify_view);
     if (ctx && bugle_begin_internal_render())
     {
 #ifdef GL_EXT_framebuffer_blit
@@ -129,7 +129,7 @@ static bool classify_initialise(filter_set *handle)
 #endif
     bugle_filter_order("invoke", "classify");
     bugle_filter_post_renders("classify");
-    classify_view = bugle_object_view_register(&bugle_context_class,
+    classify_view = bugle_object_view_register(bugle_context_class,
                                                classify_context_init,
                                                NULL,
                                                sizeof(classify_context));
@@ -207,7 +207,7 @@ static bool wireframe_make_current(function_call *call, const callback_data *dat
 {
     wireframe_context *ctx;
 
-    ctx = (wireframe_context *) bugle_object_get_current_data(&bugle_context_class, wireframe_view);
+    ctx = (wireframe_context *) bugle_object_get_current_data(bugle_context_class, wireframe_view);
     if (ctx)
         wireframe_handle_activation(bugle_filter_set_is_active(data->filter_set_handle), ctx);
     return true;
@@ -224,7 +224,7 @@ static bool wireframe_glPolygonMode(function_call *call, const callback_data *da
 {
     wireframe_context *ctx;
 
-    ctx = (wireframe_context *) bugle_object_get_current_data(&bugle_context_class, wireframe_view);
+    ctx = (wireframe_context *) bugle_object_get_current_data(bugle_context_class, wireframe_view);
     if (ctx && !ctx->real)
         return true;
     if (bugle_begin_internal_render())
@@ -241,7 +241,7 @@ static bool wireframe_glEnable(function_call *call, const callback_data *data)
 {
     wireframe_context *ctx;
 
-    ctx = (wireframe_context *) bugle_object_get_current_data(&bugle_context_class, wireframe_view);
+    ctx = (wireframe_context *) bugle_object_get_current_data(bugle_context_class, wireframe_view);
     if (ctx && !ctx->real)
         return true;
     /* FIXME: need to track this state to restore it on deactivation */
@@ -271,7 +271,7 @@ static void wireframe_classify_callback(bool real, void *arg)
 {
     wireframe_context *ctx;
 
-    ctx = (wireframe_context *) bugle_object_get_current_data(&bugle_context_class, wireframe_view);
+    ctx = (wireframe_context *) bugle_object_get_current_data(bugle_context_class, wireframe_view);
     if (ctx)
     {
         ctx->real = real;
@@ -283,7 +283,7 @@ static void wireframe_activation(filter_set *handle)
 {
     wireframe_context *ctx;
 
-    ctx = (wireframe_context *) bugle_object_get_current_data(&bugle_context_class, wireframe_view);
+    ctx = (wireframe_context *) bugle_object_get_current_data(bugle_context_class, wireframe_view);
     if (ctx)
         wireframe_handle_activation(true, ctx);
 }
@@ -292,7 +292,7 @@ static void wireframe_deactivation(filter_set *handle)
 {
     wireframe_context *ctx;
 
-    ctx = (wireframe_context *) bugle_object_get_current_data(&bugle_context_class, wireframe_view);
+    ctx = (wireframe_context *) bugle_object_get_current_data(bugle_context_class, wireframe_view);
     if (ctx)
         wireframe_handle_activation(false, ctx);
 }
@@ -312,7 +312,7 @@ static bool wireframe_initialise(filter_set *handle)
 #endif
     bugle_filter_order("invoke", "wireframe");
     bugle_filter_post_renders("wireframe");
-    wireframe_view = bugle_object_view_register(&bugle_context_class,
+    wireframe_view = bugle_object_view_register(bugle_context_class,
                                                 wireframe_context_init,
                                                 NULL,
                                                 sizeof(wireframe_context));
@@ -373,7 +373,7 @@ static bool frontbuffer_make_current(function_call *call, const callback_data *d
 {
     frontbuffer_context *ctx;
 
-    ctx = (frontbuffer_context *) bugle_object_get_current_data(&bugle_context_class, frontbuffer_view);
+    ctx = (frontbuffer_context *) bugle_object_get_current_data(bugle_context_class, frontbuffer_view);
     if (ctx)
         frontbuffer_handle_activation(bugle_filter_set_is_active(data->filter_set_handle), ctx);
     return true;
@@ -385,7 +385,7 @@ static bool frontbuffer_glDrawBuffer(function_call *call, const callback_data *d
 
     if (bugle_begin_internal_render())
     {
-        ctx = (frontbuffer_context *) bugle_object_get_current_data(&bugle_context_class, frontbuffer_view);
+        ctx = (frontbuffer_context *) bugle_object_get_current_data(bugle_context_class, frontbuffer_view);
         if (ctx) CALL_glGetIntegerv(GL_DRAW_BUFFER, &ctx->draw_buffer);
         CALL_glDrawBuffer(GL_FRONT);
         bugle_end_internal_render("frontbuffer_glDrawBuffer", true);
@@ -406,7 +406,7 @@ static void frontbuffer_activation(filter_set *handle)
 {
     frontbuffer_context *ctx;
 
-    ctx = (frontbuffer_context *) bugle_object_get_current_data(&bugle_context_class, frontbuffer_view);
+    ctx = (frontbuffer_context *) bugle_object_get_current_data(bugle_context_class, frontbuffer_view);
     if (ctx)
         frontbuffer_handle_activation(true, ctx);
 }
@@ -415,7 +415,7 @@ static void frontbuffer_deactivation(filter_set *handle)
 {
     frontbuffer_context *ctx;
 
-    ctx = (frontbuffer_context *) bugle_object_get_current_data(&bugle_context_class, frontbuffer_view);
+    ctx = (frontbuffer_context *) bugle_object_get_current_data(bugle_context_class, frontbuffer_view);
     if (ctx)
         frontbuffer_handle_activation(false, ctx);
 }
@@ -438,7 +438,7 @@ static bool frontbuffer_initialise(filter_set *handle)
     bugle_filter_order("frontbuffer_pre", "invoke");
     bugle_filter_catches(f, "glXSwapBuffers", false, frontbuffer_glXSwapBuffers);
 
-    frontbuffer_view = bugle_object_view_register(&bugle_context_class,
+    frontbuffer_view = bugle_object_view_register(bugle_context_class,
                                                   frontbuffer_context_init,
                                                   NULL,
                                                   sizeof(frontbuffer_context));
@@ -677,7 +677,7 @@ static void camera_mouse_callback(int dx, int dy, XEvent *event)
     GLfloat angle, cs, sn;
     int i, j, k;
 
-    ctx = (camera_context *) bugle_object_get_current_data(&bugle_context_class, camera_view);
+    ctx = (camera_context *) bugle_object_get_current_data(bugle_context_class, camera_view);
     if (!ctx) return;
 
     /* We use a rolling-ball type rotation. We do the calculations
@@ -729,7 +729,7 @@ static void camera_key_callback(const xevent_key *key, void *arg, XEvent *event)
     int index, i;
     camera_context *ctx;
 
-    ctx = (camera_context *) bugle_object_get_current_data(&bugle_context_class, camera_view);
+    ctx = (camera_context *) bugle_object_get_current_data(bugle_context_class, camera_view);
     if (!ctx) return;
     index = (xevent_key *) arg - key_camera;
     if (index < CAMERA_MOTION_KEYS)
@@ -799,7 +799,7 @@ static bool camera_restore(function_call *call, const callback_data *data)
 
     if (bugle_displaylist_mode() == GL_NONE)
     {
-        ctx = (camera_context *) bugle_object_get_current_data(&bugle_context_class, camera_view);
+        ctx = (camera_context *) bugle_object_get_current_data(bugle_context_class, camera_view);
         if (ctx && bugle_begin_internal_render())
         {
             CALL_glGetIntegerv(GL_MATRIX_MODE, &mode);
@@ -818,7 +818,7 @@ static bool camera_override(function_call *call, const callback_data *data)
 
     if (bugle_displaylist_mode() == GL_NONE)
     {
-        ctx = (camera_context *) bugle_object_get_current_data(&bugle_context_class, camera_view);
+        ctx = (camera_context *) bugle_object_get_current_data(bugle_context_class, camera_view);
         if (ctx && bugle_begin_internal_render())
         {
             CALL_glGetIntegerv(GL_MATRIX_MODE, &mode);
@@ -839,7 +839,7 @@ static bool camera_get(function_call *call, const callback_data *data)
     int i;
     camera_context *ctx;
 
-    ctx = (camera_context *) bugle_object_get_current_data(&bugle_context_class, camera_view);
+    ctx = (camera_context *) bugle_object_get_current_data(bugle_context_class, camera_view);
     if (!ctx) return true;
 
     switch (call->generic.group)
@@ -861,7 +861,7 @@ static bool camera_glXSwapBuffers(function_call *call, const callback_data *data
     camera_context *ctx;
     GLint mode;
 
-    ctx = (camera_context *) bugle_object_get_current_data(&bugle_context_class, camera_view);
+    ctx = (camera_context *) bugle_object_get_current_data(bugle_context_class, camera_view);
     if (ctx && bugle_begin_internal_render())
     {
         int f = 0, l = 0;
@@ -920,7 +920,7 @@ static bool camera_make_current(function_call *call, const callback_data *data)
 {
     camera_context *ctx;
 
-    ctx = (camera_context *) bugle_object_get_current_data(&bugle_context_class, camera_view);
+    ctx = (camera_context *) bugle_object_get_current_data(bugle_context_class, camera_view);
     if (ctx)
         camera_handle_activation(bugle_filter_set_is_active(data->filter_set_handle), ctx);
     return true;
@@ -930,7 +930,7 @@ static void camera_activation(filter_set *handle)
 {
     camera_context *ctx;
 
-    ctx = (camera_context *) bugle_object_get_current_data(&bugle_context_class, camera_view);
+    ctx = (camera_context *) bugle_object_get_current_data(bugle_context_class, camera_view);
     if (ctx)
         camera_handle_activation(true, ctx);
     if (camera_intercept)
@@ -941,7 +941,7 @@ static void camera_deactivation(filter_set *handle)
 {
     camera_context *ctx;
 
-    ctx = (camera_context *) bugle_object_get_current_data(&bugle_context_class, camera_view);
+    ctx = (camera_context *) bugle_object_get_current_data(bugle_context_class, camera_view);
     if (ctx)
         camera_handle_activation(false, ctx);
     if (camera_intercept)
@@ -1003,7 +1003,7 @@ static bool camera_initialise(filter_set *handle)
     bugle_filter_catches(f, "glGetFloatv", false, camera_get);
     bugle_filter_catches(f, "glGetDoublev", false, camera_get);
 
-    camera_view = bugle_object_view_register(&bugle_context_class,
+    camera_view = bugle_object_view_register(bugle_context_class,
                                              camera_context_init,
                                              NULL, sizeof(camera_context));
 
@@ -1100,7 +1100,7 @@ static bool extoverride_glGetString(function_call *call, const callback_data *da
 {
     extoverride_context *ctx;
 
-    ctx = (extoverride_context *) bugle_object_get_current_data(&bugle_context_class, extoverride_view);
+    ctx = (extoverride_context *) bugle_object_get_current_data(bugle_context_class, extoverride_view);
     if (!ctx) return true; /* Nothing can be overridden */
     switch (*call->glGetString.arg0)
     {
@@ -1146,7 +1146,7 @@ static bool extoverride_initialise(filter_set *handle)
             bugle_filter_catches_function_id(f, i, false, extoverride_warn);
     }
 
-    extoverride_view = bugle_object_view_register(&bugle_context_class,
+    extoverride_view = bugle_object_view_register(bugle_context_class,
                                                   extoverride_context_init,
                                                   extoverride_context_clear,
                                                   sizeof(extoverride_context));

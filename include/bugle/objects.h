@@ -24,29 +24,13 @@
 #include <stddef.h>
 #include <stdbool.h>
 #include <bugle/linkedlist.h>
-#include "tls.h"
 
 typedef size_t object_view;
+typedef struct object_class object_class;
+typedef struct object object;
 
-typedef struct object_class_s
-{
-    size_t count;       /* number of registrants */
-    linked_list info;   /* list of object_class_info, defined in objects.c */
-    gl_tls_key_t current;
-
-    struct object_class_s *parent;
-    object_view parent_view; /* view where we store current of this class in parent */
-} object_class;
-
-typedef struct object_s
-{
-    object_class *klass;
-    size_t count;
-    void *views[1]; /* actually [count] at runtime */
-} object;
-
-void bugle_object_class_init(object_class *klass, object_class *parent);
-void bugle_object_class_clear(object_class *klass);
+object_class *bugle_object_class_new(object_class *parent);
+void bugle_object_class_free(object_class *klass);
 /* Returns an offset into the structure, which should be passed back to
  * object_get_current to get the data associated with this registration.
  * The key passed to the structure is determined by the individual classes,

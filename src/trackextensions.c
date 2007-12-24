@@ -94,10 +94,10 @@ static void context_initialise(const void *key, void *data)
 
 static bool trackextensions_filter_set_initialise(filter_set *handle)
 {
-    trackextensions_view = bugle_object_view_register(&bugle_context_class,
-                                                       context_initialise,
-                                                       NULL,
-                                                       sizeof(bool) * BUGLE_EXT_COUNT);
+    trackextensions_view = bugle_object_view_register(bugle_context_class,
+                                                      context_initialise,
+                                                      NULL,
+                                                      sizeof(bool) * BUGLE_EXT_COUNT);
     return true;
 }
 
@@ -111,7 +111,7 @@ bool bugle_gl_has_extension(int ext)
 
     if (ext < 0) return !bugle_gl_has_extension(~ext);
     assert(ext < BUGLE_EXT_COUNT);
-    data = (const bool *) bugle_object_get_current_data(&bugle_context_class, trackextensions_view);
+    data = (const bool *) bugle_object_get_current_data(bugle_context_class, trackextensions_view);
     if (!data) return false;
     else return data[ext];
 }
@@ -127,7 +127,7 @@ bool bugle_gl_has_extension_group(int ext)
 
     if (ext < 0) return !bugle_gl_has_extension_group(~ext);
     assert(ext <= BUGLE_EXT_COUNT);
-    data = (const bool *) bugle_object_get_current_data(&bugle_context_class, trackextensions_view);
+    data = (const bool *) bugle_object_get_current_data(bugle_context_class, trackextensions_view);
     if (!data) return false;
     exts = bugle_extgroups[ext];
 

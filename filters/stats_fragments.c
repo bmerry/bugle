@@ -70,7 +70,7 @@ static bool stats_fragments_glXSwapBuffers(function_call *call, const callback_d
     stats_fragments_struct *s;
     GLuint fragments;
 
-    s = bugle_object_get_current_data(&bugle_context_class, stats_fragments_view);
+    s = bugle_object_get_current_data(bugle_context_class, stats_fragments_view);
     if (stats_fragments_fragments->active
         && s && s->query && bugle_begin_internal_render())
     {
@@ -86,7 +86,7 @@ static bool stats_fragments_post_glXSwapBuffers(function_call *call, const callb
 {
     stats_fragments_struct *s;
 
-    s = bugle_object_get_current_data(&bugle_context_class, stats_fragments_view);
+    s = bugle_object_get_current_data(bugle_context_class, stats_fragments_view);
     if (stats_fragments_fragments->active
         && s && s->query && bugle_begin_internal_render())
     {
@@ -100,7 +100,7 @@ static bool stats_fragments_query(function_call *call, const callback_data *data
 {
     stats_fragments_struct *s;
 
-    s = bugle_object_get_current_data(&bugle_context_class, stats_fragments_view);
+    s = bugle_object_get_current_data(bugle_context_class, stats_fragments_view);
     if (stats_fragments_fragments->active
         && s->query)
     {
@@ -118,10 +118,10 @@ static bool stats_fragments_initialise(filter_set *handle)
 {
     filter *f;
 
-    stats_fragments_view = bugle_object_view_register(&bugle_context_class,
-                                                       stats_fragments_struct_init,
-                                                       stats_fragments_struct_clear,
-                                                       sizeof(stats_fragments_struct));
+    stats_fragments_view = bugle_object_view_register(bugle_context_class,
+                                                      stats_fragments_struct_init,
+                                                      stats_fragments_struct_clear,
+                                                      sizeof(stats_fragments_struct));
 
     f = bugle_filter_register(handle, "stats_fragments");
     bugle_filter_catches(f, "glXSwapBuffers", false, stats_fragments_glXSwapBuffers);

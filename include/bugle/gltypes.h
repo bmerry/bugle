@@ -30,7 +30,7 @@
 #include <stdio.h>
 #include <stdbool.h>
 #include <bugle/gltokens.h>
-#include "src/data/overrides.h"
+#include <bugle/overrides.h>
 
 GLenum bugle_gl_token_to_enum(const char *name);
 const gl_token *bugle_gl_enum_to_token_struct(GLenum e);

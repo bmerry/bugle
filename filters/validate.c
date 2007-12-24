@@ -63,8 +63,8 @@ static bool error_callback(function_call *call, const callback_data *data)
     if (glGetError_group == NULL_GROUP)
         glGetError_group = budgie_group_id("glGetError");
 
-    stored_error = bugle_object_get_current_data(&bugle_context_class, error_context_view);
-    call_error = bugle_object_get_current_data(&bugle_call_class, error_call_view);
+    stored_error = bugle_object_get_current_data(bugle_context_class, error_context_view);
+    call_error = bugle_object_get_current_data(bugle_call_class, error_call_view);
     *call_error = GL_NO_ERROR;
 
     if (budgie_function_name(call->generic.id)[2] == 'X') return true; /* GLX */
@@ -139,11 +139,11 @@ static bool error_initialise(filter_set *handle)
     /* We don't call filter_post_renders, because that would make the
      * error filter-set depend on itself.
      */
-    error_context_view = bugle_object_view_register(&bugle_context_class,
+    error_context_view = bugle_object_view_register(bugle_context_class,
                                                     NULL,
                                                     NULL,
                                                     sizeof(GLenum));
-    error_call_view = bugle_object_view_register(&bugle_call_class,
+    error_call_view = bugle_object_view_register(bugle_call_class,
                                                  NULL,
                                                  NULL,
                                                  sizeof(GLenum));

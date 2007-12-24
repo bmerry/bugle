@@ -111,7 +111,7 @@ static hash_table filter_set_orders;       /* A is initialised after B */
 
 static lt_dlhandle current_dl_handle = NULL;
 
-object_class bugle_call_class;
+object_class *bugle_call_class;
 
 static void filter_set_deactivate_nolock(filter_set *handle);
 
@@ -288,7 +288,7 @@ static void filters_shutdown(void)
     bugle_hash_clear(&filter_set_orders);
     bugle_list_clear(&added_filter_sets);
     bugle_list_clear(&filter_sets);
-    bugle_object_class_clear(&bugle_call_class);
+    bugle_object_class_free(bugle_call_class);
     lt_dlexit();
 }
 
@@ -343,7 +343,7 @@ void filters_initialise(void)
     bugle_hash_init(&filter_orders, list_free);
     bugle_hash_init(&filter_set_dependencies, list_free);
     bugle_hash_init(&filter_set_orders, list_free);
-    bugle_object_class_init(&bugle_call_class, NULL);
+    bugle_call_class = bugle_object_class_new(NULL);
 
     libdir = getenv("BUGLE_FILTER_DIR");
     if (!libdir) libdir = PKGLIBDIR;
@@ -734,7 +734,7 @@ void filters_run(function_call *call)
         active_dirty = false;
     }
 
-    data.call_object = bugle_object_new(&bugle_call_class, NULL, true);
+    data.call_object = bugle_object_new(bugle_call_class, NULL, true);
     for (i = bugle_list_head(&active_callbacks[call->generic.id]); i; i = bugle_list_next(i))
     {
         cur = (filter_catcher *) bugle_list_data(i);

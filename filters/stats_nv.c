@@ -32,7 +32,6 @@
 #include <bugle/tracker.h>
 #include <bugle/log.h>
 #include <bugle/glutils.h>
-#include "src/utils.h"
 #include "xalloc.h"
 #include "xvasprintf.h"
 
