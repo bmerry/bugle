@@ -758,7 +758,7 @@ void filters_run(function_call *call)
     gl_lock_unlock(active_callbacks_mutex);
 }
 
-filter_set *bugle_filter_set_register(const filter_set_info *info)
+filter_set *bugle_filter_set_new(const filter_set_info *info)
 {
     filter_set *s;
 
@@ -788,7 +788,7 @@ filter_set *bugle_filter_set_register(const filter_set_info *info)
     return s;
 }
 
-filter *bugle_filter_register(filter_set *handle, const char *name)
+filter *bugle_filter_new(filter_set *handle, const char *name)
 {
     filter *f;
 

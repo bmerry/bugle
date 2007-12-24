@@ -94,10 +94,10 @@ static void context_initialise(const void *key, void *data)
 
 static bool trackextensions_filter_set_initialise(filter_set *handle)
 {
-    trackextensions_view = bugle_object_view_register(bugle_context_class,
-                                                      context_initialise,
-                                                      NULL,
-                                                      sizeof(bool) * BUGLE_EXT_COUNT);
+    trackextensions_view = bugle_object_view_new(bugle_context_class,
+                                                 context_initialise,
+                                                 NULL,
+                                                 sizeof(bool) * BUGLE_EXT_COUNT);
     return true;
 }
 
@@ -149,7 +149,7 @@ void trackextensions_initialise(void)
         NULL /* No documentation */
     };
 
-    bugle_filter_set_register(&trackextensions_info);
+    bugle_filter_set_new(&trackextensions_info);
 
     bugle_filter_set_renders("trackextensions");
 }

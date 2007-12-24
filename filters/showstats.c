@@ -481,7 +481,7 @@ static bool showstats_initialise(filter_set *handle)
     filter *f;
     linked_list_node *i;
 
-    f = bugle_filter_register(handle, "showstats");
+    f = bugle_filter_new(handle, "showstats");
     bugle_filter_order("showstats", "invoke");
     bugle_filter_order("showstats", "screenshot");
     /* make sure that screenshots capture the stats */
@@ -489,15 +489,15 @@ static bool showstats_initialise(filter_set *handle)
     bugle_filter_order("showstats", "screenshot");
     bugle_filter_order("stats", "showstats");
     bugle_filter_catches(f, "glXSwapBuffers", false, showstats_glXSwapBuffers);
-    showstats_view = bugle_object_view_register(bugle_context_class,
-                                                NULL,
-                                                showstats_struct_clear,
-                                                sizeof(showstats_struct));
+    showstats_view = bugle_object_view_new(bugle_context_class,
+                                           NULL,
+                                           showstats_struct_clear,
+                                           sizeof(showstats_struct));
 
     /* Value of arg is irrelevant, only truth value */
-    bugle_register_xevent_key(&key_showstats_accumulate, NULL,
+    bugle_xevent_key_callback(&key_showstats_accumulate, NULL,
                               showstats_accumulate_callback, f);
-    bugle_register_xevent_key(&key_showstats_noaccumulate, NULL,
+    bugle_xevent_key_callback(&key_showstats_noaccumulate, NULL,
                               showstats_accumulate_callback, NULL);
 
     showstats_num_graph = 0;
@@ -573,7 +573,7 @@ void bugle_initialise_filter_library(void)
         "renders statistics onto the screen"
     };
 
-    bugle_filter_set_register(&showstats_info);
+    bugle_filter_set_new(&showstats_info);
     bugle_filter_set_depends("showstats", "trackextensions");
     bugle_filter_set_renders("showstats");
     bugle_filter_set_stats_logger("showstats");

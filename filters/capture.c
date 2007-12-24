@@ -696,7 +696,7 @@ static bool screenshot_initialise(filter_set *handle)
     char *cmdline;
 #endif
 
-    f = bugle_filter_register(handle, "screenshot");
+    f = bugle_filter_new(handle, "screenshot");
     bugle_filter_catches(f, "glXSwapBuffers", false, screenshot_callback);
     bugle_filter_order("screenshot", "invoke");
 
@@ -725,7 +725,7 @@ static bool screenshot_initialise(filter_set *handle)
             video_filename = xstrdup("bugle.ppm");
         video_lag = 1;
         /* FIXME: should only intercept the key when enabled */
-        bugle_register_xevent_key(&key_screenshot, NULL, bugle_xevent_key_callback_flag, &keypress_screenshot);
+        bugle_xevent_key_callback(&key_screenshot, NULL, bugle_xevent_key_callback_flag, &keypress_screenshot);
     }
     return true;
 }
@@ -784,7 +784,7 @@ static bool showextensions_initialise(filter_set *handle)
 {
     filter *f;
 
-    f = bugle_filter_register(handle, "showextensions");
+    f = bugle_filter_new(handle, "showextensions");
     bugle_filter_catches_all(f, false, showextensions_callback);
     /* The order mainly doesn't matter, but making it a pre-filter
      * reduces the risk of another filter aborting the call.
@@ -994,19 +994,19 @@ static bool eps_initialise(filter_set *handle)
 {
     filter *f;
 
-    f = bugle_filter_register(handle, "eps_pre");
+    f = bugle_filter_new(handle, "eps_pre");
     bugle_filter_catches(f, "glXSwapBuffers", false, eps_glXSwapBuffers);
-    f = bugle_filter_register(handle, "eps");
+    f = bugle_filter_new(handle, "eps");
     bugle_filter_catches(f, "glPointSize", false, eps_glPointSize);
     bugle_filter_catches(f, "glLineWidth", false, eps_glLineWidth);
     bugle_filter_order("eps_pre", "invoke");
     bugle_filter_order("invoke", "eps");
     bugle_filter_post_renders("eps");
-    eps_view = bugle_object_view_register(bugle_context_class,
-                                          eps_context_init,
-                                          NULL,
-                                          sizeof(eps_struct));
-    bugle_register_xevent_key(&key_eps, NULL, bugle_xevent_key_callback_flag, &keypress_eps);
+    eps_view = bugle_object_view_new(bugle_context_class,
+                                     eps_context_init,
+                                     NULL,
+                                     sizeof(eps_struct));
+    bugle_xevent_key_callback(&key_eps, NULL, bugle_xevent_key_callback_flag, &keypress_eps);
     return true;
 }
 
@@ -1070,9 +1070,9 @@ void bugle_initialise_filter_library(void)
     video_codec = xstrdup("mpeg4");
     eps_filename = xstrdup("bugle.eps");
 
-    bugle_filter_set_register(&screenshot_info);
-    bugle_filter_set_register(&showextensions_info);
-    bugle_filter_set_register(&eps_info);
+    bugle_filter_set_new(&screenshot_info);
+    bugle_filter_set_new(&showextensions_info);
+    bugle_filter_set_new(&eps_info);
 
     bugle_filter_set_renders("screenshot");
     bugle_filter_set_depends("screenshot", "trackcontext");

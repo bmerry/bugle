@@ -94,15 +94,15 @@ static bool trackbeginend_filter_set_initialise(filter_set *handle)
 {
     filter *f;
 
-    f = bugle_filter_register(handle, "trackbeginend");
+    f = bugle_filter_new(handle, "trackbeginend");
     bugle_filter_order("invoke", "trackbeginend");
     bugle_filter_catches(f, "glBegin", true, trackbeginend_glBegin);
     bugle_filter_catches(f, "glEnd", true, trackbeginend_glEnd);
 
-    trackbeginend_view = bugle_object_view_register(bugle_context_class,
-                                                    NULL,
-                                                    NULL,
-                                                    sizeof(bool));
+    trackbeginend_view = bugle_object_view_new(bugle_context_class,
+                                               NULL,
+                                               NULL,
+                                               sizeof(bool));
     return true;
 }
 
@@ -119,7 +119,7 @@ void trackbeginend_initialise(void)
         NULL /* no documentation */
     };
 
-    bugle_filter_set_register(&trackbeginend_info);
+    bugle_filter_set_new(&trackbeginend_info);
 
     bugle_filter_set_depends("trackbeginend", "trackcontext");
 }

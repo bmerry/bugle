@@ -454,7 +454,7 @@ static bool trackobjects_filter_set_initialise(filter_set *handle)
 {
     filter *f;
 
-    f = bugle_filter_register(handle, "trackobjects_pre");
+    f = bugle_filter_new(handle, "trackobjects_pre");
 #ifdef GL_ARB_shader_objects
     bugle_filter_catches(f, "glDeleteObjectARB", true, trackobjects_pre_glDeleteObjectARB);
     bugle_filter_catches(f, "glUseProgramObjectARB", true, trackobjects_pre_glUseProgramObjectARB);
@@ -465,7 +465,7 @@ static bool trackobjects_filter_set_initialise(filter_set *handle)
     bugle_filter_catches(f, "glDeleteProgram", true, trackobjects_pre_glDeleteProgram);
 #endif
 
-    f = bugle_filter_register(handle, "trackobjects");
+    f = bugle_filter_new(handle, "trackobjects");
     bugle_filter_catches(f, "glBindTexture", true, trackobjects_glBindTexture);
     bugle_filter_catches(f, "glDeleteTextures", true, trackobjects_glDeleteTextures);
 #ifdef GL_ARB_vertex_buffer_object
@@ -500,14 +500,14 @@ static bool trackobjects_filter_set_initialise(filter_set *handle)
     bugle_filter_order("invoke", "trackobjects");
     bugle_filter_order("trackobjects_pre", "invoke");
     bugle_filter_post_renders("trackobjects");
-    ns_view = bugle_object_view_register(bugle_namespace_class,
-                                         trackobjects_data_init,
-                                         trackobjects_data_clear,
-                                         sizeof(trackobjects_data));
-    call_view = bugle_object_view_register(bugle_call_class,
-                                           checks_init,
-                                           (void (*)(void *)) bugle_list_clear,
-                                           sizeof(linked_list));
+    ns_view = bugle_object_view_new(bugle_namespace_class,
+                                    trackobjects_data_init,
+                                    trackobjects_data_clear,
+                                    sizeof(trackobjects_data));
+    call_view = bugle_object_view_new(bugle_call_class,
+                                      checks_init,
+                                      (void (*)(void *)) bugle_list_clear,
+                                      sizeof(linked_list));
     return true;
 }
 
@@ -578,7 +578,7 @@ void trackobjects_initialise(void)
         NULL /* no documentation */
     };
 
-    bugle_filter_set_register(&trackobjects_info);
+    bugle_filter_set_new(&trackobjects_info);
     bugle_filter_set_depends("trackobjects", "trackcontext");
     bugle_filter_set_depends("trackobjects", "trackextensions");
     bugle_filter_set_renders("trackobjects");

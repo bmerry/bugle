@@ -127,11 +127,11 @@ void filters_run(function_call *call);
 void filters_help(void);
 
 /* Initialisation functions to be used by the filter libraries, and perhaps the interceptor */
-filter_set *bugle_filter_set_register(const filter_set_info *info);
+filter_set *bugle_filter_set_new(const filter_set_info *info);
 void        bugle_filter_set_depends(const char *base, const char *dep);
 void        bugle_filter_set_order(const char *before, const char *after);
 
-filter *    bugle_filter_register(filter_set *handle, const char *name);
+filter *    bugle_filter_new(filter_set *handle, const char *name);
 void        bugle_filter_order(const char *before, const char *after);
 void        bugle_filter_catches(filter *handle, const char *group, bool inactive, filter_callback callback);
 /* Like bugle_filter_catches, but per-function rather than per-group. */

@@ -215,7 +215,7 @@ static bool trackcontext_filter_set_initialise(filter_set *handle)
     bugle_hashptr_init(&namespace_objects, (void (*)(void *)) bugle_object_free);
     bugle_hashptr_init(&initial_values, free);
 
-    f = bugle_filter_register(handle, "trackcontext");
+    f = bugle_filter_new(handle, "trackcontext");
     bugle_filter_order("invoke", "trackcontext");
     bugle_filter_catches(f, "glXMakeCurrent", true, trackcontext_callback);
     bugle_filter_catches(f, "glXCreateContext", true, trackcontext_newcontext);
@@ -225,10 +225,10 @@ static bool trackcontext_filter_set_initialise(filter_set *handle)
 #ifdef GLX_SGIX_fbconfig
     bugle_filter_catches(f, "glXCreateContextWithConfigSGIX", true, trackcontext_newcontext);
 #endif
-    trackcontext_view = bugle_object_view_register(bugle_context_class,
-                                                   NULL,
-                                                   trackcontext_data_clear,
-                                                   sizeof(trackcontext_data));
+    trackcontext_view = bugle_object_view_new(bugle_context_class,
+                                              NULL,
+                                              trackcontext_data_clear,
+                                              sizeof(trackcontext_data));
     return true;
 }
 
@@ -529,5 +529,5 @@ void trackcontext_initialise(void)
         NULL /* No documentation */
     };
 
-    bugle_filter_set_register(&trackcontext_info);
+    bugle_filter_set_new(&trackcontext_info);
 }

@@ -65,7 +65,7 @@ object_class * bugle_object_class_new(object_class *parent)
     klass->parent = parent;
     klass->count = 0;
     if (parent)
-        klass->parent_view = bugle_object_view_register(parent, NULL, NULL, sizeof(object *));
+        klass->parent_view = bugle_object_view_new(parent, NULL, NULL, sizeof(object *));
     else
         gl_tls_key_init(klass->current, NULL);
     return klass;
@@ -79,10 +79,10 @@ void bugle_object_class_free(object_class *klass)
     free(klass);
 }
 
-object_view bugle_object_view_register(object_class *klass,
-                                              void (*constructor)(const void *key, void *data),
-                                              void (*destructor)(void *data),
-                                              size_t size)
+object_view bugle_object_view_new(object_class *klass,
+                                  void (*constructor)(const void *key, void *data),
+                                  void (*destructor)(void *data),
+                                  size_t size)
 {
     object_class_info *info;
 

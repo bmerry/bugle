@@ -132,19 +132,19 @@ static bool trackdisplaylist_filter_set_initialise(filter_set *handle)
 
     bugle_displaylist_class = bugle_object_class_new(bugle_context_class);
 
-    f = bugle_filter_register(handle, "trackdisplaylist");
+    f = bugle_filter_new(handle, "trackdisplaylist");
     bugle_filter_order("invoke", "trackdisplaylist");
     bugle_filter_catches(f, "glNewList", true, trackdisplaylist_glNewList);
     bugle_filter_catches(f, "glEndList", true, trackdisplaylist_glEndList);
 
-    displaylist_view = bugle_object_view_register(bugle_displaylist_class,
-                                                  displaylist_struct_init,
-                                                  NULL,
-                                                  sizeof(displaylist_struct));
-    namespace_view = bugle_object_view_register(bugle_namespace_class,
-                                                namespace_init,
-                                                namespace_clear,
-                                                sizeof(hashptr_table));
+    displaylist_view = bugle_object_view_new(bugle_displaylist_class,
+                                             displaylist_struct_init,
+                                             NULL,
+                                             sizeof(displaylist_struct));
+    namespace_view = bugle_object_view_new(bugle_namespace_class,
+                                           namespace_init,
+                                           namespace_clear,
+                                           sizeof(hashptr_table));
     return true;
 }
 
@@ -161,7 +161,7 @@ void trackdisplaylist_initialise(void)
         NULL /* No documentation */
     };
 
-    bugle_filter_set_register(&trackdisplaylist_info);
+    bugle_filter_set_new(&trackdisplaylist_info);
 
     bugle_filter_set_depends("trackdisplaylist", "trackcontext");
 }

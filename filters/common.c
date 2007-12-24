@@ -37,7 +37,7 @@ static bool invoke_callback(function_call *call, const callback_data *data)
 static bool invoke_initialise(filter_set *handle)
 {
     filter *f;
-    f = bugle_filter_register(handle, "invoke");
+    f = bugle_filter_new(handle, "invoke");
     bugle_filter_catches_all(f, false, invoke_callback);
     return true;
 }
@@ -69,7 +69,7 @@ static bool procaddress_initialise(filter_set *handle)
     filter *f;
 
 #ifdef GLX_ARB_get_proc_address
-    f = bugle_filter_register(handle, "procaddress");
+    f = bugle_filter_new(handle, "procaddress");
     bugle_filter_order("invoke", "procaddress");
     bugle_filter_order("procaddress", "trace");
     bugle_filter_catches(f, "glXGetProcAddressARB", false, procaddress_callback);
@@ -101,8 +101,8 @@ void bugle_initialise_filter_library(void)
         NULL,
         NULL /* no documentation */
     };
-    bugle_filter_set_register(&invoke_info);
-    bugle_filter_set_register(&procaddress_info);
+    bugle_filter_set_new(&invoke_info);
+    bugle_filter_set_new(&procaddress_info);
 
     bugle_filter_set_depends("invoke", "procaddress");
 }

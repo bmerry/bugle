@@ -1022,9 +1022,9 @@ static bool debugger_initialise(filter_set *handle)
     }
     debugger_loop(NULL);
 
-    f = bugle_filter_register(handle, "debugger");
+    f = bugle_filter_new(handle, "debugger");
     bugle_filter_catches_all(f, false, debugger_callback);
-    f = bugle_filter_register(handle, "debugger_error");
+    f = bugle_filter_new(handle, "debugger_error");
     bugle_filter_catches_all(f, false, debugger_error_callback);
     bugle_filter_order("debugger", "invoke");
     bugle_filter_order("invoke", "debugger_error");
@@ -1053,7 +1053,7 @@ void bugle_initialise_filter_library(void)
         NULL /* no documentation */
     };
 
-    bugle_filter_set_register(&debugger_info);
+    bugle_filter_set_new(&debugger_info);
 
     bugle_filter_set_depends("debugger", "error");
     bugle_filter_set_depends("debugger", "trackextensions");

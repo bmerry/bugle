@@ -36,10 +36,10 @@ void bugle_object_class_free(object_class *klass);
  * The key passed to the structure is determined by the individual classes,
  * and may give more information about the abstract object.
  */
-object_view bugle_object_view_register(object_class *klass,
-                                       void (*constructor)(const void *key, void *data),
-                                       void (*destructor)(void *data),
-                                       size_t size);
+object_view bugle_object_view_new(object_class *klass,
+                                  void (*constructor)(const void *key, void *data),
+                                  void (*destructor)(void *data),
+                                  size_t size);
 object *    bugle_object_new(object_class *klass, const void *key, bool make_current);
 void        bugle_object_free(object *obj);
 object *    bugle_object_get_current(const object_class *klass);

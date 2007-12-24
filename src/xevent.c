@@ -639,7 +639,7 @@ int XSelectInput(Display *dpy, Window w, long event_mask)
     return ret;
 }
 
-void bugle_register_xevent_key(const xevent_key *key,
+void bugle_xevent_key_callback(const xevent_key *key,
                                bool (*wanted)(const xevent_key *, void *, XEvent *),
                                void (*callback)(const xevent_key *, void *, XEvent *),
                                void *arg)
@@ -733,7 +733,7 @@ void xevent_initialise(void)
 
 #else /* !ENABLE_XEVENT */
 
-void bugle_register_xevent_key(const xevent_key *key,
+void bugle_xevent_key_callback(const xevent_key *key,
                                bool (*wanted)(const xevent_key *, void *, XEvent *),
                                void (*callback)(const xevent_key *, void *, XEvent *),
                                void *arg)

@@ -139,7 +139,7 @@ static void load_config(void)
                                     fprintf(stderr, "warning: ignoring unknown toggle key %s for filter-set %s\n",
                                             set->key, set->name);
                                 else
-                                    bugle_register_xevent_key(&key, NULL, toggle_filterset, f);
+                                    bugle_xevent_key_callback(&key, NULL, toggle_filterset, f);
                             }
                         }
                     }

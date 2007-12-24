@@ -43,7 +43,7 @@ static bool trace_initialise(filter_set *handle)
 {
     filter *f;
 
-    f = bugle_filter_register(handle, "trace");
+    f = bugle_filter_new(handle, "trace");
     bugle_filter_order("invoke", "trace");
     bugle_filter_catches_all(f, false, trace_callback);
     bugle_filter_post_renders("trace");
@@ -62,7 +62,7 @@ void bugle_initialise_filter_library(void)
         NULL,
         "captures a text trace of all calls made"
     };
-    bugle_filter_set_register(&trace_info);
+    bugle_filter_set_new(&trace_info);
 
     /* No direct rendering, but some of the length functions query state */
     bugle_filter_set_renders("trace");

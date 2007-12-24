@@ -236,7 +236,7 @@ void log_initialise(void)
         "provides logging services to other filter-sets"
     };
 
-    bugle_filter_set_register(&log_info);
+    bugle_filter_set_new(&log_info);
     log_format = xstrdup("[%l] %f.%e: %m");
 }
 

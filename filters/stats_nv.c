@@ -237,12 +237,12 @@ static bool stats_nv_initialise(filter_set *handle)
         goto cancel2;
     }
 
-    f = bugle_filter_register(handle, "stats_nv");
+    f = bugle_filter_new(handle, "stats_nv");
     bugle_filter_catches(f, GROUP_glXSwapBuffers, false, stats_nv_glXSwapBuffers);
     bugle_filter_order("stats_nv", "invoke");
     bugle_filter_order("stats_nv", "stats");
 
-    f = bugle_filter_register(handle, "stats_nv_post");
+    f = bugle_filter_new(handle, "stats_nv_post");
     bugle_filter_catches(f, GROUP_glXSwapBuffers, false, stats_nv_post_glXSwapBuffers);
     bugle_filter_order("invoke", "stats_nv_post");
     return true;
@@ -289,7 +289,7 @@ void bugle_initialise_filter_library(void)
         "stats module: get counters from NVPerfSDK"
     };
 
-    bugle_filter_set_register(&stats_nv_info);
+    bugle_filter_set_new(&stats_nv_info);
     bugle_filter_set_depends("stats_nv", "stats_basic");
     bugle_filter_set_stats_generator("stats_nv");
 }

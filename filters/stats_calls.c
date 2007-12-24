@@ -41,7 +41,7 @@ static bool stats_calls_initialise(filter_set *handle)
     filter *f;
     int i;
 
-    f = bugle_filter_register(handle, "stats_calls");
+    f = bugle_filter_new(handle, "stats_calls");
     bugle_filter_catches_all(f, false, stats_calls_callback);
 
     stats_calls_counts = XNMALLOC(budgie_function_count(), stats_signal *);
@@ -73,6 +73,6 @@ void bugle_initialise_filter_library(void)
         "stats module: call counts"
     };
 
-    bugle_filter_set_register(&stats_calls_info);
+    bugle_filter_set_new(&stats_calls_info);
     bugle_filter_set_stats_generator("stats_calls");
 }

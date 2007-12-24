@@ -132,21 +132,21 @@ static bool error_initialise(filter_set *handle)
     filter *f;
 
     error_handle = handle;
-    f = bugle_filter_register(handle, "error");
+    f = bugle_filter_new(handle, "error");
     bugle_filter_catches_all(f, true, error_callback);
     bugle_filter_order("invoke", "error");
     bugle_filter_post_queries_begin_end("error");
     /* We don't call filter_post_renders, because that would make the
      * error filter-set depend on itself.
      */
-    error_context_view = bugle_object_view_register(bugle_context_class,
-                                                    NULL,
-                                                    NULL,
-                                                    sizeof(GLenum));
-    error_call_view = bugle_object_view_register(bugle_call_class,
-                                                 NULL,
-                                                 NULL,
-                                                 sizeof(GLenum));
+    error_context_view = bugle_object_view_new(bugle_context_class,
+                                               NULL,
+                                               NULL,
+                                               sizeof(GLenum));
+    error_call_view = bugle_object_view_new(bugle_call_class,
+                                            NULL,
+                                            NULL,
+                                            sizeof(GLenum));
     return true;
 }
 
@@ -173,7 +173,7 @@ static bool showerror_initialise(filter_set *handle)
 {
     filter *f;
 
-    f = bugle_filter_register(handle, "showerror");
+    f = bugle_filter_new(handle, "showerror");
     bugle_filter_catches_all(f, false, showerror_callback);
     bugle_filter_order("error", "showerror");
     bugle_filter_order("invoke", "showerror");
@@ -249,9 +249,9 @@ static bool unwindstack_initialise(filter_set *handle)
 {
     filter *f;
 
-    f = bugle_filter_register(handle, "unwindstack_pre");
+    f = bugle_filter_new(handle, "unwindstack_pre");
     bugle_filter_catches_all(f, false, unwindstack_pre_callback);
-    f = bugle_filter_register(handle, "unwindstack_post");
+    f = bugle_filter_new(handle, "unwindstack_post");
     bugle_filter_catches_all(f, false, unwindstack_post_callback);
     bugle_filter_order("invoke", "unwindstack_post");
     bugle_filter_order("unwindstack_pre", "invoke");
@@ -898,7 +898,7 @@ static bool checks_initialise(filter_set *handle)
 {
     filter *f;
 
-    f = bugle_filter_register(handle, "checks");
+    f = bugle_filter_new(handle, "checks");
     /* Pointer checks */
     bugle_filter_catches(f, "glDrawArrays", false, checks_glDrawArrays);
     bugle_filter_catches(f, "glDrawElements", false, checks_glDrawElements);
@@ -1033,10 +1033,10 @@ void bugle_initialise_filter_library(void)
         NULL,
         "checks for illegal values passed to OpenGL in some places"
     };
-    bugle_filter_set_register(&error_info);
-    bugle_filter_set_register(&showerror_info);
-    bugle_filter_set_register(&unwindstack_info);
-    bugle_filter_set_register(&checks_info);
+    bugle_filter_set_new(&error_info);
+    bugle_filter_set_new(&showerror_info);
+    bugle_filter_set_new(&unwindstack_info);
+    bugle_filter_set_new(&checks_info);
 
     bugle_filter_set_renders("error");
     bugle_filter_set_depends("showerror", "error");

@@ -19,6 +19,32 @@
  * to be able to stand alone from bugle, and in particular has no explicit
  * knowledge about OpenGL. However, the design was created with bugle in
  * mind, so it may be difficult to adapt for other APIs.
+ *
+ * The layout of the headers and C files is a bit confusing, because each
+ * file is
+ * - public or private (for headers)
+ * - hand-written or generated
+ * - part of libbugle or of libbugleutils
+ * As a result, prototypes defines in one header may be for functions in
+ * an apparently unrelated C file.
+ * (libbugleutils contains (almost) all the reflection information, but does
+ * not need to be linked to the original library. Public headers go to
+ * include/budgie/, private ones go to budgielib/. The list of files is
+ *
+ *                    public?     generated?      libbugle?
+ * addresses.h          Y             N               Y
+ * types.h              Y             N               ? (no functions)
+ * reflect.h            Y             N               N
+ * types2.h             Y             Y               Y (no functions)
+ * calls.h              Y             Y               Y
+ * internal.h           N             N               N
+ * lib.h                N             N               Y
+ *
+ * addresses.c                        N               Y
+ * internal.c                         N               N
+ * reflect.c                          N               N
+ * tables.c                           Y               N
+ * lib.c                              Y               Y
  */
 
 #include "tree.h"

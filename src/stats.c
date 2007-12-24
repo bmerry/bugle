@@ -609,7 +609,7 @@ static bool stats_ordering_initialise(filter_set *handle)
      * to allow display modules (showstats, logstats) to occur after
      * generator modules (stats_basic etc).
      */
-    bugle_filter_register(handle, "stats_ordering");
+    bugle_filter_new(handle, "stats_ordering");
     return true;
 }
 
@@ -664,6 +664,6 @@ void statistics_initialise(void)
         NULL
     };
 
-    bugle_filter_set_register(&stats_info);
-    bugle_filter_set_register(&stats_ordering_info);
+    bugle_filter_set_new(&stats_info);
+    bugle_filter_set_new(&stats_ordering_info);
 }

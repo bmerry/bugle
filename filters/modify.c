@@ -123,16 +123,16 @@ static bool classify_initialise(filter_set *handle)
 {
     filter *f;
 
-    f = bugle_filter_register(handle, "classify");
+    f = bugle_filter_new(handle, "classify");
 #ifdef GL_EXT_framebuffer_object
     bugle_filter_catches(f, "glBindFramebufferEXT", true, classify_glBindFramebufferEXT);
 #endif
     bugle_filter_order("invoke", "classify");
     bugle_filter_post_renders("classify");
-    classify_view = bugle_object_view_register(bugle_context_class,
-                                               classify_context_init,
-                                               NULL,
-                                               sizeof(classify_context));
+    classify_view = bugle_object_view_new(bugle_context_class,
+                                          classify_context_init,
+                                          NULL,
+                                          sizeof(classify_context));
     bugle_list_init(&classify_callbacks, free);
     return true;
 }
@@ -302,7 +302,7 @@ static bool wireframe_initialise(filter_set *handle)
     filter *f;
 
     wireframe_filterset = handle;
-    f = bugle_filter_register(handle, "wireframe");
+    f = bugle_filter_new(handle, "wireframe");
     bugle_filter_catches(f, "glXSwapBuffers", false, wireframe_glXSwapBuffers);
     bugle_filter_catches(f, "glPolygonMode", false, wireframe_glPolygonMode);
     bugle_filter_catches(f, "glEnable", false, wireframe_glEnable);
@@ -312,10 +312,10 @@ static bool wireframe_initialise(filter_set *handle)
 #endif
     bugle_filter_order("invoke", "wireframe");
     bugle_filter_post_renders("wireframe");
-    wireframe_view = bugle_object_view_register(bugle_context_class,
-                                                wireframe_context_init,
-                                                NULL,
-                                                sizeof(wireframe_context));
+    wireframe_view = bugle_object_view_new(bugle_context_class,
+                                           wireframe_context_init,
+                                           NULL,
+                                           sizeof(wireframe_context));
     register_classify_callback(wireframe_classify_callback, handle);
     return true;
 }
@@ -425,7 +425,7 @@ static bool frontbuffer_initialise(filter_set *handle)
     filter *f;
 
     frontbuffer_filterset = handle;
-    f = bugle_filter_register(handle, "frontbuffer");
+    f = bugle_filter_new(handle, "frontbuffer");
     bugle_filter_order("invoke", "frontbuffer");
     bugle_filter_catches(f, "glDrawBuffer", false, frontbuffer_glDrawBuffer);
     bugle_filter_catches(f, "glXMakeCurrent", true, frontbuffer_make_current);
@@ -434,14 +434,14 @@ static bool frontbuffer_initialise(filter_set *handle)
 #endif
     bugle_filter_post_renders("frontbuffer");
 
-    f = bugle_filter_register(handle, "frontbuffer_pre");
+    f = bugle_filter_new(handle, "frontbuffer_pre");
     bugle_filter_order("frontbuffer_pre", "invoke");
     bugle_filter_catches(f, "glXSwapBuffers", false, frontbuffer_glXSwapBuffers);
 
-    frontbuffer_view = bugle_object_view_register(bugle_context_class,
-                                                  frontbuffer_context_init,
-                                                  NULL,
-                                                  sizeof(frontbuffer_context));
+    frontbuffer_view = bugle_object_view_new(bugle_context_class,
+                                             frontbuffer_context_init,
+                                             NULL,
+                                             sizeof(frontbuffer_context));
     return true;
 }
 
@@ -954,7 +954,7 @@ static bool camera_initialise(filter_set *handle)
     int i;
 
     camera_filterset = handle;
-    f = bugle_filter_register(handle, "camera_pre");
+    f = bugle_filter_new(handle, "camera_pre");
     bugle_filter_order("camera_pre", "invoke");
     bugle_filter_catches(f, "glMultMatrixf", false, camera_restore);
     bugle_filter_catches(f, "glMultMatrixd", false, camera_restore);
@@ -973,7 +973,7 @@ static bool camera_initialise(filter_set *handle)
 #endif
     bugle_filter_catches(f, "glXSwapBuffers", false, camera_glXSwapBuffers);
 
-    f = bugle_filter_register(handle, "camera_post");
+    f = bugle_filter_new(handle, "camera_post");
     bugle_filter_post_renders("camera_post");
     bugle_filter_order("invoke", "camera_post");
     bugle_filter_catches(f, "glXMakeCurrent", true, camera_make_current);
@@ -1003,9 +1003,9 @@ static bool camera_initialise(filter_set *handle)
     bugle_filter_catches(f, "glGetFloatv", false, camera_get);
     bugle_filter_catches(f, "glGetDoublev", false, camera_get);
 
-    camera_view = bugle_object_view_register(bugle_context_class,
-                                             camera_context_init,
-                                             NULL, sizeof(camera_context));
+    camera_view = bugle_object_view_new(bugle_context_class,
+                                        camera_context_init,
+                                        NULL, sizeof(camera_context));
 
     for (i = 0; i < CAMERA_KEYS; i++)
     {
@@ -1013,9 +1013,9 @@ static bool camera_initialise(filter_set *handle)
 
         release = key_camera[i];
         release.press = false;
-        bugle_register_xevent_key(&key_camera[i], camera_key_wanted, camera_key_callback, (void *) &key_camera[i]);
+        bugle_xevent_key_callback(&key_camera[i], camera_key_wanted, camera_key_callback, (void *) &key_camera[i]);
         if (i < CAMERA_MOTION_KEYS)
-            bugle_register_xevent_key(&release, camera_key_wanted, camera_key_callback, (void *) &key_camera[i]);
+            bugle_xevent_key_callback(&release, camera_key_wanted, camera_key_callback, (void *) &key_camera[i]);
     }
     return true;
 }
@@ -1127,12 +1127,12 @@ static bool extoverride_initialise(filter_set *handle)
     filter *f;
     budgie_function i;
 
-    f = bugle_filter_register(handle, "extoverride_get");
+    f = bugle_filter_new(handle, "extoverride_get");
     bugle_filter_order("invoke", "extoverride_get");
     bugle_filter_order("extoverride_get", "trace");
     bugle_filter_catches(f, "glGetString", false, extoverride_glGetString);
 
-    f = bugle_filter_register(handle, "extoverride_warn");
+    f = bugle_filter_new(handle, "extoverride_warn");
     bugle_filter_order("extoverride_warn", "invoke");
     for (i = 0; i < budgie_function_count(); i++)
     {
@@ -1146,10 +1146,10 @@ static bool extoverride_initialise(filter_set *handle)
             bugle_filter_catches_function_id(f, i, false, extoverride_warn);
     }
 
-    extoverride_view = bugle_object_view_register(bugle_context_class,
-                                                  extoverride_context_init,
-                                                  extoverride_context_clear,
-                                                  sizeof(extoverride_context));
+    extoverride_view = bugle_object_view_new(bugle_context_class,
+                                             extoverride_context_init,
+                                             extoverride_context_clear,
+                                             sizeof(extoverride_context));
     return true;
 }
 
@@ -1290,11 +1290,11 @@ void bugle_initialise_filter_library(void)
         "suppresses extensions or OpenGL versions"
     };
 
-    bugle_filter_set_register(&classify_info);
-    bugle_filter_set_register(&wireframe_info);
-    bugle_filter_set_register(&frontbuffer_info);
-    bugle_filter_set_register(&camera_info);
-    bugle_filter_set_register(&extoverride_info);
+    bugle_filter_set_new(&classify_info);
+    bugle_filter_set_new(&wireframe_info);
+    bugle_filter_set_new(&frontbuffer_info);
+    bugle_filter_set_new(&camera_info);
+    bugle_filter_set_new(&extoverride_info);
 
     bugle_filter_set_renders("classify");
     bugle_filter_set_depends("classify", "trackcontext");

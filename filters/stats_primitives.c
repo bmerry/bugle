@@ -203,16 +203,16 @@ static bool stats_primitives_initialise(filter_set *handle)
 {
     filter *f;
 
-    stats_primitives_view = bugle_object_view_register(bugle_context_class,
-                                                       NULL,
-                                                       NULL,
-                                                       sizeof(stats_primitives_struct));
-    stats_primitives_displaylist_view = bugle_object_view_register(bugle_displaylist_class,
-                                                                   NULL,
-                                                                   NULL,
-                                                                   sizeof(stats_primitives_struct));
+    stats_primitives_view = bugle_object_view_new(bugle_context_class,
+                                                  NULL,
+                                                  NULL,
+                                                  sizeof(stats_primitives_struct));
+    stats_primitives_displaylist_view = bugle_object_view_new(bugle_displaylist_class,
+                                                              NULL,
+                                                              NULL,
+                                                              sizeof(stats_primitives_struct));
 
-    f = bugle_filter_register(handle, "stats_primitives");
+    f = bugle_filter_new(handle, "stats_primitives");
     bugle_filter_catches_drawing_immediate(f, false, stats_primitives_immediate);
     bugle_filter_catches(f, "glDrawElements", false, stats_primitives_glDrawElements);
     bugle_filter_catches(f, "glDrawArrays", false, stats_primitives_glDrawArrays);
@@ -249,7 +249,7 @@ void bugle_initialise_filter_library(void)
         "stats module: triangles and batches"
     };
 
-    bugle_filter_set_register(&stats_primitives_info);
+    bugle_filter_set_new(&stats_primitives_info);
     bugle_filter_set_depends("stats_primitives", "stats_basic");
     bugle_filter_set_depends("stats_primitives", "trackcontext");
     bugle_filter_set_depends("stats_primitives", "trackdisplaylist");

@@ -23,41 +23,25 @@
     <sect1 id="extending-state-api">
         <title>State of the API</title>
         <para>
-            At present, there are two ways to distribute plugins for &bugle;.
-            The first is as a dynamic shared library (<filename
-                class="extension">.so</filename> file), which is copied into
-            the plugin directory (<filename
-                class="directory">/usr/local/lib/bugle</filename> in a default
-            installation). Such a module will work only with the version of
-            &bugle; against which it was compiled, and should
-            <emphasis>only</emphasis> be done within a binary package
-            management system which can ensure that the matching version of
-            &bugle; is used.
+            The API has recently undergone a lot of cleaning up to make it,
+            as far as possible, independent of the particular OpenGL
+            headers used to compile &bugle;. If an external filter-set is
+            compiled with a more complete set of OpenGL extensions, then
+            things should continue to work provided that the filter-set
+            gracefully handles missing functionality. If &bugle; was compiled
+            with the more complete set of extensions, then things should work
+            regardless.
         </para>
-        <warning>
-            <para>
-                Compiling &bugle; on two machines with the same architecture
-                and compiler may still lead to incompatible ABIs, if the
-                OpenGL headers differ.
-            </para>
-        </warning>
         <para>
-            The other alternative is as a patch against the &bugle; source
-            code (which is also how a custom filter-set is likely to be
-            maintained). This form is robust to different versions of
-            <filename>GL/glext.h</filename> and may even apply to multiple
-            versions of &bugle; if they are not too disparate. This is the
-            recommended form of distribution.
+            That is all in theory, but it has yet to be put to the test. There
+            will probably be some breakages, but hopefully not too often, or
+            every time a new OpenGL extension is published.
         </para>
         <warning>
             <para>
                 The API is still changing regularly.
             </para>
         </warning>
-        <para>
-            A public API, with installed headers and
-            <application>pkgconfig</application> support may appear in future.
-        </para>
     </sect1>
 
     <sect1 id="extending-guidelines">
@@ -135,10 +119,13 @@
                         POSIX, BSD and X/OPEN library functions are
                         acceptable if the appropriate feature macros are
                         defined (<symbol>_POSIX_C_SOURCE</symbol> and so on).
-                        Gnulib should be used for memory-allocating functions
+                        For filter-sets distributed with &bugle;,
+                        gnulib should be used for memory-allocating functions
                         (<function>xmalloc</function> and
                         <function>xasprintf</function>, for example) and for
-                        non-portable functions.
+                        non-portable functions. Unfortunately, gnulib symbols
+                        cannot be exported since they may conflict with
+                        different implementations in the debugged application.
                 </para></listitem>
             </itemizedlist>
         </sect2>
@@ -229,6 +216,18 @@
                 activation, or to execute cleanup code after deactivation.
             </para>
         </sect2>
+        <sect2 id="extending-concepts-budgie">
+            <title>Budgie</title>
+            <para>
+                Budgie is the module within &bugle; that generates huge wads
+                of code automatically. Apart from the code to override each
+                OpenGL function, it also generates a lot of reflection
+                information about functions and types. The API for the
+                generated code isn't currently documented. Refer to existing
+                filter-sets or to the header files in <filename
+                    class="directory">include/budgie</filename>.
+            </para>
+        </sect2>
         <sect2 id="extending-concepts-groups">
             <title>Functions and groups</title>
             <para>
@@ -249,6 +248,16 @@
                 as either <symbol>GROUP_glActiveTexture</symbol> or
                 <symbol>GROUP_glActiveTextureARB</symbol>. The symbols expand
                 to the same value.
+            </para>
+            <para>
+                The values of these symbols can change every time the OpenGL
+                headers are modified, so the symbols should not be used in
+                filter-sets (in fact, the corresponding headers are no even
+                installed by &bugle;). Instead, you should use
+                <function>budgie_function_name</function>,
+                <function>budgie_function_id</function> and
+                <function>budgie_function_group</function> to map between
+                these numbers and symbolic names on the fly.
             </para>
         </sect2>
     </sect1>
@@ -280,7 +289,7 @@
             <funcsynopsis>
                 <funcsynopsisinfo language="cpp">#include &lt;src/filters.h&gt;
                     
-filter_set *bugle_filter_set_register(filter_set_info *info);</funcsynopsisinfo>
+filter_set *bugle_filter_set_new(filter_set_info *info);</funcsynopsisinfo>
             </funcsynopsis>
             <para>
                 The <structname>filter_set_info</structname> must be constant and have
@@ -416,15 +425,15 @@ filter_set *bugle_filter_set_register(filter_set_info *info);</funcsynopsisinfo>
                 register a filter within a filter-set is
             </para>
             <funcsynopsis>
-                <funcsynopsisinfo language="cpp">filter * bugle_filter_register(filter_set *handle, const char *name);</funcsynopsisinfo>
+                <funcsynopsisinfo language="cpp">filter * bugle_filter_new(filter_set *handle, const char *name);</funcsynopsisinfo>
             </funcsynopsis>
             <para>
                 A <type>filter *</type> is an opaque handle to a filter. It is
                 passed to the following functions to register callbacks:
             </para>
             <funcsynopsis>
-                <funcsynopsisinfo language="cpp">void bugle_filter_catches(filter *f, budgie_group group, bool inactive, filter_callback callback);
-void bugle_filter_catches_function(filter *f, budgie_function function, bool inactive, filter_callback callback);
+                <funcsynopsisinfo language="cpp">void bugle_filter_catches(filter *f, const char *group, bool inactive, filter_callback callback);
+void bugle_filter_catches_function(filter *f, const char *function, bool inactive, filter_callback callback);
 void bugle_filter_catches_all(filter *f, bool inactive, filter_callback callback);</funcsynopsisinfo>
             </funcsynopsis>
             <para>
@@ -434,7 +443,11 @@ void bugle_filter_catches_all(filter *f, bool inactive, filter_callback callback
                 should apply when the filter-set is inactive. Usually you will
                 want to set this to <symbol>false</symbol>, but in some cases
                 it is necessary to track some state even when the filter-set
-                is inactive.
+                is inactive. When using a group, you can use the name of any
+                function in that group, although it is best to use the one
+                with the oldest name as &bugle; is most likely to know about
+                it. If &bugle; was compiled without OpenGL headers exposing
+                that function, it is ignored.
             </para>
             <para>
                 A filter-set should also indicate ordering dependencies
@@ -576,17 +589,15 @@ void bugle_filter_catches_all(filter *f, bool inactive, filter_callback callback
         <sect2 id="extending-objects-classes">
             <title>Class management functions</title>
             <para>
-                Class structs are generally declared as globals with external
-                linkage, so that code that uses them may access them directly.
-                There may be reasons to use other allocation policies, but
-                regardless, the functions documented here will no attempt to
-                allocate or free memory for the struct itself.
+                Class structs are generally declared as global pointers with
+                external linkage, so that code that uses them may access them
+                directly.
             </para>
             <funcsynopsis>
                 <funcsynopsisinfo language="cpp">#include "src/objects.h"
                     
-void bugle_object_class_init(object_class *klass, object_class *parent);
-void bugle_object_class_clear(object_class *klass);</funcsynopsisinfo>
+object_class *bugle_object_class_new(object_class *parent);
+void bugle_object_class_free(object_class *klass);</funcsynopsisinfo>
             </funcsynopsis>
             <para>
                 These are the constructor and destructor for classes. The
@@ -596,7 +607,7 @@ void bugle_object_class_clear(object_class *klass);</funcsynopsisinfo>
             </para>
             <warning>
                 <para>
-                    The <function>bugle_object_class_clear</function> function
+                    The <function>bugle_object_class_free</function> function
                     does not delete instances of the class. They must be
                     manually deleted first. Attempting to manipulate objects
                     once their class (or any ancestor class in the scope tree)
@@ -604,7 +615,7 @@ void bugle_object_class_clear(object_class *klass);</funcsynopsisinfo>
                 </para>
             </warning>
             <funcsynopsis>
-                <funcsynopsisinfo language="cpp">object_view bugle_object_view_register(object_class *klass, 
+                <funcsynopsisinfo language="cpp">object_view bugle_object_view_new(object_class *klass, 
                                        void (*constructor)(const void *, void *), 
                                        void (*destructor)(void *), 
                                        size_t size)</funcsynopsisinfo>

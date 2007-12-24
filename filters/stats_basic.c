@@ -48,7 +48,7 @@ static bool stats_basic_initialise(filter_set *handle)
 {
     filter *f;
 
-    f = bugle_filter_register(handle, "stats_basic");
+    f = bugle_filter_new(handle, "stats_basic");
     bugle_filter_catches(f, "glXSwapBuffers", false, stats_basic_glXSwapBuffers);
     bugle_filter_order("stats_basic", "invoke");
     bugle_filter_order("stats_basic", "stats");
@@ -71,6 +71,6 @@ void bugle_initialise_filter_library(void)
         "stats module: frames and timing"
     };
 
-    bugle_filter_set_register(&stats_basic_info);
+    bugle_filter_set_new(&stats_basic_info);
     bugle_filter_set_stats_generator("stats_basic");
 }

@@ -47,7 +47,7 @@ void bugle_xevent_key_callback_flag(const xevent_key *key, void *arg, XEvent *ev
  * stateless and have no side effects. It must also ignore the 'press'
  * field, otherwise the app will see press/release mismatches.
  */
-void bugle_register_xevent_key(const xevent_key *key,
+void bugle_xevent_key_callback(const xevent_key *key,
                                bool (*wanted)(const xevent_key *, void *, XEvent *),
                                void (*callback)(const xevent_key *, void *, XEvent *),
                                void *arg);

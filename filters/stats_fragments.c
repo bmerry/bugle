@@ -118,19 +118,19 @@ static bool stats_fragments_initialise(filter_set *handle)
 {
     filter *f;
 
-    stats_fragments_view = bugle_object_view_register(bugle_context_class,
-                                                      stats_fragments_struct_init,
-                                                      stats_fragments_struct_clear,
-                                                      sizeof(stats_fragments_struct));
+    stats_fragments_view = bugle_object_view_new(bugle_context_class,
+                                                 stats_fragments_struct_init,
+                                                 stats_fragments_struct_clear,
+                                                 sizeof(stats_fragments_struct));
 
-    f = bugle_filter_register(handle, "stats_fragments");
+    f = bugle_filter_new(handle, "stats_fragments");
     bugle_filter_catches(f, "glXSwapBuffers", false, stats_fragments_glXSwapBuffers);
     bugle_filter_catches(f, "glBeginQueryARB", false, stats_fragments_query);
     bugle_filter_catches(f, "glEndQueryARB", false, stats_fragments_query);
     bugle_filter_order("stats_fragments", "invoke");
     bugle_filter_order("stats_fragments", "stats");
 
-    f = bugle_filter_register(handle, "stats_fragments_post");
+    f = bugle_filter_new(handle, "stats_fragments_post");
     bugle_filter_catches(f, "glXSwapBuffers", false, stats_fragments_post_glXSwapBuffers);
     bugle_filter_order("invoke", "stats_fragments_post");
 
@@ -151,7 +151,7 @@ void bugle_initialise_filter_library(void)
         "stats module: fragments that pass the depth test"
     };
 
-    bugle_filter_set_register(&stats_fragments_info);
+    bugle_filter_set_new(&stats_fragments_info);
     bugle_filter_set_depends("stats_fragments", "stats_basic");
     bugle_filter_set_depends("stats_fragments", "trackextensions");
     bugle_filter_set_renders("stats_fragments");

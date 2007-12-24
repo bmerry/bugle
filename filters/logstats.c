@@ -82,7 +82,7 @@ static bool logstats_initialise(filter_set *handle)
     linked_list_node *i, *j;
     stats_statistic *st;
 
-    f = bugle_filter_register(handle, "stats_log");
+    f = bugle_filter_new(handle, "stats_log");
     bugle_filter_catches(f, "glXSwapBuffers", false, logstats_glXSwapBuffers);
 
     bugle_list_clear(&logstats_show);
@@ -145,7 +145,7 @@ void bugle_initialise_filter_library(void)
         "reports statistics to the log"
     };
 
-    bugle_filter_set_register(&logstats_info);
+    bugle_filter_set_new(&logstats_info);
     bugle_filter_set_stats_logger("logstats");
     bugle_list_init(&logstats_show_requested, free);
 }
