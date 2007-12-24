@@ -22,7 +22,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#if HAVE_WEAK
+#if BUGLE_HAVE_PRAGMA_WEAK
 extern void bugle_log_xalloc_die(void);
 
 /* Some arbitrary function not used in this file. See lib/lock.h for an
@@ -36,7 +36,7 @@ extern void bugle_log(const char *filterset, const char *event, int severity,
 
 void xalloc_die(void)
 {
-#if HAVE_WEAK
+#if BUGLE_HAVE_PRAGMA_WEAK
     if (&bugle_log != NULL)
         bugle_log_xalloc_die();
     else

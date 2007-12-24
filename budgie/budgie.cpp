@@ -1685,8 +1685,8 @@ static void write_interceptors(FILE *f)
                 "    _budgie_reentrance_clear();\n"
                 "%s"
                 "}\n"
-                "BUGLE_GCC_DECLARE_HIDDEN_ALIAS(%s)\n"
-                "BUGLE_GCC_DEFINE_HIDDEN_ALIAS(%s)\n\n",
+                "BUGLE_ATTRIBUTE_DECLARE_HIDDEN_ALIAS(%s)\n"
+                "BUGLE_ATTRIBUTE_DEFINE_HIDDEN_ALIAS(%s)\n\n",
                 i->group->has_retn ? "    return retn;\n" : "",
                 name.c_str(), name.c_str());
     }
@@ -1699,7 +1699,7 @@ static void write_interceptors(FILE *f)
     {
         if (i != functions.begin())
             fprintf(f, ",\n");
-        fprintf(f, "    (void (*)(void)) BUGLE_GCC_HIDDEN_ALIAS(%s)",
+        fprintf(f, "    (void (*)(void)) BUGLE_ATTRIBUTE_HIDDEN_ALIAS(%s)",
                 i->name().c_str());
     }
     fprintf(f, "\n};\n\n");

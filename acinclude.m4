@@ -21,22 +21,6 @@ testb = testa;
           fi
 ])
 
-# Checks whether __attribute__((visibility("hidden"))) is supported
-AC_DEFUN([BUGLE_C_GCC_VISIBILITY],
-         [AC_REQUIRE([AC_PROG_CC])[]dnl
-          AC_CACHE_CHECK([for GCC visibility attribute], bugle_cv_c_gcc_visibility,
-                         [bugle_cv_c_gcc_visibility=no
-                          AC_COMPILE_IFELSE([AC_LANG_PROGRAM(
-[
-void test_function(void) __attribute__((visibility("hidden")));
-], [])], [bugle_cv_c_gcc_visibility=yes])])
-          if test $bugle_cv_c_gcc_visibility = yes; then
-            AC_DEFINE([BUGLE_GCC_VISIBILITY(x)], [__attribute__((visibility(x)))], [Specify ELF linkage visibility])
-          else
-            AC_DEFINE([BUGLE_GCC_VISIBILITY(x)], [], [Specify ELF linkage visibility])
-          fi
-])
-
 # Checks whether #pragma weak is supported
 AC_DEFUN([BUGLE_C_PRAGMA_WEAK],
          [AC_REQUIRE([AC_PROG_CC])[]dnl,
@@ -48,65 +32,57 @@ void foo(void);
 #pragma weak foo
 ], [])], [bugle_cv_c_pragma_weak=yes])])
           if test $bugle_cv_c_pragma_weak = yes; then
-            AC_DEFINE([HAVE_WEAK], [1], [Define if pragma weak is supported])
+            AC_DEFINE([BUGLE_HAVE_PRAGMA_WEAK], [1], [Define if pragma weak is supported])
           fi
 ])
 
 # Checks whether __attribute__((format(printf, 1, 2))) is supported
-AC_DEFUN([BUGLE_C_GCC_FORMAT_PRINTF],
+AC_DEFUN([BUGLE_C_ATTRIBUTE_FORMAT_PRINTF],
          [AC_REQUIRE([AC_PROG_CC])[]dnl
-          AC_CACHE_CHECK([for GCC format attribute], bugle_cv_c_gcc_format_printf,
-                         [bugle_cv_c_gcc_format_printf=no
+          AC_CACHE_CHECK([for GCC format attribute], bugle_cv_c_attribute_format_printf,
+                         [bugle_cv_c_attribute_format_printf=no
                           AC_COMPILE_IFELSE([AC_LANG_PROGRAM(
 [
 void myprintf(const char *format, ...) __attribute__((format(printf, 1, 2)));
-], [])], [bugle_cv_c_gcc_format_printf=yes])])
-          if test $bugle_cv_c_gcc_format_printf = yes; then
-            AC_DEFINE([BUGLE_GCC_FORMAT_PRINTF(a, b)], [__attribute__((format(printf, a, b)))], [Specify printf semantics])
-          else
-            AC_DEFINE([BUGLE_GCC_FORMAT_PRINTF(a, b)], [], [Specify printf semantics])
+], [])], [bugle_cv_c_attribute_format_printf=yes])])
+          if test $bugle_cv_c_attribute_format_printf = yes; then
+            AC_DEFINE([BUGLE_HAVE_ATTRIBUTE_FORMAT_PRINTF], [1], [Define if attribute((format(printf,a,b))) is available])
           fi
 ])
 
 
 # Checks whether we can define a hidden alias with GCC attribute magic
-AC_DEFUN([BUGLE_C_GCC_HIDDEN_ALIAS],
+AC_DEFUN([BUGLE_C_ATTRIBUTE_HIDDEN_ALIAS],
          [AC_REQUIRE([AC_PROG_CC])[]dnl
-          AC_CACHE_CHECK([for GCC alias and visibility attributes], bugle_cv_c_gcc_hidden_alias,
-                         [bugle_cv_c_gcc_hidden_alias=no
+          AC_CACHE_CHECK([for GCC alias and visibility attributes], bugle_cv_c_attribute_hidden_alias,
+                         [bugle_cv_c_attribute_hidden_alias=no
                           AC_COMPILE_IFELSE([AC_LANG_PROGRAM(
 [
 extern void mypublic(int x) {}
 extern __typeof(mypublic) myalias __attribute__((alias("mypublic"), visibility("hidden")));
-], [])], [bugle_cv_c_gcc_hidden_alias=yes])])
-         if test $bugle_cv_c_gcc_hidden_alias = yes; then
-           AC_DEFINE([BUGLE_GCC_HIDDEN_ALIAS(f)], [bugle_hidden_alias_ ## f], [name for the internal alias of f])
-           AC_DEFINE([BUGLE_GCC_DECLARE_HIDDEN_ALIAS(f)], [__typeof(f) BUGLE_GCC_HIDDEN_ALIAS(f);], [declares a hidden alias of f])
-           AC_DEFINE([BUGLE_GCC_DEFINE_HIDDEN_ALIAS(f)], [extern __typeof(f) BUGLE_GCC_HIDDEN_ALIAS(f) __attribute__((alias(#f), visibility("hidden")));], [defines a hidden alias of f])
-         else
-           AC_DEFINE([BUGLE_GCC_HIDDEN_ALIAS(f)], [f], [name for the internal alias of f])
-           AC_DEFINE([BUGLE_GCC_DECLARE_HIDDEN_ALIAS(f)], [], [declares a hidden alias of f])
-           AC_DEFINE([BUGLE_GCC_DEFINE_HIDDEN_ALIAS(f)], [], [defines a hidden alias of f])
+], [])], [bugle_cv_c_attribute_hidden_alias=yes])])
+         if test $bugle_cv_c_attribute_hidden_alias = yes; then
+           AC_DEFINE([BUGLE_HAVE_ATTRIBUTE_HIDDEN_ALIAS], [1], [Define if it is possible to define hidden aliases with GCC attributes])
          fi
 ])
 
 
 # Checks whether we can define startup code with GCC attribute magic
-AC_DEFUN([BUGLE_C_GCC_CONSTRUCTOR_ATTRIBUTE],
+AC_DEFUN([BUGLE_C_ATTRIBUTE_CONSTRUCTOR],
          [AC_REQUIRE([AC_PROG_CC])[]dnl
-          AC_CACHE_CHECK([for GCC constructor attribute], bugle_cv_c_gcc_constructor_attribute,
-                         [bugle_cv_c_gcc_constructor_attribute=no
+          AC_CACHE_CHECK([for GCC constructor attribute], bugle_cv_c_attribute_constructor_attribute,
+                         [bugle_cv_c_attribute_constructor_attribute=no
                           AC_COMPILE_IFELSE([AC_LANG_PROGRAM(
 [
 static void constructor(void) __attribute__((constructor));
 static void constructor(void)
 {
 }
-], [])], [bugle_cv_c_gcc_constructor_attribute=yes])])
-         if test $bugle_cv_c_gcc_constructor_attribute = yes; then
-           AC_DEFINE([BUGLE_GCC_CONSTRUCTOR_ATTRIBUTE], [__attribute__((constructor))], [function declaration suffix for constructors])
-           AC_DEFINE([BUGLE_GCC_HAVE_CONSTRUCTOR_ATTRIBUTE], 1, [Define if __attribute__((constructor)) is supported])
+], [])], [bugle_cv_c_attribute_constructor_attribute=yes])])
+         if test $bugle_cv_c_attribute_constructor_attribute = yes; then
+           AC_DEFINE([BUGLE_ATTRIBUTE_CONSTRUCTOR_ATTRIBUTE], [__attribute__((constructor))], [function declaration suffix for constructors])
+           AC_DEFINE([BUGLE_HAVE_ATTRIBUTE_CONSTRUCTOR], 1, [Define if __attribute__((constructor)) is supported])
          else
-           AC_DEFINE([BUGLE_GCC_CONSTRUCTOR_ATTRIBUTE], [], [function declaration suffix for constructors])
+           AC_DEFINE([BUGLE_ATTRIBUTE_CONSTRUCTOR_ATTRIBUTE], [], [function declaration suffix for constructors])
          fi
 ])

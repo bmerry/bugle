@@ -22,6 +22,16 @@
 # include <config.h>
 #endif
 
+#if BUGLE_HAVE_ATTRIBUTE_HIDDEN_ALIAS
+# define BUGLE_ATTRIBUTE_HIDDEN_ALIAS(f) bugle_hidden_alias_ ## f
+# define BUGLE_ATTRIBUTE_DECLARE_HIDDEN_ALIAS(f) __typeof(f) BUGLE_ATTRIBUTE_HIDDEN_ALIAS(f);
+# define BUGLE_ATTRIBUTE_DEFINE_HIDDEN_ALIAS(f) extern __typeof(f) BUGLE_ATTRIBUTE_HIDDEN_ALIAS(f) __attribute__((alias(#f), visibility("hidden")));
+#else
+# define BUGLE_ATTRIBUTE_HIDDEN_ALIAS(f) f
+# define BUGLE_ATTRIBUTE_DECLARE_HIDDEN_ALIAS(f)
+# define BUGLE_ATTRIBUTE_DEFINE_HIDDEN_ALIAS(f)
+#endif
+
 /* Holds function pointers for real implementations */
 extern void (*_budgie_function_address_real[])(void);
 /* Holds function pointers for wrappers */

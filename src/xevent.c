@@ -81,7 +81,7 @@ static Window (*real_XCreateWindow)(Display *, Window, int, int, unsigned int, u
 static Window (*real_XCreateSimpleWindow)(Display *, Window, int, int, unsigned int, unsigned int, unsigned int, unsigned long, unsigned long);
 static int (*real_XSelectInput)(Display *, Window, long);
 
-#if BUGLE_GCC_HAVE_CONSTRUCTOR_ATTRIBUTE
+#if BUGLE_HAVE_ATTRIBUTE_CONSTRUCTOR && !DEBUG_CONSTRUCTOR
 # define bugle_initialise_all() ((void) 0)
 #else
 extern void bugle_initialise_all(void);

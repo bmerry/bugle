@@ -63,8 +63,8 @@
  * Any code that depends on the initialisation being complete must call
  * BUGLE_RUN_CONSTRUCTOR on the constructor first.
  */
-#if BUGLE_GCC_HAVE_CONSTRUCTOR_ATTRIBUTE && !DEBUG_CONSTRUCTOR
-# define BUGLE_CONSTRUCTOR(fn) static void fn(void) BUGLE_GCC_CONSTRUCTOR_ATTRIBUTE
+#if BUGLE_HAVE_ATTRIBUTE_CONSTRUCTOR && !DEBUG_CONSTRUCTOR
+# define BUGLE_CONSTRUCTOR(fn) static void fn(void) __attribute__((constructor))
 # define BUGLE_RUN_CONSTRUCTOR(fn) ((void) 0)
 #else
 # define BUGLE_CONSTRUCTOR(fn) gl_once_define(static, fn ## _once)

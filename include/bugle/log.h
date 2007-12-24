@@ -30,6 +30,7 @@
 #endif
 #include <stdbool.h>
 #include <bugle/filters.h>
+#include <bugle/misc.h>
 
 enum
 {
@@ -48,7 +49,7 @@ void bugle_log(const char *filterset, const char *event, int severity,
 
 /* Variant of bugle_log with printf-style semantics */
 void bugle_log_printf(const char *filterset, const char *event, int severity,
-                      const char *format, ...) BUGLE_GCC_FORMAT_PRINTF(4, 5);
+                      const char *format, ...) BUGLE_ATTRIBUTE_FORMAT_PRINTF(4, 5);
 
 /* A generalised version that takes a callback to write out to the log file.
  * The callback must be prepared to deal with zero or more calls. Again, it

@@ -26,6 +26,12 @@
 #include <stddef.h>
 #include <stdio.h>
 
+#if BUGLE_HAVE_ATTRIBUTE_FORMAT_PRINTF
+# define BUGLE_ATTRIBUTE_FORMAT_PRINTF(a, b) __attribute__((format(printf, a, b)))
+#else
+# define BUGLE_ATTRIBUTE_FORMAT_PRINTF(a, b)
+#endif
+
 /* Calls "call" with a FILE * and "data". The data that "call" writes into
  * the file is returned in as a malloc'ed string.
  * FIXME: error checking.
@@ -39,7 +45,7 @@ char *bugle_string_io(void (*call)(FILE *, void *), void *data);
  * the length of the string, including the original portion. The string
  * length is at least doubled each time to ensure progress is made.
  */
-int bugle_appendf(char **strp, size_t *sz, const char *format, ...) BUGLE_GCC_FORMAT_PRINTF(3, 4);
+int bugle_appendf(char **strp, size_t *sz, const char *format, ...) BUGLE_ATTRIBUTE_FORMAT_PRINTF(3, 4);
 
 /* Like fgets, but creates the memory. The return value has the same
  * meaning as for fgets, but must be free()ed if non-NULL
