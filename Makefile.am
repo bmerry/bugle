@@ -40,6 +40,8 @@ nodist_includebudgie_HEADERS = \
 	include/budgie/reflect.h \
 	include/budgie/call.h \
 	include/budgie/types2.h
+pkgconfigdir = $(libdir)/pkgconfig
+pkgconfig_DATA = bugle.pc
 
 pkglib_LTLIBRARIES = \
 	filters/common.la \
@@ -280,7 +282,7 @@ TESTS = tests/errors.sh tests/misc.sh tests/queries.sh tests/setstate.sh tests/t
 TESTS_ENVIRONMENT = BUGLE_FILTERS=$(srcdir)/tests/filters BUGLE_STATISTICS=$(srcdir)/tests/statistics BUGLE_FILTER_DIR=filters/.libs BUGLE_LIB=src/.libs/libbugle.so
 
 # Extra files to distribute
-EXTRA_DIST = gl.bc.in $(BCFILES) src/data/gl.c \
+EXTRA_DIST = gl.bc.in bugle.pc.in $(BCFILES) src/data/gl.c \
 	LICENSE \
 	doc/filters.html doc/locks.txt \
 	doc/protocol.txt doc/extensions.txt \
