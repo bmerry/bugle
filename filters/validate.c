@@ -34,7 +34,7 @@
 #include <bugle/gldump.h>
 #include <bugle/tracker.h>
 #include <bugle/log.h>
-#include <bugle/threads.h>
+#include "common/threads.h"
 #include <budgie/call.h>
 #include <budgie/types.h>
 #include <budgie/reflect.h>

@@ -22,7 +22,7 @@
 #include <bugle/log.h>
 #include <bugle/filters.h>
 #include <stdbool.h>
-#include <bugle/threads.h>
+#include "common/threads.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

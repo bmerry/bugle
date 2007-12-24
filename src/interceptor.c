@@ -28,7 +28,7 @@
 #include <bugle/log.h>
 #include <bugle/stats.h>
 #include <bugle/hashtable.h>
-#include <bugle/threads.h>
+#include "common/threads.h"
 #include <budgie/call.h>
 #include <budgie/reflect.h>
 #include <budgie/addresses.h>

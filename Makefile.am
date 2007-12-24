@@ -21,7 +21,6 @@ includebugle_HEADERS = \
 	include/bugle/hashtable.h \
 	include/bugle/linkedlist.h \
 	include/bugle/misc.h \
-	include/bugle/threads.h \
         include/bugle/filters.h \
 	include/bugle/gldump.h \
 	include/bugle/glsl.h \
@@ -102,7 +101,6 @@ src_libbugleutils_la_SOURCES = \
 	common/protocol.h common/protocol.c \
 	common/hashtable.c include/bugle/hashtable.h \
 	common/linkedlist.c include/bugle/linkedlist.h \
-	include/bugle/threads.h \
 	include/budgie/types.h include/budgie/reflect.h \
 	budgielib/internal.c budgielib/internal.h budgielib/reflect.c
 nodist_src_libbugleutils_la_SOURCES = \
@@ -128,7 +126,8 @@ src_libbugle_la_SOURCES = \
 	src/objects.c include/bugle/objects.h \
 	src/xevent.c include/bugle/xevent.h \
 	budgielib/addresses.c include/budgie/addresses.h \
-	budgielib/lib.h
+	budgielib/lib.h \
+	common/threads.h
 nodist_src_libbugle_la_SOURCES = \
 	budgielib/lib.c include/budgie/call.h
 src_libbugle_la_LIBADD = $(LIBLTDL) src/libbugleutils.la -lm -lGL $(X_PRE_LIBS) $(X_LIBS) -lX11 $(X_EXTRA_LIBS) $(LTLIBTHREAD) $(LTLIBINTL) lib/libgnu.la

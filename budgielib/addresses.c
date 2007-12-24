@@ -25,7 +25,7 @@
 #include <budgie/types.h>
 #include <budgie/addresses.h>
 #include <budgie/reflect.h>
-#include <bugle/threads.h>
+#include "common/threads.h"
 #include "budgielib/lib.h"
 #include "tls.h"
 #include "xalloc.h"

@@ -24,7 +24,7 @@
 #include <stdarg.h>
 #include <bugle/misc.h>
 #include <bugle/linkedlist.h>
-#include <bugle/threads.h>
+#include "common/threads.h"
 #include "xalloc.h"
 
 char *bugle_string_io(void (*call)(FILE *, void *), void *data)
