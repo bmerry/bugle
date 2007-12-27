@@ -1044,11 +1044,11 @@ static void write_type_table(FILE *f)
 
         if (i != types.begin()) fprintf(f, ",\n");
         fprintf(f,
-                "    { \"%s\", %s, %s, %s, %s, sizeof(%s), %d,\n"
+                "    { \"%s\", \"%s\", %s, %s, %s, %s, sizeof(%s), %d,\n"
                 "      (type_dumper) _budgie_dump_%s,\n"
                 "      (type_get_type) %s,\n"
                 "      (type_get_length) %s }",
-                type.c_str(), code, base_type.c_str(), ptr.c_str(), fields.c_str(),
+                type.c_str(), name.c_str(), code, base_type.c_str(), ptr.c_str(), fields.c_str(),
                 type.c_str(), (int) length, define.c_str(),
                 get_type.c_str(), get_length.c_str());
     }
@@ -1451,25 +1451,16 @@ static void write_converter(FILE *f)
 
 static void write_call_wrappers(FILE *f)
 {
-#if 0
-    // NB: still need to put in weak symbol trickery
-    // Also need to make sure that interceptors inline the function when
-    // in bypass mode
-#endif
-
-    fputs("#define _BUDGIE_CALL(name, type, tmp) ({ static tmp = NULL; if (!_budgie_addr) _budgie_addr = (type) budgie_function_address_real(budgie_function_id((#name))); _budgie_addr; })\n"
-          "/* #define _BUDGIE_CALL(name, type, tmp) ((type) budgie_function_address_real(budgie_function_id((#name)))) */\n"
-          "\n", f);
-
     for (list<Function>::iterator i = functions.begin(); i != functions.end(); i++)
     {
         tree_node_p ptr = make_pointer(TREE_TYPE(i->node));
 
         string name = i->name();
         string type = type_to_string(ptr, "", false);
-        string tmp = type_to_string(ptr, "_budgie_addr", false);
-        fprintf(f, "#define CALL_%s _BUDGIE_CALL(%s, %s, %s)\n",
-                name.c_str(), name.c_str(), type.c_str(), tmp.c_str());
+        fprintf(f,
+                "#define _BUDGIE_HAVE_CALL_%s 1\n"
+                "#define _BUDGIE_CALL_%s _BUDGIE_CALL(%s, %s)\n",
+                name.c_str(), name.c_str(), name.c_str(), type.c_str());
         destroy_temporary(ptr);
     }
 }

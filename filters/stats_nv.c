@@ -94,7 +94,7 @@ static bool stats_nv_glXSwapBuffers(function_call *call, const callback_data *da
             if (stats_nv_pass >= 0)
             {
                 CHECK_NVPM(fNVPMEndPass(stats_nv_pass));
-                if (stats_nv_flush) CALL_glFinish();
+                if (stats_nv_flush) CALL(glFinish)();
                 if (stats_nv_pass + 1 == stats_nv_num_passes)
                 {
                     CHECK_NVPM(fNVPMEndExperiment());
@@ -104,7 +104,7 @@ static bool stats_nv_glXSwapBuffers(function_call *call, const callback_data *da
             }
         }
 
-        if (stats_nv_flush) CALL_glFinish();
+        if (stats_nv_flush) CALL(glFinish)();
         CHECK_NVPM(fNVPMSample(NULL, &samples));
         for (i = bugle_list_head(&stats_nv_active); i; i = bugle_list_next(i))
         {

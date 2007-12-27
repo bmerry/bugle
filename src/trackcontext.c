@@ -33,7 +33,6 @@
 #include <bugle/objects.h>
 #include <bugle/log.h>
 #include <budgie/types.h>
-#include <budgie/call.h>
 #include <budgie/addresses.h>
 #include "budgielib/defines.h"
 #include "src/glexts.h"
@@ -148,7 +147,7 @@ static bool trackcontext_callback(function_call *call, const callback_data *data
     /* These calls may fail, so we must explicitly check for the
      * current context.
      */
-    ctx = CALL_glXGetCurrentContext();
+    ctx = CALL(glXGetCurrentContext)();
     if (!ctx)
         bugle_object_set_current(bugle_context_class, NULL);
     else
@@ -200,8 +199,8 @@ static void trackcontext_data_clear(void *data)
      * Unfortunately, this means that an application that creates and
      * explicitly destroys many contexts will leak aux contexts.
      */
-    if (d->aux_shared) CALL_glXDestroyContext(d->dpy, d->aux_shared);
-    if (d->aux_unshared) CALL_glXDestroyContext(d->dpy, d->aux_unshared);
+    if (d->aux_shared) CALL(glXDestroyContext)(d->dpy, d->aux_shared);
+    if (d->aux_unshared) CALL(glXDestroyContext)(d->dpy, d->aux_unshared);
 #endif
 }
 
@@ -258,17 +257,17 @@ GLXContext bugle_get_aux_context(bool shared)
     aux = shared ? &data->aux_shared : &data->aux_unshared;
     if (*aux == NULL)
     {
-        dpy = CALL_glXGetCurrentDisplay();
-        old_ctx = CALL_glXGetCurrentContext();
-        CALL_glXQueryVersion(dpy, &major, &minor);
+        dpy = CALL(glXGetCurrentDisplay)();
+        old_ctx = CALL(glXGetCurrentContext)();
+        CALL(glXQueryVersion)(dpy, &major, &minor);
 
 #ifdef GLX_VERSION_1_3
         if (major >= 1 && (major > 1 || minor >= 3))
         {
             /* Have all the facilities to extract the necessary information */
-            CALL_glXQueryContext(dpy, old_ctx, GLX_RENDER_TYPE, &render_type);
-            CALL_glXQueryContext(dpy, old_ctx, GLX_SCREEN, &screen);
-            CALL_glXQueryContext(dpy, old_ctx, GLX_FBCONFIG_ID, &attribs[1]);
+            CALL(glXQueryContext)(dpy, old_ctx, GLX_RENDER_TYPE, &render_type);
+            CALL(glXQueryContext)(dpy, old_ctx, GLX_SCREEN, &screen);
+            CALL(glXQueryContext)(dpy, old_ctx, GLX_FBCONFIG_ID, &attribs[1]);
             /* I haven't quite figured out the return values, but I'm guessing
              * that it is returning one of the GLX_RGBA_BIT values rather than
              * GL_RGBA_TYPE etc.
@@ -281,16 +280,16 @@ GLXContext bugle_get_aux_context(bool shared)
             else if (render_type == GLX_RGBA_FLOAT_BIT_ARB)
                 render_type = GLX_RGBA_FLOAT_TYPE_ARB;
 #endif
-            cfgs = CALL_glXChooseFBConfig(dpy, screen, attribs, &n);
+            cfgs = CALL(glXChooseFBConfig)(dpy, screen, attribs, &n);
             if (cfgs == NULL)
             {
                 bugle_log("trackcontext", "aux", BUGLE_LOG_WARNING,
                           "could not create an auxiliary context: no matching FBConfig");
                 return NULL;
             }
-            ctx = CALL_glXCreateNewContext(dpy, cfgs[0], render_type,
+            ctx = CALL(glXCreateNewContext)(dpy, cfgs[0], render_type,
                                            shared ? old_ctx : NULL,
-                                           CALL_glXIsDirect(dpy, old_ctx));
+                                           CALL(glXIsDirect)(dpy, old_ctx));
             XFree(cfgs);
             if (ctx == NULL)
                 bugle_log("trackcontext", "aux", BUGLE_LOG_WARNING,
@@ -301,9 +300,9 @@ GLXContext bugle_get_aux_context(bool shared)
         {
             if (data->use_visual_info)
             {
-                ctx = CALL_glXCreateContext(dpy, &data->visual_info,
+                ctx = CALL(glXCreateContext)(dpy, &data->visual_info,
                                             shared ? old_ctx : NULL,
-                                            CALL_glXIsDirect(dpy, old_ctx));
+                                            CALL(glXIsDirect)(dpy, old_ctx));
                 if (!ctx)
                 {
                     bugle_log("trackcontext", "aux", BUGLE_LOG_WARNING,
@@ -328,7 +327,7 @@ Display *bugle_get_current_display_internal(bool lock)
     trackcontext_data *data;
     GLXContext ctx;
 
-    ctx = CALL_glXGetCurrentContext();
+    ctx = CALL(glXGetCurrentContext)();
     if (!ctx)
         return NULL;
     if (lock) gl_lock_lock(context_mutex);
@@ -338,11 +337,11 @@ Display *bugle_get_current_display_internal(bool lock)
         return data->dpy;
 #ifdef GLX_EXT_import_context
     else if (budgie_function_address_real(FUNC_glXGetCurrentDisplayEXT))
-        return CALL_glXGetCurrentDisplayEXT();
+        return CALL(glXGetCurrentDisplayEXT)();
 #endif
 #ifdef GLX_VERSION_1_3
     else if (budgie_function_address_real(FUNC_glXGetCurrentDisplay))
-        return CALL_glXGetCurrentDisplay();
+        return CALL(glXGetCurrentDisplay)();
 #endif
     return NULL;
 }
@@ -356,13 +355,13 @@ GLXDrawable bugle_get_current_read_drawable(void)
 {
 #ifdef GLX_VERSION_1_3
     if (bugle_gl_has_extension(BUGLE_GLX_VERSION_1_3))
-        return CALL_glXGetCurrentReadDrawable();
+        return CALL(glXGetCurrentReadDrawable)();
 #endif
 #ifdef GLX_SGI_make_current_read
     if (bugle_gl_has_extension(BUGLE_GLX_SGI_make_current_read))
-        return CALL_glXGetCurrentReadDrawableSGI();
+        return CALL(glXGetCurrentReadDrawableSGI)();
 #endif
-    return CALL_glXGetCurrentDrawable();
+    return CALL(glXGetCurrentDrawable)();
 }
 
 Bool bugle_make_context_current(Display *dpy, GLXDrawable draw,
@@ -371,13 +370,13 @@ Bool bugle_make_context_current(Display *dpy, GLXDrawable draw,
     /* FIXME: should depend on the capabilities of the target context */
 #ifdef GLX_VERSION_1_3
     if (bugle_gl_has_extension(BUGLE_GLX_VERSION_1_3))
-        return CALL_glXMakeContextCurrent(dpy, draw, read, ctx);
+        return CALL(glXMakeContextCurrent)(dpy, draw, read, ctx);
 #endif
 #ifdef GLX_SGI_make_current_read
     if (bugle_gl_has_extension(BUGLE_GLX_SGI_make_current_read))
-        return CALL_glXMakeCurrentReadSGI(dpy, draw, read, ctx);
+        return CALL(glXMakeCurrentReadSGI)(dpy, draw, read, ctx);
 #endif
-    return CALL_glXMakeCurrent(dpy, draw, ctx);
+    return CALL(glXMakeCurrent)(dpy, draw, ctx);
 }
 
 
@@ -396,7 +395,7 @@ static bool trackcontext_font_init(trackcontext_font *font)
     int i;
     GLubyte *texture_data;
 
-    dpy = CALL_glXGetCurrentDisplay();
+    dpy = CALL(glXGetCurrentDisplay)();
     if (!dpy) return NULL;
 
     /* Locate the font */
@@ -419,7 +418,7 @@ static bool trackcontext_font_init(trackcontext_font *font)
         font->texture_height *= 2;
 
     /* Allocate X structures */
-    pixmap = XCreatePixmap(dpy, CALL_glXGetCurrentDrawable(),
+    pixmap = XCreatePixmap(dpy, CALL(glXGetCurrentDrawable)(),
                            font->texture_width, font->texture_height, 1);
     values.foreground = BlackPixel(dpy, DefaultScreen(dpy));
     values.foreground = WhitePixel(dpy, DefaultScreen(dpy));
@@ -450,15 +449,15 @@ static bool trackcontext_font_init(trackcontext_font *font)
             if (XGetPixel(image, x, y))
                 texture_data[(font->texture_height - 1 - y) * font->texture_width + x] = 255;
     /* FIXME: use a proxy to check if texture size is supported */
-    CALL_glGenTextures(1, &font->texture);
-    CALL_glPushAttrib(GL_TEXTURE_BIT);
-    CALL_glBindTexture(GL_TEXTURE_2D, font->texture);
-    CALL_glTexImage2D(GL_TEXTURE_2D, 0, GL_INTENSITY4,
+    CALL(glGenTextures)(1, &font->texture);
+    CALL(glPushAttrib)(GL_TEXTURE_BIT);
+    CALL(glBindTexture)(GL_TEXTURE_2D, font->texture);
+    CALL(glTexImage2D)(GL_TEXTURE_2D, 0, GL_INTENSITY4,
                       font->texture_width, font->texture_height, 0,
                       GL_LUMINANCE, GL_UNSIGNED_BYTE, texture_data);
-    CALL_glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    CALL_glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    CALL_glPopAttrib();
+    CALL(glTexParameteri)(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    CALL(glTexParameteri)(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    CALL(glPopAttrib)();
 
     free(texture_data);
     XDestroyImage(image);
@@ -481,10 +480,10 @@ void bugle_text_render(const char *msg, int x, int y)
         trackcontext_font_init(&data->font);
 
     x0 = x;
-    CALL_glPushAttrib(GL_CURRENT_BIT | GL_TEXTURE_BIT | GL_ENABLE_BIT);
-    CALL_glBindTexture(GL_TEXTURE_2D, data->font.texture);
-    CALL_glEnable(GL_TEXTURE_2D);
-    CALL_glBegin(GL_QUADS);
+    CALL(glPushAttrib)(GL_CURRENT_BIT | GL_TEXTURE_BIT | GL_ENABLE_BIT);
+    CALL(glBindTexture)(GL_TEXTURE_2D, data->font.texture);
+    CALL(glEnable)(GL_TEXTURE_2D);
+    CALL(glBegin)(GL_QUADS);
     for (; *msg; msg++)
     {
         int r, c;
@@ -502,18 +501,18 @@ void bugle_text_render(const char *msg, int x, int y)
         s2 = data->font.char_width * (c + 1) / (GLfloat) data->font.texture_width;
         t1 = data->font.char_height * r / (GLfloat) data->font.texture_height;
         t2 = data->font.char_height * (r + 1) / (GLfloat) data->font.texture_height;
-        CALL_glTexCoord2f(s1, t1);
-        CALL_glVertex2i(x, y - data->font.char_height);
-        CALL_glTexCoord2f(s2, t1);
-        CALL_glVertex2i(x + data->font.char_width, y - data->font.char_height);
-        CALL_glTexCoord2f(s2, t2);
-        CALL_glVertex2i(x + data->font.char_width, y);
-        CALL_glTexCoord2f(s1, t2);
-        CALL_glVertex2i(x, y);
+        CALL(glTexCoord2f)(s1, t1);
+        CALL(glVertex2i)(x, y - data->font.char_height);
+        CALL(glTexCoord2f)(s2, t1);
+        CALL(glVertex2i)(x + data->font.char_width, y - data->font.char_height);
+        CALL(glTexCoord2f)(s2, t2);
+        CALL(glVertex2i)(x + data->font.char_width, y);
+        CALL(glTexCoord2f)(s1, t2);
+        CALL(glVertex2i)(x, y);
         x += data->font.char_width;
     }
-    CALL_glEnd();
-    CALL_glPopAttrib();
+    CALL(glEnd)();
+    CALL(glPopAttrib)();
 }
 
 void trackcontext_initialise(void)

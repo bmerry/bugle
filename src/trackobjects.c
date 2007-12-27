@@ -131,7 +131,7 @@ static bool trackobjects_glBindTexture(function_call *call, const callback_data 
     trackobjects_add_single(BUGLE_TRACKOBJECTS_TEXTURE,
                             *call->glBindTexture.arg0,
                             *call->glBindTexture.arg1,
-                            CALL_glIsTexture);
+                            CALL(glIsTexture));
     return true;
 }
 
@@ -140,7 +140,7 @@ static bool trackobjects_glDeleteTextures(function_call *call, const callback_da
     trackobjects_delete_multiple(BUGLE_TRACKOBJECTS_TEXTURE,
                                  *call->glDeleteTextures.arg0,
                                  *call->glDeleteTextures.arg1,
-                                 CALL_glIsTexture);
+                                 CALL(glIsTexture));
     return true;
 }
 
@@ -150,7 +150,7 @@ static bool trackobjects_glBindBuffer(function_call *call, const callback_data *
     trackobjects_add_single(BUGLE_TRACKOBJECTS_BUFFER,
                             *call->glBindBufferARB.arg0,
                             *call->glBindBufferARB.arg1,
-                            CALL_glIsBufferARB);
+                            CALL(glIsBufferARB));
     return true;
 }
 
@@ -159,7 +159,7 @@ static bool trackobjects_glDeleteBuffers(function_call *call, const callback_dat
     trackobjects_delete_multiple(BUGLE_TRACKOBJECTS_BUFFER,
                                  *call->glDeleteBuffersARB.arg0,
                                  *call->glDeleteBuffersARB.arg1,
-                                 CALL_glIsBufferARB);
+                                 CALL(glIsBufferARB));
     return true;
 }
 #endif
@@ -170,7 +170,7 @@ static bool trackobjects_glBeginQuery(function_call *call, const callback_data *
     trackobjects_add_single(BUGLE_TRACKOBJECTS_QUERY,
                             *call->glBeginQueryARB.arg0,
                             *call->glBeginQueryARB.arg1,
-                            CALL_glIsQueryARB);
+                            CALL(glIsQueryARB));
     return true;
 }
 
@@ -179,7 +179,7 @@ static bool trackobjects_glDeleteQueries(function_call *call, const callback_dat
     trackobjects_delete_multiple(BUGLE_TRACKOBJECTS_QUERY,
                                  *call->glDeleteQueriesARB.arg0,
                                  *call->glDeleteQueriesARB.arg1,
-                                 CALL_glIsQueryARB);
+                                 CALL(glIsQueryARB));
     return true;
 }
 #endif
@@ -205,7 +205,7 @@ static bool trackobjects_glDeleteProgramsARB(function_call *call, const callback
     trackobjects_delete_multiple(BUGLE_TRACKOBJECTS_OLD_PROGRAM,
                                  *call->glDeleteProgramsARB.arg0,
                                  *call->glDeleteProgramsARB.arg1,
-                                 CALL_glIsProgramARB);
+                                 CALL(glIsProgramARB));
     return true;
 }
 #endif
@@ -268,15 +268,15 @@ static bool trackobjects_pre_glDeleteObjectARB(function_call *call, const callba
     if (bugle_begin_internal_render())
     {
         object = *call->glDeleteObjectARB.arg0;
-        CALL_glGetObjectParameterivARB(object, GL_OBJECT_TYPE_ARB, &type);
+        CALL(glGetObjectParameterivARB)(object, GL_OBJECT_TYPE_ARB, &type);
         switch (type)
         {
         case GL_PROGRAM_OBJECT_ARB:
-            CALL_glGetObjectParameterivARB(object, GL_OBJECT_ATTACHED_OBJECTS_ARB, &count);
+            CALL(glGetObjectParameterivARB)(object, GL_OBJECT_ATTACHED_OBJECTS_ARB, &count);
             if (count)
             {
                 attached = XNMALLOC(count, GLhandleARB);
-                CALL_glGetAttachedObjectsARB(object, count, NULL, attached);
+                CALL(glGetAttachedObjectsARB)(object, count, NULL, attached);
                 for (i = 0; i < count; i++)
                     add_check(data->call_object, BUGLE_TRACKOBJECTS_SHADER, attached[i]);
                 free(attached);
@@ -300,13 +300,13 @@ static bool trackobjects_pre_glUseProgramObjectARB(function_call *call, const ca
 
     if (bugle_begin_internal_render())
     {
-        program = CALL_glGetHandleARB(GL_PROGRAM_OBJECT_ARB);
+        program = CALL(glGetHandleARB)(GL_PROGRAM_OBJECT_ARB);
         if (program != 0)
         {
             add_check(data->call_object, BUGLE_TRACKOBJECTS_PROGRAM, program);
-            CALL_glGetObjectParameterivARB(program, GL_OBJECT_ATTACHED_OBJECTS_ARB, &count);
+            CALL(glGetObjectParameterivARB)(program, GL_OBJECT_ATTACHED_OBJECTS_ARB, &count);
             attached = XNMALLOC(count, GLhandleARB);
-            CALL_glGetAttachedObjectsARB(program, count, NULL, attached);
+            CALL(glGetAttachedObjectsARB)(program, count, NULL, attached);
             for (i = 0; i < count; i++)
                 add_check(data->call_object, BUGLE_TRACKOBJECTS_SHADER, attached[i]);
             free(attached);
@@ -341,11 +341,11 @@ static bool trackobjects_pre_glDeleteProgram(function_call *call, const callback
     object = *call->glDeleteProgram.arg0;
     if (bugle_begin_internal_render())
     {
-        CALL_glGetProgramiv(object, GL_ATTACHED_SHADERS, &count);
+        CALL(glGetProgramiv)(object, GL_ATTACHED_SHADERS, &count);
         if (count)
         {
             attached = XNMALLOC(count, GLuint);
-            CALL_glGetAttachedShaders(object, count, NULL, attached);
+            CALL(glGetAttachedShaders)(object, count, NULL, attached);
             for (i = 0; i < count; i++)
                 add_check(data->call_object, BUGLE_TRACKOBJECTS_SHADER, attached[i]);
             free(attached);
@@ -364,7 +364,7 @@ static bool trackobjects_glBindFramebuffer(function_call *call, const callback_d
     trackobjects_add_single(BUGLE_TRACKOBJECTS_FRAMEBUFFER,
                             *call->glBindFramebufferEXT.arg0,
                             *call->glBindFramebufferEXT.arg1,
-                            CALL_glIsFramebufferEXT);
+                            CALL(glIsFramebufferEXT));
     return true;
 }
 
@@ -373,7 +373,7 @@ static bool trackobjects_glDeleteFramebuffers(function_call *call, const callbac
     trackobjects_delete_multiple(BUGLE_TRACKOBJECTS_FRAMEBUFFER,
                                  *call->glDeleteFramebuffersEXT.arg0,
                                  *call->glDeleteFramebuffersEXT.arg1,
-                                 CALL_glIsFramebufferEXT);
+                                 CALL(glIsFramebufferEXT));
     return true;
 }
 
@@ -382,7 +382,7 @@ static bool trackobjects_glBindRenderbuffer(function_call *call, const callback_
     trackobjects_add_single(BUGLE_TRACKOBJECTS_RENDERBUFFER,
                             *call->glBindRenderbufferEXT.arg0,
                             *call->glBindRenderbufferEXT.arg1,
-                            CALL_glIsRenderbufferEXT);
+                            CALL(glIsRenderbufferEXT));
     return true;
 }
 
@@ -391,7 +391,7 @@ static bool trackobjects_glDeleteRenderbuffers(function_call *call, const callba
     trackobjects_delete_multiple(BUGLE_TRACKOBJECTS_RENDERBUFFER,
                                  *call->glDeleteRenderbuffersEXT.arg0,
                                  *call->glDeleteRenderbuffersEXT.arg1,
-                                 CALL_glIsRenderbufferEXT);
+                                 CALL(glIsRenderbufferEXT));
     return true;
 }
 #endif /* GL_EXT_framebuffer_object */
@@ -414,8 +414,8 @@ static bool trackobjects_checks(function_call *call, const callback_data *data)
             if (bugle_begin_internal_render())
             {
                 GLint status;
-                CALL_glGetObjectParameterivARB(d->object, GL_OBJECT_DELETE_STATUS_ARB, &status);
-                if (CALL_glGetError() != GL_NONE)
+                CALL(glGetObjectParameterivARB)(d->object, GL_OBJECT_DELETE_STATUS_ARB, &status);
+                if (CALL(glGetError)() != GL_NONE)
                     trackobjects_delete_single(d->type, d->object);
                 bugle_end_internal_render("trackobjects_checks", true);
             }

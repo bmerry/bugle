@@ -51,7 +51,6 @@
 #include <bugle/linkedlist.h>
 #include <bugle/hashtable.h>
 #include <budgie/types.h>
-#include <budgie/call.h>
 #include <budgie/reflect.h>
 #include <budgie/addresses.h>
 #include "budgielib/defines.h"

@@ -185,7 +185,7 @@ budgie_type bugle_gl_type_to_type_ptr_pbo_source(GLenum gl_type)
         && bugle_begin_internal_render())
     {
         GLint id;
-        CALL_glGetIntegerv(GL_PIXEL_UNPACK_BUFFER_BINDING_EXT, &id);
+        CALL(glGetIntegerv)(GL_PIXEL_UNPACK_BUFFER_BINDING_EXT, &id);
         if (id) 
         {
             if (sizeof(unsigned long) == sizeof(GLvoid *)) return TYPE_m;
@@ -203,7 +203,7 @@ budgie_type bugle_gl_type_to_type_ptr_pbo_sink(GLenum gl_type)
         && bugle_begin_internal_render())
     {
         GLint id;
-        CALL_glGetIntegerv(GL_PIXEL_PACK_BUFFER_BINDING_EXT, &id);
+        CALL(glGetIntegerv)(GL_PIXEL_PACK_BUFFER_BINDING_EXT, &id);
         if (id) 
         {
             if (sizeof(unsigned long) == sizeof(GLvoid *)) return TYPE_m;
@@ -437,7 +437,7 @@ int bugle_count_program_string(GLenum target, GLenum pname)
     switch (pname)
     {
     case GL_PROGRAM_STRING_ARB:
-        CALL_glGetProgramivARB(target, GL_PROGRAM_LENGTH_ARB, &length);
+        CALL(glGetProgramivARB)(target, GL_PROGRAM_LENGTH_ARB, &length);
         break;
     default:
         length = 0;
@@ -473,31 +473,31 @@ size_t bugle_image_element_count(GLsizei width,
     if (bugle_in_begin_end()) return 0;
     if (unpack)
     {
-        CALL_glGetIntegerv(GL_UNPACK_SWAP_BYTES, &swap_bytes);
-        CALL_glGetIntegerv(GL_UNPACK_ROW_LENGTH, &row_length);
-        CALL_glGetIntegerv(GL_UNPACK_SKIP_PIXELS, &skip_pixels);
-        CALL_glGetIntegerv(GL_UNPACK_SKIP_ROWS, &skip_rows);
-        CALL_glGetIntegerv(GL_UNPACK_ALIGNMENT, &alignment);
+        CALL(glGetIntegerv)(GL_UNPACK_SWAP_BYTES, &swap_bytes);
+        CALL(glGetIntegerv)(GL_UNPACK_ROW_LENGTH, &row_length);
+        CALL(glGetIntegerv)(GL_UNPACK_SKIP_PIXELS, &skip_pixels);
+        CALL(glGetIntegerv)(GL_UNPACK_SKIP_ROWS, &skip_rows);
+        CALL(glGetIntegerv)(GL_UNPACK_ALIGNMENT, &alignment);
 #ifdef GL_EXT_texture3D
         if (depth >= 0)
         {
-            CALL_glGetIntegerv(GL_UNPACK_IMAGE_HEIGHT, &image_height);
-            CALL_glGetIntegerv(GL_UNPACK_SKIP_IMAGES, &skip_images);
+            CALL(glGetIntegerv)(GL_UNPACK_IMAGE_HEIGHT, &image_height);
+            CALL(glGetIntegerv)(GL_UNPACK_SKIP_IMAGES, &skip_images);
         }
 #endif
     }
     else
     {
-        CALL_glGetIntegerv(GL_PACK_SWAP_BYTES, &swap_bytes);
-        CALL_glGetIntegerv(GL_PACK_ROW_LENGTH, &row_length);
-        CALL_glGetIntegerv(GL_PACK_SKIP_PIXELS, &skip_pixels);
-        CALL_glGetIntegerv(GL_PACK_SKIP_ROWS, &skip_rows);
-        CALL_glGetIntegerv(GL_PACK_ALIGNMENT, &alignment);
+        CALL(glGetIntegerv)(GL_PACK_SWAP_BYTES, &swap_bytes);
+        CALL(glGetIntegerv)(GL_PACK_ROW_LENGTH, &row_length);
+        CALL(glGetIntegerv)(GL_PACK_SKIP_PIXELS, &skip_pixels);
+        CALL(glGetIntegerv)(GL_PACK_SKIP_ROWS, &skip_rows);
+        CALL(glGetIntegerv)(GL_PACK_ALIGNMENT, &alignment);
 #ifdef GL_EXT_texture3D
         if (depth >= 0)
         {
-            CALL_glGetIntegerv(GL_PACK_IMAGE_HEIGHT_EXT, &image_height);
-            CALL_glGetIntegerv(GL_PACK_SKIP_IMAGES_EXT, &skip_images);
+            CALL(glGetIntegerv)(GL_PACK_IMAGE_HEIGHT_EXT, &image_height);
+            CALL(glGetIntegerv)(GL_PACK_SKIP_IMAGES_EXT, &skip_images);
         }
 #endif
     }
@@ -535,11 +535,11 @@ size_t bugle_texture_element_count(GLenum target,
                                    GLenum type)
 {
     int width, height, depth = -1;
-    CALL_glGetTexLevelParameteriv(target, level, GL_TEXTURE_WIDTH, &width);
-    CALL_glGetTexLevelParameteriv(target, level, GL_TEXTURE_HEIGHT, &height);
+    CALL(glGetTexLevelParameteriv)(target, level, GL_TEXTURE_WIDTH, &width);
+    CALL(glGetTexLevelParameteriv)(target, level, GL_TEXTURE_HEIGHT, &height);
 #ifdef GL_EXT_texture3D
     if (bugle_gl_has_extension(BUGLE_GL_EXT_texture3D))
-        CALL_glGetTexLevelParameteriv(target, level, GL_TEXTURE_DEPTH_EXT, &depth);
+        CALL(glGetTexLevelParameteriv)(target, level, GL_TEXTURE_DEPTH_EXT, &depth);
     else
         depth = 1;
 #endif

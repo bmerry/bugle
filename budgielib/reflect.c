@@ -31,12 +31,14 @@
 
 static hash_table function_id_map;
 static hash_table type_id_map;
+static hash_table type_id_nomangle_map;
 gl_once_define(static, reflect_once);
 
 static void reflect_shutdown(void)
 {
     bugle_hash_clear(&function_id_map);
     bugle_hash_clear(&type_id_map);
+    bugle_hash_clear(&type_id_nomangle_map);
 }
 
 static void reflect_initialise(void)
@@ -49,9 +51,14 @@ static void reflect_initialise(void)
                        (void *) (size_t) (i + 1));
 
     bugle_hash_init(&type_id_map, NULL);
+    bugle_hash_init(&type_id_nomangle_map, NULL);
     for (i = 0; i < _budgie_type_count; i++)
+    {
         bugle_hash_set(&type_id_map, _budgie_type_table[i].name,
                        (void *) (size_t) (i + 1));
+        bugle_hash_set(&type_id_nomangle_map, _budgie_type_table[i].name_nomangle,
+                       (void *) (size_t) (i + 1));
+    }
 
     atexit(reflect_shutdown);
 }
@@ -130,10 +137,22 @@ const char *budgie_type_name(budgie_type type)
     return _budgie_type_table[type].name;
 }
 
+const char *budgie_type_name_nomangle(budgie_type type)
+{
+    assert(type >= 0 && type < _budgie_type_count);
+    return _budgie_type_table[type].name_nomangle;
+}
+
 budgie_type budgie_type_id(const char *name)
 {
     gl_once(reflect_once, reflect_initialise);
     return (budgie_type) (size_t) bugle_hash_get(&type_id_map, name) - 1;
+}
+
+budgie_type budgie_type_id_nomangle(const char *name)
+{
+    gl_once(reflect_once, reflect_initialise);
+    return (budgie_type) (size_t) bugle_hash_get(&type_id_nomangle_map, name) - 1;
 }
 
 void budgie_dump_any_type(budgie_type type, const void *value, int length, FILE *out)

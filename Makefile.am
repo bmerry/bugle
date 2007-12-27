@@ -34,10 +34,11 @@ includebugle_HEADERS = \
 	include/bugle/tracker.h \
 	include/bugle/xevent.h \
 	include/bugle/overrides.h
-nodist_includebudgie_HEADERS = \
-        include/budgie/types.h \
+includebudgie_HEADERS = \
 	include/budgie/addresses.h \
-	include/budgie/reflect.h \
+        include/budgie/types.h \
+	include/budgie/reflect.h
+nodist_includebudgie_HEADERS = \
 	include/budgie/call.h \
 	include/budgie/types2.h
 pkgconfigdir = $(libdir)/pkgconfig
@@ -137,7 +138,7 @@ src_libbugle_la_LDFLAGS = -thread-safe -export-dynamic $(SYMBOLFLAGS) -version-i
 
 BUDGIE_BUILT_SRCS = \
         budgielib/lib.c budgielib/tables.c \
-        include/budgie/call.h include/budgie/types2.h budgielib/defines.h
+        include/budgie/types2.h include/budgie/call.h budgielib/defines.h
 BUILT_SOURCES += $(BUDGIE_BUILT_SRCS)
 
 # Generated files that generate other files

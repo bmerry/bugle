@@ -74,6 +74,7 @@ typedef int (*type_get_length)(const void *);
 typedef struct
 {
     const char *name;
+    const char *name_nomangle;
     type_code code;
     budgie_type type;    /* base type of pointers, arrays, functions etc */
     budgie_type pointer; /* pointer to this type (NULL_TYPE if not generated) */

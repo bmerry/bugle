@@ -569,7 +569,7 @@ static void make_leaves_conditional(const glstate *self, const state_info *table
     glstate *child;
     const state_info *info;
 
-    version = (const char *) CALL_glGetString(GL_VERSION);
+    version = (const char *) CALL(glGetString)(GL_VERSION);
     for (info = table; info->name; info++)
     {
         if ((info->flags & mask) == flags
@@ -774,7 +774,7 @@ static void spawn_vertex_attrib_arrays(const struct glstate *self,
 {
 #ifdef GL_ARB_vertex_program
     GLint count, i;
-    CALL_glGetIntegerv(GL_MAX_VERTEX_ATTRIBS_ARB, &count);
+    CALL(glGetIntegerv)(GL_MAX_VERTEX_ATTRIBS_ARB, &count);
     for (i = 0; i < count; i++)
         make_object(self, 0, "VertexAttrib[%lu]", i, spawn_children_vertex_attrib, NULL, children);
 #endif
@@ -785,7 +785,7 @@ static void spawn_clip_planes(const struct glstate *self,
                               const struct state_info *info)
 {
     GLint count;
-    CALL_glGetIntegerv(GL_MAX_CLIP_PLANES, &count);
+    CALL(glGetIntegerv)(GL_MAX_CLIP_PLANES, &count);
     make_counted2(self, count, "GL_CLIP_PLANE%lu", GL_CLIP_PLANE0,
                   offsetof(glstate, target), offsetof(glstate, enum_name),
                   NULL, info, children);
@@ -817,7 +817,7 @@ static void spawn_lights(const glstate *self,
 {
     GLint count;
 
-    CALL_glGetIntegerv(GL_MAX_LIGHTS, &count);
+    CALL(glGetIntegerv)(GL_MAX_LIGHTS, &count);
     make_counted2(self, count, "GL_LIGHT%lu", GL_LIGHT0,
                   offsetof(glstate, target), offsetof(glstate, enum_name),
                   spawn_children_light,
@@ -831,28 +831,28 @@ static int get_total_texture_units(void)
 #ifdef GL_ARB_multitexture
     if (bugle_gl_has_extension_group(BUGLE_GL_ARB_multitexture))
     {
-        CALL_glGetIntegerv(GL_MAX_TEXTURE_UNITS_ARB, &cur);
+        CALL(glGetIntegerv)(GL_MAX_TEXTURE_UNITS_ARB, &cur);
         if (cur > max) max = cur;
     }
 #endif
 #ifdef GL_ARB_fragment_program
     if (bugle_gl_has_extension_group(BUGLE_EXTGROUP_texunits))
     {
-        CALL_glGetIntegerv(GL_MAX_TEXTURE_IMAGE_UNITS_ARB, &cur);
+        CALL(glGetIntegerv)(GL_MAX_TEXTURE_IMAGE_UNITS_ARB, &cur);
         if (cur > max) max = cur;
-        CALL_glGetIntegerv(GL_MAX_TEXTURE_COORDS_ARB, &cur);
+        CALL(glGetIntegerv)(GL_MAX_TEXTURE_COORDS_ARB, &cur);
         if (cur > max) max = cur;
     }
 #endif
 #ifdef GL_ARB_vertex_shader
     if (bugle_gl_has_extension_group(BUGLE_GL_ARB_vertex_shader))
     {
-        CALL_glGetIntegerv(GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS_ARB, &cur);
+        CALL(glGetIntegerv)(GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS_ARB, &cur);
         if (cur > max) max = cur;
     }
 #endif
     /* NVIDIA 66.29 on NV20 fails on some of these calls. Clear the error. */
-    CALL_glGetError();
+    CALL(glGetError)();
     return max;
 }
 
@@ -899,7 +899,7 @@ static unsigned int get_texture_env_units(void)
 
 #ifdef GL_ARB_multitexture
     if (bugle_gl_has_extension_group(BUGLE_GL_ARB_multitexture))
-        CALL_glGetIntegerv(GL_MAX_TEXTURE_UNITS_ARB, &ans);
+        CALL(glGetIntegerv)(GL_MAX_TEXTURE_UNITS_ARB, &ans);
 #endif
     return ans;
 }
@@ -911,26 +911,26 @@ static unsigned int get_texture_image_units(void)
 #ifdef GL_ARB_multitexture
     if (bugle_gl_has_extension_group(BUGLE_GL_ARB_multitexture))
     {
-        CALL_glGetIntegerv(GL_MAX_TEXTURE_UNITS_ARB, &cur);
+        CALL(glGetIntegerv)(GL_MAX_TEXTURE_UNITS_ARB, &cur);
         if (cur > max) max = cur;
     }
 #endif
 #ifdef GL_ARB_fragment_program
     if (bugle_gl_has_extension_group(BUGLE_EXTGROUP_texunits))
     {
-        CALL_glGetIntegerv(GL_MAX_TEXTURE_IMAGE_UNITS_ARB, &cur);
+        CALL(glGetIntegerv)(GL_MAX_TEXTURE_IMAGE_UNITS_ARB, &cur);
         if (cur > max) max = cur;
     }
 #endif
 #ifdef GL_ARB_vertex_shader
     if (bugle_gl_has_extension_group(BUGLE_GL_ARB_vertex_shader))
     {
-        CALL_glGetIntegerv(GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS_ARB, &cur);
+        CALL(glGetIntegerv)(GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS_ARB, &cur);
         if (cur > max) max = cur;
     }
 #endif
     /* NVIDIA 66.29 on NV20 fails on some of these calls. Clear the error. */
-    CALL_glGetError();
+    CALL(glGetError)();
     return max;
 }
 
@@ -941,19 +941,19 @@ static unsigned int get_texture_coord_units(void)
 #ifdef GL_ARB_multitexture
     if (bugle_gl_has_extension_group(BUGLE_GL_ARB_multitexture))
     {
-        CALL_glGetIntegerv(GL_MAX_TEXTURE_UNITS_ARB, &cur);
+        CALL(glGetIntegerv)(GL_MAX_TEXTURE_UNITS_ARB, &cur);
         if (cur > max) max = cur;
     }
 #endif
 #ifdef GL_ARB_fragment_program
     if (bugle_gl_has_extension_group(BUGLE_EXTGROUP_texunits))
     {
-        CALL_glGetIntegerv(GL_MAX_TEXTURE_COORDS_ARB, &cur);
+        CALL(glGetIntegerv)(GL_MAX_TEXTURE_COORDS_ARB, &cur);
         if (cur > max) max = cur;
     }
 #endif
     /* NVIDIA 66.29 on NV20 fails on some of these calls. Clear the error. */
-    CALL_glGetError();
+    CALL(glGetError)();
     return max;
 }
 
@@ -970,12 +970,12 @@ static void spawn_children_tex_level_parameter(const glstate *self, linked_list 
 
         if (self->binding)
         {
-            CALL_glGetIntegerv(self->binding, &old);
-            CALL_glBindTexture(self->target, self->object);
+            CALL(glGetIntegerv)(self->binding, &old);
+            CALL(glBindTexture)(self->target, self->object);
         }
-        CALL_glGetTexLevelParameteriv(self->face, self->level, GL_TEXTURE_COMPRESSED_ARB, &compressed);
+        CALL(glGetTexLevelParameteriv)(self->face, self->level, GL_TEXTURE_COMPRESSED_ARB, &compressed);
         if (compressed) mask &= ~STATE_SELECT_COMPRESSED;
-        if (self->binding) CALL_glBindTexture(self->target, old);
+        if (self->binding) CALL(glBindTexture)(self->target, old);
         bugle_end_internal_render("spawn_children_tex_level_parameter", true);
     }
 #endif
@@ -993,23 +993,23 @@ static void make_tex_levels(const glstate *self,
 
     if (self->binding)
     {
-        CALL_glGetIntegerv(self->binding, &old);
-        CALL_glBindTexture(self->target, self->object);
+        CALL(glGetIntegerv)(self->binding, &old);
+        CALL(glBindTexture)(self->target, self->object);
     }
     base = 0;
     max = 1000;
 #ifdef GL_SGIS_texture_lod
     if (self->binding && bugle_gl_has_extension_group(GL_SGIS_texture_lod)) /* No parameters for proxy textures */
     {
-        CALL_glGetTexParameteriv(self->target, GL_TEXTURE_BASE_LEVEL_SGIS, &base);
-        CALL_glGetTexParameteriv(self->target, GL_TEXTURE_MAX_LEVEL_SGIS, &max);
+        CALL(glGetTexParameteriv)(self->target, GL_TEXTURE_BASE_LEVEL_SGIS, &base);
+        CALL(glGetTexParameteriv)(self->target, GL_TEXTURE_MAX_LEVEL_SGIS, &max);
     }
 #endif
 
     for (i = base; i <= base + max; i++)
     {
         GLint width;
-        CALL_glGetTexLevelParameteriv(self->face, i, GL_TEXTURE_WIDTH, &width);
+        CALL(glGetTexLevelParameteriv)(self->face, i, GL_TEXTURE_WIDTH, &width);
         if (width <= 0) break;
 
         child = XMALLOC(glstate);
@@ -1023,7 +1023,7 @@ static void make_tex_levels(const glstate *self,
         bugle_list_append(children, child);
     }
 
-    if (self->binding) CALL_glBindTexture(self->target, old);
+    if (self->binding) CALL(glBindTexture)(self->target, old);
 }
 
 #ifdef GL_ARB_texture_cube_map
@@ -1238,7 +1238,7 @@ static void spawn_children_blend(const struct glstate *self,
     static const state_info blend = { STATE_NAME(GL_BLEND), TYPE_9GLboolean, -1, BUGLE_GL_EXT_draw_buffers2, -1, STATE_ENABLED_INDEXED };
 
     GLint count;
-    CALL_glGetIntegerv(GL_MAX_DRAW_BUFFERS_ATI, &count);
+    CALL(glGetIntegerv)(GL_MAX_DRAW_BUFFERS_ATI, &count);
     bugle_list_init(children, free);
     make_counted(self, count, "%lu", 0, offsetof(glstate, numeric_name), NULL,
                  &blend, children);
@@ -1260,7 +1260,7 @@ static void spawn_children_color_writemask(const struct glstate *self,
     static const state_info color_writemask = { STATE_NAME(GL_COLOR_WRITEMASK), TYPE_9GLboolean, 4, BUGLE_GL_EXT_draw_buffers2, -1, STATE_INDEXED };
 
     GLint count;
-    CALL_glGetIntegerv(GL_MAX_DRAW_BUFFERS_ATI, &count);
+    CALL(glGetIntegerv)(GL_MAX_DRAW_BUFFERS_ATI, &count);
     bugle_list_init(children, free);
     make_counted(self, count, "%lu", 0, offsetof(glstate, numeric_name), NULL,
                  &color_writemask, children);
@@ -1281,7 +1281,7 @@ static void spawn_draw_buffers(const struct glstate *self,
 {
 #ifdef GL_ATI_draw_buffers
     GLint count;
-    CALL_glGetIntegerv(GL_MAX_DRAW_BUFFERS_ATI, &count);
+    CALL(glGetIntegerv)(GL_MAX_DRAW_BUFFERS_ATI, &count);
     make_counted(self, count, "GL_DRAW_BUFFER%lu", GL_DRAW_BUFFER0_ATI,
                  offsetof(glstate, enum_name), NULL,
                  info, children);
@@ -2346,7 +2346,7 @@ void bugle_state_get_raw(const glstate *state, bugle_state_raw *wrapper)
     out_type = state->info->type;
     wrapper->data = NULL; /* Set to non-NULL if manual conversion */
 
-    if ((error = CALL_glGetError()) != GL_NO_ERROR)
+    if ((error = CALL(glGetError)()) != GL_NO_ERROR)
     {
         const char *name;
         name = bugle_gl_enum_to_token(error);
@@ -2371,21 +2371,21 @@ void bugle_state_get_raw(const glstate *state, bugle_state_raw *wrapper)
     if ((state->info->flags & STATE_MULTIPLEX_ACTIVE_TEXTURE)
         && bugle_gl_has_extension_group(BUGLE_GL_ARB_multitexture))
     {
-        CALL_glGetIntegerv(GL_ACTIVE_TEXTURE_ARB, &old_unit);
-        CALL_glGetIntegerv(GL_CLIENT_ACTIVE_TEXTURE_ARB, &old_client_unit);
+        CALL(glGetIntegerv)(GL_ACTIVE_TEXTURE_ARB, &old_unit);
+        CALL(glGetIntegerv)(GL_CLIENT_ACTIVE_TEXTURE_ARB, &old_client_unit);
 #ifdef GL_VERSION_1_3
         if (bugle_gl_has_extension(BUGLE_GL_VERSION_1_3))
         {
-            CALL_glActiveTexture(state->unit);
+            CALL(glActiveTexture)(state->unit);
             if (state->unit > get_texture_coord_units())
-                CALL_glClientActiveTexture(state->unit);
+                CALL(glClientActiveTexture)(state->unit);
         }
         else
 #endif
         {
-            CALL_glActiveTextureARB(state->unit);
+            CALL(glActiveTextureARB)(state->unit);
             if (state->unit > get_texture_coord_units())
-                CALL_glClientActiveTextureARB(state->unit);
+                CALL(glClientActiveTextureARB)(state->unit);
         }
         flag_active_texture = true;
     }
@@ -2393,44 +2393,44 @@ void bugle_state_get_raw(const glstate *state, bugle_state_raw *wrapper)
 #ifdef GL_ARB_vertex_buffer_object
     if (state->info->flags & STATE_MULTIPLEX_BIND_BUFFER)
     {
-        CALL_glGetIntegerv(GL_ARRAY_BUFFER_BINDING_ARB, &old_buffer);
+        CALL(glGetIntegerv)(GL_ARRAY_BUFFER_BINDING_ARB, &old_buffer);
 #ifdef GL_VERSION_1_5
         if (bugle_gl_has_extension(BUGLE_GL_VERSION_1_5))
         {
-            CALL_glBindBuffer(GL_ARRAY_BUFFER_ARB, state->object);
+            CALL(glBindBuffer)(GL_ARRAY_BUFFER_ARB, state->object);
         }
         else
 #endif
         {
-            CALL_glBindBufferARB(GL_ARRAY_BUFFER_ARB, state->object);
+            CALL(glBindBufferARB)(GL_ARRAY_BUFFER_ARB, state->object);
         }
     }
 #endif /* GL_ARB_vertex_buffer_object */
 #if defined(GL_ARB_vertex_program) || defined(GL_ARB_fragment_program)
     if (state->info->flags & STATE_MULTIPLEX_BIND_PROGRAM)
     {
-        CALL_glGetProgramivARB(state->target, GL_PROGRAM_BINDING_ARB, &old_program);
-        CALL_glBindProgramARB(state->target, state->object);
+        CALL(glGetProgramivARB)(state->target, GL_PROGRAM_BINDING_ARB, &old_program);
+        CALL(glBindProgramARB)(state->target, state->object);
     }
 #endif
 #ifdef GL_EXT_framebuffer_object
     if ((state->info->flags & STATE_MULTIPLEX_BIND_FRAMEBUFFER)
         && bugle_gl_has_extension_group(BUGLE_GL_EXT_framebuffer_object))
     {
-        CALL_glGetIntegerv(state->binding, &old_framebuffer);
-        CALL_glBindFramebufferEXT(state->target, state->object);
+        CALL(glGetIntegerv)(state->binding, &old_framebuffer);
+        CALL(glBindFramebufferEXT)(state->target, state->object);
     }
     if (state->info->flags & STATE_MULTIPLEX_BIND_RENDERBUFFER)
     {
-        CALL_glGetIntegerv(state->binding, &old_renderbuffer);
-        CALL_glBindRenderbufferEXT(state->target, state->object);
+        CALL(glGetIntegerv)(state->binding, &old_renderbuffer);
+        CALL(glBindRenderbufferEXT)(state->target, state->object);
     }
 #endif
     if ((state->info->flags & STATE_MULTIPLEX_BIND_TEXTURE)
         && state->binding) /* binding of 0 means a proxy texture */
     {
-        CALL_glGetIntegerv(state->binding, &old_texture);
-        CALL_glBindTexture(state->target, state->object);
+        CALL(glGetIntegerv)(state->binding, &old_texture);
+        CALL(glBindTexture)(state->target, state->object);
     }
 
     switch (state->info->flags & STATE_MODE_MASK)
@@ -2438,42 +2438,42 @@ void bugle_state_get_raw(const glstate *state, bugle_state_raw *wrapper)
     case STATE_MODE_GLOBAL:
         if (state->info->type == TYPE_PKc)
         {
-            str = (char *) CALL_glGetString(pname);
+            str = (char *) CALL(glGetString)(pname);
             if (str) str = xstrdup(str);
             else str = xstrdup("(nil)");
         }
         else if (state->info->type == TYPE_9GLboolean)
-            CALL_glGetBooleanv(pname, b);
+            CALL(glGetBooleanv)(pname, b);
         else if (state->info->type == TYPE_P6GLvoid)
-            CALL_glGetPointerv(pname, p);
+            CALL(glGetPointerv)(pname, p);
         else if (state->info->type == TYPE_8GLdouble)
-            CALL_glGetDoublev(pname, d);
+            CALL(glGetDoublev)(pname, d);
         else if (state->info->type == TYPE_7GLfloat)
-            CALL_glGetFloatv(pname, f);
+            CALL(glGetFloatv)(pname, f);
         else
         {
-            CALL_glGetIntegerv(pname, i);
+            CALL(glGetIntegerv)(pname, i);
             in_type = TYPE_5GLint;
         }
         break;
     case STATE_MODE_ENABLED:
-        b[0] = CALL_glIsEnabled(pname);
+        b[0] = CALL(glIsEnabled)(pname);
         in_type = TYPE_9GLboolean;
         break;
 #ifdef GL_EXT_draw_buffers2
     case STATE_MODE_INDEXED:
         if (state->info->type == TYPE_9GLboolean)
-            CALL_glGetBooleanIndexedvEXT(pname, state->level, b);
+            CALL(glGetBooleanIndexedvEXT)(pname, state->level, b);
         else if (state->info->type == TYPE_11GLxfbattrib)
-            CALL_glGetIntegerIndexedvEXT(pname, state->level, (GLint *) &xfbattrib);
+            CALL(glGetIntegerIndexedvEXT)(pname, state->level, (GLint *) &xfbattrib);
         else
         {
-            CALL_glGetIntegerIndexedvEXT(pname, state->level, i);
+            CALL(glGetIntegerIndexedvEXT)(pname, state->level, i);
             in_type = TYPE_5GLint;
         }
         break;
     case STATE_MODE_ENABLED_INDEXED:
-        b[0] = CALL_glIsEnabledIndexedEXT(pname, state->numeric_name);
+        b[0] = CALL(glIsEnabledIndexedEXT)(pname, state->numeric_name);
         in_type = TYPE_9GLboolean;
         break;
 #endif
@@ -2481,67 +2481,67 @@ void bugle_state_get_raw(const glstate *state, bugle_state_raw *wrapper)
     case STATE_MODE_TEXTURE_FILTER_CONTROL:
     case STATE_MODE_POINT_SPRITE:
         get_helper(state, d, f, i, &in_type, NULL,
-                   CALL_glGetTexEnvfv, CALL_glGetTexEnviv);
+                   CALL(glGetTexEnvfv), CALL(glGetTexEnviv));
         break;
     case STATE_MODE_TEX_PARAMETER:
         get_helper(state, d, f, i, &in_type, NULL,
-                   CALL_glGetTexParameterfv, CALL_glGetTexParameteriv);
+                   CALL(glGetTexParameterfv), CALL(glGetTexParameteriv));
         break;
     case STATE_MODE_TEX_LEVEL_PARAMETER:
         if (state->info->type == TYPE_8GLdouble || state->info->type == TYPE_7GLfloat)
         {
-            CALL_glGetTexLevelParameterfv(state->face, state->level, pname, f);
+            CALL(glGetTexLevelParameterfv)(state->face, state->level, pname, f);
             in_type = TYPE_7GLfloat;
         }
         else
         {
-            CALL_glGetTexLevelParameteriv(state->face, state->level, pname, i);
+            CALL(glGetTexLevelParameteriv)(state->face, state->level, pname, i);
             in_type = TYPE_5GLint;
         }
         break;
     case STATE_MODE_TEX_GEN:
-        get_helper(state, d, f, i, &in_type, CALL_glGetTexGendv,
-                   CALL_glGetTexGenfv, CALL_glGetTexGeniv);
+        get_helper(state, d, f, i, &in_type, CALL(glGetTexGendv),
+                   CALL(glGetTexGenfv), CALL(glGetTexGeniv));
         break;
     case STATE_MODE_LIGHT:
         get_helper(state, d, f, i, &in_type, NULL,
-                   CALL_glGetLightfv, CALL_glGetLightiv);
+                   CALL(glGetLightfv), CALL(glGetLightiv));
         break;
     case STATE_MODE_MATERIAL:
         get_helper(state, d, f, i, &in_type, NULL,
-                   CALL_glGetMaterialfv, CALL_glGetMaterialiv);
+                   CALL(glGetMaterialfv), CALL(glGetMaterialiv));
         break;
     case STATE_MODE_CLIP_PLANE:
-        CALL_glGetClipPlane(state->target, d);
+        CALL(glGetClipPlane)(state->target, d);
         in_type = TYPE_8GLdouble;
         break;
     case STATE_MODE_POLYGON_STIPPLE:
-        CALL_glGetPolygonStipple((GLubyte *) stipple);
+        CALL(glGetPolygonStipple)((GLubyte *) stipple);
         break;
     case STATE_MODE_COLOR_TABLE_PARAMETER:
         get_helper(state, d, f, i, &in_type, NULL,
-                   CALL_glGetColorTableParameterfv, CALL_glGetColorTableParameteriv);
+                   CALL(glGetColorTableParameterfv), CALL(glGetColorTableParameteriv));
         break;
     case STATE_MODE_CONVOLUTION_PARAMETER:
         get_helper(state, d, f, i, &in_type, NULL,
-                   CALL_glGetConvolutionParameterfv, CALL_glGetConvolutionParameteriv);
+                   CALL(glGetConvolutionParameterfv), CALL(glGetConvolutionParameteriv));
         break;
     case STATE_MODE_HISTOGRAM_PARAMETER:
         get_helper(state, d, f, i, &in_type, NULL,
-                   CALL_glGetHistogramParameterfv, CALL_glGetHistogramParameteriv);
+                   CALL(glGetHistogramParameterfv), CALL(glGetHistogramParameteriv));
         break;
     case STATE_MODE_MINMAX_PARAMETER:
         get_helper(state, d, f, i, &in_type, NULL,
-                   CALL_glGetMinmaxParameterfv, CALL_glGetMinmaxParameteriv);
+                   CALL(glGetMinmaxParameterfv), CALL(glGetMinmaxParameteriv));
         break;
 #ifdef GL_ARB_vertex_program
     case STATE_MODE_VERTEX_ATTRIB:
         if (state->info->type == TYPE_P6GLvoid)
-            CALL_glGetVertexAttribPointervARB(state->object, pname, p);
+            CALL(glGetVertexAttribPointervARB)(state->object, pname, p);
         else if (state->info->type == TYPE_8GLdouble)
-            CALL_glGetVertexAttribdvARB(state->object, pname, d);
+            CALL(glGetVertexAttribdvARB)(state->object, pname, d);
         else if (state->info->type == TYPE_7GLfloat)
-            CALL_glGetVertexAttribfvARB(state->object, pname, f);
+            CALL(glGetVertexAttribfvARB)(state->object, pname, f);
         else
         {
             /* xorg-server 1.2.0 maps the iv and fv forms to the NV
@@ -2549,22 +2549,22 @@ void bugle_state_get_raw(const glstate *state, bugle_state_raw *wrapper)
              * (_ENABLED and _NORMALIZED). We work around that by using
              * the dv form.
              */
-            CALL_glGetVertexAttribdvARB(state->object, pname, d);
+            CALL(glGetVertexAttribdvARB)(state->object, pname, d);
             in_type = TYPE_8GLdouble;
         }
         break;
 #endif
 #ifdef GL_ARB_occlusion_query
     case STATE_MODE_QUERY:
-        CALL_glGetQueryivARB(state->target, pname, i);
+        CALL(glGetQueryivARB)(state->target, pname, i);
         in_type = TYPE_5GLint;
         break;
     case STATE_MODE_QUERY_OBJECT:
         if (state->info->type == TYPE_6GLuint)
-            CALL_glGetQueryObjectuivARB(state->object, pname, ui);
+            CALL(glGetQueryObjectuivARB)(state->object, pname, ui);
         else
         {
-            CALL_glGetQueryObjectivARB(state->object, pname, i);
+            CALL(glGetQueryObjectivARB)(state->object, pname, i);
             in_type = TYPE_5GLint;
         }
         break;
@@ -2572,10 +2572,10 @@ void bugle_state_get_raw(const glstate *state, bugle_state_raw *wrapper)
 #ifdef GL_ARB_vertex_buffer_object
     case STATE_MODE_BUFFER_PARAMETER:
         if (state->info->type == TYPE_P6GLvoid)
-            CALL_glGetBufferPointervARB(GL_ARRAY_BUFFER_ARB, pname, p);
+            CALL(glGetBufferPointervARB)(GL_ARRAY_BUFFER_ARB, pname, p);
         else
         {
-            CALL_glGetBufferParameterivARB(GL_ARRAY_BUFFER_ARB, pname, i);
+            CALL(glGetBufferParameterivARB)(GL_ARRAY_BUFFER_ARB, pname, i);
             in_type = TYPE_5GLint;
         }
         break;
@@ -2584,7 +2584,7 @@ void bugle_state_get_raw(const glstate *state, bugle_state_raw *wrapper)
     case STATE_MODE_SHADER:
         if (state->info->type == TYPE_8GLdouble || state->info->type == TYPE_7GLfloat)
         {
-            CALL_glGetObjectParameterfvARB(state->object, pname, f);
+            CALL(glGetObjectParameterfvARB)(state->object, pname, f);
             in_type = TYPE_7GLfloat;
         }
         else
@@ -2596,7 +2596,7 @@ void bugle_state_get_raw(const glstate *state, bugle_state_raw *wrapper)
     case STATE_MODE_PROGRAM:
         if (state->info->type == TYPE_8GLdouble || state->info->type == TYPE_7GLfloat)
         {
-            CALL_glGetObjectParameterfvARB(state->object, pname, f);
+            CALL(glGetObjectParameterfvARB)(state->object, pname, f);
             in_type = TYPE_7GLfloat;
         }
         else
@@ -2655,23 +2655,23 @@ void bugle_state_get_raw(const glstate *state, bugle_state_raw *wrapper)
     case STATE_MODE_OLD_PROGRAM:
         if (state->info->type == TYPE_PKc)
         {
-            CALL_glGetProgramivARB(state->target, GL_PROGRAM_LENGTH_ARB, i);
+            CALL(glGetProgramivARB)(state->target, GL_PROGRAM_LENGTH_ARB, i);
             str = XNMALLOC(i[0] + 1, char);
             str[i[0]] = '\0';
-            CALL_glGetProgramStringARB(state->target, pname, str);
+            CALL(glGetProgramStringARB)(state->target, pname, str);
         }
         else
         {
-            CALL_glGetProgramivARB(state->target, pname, i);
+            CALL(glGetProgramivARB)(state->target, pname, i);
             in_type = TYPE_5GLint;
         }
         break;
     case STATE_MODE_PROGRAM_ENV_PARAMETER:
-        CALL_glGetProgramEnvParameterdvARB(state->target, state->level, d);
+        CALL(glGetProgramEnvParameterdvARB)(state->target, state->level, d);
         in_type = TYPE_8GLdouble;
         break;
     case STATE_MODE_PROGRAM_LOCAL_PARAMETER:
-        CALL_glGetProgramLocalParameterdvARB(state->target, state->level, d);
+        CALL(glGetProgramLocalParameterdvARB)(state->target, state->level, d);
         in_type = TYPE_8GLdouble;
         break;
 #endif
@@ -2682,10 +2682,10 @@ void bugle_state_get_raw(const glstate *state, bugle_state_raw *wrapper)
             GLint *formats;
             GLenum *out;
 
-            CALL_glGetIntegerv(GL_NUM_COMPRESSED_TEXTURE_FORMATS_ARB, &count);
+            CALL(glGetIntegerv)(GL_NUM_COMPRESSED_TEXTURE_FORMATS_ARB, &count);
             formats = XNMALLOC(count, GLint);
             out = XNMALLOC(count, GLenum);
-            CALL_glGetIntegerv(GL_COMPRESSED_TEXTURE_FORMATS_ARB, formats);
+            CALL(glGetIntegerv)(GL_COMPRESSED_TEXTURE_FORMATS_ARB, formats);
             budgie_type_convert(out, TYPE_6GLenum, formats, TYPE_5GLint, count);
             wrapper->data = out;
             wrapper->length = count;
@@ -2696,13 +2696,13 @@ void bugle_state_get_raw(const glstate *state, bugle_state_raw *wrapper)
 #endif
 #ifdef GL_EXT_framebuffer_object
     case STATE_MODE_FRAMEBUFFER_ATTACHMENT_PARAMETER:
-        CALL_glGetFramebufferAttachmentParameterivEXT(state->target,
+        CALL(glGetFramebufferAttachmentParameterivEXT)(state->target,
                                                       state->level,
                                                       pname, i);
         in_type = TYPE_5GLint;
         break;
     case STATE_MODE_RENDERBUFFER_PARAMETER:
-        CALL_glGetRenderbufferParameterivEXT(state->target, pname, i);
+        CALL(glGetRenderbufferParameterivEXT)(state->target, pname, i);
         in_type = TYPE_5GLint;
         break;
 #endif
@@ -2716,16 +2716,16 @@ void bugle_state_get_raw(const glstate *state, bugle_state_raw *wrapper)
 #ifdef GL_VERSION_1_3
         if (bugle_gl_has_extension(BUGLE_GL_VERSION_1_3))
         {
-            CALL_glActiveTexture(old_unit);
+            CALL(glActiveTexture)(old_unit);
             if (state->unit > get_texture_coord_units())
-                CALL_glClientActiveTexture(old_client_unit);
+                CALL(glClientActiveTexture)(old_client_unit);
         }
         else
 #endif
         {
-            CALL_glActiveTextureARB(old_unit);
+            CALL(glActiveTextureARB)(old_unit);
             if (state->unit > get_texture_coord_units())
-                CALL_glClientActiveTextureARB(old_client_unit);
+                CALL(glClientActiveTextureARB)(old_client_unit);
         }
     }
 #endif /* GL_ARB_multitexture */
@@ -2735,31 +2735,31 @@ void bugle_state_get_raw(const glstate *state, bugle_state_raw *wrapper)
 #ifdef GL_VERSION_1_5
         if (bugle_gl_has_extension(BUGLE_GL_VERSION_1_5))
         {
-            CALL_glBindBuffer(GL_ARRAY_BUFFER, old_buffer);
+            CALL(glBindBuffer)(GL_ARRAY_BUFFER, old_buffer);
         }
         else
 #endif
         {
-            CALL_glBindBufferARB(GL_ARRAY_BUFFER_ARB, old_buffer);
+            CALL(glBindBufferARB)(GL_ARRAY_BUFFER_ARB, old_buffer);
         }
     }
 #endif /* GL_ARB_vertex_buffer_object */
 #if defined(GL_ARB_vertex_program) || defined(GL_ARB_fragment_program)
     if (state->info->flags & STATE_MULTIPLEX_BIND_PROGRAM)
-        CALL_glBindProgramARB(state->target, old_program);
+        CALL(glBindProgramARB)(state->target, old_program);
 #endif
 #ifdef GL_EXT_framebuffer_object
     if ((state->info->flags & STATE_MULTIPLEX_BIND_FRAMEBUFFER)
         && bugle_gl_has_extension_group(GL_EXT_framebuffer_object))
-        CALL_glBindFramebufferEXT(state->target, old_framebuffer);
+        CALL(glBindFramebufferEXT)(state->target, old_framebuffer);
     if (state->info->flags & STATE_MULTIPLEX_BIND_RENDERBUFFER)
-        CALL_glBindRenderbufferEXT(state->target, old_renderbuffer);
+        CALL(glBindRenderbufferEXT)(state->target, old_renderbuffer);
 #endif
     if ((state->info->flags & STATE_MULTIPLEX_BIND_TEXTURE)
         && state->binding)
-        CALL_glBindTexture(state->target, old_texture);
+        CALL(glBindTexture)(state->target, old_texture);
 
-    if ((error = CALL_glGetError()) != GL_NO_ERROR)
+    if ((error = CALL(glGetError)()) != GL_NO_ERROR)
     {
         const char *name;
         name = bugle_gl_enum_to_token(error);
@@ -2771,7 +2771,7 @@ void bugle_state_get_raw(const glstate *state, bugle_state_raw *wrapper)
             bugle_log_printf("glstate", "get", BUGLE_LOG_WARNING,
                              "OpenGL error %#08x generated by state %s",
                              (unsigned int) error, state->name ? state->name : "root");
-        while (CALL_glGetError() != GL_NO_ERROR)
+        while (CALL(glGetError)() != GL_NO_ERROR)
             ; /* consume any further errors */
         return;
     }
@@ -2891,10 +2891,10 @@ static void spawn_children_old_program_object(const glstate *self, linked_list *
 #endif
     make_leaves_conditional(self, old_program_object_state, 0, mask, children);
 
-    CALL_glGetProgramivARB(self->target, GL_MAX_PROGRAM_LOCAL_PARAMETERS_ARB, &max_local);
+    CALL(glGetProgramivARB)(self->target, GL_MAX_PROGRAM_LOCAL_PARAMETERS_ARB, &max_local);
     for (i = 0; i < max_local; i++)
     {
-        CALL_glGetProgramLocalParameterdvARB(self->target, i, local);
+        CALL(glGetProgramLocalParameterdvARB)(self->target, i, local);
         if (local[0] || local[1] || local[2] || local[3])
         {
             glstate *child;
@@ -2930,10 +2930,10 @@ static void spawn_children_old_program(const glstate *self, linked_list *childre
     if (self->target == GL_ARB_fragment_program) mask = STATE_SELECT_VERTEX;
 #endif
     make_leaves_conditional(self, old_program_state, 0, mask, children);
-    CALL_glGetProgramivARB(self->target, GL_MAX_PROGRAM_ENV_PARAMETERS_ARB, &max_env);
+    CALL(glGetProgramivARB)(self->target, GL_MAX_PROGRAM_ENV_PARAMETERS_ARB, &max_env);
     for (i = 0; i < max_env; i++)
     {
-        CALL_glGetProgramEnvParameterdvARB(self->target, i, env);
+        CALL(glGetProgramEnvParameterdvARB)(self->target, i, env);
         if (env[0] || env[1] || env[2] || env[3])
         {
             glstate *child;
@@ -2970,7 +2970,7 @@ static void make_framebuffer_attachment(const glstate *self,
     GLint type;
     glstate *child;
 
-    CALL_glGetFramebufferAttachmentParameterivEXT(self->target, attachment,
+    CALL(glGetFramebufferAttachmentParameterivEXT)(self->target, attachment,
                                                   GL_FRAMEBUFFER_ATTACHMENT_OBJECT_TYPE_EXT,
                                                   &type);
     if (type != GL_NONE)
@@ -2995,12 +2995,12 @@ static void spawn_children_framebuffer_object(const glstate *self, linked_list *
     int i;
 
     bugle_list_init(children, free);
-    CALL_glGetIntegerv(self->binding, &old);
-    CALL_glBindFramebufferEXT(self->target, self->object);
+    CALL(glGetIntegerv)(self->binding, &old);
+    CALL(glBindFramebufferEXT)(self->target, self->object);
     make_leaves(self, framebuffer_parameter_state, children);
     if (self->object != 0)
     {
-        CALL_glGetIntegerv(GL_MAX_COLOR_ATTACHMENTS_EXT, &attachments);
+        CALL(glGetIntegerv)(GL_MAX_COLOR_ATTACHMENTS_EXT, &attachments);
         for (i = 0; i < attachments; i++)
             make_framebuffer_attachment(self, GL_COLOR_ATTACHMENT0_EXT + i,
                                         "GL_COLOR_ATTACHMENT%ld",
@@ -3011,7 +3011,7 @@ static void spawn_children_framebuffer_object(const glstate *self, linked_list *
                                     "GL_STENCIL_ATTACHMENT", -1, children);
     }
 
-    CALL_glBindFramebufferEXT(self->target, old);
+    CALL(glBindFramebufferEXT)(self->target, old);
 }
 
 static void spawn_children_framebuffer(const glstate *self, linked_list *children)
@@ -3062,7 +3062,7 @@ static void spawn_children_global(const glstate *self, linked_list *children)
 
     const char *version;
 
-    version = (const char *) CALL_glGetString(GL_VERSION);
+    version = (const char *) CALL(glGetString)(GL_VERSION);
     bugle_list_init(children, free);
     make_leaves(self, global_state, children);
 

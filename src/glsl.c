@@ -38,15 +38,15 @@
     do { \
         if (bugle_gl_has_extension(BUGLE_GL_VERSION_2_0)) \
         { \
-            CALL_ ## gl params; \
+            CALL(gl) params; \
         } \
         else \
         { \
-            CALL_ ## arb params; \
+            CALL(arb) params; \
         } \
     } while (0)
 #else
-#define call1(gl,arb,params) CALL_ ## arb params
+#define call1(gl,arb,params) CALL(arb) params
 #endif
 
 #ifdef GL_ARB_shader_objects
@@ -65,7 +65,7 @@ void bugle_glGetAttachedShaders(GLuint program, GLsizei max_length, GLsizei *len
 #ifdef GL_VERSION_2_0
     if (bugle_gl_has_extension(GL_VERSION_2_0))
     {
-        CALL_glGetAttachedShaders(program, max_length, length, shaders);
+        CALL(glGetAttachedShaders)(program, max_length, length, shaders);
     }
     else
 #endif
@@ -75,7 +75,7 @@ void bugle_glGetAttachedShaders(GLuint program, GLsizei max_length, GLsizei *len
         GLsizei my_length;
 
         handles = XNMALLOC(max_length, GLhandleARB);
-        CALL_glGetAttachedObjectsARB(program, max_length, &my_length, handles);
+        CALL(glGetAttachedObjectsARB)(program, max_length, &my_length, handles);
         for (i = 0; i < my_length; i++)
             shaders[i] = handles[i];
         if (length) *length = my_length;
@@ -122,18 +122,18 @@ GLint bugle_glGetUniformLocation(GLuint program, const GLcharARB *name)
 {
 #ifdef GL_VERSION_2_0
     if (bugle_gl_has_extension(GL_VERSION_2_0))
-        return CALL_glGetUniformLocation(program, name);
+        return CALL(glGetUniformLocation)(program, name);
 #endif
-    return CALL_glGetUniformLocationARB(program, name);
+    return CALL(glGetUniformLocationARB)(program, name);
 }
 
 GLint bugle_glGetAttribLocation(GLuint program, const GLcharARB *name)
 {
 #ifdef GL_VERSION_2_0
     if (bugle_gl_has_extension(GL_VERSION_2_0))
-        return CALL_glGetAttribLocation(program, name);
+        return CALL(glGetAttribLocation)(program, name);
 #endif
-    return CALL_glGetAttribLocationARB(program, name);
+    return CALL(glGetAttribLocationARB)(program, name);
 }
 
 #endif /* GL_ARB_shader_objects */

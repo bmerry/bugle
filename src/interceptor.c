@@ -29,7 +29,6 @@
 #include <bugle/stats.h>
 #include <bugle/hashtable.h>
 #include "common/threads.h"
-#include <budgie/call.h>
 #include <budgie/reflect.h>
 #include <budgie/addresses.h>
 #include "conffile.h"
@@ -198,7 +197,7 @@ static void initialise_addresses_glx(void)
     for (i = 0; i < budgie_function_count(); i++)
         if (!bugle_gl_function_table[i].version
             || strcmp(bugle_gl_function_table[i].version, "GL_VERSION_1_2") > 0)
-            budgie_function_address_set_real(i, CALL_glXGetProcAddressARB((const GLubyte *) budgie_function_name(i)));
+            budgie_function_address_set_real(i, CALL(glXGetProcAddressARB)((const GLubyte *) budgie_function_name(i)));
 }
 
 BUGLE_CONSTRUCTOR(initialise_all);

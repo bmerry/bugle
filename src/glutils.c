@@ -43,14 +43,14 @@ bool bugle_begin_internal_render(void)
     /* FIXME: work with the error filterset to save the errors even
      * when the error filterset is not actively checking for errors.
      */
-    error = CALL_glGetError();
+    error = CALL(glGetError)();
     if (error != GL_NO_ERROR)
     {
         bugle_log("glutils", "internalrender", BUGLE_LOG_WARNING,
                   "An OpenGL error was detected but will be lost to the application.");
         bugle_log("glutils", "internalrender", BUGLE_LOG_WARNING,
                   "Use the 'error' filterset to allow the application to see errors.");
-        while ((error = CALL_glGetError()) != GL_NO_ERROR);
+        while ((error = CALL(glGetError)()) != GL_NO_ERROR);
     }
     return true;
 }
@@ -58,7 +58,7 @@ bool bugle_begin_internal_render(void)
 void bugle_end_internal_render(const char *name, bool warn)
 {
     GLenum error;
-    while ((error = CALL_glGetError()) != GL_NO_ERROR)
+    while ((error = CALL(glGetError)()) != GL_NO_ERROR)
     {
         if (warn)
         {

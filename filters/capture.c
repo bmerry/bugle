@@ -41,7 +41,7 @@
 #include <bugle/tracker.h>
 #include <bugle/xevent.h>
 #include <bugle/log.h>
-#include <budgie/call.h>
+#include <budgie/addresses.h>
 #include <budgie/reflect.h>
 #include "src/glfuncs.h"
 #include "src/glexts.h"
@@ -129,7 +129,7 @@ static void prepare_screenshot_data(screenshot_data *data,
     {
         if (data->pixels) free(data->pixels);
 #ifdef GL_EXT_pixel_buffer_object
-        if (data->pbo) CALL_glDeleteBuffersARB(1, &data->pbo);
+        if (data->pbo) CALL(glDeleteBuffersARB)(1, &data->pbo);
 #endif
         data->width = width;
         data->height = height;
@@ -137,11 +137,11 @@ static void prepare_screenshot_data(screenshot_data *data,
 #ifdef GL_EXT_pixel_buffer_object
         if (use_pbo && bugle_gl_has_extension(BUGLE_GL_EXT_pixel_buffer_object))
         {
-            CALL_glGenBuffersARB(1, &data->pbo);
-            CALL_glBindBufferARB(GL_PIXEL_PACK_BUFFER_EXT, data->pbo);
-            CALL_glBufferDataARB(GL_PIXEL_PACK_BUFFER_EXT, stride * height,
+            CALL(glGenBuffersARB)(1, &data->pbo);
+            CALL(glBindBufferARB)(GL_PIXEL_PACK_BUFFER_EXT, data->pbo);
+            CALL(glBufferDataARB)(GL_PIXEL_PACK_BUFFER_EXT, stride * height,
                                  NULL, GL_DYNAMIC_READ_ARB);
-            CALL_glBindBufferARB(GL_PIXEL_PACK_BUFFER_EXT, 0);
+            CALL(glBindBufferARB)(GL_PIXEL_PACK_BUFFER_EXT, 0);
             data->pixels = NULL;
         }
         else
@@ -165,8 +165,8 @@ static bool screenshot_start(screenshot_context *ssctx)
     GLXContext aux;
     Display *dpy;
 
-    ssctx->old_context = CALL_glXGetCurrentContext();
-    ssctx->old_write = CALL_glXGetCurrentDrawable();
+    ssctx->old_context = CALL(glXGetCurrentContext)();
+    ssctx->old_write = CALL(glXGetCurrentDrawable)();
     ssctx->old_read = bugle_get_current_read_drawable();
     dpy = bugle_get_current_display();
     aux = bugle_get_aux_context(false);
@@ -369,28 +369,28 @@ static bool map_screenshot(screenshot_data *data)
     GLint size = 0;
     if (data->pbo)
     {
-        CALL_glBindBufferARB(GL_PIXEL_PACK_BUFFER_EXT, data->pbo);
+        CALL(glBindBufferARB)(GL_PIXEL_PACK_BUFFER_EXT, data->pbo);
 
         if (!data->pixels)
         {
-            data->pixels = CALL_glMapBufferARB(GL_PIXEL_PACK_BUFFER_EXT, GL_READ_ONLY_ARB);
+            data->pixels = CALL(glMapBufferARB)(GL_PIXEL_PACK_BUFFER_EXT, GL_READ_ONLY_ARB);
             if (!data->pixels)
-                CALL_glGetError(); /* hide the error from end_internal_render() */
+                CALL(glGetError)(); /* hide the error from end_internal_render() */
             else
             {
                 data->pbo_mapped = true;
                 bugle_end_internal_render("map_screenshot", true);
-                CALL_glBindBufferARB(GL_PIXEL_PACK_BUFFER_EXT, 0);
+                CALL(glBindBufferARB)(GL_PIXEL_PACK_BUFFER_EXT, 0);
                 return true;
             }
         }
         /* If we get here, we're in case 3 */
-        CALL_glGetBufferParameterivARB(GL_PIXEL_PACK_BUFFER_EXT, GL_BUFFER_SIZE_ARB, &size);
+        CALL(glGetBufferParameterivARB)(GL_PIXEL_PACK_BUFFER_EXT, GL_BUFFER_SIZE_ARB, &size);
         if (!data->pixels)
             data->pixels = xmalloc(size);
-        CALL_glGetBufferSubDataARB(GL_PIXEL_PACK_BUFFER_EXT, 0, size, data->pixels);
+        CALL(glGetBufferSubDataARB)(GL_PIXEL_PACK_BUFFER_EXT, 0, size, data->pixels);
         data->pbo_mapped = false;
-        CALL_glBindBufferARB(GL_PIXEL_PACK_BUFFER_EXT, 0);
+        CALL(glBindBufferARB)(GL_PIXEL_PACK_BUFFER_EXT, 0);
         bugle_end_internal_render("map_screenshot", true);
     }
 #endif
@@ -404,9 +404,9 @@ static bool unmap_screenshot(screenshot_data *data)
     {
         bool ret;
 
-        CALL_glBindBufferARB(GL_PIXEL_PACK_BUFFER_EXT, data->pbo);
-        ret = CALL_glUnmapBufferARB(GL_PIXEL_PACK_BUFFER_EXT);
-        CALL_glBindBufferARB(GL_PIXEL_PACK_BUFFER_EXT, 0);
+        CALL(glBindBufferARB)(GL_PIXEL_PACK_BUFFER_EXT, data->pbo);
+        ret = CALL(glUnmapBufferARB)(GL_PIXEL_PACK_BUFFER_EXT);
+        CALL(glBindBufferARB)(GL_PIXEL_PACK_BUFFER_EXT, 0);
         bugle_end_internal_render("unmap_screenshot", true);
         data->pixels = NULL;
         return ret;
@@ -426,9 +426,9 @@ static void get_drawable_size(Display *dpy, GLXDrawable draw,
 #ifdef GLX_VERSION_1_3
     if (bugle_gl_has_extension(GLX_VERSION_1_3))
     {
-        CALL_glXQueryDrawable(dpy, draw, GLX_WIDTH, &value);
+        CALL(glXQueryDrawable)(dpy, draw, GLX_WIDTH, &value);
         *width = value;
-        CALL_glXQueryDrawable(dpy, draw, GLX_HEIGHT, &value);
+        CALL(glXQueryDrawable)(dpy, draw, GLX_HEIGHT, &value);
         *height = value;
     }
     else
@@ -461,7 +461,7 @@ static bool do_screenshot(GLenum format, int test_width, int test_height,
     cur = &video_data[video_cur];
     video_cur = (video_cur + 1) % video_lag;
 
-    drawable = CALL_glXGetCurrentDrawable();
+    drawable = CALL(glXGetCurrentDrawable)();
     dpy = bugle_get_current_display();
     get_drawable_size(dpy, drawable, &width, &height);
     if (test_width != -1 || test_height != -1)
@@ -478,13 +478,13 @@ static bool do_screenshot(GLenum format, int test_width, int test_height,
     if (!bugle_begin_internal_render()) return false;
 #ifdef GL_EXT_pixel_buffer_object
     if (cur->pbo)
-        CALL_glBindBufferARB(GL_PIXEL_PACK_BUFFER_EXT, cur->pbo);
+        CALL(glBindBufferARB)(GL_PIXEL_PACK_BUFFER_EXT, cur->pbo);
 #endif
-    CALL_glReadPixels(0, 0, width, height, format,
+    CALL(glReadPixels)(0, 0, width, height, format,
                       GL_UNSIGNED_BYTE, cur->pbo ? NULL : cur->pixels);
 #ifdef GL_EXT_pixel_buffer_object
     if (cur->pbo)
-        CALL_glBindBufferARB(GL_PIXEL_PACK_BUFFER_EXT, 0);
+        CALL(glBindBufferARB)(GL_PIXEL_PACK_BUFFER_EXT, 0);
 #endif
     bugle_end_internal_render("do_screenshot", true);
 
@@ -765,8 +765,8 @@ static bool showextensions_callback(function_call *call, const callback_data *da
 
     for (i = 0; i < budgie_group_parameter_count(call->generic.group); i++)
     {
-        if (strcmp(budgie_type_name(budgie_group_parameter_type(call->generic.group, i)),
-                   "GLenum") == 0)
+        if (budgie_group_parameter_type(call->generic.group, i)
+            == BUDGIE_TYPE_ID(6GLenum))
         {
             GLenum e;
             const gl_token *t;
@@ -947,9 +947,9 @@ static bool eps_glXSwapBuffers(function_call *call, const callback_data *data)
             free(fname);
             return true;
         }
-        CALL_glGetFloatv(GL_POINT_SIZE, &size);
+        CALL(glGetFloatv)(GL_POINT_SIZE, &size);
         gl2psPointSize(size);
-        CALL_glGetFloatv(GL_LINE_WIDTH, &size);
+        CALL(glGetFloatv)(GL_LINE_WIDTH, &size);
         gl2psLineWidth(size);
 
         d->stream = f;
@@ -968,7 +968,7 @@ static bool eps_glPointSize(function_call *call, const callback_data *data)
     if (d && d->capture && bugle_begin_internal_render())
     {
         GLfloat size;
-        CALL_glGetFloatv(GL_POINT_SIZE, &size);
+        CALL(glGetFloatv)(GL_POINT_SIZE, &size);
         gl2psPointSize(size);
         bugle_end_internal_render("eps_glPointSize", true);
     }
@@ -983,7 +983,7 @@ static bool eps_glLineWidth(function_call *call, const callback_data *data)
     if (d && d->capture && bugle_begin_internal_render())
     {
         GLfloat width;
-        CALL_glGetFloatv(GL_LINE_WIDTH, &width);
+        CALL(glGetFloatv)(GL_LINE_WIDTH, &width);
         gl2psPointSize(width);
         bugle_end_internal_render("eps_glLineWidth", true);
     }

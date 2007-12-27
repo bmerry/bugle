@@ -32,7 +32,7 @@
 #include <bugle/glutils.h>
 #include <bugle/xevent.h>
 #include <bugle/tracker.h>
-#include <budgie/call.h>
+#include <budgie/addresses.h>
 #include "src/glexts.h"
 #include "xalloc.h"
 
@@ -116,7 +116,7 @@ static void showstats_statistic_initialise(showstats_statistic *sst)
 
             showstats_num_graph++;
             sst->graph_size = 128;
-            CALL_glGetIntegerv(GL_MAX_TEXTURE_SIZE, &max_size);
+            CALL(glGetIntegerv)(GL_MAX_TEXTURE_SIZE, &max_size);
             if (max_size < sst->graph_size)
                 sst->graph_size = max_size;
             sst->graph_history = XCALLOC(sst->graph_size, double);
@@ -124,15 +124,15 @@ static void showstats_statistic_initialise(showstats_statistic *sst)
             sst->graph_scale = sst->st->maximum;
             sst->graph_scale_label[0] = '\0';
 
-            CALL_glGenTextures(1, &sst->graph_tex);
-            CALL_glBindTexture(GL_TEXTURE_1D, sst->graph_tex);
-            CALL_glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-            CALL_glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-            CALL_glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-            CALL_glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_COMPARE_MODE, GL_COMPARE_R_TO_TEXTURE);
-            CALL_glTexImage1D(GL_TEXTURE_1D, 0, GL_ALPHA8,
+            CALL(glGenTextures)(1, &sst->graph_tex);
+            CALL(glBindTexture)(GL_TEXTURE_1D, sst->graph_tex);
+            CALL(glTexParameteri)(GL_TEXTURE_1D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+            CALL(glTexParameteri)(GL_TEXTURE_1D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+            CALL(glTexParameteri)(GL_TEXTURE_1D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+            CALL(glTexParameteri)(GL_TEXTURE_1D, GL_TEXTURE_COMPARE_MODE, GL_COMPARE_R_TO_TEXTURE);
+            CALL(glTexImage1D)(GL_TEXTURE_1D, 0, GL_ALPHA8,
                               sst->graph_size, 0, GL_ALPHA, GL_UNSIGNED_BYTE, sst->graph_scaled);
-            CALL_glBindTexture(GL_TEXTURE_1D, 0);
+            CALL(glBindTexture)(GL_TEXTURE_1D, 0);
             bugle_end_internal_render("showstats_statistic_initialise", true);
             sst->initialised = true;
         }
@@ -181,10 +181,10 @@ static void showstats_graph_rescale(showstats_statistic *sst, double new_scale)
         v = sst->graph_history[i] >= 0.0 ? sst->graph_history[i] : 0.0;
         sst->graph_scaled[i] = (GLubyte) rint(v * 255.0 / s);
     }
-    CALL_glBindTexture(GL_TEXTURE_1D, sst->graph_tex);
-    CALL_glTexSubImage1D(GL_TEXTURE_1D, 0, 0, sst->graph_size,
+    CALL(glBindTexture)(GL_TEXTURE_1D, sst->graph_tex);
+    CALL(glTexSubImage1D)(GL_TEXTURE_1D, 0, 0, sst->graph_size,
                          GL_ALPHA, GL_UNSIGNED_BYTE, sst->graph_scaled);
-    CALL_glBindTexture(GL_TEXTURE_1D, 0);
+    CALL(glBindTexture)(GL_TEXTURE_1D, 0);
 }
 
 static void showstats_update(showstats_struct *ss)
@@ -236,9 +236,9 @@ static void showstats_update(showstats_struct *ss)
                         v /= sst->graph_scale;
                         if (v < 0.0) v = 0.0;
                         vs = (GLubyte) rint(v * 255.0);
-                        CALL_glBindTexture(GL_TEXTURE_1D, sst->graph_tex);
-                        CALL_glTexSubImage1D(GL_TEXTURE_1D, 0, sst->graph_offset, 1, GL_ALPHA, GL_UNSIGNED_BYTE, &vs);
-                        CALL_glBindTexture(GL_TEXTURE_1D, 0);
+                        CALL(glBindTexture)(GL_TEXTURE_1D, sst->graph_tex);
+                        CALL(glTexSubImage1D)(GL_TEXTURE_1D, 0, sst->graph_offset, 1, GL_ALPHA, GL_UNSIGNED_BYTE, &vs);
+                        CALL(glBindTexture)(GL_TEXTURE_1D, 0);
 
                         sst->graph_scaled[sst->graph_offset] = vs;
                         sst->graph_offset++;
@@ -293,13 +293,13 @@ static void showstats_graph_draw(GLenum mode, int xofs0, int yofs0,
                 graph_texcoords[2] = s2;
                 graph_texcoords[3] = s1;
             }
-            CALL_glPushMatrix();
-            CALL_glTranslatef(xofs, yofs, 0.0f);
-            CALL_glScalef(sst->graph_size, 32.0f, 1.0f);
+            CALL(glPushMatrix)();
+            CALL(glTranslatef)(xofs, yofs, 0.0f);
+            CALL(glScalef)(sst->graph_size, 32.0f, 1.0f);
             if (graph_tex)
-                CALL_glBindTexture(GL_TEXTURE_1D, sst->graph_tex);
-            CALL_glDrawArrays(mode, 0, 4);
-            CALL_glPopMatrix();
+                CALL(glBindTexture)(GL_TEXTURE_1D, sst->graph_tex);
+            CALL(glDrawArrays)(mode, 0, 4);
+            CALL(glPopMatrix)();
             yofs -= 64;
         }
     }
@@ -337,21 +337,21 @@ static bool showstats_glXSwapBuffers(function_call *call, const callback_data *d
     aux = bugle_get_aux_context(false);
     if (aux && bugle_begin_internal_render())
     {
-        CALL_glGetIntegerv(GL_VIEWPORT, viewport);
-        real = CALL_glXGetCurrentContext();
-        old_write = CALL_glXGetCurrentDrawable();
+        CALL(glGetIntegerv)(GL_VIEWPORT, viewport);
+        real = CALL(glXGetCurrentContext)();
+        old_write = CALL(glXGetCurrentDrawable)();
         old_read = bugle_get_current_read_drawable();
         dpy = bugle_get_current_display();
-        CALL_glXMakeCurrent(dpy, old_write, aux);
+        CALL(glXMakeCurrent)(dpy, old_write, aux);
 
         showstats_update(ss);
 
-        CALL_glPushAttrib(GL_CURRENT_BIT | GL_VIEWPORT_BIT);
+        CALL(glPushAttrib)(GL_CURRENT_BIT | GL_VIEWPORT_BIT);
         /* Expand viewport to whole window */
-        CALL_glViewport(viewport[0], viewport[1], viewport[2], viewport[3]);
+        CALL(glViewport)(viewport[0], viewport[1], viewport[2], viewport[3]);
         /* Make coordinates correspond to pixel offsets */
-        CALL_glTranslatef(-1.0f, -1.0f, 0.0f);
-        CALL_glScalef(2.0f / viewport[2], 2.0f / viewport[3], 1.0f);
+        CALL(glTranslatef)(-1.0f, -1.0f, 0.0f);
+        CALL(glScalef)(2.0f / viewport[2], 2.0f / viewport[3], 1.0f);
 
         if (ss->showstats_display)
             bugle_text_render(ss->showstats_display, 16, viewport[3] - 16);
@@ -366,38 +366,38 @@ static bool showstats_glXSwapBuffers(function_call *call, const callback_data *d
             yofs0 = 16 + 64 * (showstats_num_graph - 1);
 
             /* Common state to first several passes */
-            CALL_glAlphaFunc(GL_GREATER, 0.0f);
-            CALL_glVertexPointer(2, GL_FLOAT, 0, graph_vertices);
-            CALL_glTexCoordPointer(1, GL_FLOAT, 0, graph_texcoords);
-            CALL_glColorPointer(4, GL_UNSIGNED_BYTE, 0, graph_colors);
-            CALL_glEnableClientState(GL_VERTEX_ARRAY);
+            CALL(glAlphaFunc)(GL_GREATER, 0.0f);
+            CALL(glVertexPointer)(2, GL_FLOAT, 0, graph_vertices);
+            CALL(glTexCoordPointer)(1, GL_FLOAT, 0, graph_texcoords);
+            CALL(glColorPointer)(4, GL_UNSIGNED_BYTE, 0, graph_colors);
+            CALL(glEnableClientState)(GL_VERTEX_ARRAY);
 
             /* Pass 1: clear the background */
-            CALL_glColor3f(0.0f, 0.0f, 0.0f);
+            CALL(glColor3f)(0.0f, 0.0f, 0.0f);
             showstats_graph_draw(GL_QUADS, xofs0, yofs0, false, NULL);
 
             /* Pass 2: draw the graphs */
-            CALL_glEnable(GL_ALPHA_TEST);
-            CALL_glEnable(GL_TEXTURE_1D);
-            CALL_glEnableClientState(GL_COLOR_ARRAY);
-            CALL_glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-            CALL_glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_COMBINE_ARB);
-            CALL_glTexEnvi(GL_TEXTURE_ENV, GL_SOURCE0_RGB_ARB, GL_PREVIOUS);
-            CALL_glTexEnvi(GL_TEXTURE_ENV, GL_COMBINE_RGB_ARB, GL_REPLACE);
-            CALL_glTexEnvi(GL_TEXTURE_ENV, GL_COMBINE_ALPHA_ARB, GL_SUBTRACT_ARB);
+            CALL(glEnable)(GL_ALPHA_TEST);
+            CALL(glEnable)(GL_TEXTURE_1D);
+            CALL(glEnableClientState)(GL_COLOR_ARRAY);
+            CALL(glEnableClientState)(GL_TEXTURE_COORD_ARRAY);
+            CALL(glTexEnvi)(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_COMBINE_ARB);
+            CALL(glTexEnvi)(GL_TEXTURE_ENV, GL_SOURCE0_RGB_ARB, GL_PREVIOUS);
+            CALL(glTexEnvi)(GL_TEXTURE_ENV, GL_COMBINE_RGB_ARB, GL_REPLACE);
+            CALL(glTexEnvi)(GL_TEXTURE_ENV, GL_COMBINE_ALPHA_ARB, GL_SUBTRACT_ARB);
             showstats_graph_draw(GL_QUADS, xofs0, yofs0, true, graph_texcoords);
-            CALL_glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
-            CALL_glTexEnvi(GL_TEXTURE_ENV, GL_SOURCE0_RGB_ARB, GL_TEXTURE);
-            CALL_glTexEnvi(GL_TEXTURE_ENV, GL_COMBINE_RGB_ARB, GL_MODULATE);
-            CALL_glTexEnvi(GL_TEXTURE_ENV, GL_COMBINE_ALPHA_ARB, GL_MODULATE);
-            CALL_glDisableClientState(GL_TEXTURE_COORD_ARRAY);
-            CALL_glDisableClientState(GL_COLOR_ARRAY);
-            CALL_glDisable(GL_TEXTURE_1D);
-            CALL_glDisable(GL_ALPHA_TEST);
-            CALL_glBindTexture(GL_TEXTURE_1D, 0);
+            CALL(glTexEnvi)(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
+            CALL(glTexEnvi)(GL_TEXTURE_ENV, GL_SOURCE0_RGB_ARB, GL_TEXTURE);
+            CALL(glTexEnvi)(GL_TEXTURE_ENV, GL_COMBINE_RGB_ARB, GL_MODULATE);
+            CALL(glTexEnvi)(GL_TEXTURE_ENV, GL_COMBINE_ALPHA_ARB, GL_MODULATE);
+            CALL(glDisableClientState)(GL_TEXTURE_COORD_ARRAY);
+            CALL(glDisableClientState)(GL_COLOR_ARRAY);
+            CALL(glDisable)(GL_TEXTURE_1D);
+            CALL(glDisable)(GL_ALPHA_TEST);
+            CALL(glBindTexture)(GL_TEXTURE_1D, 0);
 
             /* Pass 3: draw the border */
-            CALL_glColor3f(1.0f, 1.0f, 1.0f);
+            CALL(glColor3f)(1.0f, 1.0f, 1.0f);
             showstats_graph_draw(GL_LINE_LOOP, xofs0, yofs0, false, NULL);
 
             /* Pass 4: labels */
@@ -415,15 +415,15 @@ static bool showstats_glXSwapBuffers(function_call *call, const callback_data *d
             }
 
             /* Clean up */
-            CALL_glDisableClientState(GL_VERTEX_ARRAY);
-            CALL_glVertexPointer(4, GL_FLOAT, 0, NULL);
-            CALL_glTexCoordPointer(4, GL_FLOAT, 0, NULL);
-            CALL_glColorPointer(4, GL_FLOAT, 0, NULL);
-            CALL_glAlphaFunc(GL_ALWAYS, 0.0f);
+            CALL(glDisableClientState)(GL_VERTEX_ARRAY);
+            CALL(glVertexPointer)(4, GL_FLOAT, 0, NULL);
+            CALL(glTexCoordPointer)(4, GL_FLOAT, 0, NULL);
+            CALL(glColorPointer)(4, GL_FLOAT, 0, NULL);
+            CALL(glAlphaFunc)(GL_ALWAYS, 0.0f);
         }
 #endif
-        CALL_glLoadIdentity();
-        CALL_glPopAttrib();
+        CALL(glLoadIdentity)();
+        CALL(glPopAttrib)();
 
         bugle_make_context_current(dpy, old_write, old_read, real);
         bugle_end_internal_render("showstats_callback", true);

@@ -27,7 +27,7 @@
 #include <bugle/tracker.h>
 #include <bugle/log.h>
 #include <bugle/glutils.h>
-#include <budgie/call.h>
+#include <budgie/addresses.h>
 #include "src/glexts.h"
 
 #ifdef GL_ARB_occlusion_query
@@ -49,9 +49,9 @@ static void stats_fragments_struct_init(const void *key, void *data)
         && bugle_gl_has_extension(BUGLE_GL_ARB_occlusion_query)
         && bugle_begin_internal_render())
     {
-        CALL_glGenQueriesARB(1, &s->query);
+        CALL(glGenQueriesARB)(1, &s->query);
         if (s->query)
-            CALL_glBeginQueryARB(GL_SAMPLES_PASSED_ARB, s->query);
+            CALL(glBeginQueryARB)(GL_SAMPLES_PASSED_ARB, s->query);
         bugle_end_internal_render("stats_fragments_struct_initialise", true);
     }
 }
@@ -62,7 +62,7 @@ static void stats_fragments_struct_clear(void *data)
 
     s = (stats_fragments_struct *) data;
     if (s->query)
-        CALL_glDeleteQueries(1, &s->query);
+        CALL(glDeleteQueries)(1, &s->query);
 }
 
 static bool stats_fragments_glXSwapBuffers(function_call *call, const callback_data *data)
@@ -74,8 +74,8 @@ static bool stats_fragments_glXSwapBuffers(function_call *call, const callback_d
     if (stats_fragments_fragments->active
         && s && s->query && bugle_begin_internal_render())
     {
-        CALL_glEndQueryARB(GL_SAMPLES_PASSED_ARB);
-        CALL_glGetQueryObjectuivARB(s->query, GL_QUERY_RESULT_ARB, &fragments);
+        CALL(glEndQueryARB)(GL_SAMPLES_PASSED_ARB);
+        CALL(glGetQueryObjectuivARB)(s->query, GL_QUERY_RESULT_ARB, &fragments);
         bugle_end_internal_render("stats_fragments_glXSwapBuffers", true);
         bugle_stats_signal_add(stats_fragments_fragments, fragments);
     }
@@ -90,7 +90,7 @@ static bool stats_fragments_post_glXSwapBuffers(function_call *call, const callb
     if (stats_fragments_fragments->active
         && s && s->query && bugle_begin_internal_render())
     {
-        CALL_glBeginQueryARB(GL_SAMPLES_PASSED_ARB, s->query);
+        CALL(glBeginQueryARB)(GL_SAMPLES_PASSED_ARB, s->query);
         bugle_end_internal_render("stats_fragments_post_glXSwapBuffers", true);
     }
     return true;
@@ -106,8 +106,8 @@ static bool stats_fragments_query(function_call *call, const callback_data *data
     {
         bugle_log_printf("stats_fragments", "query", BUGLE_LOG_NOTICE,
                          "Application is using occlusion queries; disabling fragment counting");
-        CALL_glEndQueryARB(GL_SAMPLES_PASSED_ARB);
-        CALL_glDeleteQueriesARB(1, &s->query);
+        CALL(glEndQueryARB)(GL_SAMPLES_PASSED_ARB);
+        CALL(glDeleteQueriesARB)(1, &s->query);
         s->query = 0;
         stats_fragments_fragments->active = false;
     }

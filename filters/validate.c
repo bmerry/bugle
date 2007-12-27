@@ -35,7 +35,7 @@
 #include <bugle/tracker.h>
 #include <bugle/log.h>
 #include "common/threads.h"
-#include <budgie/call.h>
+#include <budgie/addresses.h>
 #include <budgie/types.h>
 #include <budgie/reflect.h>
 #include "src/glexts.h"
@@ -58,17 +58,13 @@ static bool error_callback(function_call *call, const callback_data *data)
     GLenum error;
     GLenum *stored_error;
     GLenum *call_error;
-    static budgie_group glGetError_group = NULL_GROUP;
-
-    if (glGetError_group == NULL_GROUP)
-        glGetError_group = budgie_group_id("glGetError");
 
     stored_error = bugle_object_get_current_data(bugle_context_class, error_context_view);
     call_error = bugle_object_get_current_data(bugle_call_class, error_call_view);
     *call_error = GL_NO_ERROR;
 
     if (budgie_function_name(call->generic.id)[2] == 'X') return true; /* GLX */
-    if (call->generic.group == glGetError_group)
+    if (call->generic.group == BUDGIE_GROUP_ID(glGetError))
     {
         /* We hope that it returns GL_NO_ERROR, since otherwise something
          * slipped through our own net. If not, we return it to the app
@@ -103,7 +99,7 @@ static bool error_callback(function_call *call, const callback_data *data)
         /* Note: we deliberately don't call begin_internal_render here,
          * since it will beat us to calling glGetError().
          */
-        while ((error = CALL_glGetError()) != GL_NO_ERROR)
+        while ((error = CALL(glGetError)()) != GL_NO_ERROR)
         {
             if (stored_error && !*stored_error)
                 *stored_error = error;
@@ -323,10 +319,10 @@ static void checks_buffer_vbo(size_t size, const void *data,
     checks_error_vbo = true;
     assert(buffer && !bugle_in_begin_end() && bugle_gl_has_extension(BUGLE_GL_ARB_vertex_buffer_object));
 
-    CALL_glGetIntegerv(GL_ARRAY_BUFFER_BINDING_ARB, &tmp);
-    CALL_glBindBufferARB(GL_ARRAY_BUFFER_ARB, buffer);
-    CALL_glGetBufferParameterivARB(GL_ARRAY_BUFFER_ARB, GL_BUFFER_SIZE_ARB, &bsize);
-    CALL_glBindBufferARB(GL_ARRAY_BUFFER_ARB, tmp);
+    CALL(glGetIntegerv)(GL_ARRAY_BUFFER_BINDING_ARB, &tmp);
+    CALL(glBindBufferARB)(GL_ARRAY_BUFFER_ARB, buffer);
+    CALL(glGetBufferParameterivARB)(GL_ARRAY_BUFFER_ARB, GL_BUFFER_SIZE_ARB, &bsize);
+    CALL(glBindBufferARB)(GL_ARRAY_BUFFER_ARB, tmp);
     end = ((const char *) data - (const char *) NULL) + size;
     if (end > (size_t) bsize)
         bugle_thread_raise(SIGSEGV);
@@ -340,7 +336,7 @@ static void checks_buffer(size_t size, const void *data,
 #ifdef GL_ARB_vertex_buffer_object
     GLint id = 0;
     if (!bugle_in_begin_end() && bugle_gl_has_extension(BUGLE_GL_ARB_vertex_buffer_object))
-        CALL_glGetIntegerv(binding, &id);
+        CALL(glGetIntegerv)(binding, &id);
     if (id) checks_buffer_vbo(size, data, id);
     else
 #endif
@@ -361,14 +357,14 @@ static void checks_attribute(size_t first, size_t count,
     GLvoid *ptr;
     const char *cptr;
 
-    if (CALL_glIsEnabled(name))
+    if (CALL(glIsEnabled)(name))
     {
         checks_error = text;
         checks_error_attribute = -1;
-        if (size_name) CALL_glGetIntegerv(size_name, &size);
+        if (size_name) CALL(glGetIntegerv)(size_name, &size);
         if (type_name)
         {
-            CALL_glGetIntegerv(type_name, &gltype);
+            CALL(glGetIntegerv)(type_name, &gltype);
             if (gltype <= 1)
             {
                 bugle_log("checks", "warning", BUGLE_LOG_WARNING,
@@ -378,8 +374,8 @@ static void checks_attribute(size_t first, size_t count,
             }
             type = gltype;
         }
-        CALL_glGetIntegerv(stride_name, &stride);
-        CALL_glGetPointerv(ptr_name, &ptr);
+        CALL(glGetIntegerv)(stride_name, &stride);
+        CALL(glGetPointerv)(ptr_name, &ptr);
         group_size = bugle_gl_type_to_size(type) * size;
         if (!stride) stride = group_size;
         cptr = (const char *) ptr;
@@ -403,21 +399,21 @@ static void checks_generic_attribute(size_t first, size_t count,
     GLint id;
 #endif
 
-    CALL_glGetVertexAttribivARB(number, GL_VERTEX_ATTRIB_ARRAY_ENABLED_ARB, &enabled);
+    CALL(glGetVertexAttribivARB)(number, GL_VERTEX_ATTRIB_ARRAY_ENABLED_ARB, &enabled);
     /* Mesa (up to at least 6.5.1) returns an error when querying attribute 0.
      * In this case clear the error and just assume that everything is valid.
      */
     if (enabled == GL_RED_BITS)
     {
         enabled = GL_FALSE;
-        CALL_glGetError();
+        CALL(glGetError)();
     }
     if (enabled)
     {
         checks_error = NULL;
         checks_error_attribute = number;
-        CALL_glGetVertexAttribivARB(number, GL_VERTEX_ATTRIB_ARRAY_SIZE_ARB, &size);
-        CALL_glGetVertexAttribivARB(number, GL_VERTEX_ATTRIB_ARRAY_TYPE_ARB, &gltype);
+        CALL(glGetVertexAttribivARB)(number, GL_VERTEX_ATTRIB_ARRAY_SIZE_ARB, &size);
+        CALL(glGetVertexAttribivARB)(number, GL_VERTEX_ATTRIB_ARRAY_TYPE_ARB, &gltype);
         if (gltype <= 1)
         {
             bugle_log("checks", "warning", BUGLE_LOG_WARNING,
@@ -426,8 +422,8 @@ static void checks_generic_attribute(size_t first, size_t count,
             gltype = GL_FLOAT;
         }
         type = bugle_gl_type_to_type(gltype);
-        CALL_glGetVertexAttribivARB(number, GL_VERTEX_ATTRIB_ARRAY_STRIDE_ARB, &stride);
-        CALL_glGetVertexAttribPointervARB(number, GL_VERTEX_ATTRIB_ARRAY_POINTER_ARB, &ptr);
+        CALL(glGetVertexAttribivARB)(number, GL_VERTEX_ATTRIB_ARRAY_STRIDE_ARB, &stride);
+        CALL(glGetVertexAttribPointervARB)(number, GL_VERTEX_ATTRIB_ARRAY_POINTER_ARB, &ptr);
         group_size = budgie_type_size(type) * size;
         if (!stride) stride = group_size;
         cptr = (const char *) ptr;
@@ -437,7 +433,7 @@ static void checks_generic_attribute(size_t first, size_t count,
 #ifdef GL_ARB_vertex_buffer_object
         id = 0;
         if (!bugle_in_begin_end() && bugle_gl_has_extension(BUGLE_GL_ARB_vertex_buffer_object))
-            CALL_glGetVertexAttribivARB(number, GL_VERTEX_ATTRIB_ARRAY_BUFFER_BINDING_ARB, &id);
+            CALL(glGetVertexAttribivARB)(number, GL_VERTEX_ATTRIB_ARRAY_BUFFER_BINDING_ARB, &id);
         if (id) checks_buffer_vbo(size, cptr, id);
         else
 #endif
@@ -496,11 +492,11 @@ static void checks_attributes(size_t first, size_t count)
     {
         GLint texunits, old;
 
-        CALL_glGetIntegerv(GL_MAX_TEXTURE_UNITS_ARB, &texunits);
-        CALL_glGetIntegerv(GL_CLIENT_ACTIVE_TEXTURE_ARB, &old);
+        CALL(glGetIntegerv)(GL_MAX_TEXTURE_UNITS_ARB, &texunits);
+        CALL(glGetIntegerv)(GL_CLIENT_ACTIVE_TEXTURE_ARB, &old);
         for (i = GL_TEXTURE0_ARB; i < GL_TEXTURE0_ARB + (GLenum) texunits; i++)
         {
-            CALL_glClientActiveTextureARB(i);
+            CALL(glClientActiveTextureARB)(i);
             checks_attribute(first, count,
                              "texture coordinate array", GL_TEXTURE_COORD_ARRAY,
                              GL_TEXTURE_COORD_ARRAY_SIZE, 0,
@@ -509,7 +505,7 @@ static void checks_attributes(size_t first, size_t count)
                              GL_TEXTURE_COORD_ARRAY_POINTER,
                              VBO_ENUM(GL_TEXTURE_COORD_ARRAY_BUFFER_BINDING_ARB));
         }
-        CALL_glClientActiveTextureARB(old);
+        CALL(glClientActiveTextureARB)(old);
     }
     else
 #endif
@@ -528,7 +524,7 @@ static void checks_attributes(size_t first, size_t count)
     {
         GLint attribs, i;
 
-        CALL_glGetIntegerv(GL_MAX_VERTEX_ATTRIBS_ARB, &attribs);
+        CALL(glGetIntegerv)(GL_MAX_VERTEX_ATTRIBS_ARB, &attribs);
         for (i = 0; i < attribs; i++)
             checks_generic_attribute(first, count, i);
     }
@@ -559,21 +555,21 @@ static void checks_min_max(GLsizei count, GLenum gltype, const GLvoid *indices,
     {
         GLint id, mapped;
         size_t size;
-        CALL_glGetIntegerv(GL_ELEMENT_ARRAY_BUFFER_BINDING_ARB, &id);
+        CALL(glGetIntegerv)(GL_ELEMENT_ARRAY_BUFFER_BINDING_ARB, &id);
         if (id)
         {
             /* We are not allowed to call glGetBufferSubDataARB on a
              * mapped buffer. Fortunately, if the buffer is mapped, the
              * call is illegal and should generate INVALID_OPERATION anyway.
              */
-            CALL_glGetBufferParameterivARB(GL_ELEMENT_ARRAY_BUFFER_ARB,
+            CALL(glGetBufferParameterivARB)(GL_ELEMENT_ARRAY_BUFFER_ARB,
                                            GL_BUFFER_MAPPED_ARB,
                                            &mapped);
             if (mapped) return;
 
             size = count * budgie_type_size(type);
             vbo_indices = xmalloc(size);
-            CALL_glGetBufferSubDataARB(GL_ELEMENT_ARRAY_BUFFER_ARB,
+            CALL(glGetBufferSubDataARB)(GL_ELEMENT_ARRAY_BUFFER_ARB,
                                        (const char *) indices - (const char *) NULL,
                                        size, vbo_indices);
             indices = vbo_indices;
@@ -864,16 +860,16 @@ static bool checks_glMultiTexCoord(function_call *call, const callback_data *dat
 #ifdef GL_ARB_fragment_program
         if (bugle_gl_has_extension_group(BUGLE_EXTGROUP_texunits))
         {
-            CALL_glGetIntegerv(GL_MAX_TEXTURE_COORDS_ARB, &max);
+            CALL(glGetIntegerv)(GL_MAX_TEXTURE_COORDS_ARB, &max);
             /* NVIDIA ship a driver that just generates an error on this
              * call on NV20. Instead of borking we check for the error and
              * fall back to GL_MAX_TEXTURE_UNITS.
              */
-            CALL_glGetError();
+            CALL(glGetError)();
         }
 #endif
         if (!max)
-            CALL_glGetIntegerv(GL_MAX_TEXTURE_UNITS_ARB, &max);
+            CALL(glGetIntegerv)(GL_MAX_TEXTURE_UNITS_ARB, &max);
         bugle_end_internal_render("checks_glMultiTexCoord", true);
     }
 

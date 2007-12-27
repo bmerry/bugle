@@ -31,7 +31,7 @@
 #include <bugle/xevent.h>
 #include <bugle/log.h>
 #include <budgie/reflect.h>
-#include <budgie/call.h>
+#include <budgie/addresses.h>
 #include "src/glexts.h"
 #include "src/glfuncs.h"
 
@@ -100,12 +100,12 @@ static bool classify_glBindFramebufferEXT(function_call *call, const callback_da
 #ifdef GL_EXT_framebuffer_blit
         if (bugle_gl_has_extension(BUGLE_GL_EXT_framebuffer_blit))
         {
-            CALL_glGetIntegerv(GL_DRAW_FRAMEBUFFER_BINDING_EXT, &fbo);
+            CALL(glGetIntegerv)(GL_DRAW_FRAMEBUFFER_BINDING_EXT, &fbo);
         }
         else
 #endif
         {
-            CALL_glGetIntegerv(GL_FRAMEBUFFER_BINDING_EXT, &fbo);
+            CALL(glGetIntegerv)(GL_FRAMEBUFFER_BINDING_EXT, &fbo);
         }
         ctx->real = (fbo == 0);
         bugle_end_internal_render("classify_glBindFramebufferEXT", true);
@@ -167,7 +167,7 @@ static void wireframe_context_init(const void *key, void *data)
     if (bugle_filter_set_is_active(wireframe_filterset)
         && bugle_begin_internal_render())
     {
-        CALL_glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+        CALL(glPolygonMode)(GL_FRONT_AND_BACK, GL_LINE);
         ctx->real = true;
         bugle_end_internal_render("wireframe_context_init", true);
     }
@@ -181,8 +181,8 @@ static void wireframe_handle_activation(bool active, wireframe_context *ctx)
     {
         if (bugle_begin_internal_render())
         {
-            CALL_glGetIntegerv(GL_POLYGON_MODE, ctx->polygon_mode);
-            CALL_glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+            CALL(glGetIntegerv)(GL_POLYGON_MODE, ctx->polygon_mode);
+            CALL(glPolygonMode)(GL_FRONT_AND_BACK, GL_LINE);
             ctx->active = true;
             bugle_end_internal_render("wireframe_handle_activation", true);
         }
@@ -191,8 +191,8 @@ static void wireframe_handle_activation(bool active, wireframe_context *ctx)
     {
         if (bugle_begin_internal_render())
         {
-            CALL_glPolygonMode(GL_FRONT, ctx->polygon_mode[0]);
-            CALL_glPolygonMode(GL_BACK, ctx->polygon_mode[1]);
+            CALL(glPolygonMode)(GL_FRONT, ctx->polygon_mode[0]);
+            CALL(glPolygonMode)(GL_BACK, ctx->polygon_mode[1]);
             ctx->active = false;
             bugle_end_internal_render("wireframe_handle_activation", true);
         }
@@ -216,7 +216,7 @@ static bool wireframe_make_current(function_call *call, const callback_data *dat
 static bool wireframe_glXSwapBuffers(function_call *call, const callback_data *data)
 {
     /* apps that render the entire frame don't always bother to clear */
-    CALL_glClear(GL_COLOR_BUFFER_BIT);
+    CALL(glClear)(GL_COLOR_BUFFER_BIT);
     return true;
 }
 
@@ -230,8 +230,8 @@ static bool wireframe_glPolygonMode(function_call *call, const callback_data *da
     if (bugle_begin_internal_render())
     {
         if (ctx)
-            CALL_glGetIntegerv(GL_POLYGON_MODE, ctx->polygon_mode);
-        CALL_glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+            CALL(glGetIntegerv)(GL_POLYGON_MODE, ctx->polygon_mode);
+        CALL(glPolygonMode)(GL_FRONT_AND_BACK, GL_LINE);
         bugle_end_internal_render("wireframe_glPolygonMode", true);
     }
     return true;
@@ -259,7 +259,7 @@ static bool wireframe_glEnable(function_call *call, const callback_data *data)
 #endif
         if (bugle_begin_internal_render())
         {
-            CALL_glDisable(*call->glEnable.arg0);
+            CALL(glDisable)(*call->glEnable.arg0);
             bugle_end_internal_render("wireframe_callback", true);
         }
     default: /* avoids compiler warning if GLenum is a C enum */ ;
@@ -340,8 +340,8 @@ static void frontbuffer_context_init(const void *key, void *data)
         && bugle_begin_internal_render())
     {
         ctx->active = true;
-        CALL_glGetIntegerv(GL_DRAW_BUFFER, &ctx->draw_buffer);
-        CALL_glDrawBuffer(GL_FRONT);
+        CALL(glGetIntegerv)(GL_DRAW_BUFFER, &ctx->draw_buffer);
+        CALL(glDrawBuffer)(GL_FRONT);
         bugle_end_internal_render("frontbuffer_context_init", true);
     }
 }
@@ -352,8 +352,8 @@ static void frontbuffer_handle_activation(bool active, frontbuffer_context *ctx)
     {
         if (bugle_begin_internal_render())
         {
-            CALL_glGetIntegerv(GL_DRAW_BUFFER, &ctx->draw_buffer);
-            CALL_glDrawBuffer(GL_FRONT);
+            CALL(glGetIntegerv)(GL_DRAW_BUFFER, &ctx->draw_buffer);
+            CALL(glDrawBuffer)(GL_FRONT);
             ctx->active = true;
             bugle_end_internal_render("frontbuffer_handle_activation", true);
         }
@@ -362,7 +362,7 @@ static void frontbuffer_handle_activation(bool active, frontbuffer_context *ctx)
     {
         if (bugle_begin_internal_render())
         {
-            CALL_glDrawBuffer(ctx->draw_buffer);
+            CALL(glDrawBuffer)(ctx->draw_buffer);
             ctx->active = false;
             bugle_end_internal_render("frontbuffer_handle_activation", true);
         }
@@ -386,8 +386,8 @@ static bool frontbuffer_glDrawBuffer(function_call *call, const callback_data *d
     if (bugle_begin_internal_render())
     {
         ctx = (frontbuffer_context *) bugle_object_get_current_data(bugle_context_class, frontbuffer_view);
-        if (ctx) CALL_glGetIntegerv(GL_DRAW_BUFFER, &ctx->draw_buffer);
-        CALL_glDrawBuffer(GL_FRONT);
+        if (ctx) CALL(glGetIntegerv)(GL_DRAW_BUFFER, &ctx->draw_buffer);
+        CALL(glDrawBuffer)(GL_FRONT);
         bugle_end_internal_render("frontbuffer_glDrawBuffer", true);
     }
     return true;
@@ -398,7 +398,7 @@ static bool frontbuffer_glXSwapBuffers(function_call *call, const callback_data 
     /* glXSwapBuffers is specified to do an implicit glFlush. We're going to
      * kill the call, so we need to do the flush explicitly.
      */
-    CALL_glFlush();
+    CALL(glFlush)();
     return false;
 }
 
@@ -596,9 +596,9 @@ static void camera_draw_frustum(const GLfloat *original)
     aux = bugle_get_aux_context(true);
     if (!aux) return;
 
-    CALL_glGetIntegerv(GL_VIEWPORT, viewport);
-    CALL_glGetFloatv(GL_MODELVIEW_MATRIX, modelview);
-    CALL_glGetFloatv(GL_PROJECTION_MATRIX, projection);
+    CALL(glGetIntegerv)(GL_VIEWPORT, viewport);
+    CALL(glGetFloatv)(GL_MODELVIEW_MATRIX, modelview);
+    CALL(glGetFloatv)(GL_PROJECTION_MATRIX, projection);
     for (i = 0; i < 4; i++)
         for (j = 0; j < 4; j++)
         {
@@ -608,25 +608,25 @@ static void camera_draw_frustum(const GLfloat *original)
         }
     frustum_vertices(mvp, vertices);
 
-    real = CALL_glXGetCurrentContext();
-    old_write = CALL_glXGetCurrentDrawable();
+    real = CALL(glXGetCurrentContext)();
+    old_write = CALL(glXGetCurrentDrawable)();
     old_read = bugle_get_current_read_drawable();
     dpy = bugle_get_current_display();
-    CALL_glXMakeCurrent(dpy, old_write, aux);
+    CALL(glXMakeCurrent)(dpy, old_write, aux);
 
-    CALL_glPushAttrib(GL_VIEWPORT_BIT);
-    CALL_glViewport(viewport[0], viewport[1], viewport[2], viewport[3]);
-    CALL_glMatrixMode(GL_PROJECTION);
-    CALL_glLoadMatrixf(projection);
-    CALL_glMatrixMode(GL_MODELVIEW);
-    CALL_glLoadMatrixf(modelview);
-    CALL_glEnable(GL_BLEND);
-    CALL_glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-    CALL_glEnable(GL_CULL_FACE);
-    CALL_glEnable(GL_DEPTH_TEST);
-    CALL_glDepthMask(GL_FALSE);
-    CALL_glVertexPointer(4, GL_FLOAT, 0, vertices);
-    CALL_glEnableClientState(GL_VERTEX_ARRAY);
+    CALL(glPushAttrib)(GL_VIEWPORT_BIT);
+    CALL(glViewport)(viewport[0], viewport[1], viewport[2], viewport[3]);
+    CALL(glMatrixMode)(GL_PROJECTION);
+    CALL(glLoadMatrixf)(projection);
+    CALL(glMatrixMode)(GL_MODELVIEW);
+    CALL(glLoadMatrixf)(modelview);
+    CALL(glEnable)(GL_BLEND);
+    CALL(glBlendFunc)(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    CALL(glEnable)(GL_CULL_FACE);
+    CALL(glEnable)(GL_DEPTH_TEST);
+    CALL(glDepthMask)(GL_FALSE);
+    CALL(glVertexPointer)(4, GL_FLOAT, 0, vertices);
+    CALL(glEnableClientState)(GL_VERTEX_ARRAY);
 #ifdef GL_NV_depth_clamp
     if (bugle_gl_has_extension(BUGLE_GL_NV_depth_clamp))
     {
@@ -637,13 +637,13 @@ static void camera_draw_frustum(const GLfloat *original)
 
     for (i = 0; i < 2; i++)
     {
-        CALL_glFrontFace(i ? GL_CCW : GL_CW);
-        CALL_glColor4f(0.2f, 0.2f, 1.0f, 0.5f);
-        CALL_glDrawElements(GL_QUADS, 24, GL_UNSIGNED_BYTE, indices);
-        CALL_glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
-        CALL_glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-        CALL_glDrawElements(GL_QUADS, 24, GL_UNSIGNED_BYTE, indices);
-        CALL_glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+        CALL(glFrontFace)(i ? GL_CCW : GL_CW);
+        CALL(glColor4f)(0.2f, 0.2f, 1.0f, 0.5f);
+        CALL(glDrawElements)(GL_QUADS, 24, GL_UNSIGNED_BYTE, indices);
+        CALL(glColor4f)(1.0f, 1.0f, 1.0f, 1.0f);
+        CALL(glPolygonMode)(GL_FRONT_AND_BACK, GL_LINE);
+        CALL(glDrawElements)(GL_QUADS, 24, GL_UNSIGNED_BYTE, indices);
+        CALL(glPolygonMode)(GL_FRONT_AND_BACK, GL_FILL);
     }
 
 #ifdef GL_NV_depth_clamp
@@ -653,19 +653,19 @@ static void camera_draw_frustum(const GLfloat *original)
         glDisable(GL_DEPTH_CLAMP_NV);
     }
 #endif
-    CALL_glMatrixMode(GL_PROJECTION);
-    CALL_glLoadIdentity();
-    CALL_glMatrixMode(GL_MODELVIEW);
-    CALL_glLoadIdentity();
-    CALL_glDisable(GL_DEPTH_TEST);
-    CALL_glBlendFunc(GL_ONE, GL_ZERO);
-    CALL_glDisable(GL_BLEND);
-    CALL_glDisable(GL_CULL_FACE);
-    CALL_glDepthMask(GL_TRUE);
-    CALL_glVertexPointer(4, GL_FLOAT, 0, NULL);
-    CALL_glDisableClientState(GL_VERTEX_ARRAY);
-    CALL_glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
-    CALL_glPopAttrib();
+    CALL(glMatrixMode)(GL_PROJECTION);
+    CALL(glLoadIdentity)();
+    CALL(glMatrixMode)(GL_MODELVIEW);
+    CALL(glLoadIdentity)();
+    CALL(glDisable)(GL_DEPTH_TEST);
+    CALL(glBlendFunc)(GL_ONE, GL_ZERO);
+    CALL(glDisable)(GL_BLEND);
+    CALL(glDisable)(GL_CULL_FACE);
+    CALL(glDepthMask)(GL_TRUE);
+    CALL(glVertexPointer)(4, GL_FLOAT, 0, NULL);
+    CALL(glDisableClientState)(GL_VERTEX_ARRAY);
+    CALL(glColor4f)(1.0f, 1.0f, 1.0f, 1.0f);
+    CALL(glPopAttrib)();
     bugle_make_context_current(dpy, old_write, old_read, real);
 }
 
@@ -771,7 +771,7 @@ static void camera_key_callback(const xevent_key *key, void *arg, XEvent *event)
 
 static void camera_get_original(camera_context *ctx)
 {
-    CALL_glGetFloatv(GL_MODELVIEW_MATRIX, ctx->original);
+    CALL(glGetFloatv)(GL_MODELVIEW_MATRIX, ctx->original);
 }
 
 static void camera_context_init(const void *key, void *data)
@@ -802,9 +802,9 @@ static bool camera_restore(function_call *call, const callback_data *data)
         ctx = (camera_context *) bugle_object_get_current_data(bugle_context_class, camera_view);
         if (ctx && bugle_begin_internal_render())
         {
-            CALL_glGetIntegerv(GL_MATRIX_MODE, &mode);
+            CALL(glGetIntegerv)(GL_MATRIX_MODE, &mode);
             if (mode == GL_MODELVIEW)
-                CALL_glLoadMatrixf(ctx->original);
+                CALL(glLoadMatrixf)(ctx->original);
             bugle_end_internal_render("camera_restore", true);
         }
     }
@@ -821,12 +821,12 @@ static bool camera_override(function_call *call, const callback_data *data)
         ctx = (camera_context *) bugle_object_get_current_data(bugle_context_class, camera_view);
         if (ctx && bugle_begin_internal_render())
         {
-            CALL_glGetIntegerv(GL_MATRIX_MODE, &mode);
+            CALL(glGetIntegerv)(GL_MATRIX_MODE, &mode);
             if (mode == GL_MODELVIEW)
             {
                 camera_get_original(ctx);
-                CALL_glLoadMatrixf(ctx->modifier);
-                CALL_glMultMatrixf(ctx->original);
+                CALL(glLoadMatrixf)(ctx->modifier);
+                CALL(glMultMatrixf)(ctx->original);
             }
             bugle_end_internal_render("camera_restore", true);
         }
@@ -876,11 +876,11 @@ static bool camera_glXSwapBuffers(function_call *call, const callback_data *data
         {
             ctx->modifier[14] += f * camera_speed;
             ctx->modifier[12] += l * camera_speed;
-            CALL_glGetIntegerv(GL_MATRIX_MODE, &mode);
-            CALL_glMatrixMode(GL_MODELVIEW);
-            CALL_glLoadMatrixf(ctx->modifier);
-            CALL_glMultMatrixf(ctx->original);
-            CALL_glMatrixMode(mode);
+            CALL(glGetIntegerv)(GL_MATRIX_MODE, &mode);
+            CALL(glMatrixMode)(GL_MODELVIEW);
+            CALL(glLoadMatrixf)(ctx->modifier);
+            CALL(glMultMatrixf)(ctx->original);
+            CALL(glMatrixMode)(mode);
             ctx->dirty = false;
         }
         bugle_end_internal_render("camera_glXSwapBuffers", true);
@@ -906,10 +906,10 @@ static void camera_handle_activation(bool active, camera_context *ctx)
     {
         if (bugle_begin_internal_render())
         {
-            CALL_glGetIntegerv(GL_MATRIX_MODE, &mode);
-            CALL_glMatrixMode(GL_MODELVIEW);
-            CALL_glLoadMatrixf(ctx->original);
-            CALL_glMatrixMode(mode);
+            CALL(glGetIntegerv)(GL_MATRIX_MODE, &mode);
+            CALL(glMatrixMode)(GL_MODELVIEW);
+            CALL(glLoadMatrixf)(ctx->original);
+            CALL(glMatrixMode)(mode);
             ctx->active = false;
             bugle_end_internal_render("camera_handle_activation", true);
         }
@@ -1051,8 +1051,8 @@ static void extoverride_context_init(const void *key, void *data)
     char *exts, *ext, *exts_ptr;
     extoverride_context *self;
 
-    real_version = (const char *) CALL_glGetString(GL_VERSION);
-    real_exts = (const char *) CALL_glGetString(GL_EXTENSIONS);
+    real_version = (const char *) CALL(glGetString)(GL_VERSION);
+    real_exts = (const char *) CALL(glGetString)(GL_EXTENSIONS);
     self = (extoverride_context *) data;
 
     if (extoverride_max_version && strcmp(real_version, extoverride_max_version) > 0)

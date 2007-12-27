@@ -95,9 +95,9 @@ static bool trackdisplaylist_glNewList(function_call *call, const callback_data 
     if (bugle_displaylist_list()) return true; /* Nested call */
     if (bugle_begin_internal_render())
     {
-        CALL_glGetIntegerv(GL_LIST_INDEX, &value);
+        CALL(glGetIntegerv)(GL_LIST_INDEX, &value);
         info.list = value;
-        CALL_glGetIntegerv(GL_LIST_MODE, &value);
+        CALL(glGetIntegerv)(GL_LIST_MODE, &value);
         info.mode = value;
         if (info.list == 0) return true; /* Call failed? */
         obj = bugle_object_new(bugle_displaylist_class, &info, true);
