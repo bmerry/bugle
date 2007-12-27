@@ -131,7 +131,7 @@ static bool trackobjects_glBindTexture(function_call *call, const callback_data 
     trackobjects_add_single(BUGLE_TRACKOBJECTS_TEXTURE,
                             *call->glBindTexture.arg0,
                             *call->glBindTexture.arg1,
-                            budgie_CALL_glIsTexture);
+                            CALL_glIsTexture);
     return true;
 }
 
@@ -140,7 +140,7 @@ static bool trackobjects_glDeleteTextures(function_call *call, const callback_da
     trackobjects_delete_multiple(BUGLE_TRACKOBJECTS_TEXTURE,
                                  *call->glDeleteTextures.arg0,
                                  *call->glDeleteTextures.arg1,
-                                 budgie_CALL_glIsTexture);
+                                 CALL_glIsTexture);
     return true;
 }
 
@@ -150,7 +150,7 @@ static bool trackobjects_glBindBuffer(function_call *call, const callback_data *
     trackobjects_add_single(BUGLE_TRACKOBJECTS_BUFFER,
                             *call->glBindBufferARB.arg0,
                             *call->glBindBufferARB.arg1,
-                            budgie_CALL_glIsBufferARB);
+                            CALL_glIsBufferARB);
     return true;
 }
 
@@ -159,7 +159,7 @@ static bool trackobjects_glDeleteBuffers(function_call *call, const callback_dat
     trackobjects_delete_multiple(BUGLE_TRACKOBJECTS_BUFFER,
                                  *call->glDeleteBuffersARB.arg0,
                                  *call->glDeleteBuffersARB.arg1,
-                                 budgie_CALL_glIsBufferARB);
+                                 CALL_glIsBufferARB);
     return true;
 }
 #endif
@@ -170,7 +170,7 @@ static bool trackobjects_glBeginQuery(function_call *call, const callback_data *
     trackobjects_add_single(BUGLE_TRACKOBJECTS_QUERY,
                             *call->glBeginQueryARB.arg0,
                             *call->glBeginQueryARB.arg1,
-                            budgie_CALL_glIsQueryARB);
+                            CALL_glIsQueryARB);
     return true;
 }
 
@@ -179,7 +179,7 @@ static bool trackobjects_glDeleteQueries(function_call *call, const callback_dat
     trackobjects_delete_multiple(BUGLE_TRACKOBJECTS_QUERY,
                                  *call->glDeleteQueriesARB.arg0,
                                  *call->glDeleteQueriesARB.arg1,
-                                 budgie_CALL_glIsQueryARB);
+                                 CALL_glIsQueryARB);
     return true;
 }
 #endif
@@ -205,7 +205,7 @@ static bool trackobjects_glDeleteProgramsARB(function_call *call, const callback
     trackobjects_delete_multiple(BUGLE_TRACKOBJECTS_OLD_PROGRAM,
                                  *call->glDeleteProgramsARB.arg0,
                                  *call->glDeleteProgramsARB.arg1,
-                                 budgie_CALL_glIsProgramARB);
+                                 CALL_glIsProgramARB);
     return true;
 }
 #endif
@@ -364,7 +364,7 @@ static bool trackobjects_glBindFramebuffer(function_call *call, const callback_d
     trackobjects_add_single(BUGLE_TRACKOBJECTS_FRAMEBUFFER,
                             *call->glBindFramebufferEXT.arg0,
                             *call->glBindFramebufferEXT.arg1,
-                            budgie_CALL_glIsFramebufferEXT);
+                            CALL_glIsFramebufferEXT);
     return true;
 }
 
@@ -373,7 +373,7 @@ static bool trackobjects_glDeleteFramebuffers(function_call *call, const callbac
     trackobjects_delete_multiple(BUGLE_TRACKOBJECTS_FRAMEBUFFER,
                                  *call->glDeleteFramebuffersEXT.arg0,
                                  *call->glDeleteFramebuffersEXT.arg1,
-                                 budgie_CALL_glIsFramebufferEXT);
+                                 CALL_glIsFramebufferEXT);
     return true;
 }
 
@@ -382,7 +382,7 @@ static bool trackobjects_glBindRenderbuffer(function_call *call, const callback_
     trackobjects_add_single(BUGLE_TRACKOBJECTS_RENDERBUFFER,
                             *call->glBindRenderbufferEXT.arg0,
                             *call->glBindRenderbufferEXT.arg1,
-                            budgie_CALL_glIsRenderbufferEXT);
+                            CALL_glIsRenderbufferEXT);
     return true;
 }
 
@@ -391,7 +391,7 @@ static bool trackobjects_glDeleteRenderbuffers(function_call *call, const callba
     trackobjects_delete_multiple(BUGLE_TRACKOBJECTS_RENDERBUFFER,
                                  *call->glDeleteRenderbuffersEXT.arg0,
                                  *call->glDeleteRenderbuffersEXT.arg1,
-                                 budgie_CALL_glIsRenderbufferEXT);
+                                 CALL_glIsRenderbufferEXT);
     return true;
 }
 #endif /* GL_EXT_framebuffer_object */

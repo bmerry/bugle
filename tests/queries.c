@@ -465,7 +465,7 @@ static void query_shaders(void)
         /* Prerelease OpenGL 2.1 drivers from NVIDIA return GL_FLOAT_MAT3 in
          * this situation. Mesa 7.0.2 returns the size as 16 instead of 1.
          */
-        fprintf(ref, "trace\\.call: glGetActiveUniformARB\\(%u, %d, %u, %p -> 1, %p -> %d, %p -> %s, \"m\"\\)\n",
+        fprintf(ref, "trace\\.call: glGetActiveUniformARB\\(%u, %d, %u, %p -> 1, %p -> %d, %p -> %s, \"%s\"\\)\n",
                 (unsigned int) p, (int) location, (unsigned int) sizeof(name),
                 &length, &size, (int) size, &type,
                 lang120 ? (type == GL_FLOAT_MAT3 ? "GL_FLOAT_MAT3" : "GL_FLOAT_MAT4x3") : "GL_FLOAT_MAT4",

@@ -735,11 +735,13 @@ static void write_headers()
 
     fprintf(files[FILE_CALL_H],
             "#ifndef BUDGIE_CALL_H\n"
-            "#define BUDGIE_CALL_H\n",
+            "#define BUDGIE_CALL_H\n"
             "#if HAVE_CONFIG_H\n"
             "# include <config.h>\n"
             "#endif\n"
-            "#include <budgie/types.h>\n");
+            "#include <budgie/types.h>\n"
+            "#include <budgie/reflect.h>\n"
+            "#include <budgie/addresses.h>\n");
     fprintf(files[FILE_DEFINES_H],
             "#ifndef BUDGIE_DEFINES_H\n"
             "#define BUDGIE_DEFINES_H\n"
@@ -761,6 +763,7 @@ static void write_headers()
             "#include <stdio.h>\n"
             "#include <stdlib.h>\n"
             "#include <string.h>\n"
+            "#include <stddef.h>\n"   // for offsetof
             "#include <budgie/types.h>\n"
             "#include <budgie/reflect.h>\n"
             "#include \"%s\"\n"
@@ -776,63 +779,6 @@ static void write_headers()
             "#include \"budgielib/defines.h\"\n"
             "#include \"budgielib/internal.h\"\n"
             "#include \"budgielib/lib.h\"\n");
-#if 0
-    fprintf(util_c,
-            "#include \"%s.h\"\n"
-            "#include \"%s.h\"\n"
-            "#include <assert.h>\n"
-            "#include <stddef.h>\n"   // for offsetof
-            "#include <budgie/budgieutils.h>\n"
-            "\n",
-            utilbase.c_str(),
-            typesbase.c_str());
-    fprintf(util_h,
-            "#ifndef UTILS_H\n"
-            "#define UTILS_H\n"
-            "\n"
-            "#include <stdio.h>\n"
-            "#include <stdbool.h>\n"
-            "#include <stdlib.h>\n"
-            "#include <string.h>\n"
-            "\n");
-    fprintf(types_c,
-            "#include \"%s.h\"\n"
-            "#include <stddef.h>\n"
-            "#include <inttypes.h>\n"
-            "\n",
-            typesbase.c_str());
-    fprintf(types_h,
-            "#ifndef TYPES_H\n"
-            "#define TYPES_H\n"
-            "\n"
-            "#include <stdio.h>\n"
-            "#include <stdbool.h>\n"
-            "#include <stdlib.h>\n"
-            "#include <string.h>\n"
-            "\n");
-    fprintf(lib_c,
-            "#include \"%s.h\"\n"
-            "#include \"%s.h\"\n"
-            "#include <budgie/budgieutils.h>\n"
-            "\n",
-            libbase.c_str(), utilbase.c_str());
-    fprintf(lib_h,
-            "#ifndef LIB_H\n"
-            "#define LIB_H\n"
-            "\n"
-            "#define BUDGIE_REDIRECT_FUNCTIONS\n"
-            "#include \"%s.h\"\n"
-            "\n",
-            utilbase.c_str());
-    fprintf(name_c,
-            "#include \"%s.h\"\n"
-            "\n",
-            namebase.c_str());
-    fprintf(name_h,
-            "#ifndef NAMES_H\n"
-            "#define NAMES_H\n"
-            "\n");
-#endif
 }
 
 static void write_trailers()
@@ -1503,38 +1449,27 @@ static void write_converter(FILE *f)
             "}\n\n");
 }
 
-static void write_call_wrappers(FILE *h, FILE *c)
+static void write_call_wrappers(FILE *f)
 {
 #if 0
     // NB: still need to put in weak symbol trickery
     // Also need to make sure that interceptors inline the function when
     // in bypass mode
 #endif
+
+    fputs("#define _BUDGIE_CALL(name, type, tmp) ({ static tmp = NULL; if (!_budgie_addr) _budgie_addr = (type) budgie_function_address_real(budgie_function_id((#name))); _budgie_addr; })\n"
+          "/* #define _BUDGIE_CALL(name, type, tmp) ((type) budgie_function_address_real(budgie_function_id((#name)))) */\n"
+          "\n", f);
+
     for (list<Function>::iterator i = functions.begin(); i != functions.end(); i++)
     {
         tree_node_p ptr = make_pointer(TREE_TYPE(i->node));
 
-        string proto = function_type_to_string(TREE_TYPE(i->node), "budgie_CALL_" + i->name(),
-                                               false, "arg");
         string name = i->name();
         string type = type_to_string(ptr, "", false);
-        string define = i->define();
-        fprintf(h, "%s;\n", proto.c_str());
-        fprintf(h, "#define CALL_%s budgie_CALL_%s\n",
-                i->name().c_str(), i->name().c_str());
-        fprintf(c, "%s\n{\n    ", proto.c_str());
-        if (i->group->has_retn)
-            fprintf(c, "return ");
-        fprintf(c,
-                "(*(%s) _budgie_function_address_real[%s])(",
-                type.c_str(), define.c_str());
-        for (size_t j = 0; j < i->group->parameters.size(); j++)
-        {
-            if (j) fprintf(c, ", ");
-            fprintf(c, "arg%d", (int) j);
-        }
-        fprintf(c, ");\n}\n\n");
-
+        string tmp = type_to_string(ptr, "_budgie_addr", false);
+        fprintf(f, "#define CALL_%s _BUDGIE_CALL(%s, %s, %s)\n",
+                name.c_str(), name.c_str(), type.c_str(), tmp.c_str());
         destroy_temporary(ptr);
     }
 }
@@ -1586,15 +1521,26 @@ static void write_call_structs(FILE *f)
             "\n");
 }
 
+static void write_call_to(FILE *f, list<Function>::iterator func, const char *arg_template)
+{
+    tree_node_p ptr = make_pointer(TREE_TYPE(func->node));
+    string type = type_to_string(ptr, "", false);
+    string name = func->name();
+    string define = func->define();
+    destroy_temporary(ptr);
+
+    fprintf(f, "(*(%s) _budgie_function_address_real[%s])(",
+            type.c_str(), define.c_str());
+    for (size_t j = 0; j < func->group->parameters.size(); j++)
+    {
+        if (j) fprintf(f, ", ");
+        fprintf(f, arg_template, (int) j);
+    }
+    fprintf(f, ")");
+}
+
 static void write_invoke(FILE *f)
 {
-#if 0
-    // the prototype isn't part of the invoker, but fits in best here
-    fprintf(util_h,
-            "void budgie_interceptor(function_call *call);\n"
-            "\n");
-#endif
-
     fprintf(f,
             "void budgie_invoke(function_call *call)\n"
             "{\n"
@@ -1605,20 +1551,16 @@ static void write_invoke(FILE *f)
     {
         string name = i->name();
         string define = i->define();
+        string arg_template = "*call->" + name + ".arg%d";
         fprintf(f,
                 "    case %s:\n"
                 "        ",
                 define.c_str());
         if (i->group->has_retn)
             fprintf(f, "*call->%s.retn = ", name.c_str());
-        fprintf(f, "CALL_%s(", name.c_str());
-        for (size_t j = 0; j < i->group->parameters.size(); j++)
-        {
-            if (j) fprintf(f, ", ");
-            fprintf(f, "*call->%s.arg%d", name.c_str(), (int) j);
-        }
+        write_call_to(f, i, arg_template.c_str());
         fprintf(f,
-                ");\n"
+                ";\n"
                 "        break;\n");
     }
     fprintf(f,
@@ -1667,7 +1609,7 @@ static void write_interceptors(FILE *f)
          * avoid the re-entrance. In bugle, this occurs because gl2ps is
          * used unmodified and hence calls to OpenGL functions. Note that
          * this code can only be entered after calling initialise_real, so
-         * the CALL_ will work.
+         * the addresses are valid.
          */
         fprintf(f,
                 "    if (_budgie_bypass[FUNC_%s] || !_budgie_reentrance_init())\n"
@@ -1676,13 +1618,8 @@ static void write_interceptors(FILE *f)
                 "        ", name.c_str()); //, name.c_str());
         if (i->group->has_retn)
             fprintf(f, "return ");
-        fprintf(f, "CALL_%s(", name.c_str());
-        for (size_t j = 0; j < i->group->parameters.size(); j++)
-        {
-            if (j) fprintf(f, ", ");
-            fprintf(f, "arg%d", (int) j);
-        }
-        fprintf(f, ");\n");
+        write_call_to(f, i, "arg%d");
+        fprintf(f, ";\n");
         if (!i->group->has_retn) fprintf(f, "        return;\n");
 
         fprintf(f,
@@ -1762,7 +1699,7 @@ int main(int argc, char * const argv[])
     write_library_table(files[FILE_LIB_C]);
     write_converter(files[FILE_TABLES_C]);
 
-    write_call_wrappers(files[FILE_CALL_H], files[FILE_LIB_C]);
+    write_call_wrappers(files[FILE_CALL_H]);
     write_call_structs(files[FILE_TYPES2_H]);
     write_invoke(files[FILE_LIB_C]);
     write_interceptors(files[FILE_LIB_C]);

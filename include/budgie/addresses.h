@@ -15,8 +15,8 @@
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#ifndef BUGLE_BUDGIE_INTERNAL_H
-#define BUGLE_BUDGIE_INTERNAL_H
+#ifndef BUGLE_BUDGIE_ADDRESSES_H
+#define BUGLE_BUDGIE_ADDRESSES_H
 
 #if HAVE_CONFIG_H
 # include <config.h>
@@ -42,4 +42,4 @@ void budgie_function_set_bypass(budgie_function id, bool bypass);
 
 void budgie_invoke(function_call *call);
 
-#endif /* BUGLE_BUDGIE_INTERNAL_H */
+#endif /* BUGLE_BUDGIE_ADDRESSES_H */

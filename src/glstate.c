@@ -2481,11 +2481,11 @@ void bugle_state_get_raw(const glstate *state, bugle_state_raw *wrapper)
     case STATE_MODE_TEXTURE_FILTER_CONTROL:
     case STATE_MODE_POINT_SPRITE:
         get_helper(state, d, f, i, &in_type, NULL,
-                   budgie_CALL_glGetTexEnvfv, budgie_CALL_glGetTexEnviv);
+                   CALL_glGetTexEnvfv, CALL_glGetTexEnviv);
         break;
     case STATE_MODE_TEX_PARAMETER:
         get_helper(state, d, f, i, &in_type, NULL,
-                   budgie_CALL_glGetTexParameterfv, budgie_CALL_glGetTexParameteriv);
+                   CALL_glGetTexParameterfv, CALL_glGetTexParameteriv);
         break;
     case STATE_MODE_TEX_LEVEL_PARAMETER:
         if (state->info->type == TYPE_8GLdouble || state->info->type == TYPE_7GLfloat)
@@ -2500,16 +2500,16 @@ void bugle_state_get_raw(const glstate *state, bugle_state_raw *wrapper)
         }
         break;
     case STATE_MODE_TEX_GEN:
-        get_helper(state, d, f, i, &in_type, budgie_CALL_glGetTexGendv,
-                   budgie_CALL_glGetTexGenfv, budgie_CALL_glGetTexGeniv);
+        get_helper(state, d, f, i, &in_type, CALL_glGetTexGendv,
+                   CALL_glGetTexGenfv, CALL_glGetTexGeniv);
         break;
     case STATE_MODE_LIGHT:
         get_helper(state, d, f, i, &in_type, NULL,
-                   budgie_CALL_glGetLightfv, budgie_CALL_glGetLightiv);
+                   CALL_glGetLightfv, CALL_glGetLightiv);
         break;
     case STATE_MODE_MATERIAL:
         get_helper(state, d, f, i, &in_type, NULL,
-                   budgie_CALL_glGetMaterialfv, budgie_CALL_glGetMaterialiv);
+                   CALL_glGetMaterialfv, CALL_glGetMaterialiv);
         break;
     case STATE_MODE_CLIP_PLANE:
         CALL_glGetClipPlane(state->target, d);
@@ -2520,19 +2520,19 @@ void bugle_state_get_raw(const glstate *state, bugle_state_raw *wrapper)
         break;
     case STATE_MODE_COLOR_TABLE_PARAMETER:
         get_helper(state, d, f, i, &in_type, NULL,
-                   budgie_CALL_glGetColorTableParameterfv, budgie_CALL_glGetColorTableParameteriv);
+                   CALL_glGetColorTableParameterfv, CALL_glGetColorTableParameteriv);
         break;
     case STATE_MODE_CONVOLUTION_PARAMETER:
         get_helper(state, d, f, i, &in_type, NULL,
-                   budgie_CALL_glGetConvolutionParameterfv, budgie_CALL_glGetConvolutionParameteriv);
+                   CALL_glGetConvolutionParameterfv, CALL_glGetConvolutionParameteriv);
         break;
     case STATE_MODE_HISTOGRAM_PARAMETER:
         get_helper(state, d, f, i, &in_type, NULL,
-                   budgie_CALL_glGetHistogramParameterfv, budgie_CALL_glGetHistogramParameteriv);
+                   CALL_glGetHistogramParameterfv, CALL_glGetHistogramParameteriv);
         break;
     case STATE_MODE_MINMAX_PARAMETER:
         get_helper(state, d, f, i, &in_type, NULL,
-                   budgie_CALL_glGetMinmaxParameterfv, budgie_CALL_glGetMinmaxParameteriv);
+                   CALL_glGetMinmaxParameterfv, CALL_glGetMinmaxParameteriv);
         break;
 #ifdef GL_ARB_vertex_program
     case STATE_MODE_VERTEX_ATTRIB:
