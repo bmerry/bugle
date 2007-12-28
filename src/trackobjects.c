@@ -31,7 +31,6 @@
 #include <bugle/hashtable.h>
 #include <budgie/types.h>
 #include <budgie/call.h>
-#include "src/glexts.h"
 #include "xalloc.h"
 #include "lock.h"
 

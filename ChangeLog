@@ -18,6 +18,8 @@
 * Some more renaming
 * Change CALL_glFoo to CALL(glFoo)
 * Rewrite the reflection API for GL extensions
+* Merge genexts, genfunctions and gentokens into genpl.perl, with one
+  header and one C file.
 * Fix several bugs where checking for GL_EXT_foo instead of BUGLE_GL_EXT_foo
 
 0.0.20071206

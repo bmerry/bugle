@@ -33,7 +33,6 @@
 #include <bugle/xevent.h>
 #include <bugle/tracker.h>
 #include <budgie/addresses.h>
-#include "src/glexts.h"
 #include "xalloc.h"
 
 typedef struct

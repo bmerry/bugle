@@ -32,7 +32,7 @@
 /* The intended use is:
  * if (bugle_begin_internal_render())
  * {
- *     CALL_glFrob();
+ *     CALL(glFrob)();
  *     bugle_end_internal_render();
  * }
  * bugle_begin_internal_render will return false if one is inside begin/end.

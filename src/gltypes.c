@@ -24,60 +24,13 @@
 #include <stdbool.h>
 #include <string.h>
 #include <bugle/gltypes.h>
-
-const gl_token *bugle_gl_enum_to_token_struct(GLenum e)
-{
-    int l, r, m;
-
-    l = 0;
-    r = bugle_gl_token_count;
-    while (l + 1 < r)
-    {
-        m = (l + r) / 2;
-        if (e < bugle_gl_tokens_value[m].value) r = m;
-        else l = m;
-    }
-    if (bugle_gl_tokens_value[l].value != e)
-        return NULL;
-    else
-    {
-        /* Pick the first one, to avoid using extension suffices */
-        while (l > 0 && bugle_gl_tokens_value[l - 1].value == e) l--;
-        return &bugle_gl_tokens_value[l];
-    }
-}
-
-const char *bugle_gl_enum_to_token(GLenum e)
-{
-    const gl_token *t;
-
-    t = bugle_gl_enum_to_token_struct(e);
-    if (t) return t->name; else return NULL;
-}
-
-GLenum bugle_gl_token_to_enum(const char *name)
-{
-    int l, r, m;
-
-    l = 0;
-    r = bugle_gl_token_count;
-    while (l + 1 < r)
-    {
-        m = (l + r) / 2;
-        if (strcmp(name, bugle_gl_tokens_name[m].name) < 0) r = m;
-        else l = m;
-    }
-    if (strcmp(bugle_gl_tokens_name[l].name, name) != 0)
-        return (GLenum) -1;
-    else
-        return bugle_gl_tokens_name[l].value;
-}
+#include <bugle/glreflect.h>
 
 bool bugle_dump_GLenum(GLenum e, FILE *out)
 {
-    const char *name = bugle_gl_enum_to_token(e);
+    const char *name = bugle_gl_enum_name(e);
     if (!name)
-        fprintf(out, "<unknown token 0x%.4x>", (unsigned int) e);
+        fprintf(out, "<unknown enum 0x%.4x>", (unsigned int) e);
     else
         fputs(name, out);
     return true;

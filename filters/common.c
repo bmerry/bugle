@@ -24,7 +24,6 @@
 #include <budgie/types.h>
 #include <budgie/addresses.h>
 #include <budgie/reflect.h>
-#include "src/glfuncs.h"
 
 /* Invoke filter-set */
 

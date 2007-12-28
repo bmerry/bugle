@@ -44,11 +44,11 @@
 #include <bugle/log.h>
 #include <bugle/hashtable.h>
 #include <bugle/misc.h>
+#include <bugle/glreflect.h>
 #include <budgie/types.h>
 #include <budgie/reflect.h>
 #include <budgie/addresses.h>
 #include "common/protocol.h"
-#include "src/glexts.h"
 #include "xalloc.h"
 #include "xvasprintf.h"
 
@@ -977,7 +977,7 @@ static bool debugger_error_callback(function_call *call, const callback_data *da
         gldb_protocol_send_code(out_pipe, RESP_BREAK_ERROR);
         gldb_protocol_send_code(out_pipe, start_id);
         gldb_protocol_send_string(out_pipe, resp_str);
-        gldb_protocol_send_string(out_pipe, bugle_gl_enum_to_token(error));
+        gldb_protocol_send_string(out_pipe, bugle_gl_enum_name(error));
         free(resp_str);
         stopped = true;
         debugger_loop(call);

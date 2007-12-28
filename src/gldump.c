@@ -24,17 +24,16 @@
 #include <string.h>
 #include <assert.h>
 #include <bugle/filters.h>
-#include <bugle/gltokens.h>
 #include <bugle/gldump.h>
 #include <bugle/glutils.h>
 #include <bugle/gltypes.h>
 #include <bugle/tracker.h>
 #include <bugle/log.h>
+#include <bugle/glreflect.h>
 #include <budgie/types.h>
 #include <budgie/reflect.h>
 #include <budgie/call.h>
 #include "budgielib/defines.h"
-#include "src/glexts.h"
 #include "xalloc.h"
 
 budgie_type bugle_gl_type_to_type(GLenum gl_type)
@@ -160,12 +159,12 @@ budgie_type bugle_gl_type_to_type(GLenum gl_type)
     default:
         fprintf(stderr,
                 "Do not know the correct type for %s. This probably indicates that you\n"
-                "passed an illegal enumerant when a type token (such as GL_FLOAT) was\n"
+                "passed an illegal enumerant when a type enum (such as GL_FLOAT) was\n"
                 "expected. If this is not the case, email the author with details of the\n"
                 "function that you called and the arguments that you passed to it. You can\n"
                 "find the location of this error by setting a breakpoint on line %d\n"
                 "of %s and examining the backtrace.\n",
-                bugle_gl_enum_to_token(gl_type), __LINE__, __FILE__);
+                bugle_gl_enum_name(gl_type), __LINE__, __FILE__);
         return TYPE_7GLubyte;
     }
 }
@@ -289,7 +288,7 @@ int bugle_gl_format_to_count(GLenum format, GLenum type)
         default:
             bugle_log_printf("gldump", "format_to_count", BUGLE_LOG_WARNING,
                              "unknown format %s; assuming 4 components",
-                             bugle_gl_enum_to_token(format));
+                             bugle_gl_enum_name(format));
             return 4; /* conservative */
         }
         break;

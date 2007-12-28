@@ -43,7 +43,6 @@
 #include <bugle/misc.h>
 #include <bugle/hashtable.h>
 #include <budgie/reflect.h>
-#include "src/glfuncs.h"
 #include "common/protocol.h"
 #include "gldb/gldb-common.h"
 #include "xalloc.h"

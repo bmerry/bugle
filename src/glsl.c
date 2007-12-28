@@ -31,7 +31,7 @@
 #include <bugle/tracker.h>
 #include <bugle/glutils.h>
 #include <budgie/call.h>
-#include "src/glexts.h"
+#include "src/gltables.h"
 #include "xalloc.h"
 
 #ifdef GL_VERSION_2_0

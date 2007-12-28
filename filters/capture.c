@@ -40,13 +40,12 @@
 #include <bugle/filters.h>
 #include <bugle/glutils.h>
 #include <bugle/gltypes.h>
+#include <bugle/glreflect.h>
 #include <bugle/tracker.h>
 #include <bugle/xevent.h>
 #include <bugle/log.h>
 #include <budgie/addresses.h>
 #include <budgie/reflect.h>
-#include "src/glfuncs.h"
-#include "src/glexts.h"
 #include "gl2ps/gl2ps.h"
 #include "xalloc.h"
 #include "xvasprintf.h"
@@ -752,33 +751,51 @@ static const char *glx_version = "GLX_VERSION_1_2";
 static bool showextensions_callback(function_call *call, const callback_data *data)
 {
     size_t i;
-    const gl_function *glinfo;
+    bugle_gl_extension ext;
+    const char *version, *name;
 
-    glinfo = &bugle_gl_function_table[call->generic.id];
-    if (glinfo->extension)
-        bugle_hash_set(&seen_extensions, glinfo->extension, &seen_extensions);
-    else
+    ext = bugle_gl_function_extension(call->generic.id);
+    assert(ext != NULL_EXTENSION);
+    if (ext != NULL_EXTENSION)
     {
-        if (glinfo->version && glinfo->version[2] == 'X' && strcmp(glinfo->version, glx_version) > 0)
-            glx_version = glinfo->version;
-        if (glinfo->version && glinfo->version[2] == '_' && strcmp(glinfo->version, gl_version) > 0)
-            gl_version = glinfo->version;
+        version = bugle_gl_extension_version(ext);
+        name = bugle_gl_extension_name(ext);
+        if (!version)
+            bugle_hash_set(&seen_extensions, name, &seen_extensions);
+        else if (bugle_gl_extension_is_glx(ext))
+        {
+            if (strcmp(name, glx_version) > 0)
+                glx_version = name;
+        }
+        else
+        {
+            if (strcmp(name, gl_version) > 0)
+                gl_version = name;
+        }
     }
 
+#if 0
+    /* FIXME: repair this for the new reflection API. It needs to be made
+     * a lot smarter so that we can get a minimal set (even if it is a
+     * greedy minimal), keeping in mind that the value could have come from
+     * any of several extensions.
+     */
     for (i = 0; i < budgie_group_parameter_count(call->generic.group); i++)
     {
         if (budgie_group_parameter_type(call->generic.group, i)
             == BUDGIE_TYPE_ID(6GLenum))
         {
             GLenum e;
-            const gl_token *t;
+            const bugle_gl_extension *exts;
 
             e = *(const GLenum *) call->generic.args[i];
-            t = bugle_gl_enum_to_token_struct(e);
-            if (t && t->extension)
-                bugle_hash_set(&seen_extensions, t->extension, &seen_extensions);
+            exts = bugle_gl_enum_extensions(e);
+            /* Arbitrary non-NULL */
+            if (exts && exts[0] != NULL_EXTENSION)
+            bugle_hash_set(&seen_extensions, exts[0], &seen_extensions);
         }
     }
+#endif
     return true;
 }
 
@@ -796,14 +813,22 @@ static bool showextensions_initialise(filter_set *handle)
     return true;
 }
 
-static void showextensions_print(void *seen, FILE *log)
+static void showextensions_print(void *seen, FILE *logf)
 {
     hash_table *seen_extensions;
     int i;
     budgie_function f;
 
     seen_extensions = (hash_table *) seen;
-    fprintf(log, "Used extensions:");
+    /* FIXME! */
+    fputs("*** WARNING ***\n"
+          "Checking by GLenum is currently disabled, as doing it right is\n"
+          "made very complicated by aliasing. If you need this, either go\n"
+          "and implement it, poke the author until he does, or use the\n"
+          "slightly suspect support in bugle <= 0.0.20071206.\n"
+          "\n"
+          "Used extensions:", logf);
+#if 0
     for (i = 0; i < bugle_gl_token_count; i++)
     {
         const char *ver, *ext;
@@ -813,18 +838,19 @@ static void showextensions_print(void *seen, FILE *log)
         if ((!ver || strcmp(ver, gl_version) > 0)
             && ext && bugle_hash_get(seen_extensions, ext) == seen_extensions)
         {
-            fprintf(log, " %s", ext);
+            fprintf(logf, " %s", ext);
             bugle_hash_set(seen_extensions, ext, NULL);
         }
     }
+#endif
     for (f = 0; f < budgie_function_count(); f++)
     {
         const char *ext;
 
-        ext = bugle_gl_function_table[f].extension;
+        ext = bugle_gl_extension_name(bugle_gl_function_extension(f));
         if (ext && bugle_hash_get(seen_extensions, ext) == seen_extensions)
         {
-            fprintf(log, " %s", ext);
+            fprintf(logf, " %s", ext);
             bugle_hash_set(seen_extensions, ext, NULL);
         }
     }

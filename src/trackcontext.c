@@ -36,7 +36,7 @@
 #include <budgie/types.h>
 #include <budgie/addresses.h>
 #include "budgielib/defines.h"
-#include "src/glexts.h"
+#include "src/gltables.h"
 #include "xalloc.h"
 #include "lock.h"
 

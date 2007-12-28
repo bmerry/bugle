@@ -54,7 +54,6 @@
 #include <budgie/reflect.h>
 #include <budgie/addresses.h>
 #include "budgielib/defines.h"
-#include "src/glfuncs.h"
 #include "xalloc.h"
 #include "lock.h"
 

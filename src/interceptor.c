@@ -35,7 +35,6 @@
 #include <budgie/addresses.h>
 #include "conffile.h"
 #include "dlopen.h"
-#include "src/glfuncs.h"
 #include "xalloc.h"
 
 #define FILTERFILE "/.bugle/filters"
@@ -197,9 +196,13 @@ static void initialise_addresses_glx(void)
     size_t i;
 
     for (i = 0; i < budgie_function_count(); i++)
-        if (!bugle_gl_function_table[i].version
-            || strcmp(bugle_gl_function_table[i].version, "GL_VERSION_1_2") > 0)
+    {
+        /* gengl.perl puts the OpenGL versions first, and ordered by version
+         * number.
+         */
+        if (bugle_gl_function_extension(i) > BUGLE_GL_EXTENSION_ID(GL_VERSION_1_2))
             budgie_function_address_set_real(i, CALL(glXGetProcAddressARB)((const GLubyte *) budgie_function_name(i)));
+    }
 }
 
 BUGLE_CONSTRUCTOR(initialise_all);

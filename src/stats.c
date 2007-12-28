@@ -30,7 +30,7 @@
 #include <bugle/filters.h>
 #include <bugle/log.h>
 #include <bugle/xevent.h>
-#include "src/glexts.h"
+#include <bugle/glreflect.h>
 #include <bugle/stats.h>
 #include "src/statsparse.h"
 #include <bugle/hashtable.h>

@@ -8,8 +8,8 @@ SYMBOLFLAGS = -export-symbols-regex '^(gl[A-Z]|budgie_|bugle_|gldb_|X|dlopen)'
 noinst_PROGRAMS = budgie/budgie
 # Misc extra files to include
 noinst_HEADERS = budgie/tree.def budgie/c-common.def
-dist_noinst_SCRIPTS = gentokens/gentokens.perl gentokens/genfunctions.perl \
-	gentokens/find_header.perl gentokens/genexts.perl mvtu.sh
+dist_noinst_SCRIPTS = gentokens/gengl.perl gentokens/find_header.perl \
+		      mvtu.sh
 # The real things
 lib_LTLIBRARIES = src/libbugleutils.la src/libbugle.la
 bin_PROGRAMS = gldb/gldb @GLDB_GUI@
@@ -25,14 +25,13 @@ includebugle_HEADERS = \
 	include/bugle/gldump.h \
 	include/bugle/glsl.h \
 	include/bugle/glstate.h \
-	include/bugle/gltokens.h \
 	include/bugle/gltypes.h \
 	include/bugle/glutils.h \
+	include/bugle/glreflect.h \
 	include/bugle/log.h \
 	include/bugle/objects.h \
 	include/bugle/stats.h \
 	include/bugle/tracker.h \
-	include/bugle/glreflect.h \
 	include/bugle/xevent.h \
 	include/bugle/overrides.h
 includebudgie_HEADERS = \
@@ -109,8 +108,7 @@ src_libbugleutils_la_SOURCES = \
 	budgielib/internal.c budgielib/internal.h budgielib/reflect.c
 nodist_src_libbugleutils_la_SOURCES = \
 	budgielib/defines.h budgielib/tables.c \
-	src/gltokens.c src/glfuncs.c src/glfuncs.h \
-	src/glexts.c src/glexts.h
+	src/gltables.c src/gltables.h
 src_libbugleutils_la_LIBADD = $(LTLIBOBJS) $(LTLIBTHREAD) $(LTLIBINTL) lib/libgnu.la
 src_libbugleutils_la_LDFLAGS = -thread-safe -export-dynamic $(SYMBOLFLAGS) -version-info 3:0:1
 
@@ -161,21 +159,15 @@ $(BUDGIE_BUILT_SRCS): budgie/budgie src/data/gl.tu gl.bc bc/alias.bc $(BCFILES)
 	$(mkdir_p) include/budgie
 	budgie/budgie -T `test -f src/data/gl.tu || echo '$(srcdir)/'`src/data/gl.tu gl.bc
 
-BUILT_SOURCES += src/glfuncs.h src/glexts.h
+BUILT_SOURCES += src/gltables.h
 
-src/gltokens.c: gentokens/gentokens.perl
-	$(PERL) -w $(srcdir)/gentokens/gentokens.perl $(GLINCLUDES) > $@
-src/glfuncs.h: gentokens/genfunctions.perl $(BUDGIE_BUILT_SRCS)
-	$(PERL) -w $(srcdir)/gentokens/genfunctions.perl --out-header --header budgielib/defines.h $(GLINCLUDES) > $@
-src/glfuncs.c: gentokens/genfunctions.perl $(BUDGIE_BUILT_SRCS)
-	$(PERL) -w $(srcdir)/gentokens/genfunctions.perl --header budgielib/defines.h $(GLINCLUDES) > $@
-src/glexts.h: gentokens/genexts.perl
-	$(PERL) -w $(srcdir)/gentokens/genexts.perl --out-header $(GLINCLUDES) > $@
-src/glexts.c: gentokens/genexts.perl
-	$(PERL) -w $(srcdir)/gentokens/genexts.perl $(GLINCLUDES) > $@
-bc/alias.bc: gentokens/genfunctions.perl
+src/gltables.c: gentokens/gengl.perl $(BUDGIE_BUILT_SRCS)
+	$(PERL) $(srcdir)/gentokens/gengl.perl --mode=c --header=budgielib/defines.h $(GLINCLUDES) > src/gltables.c
+src/gltables.h: gentokens/gengl.perl $(BUDGIE_BUILT_SRCS)
+	$(PERL) $(srcdir)/gentokens/gengl.perl --mode=header --header=budgielib/defines.h $(GLINCLUDES) > src/gltables.h
+bc/alias.bc: gentokens/gengl.perl
 	$(mkdir_p) bc
-	$(PERL) -w $(srcdir)/gentokens/genfunctions.perl --alias $(GLINCLUDES) > $@
+	$(PERL) $(srcdir)/gentokens/gengl.perl --mode=alias $(GLINCLUDES) > bc/alias.bc
 
 # Filters
 filters_common_la_SOURCES = filters/common.c
@@ -292,7 +284,7 @@ EXTRA_DIST = gl.bc.in bugle.pc.in $(BCFILES) src/data/gl.c \
 # but for some reason does not.
 CLEANFILES = \
 	$(BUDGIE_BUILT_SRCS) \
-	src/gltokens.c src/glfuncs.c src/glfuncs.h src/glexts.c src/glexts.h \
+	src/gltables.c src/gltables.h \
 	src/data/gl.tu bc/alias.bc \
 	doc/gldb.1.gz doc/bugle.3.gz \
 	gldb/.libs/gldb gldb/.libs/gldb-gui \

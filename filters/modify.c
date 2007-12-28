@@ -33,7 +33,6 @@
 #include <bugle/glreflect.h>
 #include <budgie/reflect.h>
 #include <budgie/addresses.h>
-#include "src/glfuncs.h"
 
 #if !HAVE_SINF
 # define sinf(x) ((float) (sin((double) (x))))
@@ -1135,13 +1134,19 @@ static bool extoverride_initialise(filter_set *handle)
     bugle_filter_order("extoverride_warn", "invoke");
     for (i = 0; i < budgie_function_count(); i++)
     {
-        if (bugle_gl_function_table[i].extension
-            && extoverride_suppressed(bugle_gl_function_table[i].extension))
+        bugle_gl_extension ext;
+        const char *name, *version;
+
+        ext = bugle_gl_function_extension(i);
+        version = bugle_gl_extension_version(i);
+        name = bugle_gl_extension_name(i);
+        if (!bugle_gl_extension_version(ext)
+            && extoverride_suppressed(bugle_gl_extension_name(ext)))
             bugle_filter_catches_function_id(f, i, false, extoverride_warn);
         else if (extoverride_max_version
-                 && bugle_gl_function_table[i].version
-                 && bugle_gl_function_table[i].version[2] == '_' /* filter out GLX */
-                 && strcmp(bugle_gl_function_table[i].version, extoverride_max_version) > 1)
+                 && version
+                 && !bugle_gl_extension_is_glx(ext)
+                 && strcmp(version, extoverride_max_version) > 1)
             bugle_filter_catches_function_id(f, i, false, extoverride_warn);
     }
 

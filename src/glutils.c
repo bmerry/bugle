@@ -28,9 +28,9 @@
 #include <bugle/tracker.h>
 #include <bugle/gltypes.h>
 #include <bugle/log.h>
+#include <bugle/glreflect.h>
 #include <budgie/call.h>
 #include "budgielib/defines.h"
-#include "src/glfuncs.h"
 
 static filter_set *error_handle = NULL;
 static GLenum (*bugle_call_get_error_ptr)(object *) = NULL;
@@ -63,7 +63,7 @@ void bugle_end_internal_render(const char *name, bool warn)
         if (warn)
         {
             const char *error_name;
-            error_name = bugle_gl_enum_to_token(error);
+            error_name = bugle_gl_enum_name(error);
             if (error_name)
                 bugle_log_printf("glutils", "internalrender", BUGLE_LOG_WARNING,
                                  "%s internally generated %s",

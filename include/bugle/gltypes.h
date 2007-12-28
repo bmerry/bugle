@@ -29,12 +29,7 @@
 #include <GL/glx.h>
 #include <stdio.h>
 #include <stdbool.h>
-#include <bugle/gltokens.h>
 #include <bugle/overrides.h>
-
-GLenum bugle_gl_token_to_enum(const char *name);
-const gl_token *bugle_gl_enum_to_token_struct(GLenum e);
-const char *bugle_gl_enum_to_token(GLenum e);
 
 bool bugle_dump_GLenum(GLenum e, FILE *out);
 bool bugle_dump_GLblendenum(GLenum e, FILE *out);

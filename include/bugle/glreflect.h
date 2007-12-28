@@ -22,7 +22,10 @@
 # include <config.h>
 #endif
 #include <stdbool.h>
+#include <GL/gl.h>
+#include <budgie/types.h>
 
+/*** Extensions ***/
 typedef int bugle_gl_extension;
 #define NULL_EXTENSION (-1)
 
@@ -37,6 +40,18 @@ bugle_gl_extension  bugle_gl_extension_id(const char *name);
 /* Returns a pointer to a list terminated by NULL_EXTENSION. The storage is
  * static, so do not try to free it.
  */
-bugle_gl_extension *bugle_gl_extension_group_members(bugle_gl_extension ext);
+const bugle_gl_extension *bugle_gl_extension_group_members(bugle_gl_extension ext);
+
+/*** Tokens ***/
+
+const char *bugle_gl_enum_name(GLenum e);
+/* Returns a list of extensions that define the token,
+ * terminated by NULL_EXTENSION. This includes GL_VERSION_x_y "extensions".
+ */
+const bugle_gl_extension *bugle_gl_enum_extensions(GLenum e);
+
+/*** Functions ***/
+
+bugle_gl_extension  bugle_gl_function_extension(budgie_function id);
 
 #endif /* BUGLE_SRC_GLREFLECT_H */

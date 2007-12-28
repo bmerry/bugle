@@ -29,7 +29,6 @@
 #include <bugle/log.h>
 #include <bugle/glutils.h>
 #include <budgie/addresses.h>
-#include "src/glexts.h"
 
 #ifdef GL_ARB_occlusion_query
 
