@@ -90,7 +90,7 @@ void budgie_type_convert(void *out, budgie_type out_type, const void *in, budgie
  * than the first time for the symbol.
  */
 /* This particular test is taken from glib/gmacros.h */
-#if 0 && defined (__GNUC__) && !defined(__STRICT_ANSI__) && !defined(__cplusplus)
+#if defined (__GNUC__) && !defined(__STRICT_ANSI__) && !defined(__cplusplus)
 #define _BUDGIE_PASTE_L(x) x ## L
 #define _BUDGIE_ID_FULL(type, call, fullname, namestr) \
     __extension__ ({ static type fullname ## L = -2; \

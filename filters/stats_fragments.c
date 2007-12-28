@@ -18,6 +18,7 @@
 #if HAVE_CONFIG_H
 # include <config.h>
 #endif
+#define GL_GLEXT_PROTOTYPES
 #include <stdbool.h>
 #include <GL/gl.h>
 #include <GL/glext.h>

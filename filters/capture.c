@@ -26,14 +26,16 @@
 # include <config.h>
 #endif
 #define _XOPEN_SOURCE 500
+#define GL_GLEXT_PROTOTYPES
 #include <stdbool.h>
 #include <stdio.h>
 #include <string.h>
 #include <errno.h>
 #include <assert.h>
 #include <math.h>
-#include <GL/glx.h>
 #include <sys/time.h>
+#include <GL/glx.h>
+#include <GL/gl.h>
 #include <bugle/hashtable.h>
 #include <bugle/filters.h>
 #include <bugle/glutils.h>

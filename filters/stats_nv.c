@@ -238,12 +238,12 @@ static bool stats_nv_initialise(filter_set *handle)
     }
 
     f = bugle_filter_new(handle, "stats_nv");
-    bugle_filter_catches(f, GROUP_glXSwapBuffers, false, stats_nv_glXSwapBuffers);
+    bugle_filter_catches(f, "glXSwapBuffers", false, stats_nv_glXSwapBuffers);
     bugle_filter_order("stats_nv", "invoke");
     bugle_filter_order("stats_nv", "stats");
 
     f = bugle_filter_new(handle, "stats_nv_post");
-    bugle_filter_catches(f, GROUP_glXSwapBuffers, false, stats_nv_post_glXSwapBuffers);
+    bugle_filter_catches(f, "glXSwapBuffers", false, stats_nv_post_glXSwapBuffers);
     bugle_filter_order("invoke", "stats_nv_post");
     return true;
 

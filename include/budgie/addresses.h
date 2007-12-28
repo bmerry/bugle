@@ -54,10 +54,18 @@ void budgie_invoke(function_call *call);
 #define _BUDGIE_SWITCH_POST1(ifdef) )
 
 /* the generated calls.h generates
- * _BUDGIE_CALL_glFoo => BUDGIE_CALL( */
+ * _BUDGIE_CALL_glFoo => BUDGIE_CALL(glFoo, typeof(glFoo)) */
 #define CALL(fn) _BUDGIE_SWITCH(_BUDGIE_HAVE_CALL_ ## fn, _BUDGIE_CALL_ ## fn, fn)
 
+/* Handles the case where the symbol was defined in the header at compilation
+ * time, but libbugleutils has been downgraded and it is no longer available
+ * at run-time.
+ */
+static inline void (*_budgie_function_address_get_real(budgie_function id, void (*symbol)(void)))(void)
+{
+    return id == -1 ? symbol : budgie_function_address_real(id);
+}
 #define _BUDGIE_CALL(name, type) \
-    ((type) budgie_function_address_real(BUDGIE_FUNCTION_ID(name)))
+    ((type) _budgie_function_address_get_real(BUDGIE_FUNCTION_ID(name), (void (*)(void)) name))
 
 #endif /* BUGLE_BUDGIE_ADDRESSES_H */

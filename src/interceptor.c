@@ -18,10 +18,12 @@
 #if HAVE_CONFIG_H
 # include <config.h>
 #endif
+#define GLX_GLXEXT_PROTOTYPES
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
 #include <stdio.h>
+#include <GL/glx.h>
 #include <bugle/filters.h>
 #include <bugle/tracker.h>
 #include <bugle/xevent.h>

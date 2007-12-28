@@ -842,16 +842,15 @@ static bool camera_get(function_call *call, const callback_data *data)
     ctx = (camera_context *) bugle_object_get_current_data(bugle_context_class, camera_view);
     if (!ctx) return true;
 
-    switch (call->generic.group)
+    if (call->generic.group == BUDGIE_GROUP_ID(glGetFloatv))
     {
-    case GROUP_glGetFloatv:
         for (i = 0; i < 16; i++)
             (*call->glGetFloatv.arg1)[i] = ctx->original[i];
-        break;
-    case GROUP_glGetDoublev:
+    }
+    else if (call->generic.group == BUDGIE_GROUP_ID(glGetDoublev))
+    {
         for (i = 0; i < 16; i++)
             (*call->glGetDoublev.arg1)[i] = ctx->original[i];
-        break;
     }
     return true;
 }

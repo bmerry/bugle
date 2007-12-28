@@ -19,6 +19,7 @@
 # include <config.h>
 #endif
 #define _POSIX_SOURCE
+#define GL_GLEXT_PROTOTYPES
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -28,6 +29,7 @@
 #include <setjmp.h>
 #include <errno.h>
 #include <assert.h>
+#include <GL/gl.h>
 #include <bugle/filters.h>
 #include <bugle/glutils.h>
 #include <bugle/gltypes.h>

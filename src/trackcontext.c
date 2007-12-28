@@ -18,6 +18,7 @@
 #if HAVE_CONFIG_H
 # include <config.h>
 #endif
+#define GLX_GLXEXT_PROTOTYPES
 #include <stdbool.h>
 #include <bugle/hashtable.h>
 #include <assert.h>
@@ -336,11 +337,11 @@ Display *bugle_get_current_display_internal(bool lock)
     if (data)
         return data->dpy;
 #ifdef GLX_EXT_import_context
-    else if (budgie_function_address_real(FUNC_glXGetCurrentDisplayEXT))
+    else if (CALL(glXGetCurrentDisplayEXT))
         return CALL(glXGetCurrentDisplayEXT)();
 #endif
 #ifdef GLX_VERSION_1_3
-    else if (budgie_function_address_real(FUNC_glXGetCurrentDisplay))
+    else if (CALL(glXGetCurrentDisplay))
         return CALL(glXGetCurrentDisplay)();
 #endif
     return NULL;

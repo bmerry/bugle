@@ -16,6 +16,7 @@
 * Eliminate ABI dependence on the generated code from the filter API
 * Fix potential race conditions with initialisation order
 * Some more renaming
+* Change CALL_glFoo to CALL(glFoo)
 
 0.0.20071206
 ------------

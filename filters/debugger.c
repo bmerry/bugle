@@ -19,6 +19,7 @@
 # include <config.h>
 #endif
 #define _XOPEN_SOURCE 500
+#define GL_GLEXT_PROTOTYPES
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -33,6 +34,7 @@
 # include <sys/select.h>
 #endif
 #include <X11/Xlib.h>
+#include <GL/gl.h>
 #include <bugle/filters.h>
 #include <bugle/glutils.h>
 #include <bugle/tracker.h>
