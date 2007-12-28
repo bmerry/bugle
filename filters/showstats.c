@@ -102,7 +102,7 @@ static void showstats_statistic_initialise(showstats_statistic *sst)
         break;
     case SHOWSTATS_GRAPH:
 #ifdef GL_ARB_texture_env_combine
-        if (!bugle_gl_has_extension(BUGLE_GL_ARB_texture_env_combine))
+        if (!BUGLE_GL_HAS_EXTENSION(GL_ARB_texture_env_combine))
 #endif
         {
             bugle_log("showstats", "graph", BUGLE_LOG_ERROR,

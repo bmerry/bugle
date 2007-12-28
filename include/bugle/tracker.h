@@ -27,6 +27,8 @@
 #include <stdbool.h>
 #include <bugle/filters.h>
 #include <bugle/objects.h>
+#include <bugle/glreflect.h>
+#include <budgie/macros.h>
 
 typedef enum
 {
@@ -114,9 +116,18 @@ void bugle_trackobjects_walk(bugle_trackobjects_type type,
  */
 GLenum bugle_trackobjects_get_target(bugle_trackobjects_type type, GLuint id);
 
-/* Checks for GL extensions by #define from glexts.h or glxexts.h */
-bool bugle_gl_has_extension(int ext);
-bool bugle_gl_has_extension_group(int ext);
+bool bugle_gl_has_extension(bugle_gl_extension ext);
+bool bugle_gl_has_extension_group(bugle_gl_extension ext);
+/* More robust versions: if ext == -1, checks for the string in a hash table) */
+bool bugle_gl_has_extension2(bugle_gl_extension ext, const char *name);
+bool bugle_gl_has_extension_group2(bugle_gl_extension ext, const char *name);
+
+#define BUGLE_GL_EXTENSION_ID(ext) \
+    _BUDGIE_ID_FULL(bugle_gl_extension, bugle_gl_extension_id, BUGLE_ ## ext, #ext)
+#define BUGLE_GL_HAS_EXTENSION(ext) \
+    (bugle_gl_has_extension2(BUGLE_GL_EXTENSION_ID(ext), #ext))
+#define BUGLE_GL_HAS_EXTENSION_GROUP(ext) \
+    (bugle_gl_has_extension_group2(BUGLE_GL_EXTENSION_ID(ext), #ext))
 
 /* Used by the initialisation code */
 void trackcontext_initialise(void);

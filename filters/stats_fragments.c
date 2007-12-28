@@ -47,7 +47,7 @@ static void stats_fragments_struct_init(const void *key, void *data)
 
     s = (stats_fragments_struct *) data;
     if (stats_fragments_fragments->active
-        && bugle_gl_has_extension(BUGLE_GL_ARB_occlusion_query)
+        && BUGLE_GL_HAS_EXTENSION(GL_ARB_occlusion_query)
         && bugle_begin_internal_render())
     {
         CALL(glGenQueriesARB)(1, &s->query);

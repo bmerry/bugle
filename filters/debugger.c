@@ -194,7 +194,7 @@ static void pixel_pack_reset(pixel_state *old)
     CALL(glPixelStorei)(GL_PACK_SKIP_PIXELS, 0);
     CALL(glPixelStorei)(GL_PACK_ALIGNMENT, 1);
 #ifdef GL_EXT_texture3D
-    if (bugle_gl_has_extension_group(BUGLE_GL_EXT_texture3D))
+    if (BUGLE_GL_HAS_EXTENSION_GROUP(GL_EXT_texture3D))
     {
         CALL(glGetIntegerv)(GL_PACK_IMAGE_HEIGHT, &old->image_height);
         CALL(glGetIntegerv)(GL_PACK_SKIP_IMAGES, &old->skip_images);
@@ -203,7 +203,7 @@ static void pixel_pack_reset(pixel_state *old)
     }
 #endif
 #ifdef GL_EXT_pixel_buffer_object
-    if (bugle_gl_has_extension_group(BUGLE_GL_EXT_pixel_buffer_object))
+    if (BUGLE_GL_HAS_EXTENSION_GROUP(GL_EXT_pixel_buffer_object))
     {
         CALL(glGetIntegerv)(GL_PIXEL_PACK_BUFFER_BINDING_EXT, &old->pbo);
         CALL(glBindBufferARB)(GL_PIXEL_PACK_BUFFER_EXT, 0);
@@ -221,14 +221,14 @@ static void pixel_pack_restore(const pixel_state *old)
     CALL(glPixelStorei)(GL_PACK_SKIP_PIXELS, old->skip_pixels);
     CALL(glPixelStorei)(GL_PACK_ALIGNMENT, old->alignment);
 #ifdef GL_EXT_texture3D
-    if (bugle_gl_has_extension_group(BUGLE_GL_EXT_texture3D))
+    if (BUGLE_GL_HAS_EXTENSION_GROUP(GL_EXT_texture3D))
     {
         CALL(glPixelStorei)(GL_PACK_IMAGE_HEIGHT, old->image_height);
         CALL(glPixelStorei)(GL_PACK_SKIP_IMAGES, old->skip_images);
     }
 #endif
 #ifdef GL_EXT_pixel_buffer_object
-    if (bugle_gl_has_extension_group(BUGLE_GL_EXT_pixel_buffer_object))
+    if (BUGLE_GL_HAS_EXTENSION_GROUP(GL_EXT_pixel_buffer_object))
         CALL(glBindBufferARB)(GL_PIXEL_PACK_BUFFER_EXT, old->pbo);
 #endif
 }
@@ -293,14 +293,14 @@ static bool send_data_texture(uint32_t id, GLuint texid, GLenum target,
 #ifdef GL_EXT_texture3D
     case GL_TEXTURE_3D_EXT:
         CALL(glGetTexLevelParameteriv)(face, level, GL_TEXTURE_HEIGHT, &height);
-        if (bugle_gl_has_extension_group(BUGLE_GL_EXT_texture3D))
+        if (BUGLE_GL_HAS_EXTENSION_GROUP(GL_EXT_texture3D))
             CALL(glGetTexLevelParameteriv)(face, level, GL_TEXTURE_DEPTH_EXT, &depth);
         break;
 #endif
 #ifdef GL_EXT_texture_array
     case GL_TEXTURE_2D_ARRAY_EXT:
         CALL(glGetTexLevelParameteriv)(face, level, GL_TEXTURE_HEIGHT, &height);
-        if (bugle_gl_has_extension_group(BUGLE_GL_EXT_texture_array))
+        if (BUGLE_GL_HAS_EXTENSION_GROUP(GL_EXT_texture_array))
             CALL(glGetTexLevelParameteriv)(face, level, GL_TEXTURE_DEPTH_EXT, &depth);
         break;
 #endif
@@ -410,7 +410,7 @@ static bool get_framebuffer_size(GLuint fbo, GLenum target, GLenum attachment,
         draw = bugle_get_current_read_drawable();
 
 #ifdef GLX_VERSION_1_3
-        if (bugle_gl_has_extension(GLX_VERSION_1_3))
+        if (BUGLE_GL_HAS_EXTENSION(GLX_VERSION_1_3))
         {
             CALL(glXQueryDrawable)(dpy, draw, GLX_WIDTH, &value);
             *width = value;
@@ -471,7 +471,7 @@ static bool send_data_framebuffer(uint32_t id, GLuint fbo, GLenum target,
     }
 
 #ifdef GL_EXT_framebuffer_blit
-    if (bugle_gl_has_extension(BUGLE_GL_EXT_framebuffer_blit))
+    if (BUGLE_GL_HAS_EXTENSION(GL_EXT_framebuffer_blit))
     {
         fbo_target = GL_READ_FRAMEBUFFER_EXT;
         fbo_binding = GL_READ_FRAMEBUFFER_BINDING_EXT;
@@ -480,7 +480,7 @@ static bool send_data_framebuffer(uint32_t id, GLuint fbo, GLenum target,
 #endif
     {
 #ifdef GL_EXT_framebuffer_object
-        if (bugle_gl_has_extension(BUGLE_GL_EXT_framebuffer_object))
+        if (BUGLE_GL_HAS_EXTENSION(GL_EXT_framebuffer_object))
         {
             fbo_target = GL_FRAMEBUFFER_EXT;
             fbo_binding = GL_FRAMEBUFFER_BINDING_EXT;

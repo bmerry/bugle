@@ -18,47 +18,66 @@
 #if HAVE_CONFIG_H
 # include <config.h>
 #endif
+#include <GL/glx.h>
+#include <assert.h>
+#include <stdbool.h>
+#include <stdlib.h>
+#include <string.h>
+#include <assert.h>
+#include <bugle/hashtable.h>
 #include <bugle/tracker.h>
 #include <bugle/filters.h>
 #include <bugle/objects.h>
 #include <bugle/glutils.h>
+#include <bugle/glreflect.h>
 #include <budgie/call.h>
-#include "src/glexts.h"
-#include <stdbool.h>
-#include <string.h>
-#include <assert.h>
-#include <GL/glx.h>
+#include "xalloc.h"
+
+typedef struct
+{
+    bool *flags;
+    hash_table names;
+} context_extensions;
 
 static object_view trackextensions_view = 0;
 
-static bool string_contains_extension(const char *exts, const char *ext)
+/* Extracts all the words from str, and sets arbitrary non-NULL values in
+ * the hash table for each token. It does NOT clear the hash table first.
+ */
+static void tokenise(const char *str, hash_table *tokens)
 {
-    const char *cur;
-    size_t len;
+    const char *p, *q;
+    char *tmp;
 
-    cur = exts;
-    len = strlen(ext);
-    while ((cur = strstr(cur, ext)) != NULL)
+    tmp = xcharalloc(strlen(str) + 1);
+    p = str;
+    while (*p == ' ') p++;
+    while (*p != '\0')
     {
-        if ((cur == exts || cur[-1] == ' ')
-            && (cur[len] == ' ' || cur[len] == '\0'))
-            return true;
-        else
-            cur += len;
+        q = p;
+        while (*q != ' ' && *q != '\0')
+            q++;
+        memcpy(tmp, p, q - p);
+        tmp[q - p] = '\0';
+        bugle_hash_set(tokens, tmp, tokens);
+        p = q;
+        while (*p == ' ') p++;
     }
-    return false;
+    free(tmp);
 }
 
-static void context_initialise(const void *key, void *data)
+static void context_init(const void *key, void *data)
 {
+    context_extensions *ce;
     const char *glver, *glexts, *glxexts = NULL;
     int glx_major = 0, glx_minor = 0;
-    bool *flags;
-    int i;
+    bugle_gl_extension i;
     Display *dpy;
 
-    flags = (bool *) data;
-    memset(flags, 0, sizeof(bool) * BUGLE_EXT_COUNT);
+    ce = (context_extensions *) data;
+    ce->flags = XCALLOC(bugle_gl_extension_count(), bool);
+    bugle_hash_init(&ce->names, NULL);
+
     glexts = (const char *) CALL(glGetString)(GL_EXTENSIONS);
     glver = (const char *) CALL(glGetString)(GL_VERSION);
     /* Don't lock, because we're already inside a lock */
@@ -68,36 +87,48 @@ static void context_initialise(const void *key, void *data)
         CALL(glXQueryVersion)(dpy, &glx_major, &glx_minor);
         glxexts = CALL(glXQueryExtensionsString)(dpy, 0); /* FIXME: get screen number */
     }
-    for (i = 0; i < BUGLE_EXT_COUNT; i++)
-        if (bugle_exts[i].glx)
+
+    tokenise(glexts, &ce->names);
+    if (glxexts) tokenise(glxexts, &ce->names);
+    for (i = 0; i < bugle_gl_extension_count(); i++)
+    {
+        const char *name, *ver;
+        name = bugle_gl_extension_name(i);
+        ver = bugle_gl_extension_version(i);
+        if (ver)
         {
-            if (!dpy)
-                continue;
-            if (bugle_exts[i].gl_string)
+            if (!bugle_gl_extension_is_glx(i))
+                ce->flags[i] = strcmp(glver, ver) >= 0;
+            else if (dpy)
             {
                 int major = 0, minor = 0;
-                sscanf(bugle_exts[i].gl_string, "%d.%d", &major, &minor);
-                flags[i] = glx_major > major
+                sscanf(ver, "%d.%d", &major, &minor);
+                ce->flags[i] = glx_major > major
                     || (glx_major == major && glx_minor >= minor);
             }
-            else if (bugle_exts[i].glext_string)
-                flags[i] = string_contains_extension(glxexts, bugle_exts[i].glext_string);
+            if (ce->flags[i])
+                bugle_hash_set(&ce->names, name, ce); /* arbitrary non-NULL */
         }
         else
-        {
-            if (bugle_exts[i].gl_string)
-                flags[i] = strcmp(glver, bugle_exts[i].gl_string) >= 0;
-            else if (bugle_exts[i].glext_string)
-                flags[i] = string_contains_extension(glexts, bugle_exts[i].glext_string);
-        }
+            ce->flags[i] = bugle_hash_count(&ce->names, name);
+    }
+}
+
+static void context_clear(void *data)
+{
+    context_extensions *ce;
+
+    ce = (context_extensions *) data;
+    free(ce->flags);
+    bugle_hash_clear(&ce->names);
 }
 
 static bool trackextensions_filter_set_initialise(filter_set *handle)
 {
     trackextensions_view = bugle_object_view_new(bugle_context_class,
-                                                 context_initialise,
-                                                 NULL,
-                                                 sizeof(bool) * BUGLE_EXT_COUNT);
+                                                 context_init,
+                                                 context_clear,
+                                                 sizeof(context_extensions));
     return true;
 }
 
@@ -105,35 +136,57 @@ static bool trackextensions_filter_set_initialise(filter_set *handle)
  * means "true if this extension is not present"). This is used in the
  * state tables.
  */
-bool bugle_gl_has_extension(int ext)
+bool bugle_gl_has_extension(bugle_gl_extension ext)
 {
-    const bool *data;
+    const context_extensions *ce;
 
+    /* bugle_gl_extension_id returns -1 for unknown extensions - play it safe */
+    if (ext == NULL_EXTENSION) return false;
     if (ext < 0) return !bugle_gl_has_extension(~ext);
-    assert(ext < BUGLE_EXT_COUNT);
-    data = (const bool *) bugle_object_get_current_data(bugle_context_class, trackextensions_view);
-    if (!data) return false;
-    else return data[ext];
+    assert(ext < bugle_gl_extension_count());
+    ce = (const context_extensions *) bugle_object_get_current_data(bugle_context_class, trackextensions_view);
+    if (!ce) return false;
+    else return ce->flags[ext];
+}
+
+bool bugle_gl_has_extension2(int ext, const char *name)
+{
+    const context_extensions *ce;
+
+    assert(ext >= -1 && ext < bugle_gl_extension_count());
+    /* bugle_gl_extension_id returns -1 for unknown extensions - play it safe */
+    ce = (const context_extensions *) bugle_object_get_current_data(bugle_context_class, trackextensions_view);
+    if (!ce) return false;
+    if (ext >= 0)
+        return ce->flags[ext];
+    else
+        return bugle_hash_count(&ce->names, name);
 }
 
 /* The output can be inverted by passing ~ext instead of ext (which basically
  * means "true if none of these extensions are present").
  */
-bool bugle_gl_has_extension_group(int ext)
+bool bugle_gl_has_extension_group(bugle_gl_extension ext)
 {
+    const context_extensions *ce;
     size_t i;
-    const bool *data;
-    const int *exts;
+    const bugle_gl_extension *exts;
 
     if (ext < 0) return !bugle_gl_has_extension_group(~ext);
-    assert(ext <= BUGLE_EXT_COUNT);
-    data = (const bool *) bugle_object_get_current_data(bugle_context_class, trackextensions_view);
-    if (!data) return false;
-    exts = bugle_extgroups[ext];
+    assert(ext < bugle_gl_extension_count());
+    ce = (const context_extensions *) bugle_object_get_current_data(bugle_context_class, trackextensions_view);
+    if (!ce) return false;
+    exts = bugle_gl_extension_group_members(ext);
 
-    for (i = 0; exts[i] != -1; i++)
-        if (data[exts[i]]) return true;
+    for (i = 0; exts[i] != NULL_EXTENSION; i++)
+        if (ce->flags[exts[i]]) return true;
     return false;
+}
+
+bool bugle_gl_has_extension_group2(bugle_gl_extension ext, const char *name)
+{
+    return (ext == NULL_EXTENSION)
+        ? bugle_gl_has_extension2(ext, name) : bugle_gl_has_extension_group(ext);
 }
 
 void trackextensions_initialise(void)

@@ -182,7 +182,7 @@ budgie_type bugle_gl_type_to_type_ptr(GLenum gl_type)
 budgie_type bugle_gl_type_to_type_ptr_pbo_source(GLenum gl_type)
 {
 #ifdef GL_EXT_pixel_buffer_object
-    if (bugle_gl_has_extension_group(BUGLE_GL_EXT_pixel_buffer_object)
+    if (BUGLE_GL_HAS_EXTENSION_GROUP(GL_EXT_pixel_buffer_object)
         && bugle_begin_internal_render())
     {
         GLint id;
@@ -200,7 +200,7 @@ budgie_type bugle_gl_type_to_type_ptr_pbo_source(GLenum gl_type)
 budgie_type bugle_gl_type_to_type_ptr_pbo_sink(GLenum gl_type)
 {
 #ifdef GL_EXT_pixel_buffer_object
-    if (bugle_gl_has_extension_group(BUGLE_GL_EXT_pixel_buffer_object)
+    if (BUGLE_GL_HAS_EXTENSION_GROUP(GL_EXT_pixel_buffer_object)
         && bugle_begin_internal_render())
     {
         GLint id;
@@ -539,7 +539,7 @@ size_t bugle_texture_element_count(GLenum target,
     CALL(glGetTexLevelParameteriv)(target, level, GL_TEXTURE_WIDTH, &width);
     CALL(glGetTexLevelParameteriv)(target, level, GL_TEXTURE_HEIGHT, &height);
 #ifdef GL_EXT_texture3D
-    if (bugle_gl_has_extension(BUGLE_GL_EXT_texture3D))
+    if (BUGLE_GL_HAS_EXTENSION(GL_EXT_texture3D))
         CALL(glGetTexLevelParameteriv)(target, level, GL_TEXTURE_DEPTH_EXT, &depth);
     else
         depth = 1;

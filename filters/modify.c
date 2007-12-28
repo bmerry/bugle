@@ -30,9 +30,9 @@
 #include <bugle/tracker.h>
 #include <bugle/xevent.h>
 #include <bugle/log.h>
+#include <bugle/glreflect.h>
 #include <budgie/reflect.h>
 #include <budgie/addresses.h>
-#include "src/glexts.h"
 #include "src/glfuncs.h"
 
 #if !HAVE_SINF
@@ -98,7 +98,7 @@ static bool classify_glBindFramebufferEXT(function_call *call, const callback_da
     if (ctx && bugle_begin_internal_render())
     {
 #ifdef GL_EXT_framebuffer_blit
-        if (bugle_gl_has_extension(BUGLE_GL_EXT_framebuffer_blit))
+        if (BUGLE_GL_HAS_EXTENSION(GL_EXT_framebuffer_blit))
         {
             CALL(glGetIntegerv)(GL_DRAW_FRAMEBUFFER_BINDING_EXT, &fbo);
         }
@@ -628,7 +628,7 @@ static void camera_draw_frustum(const GLfloat *original)
     CALL(glVertexPointer)(4, GL_FLOAT, 0, vertices);
     CALL(glEnableClientState)(GL_VERTEX_ARRAY);
 #ifdef GL_NV_depth_clamp
-    if (bugle_gl_has_extension(BUGLE_GL_NV_depth_clamp))
+    if (BUGLE_GL_HAS_EXTENSION(GL_NV_depth_clamp))
     {
         glEnable(GL_DEPTH_CLAMP_NV);
         glDepthFunc(GL_LEQUAL);
@@ -647,7 +647,7 @@ static void camera_draw_frustum(const GLfloat *original)
     }
 
 #ifdef GL_NV_depth_clamp
-    if (bugle_gl_has_extension(BUGLE_GL_NV_depth_clamp))
+    if (BUGLE_GL_HAS_EXTENSION(GL_NV_depth_clamp))
     {
         glDepthFunc(GL_LESS);
         glDisable(GL_DEPTH_CLAMP_NV);
@@ -1162,8 +1162,7 @@ static void extoverride_shutdown(filter_set *handle)
 static bool extoverride_variable_disable(const struct filter_set_variable_info_s *var,
                                          const char *text, const void *value)
 {
-    bool found = false;
-    size_t i;
+    bugle_gl_extension i;
 
     if (strcmp(text, "all") == 0)
     {
@@ -1172,14 +1171,8 @@ static bool extoverride_variable_disable(const struct filter_set_variable_info_s
     }
 
     bugle_hash_set(&extoverride_disabled, text, NULL);
-    for (i = 0; i < BUGLE_EXT_COUNT; i++)
-        if (!bugle_exts[i].glx && bugle_exts[i].glext_string
-            && strcmp(bugle_exts[i].glext_string, text) == 0)
-        {
-            found = true;
-            break;
-        }
-    if (!found)
+    i = bugle_gl_extension_id(text);
+    if (i == -1 || bugle_gl_extension_version(i) != NULL)
         bugle_log_printf("extoverride", "disable", BUGLE_LOG_WARNING,
                          "Extension %s is unknown (typo?)", text);
     return true;
@@ -1188,8 +1181,7 @@ static bool extoverride_variable_disable(const struct filter_set_variable_info_s
 static bool extoverride_variable_enable(const struct filter_set_variable_info_s *var,
                                         const char *text, const void *value)
 {
-    bool found = false;
-    size_t i;
+    bugle_gl_extension i;
 
     if (strcmp(text, "all") == 0)
     {
@@ -1198,14 +1190,8 @@ static bool extoverride_variable_enable(const struct filter_set_variable_info_s 
     }
 
     bugle_hash_set(&extoverride_enabled, text, NULL);
-    for (i = 0; i < BUGLE_EXT_COUNT; i++)
-        if (!bugle_exts[i].glx && bugle_exts[i].glext_string
-            && strcmp(bugle_exts[i].glext_string, text) == 0)
-        {
-            found = true;
-            break;
-        }
-    if (!found)
+    i = bugle_gl_extension_id(text);
+    if (i == -1 || bugle_gl_extension_version(i) != NULL)
         bugle_log_printf("extoverride", "enable", BUGLE_LOG_WARNING,
                          "Extension %s is unknown (typo?)", text);
     return true;

@@ -37,7 +37,7 @@
 #ifdef GL_VERSION_2_0
 #define call1(gl,arb,params) \
     do { \
-        if (bugle_gl_has_extension(BUGLE_GL_VERSION_2_0)) \
+        if (BUGLE_GL_HAS_EXTENSION(GL_VERSION_2_0)) \
         { \
             CALL(gl) params; \
         } \
@@ -64,7 +64,7 @@ void bugle_glGetShaderiv(GLuint shader, GLenum pname, GLint *param)
 void bugle_glGetAttachedShaders(GLuint program, GLsizei max_length, GLsizei *length, GLuint *shaders)
 {
 #ifdef GL_VERSION_2_0
-    if (bugle_gl_has_extension(GL_VERSION_2_0))
+    if (BUGLE_GL_HAS_EXTENSION(GL_VERSION_2_0))
     {
         CALL(glGetAttachedShaders)(program, max_length, length, shaders);
     }
@@ -122,7 +122,7 @@ void bugle_glGetUniformiv(GLuint program, GLint location, GLint *params)
 GLint bugle_glGetUniformLocation(GLuint program, const GLcharARB *name)
 {
 #ifdef GL_VERSION_2_0
-    if (bugle_gl_has_extension(GL_VERSION_2_0))
+    if (BUGLE_GL_HAS_EXTENSION(GL_VERSION_2_0))
         return CALL(glGetUniformLocation)(program, name);
 #endif
     return CALL(glGetUniformLocationARB)(program, name);
@@ -131,7 +131,7 @@ GLint bugle_glGetUniformLocation(GLuint program, const GLcharARB *name)
 GLint bugle_glGetAttribLocation(GLuint program, const GLcharARB *name)
 {
 #ifdef GL_VERSION_2_0
-    if (bugle_gl_has_extension(GL_VERSION_2_0))
+    if (BUGLE_GL_HAS_EXTENSION(GL_VERSION_2_0))
         return CALL(glGetAttribLocation)(program, name);
 #endif
     return CALL(glGetAttribLocationARB)(program, name);

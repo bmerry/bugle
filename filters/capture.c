@@ -137,7 +137,7 @@ static void prepare_screenshot_data(screenshot_data *data,
         data->height = height;
         data->stride = stride;
 #ifdef GL_EXT_pixel_buffer_object
-        if (use_pbo && bugle_gl_has_extension(BUGLE_GL_EXT_pixel_buffer_object))
+        if (use_pbo && BUGLE_GL_HAS_EXTENSION(GL_EXT_pixel_buffer_object))
         {
             CALL(glGenBuffersARB)(1, &data->pbo);
             CALL(glBindBufferARB)(GL_PIXEL_PACK_BUFFER_EXT, data->pbo);
@@ -426,7 +426,7 @@ static void get_drawable_size(Display *dpy, GLXDrawable draw,
     unsigned int value = 0;
 
 #ifdef GLX_VERSION_1_3
-    if (bugle_gl_has_extension(GLX_VERSION_1_3))
+    if (BUGLE_GL_HAS_EXTENSION(GLX_VERSION_1_3))
     {
         CALL(glXQueryDrawable)(dpy, draw, GLX_WIDTH, &value);
         *width = value;

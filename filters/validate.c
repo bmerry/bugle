@@ -319,7 +319,7 @@ static void checks_buffer_vbo(size_t size, const void *data,
     size_t end;
 
     checks_error_vbo = true;
-    assert(buffer && !bugle_in_begin_end() && bugle_gl_has_extension(BUGLE_GL_ARB_vertex_buffer_object));
+    assert(buffer && !bugle_in_begin_end() && BUGLE_GL_HAS_EXTENSION(GL_ARB_vertex_buffer_object));
 
     CALL(glGetIntegerv)(GL_ARRAY_BUFFER_BINDING_ARB, &tmp);
     CALL(glBindBufferARB)(GL_ARRAY_BUFFER_ARB, buffer);
@@ -337,7 +337,7 @@ static void checks_buffer(size_t size, const void *data,
 {
 #ifdef GL_ARB_vertex_buffer_object
     GLint id = 0;
-    if (!bugle_in_begin_end() && bugle_gl_has_extension(BUGLE_GL_ARB_vertex_buffer_object))
+    if (!bugle_in_begin_end() && BUGLE_GL_HAS_EXTENSION(GL_ARB_vertex_buffer_object))
         CALL(glGetIntegerv)(binding, &id);
     if (id) checks_buffer_vbo(size, data, id);
     else
@@ -434,7 +434,7 @@ static void checks_generic_attribute(size_t first, size_t count,
         size = (count - 1) * stride + group_size;
 #ifdef GL_ARB_vertex_buffer_object
         id = 0;
-        if (!bugle_in_begin_end() && bugle_gl_has_extension(BUGLE_GL_ARB_vertex_buffer_object))
+        if (!bugle_in_begin_end() && BUGLE_GL_HAS_EXTENSION(GL_ARB_vertex_buffer_object))
             CALL(glGetVertexAttribivARB)(number, GL_VERTEX_ATTRIB_ARRAY_BUFFER_BINDING_ARB, &id);
         if (id) checks_buffer_vbo(size, cptr, id);
         else
@@ -490,7 +490,7 @@ static void checks_attributes(size_t first, size_t count)
 
 #ifdef GL_ARB_multitexture
     /* FIXME: if there is a failure, the current texture unit will be wrong */
-    if (bugle_gl_has_extension(BUGLE_GL_ARB_multitexture))
+    if (BUGLE_GL_HAS_EXTENSION(GL_ARB_multitexture))
     {
         GLint texunits, old;
 
@@ -522,7 +522,7 @@ static void checks_attributes(size_t first, size_t count)
     }
 
 #ifdef GL_ARB_vertex_program
-    if (bugle_gl_has_extension(BUGLE_GL_ARB_vertex_program))
+    if (BUGLE_GL_HAS_EXTENSION(GL_ARB_vertex_program))
     {
         GLint attribs, i;
 
@@ -553,7 +553,7 @@ static void checks_min_max(GLsizei count, GLenum gltype, const GLvoid *indices,
 
     /* Check for element array buffer */
 #ifdef GL_ARB_vertex_buffer_object
-    if (bugle_gl_has_extension(BUGLE_GL_ARB_vertex_buffer_object))
+    if (BUGLE_GL_HAS_EXTENSION(GL_ARB_vertex_buffer_object))
     {
         GLint id, mapped;
         size_t size;
@@ -860,7 +860,7 @@ static bool checks_glMultiTexCoord(function_call *call, const callback_data *dat
     if (bugle_begin_internal_render())
     {
 #ifdef GL_ARB_fragment_program
-        if (bugle_gl_has_extension_group(BUGLE_EXTGROUP_texunits))
+        if (BUGLE_GL_HAS_EXTENSION_GROUP(EXTGROUP_texunits))
         {
             CALL(glGetIntegerv)(GL_MAX_TEXTURE_COORDS_ARB, &max);
             /* NVIDIA ship a driver that just generates an error on this

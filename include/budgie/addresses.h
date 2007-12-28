@@ -43,15 +43,7 @@ void budgie_function_set_bypass(budgie_function id, bool bypass);
 void budgie_invoke(function_call *call);
 
 #include <budgie/call.h>
-
-/* Expands to ifdef if def is defined, to ifndef otherwise */
-#define _BUDGIE_SWITCH(def, ifdef, ifndef) _BUDGIE_SWITCH2(def, ifdef, ifndef)
-#define _BUDGIE_SWITCH2(def, ifdef, ifndef) \
-    _BUDGIE_SWITCH3(_BUDGIE_SWITCH_PRE ## def(ifdef), (ifndef), _BUDGIE_SWITCH_POST ## def(ifdef))
-#define _BUDGIE_SWITCH3(pre, ifndef, post) _BUDGIE_SWITCH_2ND(pre, ifndef, post)
-#define _BUDGIE_SWITCH_2ND(a, b, c) b
-#define _BUDGIE_SWITCH_PRE1(ifdef) 0, (ifdef), (
-#define _BUDGIE_SWITCH_POST1(ifdef) )
+#include <budgie/macros.h>
 
 /* the generated calls.h generates
  * _BUDGIE_CALL_glFoo => BUDGIE_CALL(glFoo, typeof(glFoo)) */

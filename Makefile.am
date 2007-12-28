@@ -32,12 +32,14 @@ includebugle_HEADERS = \
 	include/bugle/objects.h \
 	include/bugle/stats.h \
 	include/bugle/tracker.h \
+	include/bugle/glreflect.h \
 	include/bugle/xevent.h \
 	include/bugle/overrides.h
 includebudgie_HEADERS = \
 	include/budgie/addresses.h \
         include/budgie/types.h \
-	include/budgie/reflect.h
+	include/budgie/reflect.h \
+	include/budgie/macros.h
 nodist_includebudgie_HEADERS = \
 	include/budgie/call.h \
 	include/budgie/types2.h
@@ -99,15 +101,14 @@ budgie/bclexer.cc: budgie/bclexer.ll
 BUILT_SOURCES = budgie/bcparser.h
 
 src_libbugleutils_la_SOURCES = \
-	include/bugle/gltokens.h src/gltypes.c include/bugle/gltypes.h \
-	common/misc.c include/bugle/misc.h \
+	src/gltypes.c src/glreflect.c \
+	common/misc.c \
 	common/protocol.h common/protocol.c \
 	common/hashtable.c include/bugle/hashtable.h \
 	common/linkedlist.c include/bugle/linkedlist.h \
-	include/budgie/types.h include/budgie/reflect.h \
 	budgielib/internal.c budgielib/internal.h budgielib/reflect.c
 nodist_src_libbugleutils_la_SOURCES = \
-	include/budgie/types2.h budgielib/defines.h budgielib/tables.c \
+	budgielib/defines.h budgielib/tables.c \
 	src/gltokens.c src/glfuncs.c src/glfuncs.h \
 	src/glexts.c src/glexts.h
 src_libbugleutils_la_LIBADD = $(LTLIBOBJS) $(LTLIBTHREAD) $(LTLIBINTL) lib/libgnu.la
@@ -115,24 +116,16 @@ src_libbugleutils_la_LDFLAGS = -thread-safe -export-dynamic $(SYMBOLFLAGS) -vers
 
 src_libbugle_la_SOURCES = \
 	src/confparse.y src/conflex.l src/conffile.h \
-	src/gldump.c include/bugle/gldump.h \
-	src/glutils.c include/bugle/glutils.h \
-	src/glstate.c include/bugle/glstate.h \
-	src/glsl.c include/bugle/glsl.h \
-	src/interceptor.c \
-	src/dlopen.c src/dlopen.h \
-	src/filters.c include/bugle/filters.h \
+	src/gldump.c src/glutils.c src/glstate.c src/glsl.c src/interceptor.c \
+	src/dlopen.c src/dlopen.h src/filters.c \
 	src/trackcontext.c src/trackdisplaylist.c src/trackobjects.c \
-	src/trackbeginend.c src/trackextensions.c include/bugle/tracker.h \
-	src/stats.c include/bugle/stats.h src/statslex.l src/statsparse.y \
-	src/log.c include/bugle/log.h \
-	src/objects.c include/bugle/objects.h \
-	src/xevent.c include/bugle/xevent.h \
-	budgielib/addresses.c include/budgie/addresses.h \
-	budgielib/lib.h \
+	src/trackbeginend.c src/trackextensions.c \
+	src/stats.c src/statslex.l src/statsparse.y \
+	src/log.c src/objects.c src/xevent.c \
+	budgielib/addresses.c budgielib/lib.h \
 	common/threads.h
 nodist_src_libbugle_la_SOURCES = \
-	budgielib/lib.c include/budgie/call.h
+	budgielib/lib.c
 src_libbugle_la_LIBADD = $(LIBLTDL) src/libbugleutils.la -lm -lGL $(X_PRE_LIBS) $(X_LIBS) -lX11 $(X_EXTRA_LIBS) $(LTLIBTHREAD) $(LTLIBINTL) lib/libgnu.la
 src_libbugle_la_LDFLAGS = -thread-safe -export-dynamic $(SYMBOLFLAGS) -version-info 4:0:0
 

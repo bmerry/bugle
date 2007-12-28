@@ -125,12 +125,12 @@ if ($outheader)
 #endif
 #include <stddef.h>
 #include <stdbool.h>
+#include <bugle/glreflect.h>
 
 typedef struct
 {
-    const char *gl_string;
-    const char *glext_string;
-    bool glx;
+    const char *version;
+    const char *name;
 } bugle_ext;
 EOF
 ;
@@ -144,7 +144,7 @@ EOF
     print "\n";
     print "#define BUGLE_EXT_COUNT " . $ext_index . "\n";
     print "extern const bugle_ext bugle_exts[BUGLE_EXT_COUNT];\n";
-    print "extern const int * const bugle_extgroups[BUGLE_EXT_COUNT];\n";
+    print "extern const bugle_gl_extension * const bugle_extgroups[BUGLE_EXT_COUNT];\n";
 
     print "#endif /* !BUGLE_SRC_GLEXTS_H */\n";
 }
@@ -169,17 +169,16 @@ EOF
     print "{\n";
     for my $e (@glext)
     {
-        my $glx = ($e =~ /^GLX/) ? "true" : "false";
         if ($e =~ /^GLX?_VERSION_([0-9]+)_([0-9]+)/)
         {
-            print "    { \"$1.$2\", NULL, $glx },\n";
+            print "    { \"$1.$2\", \"$e\" },\n";
         }
         else
         {
-            print "    { NULL, \"$e\", $glx },\n";
+            print "    { NULL, \"$e\" },\n";
         }
     }
-    print join(",\n", ("    { NULL, NULL }") x scalar(keys %groups)), "\n";
+    print join(",\n", map { "    { NULL, \"$_\" }" } keys %groups), "\n";
     print "};\n\n";
 
     for my $e (@glext)
@@ -201,7 +200,7 @@ EOF
         write_group($e, \@list);
     }
 
-    print "const int * const bugle_extgroups[BUGLE_EXT_COUNT] =\n";
+    print "const bugle_gl_extension * const bugle_extgroups[BUGLE_EXT_COUNT] =\n";
     print "{\n";
     print join(",\n", map { "    group_" . $_ } (@glext, keys %groups)), "\n};\n";
 }
