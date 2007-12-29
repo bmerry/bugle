@@ -8,7 +8,7 @@ SYMBOLFLAGS = -export-symbols-regex '^(gl[A-Z]|budgie_|bugle_|gldb_|X|dlopen)'
 noinst_PROGRAMS = budgie/budgie
 # Misc extra files to include
 noinst_HEADERS = budgie/tree.def budgie/c-common.def
-dist_noinst_SCRIPTS = gentokens/gengl.perl gentokens/find_header.perl \
+dist_noinst_SCRIPTS = gengl/gengl.perl gengl/find_header.perl \
 		      mvtu.sh
 # The real things
 lib_LTLIBRARIES = src/libbugleutils.la src/libbugle.la
@@ -161,13 +161,13 @@ $(BUDGIE_BUILT_SRCS): budgie/budgie src/data/gl.tu gl.bc bc/alias.bc $(BCFILES)
 
 BUILT_SOURCES += src/gltables.h
 
-src/gltables.c: gentokens/gengl.perl $(BUDGIE_BUILT_SRCS)
-	$(PERL) $(srcdir)/gentokens/gengl.perl --mode=c --header=budgielib/defines.h $(GLINCLUDES) > src/gltables.c
-src/gltables.h: gentokens/gengl.perl $(BUDGIE_BUILT_SRCS)
-	$(PERL) $(srcdir)/gentokens/gengl.perl --mode=header --header=budgielib/defines.h $(GLINCLUDES) > src/gltables.h
-bc/alias.bc: gentokens/gengl.perl
+src/gltables.c: gengl/gengl.perl $(BUDGIE_BUILT_SRCS)
+	$(PERL) $(srcdir)/gengl/gengl.perl --mode=c --header=budgielib/defines.h $(GLINCLUDES) > src/gltables.c
+src/gltables.h: gengl/gengl.perl $(BUDGIE_BUILT_SRCS)
+	$(PERL) $(srcdir)/gengl/gengl.perl --mode=header --header=budgielib/defines.h $(GLINCLUDES) > src/gltables.h
+bc/alias.bc: gengl/gengl.perl
 	$(mkdir_p) bc
-	$(PERL) $(srcdir)/gentokens/gengl.perl --mode=alias $(GLINCLUDES) > bc/alias.bc
+	$(PERL) $(srcdir)/gengl/gengl.perl --mode=alias $(GLINCLUDES) > bc/alias.bc
 
 # Filters
 filters_common_la_SOURCES = filters/common.c

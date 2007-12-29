@@ -21,25 +21,20 @@
     </sect1>
 
     <sect1 id="extending-state-api">
-        <title>State of the API</title>
+        <title>API and ABI compatibility</title>
         <para>
-            The API has recently undergone a lot of cleaning up to make it,
-            as far as possible, independent of the particular OpenGL
-            headers used to compile &bugle;. If an external filter-set is
-            compiled with a more complete set of OpenGL extensions, then
-            things should continue to work provided that the filter-set
-            gracefully handles missing functionality. If &bugle; was compiled
-            with the more complete set of extensions, then things should work
-            regardless.
-        </para>
-        <para>
-            That is all in theory, but it has yet to be put to the test. There
-            will probably be some breakages, but hopefully not too often, or
-            every time a new OpenGL extension is published.
+            The API has been designed so that filter-sets can be maintained
+            separately from &bugle;, even if the filter-set depends on OpenGL
+            extensions that were not available at the time &bugle; was
+            compiled. It has also been designed so that installing a newer (or
+            older) version of &bugle; will not necessarily break separately
+            installed filter-sets purely because the set of OpenGL headers has
+            changed.
         </para>
         <warning>
             <para>
-                The API is still changing regularly.
+                The API is still changing regularly and there is room for
+                optimisation, so upgrades to &bugle; may break the API or ABI.
             </para>
         </warning>
     </sect1>
@@ -76,7 +71,8 @@
                 </para></listitem>
                 <listitem><para>Names of types should generally not have a
                         <literal>bugle_</literal> prefix, unless it is needed
-                        to clearly disambiguate it.
+                        to clearly disambiguate it. This is an area where
+                        consistency could be improved.
                 </para></listitem>
                 <listitem><para>Functions in the core code should have a
                         <literal>bugle_</literal> prefix if and only if they
@@ -138,7 +134,7 @@
                 current in at most one thread. You should keep this in mind
                 when you attempt to track any particular OpenGL state. If you
                 are using a global variable then your code is almost certainly
-                not current for multi-threaded or multi-context applications.
+                not correct for multi-threaded or multi-context applications.
             </para>
             <para>
                 The <link linkend="extending-objects">object sub-system</link>
@@ -154,7 +150,7 @@
                 that a Win32 port will be possible one day, but also to
                 support other systems with old headers).  Thus for any
                 functions introduces after 1.1, you should favour the
-                <symbol>GROUP_<replaceable>glFunction</replaceable></symbol>
+                <symbol>BUDGIE_GROUP_ID(<replaceable>glFunction</replaceable>)</symbol>
                 definition with the oldest name, which is generally an
                 extension function. You should also protect any such code with
                 a test for the GL extension define e.g.,
@@ -235,7 +231,7 @@
                 simply an OpenGL function. Both
                 <function>glActiveTexture</function> and
                 <function>glActiveTextureARB</function> are functions, and
-                they are referred to by the symbols
+                they are referred to internally by the symbols
                 <symbol>FUNC_glActiveTexture</symbol> and
                 <symbol>FUNC_glActiveTextureARB</symbol> respectively.
             </para>
@@ -252,12 +248,23 @@
             <para>
                 The values of these symbols can change every time the OpenGL
                 headers are modified, so the symbols should not be used in
-                filter-sets (in fact, the corresponding headers are no even
+                filter-sets (in fact, the corresponding headers are not even
                 installed by &bugle;). Instead, you should use
                 <function>budgie_function_name</function>,
                 <function>budgie_function_id</function> and
                 <function>budgie_function_group</function> to map between
-                these numbers and symbolic names on the fly.
+                these numbers and symbolic names on the fly. If you know the
+                name of the function as a literal piece of text at compile
+                time, you can write, for example, <code
+                    language="cpp">BUDGIE_FUNCTION_ID(glGetString)</code> to
+                get the symbol for <function>glGetString</function>. At
+                present this simply wraps <code>budgie_function_id</code> with
+                a cache variable, but in future there may be further
+                optimisations. In core code that includes <filename
+                    class="headerfile">budgielib/defines.h</filename>, this
+                macro reduces to <symbol>FUNC_glGetString</symbol>. There are
+                similar macros <symbol>BUDGIE_GROUP_ID</symbol> and
+                <symbol>BUDGIE_TYPE_ID</symbol>.
             </para>
         </sect2>
     </sect1>
@@ -287,7 +294,7 @@
                 between filter-sets:
             </para>
             <funcsynopsis>
-                <funcsynopsisinfo language="cpp">#include &lt;src/filters.h&gt;
+                <funcsynopsisinfo language="cpp">#include &lt;bugle/filters.h&gt;
                     
 filter_set *bugle_filter_set_new(filter_set_info *info);</funcsynopsisinfo>
             </funcsynopsis>
@@ -391,13 +398,13 @@ filter_set *bugle_filter_set_new(filter_set_info *info);</funcsynopsisinfo>
             </table>
             <para>
                 With the exception of the
-                <symbol>FILTER_SET_VARIABLE_CUSTOM</symbol> custom type, each
+                <symbol>FILTER_SET_VARIABLE_CUSTOM</symbol> type, each
                 enumerant corresponds to a C type. Set the
                 <structfield>value</structfield> field to a pointer to a
                 C variable of this type, and it will be overwritten with the
                 value specified by the user. The C variable is not modified if
                 the user does not specify a value, so it is best to initialise
-                the C with an appropriate default value.
+                it with an appropriate default value.
             </para>
             <para>
                 Sometimes it is necessary to perform some extra validation or
@@ -480,12 +487,14 @@ void bugle_filter_catches_all(filter *f, bool inactive, filter_callback callback
                 The callback should generally return <symbol>true</symbol>.
                 Returning <symbol>false</symbol>
                 aborts any further processing of the call (including
-                execution if the <systemitem>invoke</systemitem> filter has not yet run). This can
+                execution if the <systemitem>invoke</systemitem> filter has
+                not yet run). This can
                 be useful if you want to suppress a call, but if possible
                 it is better to allow execution and undo the effects
                 afterwards so that later filters get a chance to run.
             </para>
-            <para> Callbacks that handle multiple OpenGL functions will need
+            <para>
+                Callbacks that handle multiple OpenGL functions will need
                 to know which function was called; the function is found in
                 <code language="cpp">call->generic.id</code>, but more useful
                 is the group found in <code
@@ -493,9 +502,9 @@ void bugle_filter_catches_all(filter *f, bool inactive, filter_callback callback
                 get access to the arguments: if the call is known to be
                 <function>gl<replaceable>Function</replaceable></function>,
                 then <code
-                    language="cpp">*call->typed.gl<replaceable>Function</replaceable>.arg<replaceable>i</replaceable></code>
+                    language="cpp">*call-><replaceable>glFunction</replaceable>.arg<replaceable>i</replaceable></code>
                 is the <replaceable>i</replaceable>th argument, and <code
-                    language="cpp">*call->typed.gl<replaceable>Function</replaceable>.retn</code>
+                    language="cpp">*call-><replaceable>glFunction</replaceable>.retn</code>
                 is the return value. If the function is not known at compile
                 time, then the arguments can be accessed via the
                 <type>void</type> pointers <code
@@ -809,12 +818,32 @@ void *bugle_object_get_current_data(object_class *klass, object *obj);</funcsyno
                 be entered recursively. There is protection against this (the
                 call will be forwarded to the real OpenGL library without
                 further action), but it is nevertheless a performance hit. To
-                call an OpenGL function, you should prefix the name with
-                <literal>CALL_</literal>, for example,
-                <function>CALL_glGetIntegerv</function>. This will also work
-                for extension functions, but you must ensure that the
-                extension is available at both compile and run time; this is
-                described in <xref linkend="extending-utility-extensions"/>.
+                call an OpenGL function
+                <function><replaceable>glFunction</replaceable></function>,
+                you should call it as
+            </para>
+            <programlisting
+                language="cpp">CALL(<replaceable>glFunction</replaceable>)(<replaceable>args</replaceable>);</programlisting>
+            <para>
+                This should only be done if you put the actual name of the
+                function as literal text. If you have a string containing the
+                name, it can be passed to
+                <function>budgie_function_address_real</function> instead.
+            </para>
+            <para>
+                If <replaceable>glFunction</replaceable> was not known when
+                &bugle; was compiled, this will generate a call to
+                <replaceable>glFunction</replaceable>. If the OpenGL library
+                does not have this symbol (which it need not, since OpenGL
+                entry points beyond OpenGL 1.2 should be queried with
+                <function>glXGetProcAddressARB</function>, then you will get
+                an unresolved symbol error at run-time.
+            </para>
+            <para>
+                If the function is not defined by OpenGL 1.1, you must first
+                check that the extension is supported at both compile and run
+                time: this is described in <xref
+                    linkend="extending-utility-extensions"/>.
             </para>
             <para>
                 For OpenGL (as opposed to GLX) functions, it is also important
@@ -825,7 +854,7 @@ void *bugle_object_get_current_data(object_class *klass, object *obj);</funcsyno
             </para>
             <programlisting>bugle_filter_set_renders("<replaceable>filter-set</replaceable>");</programlisting>
             <para>
-                and any filters that make such calls and which ran after
+                and any filters that make such calls and which run after
                 invocation must be registered during filter-set initialisation
                 with
             </para>
@@ -841,30 +870,40 @@ void *bugle_object_get_current_data(object_class *klass, object *obj);</funcsyno
                 a descriptive name for the section of code (typically the
                 name of the containing function), which is logged if the code
                 generates any OpenGL errors. Setting the second parameter to
-                false, however, suppresses the warning, which should only be
-                done if you have intentionally written code that may generate
-                OpenGL errors.
+                <symbol>false</symbol>, however, suppresses the warning, which
+                should only be done if you have intentionally written code
+                that may generate OpenGL errors.
             </para>
         </sect2>
         <sect2 id="extending-utility-extensions">
             <title>Checking for OpenGL extensions</title>
             <para>
-                The following functions simplify checking for the presence
+                Like functions and groups, &bugle; enumerates the extensions
+                it knows about, but the enumeration may change frequently and
+                so is not part of the API. Mapping between names and the
+                enumeration can be done with
+                <function>bugle_gl_extension_name</function> and
+                <function>bugle_gl_extension_id</function>, and the macro
+                <symbol>BUGLE_GL_EXTENSION_ID</symbol> can be used with the
+                literal unquoted name of the extension.
+            </para>
+            <para>
+                The following macros simplify checking for the presence
                 of an OpenGL extension in the current context:
             </para>
             <funcsynopsis>
-                <funcsynopsisinfo language="cpp">#include "src/tracker.h"
+                <funcsynopsisinfo language="cpp">#include &lt;bugle/tracker.h&gt;
 
-bool bugle_gl_has_extension(<replaceable>BUGLE_GL_EXT_some_extension</replaceable>);
-bool bugle_gl_has_extension_group(<replaceable>BUGLE_GL_EXT_some_extension</replaceable>);
+bool BUGLE_GL_HAS_EXTENSION(<replaceable>GL_EXT_some_extension</replaceable>);
+bool BUGLE_GL_HAS_EXTENSION_GROUP(<replaceable>GL_EXT_some_extension</replaceable>);
 
 bugle_filter_set_depends(<replaceable>"myfilterset"</replaceable>, "trackextensions");</funcsynopsisinfo>
             </funcsynopsis>
             <para>
                 An extension group is a set of extensions with similar
                 functionality. For example, when passing
-                <symbol>BUGLE_GL_EXT_pixel_buffer_object</symbol> to
-                <function>bugle_gl_has_extension_group</function> will return
+                <symbol>GL_EXT_pixel_buffer_object</symbol> to
+                <function>BUGLE_GL_HAS_EXTENSION_GROUP</function>, it will return
                 <symbol>true</symbol> if any one of
                 <symbol>GL_EXT_pixel_buffer_object</symbol>,
                 <symbol>GL_ARB_pixel_buffer_object</symbol>, or OpenGL 2.1 is
@@ -879,17 +918,17 @@ bugle_filter_set_depends(<replaceable>"myfilterset"</replaceable>, "trackextensi
             </note>
             <para>
                 There are also some special extension groups, defined in
-                <filename>gentokens/genexts.perl</filename>, that are
+                <filename>gengl/gengl.perl</filename>, that are
                 convenient ways to test for certain functionality that is
                 provided by several extensions but is not the sole function of
                 any of them.
             </para>
             <para>
                 Apart from extensions, you can also check for OpenGL versions
-                using symbols such as <symbol>BUGLE_GL_VERSION_2_0</symbol>.
+                using symbols such as <symbol>GL_VERSION_2_0</symbol>.
                 The list of extensions is parsed once per context, so these
-                checks are quite cheap. If there is no current context, the
-                function returns <symbol>false</symbol>.
+                checks are reasonably cheap. If there is no current context,
+                the function returns <symbol>false</symbol>.
             </para>
             <para>
                 Remember that you also need to do a compile-time check before
