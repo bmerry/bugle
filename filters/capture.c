@@ -54,6 +54,9 @@
 # include <inttypes.h>
 # include <avcodec.h>
 # include <avformat.h>
+# if HAVE_LIBSWSCALE
+#  include <swscale.h>
+# endif
 # define CAPTURE_AV_FMT PIX_FMT_RGB24
 # define CAPTURE_GL_FMT GL_RGB
 #endif
@@ -122,7 +125,8 @@ static void prepare_screenshot_data(screenshot_data *data,
 {
     size_t stride;
 
-    stride = ((width + align - 1) & ~(align - 1)) * CAPTURE_GL_ELEMENTS;
+    stride = width * CAPTURE_GL_ELEMENTS;
+    stride = (stride + align - 1) & ~(align - 1);
     if ((!data->pixels && !data->pbo)
         || data->width != width
         || data->height != height
@@ -205,6 +209,9 @@ static AVStream *video_stream;
 static AVFrame *video_raw, *video_yuv;
 static uint8_t *video_buffer;
 static size_t video_buffer_size = 2000000; /* FIXME: what should it be? */
+#if HAVE_LIBSWSCALE
+static struct SwsContext *sws_context = NULL;
+#endif
 
 static AVFrame *allocate_video_frame(int fmt, int width, int height,
                                      bool create)
@@ -349,6 +356,9 @@ static void lavc_shutdown(void)
     for (i = 0; i < video_lag; i++)
         free_screenshot_data(&video_data[i]);
     free(video_data);
+#if HAVE_LIBSWSCALE
+    sws_freeContext(sws_context);
+#endif
 
     video_context = NULL;
 }
@@ -441,7 +451,7 @@ static void get_drawable_size(Display *dpy, GLXDrawable draw,
         /* FIXME: a pbuffer here will break. This can
          * only be fixed by tracking the type of drawables
          * as they are created, which will be a huge pain.
-         * Note: this code is duplicates in capture.c and debugger.c
+         * Note: this code is duplicated in capture.c and debugger.c
          */
         XGetGeometry(dpy, draw, &root, &x, &y,
                      &uwidth, &uheight, &border, &depth);
@@ -588,9 +598,19 @@ static void screenshot_video()
         }
         video_raw->data[0] = fetch->pixels + fetch->stride * (fetch->height - 1);
         video_raw->linesize[0] = -fetch->stride;
+#if HAVE_LIBSWSCALE
+        sws_context = sws_getCachedContext(sws_context,
+                                           fetch->width, fetch->height, CAPTURE_AV_FMT,
+                                           fetch->width, fetch->height, c->pix_fmt,
+                                           SWS_BILINEAR, NULL, NULL, NULL);
+        sws_scale(sws_context, video_raw->data, video_raw->linesize,
+                  0, fetch->height, video_yuv->data, video_yuv->linesize);
+#else
+
         img_convert((AVPicture *) video_yuv, c->pix_fmt,
-                (AVPicture *) video_raw, CAPTURE_AV_FMT,
-                fetch->width, fetch->height);
+                    (AVPicture *) video_raw, CAPTURE_AV_FMT,
+                    fetch->width, fetch->height);
+#endif
         for (i = 0; i < fetch->multiplicity; i++)
         {
 #if LIBAVFORMAT_VERSION_INT >= 0x00310000

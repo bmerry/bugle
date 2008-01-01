@@ -48,6 +48,7 @@ HAVE_LAVC=1
 AVCODEC_CFLAGS=""
 AVCODEC_LIBS=""
 PKG_CHECK_MODULES([avcodec], [libavcodec libavformat], [], [HAVE_LAVC=0; AC_MSG_RESULT([no])])
+PKG_CHECK_MODULES([swscale], [libswscale], [HAVE_LIBSWSCALE=1], [HAVE_LIBSWSCALE=0])
 
 # Sadly, FreeBSD does not implement libraries depending on libraries, and
 # OpenGL uses X and maths functions. Hence the -lm and all the X rubbish.
@@ -117,12 +118,13 @@ AC_DEFINE_UNQUOTED(ENABLE_XEVENT, $ENABLE_XEVENT, [non-zero when X key and mouse
 
 AC_ARG_WITH([lavc], AC_HELP_STRING([--without-lavc], [do not use libavcodec]),
             [test $withval = no && HAVE_LAVC=0], [])
-AVCODEC_LIBS="$avcodec_LIBS"
-AVCODEC_CFLAGS="$avcodec_CFLAGS"
+AVCODEC_LIBS="$avcodec_LIBS $swscale_LIBS"
+AVCODEC_CFLAGS="$avcodec_CFLAGS $swscale_CFLAGS"
 test $HAVE_LAVC = 1 || AVCODEC_LIBS=""
 test $HAVE_LAVC = 1 || AVCODEC_CFLAGS=""
 AC_SUBST(AVCODEC_LIBS)
 AC_SUBST(AVCODEC_CFLAGS)
+AC_DEFINE_UNQUOTED(HAVE_LIBSWSCALE, $HAVE_LIBSWSCALE, [non-zero when libswscale is available])
 AC_DEFINE_UNQUOTED(HAVE_LAVC, $HAVE_LAVC, [non-zero when libavcodec is being used])
 
 AC_ARG_WITH([readline], AC_HELP_STRING([--without-readline], [do not use libreadline]),
