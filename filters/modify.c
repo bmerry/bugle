@@ -1138,16 +1138,21 @@ static bool extoverride_initialise(filter_set *handle)
         const char *name, *version;
 
         ext = bugle_gl_function_extension(i);
-        version = bugle_gl_extension_version(i);
-        name = bugle_gl_extension_name(i);
-        if (!bugle_gl_extension_version(ext)
-            && extoverride_suppressed(bugle_gl_extension_name(ext)))
+        version = bugle_gl_extension_version(ext);
+        name = bugle_gl_extension_name(ext);
+        if (!version
+            && extoverride_suppressed(name))
             bugle_filter_catches_function_id(f, i, false, extoverride_warn);
         else if (extoverride_max_version
                  && version
                  && !bugle_gl_extension_is_glx(ext)
                  && strcmp(version, extoverride_max_version) > 1)
+        {
+            /* FIXME: the strcmp above will break if there is ever an OpenGL
+             * version with multiple digits.
+             */
             bugle_filter_catches_function_id(f, i, false, extoverride_warn);
+        }
     }
 
     extoverride_view = bugle_object_view_new(bugle_context_class,
