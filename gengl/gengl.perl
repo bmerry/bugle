@@ -454,7 +454,15 @@ EOF
     {
         print "static const bugle_gl_extension enum_extensions_$enum->[1]" . "[] =\n{\n";
         $first = 1;
-        foreach my $ext (keys %{$enum->[2]})
+        # Again, Mesa headers cause us to think some things are in 1.1 when
+        # they're also defined elsewhere.
+        if (scalar(keys(%{$enum->[2]})) > 1
+            && exists($enum->[2]->{GL_VERSION_1_1}))
+        {
+            delete $enum->[2]->{GL_VERSION_1_1};
+        }
+        my @exts = sort { extension_collate($a) cmp extension_collate($b) } keys %{$enum->[2]};
+        foreach my $ext (@exts)
         {
             print "    BUGLE_$ext,\n";
         }

@@ -228,12 +228,13 @@ BUILT_SOURCES += src/statsparse.h
 # Demo/Test programs
 check_PROGRAMS = \
 	tests/errors tests/threads1 tests/threads2 tests/queries \
-	tests/misc tests/setstate tests/triangles \
+	tests/misc tests/setstate tests/showextensions tests/triangles \
 	tests/pointers tests/objects tests/textest tests/shadertest \
 	tests/pbo tests/interpose tests/dlopen
 dist_check_SCRIPTS = \
         tests/errors.sh tests/misc.sh tests/queries.sh tests/setstate.sh \
-	tests/pointers.sh tests/triangles.sh tests/pbo.sh tests/comparelog.sh \
+	tests/showextensions.sh tests/pointers.sh tests/triangles.sh \
+	tests/pbo.sh tests/comparelog.sh \
 	tests/interpose.sh tests/dlopen.sh \
 	tests/comparelog.perl
 tests_errors_SOURCES = tests/errors.c
@@ -258,13 +259,17 @@ tests_dlopen_SOURCES = tests/dlopen.c
 tests_dlopen_LDADD = $(GL_LIBS) $(X_PRE_LIBS) $(X_LIBS) -lX11 $(X_EXTRA_LIBS)
 tests_setstate_SOURCES = tests/setstate.c glee/GLee.c glee/GLee.h
 tests_setstate_LDADD = src/libbugle.la -lglut -lGLU $(GL_LIBS) $(X_PRE_LIBS) $(X_LIBS) -lX11 $(X_EXTRA_LIBS)
+tests_showextensions_SOURCES = tests/showextensions.c glee/GLee.c glee/GLee.h
+tests_showextensions_LDADD = src/libbugle.la -lglut -lGLU $(GL_LIBS) $(X_PRE_LIBS) $(X_LIBS) -lX11 $(X_EXTRA_LIBS)
 tests_objects_SOURCES = tests/objects.c glee/GLee.c glee/GLee.h
 tests_objects_LDADD = -lglut -lGLU $(GL_LIBS) $(X_PRE_LIBS) $(X_LIBS) -lX11 $(X_EXTRA_LIBS)
 tests_textest_SOURCES = tests/textest.c glee/GLee.c glee/GLee.h
 tests_textest_LDADD = -lglut -lGLU $(GL_LIBS) $(X_PRE_LIBS) $(X_LIBS) -lX11 $(X_EXTRA_LIBS)
 tests_shadertest_SOURCES = tests/shadertest.c glee/GLee.c glee/GLee.h
 tests_shadertest_LDADD = -lglut -lGLU $(GL_LIBS) $(X_PRE_LIBS) $(X_LIBS) -lX11 $(X_EXTRA_LIBS)
-TESTS = tests/errors.sh tests/misc.sh tests/queries.sh tests/setstate.sh tests/triangles.sh tests/pointers.sh tests/pbo.sh tests/interpose.sh tests/dlopen.sh
+TESTS = tests/errors.sh tests/misc.sh tests/queries.sh tests/setstate.sh \
+	tests/showextensions.sh tests/triangles.sh tests/pointers.sh \
+	tests/pbo.sh tests/interpose.sh tests/dlopen.sh
 TESTS_ENVIRONMENT = BUGLE_FILTERS=$(srcdir)/tests/filters BUGLE_STATISTICS=$(srcdir)/tests/statistics BUGLE_FILTER_DIR=filters/.libs BUGLE_LIB=src/.libs/libbugle.so
 
 # Extra files to distribute
@@ -294,6 +299,7 @@ CLEANFILES = \
 	tests/.libs/queries tests/.libs/lt-queries \
 	tests/.libs/misc tests/.libs/lt-misc \
 	tests/.libs/setstate tests/.libs/lt-setstate \
+	tests/.libs/showextensions tests/.libs/lt-showextensions \
 	tests/.libs/triangles tests/.libs/lt-triangles \
 	tests/.libs/pointers tests/.libs/lt-pointers \
 	tests/.libs/pbo tests/.libs/lt-pbo \

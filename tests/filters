@@ -42,3 +42,12 @@ chain checks
         flush yes
     }
 }
+
+chain showextensions
+{
+    filterset showextensions
+    filterset log
+    {
+        stderr_level 4
+    }
+}

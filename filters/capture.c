@@ -853,15 +853,14 @@ static void mark_extension(bugle_gl_extension ext, bool *marked_extensions)
 static void showextensions_print(void *marked, FILE *logf)
 {
     bool *marked_extensions;
-    bool first = true;
     bugle_gl_extension i;
 
+    fputs("Required extensions:", logf);
     marked_extensions = (bool *) marked;
     for (i = 0; i < bugle_gl_extension_count(); i++)
         if (marked_extensions[i] && !bugle_gl_extension_version(i))
         {
-            if (!first) fputc(' ', logf);
-            first = false;
+            fputc(' ', logf);
             fputs(bugle_gl_extension_name(i), logf);
         }
 }
