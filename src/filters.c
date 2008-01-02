@@ -81,12 +81,12 @@ static linked_list added_filter_sets; /* Those specified in the config, plus dep
  * based on the value of active_dirty. Both these variables are
  * protected by active_callbacks_mutex (as are the ->active flags on
  * filter-sets). If there are both activations
- * and deactivations within the same call, the order is not guaranted
+ * and deactivations within the same call, the order is not guaranteed
  * to be preserved (this may eventually be fixed). Similarly, the
  * result of bugle_filter_set_is_active will reflect the old values
  * until the end of the call.
  *
- * If a filter wishes to activate or deactivative a filter-set (its own
+ * If a filter wishes to activate or deactivate a filter-set (its own
  * or another), it should call bugle_filter_set_activate_deferred
  * or bugle_filter_set_deactivate_deferred. This causes the change to
  * happen only after the current call has completed processing (which
@@ -776,7 +776,7 @@ filter_set *bugle_filter_set_new(const filter_set_info *info)
 
     bugle_list_append(&filter_sets, s);
     /* FIXME: dirty hack. To make sure that 'log' is loaded and loaded
-     * first, make sure every filterset depends on it
+     * first, make sure every filter-set depends on it
      */
     if (strcmp(s->name, "log") != 0)
     {
