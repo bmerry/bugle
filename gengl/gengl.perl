@@ -3,163 +3,169 @@ use strict;
 use warnings;
 use Getopt::Long;
 
-my @extension_force = ("GL_EXT_texture_rectangle");
+my @extension_force = (
+    "GL_EXT_texture_rectangle",  # Doesn't exist, but ATI exposes it instead of GL_ARB_texture_rectangle
+    "GLX_VERSION_1_2"            # Isn't detected, but needed by bugle code
+);
 
-my %extension_chains =
-    ("GL_ATI_draw_buffers" => "GL_ARB_draw_buffers",
-     "GL_ATI_stencil_two_side" => "GL_EXT_stencil_two_side",
-     "GL_ARB_depth_texture" => "GL_VERSION_1_4",
-     "GL_ARB_draw_buffers" => "GL_VERSION_2_0",
-     "GL_ARB_fragment_program" => undef,
-     "GL_ARB_fragment_shader" => "GL_VERSION_2_0",
-     "GL_ARB_imaging" => undef,
-     "GL_ARB_multisample" => "GL_VERSION_1_3",
-     "GL_ARB_multitexture" => "GL_VERSION_1_3",
-     "GL_ARB_occlusion_query" => "GL_VERSION_1_5",
-     "GL_ARB_pixel_buffer_object" => "GL_VERSION_2_1",
-     "GL_ARB_point_parameters" => "GL_VERSION_1_4",
-     "GL_ARB_point_sprite" => "GL_VERSION_2_0",
-     "GL_ARB_shader_objects" => "GL_VERSION_2_0",
-     "GL_ARB_shading_language_100" => "GL_VERSION_2_0",
-     "GL_ARB_shadow" => "GL_VERSION_1_4",
-     "GL_ARB_texture_border_clamp" => "GL_VERSION_1_3",
-     "GL_ARB_texture_compression" => "GL_VERSION_1_3",
-     "GL_ARB_texture_cube_map" => "GL_VERSION_1_3",
-     "GL_ARB_texture_env_add" => "GL_VERSION_1_3",
-     "GL_ARB_texture_env_dot3" => "GL_VERSION_1_3",
-     "GL_ARB_texture_env_combine" => "GL_VERSION_1_3",
-     "GL_ARB_texture_env_crossbar" => "GL_VERSION_1_4",
-     "GL_ARB_texture_non_power_of_two" => "GL_VERSION_2_0",
-     "GL_ARB_texture_rectangle" => undef,
-     "GL_ARB_transpose_matrix" => "GL_VERSION_1_3",
-     "GL_ARB_vertex_buffer_object" => "GL_VERSION_1_5",
-     "GL_ARB_vertex_program" => undef,
-     "GL_ARB_vertex_shader" => "GL_VERSION_2_0",
-     "GL_ARB_window_pos" => "GL_VERSION_1_4",
-     "GL_EXT_bgra" => "GL_VERSION_1_2",
-     "GL_EXT_bindable_uniform" => undef,
-     "GL_EXT_blend_equation_separate" => "GL_VERSION_2_0",
-     "GL_EXT_blend_func_separate" => "GL_VERSION_1_4",
-     "GL_EXT_draw_range_elements" => "GL_VERSION_1_2",
-     "GL_EXT_fog_coord" => "GL_VERSION_1_4",
-     "GL_EXT_multi_draw_arrays" => "GL_VERSION_1_4",
-     "GL_EXT_packed_pixels" => "GL_VERSION_1_2",
-     "GL_EXT_pixel_buffer_object" => "GL_ARB_pixel_buffer_object",
-     "GL_EXT_point_parameters" => "GL_ARB_point_parameters",
-     "GL_EXT_rescale_normal" => "GL_VERSION_1_2",
-     "GL_EXT_secondary_color" => "GL_VERSION_1_4",
-     "GL_EXT_separate_specular_color" => "GL_VERSION_1_2",
-     "GL_EXT_shadow_funcs" => "GL_VERSION_1_5",
-     "GL_EXT_stencil_two_side" => "GL_VERSION_2_0",
-     "GL_EXT_stencil_wrap" => "GL_VERSION_1_4",
-     "GL_EXT_texture3D" => "GL_VERSION_1_2",
-     "GL_EXT_texture_buffer_object" => undef,
-     "GL_EXT_texture_cube_map" => "GL_ARB_texture_cube_map",
-     "GL_EXT_texture_env_combine" => "GL_ARB_texture_env_combine",
-     "GL_EXT_texture_filter_anisotropic" => undef,
-     "GL_EXT_texture_lod_bias" => "GL_VERSION_1_4",
-     "GL_EXT_texture_rectangle" => "GL_ARB_texture_rectangle",
-     "GL_EXT_texture_sRGB" => "GL_VERSION_2_1",
-     "GL_SGIS_generate_mipmap" => "GL_VERSION_1_4",
-     "GL_SGIS_texture_edge_clamp" => "GL_VERSION_1_2",
-     "GL_SGIS_texture_lod" => "GL_VERSION_1_2",
-     "GL_NV_blend_square" => "GL_VERSION_1_4",
-     "GL_NV_texture_rectangle" => "GL_EXT_texture_rectangle",
-     "GLX_ARB_get_proc_address" => "GLX_VERSION_1_4",
-     "GLX_EXT_import_context" => "GLX_VERSION_1_3",
-     "GLX_SGI_make_current_read" => "GLX_VERSION_1_3",
-     "GLX_SGIX_fbconfig" => "GLX_VERSION_1_3"
-    );
+my %extension_chains = (
+    "GL_ATI_draw_buffers" => "GL_ARB_draw_buffers",
+    "GL_ATI_stencil_two_side" => "GL_EXT_stencil_two_side",
+    "GL_ARB_depth_texture" => "GL_VERSION_1_4",
+    "GL_ARB_draw_buffers" => "GL_VERSION_2_0",
+    "GL_ARB_fragment_program" => undef,
+    "GL_ARB_fragment_shader" => "GL_VERSION_2_0",
+    "GL_ARB_imaging" => undef,
+    "GL_ARB_multisample" => "GL_VERSION_1_3",
+    "GL_ARB_multitexture" => "GL_VERSION_1_3",
+    "GL_ARB_occlusion_query" => "GL_VERSION_1_5",
+    "GL_ARB_pixel_buffer_object" => "GL_VERSION_2_1",
+    "GL_ARB_point_parameters" => "GL_VERSION_1_4",
+    "GL_ARB_point_sprite" => "GL_VERSION_2_0",
+    "GL_ARB_shader_objects" => "GL_VERSION_2_0",
+    "GL_ARB_shading_language_100" => "GL_VERSION_2_0",
+    "GL_ARB_shadow" => "GL_VERSION_1_4",
+    "GL_ARB_texture_border_clamp" => "GL_VERSION_1_3",
+    "GL_ARB_texture_compression" => "GL_VERSION_1_3",
+    "GL_ARB_texture_cube_map" => "GL_VERSION_1_3",
+    "GL_ARB_texture_env_add" => "GL_VERSION_1_3",
+    "GL_ARB_texture_env_dot3" => "GL_VERSION_1_3",
+    "GL_ARB_texture_env_combine" => "GL_VERSION_1_3",
+    "GL_ARB_texture_env_crossbar" => "GL_VERSION_1_4",
+    "GL_ARB_texture_non_power_of_two" => "GL_VERSION_2_0",
+    "GL_ARB_texture_rectangle" => undef,
+    "GL_ARB_transpose_matrix" => "GL_VERSION_1_3",
+    "GL_ARB_vertex_buffer_object" => "GL_VERSION_1_5",
+    "GL_ARB_vertex_program" => undef,
+    "GL_ARB_vertex_shader" => "GL_VERSION_2_0",
+    "GL_ARB_window_pos" => "GL_VERSION_1_4",
+    "GL_EXT_bgra" => "GL_VERSION_1_2",
+    "GL_EXT_bindable_uniform" => undef,
+    "GL_EXT_blend_equation_separate" => "GL_VERSION_2_0",
+    "GL_EXT_blend_func_separate" => "GL_VERSION_1_4",
+    "GL_EXT_draw_range_elements" => "GL_VERSION_1_2",
+    "GL_EXT_fog_coord" => "GL_VERSION_1_4",
+    "GL_EXT_multi_draw_arrays" => "GL_VERSION_1_4",
+    "GL_EXT_packed_pixels" => "GL_VERSION_1_2",
+    "GL_EXT_pixel_buffer_object" => "GL_ARB_pixel_buffer_object",
+    "GL_EXT_point_parameters" => "GL_ARB_point_parameters",
+    "GL_EXT_rescale_normal" => "GL_VERSION_1_2",
+    "GL_EXT_secondary_color" => "GL_VERSION_1_4",
+    "GL_EXT_separate_specular_color" => "GL_VERSION_1_2",
+    "GL_EXT_shadow_funcs" => "GL_VERSION_1_5",
+    "GL_EXT_stencil_two_side" => "GL_VERSION_2_0",
+    "GL_EXT_stencil_wrap" => "GL_VERSION_1_4",
+    "GL_EXT_texture3D" => "GL_VERSION_1_2",
+    "GL_EXT_texture_buffer_object" => undef,
+    "GL_EXT_texture_cube_map" => "GL_ARB_texture_cube_map",
+    "GL_EXT_texture_env_combine" => "GL_ARB_texture_env_combine",
+    "GL_EXT_texture_filter_anisotropic" => undef,
+    "GL_EXT_texture_lod_bias" => "GL_VERSION_1_4",
+    "GL_EXT_texture_rectangle" => "GL_ARB_texture_rectangle",
+    "GL_EXT_texture_sRGB" => "GL_VERSION_2_1",
+    "GL_SGIS_generate_mipmap" => "GL_VERSION_1_4",
+    "GL_SGIS_texture_edge_clamp" => "GL_VERSION_1_2",
+    "GL_SGIS_texture_lod" => "GL_VERSION_1_2",
+    "GL_NV_blend_square" => "GL_VERSION_1_4",
+    "GL_NV_texture_rectangle" => "GL_EXT_texture_rectangle",
+    "GLX_ARB_get_proc_address" => "GLX_VERSION_1_4",
+    "GLX_EXT_import_context" => "GLX_VERSION_1_3",
+    "GLX_SGI_make_current_read" => "GLX_VERSION_1_3",
+    "GLX_SGIX_fbconfig" => "GLX_VERSION_1_3"
+);
 
-my %extension_groups =
-    (# This got promoted to core from imaging subset in 1.4
-     "EXTGROUP_blend_color" => ["GL_EXT_blend_color", "GL_ARB_imaging", "GL_VERSION_1_4"],
-     # GL_ARB_vertex_program and GL_ARB_fragment_program have a lot of overlap
-     "EXTGROUP_old_program" => ["GL_ARB_vertex_program", "GL_ARB_fragment_program"],
-     # Extensions that define GL_MAX_TEXTURE_IMAGE_UNITS and GL_MAX_TEXTURE_COORDS
-     "EXTGROUP_texunits" => ["GL_ARB_fragment_program", "GL_ARB_vertex_shader", "GL_ARB_fragment_shader", "GL_VERSION_2_0"],
-     # Extensions that have GL_VERTEX_PROGRAM_POINT_SIZE and GL_VERTEX_PROGRAM_TWO_SIDE
-     "EXTGROUP_vp_options" => ["GL_ARB_vertex_program", "GL_ARB_vertex_shader", "GL_VERSION_2_0"],
-     # Extensions that define generic vertex attributes
-     "EXTGROUP_vertex_attrib" => ["GL_ARB_vertex_program", "GL_ARB_vertex_shader", "GL_VERSION_2_0"]
-    );
+my %extension_groups = (
+    # This got promoted to core from imaging subset in 1.4
+    "EXTGROUP_blend_color" => ["GL_EXT_blend_color", "GL_ARB_imaging", "GL_VERSION_1_4"],
+    # GL_ARB_vertex_program and GL_ARB_fragment_program have a lot of overlap
+    "EXTGROUP_old_program" => ["GL_ARB_vertex_program", "GL_ARB_fragment_program"],
+    # Extensions that define GL_MAX_TEXTURE_IMAGE_UNITS and GL_MAX_TEXTURE_COORDS
+    "EXTGROUP_texunits" => ["GL_ARB_fragment_program", "GL_ARB_vertex_shader", "GL_ARB_fragment_shader", "GL_VERSION_2_0"],
+    # Extensions that have GL_VERTEX_PROGRAM_POINT_SIZE and GL_VERTEX_PROGRAM_TWO_SIDE
+    "EXTGROUP_vp_options" => ["GL_ARB_vertex_program", "GL_ARB_vertex_shader", "GL_VERSION_2_0"],
+    # Extensions that define generic vertex attributes
+    "EXTGROUP_vertex_attrib" => ["GL_ARB_vertex_program", "GL_ARB_vertex_shader", "GL_VERSION_2_0"]
+);
 
-my @function_aliases =
-    (
-     'glGetProgramivNV'               => 'glGetProgramivARB',
-     'glIsProgramNV'                  => 'glIsProgramARB',
-     'glCreateShaderObjectARB'        => 'glCreateShader',
-     'glCreateProgramObjectARB'       => 'glCreateProgram',
-     'glUseProgramObjectARB'          => 'glUseProgram',
-     'glAttachObjectARB'              => 'glAttachShader',
-     'glDetachObjectARB'              => 'glDetachShader',
-     'glGetAttachedObjectsARB'        => 'glGetAttachedShaders',
-     'glXCreateContextWithConfigSGIX' => 'glXCreateNewContext',
-     'glXMakeCurrentReadSGI'          => 'glXMakeContextCurrent'
-    );
+# Aliases that are not automatically detected
+my @function_aliases = (
+    'glGetProgramivNV'               => 'glGetProgramivARB',
+    'glIsProgramNV'                  => 'glIsProgramARB',
+    'glCreateShaderObjectARB'        => 'glCreateShader',
+    'glCreateProgramObjectARB'       => 'glCreateProgram',
+    'glUseProgramObjectARB'          => 'glUseProgram',
+    'glAttachObjectARB'              => 'glAttachShader',
+    'glDetachObjectARB'              => 'glDetachShader',
+    'glGetAttachedObjectsARB'        => 'glGetAttachedShaders',
+    'glXCreateContextWithConfigSGIX' => 'glXCreateNewContext',
+    'glXMakeCurrentReadSGI'          => 'glXMakeContextCurrent'
+);
 
-my %function_non_aliases =
-    (
-     # GL_EXT_vertex_array had one extra parameter
-     "glColorPointerEXT" => 1,
-     "glEdgeFlagPointerEXT" => 1,
-     "glIndexPointerEXT" => 1,
-     "glNormalPointerEXT" => 1,
-     "glTexCoordPointerEXT" => 1,
-     "glVertexPointerEXT" => 1,
-     "glVertexAttribPointerNV" => 1,
+# Things that syntactically look like aliases, but don't work
+my %function_non_aliases = (
+    # GL_EXT_vertex_array had one extra parameter
+    "glColorPointerEXT" => 1,
+    "glEdgeFlagPointerEXT" => 1,
+    "glIndexPointerEXT" => 1,
+    "glNormalPointerEXT" => 1,
+    "glTexCoordPointerEXT" => 1,
+    "glVertexPointerEXT" => 1,
+    "glVertexAttribPointerNV" => 1,
 
-     # This takes a GLint, not a GLenum
-     "glHintPGI" => 1,
+    # This takes a GLint, not a GLenum
+    "glHintPGI" => 1,
 
-     # Takes a GLuint, not a GLenum
-     "glGetProgramStringNV" => 1,
+    # Takes a GLuint, not a GLenum
+    "glGetProgramStringNV" => 1,
 
-     # Mesa takes a colormap
-     "glXCreateGLXPixmapMESA" => 1,
+    # Mesa takes a colormap
+    "glXCreateGLXPixmapMESA" => 1,
 
-     # Are quite different from the ATI or NV versions
-     "glDrawElementArrayAPPLE" => 1,
-     "glDrawRangeElementArrayAPPLE" => 1,
-     "glVertexArrayRangeAPPLE" => 1,
-     "glFlushVertexArrayRangeAPPLE" => 1,
-     "glSetFenceAPPLE" => 1,
+    # Are quite different from the ATI or NV versions
+    "glDrawElementArrayAPPLE" => 1,
+    "glDrawRangeElementArrayAPPLE" => 1,
+    "glVertexArrayRangeAPPLE" => 1,
+    "glFlushVertexArrayRangeAPPLE" => 1,
+    "glSetFenceAPPLE" => 1,
 
-     "glXFreeMemoryMESA" => 1,
-     "glXAllocateMemoryMESA" => 1,
+    "glXFreeMemoryMESA" => 1,
+    "glXAllocateMemoryMESA" => 1,
 
-     # EXT version (newer) has extra parameters
-     "glXBindTexImageARB" => 1,
-     "glXReleaseTexImageARB" => 1,
+    # EXT version (newer) has extra parameters
+    "glXBindTexImageARB" => 1,
+    "glXReleaseTexImageARB" => 1,
 
-     # These have totally unrelated semantics to the core 2.0 version
-     # (but they should alias each other, which is handled later)
-     "glGetProgramivARB" => 1,
-     "glGetProgramivNV" => 1,
-     "glIsProgramNV" => 1,
-     "glIsProgramARB" => 1
-    );
+    # These have totally unrelated semantics to the core 2.0 version
+    # (but they should alias each other, which is handled later)
+    "glGetProgramivARB" => 1,
+    "glGetProgramivNV" => 1,
+    "glIsProgramNV" => 1,
+    "glIsProgramARB" => 1
+);
 
+# Enumerants that we don't want to be the chosen return for
+# bugle_gl_enum_name, unless there are no other options
 my $enum_bad_name_regex = qr/^(?:
-    GL_ATTRIB_ARRAY_SIZE_NV
-    |GL_ATTRIB_ARRAY_STRIDE_NV
-    |GL_ATTRIB_ARRAY_TYPE_NV
-    |GL_ATTRIB_ARRAY_POINTER_NV
-    |GL_PIXEL_COUNT_AVAILABLE_NV
-    |GL_PIXEL_COUNT_NV
-    |GL_CURRENT_OCCLUSION_QUERY_ID_NV
-    |GL_PIXEL_COUNTER_BITS_NV
-    |GL_TEXTURE_COMPONENTS
-    |GL_CURRENT_ATTRIB_NV
-    |GL_MAP._VERTEX_ATTRIB._._NV  # heavily reused by ARB_vertex_program
+GL_ATTRIB_ARRAY_SIZE_NV
+|GL_ATTRIB_ARRAY_STRIDE_NV
+|GL_ATTRIB_ARRAY_TYPE_NV
+|GL_ATTRIB_ARRAY_POINTER_NV
+|GL_PIXEL_COUNT_AVAILABLE_NV
+|GL_PIXEL_COUNT_NV
+|GL_CURRENT_OCCLUSION_QUERY_ID_NV
+|GL_PIXEL_COUNTER_BITS_NV
+|GL_TEXTURE_COMPONENTS
+|GL_CURRENT_ATTRIB_NV
+|GL_MAP._VERTEX_ATTRIB._._NV  # heavily reused by ARB_vertex_program
 
-    |GL_TRUE
-    |GL_FALSE
-    |GL_NO_ERROR
-    |GL_ZERO
-    |GL_ONE
-    )/x;
+|GL_TRUE
+|GL_FALSE
+|GL_NO_ERROR
+|GL_ZERO
+|GL_ONE
+)/x;
 
+# Things that perhaps look like enumerants, but aren't.
 # NB: this regex must not have capturing brackets, because it is used in
 # a situation where $n must not be overwritten.
 my $enum_not_name_regex = qr/^(?:
