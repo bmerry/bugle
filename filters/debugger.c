@@ -55,8 +55,14 @@
 static int in_pipe = -1, out_pipe = -1;
 static bool *break_on;
 static bool break_on_error = true, break_on_next = false;
+static bool stop_in_begin_end = false;
 static bool stopped = true;
 static uint32_t start_id = 0;
+
+static bool stoppable(void)
+{
+    return stop_in_begin_end || !bugle_in_begin_end();
+}
 
 static void send_state(const glstate *state, uint32_t id)
 {
@@ -837,6 +843,7 @@ static void process_single_command(function_call *call)
             uint32_t subtype, tex_id, shader_id, target, face, level, format, type;
             uint32_t fbo_id, buffer;
 
+            /* FIXME: check for begin/end? */
             gldb_protocol_recv_code(in_pipe, &subtype);
             switch (subtype)
             {
@@ -875,12 +882,17 @@ static void process_single_command(function_call *call)
     case REQ_ASYNC:
         if (!stopped)
         {
-            resp_str = bugle_string_io(dump_any_call_string_io, call);
-            stopped = true;
-            gldb_protocol_send_code(out_pipe, RESP_STOP);
-            gldb_protocol_send_code(out_pipe, start_id);
-            gldb_protocol_send_string(out_pipe, resp_str);
-            free(resp_str);
+            if (!stoppable())
+                break_on_next = true;
+            else
+            {
+                resp_str = bugle_string_io(dump_any_call_string_io, call);
+                stopped = true;
+                gldb_protocol_send_code(out_pipe, RESP_STOP);
+                gldb_protocol_send_code(out_pipe, start_id);
+                gldb_protocol_send_string(out_pipe, resp_str);
+                free(resp_str);
+            }
         }
         break;
     default:
@@ -941,25 +953,28 @@ static bool debugger_callback(function_call *call, const callback_data *data)
 {
     char *resp_str;
 
-    if (break_on[call->generic.id])
+    if (stoppable())
     {
-        resp_str = bugle_string_io(dump_any_call_string_io, call);
-        stopped = true;
-        break_on_next = false;
-        gldb_protocol_send_code(out_pipe, RESP_BREAK);
-        gldb_protocol_send_code(out_pipe, start_id);
-        gldb_protocol_send_string(out_pipe, resp_str);
-        free(resp_str);
-    }
-    else if (break_on_next)
-    {
-        resp_str = bugle_string_io(dump_any_call_string_io, call);
-        break_on_next = false;
-        stopped = true;
-        gldb_protocol_send_code(out_pipe, RESP_STOP);
-        gldb_protocol_send_code(out_pipe, start_id);
-        gldb_protocol_send_string(out_pipe, resp_str);
-        free(resp_str);
+        if (break_on[call->generic.id])
+        {
+            resp_str = bugle_string_io(dump_any_call_string_io, call);
+            stopped = true;
+            break_on_next = false;
+            gldb_protocol_send_code(out_pipe, RESP_BREAK);
+            gldb_protocol_send_code(out_pipe, start_id);
+            gldb_protocol_send_string(out_pipe, resp_str);
+            free(resp_str);
+        }
+        else if (break_on_next)
+        {
+            resp_str = bugle_string_io(dump_any_call_string_io, call);
+            break_on_next = false;
+            stopped = true;
+            gldb_protocol_send_code(out_pipe, RESP_STOP);
+            gldb_protocol_send_code(out_pipe, start_id);
+            gldb_protocol_send_string(out_pipe, resp_str);
+            free(resp_str);
+        }
     }
     debugger_loop(call);
     return true;
@@ -1059,5 +1074,6 @@ void bugle_initialise_filter_library(void)
     bugle_filter_set_depends("debugger", "error");
     bugle_filter_set_depends("debugger", "trackextensions");
     bugle_filter_set_depends("debugger", "trackobjects");
+    bugle_filter_set_depends("debugger", "trackbeginend");
     bugle_filter_set_renders("debugger");
 }
