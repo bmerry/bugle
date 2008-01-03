@@ -764,6 +764,7 @@ static void write_headers()
             "#include <stdlib.h>\n"
             "#include <string.h>\n"
             "#include <stddef.h>\n"   // for offsetof
+            "#include <inttypes.h>\n" // for PRIxxx
             "#include <budgie/types.h>\n"
             "#include <budgie/reflect.h>\n"
             "#include \"%s\"\n"

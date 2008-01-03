@@ -350,7 +350,7 @@ static void checks_buffer(size_t size, const void *data,
 static void checks_attribute(size_t first, size_t count,
                              const char *text, GLenum name,
                              GLenum size_name, GLint size,
-                             GLenum type_name, GLenum type,
+                             GLenum type_name, budgie_type type,
                              GLenum stride_name,
                              GLenum ptr_name, GLenum binding)
 {
@@ -374,11 +374,11 @@ static void checks_attribute(size_t first, size_t count,
                           "This is a known bug in Mesa <= 6.5.3. GL_FLOAT will be assumed.");
                 gltype = GL_FLOAT;
             }
-            type = gltype;
+            type = bugle_gl_type_to_type(gltype);
         }
         CALL(glGetIntegerv)(stride_name, &stride);
         CALL(glGetPointerv)(ptr_name, &ptr);
-        group_size = bugle_gl_type_to_size(type) * size;
+        group_size = budgie_type_size(type) * size;
         if (!stride) stride = group_size;
         cptr = (const char *) ptr;
         cptr += group_size * first;
@@ -461,28 +461,28 @@ static void checks_attributes(size_t first, size_t count)
     checks_attribute(first, count,
                      "normal array", GL_NORMAL_ARRAY,
                      0, 3,
-                     GL_NORMAL_ARRAY_TYPE, 0,
+                     GL_NORMAL_ARRAY_TYPE, NULL_TYPE,
                      GL_NORMAL_ARRAY_STRIDE,
                      GL_NORMAL_ARRAY_POINTER,
                      VBO_ENUM(GL_NORMAL_ARRAY_BUFFER_BINDING_ARB));
     checks_attribute(first, count,
                      "color array", GL_COLOR_ARRAY,
                      GL_COLOR_ARRAY_SIZE, 0,
-                     GL_COLOR_ARRAY_TYPE, 0,
+                     GL_COLOR_ARRAY_TYPE, NULL_TYPE,
                      GL_COLOR_ARRAY_STRIDE,
                      GL_COLOR_ARRAY_POINTER,
                      VBO_ENUM(GL_COLOR_ARRAY_BUFFER_BINDING_ARB));
     checks_attribute(first, count,
                      "index array", GL_INDEX_ARRAY,
                      0, 1,
-                     GL_INDEX_ARRAY_TYPE, 0,
+                     GL_INDEX_ARRAY_TYPE, NULL_TYPE,
                      GL_INDEX_ARRAY_STRIDE,
                      GL_INDEX_ARRAY_POINTER,
                      VBO_ENUM(GL_INDEX_ARRAY_BUFFER_BINDING_ARB));
     checks_attribute(first, count,
                      "edge flag array", GL_EDGE_FLAG_ARRAY,
                      0, 1,
-                     0, GL_BOOL,
+                     0, BUDGIE_TYPE_ID(9GLboolean),
                      GL_EDGE_FLAG_ARRAY_STRIDE,
                      GL_EDGE_FLAG_ARRAY_POINTER,
                      VBO_ENUM(GL_EDGE_FLAG_ARRAY_BUFFER_BINDING_ARB));

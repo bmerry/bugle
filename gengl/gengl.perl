@@ -171,6 +171,7 @@ GL_ATTRIB_ARRAY_SIZE_NV
 my $enum_not_name_regex = qr/^(?:
     GL_VERSION_[0-9_]+
     |GL_GLEXT_\w+
+    |GLX_GLXEXT_\w+
     |GL_[A-Z0-9_]+_BIT(?:_[A-Z0-9]+)?
     |GL(?:_[A-Z0-9_]+)?_ALL_[A-Z0-9_]+_BITS(?:_[A-Z0-9]+)?
     )$/x;
@@ -275,7 +276,8 @@ GetOptions('h|header=s' => \$defines, 'm|mode=s' => \$mode);
 
 while (<>)
 {
-    if (/^#ifndef (GLX?_([0-9A-Z]+)_\w+)/)
+    if (/^#ifndef (GLX?_([0-9A-Z]+)_\w+)/
+        && !/GL_GLEXT_/ && !/GLX_GLXEXT_/)
     {
         $cur_ext = $1;
         $cur_suffix = '';

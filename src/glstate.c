@@ -2836,7 +2836,7 @@ char *bugle_state_get_string(const glstate *state)
         return "<GL error>";
 
     if (wrapper.type == TYPE_Pc)
-        ans = xstrdup((const char *) wrapper.data); // bugle_string_io(dump_string_wrapper, (char *) wrapper.data);
+        ans = xstrdup((const char *) wrapper.data); /* bugle_string_io(dump_string_wrapper, (char *) wrapper.data); */
     else
         ans = bugle_string_io(dump_wrapper, &wrapper);
     free(wrapper.data);
