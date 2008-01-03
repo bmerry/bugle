@@ -1,3 +1,10 @@
+0.0.20080103
+------------
+There are a number of minor bug-fixes (see the ChangeLog), but the major
+change in this release is that the filter-set API has been stabilised and made
+available to users through installed header files. If you are interested in
+writing your own filter-sets, refer to doc/html/extending.html.
+
 0.0.20071206
 ------------
 This release has a lot of changes, but it's mostly under the hood to

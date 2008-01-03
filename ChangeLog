@@ -1,3 +1,5 @@
+0.0.20080103
+------------
 * Replace a lot of custom functionality with gnulib
 * Change bugle_list_init, bugle_hash_init, bugle_hashptr_init to take a
   destructor function instead of a boolean
