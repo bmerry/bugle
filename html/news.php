@@ -23,6 +23,21 @@ else
     <a href="screenshots.php">[Screenshots]</a>
     </p>
     <h1>BuGLe News</h1>
+    <h2>Developers invited to write their own filter-sets (3/1/2008)</h2>
+    <p>
+    There are a number of minor bug-fixes, but the major
+    change in this release is that the filter-set API has been stabilised and made
+    available to users through installed header files. If you are interested in
+    writing your own filter-sets, refer to the
+    <a href="documentation/extending.php">documentation</a>.
+    </p>
+    <p>
+    I will also be starting full-time employment in February, and I won't be
+    able to put as much effort in BuGLe as I have in the past. If anybody
+    would like to become involved in developing BuGLe, contact me and I can
+    suggest some things to work on while getting to know the way around the
+    source code.
+    </p>
     <h2>Remote debugging (6/12/2007)</h2>
     <p>
     This release has a lot of changes, but it's mostly under the hood to
