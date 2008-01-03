@@ -159,6 +159,34 @@
         </sect2>
     </sect1>
 
+    <sect1 id="extending-compiling">
+        <title>Compiling an external filter-set library</title>
+        <para>
+            At present there are no <application>aclocal</application> macros
+            to set up &bugle;, but there is a
+            <application>pkg-config</application> configuration file. Note
+            that with the default install paths for &bugle;, not all
+            <application>pkg-config</application> installations will look in
+            the right place. You might need to set <envar>PKG_CONFIG</envar>
+            to something like <filename
+                class="directory">/usr/local/lib/pkgconfig</filename>.
+        </para>
+        <para>
+            Apart from the basic <envar>CFLAGS</envar> and
+            <envar>LDFLAGS</envar> extracted from
+            <application>pkg-config</application>, you should also ensure that
+            your module is compiled with suitable flags to make it
+            thread-safe. Using <application>libtool</application> is
+            recommended, in which case you should use the
+            <option>-threadsafe</option>.
+        </para>
+        <para>
+            The installation directory can also be extracted from
+            <application>pkg-config</application>:
+        </para>
+        <screen><userinput>pkg-config --variable=filterdir bugle</userinput></screen>
+    </sect1>
+
     <sect1 id="extending-concepts">
         <title>Concepts</title>
         <sect2 id="extending-concepts-hierarchy">
