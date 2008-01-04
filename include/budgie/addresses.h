@@ -25,6 +25,18 @@
 #include <stdbool.h>
 #include <budgie/types.h>
 
+/* Determines the length of the array pointed to by a parameter. If it is
+ * not an array (e.g. non-pointer, or pointer to a single item), returns -1.
+ * Use -1 as the parameter index to query the return.
+ */
+budgie_type budgie_call_parameter_type(const generic_function_call *call, int param);
+/* Dumps one parameter from a call, with the appropriate type and length
+ * as determined by the parameters. Use -1 for the return (which must then
+ * exist).
+ */
+int budgie_call_parameter_length(const generic_function_call *call, int param);
+/* Dumps a single parameter, with appropriate type and length */
+void budgie_call_parameter_dump(const generic_function_call *call, int param, FILE *out);
 /* Dumps a call, including arguments and return. Does not include a newline */
 void budgie_dump_any_call(const generic_function_call *call, int indent, FILE *out);
 

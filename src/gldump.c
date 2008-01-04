@@ -343,11 +343,13 @@ void dump_initialise(void)
             if (s->type == TYPE_9GLboolean || s->type == TYPE_6GLenum
                 || s->length != 1) dump_table_size++;
 
+    dump_table_size += 1; /* Manual extras */
+
     dump_table = XNMALLOC(dump_table_size, dump_table_entry);
     cur = dump_table;
     for (t = all_state; *t; t++)
         for (s = *t; s->name; s++)
-            if (s->type == TYPE_9GLboolean || s->type == TYPE_6GLenum
+            if (s->type == BUDGIE_TYPE_ID(9GLboolean) || s->type == BUDGIE_TYPE_ID(6GLenum)
                 || s->length != 1)
             {
                 cur->key = s->pname;
@@ -363,6 +365,14 @@ void dump_initialise(void)
                 cur->length = (s->length == 1) ? -1 : s->length;
                 cur++;
             }
+
+    /* NB: if you update this, also update the adjustment to dump_table_size
+     * above!!!
+     */
+    cur->key = GL_AMBIENT_AND_DIFFUSE;
+    cur->type = BUDGIE_TYPE_ID(7GLfloat);
+    cur->length = 4;
+    cur++;
 
     qsort(dump_table, dump_table_size, sizeof(dump_table_entry), compare_dump_table_entry);
 }

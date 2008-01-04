@@ -37,46 +37,77 @@ static void make_indent(int indent, FILE *out)
         fputc(' ', out);
 }
 
+static const group_dump_parameter *parameter_info(const generic_function_call *call, int param)
+{
+    assert(param >= -1 && param < call->num_args);
+    if (param == -1)
+    {
+        assert(call->retn);
+        return &_budgie_group_dump_table[call->group].retn;
+    }
+    else
+        return &_budgie_group_dump_table[call->group].parameters[param];
+}
+
+budgie_type budgie_call_parameter_type(const generic_function_call *call, int param)
+{
+    const group_dump_parameter *info;
+    const void *arg;
+
+    info = parameter_info(call, param);
+    arg = (param == -1) ? call->retn : call->args[param];
+    if (info->get_type)
+        return info->get_type(call, param, arg);
+    else
+        return budgie_type_type(budgie_group_parameter_type(call->group, param), 
+                                arg);
+}
+
+int budgie_call_parameter_length(const generic_function_call *call, int param)
+{
+    const group_dump_parameter *info;
+    const void *arg;
+
+    info = parameter_info(call, param);
+    arg = (param == -1) ? call->retn : call->args[param];
+    if (info->get_length)
+        return info->get_length(call, param, arg);
+    else
+        return budgie_type_length(budgie_group_parameter_type(call->group, param), 
+                                  arg);
+}
+
+void budgie_call_parameter_dump(const generic_function_call *call, int param, FILE *out)
+{
+    const group_dump_parameter *info;
+    int length = -1;
+    const void *arg;
+
+    info = parameter_info(call, param);
+    length = budgie_call_parameter_length(call, param);
+    arg = (param == -1) ? call->retn : call->args[param];
+
+    if (!info->dumper || !info->dumper(call, param, arg, length, out))
+        budgie_dump_any_type(budgie_call_parameter_type(call, param),
+                             arg, length, out);
+}
+
 void budgie_dump_any_call(const generic_function_call *call, int indent, FILE *out)
 {
     size_t i;
-    const group_dump *data;
-    arg_dumper cur_dumper;
-    budgie_type type;
-    int length;
-    const group_dump_parameter *info;
 
     make_indent(indent, out);
     fprintf(out, "%s(", budgie_function_name(call->id));
-    data = &_budgie_group_dump_table[call->group];
-    info = &data->parameters[0];
-    for (i = 0; i < data->num_parameters; i++, info++)
+    for (i = 0; i < call->num_args; i++)
     {
         if (i) fputs(", ", out);
-        cur_dumper = info->dumper; /* custom dumper */
-        length = -1;
-        if (info->get_length) length = (*info->get_length)(call, i, call->args[i]);
-        if (!cur_dumper || !(*cur_dumper)(call, i, call->args[i], length, out))
-        {
-            type = info->type;
-            if (info->get_type) type = (*info->get_type)(call, i, call->args[i]);
-            budgie_dump_any_type(type, call->args[i], length, out);
-        }
+        budgie_call_parameter_dump(call, i, out);
     }
     fputs(")", out);
     if (call->retn)
     {
         fputs(" = ", out);
-        info = &data->retn;
-        cur_dumper = info->dumper; /* custom dumper */
-        length = -1;
-        if (info->get_length) length = (*info->get_length)(call, i, call->retn);
-        if (!cur_dumper || !(*cur_dumper)(call, -1, call->retn, length, out))
-        {
-            type = info->type;
-            if (info->get_type) type = (*info->get_type)(call, -1, call->retn);
-            budgie_dump_any_type(type, call->retn, length, out);
-        }
+        budgie_call_parameter_dump(call, -1, out);
     }
 }
 

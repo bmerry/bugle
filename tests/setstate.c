@@ -90,6 +90,14 @@ void set_texture_state()
     fprintf(ref, "trace\\.call: glDeleteTextures\\(1, %p -> { %u }\\)\n", (void *) &id, (unsigned int) id);
 }
 
+static void set_material_state()
+{
+    GLfloat col[4] = {0.0, 0.25, 0.5, 1.0};
+    glMaterialfv(GL_FRONT, GL_AMBIENT_AND_DIFFUSE, col);
+    fprintf(ref, "trace\\.call: glMaterialfv\\(GL_FRONT, GL_AMBIENT_AND_DIFFUSE, %p -> { 0, 0\.25, 0\.5, 1 }\\)\n",
+            (void *) col);
+}
+
 static void set_matrices()
 {
     GLfloat m[16] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16};
@@ -115,6 +123,7 @@ int main(int argc, char **argv)
     set_enables();
     set_client_state();
     set_texture_state();
+    set_material_state();
     set_matrices();
     return 0;
 }

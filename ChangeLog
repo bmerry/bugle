@@ -1,3 +1,7 @@
+* Fix trace of GL_AMBIENT_AND_DIFFUSE
+* Add extra reflection API for querying info about or dumping function
+  parameters
+
 0.0.20080103
 ------------
 * Replace a lot of custom functionality with gnulib

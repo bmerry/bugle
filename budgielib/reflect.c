@@ -86,6 +86,12 @@ budgie_group budgie_function_group(budgie_function id)
     return _budgie_function_table[id].group;
 }
 
+
+int budgie_group_count(void)
+{
+    return _budgie_group_count;
+}
+
 int budgie_group_parameter_count(budgie_group id)
 {
     assert(id >= 0 && id < _budgie_group_count);
@@ -110,6 +116,12 @@ budgie_group budgie_group_id(const char *name)
     budgie_function f;
     f = budgie_function_id(name);
     return f == NULL_FUNCTION ? NULL_GROUP : budgie_function_group(f);
+}
+
+
+int budgie_type_count(void)
+{
+    return _budgie_type_count;
 }
 
 budgie_type budgie_type_pointer(budgie_type type)
@@ -155,24 +167,43 @@ budgie_type budgie_type_id_nomangle(const char *name)
     return (budgie_type) (size_t) bugle_hash_get(&type_id_nomangle_map, name) - 1;
 }
 
+/* Remaps a type based on the instance. This is not expected to be used; it
+ * will be more common to remap for specific function parameters.
+ */
+budgie_type budgie_type_type(budgie_type type, const void *instance)
+{
+    if (type < 0 || type >= _budgie_type_count)
+        return type; /* Graceful degradation */
+    if (_budgie_type_table[type].get_type)
+    {
+        budgie_type new_type;
+        new_type = _budgie_type_table[type].get_type(instance);
+        if (new_type != type)
+            return budgie_type_type(new_type, instance);
+    }
+    return type;
+}
+
+int budgie_type_length(budgie_type type, const void *instance)
+{
+    type = budgie_type_type(type, instance);
+    if (type >= 0 && type < _budgie_type_count
+        && _budgie_type_table[type].get_length)
+        return _budgie_type_table[type].get_length(instance);
+    else
+        return -1;
+}
+
 void budgie_dump_any_type(budgie_type type, const void *value, int length, FILE *out)
 {
     const type_data *info;
-    budgie_type new_type;
 
+    type = budgie_type_type(type, value);
     assert(type >= 0);
+    
     info = &_budgie_type_table[type];
-    if (info->get_type) /* highly unlikely */
-    {
-        new_type = (*info->get_type)(value);
-        if (new_type != type)
-        {
-            budgie_dump_any_type(new_type, value, length, out);
-            return;
-        }
-    }
-    /* More likely e.g. for strings. Note that we don't override the length
-     * if specified, since it may come from a parameter override
+    /* Note that we don't override the length if specified, since it may come
+     * from a parameter override which would have better knowledge.
      */
     if (info->get_length && length == -1) 
         length = (*info->get_length)(value);
