@@ -122,8 +122,6 @@ my %function_non_aliases = (
     "glXCreateGLXPixmapMESA" => 1,
 
     # Are quite different from the ATI or NV versions
-    "glDrawElementArrayAPPLE" => 1,
-    "glDrawRangeElementArrayAPPLE" => 1,
     "glVertexArrayRangeAPPLE" => 1,
     "glFlushVertexArrayRangeAPPLE" => 1,
     "glSetFenceAPPLE" => 1,
@@ -140,7 +138,24 @@ my %function_non_aliases = (
     "glGetProgramivARB" => 1,
     "glGetProgramivNV" => 1,
     "glIsProgramNV" => 1,
-    "glIsProgramARB" => 1
+    "glIsProgramARB" => 1,
+
+    # grep glDrawElementArray /usr/include/GL/*
+    # /usr/include/GL/glext.h:GLAPI void APIENTRY glDrawElementArrayATI (GLenum, GLsizei);
+    # /usr/include/GL/glext.h:GLAPI void APIENTRY glDrawElementArrayAPPLE (GLenum, GLint, GLsizei);
+    # /usr/include/GL/glext.h:extern void APIENTRY glDrawElementArrayNV(GLenum mode, GLint first, GLsizei count);
+    "glDrawElementArrayATI" => 1,
+
+    # grep glDrawRangeElementArray /usr/include/GL/*
+    # /usr/include/GL/glext.h:GLAPI void APIENTRY glDrawRangeElementArrayATI (GLenum, GLuint, GLuint, GLsizei);
+    # /usr/include/GL/glext.h:GLAPI void APIENTRY glDrawRangeElementArrayAPPLE (GLenum, GLuint, GLuint, GLint, GLsizei);
+    # /usr/include/GL/glext.h:extern void APIENTRY glDrawRangeElementArrayNV(GLenum mode, GLuint start, GLuint end, GLint first, GLsizei count);
+    "glDrawRangeElementArrayATI" => 1,
+
+    # grep glXBindSwapBarrier /usr/include/GL/*
+    # /usr/include/GL/glxext.h:extern void glXBindSwapBarrierSGIX (Display *, GLXDrawable, int);
+    # /usr/include/GL/glxext.h:extern Bool glXBindSwapBarrierNV(Display *dpy, GLuint group, GLuint barrier);
+    "glXBindSwapBarrierNV" => 1,
 );
 
 # Enumerants that we don't want to be the chosen return for

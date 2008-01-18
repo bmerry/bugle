@@ -1,6 +1,8 @@
 * Fix trace of GL_AMBIENT_AND_DIFFUSE
 * Add extra reflection API for querying info about or dumping function
   parameters
+* Fix inappropriate aliasing of some extension functions when using NVIDIA
+  headers (thanks to Paul Melis for a patch).
 
 0.0.20080103
 ------------
