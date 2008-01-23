@@ -37,6 +37,7 @@
 #include "common/protocol.h"
 #include "gldb/gldb-common.h"
 #include "gldb/gldb-channels.h"
+#include "gldb/gldb-gui.h"
 #include "gldb/gldb-gui-target.h"
 #include "gldb/gldb-gui-image.h"
 #include "gldb/gldb-gui-state.h"

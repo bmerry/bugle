@@ -30,7 +30,6 @@ AC_PATH_PROG([PERL], [perl], [perl], [$srcdir/missing])
 dnl Checks for libraries
 AC_PATH_XTRA
 
-AM_PATH_GTK_2_0([2.6.0], [HAVE_GTK2_6=1], [HAVE_GTK2_6=0])
 AM_PATH_GTK_2_0([2.4.0], [HAVE_GTK=1], [HAVE_GTK=0])
 AM_PATH_GTKGLEXT_1_0([1.0.0], [HAVE_GTKGLEXT=1], [HAVE_GTKGLEXT=0])
 
@@ -138,7 +137,6 @@ AC_ARG_WITH([gtk], AC_HELP_STRING([--without-gtk], [do not build the GUI debugge
 GLDB_GUI=gldb/gldb-gui
 test $HAVE_GTK == 1 || GLDB_GUI=""
 AC_SUBST(GLDB_GUI)
-AC_DEFINE_UNQUOTED(HAVE_GTK2_6, $HAVE_GTK2_6, [non-zero when GTK+ 2.6 or later is available])
 
 AC_ARG_WITH([gtkglext], AC_HELP_STRING([--without-gtkglext], [do not use OpenGL within the GUI debugger]),
             [ test $withval = no && HAVE_GTKGLEXT=0], [])
@@ -171,7 +169,3 @@ case $ENABLE_XEVENT in
   0) echo "        X event interception: no" ;;
   1) echo "        X event interception: yes" ;;
 esac
-if [[ $HAVE_GTK = 1 ]] && [[ $HAVE_GTK2_6 = 0 ]]
-then
-  echo "        WARNING: You have a pre-2.6 GTK+. Some features will be disabled."
-fi

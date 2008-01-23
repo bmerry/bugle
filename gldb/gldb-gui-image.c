@@ -44,6 +44,7 @@
 #include <stdbool.h>
 #include "gldb/gldb-common.h"
 #include "gldb/gldb-channels.h"
+#include "gldb/gldb-gui.h"
 #include "gldb/gldb-gui-image.h"
 #include "xalloc.h"
 #include "xvasprintf.h"

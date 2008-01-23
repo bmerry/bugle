@@ -27,6 +27,19 @@
 #include <glib.h>
 #include "gldb/gldb-common.h"
 
+#if GTK_MAJOR_VERSION > 2
+# define HAVE_GTK2_6 1
+# define HAVE_GTK2_8 1
+#endif
+#if GTK_MAJOR_VERSION == 2
+# if GTK_MINOR_VERSION >= 6
+#  define HAVE_GTK2_6 1
+#  if GTK_MINOR_VERSION >= 8
+#   define HAVE_GTK2_8 1
+#  endif
+# endif
+#endif
+
 typedef struct _GldbPane GldbPane;
 typedef struct _GldbPaneClass GldbPaneClass;
 

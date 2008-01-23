@@ -3,6 +3,7 @@
   parameters
 * Fix inappropriate aliasing of some extension functions when using NVIDIA
   headers (thanks to Paul Melis for a patch).
+* Fix compilation under GTK+ < 2.8
 
 0.0.20080103
 ------------

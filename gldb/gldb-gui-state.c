@@ -443,7 +443,9 @@ static void state_save(GtkToolButton *toolbutton,
                                          GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
                                          GTK_STOCK_SAVE, GTK_RESPONSE_ACCEPT,
                                          NULL);
+#if HAVE_GTK2_8
     gtk_file_chooser_set_do_overwrite_confirmation(GTK_FILE_CHOOSER(dialog), TRUE);
+#endif
     gtk_file_chooser_set_current_name(GTK_FILE_CHOOSER(dialog), "state.xml");
     gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(dialog), xml_filter);
     gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(dialog), all_filter);
