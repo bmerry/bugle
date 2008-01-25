@@ -21,7 +21,7 @@ includebugle_HEADERS = \
 	include/bugle/hashtable.h \
 	include/bugle/linkedlist.h \
 	include/bugle/misc.h \
-        include/bugle/filters.h \
+	include/bugle/filters.h \
 	include/bugle/gldump.h \
 	include/bugle/glsl.h \
 	include/bugle/glstate.h \
@@ -36,7 +36,7 @@ includebugle_HEADERS = \
 	include/bugle/overrides.h
 includebudgie_HEADERS = \
 	include/budgie/addresses.h \
-        include/budgie/types.h \
+	include/budgie/types.h \
 	include/budgie/reflect.h \
 	include/budgie/macros.h
 nodist_includebudgie_HEADERS = \
@@ -110,7 +110,7 @@ nodist_src_libbugleutils_la_SOURCES = \
 	budgielib/defines.h budgielib/tables.c \
 	src/gltables.c src/gltables.h
 src_libbugleutils_la_LIBADD = $(LTLIBOBJS) $(LTLIBTHREAD) $(LTLIBINTL) lib/libgnu.la
-src_libbugleutils_la_LDFLAGS = -thread-safe -export-dynamic $(SYMBOLFLAGS) -version-info 4:0:0
+src_libbugleutils_la_LDFLAGS = -thread-safe -export-dynamic $(SYMBOLFLAGS) -version-info 5:0:1
 
 src_libbugle_la_SOURCES = \
 	src/confparse.y src/conflex.l src/conffile.h \
@@ -125,7 +125,7 @@ src_libbugle_la_SOURCES = \
 nodist_src_libbugle_la_SOURCES = \
 	budgielib/lib.c
 src_libbugle_la_LIBADD = $(LIBLTDL) src/libbugleutils.la -lm -lGL $(X_PRE_LIBS) $(X_LIBS) -lX11 $(X_EXTRA_LIBS) $(LTLIBTHREAD) $(LTLIBINTL) lib/libgnu.la
-src_libbugle_la_LDFLAGS = -thread-safe -export-dynamic $(SYMBOLFLAGS) -version-info 5:0:0
+src_libbugle_la_LDFLAGS = -thread-safe -export-dynamic $(SYMBOLFLAGS) -version-info 6:0:1
 
 BUDGIE_BUILT_SRCS = \
         budgielib/lib.c budgielib/tables.c \
@@ -232,7 +232,7 @@ check_PROGRAMS = \
 	tests/pointers tests/objects tests/textest tests/shadertest \
 	tests/pbo tests/interpose tests/dlopen
 dist_check_SCRIPTS = \
-        tests/errors.sh tests/misc.sh tests/queries.sh tests/setstate.sh \
+	tests/errors.sh tests/misc.sh tests/queries.sh tests/setstate.sh \
 	tests/showextensions.sh tests/pointers.sh tests/triangles.sh \
 	tests/pbo.sh tests/comparelog.sh \
 	tests/interpose.sh tests/dlopen.sh \

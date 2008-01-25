@@ -1,3 +1,9 @@
+0.0.20080123
+------------
+This is mostly a bugfix release, fixing compilation under old versions of
+GTK+ and with some NVIDIA header files. There is also some new reflection
+functionality for plugin authors.
+
 0.0.20080103
 ------------
 There are a number of minor bug-fixes (see the ChangeLog), but the major
