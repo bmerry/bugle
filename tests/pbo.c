@@ -59,7 +59,9 @@ int main(int argc, char **argv)
 
     GLeeInit();
 
-    if (!GLEE_EXT_pixel_buffer_object) return 0;
+    if (!GLEE_EXT_pixel_buffer_object
+        && !GLEE_ARB_pixel_buffer_object
+        && !GLEE_VERSION_2_1) return 0;
 
     generate_pbos();
     source_pbo();

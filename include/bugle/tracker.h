@@ -122,12 +122,17 @@ bool bugle_gl_has_extension_group(bugle_gl_extension ext);
 bool bugle_gl_has_extension2(bugle_gl_extension ext, const char *name);
 bool bugle_gl_has_extension_group2(bugle_gl_extension ext, const char *name);
 
+/* The BUGLE_ prefix is built up across several macros because using ##
+ * inhibits macro expansion.
+ */
+#define _BUGLE_GL_EXTENSION_ID(symbol, name) \
+    _BUDGIE_ID_FULL(bugle_gl_extension, bugle_gl_extension_id, BUGLE ## symbol, name)
 #define BUGLE_GL_EXTENSION_ID(ext) \
-    _BUDGIE_ID_FULL(bugle_gl_extension, bugle_gl_extension_id, BUGLE_ ## ext, #ext)
+    _BUGLE_GL_EXTENSION_ID(_ ## ext, #ext)
 #define BUGLE_GL_HAS_EXTENSION(ext) \
-    (bugle_gl_has_extension2(BUGLE_GL_EXTENSION_ID(ext), #ext))
+    (bugle_gl_has_extension2(_BUGLE_GL_EXTENSION_ID(_ ## ext, #ext), #ext))
 #define BUGLE_GL_HAS_EXTENSION_GROUP(ext) \
-    (bugle_gl_has_extension_group2(BUGLE_GL_EXTENSION_ID(ext), #ext))
+    (bugle_gl_has_extension_group2(_BUGLE_GL_EXTENSION_ID(_ ## ext, #ext), #ext))
 
 /* Used by the initialisation code */
 void trackcontext_initialise(void);

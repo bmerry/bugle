@@ -1,3 +1,6 @@
+* Fix BUGLE_GL_HAS_EXTENSION_GROUP
+* Make PBO test run with a larger choice of extensions
+
 0.0.20080123
 ------------
 * Fix trace of GL_AMBIENT_AND_DIFFUSE
