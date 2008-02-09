@@ -1,5 +1,6 @@
 * Fix BUGLE_GL_HAS_EXTENSION_GROUP
 * Make PBO test run with a larger choice of extensions
+* Fix crash when tracing glXChooseVisual
 
 0.0.20080123
 ------------

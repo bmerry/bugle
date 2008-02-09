@@ -7,7 +7,7 @@ TYPE PARAMETER glXMakeCurrent -1 TYPE_5XBool
 TYPE PARAMETER glXQueryExtension -1 TYPE_5XBool
 TYPE PARAMETER glXQueryVersion -1 TYPE_5XBool
 
-LENGTH PARAMETER glXChooseVisual 2 bugle_count_glx_attributes($$)
+LENGTH PARAMETER glXChooseVisual 2 bugle_count_glXChooseVisual_attributes($$)
 LENGTH PARAMETER glXCreate(Window|Pixmap) 3 bugle_count_glx_attributes($$)
 LENGTH PARAMETER glXCreatePbuffer 2 bugle_count_glx_attributes($$)
 LENGTH PARAMETER glXGetFBConfigs -1 ($$ ? *$2 : 0)

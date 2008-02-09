@@ -72,4 +72,10 @@ size_t bugle_texture_element_count(GLenum target,
  * by None.
  */
 int bugle_count_glx_attributes(const int *attr);
+
+/* Similar, but for glXChooseVisual for which boolean attributes are not
+ * followed by a value.
+ */
+int bugle_count_glXChooseVisual_attributes(const int *attr);
+
 #endif /* !BUGLE_SRC_GLDUMP_H */

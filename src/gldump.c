@@ -559,6 +559,28 @@ size_t bugle_texture_element_count(GLenum target,
 int bugle_count_glx_attributes(const int *attr)
 {
     int i = 0;
+    if (!attr) return 0;
     while (attr[i]) i += 2;
+    return i + 1;
+}
+
+int bugle_count_glXChooseVisual_attributes(const int *attr)
+{
+    int i = 0;
+    if (!attr) return 0;
+    while (attr[i])
+    {
+        switch (attr[i])
+        {
+        case GLX_USE_GL:
+        case GLX_RGBA:
+        case GLX_DOUBLEBUFFER:
+        case GLX_STEREO:
+            i++;
+            break;
+        default:
+            i += 2;
+        }
+    }
     return i + 1;
 }
