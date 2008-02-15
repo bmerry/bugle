@@ -125,7 +125,7 @@ src_libbugle_la_SOURCES = \
 nodist_src_libbugle_la_SOURCES = \
 	budgielib/lib.c
 src_libbugle_la_LIBADD = $(LIBLTDL) src/libbugleutils.la -lm -lGL $(X_PRE_LIBS) $(X_LIBS) -lX11 $(X_EXTRA_LIBS) $(LTLIBTHREAD) $(LTLIBINTL) lib/libgnu.la
-src_libbugle_la_LDFLAGS = -thread-safe -export-dynamic $(SYMBOLFLAGS) -version-info 6:0:1
+src_libbugle_la_LDFLAGS = -thread-safe -export-dynamic $(SYMBOLFLAGS) -version-info 6:1:1
 
 BUDGIE_BUILT_SRCS = \
         budgielib/lib.c budgielib/tables.c \

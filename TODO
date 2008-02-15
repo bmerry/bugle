@@ -37,7 +37,6 @@ gldb-gui
 
 bugle
 -----
-- fix crash with Python/FFI (https://sourceforge.net/forum/forum.php?thread_id=1929876&forum_id=380102)
 - dump backtrace on error
 - check whether all dependencies on trackextensions are listed
 - fix leak of aux contexts on glXDestroyContext
