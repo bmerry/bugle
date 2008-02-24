@@ -1045,6 +1045,7 @@ static bool debugger_initialise(filter_set *handle)
     bugle_filter_order("debugger", "invoke");
     bugle_filter_order("invoke", "debugger_error");
     bugle_filter_order("error", "debugger_error");
+    bugle_filter_order("trackobjects", "debugger_error"); /* so we don't try to query any deleted objects */
     bugle_filter_post_renders("debugger_error");
     bugle_filter_set_queries_error("debugger");
 

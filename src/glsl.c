@@ -137,4 +137,41 @@ GLint bugle_glGetAttribLocation(GLuint program, const GLcharARB *name)
     return CALL(glGetAttribLocationARB)(program, name);
 }
 
+GLint bugle_glGetHandleARB(GLenum pname)
+{
+    GLint handle;
+#ifdef GL_VERSION_2_0
+    if (BUGLE_GL_HAS_EXTENSION(GL_VERSION_2_0))
+    {
+        CALL(glGetIntegerv)(GL_CURRENT_PROGRAM, &handle);
+        return handle;
+    }
+#endif
+    return CALL(glGetHandleARB)(pname);
+}
+
+GLboolean bugle_glIsShader(GLuint shader)
+{
+    GLint type;
+#ifdef GL_VERSION_2_0
+    if (BUGLE_GL_HAS_EXTENSION(GL_VERSION_2_0))
+        return CALL(glIsShader)(shader);
+#endif
+    glGetObjectParameteriv(shader, GL_OBJECT_TYPE_ARB, type);
+    return (CALL(glGetError)() == GL_NO_ERROR
+            && type == GL_SHADER_OBJECT_ARB);
+}
+
+GLboolean bugle_glIsProgram(GLuint program)
+{
+    GLint type;
+#ifdef GL_VERSION_2_0
+    if (BUGLE_GL_HAS_EXTENSION(GL_VERSION_2_0))
+        return CALL(glIsProgram)(program);
+#endif
+    glGetObjectParameteriv(program, GL_OBJECT_TYPE_ARB, type);
+    return (CALL(glGetError)() == GL_NO_ERROR
+            && type == GL_PROGRAM_OBJECT_ARB);
+}
+
 #endif /* GL_ARB_shader_objects */

@@ -230,7 +230,7 @@ check_PROGRAMS = \
 	tests/errors tests/threads1 tests/threads2 tests/queries \
 	tests/misc tests/setstate tests/showextensions tests/triangles \
 	tests/pointers tests/objects tests/textest tests/shadertest \
-	tests/pbo tests/interpose tests/dlopen
+	tests/pbo tests/interpose tests/dlopen tests/texcomplete
 dist_check_SCRIPTS = \
 	tests/errors.sh tests/misc.sh tests/queries.sh tests/setstate.sh \
 	tests/showextensions.sh tests/pointers.sh tests/triangles.sh \
@@ -267,6 +267,8 @@ tests_textest_SOURCES = tests/textest.c glee/GLee.c glee/GLee.h
 tests_textest_LDADD = -lglut -lGLU $(GL_LIBS) $(X_PRE_LIBS) $(X_LIBS) -lX11 $(X_EXTRA_LIBS)
 tests_shadertest_SOURCES = tests/shadertest.c glee/GLee.c glee/GLee.h
 tests_shadertest_LDADD = -lglut -lGLU $(GL_LIBS) $(X_PRE_LIBS) $(X_LIBS) -lX11 $(X_EXTRA_LIBS)
+tests_texcomplete_SOURCES = tests/texcomplete.c glee/GLee.c glee/GLee.h
+tests_texcomplete_LDADD = -lglut -lGLU $(GL_LIBS) $(X_PRE_LIBS) $(X_LIBS) -lX11 $(X_EXTRA_LIBS)
 TESTS = tests/errors.sh tests/misc.sh tests/queries.sh tests/setstate.sh \
 	tests/showextensions.sh tests/triangles.sh tests/pointers.sh \
 	tests/pbo.sh tests/interpose.sh tests/dlopen.sh

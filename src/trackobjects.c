@@ -31,6 +31,7 @@
 #include <bugle/hashtable.h>
 #include <budgie/types.h>
 #include <budgie/call.h>
+#include <bugle/glsl.h>
 #include "xalloc.h"
 #include "lock.h"
 
@@ -98,11 +99,8 @@ static void trackobjects_delete_single(bugle_trackobjects_type type,
 
     lock();
     table = get_table(type);
-    if (table && bugle_begin_internal_render())
-    {
+    if (table)
         bugle_hashptr_set_int(table, object, NULL);
-        bugle_end_internal_render("trackobjects_delete_single", true);
-    }
     unlock();
 }
 
@@ -259,11 +257,30 @@ static bool trackobjects_glCreateProgramObjectARB(function_call *call, const cal
     return true;
 }
 
+/* Used for glDeleteProgram, glUseProgram, glDeleteObjectARB and
+ * glUseProgramObjectARB.
+ */
+static void trackobjects_pre_glsl_delete_program(GLuint object, const callback_data *data)
+{
+    GLint count, i;
+    GLuint *attached;
+
+    bugle_glGetProgramiv(object, GL_OBJECT_ATTACHED_OBJECTS_ARB, &count);
+    if (count)
+    {
+        attached = XNMALLOC(count, GLuint);
+        bugle_glGetAttachedShaders(object, count, NULL, attached);
+        for (i = 0; i < count; i++)
+            add_check(data->call_object, BUGLE_TRACKOBJECTS_SHADER, attached[i]);
+        free(attached);
+    }
+    add_check(data->call_object, BUGLE_TRACKOBJECTS_PROGRAM, object);
+}
+
 static bool trackobjects_pre_glDeleteObjectARB(function_call *call, const callback_data *data)
 {
     GLhandleARB object;
-    GLint type, count, i;
-    GLhandleARB *attached;
+    GLint type;
 
     if (bugle_begin_internal_render())
     {
@@ -272,16 +289,7 @@ static bool trackobjects_pre_glDeleteObjectARB(function_call *call, const callba
         switch (type)
         {
         case GL_PROGRAM_OBJECT_ARB:
-            CALL(glGetObjectParameterivARB)(object, GL_OBJECT_ATTACHED_OBJECTS_ARB, &count);
-            if (count)
-            {
-                attached = XNMALLOC(count, GLhandleARB);
-                CALL(glGetAttachedObjectsARB)(object, count, NULL, attached);
-                for (i = 0; i < count; i++)
-                    add_check(data->call_object, BUGLE_TRACKOBJECTS_SHADER, attached[i]);
-                free(attached);
-            }
-            add_check(data->call_object, BUGLE_TRACKOBJECTS_PROGRAM, object);
+            trackobjects_pre_glsl_delete_program(object, data);
             break;
         case GL_SHADER_OBJECT_ARB:
             add_check(data->call_object, BUGLE_TRACKOBJECTS_SHADER, object);
@@ -295,23 +303,13 @@ static bool trackobjects_pre_glDeleteObjectARB(function_call *call, const callba
 static bool trackobjects_pre_glUseProgramObjectARB(function_call *call, const callback_data *data)
 {
     GLhandleARB program;
-    GLhandleARB *attached;
-    GLint i, count;
 
     if (bugle_begin_internal_render())
     {
-        program = CALL(glGetHandleARB)(GL_PROGRAM_OBJECT_ARB);
+        program = bugle_glGetHandleARB(GL_PROGRAM_OBJECT_ARB);
         if (program != 0)
-        {
-            add_check(data->call_object, BUGLE_TRACKOBJECTS_PROGRAM, program);
-            CALL(glGetObjectParameterivARB)(program, GL_OBJECT_ATTACHED_OBJECTS_ARB, &count);
-            attached = XNMALLOC(count, GLhandleARB);
-            CALL(glGetAttachedObjectsARB)(program, count, NULL, attached);
-            for (i = 0; i < count; i++)
-                add_check(data->call_object, BUGLE_TRACKOBJECTS_SHADER, attached[i]);
-            free(attached);
-        }
-        bugle_end_internal_render("trackobjects_pre_glUseProgramARB", true);
+            trackobjects_pre_glsl_delete_program(program, data);
+        bugle_end_internal_render("trackobjects_pre_glUseProgramObjectARB", true);
     }
     return true;
 }
@@ -334,25 +332,14 @@ static bool trackobjects_pre_glDeleteShader(function_call *call, const callback_
 
 static bool trackobjects_pre_glDeleteProgram(function_call *call, const callback_data *data)
 {
-    GLint count, i;
-    GLuint *attached;
     GLuint object;
 
     object = *call->glDeleteProgram.arg0;
     if (bugle_begin_internal_render())
     {
-        CALL(glGetProgramiv)(object, GL_ATTACHED_SHADERS, &count);
-        if (count)
-        {
-            attached = XNMALLOC(count, GLuint);
-            CALL(glGetAttachedShaders)(object, count, NULL, attached);
-            for (i = 0; i < count; i++)
-                add_check(data->call_object, BUGLE_TRACKOBJECTS_SHADER, attached[i]);
-            free(attached);
-        }
-        bugle_end_internal_render("trackobjects_pre_DeleteProgram", true);
+        trackobjects_pre_glsl_delete_program(object, data);
+        bugle_end_internal_render("trackobjects_pre_glDeleteProgram", true);
     }
-    add_check(data->call_object, BUGLE_TRACKOBJECTS_PROGRAM, object);
     return true;
 }
 
@@ -406,23 +393,24 @@ static bool trackobjects_checks(function_call *call, const callback_data *data)
     for (i = bugle_list_head(l); i; i = bugle_list_next(i))
     {
         d = (const check_data *) bugle_list_data(i);
-        switch (d->type)
+        if (bugle_begin_internal_render())
         {
-#ifdef GL_ARB_shader_objects
-        case BUGLE_TRACKOBJECTS_SHADER:
-        case BUGLE_TRACKOBJECTS_PROGRAM:
-            if (bugle_begin_internal_render())
+            switch (d->type)
             {
-                GLint status;
-                CALL(glGetObjectParameterivARB)(d->object, GL_OBJECT_DELETE_STATUS_ARB, &status);
-                if (CALL(glGetError)() != GL_NONE)
+#ifdef GL_ARB_shader_objects
+            case BUGLE_TRACKOBJECTS_SHADER:
+                if (!bugle_glIsShader(d->object))
                     trackobjects_delete_single(d->type, d->object);
-                bugle_end_internal_render("trackobjects_checks", true);
-            }
-            break;
+                break;
+            case BUGLE_TRACKOBJECTS_PROGRAM:
+                if (!bugle_glIsProgram(d->object))
+                    trackobjects_delete_single(d->type, d->object);
+                break;
 #endif
-        default:
-            abort();
+            default:
+                abort();
+            }
+            bugle_end_internal_render("trackobjects_checks", true);
         }
     }
     return true;
@@ -539,13 +527,15 @@ void bugle_trackobjects_walk(bugle_trackobjects_type type,
     lock();
     table = get_table(type);
     for (i = bugle_hashptr_begin(table); i; i = bugle_hashptr_next(table, i))
-        count++;
+        if (i->value)
+            count++;
     keyvalues = (size_t (*)[2]) xnmalloc(count, sizeof(size_t [2]));
     for (i = bugle_hashptr_begin(table), j = 0; i; i = bugle_hashptr_next(table, i), j++)
-    {
-        keyvalues[j][0] = (size_t) i->key;
-        keyvalues[j][1] = (size_t) i->value;
-    }
+        if (i->value)
+        {
+            keyvalues[j][0] = (size_t) i->key;
+            keyvalues[j][1] = (size_t) i->value;
+        }
     qsort(keyvalues, count, 2 * sizeof(size_t), cmp_size_t);
     for (j = 0; j < count; j++)
         (*walker)(keyvalues[j][0], keyvalues[j][1], data);

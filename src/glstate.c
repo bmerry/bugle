@@ -2607,16 +2607,19 @@ void bugle_state_get_raw(const glstate *state, bugle_state_raw *wrapper)
         }
         break;
     case STATE_MODE_SHADER_INFO_LOG:
+        max_length = 1;
         bugle_glGetShaderiv(state->object, GL_OBJECT_INFO_LOG_LENGTH_ARB, &max_length);
         str = XNMALLOC(max_length, GLcharARB);
         bugle_glGetShaderInfoLog(state->object, max_length, &length, (GLcharARB *) str);
         break;
     case STATE_MODE_PROGRAM_INFO_LOG:
+        max_length = 1;
         bugle_glGetProgramiv(state->object, GL_OBJECT_INFO_LOG_LENGTH_ARB, &max_length);
         str = XNMALLOC(max_length, GLcharARB);
         bugle_glGetProgramInfoLog(state->object, max_length, &length, (GLcharARB *) str);
         break;
     case STATE_MODE_SHADER_SOURCE:
+        max_length = 1;
         bugle_glGetShaderiv(state->object, GL_OBJECT_SHADER_SOURCE_LENGTH_ARB, &max_length);
         str = XNMALLOC(max_length, GLcharARB);
         bugle_glGetShaderSource(state->object, max_length, &length, (GLcharARB *) str);
@@ -2643,6 +2646,7 @@ void bugle_state_get_raw(const glstate *state, bugle_state_raw *wrapper)
         {
             GLuint *attached;
 
+            max_length = 1;
             bugle_glGetProgramiv(state->object, GL_OBJECT_ATTACHED_OBJECTS_ARB, &max_length);
             attached = XNMALLOC(max_length, GLuint);
             bugle_glGetAttachedShaders(state->object, max_length, NULL, attached);

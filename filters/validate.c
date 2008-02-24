@@ -30,6 +30,7 @@
 #include <errno.h>
 #include <assert.h>
 #include <GL/gl.h>
+#include <GL/glext.h>
 #include <bugle/filters.h>
 #include <bugle/glutils.h>
 #include <bugle/gltypes.h>
@@ -37,6 +38,7 @@
 #include <bugle/tracker.h>
 #include <bugle/log.h>
 #include <bugle/glreflect.h>
+#include <bugle/glsl.h>
 #include "common/threads.h"
 #include <budgie/addresses.h>
 #include <budgie/types.h>
@@ -254,6 +256,210 @@ static bool unwindstack_initialise(filter_set *handle)
     bugle_filter_order("invoke", "unwindstack_post");
     bugle_filter_order("unwindstack_pre", "invoke");
     return true;
+}
+
+static void checks_texture_complete_fail(int unit, GLenum target, const char *reason)
+{
+    const char *target_name;
+
+    target_name = bugle_gl_enum_name(target);
+    if (!target_name) target_name = "<unknown target>";
+    bugle_log_printf("checks", "texture", BUGLE_LOG_NOTICE,
+                     "GL_TEXTURE%d / %s: incomplete texture (%s)",
+                     unit, target_name, reason);
+}
+
+/* Tests whether the texture bound to the given target is complete, and
+ * prints a warning if not. It is assumed that we are already inside
+ * bugle_begin_internal_render. The texture unit is a number from 0, not
+ * an enumerant.
+ */
+static void checks_texture_complete(int unit, GLenum target)
+{
+    GLenum dim_enum[3] = {0, 0, 0};
+    int d, dims = 0;
+    GLint min_filter, base, max;
+    GLint lvl;
+    GLint sizes[3] = {-1, -1, -1};
+    GLint border, format;
+    GLint old_unit = 0;
+
+#ifdef GL_ARB_multitexture
+    if (BUGLE_GL_HAS_EXTENSION_GROUP(GL_ARB_multitexture))
+    {
+        CALL(glGetIntegerv)(GL_ACTIVE_TEXTURE_ARB, &old_unit);
+        CALL(glActiveTextureARB)(GL_TEXTURE0_ARB + unit);
+    }
+#endif
+    CALL(glGetTexParameteriv)(target, GL_TEXTURE_MIN_FILTER, &min_filter);
+    CALL(glGetTexParameteriv)(target, GL_TEXTURE_BASE_LEVEL, &base);
+    CALL(glGetTexParameteriv)(target, GL_TEXTURE_MAX_LEVEL, &max);
+
+    if (base > max)
+    {
+        checks_texture_complete_fail(unit, target, "base > max");
+        goto cleanup;
+    }
+
+    switch (target)
+    {
+#ifdef GL_EXT_texture_cube_map
+    case GL_TEXTURE_CUBE_MAP_EXT:
+        /* FIXME: fill in */
+        goto cleanup;
+#endif
+#ifdef GL_EXT_texture3D
+    case GL_TEXTURE_3D_EXT:
+        dim_enum[2] = GL_TEXTURE_DEPTH_EXT;
+        dims++;
+        /* fall through */
+#endif
+    case GL_TEXTURE_2D:
+#ifdef GL_NV_texture_rectangle
+    case GL_TEXTURE_RECTANGLE_NV:
+#endif
+        dim_enum[1] = GL_TEXTURE_HEIGHT;
+        dims++;
+        /* fall through */
+    case GL_TEXTURE_1D:
+        dim_enum[0] = GL_TEXTURE_WIDTH;
+        dims++;
+        /* fall through */
+        break;
+    default:
+        goto cleanup; /* unknown texture type, don't try to guess */
+    }
+
+    for (d = 0; d < dims; d++)
+    {
+        CALL(glGetTexLevelParameteriv)(target, base, dim_enum[d], &sizes[d]);
+        if (sizes[d] <= 0)
+        {
+            checks_texture_complete_fail(unit, target, 
+                                         "base level does not have positive dimensions");
+            goto cleanup;
+        }
+    }
+
+    switch (min_filter)
+    {
+    case GL_NEAREST:
+    case GL_LINEAR:
+        goto cleanup;
+    }
+
+    CALL(glGetTexLevelParameteriv)(target, base, GL_TEXTURE_BORDER, &border);
+    CALL(glGetTexLevelParameteriv)(target, base, GL_TEXTURE_INTERNAL_FORMAT, &format);
+    for (lvl = base + 1; lvl <= max; lvl++)
+    {
+        GLint lformat, lborder;
+        bool more = false;
+        for (d = 0; d < dims; d++)
+            if (sizes[d] > 1)
+            {
+                more = true;
+                sizes[d] /= 2;
+            }
+        if (!more) break;
+        for (d = 0; d < dims; d++)
+        {
+            GLint size;
+            CALL(glGetTexLevelParameteriv)(target, lvl, dim_enum[d], &size);
+            if (size <= 0)
+            {
+                checks_texture_complete_fail(unit, target, 
+                                             "missing image in mipmap sequence");
+                goto cleanup;
+            }
+            if (size != sizes[d])
+            {
+                checks_texture_complete_fail(unit, target,
+                                             "incorrect size in mipmap sequence");
+                goto cleanup;
+            }
+        }
+        CALL(glGetTexLevelParameteriv)(target, lvl, GL_TEXTURE_INTERNAL_FORMAT, &lformat);
+        CALL(glGetTexLevelParameteriv)(target, lvl, GL_TEXTURE_BORDER, &lborder);
+        if (format != lformat)
+        {
+            checks_texture_complete_fail(unit, target,
+                                         "inconsistent internal formats");
+            goto cleanup;
+        }
+        if (border != lborder)
+        {
+            checks_texture_complete_fail(unit, target,
+                                         "inconsistent borders");
+            goto cleanup;
+        }
+    }
+
+cleanup:
+    ; /* make sure there is a statement here even if the #ifdef fails */
+#ifdef GL_ARB_multitexture
+    CALL(glActiveTextureARB)(old_unit);
+#endif
+}
+
+static void checks_completeness()
+{
+    if (bugle_begin_internal_render())
+    {
+        GLint num_textures = 1;
+        if (0)
+            ; /* nop, just to faciliate the "else if" cascade */
+#ifdef GL_ARB_fragment_program
+        else if (BUGLE_GL_HAS_EXTENSION_GROUP(BUGLE_EXTGROUP_texunits))
+            CALL(glGetIntegerv)(GL_MAX_TEXTURE_IMAGE_UNITS_ARB, &num_textures);
+#endif
+#ifdef GL_ARB_multitexture
+        else if (BUGLE_GL_HAS_EXTENSION_GROUP(GL_ARB_multitexture))
+            CALL(glGetIntegerv)(GL_MAX_TEXTURE_UNITS_ARB, &num_textures);
+#endif
+
+#ifdef GL_ARB_shader_objects
+        if (BUGLE_GL_HAS_EXTENSION_GROUP(GL_ARB_shader_objects))
+        {
+            GLuint program;
+            GLint num_uniforms, u;
+            GLenum type;
+            GLint size, length, loc, unit;
+            GLchar *name;
+            GLint target;
+            program = bugle_glGetHandleARB(GL_PROGRAM_OBJECT_ARB);
+            if (program)
+            {
+                bugle_glGetProgramiv(program, GL_OBJECT_ACTIVE_UNIFORMS_ARB, &num_uniforms);
+                bugle_glGetProgramiv(program, GL_OBJECT_ACTIVE_UNIFORM_MAX_LENGTH_ARB, &length);
+                name = xcharalloc(length + 1);
+                for (u = 0; u < num_uniforms; u++)
+                {
+                    bugle_glGetActiveUniform(program, u, length + 1, NULL, &size, &type, name);
+                    target = 0;
+                    switch (type)
+                    {
+                    case GL_SAMPLER_1D_ARB:        target = GL_TEXTURE_1D; break;
+                    case GL_SAMPLER_2D_ARB:        target = GL_TEXTURE_2D; break;
+                    case GL_SAMPLER_3D_ARB:        target = GL_TEXTURE_3D; break;
+                    case GL_SAMPLER_CUBE_ARB:      target = GL_TEXTURE_CUBE_MAP_EXT; break;
+                    case GL_SAMPLER_1D_SHADOW_ARB: target = GL_TEXTURE_1D; break;
+                    case GL_SAMPLER_2D_SHADOW_ARB: target = GL_TEXTURE_2D; break;
+                    case GL_SAMPLER_2D_RECT_ARB:   target = GL_TEXTURE_RECTANGLE_ARB; break;
+                    case GL_SAMPLER_2D_RECT_SHADOW_ARB: target = GL_TEXTURE_RECTANGLE_ARB; break;
+                    }
+                    if (target)
+                    {
+                        loc = bugle_glGetUniformLocation(program, name);
+                        bugle_glGetUniformiv(program, loc, &unit);
+                        checks_texture_complete(unit, target);
+                    }
+                }
+                free(name);
+            }
+        }
+#endif
+        bugle_end_internal_render("checks_completeness", true);
+    }
 }
 
 /* This is set to some description of the thing being tested, and if it
@@ -645,6 +851,7 @@ static bool checks_glDrawArrays(function_call *call, const callback_data *data)
         return false;
     }
 
+    checks_completeness();
     if (CHECKS_START())
     {
         checks_pointer_message("glDrawArrays");
@@ -659,6 +866,7 @@ static bool checks_glDrawArrays(function_call *call, const callback_data *data)
 
 static bool checks_glDrawElements(function_call *call, const callback_data *data)
 {
+    checks_completeness();
     if (CHECKS_START())
     {
         checks_pointer_message("glDrawElements");
@@ -687,6 +895,7 @@ static bool checks_glDrawElements(function_call *call, const callback_data *data
 #ifdef GL_EXT_draw_range_elements
 static bool checks_glDrawRangeElements(function_call *call, const callback_data *data)
 {
+    checks_completeness();
     if (CHECKS_START())
     {
         checks_pointer_message("glDrawRangeElements");
@@ -728,6 +937,7 @@ static bool checks_glDrawRangeElements(function_call *call, const callback_data 
 #ifdef GL_EXT_multi_draw_arrays
 static bool checks_glMultiDrawArrays(function_call *call, const callback_data *data)
 {
+    checks_completeness();
     if (CHECKS_START())
     {
         checks_pointer_message("glMultiDrawArrays");
@@ -757,6 +967,7 @@ static bool checks_glMultiDrawArrays(function_call *call, const callback_data *d
 
 static bool checks_glMultiDrawElements(function_call *call, const callback_data *data)
 {
+    checks_completeness();
     if (CHECKS_START())
     {
         checks_pointer_message("glMultiDrawElements");

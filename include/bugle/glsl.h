@@ -39,6 +39,9 @@ void bugle_glGetUniformfv(GLuint program, GLint location, GLfloat *params);
 void bugle_glGetUniformiv(GLuint program, GLint location, GLint *params);
 GLint bugle_glGetUniformLocation(GLuint program, const GLcharARB *name);
 GLint bugle_glGetAttribLocation(GLuint program, const GLcharARB *name);
+GLint bugle_glGetHandleARB(GLenum pname);
+GLboolean bugle_glIsShader(GLuint shader);
+GLboolean bugle_glIsProgram(GLuint program);
 #endif /* GL_ARB_shader_objects */
 
 #endif /* !BUGLE_SRC_GLSL_H */
