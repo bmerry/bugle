@@ -28,9 +28,7 @@
 #ifndef GETTEXT_PACKAGE
 # define GETTEXT_PACKAGE "bugle00"
 #endif
-#include "glee/GLee.h"
-#include <GL/gl.h>
-#include <GL/glext.h>
+#include <GL/glew.h>
 #include <gtk/gtkgl.h>
 #include <gtk/gtk.h>
 #include <glib.h>

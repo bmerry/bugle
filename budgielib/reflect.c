@@ -32,7 +32,7 @@
 static hash_table function_id_map;
 static hash_table type_id_map;
 static hash_table type_id_nomangle_map;
-gl_once_define(static, reflect_once);
+gl_once_define(static, reflect_once)
 
 static void reflect_shutdown(void)
 {

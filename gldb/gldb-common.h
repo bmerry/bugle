@@ -28,6 +28,7 @@
 #include <unistd.h>
 #include <stdbool.h>
 #include <bugle/linkedlist.h>
+#include <budgie/basictypes.h>
 
 #if HAVE_READLINE && !HAVE_RL_COMPLETION_MATCHES
 # define rl_completion_matches completion_matches
@@ -81,7 +82,7 @@ typedef struct
     char *name;
     GLint numeric_name;
     GLenum enum_name;
-    int type;   /* types.h and GLee.h are incompatible, hence not budgie_type */
+    budgie_type type;
     int length;
     void *data;
     linked_list children;

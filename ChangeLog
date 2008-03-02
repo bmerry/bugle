@@ -4,6 +4,7 @@
 * Change ifdef tests for GL_EXT_texture_cube_map to GL_ARB_texture_cube_map,
   since the former isn't defined by glext.h
 * Force current version info on glXGetCurrentDisplay
+* Convert from inlined GLEE to library GLEW
 
 0.0.20080215
 ------------

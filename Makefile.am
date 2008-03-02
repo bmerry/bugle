@@ -36,6 +36,7 @@ includebugle_HEADERS = \
 	include/bugle/overrides.h
 includebudgie_HEADERS = \
 	include/budgie/addresses.h \
+	include/budgie/basictypes.h \
 	include/budgie/types.h \
 	include/budgie/reflect.h \
 	include/budgie/macros.h
@@ -78,11 +79,7 @@ gldb_gldb_gui_SOURCES = gldb/gldb-gui.c gldb/gldb-gui.h \
 	gldb/gldb-gui-breakpoint.c gldb/gldb-gui-breakpoint.h \
 	gldb/gldb-common.c gldb/gldb-common.h \
 	gldb/gldb-channels.c gldb/gldb-channels.h
-if HAVE_GTKGLEXT
-  gldb_gldb_gui_SOURCES += glee/GLee.c glee/GLee.h
-endif
-EXTRA_gldb_gldb_gui_SOURCES = glee/GLee.c glee/GLee.h
-gldb_gldb_gui_LDADD = src/libbugleutils.la -lm $(GTKGLEXT_LIBS) $(GTK_LIBS) $(LTLIBINTL) lib/libgnu.la
+gldb_gldb_gui_LDADD = src/libbugleutils.la -lm $(GTKGLEXT_LIBS) $(GLEW_LIBS) $(GTK_LIBS) $(LTLIBINTL) lib/libgnu.la
 gldb_gldb_gui_LDFLAGS = -thread-safe
 gldb_gldb_gui_CFLAGS = $(GTKGLEXT_CFLAGS) $(GTK_CFLAGS)
 
@@ -239,36 +236,36 @@ dist_check_SCRIPTS = \
 	tests/comparelog.perl
 tests_errors_SOURCES = tests/errors.c
 tests_errors_LDADD = -lglut -lGLU $(GL_LIBS) $(X_PRE_LIBS) $(X_LIBS) -lX11 $(X_EXTRA_LIBS)
-tests_pointers_SOURCES = tests/pointers.c glee/GLee.c glee/GLee.h
-tests_pointers_LDADD = -lglut -lGLU $(GL_LIBS) $(X_PRE_LIBS) $(X_LIBS) -lX11 $(X_EXTRA_LIBS)
-tests_pbo_SOURCES = tests/pbo.c glee/GLee.c glee/GLee.h
-tests_pbo_LDADD = -lglut -lGLU $(GL_LIBS) $(X_PRE_LIBS) $(X_LIBS) -lX11 $(X_EXTRA_LIBS)
+tests_pointers_SOURCES = tests/pointers.c
+tests_pointers_LDADD = $(GLEW_LIBS) -lglut -lGLU $(GL_LIBS) $(X_PRE_LIBS) $(X_LIBS) -lX11 $(X_EXTRA_LIBS)
+tests_pbo_SOURCES = tests/pbo.c
+tests_pbo_LDADD = $(GLEW_LIBS) -lglut -lGLU $(GL_LIBS) $(X_PRE_LIBS) $(X_LIBS) -lX11 $(X_EXTRA_LIBS)
 tests_threads1_SOURCES = tests/threads1.c
 tests_threads1_LDADD = $(GL_LIBS) $(X_PRE_LIBS) $(X_LIBS) $(X_EXTRA_LIBS) -lX11 $(LIBMULTITHREAD)
 tests_threads2_SOURCES = tests/threads2.c
 tests_threads2_LDADD = $(GL_LIBS) $(X_PRE_LIBS) $(X_LIBS) $(X_EXTRA_LIBS) -lX11 -lpthread $(LIBMULTITHREAD)
-tests_queries_SOURCES = tests/queries.c glee/GLee.c glee/GLee.h
-tests_queries_LDADD = -lglut -lGLU $(GL_LIBS) $(X_PRE_LIBS) $(X_LIBS) -lX11 $(X_EXTRA_LIBS)
-tests_triangles_SOURCES = tests/triangles.c glee/GLee.c glee/GLee.h
-tests_triangles_LDADD = -lglut -lGLU $(GL_LIBS) $(X_PRE_LIBS) $(X_LIBS) -lX11 $(X_EXTRA_LIBS)
+tests_queries_SOURCES = tests/queries.c
+tests_queries_LDADD = $(GLEW_LIBS) -lglut -lGLU $(GL_LIBS) $(X_PRE_LIBS) $(X_LIBS) -lX11 $(X_EXTRA_LIBS)
+tests_triangles_SOURCES = tests/triangles.c
+tests_triangles_LDADD = $(GLEW_LIBS) -lglut -lGLU $(GL_LIBS) $(X_PRE_LIBS) $(X_LIBS) -lX11 $(X_EXTRA_LIBS)
 tests_misc_SOURCES = tests/misc.c
 tests_misc_LDADD = -lglut -lGLU $(GL_LIBS) $(X_PRE_LIBS) $(X_LIBS) -lX11 $(X_EXTRA_LIBS)
 tests_interpose_SOURCES = tests/interpose.c
 tests_interpose_LDADD = -lglut -lGLU $(GL_LIBS) $(X_PRE_LIBS) $(X_LIBS) -lX11 $(X_EXTRA_LIBS)
 tests_dlopen_SOURCES = tests/dlopen.c
 tests_dlopen_LDADD = $(GL_LIBS) $(X_PRE_LIBS) $(X_LIBS) -lX11 $(X_EXTRA_LIBS)
-tests_setstate_SOURCES = tests/setstate.c glee/GLee.c glee/GLee.h
-tests_setstate_LDADD = src/libbugle.la -lglut -lGLU $(GL_LIBS) $(X_PRE_LIBS) $(X_LIBS) -lX11 $(X_EXTRA_LIBS)
-tests_showextensions_SOURCES = tests/showextensions.c glee/GLee.c glee/GLee.h
-tests_showextensions_LDADD = src/libbugle.la -lglut -lGLU $(GL_LIBS) $(X_PRE_LIBS) $(X_LIBS) -lX11 $(X_EXTRA_LIBS)
-tests_objects_SOURCES = tests/objects.c glee/GLee.c glee/GLee.h
-tests_objects_LDADD = -lglut -lGLU $(GL_LIBS) $(X_PRE_LIBS) $(X_LIBS) -lX11 $(X_EXTRA_LIBS)
-tests_textest_SOURCES = tests/textest.c glee/GLee.c glee/GLee.h
-tests_textest_LDADD = -lglut -lGLU $(GL_LIBS) $(X_PRE_LIBS) $(X_LIBS) -lX11 $(X_EXTRA_LIBS)
-tests_shadertest_SOURCES = tests/shadertest.c glee/GLee.c glee/GLee.h
-tests_shadertest_LDADD = -lglut -lGLU $(GL_LIBS) $(X_PRE_LIBS) $(X_LIBS) -lX11 $(X_EXTRA_LIBS)
-tests_texcomplete_SOURCES = tests/texcomplete.c glee/GLee.c glee/GLee.h
-tests_texcomplete_LDADD = -lglut -lGLU $(GL_LIBS) $(X_PRE_LIBS) $(X_LIBS) -lX11 $(X_EXTRA_LIBS)
+tests_setstate_SOURCES = tests/setstate.c
+tests_setstate_LDADD = $(GLEW_LIBS) -lglut -lGLU $(GL_LIBS) $(X_PRE_LIBS) $(X_LIBS) -lX11 $(X_EXTRA_LIBS)
+tests_showextensions_SOURCES = tests/showextensions.c
+tests_showextensions_LDADD = $(GLEW_LIBS) -lglut -lGLU $(GL_LIBS) $(X_PRE_LIBS) $(X_LIBS) -lX11 $(X_EXTRA_LIBS)
+tests_objects_SOURCES = tests/objects.c
+tests_objects_LDADD = $(GLEW_LIBS) -lglut -lGLU $(GL_LIBS) $(X_PRE_LIBS) $(X_LIBS) -lX11 $(X_EXTRA_LIBS)
+tests_textest_SOURCES = tests/textest.c
+tests_textest_LDADD = $(GLEW_LIBS) -lglut -lGLU $(GL_LIBS) $(X_PRE_LIBS) $(X_LIBS) -lX11 $(X_EXTRA_LIBS)
+tests_shadertest_SOURCES = tests/shadertest.c
+tests_shadertest_LDADD = $(GLEW_LIBS) -lglut -lGLU $(GL_LIBS) $(X_PRE_LIBS) $(X_LIBS) -lX11 $(X_EXTRA_LIBS)
+tests_texcomplete_SOURCES = tests/texcomplete.c
+tests_texcomplete_LDADD = $(GLEW_LIBS) -lglut -lGLU $(GL_LIBS) $(X_PRE_LIBS) $(X_LIBS) -lX11 $(X_EXTRA_LIBS)
 TESTS = tests/errors.sh tests/misc.sh tests/queries.sh tests/setstate.sh \
 	tests/showextensions.sh tests/triangles.sh tests/pointers.sh \
 	tests/pbo.sh tests/interpose.sh tests/dlopen.sh
@@ -280,7 +277,6 @@ EXTRA_DIST = gl.bc.in bugle.pc.in $(BCFILES) src/data/gl.c \
 	doc/filters.html doc/locks.txt \
 	doc/protocol.txt doc/extensions.txt \
 	doc/examples/filters doc/examples/statistics \
-	glee/readme.txt \
 	gl2ps/TODO gl2ps/COPYING.GL2PS gl2ps/COPYING.LGPL gl2ps/gl2ps.pdf \
 	gl2ps/gl2psTestSimple.c gl2ps/gl2psTest.c \
 	tests/filters tests/statistics \

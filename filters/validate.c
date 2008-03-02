@@ -526,7 +526,7 @@ static const char *checks_error;
 static int checks_error_attribute;  /* generic attribute number for error */
 static bool checks_error_vbo;
 static sigjmp_buf checks_buf;
-gl_lock_define_initialized(static, checks_mutex);
+gl_lock_define_initialized(static, checks_mutex)
 
 static void checks_sigsegv_handler(int sig)
 {

@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "glee/GLee.h"
+#include <GL/glew.h>
 #include <GL/glut.h>
 
 static void display(void)
@@ -98,7 +98,7 @@ int main(int argc, char **argv)
     glutInitWindowSize(640, 480);
     glutInitDisplayMode(GLUT_RGBA | GLUT_DOUBLE | GLUT_DEPTH);
     glutCreateWindow("Shader demo");
-    GLeeInit();
+    glewInit();
     glutDisplayFunc(display);
     glutReshapeFunc(reshape);
     glutIdleFunc(idle);

@@ -6,7 +6,7 @@
 # include <config.h>
 #endif
 #define _POSIX_SOURCE
-#include "glee/GLee.h"
+#include <GL/glew.h>
 #include <GL/gl.h>
 #include <GL/glext.h>
 #include <GL/glx.h>
@@ -66,7 +66,7 @@ static void triangles_draw_range_elements(GLenum mode, int count)
 
     glVertexPointer(GL_FLOAT, 3, 0, float_data);
 #ifdef GL_EXT_draw_range_elements
-    if (GLEE_EXT_draw_range_elements)
+    if (GLEW_EXT_draw_range_elements)
     {
         glDrawRangeElementsEXT(mode, 0, 5, 6, GL_UNSIGNED_SHORT, indices);
         fprintf(ref, "logstats\\.triangles per frame: %d triangles per frame\n", count);
@@ -100,7 +100,7 @@ int main(int argc, char **argv)
     glutInitDisplayMode(GLUT_RGBA | GLUT_DOUBLE | GLUT_DEPTH);
     glutInitWindowSize(300, 300);
     glutCreateWindow("triangle count test");
-    GLeeInit();
+    glewInit();
 
     glutSwapBuffers(); /* No counts on first frame */
     run(triangles_immediate);

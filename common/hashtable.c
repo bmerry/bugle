@@ -39,7 +39,7 @@ static bool is_prime(int x)
     return true;
 }
 
-gl_once_define(static, hash_once);
+gl_once_define(static, hash_once)
 
 static void hash_initialise(void)
 {

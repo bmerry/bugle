@@ -52,7 +52,7 @@ object_class *bugle_namespace_class;
 static hashptr_table context_objects, namespace_objects;
 static hashptr_table initial_values;
 static object_view trackcontext_view;
-gl_lock_define_initialized(static, context_mutex);
+gl_lock_define_initialized(static, context_mutex)
 
 typedef struct
 {

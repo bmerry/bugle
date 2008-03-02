@@ -4,7 +4,7 @@
 # include <config.h>
 #endif
 #define _POSIX_SOURCE
-#include <glee/GLee.h>
+#include <GL/glew.h>
 #include <GL/glut.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -20,9 +20,9 @@ int main(int argc, char **argv)
     glutInitDisplayMode(GLUT_RGBA | GLUT_DOUBLE | GLUT_DEPTH);
     glutInitWindowSize(300, 300);
     glutCreateWindow("extension tester");
-    GLeeInit();
+    glewInit();
 
-    if (!GLEE_VERSION_1_2 || !GLEE_ARB_texture_cube_map)
+    if (!GLEW_VERSION_1_2 || !GLEW_ARB_texture_cube_map)
     {
         fclose(ref);
         return 0;  /* Need a minimum level of driver support to do a decent test */

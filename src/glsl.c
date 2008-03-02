@@ -157,7 +157,7 @@ GLboolean bugle_glIsShader(GLuint shader)
     if (BUGLE_GL_HAS_EXTENSION(GL_VERSION_2_0))
         return CALL(glIsShader)(shader);
 #endif
-    CALL(glGetObjectParameterivARB)(shader, GL_OBJECT_TYPE_ARB, type);
+    CALL(glGetObjectParameterivARB)(shader, GL_OBJECT_TYPE_ARB, &type);
     return (CALL(glGetError)() == GL_NO_ERROR
             && type == GL_SHADER_OBJECT_ARB);
 }
@@ -169,7 +169,7 @@ GLboolean bugle_glIsProgram(GLuint program)
     if (BUGLE_GL_HAS_EXTENSION(GL_VERSION_2_0))
         return CALL(glIsProgram)(program);
 #endif
-    CALL(glGetObjectParameterivARB)(program, GL_OBJECT_TYPE_ARB, type);
+    CALL(glGetObjectParameterivARB)(program, GL_OBJECT_TYPE_ARB, &type);
     return (CALL(glGetError)() == GL_NO_ERROR
             && type == GL_PROGRAM_OBJECT_ARB);
 }

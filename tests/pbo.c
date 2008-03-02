@@ -5,7 +5,7 @@
 #if HAVE_CONFIG_H
 # include <config.h>
 #endif
-#include "glee/GLee.h"
+#include <GL/glew.h>
 #include <GL/glut.h>
 #include <GL/glext.h>
 #include <stdlib.h>
@@ -57,11 +57,11 @@ int main(int argc, char **argv)
     glutInitWindowSize(300, 300);
     glutCreateWindow("object generator");
 
-    GLeeInit();
+    glewInit();
 
-    if (!GLEE_EXT_pixel_buffer_object
-        && !GLEE_ARB_pixel_buffer_object
-        && !GLEE_VERSION_2_1) return 0;
+    if (!GLEW_EXT_pixel_buffer_object
+        && !GLEW_ARB_pixel_buffer_object
+        && !GLEW_VERSION_2_1) return 0;
 
     generate_pbos();
     source_pbo();

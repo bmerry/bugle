@@ -7,9 +7,6 @@ gcc 3.4.0, which can be obtained from http://gcc.gnu.org.
 All the files in lib/ and m4/, and parts of some generated files (like
 configure) are part of Gnulib (http://www.gnu.org/software/gnulib).
 
-The GLee library (GLee.c and GLee.h) is written by Ben Woodhouse, and
-can be obtained from http://elf-stone.com.
-
 gl2ps (gl2ps subdirectory) is written by Christophe Geuzaine
 <geuz@geuz.org>, and is available from http://www.geuz.org/gl2ps/.
 

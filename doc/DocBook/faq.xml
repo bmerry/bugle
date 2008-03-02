@@ -372,6 +372,30 @@
 
             <qandaentry>
                 <question><para>
+                        I'm running 64-bit bugle on a 64-bit OS with a
+                        64-bit application, but when I try to run it, it
+                        tries to open the 32-bit version of <filename
+                            class="libraryfile">libGL.so</filename>.
+                </para></question>
+                <answer><para>
+                        I haven't heard if this actually works, but try
+                        setting <envar>LTDL_LIBRARY_PATH</envar> to the
+                        path containing your 64-bit OpenGL library (probably
+                        <filename class="directory">/usr/lib64</filename>. If
+                        you run into this problem, please let me know if this
+                        workaround is effective.
+                </para></answer>
+                <answer><para>
+                        Another potential workaround is to replace
+                        <filename class="libraryfile">libGL.so</filename> in
+                        <filename>gl.bc.in</filename> with the full path
+                        before running <command>configure</command>. Again,
+                        please let me know whether this is effective.
+                </para></answer>
+            </qandaentry>
+
+            <qandaentry>
+                <question><para>
                         I am using ATI drivers and when I run configure, it
                         does not find <function>glBegin</function> in
                         <option>-lGL</option>.

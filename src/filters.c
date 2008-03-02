@@ -100,7 +100,7 @@ static linked_list active_callbacks[FUNCTION_COUNT];
 static bool active_dirty = false;
 static linked_list activations_deferred;
 static linked_list deactivations_deferred;
-gl_lock_define_initialized(static, active_callbacks_mutex);
+gl_lock_define_initialized(static, active_callbacks_mutex)
 
 /* hash tables of linked lists of strings; A is the key, B is the linked list element */
 static hash_table filter_orders;           /* A is called after B */

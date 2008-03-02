@@ -5,7 +5,7 @@
 #if HAVE_CONFIG_H
 # include <config.h>
 #endif
-#include "glee/GLee.h"
+#include <GL/glew.h>
 #include <GL/glut.h>
 #include <GL/glext.h>
 #include <stdlib.h>
@@ -34,7 +34,7 @@ static void make_texture1d_object(void)
     glGenTextures(1, &tex1d);
     glBindTexture(GL_TEXTURE_1D, tex1d);
 #ifdef GL_SGIS_generate_mipmap
-    if (GLEE_SGIS_generate_mipmap)
+    if (GLEW_SGIS_generate_mipmap)
         glTexParameteri(GL_TEXTURE_1D, GL_GENERATE_MIPMAP_SGIS, GL_TRUE);
 #endif
     glTexImage1D(GL_TEXTURE_1D, 0, GL_RGB, 8, 0, GL_RGB, GL_UNSIGNED_BYTE, image);
@@ -47,7 +47,7 @@ static void make_texture2d_object(void)
     glGenTextures(1, &tex2d);
     glBindTexture(GL_TEXTURE_2D, tex2d);
 #ifdef GL_SGIS_generate_mipmap
-    if (GLEE_SGIS_generate_mipmap)
+    if (GLEW_SGIS_generate_mipmap)
         glTexParameteri(GL_TEXTURE_2D, GL_GENERATE_MIPMAP_SGIS, GL_TRUE);
 #endif
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 2, 4, 0, GL_RGB, GL_UNSIGNED_BYTE, image);
@@ -57,12 +57,12 @@ static void make_texture2d_object(void)
 static void make_texture3d_object(void)
 {
 #ifdef GL_EXT_texture3D
-    if (GLEE_EXT_texture3D)
+    if (GLEW_EXT_texture3D)
     {
         glGenTextures(1, &tex3d);
         glBindTexture(GL_TEXTURE_3D_EXT, tex3d);
 #ifdef GL_SGIS_generate_mipmap
-        if (GLEE_SGIS_generate_mipmap)
+        if (GLEW_SGIS_generate_mipmap)
             glTexParameteri(GL_TEXTURE_3D_EXT, GL_GENERATE_MIPMAP_SGIS, GL_TRUE);
 #endif
         glTexImage3DEXT(GL_TEXTURE_3D_EXT, 0, GL_RGB, 2, 2, 2, 0, GL_RGB, GL_UNSIGNED_BYTE, image);
@@ -74,12 +74,12 @@ static void make_texture3d_object(void)
 static void make_texture_cube_map_object(void)
 {
 #ifdef GL_ARB_texture_cube_map
-    if (GLEE_ARB_texture_cube_map)
+    if (GLEW_ARB_texture_cube_map)
     {
         glGenTextures(1, &texcube);
         glBindTexture(GL_TEXTURE_CUBE_MAP_ARB, texcube);
 #ifdef GL_SGIS_generate_mipmap
-        if (GLEE_SGIS_generate_mipmap)
+        if (GLEW_SGIS_generate_mipmap)
             glTexParameteri(GL_TEXTURE_CUBE_MAP_ARB, GL_GENERATE_MIPMAP_SGIS, GL_TRUE);
 #endif
         glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X_ARB, 0, GL_RGB, 2, 2, 0, GL_RGB, GL_UNSIGNED_BYTE, image);
@@ -96,7 +96,7 @@ static void make_texture_cube_map_object(void)
 static void make_query_object(void)
 {
 #ifdef GL_ARB_occlusion_query
-    if (GLEE_ARB_occlusion_query)
+    if (GLEW_ARB_occlusion_query)
     {
         glGenQueriesARB(1, &query);
         glBeginQueryARB(GL_SAMPLES_PASSED_ARB, query);
@@ -108,7 +108,7 @@ static void make_query_object(void)
 static void make_buffer_object(void)
 {
 #ifdef GL_ARB_vertex_buffer_object
-    if (GLEE_ARB_vertex_buffer_object)
+    if (GLEW_ARB_vertex_buffer_object)
     {
         glGenBuffersARB(1, &buffer);
         glBindBufferARB(GL_ARRAY_BUFFER_ARB, buffer);
@@ -130,8 +130,8 @@ static void make_shader_object(void)
         "}\n";
     GLint length;
 
-    if (GLEE_ARB_shader_objects
-        && GLEE_ARB_vertex_shader)
+    if (GLEW_ARB_shader_objects
+        && GLEW_ARB_vertex_shader)
     {
         shader = glCreateShaderObjectARB(GL_VERTEX_SHADER_ARB);
         length = strlen(source);
@@ -144,8 +144,8 @@ static void make_shader_object(void)
 static void make_program_object(void)
 {
 #if defined(GL_ARB_shader_objects) && defined(GL_ARB_vertex_shader)
-    if (GLEE_ARB_shader_objects
-        && GLEE_ARB_vertex_shader)
+    if (GLEW_ARB_shader_objects
+        && GLEW_ARB_vertex_shader)
     {
         GLfloat c[4] = {0.0, 0.5, 1.0, 0.5};
 
@@ -181,7 +181,7 @@ static void delete_texture_cube_map_object(void)
 static void delete_query_object(void)
 {
 #ifdef GL_ARB_occlusion_query
-    if (GLEE_ARB_occlusion_query)
+    if (GLEW_ARB_occlusion_query)
         glDeleteQueriesARB(1, &query);
 #endif
 }
@@ -189,7 +189,7 @@ static void delete_query_object(void)
 static void delete_buffer_object(void)
 {
 #ifdef GL_ARB_vertex_buffer_object
-    if (GLEE_ARB_vertex_buffer_object)
+    if (GLEW_ARB_vertex_buffer_object)
         glDeleteBuffersARB(1, &buffer);
 #endif
 }
@@ -197,8 +197,8 @@ static void delete_buffer_object(void)
 static void delete_shader_object(void)
 {
 #if defined(GL_ARB_shader_objects) && defined(GL_ARB_vertex_shader)
-    if (GLEE_ARB_shader_objects
-        && GLEE_ARB_vertex_shader)
+    if (GLEW_ARB_shader_objects
+        && GLEW_ARB_vertex_shader)
         glDeleteObjectARB(shader);
 #endif
 }
@@ -206,8 +206,8 @@ static void delete_shader_object(void)
 static void delete_program_object(void)
 {
 #if defined(GL_ARB_shader_objects) && defined(GL_ARB_vertex_shader)
-    if (GLEE_ARB_shader_objects
-        && GLEE_ARB_vertex_shader)
+    if (GLEW_ARB_shader_objects
+        && GLEW_ARB_vertex_shader)
     {
         glDeleteObjectARB(program);
         glUseProgramObjectARB(0);
@@ -222,7 +222,7 @@ int main(int argc, char **argv)
     glutInitWindowSize(300, 300);
     glutCreateWindow("object generator");
 
-    GLeeInit();
+    glewInit();
 
     make_texture1d_object();
     make_texture2d_object();

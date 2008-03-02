@@ -29,7 +29,7 @@
 #include "lock.h"
 
 static hash_table ext_map;
-gl_once_define(static, ext_map_once);
+gl_once_define(static, ext_map_once)
 
 static void bugle_gl_extension_clear(void)
 {

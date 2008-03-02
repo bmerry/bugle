@@ -1,4 +1,4 @@
-AC_INIT(bugle, 0.0.20080215, bmerry@users.sourceforge.net)
+AC_INIT(bugle, 0.0.20080302, bmerry@users.sourceforge.net)
 AC_CONFIG_SRCDIR([src/interceptor.c])
 AM_INIT_AUTOMAKE([1.7 dist-bzip2 subdir-objects])
 AM_CONFIG_HEADER(config.h)
@@ -56,6 +56,15 @@ AC_CHECK_LIB([GL], [glBegin], [GL_LIBS="-lGL -lm $GL_LIBS"], [], [$X_PRE_LIBS $X
 AC_SUBST(GL_LIBS)
 if test "x$GL_LIBS" = "x"; then 
   AC_MSG_ERROR([An OpenGL library is required])
+fi
+
+GLEW_LIBS=""
+HAVE_GLEW=1
+AC_CHECK_LIB([GLEW], [glewInit], [
+  GLEW_LIBS="-lGLEW"], [], [])
+AC_SUBST(GLEW_LIBS)
+if test "x$GLEW_LIBS" = "x"; then
+  AC_MSG_ERROR([GLEW is required])
 fi
 
 dnl Checks for header files

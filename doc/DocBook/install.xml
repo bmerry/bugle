@@ -32,6 +32,9 @@
                     (older versions should work, but it will be difficult to
                     debug any code that uses newer features).
             </para></listitem>
+            <listitem><para>
+                    GLEW: 1.4.0 has been tested, but older versions may work
+            </para></listitem>
             <listitem><para>Perl 5</para></listitem>
         </itemizedlist>
         <para>

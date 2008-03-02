@@ -37,7 +37,7 @@
 
 typedef struct
 {
-    gl_lock_define(, mutex);
+    gl_lock_define(, mutex)
     hashptr_table objects[BUGLE_TRACKOBJECTS_COUNT];
 } trackobjects_data;
 

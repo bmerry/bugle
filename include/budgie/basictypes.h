@@ -15,14 +15,34 @@
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#ifndef BUGLE_BUDGIE_TYPES_H
-#define BUGLE_BUDGIE_TYPES_H
+#ifndef BUGLE_BUDGIE_BASICTYPES_H
+#define BUGLE_BUDGIE_BASICTYPES_H
 
 #if HAVE_CONFIG_H
 # include <config.h>
 #endif
 
-#include <budgie/basictypes.h>
-#include <budgie/types2.h>
+typedef int budgie_function;
+typedef int budgie_group;
+typedef int budgie_type;
 
-#endif /* BUGLE_BUDGIE_TYPES_H */
+#define NULL_FUNCTION (-1)
+#define NULL_GROUP (-1)
+#define NULL_TYPE (-1)
+
+#define BUDGIE_MAX_ARGS 16
+
+/* If you modify this, be sure to update write_call_structs to set up the
+ * function_call union with compatible memory layout.
+ */
+typedef struct
+{
+    budgie_group group;
+    budgie_function id;
+    int num_args;
+    void *user_data;
+    void *retn;
+    void *args[BUDGIE_MAX_ARGS];
+} generic_function_call;
+
+#endif /* BUGLE_BUDGIE_BASICTYPES_H */

@@ -31,7 +31,7 @@
 #include "lock.h"
 
 object_class *bugle_displaylist_class;
-gl_lock_define_initialized(static, displaylist_lock);
+gl_lock_define_initialized(static, displaylist_lock)
 static object_view displaylist_view;
 static object_view namespace_view;   /* handle of the hash table */
 

@@ -4,7 +4,7 @@
 # include <config.h>
 #endif
 #define _POSIX_SOURCE
-#include "glee/GLee.h"
+#include <GL/glew.h>
 #include <GL/glut.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -42,13 +42,13 @@ static void set_enables()
     glEnable(GL_TEXTURE_1D);           fprintf(ref, "trace\\.call: glEnable\\(GL_TEXTURE_1D\\)\n");
     glEnable(GL_TEXTURE_2D);           fprintf(ref, "trace\\.call: glEnable\\(GL_TEXTURE_2D\\)\n");
 #ifdef GL_EXT_texture3D
-    if (GLEE_EXT_texture3D)
+    if (GLEW_EXT_texture3D)
     {
         glEnable(GL_TEXTURE_3D_EXT);   fprintf(ref, "trace\\.call: glEnable\\(GL_TEXTURE_3D(_EXT)?\\)\n");
     }
 #endif
 #ifdef GL_ARB_texture_cube_map
-    if (GLEE_ARB_texture_cube_map)
+    if (GLEW_ARB_texture_cube_map)
     {
         glEnable(GL_TEXTURE_CUBE_MAP_ARB); fprintf(ref, "trace\\.call: glEnable\\(GL_TEXTURE_CUBE_MAP(_ARB)?\\)\n");
     }
@@ -80,7 +80,7 @@ void set_texture_state()
     glTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, &arg);
     fprintf(ref, "trace\\.call: glTexParameteriv\\(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, %p -> GL_LINEAR\\)\n", (void *) &arg);
 #ifdef GL_SGIS_generate_mipmap
-    if (GLEE_SGIS_generate_mipmap)
+    if (GLEW_SGIS_generate_mipmap)
     {
         glTexParameterf(GL_TEXTURE_2D, GL_GENERATE_MIPMAP_SGIS, GL_TRUE);
         fprintf(ref, "trace\\.call: glTexParameterf\\(GL_TEXTURE_2D, GL_GENERATE_MIPMAP(_SGIS)?, GL_TRUE\\)\n");
@@ -94,7 +94,7 @@ static void set_material_state()
 {
     GLfloat col[4] = {0.0, 0.25, 0.5, 1.0};
     glMaterialfv(GL_FRONT, GL_AMBIENT_AND_DIFFUSE, col);
-    fprintf(ref, "trace\\.call: glMaterialfv\\(GL_FRONT, GL_AMBIENT_AND_DIFFUSE, %p -> { 0, 0\.25, 0\.5, 1 }\\)\n",
+    fprintf(ref, "trace\\.call: glMaterialfv\\(GL_FRONT, GL_AMBIENT_AND_DIFFUSE, %p -> { 0, 0\\.25, 0\\.5, 1 }\\)\n",
             (void *) col);
 }
 
@@ -118,7 +118,7 @@ int main(int argc, char **argv)
     glutInitDisplayMode(GLUT_RGBA | GLUT_DOUBLE | GLUT_DEPTH);
     glutInitWindowSize(300, 300);
     glutCreateWindow("state generator");
-    GLeeInit();
+    glewInit();
 
     set_enables();
     set_client_state();
