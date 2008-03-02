@@ -269,66 +269,27 @@ static void checks_texture_complete_fail(int unit, GLenum target, const char *re
                      unit, target_name, reason);
 }
 
-/* Tests whether the texture bound to the given target is complete, and
- * prints a warning if not. It is assumed that we are already inside
- * bugle_begin_internal_render. The texture unit is a number from 0, not
- * an enumerant.
+/* Tests whether the given texture face (bound to the active texture unit)
+ * is complete (unit is passed only for error reporting). The face is either
+ * equal to target, or a single face of a cube map. Returns true if complete,
+ * false (and a log message) if not.  It assumes that the minification filter
+ * requires mipmapping and that base <= max.
  */
-static void checks_texture_complete(int unit, GLenum target)
+static bool checks_texture_face_complete(GLuint unit, GLenum target, GLenum face, int dims,
+                                         int base, int max, bool needs_mip)
 {
-    GLenum dim_enum[3] = {0, 0, 0};
-    int d, dims = 0;
-    GLint min_filter, base, max;
-    GLint lvl;
-    GLint sizes[3] = {-1, -1, -1};
-    GLint border, format;
-    GLint old_unit = 0;
-
-#ifdef GL_ARB_multitexture
-    if (BUGLE_GL_HAS_EXTENSION_GROUP(GL_ARB_multitexture))
+    GLint sizes[3], border, format;
+    int d, lvl;
+    const GLenum dim_enum[3] =
     {
-        CALL(glGetIntegerv)(GL_ACTIVE_TEXTURE_ARB, &old_unit);
-        CALL(glActiveTextureARB)(GL_TEXTURE0_ARB + unit);
-    }
-#endif
-    CALL(glGetTexParameteriv)(target, GL_TEXTURE_MIN_FILTER, &min_filter);
-    CALL(glGetTexParameteriv)(target, GL_TEXTURE_BASE_LEVEL, &base);
-    CALL(glGetTexParameteriv)(target, GL_TEXTURE_MAX_LEVEL, &max);
-
-    if (base > max)
-    {
-        checks_texture_complete_fail(unit, target, "base > max");
-        goto cleanup;
-    }
-
-    switch (target)
-    {
-#ifdef GL_EXT_texture_cube_map
-    case GL_TEXTURE_CUBE_MAP_EXT:
-        /* FIXME: fill in */
-        goto cleanup;
-#endif
+        GL_TEXTURE_WIDTH,
+        GL_TEXTURE_HEIGHT,
 #ifdef GL_EXT_texture3D
-    case GL_TEXTURE_3D_EXT:
-        dim_enum[2] = GL_TEXTURE_DEPTH_EXT;
-        dims++;
-        /* fall through */
+        GL_TEXTURE_DEPTH_EXT
+#else
+        GL_NONE
 #endif
-    case GL_TEXTURE_2D:
-#ifdef GL_NV_texture_rectangle
-    case GL_TEXTURE_RECTANGLE_NV:
-#endif
-        dim_enum[1] = GL_TEXTURE_HEIGHT;
-        dims++;
-        /* fall through */
-    case GL_TEXTURE_1D:
-        dim_enum[0] = GL_TEXTURE_WIDTH;
-        dims++;
-        /* fall through */
-        break;
-    default:
-        goto cleanup; /* unknown texture type, don't try to guess */
-    }
+    };
 
     for (d = 0; d < dims; d++)
     {
@@ -337,16 +298,12 @@ static void checks_texture_complete(int unit, GLenum target)
         {
             checks_texture_complete_fail(unit, target, 
                                          "base level does not have positive dimensions");
-            goto cleanup;
+            return false;
         }
     }
 
-    switch (min_filter)
-    {
-    case GL_NEAREST:
-    case GL_LINEAR:
-        goto cleanup;
-    }
+    if (!needs_mip)
+        return true;
 
     CALL(glGetTexLevelParameteriv)(target, base, GL_TEXTURE_BORDER, &border);
     CALL(glGetTexLevelParameteriv)(target, base, GL_TEXTURE_INTERNAL_FORMAT, &format);
@@ -369,13 +326,13 @@ static void checks_texture_complete(int unit, GLenum target)
             {
                 checks_texture_complete_fail(unit, target, 
                                              "missing image in mipmap sequence");
-                goto cleanup;
+                return false;
             }
             if (size != sizes[d])
             {
                 checks_texture_complete_fail(unit, target,
                                              "incorrect size in mipmap sequence");
-                goto cleanup;
+                return false;
             }
         }
         CALL(glGetTexLevelParameteriv)(target, lvl, GL_TEXTURE_INTERNAL_FORMAT, &lformat);
@@ -384,18 +341,118 @@ static void checks_texture_complete(int unit, GLenum target)
         {
             checks_texture_complete_fail(unit, target,
                                          "inconsistent internal formats");
-            goto cleanup;
+            return false;
         }
         if (border != lborder)
         {
             checks_texture_complete_fail(unit, target,
                                          "inconsistent borders");
-            goto cleanup;
+            return false;
         }
     }
+    return true;
+}
 
-cleanup:
-    ; /* make sure there is a statement here even if the #ifdef fails */
+/* Tests whether the texture bound to the given target is complete, and
+ * prints a warning if not. It is assumed that we are already inside
+ * bugle_begin_internal_render. The texture unit is a number from 0, not
+ * an enumerant.
+ */
+static void checks_texture_complete(int unit, GLenum target)
+{
+    GLint min_filter, base, max, size, width, height;
+    GLint format, lformat, border, lborder;
+    GLint old_unit = 0;
+    GLenum face;
+    bool needs_mip = true;
+    bool success = true;
+
+#ifdef GL_ARB_multitexture
+    if (BUGLE_GL_HAS_EXTENSION_GROUP(GL_ARB_multitexture))
+    {
+        CALL(glGetIntegerv)(GL_ACTIVE_TEXTURE_ARB, &old_unit);
+        CALL(glActiveTextureARB)(GL_TEXTURE0_ARB + unit);
+    }
+#endif
+    CALL(glGetTexParameteriv)(target, GL_TEXTURE_MIN_FILTER, &min_filter);
+    CALL(glGetTexParameteriv)(target, GL_TEXTURE_BASE_LEVEL, &base);
+    CALL(glGetTexParameteriv)(target, GL_TEXTURE_MAX_LEVEL, &max);
+
+    switch (min_filter)
+    {
+    case GL_NEAREST:
+    case GL_LINEAR:
+        needs_mip = false;
+    }
+
+    if (base > max && needs_mip)
+        checks_texture_complete_fail(unit, target, "base > max");
+    else
+        switch (target)
+        {
+#ifdef GL_ARB_texture_cube_map
+        case GL_TEXTURE_CUBE_MAP_ARB:
+            glGetTexLevelParameteriv(GL_TEXTURE_CUBE_MAP_POSITIVE_X_ARB, base, GL_TEXTURE_WIDTH, &size);
+            glGetTexLevelParameteriv(GL_TEXTURE_CUBE_MAP_POSITIVE_X_ARB, base, GL_TEXTURE_INTERNAL_FORMAT, &format);
+            glGetTexLevelParameteriv(GL_TEXTURE_CUBE_MAP_POSITIVE_X_ARB, base, GL_TEXTURE_BORDER, &border);
+            for (int i = 0; i < 6; i++)
+            {
+                face = GL_TEXTURE_CUBE_MAP_POSITIVE_X_ARB + i;
+                glGetTexLevelParameteriv(face, base, GL_TEXTURE_WIDTH, &width);
+                glGetTexLevelParameteriv(face, base, GL_TEXTURE_HEIGHT, &height);
+                glGetTexLevelParameteriv(face, base, GL_TEXTURE_INTERNAL_FORMAT, &lformat);
+                glGetTexLevelParameteriv(face, base, GL_TEXTURE_BORDER, &lborder);
+                if (width != height)
+                {
+                    checks_texture_complete_fail(unit, face, "cube map face is not square");
+                    success = false;
+                    break;
+                }
+                if (width != size)
+                {
+                    checks_texture_complete_fail(unit, face, "cube map faces have different sizes");
+                    success = false;
+                    break;
+                }
+                if (format != lformat)
+                {
+                    checks_texture_complete_fail(unit, face, "cube map faces have different internal formats");
+                    success = false;
+                    break;
+                }
+                if (border != lborder)
+                {
+                    checks_texture_complete_fail(unit, face, "cube map faces have different border widths");
+                    success = false;
+                    break;
+                }
+            }
+            if (!success)
+                break;
+            for (int i = 0; i < 6; i++)
+            {
+                face = GL_TEXTURE_CUBE_MAP_POSITIVE_X_ARB + i;
+                if (!checks_texture_face_complete(unit, target, face, 2, base, max, needs_mip))
+                    break;
+            }
+            break;
+#endif
+#ifdef GL_EXT_texture3D
+        case GL_TEXTURE_3D_EXT:
+            success = checks_texture_face_complete(unit, target, target, 3, base, max, needs_mip);
+            break;
+#endif
+        case GL_TEXTURE_2D:
+#ifdef GL_NV_texture_rectangle
+        case GL_TEXTURE_RECTANGLE_NV:
+#endif
+            checks_texture_face_complete(unit, target, target, 2, base, max, needs_mip);
+            break;
+        case GL_TEXTURE_1D:
+            checks_texture_face_complete(unit, target, target, 1, base, max, needs_mip);
+            break;
+        }
+
 #ifdef GL_ARB_multitexture
     CALL(glActiveTextureARB)(old_unit);
 #endif
@@ -441,7 +498,7 @@ static void checks_completeness()
                     case GL_SAMPLER_1D_ARB:        target = GL_TEXTURE_1D; break;
                     case GL_SAMPLER_2D_ARB:        target = GL_TEXTURE_2D; break;
                     case GL_SAMPLER_3D_ARB:        target = GL_TEXTURE_3D; break;
-                    case GL_SAMPLER_CUBE_ARB:      target = GL_TEXTURE_CUBE_MAP_EXT; break;
+                    case GL_SAMPLER_CUBE_ARB:      target = GL_TEXTURE_CUBE_MAP_ARB; break;
                     case GL_SAMPLER_1D_SHADOW_ARB: target = GL_TEXTURE_1D; break;
                     case GL_SAMPLER_2D_SHADOW_ARB: target = GL_TEXTURE_2D; break;
                     case GL_SAMPLER_2D_RECT_ARB:   target = GL_TEXTURE_RECTANGLE_ARB; break;

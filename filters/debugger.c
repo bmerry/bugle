@@ -387,11 +387,11 @@ static bool get_framebuffer_size(GLuint fbo, GLenum target, GLenum attachment,
 
             CALL(glGetIntegerv)(texture_binding, &old_name);
             CALL(glBindTexture)(texture_target, name);
-#ifdef GL_EXT_texture_cube_map
-            if (target == GL_TEXTURE_CUBE_MAP_EXT)
+#ifdef GL_ARB_texture_cube_map
+            if (target == GL_TEXTURE_CUBE_MAP_ARB)
             {
-                CALL(glGetFramebufferAttachmentParameteriv)(target, attachment,
-                                                           GL_FRAMEBUFFER_ATTACHMENT_TEXTURE_CUBE_MAP_FACE_EXT, &face);
+                CALL(glGetFramebufferAttachmentParameterivEXT)(target, attachment,
+                                                               GL_FRAMEBUFFER_ATTACHMENT_TEXTURE_CUBE_MAP_FACE_EXT, &face);
             }
             else
 #endif

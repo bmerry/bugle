@@ -1,6 +1,9 @@
 * Fix several bugs in object tracking, which could lead to crashes in
   gldb-gui
 * Checking for texture completeness in validate filterset
+* Change ifdef tests for GL_EXT_texture_cube_map to GL_ARB_texture_cube_map,
+  since the former isn't defined by glext.h
+* Force current version info on glXGetCurrentDisplay
 
 0.0.20080215
 ------------
