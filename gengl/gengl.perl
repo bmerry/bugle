@@ -5,7 +5,11 @@ use Getopt::Long;
 
 my @extension_force = (
     "GL_EXT_texture_rectangle",  # Doesn't exist, but ATI exposes it instead of GL_ARB_texture_rectangle
-    "GLX_VERSION_1_2"            # Isn't detected, but needed by bugle code
+    "GLX_VERSION_1_2"            # Isn't always detected, but needed by bugle code
+);
+
+my %function_force_version = (
+    "glXGetCurrentDisplay" => "GLX_VERSION_1_2",      # glxext.h claims 1.3
 );
 
 my %extension_chains = (
@@ -324,11 +328,17 @@ while (<>)
     {
         my $name = $1;
         my $base = base_name($name, $cur_suffix);
-        # Mesa headers define assorted functions from higher GL versions
-        # without the regexs that we match against. In this case it will
-        # appear that the function is 1.1 when really it is something else.
-        if (!defined($functions{$name}) || $functions{$name} eq 'GL_VERSION_1_1')
+        # In some cases the headers are wrong. Use our own table for those
+        # cases
+        if (exists($function_force_version{$name}))
         {
+            $functions{$name} = $function_force_version{$name};
+        }
+        elsif (!defined($functions{$name}) || $functions{$name} eq 'GL_VERSION_1_1')
+        {
+            # Mesa headers define assorted functions from higher GL versions
+            # without the regexs that we match against. In this case it will
+            # appear that the function is 1.1 when really it is something else.
             $functions{$name} = $cur_ext;
         }
         elsif ($cur_ext ne 'GL_VERSION_1_1' && $cur_ext ne $functions{$name})
