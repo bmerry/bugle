@@ -23,6 +23,11 @@ else
     <a href="screenshots.php">[Screenshots]</a>
     </p>
     <h1>BuGLe News</h1>
+    <h2>Texture completeness checks</h2>
+    <p>
+    The new release adds partial support for checking whether textures are
+    complete (in the <tt>checks</tt> filter-set), with warning messages
+    printed when this is detected. It currently only works on 
     <h2>Developers invited to write their own filter-sets (3/1/2008)</h2>
     <p>
     There are a number of minor bug-fixes, but the major
