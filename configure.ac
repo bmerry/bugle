@@ -1,4 +1,4 @@
-AC_INIT(bugle, 0.0.20080302, bmerry@users.sourceforge.net)
+AC_INIT(bugle, 0.0.20080303, bmerry@users.sourceforge.net)
 AC_CONFIG_SRCDIR([src/interceptor.c])
 AM_INIT_AUTOMAKE([1.7 dist-bzip2 subdir-objects])
 AM_CONFIG_HEADER(config.h)
@@ -61,11 +61,8 @@ fi
 GLEW_LIBS=""
 HAVE_GLEW=1
 AC_CHECK_LIB([GLEW], [glewInit], [
-  GLEW_LIBS="-lGLEW"], [], [])
+  GLEW_LIBS="-lGLEW"], [HAVE_GLEW=0], [])
 AC_SUBST(GLEW_LIBS)
-if test "x$GLEW_LIBS" = "x"; then
-  AC_MSG_ERROR([GLEW is required])
-fi
 
 dnl Checks for header files
 gl_INIT
@@ -150,6 +147,16 @@ AC_SUBST(GLDB_GUI)
 AC_ARG_WITH([gtkglext], AC_HELP_STRING([--without-gtkglext], [do not use OpenGL within the GUI debugger]),
             [ test $withval = no && HAVE_GTKGLEXT=0], [])
 AM_CONDITIONAL(HAVE_GTKGLEXT, test x$HAVE_GTKGLEXT = x1)
+if test x$HAVE_GLEW = x0
+then
+    HAVE_GTKGLEXT=0
+fi
+if test x$HAVE_GTKGLEXT = x0
+then
+    HAVE_GLEW=0
+    GLEW_LIBS=""
+    GTKGLEXT_LIBS=""
+fi
 AC_DEFINE_UNQUOTED(HAVE_GTKGLEXT, $HAVE_GTKGLEXT, [non-zero when all the requirements for GtkGLExt are met])
 
 dnl Write out files
@@ -170,7 +177,7 @@ esac
 case $HAVE_GTK in
   0) echo "        GUI: no" ;;
   1) case $HAVE_GTKGLEXT in
-     0) echo "        GUI: yes (without OpenGL - install GtkGLExt for OpenGL support)" ;;
+     0) echo "        GUI: yes (without OpenGL - install GtkGLExt and GLEW for OpenGL support)" ;;
      1) echo "        GUI: yes (with OpenGL)" ;;
      esac ;;
 esac

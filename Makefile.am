@@ -107,7 +107,7 @@ nodist_src_libbugleutils_la_SOURCES = \
 	budgielib/defines.h budgielib/tables.c \
 	src/gltables.c src/gltables.h
 src_libbugleutils_la_LIBADD = $(LTLIBOBJS) $(LTLIBTHREAD) $(LTLIBINTL) lib/libgnu.la
-src_libbugleutils_la_LDFLAGS = -thread-safe -export-dynamic $(SYMBOLFLAGS) -version-info 5:0:1
+src_libbugleutils_la_LDFLAGS = -thread-safe -export-dynamic $(SYMBOLFLAGS) -version-info 5:1:1
 
 src_libbugle_la_SOURCES = \
 	src/confparse.y src/conflex.l src/conffile.h \
@@ -122,7 +122,7 @@ src_libbugle_la_SOURCES = \
 nodist_src_libbugle_la_SOURCES = \
 	budgielib/lib.c
 src_libbugle_la_LIBADD = $(LIBLTDL) src/libbugleutils.la -lm -lGL $(X_PRE_LIBS) $(X_LIBS) -lX11 $(X_EXTRA_LIBS) $(LTLIBTHREAD) $(LTLIBINTL) lib/libgnu.la
-src_libbugle_la_LDFLAGS = -thread-safe -export-dynamic $(SYMBOLFLAGS) -version-info 6:1:1
+src_libbugle_la_LDFLAGS = -thread-safe -export-dynamic $(SYMBOLFLAGS) -version-info 6:2:1
 
 BUDGIE_BUILT_SRCS = \
         budgielib/lib.c budgielib/tables.c \
@@ -231,9 +231,8 @@ check_PROGRAMS = \
 dist_check_SCRIPTS = \
 	tests/errors.sh tests/misc.sh tests/queries.sh tests/setstate.sh \
 	tests/showextensions.sh tests/pointers.sh tests/triangles.sh \
-	tests/pbo.sh tests/comparelog.sh \
-	tests/interpose.sh tests/dlopen.sh \
-	tests/comparelog.perl
+	tests/pbo.sh tests/interpose.sh tests/dlopen.sh tests/texcomplete.sh \
+	tests/comparelog.perl tests/comparelog.sh
 tests_errors_SOURCES = tests/errors.c
 tests_errors_LDADD = -lglut -lGLU $(GL_LIBS) $(X_PRE_LIBS) $(X_LIBS) -lX11 $(X_EXTRA_LIBS)
 tests_pointers_SOURCES = tests/pointers.c
@@ -268,7 +267,7 @@ tests_texcomplete_SOURCES = tests/texcomplete.c
 tests_texcomplete_LDADD = $(GLEW_LIBS) -lglut -lGLU $(GL_LIBS) $(X_PRE_LIBS) $(X_LIBS) -lX11 $(X_EXTRA_LIBS)
 TESTS = tests/errors.sh tests/misc.sh tests/queries.sh tests/setstate.sh \
 	tests/showextensions.sh tests/triangles.sh tests/pointers.sh \
-	tests/pbo.sh tests/interpose.sh tests/dlopen.sh
+	tests/pbo.sh tests/interpose.sh tests/dlopen.sh tests/texcomplete.sh
 TESTS_ENVIRONMENT = BUGLE_FILTERS=$(srcdir)/tests/filters BUGLE_STATISTICS=$(srcdir)/tests/statistics BUGLE_FILTER_DIR=filters/.libs BUGLE_LIB=src/.libs/libbugle.so
 
 # Extra files to distribute
@@ -290,18 +289,7 @@ CLEANFILES = \
 	src/gltables.c src/gltables.h \
 	src/data/gl.tu bc/alias.bc \
 	doc/gldb.1.gz doc/bugle.3.gz \
-	gldb/.libs/gldb gldb/.libs/gldb-gui \
-	tests/.libs/threads1 \
-	tests/.libs/threads2 \
-	tests/.libs/errors tests/.libs/lt-errors \
-	tests/.libs/queries tests/.libs/lt-queries \
-	tests/.libs/misc tests/.libs/lt-misc \
-	tests/.libs/setstate tests/.libs/lt-setstate \
-	tests/.libs/showextensions tests/.libs/lt-showextensions \
-	tests/.libs/triangles tests/.libs/lt-triangles \
-	tests/.libs/pointers tests/.libs/lt-pointers \
-	tests/.libs/pbo tests/.libs/lt-pbo \
-	tests/.libs/objects
+	gldb/.libs/gldb gldb/.libs/gldb-gui
 DISTCLEANFILES = tests/*.log
 MAINTAINERCLEANFILES =
 

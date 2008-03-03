@@ -271,11 +271,11 @@ static void checks_texture_complete_fail(int unit, GLenum target, const char *re
 
 /* Tests whether the given texture face (bound to the active texture unit)
  * is complete (unit is passed only for error reporting). The face is either
- * equal to target, or a single face of a cube map. Returns true if complete,
+ * a target, or a single face of a cube map. Returns true if complete,
  * false (and a log message) if not.  It assumes that the minification filter
  * requires mipmapping and that base <= max.
  */
-static bool checks_texture_face_complete(GLuint unit, GLenum target, GLenum face, int dims,
+static bool checks_texture_face_complete(GLuint unit, GLenum face, int dims,
                                          int base, int max, bool needs_mip)
 {
     GLint sizes[3], border, format;
@@ -293,10 +293,10 @@ static bool checks_texture_face_complete(GLuint unit, GLenum target, GLenum face
 
     for (d = 0; d < dims; d++)
     {
-        CALL(glGetTexLevelParameteriv)(target, base, dim_enum[d], &sizes[d]);
+        CALL(glGetTexLevelParameteriv)(face, base, dim_enum[d], &sizes[d]);
         if (sizes[d] <= 0)
         {
-            checks_texture_complete_fail(unit, target, 
+            checks_texture_complete_fail(unit, face,
                                          "base level does not have positive dimensions");
             return false;
         }
@@ -305,8 +305,8 @@ static bool checks_texture_face_complete(GLuint unit, GLenum target, GLenum face
     if (!needs_mip)
         return true;
 
-    CALL(glGetTexLevelParameteriv)(target, base, GL_TEXTURE_BORDER, &border);
-    CALL(glGetTexLevelParameteriv)(target, base, GL_TEXTURE_INTERNAL_FORMAT, &format);
+    CALL(glGetTexLevelParameteriv)(face, base, GL_TEXTURE_BORDER, &border);
+    CALL(glGetTexLevelParameteriv)(face, base, GL_TEXTURE_INTERNAL_FORMAT, &format);
     for (lvl = base + 1; lvl <= max; lvl++)
     {
         GLint lformat, lborder;
@@ -321,31 +321,31 @@ static bool checks_texture_face_complete(GLuint unit, GLenum target, GLenum face
         for (d = 0; d < dims; d++)
         {
             GLint size;
-            CALL(glGetTexLevelParameteriv)(target, lvl, dim_enum[d], &size);
+            CALL(glGetTexLevelParameteriv)(face, lvl, dim_enum[d], &size);
             if (size <= 0)
             {
-                checks_texture_complete_fail(unit, target, 
+                checks_texture_complete_fail(unit, face,
                                              "missing image in mipmap sequence");
                 return false;
             }
             if (size != sizes[d])
             {
-                checks_texture_complete_fail(unit, target,
+                checks_texture_complete_fail(unit, face,
                                              "incorrect size in mipmap sequence");
                 return false;
             }
         }
-        CALL(glGetTexLevelParameteriv)(target, lvl, GL_TEXTURE_INTERNAL_FORMAT, &lformat);
-        CALL(glGetTexLevelParameteriv)(target, lvl, GL_TEXTURE_BORDER, &lborder);
+        CALL(glGetTexLevelParameteriv)(face, lvl, GL_TEXTURE_INTERNAL_FORMAT, &lformat);
+        CALL(glGetTexLevelParameteriv)(face, lvl, GL_TEXTURE_BORDER, &lborder);
         if (format != lformat)
         {
-            checks_texture_complete_fail(unit, target,
+            checks_texture_complete_fail(unit, face,
                                          "inconsistent internal formats");
             return false;
         }
         if (border != lborder)
         {
-            checks_texture_complete_fail(unit, target,
+            checks_texture_complete_fail(unit, face,
                                          "inconsistent borders");
             return false;
         }
@@ -432,24 +432,24 @@ static void checks_texture_complete(int unit, GLenum target)
             for (int i = 0; i < 6; i++)
             {
                 face = GL_TEXTURE_CUBE_MAP_POSITIVE_X_ARB + i;
-                if (!checks_texture_face_complete(unit, target, face, 2, base, max, needs_mip))
+                if (!checks_texture_face_complete(unit, face, 2, base, max, needs_mip))
                     break;
             }
             break;
 #endif
 #ifdef GL_EXT_texture3D
         case GL_TEXTURE_3D_EXT:
-            success = checks_texture_face_complete(unit, target, target, 3, base, max, needs_mip);
+            success = checks_texture_face_complete(unit, target, 3, base, max, needs_mip);
             break;
 #endif
         case GL_TEXTURE_2D:
 #ifdef GL_NV_texture_rectangle
         case GL_TEXTURE_RECTANGLE_NV:
 #endif
-            checks_texture_face_complete(unit, target, target, 2, base, max, needs_mip);
+            checks_texture_face_complete(unit, target, 2, base, max, needs_mip);
             break;
         case GL_TEXTURE_1D:
-            checks_texture_face_complete(unit, target, target, 1, base, max, needs_mip);
+            checks_texture_face_complete(unit, target, 1, base, max, needs_mip);
             break;
         }
 
@@ -481,7 +481,7 @@ static void checks_completeness()
             GLint num_uniforms, u;
             GLenum type;
             GLint size, length, loc, unit;
-            GLchar *name;
+            GLcharARB *name;
             GLint target;
             program = bugle_glGetHandleARB(GL_PROGRAM_OBJECT_ARB);
             if (program)

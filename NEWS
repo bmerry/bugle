@@ -1,3 +1,10 @@
+0.0.20080303
+------------
+Apart from a few bug-fixes, this release adds checks for incomplete textures to
+the 'checks' filter-set. It now also requires GLEW for the image viewers in
+gldb-gui - if you find those tabs have vanished then you should install
+it from glew.sf.net and reconfigure bugle.
+
 0.0.20080215
 ------------
 This release just fixes a few minor bugs.
