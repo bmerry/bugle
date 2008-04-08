@@ -18,15 +18,18 @@
 #if HAVE_CONFIG_H
 # include <config.h>
 #endif
+/* This is needed to allow compilation to succeed, because CALL uses the
+ * symbol name as a fallback. In typical use the symbols will not be referenced.
+ */
 #define GL_GLEXT_PROTOTYPES
 #include <GL/gl.h>
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
 #include <bugle/filters.h>
-#include <bugle/gldump.h>
 #include <bugle/glutils.h>
-#include <bugle/gltypes.h>
+#include <bugle/gl/gldump.h>
+#include <bugle/gl/gltypes.h>
 #include <bugle/tracker.h>
 #include <bugle/log.h>
 #include <bugle/glreflect.h>
@@ -554,33 +557,4 @@ size_t bugle_texture_element_count(GLenum target,
         depth = 1;
 #endif
     return bugle_image_element_count(width, height, depth, format, type, false);
-}
-
-int bugle_count_glx_attributes(const int *attr)
-{
-    int i = 0;
-    if (!attr) return 0;
-    while (attr[i]) i += 2;
-    return i + 1;
-}
-
-int bugle_count_glXChooseVisual_attributes(const int *attr)
-{
-    int i = 0;
-    if (!attr) return 0;
-    while (attr[i])
-    {
-        switch (attr[i])
-        {
-        case GLX_USE_GL:
-        case GLX_RGBA:
-        case GLX_DOUBLEBUFFER:
-        case GLX_STEREO:
-            i++;
-            break;
-        default:
-            i += 2;
-        }
-    }
-    return i + 1;
 }

@@ -160,7 +160,7 @@ fi
 AC_DEFINE_UNQUOTED(HAVE_GTKGLEXT, $HAVE_GTKGLEXT, [non-zero when all the requirements for GtkGLExt are met])
 
 dnl Write out files
-AC_CONFIG_FILES([Makefile lib/Makefile gl.bc bugle.pc])
+AC_CONFIG_FILES([Makefile lib/Makefile bugle.pc])
 AC_OUTPUT
 
 dnl Display configuration

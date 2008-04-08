@@ -15,14 +15,13 @@
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#ifndef BUGLE_SRC_GLDUMP_H
-#define BUGLE_SRC_GLDUMP_H
+#ifndef BUGLE_GL_GLDUMP_H
+#define BUGLE_GL_GLDUMP_H
 
 #if HAVE_CONFIG_H
 # include <config.h>
 #endif
 #include <GL/gl.h>
-#include <GL/glx.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <budgie/types.h>
@@ -68,14 +67,4 @@ size_t bugle_texture_element_count(GLenum target,
                                    GLenum format,
                                    GLenum type);
 
-/* Return a count for an attribute list consisting of pairs terminated
- * by None.
- */
-int bugle_count_glx_attributes(const int *attr);
-
-/* Similar, but for glXChooseVisual for which boolean attributes are not
- * followed by a value.
- */
-int bugle_count_glXChooseVisual_attributes(const int *attr);
-
-#endif /* !BUGLE_SRC_GLDUMP_H */
+#endif /* !BUGLE_GL_GLDUMP_H */

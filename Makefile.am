@@ -22,10 +22,8 @@ includebugle_HEADERS = \
 	include/bugle/linkedlist.h \
 	include/bugle/misc.h \
 	include/bugle/filters.h \
-	include/bugle/gldump.h \
 	include/bugle/glsl.h \
 	include/bugle/glstate.h \
-	include/bugle/gltypes.h \
 	include/bugle/glutils.h \
 	include/bugle/glreflect.h \
 	include/bugle/log.h \
@@ -33,7 +31,12 @@ includebugle_HEADERS = \
 	include/bugle/stats.h \
 	include/bugle/tracker.h \
 	include/bugle/xevent.h \
-	include/bugle/overrides.h
+	include/bugle/gl/overrides.h \
+	include/bugle/gl/gltypes.h \
+	include/bugle/gl/gldump.h \
+	include/bugle/glx/overrides.h \
+	include/bugle/glx/glxtypes.h \
+	include/bugle/glx/glxdump.h
 includebudgie_HEADERS = \
 	include/budgie/addresses.h \
 	include/budgie/basictypes.h \
@@ -97,7 +100,8 @@ budgie/bclexer.cc: budgie/bclexer.ll
 BUILT_SOURCES = budgie/bcparser.h
 
 src_libbugleutils_la_SOURCES = \
-	src/gltypes.c src/glreflect.c \
+	src/gl/gltypes.c src/glreflect.c \
+	src/glx/glxtypes.c \
 	common/misc.c \
 	common/protocol.h common/protocol.c \
 	common/hashtable.c include/bugle/hashtable.h \
@@ -111,12 +115,14 @@ src_libbugleutils_la_LDFLAGS = -thread-safe -export-dynamic $(SYMBOLFLAGS) -vers
 
 src_libbugle_la_SOURCES = \
 	src/confparse.y src/conflex.l src/conffile.h \
-	src/gldump.c src/glutils.c src/glstate.c src/glsl.c src/interceptor.c \
+	src/glutils.c src/glstate.c src/glsl.c src/interceptor.c \
 	src/dlopen.c src/dlopen.h src/filters.c \
 	src/trackcontext.c src/trackdisplaylist.c src/trackobjects.c \
 	src/trackbeginend.c src/trackextensions.c \
 	src/stats.c src/statslex.l src/statsparse.y \
 	src/log.c src/objects.c src/xevent.c \
+	src/gl/gldump.c \
+	src/glx/glxdump.c \
 	budgielib/addresses.c budgielib/lib.h \
 	common/threads.h
 nodist_src_libbugle_la_SOURCES = \
@@ -132,29 +138,30 @@ BUILT_SOURCES += $(BUDGIE_BUILT_SRCS)
 # Generated files that generate other files
 
 # ccache doesn't play nice with -fdump-translation-unit, so we disable it
-src/data/gl.tu: src/data/gl.c include/bugle/overrides.h
+src/data/gl.tu: src/data/gl.c include/bugle/gl/overrides.h include/bugle/glx/overrides.h
 	$(mkdir_p) src/data
 	CCACHE_DISABLE=1 $(COMPILE) -fdump-translation-unit -c $(srcdir)/src/data/gl.c -o src/data/gl.o
 	rm -f src/data/gl.o
 	$(srcdir)/mvtu.sh gl.c src/data/gl.tu
 
-BCFILES = bc/core1_1.bc bc/glsl1_20.bc bc/glx.bc \
-	bc/GL_ARB_multitexture.bc bc/GL_ARB_imaging.bc \
-	bc/GL_ARB_shader_objects.bc bc/GL_ARB_occlusion_query.bc \
-	bc/GL_ARB_texture_compression.bc bc/GL_ARB_vertex_buffer_object.bc \
-	bc/GL_ARB_vertex_program.bc bc/GL_ATI_draw_buffers.bc \
-	bc/GL_EXT_blend_func_separate.bc bc/GL_EXT_draw_buffers2.bc \
-	bc/GL_EXT_draw_instanced.bc bc/GL_EXT_draw_range_elements.bc \
-	bc/GL_EXT_geometry_shader4.bc bc/GL_EXT_multi_draw_arrays.bc \
-	bc/GL_EXT_secondary_color.bc bc/GL_EXT_texture3D.bc \
-	bc/GL_EXT_framebuffer_object.bc bc/GL_EXT_gpu_program_parameters.bc \
-	bc/GL_NV_transform_feedback.bc \
-	bc/GLX_ARB_get_proc_address.bc bc/GLX_SGI_make_current_read.bc \
-	bc/GLX_SGIX_fbconfig.bc bc/GLX_SGIX_pbuffer.bc
+BCFILES = gl/gl.bc gl/bc/core1_1.bc gl/bc/glsl1_20.bc \
+	gl/bc/GL_ARB_multitexture.bc gl/bc/GL_ARB_imaging.bc \
+	gl/bc/GL_ARB_shader_objects.bc gl/bc/GL_ARB_occlusion_query.bc \
+	gl/bc/GL_ARB_texture_compression.bc gl/bc/GL_ARB_vertex_buffer_object.bc \
+	gl/bc/GL_ARB_vertex_program.bc gl/bc/GL_ATI_draw_buffers.bc \
+	gl/bc/GL_EXT_blend_func_separate.bc gl/bc/GL_EXT_draw_buffers2.bc \
+	gl/bc/GL_EXT_draw_instanced.bc gl/bc/GL_EXT_draw_range_elements.bc \
+	gl/bc/GL_EXT_geometry_shader4.bc gl/bc/GL_EXT_multi_draw_arrays.bc \
+	gl/bc/GL_EXT_secondary_color.bc gl/bc/GL_EXT_texture3D.bc \
+	gl/bc/GL_EXT_framebuffer_object.bc gl/bc/GL_EXT_gpu_program_parameters.bc \
+	gl/bc/GL_NV_transform_feedback.bc \
+	glx/glx.bc glx/bc/glx.bc \
+	glx/bc/GLX_ARB_get_proc_address.bc glx/bc/GLX_SGI_make_current_read.bc \
+	glx/bc/GLX_SGIX_fbconfig.bc glx/bc/GLX_SGIX_pbuffer.bc
 
-$(BUDGIE_BUILT_SRCS): budgie/budgie src/data/gl.tu gl.bc bc/alias.bc $(BCFILES)
+$(BUDGIE_BUILT_SRCS): budgie/budgie src/data/gl.tu gl.bc gl/bc/alias.bc $(BCFILES)
 	$(mkdir_p) include/budgie
-	budgie/budgie -T `test -f src/data/gl.tu || echo '$(srcdir)/'`src/data/gl.tu gl.bc
+	budgie/budgie -I$(srcdir) -T `test -f src/data/gl.tu || echo '$(srcdir)/'`src/data/gl.tu $(srcdir)/gl-glx.bc
 
 BUILT_SOURCES += src/gltables.h
 
@@ -162,9 +169,9 @@ src/gltables.c: gengl/gengl.perl $(BUDGIE_BUILT_SRCS)
 	$(PERL) $(srcdir)/gengl/gengl.perl --mode=c --header=budgielib/defines.h $(GLINCLUDES) > src/gltables.c
 src/gltables.h: gengl/gengl.perl $(BUDGIE_BUILT_SRCS)
 	$(PERL) $(srcdir)/gengl/gengl.perl --mode=header --header=budgielib/defines.h $(GLINCLUDES) > src/gltables.h
-bc/alias.bc: gengl/gengl.perl
-	$(mkdir_p) bc
-	$(PERL) $(srcdir)/gengl/gengl.perl --mode=alias $(GLINCLUDES) > bc/alias.bc
+gl/bc/alias.bc: gengl/gengl.perl
+	$(mkdir_p) gl/bc
+	$(PERL) $(srcdir)/gengl/gengl.perl --mode=alias $(GLINCLUDES) > gl/bc/alias.bc
 
 # Filters
 filters_common_la_SOURCES = filters/common.c

@@ -1,5 +1,5 @@
-#ifndef OVERRIDES_H
-#define OVERRIDES_H
+#ifndef BUGLE_GL_OVERRIDES_H
+#define BUGLE_GL_OVERRIDES_H
 
 /* Mesa 3.4 gets this wrong */
 #if defined(GL_ALL_CLIENT_ATTRIB_BITS) && !defined(GL_CLIENT_ALL_ATTRIB_BITS)
@@ -76,9 +76,4 @@ typedef struct
 typedef GLxfbattrib *pGLxfbattrib;
 typedef const GLxfbattrib *pkGLxfbattrib;
 
-/* X #defines this rather than typedefing it. Unfortunately this means that
- * we have to give it a new type and explicitly tag uses.
- */
-typedef Bool XBool;
-
-#endif
+#endif /* BUGLE_GL_OVERRIDES_H */

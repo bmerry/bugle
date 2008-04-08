@@ -40,7 +40,6 @@
 #include <bugle/tracker.h>
 #include <bugle/glstate.h>
 #include <bugle/glsl.h>
-#include <bugle/gltypes.h>
 #include <bugle/log.h>
 #include <bugle/hashtable.h>
 #include <bugle/misc.h>

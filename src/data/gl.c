@@ -3,4 +3,5 @@
 #include <GL/gl.h>
 #include <GL/glext.h>
 #include <GL/glx.h>
-#include <bugle/overrides.h>
+#include <bugle/gl/overrides.h>
+#include <bugle/glx/overrides.h>

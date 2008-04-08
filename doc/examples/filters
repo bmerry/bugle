@@ -13,7 +13,7 @@ chain trace
     filterset showerror
     filterset log
     {
-    	filename "bugle.log"
+        filename "bugle.log"
         # flush "yes"
     }
 }
@@ -198,4 +198,9 @@ chain validate
 {
     filterset checks
     filterset showerror
+}
+
+chain exe
+{
+    filterset exe
 }

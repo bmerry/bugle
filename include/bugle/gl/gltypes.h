@@ -1,5 +1,5 @@
 /*  BuGLe: an OpenGL debugging tool
- *  Copyright (C) 2004-2007  Bruce Merry
+ *  Copyright (C) 2004-2008  Bruce Merry
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -19,17 +19,16 @@
  * able to call OpenGL (hence suitable for incorporating into gldb).
  */
 
-#ifndef BUGLE_SRC_GLTYPES_H
-#define BUGLE_SRC_GLTYPES_H
+#ifndef BUGLE_GL_GLTYPES_H
+#define BUGLE_GL_GLTYPES_H
 
 #if HAVE_CONFIG_H
 # include <config.h>
 #endif
 #include <GL/gl.h>
-#include <GL/glx.h>
 #include <stdio.h>
 #include <stdbool.h>
-#include <bugle/overrides.h>
+#include <bugle/gl/overrides.h>
 
 bool bugle_dump_GLenum(GLenum e, FILE *out);
 bool bugle_dump_GLblendenum(GLenum e, FILE *out);
@@ -37,9 +36,7 @@ bool bugle_dump_GLprimitiveenum(GLenum e, FILE *out);
 bool bugle_dump_GLcomponentsenum(GLenum e, FILE *out);
 bool bugle_dump_GLerror(GLenum e, FILE *out);
 bool bugle_dump_GLboolean(GLboolean b, FILE *out);
-bool bugle_dump_Bool(Bool b, FILE *out);
-bool bugle_dump_GLXDrawable(GLXDrawable d, FILE *out);
 bool bugle_dump_GLpolygonstipple(const GLubyte (*pattern)[4], FILE *out);
 bool bugle_dump_GLxfbattrib(const GLxfbattrib *a, FILE *out);
 
-#endif /* !BUGLE_SRC_GLTYPES_H */
+#endif /* !BUGLE_GL_GLTYPES_H */

@@ -170,6 +170,7 @@ static list<Bitfield> bitfields;
 /* Yacc stuff */
 extern FILE *bc_yyin;
 extern int yyparse();
+vector<string> include_paths(1, ".");
 
 /* File handles */
 static string tufile;
@@ -258,7 +259,7 @@ static void process_args(int argc, char * const argv[])
     filenames[FILE_DEFINES_H] = "budgielib/defines.h";
     filenames[FILE_TABLES_C] = "budgielib/tables.c";
     filenames[FILE_LIB_C] = "budgielib/lib.c";
-    while ((opt = getopt(argc, argv, "T:c:2:t:l:d:")) != -1)
+    while ((opt = getopt(argc, argv, "T:c:2:t:l:d:I:")) != -1)
     {
         switch (opt)
         {
@@ -279,6 +280,9 @@ static void process_args(int argc, char * const argv[])
             break;
         case 'd':
             filenames[FILE_DEFINES_H] = optarg;
+            break;
+        case 'I':
+            include_paths.push_back(optarg);
             break;
         case '?':
         case ':':
@@ -339,7 +343,8 @@ static void identify()
 
     if (limit != "")
     {
-        int result = regcomp(&limit_regex, limit.c_str(), REG_NOSUB | REG_EXTENDED);
+        string anchored = "^" + limit + "$";
+        int result = regcomp(&limit_regex, anchored.c_str(), REG_NOSUB | REG_EXTENDED);
         if (result != 0) die_regex(result, &limit_regex);
         have_limit = true;
     }
@@ -392,8 +397,6 @@ static void identify()
             {
                 string name = type_to_id(node);
                 // FIXME: add an IGNORETYPE command
-                if (name == "GLubyte")
-                    cout << "";
                 if (seen_types.count(name))
                 {
                     assert(type_to_id(seen_types[name]) == name);
@@ -1628,12 +1631,11 @@ static void write_interceptors(FILE *f)
         {
             fprintf(f,
                     "    call.generic.args[%d] = &arg%d;\n",
-                    (int) j, (int) j, name.c_str(), (int) j, (int) j);
+                    (int) j, (int) j);
         }
         if (i->group->has_retn)
             fprintf(f,
-                    "    call.generic.retn = &retn;\n",
-                    name.c_str());
+                    "    call.generic.retn = &retn;\n");
 
         fprintf(f,
                 "    budgie_interceptor(&call);\n"
@@ -1702,7 +1704,9 @@ int main(int argc, char * const argv[])
 
 void parser_limit(const string &l)
 {
-    limit = "^(" + l + ")$";
+    if (!limit.empty())
+        limit += "|";
+    limit += "(" + l + ")";
 }
 
 void parser_header(const string &h)

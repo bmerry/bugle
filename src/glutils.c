@@ -26,7 +26,7 @@
 #include <bugle/filters.h>
 #include <bugle/glutils.h>
 #include <bugle/tracker.h>
-#include <bugle/gltypes.h>
+#include <bugle/gl/gltypes.h>
 #include <bugle/log.h>
 #include <bugle/glreflect.h>
 #include <budgie/call.h>

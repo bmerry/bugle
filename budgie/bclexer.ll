@@ -1,7 +1,7 @@
 %{
 
 /*  BuGLe: an OpenGL debugging tool
- *  Copyright (C) 2004-2006  Bruce Merry
+ *  Copyright (C) 2004-2006, 2008  Bruce Merry
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -25,6 +25,7 @@
 #include <cassert>
 #include <stack>
 #include <string>
+#include <vector>
 #include <list>
 #include "bcparser.h"
 
@@ -34,11 +35,27 @@ using namespace std;
 
 static int nesting = 0;
 extern int expect_c;
+extern vector<string> include_paths;
 
 static void finish_c(string **s)
 {
     *s = new string(bc_yytext);
     BEGIN(0);
+}
+
+/* fopen wrapper that tries all include directories; used for INCLUDE */
+static FILE *fopen_include(const char *fname, const char *mode)
+{
+    size_t i;
+    FILE *f;
+    for (i = 0; i < include_paths.size(); i++)
+    {
+        string full_name = include_paths[i] + '/' + fname;
+        f = fopen(full_name.c_str(), mode);
+        if (f != NULL)
+            return f;
+    }
+    return NULL;
 }
 
 static stack<YY_BUFFER_STATE> include_stack;
@@ -121,7 +138,7 @@ INCLUDE		{ BEGIN(incl); }
 <incl>[ \t]*	/* eat whitespace */
 <incl>[^ \t\n]+	{
     include_stack.push(YY_CURRENT_BUFFER);
-    bc_yyin = fopen(yytext, "r");
+    bc_yyin = fopen_include(yytext, "r");
     if (!bc_yyin)
     {
         fprintf(stderr, "could not open %s: ", bc_yytext);

@@ -33,8 +33,6 @@
 #include <GL/glext.h>
 #include <bugle/filters.h>
 #include <bugle/glutils.h>
-#include <bugle/gltypes.h>
-#include <bugle/gldump.h>
 #include <bugle/tracker.h>
 #include <bugle/log.h>
 #include <bugle/glreflect.h>
