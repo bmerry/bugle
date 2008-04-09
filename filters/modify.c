@@ -1,5 +1,5 @@
 /*  BuGLe: an OpenGL debugging tool
- *  Copyright (C) 2004-2007  Bruce Merry
+ *  Copyright (C) 2004-2008  Bruce Merry
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -28,6 +28,7 @@
 #include <bugle/glutils.h>
 #include <bugle/objects.h>
 #include <bugle/tracker.h>
+#include <bugle/glwin.h>
 #include <bugle/xevent.h>
 #include <bugle/log.h>
 #include <bugle/glreflect.h>
@@ -198,9 +199,8 @@ static void wireframe_handle_activation(bool active, wireframe_context *ctx)
     }
 }
 
-/* Handles both glXMakeCurrent and glXMakeContextCurrent. It is called even
- * when inactive, to restore the proper state to contexts that were not
- * current when activation or deactivation occurred.
+/* This is called even when inactive, to restore the proper state to contexts
+ * that were not current when activation or deactivation occurred.
  */
 static bool wireframe_make_current(function_call *call, const callback_data *data)
 {
@@ -212,7 +212,7 @@ static bool wireframe_make_current(function_call *call, const callback_data *dat
     return true;
 }
 
-static bool wireframe_glXSwapBuffers(function_call *call, const callback_data *data)
+static bool wireframe_swap_buffers(function_call *call, const callback_data *data)
 {
     /* apps that render the entire frame don't always bother to clear */
     CALL(glClear)(GL_COLOR_BUFFER_BIT);
@@ -302,13 +302,10 @@ static bool wireframe_initialise(filter_set *handle)
 
     wireframe_filterset = handle;
     f = bugle_filter_new(handle, "wireframe");
-    bugle_filter_catches(f, "glXSwapBuffers", false, wireframe_glXSwapBuffers);
+    bugle_glwin_filter_catches_swap_buffers(f, false, wireframe_swap_buffers);
     bugle_filter_catches(f, "glPolygonMode", false, wireframe_glPolygonMode);
     bugle_filter_catches(f, "glEnable", false, wireframe_glEnable);
-    bugle_filter_catches(f, "glXMakeCurrent", true, wireframe_make_current);
-#ifdef GLX_SGI_make_current_read
-    bugle_filter_catches(f, "glXMakeCurrentReadSGI", true, wireframe_make_current);
-#endif
+    bugle_glwin_filter_catches_make_current(f, true, wireframe_make_current);
     bugle_filter_order("invoke", "wireframe");
     bugle_filter_post_renders("wireframe");
     wireframe_view = bugle_object_view_new(bugle_context_class,
@@ -392,9 +389,9 @@ static bool frontbuffer_glDrawBuffer(function_call *call, const callback_data *d
     return true;
 }
 
-static bool frontbuffer_glXSwapBuffers(function_call *call, const callback_data *data)
+static bool frontbuffer_swap_buffers(function_call *call, const callback_data *data)
 {
-    /* glXSwapBuffers is specified to do an implicit glFlush. We're going to
+    /* swap_buffers is specified to do an implicit glFlush. We're going to
      * kill the call, so we need to do the flush explicitly.
      */
     CALL(glFlush)();
@@ -427,15 +424,12 @@ static bool frontbuffer_initialise(filter_set *handle)
     f = bugle_filter_new(handle, "frontbuffer");
     bugle_filter_order("invoke", "frontbuffer");
     bugle_filter_catches(f, "glDrawBuffer", false, frontbuffer_glDrawBuffer);
-    bugle_filter_catches(f, "glXMakeCurrent", true, frontbuffer_make_current);
-#ifdef GLX_SGI_make_current_read
-    bugle_filter_catches(f, "glXMakeCurrentReadSGI", true, frontbuffer_make_current);
-#endif
+    bugle_glwin_filter_catches_make_current(f, true, frontbuffer_make_current);
     bugle_filter_post_renders("frontbuffer");
 
     f = bugle_filter_new(handle, "frontbuffer_pre");
     bugle_filter_order("frontbuffer_pre", "invoke");
-    bugle_filter_catches(f, "glXSwapBuffers", false, frontbuffer_glXSwapBuffers);
+    bugle_glwin_filter_catches_swap_buffers(f, false, frontbuffer_swap_buffers);
 
     frontbuffer_view = bugle_object_view_new(bugle_context_class,
                                              frontbuffer_context_init,
@@ -488,7 +482,7 @@ typedef struct
 
 static void invalidate_window(XEvent *event)
 {
-    Display *dpy;
+    glwin_display dpy;
     XEvent dirty;
     Window w;
     Window root;
@@ -572,9 +566,9 @@ static void frustum_vertices(const GLfloat *m, GLfloat *x)
 
 static void camera_draw_frustum(const GLfloat *original)
 {
-    Display *dpy;
-    GLXDrawable old_read, old_write;
-    GLXContext real, aux;
+    glwin_display dpy;
+    glwin_drawable old_read, old_write;
+    glwin_context real, aux;
     int i, j, k;
 
     GLubyte indices[24] =
@@ -607,11 +601,11 @@ static void camera_draw_frustum(const GLfloat *original)
         }
     frustum_vertices(mvp, vertices);
 
-    real = CALL(glXGetCurrentContext)();
-    old_write = CALL(glXGetCurrentDrawable)();
-    old_read = bugle_get_current_read_drawable();
-    dpy = bugle_get_current_display();
-    CALL(glXMakeCurrent)(dpy, old_write, aux);
+    real = bugle_glwin_get_current_context();
+    old_write = bugle_glwin_get_current_drawable();
+    old_read = bugle_glwin_get_current_read_drawable();
+    dpy = bugle_glwin_get_current_display();
+    bugle_glwin_make_context_current(dpy, old_write, old_write, aux);
 
     CALL(glPushAttrib)(GL_VIEWPORT_BIT);
     CALL(glViewport)(viewport[0], viewport[1], viewport[2], viewport[3]);
@@ -665,7 +659,7 @@ static void camera_draw_frustum(const GLfloat *original)
     CALL(glDisableClientState)(GL_VERTEX_ARRAY);
     CALL(glColor4f)(1.0f, 1.0f, 1.0f, 1.0f);
     CALL(glPopAttrib)();
-    bugle_make_context_current(dpy, old_write, old_read, real);
+    bugle_glwin_make_context_current(dpy, old_write, old_read, real);
 }
 
 static void camera_mouse_callback(int dx, int dy, XEvent *event)
@@ -854,7 +848,7 @@ static bool camera_get(function_call *call, const callback_data *data)
     return true;
 }
 
-static bool camera_glXSwapBuffers(function_call *call, const callback_data *data)
+static bool camera_swap_buffers(function_call *call, const callback_data *data)
 {
     camera_context *ctx;
     GLint mode;
@@ -881,7 +875,7 @@ static bool camera_glXSwapBuffers(function_call *call, const callback_data *data
             CALL(glMatrixMode)(mode);
             ctx->dirty = false;
         }
-        bugle_end_internal_render("camera_glXSwapBuffers", true);
+        bugle_end_internal_render("camera_swap_buffers", true);
     }
     return true;
 }
@@ -969,15 +963,12 @@ static bool camera_initialise(filter_set *handle)
     bugle_filter_catches(f, "glMultTransposeMatrixf", false, camera_restore);
     bugle_filter_catches(f, "glMultTransposeMatrixd", false, camera_restore);
 #endif
-    bugle_filter_catches(f, "glXSwapBuffers", false, camera_glXSwapBuffers);
+    bugle_glwin_filter_catches_swap_buffers(f, false, camera_swap_buffers);
 
     f = bugle_filter_new(handle, "camera_post");
     bugle_filter_post_renders("camera_post");
     bugle_filter_order("invoke", "camera_post");
-    bugle_filter_catches(f, "glXMakeCurrent", true, camera_make_current);
-#ifdef GLX_SGI_make_current_read
-    bugle_filter_catches(f, "glXMakeCurrentReadSGI", true, camera_make_current);
-#endif
+    bugle_glwin_filter_catches_make_current(f, true, camera_make_current);
     bugle_filter_catches(f, "glLoadIdentity", false, camera_override);
     bugle_filter_catches(f, "glLoadMatrixf", false, camera_override);
     bugle_filter_catches(f, "glLoadMatrixd", false, camera_override);

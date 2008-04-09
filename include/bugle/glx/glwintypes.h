@@ -25,9 +25,8 @@
 #include <GL/glx.h>
 #include <GL/glxext.h>
 
-typedef Display *   bugle_glwin_display;
-typedef GLXContext  bugle_glwin_context;
-typedef GLXDrawable bugle_glwin_drawable;
-typedef XVisualInfo bugle_glwin_visual_info;
+typedef Display *   glwin_display;
+typedef GLXContext  glwin_context;
+typedef GLXDrawable glwin_drawable;
 
 #endif /* !BUGLE_GLX_GLWINTYPES_H */

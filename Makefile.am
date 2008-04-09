@@ -122,7 +122,7 @@ src_libbugle_la_SOURCES = \
 	src/stats.c src/statslex.l src/statsparse.y \
 	src/log.c src/objects.c src/xevent.c \
 	src/gl/gldump.c \
-	src/glx/glxdump.c \
+	src/glx/glxdump.c src/glx/glwin.c \
 	budgielib/addresses.c budgielib/lib.h \
 	common/threads.h
 nodist_src_libbugle_la_SOURCES = \

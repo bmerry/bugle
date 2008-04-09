@@ -64,22 +64,6 @@ void bugle_filter_post_queries_begin_end(const char *name);
  */
 GLXContext bugle_get_aux_context(bool shared);
 
-/* Determines the current display if possible. It may return NULL in some
- * cases even if there is an active extension. Depends on trackcontext and
- * trackextensions.
- */
-Display *bugle_get_current_display(void);
-Display *bugle_get_current_display_internal(bool lock);
-
-/* Determines the current read drawable. Depends on trackcontext and
- * trackextensions.
- */
-GLXDrawable bugle_get_current_read_drawable(void);
-
-/* Wrapper around glXMakeContextCurrent that handles pre-GLX 1.3 */
-Bool bugle_make_context_current(Display *dpy, GLXDrawable draw,
-                                GLXDrawable read, GLXContext ctx);
-
 /* Draws text at the specified location. The current colour is used to
  * render the text. The text is rendered with alpha, so alpha-test or
  * alpha-blending can be used to obtain a transparent background.

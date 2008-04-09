@@ -25,6 +25,7 @@
 #include <bugle/linkedlist.h>
 #include <bugle/stats.h>
 #include <bugle/filters.h>
+#include <bugle/glwin.h>
 #include <bugle/log.h>
 #include "xalloc.h"
 
@@ -40,7 +41,7 @@ static bool logstats_show_set(const struct filter_set_variable_info_s *var,
     return true;
 }
 
-static bool logstats_glXSwapBuffers(function_call *call, const callback_data *data)
+static bool logstats_swap_buffers(function_call *call, const callback_data *data)
 {
     linked_list_node *i;
     stats_statistic *st;
@@ -83,7 +84,7 @@ static bool logstats_initialise(filter_set *handle)
     stats_statistic *st;
 
     f = bugle_filter_new(handle, "stats_log");
-    bugle_filter_catches(f, "glXSwapBuffers", false, logstats_glXSwapBuffers);
+    bugle_glwin_filter_catches_swap_buffers(f, false, logstats_swap_buffers);
 
     bugle_list_clear(&logstats_show);
     for (i = bugle_list_head(&logstats_show_requested); i; i = bugle_list_next(i))

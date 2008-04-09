@@ -15,33 +15,55 @@
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#ifndef BUGLE_GLX_GLWIN_H
-#define BUGLE_GLX_GLWIN_H
+#ifndef BUGLE_GLWIN_H
+#define BUGLE_GLWIN_H
 
 #if HAVE_CONFIG_H
 # include <config.h>
 #endif
-#include <bugle/glwintypes.h>
+#include <bugle/glx/glwintypes.h>
+#include <bugle/filters.h>
 #include <stdbool.h>
 
 /* Wrappers around GLX/WGL/EGL functions */
-bugle_glwin_display  bugle_get_current_display(void);
-bugle_glwin_context  bugle_get_current_context(void);
-bugle_glwin_drawable bugle_get_current_drawable(void);
-bugle_glwin_drawable bugle_get_current_read_drawable(void);
+glwin_display  bugle_glwin_get_current_display(void);
+glwin_context  bugle_glwin_get_current_context(void);
+glwin_drawable bugle_glwin_get_current_drawable(void);
+glwin_drawable bugle_glwin_get_current_read_drawable(void);
 
-bool bugle_make_context_current(bugle_glwin_display dpy, bugle_glwin_drawable draw,
-                                bugle_glwin_drawable read, bugle_glwin_context ctx);
+bool bugle_glwin_make_context_current(glwin_display dpy, glwin_drawable draw,
+                                      glwin_drawable read, glwin_context ctx);
 
-/* Creates a new context with the same visual/pixel format/config as the
- * given one. If 'share' is true, it will share texture data etc, otherwise
- * it will not. Returns NULL on failure.
- *
- * This functionality is intended primarily for trackcontext to generate
- * aux contexts. Most user code should use those aux contexts rather than
- * generating lots of their own.
+
+/* Encodes information about the call that created a context, so that a similar
+ * one may be created later. This is only the platform-independent part.
+ * Each platform will append some data to the structure.
  */
-bugle_glwin_context bugle_clone_current_context(bugle_glwin_display dpy,
-                                                bugle_glwin_context ctx,
-                                                bool share);
-#endif /* !BUGLE_GLX_GLWIN_H */
+typedef struct glwin_context_create
+{
+    budgie_function function;
+    budgie_group group;
+    glwin_display dpy;
+    glwin_context share;
+    glwin_context ctx;
+} glwin_context_create;
+
+/* Captures the necessary information from a context creation call to make
+ * more contexts. Returns a newly allocated glwin_context_create (or a
+ * subclass) if the original function succeeded, or NULL if it failed.
+ * This should only be called after the original function completed.
+ */
+glwin_context_create *bugle_glwin_context_create_save(function_call *call);
+
+/* Creates a new context that is compatible with the information captured in
+ * the create structure. If share is true, the new context will share textures
+ * etc with the original. Returns the new context, or NULL on failure.
+ */
+glwin_context bugle_glwin_context_create_new(const struct glwin_context_create *create, bool share);
+
+/* Helper functions to trap the appropriate window-system calls */
+void bugle_glwin_filter_catches_create_context(filter *f, bool inactive, filter_callback callback);
+void bugle_glwin_filter_catches_make_current(filter *f, bool inactive, filter_callback callback);
+void bugle_glwin_filter_catches_swap_buffers(filter *f, bool inactive, filter_callback callback);
+
+#endif /* !BUGLE_GLWIN_H */

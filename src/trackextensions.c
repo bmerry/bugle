@@ -1,5 +1,5 @@
 /*  BuGLe: an OpenGL debugging tool
- *  Copyright (C) 2004-2007  Bruce Merry
+ *  Copyright (C) 2004-2008  Bruce Merry
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -26,6 +26,7 @@
 #include <assert.h>
 #include <bugle/hashtable.h>
 #include <bugle/tracker.h>
+#include <bugle/glwin.h>
 #include <bugle/filters.h>
 #include <bugle/objects.h>
 #include <bugle/glutils.h>
@@ -80,8 +81,7 @@ static void context_init(const void *key, void *data)
 
     glexts = (const char *) CALL(glGetString)(GL_EXTENSIONS);
     glver = (const char *) CALL(glGetString)(GL_VERSION);
-    /* Don't lock, because we're already inside a lock */
-    dpy = bugle_get_current_display_internal(false);
+    dpy = bugle_glwin_get_current_display();
     if (dpy)
     {
         CALL(glXQueryVersion)(dpy, &glx_major, &glx_minor);

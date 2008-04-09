@@ -78,7 +78,7 @@ static NVPMRESULT check_nvpm(NVPMRESULT status, const char *file, int line)
 
 #define CHECK_NVPM(x) (check_nvpm((x), __FILE__, __LINE__))
 
-static bool stats_nv_glXSwapBuffers(function_call *call, const callback_data *data)
+static bool stats_nv_swap_buffers(function_call *call, const callback_data *data)
 {
     linked_list_node *i;
     stats_signal *si;
@@ -121,7 +121,7 @@ static bool stats_nv_glXSwapBuffers(function_call *call, const callback_data *da
     return true;
 }
 
-static bool stats_nv_post_glXSwapBuffers(function_call *call, const callback_data *data)
+static bool stats_nv_post_swap_buffers(function_call *call, const callback_data *data)
 {
     if (stats_nv_experiment_mode)
     {
@@ -238,12 +238,12 @@ static bool stats_nv_initialise(filter_set *handle)
     }
 
     f = bugle_filter_new(handle, "stats_nv");
-    bugle_filter_catches(f, "glXSwapBuffers", false, stats_nv_glXSwapBuffers);
+    bugle_glwin_filter_catches_swap_buffers(f, false, stats_nv_swap_buffers);
     bugle_filter_order("stats_nv", "invoke");
     bugle_filter_order("stats_nv", "stats");
 
     f = bugle_filter_new(handle, "stats_nv_post");
-    bugle_filter_catches(f, "glXSwapBuffers", false, stats_nv_post_glXSwapBuffers);
+    bugle_glwin_filter_catches_swap_buffers(f, false, stats_nv_post_swap_buffers);
     bugle_filter_order("invoke", "stats_nv_post");
     return true;
 

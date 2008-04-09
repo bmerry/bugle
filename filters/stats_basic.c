@@ -23,6 +23,7 @@
 #include <sys/types.h>
 #include <bugle/stats.h>
 #include <bugle/filters.h>
+#include <bugle/glwin.h>
 
 static stats_signal *stats_basic_frames, *stats_basic_seconds;
 
@@ -34,7 +35,7 @@ static bool stats_basic_seconds_activate(stats_signal *si)
     return true;
 }
 
-static bool stats_basic_glXSwapBuffers(function_call *call, const callback_data *data)
+static bool stats_basic_swap_buffers(function_call *call, const callback_data *data)
 {
     struct timeval now;
 
@@ -49,7 +50,7 @@ static bool stats_basic_initialise(filter_set *handle)
     filter *f;
 
     f = bugle_filter_new(handle, "stats_basic");
-    bugle_filter_catches(f, "glXSwapBuffers", false, stats_basic_glXSwapBuffers);
+    bugle_glwin_filter_catches_swap_buffers(f, false, stats_basic_swap_buffers);
     bugle_filter_order("stats_basic", "invoke");
     bugle_filter_order("stats_basic", "stats");
 

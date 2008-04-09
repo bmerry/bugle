@@ -41,6 +41,7 @@
 #include <bugle/glutils.h>
 #include <bugle/glreflect.h>
 #include <bugle/tracker.h>
+#include <bugle/glwin.h>
 #include <bugle/xevent.h>
 #include <bugle/log.h>
 #include <budgie/addresses.h>
@@ -76,8 +77,8 @@ typedef struct
  */
 typedef struct
 {
-    GLXContext old_context;
-    GLXDrawable old_read, old_write;
+    glwin_context old_context;
+    glwin_drawable old_read, old_write;
 } screenshot_context;
 
 /* General settings */
@@ -166,31 +167,31 @@ static void prepare_screenshot_data(screenshot_data *data,
  */
 static bool screenshot_start(screenshot_context *ssctx)
 {
-    GLXContext aux;
-    Display *dpy;
+    glwin_context aux;
+    glwin_display dpy;
 
-    ssctx->old_context = CALL(glXGetCurrentContext)();
-    ssctx->old_write = CALL(glXGetCurrentDrawable)();
-    ssctx->old_read = bugle_get_current_read_drawable();
-    dpy = bugle_get_current_display();
+    ssctx->old_context = bugle_glwin_get_current_context();
+    ssctx->old_write = bugle_glwin_get_current_drawable();
+    ssctx->old_read = bugle_glwin_get_current_read_drawable();
+    dpy = bugle_glwin_get_current_display();
     aux = bugle_get_aux_context(false);
     if (!aux) return false;
     if (!bugle_begin_internal_render())
     {
         bugle_log("screenshot", "grab", BUGLE_LOG_NOTICE,
-                  "glXSwapBuffers called inside begin/end; skipping frame");
+                  "swap_buffers called inside begin/end; skipping frame");
         return false;
     }
-    bugle_make_context_current(dpy, ssctx->old_write, ssctx->old_write, aux);
+    bugle_glwin_make_context_current(dpy, ssctx->old_write, ssctx->old_write, aux);
     return true;
 }
 
 static void screenshot_stop(screenshot_context *ssctx)
 {
-    Display *dpy;
+    glwin_display dpy;
 
-    dpy = bugle_get_current_display();
-    bugle_make_context_current(dpy, ssctx->old_write, ssctx->old_read, ssctx->old_context);
+    dpy = bugle_glwin_get_current_display();
+    bugle_glwin_make_context_current(dpy, ssctx->old_write, ssctx->old_read, ssctx->old_context);
 }
 
 /* FIXME: we do not currently free the PBO, since we have no way of knowing
@@ -428,7 +429,7 @@ static bool unmap_screenshot(screenshot_data *data)
     }
 }
 
-static void get_drawable_size(Display *dpy, GLXDrawable draw,
+static void get_drawable_size(glwin_display dpy, glwin_drawable draw,
                               int *width, int *height)
 {
     unsigned int value = 0;
@@ -462,8 +463,8 @@ static void get_drawable_size(Display *dpy, GLXDrawable draw,
 static bool do_screenshot(GLenum format, int test_width, int test_height,
                           screenshot_data **data)
 {
-    GLXDrawable drawable;
-    Display *dpy;
+    glwin_drawable drawable;
+    glwin_display dpy;
     screenshot_data *cur;
     int width, height;
 
@@ -471,8 +472,8 @@ static bool do_screenshot(GLenum format, int test_width, int test_height,
     cur = &video_data[video_cur];
     video_cur = (video_cur + 1) % video_lag;
 
-    drawable = CALL(glXGetCurrentDrawable)();
-    dpy = bugle_get_current_display();
+    drawable = bugle_glwin_get_current_drawable();
+    dpy = bugle_glwin_get_current_display();
     get_drawable_size(dpy, drawable, &width, &height);
     if (test_width != -1 || test_height != -1)
         if (width != test_width || height != test_height)
@@ -717,7 +718,7 @@ static bool screenshot_initialise(filter_set *handle)
 #endif
 
     f = bugle_filter_new(handle, "screenshot");
-    bugle_filter_catches(f, "glXSwapBuffers", false, screenshot_callback);
+    bugle_glwin_filter_catches_swap_buffers(f, false, screenshot_callback);
     bugle_filter_order("screenshot", "invoke");
 
     video_data = XCALLOC(video_lag, screenshot_data);
@@ -948,7 +949,7 @@ static void eps_context_init(const void *key, void *data)
     d->stream = NULL;
 }
 
-static bool eps_glXSwapBuffers(function_call *call, const callback_data *data)
+static bool eps_swap_buffers(function_call *call, const callback_data *data)
 {
     size_t frame;
     eps_struct *d;
@@ -990,7 +991,7 @@ static bool eps_glXSwapBuffers(function_call *call, const callback_data *data)
         }
         else
             bugle_log("eps", "gl2ps", BUGLE_LOG_NOTICE,
-                      "glXSwapBuffers called inside glBegin/glEnd; snapshot may be corrupted.");
+                      "swap_buffers called inside glBegin/glEnd; snapshot may be corrupted.");
     }
     else if (keypress_eps && bugle_begin_internal_render())
     {
@@ -1039,7 +1040,7 @@ static bool eps_glXSwapBuffers(function_call *call, const callback_data *data)
         d->stream = f;
         d->capture = true;
         free(fname);
-        bugle_end_internal_render("eps_glXSwapBuffers", true);
+        bugle_end_internal_render("eps_swap_buffers", true);
     }
     return true;
 }
@@ -1079,7 +1080,7 @@ static bool eps_initialise(filter_set *handle)
     filter *f;
 
     f = bugle_filter_new(handle, "eps_pre");
-    bugle_filter_catches(f, "glXSwapBuffers", false, eps_glXSwapBuffers);
+    bugle_glwin_filter_catches_swap_buffers(f, false, eps_swap_buffers);
     f = bugle_filter_new(handle, "eps");
     bugle_filter_catches(f, "glPointSize", false, eps_glPointSize);
     bugle_filter_catches(f, "glLineWidth", false, eps_glLineWidth);

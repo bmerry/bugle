@@ -32,6 +32,7 @@
 #include <bugle/glutils.h>
 #include <bugle/xevent.h>
 #include <bugle/tracker.h>
+#include <bugle/glwin.h>
 #include <budgie/addresses.h>
 #include "xalloc.h"
 
@@ -304,11 +305,11 @@ static void showstats_graph_draw(GLenum mode, int xofs0, int yofs0,
     }
 }
 
-static bool showstats_glXSwapBuffers(function_call *call, const callback_data *data)
+static bool showstats_swap_buffers(function_call *call, const callback_data *data)
 {
-    Display *dpy;
-    GLXDrawable old_read, old_write;
-    GLXContext aux, real;
+    glwin_display dpy;
+    glwin_drawable old_read, old_write;
+    glwin_context aux, real;
     showstats_struct *ss;
     GLint viewport[4];
     linked_list_node *i;
@@ -337,11 +338,11 @@ static bool showstats_glXSwapBuffers(function_call *call, const callback_data *d
     if (aux && bugle_begin_internal_render())
     {
         CALL(glGetIntegerv)(GL_VIEWPORT, viewport);
-        real = CALL(glXGetCurrentContext)();
-        old_write = CALL(glXGetCurrentDrawable)();
-        old_read = bugle_get_current_read_drawable();
-        dpy = bugle_get_current_display();
-        CALL(glXMakeCurrent)(dpy, old_write, aux);
+        real = bugle_glwin_get_current_context();
+        old_write = bugle_glwin_get_current_drawable();
+        old_read = bugle_glwin_get_current_read_drawable();
+        dpy = bugle_glwin_get_current_display();
+        bugle_glwin_make_context_current(dpy, old_write, old_write, aux);
 
         showstats_update(ss);
 
@@ -424,7 +425,7 @@ static bool showstats_glXSwapBuffers(function_call *call, const callback_data *d
         CALL(glLoadIdentity)();
         CALL(glPopAttrib)();
 
-        bugle_make_context_current(dpy, old_write, old_read, real);
+        bugle_glwin_make_context_current(dpy, old_write, old_read, real);
         bugle_end_internal_render("showstats_callback", true);
     }
     return true;
@@ -487,7 +488,7 @@ static bool showstats_initialise(filter_set *handle)
     bugle_filter_order("showstats", "debugger");
     bugle_filter_order("showstats", "screenshot");
     bugle_filter_order("stats", "showstats");
-    bugle_filter_catches(f, "glXSwapBuffers", false, showstats_glXSwapBuffers);
+    bugle_glwin_filter_catches_swap_buffers(f, false, showstats_swap_buffers);
     showstats_view = bugle_object_view_new(bugle_context_class,
                                            NULL,
                                            showstats_struct_clear,

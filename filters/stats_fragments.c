@@ -26,6 +26,7 @@
 #include <bugle/filters.h>
 #include <bugle/objects.h>
 #include <bugle/tracker.h>
+#include <bugle/glwin.h>
 #include <bugle/log.h>
 #include <bugle/glutils.h>
 #include <budgie/addresses.h>
@@ -65,7 +66,7 @@ static void stats_fragments_struct_clear(void *data)
         CALL(glDeleteQueries)(1, &s->query);
 }
 
-static bool stats_fragments_glXSwapBuffers(function_call *call, const callback_data *data)
+static bool stats_fragments_swap_buffers(function_call *call, const callback_data *data)
 {
     stats_fragments_struct *s;
     GLuint fragments;
@@ -76,13 +77,13 @@ static bool stats_fragments_glXSwapBuffers(function_call *call, const callback_d
     {
         CALL(glEndQueryARB)(GL_SAMPLES_PASSED_ARB);
         CALL(glGetQueryObjectuivARB)(s->query, GL_QUERY_RESULT_ARB, &fragments);
-        bugle_end_internal_render("stats_fragments_glXSwapBuffers", true);
+        bugle_end_internal_render("stats_fragments_swap_buffers", true);
         bugle_stats_signal_add(stats_fragments_fragments, fragments);
     }
     return true;
 }
 
-static bool stats_fragments_post_glXSwapBuffers(function_call *call, const callback_data *data)
+static bool stats_fragments_post_swap_buffers(function_call *call, const callback_data *data)
 {
     stats_fragments_struct *s;
 
@@ -91,7 +92,7 @@ static bool stats_fragments_post_glXSwapBuffers(function_call *call, const callb
         && s && s->query && bugle_begin_internal_render())
     {
         CALL(glBeginQueryARB)(GL_SAMPLES_PASSED_ARB, s->query);
-        bugle_end_internal_render("stats_fragments_post_glXSwapBuffers", true);
+        bugle_end_internal_render("stats_fragments_post_swap_buffers", true);
     }
     return true;
 }
@@ -124,14 +125,14 @@ static bool stats_fragments_initialise(filter_set *handle)
                                                  sizeof(stats_fragments_struct));
 
     f = bugle_filter_new(handle, "stats_fragments");
-    bugle_filter_catches(f, "glXSwapBuffers", false, stats_fragments_glXSwapBuffers);
+    bugle_glwin_filter_catches_swap_buffers(f, false, stats_fragments_swap_buffers);
     bugle_filter_catches(f, "glBeginQueryARB", false, stats_fragments_query);
     bugle_filter_catches(f, "glEndQueryARB", false, stats_fragments_query);
     bugle_filter_order("stats_fragments", "invoke");
     bugle_filter_order("stats_fragments", "stats");
 
     f = bugle_filter_new(handle, "stats_fragments_post");
-    bugle_filter_catches(f, "glXSwapBuffers", false, stats_fragments_post_glXSwapBuffers);
+    bugle_glwin_filter_catches_swap_buffers(f, false, stats_fragments_post_swap_buffers);
     bugle_filter_order("invoke", "stats_fragments_post");
 
     stats_fragments_fragments = bugle_stats_signal_new("fragments", NULL, NULL);
