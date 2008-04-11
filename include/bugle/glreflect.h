@@ -34,7 +34,7 @@ int                 bugle_gl_extension_count(void);
 const char *        bugle_gl_extension_name(bugle_gl_extension ext);
 /* The GL/GLX core version represented, or NULL for actual extensions */
 const char *        bugle_gl_extension_version(bugle_gl_extension ext);
-bool                bugle_gl_extension_is_glx(bugle_gl_extension ext);
+bool                bugle_gl_extension_is_glwin(bugle_gl_extension ext);
 bugle_gl_extension  bugle_gl_extension_id(const char *name);
 
 /* Returns a pointer to a list terminated by NULL_EXTENSION. The storage is

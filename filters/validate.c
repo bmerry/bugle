@@ -65,7 +65,8 @@ static bool error_callback(function_call *call, const callback_data *data)
     call_error = bugle_object_get_current_data(bugle_call_class, error_call_view);
     *call_error = GL_NO_ERROR;
 
-    if (budgie_function_name(call->generic.id)[2] == 'X') return true; /* GLX */
+    if (bugle_gl_extension_is_glwin(bugle_gl_function_extension(call->generic.id)))
+        return true;  /* only applies to real GL calls */
     if (call->generic.group == BUDGIE_GROUP_ID(glGetError))
     {
         /* We hope that it returns GL_NO_ERROR, since otherwise something

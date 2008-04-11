@@ -409,36 +409,13 @@ static bool get_framebuffer_size(GLuint fbo, GLenum target, GLenum attachment,
     {
         glwin_display dpy;
         glwin_drawable draw;
-        unsigned int value = 0;
 
         /* Window-system framebuffer */
         dpy = bugle_glwin_get_current_display();
         draw = bugle_glwin_get_current_read_drawable();
 
-#ifdef GLX_VERSION_1_3
-        if (BUGLE_GL_HAS_EXTENSION(GLX_VERSION_1_3))
-        {
-            CALL(glXQueryDrawable)(dpy, draw, GLX_WIDTH, &value);
-            *width = value;
-            CALL(glXQueryDrawable)(dpy, draw, GLX_HEIGHT, &value);
-            *height = value;
-        }
-        else
-#endif
-        {
-            Window root;
-            int x, y;
-            unsigned int uwidth = 0, uheight = 0, border, depth;
-            /* FIXME: a pbuffer here will break. This can
-             * only be fixed by tracking the type of drawables
-             * as they are created, which will be a huge pain.
-             * Note: this code is duplicates in capture.c and debugger.c
-             */
-            XGetGeometry(dpy, draw, &root, &x, &y,
-                         &uwidth, &uheight, &border, &depth);
-            *width = uwidth;
-            *height = uheight;
-        }
+        bugle_glwin_get_drawable_dimensions(dpy, draw, width, height);
+        return width >= 0 && height >= 0;
     }
     return true;
 }

@@ -429,37 +429,6 @@ static bool unmap_screenshot(screenshot_data *data)
     }
 }
 
-static void get_drawable_size(glwin_display dpy, glwin_drawable draw,
-                              int *width, int *height)
-{
-    unsigned int value = 0;
-
-#ifdef GLX_VERSION_1_3
-    if (BUGLE_GL_HAS_EXTENSION(GLX_VERSION_1_3))
-    {
-        CALL(glXQueryDrawable)(dpy, draw, GLX_WIDTH, &value);
-        *width = value;
-        CALL(glXQueryDrawable)(dpy, draw, GLX_HEIGHT, &value);
-        *height = value;
-    }
-    else
-#endif
-    {
-        Window root;
-        int x, y;
-        unsigned int uwidth = 0, uheight = 0, border, depth;
-        /* FIXME: a pbuffer here will break. This can
-         * only be fixed by tracking the type of drawables
-         * as they are created, which will be a huge pain.
-         * Note: this code is duplicated in capture.c and debugger.c
-         */
-        XGetGeometry(dpy, draw, &root, &x, &y,
-                     &uwidth, &uheight, &border, &depth);
-        *width = uwidth;
-        *height = uheight;
-    }
-}
-
 static bool do_screenshot(GLenum format, int test_width, int test_height,
                           screenshot_data **data)
 {
@@ -474,7 +443,7 @@ static bool do_screenshot(GLenum format, int test_width, int test_height,
 
     drawable = bugle_glwin_get_current_drawable();
     dpy = bugle_glwin_get_current_display();
-    get_drawable_size(dpy, drawable, &width, &height);
+    bugle_glwin_get_drawable_dimensions(dpy, drawable, &width, &height);
     if (test_width != -1 || test_height != -1)
         if (width != test_width || height != test_height)
         {
@@ -846,7 +815,7 @@ static void mark_extension(bugle_gl_extension ext, bool *marked_extensions)
     if (ext > 0
         && bugle_gl_extension_version(ext) 
         && bugle_gl_extension_version(ext - 1)
-        && bugle_gl_extension_is_glx(ext) == bugle_gl_extension_is_glx(ext - 1))
+        && bugle_gl_extension_is_glwin(ext) == bugle_gl_extension_is_glwin(ext - 1))
         mark_extension(ext - 1, marked_extensions);
 }
 
@@ -906,7 +875,7 @@ static void showextensions_shutdown(filter_set *handle)
             ver = bugle_gl_extension_version(best);
             if (ver)
             {
-                if (bugle_gl_extension_is_glx(best))
+                if (bugle_gl_extension_is_glwin(best))
                     glx_version = ver;
                 else
                     gl_version = ver;

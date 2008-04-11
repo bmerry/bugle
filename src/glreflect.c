@@ -1,5 +1,5 @@
 /*  BuGLe: an OpenGL debugging tool
- *  Copyright (C) 2004-2007  Bruce Merry
+ *  Copyright (C) 2004-2008  Bruce Merry
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -62,10 +62,10 @@ const char *bugle_gl_extension_version(bugle_gl_extension ext)
     return _bugle_gl_extension_table[ext].version;
 }
 
-bool bugle_gl_extension_is_glx(bugle_gl_extension ext)
+bool bugle_gl_extension_is_glwin(bugle_gl_extension ext)
 {
     assert(ext >= 0 && ext < BUGLE_GL_EXTENSION_COUNT);
-    return strncmp(_bugle_gl_extension_table[ext].name, "GLX_", 4) == 0;
+    return strncmp(_bugle_gl_extension_table[ext].name, "GL_", 3) != 0;
 }
 
 bugle_gl_extension bugle_gl_extension_id(const char *name)

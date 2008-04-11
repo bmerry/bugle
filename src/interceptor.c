@@ -18,14 +18,13 @@
 #if HAVE_CONFIG_H
 # include <config.h>
 #endif
-#define GLX_GLXEXT_PROTOTYPES
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
 #include <stdio.h>
-#include <GL/glx.h>
 #include <bugle/filters.h>
 #include <bugle/tracker.h>
+#include <bugle/glwin.h>
 #include <bugle/xevent.h>
 #include <bugle/log.h>
 #include <bugle/stats.h>
@@ -191,7 +190,7 @@ static void initialise_core_filters(void)
  * direct dynamic linking, but everything else should be accessed by
  * glXGetProcAddressARB. We deal with that here.
  */
-static void initialise_addresses_glx(void)
+static void initialise_addresses_glwin(void)
 {
     size_t i;
 
@@ -200,8 +199,8 @@ static void initialise_addresses_glx(void)
         /* gengl.perl puts the OpenGL versions first, and ordered by version
          * number.
          */
-        if (bugle_gl_function_extension(i) > BUGLE_GL_EXTENSION_ID(GL_VERSION_1_2))
-            budgie_function_address_set_real(i, CALL(glXGetProcAddressARB)((const GLubyte *) budgie_function_name(i)));
+        if (bugle_gl_function_extension(i) > BUGLE_GL_EXTENSION_ID(GL_VERSION_1_1))
+            budgie_function_address_set_real(i, bugle_glwin_get_proc_address(budgie_function_name(i)));
     }
 }
 
@@ -210,7 +209,7 @@ BUGLE_CONSTRUCTOR(initialise_all);
 static void initialise_all(void)
 {
     budgie_function_address_initialise();
-    initialise_addresses_glx();
+    initialise_addresses_glwin();
     xevent_initialise();
     filters_initialise();
     initialise_core_filters();

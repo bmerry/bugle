@@ -15,7 +15,6 @@
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#include <GL/glx.h>
 #include <sys/time.h>
 #include <math.h>
 #include <stdlib.h>
@@ -1136,7 +1135,7 @@ static bool extoverride_initialise(filter_set *handle)
             bugle_filter_catches_function_id(f, i, false, extoverride_warn);
         else if (extoverride_max_version
                  && version
-                 && !bugle_gl_extension_is_glx(ext)
+                 && !bugle_gl_extension_is_glwin(ext)
                  && strcmp(version, extoverride_max_version) > 1)
         {
             /* FIXME: the strcmp above will break if there is ever an OpenGL

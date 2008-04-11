@@ -35,6 +35,21 @@ bool bugle_glwin_make_context_current(glwin_display dpy, glwin_drawable draw,
                                       glwin_drawable read, glwin_context ctx);
 
 
+/* Wrapper around glXGetProcAddress or similar functios */
+void (*bugle_glwin_get_proc_address(const char *name))(void);
+
+/* Wrapper around glXQueryVersion - return 1.0 for wgl */
+void bugle_glwin_query_version(glwin_display dpy, int *major, int *minor);
+
+/* Returns the window-system extension string */
+const char *bugle_glwin_query_extensions_string(glwin_display dpy);
+
+/* Returns the width and height of the drawable, if it can be determined.
+ * Otherwise returns -1, -1. Both parameters must be non-NULL.
+ */
+void bugle_glwin_get_drawable_dimensions(glwin_display dpy, glwin_drawable drawable,
+                                         int *width, int *height);
+
 /* Encodes information about the call that created a context, so that a similar
  * one may be created later. This is only the platform-independent part.
  * Each platform will append some data to the structure.

@@ -18,7 +18,6 @@
 #if HAVE_CONFIG_H
 # include <config.h>
 #endif
-#include <GL/glx.h>
 #include <assert.h>
 #include <stdbool.h>
 #include <stdlib.h>
@@ -70,8 +69,8 @@ static void tokenise(const char *str, hash_table *tokens)
 static void context_init(const void *key, void *data)
 {
     context_extensions *ce;
-    const char *glver, *glexts, *glxexts = NULL;
-    int glx_major = 0, glx_minor = 0;
+    const char *glver, *glexts, *glwinexts = NULL;
+    int glwin_major = 0, glwin_minor = 0;
     bugle_gl_extension i;
     Display *dpy;
 
@@ -84,12 +83,12 @@ static void context_init(const void *key, void *data)
     dpy = bugle_glwin_get_current_display();
     if (dpy)
     {
-        CALL(glXQueryVersion)(dpy, &glx_major, &glx_minor);
-        glxexts = CALL(glXQueryExtensionsString)(dpy, 0); /* FIXME: get screen number */
+        bugle_glwin_query_version(dpy, &glwin_major, &glwin_minor);
+        glwinexts = bugle_glwin_query_extensions_string(dpy);
     }
 
     tokenise(glexts, &ce->names);
-    if (glxexts) tokenise(glxexts, &ce->names);
+    if (glwinexts) tokenise(glwinexts, &ce->names);
     for (i = 0; i < bugle_gl_extension_count(); i++)
     {
         const char *name, *ver;
@@ -97,14 +96,14 @@ static void context_init(const void *key, void *data)
         ver = bugle_gl_extension_version(i);
         if (ver)
         {
-            if (!bugle_gl_extension_is_glx(i))
+            if (!bugle_gl_extension_is_glwin(i))
                 ce->flags[i] = strcmp(glver, ver) >= 0;
             else if (dpy)
             {
                 int major = 0, minor = 0;
                 sscanf(ver, "%d.%d", &major, &minor);
-                ce->flags[i] = glx_major > major
-                    || (glx_major == major && glx_minor >= minor);
+                ce->flags[i] = glwin_major > major
+                    || (glwin_major == major && glwin_minor >= minor);
             }
             if (ce->flags[i])
                 bugle_hash_set(&ce->names, name, ce); /* arbitrary non-NULL */

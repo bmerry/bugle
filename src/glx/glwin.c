@@ -56,6 +56,55 @@ bool bugle_glwin_make_context_current(glwin_display dpy, glwin_drawable draw,
     return CALL(glXMakeCurrentReadSGI)(dpy, draw, read, ctx);
 }
 
+void (*bugle_glwin_get_proc_address(const char *name))(void)
+{
+    return CALL(glXGetProcAddressARB)((const GLubyte *) name);
+}
+
+void bugle_glwin_query_version(glwin_display dpy, int *major, int *minor)
+{
+    CALL(glXQueryVersion)(dpy, major, minor);
+}
+
+const char *bugle_glwin_query_extensions_string(glwin_display dpy)
+{
+    /* FIXME: take a screen number, or find out a default somehow */
+    return CALL(glXQueryExtensionsString)(dpy, 0);
+}
+
+void bugle_glwin_get_drawable_dimensions(glwin_display dpy, glwin_drawable drawable,
+                                         int *width, int *height)
+{
+    unsigned int uwidth, uheight;
+#ifdef GLX_VERSION_1_3
+    int major, minor;
+
+    glXQueryVersion(dpy, &major, &minor);
+    if (major > 1 || (major == 1 && minor >= 3))
+    {
+        glXQueryDrawable(dpy, drawable, GLX_WIDTH, &uwidth);
+        glXQueryDrawable(dpy, drawable, GLX_HEIGHT, &uheight);
+    }
+#endif
+    else
+    {
+        /* Ok, can get tricky if we don't have 1.3, since no extension defined
+         * a glXQueryDrawable??? extension. Just hope it is a window and not
+         * a pbuffer or pixmap.
+         * FIXME: should track this at creation time. OTOH, GLX 1.3 is has been
+         * around since 1998 old and vendors really ought to support it by now.
+         */
+        Window root;
+        int x, y;
+        unsigned int border, depth;
+
+        XGetGeometry(dpy, drawable, &root, &x, &y,
+                     &uwidth, &uheight, &border, &depth);
+    }
+    *width = uwidth;
+    *height = uheight;
+}
+
 typedef struct glwin_context_create_glx
 {
     glwin_context_create parent;
