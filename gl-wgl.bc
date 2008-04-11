@@ -1,0 +1,4 @@
+LIBRARY opengl32.dll
+
+INCLUDE gl/gl.bc
+INCLUDE wgl/wgl.bc

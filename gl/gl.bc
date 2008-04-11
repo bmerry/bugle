@@ -3,6 +3,7 @@ HEADER GL/glext.h
 HEADER bugle/gl/gltypes.h
 HEADER bugle/gl/gldump.h
 HEADER bugle/gl/overrides.h
+HEADER bugle/glstate.h
 LIMIT gl[A-Z][a-z].*
 
 INCLUDE gl/bc/alias.bc

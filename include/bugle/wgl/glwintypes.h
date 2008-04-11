@@ -31,8 +31,8 @@
 typedef HDC   bugle_glwin_display;
 typedef HGLRC bugle_glwin_context;
 typedef HDC   bugle_glwin_drawable;
-/* Windows uses integers for pixel formats */
-typedef int   bugle_glwin_visual_info;
+
+#define BUGLE_GLWIN_GET_PROC_ADDRESS wglGetProcAddress
 
 #endif /* !BUGLE_WGL_GLWINTYPES_H */
 
