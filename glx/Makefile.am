@@ -14,4 +14,4 @@ src_libbugle_la_SOURCES += \
 
 $(BUDGIE_BUILT_SRCS): budgie/budgie$(EXEEXT) src/data/gl.tu gl.bc gl/bc/alias.bc $(GLBCFILES) $(GLXBCFILES) $(srcdir)/gl-glx.bc
 	$(mkdir_p) include/budgie
-	budgie/.libs/budgie$(EXEEXT) -I$(srcdir) -T `test -f src/data/gl.tu || echo '$(srcdir)/'`src/data/gl.tu $(srcdir)/gl-glx.bc
+	budgie/budgie$(EXEEXT) -I$(srcdir) -T `test -f src/data/gl.tu || echo '$(srcdir)/'`src/data/gl.tu $(srcdir)/gl-glx.bc
