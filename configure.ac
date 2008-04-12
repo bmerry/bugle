@@ -3,6 +3,8 @@ AC_CONFIG_SRCDIR([src/interceptor.c])
 AM_INIT_AUTOMAKE([1.7 dist-bzip2 subdir-objects])
 AM_CONFIG_HEADER(config.h)
 
+bugle_target=gl-wgl
+
 dnl Checks for programs
 AC_PROG_CC
 gl_EARLY
@@ -30,8 +32,13 @@ AC_PATH_PROG([PERL], [perl], [perl], [$srcdir/missing])
 dnl Checks for libraries
 AC_PATH_XTRA
 
-AM_PATH_GTK_2_0([2.4.0], [HAVE_GTK=1], [HAVE_GTK=0])
-AM_PATH_GTKGLEXT_1_0([1.0.0], [HAVE_GTKGLEXT=1], [HAVE_GTKGLEXT=0])
+if test "$bugle_target" = "gl-wgl"; then
+  # Disable for now since it causes problems for me
+  HAVE_GTK=0
+else
+  AM_PATH_GTK_2_0([2.4.0], [HAVE_GTK=1], [HAVE_GTK=0])
+  AM_PATH_GTKGLEXT_1_0([1.0.0], [HAVE_GTKGLEXT=1], [HAVE_GTKGLEXT=0])
+fi
 
 READLINE_LIBS=""
 HAVE_READLINE=1
@@ -43,6 +50,8 @@ AC_CHECK_LIB([history], [add_history], [
   READLINE_LIBS="-lhistory $READLINE_LIBS"], [HAVE_READLINE=0], [$READLINE_LIBS])
 AC_SUBST(READLINE_LIBS)
 
+AC_SEARCH_LIBS([regexec], [regex], [], [AC_MSG_ERROR([regex is required])])
+
 HAVE_LAVC=1
 AVCODEC_CFLAGS=""
 AVCODEC_LIBS=""
@@ -52,7 +61,14 @@ PKG_CHECK_MODULES([swscale], [libswscale], [HAVE_LIBSWSCALE=1], [HAVE_LIBSWSCALE
 # Sadly, FreeBSD does not implement libraries depending on libraries, and
 # OpenGL uses X and maths functions. Hence the -lm and all the X rubbish.
 GL_LIBS=""
-AC_CHECK_LIB([GL], [glBegin], [GL_LIBS="-lGL -lm $GL_LIBS"], [], [$X_PRE_LIBS $X_LIBS $X_XTRA_LIBS -lm])
+if test "$bugle_target" = "gl-wgl"
+then
+  # AC_CHECK_LIB fails because the autoconf test does not specify __stdcall
+  # AC_CHECK_LIB([opengl32], [glBegin], [GL_LIBS="-lopengl32 $GL_LIBS"], [], [])
+  GL_LIBS="-lopengl32"
+else
+  AC_CHECK_LIB([GL], [glBegin], [GL_LIBS="-lGL -lm $GL_LIBS"], [], [$X_PRE_LIBS $X_LIBS $X_XTRA_LIBS -lm])
+fi
 AC_SUBST(GL_LIBS)
 if test "x$GL_LIBS" = "x"; then 
   AC_MSG_ERROR([An OpenGL library is required])
@@ -159,7 +175,8 @@ then
 fi
 AC_DEFINE_UNQUOTED(HAVE_GTKGLEXT, $HAVE_GTKGLEXT, [non-zero when all the requirements for GtkGLExt are met])
 
-AM_CONDITIONAL(USING_GLX, test 1 = 1)
+AM_CONDITIONAL(USING_GLX, test "$bugle_target" = "gl-glx")
+AM_CONDITIONAL(USING_WGL, test "$bugle_target" = "gl-wgl")
 
 dnl Write out files
 AC_CONFIG_FILES([Makefile lib/Makefile bugle.pc])

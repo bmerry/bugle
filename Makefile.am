@@ -140,7 +140,7 @@ src/data/gl.tu: src/data/gl.c include/bugle/gl/overrides.h include/bugle/glx/ove
 	rm -f src/data/gl.o
 	$(srcdir)/mvtu.sh gl.c src/data/gl.tu
 
-BCFILES = gl/gl.bc gl/bc/core1_1.bc gl/bc/glsl1_20.bc \
+GLBCFILES = gl/gl.bc gl/bc/core1_1.bc gl/bc/glsl1_20.bc \
 	gl/bc/GL_ARB_multitexture.bc gl/bc/GL_ARB_imaging.bc \
 	gl/bc/GL_ARB_shader_objects.bc gl/bc/GL_ARB_occlusion_query.bc \
 	gl/bc/GL_ARB_texture_compression.bc gl/bc/GL_ARB_vertex_buffer_object.bc \
@@ -151,11 +151,12 @@ BCFILES = gl/gl.bc gl/bc/core1_1.bc gl/bc/glsl1_20.bc \
 	gl/bc/GL_EXT_secondary_color.bc gl/bc/GL_EXT_texture3D.bc \
 	gl/bc/GL_EXT_framebuffer_object.bc gl/bc/GL_EXT_gpu_program_parameters.bc \
 	gl/bc/GL_NV_transform_feedback.bc \
-	glx/glx.bc glx/bc/glx.bc \
+	gl/bc/alias.bc
+GLXBCFILES = glx/glx.bc glx/bc/glx.bc \
 	glx/bc/GLX_ARB_get_proc_address.bc glx/bc/GLX_SGI_make_current_read.bc \
-	glx/bc/GLX_SGIX_fbconfig.bc glx/bc/GLX_SGIX_pbuffer.bc \
-	wgl/wgl.bc \
-	gl-glx.bc gl-wgl.bc
+	glx/bc/GLX_SGIX_fbconfig.bc glx/bc/GLX_SGIX_pbuffer.bc
+WGLBCFILES = wgl/wgl.bc
+BCFILES = $(GLBCFILES) $(GLXBCFILES) $(WGLBCFILES) gl-glx.bc gl-wgl.bc
 
 BUILT_SOURCES += src/gltables.h
 
@@ -272,7 +273,7 @@ TESTS = tests/errors.sh tests/misc.sh tests/queries.sh tests/setstate.sh \
 TESTS_ENVIRONMENT = BUGLE_FILTERS=$(srcdir)/tests/filters BUGLE_STATISTICS=$(srcdir)/tests/statistics BUGLE_FILTER_DIR=filters/.libs BUGLE_LIB=src/.libs/libbugle.so
 
 # Extra files to distribute
-EXTRA_DIST = gl.bc.in bugle.pc.in $(BCFILES) src/data/gl.c \
+EXTRA_DIST = bugle.pc.in $(BCFILES) src/data/gl.c \
 	LICENSE \
 	doc/filters.html doc/locks.txt \
 	doc/protocol.txt doc/extensions.txt \
@@ -448,4 +449,7 @@ libtool: @LIBTOOL_DEPS@
 # Window-system specific files
 if USING_GLX
 include $(top_srcdir)/glx/Makefile.am
+endif
+if USING_WGL
+include $(top_srcdir)/wgl/Makefile.am
 endif

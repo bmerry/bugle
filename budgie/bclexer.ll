@@ -72,6 +72,8 @@ static stack<YY_BUFFER_STATE> include_stack;
 
 %}
 
+%option never-interactive
+
 DIGIT	[0-9]
 NUM	[-+]?[0-9]+
 ID	[A-Za-z][A-Za-z0-9_]*

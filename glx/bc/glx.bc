@@ -1,3 +1,5 @@
+EXTRATYPE XBool
+
 DUMP TYPE GLXDrawable bugle_dump_GLXDrawable($$, $F)
 DUMP TYPE XBool bugle_dump_Bool($$, $F)
 
