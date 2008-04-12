@@ -34,9 +34,7 @@ includebugle_HEADERS = \
 	include/bugle/gl/overrides.h \
 	include/bugle/gl/gltypes.h \
 	include/bugle/gl/gldump.h \
-	include/bugle/glx/overrides.h \
-	include/bugle/glx/glxtypes.h \
-	include/bugle/glx/glxdump.h
+	include/bugle/wgl/glwintypes.h
 includebudgie_HEADERS = \
 	include/budgie/addresses.h \
 	include/budgie/basictypes.h \
@@ -101,7 +99,6 @@ BUILT_SOURCES = budgie/bcparser.h
 
 src_libbugleutils_la_SOURCES = \
 	src/gl/gltypes.c src/glreflect.c \
-	src/glx/glxtypes.c \
 	common/misc.c \
 	common/protocol.h common/protocol.c \
 	common/hashtable.c include/bugle/hashtable.h \
@@ -122,7 +119,6 @@ src_libbugle_la_SOURCES = \
 	src/stats.c src/statslex.l src/statsparse.y \
 	src/log.c src/objects.c src/xevent.c \
 	src/gl/gldump.c \
-	src/glx/glxdump.c src/glx/glwin.c \
 	budgielib/addresses.c budgielib/lib.h \
 	common/threads.h
 nodist_src_libbugle_la_SOURCES = \
@@ -157,11 +153,9 @@ BCFILES = gl/gl.bc gl/bc/core1_1.bc gl/bc/glsl1_20.bc \
 	gl/bc/GL_NV_transform_feedback.bc \
 	glx/glx.bc glx/bc/glx.bc \
 	glx/bc/GLX_ARB_get_proc_address.bc glx/bc/GLX_SGI_make_current_read.bc \
-	glx/bc/GLX_SGIX_fbconfig.bc glx/bc/GLX_SGIX_pbuffer.bc
-
-$(BUDGIE_BUILT_SRCS): budgie/budgie src/data/gl.tu gl.bc gl/bc/alias.bc $(BCFILES)
-	$(mkdir_p) include/budgie
-	budgie/budgie -I$(srcdir) -T `test -f src/data/gl.tu || echo '$(srcdir)/'`src/data/gl.tu $(srcdir)/gl-glx.bc
+	glx/bc/GLX_SGIX_fbconfig.bc glx/bc/GLX_SGIX_pbuffer.bc \
+	wgl/wgl.bc \
+	gl-glx.bc gl-wgl.bc
 
 BUILT_SOURCES += src/gltables.h
 
@@ -449,3 +443,9 @@ MAINTAINERCLEANFILES += doc/html/single.html
 
 libtool: @LIBTOOL_DEPS@
 	$(SHELL) ./config.status --recheck
+
+
+# Window-system specific files
+if USING_GLX
+include $(top_srcdir)/glx/Makefile.am
+endif

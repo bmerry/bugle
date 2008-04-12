@@ -21,9 +21,14 @@
 #if HAVE_CONFIG_H
 # include <config.h>
 #endif
-#include <bugle/glx/glwintypes.h>
 #include <bugle/filters.h>
 #include <stdbool.h>
+
+#if BUGLE_GLWIN_GLX
+# include <bugle/glx/glwintypes.h>
+#elif BUGLE_GLWIN_WGL
+# include <bugle/wgl/glwintypes.h>
+#endif
 
 /* Wrappers around GLX/WGL/EGL functions */
 glwin_display  bugle_glwin_get_current_display(void);

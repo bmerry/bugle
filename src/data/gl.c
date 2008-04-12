@@ -4,4 +4,6 @@
 #include <GL/glext.h>
 #include <GL/glx.h>
 #include <bugle/gl/overrides.h>
-#include <bugle/glx/overrides.h>
+#if BUGLE_GLWIN_GLX
+# include <bugle/glx/overrides.h>
+#endif
