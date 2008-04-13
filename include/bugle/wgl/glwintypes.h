@@ -24,13 +24,11 @@
 
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
-#include <GL/wgl.h>
-#include <GL/wglext.h>
 
 /* In Windows, display and surface are the same thing */
-typedef HDC   bugle_glwin_display;
-typedef HGLRC bugle_glwin_context;
-typedef HDC   bugle_glwin_drawable;
+typedef HDC   glwin_display;
+typedef HGLRC glwin_context;
+typedef HDC   glwin_drawable;
 
 #define BUGLE_GLWIN_GET_PROC_ADDRESS wglGetProcAddress
 

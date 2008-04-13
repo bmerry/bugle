@@ -22,7 +22,6 @@
 # include <config.h>
 #endif
 #include <GL/gl.h>
-#include <GL/glx.h>
 #include <stdbool.h>
 #include <bugle/filters.h>
 #include <bugle/objects.h>

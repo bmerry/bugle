@@ -200,6 +200,8 @@ rest of the record, find the length, then replace what we don't need.
 "null"	|
 "register" |
 "artificial" |
+"bitfield" |
+"volatile" |
 "clnp"	/* Ignore these tags */
 
 {DIGIT}({DIGIT}|" "){3}:" "@{DIGIT}+ /* GCC 4.1 generates fields which are just numbers */

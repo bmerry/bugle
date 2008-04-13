@@ -132,8 +132,12 @@ void budgie_function_address_initialise(void)
     N = _budgie_library_count;
     F = budgie_function_count();
 
+    /* These have gone away at some point in libtool
+     */
+#if 0
     lt_dlmalloc = xmalloc;
     lt_dlrealloc = xrealloc;
+#endif
     lt_dlinit();
     for (i = 0; i < N; i++)
     {

@@ -5,7 +5,8 @@ use Getopt::Long;
 
 my @extension_force = (
     "GL_EXT_texture_rectangle",  # Doesn't exist, but ATI exposes it instead of GL_ARB_texture_rectangle
-    "GLX_VERSION_1_2"            # Isn't always detected, but needed by bugle code
+    "GLX_VERSION_1_2",           # Isn't always detected, but needed by bugle code
+    "WGL_VERSION_1_0"            # WGL doesn't have versions, so use this fake one
 );
 
 my %function_force_version = (
@@ -323,14 +324,21 @@ while (<>)
         }
         $enums{$value}->[1]->{$cur_ext} = 1;
     }
-    elsif (/(gl[A-Z]\w+)\s*\(/
-           || /^extern .+ (glX\w+)\s*\(/)
+    elsif (/\s(gl[A-Z]\w+)\s*\(/
+           || /^extern .+ (glX\w+)\s*\(/
+           || /^WINGDIAPI .+ (wgl\w+)\s*\(/)
     {
         my $name = $1;
         my $base = base_name($name, $cur_suffix);
+
+        if ($name =~ /^wgl/)
+        {
+            # Fake version, since WGL isn't versioned
+            $functions{$name} = "WGL_VERSION_1_0";
+        }
         # In some cases the headers are wrong. Use our own table for those
         # cases
-        if (exists($function_force_version{$name}))
+        elsif (exists($function_force_version{$name}))
         {
             $functions{$name} = $function_force_version{$name};
         }

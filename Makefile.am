@@ -117,7 +117,7 @@ src_libbugle_la_SOURCES = \
 	src/trackcontext.c src/trackdisplaylist.c src/trackobjects.c \
 	src/trackbeginend.c src/trackextensions.c \
 	src/stats.c src/statslex.l src/statsparse.y \
-	src/log.c src/objects.c src/xevent.c \
+	src/log.c src/objects.c \
 	src/gl/gldump.c \
 	budgielib/addresses.c budgielib/lib.h \
 	common/threads.h
@@ -452,4 +452,11 @@ include $(top_srcdir)/glx/Makefile.am
 endif
 if USING_WGL
 include $(top_srcdir)/wgl/Makefile.am
+endif
+
+if USING_X11
+include $(top_srcdir)/x11/Makefile.am
+endif
+if USING_WIN32
+include $(top_srcdir)/win32/Makefile.am
 endif

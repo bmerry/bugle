@@ -22,8 +22,14 @@
 # include <config.h>
 #endif
 #include <stdbool.h>
-#include <X11/Xlib.h>
-#include <X11/keysym.h> /* Convenience for including files */
+
+#if USING_X11
+# include <X11/Xlib.h>
+# include <X11/keysym.h> /* Convenience for including files */
+#else
+typedef int KeySym;
+typedef void XEvent;
+#endif
 
 typedef struct
 {

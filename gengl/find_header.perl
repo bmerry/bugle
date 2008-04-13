@@ -19,7 +19,7 @@ close PREPROC;
 if (!$path)
 {
     # Try a few standard places
-    for my $i (qw(/usr/include /usr/X11R6/include /usr/local/include))
+    for my $i (qw(/usr/include /usr/X11R6/include /usr/local/include /usr/include/w32api))
     {
         if (-f "$i/$header") { $path = "$i/$header"; last; }
     }

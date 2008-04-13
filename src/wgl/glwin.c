@@ -19,43 +19,44 @@
 # include <config.h>
 #endif
 
+#define WGL_WGLEXT_PROTOTYPES
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
-#include <GL/wgl.h>
-#include <bugle/glwintypes.h>
 #include <bugle/glwin.h>
+#include <GL/wglext.h>
+#include <budgie/call.h>
 #include "xalloc.h"
 #include "budgielib/defines.h"
 
 glwin_display bugle_glwin_get_current_display(void)
 {
-    return wglGetCurrentDC();
+    return CALL(wglGetCurrentDC)();
 }
 
 glwin_context bugle_glwin_get_current_context(void)
 {
-    return wglGetCurrentContext();
+    return CALL(wglGetCurrentContext)();
 }
 
 glwin_drawable bugle_glwin_get_current_drawable(void)
 {
-    return wglGetCurrentDC();
+    return CALL(wglGetCurrentDC)();
 }
 
 glwin_drawable bugle_glwin_get_current_read_drawable(void)
 {
-    return wglGetCurrentReadDCARB();
+    return CALL(wglGetCurrentReadDCARB)();
 }
 
 bool bugle_glwin_make_context_current(glwin_display dpy, glwin_drawable draw,
                                       glwin_drawable read, glwin_context ctx)
 {
-    wglMakeContextCurrentARB(draw, read, ctx);
+    return CALL(wglMakeContextCurrentARB)(draw, read, ctx);
 }
 
 void (*bugle_glwin_get_proc_address(const char *name))(void)
 {
-    return wglGetProcAddress(name);
+    return CALL(wglGetProcAddress)(name);
 }
 
 void bugle_glwin_query_version(glwin_display dpy, int *major, int *minor)
@@ -79,13 +80,12 @@ void bugle_glwin_get_drawable_dimensions(glwin_display dpy, glwin_drawable drawa
     /* FIXME: implement */
     *width = -1;
     *height = -1;
-    return NULL;
 }
 
-typedef struct glwin_context_create_wgl
+typedef struct
 {
     glwin_context_create parent;
-};
+} glwin_context_create_wgl;
 
 glwin_context_create *bugle_glwin_context_create_save(function_call *call)
 {
@@ -97,8 +97,8 @@ glwin_context_create *bugle_glwin_context_create_save(function_call *call)
         return NULL;
     create = XMALLOC(glwin_context_create_wgl);
     create->parent.dpy = *call->wglCreateContext.arg0;
-    create->parent.function = call->function;
-    create->parent.group = call->group;
+    create->parent.function = call->generic.id;
+    create->parent.group = call->generic.group;
     create->parent.ctx = ctx;
     create->parent.share = false;
 
@@ -108,9 +108,9 @@ glwin_context_create *bugle_glwin_context_create_save(function_call *call)
 glwin_context bugle_glwin_context_create_new(const glwin_context_create *create, bool share)
 {
     glwin_context ctx;
-    ctx = CALL(wglContextCreate)(create->dpy);
+    ctx = CALL(wglCreateContext)(create->dpy);
     if (share)
-        wglShareLists(create->ctx, ctx);
+        CALL(wglShareLists)(create->ctx, ctx);
     return ctx;
 }
 

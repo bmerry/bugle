@@ -90,10 +90,18 @@ AC_CHECK_HEADERS([readline/readline.h readline/history.h], [], [HAVE_READLINE=0]
 
 GLEXTINCLUDE="`CPP=\"$CPP\" srcdir=\"$srcdir\" $PERL -w $srcdir/gengl/find_header.perl GL/glext.h`"
 AC_SUBST(GLEXTINCLUDE)
-GLINCLUDES="`CPP=\"$CPP\" srcdir=\"$srcdir\" $PERL -w $srcdir/gengl/find_header.perl GL/gl.h` \
-`CPP=\"$CPP\" srcdir=\"$srcdir\" $PERL -w $srcdir/gengl/find_header.perl GL/glx.h` \
-`CPP=\"$CPP\" srcdir=\"$srcdir\" $PERL -w $srcdir/gengl/find_header.perl GL/glext.h` \
-`CPP=\"$CPP\" srcdir=\"$srcdir\" $PERL -w $srcdir/gengl/find_header.perl GL/glxext.h`"
+
+if test "$bugle_target" = "gl-wgl"
+then
+    GLINCLUDES="`CPP=\"$CPP\" srcdir=\"$srcdir\" $PERL -w $srcdir/gengl/find_header.perl GL/gl.h` \
+    `CPP=\"$CPP\" srcdir=\"$srcdir\" $PERL -w $srcdir/gengl/find_header.perl wingdi.h` \
+    `CPP=\"$CPP\" srcdir=\"$srcdir\" $PERL -w $srcdir/gengl/find_header.perl GL/glext.h`"
+else
+    GLINCLUDES="`CPP=\"$CPP\" srcdir=\"$srcdir\" $PERL -w $srcdir/gengl/find_header.perl GL/gl.h` \
+    `CPP=\"$CPP\" srcdir=\"$srcdir\" $PERL -w $srcdir/gengl/find_header.perl GL/glx.h` \
+    `CPP=\"$CPP\" srcdir=\"$srcdir\" $PERL -w $srcdir/gengl/find_header.perl GL/glext.h` \
+    `CPP=\"$CPP\" srcdir=\"$srcdir\" $PERL -w $srcdir/gengl/find_header.perl GL/glxext.h`"
+fi
 AC_SUBST(GLINCLUDES)
 
 dnl Checks for types
@@ -176,7 +184,9 @@ fi
 AC_DEFINE_UNQUOTED(HAVE_GTKGLEXT, $HAVE_GTKGLEXT, [non-zero when all the requirements for GtkGLExt are met])
 
 AM_CONDITIONAL(USING_GLX, test "$bugle_target" = "gl-glx")
+AM_CONDITIONAL(USING_X11, test "$bugle_target" = "gl-glx")
 AM_CONDITIONAL(USING_WGL, test "$bugle_target" = "gl-wgl")
+AM_CONDITIONAL(USING_WIN32, test "$bugle_target" = "gl-wgl")
 
 dnl Write out files
 AC_CONFIG_FILES([Makefile lib/Makefile bugle.pc])

@@ -72,7 +72,7 @@ static void context_init(const void *key, void *data)
     const char *glver, *glexts, *glwinexts = NULL;
     int glwin_major = 0, glwin_minor = 0;
     bugle_gl_extension i;
-    Display *dpy;
+    glwin_display dpy;
 
     ce = (context_extensions *) data;
     ce->flags = XCALLOC(bugle_gl_extension_count(), bool);

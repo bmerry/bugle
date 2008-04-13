@@ -23,8 +23,8 @@
 #endif
 #include <stddef.h>
 #include <GL/gl.h>
-#include <GL/glx.h>
 #include <stdbool.h>
+#include <bugle/glwin.h>
 #include <bugle/filters.h>
 #include <bugle/objects.h>
 #include <bugle/glreflect.h>
@@ -62,7 +62,7 @@ void bugle_filter_post_queries_begin_end(const char *name);
  * best for querying object state, the latter for creating internal objects
  * so as not to pollute the primary namespace.
  */
-GLXContext bugle_get_aux_context(bool shared);
+glwin_context bugle_get_aux_context(bool shared);
 
 /* Draws text at the specified location. The current colour is used to
  * render the text. The text is rendered with alpha, so alpha-test or

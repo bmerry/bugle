@@ -3,6 +3,9 @@ WGL port
 - recover font-rendering capability
 - excise last bits of GLX dependence from filters
 - better robustness to missing WGL/GLX extensions
+- put BUGLE_ prefix on USING_* defines, and bake them in to the headers
+- proper abstraction layer over xevent
+- implement xevent on win32
 
 camera filter-set
 -----------------
