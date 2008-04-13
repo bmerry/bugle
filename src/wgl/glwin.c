@@ -45,17 +45,25 @@ glwin_drawable bugle_glwin_get_current_drawable(void)
 
 glwin_drawable bugle_glwin_get_current_read_drawable(void)
 {
-    return CALL(wglGetCurrentReadDCARB)();
+    /* FIXME: use wglGetCurrentReadDCARB if available - but it needs a
+     * context to obtain the address.
+     */
+    return CALL(wglGetCurrentDC)();
 }
 
 bool bugle_glwin_make_context_current(glwin_display dpy, glwin_drawable draw,
                                       glwin_drawable read, glwin_context ctx)
 {
-    return CALL(wglMakeContextCurrentARB)(draw, read, ctx);
+    /* FIXME: use wglMakeContextCurrentARB if available - but it needs a
+     * context to obtain the address.
+     */
+    return CALL(wglMakeCurrent)(draw, ctx);
 }
 
 void (*bugle_glwin_get_proc_address(const char *name))(void)
 {
+    /* FIXME: we can't call this until we have a context */
+    return NULL;
     return CALL(wglGetProcAddress)(name);
 }
 

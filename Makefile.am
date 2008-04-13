@@ -3,6 +3,7 @@ SUBDIRS = lib libltdl
 ACLOCAL_AMFLAGS = -I m4
 
 SYMBOLFLAGS = -export-symbols-regex '^(gl[A-Z]|budgie_|bugle_|gldb_|X|dlopen)'
+MODULEFLAGS = -no-undefined -thread-safe -export-dynamic -module -avoid-version src/libbugle.la
 
 # Utility programs, used for generating other files
 noinst_PROGRAMS = budgie/budgie
@@ -106,7 +107,7 @@ nodist_src_libbugleutils_la_SOURCES = \
 	budgielib/defines.h budgielib/tables.c \
 	src/gltables.c src/gltables.h
 src_libbugleutils_la_LIBADD = $(LTLIBOBJS) $(LTLIBTHREAD) $(LTLIBINTL) lib/libgnu.la
-src_libbugleutils_la_LDFLAGS = -thread-safe -export-dynamic $(SYMBOLFLAGS) -version-info 5:1:1
+src_libbugleutils_la_LDFLAGS = -no-undefined -thread-safe -export-dynamic $(SYMBOLFLAGS) -version-info 5:1:1
 
 src_libbugle_la_SOURCES = \
 	src/confparse.y src/conflex.l src/conffile.h \
@@ -121,8 +122,8 @@ src_libbugle_la_SOURCES = \
 	common/threads.h
 nodist_src_libbugle_la_SOURCES = \
 	budgielib/lib.c
-src_libbugle_la_LIBADD = $(LIBLTDL) src/libbugleutils.la -lm -lGL $(X_PRE_LIBS) $(X_LIBS) -lX11 $(X_EXTRA_LIBS) $(LTLIBTHREAD) $(LTLIBINTL) lib/libgnu.la
-src_libbugle_la_LDFLAGS = -thread-safe -export-dynamic $(SYMBOLFLAGS) -version-info 6:2:1
+src_libbugle_la_LIBADD = $(LIBLTDL) src/libbugleutils.la $(GL_LIBS) $(LTLIBTHREAD) $(LTLIBINTL) lib/libgnu.la
+src_libbugle_la_LDFLAGS = -no-undefined -thread-safe -export-dynamic $(SYMBOLFLAGS) -version-info 6:2:1
 
 BUDGIE_BUILT_SRCS = \
         budgielib/lib.c budgielib/tables.c \
@@ -168,47 +169,47 @@ gl/bc/alias.bc: gengl/gengl.perl
 
 # Filters
 filters_common_la_SOURCES = filters/common.c
-filters_common_la_LDFLAGS = -thread-safe -module -avoid-version -export-dynamic $(SYMBOLFLAGS)
+filters_common_la_LDFLAGS = $(MODULEFLAGS)
 filters_common_la_LIBADD = lib/libgnu.la
 
 filters_trace_la_SOURCES = filters/trace.c
-filters_trace_la_LDFLAGS = -thread-safe -module -avoid-version -export-dynamic $(SYMBOLFLAGS)
+filters_trace_la_LDFLAGS = $(MODULEFLAGS)
 filters_trace_la_LIBADD = lib/libgnu.la
 
 filters_validate_la_SOURCES = filters/validate.c
-filters_validate_la_LDFLAGS = -thread-safe -module -avoid-version -export-dynamic $(SYMBOLFLAGS)
+filters_validate_la_LDFLAGS = $(MODULEFLAGS)
 filters_validate_la_LIBADD = lib/libgnu.la
 
 filters_debugger_la_SOURCES = filters/debugger.c
-filters_debugger_la_LDFLAGS = -thread-safe -module -avoid-version -export-dynamic $(SYMBOLFLAGS)
+filters_debugger_la_LDFLAGS = $(MODULEFLAGS)
 filters_debugger_la_LIBADD = lib/libgnu.la
 
 filters_stats_basic_la_SOURCES = filters/stats_basic.c
-filters_stats_basic_la_LDFLAGS = -thread-safe -module -avoid-version -export-dynamic $(SYMBOLFLAGS)
+filters_stats_basic_la_LDFLAGS = $(MODULEFLAGS)
 filters_stats_basic_la_LIBADD = lib/libgnu.la
 
 filters_stats_calls_la_SOURCES = filters/stats_calls.c
-filters_stats_calls_la_LDFLAGS = -thread-safe -module -avoid-version -export-dynamic $(SYMBOLFLAGS)
+filters_stats_calls_la_LDFLAGS = $(MODULEFLAGS)
 filters_stats_calls_la_LIBADD = lib/libgnu.la
 
 filters_stats_fragments_la_SOURCES = filters/stats_fragments.c
-filters_stats_fragments_la_LDFLAGS = -thread-safe -module -avoid-version -export-dynamic $(SYMBOLFLAGS)
+filters_stats_fragments_la_LDFLAGS = $(MODULEFLAGS)
 filters_stats_fragments_la_LIBADD = lib/libgnu.la
 
 filters_stats_nv_la_SOURCES = filters/stats_nv.c
-filters_stats_nv_la_LDFLAGS = -thread-safe -module -avoid-version -export-dynamic $(SYMBOLFLAGS)
+filters_stats_nv_la_LDFLAGS = $(MODULEFLAGS)
 filters_stats_nv_la_LIBADD = lib/libgnu.la
 
 filters_stats_primitives_la_SOURCES = filters/stats_primitives.c
-filters_stats_primitives_la_LDFLAGS = -thread-safe -module -avoid-version -export-dynamic $(SYMBOLFLAGS)
+filters_stats_primitives_la_LDFLAGS = $(MODULEFLAGS)
 filters_stats_primitives_la_LIBADD = lib/libgnu.la
 
 filters_logstats_la_SOURCES = filters/logstats.c
-filters_logstats_la_LDFLAGS = -thread-safe -module -avoid-version -export-dynamic $(SYMBOLFLAGS)
+filters_logstats_la_LDFLAGS = $(MODULEFLAGS)
 filters_logstats_la_LIBADD = lib/libgnu.la -lm
 
 filters_showstats_la_SOURCES = filters/showstats.c
-filters_showstats_la_LDFLAGS = -thread-safe -module -avoid-version -export-dynamic $(SYMBOLFLAGS)
+filters_showstats_la_LDFLAGS = $(MODULEFLAGS)
 filters_showstats_la_LIBADD = lib/libgnu.la -lm
 
 BUILT_SOURCES += src/statsparse.h

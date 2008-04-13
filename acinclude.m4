@@ -26,10 +26,12 @@ AC_DEFUN([BUGLE_C_PRAGMA_WEAK],
          [AC_REQUIRE([AC_PROG_CC])[]dnl,
           AC_CACHE_CHECK([for weak symbol pragma], bugle_cv_c_pragma_weak,
                          [bugle_cv_c_pragma_weak=no
-                          AC_COMPILE_IFELSE([AC_LANG_PROGRAM(
+                          AC_LINK_IFELSE([AC_LANG_PROGRAM(
 [
-void foo(void);
+extern void foo(void);
 #pragma weak foo
+
+int main() { foo(); }
 ], [])], [bugle_cv_c_pragma_weak=yes])])
           if test $bugle_cv_c_pragma_weak = yes; then
             AC_DEFINE([BUGLE_HAVE_PRAGMA_WEAK], [1], [Define if pragma weak is supported])
@@ -60,6 +62,9 @@ AC_DEFUN([BUGLE_C_ATTRIBUTE_HIDDEN_ALIAS],
 [
 extern void mypublic(int x) {}
 extern __typeof(mypublic) myalias __attribute__((alias("mypublic"), visibility("hidden")));
+#if defined(_WIN32) || defined(__CYGWIN__)
+# error "Cygwin accepts but ignores hidden visibility"
+#endif
 ], [])], [bugle_cv_c_attribute_hidden_alias=yes])])
          if test $bugle_cv_c_attribute_hidden_alias = yes; then
            AC_DEFINE([BUGLE_HAVE_ATTRIBUTE_HIDDEN_ALIAS], [1], [Define if it is possible to define hidden aliases with GCC attributes])

@@ -3,7 +3,7 @@ AC_CONFIG_SRCDIR([src/interceptor.c])
 AM_INIT_AUTOMAKE([1.7 dist-bzip2 subdir-objects])
 AM_CONFIG_HEADER(config.h)
 
-bugle_target=gl-glx
+bugle_target=gl-wgl
 
 dnl Checks for programs
 AC_PROG_CC
@@ -19,10 +19,9 @@ AM_PROG_MKDIR_P
 AC_PROG_MAKE_SET
 
 AC_LANG(C)
-AC_LIBLTDL_INSTALLABLE
-AC_LIBTOOL_DLOPEN
-AC_PROG_LIBTOOL
-AC_CONFIG_SUBDIRS(libltdl)
+LT_INIT([win32-dll dlopen])
+LT_CONFIG_LTDL_DIR([libltdl])
+LTDL_INIT([installable])
 AC_SUBST(LTDLINCL)
 AC_SUBST(LIBLTDL)
 AC_SUBST(LIBTOOL_DEPS)
@@ -50,7 +49,8 @@ AC_CHECK_LIB([history], [add_history], [
   READLINE_LIBS="-lhistory $READLINE_LIBS"], [HAVE_READLINE=0], [$READLINE_LIBS])
 AC_SUBST(READLINE_LIBS)
 
-AC_SEARCH_LIBS([regexec], [regex], [], [AC_MSG_ERROR([regex is required])])
+# FIXME: only need this for building budgie, not for any C code.
+# AC_SEARCH_LIBS([regexec], [regex], [], [AC_MSG_ERROR([regex is required])])
 
 HAVE_LAVC=1
 AVCODEC_CFLAGS=""

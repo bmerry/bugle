@@ -1,3 +1,7 @@
+# FIXME: need to make -export-symbols-regex work with stdcall
+# SYMBOLFLAGS = -export-symbols-regex '^(gl[A-Z]|budgie_|bugle_|gldb_|X|dlopen)'
+SYMBOLFLAGS =
+
 AM_CPPFLAGS += -DBUGLE_GLWIN_WGL
 
 includebugle_HEADERS += \

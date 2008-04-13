@@ -20,6 +20,36 @@
 #include "protocol.h"
 #include <bugle/misc.h>
 
+#if !HAVE_ARPA_INET_H
+static inline uint32_t htonl(uint32_t h)
+{
+    union
+    {
+        uint8_t bytes[4];
+        uint32_t n;
+    } u;
+
+    u.bytes[0] = (h >> 24) & 0xff;
+    u.bytes[1] = (h >> 16) & 0xff;
+    u.bytes[2] = (h >> 8) & 0xff;
+    u.bytes[3] = h & 0xff;
+    return u.n;
+}
+
+static inline uint32_t ntohl(uint32_t n)
+{
+    union
+    {
+        uint8_t bytes[4];
+        uint32_t n;
+    } u;
+
+    u.n = n;
+    return (u.bytes[0] << 24) | (u.bytes[1] << 16) | (u.bytes[2] << 8) | u.bytes[3];
+}
+
+#endif /* !HAVE_ARPA_INET_H */
+
 #define TO_NETWORK(x) htonl(x)
 #define TO_HOST(x) ntohl(x)
 

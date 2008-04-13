@@ -6,6 +6,11 @@ WGL port
 - put BUGLE_ prefix on USING_* defines, and bake them in to the headers
 - proper abstraction layer over xevent
 - implement xevent on win32
+- support read != draw DC in glwin.c
+- support wglGetProcAddress on win32?
+- handle cross-DLL data import/export cleanly
+- put suitable visibility tags on all export functions, so that -export-symbols-regex is not needed
+
 
 camera filter-set
 -----------------
