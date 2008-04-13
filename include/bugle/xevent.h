@@ -29,6 +29,7 @@
 #else
 typedef int KeySym;
 typedef void XEvent;
+#define NoSymbol ((KeySym) 0)
 #endif
 
 typedef struct

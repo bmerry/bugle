@@ -50,10 +50,8 @@ pkgconfig_DATA = bugle.pc
 pkglib_LTLIBRARIES = \
 	filters/common.la \
 	filters/trace.la \
-	filters/modify.la \
 	filters/validate.la \
 	filters/debugger.la \
-	filters/capture.la \
 	filters/stats_basic.la \
 	filters/stats_calls.la \
 	filters/stats_fragments.la \
@@ -177,10 +175,6 @@ filters_trace_la_SOURCES = filters/trace.c
 filters_trace_la_LDFLAGS = -thread-safe -module -avoid-version -export-dynamic $(SYMBOLFLAGS)
 filters_trace_la_LIBADD = lib/libgnu.la
 
-filters_modify_la_SOURCES = filters/modify.c
-filters_modify_la_LIBADD = lib/libgnu.la -lm
-filters_modify_la_LDFLAGS = -thread-safe -module -avoid-version -export-dynamic $(SYMBOLFLAGS)
-
 filters_validate_la_SOURCES = filters/validate.c
 filters_validate_la_LDFLAGS = -thread-safe -module -avoid-version -export-dynamic $(SYMBOLFLAGS)
 filters_validate_la_LIBADD = lib/libgnu.la
@@ -216,11 +210,6 @@ filters_logstats_la_LIBADD = lib/libgnu.la -lm
 filters_showstats_la_SOURCES = filters/showstats.c
 filters_showstats_la_LDFLAGS = -thread-safe -module -avoid-version -export-dynamic $(SYMBOLFLAGS)
 filters_showstats_la_LIBADD = lib/libgnu.la -lm
-
-filters_capture_la_SOURCES = filters/capture.c gl2ps/gl2ps.c gl2ps/gl2ps.h
-filters_capture_la_CFLAGS = $(AVCODEC_CFLAGS)
-filters_capture_la_LIBADD = lib/libgnu.la $(AVCODEC_LIBS)
-filters_capture_la_LDFLAGS = -thread-safe -module -avoid-version -export-dynamic $(SYMBOLFLAGS)
 
 BUILT_SOURCES += src/statsparse.h
 

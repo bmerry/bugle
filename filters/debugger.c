@@ -1,5 +1,5 @@
 /*  BuGLe: an OpenGL debugging tool
- *  Copyright (C) 2004-2007  Bruce Merry
+ *  Copyright (C) 2004-2008  Bruce Merry
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -33,7 +33,6 @@
 #if HAVE_SYS_SELECT_H
 # include <sys/select.h>
 #endif
-#include <X11/Xlib.h>
 #include <GL/gl.h>
 #include <bugle/filters.h>
 #include <bugle/glutils.h>
