@@ -1,3 +1,3 @@
-AM_CPPFLAGS += BUGLE_WIN_X11
+AM_CPPFLAGS += -DBUGLE_WIN_X11
 
 src_libbugle_la_SOURCES += src/x11/xevent.c

@@ -1,5 +1,5 @@
 /*  BuGLe: an OpenGL debugging tool
- *  Copyright (C) 2004-2006  Bruce Merry
+ *  Copyright (C) 2004-2006, 2008  Bruce Merry
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -42,6 +42,7 @@ enum override_type
 
 void parser_limit(const std::string &limit);
 void parser_header(const std::string &header);
+void parser_call_api(const std::string &api);
 void parser_library(const std::string &library);
 void parser_alias(const std::string &func1, const std::string &func2);
 

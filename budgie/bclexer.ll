@@ -100,6 +100,7 @@ BITFIELD	{ return BITFIELD; }
 EXTRATYPE	{ return EXTRATYPE; }
 DUMP		{ return DUMP; }
 ALIAS		{ return ALIAS; }
+CALLAPI         { return CALLAPI; }
 INCLUDE		{ BEGIN(incl); }
 
 "{"|"}"		{ return bc_yytext[0]; }

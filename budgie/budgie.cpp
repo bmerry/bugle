@@ -1,5 +1,5 @@
 /*  BuGLe: an OpenGL debugging tool
- *  Copyright (C) 2004-2007  Bruce Merry
+ *  Copyright (C) 2004-2008  Bruce Merry
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -161,6 +161,7 @@ static list<Type> types;
 
 /* Configuration and command line stuff */
 static string limit = "";
+static string call_api = "";
 static list<string> headers, libraries;
 static list<Override> overrides;
 static list<pair<string, string> > aliases;
@@ -744,7 +745,9 @@ static void write_headers()
             "#endif\n"
             "#include <budgie/types.h>\n"
             "#include <budgie/reflect.h>\n"
-            "#include <budgie/addresses.h>\n");
+            "#include <budgie/addresses.h>\n"
+            "#define BUDGIEAPI %s\n",
+            call_api.c_str());
     fprintf(files[FILE_DEFINES_H],
             "#ifndef BUDGIE_DEFINES_H\n"
             "#define BUDGIE_DEFINES_H\n"
@@ -1519,7 +1522,7 @@ static void write_call_structs(FILE *f)
 static void write_call_to(FILE *f, list<Function>::iterator func, const char *arg_template)
 {
     tree_node_p ptr = make_pointer(TREE_TYPE(func->node));
-    string type = type_to_string(ptr, "", false);
+    string type = type_to_string(ptr, " BUDGIEAPI", false);
     string name = func->name();
     string define = func->define();
     destroy_temporary(ptr);
@@ -1587,7 +1590,7 @@ static void write_interceptors(FILE *f)
         string name = i->name();
         string define = i->define();
         string group = i->group_define();
-        string proto = function_type_to_string(TREE_TYPE(i->node), i->name(),
+        string proto = function_type_to_string(TREE_TYPE(i->node), "BUDGIEAPI " + i->name(),
                                                false, "arg");
         fprintf(f,
                 "%s\n"
@@ -1712,6 +1715,11 @@ void parser_limit(const string &l)
 void parser_header(const string &h)
 {
     headers.push_back(h);
+}
+
+void parser_call_api(const string &api)
+{
+    call_api = api;
 }
 
 void parser_library(const string &l)

@@ -1,9 +1,9 @@
-AC_INIT(bugle, 0.0.20080303, bmerry@users.sourceforge.net)
+AC_INIT(bugle, 0.0.20080412, bmerry@users.sourceforge.net)
 AC_CONFIG_SRCDIR([src/interceptor.c])
 AM_INIT_AUTOMAKE([1.7 dist-bzip2 subdir-objects])
 AM_CONFIG_HEADER(config.h)
 
-bugle_target=gl-wgl
+bugle_target=gl-glx
 
 dnl Checks for programs
 AC_PROG_CC

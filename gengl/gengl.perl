@@ -5,8 +5,9 @@ use Getopt::Long;
 
 my @extension_force = (
     "GL_EXT_texture_rectangle",  # Doesn't exist, but ATI exposes it instead of GL_ARB_texture_rectangle
-    "GLX_VERSION_1_2",           # Isn't always detected, but needed by bugle code
-    "WGL_VERSION_1_0"            # WGL doesn't have versions, so use this fake one
+    "GL_VERSION_1_1",            # Base versions
+    "GLX_VERSION_1_2",
+    "WGL_VERSION_1_0"
 );
 
 my %function_force_version = (
@@ -237,6 +238,11 @@ sub extension_collate($)
         $e =~ s/^GLX_/GL_/;
         return 'z' . &extension_collate($e);
     }
+    elsif ($e =~ /^WGL_/)
+    {
+        $e =~ s/^WGL_/GL_/;
+        return 'z' . &extension_collate($e);
+    }
 
     if ($e =~ /^GL_VERSION_(\d+)_(\d+)/)
     {
@@ -283,9 +289,7 @@ sub extension_write_group($$)
     print "};\n\n";
 }
 
-my $cur_ext = "GL_VERSION_1_1";
-my $cur_suffix = '';
-my %extensions = ("GL_VERSION_1_1" => 1, map { $_ => 1 } @extension_force);
+my %extensions = (map { $_ => 1 } @extension_force);
 my %enums = ();
 my %functions = ();
 my %groups = ();
@@ -294,68 +298,95 @@ my $defines = undef;
 
 GetOptions('h|header=s' => \$defines, 'm|mode=s' => \$mode);
 
-while (<>)
+foreach my $in_header (@ARGV)
 {
-    if (/^#ifndef (GLX?_([0-9A-Z]+)_\w+)/
-        && !/GL_GLEXT_/ && !/GLX_GLXEXT_/)
-    {
-        $cur_ext = $1;
-        $cur_suffix = '';
-        if (!/^#ifndef GLX?_VERSION/
-            && /^#ifndef GLX?_([0-9A-Z]+)_\w+/)
-        {
-            $cur_suffix = $1;
-        }
-        $extensions{$cur_ext} = 1;
-    }
-    elsif (/^#endif/)
-    {
-        $cur_ext = "GL_VERSION_1_1";
-    }
-    elsif (/^#define (GL_[0-9A-Za-z_]+)\s+((0x)?[0-9A-Fa-f]+)/
-           && $2 ne '1' && $1 !~ /$enum_not_name_regex/)
-    {
-        my $name = $1;
-        my $value = $2;
-        $value = oct($value) if $value =~ /^0/; # Convert from hex
-        if (enum_name_collate($name) lt enum_name_collate($enums{$value}->[0]))
-        {
-            $enums{$value}->[0] = $name;
-        }
-        $enums{$value}->[1]->{$cur_ext} = 1;
-    }
-    elsif (/\s(gl[A-Z]\w+)\s*\(/
-           || /^extern .+ (glX\w+)\s*\(/
-           || /^WINGDIAPI .+ (wgl\w+)\s*\(/)
-    {
-        my $name = $1;
-        my $base = base_name($name, $cur_suffix);
+    my $cur_ext;
+    my $cur_suffix = '';
+    my $base_ext;
 
-        if ($name =~ /^wgl/)
+    open(H, '<', $in_header) or die "Cannot open $in_header";
+    $cur_suffix = '';
+    if ($in_header =~ /glx\.h|glxext\.h/)
+    {
+        $base_ext = 'GLX_VERSION_1_2';
+    }
+    elsif ($in_header =~ /windows\.h|wingdi\.h|wglext\.h/)
+    {
+        $base_ext = 'WGL_VERSION_1_0';
+    }
+    else
+    {
+        $base_ext = 'GL_VERSION_1_1';
+    }
+
+    $cur_ext = $base_ext;
+    while (<H>)
+    {
+        if (/^#ifndef (GLX?_([0-9A-Z]+)_\w+)/
+            && !/GL_GLEXT_/ && !/GLX_GLXEXT_/)
         {
-            # Fake version, since WGL isn't versioned
-            $functions{$name} = "WGL_VERSION_1_0";
+            $cur_ext = $1;
+            $cur_suffix = '';
+            if (!/^#ifndef GLX?_VERSION/
+                && /^#ifndef GLX?_([0-9A-Z]+)_\w+/)
+            {
+                $cur_suffix = $1;
+            }
+            $extensions{$cur_ext} = 1;
         }
-        # In some cases the headers are wrong. Use our own table for those
-        # cases
-        elsif (exists($function_force_version{$name}))
+        elsif (/^#endif/)
         {
-            $functions{$name} = $function_force_version{$name};
+            $cur_ext = $base_ext;
         }
-        elsif (!defined($functions{$name}) || $functions{$name} eq 'GL_VERSION_1_1')
+        elsif (/^#define (GL_[0-9A-Za-z_]+)\s+((0x)?[0-9A-Fa-f]+)/
+               && $2 ne '1' && $1 !~ /$enum_not_name_regex/)
         {
-            # Mesa headers define assorted functions from higher GL versions
-            # without the regexs that we match against. In this case it will
-            # appear that the function is 1.1 when really it is something else.
-            $functions{$name} = $cur_ext;
+            my $name = $1;
+            my $value = $2;
+            $value = oct($value) if $value =~ /^0/; # Convert from hex
+            if (enum_name_collate($name) lt enum_name_collate($enums{$value}->[0]))
+            {
+                $enums{$value}->[0] = $name;
+            }
+            $enums{$value}->[1]->{$cur_ext} = 1;
         }
-        elsif ($cur_ext ne 'GL_VERSION_1_1' && $cur_ext ne $functions{$name})
+        elsif (/(w?gl[A-Z]\w+)\s*\(/)
         {
-            die "$name is defined in both $cur_ext and $functions{$name}";
-        }
-        if (!exists($function_non_aliases{$name}))
-        {
-            $groups{$base}->{$name} = 1;
+            my $name = $1;
+            my $base = base_name($name, $cur_suffix);
+    
+            if ($name =~ /^wgl/)
+            {
+                # Fake version, since WGL isn't versioned
+                $functions{$name} = "WGL_VERSION_1_0";
+            }
+            # In some cases the headers are wrong. Use our own table for those
+            # cases
+            elsif (exists($function_force_version{$name}))
+            {
+                $functions{$name} = $function_force_version{$name};
+            }
+            elsif (!defined($functions{$name})
+                || $functions{$name} eq 'GL_VERSION_1_1'
+                || $functions{$name} eq 'GLX_VERSION_1_2'
+                || $functions{$name} eq 'WGL_VERSION_1_0')
+            {
+                # Mesa headers define assorted functions from higher GL versions
+                # without the regexs that we match against. In this case it will
+                # appear that the function is 1.1 when really it is something else.
+                $functions{$name} = $cur_ext;
+            }
+            elsif ($cur_ext ne 'GL_VERSION_1_1'
+                   && $cur_ext ne 'GLX_VERSION_1_2'
+                   && $cur_ext ne 'WGL_VERSION_1_0'
+                   && $cur_ext ne $functions{$name})
+            {
+                die "$name is defined in both $cur_ext and $functions{$name}";
+            }
+            if (!exists($function_non_aliases{$name}))
+            {
+                $groups{$base}->{$name} = 1;
+            }
         }
     }
 }

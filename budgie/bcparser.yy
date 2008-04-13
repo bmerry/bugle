@@ -1,7 +1,7 @@
 %{
 
 /*  BuGLe: an OpenGL debugging tool
- *  Copyright (C) 2004-2006  Bruce Merry
+ *  Copyright (C) 2004-2006, 2008  Bruce Merry
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -63,6 +63,7 @@ int yyerror(const char *msg)
 %token DUMP
 %token BRACKET_PAIR
 %token ALIAS
+%token CALLAPI
 
 %type <str> funcregex
 %type <str> text
@@ -90,9 +91,11 @@ bcitem: headeritem
 	| newtypeitem
 	| extratypeitem
         | overrideitem
+        | callapiitem
 ;
 
 headeritem: HEADER text { parser_header(*$2); delete $2; } ;
+callapiitem: CALLAPI text { parser_call_api(*$2); delete $2; } ;
 libraryitem: LIBRARY text { parser_library(*$2); delete $2; } ;
 limititem: LIMIT funcregex { parser_limit(*$2); delete $2; } ;
 newtypeitem: NEWTYPE BITFIELD ID type idlist
