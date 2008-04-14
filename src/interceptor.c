@@ -200,7 +200,11 @@ static void initialise_addresses_glwin(void)
          * number.
          */
         if (bugle_gl_function_extension(i) > BUGLE_GL_EXTENSION_ID(GL_VERSION_1_1))
-            budgie_function_address_set_real(i, bugle_glwin_get_proc_address(budgie_function_name(i)));
+        {
+            void (BUDGIEAPI *ptr)(void) = bugle_glwin_get_proc_address(budgie_function_name(i));
+            if (ptr != NULL)
+                budgie_function_address_set_real(i, bugle_glwin_get_proc_address(budgie_function_name(i)));
+        }
     }
 }
 

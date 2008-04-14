@@ -56,7 +56,7 @@ bool bugle_glwin_make_context_current(glwin_display dpy, glwin_drawable draw,
     return CALL(glXMakeCurrentReadSGI)(dpy, draw, read, ctx);
 }
 
-void (*bugle_glwin_get_proc_address(const char *name))(void)
+void (BUDGIEAPI *bugle_glwin_get_proc_address(const char *name))(void)
 {
     return CALL(glXGetProcAddressARB)((const GLubyte *) name);
 }

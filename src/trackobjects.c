@@ -1,5 +1,5 @@
 /*  BuGLe: an OpenGL debugging tool
- *  Copyright (C) 2004-2007  Bruce Merry
+ *  Copyright (C) 2004-2008  Bruce Merry
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -77,7 +77,7 @@ static inline void unlock(void)
 static void trackobjects_add_single(bugle_trackobjects_type type,
                                     GLenum target,
                                     GLuint object,
-                                    GLboolean (*is)(GLuint))
+                                    GLboolean (BUDGIEAPI *is)(GLuint))
 {
     hashptr_table *table;
 
@@ -107,7 +107,7 @@ static void trackobjects_delete_single(bugle_trackobjects_type type,
 static void trackobjects_delete_multiple(bugle_trackobjects_type type,
                                          GLsizei count,
                                          const GLuint *objects,
-                                         GLboolean (*is)(GLuint))
+                                         GLboolean (BUDGIEAPI *is)(GLuint))
 {
     GLsizei i;
     hashptr_table *table;

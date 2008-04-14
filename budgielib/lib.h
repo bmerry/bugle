@@ -21,6 +21,7 @@
 #if HAVE_CONFIG_H
 # include <config.h>
 #endif
+#include <budgie/types2.h>
 
 #if BUGLE_HAVE_ATTRIBUTE_HIDDEN_ALIAS
 # define BUGLE_ATTRIBUTE_HIDDEN_ALIAS(f) bugle_hidden_alias_ ## f
@@ -33,9 +34,9 @@
 #endif
 
 /* Holds function pointers for real implementations */
-extern void (*_budgie_function_address_real[])(void);
+extern void (BUDGIEAPI *_budgie_function_address_real[])(void);
 /* Holds function pointers for wrappers */
-extern void (*_budgie_function_address_wrapper[])(void);
+extern void (BUDGIEAPI *_budgie_function_address_wrapper[])(void);
 
 extern int _budgie_library_count;
 extern const char * const _budgie_library_names[];

@@ -32,8 +32,14 @@
 #include <assert.h>
 #include "xalloc.h"
 
+#define LOG_DEFAULT_FORMAT "[%l] %f.%e: %m" 
+
+/* Note: it is important for these to all have sensible initial values
+ * (even though the format is later replaced by xstrdup), because errors in
+ * loading the config file are logged before the log filterset is initialised.
+ */
 static char *log_filename = NULL;
-static char *log_format = NULL;
+static char *log_format = LOG_DEFAULT_FORMAT;
 static bool log_flush = false;
 static FILE *log_file = NULL;
 static long log_file_level = BUGLE_LOG_INFO + 1;
@@ -237,7 +243,7 @@ void log_initialise(void)
     };
 
     bugle_filter_set_new(&log_info);
-    log_format = xstrdup("[%l] %f.%e: %m");
+    log_format = xstrdup(LOG_DEFAULT_FORMAT);
 }
 
 void bugle_log_xalloc_die(void)

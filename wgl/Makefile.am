@@ -5,7 +5,11 @@ SYMBOLFLAGS =
 AM_CPPFLAGS += -DBUGLE_GLWIN_WGL
 
 includebugle_HEADERS += \
-	include/bugle/wgl/glwintypes.h
+	include/bugle/wgl/glwintypes.h \
+	include/bugle/wgl/wgltypes.h
+
+src_libbugleutils_la_SOURCES += \
+	src/wgl/wgltypes.c
 
 src_libbugle_la_SOURCES += \
 	src/wgl/glwin.c

@@ -1,5 +1,5 @@
 /*  BuGLe: an OpenGL debugging tool
- *  Copyright (C) 2004-2007  Bruce Merry
+ *  Copyright (C) 2004-2008  Bruce Merry
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -2235,9 +2235,9 @@ const state_info * const all_state[] =
 static void get_helper(const glstate *state,
                        GLdouble *d, GLfloat *f, GLint *i,
                        budgie_type *in_type,
-                       void (*get_double)(GLenum, GLenum, GLdouble *),
-                       void (*get_float)(GLenum, GLenum, GLfloat *),
-                       void (*get_int)(GLenum, GLenum, GLint *))
+                       void (BUDGIEAPI *get_double)(GLenum, GLenum, GLdouble *),
+                       void (BUDGIEAPI *get_float)(GLenum, GLenum, GLfloat *),
+                       void (BUDGIEAPI *get_int)(GLenum, GLenum, GLint *))
 {
     if (state->info->type == TYPE_8GLdouble && get_double != NULL)
     {

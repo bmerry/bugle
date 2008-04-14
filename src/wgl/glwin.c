@@ -60,7 +60,7 @@ bool bugle_glwin_make_context_current(glwin_display dpy, glwin_drawable draw,
     return CALL(wglMakeCurrent)(draw, ctx);
 }
 
-void (*bugle_glwin_get_proc_address(const char *name))(void)
+void (BUDGIEAPI *bugle_glwin_get_proc_address(const char *name))(void)
 {
     /* FIXME: we can't call this until we have a context */
     return NULL;
@@ -79,7 +79,7 @@ const char *bugle_glwin_query_extensions_string(glwin_display dpy)
      * the ICD, so we have to have an appropriate context because we can even
      * get a handle to the function.
      */
-    return NULL;
+    return "";
 }
 
 void bugle_glwin_get_drawable_dimensions(glwin_display dpy, glwin_drawable drawable,

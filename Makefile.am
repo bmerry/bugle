@@ -2,7 +2,6 @@
 SUBDIRS = lib libltdl
 ACLOCAL_AMFLAGS = -I m4
 
-SYMBOLFLAGS = -export-symbols-regex '^(gl[A-Z]|budgie_|bugle_|gldb_|X|dlopen)'
 MODULEFLAGS = -no-undefined -thread-safe -export-dynamic -module -avoid-version src/libbugle.la
 
 # Utility programs, used for generating other files
@@ -58,8 +57,7 @@ pkglib_LTLIBRARIES = \
 	filters/stats_fragments.la \
 	filters/stats_nv.la \
 	filters/stats_primitives.la \
-	filters/logstats.la \
-	filters/showstats.la
+	filters/logstats.la
 
 AM_CPPFLAGS = -I$(srcdir)/lib -Ilib -I$(srcdir)/include -Iinclude $(LTDLINCL) -DLIBDIR=\"$(libdir)\" -DPKGLIBDIR=\"$(pkglibdir)\" $(X_CFLAGS)
 AM_YFLAGS = -d
@@ -207,10 +205,6 @@ filters_stats_primitives_la_LIBADD = lib/libgnu.la
 filters_logstats_la_SOURCES = filters/logstats.c
 filters_logstats_la_LDFLAGS = $(MODULEFLAGS)
 filters_logstats_la_LIBADD = lib/libgnu.la -lm
-
-filters_showstats_la_SOURCES = filters/showstats.c
-filters_showstats_la_LDFLAGS = $(MODULEFLAGS)
-filters_showstats_la_LIBADD = lib/libgnu.la -lm
 
 BUILT_SOURCES += src/statsparse.h
 

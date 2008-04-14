@@ -1,5 +1,6 @@
 #define GL_GLEXT_PROTOTYPES
 #define GLX_GLXEXT_PROTOTYPES
+#define WGL_WGLEXT_PROTOTYPES
 #include <GL/gl.h>
 #include <GL/glext.h>
 #include <bugle/gl/overrides.h>

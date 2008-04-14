@@ -22,6 +22,7 @@
 # include <config.h>
 #endif
 #include <bugle/filters.h>
+#include <budgie/types2.h>
 #include <stdbool.h>
 
 #if BUGLE_GLWIN_GLX
@@ -41,7 +42,7 @@ bool bugle_glwin_make_context_current(glwin_display dpy, glwin_drawable draw,
 
 
 /* Wrapper around glXGetProcAddress or similar functios */
-void (*bugle_glwin_get_proc_address(const char *name))(void);
+void (BUDGIEAPI *bugle_glwin_get_proc_address(const char *name))(void);
 
 /* Wrapper around glXQueryVersion - return 1.0 for wgl */
 void bugle_glwin_query_version(glwin_display dpy, int *major, int *minor);

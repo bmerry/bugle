@@ -745,9 +745,7 @@ static void write_headers()
             "#endif\n"
             "#include <budgie/types.h>\n"
             "#include <budgie/reflect.h>\n"
-            "#include <budgie/addresses.h>\n"
-            "#define BUDGIEAPI %s\n",
-            call_api.c_str());
+            "#include <budgie/addresses.h>\n");
     fprintf(files[FILE_DEFINES_H],
             "#ifndef BUDGIE_DEFINES_H\n"
             "#define BUDGIE_DEFINES_H\n"
@@ -760,8 +758,9 @@ static void write_headers()
             "#if HAVE_CONFIG_H\n"
             "# include <config.h>\n"
             "#endif\n"
-            "#include <budgie/types.h>\n");
-
+            "#include <budgie/types.h>\n"
+            "#define BUDGIEAPI %s\n",
+            call_api.c_str());
     fprintf(files[FILE_TABLES_C],
             "#if HAVE_CONFIG_H\n"
             "# include <config.h>\n"
@@ -1463,7 +1462,7 @@ static void write_call_wrappers(FILE *f)
         tree_node_p ptr = make_pointer(TREE_TYPE(i->node));
 
         string name = i->name();
-        string type = type_to_string(ptr, "", false);
+        string type = type_to_string(ptr, "BUDGIEAPI", false);
         fprintf(f,
                 "#define _BUDGIE_HAVE_CALL_%s 1\n"
                 "#define _BUDGIE_CALL_%s _BUDGIE_CALL(%s, %s)\n",
@@ -1652,14 +1651,14 @@ static void write_interceptors(FILE *f)
     }
 
     fprintf(f,
-            "void (*_budgie_function_address_real[FUNCTION_COUNT])(void);\n"
-            "void (*_budgie_function_address_wrapper[FUNCTION_COUNT])(void) =\n"
+            "void (BUDGIEAPI *_budgie_function_address_real[FUNCTION_COUNT])(void);\n"
+            "void (BUDGIEAPI *_budgie_function_address_wrapper[FUNCTION_COUNT])(void) =\n"
             "{\n");
     for (list<Function>::iterator i = functions.begin(); i != functions.end(); i++)
     {
         if (i != functions.begin())
             fprintf(f, ",\n");
-        fprintf(f, "    (void (*)(void)) BUGLE_ATTRIBUTE_HIDDEN_ALIAS(%s)",
+        fprintf(f, "    (void (BUDGIEAPI *)(void)) BUGLE_ATTRIBUTE_HIDDEN_ALIAS(%s)",
                 i->name().c_str());
     }
     fprintf(f, "\n};\n\n");
