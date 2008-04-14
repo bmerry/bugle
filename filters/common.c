@@ -53,7 +53,7 @@ static bool procaddress_callback(function_call *call, const callback_data *data)
      * is specified as part of the ABI.
      */
 #ifdef BUGLE_GLWIN_GET_PROC_ADDRESS
-    void (*sym)(void);
+    void (BUDGIEAPI *sym)(void);
     budgie_function func;
 
     if (!*call->BUGLE_GLWIN_GET_PROC_ADDRESS.retn) return true;
