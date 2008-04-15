@@ -26,6 +26,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <NVPerfSDK.h>
+#include <budgie/addresses.h>
 #include <bugle/stats.h>
 #include <bugle/filters.h>
 #include <bugle/objects.h>
