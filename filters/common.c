@@ -59,7 +59,7 @@ static bool procaddress_callback(function_call *call, const callback_data *data)
     if (!*call->BUGLE_GLWIN_GET_PROC_ADDRESS.retn) return true;
     func = budgie_function_id((const char *) *call->BUGLE_GLWIN_GET_PROC_ADDRESS.arg0);
     sym = (func == NULL_FUNCTION) ? NULL : budgie_function_address_wrapper(func);
-    if (sym) *call->BUGLE_GLWIN_GET_PROC_ADDRESS.retn = sym;
+    if (sym) *(void (BUDGIEAPI **)(void)) call->BUGLE_GLWIN_GET_PROC_ADDRESS.retn = sym;
 #endif
     return true;
 }

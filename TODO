@@ -1,7 +1,7 @@
 WGL port
 --------
 - recover font-rendering capability, and restore showstats filterset
-- excise last bits of GLX dependence from filters
+- excise last bits of GLX and UNIX dependence from filters
 - better robustness to missing WGL/GLX extensions
 - put BUGLE_ prefix on USING_* defines, and bake them in to the headers
 - proper abstraction layer over xevent
@@ -10,7 +10,12 @@ WGL port
 - support wglGetProcAddress on win32?
 - handle cross-DLL data import/export cleanly
 - put suitable visibility tags on all export functions, so that -export-symbols-regex is not needed
-
+- figure out why @nn suffices are left and whether they matter
+- sort out CONSTRUCTOR magic on Win32
+- load opengl32.dll from SYSTEMDIR rather than hard-coded path.
+- link budgie with -lregex if needed
+- link debugger with -lws2_32 if needed
+- rename shutdown to gldb to avoid conflicts
 
 camera filter-set
 -----------------

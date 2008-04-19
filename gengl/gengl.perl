@@ -14,6 +14,9 @@ my %function_force_version = (
     "glXGetCurrentDisplay" => "GLX_VERSION_1_2",      # glxext.h claims 1.3
 );
 
+my $function_regex = qr/(w?gl[A-Z]\w+)\s*\(/;
+my $wgl_function_regex = qr/^wgl/;
+
 my %extension_chains = (
     "GL_ATI_draw_buffers" => "GL_ARB_draw_buffers",
     "GL_ATI_stencil_two_side" => "GL_EXT_stencil_two_side",
@@ -350,12 +353,12 @@ foreach my $in_header (@ARGV)
             }
             $enums{$value}->[1]->{$cur_ext} = 1;
         }
-        elsif (/(w?gl[A-Z]\w+)\s*\(/)
+        elsif (/$function_regex/)
         {
             my $name = $1;
             my $base = base_name($name, $cur_suffix);
     
-            if ($name =~ /^wgl/)
+            if ($name =~ /$wgl_function_regex/)
             {
                 # Fake version, since WGL isn't versioned
                 $functions{$name} = "WGL_VERSION_1_0";

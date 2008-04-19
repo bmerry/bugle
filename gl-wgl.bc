@@ -1,5 +1,4 @@
-LIBRARY opengl32.dll
-LIBRARY gdi32.dll
+LIBRARY c:\\windows\\system32\\opengl32.dll
 CALLAPI __stdcall
 
 INCLUDE gl/gl.bc

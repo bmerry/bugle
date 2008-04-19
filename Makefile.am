@@ -2,6 +2,7 @@
 SUBDIRS = lib libltdl
 ACLOCAL_AMFLAGS = -I m4
 
+SYMBOLFLAGS = -export-symbols-regex '^(gl[A-Z]|budgie_|bugle_|gldb_|X|dlopen)'
 MODULEFLAGS = -no-undefined -thread-safe -export-dynamic -module -avoid-version src/libbugle.la
 
 # Utility programs, used for generating other files
@@ -50,7 +51,6 @@ pkgconfig_DATA = bugle.pc
 pkglib_LTLIBRARIES = \
 	filters/common.la \
 	filters/trace.la \
-	filters/validate.la \
 	filters/debugger.la \
 	filters/stats_basic.la \
 	filters/stats_calls.la \
@@ -87,6 +87,7 @@ budgie_budgie_SOURCES = \
 	budgie/treeutils.cpp budgie/treeutils.h \
 	budgie/tulexer.ll \
 	budgie/bclexer.ll budgie/bcparser.yy
+budgie_budgie_LDADD = $(REGEX_LIBS)
 
 # Unfortunately this introduces a dependence on flex
 budgie/bclexer.cc: budgie/bclexer.ll
@@ -174,13 +175,9 @@ filters_trace_la_SOURCES = filters/trace.c
 filters_trace_la_LDFLAGS = $(MODULEFLAGS)
 filters_trace_la_LIBADD = lib/libgnu.la
 
-filters_validate_la_SOURCES = filters/validate.c
-filters_validate_la_LDFLAGS = $(MODULEFLAGS)
-filters_validate_la_LIBADD = lib/libgnu.la
-
 filters_debugger_la_SOURCES = filters/debugger.c
 filters_debugger_la_LDFLAGS = $(MODULEFLAGS)
-filters_debugger_la_LIBADD = lib/libgnu.la
+filters_debugger_la_LIBADD = lib/libgnu.la $(WINSOCK_LIBS)
 
 filters_stats_basic_la_SOURCES = filters/stats_basic.c
 filters_stats_basic_la_LDFLAGS = $(MODULEFLAGS)

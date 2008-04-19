@@ -1,4 +1,3 @@
-SYMBOLFLAGS = -export-symbols-regex '^(gl[A-Z]|budgie_|bugle_|gldb_|X|dlopen)'
 AM_CPPFLAGS += -DBUGLE_GLWIN_GLX
 
 includebugle_HEADERS += \
@@ -28,6 +27,11 @@ pkglib_LTLIBRARIES += filters/showstats.la
 filters_showstats_la_SOURCES = filters/showstats.c
 filters_showstats_la_LDFLAGS = $(MODULEFLAGS)
 filters_showstats_la_LIBADD = lib/libgnu.la -lm
+
+pkglib_LTLIBRARIES += filters/validate.la
+filters_validate_la_SOURCES = filters/validate.c
+filters_validate_la_LDFLAGS = $(MODULEFLAGS)
+filters_validate_la_LIBADD = lib/libgnu.la
 
 $(BUDGIE_BUILT_SRCS): budgie/budgie$(EXEEXT) src/data/gl.tu gl.bc gl/bc/alias.bc $(GLBCFILES) $(GLXBCFILES) $(srcdir)/gl-glx.bc
 	$(mkdir_p) include/budgie

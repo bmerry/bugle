@@ -62,8 +62,11 @@
 /* This initialisation mechanism is only valid for static constructor functions.
  * Any code that depends on the initialisation being complete must call
  * BUGLE_RUN_CONSTRUCTOR on the constructor first.
+ *
+ * This is disabled on WIN32 because it does DLL initialisation before it is
+ * safe to call LoadLibrary.
  */
-#if BUGLE_HAVE_ATTRIBUTE_CONSTRUCTOR && !DEBUG_CONSTRUCTOR
+#if BUGLE_HAVE_ATTRIBUTE_CONSTRUCTOR && !DEBUG_CONSTRUCTOR && !defined(WIN32)
 # define BUGLE_CONSTRUCTOR(fn) static void fn(void) __attribute__((constructor))
 # define BUGLE_RUN_CONSTRUCTOR(fn) ((void) 0)
 #else

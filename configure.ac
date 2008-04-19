@@ -3,8 +3,6 @@ AC_CONFIG_SRCDIR([src/interceptor.c])
 AM_INIT_AUTOMAKE([1.7 dist-bzip2 subdir-objects])
 AM_CONFIG_HEADER(config.h)
 
-bugle_target=gl-wgl
-
 dnl Checks for programs
 AC_PROG_CC
 gl_EARLY
@@ -17,6 +15,13 @@ AC_PROG_LN_S
 AC_PROG_INSTALL
 AM_PROG_MKDIR_P
 AC_PROG_MAKE_SET
+
+AC_CANONICAL_HOST
+case $host in
+  *-*-cygwin) bugle_target="gl-wgl";;
+  *-*-mingw32)  bugle_target="gl-wgl";;
+  *) bugle_target="gl-glx";;
+esac
 
 AC_LANG(C)
 LT_INIT([win32-dll dlopen])
@@ -31,13 +36,8 @@ AC_PATH_PROG([PERL], [perl], [perl], [$srcdir/missing])
 dnl Checks for libraries
 AC_PATH_XTRA
 
-if test "$bugle_target" = "gl-wgl"; then
-  # Disable for now since it causes problems for me
-  HAVE_GTK=0
-else
-  AM_PATH_GTK_2_0([2.4.0], [HAVE_GTK=1], [HAVE_GTK=0])
-  AM_PATH_GTKGLEXT_1_0([1.0.0], [HAVE_GTKGLEXT=1], [HAVE_GTKGLEXT=0])
-fi
+AM_PATH_GTK_2_0([2.4.0], [HAVE_GTK=1], [HAVE_GTK=0])
+AM_PATH_GTKGLEXT_1_0([1.0.0], [HAVE_GTKGLEXT=1], [HAVE_GTKGLEXT=0])
 
 READLINE_LIBS=""
 HAVE_READLINE=1
@@ -49,8 +49,19 @@ AC_CHECK_LIB([history], [add_history], [
   READLINE_LIBS="-lhistory $READLINE_LIBS"], [HAVE_READLINE=0], [$READLINE_LIBS])
 AC_SUBST(READLINE_LIBS)
 
-# FIXME: only need this for building budgie, not for any C code.
-# AC_SEARCH_LIBS([regexec], [regex], [], [AC_MSG_ERROR([regex is required])])
+real_libs="$LIBS"
+REGEX_LIBS=""
+WINSOCK_LIBS=""
+AC_SEARCH_LIBS([regexec], [regex], [REGEX_LIBS="$LIBS"], [AC_MSG_ERROR([regex is required])])
+LIBS="$real_libs"
+# Check doesn't actually work on mingw, because autoconf doesn't add the header
+# AC_SEARCH_LIBS([select], [ws2_32], [WINSOCK_LIBS="$LIBS"], [AC_MSG_ERROR([select is required])])
+case $host in
+  *-*-mingw32) WINSOCK_LIBS="-lws2_32"
+esac
+LIBS="$real_libs";
+AC_SUBST(REGEX_LIBS)
+AC_SUBST(WINSOCK_LIBS)
 
 HAVE_LAVC=1
 AVCODEC_CFLAGS=""
