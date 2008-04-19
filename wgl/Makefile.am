@@ -2,12 +2,13 @@ AM_CPPFLAGS += -DBUGLE_GLWIN_WGL
 
 includebugle_HEADERS += \
 	include/bugle/wgl/glwintypes.h \
-	include/bugle/wgl/wgltypes.h
+	include/bugle/wgl/wgltypes.h \
+	include/bugle/wgl/overrides.h
 
 src_libbugleutils_la_SOURCES += \
 	src/wgl/wgltypes.c
 
-src_libbugle_la_SOURCES += \
+bugle_sources += \
 	src/wgl/glwin.c
 
 $(BUDGIE_BUILT_SRCS): budgie/budgie$(EXEEXT) src/data/gl.tu $(GLBCFILES) $(WGLBCFILES) $(srcdir)/gl-wgl.bc

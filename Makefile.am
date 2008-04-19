@@ -3,7 +3,7 @@ SUBDIRS = lib libltdl
 ACLOCAL_AMFLAGS = -I m4
 
 SYMBOLFLAGS = -export-symbols-regex '^(gl[A-Z]|budgie_|bugle_|gldb_|X|dlopen)'
-MODULEFLAGS = -no-undefined -thread-safe -export-dynamic -module -avoid-version src/libbugle.la
+MODULEFLAGS = -no-undefined -thread-safe -export-dynamic -module -avoid-version
 
 # Utility programs, used for generating other files
 noinst_PROGRAMS = budgie/budgie
@@ -12,7 +12,7 @@ noinst_HEADERS = budgie/tree.def budgie/c-common.def
 dist_noinst_SCRIPTS = gengl/gengl.perl gengl/find_header.perl \
 		      mvtu.sh
 # The real things
-lib_LTLIBRARIES = src/libbugleutils.la src/libbugle.la
+lib_LTLIBRARIES = src/libbugleutils.la
 bin_PROGRAMS = gldb/gldb @GLDB_GUI@
 EXTRA_PROGRAMS = gldb/gldb-gui
 
@@ -34,8 +34,7 @@ includebugle_HEADERS = \
 	include/bugle/xevent.h \
 	include/bugle/gl/overrides.h \
 	include/bugle/gl/gltypes.h \
-	include/bugle/gl/gldump.h \
-	include/bugle/wgl/glwintypes.h
+	include/bugle/gl/gldump.h
 includebudgie_HEADERS = \
 	include/budgie/addresses.h \
 	include/budgie/basictypes.h \
@@ -108,7 +107,9 @@ nodist_src_libbugleutils_la_SOURCES = \
 src_libbugleutils_la_LIBADD = $(LTLIBOBJS) $(LTLIBTHREAD) $(LTLIBINTL) lib/libgnu.la
 src_libbugleutils_la_LDFLAGS = -no-undefined -thread-safe -export-dynamic $(SYMBOLFLAGS) -version-info 5:1:1
 
-src_libbugle_la_SOURCES = \
+# The name of the target is OS-dependent, because on Win32 we want to call the
+# library opengl32.dll. Here we just define the inputs
+bugle_sources = \
 	src/confparse.y src/conflex.l src/conffile.h \
 	src/glutils.c src/glstate.c src/glsl.c src/interceptor.c \
 	src/dlopen.c src/dlopen.h src/filters.c \
@@ -119,10 +120,10 @@ src_libbugle_la_SOURCES = \
 	src/gl/gldump.c \
 	budgielib/addresses.c budgielib/lib.h \
 	common/threads.h
-nodist_src_libbugle_la_SOURCES = \
+bugle_sources_nodist = \
 	budgielib/lib.c
-src_libbugle_la_LIBADD = $(LIBLTDL) src/libbugleutils.la $(GL_LIBS) $(LTLIBTHREAD) $(LTLIBINTL) lib/libgnu.la
-src_libbugle_la_LDFLAGS = -no-undefined -thread-safe -export-dynamic $(SYMBOLFLAGS) -version-info 6:2:1
+bugle_libadd = $(LIBLTDL) src/libbugleutils.la $(GL_LIBS) $(LTLIBTHREAD) $(LTLIBINTL) lib/libgnu.la
+bugle_ldflags = -no-undefined -thread-safe -export-dynamic $(SYMBOLFLAGS) -version-info 6:2:1
 
 BUDGIE_BUILT_SRCS = \
         budgielib/lib.c budgielib/tables.c \
@@ -428,16 +429,16 @@ libtool: @LIBTOOL_DEPS@
 
 
 # Window-system specific files
-if USING_GLX
-include $(top_srcdir)/glx/Makefile.am
-endif
-if USING_WGL
-include $(top_srcdir)/wgl/Makefile.am
-endif
-
 if USING_X11
 include $(top_srcdir)/x11/Makefile.am
 endif
 if USING_WIN32
 include $(top_srcdir)/win32/Makefile.am
+endif
+
+if USING_GLX
+include $(top_srcdir)/glx/Makefile.am
+endif
+if USING_WGL
+include $(top_srcdir)/wgl/Makefile.am
 endif

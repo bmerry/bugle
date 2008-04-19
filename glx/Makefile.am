@@ -9,7 +9,7 @@ includebugle_HEADERS += \
 src_libbugleutils_la_SOURCES += \
 	src/glx/glxtypes.c
 
-src_libbugle_la_SOURCES += \
+bugle_sources += \
 	src/glx/glxdump.c src/glx/glwin.c
 
 pkglib_LTLIBRARIES += filters/modify.la

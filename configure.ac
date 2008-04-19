@@ -99,19 +99,11 @@ AC_HEADER_STDBOOL
 AC_CHECK_HEADERS([sys/types.h stdlib.h stddef.h regex.h sys/select.h arpa/inet.h netinet/in.h NVPerfSDK.h dlfcn.h])
 AC_CHECK_HEADERS([readline/readline.h readline/history.h], [], [HAVE_READLINE=0])
 
-GLEXTINCLUDE="`CPP=\"$CPP\" srcdir=\"$srcdir\" $PERL -w $srcdir/gengl/find_header.perl GL/glext.h`"
-AC_SUBST(GLEXTINCLUDE)
-
 if test "$bugle_target" = "gl-wgl"
 then
-    GLINCLUDES="`CPP=\"$CPP\" srcdir=\"$srcdir\" $PERL -w $srcdir/gengl/find_header.perl GL/gl.h` \
-    `CPP=\"$CPP\" srcdir=\"$srcdir\" $PERL -w $srcdir/gengl/find_header.perl wingdi.h` \
-    `CPP=\"$CPP\" srcdir=\"$srcdir\" $PERL -w $srcdir/gengl/find_header.perl GL/glext.h`"
+    GLINCLUDES="`CPP=\"$CPP\" srcdir=\"$srcdir\" $PERL -w $srcdir/gengl/find_header.perl GL/gl.h wingdi.h GL/glext.h include/bugle/wgl/overrides.h`"
 else
-    GLINCLUDES="`CPP=\"$CPP\" srcdir=\"$srcdir\" $PERL -w $srcdir/gengl/find_header.perl GL/gl.h` \
-    `CPP=\"$CPP\" srcdir=\"$srcdir\" $PERL -w $srcdir/gengl/find_header.perl GL/glx.h` \
-    `CPP=\"$CPP\" srcdir=\"$srcdir\" $PERL -w $srcdir/gengl/find_header.perl GL/glext.h` \
-    `CPP=\"$CPP\" srcdir=\"$srcdir\" $PERL -w $srcdir/gengl/find_header.perl GL/glxext.h`"
+    GLINCLUDES="`CPP=\"$CPP\" srcdir=\"$srcdir\" $PERL -w $srcdir/gengl/find_header.perl GL/gl.h GL/glx.h GL/glext.h GL/glxext.h`"
 fi
 AC_SUBST(GLINCLUDES)
 
