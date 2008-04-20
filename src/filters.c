@@ -45,6 +45,7 @@
 #  include <ndir.h>
 # endif
 #endif
+#include <ltdl.h>
 #include <bugle/xevent.h>
 #include <bugle/filters.h>
 #include <bugle/log.h>
@@ -65,6 +66,12 @@ typedef struct
     filter_callback callback;
 } filter_catcher;
 
+typedef struct
+{
+    filter_set *set;
+    bool active;        /* true for an activation, false for a deactivation */
+} filter_set_activation;
+
 static linked_list filter_sets;
 static linked_list added_filter_sets; /* Those specified in the config, plus dependents */
 
@@ -77,14 +84,10 @@ static linked_list added_filter_sets; /* Those specified in the config, plus dep
  *
  * The active_callbacks list contains the list of callback in
  * active filters. Each active_callback list entry points to a
- * filter_catcher in the original filter structure. It is updated lazily,
- * based on the value of active_dirty. Both these variables are
- * protected by active_callbacks_mutex (as are the ->active flags on
- * filter-sets). If there are both activations
- * and deactivations within the same call, the order is not guaranteed
- * to be preserved (this may eventually be fixed). Similarly, the
- * result of bugle_filter_set_is_active will reflect the old values
- * until the end of the call.
+ * filter_catcher in the original filter structure. It is updated by calling
+ * compute_active_callbacks, which takes a write lock on
+ * active_callbacks_rwlock. The same lock also protects the ->active flag
+ * on filter-sets, and the activations_deferred list (see below).
  *
  * If a filter wishes to activate or deactivate a filter-set (its own
  * or another), it should call bugle_filter_set_activate_deferred
@@ -97,10 +100,8 @@ static linked_list loaded_filters;
 
 /* FIXME: remove the dependence on defines.h */
 static linked_list active_callbacks[FUNCTION_COUNT];
-static bool active_dirty = false;
 static linked_list activations_deferred;
-static linked_list deactivations_deferred;
-gl_lock_define_initialized(static, active_callbacks_mutex)
+gl_rwlock_define_initialized(static, active_callbacks_rwlock)
 
 /* hash tables of linked lists of strings; A is the key, B is the linked list element */
 static hash_table filter_orders;           /* A is called after B */
@@ -111,7 +112,9 @@ static lt_dlhandle current_dl_handle = NULL;
 
 object_class *bugle_call_class;
 
+/* Forward declarations */
 static void filter_set_deactivate_nolock(filter_set *handle);
+static void compute_active_callbacks(void);
 
 /*** Order management helper code ***/
 
@@ -336,8 +339,7 @@ void filters_initialise(void)
     bugle_list_init(&loaded_filters, NULL);
     for (f = 0; f < budgie_function_count(); f++)
         bugle_list_init(&active_callbacks[f], NULL);
-    bugle_list_init(&activations_deferred, NULL);
-    bugle_list_init(&deactivations_deferred, NULL);
+    bugle_list_init(&activations_deferred, free);
     bugle_hash_init(&filter_orders, list_free);
     bugle_hash_init(&filter_set_dependencies, list_free);
     bugle_hash_init(&filter_set_orders, list_free);
@@ -347,7 +349,7 @@ void filters_initialise(void)
     if (!libdir) libdir = PKGLIBDIR;
     dir = opendir(libdir);
     if (!dir)
-    {
+    { 
         bugle_log_printf("filters", "initialise", BUGLE_LOG_ERROR,
                          "failed to open %s: %s", libdir, strerror(errno));
         exit(1);
@@ -516,6 +518,10 @@ bool filter_set_variable(filter_set *handle, const char *name, const char *value
     return false;
 }
 
+/* Every function that calls this one must hold active_callbacks_rwlock
+ * (or be single-threaded startup code), and must arrange for
+ * compute_active_callbacks to be run afterwards.
+ */
 /* FIXME: deps should also be activated */
 static void filter_set_activate_nolock(filter_set *handle)
 {
@@ -524,7 +530,6 @@ static void filter_set_activate_nolock(filter_set *handle)
     {
         if (handle->activate) (*handle->activate)(handle);
         handle->active = true;
-        active_dirty = true;
     }
 }
 
@@ -536,7 +541,6 @@ static void filter_set_deactivate_nolock(filter_set *handle)
     {
         if (handle->deactivate) (*handle->deactivate)(handle);
         handle->active = false;
-        active_dirty = true;
     }
 }
 
@@ -603,38 +607,51 @@ void load_filter_sets(void)
         if (handle->active)
         {
             filter_set_activate_nolock(handle);
-            active_dirty = true;
         }
     }
 }
 
 void filter_set_activate(filter_set *handle)
 {
-    gl_lock_lock(active_callbacks_mutex);
+    gl_rwlock_wrlock(active_callbacks_rwlock);
     filter_set_activate_nolock(handle);
-    gl_lock_unlock(active_callbacks_mutex);
+    compute_active_callbacks();
+    gl_rwlock_unlock(active_callbacks_rwlock);
 }
 
 void filter_set_deactivate(filter_set *handle)
 {
-    gl_lock_lock(active_callbacks_mutex);
+    gl_rwlock_wrlock(active_callbacks_rwlock);
     filter_set_deactivate_nolock(handle);
-    gl_lock_unlock(active_callbacks_mutex);
+    compute_active_callbacks();
+    gl_rwlock_unlock(active_callbacks_rwlock);
 }
 
 /* Note: these should be called only from within a callback, in which
  * case the lock is already held.
- * FIXME: a single queue should be used for activate and deactivate, to
- * allow for arbitrary ordering.
  */
 void bugle_filter_set_activate_deferred(filter_set *handle)
 {
-    bugle_list_append(&activations_deferred, handle);
+    filter_set_activation *activation = XMALLOC(filter_set_activation);
+
+    activation->set = handle;
+    activation->active = true;
+
+    gl_rwlock_wrlock(active_callbacks_rwlock);
+    bugle_list_append(&activations_deferred, activation);
+    gl_rwlock_unlock(active_callbacks_rwlock);
 }
 
 void bugle_filter_set_deactivate_deferred(filter_set *handle)
 {
-    bugle_list_append(&deactivations_deferred, handle);
+    filter_set_activation *activation = XMALLOC(filter_set_activation);
+
+    activation->set = handle;
+    activation->active = false;
+
+    gl_rwlock_wrlock(active_callbacks_rwlock);
+    bugle_list_append(&activations_deferred, activation);
+    gl_rwlock_unlock(active_callbacks_rwlock);
 }
 
 static const char *filter_get_name(void *f)
@@ -683,13 +700,6 @@ static void set_bypass(void)
     free(bypass);
 }
 
-void filters_finalise(void)
-{
-    load_filter_sets();
-    filter_compute_order();
-    set_bypass();
-}
-
 /* Note: caller must take mutexes */
 static void compute_active_callbacks(void)
 {
@@ -714,23 +724,21 @@ static void compute_active_callbacks(void)
     }
 }
 
+void filters_finalise(void)
+{
+    load_filter_sets();
+    filter_compute_order();
+    set_bypass();
+    compute_active_callbacks();
+}
+
 void filters_run(function_call *call)
 {
     linked_list_node *i;
     filter_catcher *cur;
     callback_data data;
 
-    /* FIXME: this lock effectively makes the entire capture process a
-     * critical section, even though changes to active_callbacks and
-     * active_dirty are rare. We would prefer a read-write lock or
-     * a read-copy process or something.
-     */
-    gl_lock_lock(active_callbacks_mutex);
-    if (active_dirty)
-    {
-        compute_active_callbacks();
-        active_dirty = false;
-    }
+    gl_rwlock_rdlock(active_callbacks_rwlock);
 
     data.call_object = bugle_object_new(bugle_call_class, NULL, true);
     for (i = bugle_list_head(&active_callbacks[call->generic.id]); i; i = bugle_list_next(i))
@@ -741,19 +749,23 @@ void filters_run(function_call *call)
     }
     bugle_object_free(data.call_object);
 
-    while (bugle_list_head(&activations_deferred))
+    /* Process any pending activations */
+    if (bugle_list_head(&activations_deferred))
     {
-        i = bugle_list_head(&activations_deferred);
-        filter_set_activate_nolock((filter_set *) bugle_list_data(i));
-        bugle_list_erase(&activations_deferred, i);
+        /* Upgrade to a write lock. Somebody else make get in between the
+         * unlock and the wrlock, but at worst they will do our work for us.
+         */
+        gl_rwlock_unlock(active_callbacks_rwlock);
+        gl_rwlock_wrlock(active_callbacks_rwlock);
+        while (bugle_list_head(&activations_deferred))
+        {
+            i = bugle_list_head(&activations_deferred);
+            filter_set_activate_nolock((filter_set *) bugle_list_data(i));
+            bugle_list_erase(&activations_deferred, i);
+        }
+        compute_active_callbacks();
     }
-    while (bugle_list_head(&deactivations_deferred))
-    {
-        i = bugle_list_head(&deactivations_deferred);
-        filter_set_deactivate_nolock((filter_set *) bugle_list_data(i));
-        bugle_list_erase(&deactivations_deferred, i);
-    }
-    gl_lock_unlock(active_callbacks_mutex);
+    gl_rwlock_unlock(active_callbacks_rwlock);
 }
 
 filter_set *bugle_filter_set_new(const filter_set_info *info)
