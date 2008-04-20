@@ -32,5 +32,6 @@ typedef GLXDrawable glwin_drawable;
 #ifdef GLX_ARB_get_proc_address
 #define BUGLE_GLWIN_GET_PROC_ADDRESS glXGetProcAddressARB
 #endif
+#define BUGLE_GLWIN_GET_PROC_ADDRESS_CONTEXT_DEPENDENT 0
 
 #endif /* !BUGLE_GLX_GLWINTYPES_H */

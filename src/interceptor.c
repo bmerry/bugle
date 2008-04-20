@@ -192,6 +192,11 @@ static void initialise_core_filters(void)
  */
 static void initialise_addresses_glwin(void)
 {
+    /* This doesn't work for WGL because it uses context-dependent function
+     * pointers. Instead, budgie_address_generator returns addresses on the
+     * fly.
+     */
+#if !BUGLE_GLWIN_GET_PROC_ADDRESS_CONTEXT_DEPENDENT
     size_t i;
 
     for (i = 0; i < budgie_function_count(); i++)
@@ -206,6 +211,7 @@ static void initialise_addresses_glwin(void)
                 budgie_function_address_set_real(i, bugle_glwin_get_proc_address(budgie_function_name(i)));
         }
     }
+#endif
 }
 
 BUGLE_CONSTRUCTOR(initialise_all);
@@ -233,4 +239,13 @@ void budgie_interceptor(function_call *call)
 {
     BUGLE_RUN_CONSTRUCTOR(initialise_all);
     filters_run(call);
+}
+
+void (BUDGIEAPI *budgie_address_generator(budgie_function id))
+{
+#if BUGLE_GLWIN_GET_PROC_ADDRESS_CONTEXT_DEPENDENT
+    return bugle_glwin_get_proc_address(budgie_function_name(id));
+#else
+    return NULL;
+#endif
 }

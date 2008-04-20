@@ -62,8 +62,6 @@ bool bugle_glwin_make_context_current(glwin_display dpy, glwin_drawable draw,
 
 void (BUDGIEAPI *bugle_glwin_get_proc_address(const char *name))(void)
 {
-    /* FIXME: we can't call this until we have a context */
-    return NULL;
     return CALL(wglGetProcAddress)(name);
 }
 

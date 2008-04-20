@@ -1526,7 +1526,7 @@ static void write_call_to(FILE *f, list<Function>::iterator func, const char *ar
     string define = func->define();
     destroy_temporary(ptr);
 
-    fprintf(f, "(*(%s) _budgie_function_address_real[%s])(",
+    fprintf(f, "(*(%s) budgie_function_address_real(%s))(",
             type.c_str(), define.c_str());
     for (size_t j = 0; j < func->group->parameters.size(); j++)
     {

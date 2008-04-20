@@ -31,6 +31,7 @@ typedef HGLRC glwin_context;
 typedef HDC   glwin_drawable;
 
 #define BUGLE_GLWIN_GET_PROC_ADDRESS wglGetProcAddress
+#define BUGLE_GLWIN_GET_PROC_ADDRESS_CONTEXT_DEPENDENT 1
 
 #endif /* !BUGLE_WGL_GLWINTYPES_H */
 

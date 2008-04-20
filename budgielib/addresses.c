@@ -30,6 +30,11 @@
 #include "tls.h"
 #include "xalloc.h"
 
+/* External function provided to look up addresses on the fly, for when the
+ * address is context-dependent.
+ */
+extern void (BUDGIEAPI *budgie_address_generator(budgie_function id));
+
 static void make_indent(int indent, FILE *out)
 {
     int i;
@@ -114,7 +119,10 @@ void budgie_dump_any_call(const generic_function_call *call, int indent, FILE *o
 void (BUDGIEAPI *budgie_function_address_real(budgie_function id))(void)
 {
     assert(id >= 0 && id < budgie_function_count());
-    return _budgie_function_address_real[id];
+    if (_budgie_function_address_real[id] == NULL)
+        return budgie_address_generator(id);
+    else
+        return _budgie_function_address_real[id];
 }
 
 void (BUDGIEAPI *budgie_function_address_wrapper(budgie_function id))(void)
