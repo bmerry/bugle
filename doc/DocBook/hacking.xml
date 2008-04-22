@@ -1,0 +1,166 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE chapter PUBLIC "-//OASIS//DTD DocBook XML V4.3//EN" "http://www.oasis-open.org/docbook/xml/4.3/docbookx.dtd" [
+<!ENTITY % myentities SYSTEM "bugle.ent" >
+%myentities;
+]>
+<chapter id="hacking">
+    <title>Hacking &bugle;</title>
+
+    <sect1 id="hacking-porting">
+        <title>Porting</title>
+
+        <sect2 id="hacking-porting-intro">
+            <title>Introduction</title>
+            <para>
+                Wherever possible, autoconf, libtool and gnulib are used to hide
+                the gory details of porting to different operating systems.
+                However, because &bugle; interfaces directly into the host system
+                in a number of ways, some work is required to port &bugle; to new
+                systems.
+            </para>
+            <para>
+                While other projects may have simply a <quote>Windows</quote> port and a
+                <quote>GNU</quote> port, for example, but it is not so simple for &bugle;.
+                For example, one might run on Windows but using Cygwin with an X
+                server, or on Linux but using EGL rather than GLX. Instead, a
+                target system is based on a number of categories:
+            </para>
+            <variablelist>
+                <varlistentry>
+                    <term>Binary format</term>
+                    <listitem><para>The binary format determines the details of
+                            how dynamic linking is done and how it may be subverted.
+                            For example, the Windows PE format explicitly indicates
+                            which symbols come from which library, and hence
+                            require an entire library to be impersonated, while
+                            ELF files just list dependent libraries and dependent
+                            symbols, making it easy to replace certain symbols.
+                    </para></listitem>
+                </varlistentry>
+                <varlistentry>
+                    <term>Operating system API</term>
+                    <listitem><para>This determines how things like segfault
+                            handling and other low-level operations are
+                            performed. Examples are POSIX and Win32.
+                    </para></listitem>
+                </varlistentry>
+                <varlistentry>
+                    <term>Windowing system</term>
+                    <listitem><para>The main effect of the windowing system is to
+                            determine how keyboard and mouse events may be
+                            intercepted.
+                    </para></listitem>
+                </varlistentry>
+                <varlistentry>
+                    <term>GL-Window system integration</term>
+                    <listitem><para>This determines how GL interacts with the
+                            windowing system. Usually there is a one-to-one
+                            mapping (e.g., AGL, WGL, GLX), but EGL applies on any
+                            windowing system.
+                    </para></listitem>
+                </varlistentry>
+                <varlistentry>
+                    <term>Filesystem layout</term>
+                    <listitem><para>This determines where to look for files,
+                            namely &bugle; configuration files and system
+                            libraries, and potentially temporary files.
+                    </para></listitem>
+                </varlistentry>
+            </variablelist>
+            <para>
+                Rather than conditionally compiling code based on the particular
+                system in use, each system is characterised by a set of defines
+                that describe its essential properties. This makes it easier to
+                port &bugle; to similar but not identical systems in future:
+                new code is needed only for those parts either specific to the
+                system in question, or where the new system behaves in an entirely
+                novel way.
+            </para>
+        </sect2>
+
+        <sect2 id="hacking-porting-binfmt">
+            <title>Binary format</title>
+            <para>
+                The following properties are defined as either 0 or 1, meaning
+                false or true; the descriptions indicate the meaning if true:
+            </para>
+            <variablelist>
+                <varlistentry>
+                    <term><symbol>BUGLE_BINFMT_SYMBOL_BY_DSO</symbol></term>
+                    <listitem><para>
+                            The binary format lists the external library that
+                            is to be used for each external symbol.
+                    </para></listitem>
+                </varlistentry>
+                <varlistentry>
+                    <term><symbol>BUGLE_BINFMT_LDPRELOAD</symbol></term>
+                    <listitem><para>
+                            &Bugle; is injected by <envar>LD_PRELOAD</envar>
+                            or an equivalent mechanism. If false, the &bugle;
+                            library is given the same name as the usual OpenGL
+                            library (e.g., <systemitem
+                                class="library">opengl32.dll</systemitem>
+                            on Windows), and loads the original library with a
+                            full path.
+                    </para></listitem>
+                </varlistentry>
+            </variablelist>
+            <para>
+                At present the supported binary formats are PE
+                (<symbol>BUGLE_BINFMT_PE</symbol>) and ELF
+                (<symbol>BUGLE_BINFMT_ELF</symbol>), although other formats
+                could well be similar enough to be put in the same category.
+            </para>
+        </sect2>
+
+        <sect2 id="hacking-porting-osapi">
+            <title>Operating system API</title>
+            <para>
+                For the most part, code that needs to be OS API aware needs to
+                have code implemented for each target OS. The only use of this
+                in the API at present is the use of
+                <function>signal</function> and
+                <function>siglongjmp</function> to return useful information
+                in the face of an access violation, and these functions may be
+                detected via autoconf.
+            </para>
+            <para>
+                For this reason, no preprocessor symbols are currently defined
+                to indicate the OS API. This is subject to change should a
+                need arise.
+            </para>
+        </sect2>
+
+        <sect2 id="hacking-porting-winsys">
+            <title>Windowing system</title>
+            <para>
+                As for OS porting, code that is windowing system specific
+                needs to be written for each windowing system. The following
+                window systems are defined:
+            </para>
+            <itemizedlist>
+                <listitem><para>
+                        <symbol>BUGLE_WINSYS_X11</symbol>
+                </para></listitem>
+                <listitem><para>
+                        <symbol>BUGLE_WINSYS_WINDOWS</symbol>
+                </para></listitem>
+            </itemizedlist>
+        </sect2>
+
+        <sect2 id="hacking-porting-glwin">
+            <title>GL-Windowing integration</title>
+            <para>
+                The primary difference between GL-Windowing integration APIs
+                is whether extension function pointers are context-dependent
+                or constant. This is determined by
+                <symbol>BUGLE_GLWIN_CONTEXT_DEPENDENT</symbol>. The only
+                currently supported instance of this is WGL
+                (<symbol>BUGLE_GLWIN_WGL</symbol>). EGL
+                (<symbol>BUGLE_GLWIN_EGL</symbol>) and GLX
+                (<symbol>BUGLE_GLWIN_GLX</symbol>) both require function
+                pointers to be the same in any context.
+            </para>
+        </sect2>
+    </sect1>
+</chapter>

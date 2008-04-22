@@ -324,6 +324,7 @@ DOCBOOK_SRCS = $(DOCBOOK_MAN_SRCS) \
 	       doc/DocBook/introduction.xml \
 	       doc/DocBook/install.xml \
 	       doc/DocBook/extending.xml \
+	       doc/DocBook/hacking.xml \
 	       doc/DocBook/faq.xml \
 	       doc/DocBook/releasenotes.xml \
 	       doc/DocBook/changelog.xml \
@@ -370,6 +371,9 @@ doc/DocBook/man.stamp: $(DOCBOOK_MAN_SRCS) doc/DocBook/bugle.xml doc/DocBook/man
 	$(XMLLINT) $(XMLLINT_OPTIONS) $(srcdir)/doc/DocBook/bugle.xml
 	$(XSLTPROC) $(XSLTPROC_OPTIONS) $(srcdir)/doc/DocBook/manpages.xsl $(srcdir)/doc/DocBook/bugle.xml
 	$(mkdir_p) doc/DocBook
+	$(mkdir_p) doc/man1
+	$(mkdir_p) doc/man3
+	$(mkdir_p) doc/man7
 	echo timestamp > doc/DocBook/man.stamp
 dist_man_MANS = $(DOCBOOK_MAN_MANPAGES)
 EXTRA_DIST += doc/DocBook/man.stamp
@@ -380,6 +384,7 @@ DOCBOOK_HTML = doc/html/index.html \
 	       doc/html/introduction.html \
 	       doc/html/install.html \
 	       doc/html/extending.html \
+	       doc/html/hacking.html \
 	       doc/html/faq.html \
 	       doc/html/gldb-gui.1.html \
 	       doc/html/gldb.1.html \
@@ -411,6 +416,7 @@ doc/DocBook/html.stamp: $(DOCBOOK_SRCS) doc/DocBook/xhtml-chunk.xsl doc/DocBook/
 	$(XMLLINT) $(XMLLINT_OPTIONS) $(srcdir)/doc/DocBook/bugle.xml
 	$(XSLTPROC) $(XSLTPROC_OPTIONS) $(srcdir)/doc/DocBook/xhtml-chunk.xsl $(srcdir)/doc/DocBook/bugle.xml
 	$(mkdir_p) doc/DocBook
+	$(mkdir_p) doc/html
 	echo timestamp > doc/DocBook/html.stamp
 htmldoc_DATA = $(DOCBOOK_HTML)
 EXTRA_DIST += doc/DocBook/html.stamp $(DOCBOOK_HTML)
