@@ -55,8 +55,10 @@ pkgconfig_DATA = bugle.pc
 
 pkglib_LTLIBRARIES = \
 	filters/common.la \
+	filters/validate.la \
 	filters/trace.la \
 	filters/debugger.la \
+	filters/modify.la \
 	filters/stats_basic.la \
 	filters/stats_calls.la \
 	filters/stats_fragments.la \
@@ -179,6 +181,10 @@ filters_common_la_SOURCES = filters/common.c
 filters_common_la_LDFLAGS = $(MODULEFLAGS)
 filters_common_la_LIBADD = $(MODULELIBS)
 
+filters_validate_la_SOURCES = filters/validate.c
+filters_validate_la_LDFLAGS = $(MODULEFLAGS)
+filters_validate_la_LIBADD = $(MODULELIBS)
+
 filters_trace_la_SOURCES = filters/trace.c
 filters_trace_la_LDFLAGS = $(MODULEFLAGS)
 filters_trace_la_LIBADD = $(MODULELIBS)
@@ -186,6 +192,10 @@ filters_trace_la_LIBADD = $(MODULELIBS)
 filters_debugger_la_SOURCES = filters/debugger.c
 filters_debugger_la_LDFLAGS = $(MODULEFLAGS)
 filters_debugger_la_LIBADD = $(MODULELIBS) $(WINSOCK_LIBS)
+
+filters_modify_la_SOURCES = filters/modify.c
+filters_modify_la_LDFLAGS = $(MODULEFLAGS)
+filters_modify_la_LIBADD = $(MODULELIBS) -lm
 
 filters_stats_basic_la_SOURCES = filters/stats_basic.c
 filters_stats_basic_la_LDFLAGS = $(MODULEFLAGS)

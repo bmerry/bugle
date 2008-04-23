@@ -179,6 +179,7 @@ static bool showerror_initialise(filter_set *handle)
     return true;
 }
 
+#if HAVE_SIGLONGJMP
 /* Stack unwind hack, to get a usable stack trace after a segfault inside
  * the OpenGL driver, if it was compiled with -fomit-frame-pointer (such
  * as the NVIDIA drivers). This implementation violates the requirement
@@ -256,6 +257,7 @@ static bool unwindstack_initialise(filter_set *handle)
     bugle_filter_order("unwindstack_pre", "invoke");
     return true;
 }
+#endif
 
 static void checks_texture_complete_fail(int unit, GLenum target, const char *reason)
 {
@@ -391,16 +393,16 @@ static void checks_texture_complete(int unit, GLenum target)
         {
 #ifdef GL_ARB_texture_cube_map
         case GL_TEXTURE_CUBE_MAP_ARB:
-            glGetTexLevelParameteriv(GL_TEXTURE_CUBE_MAP_POSITIVE_X_ARB, base, GL_TEXTURE_WIDTH, &size);
-            glGetTexLevelParameteriv(GL_TEXTURE_CUBE_MAP_POSITIVE_X_ARB, base, GL_TEXTURE_INTERNAL_FORMAT, &format);
-            glGetTexLevelParameteriv(GL_TEXTURE_CUBE_MAP_POSITIVE_X_ARB, base, GL_TEXTURE_BORDER, &border);
+            CALL(glGetTexLevelParameteriv)(GL_TEXTURE_CUBE_MAP_POSITIVE_X_ARB, base, GL_TEXTURE_WIDTH, &size);
+            CALL(glGetTexLevelParameteriv)(GL_TEXTURE_CUBE_MAP_POSITIVE_X_ARB, base, GL_TEXTURE_INTERNAL_FORMAT, &format);
+            CALL(glGetTexLevelParameteriv)(GL_TEXTURE_CUBE_MAP_POSITIVE_X_ARB, base, GL_TEXTURE_BORDER, &border);
             for (int i = 0; i < 6; i++)
             {
                 face = GL_TEXTURE_CUBE_MAP_POSITIVE_X_ARB + i;
-                glGetTexLevelParameteriv(face, base, GL_TEXTURE_WIDTH, &width);
-                glGetTexLevelParameteriv(face, base, GL_TEXTURE_HEIGHT, &height);
-                glGetTexLevelParameteriv(face, base, GL_TEXTURE_INTERNAL_FORMAT, &lformat);
-                glGetTexLevelParameteriv(face, base, GL_TEXTURE_BORDER, &lborder);
+                CALL(glGetTexLevelParameteriv)(face, base, GL_TEXTURE_WIDTH, &width);
+                CALL(glGetTexLevelParameteriv)(face, base, GL_TEXTURE_HEIGHT, &height);
+                CALL(glGetTexLevelParameteriv)(face, base, GL_TEXTURE_INTERNAL_FORMAT, &lformat);
+                CALL(glGetTexLevelParameteriv)(face, base, GL_TEXTURE_BORDER, &lborder);
                 if (width != height)
                 {
                     checks_texture_complete_fail(unit, face, "cube map face is not square");
@@ -524,6 +526,8 @@ static void checks_completeness()
 static const char *checks_error;
 static int checks_error_attribute;  /* generic attribute number for error */
 static bool checks_error_vbo;
+
+#if HAVE_SIGLONGJMP
 static sigjmp_buf checks_buf;
 gl_lock_define_initialized(static, checks_mutex)
 
@@ -531,6 +535,7 @@ static void checks_sigsegv_handler(int sig)
 {
     siglongjmp(checks_buf, 1);
 }
+#endif
 
 static void checks_pointer_message(const char *function)
 {
@@ -553,6 +558,7 @@ static void checks_pointer_message(const char *function)
  */
 static void checks_memory(size_t size, const void *data)
 {
+#if HAVE_SIGLONGJMP
     volatile char dummy;
     const char *cdata;
     size_t i;
@@ -561,6 +567,7 @@ static void checks_memory(size_t size, const void *data)
     cdata = (const char *) data;
     for (i = 0; i < size; i++)
         dummy = cdata[i];
+#endif
 }
 
 /* We don't want to have to make *calls* to checks_buffer conditional
@@ -864,6 +871,7 @@ static void checks_min_max(GLsizei count, GLenum gltype, const GLvoid *indices,
  * we protect it with a big lock.
  *
  */
+#if HAVE_SIGLONGJMP
 #define CHECKS_START() 1) { \
     struct sigaction act, old_act; \
     volatile bool ret = true; \
@@ -897,6 +905,15 @@ static void checks_min_max(GLsizei count, GLenum gltype, const GLvoid *indices,
     gl_lock_unlock(checks_mutex); \
     return ret; \
     } else (void) 0
+
+#else /* !HAVE_SIGLONGJMP */
+#define CHECKS_START() 1) { \
+    bool ret = true; \
+    if (0
+#define CHECKS_STOP() \
+    return ret; \
+    } else (void) 0
+#endif
 
 static bool checks_glDrawArrays(function_call *call, const callback_data *data)
 {
@@ -1278,6 +1295,7 @@ void bugle_initialise_filter_library(void)
         NULL,
         "logs OpenGL errors"
     };
+#if HAVE_SIGLONGJMP
     static const filter_set_info unwindstack_info =
     {
         "unwindstack",
@@ -1288,6 +1306,7 @@ void bugle_initialise_filter_library(void)
         NULL,
         "catches segfaults and allows recovery of the stack (see docs)"
     };
+#endif
     static const filter_set_info checks_info =
     {
         "checks",
@@ -1300,7 +1319,9 @@ void bugle_initialise_filter_library(void)
     };
     bugle_filter_set_new(&error_info);
     bugle_filter_set_new(&showerror_info);
+#if HAVE_SIGLONGJMP
     bugle_filter_set_new(&unwindstack_info);
+#endif
     bugle_filter_set_new(&checks_info);
 
     bugle_filter_set_renders("error");

@@ -1,5 +1,3 @@
-AM_CPPFLAGS += -DBUGLE_GLWIN_WGL
-
 includebugle_HEADERS += \
 	include/bugle/wgl/overrides.h
 

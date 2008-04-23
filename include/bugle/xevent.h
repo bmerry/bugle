@@ -31,7 +31,12 @@
 typedef int KeySym;
 typedef void XEvent;
 #define NoSymbol ((KeySym) 0)
-#endif
+#define XK_Up 1
+#define XK_Down 1
+#define XK_Left 1
+#define XK_Right 1
+#define XK_Page_Up 1
+#define XK_Page_Down 1
 
 typedef struct
 {
@@ -63,6 +68,10 @@ void bugle_xevent_key_callback(const xevent_key *key,
 void bugle_xevent_grab_pointer(bool dga, void (*callback)(int, int, XEvent *));
 void bugle_xevent_release_pointer(void);
 
+/* Sends an invalidation event to the window referenced by the event */
+void bugle_xevent_invalidate_window(XEvent *event);
+
 void xevent_initialise(void);
 
+#endif /* !BUGLE_WINSYS_X11 */
 #endif /* !BUGLE_SRC_XEVENT_H */

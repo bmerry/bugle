@@ -129,7 +129,7 @@ BUGLE_C_PRAGMA_WEAK
 
 dnl Checks for library functions
 AC_CHECK_FUNCS([regcomp strrchr vsnprintf open_memstream])
-AC_CHECK_FUNCS([cosf sinf finite isfinite nan isnan])
+AC_CHECK_FUNCS([cosf sinf finite isfinite nan isnan siglongjmp])
 # Readline used to call this completion_matches
 real_libs="$LIBS"
 LIBS="$READLINE_LIBS $LIBS"

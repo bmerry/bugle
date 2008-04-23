@@ -672,6 +672,34 @@ void bugle_xevent_release_pointer(void)
     bugle_log("xevent", "mouse", BUGLE_LOG_DEBUG, "released");
 }
 
+void bugle_xevent_invalidate_window(XEvent *event)
+{
+    glwin_display dpy;
+    XEvent dirty;
+    Window w;
+    Window root;
+    int x, y;
+    unsigned int width, height, border_width, depth;
+
+    dpy = event->xany.display;
+    w = event->xany.window != None ? event->xany.window : PointerWindow;
+    dirty.type = Expose;
+    dirty.xexpose.display = dpy;
+    dirty.xexpose.window = event->xany.window;
+    dirty.xexpose.x = 0;
+    dirty.xexpose.y = 0;
+    dirty.xexpose.width = 1;
+    dirty.xexpose.height = 1;
+    dirty.xexpose.count = 0;
+    if (event->xany.window != None
+        && XGetGeometry(dpy, w, &root, &x, &y, &width, &height, &border_width, &depth))
+    {
+        dirty.xexpose.width = width;
+        dirty.xexpose.height = height;
+    }
+    XSendEvent(dpy, PointerWindow, True, ExposureMask, &dirty);
+}
+
 void xevent_initialise(void)
 {
     lt_dlhandle handle;
@@ -745,6 +773,10 @@ void bugle_xevent_grab_pointer(bool dga, void (*callback)(int, int, XEvent *))
 }
 
 void bugle_xevent_release_pointer(void)
+{
+}
+
+void bugle_xevent_invalidate_window(XEvent *event)
 {
 }
 

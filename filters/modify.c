@@ -479,34 +479,6 @@ typedef struct
     bool pressed[CAMERA_MOTION_KEYS];
 } camera_context;
 
-static void invalidate_window(XEvent *event)
-{
-    glwin_display dpy;
-    XEvent dirty;
-    Window w;
-    Window root;
-    int x, y;
-    unsigned int width, height, border_width, depth;
-
-    dpy = event->xany.display;
-    w = event->xany.window != None ? event->xany.window : PointerWindow;
-    dirty.type = Expose;
-    dirty.xexpose.display = dpy;
-    dirty.xexpose.window = event->xany.window;
-    dirty.xexpose.x = 0;
-    dirty.xexpose.y = 0;
-    dirty.xexpose.width = 1;
-    dirty.xexpose.height = 1;
-    dirty.xexpose.count = 0;
-    if (event->xany.window != None
-        && XGetGeometry(dpy, w, &root, &x, &y, &width, &height, &border_width, &depth))
-    {
-        dirty.xexpose.width = width;
-        dirty.xexpose.height = height;
-    }
-    XSendEvent(dpy, PointerWindow, True, ExposureMask, &dirty);
-}
-
 /* Determinant of a 4x4 matrix */
 static GLfloat determinant(const GLfloat *m)
 {
@@ -622,8 +594,8 @@ static void camera_draw_frustum(const GLfloat *original)
 #ifdef GL_NV_depth_clamp
     if (BUGLE_GL_HAS_EXTENSION(GL_NV_depth_clamp))
     {
-        glEnable(GL_DEPTH_CLAMP_NV);
-        glDepthFunc(GL_LEQUAL);
+        CALL(glEnable)(GL_DEPTH_CLAMP_NV);
+        CALL(glDepthFunc)(GL_LEQUAL);
     }
 #endif
 
@@ -641,8 +613,8 @@ static void camera_draw_frustum(const GLfloat *original)
 #ifdef GL_NV_depth_clamp
     if (BUGLE_GL_HAS_EXTENSION(GL_NV_depth_clamp))
     {
-        glDepthFunc(GL_LESS);
-        glDisable(GL_DEPTH_CLAMP_NV);
+        CALL(glDepthFunc)(GL_LESS);
+        CALL(glDisable)(GL_DEPTH_CLAMP_NV);
     }
 #endif
     CALL(glMatrixMode)(GL_PROJECTION);
@@ -708,7 +680,7 @@ static void camera_mouse_callback(int dx, int dy, XEvent *event)
         }
     ctx->dirty = true;
 
-    invalidate_window(event);
+    bugle_xevent_invalidate_window(event);
 }
 
 static bool camera_key_wanted(const xevent_key *key, void *arg, XEvent *event)
@@ -727,7 +699,7 @@ static void camera_key_callback(const xevent_key *key, void *arg, XEvent *event)
     if (index < CAMERA_MOTION_KEYS)
     {
         ctx->pressed[index] = key->press;
-        if (key->press) invalidate_window(event);
+        if (key->press) bugle_xevent_invalidate_window(event);
     }
     else
     {
@@ -738,7 +710,7 @@ static void camera_key_callback(const xevent_key *key, void *arg, XEvent *event)
         case CAMERA_KEY_RESET:
             for (i = 0; i < 16; i++)
                 ctx->modifier[i] = (i % 5) ? 0.0f : 1.0f;
-            invalidate_window(event);
+            bugle_xevent_invalidate_window(event);
             break;
         case CAMERA_KEY_TOGGLE:
             if (!camera_intercept)
@@ -755,7 +727,7 @@ static void camera_key_callback(const xevent_key *key, void *arg, XEvent *event)
             break;
         case CAMERA_KEY_FRUSTUM:
             camera_frustum = !camera_frustum;
-            invalidate_window(event);
+            bugle_xevent_invalidate_window(event);
             break;
         }
     }

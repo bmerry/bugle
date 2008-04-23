@@ -45,6 +45,10 @@ void bugle_xevent_release_pointer(void)
 {
 }
 
+void bugle_xevent_invalidate_window(XEvent *event)
+{
+}
+
 void xevent_initialise(void)
 {
 }
