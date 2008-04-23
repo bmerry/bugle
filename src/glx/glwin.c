@@ -18,8 +18,6 @@
 #if HAVE_CONFIG_H
 # include <config.h>
 #endif
-#define GLX_GLXEXT_PROTOTYPES /* Currently needed for CALL() */
-#include <bugle/glx/glwintypes.h>
 #include <bugle/glwin.h>
 #include <bugle/filters.h>
 #include <budgie/call.h>

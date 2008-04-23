@@ -3,4 +3,4 @@ HEADER GL/wglext.h
 HEADER bugle/wgl/wgltypes.h
 LIMIT wgl.*
 
-DUMP TYPE HDC bugle_dump_HDC($$, $F)
+DUMP TYPE HDC bugle_dump_glwin_drawable($$, $F)

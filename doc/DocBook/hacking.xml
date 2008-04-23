@@ -162,5 +162,33 @@
                 pointers to be the same in any context.
             </para>
         </sect2>
+
+        <sect2 id="hacking-porting-fs">
+            <title>Filesystem layout</title>
+            <para>
+                Filesystem layout determines the conventional placement of
+                files. Three variants are defined
+            </para>
+            <variablelist>
+                <varlistentry>
+                    <term><symbol>BUGLE_FS_UNIX</symbol></term>
+                    <listitem><para>
+                            Configuration files are stored in
+                            <filename>$<envar>HOME</envar>/.bugle</filename>
+                            and system libraries are searched for in
+                            <filename>/usr/lib</filename>.
+                    </para></listitem>
+                </varlistentry>
+                <varlistentry>
+                    <term><symbol>BUGLE_FS_CYGMING</symbol></term>
+                    <listitem><para>
+                            Configuration files are stored in
+                            <filename>$<envar>HOME</envar>/.bugle</filename>,
+                            but system libraries are searched for in
+                            <function>GetSystemDir()</function>.
+                    </para></listitem>
+                </varlistentry>
+            </variablelist>
+        </sect2>
     </sect1>
 </chapter>

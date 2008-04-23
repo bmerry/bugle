@@ -1,13 +1,7 @@
-AM_CPPFLAGS += -DBUGLE_GLWIN_GLX
-
-includebugle_HEADERS += \
+includebugleglxdir = $(includebugledir)/glx
+includebugleglx_HEADERS = \
 	include/bugle/glx/overrides.h \
-	include/bugle/glx/glxtypes.h \
-	include/bugle/glx/glxdump.h \
-	include/bugle/glx/glwintypes.h
-
-src_libbugleutils_la_SOURCES += \
-	src/glx/glxtypes.c
+	include/bugle/glx/glxdump.h
 
 bugle_sources += \
 	src/glx/glxdump.c src/glx/glwin.c
@@ -33,6 +27,6 @@ filters_validate_la_SOURCES = filters/validate.c
 filters_validate_la_LDFLAGS = $(MODULEFLAGS)
 filters_validate_la_LIBADD = lib/libgnu.la
 
-$(BUDGIE_BUILT_SRCS): budgie/budgie$(EXEEXT) src/data/gl.tu gl.bc gl/bc/alias.bc $(GLBCFILES) $(GLXBCFILES) $(srcdir)/gl-glx.bc
+$(BUDGIE_BUILT_SRCS): budgie/budgie$(EXEEXT) src/data/gl.tu $(GLBCFILES) $(GLXBCFILES) $(srcdir)/gl-glx.bc
 	$(mkdir_p) include/budgie
 	budgie/budgie$(EXEEXT) -I$(srcdir) -T `test -f src/data/gl.tu || echo '$(srcdir)/'`src/data/gl.tu $(srcdir)/gl-glx.bc

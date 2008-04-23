@@ -1,10 +1,7 @@
 HEADER GL/glx.h
-HEADER bugle/glx/glxtypes.h
 HEADER bugle/glx/glxdump.h
 HEADER bugle/glx/overrides.h
 LIMIT glX.*
-
-INCLUDE glx/bc/alias.bc
 
 INCLUDE glx/bc/glx.bc
 INCLUDE glx/bc/GLX_ARB_get_proc_address.bc

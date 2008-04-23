@@ -4,6 +4,7 @@ ACLOCAL_AMFLAGS = -I m4
 
 SYMBOLFLAGS = -export-symbols-regex '^(gl[A-Z]|budgie_|bugle_|gldb_|X|dlopen)'
 MODULEFLAGS = -no-undefined -thread-safe -export-dynamic -module -avoid-version
+MODULELIBS = lib/libgnu.la
 
 # Utility programs, used for generating other files
 noinst_PROGRAMS = budgie/budgie
@@ -17,6 +18,7 @@ bin_PROGRAMS = gldb/gldb @GLDB_GUI@
 EXTRA_PROGRAMS = gldb/gldb-gui
 
 includebugledir = $(includedir)/bugle/bugle
+includebuglegldir = $(includebugledir)/gl
 includebudgiedir = $(includedir)/bugle/budgie
 includebugle_HEADERS = \
 	include/bugle/hashtable.h \
@@ -32,6 +34,10 @@ includebugle_HEADERS = \
 	include/bugle/stats.h \
 	include/bugle/tracker.h \
 	include/bugle/xevent.h \
+	include/bugle/porting.h \
+	include/bugle/glwintypes.h \
+	include/bugle/glwin.h
+includebuglegl_HEADERS = \
 	include/bugle/gl/overrides.h \
 	include/bugle/gl/gltypes.h \
 	include/bugle/gl/gldump.h
@@ -96,6 +102,7 @@ BUILT_SOURCES = budgie/bcparser.h
 
 src_libbugleutils_la_SOURCES = \
 	src/gl/gltypes.c src/glreflect.c \
+	src/glwintypes.c \
 	common/misc.c \
 	common/protocol.h common/protocol.c \
 	common/hashtable.c include/bugle/hashtable.h \
@@ -170,39 +177,39 @@ gl/bc/alias.bc: gengl/gengl.perl
 # Filters
 filters_common_la_SOURCES = filters/common.c
 filters_common_la_LDFLAGS = $(MODULEFLAGS)
-filters_common_la_LIBADD = lib/libgnu.la
+filters_common_la_LIBADD = $(MODULELIBS)
 
 filters_trace_la_SOURCES = filters/trace.c
 filters_trace_la_LDFLAGS = $(MODULEFLAGS)
-filters_trace_la_LIBADD = lib/libgnu.la
+filters_trace_la_LIBADD = $(MODULELIBS)
 
 filters_debugger_la_SOURCES = filters/debugger.c
 filters_debugger_la_LDFLAGS = $(MODULEFLAGS)
-filters_debugger_la_LIBADD = lib/libgnu.la $(WINSOCK_LIBS)
+filters_debugger_la_LIBADD = $(MODULELIBS) $(WINSOCK_LIBS)
 
 filters_stats_basic_la_SOURCES = filters/stats_basic.c
 filters_stats_basic_la_LDFLAGS = $(MODULEFLAGS)
-filters_stats_basic_la_LIBADD = lib/libgnu.la
+filters_stats_basic_la_LIBADD = $(MODULELIBS)
 
 filters_stats_calls_la_SOURCES = filters/stats_calls.c
 filters_stats_calls_la_LDFLAGS = $(MODULEFLAGS)
-filters_stats_calls_la_LIBADD = lib/libgnu.la
+filters_stats_calls_la_LIBADD = $(MODULELIBS)
 
 filters_stats_fragments_la_SOURCES = filters/stats_fragments.c
 filters_stats_fragments_la_LDFLAGS = $(MODULEFLAGS)
-filters_stats_fragments_la_LIBADD = lib/libgnu.la
+filters_stats_fragments_la_LIBADD = $(MODULELIBS)
 
 filters_stats_nv_la_SOURCES = filters/stats_nv.c
 filters_stats_nv_la_LDFLAGS = $(MODULEFLAGS)
-filters_stats_nv_la_LIBADD = lib/libgnu.la
+filters_stats_nv_la_LIBADD = $(MODULELIBS)
 
 filters_stats_primitives_la_SOURCES = filters/stats_primitives.c
 filters_stats_primitives_la_LDFLAGS = $(MODULEFLAGS)
-filters_stats_primitives_la_LIBADD = lib/libgnu.la
+filters_stats_primitives_la_LIBADD = $(MODULELIBS)
 
 filters_logstats_la_SOURCES = filters/logstats.c
 filters_logstats_la_LDFLAGS = $(MODULEFLAGS)
-filters_logstats_la_LIBADD = lib/libgnu.la -lm
+filters_logstats_la_LIBADD = $(MODULELIBS) -lm
 
 BUILT_SOURCES += src/statsparse.h
 
@@ -271,7 +278,7 @@ EXTRA_DIST = bugle.pc.in $(BCFILES) src/data/gl.c \
 CLEANFILES = \
 	$(BUDGIE_BUILT_SRCS) \
 	src/gltables.c src/gltables.h \
-	src/data/gl.tu bc/alias.bc \
+	src/data/gl.tu gl/bc/alias.bc \
 	doc/gldb.1.gz doc/bugle.3.gz \
 	gldb/.libs/gldb gldb/.libs/gldb-gui
 DISTCLEANFILES = tests/*.log
@@ -435,16 +442,36 @@ libtool: @LIBTOOL_DEPS@
 
 
 # Window-system specific files
-if USING_X11
-include $(top_srcdir)/x11/Makefile.am
+if BUGLE_WINSYS_X11
+bugle_sources += src/x11/xevent.c
 endif
-if USING_WIN32
-include $(top_srcdir)/win32/Makefile.am
+if BUGLE_WINSYS_WINDOWS
+bugle_sources += src/windows/xevent.c
 endif
 
-if USING_GLX
+# Window-system interface specific files
+if BUGLE_GLWIN_GLX
 include $(top_srcdir)/glx/Makefile.am
 endif
-if USING_WGL
+if BUGLE_GLWIN_WGL
 include $(top_srcdir)/wgl/Makefile.am
+endif
+
+if BUGLE_BINFMT_PE
+MODULELIBS += src/opengl32.la
+SYMBOLFLAGS += -Wl,--kill-at
+lib_LTLIBRARIES += src/opengl32.la
+
+src_opengl32_la_SOURCES = $(bugle_sources)
+nodist_src_opengl32_la_SOURCES = $(bugle_sources_nodist)
+src_opengl32_la_LIBADD = $(bugle_libadd)
+src_opengl32_la_LDFLAGS = $(bugle_ldflags) -module -avoid-version
+else
+MODULELIBS += src/libbugle.la
+lib_LTLIBRARIES += src/libbugle.la
+
+src_libbugle_la_SOURCES = $(bugle_sources)
+nodist_src_libbugle_la_SOURCES = $(bugle_sources_nodist)
+src_libbugle_la_LIBADD = $(bugle_libadd)
+src_libbugle_la_LDFLAGS = $(bugle_ldflags)
 endif

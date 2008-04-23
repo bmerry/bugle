@@ -15,23 +15,23 @@
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#ifndef BUGLE_GLX_GLWINTYPES_H
-#define BUGLE_GLX_GLWINTYPES_H
-
 #if HAVE_CONFIG_H
 # include <config.h>
 #endif
+#include <bugle/porting.h>
+#include <bugle/glwintypes.h>
 
-#include <GL/glx.h>
-#include <GL/glxext.h>
+bool bugle_dump_glwin_drawable(glwin_drawable d, FILE *out)
+{
+    fprintf(out, "0x%08lx", (unsigned long) d);
+    return true;
+}
 
-typedef Display *   glwin_display;
-typedef GLXContext  glwin_context;
-typedef GLXDrawable glwin_drawable;
-
-#ifdef GLX_ARB_get_proc_address
-#define BUGLE_GLWIN_GET_PROC_ADDRESS glXGetProcAddressARB
-#endif
-#define BUGLE_GLWIN_GET_PROC_ADDRESS_CONTEXT_DEPENDENT 0
-
-#endif /* !BUGLE_GLX_GLWINTYPES_H */
+bool bugle_dump_glwin_bool(glwin_bool b, FILE *out)
+{
+    if (b == 0 || b == 1)
+        fputs(b ? GLWIN_BOOL_TRUE : GLWIN_BOOL_FALSE, out);
+    else
+        fprintf(out, "(" GLWIN_BOOL_TYPE ") %u", (unsigned int) b);
+    return true;
+}

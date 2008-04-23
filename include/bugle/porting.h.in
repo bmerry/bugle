@@ -15,23 +15,31 @@
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#ifndef BUGLE_WGL_GLWINTYPES_H
-#define BUGLE_WGL_GLWINTYPES_H
+#ifndef BUGLE_SRC_PORTING_H
+#define BUGLE_SRC_PORTING_H
 
-#if HAVE_CONFIG_H
-# include <config.h>
+#define @BUGLE_BINFMT@ 1
+#define @BUGLE_WINSYS@ 1
+#define @BUGLE_GLWIN@ 1
+#define @BUGLE_FS@ 1
+
+#if BUGLE_BINFMT_ELF
+# define BUGLE_BINFMT_SYMBOL_BY_DSO 0
+# define BUGLE_BINFMT_LDPRELOAD 1
+#endif
+#if BUGLE_BINFMT_PE
+# define BUGLE_BINFMT_SYMBOL_BY_DSO 1
+# define BUGLE_BINFMT_LDPRELOAD 0
 #endif
 
-#define WIN32_LEAN_AND_MEAN
-#include <windows.h>
+#if !defined(BUGLE_BINFMT_SYMBOL_BY_DSO) || !defined(BUGLE_BINFMT_LDPRELOAD)
+# error "Your binary format is unknown. Please update bugle/porting.h"
+#endif
 
-/* In Windows, display and surface are the same thing */
-typedef HDC   glwin_display;
-typedef HGLRC glwin_context;
-typedef HDC   glwin_drawable;
+#if BUGLE_GLWIN_WGL
+# define BUGLE_GLWIN_CONTEXT_DEPENDENT 1
+#else
+# define BUGLE_GLWIN_CONTEXT_DEPENDENT 0
+#endif
 
-#define BUGLE_GLWIN_GET_PROC_ADDRESS wglGetProcAddress
-#define BUGLE_GLWIN_GET_PROC_ADDRESS_CONTEXT_DEPENDENT 1
-
-#endif /* !BUGLE_WGL_GLWINTYPES_H */
-
+#endif /* BUGLE_SRC_PORTING_H */

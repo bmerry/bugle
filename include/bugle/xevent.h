@@ -22,8 +22,9 @@
 # include <config.h>
 #endif
 #include <stdbool.h>
+#include <bugle/porting.h>
 
-#if BUGLE_WIN_X11
+#if BUGLE_WINSYS_X11
 # include <X11/Xlib.h>
 # include <X11/keysym.h> /* Convenience for including files */
 #else
