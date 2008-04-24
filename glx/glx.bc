@@ -1,4 +1,5 @@
 HEADER GL/glx.h
+HEADER bugle/glwintypes.h
 HEADER bugle/glx/glxdump.h
 HEADER bugle/glx/overrides.h
 LIMIT glX.*

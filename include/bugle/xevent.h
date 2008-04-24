@@ -38,6 +38,8 @@ typedef void XEvent;
 #define XK_Page_Up 1
 #define XK_Page_Down 1
 
+#endif /* !BUGLE_WINSYS_X11 */
+
 typedef struct
 {
     KeySym keysym;
@@ -73,5 +75,4 @@ void bugle_xevent_invalidate_window(XEvent *event);
 
 void xevent_initialise(void);
 
-#endif /* !BUGLE_WINSYS_X11 */
 #endif /* !BUGLE_SRC_XEVENT_H */
