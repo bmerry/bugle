@@ -34,7 +34,6 @@
 #include <assert.h>
 #include <math.h>
 #include <sys/time.h>
-#include <GL/glx.h>
 #include <GL/gl.h>
 #include <bugle/hashtable.h>
 #include <bugle/filters.h>

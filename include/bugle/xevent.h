@@ -28,15 +28,20 @@
 # include <X11/Xlib.h>
 # include <X11/keysym.h> /* Convenience for including files */
 #else
-typedef int KeySym;
-typedef void XEvent;
+typedef SHORT KeySym;
+typedef MSG XEvent;
 #define NoSymbol ((KeySym) 0)
-#define XK_Up 1
-#define XK_Down 1
-#define XK_Left 1
-#define XK_Right 1
-#define XK_Page_Up 1
-#define XK_Page_Down 1
+#define XK_Up VK_UP
+#define XK_Down VK_DOWN
+#define XK_Left VK_LEFT
+#define XK_Right VK_RIGHT
+#define XK_Page_Up VK_PRIOR
+#define XK_Page_Down VK_NEXT
+#define XK_W ((KeySym) 'W')
+#define XK_S ((KeySym) 'S')
+#define ControlMask ((KeySym) 0x200)
+#define ShiftMask ((KeySym) 0x100)
+#define Mod1Mask ((KeySym) 0x400)
 
 #endif /* !BUGLE_WINSYS_X11 */
 

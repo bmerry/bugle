@@ -51,10 +51,43 @@ void bugle_xevent_invalidate_window(XEvent *event)
 
 void xevent_initialise(void)
 {
+    /* SetWindowsHookEx(WH_KEYBOARD, xevent_key_hook, (HINSTANCE) NULL, GetCurrentThreadId()); */
 }
 
 bool bugle_xevent_key_lookup(const char *name, xevent_key *key)
 {
+    unsigned int state = 0;
+
+    key->press = true;
+    while (true)
+    {
+        if (name[0] == 'C' && name[1] == '-')
+        {
+            state |= ControlMask;
+            name += 2;
+        }
+        else if (name[0] == 'S' && name[1] == '-')
+        {
+            state |= ShiftMask;
+            name += 2;
+        }
+        else if (name[0] == 'A' && name[1] == '-')
+        {
+            state |= Mod1Mask;
+            name += 2;
+        }
+        else
+        {
+            if (name[0] >= 'A' && name[0] <= 'Z' && name[1] == '\0')
+            {
+                key->keysym = name[0];
+                key->state = state;
+                return true;
+            }
+            else
+                return false;
+        }
+    }
     return false;
 }
 

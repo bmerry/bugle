@@ -4,7 +4,7 @@ ACLOCAL_AMFLAGS = -I m4
 
 SYMBOLFLAGS = -export-symbols-regex '^(gl[A-Z]|budgie_|bugle_|gldb_|X|dlopen)'
 MODULEFLAGS = -no-undefined -thread-safe -export-dynamic -module -avoid-version
-MODULELIBS = lib/libgnu.la
+MODULELIBS = src/libbugleutils.la lib/libgnu.la
 
 # Utility programs, used for generating other files
 noinst_PROGRAMS = budgie/budgie
@@ -56,6 +56,7 @@ pkgconfig_DATA = bugle.pc
 pkglib_LTLIBRARIES = \
 	filters/common.la \
 	filters/validate.la \
+	filters/capture.la \
 	filters/trace.la \
 	filters/debugger.la \
 	filters/modify.la \
@@ -180,6 +181,11 @@ gl/bc/alias.bc: gengl/gengl.perl
 filters_common_la_SOURCES = filters/common.c
 filters_common_la_LDFLAGS = $(MODULEFLAGS)
 filters_common_la_LIBADD = $(MODULELIBS)
+
+filters_capture_la_SOURCES = filters/capture.c gl2ps/gl2ps.c gl2ps/gl2ps.h
+filters_capture_la_CFLAGS = $(AVCODEC_CFLAGS)
+filters_capture_la_LIBADD = $(MODULELIBS) $(AVCODEC_LIBS)
+filters_capture_la_LDFLAGS = $(MODULEFLAGS)
 
 filters_validate_la_SOURCES = filters/validate.c
 filters_validate_la_LDFLAGS = $(MODULEFLAGS)
@@ -469,7 +475,8 @@ endif
 
 if BUGLE_BINFMT_PE
 MODULELIBS += src/opengl32.la
-SYMBOLFLAGS += -Wl,--kill-at
+MODULEFLAGS += -Wl,--export-all-symbols
+SYMBOLFLAGS += -Wl,--add-stdcall-alias
 lib_LTLIBRARIES += src/opengl32.la
 
 src_opengl32_la_SOURCES = $(bugle_sources)

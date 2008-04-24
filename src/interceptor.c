@@ -243,7 +243,7 @@ void budgie_interceptor(function_call *call)
 
 void (BUDGIEAPI *budgie_address_generator(budgie_function id))
 {
-#if BUGLE_GLWIN_GET_PROC_ADDRESS_CONTEXT_DEPENDENT
+#if BUGLE_GLWIN_CONTEXT_DEPENDENT
     return bugle_glwin_get_proc_address(budgie_function_name(id));
 #else
     return NULL;

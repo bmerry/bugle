@@ -3,15 +3,17 @@ WGL port
 - recover font-rendering capability, and restore showstats filterset
 - excise last bits of GLX and UNIX dependence from filters
 - better robustness to missing WGL/GLX extensions
-- bake BUGLE_GLWIN_*, BUGLE_WIN_* etc into headers
 - proper abstraction layer over xevent
 - implement xevent on win32
 - support read != draw DC in glwin.c
 - handle cross-DLL data import/export cleanly
-- put suitable visibility tags on all export functions, so that -export-symbols-regex is not needed
+- put suitable visibility tags on all export functions, so that -export-symbols-regex and --export-all-symbols are not needed
 - load opengl32.dll from SYSTEMDIR rather than hard-coded path.
 - rename shutdown in gldb to avoid conflicts
 - make gldb and gldb-gui work
+- prevent libraries from being loaded twice
+- check where tmp files are being created for trace
+- make contexts opaque
 
 camera filter-set
 -----------------

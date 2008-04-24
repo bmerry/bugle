@@ -71,13 +71,9 @@ static inline void (BUDGIEAPI *_budgie_function_address_get_real(budgie_function
 }
 
 /* Note: it's tempting to put to put 'name' instead of NULL (and this was
- * originally done. There are two issues with this on Win32:
- *
- * 1. When used with OpenGL, there is no requirement that these symbols will
- * be available, undefined symbols are not permitted.
- *
- * 2. The way -export-symbols-regex works in bugle causes the GL overrides to
- * not be available to outside libraries (it strips out symbols with an @).
+ * originally done). However, there is no guarantee that the symbol will
+ * actually exist (unless bugle overrides it, in which case BUDGIE_FUNCTION_ID
+ * will succeed anyway), and undefined symbols are not always valid.
  */
 #define _BUDGIE_CALL(name, type) \
     ((type) _budgie_function_address_get_real(BUDGIE_FUNCTION_ID(name), (void (BUDGIEAPI *)(void)) NULL))
