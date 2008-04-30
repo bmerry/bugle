@@ -28,8 +28,11 @@
 # include <X11/Xlib.h>
 # include <X11/keysym.h> /* Convenience for including files */
 #else
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
 typedef SHORT KeySym;
 typedef MSG XEvent;
+typedef HWND Window;
 #define NoSymbol ((KeySym) 0)
 #define XK_Up VK_UP
 #define XK_Down VK_DOWN

@@ -32,6 +32,7 @@
 #endif
 #include <signal.h>
 #include <stdlib.h>
+#include <bugle/porting.h>
 #include "lock.h"
 
 #if USE_POSIX_THREADS
@@ -66,7 +67,7 @@
  * This is disabled on WIN32 because it does DLL initialisation before it is
  * safe to call LoadLibrary.
  */
-#if BUGLE_HAVE_ATTRIBUTE_CONSTRUCTOR && !DEBUG_CONSTRUCTOR && !defined(WIN32)
+#if BUGLE_HAVE_ATTRIBUTE_CONSTRUCTOR && !DEBUG_CONSTRUCTOR && BUGLE_BINFMT_CONSTRUCTOR_LTDL
 # define BUGLE_CONSTRUCTOR(fn) static void fn(void) __attribute__((constructor))
 # define BUGLE_RUN_CONSTRUCTOR(fn) ((void) 0)
 #else

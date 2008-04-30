@@ -127,7 +127,7 @@ bugle_sources = \
 	src/trackbeginend.c src/trackextensions.c \
 	src/stats.c src/statslex.l src/statsparse.y \
 	src/log.c src/objects.c \
-	src/gl/gldump.c \
+	src/gl/gldump.c src/xevent.c \
 	budgielib/addresses.c budgielib/lib.h \
 	common/threads.h
 bugle_sources_nodist = \
@@ -456,14 +456,6 @@ MAINTAINERCLEANFILES += doc/html/single.html
 libtool: @LIBTOOL_DEPS@
 	$(SHELL) ./config.status --recheck
 
-
-# Window-system specific files
-if BUGLE_WINSYS_X11
-bugle_sources += src/x11/xevent.c
-endif
-if BUGLE_WINSYS_WINDOWS
-bugle_sources += src/windows/xevent.c
-endif
 
 # Window-system interface specific files
 if BUGLE_GLWIN_GLX
