@@ -53,17 +53,9 @@ AC_SUBST(READLINE_LIBS)
 
 real_libs="$LIBS"
 REGEX_LIBS=""
-WINSOCK_LIBS=""
 AC_SEARCH_LIBS([regexec], [regex], [REGEX_LIBS="$LIBS"], [AC_MSG_ERROR([regex is required])])
 LIBS="$real_libs"
-# Check doesn't actually work on mingw, because autoconf doesn't add the header
-# AC_SEARCH_LIBS([select], [ws2_32], [WINSOCK_LIBS="$LIBS"], [AC_MSG_ERROR([select is required])])
-case $host in
-  *-*-mingw32) WINSOCK_LIBS="-lws2_32"
-esac
-LIBS="$real_libs";
 AC_SUBST(REGEX_LIBS)
-AC_SUBST(WINSOCK_LIBS)
 
 HAVE_LAVC=1
 AVCODEC_CFLAGS=""
@@ -98,7 +90,7 @@ gl_INIT
 AC_HEADER_STDC
 AC_HEADER_DIRENT
 AC_HEADER_STDBOOL
-AC_CHECK_HEADERS([sys/types.h stdlib.h stddef.h regex.h sys/select.h arpa/inet.h netinet/in.h NVPerfSDK.h dlfcn.h])
+AC_CHECK_HEADERS([sys/types.h stdlib.h stddef.h regex.h NVPerfSDK.h dlfcn.h])
 AC_CHECK_HEADERS([readline/readline.h readline/history.h], [], [HAVE_READLINE=0])
 
 if test "$bugle_target" = "gl-wgl"
@@ -188,18 +180,22 @@ then
 fi
 AC_DEFINE_UNQUOTED(HAVE_GTKGLEXT, $HAVE_GTKGLEXT, [non-zero when all the requirements for GtkGLExt are met])
 
+# FIXME: only GLWIN and WINSYS should be set here; others should be based on
+# target directly
 case $bugle_target in
     gl-glx)
     BUGLE_FS=BUGLE_FS_UNIX
     BUGLE_GLWIN=BUGLE_GLWIN_GLX
     BUGLE_WINSYS=BUGLE_WINSYS_X11
     BUGLE_BINFMT=BUGLE_BINFMT_ELF
+    BUGLE_OSAPI=BUGLE_OSAPI_POSIX
     ;;
     gl-wgl)
     BUGLE_FS=BUGLE_FS_CYGMING
     BUGLE_GLWIN=BUGLE_GLWIN_WGL
     BUGLE_WINSYS=BUGLE_WINSYS_WINDOWS
     BUGLE_BINFMT=BUGLE_BINFMT_PE
+    BUGLE_OSAPI=BUGLE_OSAPI_WIN32
     ;;
 esac
 
@@ -207,6 +203,7 @@ AC_SUBST(BUGLE_FS)
 AC_SUBST(BUGLE_GLWIN)
 AC_SUBST(BUGLE_WINSYS)
 AC_SUBST(BUGLE_BINFMT)
+AC_SUBST(BUGLE_OSAPI)
 AM_CONDITIONAL(BUGLE_WINSYS_X11, test $BUGLE_WINSYS = BUGLE_WINSYS_X11)
 AM_CONDITIONAL(BUGLE_WINSYS_WINDOWS, test $BUGLE_WINSYS = BUGLE_WINSYS_WINDOWS)
 AM_CONDITIONAL(BUGLE_GLWIN_WGL, test $BUGLE_GLWIN = BUGLE_GLWIN_WGL)

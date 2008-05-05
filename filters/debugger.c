@@ -30,9 +30,6 @@
 #include <unistd.h>
 #include <errno.h>
 #include <assert.h>
-#if HAVE_SYS_SELECT_H
-# include <sys/select.h>
-#endif
 #include <GL/gl.h>
 #include <bugle/filters.h>
 #include <bugle/glutils.h>
@@ -885,10 +882,6 @@ static void process_single_command(function_call *call)
  */
 static void debugger_loop(function_call *call)
 {
-    fd_set readfds, exceptfds;
-    struct timeval timeout;
-    int r;
-
     if (call && bugle_begin_internal_render())
     {
         CALL(glFinish)();
@@ -897,31 +890,9 @@ static void debugger_loop(function_call *call)
 
     do
     {
-        FD_ZERO(&readfds);
-        FD_ZERO(&exceptfds);
-        FD_SET(in_pipe, &readfds);
-        FD_SET(in_pipe, &exceptfds);
-        timeout.tv_sec = 0;
-        timeout.tv_usec = 0;
-        r = select(in_pipe + 1, &readfds, NULL, &exceptfds,
-                   stopped ? NULL : &timeout);
-        if (r == -1)
-        {
-            if (errno == EINTR) continue;
-            else
-            {
-                perror("select");
-                exit(1);
-            }
-        }
-        if (FD_ISSET(in_pipe, &exceptfds))
-        {
-            bugle_log("debugger", "protocol", BUGLE_LOG_ERROR,
-                      "bugle: exceptional condition on debugger input pipe");
-            exit(1);
-        }
-        else if (FD_ISSET(in_pipe, &readfds))
-            process_single_command(call);
+        if (!stopped && !gldb_io_has_data(in_pipe))
+            break;
+        process_single_command(call);
     } while (stopped);
 }
 
@@ -1024,6 +995,8 @@ static bool debugger_initialise(filter_set *handle)
     bugle_filter_order("trackobjects", "debugger_error"); /* so we don't try to query any deleted objects */
     bugle_filter_post_renders("debugger_error");
     bugle_filter_set_queries_error("debugger");
+
+    gldb_io_start_read_thread(in_pipe);
 
     return true;
 }

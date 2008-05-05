@@ -1,3 +1,20 @@
+/*  BuGLe: an OpenGL debugging tool
+ *  Copyright (C) 2004-2008  Bruce Merry
+ *
+ *  This program is free software; you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation; version 2.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program; if not, write to the Free Software
+ *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ */
+
 #ifndef BUGLE_COMMON_PROTOCOL_H
 #define BUGLE_COMMON_PROTOCOL_H
 
@@ -43,6 +60,15 @@
 #define REQ_DATA_TEXTURE               0xedbc0000UL
 #define REQ_DATA_SHADER                0xedbc0001UL
 #define REQ_DATA_FRAMEBUFFER           0xedbc0002UL
+
+/* Utility functions for Win32, where a separate thread must be used to
+ * buffer data in order to determine whether there is any to be processed.
+ *
+ * io_start_read_thread may only ever be called on one fd, and that is
+ * the only fd that may be used in io_has_data. 
+ */
+void gldb_io_start_read_thread(int fd);
+bool gldb_io_has_data(int fd);
 
 bool gldb_protocol_send_code(int fd, uint32_t code);
 bool gldb_protocol_send_binary_string(int fd, uint32_t len, const char *str);

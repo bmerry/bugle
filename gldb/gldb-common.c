@@ -28,11 +28,12 @@
 #include <signal.h>
 #include <errno.h>
 #include <sys/types.h>
-#include <sys/wait.h>
 #include <stdbool.h>
+#include <fcntl.h>
 #include <bugle/linkedlist.h>
 #include <bugle/hashtable.h>
 #include <bugle/misc.h>
+#include <bugle/porting.h>
 #include <budgie/reflect.h>
 #include "budgielib/defines.h"
 #include "common/protocol.h"
@@ -98,6 +99,71 @@ gldb_program_type gldb_program_get_type(void)
     return prog_type;
 }
 
+#if BUGLE_OSAPI_WIN32
+# include <windows.h>
+
+static void setenv_printf(const char *fmt, ...)
+{
+    va_list ap;
+    char *var;
+
+    va_start(ap, fmt);
+    var = xvasprintf(fmt, ap);
+    va_end(ap);
+    _putenv(var);
+    free(var);
+}
+
+/* Spawns off the program, and returns the pid */
+static pid_t execute(void (*child_init)(void))
+{
+    pid_t pid;
+    /* in is child->parent
+     * out is parent->child
+     */
+    int in_pipe[2], out_pipe[2], child_pipes[2];
+    const char *command, *chain;
+
+    command = prog_settings[GLDB_PROGRAM_SETTING_COMMAND];
+    if (!command) command = "/bin/true";
+    chain = prog_settings[GLDB_PROGRAM_SETTING_CHAIN];
+
+    /* child_init not actually possible on win32 */
+    assert(child_init == NULL);
+
+    /* Some trickery is needed on windows to get inheritance right: the
+     * pipes are all initially opened with _O_NOINHERIT, and then those that
+     * must be inherited are put through dup.
+     */
+    gldb_safe_syscall(_pipe(in_pipe, 4096, _O_BINARY | _O_NOINHERIT), "_pipe");
+    gldb_safe_syscall(_pipe(out_pipe, 4096, _O_BINARY | _O_NOINHERIT), "_pipe");
+
+    child_pipes[0] = dup(out_pipe[0]); close(out_pipe[0]);
+    child_pipes[1] = dup(in_pipe[1]);  close(in_pipe[1]);
+
+    /* FIXME: support ssh as well */
+    setenv_printf("BUGLE_DEBUGGER=1");
+    setenv_printf("BUGLE_DEBUGGER_FD_IN=%d", child_pipes[0]);
+    setenv_printf("BUGLE_DEBUGGER_FD_OUT=%d", child_pipes[1]);
+    setenv_printf("BUGLE_CHAIN=%s", chain ? chain : "");
+
+    pid = _spawnlp(_P_NOWAIT, command, command, NULL);
+    if (pid == -1)
+    {
+        perror("failed to execute program");
+        exit(1);
+    }
+
+    close(child_pipes[0]);
+    close(child_pipes[1]);
+    lib_in = in_pipe[0];
+    lib_out = out_pipe[1];
+    return pid;
+}
+
+#else /* !BUGLE_OSAPI_WIN32 */
+# include <sys/wait.h>
+
 /* Spawns off the program, and returns the pid */
 static pid_t execute(void (*child_init)(void))
 {
@@ -160,6 +226,7 @@ static pid_t execute(void (*child_init)(void))
         return pid;
     }
 }
+#endif
 
 void set_status(gldb_status s)
 {

@@ -25,6 +25,7 @@
 #include <GL/gl.h>
 #include <inttypes.h>
 #include <stdbool.h>
+#include <stddef.h>
 #include "gldb/gldb-channels.h"
 
 gldb_channel_table_entry gldb_channel_table[] =

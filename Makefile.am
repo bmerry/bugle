@@ -197,7 +197,7 @@ filters_trace_la_LIBADD = $(MODULELIBS)
 
 filters_debugger_la_SOURCES = filters/debugger.c
 filters_debugger_la_LDFLAGS = $(MODULEFLAGS)
-filters_debugger_la_LIBADD = $(MODULELIBS) $(WINSOCK_LIBS)
+filters_debugger_la_LIBADD = $(MODULELIBS)
 
 filters_modify_la_SOURCES = filters/modify.c
 filters_modify_la_LDFLAGS = $(MODULEFLAGS)
