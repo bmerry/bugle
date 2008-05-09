@@ -255,6 +255,12 @@ pid_t gldb_get_child_pid(void);
  */
 int gldb_get_in_pipe(void);
 int gldb_get_out_pipe(void);
+/* Used to tell gldb what reader to use in gldb_protocol_recv*. It must also
+ * be set after launching a process before trying to read anything. It is
+ * deallocated on process shutdown.
+ */
+struct gldb_protocol_reader;
+void gldb_set_in_reader(struct gldb_protocol_reader *reader);
 
 void gldb_program_clear();
 void gldb_program_set_setting(gldb_program_setting setting, const char *value);

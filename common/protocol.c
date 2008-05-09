@@ -69,229 +69,117 @@ static uint32_t io_ntohl(uint32_t n)
 #define TO_HOST(x) io_ntohl(x)
 
 #if BUGLE_OSAPI_SELECT_BROKEN
-# define IO_BUFFER_SIZE 4096
 
-static int io_buffered_fd = -1;
-static char io_buffer[IO_BUFFER_SIZE];
-static int io_read_idx;  /* where the user finds data */
-static int io_write_idx; /* where the helper thread writes new data */
-static bool io_eof;      /* set to true once the helper runs out of input */
+/* These functions are all defined in an OS-specific file e.g. protocol-win32.c */
 
-#if BUGLE_OSAPI_WIN32
-# include <windows.h>
-# include <process.h>
-# define IO_THREAD_CALL __stdcall
-# define IO_THREAD_RETURN_TYPE unsigned
-# define IO_THREAD_RETURN 0U
+typedef struct gldb_protocol_reader_select gldb_protocol_reader_select;
 
-static HANDLE io_data_event, io_space_event;
-gl_lock_define(static, io_mutex)
+/* Create a new OS-specific reader object for the given fd */
+gldb_protocol_reader_select *gldb_protocol_reader_select_new(int fd);
 
-static IO_THREAD_RETURN_TYPE IO_THREAD_CALL io_read_thread(void *arg);
+/* Equivalent read() for the reader object. Not guaranteed to extract all
+ * currently available data.
+ */
+ssize_t gldb_protocol_reader_select_read(gldb_protocol_reader_select *r, void *buf, size_t count);
 
-static void io_lock(int fd)
+/* Determine whether there is some data available to read */
+bool gldb_protocol_reader_select_has_data(gldb_protocol_reader_select *r);
+
+/* Clean up the structure. Does not close the fd. */
+void gldb_protocol_reader_select_free(gldb_protocol_reader_select *r);
+
+#endif /* BUGLE_OSAPI_SELECT_BROKEN */
+
+typedef enum
 {
-    gl_lock_lock(io_mutex);
-}
+    MODE_FD,
+    MODE_FD_SELECT,
+    MODE_FUNC
+} gldb_protocol_reader_mode;
 
-static void io_unlock(int fd)
+struct gldb_protocol_reader
 {
-    gl_lock_unlock(io_mutex);
-}
-
-static void io_mark_data(int fd)
-{
-    SetEvent(io_data_event);
-}
-
-static void io_mark_no_data(int fd)
-{
-    ResetEvent(io_data_event);
-}
-
-static void io_mark_space(int fd)
-{
-    SetEvent(io_space_event);
-}
-
-static void io_mark_no_space(int fd)
-{
-    ResetEvent(io_space_event);
-}
-
-static void io_wait_space(int fd)
-{
-    WaitForSingleObject(io_space_event, INFINITE);
-}
-
-static void io_wait_data(int fd)
-{
-    WaitForSingleObject(io_data_event, INFINITE);
-}
-
-void gldb_io_start_read_thread(int fd)
-{
-    io_lock(fd);
-    assert(io_buffered_fd == -1);
-    io_buffered_fd = fd;
-
-    io_data_event = CreateEvent(NULL, TRUE, FALSE, NULL);
-    io_space_event = CreateEvent(NULL, TRUE, TRUE, NULL);
-    _beginthreadex(NULL, 0, io_read_thread, &io_buffered_fd, 0, NULL);
-
-    io_unlock(fd);
-}
-
-#else
-# error "Please add code to protocol.c to handle non-blocking I/O"
-#endif
-static IO_THREAD_RETURN_TYPE IO_THREAD_CALL io_read_thread(void *arg)
-{
+    gldb_protocol_reader_mode mode;
     int fd;
-
-    fd = *(int *) arg;
-    io_lock(fd);
-    while (true)
-    {
-        int space;
-        ssize_t bytes;
-
-        /* Always leave one empty slot, otherwise full and empty look the same */
-        if (io_write_idx >= io_read_idx)
-        {
-            space = IO_BUFFER_SIZE - io_write_idx;
-            if (io_read_idx == 0)
-                space--;   /* don't completely fill */
-        }
-        else
-            space = io_read_idx - io_write_idx - 1;
-        if (space <= 0)
-        {
-            /* No space to read into */
-            io_mark_no_space(fd);
-            io_unlock(fd);
-            io_wait_space(fd);
-            io_lock(fd);
-            continue;  /* Go round and recompute space */
-        }
-
-        io_unlock(fd);
-        bytes = read(fd, io_buffer + io_write_idx, space);
-        io_lock(fd);
-
-        if (bytes <= 0)
-        {
-            if (bytes < 0 && errno == EINTR)
-                continue;
-            io_eof = true;
-            io_mark_data(fd); /* No actual data, but unblocks main thread */
-            io_unlock(fd);
-            return IO_THREAD_RETURN;
-        }
-        else
-        {
-            io_write_idx += bytes;
-            if (io_write_idx >= IO_BUFFER_SIZE)
-                io_write_idx -= IO_BUFFER_SIZE;
-            io_mark_data(fd);
-        }
-    }
-    return IO_THREAD_RETURN;
-}
-
-static ssize_t io_read(int fd, char *data, size_t count)
-{
-    size_t ret = 0;
-    size_t copied;
-
-    io_lock(fd);
-    if (fd != io_buffered_fd)
-    {
-        io_unlock(fd);
-        return full_read(fd, data, count);
-    }
-
-    while (count > 0)
-    {
-        if (io_read_idx == io_write_idx)
-        {
-            if (io_eof)
-                break;
-            io_mark_no_data(fd);
-            io_unlock(fd);
-            io_wait_data(fd);
-            io_lock(fd);
-            continue;
-        }
-
-        if (io_read_idx > io_write_idx)
-            copied = IO_BUFFER_SIZE - io_read_idx;
-        else
-            copied = io_write_idx - io_read_idx;
-
-        if (count < copied)
-            copied = count;
-        memcpy(data, io_buffer + io_read_idx, copied);
-        data += copied;
-        ret += copied;
-        count -= copied;
-        io_read_idx += copied;
-        if (io_read_idx >= IO_BUFFER_SIZE)
-            io_read_idx -= IO_BUFFER_SIZE;
-        io_mark_space(fd);
-    }
-    return ret;
-}
-
-bool gldb_io_has_data(int fd)
-{
-    bool ret = false;
-
-    io_lock(fd);
-    if (fd == io_buffered_fd)
-    {
-        ret = (io_read_idx != io_write_idx) || io_eof;
-    }
-    io_unlock(fd);
-    return ret;
-}
-
-#else /* !BUGLE_OSAPI_SELECT_BROKEN */
-
-static ssize_t io_read(int fd, char *data, size_t count)
-{
-    return full_read(fd, data, count);
-}
-
-static ssize_t gldb_io_has_data(int fd)
-{
-    fd_set read_fds;
-    struct timeval timeout;
-    int r;
-
-    FD_ZERO(&readfds);
-    FD_SET(fd, &readfds);
-    timeout.tv_sec = 0;
-    timeout.tv_usec = 0;
-    r = select(in_pipe + 1, &readfds, NULL, &exceptfds, &timeout);
-    if (r == -1)
-    {
-        if (errno == EINTR) continue;
-        else
-        {
-            perror("select");
-            exit(1);
-        }
-    }
-    return FD_ISSET(in, &readfds);
-}
-
-void gldb_io_start_read_thread(int fd)
-{
-    /* Nop */
-}
-
+#if BUGLE_OSAPI_SELECT_BROKEN
+    gldb_protocol_reader_select *select_reader;
 #endif
+    
+    ssize_t (*reader_func)(void *arg, void *buf, size_t count);
+    void *reader_arg;
+};
+
+gldb_protocol_reader *gldb_protocol_reader_new_fd(int fd)
+{
+    gldb_protocol_reader *reader;
+    reader = XMALLOC(gldb_protocol_reader);
+    reader->mode = MODE_FD;
+    reader->fd = fd;
+    reader->reader_func = NULL;
+    reader->reader_arg = NULL;
+    return reader;
+}
+
+gldb_protocol_reader *gldb_protocol_reader_new_fd_select(int fd)
+{
+    gldb_protocol_reader *reader;
+    reader = XMALLOC(gldb_protocol_reader);
+    reader->mode = MODE_FD_SELECT;
+    reader->fd = fd;
+    reader->reader_func = NULL;
+    reader->reader_arg = NULL;
+#if BUGLE_OSAPI_SELECT_BROKEN
+    reader->select_reader = gldb_protocol_reader_select_new(fd);
+#endif
+    return reader;
+}
+
+gldb_protocol_reader *gldb_protocol_reader_new_func(ssize_t (*read_func)(void *arg, void *buf, size_t count), void *arg)
+{
+    gldb_protocol_reader *reader;
+    reader = XMALLOC(gldb_protocol_reader);
+    reader->mode = MODE_FUNC;
+    reader->fd = -1;
+    reader->reader_func = read_func;
+    reader->reader_arg = arg;
+    return reader;
+}
+
+ssize_t gldb_protocol_reader_read(gldb_protocol_reader *reader, void *buf, size_t count)
+{
+    switch (reader->mode)
+    {
+    case MODE_FD:
+        return read(reader->fd, buf, count);
+    case MODE_FD_SELECT:
+#if BUGLE_OSAPI_SELECT_BROKEN
+        return gldb_protocol_reader_select_read(reader->select_reader, buf, count);
+#else
+        return read(reader->fd, buf, count);
+#endif
+    case MODE_FUNC:
+        return reader->reader_func(reader->reader_arg, buf, count);
+    }
+    return -1; /* Should never be reached */
+}
+
+bool gldb_protocol_reader_has_data(gldb_protocol_reader *reader)
+{
+    if (reader->mode == MODE_FD_SELECT)
+        return gldb_protocol_reader_select_has_data(reader->select_reader);
+    else
+        return false;
+}
+
+/* FIXME: should eventually allow a user destructor for the user arg */
+void gldb_protocol_reader_free(gldb_protocol_reader *reader)
+{
+#if BUGLE_OSAPI_SELECT_BROKEN
+    if (reader->mode == MODE_FD_SELECT)
+        gldb_protocol_reader_select_free(reader->select_reader);
+#endif
+    free(reader);
+}
 
 /* Returns false on EOF, aborts on failure */
 static bool io_safe_write(int fd, const void *buf, size_t count)
@@ -313,22 +201,26 @@ static bool io_safe_write(int fd, const void *buf, size_t count)
 }
 
 /* Returns false on EOF, aborts on failure */
-static bool io_safe_read(int fd, void *buf, size_t count)
+static bool io_safe_read(gldb_protocol_reader *reader, void *buf, size_t count)
 {
-    ssize_t out;
+    ssize_t bytes;
 
-    out = io_read(fd, buf, count);
-    if (out < count)
+    while (count > 0)
     {
-        if (errno)
+        bytes = gldb_protocol_reader_read(reader, buf, count);
+        if (bytes <= 0)
         {
-            perror("read failed");
-            exit(1);
+            if (errno)
+            {
+                perror("read failed");
+                exit(1);
+            }
+            return false;
         }
-        return false;
+        count -= bytes;
+        buf += bytes;
     }
-    else
-        return true;
+    return true;
 }
 
 bool gldb_protocol_send_code(int fd, uint32_t code)
@@ -362,10 +254,10 @@ bool gldb_protocol_send_string(int fd, const char *str)
     return gldb_protocol_send_binary_string(fd, strlen(str), str);
 }
 
-bool gldb_protocol_recv_code(int fd, uint32_t *code)
+bool gldb_protocol_recv_code(gldb_protocol_reader *reader, uint32_t *code)
 {
     uint32_t code2;
-    if (io_safe_read(fd, &code2, sizeof(uint32_t)))
+    if (io_safe_read(reader, &code2, sizeof(uint32_t)))
     {
         *code = TO_HOST(code2);
         return true;
@@ -374,15 +266,15 @@ bool gldb_protocol_recv_code(int fd, uint32_t *code)
         return false;
 }
 
-bool gldb_protocol_recv_binary_string(int fd, uint32_t *len, char **data)
+bool gldb_protocol_recv_binary_string(gldb_protocol_reader *reader, uint32_t *len, char **data)
 {
     uint32_t len2;
     int old_errno;
 
-    if (!io_safe_read(fd, &len2, sizeof(uint32_t))) return false;
+    if (!io_safe_read(reader, &len2, sizeof(uint32_t))) return false;
     *len = TO_HOST(len2);
     *data = xmalloc(*len + 1);
-    if (!io_safe_read(fd, *data, *len))
+    if (!io_safe_read(reader, *data, *len))
     {
         old_errno = errno;
         free(*data);
@@ -396,9 +288,9 @@ bool gldb_protocol_recv_binary_string(int fd, uint32_t *len, char **data)
     }
 }
 
-bool gldb_protocol_recv_string(int fd, char **str)
+bool gldb_protocol_recv_string(gldb_protocol_reader *reader, char **str)
 {
     uint32_t dummy;
 
-    return gldb_protocol_recv_binary_string(fd, &dummy, str);
+    return gldb_protocol_recv_binary_string(reader, &dummy, str);
 }

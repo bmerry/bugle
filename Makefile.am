@@ -107,7 +107,7 @@ src_libbugleutils_la_SOURCES = \
 	src/gl/gltypes.c src/glreflect.c \
 	src/glwintypes.c \
 	common/misc.c \
-	common/protocol.h common/protocol.c \
+	common/protocol.h common/protocol.c common/protocol-win32.c\
 	common/hashtable.c include/bugle/hashtable.h \
 	common/linkedlist.c include/bugle/linkedlist.h \
 	budgielib/internal.c budgielib/internal.h budgielib/reflect.c

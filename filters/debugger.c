@@ -48,7 +48,8 @@
 #include "xalloc.h"
 #include "xvasprintf.h"
 
-static int in_pipe = -1, out_pipe = -1;
+static gldb_protocol_reader *in_pipe = NULL;
+static int in_pipe_fd = -1, out_pipe = -1;
 static bool *break_on;
 static bool break_on_error = true, break_on_next = false;
 static bool stop_in_begin_end = false;
@@ -890,7 +891,7 @@ static void debugger_loop(function_call *call)
 
     do
     {
-        if (!stopped && !gldb_io_has_data(in_pipe))
+        if (!stopped && !gldb_protocol_reader_has_data(in_pipe))
             break;
         process_single_command(call);
     } while (stopped);
@@ -965,7 +966,7 @@ static bool debugger_initialise(filter_set *handle)
     }
 
     env = getenv("BUGLE_DEBUGGER_FD_IN");
-    in_pipe = strtol(env, &last, 0);
+    in_pipe_fd = strtol(env, &last, 0);
     if (!*env || *last)
     {
         bugle_log_printf("debugger", "initialise", BUGLE_LOG_ERROR,
@@ -983,6 +984,7 @@ static bool debugger_initialise(filter_set *handle)
                          env);
         return false;
     }
+    in_pipe = gldb_protocol_reader_new_fd_select(in_pipe_fd);
     debugger_loop(NULL);
 
     f = bugle_filter_new(handle, "debugger");
@@ -995,8 +997,6 @@ static bool debugger_initialise(filter_set *handle)
     bugle_filter_order("trackobjects", "debugger_error"); /* so we don't try to query any deleted objects */
     bugle_filter_post_renders("debugger_error");
     bugle_filter_set_queries_error("debugger");
-
-    gldb_io_start_read_thread(in_pipe);
 
     return true;
 }

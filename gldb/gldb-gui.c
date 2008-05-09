@@ -34,6 +34,7 @@
 #include <math.h>
 #include <bugle/linkedlist.h>
 #include <bugle/hashtable.h>
+#include <bugle/porting.h>
 #include "common/protocol.h"
 #include "gldb/gldb-common.h"
 #include "gldb/gldb-channels.h"
@@ -461,8 +462,19 @@ static void quit_action(GtkAction *action, gpointer user_data)
     gtk_widget_destroy(((GldbWindow *) user_data)->window);
 }
 
-static void child_init(void)
+static ssize_t read_callback(void *channel, void *buf, size_t count)
 {
+    GIOStatus status;
+    gsize bytes_read;
+    do
+    {
+        status = g_io_channel_read_chars((GIOChannel *) channel, buf, count,
+                                         &bytes_read, NULL);
+    } while (status == G_IO_STATUS_AGAIN);
+    if (status == G_IO_STATUS_ERROR)
+        return -1;
+    else
+        return bytes_read;
 }
 
 static void run_action(GtkAction *action, gpointer user_data)
@@ -471,14 +483,17 @@ static void run_action(GtkAction *action, gpointer user_data)
     context = (GldbWindow *) user_data;
 
     g_return_if_fail(gldb_get_status() == GLDB_STATUS_DEAD);
-    /* GIOChannel on UNIX is sufficiently light that we may wrap
-     * the input pipe in it without forcing us to do everything through
-     * it.
-     */
-    gldb_run(seq++, child_init);
+    gldb_run(seq++, NULL);
+#if BUGLE_OSAPI_WIN32
+    context->channel = g_io_channel_win32_new_fd(gldb_get_in_pipe());
+#else
     context->channel = g_io_channel_unix_new(gldb_get_in_pipe());
+#endif
+    g_io_channel_set_encoding(context->channel, NULL, NULL);
+    gldb_set_in_reader(gldb_protocol_reader_new_func(read_callback, context->channel));
     context->channel_watch = g_io_add_watch(context->channel, G_IO_IN | G_IO_ERR,
                                             response_callback, context);
+
     g_child_watch_add(gldb_get_child_pid(), child_exit_callback, context);
     update_status_bar(context, _("Started"));
 }

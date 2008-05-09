@@ -41,7 +41,8 @@
 #include "xalloc.h"
 #include "xvasprintf.h"
 
-static int lib_in, lib_out;
+static int lib_in_fd = -1, lib_out = -1;
+static gldb_protocol_reader *lib_in = NULL;
 /* Started is set to true only after receiving RESP_RUNNING. When
  * we are in the state (running && !started), non-break responses are
  * handled but do not cause a new line to be read.
@@ -156,7 +157,7 @@ static pid_t execute(void (*child_init)(void))
 
     close(child_pipes[0]);
     close(child_pipes[1]);
-    lib_in = in_pipe[0];
+    lib_in_fd = in_pipe[0];
     lib_out = out_pipe[1];
     return pid;
 }
@@ -181,7 +182,8 @@ static pid_t execute(void (*child_init)(void))
         perror("fork failed");
         exit(1);
     case 0: /* Child */
-        (*child_init)();
+        if (child_init != NULL)
+            (*child_init)();
 
         command = prog_settings[GLDB_PROGRAM_SETTING_COMMAND];
         if (!command) command = "/bin/true";
@@ -219,7 +221,7 @@ static pid_t execute(void (*child_init)(void))
         perror("failed to execute program");
         exit(1);
     default: /* Parent */
-        lib_in = in_pipe[0];
+        lib_in_fd = in_pipe[0];
         lib_out = out_pipe[1];
         close(in_pipe[1]);
         close(out_pipe[0]);
@@ -241,10 +243,13 @@ void set_status(gldb_status s)
     case GLDB_STATUS_STARTED:
         break;
     case GLDB_STATUS_DEAD:
-        close(lib_in);
+        if (lib_in)
+            gldb_protocol_reader_free(lib_in);
+        close(lib_in_fd);
         close(lib_out);
-        lib_in = -1;
+        lib_in_fd = -1;
         lib_out = -1;
+        lib_in = NULL;
         child_pid = 0;
         break;
     }
@@ -851,7 +856,12 @@ pid_t gldb_get_child_pid(void)
 
 int gldb_get_in_pipe(void)
 {
-    return lib_in;
+    return lib_in_fd;
+}
+
+void gldb_set_in_reader(gldb_protocol_reader *reader)
+{
+    lib_in = reader;
 }
 
 int gldb_get_out_pipe(void)

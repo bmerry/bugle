@@ -61,20 +61,43 @@
 #define REQ_DATA_SHADER                0xedbc0001UL
 #define REQ_DATA_FRAMEBUFFER           0xedbc0002UL
 
-/* Utility functions for Win32, where a separate thread must be used to
- * buffer data in order to determine whether there is any to be processed.
- *
- * io_start_read_thread may only ever be called on one fd, and that is
- * the only fd that may be used in io_has_data. 
+typedef struct gldb_protocol_reader gldb_protocol_reader;
+
+/* Creates a reader structure that simply reads from the given fd */
+gldb_protocol_reader *gldb_protocol_reader_new_fd(int fd);
+
+/* Creates a reader structure that reads from the given fd, but which will
+ * also support gldb_protocol_reader_has_data by using a separate thread to
+ * buffer data under Windows.
  */
-void gldb_io_start_read_thread(int fd);
-bool gldb_io_has_data(int fd);
+
+gldb_protocol_reader *gldb_protocol_reader_new_fd_select(int fd);
+/* Creates a reader that uses a user function to extract data. The function has
+ * the same arguments as read, except using the user arg instead of an fd.
+ * It need not pull out all the available data in one go; the protocol code
+ * will call it repeatedly until it has what it needs.
+ */
+gldb_protocol_reader *gldb_protocol_reader_new_func(ssize_t (*read_func)(void *arg, void *buf, size_t count), void *arg);
+
+/* Determines whether the given reader has data available. This only works
+ * if it was created with gldb_protocol_reader_new_fd_select, otherwise it
+ * will always return false.
+ */
+bool gldb_protocol_reader_has_data(gldb_protocol_reader *reader);
+
+/* Analog to read(). Not guaranteed to extract all available data */
+ssize_t gldb_protocol_reader_read(gldb_protocol_reader *reader, void *buf, size_t count);
+
+/* Cleans up a reader allocated by one of the above. It does NOT close any
+ * file descriptors.
+ */
+void gldb_protocol_reader_free(gldb_protocol_reader *reader);
 
 bool gldb_protocol_send_code(int fd, uint32_t code);
 bool gldb_protocol_send_binary_string(int fd, uint32_t len, const char *str);
 bool gldb_protocol_send_string(int fd, const char *str);
-bool gldb_protocol_recv_code(int fd, uint32_t *code);
-bool gldb_protocol_recv_binary_string(int fd, uint32_t *len, char **data);
-bool gldb_protocol_recv_string(int fd, char **str);
+bool gldb_protocol_recv_code(gldb_protocol_reader *reader, uint32_t *code);
+bool gldb_protocol_recv_binary_string(gldb_protocol_reader *reader, uint32_t *len, char **data);
+bool gldb_protocol_recv_string(gldb_protocol_reader *reader, char **str);
 
 #endif /* BUGLE_COMMON_PROTOCOL_H */
