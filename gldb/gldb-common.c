@@ -644,7 +644,7 @@ char *gldb_state_string(const gldb_state *state)
         return xstrdup("");
     if (state->length == -2)
         return xstrdup("<GL error>");
-    if (state->type == TYPE_Pc)
+    if (state->type == TYPE_c || state->type == TYPE_Kc)
         return xstrdup((const char *) state->data);
     else
         return bugle_string_io(dump_wrapper, (void *) state);
