@@ -166,7 +166,21 @@ ssize_t gldb_protocol_reader_read(gldb_protocol_reader *reader, void *buf, size_
 bool gldb_protocol_reader_has_data(gldb_protocol_reader *reader)
 {
     if (reader->mode == MODE_FD_SELECT)
+    {
+#if BUGLE_OSAPI_SELECT_BROKEN
         return gldb_protocol_reader_select_has_data(reader->select_reader);
+#else
+        fd_set read_fds;
+        struct timeval timeout;
+
+        FD_ZERO(&read_fds);
+        FD_SET(reader->fd, &read_fds);
+        timeout.tv_sec = 0;
+        timeout.tv_usec = 0;
+        select(reader->fd + 1, &read_fds, NULL, NULL, &timeout);
+        return (FD_ISSET(reader->fd, &read_fds)) ? true : false;
+#endif
+    }
     else
         return false;
 }
