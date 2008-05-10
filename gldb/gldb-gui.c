@@ -394,6 +394,8 @@ static gboolean response_callback(GIOChannel *channel, GIOCondition condition,
 
     context = (GldbWindow *) user_data;
     r = gldb_get_response();
+    if (r == NULL)
+        return TRUE;
 
     n = bugle_list_head(&response_handlers);
     if (n) h = (response_handler *) bugle_list_data(n);

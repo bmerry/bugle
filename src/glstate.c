@@ -2785,7 +2785,7 @@ void bugle_state_get_raw(const glstate *state, bugle_state_raw *wrapper)
     {
         wrapper->data = str;
         wrapper->length = strlen(str);
-        wrapper->type = TYPE_Pc;
+        wrapper->type = TYPE_c;
         return;
     }
 
