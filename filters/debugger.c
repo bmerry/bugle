@@ -129,9 +129,9 @@ static void send_state_raw(const glstate *state, uint32_t id)
     gldb_protocol_send_code(out_pipe, id);
 }
 
-static void dump_any_call_string_io(FILE *out, void *data)
+static void dump_any_call_string_io(char **buffer, size_t *size, void *data)
 {
-    budgie_dump_any_call(&((const function_call *) data)->generic, 0, out);
+    budgie_dump_any_call(&((const function_call *) data)->generic, 0, buffer, size);
 }
 
 static GLenum target_to_binding(GLenum target)

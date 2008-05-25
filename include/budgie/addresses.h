@@ -36,9 +36,9 @@ budgie_type budgie_call_parameter_type(const generic_function_call *call, int pa
  */
 int budgie_call_parameter_length(const generic_function_call *call, int param);
 /* Dumps a single parameter, with appropriate type and length */
-void budgie_call_parameter_dump(const generic_function_call *call, int param, FILE *out);
+void budgie_call_parameter_dump(const generic_function_call *call, int param, char **buffer, size_t *size);
 /* Dumps a call, including arguments and return. Does not include a newline */
-void budgie_dump_any_call(const generic_function_call *call, int indent, FILE *out);
+void budgie_dump_any_call(const generic_function_call *call, int indent, char **buffer, size_t *size);
 
 void (BUDGIEAPI *budgie_function_address_real(budgie_function id))(void);
 void (BUDGIEAPI *budgie_function_address_wrapper(budgie_function id))(void);

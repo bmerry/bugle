@@ -5,4 +5,4 @@ LENGTH PARAMETER glBufferSubDataARB 3 $2
 LENGTH PARAMETER glGetBufferSubDataARB 3 $2
 
 LENGTH PARAMETER glGetBufferParameterivARB 2 bugle_count_gl($f, $1)
-DUMP PARAMETER glGetBufferParameterivARB 2 bugle_dump_convert($1, &$$, $t$, $F)
+DUMP PARAMETER glGetBufferParameterivARB 2 bugle_dump_convert($1, &$$, $t$, $B, $S)

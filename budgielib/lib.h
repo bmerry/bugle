@@ -51,7 +51,7 @@ void _budgie_reentrance_clear(void);
 void budgie_interceptor(function_call *call);
 
 
-typedef bool (*arg_dumper)(const generic_function_call *, int, const void *, int, FILE *);
+typedef bool (*arg_dumper)(const generic_function_call *, int, const void *, int, char **buffer, size_t *size);
 typedef budgie_type (*arg_get_type)(const generic_function_call *, int, const void *);
 typedef int (*arg_get_length)(const generic_function_call *, int, const void *);
 

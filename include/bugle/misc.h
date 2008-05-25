@@ -32,12 +32,12 @@
 # define BUGLE_ATTRIBUTE_FORMAT_PRINTF(a, b)
 #endif
 
-/* Calls "call" with a FILE * and "data". The data that "call" writes into
- * the file is returned in as a malloc'ed string.
- * FIXME: error checking.
- * FIXME: is ftell portable on _binary_ streams (which tmpfile is)?
+/* Calls "call" with a char **, size_t * and "data".
+ * The data that "call" writes into the buffer (advancing it) is returned in
+ * a malloc'ed string. It is intended to be used together with the dump
+ * functions, which take the same char ** and size_t *.
  */
-char *bugle_string_io(void (*call)(FILE *, void *), void *data);
+char *bugle_string_io(void (*call)(char **, size_t *, void *), void *data);
 
 /* Appends to *strp using the format, reallocating if necessary. The
  * current size is *sz, and will be updated on reallocation. *strp may

@@ -47,7 +47,7 @@ int bugle_count_program_string(GLenum target, GLenum pname);
 #endif
 
 bool bugle_dump_convert(GLenum pname, const void *value,
-                        budgie_type in_type, FILE *out);
+                        budgie_type in_type, char **buffer, size_t *size);
 
 /* Computes the number of pixel elements (units of byte, int, float etc)
  * used by a client-side encoding of a 1D, 2D or 3D image.

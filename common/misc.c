@@ -27,27 +27,16 @@
 #include "common/threads.h"
 #include "xalloc.h"
 
-char *bugle_string_io(void (*call)(FILE *, void *), void *data)
+char *bugle_string_io(void (*call)(char **, size_t *, void *), void *data)
 {
-    FILE *f;
-    size_t size;
-    char *buffer;
+    char *buffer = NULL, *ptr;
+    size_t len = 0;
 
-#if HAVE_OPEN_MEMSTREAM
-    f = open_memstream(&buffer, &size);
-    (*call)(f, data);
-    fclose(f);
-#else
-    f = tmpfile();
-    (*call)(f, data);
-    size = ftell(f);
-    fseek(f, 0, SEEK_SET);
-    buffer = malloc(size + 1);
-    fread(buffer, 1, size, f);
-    buffer[size] = '\0';
-    fclose(f);
-#endif
-
+    call(&buffer, &len, data);
+    len = buffer - (char *) NULL + 1;
+    buffer = xcharalloc(len);
+    ptr = buffer;
+    call(&ptr, &len, data);
     return buffer;
 }
 

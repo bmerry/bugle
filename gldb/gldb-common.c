@@ -630,12 +630,12 @@ gldb_state *gldb_state_find_child_enum(gldb_state *parent, GLenum name)
     return NULL;
 }
 
-static void dump_wrapper(FILE *f, void *data)
+static void dump_wrapper(char **buffer, size_t *size, void *data)
 {
     const gldb_state *w;
 
     w = (const gldb_state *) data;
-    budgie_dump_any_type_extended(w->type, w->data, -1, w->length, NULL, f);
+    budgie_dump_any_type_extended(w->type, w->data, -1, w->length, NULL, buffer, size);
 }
 
 char *gldb_state_string(const gldb_state *state)

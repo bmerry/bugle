@@ -35,11 +35,11 @@
  */
 extern void (BUDGIEAPI *budgie_address_generator(budgie_function id));
 
-static void make_indent(int indent, FILE *out)
+static void make_indent(int indent, char **buffer, size_t *size)
 {
     int i;
     for (i = 0; i < indent; i++)
-        fputc(' ', out);
+        budgie_snputc_advance(buffer, size, ' ');
 }
 
 static const group_dump_parameter *parameter_info(const generic_function_call *call, int param)
@@ -82,7 +82,7 @@ int budgie_call_parameter_length(const generic_function_call *call, int param)
                                   arg);
 }
 
-void budgie_call_parameter_dump(const generic_function_call *call, int param, FILE *out)
+void budgie_call_parameter_dump(const generic_function_call *call, int param, char **buffer, size_t *size)
 {
     const group_dump_parameter *info;
     int length = -1;
@@ -92,27 +92,27 @@ void budgie_call_parameter_dump(const generic_function_call *call, int param, FI
     length = budgie_call_parameter_length(call, param);
     arg = (param == -1) ? call->retn : call->args[param];
 
-    if (!info->dumper || !info->dumper(call, param, arg, length, out))
+    if (!info->dumper || !info->dumper(call, param, arg, length, buffer, size))
         budgie_dump_any_type(budgie_call_parameter_type(call, param),
-                             arg, length, out);
+                             arg, length, buffer, size);
 }
 
-void budgie_dump_any_call(const generic_function_call *call, int indent, FILE *out)
+void budgie_dump_any_call(const generic_function_call *call, int indent, char **buffer, size_t *size)
 {
     size_t i;
 
-    make_indent(indent, out);
-    fprintf(out, "%s(", budgie_function_name(call->id));
+    make_indent(indent, buffer, size);
+    budgie_snprintf_advance(buffer, size, "%s(", budgie_function_name(call->id));
     for (i = 0; i < call->num_args; i++)
     {
-        if (i) fputs(", ", out);
-        budgie_call_parameter_dump(call, i, out);
+        if (i) budgie_snputs_advance(buffer, size, ", ");
+        budgie_call_parameter_dump(call, i, buffer, size);
     }
-    fputs(")", out);
+    budgie_snputc_advance(buffer, size, ')');
     if (call->retn)
     {
-        fputs(" = ", out);
-        budgie_call_parameter_dump(call, -1, out);
+        budgie_snputs_advance(buffer, size, " = ");
+        budgie_call_parameter_dump(call, -1, buffer, size);
     }
 }
 

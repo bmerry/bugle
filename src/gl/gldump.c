@@ -394,7 +394,7 @@ static const dump_table_entry *get_dump_table_entry(GLenum e)
 }
 
 bool bugle_dump_convert(GLenum pname, const void *value,
-                        budgie_type in_type, FILE *out)
+                        budgie_type in_type, char **buffer, size_t *size)
 {
     const dump_table_entry *entry;
     budgie_type out_type;
@@ -429,9 +429,9 @@ bool bugle_dump_convert(GLenum pname, const void *value,
     else
         budgie_type_convert(out_data, out_type, in, in_type, alength);
     if (ptr)
-        budgie_dump_any_type_extended(out_type, out_data, -1, length, ptr, out);
+        budgie_dump_any_type_extended(out_type, out_data, -1, length, ptr, buffer, size);
     else
-        budgie_dump_any_type(out_type, out_data, -1, out);
+        budgie_dump_any_type(out_type, out_data, -1, buffer, size);
     free(out_data);
     return true;
 }

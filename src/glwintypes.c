@@ -20,18 +20,19 @@
 #endif
 #include <bugle/porting.h>
 #include <bugle/glwintypes.h>
+#include <budgie/reflect.h>
 
-bool bugle_dump_glwin_drawable(glwin_drawable d, FILE *out)
+bool bugle_dump_glwin_drawable(glwin_drawable d, char **buffer, size_t *size)
 {
-    fprintf(out, "0x%08lx", (unsigned long) d);
+    budgie_snprintf_advance(buffer, size, "0x%08lx", (unsigned long) d);
     return true;
 }
 
-bool bugle_dump_glwin_bool(glwin_bool b, FILE *out)
+bool bugle_dump_glwin_bool(glwin_bool b, char **buffer, size_t *size)
 {
     if (b == 0 || b == 1)
-        fputs(b ? GLWIN_BOOL_TRUE : GLWIN_BOOL_FALSE, out);
+        budgie_snputs_advance(buffer, size, b ? GLWIN_BOOL_TRUE : GLWIN_BOOL_FALSE);
     else
-        fprintf(out, "(" GLWIN_BOOL_TYPE ") %u", (unsigned int) b);
+        budgie_snprintf_advance(buffer, size, "(" GLWIN_BOOL_TYPE ") %u", (unsigned int) b);
     return true;
 }

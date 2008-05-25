@@ -1,7 +1,7 @@
 EXTRATYPE XBool
 
-DUMP TYPE GLXDrawable bugle_dump_glwin_drawable($$, $F)
-DUMP TYPE XBool bugle_dump_glwin_bool($$, $F)
+DUMP TYPE GLXDrawable bugle_dump_glwin_drawable($$, $B, $S)
+DUMP TYPE XBool bugle_dump_glwin_bool($$, $B, $S)
 
 TYPE PARAMETER glXCreateContext 3 TYPE_5XBool
 TYPE PARAMETER glXIsDirect -1 TYPE_5XBool

@@ -67,7 +67,7 @@ typedef struct
     ptrdiff_t offset;
 } type_record_data;
 
-typedef void (*type_dumper)(const void *, int, FILE *);
+typedef void (*type_dumper)(const void *, int, char **buffer, size_t *size);
 typedef budgie_type (*type_get_type)(const void *);
 typedef int (*type_get_length)(const void *);
 
@@ -103,14 +103,14 @@ extern bool _budgie_bypass[];
 extern int _budgie_group_count;
 extern const group_data _budgie_group_table[];
 
-void _budgie_dump_bitfield(unsigned int value, FILE *out,
+void _budgie_dump_bitfield(unsigned int value, char **buffer, size_t *size,
                            const bitfield_pair *tags, int count);
 
 /* User functions for .bc files */
 
-bool budgie_dump_string(const char *value, FILE *out);
+bool budgie_dump_string(const char *value, char **buffer, size_t *size);
 int budgie_count_string(const char *value);
 /* Like dump_string but takes an explicit length rather than NULL terminator */
-bool budgie_dump_string_length(const char *value, size_t length, FILE *out);
+bool budgie_dump_string_length(const char *value, size_t length, char **buffer, size_t *size);
 
 #endif /* BUGLE_BUDGIE_INTERNAL_H */

@@ -1,5 +1,5 @@
 /*  BuGLe: an OpenGL debugging tool
- *  Copyright (C) 2004-2007  Bruce Merry
+ *  Copyright (C) 2004-2008  Bruce Merry
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -25,6 +25,7 @@
 #include <stdio.h>
 #include <stddef.h>
 #include <budgie/types.h>
+#include <bugle/misc.h>  /* For printf format attribute */
 
 int             budgie_function_count(void);
 const char *    budgie_function_name(budgie_function id);
@@ -57,7 +58,7 @@ budgie_type     budgie_type_id_nomangle(const char *name);
 budgie_type     budgie_type_type(budgie_type type, const void *instance);
 /* Computes the length of the array pointed to, if any, or -1 */
 int             budgie_type_length(budgie_type type, const void *instance);
-void budgie_dump_any_type(budgie_type type, const void *value, int length, FILE *out);
+void budgie_dump_any_type(budgie_type type, const void *value, int length, char **buffer, size_t *size);
 /* Calls budgie_dump_any_type, BUT:
  * if outer_length != -1, then it considers the type as if it were an
  * array of that type, of length outer_length. If pointer is
@@ -69,10 +70,20 @@ void budgie_dump_any_type_extended(budgie_type type,
                                    int length,
                                    int outer_length,
                                    const void *pointer,
-                                   FILE *out);
+                                   char **buffer, size_t *size);
 
 /* Generated function that converts [an array of] one numeric type to another */
 void budgie_type_convert(void *out, budgie_type out_type, const void *in, budgie_type in_type, size_t count);
+
+/* Does snprintf and returns the result, but advances buffer and size by the
+ * number of characters that would have been written (size clamps to 0).
+ * If *size is 1 on return, then the string just fit without overflowing. If
+ * it is zero, there was an overflow.
+ */
+ssize_t budgie_snprintf_advance(char **buffer, size_t *size, const char *fmt, ...) BUGLE_ATTRIBUTE_FORMAT_PRINTF(3, 4);
+/* Equivalent to budgie_snprintf(buffer, size, "%s", s) but more efficient. */
+ssize_t budgie_snputs_advance(char **buffer, size_t *size, const char *s);
+ssize_t budgie_snputc_advance(char **buffer, size_t *size, char c);
 
 /* Some black magic to look up ID's as efficiently as possible. If defines.h
  * is included, GCC will compile this down to a constant. If it is not

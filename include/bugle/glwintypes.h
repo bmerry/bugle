@@ -61,7 +61,7 @@ typedef BOOL  glwin_bool;
 #define BUGLE_GLWIN_GET_PROC_ADDRESS wglGetProcAddress
 #endif /* BUGLE_GLWIN_WGL */
 
-bool bugle_dump_glwin_bool(glwin_bool b, FILE *out);
-bool bugle_dump_glwin_drawable(glwin_drawable d, FILE *out);
+bool bugle_dump_glwin_bool(glwin_bool b, char **buffer, size_t *size);
+bool bugle_dump_glwin_drawable(glwin_drawable d, char **buffer, size_t *size);
 
 #endif /* BUGLE_GLWINTYPES_H */

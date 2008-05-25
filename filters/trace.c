@@ -20,22 +20,39 @@
 #endif
 #include <stdbool.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <bugle/filters.h>
 #include <bugle/glutils.h>
 #include <bugle/log.h>
 #include <budgie/reflect.h>
 #include <budgie/addresses.h>
-
-/* Callback passed to bugle_log */
-static void trace_callback_call_callback(void *call, FILE *f)
-{
-    budgie_dump_any_call((generic_function_call *) call, 0, f);
-}
+#include "xalloc.h"
 
 static bool trace_callback(function_call *call, const callback_data *data)
 {
-    bugle_log_callback("trace", "call", BUGLE_LOG_INFO,
-                       trace_callback_call_callback, &call->generic);
+    char fixed_buffer[4096], *dyn_buffer = NULL, *ptr;
+    size_t fixed_size, len;
+
+    /* First try just the fixed buffer, which should take care of the vast
+     * majority without allocating memory.
+     */
+    fixed_size = sizeof(fixed_buffer);
+    ptr = fixed_buffer;
+    budgie_dump_any_call((generic_function_call *) call, 0, &ptr, &fixed_size);
+    len = ptr - fixed_buffer + 1;
+    if (len > sizeof(fixed_buffer))
+    {
+        /* No good, it's too big */
+        dyn_buffer = xcharalloc(len);
+        ptr = dyn_buffer;
+        budgie_dump_any_call((generic_function_call *) call, 0, &ptr, &len);
+        ptr = dyn_buffer;
+    }
+    else
+        ptr = fixed_buffer;
+
+    bugle_log("trace", "call", BUGLE_LOG_INFO, ptr);
+    free(dyn_buffer);
     return true;
 }
 

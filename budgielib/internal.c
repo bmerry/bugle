@@ -21,6 +21,9 @@
 #include <stdio.h>
 #include <string.h>
 #include <ctype.h>
+#include <stdarg.h>
+#include <stddef.h>
+#include <budgie/reflect.h>
 #include "budgielib/defines.h"
 #include "budgielib/internal.h"
 
@@ -28,7 +31,7 @@ int _budgie_function_count = FUNCTION_COUNT;
 int _budgie_group_count = GROUP_COUNT;
 int _budgie_type_count = TYPE_COUNT;
 
-void _budgie_dump_bitfield(unsigned int value, FILE *out,
+void _budgie_dump_bitfield(unsigned int value, char **buffer, size_t *size,
                            const bitfield_pair *tags, int count)
 {
     bool first = true;
@@ -36,70 +39,70 @@ void _budgie_dump_bitfield(unsigned int value, FILE *out,
     for (i = 0; i < count; i++)
         if (value & tags[i].value)
         {
-            if (!first) fputs(" | ", out); else first = false;
-            fputs(tags[i].name, out);
+            if (!first) budgie_snputs_advance(buffer, size, " | "); else first = false;
+            budgie_snputs_advance(buffer, size, tags[i].name);
             value &= ~tags[i].value;
         }
     if (value)
     {
-        if (!first) fputs(" | ", out);
-        fprintf(out, "%08x", value);
+        if (!first) budgie_snputs_advance(buffer, size, " | ");
+        budgie_snprintf_advance(buffer, size, "%08x", value);
     }
 }
 
-bool budgie_dump_string(const char *value, FILE *out)
+bool budgie_dump_string(const char *value, char **buffer, size_t *size)
 {
     /* FIXME: handle illegal dereferences */
-    if (value == NULL) fputs("NULL", out);
+    if (value == NULL) budgie_snputs_advance(buffer, size, "NULL");
     else
     {
-        fputc('"', out);
+        budgie_snputc_advance(buffer, size, '"');
         while (value[0])
         {
             switch (value[0])
             {
-            case '"': fputs("\\\"", out); break;
-            case '\\': fputs("\\\\", out); break;
-            case '\n': fputs("\\n", out); break;
-            case '\r': fputs("\\r", out); break;
+            case '"': budgie_snputs_advance(buffer, size, "\\\""); break;
+            case '\\': budgie_snputs_advance(buffer, size, "\\\\"); break;
+            case '\n': budgie_snputs_advance(buffer, size, "\\n"); break;
+            case '\r': budgie_snputs_advance(buffer, size, "\\r"); break;
             default:
                 if (iscntrl(value[0]))
-                    fprintf(out, "\\%03o", (int) value[0]);
+                    budgie_snprintf_advance(buffer, size, "\\%03o", (int) value[0]);
                 else
-                    fputc(value[0], out);
+                    budgie_snputc_advance(buffer, size, value[0]);
             }
             value++;
         }
-        fputc('"', out);
+        budgie_snputc_advance(buffer, size, '"');
     }
     return true;
 }
 
-bool budgie_dump_string_length(const char *value, size_t length, FILE *out)
+bool budgie_dump_string_length(const char *value, size_t length, char **buffer, size_t *size)
 {
     size_t i;
     /* FIXME: handle illegal dereferences */
-    if (value == NULL) fputs("NULL", out);
+    if (value == NULL) budgie_snputs_advance(buffer, size, "NULL");
     else
     {
-        fputc('"', out);
+        budgie_snputc_advance(buffer, size, '"');
         for (i = 0; i < length; i++)
         {
             switch (value[0])
             {
-            case '"': fputs("\\\"", out); break;
-            case '\\': fputs("\\\\", out); break;
-            case '\n': fputs("\\n", out); break;
-            case '\r': fputs("\\r", out); break;
+            case '"': budgie_snputs_advance(buffer, size, "\\\""); break;
+            case '\\': budgie_snputs_advance(buffer, size, "\\\\"); break;
+            case '\n': budgie_snputs_advance(buffer, size, "\\n"); break;
+            case '\r': budgie_snputs_advance(buffer, size, "\\r"); break;
             default:
                 if (iscntrl(value[0]))
-                    fprintf(out, "\\%03o", (int) value[0]);
+                    budgie_snprintf_advance(buffer, size, "\\%03o", (int) value[0]);
                 else
-                    fputc(value[0], out);
+                    budgie_snputc_advance(buffer, size, value[0]);
             }
             value++;
         }
-        fputc('"', out);
+        budgie_snputc_advance(buffer, size, '"');
     }
     return true;
 }
