@@ -80,9 +80,11 @@ if test "x$GL_LIBS" = "x"; then
 fi
 
 GLEW_LIBS=""
-HAVE_GLEW=1
+HAVE_GLEW=0
 AC_CHECK_LIB([GLEW], [glewInit], [
-  GLEW_LIBS="-lGLEW"], [HAVE_GLEW=0], [])
+  GLEW_LIBS="-lGLEW" && HAVE_GLEW=1], [], [])
+AC_CHECK_LIB([GLEW32], [glewInit], [
+  GLEW_LIBS="-lGLEW32" && HAVE_GLEW=1], [], [])
 AC_SUBST(GLEW_LIBS)
 
 dnl Checks for header files
@@ -120,7 +122,7 @@ BUGLE_C_ATTRIBUTE_CONSTRUCTOR
 BUGLE_C_PRAGMA_WEAK
 
 dnl Checks for library functions
-AC_CHECK_FUNCS([regcomp strrchr vsnprintf open_memstream])
+AC_CHECK_FUNCS([regcomp strrchr vsnprintf])
 AC_CHECK_FUNCS([cosf sinf finite isfinite nan isnan siglongjmp])
 # Readline used to call this completion_matches
 real_libs="$LIBS"
