@@ -83,9 +83,35 @@ const char *bugle_glwin_query_extensions_string(glwin_display dpy)
 void bugle_glwin_get_drawable_dimensions(glwin_display dpy, glwin_drawable drawable,
                                          int *width, int *height)
 {
-    /* FIXME: implement */
-    *width = -1;
-    *height = -1;
+    /* There is no WGL equivalent to glXQueryDrawable. However, we can get the
+     * dimensions by attaching a brand-new context, whose viewport will
+     * automatically take the size of the drawable surface.
+     */
+    glwin_context ctx, old_ctx;
+    glwin_drawable old_draw, old_read;
+    glwin_display old_dpy;
+
+    old_dpy = bugle_glwin_get_current_display();
+    old_draw = bugle_glwin_get_current_drawable();
+    old_read = bugle_glwin_get_current_read_drawable();
+    old_ctx = bugle_glwin_get_current_context();
+
+    ctx = CALL(wglCreateContext)(drawable);
+    if (ctx && CALL(wglMakeCurrent)(drawable, ctx))
+    {
+        GLint viewport[4];
+        CALL(glGetIntegerv)(GL_VIEWPORT, viewport);
+        *width = viewport[2];
+        *height = viewport[3];
+
+        bugle_glwin_make_context_current(old_dpy, old_draw, old_read, old_ctx);
+        wglDeleteContext(ctx);
+    }
+    else
+    {
+        *width = -1;
+        *height = -1;
+    }
 }
 
 typedef struct
