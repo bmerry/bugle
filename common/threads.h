@@ -44,9 +44,17 @@
 #endif
 #define bugle_pthread_raise(sig) (pthread_in_use() ? pthread_kill(pthread_self(), (sig)) : raise((sig)))
 
-#endif /* !USE_POSIX_THREADS */
+#endif /* USE_POSIX_THREADS */
 
-#if USE_PTH_THREADS || USE_SOLARIS_THREADS || USE_WIN32_THREADS
+#if USE_WIN32_THREADS
+
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+#define bugle_thread_self() (GetCurrentThreadId())
+
+#endif /* USE_WIN32_THREADS */
+
+#if USE_PTH_THREADS || USE_SOLARIS_THREADS
 # warning "Threading model not totally supported; some features might not work"
 #endif
 

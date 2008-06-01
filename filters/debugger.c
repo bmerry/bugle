@@ -45,8 +45,10 @@
 #include <budgie/reflect.h>
 #include <budgie/addresses.h>
 #include "common/protocol.h"
+#include "common/threads.h"
 #include "xalloc.h"
 #include "xvasprintf.h"
+#include "lock.h"
 
 static gldb_protocol_reader *in_pipe = NULL;
 static int in_pipe_fd = -1, out_pipe = -1;
@@ -55,6 +57,8 @@ static bool break_on_error = true, break_on_next = false;
 static bool stop_in_begin_end = false;
 static bool stopped = true;
 static uint32_t start_id = 0;
+
+static unsigned long debug_thread;
 
 static bool stoppable(void)
 {
@@ -897,9 +901,24 @@ static void debugger_loop(function_call *call)
     } while (stopped);
 }
 
+static void debugger_init_thread(void)
+{
+    debug_thread = bugle_thread_self();
+}
+
+gl_once_define(static, debugger_init_thread_once)
+
 static bool debugger_callback(function_call *call, const callback_data *data)
 {
     char *resp_str;
+    
+    /* Only one thread can read and write from the pipes.
+     * FIXME: still stop others threads, with events to start and stop everything
+     * in sync.
+     */
+    gl_once(debugger_init_thread_once, debugger_init_thread);
+    if (debug_thread != bugle_thread_self())
+        return true;
 
     if (stoppable())
     {
@@ -932,6 +951,10 @@ static bool debugger_error_callback(function_call *call, const callback_data *da
 {
     GLenum error;
     char *resp_str;
+
+    gl_once(debugger_init_thread_once, debugger_init_thread);
+    if (debug_thread != bugle_thread_self())
+        return true;
 
     if (break_on_error
         && (error = bugle_call_get_error(data->call_object)))
