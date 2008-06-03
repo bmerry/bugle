@@ -4,6 +4,14 @@ can be found in the file COPYING. Note that BuGLe is licensed specifically
 under version 2 of the license, not any later version.
 
 
+The font displayed by the showstats filterset is extracted from the ASCII part
+of Roman Czyborra's Unifont. The original was distributed under these terms:
+"All of my works you find here are freeware. You may freely copy, use, quote,
+modify or redistribute them as long as you properly attribute my contribution
+and have given a quick thought about whether Roman might perhaps be interested
+to read what you did with his stuff. Horizontal rules don't apply."
+
+
 gl2ps (which is placed verbatim in the gl2ps/ subdirectory and compiled
 into bugle) is licensed under the LGPL and the GL2PS licencse:
 
