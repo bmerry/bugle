@@ -213,7 +213,7 @@ void bugle_text_render(const char *msg, int x, int y)
     CALL(glBindTexture)(GL_TEXTURE_2D, data->font_texture);
     CALL(glEnable)(GL_TEXTURE_2D);
     CALL(glBegin)(GL_QUADS);
-     !6!%for (; *msg; msg++)
+    for (; *msg; msg++)
     {
         int r, c;
         GLfloat s1, s2, t1, t2;

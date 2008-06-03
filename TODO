@@ -1,7 +1,6 @@
 WGL port
 --------
-- recover font-rendering capability, and restore showstats filterset
-- excise last bits of GLX and UNIX dependence from filters
+- figure out why showstats on shadowfun crashes on exit (glDeleteQueries not defined?)
 - better robustness to missing WGL/GLX extensions
 - proper abstraction layer over xevent
 - support read != draw DC in glwin.c
@@ -11,9 +10,9 @@ WGL port
 - rename shutdown in gldb to avoid conflicts
 - make gldb and gldb-gui work
   - kill takes out gldb-gui
-  - texture isn't update on first pause
 - prevent libraries from being loaded twice
 - make contexts opaque
+- make Cygwin work
 
 camera filter-set
 -----------------

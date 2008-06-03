@@ -65,6 +65,7 @@ pkglib_LTLIBRARIES = \
 	filters/stats_fragments.la \
 	filters/stats_nv.la \
 	filters/stats_primitives.la \
+	filters/showstats.la \
 	filters/logstats.la
 
 AM_CPPFLAGS = -I$(srcdir)/lib -Ilib -I$(srcdir)/include -Iinclude $(LTDLINCL) -DLIBDIR=\"$(libdir)\" -DPKGLIBDIR=\"$(pkglibdir)\" $(X_CFLAGS)
@@ -222,6 +223,10 @@ filters_stats_nv_la_LIBADD = $(MODULELIBS)
 filters_stats_primitives_la_SOURCES = filters/stats_primitives.c
 filters_stats_primitives_la_LDFLAGS = $(MODULEFLAGS)
 filters_stats_primitives_la_LIBADD = $(MODULELIBS)
+
+filters_showstats_la_SOURCES = filters/showstats.c
+filters_showstats_la_LDFLAGS = $(MODULEFLAGS)
+filters_showstats_la_LIBADD = $(MODULELIBS) -lm
 
 filters_logstats_la_SOURCES = filters/logstats.c
 filters_logstats_la_LDFLAGS = $(MODULEFLAGS)
