@@ -332,6 +332,19 @@ static bool trackcontext_callback(function_call *call, const callback_data *data
     return true;
 }
 
+static bool trackcontext_destroycontext(function_call *call, const callback_data *data)
+{
+    object *obj;
+    glwin_context ctx;
+
+    /* FIXME: leaks from namespace associations */
+    obj = bugle_object_get_current(bugle_context_class);
+    ctx = bugle_glwin_get_context_destroy(call);
+    if (ctx && obj)
+    bugle_hashptr_set(&context_objects, ctx, obj);
+    return true;
+}
+
 static void trackcontext_data_clear(void *data)
 {
     trackcontext_data *d;
@@ -365,6 +378,11 @@ static bool trackcontext_filter_set_initialise(filter_set *handle)
     bugle_filter_order("invoke", "trackcontext");
     bugle_glwin_filter_catches_make_current(f, true, trackcontext_callback);
     bugle_glwin_filter_catches_create_context(f, true, trackcontext_newcontext);
+
+    f = bugle_filter_new(handle, "trackcontext_destroy");
+    bugle_filter_order("trackcontext_destroy", "invoke");
+    bugle_glwin_filter_catches_destroy_context(f, true, trackcontext_destroycontext);
+
     trackcontext_view = bugle_object_view_new(bugle_context_class,
                                               NULL,
                                               trackcontext_data_clear,

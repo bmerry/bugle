@@ -195,9 +195,20 @@ glwin_context bugle_glwin_context_create_new(const glwin_context_create *create,
     return retn;
 }
 
+glwin_context bugle_glwin_get_context_destroy(function_call *call)
+{
+    return *call->glXDestroyContext.arg1;
+}
+
 void bugle_glwin_filter_catches_create_context(filter *f, bool inactive, filter_callback callback)
 {
     bugle_filter_catches(f, "glXCreateContext", inactive, callback);
+    bugle_filter_catches(f, "glXCreateContextWithConfigSGIX", inactive, callback);
+}
+
+void bugle_glwin_filter_catches_destroy_context(filter *f, bool inactive, filter_callback callback)
+{
+    bugle_filter_catches(f, "glXDestroyContext", inactive, callback);
     bugle_filter_catches(f, "glXCreateContextWithConfigSGIX", inactive, callback);
 }
 

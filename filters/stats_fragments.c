@@ -57,15 +57,6 @@ static void stats_fragments_struct_init(const void *key, void *data)
     }
 }
 
-static void stats_fragments_struct_clear(void *data)
-{
-    stats_fragments_struct *s;
-
-    s = (stats_fragments_struct *) data;
-    if (s->query)
-        CALL(glDeleteQueries)(1, &s->query);
-}
-
 static bool stats_fragments_swap_buffers(function_call *call, const callback_data *data)
 {
     stats_fragments_struct *s;
@@ -121,7 +112,7 @@ static bool stats_fragments_initialise(filter_set *handle)
 
     stats_fragments_view = bugle_object_view_new(bugle_context_class,
                                                  stats_fragments_struct_init,
-                                                 stats_fragments_struct_clear,
+                                                 NULL,
                                                  sizeof(stats_fragments_struct));
 
     f = bugle_filter_new(handle, "stats_fragments");

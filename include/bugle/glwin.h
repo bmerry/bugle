@@ -78,8 +78,12 @@ glwin_context_create *bugle_glwin_context_create_save(function_call *call);
  */
 glwin_context bugle_glwin_context_create_new(const struct glwin_context_create *create, bool share);
 
+/* Extracts the context passed to a destroy function */
+glwin_context bugle_glwin_get_context_destroy(function_call *call);
+
 /* Helper functions to trap the appropriate window-system calls */
 void bugle_glwin_filter_catches_create_context(filter *f, bool inactive, filter_callback callback);
+void bugle_glwin_filter_catches_destroy_context(filter *f, bool inactive, filter_callback callback);
 void bugle_glwin_filter_catches_make_current(filter *f, bool inactive, filter_callback callback);
 void bugle_glwin_filter_catches_swap_buffers(filter *f, bool inactive, filter_callback callback);
 
