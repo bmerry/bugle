@@ -11,6 +11,8 @@ WGL port
 - make gldb and gldb-gui work
   - kill takes out gldb-gui
 - prevent libraries from being loaded twice
+- fix crash in shutdown on es2demo
+- fix counting of glGetAttachedShaders properly
 - make contexts opaque
 - make Cygwin work
 

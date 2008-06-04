@@ -3,4 +3,7 @@ HEADER GL/wglext.h
 HEADER bugle/glwintypes.h
 LIMIT wgl.*
 
-DUMP TYPE HDC bugle_dump_glwin_drawable($$, $B, $S)
+TYPE TYPE HDC TYPE_P6GLvoid
+TYPE TYPE HGLRC TYPE_P6GLvoid
+TYPE TYPE HWND TYPE_P6GLvoid
+TYPE TYPE HBITMAP TYPE_P6GLvoid
