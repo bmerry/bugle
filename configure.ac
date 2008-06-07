@@ -101,7 +101,7 @@ gl_INIT
 AC_HEADER_STDC
 AC_HEADER_DIRENT
 AC_HEADER_STDBOOL
-AC_CHECK_HEADERS([sys/types.h stdlib.h stddef.h regex.h NVPerfSDK.h dlfcn.h])
+AC_CHECK_HEADERS([sys/types.h stdlib.h stddef.h regex.h NVPerfSDK.h dlfcn.h sys/select.h])
 AC_CHECK_HEADERS([readline/readline.h readline/history.h], [], [HAVE_READLINE=0])
 
 if test "$bugle_target" = "gl-wgl"
@@ -172,8 +172,11 @@ AC_DEFINE_UNQUOTED(HAVE_READLINE, $HAVE_READLINE, [non-zero when all the require
 
 AC_ARG_WITH([gtk], AC_HELP_STRING([--without-gtk], [do not build the GUI debugger]),
             [test $withval = no && HAVE_GTK=0], [])
+GLDB=gldb/gldb
 GLDB_GUI=gldb/gldb-gui
 test $HAVE_GTK == 1 || GLDB_GUI=""
+test $BUGLE_OSAPI == "BUGLE_OSAPI_POSIX" || GLDB=""
+AC_SUBST(GLDB)
 AC_SUBST(GLDB_GUI)
 
 AC_ARG_WITH([gtkglext], AC_HELP_STRING([--without-gtkglext], [do not use OpenGL within the GUI debugger]),

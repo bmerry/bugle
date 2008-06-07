@@ -14,8 +14,8 @@ dist_noinst_SCRIPTS = gengl/gengl.perl gengl/find_header.perl \
 		      mvtu.sh
 # The real things
 lib_LTLIBRARIES = src/libbugleutils.la
-bin_PROGRAMS = gldb/gldb @GLDB_GUI@
-EXTRA_PROGRAMS = gldb/gldb-gui
+bin_PROGRAMS = @GLDB@ @GLDB_GUI@
+EXTRA_PROGRAMS = gldb/gldb gldb/gldb-gui
 
 includebugledir = $(includedir)/bugle/bugle
 includebuglegldir = $(includebugledir)/gl

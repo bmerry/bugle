@@ -26,6 +26,9 @@
 #include <errno.h>
 #include <string.h>
 #include <assert.h>
+#if HAVE_SYS_SELECT_H
+# include <sys/select.h>
+#endif
 #include "full-read.h"
 #include "full-write.h"
 #include "lock.h"
