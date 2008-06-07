@@ -129,4 +129,26 @@
             <filename>doc/examples/statistics</filename> into it.
         </para>
     </sect1>
+
+    <sect1 id="install-windows">
+        <title>Compiling on Windows</title>
+        <para>
+            Installing from source on Windows is supported, but it is
+            significantly trickier than on
+            UNIX-like systems, and currently only recommended for experts.
+            The intended target is <ulink
+                url="http://www.mingw.org">MinGW</ulink>; you can try using
+            Cygwin as well, but it is not tested.
+        </para>
+        <para>
+            Apart from the core of MinGW, you will need to install MSYS, Perl,
+            regex (user-contributed version), and msysDTK. If you install GTK+
+            and GtkGLExt,
+            you need to ensure that <command>pkg-config</command> knows
+            where to find them (setting <envar>PKG_CONFIG_PATH</envar>
+            appropriately). If you install GLEW, you need to ensure that the
+            compiler and linker can find it (setting <envar>CPATH</envar> and
+            <envar>LIBRARY_PATH</envar> appropriately).
+        </para>
+    </sect1>
 </chapter>

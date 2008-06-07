@@ -392,7 +392,7 @@ static void shader_source(GLhandleARB shader, const char *source)
 
 static void query_shaders(void)
 {
-    GLhandleARB vs, fs, p, attached[2];
+    GLhandleARB vs, fs, p, attached[4];
     GLsizei count;
     GLint location;
     GLsizei length, size;
@@ -444,6 +444,9 @@ static void query_shaders(void)
         glGetAttachedObjectsARB(p, 2, &count, attached);
         fprintf(ref, "trace\\.call: glGetAttachedObjectsARB\\(%u, 2, %p -> 2, %p -> { %u, %u }\\)\n",
                 (unsigned int) p, (void *) &count, (void *) attached, (unsigned int) vs, (unsigned int) fs);
+        glGetAttachedObjectsARB(p, 4, NULL, attached);
+        fprintf(ref, "trace\\.call: glGetAttachedObjectsARB\\(%u, 4, \\(nil\\), %p -> { %u, %u }\\)\n",
+                (unsigned int) p, (void *) attached, (unsigned int) vs, (unsigned int) fs);
 
         language_version = (const char *) glGetString(GL_SHADING_LANGUAGE_VERSION_ARB);
         fprintf(ref, "trace\\.call: glGetString\\(GL_SHADING_LANGUAGE_VERSION(_ARB)?\\) = ");

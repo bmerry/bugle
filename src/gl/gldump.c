@@ -1,5 +1,5 @@
 /*  BuGLe: an OpenGL debugging tool
- *  Copyright (C) 2004-2007  Bruce Merry
+ *  Copyright (C) 2004-2008  Bruce Merry
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -456,6 +456,26 @@ int bugle_count_program_string(GLenum target, GLenum pname)
         length = 0;
     }
     return length;
+}
+#endif
+
+#ifdef GL_ARB_shader_objects
+/* Counts the number of objects returned by a call to
+ * glGetAttachedObjectsARB(program, max, &count, ptr).
+ */
+int bugle_count_attached_objects(GLhandleARB program, GLsizei max)
+{
+    GLsizei real_count = 0;
+    if (bugle_begin_internal_render())
+    {
+        CALL(glGetObjectParameterivARB)(program, GL_OBJECT_ATTACHED_OBJECTS_ARB, &real_count);
+        /* The above might generate an error, in which case real_count remains 0 */
+        bugle_end_internal_render("bugle_count_attached_objects", false);
+    }
+    if (real_count <= max)
+        return real_count;
+    else
+        return max;
 }
 #endif
 

@@ -1,3 +1,8 @@
+* Port to Windows
+* Embed a font in the source instead of trying to query it
+* Fix count for glGetAttachedShaders
+* Other miscellaneous bug-fixes
+
 0.0.20080303
 ------------
 * Fix several bugs in object tracking, which could lead to crashes in
