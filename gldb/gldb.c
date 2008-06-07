@@ -635,6 +635,7 @@ static bool command_gdb(const char *cmd,
                         const char *line,
                         const char * const *tokens)
 {
+#if BUGLE_OSAPI_POSIX
     pid_t pid, pgrp, tc_pgrp;
     char *pid_str;
     int status;
@@ -674,6 +675,9 @@ static bool command_gdb(const char *cmd,
     }
 
     gldb_safe_syscall(sigprocmask(SIG_SETMASK, &blocked, NULL), "sigprocmask");
+#else
+    printf("gdb command not implemented on this platform\n");
+#endif
     return false;
 }
 
@@ -921,7 +925,7 @@ static void sort_commands(void)
     qsort(commands, count, sizeof(command_info), compare_commands);
 }
 
-static void shutdown(void)
+static void cleanup(void)
 {
     gldb_shutdown();
 
@@ -942,7 +946,7 @@ static void initialise(void)
     rl_readline_name = "gldb";
     rl_attempted_completion_function = completion;
 #endif
-    atexit(shutdown);
+    atexit(cleanup);
 }
 
 int main(int argc, const char * const *argv)

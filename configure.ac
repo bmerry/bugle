@@ -18,9 +18,18 @@ AC_PROG_MAKE_SET
 
 AC_CANONICAL_HOST
 case $host in
-  *-*-cygwin) bugle_target="gl-wgl";;
-  *-*-mingw32)  bugle_target="gl-wgl";;
-  *) bugle_target="gl-glx";;
+  *-*-cygwin)
+    bugle_target="gl-wgl"
+    BUGLE_OSAPI=BUGLE_OSAPI_POSIX
+    ;;
+  *-*-mingw32)
+    bugle_target="gl-wgl"
+    BUGLE_OSAPI=BUGLE_OSAPI_WIN32
+    ;;
+  *)
+    bugle_target="gl-glx"
+    BUGLE_OSAPI=BUGLE_OSAPI_POSIX
+    ;;
 esac
 
 AC_LANG(C)
@@ -190,14 +199,12 @@ case $bugle_target in
     BUGLE_GLWIN=BUGLE_GLWIN_GLX
     BUGLE_WINSYS=BUGLE_WINSYS_X11
     BUGLE_BINFMT=BUGLE_BINFMT_ELF
-    BUGLE_OSAPI=BUGLE_OSAPI_POSIX
     ;;
     gl-wgl)
     BUGLE_FS=BUGLE_FS_CYGMING
     BUGLE_GLWIN=BUGLE_GLWIN_WGL
     BUGLE_WINSYS=BUGLE_WINSYS_WINDOWS
     BUGLE_BINFMT=BUGLE_BINFMT_PE
-    BUGLE_OSAPI=BUGLE_OSAPI_WIN32
     ;;
 esac
 

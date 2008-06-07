@@ -7,13 +7,10 @@ WGL port
 - handle cross-DLL data import/export cleanly
 - put suitable visibility tags on all export functions, so that -export-symbols-regex and --export-all-symbols are not needed
 - load opengl32.dll from SYSTEMDIR rather than hard-coded path.
-- rename shutdown in gldb to avoid conflicts
 - make gldb and gldb-gui work
   - kill takes out gldb-gui
 - prevent libraries from being loaded twice
 - fix crash in shutdown on es2demo
-- fix counting of glGetAttachedShaders properly
-- make contexts opaque
 - make Cygwin work
 
 camera filter-set
@@ -52,6 +49,7 @@ gldb-gui
 - statistics tab
 - state diffs
   - diff to the default
+  - checkpointing
 
 bugle
 -----
@@ -93,7 +91,6 @@ tests
 
 long term
 ---------
-- replace GLee with something C89 compliant
 - internationalisation
 - OpenEXR export
 - Windows support
@@ -104,4 +101,3 @@ long term
 - shader debugging
 - better movie capture
   - option of a separate thread, for parallel encoding
-- install headers and pkgconfig files to simplify 3rd party filter-sets
