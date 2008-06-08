@@ -1,5 +1,0 @@
-HEADER bugle/glstate.h
-LIBRARY libGL.so
-
-INCLUDE gl/gl.bc
-INCLUDE glx/glx.bc

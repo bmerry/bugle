@@ -150,23 +150,23 @@ src/data/gl.tu: src/data/gl.c include/bugle/gl/overrides.h include/bugle/glx/ove
 	rm -f src/data/gl.o
 	$(srcdir)/mvtu.sh gl.c src/data/gl.tu
 
-GLBCFILES = gl/gl.bc gl/bc/core1_1.bc gl/bc/glsl1_20.bc \
-	gl/bc/GL_ARB_multitexture.bc gl/bc/GL_ARB_imaging.bc \
-	gl/bc/GL_ARB_shader_objects.bc gl/bc/GL_ARB_occlusion_query.bc \
-	gl/bc/GL_ARB_texture_compression.bc gl/bc/GL_ARB_vertex_buffer_object.bc \
-	gl/bc/GL_ARB_vertex_program.bc gl/bc/GL_ATI_draw_buffers.bc \
-	gl/bc/GL_EXT_blend_func_separate.bc gl/bc/GL_EXT_draw_buffers2.bc \
-	gl/bc/GL_EXT_draw_instanced.bc gl/bc/GL_EXT_draw_range_elements.bc \
-	gl/bc/GL_EXT_geometry_shader4.bc gl/bc/GL_EXT_multi_draw_arrays.bc \
-	gl/bc/GL_EXT_secondary_color.bc gl/bc/GL_EXT_texture3D.bc \
-	gl/bc/GL_EXT_framebuffer_object.bc gl/bc/GL_EXT_gpu_program_parameters.bc \
-	gl/bc/GL_NV_transform_feedback.bc \
-	gl/bc/alias.bc
-GLXBCFILES = glx/glx.bc glx/bc/glx.bc \
-	glx/bc/GLX_ARB_get_proc_address.bc glx/bc/GLX_SGI_make_current_read.bc \
-	glx/bc/GLX_SGIX_fbconfig.bc glx/bc/GLX_SGIX_pbuffer.bc
-WGLBCFILES = wgl/wgl.bc
-BCFILES = $(GLBCFILES) $(GLXBCFILES) $(WGLBCFILES) gl-glx.bc gl-wgl.bc
+GLBCFILES = bc/gl/gl.bc bc/gl/core1_1.bc bc/gl/glsl1_20.bc \
+	bc/gl/GL_ARB_multitexture.bc bc/gl/GL_ARB_imaging.bc \
+	bc/gl/GL_ARB_shader_objects.bc bc/gl/GL_ARB_occlusion_query.bc \
+	bc/gl/GL_ARB_texture_compression.bc bc/gl/GL_ARB_vertex_buffer_object.bc \
+	bc/gl/GL_ARB_vertex_program.bc bc/gl/GL_ATI_draw_buffers.bc \
+	bc/gl/GL_EXT_blend_func_separate.bc bc/gl/GL_EXT_draw_buffers2.bc \
+	bc/gl/GL_EXT_draw_instanced.bc bc/gl/GL_EXT_draw_range_elements.bc \
+	bc/gl/GL_EXT_geometry_shader4.bc bc/gl/GL_EXT_multi_draw_arrays.bc \
+	bc/gl/GL_EXT_secondary_color.bc bc/gl/GL_EXT_texture3D.bc \
+	bc/gl/GL_EXT_framebuffer_object.bc bc/gl/GL_EXT_gpu_program_parameters.bc \
+	bc/gl/GL_NV_transform_feedback.bc \
+	bc/gl/alias.bc
+GLXBCFILES = bc/glx/glx.bc \
+	bc/glx/GLX_ARB_get_proc_address.bc bc/glx/GLX_SGI_make_current_read.bc \
+	bc/glx/GLX_SGIX_fbconfig.bc bc/glx/GLX_SGIX_pbuffer.bc
+WGLBCFILES = bc/wgl/wgl.bc
+BCFILES = $(GLBCFILES) $(GLXBCFILES) $(WGLBCFILES) bc/gl-glx.bc bc/gl-wgl.bc
 
 BUILT_SOURCES += src/gltables.h
 
@@ -174,9 +174,9 @@ src/gltables.c: gengl/gengl.perl $(BUDGIE_BUILT_SRCS)
 	$(PERL) $(srcdir)/gengl/gengl.perl --mode=c --header=budgielib/defines.h $(GLINCLUDES) > src/gltables.c
 src/gltables.h: gengl/gengl.perl $(BUDGIE_BUILT_SRCS)
 	$(PERL) $(srcdir)/gengl/gengl.perl --mode=header --header=budgielib/defines.h $(GLINCLUDES) > src/gltables.h
-gl/bc/alias.bc: gengl/gengl.perl
-	$(mkdir_p) gl/bc
-	$(PERL) $(srcdir)/gengl/gengl.perl --mode=alias $(GLINCLUDES) > gl/bc/alias.bc
+bc/gl/alias.bc: gengl/gengl.perl
+	$(mkdir_p) bc/gl
+	$(PERL) $(srcdir)/gengl/gengl.perl --mode=alias $(GLINCLUDES) > bc/gl/alias.bc
 
 # Filters
 filters_common_la_SOURCES = filters/common.c
@@ -299,7 +299,7 @@ EXTRA_DIST = bugle.pc.in $(BCFILES) src/data/gl.c \
 CLEANFILES = \
 	$(BUDGIE_BUILT_SRCS) \
 	src/gltables.c src/gltables.h \
-	src/data/gl.tu gl/bc/alias.bc \
+	src/data/gl.tu bc/gl/alias.bc \
 	doc/gldb.1.gz doc/bugle.3.gz \
 	gldb/.libs/gldb gldb/.libs/gldb-gui
 DISTCLEANFILES = tests/*.log
@@ -464,10 +464,28 @@ libtool: @LIBTOOL_DEPS@
 
 # Window-system interface specific files
 if BUGLE_GLWIN_GLX
-include $(top_srcdir)/glx/Makefile.am
+includebugleglxdir = $(includebugledir)/glx
+includebugleglx_HEADERS = \
+	include/bugle/glx/overrides.h \
+	include/bugle/glx/glxdump.h
+
+bugle_sources += \
+	src/glx/glxdump.c src/glx/glwin.c
+
+$(BUDGIE_BUILT_SRCS): budgie/budgie$(EXEEXT) src/data/gl.tu $(GLBCFILES) $(GLXBCFILES) $(srcdir)/bc/gl-glx.bc
+	$(mkdir_p) include/budgie
+	budgie/budgie$(EXEEXT) -I$(srcdir) -T `test -f src/data/gl.tu || echo '$(srcdir)/'`src/data/gl.tu $(srcdir)/bc/gl-glx.bc
 endif
 if BUGLE_GLWIN_WGL
-include $(top_srcdir)/wgl/Makefile.am
+includebugle_HEADERS += \
+	include/bugle/wgl/overrides.h
+
+bugle_sources += \
+	src/wgl/glwin.c
+
+$(BUDGIE_BUILT_SRCS): budgie/budgie$(EXEEXT) src/data/gl.tu $(GLBCFILES) $(WGLBCFILES) $(srcdir)/bc/gl-wgl.bc
+	$(mkdir_p) include/budgie
+	budgie/budgie$(EXEEXT) -I$(srcdir) -T `test -f src/data/gl.tu || echo '$(srcdir)/'`src/data/gl.tu $(srcdir)/bc/gl-wgl.bc
 endif
 
 if BUGLE_BINFMT_PE
