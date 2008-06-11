@@ -22,10 +22,10 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdbool.h>
+#include <bugle/glwin/glwin.h>
 #include <bugle/linkedlist.h>
 #include <bugle/stats.h>
 #include <bugle/filters.h>
-#include <bugle/glwin.h>
 #include <bugle/log.h>
 #include "xalloc.h"
 

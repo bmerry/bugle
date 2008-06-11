@@ -22,9 +22,9 @@
 #include <string.h>
 #include <errno.h>
 #include <stdio.h>
+#include <bugle/glwin/glwin.h>
 #include <bugle/filters.h>
 #include <bugle/tracker.h>
-#include <bugle/glwin.h>
 #include <bugle/xevent.h>
 #include <bugle/log.h>
 #include <bugle/stats.h>
@@ -189,6 +189,8 @@ static void initialise_core_filters(void)
 /* The Linux ABI requires that OpenGL 1.2 functions be accessible by
  * direct dynamic linking, but everything else should be accessed by
  * glXGetProcAddressARB. We deal with that here.
+ *
+ * FIXME: this is GL-specific code, should move into glwin/ dir.
  */
 static void initialise_addresses_glwin(void)
 {
@@ -204,7 +206,7 @@ static void initialise_addresses_glwin(void)
         /* gengl.perl puts the OpenGL versions first, and ordered by version
          * number.
          */
-        if (bugle_gl_function_extension(i) > BUGLE_GL_EXTENSION_ID(GL_VERSION_1_1))
+        if (bugle_api_function_extension(i) > BUGLE_GL_EXTENSION_ID(GL_VERSION_1_1))
         {
             void (BUDGIEAPI *ptr)(void) = bugle_glwin_get_proc_address(budgie_function_name(i));
             if (ptr != NULL)

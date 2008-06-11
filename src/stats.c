@@ -25,12 +25,11 @@
 #include <sys/types.h>
 #include <assert.h>
 #include <math.h>
-#include <bugle/glutils.h>
+#include <bugle/gl/glutils.h>
 #include <bugle/tracker.h>
 #include <bugle/filters.h>
 #include <bugle/log.h>
 #include <bugle/xevent.h>
-#include <bugle/glreflect.h>
 #include <bugle/stats.h>
 #include "src/statsparse.h"
 #include <bugle/hashtable.h>

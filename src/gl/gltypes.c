@@ -23,12 +23,12 @@
 #include <stdbool.h>
 #include <string.h>
 #include <budgie/reflect.h>
+#include <bugle/apireflect.h>
 #include <bugle/gl/gltypes.h>
-#include <bugle/glreflect.h>
 
 bool bugle_dump_GLenum(GLenum e, char **buffer, size_t *size)
 {
-    const char *name = bugle_gl_enum_name(e);
+    const char *name = bugle_api_enum_name(e);
     if (!name)
         budgie_snprintf_advance(buffer, size, "<unknown enum 0x%.4x>", (unsigned int) e);
     else

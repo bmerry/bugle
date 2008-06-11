@@ -24,15 +24,15 @@
 #include <string.h>
 #include <math.h>
 #include <stdbool.h>
+#include <bugle/gl/glutils.h>
+#include <bugle/glwin/glwin.h>
 #include <bugle/linkedlist.h>
 #include <bugle/misc.h>
 #include <bugle/stats.h>
 #include <bugle/filters.h>
 #include <bugle/log.h>
-#include <bugle/glutils.h>
 #include <bugle/xevent.h>
 #include <bugle/tracker.h>
-#include <bugle/glwin.h>
 #include <budgie/addresses.h>
 #include "xalloc.h"
 

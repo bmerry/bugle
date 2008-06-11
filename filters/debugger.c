@@ -31,16 +31,16 @@
 #include <errno.h>
 #include <assert.h>
 #include <GL/gl.h>
+#include <bugle/glwin/glwin.h>
+#include <bugle/gl/glstate.h>
+#include <bugle/gl/glsl.h>
+#include <bugle/gl/glutils.h>
 #include <bugle/filters.h>
-#include <bugle/glutils.h>
 #include <bugle/tracker.h>
-#include <bugle/glwin.h>
-#include <bugle/glstate.h>
-#include <bugle/glsl.h>
 #include <bugle/log.h>
 #include <bugle/hashtable.h>
 #include <bugle/misc.h>
-#include <bugle/glreflect.h>
+#include <bugle/apireflect.h>
 #include <budgie/types.h>
 #include <budgie/reflect.h>
 #include <budgie/addresses.h>
@@ -963,7 +963,7 @@ static bool debugger_error_callback(function_call *call, const callback_data *da
         gldb_protocol_send_code(out_pipe, RESP_BREAK_ERROR);
         gldb_protocol_send_code(out_pipe, start_id);
         gldb_protocol_send_string(out_pipe, resp_str);
-        gldb_protocol_send_string(out_pipe, bugle_gl_enum_name(error));
+        gldb_protocol_send_string(out_pipe, bugle_api_enum_name(error));
         free(resp_str);
         stopped = true;
         debugger_loop(call);

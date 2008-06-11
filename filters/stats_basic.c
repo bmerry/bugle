@@ -23,7 +23,7 @@
 #include <sys/types.h>
 #include <bugle/stats.h>
 #include <bugle/filters.h>
-#include <bugle/glwin.h>
+#include <bugle/glwin/glwin.h>
 
 static stats_signal *stats_basic_frames, *stats_basic_seconds;
 

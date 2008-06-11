@@ -24,7 +24,7 @@
 #include <stddef.h>
 #include <stdlib.h>
 #include <string.h>
-#include <bugle/glwin.h>
+#include <bugle/glwin/glwin.h>
 #include <bugle/filters.h>
 #include <bugle/tracker.h>
 #include <bugle/objects.h>

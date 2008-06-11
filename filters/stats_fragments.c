@@ -22,13 +22,13 @@
 #include <stdbool.h>
 #include <GL/gl.h>
 #include <GL/glext.h>
+#include <bugle/gl/glutils.h>
+#include <bugle/glwin/glwin.h>
 #include <bugle/stats.h>
 #include <bugle/filters.h>
 #include <bugle/objects.h>
 #include <bugle/tracker.h>
-#include <bugle/glwin.h>
 #include <bugle/log.h>
-#include <bugle/glutils.h>
 #include <budgie/addresses.h>
 
 #ifdef GL_ARB_occlusion_query

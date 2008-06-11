@@ -23,13 +23,13 @@
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
+#include <bugle/glwin/glwin.h>
+#include <bugle/gl/glutils.h>
 #include <bugle/hashtable.h>
 #include <bugle/tracker.h>
-#include <bugle/glwin.h>
 #include <bugle/filters.h>
 #include <bugle/objects.h>
-#include <bugle/glutils.h>
-#include <bugle/glreflect.h>
+#include <bugle/apireflect.h>
 #include <budgie/call.h>
 #include "xalloc.h"
 
@@ -71,11 +71,11 @@ static void context_init(const void *key, void *data)
     context_extensions *ce;
     const char *glver, *glexts, *glwinexts = NULL;
     int glwin_major = 0, glwin_minor = 0;
-    bugle_gl_extension i;
+    bugle_api_extension i;
     glwin_display dpy;
 
     ce = (context_extensions *) data;
-    ce->flags = XCALLOC(bugle_gl_extension_count(), bool);
+    ce->flags = XCALLOC(bugle_api_extension_count(), bool);
     bugle_hash_init(&ce->names, NULL);
 
     glexts = (const char *) CALL(glGetString)(GL_EXTENSIONS);
@@ -89,14 +89,14 @@ static void context_init(const void *key, void *data)
 
     tokenise(glexts, &ce->names);
     if (glwinexts) tokenise(glwinexts, &ce->names);
-    for (i = 0; i < bugle_gl_extension_count(); i++)
+    for (i = 0; i < bugle_api_extension_count(); i++)
     {
         const char *name, *ver;
-        name = bugle_gl_extension_name(i);
-        ver = bugle_gl_extension_version(i);
+        name = bugle_api_extension_name(i);
+        ver = bugle_api_extension_version(i);
         if (ver)
         {
-            if (!bugle_gl_extension_is_glwin(i))
+            if (bugle_api_extension_block(i) != BUGLE_API_EXTENSION_BLOCK_GLWIN)
                 ce->flags[i] = strcmp(glver, ver) >= 0;
             else if (dpy)
             {
@@ -135,14 +135,14 @@ static bool trackextensions_filter_set_initialise(filter_set *handle)
  * means "true if this extension is not present"). This is used in the
  * state tables.
  */
-bool bugle_gl_has_extension(bugle_gl_extension ext)
+bool bugle_gl_has_extension(bugle_api_extension ext)
 {
     const context_extensions *ce;
 
-    /* bugle_gl_extension_id returns -1 for unknown extensions - play it safe */
+    /* bugle_api_extension_id returns -1 for unknown extensions - play it safe */
     if (ext == NULL_EXTENSION) return false;
     if (ext < 0) return !bugle_gl_has_extension(~ext);
-    assert(ext < bugle_gl_extension_count());
+    assert(ext < bugle_api_extension_count());
     ce = (const context_extensions *) bugle_object_get_current_data(bugle_context_class, trackextensions_view);
     if (!ce) return false;
     else return ce->flags[ext];
@@ -152,8 +152,8 @@ bool bugle_gl_has_extension2(int ext, const char *name)
 {
     const context_extensions *ce;
 
-    assert(ext >= -1 && ext < bugle_gl_extension_count());
-    /* bugle_gl_extension_id returns -1 for unknown extensions - play it safe */
+    assert(ext >= -1 && ext < bugle_api_extension_count());
+    /* bugle_api_extension_id returns -1 for unknown extensions - play it safe */
     ce = (const context_extensions *) bugle_object_get_current_data(bugle_context_class, trackextensions_view);
     if (!ce) return false;
     if (ext >= 0)
@@ -165,24 +165,24 @@ bool bugle_gl_has_extension2(int ext, const char *name)
 /* The output can be inverted by passing ~ext instead of ext (which basically
  * means "true if none of these extensions are present").
  */
-bool bugle_gl_has_extension_group(bugle_gl_extension ext)
+bool bugle_gl_has_extension_group(bugle_api_extension ext)
 {
     const context_extensions *ce;
     size_t i;
-    const bugle_gl_extension *exts;
+    const bugle_api_extension *exts;
 
     if (ext < 0) return !bugle_gl_has_extension_group(~ext);
-    assert(ext < bugle_gl_extension_count());
+    assert(ext < bugle_api_extension_count());
     ce = (const context_extensions *) bugle_object_get_current_data(bugle_context_class, trackextensions_view);
     if (!ce) return false;
-    exts = bugle_gl_extension_group_members(ext);
+    exts = bugle_api_extension_group_members(ext);
 
     for (i = 0; exts[i] != NULL_EXTENSION; i++)
         if (ce->flags[exts[i]]) return true;
     return false;
 }
 
-bool bugle_gl_has_extension_group2(bugle_gl_extension ext, const char *name)
+bool bugle_gl_has_extension_group2(bugle_api_extension ext, const char *name)
 {
     return (ext == NULL_EXTENSION)
         ? bugle_gl_has_extension2(ext, name) : bugle_gl_has_extension_group(ext);

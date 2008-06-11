@@ -35,12 +35,12 @@
 #include <math.h>
 #include <sys/time.h>
 #include <GL/gl.h>
+#include <bugle/gl/glutils.h>
+#include <bugle/glwin/glwin.h>
 #include <bugle/hashtable.h>
 #include <bugle/filters.h>
-#include <bugle/glutils.h>
-#include <bugle/glreflect.h>
+#include <bugle/apireflect.h>
 #include <bugle/tracker.h>
-#include <bugle/glwin.h>
 #include <bugle/xevent.h>
 #include <bugle/log.h>
 #include <budgie/addresses.h>
@@ -773,7 +773,7 @@ static bool showextensions_initialise(filter_set *handle)
     return true;
 }
 
-static bool has_extension(const bugle_gl_extension *list, bugle_gl_extension test)
+static bool has_extension(const bugle_api_extension *list, bugle_api_extension test)
 {
     size_t i;
     for (i = 0; list[i] != NULL_EXTENSION; i++)
@@ -785,11 +785,11 @@ static bool has_extension(const bugle_gl_extension *list, bugle_gl_extension tes
 /* Clears the seen flags for everything covered by this extension, so that
  * we don't try to find a different extension to cover it.
  */
-static void mark_extension(bugle_gl_extension ext, bool *marked_extensions)
+static void mark_extension(bugle_api_extension ext, bool *marked_extensions)
 {
     budgie_function f;
     const hashptr_table_entry *e;
-    const bugle_gl_extension *exts;
+    const bugle_api_extension *exts;
 
     if (marked_extensions[ext]) return;
     marked_extensions[ext] = true;
@@ -797,13 +797,13 @@ static void mark_extension(bugle_gl_extension ext, bool *marked_extensions)
     for (f = 0; f < budgie_function_count(); f++)
         if (seen_functions[f])
         {
-            if (bugle_gl_function_extension(f) == ext)
+            if (bugle_api_function_extension(f) == ext)
                 seen_functions[f] = false;
         }
     for (e = bugle_hashptr_begin(&seen_enums); e; e = bugle_hashptr_next(&seen_enums, e))
         if (e->value)
         {
-            exts = bugle_gl_enum_extensions((GLenum) (size_t) e->key);
+            exts = bugle_api_enum_extensions((GLenum) (size_t) e->key);
             if (has_extension(exts, ext))
                 bugle_hashptr_set(&seen_enums, e->key, NULL);
         }
@@ -812,24 +812,24 @@ static void mark_extension(bugle_gl_extension ext, bool *marked_extensions)
      * We recursively mark off all prior extensions.
      */
     if (ext > 0
-        && bugle_gl_extension_version(ext) 
-        && bugle_gl_extension_version(ext - 1)
-        && bugle_gl_extension_is_glwin(ext) == bugle_gl_extension_is_glwin(ext - 1))
+        && bugle_api_extension_version(ext) 
+        && bugle_api_extension_version(ext - 1)
+        && bugle_api_extension_block(ext) == bugle_api_extension_block(ext - 1))
         mark_extension(ext - 1, marked_extensions);
 }
 
 static void showextensions_print(void *marked, FILE *logf)
 {
     bool *marked_extensions;
-    bugle_gl_extension i;
+    bugle_api_extension i;
 
     fputs("Required extensions:", logf);
     marked_extensions = (bool *) marked;
-    for (i = 0; i < bugle_gl_extension_count(); i++)
-        if (marked_extensions[i] && !bugle_gl_extension_version(i))
+    for (i = 0; i < bugle_api_extension_count(); i++)
+        if (marked_extensions[i] && !bugle_api_extension_version(i))
         {
             fputc(' ', logf);
-            fputs(bugle_gl_extension_name(i), logf);
+            fputs(bugle_api_extension_name(i), logf);
         }
 }
 
@@ -839,10 +839,10 @@ static void showextensions_shutdown(filter_set *handle)
     budgie_function f;
     const hashptr_table_entry *e;
     bool *marked_extensions;
-    const bugle_gl_extension *exts;
-    bugle_gl_extension best;
+    const bugle_api_extension *exts;
+    bugle_api_extension best;
 
-    marked_extensions = XCALLOC(bugle_gl_extension_count(), bool);
+    marked_extensions = XCALLOC(bugle_api_extension_count(), bool);
     /* We assume GL 1.1 and GLX 1.2 */
     mark_extension(BUGLE_GL_EXTENSION_ID(GL_VERSION_1_1), marked_extensions);
     mark_extension(BUGLE_GL_EXTENSION_ID(GLX_VERSION_1_2), marked_extensions);
@@ -851,14 +851,14 @@ static void showextensions_shutdown(filter_set *handle)
      */
     for (f = 0; f < budgie_function_count(); f++)
         if (seen_functions[f])
-            mark_extension(bugle_gl_function_extension(f), marked_extensions);
+            mark_extension(bugle_api_function_extension(f), marked_extensions);
     /* For enums, we try to list the highest-numbered extension first, since
      * that is the oldest and hence least-demanding version
      */
     for (e = bugle_hashptr_begin(&seen_enums); e; e = bugle_hashptr_next(&seen_enums, e))
         if (e->value)
         {
-            exts = bugle_gl_enum_extensions((GLenum) (size_t) e->key);
+            exts = bugle_api_enum_extensions((GLenum) (size_t) e->key);
             best = NULL_EXTENSION;
             for (i = 0; exts[i] != NULL_EXTENSION; i++)
                 if (exts[i] > best)
@@ -867,14 +867,15 @@ static void showextensions_shutdown(filter_set *handle)
         }
 
     /* Now identify the versions of GL and GLX. */
-    for (best = 0; best < bugle_gl_extension_count(); best++)
+    for (best = 0; best < bugle_api_extension_count(); best++)
         if (marked_extensions[best])
         {
             const char *ver;
-            ver = bugle_gl_extension_version(best);
+            ver = bugle_api_extension_version(best);
             if (ver)
             {
-                if (bugle_gl_extension_is_glwin(best))
+                /* FIXME: should be named glwin_version */
+                if (bugle_api_extension_block(best) == BUGLE_API_EXTENSION_BLOCK_GLWIN)
                     glx_version = ver;
                 else
                     gl_version = ver;

@@ -25,7 +25,7 @@
 #include <bugle/filters.h>
 #include <bugle/objects.h>
 #include <bugle/tracker.h>
-#include <bugle/glutils.h>
+#include <bugle/gl/glutils.h>
 #include <bugle/hashtable.h>
 #include <budgie/call.h>
 #include "lock.h"

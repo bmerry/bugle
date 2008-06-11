@@ -21,8 +21,8 @@
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <bugle/gl/glutils.h>
 #include <bugle/filters.h>
-#include <bugle/glutils.h>
 #include <bugle/log.h>
 #include <budgie/reflect.h>
 #include <budgie/addresses.h>

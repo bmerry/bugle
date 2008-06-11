@@ -31,12 +31,12 @@
 #include <assert.h>
 #include <GL/gl.h>
 #include <GL/glext.h>
+#include <bugle/gl/glutils.h>
+#include <bugle/gl/glsl.h>
 #include <bugle/filters.h>
-#include <bugle/glutils.h>
 #include <bugle/tracker.h>
 #include <bugle/log.h>
-#include <bugle/glreflect.h>
-#include <bugle/glsl.h>
+#include <bugle/apireflect.h>
 #include "common/threads.h"
 #include <budgie/addresses.h>
 #include <budgie/types.h>
@@ -65,7 +65,7 @@ static bool error_callback(function_call *call, const callback_data *data)
     call_error = bugle_object_get_current_data(bugle_call_class, error_call_view);
     *call_error = GL_NO_ERROR;
 
-    if (bugle_gl_extension_is_glwin(bugle_gl_function_extension(call->generic.id)))
+    if (bugle_api_extension_block(bugle_api_function_extension(call->generic.id)) != BUGLE_API_EXTENSION_BLOCK_GL)
         return true;  /* only applies to real GL calls */
     if (call->generic.group == BUDGIE_GROUP_ID(glGetError))
     {
@@ -77,7 +77,7 @@ static bool error_callback(function_call *call, const callback_data *data)
         if (*call->glGetError.retn != GL_NO_ERROR)
         {
             const char *name;
-            name = bugle_gl_enum_name(*call->glGetError.retn);
+            name = bugle_api_enum_name(*call->glGetError.retn);
             if (name)
                 bugle_log_printf("error", "callback", BUGLE_LOG_WARNING,
                                  "glGetError() returned %s when GL_NO_ERROR was expected",
@@ -155,7 +155,7 @@ static bool showerror_callback(function_call *call, const callback_data *data)
     if ((error = bugle_call_get_error_internal(data->call_object)) != GL_NO_ERROR)
     {
         const char *name;
-        name = bugle_gl_enum_name(error);
+        name = bugle_api_enum_name(error);
         if (name)
             bugle_log_printf("showerror", "gl", BUGLE_LOG_NOTICE,
                              "%s in %s", name,
@@ -263,7 +263,7 @@ static void checks_texture_complete_fail(int unit, GLenum target, const char *re
 {
     const char *target_name;
 
-    target_name = bugle_gl_enum_name(target);
+    target_name = bugle_api_enum_name(target);
     if (!target_name) target_name = "<unknown target>";
     bugle_log_printf("checks", "texture", BUGLE_LOG_NOTICE,
                      "GL_TEXTURE%d / %s: incomplete texture (%s)",

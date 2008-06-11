@@ -22,12 +22,12 @@
 #include <string.h>
 #include <assert.h>
 #include <bugle/filters.h>
-#include <bugle/glutils.h>
-#include <bugle/glwintypes.h>
+#include <bugle/gl/glutils.h>
+#include <bugle/glwin/glwintypes.h>
 #include <bugle/glx/glxdump.h>
 #include <bugle/tracker.h>
 #include <bugle/log.h>
-#include <bugle/glreflect.h>
+#include <bugle/apireflect.h>
 #include <budgie/types.h>
 #include <budgie/reflect.h>
 #include <budgie/call.h>

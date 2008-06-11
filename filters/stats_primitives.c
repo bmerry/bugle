@@ -22,12 +22,12 @@
 #include <assert.h>
 #include <stdbool.h>
 #include <stdlib.h>
+#include <bugle/gl/glutils.h>
 #include <bugle/stats.h>
 #include <bugle/filters.h>
 #include <bugle/objects.h>
 #include <bugle/tracker.h>
 #include <bugle/log.h>
-#include <bugle/glutils.h>
 #include <budgie/types.h>
 
 static object_view stats_primitives_view;  /* begin/end counting */

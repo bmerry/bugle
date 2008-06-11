@@ -19,7 +19,7 @@
 # include <config.h>
 #endif
 #include <bugle/porting.h>
-#include <bugle/glwintypes.h>
+#include <bugle/glwin/glwintypes.h>
 #include <budgie/reflect.h>
 
 bool bugle_dump_glwin_drawable(glwin_drawable d, char **buffer, size_t *size)

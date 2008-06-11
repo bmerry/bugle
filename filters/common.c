@@ -20,8 +20,8 @@
 #endif
 #include <stdbool.h>
 #include <bugle/filters.h>
-#include <bugle/glutils.h>
-#include <bugle/glwin.h>
+#include <bugle/gl/glutils.h>
+#include <bugle/glwin/glwin.h>
 #include <budgie/types.h>
 #include <budgie/addresses.h>
 #include <budgie/reflect.h>

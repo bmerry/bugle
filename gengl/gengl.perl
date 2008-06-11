@@ -168,7 +168,7 @@ my %function_non_aliases = (
 );
 
 # Enumerants that we don't want to be the chosen return for
-# bugle_gl_enum_name, unless there are no other options
+# bugle_api_enum_name, unless there are no other options
 my $enum_bad_name_regex = qr/^(?:
 GL_ATTRIB_ARRAY_SIZE_NV
 |GL_ATTRIB_ARRAY_STRIDE_NV
@@ -285,7 +285,7 @@ sub load_ids($)
 sub extension_write_group($$)
 {
     my ($ext, $list) = @_;
-    print "static const bugle_gl_extension extension_group_" . $ext . "[] =\n";
+    print "static const bugle_api_extension extension_group_" . $ext . "[] =\n";
     print "{\n";
     print map { "    BUGLE_" . $_ . ",\n"} @$list;
     print "    NULL_EXTENSION\n";
@@ -424,26 +424,27 @@ elsif ($mode eq 'header')
 #ifdef HAVE_CONFIG_H
 # include <config.h>
 #endif
-#include <bugle/glreflect.h>
+#include <bugle/apireflect.h>
 
 typedef struct
 {
     const char *version;
     const char *name;
-    const bugle_gl_extension *group;
-} bugle_gl_extension_data;
+    const bugle_api_extension *group;
+    api_block block;
+} bugle_api_extension_data;
 
 typedef struct
 {
     GLenum value;
     const char *name;
-    const bugle_gl_extension *extensions;
-} bugle_gl_enum_data;
+    const bugle_api_extension *extensions;
+} bugle_api_enum_data;
 
 typedef struct
 {
-    bugle_gl_extension extension;
-} bugle_gl_function_data;
+    bugle_api_extension extension;
+} bugle_api_function_data;
 
 EOF
     $index = 0;
@@ -452,13 +453,13 @@ EOF
         printf "#define BUGLE_%s %d\n", $ext, $index;
         $index++;
     }
-    printf "#define BUGLE_GL_EXTENSION_COUNT %d\n\n", $index;
-    printf "#define BUGLE_GL_ENUM_COUNT %d\n", scalar(@enums);
-    print "extern const bugle_gl_extension_data _bugle_gl_extension_table[BUGLE_GL_EXTENSION_COUNT];\n";
-    print "extern const bugle_gl_function_data _bugle_gl_function_table[];\n";
-    print "extern const bugle_gl_enum_data _bugle_gl_enum_table[];\n";
+    printf "#define BUGLE_API_EXTENSION_COUNT %d\n\n", $index;
+    printf "#define BUGLE_API_ENUM_COUNT %d\n", scalar(@enums);
+    print "extern const bugle_api_extension_data _bugle_api_extension_table[BUGLE_API_EXTENSION_COUNT];\n";
+    print "extern const bugle_api_function_data _bugle_api_function_table[];\n";
+    print "extern const bugle_api_enum_data _bugle_api_enum_table[];\n";
     print <<'EOF';
-#endif /* BUGLE_SRC_GLTABLES_H */
+#endif /* BUGLE_SRC_APITABLES_H */
 EOF
 }
 elsif ($mode eq 'c')
@@ -472,8 +473,8 @@ elsif ($mode eq 'c')
 #ifdef HAVE_CONFIG_H
 # include <config.h>
 #endif
-#include <bugle/glreflect.h>
-#include "src/gltables.h"
+#include <bugle/apireflect.h>
+#include "src/apitables.h"
 EOF
     foreach my $ext (@extensions)
     {
@@ -494,17 +495,22 @@ EOF
         extension_write_group($ext, \@list);
     }
 
-    print "const bugle_gl_extension_data _bugle_gl_extension_table[] =\n{\n";
+    print "const bugle_api_extension_data _bugle_api_extension_table[] =\n{\n";
     $first = 1;
     foreach my $ext (@extensions, keys %extension_groups)
     {
         my $ver = ($ext =~ /^GLX?_VERSION_([0-9]+)_([0-9]+)/) ? "\"$1.$2\"" : "NULL";
+        my $block = 'BUGLE_API_EXTENSION_BLOCK_GLWIN';
+        if ($ext =~ /^GL_/)
+        {
+            $block = 'BUGLE_API_EXTENSION_BLOCK_GL';
+        }
         print ",\n" if !$first; $first = 0;
-        printf "    { %s, \"%s\", extension_group_%s }", $ver, $ext, $ext;
+        printf "    { %s, \"%s\", extension_group_%s, %s }", $ver, $ext, $ext, $block;
     }
     print "\n};\n\n";
 
-    print "const bugle_gl_function_data _bugle_gl_function_table[] =\n{\n";
+    print "const bugle_api_function_data _bugle_api_function_table[] =\n{\n";
     $first = 1;
     for (my $id = 0; $id < scalar(@func_ids); $id++)
     {
@@ -521,7 +527,7 @@ EOF
 
     foreach my $enum (@enums)
     {
-        print "static const bugle_gl_extension enum_extensions_$enum->[1]" . "[] =\n{\n";
+        print "static const bugle_api_extension enum_extensions_$enum->[1]" . "[] =\n{\n";
         $first = 1;
         # Again, Mesa headers cause us to think some things are in 1.1 when
         # they're also defined elsewhere.
@@ -537,7 +543,7 @@ EOF
         }
         print "    NULL_EXTENSION\n};\n\n";
     }
-    print "const bugle_gl_enum_data _bugle_gl_enum_table[] =\n{\n";
+    print "const bugle_api_enum_data _bugle_api_enum_table[] =\n{\n";
     foreach my $enum (@enums)
     {
         my ($value, $name, $exts) = @$enum;

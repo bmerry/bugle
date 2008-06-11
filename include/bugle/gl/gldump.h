@@ -45,6 +45,9 @@ int bugle_count_gl(budgie_function func, GLenum token);
 #ifdef GL_ARB_vertex_program
 int bugle_count_program_string(GLenum target, GLenum pname);
 #endif
+#ifdef GL_ARB_shader_objects
+int bugle_count_attached_objects(GLhandleARB program, GLsizei max);
+#endif
 
 bool bugle_dump_convert(GLenum pname, const void *value,
                         budgie_type in_type, char **buffer, size_t *size);

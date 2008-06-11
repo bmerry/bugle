@@ -29,9 +29,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <bugle/tracker.h>
-#include <bugle/glutils.h>
+#include <bugle/gl/glutils.h>
 #include <budgie/call.h>
-#include "src/gltables.h"
+#include "src/apitables.h"
 #include "xalloc.h"
 
 #ifdef GL_VERSION_2_0

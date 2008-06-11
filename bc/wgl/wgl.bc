@@ -1,6 +1,6 @@
 HEADER windows.h
 HEADER GL/wglext.h
-HEADER bugle/glwintypes.h
+HEADER bugle/glwin/glwintypes.h
 LIMIT wgl.*
 
 TYPE TYPE HDC TYPE_P6GLvoid

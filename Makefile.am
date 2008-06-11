@@ -19,25 +19,27 @@ EXTRA_PROGRAMS = gldb/gldb gldb/gldb-gui
 
 includebugledir = $(includedir)/bugle/bugle
 includebuglegldir = $(includebugledir)/gl
+includebugleglwindir = $(includebugledir)/glwin
 includebudgiedir = $(includedir)/bugle/budgie
 includebugle_HEADERS = \
 	include/bugle/hashtable.h \
 	include/bugle/linkedlist.h \
 	include/bugle/misc.h \
 	include/bugle/filters.h \
-	include/bugle/glsl.h \
-	include/bugle/glstate.h \
-	include/bugle/glutils.h \
-	include/bugle/glreflect.h \
+	include/bugle/apireflect.h \
 	include/bugle/log.h \
 	include/bugle/objects.h \
 	include/bugle/stats.h \
 	include/bugle/tracker.h \
 	include/bugle/xevent.h \
-	include/bugle/porting.h \
-	include/bugle/glwintypes.h \
-	include/bugle/glwin.h
+	include/bugle/porting.h
+includebugleglwin_HEADERS = \
+	include/bugle/glwin/glwintypes.h \
+	include/bugle/glwin/glwin.h
 includebuglegl_HEADERS = \
+	include/bugle/gl/glsl.h \
+	include/bugle/gl/glstate.h \
+	include/bugle/gl/glutils.h \
 	include/bugle/gl/overrides.h \
 	include/bugle/gl/gltypes.h \
 	include/bugle/gl/gldump.h
@@ -105,16 +107,15 @@ budgie/bclexer.cc: budgie/bclexer.ll
 BUILT_SOURCES = budgie/bcparser.h
 
 src_libbugleutils_la_SOURCES = \
-	src/gl/gltypes.c src/glreflect.c \
-	src/glwintypes.c \
+	src/gl/gltypes.c src/apireflect.c \
+	src/glwin/glwintypes.c \
 	common/misc.c \
-	common/protocol.h common/protocol.c common/protocol-win32.c\
-	common/hashtable.c include/bugle/hashtable.h \
-	common/linkedlist.c include/bugle/linkedlist.h \
+	common/protocol.h common/protocol.c common/protocol-win32.c \
+	common/hashtable.c common/linkedlist.c \
 	budgielib/internal.c budgielib/internal.h budgielib/reflect.c
 nodist_src_libbugleutils_la_SOURCES = \
 	budgielib/defines.h budgielib/tables.c \
-	src/gltables.c src/gltables.h
+	src/apitables.c src/apitables.h
 src_libbugleutils_la_LIBADD = $(LTLIBOBJS) $(LTLIBTHREAD) $(LTLIBINTL) lib/libgnu.la
 src_libbugleutils_la_LDFLAGS = -no-undefined -thread-safe -export-dynamic $(SYMBOLFLAGS) -version-info 5:1:1
 
@@ -122,15 +123,17 @@ src_libbugleutils_la_LDFLAGS = -no-undefined -thread-safe -export-dynamic $(SYMB
 # library opengl32.dll. Here we just define the inputs
 bugle_sources = \
 	src/confparse.y src/conflex.l src/conffile.h \
-	src/glutils.c src/glstate.c src/glsl.c src/interceptor.c \
+	src/interceptor.c \
 	src/dlopen.c src/dlopen.h src/filters.c \
-	src/trackcontext.c src/trackdisplaylist.c src/trackobjects.c \
-	src/trackbeginend.c src/trackextensions.c \
+	src/trackextensions.c \
 	src/stats.c src/statslex.l src/statsparse.y \
 	src/log.c src/objects.c \
-	src/gl/gldump.c src/xevent.c \
+	src/xevent.c \
 	budgielib/addresses.c budgielib/lib.h \
-	common/threads.h
+	common/threads.h \
+	src/gl/glutils.c src/gl/glstate.c src/gl/glsl.c src/gl/gldump.c \
+	src/glwin/trackcontext.c src/gl/trackdisplaylist.c src/gl/trackobjects.c \
+	src/gl/trackbeginend.c
 bugle_sources_nodist = \
 	budgielib/lib.c
 bugle_libadd = $(LIBLTDL) src/libbugleutils.la $(GL_LIBS) $(LTLIBTHREAD) $(LTLIBINTL) lib/libgnu.la
@@ -143,8 +146,9 @@ BUILT_SOURCES += $(BUDGIE_BUILT_SRCS)
 
 # Generated files that generate other files
 
+budgie_overrides = include/bugle/gl/overrides.h include/bugle/glx/overrides.h
 # ccache doesn't play nice with -fdump-translation-unit, so we disable it
-src/data/gl.tu: src/data/gl.c include/bugle/gl/overrides.h include/bugle/glx/overrides.h
+src/data/gl.tu: src/data/gl.c $(budgie_overrides)
 	$(mkdir_p) src/data
 	CCACHE_DISABLE=1 $(COMPILE) -fdump-translation-unit -c $(srcdir)/src/data/gl.c -o src/data/gl.o
 	rm -f src/data/gl.o
@@ -168,12 +172,12 @@ GLXBCFILES = bc/glx/glx.bc \
 WGLBCFILES = bc/wgl/wgl.bc
 BCFILES = $(GLBCFILES) $(GLXBCFILES) $(WGLBCFILES) bc/gl-glx.bc bc/gl-wgl.bc
 
-BUILT_SOURCES += src/gltables.h
+BUILT_SOURCES += src/apitables.h
 
-src/gltables.c: gengl/gengl.perl $(BUDGIE_BUILT_SRCS)
-	$(PERL) $(srcdir)/gengl/gengl.perl --mode=c --header=budgielib/defines.h $(GLINCLUDES) > src/gltables.c
-src/gltables.h: gengl/gengl.perl $(BUDGIE_BUILT_SRCS)
-	$(PERL) $(srcdir)/gengl/gengl.perl --mode=header --header=budgielib/defines.h $(GLINCLUDES) > src/gltables.h
+src/apitables.c: gengl/gengl.perl $(BUDGIE_BUILT_SRCS)
+	$(PERL) $(srcdir)/gengl/gengl.perl --mode=c --header=budgielib/defines.h $(GLINCLUDES) > src/apitables.c
+src/apitables.h: gengl/gengl.perl $(BUDGIE_BUILT_SRCS)
+	$(PERL) $(srcdir)/gengl/gengl.perl --mode=header --header=budgielib/defines.h $(GLINCLUDES) > src/apitables.h
 bc/gl/alias.bc: gengl/gengl.perl
 	$(mkdir_p) bc/gl
 	$(PERL) $(srcdir)/gengl/gengl.perl --mode=alias $(GLINCLUDES) > bc/gl/alias.bc
@@ -298,7 +302,7 @@ EXTRA_DIST = bugle.pc.in $(BCFILES) src/data/gl.c \
 # but for some reason does not.
 CLEANFILES = \
 	$(BUDGIE_BUILT_SRCS) \
-	src/gltables.c src/gltables.h \
+	src/apitables.c src/apitables.h \
 	src/data/gl.tu bc/gl/alias.bc \
 	doc/gldb.1.gz doc/bugle.3.gz \
 	gldb/.libs/gldb gldb/.libs/gldb-gui
@@ -468,7 +472,8 @@ includebugleglxdir = $(includebugledir)/glx
 includebugleglx_HEADERS = \
 	include/bugle/glx/overrides.h \
 	include/bugle/glx/glxdump.h
-
+budgie_overrides += \
+	include/bugle/glx/overrides.h
 bugle_sources += \
 	src/glx/glxdump.c src/glx/glwin.c
 
@@ -477,9 +482,11 @@ $(BUDGIE_BUILT_SRCS): budgie/budgie$(EXEEXT) src/data/gl.tu $(GLBCFILES) $(GLXBC
 	budgie/budgie$(EXEEXT) -I$(srcdir) -T `test -f src/data/gl.tu || echo '$(srcdir)/'`src/data/gl.tu $(srcdir)/bc/gl-glx.bc
 endif
 if BUGLE_GLWIN_WGL
-includebugle_HEADERS += \
+includebuglewgldir = $(includebugledir)/wgl
+includebuglewgl_HEADERS = \
 	include/bugle/wgl/overrides.h
-
+budgie_overrides += \
+	include/bugle/wgl/overrides.h
 bugle_sources += \
 	src/wgl/glwin.c
 

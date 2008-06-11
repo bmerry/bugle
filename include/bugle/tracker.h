@@ -24,10 +24,10 @@
 #include <stddef.h>
 #include <GL/gl.h>
 #include <stdbool.h>
-#include <bugle/glwin.h>
+#include <bugle/glwin/glwin.h>
 #include <bugle/filters.h>
 #include <bugle/objects.h>
-#include <bugle/glreflect.h>
+#include <bugle/apireflect.h>
 #include <budgie/macros.h>
 
 typedef enum
@@ -100,17 +100,17 @@ void bugle_trackobjects_walk(bugle_trackobjects_type type,
  */
 GLenum bugle_trackobjects_get_target(bugle_trackobjects_type type, GLuint id);
 
-bool bugle_gl_has_extension(bugle_gl_extension ext);
-bool bugle_gl_has_extension_group(bugle_gl_extension ext);
+bool bugle_gl_has_extension(bugle_api_extension ext);
+bool bugle_gl_has_extension_group(bugle_api_extension ext);
 /* More robust versions: if ext == -1, checks for the string in a hash table) */
-bool bugle_gl_has_extension2(bugle_gl_extension ext, const char *name);
-bool bugle_gl_has_extension_group2(bugle_gl_extension ext, const char *name);
+bool bugle_gl_has_extension2(bugle_api_extension ext, const char *name);
+bool bugle_gl_has_extension_group2(bugle_api_extension ext, const char *name);
 
 /* The BUGLE_ prefix is built up across several macros because using ##
  * inhibits macro expansion.
  */
 #define _BUGLE_GL_EXTENSION_ID(symbol, name) \
-    _BUDGIE_ID_FULL(bugle_gl_extension, bugle_gl_extension_id, BUGLE ## symbol, name)
+    _BUDGIE_ID_FULL(bugle_api_extension, bugle_api_extension_id, BUGLE ## symbol, name)
 #define BUGLE_GL_EXTENSION_ID(ext) \
     _BUGLE_GL_EXTENSION_ID(_ ## ext, #ext)
 #define BUGLE_GL_HAS_EXTENSION(ext) \

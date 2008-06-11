@@ -18,7 +18,7 @@
 #if HAVE_CONFIG_H
 # include <config.h>
 #endif
-#include <bugle/glwin.h>
+#include <bugle/glwin/glwin.h>
 #include <bugle/filters.h>
 #include <budgie/call.h>
 #include <X11/Xlib.h>

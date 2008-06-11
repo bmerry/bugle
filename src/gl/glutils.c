@@ -23,12 +23,12 @@
 #include <stdlib.h>
 #include <GL/gl.h>
 #include <assert.h>
-#include <bugle/filters.h>
-#include <bugle/glutils.h>
-#include <bugle/tracker.h>
+#include <bugle/gl/glutils.h>
 #include <bugle/gl/gltypes.h>
+#include <bugle/apireflect.h>
+#include <bugle/filters.h>
+#include <bugle/tracker.h>
 #include <bugle/log.h>
-#include <bugle/glreflect.h>
 #include <budgie/call.h>
 #include "budgielib/defines.h"
 
@@ -63,7 +63,7 @@ void bugle_end_internal_render(const char *name, bool warn)
         if (warn)
         {
             const char *error_name;
-            error_name = bugle_gl_enum_name(error);
+            error_name = bugle_api_enum_name(error);
             if (error_name)
                 bugle_log_printf("glutils", "internalrender", BUGLE_LOG_WARNING,
                                  "%s internally generated %s",

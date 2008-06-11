@@ -23,7 +23,7 @@
 #endif
 #include <bugle/filters.h>
 #include <bugle/porting.h>
-#include <bugle/glwintypes.h>
+#include <bugle/glwin/glwintypes.h>
 #include <budgie/types2.h>
 #include <stdbool.h>
 
