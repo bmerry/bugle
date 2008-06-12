@@ -1,5 +1,5 @@
 /*  BuGLe: an OpenGL debugging tool
- *  Copyright (C) 2004-2006  Bruce Merry
+ *  Copyright (C) 2004-2006, 2008  Bruce Merry
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -26,8 +26,10 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include <GL/gl.h>
+#include <bugle/glwin/trackcontext.h>
+#include <bugle/gl/trackbeginend.h>
+#include <bugle/gl/trackobjects.h>
 #include <bugle/filters.h>
-#include <bugle/tracker.h>
 #include <bugle/objects.h>
 #include <budgie/call.h>
 #include <budgie/types.h>
@@ -77,7 +79,7 @@ static bool trackbeginend_glEnd(function_call *call, const callback_data *data)
     return true;
 }
 
-bool bugle_in_begin_end(void)
+bool bugle_gl_in_begin_end(void)
 {
     bool *begin_end;
 
@@ -85,7 +87,7 @@ bool bugle_in_begin_end(void)
     return !begin_end || *begin_end;
 }
 
-void bugle_filter_post_queries_begin_end(const char *name)
+void bugle_gl_filter_post_queries_begin_end(const char *name)
 {
     bugle_filter_order("trackbeginend", name);
 }

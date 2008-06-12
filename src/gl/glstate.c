@@ -39,12 +39,13 @@
 #include <inttypes.h>
 #include "xalloc.h"
 #include "xvasprintf.h"
-#include <bugle/tracker.h>
 #include <bugle/log.h>
 #include <bugle/misc.h>
 #include <bugle/gl/glsl.h>
 #include <bugle/gl/glstate.h>
 #include <bugle/gl/glutils.h>
+#include <bugle/gl/trackobjects.h>
+#include <bugle/gl/trackextensions.h>
 #include <budgie/types.h>
 #include <budgie/reflect.h>
 #include <budgie/call.h>

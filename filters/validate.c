@@ -31,10 +31,12 @@
 #include <assert.h>
 #include <GL/gl.h>
 #include <GL/glext.h>
+#include <bugle/glwin/trackcontext.h>
 #include <bugle/gl/glutils.h>
 #include <bugle/gl/glsl.h>
+#include <bugle/gl/trackbeginend.h>
+#include <bugle/gl/trackextensions.h>
 #include <bugle/filters.h>
-#include <bugle/tracker.h>
 #include <bugle/log.h>
 #include <bugle/apireflect.h>
 #include "common/threads.h"
@@ -87,7 +89,7 @@ static bool error_callback(function_call *call, const callback_data *data)
                                  "glGetError() returned %#08x when GL_NO_ERROR was expected",
                                  (unsigned int) *call->glGetError.retn);
         }
-        else if (bugle_in_begin_end())
+        else if (bugle_gl_in_begin_end())
         {
             *call_error = GL_INVALID_OPERATION;
         }
@@ -97,7 +99,7 @@ static bool error_callback(function_call *call, const callback_data *data)
             *stored_error = GL_NO_ERROR;
         }
     }
-    else if (!bugle_in_begin_end())
+    else if (!bugle_gl_in_begin_end())
     {
         /* Note: we deliberately don't call begin_internal_render here,
          * since it will beat us to calling glGetError().
@@ -134,7 +136,7 @@ static bool error_initialise(filter_set *handle)
     f = bugle_filter_new(handle, "error");
     bugle_filter_catches_all(f, true, error_callback);
     bugle_filter_order("invoke", "error");
-    bugle_filter_post_queries_begin_end("error");
+    bugle_gl_filter_post_queries_begin_end("error");
     /* We don't call filter_post_renders, because that would make the
      * error filter-set depend on itself.
      */
@@ -588,7 +590,7 @@ static void checks_buffer_vbo(size_t size, const void *data,
     size_t end;
 
     checks_error_vbo = true;
-    assert(buffer && !bugle_in_begin_end() && BUGLE_GL_HAS_EXTENSION(GL_ARB_vertex_buffer_object));
+    assert(buffer && !bugle_gl_in_begin_end() && BUGLE_GL_HAS_EXTENSION(GL_ARB_vertex_buffer_object));
 
     CALL(glGetIntegerv)(GL_ARRAY_BUFFER_BINDING_ARB, &tmp);
     CALL(glBindBufferARB)(GL_ARRAY_BUFFER_ARB, buffer);
@@ -606,7 +608,7 @@ static void checks_buffer(size_t size, const void *data,
 {
 #ifdef GL_ARB_vertex_buffer_object
     GLint id = 0;
-    if (!bugle_in_begin_end() && BUGLE_GL_HAS_EXTENSION(GL_ARB_vertex_buffer_object))
+    if (!bugle_gl_in_begin_end() && BUGLE_GL_HAS_EXTENSION(GL_ARB_vertex_buffer_object))
         CALL(glGetIntegerv)(binding, &id);
     if (id) checks_buffer_vbo(size, data, id);
     else
@@ -703,7 +705,7 @@ static void checks_generic_attribute(size_t first, size_t count,
         size = (count - 1) * stride + group_size;
 #ifdef GL_ARB_vertex_buffer_object
         id = 0;
-        if (!bugle_in_begin_end() && BUGLE_GL_HAS_EXTENSION(GL_ARB_vertex_buffer_object))
+        if (!bugle_gl_in_begin_end() && BUGLE_GL_HAS_EXTENSION(GL_ARB_vertex_buffer_object))
             CALL(glGetVertexAttribivARB)(number, GL_VERTEX_ATTRIB_ARRAY_BUFFER_BINDING_ARB, &id);
         if (id) checks_buffer_vbo(size, cptr, id);
         else
@@ -817,7 +819,7 @@ static void checks_min_max(GLsizei count, GLenum gltype, const GLvoid *indices,
         && gltype != GL_UNSIGNED_SHORT
         && gltype != GL_UNSIGNED_BYTE)
         return; /* It will just generate a GL error and be ignored */
-    if (bugle_in_begin_end()) return;
+    if (bugle_gl_in_begin_end()) return;
     type = bugle_gl_type_to_type(gltype);
 
     /* Check for element array buffer */
@@ -1085,7 +1087,7 @@ static bool checks_glMultiDrawElements(function_call *call, const callback_data 
  */
 static bool checks_no_begin_end(function_call *call, const callback_data *data)
 {
-    if (bugle_in_begin_end())
+    if (bugle_gl_in_begin_end())
     {
         bugle_log_printf("checks", "error", BUGLE_LOG_NOTICE,
                          "%s called inside glBegin/glEnd; call will be ignored.",
@@ -1100,7 +1102,7 @@ static bool checks_begin_end(function_call *call, const callback_data *data)
 {
     const char *name;
 
-    if (!bugle_in_begin_end())
+    if (!bugle_gl_in_begin_end())
     {
         /* VertexAttrib commands are ok if they are not affecting attrib 0 */
         name = budgie_function_name(call->generic.id);

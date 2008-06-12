@@ -87,4 +87,7 @@ void bugle_glwin_filter_catches_destroy_context(filter *f, bool inactive, filter
 void bugle_glwin_filter_catches_make_current(filter *f, bool inactive, filter_callback callback);
 void bugle_glwin_filter_catches_swap_buffers(filter *f, bool inactive, filter_callback callback);
 
+/* Fills in function pointer table for extensions */
+void bugle_function_address_initialise_extra(void);
+
 #endif /* !BUGLE_GLWIN_H */

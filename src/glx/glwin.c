@@ -20,6 +20,7 @@
 #endif
 #include <bugle/glwin/glwin.h>
 #include <bugle/filters.h>
+#include <bugle/apireflect.h>
 #include <budgie/call.h>
 #include <X11/Xlib.h>
 #include <stdbool.h>
@@ -221,4 +222,26 @@ void bugle_glwin_filter_catches_make_current(filter *f, bool inactive, filter_ca
 void bugle_glwin_filter_catches_swap_buffers(filter *f, bool inactive, filter_callback callback)
 {
     bugle_filter_catches(f, "glXSwapBuffers", inactive, callback);
+}
+
+/* The Linux ABI requires that OpenGL 1.2 functions be accessible by
+ * direct dynamic linking, but everything else should be accessed by
+ * glXGetProcAddressARB. We deal with that here.
+ */
+void bugle_function_address_initialise_extra(void)
+{
+    size_t i;
+
+    for (i = 0; i < budgie_function_count(); i++)
+    {
+        /* gengl.perl puts the OpenGL versions first, and ordered by version
+         * number.
+         */
+        if (bugle_api_function_extension(i) > BUGLE_API_EXTENSION_ID(GL_VERSION_1_2))
+        {
+            void (BUDGIEAPI *ptr)(void) = bugle_glwin_get_proc_address(budgie_function_name(i));
+            if (ptr != NULL)
+                budgie_function_address_set_real(i, bugle_glwin_get_proc_address(budgie_function_name(i)));
+        }
+    }
 }

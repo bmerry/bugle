@@ -24,9 +24,10 @@
 #include <string.h>
 #include <assert.h>
 #include <bugle/glwin/glwin.h>
+#include <bugle/glwin/trackcontext.h>
 #include <bugle/gl/glutils.h>
+#include <bugle/gl/trackextensions.h>
 #include <bugle/hashtable.h>
-#include <bugle/tracker.h>
 #include <bugle/filters.h>
 #include <bugle/objects.h>
 #include <bugle/apireflect.h>

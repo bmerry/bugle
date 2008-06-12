@@ -30,19 +30,23 @@ includebugle_HEADERS = \
 	include/bugle/log.h \
 	include/bugle/objects.h \
 	include/bugle/stats.h \
-	include/bugle/tracker.h \
 	include/bugle/xevent.h \
 	include/bugle/porting.h
 includebugleglwin_HEADERS = \
 	include/bugle/glwin/glwintypes.h \
-	include/bugle/glwin/glwin.h
+	include/bugle/glwin/glwin.h \
+	include/bugle/glwin/trackcontext.h
 includebuglegl_HEADERS = \
 	include/bugle/gl/glsl.h \
 	include/bugle/gl/glstate.h \
 	include/bugle/gl/glutils.h \
 	include/bugle/gl/overrides.h \
 	include/bugle/gl/gltypes.h \
-	include/bugle/gl/gldump.h
+	include/bugle/gl/gldump.h \
+	include/bugle/gl/trackbeginend.h \
+	include/bugle/gl/trackdisplaylist.h \
+	include/bugle/gl/trackobjects.h \
+	include/bugle/gl/trackextensions.h
 includebudgie_HEADERS = \
 	include/budgie/addresses.h \
 	include/budgie/basictypes.h \
@@ -125,7 +129,6 @@ bugle_sources = \
 	src/confparse.y src/conflex.l src/conffile.h \
 	src/interceptor.c \
 	src/dlopen.c src/dlopen.h src/filters.c \
-	src/trackextensions.c \
 	src/stats.c src/statslex.l src/statsparse.y \
 	src/log.c src/objects.c \
 	src/xevent.c \
@@ -133,7 +136,7 @@ bugle_sources = \
 	common/threads.h \
 	src/gl/glutils.c src/gl/glstate.c src/gl/glsl.c src/gl/gldump.c \
 	src/glwin/trackcontext.c src/gl/trackdisplaylist.c src/gl/trackobjects.c \
-	src/gl/trackbeginend.c
+	src/gl/trackextensions.c src/gl/trackbeginend.c
 bugle_sources_nodist = \
 	budgielib/lib.c
 bugle_libadd = $(LIBLTDL) src/libbugleutils.la $(GL_LIBS) $(LTLIBTHREAD) $(LTLIBINTL) lib/libgnu.la

@@ -23,10 +23,9 @@
 #endif
 #include <stddef.h>
 #include <stdbool.h>
+#include <bugle/glwin/glwintypes.h>
 #include <bugle/filters.h>
 #include <bugle/objects.h>
-#include <bugle/glwin.h>
-#include <budgie/macros.h>
 
 extern object_class *bugle_context_class, *bugle_namespace_class;
 
@@ -36,7 +35,7 @@ extern object_class *bugle_context_class, *bugle_namespace_class;
  * best for querying object state, the latter for creating internal objects
  * so as not to pollute the primary namespace.
  */
-bugle_glwin_context bugle_get_aux_context(bool shared);
+glwin_context bugle_get_aux_context(bool shared);
 
 /* Draws text at the specified location. The current colour is used to
  * render the text. The text is rendered with alpha, so alpha-test or
@@ -51,7 +50,7 @@ bugle_glwin_context bugle_get_aux_context(bool shared);
  * - must be inside begin_internal_render/end_internal_render
  * - there must be room for one push on the attribute stack
  */
-void bugle_text_render(const char *msg, int x, int y);
+void bugle_gl_text_render(const char *msg, int x, int y);
 
 /* Used by the initialisation code */
 void trackcontext_initialise(void);

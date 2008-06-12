@@ -1,5 +1,5 @@
 /*  BuGLe: an OpenGL debugging tool
- *  Copyright (C) 2004-2007  Bruce Merry
+ *  Copyright (C) 2004-2008  Bruce Merry
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -35,12 +35,13 @@
 #include <math.h>
 #include <sys/time.h>
 #include <GL/gl.h>
-#include <bugle/gl/glutils.h>
 #include <bugle/glwin/glwin.h>
+#include <bugle/glwin/trackcontext.h>
+#include <bugle/gl/glutils.h>
+#include <bugle/gl/trackextensions.h>
 #include <bugle/hashtable.h>
 #include <bugle/filters.h>
 #include <bugle/apireflect.h>
-#include <bugle/tracker.h>
 #include <bugle/xevent.h>
 #include <bugle/log.h>
 #include <budgie/addresses.h>
@@ -844,8 +845,8 @@ static void showextensions_shutdown(filter_set *handle)
 
     marked_extensions = XCALLOC(bugle_api_extension_count(), bool);
     /* We assume GL 1.1 and GLX 1.2 */
-    mark_extension(BUGLE_GL_EXTENSION_ID(GL_VERSION_1_1), marked_extensions);
-    mark_extension(BUGLE_GL_EXTENSION_ID(GLX_VERSION_1_2), marked_extensions);
+    mark_extension(BUGLE_API_EXTENSION_ID(GL_VERSION_1_1), marked_extensions);
+    mark_extension(BUGLE_API_EXTENSION_ID(GLX_VERSION_1_2), marked_extensions);
     /* Functions generally tell us about specific extensions, so do them
      * first.
      */

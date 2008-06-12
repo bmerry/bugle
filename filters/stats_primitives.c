@@ -1,5 +1,5 @@
 /*  BuGLe: an OpenGL debugging tool
- *  Copyright (C) 2004-2007  Bruce Merry
+ *  Copyright (C) 2004-2008  Bruce Merry
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -22,11 +22,13 @@
 #include <assert.h>
 #include <stdbool.h>
 #include <stdlib.h>
+#include <bugle/glwin/trackcontext.h>
+#include <bugle/gl/trackbeginend.h>
+#include <bugle/gl/trackdisplaylist.h>
 #include <bugle/gl/glutils.h>
 #include <bugle/stats.h>
 #include <bugle/filters.h>
 #include <bugle/objects.h>
-#include <bugle/tracker.h>
 #include <bugle/log.h>
 #include <budgie/types.h>
 
@@ -103,7 +105,7 @@ static bool stats_primitives_immediate(function_call *call, const callback_data 
 {
     stats_primitives_struct *s;
 
-    if (bugle_in_begin_end())
+    if (bugle_gl_in_begin_end())
     {
         s = bugle_object_get_current_data(bugle_context_class, stats_primitives_view);
         s->begin_count++;

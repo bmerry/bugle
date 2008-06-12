@@ -21,18 +21,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
-#include <bugle/filters.h>
-#include <bugle/gl/glutils.h>
-#include <bugle/glwin/glwintypes.h>
+#include <GL/glx.h>
 #include <bugle/glx/glxdump.h>
-#include <bugle/tracker.h>
-#include <bugle/log.h>
-#include <bugle/apireflect.h>
-#include <budgie/types.h>
-#include <budgie/reflect.h>
-#include <budgie/call.h>
-#include "budgielib/defines.h"
-#include "xalloc.h"
 
 int bugle_count_glx_attributes(const int *attr)
 {

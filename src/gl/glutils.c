@@ -25,9 +25,9 @@
 #include <assert.h>
 #include <bugle/gl/glutils.h>
 #include <bugle/gl/gltypes.h>
+#include <bugle/gl/trackbeginend.h>
 #include <bugle/apireflect.h>
 #include <bugle/filters.h>
-#include <bugle/tracker.h>
 #include <bugle/log.h>
 #include <budgie/call.h>
 #include "budgielib/defines.h"
@@ -39,7 +39,7 @@ bool bugle_begin_internal_render(void)
 {
     GLenum error;
 
-    if (bugle_in_begin_end()) return false;
+    if (bugle_gl_in_begin_end()) return false;
     /* FIXME: work with the error filterset to save the errors even
      * when the error filterset is not actively checking for errors.
      */
@@ -243,7 +243,7 @@ void bugle_filter_set_renders(const char *name)
 void bugle_filter_post_renders(const char *name)
 {
     bugle_filter_order("error", name);
-    bugle_filter_post_queries_begin_end(name);
+    bugle_gl_filter_post_queries_begin_end(name);
 }
 
 void bugle_filter_set_queries_error(const char *name)

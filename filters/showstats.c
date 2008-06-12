@@ -1,5 +1,5 @@
 /*  BuGLe: an OpenGL debugging tool
- *  Copyright (C) 2004-2007  Bruce Merry
+ *  Copyright (C) 2004-2008  Bruce Merry
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -24,15 +24,16 @@
 #include <string.h>
 #include <math.h>
 #include <stdbool.h>
-#include <bugle/gl/glutils.h>
 #include <bugle/glwin/glwin.h>
+#include <bugle/glwin/trackcontext.h>
+#include <bugle/gl/glutils.h>
+#include <bugle/gl/trackextensions.h>
 #include <bugle/linkedlist.h>
 #include <bugle/misc.h>
 #include <bugle/stats.h>
 #include <bugle/filters.h>
 #include <bugle/log.h>
 #include <bugle/xevent.h>
-#include <bugle/tracker.h>
 #include <budgie/addresses.h>
 #include "xalloc.h"
 
@@ -354,7 +355,7 @@ static bool showstats_swap_buffers(function_call *call, const callback_data *dat
         CALL(glScalef)(2.0f / viewport[2], 2.0f / viewport[3], 1.0f);
 
         if (ss->showstats_display)
-            bugle_text_render(ss->showstats_display, 16, viewport[3] - 16);
+            bugle_gl_text_render(ss->showstats_display, 16, viewport[3] - 16);
 
 #ifdef GL_ARB_texture_env_combine
         if (showstats_num_graph)
@@ -408,8 +409,8 @@ static bool showstats_swap_buffers(function_call *call, const callback_data *dat
                 sst = (showstats_statistic *) bugle_list_data(i);
                 if (sst->mode == SHOWSTATS_GRAPH && sst->graph_tex)
                 {
-                    bugle_text_render(sst->st->label, xofs, yofs + 48);
-                    bugle_text_render(sst->graph_scale_label, xofs + sst->graph_size + 2, yofs + 40);
+                    bugle_gl_text_render(sst->st->label, xofs, yofs + 48);
+                    bugle_gl_text_render(sst->graph_scale_label, xofs + sst->graph_size + 2, yofs + 40);
                     yofs -= 64;
                 }
             }

@@ -25,10 +25,11 @@
 #include <string.h>
 #include <stddef.h>
 #include <stdbool.h>
+#include <bugle/glwin/trackcontext.h>
 #include <bugle/gl/glutils.h>
 #include <bugle/gl/glsl.h>
+#include <bugle/gl/trackobjects.h>
 #include <bugle/filters.h>
-#include <bugle/tracker.h>
 #include <bugle/hashtable.h>
 #include <budgie/types.h>
 #include <budgie/call.h>

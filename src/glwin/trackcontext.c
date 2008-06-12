@@ -25,8 +25,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <bugle/glwin/glwin.h>
+#include <bugle/glwin/trackcontext.h>
 #include <bugle/filters.h>
-#include <bugle/tracker.h>
 #include <bugle/objects.h>
 #include <bugle/log.h>
 #include <budgie/types.h>
@@ -194,7 +194,7 @@ static GLuint trackcontext_font_init(void)
     return texture;
 }
 
-void bugle_text_render(const char *msg, int x, int y)
+void bugle_gl_text_render(const char *msg, int x, int y)
 {
     trackcontext_data *data;
     int x0;

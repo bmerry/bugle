@@ -32,11 +32,14 @@
 #include <assert.h>
 #include <GL/gl.h>
 #include <bugle/glwin/glwin.h>
+#include <bugle/glwin/trackcontext.h>
 #include <bugle/gl/glstate.h>
 #include <bugle/gl/glsl.h>
 #include <bugle/gl/glutils.h>
+#include <bugle/gl/trackbeginend.h>
+#include <bugle/gl/trackobjects.h>
+#include <bugle/gl/trackextensions.h>
 #include <bugle/filters.h>
-#include <bugle/tracker.h>
 #include <bugle/log.h>
 #include <bugle/hashtable.h>
 #include <bugle/misc.h>
@@ -62,7 +65,7 @@ static unsigned long debug_thread;
 
 static bool stoppable(void)
 {
-    return stop_in_begin_end || !bugle_in_begin_end();
+    return stop_in_begin_end || !bugle_gl_in_begin_end();
 }
 
 static void send_state(const glstate *state, uint32_t id)

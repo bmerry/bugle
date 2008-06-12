@@ -171,3 +171,11 @@ void bugle_glwin_filter_catches_swap_buffers(filter *f, bool inactive, filter_ca
 {
     bugle_filter_catches(f, "wglSwapBuffers", inactive, callback);
 }
+
+void bugle_function_address_initialise_extra(void)
+{
+    /* This doesn't work for WGL because it uses context-dependent function
+     * pointers. Instead, budgie_address_generator returns addresses on the
+     * fly.
+     */
+}

@@ -23,8 +23,12 @@
 #include <errno.h>
 #include <stdio.h>
 #include <bugle/glwin/glwin.h>
+#include <bugle/glwin/trackcontext.h>
+#include <bugle/gl/trackobjects.h>
+#include <bugle/gl/trackdisplaylist.h>
+#include <bugle/gl/trackbeginend.h>
+#include <bugle/gl/trackextensions.h>
 #include <bugle/filters.h>
-#include <bugle/tracker.h>
 #include <bugle/xevent.h>
 #include <bugle/log.h>
 #include <bugle/stats.h>
@@ -40,6 +44,9 @@
 
 extern FILE *yyin;
 extern int yyparse(void);
+
+/* FIXME: design for a per-API initialisation block */
+extern void bugle_initialise_addresses_extra(void);
 
 static void toggle_filterset(const xevent_key *key, void *arg, XEvent *event)
 {
@@ -186,42 +193,12 @@ static void initialise_core_filters(void)
     statistics_initialise();
 }
 
-/* The Linux ABI requires that OpenGL 1.2 functions be accessible by
- * direct dynamic linking, but everything else should be accessed by
- * glXGetProcAddressARB. We deal with that here.
- *
- * FIXME: this is GL-specific code, should move into glwin/ dir.
- */
-static void initialise_addresses_glwin(void)
-{
-    /* This doesn't work for WGL because it uses context-dependent function
-     * pointers. Instead, budgie_address_generator returns addresses on the
-     * fly.
-     */
-#if !BUGLE_GLWIN_GET_PROC_ADDRESS_CONTEXT_DEPENDENT
-    size_t i;
-
-    for (i = 0; i < budgie_function_count(); i++)
-    {
-        /* gengl.perl puts the OpenGL versions first, and ordered by version
-         * number.
-         */
-        if (bugle_api_function_extension(i) > BUGLE_GL_EXTENSION_ID(GL_VERSION_1_1))
-        {
-            void (BUDGIEAPI *ptr)(void) = bugle_glwin_get_proc_address(budgie_function_name(i));
-            if (ptr != NULL)
-                budgie_function_address_set_real(i, bugle_glwin_get_proc_address(budgie_function_name(i)));
-        }
-    }
-#endif
-}
-
 BUGLE_CONSTRUCTOR(initialise_all);
 
 static void initialise_all(void)
 {
     budgie_function_address_initialise();
-    initialise_addresses_glwin();
+    bugle_function_address_initialise_extra();
     xevent_initialise();
     filters_initialise();
     initialise_core_filters();

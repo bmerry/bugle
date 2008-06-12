@@ -28,7 +28,7 @@
 #include <GL/glext.h>
 #include <stdlib.h>
 #include <string.h>
-#include <bugle/tracker.h>
+#include <bugle/gl/trackextensions.h>
 #include <bugle/gl/glutils.h>
 #include <budgie/call.h>
 #include "src/apitables.h"

@@ -1,5 +1,5 @@
 /*  BuGLe: an OpenGL debugging tool
- *  Copyright (C) 2004-2006  Bruce Merry
+ *  Copyright (C) 2004-2006, 2008  Bruce Merry
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -60,5 +60,13 @@ const bugle_api_extension *bugle_api_enum_extensions(GLenum e);
 /*** Functions ***/
 
 bugle_api_extension bugle_api_function_extension(budgie_function id);
+
+/* The BUGLE_ prefix is built up across several macros because using ##
+ * inhibits macro expansion.
+ */
+#define _BUGLE_API_EXTENSION_ID(symbol, name) \
+    _BUDGIE_ID_FULL(bugle_api_extension, bugle_api_extension_id, BUGLE ## symbol, name)
+#define BUGLE_API_EXTENSION_ID(ext) \
+    _BUGLE_API_EXTENSION_ID(_ ## ext, #ext)
 
 #endif /* BUGLE_SRC_APIREFLECT_H */

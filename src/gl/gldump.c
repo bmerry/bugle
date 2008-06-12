@@ -29,8 +29,9 @@
 #include <bugle/gl/glutils.h>
 #include <bugle/gl/gldump.h>
 #include <bugle/gl/gltypes.h>
+#include <bugle/gl/trackbeginend.h>
+#include <bugle/gl/trackextensions.h>
 #include <bugle/filters.h>
-#include <bugle/tracker.h>
 #include <bugle/log.h>
 #include <bugle/apireflect.h>
 #include <budgie/types.h>
@@ -445,7 +446,7 @@ int bugle_count_gl(budgie_function func, GLenum token)
 int bugle_count_program_string(GLenum target, GLenum pname)
 {
     GLint length = 0;
-    if (bugle_in_begin_end()) return 0;
+    if (bugle_gl_in_begin_end()) return 0;
 
     switch (pname)
     {
@@ -503,7 +504,7 @@ size_t bugle_image_element_count(GLsizei width,
     /* First check that we aren't in begin/end, in which case the call
      * will fail anyway.
      */
-    if (bugle_in_begin_end()) return 0;
+    if (bugle_gl_in_begin_end()) return 0;
     if (unpack)
     {
         CALL(glGetIntegerv)(GL_UNPACK_SWAP_BYTES, &swap_bytes);
