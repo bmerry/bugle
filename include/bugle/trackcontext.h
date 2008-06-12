@@ -38,21 +38,20 @@ extern object_class *bugle_context_class, *bugle_namespace_class;
  */
 bugle_glwin_context bugle_get_aux_context(bool shared);
 
-/* Determines the current display if possible. It may return NULL in some
- * cases even if there is an active extension. Depends on trackcontext and
- * trackextensions.
+/* Draws text at the specified location. The current colour is used to
+ * render the text. The text is rendered with alpha, so alpha-test or
+ * alpha-blending can be used to obtain a transparent background.
+ * Pre-conditions:
+ * - the unshared aux context is active
+ * - the projection matrix is the identity
+ * - the modelview matrix is the identity, scaled and optionally translated
+ *   such that one unit is one pixel
+ * - the pixel unpack state is the default
+ * - no textures are enabled
+ * - must be inside begin_internal_render/end_internal_render
+ * - there must be room for one push on the attribute stack
  */
-bugle_glwin_display bugle_get_current_display(void);
-bugle_glwin_display bugle_get_current_display_internal(bool lock);
-
-/* Determines the current read drawable. Depends on trackcontext and
- * trackextensions.
- */
-bugle_glwin_drawable bugle_get_current_read_drawable(void);
-
-/* Wrapper around glXMakeContextCurrent that handles pre-GLX 1.3 */
-bool bugle_make_context_current(bugle_glwin_display dpy, bugle_glwin_drawable draw,
-                                bugle_glwin_drawable read, bugle_glwin_context ctx);
+void bugle_text_render(const char *msg, int x, int y);
 
 /* Used by the initialisation code */
 void trackcontext_initialise(void);
