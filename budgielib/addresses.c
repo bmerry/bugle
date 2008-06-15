@@ -33,7 +33,7 @@
 /* External function provided to look up addresses on the fly, for when the
  * address is context-dependent.
  */
-extern void (BUDGIEAPI *budgie_address_generator(budgie_function id));
+extern void BUDGIEAPI (*budgie_address_generator(budgie_function id));
 
 static void make_indent(int indent, char **buffer, size_t *size)
 {

@@ -874,9 +874,9 @@ LRESULT CALLBACK xevent_mouse_hook(int code, WPARAM wParam, LPARAM lParam)
             {
                 bugle_log_printf("xevent", "mouse", BUGLE_LOG_DEBUG,
                                  "mouse moved by (%d, %d) ref = (%d, %d)",
-                                 info->pt.x - mouse_x, info->pt.y - mouse_y,
+                                 (int) info->pt.x - mouse_x, (int) info->pt.y - mouse_y,
                                  mouse_x, mouse_y);
-                (*mouse_callback)(info->pt.x - mouse_x, info->pt.y - mouse_y, NULL);
+                (*mouse_callback)((int) info->pt.x - mouse_x, (int) info->pt.y - mouse_y, NULL);
                 SetCursorPos(mouse_x, mouse_y);
             }
         }

@@ -879,8 +879,8 @@ static void process_single_command(function_call *call)
     default:
         bugle_log_printf("debugger", "process_single_command",
                          BUGLE_LOG_WARNING,
-                         "Unknown debug command %#08x received",
-                         req);
+                         "Unknown debug command %#08lx received",
+                         (unsigned long) req);
     }
 }
 

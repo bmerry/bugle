@@ -22,7 +22,7 @@
 #define WGL_WGLEXT_PROTOTYPES
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
-#include <bugle/glwin.h>
+#include <bugle/glwin/glwin.h>
 #include <GL/wglext.h>
 #include <budgie/call.h>
 #include "xalloc.h"
@@ -60,7 +60,7 @@ bool bugle_glwin_make_context_current(glwin_display dpy, glwin_drawable draw,
     return CALL(wglMakeCurrent)(draw, ctx);
 }
 
-void (BUDGIEAPI *bugle_glwin_get_proc_address(const char *name))(void)
+void BUDGIEAPI (*bugle_glwin_get_proc_address(const char *name))(void)
 {
     return CALL(wglGetProcAddress)(name);
 }
