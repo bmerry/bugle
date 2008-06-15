@@ -29,8 +29,7 @@
 #include <setjmp.h>
 #include <errno.h>
 #include <assert.h>
-#include <GL/gl.h>
-#include <GL/glext.h>
+#include <bugle/gl/glheaders.h>
 #include <bugle/glwin/trackcontext.h>
 #include <bugle/gl/glutils.h>
 #include <bugle/gl/glsl.h>

@@ -15,8 +15,8 @@
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#ifndef BUGLE_GLWINTYPES_H
-#define BUGLE_GLWINTYPES_H
+#ifndef BUGLE_GLWIN_GLWINTYPES_H
+#define BUGLE_GLWIN_GLWINTYPES_H
 
 #if HAVE_CONFIG_H
 # include <config.h>
@@ -61,7 +61,22 @@ typedef BOOL  glwin_bool;
 #define BUGLE_GLWIN_GET_PROC_ADDRESS wglGetProcAddress
 #endif /* BUGLE_GLWIN_WGL */
 
+#if BUGLE_GLWIN_EGL
+#include <EGL/egl.h>
+
+typedef EGLDisplay glwin_display;
+typedef EGLContext glwin_context;
+typedef EGLSurface glwin_drawable;
+typedef EGLBoolean glwin_bool;
+
+#define GLWIN_BOOL_TRUE "EGL_TRUE"
+#define GLWIN_BOOL_FALSE "EGL_FALSE"
+#define GLWIN_BOOL_TYPE "EGLBoolean"
+
+#define BUGLE_GLWIN_GET_PROC_ADDRESS eglGetProcAddress
+#endif /* BUGLE_GLWIN_EGL */
+
 bool bugle_dump_glwin_bool(glwin_bool b, char **buffer, size_t *size);
 bool bugle_dump_glwin_drawable(glwin_drawable d, char **buffer, size_t *size);
 
-#endif /* BUGLE_GLWINTYPES_H */
+#endif /* BUGLE_GLWIN_GLWINTYPES_H */

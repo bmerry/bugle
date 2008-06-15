@@ -22,10 +22,10 @@
  * symbol name as a fallback. In typical use the symbols will not be referenced.
  */
 #define GL_GLEXT_PROTOTYPES
-#include <GL/gl.h>
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
+#include <bugle/gl/glheaders.h>
 #include <bugle/gl/glutils.h>
 #include <bugle/gl/gldump.h>
 #include <bugle/gl/gltypes.h>

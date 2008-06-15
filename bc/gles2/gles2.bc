@@ -1,0 +1,7 @@
+HEADER GLES2/gl2.h
+HEADER GLES2/gl2ext.h
+HEADER bugle/gl/gltypes.h
+HEADER bugle/gl/gldump.h
+HEADER bugle/gl/overrides.h
+HEADER bugle/gl/glstate.h
+LIMIT gl[A-Z][a-z].*

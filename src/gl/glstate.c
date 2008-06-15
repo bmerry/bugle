@@ -30,8 +30,7 @@
 # include <config.h>
 #endif
 #define GL_GLEXT_PROTOTYPES
-#include <GL/gl.h>
-#include <GL/glext.h>
+#include <bugle/gl/glheaders.h>
 #include <stdlib.h>
 #include <string.h>
 #include <limits.h>

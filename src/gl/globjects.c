@@ -19,13 +19,12 @@
 # include <config.h>
 #endif
 #define GL_GLEXT_PROTOTYPES
-#include <GL/gl.h>
-#include <GL/glext.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stddef.h>
 #include <stdbool.h>
 #include <bugle/glwin/trackcontext.h>
+#include <bugle/gl/glheaders.h>
 #include <bugle/gl/glutils.h>
 #include <bugle/gl/glsl.h>
 #include <bugle/gl/globjects.h>

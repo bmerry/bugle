@@ -20,17 +20,28 @@ AC_CANONICAL_HOST
 case $host in
   *-*-cygwin)
     bugle_target="gl-wgl"
+    BUGLE_FS=BUGLE_FS_CYGMING
     BUGLE_OSAPI=BUGLE_OSAPI_POSIX
+    BUGLE_WINSYS=BUGLE_WINSYS_WINDOWS
+    BUGLE_BINFMT=BUGLE_BINFMT_PE
     ;;
   *-*-mingw32)
     bugle_target="gl-wgl"
+    BUGLE_FS=BUGLE_FS_CYGMING
     BUGLE_OSAPI=BUGLE_OSAPI_WIN32
+    BUGLE_WINSYS=BUGLE_WINSYS_WINDOWS
+    BUGLE_BINFMT=BUGLE_BINFMT_PE
     ;;
   *)
     bugle_target="gl-glx"
+    BUGLE_FS=BUGLE_FS_UNIX
     BUGLE_OSAPI=BUGLE_OSAPI_POSIX
+    BUGLE_WINSYS=BUGLE_WINSYS_X11
+    BUGLE_BINFMT_BUGLE_BINFMT_ELF
     ;;
 esac
+# FIXME-GLES
+bugle_target="gles2-egl-win"
 
 AC_LANG(C)
 AC_LIBLTDL_INSTALLABLE(libltdl)
@@ -75,14 +86,19 @@ PKG_CHECK_MODULES([swscale], [libswscale], [HAVE_LIBSWSCALE=1], [HAVE_LIBSWSCALE
 # Sadly, FreeBSD does not implement libraries depending on libraries, and
 # OpenGL uses X and maths functions. Hence the -lm and all the X rubbish.
 GL_LIBS=""
-if test "$bugle_target" = "gl-wgl"
-then
-  # AC_CHECK_LIB fails because the autoconf test does not specify __stdcall
-  # AC_CHECK_LIB([opengl32], [glBegin], [GL_LIBS="-lopengl32 $GL_LIBS"], [], [])
-  GL_LIBS="-lopengl32"
-else
-  AC_CHECK_LIB([GL], [glBegin], [GL_LIBS="-lGL -lm $GL_LIBS"], [], [$X_PRE_LIBS $X_LIBS $X_XTRA_LIBS -lm])
-fi
+case "$bugle_target" in
+  gl-wgl)
+    # AC_CHECK_LIB fails because the autoconf test does not specify __stdcall
+    # AC_CHECK_LIB([opengl32], [glBegin], [GL_LIBS="-lopengl32 $GL_LIBS"], [], [])
+    GL_LIBS="-lopengl32"
+    ;;
+  gl-*)
+    AC_CHECK_LIB([GL], [glBegin], [GL_LIBS="-lGL -lm $GL_LIBS"], [], [$X_PRE_LIBS $X_LIBS $X_XTRA_LIBS -lm])
+    ;;
+  gles2-egl-*)
+    GL_LIBS="-lEGL -lGLESv2"
+    ;;
+esac
 AC_SUBST(GL_LIBS)
 if test "x$GL_LIBS" = "x"; then 
   AC_MSG_ERROR([An OpenGL library is required])
@@ -104,12 +120,19 @@ AC_HEADER_STDBOOL
 AC_CHECK_HEADERS([sys/types.h stdlib.h stddef.h regex.h NVPerfSDK.h dlfcn.h sys/select.h])
 AC_CHECK_HEADERS([readline/readline.h readline/history.h], [], [HAVE_READLINE=0])
 
-if test "$bugle_target" = "gl-wgl"
-then
+case "$bugle_target" in
+  gl-wgl)
     GLINCLUDES="`CPP=\"$CPP\" srcdir=\"$srcdir\" $PERL -w $srcdir/gengl/find_header.perl GL/gl.h wingdi.h GL/glext.h include/bugle/wgl/overrides.h`"
-else
+    ;;
+  gl-glx)
     GLINCLUDES="`CPP=\"$CPP\" srcdir=\"$srcdir\" $PERL -w $srcdir/gengl/find_header.perl GL/gl.h GL/glx.h GL/glext.h GL/glxext.h`"
-fi
+    ;;
+  gles2-egl-*)
+    GLINCLUDES="`CPP=\"$CPP\" srcdir=\"$srcdir\" $PERL -w $srcdir/gengl/find_header.perl GLES2/gl2.h GLES2/gl2ext.h EGL/egl.h EGL/eglext.h`"
+    ;;
+  *)
+    AC_MSG_ERROR([Unknown target $bugle_target])
+esac
 AC_SUBST(GLINCLUDES)
 
 dnl Checks for types
@@ -194,25 +217,24 @@ then
 fi
 AC_DEFINE_UNQUOTED(HAVE_GTKGLEXT, $HAVE_GTKGLEXT, [non-zero when all the requirements for GtkGLExt are met])
 
-# FIXME: only GLWIN and WINSYS should be set here; others should be based on
-# target directly
 case $bugle_target in
-    gl-glx)
-    BUGLE_FS=BUGLE_FS_UNIX
+  gl-glx)
     BUGLE_GLWIN=BUGLE_GLWIN_GLX
-    BUGLE_WINSYS=BUGLE_WINSYS_X11
-    BUGLE_BINFMT=BUGLE_BINFMT_ELF
+    BUGLE_GLTYPE=BUGLE_GLTYPE_GL
     ;;
-    gl-wgl)
-    BUGLE_FS=BUGLE_FS_CYGMING
+  gl-wgl)
     BUGLE_GLWIN=BUGLE_GLWIN_WGL
-    BUGLE_WINSYS=BUGLE_WINSYS_WINDOWS
-    BUGLE_BINFMT=BUGLE_BINFMT_PE
+    BUGLE_GLTYPE=BUGLE_GLTYPE_GL
+    ;;
+  gles2-egl-*)
+    BUGLE_GLWIN=BUGLE_GLWIN_EGL
+    BUGLE_GLTYPE=BUGLE_GLTYPE_GLES2
     ;;
 esac
 
 AC_SUBST(BUGLE_FS)
 AC_SUBST(BUGLE_GLWIN)
+AC_SUBST(BUGLE_GLTYPE)
 AC_SUBST(BUGLE_WINSYS)
 AC_SUBST(BUGLE_BINFMT)
 AC_SUBST(BUGLE_OSAPI)
@@ -220,6 +242,9 @@ AM_CONDITIONAL(BUGLE_WINSYS_X11, test $BUGLE_WINSYS = BUGLE_WINSYS_X11)
 AM_CONDITIONAL(BUGLE_WINSYS_WINDOWS, test $BUGLE_WINSYS = BUGLE_WINSYS_WINDOWS)
 AM_CONDITIONAL(BUGLE_GLWIN_WGL, test $BUGLE_GLWIN = BUGLE_GLWIN_WGL)
 AM_CONDITIONAL(BUGLE_GLWIN_GLX, test $BUGLE_GLWIN = BUGLE_GLWIN_GLX)
+AM_CONDITIONAL(BUGLE_GLWIN_EGL, test $BUGLE_GLWIN = BUGLE_GLWIN_EGL)
+AM_CONDITIONAL(BUGLE_GLTYPE_GL, test $BUGLE_GLTYPE = BUGLE_GLTYPE_GL1)
+AM_CONDITIONAL(BUGLE_GLTYPE_GLES2, test $BUGLE_GLTYPE = BUGLE_GLTYPE_GLES2)
 AM_CONDITIONAL(BUGLE_BINFMT_PE, test $BUGLE_BINFMT = BUGLE_BINFMT_PE)
 AM_CONDITIONAL(BUGLE_BINFMT_ELF, test $BUGLE_BINFMT = BUGLE_BINFMT_ELF)
 

@@ -30,7 +30,7 @@
 #include <unistd.h>
 #include <errno.h>
 #include <assert.h>
-#include <GL/gl.h>
+#include <bugle/gl/glheaders.h>
 #include <bugle/glwin/glwin.h>
 #include <bugle/glwin/trackcontext.h>
 #include <bugle/gl/glstate.h>

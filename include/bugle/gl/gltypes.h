@@ -25,7 +25,8 @@
 #if HAVE_CONFIG_H
 # include <config.h>
 #endif
-#include <GL/gl.h>
+#include <bugle/porting.h>
+#include <bugle/gl/glheaders.h>
 #include <stdio.h>
 #include <stdbool.h>
 #include <bugle/gl/overrides.h>

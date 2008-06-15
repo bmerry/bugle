@@ -24,17 +24,18 @@
 # include <config.h>
 #endif
 #define GL_GLEXT_PROTOTYPES
-#include <GL/gl.h>
-#include <GL/glext.h>
 #include <stdlib.h>
 #include <string.h>
+#include <bugle/gl/glheaders.h>
 #include <bugle/gl/glextensions.h>
 #include <bugle/gl/glutils.h>
 #include <budgie/call.h>
 #include "src/apitables.h"
 #include "xalloc.h"
 
-#ifdef GL_VERSION_2_0
+#if BUGLE_GLTYPE_GLES2
+#define call1(gl,arb,params) CALL(gl) params
+#elif defined(GL_VERSION_2_0)
 #define call1(gl,arb,params) \
     do { \
         if (BUGLE_GL_HAS_EXTENSION(GL_VERSION_2_0)) \

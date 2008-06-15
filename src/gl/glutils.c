@@ -21,8 +21,8 @@
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <GL/gl.h>
 #include <assert.h>
+#include <bugle/gl/glheaders.h>
 #include <bugle/gl/glutils.h>
 #include <bugle/gl/gltypes.h>
 #include <bugle/gl/glbeginend.h>
@@ -78,6 +78,7 @@ void bugle_end_internal_render(const char *name, bool warn)
 
 void bugle_filter_catches_drawing_immediate(filter *f, bool inactive, filter_callback callback)
 {
+#if BUGLE_GLTYPE_GL
 #ifdef GL_ARB_vertex_program
     bugle_filter_catches(f, "glVertexAttrib1sARB", inactive, callback);
     bugle_filter_catches(f, "glVertexAttrib1fARB", inactive, callback);
@@ -142,6 +143,7 @@ void bugle_filter_catches_drawing_immediate(filter *f, bool inactive, filter_cal
     bugle_filter_catches(f, "glVertex4sv", inactive, callback);
 
     bugle_filter_catches(f, "glArrayElement", inactive, callback);
+#endif /* BUGLE_GLTYPE_GL */
 }
 
 void bugle_filter_catches_drawing(filter *f, bool inactive, filter_callback callback)
@@ -161,6 +163,7 @@ void bugle_filter_catches_drawing(filter *f, bool inactive, filter_callback call
 
 bool bugle_call_is_immediate(function_call *call)
 {
+#if BUGLE_GLTYPE_GL
     switch (call->generic.group)
     {
 #ifdef GL_ARB_vertex_program
@@ -231,6 +234,9 @@ bool bugle_call_is_immediate(function_call *call)
     default:
         return false;
     }
+#else /* !BUGLE_GLTYPE_GL */
+    return false;
+#endif
 }
 
 void bugle_filter_set_renders(const char *name)

@@ -1,0 +1,6 @@
+LIBRARY c:\\windows\\system32\\libEGL.dll
+LIBRARY c:\\windows\\system32\\libGLESv2.dll
+CALLAPI __stdcall
+
+INCLUDE bc/gles2/gles2.bc
+INCLUDE bc/egl/egl.bc

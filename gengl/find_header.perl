@@ -28,5 +28,5 @@ while (@ARGV)
         }
     }
     die("Could not find header $path") unless $path;
-    print "$path ";
+    print "\"$path\" ";
 }

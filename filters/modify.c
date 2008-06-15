@@ -23,6 +23,7 @@
 #include "xalloc.h"
 #include <bugle/glwin/glwin.h>
 #include <bugle/glwin/trackcontext.h>
+#include <bugle/gl/glheaders.h>
 #include <bugle/gl/glutils.h>
 #include <bugle/gl/glextensions.h>
 #include <bugle/gl/gldisplaylist.h>

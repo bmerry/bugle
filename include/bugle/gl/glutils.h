@@ -21,8 +21,8 @@
 #if HAVE_CONFIG_H
 # include <config.h>
 #endif
-#include <GL/gl.h>
 #include <stdbool.h>
+#include <bugle/gl/glheaders.h>
 #include <bugle/filters.h>
 #include <bugle/objects.h>
 #include <budgie/types.h>

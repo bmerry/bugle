@@ -34,7 +34,7 @@
 #include <assert.h>
 #include <math.h>
 #include <sys/time.h>
-#include <GL/gl.h>
+#include <bugle/gl/glheaders.h>
 #include <bugle/glwin/glwin.h>
 #include <bugle/glwin/trackcontext.h>
 #include <bugle/gl/glutils.h>

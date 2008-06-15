@@ -21,7 +21,7 @@
 #if HAVE_CONFIG_H
 # include <config.h>
 #endif
-#include <GL/gl.h>
+#include <bugle/gl/glheaders.h>
 #include <bugle/objects.h>
 
 extern object_class *bugle_displaylist_class;

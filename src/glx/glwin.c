@@ -241,7 +241,7 @@ void bugle_function_address_initialise_extra(void)
         {
             void (BUDGIEAPI *ptr)(void) = bugle_glwin_get_proc_address(budgie_function_name(i));
             if (ptr != NULL)
-                budgie_function_address_set_real(i, bugle_glwin_get_proc_address(budgie_function_name(i)));
+                budgie_function_address_set_real(i, ptr);
         }
     }
 }

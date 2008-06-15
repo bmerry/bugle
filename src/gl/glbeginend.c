@@ -25,8 +25,8 @@
 #endif
 #include <stdbool.h>
 #include <stddef.h>
-#include <GL/gl.h>
 #include <bugle/glwin/trackcontext.h>
+#include <bugle/gl/glheaders.h>
 #include <bugle/gl/glbeginend.h>
 #include <bugle/gl/globjects.h>
 #include <bugle/filters.h>
@@ -34,6 +34,7 @@
 #include <budgie/call.h>
 #include <budgie/types.h>
 
+#if BUGLE_GLTYPE_GL
 static object_view glbeginend_view;
 
 /* Note: we can't use glGetError to determine whether an error occurred,
@@ -86,6 +87,12 @@ bool bugle_gl_in_begin_end(void)
     begin_end = (bool *) bugle_object_get_current_data(bugle_context_class, glbeginend_view);
     return !begin_end || *begin_end;
 }
+#else
+bool bugle_gl_in_begin_end(void)
+{
+    return false;
+}
+#endif
 
 void bugle_gl_filter_post_queries_begin_end(const char *name)
 {
@@ -94,6 +101,7 @@ void bugle_gl_filter_post_queries_begin_end(const char *name)
 
 static bool glbeginend_filter_set_initialise(filter_set *handle)
 {
+#if BUGLE_GLTYPE_GL
     filter *f;
 
     f = bugle_filter_new(handle, "glbeginend");
@@ -105,6 +113,7 @@ static bool glbeginend_filter_set_initialise(filter_set *handle)
                                                NULL,
                                                NULL,
                                                sizeof(bool));
+#endif
     return true;
 }
 

@@ -22,7 +22,7 @@
 # include <config.h>
 #endif
 #include <stddef.h>
-#include <GL/gl.h>
+#include <bugle/gl/glheaders.h>
 #include <bugle/linkedlist.h>
 
 struct glstate;

@@ -20,11 +20,12 @@
 #endif
 #include <stdbool.h>
 #include <stddef.h>
-#include <GL/gl.h>
 #include <string.h>
+#include <stdlib.h>
 #include <bugle/filters.h>
 #include <bugle/objects.h>
 #include <bugle/glwin/trackcontext.h>
+#include <bugle/gl/glheaders.h>
 #include <bugle/gl/gldisplaylist.h>
 #include <bugle/gl/globjects.h>
 #include <bugle/gl/glutils.h>
@@ -33,6 +34,8 @@
 #include "lock.h"
 
 object_class *bugle_displaylist_class;
+
+#if BUGLE_GLTYPE_GL
 gl_lock_define_initialized(static, displaylist_lock)
 static object_view displaylist_view;
 static object_view namespace_view;   /* handle of the hash table */
@@ -127,6 +130,17 @@ static bool gldisplaylist_glEndList(function_call *call, const callback_data *da
     bugle_object_set_current(bugle_displaylist_class, NULL);
     return true;
 }
+#else
+GLenum bugle_displaylist_mode(void)
+{
+    return GL_NONE;
+}
+
+GLuint bugle_displaylist_list(void)
+{
+    return 0;
+}
+#endif
 
 static bool gldisplaylist_filter_set_initialise(filter_set *handle)
 {
@@ -134,6 +148,7 @@ static bool gldisplaylist_filter_set_initialise(filter_set *handle)
 
     bugle_displaylist_class = bugle_object_class_new(bugle_context_class);
 
+#if BUGLE_GLTYPE_GL
     f = bugle_filter_new(handle, "gldisplaylist");
     bugle_filter_order("invoke", "gldisplaylist");
     bugle_filter_catches(f, "glNewList", true, gldisplaylist_glNewList);
@@ -147,6 +162,7 @@ static bool gldisplaylist_filter_set_initialise(filter_set *handle)
                                            namespace_init,
                                            namespace_clear,
                                            sizeof(hashptr_table));
+#endif
     return true;
 }
 

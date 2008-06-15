@@ -1,5 +1,5 @@
 /*  BuGLe: an OpenGL debugging tool
- *  Copyright (C) 2004-2007  Bruce Merry
+ *  Copyright (C) 2004-2008  Bruce Merry
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -18,10 +18,10 @@
 #if HAVE_CONFIG_H
 # include <config.h>
 #endif
-#include <GL/gl.h>
 #include <stdio.h>
 #include <stdbool.h>
 #include <string.h>
+#include <bugle/gl/glheaders.h>
 #include <budgie/reflect.h>
 #include <bugle/apireflect.h>
 #include <bugle/gl/gltypes.h>
@@ -68,8 +68,11 @@ bool bugle_dump_GLprimitiveenum(GLenum token, char **buffer, size_t *size)
     case GL_TRIANGLES: budgie_snputs_advance(buffer, size, "GL_TRIANGLES"); break;
     case GL_TRIANGLE_STRIP: budgie_snputs_advance(buffer, size, "GL_TRIANGLE_STRIP"); break;
     case GL_TRIANGLE_FAN: budgie_snputs_advance(buffer, size, "GL_TRIANGLE_FAN"); break;
+#if BUGLE_GLTYPE_GL
     case GL_QUADS: budgie_snputs_advance(buffer, size, "GL_QUADS"); break;
+    case GL_QUAD_STRIP: budgie_snputs_advance(buffer, size, "GL_QUAD_STRIP"); break;
     case GL_POLYGON: budgie_snputs_advance(buffer, size, "GL_POLYGON"); break;
+#endif
     default: bugle_dump_GLenum(token, buffer, size);
     }
     return true;

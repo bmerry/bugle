@@ -1,6 +1,8 @@
 #ifndef BUGLE_GL_OVERRIDES_H
 #define BUGLE_GL_OVERRIDES_H
 
+#include <bugle/porting.h>
+
 /* Mesa 3.4 gets this wrong */
 #if defined(GL_ALL_CLIENT_ATTRIB_BITS) && !defined(GL_CLIENT_ALL_ATTRIB_BITS)
 # define GL_CLIENT_ALL_ATTRIB_BITS GL_ALL_CLIENT_ATTRIB_BITS
@@ -8,7 +10,9 @@
 
 /* Array types */
 typedef GLfloat GLfloatmatrix[4][4];
+#if BUGLE_GLTYPE_GL
 typedef GLdouble GLdoublematrix[4][4];
+#endif
 typedef GLubyte GLpolygonstipple[32][4];
 
 typedef GLfloat GLvec2[2];
@@ -34,7 +38,9 @@ typedef GLfloat GLmat4x3[4][3];
 
 /* Pointers to the array types */
 typedef const GLfloatmatrix *pGLfloatmatrix;
+#if BUGLE_GLTYPE_GL
 typedef const GLdoublematrix *pGLdoublematrix;
+#endif
 typedef const GLpolygonstipple *pGLpolygonstipple;
 
 typedef GLvec2 *pGLvec2;

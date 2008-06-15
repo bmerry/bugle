@@ -23,10 +23,12 @@
 #ifndef BUGLE_SRC_GLSL_H
 #define BUGLE_SRC_GLSL_H
 
-#include <GL/gl.h>
-#include <GL/glext.h>
+#include <bugle/gl/glheaders.h>
 
-#ifdef GL_ARB_shader_objects
+#if BUGLE_GLTYPE_GLES2
+# define GLcharARB char
+#endif
+#if defined(GL_ARB_shader_objects) || BUGLE_GLTYPE_GLES2
 void bugle_glGetProgramiv(GLuint program, GLenum pname, GLint *param);
 void bugle_glGetShaderiv(GLuint shader, GLenum pname, GLint *param);
 void bugle_glGetAttachedShaders(GLuint program, GLsizei max_length, GLsizei *length, GLuint *shaders);

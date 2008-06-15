@@ -20,8 +20,7 @@
 #endif
 #define GL_GLEXT_PROTOTYPES
 #include <stdbool.h>
-#include <GL/gl.h>
-#include <GL/glext.h>
+#include <bugle/gl/glheaders.h>
 #include <bugle/glwin/glwin.h>
 #include <bugle/glwin/trackcontext.h>
 #include <bugle/gl/glutils.h>

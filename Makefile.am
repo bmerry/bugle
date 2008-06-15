@@ -169,11 +169,18 @@ GLBCFILES = bc/gl/gl.bc bc/gl/core1_1.bc bc/gl/glsl1_20.bc \
 	bc/gl/GL_EXT_framebuffer_object.bc bc/gl/GL_EXT_gpu_program_parameters.bc \
 	bc/gl/GL_NV_transform_feedback.bc \
 	bc/gl/alias.bc
+GLES2BCFILES = bc/gles2/gles2.bc
 GLXBCFILES = bc/glx/glx.bc \
 	bc/glx/GLX_ARB_get_proc_address.bc bc/glx/GLX_SGI_make_current_read.bc \
 	bc/glx/GLX_SGIX_fbconfig.bc bc/glx/GLX_SGIX_pbuffer.bc
 WGLBCFILES = bc/wgl/wgl.bc
-BCFILES = $(GLBCFILES) $(GLXBCFILES) $(WGLBCFILES) bc/gl-glx.bc bc/gl-wgl.bc
+EGLBCFILES = bc/egl/egl.bc
+BCFILES = $(GLBCFILES) \
+	  $(GLES2BCFILES) \
+	  $(GLXBCFILES) \
+	  $(WGLBCFILES) \
+	  $(EGLBCFILES) \
+	  bc/gl-glx.bc bc/gl-wgl.bc bc/gles2-egl-win.bc
 
 BUILT_SOURCES += src/apitables.h
 
@@ -497,18 +504,43 @@ $(BUDGIE_BUILT_SRCS): budgie/budgie$(EXEEXT) src/data/gl.tu $(GLBCFILES) $(WGLBC
 	$(mkdir_p) include/budgie
 	budgie/budgie$(EXEEXT) -I$(srcdir) -T `test -f src/data/gl.tu || echo '$(srcdir)/'`src/data/gl.tu $(srcdir)/bc/gl-wgl.bc
 endif
+if BUGLE_GLWIN_EGL
+includebugleegldir = $(includebugledir)/egl
+includebugleegl_HEADERS = \
+	include/bugle/egl/overrides.h
+budgie_overrides += \
+	include/bugle/egl/overrides.h
+bugle_sources += \
+	src/egl/glwin.c
+
+# FIXME-GLES: current specific to GLES2 and Windows
+$(BUDGIE_BUILT_SRCS): budgie/budgie$(EXEEXT) src/data/gl.tu $(GLES2BCFILES) $(EGLBCFILES) $(srcdir)/bc/gles2-egl-win.bc
+	$(mkdir_p) include/budgie
+	budgie/budgie$(EXEEXT) -I$(srcdir) -T `test -f src/data/gl.tu || echo '$(srcdir)/'`src/data/gl.tu $(srcdir)/bc/gles2-egl-win.bc
+endif
 
 if BUGLE_BINFMT_PE
-MODULELIBS += src/opengl32.la
 MODULEFLAGS += -Wl,--export-all-symbols
 SYMBOLFLAGS += -Wl,--add-stdcall-alias
+if BUGLE_GLTYPE_GL
+MODULELIBS += src/opengl32.la
 lib_LTLIBRARIES += src/opengl32.la
 
 src_opengl32_la_SOURCES = $(bugle_sources)
 nodist_src_opengl32_la_SOURCES = $(bugle_sources_nodist)
 src_opengl32_la_LIBADD = $(bugle_libadd)
 src_opengl32_la_LDFLAGS = $(bugle_ldflags) -module -avoid-version
-else
+endif
+if BUGLE_GLTYPE_GLES2
+MODULELIBS += src/libGLESv2.la
+lib_LTLIBRARIES += src/libGLESv2.la
+
+src_libGLESv2_la_SOURCES = $(bugle_sources)
+nodist_src_libGLESv2_la_SOURCES = $(bugle_sources_nodist)
+src_libGLESv2_la_LIBADD = $(bugle_libadd)
+src_libGLESv2_la_LDFLAGS = $(bugle_ldflags) -module -avoid-version
+endif
+else !BUGLE_BINFMT_PE
 MODULELIBS += src/libbugle.la
 lib_LTLIBRARIES += src/libbugle.la
 

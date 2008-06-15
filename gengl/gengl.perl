@@ -7,15 +7,17 @@ my @extension_force = (
     "GL_EXT_texture_rectangle",  # Doesn't exist, but ATI exposes it instead of GL_ARB_texture_rectangle
     "GL_VERSION_1_1",            # Base versions
     "GLX_VERSION_1_2",
-    "WGL_VERSION_1_0"
+    "WGL_VERSION_1_0",
+    "EGL_VERSION_1_3"
 );
 
 my %function_force_version = (
     "glXGetCurrentDisplay" => "GLX_VERSION_1_2",      # glxext.h claims 1.3
 );
 
-my $function_regex = qr/(w?gl[A-Z]\w+)\s*\(/;
+my $function_regex = qr/([ew]?gl[A-Z]\w+)\s*\(/;
 my $wgl_function_regex = qr/^wgl/;
+my $egl_function_regex = qr/^egl/;
 
 my %extension_chains = (
     "GL_ATI_draw_buffers" => "GL_ARB_draw_buffers",
@@ -236,18 +238,13 @@ sub enum_name_collate($)
 sub extension_collate($)
 {
     my $e = shift;
-    if ($e =~ /^GLX_/)
+    if ($e =~ /^(?:GLX|WGL|EGL)_/)
     {
-        $e =~ s/^GLX_/GL_/;
-        return 'z' . &extension_collate($e);
-    }
-    elsif ($e =~ /^WGL_/)
-    {
-        $e =~ s/^WGL_/GL_/;
+        $e =~ s/^[A-Z]*_/GL_/;
         return 'z' . &extension_collate($e);
     }
 
-    if ($e =~ /^GL_VERSION_(\d+)_(\d+)/)
+    if ($e =~ /^GL_(?:ES_)?VERSION_(\d+)_(\d+)/)
     {
         return sprintf("a_%04d_%04d", $1, $2);
     }
@@ -317,6 +314,10 @@ foreach my $in_header (@ARGV)
     {
         $base_ext = 'WGL_VERSION_1_0';
     }
+    elsif ($in_header =~ /egl\.h|eglext\.h/)
+    {
+        $base_ext = 'EGL_VERSION_1_3';
+    }
     else
     {
         $base_ext = 'GL_VERSION_1_1';
@@ -325,13 +326,13 @@ foreach my $in_header (@ARGV)
     $cur_ext = $base_ext;
     while (<H>)
     {
-        if (/^#ifndef (GLX?_([0-9A-Z]+)_\w+)/
+        if (/^#ifndef (E?GLX?_([0-9A-Z]+)_\w+)/
             && !/GL_GLEXT_/ && !/GLX_GLXEXT_/)
         {
             $cur_ext = $1;
             $cur_suffix = '';
-            if (!/^#ifndef GLX?_VERSION/
-                && /^#ifndef GLX?_([0-9A-Z]+)_\w+/)
+            if (!/^#ifndef E?GLX?_(?:ES_)?VERSION/
+                && /^#ifndef E?GLX?_([0-9A-Z]+)_\w+/)
             {
                 $cur_suffix = $1;
             }
@@ -363,6 +364,11 @@ foreach my $in_header (@ARGV)
                 # Fake version, since WGL isn't versioned
                 $functions{$name} = "WGL_VERSION_1_0";
             }
+            elsif ($name =~ /$egl_function_regex/)
+            {
+                # Guess, since egl.h doesn't list versions
+                $functions{$name} = "EGL_VERSION_1_3";
+            }
             # In some cases the headers are wrong. Use our own table for those
             # cases
             elsif (exists($function_force_version{$name}))
@@ -372,7 +378,8 @@ foreach my $in_header (@ARGV)
             elsif (!defined($functions{$name})
                 || $functions{$name} eq 'GL_VERSION_1_1'
                 || $functions{$name} eq 'GLX_VERSION_1_2'
-                || $functions{$name} eq 'WGL_VERSION_1_0')
+                || $functions{$name} eq 'WGL_VERSION_1_0'
+                || $functions{$name} eq 'EGL_VERSION_1_3')
             {
                 # Mesa headers define assorted functions from higher GL versions
                 # without the regexs that we match against. In this case it will
@@ -382,6 +389,7 @@ foreach my $in_header (@ARGV)
             elsif ($cur_ext ne 'GL_VERSION_1_1'
                    && $cur_ext ne 'GLX_VERSION_1_2'
                    && $cur_ext ne 'WGL_VERSION_1_0'
+                   && $cur_ext ne 'EGL_VERSION_1_3'
                    && $cur_ext ne $functions{$name})
             {
                 die "$name is defined in both $cur_ext and $functions{$name}";
@@ -499,7 +507,7 @@ EOF
     $first = 1;
     foreach my $ext (@extensions, keys %extension_groups)
     {
-        my $ver = ($ext =~ /^GLX?_VERSION_([0-9]+)_([0-9]+)/) ? "\"$1.$2\"" : "NULL";
+        my $ver = ($ext =~ /^E?GLX?_(?:ES_)?VERSION_([0-9]+)_([0-9]+)/) ? "\"$1.$2\"" : "NULL";
         my $block = 'BUGLE_API_EXTENSION_BLOCK_GLWIN';
         if ($ext =~ /^GL_/)
         {
