@@ -25,8 +25,8 @@
 #include <bugle/filters.h>
 #include <bugle/objects.h>
 #include <bugle/glwin/trackcontext.h>
-#include <bugle/gl/trackdisplaylist.h>
-#include <bugle/gl/trackobjects.h>
+#include <bugle/gl/gldisplaylist.h>
+#include <bugle/gl/globjects.h>
 #include <bugle/gl/glutils.h>
 #include <bugle/hashtable.h>
 #include <budgie/call.h>
@@ -88,7 +88,7 @@ void *bugle_displaylist_get(GLuint list)
     return ans;
 }
 
-static bool trackdisplaylist_glNewList(function_call *call, const callback_data *data)
+static bool gldisplaylist_glNewList(function_call *call, const callback_data *data)
 {
     displaylist_struct info;
     object *obj;
@@ -103,12 +103,12 @@ static bool trackdisplaylist_glNewList(function_call *call, const callback_data 
         info.mode = value;
         if (info.list == 0) return true; /* Call failed? */
         obj = bugle_object_new(bugle_displaylist_class, &info, true);
-        bugle_end_internal_render("trackdisplaylist_callback", true);
+        bugle_end_internal_render("gldisplaylist_callback", true);
     }
     return true;
 }
 
-static bool trackdisplaylist_glEndList(function_call *call, const callback_data *data)
+static bool gldisplaylist_glEndList(function_call *call, const callback_data *data)
 {
     object *obj;
     displaylist_struct *info_ptr;
@@ -128,16 +128,16 @@ static bool trackdisplaylist_glEndList(function_call *call, const callback_data 
     return true;
 }
 
-static bool trackdisplaylist_filter_set_initialise(filter_set *handle)
+static bool gldisplaylist_filter_set_initialise(filter_set *handle)
 {
     filter *f;
 
     bugle_displaylist_class = bugle_object_class_new(bugle_context_class);
 
-    f = bugle_filter_new(handle, "trackdisplaylist");
-    bugle_filter_order("invoke", "trackdisplaylist");
-    bugle_filter_catches(f, "glNewList", true, trackdisplaylist_glNewList);
-    bugle_filter_catches(f, "glEndList", true, trackdisplaylist_glEndList);
+    f = bugle_filter_new(handle, "gldisplaylist");
+    bugle_filter_order("invoke", "gldisplaylist");
+    bugle_filter_catches(f, "glNewList", true, gldisplaylist_glNewList);
+    bugle_filter_catches(f, "glEndList", true, gldisplaylist_glEndList);
 
     displaylist_view = bugle_object_view_new(bugle_displaylist_class,
                                              displaylist_struct_init,
@@ -150,12 +150,12 @@ static bool trackdisplaylist_filter_set_initialise(filter_set *handle)
     return true;
 }
 
-void trackdisplaylist_initialise(void)
+void gldisplaylist_initialise(void)
 {
-    static const filter_set_info trackdisplaylist_info =
+    static const filter_set_info gldisplaylist_info =
     {
-        "trackdisplaylist",
-        trackdisplaylist_filter_set_initialise,
+        "gldisplaylist",
+        gldisplaylist_filter_set_initialise,
         NULL,
         NULL,
         NULL,
@@ -163,7 +163,7 @@ void trackdisplaylist_initialise(void)
         NULL /* No documentation */
     };
 
-    bugle_filter_set_new(&trackdisplaylist_info);
+    bugle_filter_set_new(&gldisplaylist_info);
 
-    bugle_filter_set_depends("trackdisplaylist", "trackcontext");
+    bugle_filter_set_depends("gldisplaylist", "trackcontext");
 }

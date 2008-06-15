@@ -38,7 +38,7 @@
 #include <bugle/glwin/glwin.h>
 #include <bugle/glwin/trackcontext.h>
 #include <bugle/gl/glutils.h>
-#include <bugle/gl/trackextensions.h>
+#include <bugle/gl/glextensions.h>
 #include <bugle/hashtable.h>
 #include <bugle/filters.h>
 #include <bugle/apireflect.h>
@@ -1131,7 +1131,7 @@ void bugle_initialise_filter_library(void)
 
     bugle_filter_set_renders("screenshot");
     bugle_filter_set_depends("screenshot", "trackcontext");
-    bugle_filter_set_depends("screenshot", "trackextensions");
+    bugle_filter_set_depends("screenshot", "glextensions");
     bugle_filter_set_renders("eps");
     bugle_filter_set_depends("eps", "trackcontext");
 }

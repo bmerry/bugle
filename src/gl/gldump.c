@@ -29,8 +29,8 @@
 #include <bugle/gl/glutils.h>
 #include <bugle/gl/gldump.h>
 #include <bugle/gl/gltypes.h>
-#include <bugle/gl/trackbeginend.h>
-#include <bugle/gl/trackextensions.h>
+#include <bugle/gl/glbeginend.h>
+#include <bugle/gl/glextensions.h>
 #include <bugle/filters.h>
 #include <bugle/log.h>
 #include <bugle/apireflect.h>
@@ -484,7 +484,7 @@ int bugle_count_attached_objects(GLhandleARB program, GLsizei max)
  * used by a client-side encoding of a 1D, 2D or 3D image.
  * Specify -1 for depth for 1D or 2D textures.
  *
- * The trackcontext and trackbeginend filtersets
+ * The trackcontext and glbeginend filtersets
  * must be loaded for this to work.
  */
 size_t bugle_image_element_count(GLsizei width,

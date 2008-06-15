@@ -43,10 +43,10 @@ includebuglegl_HEADERS = \
 	include/bugle/gl/overrides.h \
 	include/bugle/gl/gltypes.h \
 	include/bugle/gl/gldump.h \
-	include/bugle/gl/trackbeginend.h \
-	include/bugle/gl/trackdisplaylist.h \
-	include/bugle/gl/trackobjects.h \
-	include/bugle/gl/trackextensions.h
+	include/bugle/gl/glbeginend.h \
+	include/bugle/gl/gldisplaylist.h \
+	include/bugle/gl/globjects.h \
+	include/bugle/gl/glextensions.h
 includebudgie_HEADERS = \
 	include/budgie/addresses.h \
 	include/budgie/basictypes.h \
@@ -135,8 +135,8 @@ bugle_sources = \
 	budgielib/addresses.c budgielib/lib.h \
 	common/threads.h \
 	src/gl/glutils.c src/gl/glstate.c src/gl/glsl.c src/gl/gldump.c \
-	src/glwin/trackcontext.c src/gl/trackdisplaylist.c src/gl/trackobjects.c \
-	src/gl/trackextensions.c src/gl/trackbeginend.c
+	src/glwin/trackcontext.c src/gl/gldisplaylist.c src/gl/globjects.c \
+	src/gl/glextensions.c src/gl/glbeginend.c
 bugle_sources_nodist = \
 	budgielib/lib.c
 bugle_libadd = $(LIBLTDL) src/libbugleutils.la $(GL_LIBS) $(LTLIBTHREAD) $(LTLIBINTL) lib/libgnu.la

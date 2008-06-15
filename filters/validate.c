@@ -34,8 +34,8 @@
 #include <bugle/glwin/trackcontext.h>
 #include <bugle/gl/glutils.h>
 #include <bugle/gl/glsl.h>
-#include <bugle/gl/trackbeginend.h>
-#include <bugle/gl/trackextensions.h>
+#include <bugle/gl/glbeginend.h>
+#include <bugle/gl/glextensions.h>
 #include <bugle/filters.h>
 #include <bugle/log.h>
 #include <bugle/apireflect.h>
@@ -1270,8 +1270,8 @@ static bool checks_initialise(filter_set *handle)
     bugle_filter_order("checks", "stats");
     bugle_filter_order("checks", "trace");
     bugle_filter_order("checks", "trackcontext");
-    bugle_filter_order("checks", "trackbeginend");
-    bugle_filter_order("checks", "trackdisplaylist");
+    bugle_filter_order("checks", "glbeginend");
+    bugle_filter_order("checks", "gldisplaylist");
     return true;
 }
 
@@ -1330,5 +1330,5 @@ void bugle_initialise_filter_library(void)
     bugle_filter_set_depends("showerror", "error");
     bugle_filter_set_queries_error("showerror");
     bugle_filter_set_renders("checks");
-    bugle_filter_set_depends("checks", "trackextensions");
+    bugle_filter_set_depends("checks", "glextensions");
 }

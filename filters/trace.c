@@ -84,6 +84,6 @@ void bugle_initialise_filter_library(void)
     /* No direct rendering, but some of the length functions query state */
     bugle_filter_set_renders("trace");
     /* Some of the queries depend on extensions */
-    bugle_filter_set_depends("trace", "trackbeginend");
-    bugle_filter_set_depends("trace", "trackextensions");
+    bugle_filter_set_depends("trace", "glbeginend");
+    bugle_filter_set_depends("trace", "glextensions");
 }

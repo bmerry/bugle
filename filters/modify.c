@@ -24,8 +24,8 @@
 #include <bugle/glwin/glwin.h>
 #include <bugle/glwin/trackcontext.h>
 #include <bugle/gl/glutils.h>
-#include <bugle/gl/trackextensions.h>
-#include <bugle/gl/trackdisplaylist.h>
+#include <bugle/gl/glextensions.h>
+#include <bugle/gl/gldisplaylist.h>
 #include <bugle/linkedlist.h>
 #include <bugle/hashtable.h>
 #include <bugle/filters.h>
@@ -1257,15 +1257,15 @@ void bugle_initialise_filter_library(void)
 
     bugle_filter_set_renders("classify");
     bugle_filter_set_depends("classify", "trackcontext");
-    bugle_filter_set_depends("classify", "trackextensions");
+    bugle_filter_set_depends("classify", "glextensions");
     bugle_filter_set_renders("wireframe");
     bugle_filter_set_depends("wireframe", "trackcontext");
     bugle_filter_set_depends("wireframe", "classify");
     bugle_filter_set_renders("frontbuffer");
     bugle_filter_set_renders("camera");
     bugle_filter_set_depends("camera", "classify");
-    bugle_filter_set_depends("camera", "trackdisplaylist");
+    bugle_filter_set_depends("camera", "gldisplaylist");
     bugle_filter_set_depends("camera", "trackcontext");
-    bugle_filter_set_depends("camera", "trackextensions");
-    bugle_filter_set_depends("extoverride", "trackextensions");
+    bugle_filter_set_depends("camera", "glextensions");
+    bugle_filter_set_depends("extoverride", "glextensions");
 }

@@ -36,9 +36,9 @@
 #include <bugle/gl/glstate.h>
 #include <bugle/gl/glsl.h>
 #include <bugle/gl/glutils.h>
-#include <bugle/gl/trackbeginend.h>
-#include <bugle/gl/trackobjects.h>
-#include <bugle/gl/trackextensions.h>
+#include <bugle/gl/glbeginend.h>
+#include <bugle/gl/globjects.h>
+#include <bugle/gl/glextensions.h>
 #include <bugle/filters.h>
 #include <bugle/log.h>
 #include <bugle/hashtable.h>
@@ -385,7 +385,7 @@ static bool get_framebuffer_size(GLuint fbo, GLenum target, GLenum attachment,
         {
             CALL(glGetFramebufferAttachmentParameterivEXT)(target, attachment,
                                                           GL_FRAMEBUFFER_ATTACHMENT_TEXTURE_LEVEL_EXT, &level);
-            texture_target = bugle_trackobjects_get_target(BUGLE_TRACKOBJECTS_TEXTURE, name);
+            texture_target = bugle_globjects_get_target(BUGLE_GLOBJECTS_TEXTURE, name);
             texture_binding = target_to_binding(texture_target);
             if (!texture_binding) return false;
 
@@ -1020,7 +1020,7 @@ static bool debugger_initialise(filter_set *handle)
     bugle_filter_order("debugger", "invoke");
     bugle_filter_order("invoke", "debugger_error");
     bugle_filter_order("error", "debugger_error");
-    bugle_filter_order("trackobjects", "debugger_error"); /* so we don't try to query any deleted objects */
+    bugle_filter_order("globjects", "debugger_error"); /* so we don't try to query any deleted objects */
     bugle_filter_post_renders("debugger_error");
     bugle_filter_set_queries_error("debugger");
 
@@ -1048,8 +1048,8 @@ void bugle_initialise_filter_library(void)
     bugle_filter_set_new(&debugger_info);
 
     bugle_filter_set_depends("debugger", "error");
-    bugle_filter_set_depends("debugger", "trackextensions");
-    bugle_filter_set_depends("debugger", "trackobjects");
-    bugle_filter_set_depends("debugger", "trackbeginend");
+    bugle_filter_set_depends("debugger", "glextensions");
+    bugle_filter_set_depends("debugger", "globjects");
+    bugle_filter_set_depends("debugger", "glbeginend");
     bugle_filter_set_renders("debugger");
 }

@@ -27,7 +27,7 @@
 #include <bugle/glwin/glwin.h>
 #include <bugle/glwin/trackcontext.h>
 #include <bugle/gl/glutils.h>
-#include <bugle/gl/trackextensions.h>
+#include <bugle/gl/glextensions.h>
 #include <bugle/linkedlist.h>
 #include <bugle/misc.h>
 #include <bugle/stats.h>
@@ -575,7 +575,7 @@ void bugle_initialise_filter_library(void)
     };
 
     bugle_filter_set_new(&showstats_info);
-    bugle_filter_set_depends("showstats", "trackextensions");
+    bugle_filter_set_depends("showstats", "glextensions");
     bugle_filter_set_renders("showstats");
     bugle_filter_set_stats_logger("showstats");
     bugle_list_init(&showstats_stats_requested, free);

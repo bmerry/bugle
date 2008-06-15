@@ -44,8 +44,8 @@
 #include <bugle/gl/glsl.h>
 #include <bugle/gl/glstate.h>
 #include <bugle/gl/glutils.h>
-#include <bugle/gl/trackobjects.h>
-#include <bugle/gl/trackextensions.h>
+#include <bugle/gl/globjects.h>
+#include <bugle/gl/glextensions.h>
 #include <budgie/types.h>
 #include <budgie/reflect.h>
 #include <budgie/call.h>
@@ -711,7 +711,7 @@ static void make_objects_walker(GLuint object,
 }
 
 static void make_objects(const glstate *self,
-                         bugle_trackobjects_type type,
+                         bugle_globjects_type type,
                          GLenum target,
                          bool add_zero,
                          const char *format,
@@ -730,7 +730,7 @@ static void make_objects(const glstate *self,
 
     if (add_zero)
         make_object(self, target, format, 0, spawn_children, info, children);
-    bugle_trackobjects_walk(type, make_objects_walker, &data);
+    bugle_globjects_walk(type, make_objects_walker, &data);
 }
 
 static void make_target(const glstate *self,
@@ -1058,7 +1058,7 @@ static void spawn_children_tex_target(const glstate *self, linked_list *children
     if (self->binding) /* Zero here indicates a proxy target */
     {
         bugle_list_init(children, free);
-        make_objects(self, BUGLE_TRACKOBJECTS_TEXTURE, self->target, true, "%lu",
+        make_objects(self, BUGLE_GLOBJECTS_TEXTURE, self->target, true, "%lu",
                      spawn_children_tex_parameter, NULL, children);
     }
     else
@@ -1074,7 +1074,7 @@ static void spawn_children_tex_buffer(const glstate *self, linked_list *children
 static void spawn_children_tex_buffer_target(const glstate *self, linked_list *children)
 {
     bugle_list_init(children, free);
-    make_objects(self, BUGLE_TRACKOBJECTS_TEXTURE, self->target, true, "%lu",
+    make_objects(self, BUGLE_GLOBJECTS_TEXTURE, self->target, true, "%lu",
                  spawn_children_tex_buffer, NULL, children);
 }
 
@@ -1456,7 +1456,7 @@ static void spawn_shaders(const struct glstate *self,
                           const struct state_info *info)
 {
 #ifdef GL_ARB_shader_objects
-    make_objects(self, BUGLE_TRACKOBJECTS_SHADER, GL_NONE, false,
+    make_objects(self, BUGLE_GLOBJECTS_SHADER, GL_NONE, false,
                  "Shader[%lu]", spawn_children_shader, NULL, children);
 #endif
 }
@@ -1466,7 +1466,7 @@ static void spawn_programs(const struct glstate *self,
                            const struct state_info *info)
 {
 #ifdef GL_ARB_shader_objects
-    make_objects(self, BUGLE_TRACKOBJECTS_PROGRAM, GL_NONE, false,
+    make_objects(self, BUGLE_GLOBJECTS_PROGRAM, GL_NONE, false,
                  "Program[%lu]", spawn_children_program, NULL, children);
 #endif
 }
@@ -2955,7 +2955,7 @@ static void spawn_children_old_program(const glstate *self, linked_list *childre
             bugle_list_append(children, child);
         }
     }
-    make_objects(self, BUGLE_TRACKOBJECTS_OLD_PROGRAM, self->target, false,
+    make_objects(self, BUGLE_GLOBJECTS_OLD_PROGRAM, self->target, false,
                  "%lu", spawn_children_old_program_object, NULL, children);
 }
 #endif /* GL_ARB_vertex_program || GL_ARB_fragment_program */
@@ -3023,7 +3023,7 @@ static void spawn_children_framebuffer_object(const glstate *self, linked_list *
 static void spawn_children_framebuffer(const glstate *self, linked_list *children)
 {
     bugle_list_init(children, free);
-    make_objects(self, BUGLE_TRACKOBJECTS_FRAMEBUFFER, self->target, true,
+    make_objects(self, BUGLE_GLOBJECTS_FRAMEBUFFER, self->target, true,
                  "%lu", spawn_children_framebuffer_object, NULL, children);
 }
 
@@ -3036,7 +3036,7 @@ static void spawn_children_renderbuffer_object(const glstate *self, linked_list 
 static void spawn_children_renderbuffer(const glstate *self, linked_list *children)
 {
     bugle_list_init(children, free);
-    make_objects(self, BUGLE_TRACKOBJECTS_RENDERBUFFER, self->target, false,
+    make_objects(self, BUGLE_GLOBJECTS_RENDERBUFFER, self->target, false,
                  "%lu", spawn_children_renderbuffer_object, NULL, children);
 }
 #endif /* GL_EXT_framebuffer_object */
@@ -3077,14 +3077,14 @@ static void spawn_children_global(const glstate *self, linked_list *children)
     {
         make_fixed(self, query_enums, offsetof(glstate, target),
                    spawn_children_query, NULL, children);
-        make_objects(self, BUGLE_TRACKOBJECTS_QUERY, GL_NONE, false,
+        make_objects(self, BUGLE_GLOBJECTS_QUERY, GL_NONE, false,
                      "Query[%lu]", spawn_children_query_object, NULL, children);
     }
 #endif
 #ifdef GL_ARB_vertex_buffer_object
     if (bugle_gl_has_extension_group(BUGLE_GL_ARB_vertex_buffer_object))
     {
-        make_objects(self, BUGLE_TRACKOBJECTS_BUFFER, GL_NONE, false,
+        make_objects(self, BUGLE_GLOBJECTS_BUFFER, GL_NONE, false,
                      "Buffer[%lu]", spawn_children_buffer_parameter, NULL, children);
     }
 #endif

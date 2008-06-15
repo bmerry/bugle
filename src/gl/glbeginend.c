@@ -27,20 +27,20 @@
 #include <stddef.h>
 #include <GL/gl.h>
 #include <bugle/glwin/trackcontext.h>
-#include <bugle/gl/trackbeginend.h>
-#include <bugle/gl/trackobjects.h>
+#include <bugle/gl/glbeginend.h>
+#include <bugle/gl/globjects.h>
 #include <bugle/filters.h>
 #include <bugle/objects.h>
 #include <budgie/call.h>
 #include <budgie/types.h>
 
-static object_view trackbeginend_view;
+static object_view glbeginend_view;
 
 /* Note: we can't use glGetError to determine whether an error occurred,
  * because if the call was successful then doing so is itself an error. So
  * we are forced to do the validation ourselves.
  */
-static bool trackbeginend_glBegin(function_call *call, const callback_data *data)
+static bool glbeginend_glBegin(function_call *call, const callback_data *data)
 {
     bool *begin_end;
 
@@ -62,19 +62,19 @@ static bool trackbeginend_glBegin(function_call *call, const callback_data *data
     case GL_TRIANGLES_ADJACENCY_EXT:
     case GL_TRIANGLE_STRIP_ADJACENCY_EXT:
 #endif
-        begin_end = (bool *) bugle_object_get_current_data(bugle_context_class, trackbeginend_view);
+        begin_end = (bool *) bugle_object_get_current_data(bugle_context_class, glbeginend_view);
         if (begin_end != NULL) *begin_end = true;
     default: /* Avoids compiler warning if GLenum is a C enum */ ;
     }
     return true;
 }
 
-static bool trackbeginend_glEnd(function_call *call, const callback_data *data)
+static bool glbeginend_glEnd(function_call *call, const callback_data *data)
 {
     bool *begin_end;
 
     /* glEnd can only fail if we weren't in begin/end anyway. */
-    begin_end = (bool *) bugle_object_get_current_data(bugle_context_class, trackbeginend_view);
+    begin_end = (bool *) bugle_object_get_current_data(bugle_context_class, glbeginend_view);
     if (begin_end != NULL) *begin_end = false;
     return true;
 }
@@ -83,37 +83,37 @@ bool bugle_gl_in_begin_end(void)
 {
     bool *begin_end;
 
-    begin_end = (bool *) bugle_object_get_current_data(bugle_context_class, trackbeginend_view);
+    begin_end = (bool *) bugle_object_get_current_data(bugle_context_class, glbeginend_view);
     return !begin_end || *begin_end;
 }
 
 void bugle_gl_filter_post_queries_begin_end(const char *name)
 {
-    bugle_filter_order("trackbeginend", name);
+    bugle_filter_order("glbeginend", name);
 }
 
-static bool trackbeginend_filter_set_initialise(filter_set *handle)
+static bool glbeginend_filter_set_initialise(filter_set *handle)
 {
     filter *f;
 
-    f = bugle_filter_new(handle, "trackbeginend");
-    bugle_filter_order("invoke", "trackbeginend");
-    bugle_filter_catches(f, "glBegin", true, trackbeginend_glBegin);
-    bugle_filter_catches(f, "glEnd", true, trackbeginend_glEnd);
+    f = bugle_filter_new(handle, "glbeginend");
+    bugle_filter_order("invoke", "glbeginend");
+    bugle_filter_catches(f, "glBegin", true, glbeginend_glBegin);
+    bugle_filter_catches(f, "glEnd", true, glbeginend_glEnd);
 
-    trackbeginend_view = bugle_object_view_new(bugle_context_class,
+    glbeginend_view = bugle_object_view_new(bugle_context_class,
                                                NULL,
                                                NULL,
                                                sizeof(bool));
     return true;
 }
 
-void trackbeginend_initialise(void)
+void glbeginend_initialise(void)
 {
-    static const filter_set_info trackbeginend_info =
+    static const filter_set_info glbeginend_info =
     {
-        "trackbeginend",
-        trackbeginend_filter_set_initialise,
+        "glbeginend",
+        glbeginend_filter_set_initialise,
         NULL,
         NULL,
         NULL,
@@ -121,7 +121,7 @@ void trackbeginend_initialise(void)
         NULL /* no documentation */
     };
 
-    bugle_filter_set_new(&trackbeginend_info);
+    bugle_filter_set_new(&glbeginend_info);
 
-    bugle_filter_set_depends("trackbeginend", "trackcontext");
+    bugle_filter_set_depends("glbeginend", "trackcontext");
 }

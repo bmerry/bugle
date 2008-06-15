@@ -26,7 +26,7 @@
 #include <bugle/glwin/glwin.h>
 #include <bugle/glwin/trackcontext.h>
 #include <bugle/gl/glutils.h>
-#include <bugle/gl/trackextensions.h>
+#include <bugle/gl/glextensions.h>
 #include <bugle/hashtable.h>
 #include <bugle/filters.h>
 #include <bugle/objects.h>
@@ -40,7 +40,7 @@ typedef struct
     hash_table names;
 } context_extensions;
 
-static object_view trackextensions_view = 0;
+static object_view glextensions_view = 0;
 
 /* Extracts all the words from str, and sets arbitrary non-NULL values in
  * the hash table for each token. It does NOT clear the hash table first.
@@ -123,12 +123,12 @@ static void context_clear(void *data)
     bugle_hash_clear(&ce->names);
 }
 
-static bool trackextensions_filter_set_initialise(filter_set *handle)
+static bool glextensions_filter_set_initialise(filter_set *handle)
 {
-    trackextensions_view = bugle_object_view_new(bugle_context_class,
-                                                 context_init,
-                                                 context_clear,
-                                                 sizeof(context_extensions));
+    glextensions_view = bugle_object_view_new(bugle_context_class,
+                                              context_init,
+                                              context_clear,
+                                              sizeof(context_extensions));
     return true;
 }
 
@@ -144,7 +144,7 @@ bool bugle_gl_has_extension(bugle_api_extension ext)
     if (ext == NULL_EXTENSION) return false;
     if (ext < 0) return !bugle_gl_has_extension(~ext);
     assert(ext < bugle_api_extension_count());
-    ce = (const context_extensions *) bugle_object_get_current_data(bugle_context_class, trackextensions_view);
+    ce = (const context_extensions *) bugle_object_get_current_data(bugle_context_class, glextensions_view);
     if (!ce) return false;
     else return ce->flags[ext];
 }
@@ -155,7 +155,7 @@ bool bugle_gl_has_extension2(int ext, const char *name)
 
     assert(ext >= -1 && ext < bugle_api_extension_count());
     /* bugle_api_extension_id returns -1 for unknown extensions - play it safe */
-    ce = (const context_extensions *) bugle_object_get_current_data(bugle_context_class, trackextensions_view);
+    ce = (const context_extensions *) bugle_object_get_current_data(bugle_context_class, glextensions_view);
     if (!ce) return false;
     if (ext >= 0)
         return ce->flags[ext];
@@ -174,7 +174,7 @@ bool bugle_gl_has_extension_group(bugle_api_extension ext)
 
     if (ext < 0) return !bugle_gl_has_extension_group(~ext);
     assert(ext < bugle_api_extension_count());
-    ce = (const context_extensions *) bugle_object_get_current_data(bugle_context_class, trackextensions_view);
+    ce = (const context_extensions *) bugle_object_get_current_data(bugle_context_class, glextensions_view);
     if (!ce) return false;
     exts = bugle_api_extension_group_members(ext);
 
@@ -189,12 +189,12 @@ bool bugle_gl_has_extension_group2(bugle_api_extension ext, const char *name)
         ? bugle_gl_has_extension2(ext, name) : bugle_gl_has_extension_group(ext);
 }
 
-void trackextensions_initialise(void)
+void glextensions_initialise(void)
 {
-    static const filter_set_info trackextensions_info =
+    static const filter_set_info glextensions_info =
     {
-        "trackextensions",
-        trackextensions_filter_set_initialise,
+        "glextensions",
+        glextensions_filter_set_initialise,
         NULL,
         NULL,
         NULL,
@@ -202,7 +202,7 @@ void trackextensions_initialise(void)
         NULL /* No documentation */
     };
 
-    bugle_filter_set_new(&trackextensions_info);
+    bugle_filter_set_new(&glextensions_info);
 
-    bugle_filter_set_renders("trackextensions");
+    bugle_filter_set_renders("glextensions");
 }

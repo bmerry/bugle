@@ -78,7 +78,7 @@ typedef struct
 } bugle_state_raw;
 
 /* Must be in a valid state to make GL calls.
- * Must also have trackextensions and trackobjects.
+ * Must also have glextensions and globjects.
  */
 void bugle_state_get_raw(const glstate *, bugle_state_raw *);
 char *bugle_state_get_string(const glstate *); /* caller frees */

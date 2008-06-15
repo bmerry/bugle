@@ -25,7 +25,7 @@
 #include <bugle/glwin/glwin.h>
 #include <bugle/glwin/trackcontext.h>
 #include <bugle/gl/glutils.h>
-#include <bugle/gl/trackextensions.h>
+#include <bugle/gl/glextensions.h>
 #include <bugle/stats.h>
 #include <bugle/filters.h>
 #include <bugle/objects.h>
@@ -146,7 +146,7 @@ void bugle_initialise_filter_library(void)
 
     bugle_filter_set_new(&stats_fragments_info);
     bugle_filter_set_depends("stats_fragments", "stats_basic");
-    bugle_filter_set_depends("stats_fragments", "trackextensions");
+    bugle_filter_set_depends("stats_fragments", "glextensions");
     bugle_filter_set_renders("stats_fragments");
     bugle_filter_set_stats_generator("stats_fragments");
 }

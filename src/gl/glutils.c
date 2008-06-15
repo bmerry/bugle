@@ -25,7 +25,7 @@
 #include <assert.h>
 #include <bugle/gl/glutils.h>
 #include <bugle/gl/gltypes.h>
-#include <bugle/gl/trackbeginend.h>
+#include <bugle/gl/glbeginend.h>
 #include <bugle/apireflect.h>
 #include <bugle/filters.h>
 #include <bugle/log.h>
@@ -236,7 +236,7 @@ bool bugle_call_is_immediate(function_call *call)
 void bugle_filter_set_renders(const char *name)
 {
     bugle_filter_set_depends(name, "trackcontext");
-    bugle_filter_set_depends(name, "trackbeginend");
+    bugle_filter_set_depends(name, "glbeginend");
     bugle_filter_set_depends(name, "log");
 }
 

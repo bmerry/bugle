@@ -23,8 +23,8 @@
 #include <stdbool.h>
 #include <stdlib.h>
 #include <bugle/glwin/trackcontext.h>
-#include <bugle/gl/trackbeginend.h>
-#include <bugle/gl/trackdisplaylist.h>
+#include <bugle/gl/glbeginend.h>
+#include <bugle/gl/gldisplaylist.h>
 #include <bugle/gl/glutils.h>
 #include <bugle/stats.h>
 #include <bugle/filters.h>
@@ -254,7 +254,7 @@ void bugle_initialise_filter_library(void)
     bugle_filter_set_new(&stats_primitives_info);
     bugle_filter_set_depends("stats_primitives", "stats_basic");
     bugle_filter_set_depends("stats_primitives", "trackcontext");
-    bugle_filter_set_depends("stats_primitives", "trackdisplaylist");
-    bugle_filter_set_depends("stats_primitives", "trackbeginend");
+    bugle_filter_set_depends("stats_primitives", "gldisplaylist");
+    bugle_filter_set_depends("stats_primitives", "glbeginend");
     bugle_filter_set_stats_generator("stats_primitives");
 }

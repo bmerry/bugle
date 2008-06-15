@@ -1,5 +1,5 @@
 /*  BuGLe: an OpenGL debugging tool
- *  Copyright (C) 2004-2007  Bruce Merry
+ *  Copyright (C) 2004-2008  Bruce Merry
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -24,10 +24,10 @@
 #include <stdio.h>
 #include <bugle/glwin/glwin.h>
 #include <bugle/glwin/trackcontext.h>
-#include <bugle/gl/trackobjects.h>
-#include <bugle/gl/trackdisplaylist.h>
-#include <bugle/gl/trackbeginend.h>
-#include <bugle/gl/trackextensions.h>
+#include <bugle/gl/globjects.h>
+#include <bugle/gl/gldisplaylist.h>
+#include <bugle/gl/glbeginend.h>
+#include <bugle/gl/glextensions.h>
 #include <bugle/filters.h>
 #include <bugle/xevent.h>
 #include <bugle/log.h>
@@ -185,10 +185,10 @@ static void load_config(void)
 static void initialise_core_filters(void)
 {
     trackcontext_initialise();
-    trackdisplaylist_initialise();
-    trackbeginend_initialise();
-    trackextensions_initialise();
-    trackobjects_initialise();
+    gldisplaylist_initialise();
+    glbeginend_initialise();
+    glextensions_initialise();
+    globjects_initialise();
     log_initialise();
     statistics_initialise();
 }
