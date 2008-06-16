@@ -59,6 +59,8 @@ typedef struct
     GLuint font_texture;
 } trackcontext_data;
 
+/* FIXME-GLES */
+#if BUGLE_GLTYPE_GL
 /* Extracted from Unifont - see LICENSE for details. Each byte is one 8-pixel
  * row of a character, highest bit left-most. The characters are packed into
  * a 128x128 texture, 16 per row and 8 per column, with the ASCII values
@@ -248,6 +250,7 @@ void bugle_gl_text_render(const char *msg, int x, int y)
     CALL(glEnd)();
     CALL(glPopAttrib)();
 }
+#endif
 
 static bool trackcontext_newcontext(function_call *call, const callback_data *data)
 {

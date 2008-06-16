@@ -41,7 +41,7 @@ case $host in
     ;;
 esac
 # FIXME-GLES
-bugle_target="gles2-egl-win"
+# bugle_target="gles2-egl-win"
 
 AC_LANG(C)
 AC_LIBLTDL_INSTALLABLE(libltdl)

@@ -6,6 +6,7 @@ use Getopt::Long;
 my @extension_force = (
     "GL_EXT_texture_rectangle",  # Doesn't exist, but ATI exposes it instead of GL_ARB_texture_rectangle
     "GL_VERSION_1_1",            # Base versions
+    "GL_ES_VERSION_2_0",
     "GLX_VERSION_1_2",
     "WGL_VERSION_1_0",
     "EGL_VERSION_1_3"
@@ -195,7 +196,7 @@ GL_ATTRIB_ARRAY_SIZE_NV
 # NB: this regex must not have capturing brackets, because it is used in
 # a situation where $n must not be overwritten.
 my $enum_not_name_regex = qr/^(?:
-    GL_VERSION_[0-9_]+
+    GL_(?:ES_)?VERSION_[0-9_]+
     |GL_GLEXT_\w+
     |GLX_GLXEXT_\w+
     |GL_[A-Z0-9_]+_BIT(?:_[A-Z0-9]+)?
@@ -230,7 +231,7 @@ sub enum_name_collate($)
 }
 
 # Helper for sorting extension names into a preferred order:
-# - GL_VERSION_* (numerically)
+# - GL_[ES_]VERSION_* (numerically)
 # - GL_ARB_*
 # - GL_EXT_*
 # - GL_*
