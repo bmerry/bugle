@@ -40,8 +40,25 @@ case $host in
     BUGLE_BINFMT=BUGLE_BINFMT_ELF
     ;;
 esac
-# FIXME-GLES
-# bugle_target="gles2-egl-win"
+AC_ARG_WITH([api], AC_HELP_STRING([--with-api], [specify api, from gl-wgl, gl-glx and gles2-egl-win]),
+            [bugle_target="$withval"], [])
+case $bugle_target in
+  gl-glx)
+    BUGLE_GLWIN=BUGLE_GLWIN_GLX
+    BUGLE_GLTYPE=BUGLE_GLTYPE_GL
+    ;;
+  gl-wgl)
+    BUGLE_GLWIN=BUGLE_GLWIN_WGL
+    BUGLE_GLTYPE=BUGLE_GLTYPE_GL
+    ;;
+  gles2-egl-*)
+    BUGLE_GLWIN=BUGLE_GLWIN_EGL
+    BUGLE_GLTYPE=BUGLE_GLTYPE_GLES2
+    ;;
+  *)
+    AC_MSG_ERROR([API $bugle_target is not recognised])
+    ;;
+esac
 
 AC_LANG(C)
 AC_LIBLTDL_INSTALLABLE(libltdl)
@@ -130,8 +147,6 @@ case "$bugle_target" in
   gles2-egl-*)
     GLINCLUDES="`CPP=\"$CPP\" srcdir=\"$srcdir\" $PERL -w $srcdir/gengl/find_header.perl GLES2/gl2.h GLES2/gl2ext.h EGL/egl.h EGL/eglext.h`"
     ;;
-  *)
-    AC_MSG_ERROR([Unknown target $bugle_target])
 esac
 AC_SUBST(GLINCLUDES)
 
@@ -216,21 +231,6 @@ then
     GTKGLEXT_LIBS=""
 fi
 AC_DEFINE_UNQUOTED(HAVE_GTKGLEXT, $HAVE_GTKGLEXT, [non-zero when all the requirements for GtkGLExt are met])
-
-case $bugle_target in
-  gl-glx)
-    BUGLE_GLWIN=BUGLE_GLWIN_GLX
-    BUGLE_GLTYPE=BUGLE_GLTYPE_GL
-    ;;
-  gl-wgl)
-    BUGLE_GLWIN=BUGLE_GLWIN_WGL
-    BUGLE_GLTYPE=BUGLE_GLTYPE_GL
-    ;;
-  gles2-egl-*)
-    BUGLE_GLWIN=BUGLE_GLWIN_EGL
-    BUGLE_GLTYPE=BUGLE_GLTYPE_GLES2
-    ;;
-esac
 
 AC_SUBST(BUGLE_FS)
 AC_SUBST(BUGLE_GLWIN)

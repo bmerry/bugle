@@ -10,8 +10,7 @@ MODULELIBS = src/libbugleutils.la lib/libgnu.la
 noinst_PROGRAMS = budgie/budgie
 # Misc extra files to include
 noinst_HEADERS = budgie/tree.def budgie/c-common.def
-dist_noinst_SCRIPTS = gengl/gengl.perl gengl/find_header.perl \
-		      mvtu.sh
+dist_noinst_SCRIPTS = gengl/gengl.perl gengl/find_header.perl mvtu.sh
 # The real things
 lib_LTLIBRARIES = src/libbugleutils.la
 bin_PROGRAMS = @GLDB@ @GLDB_GUI@
@@ -134,7 +133,7 @@ bugle_sources = \
 	src/xevent.c \
 	budgielib/addresses.c budgielib/lib.h \
 	common/threads.h \
-	src/gl/glutils.c src/gl/glstate.c src/gl/glsl.c src/gl/gldump.c \
+	src/gl/glutils.c src/gl/glsl.c \
 	src/glwin/trackcontext.c src/gl/gldisplaylist.c src/gl/globjects.c \
 	src/gl/glextensions.c src/gl/glbeginend.c
 bugle_sources_nodist = \
@@ -513,10 +512,17 @@ budgie_overrides += \
 bugle_sources += \
 	src/egl/glwin.c
 
-# FIXME-GLES: current specific to GLES2 and Windows
+# FIXME-GLES: currently specific to GLES2 and Windows
 $(BUDGIE_BUILT_SRCS): budgie/budgie$(EXEEXT) src/data/gl.tu $(GLES2BCFILES) $(EGLBCFILES) $(srcdir)/bc/gles2-egl-win.bc
 	$(mkdir_p) include/budgie
 	budgie/budgie$(EXEEXT) -I$(srcdir) -T `test -f src/data/gl.tu || echo '$(srcdir)/'`src/data/gl.tu $(srcdir)/bc/gles2-egl-win.bc
+endif
+
+if BUGLE_GLTYPE_GL
+bugle_sources += src/gl/glstate.c src/gl/gldump.c
+endif
+if BUGLE_GLTYPE_GLES2
+bugle_sources += src/gles2/glstate.c src/gles2/gldump.c
 endif
 
 if BUGLE_BINFMT_PE
