@@ -721,6 +721,7 @@ static void checks_attributes(size_t first, size_t count)
     GLenum i;
 
     if (!count) return;
+#ifndef GL_ES_VERSION_2_0
     checks_attribute(first, count,
                      "vertex array", GL_VERTEX_ARRAY,
                      GL_VERTEX_ARRAY_SIZE, 0,
@@ -790,13 +791,23 @@ static void checks_attributes(size_t first, size_t count)
                          GL_TEXTURE_COORD_ARRAY_POINTER,
                          VBO_ENUM(GL_TEXTURE_COORD_ARRAY_BUFFER_BINDING_ARB));
     }
+#endif /* !GL_ES_VERSION_2_0 */
 
-#ifdef GL_ARB_vertex_program
-    if (BUGLE_GL_HAS_EXTENSION(GL_ARB_vertex_program))
+#if defined(GL_ARB_vertex_program)
+    if (BUGLE_GL_HAS_EXTENSION_GROUP(GL_EXTGROUP_vertex_attrib))
     {
         GLint attribs, i;
 
         CALL(glGetIntegerv)(GL_MAX_VERTEX_ATTRIBS_ARB, &attribs);
+        for (i = 0; i < attribs; i++)
+            checks_generic_attribute(first, count, i);
+    }
+#endif
+#ifdef GL_ES_VERSION_2_0
+    {
+        GLint attribs, i;
+
+        CALL(glGetIntegerv)(GL_MAX_VERTEX_ATTRIBS, &attribs);
         for (i = 0; i < attribs; i++)
             checks_generic_attribute(first, count, i);
     }

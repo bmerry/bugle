@@ -61,20 +61,20 @@ void BUDGIEAPI (*bugle_glwin_get_proc_address(const char *name))(void)
 void bugle_glwin_query_version(glwin_display dpy, int *major, int *minor)
 {
     /* FIXME: is this valid? We are reinitialising! */
-    eglInitialize(dpy, major, minor);
+    CALL(eglInitialize)(dpy, major, minor);
 }
 
 const char *bugle_glwin_query_extensions_string(glwin_display dpy)
 {
-    return eglQueryString(dpy, EGL_EXTENSIONS);
+    return CALL(eglQueryString)(dpy, EGL_EXTENSIONS);
 }
 
 void bugle_glwin_get_drawable_dimensions(glwin_display dpy, glwin_drawable drawable,
                                          int *width, int *height)
 {
     EGLint w, h;
-    eglQuerySurface(dpy, drawable, EGL_WIDTH, &w);
-    eglQuerySurface(dpy, drawable, EGL_HEIGHT, &h);
+    CALL(eglQuerySurface)(dpy, drawable, EGL_WIDTH, &w);
+    CALL(eglQuerySurface)(dpy, drawable, EGL_HEIGHT, &h);
     *width = w;
     *height = h;
 }

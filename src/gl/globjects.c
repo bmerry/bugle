@@ -306,7 +306,7 @@ static bool globjects_pre_glUseProgramObjectARB(function_call *call, const callb
 
     if (bugle_begin_internal_render())
     {
-        program = bugle_glGetHandleARB(GL_PROGRAM_OBJECT_ARB);
+        program = bugle_gl_get_current_program();
         if (program != 0)
             globjects_pre_glsl_delete_program(program, data);
         bugle_end_internal_render("globjects_pre_glUseProgramObjectARB", true);

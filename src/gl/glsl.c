@@ -1,5 +1,5 @@
 /*  BuGLe: an OpenGL debugging tool
- *  Copyright (C) 2004-2007  Bruce Merry
+ *  Copyright (C) 2004-2008  Bruce Merry
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -35,6 +35,7 @@
 
 #if BUGLE_GLTYPE_GLES2
 #define call1(gl,arb,params) CALL(gl) params
+#define call1r(gl,arb,params) return CALL(gl) params
 #elif defined(GL_VERSION_2_0)
 #define call1(gl,arb,params) \
     do { \
@@ -47,11 +48,23 @@
             CALL(arb) params; \
         } \
     } while (0)
+#define call1r(gl,arb,params) \
+    do { \
+        if (BUGLE_GL_HAS_EXTENSION(GL_VERSION_2_0)) \
+        { \
+            return CALL(gl) params; \
+        } \
+        else \
+        { \
+            return CALL(arb) params; \
+        } \
+    } while (0)
 #else
 #define call1(gl,arb,params) CALL(arb) params
+#define call1r(gl,arb,params) return CALL(arb) params
 #endif
 
-#ifdef GL_ARB_shader_objects
+#if defined(GL_ARB_shader_objects) || defined(GL_ES_VERSION_2_0)
 void bugle_glGetProgramiv(GLuint program, GLenum pname, GLint *param)
 {
     call1(glGetProgramiv, glGetObjectParameterivARB, (program, pname, param));
@@ -64,48 +77,30 @@ void bugle_glGetShaderiv(GLuint shader, GLenum pname, GLint *param)
 
 void bugle_glGetAttachedShaders(GLuint program, GLsizei max_length, GLsizei *length, GLuint *shaders)
 {
-#ifdef GL_VERSION_2_0
-    if (BUGLE_GL_HAS_EXTENSION(GL_VERSION_2_0))
-    {
-        CALL(glGetAttachedShaders)(program, max_length, length, shaders);
-    }
-    else
-#endif
-    {
-        GLhandleARB *handles;
-        GLsizei i;
-        GLsizei my_length;
-
-        handles = XNMALLOC(max_length, GLhandleARB);
-        CALL(glGetAttachedObjectsARB)(program, max_length, &my_length, handles);
-        for (i = 0; i < my_length; i++)
-            shaders[i] = handles[i];
-        if (length) *length = my_length;
-        free(handles);
-    }
+    call1r(glGetAttachedShaders, glGetAttachedObjectsARB, (program, max_length, length, shaders));
 }
 
-void bugle_glGetProgramInfoLog(GLuint program, GLsizei max_length, GLsizei *length, GLcharARB *log)
+void bugle_glGetProgramInfoLog(GLuint program, GLsizei max_length, GLsizei *length, char *log)
 {
     call1(glGetProgramInfoLog, glGetInfoLogARB, (program, max_length, length, log));
 }
 
-void bugle_glGetShaderInfoLog(GLuint shader, GLsizei max_length, GLsizei *length, GLcharARB *log)
+void bugle_glGetShaderInfoLog(GLuint shader, GLsizei max_length, GLsizei *length, char *log)
 {
     call1(glGetShaderInfoLog, glGetInfoLogARB, (shader, max_length, length, log));
 }
 
-void bugle_glGetShaderSource(GLuint shader, GLsizei max_length, GLsizei *length, GLcharARB *source)
+void bugle_glGetShaderSource(GLuint shader, GLsizei max_length, GLsizei *length, char *source)
 {
     call1(glGetShaderSource, glGetShaderSourceARB, (shader, max_length, length, source));
 }
 
-void bugle_glGetActiveUniform(GLuint program, GLuint index, GLsizei max_length, GLsizei *length, GLint *size, GLenum *type, GLcharARB *name)
+void bugle_glGetActiveUniform(GLuint program, GLuint index, GLsizei max_length, GLsizei *length, GLint *size, GLenum *type, char *name)
 {
     call1(glGetActiveUniform, glGetActiveUniformARB, (program, index, max_length, length, size, type, name));
 }
 
-void bugle_glGetActiveAttrib(GLuint program, GLuint index, GLsizei max_length, GLsizei *length, GLint *size, GLenum *type, GLcharARB *name)
+void bugle_glGetActiveAttrib(GLuint program, GLuint index, GLsizei max_length, GLsizei *length, GLint *size, GLenum *type, char *name)
 {
     call1(glGetActiveAttrib, glGetActiveAttribARB, (program, index, max_length, length, size, type, name));
 }
@@ -120,25 +115,20 @@ void bugle_glGetUniformiv(GLuint program, GLint location, GLint *params)
     call1(glGetUniformiv, glGetUniformivARB, (program, location, params));
 }
 
-GLint bugle_glGetUniformLocation(GLuint program, const GLcharARB *name)
+GLint bugle_glGetUniformLocation(GLuint program, const char *name)
 {
-#ifdef GL_VERSION_2_0
-    if (BUGLE_GL_HAS_EXTENSION(GL_VERSION_2_0))
-        return CALL(glGetUniformLocation)(program, name);
-#endif
-    return CALL(glGetUniformLocationARB)(program, name);
+    call1r(glGetUniformLocation, glGetUniformLocationARB, (program, name));
 }
 
-GLint bugle_glGetAttribLocation(GLuint program, const GLcharARB *name)
+GLint bugle_glGetAttribLocation(GLuint program, const char *name)
 {
-#ifdef GL_VERSION_2_0
-    if (BUGLE_GL_HAS_EXTENSION(GL_VERSION_2_0))
-        return CALL(glGetAttribLocation)(program, name);
-#endif
-    return CALL(glGetAttribLocationARB)(program, name);
+    call1r(glGetAttribLocation, glGetAttribLocationARB, (program, name));
 }
 
-GLint bugle_glGetHandleARB(GLenum pname)
+#endif /* GL_ARB_shader_objects || GL_ES_VERSION_2_0 */
+
+#ifdef GL_ARB_shader_objects
+GLuint bugle_gl_get_current_program(void)
 {
     GLint handle;
 #ifdef GL_VERSION_2_0
@@ -148,7 +138,7 @@ GLint bugle_glGetHandleARB(GLenum pname)
         return handle;
     }
 #endif
-    return CALL(glGetHandleARB)(pname);
+    return CALL(glGetHandleARB)(GL_PROGRAM_OBJECT_ARB);
 }
 
 GLboolean bugle_glIsShader(GLuint shader)
@@ -174,5 +164,23 @@ GLboolean bugle_glIsProgram(GLuint program)
     return (CALL(glGetError)() == GL_NO_ERROR
             && type == GL_PROGRAM_OBJECT_ARB);
 }
-
 #endif /* GL_ARB_shader_objects */
+
+#ifdef GL_ES_VERSION_2_0
+GLuint bugle_gl_get_current_program(void)
+{
+    GLint handle;
+    CALL(glGetIntegerv)(GL_CURRENT_PROGRAM, &handle);
+    return handle;
+}
+
+GLboolean bugle_glIsShader(GLuint shader)
+{
+    return CALL(glIsShader)(shader);
+}
+
+GLboolean bugle_glIsProgram(GLuint program)
+{
+    return CALL(glIsProgram)(program);
+}
+#endif

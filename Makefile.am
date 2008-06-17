@@ -138,7 +138,7 @@ bugle_sources = \
 	src/gl/glextensions.c src/gl/glbeginend.c
 bugle_sources_nodist = \
 	budgielib/lib.c
-bugle_libadd = $(LIBLTDL) src/libbugleutils.la $(GL_LIBS) $(LTLIBTHREAD) $(LTLIBINTL) lib/libgnu.la
+bugle_libadd = $(LIBLTDL) src/libbugleutils.la $(LTLIBTHREAD) $(LTLIBINTL) lib/libgnu.la
 bugle_ldflags = -no-undefined -thread-safe -export-dynamic $(SYMBOLFLAGS) -version-info 6:2:1
 
 BUDGIE_BUILT_SRCS = \
