@@ -145,17 +145,12 @@ static GLenum target_to_binding(GLenum target)
 {
     switch (target)
     {
-    case GL_TEXTURE_1D: return GL_TEXTURE_BINDING_1D;
     case GL_TEXTURE_2D: return GL_TEXTURE_BINDING_2D;
-#if defined(GL_EXT_texture_object) && defined(GL_EXT_texture3D)
-    case GL_TEXTURE_3D_EXT: return GL_TEXTURE_3D_BINDING_EXT;
-#endif
-#ifdef GL_ARB_texture_cube_map
-    case GL_TEXTURE_CUBE_MAP_ARB: return GL_TEXTURE_BINDING_CUBE_MAP_ARB;
-#endif
-#ifdef GL_NV_texture_rectangle
-    case GL_TEXTURE_RECTANGLE_NV: return GL_TEXTURE_BINDING_RECTANGLE_NV;
-#endif
+    case GL_TEXTURE_CUBE_MAP: return GL_TEXTURE_BINDING_CUBE_MAP;
+#ifndef GL_ES_VERSION_2_0
+    case GL_TEXTURE_1D: return GL_TEXTURE_BINDING_1D;
+    case GL_TEXTURE_3D: return GL_TEXTURE_BINDING_3D;
+    case GL_TEXTURE_RECTANGLE_ARB: return GL_TEXTURE_BINDING_RECTANGLE_ARB;
 #ifdef GL_EXT_texture_array
     case GL_TEXTURE_1D_ARRAY_EXT: return GL_TEXTURE_BINDING_1D_ARRAY_EXT;
     case GL_TEXTURE_2D_ARRAY_EXT: return GL_TEXTURE_BINDING_2D_ARRAY_EXT;
@@ -163,6 +158,7 @@ static GLenum target_to_binding(GLenum target)
 #ifdef GL_EXT_texture_buffer_object
     case GL_TEXTURE_BUFFER_EXT: return GL_TEXTURE_BINDING_BUFFER_EXT;
 #endif
+#endif /* GL_ES_VERSION_2_0 */
     default:
         return GL_NONE;
     }
@@ -178,9 +174,7 @@ typedef struct
     GLboolean swap_bytes, lsb_first;
     GLint row_length, skip_rows;
     GLint skip_pixels, alignment;
-#ifdef GL_EXT_texture3D
     GLint image_height, skip_images;
-#endif
 #ifdef GL_EXT_pixel_buffer_object
     GLint pbo;
 #endif
@@ -191,19 +185,19 @@ typedef struct
  */
 static void pixel_pack_reset(pixel_state *old)
 {
+    CALL(glGetIntegerv)(GL_PACK_ALIGNMENT, &old->alignment);
+    CALL(glPixelStorei)(GL_PACK_ALIGNMENT, 1);
+#ifndef GL_ES_VERSION_2_0
     CALL(glGetBooleanv)(GL_PACK_SWAP_BYTES, &old->swap_bytes);
     CALL(glGetBooleanv)(GL_PACK_LSB_FIRST, &old->lsb_first);
     CALL(glGetIntegerv)(GL_PACK_ROW_LENGTH, &old->row_length);
     CALL(glGetIntegerv)(GL_PACK_SKIP_ROWS, &old->skip_rows);
     CALL(glGetIntegerv)(GL_PACK_SKIP_PIXELS, &old->skip_pixels);
-    CALL(glGetIntegerv)(GL_PACK_ALIGNMENT, &old->alignment);
     CALL(glPixelStorei)(GL_PACK_SWAP_BYTES, GL_FALSE);
     CALL(glPixelStorei)(GL_PACK_LSB_FIRST, GL_FALSE);
     CALL(glPixelStorei)(GL_PACK_ROW_LENGTH, 0);
     CALL(glPixelStorei)(GL_PACK_SKIP_ROWS, 0);
     CALL(glPixelStorei)(GL_PACK_SKIP_PIXELS, 0);
-    CALL(glPixelStorei)(GL_PACK_ALIGNMENT, 1);
-#ifdef GL_EXT_texture3D
     if (BUGLE_GL_HAS_EXTENSION_GROUP(GL_EXT_texture3D))
     {
         CALL(glGetIntegerv)(GL_PACK_IMAGE_HEIGHT, &old->image_height);
@@ -211,7 +205,7 @@ static void pixel_pack_reset(pixel_state *old)
         CALL(glPixelStorei)(GL_PACK_IMAGE_HEIGHT, 0);
         CALL(glPixelStorei)(GL_PACK_SKIP_IMAGES, 0);
     }
-#endif
+#endif /* !GL_ES_VERSION_2_0 */
 #ifdef GL_EXT_pixel_buffer_object
     if (BUGLE_GL_HAS_EXTENSION_GROUP(GL_EXT_pixel_buffer_object))
     {
@@ -224,25 +218,26 @@ static void pixel_pack_reset(pixel_state *old)
 /* Sets the pixel pack state specified in old */
 static void pixel_pack_restore(const pixel_state *old)
 {
+    CALL(glPixelStorei)(GL_PACK_ALIGNMENT, old->alignment);
+#ifndef GL_ES_VERSION_2_0
     CALL(glPixelStorei)(GL_PACK_SWAP_BYTES, old->swap_bytes);
     CALL(glPixelStorei)(GL_PACK_LSB_FIRST, old->lsb_first);
     CALL(glPixelStorei)(GL_PACK_ROW_LENGTH, old->row_length);
     CALL(glPixelStorei)(GL_PACK_SKIP_ROWS, old->skip_rows);
     CALL(glPixelStorei)(GL_PACK_SKIP_PIXELS, old->skip_pixels);
-    CALL(glPixelStorei)(GL_PACK_ALIGNMENT, old->alignment);
-#ifdef GL_EXT_texture3D
     if (BUGLE_GL_HAS_EXTENSION_GROUP(GL_EXT_texture3D))
     {
         CALL(glPixelStorei)(GL_PACK_IMAGE_HEIGHT, old->image_height);
         CALL(glPixelStorei)(GL_PACK_SKIP_IMAGES, old->skip_images);
     }
-#endif
+#endif /* !GL_ES_VERSION_2_0 */
 #ifdef GL_EXT_pixel_buffer_object
     if (BUGLE_GL_HAS_EXTENSION_GROUP(GL_EXT_pixel_buffer_object))
         CALL(glBindBufferARB)(GL_PIXEL_PACK_BUFFER_EXT, old->pbo);
 #endif
 }
 
+#ifndef GL_ES_VERSION_2_0
 /* Wherever possible we use the aux context. However, default textures
  * are not shared between contexts, so we sometimes have to take our
  * chances with setting up the default readback state and restoring it
@@ -351,6 +346,7 @@ static bool send_data_texture(uint32_t id, GLuint texid, GLenum target,
     free(data);
     return true;
 }
+#endif
 
 /* Unfortunately, FBO cannot have a size query, because while incomplete
  * it could have different sizes for different buffers. Thus, we have to
@@ -391,14 +387,12 @@ static bool get_framebuffer_size(GLuint fbo, GLenum target, GLenum attachment,
 
             CALL(glGetIntegerv)(texture_binding, &old_name);
             CALL(glBindTexture)(texture_target, name);
-#ifdef GL_ARB_texture_cube_map
-            if (target == GL_TEXTURE_CUBE_MAP_ARB)
+            if (target == GL_TEXTURE_CUBE_MAP)
             {
                 CALL(glGetFramebufferAttachmentParameterivEXT)(target, attachment,
                                                                GL_FRAMEBUFFER_ATTACHMENT_TEXTURE_CUBE_MAP_FACE_EXT, &face);
             }
             else
-#endif
             {
                 face = texture_target;
             }
@@ -488,6 +482,7 @@ static bool send_data_framebuffer(uint32_t id, GLuint fbo, GLenum target,
         return false;
     }
 
+#ifdef GL_VERSION_1_1
     if (fbo)
     {
         /* This version doesn't share renderbuffers between contexts.
@@ -510,6 +505,7 @@ static bool send_data_framebuffer(uint32_t id, GLuint fbo, GLenum target,
         CALL(glPixelStorei)(GL_PACK_ALIGNMENT, 1);
     }
     else
+#endif
     {
         pixel_pack_reset(&old_pack);
         if (fbo_binding)
@@ -530,11 +526,13 @@ static bool send_data_framebuffer(uint32_t id, GLuint fbo, GLenum target,
      * a brand new FBO, but that seems like a lot of work and quite
      * fragile to future changes in the way FBO's are handled.
      */
+#ifndef GL_ES_VERSION_2_0
     if (format != GL_DEPTH_COMPONENT && format != GL_STENCIL_INDEX)
     {
         CALL(glGetIntegerv)(GL_READ_BUFFER, &old_read_buffer);
         CALL(glReadBuffer)(buffer);
     }
+#endif
 
     get_framebuffer_size(fbo, fbo_target, buffer, &width, &height);
     length = bugle_gl_type_to_size(type) * bugle_gl_format_to_count(format, type)
@@ -544,6 +542,7 @@ static bool send_data_framebuffer(uint32_t id, GLuint fbo, GLenum target,
 
     /* Restore the old state. glPushAttrib currently does NOT save FBO
      * bindings, so we have to do that manually even for the aux context. */
+#ifndef GL_ES_VERSION_2_0
     if (format != GL_DEPTH_COMPONENT && format != GL_STENCIL_INDEX)
         CALL(glReadBuffer)(old_read_buffer);
     if (aux)
@@ -561,6 +560,7 @@ static bool send_data_framebuffer(uint32_t id, GLuint fbo, GLenum target,
         bugle_glwin_make_context_current(dpy, old_write, old_read, real);
     }
     else
+#endif /* !GL_ES_VERSION_2_0 */
     {
 #ifdef GL_EXT_framebuffer_object
         if ((GLint) fbo != old_fbo)
@@ -580,7 +580,6 @@ static bool send_data_framebuffer(uint32_t id, GLuint fbo, GLenum target,
     return true;
 }
 
-#if defined(GL_ARB_vertex_program) || defined(GL_ARB_fragment_program) || defined(GL_ARB_vertex_shader) || defined(GL_ARB_fragment_shader)
 static bool send_data_shader(uint32_t id, GLuint shader_id,
                              GLenum target)
 {
@@ -607,7 +606,6 @@ static bool send_data_shader(uint32_t id, GLuint shader_id,
     dpy = bugle_glwin_get_current_display();
     bugle_glwin_make_context_current(dpy, old_write, old_write, aux);
 
-    CALL(glPushAttrib)(GL_ALL_ATTRIB_BITS);
     switch (target)
     {
 #ifdef GL_ARB_fragment_program
@@ -617,32 +615,28 @@ static bool send_data_shader(uint32_t id, GLuint shader_id,
     case GL_VERTEX_PROGRAM_ARB:
 #endif
 #if defined(GL_ARB_vertex_program) || defined(GL_ARB_fragment_program)
+        CALL(glPushAttrib)(GL_ALL_ATTRIB_BITS);
         CALL(glBindProgramARB)(target, shader_id);
         CALL(glGetProgramivARB)(target, GL_PROGRAM_LENGTH_ARB, &length);
         text = XNMALLOC(length, char);
         CALL(glGetProgramStringARB)(target, GL_PROGRAM_STRING_ARB, text);
+        CALL_(glPopAttrib)();
         break;
 #endif
-#ifdef GL_ARB_vertex_shader
-    case GL_VERTEX_SHADER_ARB:
-#endif
-#ifdef GL_ARB_fragment_shader
-    case GL_FRAGMENT_SHADER_ARB:
-#endif
+    case GL_VERTEX_SHADER:
+    case GL_FRAGMENT_SHADER:
 #ifdef GL_EXT_geometry_shader4
     case GL_GEOMETRY_SHADER_EXT:
 #endif
-#ifdef GL_ARB_shader_objects
-        bugle_glGetShaderiv(shader_id, GL_OBJECT_SHADER_SOURCE_LENGTH_ARB, &length);
+        bugle_glGetShaderiv(shader_id, GL_SHADER_SOURCE_LENGTH, &length);
         if (length != 0)
         {
             text = XNMALLOC(length, char);
-            bugle_glGetShaderSource(shader_id, length, NULL, (GLcharARB *) text);
+            bugle_glGetShaderSource(shader_id, length, NULL, text);
             length--; /* Don't count NULL terminator */
         }
         else
             text = XNMALLOC(1, char);
-#endif
         break;
     default:
         /* Should never get here */
@@ -656,7 +650,6 @@ static bool send_data_shader(uint32_t id, GLuint shader_id,
     gldb_protocol_send_binary_string(out_pipe, length, text);
     free(text);
 
-    CALL(glPopAttrib)();
     while ((error = CALL(glGetError)()) != GL_NO_ERROR)
         bugle_log_printf("debugger", "protocol", BUGLE_LOG_WARNING,
                          "Warning: GL error %#04x generated by send_data_shader in aux context", error);
@@ -664,7 +657,6 @@ static bool send_data_shader(uint32_t id, GLuint shader_id,
     bugle_end_internal_render("send_data_shader", true);
     return true;
 }
-#endif /* defined(GL_ARB_vertex_program) || defined(GL_ARB_fragment_program) || defined(GL_ARB_vertex_shader) || defined(GL_ARB_fragment_shader) */
 
 static void process_single_command(function_call *call)
 {
@@ -828,6 +820,7 @@ static void process_single_command(function_call *call)
             gldb_protocol_recv_code(in_pipe, &subtype);
             switch (subtype)
             {
+#ifndef GL_ES_VERSION_2_0
             case REQ_DATA_TEXTURE:
                 gldb_protocol_recv_code(in_pipe, &tex_id);
                 gldb_protocol_recv_code(in_pipe, &target);
@@ -838,6 +831,7 @@ static void process_single_command(function_call *call)
                 send_data_texture(id, tex_id, target, face, level,
                                   format, type);
                 break;
+#endif
             case REQ_DATA_FRAMEBUFFER:
                 gldb_protocol_recv_code(in_pipe, &fbo_id);
                 gldb_protocol_recv_code(in_pipe, &target);

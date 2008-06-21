@@ -28,9 +28,9 @@
 #include <glib.h>
 #include <glib/gi18n-lib.h>
 #include <budgie/reflect.h>
-#include "gldb/gldb-common.h"
 #include "gldb/gldb-gui.h"
 #include "gldb/gldb-gui-breakpoint.h"
+#include "gldb/gldb-common.h"
 
 struct _GldbBreakpointPane
 {

@@ -516,6 +516,10 @@ bugle_sources += \
 $(BUDGIE_BUILT_SRCS): budgie/budgie$(EXEEXT) src/data/gl.tu $(GLES2BCFILES) $(EGLBCFILES) $(srcdir)/bc/gles2-egl-win.bc
 	$(mkdir_p) include/budgie
 	budgie/budgie$(EXEEXT) -I$(srcdir) -T `test -f src/data/gl.tu || echo '$(srcdir)/'`src/data/gl.tu $(srcdir)/bc/gles2-egl-win.bc
+lib_LTLIBRARIES += src/libEGL.la
+src_libEGL_la_SOURCES = src/egl/egl-win.c -export-symbols
+src_libEGL_la_LDFLAGS = -no-undefined -module -avoid-version -export-symbols $(srcdir)/src/egl/egl-win.def
+src_libEGL_la_DEPENDENCIES = $(srcdir)/src/egl/egl-win.def
 endif
 
 if BUGLE_GLTYPE_GL
@@ -544,7 +548,7 @@ lib_LTLIBRARIES += src/libGLESv2.la
 src_libGLESv2_la_SOURCES = $(bugle_sources)
 nodist_src_libGLESv2_la_SOURCES = $(bugle_sources_nodist)
 src_libGLESv2_la_LIBADD = $(bugle_libadd)
-src_libGLESv2_la_LDFLAGS = $(bugle_ldflags) -module -avoid-version
+src_libGLESv2_la_LDFLAGS = $(bugle_ldflags) -avoid-version
 endif
 else !BUGLE_BINFMT_PE
 MODULELIBS += src/libbugle.la

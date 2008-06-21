@@ -260,6 +260,7 @@ static bool unwindstack_initialise(filter_set *handle)
 }
 #endif
 
+#ifdef GL_VERSION_1_1
 static void checks_texture_complete_fail(int unit, GLenum target, const char *reason)
 {
     const char *target_name;
@@ -286,13 +287,11 @@ static bool checks_texture_face_complete(GLuint unit, GLenum face, int dims,
     {
         GL_TEXTURE_WIDTH,
         GL_TEXTURE_HEIGHT,
-#ifdef GL_EXT_texture3D
-        GL_TEXTURE_DEPTH_EXT
-#else
+        GL_TEXTURE_DEPTH
         GL_NONE
-#endif
     };
 
+    /* FIXME: cannot query depth unless extension is present */
     for (d = 0; d < dims; d++)
     {
         CALL(glGetTexLevelParameteriv)(face, base, dim_enum[d], &sizes[d]);
@@ -369,13 +368,11 @@ static void checks_texture_complete(int unit, GLenum target)
     bool needs_mip = true;
     bool success = true;
 
-#ifdef GL_ARB_multitexture
     if (BUGLE_GL_HAS_EXTENSION_GROUP(GL_ARB_multitexture))
     {
-        CALL(glGetIntegerv)(GL_ACTIVE_TEXTURE_ARB, &old_unit);
-        CALL(glActiveTextureARB)(GL_TEXTURE0_ARB + unit);
+        CALL(glGetIntegerv)(GL_ACTIVE_TEXTURE, &old_unit);
+        CALL(glActiveTexture)(GL_TEXTURE0 + unit);
     }
-#endif
     CALL(glGetTexParameteriv)(target, GL_TEXTURE_MIN_FILTER, &min_filter);
     CALL(glGetTexParameteriv)(target, GL_TEXTURE_BASE_LEVEL, &base);
     CALL(glGetTexParameteriv)(target, GL_TEXTURE_MAX_LEVEL, &max);
@@ -392,14 +389,13 @@ static void checks_texture_complete(int unit, GLenum target)
     else
         switch (target)
         {
-#ifdef GL_ARB_texture_cube_map
-        case GL_TEXTURE_CUBE_MAP_ARB:
-            CALL(glGetTexLevelParameteriv)(GL_TEXTURE_CUBE_MAP_POSITIVE_X_ARB, base, GL_TEXTURE_WIDTH, &size);
-            CALL(glGetTexLevelParameteriv)(GL_TEXTURE_CUBE_MAP_POSITIVE_X_ARB, base, GL_TEXTURE_INTERNAL_FORMAT, &format);
-            CALL(glGetTexLevelParameteriv)(GL_TEXTURE_CUBE_MAP_POSITIVE_X_ARB, base, GL_TEXTURE_BORDER, &border);
+        case GL_TEXTURE_CUBE_MAP:
+            CALL(glGetTexLevelParameteriv)(GL_TEXTURE_CUBE_MAP_POSITIVE_X, base, GL_TEXTURE_WIDTH, &size);
+            CALL(glGetTexLevelParameteriv)(GL_TEXTURE_CUBE_MAP_POSITIVE_X, base, GL_TEXTURE_INTERNAL_FORMAT, &format);
+            CALL(glGetTexLevelParameteriv)(GL_TEXTURE_CUBE_MAP_POSITIVE_X, base, GL_TEXTURE_BORDER, &border);
             for (int i = 0; i < 6; i++)
             {
-                face = GL_TEXTURE_CUBE_MAP_POSITIVE_X_ARB + i;
+                face = GL_TEXTURE_CUBE_MAP_POSITIVE_X + i;
                 CALL(glGetTexLevelParameteriv)(face, base, GL_TEXTURE_WIDTH, &width);
                 CALL(glGetTexLevelParameteriv)(face, base, GL_TEXTURE_HEIGHT, &height);
                 CALL(glGetTexLevelParameteriv)(face, base, GL_TEXTURE_INTERNAL_FORMAT, &lformat);
@@ -433,21 +429,16 @@ static void checks_texture_complete(int unit, GLenum target)
                 break;
             for (int i = 0; i < 6; i++)
             {
-                face = GL_TEXTURE_CUBE_MAP_POSITIVE_X_ARB + i;
+                face = GL_TEXTURE_CUBE_MAP_POSITIVE_X + i;
                 if (!checks_texture_face_complete(unit, face, 2, base, max, needs_mip))
                     break;
             }
             break;
-#endif
-#ifdef GL_EXT_texture3D
-        case GL_TEXTURE_3D_EXT:
+        case GL_TEXTURE_3D:
             success = checks_texture_face_complete(unit, target, 3, base, max, needs_mip);
             break;
-#endif
         case GL_TEXTURE_2D:
-#ifdef GL_NV_texture_rectangle
-        case GL_TEXTURE_RECTANGLE_NV:
-#endif
+        case GL_TEXTURE_RECTANGLE_ARB:
             checks_texture_face_complete(unit, target, 2, base, max, needs_mip);
             break;
         case GL_TEXTURE_1D:
@@ -455,41 +446,36 @@ static void checks_texture_complete(int unit, GLenum target)
             break;
         }
 
-#ifdef GL_ARB_multitexture
-    CALL(glActiveTextureARB)(old_unit);
-#endif
+    if (old_unit != unit)
+        CALL(glActiveTexture)(old_unit);
 }
+#endif /* GL_VERSION_1_1 */
 
 static void checks_completeness()
 {
     if (bugle_begin_internal_render())
     {
         GLint num_textures = 1;
-        if (0)
-            ; /* nop, just to faciliate the "else if" cascade */
-#ifdef GL_ARB_fragment_program
-        else if (BUGLE_GL_HAS_EXTENSION_GROUP(BUGLE_EXTGROUP_texunits))
-            CALL(glGetIntegerv)(GL_MAX_TEXTURE_IMAGE_UNITS_ARB, &num_textures);
-#endif
-#ifdef GL_ARB_multitexture
+        if (BUGLE_GL_HAS_EXTENSION_GROUP(BUGLE_EXTGROUP_texunits))
+            CALL(glGetIntegerv)(GL_MAX_TEXTURE_IMAGE_UNITS, &num_textures);
+#ifndef GL_ES_VERSION_2_0
         else if (BUGLE_GL_HAS_EXTENSION_GROUP(GL_ARB_multitexture))
-            CALL(glGetIntegerv)(GL_MAX_TEXTURE_UNITS_ARB, &num_textures);
+            CALL(glGetIntegerv)(GL_MAX_TEXTURE_UNITS, &num_textures);
 #endif
 
-#ifdef GL_ARB_shader_objects
         if (BUGLE_GL_HAS_EXTENSION_GROUP(GL_ARB_shader_objects))
         {
             GLuint program;
             GLint num_uniforms, u;
             GLenum type;
             GLint size, length, loc, unit;
-            GLcharARB *name;
+            char *name;
             GLint target;
-            program = bugle_glGetHandleARB(GL_PROGRAM_OBJECT_ARB);
+            program = bugle_gl_get_current_program();
             if (program)
             {
-                bugle_glGetProgramiv(program, GL_OBJECT_ACTIVE_UNIFORMS_ARB, &num_uniforms);
-                bugle_glGetProgramiv(program, GL_OBJECT_ACTIVE_UNIFORM_MAX_LENGTH_ARB, &length);
+                bugle_glGetProgramiv(program, GL_ACTIVE_UNIFORMS, &num_uniforms);
+                bugle_glGetProgramiv(program, GL_ACTIVE_UNIFORM_MAX_LENGTH, &length);
                 name = xcharalloc(length + 1);
                 for (u = 0; u < num_uniforms; u++)
                 {
@@ -497,26 +483,29 @@ static void checks_completeness()
                     target = 0;
                     switch (type)
                     {
-                    case GL_SAMPLER_1D_ARB:        target = GL_TEXTURE_1D; break;
-                    case GL_SAMPLER_2D_ARB:        target = GL_TEXTURE_2D; break;
-                    case GL_SAMPLER_3D_ARB:        target = GL_TEXTURE_3D; break;
-                    case GL_SAMPLER_CUBE_ARB:      target = GL_TEXTURE_CUBE_MAP_ARB; break;
-                    case GL_SAMPLER_1D_SHADOW_ARB: target = GL_TEXTURE_1D; break;
-                    case GL_SAMPLER_2D_SHADOW_ARB: target = GL_TEXTURE_2D; break;
-                    case GL_SAMPLER_2D_RECT_ARB:   target = GL_TEXTURE_RECTANGLE_ARB; break;
-                    case GL_SAMPLER_2D_RECT_SHADOW_ARB: target = GL_TEXTURE_RECTANGLE_ARB; break;
+                    case GL_SAMPLER_2D:        target = GL_TEXTURE_2D; break;
+                    case GL_SAMPLER_CUBE:      target = GL_TEXTURE_CUBE_MAP; break;
+#ifndef GL_ES_VERSION_2_0
+                    case GL_SAMPLER_1D:        target = GL_TEXTURE_1D; break;
+                    case GL_SAMPLER_3D:        target = GL_TEXTURE_3D; break;
+                    case GL_SAMPLER_1D_SHADOW: target = GL_TEXTURE_1D; break;
+                    case GL_SAMPLER_2D_SHADOW: target = GL_TEXTURE_2D; break;
+                    case GL_SAMPLER_2D_RECT_ARB:        target = GL_TEXTURE_RECTANGLE_ARB; break;
+                    case GL_SAMPLER_2D_RECT_SHADOWARB_: target = GL_TEXTURE_RECTANGLE_ARB; break;
+#endif
                     }
                     if (target)
                     {
                         loc = bugle_glGetUniformLocation(program, name);
                         bugle_glGetUniformiv(program, loc, &unit);
+#ifndef GL_ES_VERSION_2_0
                         checks_texture_complete(unit, target);
+#endif
                     }
                 }
                 free(name);
             }
         }
-#endif
         bugle_end_internal_render("checks_completeness", true);
     }
 }
@@ -571,17 +560,6 @@ static void checks_memory(size_t size, const void *data)
 #endif
 }
 
-/* We don't want to have to make *calls* to checks_buffer conditional
- * on GL_ARB_vertex_buffer_object, but the bindings are only defined by
- * that extension. Instead we wrap them in this macro.
- */
-#ifdef GL_ARB_vertex_buffer_object
-# define VBO_ENUM(x) (x)
-#else
-# define VBO_ENUM(x) (GL_NONE)
-#endif
-
-#ifdef GL_ARB_vertex_buffer_object
 static void checks_buffer_vbo(size_t size, const void *data,
                               GLuint buffer)
 {
@@ -589,34 +567,31 @@ static void checks_buffer_vbo(size_t size, const void *data,
     size_t end;
 
     checks_error_vbo = true;
-    assert(buffer && !bugle_gl_in_begin_end() && BUGLE_GL_HAS_EXTENSION(GL_ARB_vertex_buffer_object));
+    assert(buffer && !bugle_gl_in_begin_end() && BUGLE_GL_HAS_EXTENSION_GROUP(GL_ARB_vertex_buffer_object));
 
-    CALL(glGetIntegerv)(GL_ARRAY_BUFFER_BINDING_ARB, &tmp);
-    CALL(glBindBufferARB)(GL_ARRAY_BUFFER_ARB, buffer);
-    CALL(glGetBufferParameterivARB)(GL_ARRAY_BUFFER_ARB, GL_BUFFER_SIZE_ARB, &bsize);
-    CALL(glBindBufferARB)(GL_ARRAY_BUFFER_ARB, tmp);
+    CALL(glGetIntegerv)(GL_ARRAY_BUFFER_BINDING, &tmp);
+    CALL(glBindBuffer)(GL_ARRAY_BUFFER, buffer);
+    CALL(glGetBufferParameteriv)(GL_ARRAY_BUFFER, GL_BUFFER_SIZE, &bsize);
+    CALL(glBindBuffer)(GL_ARRAY_BUFFER, tmp);
     end = ((const char *) data - (const char *) NULL) + size;
     if (end > (size_t) bsize)
         bugle_thread_raise(SIGSEGV);
 }
-#endif
 
 /* Like checks_memory, but handles buffer objects */
 static void checks_buffer(size_t size, const void *data,
                           GLenum binding)
 {
-#ifdef GL_ARB_vertex_buffer_object
     GLint id = 0;
-    if (!bugle_gl_in_begin_end() && BUGLE_GL_HAS_EXTENSION(GL_ARB_vertex_buffer_object))
+    if (!bugle_gl_in_begin_end() && BUGLE_GL_HAS_EXTENSION_GROUP(GL_ARB_vertex_buffer_object))
         CALL(glGetIntegerv)(binding, &id);
-    if (id) checks_buffer_vbo(size, data, id);
+    if (id)
+        checks_buffer_vbo(size, data, id);
     else
-#endif
-    {
         checks_memory(size, data);
-    }
 }
 
+#ifdef GL_VERSION_1_1
 static void checks_attribute(size_t first, size_t count,
                              const char *text, GLenum name,
                              GLenum size_name, GLint size,
@@ -656,8 +631,8 @@ static void checks_attribute(size_t first, size_t count,
                       binding);
     }
 }
+#endif /* GL_VERSION_1_1 */
 
-#ifdef GL_ARB_vertex_program
 static void checks_generic_attribute(size_t first, size_t count,
                                      GLint number)
 {
@@ -667,11 +642,9 @@ static void checks_generic_attribute(size_t first, size_t count,
     GLvoid *ptr;
     budgie_type type;
     const char *cptr;
-#ifdef GL_ARB_vertex_buffer_object
     GLint id;
-#endif
 
-    CALL(glGetVertexAttribivARB)(number, GL_VERTEX_ATTRIB_ARRAY_ENABLED_ARB, &enabled);
+    CALL(glGetVertexAttribiv)(number, GL_VERTEX_ATTRIB_ARRAY_ENABLED, &enabled);
     /* Mesa (up to at least 6.5.1) returns an error when querying attribute 0.
      * In this case clear the error and just assume that everything is valid.
      */
@@ -684,8 +657,8 @@ static void checks_generic_attribute(size_t first, size_t count,
     {
         checks_error = NULL;
         checks_error_attribute = number;
-        CALL(glGetVertexAttribivARB)(number, GL_VERTEX_ATTRIB_ARRAY_SIZE_ARB, &size);
-        CALL(glGetVertexAttribivARB)(number, GL_VERTEX_ATTRIB_ARRAY_TYPE_ARB, &gltype);
+        CALL(glGetVertexAttribiv)(number, GL_VERTEX_ATTRIB_ARRAY_SIZE, &size);
+        CALL(glGetVertexAttribiv)(number, GL_VERTEX_ATTRIB_ARRAY_TYPE, &gltype);
         if (gltype <= 1)
         {
             bugle_log("checks", "warning", BUGLE_LOG_WARNING,
@@ -694,27 +667,25 @@ static void checks_generic_attribute(size_t first, size_t count,
             gltype = GL_FLOAT;
         }
         type = bugle_gl_type_to_type(gltype);
-        CALL(glGetVertexAttribivARB)(number, GL_VERTEX_ATTRIB_ARRAY_STRIDE_ARB, &stride);
-        CALL(glGetVertexAttribPointervARB)(number, GL_VERTEX_ATTRIB_ARRAY_POINTER_ARB, &ptr);
+        CALL(glGetVertexAttribiv)(number, GL_VERTEX_ATTRIB_ARRAY_STRIDE, &stride);
+        CALL(glGetVertexAttribPointerv)(number, GL_VERTEX_ATTRIB_ARRAY_POINTER, &ptr);
         group_size = budgie_type_size(type) * size;
         if (!stride) stride = group_size;
         cptr = (const char *) ptr;
         cptr += group_size * first;
 
         size = (count - 1) * stride + group_size;
-#ifdef GL_ARB_vertex_buffer_object
         id = 0;
-        if (!bugle_gl_in_begin_end() && BUGLE_GL_HAS_EXTENSION(GL_ARB_vertex_buffer_object))
-            CALL(glGetVertexAttribivARB)(number, GL_VERTEX_ATTRIB_ARRAY_BUFFER_BINDING_ARB, &id);
-        if (id) checks_buffer_vbo(size, cptr, id);
-        else
-#endif
+        if (!bugle_gl_in_begin_end() && BUGLE_GL_HAS_EXTENSION_GROUP(GL_ARB_vertex_buffer_object))
         {
-            checks_memory(size, cptr);
+            CALL(glGetVertexAttribiv)(number, GL_VERTEX_ATTRIB_ARRAY_BUFFER_BINDING, &id);
         }
+        if (id)
+            checks_buffer_vbo(size, cptr, id);
+        else
+            checks_memory(size, cptr);
     }
 }
-#endif /* GL_ARB_vertex_program */
 
 static void checks_attributes(size_t first, size_t count)
 {
@@ -728,60 +699,58 @@ static void checks_attributes(size_t first, size_t count)
                      GL_VERTEX_ARRAY_TYPE, 0,
                      GL_VERTEX_ARRAY_STRIDE,
                      GL_VERTEX_ARRAY_POINTER,
-                     VBO_ENUM(GL_VERTEX_ARRAY_BUFFER_BINDING_ARB));
+                     GL_VERTEX_ARRAY_BUFFER_BINDING);
     checks_attribute(first, count,
                      "normal array", GL_NORMAL_ARRAY,
                      0, 3,
                      GL_NORMAL_ARRAY_TYPE, NULL_TYPE,
                      GL_NORMAL_ARRAY_STRIDE,
                      GL_NORMAL_ARRAY_POINTER,
-                     VBO_ENUM(GL_NORMAL_ARRAY_BUFFER_BINDING_ARB));
+                     GL_NORMAL_ARRAY_BUFFER_BINDING);
     checks_attribute(first, count,
                      "color array", GL_COLOR_ARRAY,
                      GL_COLOR_ARRAY_SIZE, 0,
                      GL_COLOR_ARRAY_TYPE, NULL_TYPE,
                      GL_COLOR_ARRAY_STRIDE,
                      GL_COLOR_ARRAY_POINTER,
-                     VBO_ENUM(GL_COLOR_ARRAY_BUFFER_BINDING_ARB));
+                     GL_COLOR_ARRAY_BUFFER_BINDING);
     checks_attribute(first, count,
                      "index array", GL_INDEX_ARRAY,
                      0, 1,
                      GL_INDEX_ARRAY_TYPE, NULL_TYPE,
                      GL_INDEX_ARRAY_STRIDE,
                      GL_INDEX_ARRAY_POINTER,
-                     VBO_ENUM(GL_INDEX_ARRAY_BUFFER_BINDING_ARB));
+                     GL_INDEX_ARRAY_BUFFER_BINDING);
     checks_attribute(first, count,
                      "edge flag array", GL_EDGE_FLAG_ARRAY,
                      0, 1,
                      0, BUDGIE_TYPE_ID(9GLboolean),
                      GL_EDGE_FLAG_ARRAY_STRIDE,
                      GL_EDGE_FLAG_ARRAY_POINTER,
-                     VBO_ENUM(GL_EDGE_FLAG_ARRAY_BUFFER_BINDING_ARB));
+                     GL_EDGE_FLAG_ARRAY_BUFFER_BINDING);
     /* FIXME: there are others (fog, secondary colour, ?) */
 
-#ifdef GL_ARB_multitexture
     /* FIXME: if there is a failure, the current texture unit will be wrong */
-    if (BUGLE_GL_HAS_EXTENSION(GL_ARB_multitexture))
+    if (BUGLE_GL_HAS_EXTENSION_GROUP(GL_ARB_multitexture))
     {
         GLint texunits, old;
 
-        CALL(glGetIntegerv)(GL_MAX_TEXTURE_UNITS_ARB, &texunits);
-        CALL(glGetIntegerv)(GL_CLIENT_ACTIVE_TEXTURE_ARB, &old);
-        for (i = GL_TEXTURE0_ARB; i < GL_TEXTURE0_ARB + (GLenum) texunits; i++)
+        CALL(glGetIntegerv)(GL_MAX_TEXTURE_UNITS, &texunits);
+        CALL(glGetIntegerv)(GL_CLIENT_ACTIVE_TEXTURE, &old);
+        for (i = GL_TEXTURE0; i < GL_TEXTURE0 + (GLenum) texunits; i++)
         {
-            CALL(glClientActiveTextureARB)(i);
+            CALL(glClientActiveTexture(i);
             checks_attribute(first, count,
                              "texture coordinate array", GL_TEXTURE_COORD_ARRAY,
                              GL_TEXTURE_COORD_ARRAY_SIZE, 0,
                              GL_TEXTURE_COORD_ARRAY_TYPE, 0,
                              GL_TEXTURE_COORD_ARRAY_STRIDE,
                              GL_TEXTURE_COORD_ARRAY_POINTER,
-                             VBO_ENUM(GL_TEXTURE_COORD_ARRAY_BUFFER_BINDING_ARB));
+                             GL_TEXTURE_COORD_ARRAY_BUFFER_BINDING);
         }
-        CALL(glClientActiveTextureARB)(old);
+        CALL(glClientActiveTexture)(old);
     }
     else
-#endif
     {
         checks_attribute(first, count,
                          "texture coordinate array", GL_TEXTURE_COORD_ARRAY,
@@ -789,21 +758,11 @@ static void checks_attributes(size_t first, size_t count)
                          GL_TEXTURE_COORD_ARRAY_TYPE, 0,
                          GL_TEXTURE_COORD_ARRAY_STRIDE,
                          GL_TEXTURE_COORD_ARRAY_POINTER,
-                         VBO_ENUM(GL_TEXTURE_COORD_ARRAY_BUFFER_BINDING_ARB));
+                         GL_TEXTURE_COORD_ARRAY_BUFFER_BINDING_ARB);
     }
 #endif /* !GL_ES_VERSION_2_0 */
 
-#if defined(GL_ARB_vertex_program)
     if (BUGLE_GL_HAS_EXTENSION_GROUP(GL_EXTGROUP_vertex_attrib))
-    {
-        GLint attribs, i;
-
-        CALL(glGetIntegerv)(GL_MAX_VERTEX_ATTRIBS_ARB, &attribs);
-        for (i = 0; i < attribs; i++)
-            checks_generic_attribute(first, count, i);
-    }
-#endif
-#ifdef GL_ES_VERSION_2_0
     {
         GLint attribs, i;
 
@@ -811,7 +770,6 @@ static void checks_attributes(size_t first, size_t count)
         for (i = 0; i < attribs; i++)
             checks_generic_attribute(first, count, i);
     }
-#endif
 }
 
 /* FIXME: breaks when using an element array buffer for indices */
@@ -833,32 +791,35 @@ static void checks_min_max(GLsizei count, GLenum gltype, const GLvoid *indices,
     type = bugle_gl_type_to_type(gltype);
 
     /* Check for element array buffer */
-#ifdef GL_ARB_vertex_buffer_object
-    if (BUGLE_GL_HAS_EXTENSION(GL_ARB_vertex_buffer_object))
+    if (BUGLE_GL_HAS_EXTENSION_GROUP(GL_ARB_vertex_buffer_object))
     {
         GLint id, mapped;
         size_t size;
-        CALL(glGetIntegerv)(GL_ELEMENT_ARRAY_BUFFER_BINDING_ARB, &id);
+        CALL(glGetIntegerv)(GL_ELEMENT_ARRAY_BUFFER_BINDING, &id);
         if (id)
         {
+#ifdef GL_ES_VERSION_2_0
+            /* FIXME: save data on load */
+            return;
+#else
             /* We are not allowed to call glGetBufferSubDataARB on a
              * mapped buffer. Fortunately, if the buffer is mapped, the
              * call is illegal and should generate INVALID_OPERATION anyway.
              */
-            CALL(glGetBufferParameterivARB)(GL_ELEMENT_ARRAY_BUFFER_ARB,
-                                           GL_BUFFER_MAPPED_ARB,
-                                           &mapped);
+            CALL(glGetBufferParameteriv)(GL_ELEMENT_ARRAY_BUFFER,
+                                         GL_BUFFER_MAPPED,
+                                         &mapped);
             if (mapped) return;
 
             size = count * budgie_type_size(type);
             vbo_indices = xmalloc(size);
-            CALL(glGetBufferSubDataARB)(GL_ELEMENT_ARRAY_BUFFER_ARB,
-                                       (const char *) indices - (const char *) NULL,
-                                       size, vbo_indices);
+            CALL(glGetBufferSubData)(GL_ELEMENT_ARRAY_BUFFER,
+                                    (const char *) indices - (const char *) NULL,
+                                    size, vbo_indices);
             indices = vbo_indices;
+#endif
         }
     }
-#endif
 
     out = XNMALLOC(count, GLuint);
     budgie_type_convert(out, bugle_gl_type_to_type(GL_UNSIGNED_INT), indices, type, count);
@@ -970,14 +931,14 @@ static bool checks_glDrawElements(function_call *call, const callback_data *data
         indices = *call->glDrawElements.arg3;
         checks_buffer(count * bugle_gl_type_to_size(type),
                       indices,
-                      VBO_ENUM(GL_ELEMENT_ARRAY_BUFFER_BINDING_ARB));
+                      GL_ELEMENT_ARRAY_BUFFER_BINDING);
         checks_min_max(count, type, indices, &min, &max);
         checks_attributes(min, max - min + 1);
     }
     CHECKS_STOP();
 }
 
-#ifdef GL_EXT_draw_range_elements
+#ifdef GL_VERSION_1_1
 static bool checks_glDrawRangeElements(function_call *call, const callback_data *data)
 {
     checks_completeness();
@@ -1017,9 +978,7 @@ static bool checks_glDrawRangeElements(function_call *call, const callback_data 
     }
     CHECKS_STOP();
 }
-#endif
 
-#ifdef GL_EXT_multi_draw_arrays
 static bool checks_glMultiDrawArrays(function_call *call, const callback_data *data)
 {
     checks_completeness();
@@ -1033,9 +992,9 @@ static bool checks_glMultiDrawArrays(function_call *call, const callback_data *d
         const GLsizei *count_ptr;
         GLsizei count, i;
 
-        count = *call->glMultiDrawArraysEXT.arg3;
-        first_ptr = *call->glMultiDrawArraysEXT.arg1;
-        count_ptr = *call->glMultiDrawArraysEXT.arg2;
+        count = *call->glMultiDrawArrays.arg3;
+        first_ptr = *call->glMultiDrawArrays.arg1;
+        count_ptr = *call->glMultiDrawArrays.arg2;
 
         checks_error = "first array";
         checks_error_attribute = -1;
@@ -1083,14 +1042,13 @@ static bool checks_glMultiDrawElements(function_call *call, const callback_data 
         {
             checks_buffer(count_ptr[i] * bugle_gl_type_to_size(type),
                           indices_ptr[i],
-                          VBO_ENUM(GL_ELEMENT_ARRAY_BUFFER_BINDING_ARB));
+                          GL_ELEMENT_ARRAY_BUFFER_BINDING);
             checks_min_max(count_ptr[i], type, indices_ptr[i], &min, &max);
             checks_attributes(min, max - min + 1);
         }
     }
     CHECKS_STOP();
 }
-#endif
 
 /* OpenGL defines certain calls to be illegal inside glBegin/glEnd but
  * allows undefined behaviour when it happens (these are client-side calls).
@@ -1116,7 +1074,6 @@ static bool checks_begin_end(function_call *call, const callback_data *data)
     {
         /* VertexAttrib commands are ok if they are not affecting attrib 0 */
         name = budgie_function_name(call->generic.id);
-#ifdef GL_ARB_vertex_program
         if (strncmp(name, "glVertexAttrib", 14) == 0)
         {
             GLuint attrib;
@@ -1124,7 +1081,6 @@ static bool checks_begin_end(function_call *call, const callback_data *data)
             attrib = *(const GLuint *) call->generic.args[0];
             if (attrib) return true;
         }
-#endif
         bugle_log_printf("checks", "error", BUGLE_LOG_NOTICE,
                          "%s called outside glBegin/glEnd; call will be ignored.",
                          name);
@@ -1146,7 +1102,6 @@ static bool checks_glArrayElement(function_call *call, const callback_data *data
 }
 
 /* glMultiTexCoord with an illegal texture has undefined behaviour */
-#ifdef GL_ARB_multitexture
 static bool checks_glMultiTexCoord(function_call *call, const callback_data *data)
 {
     GLenum texture;
@@ -1155,19 +1110,17 @@ static bool checks_glMultiTexCoord(function_call *call, const callback_data *dat
     texture = *(GLenum *) call->generic.args[0];
     if (bugle_begin_internal_render())
     {
-#ifdef GL_ARB_fragment_program
         if (BUGLE_GL_HAS_EXTENSION_GROUP(EXTGROUP_texunits))
         {
-            CALL(glGetIntegerv)(GL_MAX_TEXTURE_COORDS_ARB, &max);
+            CALL(glGetIntegerv)(GL_MAX_TEXTURE_COORDS, &max);
             /* NVIDIA ship a driver that just generates an error on this
              * call on NV20. Instead of borking we check for the error and
              * fall back to GL_MAX_TEXTURE_UNITS.
              */
             CALL(glGetError)();
         }
-#endif
         if (!max)
-            CALL(glGetIntegerv)(GL_MAX_TEXTURE_UNITS_ARB, &max);
+            CALL(glGetIntegerv)(GL_MAX_TEXTURE_UNITS, &max);
         bugle_end_internal_render("checks_glMultiTexCoord", true);
     }
 
@@ -1177,7 +1130,7 @@ static bool checks_glMultiTexCoord(function_call *call, const callback_data *dat
      */
     if (!max) return true;
 
-    if (texture < GL_TEXTURE0_ARB || texture >= GL_TEXTURE0_ARB + (GLenum) max)
+    if (texture < GL_TEXTURE0 || texture >= GL_TEXTURE0 + (GLenum) max)
     {
         bugle_log_printf("checks", "error", BUGLE_LOG_NOTICE,
                          "%s called with out of range texture unit; call will be ignored.",
@@ -1186,7 +1139,7 @@ static bool checks_glMultiTexCoord(function_call *call, const callback_data *dat
     }
     return true;
 }
-#endif
+#endif /* GL_VERSION_1_1 */
 
 static bool checks_initialise(filter_set *handle)
 {
@@ -1196,36 +1149,25 @@ static bool checks_initialise(filter_set *handle)
     /* Pointer checks */
     bugle_filter_catches(f, "glDrawArrays", false, checks_glDrawArrays);
     bugle_filter_catches(f, "glDrawElements", false, checks_glDrawElements);
-#ifdef GL_EXT_draw_range_elements
-    bugle_filter_catches(f, "glDrawRangeElementsEXT", false, checks_glDrawRangeElements);
-#endif
-#ifdef GL_EXT_multi_draw_arrays
-    bugle_filter_catches(f, "glMultiDrawArraysEXT", false, checks_glMultiDrawArrays);
-    bugle_filter_catches(f, "glMultiDrawElementsEXT", false, checks_glMultiDrawElements);
-#endif
+#ifdef GL_VERSION_1_1
+    bugle_filter_catches(f, "glDrawRangeElements", false, checks_glDrawRangeElements);
+    bugle_filter_catches(f, "glMultiDrawArrays", false, checks_glMultiDrawArrays);
+    bugle_filter_catches(f, "glMultiDrawElements", false, checks_glMultiDrawElements);
     /* Checks that we are outside begin/end */
     bugle_filter_catches(f, "glEnableClientState", false, checks_no_begin_end);
     bugle_filter_catches(f, "glDisableClientState", false, checks_no_begin_end);
     bugle_filter_catches(f, "glPushClientAttrib", false, checks_no_begin_end);
     bugle_filter_catches(f, "glPopClientAttrib", false, checks_no_begin_end);
     bugle_filter_catches(f, "glColorPointer", false, checks_no_begin_end);
-#ifdef GL_EXT_fog_coord
-    bugle_filter_catches(f, "glFogCoordPointerEXT", false, checks_no_begin_end);
-#endif
+    bugle_filter_catches(f, "glFogCoordPointer", false, checks_no_begin_end);
     bugle_filter_catches(f, "glEdgeFlagPointer", false, checks_no_begin_end);
     bugle_filter_catches(f, "glIndexPointer", false, checks_no_begin_end);
     bugle_filter_catches(f, "glNormalPointer", false, checks_no_begin_end);
     bugle_filter_catches(f, "glTexCoordPointer", false, checks_no_begin_end);
-#ifdef GL_EXT_secondary_color
-    bugle_filter_catches(f, "glSecondaryColorPointerEXT", false, checks_no_begin_end);
-#endif
+    bugle_filter_catches(f, "glSecondaryColorPointer", false, checks_no_begin_end);
     bugle_filter_catches(f, "glVertexPointer", false, checks_no_begin_end);
-#ifdef GL_ARB_vertex_program
-    bugle_filter_catches(f, "glVertexAttribPointerARB", false, checks_no_begin_end);
-#endif
-#ifdef GL_ARB_multitexture
-    bugle_filter_catches(f, "glClientActiveTextureARB", false, checks_no_begin_end);
-#endif
+    bugle_filter_catches(f, "glVertexAttribPointer", false, checks_no_begin_end);
+    bugle_filter_catches(f, "glClientActiveTexture", false, checks_no_begin_end);
     bugle_filter_catches(f, "glInterleavedArrays", false, checks_no_begin_end);
     bugle_filter_catches(f, "glPixelStorei", false, checks_no_begin_end);
     bugle_filter_catches(f, "glPixelStoref", false, checks_no_begin_end);
@@ -1234,7 +1176,6 @@ static bool checks_initialise(filter_set *handle)
     /* This call has undefined behaviour if given a negative argument */
     bugle_filter_catches(f, "glArrayElement", false, checks_glArrayElement);
     /* Other */
-#ifdef GL_ARB_multitexture
     bugle_filter_catches(f, "glMultiTexCoord1s", false, checks_glMultiTexCoord);
     bugle_filter_catches(f, "glMultiTexCoord1i", false, checks_glMultiTexCoord);
     bugle_filter_catches(f, "glMultiTexCoord1f", false, checks_glMultiTexCoord);

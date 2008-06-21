@@ -13,6 +13,17 @@ WGL port
 - fix crash in shutdown on es2demo
 - make Cygwin work
 
+GLES port
+---------
+- extend extension chains mechanism to extension sets
+- make CALL multiplex between different functions in a group
+- remove a lot of extension #define checks
+- update gengl.pl to indicate which desktop extensions existing in GLES2
+- put in FBO wrapper layer, similar to GLSL
+- autogenerate egl-win.def
+- track texture data so that it can be queried
+- make gldb-gui work
+
 camera filter-set
 -----------------
 - handle display lists properly

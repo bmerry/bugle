@@ -21,7 +21,6 @@
 #if HAVE_CONFIG_H
 # include <config.h>
 #endif
-#include <GL/gl.h>
 #include <sys/types.h>
 #include <inttypes.h>
 #include <signal.h>
@@ -29,6 +28,9 @@
 #include <stdbool.h>
 #include <bugle/linkedlist.h>
 #include <budgie/basictypes.h>
+#ifndef GL_FALSE
+# include <GL/gl.h>
+#endif
 
 #if HAVE_READLINE && !HAVE_RL_COMPLETION_MATCHES
 # define rl_completion_matches completion_matches
