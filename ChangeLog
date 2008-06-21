@@ -5,6 +5,8 @@
 * Change CALL to search around aliases until it finds a pointer
 * Remove compile-time tests for pre-GL2 extensions
 * Fix count for glGetAttachedShaders
+* Remove support for older ffmpeg's
+* Support ffmpeg 20080327
 * Other miscellaneous bug-fixes
 
 0.0.20080303

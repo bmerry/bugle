@@ -243,11 +243,7 @@ static bool lavc_initialise(int width, int height)
     fmt = guess_format(NULL, video_filename, NULL);
     if (!fmt) fmt = guess_format("avi", NULL, NULL);
     if (!fmt) return false;
-#if LIBAVFORMAT_VERSION_INT >= 0x000409
     video_context = av_alloc_format_context();
-#else
-    video_context = av_mallocz(sizeof(AVFormatContext));
-#endif
     if (!video_context) return false;
     video_context->oformat = fmt;
     snprintf(video_context->filename,
@@ -258,11 +254,7 @@ static bool lavc_initialise(int width, int height)
     codec = avcodec_find_encoder_by_name(video_codec);
     if (!codec) codec = avcodec_find_encoder(CODEC_ID_HUFFYUV);
     if (!codec) return false;
-#if LIBAVFORMAT_VERSION_INT >= 0x00310000  /* Version 50? */
     c = video_stream->codec;
-#else
-    c = &video_stream->codec;
-#endif
     c->codec_type = CODEC_TYPE_VIDEO;
     c->codec_id = codec->id;
     if (c->codec_id == CODEC_ID_HUFFYUV) c->pix_fmt = PIX_FMT_YUV422P;
@@ -271,13 +263,8 @@ static bool lavc_initialise(int width, int height)
     c->bit_rate = video_bitrate;
     c->width = width;
     c->height = height;
-#if LIBAVFORMAT_VERSION_INT >= 0x00310000 /* Version 50? */
     c->time_base.den = 30;
     c->time_base.num = 1;
-#else
-    c->frame_rate = 30;   /* FIXME: user should specify */
-    c->frame_rate_base = 1;
-#endif
     c->gop_size = 12;     /* FIXME: user should specify */
     /* FIXME: what does the NULL do? */
     if (av_set_parameters(video_context, NULL) < 0) return false;
@@ -301,15 +288,8 @@ static void lavc_shutdown(void)
     AVCodecContext *c;
     size_t out_size;
 
-#if LIBAVFORMAT_VERSION_INT >= 0x00310000
     c = video_stream->codec;
-#else
-    c = &video_stream->codec;
-#endif
-    /* Write any delayed frames. On older ffmpeg's this seemed to cause
-     * a segfault and needed different code, so we leave it out.
-     */
-#if LIBAVFORMAT_VERSION_INT >= 0x000409
+    /* Write any delayed frames. */
     do
     {
         AVPacket pkt;
@@ -334,15 +314,10 @@ static void lavc_shutdown(void)
             }
         }
     } while (out_size);
-#endif
 
     /* Close it all down */
     av_write_trailer(video_context);
-#if LIBAVFORMAT_VERSION_INT >= 0x00310000
     avcodec_close(video_stream->codec);
-#else
-    avcodec_close(&video_stream->codec);
-#endif
     av_free(video_yuv->data[0]);
     /* We don't free video_raw, since that memory belongs to video_data */
     av_free(video_yuv);
@@ -350,7 +325,7 @@ static void lavc_shutdown(void)
     av_free(video_buffer);
     for (i = 0; i < video_context->nb_streams; i++)
         av_freep(&video_context->streams[i]);
-    url_fclose(&video_context->pb);
+    url_fclose(video_context->pb);
     av_free(video_context);
 
     for (i = 0; i < video_lag; i++)
@@ -555,11 +530,7 @@ static void screenshot_video()
     {
         if (!video_context)
             lavc_initialise(fetch->width, fetch->height);
-#if LIBAVFORMAT_VERSION_INT >= 0x00310000
         c = video_stream->codec;
-#else
-        c = &video_stream->codec;
-#endif
         if (!map_screenshot(fetch))
         {
             screenshot_stop(&ssctx);
@@ -582,18 +553,11 @@ static void screenshot_video()
 #endif
         for (i = 0; i < fetch->multiplicity; i++)
         {
-#if LIBAVFORMAT_VERSION_INT >= 0x00310000
             out_size = avcodec_encode_video(video_stream->codec,
                                             video_buffer, video_buffer_size,
                                             video_yuv);
-#else
-            out_size = avcodec_encode_video(&video_stream->codec,
-                                            video_buffer, video_buffer_size,
-                                            video_yuv);
-#endif
             if (out_size != 0)
             {
-#if LIBAVFORMAT_VERSION_INT >= 0x000409
                 AVPacket pkt;
 
                 av_init_packet(&pkt);
@@ -604,10 +568,6 @@ static void screenshot_video()
                 pkt.data = video_buffer;
                 pkt.size = out_size;
                 ret = av_write_frame(video_context, &pkt);
-#else
-                ret = av_write_frame(video_context, video_stream->index,
-                                     video_buffer, out_size);
-#endif
                 if (ret != 0)
                 {
                     bugle_log("screenshot", "video", BUGLE_LOG_ERROR, "encoding failed");
