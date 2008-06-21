@@ -26,9 +26,8 @@
 #include <bugle/gl/glheaders.h>
 
 #if BUGLE_GLTYPE_GLES2
-# define GLcharARB char
+# define GLchar char
 #endif
-#if defined(GL_ARB_shader_objects) || BUGLE_GLTYPE_GLES2
 void bugle_glGetProgramiv(GLuint program, GLenum pname, GLint *param);
 void bugle_glGetShaderiv(GLuint shader, GLenum pname, GLint *param);
 void bugle_glGetAttachedShaders(GLuint program, GLsizei max_length, GLsizei *length, GLuint *shaders);
@@ -44,6 +43,5 @@ GLint bugle_glGetAttribLocation(GLuint program, const GLcharARB *name);
 GLuint bugle_gl_get_current_program();
 GLboolean bugle_glIsShader(GLuint shader);
 GLboolean bugle_glIsProgram(GLuint program);
-#endif /* GL_ARB_shader_objects */
 
 #endif /* !BUGLE_SRC_GLSL_H */

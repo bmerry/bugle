@@ -44,26 +44,18 @@ budgie_type bugle_gl_type_to_type(GLenum gl_type)
 {
     switch (gl_type)
     {
-#ifdef GL_EXT_packed_pixels
-    case GL_UNSIGNED_BYTE_3_3_2_EXT:
-#endif
-#ifdef GL_VERSION_1_2
+    case GL_UNSIGNED_BYTE_3_3_2:
     case GL_UNSIGNED_BYTE_2_3_3_REV:
-#endif
     case GL_UNSIGNED_BYTE:
         return TYPE_7GLubyte;
     case GL_BYTE:
         return TYPE_6GLbyte;
-#ifdef GL_EXT_packed_pixels
-    case GL_UNSIGNED_SHORT_4_4_4_4_EXT:
-    case GL_UNSIGNED_SHORT_5_5_5_1_EXT:
-#endif
-#ifdef GL_VERSION_1_2
+    case GL_UNSIGNED_SHORT_4_4_4_4:
+    case GL_UNSIGNED_SHORT_5_5_5_1:
     case GL_UNSIGNED_SHORT_5_6_5:
     case GL_UNSIGNED_SHORT_5_6_5_REV:
     case GL_UNSIGNED_SHORT_4_4_4_4_REV:
     case GL_UNSIGNED_SHORT_1_5_5_5_REV:
-#endif
 #ifdef GL_APPLE_ycbcr_422
     case GL_UNSIGNED_SHORT_8_8_APPLE:
     case GL_UNSIGNED_SHORT_8_8_REV_APPLE:
@@ -72,14 +64,10 @@ budgie_type bugle_gl_type_to_type(GLenum gl_type)
         return TYPE_8GLushort;
     case GL_SHORT:
         return TYPE_7GLshort;
-#ifdef GL_EXT_packed_pixels
-    case GL_UNSIGNED_INT_8_8_8_8_EXT:
-    case GL_UNSIGNED_INT_10_10_10_2_EXT:
-#endif
-#ifdef GL_VERSION_1_2
+    case GL_UNSIGNED_INT_8_8_8_8:
+    case GL_UNSIGNED_INT_10_10_10_2:
     case GL_UNSIGNED_INT_8_8_8_8_REV:
     case GL_UNSIGNED_INT_2_10_10_10_REV:
-#endif
 #ifdef GL_NV_packed_depth_stencil
     case GL_UNSIGNED_INT_24_8_NV:
 #endif
@@ -101,34 +89,6 @@ budgie_type bugle_gl_type_to_type(GLenum gl_type)
         return TYPE_7GLfloat;
     case GL_DOUBLE:
         return TYPE_8GLdouble;
-#ifdef GL_ARB_shader_objects
-    case GL_FLOAT_VEC2_ARB: return TYPE_6GLvec2; break;
-    case GL_FLOAT_VEC3_ARB: return TYPE_6GLvec3; break;
-    case GL_FLOAT_VEC4_ARB: return TYPE_6GLvec4; break;
-    case GL_INT_VEC2_ARB: return TYPE_7GLivec2; break;
-    case GL_INT_VEC3_ARB: return TYPE_7GLivec3; break;
-    case GL_INT_VEC4_ARB: return TYPE_7GLivec4; break;
-    case GL_FLOAT_MAT2_ARB: return TYPE_6GLmat2; break;
-    case GL_FLOAT_MAT3_ARB: return TYPE_6GLmat3; break;
-    case GL_FLOAT_MAT4_ARB: return TYPE_6GLmat4; break;
-    case GL_BOOL_ARB: return TYPE_9GLboolean; break;
-    case GL_BOOL_VEC2_ARB: return TYPE_7GLbvec2; break;
-    case GL_BOOL_VEC3_ARB: return TYPE_7GLbvec3; break;
-    case GL_BOOL_VEC4_ARB: return TYPE_7GLbvec4; break;
-    /* It appears that glext.h version 21 doesn't define these */
-#ifdef GL_SAMPLER_1D_ARB
-    case GL_SAMPLER_1D_ARB:
-    case GL_SAMPLER_2D_ARB:
-    case GL_SAMPLER_3D_ARB:
-    case GL_SAMPLER_CUBE_ARB:
-    case GL_SAMPLER_1D_SHADOW_ARB:
-    case GL_SAMPLER_2D_SHADOW_ARB:
-    case GL_SAMPLER_2D_RECT_ARB:
-    case GL_SAMPLER_2D_RECT_SHADOW_ARB:
-        return TYPE_5GLint;
-#endif /* GL_SAMPLER_1D_ARB */
-#endif /* GL_ARB_shader_objects */
-#if defined(GL_VERSION_2_0) && !defined(GL_ARB_shader_objects)
     case GL_FLOAT_VEC2: return TYPE_6GLvec2; break;
     case GL_FLOAT_VEC3: return TYPE_6GLvec3; break;
     case GL_FLOAT_VEC4: return TYPE_6GLvec4; break;
@@ -148,10 +108,9 @@ budgie_type bugle_gl_type_to_type(GLenum gl_type)
     case GL_SAMPLER_CUBE:
     case GL_SAMPLER_1D_SHADOW:
     case GL_SAMPLER_2D_SHADOW:
-    case GL_SAMPLER_2D_RECT:
-    case GL_SAMPLER_2D_RECT_SHADOW:
+    case GL_SAMPLER_2D_RECT_ARB:
+    case GL_SAMPLER_2D_RECT_SHADOW_ARB:
         return TYPE_5GLint;
-#endif
 #if defined(GL_VERSION_2_1)
     case GL_FLOAT_MAT2x3: return TYPE_8GLmat2x3; break;
     case GL_FLOAT_MAT3x2: return TYPE_8GLmat3x2; break;
@@ -271,17 +230,13 @@ int bugle_gl_format_to_count(GLenum format, GLenum type)
 #endif
             return 2;
         case GL_RGB:
-#ifdef GL_EXT_bgra
         case GL_BGR:
-#endif
 #ifdef GL_EXT_texture_sRGB
         case GL_SRGB_EXT:
 #endif
             return 3;
         case GL_RGBA:
-#ifdef GL_EXT_bgra
         case GL_BGRA_EXT:
-#endif
 #ifdef GL_EXT_abgr
         case GL_ABGR_EXT:
 #endif
@@ -460,25 +415,23 @@ int bugle_count_program_string(GLenum target, GLenum pname)
 }
 #endif
 
-#ifdef GL_ARB_shader_objects
 /* Counts the number of objects returned by a call to
- * glGetAttachedObjectsARB(program, max, &count, ptr).
+ * glGetAttachedShaders(program, max, &count, ptr).
  */
-int bugle_count_attached_objects(GLhandleARB program, GLsizei max)
+int bugle_count_attached_shaders(GLuint program, GLsizei max)
 {
     GLsizei real_count = 0;
     if (bugle_begin_internal_render())
     {
-        CALL(glGetObjectParameterivARB)(program, GL_OBJECT_ATTACHED_OBJECTS_ARB, &real_count);
+        bugle_glGetProgramiv(program, GL_ATTACHED_SHADERS, &real_count);
         /* The above might generate an error, in which case real_count remains 0 */
-        bugle_end_internal_render("bugle_count_attached_objects", false);
+        bugle_end_internal_render("bugle_count_attached_shaders", false);
     }
     if (real_count <= max)
         return real_count;
     else
         return max;
 }
-#endif
 
 /* Computes the number of pixel elements (units of byte, int, float etc)
  * used by a client-side encoding of a 1D, 2D or 3D image.
@@ -512,13 +465,11 @@ size_t bugle_image_element_count(GLsizei width,
         CALL(glGetIntegerv)(GL_UNPACK_SKIP_PIXELS, &skip_pixels);
         CALL(glGetIntegerv)(GL_UNPACK_SKIP_ROWS, &skip_rows);
         CALL(glGetIntegerv)(GL_UNPACK_ALIGNMENT, &alignment);
-#ifdef GL_EXT_texture3D
         if (depth >= 0)
         {
             CALL(glGetIntegerv)(GL_UNPACK_IMAGE_HEIGHT, &image_height);
             CALL(glGetIntegerv)(GL_UNPACK_SKIP_IMAGES, &skip_images);
         }
-#endif
     }
     else
     {
@@ -527,13 +478,11 @@ size_t bugle_image_element_count(GLsizei width,
         CALL(glGetIntegerv)(GL_PACK_SKIP_PIXELS, &skip_pixels);
         CALL(glGetIntegerv)(GL_PACK_SKIP_ROWS, &skip_rows);
         CALL(glGetIntegerv)(GL_PACK_ALIGNMENT, &alignment);
-#ifdef GL_EXT_texture3D
         if (depth >= 0)
         {
             CALL(glGetIntegerv)(GL_PACK_IMAGE_HEIGHT_EXT, &image_height);
             CALL(glGetIntegerv)(GL_PACK_SKIP_IMAGES_EXT, &skip_images);
         }
-#endif
     }
     a = alignment;
     skip_images = (depth > 0) ? skip_images : 0;
@@ -571,11 +520,9 @@ size_t bugle_texture_element_count(GLenum target,
     int width, height, depth = -1;
     CALL(glGetTexLevelParameteriv)(target, level, GL_TEXTURE_WIDTH, &width);
     CALL(glGetTexLevelParameteriv)(target, level, GL_TEXTURE_HEIGHT, &height);
-#ifdef GL_EXT_texture3D
-    if (BUGLE_GL_HAS_EXTENSION(GL_EXT_texture3D))
-        CALL(glGetTexLevelParameteriv)(target, level, GL_TEXTURE_DEPTH_EXT, &depth);
+    if (BUGLE_GL_HAS_EXTENSION_GROUP(GL_EXT_texture3D))
+        CALL(glGetTexLevelParameteriv)(target, level, GL_TEXTURE_DEPTH, &depth);
     else
         depth = 1;
-#endif
     return bugle_image_element_count(width, height, depth, format, type, false);
 }

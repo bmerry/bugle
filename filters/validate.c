@@ -288,7 +288,6 @@ static bool checks_texture_face_complete(GLuint unit, GLenum face, int dims,
         GL_TEXTURE_WIDTH,
         GL_TEXTURE_HEIGHT,
         GL_TEXTURE_DEPTH
-        GL_NONE
     };
 
     /* FIXME: cannot query depth unless extension is present */
@@ -455,8 +454,9 @@ static void checks_completeness()
 {
     if (bugle_begin_internal_render())
     {
+        /* FIXME: should unify this code with glstate.c */
         GLint num_textures = 1;
-        if (BUGLE_GL_HAS_EXTENSION_GROUP(BUGLE_EXTGROUP_texunits))
+        if (BUGLE_GL_HAS_EXTENSION_GROUP(EXTGROUP_texunits))
             CALL(glGetIntegerv)(GL_MAX_TEXTURE_IMAGE_UNITS, &num_textures);
 #ifndef GL_ES_VERSION_2_0
         else if (BUGLE_GL_HAS_EXTENSION_GROUP(GL_ARB_multitexture))
@@ -491,7 +491,7 @@ static void checks_completeness()
                     case GL_SAMPLER_1D_SHADOW: target = GL_TEXTURE_1D; break;
                     case GL_SAMPLER_2D_SHADOW: target = GL_TEXTURE_2D; break;
                     case GL_SAMPLER_2D_RECT_ARB:        target = GL_TEXTURE_RECTANGLE_ARB; break;
-                    case GL_SAMPLER_2D_RECT_SHADOWARB_: target = GL_TEXTURE_RECTANGLE_ARB; break;
+                    case GL_SAMPLER_2D_RECT_SHADOW_ARB: target = GL_TEXTURE_RECTANGLE_ARB; break;
 #endif
                     }
                     if (target)
@@ -739,7 +739,7 @@ static void checks_attributes(size_t first, size_t count)
         CALL(glGetIntegerv)(GL_CLIENT_ACTIVE_TEXTURE, &old);
         for (i = GL_TEXTURE0; i < GL_TEXTURE0 + (GLenum) texunits; i++)
         {
-            CALL(glClientActiveTexture(i);
+            CALL(glClientActiveTexture)(i);
             checks_attribute(first, count,
                              "texture coordinate array", GL_TEXTURE_COORD_ARRAY,
                              GL_TEXTURE_COORD_ARRAY_SIZE, 0,
@@ -762,7 +762,7 @@ static void checks_attributes(size_t first, size_t count)
     }
 #endif /* !GL_ES_VERSION_2_0 */
 
-    if (BUGLE_GL_HAS_EXTENSION_GROUP(GL_EXTGROUP_vertex_attrib))
+    if (BUGLE_GL_HAS_EXTENSION_GROUP(EXTGROUP_vertex_attrib))
     {
         GLint attribs, i;
 
@@ -955,15 +955,15 @@ static bool checks_glDrawRangeElements(function_call *call, const callback_data 
 
         checks_error = "index array";
         checks_error_attribute = -1;
-        count = *call->glDrawRangeElementsEXT.arg3;
-        type = *call->glDrawRangeElementsEXT.arg4;
-        indices = *call->glDrawRangeElementsEXT.arg5;
+        count = *call->glDrawRangeElements.arg3;
+        type = *call->glDrawRangeElements.arg4;
+        indices = *call->glDrawRangeElements.arg5;
         checks_buffer(count * bugle_gl_type_to_size(type),
                       indices,
-                      VBO_ENUM(GL_ELEMENT_ARRAY_BUFFER_BINDING_ARB));
+                      GL_ELEMENT_ARRAY_BUFFER_BINDING);
         checks_min_max(count, type, indices, &min, &max);
-        if (min < *call->glDrawRangeElementsEXT.arg1
-            || max > *call->glDrawRangeElementsEXT.arg2)
+        if (min < *call->glDrawRangeElements.arg1
+            || max > *call->glDrawRangeElements.arg2)
         {
             bugle_log("checks", "error", BUGLE_LOG_NOTICE,
                       "glDrawRangeElements indices fall outside range; call will be ignored.");
@@ -971,8 +971,8 @@ static bool checks_glDrawRangeElements(function_call *call, const callback_data 
         }
         else
         {
-            min = *call->glDrawRangeElementsEXT.arg1;
-            max = *call->glDrawRangeElementsEXT.arg2;
+            min = *call->glDrawRangeElements.arg1;
+            max = *call->glDrawRangeElements.arg2;
             checks_attributes(min, max - min + 1);
         }
     }

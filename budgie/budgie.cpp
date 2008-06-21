@@ -762,7 +762,8 @@ static void write_headers()
             "# include <config.h>\n"
             "#endif\n"
             "#include <budgie/types.h>\n"
-            "#define BUDGIEAPI %s\n",
+            "#define BUDGIEAPI %s\n"
+            "typedef void BUDGIEAPI (*BUDGIEAPIPROC)(void);\n",
             call_api.c_str());
     fprintf(files[FILE_TABLES_C],
             "#if HAVE_CONFIG_H\n"
@@ -1666,14 +1667,14 @@ static void write_interceptors(FILE *f)
     }
 
     fprintf(f,
-            "void (BUDGIEAPI *_budgie_function_address_real[FUNCTION_COUNT])(void);\n"
-            "void (BUDGIEAPI *_budgie_function_address_wrapper[FUNCTION_COUNT])(void) =\n"
+            "BUDGIEAPIPROC _budgie_function_address_real[FUNCTION_COUNT];\n"
+            "BUDGIEAPIPROC _budgie_function_address_wrapper[FUNCTION_COUNT] =\n"
             "{\n");
     for (list<Function>::iterator i = functions.begin(); i != functions.end(); i++)
     {
         if (i != functions.begin())
             fprintf(f, ",\n");
-        fprintf(f, "    (void (BUDGIEAPI *)(void)) BUGLE_ATTRIBUTE_HIDDEN_ALIAS(%s)",
+        fprintf(f, "    (BUDGIEAPIPROC) BUGLE_ATTRIBUTE_HIDDEN_ALIAS(%s)",
                 i->name().c_str());
     }
     fprintf(f, "\n};\n\n");

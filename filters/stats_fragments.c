@@ -31,8 +31,6 @@
 #include <bugle/log.h>
 #include <budgie/addresses.h>
 
-#ifdef GL_ARB_occlusion_query
-
 typedef struct
 {
     GLuint query;
@@ -149,11 +147,3 @@ void bugle_initialise_filter_library(void)
     bugle_filter_set_renders("stats_fragments");
     bugle_filter_set_stats_generator("stats_fragments");
 }
-
-#else /* GL_ARB_occlusion_query */
-
-void bugle_initialise_filter_library(void)
-{
-}
-
-#endif

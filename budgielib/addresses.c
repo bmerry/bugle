@@ -1,5 +1,5 @@
 /*  BuGLe: an OpenGL debugging tool
- *  Copyright (C) 2004-2007  Bruce Merry
+ *  Copyright (C) 2004-2008  Bruce Merry
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -33,7 +33,7 @@
 /* External function provided to look up addresses on the fly, for when the
  * address is context-dependent.
  */
-extern void BUDGIEAPI (*budgie_address_generator(budgie_function id));
+extern BUDGIEAPIPROC budgie_address_generator(budgie_function id);
 
 static void make_indent(int indent, char **buffer, size_t *size)
 {
@@ -116,13 +116,37 @@ void budgie_dump_any_call(const generic_function_call *call, int indent, char **
     }
 }
 
-void (BUDGIEAPI *budgie_function_address_real(budgie_function id))(void)
+static BUDGIEAPIPROC function_address_real1(budgie_function id)
 {
     assert(id >= 0 && id < budgie_function_count());
     if (_budgie_function_address_real[id] == NULL)
         return budgie_address_generator(id);
     else
         return _budgie_function_address_real[id];
+}
+
+BUDGIEAPIPROC budgie_function_address_real(budgie_function id)
+{
+    BUDGIEAPIPROC fn;
+
+    assert(id >= 0 && id < budgie_function_count());
+    fn = function_address_real1(id);
+    if (fn == NULL)
+    {
+        budgie_group g;
+        budgie_function f;
+
+        /* FIXME: this needs to be made a LOT more efficient */
+        g = budgie_function_group(id);
+        for (f = budgie_function_count() - 1; f >= 0; f--)
+            if (budgie_function_group(f) == g)
+            {
+                fn = function_address_real1(f);
+                if (fn != NULL)
+                    break;
+            }
+    }
+    return fn;
 }
 
 void (BUDGIEAPI *budgie_function_address_wrapper(budgie_function id))(void)

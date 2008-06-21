@@ -24,18 +24,17 @@ EXTRATYPE pGLbvec2
 EXTRATYPE pGLbvec3
 EXTRATYPE pGLbvec4
 
-LENGTH PARAMETER glUniform([1234])[if]vARB 2 $1
+LENGTH PARAMETER glUniform([1234])[if]v(ARB)? 2 $1
 LENGTH PARAMETER glUniformMatrix([234])fv(ARB)? 3 $1
 TYPE PARAMETER glUniform([234])fv(ARB)? 2 TYPE_7pGLvec\1
 TYPE PARAMETER glUniform([234])iv(ARB)? 2 TYPE_8pGLivec\1
-TYPE PARAMETER glUniformMatrix([234])fvARB 3 TYPE_7pGLmat\1
+TYPE PARAMETER glUniformMatrix([234])fv(ARB)? 3 TYPE_7pGLmat\1
 
-# Note: the ARB versions here are not the same as they take GLhandleARB
 LENGTH PARAMETER glShaderSource(ARB)? 2 $1
-LENGTH PARAMETER glShaderSource(ARB)? 3 $1
+LENGTH PARAMETER glShaderSource(ARB)? 3 ($3 ? $1 : 0)
 
-LENGTH PARAMETER glGetAttachedObjectsARB 3 bugle_count_attached_objects($0, $1)
-LENGTH PARAMETER glGetAttachedShaders 3 bugle_count_attached_objects($0, $1)
+LENGTH PARAMETER glGetAttachedObjectsARB 3 bugle_count_attached_shaders($0, $1)
+LENGTH PARAMETER glGetAttachedShaders 3 bugle_count_attached_shaders($0, $1)
 
 LENGTH PARAMETER glGetObjectParameter[if]vARB 2 bugle_count_gl($f, $1)
 LENGTH PARAMETER glGetProgramiv 2 bugle_count_gl($f, $1)

@@ -146,15 +146,12 @@ static bool stats_primitives_glDrawElements(function_call *call, const callback_
     return true;
 }
 
-#ifdef GL_EXT_draw_range_elements
 static bool stats_primitives_glDrawRangeElements(function_call *call, const callback_data *data)
 {
-    stats_primitives_update(*call->glDrawRangeElementsEXT.arg0, *call->glDrawRangeElementsEXT.arg3);
+    stats_primitives_update(*call->glDrawRangeElements.arg0, *call->glDrawRangeElementsEXT.arg3);
     return true;
 }
-#endif
 
-#ifdef GL_EXT_multi_draw_arrays
 static bool stats_primitives_glMultiDrawArrays(function_call *call, const callback_data *data)
 {
     GLsizei i, primcount;
@@ -176,7 +173,6 @@ static bool stats_primitives_glMultiDrawElements(function_call *call, const call
                                 (*call->glMultiDrawElements.arg1)[i]);
     return true;
 }
-#endif
 
 static bool stats_primitives_glCallList(function_call *call, const callback_data *data)
 {
@@ -218,13 +214,9 @@ static bool stats_primitives_initialise(filter_set *handle)
     bugle_filter_catches_drawing_immediate(f, false, stats_primitives_immediate);
     bugle_filter_catches(f, "glDrawElements", false, stats_primitives_glDrawElements);
     bugle_filter_catches(f, "glDrawArrays", false, stats_primitives_glDrawArrays);
-#ifdef GL_EXT_draw_range_elements
-    bugle_filter_catches(f, "glDrawRangeElementsEXT", false, stats_primitives_glDrawRangeElements);
-#endif
-#ifdef GL_EXT_multi_draw_arrays
-    bugle_filter_catches(f, "glMultiDrawElementsEXT", false, stats_primitives_glMultiDrawElements);
-    bugle_filter_catches(f, "glMultiDrawArraysEXT", false, stats_primitives_glMultiDrawArrays);
-#endif
+    bugle_filter_catches(f, "glDrawRangeElements", false, stats_primitives_glDrawRangeElements);
+    bugle_filter_catches(f, "glMultiDrawElements", false, stats_primitives_glMultiDrawElements);
+    bugle_filter_catches(f, "glMultiDrawArrays", false, stats_primitives_glMultiDrawArrays);
     bugle_filter_catches(f, "glBegin", false, stats_primitives_glBegin);
     bugle_filter_catches(f, "glEnd", false, stats_primitives_glEnd);
     bugle_filter_catches(f, "glCallList", false, stats_primitives_glCallList);

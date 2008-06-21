@@ -620,7 +620,7 @@ static bool send_data_shader(uint32_t id, GLuint shader_id,
         CALL(glGetProgramivARB)(target, GL_PROGRAM_LENGTH_ARB, &length);
         text = XNMALLOC(length, char);
         CALL(glGetProgramStringARB)(target, GL_PROGRAM_STRING_ARB, text);
-        CALL_(glPopAttrib)();
+        CALL(glPopAttrib)();
         break;
 #endif
     case GL_VERTEX_SHADER:

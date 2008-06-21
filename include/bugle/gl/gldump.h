@@ -1,5 +1,5 @@
 /*  BuGLe: an OpenGL debugging tool
- *  Copyright (C) 2004-2007  Bruce Merry
+ *  Copyright (C) 2004-2008  Bruce Merry
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -45,9 +45,7 @@ int bugle_count_gl(budgie_function func, GLenum token);
 #ifdef GL_ARB_vertex_program
 int bugle_count_program_string(GLenum target, GLenum pname);
 #endif
-#ifdef GL_ARB_shader_objects
-int bugle_count_attached_objects(GLhandleARB program, GLsizei max);
-#endif
+int bugle_count_attached_shaders(GLhandleARB program, GLsizei max);
 
 bool bugle_dump_convert(GLenum pname, const void *value,
                         budgie_type in_type, char **buffer, size_t *size);

@@ -105,7 +105,7 @@ TYPE PARAMETER glUniformMatrix([234])fv 3 TYPE_7pGLmat\1
 LENGTH PARAMETER glShaderSource 2 $1
 LENGTH PARAMETER glShaderSource 3 $1
 
-LENGTH PARAMETER glGetAttachedShaders 3 bugle_count_attached_objects($0, $1)
+LENGTH PARAMETER glGetAttachedShaders 3 bugle_count_attached_shaders($0, $1)
 
 LENGTH PARAMETER glGetProgramiv 2 bugle_count_gl($f, $1)
 LENGTH PARAMETER glGetShaderiv 2 bugle_count_gl($f, $1)

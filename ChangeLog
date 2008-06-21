@@ -1,5 +1,9 @@
 * Port to Windows
+* Port to OpenGL ES 2.0
 * Embed a font in the source instead of trying to query it
+* Fix some extension tests
+* Change CALL to search around aliases until it finds a pointer
+* Remove compile-time tests for pre-GL2 extensions
 * Fix count for glGetAttachedShaders
 * Other miscellaneous bug-fixes
 

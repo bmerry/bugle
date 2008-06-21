@@ -52,10 +52,10 @@
 
 #if HAVE_LAVC
 # include <inttypes.h>
-# include <avcodec.h>
-# include <avformat.h>
+# include <libavcodec/avcodec.h>
+# include <libavformat/avformat.h>
 # if HAVE_LIBSWSCALE
-#  include <swscale.h>
+#  include <libswscale/swscale.h>
 # endif
 # define CAPTURE_AV_FMT PIX_FMT_RGB24
 # define CAPTURE_GL_FMT GL_RGB

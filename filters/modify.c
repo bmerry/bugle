@@ -252,12 +252,8 @@ static bool wireframe_glEnable(function_call *call, const callback_data *data)
     {
     case GL_TEXTURE_1D:
     case GL_TEXTURE_2D:
-#ifdef GL_ARB_texture_cube_map
-    case GL_TEXTURE_CUBE_MAP_ARB:
-#endif
-#ifdef GL_EXT_texture3D
-    case GL_TEXTURE_3D_EXT:
-#endif
+    case GL_TEXTURE_CUBE_MAP:
+    case GL_TEXTURE_3D:
         if (bugle_begin_internal_render())
         {
             CALL(glDisable)(*call->glEnable.arg0);
@@ -933,10 +929,8 @@ static bool camera_initialise(filter_set *handle)
     bugle_filter_catches(f, "glFrustum", false, camera_restore);
     bugle_filter_catches(f, "glPushMatrix", false, camera_restore);
     bugle_filter_catches(f, "glPopMatrix", false, camera_restore);
-#ifdef GL_ARB_transpose_matrix
     bugle_filter_catches(f, "glMultTransposeMatrixf", false, camera_restore);
     bugle_filter_catches(f, "glMultTransposeMatrixd", false, camera_restore);
-#endif
     bugle_glwin_filter_catches_swap_buffers(f, false, camera_swap_buffers);
 
     f = bugle_filter_new(handle, "camera_post");
@@ -957,12 +951,10 @@ static bool camera_initialise(filter_set *handle)
     bugle_filter_catches(f, "glFrustum", false, camera_override);
     bugle_filter_catches(f, "glPushMatrix", false, camera_override);
     bugle_filter_catches(f, "glPopMatrix", false, camera_override);
-#ifdef GL_ARB_transpose_matrix
     bugle_filter_catches(f, "glLoadTransposeMatrixf", false, camera_override);
     bugle_filter_catches(f, "glLoadTransposeMatrixd", false, camera_override);
     bugle_filter_catches(f, "glMultTransposeMatrixf", false, camera_override);
     bugle_filter_catches(f, "glMultTransposeMatrixd", false, camera_override);
-#endif
     bugle_filter_catches(f, "glGetFloatv", false, camera_get);
     bugle_filter_catches(f, "glGetDoublev", false, camera_get);
 

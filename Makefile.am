@@ -36,6 +36,7 @@ includebugleglwin_HEADERS = \
 	include/bugle/glwin/glwin.h \
 	include/bugle/glwin/trackcontext.h
 includebuglegl_HEADERS = \
+	include/bugle/gl/glheaders.h \
 	include/bugle/gl/glsl.h \
 	include/bugle/gl/glstate.h \
 	include/bugle/gl/glutils.h \
@@ -517,7 +518,7 @@ $(BUDGIE_BUILT_SRCS): budgie/budgie$(EXEEXT) src/data/gl.tu $(GLES2BCFILES) $(EG
 	$(mkdir_p) include/budgie
 	budgie/budgie$(EXEEXT) -I$(srcdir) -T `test -f src/data/gl.tu || echo '$(srcdir)/'`src/data/gl.tu $(srcdir)/bc/gles2-egl-win.bc
 lib_LTLIBRARIES += src/libEGL.la
-src_libEGL_la_SOURCES = src/egl/egl-win.c -export-symbols
+src_libEGL_la_SOURCES = src/egl/egl-win.c
 src_libEGL_la_LDFLAGS = -no-undefined -module -avoid-version -export-symbols $(srcdir)/src/egl/egl-win.def
 src_libEGL_la_DEPENDENCIES = $(srcdir)/src/egl/egl-win.def
 endif
