@@ -180,7 +180,7 @@ BCFILES = $(GLBCFILES) \
 	  $(GLXBCFILES) \
 	  $(WGLBCFILES) \
 	  $(EGLBCFILES) \
-	  bc/gl-glx.bc bc/gl-wgl.bc bc/gles2-egl-win.bc
+	  bc/gl-glx.bc bc/gl-wgl.bc bc/gles2-egl-win.bc bc/gles2-egl-posix.bc
 
 BUILT_SOURCES += src/apitables.h
 
@@ -513,7 +513,8 @@ budgie_overrides += \
 bugle_sources += \
 	src/egl/glwin.c
 
-# FIXME-GLES: currently specific to GLES2 and Windows
+# FIXME-GLES: currently specific to GLES2
+if BUGLE_WINSYS_WINDOWS
 $(BUDGIE_BUILT_SRCS): budgie/budgie$(EXEEXT) src/data/gl.tu $(GLES2BCFILES) $(EGLBCFILES) $(srcdir)/bc/gles2-egl-win.bc
 	$(mkdir_p) include/budgie
 	budgie/budgie$(EXEEXT) -I$(srcdir) -T `test -f src/data/gl.tu || echo '$(srcdir)/'`src/data/gl.tu $(srcdir)/bc/gles2-egl-win.bc
@@ -521,6 +522,11 @@ lib_LTLIBRARIES += src/libEGL.la
 src_libEGL_la_SOURCES = src/egl/egl-win.c
 src_libEGL_la_LDFLAGS = -no-undefined -module -avoid-version -export-symbols $(srcdir)/src/egl/egl-win.def
 src_libEGL_la_DEPENDENCIES = $(srcdir)/src/egl/egl-win.def
+else
+$(BUDGIE_BUILT_SRCS): budgie/budgie$(EXEEXT) src/data/gl.tu $(GLES2BCFILES) $(EGLBCFILES) $(srcdir)/bc/gles2-egl-posix.bc
+	$(mkdir_p) include/budgie
+	budgie/budgie$(EXEEXT) -I$(srcdir) -T `test -f src/data/gl.tu || echo '$(srcdir)/'`src/data/gl.tu $(srcdir)/bc/gles2-egl-posix.bc
+endif
 endif
 
 if BUGLE_GLTYPE_GL

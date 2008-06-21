@@ -40,7 +40,7 @@ case $host in
     BUGLE_BINFMT=BUGLE_BINFMT_ELF
     ;;
 esac
-AC_ARG_WITH([api], AC_HELP_STRING([--with-api], [specify api, from gl-wgl, gl-glx and gles2-egl-win]),
+AC_ARG_WITH([api], AC_HELP_STRING([--with-api], [specify api, from gl-wgl, gl-glx, gles2-egl-win and gles2-egl-posix]),
             [bugle_target="$withval"], [])
 case $bugle_target in
   gl-glx)
@@ -112,7 +112,7 @@ case "$bugle_target" in
   gl-*)
     AC_CHECK_LIB([GL], [glBegin], [GL_LIBS="-lGL -lm $GL_LIBS"], [], [$X_PRE_LIBS $X_LIBS $X_XTRA_LIBS -lm])
     ;;
-  gles2-egl-win)
+  gles2-egl-*)
     GL_LIBS="-lEGL -lGLESv2"
     ;;
 esac

@@ -22,6 +22,7 @@
 #include <EGL/egl.h>
 #include <budgie/call.h>
 #include <stdbool.h>
+#include <string.h>
 #include <bugle/glwin/glwin.h>
 #include <bugle/apireflect.h>
 #include "budgielib/defines.h"

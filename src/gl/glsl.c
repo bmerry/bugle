@@ -121,6 +121,7 @@ GLint bugle_glGetAttribLocation(GLuint program, const char *name)
     return CALL(glGetAttribLocation)(program, name);
 }
 
+#ifdef GL_VERSION_2_0
 GLuint bugle_gl_get_current_program(void)
 {
     GLint handle;
@@ -151,6 +152,7 @@ GLboolean bugle_glIsProgram(GLuint program)
     return (CALL(glGetError)() == GL_NO_ERROR
             && type == GL_PROGRAM_OBJECT_ARB);
 }
+#endif
 
 #ifdef GL_ES_VERSION_2_0
 GLuint bugle_gl_get_current_program(void)
