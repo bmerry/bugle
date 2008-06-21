@@ -62,10 +62,16 @@ pkgconfig_DATA = bugle.pc
 pkglib_LTLIBRARIES = \
 	filters/common.la \
 	filters/validate.la \
-	filters/capture.la \
+	filters/checks.la \
+	filters/unwindstack.la \
+	filters/screenshot.la \
+	filters/showextensions.la \
+	filters/eps.la \
 	filters/trace.la \
 	filters/debugger.la \
 	filters/modify.la \
+	filters/camera.la \
+	filters/extoverride.la \
 	filters/stats_basic.la \
 	filters/stats_calls.la \
 	filters/stats_fragments.la \
@@ -197,14 +203,30 @@ filters_common_la_SOURCES = filters/common.c
 filters_common_la_LDFLAGS = $(MODULEFLAGS)
 filters_common_la_LIBADD = $(MODULELIBS)
 
-filters_capture_la_SOURCES = filters/capture.c gl2ps/gl2ps.c gl2ps/gl2ps.h
-filters_capture_la_CFLAGS = $(AVCODEC_CFLAGS)
-filters_capture_la_LIBADD = $(MODULELIBS) $(AVCODEC_LIBS)
-filters_capture_la_LDFLAGS = $(MODULEFLAGS)
+filters_screenshot_la_SOURCES = filters/screenshot.c
+filters_screenshot_la_CFLAGS = $(AVCODEC_CFLAGS)
+filters_screenshot_la_LIBADD = $(MODULELIBS) $(AVCODEC_LIBS)
+filters_screenshot_la_LDFLAGS = $(MODULEFLAGS)
+
+filters_eps_la_SOURCES = filters/eps.c gl2ps/gl2ps.c gl2ps/gl2ps.h
+filters_eps_la_LIBADD = $(MODULELIBS)
+filters_eps_la_LDFLAGS = $(MODULEFLAGS)
+
+filters_showextensions_la_SOURCES = filters/showextensions.c
+filters_showextensions_la_LIBADD = $(MODULELIBS)
+filters_showextensions_la_LDFLAGS = $(MODULEFLAGS)
 
 filters_validate_la_SOURCES = filters/validate.c
 filters_validate_la_LDFLAGS = $(MODULEFLAGS)
 filters_validate_la_LIBADD = $(MODULELIBS)
+
+filters_unwindstack_la_SOURCES = filters/unwindstack.c
+filters_unwindstack_la_LDFLAGS = $(MODULEFLAGS)
+filters_unwindstack_la_LIBADD = $(MODULELIBS)
+
+filters_checks_la_SOURCES = filters/checks.c
+filters_checks_la_LDFLAGS = $(MODULEFLAGS)
+filters_checks_la_LIBADD = $(MODULELIBS)
 
 filters_trace_la_SOURCES = filters/trace.c
 filters_trace_la_LDFLAGS = $(MODULEFLAGS)
@@ -217,6 +239,14 @@ filters_debugger_la_LIBADD = $(MODULELIBS)
 filters_modify_la_SOURCES = filters/modify.c
 filters_modify_la_LDFLAGS = $(MODULEFLAGS)
 filters_modify_la_LIBADD = $(MODULELIBS) -lm
+
+filters_camera_la_SOURCES = filters/camera.c
+filters_camera_la_LDFLAGS = $(MODULEFLAGS)
+filters_camera_la_LIBADD = $(MODULELIBS) -lm
+
+filters_extoverride_la_SOURCES = filters/extoverride.c
+filters_extoverride_la_LDFLAGS = $(MODULEFLAGS)
+filters_extoverride_la_LIBADD = $(MODULELIBS) -lm
 
 filters_stats_basic_la_SOURCES = filters/stats_basic.c
 filters_stats_basic_la_LDFLAGS = $(MODULEFLAGS)
