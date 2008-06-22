@@ -66,18 +66,13 @@ pkglib_LTLIBRARIES = \
 	filters/unwindstack.la \
 	filters/screenshot.la \
 	filters/showextensions.la \
-	filters/eps.la \
 	filters/trace.la \
 	filters/debugger.la \
-	filters/modify.la \
-	filters/camera.la \
 	filters/extoverride.la \
 	filters/stats_basic.la \
 	filters/stats_calls.la \
-	filters/stats_fragments.la \
 	filters/stats_nv.la \
 	filters/stats_primitives.la \
-	filters/showstats.la \
 	filters/logstats.la
 
 AM_CPPFLAGS = -I$(srcdir)/lib -Ilib -I$(srcdir)/include -Iinclude $(LTDLINCL) -DLIBDIR=\"$(libdir)\" -DPKGLIBDIR=\"$(pkglibdir)\" $(X_CFLAGS)
@@ -188,6 +183,10 @@ BCFILES = $(GLBCFILES) \
 	  $(EGLBCFILES) \
 	  bc/gl-glx.bc bc/gl-wgl.bc bc/gles2-egl-win.bc bc/gles2-egl-posix.bc
 
+$(BUDGIE_BUILT_SRCS): budgie/budgie$(EXEEXT) src/data/gl.tu $(budgie_all_bc_files)
+	$(mkdir_p) include/budgie
+	budgie/budgie$(EXEEXT) -I$(srcdir) -T `test -f src/data/gl.tu || echo '$(srcdir)/'`src/data/gl.tu $(budgie_main_bc_file)
+
 BUILT_SOURCES += src/apitables.h
 
 src/apitables.c: gengl/gengl.perl $(BUDGIE_BUILT_SRCS)
@@ -207,10 +206,6 @@ filters_screenshot_la_SOURCES = filters/screenshot.c
 filters_screenshot_la_CFLAGS = $(AVCODEC_CFLAGS)
 filters_screenshot_la_LIBADD = $(MODULELIBS) $(AVCODEC_LIBS)
 filters_screenshot_la_LDFLAGS = $(MODULEFLAGS)
-
-filters_eps_la_SOURCES = filters/eps.c gl2ps/gl2ps.c gl2ps/gl2ps.h
-filters_eps_la_LIBADD = $(MODULELIBS)
-filters_eps_la_LDFLAGS = $(MODULEFLAGS)
 
 filters_showextensions_la_SOURCES = filters/showextensions.c
 filters_showextensions_la_LIBADD = $(MODULELIBS)
@@ -236,14 +231,6 @@ filters_debugger_la_SOURCES = filters/debugger.c
 filters_debugger_la_LDFLAGS = $(MODULEFLAGS)
 filters_debugger_la_LIBADD = $(MODULELIBS)
 
-filters_modify_la_SOURCES = filters/modify.c
-filters_modify_la_LDFLAGS = $(MODULEFLAGS)
-filters_modify_la_LIBADD = $(MODULELIBS) -lm
-
-filters_camera_la_SOURCES = filters/camera.c
-filters_camera_la_LDFLAGS = $(MODULEFLAGS)
-filters_camera_la_LIBADD = $(MODULELIBS) -lm
-
 filters_extoverride_la_SOURCES = filters/extoverride.c
 filters_extoverride_la_LDFLAGS = $(MODULEFLAGS)
 filters_extoverride_la_LIBADD = $(MODULELIBS) -lm
@@ -256,10 +243,6 @@ filters_stats_calls_la_SOURCES = filters/stats_calls.c
 filters_stats_calls_la_LDFLAGS = $(MODULEFLAGS)
 filters_stats_calls_la_LIBADD = $(MODULELIBS)
 
-filters_stats_fragments_la_SOURCES = filters/stats_fragments.c
-filters_stats_fragments_la_LDFLAGS = $(MODULEFLAGS)
-filters_stats_fragments_la_LIBADD = $(MODULELIBS)
-
 filters_stats_nv_la_SOURCES = filters/stats_nv.c
 filters_stats_nv_la_LDFLAGS = $(MODULEFLAGS)
 filters_stats_nv_la_LIBADD = $(MODULELIBS)
@@ -267,10 +250,6 @@ filters_stats_nv_la_LIBADD = $(MODULELIBS)
 filters_stats_primitives_la_SOURCES = filters/stats_primitives.c
 filters_stats_primitives_la_LDFLAGS = $(MODULEFLAGS)
 filters_stats_primitives_la_LIBADD = $(MODULELIBS)
-
-filters_showstats_la_SOURCES = filters/showstats.c
-filters_showstats_la_LDFLAGS = $(MODULEFLAGS)
-filters_showstats_la_LIBADD = $(MODULELIBS) -lm
 
 filters_logstats_la_SOURCES = filters/logstats.c
 filters_logstats_la_LDFLAGS = $(MODULEFLAGS)
@@ -517,9 +496,8 @@ budgie_overrides += \
 bugle_sources += \
 	src/glx/glxdump.c src/glx/glwin.c
 
-$(BUDGIE_BUILT_SRCS): budgie/budgie$(EXEEXT) src/data/gl.tu $(GLBCFILES) $(GLXBCFILES) $(srcdir)/bc/gl-glx.bc
-	$(mkdir_p) include/budgie
-	budgie/budgie$(EXEEXT) -I$(srcdir) -T `test -f src/data/gl.tu || echo '$(srcdir)/'`src/data/gl.tu $(srcdir)/bc/gl-glx.bc
+budgie_all_bc_files = $(GLBCFILES) $(GLXBCFILES) $(srcdir)/bc/gl-glx.bc
+budgie_main_bc_file = $(srcdir)/bc/gl-glx.bc
 endif
 if BUGLE_GLWIN_WGL
 includebuglewgldir = $(includebugledir)/wgl
@@ -530,9 +508,8 @@ budgie_overrides += \
 bugle_sources += \
 	src/wgl/glwin.c
 
-$(BUDGIE_BUILT_SRCS): budgie/budgie$(EXEEXT) src/data/gl.tu $(GLBCFILES) $(WGLBCFILES) $(srcdir)/bc/gl-wgl.bc
-	$(mkdir_p) include/budgie
-	budgie/budgie$(EXEEXT) -I$(srcdir) -T `test -f src/data/gl.tu || echo '$(srcdir)/'`src/data/gl.tu $(srcdir)/bc/gl-wgl.bc
+budgie_all_bc_files = $(GLBCFILES) $(WGLBCFILES) $(srcdir)/bc/gl-wgl.bc
+budgie_main_bc_file = $(srcdir)/bc/gl-wgl.bc
 endif
 if BUGLE_GLWIN_EGL
 includebugleegldir = $(includebugledir)/egl
@@ -545,23 +522,47 @@ bugle_sources += \
 
 # FIXME-GLES: currently specific to GLES2
 if BUGLE_WINSYS_WINDOWS
-$(BUDGIE_BUILT_SRCS): budgie/budgie$(EXEEXT) src/data/gl.tu $(GLES2BCFILES) $(EGLBCFILES) $(srcdir)/bc/gles2-egl-win.bc
-	$(mkdir_p) include/budgie
-	budgie/budgie$(EXEEXT) -I$(srcdir) -T `test -f src/data/gl.tu || echo '$(srcdir)/'`src/data/gl.tu $(srcdir)/bc/gles2-egl-win.bc
+budgie_all_bc_files = $(GLES2BCFILES) $(EGLBCFILES) $(srcdir)/bc/gles2-egl-win.bc
+budgie_main_bc_file = $(srcdir)/bc/gles2-egl-win.bc
+
 lib_LTLIBRARIES += src/libEGL.la
 src_libEGL_la_SOURCES = src/egl/egl-win.c
 src_libEGL_la_LDFLAGS = -no-undefined -module -avoid-version -export-symbols $(srcdir)/src/egl/egl-win.def
 src_libEGL_la_DEPENDENCIES = $(srcdir)/src/egl/egl-win.def
 else
-$(BUDGIE_BUILT_SRCS): budgie/budgie$(EXEEXT) src/data/gl.tu $(GLES2BCFILES) $(EGLBCFILES) $(srcdir)/bc/gles2-egl-posix.bc
-	$(mkdir_p) include/budgie
-	budgie/budgie$(EXEEXT) -I$(srcdir) -T `test -f src/data/gl.tu || echo '$(srcdir)/'`src/data/gl.tu $(srcdir)/bc/gles2-egl-posix.bc
+budgie_all_bc_files = $(GLES2BCFILES) $(EGLBCFILES) $(srcdir)/bc/gles2-egl-posix.bc
+budgie_main_bc_file = $(srcdir)/bc/gles2-egl-posix.bc
 endif
 endif
 
 if BUGLE_GLTYPE_GL
 bugle_sources += src/gl/glstate.c src/gl/gldump.c
+
+pkglib_LTLIBRARIES += \
+	filters/camera.la filters/modify.la filters/eps.la \
+	filters/stats_fragments.la filters/showstats.la
+
+filters_camera_la_SOURCES = filters/camera.c
+filters_camera_la_LDFLAGS = $(MODULEFLAGS)
+filters_camera_la_LIBADD = $(MODULELIBS) -lm
+
+filters_modify_la_SOURCES = filters/modify.c
+filters_modify_la_LDFLAGS = $(MODULEFLAGS)
+filters_modify_la_LIBADD = $(MODULELIBS) -lm
+
+filters_eps_la_SOURCES = filters/eps.c gl2ps/gl2ps.c gl2ps/gl2ps.h
+filters_eps_la_LIBADD = $(MODULELIBS)
+filters_eps_la_LDFLAGS = $(MODULEFLAGS)
+
+filters_stats_fragments_la_SOURCES = filters/stats_fragments.c
+filters_stats_fragments_la_LDFLAGS = $(MODULEFLAGS)
+filters_stats_fragments_la_LIBADD = $(MODULELIBS)
+
+filters_showstats_la_SOURCES = filters/showstats.c
+filters_showstats_la_LDFLAGS = $(MODULEFLAGS)
+filters_showstats_la_LIBADD = $(MODULELIBS) -lm
 endif
+
 if BUGLE_GLTYPE_GLES2
 bugle_sources += src/gles2/glstate.c src/gles2/gldump.c
 endif
