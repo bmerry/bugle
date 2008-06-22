@@ -60,7 +60,7 @@ bool bugle_glwin_make_context_current(glwin_display dpy, glwin_drawable draw,
     return CALL(wglMakeCurrent)(draw, ctx);
 }
 
-BUDGIEAPIPROC bugle_glwin_get_proc_address(const char *name);
+BUDGIEAPIPROC bugle_glwin_get_proc_address(const char *name)
 {
     return (BUDGIEAPIPROC) CALL(wglGetProcAddress)(name);
 }

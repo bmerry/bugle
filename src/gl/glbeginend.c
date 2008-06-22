@@ -90,7 +90,7 @@ bool bugle_gl_in_begin_end(void)
 #else
 bool bugle_gl_in_begin_end(void)
 {
-    return false;
+    return bugle_object_get_current(bugle_context_class) == NULL;
 }
 #endif
 

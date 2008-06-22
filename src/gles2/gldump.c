@@ -290,16 +290,16 @@ int bugle_count_gl(budgie_function func, GLenum token)
 }
 
 /* Counts the number of objects returned by a call to
- * glGetAttachedObjectsARB(program, max, &count, ptr).
+ * glGetAttachedShaders(program, max, &count, ptr).
  */
-int bugle_count_attached_objects(GLuint program, GLsizei max)
+int bugle_count_attached_shaders(GLuint program, GLsizei max)
 {
     GLsizei real_count = 0;
     if (bugle_begin_internal_render())
     {
         CALL(glGetProgramiv)(program, GL_ATTACHED_SHADERS, &real_count);
         /* The above might generate an error, in which case real_count remains 0 */
-        bugle_end_internal_render("bugle_count_attached_objects", false);
+        bugle_end_internal_render("bugle_count_attached_shaders", false);
     }
     if (real_count <= max)
         return real_count;
