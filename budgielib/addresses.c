@@ -128,25 +128,18 @@ static BUDGIEAPIPROC function_address_real1(budgie_function id)
 BUDGIEAPIPROC budgie_function_address_real(budgie_function id)
 {
     BUDGIEAPIPROC fn;
+    budgie_function id2;
 
     assert(id >= 0 && id < budgie_function_count());
-    fn = function_address_real1(id);
-    if (fn == NULL)
+    id2 = id;
+    do
     {
-        budgie_group g;
-        budgie_function f;
-
-        /* FIXME: this needs to be made a LOT more efficient */
-        g = budgie_function_group(id);
-        for (f = budgie_function_count() - 1; f >= 0; f--)
-            if (budgie_function_group(f) == g)
-            {
-                fn = function_address_real1(f);
-                if (fn != NULL)
-                    break;
-            }
-    }
-    return fn;
+        fn = function_address_real1(id2);
+        if (fn != NULL)
+            return fn;
+        id2 = budgie_function_next(id);
+    } while (id2 != id);
+    return NULL;
 }
 
 void (BUDGIEAPI *budgie_function_address_wrapper(budgie_function id))(void)

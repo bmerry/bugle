@@ -30,8 +30,9 @@
 int             budgie_function_count(void);
 const char *    budgie_function_name(budgie_function id);
 budgie_function budgie_function_id(const char *name);
-void          (*budgie_function_address(budgie_function id, bool real))(void);
 budgie_group    budgie_function_group(budgie_function id);
+/* Next function in a circularly linked list of functions in the same group */
+budgie_function budgie_function_next(budgie_function id);
 
 int             budgie_group_count(void);
 budgie_group    budgie_group_id(const char *name); /* Takes a function name from the group */

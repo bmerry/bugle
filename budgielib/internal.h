@@ -41,6 +41,7 @@ typedef struct
 {
     const char *name;
     budgie_group group;
+    budgie_function next_in_group;  /* circular linked list */
 } function_data;
 
 typedef struct

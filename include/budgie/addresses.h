@@ -44,7 +44,7 @@ BUDGIEAPIPROC budgie_function_address_real(budgie_function id);
 BUDGIEAPIPROC budgie_function_address_wrapper(budgie_function id);
 
 /* These should only be used by the interceptor - it sets up all the addresses
- * (real and wrapper) for budgie_function_address.
+ * (real and wrapper) for budgie_function_address_*.
  */
 void budgie_function_address_initialise(void);
 /* Used to manually override the initialiser */

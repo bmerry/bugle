@@ -86,6 +86,12 @@ budgie_group budgie_function_group(budgie_function id)
     return _budgie_function_table[id].group;
 }
 
+budgie_function budgie_function_next(budgie_function id)
+{
+    assert(id >= 0 && id < _budgie_function_count);
+    return _budgie_function_table[id].next_in_group;
+}
+
 
 int budgie_group_count(void)
 {

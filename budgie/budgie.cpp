@@ -852,12 +852,19 @@ static void write_function_table(FILE *f)
             "{\n");
     for (list<Function>::iterator i = functions.begin(); i != functions.end(); i++)
     {
+        list<Group::FunctionIterator>::iterator next = i->group->functions.begin();
+        while (*next != i) next++;
+        next++;
+        if (next == i->group->functions.end())
+            next = i->group->functions.begin();
+
         string name = i->name();
+        string next_name = (*next)->define();
         string group = i->group_define();
         if (i != functions.begin()) fprintf(f, ",\n");
         fprintf(f,
-                "    { \"%s\", %s }",
-                name.c_str(), group.c_str());
+                "    { \"%s\", %s, %s }",
+                name.c_str(), group.c_str(), next_name.c_str());
     }
     fprintf(f, "\n};\n\n");
 }

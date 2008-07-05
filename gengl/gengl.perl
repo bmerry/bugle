@@ -26,20 +26,20 @@ my %extension_chains = (
     "GL_ARB_depth_texture" => "GL_VERSION_1_4",
     "GL_ARB_draw_buffers" => "GL_VERSION_2_0",
     "GL_ARB_fragment_program" => undef,
-    "GL_ARB_fragment_shader" => "GL_VERSION_2_0",
+    "GL_ARB_fragment_shader" => ["GL_VERSION_2_0", "GL_ES_VERSION_2_0"],
     "GL_ARB_imaging" => undef,
-    "GL_ARB_multisample" => "GL_VERSION_1_3",
-    "GL_ARB_multitexture" => "GL_VERSION_1_3",
+    "GL_ARB_multisample" => ["GL_VERSION_1_3", "GL_ES_VERSION_2_0"],
+    "GL_ARB_multitexture" => ["GL_VERSION_1_3", "GL_ES_VERSION_2_0"],
     "GL_ARB_occlusion_query" => "GL_VERSION_1_5",
     "GL_ARB_pixel_buffer_object" => "GL_VERSION_2_1",
-    "GL_ARB_point_parameters" => "GL_VERSION_1_4",
+    "GL_ARB_point_parameters" => ["GL_VERSION_1_4", "GL_ES_VERSION_2_0"],
     "GL_ARB_point_sprite" => "GL_VERSION_2_0",
-    "GL_ARB_shader_objects" => "GL_VERSION_2_0",
-    "GL_ARB_shading_language_100" => "GL_VERSION_2_0",
+    "GL_ARB_shader_objects" => ["GL_VERSION_2_0", "GL_ES_VERSION_2_0"],
+    "GL_ARB_shading_language_100" => ["GL_VERSION_2_0", "GL_ES_VERSION_2_0"],
     "GL_ARB_shadow" => "GL_VERSION_1_4",
     "GL_ARB_texture_border_clamp" => "GL_VERSION_1_3",
-    "GL_ARB_texture_compression" => "GL_VERSION_1_3",
-    "GL_ARB_texture_cube_map" => "GL_VERSION_1_3",
+    "GL_ARB_texture_compression" => ["GL_VERSION_1_3", "GL_ES_VERSION_2_0"],
+    "GL_ARB_texture_cube_map" => ["GL_VERSION_1_3", "GL_ES_VERSION_2_0"],
     "GL_ARB_texture_env_add" => "GL_VERSION_1_3",
     "GL_ARB_texture_env_dot3" => "GL_VERSION_1_3",
     "GL_ARB_texture_env_combine" => "GL_VERSION_1_3",
@@ -47,16 +47,17 @@ my %extension_chains = (
     "GL_ARB_texture_non_power_of_two" => "GL_VERSION_2_0",
     "GL_ARB_texture_rectangle" => undef,
     "GL_ARB_transpose_matrix" => "GL_VERSION_1_3",
-    "GL_ARB_vertex_buffer_object" => "GL_VERSION_1_5",
+    "GL_ARB_vertex_buffer_object" => ["GL_VERSION_1_5", "GL_ARB_vertex_buffer_object"],
     "GL_ARB_vertex_program" => undef,
-    "GL_ARB_vertex_shader" => "GL_VERSION_2_0",
+    "GL_ARB_vertex_shader" => ["GL_VERSION_2_0", "GL_ES_VERSION_2_0"],
     "GL_ARB_window_pos" => "GL_VERSION_1_4",
     "GL_EXT_bgra" => "GL_VERSION_1_2",
     "GL_EXT_bindable_uniform" => undef,
-    "GL_EXT_blend_equation_separate" => "GL_VERSION_2_0",
-    "GL_EXT_blend_func_separate" => "GL_VERSION_1_4",
+    "GL_EXT_blend_equation_separate" => ["GL_VERSION_2_0", "GL_ES_VERSION_2_0"],
+    "GL_EXT_blend_func_separate" => ["GL_VERSION_1_4", "GL_ES_VERSION_2_0"],
     "GL_EXT_draw_range_elements" => "GL_VERSION_1_2",
     "GL_EXT_fog_coord" => "GL_VERSION_1_4",
+    "GL_EXT_framebuffer_object" => "GL_ES_VERSION_2_0",
     "GL_EXT_multi_draw_arrays" => "GL_VERSION_1_4",
     "GL_EXT_packed_pixels" => "GL_VERSION_1_2",
     "GL_EXT_pixel_buffer_object" => "GL_ARB_pixel_buffer_object",
@@ -65,8 +66,8 @@ my %extension_chains = (
     "GL_EXT_secondary_color" => "GL_VERSION_1_4",
     "GL_EXT_separate_specular_color" => "GL_VERSION_1_2",
     "GL_EXT_shadow_funcs" => "GL_VERSION_1_5",
-    "GL_EXT_stencil_two_side" => "GL_VERSION_2_0",
-    "GL_EXT_stencil_wrap" => "GL_VERSION_1_4",
+    "GL_EXT_stencil_two_side" => ["GL_VERSION_2_0", "GL_ES_VERSION_2_0"],
+    "GL_EXT_stencil_wrap" => ["GL_VERSION_1_4", "GL_ES_VERSION_2_0"],
     "GL_EXT_texture3D" => "GL_VERSION_1_2",
     "GL_EXT_texture_buffer_object" => undef,
     "GL_EXT_texture_cube_map" => "GL_ARB_texture_cube_map",
@@ -76,9 +77,9 @@ my %extension_chains = (
     "GL_EXT_texture_rectangle" => "GL_ARB_texture_rectangle",
     "GL_EXT_texture_sRGB" => "GL_VERSION_2_1",
     "GL_SGIS_generate_mipmap" => "GL_VERSION_1_4",
-    "GL_SGIS_texture_edge_clamp" => "GL_VERSION_1_2",
+    "GL_SGIS_texture_edge_clamp" => ["GL_VERSION_1_2", "GL_ES_VERSION_2_0"],
     "GL_SGIS_texture_lod" => "GL_VERSION_1_2",
-    "GL_NV_blend_square" => "GL_VERSION_1_4",
+    "GL_NV_blend_square" => ["GL_VERSION_1_4", "GL_ES_VERSION_2_0"],
     "GL_NV_texture_rectangle" => "GL_EXT_texture_rectangle",
     "GLX_ARB_get_proc_address" => "GLX_VERSION_1_4",
     "GLX_EXT_import_context" => "GLX_VERSION_1_3",
@@ -259,6 +260,35 @@ sub extension_collate($)
     }
 }
 
+sub follow_chain_r($$)
+{
+    my ($start, $set) = @_;
+    return if (!defined($start) || exists($set->{$start}));
+    $set->{$start} = 1;
+    if (exists($extension_chains{$start}))
+    {
+        my @follow = ($extension_chains{$start});
+        if (ref($follow[0]))
+        {
+            @follow = @{$follow[0]};
+        }
+        for my $ext (@follow)
+        {
+            &follow_chain_r($ext, $set);
+        }
+    }
+}
+
+# Takes the name of an extension, and returns a list of extensions that
+# subsume it.
+sub follow_chain($)
+{
+    my $start = shift;
+    my %all = ();
+    follow_chain_r($start, \%all);
+    return keys %all;
+}
+
 my @func_ids;
 
 sub load_ids($)
@@ -359,7 +389,7 @@ foreach my $in_header (@ARGV)
         {
             my $name = $1;
             my $base = base_name($name, $cur_suffix);
-    
+
             if ($name =~ /$wgl_function_regex/)
             {
                 # Fake version, since WGL isn't versioned
@@ -488,12 +518,7 @@ EOF
     foreach my $ext (@extensions)
     {
         my $cur = $ext;
-        my @list = ($cur);
-        while (defined($extension_chains{$cur}))
-        {
-            $cur = $extension_chains{$cur};
-            push @list, ($cur);
-        }
+        my @list = follow_chain($cur);
         @list = grep { exists($extensions{$_}) } @list;
         extension_write_group($ext, \@list);
     }
