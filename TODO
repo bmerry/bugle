@@ -18,7 +18,6 @@ GLES port
 ---------
 - remove a lot of extension #define checks
 - put in FBO wrapper layer, similar to GLSL
-- autogenerate egl-win.def
 - track texture data so that it can be queried
 - make gldb-gui work
 - doc updates

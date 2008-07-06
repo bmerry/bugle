@@ -10,7 +10,7 @@ MODULELIBS = src/libbugleutils.la lib/libgnu.la
 noinst_PROGRAMS = budgie/budgie
 # Misc extra files to include
 noinst_HEADERS = budgie/tree.def budgie/c-common.def
-dist_noinst_SCRIPTS = gengl/gengl.perl gengl/find_header.perl mvtu.sh
+dist_noinst_SCRIPTS = gengl/gengl.perl gengl/genegldef.perl gengl/find_header.perl mvtu.sh
 # The real things
 lib_LTLIBRARIES = src/libbugleutils.la
 bin_PROGRAMS = @GLDB@ @GLDB_GUI@
@@ -193,6 +193,9 @@ src/apitables.c: gengl/gengl.perl $(BUDGIE_BUILT_SRCS)
 	$(PERL) $(srcdir)/gengl/gengl.perl --mode=c --header=budgielib/defines.h $(GLINCLUDES) > src/apitables.c
 src/apitables.h: gengl/gengl.perl $(BUDGIE_BUILT_SRCS)
 	$(PERL) $(srcdir)/gengl/gengl.perl --mode=header --header=budgielib/defines.h $(GLINCLUDES) > src/apitables.h
+src/egl/egl-win.def: gengl/genegldef.perl $(BUDGIE_BUILT_SRCS)
+	$(mkdir_p) src/egl
+	$(PERL) $(srcdir)/gengl/genegldef.perl budgielib/defines.h > src/egl/egl-win.def
 bc/gl/alias.bc: gengl/gengl.perl
 	$(mkdir_p) bc/gl
 	$(PERL) $(srcdir)/gengl/gengl.perl --mode=alias $(GLINCLUDES) > bc/gl/alias.bc
@@ -528,8 +531,8 @@ budgie_main_bc_file = $(srcdir)/bc/gles2-egl-win.bc
 
 lib_LTLIBRARIES += src/libEGL.la
 src_libEGL_la_SOURCES = src/egl/egl-win.c
-src_libEGL_la_LDFLAGS = -no-undefined -module -avoid-version -export-symbols $(srcdir)/src/egl/egl-win.def
-src_libEGL_la_DEPENDENCIES = $(srcdir)/src/egl/egl-win.def
+src_libEGL_la_LDFLAGS = -no-undefined -module -avoid-version -export-symbols src/egl/egl-win.def
+src_libEGL_la_DEPENDENCIES = src/egl/egl-win.def
 else
 budgie_all_bc_files = $(GLES2BCFILES) $(EGLBCFILES) $(srcdir)/bc/gles2-egl-posix.bc
 budgie_main_bc_file = $(srcdir)/bc/gles2-egl-posix.bc
