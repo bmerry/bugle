@@ -82,7 +82,7 @@ bugle
 - improve support for GLSL (more type information)
 - capture more information about call lists
 - capture and replay
-- improve bugle_call_get_error and bugle_begin_internal_render so that using
+- improve bugle_gl_call_get_error and bugle_gl_begin_internal_render so that using
   them doesn't require every single function call to be intercepted
 - support for GL_GREMEDY_string_marker and GL_GREMEDY_frame_terminator
 - finish documenting API in DocBook

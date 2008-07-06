@@ -46,12 +46,12 @@ static void stats_fragments_struct_init(const void *key, void *data)
     s = (stats_fragments_struct *) data;
     if (stats_fragments_fragments->active
         && BUGLE_GL_HAS_EXTENSION(GL_ARB_occlusion_query)
-        && bugle_begin_internal_render())
+        && bugle_gl_begin_internal_render())
     {
         CALL(glGenQueriesARB)(1, &s->query);
         if (s->query)
             CALL(glBeginQueryARB)(GL_SAMPLES_PASSED_ARB, s->query);
-        bugle_end_internal_render("stats_fragments_struct_initialise", true);
+        bugle_gl_end_internal_render("stats_fragments_struct_initialise", true);
     }
 }
 
@@ -62,11 +62,11 @@ static bool stats_fragments_swap_buffers(function_call *call, const callback_dat
 
     s = bugle_object_get_current_data(bugle_context_class, stats_fragments_view);
     if (stats_fragments_fragments->active
-        && s && s->query && bugle_begin_internal_render())
+        && s && s->query && bugle_gl_begin_internal_render())
     {
         CALL(glEndQueryARB)(GL_SAMPLES_PASSED_ARB);
         CALL(glGetQueryObjectuivARB)(s->query, GL_QUERY_RESULT_ARB, &fragments);
-        bugle_end_internal_render("stats_fragments_swap_buffers", true);
+        bugle_gl_end_internal_render("stats_fragments_swap_buffers", true);
         bugle_stats_signal_add(stats_fragments_fragments, fragments);
     }
     return true;
@@ -78,10 +78,10 @@ static bool stats_fragments_post_swap_buffers(function_call *call, const callbac
 
     s = bugle_object_get_current_data(bugle_context_class, stats_fragments_view);
     if (stats_fragments_fragments->active
-        && s && s->query && bugle_begin_internal_render())
+        && s && s->query && bugle_gl_begin_internal_render())
     {
         CALL(glBeginQueryARB)(GL_SAMPLES_PASSED_ARB, s->query);
-        bugle_end_internal_render("stats_fragments_post_swap_buffers", true);
+        bugle_gl_end_internal_render("stats_fragments_post_swap_buffers", true);
     }
     return true;
 }
@@ -144,6 +144,6 @@ void bugle_initialise_filter_library(void)
     bugle_filter_set_new(&stats_fragments_info);
     bugle_filter_set_depends("stats_fragments", "stats_basic");
     bugle_filter_set_depends("stats_fragments", "glextensions");
-    bugle_filter_set_renders("stats_fragments");
+    bugle_gl_filter_set_renders("stats_fragments");
     bugle_filter_set_stats_generator("stats_fragments");
 }

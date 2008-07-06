@@ -98,7 +98,7 @@ static bool gldisplaylist_glNewList(function_call *call, const callback_data *da
     GLint value;
 
     if (bugle_displaylist_list()) return true; /* Nested call */
-    if (bugle_begin_internal_render())
+    if (bugle_gl_begin_internal_render())
     {
         CALL(glGetIntegerv)(GL_LIST_INDEX, &value);
         info.list = value;
@@ -106,7 +106,7 @@ static bool gldisplaylist_glNewList(function_call *call, const callback_data *da
         info.mode = value;
         if (info.list == 0) return true; /* Call failed? */
         obj = bugle_object_new(bugle_displaylist_class, &info, true);
-        bugle_end_internal_render("gldisplaylist_callback", true);
+        bugle_gl_end_internal_render("gldisplaylist_callback", true);
     }
     return true;
 }

@@ -145,11 +145,13 @@
         <sect2 id="extending-guidelines-oglextensions">
             <title>OpenGL extensions</title>
             <para>
-                BuGLe tries to support systems that only have header files and
-                runtime support for <application>OpenGL</application> 1.1 (so
-                that a Win32 port will be possible one day, but also to
-                support other systems with old headers).  Thus for any
-                functions introduces after 1.1, you should favour the
+                BuGLe tries to support systems that only have
+                runtime support for <application>OpenGL</application> 1.1, to
+                support the Windows software rasteriser. However, as of July
+                2008, a <filename>glext.h</filename> supporting OpenGL 2.0
+                is a requirement, so you may assume that the reflection system
+                knows about these functions. For any post-2.0 functions, you
+                you should favour the
                 <symbol>BUDGIE_GROUP_ID(<replaceable>glFunction</replaceable>)</symbol>
                 definition with the oldest name, which is generally an
                 extension function. You should also protect any such code with
@@ -178,7 +180,7 @@
             your module is compiled with suitable flags to make it
             thread-safe. Using <application>libtool</application> is
             recommended, in which case you should use the
-            <option>-threadsafe</option>.
+            <option>-thread-safe</option>.
         </para>
         <para>
             The installation directory can also be extracted from
@@ -243,7 +245,8 @@
         <sect2 id="extending-concepts-budgie">
             <title>Budgie</title>
             <para>
-                Budgie is the module within &bugle; that generates huge wads
+                Budgie is the module within &bugle; that generates huge
+                amounts
                 of code automatically. Apart from the code to override each
                 OpenGL function, it also generates a lot of reflection
                 information about functions and types. The API for the
@@ -416,7 +419,7 @@ filter_set *bugle_filter_set_new(filter_set_info *info);</funcsynopsisinfo>
                         <row><entry><symbol>FILTER_SET_VARIABLE_BOOL</symbol></entry><entry><type>bool</type></entry><entry></entry></row>
                         <row><entry><symbol>FILTER_SET_VARIABLE_INT</symbol></entry><entry><type>long</type></entry><entry></entry></row>
                         <row><entry><symbol>FILTER_SET_VARIABLE_UINT</symbol></entry><entry><type>long</type></entry><entry>&ge; 0</entry></row>
-                        <row><entry><symbol>FILTER_SET_VARIABLE_INT</symbol></entry><entry><type>long</type></entry><entry>&gt; 0</entry></row>
+                        <row><entry><symbol>FILTER_SET_VARIABLE_POSITIVE_INT</symbol></entry><entry><type>long</type></entry><entry>&gt; 0</entry></row>
                         <row><entry><symbol>FILTER_SET_VARIABLE_FLOAT</symbol></entry><entry><type>float</type></entry><entry>finite</entry></row>
                         <row><entry><symbol>FILTER_SET_VARIABLE_STRING</symbol></entry><entry><type>char *</type></entry><entry></entry></row>
                         <row><entry><symbol>FILTER_SET_VARIABLE_KEY</symbol></entry><entry><type>xevent_key</type></entry><entry>valid</entry></row>
@@ -631,7 +634,7 @@ void bugle_filter_catches_all(filter *f, bool inactive, filter_callback callback
                 directly.
             </para>
             <funcsynopsis>
-                <funcsynopsisinfo language="cpp">#include "src/objects.h"
+                <funcsynopsisinfo language="cpp">#include &lt;bugle/objects.h&gt;
                     
 object_class *bugle_object_class_new(object_class *parent);
 void bugle_object_class_free(object_class *klass);</funcsynopsisinfo>
@@ -775,7 +778,7 @@ void *bugle_object_get_current_data(object_class *klass, object *obj);</funcsyno
             filter-set. This section describes a number of utilities which
             simplify the job of writing a more powerful filter-set. Most of
             the functions described here are defined in <filename
-                class="headerfile">src/glutils.h</filename>.
+                class="headerfile">bugle/gl/glutils.h</filename>.
         </para>
         <sect2 id="extending-utility-beginend">
             <title>Begin/end checking</title>
@@ -783,13 +786,13 @@ void *bugle_object_get_current_data(object_class *klass, object *obj);</funcsyno
                 Many OpenGL functions may not be called between
                 <function>glBegin</function> and <function>glEnd</function>.
                 To facilitate checking for this, the
-                <systemitem>trackbeginend</systemitem> filter-set provides the
-                boolean function <function>bugle_in_begin_end</function> which
+                <systemitem>glbeginend</systemitem> filter-set provides the
+                boolean function <function>bugle_gl_in_begin_end</function> which
                 indicates whether the current context is in this state. This
                 function is defined in the header <filename
-                    class="headerfile">src/tracker.h</filename>. You must also
+                    class="headerfile">bugle/gl/glbeginend.h</filename>. You must also
                 also call <code
-                    language="cpp">bugle_filter_post_queries_begin_end("<replaceable>filtername</replaceable>")</code>
+                    language="cpp">bugle_gl_filter_post_queries_begin_end("<replaceable>filtername</replaceable>")</code>
                 as part of the filter-set initialisation, for filters that run
                 after invocation. Failing to do so may yield incorrect results
                 during interception of <function>glBegin</function> or
@@ -819,10 +822,10 @@ void *bugle_object_get_current_data(object_class *klass, object *obj);</funcsyno
                 OpenGL error. If your filter-set
                 <replaceable>filterset</replaceable> wishes to do this, it
                 must call <code
-                    language="cpp">bugle_filter_set_queries_error("<replaceable>filterset</replaceable>")</code>
+                    language="cpp">bugle_gl_filter_set_queries_error("<replaceable>filterset</replaceable>")</code>
                 during library initialisation. To actually retrieve the error,
                 call <code
-                    language="cpp">bugle_call_get_error(data->call_object)</code>.
+                    language="cpp">bugle_gl_call_get_error(data->call_object)</code>.
             </para>
             <para>
                 This mechanism is not totally reliable. It is illegal to call
@@ -864,14 +867,19 @@ void *bugle_object_get_current_data(object_class *klass, object *obj);</funcsyno
                 <replaceable>glFunction</replaceable>. If the OpenGL library
                 does not have this symbol (which it need not, since OpenGL
                 entry points beyond OpenGL 1.2 should be queried with
-                <function>glXGetProcAddressARB</function>, then you will get
-                an unresolved symbol error at run-time.
+                <function>glXGetProcAddressARB</function>), then you will get
+                an unresolved symbol error at run-time. On Windows, you will
+                get a link failure.
             </para>
             <para>
                 If the function is not defined by OpenGL 1.1, you must first
-                check that the extension is supported at both compile and run
-                time: this is described in <xref
-                    linkend="extending-utility-extensions"/>.
+                check that the extension is supported at run
+                time, and if it is not defined by OpenGL 2.0, you must also
+                check that it is defined at compile time. This is described in
+                <xref linkend="extending-utility-extensions"/>. Note that
+                &bugle; will first try the function whose name exactly matches
+                what you pass, but if that does not exist, it will then try
+                the other functions in the same group.
             </para>
             <para>
                 For OpenGL (as opposed to GLX) functions, it is also important
@@ -880,20 +888,20 @@ void *bugle_object_get_current_data(object_class *klass, object *obj);</funcsyno
                 begin/end checking. A filter-set that wishes to make OpenGL
                 calls must be registered at library initialisation time with
             </para>
-            <programlisting>bugle_filter_set_renders("<replaceable>filter-set</replaceable>");</programlisting>
+            <programlisting>bugle_gl_filter_set_renders("<replaceable>filter-set</replaceable>");</programlisting>
             <para>
                 and any filters that make such calls and which run after
                 invocation must be registered during filter-set initialisation
                 with
             </para>
-            <programlisting>bugle_filter_post_renders("<replaceable>filter</replaceable>");</programlisting>
+            <programlisting>bugle_gl_filter_post_renders("<replaceable>filter</replaceable>");</programlisting>
             <para>
                 To begin a section of code that wishes to make OpenGL function
-                calls, call <code>bugle_begin_internal_render()</code>. It
+                calls, call <code>bugle_gl_begin_internal_render()</code>. It
                 will return a boolean, indicating whether it is safe to
                 proceed. If it is, you must terminate that block of code by
                 calling
-                <code>bugle_end_internal_render("<replaceable>name</replaceable>", true);</code>
+                <code>bugle_gl_end_internal_render("<replaceable>name</replaceable>", true);</code>
                 The first parameter is
                 a descriptive name for the section of code (typically the
                 name of the containing function), which is logged if the code
@@ -920,12 +928,12 @@ void *bugle_object_get_current_data(object_class *klass, object *obj);</funcsyno
                 of an OpenGL extension in the current context:
             </para>
             <funcsynopsis>
-                <funcsynopsisinfo language="cpp">#include &lt;bugle/tracker.h&gt;
+                <funcsynopsisinfo language="cpp">#include &lt;bugle/gl/glextensions.h&gt;
 
 bool BUGLE_GL_HAS_EXTENSION(<replaceable>GL_EXT_some_extension</replaceable>);
 bool BUGLE_GL_HAS_EXTENSION_GROUP(<replaceable>GL_EXT_some_extension</replaceable>);
 
-bugle_filter_set_depends(<replaceable>"myfilterset"</replaceable>, "trackextensions");</funcsynopsisinfo>
+bugle_filter_set_depends(<replaceable>"myfilterset"</replaceable>, "glextensions");</funcsynopsisinfo>
             </funcsynopsis>
             <para>
                 An extension group is a set of extensions with similar

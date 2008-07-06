@@ -352,11 +352,11 @@ static void camera_context_init(const void *key, void *data)
         ctx->modifier[i * 5] = 1.0f;
 
     if (bugle_filter_set_is_active(camera_filterset)
-        && bugle_begin_internal_render())
+        && bugle_gl_begin_internal_render())
     {
         ctx->active = true;
         camera_get_original(ctx);
-        bugle_end_internal_render("camera_context_init", true);
+        bugle_gl_end_internal_render("camera_context_init", true);
     }
 }
 
@@ -368,12 +368,12 @@ static bool camera_restore(function_call *call, const callback_data *data)
     if (bugle_displaylist_mode() == GL_NONE)
     {
         ctx = (camera_context *) bugle_object_get_current_data(bugle_context_class, camera_view);
-        if (ctx && bugle_begin_internal_render())
+        if (ctx && bugle_gl_begin_internal_render())
         {
             CALL(glGetIntegerv)(GL_MATRIX_MODE, &mode);
             if (mode == GL_MODELVIEW)
                 CALL(glLoadMatrixf)(ctx->original);
-            bugle_end_internal_render("camera_restore", true);
+            bugle_gl_end_internal_render("camera_restore", true);
         }
     }
     return true;
@@ -387,7 +387,7 @@ static bool camera_override(function_call *call, const callback_data *data)
     if (bugle_displaylist_mode() == GL_NONE)
     {
         ctx = (camera_context *) bugle_object_get_current_data(bugle_context_class, camera_view);
-        if (ctx && bugle_begin_internal_render())
+        if (ctx && bugle_gl_begin_internal_render())
         {
             CALL(glGetIntegerv)(GL_MATRIX_MODE, &mode);
             if (mode == GL_MODELVIEW)
@@ -396,7 +396,7 @@ static bool camera_override(function_call *call, const callback_data *data)
                 CALL(glLoadMatrixf)(ctx->modifier);
                 CALL(glMultMatrixf)(ctx->original);
             }
-            bugle_end_internal_render("camera_restore", true);
+            bugle_gl_end_internal_render("camera_restore", true);
         }
     }
     return true;
@@ -429,7 +429,7 @@ static bool camera_swap_buffers(function_call *call, const callback_data *data)
     GLint mode;
 
     ctx = (camera_context *) bugle_object_get_current_data(bugle_context_class, camera_view);
-    if (ctx && bugle_begin_internal_render())
+    if (ctx && bugle_gl_begin_internal_render())
     {
         int f = 0, l = 0;
 
@@ -450,7 +450,7 @@ static bool camera_swap_buffers(function_call *call, const callback_data *data)
             CALL(glMatrixMode)(mode);
             ctx->dirty = false;
         }
-        bugle_end_internal_render("camera_swap_buffers", true);
+        bugle_gl_end_internal_render("camera_swap_buffers", true);
     }
     return true;
 }
@@ -461,24 +461,24 @@ static void camera_handle_activation(bool active, camera_context *ctx)
 
     if (active && !ctx->active)
     {
-        if (bugle_begin_internal_render())
+        if (bugle_gl_begin_internal_render())
         {
             camera_get_original(ctx);
             ctx->active = true;
             ctx->dirty = true;
-            bugle_end_internal_render("camera_handle_activation", true);
+            bugle_gl_end_internal_render("camera_handle_activation", true);
         }
     }
     else if (!active && ctx->active)
     {
-        if (bugle_begin_internal_render())
+        if (bugle_gl_begin_internal_render())
         {
             CALL(glGetIntegerv)(GL_MATRIX_MODE, &mode);
             CALL(glMatrixMode)(GL_MODELVIEW);
             CALL(glLoadMatrixf)(ctx->original);
             CALL(glMatrixMode)(mode);
             ctx->active = false;
-            bugle_end_internal_render("camera_handle_activation", true);
+            bugle_gl_end_internal_render("camera_handle_activation", true);
         }
     }
 }
@@ -539,7 +539,7 @@ static bool camera_initialise(filter_set *handle)
     bugle_glwin_filter_catches_swap_buffers(f, false, camera_swap_buffers);
 
     f = bugle_filter_new(handle, "camera_post");
-    bugle_filter_post_renders("camera_post");
+    bugle_gl_filter_post_renders("camera_post");
     bugle_filter_order("invoke", "camera_post");
     bugle_glwin_filter_catches_make_current(f, true, camera_make_current);
     bugle_filter_catches(f, "glLoadIdentity", false, camera_override);
@@ -611,7 +611,7 @@ void bugle_initialise_filter_library(void)
 
     bugle_filter_set_new(&camera_info);
 
-    bugle_filter_set_renders("camera");
+    bugle_gl_filter_set_renders("camera");
     bugle_filter_set_depends("camera", "classify");
     bugle_filter_set_depends("camera", "gldisplaylist");
     bugle_filter_set_depends("camera", "trackcontext");

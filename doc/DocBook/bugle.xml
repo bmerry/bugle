@@ -18,6 +18,7 @@
     </bookinfo>
     <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="introduction.xml"/>
     <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="install.xml"/>
+    <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="gles2.xml"/>
     <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="extending.xml"/>
     <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="hacking.xml"/>
     <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="faq.xml"/>

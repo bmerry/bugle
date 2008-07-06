@@ -29,37 +29,37 @@
 #include <assert.h>
 
 /* The intended use is:
- * if (bugle_begin_internal_render())
+ * if (bugle_gl_begin_internal_render())
  * {
  *     CALL(glFrob)();
- *     bugle_end_internal_render();
+ *     bugle_gl_end_internal_render();
  * }
- * bugle_begin_internal_render will return false if one is inside begin/end.
- * You must also call bugle_filter_set_renders in the filterset initialiser,
- * as well as bugle_filter_post_renders for each filter that will do rendering
+ * bugle_gl_begin_internal_render will return false if one is inside begin/end.
+ * You must also call bugle_gl_filter_set_renders in the filterset initialiser,
+ * as well as bugle_gl_filter_post_renders for each filter that will do rendering
  * after invoke.
  */
 
-bool bugle_begin_internal_render(void);
-void bugle_end_internal_render(const char *name, bool warn);
+bool bugle_gl_begin_internal_render(void);
+void bugle_gl_end_internal_render(const char *name, bool warn);
 
 /* Registers all commands that trigger geometry (pixel rectangles are
  * not included). This includes commands that use arrays as well as
  * immediate mode commands.
  */
-void bugle_filter_catches_drawing(filter *f, bool inactive, filter_callback callback);
+void bugle_gl_filter_catches_drawing(filter *f, bool inactive, filter_callback callback);
 /* Like the above, but only immediate mode vertex commands */
-void bugle_filter_catches_drawing_immediate(filter *f, bool inactive, filter_callback callback);
+void bugle_gl_filter_catches_drawing_immediate(filter *f, bool inactive, filter_callback callback);
 
 /* Returns true for glVertex*, and for glVertexAttrib* with attribute
  * 0. These are the calls that generate a vertex in immediate mode.
  * f must be canonicalised.
  */
-bool bugle_call_is_immediate(function_call *call);
+bool bugle_gl_call_is_immediate(function_call *call);
 
-void bugle_filter_set_renders(const char *name);
-void bugle_filter_post_renders(const char *name);
-void bugle_filter_set_queries_error(const char *name);
-GLenum bugle_call_get_error(object *call_object);
+void bugle_gl_filter_set_renders(const char *name);
+void bugle_gl_filter_post_renders(const char *name);
+void bugle_gl_filter_set_queries_error(const char *name);
+GLenum bugle_gl_call_get_error(object *call_object);
 
 #endif /* !BUGLE_SRC_GLUTILS_H */

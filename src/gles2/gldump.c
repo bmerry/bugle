@@ -295,11 +295,11 @@ int bugle_count_gl(budgie_function func, GLenum token)
 int bugle_count_attached_shaders(GLuint program, GLsizei max)
 {
     GLsizei real_count = 0;
-    if (bugle_begin_internal_render())
+    if (bugle_gl_begin_internal_render())
     {
         CALL(glGetProgramiv)(program, GL_ATTACHED_SHADERS, &real_count);
         /* The above might generate an error, in which case real_count remains 0 */
-        bugle_end_internal_render("bugle_count_attached_shaders", false);
+        bugle_gl_end_internal_render("bugle_count_attached_shaders", false);
     }
     if (real_count <= max)
         return real_count;

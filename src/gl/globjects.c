@@ -83,11 +83,11 @@ static void globjects_add_single(bugle_globjects_type type,
 
     lock();
     table = get_table(type);
-    if (table && bugle_begin_internal_render())
+    if (table && bugle_gl_begin_internal_render())
     {
         if (is == NULL || is(object))
             bugle_hashptr_set_int(table, object, (void *) (size_t) target);
-        bugle_end_internal_render("globjects_add_single", true);
+        bugle_gl_end_internal_render("globjects_add_single", true);
     }
     unlock();
 }
@@ -114,12 +114,12 @@ static void globjects_delete_multiple(bugle_globjects_type type,
 
     lock();
     table = get_table(type);
-    if (table && bugle_begin_internal_render())
+    if (table && bugle_gl_begin_internal_render())
     {
         for (i = 0; i < count; i++)
             if (is == NULL || !is(objects[i]))
                 bugle_hashptr_set_int(table, objects[i], NULL);
-        bugle_end_internal_render("globjects_delete_multiple", true);
+        bugle_gl_end_internal_render("globjects_delete_multiple", true);
     }
     unlock();
 }
@@ -278,7 +278,7 @@ static bool globjects_pre_glDeleteObjectARB(function_call *call, const callback_
     GLhandleARB object;
     GLint type;
 
-    if (bugle_begin_internal_render())
+    if (bugle_gl_begin_internal_render())
     {
         object = *call->glDeleteObjectARB.arg0;
         CALL(glGetObjectParameterivARB)(object, GL_OBJECT_TYPE_ARB, &type);
@@ -291,7 +291,7 @@ static bool globjects_pre_glDeleteObjectARB(function_call *call, const callback_
             add_check(data->call_object, BUGLE_GLOBJECTS_SHADER, object);
             break;
         }
-        bugle_end_internal_render("globjects_pre_glDeleteObjectARB", true);
+        bugle_gl_end_internal_render("globjects_pre_glDeleteObjectARB", true);
     }
     return true;
 }
@@ -301,12 +301,12 @@ static bool globjects_pre_glUseProgram(function_call *call, const callback_data 
 {
     GLuint program;
 
-    if (bugle_begin_internal_render())
+    if (bugle_gl_begin_internal_render())
     {
         program = bugle_gl_get_current_program();
         if (program != 0)
             globjects_pre_glsl_delete_program(program, data);
-        bugle_end_internal_render("globjects_pre_glUseProgram", true);
+        bugle_gl_end_internal_render("globjects_pre_glUseProgram", true);
     }
     return true;
 }
@@ -329,10 +329,10 @@ static bool globjects_pre_glDeleteProgram(function_call *call, const callback_da
     GLuint object;
 
     object = *call->glDeleteProgram.arg0;
-    if (bugle_begin_internal_render())
+    if (bugle_gl_begin_internal_render())
     {
         globjects_pre_glsl_delete_program(object, data);
-        bugle_end_internal_render("globjects_pre_glDeleteProgram", true);
+        bugle_gl_end_internal_render("globjects_pre_glDeleteProgram", true);
     }
     return true;
 }
@@ -385,7 +385,7 @@ static bool globjects_checks(function_call *call, const callback_data *data)
     for (i = bugle_list_head(l); i; i = bugle_list_next(i))
     {
         d = (const check_data *) bugle_list_data(i);
-        if (bugle_begin_internal_render())
+        if (bugle_gl_begin_internal_render())
         {
             switch (d->type)
             {
@@ -400,7 +400,7 @@ static bool globjects_checks(function_call *call, const callback_data *data)
             default:
                 abort();
             }
-            bugle_end_internal_render("globjects_checks", true);
+            bugle_gl_end_internal_render("globjects_checks", true);
         }
     }
     return true;
@@ -471,7 +471,7 @@ static bool globjects_filter_set_initialise(filter_set *handle)
 #endif
     bugle_filter_order("invoke", "globjects");
     bugle_filter_order("globjects_pre", "invoke");
-    bugle_filter_post_renders("globjects");
+    bugle_gl_filter_post_renders("globjects");
     ns_view = bugle_object_view_new(bugle_namespace_class,
                                     globjects_data_init,
                                     globjects_data_clear,
@@ -555,5 +555,5 @@ void globjects_initialise(void)
     bugle_filter_set_new(&globjects_info);
     bugle_filter_set_depends("globjects", "trackcontext");
     bugle_filter_set_depends("globjects", "glextensions");
-    bugle_filter_set_renders("globjects");
+    bugle_gl_filter_set_renders("globjects");
 }

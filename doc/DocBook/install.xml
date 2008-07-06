@@ -8,15 +8,16 @@
     <sect1 id="install-requirements">
         <title>Requirements</title>
         <para>
-            Bugle is intended to work on any POSIX-compliant operating system
+            &Bugle; is intended to work on any POSIX-compliant operating system
             that use the X Windowing System, dynamic linking, and
             <envar>LD_PRELOAD</envar> for library interposition. If it fails
             to work on such an operating system, please let me know (I only
-            use it on GNU/Linux). Windows and Mac OSX are not currently
-            supported as they are not based on X.
+            use it on GNU/Linux). It is also supported on Windows, although
+            this support is less complete. It also includes highly
+            experimental and incomplete support for OpenGL ES 2 on Windows.
         </para>
         <para>
-            The following packages are required to compile Bugle:
+            The following packages are required to compile &bugle;:
         </para>
         <itemizedlist>
             <listitem><para>
@@ -27,13 +28,12 @@
             <listitem><para>
                     A C++ compiler (generally <application>g++</application>)
             </para></listitem>
-            <listitem><para>OpenGL header files, including a recent version of <ulink
-                        url="http://www.opengl.org/registry/api/glext.h">glext.h</ulink>
-                    (older versions should work, but it will be difficult to
-                    debug any code that uses newer features).
-            </para></listitem>
             <listitem><para>
-                    GLEW: 1.4.0 has been tested, but older versions may work
+                    OpenGL header files, including a recent version of <ulink
+                        url="http://www.opengl.org/registry/api/glext.h">glext.h</ulink>.
+                    A version supporting at least OpenGL 2.0 is required. For
+                    OpenGL ES 2, the OpenGL ES 2 and EGL header files are
+                    required.
             </para></listitem>
             <listitem><para>Perl 5</para></listitem>
         </itemizedlist>
@@ -63,6 +63,13 @@
                 </para></listitem>
             </varlistentry>
             <varlistentry>
+                <term><ulink url="http://glew.sourceforge.net/">GLEW</ulink></term>
+                <listitem><para>
+                        GLEW is also needed for texture and framebuffer
+                        viewers.
+                </para></listitem>
+            </varlistentry>
+            <varlistentry>
                 <term><ulink url="http://ffmpeg.org/">FFmpeg</ulink></term>
                 <listitem><para>
                         If FFmpeg is available, the included <systemitem
@@ -75,12 +82,14 @@
     <sect1 id="install-configure">
         <title>Configuring</title>
         <para>
-            Bugle uses the standard <command>configure</command> command for
+            &Bugle; uses the standard <command>configure</command> command for
             compile-time configuration. Generic instructions may be found in
             <filename>INSTALL</filename> in the root of the source directory.
             In general, <command>configure</command> will auto-detect optional
             packages and use them only if present, but you can also prevent it
-            from depending on certain packages with the following flags:
+            from depending on certain packages with the following flags.
+            FFmpeg (lavc) in particular is a moving target and if you get
+            compilation failures, you should try disabling it.
         </para>
         <itemizedlist>
             <listitem><para><option>--without-lavc</option></para></listitem>
@@ -89,16 +98,16 @@
             <listitem><para><option>--without-gtkglext</option></para></listitem>
         </itemizedlist>
         <para>
-            Bugle does not use threads itself, but applications that it
-            debugs might, and bugle needs to use appropriate locking and
+            &Bugle; does not use threads itself, but applications that it
+            debugs might, and &bugle; needs to use appropriate locking and
             thread-local storage libraries. The correct option should be
             auto-detected, but you can force it with
-            <option>--with-threads</option>=<replaceable>model</replaceable>.
-            Valid models are <literal>pthreads</literal> and
-            <literal>single</literal> (i.e., no threads).
+            <option>--enable-threads</option>=<replaceable>model</replaceable>.
+            Valid models are <literal>posix</literal> and
+            <literal>win32</literal>.
         </para>
         <para>
-            Finally, bugle intercepts events from X11. While there are no
+            Finally, &bugle; intercepts events from X11. While there are no
             known cases of this causing problems, it is difficult to make
             the interception completely transparent, and so the
             <option>--disable-xevent</option> option is
@@ -111,7 +120,7 @@
         <para>
             Compilation is as simple as running <userinput>make</userinput>.
             Before installing, you should remove any previous installation of
-            bugle to avoid leaving old versions of files around. If you do not
+            &bugle; to avoid leaving old versions of files around. If you do not
             have your original installation tree to run <userinput>make
                 uninstall</userinput>, you should at least remove the files in
             <filename><replaceable>/usr/local/lib/</replaceable>bugle</filename>
@@ -123,7 +132,7 @@
         </para>
         <para>
             Next, you need to install some files for the user that will run
-            bugle. Create a directory <filename
+            &bugle;. Create a directory <filename
                 class="directory">$HOME/.bugle</filename>, and copy
             <filename>doc/examples/filters</filename> and
             <filename>doc/examples/statistics</filename> into it.
@@ -149,6 +158,13 @@
             appropriately). If you install GLEW, you need to ensure that the
             compiler and linker can find it (setting <envar>CPATH</envar> and
             <envar>LIBRARY_PATH</envar> appropriately).
+        </para>
+        <para>
+            After installation, you will have a
+            <filename>opengl32.dll</filename> file installed. When debugging a
+            program, you need to place this on the path ahead of the real one.
+            This can be achieved by copying it to the same directory as the
+            program you intend to debug.
         </para>
     </sect1>
 </chapter>

@@ -227,7 +227,7 @@ static bool stats_primitives_initialise(filter_set *handle)
     bugle_filter_catches(f, "glDrawRangeElements", false, stats_primitives_glDrawRangeElements);
     bugle_filter_catches(f, "glMultiDrawElements", false, stats_primitives_glMultiDrawElements);
     bugle_filter_catches(f, "glMultiDrawArrays", false, stats_primitives_glMultiDrawArrays);
-    bugle_filter_catches_drawing_immediate(f, false, stats_primitives_immediate);
+    bugle_gl_filter_catches_drawing_immediate(f, false, stats_primitives_immediate);
     bugle_filter_catches(f, "glBegin", false, stats_primitives_glBegin);
     bugle_filter_catches(f, "glEnd", false, stats_primitives_glEnd);
     bugle_filter_catches(f, "glCallList", false, stats_primitives_glCallList);

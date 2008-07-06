@@ -890,7 +890,7 @@ static void spawn_children_tex_level_parameter(const glstate *self, linked_list 
 
     if (!(mask & STATE_SELECT_NO_PROXY)
         && bugle_gl_has_extension_group(BUGLE_GL_ARB_texture_compression)
-        && bugle_begin_internal_render())
+        && bugle_gl_begin_internal_render())
     {
         GLint old, compressed;
 
@@ -902,7 +902,7 @@ static void spawn_children_tex_level_parameter(const glstate *self, linked_list 
         CALL(glGetTexLevelParameteriv)(self->face, self->level, GL_TEXTURE_COMPRESSED, &compressed);
         if (compressed) mask &= ~STATE_SELECT_COMPRESSED;
         if (self->binding) CALL(glBindTexture)(self->target, old);
-        bugle_end_internal_render("spawn_children_tex_level_parameter", true);
+        bugle_gl_end_internal_render("spawn_children_tex_level_parameter", true);
     }
     bugle_list_init(children, free);
     make_leaves_conditional(self, tex_level_parameter_state, 0,

@@ -204,5 +204,5 @@ void glextensions_initialise(void)
 
     bugle_filter_set_new(&glextensions_info);
 
-    bugle_filter_set_renders("glextensions");
+    bugle_gl_filter_set_renders("glextensions");
 }

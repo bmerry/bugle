@@ -63,7 +63,7 @@ static bool trace_initialise(filter_set *handle)
     f = bugle_filter_new(handle, "trace");
     bugle_filter_order("invoke", "trace");
     bugle_filter_catches_all(f, false, trace_callback);
-    bugle_filter_post_renders("trace");
+    bugle_gl_filter_post_renders("trace");
     return true;
 }
 
@@ -82,7 +82,7 @@ void bugle_initialise_filter_library(void)
     bugle_filter_set_new(&trace_info);
 
     /* No direct rendering, but some of the length functions query state */
-    bugle_filter_set_renders("trace");
+    bugle_gl_filter_set_renders("trace");
     /* Some of the queries depend on extensions */
     bugle_filter_set_depends("trace", "glbeginend");
     bugle_filter_set_depends("trace", "glextensions");

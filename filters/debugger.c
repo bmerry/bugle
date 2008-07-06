@@ -257,7 +257,7 @@ static bool send_data_texture(uint32_t id, GLuint texid, GLenum target,
     glwin_drawable old_read = 0, old_write = 0;
     pixel_state old_pack;
 
-    if (!bugle_begin_internal_render())
+    if (!bugle_gl_begin_internal_render())
     {
         gldb_protocol_send_code(out_pipe, RESP_ERROR);
         gldb_protocol_send_code(out_pipe, id);
@@ -342,7 +342,7 @@ static bool send_data_texture(uint32_t id, GLuint texid, GLenum target,
     gldb_protocol_send_code(out_pipe, width);
     gldb_protocol_send_code(out_pipe, height);
     gldb_protocol_send_code(out_pipe, depth);
-    bugle_end_internal_render("send_data_texture", true);
+    bugle_gl_end_internal_render("send_data_texture", true);
     free(data);
     return true;
 }
@@ -442,7 +442,7 @@ static bool send_data_framebuffer(uint32_t id, GLuint fbo, GLenum target,
     char *data;
     bool illegal = false;
 
-    if (!bugle_begin_internal_render())
+    if (!bugle_gl_begin_internal_render())
     {
         gldb_protocol_send_code(out_pipe, RESP_ERROR);
         gldb_protocol_send_code(out_pipe, id);
@@ -575,7 +575,7 @@ static bool send_data_framebuffer(uint32_t id, GLuint fbo, GLenum target,
     gldb_protocol_send_binary_string(out_pipe, length, data);
     gldb_protocol_send_code(out_pipe, width);
     gldb_protocol_send_code(out_pipe, height);
-    bugle_end_internal_render("send_data_framebuffer", true);
+    bugle_gl_end_internal_render("send_data_framebuffer", true);
     free(data);
     return true;
 }
@@ -587,7 +587,7 @@ static bool send_data_shader(uint32_t id, GLuint shader_id,
     GLint length;
     char *text;
 
-    if (!bugle_begin_internal_render())
+    if (!bugle_gl_begin_internal_render())
     {
         gldb_protocol_send_code(out_pipe, RESP_ERROR);
         gldb_protocol_send_code(out_pipe, id);
@@ -640,7 +640,7 @@ static bool send_data_shader(uint32_t id, GLuint shader_id,
     gldb_protocol_send_binary_string(out_pipe, length, text);
     free(text);
 
-    bugle_end_internal_render("send_data_shader", true);
+    bugle_gl_end_internal_render("send_data_shader", true);
     return true;
 }
 
@@ -762,10 +762,10 @@ static void process_single_command(function_call *call)
         free(req_str);
         break;
     case REQ_STATE_TREE:
-        if (bugle_begin_internal_render())
+        if (bugle_gl_begin_internal_render())
         {
             send_state(bugle_state_get_root(), id);
-            bugle_end_internal_render("send_state", true);
+            bugle_gl_end_internal_render("send_state", true);
         }
         else
         {
@@ -776,10 +776,10 @@ static void process_single_command(function_call *call)
         }
         break;
     case REQ_STATE_TREE_RAW:
-        if (bugle_begin_internal_render())
+        if (bugle_gl_begin_internal_render())
         {
             send_state_raw(bugle_state_get_root(), id);
-            bugle_end_internal_render("send_state_raw", true);
+            bugle_gl_end_internal_render("send_state_raw", true);
         }
         else
         {
@@ -870,10 +870,10 @@ static void process_single_command(function_call *call)
  */
 static void debugger_loop(function_call *call)
 {
-    if (call && bugle_begin_internal_render())
+    if (call && bugle_gl_begin_internal_render())
     {
         CALL(glFinish)();
-        bugle_end_internal_render("debugger", true);
+        bugle_gl_end_internal_render("debugger", true);
     }
 
     do
@@ -940,7 +940,7 @@ static bool debugger_error_callback(function_call *call, const callback_data *da
         return true;
 
     if (break_on_error
-        && (error = bugle_call_get_error(data->call_object)))
+        && (error = bugle_gl_call_get_error(data->call_object)))
     {
         resp_str = bugle_string_io(dump_any_call_string_io, call);
         gldb_protocol_send_code(out_pipe, RESP_BREAK_ERROR);
@@ -1001,8 +1001,8 @@ static bool debugger_initialise(filter_set *handle)
     bugle_filter_order("invoke", "debugger_error");
     bugle_filter_order("error", "debugger_error");
     bugle_filter_order("globjects", "debugger_error"); /* so we don't try to query any deleted objects */
-    bugle_filter_post_renders("debugger_error");
-    bugle_filter_set_queries_error("debugger");
+    bugle_gl_filter_post_renders("debugger_error");
+    bugle_gl_filter_set_queries_error("debugger");
 
     return true;
 }
@@ -1031,5 +1031,5 @@ void bugle_initialise_filter_library(void)
     bugle_filter_set_depends("debugger", "glextensions");
     bugle_filter_set_depends("debugger", "globjects");
     bugle_filter_set_depends("debugger", "glbeginend");
-    bugle_filter_set_renders("debugger");
+    bugle_gl_filter_set_renders("debugger");
 }

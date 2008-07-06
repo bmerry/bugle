@@ -93,7 +93,7 @@ static bool classify_glBindFramebufferEXT(function_call *call, const callback_da
     classify_callback *cb;
 
     ctx = (classify_context *) bugle_object_get_current_data(bugle_context_class, classify_view);
-    if (ctx && bugle_begin_internal_render())
+    if (ctx && bugle_gl_begin_internal_render())
     {
 #ifdef GL_EXT_framebuffer_blit
         if (BUGLE_GL_HAS_EXTENSION(GL_EXT_framebuffer_blit))
@@ -106,7 +106,7 @@ static bool classify_glBindFramebufferEXT(function_call *call, const callback_da
             CALL(glGetIntegerv)(GL_FRAMEBUFFER_BINDING_EXT, &fbo);
         }
         ctx->real = (fbo == 0);
-        bugle_end_internal_render("classify_glBindFramebufferEXT", true);
+        bugle_gl_end_internal_render("classify_glBindFramebufferEXT", true);
         for (i = bugle_list_head(&classify_callbacks); i; i = bugle_list_next(i))
         {
             cb = (classify_callback *) bugle_list_data(i);
@@ -126,7 +126,7 @@ static bool classify_initialise(filter_set *handle)
     bugle_filter_catches(f, "glBindFramebufferEXT", true, classify_glBindFramebufferEXT);
 #endif
     bugle_filter_order("invoke", "classify");
-    bugle_filter_post_renders("classify");
+    bugle_gl_filter_post_renders("classify");
     classify_view = bugle_object_view_new(bugle_context_class,
                                           classify_context_init,
                                           NULL,
@@ -163,11 +163,11 @@ static void wireframe_context_init(const void *key, void *data)
     ctx->polygon_mode[1] = GL_FILL;
 
     if (bugle_filter_set_is_active(wireframe_filterset)
-        && bugle_begin_internal_render())
+        && bugle_gl_begin_internal_render())
     {
         CALL(glPolygonMode)(GL_FRONT_AND_BACK, GL_LINE);
         ctx->real = true;
-        bugle_end_internal_render("wireframe_context_init", true);
+        bugle_gl_end_internal_render("wireframe_context_init", true);
     }
 }
 
@@ -177,22 +177,22 @@ static void wireframe_handle_activation(bool active, wireframe_context *ctx)
     active &= ctx->real;
     if (active && !ctx->active)
     {
-        if (bugle_begin_internal_render())
+        if (bugle_gl_begin_internal_render())
         {
             CALL(glGetIntegerv)(GL_POLYGON_MODE, ctx->polygon_mode);
             CALL(glPolygonMode)(GL_FRONT_AND_BACK, GL_LINE);
             ctx->active = true;
-            bugle_end_internal_render("wireframe_handle_activation", true);
+            bugle_gl_end_internal_render("wireframe_handle_activation", true);
         }
     }
     else if (!active && ctx->active)
     {
-        if (bugle_begin_internal_render())
+        if (bugle_gl_begin_internal_render())
         {
             CALL(glPolygonMode)(GL_FRONT, ctx->polygon_mode[0]);
             CALL(glPolygonMode)(GL_BACK, ctx->polygon_mode[1]);
             ctx->active = false;
-            bugle_end_internal_render("wireframe_handle_activation", true);
+            bugle_gl_end_internal_render("wireframe_handle_activation", true);
         }
     }
 }
@@ -224,12 +224,12 @@ static bool wireframe_glPolygonMode(function_call *call, const callback_data *da
     ctx = (wireframe_context *) bugle_object_get_current_data(bugle_context_class, wireframe_view);
     if (ctx && !ctx->real)
         return true;
-    if (bugle_begin_internal_render())
+    if (bugle_gl_begin_internal_render())
     {
         if (ctx)
             CALL(glGetIntegerv)(GL_POLYGON_MODE, ctx->polygon_mode);
         CALL(glPolygonMode)(GL_FRONT_AND_BACK, GL_LINE);
-        bugle_end_internal_render("wireframe_glPolygonMode", true);
+        bugle_gl_end_internal_render("wireframe_glPolygonMode", true);
     }
     return true;
 }
@@ -250,10 +250,10 @@ static bool wireframe_glEnable(function_call *call, const callback_data *data)
     case GL_TEXTURE_2D:
     case GL_TEXTURE_CUBE_MAP:
     case GL_TEXTURE_3D:
-        if (bugle_begin_internal_render())
+        if (bugle_gl_begin_internal_render())
         {
             CALL(glDisable)(*call->glEnable.arg0);
-            bugle_end_internal_render("wireframe_callback", true);
+            bugle_gl_end_internal_render("wireframe_callback", true);
         }
     default: /* avoids compiler warning if GLenum is a C enum */ ;
     }
@@ -301,7 +301,7 @@ static bool wireframe_initialise(filter_set *handle)
     bugle_filter_catches(f, "glEnable", false, wireframe_glEnable);
     bugle_glwin_filter_catches_make_current(f, true, wireframe_make_current);
     bugle_filter_order("invoke", "wireframe");
-    bugle_filter_post_renders("wireframe");
+    bugle_gl_filter_post_renders("wireframe");
     wireframe_view = bugle_object_view_new(bugle_context_class,
                                            wireframe_context_init,
                                            NULL,
@@ -327,12 +327,12 @@ static void frontbuffer_context_init(const void *key, void *data)
 
     ctx = (frontbuffer_context *) data;
     if (bugle_filter_set_is_active(frontbuffer_filterset)
-        && bugle_begin_internal_render())
+        && bugle_gl_begin_internal_render())
     {
         ctx->active = true;
         CALL(glGetIntegerv)(GL_DRAW_BUFFER, &ctx->draw_buffer);
         CALL(glDrawBuffer)(GL_FRONT);
-        bugle_end_internal_render("frontbuffer_context_init", true);
+        bugle_gl_end_internal_render("frontbuffer_context_init", true);
     }
 }
 
@@ -340,21 +340,21 @@ static void frontbuffer_handle_activation(bool active, frontbuffer_context *ctx)
 {
     if (active && !ctx->active)
     {
-        if (bugle_begin_internal_render())
+        if (bugle_gl_begin_internal_render())
         {
             CALL(glGetIntegerv)(GL_DRAW_BUFFER, &ctx->draw_buffer);
             CALL(glDrawBuffer)(GL_FRONT);
             ctx->active = true;
-            bugle_end_internal_render("frontbuffer_handle_activation", true);
+            bugle_gl_end_internal_render("frontbuffer_handle_activation", true);
         }
     }
     else if (!active && ctx->active)
     {
-        if (bugle_begin_internal_render())
+        if (bugle_gl_begin_internal_render())
         {
             CALL(glDrawBuffer)(ctx->draw_buffer);
             ctx->active = false;
-            bugle_end_internal_render("frontbuffer_handle_activation", true);
+            bugle_gl_end_internal_render("frontbuffer_handle_activation", true);
         }
     }
 }
@@ -373,12 +373,12 @@ static bool frontbuffer_glDrawBuffer(function_call *call, const callback_data *d
 {
     frontbuffer_context *ctx;
 
-    if (bugle_begin_internal_render())
+    if (bugle_gl_begin_internal_render())
     {
         ctx = (frontbuffer_context *) bugle_object_get_current_data(bugle_context_class, frontbuffer_view);
         if (ctx) CALL(glGetIntegerv)(GL_DRAW_BUFFER, &ctx->draw_buffer);
         CALL(glDrawBuffer)(GL_FRONT);
-        bugle_end_internal_render("frontbuffer_glDrawBuffer", true);
+        bugle_gl_end_internal_render("frontbuffer_glDrawBuffer", true);
     }
     return true;
 }
@@ -419,7 +419,7 @@ static bool frontbuffer_initialise(filter_set *handle)
     bugle_filter_order("invoke", "frontbuffer");
     bugle_filter_catches(f, "glDrawBuffer", false, frontbuffer_glDrawBuffer);
     bugle_glwin_filter_catches_make_current(f, true, frontbuffer_make_current);
-    bugle_filter_post_renders("frontbuffer");
+    bugle_gl_filter_post_renders("frontbuffer");
 
     f = bugle_filter_new(handle, "frontbuffer_pre");
     bugle_filter_order("frontbuffer_pre", "invoke");
@@ -469,11 +469,11 @@ void bugle_initialise_filter_library(void)
     bugle_filter_set_new(&wireframe_info);
     bugle_filter_set_new(&frontbuffer_info);
 
-    bugle_filter_set_renders("classify");
+    bugle_gl_filter_set_renders("classify");
     bugle_filter_set_depends("classify", "trackcontext");
     bugle_filter_set_depends("classify", "glextensions");
-    bugle_filter_set_renders("wireframe");
+    bugle_gl_filter_set_renders("wireframe");
     bugle_filter_set_depends("wireframe", "trackcontext");
     bugle_filter_set_depends("wireframe", "classify");
-    bugle_filter_set_renders("frontbuffer");
+    bugle_gl_filter_set_renders("frontbuffer");
 }

@@ -140,7 +140,7 @@ static bool checks_texture_face_complete(GLuint unit, GLenum face, int dims,
 
 /* Tests whether the texture bound to the given target is complete, and
  * prints a warning if not. It is assumed that we are already inside
- * bugle_begin_internal_render. The texture unit is a number from 0, not
+ * bugle_gl_begin_internal_render. The texture unit is a number from 0, not
  * an enumerant.
  */
 static void checks_texture_complete(int unit, GLenum target)
@@ -237,7 +237,7 @@ static void checks_texture_complete(int unit, GLenum target)
 
 static void checks_completeness()
 {
-    if (bugle_begin_internal_render())
+    if (bugle_gl_begin_internal_render())
     {
         /* FIXME: should unify this code with glstate.c */
         GLint num_textures = 1;
@@ -291,7 +291,7 @@ static void checks_completeness()
                 free(name);
             }
         }
-        bugle_end_internal_render("checks_completeness", true);
+        bugle_gl_end_internal_render("checks_completeness", true);
     }
 }
 
@@ -893,7 +893,7 @@ static bool checks_glMultiTexCoord(function_call *call, const callback_data *dat
     GLint max = 0;
 
     texture = *(GLenum *) call->generic.args[0];
-    if (bugle_begin_internal_render())
+    if (bugle_gl_begin_internal_render())
     {
         if (BUGLE_GL_HAS_EXTENSION_GROUP(EXTGROUP_texunits))
         {
@@ -906,7 +906,7 @@ static bool checks_glMultiTexCoord(function_call *call, const callback_data *dat
         }
         if (!max)
             CALL(glGetIntegerv)(GL_MAX_TEXTURE_UNITS, &max);
-        bugle_end_internal_render("checks_glMultiTexCoord", true);
+        bugle_gl_end_internal_render("checks_glMultiTexCoord", true);
     }
 
     /* FIXME: This is the most likely scenario i.e. inside glBegin/glEnd.
@@ -957,7 +957,7 @@ static bool checks_initialise(filter_set *handle)
     bugle_filter_catches(f, "glPixelStorei", false, checks_no_begin_end);
     bugle_filter_catches(f, "glPixelStoref", false, checks_no_begin_end);
     /* Checks that we are inside begin/end */
-    bugle_filter_catches_drawing_immediate(f, false, checks_begin_end);
+    bugle_gl_filter_catches_drawing_immediate(f, false, checks_begin_end);
     /* This call has undefined behaviour if given a negative argument */
     bugle_filter_catches(f, "glArrayElement", false, checks_glArrayElement);
     /* Other */
@@ -1025,6 +1025,6 @@ void bugle_initialise_filter_library(void)
     };
     bugle_filter_set_new(&checks_info);
 
-    bugle_filter_set_renders("checks");
+    bugle_gl_filter_set_renders("checks");
     bugle_filter_set_depends("checks", "glextensions");
 }

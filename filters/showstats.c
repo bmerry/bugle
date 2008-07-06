@@ -110,7 +110,7 @@ static void showstats_statistic_initialise(showstats_statistic *sst)
             exit(1);
         }
 #ifdef GL_ARB_texture_env_combine
-        else if (bugle_begin_internal_render())
+        else if (bugle_gl_begin_internal_render())
         {
             GLint max_size;
 
@@ -133,7 +133,7 @@ static void showstats_statistic_initialise(showstats_statistic *sst)
             CALL(glTexImage1D)(GL_TEXTURE_1D, 0, GL_ALPHA8,
                               sst->graph_size, 0, GL_ALPHA, GL_UNSIGNED_BYTE, sst->graph_scaled);
             CALL(glBindTexture)(GL_TEXTURE_1D, 0);
-            bugle_end_internal_render("showstats_statistic_initialise", true);
+            bugle_gl_end_internal_render("showstats_statistic_initialise", true);
             sst->initialised = true;
         }
 #endif
@@ -335,7 +335,7 @@ static bool showstats_swap_buffers(function_call *call, const callback_data *dat
 
     ss = bugle_object_get_current_data(bugle_context_class, showstats_view);
     aux = bugle_get_aux_context(false);
-    if (aux && bugle_begin_internal_render())
+    if (aux && bugle_gl_begin_internal_render())
     {
         CALL(glGetIntegerv)(GL_VIEWPORT, viewport);
         real = bugle_glwin_get_current_context();
@@ -426,7 +426,7 @@ static bool showstats_swap_buffers(function_call *call, const callback_data *dat
         CALL(glPopAttrib)();
 
         bugle_glwin_make_context_current(dpy, old_write, old_read, real);
-        bugle_end_internal_render("showstats_callback", true);
+        bugle_gl_end_internal_render("showstats_callback", true);
     }
     return true;
 }
@@ -575,7 +575,7 @@ void bugle_initialise_filter_library(void)
 
     bugle_filter_set_new(&showstats_info);
     bugle_filter_set_depends("showstats", "glextensions");
-    bugle_filter_set_renders("showstats");
+    bugle_gl_filter_set_renders("showstats");
     bugle_filter_set_stats_logger("showstats");
     bugle_list_init(&showstats_stats_requested, free);
     bugle_list_init(&showstats_stats, free);

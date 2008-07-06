@@ -169,7 +169,7 @@ static bool eps_swap_buffers(function_call *call, const callback_data *data)
         d->stream = f;
         d->capture = true;
         free(fname);
-        bugle_end_internal_render("eps_swap_buffers", true);
+        bugle_gl_end_internal_render("eps_swap_buffers", true);
     }
     return true;
 }
@@ -184,7 +184,7 @@ static bool eps_glPointSize(function_call *call, const callback_data *data)
         GLfloat size;
         CALL(glGetFloatv)(GL_POINT_SIZE, &size);
         gl2psPointSize(size);
-        bugle_end_internal_render("eps_glPointSize", true);
+        bugle_gl_end_internal_render("eps_glPointSize", true);
     }
     return true;
 }
@@ -199,7 +199,7 @@ static bool eps_glLineWidth(function_call *call, const callback_data *data)
         GLfloat width;
         CALL(glGetFloatv)(GL_LINE_WIDTH, &width);
         gl2psPointSize(width);
-        bugle_end_internal_render("eps_glLineWidth", true);
+        bugle_gl_end_internal_render("eps_glLineWidth", true);
     }
     return true;
 }
@@ -215,7 +215,7 @@ static bool eps_initialise(filter_set *handle)
     bugle_filter_catches(f, "glLineWidth", false, eps_glLineWidth);
     bugle_filter_order("eps_pre", "invoke");
     bugle_filter_order("invoke", "eps");
-    bugle_filter_post_renders("eps");
+    bugle_gl_filter_post_renders("eps");
     eps_view = bugle_object_view_new(bugle_context_class,
                                      eps_context_init,
                                      NULL,
@@ -251,6 +251,6 @@ void bugle_initialise_filter_library(void)
 
     bugle_filter_set_new(&eps_info);
 
-    bugle_filter_set_renders("eps");
+    bugle_gl_filter_set_renders("eps");
     bugle_filter_set_depends("eps", "trackcontext");
 }

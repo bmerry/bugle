@@ -176,7 +176,7 @@ static bool screenshot_start(screenshot_context *ssctx)
     dpy = bugle_glwin_get_current_display();
     aux = bugle_get_aux_context(false);
     if (!aux) return false;
-    if (!bugle_begin_internal_render())
+    if (!bugle_gl_begin_internal_render())
     {
         bugle_log("screenshot", "grab", BUGLE_LOG_NOTICE,
                   "swap_buffers called inside begin/end; skipping frame");
@@ -365,7 +365,7 @@ static bool map_screenshot(screenshot_data *data)
             else
             {
                 data->pbo_mapped = true;
-                bugle_end_internal_render("map_screenshot", true);
+                bugle_gl_end_internal_render("map_screenshot", true);
                 CALL(glBindBufferARB)(GL_PIXEL_PACK_BUFFER_EXT, 0);
                 return true;
             }
@@ -377,7 +377,7 @@ static bool map_screenshot(screenshot_data *data)
         CALL(glGetBufferSubDataARB)(GL_PIXEL_PACK_BUFFER_EXT, 0, size, data->pixels);
         data->pbo_mapped = false;
         CALL(glBindBufferARB)(GL_PIXEL_PACK_BUFFER_EXT, 0);
-        bugle_end_internal_render("map_screenshot", true);
+        bugle_gl_end_internal_render("map_screenshot", true);
     }
 #endif
     return true;
@@ -393,7 +393,7 @@ static bool unmap_screenshot(screenshot_data *data)
         CALL(glBindBufferARB)(GL_PIXEL_PACK_BUFFER_EXT, data->pbo);
         ret = CALL(glUnmapBufferARB)(GL_PIXEL_PACK_BUFFER_EXT);
         CALL(glBindBufferARB)(GL_PIXEL_PACK_BUFFER_EXT, 0);
-        bugle_end_internal_render("unmap_screenshot", true);
+        bugle_gl_end_internal_render("unmap_screenshot", true);
         data->pixels = NULL;
         return ret;
     }
@@ -430,7 +430,7 @@ static bool do_screenshot(GLenum format, int test_width, int test_height,
 
     prepare_screenshot_data(cur, width, height, 4, true);
 
-    if (!bugle_begin_internal_render()) return false;
+    if (!bugle_gl_begin_internal_render()) return false;
 #ifdef GL_EXT_pixel_buffer_object
     if (cur->pbo)
         CALL(glBindBufferARB)(GL_PIXEL_PACK_BUFFER_EXT, cur->pbo);
@@ -441,7 +441,7 @@ static bool do_screenshot(GLenum format, int test_width, int test_height,
     if (cur->pbo)
         CALL(glBindBufferARB)(GL_PIXEL_PACK_BUFFER_EXT, 0);
 #endif
-    bugle_end_internal_render("do_screenshot", true);
+    bugle_gl_end_internal_render("do_screenshot", true);
 
     return true;
 }
@@ -719,7 +719,7 @@ void bugle_initialise_filter_library(void)
 
     bugle_filter_set_new(&screenshot_info);
 
-    bugle_filter_set_renders("screenshot");
+    bugle_gl_filter_set_renders("screenshot");
     bugle_filter_set_depends("screenshot", "trackcontext");
     bugle_filter_set_depends("screenshot", "glextensions");
 }

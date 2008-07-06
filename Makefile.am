@@ -374,6 +374,7 @@ DOCBOOK_SRCS = $(DOCBOOK_MAN_SRCS) \
 	       doc/DocBook/bugle.xml \
 	       doc/DocBook/introduction.xml \
 	       doc/DocBook/install.xml \
+	       doc/DocBook/gles2.xml \
 	       doc/DocBook/extending.xml \
 	       doc/DocBook/hacking.xml \
 	       doc/DocBook/faq.xml \

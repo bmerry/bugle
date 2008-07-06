@@ -145,7 +145,7 @@ budgie_type bugle_gl_type_to_type_ptr_pbo_source(GLenum gl_type)
 {
 #ifdef GL_EXT_pixel_buffer_object
     if (BUGLE_GL_HAS_EXTENSION_GROUP(GL_EXT_pixel_buffer_object)
-        && bugle_begin_internal_render())
+        && bugle_gl_begin_internal_render())
     {
         GLint id;
         CALL(glGetIntegerv)(GL_PIXEL_UNPACK_BUFFER_BINDING_EXT, &id);
@@ -163,7 +163,7 @@ budgie_type bugle_gl_type_to_type_ptr_pbo_sink(GLenum gl_type)
 {
 #ifdef GL_EXT_pixel_buffer_object
     if (BUGLE_GL_HAS_EXTENSION_GROUP(GL_EXT_pixel_buffer_object)
-        && bugle_begin_internal_render())
+        && bugle_gl_begin_internal_render())
     {
         GLint id;
         CALL(glGetIntegerv)(GL_PIXEL_PACK_BUFFER_BINDING_EXT, &id);
@@ -421,11 +421,11 @@ int bugle_count_program_string(GLenum target, GLenum pname)
 int bugle_count_attached_shaders(GLuint program, GLsizei max)
 {
     GLsizei real_count = 0;
-    if (bugle_begin_internal_render())
+    if (bugle_gl_begin_internal_render())
     {
         bugle_glGetProgramiv(program, GL_ATTACHED_SHADERS, &real_count);
         /* The above might generate an error, in which case real_count remains 0 */
-        bugle_end_internal_render("bugle_count_attached_shaders", false);
+        bugle_gl_end_internal_render("bugle_count_attached_shaders", false);
     }
     if (real_count <= max)
         return real_count;

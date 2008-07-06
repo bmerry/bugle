@@ -33,9 +33,9 @@
 #include "budgielib/defines.h"
 
 static filter_set *error_handle = NULL;
-static GLenum (*bugle_call_get_error_ptr)(object *) = NULL;
+static GLenum (*bugle_gl_call_get_error_ptr)(object *) = NULL;
 
-bool bugle_begin_internal_render(void)
+bool bugle_gl_begin_internal_render(void)
 {
     GLenum error;
 
@@ -55,7 +55,7 @@ bool bugle_begin_internal_render(void)
     return true;
 }
 
-void bugle_end_internal_render(const char *name, bool warn)
+void bugle_gl_end_internal_render(const char *name, bool warn)
 {
     GLenum error;
     while ((error = CALL(glGetError)()) != GL_NO_ERROR)
@@ -76,7 +76,7 @@ void bugle_end_internal_render(const char *name, bool warn)
     }
 }
 
-void bugle_filter_catches_drawing_immediate(filter *f, bool inactive, filter_callback callback)
+void bugle_gl_filter_catches_drawing_immediate(filter *f, bool inactive, filter_callback callback)
 {
 #if BUGLE_GLTYPE_GL
     bugle_filter_catches(f, "glVertexAttrib1s", inactive, callback);
@@ -144,9 +144,9 @@ void bugle_filter_catches_drawing_immediate(filter *f, bool inactive, filter_cal
 #endif /* BUGLE_GLTYPE_GL */
 }
 
-void bugle_filter_catches_drawing(filter *f, bool inactive, filter_callback callback)
+void bugle_gl_filter_catches_drawing(filter *f, bool inactive, filter_callback callback)
 {
-    bugle_filter_catches_drawing_immediate(f, inactive, callback);
+    bugle_gl_filter_catches_drawing_immediate(f, inactive, callback);
 
     bugle_filter_catches(f, "glDrawElements", inactive, callback);
     bugle_filter_catches(f, "glDrawArrays", inactive, callback);
@@ -155,7 +155,7 @@ void bugle_filter_catches_drawing(filter *f, bool inactive, filter_callback call
     bugle_filter_catches(f, "glMultiDrawArrays", inactive, callback);
 }
 
-bool bugle_call_is_immediate(function_call *call)
+bool bugle_gl_call_is_immediate(function_call *call)
 {
 #if BUGLE_GLTYPE_GL
     switch (call->generic.group)
@@ -231,34 +231,34 @@ bool bugle_call_is_immediate(function_call *call)
 #endif
 }
 
-void bugle_filter_set_renders(const char *name)
+void bugle_gl_filter_set_renders(const char *name)
 {
     bugle_filter_set_depends(name, "trackcontext");
     bugle_filter_set_depends(name, "glbeginend");
     bugle_filter_set_depends(name, "log");
 }
 
-void bugle_filter_post_renders(const char *name)
+void bugle_gl_filter_post_renders(const char *name)
 {
     bugle_filter_order("error", name);
     bugle_gl_filter_post_queries_begin_end(name);
 }
 
-void bugle_filter_set_queries_error(const char *name)
+void bugle_gl_filter_set_queries_error(const char *name)
 {
     if (!error_handle)
     {
         error_handle = bugle_filter_set_get_handle("error");
-        bugle_call_get_error_ptr = (GLenum (*)(object *)) bugle_filter_set_get_symbol(error_handle, "bugle_call_get_error_internal");
+        bugle_gl_call_get_error_ptr = (GLenum (*)(object *)) bugle_filter_set_get_symbol(error_handle, "bugle_gl_call_get_error_internal");
     }
 }
 
-GLenum bugle_call_get_error(object *call_object)
+GLenum bugle_gl_call_get_error(object *call_object)
 {
     if (error_handle
         && bugle_filter_set_is_active(error_handle)
-        && bugle_call_get_error_ptr)
-        return bugle_call_get_error_ptr(call_object);
+        && bugle_gl_call_get_error_ptr)
+        return bugle_gl_call_get_error_ptr(call_object);
     else
         return GL_NO_ERROR;
 }
