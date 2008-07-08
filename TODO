@@ -1,3 +1,5 @@
+- finish the man page
+
 WGL port
 --------
 - figure out why showstats on shadowfun crashes on exit (glDeleteQueries not defined?)

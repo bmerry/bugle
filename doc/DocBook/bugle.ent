@@ -8,6 +8,7 @@
 <!ENTITY mp-checks "<link linkend='checks.7'><citerefentry><refentrytitle>bugle-checks</refentrytitle><manvolnum>7</manvolnum></citerefentry></link>">
 <!ENTITY mp-eps "<link linkend='eps.7'><citerefentry><refentrytitle>bugle-eps</refentrytitle><manvolnum>7</manvolnum></citerefentry></link>">
 <!ENTITY mp-error "<link linkend='error.7'><citerefentry><refentrytitle>bugle-error</refentrytitle><manvolnum>7</manvolnum></citerefentry></link>">
+<!ENTITY mp-exe "<link linkend='exe.7'><citerefentry><refentrytitle>bugle-exe</refentrytitle><manvolnum>7</manvolnum></citerefentry></link>">
 <!ENTITY mp-extoverride "<link linkend='extoverride.7'><citerefentry><refentrytitle>bugle-extoverride</refentrytitle><manvolnum>7</manvolnum></citerefentry></link>">
 <!ENTITY mp-frontbuffer "<link linkend='frontbuffer.7'><citerefentry><refentrytitle>bugle-frontbuffer</refentrytitle><manvolnum>7</manvolnum></citerefentry></link>">
 <!ENTITY mp-log "<link linkend='log.7'><citerefentry><refentrytitle>bugle-log</refentrytitle><manvolnum>7</manvolnum></citerefentry></link>">

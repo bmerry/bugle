@@ -52,10 +52,22 @@
 
 #if HAVE_LAVC
 # include <inttypes.h>
-# include <libavcodec/avcodec.h>
-# include <libavformat/avformat.h>
+# if HAVE_LIBAVCODEC_AVCODEC_H
+#  include <libavcodec/avcodec.h>
+# else
+#  include <avcodec.h>
+# endif
+# if HAVE_LIBAVFORMAT_AVFORMAT_H
+#  include <libavformat/avformat.h>
+# else
+#  include <avformat.h>
+# endif
 # if HAVE_LIBSWSCALE
-#  include <libswscale/swscale.h>
+#  if HAVE_LIBSWSCALE_SWSCALE_H
+#   include <libswscale/swscale.h>
+#  else
+#   include <swscale.h>
+#  endif
 # endif
 # define CAPTURE_AV_FMT PIX_FMT_RGB24
 # define CAPTURE_GL_FMT GL_RGB
@@ -325,7 +337,11 @@ static void lavc_shutdown(void)
     av_free(video_buffer);
     for (i = 0; i < video_context->nb_streams; i++)
         av_freep(&video_context->streams[i]);
+#if LIBAVFORMAT_VERSION_INT >= 0x00340000 /* major of 52 */
     url_fclose(video_context->pb);
+#else
+    url_fclose(&video_context->pb);
+#endif
     av_free(video_context);
 
     for (i = 0; i < video_lag; i++)

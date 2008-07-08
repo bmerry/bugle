@@ -6,8 +6,9 @@
 * Remove compile-time tests for pre-GL2 extensions
 * Fix count for glGetAttachedShaders
 * Finer-grained modules
-* Remove support for older ffmpeg's
-* Support ffmpeg 20080327
+* Add 'exe' filterset
+* Remove support for older ffmpeg's, and add support for newer ones
+* Rename assorted files and symbols
 * Other miscellaneous bug-fixes
 
 0.0.20080303

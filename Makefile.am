@@ -67,6 +67,7 @@ pkglib_LTLIBRARIES = \
 	filters/screenshot.la \
 	filters/showextensions.la \
 	filters/trace.la \
+	filters/exe.la \
 	filters/debugger.la \
 	filters/extoverride.la \
 	filters/stats_basic.la \
@@ -230,6 +231,10 @@ filters_trace_la_SOURCES = filters/trace.c
 filters_trace_la_LDFLAGS = $(MODULEFLAGS)
 filters_trace_la_LIBADD = $(MODULELIBS)
 
+filters_exe_la_SOURCES = filters/exe.c
+filters_exe_la_LDFLAGS = $(MODULEFLAGS)
+filters_exe_la_LIBADD = $(MODULELIBS)
+
 filters_debugger_la_SOURCES = filters/debugger.c
 filters_debugger_la_LDFLAGS = $(MODULEFLAGS)
 filters_debugger_la_LIBADD = $(MODULELIBS)
@@ -355,6 +360,7 @@ DOCBOOK_MAN_SRCS = \
 	doc/DocBook/man/checks.xml \
 	doc/DocBook/man/eps.xml \
 	doc/DocBook/man/error.xml \
+	doc/DocBook/man/exe.xml \
 	doc/DocBook/man/extoverride.xml \
 	doc/DocBook/man/frontbuffer.xml \
 	doc/DocBook/man/log.xml \
@@ -404,6 +410,7 @@ DOCBOOK_MAN_MANPAGES = \
 	doc/man7/bugle-checks.7 \
 	doc/man7/bugle-eps.7 \
 	doc/man7/bugle-error.7 \
+	doc/man7/bugle-exe.7 \
 	doc/man7/bugle-extoverride.7 \
 	doc/man7/bugle-frontbuffer.7 \
 	doc/man7/bugle-log.7 \
@@ -449,6 +456,7 @@ DOCBOOK_HTML = doc/html/index.html \
 	       doc/html/checks.7.html \
 	       doc/html/eps.7.html \
 	       doc/html/error.7.html \
+	       doc/html/exe.7.html \
 	       doc/html/extoverride.7.html \
 	       doc/html/frontbuffer.7.html \
 	       doc/html/log.7.html \

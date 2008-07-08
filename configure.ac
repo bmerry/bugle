@@ -136,6 +136,8 @@ AC_HEADER_DIRENT
 AC_HEADER_STDBOOL
 AC_CHECK_HEADERS([sys/types.h stdlib.h stddef.h regex.h NVPerfSDK.h dlfcn.h sys/select.h])
 AC_CHECK_HEADERS([readline/readline.h readline/history.h], [], [HAVE_READLINE=0])
+# ffmpeg moves the headers around
+AC_CHECK_HEADERS([libavcodec/avcodec.h libavformat/avformat.h libswscale/swscale.h])
 
 case "$bugle_target" in
   gl-wgl)

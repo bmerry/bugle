@@ -25,6 +25,7 @@
     <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="checks.xml"/>
     <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="eps.xml"/>
     <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="error.xml"/>
+    <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="exe.xml"/>
     <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="extoverride.xml"/>
     <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="frontbuffer.xml"/>
     <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="log.xml"/>
