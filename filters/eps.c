@@ -88,7 +88,7 @@ static bool eps_swap_buffers(function_call *call, const callback_data *data)
     frame = d->frame++;
     if (d->capture)
     {
-        if (bugle_begin_internal_render())
+        if (bugle_gl_begin_internal_render())
         {
             GLint status;
 
@@ -122,7 +122,7 @@ static bool eps_swap_buffers(function_call *call, const callback_data *data)
             bugle_log("eps", "gl2ps", BUGLE_LOG_NOTICE,
                       "swap_buffers called inside glBegin/glEnd; snapshot may be corrupted.");
     }
-    else if (keypress_eps && bugle_begin_internal_render())
+    else if (keypress_eps && bugle_gl_begin_internal_render())
     {
         FILE *f;
         char *fname, *end;
@@ -179,7 +179,7 @@ static bool eps_glPointSize(function_call *call, const callback_data *data)
     eps_struct *d;
 
     d = (eps_struct *) bugle_object_get_current_data(bugle_context_class, eps_view);
-    if (d && d->capture && bugle_begin_internal_render())
+    if (d && d->capture && bugle_gl_begin_internal_render())
     {
         GLfloat size;
         CALL(glGetFloatv)(GL_POINT_SIZE, &size);
@@ -194,7 +194,7 @@ static bool eps_glLineWidth(function_call *call, const callback_data *data)
     eps_struct *d;
 
     d = (eps_struct *) bugle_object_get_current_data(bugle_context_class, eps_view);
-    if (d && d->capture && bugle_begin_internal_render())
+    if (d && d->capture && bugle_gl_begin_internal_render())
     {
         GLfloat width;
         CALL(glGetFloatv)(GL_LINE_WIDTH, &width);

@@ -199,8 +199,3 @@ chain validate
     filterset checks
     filterset showerror
 }
-
-chain exe
-{
-    filterset exe
-}

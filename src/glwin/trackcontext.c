@@ -343,8 +343,8 @@ static bool trackcontext_destroycontext(function_call *call, const callback_data
     /* FIXME: leaks from namespace associations */
     obj = bugle_object_get_current(bugle_context_class);
     ctx = bugle_glwin_get_context_destroy(call);
-    if (ctx && obj)
-    bugle_hashptr_set(&context_objects, ctx, obj);
+    if (ctx)
+        bugle_hashptr_set(&context_objects, ctx, NULL);
     return true;
 }
 
