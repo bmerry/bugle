@@ -43,6 +43,7 @@ filename "<replaceable>exetrace.c</replaceable>"
             <function>glCreateShader</function> are not remapped, so
             re-running a compiled trace will only work if handles are
             generated deterministically by the OpenGL implementation.
+            Client-side vertex arrays are also not yet supported.
         </para>
         <para>
             The generated code merely consists of a function per frame, and a
@@ -68,12 +69,8 @@ filename "<replaceable>exetrace.c</replaceable>"
         <title>Bugs</title>
         <para>
             See the limitations above. This filter-set is also vulnerable to
-            any errors or omissions in the tables that 
-            Some enumerants share values, so you may see a different symbolic
-            name in the log than in your source code. It is believed that this
-            should be limited to cases where extensions share a value for
-            semanticly equivalent symbols; if you find a case where this is not
-            true, please inform the author.
+            any errors or omissions in the tables that tell &bugle; how many
+            values are stored in an array passed to OpenGL.
         </para>
         <para>
             Because the filter-set examines arguments and follows pointers, it
@@ -82,19 +79,10 @@ filename "<replaceable>exetrace.c</replaceable>"
         </para>
     </refsect1>
 
-    <refsect1>
-        <title>Backwards compatibility</title>
-        <para>
-            In previous versions, the <systemitem>trace</systemitem> filter-set
-            also reported OpenGL errors to the log. This is now handled by the
-            <systemitem>showerror</systemitem> filter-set (see &mp-showerror;).
-        </para>
-    </refsect1>
-
     &author;
 
     <refsect1>
         <title>See also</title>
-        <para>&mp-bugle;, &mp-log;, &mp-showerror;</para>
+        <para>&mp-bugle;, &mp-trace;</para>
     </refsect1>
 </refentry>
