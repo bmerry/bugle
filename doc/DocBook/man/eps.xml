@@ -15,7 +15,7 @@
 
     <refnamediv>
         <refname>bugle-eps</refname>
-        <refpurpose>recover a stack trace after a segmentation fault</refpurpose>
+        <refpurpose>captures vector graphics representatios of scenes</refpurpose>
     </refnamediv>
 
     <refsynopsisdiv>

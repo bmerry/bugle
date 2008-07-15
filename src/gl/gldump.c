@@ -31,6 +31,7 @@
 #include <bugle/gl/gltypes.h>
 #include <bugle/gl/glbeginend.h>
 #include <bugle/gl/glextensions.h>
+#include <bugle/gl/glsl.h>
 #include <bugle/filters.h>
 #include <bugle/log.h>
 #include <bugle/apireflect.h>

@@ -43,6 +43,7 @@
  * lazily deleted by setting to NULL.
  *
  * FIXME-GLES: needs to be updated to support GL ES
+ * FIXME: needs to be updated to support WGL
  */
 static bool *seen_functions;
 static hashptr_table seen_enums;
