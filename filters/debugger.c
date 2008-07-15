@@ -583,7 +583,6 @@ static bool send_data_framebuffer(uint32_t id, GLuint fbo, GLenum target,
 static bool send_data_shader(uint32_t id, GLuint shader_id,
                              GLenum target)
 {
-    GLenum error;
     GLint length;
     char *text;
 
