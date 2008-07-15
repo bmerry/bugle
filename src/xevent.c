@@ -712,6 +712,14 @@ void xevent_initialise(void)
     handle = lt_dlopenext("libX11");
     if (handle == NULL)
     {
+        /* The first attempt ought to be the most portable, but also fails
+         * when trying to run with 32-bit apps on a 64-bit system. This is
+         * a fallback.
+         */
+        handle = lt_dlopen("libX11.so");
+    }
+    if (handle == NULL)
+    {
         fputs("ERROR: cannot locate libX11. There is something unusual about the linkage\n"
               "of your application. You will need to pass --disable-xevent to configure\n"
               "when configuring bugle, and will you lose the key and mouse interception\n"

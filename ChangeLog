@@ -6,6 +6,7 @@
 * Change CALL to search around aliases until it finds a pointer
 * Remove compile-time tests for pre-GL2 extensions
 * Fix count for glGetAttachedShaders
+* Fix X11 event interception for 32-bit bugle on 64-bit OS (on my box at least)
 * Finer-grained modules
 * Remove support for older ffmpeg's, and add support for newer ones
 * Rename assorted files and symbols
