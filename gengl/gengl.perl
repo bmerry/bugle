@@ -191,7 +191,17 @@ GL_ATTRIB_ARRAY_SIZE_NV
 |GL_NO_ERROR
 |GL_ZERO
 |GL_ONE
-)/x;
+)$/x;
+
+# Enums whose *values* appear in both GL1.1 and an extension. Normally
+# we assume that values defined in extensions are not part of 1.1 (because
+# otherwise we get some false positives from Mesa), but these are exceptions.
+my $enum_force_11_regex = qr/^(?:
+GL_MODELVIEW            # aliases MODELVIEW0_ARB
+|GL_LINES               # these three have aliases in SUN_triangle_list
+|GL_LINE_LOOP
+|GL_LINE_STRIP
+)$/x;
 
 # Things that perhaps look like enumerants, but aren't.
 # NB: this regex must not have capturing brackets, because it is used in
@@ -566,7 +576,8 @@ EOF
         # Again, Mesa headers cause us to think some things are in 1.1 when
         # they're also defined elsewhere.
         if (scalar(keys(%{$enum->[2]})) > 1
-            && exists($enum->[2]->{GL_VERSION_1_1}))
+            && exists($enum->[2]->{GL_VERSION_1_1})
+            && $enum->[1] !~ /$enum_force_11_regex/)
         {
             delete $enum->[2]->{GL_VERSION_1_1};
         }
