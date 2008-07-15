@@ -1,12 +1,12 @@
-* Port to Windows
-* Port to OpenGL ES 2.0
+* Port to Windows (experimental, don't expect it all to work)
+* Port to OpenGL ES 2.0 (VERY experimental, don't expect any of it to work)
+* Add alpha filter-set to produce compilable C traces
 * Embed a font in the source instead of trying to query it
 * Fix some extension tests
 * Change CALL to search around aliases until it finds a pointer
 * Remove compile-time tests for pre-GL2 extensions
 * Fix count for glGetAttachedShaders
 * Finer-grained modules
-* Add 'exe' filterset
 * Remove support for older ffmpeg's, and add support for newer ones
 * Rename assorted files and symbols
 * Other miscellaneous bug-fixes
