@@ -195,7 +195,7 @@ void bugle_stats_signal_values_gather(stats_signal_values *sv)
 {
     stats_signal *si;
     linked_list_node *s;
-    int i;
+    size_t i;
 
     gettimeofday(&sv->last_updated, NULL);
 

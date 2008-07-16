@@ -112,7 +112,7 @@ budgie_type budgie_group_parameter_type(budgie_group id, int param)
             ? _budgie_group_table[id].retn_type : NULL_TYPE;
     else
     {
-        assert(0 <= param && param < _budgie_group_table[id].num_parameters);
+        assert(0 <= param && param < (int) _budgie_group_table[id].num_parameters);
         return _budgie_group_table[id].parameter_types[param];
     }
 }
@@ -254,7 +254,7 @@ ssize_t budgie_snprintf_advance(char **buffer, size_t *size, const char *fmt, ..
     va_start(ap, fmt);
     written = vsnprintf(*buffer, *size, fmt, ap);
     va_end(ap);
-    *size = (written >= *size) ? 0 : *size - written;
+    *size = (written >= (ssize_t) *size) ? 0 : *size - written;
     *buffer += written;
     return written;
 }

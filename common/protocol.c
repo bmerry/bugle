@@ -204,7 +204,7 @@ static bool io_safe_write(int fd, const void *buf, size_t count)
     ssize_t out;
 
     out = full_write(fd, buf, count);
-    if (out < count)
+    if (out < (ssize_t) count)
     {
         if (errno)
         {

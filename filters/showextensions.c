@@ -52,7 +52,7 @@ static const char *glx_version = "1.2";
 
 static bool showextensions_callback(function_call *call, const callback_data *data)
 {
-    size_t i;
+    int i;
 
     seen_functions[call->generic.id] = true;
     for (i = 0; i < budgie_group_parameter_count(call->generic.group); i++)
@@ -63,8 +63,8 @@ static bool showextensions_callback(function_call *call, const callback_data *da
             GLenum e;
 
             e = *(const GLenum *) call->generic.args[i];
-            if (e >= 0) /* Set to arbitrary non-NULL value */
-                bugle_hashptr_set(&seen_enums, (void *) (size_t) e, &seen_enums);
+            /* Set to arbitrary non-NULL value */
+            bugle_hashptr_set(&seen_enums, (void *) (size_t) e, &seen_enums);
         }
     }
     return true;

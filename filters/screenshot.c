@@ -335,7 +335,7 @@ static void lavc_shutdown(void)
     av_free(video_yuv);
     av_free(video_raw);
     av_free(video_buffer);
-    for (i = 0; i < video_context->nb_streams; i++)
+    for (i = 0; i < (int) video_context->nb_streams; i++)
         av_freep(&video_context->streams[i]);
 #if LIBAVFORMAT_VERSION_INT >= 0x00340000 /* major of 52 */
     url_fclose(video_context->pb);

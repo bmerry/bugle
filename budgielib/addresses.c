@@ -99,7 +99,7 @@ void budgie_call_parameter_dump(const generic_function_call *call, int param, ch
 
 void budgie_dump_any_call(const generic_function_call *call, int indent, char **buffer, size_t *size)
 {
-    size_t i;
+    int i;
 
     make_indent(indent, buffer, size);
     budgie_snprintf_advance(buffer, size, "%s(", budgie_function_name(call->id));

@@ -123,7 +123,7 @@ nodist_src_libbugleutils_la_SOURCES = \
 	budgielib/defines.h budgielib/tables.c \
 	src/apitables.c src/apitables.h
 src_libbugleutils_la_LIBADD = $(LTLIBOBJS) $(LTLIBTHREAD) $(LTLIBINTL) lib/libgnu.la
-src_libbugleutils_la_LDFLAGS = -no-undefined -thread-safe -export-dynamic $(SYMBOLFLAGS) -version-info 5:1:1
+src_libbugleutils_la_LDFLAGS = -no-undefined -thread-safe -export-dynamic $(SYMBOLFLAGS) -version-info 6:0:0
 
 # The name of the target is OS-dependent, because on Win32 we want to call the
 # library opengl32.dll. Here we just define the inputs
@@ -142,7 +142,7 @@ bugle_sources = \
 bugle_sources_nodist = \
 	budgielib/lib.c
 bugle_libadd = $(LIBLTDL) src/libbugleutils.la $(LTLIBTHREAD) $(LTLIBINTL) lib/libgnu.la
-bugle_ldflags = -no-undefined -thread-safe -export-dynamic $(SYMBOLFLAGS) -version-info 6:2:1
+bugle_ldflags = -no-undefined -thread-safe -export-dynamic $(SYMBOLFLAGS) -version-info 7:0:0
 
 BUDGIE_BUILT_SRCS = \
         budgielib/lib.c budgielib/tables.c \

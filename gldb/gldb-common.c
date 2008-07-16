@@ -78,7 +78,7 @@ void gldb_program_clear(void)
 
 void gldb_program_set_setting(gldb_program_setting setting, const char *value)
 {
-    assert(setting >= 0 && setting < GLDB_PROGRAM_SETTING_COUNT);
+    assert(setting < GLDB_PROGRAM_SETTING_COUNT);
     free(prog_settings[setting]);
     if (value && !*value) value = NULL;
     prog_settings[setting] = value ? xstrdup(value) : NULL;
@@ -91,7 +91,7 @@ void gldb_program_set_type(gldb_program_type type)
 
 const char *gldb_program_get_setting(gldb_program_setting setting)
 {
-    assert(setting >= 0 && setting < GLDB_PROGRAM_SETTING_COUNT);
+    assert(setting < GLDB_PROGRAM_SETTING_COUNT);
     return prog_settings[setting];
 }
 

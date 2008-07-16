@@ -44,7 +44,7 @@ int bugle_appendf(char **strp, size_t *sz, const char *format, ...)
 {
     va_list ap;
     size_t len;       /* of initial portion */
-    int ans;
+    ssize_t ans;
 
     if (!*strp)
     {
@@ -64,11 +64,11 @@ int bugle_appendf(char **strp, size_t *sz, const char *format, ...)
      */
     if (ans < 0)
         return 0;  /* Output error */
-    else if (ans >= *sz - len)
+    else if (ans >= (ssize_t) (*sz - len))
     {
         /* Ensure we at least double, to avoid O(N^2) algorithms */
         *sz *= 2;
-        if (ans >= *sz - len)
+        if (ans >= (ssize_t) (*sz - len))
             *sz = ans + len + 1;
         *strp = xnrealloc(*strp, *sz, sizeof(char));
         va_start(ap, format);

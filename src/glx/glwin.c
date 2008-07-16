@@ -230,7 +230,7 @@ void bugle_glwin_filter_catches_swap_buffers(filter *f, bool inactive, filter_ca
  */
 void bugle_function_address_initialise_extra(void)
 {
-    size_t i;
+    budgie_function i;
 
     for (i = 0; i < budgie_function_count(); i++)
     {

@@ -101,7 +101,7 @@ static void send_state_raw(const glstate *state, uint32_t id)
 {
     linked_list children;
     linked_list_node *cur;
-    bugle_state_raw wrapper = {NULL};
+    bugle_state_raw wrapper = {NULL, 0, 0};
 
     bugle_state_get_raw(state, &wrapper);
     gldb_protocol_send_code(out_pipe, RESP_STATE_NODE_BEGIN_RAW);
@@ -413,7 +413,7 @@ static bool get_framebuffer_size(GLuint fbo, GLenum target, GLenum attachment,
         draw = bugle_glwin_get_current_read_drawable();
 
         bugle_glwin_get_drawable_dimensions(dpy, draw, width, height);
-        return width >= 0 && height >= 0;
+        return *width >= 0 && *height >= 0;
     }
     return true;
 }

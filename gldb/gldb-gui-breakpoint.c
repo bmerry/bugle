@@ -158,7 +158,7 @@ GldbPane *gldb_breakpoint_pane_new(void)
     GtkWidget *hbox, *vbox, *bbox, *btn, *toggle;
     GtkCellRenderer *cell;
     GtkTreeViewColumn *column;
-    gsize i;
+    int i;
     GtkTreeIter iter;
 
     pane = GLDB_BREAKPOINT_PANE(g_object_new(GLDB_BREAKPOINT_PANE_TYPE, NULL));

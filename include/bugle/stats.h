@@ -146,7 +146,7 @@ typedef struct
 
 typedef struct
 {
-    int allocated;
+    size_t allocated;
     stats_signal_value *values;
     struct timeval last_updated;
 } stats_signal_values;

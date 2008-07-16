@@ -221,7 +221,7 @@ static int handle_responses(void)
     gldb_response_data_framebuffer *fb;
 
     FILE *f;
-    int i;
+    uint32_t i;
 
     r = gldb_get_response();
     /* For some reason select() sometimes claims that there is data

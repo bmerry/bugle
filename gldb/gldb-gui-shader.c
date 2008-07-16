@@ -146,7 +146,7 @@ static void gldb_shader_pane_update_ids(GldbShaderPane *pane)
             t = gldb_state_find(s, "Attached", strlen("Attached"));
             if (t)
             {
-                size_t i;
+                int i;
                 GLuint *ids;
                 ids = (GLuint *) t->data;
                 for (i = 0; i < t->length; i++)

@@ -1,3 +1,5 @@
+0.0.20080716
+------------
 * Port to Windows (experimental, don't expect it all to work)
 * Port to OpenGL ES 2.0 (VERY experimental, don't expect any of it to work)
 * Add alpha filter-set to produce compilable C traces

@@ -151,6 +151,7 @@ static void checks_texture_complete(int unit, GLenum target)
     GLenum face;
     bool needs_mip = true;
     bool success = true;
+    int i;
 
     if (BUGLE_GL_HAS_EXTENSION_GROUP(GL_ARB_multitexture))
     {
@@ -211,7 +212,7 @@ static void checks_texture_complete(int unit, GLenum target)
             }
             if (!success)
                 break;
-            for (int i = 0; i < 6; i++)
+            for (i = 0; i < 6; i++)
             {
                 face = GL_TEXTURE_CUBE_MAP_POSITIVE_X + i;
                 if (!checks_texture_face_complete(unit, face, 2, base, max, needs_mip))
