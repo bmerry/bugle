@@ -23,6 +23,14 @@ else
     <a href="screenshots.php">[Screenshots]</a>
     </p>
     <h1>BuGLe News</h1>
+    <h2>Alpha support for Windows and OpenGL ES 2.0 (16/7/2008)</h2>
+    <p>
+    This is a major new release that adds experimental support for Windows and 
+    for OpenGL ES 2.0. These ports are still in the early stages of development, 
+    and many features don't yet work. Nevertheless, you're encouraged to try them 
+    out.</p>
+    <p>Note that you must delete the old contents of <kbd>$PREFIX/lib/bugle/*.so</kbd>
+    when upgrading, as otherwise stale modules will be loaded into bugle.</p>
     <h2>Texture completeness checks</h2>
     <p>
     The new release adds partial support for checking whether textures are
