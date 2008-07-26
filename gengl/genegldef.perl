@@ -5,7 +5,7 @@ use warnings;
 print "EXPORTS\n";
 while (<>)
 {
-    if (/#define FUNC_(egl.*) \d+$/)
+    if (/^#define FUNC_(egl.*) \d+/)
     {
         print "$1 = libGLESv2.$1\n";
     }
