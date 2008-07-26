@@ -1,5 +1,5 @@
 /*  BuGLe: an OpenGL debugging tool
- *  Copyright (C) 2004-2006  Bruce Merry
+ *  Copyright (C) 2004-2008  Bruce Merry
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -692,10 +692,29 @@ static void gldb_gui_image_viewer_new_zoom_combo(GldbGuiImageViewer *viewer)
 }
 
 #define FLOAT_TO_UBYTE(x) ((guchar) CLAMP(floor((x) * 255.0), 0, 255))
+#define UBYTE_TO_FLOAT(x) ((x) / 255.0f)
 
 static void free_pixbuf_data(guchar *pixels, gpointer user_data)
 {
     free(pixels);
+}
+
+static GLfloat gldb_gui_image_get_pixel(GldbGuiImagePlane *plane, int x, int y, int c)
+{
+    int nin;
+    size_t offset;
+
+    nin = gldb_channel_count(plane->channels);
+    offset = ((size_t) y * plane->width + x) * nin + c;
+    switch (plane->type)
+    {
+    case GL_FLOAT:
+        return ((const GLfloat *) plane->pixels)[offset];
+    case GL_UNSIGNED_BYTE:
+        return UBYTE_TO_FLOAT(((const GLubyte *) plane->pixels)[offset]);
+    default:
+        g_return_val_if_reached(0);
+    }
 }
 
 static void image_copy_clicked(GtkWidget *button, gpointer user_data)
@@ -729,7 +748,7 @@ static void image_copy_clicked(GtkWidget *button, gpointer user_data)
     for (y = height - 1; y >= 0; y--)
         for (x = 0; x < width; x++)
             for (c = 0; c < nout; c++)
-                *p++ = FLOAT_TO_UBYTE(plane->pixels[((y * width) + x) * nin + (c % nin)]);
+                *p++ = gldb_gui_image_get_pixel(plane, x, y, c % nin);
 
     pixbuf = gdk_pixbuf_new_from_data(pixels, GDK_COLORSPACE_RGB, nout == 4, 8,
                                       width, height, width * nout,
@@ -1383,13 +1402,18 @@ void gldb_gui_image_upload(GldbGuiImage *image, bool remap)
         for (l = 0; l < image->nlevels; l++)
             for (p = 0; p < image->levels[l].nplanes; p++)
             {
+                int channels, x, y, c;
                 plane = &image->levels[l].planes[p];
-                int c = gldb_channel_count(plane->channels);
-                for (i = 0; i < plane->width * plane->height * c; i++)
-                {
-                    low = MIN(low, plane->pixels[i]);
-                    high = MAX(high, plane->pixels[i]);
-                }
+                channels = gldb_channel_count(plane->channels);
+                for (y = 0; y < plane->height; y++)
+                    for (x = 0; x < plane->width; x++)
+                        for (c = 0; c < channels; c++)
+                        {
+                            GLfloat value;
+                            value = gldb_gui_image_get_pixel(plane, x, y, c);
+                            low = MIN(low, value);
+                            high = MAX(high, value);
+                        }
             }
         if (high == HUGE_VAL || high - low < 1e-8)
             remap = false;
@@ -1418,10 +1442,10 @@ void gldb_gui_image_upload(GldbGuiImage *image, bool remap)
             format = gldb_channel_get_display_token(plane->channels);
             glTexImage2D(image->texture_target, l, format,
                          texture_width, texture_height,
-                         0, format, GL_FLOAT, NULL);
+                         0, format, image->type, NULL);
             glTexSubImage2D(image->texture_target, l,
                             0, 0, plane->width, plane->height,
-                            format, GL_FLOAT, plane->pixels);
+                            format, image->type, plane->pixels);
             if (l == 0)
             {
                 image->s = (GLfloat) plane->width / texture_width;

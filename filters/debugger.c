@@ -358,6 +358,7 @@ static bool send_data_texture(uint32_t id, GLuint texid, GLenum target,
 static bool get_framebuffer_size(GLuint fbo, GLenum target, GLenum attachment,
                                  GLint *width, GLint *height)
 {
+    /* FIXME: support GLES framebuffer objects */
 #ifdef GL_EXT_framebuffer_object
     if (fbo)
     {
@@ -412,7 +413,20 @@ static bool get_framebuffer_size(GLuint fbo, GLenum target, GLenum attachment,
         dpy = bugle_glwin_get_current_display();
         draw = bugle_glwin_get_current_read_drawable();
 
-        bugle_glwin_get_drawable_dimensions(dpy, draw, width, height);
+        /* AMD's GLES emulator doesn't query the drawable correctly */
+        if (draw)
+        {
+            *width = -1;
+            *height = -1;
+            bugle_glwin_get_drawable_dimensions(dpy, draw, width, height);
+        }
+        else
+        {
+            GLint viewport[4];
+            CALL(glGetIntegerv)(GL_VIEWPORT, viewport);
+            *width = viewport[2];
+            *height = viewport[3];
+        }
         return *width >= 0 && *height >= 0;
     }
     return true;

@@ -88,6 +88,7 @@ typedef struct
     GLenum face;
     GLuint level;
     uint32_t channels;
+    GLenum pixel_type;
     guint32 flags;
 
     /* The following attributes are set for the first of a set, to allow
@@ -144,6 +145,7 @@ static gboolean gldb_texture_pane_response_callback(gldb_response *response,
             level->planes[plane].height = r->height;
             level->planes[plane].channels = data->channels;
             level->planes[plane].owns_pixels = true;
+            level->planes[plane].type = data->pixel_type;
             level->planes[plane].pixels = (GLfloat *) r->data;
             break;
         case GLDB_GUI_IMAGE_TYPE_3D:
@@ -155,6 +157,7 @@ static gboolean gldb_texture_pane_response_callback(gldb_response *response,
                 level->planes[plane].height = r->width;
                 level->planes[plane].channels = data->channels;
                 level->planes[plane].owns_pixels = (plane == 0);
+                level->planes[plane].type = data->pixel_type;
                 level->planes[plane].pixels = ((GLfloat *) r->data) + plane * r->width * r->height * gldb_channel_count(data->channels);
             }
             break;
@@ -344,6 +347,7 @@ static void gldb_texture_pane_id_changed(GtkComboBox *id_box, gpointer user_data
                     data->face = GL_TEXTURE_CUBE_MAP_POSITIVE_X_ARB + i;
                     data->level = l;
                     data->channels = channels;
+                    data->pixel_type = GL_FLOAT;
                     data->flags = 0;
                     data->pane = pane;
                     if (l == 0 && i == 0)
@@ -357,7 +361,7 @@ static void gldb_texture_pane_id_changed(GtkComboBox *id_box, gpointer user_data
                     seq = gldb_gui_set_response_handler(gldb_texture_pane_response_callback, data);
                     gldb_send_data_texture(seq, id, target, data->face, l,
                                            gldb_channel_get_texture_token(channels),
-                                           GL_FLOAT);
+                                           data->pixel_type);
                 }
             }
             else

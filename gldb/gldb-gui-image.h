@@ -1,5 +1,5 @@
 /*  BuGLe: an OpenGL debugging tool
- *  Copyright (C) 2004-2006  Bruce Merry
+ *  Copyright (C) 2004-2008  Bruce Merry
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -58,7 +58,8 @@ typedef struct
     int width;
     int height;
     uint32_t channels;
-    GLfloat *pixels;
+    GLenum type;
+    GLvoid *pixels;
     bool owns_pixels;
 } GldbGuiImagePlane;
 
