@@ -1,5 +1,5 @@
 /*  BuGLe: an OpenGL debugging tool
- *  Copyright (C) 2004-2007  Bruce Merry
+ *  Copyright (C) 2004-2008  Bruce Merry
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -36,6 +36,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <bugle/porting.h>
 #include "common/protocol.h"
 #include "gldb/gldb-common.h"
 #include "gldb/gldb-channels.h"
@@ -396,6 +397,7 @@ static void gldb_framebuffer_pane_buffer_changed(GtkWidget *widget, gpointer use
     GtkTreeIter iter;
     guint id, target, buffer, channel;
     guint32 seq;
+    GLenum type, format;
 
     pane = (GldbFramebufferPane *) user_data;
 
@@ -431,9 +433,18 @@ static void gldb_framebuffer_pane_buffer_changed(GtkWidget *widget, gpointer use
         data->flags = 0;
         data->pane = pane;
         seq = gldb_gui_set_response_handler(gldb_framebuffer_pane_response_callback, data);
-        gldb_send_data_framebuffer(seq, id, target, buffer,
-                                   gldb_channel_get_framebuffer_token(data->channels),
-                                   GL_FLOAT);
+
+#if BUGLE_GLTYPE_GL
+        format = gldb_channel_get_framebuffer_token(data->channels);
+        type = GL_FLOAT;
+#elif BUGLE_GLTYPE_GLES2
+        /* GL ES only supports this combination plus an implementation-defined one */
+        format = GL_RGBA;
+        type = GL_UNSIGNED_BYTE;
+#else
+# error "Unknown target"
+#endif
+        gldb_send_data_framebuffer(seq, id, target, buffer, format, type);
     }
 }
 
