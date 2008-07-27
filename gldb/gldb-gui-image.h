@@ -63,6 +63,8 @@ typedef struct
     bool owns_pixels;
 } GldbGuiImagePlane;
 
+GLfloat gldb_gui_image_plane_get_pixel(const GldbGuiImagePlane *plane, int x, int y, int c);
+
 /* A bag of 2D images that occur at the same level of a texture. This is
  * - a level of a 2D texture (nplanes = 1)
  * - a level of a cube-map (nplanes = 6)

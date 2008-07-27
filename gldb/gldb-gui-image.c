@@ -417,7 +417,7 @@ static void image_draw_motion_update(GldbGuiImageViewer *viewer,
         channel = channels & ~(channels - 1);
         const char *abbr = gldb_channel_get_abbr(channel);
         tmp_msg = msg;
-        msg = xasprintf(" %s %s: %f", tmp_msg, abbr ? abbr : "?", pixel[p]);
+        msg = xasprintf(" %s %s: %f", tmp_msg, abbr ? abbr : "?", gldb_gui_image_plane_get_pixel(plane, u, v, p));
         free(tmp_msg);
     }
     viewer->pixel_status_id = gtk_statusbar_push(viewer->statusbar,
@@ -699,7 +699,7 @@ static void free_pixbuf_data(guchar *pixels, gpointer user_data)
     free(pixels);
 }
 
-static GLfloat gldb_gui_image_get_pixel(GldbGuiImagePlane *plane, int x, int y, int c)
+GLfloat gldb_gui_image_plane_get_pixel(const GldbGuiImagePlane *plane, int x, int y, int c)
 {
     int nin;
     size_t offset;
@@ -748,7 +748,7 @@ static void image_copy_clicked(GtkWidget *button, gpointer user_data)
     for (y = height - 1; y >= 0; y--)
         for (x = 0; x < width; x++)
             for (c = 0; c < nout; c++)
-                *p++ = gldb_gui_image_get_pixel(plane, x, y, c % nin);
+                *p++ = FLOAT_TO_UBYTE(gldb_gui_image_plane_get_pixel(plane, x, y, c % nin));
 
     pixbuf = gdk_pixbuf_new_from_data(pixels, GDK_COLORSPACE_RGB, nout == 4, 8,
                                       width, height, width * nout,
@@ -1389,7 +1389,7 @@ static int round_up_two(int x)
 void gldb_gui_image_upload(GldbGuiImage *image, bool remap)
 {
     GLenum face, format;
-    int l, p, i;
+    int l, p;
     bool have_npot;
     GLint texture_width, texture_height, texture_depth;
     GldbGuiImagePlane *plane;
@@ -1410,7 +1410,7 @@ void gldb_gui_image_upload(GldbGuiImage *image, bool remap)
                         for (c = 0; c < channels; c++)
                         {
                             GLfloat value;
-                            value = gldb_gui_image_get_pixel(plane, x, y, c);
+                            value = gldb_gui_image_plane_get_pixel(plane, x, y, c);
                             low = MIN(low, value);
                             high = MAX(high, value);
                         }
@@ -1442,10 +1442,10 @@ void gldb_gui_image_upload(GldbGuiImage *image, bool remap)
             format = gldb_channel_get_display_token(plane->channels);
             glTexImage2D(image->texture_target, l, format,
                          texture_width, texture_height,
-                         0, format, image->type, NULL);
+                         0, format, plane->type, NULL);
             glTexSubImage2D(image->texture_target, l,
                             0, 0, plane->width, plane->height,
-                            format, image->type, plane->pixels);
+                            format, plane->type, plane->pixels);
             if (l == 0)
             {
                 image->s = (GLfloat) plane->width / texture_width;

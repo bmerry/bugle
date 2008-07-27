@@ -219,13 +219,16 @@ static void gldb_framebuffer_pane_id_changed(GtkWidget *widget, gpointer user_da
     GldbFramebufferPane *pane;
     GtkTreeModel *model;
     GtkTreeIter iter;
-    gboolean stereo = FALSE, doublebuffer = FALSE;
-    guint channels = 0, color_channels;
     guint id;
     GValue old_buffer;
-    gldb_state *root, *framebuffer, *fbo, *parameter;
+    gldb_state *root;
+#if BUGLE_GLTYPE_GL
+    gboolean stereo = FALSE, doublebuffer = FALSE;
+    guint channels = 0, color_channels;
+    gldb_state *framebuffer, *fbo, *parameter;
     int i, attachments;
     char *name;
+#endif
 
     if (gldb_get_status() == GLDB_STATUS_STOPPED)
     {
@@ -244,6 +247,7 @@ static void gldb_framebuffer_pane_id_changed(GtkWidget *widget, gpointer user_da
         model = gtk_combo_box_get_model(GTK_COMBO_BOX(pane->buffer));
         gtk_list_store_clear(GTK_LIST_STORE(model));
 
+#if BUGLE_GLTYPE_GL
         framebuffer = gldb_state_find_child_enum(root, GL_FRAMEBUFFER_EXT);
         if (id != 0)
         {
@@ -386,6 +390,14 @@ static void gldb_framebuffer_pane_id_changed(GtkWidget *widget, gpointer user_da
                                        -1);
                 }
         }
+#else /* !BUGLE_GLTYPE_GL */
+        gtk_list_store_append(GTK_LIST_STORE(model), &iter);
+        gtk_list_store_set(GTK_LIST_STORE(model), &iter,
+                           COLUMN_FRAMEBUFFER_BUFFER_ID, 0,
+                           COLUMN_FRAMEBUFFER_BUFFER_CHANNELS, GLDB_CHANNEL_RGBA,
+                           COLUMN_FRAMEBUFFER_BUFFER_TEXT, _("Color"),
+                           -1);
+#endif
         gldb_gui_combo_box_restore_old(GTK_COMBO_BOX(pane->buffer), &old_buffer,
                                        COLUMN_FRAMEBUFFER_BUFFER_ID, -1);
     }
