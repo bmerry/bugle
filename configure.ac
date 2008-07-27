@@ -183,7 +183,7 @@ dnl Checks for system services
 AC_PATH_XTRA
 AC_ARG_VAR([XSLTPROC], [Path to xsltproc])
 AC_ARG_VAR([XMLLINT], [Path to xmllint])
-AC_PATH_PROG([XSLTPROC], [xsltproc], [xsltproc_is_required_to_update_documentation])
+AC_PATH_PROG([XSLTPROC], [xsltproc], [true])
 AC_PATH_PROG([XMLLINT], [xmllint], [true])
 
 dnl Set up some extra stuff
