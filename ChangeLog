@@ -1,3 +1,8 @@
+0.0.20080728
+------------
+* Fix generated egl-win.def (builds on Windows may have been broken)
+* Implement framebuffer viewing on OpenGL ES
+
 0.0.20080716
 ------------
 * Port to Windows (experimental, don't expect it all to work)

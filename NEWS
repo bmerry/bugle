@@ -1,3 +1,8 @@
+0.0.20080728
+------------
+This release fixes some problems with OpenGL ES support. Desktop users do not
+need to upgrade.
+
 0.0.20080716
 ------------
 This is a major new release that adds experimental support for Windows and for
