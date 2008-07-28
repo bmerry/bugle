@@ -1,5 +1,6 @@
 0.0.20080728
 ------------
+* Fix Makefile rules to correctly build gldb-gui on Windows
 * Fix generated egl-win.def (builds on Windows may have been broken)
 * Implement framebuffer viewing on OpenGL ES
 
