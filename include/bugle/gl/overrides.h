@@ -63,6 +63,10 @@ typedef GLmat4x2 *pGLmat4x2;
 typedef GLmat3x4 *pGLmat3x4;
 typedef GLmat4x3 *pGLmat4x3;
 
+/* Pointer types that don't get detected automatically in all cases. */
+typedef GLubyte *pGLubyte;
+typedef GLushort *pGLushort;
+
 /* Other ways to interpret enums. Enums have up to 5 different interpretations,
  * with the most serious aliasing being that of 0 and 1. */
 typedef GLenum GLerror;          /* 0 = GL_NO_ERROR */

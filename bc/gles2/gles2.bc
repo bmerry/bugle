@@ -11,6 +11,8 @@ NEWTYPE BITFIELD bufferbits GLbitfield GL_COLOR_BUFFER_BIT GL_DEPTH_BUFFER_BIT G
 
 EXTRATYPE +PKc
 EXTRATYPE +Pc
+EXTRATYPE +P7GLubyte
+EXTRATYPE +P8GLushort
 EXTRATYPE GLfloatmatrix
 EXTRATYPE pGLfloatmatrix
 EXTRATYPE GLerror
@@ -70,7 +72,6 @@ DUMP PARAMETER gl(Get)?(TexParameter)[sifd]v? 2 bugle_dump_convert($1, &$$, $t$,
 DUMP PARAMETER glPixelStorei 1 bugle_dump_convert($0, &$$, $t$, $B, $S)
 
 # Assorted type overrides
-TYPE PARAMETER glTexImage2D 2 TYPE_16GLcomponentsenum
 TYPE PARAMETER glClear 0 TYPE_10bufferbits
 TYPE PARAMETER glGetError -1 TYPE_7GLerror
 TYPE PARAMETER glBlendFunc 0 TYPE_11GLblendenum
