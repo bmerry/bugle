@@ -117,6 +117,10 @@ static void setenv_printf(const char *fmt, ...)
 
 /* Produces an argv array by splitting the fields of the command.
  * To clean up, free(argv[0]), then free(argv).
+ *
+ * The field is split on individual spaces, not blocks of it. _spawnvp will
+ * concatenate the arguments with spaces between, so this gives the original
+ * command line.
  */
 static char **make_argv(const char *cmd)
 {
@@ -127,16 +131,13 @@ static char **make_argv(const char *cmd)
     buffer = xstrdup(cmd);
     /* First pass to count arguments */
     i = buffer;
+    while (*i == ' ') i++;  /* Skip leading whitespace */
     while (*i)
     {
-        while (*i == ' ')
-            i++;   /* skip whitespace */
-        if (!*i)
-            break;
-
         argc++;
         while (*i && *i != ' ')
-            i++;   /* walk over argument */
+            i++;      /* walk over argument */
+        if (*i) i++;  /* skip one whitespace */
     }
 
     if (argc == 0)
@@ -152,17 +153,16 @@ static char **make_argv(const char *cmd)
 
     argv = XNMALLOC(argc + 1, char *);
     argc = 0;
+    i = buffer;
+    while (*i == ' ') i++;  /* Skip leading whitespace */
     while (*i)
     {
-        while (*i == ' ')
-            *i++ = '\0';   /* replace whitespace with NULs */
-        if (!*i)
-            break;
-
         argv[argc++] = i;
         while (*i && *i != ' ')
-            i++;   /* walk over argument */
+            i++;              /* walk over argument */
+        if (*i) *i++ = '\0';  /* replace one space */
     }
+    argv[argc] = NULL;
 
     return argv;
 }
