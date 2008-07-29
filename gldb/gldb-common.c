@@ -115,6 +115,58 @@ static void setenv_printf(const char *fmt, ...)
     free(var);
 }
 
+/* Produces an argv array by splitting the fields of the command.
+ * To clean up, free(argv[0]), then free(argv).
+ */
+static char **make_argv(const char *cmd)
+{
+    char **argv;
+    char *buffer, *i;
+    int argc = 0;
+
+    buffer = xstrdup(cmd);
+    /* First pass to count arguments */
+    i = buffer;
+    while (*i)
+    {
+        while (*i == ' ')
+            i++;   /* skip whitespace */
+        if (!*i)
+            break;
+
+        argc++;
+        while (*i && *i != ' ')
+            i++;   /* walk over argument */
+    }
+
+    if (argc == 0)
+    {
+        /* empty argument list. We can't pass that back, because then the
+         * caller would have no command to run.
+         */
+        argv = XNMALLOC(2, char *);
+        argv[0] = buffer;
+        argv[1] = NULL;
+        return argv;
+    }
+
+    argv = XNMALLOC(argc + 1, char *);
+    argc = 0;
+    while (*i)
+    {
+        while (*i == ' ')
+            *i++ = '\0';   /* replace whitespace with NULs */
+        if (!*i)
+            break;
+
+        argv[argc++] = i;
+        while (*i && *i != ' ')
+            i++;   /* walk over argument */
+    }
+
+    return argv;
+}
+
 /* Spawns off the program, and returns the pid */
 static pid_t execute(void (*child_init)(void))
 {
@@ -124,6 +176,7 @@ static pid_t execute(void (*child_init)(void))
      */
     int in_pipe[2], out_pipe[2], child_pipes[2];
     const char *command, *chain;
+    char **argv;
 
     command = prog_settings[GLDB_PROGRAM_SETTING_COMMAND];
     if (!command) command = "/bin/true";
@@ -148,7 +201,10 @@ static pid_t execute(void (*child_init)(void))
     setenv_printf("BUGLE_DEBUGGER_FD_OUT=%d", child_pipes[1]);
     setenv_printf("BUGLE_CHAIN=%s", chain ? chain : "");
 
-    pid = _spawnlp(_P_NOWAIT, command, command, NULL);
+    argv = make_argv(command);
+    pid = _spawnvp(_P_NOWAIT, argv[0], argv);
+    free(argv[0]);
+    free(argv);
     if (pid == -1)
     {
         perror("failed to execute program");

@@ -94,6 +94,7 @@ bool budgie_dump_string_length(const char *value, size_t length, char **buffer, 
             case '\\': budgie_snputs_advance(buffer, size, "\\\\"); break;
             case '\n': budgie_snputs_advance(buffer, size, "\\n"); break;
             case '\r': budgie_snputs_advance(buffer, size, "\\r"); break;
+            case '\t': budgie_snputs_advance(buffer, size, "\\t"); break;
             default:
                 if (iscntrl(value[0]))
                     budgie_snprintf_advance(buffer, size, "\\%03o", (int) value[0]);
