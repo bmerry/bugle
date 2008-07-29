@@ -160,7 +160,7 @@ static bool globjects_glDeleteBuffers(function_call *call, const callback_data *
     return true;
 }
 
-#ifndef GL_ES_VERSION_2_0
+#if BUGLE_GLTYPE_GL
 static bool globjects_glBeginQuery(function_call *call, const callback_data *data)
 {
     globjects_add_single(BUGLE_GLOBJECTS_QUERY,
@@ -248,7 +248,7 @@ static bool globjects_glCreateShader(function_call *call, const callback_data *d
 static bool globjects_glCreateProgram(function_call *call, const callback_data *data)
 {
     globjects_add_single(BUGLE_GLOBJECTS_PROGRAM,
-                         GL_NONE,
+                         1,  /* arbitrary non-zero value */
                          *call->glCreateProgram.retn,
                          NULL);
     return true;
