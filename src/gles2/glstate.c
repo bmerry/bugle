@@ -884,7 +884,7 @@ void bugle_state_get_raw(const glstate *state, bugle_state_raw *wrapper)
         str = XNMALLOC(max_length, char);
         bugle_glGetShaderInfoLog(state->object, max_length, &length, str);
         /* AMD don't always nul-terminate empty strings */
-        if (length < max_length) str[length] = '\0';
+        if (length >= 0 && length < max_length) str[length] = '\0';
         break;
     case STATE_MODE_PROGRAM_INFO_LOG:
         max_length = 1;
@@ -893,7 +893,7 @@ void bugle_state_get_raw(const glstate *state, bugle_state_raw *wrapper)
         str = XNMALLOC(max_length, char);
         bugle_glGetProgramInfoLog(state->object, max_length, &length, str);
         /* AMD don't always nul-terminate empty strings */
-        if (length < max_length) str[length] = '\0';
+        if (length >= 0 && length < max_length) str[length] = '\0';
         break;
     case STATE_MODE_SHADER_SOURCE:
         max_length = 1;
@@ -902,7 +902,7 @@ void bugle_state_get_raw(const glstate *state, bugle_state_raw *wrapper)
         str = XNMALLOC(max_length, char);
         bugle_glGetShaderSource(state->object, max_length, &length, str);
         /* AMD don't always nul-terminate empty strings */
-        if (length < max_length) str[length] = '\0';
+        if (length >= 0 && length < max_length) str[length] = '\0';
         break;
     case STATE_MODE_UNIFORM:
         {

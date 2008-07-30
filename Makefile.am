@@ -29,8 +29,7 @@ includebugle_HEADERS = \
 	include/bugle/log.h \
 	include/bugle/objects.h \
 	include/bugle/stats.h \
-	include/bugle/xevent.h \
-	include/bugle/porting.h
+	include/bugle/xevent.h
 includebugleglwin_HEADERS = \
 	include/bugle/glwin/glwintypes.h \
 	include/bugle/glwin/glwin.h \
@@ -56,6 +55,8 @@ includebudgie_HEADERS = \
 nodist_includebudgie_HEADERS = \
 	include/budgie/call.h \
 	include/budgie/types2.h
+nodist_includebugle_HEADERS = \
+	include/bugle/porting.h
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = bugle.pc
 

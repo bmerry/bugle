@@ -514,11 +514,12 @@ void bugle_globjects_walk(bugle_globjects_type type,
         if (i->value)
             count++;
     keyvalues = (size_t (*)[2]) xnmalloc(count, sizeof(size_t [2]));
-    for (i = bugle_hashptr_begin(table), j = 0; i; i = bugle_hashptr_next(table, i), j++)
+    for (i = bugle_hashptr_begin(table), j = 0; i; i = bugle_hashptr_next(table, i))
         if (i->value)
         {
             keyvalues[j][0] = (size_t) i->key;
             keyvalues[j][1] = (size_t) i->value;
+            j++;
         }
     qsort(keyvalues, count, 2 * sizeof(size_t), cmp_size_t);
     for (j = 0; j < count; j++)

@@ -1,3 +1,12 @@
+* Fix display of program objects
+* Make shader/program string querying more robust
+* Allow gldb-gui to accept command arguments in Windows
+* Fix tracing of OpenGL ES using ubyte or ushort arrays
+* Fix display of internalformat parameter in OpenGL ES
+* Fix memory corruption in object tracking if objects are deleted
+* Update documentation on setting up for Windows and for OpenGL ES
+* Prevent porting.h from being included in tarballs
+
 0.0.20080728
 ------------
 * Fix Makefile rules to correctly build gldb-gui on Windows

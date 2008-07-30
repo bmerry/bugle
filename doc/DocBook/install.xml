@@ -150,15 +150,63 @@
             Cygwin as well, but it is not tested.
         </para>
         <para>
-            Apart from the core of MinGW, you will need to install MSYS, Perl,
-            regex (user-contributed version), and msysDTK. If you install GTK+
-            and GtkGLExt,
-            you need to ensure that <command>pkg-config</command> knows
-            where to find them (setting <envar>PKG_CONFIG_PATH</envar>
-            appropriately). If you install GLEW, you need to ensure that the
-            compiler and linker can find it (setting <envar>CPATH</envar> and
-            <envar>LIBRARY_PATH</envar> appropriately).
+            Here is the list of steps I used to install on Windows, including
+            support for the debugger. The versions numbers were the latest
+            available at the time, but newer versions should work too.
         </para>
+        <orderedlist>
+            <listitem><para>
+                    Install <application>MinGW</application> 5.1.4, including
+                    <application>GCC</application> and
+                    <application>G++</application>, but not
+                    <application>make</application>.
+            </para></listitem>
+            <listitem><para>
+                    Install <application>MSYS</application> 1.0.10.
+            </para></listitem>
+            <listitem><para>
+                    Install <application>msysDTK</application> 1.0.1.
+            </para></listitem>
+            <listitem><para>
+                    Downloaded
+                    <filename>mingw-libgnurx-2.5.1-bin.tar.gz</filename> and
+                    <filename>mingw-libgnurx-2.5.1-dev.tar.gz</filename> from
+                    the <application>MinGW</application> page, and unpacked
+                    both into <filename class="directory">/mingw</filename>
+                    (i.e., the directory in which
+                    <application>MinGW</application> is installed).
+            </para></listitem>
+            <listitem><para>
+                    Download the <application>GTK+</application> bundle
+                    (2.12.11) from <ulink
+                        url="http://www.gtk.org/download-windows.html">gtk.org</ulink>,
+                    and unpack it into <filename
+                        class="directory">/mingw</filename>.
+            </para></listitem>
+            <listitem><para>
+                    Get the <application>gtkglext</application> installer from
+                    <ulink url="http://www.bonifazi.eu/appunti/"/>, and
+                    install it into <filename
+                        class="directory">/mingw</filename>.
+            </para></listitem>
+            <listitem><para>
+                    Download <application>GLEW</application> 1.5 and unpack it
+                    into a temporary location, then copy the
+                    <filename class="directory">lib</filename>,
+                    <filename class="directory">bin</filename> and
+                    <filename class="directory">include</filename>
+                    directories into
+                    <filename class="directory">/mingw</filename>.
+            </para></listitem>
+            <listitem><para>
+                    Grab the latest <ulink
+                        url="http://www.opengl.org/registry/api/glext.h"><filename>glext.h</filename></ulink> and
+                    <ulink
+                        url="http://www.opengl.org/registry/api/wglext.h"><filename>wglext.h</filename></ulink>
+                    headers, and put them in
+                    <filename class="directory">/mingw/include/GL</filename>.
+            </para></listitem>
+        </orderedlist>
         <para>
             After installation, you will have a
             <filename>opengl32.dll</filename> file installed. When debugging a

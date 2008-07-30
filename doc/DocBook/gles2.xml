@@ -50,6 +50,13 @@
                 for the GUI debugger.
             </para>
         </note>
+        <para>
+            You also need to ensure that your various paths are set correctly.
+            The headers, libraries and DLLs for the OpenGL ES 2 implementation
+            need to be listed in <envar>CPATH</envar>,
+            <envar>LIBRARY_PATH</envar> and <envar>PATH</envar> respectively,
+            unless the compiler is already configured to find them.
+        </para>
     </sect1>
     <sect1 id="gles2-install">
         <title>Installation</title>
@@ -60,9 +67,11 @@
             <filename>libEGL.dll</filename> and
             <filename>libGLESv2.dll</filename> called
             <filename>bglEGL.dll</filename> and
-            <filename>bglGLESv2.dll</filename> respectively. Then modify these
+            <filename>bglGLESv2.dll</filename> respectively. Then modify each
+            of these
             files so that links to the other use the replacement name. This
-            can be done as follows:
+            can be done as follows, although you might find that the version
+            of <command>sed</command> provided with MSYS is too old:
         </para>
 <screen>
 <prompt>$</prompt> <userinput>sed -b 's/libGLESv2/bglGLESv2/g' libEGL.dll &gt; bglEGL.dll</userinput>
