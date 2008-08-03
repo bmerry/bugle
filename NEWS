@@ -1,3 +1,7 @@
+0.0.20080803
+------------
+This release fixes a number of small bugs. Refer to the ChangeLog for details.
+
 0.0.20080728
 ------------
 This release fixes some problems with OpenGL ES support, and with building
