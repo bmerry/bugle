@@ -23,6 +23,11 @@ else
     <a href="screenshots.php">[Screenshots]</a>
     </p>
     <h1>BuGLe News</h1>
+    <h2>Minor bugfixes (3/8/2008)</h2>
+    <p>
+    Today's release brings minor bugfixes in several areas, particularly in
+    building for OpenGL ES and/or Windows.
+    </p>
     <h2>Alpha support for Windows and OpenGL ES 2.0 (16/7/2008)</h2>
     <p>
     This is a major new release that adds experimental support for Windows and 
