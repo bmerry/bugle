@@ -371,6 +371,7 @@ static void gldb_texture_pane_id_changed(GtkComboBox *id_box, gpointer user_data
                 data->face = target;
                 data->level = l;
                 data->channels = channels;
+                data->pixel_type = GL_FLOAT;
                 data->flags = 0;
                 data->pane = pane;
                 if (l == 0)
@@ -391,7 +392,7 @@ static void gldb_texture_pane_id_changed(GtkComboBox *id_box, gpointer user_data
                 seq = gldb_gui_set_response_handler(gldb_texture_pane_response_callback, data);
                 gldb_send_data_texture(seq, id, target, target, l,
                                        gldb_channel_get_texture_token(channels),
-                                       GL_FLOAT);
+                                       data->pixel_type);
             }
         }
     }
