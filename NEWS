@@ -1,3 +1,8 @@
+0.0.20080824
+------------
+The texture view was broken in the previous release - this release fixes it.
+There are no other changes.
+
 0.0.20080803
 ------------
 This release fixes a number of small bugs. Refer to the ChangeLog for details.
