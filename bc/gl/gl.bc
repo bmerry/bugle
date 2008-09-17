@@ -14,6 +14,7 @@ INCLUDE bc/gl/GL_ARB_shader_objects.bc
 INCLUDE bc/gl/GL_ARB_texture_compression.bc
 INCLUDE bc/gl/GL_ARB_imaging.bc
 INCLUDE bc/gl/GL_ARB_occlusion_query.bc
+INCLUDE bc/gl/GL_ARB_transpose_matrix.bc
 INCLUDE bc/gl/GL_ARB_vertex_buffer_object.bc
 INCLUDE bc/gl/GL_ARB_vertex_program.bc
 INCLUDE bc/gl/GL_ATI_draw_buffers.bc

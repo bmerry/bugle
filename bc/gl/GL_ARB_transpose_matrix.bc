@@ -1,0 +1,2 @@
+TYPE PARAMETER gl(Mult|Load)TransposeMatrixfARB 0 TYPE_14pGLfloatmatrix
+TYPE PARAMETER gl(Mult|Load)TransposeMatrixdARB 0 TYPE_15pGLdoublematrix

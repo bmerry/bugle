@@ -1,3 +1,5 @@
+* Fix tracing support for GL_ARB_transpose_matrix
+
 0.0.20080824
 ------------
 * Fix texture viewer

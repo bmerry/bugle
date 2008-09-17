@@ -163,8 +163,9 @@ src/data/gl.tu: src/data/gl.c $(budgie_overrides)
 GLBCFILES = bc/gl/gl.bc bc/gl/core1_1.bc bc/gl/glsl1_20.bc \
 	bc/gl/GL_ARB_multitexture.bc bc/gl/GL_ARB_imaging.bc \
 	bc/gl/GL_ARB_shader_objects.bc bc/gl/GL_ARB_occlusion_query.bc \
-	bc/gl/GL_ARB_texture_compression.bc bc/gl/GL_ARB_vertex_buffer_object.bc \
-	bc/gl/GL_ARB_vertex_program.bc bc/gl/GL_ATI_draw_buffers.bc \
+	bc/gl/GL_ARB_texture_compression.bc bc/gl/GL_ARB_transpose_matrix.bc \
+	bc/gl/GL_ARB_vertex_buffer_object.bc bc/gl/GL_ARB_vertex_program.bc \
+	bc/gl/GL_ATI_draw_buffers.bc \
 	bc/gl/GL_EXT_blend_func_separate.bc bc/gl/GL_EXT_draw_buffers2.bc \
 	bc/gl/GL_EXT_draw_instanced.bc bc/gl/GL_EXT_draw_range_elements.bc \
 	bc/gl/GL_EXT_geometry_shader4.bc bc/gl/GL_EXT_multi_draw_arrays.bc \
