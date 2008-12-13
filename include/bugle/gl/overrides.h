@@ -13,6 +13,9 @@ typedef GLfloat GLfloatmatrix[4][4];
 #if BUGLE_GLTYPE_GL
 typedef GLdouble GLdoublematrix[4][4];
 #endif
+#if BUGLE_GLTYPE_GLES1CM
+typedef GLfixed GLfixedmatrix[4][4];
+#endif
 typedef GLubyte GLpolygonstipple[32][4];
 
 typedef GLfloat GLvec2[2];
@@ -40,6 +43,9 @@ typedef GLfloat GLmat4x3[4][3];
 typedef const GLfloatmatrix *pGLfloatmatrix;
 #if BUGLE_GLTYPE_GL
 typedef const GLdoublematrix *pGLdoublematrix;
+#endif
+#if BUGLE_GLTYPE_GLES1CM
+typedef const GLfixedmatrix *pGLfixedmatrix;
 #endif
 typedef const GLpolygonstipple *pGLpolygonstipple;
 

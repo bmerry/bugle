@@ -52,7 +52,7 @@ typedef struct
 static void stats_primitives_update(GLenum mode, GLsizei count)
 {
     size_t t = 0;
-#ifndef GL_ES_VERSION_2_0
+#ifdef GL_VERSION_1_1
     stats_primitives_displaylist_struct *displaylist;
 #endif
 
@@ -61,7 +61,7 @@ static void stats_primitives_update(GLenum mode, GLsizei count)
     case GL_TRIANGLES:
         t = count / 3;
         break;
-#ifndef GL_ES_VERSION_2_0
+#ifdef GL_VERSION_1_1
     case GL_QUADS:
         t = count / 4 * 2;
         break;
@@ -90,7 +90,7 @@ static void stats_primitives_update(GLenum mode, GLsizei count)
         bugle_stats_signal_add(stats_primitives_triangles, t);
         bugle_stats_signal_add(stats_primitives_batches, 1);
         break;
-#ifndef GL_ES_VERSION_2_0
+#ifdef GL_VERSION_1_1
     case GL_COMPILE_AND_EXECUTE:
         bugle_stats_signal_add(stats_primitives_triangles, t);
         bugle_stats_signal_add(stats_primitives_batches, 1);
@@ -107,7 +107,7 @@ static void stats_primitives_update(GLenum mode, GLsizei count)
     }
 }
 
-#ifndef GL_ES_VERSION_2_0
+#ifdef GL_VERSION_1_1
 static bool stats_primitives_immediate(function_call *call, const callback_data *data)
 {
     stats_primitives_struct *s;
@@ -154,7 +154,7 @@ static bool stats_primitives_glDrawElements(function_call *call, const callback_
     return true;
 }
 
-#ifndef GL_ES_VERSION_2_0
+#ifdef GL_VERSION_1_1
 static bool stats_primitives_glDrawRangeElements(function_call *call, const callback_data *data)
 {
     stats_primitives_update(*call->glDrawRangeElements.arg0, *call->glDrawRangeElementsEXT.arg3);
@@ -205,7 +205,7 @@ static bool stats_primitives_glCallLists(function_call *call, const callback_dat
               "triangle counting in glCallLists is not implemented!");
     return true;
 }
-#endif /* !GL_ES_VERSION_2_0 */
+#endif /* GL_VERSION_1_1 */
 
 static bool stats_primitives_initialise(filter_set *handle)
 {
@@ -223,7 +223,7 @@ static bool stats_primitives_initialise(filter_set *handle)
     f = bugle_filter_new(handle, "stats_primitives");
     bugle_filter_catches(f, "glDrawElements", false, stats_primitives_glDrawElements);
     bugle_filter_catches(f, "glDrawArrays", false, stats_primitives_glDrawArrays);
-#ifndef GL_ES_VERSION_2_0
+#ifdef GL_VERSION_1_1
     bugle_filter_catches(f, "glDrawRangeElements", false, stats_primitives_glDrawRangeElements);
     bugle_filter_catches(f, "glMultiDrawElements", false, stats_primitives_glMultiDrawElements);
     bugle_filter_catches(f, "glMultiDrawArrays", false, stats_primitives_glMultiDrawArrays);

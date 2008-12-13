@@ -35,7 +35,7 @@
 
 object_class *bugle_displaylist_class;
 
-#if BUGLE_GLTYPE_GL
+#if GL_VERSION_1_1
 gl_lock_define_initialized(static, displaylist_lock)
 static object_view displaylist_view;
 static object_view namespace_view;   /* handle of the hash table */
@@ -130,7 +130,7 @@ static bool gldisplaylist_glEndList(function_call *call, const callback_data *da
     bugle_object_set_current(bugle_displaylist_class, NULL);
     return true;
 }
-#else
+#else /* !GL_VERSION_1_1 */
 GLenum bugle_displaylist_mode(void)
 {
     return GL_NONE;
@@ -148,7 +148,7 @@ static bool gldisplaylist_filter_set_initialise(filter_set *handle)
 
     bugle_displaylist_class = bugle_object_class_new(bugle_context_class);
 
-#if BUGLE_GLTYPE_GL
+#if GL_VERSION_1_1
     f = bugle_filter_new(handle, "gldisplaylist");
     bugle_filter_order("invoke", "gldisplaylist");
     bugle_filter_catches(f, "glNewList", true, gldisplaylist_glNewList);

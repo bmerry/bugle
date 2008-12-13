@@ -451,7 +451,7 @@ static void gldb_framebuffer_pane_buffer_changed(GtkWidget *widget, gpointer use
 #if BUGLE_GLTYPE_GL
         format = gldb_channel_get_framebuffer_token(data->channels);
         type = GL_FLOAT;
-#elif BUGLE_GLTYPE_GLES2
+#elif BUGLE_GLTYPE_GLES1CM || BUGLE_GLTYPE_GLES2
         /* GL ES only supports this combination plus an implementation-defined one */
         format = GL_RGBA;
         type = GL_UNSIGNED_BYTE;

@@ -33,7 +33,9 @@
 #include "src/apitables.h"
 #include "xalloc.h"
 
-#if BUGLE_GLTYPE_GLES2
+#if GL_ES_VERSION_2_0 || GL_VERSION_2_0
+
+#if GL_ES_VERSION_2_0
 #define call1(gl,arb,params) CALL(gl) params
 #define call1r(gl,arb,params) return CALL(gl) params
 #else
@@ -171,4 +173,6 @@ GLboolean bugle_glIsProgram(GLuint program)
 {
     return CALL(glIsProgram)(program);
 }
-#endif
+#endif  /* GL_ES_VERSION_2_0 */
+
+#endif  /* GLES2 || GL2 */

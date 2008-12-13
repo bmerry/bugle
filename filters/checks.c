@@ -242,13 +242,18 @@ static void checks_completeness()
     {
         /* FIXME: should unify this code with glstate.c */
         GLint num_textures = 1;
-        if (BUGLE_GL_HAS_EXTENSION_GROUP(EXTGROUP_texunits))
+        if (false)
+            (void) 0; /* makes sure the "else if" works regardless of ifdefs */
+#if GL_ES_VERSION_2_0 || GL_VERSION_2_0
+        else if (BUGLE_GL_HAS_EXTENSION_GROUP(EXTGROUP_texunits))
             CALL(glGetIntegerv)(GL_MAX_TEXTURE_IMAGE_UNITS, &num_textures);
-#ifndef GL_ES_VERSION_2_0
+#endif
+#if GL_VERSION_ES_CM_1_0 || GL_VERSION_1_3
         else if (BUGLE_GL_HAS_EXTENSION_GROUP(GL_ARB_multitexture))
             CALL(glGetIntegerv)(GL_MAX_TEXTURE_UNITS, &num_textures);
 #endif
 
+#if GL_ES_VERSION_2_0 || GL_VERSION_2_0
         if (BUGLE_GL_HAS_EXTENSION_GROUP(GL_ARB_shader_objects))
         {
             GLuint program;
@@ -271,7 +276,7 @@ static void checks_completeness()
                     {
                     case GL_SAMPLER_2D:        target = GL_TEXTURE_2D; break;
                     case GL_SAMPLER_CUBE:      target = GL_TEXTURE_CUBE_MAP; break;
-#ifndef GL_ES_VERSION_2_0
+#ifdef GL_VERSION_2_0
                     case GL_SAMPLER_1D:        target = GL_TEXTURE_1D; break;
                     case GL_SAMPLER_3D:        target = GL_TEXTURE_3D; break;
                     case GL_SAMPLER_1D_SHADOW: target = GL_TEXTURE_1D; break;
@@ -284,7 +289,7 @@ static void checks_completeness()
                     {
                         loc = bugle_glGetUniformLocation(program, name);
                         bugle_glGetUniformiv(program, loc, &unit);
-#ifndef GL_ES_VERSION_2_0
+#ifdef GL_VERSION_2_0 /* not because it doesn't apply to ES, but it can't currently be checked */
                         checks_texture_complete(unit, target);
 #endif
                     }
@@ -292,6 +297,7 @@ static void checks_completeness()
                 free(name);
             }
         }
+#endif /* GLES2 || GL2 */
         bugle_gl_end_internal_render("checks_completeness", true);
     }
 }
@@ -377,7 +383,7 @@ static void checks_buffer(size_t size, const void *data,
         checks_memory(size, data);
 }
 
-#ifdef GL_VERSION_1_1
+#if GL_VERSION_ES_CM_1_0 || GL_VERSION_1_1
 static void checks_attribute(size_t first, size_t count,
                              const char *text, GLenum name,
                              GLenum size_name, GLint size,
@@ -419,6 +425,7 @@ static void checks_attribute(size_t first, size_t count,
 }
 #endif /* GL_VERSION_1_1 */
 
+#if GL_ES_VERSION_2_0 || GL_VERSION_2_0
 static void checks_generic_attribute(size_t first, size_t count,
                                      GLint number)
 {
@@ -472,13 +479,14 @@ static void checks_generic_attribute(size_t first, size_t count,
             checks_memory(size, cptr);
     }
 }
+#endif
 
 static void checks_attributes(size_t first, size_t count)
 {
     GLenum i;
 
     if (!count) return;
-#ifndef GL_ES_VERSION_2_0
+#if GL_VERSION_ES_CM_1_0 || GL_VERSION_1_1
     checks_attribute(first, count,
                      "vertex array", GL_VERTEX_ARRAY,
                      GL_VERTEX_ARRAY_SIZE, 0,
@@ -500,6 +508,8 @@ static void checks_attributes(size_t first, size_t count)
                      GL_COLOR_ARRAY_STRIDE,
                      GL_COLOR_ARRAY_POINTER,
                      GL_COLOR_ARRAY_BUFFER_BINDING);
+#endif
+#ifdef GL_VERSION_1_1
     checks_attribute(first, count,
                      "index array", GL_INDEX_ARRAY,
                      0, 1,
@@ -544,10 +554,11 @@ static void checks_attributes(size_t first, size_t count)
                          GL_TEXTURE_COORD_ARRAY_TYPE, 0,
                          GL_TEXTURE_COORD_ARRAY_STRIDE,
                          GL_TEXTURE_COORD_ARRAY_POINTER,
-                         GL_TEXTURE_COORD_ARRAY_BUFFER_BINDING_ARB);
+                         GL_TEXTURE_COORD_ARRAY_BUFFER_BINDING);
     }
-#endif /* !GL_ES_VERSION_2_0 */
+#endif /* GLES1 || GL */
 
+#if GL_ES_VERSION_2_0 || GL_VERSION_2_0
     if (BUGLE_GL_HAS_EXTENSION_GROUP(EXTGROUP_vertex_attrib))
     {
         GLint attribs, i;
@@ -556,6 +567,7 @@ static void checks_attributes(size_t first, size_t count)
         for (i = 0; i < attribs; i++)
             checks_generic_attribute(first, count, i);
     }
+#endif
 }
 
 /* FIXME: breaks when using an element array buffer for indices */
@@ -584,8 +596,8 @@ static void checks_min_max(GLsizei count, GLenum gltype, const GLvoid *indices,
         CALL(glGetIntegerv)(GL_ELEMENT_ARRAY_BUFFER_BINDING, &id);
         if (id)
         {
-#ifdef GL_ES_VERSION_2_0
-            /* FIXME: save data on load */
+#if GL_VERSION_ES_CM_1_1 || GL_ES_VERSION_2_0
+            /* FIXME-GLES: save data on load */
             return;
 #else
             /* We are not allowed to call glGetBufferSubDataARB on a
@@ -603,7 +615,7 @@ static void checks_min_max(GLsizei count, GLenum gltype, const GLvoid *indices,
                                     (const char *) indices - (const char *) NULL,
                                     size, vbo_indices);
             indices = vbo_indices;
-#endif
+#endif // 
         }
     }
 

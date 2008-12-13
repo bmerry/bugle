@@ -40,7 +40,7 @@ case $host in
     BUGLE_BINFMT=BUGLE_BINFMT_ELF
     ;;
 esac
-AC_ARG_WITH([api], AC_HELP_STRING([--with-api], [specify api, from gl-wgl, gl-glx, gles2-egl-win and gles2-egl-posix]),
+AC_ARG_WITH([api], AC_HELP_STRING([--with-api], [specify api, from gl-wgl, gl-glx, gles1cm-egl-posix, gles2-egl-win, gles2-egl-posix]),
             [bugle_target="$withval"], [])
 case $bugle_target in
   gl-glx)
@@ -50,6 +50,10 @@ case $bugle_target in
   gl-wgl)
     BUGLE_GLWIN=BUGLE_GLWIN_WGL
     BUGLE_GLTYPE=BUGLE_GLTYPE_GL
+    ;;
+  gles1cm-egl-*)
+    BUGLE_GLWIN=BUGLE_GLWIN_EGL
+    BUGLE_GLTYPE=BUGLE_GLTYPE_GLES1CM
     ;;
   gles2-egl-*)
     BUGLE_GLWIN=BUGLE_GLWIN_EGL
@@ -112,6 +116,9 @@ case "$bugle_target" in
   gl-*)
     AC_CHECK_LIB([GL], [glBegin], [GL_LIBS="-lGL -lm $GL_LIBS"], [], [$X_PRE_LIBS $X_LIBS $X_XTRA_LIBS -lm])
     ;;
+  gles1cm-egl-*)
+    GL_LIBS="-lEGL -lGLESv1_CM"
+    ;;
   gles2-egl-*)
     GL_LIBS="-lEGL -lGLESv2"
     ;;
@@ -145,6 +152,9 @@ case "$bugle_target" in
     ;;
   gl-glx)
     GLINCLUDES="`CPP=\"$CPP\" srcdir=\"$srcdir\" $PERL -w $srcdir/gengl/find_header.perl GL/gl.h GL/glx.h GL/glext.h GL/glxext.h`"
+    ;;
+  gles1cm-egl-*)
+    GLINCLUDES="`CPP=\"$CPP\" srcdir=\"$srcdir\" $PERL -w $srcdir/gengl/find_header.perl GLES/gl.h GLES/glext.h EGL/egl.h EGL/eglext.h`"
     ;;
   gles2-egl-*)
     GLINCLUDES="`CPP=\"$CPP\" srcdir=\"$srcdir\" $PERL -w $srcdir/gengl/find_header.perl GLES2/gl2.h GLES2/gl2ext.h EGL/egl.h EGL/eglext.h`"
@@ -246,6 +256,7 @@ AM_CONDITIONAL(BUGLE_GLWIN_WGL, test $BUGLE_GLWIN = BUGLE_GLWIN_WGL)
 AM_CONDITIONAL(BUGLE_GLWIN_GLX, test $BUGLE_GLWIN = BUGLE_GLWIN_GLX)
 AM_CONDITIONAL(BUGLE_GLWIN_EGL, test $BUGLE_GLWIN = BUGLE_GLWIN_EGL)
 AM_CONDITIONAL(BUGLE_GLTYPE_GL, test $BUGLE_GLTYPE = BUGLE_GLTYPE_GL)
+AM_CONDITIONAL(BUGLE_GLTYPE_GLES1CM, test $BUGLE_GLTYPE = BUGLE_GLTYPE_GLES1CM)
 AM_CONDITIONAL(BUGLE_GLTYPE_GLES2, test $BUGLE_GLTYPE = BUGLE_GLTYPE_GLES2)
 AM_CONDITIONAL(BUGLE_BINFMT_PE, test $BUGLE_BINFMT = BUGLE_BINFMT_PE)
 AM_CONDITIONAL(BUGLE_BINFMT_ELF, test $BUGLE_BINFMT = BUGLE_BINFMT_ELF)

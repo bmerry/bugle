@@ -146,11 +146,14 @@ static GLenum target_to_binding(GLenum target)
     switch (target)
     {
     case GL_TEXTURE_2D: return GL_TEXTURE_BINDING_2D;
+#if GL_ES_VERSION_2_0 || GL_VERSION_1_3
     case GL_TEXTURE_CUBE_MAP: return GL_TEXTURE_BINDING_CUBE_MAP;
-#ifndef GL_ES_VERSION_2_0
+#endif
+#ifdef GL_VERSION_1_2
     case GL_TEXTURE_1D: return GL_TEXTURE_BINDING_1D;
     case GL_TEXTURE_3D: return GL_TEXTURE_BINDING_3D;
     case GL_TEXTURE_RECTANGLE_ARB: return GL_TEXTURE_BINDING_RECTANGLE_ARB;
+#endif
 #ifdef GL_EXT_texture_array
     case GL_TEXTURE_1D_ARRAY_EXT: return GL_TEXTURE_BINDING_1D_ARRAY_EXT;
     case GL_TEXTURE_2D_ARRAY_EXT: return GL_TEXTURE_BINDING_2D_ARRAY_EXT;
@@ -158,7 +161,6 @@ static GLenum target_to_binding(GLenum target)
 #ifdef GL_EXT_texture_buffer_object
     case GL_TEXTURE_BUFFER_EXT: return GL_TEXTURE_BINDING_BUFFER_EXT;
 #endif
-#endif /* GL_ES_VERSION_2_0 */
     default:
         return GL_NONE;
     }
@@ -187,7 +189,7 @@ static void pixel_pack_reset(pixel_state *old)
 {
     CALL(glGetIntegerv)(GL_PACK_ALIGNMENT, &old->alignment);
     CALL(glPixelStorei)(GL_PACK_ALIGNMENT, 1);
-#ifndef GL_ES_VERSION_2_0
+#ifdef GL_VERSION_1_1
     CALL(glGetBooleanv)(GL_PACK_SWAP_BYTES, &old->swap_bytes);
     CALL(glGetBooleanv)(GL_PACK_LSB_FIRST, &old->lsb_first);
     CALL(glGetIntegerv)(GL_PACK_ROW_LENGTH, &old->row_length);
@@ -205,7 +207,7 @@ static void pixel_pack_reset(pixel_state *old)
         CALL(glPixelStorei)(GL_PACK_IMAGE_HEIGHT, 0);
         CALL(glPixelStorei)(GL_PACK_SKIP_IMAGES, 0);
     }
-#endif /* !GL_ES_VERSION_2_0 */
+#endif /* GL_VERSION_1_1 */
 #ifdef GL_EXT_pixel_buffer_object
     if (BUGLE_GL_HAS_EXTENSION_GROUP(GL_EXT_pixel_buffer_object))
     {
@@ -219,7 +221,7 @@ static void pixel_pack_reset(pixel_state *old)
 static void pixel_pack_restore(const pixel_state *old)
 {
     CALL(glPixelStorei)(GL_PACK_ALIGNMENT, old->alignment);
-#ifndef GL_ES_VERSION_2_0
+#ifdef GL_VERSION_1_1
     CALL(glPixelStorei)(GL_PACK_SWAP_BYTES, old->swap_bytes);
     CALL(glPixelStorei)(GL_PACK_LSB_FIRST, old->lsb_first);
     CALL(glPixelStorei)(GL_PACK_ROW_LENGTH, old->row_length);
@@ -230,14 +232,14 @@ static void pixel_pack_restore(const pixel_state *old)
         CALL(glPixelStorei)(GL_PACK_IMAGE_HEIGHT, old->image_height);
         CALL(glPixelStorei)(GL_PACK_SKIP_IMAGES, old->skip_images);
     }
-#endif /* !GL_ES_VERSION_2_0 */
+#endif /* GL_VERSION_1_1 */
 #ifdef GL_EXT_pixel_buffer_object
     if (BUGLE_GL_HAS_EXTENSION_GROUP(GL_EXT_pixel_buffer_object))
         CALL(glBindBufferARB)(GL_PIXEL_PACK_BUFFER_EXT, old->pbo);
 #endif
 }
 
-#ifndef GL_ES_VERSION_2_0
+#ifdef GL_VERSION_1_1
 /* Wherever possible we use the aux context. However, default textures
  * are not shared between contexts, so we sometimes have to take our
  * chances with setting up the default readback state and restoring it
@@ -346,7 +348,7 @@ static bool send_data_texture(uint32_t id, GLuint texid, GLenum target,
     free(data);
     return true;
 }
-#endif
+#endif /* GL */
 
 /* Unfortunately, FBO cannot have a size query, because while incomplete
  * it could have different sizes for different buffers. Thus, we have to
@@ -540,7 +542,7 @@ static bool send_data_framebuffer(uint32_t id, GLuint fbo, GLenum target,
      * a brand new FBO, but that seems like a lot of work and quite
      * fragile to future changes in the way FBO's are handled.
      */
-#ifndef GL_ES_VERSION_2_0
+#ifdef GL_VERSION_1_1
     if (format != GL_DEPTH_COMPONENT && format != GL_STENCIL_INDEX)
     {
         CALL(glGetIntegerv)(GL_READ_BUFFER, &old_read_buffer);
@@ -556,7 +558,7 @@ static bool send_data_framebuffer(uint32_t id, GLuint fbo, GLenum target,
 
     /* Restore the old state. glPushAttrib currently does NOT save FBO
      * bindings, so we have to do that manually even for the aux context. */
-#ifndef GL_ES_VERSION_2_0
+#ifdef GL_VERSION_1_1
     if (format != GL_DEPTH_COMPONENT && format != GL_STENCIL_INDEX)
         CALL(glReadBuffer)(old_read_buffer);
     if (aux)
@@ -574,7 +576,7 @@ static bool send_data_framebuffer(uint32_t id, GLuint fbo, GLenum target,
         bugle_glwin_make_context_current(dpy, old_write, old_read, real);
     }
     else
-#endif /* !GL_ES_VERSION_2_0 */
+#endif /* GL_VERSION_1_1 */
     {
 #ifdef GL_EXT_framebuffer_object
         if ((GLint) fbo != old_fbo)
@@ -594,6 +596,7 @@ static bool send_data_framebuffer(uint32_t id, GLuint fbo, GLenum target,
     return true;
 }
 
+#if GL_ES_VERSION_2_0 || GL_VERSION_2_0
 static bool send_data_shader(uint32_t id, GLuint shader_id,
                              GLenum target)
 {
@@ -656,6 +659,7 @@ static bool send_data_shader(uint32_t id, GLuint shader_id,
     bugle_gl_end_internal_render("send_data_shader", true);
     return true;
 }
+#endif /* GL_ES_VERSION_2_0 || GL_VERSION_2_0 */
 
 static void process_single_command(function_call *call)
 {
@@ -819,7 +823,7 @@ static void process_single_command(function_call *call)
             gldb_protocol_recv_code(in_pipe, &subtype);
             switch (subtype)
             {
-#ifndef GL_ES_VERSION_2_0
+#ifdef GL_VERSION_1_1
             case REQ_DATA_TEXTURE:
                 gldb_protocol_recv_code(in_pipe, &tex_id);
                 gldb_protocol_recv_code(in_pipe, &target);
@@ -839,11 +843,13 @@ static void process_single_command(function_call *call)
                 gldb_protocol_recv_code(in_pipe, &type);
                 send_data_framebuffer(id, fbo_id, target, buffer, format, type);
                 break;
+#if GL_ES_VERSION_2_0 || GL_VERSION_2_0
             case REQ_DATA_SHADER:
                 gldb_protocol_recv_code(in_pipe, &shader_id);
                 gldb_protocol_recv_code(in_pipe, &target);
                 send_data_shader(id, shader_id, target);
                 break;
+#endif
             default:
                 gldb_protocol_send_code(out_pipe, RESP_ERROR);
                 gldb_protocol_send_code(out_pipe, id);

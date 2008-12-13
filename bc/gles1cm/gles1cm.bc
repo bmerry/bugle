@@ -1,0 +1,75 @@
+HEADER GLES/gl.h
+HEADER GLES/glext.h
+HEADER bugle/gl/gltypes.h
+HEADER bugle/gl/gldump.h
+HEADER bugle/gl/overrides.h
+HEADER bugle/gl/glstate.h
+LIMIT gl[A-Z][a-z].*
+
+NEWTYPE BITFIELD bufferbits GLbitfield GL_COLOR_BUFFER_BIT GL_DEPTH_BUFFER_BIT GL_STENCIL_BUFFER_BIT
+
+EXTRATYPE +PKc
+EXTRATYPE +Pc
+EXTRATYPE +P7GLubyte
+EXTRATYPE +P8GLushort
+EXTRATYPE GLfloatmatrix
+EXTRATYPE pGLfloatmatrix
+EXTRATYPE GLfixedmatrix
+EXTRATYPE pGLfixedmatrix
+EXTRATYPE GLerror
+EXTRATYPE GLblendenum
+EXTRATYPE GLprimitiveenum
+EXTRATYPE GLcomponentsenum
+EXTRATYPE GLbyte
+EXTRATYPE GLushort
+EXTRATYPE GLshort
+EXTRATYPE GLfixed
+
+LENGTH PARAMETER glClipPlane[xf] 1 4
+LENGTH PARAMETER glGetClipPlane[xf] 1 4
+
+# Handle generator and deletors
+LENGTH PARAMETER gl(Gen|Delete)(Textures|Buffers) 1 $0
+
+# Functions where the count is determined by the token
+LENGTH PARAMETER glDrawElements 3 bugle_gl_type_to_size($2) * $1
+TYPE PARAMETER glTexImage2D 8 bugle_gl_type_to_type_ptr($7)
+LENGTH PARAMETER glTexImage2D 8 bugle_image_element_count($3, $4, -1, $6, $7, true)
+TYPE PARAMETER glTexSubImage2D 8 bugle_gl_type_to_type_ptr($7)
+LENGTH PARAMETER glTexSubImage2D 8 bugle_image_element_count($4, $5, -1, $6, $7, true)
+
+TYPE PARAMETER glReadPixels 6 bugle_gl_type_to_type_ptr($5)
+LENGTH PARAMETER glReadPixels 6 bugle_image_element_count($2, $3, -1, $4, $5, false)
+
+# Assorted type overrides
+TYPE PARAMETER gl(Mult|Load)Matrixf 0 TYPE_14pGLfloatmatrix
+TYPE PARAMETER gl(Mult|Load)Matrixx 0 TYPE_14pGLfixedmatrix
+TYPE PARAMETER glClear 0 TYPE_10bufferbits
+TYPE PARAMETER glGetError -1 TYPE_7GLerror
+TYPE PARAMETER glBlendFunc 0 TYPE_11GLblendenum
+TYPE PARAMETER glBlendFunc 1 TYPE_11GLblendenum
+TYPE PARAMETER glDrawArrays 0 TYPE_15GLprimitiveenum
+TYPE PARAMETER glDrawElements 0 TYPE_15GLprimitiveenum
+# C string, not array
+TYPE PARAMETER glGetString -1 TYPE_PKc
+
+# Dumping overrides
+DUMP TYPE GLenum bugle_dump_GLenum($$, $B, $S)
+DUMP TYPE GLboolean bugle_dump_GLboolean($$, $B, $S)
+DUMP TYPE GLerror bugle_dump_GLerror($$, $B, $S)
+DUMP TYPE GLblendenum bugle_dump_GLblendenum($$, $B, $S)
+DUMP TYPE GLprimitiveenum bugle_dump_GLprimitiveenum($$, $B, $S)
+DUMP TYPE +PKc budgie_dump_string($$, $B, $S)
+DUMP TYPE +Pc budgie_dump_string($$, $B, $S)
+LENGTH TYPE +PKc budgie_count_string($$)
+LENGTH TYPE +Pc budgie_count_string($$)
+
+# Both count and interpretation of type depend on the token
+# Note that we only override length for the vector versions
+LENGTH PARAMETER gl(LightModel|Fog)[xf]v 1 bugle_count_gl($f, $0)
+LENGTH PARAMETER glGet(Boolean|Integer|Float|Fixed)v 1 bugle_count_gl($f, $0)
+LENGTH PARAMETER gl(Get)?(TexParameter|TexEnv|Light|Material)[ifx]v 2 bugle_count_gl($f, $1)
+DUMP PARAMETER gl(LightModel|Fog)[xf]v? 1 bugle_dump_convert($0, &$$, $t$, $B, $S)
+DUMP PARAMETER glGet(Integer|Float|Fixed)v 1 bugle_dump_convert($0, &$$, $t$, $B, $S)
+DUMP PARAMETER gl(Get)?(TexParameter|TexEnv|Light|Material)[ifx]v? 2 bugle_dump_convert($1, &$$, $t$, $B, $S)
+DUMP PARAMETER glPixelStorei 1 bugle_dump_convert($0, &$$, $t$, $B, $S)

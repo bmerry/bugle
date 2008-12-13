@@ -173,6 +173,7 @@ GLBCFILES = bc/gl/gl.bc bc/gl/core1_1.bc bc/gl/glsl1_20.bc \
 	bc/gl/GL_EXT_framebuffer_object.bc bc/gl/GL_EXT_gpu_program_parameters.bc \
 	bc/gl/GL_NV_transform_feedback.bc \
 	bc/gl/alias.bc
+GLES1CMBCFILES = bc/gles1cm/gles1cm.bc
 GLES2BCFILES = bc/gles2/gles2.bc
 GLXBCFILES = bc/glx/glx.bc \
 	bc/glx/GLX_ARB_get_proc_address.bc bc/glx/GLX_SGI_make_current_read.bc \
@@ -180,11 +181,14 @@ GLXBCFILES = bc/glx/glx.bc \
 WGLBCFILES = bc/wgl/wgl.bc
 EGLBCFILES = bc/egl/egl.bc
 BCFILES = $(GLBCFILES) \
+	  $(GLES1CMBCFILES) \
 	  $(GLES2BCFILES) \
 	  $(GLXBCFILES) \
 	  $(WGLBCFILES) \
 	  $(EGLBCFILES) \
-	  bc/gl-glx.bc bc/gl-wgl.bc bc/gles2-egl-win.bc bc/gles2-egl-posix.bc
+	  bc/gl-glx.bc bc/gl-wgl.bc \
+	  bc/gles2-egl-win.bc bc/gles2-egl-posix.bc \
+	  bc/gles1cm-egl-posix.bc
 
 $(BUDGIE_BUILT_SRCS): budgie/budgie$(EXEEXT) src/data/gl.tu $(budgie_all_bc_files)
 	$(mkdir_p) include/budgie
@@ -525,6 +529,7 @@ bugle_sources += \
 budgie_all_bc_files = $(GLBCFILES) $(WGLBCFILES) $(srcdir)/bc/gl-wgl.bc
 budgie_main_bc_file = $(srcdir)/bc/gl-wgl.bc
 endif
+
 if BUGLE_GLWIN_EGL
 includebugleegldir = $(includebugledir)/egl
 includebugleegl_HEADERS = \
@@ -544,10 +549,16 @@ src_libEGL_la_SOURCES = src/egl/egl-win.c
 src_libEGL_la_LDFLAGS = -no-undefined -module -avoid-version -export-symbols src/egl/egl-win.def
 src_libEGL_la_DEPENDENCIES = src/egl/egl-win.def
 else
+if BUGLE_GLTYPE_GLES1CM
+budgie_all_bc_files = $(GLES1CMBCFILES) $(EGLBCFILES) $(srcdir)/bc/gles1cm-egl-posix.bc
+budgie_main_bc_file = $(srcdir)/bc/gles1cm-egl-posix.bc
+endif
+if BUGLE_GLTYPE_GLES2
 budgie_all_bc_files = $(GLES2BCFILES) $(EGLBCFILES) $(srcdir)/bc/gles2-egl-posix.bc
 budgie_main_bc_file = $(srcdir)/bc/gles2-egl-posix.bc
 endif
-endif
+endif # !BUGLE_WINSYS_WINDOWS
+endif # BUGLE_GLWIN_EGL
 
 if BUGLE_GLTYPE_GL
 bugle_sources += src/gl/glstate.c src/gl/gldump.c

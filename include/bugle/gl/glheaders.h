@@ -31,6 +31,19 @@
 #elif BUGLE_GLTYPE_GLES2
 # include <GLES2/gl2.h>
 # include <GLES2/gl2ext.h>
+#elif BUGLE_GLTYPE_GLES1CM
+# include <GLES/gl.h>
+# include <GLES/glext.h>
+#endif
+
+/* To reduce the number of ifdefs in the code, define some tokens that are
+ * not universal across all headers
+ */
+#ifndef GL_NONE
+# define GL_NONE 0x0
+#endif
+#ifndef GL_UNSIGNED_INT
+# define GL_UNSIGNED_INT 0x1405
 #endif
 
 #endif /* !BUGLE_GL_GLHEADERS_H */

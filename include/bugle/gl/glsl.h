@@ -25,6 +25,8 @@
 
 #include <bugle/gl/glheaders.h>
 
+#if GL_ES_VERSION_2_0 || GL_VERSION_2_0
+
 #if BUGLE_GLTYPE_GLES2
 # define GLchar char
 #endif
@@ -43,5 +45,7 @@ GLint bugle_glGetAttribLocation(GLuint program, const GLchar *name);
 GLuint bugle_gl_get_current_program();
 GLboolean bugle_glIsShader(GLuint shader);
 GLboolean bugle_glIsProgram(GLuint program);
+
+#endif /* GLES2 || GL2 */
 
 #endif /* !BUGLE_SRC_GLSL_H */
