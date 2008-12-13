@@ -29,7 +29,7 @@
 #include <bugle/gl/glbeginend.h>
 #include <bugle/gl/glextensions.h>
 #include <bugle/filters.h>
-#include <bugle/xevent.h>
+#include <bugle/input.h>
 #include <bugle/log.h>
 #include <bugle/stats.h>
 #include <bugle/hashtable.h>
@@ -48,7 +48,7 @@ extern int yyparse(void);
 /* FIXME: design for a per-API initialisation block */
 extern void bugle_initialise_addresses_extra(void);
 
-static void toggle_filterset(const xevent_key *key, void *arg, XEvent *event)
+static void toggle_filterset(const bugle_input_key *key, void *arg, bugle_input_event *event)
 {
     filter_set *set;
 
@@ -70,7 +70,7 @@ static void load_config(void)
     filter_set *f;
     linked_list_node *i, *j;
     bool debugging;
-    xevent_key key;
+    bugle_input_key key;
 
     if (getenv("BUGLE_FILTERS"))
         config = xstrdup(getenv("BUGLE_FILTERS"));
@@ -141,11 +141,11 @@ static void load_config(void)
                             filter_set_add(f, set->active);
                             if (set->key)
                             {
-                                if (!bugle_xevent_key_lookup(set->key, &key))
+                                if (!bugle_input_key_lookup(set->key, &key))
                                     fprintf(stderr, "warning: ignoring unknown toggle key %s for filter-set %s\n",
                                             set->key, set->name);
                                 else
-                                    bugle_xevent_key_callback(&key, NULL, toggle_filterset, f);
+                                    bugle_input_key_callback(&key, NULL, toggle_filterset, f);
                             }
                         }
                     }
@@ -199,7 +199,7 @@ static void initialise_all(void)
 {
     budgie_function_address_initialise();
     bugle_function_address_initialise_extra();
-    xevent_initialise();
+    input_initialise();
     filters_initialise();
     initialise_core_filters();
     dump_initialise();
@@ -208,7 +208,7 @@ static void initialise_all(void)
     filters_finalise();
 }
 
-/* Used by xevents */
+/* Used by input subsystem */
 void bugle_initialise_all(void)
 {
     BUGLE_RUN_CONSTRUCTOR(initialise_all);

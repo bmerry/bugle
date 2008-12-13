@@ -43,7 +43,7 @@
 #include <bugle/hashtable.h>
 #include <bugle/filters.h>
 #include <bugle/apireflect.h>
-#include <bugle/xevent.h>
+#include <bugle/input.h>
 #include <bugle/log.h>
 #include <budgie/addresses.h>
 #include <budgie/reflect.h>
@@ -97,7 +97,7 @@ typedef struct
 static bool video = false;
 static char *video_filename = NULL;
 /* Still settings */
-static xevent_key key_screenshot = { XK_S, ControlMask | ShiftMask | Mod1Mask, true };
+static bugle_input_key key_screenshot = { BUGLE_INPUT_NOSYMBOL, 0, true };
 /* Video settings */
 static char *video_codec = NULL;
 static bool video_sample_all = false;
@@ -691,7 +691,7 @@ static bool screenshot_initialise(filter_set *handle)
             video_filename = xstrdup("bugle.ppm");
         video_lag = 1;
         /* FIXME: should only intercept the key when enabled */
-        bugle_xevent_key_callback(&key_screenshot, NULL, bugle_xevent_key_callback_flag, &keypress_screenshot);
+        bugle_input_key_callback(&key_screenshot, NULL, bugle_input_key_callback_flag, &keypress_screenshot);
     }
     return true;
 }
@@ -732,6 +732,7 @@ void bugle_initialise_filter_library(void)
     };
 
     video_codec = xstrdup("mpeg4");
+    bugle_input_key_lookup("C-A-S-S", &key_screenshot);
 
     bugle_filter_set_new(&screenshot_info);
 

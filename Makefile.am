@@ -29,7 +29,7 @@ includebugle_HEADERS = \
 	include/bugle/log.h \
 	include/bugle/objects.h \
 	include/bugle/stats.h \
-	include/bugle/xevent.h
+	include/bugle/input.h
 includebugleglwin_HEADERS = \
 	include/bugle/glwin/glwintypes.h \
 	include/bugle/glwin/glwin.h \
@@ -134,7 +134,7 @@ bugle_sources = \
 	src/dlopen.c src/dlopen.h src/filters.c \
 	src/stats.c src/statslex.l src/statsparse.y \
 	src/log.c src/objects.c \
-	src/xevent.c \
+	src/input.c \
 	budgielib/addresses.c budgielib/lib.h \
 	common/threads.h \
 	src/gl/glutils.c src/gl/glsl.c \
@@ -540,7 +540,7 @@ bugle_sources += \
 	src/egl/glwin.c
 
 # FIXME-GLES: currently specific to GLES2
-if BUGLE_WINSYS_WINDOWS
+if BUGLE_OSAPI_WIN32
 budgie_all_bc_files = $(GLES2BCFILES) $(EGLBCFILES) $(srcdir)/bc/gles2-egl-win.bc
 budgie_main_bc_file = $(srcdir)/bc/gles2-egl-win.bc
 

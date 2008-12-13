@@ -27,7 +27,7 @@
 #include <math.h>
 #include <bugle/filters.h>
 #include <bugle/log.h>
-#include <bugle/xevent.h>
+#include <bugle/input.h>
 #include <bugle/stats.h>
 #include "src/statsparse.h"
 #include <bugle/hashtable.h>

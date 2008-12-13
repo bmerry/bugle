@@ -46,7 +46,7 @@
 # endif
 #endif
 #include <ltdl.h>
-#include <bugle/xevent.h>
+#include <bugle/input.h>
 #include <bugle/filters.h>
 #include <bugle/log.h>
 #include <bugle/linkedlist.h>
@@ -369,7 +369,7 @@ bool filter_set_variable(filter_set *handle, const char *name, const char *value
     float float_value;
     char *string_value;
     char *end;
-    xevent_key key_value;
+    bugle_input_key key_value;
     void *value_ptr = NULL;
     bool finite_value;
 
@@ -461,7 +461,7 @@ bool filter_set_variable(filter_set *handle, const char *name, const char *value
                 value_ptr = &string_value;
                 break;
             case FILTER_SET_VARIABLE_KEY:
-                if (!bugle_xevent_key_lookup(value, &key_value))
+                if (!bugle_input_key_lookup(value, &key_value))
                 {
                     bugle_log_printf(handle->name, "initialise", BUGLE_LOG_ERROR,
                                      "Unknown key %s for %s in filter-set %s", value, name, handle->name);
@@ -502,7 +502,7 @@ bool filter_set_variable(filter_set *handle, const char *name, const char *value
                         *(char **) v->value = string_value;
                         break;
                     case FILTER_SET_VARIABLE_KEY:
-                        *(xevent_key *) v->value = key_value;
+                        *(bugle_input_key *) v->value = key_value;
                         break;
                     case FILTER_SET_VARIABLE_CUSTOM:
                         break;

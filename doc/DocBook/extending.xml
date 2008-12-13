@@ -422,7 +422,7 @@ filter_set *bugle_filter_set_new(filter_set_info *info);</funcsynopsisinfo>
                         <row><entry><symbol>FILTER_SET_VARIABLE_POSITIVE_INT</symbol></entry><entry><type>long</type></entry><entry>&gt; 0</entry></row>
                         <row><entry><symbol>FILTER_SET_VARIABLE_FLOAT</symbol></entry><entry><type>float</type></entry><entry>finite</entry></row>
                         <row><entry><symbol>FILTER_SET_VARIABLE_STRING</symbol></entry><entry><type>char *</type></entry><entry></entry></row>
-                        <row><entry><symbol>FILTER_SET_VARIABLE_KEY</symbol></entry><entry><type>xevent_key</type></entry><entry>valid</entry></row>
+                        <row><entry><symbol>FILTER_SET_VARIABLE_KEY</symbol></entry><entry><type>bugle_input_key</type></entry><entry>valid</entry></row>
                         <row><entry><symbol>FILTER_SET_VARIABLE_CUSTOM</symbol></entry><entry>any</entry><entry></entry></row>
                     </tbody>
                 </tgroup>

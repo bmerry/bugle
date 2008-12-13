@@ -65,7 +65,7 @@ typedef struct filter_set_variable_info_s
      * bool: a bool *
      * string: pointer to char *, which will then own the memory.
      *         If the old value was non-NULL, it is freed.
-     * key: a xevent_key *
+     * key: a bugle_input_key *
      * custom: pointer to whatever you like, even NULL. The callback
      *         is required in this case.
      */

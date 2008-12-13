@@ -32,7 +32,7 @@
 #include <bugle/hashtable.h>
 #include <bugle/filters.h>
 #include <bugle/objects.h>
-#include <bugle/xevent.h>
+#include <bugle/input.h>
 #include <bugle/log.h>
 #include <bugle/apireflect.h>
 #include <budgie/reflect.h>

@@ -32,7 +32,7 @@
 #include <bugle/stats.h>
 #include <bugle/filters.h>
 #include <bugle/log.h>
-#include <bugle/xevent.h>
+#include <bugle/input.h>
 #include <budgie/addresses.h>
 #include "xalloc.h"
 
@@ -78,8 +78,8 @@ typedef struct
 static object_view showstats_view;
 static linked_list showstats_stats;  /* List of showstats_statistic */
 static int showstats_num_graph;
-static xevent_key key_showstats_accumulate = { NoSymbol, 0, true };
-static xevent_key key_showstats_noaccumulate = { NoSymbol, 0, true };
+static bugle_input_key key_showstats_accumulate = { BUGLE_INPUT_NOSYMBOL, 0, true };
+static bugle_input_key key_showstats_noaccumulate = { BUGLE_INPUT_NOSYMBOL, 0, true };
 static double showstats_time = 0.2;
 
 static linked_list showstats_stats_requested;
@@ -431,7 +431,7 @@ static bool showstats_swap_buffers(function_call *call, const callback_data *dat
     return true;
 }
 
-static void showstats_accumulate_callback(const xevent_key *key, void *arg, XEvent *event)
+static void showstats_accumulate_callback(const bugle_input_key *key, void *arg, bugle_input_event *event)
 {
     showstats_struct *ss;
     ss = bugle_object_get_current_data(bugle_context_class, showstats_view);
@@ -495,10 +495,10 @@ static bool showstats_initialise(filter_set *handle)
                                            sizeof(showstats_struct));
 
     /* Value of arg is irrelevant, only truth value */
-    bugle_xevent_key_callback(&key_showstats_accumulate, NULL,
-                              showstats_accumulate_callback, f);
-    bugle_xevent_key_callback(&key_showstats_noaccumulate, NULL,
-                              showstats_accumulate_callback, NULL);
+    bugle_input_key_callback(&key_showstats_accumulate, NULL,
+                             showstats_accumulate_callback, f);
+    bugle_input_key_callback(&key_showstats_noaccumulate, NULL,
+                             showstats_accumulate_callback, NULL);
 
     showstats_num_graph = 0;
     for (i = bugle_list_head(&showstats_stats_requested); i; i = bugle_list_next(i))

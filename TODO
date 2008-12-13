@@ -2,7 +2,6 @@ WGL port
 --------
 - figure out why showstats on shadowfun crashes on exit (glDeleteQueries not defined?)
 - better robustness to missing WGL/GLX extensions
-- proper abstraction layer over xevent
 - support read != draw DC in glwin.c
 - handle cross-DLL data import/export cleanly
 - put suitable visibility tags on all export functions, so that -export-symbols-regex and --export-all-symbols are not needed
@@ -30,6 +29,7 @@ camera filter-set
 
 gldb
 ----
+- more robust wire protocol
 - allow Ctrl-C to abort current line when reading commands
 - set filter variables on the fly
 - enable reporting of segfaults
@@ -39,7 +39,7 @@ gldb
 gldb-gui
 --------
 - VBO decode
-- convert state names to UTF8
+- convert state names to UTF-8
 - enabling and disabling filter sets, and setting variables
 - texture viewer:
   - interaction with cube map cube
@@ -89,7 +89,7 @@ budgie
 ------
 - more autoconf tests (e.g. regex)
 - robust logging, to avoid segfaulting
-- move filter framework into budgie? May suck in xevent stuff
+- move filter framework into budgie? May suck in input stuff
 
 tests
 -----
@@ -101,10 +101,11 @@ long term
 ---------
 - internationalisation
 - OpenEXR export
-- OpenGL 3.0 support
+- OpenGL 3.x support
 - make gldb-gui tabs totally modular (separate shared objects)
 - write support for state
 - robust network debugging protocol
 - shader debugging
 - better movie capture
   - option of a separate thread, for parallel encoding
+- scons build system

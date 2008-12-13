@@ -31,7 +31,7 @@
 #include <bugle/gl/gldisplaylist.h>
 #include <bugle/filters.h>
 #include <bugle/objects.h>
-#include <bugle/xevent.h>
+#include <bugle/input.h>
 #include <bugle/apireflect.h>
 #include <budgie/reflect.h>
 #include <budgie/addresses.h>
@@ -63,15 +63,15 @@ static bool camera_dga = false;
 static bool camera_intercept = true;
 static bool camera_frustum = false;
 
-static xevent_key key_camera[CAMERA_KEYS] =
+static bugle_input_key key_camera[CAMERA_KEYS];
+static const char * const key_camera_defaults[] =
 {
-    { XK_Up, 0, true },
-    { XK_Down, 0, true },
-    { XK_Left, 0, true },
-    { XK_Right, 0, true },
-    { XK_Page_Up, 0, true },
-    { XK_Page_Down, 0, true },
-    { NoSymbol, 0, true }
+    "Up",
+    "Down",
+    "Left",
+    "Right",
+    "Page_Up",
+    "Page_Down"
 };
 
 typedef struct
@@ -237,7 +237,7 @@ static void camera_draw_frustum(const GLfloat *original)
     bugle_glwin_make_context_current(dpy, old_write, old_read, real);
 }
 
-static void camera_mouse_callback(int dx, int dy, XEvent *event)
+static void camera_mouse_callback(int dx, int dy, bugle_input_event *event)
 {
     camera_context *ctx;
     GLfloat old[16], rotator[3][3];
@@ -284,26 +284,26 @@ static void camera_mouse_callback(int dx, int dy, XEvent *event)
         }
     ctx->dirty = true;
 
-    bugle_xevent_invalidate_window(event);
+    bugle_input_invalidate_window(event);
 }
 
-static bool camera_key_wanted(const xevent_key *key, void *arg, XEvent *event)
+static bool camera_key_wanted(const bugle_input_key *key, void *arg, bugle_input_event *event)
 {
     return bugle_filter_set_is_active(camera_filterset);
 }
 
-static void camera_key_callback(const xevent_key *key, void *arg, XEvent *event)
+static void camera_key_callback(const bugle_input_key *key, void *arg, bugle_input_event *event)
 {
     int index, i;
     camera_context *ctx;
 
     ctx = (camera_context *) bugle_object_get_current_data(bugle_context_class, camera_view);
     if (!ctx) return;
-    index = (xevent_key *) arg - key_camera;
+    index = (bugle_input_key *) arg - key_camera;
     if (index < CAMERA_MOTION_KEYS)
     {
         ctx->pressed[index] = key->press;
-        if (key->press) bugle_xevent_invalidate_window(event);
+        if (key->press) bugle_input_invalidate_window(event);
     }
     else
     {
@@ -314,24 +314,24 @@ static void camera_key_callback(const xevent_key *key, void *arg, XEvent *event)
         case CAMERA_KEY_RESET:
             for (i = 0; i < 16; i++)
                 ctx->modifier[i] = (i % 5) ? 0.0f : 1.0f;
-            bugle_xevent_invalidate_window(event);
+            bugle_input_invalidate_window(event);
             break;
         case CAMERA_KEY_TOGGLE:
             if (!camera_intercept)
             {
                 camera_intercept = true;
-                bugle_xevent_grab_pointer(camera_dga, camera_mouse_callback);
+                bugle_input_grab_pointer(camera_dga, camera_mouse_callback);
                 break;
             }
             else
             {
                 camera_intercept = false;
-                bugle_xevent_release_pointer();
+                bugle_input_release_pointer();
             }
             break;
         case CAMERA_KEY_FRUSTUM:
             camera_frustum = !camera_frustum;
-            bugle_xevent_invalidate_window(event);
+            bugle_input_invalidate_window(event);
             break;
         }
     }
@@ -501,7 +501,7 @@ static void camera_activation(filter_set *handle)
     if (ctx)
         camera_handle_activation(true, ctx);
     if (camera_intercept)
-        bugle_xevent_grab_pointer(camera_dga, camera_mouse_callback);
+        bugle_input_grab_pointer(camera_dga, camera_mouse_callback);
 }
 
 static void camera_deactivation(filter_set *handle)
@@ -512,7 +512,7 @@ static void camera_deactivation(filter_set *handle)
     if (ctx)
         camera_handle_activation(false, ctx);
     if (camera_intercept)
-        bugle_xevent_release_pointer();
+        bugle_input_release_pointer();
 }
 
 static bool camera_initialise(filter_set *handle)
@@ -569,19 +569,21 @@ static bool camera_initialise(filter_set *handle)
 
     for (i = 0; i < CAMERA_KEYS; i++)
     {
-        xevent_key release;
+        bugle_input_key release;
 
         release = key_camera[i];
         release.press = false;
-        bugle_xevent_key_callback(&key_camera[i], camera_key_wanted, camera_key_callback, (void *) &key_camera[i]);
+        bugle_input_key_callback(&key_camera[i], camera_key_wanted, camera_key_callback, (void *) &key_camera[i]);
         if (i < CAMERA_MOTION_KEYS)
-            bugle_xevent_key_callback(&release, camera_key_wanted, camera_key_callback, (void *) &key_camera[i]);
+            bugle_input_key_callback(&release, camera_key_wanted, camera_key_callback, (void *) &key_camera[i]);
     }
     return true;
 }
 
 void bugle_initialise_filter_library(void)
 {
+    int i;
+
     static const filter_set_variable_info camera_variables[] =
     {
         { "mouse_dga", "mouse is controlled with XF86DGA extension", FILTER_SET_VARIABLE_BOOL, &camera_dga, NULL },
@@ -616,4 +618,12 @@ void bugle_initialise_filter_library(void)
     bugle_filter_set_depends("camera", "gldisplaylist");
     bugle_filter_set_depends("camera", "trackcontext");
     bugle_filter_set_depends("camera", "glextensions");
+
+    for (i = 0; i < CAMERA_KEYS; i++)
+    {
+        key_camera[i].keysym = BUGLE_INPUT_NOSYMBOL;
+        key_camera[i].state = 0;
+        if (key_camera_defaults[i] != NULL)
+            bugle_input_key_lookup(key_camera_defaults[i], &key_camera[i]);
+    }
 }

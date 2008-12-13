@@ -36,7 +36,7 @@
 #include <bugle/hashtable.h>
 #include <bugle/filters.h>
 #include <bugle/apireflect.h>
-#include <bugle/xevent.h>
+#include <bugle/input.h>
 #include <bugle/log.h>
 #include <budgie/addresses.h>
 #include <budgie/reflect.h>
@@ -53,7 +53,7 @@ typedef struct
 
 static object_view eps_view;
 static bool keypress_eps = false;
-static xevent_key key_eps = { XK_W, ControlMask | ShiftMask | Mod1Mask, true };
+static bugle_input_key key_eps = { BUGLE_INPUT_NOSYMBOL, 0, true };
 static char *eps_filename = NULL;
 static char *eps_title = NULL;
 static bool eps_bsp = false;
@@ -220,7 +220,7 @@ static bool eps_initialise(filter_set *handle)
                                      eps_context_init,
                                      NULL,
                                      sizeof(eps_struct));
-    bugle_xevent_key_callback(&key_eps, NULL, bugle_xevent_key_callback_flag, &keypress_eps);
+    bugle_input_key_callback(&key_eps, NULL, bugle_input_key_callback_flag, &keypress_eps);
     return true;
 }
 
@@ -248,6 +248,7 @@ void bugle_initialise_filter_library(void)
     };
 
     eps_filename = xstrdup("bugle.eps");
+    bugle_input_key_lookup("C-A-S-W", &key_eps);
 
     bugle_filter_set_new(&eps_info);
 

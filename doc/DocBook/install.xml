@@ -107,11 +107,12 @@
             <literal>win32</literal>.
         </para>
         <para>
-            Finally, &bugle; intercepts events from X11. While there are no
-            known cases of this causing problems, it is difficult to make
-            the interception completely transparent, and so the
-            <option>--disable-xevent</option> option is
-            available to disable it at compile time.
+            Finally, &bugle; intercepts events from X11 and Windows. While
+            there are no known cases of this causing problems, it is difficult
+            to make the interception completely transparent, and so the
+            <option>--disable-input</option> option is available to disable it
+            at compile time. It is also required when using EGL on a platform
+            other than X11 or Windows.
         </para>
     </sect1>
 

@@ -198,10 +198,10 @@ AC_PATH_PROG([XMLLINT], [xmllint], [true])
 
 dnl Set up some extra stuff
 
-ENABLE_XEVENT=1
-AC_ARG_ENABLE([xevent], AC_HELP_STRING([--disable-xevent], [disable key and mouse interception]),
-              [test $enableval = no && ENABLE_XEVENT=0], [])
-AC_DEFINE_UNQUOTED(ENABLE_XEVENT, $ENABLE_XEVENT, [non-zero when X key and mouse events should be intercepted])
+ENABLE_INPUT=1
+AC_ARG_ENABLE([input], AC_HELP_STRING([--disable-input], [disable key and mouse interception]),
+              [test $enableval = no && ENABLE_INPUT=0 && BUGLE_WINSYS=BUGLE_WINSYS_NONE], [])
+AC_DEFINE_UNQUOTED(ENABLE_INPUT, $ENABLE_INPUT, [non-zero when key and mouse events should be intercepted])
 
 AC_ARG_WITH([lavc], AC_HELP_STRING([--without-lavc], [do not use libavcodec]),
             [test $withval = no && HAVE_LAVC=0], [])
@@ -252,6 +252,9 @@ AC_SUBST(BUGLE_BINFMT)
 AC_SUBST(BUGLE_OSAPI)
 AM_CONDITIONAL(BUGLE_WINSYS_X11, test $BUGLE_WINSYS = BUGLE_WINSYS_X11)
 AM_CONDITIONAL(BUGLE_WINSYS_WINDOWS, test $BUGLE_WINSYS = BUGLE_WINSYS_WINDOWS)
+AM_CONDITIONAL(BUGLE_WINSYS_NONE, test $BUGLE_WINSYS = BUGLE_WINSYS_NONE)
+AM_CONDITIONAL(BUGLE_OSAPI_WIN32, test $BUGLE_OSAPI = BUGLE_OSAPI_WIN32)
+AM_CONDITIONAL(BUGLE_OSAPI_POSIX, test $BUGLE_OSAPI = BUGLE_OSAPI_POSIX)
 AM_CONDITIONAL(BUGLE_GLWIN_WGL, test $BUGLE_GLWIN = BUGLE_GLWIN_WGL)
 AM_CONDITIONAL(BUGLE_GLWIN_GLX, test $BUGLE_GLWIN = BUGLE_GLWIN_GLX)
 AM_CONDITIONAL(BUGLE_GLWIN_EGL, test $BUGLE_GLWIN = BUGLE_GLWIN_EGL)
@@ -283,7 +286,7 @@ case $HAVE_GTK in
      1) echo "        GUI: yes (with OpenGL)" ;;
      esac ;;
 esac
-case $ENABLE_XEVENT in
-  0) echo "        X event interception: no" ;;
-  1) echo "        X event interception: yes" ;;
+case $ENABLE_INPUT in
+  0) echo "        event interception: no" ;;
+  1) echo "        event interception: yes" ;;
 esac
