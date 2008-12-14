@@ -8,6 +8,7 @@ my @extension_force = (
     "GL_VERSION_1_1",            # Base versions
     "GL_ES_VERSION_2_0",
     "GL_VERSION_ES_CM_1_0",
+    "GL_VERSION_ES_CM_1_1",
     "GLX_VERSION_1_2",
     "WGL_VERSION_1_0",
     "EGL_VERSION_1_3"
@@ -209,6 +210,7 @@ GL_MODELVIEW            # aliases MODELVIEW0_ARB
 # a situation where $n must not be overwritten.
 my $enum_not_name_regex = qr/^(?:
     GL_(?:ES_)?VERSION_[0-9_]+
+    |GL_VERSION_ES_CM_[0-9]+
     |GL_GLEXT_\w+
     |GLX_GLXEXT_\w+
     |GL_[A-Z0-9_]+_BIT(?:_[A-Z0-9]+)?
@@ -243,7 +245,7 @@ sub enum_name_collate($)
 }
 
 # Helper for sorting extension names into a preferred order:
-# - GL_[ES_]VERSION_* (numerically)
+# - GL_[ES_]VERSION_[ES_CM_]* (numerically)
 # - GL_ARB_*
 # - GL_EXT_*
 # - GL_*
@@ -257,7 +259,7 @@ sub extension_collate($)
         return 'z' . &extension_collate($e);
     }
 
-    if ($e =~ /^GL_(?:ES_)?VERSION_(\d+)_(\d+)/)
+    if ($e =~ /^GL_(?:ES_)?VERSION_(?:ES_CM_)(\d+)_(\d+)/)
     {
         return sprintf("a_%04d_%04d", $1, $2);
     }
@@ -544,7 +546,7 @@ EOF
     $first = 1;
     foreach my $ext (@extensions, keys %extension_groups)
     {
-        my $ver = ($ext =~ /^E?GLX?_(?:ES_)?VERSION_([0-9]+)_([0-9]+)/) ? "\"$1.$2\"" : "NULL";
+        my $ver = ($ext =~ /^E?GLX?_(?:ES_)?VERSION_(?:ES_CM_)([0-9]+)_([0-9]+)/) ? "\"$1.$2\"" : "NULL";
         my $block = 'BUGLE_API_EXTENSION_BLOCK_GLWIN';
         if ($ext =~ /^GL_/)
         {

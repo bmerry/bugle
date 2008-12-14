@@ -291,18 +291,6 @@ static void make_counted2(const glstate *self,
     }
 }
 
-static void make_counted(const glstate *self,
-                         GLint count,
-                         const char *format,
-                         GLenum base,
-                         size_t offset,
-                         void (*spawn)(const glstate *, linked_list *),
-                         const state_info *info,
-                         linked_list *children)
-{
-    make_counted2(self, count, format, base, offset, offset, spawn, info, children);
-}
-
 static void make_object(const glstate *self,
                         GLenum target,
                         const char *format,
@@ -807,16 +795,12 @@ void bugle_state_get_raw(const glstate *state, bugle_state_raw *wrapper)
     GLuint ui[16];
     GLboolean b[16];
     GLvoid *p[16];
-    GLpolygonstipple stipple;
-    GLxfbattrib xfbattrib;
-    GLsizei length;
-    GLint max_length;
     void *in;
     budgie_type in_type, out_type;
     int in_length;
     char *str = NULL;  /* Set to non-NULL for human-readable string output */
 
-    GLint old_texture, old_buffer, old_program;
+    GLint old_texture, old_buffer;
     GLint old_unit, old_client_unit, old_framebuffer, old_renderbuffer;
     bool flag_active_texture = false;
     GLenum pname;
@@ -1168,11 +1152,6 @@ static void spawn_children_renderbuffer(const glstate *self, linked_list *childr
 
 static void spawn_children_global(const glstate *self, linked_list *children)
 {
-    static const state_info enable =
-    {
-        NULL, GL_NONE, TYPE_9GLboolean, -1, BUGLE_GL_VERSION_ES_CM_1_0, -1, STATE_ENABLED
-    };
-
     const char *version;
 
     version = (const char *) CALL(glGetString)(GL_VERSION);

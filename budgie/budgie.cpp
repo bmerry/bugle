@@ -1241,7 +1241,8 @@ static void write_type_dumpers(FILE *f)
                 fprintf(f, "    int i;\n");
             fprintf(f,
                     "%s"
-                    "    budgie_snprintf_advance(buffer, size, \"%%p\", (void *) *value);\n",
+                    "    if (*value == NULL) budgie_snputs_advance(buffer, size, \"NULL\");\n"
+                    "    else budgie_snprintf_advance(buffer, size, \"%%p\", (void *) *value);\n",
                     custom_code.c_str());
             if (type_map.count(child))
             {

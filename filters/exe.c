@@ -47,9 +47,10 @@ static int follow_pointer(budgie_type type, int length, const void *ptr,
 {
     int i;
     size_t size;
-    int arg_ids[MAX_ARGS];
+    int *arg_ids;
 
     size = budgie_type_size(type);
+    arg_ids = XNMALLOC(length, int);
     /* First follow any sub-pointers */
     for (i = 0; i < length; i++)
     {
@@ -104,6 +105,7 @@ static int follow_pointer(budgie_type type, int length, const void *ptr,
             free(buffer);
         }
     }
+    free(arg_ids);
     fprintf(out, " };\n");
     return *defn_pool++;
 }
@@ -148,7 +150,7 @@ static bool exe_callback(function_call *call, const callback_data *data)
                 block = true;
             }
             length = abs(budgie_call_parameter_length(&call->generic, i));
-            arg_ids[i] = follow_pointer(base, length, call->generic.args[i], &defn_pool);
+            arg_ids[i] = follow_pointer(base, length, *(void **) call->generic.args[i], &defn_pool);
         }
         else
             arg_ids[i] = -1;

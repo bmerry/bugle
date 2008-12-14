@@ -28,8 +28,20 @@ EXTRATYPE GLfixed
 LENGTH PARAMETER glClipPlane[xf] 1 4
 LENGTH PARAMETER glGetClipPlane[xf] 1 4
 
+TYPE PARAMETER glCompressedTexImage2D 7 bugle_gl_type_to_type_ptr_pbo_source(GL_UNSIGNED_BYTE)
+TYPE PARAMETER glCompressedTexSubImage2D 8 bugle_gl_type_to_type_ptr_pbo_source(GL_UNSIGNED_BYTE)
+LENGTH PARAMETER glCompressedTexImage2D 7 $6
+LENGTH PARAMETER glCompressedTexSubImage2D 8 $7
+
+TYPE PARAMETER glBufferData 2 TYPE_PK7GLubyte
+TYPE PARAMETER glBufferSubData 3 TYPE_PK7GLubyte
+LENGTH PARAMETER glBufferData 2 $1
+LENGTH PARAMETER glBufferSubData 3 $2
+LENGTH PARAMETER glGetBufferParameteriv 2 bugle_count_gl($f, $1)
+DUMP PARAMETER glGetBufferParameteriv 2 bugle_dump_convert($1, &$$, $t$, $B, $S)
+
 # Handle generator and deletors
-LENGTH PARAMETER gl(Gen|Delete)(Textures|Buffers) 1 $0
+LENGTH PARAMETER gl(Gen|Delete)(Textures|Buffers|FramebuffersOES|RenderbuffersOES) 1 $0
 
 # Functions where the count is determined by the token
 LENGTH PARAMETER glDrawElements 3 bugle_gl_type_to_size($2) * $1
@@ -73,3 +85,9 @@ DUMP PARAMETER gl(LightModel|Fog)[xf]v? 1 bugle_dump_convert($0, &$$, $t$, $B, $
 DUMP PARAMETER glGet(Integer|Float|Fixed)v 1 bugle_dump_convert($0, &$$, $t$, $B, $S)
 DUMP PARAMETER gl(Get)?(TexParameter|TexEnv|Light|Material)[ifx]v? 2 bugle_dump_convert($1, &$$, $t$, $B, $S)
 DUMP PARAMETER glPixelStorei 1 bugle_dump_convert($0, &$$, $t$, $B, $S)
+
+# Framebuffer objects
+LENGTH PARAMETER glGetRenderbufferParameterivOES 2 bugle_count_gl($f, $1)
+LENGTH PARAMETER glGetFramebufferAttachmentParameterivOES 3 bugle_count_gl($f, $2)
+DUMP PARAMETER glGetRenderbufferParameterivOES 2 bugle_dump_convert($1, &$$, $t$, $B, $S)
+DUMP PARAMETER glGetFramebufferAttachmentParameterivOES 3 bugle_dump_convert($2, &$$, $t$, $B, $S)

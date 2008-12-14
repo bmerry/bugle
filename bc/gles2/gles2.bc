@@ -50,6 +50,22 @@ EXTRATYPE pGLbvec2
 EXTRATYPE pGLbvec3
 EXTRATYPE pGLbvec4
 
+TYPE PARAMETER glCompressedTexImage2D 7 bugle_gl_type_to_type_ptr_pbo_source(GL_UNSIGNED_BYTE)
+TYPE PARAMETER glCompressedTexImage3D 8 bugle_gl_type_to_type_ptr_pbo_source(GL_UNSIGNED_BYTE)
+TYPE PARAMETER glCompressedTexSubImage2D 8 bugle_gl_type_to_type_ptr_pbo_source(GL_UNSIGNED_BYTE)
+TYPE PARAMETER glCompressedTexSubImage2D 10 bugle_gl_type_to_type_ptr_pbo_source(GL_UNSIGNED_BYTE)
+LENGTH PARAMETER glCompressedTexImage2D 7 $6
+LENGTH PARAMETER glCompressedTexImage3DOES 8 $7
+LENGTH PARAMETER glCompressedTexSubImage2D 8 $7
+LENGTH PARAMETER glCompressedTexSubImage3DOES 10 $9
+
+TYPE PARAMETER glBufferData 2 TYPE_PK7GLubyte
+TYPE PARAMETER glBufferSubData 3 TYPE_PK7GLubyte
+LENGTH PARAMETER glBufferData 2 $1
+LENGTH PARAMETER glBufferSubData 3 $2
+LENGTH PARAMETER glGetBufferParameteriv 2 bugle_count_gl($f, $1)
+DUMP PARAMETER glGetBufferParameteriv 2 bugle_dump_convert($1, &$$, $t$, $B, $S)
+
 # Handle generator and deletors
 LENGTH PARAMETER gl(Gen|Delete)(Textures|Buffers|Framebuffers|Renderbuffers) 1 $0
 

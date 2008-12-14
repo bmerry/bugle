@@ -2,7 +2,7 @@
 SUBDIRS = lib libltdl
 ACLOCAL_AMFLAGS = -I m4
 
-SYMBOLFLAGS = -export-symbols-regex '^(gl[A-Z]|budgie_|bugle_|gldb_|X|dlopen)'
+SYMBOLFLAGS = -export-symbols-regex '^(gl[A-Z]|egl[A-Z]|budgie_|bugle_|gldb_|X|dlopen)'
 MODULEFLAGS = -no-undefined -thread-safe -export-dynamic -module -avoid-version
 MODULELIBS = src/libbugleutils.la lib/libgnu.la
 
@@ -586,6 +586,10 @@ filters_stats_fragments_la_LIBADD = $(MODULELIBS)
 filters_showstats_la_SOURCES = filters/showstats.c
 filters_showstats_la_LDFLAGS = $(MODULEFLAGS)
 filters_showstats_la_LIBADD = $(MODULELIBS) -lm
+endif
+
+if BUGLE_GLTYPE_GLES1CM
+bugle_sources += src/gles1cm/glstate.c src/gles1cm/gldump.c
 endif
 
 if BUGLE_GLTYPE_GLES2
