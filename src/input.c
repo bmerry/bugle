@@ -771,42 +771,18 @@ void input_initialise(void)
     bugle_list_init(&handlers, free);
 }
 
-bool bugle_input_key_lookup(const char *name, bugle_input_key *key)
+static bool input_key_lookup(const char *name, bugle_input_key *key)
 {
-    bugle_input_keysym keysym = BUGLE_INPUT_NOSYMBOL;
-    unsigned char state = 0;
+    bugle_input_keysym keysym;
 
-    key->press = true;
-    while (true)
+    keysym = XStringToKeysym((char *) name);
+    if (keysym != BUGLE_INPUT_NOSYMBOL)
     {
-        if (name[0] == 'C' && name[1] == '-')
-        {
-            state |= BUGLE_INPUT_CONTROL_BIT;
-            name += 2;
-        }
-        else if (name[0] == 'S' && name[1] == '-')
-        {
-            state |= BUGLE_INPUT_SHIFT_BIT;
-            name += 2;
-        }
-        else if (name[0] == 'A' && name[1] == '-')
-        {
-            state |= BUGLE_INPUT_ALT_BIT;
-            name += 2;
-        }
-        else
-        {
-            keysym = XStringToKeysym((char *) name);
-            if (keysym != BUGLE_INPUT_NOSYMBOL)
-            {
-                key->keysym = keysym;
-                key->state = state;
-                return true;
-            }
-            else
-                return false;
-        }
+        key->keysym = keysym;
+        return true;
     }
+    else
+        return false;
 }
 
 #endif /* BUGLE_WINSYS_X11 */
@@ -890,41 +866,15 @@ void input_initialise(void)
     SetWindowsHookEx(WH_MOUSE, input_mouse_hook, (HINSTANCE) NULL, GetCurrentThreadId());
 }
 
-bool bugle_input_key_lookup(const char *name, bugle_input_key *key)
+static bool input_key_lookup(const char *name, bugle_input_key *key)
 {
-    unsigned char state = 0;
-
-    key->press = true;
-    while (true)
+    if (name[0] >= 'A' && name[0] <= 'Z' && name[1] == '\0')
     {
-        if (name[0] == 'C' && name[1] == '-')
-        {
-            state |= BUGLE_INPUT_CONTROL_BIT;
-            name += 2;
-        }
-        else if (name[0] == 'S' && name[1] == '-')
-        {
-            state |= BUGLE_INPUT_SHIFT_BIT;
-            name += 2;
-        }
-        else if (name[0] == 'A' && name[1] == '-')
-        {
-            state |= BUGLE_INPUT_ALT_BIT;
-            name += 2;
-        }
-        else
-        {
-            if (name[0] >= 'A' && name[0] <= 'Z' && name[1] == '\0')
-            {
-                key->keysym = name[0];
-                key->state = state;
-                return true;
-            }
-            else
-                return false;
-        }
+        key->keysym = name[0];
+        return true;
     }
-    return false;
+    else
+        return false;
 }
 
 #endif /* BUGLE_WINSYS_WINDOWS */
@@ -938,6 +888,17 @@ void bugle_input_invalidate_window(bugle_input_event *event)
 void input_initialise(void)
 {
 }
+
+static bool input_key_lookup(const char *name, bugle_input_key *key)
+{
+    /* make all input keys appear valid, so that we don't reject config
+     * files just because they have keys in them.
+     */
+    key->keysym = BUGLE_INPUT_NOSYMBOL;
+    return true;
+}
+
+#endif /* BUGLE_WINSYS_NONE */
 
 bool bugle_input_key_lookup(const char *name, bugle_input_key *key)
 {
@@ -964,10 +925,8 @@ bool bugle_input_key_lookup(const char *name, bugle_input_key *key)
         }
         else
         {
-            keysym = XStringToKeysym((char *) name);
-            if (keysym != BUGLE_INPUT_NOSYMBOL)
+            if (input_key_lookup(name, key))
             {
-                key->keysym = keysym;
                 key->state = state;
                 return true;
             }
@@ -976,5 +935,3 @@ bool bugle_input_key_lookup(const char *name, bugle_input_key *key)
         }
     }
 }
-
-#endif /* BUGLE_WINSYS_NONE */
