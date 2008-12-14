@@ -55,39 +55,10 @@ budgie_type bugle_gl_type_to_type(GLenum gl_type)
         return TYPE_8GLushort;
     case GL_SHORT:
         return TYPE_7GLshort;
-#ifdef GL_OES_vertex_type_10_10_10_2
-    case GL_UNSIGNED_INT_10_10_10_2_OES:
-#endif
-    case GL_UNSIGNED_INT:
-        return TYPE_6GLuint;
-#ifdef GL_OES_vertex_type_10_10_10_2
-    case GL_INT_10_10_10_2_OES:
-#endif
-    case GL_INT:
-        return TYPE_5GLint;
     case GL_FLOAT:
         return TYPE_7GLfloat;
     case GL_FIXED:
         return TYPE_7GLfixed;
-    case GL_FLOAT_VEC2: return TYPE_6GLvec2; break;
-    case GL_FLOAT_VEC3: return TYPE_6GLvec3; break;
-    case GL_FLOAT_VEC4: return TYPE_6GLvec4; break;
-    case GL_INT_VEC2: return TYPE_7GLivec2; break;
-    case GL_INT_VEC3: return TYPE_7GLivec3; break;
-    case GL_INT_VEC4: return TYPE_7GLivec4; break;
-    case GL_FLOAT_MAT2: return TYPE_6GLmat2; break;
-    case GL_FLOAT_MAT3: return TYPE_6GLmat3; break;
-    case GL_FLOAT_MAT4: return TYPE_6GLmat4; break;
-    case GL_BOOL: return TYPE_9GLboolean; break;
-    case GL_BOOL_VEC2: return TYPE_7GLbvec2; break;
-    case GL_BOOL_VEC3: return TYPE_7GLbvec3; break;
-    case GL_BOOL_VEC4: return TYPE_7GLbvec4; break;
-    case GL_SAMPLER_2D:
-#ifdef GL_OES_texture3D
-    case GL_SAMPLER_3D_OES:
-#endif
-    case GL_SAMPLER_CUBE:
-        return TYPE_5GLint;
     default:
         fprintf(stderr,
                 "Do not know the correct type for %s. This probably indicates that you\n"
@@ -133,15 +104,12 @@ int bugle_gl_format_to_count(GLenum format, GLenum type)
     case GL_BYTE:
     case GL_UNSIGNED_SHORT:
     case GL_SHORT:
-    case GL_UNSIGNED_INT:
-    case GL_INT:
     case GL_FLOAT:
+    case GL_FIXED:
         switch (format)
         {
         case GL_ALPHA:
         case GL_LUMINANCE:
-        case GL_STENCIL_INDEX:
-        case GL_DEPTH_COMPONENT:
             return 1;
         case GL_LUMINANCE_ALPHA:
             return 2;
@@ -206,6 +174,8 @@ void dump_initialise(void)
             if (s->type == TYPE_9GLboolean || s->type == TYPE_6GLenum
                 || s->length != 1) dump_table_size++;
 
+    dump_table_size += 1; /* Manual extras */
+
     dump_table = XNMALLOC(dump_table_size, dump_table_entry);
     cur = dump_table;
     for (t = all_state; *t; t++)
@@ -225,6 +195,14 @@ void dump_initialise(void)
                 cur->length = (s->length == 1) ? -1 : s->length;
                 cur++;
             }
+
+    /* NB: if you update this, also update the adjustment to dump_table_size
+     * above!!!
+     */
+    cur->key = GL_AMBIENT_AND_DIFFUSE;
+    cur->type = BUDGIE_TYPE_ID(7GLfloat);
+    cur->length = 4;
+    cur++;
 
     qsort(dump_table, dump_table_size, sizeof(dump_table_entry), compare_dump_table_entry);
 }
@@ -282,24 +260,6 @@ bool bugle_dump_convert(GLenum pname, const void *value,
 int bugle_count_gl(budgie_function func, GLenum token)
 {
     return get_dump_table_entry(token)->length;
-}
-
-/* Counts the number of objects returned by a call to
- * glGetAttachedShaders(program, max, &count, ptr).
- */
-int bugle_count_attached_shaders(GLuint program, GLsizei max)
-{
-    GLsizei real_count = 0;
-    if (bugle_gl_begin_internal_render())
-    {
-        CALL(glGetProgramiv)(program, GL_ATTACHED_SHADERS, &real_count);
-        /* The above might generate an error, in which case real_count remains 0 */
-        bugle_gl_end_internal_render("bugle_count_attached_shaders", false);
-    }
-    if (real_count <= max)
-        return real_count;
-    else
-        return max;
 }
 
 /* Computes the number of pixel elements (units of byte, int, float etc)
