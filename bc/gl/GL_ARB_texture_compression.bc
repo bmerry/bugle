@@ -3,7 +3,7 @@ TYPE PARAMETER glCompressedTexImage2DARB 7 bugle_gl_type_to_type_ptr_pbo_source(
 TYPE PARAMETER glCompressedTexImage3DARB 8 bugle_gl_type_to_type_ptr_pbo_source(GL_UNSIGNED_BYTE)
 TYPE PARAMETER glCompressedTexSubImage1DARB 6 bugle_gl_type_to_type_ptr_pbo_source(GL_UNSIGNED_BYTE)
 TYPE PARAMETER glCompressedTexSubImage2DARB 8 bugle_gl_type_to_type_ptr_pbo_source(GL_UNSIGNED_BYTE)
-TYPE PARAMETER glCompressedTexSubImage2DARB 10 bugle_gl_type_to_type_ptr_pbo_source(GL_UNSIGNED_BYTE)
+TYPE PARAMETER glCompressedTexSubImage3DARB 10 bugle_gl_type_to_type_ptr_pbo_source(GL_UNSIGNED_BYTE)
 LENGTH PARAMETER glCompressedTexImage1DARB 6 $5
 LENGTH PARAMETER glCompressedTexImage2DARB 7 $6
 LENGTH PARAMETER glCompressedTexImage3DARB 8 $7

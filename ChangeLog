@@ -1,4 +1,11 @@
 * Fix tracing support for GL_ARB_transpose_matrix
+* Fix several bugs in exe filterset that made it almost unusable
+* OpenGL ES-CM 1.1 support (incomplete)
+* Improved dumping of glCompressedTex*Image* and glBuffer*Data
+* Dump NULL pointers as "NULL" instead of whatever the printf implementation picks
+* Rename 'xevent' system to 'input'
+* Make --disable-input remove all compile-time dependence on X
+* Fix EGL support on POSIX to include the symbols
 
 0.0.20080824
 ------------

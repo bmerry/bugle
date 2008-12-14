@@ -27,11 +27,11 @@ static void generate_pbos()
     glBindBufferARB(GL_PIXEL_PACK_BUFFER_EXT, pbo_ids[0]);
     fprintf(ref, "trace\\.call: glBindBufferARB\\(GL_PIXEL_PACK_BUFFER(_EXT|_ARB)?, %u\\)\n", pbo_ids[0]);
     glBufferDataARB(GL_PIXEL_PACK_BUFFER_EXT, pbo_size, NULL, GL_DYNAMIC_READ_ARB);
-    fprintf(ref, "trace\\.call: glBufferDataARB\\(GL_PIXEL_PACK_BUFFER(_EXT|_ARB)?, %u, \\(nil\\), GL_DYNAMIC_READ(_ARB)?\\)\n", pbo_size);
+    fprintf(ref, "trace\\.call: glBufferDataARB\\(GL_PIXEL_PACK_BUFFER(_EXT|_ARB)?, %u, NULL, GL_DYNAMIC_READ(_ARB)?\\)\n", pbo_size);
     glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_EXT, pbo_ids[1]);
     fprintf(ref, "trace\\.call: glBindBufferARB\\(GL_PIXEL_UNPACK_BUFFER(_EXT|_ARB)?, %u\\)\n", pbo_ids[1]);
     glBufferDataARB(GL_PIXEL_UNPACK_BUFFER_EXT, 512 * 512 * 4 + 4, NULL, GL_DYNAMIC_DRAW_ARB);
-    fprintf(ref, "trace\\.call: glBufferDataARB\\(GL_PIXEL_UNPACK_BUFFER(_EXT|_ARB)?, %u, \\(nil\\), GL_DYNAMIC_DRAW(_ARB)?\\)\n", pbo_size);
+    fprintf(ref, "trace\\.call: glBufferDataARB\\(GL_PIXEL_UNPACK_BUFFER(_EXT|_ARB)?, %u, NULL, GL_DYNAMIC_DRAW(_ARB)?\\)\n", pbo_size);
 }
 
 static void source_pbo()

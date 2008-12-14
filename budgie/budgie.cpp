@@ -636,7 +636,7 @@ static void make_overrides()
                     else
                     {
                         if (i->param < -1 || i->param >= (int) j->parameters.size())
-                            die("Parameter out of range");
+                            die("Parameter out of range\n");
                         j->parameters[i->param].overrides[i->mode] = subst;
                     }
                     // FIXME: substitutions

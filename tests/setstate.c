@@ -60,7 +60,7 @@ static void set_enables()
 void set_client_state()
 {
     glEnableClientState(GL_VERTEX_ARRAY); fprintf(ref, "trace\\.call: glEnableClientState\\(GL_VERTEX_ARRAY\\)\n");
-    glVertexPointer(3, GL_INT, 0, NULL);  fprintf(ref, "trace\\.call: glVertexPointer\\(3, GL_INT, 0, \\(nil\\)\\)\n");
+    glVertexPointer(3, GL_INT, 0, NULL);  fprintf(ref, "trace\\.call: glVertexPointer\\(3, GL_INT, 0, NULL\\)\n");
     glPixelStorei(GL_PACK_ALIGNMENT, 1);  fprintf(ref, "trace\\.call: glPixelStorei\\(GL_PACK_ALIGNMENT, 1\\)\n");
     glPixelStoref(GL_PACK_SWAP_BYTES, GL_FALSE); fprintf(ref, "trace\\.call: glPixelStoref\\(GL_PACK_SWAP_BYTES, GL_FALSE\\)\n");
 }
@@ -73,7 +73,7 @@ void set_texture_state()
     glGenTextures(1, &id);                fprintf(ref, "trace\\.call: glGenTextures\\(1, %p -> { %u }\\)\n", (void *) &id, (unsigned int) id);
     glBindTexture(GL_TEXTURE_2D, id);     fprintf(ref, "trace\\.call: glBindTexture\\(GL_TEXTURE_2D, [0-9]+\\)\n");
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 4, 4, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
-    fprintf(ref, "trace\\.call: glTexImage2D\\(GL_TEXTURE_2D, 0, GL_RGB, 4, 4, 0, GL_RGB, GL_UNSIGNED_BYTE, \\(nil\\)\\)\n");
+    fprintf(ref, "trace\\.call: glTexImage2D\\(GL_TEXTURE_2D, 0, GL_RGB, 4, 4, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL\\)\n");
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     fprintf(ref, "trace\\.call: glTexParameteri\\(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR\\)\n");
     arg = GL_LINEAR;

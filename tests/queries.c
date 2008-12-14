@@ -240,7 +240,7 @@ static void query_vertex_attrib(void)
          * attribute 0 and VertexPointer.
          */
         glGetVertexAttribPointervARB(6, GL_VERTEX_ATTRIB_ARRAY_POINTER_ARB, &p);
-        fprintf(ref, "trace\\.call: glGetVertexAttribPointervARB\\(6, GL_VERTEX_ATTRIB_ARRAY_POINTER(_ARB)?, %p -> \\(nil\\)\\)\n", (void *) &p);
+        fprintf(ref, "trace\\.call: glGetVertexAttribPointervARB\\(6, GL_VERTEX_ATTRIB_ARRAY_POINTER(_ARB)?, %p -> NULL\\)\n", (void *) &p);
         glGetVertexAttribdvARB(6, GL_CURRENT_VERTEX_ATTRIB_ARB, d);
         fprintf(ref, "trace\\.call: glGetVertexAttribdvARB\\(6, (GL_CURRENT_VERTEX_ATTRIB(_ARB)?|GL_CURRENT_ATTRIB_NV), %p -> { 0, 0, 0, 1 }\\)\n", (void *) d);
         glGetVertexAttribivARB(6, GL_VERTEX_ATTRIB_ARRAY_TYPE_ARB, &i);
@@ -283,13 +283,13 @@ static void query_buffer_parameter(void)
         glBindBufferARB(GL_ARRAY_BUFFER_ARB, 1);
         fprintf(ref, "trace\\.call: glBindBufferARB\\(GL_ARRAY_BUFFER(_ARB)?, 1\\)\n");
         glBufferDataARB(GL_ARRAY_BUFFER_ARB, 8, data, GL_STATIC_DRAW_ARB);
-        fprintf(ref, "trace\\.call: glBufferDataARB\\(GL_ARRAY_BUFFER(_ARB)?, 8, %p, GL_STATIC_DRAW(_ARB)?\\)\n",
+        fprintf(ref, "trace\\.call: glBufferDataARB\\(GL_ARRAY_BUFFER(_ARB)?, 8, %p -> { 0, 1, 2, 3, 4, 5, 6, 7 }, GL_STATIC_DRAW(_ARB)?\\)\n",
                 (void *) data);
         glGetBufferParameterivARB(GL_ARRAY_BUFFER_ARB, GL_BUFFER_MAPPED_ARB, &res);
         fprintf(ref, "trace\\.call: glGetBufferParameterivARB\\(GL_ARRAY_BUFFER(_ARB)?, GL_BUFFER_MAPPED(_ARB)?, %p -> GL_FALSE\\)\n",
                 (void *) &res);
         glGetBufferPointervARB(GL_ARRAY_BUFFER_ARB, GL_BUFFER_MAP_POINTER_ARB, &ptr);
-        fprintf(ref, "trace\\.call: glGetBufferPointervARB\\(GL_ARRAY_BUFFER(_ARB)?, GL_BUFFER_MAP_POINTER(_ARB)?, %p -> \\(nil\\)\\)\n",
+        fprintf(ref, "trace\\.call: glGetBufferPointervARB\\(GL_ARRAY_BUFFER(_ARB)?, GL_BUFFER_MAP_POINTER(_ARB)?, %p -> NULL\\)\n",
                 (void *) &ptr);
     }
 }
@@ -379,7 +379,7 @@ static void shader_source(GLhandleARB shader, const char *source)
     fprintf(ref, "trace\\.call: glShaderSourceARB\\(%u, 1, %p -> { ",
             (unsigned int) shader, &source);
     dump_string(ref, source);
-    fprintf(ref, " }, \\(nil\\)\\)\n");
+    fprintf(ref, " }, NULL\\)\n");
 
     glCompileShaderARB(shader);
     fprintf(ref, "trace\\.call: glCompileShaderARB\\(%u\\)\n",
@@ -445,7 +445,7 @@ static void query_shaders(void)
         fprintf(ref, "trace\\.call: glGetAttachedObjectsARB\\(%u, 2, %p -> 2, %p -> { %u, %u }\\)\n",
                 (unsigned int) p, (void *) &count, (void *) attached, (unsigned int) vs, (unsigned int) fs);
         glGetAttachedObjectsARB(p, 4, NULL, attached);
-        fprintf(ref, "trace\\.call: glGetAttachedObjectsARB\\(%u, 4, \\(nil\\), %p -> { %u, %u }\\)\n",
+        fprintf(ref, "trace\\.call: glGetAttachedObjectsARB\\(%u, 4, NULL, %p -> { %u, %u }\\)\n",
                 (unsigned int) p, (void *) attached, (unsigned int) vs, (unsigned int) fs);
 
         language_version = (const char *) glGetString(GL_SHADING_LANGUAGE_VERSION_ARB);
@@ -523,22 +523,22 @@ static void query_ll_programs(void)
 static void texture2D(GLenum target, const char *target_regex)
 {
     glTexImage2D(target, 0, GL_RGBA, 4, 4, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
-    fprintf(ref, "trace\\.call: glTexImage2D\\(%s, 0, GL_RGBA, 4, 4, 0, GL_RGBA, GL_UNSIGNED_BYTE, \\(nil\\)\\)\n", target_regex);
+    fprintf(ref, "trace\\.call: glTexImage2D\\(%s, 0, GL_RGBA, 4, 4, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL\\)\n", target_regex);
     glTexImage2D(target, 1, GL_RGBA, 2, 2, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
-    fprintf(ref, "trace\\.call: glTexImage2D\\(%s, 1, GL_RGBA, 2, 2, 0, GL_RGBA, GL_UNSIGNED_BYTE, \\(nil\\)\\)\n", target_regex);
+    fprintf(ref, "trace\\.call: glTexImage2D\\(%s, 1, GL_RGBA, 2, 2, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL\\)\n", target_regex);
     glTexImage2D(target, 2, GL_RGBA, 1, 1, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
-    fprintf(ref, "trace\\.call: glTexImage2D\\(%s, 2, GL_RGBA, 1, 1, 0, GL_RGBA, GL_UNSIGNED_BYTE, \\(nil\\)\\)\n", target_regex);
+    fprintf(ref, "trace\\.call: glTexImage2D\\(%s, 2, GL_RGBA, 1, 1, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL\\)\n", target_regex);
 }
 
 /* Same but for 3D */
 static void texture3D(GLenum target, const char *target_regex)
 {
     glTexImage3DEXT(target, 0, GL_RGBA, 4, 4, 4, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
-    fprintf(ref, "trace\\.call: glTexImage3DEXT\\(%s, 0, GL_RGBA, 4, 4, 4, 0, GL_RGBA, GL_UNSIGNED_BYTE, \\(nil\\)\\)\n", target_regex);
+    fprintf(ref, "trace\\.call: glTexImage3DEXT\\(%s, 0, GL_RGBA, 4, 4, 4, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL\\)\n", target_regex);
     glTexImage3DEXT(target, 1, GL_RGBA, 2, 2, 2, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
-    fprintf(ref, "trace\\.call: glTexImage3DEXT\\(%s, 1, GL_RGBA, 2, 2, 2, 0, GL_RGBA, GL_UNSIGNED_BYTE, \\(nil\\)\\)\n", target_regex);
+    fprintf(ref, "trace\\.call: glTexImage3DEXT\\(%s, 1, GL_RGBA, 2, 2, 2, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL\\)\n", target_regex);
     glTexImage3DEXT(target, 2, GL_RGBA, 1, 1, 1, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
-    fprintf(ref, "trace\\.call: glTexImage3DEXT\\(%s, 2, GL_RGBA, 1, 1, 1, 0, GL_RGBA, GL_UNSIGNED_BYTE, \\(nil\\)\\)\n", target_regex);
+    fprintf(ref, "trace\\.call: glTexImage3DEXT\\(%s, 2, GL_RGBA, 1, 1, 1, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL\\)\n", target_regex);
 }
 
 static void query_framebuffers(void)
@@ -701,7 +701,7 @@ static void query_transform_feedback(void)
             fprintf(ref, "trace\\.call: glBindBuffer\\(GL_TRANSFORM_FEEDBACK_BUFFER_NV, %u\\)\n",
                     buffers[i]);
             glBufferData(GL_TRANSFORM_FEEDBACK_BUFFER_NV, 1024, NULL, GL_STREAM_COPY);
-            fprintf(ref, "trace\\.call: glBufferData\\(GL_TRANSFORM_FEEDBACK_BUFFER_NV, 1024, \\(nil\\), GL_STREAM_COPY(_ARB)?\\)\n");
+            fprintf(ref, "trace\\.call: glBufferData\\(GL_TRANSFORM_FEEDBACK_BUFFER_NV, 1024, NULL, GL_STREAM_COPY(_ARB)?\\)\n");
             glBindBufferBaseNV(GL_TRANSFORM_FEEDBACK_BUFFER_NV, i, i);
             fprintf(ref, "trace\\.call: glBindBufferBaseNV\\(GL_TRANSFORM_FEEDBACK_BUFFER_NV, %d, %d\\)\n",
                     i, i);

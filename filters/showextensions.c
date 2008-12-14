@@ -125,7 +125,7 @@ static void mark_extension(bugle_api_extension ext, bool *marked_extensions)
      * We recursively mark off all prior extensions.
      */
     if (ext > 0
-        && bugle_api_extension_version(ext) 
+        && bugle_api_extension_version(ext)
         && bugle_api_extension_version(ext - 1)
         && bugle_api_extension_block(ext) == bugle_api_extension_block(ext - 1))
         mark_extension(ext - 1, marked_extensions);
