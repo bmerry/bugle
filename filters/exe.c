@@ -76,7 +76,7 @@ static int follow_pointer(budgie_type type, int length, const void *ptr,
      * Note: the __typeof is because not all definitions can be formed
      * simply as "<type> <identifier>" e.g. function pointers.
      */
-    fprintf(out, "        const __typeof(%s) defn%d[] = { ",
+    fprintf(out, "        __typeof(%s) defn%d[] = { ",
             budgie_type_name_nomangle(type), *defn_pool);
     for (i = 0; i < length; i++)
     {
@@ -203,8 +203,18 @@ static bool exe_initialise(filter_set *handle)
     }
     fputs("#include <stdlib.h>\n"
           "#include <string.h>\n"
+#if BUGLE_GLTYPE_GL
           "#include <GL/glew.h>\n"
           "#include <GL/glut.h>\n"
+#endif
+#if BUGLE_GLTYPE_GLES1CM
+          "#include <GLES/gl.h>\n"
+          "#include <GLES/glext.h>\n"
+#endif
+#if BUGLE_GLTYPE_GLES2
+          "#include <GLES2/gl2.h>\n"
+          "#include <GLES2/gl2ext.h>\n"
+#endif
           "\n",
           out);
     return true;
@@ -216,7 +226,8 @@ static void exe_shutdown(filter_set *handle)
 
     if (!outside)
         fprintf(out, "}\n");
-    fprintf(out, "\nstatic void (*frames[]) =\n{\n");
+    fprintf(out, "\nint frame_count = %d;\n", frame);
+    fprintf(out, "void (*frames[])(void) =\n{\n");
     for (i = 0; i < frame; i++)
         fprintf(out, "    frame%d,\n", i);
     fprintf(out, "};\n");
