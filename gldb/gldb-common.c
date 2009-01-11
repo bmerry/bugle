@@ -437,18 +437,19 @@ static gldb_state *state_get(void)
     int32_t length;
     char *data;
     uint32_t data_len;
+    char *type_name = NULL;
 
     s = XMALLOC(gldb_state);
     bugle_list_init(&s->children, (void (*)(void *)) state_destroy);
     gldb_protocol_recv_string(lib_in, &s->name);
     gldb_protocol_recv_code(lib_in, &numeric_name);
     gldb_protocol_recv_code(lib_in, &enum_name);
-    gldb_protocol_recv_code(lib_in, &type);
+    gldb_protocol_recv_string(lib_in, &type_name);
     gldb_protocol_recv_code(lib_in, (uint32_t *) &length);
     gldb_protocol_recv_binary_string(lib_in, &data_len, &data);
     s->numeric_name = numeric_name;
     s->enum_name = enum_name;
-    s->type = type;
+    s->type = budgie_type_id(type_name); free(type_name);
     s->length = length;
     s->data = data;
 

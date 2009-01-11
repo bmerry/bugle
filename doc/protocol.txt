@@ -7,7 +7,7 @@ libbugle.
 The protocol is a simple binary protocol. This makes it easier to use
 with the read() and write() system calls, rather than using the C stdio
 layer. The former are easier to use with features like select(), but
-are not very for text-based protocols.
+are not very friendly for text-based protocols.
 
 Values are all 32-bit except where otherwise specified. Strings are a
 32-bit count followed by the characters (no explicit terminator).
@@ -104,7 +104,7 @@ RESP_STATE_NODE_BEGIN_RAW
 RESP_STATE_NODE_END_RAW:
              Similar to RESP_STATE_NODE_BEGIN, but in response to
              REQ_STATE_TREE_RAW. The string field is replaced by:
-             - (uint32) type code
+             - (str) type (with C++-style name mangling)
              - (int32) number of elements, or -1 for non-array
              - (str) the raw data
              If the data could not be obtained, the number of elements is

@@ -112,13 +112,13 @@ static void send_state_raw(const glstate *state, uint32_t id)
     gldb_protocol_send_code(out_pipe, state->enum_name);
     if (wrapper.data || !state->info)  /* root is valid but has no data */
     {
-        gldb_protocol_send_code(out_pipe, wrapper.type);
+        gldb_protocol_send_string(out_pipe, budgie_type_name(wrapper.type));
         gldb_protocol_send_code(out_pipe, wrapper.length);
         gldb_protocol_send_binary_string(out_pipe, budgie_type_size(wrapper.type) * abs(wrapper.length), (const char *) wrapper.data);
     }
     else
     {
-        gldb_protocol_send_code(out_pipe, 0);
+        gldb_protocol_send_string(out_pipe, "");
         gldb_protocol_send_code(out_pipe, -2); /* Magic invalid value */
         gldb_protocol_send_binary_string(out_pipe, 0, (const char *) wrapper.data);
     }

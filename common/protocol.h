@@ -39,8 +39,9 @@
 #define RESP_STATE_NODE_BEGIN          0xabcd0008UL
 #define RESP_STATE_NODE_END            0xabcd0009UL
 #define RESP_DATA                      0xabcd000aUL
-#define RESP_STATE_NODE_BEGIN_RAW      0xabcd000bUL
+#define RESP_STATE_NODE_BEGIN_RAW_OLD  0xabcd000bUL  /* Obsolete */
 #define RESP_STATE_NODE_END_RAW        0xabcd000cUL
+#define RESP_STATE_NODE_BEGIN_RAW      0xabcd000dUL
 
 #define REQ_RUN                        0xdcba0000UL
 #define REQ_CONT                       0xdcba0001UL
@@ -55,7 +56,8 @@
 #define REQ_DEACTIVATE_FILTERSET       0xdcba000aUL
 #define REQ_STATE_TREE                 0xdcba000bUL
 #define REQ_DATA                       0xdcba000cUL
-#define REQ_STATE_TREE_RAW             0xdcba000dUL
+#define REQ_STATE_TREE_RAW_OLD         0xdcba000dUL  /* Obsolete */
+#define REQ_STATE_TREE_RAW             0xdcba000eUL
 
 #define REQ_DATA_TEXTURE               0xedbc0000UL
 #define REQ_DATA_SHADER                0xedbc0001UL

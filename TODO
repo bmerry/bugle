@@ -30,6 +30,10 @@ camera filter-set
 gldb
 ----
 - more robust wire protocol
+  - versioning
+  - ability to obtain list of functions for tab completion in the GUI
+  - ability to get the target to do dump formatting when the client doesn't know how
+- TCP/IP remote debugging
 - allow Ctrl-C to abort current line when reading commands
 - set filter variables on the fly
 - enable reporting of segfaults
