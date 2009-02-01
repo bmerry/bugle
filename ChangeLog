@@ -8,6 +8,7 @@
 * Fix EGL support on POSIX to include the symbols
 * Change debug protocol to pass types as mangled strings, to make the protocol
 usable between clients and filters that weren't built identically
+* Makefile fix for parallel make
 
 0.0.20080824
 ------------

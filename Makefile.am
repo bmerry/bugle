@@ -190,9 +190,14 @@ BCFILES = $(GLBCFILES) \
 	  bc/gles2-egl-win.bc bc/gles2-egl-posix.bc \
 	  bc/gles1cm-egl-posix.bc
 
-$(BUDGIE_BUILT_SRCS): budgie/budgie$(EXEEXT) src/data/gl.tu $(budgie_all_bc_files)
+# budgie builds all its outputs in one go, so we need a pseudo-target
+# in between to avoid make running the rule N times
+$(BUDGIE_BUILT_SRCS): budgie_output_stamp
+	@true
+budgie_output_stamp: budgie/budgie$(EXEEXT) src/data/gl.tu $(budgie_all_bc_files)
 	$(mkdir_p) include/budgie
 	budgie/budgie$(EXEEXT) -I$(srcdir) -T `test -f src/data/gl.tu || echo '$(srcdir)/'`src/data/gl.tu $(budgie_main_bc_file)
+	touch budgie_output_stamp
 
 BUILT_SOURCES += src/apitables.h
 
@@ -334,7 +339,7 @@ EXTRA_DIST = bugle.pc.in $(BCFILES) src/data/gl.c \
 # Note: automake ought to clean the various files in the .libs directories,
 # but for some reason does not.
 CLEANFILES = \
-	$(BUDGIE_BUILT_SRCS) \
+	$(BUDGIE_BUILT_SRCS) budgie_output_stamp \
 	src/apitables.c src/apitables.h \
 	src/data/gl.tu bc/gl/alias.bc \
 	doc/gldb.1.gz doc/bugle.3.gz \
