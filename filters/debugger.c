@@ -30,6 +30,7 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <netinet/tcp.h>
+#include <netdb.h>
 #include <unistd.h>
 #include <errno.h>
 #include <assert.h>
@@ -916,7 +917,7 @@ gl_once_define(static, debugger_init_thread_once)
 static bool debugger_callback(function_call *call, const callback_data *data)
 {
     char *resp_str;
-    
+
     /* Only one thread can read and write from the pipes.
      * FIXME: still stop others threads, with events to start and stop everything
      * in sync.
@@ -1025,58 +1026,75 @@ static bool debugger_initialise(filter_set *handle)
     else if (0 == strcmp(getenv("BUGLE_DEBUGGER"), "tcp"))
     {
         int sock;
-        int port;
         int status;
-        struct sockaddr_in addr;
+        const char *host;
+        struct addrinfo hints, *ai;
 
         env = getenv("BUGLE_DEBUGGER_PORT");
         if (!env)
         {
             bugle_log("debugger", "initialise", BUGLE_LOG_ERROR,
-                      "The debugger filter-set should only be used with gldb");
-        }
-        port = strtol(env, &last, 0);
-        if (!*env || *last || port < 0 || port > 0xffff)
-        {
-            bugle_log_printf("debugger", "initialise", BUGLE_LOG_ERROR,
-                             "Illegal BUGLE_DEBUGGER_PORT: '%s' (bug in gldb?)",
-                             env);
+                      "BUGLE_DEBUGGER_PORT must be set");
             return false;
         }
-        addr.sin_family = AF_INET;
-        addr.sin_port = htons(port);
-        addr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
 
-        sock = socket(AF_INET, SOCK_STREAM, 0);
+        host = getenv("BUGLE_DEBUGGER_HOST");
+
+        memset(&hints, 0, sizeof(hints));
+        hints.ai_family = AF_UNSPEC;        /* supports IPv4 and IPv6 */
+        hints.ai_socktype = SOCK_STREAM;
+        hints.ai_protocol = IPPROTO_TCP;
+        hints.ai_flags = AI_V4MAPPED | AI_ADDRCONFIG | AI_PASSIVE;
+        status = getaddrinfo(host, env, &hints, &ai);
+        if (status != 0 || ai == NULL)
+        {
+            bugle_log_printf("debugger", "initialise", BUGLE_LOG_ERROR,
+                             "failed to resolve %s:%s: %s",
+                             host ? host : "", env, gai_strerror(status));
+            return false;
+        }
+
+
+        sock = socket(ai->ai_family, ai->ai_socktype, ai->ai_protocol);
         if (sock == -1)
         {
+            freeaddrinfo(ai);
             bugle_log_printf("debugger", "initialise", BUGLE_LOG_ERROR,
-                             "Failed to open a TCP socket");
+                             "failed to open socket");
             return false;
         }
 
-        status = bind(sock, (const struct sockaddr *) &addr, sizeof(addr));
+        status = bind(sock, ai->ai_addr, ai->ai_addrlen);
         if (status == -1)
         {
+            freeaddrinfo(ai);
+            close(sock);
             bugle_log_printf("debugger", "initialise", BUGLE_LOG_ERROR,
-                             "binding to port %d failed", port);
+                             "failed to bind to %s:%s",
+                             host ? host : "", env);
             return false;
         }
 
         if (listen(sock, 1) == -1)
         {
+            freeaddrinfo(ai);
+            close(sock);
             bugle_log_printf("debugger", "initialise", BUGLE_LOG_ERROR,
-                             "listening on port %d failed", port);
+                             "failed to listen on %s:%s",
+                             host ? host : "", env);
             return false;
         }
 
         in_pipe_fd = accept(sock, NULL, NULL);
         if (in_pipe_fd == -1)
         {
+            freeaddrinfo(ai);
+            close(sock);
             bugle_log_printf("debugger", "initialise", BUGLE_LOG_ERROR,
-                             "failed to accept a connection on port %d", port);
+                             "failed to accept a connection on %s:%s", host, env);
             return false;
         }
+        close(sock);
 
         out_pipe = in_pipe_fd;
         in_pipe = gldb_protocol_reader_new_fd_select(in_pipe_fd);

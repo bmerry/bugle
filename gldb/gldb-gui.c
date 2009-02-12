@@ -386,11 +386,8 @@ static void notebook_switch_page(GtkNotebook *notebook,
     notebook_update((GldbWindow *) user_data, page_num);
 }
 
-static void child_exit_callback(GPid pid, gint status, gpointer user_data)
+static void child_exit_notify(GldbWindow *context)
 {
-    GldbWindow *context;
-
-    context = (GldbWindow *) user_data;
     if (context->channel)
     {
         g_io_channel_unref(context->channel);
@@ -408,6 +405,11 @@ static void child_exit_callback(GPid pid, gint status, gpointer user_data)
     pane_status_changed(context);
 }
 
+static void child_exit_callback(GPid pid, gint status, gpointer user_data)
+{
+    child_exit_notify((GldbWindow *) user_data);
+}
+
 static gboolean response_callback(GIOChannel *channel, GIOCondition condition,
                                   gpointer user_data)
 {
@@ -421,7 +423,10 @@ static gboolean response_callback(GIOChannel *channel, GIOCondition condition,
     context = (GldbWindow *) user_data;
     r = gldb_get_response();
     if (r == NULL)
+    {
+        child_exit_notify(context);
         return TRUE;
+    }
 
     n = bugle_list_head(&response_handlers);
     if (n) h = (response_handler *) bugle_list_data(n);
@@ -629,7 +634,7 @@ static void about_action(GtkAction *action, gpointer user_data)
                           "program-name", "gldb-gui",
                           /* "authors", authors, */
                           "comments", "An open-source OpenGL debugger",
-                          "copyright", "2004-2007 Bruce Merry",
+                          "copyright", "2004-2009 Bruce Merry",
                           "license", license,
                           "version", PACKAGE_VERSION,
                           "website", "http://www.opengl.org/sdk/tools/BuGLe/",

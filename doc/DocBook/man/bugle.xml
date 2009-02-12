@@ -5,7 +5,7 @@
 ]>
 <refentry id="bugle.3">
     <refentryinfo>
-        <date>October 2007</date>
+        <date>Jan 2009</date>
         <productname>BUGLE</productname>
     </refentryinfo>
     <refmeta>
@@ -152,6 +152,15 @@ filterset <replaceable>filterset</replaceable> <optional><replaceable>key</repla
                 <listitem><para>
                         Tells the linker to load
                         <application>bugle</application>.
+                </para></listitem>
+            </varlistentry>
+            <varlistentry>
+                <term><envar>BUGLE_DEBUGGER</envar></term>
+                <term><envar>BUGLE_DEBUGGER_HOST</envar></term>
+                <term><envar>BUGLE_DEBUGGER_PORT</envar></term>
+                <listitem><para>
+                        Configuration for remote TCP/IP debugging. Refer to
+                        &mp-gldb-gui; for details.
                 </para></listitem>
             </varlistentry>
         </variablelist>

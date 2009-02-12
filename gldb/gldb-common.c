@@ -198,12 +198,27 @@ static pid_t execute(void (*child_init)(void))
     const char *command, *chain;
     char **argv;
 
+    /* child_init not actually possible on win32 */
+    assert(child_init == NULL);
+    /* FIXME: add support for remote modes one day */
+    switch (prog_type)
+    {
+    case GLDB_PROGRAM_TYPE_LOCAL:
+        break;
+    case GLDB_PROGRAM_TYPE_SSH:
+        gldb_error("SSH mode not yet supported on Windows");
+        return -1;
+    case GLDB_PROGRAM_TYPE_TCP:
+        gldb_error("TCP/IP mode not yet supported on Windows");
+        return -1;
+    default:
+        gldb_error("This mode is not yet supported on Windows");
+        return -1;
+    }
+
     command = prog_settings[GLDB_PROGRAM_SETTING_COMMAND];
     if (!command) command = "/bin/true";
     chain = prog_settings[GLDB_PROGRAM_SETTING_CHAIN];
-
-    /* child_init not actually possible on win32 */
-    assert(child_init == NULL);
 
     /* Some trickery is needed on windows to get inheritance right: the
      * pipes are all initially opened with _O_NOINHERIT, and then those that
@@ -215,7 +230,6 @@ static pid_t execute(void (*child_init)(void))
     child_pipes[0] = dup(out_pipe[0]); close(out_pipe[0]);
     child_pipes[1] = dup(in_pipe[1]);  close(in_pipe[1]);
 
-    /* FIXME: support ssh as well */
     setenv_printf("BUGLE_DEBUGGER=fd");
     setenv_printf("BUGLE_DEBUGGER_FD_IN=%d", child_pipes[0]);
     setenv_printf("BUGLE_DEBUGGER_FD_OUT=%d", child_pipes[1]);
@@ -248,8 +262,7 @@ static pid_t execute(void (*child_init)(void))
 
 /* Spawns off the program, and returns the pid
  * Returns: -1 on failure
- *           0 on success when there is no local process
- *           pid on success when there is a local process
+ *           pid on success
  */
 static pid_t execute(void (*child_init)(void))
 {
@@ -274,7 +287,7 @@ static pid_t execute(void (*child_init)(void))
         hints.ai_family = AF_UNSPEC;    /* IPv4 or IPv6 */
         hints.ai_socktype = SOCK_STREAM;
         hints.ai_protocol = IPPROTO_TCP;
-        hints.ai_flags = AI_PASSIVE | AI_V4MAPPED | AI_ADDRCONFIG;
+        hints.ai_flags = AI_V4MAPPED | AI_ADDRCONFIG;
         status = getaddrinfo(host, port, &hints, &ai);
         if (status != 0 || ai == NULL)
         {
@@ -411,9 +424,13 @@ gldb_state *gldb_state_update(uint32_t id)
         {
             state_root = ((gldb_response_state_tree *) r)->root;
             free(r);
+            state_dirty = false;
         }
-        state_dirty = false;
-        /* FIXME: report any error to the GUI */
+        else
+        {
+            gldb_error(((gldb_response_error *) r)->error);
+            gldb_free_response(r);
+        }
     }
     return state_root;
 }

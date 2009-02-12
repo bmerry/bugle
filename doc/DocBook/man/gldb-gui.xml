@@ -316,12 +316,13 @@
         </para>
 
         <para>
-            Regardless of the method used, the X11 display running the
+            Regardless of the method used, the GL implementation running the
             debugger must in some respects be at least as capable as the
             display running the target application. Specifically, any
             texture that you view is loaded into an equivalent texture in
             the debugger, and so the texture target and dimensions must be
-            supported there.
+            supported there. Note that even if &bugle; was built for OpenGL ES,
+            the debugger will use OpenGL.
         </para>
 
         <refsect2 id="gldb-gui-MAN-remote-x11">
@@ -365,7 +366,7 @@
         <refsect2 id="gldb-gui-MAN-remote-ssh">
             <title>SSH-tunnelled debugger protocol</title>
             <para>
-                This scenario is highly experimental and extremely fragile.
+                This scenario is experimental and fragile.
                 The debugger and target execute on separate machines, and
                 communicate over SSH rather than through a local pipe. Because
                 the debugger protocol was not designed for networking, this
@@ -376,12 +377,12 @@
                         types. In particular, they must have the same endianness,
                         and it may be necessary for them to have the same word size.
                 </para></listitem>
-                <listitem><para>They must the same internal enumeration of types.
-                        Generally this is only guaranteed if they are the same
+                <listitem><para>Any types used on the target must also be known
+                        to the debugger. Ideally, one should use the same
                         version of &bugle;, compiled with the same compiler and
                         the same OpenGL headers. In some cases it may be
                         sufficient to copy <filename>src/data/gl.tu</filename>
-                        from one build to another and re-build (but do not
+                        from one build to another and re-build (but do
                         <emphasis>not</emphasis> run <command>make
                             clean</command>, as this will cause the copied
                         file to be regenerated).
@@ -403,6 +404,47 @@
                 configure <application>ssh</application> to log into the
                 machine without prompting for a password.
             </para>
+        </refsect2>
+
+        <refsect2 id="gldb-gui-MAN-remote-tcp">
+            <title>TCP/IP connection</title>
+            <para>
+                This is similar to the SSH option, but does not require SSH
+                to be available, making it suitable for embedded systems with
+                OpenGL ES. First, start the application on the target, with the
+                following environment variables:
+            </para>
+            <itemizedlist>
+                <listitem><para><userinput><envar>LD_PRELOAD</envar>=libbugle.so</userinput></para></listitem>
+                <listitem><para><userinput><envar>BUGLE_DEBUGGER</envar>=tcp</userinput></para></listitem>
+                <listitem><para><userinput><envar>BUGLE_DEBUGGER_PORT</envar>=<replaceable>port</replaceable></userinput></para></listitem>
+                <listitem><para><userinput><envar>BUGLE_DEBUGGER_HOST</envar>=<replaceable>host</replaceable></userinput> (optional)</para></listitem>
+            </itemizedlist>
+            <para>
+                This will open a listener on <replaceable>port</replaceable>.
+                By default, it will listen on all interfaces, but can be made
+                to bind to a specific interface by setting
+                <envar>BUGLE_DEBUGGER_HOST</envar>.
+            </para>
+            <para>
+                Once the target has been started, go to
+                <menuchoice>
+                    <guimenu>Options</guimenu>
+                    <guimenuitem>Target</guimenuitem>
+                </menuchoice>
+                and change the mode to <guilabel>Remote via TCP/IP</guilabel>.
+                You will then be able to fill in the host and port of the
+                target. Once this setup is done, select
+                <menuchoice>
+                    <guimenu>Run</guimenu>
+                    <guimenuitem>Run</guimenuitem>
+                </menuchoice>
+                to start the debugging session.
+            </para>
+            <warning><para>
+                    This mode does not use any kind of authentication or
+                    encryption, so should only be used on a trusted network.
+            </para></warning>
         </refsect2>
     </refsect1>
 
