@@ -1,5 +1,5 @@
 /*  BuGLe: an OpenGL debugging tool
- *  Copyright (C) 2004-2007  Bruce Merry
+ *  Copyright (C) 2004-2007, 2009  Bruce Merry
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -32,6 +32,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
+#include <errno.h>
 #include <bugle/linkedlist.h>
 #include <bugle/hashtable.h>
 #include <bugle/porting.h>
@@ -54,6 +55,31 @@
 static linked_list response_handlers;
 static guint32 seq = 0;
 static GdkCursor *wait_cursor = NULL;
+
+/* Callback functions for gldb-common.c */
+void gldb_error(const char *fmt, ...)
+{
+    va_list ap;
+    char *msg;
+    GtkWidget *dialog;
+
+    va_start(ap, fmt);
+    msg = xvasprintf(fmt, ap);
+    va_end(ap);
+
+    dialog = gtk_message_dialog_new(NULL,
+                                    GTK_DIALOG_DESTROY_WITH_PARENT,
+                                    GTK_MESSAGE_ERROR,
+                                    GTK_BUTTONS_CLOSE,
+                                    "%s", msg);
+    gtk_dialog_run(GTK_DIALOG(dialog));
+    gtk_widget_destroy(dialog);
+}
+
+void gldb_perror(const char *msg)
+{
+    gldb_error("%s: %s", msg, g_strerror(errno));
+}
 
 /* gldb-gui is broken into a number of separate modules, which are unified by
  * the GldbPane type. A GldbPane encapsulates a widget plus internal state,
@@ -485,7 +511,8 @@ static void run_action(GtkAction *action, gpointer user_data)
     context = (GldbWindow *) user_data;
 
     g_return_if_fail(gldb_get_status() == GLDB_STATUS_DEAD);
-    gldb_run(seq++, NULL);
+    if (!gldb_run(seq++, NULL))
+        return;
 #if BUGLE_OSAPI_WIN32
     context->channel = g_io_channel_win32_new_fd(gldb_get_in_pipe());
 #else

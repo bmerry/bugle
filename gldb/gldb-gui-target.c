@@ -35,9 +35,10 @@
 typedef struct GldbGuiTargetDialog
 {
     GtkWidget *dialog;
-    GtkWidget *mode, *command, *chain, *display;
+    GtkWidget *mode;
 
-    GtkWidget *host_label, *host;
+    GtkWidget *settings[GLDB_PROGRAM_SETTING_COUNT];
+    GtkWidget *labels[GLDB_PROGRAM_SETTING_COUNT];
 } GldbGuiTargetDialog;
 
 static GtkTreeModel *target_model(void)
@@ -49,12 +50,17 @@ static GtkTreeModel *target_model(void)
     gtk_list_store_append(store, &iter);
     gtk_list_store_set(store, &iter,
                        COLUMN_MODE_NAME, _("Local"),
-                       COLUMN_MODE_ENUM, GLDB_PROGRAM_LOCAL,
+                       COLUMN_MODE_ENUM, GLDB_PROGRAM_TYPE_LOCAL,
                        -1);
     gtk_list_store_append(store, &iter);
     gtk_list_store_set(store, &iter,
                        COLUMN_MODE_NAME, _("Remote via SSH"),
-                       COLUMN_MODE_ENUM, GLDB_PROGRAM_SSH,
+                       COLUMN_MODE_ENUM, GLDB_PROGRAM_TYPE_SSH,
+                       -1);
+    gtk_list_store_append(store, &iter);
+    gtk_list_store_set(store, &iter,
+                       COLUMN_MODE_NAME, _("Remote via TCP/IP"),
+                       COLUMN_MODE_ENUM, GLDB_PROGRAM_TYPE_TCP,
                        -1);
     return GTK_TREE_MODEL(store);
 }
@@ -71,7 +77,7 @@ static void target_mode_changed(GtkComboBox *mode, gpointer user_data)
     GtkTreeModel *model;
     GtkTreeIter iter;
     gint mode_enum;
-    gboolean remote_visible;
+    gldb_program_setting setting;
 
     context = (GldbGuiTargetDialog *) user_data;
     model = gtk_combo_box_get_model(mode);
@@ -80,9 +86,13 @@ static void target_mode_changed(GtkComboBox *mode, gpointer user_data)
                        COLUMN_MODE_ENUM, &mode_enum,
                        -1);
 
-    remote_visible = (mode_enum == GLDB_PROGRAM_SSH);
-    show_hide(context->host_label, remote_visible);
-    show_hide(context->host, remote_visible);
+    for (setting = 0; setting < GLDB_PROGRAM_SETTING_COUNT; setting++)
+    {
+        gboolean visible;
+        visible = gldb_program_type_has_setting(mode_enum, setting);
+        show_hide(context->settings[setting], visible);
+        show_hide(context->labels[setting], visible);
+    }
 }
 
 static GtkWidget *target_mode(GldbGuiTargetDialog *context)
@@ -129,7 +139,8 @@ static void target_update(GldbGuiTargetDialog *context)
     GtkTreeModel *model;
     GtkTreeIter iter;
     gint mode_enum;
-    const char *command, *chain, *display, *host;
+    gldb_program_setting setting;
+    const char *value;
 
     model = gtk_combo_box_get_model(GTK_COMBO_BOX(context->mode));
     gtk_combo_box_get_active_iter(GTK_COMBO_BOX(context->mode), &iter);
@@ -137,22 +148,15 @@ static void target_update(GldbGuiTargetDialog *context)
                        COLUMN_MODE_ENUM, &mode_enum,
                        -1);
 
-    command = (const char *) gtk_entry_get_text(GTK_ENTRY(context->command));
-    chain = (const char *) gtk_entry_get_text(GTK_ENTRY(context->chain));
-    display = (const char *) gtk_entry_get_text(GTK_ENTRY(context->display));
-    gldb_program_set_setting(GLDB_PROGRAM_SETTING_CHAIN, chain);
-    gldb_program_set_setting(GLDB_PROGRAM_SETTING_DISPLAY, display);
-    gldb_program_set_setting(GLDB_PROGRAM_SETTING_COMMAND, command);
-    switch (mode_enum)
-    {
-    case GLDB_PROGRAM_LOCAL: /* Local */
-        break;
-    case GLDB_PROGRAM_SSH: /* Remote */
-        host = (const char *) gtk_entry_get_text(GTK_ENTRY(context->host));
-        gldb_program_set_setting(GLDB_PROGRAM_SETTING_HOST, host);
-        break;
-    }
     gldb_program_set_type(mode_enum);
+    for (setting = 0; setting < GLDB_PROGRAM_SETTING_COUNT; setting++)
+    {
+        if (gldb_program_type_has_setting(mode_enum, setting))
+        {
+            value = (const char *) gtk_entry_get_text(GTK_ENTRY(context->settings[setting]));
+            gldb_program_set_setting(setting, value);
+        }
+    }
 }
 
 static GtkWidget *entry_new_with_setting(gldb_program_setting setting)
@@ -172,6 +176,15 @@ void gldb_gui_target_dialog_run(GtkWindow *parent)
     GldbGuiTargetDialog context;
     gint result;
     GtkWidget *table;
+    gldb_program_setting setting;
+    static const gchar *names[GLDB_PROGRAM_SETTING_COUNT] =
+    {
+        "Executable",
+        "Filter chain",
+        "X11 Display",
+        "Host",
+        "Port"
+    };
 
     context.dialog = gtk_dialog_new_with_buttons(_("Target"),
                                                  parent,
@@ -184,17 +197,16 @@ void gldb_gui_target_dialog_run(GtkWindow *parent)
     gtk_window_set_resizable(GTK_WINDOW(context.dialog), FALSE);
 
     target_mode(&context);
-    context.command = entry_new_with_setting(GLDB_PROGRAM_SETTING_COMMAND);
-    context.chain = entry_new_with_setting(GLDB_PROGRAM_SETTING_CHAIN);
-    context.display = entry_new_with_setting(GLDB_PROGRAM_SETTING_DISPLAY);
-    context.host = entry_new_with_setting(GLDB_PROGRAM_SETTING_HOST);
+    for (setting = 0; setting < GLDB_PROGRAM_SETTING_COUNT; setting++)
 
-    table = gtk_table_new(5, 2, FALSE);
+    table = gtk_table_new(GLDB_PROGRAM_SETTING_COUNT + 1, 2, FALSE);
     add_labelled(table, 0, _("Mode"), context.mode);
-    add_labelled(table, 1, _("Executable"), context.command);
-    add_labelled(table, 2, _("Filter chain"), context.chain);
-    add_labelled(table, 3, _("X11 Display"), context.display);
-    context.host_label = add_labelled(table, 4, _("Host"), context.host);
+    for (setting = 0; setting < GLDB_PROGRAM_SETTING_COUNT; setting++)
+    {
+        context.settings[setting] = entry_new_with_setting(setting);
+        context.labels[setting] = add_labelled(table, setting + 1,
+                                               _(names[setting]), context.settings[setting]);
+    }
     gtk_box_pack_start(GTK_BOX(GTK_DIALOG(context.dialog)->vbox),
                        table, TRUE, FALSE, 0);
     gtk_combo_box_set_active(GTK_COMBO_BOX(context.mode), gldb_program_get_type());

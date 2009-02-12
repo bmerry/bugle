@@ -9,6 +9,7 @@
 * Change debug protocol to pass types as mangled strings, to make the protocol
 usable between clients and filters that weren't built identically
 * Makefile fix for parallel make
+* TCP/IP remote debugging (still in progress)
 
 0.0.20080824
 ------------

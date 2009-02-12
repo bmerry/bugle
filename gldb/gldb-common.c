@@ -1,5 +1,5 @@
 /*  BuGLe: an OpenGL debugging tool
- *  Copyright (C) 2004-2007  Bruce Merry
+ *  Copyright (C) 2004-2007, 2009  Bruce Merry
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -72,8 +72,28 @@ void gldb_program_clear(void)
     int i;
 
     for (i = 0; i < GLDB_PROGRAM_SETTING_COUNT; i++)
+    {
         free(prog_settings[i]);
-    prog_type = GLDB_PROGRAM_LOCAL;
+        prog_settings[i] = NULL;
+    }
+    prog_type = GLDB_PROGRAM_TYPE_LOCAL;
+}
+
+bool gldb_program_type_has_setting(gldb_program_type type, gldb_program_setting setting)
+{
+    static const bool ans[GLDB_PROGRAM_TYPE_COUNT][GLDB_PROGRAM_SETTING_COUNT] =
+    {
+        /* GLDB_PROGRAM_TYPE_LOCAL */
+        { true, true, true, false, false },
+        /* GLDB_PROGRAM_TYPE_SSH */
+        { true, true, true, true, false },
+        /* GLDB_PROGRAM_TYPE_TCP */
+        { false, false, false, true, true }
+    };
+
+    assert(type >= 0 && type < GLDB_PROGRAM_TYPE_COUNT);
+    assert(setting >= 0 && setting < GLDB_PROGRAM_SETTING_COUNT);
+    return ans[type][setting];
 }
 
 void gldb_program_set_setting(gldb_program_setting setting, const char *value)
@@ -196,7 +216,7 @@ static pid_t execute(void (*child_init)(void))
     child_pipes[1] = dup(in_pipe[1]);  close(in_pipe[1]);
 
     /* FIXME: support ssh as well */
-    setenv_printf("BUGLE_DEBUGGER=1");
+    setenv_printf("BUGLE_DEBUGGER=fd");
     setenv_printf("BUGLE_DEBUGGER_FD_IN=%d", child_pipes[0]);
     setenv_printf("BUGLE_DEBUGGER_FD_OUT=%d", child_pipes[1]);
     setenv_printf("BUGLE_CHAIN=%s", chain ? chain : "");
@@ -220,23 +240,78 @@ static pid_t execute(void (*child_init)(void))
 
 #else /* !BUGLE_OSAPI_WIN32 */
 # include <sys/wait.h>
+# include <sys/socket.h>
+# include <netinet/in.h>
+# include <netinet/tcp.h>
+# include <arpa/inet.h>
+# include <netdb.h>
 
-/* Spawns off the program, and returns the pid */
+/* Spawns off the program, and returns the pid
+ * Returns: -1 on failure
+ *           0 on success when there is no local process
+ *           pid on success when there is a local process
+ */
 static pid_t execute(void (*child_init)(void))
 {
     pid_t pid;
     /* in/out refers to our view, not child view */
     int in_pipe[2], out_pipe[2];
     char *prog_argv[10];
-    char *command, *chain, *display, *host;
+    char *command, *chain, *display, *host, *port;
+
+    if (prog_type == GLDB_PROGRAM_TYPE_TCP)
+    {
+        /* No exec() call, just open a connection */
+        struct addrinfo hints;
+        struct addrinfo *ai;
+        int status;
+        int sock;
+
+        host = prog_settings[GLDB_PROGRAM_SETTING_HOST];
+        port = prog_settings[GLDB_PROGRAM_SETTING_PORT];
+
+        memset(&hints, 0, sizeof(hints));
+        hints.ai_family = AF_UNSPEC;    /* IPv4 or IPv6 */
+        hints.ai_socktype = SOCK_STREAM;
+        hints.ai_protocol = IPPROTO_TCP;
+        hints.ai_flags = AI_PASSIVE | AI_V4MAPPED | AI_ADDRCONFIG;
+        status = getaddrinfo(host, port, &hints, &ai);
+        if (status != 0 || ai == NULL)
+        {
+            gldb_error("Failed to resolve %s:%s: %s\n", 
+                       host ? host : "",
+                       port ? port : "",
+                       gai_strerror(status));
+            return -1;
+        }
+
+        sock = socket(ai->ai_family, ai->ai_socktype, ai->ai_protocol);
+        if (sock == -1)
+        {
+            freeaddrinfo(ai);
+            gldb_perror("socket");
+            return -1;
+        }
+        if (connect(sock, ai->ai_addr, ai->ai_addrlen) == -1)
+        {
+            freeaddrinfo(ai);
+            close(sock);
+            gldb_perror("connect failed");
+            return -1;
+        }
+        freeaddrinfo(ai);
+        lib_in_fd = sock;
+        lib_out = sock;
+        return 0;
+    }
 
     gldb_safe_syscall(pipe(in_pipe), "pipe");
     gldb_safe_syscall(pipe(out_pipe), "pipe");
     switch ((pid = fork()))
     {
     case -1:
-        perror("fork failed");
-        exit(1);
+        gldb_perror("fork failed");
+        return -1;
     case 0: /* Child */
         if (child_init != NULL)
             (*child_init)();
@@ -248,20 +323,20 @@ static pid_t execute(void (*child_init)(void))
         host = prog_settings[GLDB_PROGRAM_SETTING_HOST];
         switch (prog_type)
         {
-        case GLDB_PROGRAM_LOCAL:
+        case GLDB_PROGRAM_TYPE_LOCAL:
             prog_argv[0] = "/bin/sh";
             prog_argv[1] = "-c";
-            prog_argv[2] = xasprintf("%s%s BUGLE_CHAIN=%s LD_PRELOAD=libbugle.so BUGLE_DEBUGGER=1 BUGLE_DEBUGGER_FD_IN=%d BUGLE_DEBUGGER_FD_OUT=%d %s",
+            prog_argv[2] = xasprintf("%s%s BUGLE_CHAIN=%s LD_PRELOAD=libbugle.so BUGLE_DEBUGGER=fd BUGLE_DEBUGGER_FD_IN=%d BUGLE_DEBUGGER_FD_OUT=%d %s",
                                      display ? "DISPLAY=" : "", display ? display : "",
                                      chain ? chain : "",
                                      out_pipe[0], in_pipe[1], command);
             prog_argv[3] = NULL;
             break;
-        case GLDB_PROGRAM_SSH:
+        case GLDB_PROGRAM_TYPE_SSH:
             /* Insert the environment variables into the command. */
             prog_argv[0] = "/usr/bin/ssh";
             prog_argv[1] = host ? host : "localhost";
-            prog_argv[2] = xasprintf("%s%s BUGLE_CHAIN=%s LD_PRELOAD=libbugle.so BUGLE_DEBUGGER=1 BUGLE_DEBUGGER_FD_IN=3 BUGLE_DEBUGGER_FD_OUT=4 %s 3<&0 4>&1 </dev/null 1>&2",
+            prog_argv[2] = xasprintf("%s%s BUGLE_CHAIN=%s LD_PRELOAD=libbugle.so BUGLE_DEBUGGER=fd BUGLE_DEBUGGER_FD_IN=3 BUGLE_DEBUGGER_FD_OUT=4 %s 3<&0 4>&1 </dev/null 1>&2",
                                      display ? "DISPLAY=" : "", display ? display : "",
                                      chain ? chain : "",
                                      command);
@@ -269,6 +344,7 @@ static pid_t execute(void (*child_init)(void))
             dup2(in_pipe[1], 1);
             dup2(out_pipe[0], 0);
             break;
+        default:;
         }
 
         close(in_pipe[0]);
@@ -281,7 +357,13 @@ static pid_t execute(void (*child_init)(void))
         lib_out = out_pipe[1];
         close(in_pipe[1]);
         close(out_pipe[0]);
-        return pid;
+        switch (prog_type)
+        {
+        case GLDB_PROGRAM_TYPE_LOCAL:
+            return pid;
+        default:
+            return 0;
+        }
     }
 }
 #endif
@@ -433,7 +515,7 @@ static gldb_state *state_get(void)
 {
     gldb_state *s, *child;
     uint32_t resp, id;
-    uint32_t numeric_name, enum_name, type;
+    uint32_t numeric_name, enum_name;
     int32_t length;
     char *data;
     uint32_t data_len;
@@ -755,11 +837,13 @@ void gldb_safe_syscall(int r, const char *str)
     }
 }
 
-void gldb_run(uint32_t id, void (*child_init)(void))
+bool gldb_run(uint32_t id, void (*child_init)(void))
 {
     const hash_table_entry *h;
 
     child_pid = execute(child_init);
+    if (child_pid == -1)
+        return false;
     /* Send breakpoints */
     gldb_protocol_send_code(lib_out, REQ_BREAK_ERROR);
     gldb_protocol_send_code(lib_out, 0);
@@ -774,6 +858,7 @@ void gldb_run(uint32_t id, void (*child_init)(void))
     gldb_protocol_send_code(lib_out, REQ_RUN);
     gldb_protocol_send_code(lib_out, id);
     set_status(GLDB_STATUS_STARTED);
+    return true;
 }
 
 void gldb_send_continue(uint32_t id)
@@ -944,6 +1029,8 @@ void gldb_initialise(int argc, const char * const *argv)
     }
     ptr[-1] = '\0';
     gldb_program_set_setting(GLDB_PROGRAM_SETTING_COMMAND, command);
+    gldb_program_set_setting(GLDB_PROGRAM_SETTING_HOST, "localhost");
+    gldb_program_set_setting(GLDB_PROGRAM_SETTING_PORT, "9118");
     free(command);
     bugle_hash_init(&break_on, NULL);
 }

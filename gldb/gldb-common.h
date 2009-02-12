@@ -1,5 +1,5 @@
 /*  BuGLe: an OpenGL debugging tool
- *  Copyright (C) 2004-2007  Bruce Merry
+ *  Copyright (C) 2004-2007, 2009  Bruce Merry
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -27,6 +27,7 @@
 #include <unistd.h>
 #include <stdbool.h>
 #include <bugle/linkedlist.h>
+#include <bugle/misc.h>
 #include <budgie/basictypes.h>
 #ifndef GL_FALSE
 # include <GL/gl.h>
@@ -49,6 +50,10 @@
         } \
     } while (0)
 
+/* Callback functions provided by the UI */
+void gldb_error(const char *fmt, ...) BUGLE_ATTRIBUTE_FORMAT_PRINTF(1, 2);
+void gldb_perror(const char *msg);
+
 /* There are four possible statuses:
  * - dead: the program has not been started or has exited
  * - started: the program is busy initialising and accepting our
@@ -70,13 +75,16 @@ typedef enum
     GLDB_PROGRAM_SETTING_CHAIN,
     GLDB_PROGRAM_SETTING_DISPLAY,
     GLDB_PROGRAM_SETTING_HOST,
+    GLDB_PROGRAM_SETTING_PORT,
     GLDB_PROGRAM_SETTING_COUNT
 } gldb_program_setting;
 
 typedef enum
 {
-    GLDB_PROGRAM_LOCAL,
-    GLDB_PROGRAM_SSH
+    GLDB_PROGRAM_TYPE_LOCAL = 0,
+    GLDB_PROGRAM_TYPE_SSH,
+    GLDB_PROGRAM_TYPE_TCP,
+    GLDB_PROGRAM_TYPE_COUNT
 } gldb_program_type;
 
 typedef struct
@@ -224,7 +232,7 @@ gldb_state *gldb_state_update();
  */
 void gldb_safe_syscall(int r, const char *str);
 
-void gldb_run(uint32_t id, void (*child_init)(void));
+bool gldb_run(uint32_t id, void (*child_init)(void));
 void gldb_send_quit(uint32_t id);
 void gldb_send_continue(uint32_t id);
 void gldb_send_step(uint32_t id);
@@ -267,6 +275,7 @@ void gldb_set_in_reader(struct gldb_protocol_reader *reader);
 void gldb_program_clear();
 void gldb_program_set_setting(gldb_program_setting setting, const char *value);
 void gldb_program_set_type(gldb_program_type type);
+bool gldb_program_type_has_setting(gldb_program_type type, gldb_program_setting setting);
 const char *gldb_program_get_setting(gldb_program_setting setting);
 gldb_program_type gldb_program_get_type(void);
 

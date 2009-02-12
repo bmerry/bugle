@@ -27,6 +27,9 @@
 #include <inttypes.h>
 #include <sys/time.h>
 #include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <netinet/tcp.h>
 #include <unistd.h>
 #include <errno.h>
 #include <assert.h>
@@ -981,35 +984,110 @@ static bool debugger_initialise(filter_set *handle)
 
     break_on = XCALLOC(budgie_function_count(), bool);
 
-    if (!getenv("BUGLE_DEBUGGER")
-        || !getenv("BUGLE_DEBUGGER_FD_IN")
-        || !getenv("BUGLE_DEBUGGER_FD_OUT"))
+    if (!getenv("BUGLE_DEBUGGER"))
     {
         bugle_log("debugger", "initialise", BUGLE_LOG_ERROR,
                   "The debugger filter-set should only be used with gldb");
         return false;
     }
 
-    env = getenv("BUGLE_DEBUGGER_FD_IN");
-    in_pipe_fd = strtol(env, &last, 0);
-    if (!*env || *last)
+    if (0 == strcmp(getenv("BUGLE_DEBUGGER"), "fd"))
     {
-        bugle_log_printf("debugger", "initialise", BUGLE_LOG_ERROR,
-                         "Illegal BUGLE_DEBUGGER_FD_IN: '%s' (bug in gldb?)",
-                         env);
-        return false;
-    }
+        if (!getenv("BUGLE_DEBUGGER_FD_IN")
+            || !getenv("BUGLE_DEBUGGER_FD_OUT"))
+        {
+            bugle_log("debugger", "initialise", BUGLE_LOG_ERROR,
+                      "The debugger filter-set should only be used with gldb");
+            return false;
+        }
 
-    env = getenv("BUGLE_DEBUGGER_FD_OUT");
-    out_pipe = strtol(env, &last, 0);
-    if (!*env || *last)
+        env = getenv("BUGLE_DEBUGGER_FD_IN");
+        in_pipe_fd = strtol(env, &last, 0);
+        if (!*env || *last)
+        {
+            bugle_log_printf("debugger", "initialise", BUGLE_LOG_ERROR,
+                             "Illegal BUGLE_DEBUGGER_FD_IN: '%s' (bug in gldb?)",
+                             env);
+            return false;
+        }
+
+        env = getenv("BUGLE_DEBUGGER_FD_OUT");
+        out_pipe = strtol(env, &last, 0);
+        if (!*env || *last)
+        {
+            bugle_log_printf("debugger", "initialise", BUGLE_LOG_ERROR,
+                             "Illegal BUGLE_DEBUGGER_FD_OUT: '%s' (bug in gldb?)",
+                             env);
+            return false;
+        }
+        in_pipe = gldb_protocol_reader_new_fd_select(in_pipe_fd);
+    }
+    else if (0 == strcmp(getenv("BUGLE_DEBUGGER"), "tcp"))
+    {
+        int sock;
+        int port;
+        int status;
+        struct sockaddr_in addr;
+
+        env = getenv("BUGLE_DEBUGGER_PORT");
+        if (!env)
+        {
+            bugle_log("debugger", "initialise", BUGLE_LOG_ERROR,
+                      "The debugger filter-set should only be used with gldb");
+        }
+        port = strtol(env, &last, 0);
+        if (!*env || *last || port < 0 || port > 0xffff)
+        {
+            bugle_log_printf("debugger", "initialise", BUGLE_LOG_ERROR,
+                             "Illegal BUGLE_DEBUGGER_PORT: '%s' (bug in gldb?)",
+                             env);
+            return false;
+        }
+        addr.sin_family = AF_INET;
+        addr.sin_port = htons(port);
+        addr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+
+        sock = socket(AF_INET, SOCK_STREAM, 0);
+        if (sock == -1)
+        {
+            bugle_log_printf("debugger", "initialise", BUGLE_LOG_ERROR,
+                             "Failed to open a TCP socket");
+            return false;
+        }
+
+        status = bind(sock, (const struct sockaddr *) &addr, sizeof(addr));
+        if (status == -1)
+        {
+            bugle_log_printf("debugger", "initialise", BUGLE_LOG_ERROR,
+                             "binding to port %d failed", port);
+            return false;
+        }
+
+        if (listen(sock, 1) == -1)
+        {
+            bugle_log_printf("debugger", "initialise", BUGLE_LOG_ERROR,
+                             "listening on port %d failed", port);
+            return false;
+        }
+
+        in_pipe_fd = accept(sock, NULL, NULL);
+        if (in_pipe_fd == -1)
+        {
+            bugle_log_printf("debugger", "initialise", BUGLE_LOG_ERROR,
+                             "failed to accept a connection on port %d", port);
+            return false;
+        }
+
+        out_pipe = in_pipe_fd;
+        in_pipe = gldb_protocol_reader_new_fd_select(in_pipe_fd);
+    }
+    else
     {
         bugle_log_printf("debugger", "initialise", BUGLE_LOG_ERROR,
-                         "Illegal BUGLE_DEBUGGER_FD_OUT: '%s' (bug in gldb?)",
-                         env);
+                         "did not recognise BUGLE_DEBUGGER value '%s'",
+                         getenv("BUGLE_DEBUGGER"));
         return false;
     }
-    in_pipe = gldb_protocol_reader_new_fd_select(in_pipe_fd);
     debugger_loop(NULL);
 
     f = bugle_filter_new(handle, "debugger");

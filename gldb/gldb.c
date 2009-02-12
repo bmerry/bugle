@@ -49,6 +49,22 @@
 #define HAVE_READLINE
 */
 
+/* Callback functions for gldb-common.c */
+void gldb_error(const char *fmt, ...)
+{
+    va_list ap;
+
+    va_start(ap, fmt);
+    vfprintf(stderr, fmt, ap);
+    va_end(ap);
+    fprintf(stderr, "\n");
+}
+
+void gldb_perror(const char *msg)
+{
+    perror(msg);
+}
+
 /* The table of full command names. This is used for command completion
  * and display of help. There is also a hash table of command names
  * including prefixes. The handler takes the canonical name of the command,
