@@ -10,6 +10,7 @@
 usable between clients and filters that weren't built identically
 * Makefile fix for parallel make
 * TCP/IP remote debugging (still in progress)
+* Fix for newer versions of Mesa's GLgl.h
 
 0.0.20080824
 ------------

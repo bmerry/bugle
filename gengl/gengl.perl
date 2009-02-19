@@ -16,6 +16,7 @@ my @extension_force = (
 
 my %function_force_version = (
     "glXGetCurrentDisplay" => "GLX_VERSION_1_2",      # glxext.h claims 1.3
+    "glFramebufferTextureLayerEXT" => "EXTGROUP_framebuffer_texture_layer"
 );
 
 my $function_regex = qr/([ew]?gl[A-Z]\w+)\s*\(/;
@@ -99,7 +100,10 @@ my %extension_groups = (
     # Extensions that have GL_VERTEX_PROGRAM_POINT_SIZE and GL_VERTEX_PROGRAM_TWO_SIDE
     "EXTGROUP_vp_options" => ["GL_ARB_vertex_program", "GL_ARB_vertex_shader", "GL_VERSION_2_0"],
     # Extensions that define generic vertex attributes
-    "EXTGROUP_vertex_attrib" => ["GL_ARB_vertex_program", "GL_ARB_vertex_shader", "GL_VERSION_2_0", "GL_ES_VERSION_2_0"]
+    "EXTGROUP_vertex_attrib" => ["GL_ARB_vertex_program", "GL_ARB_vertex_shader", "GL_VERSION_2_0", "GL_ES_VERSION_2_0"],
+    # Extensions that define FramebufferTextureLayerEXT - needed because some
+    # versions of Mesa headers do odd things with this function
+    "EXTGROUP_framebuffer_texture_layer" => ["GL_EXT_texture_array", "GL_NV_geometry_program4"]
 );
 
 # Aliases that are not automatically detected
