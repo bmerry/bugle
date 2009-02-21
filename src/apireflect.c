@@ -26,7 +26,7 @@
 #include <bugle/apireflect.h>
 #include <budgie/reflect.h>
 #include "src/apitables.h"
-#include "lock.h"
+#include "glthread/lock.h"
 
 static hash_table ext_map;
 gl_once_define(static, ext_map_once)

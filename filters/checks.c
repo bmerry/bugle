@@ -43,7 +43,7 @@
 #include <budgie/types.h>
 #include <budgie/reflect.h>
 #include "xalloc.h"
-#include "lock.h"
+#include "glthread/lock.h"
 
 #ifdef GL_VERSION_1_1
 static void checks_texture_complete_fail(int unit, GLenum target, const char *reason)

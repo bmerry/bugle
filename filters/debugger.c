@@ -55,7 +55,7 @@
 #include "common/threads.h"
 #include "xalloc.h"
 #include "xvasprintf.h"
-#include "lock.h"
+#include "glthread/lock.h"
 
 static gldb_protocol_reader *in_pipe = NULL;
 static int in_pipe_fd = -1, out_pipe = -1;

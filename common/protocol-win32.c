@@ -31,7 +31,7 @@
 #include <stdbool.h>
 #include <fcntl.h>
 #include <errno.h>
-#include "lock.h"
+#include "glthread/lock.h"
 #include "xalloc.h"
 #include <windows.h>
 #include <process.h>

@@ -33,7 +33,7 @@
 #include <budgie/types.h>
 #include <budgie/call.h>
 #include "xalloc.h"
-#include "lock.h"
+#include "glthread/lock.h"
 
 typedef struct
 {

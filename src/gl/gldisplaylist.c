@@ -31,7 +31,7 @@
 #include <bugle/gl/glutils.h>
 #include <bugle/hashtable.h>
 #include <budgie/call.h>
-#include "lock.h"
+#include "glthread/lock.h"
 
 object_class *bugle_displaylist_class;
 

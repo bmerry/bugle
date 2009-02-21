@@ -1,4 +1,4 @@
-# Copyright (C) 2002-2008 Free Software Foundation, Inc.
+# Copyright (C) 2002-2009 Free Software Foundation, Inc.
 #
 # This file is free software, distributed under the terms of the GNU
 # General Public License.  As a special exception to the GNU General
@@ -15,11 +15,27 @@
 
 
 # Specification in the form of a command-line invocation:
-#   gnulib-tool --import --dir=. --local-dir=gnulib-local --lib=libgnu --source-base=lib --m4-base=m4 --doc-base=doc --aux-dir=. --libtool --macro-prefix=gl atexit exitfail free full-read full-write getline inttypes lock malloc memcmp realloc stdbool tls vsnprintf vsnprintf-posix xalloc xstrndup xvasprintf
+#   gnulib-tool --import --dir=. --local-dir=gnulib-local --lib=libgnu --source-base=lib --m4-base=m4 --doc-base=doc --tests-base=tests --aux-dir=. --libtool --macro-prefix=gl exitfail full-read full-write getline inttypes lock malloc realloc stdbool tls vsnprintf vsnprintf-posix xalloc xstrndup xvasprintf
 
 # Specification in the form of a few gnulib-tool.m4 macro invocations:
 gl_LOCAL_DIR([gnulib-local])
-gl_MODULES([atexit exitfail free full-read full-write getline inttypes lock malloc memcmp realloc stdbool tls vsnprintf vsnprintf-posix xalloc xstrndup xvasprintf])
+gl_MODULES([
+  exitfail
+  full-read
+  full-write
+  getline
+  inttypes
+  lock
+  malloc
+  realloc
+  stdbool
+  tls
+  vsnprintf
+  vsnprintf-posix
+  xalloc
+  xstrndup
+  xvasprintf
+])
 gl_AVOID([])
 gl_SOURCE_BASE([lib])
 gl_M4_BASE([m4])
