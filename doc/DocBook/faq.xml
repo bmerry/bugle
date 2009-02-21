@@ -117,20 +117,6 @@
                         and put it there.
                 </para></answer>
             </qandaentry>
-            <qandaentry>
-                <question>
-                    <para>I am trying to compile with Ubuntu 8.10, and I get
-                        the error <computeroutput>glFramebufferTextureLayerEXT
-                            is defined in both GL_NV_geometry_program4 and
-                            GL_EXT_texture_array</computeroutput>.
-                    </para>
-                </question>
-                <answer><para>
-                        Follow the instructions above to get an up-to-date
-                        version of <filename>GL/glext.h</filename> and rebuild
-                        from scratch.
-                </para></answer>
-            </qandaentry>
 
             <qandaentry>
                 <question><para>
