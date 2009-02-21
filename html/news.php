@@ -23,6 +23,11 @@ else
     <a href="screenshots.php">[Screenshots]</a>
     </p>
     <h1>BuGLe News</h1>
+    <h2>Bugfixes and features (21/2/2009)</h2>
+    <p>
+    This release features a whole host of new features and bugfixes. Most notable
+    are experimental support for TCP/IP-based remote debugging and OpenGL ES 1.1.
+    </p>
     <h2>Minor bugfixes (3/8/2008)</h2>
     <p>
     Today's release brings minor bugfixes in several areas, particularly in
