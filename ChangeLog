@@ -1,3 +1,5 @@
+* Give budgie a separate configure.ac and Makefile.am, to make cross-compilation easier
+
 0.0.20090221
 ------------
 * Fix tracing support for GL_ARB_transpose_matrix

@@ -8,7 +8,6 @@ AC_PROG_CC
 gl_EARLY
 AM_PROG_CC_C_O
 AC_PROG_CPP
-AC_PROG_CXX
 AM_PROG_LEX
 AC_PROG_YACC
 AC_PROG_LN_S
@@ -69,7 +68,7 @@ AC_LIBLTDL_INSTALLABLE(libltdl)
 AC_LIBTOOL_DLOPEN
 AC_LIBTOOL_WIN32_DLL
 AC_PROG_LIBTOOL
-AC_CONFIG_SUBDIRS(libltdl)
+AC_CONFIG_SUBDIRS(libltdl budgie)
 AC_SUBST(LTDLINCL)
 AC_SUBST(LIBLTDL)
 AC_SUBST(LIBTOOL_DEPS)
@@ -91,12 +90,6 @@ AC_CHECK_LIB([readline], [readline], [
 AC_CHECK_LIB([history], [add_history], [
   READLINE_LIBS="-lhistory $READLINE_LIBS"], [HAVE_READLINE=0], [$READLINE_LIBS])
 AC_SUBST(READLINE_LIBS)
-
-real_libs="$LIBS"
-REGEX_LIBS=""
-AC_SEARCH_LIBS([regexec], [regex], [REGEX_LIBS="$LIBS"], [AC_MSG_ERROR([regex is required])])
-LIBS="$real_libs"
-AC_SUBST(REGEX_LIBS)
 
 HAVE_LAVC=1
 AVCODEC_CFLAGS=""
@@ -141,7 +134,7 @@ gl_INIT
 AC_HEADER_STDC
 AC_HEADER_DIRENT
 AC_HEADER_STDBOOL
-AC_CHECK_HEADERS([sys/types.h stdlib.h stddef.h regex.h NVPerfSDK.h dlfcn.h sys/select.h])
+AC_CHECK_HEADERS([sys/types.h stdlib.h stddef.h NVPerfSDK.h dlfcn.h sys/select.h])
 AC_CHECK_HEADERS([readline/readline.h readline/history.h], [], [HAVE_READLINE=0])
 # ffmpeg moves the headers around
 AC_CHECK_HEADERS([libavcodec/avcodec.h libavformat/avformat.h libswscale/swscale.h])
@@ -181,7 +174,7 @@ BUGLE_C_ATTRIBUTE_CONSTRUCTOR
 BUGLE_C_PRAGMA_WEAK
 
 dnl Checks for library functions
-AC_CHECK_FUNCS([regcomp strrchr vsnprintf])
+AC_CHECK_FUNCS([strrchr vsnprintf])
 AC_CHECK_FUNCS([cosf sinf finite isfinite nan isnan siglongjmp])
 # Readline used to call this completion_matches
 real_libs="$LIBS"

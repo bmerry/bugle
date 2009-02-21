@@ -1,15 +1,12 @@
 # Process with automake 1.7 or newer
-SUBDIRS = lib libltdl
+SUBDIRS = budgie lib libltdl
 ACLOCAL_AMFLAGS = -I m4
 
 SYMBOLFLAGS = -export-symbols-regex '^(gl[A-Z]|egl[A-Z]|budgie_|bugle_|gldb_|X|dlopen)'
 MODULEFLAGS = -no-undefined -thread-safe -export-dynamic -module -avoid-version
 MODULELIBS = src/libbugleutils.la lib/libgnu.la
 
-# Utility programs, used for generating other files
-noinst_PROGRAMS = budgie/budgie
 # Misc extra files to include
-noinst_HEADERS = budgie/tree.def budgie/c-common.def
 dist_noinst_SCRIPTS = gengl/gengl.perl gengl/genegldef.perl gengl/find_header.perl mvtu.sh
 # The real things
 lib_LTLIBRARIES = src/libbugleutils.la
@@ -99,20 +96,6 @@ gldb_gldb_gui_LDADD = src/libbugleutils.la -lm $(GTKGLEXT_LIBS) $(GLEW_LIBS) $(G
 gldb_gldb_gui_LDFLAGS = -thread-safe
 gldb_gldb_gui_CFLAGS = $(GTKGLEXT_CFLAGS) $(GTK_CFLAGS)
 
-budgie_budgie_SOURCES = \
-	budgie/budgie.cpp budgie/budgie.h \
-	budgie/tree.cpp budgie/tree.h \
-	budgie/treeutils.cpp budgie/treeutils.h \
-	budgie/tulexer.ll \
-	budgie/bclexer.ll budgie/bcparser.yy
-budgie_budgie_LDADD = $(REGEX_LIBS)
-
-# Unfortunately this introduces a dependence on flex
-budgie/bclexer.cc: budgie/bclexer.ll
-	$(SHELL) $(YLWRAP) `test -f budgie/bclexer.ll || echo '$(srcdir)/'`budgie/bclexer.ll lex.bc_yy.c budgie/bclexer.cc -- $(LEXCOMPILE) -Pbc_yy
-
-BUILT_SOURCES = budgie/bcparser.h
-
 src_libbugleutils_la_SOURCES = \
 	src/gl/gltypes.c src/apireflect.c \
 	src/glwin/glwintypes.c \
@@ -148,7 +131,7 @@ bugle_ldflags = -no-undefined -thread-safe -export-dynamic $(SYMBOLFLAGS) -versi
 BUDGIE_BUILT_SRCS = \
         budgielib/lib.c budgielib/tables.c \
         include/budgie/types2.h include/budgie/call.h budgielib/defines.h
-BUILT_SOURCES += $(BUDGIE_BUILT_SRCS)
+BUILT_SOURCES = $(BUDGIE_BUILT_SRCS)
 
 # Generated files that generate other files
 
@@ -194,7 +177,8 @@ BCFILES = $(GLBCFILES) \
 # in between to avoid make running the rule N times
 $(BUDGIE_BUILT_SRCS): budgie_output_stamp
 	@true
-budgie_output_stamp: budgie/budgie$(EXEEXT) src/data/gl.tu $(budgie_all_bc_files)
+budgie_output_stamp: src/data/gl.tu $(budgie_all_bc_files)
+	$(MAKE) -C budgie
 	$(mkdir_p) include/budgie
 	budgie/budgie$(EXEEXT) -I$(srcdir) -T `test -f src/data/gl.tu || echo '$(srcdir)/'`src/data/gl.tu $(budgie_main_bc_file)
 	touch budgie_output_stamp
