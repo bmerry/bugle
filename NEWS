@@ -1,3 +1,8 @@
+0.0.20090221
+------------
+This release features a whole host of new features and bugfixes. Most notable
+are experimental support for TCP/IP-based remote debugging and OpenGL ES 1.1.
+
 0.0.20080824
 ------------
 The texture view was broken in the previous release - this release fixes it.

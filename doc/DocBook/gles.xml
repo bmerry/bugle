@@ -3,21 +3,25 @@
 <!ENTITY % myentities SYSTEM "bugle.ent" >
 %myentities;
 ]>
-<chapter id="gles2">
-    <title>Using bugle with OpenGL ES 2</title>
-    <sect1 id="gles2-introduction">
+<chapter id="gles">
+    <title>Using bugle with OpenGL ES</title>
+    <sect1 id="gles-introduction">
         <title>Introduction</title>
         <para>
-            As of July 2008, &bugle; has partial support for OpenGL ES 2. It
-            has been tested using the AMD OpenGL ES Emulator 1.3, and basic
-            features work. These include tracing, and the debugger using
-            breakpoints, examining state, and examining shaders. Texture and
-            framebuffer viewing does not currently work (due to limitations of
-            the query mechanisms in OpenGL ES 2. Many of the filtersets do not
-            work, either because they intrinsicly depend on features excluded
-            from OpenGL ES 2 (such as a modelview matrix or polygon mode), or
-            because they have not yet been ported. The test suite is not
-            supported.
+            &bugle; has partial support for OpenGL ES. The OpenGL ES 2.0
+            support has been tested using the AMD OpenGL ES Emulator 1.3, and
+            OpenGL ES 1.1 support has been tested on a hardware platform.
+            OpenGL ES 1.0 support has not been tested and may will be broken.
+            For OpenGL ES 1.x, only the Common (CM) profile is supported.
+        </para>
+        <para>
+            The testing shows that basic features work. These include tracing,
+            and the debugger using breakpoints, examining state, and examining
+            shaders. Texture and framebuffer viewing does not currently work
+            (due to limitations of the query mechanisms in OpenGL ES). Many of
+            the filtersets do not work, either because they intrinsicly depend
+            on features excluded from OpenGL ES, or because they have not yet
+            been ported. The test suite is not supported.
         </para>
         <para>
             It should be noted that when using an emulator that works on top
@@ -32,33 +36,62 @@
         <para>
             Support on top of X11 rather than Windows is theoretically present
             and compiles, but has not been tested. Feedback from anyone with a
-            working OpenGL ES 2 implementation on an X11 system is welcomed.
+            working OpenGL ES implementation on an X11 system is welcomed.
         </para>
     </sect1>
-    <sect1 id="gles2-config">
+    <sect1 id="gles-config">
         <title>Configuration</title>
         <para>
             Configuration can be done largely as described in <xref
-                linkend="install-configure"/>. To indicate that OpenGL ES 2 is
-            desired, the extra parameter
-            <parameter>--with-target=gles2-egl-win</parameter> must be passed to
-            <command>configure</command>.
+                linkend="install-configure"/>. To indicate that OpenGL ES is
+            desired,
+            <parameter>--with-target=<replaceable>config</replaceable></parameter>
+            must be passed to <command>configure</command>, where
+            <replaceable>config</replaceable> is one of the values below:
         </para>
+        <variablelist>
+            <varlistentry>
+                <term>gles1cm-egl-posix</term>
+                <listitem><para>
+                        OpenGL ES 1.x Common profile with EGL on a UNIX-like
+                        operating system (only tested with GNU/Linux).
+                </para></listitem>
+            </varlistentry>
+            <varlistentry>
+                <term>gles2-egl-posix</term>
+                <listitem><para>
+                        OpenGL ES 2.x with EGL on a UNIX-like
+                        operating system (untested).
+                </para></listitem>
+            </varlistentry>
+            <varlistentry>
+                <term>gles2-egl-win</term>
+                <listitem><para>
+                        OpenGL ES 2.x with EGL on Windows
+                </para></listitem>
+            </varlistentry>
+        </variablelist>
         <note>
             <para>
                 Desktop OpenGL header files and libraries are still required
                 for the GUI debugger.
             </para>
         </note>
+        <note>
+            <para>
+                Currently OpenGL ES 1.x on Windows is not supported, but this
+                can easily be added.
+            </para>
+        </note>
         <para>
             You also need to ensure that your various paths are set correctly.
-            The headers, libraries and DLLs for the OpenGL ES 2 implementation
+            The headers, libraries and DLLs for the OpenGL ES implementation
             need to be listed in <envar>CPATH</envar>,
             <envar>LIBRARY_PATH</envar> and <envar>PATH</envar> respectively,
             unless the compiler is already configured to find them.
         </para>
     </sect1>
-    <sect1 id="gles2-install">
+    <sect1 id="gles-install">
         <title>Installation</title>
         <para>
             Apart from the usual installation step, some extra setup is
