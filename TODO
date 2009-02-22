@@ -12,6 +12,7 @@ WGL port
 - fix crash in shutdown on es2demo
 - make Cygwin work
 - doc updates
+- TCP/IP remote debugging support (target and debugger)
 
 GLES port
 ---------
@@ -33,12 +34,12 @@ gldb
   - versioning
   - ability to obtain list of functions for tab completion in the GUI
   - ability to get the target to do dump formatting when the client doesn't know how
-- TCP/IP remote debugging
 - allow Ctrl-C to abort current line when reading commands
 - set filter variables on the fly
 - enable reporting of segfaults
 - break on particular GL errors, not just 'all errors'
 - fix display of uniform arrays
+- allow debugger to be built separately from interceptor
 
 gldb-gui
 --------
