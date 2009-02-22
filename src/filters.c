@@ -56,7 +56,7 @@
 #include <budgie/addresses.h>
 #include "budgielib/defines.h"
 #include "xalloc.h"
-#include "glthread/lock.h"
+#include "lock.h"
 
 typedef struct
 {

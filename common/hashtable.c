@@ -24,7 +24,7 @@
 #include <assert.h>
 #include <stdbool.h>
 #include <bugle/hashtable.h>
-#include "glthread/lock.h"
+#include "lock.h"
 #include "xalloc.h"
 
 /* Primes are used for hash table sizes */

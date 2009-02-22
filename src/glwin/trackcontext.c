@@ -33,7 +33,7 @@
 #include <budgie/addresses.h>
 #include "budgielib/defines.h"
 #include "xalloc.h"
-#include "glthread/lock.h"
+#include "lock.h"
 
 /* Some constructors like the context to be current when they are run.
  * To facilitate this, the object is not constructed until the first

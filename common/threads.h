@@ -33,7 +33,7 @@
 #include <signal.h>
 #include <stdlib.h>
 #include <bugle/porting.h>
-#include "glthread/lock.h"
+#include "lock.h"
 
 #if USE_POSIX_THREADS
 

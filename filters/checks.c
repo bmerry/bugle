@@ -43,7 +43,7 @@
 #include <budgie/types.h>
 #include <budgie/reflect.h>
 #include "xalloc.h"
-#include "glthread/lock.h"
+#include "lock.h"
 
 #ifdef GL_VERSION_1_1
 static void checks_texture_complete_fail(int unit, GLenum target, const char *reason)
@@ -178,7 +178,7 @@ static void checks_texture_complete(int unit, GLenum target)
             CALL(glGetTexLevelParameteriv)(GL_TEXTURE_CUBE_MAP_POSITIVE_X, base, GL_TEXTURE_WIDTH, &size);
             CALL(glGetTexLevelParameteriv)(GL_TEXTURE_CUBE_MAP_POSITIVE_X, base, GL_TEXTURE_INTERNAL_FORMAT, &format);
             CALL(glGetTexLevelParameteriv)(GL_TEXTURE_CUBE_MAP_POSITIVE_X, base, GL_TEXTURE_BORDER, &border);
-            for (int i = 0; i < 6; i++)
+            for (i = 0; i < 6; i++)
             {
                 face = GL_TEXTURE_CUBE_MAP_POSITIVE_X + i;
                 CALL(glGetTexLevelParameteriv)(face, base, GL_TEXTURE_WIDTH, &width);

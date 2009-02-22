@@ -1,4 +1,5 @@
 * Give budgie a separate configure.ac and Makefile.am, to make cross-compilation easier
+* Reverted to old version of gnulib without GPLv3 code
 
 0.0.20090221
 ------------
