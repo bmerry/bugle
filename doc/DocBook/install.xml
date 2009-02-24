@@ -79,6 +79,7 @@
             </varlistentry>
         </variablelist>
     </sect1>
+
     <sect1 id="install-configure">
         <title>Configuring</title>
         <para>
@@ -114,6 +115,43 @@
             at compile time. It is also required when using EGL on a platform
             other than X11 or Windows.
         </para>
+
+        <sect2 id="install-configure-cross">
+            <title>Configuring for cross-compilation</title>
+            <para>
+                If possible, the best way to do cross-compilation is to use
+                <ulink
+                    url="http://www.scratchbox.org/"><application>scratchbox</application></ulink>,
+                where it should all work seamlessly. However,
+                <application>scratchbox</application> only supports a limited
+                set of cross-compilation targets. If you want to do
+                cross-compilation, you will need to jump through some extra
+                hoops.
+            </para>
+            <para>
+                First, run <command>configure</command> in the top-level
+                directory, passing the appropriate <option>--host</option>
+                option for your cross-compiler. Also make sure that the
+                appropriate header files and libraries for the
+                cross-compilation target are available. You might also need to
+                pass extra options to <command>configure</command> to disable
+                optional features that are incorrectly detected (see above).
+            </para>
+            <para>
+                Next, change into the <filename
+                    class="directory">budgie</filename> subdirectory and run
+                the configure script there (if you are configuring in a
+                different directory from the source, you will need to be in
+                the <filename class="directory">budgie</filename> subdirectory
+                of the build directory, running the
+                <command>configure</command> script from the <filename
+                    class="directory">budgie</filename> subdirectory of the
+                source. When doing this, configure for your
+                <emphasis>native</emphasis> compiler. This is necessary
+                because the program that is built in this directory is run on
+                the build machine to produce source code, not on the host.
+            </para>
+        </sect2>
     </sect1>
 
     <sect1 id="install-compile">
