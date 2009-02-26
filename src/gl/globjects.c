@@ -168,7 +168,7 @@ static bool globjects_glDeleteQueries(function_call *call, const callback_data *
 }
 #endif
 
-#if defined(GL_ARB_vertex_program) || defined(GL_ARB_fragment_program)
+#if GL_ES_VERSION_2_0 || GL_VERSION_2_0
 static void globjects_delete_single(bugle_globjects_type type,
                                        GLuint object)
 {
@@ -180,7 +180,9 @@ static void globjects_delete_single(bugle_globjects_type type,
         bugle_hashptr_set_int(table, object, NULL);
     unlock();
 }
+#endif /* GL_ES_VERSION_2_0 || GL_VERSION_2_0 */
 
+#if defined(GL_ARB_vertex_program) || defined(GL_ARB_fragment_program)
 static bool globjects_glBindProgramARB(function_call *call, const callback_data *data)
 {
     /* NVIDIA driver 66.29 has a bug where glIsProgramARB will return
