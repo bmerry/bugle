@@ -1,5 +1,5 @@
 /*  BuGLe: an OpenGL debugging tool
- *  Copyright (C) 2004-2008  Bruce Merry
+ *  Copyright (C) 2004-2009  Bruce Merry
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -24,6 +24,9 @@
 #include <stdbool.h>
 #include <stdio.h>
 #include <stddef.h>
+#if HAVE_SYS_TYPES_H
+# include <sys/types.h>  /* for ssize_t */
+#endif
 #include <budgie/types.h>
 #include <bugle/misc.h>  /* For printf format attribute */
 
