@@ -2,6 +2,7 @@
 * Reverted to old version of gnulib without GPLv3 code
 * Fix missing symbol globjects_delete_single in ES2.0 port
 * Fix compilation errors due to ssize_t not being defined
+* Fix extraction of uniforms
 
 0.0.20090221
 ------------

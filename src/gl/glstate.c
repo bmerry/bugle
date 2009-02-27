@@ -1307,18 +1307,17 @@ static void spawn_children_program(const glstate *self, linked_list *children)
             child->info = &uniform_state;
             child->name = XNMALLOC(max, GLcharARB);
             child->name[0] = '\0'; /* sanity, in case the query borks */
-            child->numeric_name = i;
             child->enum_name = 0;
-            child->level = i;
+            child->level = i;      /* level is overloaded with the uniform index */
             bugle_glGetActiveUniform(self->object, i, max, &length, &size,
                                      &type, child->name);
             if (length)
             {
+                child->numeric_name = bugle_glGetUniformLocation(self->object, child->name);
                 /* Check for built-in state, which is returned by glGetActiveUniformARB
                  * but cannot be queried.
                  */
-                child->level = bugle_glGetUniformLocation(self->object, child->name);
-                if (child->level == -1) length = 0;
+                if (child->numeric_name == -1) length = 0;
             }
             if (length) bugle_list_append(children, child);
             else free(child->name); /* failed query */
@@ -2382,9 +2381,9 @@ void bugle_state_get_raw(const glstate *state, bugle_state_raw *wrapper)
                                      &size, &type, dummy);
             uniform_types(type, &in_type, &out_type, &in_length);
             if (in_type == TYPE_7GLfloat)
-                bugle_glGetUniformfv(state->object, state->level, f);
+                bugle_glGetUniformfv(state->object, state->numeric_name, f);
             else
-                bugle_glGetUniformiv(state->object, state->level, i);
+                bugle_glGetUniformiv(state->object, state->numeric_name, i);
         }
         break;
     case STATE_MODE_ATTRIB_LOCATION:
