@@ -150,7 +150,7 @@
                 support the Windows software rasteriser. However, as of July
                 2008, a <filename>glext.h</filename> supporting OpenGL 2.0
                 is a requirement, so you may assume that the reflection system
-                knows about these functions. For any post-2.0 functions, you
+                knows about these functions. For any post-2.0 functions,
                 you should favour the
                 <symbol>BUDGIE_GROUP_ID(<replaceable>glFunction</replaceable>)</symbol>
                 definition with the oldest name, which is generally an
@@ -801,7 +801,7 @@ void *bugle_object_get_current_data(object_class *klass, object *obj);</funcsyno
             <warning>
                 <para>
                     Do not call
-                    <function>bugle_filter_post_queries_begin_end</function>
+                    <function>bugle_gl_filter_post_queries_begin_end</function>
                     for filters that run before invocation, or you will
                     generate a cyclic dependency.
                 </para>
