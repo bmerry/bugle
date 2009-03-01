@@ -51,7 +51,6 @@
 #include <budgie/types.h>
 #include <budgie/reflect.h>
 #include <budgie/addresses.h>
-#include "budgielib/defines.h"
 #include "common/protocol.h"
 #include "common/threads.h"
 #include "xalloc.h"
@@ -1054,7 +1053,7 @@ static bool debugger_error_callback(function_call *call, const callback_data *da
         error_str = bugle_api_enum_name(error);
     }
 #if GL_ES_VERSION_2_0 || GL_VERSION_2_0
-    else if (break_on_event[REQ_EVENT_COMPILE_ERROR] && call->generic.group == GROUP_glCompileShader
+    else if (break_on_event[REQ_EVENT_COMPILE_ERROR] && call->generic.group == BUDGIE_GROUP_ID(glCompileShader)
              && !bugle_gl_in_begin_end())
     {
         GLint status;
@@ -1062,7 +1061,7 @@ static bool debugger_error_callback(function_call *call, const callback_data *da
         if (status == GL_FALSE)
             error_str = "Shader compilation error";
     }
-    else if (break_on_event[REQ_EVENT_LINK_ERROR] && call->generic.group == GROUP_glLinkProgram
+    else if (break_on_event[REQ_EVENT_LINK_ERROR] && call->generic.group == BUDGIE_GROUP_ID(glLinkProgram)
              && !bugle_gl_in_begin_end())
     {
         GLint status;
