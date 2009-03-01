@@ -1,5 +1,5 @@
 /*  BuGLe: an OpenGL debugging tool
- *  Copyright (C) 2004-2007  Bruce Merry
+ *  Copyright (C) 2004-2007, 2009  Bruce Merry
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -47,6 +47,7 @@ struct _GldbShaderPane
     GtkWidget *top_widget;
     GtkWidget *id;
     GtkWidget *source;
+    GtkWidget *info_log;
 };
 
 struct _GldbShaderPaneClass
@@ -62,21 +63,40 @@ enum
     COLUMN_SHADER_ID_TEXT
 };
 
-static gboolean gldb_shader_pane_response_callback(gldb_response *response,
-                                                   gpointer user_data)
+static void gldb_shader_pane_update_buffer(gldb_response *response,
+                                           GtkTextBuffer *buffer)
 {
-    gldb_response_data_shader *r;
-    GtkTextBuffer *buffer;
-    GldbShaderPane *pane;
+    gldb_response_data *r;
 
-    pane = GLDB_SHADER_PANE(user_data);
-    r = (gldb_response_data_shader *) response;
-    buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(pane->source));
+    r = (gldb_response_data *) response;
     if (response->code != RESP_DATA || !r->length)
         gtk_text_buffer_set_text(buffer, "", 0);
     else
         gtk_text_buffer_set_text(buffer, r->data, r->length);
     gldb_free_response(response);
+}
+
+static gboolean gldb_shader_pane_response_callback_source(gldb_response *response,
+                                                          gpointer user_data)
+{
+    GtkTextBuffer *buffer;
+    GldbShaderPane *pane;
+
+    pane = GLDB_SHADER_PANE(user_data);
+    buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(pane->source));
+    gldb_shader_pane_update_buffer(response, buffer);
+    return TRUE;
+}
+
+static gboolean gldb_shader_pane_response_callback_info_log(gldb_response *response,
+                                                            gpointer user_data)
+{
+    GtkTextBuffer *buffer;
+    GldbShaderPane *pane;
+
+    pane = GLDB_SHADER_PANE(user_data);
+    buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(pane->info_log));
+    gldb_shader_pane_update_buffer(response, buffer);
     return TRUE;
 }
 
@@ -234,8 +254,10 @@ static void gldb_shader_pane_id_changed(GtkComboBox *id_box, gpointer user_data)
                            COLUMN_SHADER_ID_TARGET, &target,
                            -1);
 
-        seq = gldb_gui_set_response_handler(gldb_shader_pane_response_callback, pane);
+        seq = gldb_gui_set_response_handler(gldb_shader_pane_response_callback_source, pane);
         gldb_send_data_shader(seq, id, target);
+        seq = gldb_gui_set_response_handler(gldb_shader_pane_response_callback_info_log, pane);
+        gldb_send_data_info_log(seq, id, target);
     }
 }
 
@@ -321,10 +343,27 @@ static GtkWidget *gldb_shader_pane_id_new(GldbShaderPane *pane)
     return pane->id = id;
 }
 
+/* Wraps a widget inside a scrollbox inside a labelled frame */
+static GtkWidget *gldb_shader_pane_make_scrolled_frame(GtkWidget *widget, gchar *label)
+{
+    GtkWidget *scrolled, *frame;
+
+    scrolled = gtk_scrolled_window_new(NULL, NULL);
+    gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(scrolled),
+                                   GTK_POLICY_AUTOMATIC,
+                                   GTK_POLICY_AUTOMATIC);
+    gtk_container_add(GTK_CONTAINER(scrolled), widget);
+
+    frame = gtk_frame_new(label);
+    gtk_container_add(GTK_CONTAINER(frame), scrolled);
+    return frame;
+}
+
 GldbPane *gldb_shader_pane_new(void)
 {
     GldbShaderPane *pane;
-    GtkWidget *vbox, *hbox, *id, *source, *scrolled;
+    GtkWidget *vbox, *vbox2, *hbox, *id, *source, *info_log;
+    GtkWidget *frame_source, *frame_info_log;
     PangoFontDescription *font;
 
     pane = GLDB_SHADER_PANE(g_object_new(GLDB_SHADER_PANE_TYPE, NULL));
@@ -342,19 +381,24 @@ GldbPane *gldb_shader_pane_new(void)
     pango_font_description_free(font);
     g_signal_connect(G_OBJECT(source), "expose-event", G_CALLBACK(gldb_shader_pane_source_expose), NULL);
 
-    scrolled = gtk_scrolled_window_new(NULL, NULL);
-    gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(scrolled),
-                                   GTK_POLICY_AUTOMATIC,
-                                   GTK_POLICY_AUTOMATIC);
-    gtk_container_add(GTK_CONTAINER(scrolled), source);
+    info_log = gtk_text_view_new();
+    gtk_text_view_set_editable(GTK_TEXT_VIEW(info_log), FALSE);
+    gtk_text_view_set_cursor_visible(GTK_TEXT_VIEW(source), FALSE);
+
+    frame_source = gldb_shader_pane_make_scrolled_frame(source, _("Source"));
+    frame_info_log = gldb_shader_pane_make_scrolled_frame(info_log, _("Info log"));
 
     vbox = gtk_vbox_new(FALSE, 0);
     hbox = gtk_hbox_new(FALSE, 0);
+    vbox2 = gtk_vbox_new(TRUE, 0);
     gtk_box_pack_start(GTK_BOX(vbox), id, FALSE, FALSE, 0);
+    gtk_box_pack_start(GTK_BOX(vbox2), frame_source, TRUE, TRUE, 0);
+    gtk_box_pack_start(GTK_BOX(vbox2), frame_info_log, TRUE, TRUE, 0);
     gtk_box_pack_start(GTK_BOX(hbox), vbox, FALSE, FALSE, 0);
-    gtk_box_pack_start(GTK_BOX(hbox), scrolled, TRUE, TRUE, 0);
+    gtk_box_pack_start(GTK_BOX(hbox), vbox2, TRUE, TRUE, 0);
 
     pane->source = source;
+    pane->info_log = info_log;
     gldb_pane_set_widget(GLDB_PANE(pane), hbox);
     return GLDB_PANE(pane);
 }

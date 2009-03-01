@@ -5,6 +5,7 @@
 * Fix extraction of uniforms
 * Tweaks to the debug protocol and fixes to the related code
 * Support stopping on shader compilation or link failure
+* Display of info log
 
 0.0.20090221
 ------------

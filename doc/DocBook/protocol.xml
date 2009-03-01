@@ -620,6 +620,49 @@
                     </tgroup>
                 </informaltable>
             </sect3>
+            <sect3>
+                <title>Info log</title>
+                <para>
+                    This is used for shader or program info log of a GLSL
+                    shader. It is valid to query for ARB programs, but the info
+                    log is always empty.
+                </para>
+                <informaltable>
+                    <tgroup cols="2">
+                        <thead>
+                            <row>
+                                <entry>Type</entry>
+                                <entry>Description</entry>
+                            </row>
+                        </thead>
+                        <tbody>
+                            <row>
+                                <entry><type>CODE</type></entry>
+                                <entry><symbol>REQ_DATA</symbol></entry>
+                            </row>
+                            <row>
+                                <entry><type>UINT32</type></entry>
+                                <entry>request ID</entry>
+                            </row>
+                            <row>
+                                <entry><type>CODE</type></entry>
+                                <entry><symbol>REQ_DATA_INFO_LOG</symbol></entry>
+                            </row>
+                            <row>
+                                <entry><type>UINT32</type></entry>
+                                <entry>GL name of the shader or program object</entry>
+                            </row>
+                            <row>
+                                <entry><type>GLENUM</type></entry>
+                                <entry>shader type, or
+                                    <symbol>GL_PROGRAM_OBJECT_ARB</symbol> for
+                                    GLSL programs (even in OpenGL ES, where
+                                    is not a defined enum)</entry>
+                            </row>
+                        </tbody>
+                    </tgroup>
+                </informaltable>
+            </sect3>
         </sect2>
     </sect1>
 
@@ -1029,6 +1072,37 @@
                             <row>
                                 <entry><type>STRING</type></entry>
                                 <entry>shader source</entry>
+                            </row>
+                        </tbody>
+                    </tgroup>
+                </informaltable>
+            </sect3>
+            <sect3 id="protocol-syncresponses-data-info-log">
+                <title>Info log response</title>
+                <informaltable>
+                    <tgroup cols="2">
+                        <thead>
+                            <row>
+                                <entry>Type</entry>
+                                <entry>Description</entry>
+                            </row>
+                        </thead>
+                        <tbody>
+                            <row>
+                                <entry><type>CODE</type></entry>
+                                <entry><symbol>RESP_DATA</symbol></entry>
+                            </row>
+                            <row>
+                                <entry><type>UINT32</type></entry>
+                                <entry>request ID</entry>
+                            </row>
+                            <row>
+                                <entry><type>CODE</type></entry>
+                                <entry><symbol>REQ_DATA_INFO_LOG</symbol></entry>
+                            </row>
+                            <row>
+                                <entry><type>STRING</type></entry>
+                                <entry>info log</entry>
                             </row>
                         </tbody>
                     </tgroup>

@@ -665,6 +665,81 @@ static bool send_data_shader(uint32_t id, GLuint shader_id,
     bugle_gl_end_internal_render("send_data_shader", true);
     return true;
 }
+
+static bool send_data_info_log(uint32_t id, GLuint object_id,
+                             GLenum target)
+{
+    GLint length;
+    char *text;
+
+    if (!bugle_gl_begin_internal_render())
+    {
+        gldb_protocol_send_code(out_pipe, RESP_ERROR);
+        gldb_protocol_send_code(out_pipe, id);
+        gldb_protocol_send_code(out_pipe, 0);
+        gldb_protocol_send_string(out_pipe, "inside glBegin/glEnd");
+        return false;
+    }
+
+    switch (target)
+    {
+#ifdef GL_ARB_fragment_program
+    case GL_FRAGMENT_PROGRAM_ARB:
+#endif
+#ifdef GL_ARB_vertex_program
+    case GL_VERTEX_PROGRAM_ARB:
+#endif
+#if defined(GL_ARB_vertex_program) || defined(GL_ARB_fragment_program)
+        /* The info log is overwritten at the next call, so don't try to
+         * fetch this.
+         */
+        length = 0;
+        text = XNMALLOC(1, char);
+        text[0] = '\0';
+        break;
+#endif
+    case GL_VERTEX_SHADER:
+    case GL_FRAGMENT_SHADER:
+#ifdef GL_EXT_geometry_shader4
+    case GL_GEOMETRY_SHADER_EXT:
+#endif
+        bugle_glGetShaderiv(object_id, GL_INFO_LOG_LENGTH, &length);
+        if (length != 0)
+        {
+            text = XNMALLOC(length, char);
+            bugle_glGetShaderInfoLog(object_id, length, NULL, text);
+            length--; /* Don't count NULL terminator */
+        }
+        else
+            text = XNMALLOC(1, char);
+        break;
+    case 0x8B40: /* GL_PROGRAM_OBJECT_ARB - but doesn't exist in ES header files */
+        bugle_glGetProgramiv(object_id, GL_INFO_LOG_LENGTH, &length);
+        if (length != 0)
+        {
+            text = XNMALLOC(length, char);
+            bugle_glGetProgramInfoLog(object_id, length, NULL, text);
+            length--; /* Don't count NULL terminator */
+        }
+        else
+            text = XNMALLOC(1, char);
+        break;
+    default:
+        /* Should never get here */
+        text = XNMALLOC(1, char);
+        length = 0;
+    }
+
+    gldb_protocol_send_code(out_pipe, RESP_DATA);
+    gldb_protocol_send_code(out_pipe, id);
+    gldb_protocol_send_code(out_pipe, REQ_DATA_INFO_LOG);
+    gldb_protocol_send_binary_string(out_pipe, length, text);
+    free(text);
+
+    bugle_gl_end_internal_render("send_data_info_log", true);
+    return true;
+
+}
 #endif /* GL_ES_VERSION_2_0 || GL_VERSION_2_0 */
 
 static void process_single_command(function_call *call)
@@ -834,8 +909,8 @@ static void process_single_command(function_call *call)
         exit(1);
     case REQ_DATA:
         {
-            uint32_t subtype, tex_id, shader_id, target, face, level, format, type;
-            uint32_t fbo_id, buffer;
+            uint32_t subtype, object_id, target, face, level, format, type;
+            uint32_t buffer;
 
             /* FIXME: check for begin/end? */
             gldb_protocol_recv_code(in_pipe, &subtype);
@@ -843,29 +918,34 @@ static void process_single_command(function_call *call)
             {
 #ifdef GL_VERSION_1_1
             case REQ_DATA_TEXTURE:
-                gldb_protocol_recv_code(in_pipe, &tex_id);
+                gldb_protocol_recv_code(in_pipe, &object_id);
                 gldb_protocol_recv_code(in_pipe, &target);
                 gldb_protocol_recv_code(in_pipe, &face);
                 gldb_protocol_recv_code(in_pipe, &level);
                 gldb_protocol_recv_code(in_pipe, &format);
                 gldb_protocol_recv_code(in_pipe, &type);
-                send_data_texture(id, tex_id, target, face, level,
+                send_data_texture(id, object_id, target, face, level,
                                   format, type);
                 break;
 #endif
             case REQ_DATA_FRAMEBUFFER:
-                gldb_protocol_recv_code(in_pipe, &fbo_id);
+                gldb_protocol_recv_code(in_pipe, &object_id);
                 gldb_protocol_recv_code(in_pipe, &target);
                 gldb_protocol_recv_code(in_pipe, &buffer);
                 gldb_protocol_recv_code(in_pipe, &format);
                 gldb_protocol_recv_code(in_pipe, &type);
-                send_data_framebuffer(id, fbo_id, target, buffer, format, type);
+                send_data_framebuffer(id, object_id, target, buffer, format, type);
                 break;
 #if GL_ES_VERSION_2_0 || GL_VERSION_2_0
             case REQ_DATA_SHADER:
-                gldb_protocol_recv_code(in_pipe, &shader_id);
+                gldb_protocol_recv_code(in_pipe, &object_id);
                 gldb_protocol_recv_code(in_pipe, &target);
-                send_data_shader(id, shader_id, target);
+                send_data_shader(id, object_id, target);
+                break;
+            case REQ_DATA_INFO_LOG:
+                gldb_protocol_recv_code(in_pipe, &object_id);
+                gldb_protocol_recv_code(in_pipe, &target);
+                send_data_info_log(id, object_id, target);
                 break;
 #endif
             default:

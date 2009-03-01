@@ -63,6 +63,7 @@
 #define REQ_DATA_TEXTURE               0xedbc0000UL
 #define REQ_DATA_SHADER                0xedbc0001UL
 #define REQ_DATA_FRAMEBUFFER           0xedbc0002UL
+#define REQ_DATA_INFO_LOG              0xedbc0003UL
 
 #define REQ_EVENT_GL_ERROR             0x00000000UL
 #define REQ_EVENT_COMPILE_ERROR        0x00000001UL

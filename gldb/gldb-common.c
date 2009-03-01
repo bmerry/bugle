@@ -627,6 +627,21 @@ static gldb_response *gldb_get_response_data_shader(uint32_t code, uint32_t id,
     return (gldb_response *) r;
 }
 
+static gldb_response *gldb_get_response_data_info_log(uint32_t code, uint32_t id,
+                                                      uint32_t subtype,
+                                                      uint32_t length, char *data)
+{
+    gldb_response_data_info_log *r;
+
+    r = XMALLOC(gldb_response_data_info_log);
+    r->code = code;
+    r->id = id;
+    r->subtype = subtype;
+    r->length = length;
+    r->data = data;
+    return (gldb_response *) r;
+}
+
 static gldb_response *gldb_get_response_data(uint32_t code, uint32_t id)
 {
     uint32_t subtype;
@@ -643,6 +658,8 @@ static gldb_response *gldb_get_response_data(uint32_t code, uint32_t id)
         return gldb_get_response_data_framebuffer(code, id, subtype, length, data);
     case REQ_DATA_SHADER:
         return gldb_get_response_data_shader(code, id, subtype, length, data);
+    case REQ_DATA_INFO_LOG:
+        return gldb_get_response_data_info_log(code, id, subtype, length, data);
     default:
         fprintf(stderr, "Unknown DATA subtype %lu\n", (unsigned long) subtype);
         exit(1);
@@ -961,6 +978,16 @@ void gldb_send_data_shader(uint32_t id, GLuint shader_id, GLenum target)
     gldb_protocol_send_code(lib_out, id);
     gldb_protocol_send_code(lib_out, REQ_DATA_SHADER);
     gldb_protocol_send_code(lib_out, shader_id);
+    gldb_protocol_send_code(lib_out, target);
+}
+
+void gldb_send_data_info_log(uint32_t id, GLuint object_id, GLenum target)
+{
+    assert(status != GLDB_STATUS_DEAD);
+    gldb_protocol_send_code(lib_out, REQ_DATA);
+    gldb_protocol_send_code(lib_out, id);
+    gldb_protocol_send_code(lib_out, REQ_DATA_INFO_LOG);
+    gldb_protocol_send_code(lib_out, object_id);
     gldb_protocol_send_code(lib_out, target);
 }
 
