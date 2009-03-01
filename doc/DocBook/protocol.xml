@@ -1,0 +1,1127 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE chapter PUBLIC "-//OASIS//DTD DocBook XML V4.3//EN" "http://www.oasis-open.org/docbook/xml/4.3/docbookx.dtd" [
+<!ENTITY % myentities SYSTEM "bugle.ent" >
+%myentities;
+]>
+<appendix id="protocol">
+    <title>&Bugle; debugger protocol</title>
+    <sect1 id="protocol-introduction">
+        <title>Introduction</title>
+        <para>
+            The debugger component of &bugle; uses a wire protocol to
+            communicate data between the debugger filter-set and the
+            debugger application. The protocol is documented here.
+        </para>
+        <para>
+            It should be noted that this protocol has many shortcomings:
+        </para>
+        <itemizedlist>
+            <listitem><para>
+                    It is unversioned, so the endpoints may be
+                    using different versions of the protocol and not be
+                    aware of this until something goes catastrophically wrong.
+            </para></listitem>
+            <listitem><para>
+                    It is not endian-safe. While the control codes this is easily fixed for the
+                    control codes, there is little point in doing so until the
+                    data being transferred can be placed into a canonical
+                    representation.
+            </para></listitem>
+            <listitem><para>
+                    It may in places be dependent on the pointer size of the
+                    system, in particular when transferring GL pointer state.
+            </para></listitem>
+            <listitem><para>
+                    Packets do not contain a length field, making it
+                    impossible to skip unknown packets.
+            </para></listitem>
+        </itemizedlist>
+        <para>
+            In spite of these limitations, it has been successively used to
+            debug an OpenGL ES application running on an ARM CPU with the
+            debugger running on top of OpenGL on a 64-bit Intel CPU.
+        </para>
+        <para>
+            The goal is to eventually address these limitations, and patches
+            are welcomed.
+        </para>
+    </sect1>
+    <sect1 id="protocol-basics">
+        <title>Basics</title>
+        <para>
+            The protocol is a binary packet-based protocol. The debugger makes
+            requests to the filter-set, which returns responses. Packets have
+            identifiers to facilitate pipelining. In addition, there are
+            certain responses that may be generated asynchronously by the
+            filter-set.
+        </para>
+        <sect2 id="protocol-types">
+            <title>Types</title>
+            <informaltable>
+                <tgroup cols="2">
+                    <thead>
+                        <row>
+                            <entry>Name</entry>
+                            <entry>Description</entry>
+                        </row>
+                    </thead>
+                    <tbody>
+                        <row>
+                            <entry><type>UINT32</type></entry>
+                            <entry>32-bit big-endian unsigned integer</entry>
+                        </row>
+                        <row>
+                            <entry><type>INT32</type></entry>
+                            <entry>32-bit twos-complement big-endian signed
+                                integer</entry>
+                        </row>
+                        <row>
+                            <entry><type>CODE</type></entry>
+                            <entry>same as UINT32, but for debugger protocol
+                                enumerated values</entry>
+                        </row>
+                        <row>
+                            <entry><type>GLENUM</type></entry>
+                            <entry>same as UINT32, but for OpenGL enumerated
+                                values</entry>
+                        </row>
+                        <row>
+                            <entry><type>BOOL</type></entry>
+                            <entry>A UINT32 with the value 1 (true) or 0
+                                (false)</entry>
+                        </row>
+                        <row>
+                            <entry><type>STRING</type></entry>
+                            <entry>A length (as UINT32) followed by that
+                                number of bytes. The character set is UTF-8,
+                                in most cases it will be plain ASCII.</entry>
+                        </row>
+                        <row>
+                            <entry><type>BLOB</type></entry>
+                            <entry>A piece of binary data, encoded in the same
+                                way as <type>STRING</type></entry>
+                        </row>
+                    </tbody>
+                </tgroup>
+            </informaltable>
+        </sect2>
+        <sect2 id="protocol-states">
+            <title>States</title>
+            <para>
+                Over the lifetime of the debugged process, it will move
+                between three states. When it first starts, it is in the
+                <symbol>startup</symbol> state, and waits for instructions
+                from the debugger. At this point, the debugger will send
+                breakpoints and other requests that need to be in place before
+                the program starts issuing GL commands. Once the
+                <symbol>REQ_RUN</symbol> request is received, the program
+                enters the <symbol>running</symbol> state. From this point, it
+                will alternate between <symbol>running</symbol> and
+                <symbol>stopped</symbol>. The filter-set will accept commands
+                in both states (although if no GL commands are issued, the
+                filter will not run and so will not be responsive). However,
+                in the <symbol>stopped</symbol> state, the filter-set will
+                block and wait for commands and will prevent the thread it is
+                in from running, while in the <symbol>running</symbol> state,
+                it will only process commands that are
+                available<footnote><para>Actually, as long as there is data
+                    available on the connection, it will consume a complete
+                    command. Thus, sending a partial command and stopping will
+                    cause a stoppage. This should probably be
+                    fixed.</para></footnote> and will
+                allow its thread to continue running normally.
+            </para>
+        </sect2>
+    </sect1>
+
+    <sect1 id="protocol-requests">
+        <title>Requests</title>
+        <para>
+            These are the requests that the debugger may make to the
+            filter-set. The values for <type>CODE</type> fields are listed
+            symbolically; the symbol values can be found in
+            <filename>common/protocol.h</filename>.
+        </para>
+        <para>
+            Each request starts with the request type and a request ID. Request
+            IDs are arbitrary values chosen by the debugger to identify
+            requests. Responses include the request ID, to facilitate matching
+            of responses to requests. Request IDs need not be unique.
+        </para>
+
+        <sect2 id="protocol-requests-run">
+            <title>Run</title>
+            <para>
+                Starts the program running. Once it is running, the response
+                <symbol>RESP_RUNNING</symbol> is returned, ahead of any
+                asynchronous response that might result.
+            </para>
+            <informaltable>
+                <tgroup cols="2">
+                    <thead>
+                        <row>
+                            <entry>Type</entry>
+                            <entry>Description</entry>
+                        </row>
+                    </thead>
+                    <tbody>
+                        <row>
+                            <entry><type>CODE</type></entry>
+                            <entry><symbol>REQ_RUN</symbol></entry>
+                        </row>
+                        <row>
+                            <entry><type>UINT32</type></entry>
+                            <entry>request ID</entry>
+                        </row>
+                    </tbody>
+                </tgroup>
+            </informaltable>
+        </sect2>
+
+        <sect2 id="protocol-requests-cont">
+            <title>Continue</title>
+            <para>Continue running a stopped program.</para>
+            <informaltable>
+                <tgroup cols="2">
+                    <thead>
+                        <row>
+                            <entry>Type</entry>
+                            <entry>Description</entry>
+                        </row>
+                    </thead>
+                    <tbody>
+                        <row>
+                            <entry><type>CODE</type></entry>
+                            <entry><symbol>REQ_CONT</symbol></entry>
+                        </row>
+                        <row>
+                            <entry><type>UINT32</type></entry>
+                            <entry>request ID</entry>
+                        </row>
+                    </tbody>
+                </tgroup>
+            </informaltable>
+        </sect2>
+
+        <sect2 id="protocol-requests-step">
+            <title>Step</title>
+            <para>Continue running, but break on the next call.</para>
+            <informaltable>
+                <tgroup cols="2">
+                    <thead>
+                        <row>
+                            <entry>Type</entry>
+                            <entry>Description</entry>
+                        </row>
+                    </thead>
+                    <tbody>
+                        <row>
+                            <entry><type>CODE</type></entry>
+                            <entry><symbol>REQ_STEP</symbol></entry>
+                        </row>
+                        <row>
+                            <entry><type>UINT32</type></entry>
+                            <entry>request ID</entry>
+                        </row>
+                    </tbody>
+                </tgroup>
+            </informaltable>
+        </sect2>
+
+        <sect2 id="protocol-requests-break">
+            <title>Break on function</title>
+            <para>Set or clear a breakpoint on a function.</para>
+            <informaltable>
+                <tgroup cols="2">
+                    <thead>
+                        <row>
+                            <entry>Type</entry>
+                            <entry>Description</entry>
+                        </row>
+                    </thead>
+                    <tbody>
+                        <row>
+                            <entry><type>CODE</type></entry>
+                            <entry><symbol>REQ_BREAK</symbol></entry>
+                        </row>
+                        <row>
+                            <entry><type>UINT32</type></entry>
+                            <entry>request ID</entry>
+                        </row>
+                        <row>
+                            <entry><type>STRING</type></entry>
+                            <entry>name of the function</entry>
+                        </row>
+                        <row>
+                            <entry><type>BOOL</type></entry>
+                            <entry>true to set, false to clear</entry>
+                        </row>
+                    </tbody>
+                </tgroup>
+            </informaltable>
+        </sect2>
+
+        <sect2 id="protocol-requests-break-event">
+            <title>Break on event</title>
+            <para>Set or clear a breakpoint on an event class.</para>
+            <informaltable>
+                <tgroup cols="2">
+                    <thead>
+                        <row>
+                            <entry>Type</entry>
+                            <entry>Description</entry>
+                        </row>
+                    </thead>
+                    <tbody>
+                        <row>
+                            <entry><type>CODE</type></entry>
+                            <entry><symbol>REQ_BREAK_EVENT</symbol></entry>
+                        </row>
+                        <row>
+                            <entry><type>UINT32</type></entry>
+                            <entry>Request ID</entry>
+                        </row>
+                        <row>
+                            <entry><type>CODE</type></entry>
+                            <entry><para>one of </para><itemizedlist>
+                                    <listitem><simpara>
+                                            <symbol>REQ_EVENT_GL_ERROR</symbol>:
+                                            error from
+                                            <function>glGetError</function>
+                                    </simpara></listitem>
+                                    <listitem><simpara>
+                                            <symbol>REQ_EVENT_COMPILE_ERROR</symbol>:
+                                            failed shader compilation
+                                    </simpara></listitem>
+                                    <listitem><simpara>
+                                            <symbol>REQ_EVENT_LINK_ERROR</symbol>:
+                                            failed shader link
+                                    </simpara></listitem>
+                            </itemizedlist></entry>
+                        </row>
+                        <row>
+                            <entry><type>BOOL</type></entry>
+                            <entry>true to set, false to clear</entry>
+                        </row>
+                    </tbody>
+                </tgroup>
+            </informaltable>
+        </sect2>
+
+        <sect2 id="protocol-requests-break-error">
+            <title>Break on error</title>
+            <para>This is an obsolete command, equivalent to
+                <symbol>REQ_BREAK_EVENT</symbol> with an event type of
+                <symbol>REQ_EVENT_GL_ERROR</symbol>.
+            </para>
+            <informaltable>
+                <tgroup cols="2">
+                    <thead>
+                        <row>
+                            <entry>Type</entry>
+                            <entry>Description</entry>
+                        </row>
+                    </thead>
+                    <tbody>
+                        <row>
+                            <entry><type>CODE</type></entry>
+                            <entry><symbol>REQ_BREAK_ERROR</symbol></entry>
+                        </row>
+                        <row>
+                            <entry><type>UINT32</type></entry>
+                            <entry>request ID</entry>
+                        </row>
+                        <row>
+                            <entry><type>BOOL</type></entry>
+                            <entry>true to set, false to clear</entry>
+                        </row>
+                    </tbody>
+                </tgroup>
+            </informaltable>
+        </sect2>
+
+        <sect2 id="protocol-requests-async">
+            <title>Stop</title>
+            <para>Requests a running program to stop at the next available
+                point. It is ignored if the program is already stopped when
+                the command is received.
+            </para>
+            <informaltable>
+                <tgroup cols="2">
+                    <thead>
+                        <row>
+                            <entry>Type</entry>
+                            <entry>Description</entry>
+                        </row>
+                    </thead>
+                    <tbody>
+                        <row>
+                            <entry><type>CODE</type></entry>
+                            <entry><symbol>REQ_ASYNC</symbol></entry>
+                        </row>
+                        <row>
+                            <entry><type>UINT32</type></entry>
+                            <entry>request ID</entry>
+                        </row>
+                    </tbody>
+                </tgroup>
+            </informaltable>
+        </sect2>
+
+        <sect2 id="protocol-requests-quit">
+            <title>Quit</title>
+            <para>Requests the program to terminate.</para>
+            <informaltable>
+                <tgroup cols="2">
+                    <thead>
+                        <row>
+                            <entry>Type</entry>
+                            <entry>Description</entry>
+                        </row>
+                    </thead>
+                    <tbody>
+                        <row>
+                            <entry><type>CODE</type></entry>
+                            <entry><symbol>REQ_QUIT</symbol></entry>
+                        </row>
+                        <row>
+                            <entry><type>UINT32</type></entry>
+                            <entry>request ID</entry>
+                        </row>
+                    </tbody>
+                </tgroup>
+            </informaltable>
+        </sect2>
+
+        <sect2 id="protocol-requests-activate-deactivate">
+            <title>Filter-set activation and deactivation</title>
+            <para>
+                Filter-sets can be enabled or disabled on the fly by the
+                debugger, similarly to the way they can be activated or
+                deactivated using key sequences.
+            </para>
+            <informaltable>
+                <tgroup cols="2">
+                    <thead>
+                        <row>
+                            <entry>Type</entry>
+                            <entry>Description</entry>
+                        </row>
+                    </thead>
+                    <tbody>
+                        <row>
+                            <entry><type>CODE</type></entry>
+                            <entry><symbol>REQ_ACTIVATE_FILTERSET</symbol>
+                                or <symbol>REQ_DEACTIVATE_FILTERSET</symbol></entry>
+                        </row>
+                        <row>
+                            <entry><type>UINT32</type></entry>
+                            <entry>request ID</entry>
+                        </row>
+                        <row>
+                            <entry><type>STRING</type></entry>
+                            <entry>name of the filter-set</entry>
+                        </row>
+                    </tbody>
+                </tgroup>
+            </informaltable>
+        </sect2>
+
+        <sect2 id="protocol-requests-state">
+            <title>State requests</title>
+            <para>Requests a readout of all the GL state.</para>
+            <informaltable>
+                <tgroup cols="2">
+                    <thead>
+                        <row>
+                            <entry>Type</entry>
+                            <entry>Description</entry>
+                        </row>
+                    </thead>
+                    <tbody>
+                        <row>
+                            <entry><type>CODE</type></entry>
+                            <entry><symbol>REQ_STATE_TREE_RAW</symbol></entry>
+                        </row>
+                        <row>
+                            <entry><type>UINT32</type></entry>
+                            <entry>request ID</entry>
+                        </row>
+                    </tbody>
+                </tgroup>
+            </informaltable>
+            <para>State can also be requested in a text form, but this is
+                deprecated:
+            </para>
+            <informaltable>
+                <tgroup cols="2">
+                    <thead>
+                        <row>
+                            <entry>Type</entry>
+                            <entry>Description</entry>
+                        </row>
+                    </thead>
+                    <tbody>
+                        <row>
+                            <entry><type>CODE</type></entry>
+                            <entry><symbol>REQ_STATE_TREE</symbol></entry>
+                        </row>
+                        <row>
+                            <entry><type>UINT32</type></entry>
+                            <entry>request ID</entry>
+                        </row>
+                    </tbody>
+                </tgroup>
+            </informaltable>
+        </sect2>
+
+        <sect2 id="protocol-requests-data">
+            <title>Data requests</title>
+            <para>Request data from a GL object. This command has a common
+                header, and a number of possible sub-types.</para>
+            <sect3 id="protocol-requests-data-texture">
+                <title>Texture data</title>
+                <informaltable>
+                    <tgroup cols="2">
+                        <thead>
+                            <row>
+                                <entry>Type</entry>
+                                <entry>Description</entry>
+                            </row>
+                        </thead>
+                        <tbody>
+                            <row>
+                                <entry><type>CODE</type></entry>
+                                <entry><symbol>REQ_DATA</symbol></entry>
+                            </row>
+                            <row>
+                                <entry><type>UINT32</type></entry>
+                                <entry>request ID</entry>
+                            </row>
+                            <row>
+                                <entry><type>CODE</type></entry>
+                                <entry><symbol>REQ_DATA_TEXTURE</symbol></entry>
+                            </row>
+                            <row>
+                                <entry><type>UINT32</type></entry>
+                                <entry>GL name of the texture object</entry>
+                            </row>
+                            <row>
+                                <entry><type>GLENUM</type></entry>
+                                <entry>texture target</entry>
+                            </row>
+                            <row>
+                                <entry><type>GLENUM</type></entry>
+                                <entry>texture face (used only for cubemaps,
+                                    otherwise ignored)</entry>
+                            </row>
+                            <row>
+                                <entry><type>UINT32</type></entry>
+                                <entry>texture level</entry>
+                            </row>
+                            <row>
+                                <entry><type>GLENUM</type></entry>
+                                <entry><parameter>format</parameter> parameter
+                                    to <function>glGetTexImage</function></entry>
+                            </row>
+                            <row>
+                                <entry><type>GLENUM</type></entry>
+                                <entry><parameter>type</parameter> parameter
+                                    to <function>glGetTexImage</function></entry>
+                            </row>
+                        </tbody>
+                    </tgroup>
+                </informaltable>
+            </sect3>
+            <sect3 id="protocol-requests-data-framebuffer">
+                <title>Framebuffer data</title>
+                <informaltable>
+                    <tgroup cols="2">
+                        <thead>
+                            <row>
+                                <entry>Type</entry>
+                                <entry>Description</entry>
+                            </row>
+                        </thead>
+                        <tbody>
+                            <row>
+                                <entry><type>CODE</type></entry>
+                                <entry><symbol>REQ_DATA</symbol></entry>
+                            </row>
+                            <row>
+                                <entry><type>UINT32</type></entry>
+                                <entry>request ID</entry>
+                            </row>
+                            <row>
+                                <entry><type>CODE</type></entry>
+                                <entry><symbol>REQ_DATA_FRAMEBUFFER</symbol></entry>
+                            </row>
+                            <row>
+                                <entry><type>UINT32</type></entry>
+                                <entry>GL name of the framebuffer object (zero
+                                    for the window-system framebuffer)</entry>
+                            </row>
+                            <row>
+                                <entry><type>GLENUM</type></entry>
+                                <entry>framebuffer target (currently ignored but
+                                    should be <symbol>GL_FRAMEBUFFER</symbol>)</entry>
+                            </row>
+                            <row>
+                                <entry><type>GLENUM</type></entry>
+                                <entry>read buffer</entry>
+                            </row>
+                            <row>
+                                <entry><type>GLENUM</type></entry>
+                                <entry><parameter>format</parameter> parameter
+                                    to <function>glReadPixels</function></entry>
+                            </row>
+                            <row>
+                                <entry><type>GLENUM</type></entry>
+                                <entry><parameter>type</parameter> parameter
+                                    to <function>glReadPixels</function></entry>
+                            </row>
+                        </tbody>
+                    </tgroup>
+                </informaltable>
+            </sect3>
+            <sect3>
+                <title>Shader source</title>
+                <informaltable>
+                    <tgroup cols="2">
+                        <thead>
+                            <row>
+                                <entry>Type</entry>
+                                <entry>Description</entry>
+                            </row>
+                        </thead>
+                        <tbody>
+                            <row>
+                                <entry><type>CODE</type></entry>
+                                <entry><symbol>REQ_DATA</symbol></entry>
+                            </row>
+                            <row>
+                                <entry><type>UINT32</type></entry>
+                                <entry>request ID</entry>
+                            </row>
+                            <row>
+                                <entry><type>CODE</type></entry>
+                                <entry><symbol>REQ_DATA_SHADER</symbol></entry>
+                            </row>
+                            <row>
+                                <entry><type>UINT32</type></entry>
+                                <entry>GL name of the shader object (either GLSL
+                                    or ARB shader)</entry>
+                            </row>
+                            <row>
+                                <entry><type>GLENUM</type></entry>
+                                <entry>shader type (GLSL) or target (ARB shader)</entry>
+                            </row>
+                        </tbody>
+                    </tgroup>
+                </informaltable>
+            </sect3>
+        </sect2>
+    </sect1>
+
+    <sect1 id="protocol-syncresponses">
+        <title>Synchronous responses</title>
+        <para>
+            Synchronous responses are replies to requests. Each synchronous
+            response start with a response type and the request ID of the
+            request it is in response to. Responses are always returned in the
+            same order as the requests were received, but may potentially be
+            intermixed with asynchronous responses.
+        </para>
+
+        <sect2 id="protocol-syncresponses-error">
+            <title>Error</title>
+            <para>
+                This is a general-purpose error response to any request which
+                failed. The error code is currently unused and will always be
+                zero. It is reserved for future use, where defined error codes
+                may facilitate automatic interpretation of the error.
+            </para>
+            <informaltable>
+                <tgroup cols="2">
+                    <thead>
+                        <row>
+                            <entry>Type</entry>
+                            <entry>Description</entry>
+                        </row>
+                    </thead>
+                    <tbody>
+                        <row>
+                            <entry><type>CODE</type></entry>
+                            <entry><symbol>RESP_ERROR</symbol></entry>
+                        </row>
+                        <row>
+                            <entry><type>UINT32</type></entry>
+                            <entry>request ID</entry>
+                        </row>
+                        <row>
+                            <entry><type>CODE</type></entry>
+                            <entry>error code</entry>
+                        </row>
+                        <row>
+                            <entry><type>STRING</type></entry>
+                            <entry>human-readable error message</entry>
+                        </row>
+                    </tbody>
+                </tgroup>
+            </informaltable>
+        </sect2>
+
+        <sect2 id="protocol-syncresponses-ans">
+            <title>Answer</title>
+            <para>
+                This is a general-purpose successful answer response. The
+                meaning of the <structfield>value</structfield> field is
+                determined by the corresponding request. Currently, no requests
+                use this field and its value is undefined.
+            </para>
+            <informaltable>
+                <tgroup cols="2">
+                    <thead>
+                        <row>
+                            <entry>Type</entry>
+                            <entry>Description</entry>
+                        </row>
+                    </thead>
+                    <tbody>
+                        <row>
+                            <entry><type>CODE</type></entry>
+                            <entry><symbol>RESP_ANS</symbol></entry>
+                        </row>
+                        <row>
+                            <entry><type>UINT32</type></entry>
+                            <entry>request ID</entry>
+                        </row>
+                        <row>
+                            <entry><type>UINT32</type></entry>
+                            <entry>value</entry>
+                        </row>
+                    </tbody>
+                </tgroup>
+            </informaltable>
+        </sect2>
+
+        <sect2 id="protocol-syncresponses-running">
+            <title>Running</title>
+            <para>
+                This is sent in response to <symbol>REQ_RUN</symbol>, to
+                indicate that the debugger has successfully initialised.
+            </para>
+            <informaltable>
+                <tgroup cols="2">
+                    <thead>
+                        <row>
+                            <entry>Type</entry>
+                            <entry>Description</entry>
+                        </row>
+                    </thead>
+                    <tbody>
+                        <row>
+                            <entry><type>CODE</type></entry>
+                            <entry><symbol>RESP_ERROR</symbol></entry>
+                        </row>
+                        <row>
+                            <entry><type>UINT32</type></entry>
+                            <entry>request ID</entry>
+                        </row>
+                    </tbody>
+                </tgroup>
+            </informaltable>
+        </sect2>
+
+        <sect2 id="protocol-syncresponses-state-node-raw">
+            <title>Binary state dumps</title>
+            <para>
+                The GL state is returned as a contiguous block of responses,
+                with no intermediate asynchronous responses. Each node in the
+                tree is encoded as a
+                <symbol>RESP_STATE_NODE_BEGIN_RAW</symbol> (which contains
+                information about the root of the tree, if any), then the
+                children encoded recursively, then a
+                <symbol>RESP_STATE_NODE_END_RAW</symbol> response to indicate
+                the end of the children. The same request ID is used for the
+                whole set of responses.
+            </para>
+            <sect3 id="protocol-syncresponses-state-node-begin-raw">
+                <title>Begin response</title>
+                <informaltable>
+                    <tgroup cols="2">
+                        <thead>
+                            <row>
+                                <entry>Type</entry>
+                                <entry>Description</entry>
+                            </row>
+                        </thead>
+                        <tbody>
+                            <row>
+                                <entry><type>CODE</type></entry>
+                                <entry><symbol>RESP_STATE_NODE_BEGIN_RAW</symbol></entry>
+                            </row>
+                            <row>
+                                <entry><type>UINT32</type></entry>
+                                <entry>request ID</entry>
+                            </row>
+                            <row>
+                                <entry><type>STRING</type></entry>
+                                <entry>name of the state (empty for the root
+                                    state)</entry>
+                            </row>
+                            <row>
+                                <entry><type>UINT32</type></entry>
+                                <entry>numeric name of the state, which is
+                                    state dependent (typically it is a GL
+                                    name)</entry>
+                            </row>
+                            <row>
+                                <entry><type>GLENUM</type></entry>
+                                <entry>enum name of the state, which is
+                                    state dependent (typically it is a
+                                    <parameter>pname</parameter> parameter to
+                                    a GL query function)
+                                </entry>
+                            </row>
+                            <row>
+                                <entry><type>STRING</type></entry>
+                                <entry>the mangled type name, as returned by
+                                    <function>budgie_type_name</function></entry>
+                            </row>
+                            <row>
+                                <entry><type>INT32</type></entry>
+                                <entry>element count for an array, &minus;1
+                                    for a non-array, and &minus;2 if an error
+                                    occurred in trying to retrieve the value
+                                </entry>
+                            </row>
+                            <row>
+                                <entry><type>BLOB</type></entry>
+                                <entry>the value of the state
+                                    (currently using host object
+                                    representation)
+                                </entry>
+                            </row>
+                        </tbody>
+                    </tgroup>
+                </informaltable>
+            </sect3>
+            <sect3 id="protocol-syncresponses-state-node-end-raw">
+                <title>End response</title>
+                <informaltable>
+                    <tgroup cols="2">
+                        <thead>
+                            <row>
+                                <entry>Type</entry>
+                                <entry>Description</entry>
+                            </row>
+                        </thead>
+                        <tbody>
+                            <row>
+                                <entry><type>CODE</type></entry>
+                                <entry><symbol>RESP_STATE_NODE_END_RAW</symbol></entry>
+                            </row>
+                            <row>
+                                <entry><type>UINT32</type></entry>
+                                <entry>request ID</entry>
+                            </row>
+                        </tbody>
+                    </tgroup>
+                </informaltable>
+            </sect3>
+        </sect2>
+
+        <sect2 id="protocol-syncresponses-state-node">
+            <title>Textual state dumps</title>
+            <para>
+                Textual state dumps work similarly to binary state dumps,
+                except that the state is formatting into a human-readable
+                string by the filter-set. It is recommended that clients do
+                not attempt to parse these strings, and should instead use a
+                binary state dump if they intend to inspect values.
+            </para>
+            <sect3 id="protocol-syncresponses-state-node-begin">
+                <title>Begin response</title>
+                <informaltable>
+                    <tgroup cols="2">
+                        <thead>
+                            <row>
+                                <entry>Type</entry>
+                                <entry>Description</entry>
+                            </row>
+                        </thead>
+                        <tbody>
+                            <row>
+                                <entry><type>CODE</type></entry>
+                                <entry><symbol>RESP_STATE_NODE_BEGIN</symbol></entry>
+                            </row>
+                            <row>
+                                <entry><type>UINT32</type></entry>
+                                <entry>request ID</entry>
+                            </row>
+                            <row>
+                                <entry><type>STRING</type></entry>
+                                <entry>name of the state (empty for the root
+                                    state)</entry>
+                            </row>
+                            <row>
+                                <entry><type>UINT32</type></entry>
+                                <entry>numeric name of the state, which is
+                                    state dependent (typically it is a GL
+                                    name)</entry>
+                            </row>
+                            <row>
+                                <entry><type>GLENUM</type></entry>
+                                <entry>enum name of the state, which is
+                                    state dependent (typically it is a
+                                    <parameter>pname</parameter> parameter to
+                                    a GL query function)
+                                </entry>
+                            </row>
+                            <row>
+                                <entry><type>STRING</type></entry>
+                                <entry>the human-readable value of the state</entry>
+                            </row>
+                        </tbody>
+                    </tgroup>
+                </informaltable>
+            </sect3>
+            <sect3 id="protocol-syncresponses-state-node-end">
+                <title>End response</title>
+                <informaltable>
+                    <tgroup cols="2">
+                        <thead>
+                            <row>
+                                <entry>Type</entry>
+                                <entry>Description</entry>
+                            </row>
+                        </thead>
+                        <tbody>
+                            <row>
+                                <entry><type>CODE</type></entry>
+                                <entry><symbol>RESP_STATE_NODE_END</symbol></entry>
+                            </row>
+                            <row>
+                                <entry><type>UINT32</type></entry>
+                                <entry>request ID</entry>
+                            </row>
+                        </tbody>
+                    </tgroup>
+                </informaltable>
+            </sect3>
+        </sect2>
+
+        <sect2 id="protocol-syncresponses-data">
+            <title>Data responses</title>
+            <para>The response to data requests varies by the sub-type of the
+                request. In each case, the data is returned as a binary blob,
+                exactly as it was returned by the appropriate GL query
+                function. The client pixel pack state is set to the default,
+                except that <symbol>GL_PIXEL_PACK_ALIGNMENT</symbol> is set to
+                1.
+            </para>
+            <sect3 id="protocol-syncresponses-data-texture">
+                <title>Texture data response</title>
+                <informaltable>
+                    <tgroup cols="2">
+                        <thead>
+                            <row>
+                                <entry>Type</entry>
+                                <entry>Description</entry>
+                            </row>
+                        </thead>
+                        <tbody>
+                            <row>
+                                <entry><type>CODE</type></entry>
+                                <entry><symbol>RESP_DATA</symbol></entry>
+                            </row>
+                            <row>
+                                <entry><type>UINT32</type></entry>
+                                <entry>request ID</entry>
+                            </row>
+                            <row>
+                                <entry><type>CODE</type></entry>
+                                <entry><symbol>REQ_DATA_TEXTURE</symbol></entry>
+                            </row>
+                            <row>
+                                <entry><type>BLOB</type></entry>
+                                <entry>texture data</entry>
+                            </row>
+                            <row>
+                                <entry><type>UINT32</type></entry>
+                                <entry>width</entry>
+                            </row>
+                            <row>
+                                <entry><type>UINT32</type></entry>
+                                <entry>height (1 for 1D textures)</entry>
+                            </row>
+                            <row>
+                                <entry><type>UINT32</type></entry>
+                                <entry>depth (1 for 1D and 2D textures)</entry>
+                            </row>
+                        </tbody>
+                    </tgroup>
+                </informaltable>
+            </sect3>
+            <sect3 id="protocol-syncresponses-data-framebuffer">
+                <title>Framebuffer data response</title>
+                <informaltable>
+                    <tgroup cols="2">
+                        <thead>
+                            <row>
+                                <entry>Type</entry>
+                                <entry>Description</entry>
+                            </row>
+                        </thead>
+                        <tbody>
+                            <row>
+                                <entry><type>CODE</type></entry>
+                                <entry><symbol>RESP_DATA</symbol></entry>
+                            </row>
+                            <row>
+                                <entry><type>UINT32</type></entry>
+                                <entry>request ID</entry>
+                            </row>
+                            <row>
+                                <entry><type>CODE</type></entry>
+                                <entry><symbol>REQ_DATA_FRAMEBUFFER</symbol></entry>
+                            </row>
+                            <row>
+                                <entry><type>BLOB</type></entry>
+                                <entry>framebuffer data</entry>
+                            </row>
+                            <row>
+                                <entry><type>UINT32</type></entry>
+                                <entry>width</entry>
+                            </row>
+                            <row>
+                                <entry><type>UINT32</type></entry>
+                                <entry>height (1 for 1D textures)</entry>
+                            </row>
+                        </tbody>
+                    </tgroup>
+                </informaltable>
+            </sect3>
+            <sect3 id="protocol-syncresponses-data-shader">
+                <title>Shader source response</title>
+                <informaltable>
+                    <tgroup cols="2">
+                        <thead>
+                            <row>
+                                <entry>Type</entry>
+                                <entry>Description</entry>
+                            </row>
+                        </thead>
+                        <tbody>
+                            <row>
+                                <entry><type>CODE</type></entry>
+                                <entry><symbol>RESP_DATA</symbol></entry>
+                            </row>
+                            <row>
+                                <entry><type>UINT32</type></entry>
+                                <entry>request ID</entry>
+                            </row>
+                            <row>
+                                <entry><type>CODE</type></entry>
+                                <entry><symbol>REQ_DATA_SHADER</symbol></entry>
+                            </row>
+                            <row>
+                                <entry><type>STRING</type></entry>
+                                <entry>shader source</entry>
+                            </row>
+                        </tbody>
+                    </tgroup>
+                </informaltable>
+            </sect3>
+        </sect2>
+    </sect1>
+
+    <sect1 id="protocol-asyncresponses">
+        <title>Asynchronous responses</title>
+        <para>
+            Asynchronous responses are generated when the program transitions
+            from <symbol>running</symbol> state to <symbol>stopped</symbol>
+            state. Except where otherwise noted, they can occur any time the
+            program is running, potentially interleaved with synchronous
+            responses.
+        </para>
+        <para>
+            Asynchronous responses include a request ID field, which contains
+            the request ID of the last request that started the program
+            running.
+        </para>
+
+        <sect2 id="protocol-asyncresponse-break">
+            <title>Break</title>
+            <para>
+                This response is sent when the program is stopped just before
+                executing a function call. This can be due to a user
+                breakpoint on the function, or reaching the next function
+                after a <symbol>REQ_STEP</symbol> or
+                <symbol>REQ_ASYNC</symbol>.
+            </para>
+            <informaltable>
+                <tgroup cols="2">
+                    <thead>
+                        <row>
+                            <entry>Type</entry>
+                            <entry>Description</entry>
+                        </row>
+                    </thead>
+                    <tbody>
+                        <row>
+                            <entry><type>CODE</type></entry>
+                            <entry><symbol>RESP_BREAK</symbol></entry>
+                        </row>
+                        <row>
+                            <entry><type>UINT32</type></entry>
+                            <entry>request ID</entry>
+                        </row>
+                        <row>
+                            <entry><type>STRING</type></entry>
+                            <entry>description of the function call</entry>
+                        </row>
+                    </tbody>
+                </tgroup>
+            </informaltable>
+        </sect2>
+
+        <sect2 id="protocol-asyncresponse-break-event">
+            <title>Break on event</title>
+            <para>
+                This response is used when the program is stopped just after
+                executing a function call, as a result of something that
+                occurred in the debugged application (such as a GL error).
+            </para>
+            <informaltable>
+                <tgroup cols="2">
+                    <thead>
+                        <row>
+                            <entry>Type</entry>
+                            <entry>Description</entry>
+                        </row>
+                    </thead>
+                    <tbody>
+                        <row>
+                            <entry><type>CODE</type></entry>
+                            <entry><symbol>RESP_BREAK_EVENT</symbol></entry>
+                        </row>
+                        <row>
+                            <entry><type>UINT32</type></entry>
+                            <entry>request ID</entry>
+                        </row>
+                        <row>
+                            <entry><type>STRING</type></entry>
+                            <entry>description of the function call</entry>
+                        </row>
+                        <row>
+                            <entry><type>STRING</type></entry>
+                            <entry>description of the event</entry>
+                        </row>
+                    </tbody>
+                </tgroup>
+            </informaltable>
+        </sect2>
+    </sect1>
+</appendix>

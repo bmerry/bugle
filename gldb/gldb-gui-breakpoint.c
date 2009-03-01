@@ -1,5 +1,5 @@
 /*  BuGLe: an OpenGL debugging tool
- *  Copyright (C) 2004-2007  Bruce Merry
+ *  Copyright (C) 2004-2007, 2009  Bruce Merry
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -31,6 +31,7 @@
 #include "gldb/gldb-gui.h"
 #include "gldb/gldb-gui-breakpoint.h"
 #include "gldb/gldb-common.h"
+#include "common/protocol.h"
 
 struct _GldbBreakpointPane
 {
@@ -121,12 +122,31 @@ static void gldb_breakpoint_pane_remove(GtkButton *button, gpointer user_data)
     }
 }
 
-static void gldb_breakpoint_pane_error_toggled(GtkWidget *toggle, gpointer user_data)
+static void gldb_breakpoint_pane_gl_error_toggled(GtkWidget *toggle, gpointer user_data)
 {
     GldbBreakpointPane *pane;
 
     pane = GLDB_BREAKPOINT_PANE(user_data);
-    gldb_set_break_error(0, gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(toggle)));
+    gldb_set_break_event(0, REQ_EVENT_GL_ERROR,
+                         gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(toggle)));
+}
+
+static void gldb_breakpoint_pane_compile_error_toggled(GtkWidget *toggle, gpointer user_data)
+{
+    GldbBreakpointPane *pane;
+
+    pane = GLDB_BREAKPOINT_PANE(user_data);
+    gldb_set_break_event(0, REQ_EVENT_COMPILE_ERROR,
+                         gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(toggle)));
+}
+
+static void gldb_breakpoint_pane_link_error_toggled(GtkWidget *toggle, gpointer user_data)
+{
+    GldbBreakpointPane *pane;
+
+    pane = GLDB_BREAKPOINT_PANE(user_data);
+    gldb_set_break_event(0, REQ_EVENT_LINK_ERROR,
+                         gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(toggle)));
 }
 
 static void gldb_breakpoint_pane_cell_toggled(GtkCellRendererToggle *cell,
@@ -205,10 +225,22 @@ GldbPane *gldb_breakpoint_pane_new(void)
     gtk_box_pack_start(GTK_BOX(hbox), bbox, FALSE, FALSE, 0);
     gtk_box_pack_start(GTK_BOX(vbox), hbox, TRUE, TRUE, 0);
 
-    toggle = gtk_check_button_new_with_mnemonic(_("Break on _errors"));
-    gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(toggle), gldb_get_break_error());
+    toggle = gtk_check_button_new_with_mnemonic(_("Break on GL _errors"));
+    gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(toggle), gldb_get_break_event(REQ_EVENT_GL_ERROR));
     g_signal_connect(G_OBJECT(toggle), "toggled",
-                     G_CALLBACK(gldb_breakpoint_pane_error_toggled), pane);
+                     G_CALLBACK(gldb_breakpoint_pane_gl_error_toggled), pane);
+    gtk_box_pack_start(GTK_BOX(vbox), toggle, FALSE, FALSE, 0);
+
+    toggle = gtk_check_button_new_with_mnemonic(_("Break on shader _compilation failure"));
+    gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(toggle), gldb_get_break_event(REQ_EVENT_COMPILE_ERROR));
+    g_signal_connect(G_OBJECT(toggle), "toggled",
+                     G_CALLBACK(gldb_breakpoint_pane_compile_error_toggled), pane);
+    gtk_box_pack_start(GTK_BOX(vbox), toggle, FALSE, FALSE, 0);
+
+    toggle = gtk_check_button_new_with_mnemonic(_("Break on shader _link errors"));
+    gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(toggle), gldb_get_break_event(REQ_EVENT_LINK_ERROR));
+    g_signal_connect(G_OBJECT(toggle), "toggled",
+                     G_CALLBACK(gldb_breakpoint_pane_link_error_toggled), pane);
     gtk_box_pack_start(GTK_BOX(vbox), toggle, FALSE, FALSE, 0);
 
     gldb_pane_set_widget(GLDB_PANE(pane), vbox);

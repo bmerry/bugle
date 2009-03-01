@@ -447,20 +447,15 @@ static gboolean response_callback(GIOChannel *channel, GIOCondition condition,
 
     switch (r->code)
     {
-    case RESP_STOP:
-        msg = xasprintf(_("Stopped in %s"), ((gldb_response_stop *) r)->call);
-        stopped(context, msg);
-        free(msg);
-        break;
     case RESP_BREAK:
-        msg = xasprintf(_("Break on %s"), ((gldb_response_break *) r)->call);
+        msg = xasprintf(_("Stopped in %s"), ((gldb_response_break *) r)->call);
         stopped(context, msg);
         free(msg);
         break;
-    case RESP_BREAK_ERROR:
+    case RESP_BREAK_EVENT:
         msg = xasprintf( _("%s in %s"),
-                        ((gldb_response_break_error *) r)->error,
-                        ((gldb_response_break_error *) r)->call);
+                        ((gldb_response_break_event *) r)->event,
+                        ((gldb_response_break_event *) r)->call);
         stopped(context, msg);
         free(msg);
         break;

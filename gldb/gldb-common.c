@@ -56,7 +56,7 @@ static gldb_program_type prog_type;
 static gldb_state *state_root = NULL;
 static bool state_dirty = true;
 
-static bool break_on_error = true;
+static bool break_on_event[REQ_EVENT_COUNT];
 static hash_table break_on;
 
 static void state_destroy(gldb_state *s)
@@ -446,18 +446,6 @@ static gldb_response *gldb_get_response_ans(uint32_t code, uint32_t id)
     return (gldb_response *) r;
 }
 
-static gldb_response *gldb_get_response_stop(uint32_t code, uint32_t id)
-{
-    gldb_response_stop *r;
-
-    set_status(GLDB_STATUS_STOPPED);
-    r = XMALLOC(gldb_response_stop);
-    r->code = code;
-    r->id = id;
-    gldb_protocol_recv_string(lib_in, &r->call);
-    return (gldb_response *) r;
-}
-
 static gldb_response *gldb_get_response_break(uint32_t code, uint32_t id)
 {
     gldb_response_break *r;
@@ -470,16 +458,16 @@ static gldb_response *gldb_get_response_break(uint32_t code, uint32_t id)
     return (gldb_response *) r;
 }
 
-static gldb_response *gldb_get_response_break_error(uint32_t code, uint32_t id)
+static gldb_response *gldb_get_response_break_event(uint32_t code, uint32_t id)
 {
-    gldb_response_break_error *r;
+    gldb_response_break_event *r;
 
     set_status(GLDB_STATUS_STOPPED);
-    r = XMALLOC(gldb_response_break_error);
+    r = XMALLOC(gldb_response_break_event);
     r->code = code;
     r->id = id;
     gldb_protocol_recv_string(lib_in, &r->call);
-    gldb_protocol_recv_string(lib_in, &r->error);
+    gldb_protocol_recv_string(lib_in, &r->event);
     return (gldb_response *) r;
 }
 
@@ -672,9 +660,10 @@ gldb_response *gldb_get_response(void)
     switch (code)
     {
     case RESP_ANS: return gldb_get_response_ans(code, id);
-    case RESP_STOP: return gldb_get_response_stop(code, id);
     case RESP_BREAK: return gldb_get_response_break(code, id);
-    case RESP_BREAK_ERROR: return gldb_get_response_break_error(code, id);
+    case RESP_STOP: /* Obsolete alias of RESP_BREAK */
+        return gldb_get_response_break(RESP_BREAK, id);
+    case RESP_BREAK_EVENT: return gldb_get_response_break_event(code, id);
     case RESP_STATE: return gldb_get_response_state(code, id);
     case RESP_ERROR: return gldb_get_response_error(code, id);
     case RESP_RUNNING: return gldb_get_response_running(code, id);
@@ -694,9 +683,9 @@ void gldb_free_response(gldb_response *r)
     case RESP_BREAK:
         free(((gldb_response_break *) r)->call);
         break;
-    case RESP_BREAK_ERROR:
-        free(((gldb_response_break_error *) r)->call);
-        free(((gldb_response_break_error *) r)->error);
+    case RESP_BREAK_EVENT:
+        free(((gldb_response_break_event *) r)->call);
+        free(((gldb_response_break_event *) r)->event);
         break;
     case RESP_STATE:
         free(((gldb_response_state *) r)->state);
@@ -857,14 +846,19 @@ void gldb_safe_syscall(int r, const char *str)
 bool gldb_run(uint32_t id, void (*child_init)(void))
 {
     const hash_table_entry *h;
+    uint32_t event;
 
     child_pid = execute(child_init);
     if (child_pid == -1)
         return false;
     /* Send breakpoints */
-    gldb_protocol_send_code(lib_out, REQ_BREAK_ERROR);
-    gldb_protocol_send_code(lib_out, 0);
-    gldb_protocol_send_code(lib_out, break_on_error ? 1 : 0);
+    for (event = 0; event < REQ_EVENT_COUNT; event++)
+    {
+        gldb_protocol_send_code(lib_out, REQ_BREAK_EVENT);
+        gldb_protocol_send_code(lib_out, 0);
+        gldb_protocol_send_code(lib_out, event);
+        gldb_protocol_send_code(lib_out, break_on_event[event] ? 1 : 0);
+    }
     for (h = bugle_hash_begin(&break_on); h; h = bugle_hash_next(&break_on, h))
     {
         gldb_protocol_send_code(lib_out, REQ_BREAK);
@@ -970,18 +964,21 @@ void gldb_send_data_shader(uint32_t id, GLuint shader_id, GLenum target)
     gldb_protocol_send_code(lib_out, target);
 }
 
-bool gldb_get_break_error(void)
+bool gldb_get_break_event(uint32_t event)
 {
-    return break_on_error;
+    assert(event < REQ_EVENT_COUNT);
+    return break_on_event[event];
 }
 
-void gldb_set_break_error(uint32_t id, bool brk)
+void gldb_set_break_event(uint32_t id, uint32_t event, bool brk)
 {
-    break_on_error = brk;
+    assert(event < REQ_EVENT_COUNT);
+    break_on_event[event] = brk;
     if (status != GLDB_STATUS_DEAD)
     {
-        gldb_protocol_send_code(lib_out, REQ_BREAK_ERROR);
+        gldb_protocol_send_code(lib_out, REQ_BREAK_EVENT);
         gldb_protocol_send_code(lib_out, id);
+        gldb_protocol_send_code(lib_out, event);
         gldb_protocol_send_code(lib_out, brk ? 1 : 0);
     }
 }
@@ -1050,6 +1047,8 @@ void gldb_initialise(int argc, const char * const *argv)
     gldb_program_set_setting(GLDB_PROGRAM_SETTING_PORT, "9118");
     free(command);
     bugle_hash_init(&break_on, NULL);
+    for (i = 0; i < (int) REQ_EVENT_COUNT; i++)
+        break_on_event[i] = true;
 }
 
 void gldb_shutdown(void)

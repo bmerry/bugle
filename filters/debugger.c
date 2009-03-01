@@ -1,5 +1,5 @@
 /*  BuGLe: an OpenGL debugging tool
- *  Copyright (C) 2004-2008  Bruce Merry
+ *  Copyright (C) 2004-2009  Bruce Merry
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -51,6 +51,7 @@
 #include <budgie/types.h>
 #include <budgie/reflect.h>
 #include <budgie/addresses.h>
+#include "budgielib/defines.h"
 #include "common/protocol.h"
 #include "common/threads.h"
 #include "xalloc.h"
@@ -60,7 +61,8 @@
 static gldb_protocol_reader *in_pipe = NULL;
 static int in_pipe_fd = -1, out_pipe = -1;
 static bool *break_on;
-static bool break_on_error = true, break_on_next = false;
+static bool break_on_event[REQ_EVENT_COUNT];
+static bool break_on_next = false;
 static bool stop_in_begin_end = false;
 static bool stopped = true;
 static uint32_t start_id = 0;
@@ -668,6 +670,7 @@ static bool send_data_shader(uint32_t id, GLuint shader_id,
 static void process_single_command(function_call *call)
 {
     uint32_t req, id, req_val;
+    uint32_t event;
     char *req_str, *resp_str;
     bool activate;
     budgie_function func;
@@ -713,12 +716,23 @@ static void process_single_command(function_call *call)
         }
         free(req_str);
         break;
-    case REQ_BREAK_ERROR:
+    case REQ_BREAK_EVENT:
+        gldb_protocol_recv_code(in_pipe, &event);
         gldb_protocol_recv_code(in_pipe, &req_val);
-        break_on_error = req_val != 0;
-        gldb_protocol_send_code(out_pipe, RESP_ANS);
-        gldb_protocol_send_code(out_pipe, id);
-        gldb_protocol_send_code(out_pipe, 0);
+        if (event >= REQ_EVENT_COUNT)
+        {
+            gldb_protocol_send_code(out_pipe, RESP_ERROR);
+            gldb_protocol_send_code(out_pipe, id);
+            gldb_protocol_send_code(out_pipe, 0);
+            gldb_protocol_send_string(out_pipe, "Event out of range - protocol mismatch?");
+        }
+        else
+        {
+            break_on_event[event] = req_val != 0;
+            gldb_protocol_send_code(out_pipe, RESP_ANS);
+            gldb_protocol_send_code(out_pipe, id);
+            gldb_protocol_send_code(out_pipe, 0);
+        }
         break;
     case REQ_ACTIVATE_FILTERSET:
     case REQ_DEACTIVATE_FILTERSET:
@@ -872,7 +886,8 @@ static void process_single_command(function_call *call)
             {
                 resp_str = bugle_string_io(dump_any_call_string_io, call);
                 stopped = true;
-                gldb_protocol_send_code(out_pipe, RESP_STOP);
+                break_on_next = false;
+                gldb_protocol_send_code(out_pipe, RESP_BREAK);
                 gldb_protocol_send_code(out_pipe, start_id);
                 gldb_protocol_send_string(out_pipe, resp_str);
                 free(resp_str);
@@ -928,22 +943,12 @@ static bool debugger_callback(function_call *call, const callback_data *data)
 
     if (stoppable())
     {
-        if (break_on[call->generic.id])
+        if (break_on[call->generic.id] || break_on_next)
         {
             resp_str = bugle_string_io(dump_any_call_string_io, call);
             stopped = true;
             break_on_next = false;
             gldb_protocol_send_code(out_pipe, RESP_BREAK);
-            gldb_protocol_send_code(out_pipe, start_id);
-            gldb_protocol_send_string(out_pipe, resp_str);
-            free(resp_str);
-        }
-        else if (break_on_next)
-        {
-            resp_str = bugle_string_io(dump_any_call_string_io, call);
-            break_on_next = false;
-            stopped = true;
-            gldb_protocol_send_code(out_pipe, RESP_STOP);
             gldb_protocol_send_code(out_pipe, start_id);
             gldb_protocol_send_string(out_pipe, resp_str);
             free(resp_str);
@@ -957,19 +962,43 @@ static bool debugger_error_callback(function_call *call, const callback_data *da
 {
     GLenum error;
     char *resp_str;
+    const char *error_str = NULL; /* NULL indicates no break, if non-NULL then break */
 
     gl_once(debugger_init_thread_once, debugger_init_thread);
     if (debug_thread != bugle_thread_self())
         return true;
 
-    if (break_on_error
-        && (error = bugle_gl_call_get_error(data->call_object)))
+    error = bugle_gl_call_get_error(data->call_object);
+    if (break_on_event[REQ_EVENT_GL_ERROR] && error != GL_NO_ERROR)
+    {
+        error_str = bugle_api_enum_name(error);
+    }
+#if GL_ES_VERSION_2_0 || GL_VERSION_2_0
+    else if (break_on_event[REQ_EVENT_COMPILE_ERROR] && call->generic.group == GROUP_glCompileShader
+             && !bugle_gl_in_begin_end())
+    {
+        GLint status;
+        bugle_glGetShaderiv(*call->glCompileShader.arg0, GL_COMPILE_STATUS, &status);
+        if (status == GL_FALSE)
+            error_str = "Shader compilation error";
+    }
+    else if (break_on_event[REQ_EVENT_LINK_ERROR] && call->generic.group == GROUP_glLinkProgram
+             && !bugle_gl_in_begin_end())
+    {
+        GLint status;
+        bugle_glGetProgramiv(*call->glLinkProgram.arg0, GL_LINK_STATUS, &status);
+        if (status == GL_FALSE)
+            error_str = "Program link error";
+    }
+#endif // GL_ES_VERSION_2_0 || GL_VERSION_2_0
+
+    if (error_str != NULL)
     {
         resp_str = bugle_string_io(dump_any_call_string_io, call);
-        gldb_protocol_send_code(out_pipe, RESP_BREAK_ERROR);
+        gldb_protocol_send_code(out_pipe, RESP_BREAK_EVENT);
         gldb_protocol_send_code(out_pipe, start_id);
         gldb_protocol_send_string(out_pipe, resp_str);
-        gldb_protocol_send_string(out_pipe, bugle_api_enum_name(error));
+        gldb_protocol_send_string(out_pipe, error_str);
         free(resp_str);
         stopped = true;
         debugger_loop(call);
@@ -1129,6 +1158,8 @@ static void debugger_shutdown(filter_set *handle)
 
 void bugle_initialise_filter_library(void)
 {
+    unsigned int i;
+
     static const filter_set_info debugger_info =
     {
         "debugger",
@@ -1147,4 +1178,7 @@ void bugle_initialise_filter_library(void)
     bugle_filter_set_depends("debugger", "globjects");
     bugle_filter_set_depends("debugger", "glbeginend");
     bugle_gl_filter_set_renders("debugger");
+
+    for (i = 0; i < REQ_EVENT_COUNT; i++)
+        break_on_event[i] = true;
 }

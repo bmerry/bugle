@@ -30,8 +30,8 @@
  */
 #define RESP_ANS                       0xabcd0000UL
 #define RESP_BREAK                     0xabcd0001UL
-#define RESP_BREAK_ERROR               0xabcd0002UL
-#define RESP_STOP                      0xabcd0003UL
+#define RESP_BREAK_EVENT               0xabcd0002UL
+#define RESP_STOP                      0xabcd0003UL  /* Obsolete */
 #define RESP_STATE                     0xabcd0004UL  /* Obsolete */
 #define RESP_ERROR                     0xabcd0005UL
 #define RESP_RUNNING                   0xabcd0006UL
@@ -47,7 +47,7 @@
 #define REQ_CONT                       0xdcba0001UL
 #define REQ_STEP                       0xdcba0002UL
 #define REQ_BREAK                      0xdcba0003UL
-#define REQ_BREAK_ERROR                0xdcba0004UL
+#define REQ_BREAK_ERROR                0xdcba0004UL  /* Obsolete, replaced by REQ_BREAK_EVENT */
 #define REQ_STATE                      0xdcba0005UL  /* Obsolete */
 #define REQ_QUIT                       0xdcba0006UL
 #define REQ_ASYNC                      0xdcba0007UL
@@ -58,10 +58,17 @@
 #define REQ_DATA                       0xdcba000cUL
 #define REQ_STATE_TREE_RAW_OLD         0xdcba000dUL  /* Obsolete */
 #define REQ_STATE_TREE_RAW             0xdcba000eUL
+#define REQ_BREAK_EVENT                0xdcba000fUL
 
 #define REQ_DATA_TEXTURE               0xedbc0000UL
 #define REQ_DATA_SHADER                0xedbc0001UL
 #define REQ_DATA_FRAMEBUFFER           0xedbc0002UL
+
+#define REQ_EVENT_GL_ERROR             0x00000000UL
+#define REQ_EVENT_COMPILE_ERROR        0x00000001UL
+#define REQ_EVENT_LINK_ERROR           0x00000002UL
+/* Count of events - increment as events are added */
+#define REQ_EVENT_COUNT                0x00000003UL
 
 typedef struct gldb_protocol_reader gldb_protocol_reader;
 

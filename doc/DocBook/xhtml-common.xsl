@@ -6,6 +6,8 @@
     <xsl:param name="img.src.path" select="'images/'"/>
     <xsl:param name="section.label.includes.component.label" select="'1'"/>
 
+    <xsl:param name="table.borders.with.css" select="'1'"/>
+
     <!--
     <xsl:param name="admon.graphics.path" select="'images/'"/>
     <xsl:param name="admon.graphics.extension" select="'.png'"/>

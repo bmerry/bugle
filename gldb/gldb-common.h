@@ -117,8 +117,8 @@ typedef struct
     uint32_t code;
     uint32_t id;
     char *call;
-    char *error;
-} gldb_response_break_error;
+    char *event;
+} gldb_response_break_event;
 
 typedef struct
 {
@@ -246,7 +246,7 @@ void gldb_send_data_texture(uint32_t id, GLuint tex_id, GLenum target,
 void gldb_send_data_framebuffer(uint32_t id, GLuint fbo_id, GLenum target,
                                 GLenum buffer, GLenum format, GLenum type);
 void gldb_send_data_shader(uint32_t id, GLuint shader_id, GLenum target);
-void gldb_set_break_error(uint32_t id, bool brk);
+void gldb_set_break_event(uint32_t id, uint32_t event, bool brk);
 void gldb_set_break(uint32_t id, const char *function, bool brk);
 
 const char *gldb_get_chain(void);
@@ -256,7 +256,7 @@ void gldb_notify_child_dead(void);
 gldb_response *gldb_get_response(void);
 void gldb_free_response(gldb_response *response);
 
-bool gldb_get_break_error(void);
+bool gldb_get_break_event(uint32_t event);
 gldb_status gldb_get_status(void);
 pid_t gldb_get_child_pid(void);
 /* These should only be used for select() and the like, never read from.

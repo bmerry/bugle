@@ -251,13 +251,13 @@ static int handle_responses(void)
     case RESP_BREAK:
         printf("Break on %s\n", ((gldb_response_break *) r)->call);
         break;
-    case RESP_BREAK_ERROR:
-        printf("Error %s in %s\n",
-               ((gldb_response_break_error *) r)->error,
-               ((gldb_response_break_error *) r)->call);
+    case RESP_BREAK_EVENT:
+        printf("%s in %s\n",
+               ((gldb_response_break_event *) r)->event,
+               ((gldb_response_break_event *) r)->call);
         break;
     case RESP_ERROR:
-        printf("%s\n", ((gldb_response_break_error *) r)->error);
+        printf("%s\n", ((gldb_response_error *) r)->error);
         break;
     case RESP_RUNNING:
         printf("Running.\n");
@@ -420,7 +420,7 @@ static void main_loop(void)
                 /* Ctrl-C was pressed */
                 read(int_pipes[0], &buf, 1);
                 gldb_send_async(0);
-                done = false; /* We still need to wait for RESP_STOP */
+                done = false; /* We still need to wait for RESP_BREAK */
             }
             else if (result != -1 && FD_ISSET(gldb_get_in_pipe(), &readfds))
             {
@@ -516,7 +516,7 @@ static bool command_break_unbreak(const char *cmd,
     }
 
     if (strcmp(func, "error") == 0)
-        gldb_set_break_error(0, cmd[0] == 'b');
+        gldb_set_break_event(0, REQ_EVENT_GL_ERROR, cmd[0] == 'b');
     else
         gldb_set_break(0, func, cmd[0] == 'b');
     return gldb_get_status() != GLDB_STATUS_DEAD;

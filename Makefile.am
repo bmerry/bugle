@@ -381,6 +381,7 @@ DOCBOOK_SRCS = $(DOCBOOK_MAN_SRCS) \
 	       doc/DocBook/gles.xml \
 	       doc/DocBook/extending.xml \
 	       doc/DocBook/hacking.xml \
+	       doc/DocBook/protocol.xml \
 	       doc/DocBook/faq.xml \
 	       doc/DocBook/releasenotes.xml \
 	       doc/DocBook/changelog.xml \
@@ -442,6 +443,7 @@ DOCBOOK_HTML = doc/html/index.html \
 	       doc/html/install.html \
 	       doc/html/extending.html \
 	       doc/html/hacking.html \
+	       doc/html/protocol.html \
 	       doc/html/faq.html \
 	       doc/html/gldb-gui.1.html \
 	       doc/html/gldb.1.html \

@@ -3,6 +3,8 @@
 * Fix missing symbol globjects_delete_single in ES2.0 port
 * Fix compilation errors due to ssize_t not being defined
 * Fix extraction of uniforms
+* Tweaks to the debug protocol and fixes to the related code
+* Support stopping on shader compilation or link failure
 
 0.0.20090221
 ------------
