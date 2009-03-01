@@ -1198,4 +1198,109 @@
             </informaltable>
         </sect2>
     </sect1>
+
+    <sect1 id="protocol-definition">
+        <title>Protocol definition</title>
+        <para>
+            The previous sectiosn describe the individual request and response
+            packets. Here we describe their relationship to each other and the
+            transitions between states in the system.
+        </para>
+        <para>
+            The intention is that except where otherwise noted, illegal
+            requests should result in an error being returned. However, this
+            is not fully implemented and you should not depend on this.
+        </para>
+        <para>
+            The table below shows the valid states for each command, the
+            resulting state on success (empty meaning
+            no change), and the expected non-error, synchronous response.
+        </para>
+        <informaltable>
+            <tgroup cols="4">
+                <thead>
+                    <row>
+                        <entry>Request</entry>
+                        <entry>Old state</entry>
+                        <entry>New state</entry>
+                        <entry>Response</entry>
+                    </row>
+                </thead>
+                <tbody>
+                    <row>
+                        <entry><symbol>REQ_RUN</symbol></entry>
+                        <entry><symbol>startup</symbol></entry>
+                        <entry><symbol>running</symbol></entry>
+                        <entry><symbol>RESP_RUNNING</symbol></entry>
+                    </row>
+                    <row>
+                        <entry><symbol>REQ_CONT</symbol></entry>
+                        <entry morerows="1"><symbol>stopped</symbol></entry>
+                        <entry morerows="1"><symbol>running</symbol></entry>
+                        <entry morerows="1">none</entry>
+                    </row>
+                    <row>
+                        <entry><symbol>REQ_STEP</symbol></entry>
+                    </row>
+                    <row>
+                        <entry><symbol>REQ_BREAK</symbol></entry>
+                        <entry morerows="2">any</entry>
+                        <entry morerows="2"></entry>
+                        <entry morerows="2"><symbol>RESP_ANS</symbol></entry>
+                    </row>
+                    <row>
+                        <entry><symbol>REQ_BREAK_EVENT</symbol></entry>
+                    </row>
+                    <row>
+                        <entry><symbol>REQ_BREAK_ERROR</symbol></entry>
+                    </row>
+                    <row>
+                        <entry><symbol>REQ_STOP</symbol></entry>
+                        <entry><symbol>stopped</symbol>, <symbol>running</symbol></entry>
+                        <entry><symbol>stopped</symbol></entry>
+                        <entry>none</entry>
+                    </row>
+                    <row>
+                        <entry><symbol>REQ_QUIT</symbol></entry>
+                        <entry><symbol>stopped</symbol>, <symbol>running</symbol></entry>
+                        <entry>dead</entry>
+                        <entry>none (process exits)</entry>
+                    </row>
+                    <row>
+                        <entry><symbol>REQ_ACTIVATE_FILTERSET</symbol></entry>
+                        <entry morerows="1"><symbol>stopped</symbol>,
+                            <symbol>running</symbol></entry>
+                        <entry morerows="1"></entry>
+                        <entry morerows="1"><symbol>RESP_ANS</symbol></entry>
+                    </row>
+                    <row>
+                        <entry><symbol>REQ_DEACTIVATE_FILTERSET</symbol></entry>
+                    </row>
+                    <row>
+                        <entry><symbol>REQ_STATE_TREE_RAW</symbol></entry>
+                        <entry morerows="1"><symbol>stopped</symbol>,
+                            <symbol>running</symbol></entry>
+                        <entry morerows="1"></entry>
+                        <entry>sequence of
+                            <symbol>RESP_STATE_NODE_BEGIN_RAW</symbol> and
+                            <symbol>RESP_STATE_NODE_END_RAW</symbol></entry>
+                    </row>
+                    <row>
+                        <entry><symbol>REQ_STATE_TREE</symbol></entry>
+                        <entry>sequence of
+                            <symbol>RESP_STATE_NODE_BEGIN</symbol> and
+                            <symbol>RESP_STATE_NODE_END</symbol></entry>
+                    </row>
+                    <row>
+                        <entry><symbol>REQ_DATA</symbol></entry>
+                        <entry><symbol>stopped</symbol>,
+                            <symbol>running</symbol></entry>
+                        <entry></entry>
+                        <entry><symbol>RESP_DATA</symbol> (with matching
+                            subtype)</entry>
+                    </row>
+                </tbody>
+            </tgroup>
+        </informaltable>
+    </sect1>
 </appendix>

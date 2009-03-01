@@ -312,7 +312,7 @@ TESTS_ENVIRONMENT = BUGLE_FILTERS=$(srcdir)/tests/filters BUGLE_STATISTICS=$(src
 EXTRA_DIST = bugle.pc.in $(BCFILES) src/data/gl.c \
 	LICENSE \
 	doc/filters.html doc/locks.txt \
-	doc/protocol.txt doc/extensions.txt \
+	doc/extensions.txt \
 	doc/examples/filters doc/examples/statistics \
 	gl2ps/TODO gl2ps/COPYING.GL2PS gl2ps/COPYING.LGPL gl2ps/gl2ps.pdf \
 	gl2ps/gl2psTestSimple.c gl2ps/gl2psTest.c \
