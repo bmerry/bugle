@@ -31,7 +31,7 @@
 #include <bugle/filters.h>
 #include <bugle/objects.h>
 #include <bugle/log.h>
-#include <bugle/glutils.h>
+#include <bugle/glwin/glwin.h>
 #include "xalloc.h"
 #include "xvasprintf.h"
 

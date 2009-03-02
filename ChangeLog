@@ -7,6 +7,7 @@
 * Support stopping on shader compilation or link failure
 * Display of info log
 * Fix Windows build of the debugger filter-set
+* Fix compilation error in stats_nv filter-set
 
 0.0.20090221
 ------------
