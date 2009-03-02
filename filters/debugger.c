@@ -27,10 +27,6 @@
 #include <inttypes.h>
 #include <sys/time.h>
 #include <sys/types.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <netinet/tcp.h>
-#include <netdb.h>
 #include <unistd.h>
 #include <errno.h>
 #include <assert.h>
@@ -48,9 +44,16 @@
 #include <bugle/hashtable.h>
 #include <bugle/misc.h>
 #include <bugle/apireflect.h>
+#include <bugle/porting.h>
 #include <budgie/types.h>
 #include <budgie/reflect.h>
 #include <budgie/addresses.h>
+#if BUGLE_OSAPI_POSIX
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <netinet/tcp.h>
+#include <netdb.h>
+#endif
 #include "common/protocol.h"
 #include "common/threads.h"
 #include "xalloc.h"
@@ -1131,6 +1134,7 @@ static bool debugger_initialise(filter_set *handle)
         }
         in_pipe = gldb_protocol_reader_new_fd_select(in_pipe_fd);
     }
+#if BUGLE_OSAPI_POSIX
     else if (0 == strcmp(getenv("BUGLE_DEBUGGER"), "tcp"))
     {
         int sock;
@@ -1207,6 +1211,7 @@ static bool debugger_initialise(filter_set *handle)
         out_pipe = in_pipe_fd;
         in_pipe = gldb_protocol_reader_new_fd_select(in_pipe_fd);
     }
+#endif
     else
     {
         bugle_log_printf("debugger", "initialise", BUGLE_LOG_ERROR,
