@@ -663,6 +663,40 @@
                     </tgroup>
                 </informaltable>
             </sect3>
+            <sect3>
+                <title>Buffer</title>
+                <para>
+                    This query returns the contents of a buffer (VBO).
+                </para>
+                <informaltable>
+                    <tgroup cols="2">
+                        <thead>
+                            <row>
+                                <entry>Type</entry>
+                                <entry>Description</entry>
+                            </row>
+                        </thead>
+                        <tbody>
+                            <row>
+                                <entry><type>CODE</type></entry>
+                                <entry><symbol>REQ_DATA</symbol></entry>
+                            </row>
+                            <row>
+                                <entry><type>UINT32</type></entry>
+                                <entry>request ID</entry>
+                            </row>
+                            <row>
+                                <entry><type>CODE</type></entry>
+                                <entry><symbol>REQ_DATA_BUFFER</symbol></entry>
+                            </row>
+                            <row>
+                                <entry><type>UINT32</type></entry>
+                                <entry>GL name of the shader or program object</entry>
+                            </row>
+                        </tbody>
+                    </tgroup>
+                </informaltable>
+            </sect3>
         </sect2>
     </sect1>
 
@@ -1103,6 +1137,37 @@
                             <row>
                                 <entry><type>STRING</type></entry>
                                 <entry>info log</entry>
+                            </row>
+                        </tbody>
+                    </tgroup>
+                </informaltable>
+            </sect3>
+            <sect3 id="protocol-syncresponses-data-buffer">
+                <title>Info log response</title>
+                <informaltable>
+                    <tgroup cols="2">
+                        <thead>
+                            <row>
+                                <entry>Type</entry>
+                                <entry>Description</entry>
+                            </row>
+                        </thead>
+                        <tbody>
+                            <row>
+                                <entry><type>CODE</type></entry>
+                                <entry><symbol>RESP_DATA</symbol></entry>
+                            </row>
+                            <row>
+                                <entry><type>UINT32</type></entry>
+                                <entry>request ID</entry>
+                            </row>
+                            <row>
+                                <entry><type>CODE</type></entry>
+                                <entry><symbol>REQ_DATA_BUFFER</symbol></entry>
+                            </row>
+                            <row>
+                                <entry><type>BLOB</type></entry>
+                                <entry>buffer data</entry>
                             </row>
                         </tbody>
                     </tgroup>

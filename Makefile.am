@@ -86,6 +86,7 @@ gldb_gldb_gui_SOURCES = gldb/gldb-gui.c gldb/gldb-gui.h \
 	gldb/gldb-gui-state.c gldb/gldb-gui-state.h \
 	gldb/gldb-gui-image.c gldb/gldb-gui-image.h \
 	gldb/gldb-gui-texture.c gldb/gldb-gui-texture.h \
+	gldb/gldb-gui-buffer.c gldb/gldb-gui-buffer.h \
 	gldb/gldb-gui-framebuffer.c gldb/gldb-gui-framebuffer.h \
 	gldb/gldb-gui-shader.c gldb/gldb-gui-shader.h \
 	gldb/gldb-gui-backtrace.c gldb/gldb-gui-backtrace.h \

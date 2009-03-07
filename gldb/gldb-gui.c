@@ -763,10 +763,15 @@ static void build_main_window(GldbWindow *context)
 
     context->panes = g_ptr_array_new();
     main_window_add_pane(context, _("State"), gldb_state_pane_new());
+#if BUGLE_GLTYPE_GL  /* GL ES port doesn't yet support buffer readback */
+    main_window_add_pane(context, _("Buffers"), gldb_buffer_pane_new());
+#endif
 #if HAVE_GTKGLEXT
+#if BUGLE_GLTYPE_GL  /* GL ES port doesn't yet support texture readback */
     main_window_add_pane(context, _("Textures"),
                          gldb_texture_pane_new(GTK_STATUSBAR(context->statusbar),
                                                context->statusbar_context_id));
+#endif
     main_window_add_pane(context, _("Framebuffers"),
                          gldb_framebuffer_pane_new(GTK_STATUSBAR(context->statusbar),
                                                    context->statusbar_context_id));
