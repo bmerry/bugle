@@ -86,6 +86,7 @@ static void image_draw_realize(GtkWidget *widget, gpointer user_data)
     gldrawable = gtk_widget_get_gl_drawable(widget);
     if (!gdk_gl_drawable_gl_begin(gldrawable, glcontext)) return;
 
+    glewInit();
     glViewport(0, 0, widget->allocation.width, widget->allocation.height);
     glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
     glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
