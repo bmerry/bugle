@@ -8,6 +8,8 @@
 * Display of info log
 * Fix Windows build of the debugger filter-set
 * Fix compilation error in stats_nv filter-set
+* Fix display of 3D textures in the debugger
+* Buffer object viewer
 
 0.0.20090221
 ------------

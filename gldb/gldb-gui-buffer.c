@@ -44,7 +44,7 @@ struct _GldbBufferPane
     gboolean dirty;
     GtkWidget *top_widget;
 
-    GtkWidget *id, *scrolled, *data_view, *format;
+    GtkWidget *id, *data_view, *format;
     GtkListStore *data_store;
     guint nfields;
     budgie_type *fields;
@@ -191,7 +191,10 @@ static void gldb_buffer_pane_update_data(GldbBufferPane *pane)
         column = 0;
         /* Start the row - if it isn't completely filled, it will be culled later */
         if (!valid)
+        {
             gtk_list_store_append(pane->data_store, &iter);
+            valid = true;
+        }
         for (i = 0; i < pane->nfields && !done; i++)
         {
             if (pane->fields[i] != NULL_TYPE)
@@ -466,27 +469,38 @@ GtkWidget *gldb_buffer_pane_format_new(GldbBufferPane *pane)
 
 GldbPane *gldb_buffer_pane_new(void)
 {
-    GtkWidget *hbox, *vbox, *combos, *format;
+    GtkWidget *hbox, *vbox, *scrolled, *combos, *format, *help;
     GldbBufferPane *pane;
 
     pane = GLDB_BUFFER_PANE(g_object_new(GLDB_BUFFER_PANE_TYPE, NULL));
 
-    pane->scrolled = gtk_scrolled_window_new(NULL, NULL);
-    gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(pane->scrolled),
+    scrolled = gtk_scrolled_window_new(NULL, NULL);
+    gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(scrolled),
                                    GTK_POLICY_AUTOMATIC,
                                    GTK_POLICY_AUTOMATIC);
 
     combos = gldb_buffer_pane_combo_table_new(pane);
     format = gldb_buffer_pane_format_new(pane);
+    help = gtk_label_new(_("b = byte\n"
+                           "B = ubyte\n"
+                           "s = short\n"
+                           "S = ushort\n"
+                           "i = int\n"
+                           "I = uint\n"
+                           "f = float\n"
+                           "d = double\n"
+                           "_ = pad byte\n"
+                           "3x = xxx"));
     gldb_buffer_pane_rebuild_view(format, pane);
-    gtk_container_add(GTK_CONTAINER(pane->scrolled), pane->data_view);
+    gtk_container_add(GTK_CONTAINER(scrolled), pane->data_view);
 
     vbox = gtk_vbox_new(FALSE, 0);
     gtk_box_pack_start(GTK_BOX(vbox), combos, FALSE, FALSE, 0);
     gtk_box_pack_start(GTK_BOX(vbox), format, FALSE, FALSE, 0);
+    gtk_box_pack_start(GTK_BOX(vbox), help, FALSE, FALSE, 0);
     hbox = gtk_hbox_new(FALSE, 0);
     gtk_box_pack_start(GTK_BOX(hbox), vbox, FALSE, FALSE, 0);
-    gtk_box_pack_start(GTK_BOX(hbox), pane->scrolled, TRUE, TRUE, 0);
+    gtk_box_pack_start(GTK_BOX(hbox), scrolled, TRUE, TRUE, 0);
     gldb_pane_set_widget(GLDB_PANE(pane), hbox);
     return GLDB_PANE(pane);
 }
