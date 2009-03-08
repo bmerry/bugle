@@ -12,6 +12,9 @@
 * Fix display of 3D textures in the debugger
 * Buffer object viewer
 * Support for OpenGL ES-CM 1.1 on Windows
+* Fix a build problem when using Cygwin Perl in a MinGW shell
+* Fix installation instructions to require building GLEW from source
+* Fix an array overrun during startup in the camera filter-set
 
 0.0.20090221
 ------------

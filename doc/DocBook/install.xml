@@ -205,6 +205,9 @@
             </para></listitem>
             <listitem><para>
                     Install <application>msysDTK</application> 1.0.1.
+                    Alternatively, if you have Cygwin installed, add Cygwin's
+                    <filename class="directory">bin</filename> directory to
+                    the end of <envar>PATH</envar>.
             </para></listitem>
             <listitem><para>
                     Downloaded
@@ -229,13 +232,10 @@
                         class="directory">/mingw</filename>.
             </para></listitem>
             <listitem><para>
-                    Download <application>GLEW</application> 1.5 and unpack it
-                    into a temporary location, then copy the
-                    <filename class="directory">lib</filename>,
-                    <filename class="directory">bin</filename> and
-                    <filename class="directory">include</filename>
-                    directories into
-                    <filename class="directory">/mingw</filename>.
+                    Download the source for <application>GLEW</application>
+                    1.5 and unpack it into a temporary location and built it
+                    using make, then install it with the command
+                    <userinput>make GLEW_DEST=/mingw install</userinput>.
             </para></listitem>
             <listitem><para>
                     Grab the latest <ulink

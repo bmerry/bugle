@@ -1,11 +1,12 @@
 #!/usr/bin/perl -w
 use strict;
 
-die("Missing CPP") unless defined($ENV{'CPP'});
+my $cpp = $ENV{'CPP'};
+my $srcdir = $ENV{'srcdir'} // $ENV{'SRCDIR'};  # MinGW forces env vars to upper case
+die("Missing CPP") unless defined($cpp);
+die("Missing srcdir") unless defined($srcdir);
 die("Usage: $0 <header> <header>...") unless $#ARGV >= 0;
 
-my $cpp = $ENV{'CPP'};
-my $srcdir = $ENV{'srcdir'};
 $srcdir =~ s/'/'\\''/g;
 
 while (@ARGV)

@@ -163,12 +163,11 @@ chain camera
         # key_right "Right"
         # key_faster "Page_Up"   # speeds up motion
         # key_slower "Page_Down" # slows down motion
-        # The following have no defaults
-        key_reset "R"          # resets the camera to the app's view (no default)
-        key_toggle "T"         # toggles mouse capture (no default)
-        key_frustum "F"        # toggles display of the view frustum
+        # key_reset "C-R"        # resets the camera to the app's view
+        # key_toggle "C-T"       # toggles mouse capture
+        # key_frustum "C-F"      # toggles display of the view frustum
         # The default of 1.0 is too fast for some apps
-        speed "0.1"            # initial keyboard motion speed
+        speed "0.1"              # initial keyboard motion speed
     }
 }
 

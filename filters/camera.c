@@ -71,7 +71,10 @@ static const char * const key_camera_defaults[] =
     "Left",
     "Right",
     "Page_Up",
-    "Page_Down"
+    "Page_Down",
+    "C-R",
+    "C-T",
+    "C-F"
 };
 
 typedef struct

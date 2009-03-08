@@ -1,11 +1,11 @@
 WGL port
 --------
-- figure out why showstats on shadowfun crashes on exit (glDeleteQueries not defined?)
 - better robustness to missing WGL/GLX extensions
 - support read != draw DC in glwin.c
 - handle cross-DLL data import/export cleanly
 - put suitable visibility tags on all export functions, so that -export-symbols-regex and --export-all-symbols are not needed
 - load opengl32.dll from SYSTEMDIR rather than hard-coded path.
+- remove -module flag on libEGL so that it goes to the same place as libGLES*
 - make gldb and gldb-gui work
   - kill takes out gldb-gui
 - prevent libraries from being loaded twice
@@ -18,8 +18,7 @@ GLES port
 ---------
 - put in FBO wrapper layer, similar to GLSL
 - track texture data so that it can be queried
-- make gldb-gui work
-- doc updates
+- track buffer data so that it can be queried
 
 camera filter-set
 -----------------
