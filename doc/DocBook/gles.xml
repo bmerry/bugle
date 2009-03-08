@@ -65,7 +65,7 @@
                         guidelines, with a single library
                         (<filename>libGLES_CM.so</filename>) containing both
                         EGL and OpenGL ES functions, and using the
-                        <keyword>__cdecl</keyword> calling convention.
+                        <literal>__cdecl</literal> calling convention.
                 </para></listitem>
             </varlistentry>
             <varlistentry>
