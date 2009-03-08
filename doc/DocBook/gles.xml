@@ -11,13 +11,13 @@
             &bugle; has partial support for OpenGL ES. The OpenGL ES 2.0
             support has been tested using the AMD OpenGL ES Emulator 1.3, and
             OpenGL ES 1.1 support has been tested on a hardware platform.
-            OpenGL ES 1.0 support has not been tested and may will be broken.
+            OpenGL ES 1.0 support has not been tested and is probably broken.
             For OpenGL ES 1.x, only the Common (CM) profile is supported.
         </para>
         <para>
             The testing shows that basic features work. These include tracing,
             and the debugger using breakpoints, examining state, and examining
-            shaders. Texture and framebuffer viewing does not currently work
+            shaders. Texture and buffer viewing does not currently work
             (due to limitations of the query mechanisms in OpenGL ES). Many of
             the filtersets do not work, either because they intrinsicly depend
             on features excluded from OpenGL ES, or because they have not yet
@@ -58,6 +58,17 @@
                 </para></listitem>
             </varlistentry>
             <varlistentry>
+                <term>gles1cm-legacy-egl-win</term>
+                <listitem><para>
+                        OpenGL ES 1.x Common profile with EGL on a Windows
+                        system. This is set up for the legacy integration
+                        guidelines, with a single library
+                        (<filename>libGLES_CM.so</filename>) containing both
+                        EGL and OpenGL ES functions, and using the
+                        <keyword>__cdecl<keyword> calling convention.
+                </para></listitem>
+            </varlistentry>
+            <varlistentry>
                 <term>gles2-egl-posix</term>
                 <listitem><para>
                         OpenGL ES 2.x with EGL on a UNIX-like
@@ -95,8 +106,8 @@
         <title>Installation</title>
         <para>
             Apart from the usual installation step, some extra setup is
-            required on a Windows system, due to the limitations of the
-            dynamic linker. Create copies of the system
+            required on a Windows system when using OpenGL ES 2.0, due to the
+            limitations of the dynamic linker. Create copies of the system
             <filename>libEGL.dll</filename> and
             <filename>libGLESv2.dll</filename> called
             <filename>bglEGL.dll</filename> and

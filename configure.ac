@@ -1,4 +1,4 @@
-AC_INIT(bugle, 0.0.20090305, bmerry@users.sourceforge.net)
+AC_INIT(bugle, 0.0.20090308, bmerry@users.sourceforge.net)
 AC_CONFIG_SRCDIR([src/interceptor.c])
 AM_INIT_AUTOMAKE([1.7 dist-bzip2 subdir-objects])
 AM_CONFIG_HEADER(config.h)
@@ -18,30 +18,30 @@ AC_PROG_MAKE_SET
 AC_CANONICAL_HOST
 case $host in
   *-*-cygwin)
-    bugle_target="gl-wgl"
+    BUGLE_API="gl-wgl"
     BUGLE_FS=BUGLE_FS_CYGMING
     BUGLE_OSAPI=BUGLE_OSAPI_POSIX
     BUGLE_WINSYS=BUGLE_WINSYS_WINDOWS
     BUGLE_BINFMT=BUGLE_BINFMT_PE
     ;;
   *-*-mingw32)
-    bugle_target="gl-wgl"
+    BUGLE_API="gl-wgl"
     BUGLE_FS=BUGLE_FS_CYGMING
     BUGLE_OSAPI=BUGLE_OSAPI_WIN32
     BUGLE_WINSYS=BUGLE_WINSYS_WINDOWS
     BUGLE_BINFMT=BUGLE_BINFMT_PE
     ;;
   *)
-    bugle_target="gl-glx"
+    BUGLE_API="gl-glx"
     BUGLE_FS=BUGLE_FS_UNIX
     BUGLE_OSAPI=BUGLE_OSAPI_POSIX
     BUGLE_WINSYS=BUGLE_WINSYS_X11
     BUGLE_BINFMT=BUGLE_BINFMT_ELF
     ;;
 esac
-AC_ARG_WITH([api], AC_HELP_STRING([--with-api], [specify api, from gl-wgl, gl-glx, gles1cm-egl-posix, gles2-egl-win, gles2-egl-posix]),
-            [bugle_target="$withval"], [])
-case $bugle_target in
+AC_ARG_WITH([api], AC_HELP_STRING([--with-api], [specify api, from gl-wgl, gl-glx, gles1cm-egl-posix, gles1cm-legacy-egl-win, gles2-egl-win, gles2-egl-posix]),
+            [BUGLE_API="$withval"], [])
+case $BUGLE_API in
   gl-glx)
     BUGLE_GLWIN=BUGLE_GLWIN_GLX
     BUGLE_GLTYPE=BUGLE_GLTYPE_GL
@@ -50,16 +50,24 @@ case $bugle_target in
     BUGLE_GLWIN=BUGLE_GLWIN_WGL
     BUGLE_GLTYPE=BUGLE_GLTYPE_GL
     ;;
-  gles1cm-egl-*)
+  gles1cm-egl-posix)
     BUGLE_GLWIN=BUGLE_GLWIN_EGL
     BUGLE_GLTYPE=BUGLE_GLTYPE_GLES1CM
     ;;
-  gles2-egl-*)
+  gles1cm-legacy-egl-win)
+    BUGLE_GLWIN=BUGLE_GLWIN_EGL
+    BUGLE_GLTYPE=BUGLE_GLTYPE_GLES1CM
+    ;;
+  gles2-egl-posix)
+    BUGLE_GLWIN=BUGLE_GLWIN_EGL
+    BUGLE_GLTYPE=BUGLE_GLTYPE_GLES2
+    ;;
+  gles2-egl-win)
     BUGLE_GLWIN=BUGLE_GLWIN_EGL
     BUGLE_GLTYPE=BUGLE_GLTYPE_GLES2
     ;;
   *)
-    AC_MSG_ERROR([API $bugle_target is not recognised])
+    AC_MSG_ERROR([API $BUGLE_API is not recognised])
     ;;
 esac
 
@@ -100,14 +108,17 @@ PKG_CHECK_MODULES([swscale], [libswscale], [HAVE_LIBSWSCALE=1], [HAVE_LIBSWSCALE
 # Sadly, FreeBSD does not implement libraries depending on libraries, and
 # OpenGL uses X and maths functions. Hence the -lm and all the X rubbish.
 GL_LIBS=""
-case "$bugle_target" in
+case "$BUGLE_API" in
   gl-wgl)
     # AC_CHECK_LIB fails because the autoconf test does not specify __stdcall
     # AC_CHECK_LIB([opengl32], [glBegin], [GL_LIBS="-lopengl32 $GL_LIBS"], [], [])
     GL_LIBS="-lopengl32"
     ;;
-  gl-*)
+  gl-glx)
     AC_CHECK_LIB([GL], [glBegin], [GL_LIBS="-lGL -lm $GL_LIBS"], [], [$X_PRE_LIBS $X_LIBS $X_XTRA_LIBS -lm])
+    ;;
+  gles1cm-legacy-egl-*)
+    GL_LIBS="-lGLES_CM"
     ;;
   gles1cm-egl-*)
     GL_LIBS="-lEGL -lGLESv1_CM"
@@ -139,7 +150,7 @@ AC_CHECK_HEADERS([readline/readline.h readline/history.h], [], [HAVE_READLINE=0]
 # ffmpeg moves the headers around
 AC_CHECK_HEADERS([libavcodec/avcodec.h libavformat/avformat.h libswscale/swscale.h])
 
-case "$bugle_target" in
+case "$BUGLE_API" in
   gl-wgl)
     GLINCLUDES="`CPP=\"$CPP\" srcdir=\"$srcdir\" $PERL -w $srcdir/gengl/find_header.perl GL/gl.h wingdi.h GL/glext.h include/bugle/wgl/overrides.h`"
     ;;
@@ -243,6 +254,14 @@ AC_SUBST(BUGLE_GLTYPE)
 AC_SUBST(BUGLE_WINSYS)
 AC_SUBST(BUGLE_BINFMT)
 AC_SUBST(BUGLE_OSAPI)
+AC_SUBST(BUGLE_API)
+
+AM_CONDITIONAL(BUGLE_API_GL_GLX, test $BUGLE_API = GL_GLX)
+AM_CONDITIONAL(BUGLE_API_GL_WGL, test $BUGLE_API = GL_WGL)
+AM_CONDITIONAL(BUGLE_API_GLES1CM_LEGACY_EGL_WIN, test $BUGLE_API = GLES1CM_LEGACY_EGL_WIN)
+AM_CONDITIONAL(BUGLE_API_GLES1CM_EGL_POSIX, test $BUGLE_API = GLES1CM_EGL_POSIX)
+AM_CONDITIONAL(BUGLE_API_GLES2_EGL_WIN, test $BUGLE_API = GLES2_EGL_WIN)
+AM_CONDITIONAL(BUGLE_API_GLES2_EGL_POSIX, test $BUGLE_API = GLES2_EGL_POSIX)
 AM_CONDITIONAL(BUGLE_WINSYS_X11, test $BUGLE_WINSYS = BUGLE_WINSYS_X11)
 AM_CONDITIONAL(BUGLE_WINSYS_WINDOWS, test $BUGLE_WINSYS = BUGLE_WINSYS_WINDOWS)
 AM_CONDITIONAL(BUGLE_WINSYS_NONE, test $BUGLE_WINSYS = BUGLE_WINSYS_NONE)
@@ -264,6 +283,7 @@ AC_OUTPUT
 dnl Display configuration
 echo
 echo "Configuration:"
+echo "        API combination: $BUGLE_API"
 case $HAVE_LAVC in
   0) echo "        libavcodec: no" ;;
   *) echo "        libavcodec: yes" ;;

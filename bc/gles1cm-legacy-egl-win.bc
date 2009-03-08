@@ -1,0 +1,4 @@
+LIBRARY libGLES_CM.dll
+
+INCLUDE bc/gles1cm/gles1cm.bc
+INCLUDE bc/egl/egl.bc

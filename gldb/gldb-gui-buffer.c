@@ -29,7 +29,6 @@
 #include <budgie/macros.h>
 #include <budgie/types.h>
 #include <budgie/reflect.h>
-#include <bugle/gl/gldump.h>
 #include "gldb/gldb-common.h"
 #include "gldb/gldb-gui.h"
 #include "gldb/gldb-gui-buffer.h"
@@ -83,7 +82,9 @@ static gboolean parse_format_letter(gchar letter, GType *column, budgie_type *fi
     case 'i': *column = G_TYPE_INT; *field = BUDGIE_TYPE_ID(5GLint); break;
     case 'I': *column = G_TYPE_INT; *field = BUDGIE_TYPE_ID(6GLuint); break;
     case 'f': *column = G_TYPE_FLOAT; *field = BUDGIE_TYPE_ID(7GLfloat); break;
+#if BUGLE_GLTYPE_GL
     case 'd': *column = G_TYPE_DOUBLE; *field = BUDGIE_TYPE_ID(8GLdouble); break;
+#endif
     default: return FALSE;
     }
     return TRUE;
@@ -203,49 +204,51 @@ static void gldb_buffer_pane_update_data(GldbBufferPane *pane)
                 GType column_type;
 
                 /* Value might not be aligned - so make an aligned copy
-                 * (GLdouble is in the union to force alignment).
+                 * (double is in the union to force alignment).
                  */
                 union
                 {
-                    GLdouble dummy;
-                    char store[sizeof(GLdouble)];
+                    double dummy;
+                    char store[sizeof(double)];
                 } aligned;
-                GLint int_value;
-                GLuint uint_value;
-                GLfloat float_value;
-                GLdouble double_value;
+                int int_value;
+                unsigned int uint_value;
+                float float_value;
+                double double_value;
 
                 size = budgie_type_size(pane->fields[i]);
                 if (data + size > end)
                     done = true;
                 else
                 {
-                    g_assert(size <= sizeof(GLdouble));
+                    g_assert(size <= sizeof(double));
                     memcpy(&aligned.store, data, size);
                     data += size;
                     column_type = gtk_tree_model_get_column_type(GTK_TREE_MODEL(pane->data_store), column);
                     switch (column_type)
                     {
                     case G_TYPE_INT:
-                        budgie_type_convert(&int_value, BUDGIE_TYPE_ID(5GLint),
+                        budgie_type_convert(&int_value, BUDGIE_TYPE_ID(i),
                                             &aligned.store, pane->fields[i], 1);
                         gtk_list_store_set(pane->data_store, &iter, column, (gint) int_value, -1);
                         break;
                     case G_TYPE_UINT:
-                        budgie_type_convert(&uint_value, BUDGIE_TYPE_ID(6GLuint),
+                        budgie_type_convert(&uint_value, BUDGIE_TYPE_ID(j),
                                             &aligned.store, pane->fields[i], 1);
                         gtk_list_store_set(pane->data_store, &iter, column, (guint) uint_value, -1);
                         break;
                     case G_TYPE_FLOAT:
-                        budgie_type_convert(&float_value, BUDGIE_TYPE_ID(7GLfloat),
+                        budgie_type_convert(&float_value, BUDGIE_TYPE_ID(f),
                                             &aligned.store, pane->fields[i], 1);
                         gtk_list_store_set(pane->data_store, &iter, column, (gfloat) float_value, -1);
                         break;
+#if BUGLE_GLTYPE_GL
                     case G_TYPE_DOUBLE:
-                        budgie_type_convert(&double_value, BUDGIE_TYPE_ID(8GLdouble),
+                        budgie_type_convert(&double_value, BUDGIE_TYPE_ID(d),
                                             &aligned.store, pane->fields[i], 1);
                         gtk_list_store_set(pane->data_store, &iter, column, (gdouble) double_value, -1);
                         break;
+#endif
                     default:
                         g_assert_not_reached();
                     }
@@ -488,7 +491,9 @@ GldbPane *gldb_buffer_pane_new(void)
                            "i = int\n"
                            "I = uint\n"
                            "f = float\n"
+#ifdef BUGLE_GLTYPE_GL
                            "d = double\n"
+#endif
                            "_ = pad byte\n"
                            "3x = xxx"));
     gldb_buffer_pane_rebuild_view(format, pane);
