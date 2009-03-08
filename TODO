@@ -5,7 +5,6 @@ WGL port
 - handle cross-DLL data import/export cleanly
 - put suitable visibility tags on all export functions, so that -export-symbols-regex and --export-all-symbols are not needed
 - load opengl32.dll from SYSTEMDIR rather than hard-coded path.
-- remove -module flag on libEGL so that it goes to the same place as libGLES*
 - make gldb and gldb-gui work
   - kill takes out gldb-gui
 - prevent libraries from being loaded twice

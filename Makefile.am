@@ -600,7 +600,7 @@ src/egl/egl-win.def: gengl/genegldef.perl $(BUDGIE_BUILT_SRCS)
 
 lib_LTLIBRARIES += src/libEGL.la
 src_libEGL_la_SOURCES = src/egl/egl-win.c
-src_libEGL_la_LDFLAGS = -no-undefined -module -avoid-version -export-symbols src/egl/egl-win.def
+src_libEGL_la_LDFLAGS = -no-undefined -avoid-version -export-symbols src/egl/egl-win.def
 src_libEGL_la_DEPENDENCIES = src/egl/egl-win.def
 endif
 endif
