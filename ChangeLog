@@ -4,12 +4,14 @@
 * Fix compilation errors due to ssize_t not being defined
 * Fix extraction of uniforms
 * Tweaks to the debug protocol and fixes to the related code
+* Updated protocol documentation as part of the user manual
 * Support stopping on shader compilation or link failure
 * Display of info log
 * Fix Windows build of the debugger filter-set
 * Fix compilation error in stats_nv filter-set
 * Fix display of 3D textures in the debugger
 * Buffer object viewer
+* Support for OpenGL ES-CM 1.1 on Windows
 
 0.0.20090221
 ------------

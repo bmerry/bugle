@@ -5,7 +5,7 @@
 ]>
 <refentry id="gldb-gui.1">
     <refentryinfo>
-        <date>October 2007</date>
+        <date>March 2009</date>
         <productname>BUGLE</productname>
     </refentryinfo>
     <refmeta>
@@ -114,10 +114,32 @@
             <listitem><para>To save all the states to an XML file, click the
                     <guibutton>Save</guibutton> button.</para></listitem>
         </itemizedlist>
+        <refsect2 id="gldb-gui-MAN-state-buffers">
+            <title>Examining buffers</title>
+            <para>
+                The <guilabel>Buffers</guilabel> tab shows OpenGL buffers
+                (vertex buffer objects). The <guilabel>Buffer</guilabel>
+                combobox allows a buffer to be selected. By default, the
+                buffer is decoded as a sequence of unsigned bytes, but a
+                format specification can be filled in below the combobox to
+                control the decoding. It works best when the entire buffer
+                contains repetitions of repetitions of a single structure
+                format.
+            </para>
+            <para>
+                Suppose that the buffer contains a sequence of vertices, each
+                consisting of a 3 GLfloats for the position, 3 unsigned bytes
+                for a colour, and a byte of padding to make the stride 16
+                bytes. Then fill in the format field with
+                <userinput>fffbbb_</userinput> or more compactly,
+                <userinput>3f3b_</userinput>. A description of the available
+                letters for specifying types appears below the entry box.
+            </para>
+        </refsect2>
         <refsect2 id="gldb-gui-MAN-state-texture">
             <title>Examining textures</title>
             <para>
-                The <guilabel>Texture</guilabel> tab shows OpenGL textures.
+                The <guilabel>Textures</guilabel> tab shows OpenGL textures.
                 The <guilabel>Texture</guilabel> combobox allows a texture to
                 be selected, with the currently bound texture of each type
                 shown in bold. For cubemap textures, the
