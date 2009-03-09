@@ -2,7 +2,7 @@
 use strict;
 
 my $cpp = $ENV{'CPP'};
-my $srcdir = $ENV{'srcdir'} // $ENV{'SRCDIR'};  # MinGW forces env vars to upper case
+my $srcdir = $ENV{'srcdir'} || $ENV{'SRCDIR'};  # MinGW forces env vars to upper case
 die("Missing CPP") unless defined($cpp);
 die("Missing srcdir") unless defined($srcdir);
 die("Usage: $0 <header> <header>...") unless $#ARGV >= 0;
