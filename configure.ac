@@ -157,7 +157,7 @@ case "$BUGLE_API" in
   gl-glx)
     GLINCLUDES="`CPP=\"$CPP\" srcdir=\"$srcdir\" $PERL -w $srcdir/gengl/find_header.perl GL/gl.h GL/glx.h GL/glext.h GL/glxext.h`"
     ;;
-  gles1cm-egl-*)
+  gles1cm-egl-* | gles1cm-legacy-egl-*)
     GLINCLUDES="`CPP=\"$CPP\" srcdir=\"$srcdir\" $PERL -w $srcdir/gengl/find_header.perl GLES/gl.h GLES/glext.h EGL/egl.h EGL/eglext.h`"
     ;;
   gles2-egl-*)
