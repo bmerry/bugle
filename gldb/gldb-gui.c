@@ -43,6 +43,7 @@
 #include "gldb/gldb-gui-target.h"
 #include "gldb/gldb-gui-image.h"
 #include "gldb/gldb-gui-state.h"
+#include "gldb/gldb-gui-buffer.h"
 #include "gldb/gldb-gui-texture.h"
 #include "gldb/gldb-gui-framebuffer.h"
 #include "gldb/gldb-gui-shader.h"

@@ -902,7 +902,6 @@ static bool input_key_lookup(const char *name, bugle_input_key *key)
 
 bool bugle_input_key_lookup(const char *name, bugle_input_key *key)
 {
-    bugle_input_keysym keysym = BUGLE_INPUT_NOSYMBOL;
     unsigned int state = 0;
 
     key->press = true;
