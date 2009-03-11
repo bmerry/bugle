@@ -29,10 +29,7 @@ else
     <xsl:template name="user.footer.navigation">
         <hr />
         <p>
-            <a href="http://sourceforge.net">
-                <img src="http://sourceforge.net/sflogo.php?group_id=110905&amp;type=1"
-                    width="88" height="31" alt="SourceForge.net Logo" />
-            </a>
+            <a href="http://sourceforge.net/projects/bugle"><img src="http://sflogo.sourceforge.net/sflogo.php?group_id=110905&amp;type=12" width="120" height="30" border="0" alt="Get BuGLe at SourceForge.net. Fast, secure and Free Open Source software downloads" /></a>
         </p>
         <xsl:processing-instruction name="php">
 if (file_exists("/home/virtual/opengl.org/var/www/html/sdk/inc/sdk_footer.txt"))

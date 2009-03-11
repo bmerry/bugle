@@ -1,3 +1,12 @@
+0.0.20090311
+------------
+This release is packed with new debugger features:
+- Buffer viewer
+- Info log view
+- Stop on shader compile/link failure
+It also generally improves portability and cross-compilation support, adds
+a target for OpenGL ES 1.1 on Windows, and has a lot of bugfixes as well.
+
 0.0.20090221
 ------------
 This release features a whole host of new features and bugfixes. Most notable
