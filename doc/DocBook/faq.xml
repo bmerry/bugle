@@ -208,6 +208,25 @@
                             class="directory">/usr/lib64</filename> above.
                 </para></answer>
             </qandaentry>
+
+            <qandaentry>
+                <question><para>
+                        I am using Fedora 10, and when I run
+                        <application>glxgears</application> under &bugle; it
+                        exits with the message
+                        <computeroutput>Error: couldn't get an RGB,
+                            Double-buffered visual</computeroutput>.
+                </para></question>
+                <answer><para>
+                        This seems to be caused by having two different
+                        versions of <filename
+                            class="libraryfile">libGL.so</filename> on your
+                        system, and &bugle; picking up symbols from the wrong
+                        one. Find out which one is correct
+                        (<application>ldd</application>) should help, then
+                        move other ones out of the way.
+                </para></answer>
+            </qandaentry>
         </qandaset>
     </sect1>
 
