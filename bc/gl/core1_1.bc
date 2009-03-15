@@ -19,7 +19,6 @@ EXTRATYPE pGLpolygonstipple
 # Functions taking pointers to fixed length arrays
 LENGTH PARAMETER gl(RasterPos|EvalCoord|Vertex|Normal|TexCoord|Color)([234])u?[sifdb]v 0 \2
 # FIXME: how do glMap, glPixelMap, glGetMap, glGetPixelMap work?
-# FIXME: glRectfv
 
 LENGTH PARAMETER glRect[sifd]v 0 2
 LENGTH PARAMETER glRect[sifd]v 1 2

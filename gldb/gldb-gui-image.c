@@ -309,7 +309,6 @@ static void image_draw_expose_cube_map(GldbGuiImageViewer *viewer)
         g_warning("No cube-map support in OpenGL!");
 }
 
-/* FIXME: handle cube-map and 3D textures */
 static gboolean image_draw_expose(GtkWidget *widget,
                                   GdkEventExpose *event,
                                   gpointer user_data)
@@ -394,7 +393,7 @@ static void image_draw_motion_update(GldbGuiImageViewer *viewer,
     const GldbGuiImagePlane *plane;
 
     image_draw_motion_clear_status(viewer);
-    /* FIXME: handle cube-map and 3D textures */
+    /* FIXME: handle cube-map textures */
     if (!viewer->current)
         return;
     if (viewer->current_plane < 0)

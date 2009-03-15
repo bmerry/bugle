@@ -1,47 +1,38 @@
+THIS FILE IS OBSOLETE. Bugs and enhancements should now be listed in trac
+(https://apps.https://apps.sourceforge.net/trac/bugle/). This file is left
+here for things that haven't yet been entered into trac. Some of these are so
+low priority that I will probably never get around to putting them in trac.
+
 WGL port
 --------
 - better robustness to missing WGL/GLX extensions
 - support read != draw DC in glwin.c
 - handle cross-DLL data import/export cleanly
 - put suitable visibility tags on all export functions, so that -export-symbols-regex and --export-all-symbols are not needed
-- load opengl32.dll from SYSTEMDIR rather than hard-coded path.
 - make gldb and gldb-gui work
-  - kill takes out gldb-gui
+  - kill takes out gldb-gui [fixed?]
 - prevent libraries from being loaded twice
-- fix crash in shutdown on es2demo
+- fix crash in shutdown on es2demo [fixed?]
 - make Cygwin work
 - doc updates
-- TCP/IP remote debugging support (target and debugger)
-
-GLES port
----------
-- put in FBO wrapper layer, similar to GLSL
-- track texture data so that it can be queried
-- track buffer data so that it can be queried
 
 camera filter-set
 -----------------
 - handle display lists properly
 - do the right thing when event handling is in a different
   thread to rendering
-- invalidate every frame when a motion key is depressed
 
 gldb
 ----
 - more robust wire protocol
-  - versioning
   - ability to obtain list of functions for tab completion in the GUI
   - ability to get the target to do dump formatting when the client doesn't know how
 - allow Ctrl-C to abort current line when reading commands
 - set filter variables on the fly
 - enable reporting of segfaults
-- break on particular GL errors, not just 'all errors'
-- fix display of uniform arrays
-- allow debugger to be built separately from interceptor
 
 gldb-gui
 --------
-- VBO decode
 - convert state names to UTF-8
 - enabling and disabling filter sets, and setting variables
 - texture viewer:
@@ -49,48 +40,23 @@ gldb-gui
   - display of pixel values on cube map
   - stats
   - LOD bias
-  - alpha blending / display of alpha
-  - test sRGB textures
-  - better export for non [0,1] colours e.g. OpenEXR export
-- shader viewer
-  - show metadata like uniforms, info log
-- test for all extensions before using them
 - trace window?
-- figure out why BadValue is sometimes generated on exit
+- figure out why BadValue is sometimes generated on exit [fixed?]
 - statistics tab
-- state diffs
-  - diff to the default
-  - checkpointing
 
 bugle
 -----
-- dump backtrace on error
 - check whether all dependencies on trackextensions are listed
-- fix leak of aux contexts on glXDestroyContext
 - exploit per-context, per-filter state e.g. for video
-- option to use pid in log filename or log file
 - proper support for enabled but inactive filtersets
-- handle use of GLX_SGIX_fbconfig rather than GLX 1.3 to manage contexts
-- make segfault handling adhere better to POSIX
 - rewrite some things to use hash tables
 - autoconf test for GLENUM_IS_GLUINT
-- cap overrides
-- memory use statistics
 - better handling of texture proxies
-- fill in the rest of the state (image state, mainly)
-- handle GL shared and unshared objects correctly (queries unshared)
-- mirror GL objects (textures etc) in the bugle object system
-- improve support for GLSL (more type information)
 - capture more information about call lists
-- capture and replay
-- improve bugle_gl_call_get_error and bugle_gl_begin_internal_render so that using
-  them doesn't require every single function call to be intercepted
-- support for GL_GREMEDY_string_marker and GL_GREMEDY_frame_terminator
 - finish documenting API in DocBook
 
 budgie
 ------
-- more autoconf tests (e.g. regex)
 - robust logging, to avoid segfaulting
 - move filter framework into budgie? May suck in input stuff
 
@@ -103,12 +69,6 @@ tests
 long term
 ---------
 - internationalisation
-- OpenEXR export
-- OpenGL 3.x support
 - make gldb-gui tabs totally modular (separate shared objects)
 - write support for state
-- robust network debugging protocol
-- shader debugging
-- better movie capture
-  - option of a separate thread, for parallel encoding
 - scons build system
