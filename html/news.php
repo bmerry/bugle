@@ -23,6 +23,16 @@ else
     <a href="screenshots.php">[Screenshots]</a>
     </p>
     <h1>BuGLe News</h1>
+    <h2>New ticket system, new release (15/3/2009)</h2>
+    <p>
+    BuGLe has grown to the point that having people email me bug reports meant
+    that they tended to get lost. I've set up a <a
+        href="http://apps.sourceforge.net/trac/bugle">trac</a> system where
+    you can report bugs in future.
+    </p>
+    <p>I also made a new release on 11 March, which contains a number of new
+    features (including a VBO viewer) and bug fixes.
+    </p>
     <h2>Bugfixes and features (21/2/2009)</h2>
     <p>
     This release features a whole host of new features and bugfixes. Most notable

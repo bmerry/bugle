@@ -40,12 +40,10 @@ else
         if the driver is compiled without symbols.</li>
     </ul>
 
-    <p>In addition, there is a debugger (<kbd>gldb</kbd>) that lets you set
+    <p>In addition, there is a debugger (<kbd>gldb-gui</kbd>) that lets you set
     breakpoints and examine backtraces. It also lets you examine OpenGL
-    state, enable and disable filters, and drop into gdb to
-    see what is going wrong. A GUI version of the debugger (<kbd>gldb-gui</kbd>)
-    is currently in development, and a preliminary version is available
-    with the latest releases. It features a texture viewer and a shader viewer.
+    state, shaders, textures, buffers etc., and drop into gdb to
+    see what is going wrong.
     </p>
 
     <p>
@@ -53,7 +51,9 @@ else
     <a href="http://sourceforge.net/projects/bugle/">project page</a>,
     or view the <a href="documentation/index.php">documentation</a>
     online. BuGLe is also available in Gentoo portage and the BSD ports
-    collection.
+    collection (there is no guarantee that it is up-to-date, however).
+    Bugs should be filed on the <a 
+    href="http://apps.sourceforge.net/trac/bugle"/>trac</a> system.
     </p>
 
     <hr />
@@ -67,9 +67,10 @@ else
         <li><a href="http://cnswww.cns.cwru.edu/~chet/readline/rltop.html">GNU
             readline</a> is recommended for history editing in <kbd>gldb</kbd></li>
         <li><a href="http://www.gtk.org/">GTK+</a> is required for <kbd>gldb-gui</kbd></li>
-        <li><a href="http://gtkglext.sourceforge.net/">GtkGLExt</a> is highly
-        recommended for <kbd>gldb-gui</kbd> (without it, the texture display will
-        not work)</li>
+        <li><a href="http://gtkglext.sourceforge.net/">GtkGLExt</a> and
+        <a href="http://glew.sourceforge.net/">GLEW</a> are highly
+        recommended for <kbd>gldb-gui</kbd> (without them, the texture display
+        will not work)</li>
     </ul>
 
     <hr />
