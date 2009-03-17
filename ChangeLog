@@ -1,3 +1,5 @@
+* Fix display of uniform arrays to show all elements, not just one (closes: #53)
+
 0.0.20090311
 ------------
 * Give budgie a separate configure.ac and Makefile.am, to make cross-compilation easier

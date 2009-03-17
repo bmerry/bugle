@@ -2050,26 +2050,25 @@ static void get_helper(const glstate *state,
 
 static void uniform_types(GLenum type,
                           budgie_type *in_type,
-                          budgie_type *out_type,
-                          int *length)
+                          budgie_type *out_type)
 {
     switch (type)
     {
-    case GL_FLOAT: *in_type = TYPE_7GLfloat; *out_type = TYPE_7GLfloat; *length = -1; break;
-    case GL_FLOAT_VEC2: *in_type = TYPE_7GLfloat; *out_type = TYPE_7GLfloat; *length = 2; break;
-    case GL_FLOAT_VEC3: *in_type = TYPE_7GLfloat; *out_type = TYPE_7GLfloat; *length = 3; break;
-    case GL_FLOAT_VEC4: *in_type = TYPE_7GLfloat; *out_type = TYPE_7GLfloat; *length = 4; break;
-    case GL_INT: *in_type = TYPE_5GLint; *out_type = TYPE_5GLint; *length = -1; break;
-    case GL_INT_VEC2: *in_type = TYPE_5GLint; *out_type = TYPE_5GLint; *length = 2; break;
-    case GL_INT_VEC3: *in_type = TYPE_5GLint; *out_type = TYPE_5GLint; *length = 3; break;
-    case GL_INT_VEC4: *in_type = TYPE_5GLint; *out_type = TYPE_5GLint; *length = 4; break;
-    case GL_BOOL: *in_type = TYPE_5GLint; *out_type = TYPE_9GLboolean; *length = -1; break;
-    case GL_BOOL_VEC2: *in_type = TYPE_5GLint; *out_type = TYPE_9GLboolean; *length = 2; break;
-    case GL_BOOL_VEC3: *in_type = TYPE_5GLint; *out_type = TYPE_9GLboolean; *length = 3; break;
-    case GL_BOOL_VEC4: *in_type = TYPE_5GLint; *out_type = TYPE_9GLboolean; *length = 4; break;
-    case GL_FLOAT_MAT2: *in_type = TYPE_7GLfloat; *out_type = TYPE_7GLfloat; *length = 4; break;
-    case GL_FLOAT_MAT3: *in_type = TYPE_7GLfloat; *out_type = TYPE_7GLfloat; *length = 9; break;
-    case GL_FLOAT_MAT4: *in_type = TYPE_7GLfloat; *out_type = TYPE_7GLfloat; *length = 16; break;
+    case GL_FLOAT: *in_type = TYPE_7GLfloat; *out_type = TYPE_7GLfloat; break;
+    case GL_FLOAT_VEC2: *in_type = TYPE_7GLfloat; *out_type = TYPE_7GLfloat; break;
+    case GL_FLOAT_VEC3: *in_type = TYPE_7GLfloat; *out_type = TYPE_7GLfloat; break;
+    case GL_FLOAT_VEC4: *in_type = TYPE_7GLfloat; *out_type = TYPE_7GLfloat; break;
+    case GL_INT: *in_type = TYPE_5GLint; *out_type = TYPE_5GLint; break;
+    case GL_INT_VEC2: *in_type = TYPE_5GLint; *out_type = TYPE_5GLint; break;
+    case GL_INT_VEC3: *in_type = TYPE_5GLint; *out_type = TYPE_5GLint; break;
+    case GL_INT_VEC4: *in_type = TYPE_5GLint; *out_type = TYPE_5GLint; break;
+    case GL_BOOL: *in_type = TYPE_5GLint; *out_type = TYPE_9GLboolean; break;
+    case GL_BOOL_VEC2: *in_type = TYPE_5GLint; *out_type = TYPE_9GLboolean; break;
+    case GL_BOOL_VEC3: *in_type = TYPE_5GLint; *out_type = TYPE_9GLboolean; break;
+    case GL_BOOL_VEC4: *in_type = TYPE_5GLint; *out_type = TYPE_9GLboolean; break;
+    case GL_FLOAT_MAT2: *in_type = TYPE_7GLfloat; *out_type = TYPE_7GLfloat; break;
+    case GL_FLOAT_MAT3: *in_type = TYPE_7GLfloat; *out_type = TYPE_7GLfloat; break;
+    case GL_FLOAT_MAT4: *in_type = TYPE_7GLfloat; *out_type = TYPE_7GLfloat; break;
     case GL_SAMPLER_1D:
     case GL_SAMPLER_2D:
     case GL_SAMPLER_3D:
@@ -2084,14 +2083,14 @@ static void uniform_types(GLenum type,
     case GL_SAMPLER_1D_ARRAY_SHADOW_EXT:
     case GL_SAMPLER_2D_ARRAY_SHADOW_EXT:
 #endif
-        *in_type = TYPE_5GLint; *out_type = TYPE_5GLint; *length = -1; break;
+        *in_type = TYPE_5GLint; *out_type = TYPE_5GLint; break;
 #ifdef GL_VERSION_2_1
-    case GL_FLOAT_MAT2x3: *in_type = TYPE_7GLfloat; *out_type = TYPE_7GLfloat; *length = 6; break;
-    case GL_FLOAT_MAT2x4: *in_type = TYPE_7GLfloat; *out_type = TYPE_7GLfloat; *length = 8; break;
-    case GL_FLOAT_MAT3x2: *in_type = TYPE_7GLfloat; *out_type = TYPE_7GLfloat; *length = 6; break;
-    case GL_FLOAT_MAT3x4: *in_type = TYPE_7GLfloat; *out_type = TYPE_7GLfloat; *length = 12; break;
-    case GL_FLOAT_MAT4x2: *in_type = TYPE_7GLfloat; *out_type = TYPE_7GLfloat; *length = 8; break;
-    case GL_FLOAT_MAT4x3: *in_type = TYPE_7GLfloat; *out_type = TYPE_7GLfloat; *length = 12; break;
+    case GL_FLOAT_MAT2x3: *in_type = TYPE_7GLfloat; *out_type = TYPE_7GLfloat; break;
+    case GL_FLOAT_MAT2x4: *in_type = TYPE_7GLfloat; *out_type = TYPE_7GLfloat; break;
+    case GL_FLOAT_MAT3x2: *in_type = TYPE_7GLfloat; *out_type = TYPE_7GLfloat; break;
+    case GL_FLOAT_MAT3x4: *in_type = TYPE_7GLfloat; *out_type = TYPE_7GLfloat; break;
+    case GL_FLOAT_MAT4x2: *in_type = TYPE_7GLfloat; *out_type = TYPE_7GLfloat; break;
+    case GL_FLOAT_MAT4x3: *in_type = TYPE_7GLfloat; *out_type = TYPE_7GLfloat; break;
 #endif
     default:
         abort();
@@ -2376,14 +2375,29 @@ void bugle_state_get_raw(const glstate *state, bugle_state_raw *wrapper)
             GLsizei size;
             GLenum type;
             GLchar dummy[1];
+            GLsizei units;  /* number of the base type in the full type */
+            budgie_type composite_type;
+            void *buffer;
 
             bugle_glGetActiveUniform(state->object, state->level, 1, NULL,
                                      &size, &type, dummy);
-            uniform_types(type, &in_type, &out_type, &in_length);
-            if (in_type == TYPE_7GLfloat)
-                bugle_glGetUniformfv(state->object, state->numeric_name, f);
+            uniform_types(type, &in_type, &out_type);
+            composite_type = bugle_gl_type_to_type(type);
+            units = budgie_type_size(composite_type) / budgie_type_size(in_type);
+            buffer = xmalloc(size * units * budgie_type_size(in_type));
+            wrapper->data = xmalloc(size * units * budgie_type_size(out_type));
+            wrapper->type = composite_type;
+            if (size == 1)
+                wrapper->length = -1;
             else
-                bugle_glGetUniformiv(state->object, state->numeric_name, i);
+                wrapper->length = size;
+            if (in_type == TYPE_7GLfloat)
+                bugle_glGetUniformfv(state->object, state->numeric_name, (GLfloat *) buffer);
+            else
+                bugle_glGetUniformiv(state->object, state->numeric_name, (GLint *) buffer);
+
+            budgie_type_convert(wrapper->data, out_type, buffer, in_type, size * units);
+            free(buffer);
         }
         break;
     case STATE_MODE_ATTRIB_LOCATION:
