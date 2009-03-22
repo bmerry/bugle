@@ -394,7 +394,7 @@ int XWindowEvent(Display *dpy, Window w, long event_mask, XEvent *event)
     bugle_initialise_all();
     if (!active) return (*real_XWindowEvent)(dpy, w, event_mask, event);
     bugle_log("input", "XWindowEvent", BUGLE_LOG_DEBUG, "enter");
-    initialize_keycodes(dpy);
+    initialise_keycodes(dpy);
     extract_events(dpy);
     data.use_w = 1;
     data.use_event_mask = 1;
