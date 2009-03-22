@@ -28,7 +28,7 @@
 
 bool bugle_dump_GLenum(GLenum e, char **buffer, size_t *size)
 {
-    const char *name = bugle_api_enum_name(e);
+    const char *name = bugle_api_enum_name(e, BUGLE_API_EXTENSION_BLOCK_GL);
     if (!name)
         budgie_snprintf_advance(buffer, size, "<unknown enum 0x%.4x>", (unsigned int) e);
     else

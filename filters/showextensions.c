@@ -116,7 +116,7 @@ static void mark_extension(bugle_api_extension ext, bool *marked_extensions)
     for (e = bugle_hashptr_begin(&seen_enums); e; e = bugle_hashptr_next(&seen_enums, e))
         if (e->value)
         {
-            exts = bugle_api_enum_extensions((GLenum) (size_t) e->key);
+            exts = bugle_api_enum_extensions((GLenum) (size_t) e->key, BUGLE_API_EXTENSION_BLOCK_GL);
             if (has_extension(exts, ext))
                 bugle_hashptr_set(&seen_enums, e->key, NULL);
         }
@@ -171,7 +171,7 @@ static void showextensions_shutdown(filter_set *handle)
     for (e = bugle_hashptr_begin(&seen_enums); e; e = bugle_hashptr_next(&seen_enums, e))
         if (e->value)
         {
-            exts = bugle_api_enum_extensions((GLenum) (size_t) e->key);
+            exts = bugle_api_enum_extensions((GLenum) (size_t) e->key, BUGLE_API_EXTENSION_BLOCK_GL);
             best = NULL_EXTENSION;
             for (i = 0; exts[i] != NULL_EXTENSION; i++)
                 if (exts[i] > best)

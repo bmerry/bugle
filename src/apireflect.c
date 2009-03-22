@@ -82,38 +82,38 @@ const bugle_api_extension *bugle_api_extension_group_members(bugle_api_extension
 
 /*** Tokens ***/
 
-static const bugle_api_enum_data *bugle_api_enum_get(api_enum e)
+static const bugle_api_enum_data *bugle_api_enum_get(api_enum e, api_block block)
 {
     int l, r, m;
 
     l = 0;
-    r = BUGLE_API_ENUM_COUNT;
+    r = _bugle_api_enum_count[block];
     while (l + 1 < r)
     {
         m = (l + r) / 2;
-        if (e < _bugle_api_enum_table[m].value) r = m;
+        if (e < _bugle_api_enum_table[block][m].value) r = m;
         else l = m;
     }
-    if (_bugle_api_enum_table[l].value != e)
+    if (_bugle_api_enum_table[block][l].value != e)
         return NULL;
     else
-        return &_bugle_api_enum_table[l];
+        return &_bugle_api_enum_table[block][l];
 }
 
-const char *bugle_api_enum_name(api_enum e)
+const char *bugle_api_enum_name(api_enum e, api_block block)
 {
     const bugle_api_enum_data *t;
 
-    t = bugle_api_enum_get(e);
+    t = bugle_api_enum_get(e, block);
     if (t) return t->name; else return NULL;
 }
 
-const bugle_api_extension *bugle_api_enum_extensions(api_enum e)
+const bugle_api_extension *bugle_api_enum_extensions(api_enum e, api_block block)
 {
     const bugle_api_enum_data *t;
     static const bugle_api_extension dummy[1] = {NULL_EXTENSION};
 
-    t = bugle_api_enum_get(e);
+    t = bugle_api_enum_get(e, block);
     if (t) return t->extensions;
     else return dummy;
 }

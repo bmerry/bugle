@@ -192,8 +192,6 @@ GL_ATTRIB_ARRAY_SIZE_NV
 |GL_CURRENT_ATTRIB_NV
 |GL_MAP._VERTEX_ATTRIB._._NV  # heavily reused by ARB_vertex_program
 
-|GL_TRUE
-|GL_FALSE
 |GL_NO_ERROR
 |GL_ZERO
 |GL_ONE
@@ -213,12 +211,16 @@ GL_MODELVIEW            # aliases MODELVIEW0_ARB
 # NB: this regex must not have capturing brackets, because it is used in
 # a situation where $n must not be overwritten.
 my $enum_not_name_regex = qr/^(?:
-    GL_(?:ES_)?VERSION_[0-9_]+
+    E?GL_(?:ES_)?VERSION_[0-9_]+
     |GL_VERSION_ES_(?:CM_|CL_)[0-9]+
     |GL_GLEXT_\w+
+    |EGL_EGLEXT_\w+
     |GLX_GLXEXT_\w+
-    |GL_[A-Z0-9_]+_BIT(?:_[A-Z0-9]+)?
+    |E?GLX?_[A-Z0-9_]+_BIT(?:_[A-Z0-9]+)?
+    |GLX_BUFFER_CLOBBER_MASK(?:_[A-Z0-9]+)?
     |GL(?:_[A-Z0-9_]+)?_ALL_[A-Z0-9_]+_BITS(?:_[A-Z0-9]+)?
+    |E?GL_FALSE
+    |E?GL_TRUE
     )$/x;
 
 sub base_name($$)
@@ -229,6 +231,18 @@ sub base_name($$)
         $name =~ s/\Q$suffix\E$//;
     }
     return $name;
+}
+
+# Maps an extension name to an API
+sub extension_block($)
+{
+    my $ext = shift;
+    my $block = 'BUGLE_API_EXTENSION_BLOCK_GLWIN';
+    if ($ext =~ /^GL_/)
+    {
+        $block = 'BUGLE_API_EXTENSION_BLOCK_GL';
+    }
+    return $block;
 }
 
 sub enum_name_collate($)
@@ -253,7 +267,7 @@ sub enum_name_collate($)
 # - GL_ARB_*
 # - GL_EXT_*
 # - GL_*
-# - Similarly for GLX_
+# - Similarly for GLX/EGL/WGL, but sorted to end
 sub extension_collate($)
 {
     my $e = shift;
@@ -390,17 +404,18 @@ foreach my $in_header (@ARGV)
         {
             $cur_ext = $base_ext;
         }
-        elsif (/^#define (GL_[0-9A-Za-z_]+)\s+((0x)?[0-9A-Fa-f]+)/
+        elsif (/^#define (E?GLX?_[0-9A-Za-z_]+)\s+((0x)?[0-9A-Fa-f]+)\s+$/
                && $2 ne '1' && $1 !~ /$enum_not_name_regex/)
         {
             my $name = $1;
             my $value = $2;
             $value = oct($value) if $value =~ /^0/; # Convert from hex
-            if (enum_name_collate($name) lt enum_name_collate($enums{$value}->[0]))
+            my $block = extension_block($cur_ext);
+            if (enum_name_collate($name) lt enum_name_collate($enums{$block}->{$value}->[0]))
             {
-                $enums{$value}->[0] = $name;
+                $enums{$block}->{$value}->[0] = $name;
             }
-            $enums{$value}->[1]->{$cur_ext} = 1;
+            $enums{$block}->{$value}->[1]->{$cur_ext} = 1;
         }
         elsif (/$function_regex/)
         {
@@ -451,7 +466,12 @@ foreach my $in_header (@ARGV)
 }
 
 my @extensions = sort { extension_collate($a) cmp extension_collate($b) } keys %extensions;
-my @enums = sort { $a->[0] <=> $b->[0] } map { [$_, @{$enums{$_}}] } keys %enums;
+my %enums_flat = ();
+foreach my $block (keys %enums)
+{
+    my $keyed = $enums{$block};
+    $enums_flat{$block} = [ sort { $a->[0] <=> $b->[0] } map { [$_, @{$keyed->{$_}}] } keys %$keyed ];
+}
 
 if ($mode eq 'alias')
 {
@@ -510,10 +530,10 @@ EOF
         $index++;
     }
     printf "#define BUGLE_API_EXTENSION_COUNT %d\n\n", $index;
-    printf "#define BUGLE_API_ENUM_COUNT %d\n", scalar(@enums);
     print "extern const bugle_api_extension_data _bugle_api_extension_table[BUGLE_API_EXTENSION_COUNT];\n";
     print "extern const bugle_api_function_data _bugle_api_function_table[];\n";
-    print "extern const bugle_api_enum_data _bugle_api_enum_table[];\n";
+    print "extern const bugle_api_enum_data * const _bugle_api_enum_table[];\n";
+    print "extern const int _bugle_api_enum_count[];\n";
     print <<'EOF';
 #endif /* BUGLE_SRC_APITABLES_H */
 EOF
@@ -551,11 +571,7 @@ EOF
     foreach my $ext (@extensions, keys %extension_groups)
     {
         my $ver = ($ext =~ /^E?GLX?_(?:ES_)?VERSION_(?:ES_CM_)?([0-9]+)_([0-9]+)/) ? "\"$1.$2\"" : "NULL";
-        my $block = 'BUGLE_API_EXTENSION_BLOCK_GLWIN';
-        if ($ext =~ /^GL_/)
-        {
-            $block = 'BUGLE_API_EXTENSION_BLOCK_GL';
-        }
+        my $block = extension_block($ext);
         print ",\n" if !$first; $first = 0;
         printf "    { %s, \"%s\", extension_group_%s, %s }", $ver, $ext, $ext, $block;
     }
@@ -576,31 +592,59 @@ EOF
     }
     print "\n};\n\n";
 
-    foreach my $enum (@enums)
+    foreach my $block (keys %enums_flat)
     {
-        print "static const bugle_api_extension enum_extensions_$enum->[1]" . "[] =\n{\n";
+        my $list = $enums_flat{$block};
+
+        foreach my $enum (@$list)
+        {
+            print "static const bugle_api_extension enum_extensions_$enum->[1]" . "[] =\n{\n";
+            $first = 1;
+            # Again, Mesa headers cause us to think some things are in 1.1 when
+            # they're also defined elsewhere.
+            if (scalar(keys(%{$enum->[2]})) > 1
+                && exists($enum->[2]->{GL_VERSION_1_1})
+                && $enum->[1] !~ /$enum_force_11_regex/)
+            {
+                delete $enum->[2]->{GL_VERSION_1_1};
+            }
+            my @exts = sort { extension_collate($a) cmp extension_collate($b) } keys %{$enum->[2]};
+            foreach my $ext (@exts)
+            {
+                print "    BUGLE_$ext,\n";
+            }
+            print "    NULL_EXTENSION\n};\n\n";
+        }
+
+        print "static const bugle_api_enum_data _bugle_api_enum_table_${block}[] =\n{\n";
         $first = 1;
-        # Again, Mesa headers cause us to think some things are in 1.1 when
-        # they're also defined elsewhere.
-        if (scalar(keys(%{$enum->[2]})) > 1
-            && exists($enum->[2]->{GL_VERSION_1_1})
-            && $enum->[1] !~ /$enum_force_11_regex/)
+        foreach my $enum (@$list)
         {
-            delete $enum->[2]->{GL_VERSION_1_1};
+            my ($value, $name, $exts) = @$enum;
+            print ",\n" unless $first; $first = 0;
+            printf("    { 0x%.4x, \"%s\", enum_extensions_%s }", $value, $name, $name);
         }
-        my @exts = sort { extension_collate($a) cmp extension_collate($b) } keys %{$enum->[2]};
-        foreach my $ext (@exts)
-        {
-            print "    BUGLE_$ext,\n";
-        }
-        print "    NULL_EXTENSION\n};\n\n";
+        print "\n};\n\n";
     }
-    print "const bugle_api_enum_data _bugle_api_enum_table[] =\n{\n";
-    foreach my $enum (@enums)
+
+    # This must match the #define numbering of these blocks
+    my @blocks = qw(BUGLE_API_EXTENSION_BLOCK_GL BUGLE_API_EXTENSION_BLOCK_GLWIN);
+
+    $first = 1;
+    print "const bugle_api_enum_data * const _bugle_api_enum_table[] =\n{\n";
+    foreach my $block (@blocks)
     {
-        my ($value, $name, $exts) = @$enum;
         print ",\n" unless $first; $first = 0;
-        printf("    { 0x%.4x, \"%s\", enum_extensions_%s }", $value, $name, $name);
+        print "    _bugle_api_enum_table_$block";
+    }
+    print "\n};\n\n";
+
+    $first = 1;
+    print "const int _bugle_api_enum_count[] =\n{\n";
+    foreach my $block (@blocks)
+    {
+        print ",\n" unless $first; $first = 0;
+        print "    ", scalar(@{$enums_flat{$block}});
     }
     print "\n};\n\n";
 }

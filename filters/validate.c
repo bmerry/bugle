@@ -69,7 +69,7 @@ static bool error_callback(function_call *call, const callback_data *data)
         if (*call->glGetError.retn != GL_NO_ERROR)
         {
             const char *name;
-            name = bugle_api_enum_name(*call->glGetError.retn);
+            name = bugle_api_enum_name(*call->glGetError.retn, BUGLE_API_EXTENSION_BLOCK_GL);
             if (name)
                 bugle_log_printf("error", "callback", BUGLE_LOG_WARNING,
                                  "glGetError() returned %s when GL_NO_ERROR was expected",
@@ -147,7 +147,7 @@ static bool showerror_callback(function_call *call, const callback_data *data)
     if ((error = bugle_gl_call_get_error_internal(data->call_object)) != GL_NO_ERROR)
     {
         const char *name;
-        name = bugle_api_enum_name(error);
+        name = bugle_api_enum_name(error, BUGLE_API_EXTENSION_BLOCK_GL);
         if (name)
             bugle_log_printf("showerror", "gl", BUGLE_LOG_NOTICE,
                              "%s in %s", name,

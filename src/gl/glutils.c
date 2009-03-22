@@ -63,7 +63,7 @@ void bugle_gl_end_internal_render(const char *name, bool warn)
         if (warn)
         {
             const char *error_name;
-            error_name = bugle_api_enum_name(error);
+            error_name = bugle_api_enum_name(error, BUGLE_API_EXTENSION_BLOCK_GL);
             if (error_name)
                 bugle_log_printf("glutils", "internalrender", BUGLE_LOG_WARNING,
                                  "%s internally generated %s",

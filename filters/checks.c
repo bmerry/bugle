@@ -50,7 +50,7 @@ static void checks_texture_complete_fail(int unit, GLenum target, const char *re
 {
     const char *target_name;
 
-    target_name = bugle_api_enum_name(target);
+    target_name = bugle_api_enum_name(target, BUGLE_API_EXTENSION_BLOCK_GL);
     if (!target_name) target_name = "<unknown target>";
     bugle_log_printf("checks", "texture", BUGLE_LOG_NOTICE,
                      "GL_TEXTURE%d / %s: incomplete texture (%s)",

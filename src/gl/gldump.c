@@ -128,7 +128,7 @@ budgie_type bugle_gl_type_to_type(GLenum gl_type)
                 "function that you called and the arguments that you passed to it. You can\n"
                 "find the location of this error by setting a breakpoint on line %d\n"
                 "of %s and examining the backtrace.\n",
-                bugle_api_enum_name(gl_type), __LINE__, __FILE__);
+                bugle_api_enum_name(gl_type, BUGLE_API_EXTENSION_BLOCK_GL), __LINE__, __FILE__);
         return TYPE_7GLubyte;
     }
 }
@@ -248,7 +248,7 @@ int bugle_gl_format_to_count(GLenum format, GLenum type)
         default:
             bugle_log_printf("gldump", "format_to_count", BUGLE_LOG_WARNING,
                              "unknown format %s; assuming 4 components",
-                             bugle_api_enum_name(format));
+                             bugle_api_enum_name(format, BUGLE_API_EXTENSION_BLOCK_GL));
             return 4; /* conservative */
         }
         break;

@@ -51,11 +51,11 @@ const bugle_api_extension *bugle_api_extension_group_members(bugle_api_extension
 
 /*** Tokens ***/
 
-const char *bugle_api_enum_name(GLenum e);
+const char *bugle_api_enum_name(api_enum e, api_block block);
 /* Returns a list of extensions that define the token,
  * terminated by NULL_EXTENSION. This includes GL_VERSION_x_y "extensions".
  */
-const bugle_api_extension *bugle_api_enum_extensions(GLenum e);
+const bugle_api_extension *bugle_api_enum_extensions(api_enum e, api_block block);
 
 /*** Functions ***/
 

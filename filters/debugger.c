@@ -1135,7 +1135,7 @@ static bool debugger_error_callback(function_call *call, const callback_data *da
     error = bugle_gl_call_get_error(data->call_object);
     if (break_on_event[REQ_EVENT_GL_ERROR] && error != GL_NO_ERROR)
     {
-        error_str = bugle_api_enum_name(error);
+        error_str = bugle_api_enum_name(error, BUGLE_API_EXTENSION_BLOCK_GL);
     }
 #if GL_ES_VERSION_2_0 || GL_VERSION_2_0
     else if (break_on_event[REQ_EVENT_COMPILE_ERROR] && call->generic.group == BUDGIE_GROUP_ID(glCompileShader)
