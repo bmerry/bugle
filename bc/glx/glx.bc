@@ -11,9 +11,17 @@ INCLUDE bc/glx/GLX_SGIX_pbuffer.bc
 
 
 EXTRATYPE XBool
+EXTRATYPE GLXenum
+
+# Prevent the internals from being dumped
+TYPE TYPE +P7Display TYPE_Pv
+TYPE TYPE GLXWindow TYPE_Pv
+TYPE TYPE GLXContext TYPE_Pv
+TYPE TYPE +P11XVisualInfo TYPE_Pv
 
 DUMP TYPE GLXDrawable bugle_dump_glwin_drawable($$, $B, $S)
 DUMP TYPE XBool bugle_dump_glwin_bool($$, $B, $S)
+DUMP TYPE GLXenum bugle_dump_glwin_enum($$, $B, $S)
 
 TYPE PARAMETER glXCreateContext 3 TYPE_5XBool
 TYPE PARAMETER glXIsDirect -1 TYPE_5XBool
@@ -21,7 +29,13 @@ TYPE PARAMETER glXMakeCurrent -1 TYPE_5XBool
 TYPE PARAMETER glXQueryExtension -1 TYPE_5XBool
 TYPE PARAMETER glXQueryVersion -1 TYPE_5XBool
 
+TYPE PARAMETER glXGetConfig 2 TYPE_7GLXenum
+TYPE PARAMETER glXQuery(Drawable|Context) 2 TYPE_7GLXenum
+
 LENGTH PARAMETER glXChooseVisual 2 bugle_count_glXChooseVisual_attributes($$)
-LENGTH PARAMETER glXCreate(Window|Pixmap) 3 bugle_count_glx_attributes($$)
-LENGTH PARAMETER glXCreatePbuffer 2 bugle_count_glx_attributes($$)
+DUMP PARAMETER glXChooseVisual 2 bugle_dump_glXChooseVisual_attributes($$, $B, $S)
+LENGTH PARAMETER glXCreate(Window|Pixmap) 3 bugle_count_glwin_attributes($$, None)
+DUMP PARAMETER glXCreate(Window|Pixmap) 3 bugle_dump_glwin_attributes($$, None, $B, $S)
+LENGTH PARAMETER glXCreatePbuffer 2 bugle_count_glwin_attributes($$, None)
+DUMP PARAMETER glXCreatePbuffer 2 bugle_dump_glwin_attributes($$, None, $B, $S)
 LENGTH PARAMETER glXGetFBConfigs -1 ($$ ? *$2 : 0)

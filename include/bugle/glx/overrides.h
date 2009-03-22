@@ -6,4 +6,7 @@
  */
 typedef Bool XBool;
 
+/* Fake type to support dumping by name */
+typedef int GLXenum;
+
 #endif /* BUGLE_GLX_OVERRIDES_H */

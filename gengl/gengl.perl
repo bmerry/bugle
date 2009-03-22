@@ -195,6 +195,20 @@ GL_ATTRIB_ARRAY_SIZE_NV
 |GL_NO_ERROR
 |GL_ZERO
 |GL_ONE
+
+|GLX_BAD.*
+|GLX_HYPERPIPE_.*
+|GLX_PIPE_RECT_.*
+|GLX_SYNC_SWAP_.*
+|GLX_SYNC_FRAME_.*
+|GLX_3DFX_.*_MODE_.*
+)$/x;
+
+# Normally we assume that things defined to '1' are not really enumerants,
+# but there are exceptions
+my $enum_good_name_regex = qr/^(?:
+GLX_USE_GL
+|GLX_VENDOR
 )$/x;
 
 # Enums whose *values* appear in both GL1.1 and an extension. Normally
@@ -404,18 +418,21 @@ foreach my $in_header (@ARGV)
         {
             $cur_ext = $base_ext;
         }
-        elsif (/^#define (E?GLX?_[0-9A-Za-z_]+)\s+((0x)?[0-9A-Fa-f]+)\s+$/
-               && $2 ne '1' && $1 !~ /$enum_not_name_regex/)
+        elsif (/^#define (E?GLX?_[0-9A-Za-z_]+)\s+((0x)?[0-9A-Fa-f]+)\s+$/)
         {
             my $name = $1;
             my $value = $2;
-            $value = oct($value) if $value =~ /^0/; # Convert from hex
-            my $block = extension_block($cur_ext);
-            if (enum_name_collate($name) lt enum_name_collate($enums{$block}->{$value}->[0]))
+            if (($name =~ /$enum_good_name_regex/ || $value ne '1')
+                && $name !~ /$enum_not_name_regex/)
             {
-                $enums{$block}->{$value}->[0] = $name;
+                $value = oct($value) if $value =~ /^0/; # Convert from hex
+                my $block = extension_block($cur_ext);
+                if (enum_name_collate($name) lt enum_name_collate($enums{$block}->{$value}->[0]))
+                {
+                    $enums{$block}->{$value}->[0] = $name;
+                }
+                $enums{$block}->{$value}->[1]->{$cur_ext} = 1;
             }
-            $enums{$block}->{$value}->[1]->{$cur_ext} = 1;
         }
         elsif (/$function_regex/)
         {

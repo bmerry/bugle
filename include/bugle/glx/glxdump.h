@@ -26,14 +26,12 @@
 #include <stdio.h>
 #include <budgie/types.h>
 
-/* Return a count for an attribute list consisting of pairs terminated
- * by None.
- */
-int bugle_count_glx_attributes(const int *attr);
-
-/* Similar, but for glXChooseVisual for which boolean attributes are not
- * followed by a value.
+/* Count the attribute list for glXChooseVisual,
+ * for which boolean attributes are not followed by a value.
  */
 int bugle_count_glXChooseVisual_attributes(const int *attr);
+
+/* Output the attribute list passed to glXChooseVisual */
+bool bugle_dump_glXChooseVisual_attributes(const int *attr, char **buffer, size_t *size);
 
 #endif /* !BUGLE_GLX_GLXDUMP_H */

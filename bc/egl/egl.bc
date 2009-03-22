@@ -5,3 +5,19 @@ LIMIT egl.*
 TYPE TYPE EGLNativeWindowType TYPE_Pv
 TYPE TYPE EGLNativeDisplayType TYPE_Pv
 TYPE TYPE EGLNativePixmapType TYPE_Pv
+
+# Attribute lists
+LENGTH PARAMETER eglChooseConfig 1 bugle_count_glwin_attributes($$, EGL_NONE)
+DUMP PARAMETER eglChooseConfig 1 bugle_dump_glwin_attributes($$, EGL_NONE, $B, $S)
+LENGTH PARAMETER eglCreate(Window|Pixmap)Surface 3 bugle_count_glwin_attributes($$, EGL_NONE)
+DUMP PARAMETER eglCreate(Window|Pixmap)Surface 3 bugle_dump_glwin_attributes($$, EGL_NONE, $B, $S)
+LENGTH PARAMETER eglCreatePbufferSurface 2 bugle_count_glwin_attributes($$, EGL_NONE)
+DUMP PARAMETER eglCreatePbufferSurface 2 bugle_dump_glwin_attributes($$, EGL_NONE, $B, $S)
+LENGTH PARAMETER eglCreatePbufferFromClientBuffer 4 bugle_count_glwin_attributes($$, EGL_NONE)
+DUMP PARAMETER eglCreatePbufferFromClientBuffer 4 bugle_dump_glwin_attributes($$, EGL_NONE, $B, $S)
+LENGTH PARAMETER eglCreateContext 3 bugle_count_glwin_attributes($$, EGL_NONE)
+DUMP PARAMETER eglCreateContext 3 bugle_dump_glwin_attributes($$, EGL_NONE, $B, $S)
+
+TYPE PARAMETER eglGetConfigAttrib 2 TYPE_7EGLenum
+TYPE PARAMETER eglQuery(Surface|Context) 2 TYPE_7EGLenum
+TYPE PARAMETER eglSurfaceAttrib 2 TYPE_7EGLenum

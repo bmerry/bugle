@@ -1,5 +1,10 @@
 * Fix display of uniform arrays to show all elements, not just one (closes: #53)
 * Fix input system to not call X functions inside an event predicate
+* Improved symbolic display of enums for EGL and GLX
+* Added block parameter to bugle_api_enum_name and bugle_api_enum_extensions
+* Removed bugle_count_glx_attributes in favour of generic bugle_count_glwin_attributes
+* Removed bugle_dump_glx_attributes in favour of generic bugle_dump_glwin_attributes
+* Added .bc entries for dumping of attribute lists, particularly in EGL
 
 0.0.20090311
 ------------

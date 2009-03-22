@@ -22,15 +22,9 @@
 #include <string.h>
 #include <assert.h>
 #include <GL/glx.h>
+#include <budgie/reflect.h>
+#include <bugle/glwin/glwintypes.h>
 #include <bugle/glx/glxdump.h>
-
-int bugle_count_glx_attributes(const int *attr)
-{
-    int i = 0;
-    if (!attr) return 0;
-    while (attr[i]) i += 2;
-    return i + 1;
-}
 
 int bugle_count_glXChooseVisual_attributes(const int *attr)
 {
@@ -51,4 +45,34 @@ int bugle_count_glXChooseVisual_attributes(const int *attr)
         }
     }
     return i + 1;
+}
+
+bool bugle_dump_glXChooseVisual_attributes(const int *attr, char **buffer, size_t *size)
+{
+    int i = 0;
+
+    if (!attr)
+        return false;   /* Fall back on default dumping for NULL */
+
+    budgie_snprintf_advance(buffer, size, "%p -> { ", attr);
+    while (attr[i])
+    {
+        switch (attr[i])
+        {
+        case GLX_USE_GL:
+        case GLX_RGBA:
+        case GLX_DOUBLEBUFFER:
+        case GLX_STEREO:
+            bugle_dump_glwin_enum(attr[i], buffer, size);
+            budgie_snputs_advance(buffer, size, ", ");
+            i++;
+            break;
+        default:
+            bugle_dump_glwin_enum(attr[i], buffer, size);
+            budgie_snprintf_advance(buffer, size, ", %d, ", attr[i + 1]);
+            i += 2;
+        }
+    }
+    budgie_snputs_advance(buffer, size, "None }");
+    return true;
 }

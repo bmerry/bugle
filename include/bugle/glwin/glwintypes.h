@@ -1,5 +1,5 @@
 /*  BuGLe: an OpenGL debugging tool
- *  Copyright (C) 2008  Bruce Merry
+ *  Copyright (C) 2008-2009  Bruce Merry
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -33,6 +33,8 @@ typedef Display *   glwin_display;
 typedef GLXContext  glwin_context;
 typedef GLXDrawable glwin_drawable;
 typedef Bool        glwin_bool;
+typedef int         glwin_enum;
+typedef int         glwin_attrib;     /* type for (attrib, value) pair list */
 
 #define GLWIN_BOOL_TRUE "True"
 #define GLWIN_BOOL_FALSE "False"
@@ -52,6 +54,8 @@ typedef HDC   glwin_display;
 typedef HGLRC glwin_context;
 typedef HDC   glwin_drawable;
 typedef BOOL  glwin_bool;
+typedef int   glwin_enum;
+typedef int   glwin_attrib;
 
 /* Don't put brackets around these: they are stringized for dumping */
 #define GLWIN_BOOL_TRUE "TRUE"
@@ -68,6 +72,8 @@ typedef EGLDisplay glwin_display;
 typedef EGLContext glwin_context;
 typedef EGLSurface glwin_drawable;
 typedef EGLBoolean glwin_bool;
+typedef EGLenum    glwin_enum;
+typedef EGLint     glwin_attrib;
 
 #define GLWIN_BOOL_TRUE "EGL_TRUE"
 #define GLWIN_BOOL_FALSE "EGL_FALSE"
@@ -78,5 +84,9 @@ typedef EGLBoolean glwin_bool;
 
 bool bugle_dump_glwin_bool(glwin_bool b, char **buffer, size_t *size);
 bool bugle_dump_glwin_drawable(glwin_drawable d, char **buffer, size_t *size);
+bool bugle_dump_glwin_enum(glwin_enum e, char **buffer, size_t *size);
+
+int bugle_count_glwin_attributes(const glwin_attrib *attribs, glwin_attrib terminator);
+bool bugle_dump_glwin_attributes(const glwin_attrib *attribs, glwin_attrib terminator, char **buffer, size_t *size);
 
 #endif /* BUGLE_GLWIN_GLWINTYPES_H */
