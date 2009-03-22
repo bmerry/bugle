@@ -1,4 +1,5 @@
 * Fix display of uniform arrays to show all elements, not just one (closes: #53)
+* Fix input system to not call X functions inside an event predicate
 
 0.0.20090311
 ------------

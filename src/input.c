@@ -37,6 +37,12 @@
 typedef struct
 {
     bugle_input_key key;
+#if BUGLE_WINSYS_X11
+    /* Event predicates only receive keycodes, so we have to cache those
+     * here.
+     */
+    KeyCode keycode;
+#endif
     void *arg;
     bool (*wanted)(const bugle_input_key *, void *, bugle_input_event *);
     void (*callback)(const bugle_input_key *, void *, bugle_input_event *);
@@ -133,13 +139,13 @@ static Bool event_predicate(Display *dpy, XEvent *event, XPointer arg)
 
     if (mouse_active && event->type == MotionNotify) return True;
     if (event->type != KeyPress && event->type != KeyRelease) return False;
-    key.keysym = XKeycodeToKeysym(dpy, event->xkey.keycode, 1);
     key.state = event->xkey.state & STATE_MASK;
     key.press = event->type == KeyPress;
     for (i = bugle_list_head(&handlers); i; i = bugle_list_next(i))
     {
         h = (handler *) bugle_list_data(i);
-        if (h->key.keysym == key.keysym && h->key.state == key.state
+        if (h->keycode == event->xkey.keycode
+            && h->key.state == key.state
             && (!h->wanted || (*h->wanted)(&key, h->arg, event)))
             return True;
     }
@@ -208,10 +214,36 @@ static void handle_event(Display *dpy, XEvent *event)
     }
 }
 
+static void initialise_keycodes(Display *dpy)
+{
+    /* We have to generate keycodes outside of event_predicate, because
+     * event_predicate may not call X functions.
+     * FIXME: this will go wrong if two different threads connected to
+     * different X servers try to use this at the same time.
+     */
+    static Display *dpy_cached = NULL;
+    gl_lock_define(static, lock);
+    gl_lock_lock(lock);
+    if (dpy_cached != dpy)
+    {
+        linked_list_node *i;
+        handler *h;
+        for (i = bugle_list_head(&handlers); i; i = bugle_list_next(i))
+        {
+            h = (handler *) bugle_list_data(i);
+            h->keycode = XKeysymToKeycode(dpy, h->key.keysym);
+        }
+        dpy_cached = dpy;
+    }
+    gl_lock_unlock(lock);
+}
+
 static bool extract_events(Display *dpy)
 {
     XEvent event;
     bool any = false;
+
+    initialise_keycodes(dpy);
 
     while ((*real_XCheckIfEvent)(dpy, &event, event_predicate, NULL))
     {
@@ -362,6 +394,7 @@ int XWindowEvent(Display *dpy, Window w, long event_mask, XEvent *event)
     bugle_initialise_all();
     if (!active) return (*real_XWindowEvent)(dpy, w, event_mask, event);
     bugle_log("input", "XWindowEvent", BUGLE_LOG_DEBUG, "enter");
+    initialize_keycodes(dpy);
     extract_events(dpy);
     data.use_w = 1;
     data.use_event_mask = 1;
@@ -799,7 +832,6 @@ LRESULT CALLBACK input_key_hook(int code, WPARAM wParam, LPARAM lParam)
      * should do */
     if (code == HC_ACTION)
     {
-
         key.keysym = wParam;
         key.state = 0;
         if (GetKeyState(VK_SHIFT) & 0x8000)
