@@ -43,7 +43,7 @@
 typedef struct gldb_protocol_reader_select
 {
     /* the underlying fd to read */
-    int fd;                        
+    int fd;
 
     /* Indices into a circular buffer. read_idx is where the main thread gets
      * data. write_idx is where the thread puts new data from the fd.
@@ -125,7 +125,7 @@ unsigned __stdcall reader_thread(void *arg)
 gldb_protocol_reader_select *gldb_protocol_reader_select_new(int fd)
 {
     gldb_protocol_reader_select *r;
-   
+
     r = XMALLOC(gldb_protocol_reader_select);
     InitializeCriticalSection(&r->lock);
     r->data_event = CreateEvent(NULL, TRUE, FALSE, NULL);
