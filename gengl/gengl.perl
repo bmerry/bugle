@@ -418,7 +418,7 @@ foreach my $in_header (@ARGV)
         {
             $cur_ext = $base_ext;
         }
-        elsif (/^#define (E?GLX?_[0-9A-Za-z_]+)\s+((?:0x)?[0-9A-Fa-f]+)(?:\s*\/\*.*\*\/\s*)?$/)
+        elsif (/^#define (E?GLX?_[0-9A-Za-z_]+)\s+((?:0x)?[0-9A-Fa-f]+)\s*(?:\/\*.*\*\/)?\s*$/)
         {
             my $name = $1;
             my $value = $2;
@@ -661,7 +661,8 @@ EOF
     foreach my $block (@blocks)
     {
         print ",\n" unless $first; $first = 0;
-        print "    ", scalar(@{$enums_flat{$block}});
+        my $count = defined($enums_flat{$block}) ? scalar(@{$enums_flat{$block}}) : 0;
+        print "    ", $count;
     }
     print "\n};\n\n";
 }
