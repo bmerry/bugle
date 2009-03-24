@@ -1,1 +1,1 @@
-LENGTH PARAMETER glXCreateGLXPbufferSGIX 4 bugle_count_glx_attributes($$)
+LENGTH PARAMETER glXCreateGLXPbufferSGIX 4 bugle_count_glwin_attributes($$, None)
