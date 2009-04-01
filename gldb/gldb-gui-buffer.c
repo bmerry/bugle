@@ -117,9 +117,16 @@ static gboolean parse_format(const gchar *format,
         else if (*p >= '0' && *p <= '9')
         {
             /* repeat count */
-            if (number != -1)
-                return FALSE;    /* multi-digit not yet supported */
-            number = *p - '0';
+            if (number > 99)
+            {
+                /* Limit to repeat of 999. That's far more than the
+                 * set of all enabled attributes can hold.
+                 */
+                return FALSE;
+            }
+            if (number == -1)
+                number = 0;
+            number = number * 10 + (*p - '0');
         }
         else if (parse_format_letter(*p, &column, &field))
         {
@@ -144,6 +151,7 @@ static gboolean parse_format(const gchar *format,
     *fields = XNMALLOC(f, budgie_type);
     n = 0;
     f = 0;
+    number = -1;
 
     p = format;
     for (p = format; *p; p++)
@@ -156,9 +164,16 @@ static gboolean parse_format(const gchar *format,
         else if (*p >= '0' && *p <= '9')
         {
             /* repeat count */
-            if (number != -1)
-                return FALSE;    /* multi-digit not yet supported */
-            number = *p - '0';
+            if (number > 99)
+            {
+                /* Limit to repeat of 999. That's far more than the
+                 * set of all enabled attributes can hold.
+                 */
+                return FALSE;
+            }
+            if (number == -1)
+                number = 0;
+            number = number * 10 + (*p - '0');
         }
         else if (parse_format_letter(*p, &column, &field))
         {
@@ -167,6 +182,7 @@ static gboolean parse_format(const gchar *format,
                 (*columns)[n++] = column;
                 (*fields)[f++] = field;
             }
+            number = -1;
         }
     }
 
