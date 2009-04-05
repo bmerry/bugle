@@ -70,6 +70,7 @@ pkglib_LTLIBRARIES = \
 	filters/extoverride.la \
 	filters/stats_basic.la \
 	filters/stats_calls.la \
+	filters/stats_calltimes.la \
 	filters/stats_nv.la \
 	filters/stats_primitives.la \
 	filters/logstats.la
@@ -246,6 +247,10 @@ filters_stats_calls_la_SOURCES = filters/stats_calls.c
 filters_stats_calls_la_LDFLAGS = $(MODULEFLAGS)
 filters_stats_calls_la_LIBADD = $(MODULELIBS)
 
+filters_stats_calltimes_la_SOURCES = filters/stats_calltimes.c
+filters_stats_calltimes_la_LDFLAGS = $(MODULEFLAGS)
+filters_stats_calltimes_la_LIBADD = $(MODULELIBS)
+
 filters_stats_nv_la_SOURCES = filters/stats_nv.c
 filters_stats_nv_la_LDFLAGS = $(MODULEFLAGS)
 filters_stats_nv_la_LIBADD = $(MODULELIBS)
@@ -367,6 +372,7 @@ DOCBOOK_MAN_SRCS = \
 	doc/DocBook/man/statistics.xml \
 	doc/DocBook/man/stats_basic.xml \
 	doc/DocBook/man/stats_calls.xml \
+	doc/DocBook/man/stats_calltimes.xml \
 	doc/DocBook/man/stats_fragments.xml \
 	doc/DocBook/man/stats_nv.xml \
 	doc/DocBook/man/stats_primitives.xml \
@@ -417,6 +423,7 @@ DOCBOOK_MAN_MANPAGES = \
 	doc/man7/bugle-showstats.7 \
 	doc/man7/bugle-stats_basic.7 \
 	doc/man7/bugle-stats_calls.7 \
+	doc/man7/bugle-stats_calltimes.7 \
 	doc/man7/bugle-stats_fragments.7 \
 	doc/man7/bugle-stats_nv.7 \
 	doc/man7/bugle-stats_primitives.7 \
@@ -464,6 +471,7 @@ DOCBOOK_HTML = doc/html/index.html \
 	       doc/html/showstats.7.html \
 	       doc/html/stats_basic.7.html \
 	       doc/html/stats_calls.7.html \
+	       doc/html/stats_calltimes.7.html \
 	       doc/html/stats_fragments.7.html \
 	       doc/html/stats_nv.7.html \
 	       doc/html/stats_primitives.7.html \

@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE refentry PUBLIC "-//OASIS//DTD DocBook XML V4.3//EN" "http://www.oasis-open.org/docbook/xml/4.3/docbookx.dtd" [
+<!ENTITY % myentities SYSTEM "../bugle.ent" >
+%myentities;
+]>
+<refentry id="stats_calltimes.7">
+    <refentryinfo>
+        <date>April 2009</date>
+        <productname>BUGLE</productname>
+    </refentryinfo>
+    <refmeta>
+        <refentrytitle>bugle-stats_calltimes</refentrytitle>
+        <manvolnum>7</manvolnum>
+    </refmeta>
+
+    <refnamediv>
+        <refname>bugle-stats_calltime</refname>
+        <refpurpose>gather call timing</refpurpose>
+    </refnamediv>
+
+    <refsynopsisdiv>
+        <screen>filterset stats_calltimes</screen>
+    </refsynopsisdiv>
+
+    <refsect1>
+        <title>Description</title>
+        <para>
+            This filter-set measures how long is spent in each OpenGL call.
+            The signal associated with
+            <replaceable>glSomeFunction</replaceable> is called
+            <varname>calltimes:<replaceable>glSomeFunction</replaceable></varname>.
+        </para>
+        <para>
+            In addition, there is a signal called
+            <varname>calltimes:total</varname>, which measures the total time
+            spent in all GL calls.
+        </para>
+        <para>
+            The expected use is with the <systemitem>average time per
+                call</systemitem> statistic defined in the sample statistics
+            file, which shows the average time spent in each call.
+        </para>
+        <para>
+            Note that these times include some overhead from &bugle; itself,
+            so it will be most useful for calls that involve significant work
+            (such as shader compilation/linking) or which may stall the CPU
+            (such as <function>glReadPixels</function>).
+        </para>
+    </refsect1>
+
+    &author;
+
+    <refsect1>
+        <title>See also</title>
+        <para>&mp-bugle;, &mp-stats_calls;, &mp-statistics;</para>
+    </refsect1>
+</refentry>

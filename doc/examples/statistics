@@ -478,3 +478,19 @@
     precision 0
     label "*"
 }
+
+#
+# Call time statistics
+#
+
+"average time per call" = d("calltimes:*") / d("calls:*") * 1000
+{
+    precision 3
+    label "* (ms)"
+}
+
+"time in GL" = d("calltimes:total") / d("seconds") * 100
+{
+    precision 1
+    label "%"
+}

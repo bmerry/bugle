@@ -7,6 +7,7 @@
 * Added .bc entries for dumping of attribute lists, particularly in EGL
 * Add include dir to bugle.pc to make compilation of third-party plugins work better
 * Fix crashes when using repeat counts in buffer viewer
+* Add stats_calltimes filterset
 
 0.0.20090311
 ------------

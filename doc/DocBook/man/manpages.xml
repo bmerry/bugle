@@ -36,6 +36,7 @@
     <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="showstats.xml"/>
     <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="stats_basic.xml"/>
     <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="stats_calls.xml"/>
+    <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="stats_calltimes.xml"/>
     <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="stats_fragments.xml"/>
     <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="stats_nv.xml"/>
     <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="stats_primitives.xml"/>
