@@ -230,11 +230,14 @@ my $enum_not_name_regex = qr/^(?:
     |GL_GLEXT_\w+
     |EGL_EGLEXT_\w+
     |GLX_GLXEXT_\w+
+    |WGL_WGLEXT_\w+
     |E?GLX?_[A-Z0-9_]+_BIT(?:_[A-Z0-9]+)?
     |GLX_BUFFER_CLOBBER_MASK(?:_[A-Z0-9]+)?
     |GL(?:_[A-Z0-9_]+)?_ALL_[A-Z0-9_]+_BITS(?:_[A-Z0-9]+)?
     |E?GL_FALSE
     |E?GL_TRUE
+    |WGL_SWAP_OVERLAY\d+
+    |WGL_SWAP_UNDERLAY\d+
     )$/x;
 
 sub base_name($$)
@@ -402,13 +405,13 @@ foreach my $in_header (@ARGV)
     $cur_ext = $base_ext;
     while (<H>)
     {
-        if (/^#ifndef (E?GLX?_([0-9A-Z]+)_\w+)/
+        if (/^#ifndef ([EW]?GLX?_([0-9A-Z]+)_\w+)/
             && !/GL_GLEXT_/ && !/GLX_GLXEXT_/)
         {
             $cur_ext = $1;
             $cur_suffix = '';
-            if (!/^#ifndef E?GLX?_(?:ES_)?VERSION/
-                && /^#ifndef E?GLX?_([0-9A-Z]+)_\w+/)
+            if (!/^#ifndef [EW]?GLX?_(?:ES_)?VERSION/
+                && /^#ifndef [EW]?GLX?_([0-9A-Z]+)_\w+/)
             {
                 $cur_suffix = $1;
             }
@@ -418,7 +421,7 @@ foreach my $in_header (@ARGV)
         {
             $cur_ext = $base_ext;
         }
-        elsif (/^#define (E?GLX?_[0-9A-Za-z_]+)\s+((?:0x)?[0-9A-Fa-f]+)\s*(?:\/\*.*\*\/)?\s*$/)
+        elsif (/^#define ([EW]?GLX?_[0-9A-Za-z_]+)\s+((?:0x)?[0-9A-Fa-f]+)\s*(?:\/\*.*\*\/)?\s*$/)
         {
             my $name = $1;
             my $value = $2;

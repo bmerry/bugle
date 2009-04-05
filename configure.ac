@@ -152,7 +152,7 @@ AC_CHECK_HEADERS([libavcodec/avcodec.h libavformat/avformat.h libswscale/swscale
 
 case "$BUGLE_API" in
   gl-wgl)
-    GLINCLUDES="`CPP=\"$CPP\" srcdir=\"$srcdir\" $PERL -w $srcdir/gengl/find_header.perl GL/gl.h wingdi.h GL/glext.h include/bugle/wgl/overrides.h`"
+    GLINCLUDES="`CPP=\"$CPP\" srcdir=\"$srcdir\" $PERL -w $srcdir/gengl/find_header.perl GL/gl.h wingdi.h GL/glext.h GL/wglext.h include/bugle/wgl/overrides.h`"
     ;;
   gl-glx)
     GLINCLUDES="`CPP=\"$CPP\" srcdir=\"$srcdir\" $PERL -w $srcdir/gengl/find_header.perl GL/gl.h GL/glx.h GL/glext.h GL/glxext.h`"
