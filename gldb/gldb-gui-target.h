@@ -24,6 +24,7 @@
 
 #include <gtk/gtk.h>
 
+/* Display the target dialog and gather responses */
 void gldb_gui_target_dialog_run(GtkWidget *parent);
 
 #endif

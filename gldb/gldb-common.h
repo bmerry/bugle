@@ -299,6 +299,11 @@ bool gldb_program_type_has_setting(gldb_program_type type, gldb_program_setting 
 const char *gldb_program_get_setting(gldb_program_setting setting);
 gldb_program_type gldb_program_get_type(void);
 
+/* Validates current settings, and returns an error message if they
+ * are invalid. Otherwise, returns NULL.
+ */
+const char * gldb_program_validate(void);
+
 void gldb_initialise(int argc, const char * const *argv);
 void gldb_shutdown(void);
 

@@ -1,4 +1,4 @@
-0.0.20090410
+0.0.20090411
 ------------
 * Fix display of uniform arrays to show all elements, not just one (closes: #53)
 * Fix input system to not call X functions inside an event predicate (closes: #55)
@@ -11,6 +11,7 @@
 * Fix crashes when using repeat counts in buffer viewer
 * Fix segfault on starting command-line gldb
 * Add stats_calltimes filterset
+* Made specifying a command on the command-line optional
 
 0.0.20090311
 ------------

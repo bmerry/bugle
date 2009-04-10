@@ -508,10 +508,24 @@ static ssize_t read_callback(void *channel, void *buf, size_t count)
 
 static void run_action(GtkAction *action, gpointer user_data)
 {
+    const char *error_msg;
     GldbWindow *context;
     context = (GldbWindow *) user_data;
 
     g_return_if_fail(gldb_get_status() == GLDB_STATUS_DEAD);
+    while ((error_msg = gldb_program_validate()) != NULL)
+    {
+        GtkWidget *error_dialog;
+
+        error_dialog = gtk_message_dialog_new(GTK_WINDOW(context->window),
+                                              GTK_DIALOG_MODAL,
+                                              GTK_MESSAGE_ERROR,
+                                              GTK_BUTTONS_OK,
+                                              "%s", error_msg);
+        gtk_dialog_run(GTK_DIALOG(error_dialog));
+        gtk_widget_destroy(error_dialog);
+        gldb_gui_target_dialog_run(context->window);
+    }
     if (!gldb_run(seq++, NULL))
         return;
 #if BUGLE_OSAPI_WIN32
@@ -810,11 +824,6 @@ int main(int argc, char **argv)
     gtk_gl_init(&argc, &argv);
     gldb_gui_image_initialise();
 #endif
-    if (argc < 2)
-    {
-        fputs("Usage: gldb-gui <program> [<arguments>]\n", stderr);
-        return 1;
-    }
     gldb_initialise(argc, (const char * const *) argv);
     bugle_list_init(&response_handlers, free);
 

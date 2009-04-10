@@ -120,6 +120,38 @@ gldb_program_type gldb_program_get_type(void)
     return prog_type;
 }
 
+const char *gldb_program_validate(void)
+{
+    const char *setting;
+
+    switch (gldb_program_get_type())
+    {
+    case GLDB_PROGRAM_TYPE_LOCAL:
+        setting = gldb_program_get_setting(GLDB_PROGRAM_SETTING_COMMAND);
+        if (setting == NULL || setting[0] == '\0')
+            return "Command not set";
+        break;
+    case GLDB_PROGRAM_TYPE_SSH:
+        setting = gldb_program_get_setting(GLDB_PROGRAM_SETTING_COMMAND);
+        if (setting == NULL || setting[0] == '\0')
+            return "Command not set";
+        setting = gldb_program_get_setting(GLDB_PROGRAM_SETTING_HOST);
+        if (setting == NULL || setting[0] == '\0')
+            return "Host not set";
+        break;
+    case GLDB_PROGRAM_TYPE_TCP:
+        setting = gldb_program_get_setting(GLDB_PROGRAM_SETTING_HOST);
+        if (setting == NULL || setting[0] == '\0')
+            return "Host not set";
+        break;
+        setting = gldb_program_get_setting(GLDB_PROGRAM_SETTING_PORT);
+        if (setting == NULL || setting[0] == '\0')
+            return "Port not set";
+        break;
+    }
+    return NULL;    /* success */
+}
+
 #if BUGLE_OSAPI_WIN32
 # include <windows.h>
 
@@ -1082,7 +1114,7 @@ void gldb_initialise(int argc, const char * const *argv)
 {
     int i;
     char *command, *ptr;
-    size_t len = 0;
+    size_t len = 1;
 
     for (i = 1; i < argc; i++)
         len += strlen(argv[i]) + 1;
@@ -1094,7 +1126,10 @@ void gldb_initialise(int argc, const char * const *argv)
         ptr += len;
         *ptr++ = ' ';
     }
-    ptr[-1] = '\0';
+    if (ptr > command)
+        ptr[-1] = '\0';
+    else
+        ptr[0] = '\0';
     gldb_program_set_setting(GLDB_PROGRAM_SETTING_COMMAND, command);
     gldb_program_set_setting(GLDB_PROGRAM_SETTING_HOST, "localhost");
     gldb_program_set_setting(GLDB_PROGRAM_SETTING_PORT, "9118");
