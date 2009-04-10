@@ -1,3 +1,7 @@
+0.0.20090410
+------------
+This release fixes several bugs, and has improved tracing of EGL and GLX.
+
 0.0.20090311
 ------------
 This release is packed with new debugger features:

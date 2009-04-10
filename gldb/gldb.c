@@ -547,6 +547,7 @@ static bool command_run(const char *cmd,
     else
     {
         gldb_run(0, child_init);
+        gldb_set_in_reader(gldb_protocol_reader_new_fd_select(gldb_get_in_pipe()));
         return true;
     }
 }

@@ -1,3 +1,5 @@
+0.0.20090410
+------------
 * Fix display of uniform arrays to show all elements, not just one (closes: #53)
 * Fix input system to not call X functions inside an event predicate (closes: #55)
 * Improved symbolic display of enums for EGL and GLX
@@ -7,6 +9,7 @@
 * Added .bc entries for dumping of attribute lists, particularly in EGL
 * Add include dir to bugle.pc to make compilation of third-party plugins work better
 * Fix crashes when using repeat counts in buffer viewer
+* Fix segfault on starting command-line gldb
 * Add stats_calltimes filterset
 
 0.0.20090311
