@@ -1,5 +1,5 @@
 /*  BuGLe: an OpenGL debugging tool
- *  Copyright (C) 2004-2007  Bruce Merry
+ *  Copyright (C) 2004-2007, 2009  Bruce Merry
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -24,7 +24,9 @@
 
 #include <gtk/gtk.h>
 
-/* Display the target dialog and gather responses */
-void gldb_gui_target_dialog_run(GtkWidget *parent);
+/* Display the target dialog and gather responses
+ * Returns true if the user accepted the dialog.
+ */
+bool gldb_gui_target_dialog_run(GtkWidget *parent);
 
 #endif

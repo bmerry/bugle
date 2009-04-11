@@ -171,7 +171,7 @@ static GtkWidget *entry_new_with_setting(gldb_program_setting setting)
     return entry;
 }
 
-void gldb_gui_target_dialog_run(GtkWindow *parent)
+bool gldb_gui_target_dialog_run(GtkWindow *parent)
 {
     GldbGuiTargetDialog context;
     gint result;
@@ -216,4 +216,5 @@ void gldb_gui_target_dialog_run(GtkWindow *parent)
     if (result == GTK_RESPONSE_ACCEPT)
         target_update(&context);
     gtk_widget_destroy(context.dialog);
+    return result == GTK_RESPONSE_ACCEPT;
 }

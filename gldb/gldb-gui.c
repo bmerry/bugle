@@ -524,7 +524,8 @@ static void run_action(GtkAction *action, gpointer user_data)
                                               "%s", error_msg);
         gtk_dialog_run(GTK_DIALOG(error_dialog));
         gtk_widget_destroy(error_dialog);
-        gldb_gui_target_dialog_run(context->window);
+        if (!gldb_gui_target_dialog_run(context->window))
+            return;     /* user cancelled the dialog, so cancel the run too */
     }
     if (!gldb_run(seq++, NULL))
         return;
