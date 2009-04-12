@@ -1,32 +1,4 @@
 #!/usr/bin/env python
-from subprocess import *
-import re
-
-def find_header(env, name):
-    # TODO: -I should come from CPPPATH
-    sp = Popen([env['CC'], '-E', '-I.', '-I' + env['topbuilddir'].path, '-'],
-            stdin = PIPE, stdout = PIPE, stderr = PIPE)
-    (out, err) = sp.communicate('#include <' + name + '>\n')
-    errcode = sp.wait()
-    if errcode != 0:
-        raise NameError, err.rstrip("\r\n")
-
-    s = re.compile(r'^# \d+ "(.*' + name + r')"', re.M)
-    matches = s.search(out)
-    if matches is not None:
-        return matches.group(1)
-
-    # Preprocessor didn't find it, fall back and try some known paths
-    file = env.FindFile(name, [
-        '/usr/include',
-        '/usr/X11R6/include',
-        '/usr/local/include',
-        '/usr/include/w32api'])
-    if file is not None:
-        return file
-
-    raise NameError, 'Could not find ' + name
-
 env = Environment(
         CPPPATH = ['#source/include', '#source'],
         CXXFLAGS = '-Wall -g',
@@ -52,6 +24,6 @@ budgie_outputs = [
 env.Budgie(budgie_outputs, ['src/data/gl.tu', 'bc/gl-glx.bc'])
 
 headers = ['GL/gl.h', 'GL/glext.h', 'GL/glx.h', 'GL/glxext.h']
-headers = [find_header(env, h) for h in headers]
+headers = [env['find_header'](env, h) for h in headers]
 # TODO change to bc/alias.bc
 env.BudgieAlias(target = ['bc/gl/alias.bc'], source = headers)
