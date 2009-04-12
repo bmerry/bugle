@@ -28,6 +28,6 @@ while (@ARGV)
             if (-f "$i/$header") { $path = "$i/$header"; last; }
         }
     }
-    die("Could not find header $path") unless $path;
-    print "\"$path\" ";
+    die("Could not find header $header") unless $path;
+    print "$path\n";
 }
