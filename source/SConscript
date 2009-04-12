@@ -1,0 +1,79 @@
+#!/usr/bin/env python
+from subprocess import *
+import re
+
+def find_header(env, name):
+    # TODO: -I should come from CPPPATH
+    sp = Popen([env['CC'], '-E', '-I.', '-I' + env['topbuilddir'].path, '-'],
+            stdin = PIPE, stdout = PIPE, stderr = PIPE)
+    (out, err) = sp.communicate('#include <' + name + '>\n')
+    errcode = sp.wait()
+    if errcode != 0:
+        raise NameError, err.rstrip("\r\n")
+
+    s = re.compile(r'^# \d+ "(.*' + name + r')"', re.M)
+    matches = s.search(out)
+    if matches is not None:
+        return matches.group(1)
+
+    # Preprocessor didn't find it, fall back and try some known paths
+    file = env.FindFile(name, [
+        '/usr/include',
+        '/usr/X11R6/include',
+        '/usr/local/include',
+        '/usr/include/w32api'])
+    if file is not None:
+        return file
+
+    raise NameError, 'Could not find ' + name
+
+def bc_scanner_function(node, env, path, arg = None):
+    contents = node.get_contents()
+    matches = re.findall(r'^\s*INCLUDE\s*(\S+)\s*$', contents, re.M)
+    deps = []
+    for x in matches:
+        dep = env.FindFile(x, path)
+        if dep is None:
+            print "Could not find " + x
+        else:
+            deps.append(dep)
+    return deps
+
+env = Environment(
+        CPPPATH = ['#source/include', '#source'],
+        CXXFLAGS = '-Wall -g',
+        YACCHXXFILESUFFIX = '.h',
+        _BCINCPATH = '$( ${ _concat("-I ", BCPATH, "", __env__, RDirs)} $)',
+        topbuilddir = Dir('#build'),
+        topsrcdir = Dir('.').srcnode()
+        )
+Export('env')
+env.Append(BCPATH = [env['topbuilddir'], env['topsrcdir']])
+
+SConscript('budgie/SConscript')
+SConscript('src/SConscript')
+
+budgie_outputs = [
+        'include/budgie/call.h',
+        'include/budgie/types2.h',
+        'budgielib/defines.h',
+        'budgielib/tables.c',
+        'budgielib/lib.c'
+        ]
+
+bc_scanner = env.Scanner(
+        function = bc_scanner_function,
+        path_function = FindPathDirs('BCPATH'),
+        recursive = 1)
+SourceFileScanner.add_scanner('.bc', bc_scanner)
+
+env.Command(
+        budgie_outputs,
+        ['src/data/gl.tu', 'bc/gl-glx.bc', env['BUDGIE']],
+        action = '${BUDGIE.abspath} $_BCINCPATH -c ${TARGETS[0].path} -2 ${TARGETS[1].path} -d ${TARGETS[2].path} -t ${TARGETS[3].path} -l ${TARGETS[4].path} -T ${SOURCES[0].path} ${SOURCES[1].abspath}',
+        source_scanner = SourceFileScanner)
+
+headers = ['GL/gl.h', 'GL/glext.h', 'GL/glx.h', 'GL/glxext.h']
+headers = [find_header(env, h) for h in headers]
+# TODO change to bc/alias.bc
+env.BudgieAlias(target = ['bc/gl/alias.bc'], source = headers)

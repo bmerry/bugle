@@ -1,5 +1,5 @@
 /*  BuGLe: an OpenGL debugging tool
- *  Copyright (C) 2004-2008  Bruce Merry
+ *  Copyright (C) 2004-2009  Bruce Merry
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -273,14 +273,14 @@ static void process_args(int argc, char * const argv[])
         case '2':
             filenames[FILE_TYPES2_H] = optarg;
             break;
-        case 'l':
-            filenames[FILE_LIB_C] = optarg;
+        case 'd':
+            filenames[FILE_DEFINES_H] = optarg;
             break;
         case 't':
             filenames[FILE_TABLES_C] = optarg;
             break;
-        case 'd':
-            filenames[FILE_DEFINES_H] = optarg;
+        case 'l':
+            filenames[FILE_LIB_C] = optarg;
             break;
         case 'I':
             include_paths.push_back(optarg);

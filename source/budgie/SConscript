@@ -14,21 +14,8 @@ budgie_list = env.Program('budgie', source = [
     'bclexer.cpp',
     'tulexer.cpp'])
 
-def budgie_emitter(target, source, env):
-    target.extend([
-            '#/budgielib/lib.c',
-            '#/budgielib/tables.c',
-            '#/budgielib/defines.h',
-            '#/include/budgie/types2.h',
-            '#/include/budgie/call.h'
-            ])
-    return target, source
-
-def budgie_generator(source, target, env, for_signature):
-    return '%s -I %s -T %s %s' % (env['BUDGIE'], env['BUDGIEPATH'], source[0], source[1])
-
 def alias_emitter(target, source, env):
-    source.append('#/gengl/gengl.perl')
+    source.append('#source/gengl/gengl.perl')
     return target, source
 
 def alias_generator(source, target, env, for_signature):
@@ -38,11 +25,7 @@ def alias_generator(source, target, env, for_signature):
     cmd += ' > ' + target[0].path
     return cmd
 
-env.Append(BUDGIE = budgie_list[0].path)
-budgie_builder = env.Builder(
-        generator = budgie_generator,
-        src_suffix = '.tu',
-        emitter = budgie_emitter)
+env.Append(BUDGIE = budgie_list[0])
 
 alias_builder = env.Builder(
         generator = alias_generator,
@@ -50,6 +33,5 @@ alias_builder = env.Builder(
         emitter = alias_emitter)
 
 env.Append(BUILDERS = {
-    'Budgie': budgie_builder,
     'BudgieAlias': alias_builder
     })
