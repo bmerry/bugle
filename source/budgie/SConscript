@@ -14,24 +14,4 @@ budgie_list = env.Program('budgie', source = [
     'bclexer.cpp',
     'tulexer.cpp'])
 
-def alias_emitter(target, source, env):
-    source.append('#source/gengl/gengl.perl')
-    return target, source
-
-def alias_generator(source, target, env, for_signature):
-    cmd = 'perl ' + source[-1].path + ' --mode=alias'
-    for header in source[0:-1]:
-        cmd += ' ' + header.path
-    cmd += ' > ' + target[0].path
-    return cmd
-
 env.Append(BUDGIE = budgie_list[0])
-
-alias_builder = env.Builder(
-        generator = alias_generator,
-        src_suffix = '.h',
-        emitter = alias_emitter)
-
-env.Append(BUILDERS = {
-    'BudgieAlias': alias_builder
-    })
