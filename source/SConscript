@@ -8,7 +8,15 @@ env = Environment(
         tools = ['default', 'budgie', 'gengl']
         )
 Export('env')
-env.Append(BCPATH = [env['topbuilddir'], env['topsrcdir']])
+env.Append(
+        BCPATH = [env['topbuilddir'], env['topsrcdir']],
+        CPPPATH = [
+            env['topbuilddir'],
+            env['topbuilddir'].Dir('include'),
+            '#source/include',
+            '#source',
+            '#source/lib']
+        )
 
 SConscript('budgie/SConscript')
 SConscript('src/SConscript')
