@@ -3,6 +3,9 @@ Import('srcdir', 'builddir', 'env')
 
 SConscript('budgie/SConscript')
 SConscript('src/SConscript')
+SConscript('filters/SConscript')
+
+env.AlwaysBuild(env.Command('lib/libgnu.la', [], 'make -C lib'))
 
 budgie_outputs = [
         'include/budgie/call.h',
@@ -11,7 +14,6 @@ budgie_outputs = [
         'budgielib/tables.c',
         'budgielib/lib.c'
         ]
-
 env.Budgie(budgie_outputs, ['src/data/gl.tu', 'bc/gl-glx.bc'])
 
 headers = ['GL/gl.h', 'GL/glext.h', 'GL/glx.h', 'GL/glxext.h']

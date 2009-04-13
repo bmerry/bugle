@@ -12,13 +12,13 @@ env = Environment(
             builddir.Dir('include')
             ],
         BCPATH = [builddir, srcdir],
-        CXXFLAGS = '-Wall -g',
         CPPDEFINES = [
             ('LIBDIR', r'\"@libdir@\"'),
             ('PKGLIBDIR', r'\"@libdir@/@PACKAGE@\"'),
             ('HAVE_CONFIG_H', 1)
             ],
         YACCHXXFILESUFFIX = '.h',
+        parse_flags = '-pthread',
         srcdir = srcdir, builddir = builddir,
         tools = ['default', 'budgie', 'gengl'],
         toolpath = ['@srcdir@/site_scons/site_tools']

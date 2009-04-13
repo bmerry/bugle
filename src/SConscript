@@ -1,13 +1,25 @@
 #!/usr/bin/env python
 Import('env')
 
+def shared_library(target, source, version, env, **kw):
+    version_parts = version.split('.')
+    base = env.subst('${SHLIBPREFIX}' + target + '${SHLIBSUFFIX}')
+    full = base + '.' + version
+    soname = base + '.' + version_parts[0]
+
+    shl_list = env.SharedLibrary(full, source, 
+            SHLIBPREFIX = '', SHLIBSUFFIX = '',
+            LINKFLAGS = '-Wl,-soname,' + soname, **kw)
+    env.Command(soname, shl_list[0], 'ln -s ${SOURCE.file} $TARGET')
+    return env.Command(base, shl_list[0], 'ln -s ${SOURCE.file} $TARGET')
+
 # TODO source scanner, make this a tool?
 env.Command(
         'data/gl.tu',
         'data/gl.c',
         'CCACHE_DISABLE=1 $CC $_CPPINCFLAGS -fdump-translation-unit -c $SOURCE && ${srcdir.path}/mvtu.sh gl.c $TARGET')
 
-bugleutils_list = env.SharedLibrary(
+libbugleutils = shared_library(
         'bugleutils',
         [
             'gl/gltypes.c',
@@ -22,9 +34,9 @@ bugleutils_list = env.SharedLibrary(
             '../budgielib/reflect.c',
             '../budgielib/tables.c',
             'apitables.c'
-        ])
+        ], '7.0.0', env)
 
-env.SharedLibrary(
+libbugle = shared_library(
         'bugle',
         [
             env.CFile('confparse.y', YACCFLAGS = '-d')[0],
@@ -47,4 +59,7 @@ env.SharedLibrary(
             'gl/glextensions.c',
             'gl/glbeginend.c'
         ],
-        LIBS = bugleutils_list[0])
+        '8.0.0', env,
+        LIBS = libbugleutils)
+
+Export('libbugle', 'libbugleutils')

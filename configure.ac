@@ -150,22 +150,6 @@ AC_CHECK_HEADERS([readline/readline.h readline/history.h], [], [HAVE_READLINE=0]
 # ffmpeg moves the headers around
 AC_CHECK_HEADERS([libavcodec/avcodec.h libavformat/avformat.h libswscale/swscale.h])
 
-case "$BUGLE_API" in
-  gl-wgl)
-    GLINCLUDES="`CPP=\"$CPP\" srcdir=\"$srcdir\" $PERL -w $srcdir/gengl/find_header.perl GL/gl.h wingdi.h GL/glext.h GL/wglext.h include/bugle/wgl/overrides.h`"
-    ;;
-  gl-glx)
-    GLINCLUDES="`CPP=\"$CPP\" srcdir=\"$srcdir\" $PERL -w $srcdir/gengl/find_header.perl GL/gl.h GL/glx.h GL/glext.h GL/glxext.h`"
-    ;;
-  gles1cm-egl-* | gles1cm-legacy-egl-*)
-    GLINCLUDES="`CPP=\"$CPP\" srcdir=\"$srcdir\" $PERL -w $srcdir/gengl/find_header.perl GLES/gl.h GLES/glext.h EGL/egl.h EGL/eglext.h`"
-    ;;
-  gles2-egl-*)
-    GLINCLUDES="`CPP=\"$CPP\" srcdir=\"$srcdir\" $PERL -w $srcdir/gengl/find_header.perl GLES2/gl2.h GLES2/gl2ext.h EGL/egl.h EGL/eglext.h`"
-    ;;
-esac
-AC_SUBST(GLINCLUDES)
-
 dnl Checks for types
 AC_CHECK_TYPE(ptrdiff_t, long int)
 AC_CHECK_TYPE([long long])
