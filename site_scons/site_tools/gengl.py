@@ -5,7 +5,7 @@ import re
 
 def find_header(env, name):
     # TODO: -I should come from CPPPATH
-    sp = Popen([env['CC'], '-E', '-I.', '-I' + env['builddir'].path, '-'],
+    sp = Popen([env['CC'], '-E', '-I.', '-I' + env['srcdir'].path, '-'],
             stdin = PIPE, stdout = PIPE, stderr = PIPE)
     (out, err) = sp.communicate('#include <' + name + '>\n')
     errcode = sp.wait()
@@ -28,8 +28,8 @@ def find_header(env, name):
 
     raise NameError, 'Could not find ' + name
 
-def alias_emitter(target, source, env):
-    # Make sure the generator is treated as a source for dependency purposes
+def gengl_emitter(target, source, env):
+    '''Make sure the generator is treated as a source for dependency purposes'''
     source.append(env['srcdir'].File('gengl/gengl.perl'))
     return target, source
 
@@ -40,12 +40,36 @@ def alias_generator(source, target, env, for_signature):
     cmd += ' > ' + target[0].path
     return cmd
 
+def apitables_c_generator(source, target, env, for_signature):
+    cmd = 'perl ' + source[-1].path + ' --mode=c --header=' + source[0].path
+    for header in source[1:-1]:
+        cmd += ' ' + header.path
+    cmd += ' > ' + target[0].path
+    return cmd
+
+def apitables_h_generator(source, target, env, for_signature):
+    cmd = 'perl ' + source[-1].path + ' --mode=header --header=' + source[0].path
+    for header in source[1:-1]:
+        cmd += ' ' + header.path
+    cmd += ' > ' + target[0].path
+    return cmd
+
 def generate(env, **kw):
     alias_builder = env.Builder(
             generator = alias_generator,
-            emitter = alias_emitter)
+            emitter = gengl_emitter)
+    apitables_c_builder = env.Builder(
+            generator = apitables_c_generator,
+            emitter = gengl_emitter)
+    apitables_h_builder = env.Builder(
+            generator = apitables_h_generator,
+            emitter = gengl_emitter)
     env.Append(
-            BUILDERS = {'BudgieAlias': alias_builder},
+            BUILDERS = {
+                'BudgieAlias': alias_builder,
+                'ApitablesC': apitables_c_builder,
+                'ApitablesH': apitables_h_builder
+                },
             find_header = find_header)
 
 def exists(env):

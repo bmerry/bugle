@@ -18,3 +18,5 @@ headers = ['GL/gl.h', 'GL/glext.h', 'GL/glx.h', 'GL/glxext.h']
 headers = [env['find_header'](env, h) for h in headers]
 # TODO change to bc/alias.bc
 env.BudgieAlias(target = ['bc/gl/alias.bc'], source = headers)
+env.ApitablesC(target = ['src/apitables.c'], source = ['budgielib/defines.h'] + headers)
+env.ApitablesH(target = ['src/apitables.h'], source = ['budgielib/defines.h'] + headers)

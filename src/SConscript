@@ -7,17 +7,34 @@ env.Command(
         'data/gl.c',
         'CCACHE_DISABLE=1 $CC $_CPPINCFLAGS -fdump-translation-unit -c $SOURCE && ${srcdir.path}/mvtu.sh gl.c $TARGET')
 
+bugleutils_list = env.SharedLibrary(
+        'bugleutils',
+        [
+            'gl/gltypes.c',
+            'apireflect.c',
+            'glwin/glwintypes.c',
+            '../common/misc.c',
+            '../common/protocol.c',
+            '../common/protocol-win32.c',
+            '../common/hashtable.c',
+            '../common/linkedlist.c',
+            '../budgielib/internal.c',
+            '../budgielib/reflect.c',
+            '../budgielib/tables.c',
+            'apitables.c'
+        ])
+
 env.SharedLibrary(
         'bugle',
         [
-            env.CFile('confparse.y', YACCFLAGS = '-d'),
+            env.CFile('confparse.y', YACCFLAGS = '-d')[0],
             'conflex.l',
             'interceptor.c',
             'dlopen.c',
             'filters.c',
             'stats.c',
             'statslex.l',
-            env.CFile('statsparse.y', YACCFLAGS = '-d'),
+            env.CFile('statsparse.y', YACCFLAGS = '-d')[0],
             'log.c',
             'objects.c',
             'input.c',
@@ -29,5 +46,5 @@ env.SharedLibrary(
             'gl/globjects.c',
             'gl/glextensions.c',
             'gl/glbeginend.c'
-        ])
-
+        ],
+        LIBS = bugleutils_list[0])
