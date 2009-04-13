@@ -5,7 +5,7 @@ import re
 
 def find_header(env, name):
     # TODO: -I should come from CPPPATH
-    sp = Popen([env['CC'], '-E', '-I.', '-I' + env['topbuilddir'].path, '-'],
+    sp = Popen([env['CC'], '-E', '-I.', '-I' + env['builddir'].path, '-'],
             stdin = PIPE, stdout = PIPE, stderr = PIPE)
     (out, err) = sp.communicate('#include <' + name + '>\n')
     errcode = sp.wait()
@@ -30,7 +30,7 @@ def find_header(env, name):
 
 def alias_emitter(target, source, env):
     # Make sure the generator is treated as a source for dependency purposes
-    source.append('#source/gengl/gengl.perl')
+    source.append(env['srcdir'].File('gengl/gengl.perl'))
     return target, source
 
 def alias_generator(source, target, env, for_signature):

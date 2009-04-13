@@ -5,7 +5,7 @@ Import('env')
 env.Command(
         'data/gl.tu',
         'data/gl.c',
-        'CCACHE_DISABLE=1 $CC $_CPPINCFLAGS -fdump-translation-unit -c $SOURCE && ./mvtu.sh gl.c $TARGET')
+        'CCACHE_DISABLE=1 $CC $_CPPINCFLAGS -fdump-translation-unit -c $SOURCE && ${srcdir.path}/mvtu.sh gl.c $TARGET')
 
 env.SharedLibrary(
         'bugle',

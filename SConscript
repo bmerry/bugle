@@ -1,22 +1,5 @@
 #!/usr/bin/env python
-env = Environment(
-        CPPPATH = ['#source/include', '#source'],
-        CXXFLAGS = '-Wall -g',
-        YACCHXXFILESUFFIX = '.h',
-        topbuilddir = Dir('#build'),
-        topsrcdir = Dir('.').srcnode(),
-        tools = ['default', 'budgie', 'gengl']
-        )
-Export('env')
-env.Append(
-        BCPATH = [env['topbuilddir'], env['topsrcdir']],
-        CPPPATH = [
-            env['topbuilddir'],
-            env['topbuilddir'].Dir('include'),
-            '#source/include',
-            '#source',
-            '#source/lib']
-        )
+Import('srcdir', 'builddir', 'env')
 
 SConscript('budgie/SConscript')
 SConscript('src/SConscript')

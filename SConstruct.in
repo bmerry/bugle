@@ -1,0 +1,29 @@
+#!/usr/bin/env python
+
+srcdir = Dir('@srcdir@')
+builddir = Dir('.')
+
+env = Environment(
+        CPPPATH = [
+            srcdir,
+            srcdir.Dir('lib'),
+            srcdir.Dir('include'),
+            builddir,
+            builddir.Dir('include')
+            ],
+        BCPATH = [builddir, srcdir],
+        CXXFLAGS = '-Wall -g',
+        CPPDEFINES = [
+            ('LIBDIR', r'\"@libdir@\"'),
+            ('PKGLIBDIR', r'\"@libdir@/@PACKAGE@\"'),
+            ('HAVE_CONFIG_H', 1)
+            ],
+        YACCHXXFILESUFFIX = '.h',
+        srcdir = srcdir, builddir = builddir,
+        tools = ['default', 'budgie', 'gengl'],
+        toolpath = ['@srcdir@/site_scons/site_tools']
+        )
+
+Export('env', 'srcdir', 'builddir')
+
+SConscript(srcdir.File('SConscript'), variant_dir = builddir, duplicate = 0)

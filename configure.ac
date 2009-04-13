@@ -277,7 +277,7 @@ AM_CONDITIONAL(BUGLE_BINFMT_PE, test $BUGLE_BINFMT = BUGLE_BINFMT_PE)
 AM_CONDITIONAL(BUGLE_BINFMT_ELF, test $BUGLE_BINFMT = BUGLE_BINFMT_ELF)
 
 dnl Write out files
-AC_CONFIG_FILES([Makefile lib/Makefile bugle.pc include/bugle/porting.h])
+AC_CONFIG_FILES([SConstruct Makefile lib/Makefile bugle.pc include/bugle/porting.h])
 AC_OUTPUT
 
 dnl Display configuration
