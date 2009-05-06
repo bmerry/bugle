@@ -175,6 +175,9 @@ my %function_non_aliases = (
     # /usr/include/GL/glxext.h:extern void glXBindSwapBarrierSGIX (Display *, GLXDrawable, int);
     # /usr/include/GL/glxext.h:extern Bool glXBindSwapBarrierNV(Display *dpy, GLuint group, GLuint barrier);
     "glXBindSwapBarrierNV" => 1,
+
+    # NV version has only 3 args
+    "glGetTransformFeedbackVaryingNV" => 1
 );
 
 # Enumerants that we don't want to be the chosen return for
