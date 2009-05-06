@@ -1,12 +1,12 @@
 #!/usr/bin/env python
 
-Import('env')
+Import('build_env')
 
-env.CXXFile('bcparser.cpp', 'bcparser.yy', YACCFLAGS = '-d --defines=${TARGET.dir}/bcparser.h')
-env.CXXFile('bclexer.cpp', 'bclexer.ll', LEXFLAGS = '-Pbc_yy')
-env.CXXFile('tulexer.cpp', 'tulexer.ll')
+build_env.CXXFile('bcparser.cpp', 'bcparser.yy', YACCFLAGS = '-d --defines=${TARGET.dir}/bcparser.h')
+build_env.CXXFile('bclexer.cpp', 'bclexer.ll', LEXFLAGS = '-Pbc_yy')
+build_env.CXXFile('tulexer.cpp', 'tulexer.ll')
 
-budgie_list = env.Program('budgie', source = [
+budgie_list = build_env.Program('budgie', source = [
     'budgie.cpp',
     'tree.cpp',
     'treeutils.cpp',
@@ -14,4 +14,4 @@ budgie_list = env.Program('budgie', source = [
     'bclexer.cpp',
     'tulexer.cpp'])
 
-env.Append(BUDGIE = budgie_list[0])
+build_env.Append(BUDGIE = budgie_list[0])
