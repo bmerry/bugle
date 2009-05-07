@@ -5,23 +5,42 @@ from CrossEnvironment import CrossEnvironment
 
 Import('ac_vars', 'srcdir', 'builddir')
 
+class API:
+    def __init__(self, name, headers):
+        self.name = name
+        self.headers = headers
+
+gl_headers = ['GL/gl.h', 'GL/glext.h']
+gles1_headers = ['GLES/gl.h', 'GLES/glext.h']
+gles2_headers = ['GLES2/gl2.h', 'GLES2/gl2ext.h']
+glx_headers = ['GL/glx.h', 'GL/glxext.h']
+wgl_headers = ['wingdi.h', 'GL/wglext.h']
+egl_headers = ['EGL/egl.h', 'EGL/eglext.h']
+apis = [API('gl-glx', gl_headers + glx_headers),
+        API('gl-wgl', gl_headers + wgl_headers),
+        API('gles1cm-egl-posix', gles1_headers + egl_headers),
+        API('gles1cm-legacy-egl-win', gles1_headers + egl_headers),
+        API('gles2-egl-posix', gles2_headers + egl_headers),
+        API('gles2-egl-win', gles2_headers + egl_headers)]
+
 # Process command line arguments
-api = ARGUMENTS.get('api', 'gl-glx')
-if api == 'gl-glx':
-    pass
-elif api == 'gl-wgl':
-    pass
-elif api == 'gles1cm-egl-posix':
-    pass
-elif api == 'gles2-egl-posix':
-    pass
-else:
+api = None
+for i in apis:
+    if i.name == ARGUMENTS.get('api', 'gl-glx'):
+        api = i
+        break
+
+if api is None:
     print >>sys.stderr, "Invalid value for api"
     Exit(2)
 
 # Environment for tools that have to run on the build machine
+environ = {}
+for e in ['PATH', 'CPATH', 'LIBRARY_PATH', 'LD_LIBRARY_PATH']:
+    if e in os.environ:
+        environ[e] = os.environ[e]
 build_env = Environment(
-        ENV = {'PATH': os.environ['PATH']},
+        ENV = environ,
         CPPPATH = [
             srcdir,
             srcdir.Dir('lib'),
@@ -41,8 +60,7 @@ build_env = Environment(
 
 # Environment for the target machine
 env = CrossEnvironment(
-        ENV = {'PATH': os.environ['PATH']},
-        HOST = 'arm-none-linux-gnueabi',
+        ENV = environ,
         CPPPATH = [
             srcdir,
             srcdir.Dir('lib'),
@@ -74,10 +92,9 @@ budgie_outputs = [
         'budgielib/tables.c',
         'budgielib/lib.c'
         ]
-build_env.Budgie(budgie_outputs, ['src/data/gl.tu', 'bc/gl-glx.bc'])
+build_env.Budgie(budgie_outputs, ['src/data/gl.tu', 'bc/' + api.name + '.bc'])
 
-headers = ['GL/gl.h', 'GL/glext.h', 'GL/glx.h', 'GL/glxext.h']
-headers = [build_env['find_header'](env, h) for h in headers]
+headers = [build_env['find_header'](env, h) for h in api.headers]
 # TODO change to bc/alias.bc
 build_env.BudgieAlias(target = ['bc/gl/alias.bc'], source = headers)
 build_env.ApitablesC(target = ['src/apitables.c'], source = ['budgielib/defines.h'] + headers)
