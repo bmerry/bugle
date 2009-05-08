@@ -10,6 +10,14 @@ class API:
         self.name = name
         self.headers = headers
 
+        self.fields = name.split('-')
+        for gltype in ['gl', 'gles1cm', 'gles2']:
+            if gltype in self.fields:
+                self.gltype = gltype
+        for glwin in ['glx', 'wgl', 'egl']:
+            if glwin in self.fields:
+                self.glwin = glwin
+
 gl_headers = ['GL/gl.h', 'GL/glext.h']
 gles1_headers = ['GLES/gl.h', 'GLES/glext.h']
 gles2_headers = ['GLES2/gl2.h', 'GLES2/gl2ext.h']
@@ -52,7 +60,7 @@ build_env = Environment(
             ('HAVE_CONFIG_H', 1)
             ],
         YACCHXXFILESUFFIX = '.h',
-        tools = ['default', 'budgie', 'gengl'],
+        tools = ['default', 'budgie', 'gengl', 'yacc'],
         toolpath = ['%(srcdir)s/site_scons/site_tools' % ac_vars],
 
         BCPATH = [builddir, srcdir],
@@ -74,16 +82,18 @@ env = CrossEnvironment(
             ('HAVE_CONFIG_H', 1)
             ],
         parse_flags = '-pthread',
+        tools = ['default', 'yacc'],
 
         srcdir = srcdir, builddir = builddir
         )
-Export('build_env', 'env')
+Export('build_env', 'env', 'api')
 
 SConscript('budgie/SConscript')
 SConscript('src/SConscript')
 SConscript('filters/SConscript')
 
 env.AlwaysBuild(env.Command('lib/libgnu.la', [], 'make -C lib'))
+env.AlwaysBuild(env.Command('libltdl/libltdl.la', [], 'make -C libltdl'))
 
 budgie_outputs = [
         'include/budgie/call.h',

@@ -1,13 +1,15 @@
 #!/usr/bin/env python
-Import('build_env', 'env')
+Import('build_env', 'env', 'api')
 
 def shared_library(target, source, version, env, **kw):
+    if env['PLATFORM'] == 'win32':
+        return env.SharedLibrary(target, source, **kw)
     version_parts = version.split('.')
     base = env.subst('${SHLIBPREFIX}' + target + '${SHLIBSUFFIX}')
     full = base + '.' + version
     soname = base + '.' + version_parts[0]
 
-    shl_list = env.SharedLibrary(full, source, 
+    shl_list = env.SharedLibrary(full, source,
             SHLIBPREFIX = '', SHLIBSUFFIX = '',
             LINKFLAGS = '-Wl,-soname,' + soname, **kw)
     env.Command(soname, shl_list[0], 'ln -s ${SOURCE.file} $TARGET')
@@ -33,7 +35,17 @@ libbugleutils = shared_library(
             '../budgielib/internal.c',
             '../budgielib/reflect.c',
             '../budgielib/tables.c',
-            'apitables.c'
+            'apitables.c',
+
+            '../lib/xmalloc.c',
+            '../lib/xalloc-die.c',
+            '../lib/xstrndup.c',
+            '../lib/xvasprintf.c',
+            '../lib/xasprintf.c',
+            '../lib/lock.c',
+            '../lib/safe-read.c',
+            '../lib/safe-write.c',
+            '../lib/full-write.c'
         ], '7.0.0', env)
 
 libbugle = shared_library(
@@ -51,15 +63,20 @@ libbugle = shared_library(
             'objects.c',
             'input.c',
             '../budgielib/addresses.c',
+            '../budgielib/lib.c',
             'gl/glutils.c',
             'gl/glsl.c',
             'glwin/trackcontext.c',
             'gl/gldisplaylist.c',
             'gl/globjects.c',
             'gl/glextensions.c',
-            'gl/glbeginend.c'
+            'gl/glbeginend.c',
+            api.gltype + '/gldump.c',
+            api.gltype + '/glstate.c',
+            api.glwin + '/glwin.c'
         ],
         '8.0.0', env,
-        LIBS = libbugleutils)
+        LIBPATH = ['../libltdl/.libs'],
+        LIBS = [libbugleutils, 'ltdl'])
 
 Export('libbugle', 'libbugleutils')

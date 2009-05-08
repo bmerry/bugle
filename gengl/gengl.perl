@@ -16,7 +16,17 @@ my @extension_force = (
 
 my %function_force_version = (
     "glXGetCurrentDisplay" => "GLX_VERSION_1_2",      # glxext.h claims 1.3
-    "glFramebufferTextureLayerEXT" => "EXTGROUP_framebuffer_texture_layer"
+    "glFramebufferTextureLayerEXT" => "EXTGROUP_framebuffer_texture_layer",
+
+    # These functions are internal to opengl32.dll, not part of the spec
+    "glDebugEntry" => "WGL_VERSION_1_0",
+    "wglChoosePixelFormat" => "WGL_VERSION_1_0",
+    "wglSetPixelFormat" => "WGL_VERSION_1_0",
+    "wglDescribePixelFormat" => "WGL_VERSION_1_0",
+    "wglGetPixelFormat" => "WGL_VERSION_1_0",
+    "wglGetDefaultProcAddress" => "WGL_VERSION_1_0",
+    "wglSwapBuffers" => "WGL_VERSION_1_0",
+    "wglSwapMultipleBuffers" => "WGL_VERSION_1_0"
 );
 
 my $function_regex = qr/([ew]?gl[A-Z]\w+)\s*\(/;
@@ -602,11 +612,11 @@ EOF
     for (my $id = 0; $id < scalar(@func_ids); $id++)
     {
         my $funcname = $func_ids[$id];
-        if (!exists($functions{$funcname}))
+        my $ext = $functions{$funcname} // $function_force_version{$funcname};
+        if (!defined($ext))
         {
             die "Could not find the extension for $funcname";
         }
-        my $ext = $functions{$funcname};
         print ",\n" if !$first; $first = 0;
         printf "    { BUGLE_%s }", $ext;
     }
