@@ -22,6 +22,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <assert.h>
+#include <stdarg.h>
 #include <ltdl.h>
 #include <bugle/hashtable.h>
 #include <budgie/types.h>
