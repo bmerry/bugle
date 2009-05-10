@@ -25,7 +25,7 @@
 #include <bugle/objects.h>
 #include <bugle/export.h>
 
-extern object_class *bugle_displaylist_class;
+extern BUGLE_EXPORT_PRE object_class *bugle_displaylist_class BUGLE_EXPORT_POST;
 
 /* The number and mode of the current display list being compiled,
  * or 0 and GL_NONE if none.

@@ -110,6 +110,7 @@ extern void bugle_initialise_all(void);
 /* Events we don't want to know about */
 #define EVENT_UNMASK (PointerMotionHintMask)
 
+/* Pointers to the real versions in libX11 */
 static int (*real_XNextEvent)(Display *, XEvent *) = NULL;
 static int (*real_XPeekEvent)(Display *, XEvent *) = NULL;
 static int (*real_XWindowEvent)(Display *, Window, long, XEvent *) = NULL;
@@ -127,8 +128,30 @@ static int (*real_XEventsQueued)(Display *, int) = NULL;
 static int (*real_XPending)(Display *) = NULL;
 
 static Window (*real_XCreateWindow)(Display *, Window, int, int, unsigned int, unsigned int, unsigned int, int, unsigned int, Visual *, unsigned long, XSetWindowAttributes *) = NULL;
-static Window (*real_XCreateSimpleWindow)(Display *, Window, int, int, unsigned int, unsigned int, unsigned int, unsigned long, unsigned long);
-static int (*real_XSelectInput)(Display *, Window, long);
+static Window (*real_XCreateSimpleWindow)(Display *, Window, int, int, unsigned int, unsigned int, unsigned int, unsigned long, unsigned long) = NULL;
+static int (*real_XSelectInput)(Display *, Window, long) = NULL;
+
+/* Declare our versions for DLL export */
+BUGLE_EXPORT_PRE int XNextEvent(Display *, XEvent *) BUGLE_EXPORT_POST;
+BUGLE_EXPORT_PRE int XPeekEvent(Display *, XEvent *) BUGLE_EXPORT_POST;
+BUGLE_EXPORT_PRE int XWindowEvent(Display *, Window, long, XEvent *) BUGLE_EXPORT_POST;
+BUGLE_EXPORT_PRE Bool XCheckWindowEvent(Display *, Window, long, XEvent *) BUGLE_EXPORT_POST;
+BUGLE_EXPORT_PRE int XMaskEvent(Display *, long, XEvent *) BUGLE_EXPORT_POST;
+BUGLE_EXPORT_PRE Bool XCheckMaskEvent(Display *, long, XEvent *) BUGLE_EXPORT_POST;
+BUGLE_EXPORT_PRE Bool XCheckTypedEvent(Display *, int, XEvent *) BUGLE_EXPORT_POST;
+BUGLE_EXPORT_PRE Bool XCheckTypedWindowEvent(Display *, Window, int, XEvent *) BUGLE_EXPORT_POST;
+
+BUGLE_EXPORT_PRE int XIfEvent(Display *, XEvent *, Bool (*)(Display *, XEvent *, XPointer), XPointer) BUGLE_EXPORT_POST;
+BUGLE_EXPORT_PRE Bool XCheckIfEvent(Display *, XEvent *, Bool (*)(Display *, XEvent *, XPointer), XPointer) BUGLE_EXPORT_POST;
+BUGLE_EXPORT_PRE int XPeekIfEvent(Display *, XEvent *, Bool (*)(Display *, XEvent *, XPointer), XPointer) BUGLE_EXPORT_POST;
+
+BUGLE_EXPORT_PRE int XEventsQueued(Display *, int) BUGLE_EXPORT_POST;
+BUGLE_EXPORT_PRE int XPending(Display *) BUGLE_EXPORT_POST;
+
+BUGLE_EXPORT_PRE Window XCreateWindow(Display *, Window, int, int, unsigned int, unsigned int, unsigned int, int, unsigned int, Visual *, unsigned long, XSetWindowAttributes *) BUGLE_EXPORT_POST;
+BUGLE_EXPORT_PRE Window XCreateSimpleWindow(Display *, Window, int, int, unsigned int, unsigned int, unsigned int, unsigned long, unsigned long) BUGLE_EXPORT_POST;
+BUGLE_EXPORT_PRE int XSelectInput(Display *, Window, long) BUGLE_EXPORT_POST;
+
 
 /* Determines whether bugle wants to intercept an event */
 static Bool event_predicate(Display *dpy, XEvent *event, XPointer arg)

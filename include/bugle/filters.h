@@ -141,7 +141,7 @@ BUGLE_EXPORT_PRE void        bugle_filter_catches_function(filter *handle, const
 BUGLE_EXPORT_PRE void        bugle_filter_catches_function_id(filter *handle, budgie_function, bool inactive, filter_callback callback) BUGLE_EXPORT_POST;
 BUGLE_EXPORT_PRE void        bugle_filter_catches_all(filter *handle, bool inactive, filter_callback callback) BUGLE_EXPORT_POST;
 
-extern object_class *bugle_call_class;
+extern BUGLE_EXPORT_PRE object_class *bugle_call_class BUGLE_EXPORT_POST;
 
 /* Other run-time functions */
 BUGLE_EXPORT_PRE filter_set *bugle_filter_set_get_handle(const char *name) BUGLE_EXPORT_POST;
