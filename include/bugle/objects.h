@@ -1,5 +1,5 @@
 /*  BuGLe: an OpenGL debugging tool
- *  Copyright (C) 2004-2007  Bruce Merry
+ *  Copyright (C) 2004-2007, 2009  Bruce Merry
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -24,27 +24,28 @@
 #include <stddef.h>
 #include <stdbool.h>
 #include <bugle/linkedlist.h>
+#include <bugle/export.h>
 
 typedef size_t object_view;
 typedef struct object_class object_class;
 typedef struct object object;
 
-object_class *bugle_object_class_new(object_class *parent);
-void bugle_object_class_free(object_class *klass);
+BUGLE_EXPORT_PRE object_class *bugle_object_class_new(object_class *parent) BUGLE_EXPORT_POST;
+BUGLE_EXPORT_PRE void bugle_object_class_free(object_class *klass) BUGLE_EXPORT_POST;
 /* Returns an offset into the structure, which should be passed back to
  * object_get_current to get the data associated with this registration.
  * The key passed to the structure is determined by the individual classes,
  * and may give more information about the abstract object.
  */
-object_view bugle_object_view_new(object_class *klass,
-                                  void (*constructor)(const void *key, void *data),
-                                  void (*destructor)(void *data),
-                                  size_t size);
-object *    bugle_object_new(object_class *klass, const void *key, bool make_current);
-void        bugle_object_free(object *obj);
-object *    bugle_object_get_current(const object_class *klass);
-void *      bugle_object_get_current_data(const object_class *klass, object_view view);
-void        bugle_object_set_current(object_class *klass, object *obj);
-void *      bugle_object_get_data(object *obj, object_view view);
+BUGLE_EXPORT_PRE object_view bugle_object_view_new(object_class *klass,
+                                                   void (*constructor)(const void *key, void *data),
+                                                   void (*destructor)(void *data),
+                                                   size_t size) BUGLE_EXPORT_POST;
+BUGLE_EXPORT_PRE object *    bugle_object_new(object_class *klass, const void *key, bool make_current) BUGLE_EXPORT_POST;
+BUGLE_EXPORT_PRE void        bugle_object_free(object *obj) BUGLE_EXPORT_POST;
+BUGLE_EXPORT_PRE object *    bugle_object_get_current(const object_class *klass) BUGLE_EXPORT_POST;
+BUGLE_EXPORT_PRE void *      bugle_object_get_current_data(const object_class *klass, object_view view) BUGLE_EXPORT_POST;
+BUGLE_EXPORT_PRE void        bugle_object_set_current(object_class *klass, object *obj) BUGLE_EXPORT_POST;
+BUGLE_EXPORT_PRE void *      bugle_object_get_data(object *obj, object_view view) BUGLE_EXPORT_POST;
 
 #endif /* !BUGLE_SRC_OBJECTS_H */

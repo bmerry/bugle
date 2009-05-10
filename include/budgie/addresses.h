@@ -1,5 +1,5 @@
 /*  BuGLe: an OpenGL debugging tool
- *  Copyright (C) 2004-2007  Bruce Merry
+ *  Copyright (C) 2004-2007, 2009  Bruce Merry
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -24,35 +24,36 @@
 #include <stdio.h>
 #include <stdbool.h>
 #include <budgie/types.h>
+#include <bugle/export.h>
 
 /* Determines the length of the array pointed to by a parameter. If it is
  * not an array (e.g. non-pointer, or pointer to a single item), returns -1.
  * Use -1 as the parameter index to query the return.
  */
-budgie_type budgie_call_parameter_type(const generic_function_call *call, int param);
+BUGLE_EXPORT_PRE budgie_type budgie_call_parameter_type(const generic_function_call *call, int param) BUGLE_EXPORT_POST;
 /* Dumps one parameter from a call, with the appropriate type and length
  * as determined by the parameters. Use -1 for the return (which must then
  * exist).
  */
-int budgie_call_parameter_length(const generic_function_call *call, int param);
+BUGLE_EXPORT_PRE int budgie_call_parameter_length(const generic_function_call *call, int param) BUGLE_EXPORT_POST;
 /* Dumps a single parameter, with appropriate type and length */
-void budgie_call_parameter_dump(const generic_function_call *call, int param, char **buffer, size_t *size);
+BUGLE_EXPORT_PRE void budgie_call_parameter_dump(const generic_function_call *call, int param, char **buffer, size_t *size) BUGLE_EXPORT_POST;
 /* Dumps a call, including arguments and return. Does not include a newline */
-void budgie_dump_any_call(const generic_function_call *call, int indent, char **buffer, size_t *size);
+BUGLE_EXPORT_PRE void budgie_dump_any_call(const generic_function_call *call, int indent, char **buffer, size_t *size) BUGLE_EXPORT_POST;
 
-BUDGIEAPIPROC budgie_function_address_real(budgie_function id);
-BUDGIEAPIPROC budgie_function_address_wrapper(budgie_function id);
+BUGLE_EXPORT_PRE BUDGIEAPIPROC budgie_function_address_real(budgie_function id) BUGLE_EXPORT_POST;
+BUGLE_EXPORT_PRE BUDGIEAPIPROC budgie_function_address_wrapper(budgie_function id) BUGLE_EXPORT_POST;
 
 /* These should only be used by the interceptor - it sets up all the addresses
  * (real and wrapper) for budgie_function_address_*.
  */
-void budgie_function_address_initialise(void);
+BUGLE_EXPORT_PRE void budgie_function_address_initialise(void) BUGLE_EXPORT_POST;
 /* Used to manually override the initialiser */
-void budgie_function_address_set_real(budgie_function id, void (BUDGIEAPI *addr)(void));
+BUGLE_EXPORT_PRE void budgie_function_address_set_real(budgie_function id, void (BUDGIEAPI *addr)(void)) BUGLE_EXPORT_POST;
 
-void budgie_function_set_bypass(budgie_function id, bool bypass);
+BUGLE_EXPORT_PRE void budgie_function_set_bypass(budgie_function id, bool bypass) BUGLE_EXPORT_POST;
 
-void budgie_invoke(function_call *call);
+BUGLE_EXPORT_PRE void budgie_invoke(function_call *call) BUGLE_EXPORT_POST;
 
 #include <budgie/call.h>
 #include <budgie/macros.h>

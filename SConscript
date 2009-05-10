@@ -99,8 +99,12 @@ env = CrossEnvironment(
 
         srcdir = srcdir, builddir = builddir
         )
+if 'gcc' in env['TOOLS']:
+    env.MergeFlags('-fvisibility=hidden')
+
 Export('build_env', 'env', 'api')
 
+SConscript('lib/SConscript')
 SConscript('budgie/SConscript')
 SConscript('src/SConscript')
 SConscript('filters/SConscript')

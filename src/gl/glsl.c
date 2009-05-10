@@ -29,6 +29,7 @@
 #include <bugle/gl/glheaders.h>
 #include <bugle/gl/glextensions.h>
 #include <bugle/gl/glutils.h>
+#include <bugle/gl/glsl.h>
 #include <budgie/call.h>
 #include "src/apitables.h"
 #include "xalloc.h"

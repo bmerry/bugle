@@ -1,5 +1,5 @@
 /*  BuGLe: an OpenGL debugging tool
- *  Copyright (C) 2004-2007  Bruce Merry
+ *  Copyright (C) 2004-2007, 2009  Bruce Merry
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -24,27 +24,28 @@
 #define BUGLE_GL_GLSL_H
 
 #include <bugle/gl/glheaders.h>
+#include <bugle/export.h>
 
 #if GL_ES_VERSION_2_0 || GL_VERSION_2_0
 
 #if BUGLE_GLTYPE_GLES2
 # define GLchar char
 #endif
-void bugle_glGetProgramiv(GLuint program, GLenum pname, GLint *param);
-void bugle_glGetShaderiv(GLuint shader, GLenum pname, GLint *param);
-void bugle_glGetAttachedShaders(GLuint program, GLsizei max_length, GLsizei *length, GLuint *shaders);
-void bugle_glGetProgramInfoLog(GLuint program, GLsizei max_length, GLsizei *length, GLchar *log);
-void bugle_glGetShaderInfoLog(GLuint shader, GLsizei max_length, GLsizei *length, GLchar *log);
-void bugle_glGetShaderSource(GLuint shader, GLsizei max_length, GLsizei *length, GLchar *source);
-void bugle_glGetActiveUniform(GLuint program, GLuint index, GLsizei max_length, GLsizei *length, GLint *size, GLenum *type, GLchar *name);
-void bugle_glGetActiveAttrib(GLuint program, GLuint index, GLsizei max_length, GLsizei *length, GLint *size, GLenum *type, GLchar *name);
-void bugle_glGetUniformfv(GLuint program, GLint location, GLfloat *params);
-void bugle_glGetUniformiv(GLuint program, GLint location, GLint *params);
-GLint bugle_glGetUniformLocation(GLuint program, const GLchar *name);
-GLint bugle_glGetAttribLocation(GLuint program, const GLchar *name);
-GLuint bugle_gl_get_current_program();
-GLboolean bugle_glIsShader(GLuint shader);
-GLboolean bugle_glIsProgram(GLuint program);
+BUGLE_EXPORT_PRE void bugle_glGetProgramiv(GLuint program, GLenum pname, GLint *param) BUGLE_EXPORT_POST;
+BUGLE_EXPORT_PRE void bugle_glGetShaderiv(GLuint shader, GLenum pname, GLint *param) BUGLE_EXPORT_POST;
+BUGLE_EXPORT_PRE void bugle_glGetAttachedShaders(GLuint program, GLsizei max_length, GLsizei *length, GLuint *shaders) BUGLE_EXPORT_POST;
+BUGLE_EXPORT_PRE void bugle_glGetProgramInfoLog(GLuint program, GLsizei max_length, GLsizei *length, GLchar *log) BUGLE_EXPORT_POST;
+BUGLE_EXPORT_PRE void bugle_glGetShaderInfoLog(GLuint shader, GLsizei max_length, GLsizei *length, GLchar *log) BUGLE_EXPORT_POST;
+BUGLE_EXPORT_PRE void bugle_glGetShaderSource(GLuint shader, GLsizei max_length, GLsizei *length, GLchar *source) BUGLE_EXPORT_POST;
+BUGLE_EXPORT_PRE void bugle_glGetActiveUniform(GLuint program, GLuint index, GLsizei max_length, GLsizei *length, GLint *size, GLenum *type, GLchar *name) BUGLE_EXPORT_POST;
+BUGLE_EXPORT_PRE void bugle_glGetActiveAttrib(GLuint program, GLuint index, GLsizei max_length, GLsizei *length, GLint *size, GLenum *type, GLchar *name) BUGLE_EXPORT_POST;
+BUGLE_EXPORT_PRE void bugle_glGetUniformfv(GLuint program, GLint location, GLfloat *params) BUGLE_EXPORT_POST;
+BUGLE_EXPORT_PRE void bugle_glGetUniformiv(GLuint program, GLint location, GLint *params) BUGLE_EXPORT_POST;
+BUGLE_EXPORT_PRE GLint bugle_glGetUniformLocation(GLuint program, const GLchar *name) BUGLE_EXPORT_POST;
+BUGLE_EXPORT_PRE GLint bugle_glGetAttribLocation(GLuint program, const GLchar *name) BUGLE_EXPORT_POST;
+BUGLE_EXPORT_PRE GLuint bugle_gl_get_current_program() BUGLE_EXPORT_POST;
+BUGLE_EXPORT_PRE GLboolean bugle_glIsShader(GLuint shader) BUGLE_EXPORT_POST;
+BUGLE_EXPORT_PRE GLboolean bugle_glIsProgram(GLuint program) BUGLE_EXPORT_POST;
 
 #endif /* GLES2 || GL2 */
 

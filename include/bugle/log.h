@@ -1,5 +1,5 @@
 /*  BuGLe: an OpenGL debugging tool
- *  Copyright (C) 2004-2007  Bruce Merry
+ *  Copyright (C) 2004-2007, 2009  Bruce Merry
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -31,6 +31,7 @@
 #include <stdbool.h>
 #include <bugle/filters.h>
 #include <bugle/misc.h>
+#include <bugle/export.h>
 
 enum
 {
@@ -44,24 +45,24 @@ enum
 /* Write a message to the log. Do not include a trailing newline; this will
  * be provided automatically.
  */
-void bugle_log(const char *filterset, const char *event, int severity,
-               const char *message);
+BUGLE_EXPORT_PRE void bugle_log(const char *filterset, const char *event, int severity,
+                                const char *message) BUGLE_EXPORT_POST;
 
 /* Variant of bugle_log with printf-style semantics */
-void bugle_log_printf(const char *filterset, const char *event, int severity,
-                      const char *format, ...) BUGLE_ATTRIBUTE_FORMAT_PRINTF(4, 5);
+BUGLE_EXPORT_PRE void bugle_log_printf(const char *filterset, const char *event, int severity,
+                                       const char *format, ...) BUGLE_ATTRIBUTE_FORMAT_PRINTF(4, 5) BUGLE_EXPORT_POST;
 
 /* A generalised version that takes a callback to write out to the log file.
  * The callback must be prepared to deal with zero or more calls. Again, it
  * should not output a newline.
  */
-void bugle_log_callback(const char *filterset, const char *event, int severity,
-                        void (*callback)(void *arg, FILE *f), void *arg);
+BUGLE_EXPORT_PRE void bugle_log_callback(const char *filterset, const char *event, int severity,
+                                         void (*callback)(void *arg, FILE *f), void *arg) BUGLE_EXPORT_POST;
 
 /* An implementation of xalloc_die. The actual xalloc_die symbol is in
  * src/xalloc-die-log.c.
  */
-void bugle_log_xalloc_die(void);
+BUGLE_EXPORT_PRE void bugle_log_xalloc_die(void) BUGLE_EXPORT_POST;
 
 /* Used internally by the initialisation code */
 void log_initialise(void);

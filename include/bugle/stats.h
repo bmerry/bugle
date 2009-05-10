@@ -1,5 +1,5 @@
 /*  BuGLe: an OpenGL debugging tool
- *  Copyright (C) 2004-2006  Bruce Merry
+ *  Copyright (C) 2004-2006, 2009  Bruce Merry
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -24,6 +24,7 @@
 #include <sys/time.h>
 #include <sys/types.h>
 #include <bugle/linkedlist.h>
+#include <bugle/export.h>
 #include <stdbool.h>
 
 #if HAVE_FINITE
@@ -126,15 +127,15 @@ void stats_statistic_free(stats_statistic *st);
  * activated. User code should note attempt to free() the registered
  * signal, as that is handled by the stats shutdown code.
  */
-stats_signal *bugle_stats_signal_new(const char *name, void *user_data,
-                                     bool (*activate)(stats_signal *));
+BUGLE_EXPORT_PRE stats_signal *bugle_stats_signal_new(const char *name, void *user_data,
+                                                      bool (*activate)(stats_signal *)) BUGLE_EXPORT_POST;
 /* Sets a new value, replacing any previous one */
-void bugle_stats_signal_update(stats_signal *si, double v);
+BUGLE_EXPORT_PRE void bugle_stats_signal_update(stats_signal *si, double v) BUGLE_EXPORT_POST;
 
 /* Convenience for accumulating signals */
-void bugle_stats_signal_add(stats_signal *si, double dv);
+BUGLE_EXPORT_PRE void bugle_stats_signal_add(stats_signal *si, double dv) BUGLE_EXPORT_POST;
 
-void bugle_filter_set_stats_generator(const char *name);
+BUGLE_EXPORT_PRE void bugle_filter_set_stats_generator(const char *name) BUGLE_EXPORT_POST;
 
 /*** Public API for loggers ***/
 
@@ -151,22 +152,22 @@ typedef struct
     struct timeval last_updated;
 } stats_signal_values;
 
-void bugle_stats_signal_values_init(stats_signal_values *sv);
-void bugle_stats_signal_values_clear(stats_signal_values *sv);
-void bugle_stats_signal_values_gather(stats_signal_values *sv);
+BUGLE_EXPORT_PRE void bugle_stats_signal_values_init(stats_signal_values *sv) BUGLE_EXPORT_POST;
+BUGLE_EXPORT_PRE void bugle_stats_signal_values_clear(stats_signal_values *sv) BUGLE_EXPORT_POST;
+BUGLE_EXPORT_PRE void bugle_stats_signal_values_gather(stats_signal_values *sv) BUGLE_EXPORT_POST;
 
 /* Evaluates the expression. If a signal is missing, the return is NaN. */
-double bugle_stats_expression_evaluate(const stats_expression *expr,
-                                       stats_signal_values *old_signals,
-                                       stats_signal_values *new_signals);
+BUGLE_EXPORT_PRE double bugle_stats_expression_evaluate(const stats_expression *expr,
+                                                        stats_signal_values *old_signals,
+                                                        stats_signal_values *new_signals) BUGLE_EXPORT_POST;
 
-stats_substitution *bugle_stats_statistic_find_substitution(stats_statistic *st, double v);
+BUGLE_EXPORT_PRE stats_substitution *bugle_stats_statistic_find_substitution(stats_statistic *st, double v) BUGLE_EXPORT_POST;
 /* Returns the first of a set if it exists, or NULL if not. */
-linked_list_node *bugle_stats_statistic_find(const char *name);
+BUGLE_EXPORT_PRE linked_list_node *bugle_stats_statistic_find(const char *name) BUGLE_EXPORT_POST;
 /* List the registered statistics, for when an illegal one is mentioned */
-void bugle_stats_statistic_list(void);
+BUGLE_EXPORT_PRE void bugle_stats_statistic_list(void) BUGLE_EXPORT_POST;
 
-bool bugle_stats_expression_activate_signals(stats_expression *expr);
-void bugle_filter_set_stats_logger(const char *name);
+BUGLE_EXPORT_PRE bool bugle_stats_expression_activate_signals(stats_expression *expr) BUGLE_EXPORT_POST;
+BUGLE_EXPORT_PRE void bugle_filter_set_stats_logger(const char *name) BUGLE_EXPORT_POST;
 
 #endif /* BUGLE_FILTERS_STATS_H */

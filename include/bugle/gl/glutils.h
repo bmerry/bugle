@@ -1,5 +1,5 @@
 /*  BuGLe: an OpenGL debugging tool
- *  Copyright (C) 2004-2006  Bruce Merry
+ *  Copyright (C) 2004-2006, 2009  Bruce Merry
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -26,6 +26,7 @@
 #include <bugle/filters.h>
 #include <bugle/objects.h>
 #include <budgie/types.h>
+#include <bugle/export.h>
 #include <assert.h>
 
 /* The intended use is:
@@ -40,26 +41,26 @@
  * after invoke.
  */
 
-bool bugle_gl_begin_internal_render(void);
-void bugle_gl_end_internal_render(const char *name, bool warn);
+BUGLE_EXPORT_PRE bool bugle_gl_begin_internal_render(void) BUGLE_EXPORT_POST;
+BUGLE_EXPORT_PRE void bugle_gl_end_internal_render(const char *name, bool warn) BUGLE_EXPORT_POST;
 
 /* Registers all commands that trigger geometry (pixel rectangles are
  * not included). This includes commands that use arrays as well as
  * immediate mode commands.
  */
-void bugle_gl_filter_catches_drawing(filter *f, bool inactive, filter_callback callback);
+BUGLE_EXPORT_PRE void bugle_gl_filter_catches_drawing(filter *f, bool inactive, filter_callback callback) BUGLE_EXPORT_POST;
 /* Like the above, but only immediate mode vertex commands */
-void bugle_gl_filter_catches_drawing_immediate(filter *f, bool inactive, filter_callback callback);
+BUGLE_EXPORT_PRE void bugle_gl_filter_catches_drawing_immediate(filter *f, bool inactive, filter_callback callback) BUGLE_EXPORT_POST;
 
 /* Returns true for glVertex*, and for glVertexAttrib* with attribute
  * 0. These are the calls that generate a vertex in immediate mode.
  * f must be canonicalised.
  */
-bool bugle_gl_call_is_immediate(function_call *call);
+BUGLE_EXPORT_PRE bool bugle_gl_call_is_immediate(function_call *call) BUGLE_EXPORT_POST;
 
-void bugle_gl_filter_set_renders(const char *name);
-void bugle_gl_filter_post_renders(const char *name);
-void bugle_gl_filter_set_queries_error(const char *name);
-GLenum bugle_gl_call_get_error(object *call_object);
+BUGLE_EXPORT_PRE void bugle_gl_filter_set_renders(const char *name) BUGLE_EXPORT_POST;
+BUGLE_EXPORT_PRE void bugle_gl_filter_post_renders(const char *name) BUGLE_EXPORT_POST;
+BUGLE_EXPORT_PRE void bugle_gl_filter_set_queries_error(const char *name) BUGLE_EXPORT_POST;
+BUGLE_EXPORT_PRE GLenum bugle_gl_call_get_error(object *call_object) BUGLE_EXPORT_POST;
 
 #endif /* !BUGLE_SRC_GLUTILS_H */

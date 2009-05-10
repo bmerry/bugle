@@ -1602,12 +1602,6 @@ static void write_invoke(FILE *f)
 static void write_interceptors(FILE *f)
 {
     fprintf(f, "bool _budgie_bypass[FUNCTION_COUNT];\n\n");
-    fprintf(f, 
-            "#ifdef DLL_EXPORT\n"
-            "# define BUDGIE_DLL_EXPORT __declspec(dllexport)\n"
-            "#else\n"
-            "# define BUDGIE_DLL_EXPORT\n"
-            "#endif\n");
     for (list<Function>::iterator i = functions.begin(); i != functions.end(); i++)
     {
         string name = i->name();
@@ -1616,10 +1610,11 @@ static void write_interceptors(FILE *f)
         string proto = function_type_to_string(TREE_TYPE(i->node), "BUDGIEAPI " + i->name(),
                                                false, "arg");
         fprintf(f,
-                "BUDGIE_DLL_EXPORT %s\n"
+                "BUGLE_EXPORT_PRE %s BUGLE_EXPORT_POST;\n"
+                "%s\n"
                 "{\n"
                 "    function_call call;\n",
-                proto.c_str());
+                proto.c_str(), proto.c_str());
         if (i->group->has_retn)
         {
             string ret_var = type_to_string(i->group->retn.type->node,

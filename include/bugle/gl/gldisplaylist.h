@@ -1,5 +1,5 @@
 /*  BuGLe: an OpenGL debugging tool
- *  Copyright (C) 2004-2006, 2008  Bruce Merry
+ *  Copyright (C) 2004-2006, 2008-2009  Bruce Merry
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -23,6 +23,7 @@
 #endif
 #include <bugle/gl/glheaders.h>
 #include <bugle/objects.h>
+#include <bugle/export.h>
 
 extern object_class *bugle_displaylist_class;
 
@@ -30,10 +31,10 @@ extern object_class *bugle_displaylist_class;
  * or 0 and GL_NONE if none.
  * gldisplaylist is required.
  */
-GLuint bugle_displaylist_list(void);
-GLenum bugle_displaylist_mode(void);
+BUGLE_EXPORT_PRE GLuint bugle_displaylist_list(void) BUGLE_EXPORT_POST;
+BUGLE_EXPORT_PRE GLenum bugle_displaylist_mode(void) BUGLE_EXPORT_POST;
 /* The display list object associated with a numbered list */
-void *bugle_displaylist_get(GLuint list);
+BUGLE_EXPORT_PRE void *bugle_displaylist_get(GLuint list) BUGLE_EXPORT_POST;
 
 /* Used by the initialisation code */
 void gldisplaylist_initialise(void);

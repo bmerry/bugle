@@ -24,6 +24,7 @@
 #include <stdbool.h>
 #include <budgie/types.h>
 #include <bugle/porting.h>
+#include <bugle/export.h>
 
 typedef unsigned int api_enum;
 typedef int api_block;
@@ -37,29 +38,29 @@ typedef int bugle_api_extension;
 #define NULL_EXTENSION (-1)
 
 /* Checks for GL extensions by #define from header files */
-int                 bugle_api_extension_count(void);
-const char *        bugle_api_extension_name(bugle_api_extension ext);
+BUGLE_EXPORT_PRE int                 bugle_api_extension_count(void) BUGLE_EXPORT_POST;
+BUGLE_EXPORT_PRE const char *        bugle_api_extension_name(bugle_api_extension ext) BUGLE_EXPORT_POST;
 /* The GL/GLX/etc core version represented, or NULL for actual extensions */
-const char *        bugle_api_extension_version(bugle_api_extension ext);
-api_block           bugle_api_extension_block(bugle_api_extension ext);
-bugle_api_extension bugle_api_extension_id(const char *name);
+BUGLE_EXPORT_PRE const char *        bugle_api_extension_version(bugle_api_extension ext) BUGLE_EXPORT_POST;
+BUGLE_EXPORT_PRE api_block           bugle_api_extension_block(bugle_api_extension ext) BUGLE_EXPORT_POST;
+BUGLE_EXPORT_PRE bugle_api_extension bugle_api_extension_id(const char *name) BUGLE_EXPORT_POST;
 
 /* Returns a pointer to a list terminated by NULL_EXTENSION. The storage is
  * static, so do not try to free it.
  */
-const bugle_api_extension *bugle_api_extension_group_members(bugle_api_extension ext);
+BUGLE_EXPORT_PRE const bugle_api_extension *bugle_api_extension_group_members(bugle_api_extension ext) BUGLE_EXPORT_POST;
 
 /*** Tokens ***/
 
-const char *bugle_api_enum_name(api_enum e, api_block block);
+BUGLE_EXPORT_PRE const char *bugle_api_enum_name(api_enum e, api_block block) BUGLE_EXPORT_POST;
 /* Returns a list of extensions that define the token,
  * terminated by NULL_EXTENSION. This includes GL_VERSION_x_y "extensions".
  */
-const bugle_api_extension *bugle_api_enum_extensions(api_enum e, api_block block);
+BUGLE_EXPORT_PRE const bugle_api_extension *bugle_api_enum_extensions(api_enum e, api_block block) BUGLE_EXPORT_POST;
 
 /*** Functions ***/
 
-bugle_api_extension bugle_api_function_extension(budgie_function id);
+BUGLE_EXPORT_PRE bugle_api_extension bugle_api_function_extension(budgie_function id) BUGLE_EXPORT_POST;
 
 /* The BUGLE_ prefix is built up across several macros because using ##
  * inhibits macro expansion.

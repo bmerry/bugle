@@ -1,5 +1,5 @@
 /*  BuGLe: an OpenGL debugging tool
- *  Copyright (C) 2004-2006  Bruce Merry
+ *  Copyright (C) 2004-2006, 2009  Bruce Merry
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -25,6 +25,7 @@
 #include <ltdl.h>
 #include <bugle/linkedlist.h>
 #include <bugle/objects.h>
+#include <bugle/export.h>
 #include <budgie/types.h>
 #include <stdbool.h>
 
@@ -127,27 +128,27 @@ void filters_run(function_call *call);
 void filters_help(void);
 
 /* Initialisation functions to be used by the filter libraries, and perhaps the interceptor */
-filter_set *bugle_filter_set_new(const filter_set_info *info);
-void        bugle_filter_set_depends(const char *base, const char *dep);
-void        bugle_filter_set_order(const char *before, const char *after);
+BUGLE_EXPORT_PRE filter_set *bugle_filter_set_new(const filter_set_info *info) BUGLE_EXPORT_POST;
+BUGLE_EXPORT_PRE void        bugle_filter_set_depends(const char *base, const char *dep) BUGLE_EXPORT_POST;
+BUGLE_EXPORT_PRE void        bugle_filter_set_order(const char *before, const char *after) BUGLE_EXPORT_POST;
 
-filter *    bugle_filter_new(filter_set *handle, const char *name);
-void        bugle_filter_order(const char *before, const char *after);
-void        bugle_filter_catches(filter *handle, const char *group, bool inactive, filter_callback callback);
+BUGLE_EXPORT_PRE filter *    bugle_filter_new(filter_set *handle, const char *name) BUGLE_EXPORT_POST;
+BUGLE_EXPORT_PRE void        bugle_filter_order(const char *before, const char *after) BUGLE_EXPORT_POST;
+BUGLE_EXPORT_PRE void        bugle_filter_catches(filter *handle, const char *group, bool inactive, filter_callback callback) BUGLE_EXPORT_POST;
 /* Like bugle_filter_catches, but per-function rather than per-group. */
-void        bugle_filter_catches_function(filter *handle, const char *f, bool inactive, filter_callback callback);
+BUGLE_EXPORT_PRE void        bugle_filter_catches_function(filter *handle, const char *f, bool inactive, filter_callback callback) BUGLE_EXPORT_POST;
 /* Like bugle_filter_catch_function, but takes a budgie_function not a string */
-void        bugle_filter_catches_function_id(filter *handle, budgie_function, bool inactive, filter_callback callback);
-void        bugle_filter_catches_all(filter *handle, bool inactive, filter_callback callback);
+BUGLE_EXPORT_PRE void        bugle_filter_catches_function_id(filter *handle, budgie_function, bool inactive, filter_callback callback) BUGLE_EXPORT_POST;
+BUGLE_EXPORT_PRE void        bugle_filter_catches_all(filter *handle, bool inactive, filter_callback callback) BUGLE_EXPORT_POST;
 
 extern object_class *bugle_call_class;
 
 /* Other run-time functions */
-filter_set *bugle_filter_set_get_handle(const char *name);
-bool        bugle_filter_set_is_loaded(const filter_set *handle);
-bool        bugle_filter_set_is_active(const filter_set *handle);
-void *      bugle_filter_set_get_symbol(filter_set *handle, const char *name);
-void        bugle_filter_set_activate_deferred(filter_set *handle);
-void        bugle_filter_set_deactivate_deferred(filter_set *handle);
+BUGLE_EXPORT_PRE filter_set *bugle_filter_set_get_handle(const char *name) BUGLE_EXPORT_POST;
+BUGLE_EXPORT_PRE bool        bugle_filter_set_is_loaded(const filter_set *handle) BUGLE_EXPORT_POST;
+BUGLE_EXPORT_PRE bool        bugle_filter_set_is_active(const filter_set *handle) BUGLE_EXPORT_POST;
+BUGLE_EXPORT_PRE void *      bugle_filter_set_get_symbol(filter_set *handle, const char *name) BUGLE_EXPORT_POST;
+BUGLE_EXPORT_PRE void        bugle_filter_set_activate_deferred(filter_set *handle) BUGLE_EXPORT_POST;
+BUGLE_EXPORT_PRE void        bugle_filter_set_deactivate_deferred(filter_set *handle) BUGLE_EXPORT_POST;
 
 #endif /* BUGLE_SRC_FILTERS_H */

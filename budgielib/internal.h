@@ -23,6 +23,7 @@
 #endif
 #include <stdio.h>
 #include <budgie/types.h>
+#include <bugle/export.h>
 
 typedef struct
 {
@@ -109,9 +110,9 @@ void _budgie_dump_bitfield(unsigned int value, char **buffer, size_t *size,
 
 /* User functions for .bc files */
 
-bool budgie_dump_string(const char *value, char **buffer, size_t *size);
-int budgie_count_string(const char *value);
+bool BUGLE_EXPORT_PRE budgie_dump_string(const char *value, char **buffer, size_t *size) BUGLE_EXPORT_POST;
+int BUGLE_EXPORT_PRE budgie_count_string(const char *value) BUGLE_EXPORT_POST;
 /* Like dump_string but takes an explicit length rather than NULL terminator */
-bool budgie_dump_string_length(const char *value, size_t length, char **buffer, size_t *size);
+bool BUGLE_EXPORT_PRE budgie_dump_string_length(const char *value, size_t length, char **buffer, size_t *size) BUGLE_EXPORT_POST;
 
 #endif /* BUGLE_BUDGIE_INTERNAL_H */

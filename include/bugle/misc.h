@@ -25,6 +25,7 @@
 #endif
 #include <stddef.h>
 #include <stdio.h>
+#include <bugle/export.h>
 
 #if BUGLE_HAVE_ATTRIBUTE_FORMAT_PRINTF
 # define BUGLE_ATTRIBUTE_FORMAT_PRINTF(a, b) __attribute__((format(printf, a, b)))
@@ -37,7 +38,7 @@
  * a malloc'ed string. It is intended to be used together with the dump
  * functions, which take the same char ** and size_t *.
  */
-char *bugle_string_io(void (*call)(char **, size_t *, void *), void *data);
+BUGLE_EXPORT_PRE char *bugle_string_io(void (*call)(char **, size_t *, void *), void *data) BUGLE_EXPORT_POST;
 
 /* Appends to *strp using the format, reallocating if necessary. The
  * current size is *sz, and will be updated on reallocation. *strp may
@@ -45,11 +46,11 @@ char *bugle_string_io(void (*call)(char **, size_t *, void *), void *data);
  * the length of the string, including the original portion. The string
  * length is at least doubled each time to ensure progress is made.
  */
-int bugle_appendf(char **strp, size_t *sz, const char *format, ...) BUGLE_ATTRIBUTE_FORMAT_PRINTF(3, 4);
+BUGLE_EXPORT_PRE int bugle_appendf(char **strp, size_t *sz, const char *format, ...) BUGLE_ATTRIBUTE_FORMAT_PRINTF(3, 4) BUGLE_EXPORT_POST;
 
 /* Like fgets, but creates the memory. The return value has the same
  * meaning as for fgets, but must be free()ed if non-NULL
  */
-char *bugle_afgets(FILE *stream);
+BUGLE_EXPORT_PRE char *bugle_afgets(FILE *stream) BUGLE_EXPORT_POST;
 
 #endif /* !BUGLE_COMMON_MISC_H */

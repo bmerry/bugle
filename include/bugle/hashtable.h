@@ -1,5 +1,5 @@
 /*  BuGLe: an OpenGL debugging tool
- *  Copyright (C) 2004-2007  Bruce Merry
+ *  Copyright (C) 2004-2007, 2009  Bruce Merry
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -23,6 +23,7 @@
 #endif
 #include <stdbool.h>
 #include <stddef.h>
+#include <bugle/export.h>
 
 typedef struct
 {
@@ -42,19 +43,19 @@ typedef struct
 /* Destructor may be NULL, free, or something custom. It will be called
  * even if the value is NULL.
  */
-void bugle_hash_init(hash_table *table, void (*destructor)(void *));
-void bugle_hash_set(hash_table *table, const char *key, void *value);
+BUGLE_EXPORT_PRE void bugle_hash_init(hash_table *table, void (*destructor)(void *)) BUGLE_EXPORT_POST;
+BUGLE_EXPORT_PRE void bugle_hash_set(hash_table *table, const char *key, void *value) BUGLE_EXPORT_POST;
 /* Determines whether the key is present */
-bool bugle_hash_count(const hash_table *table, const char *key);
+BUGLE_EXPORT_PRE bool bugle_hash_count(const hash_table *table, const char *key) BUGLE_EXPORT_POST;
 /* Returns NULL if key absent OR if value is NULL */
-void *bugle_hash_get(const hash_table *table, const char *key);
-void bugle_hash_clear(hash_table *table);
+BUGLE_EXPORT_PRE void *bugle_hash_get(const hash_table *table, const char *key) BUGLE_EXPORT_POST;
+BUGLE_EXPORT_PRE void bugle_hash_clear(hash_table *table) BUGLE_EXPORT_POST;
 
 /* Walk the hash table. A walker loop looks like this:
  * for (h = bugle_hash_begin(&table); h; h = bugle_hash_next(&table, h))
  */
-const hash_table_entry *bugle_hash_begin(hash_table *table);
-const hash_table_entry *bugle_hash_next(hash_table *table, const hash_table_entry *e);
+BUGLE_EXPORT_PRE const hash_table_entry *bugle_hash_begin(hash_table *table) BUGLE_EXPORT_POST;
+BUGLE_EXPORT_PRE const hash_table_entry *bugle_hash_next(hash_table *table, const hash_table_entry *e) BUGLE_EXPORT_POST;
 
 /* A similar implementation but with void * instead of string keys.
  * The data in the void * is irrelevant and in fact the void * is
@@ -75,14 +76,14 @@ typedef struct
     void (*destructor)(void *);
 } hashptr_table;
 
-void bugle_hashptr_init(hashptr_table *table, void (*destructor)(void *));
-void bugle_hashptr_set(hashptr_table *table, const void *key, void *value);
-bool bugle_hashptr_count(const hashptr_table *table, const void *key);
-void *bugle_hashptr_get(const hashptr_table *table, const void *key);
-void bugle_hashptr_clear(hashptr_table *table);
+BUGLE_EXPORT_PRE void bugle_hashptr_init(hashptr_table *table, void (*destructor)(void *)) BUGLE_EXPORT_POST;
+BUGLE_EXPORT_PRE void bugle_hashptr_set(hashptr_table *table, const void *key, void *value) BUGLE_EXPORT_POST;
+BUGLE_EXPORT_PRE bool bugle_hashptr_count(const hashptr_table *table, const void *key) BUGLE_EXPORT_POST;
+BUGLE_EXPORT_PRE void *bugle_hashptr_get(const hashptr_table *table, const void *key) BUGLE_EXPORT_POST;
+BUGLE_EXPORT_PRE void bugle_hashptr_clear(hashptr_table *table) BUGLE_EXPORT_POST;
 
-const hashptr_table_entry *bugle_hashptr_begin(hashptr_table *table);
-const hashptr_table_entry *bugle_hashptr_next(hashptr_table *table, const hashptr_table_entry *e);
+BUGLE_EXPORT_PRE const hashptr_table_entry *bugle_hashptr_begin(hashptr_table *table) BUGLE_EXPORT_POST;
+BUGLE_EXPORT_PRE const hashptr_table_entry *bugle_hashptr_next(hashptr_table *table, const hashptr_table_entry *e) BUGLE_EXPORT_POST;
 
 static inline void bugle_hashptr_set_int(hashptr_table *table, size_t key, void *value)
 {

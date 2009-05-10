@@ -1,5 +1,5 @@
 /*  BuGLe: an OpenGL debugging tool
- *  Copyright (C) 2004-2007  Bruce Merry
+ *  Copyright (C) 2004-2007, 2009  Bruce Merry
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -80,11 +80,11 @@ typedef struct
 /* Must be in a valid state to make GL calls.
  * Must also have glextensions and globjects.
  */
-void bugle_state_get_raw(const glstate *, bugle_state_raw *);
-char *bugle_state_get_string(const glstate *); /* caller frees */
-void bugle_state_get_children(const glstate *, linked_list *);
-void bugle_state_clear(glstate *);
-const glstate *bugle_state_get_root(void);
+BUGLE_EXPORT_PRE void bugle_state_get_raw(const glstate *, bugle_state_raw *) BUGLE_EXPORT_POST;
+BUGLE_EXPORT_PRE char *bugle_state_get_string(const glstate *) BUGLE_EXPORT_POST; /* caller frees */
+BUGLE_EXPORT_PRE void bugle_state_get_children(const glstate *, linked_list *) BUGLE_EXPORT_POST;
+BUGLE_EXPORT_PRE void bugle_state_clear(glstate *) BUGLE_EXPORT_POST;
+BUGLE_EXPORT_PRE const glstate *bugle_state_get_root(void) BUGLE_EXPORT_POST;
 
 extern const state_info * const all_state[];
 

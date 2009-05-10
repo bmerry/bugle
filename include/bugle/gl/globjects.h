@@ -1,5 +1,5 @@
 /*  BuGLe: an OpenGL debugging tool
- *  Copyright (C) 2004-2006, 2008  Bruce Merry
+ *  Copyright (C) 2004-2006, 2008-2009  Bruce Merry
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -22,6 +22,7 @@
 # include <config.h>
 #endif
 #include <bugle/gl/glheaders.h>
+#include <bugle/export.h>
 
 typedef enum
 {
@@ -40,13 +41,13 @@ typedef enum
  * to the walker are object, target (if available or applicable), and the
  * user data.
  */
-void bugle_globjects_walk(bugle_globjects_type type,
-                             void (*walker)(GLuint, GLenum, void *),
-                             void *);
+BUGLE_EXPORT_PRE void bugle_globjects_walk(bugle_globjects_type type,
+                                           void (*walker)(GLuint, GLenum, void *),
+                                           void *) BUGLE_EXPORT_POST;
 /* Determines the target associated with a particular object, or GL_NONE
  * if none is known.
  */
-GLenum bugle_globjects_get_target(bugle_globjects_type type, GLuint id);
+BUGLE_EXPORT_PRE GLenum bugle_globjects_get_target(bugle_globjects_type type, GLuint id) BUGLE_EXPORT_POST;
 
 /* Used by the initialisation code */
 void globjects_initialise(void);

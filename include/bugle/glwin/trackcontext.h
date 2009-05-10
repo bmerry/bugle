@@ -1,5 +1,5 @@
 /*  BuGLe: an OpenGL debugging tool
- *  Copyright (C) 2004-2006, 2008  Bruce Merry
+ *  Copyright (C) 2004-2006, 2008-2009  Bruce Merry
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -26,6 +26,7 @@
 #include <bugle/glwin/glwintypes.h>
 #include <bugle/filters.h>
 #include <bugle/objects.h>
+#include <bugle/export.h>
 
 extern object_class *bugle_context_class, *bugle_namespace_class;
 
@@ -35,7 +36,7 @@ extern object_class *bugle_context_class, *bugle_namespace_class;
  * best for querying object state, the latter for creating internal objects
  * so as not to pollute the primary namespace.
  */
-glwin_context bugle_get_aux_context(bool shared);
+BUGLE_EXPORT_PRE glwin_context bugle_get_aux_context(bool shared) BUGLE_EXPORT_POST;
 
 /* Draws text at the specified location. The current colour is used to
  * render the text. The text is rendered with alpha, so alpha-test or
@@ -50,7 +51,7 @@ glwin_context bugle_get_aux_context(bool shared);
  * - must be inside begin_internal_render/end_internal_render
  * - there must be room for one push on the attribute stack
  */
-void bugle_gl_text_render(const char *msg, int x, int y);
+BUGLE_EXPORT_PRE void bugle_gl_text_render(const char *msg, int x, int y) BUGLE_EXPORT_POST;
 
 /* Used by the initialisation code */
 void trackcontext_initialise(void);

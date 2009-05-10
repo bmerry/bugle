@@ -1,5 +1,5 @@
 /*  BuGLe: an OpenGL debugging tool
- *  Copyright (C) 2007  Bruce Merry
+ *  Copyright (C) 2007, 2009  Bruce Merry
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -30,6 +30,7 @@
 # include <dlfcn.h>
 # include <string.h>
 # include <stdbool.h>
+# include <bugle/export.h>
 
 # ifdef RTLD_NEXT
 #  define BUGLE_DEFINED_DLOPEN
@@ -42,8 +43,10 @@ void dlopen_initialise()
     bypass_dlopen = true;
 }
 
+BUGLE_EXPORT_PRE void *dlopen(const char *filename, int flag) BUGLE_EXPORT_POST;
 void *dlopen(const char *filename, int flag)
 {
+    /* TODO-GLES: handle other library names */
     if (bypass_dlopen && filename != NULL)
     {
         if (strcmp(filename, "libGL.so") == 0
