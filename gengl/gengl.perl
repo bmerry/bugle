@@ -612,7 +612,7 @@ EOF
     for (my $id = 0; $id < scalar(@func_ids); $id++)
     {
         my $funcname = $func_ids[$id];
-        my $ext = $functions{$funcname} // $function_force_version{$funcname};
+        my $ext = $functions{$funcname} || $function_force_version{$funcname};
         if (!defined($ext))
         {
             die "Could not find the extension for $funcname";
