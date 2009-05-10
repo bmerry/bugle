@@ -2,39 +2,52 @@
 import sys
 import os
 from CrossEnvironment import CrossEnvironment
+from API import *
 
 Import('ac_vars', 'srcdir', 'builddir')
 
-class API:
-    def __init__(self, name, headers):
-        self.name = name
-        self.headers = headers
+# Ensures that we have all the elements required
+feature_default = Feature(
+        headers = [],
+        bugle_libs = [],
+        bugle_sources = [],
+        bugleutils_sources = [])
+feature_gl = Feature(
+        gltype = 'gl',
+        headers = ['GL/gl.h', 'GL/glext.h'])
+feature_gles1 = Feature(
+        gltype = 'gles1cm',
+        headers = ['GLES/gl.h', 'GLES/glext.h'])
+feature_gles2 = Feature(
+        gltype = 'gles2',
+        headers = ['GLES2/gl2.h', 'GLES2/gl2ext.h'])
 
-        self.fields = name.split('-')
-        for gltype in ['gl', 'gles1cm', 'gles2']:
-            if gltype in self.fields:
-                self.gltype = gltype
-        for glwin in ['glx', 'wgl', 'egl']:
-            if glwin in self.fields:
-                self.glwin = glwin
+feature_glx = Feature(
+        glwin = 'glx',
+        headers = ['GL/glx.h', 'GL/glxext.h'],
+        bugle_sources = [srcdir.File('src/glx/glxdump.c')])
+feature_wgl = Feature(
+        glwin = 'wgl',
+        headers = ['wingdi.h', 'GL/wglext.h'])
+feature_egl = Feature(
+        glwin = 'egl',
+        headers = ['EGL/egl.h', 'EGL/eglext.h'])
 
-gl_headers = ['GL/gl.h', 'GL/glext.h']
-gles1_headers = ['GLES/gl.h', 'GLES/glext.h']
-gles2_headers = ['GLES2/gl2.h', 'GLES2/gl2ext.h']
-glx_headers = ['GL/glx.h', 'GL/glxext.h']
-wgl_headers = ['wingdi.h', 'GL/wglext.h']
-egl_headers = ['EGL/egl.h', 'EGL/eglext.h']
-apis = [API('gl-glx', gl_headers + glx_headers),
-        API('gl-wgl', gl_headers + wgl_headers),
-        API('gles1cm-egl-posix', gles1_headers + egl_headers),
-        API('gles1cm-legacy-egl-win', gles1_headers + egl_headers),
-        API('gles2-egl-posix', gles2_headers + egl_headers),
-        API('gles2-egl-win', gles2_headers + egl_headers)]
+feature_x11 = Feature(
+        winsys = 'x11',
+        bugle_libs = ['X11'])
+
+apis = [API('gl-glx', feature_gl, feature_glx, feature_x11),
+        API('gl-wgl', feature_gl, feature_wgl),
+        API('gles1cm-egl-posix', feature_gles1, feature_egl),
+        API('gles1cm-legacy-egl-win', feature_gles1, feature_egl),
+        API('gles2-egl-posix', feature_gles2, feature_egl, feature_x11),
+        API('gles2-egl-win', feature_gles2, feature_egl)]
 
 # Process command line arguments
 api = None
 for i in apis:
-    if i.name == ARGUMENTS.get('api', 'gl-glx'):
+    if i.name == ARGUMENTS.get('api', ac_vars['BUGLE_API']):
         api = i
         break
 
