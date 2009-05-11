@@ -2,6 +2,14 @@ class Feature(dict):
     '''
     Holds list of headers, source files etc for a single aspect of the
     API featureset.
+
+    Useful keys are:
+      - C{checks}: a list of functions taking one parameter, a C{SCons.Configure}
+      - C{headers}: the header files to search for function prototypes
+      - C{gltype}, C{glwin}, C{winsys}: strings identifying the feature
+      - C{bugle_libs}: libraries against which to link libbugle
+      - C{bugle_sources}: extra source files for libbugle
+      - C{bugleutils_sources}: extra source files for libbugleutils
     '''
 
     def __init__(self, **kw):
@@ -23,7 +31,8 @@ _default_feature = Feature(
         headers = [],
         bugle_libs = [],
         bugle_sources = [],
-        bugleutils_sources = [])
+        bugleutils_sources = [],
+        checks = [])
 
 class API:
     '''
