@@ -3,6 +3,7 @@ import sys
 import os
 from CrossEnvironment import CrossEnvironment
 from API import *
+import BugleChecks
 
 Import('ac_vars', 'srcdir', 'builddir')
 
@@ -102,6 +103,20 @@ env = CrossEnvironment(
 if 'gcc' in env['TOOLS']:
     env.MergeFlags('-fvisibility=hidden')
 
+conf = Configure(env, custom_tests = BugleChecks.tests, config_h = '#/config.h')
+conf.CheckHeader('dirent.h')
+conf.CheckHeader('ndir.h')
+conf.CheckHeader('dlfcn.h')
+conf.CheckHeader('stdint.h')
+conf.CheckLib('m', 'finite', autoadd = 0)
+conf.CheckLib('m', 'isfinite', autoadd = 0)
+conf.CheckLib('m', 'sinf', autoadd = 0)
+conf.CheckFunc('strtof')
+conf.CheckAttributePrintf()
+conf.CheckAttributeConstructor()
+conf.CheckAttributeHiddenAlias()
+env = conf.Finish()
+
 Export('build_env', 'env', 'api')
 
 SConscript('lib/SConscript')
@@ -109,7 +124,6 @@ SConscript('budgie/SConscript')
 SConscript('src/SConscript')
 SConscript('filters/SConscript')
 
-env.AlwaysBuild(env.Command('lib/libgnu.la', [], 'make -C lib'))
 env.AlwaysBuild(env.Command('libltdl/libltdl.la', [], 'make -C libltdl'))
 
 budgie_outputs = [
