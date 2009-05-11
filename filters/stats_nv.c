@@ -19,6 +19,8 @@
 # include <config.h>
 #endif
 
+#include <bugle/filters.h>
+
 #if HAVE_NVPERFSDK_H
 
 #include <stdbool.h>
@@ -28,7 +30,6 @@
 #include <NVPerfSDK.h>
 #include <budgie/addresses.h>
 #include <bugle/stats.h>
-#include <bugle/filters.h>
 #include <bugle/objects.h>
 #include <bugle/log.h>
 #include <bugle/glwin/glwin.h>

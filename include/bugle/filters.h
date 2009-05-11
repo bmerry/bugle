@@ -151,4 +151,9 @@ BUGLE_EXPORT_PRE void *      bugle_filter_set_get_symbol(filter_set *handle, con
 BUGLE_EXPORT_PRE void        bugle_filter_set_activate_deferred(filter_set *handle) BUGLE_EXPORT_POST;
 BUGLE_EXPORT_PRE void        bugle_filter_set_deactivate_deferred(filter_set *handle) BUGLE_EXPORT_POST;
 
+/* Function exported by each filter - prototyped to ensure that it
+ * has the correct symbol visibility.
+ */
+BUGLE_EXPORT_PRE void        bugle_initialise_filter_library(void) BUGLE_EXPORT_POST;
+
 #endif /* BUGLE_SRC_FILTERS_H */

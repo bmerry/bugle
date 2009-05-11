@@ -1,5 +1,5 @@
 /*  BuGLe: an OpenGL debugging tool
- *  Copyright (C) 2004-2007  Bruce Merry
+ *  Copyright (C) 2004-2007, 2009  Bruce Merry
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -195,6 +195,12 @@ void bugle_log(const char *filterset, const char *event, int severity,
     }
 }
 
+static void log_alloc_die(void)
+{
+    bugle_log("core", "alloc", BUGLE_LOG_ERROR, "memory allocation failed");
+    abort();
+}
+
 static bool log_filter_set_initialise(filter_set *handle)
 {
     if (log_filename)
@@ -206,11 +212,13 @@ static bool log_filter_set_initialise(filter_set *handle)
             return false;
         }
     }
+    bugle_set_alloc_die(log_alloc_die);
     return true;
 }
 
 static void log_filter_set_shutdown(filter_set *handle)
 {
+    bugle_set_alloc_die(NULL);
     if (log_filename)
     {
         if (log_file) fclose(log_file);
@@ -244,10 +252,4 @@ void log_initialise(void)
 
     bugle_filter_set_new(&log_info);
     log_format = xstrdup(LOG_DEFAULT_FORMAT);
-}
-
-void bugle_log_xalloc_die(void)
-{
-    bugle_log("core", "xalloc", BUGLE_LOG_ERROR, "memory allocation failed");
-    abort();
 }

@@ -1,5 +1,5 @@
 /*  BuGLe: an OpenGL debugging tool
- *  Copyright (C) 2004-2007, 2009  Bruce Merry
+ *  Copyright (C) 2009  Bruce Merry
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -18,18 +18,17 @@
 #if HAVE_CONFIG_H
 # include <config.h>
 #endif
-
-#include <stdio.h>
-#include <stdlib.h>
+#include <stddef.h>
 #include <bugle/die.h>
 
-void xalloc_die(void)
-{
-    void (*xalloc_die_callback)(void) = bugle_get_alloc_die();
+static bugle_alloc_die_callback die_callback = NULL;
 
-    if (xalloc_die_callback != NULL)
-        xalloc_die_callback();
-    else
-        fprintf(stderr, "bugle: memory allocation failed\n");
-    abort();
+bugle_alloc_die_callback bugle_get_alloc_die(void)
+{
+    return die_callback;
+}
+
+void bugle_set_alloc_die(bugle_alloc_die_callback callback)
+{
+    die_callback = callback;
 }

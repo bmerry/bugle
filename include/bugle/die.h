@@ -1,5 +1,5 @@
 /*  BuGLe: an OpenGL debugging tool
- *  Copyright (C) 2004-2007, 2009  Bruce Merry
+ *  Copyright (C) 2009  Bruce Merry
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -15,21 +15,32 @@
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
+/* Provides a callback to indicate memory allocation failure, which uses
+ * the logging system if available.
+ */
+
+#ifndef BUGLE_SRC_DIE_H
+#define BUGLE_SRC_DIE_H
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #if HAVE_CONFIG_H
 # include <config.h>
 #endif
+#include <bugle/export.h>
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <bugle/die.h>
+typedef void (*bugle_alloc_die_callback)(void);
 
-void xalloc_die(void)
-{
-    void (*xalloc_die_callback)(void) = bugle_get_alloc_die();
+/* Obtain the current callback (might be NULL) */
+BUGLE_EXPORT_PRE bugle_alloc_die_callback bugle_get_alloc_die(void) BUGLE_EXPORT_POST;
 
-    if (xalloc_die_callback != NULL)
-        xalloc_die_callback();
-    else
-        fprintf(stderr, "bugle: memory allocation failed\n");
-    abort();
+/* Set the current callback */
+BUGLE_EXPORT_PRE void bugle_set_alloc_die(bugle_alloc_die_callback callback) BUGLE_EXPORT_POST;
+
+#ifdef __cplusplus
 }
+#endif
+
+#endif /* !BUGLE_SRC_DIE_H */

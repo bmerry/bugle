@@ -59,11 +59,6 @@ BUGLE_EXPORT_PRE void bugle_log_printf(const char *filterset, const char *event,
 BUGLE_EXPORT_PRE void bugle_log_callback(const char *filterset, const char *event, int severity,
                                          void (*callback)(void *arg, FILE *f), void *arg) BUGLE_EXPORT_POST;
 
-/* An implementation of xalloc_die. The actual xalloc_die symbol is in
- * src/xalloc-die-log.c.
- */
-BUGLE_EXPORT_PRE void bugle_log_xalloc_die(void) BUGLE_EXPORT_POST;
-
 /* Used internally by the initialisation code */
 void log_initialise(void);
 
