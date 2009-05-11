@@ -117,8 +117,8 @@ for e in ['PATH', 'CPATH', 'LIBRARY_PATH', 'LD_LIBRARY_PATH']:
     if e in os.environ:
         environ[e] = os.environ[e]
 
-# Environment for tools that have to run on the build machine
-build_env = Environment(
+# Values common to both build environment and host environment
+common_kw = dict(
         ENV = environ,
         CPPPATH = [
             srcdir,
@@ -127,26 +127,23 @@ build_env = Environment(
             builddir,
             builddir.Dir('include')
             ],
+        toolpath = ['%(srcdir)s/site_scons/site_tools' % ac_vars],
+        srcdir = srcdir,
+        builddir = builddir)
+
+# Environment for tools that have to run on the build machine
+build_env = Environment(
         CPPDEFINES = [
             ('HAVE_CONFIG_H', 1)
             ],
         YACCHXXFILESUFFIX = '.h',
         tools = ['default', 'budgie', 'gengl', 'yacc'],
-        toolpath = ['%(srcdir)s/site_scons/site_tools' % ac_vars],
 
         BCPATH = [builddir, srcdir],
-        srcdir = srcdir, builddir = builddir)
+        **common_kw)
 
 # Environment for the target machine
 env = CrossEnvironment(
-        ENV = environ,
-        CPPPATH = [
-            srcdir,
-            srcdir.Dir('lib'),
-            srcdir.Dir('include'),
-            builddir,
-            builddir.Dir('include')
-            ],
         CPPDEFINES = [
             ('LIBDIR', r'\"%(libdir)s\"' % ac_vars),
             ('PKGLIBDIR', r'\"%(libdir)s/%(PACKAGE)s\"' % ac_vars),
@@ -154,8 +151,7 @@ env = CrossEnvironment(
             ],
         parse_flags = '-pthread',
         tools = ['default', 'yacc'],
-
-        srcdir = srcdir, builddir = builddir
+        **common_kw
         )
 if 'gcc' in env['TOOLS']:
     env.MergeFlags('-fvisibility=hidden')
