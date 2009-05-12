@@ -21,23 +21,6 @@ testb = testa;
           fi
 ])
 
-# Checks whether #pragma weak is supported
-AC_DEFUN([BUGLE_C_PRAGMA_WEAK],
-         [AC_REQUIRE([AC_PROG_CC])[]dnl,
-          AC_CACHE_CHECK([for weak symbol pragma], bugle_cv_c_pragma_weak,
-                         [bugle_cv_c_pragma_weak=no
-                          AC_LINK_IFELSE([AC_LANG_PROGRAM(
-[
-extern void foo(void);
-#pragma weak foo
-
-int main() { foo(); }
-], [])], [bugle_cv_c_pragma_weak=yes])])
-          if test $bugle_cv_c_pragma_weak = yes; then
-            AC_DEFINE([BUGLE_HAVE_PRAGMA_WEAK], [1], [Define if pragma weak is supported])
-          fi
-])
-
 # Checks whether __attribute__((format(printf, 1, 2))) is supported
 AC_DEFUN([BUGLE_C_ATTRIBUTE_FORMAT_PRINTF],
          [AC_REQUIRE([AC_PROG_CC])[]dnl
