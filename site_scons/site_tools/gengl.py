@@ -38,21 +38,21 @@ def alias_generator(source, target, env, for_signature):
     for header in source[0:-1]:
         cmd += ' ' + header.path
     cmd += ' > ' + target[0].path
-    return cmd
+    return Action.Action(cmd, '$ALIASCOMSTR')
 
 def apitables_c_generator(source, target, env, for_signature):
     cmd = 'perl ' + source[-1].path + ' --mode=c --header=' + source[0].path
     for header in source[1:-1]:
         cmd += ' ' + header.path
     cmd += ' > ' + target[0].path
-    return cmd
+    return Action.Action(cmd, '$APITABLESCCOMSTR')
 
 def apitables_h_generator(source, target, env, for_signature):
     cmd = 'perl ' + source[-1].path + ' --mode=header --header=' + source[0].path
     for header in source[1:-1]:
         cmd += ' ' + header.path
     cmd += ' > ' + target[0].path
-    return cmd
+    return Action.Action(cmd, '$APITTABLESHCOMSTR')
 
 def generate(env, **kw):
     alias_builder = env.Builder(

@@ -109,6 +109,9 @@ def get_api(name):
     print >>sys.stderr, "Invalid value '%s' for api" % name
     Exit(2)
 
+def setup_options():
+    AddOption('--short', dest = 'bugle_short', action = 'store_true')
+
 # Process command line arguments
 api = get_api(ARGUMENTS.get('api', ac_vars['BUGLE_API']))
 
@@ -130,6 +133,13 @@ common_kw = dict(
         toolpath = ['%(srcdir)s/site_scons/site_tools' % ac_vars],
         srcdir = srcdir,
         builddir = builddir)
+
+setup_options()
+if GetOption('bugle_short'):
+    for i in ['ALIAS', 'APITABLESC', 'APITABLESH', 'CC', 'CXX', 'LDMODULE', 'LEX', 'LINK', 'SHCC', 'SHCXX', 'SHLINK', 'YACC']:
+        common_kw[i + 'COMSTR'] = i + ' $TARGET'
+    common_kw['TUCOMSTR'] = 'TU ${TARGETS[1]}'
+    common_kw['BUDGIECOMSTR'] = 'BUDGIE ${TARGETS}'
 
 # Environment for tools that have to run on the build machine
 build_env = Environment(

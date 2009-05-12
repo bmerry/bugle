@@ -36,13 +36,14 @@ def generate(env, **kw):
             recursive = 1)
 
     bc_builder = env.Builder(
-            action = Action.Action('${BUDGIE.path} $_BCINCPATH -c ${TARGETS[0].path} -2 ${TARGETS[1].path} -d ${TARGETS[2].path} -t ${TARGETS[3].path} -l ${TARGETS[4].path} -T ${SOURCES[0].path} ${SOURCES[1].abspath}'),
+            action = Action.Action('$BUDGIECOM', '$BUDGIECOMSTR'),
             emitter = bc_emitter,
             source_suffix = '.bc',
             source_scanner = Tool.SourceFileScanner)
 
     env.Append(
             BUILDERS = {'Budgie': bc_builder},
+            BUDGIECOM = '${BUDGIE.path} $_BCINCPATH -c ${TARGETS[0].path} -2 ${TARGETS[1].path} -d ${TARGETS[2].path} -t ${TARGETS[3].path} -l ${TARGETS[4].path} -T ${SOURCES[0].path} ${SOURCES[1].abspath}',
             _BCINCPATH = '$( ${ _concat("-I ", BCPATH, "", __env__, RDirs)} $)',
             )
     Tool.SourceFileScanner.add_scanner('.bc', bc_scanner)
