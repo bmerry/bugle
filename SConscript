@@ -133,13 +133,8 @@ common_kw = dict(
 
 # Environment for tools that have to run on the build machine
 build_env = Environment(
-        CPPDEFINES = [
-            ('HAVE_CONFIG_H', 1)
-            ],
         YACCHXXFILESUFFIX = '.h',
-        tools = ['default', 'budgie', 'gengl', 'yacc'],
-
-        BCPATH = [builddir, srcdir],
+        tools = ['default', 'yacc'],
         **common_kw)
 
 # Environment for the target machine
@@ -155,6 +150,14 @@ env = CrossEnvironment(
         )
 if 'gcc' in env['TOOLS']:
     env.MergeFlags('-fvisibility=hidden')
+
+# Environment for generating parse tree. This has to be GCC, and in cross
+# compilation should be the cross-gcc so that the correct headers are
+# identified for the target.
+tu_env = CrossEnvironment(
+        tools = ['gcc', 'budgie', 'gengl', 'tu'],
+        BCPATH = [builddir, srcdir],
+        **common_kw)
 
 conf = Configure(env, custom_tests = BugleChecks.tests, config_h = '#/config.h')
 conf.CheckHeader('dirent.h')
@@ -172,7 +175,7 @@ for c in api.checks:
     c(conf)
 env = conf.Finish()
 
-Export('build_env', 'env', 'api')
+Export('build_env', 'tu_env', 'env', 'api')
 
 SConscript('lib/SConscript')
 SConscript('budgie/SConscript')
@@ -188,10 +191,10 @@ budgie_outputs = [
         'budgielib/tables.c',
         'budgielib/lib.c'
         ]
-build_env.Budgie(budgie_outputs, ['src/data/gl.tu', 'bc/' + api.name + '.bc'])
+tu_env.Budgie(budgie_outputs, ['src/data/gl.tu', 'bc/' + api.name + '.bc'])
 
-headers = [build_env['find_header'](env, h) for h in api.headers]
+headers = [tu_env['find_header'](env, h) for h in api.headers]
 # TODO change to bc/alias.bc
-build_env.BudgieAlias(target = ['bc/gl/alias.bc'], source = headers)
-build_env.ApitablesC(target = ['src/apitables.c'], source = ['budgielib/defines.h'] + headers)
-build_env.ApitablesH(target = ['src/apitables.h'], source = ['budgielib/defines.h'] + headers)
+tu_env.BudgieAlias(target = ['bc/gl/alias.bc'], source = headers)
+tu_env.ApitablesC(target = ['src/apitables.c'], source = ['budgielib/defines.h'] + headers)
+tu_env.ApitablesH(target = ['src/apitables.h'], source = ['budgielib/defines.h'] + headers)

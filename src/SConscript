@@ -1,11 +1,7 @@
 #!/usr/bin/env python
-Import('build_env', 'env', 'api', 'gnulib_shared')
+Import('build_env', 'tu_env', 'env', 'api', 'gnulib_shared')
 
-# TODO source scanner, make this a tool?
-build_env.Command(
-        'data/gl.tu',
-        'data/gl.c',
-        'CCACHE_DISABLE=1 $CC $_CPPINCFLAGS -fdump-translation-unit -c $SOURCE && ${srcdir.path}/mvtu.sh gl.c $TARGET')
+tu_env.Tu(['data/gl.o', 'data/gl.tu'], 'data/gl.c')
 
 libbugleutils = env.SharedLibrary2(
         'bugleutils',
