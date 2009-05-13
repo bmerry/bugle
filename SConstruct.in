@@ -21,9 +21,7 @@ ac_raw_vars = {
         'srcdir': '''@srcdir@''',
         'libdir': '''@libdir@''',
         'pkglibdir': '''@libdir@/@PACKAGE@''',
-        'host_os': '''@host_os@''',
-        'PACKAGE': '''@PACKAGE@''',
-        'BUGLE_API': '''@BUGLE_API@'''
+        'PACKAGE': '''@PACKAGE@'''
         }
 ac_vars = dict([(key, expand_ac_var(ac_raw_vars, key)) for key in ac_raw_vars])
 srcdir = Dir(ac_vars['srcdir'])

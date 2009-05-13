@@ -15,61 +15,6 @@ AM_PROG_MKDIR_P
 AC_PROG_MAKE_SET
 
 AC_CANONICAL_HOST
-case $host in
-  *-*-cygwin)
-    BUGLE_API="gl-wgl"
-    BUGLE_FS=BUGLE_FS_CYGMING
-    BUGLE_OSAPI=BUGLE_OSAPI_POSIX
-    BUGLE_WINSYS=BUGLE_WINSYS_WINDOWS
-    BUGLE_BINFMT=BUGLE_BINFMT_PE
-    ;;
-  *-*-mingw32)
-    BUGLE_API="gl-wgl"
-    BUGLE_FS=BUGLE_FS_CYGMING
-    BUGLE_OSAPI=BUGLE_OSAPI_WIN32
-    BUGLE_WINSYS=BUGLE_WINSYS_WINDOWS
-    BUGLE_BINFMT=BUGLE_BINFMT_PE
-    ;;
-  *)
-    BUGLE_API="gl-glx"
-    BUGLE_FS=BUGLE_FS_UNIX
-    BUGLE_OSAPI=BUGLE_OSAPI_POSIX
-    BUGLE_WINSYS=BUGLE_WINSYS_X11
-    BUGLE_BINFMT=BUGLE_BINFMT_ELF
-    ;;
-esac
-AC_ARG_WITH([api], AC_HELP_STRING([--with-api], [specify api, from gl-wgl, gl-glx, gles1cm-egl-posix, gles1cm-legacy-egl-win, gles2-egl-win, gles2-egl-posix]),
-            [BUGLE_API="$withval"], [])
-case $BUGLE_API in
-  gl-glx)
-    BUGLE_GLWIN=BUGLE_GLWIN_GLX
-    BUGLE_GLTYPE=BUGLE_GLTYPE_GL
-    ;;
-  gl-wgl)
-    BUGLE_GLWIN=BUGLE_GLWIN_WGL
-    BUGLE_GLTYPE=BUGLE_GLTYPE_GL
-    ;;
-  gles1cm-egl-posix)
-    BUGLE_GLWIN=BUGLE_GLWIN_EGL
-    BUGLE_GLTYPE=BUGLE_GLTYPE_GLES1CM
-    ;;
-  gles1cm-legacy-egl-win)
-    BUGLE_GLWIN=BUGLE_GLWIN_EGL
-    BUGLE_GLTYPE=BUGLE_GLTYPE_GLES1CM
-    ;;
-  gles2-egl-posix)
-    BUGLE_GLWIN=BUGLE_GLWIN_EGL
-    BUGLE_GLTYPE=BUGLE_GLTYPE_GLES2
-    ;;
-  gles2-egl-win)
-    BUGLE_GLWIN=BUGLE_GLWIN_EGL
-    BUGLE_GLTYPE=BUGLE_GLTYPE_GLES2
-    ;;
-  *)
-    AC_MSG_ERROR([API $BUGLE_API is not recognised])
-    ;;
-esac
-
 AC_LANG(C)
 AC_LIBLTDL_INSTALLABLE(libltdl)
 AC_LIBTOOL_DLOPEN
@@ -103,33 +48,6 @@ AVCODEC_CFLAGS=""
 AVCODEC_LIBS=""
 PKG_CHECK_MODULES([avcodec], [libavcodec libavformat], [], [HAVE_LAVC=0; AC_MSG_RESULT([no])])
 PKG_CHECK_MODULES([swscale], [libswscale], [HAVE_LIBSWSCALE=1], [HAVE_LIBSWSCALE=0])
-
-# Sadly, FreeBSD does not implement libraries depending on libraries, and
-# OpenGL uses X and maths functions. Hence the -lm and all the X rubbish.
-GL_LIBS=""
-case "$BUGLE_API" in
-  gl-wgl)
-    # AC_CHECK_LIB fails because the autoconf test does not specify __stdcall
-    # AC_CHECK_LIB([opengl32], [glBegin], [GL_LIBS="-lopengl32 $GL_LIBS"], [], [])
-    GL_LIBS="-lopengl32"
-    ;;
-  gl-glx)
-    AC_CHECK_LIB([GL], [glBegin], [GL_LIBS="-lGL -lm $GL_LIBS"], [], [$X_PRE_LIBS $X_LIBS $X_XTRA_LIBS -lm])
-    ;;
-  gles1cm-legacy-egl-*)
-    GL_LIBS="-lGLES_CM"
-    ;;
-  gles1cm-egl-*)
-    GL_LIBS="-lEGL -lGLESv1_CM"
-    ;;
-  gles2-egl-*)
-    GL_LIBS="-lEGL -lGLESv2"
-    ;;
-esac
-AC_SUBST(GL_LIBS)
-if test "x$GL_LIBS" = "x"; then 
-  AC_MSG_ERROR([An OpenGL library is required])
-fi
 
 GLEW_LIBS=""
 HAVE_GLEW=0
@@ -229,42 +147,13 @@ then
 fi
 AC_DEFINE_UNQUOTED(HAVE_GTKGLEXT, $HAVE_GTKGLEXT, [non-zero when all the requirements for GtkGLExt are met])
 
-AC_SUBST(BUGLE_FS)
-AC_SUBST(BUGLE_GLWIN)
-AC_SUBST(BUGLE_GLTYPE)
-AC_SUBST(BUGLE_WINSYS)
-AC_SUBST(BUGLE_BINFMT)
-AC_SUBST(BUGLE_OSAPI)
-AC_SUBST(BUGLE_API)
-
-AM_CONDITIONAL(BUGLE_API_GL_GLX, test $BUGLE_API = gl-glx)
-AM_CONDITIONAL(BUGLE_API_GL_WGL, test $BUGLE_API = gl-wgl)
-AM_CONDITIONAL(BUGLE_API_GLES1CM_LEGACY_EGL_WIN, test $BUGLE_API = gles1cm-legacy-egl-win)
-AM_CONDITIONAL(BUGLE_API_GLES1CM_EGL_POSIX, test $BUGLE_API = gles1cm-egl-posix)
-AM_CONDITIONAL(BUGLE_API_GLES2_EGL_WIN, test $BUGLE_API = gles2-egl-win)
-AM_CONDITIONAL(BUGLE_API_GLES2_EGL_POSIX, test $BUGLE_API = gles2-egl-posix)
-AM_CONDITIONAL(BUGLE_WINSYS_X11, test $BUGLE_WINSYS = BUGLE_WINSYS_X11)
-AM_CONDITIONAL(BUGLE_WINSYS_WINDOWS, test $BUGLE_WINSYS = BUGLE_WINSYS_WINDOWS)
-AM_CONDITIONAL(BUGLE_WINSYS_NONE, test $BUGLE_WINSYS = BUGLE_WINSYS_NONE)
-AM_CONDITIONAL(BUGLE_OSAPI_WIN32, test $BUGLE_OSAPI = BUGLE_OSAPI_WIN32)
-AM_CONDITIONAL(BUGLE_OSAPI_POSIX, test $BUGLE_OSAPI = BUGLE_OSAPI_POSIX)
-AM_CONDITIONAL(BUGLE_GLWIN_WGL, test $BUGLE_GLWIN = BUGLE_GLWIN_WGL)
-AM_CONDITIONAL(BUGLE_GLWIN_GLX, test $BUGLE_GLWIN = BUGLE_GLWIN_GLX)
-AM_CONDITIONAL(BUGLE_GLWIN_EGL, test $BUGLE_GLWIN = BUGLE_GLWIN_EGL)
-AM_CONDITIONAL(BUGLE_GLTYPE_GL, test $BUGLE_GLTYPE = BUGLE_GLTYPE_GL)
-AM_CONDITIONAL(BUGLE_GLTYPE_GLES1CM, test $BUGLE_GLTYPE = BUGLE_GLTYPE_GLES1CM)
-AM_CONDITIONAL(BUGLE_GLTYPE_GLES2, test $BUGLE_GLTYPE = BUGLE_GLTYPE_GLES2)
-AM_CONDITIONAL(BUGLE_BINFMT_PE, test $BUGLE_BINFMT = BUGLE_BINFMT_PE)
-AM_CONDITIONAL(BUGLE_BINFMT_ELF, test $BUGLE_BINFMT = BUGLE_BINFMT_ELF)
-
 dnl Write out files
-AC_CONFIG_FILES([SConstruct Makefile bugle.pc include/bugle/porting.h])
+AC_CONFIG_FILES([SConstruct Makefile bugle.pc])
 AC_OUTPUT
 
 dnl Display configuration
 echo
 echo "Configuration:"
-echo "        API combination: $BUGLE_API"
 case $HAVE_LAVC in
   0) echo "        libavcodec: no" ;;
   *) echo "        libavcodec: yes" ;;

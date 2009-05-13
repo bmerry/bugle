@@ -138,16 +138,48 @@ def checks(env):
         c(conf)
     return conf.Finish()
 
+def get_vars(apis):
+    vars = Variables('config.py', ARGUMENTS)
+    # TODO determine the default from the platform
+    vars.Add('api', help = 'GL API variant', default = 'gl-glx',
+            validator = lambda key, val, env: api_validator(apis, val))
+    vars.Add('HOST', help = 'Host machine string for cross-compilation')
+    vars.Add('CC', help = 'The C compiler')
+    vars.Add('CCFLAGS', help = 'C and C++ compilation flags')
+    vars.Add('CFLAGS', help = 'C compilation flags')
+    vars.Add('CXXFLAGS', help = 'C++ compilation flags')
+    return vars
+
+def get_substs(platform, api):
+    '''
+    Obtains a dictionary of substitutions to make in porting.h
+    '''
+
+    substs = {}
+    if platform == 'posix':
+        substs['BUGLE_OSAPI'] = 'BUGLE_OSAPI_POSIX'
+        substs['BUGLE_FS'] = 'BUGLE_FS_UNIX'
+        substs['BUGLE_BINFMT'] = 'BUGLE_BINFMT_ELF'
+    elif platform == 'win32':
+        substs['BUGLE_OSAPI'] = 'BUGLE_OSAPI_WIN32'
+        substs['BUGLE_FS'] = 'BUGLE_FS_CYGMING'
+        substs['BUGLE_BINFMT'] = 'BUGLE_BINFMT_PE'
+    elif platform == 'cygwin':
+        substs['BUGLE_OSAPI'] = 'BUGLE_OSAPI_POSIX'
+        substs['BUGLE_FS'] = 'BUGLE_FS_CYGMING'
+        substs['BUGLE_BINFMT'] = 'BUGLE_BINFMT_PE'
+    else:
+        print 'Platform', platform, 'is not recognised.'
+        Exit(1)
+
+    substs['BUGLE_GLTYPE'] = 'BUGLE_GLTYPE_' + api.gltype.upper()
+    substs['BUGLE_GLWIN'] = 'BUGLE_GLWIN_' + api.glwin.upper()
+    substs['BUGLE_WINSYS'] = 'BUGLE_WINSYS_' + api.winsys.upper()
+    return substs
+
 # Process command line arguments
 apis = get_apis()
-vars = Variables('config.py', ARGUMENTS)
-vars.Add('api', help = 'GL API variant', default = ac_vars['BUGLE_API'],
-        validator = lambda key, val, env: api_validator(apis, val))
-vars.Add('HOST', help = 'Host machine string for cross-compilation')
-vars.Add('CC', help = 'The C compiler')
-vars.Add('CCFLAGS', help = 'C and C++ compilation flags')
-vars.Add('CFLAGS', help = 'C compilation flags')
-vars.Add('CXXFLAGS', help = 'C++ compilation flags')
+vars = get_vars(apis)
 
 environ = {}
 for e in ['PATH', 'CPATH', 'LIBRARY_PATH', 'LD_LIBRARY_PATH']:
@@ -190,7 +222,7 @@ env = CrossEnvironment(
             ('HAVE_CONFIG_H', 1)
             ],
         parse_flags = '-pthread',
-        tools = ['default', 'yacc'],
+        tools = ['default', 'yacc', 'subst'],
         **common_kw
         )
 if 'gcc' in env['TOOLS']:
@@ -211,6 +243,8 @@ if unknown:
     print 'Unknown command-line option(s):', ', '.join(unknown.keys())
     Exit(2)
 api = apis[env['api']]
+substs = get_substs(env['PLATFORM'], api)
+env.SubstFile(builddir.File('include/bugle/porting.h'), srcdir.File('include/bugle/porting.h.in'), substs)
 
 env = checks(env)
 Export('build_env', 'tu_env', 'env', 'api')

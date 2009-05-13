@@ -32,7 +32,8 @@ def generate(env):
                 Action.Action(move_tu, None)
                 ],
             source_suffix = '.c',
-            target_suffix = '.o')
+            target_suffix = '.o',
+            source_scanner = Tool.SourceFileScanner)
 
     # CCache doesn't understand the -fdump-translation-unit option, so disable it
     env.Append(BUILDERS = {'Tu': tu_builder}, ENV = {'CCACHE_DISABLE': '1'})
