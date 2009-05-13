@@ -133,6 +133,7 @@ def checks(env):
     conf.CheckAttributePrintf()
     conf.CheckAttributeConstructor()
     conf.CheckAttributeHiddenAlias()
+    conf.CheckInline()
     for c in api.checks:
         c(conf)
     return conf.Finish()

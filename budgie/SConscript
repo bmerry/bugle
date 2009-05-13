@@ -1,10 +1,18 @@
 #!/usr/bin/env python
+import BugleChecks
 
 Import('build_env', 'tu_env')
 
 # Ensure that <config.h> comes from the one in this directory
 budgie_env = build_env.Clone()
 budgie_env.Prepend(CPPPATH = ['.'])
+
+conf = Configure(budgie_env, custom_tests = BugleChecks.tests, config_h = 'config.h')
+if not conf.CheckLibWithHeader(None, 'regex.h', 'c++', 'regcomp(0, 0, 0);'):
+    if not conf.CheckLibWithHeader('regex', 'regex.h', 'c++', 'regcomp(0, 0, 0);'):
+        print "A regex library is required"
+        Exit(1)
+budgie_env = conf.Finish()
 
 budgie_env.CXXFile('bcparser.cpp', 'bcparser.yy', YACCFLAGS = '-d --defines=${TARGET.dir}/bcparser.h')
 budgie_env.CXXFile('bclexer.cpp', 'bclexer.ll', LEXFLAGS = '-Pbc_yy')
