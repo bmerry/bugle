@@ -52,7 +52,7 @@ def apitables_h_generator(source, target, env, for_signature):
     for header in source[1:-1]:
         cmd += ' ' + header.path
     cmd += ' > ' + target[0].path
-    return Action.Action(cmd, '$APITTABLESHCOMSTR')
+    return Action.Action(cmd, '$APITABLESHCOMSTR')
 
 def generate(env, **kw):
     alias_builder = env.Builder(

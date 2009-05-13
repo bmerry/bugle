@@ -1,5 +1,6 @@
-AC_INIT(bugle, 0.0.20090221, bmerry@users.sourceforge.net)
+AC_INIT(bugle, 0.0.20090411, bmerry@users.sourceforge.net)
 AC_CONFIG_SRCDIR([budgie.cpp])
+AC_CONFIG_HEADERS([config.h])
 AM_INIT_AUTOMAKE([1.7 subdir-objects])
 
 dnl Checks for programs

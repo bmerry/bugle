@@ -21,6 +21,7 @@
 #define _POSIX_C_SOURCE 200112L /* for flockfile */
 #include <bugle/log.h>
 #include <bugle/filters.h>
+#include <bugle/die.h>
 #include <stdbool.h>
 #include "common/threads.h"
 #include <stdio.h>

@@ -22,6 +22,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdarg.h>
+#include <unistd.h>
 #include <bugle/misc.h>
 #include <bugle/linkedlist.h>
 #include "common/threads.h"

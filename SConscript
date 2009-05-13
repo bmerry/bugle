@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 import sys
 import os
+from SCons.Script.Main import OptionsParser
 from CrossEnvironment import CrossEnvironment
 from API import *
 import BugleChecks
@@ -79,7 +80,7 @@ def get_features():
 
 def get_apis():
     '''
-    Returns a list of possible API objects
+    Returns a dictionary of possible API objects
     '''
 
     # Each list is a name followed by a list of feature keys
@@ -91,29 +92,61 @@ def get_apis():
             ['gles2-egl-posix', 'gles2', 'egl', 'x11'],
             ['gles2-egl-win', 'gles2', 'egl']
             ]
-    apis = []
+    apis = {}
     features = get_features()
     for i in api_helpers:
         f = [features[x] for x in i[1:]]
-        apis.append(API(i[0], *f))
+        apis[i[0]] = API(i[0], *f)
     return apis
 
-def get_api(name):
+def api_validator(apis, name):
     '''
-    Get the API object for the selected variant string
+    Checks that an API name is in the dictionary of recognised names
     '''
-    apis = get_apis()
-    for i in apis:
-        if i.name == name:
-            return i
-    print >>sys.stderr, "Invalid value '%s' for api" % name
-    Exit(2)
+    if name not in apis:
+        print "%s is not a valid api (pick one of %s)" % (name, ', '.join(apis.keys()))
+        Exit(2)
 
 def setup_options():
-    AddOption('--short', dest = 'bugle_short', action = 'store_true')
+    '''
+    Adds custom command-line options
+    '''
+    AddOption('--short', help = 'Show more compact build lines', dest = 'bugle_short', action = 'store_true')
+
+def checks(env):
+    '''
+    Do configuration checks
+    '''
+    if env.GetOption('help') or env.GetOption('clean'):
+        return env
+
+    conf = Configure(env, custom_tests = BugleChecks.tests, config_h = '#/config.h')
+    conf.CheckHeader('dirent.h')
+    conf.CheckHeader('ndir.h')
+    conf.CheckHeader('dlfcn.h')
+    conf.CheckHeader('stdint.h')
+    for i in ['cosf', 'sinf', 'finite', 'isfinite', 'isnan']:
+        conf.CheckLibWithHeader('m', 'math.h', 'c', '%s(1.0);' % i, autoadd = False)
+    conf.CheckLibWithHeader('m', 'math.h', 'c', 'nan("");', autoadd = False)
+    for i in ['strtof', 'strrchr']:
+        conf.CheckFunc(i)
+    conf.CheckAttributePrintf()
+    conf.CheckAttributeConstructor()
+    conf.CheckAttributeHiddenAlias()
+    for c in api.checks:
+        c(conf)
+    return conf.Finish()
 
 # Process command line arguments
-api = get_api(ARGUMENTS.get('api', ac_vars['BUGLE_API']))
+apis = get_apis()
+vars = Variables('config.py', ARGUMENTS)
+vars.Add('api', help = 'GL API variant', default = ac_vars['BUGLE_API'],
+        validator = lambda key, val, env: api_validator(apis, val))
+vars.Add('HOST', help = 'Host machine string for cross-compilation')
+vars.Add('CC', help = 'The C compiler')
+vars.Add('CCFLAGS', help = 'C and C++ compilation flags')
+vars.Add('CFLAGS', help = 'C compilation flags')
+vars.Add('CXXFLAGS', help = 'C++ compilation flags')
 
 environ = {}
 for e in ['PATH', 'CPATH', 'LIBRARY_PATH', 'LD_LIBRARY_PATH']:
@@ -132,7 +165,8 @@ common_kw = dict(
             ],
         toolpath = ['%(srcdir)s/site_scons/site_tools' % ac_vars],
         srcdir = srcdir,
-        builddir = builddir)
+        builddir = builddir,
+        variables = vars)
 
 setup_options()
 if GetOption('bugle_short'):
@@ -169,23 +203,15 @@ tu_env = CrossEnvironment(
         BCPATH = [builddir, srcdir],
         **common_kw)
 
-conf = Configure(env, custom_tests = BugleChecks.tests, config_h = '#/config.h')
-conf.CheckHeader('dirent.h')
-conf.CheckHeader('ndir.h')
-conf.CheckHeader('dlfcn.h')
-conf.CheckHeader('stdint.h')
-for i in ['cosf', 'sinf', 'finite', 'isfinite', 'isnan']:
-    conf.CheckLibWithHeader('m', 'math.h', 'c', '%s(1.0);' % i, autoadd = False)
-conf.CheckLibWithHeader('m', 'math.h', 'c', 'nan("");', autoadd = False)
-for i in ['strtof', 'strrchr']:
-    conf.CheckFunc(i)
-conf.CheckAttributePrintf()
-conf.CheckAttributeConstructor()
-conf.CheckAttributeHiddenAlias()
-for c in api.checks:
-    c(conf)
-env = conf.Finish()
+# Post-process command-line options
+Help(vars.GenerateHelpText(env))
+unknown = vars.UnknownVariables()
+if unknown:
+    print 'Unknown command-line option(s):', ', '.join(unknown.keys())
+    Exit(2)
+api = apis[env['api']]
 
+env = checks(env)
 Export('build_env', 'tu_env', 'env', 'api')
 
 SConscript('lib/SConscript')

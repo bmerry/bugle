@@ -5,7 +5,6 @@ AM_CONFIG_HEADER(config.h)
 
 dnl Checks for programs
 AC_PROG_CC
-gl_EARLY
 AM_PROG_CC_C_O
 AC_PROG_CPP
 AM_PROG_LEX
@@ -76,7 +75,7 @@ AC_LIBLTDL_INSTALLABLE(libltdl)
 AC_LIBTOOL_DLOPEN
 AC_LIBTOOL_WIN32_DLL
 AC_PROG_LIBTOOL
-AC_CONFIG_SUBDIRS(libltdl budgie)
+AC_CONFIG_SUBDIRS(libltdl lib budgie)
 AC_SUBST(LTDLINCL)
 AC_SUBST(LIBLTDL)
 AC_SUBST(LIBTOOL_DEPS)
@@ -141,7 +140,6 @@ AC_CHECK_LIB([GLEW32], [glewInit], [
 AC_SUBST(GLEW_LIBS)
 
 dnl Checks for header files
-gl_INIT
 AC_HEADER_STDC
 AC_HEADER_DIRENT
 AC_HEADER_STDBOOL
@@ -260,7 +258,7 @@ AM_CONDITIONAL(BUGLE_BINFMT_PE, test $BUGLE_BINFMT = BUGLE_BINFMT_PE)
 AM_CONDITIONAL(BUGLE_BINFMT_ELF, test $BUGLE_BINFMT = BUGLE_BINFMT_ELF)
 
 dnl Write out files
-AC_CONFIG_FILES([SConstruct Makefile lib/Makefile bugle.pc include/bugle/porting.h])
+AC_CONFIG_FILES([SConstruct Makefile bugle.pc include/bugle/porting.h])
 AC_OUTPUT
 
 dnl Display configuration

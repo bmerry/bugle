@@ -2,6 +2,10 @@
 
 Import('env')
 
+# Make sure that config.h from this dir is found
+gnulib_env = env.Clone()
+gnulib_env.Prepend(CPPPATH = ['.'])
+
 gnulib_sources = [
         'xmalloc.c',
         '../gnulib-local/lib/xalloc-die.c',
@@ -15,6 +19,6 @@ gnulib_sources = [
 
 gnulib_shared = []
 for i in gnulib_sources:
-    gnulib_shared += env.SharedObject(i)
+    gnulib_shared += gnulib_env.SharedObject(i)
 
 Export('gnulib_shared')
