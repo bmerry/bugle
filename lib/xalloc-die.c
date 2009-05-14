@@ -1,5 +1,5 @@
 /*  BuGLe: an OpenGL debugging tool
- *  Copyright (C) 2004-2007  Bruce Merry
+ *  Copyright (C) 2004-2007, 2009  Bruce Merry
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -21,28 +21,15 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-
-#if BUGLE_HAVE_PRAGMA_WEAK
-extern void bugle_log_xalloc_die(void);
-
-/* Some arbitrary function not used in this file. See lib/lock.h for an
- * explanation of why this is useful.
- */
-extern void bugle_log(const char *filterset, const char *event, int severity,
-                      const char *message);
-# pragma weak bugle_log_xalloc_die
-# pragma weak bugle_log
-#endif
+#include <bugle/die.h>
 
 void xalloc_die(void)
 {
-#if BUGLE_HAVE_PRAGMA_WEAK
-    if (&bugle_log != NULL)
-        bugle_log_xalloc_die();
+    void (*xalloc_die_callback)(void) = bugle_get_alloc_die();
+
+    if (xalloc_die_callback != NULL)
+        xalloc_die_callback();
     else
-#endif
-    {
         fprintf(stderr, "bugle: memory allocation failed\n");
-    }
     abort();
 }
