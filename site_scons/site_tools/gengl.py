@@ -29,40 +29,19 @@ def find_header(env, name):
     raise NameError, 'Could not find ' + name
 
 def gengl_emitter(target, source, env):
-    '''Make sure the generator is treated as a source for dependency purposes'''
-    source.append(env['srcdir'].File('gengl/gengl.perl'))
+    '''Make the generator a dependency'''
+    env.Depends(target, env['GENGL'])
     return target, source
-
-def alias_generator(source, target, env, for_signature):
-    cmd = 'perl ' + source[-1].path + ' --mode=alias'
-    for header in source[0:-1]:
-        cmd += ' ' + header.path
-    cmd += ' > ' + target[0].path
-    return Action.Action(cmd, '$ALIASCOMSTR')
-
-def apitables_c_generator(source, target, env, for_signature):
-    cmd = 'perl ' + source[-1].path + ' --mode=c --header=' + source[0].path
-    for header in source[1:-1]:
-        cmd += ' ' + header.path
-    cmd += ' > ' + target[0].path
-    return Action.Action(cmd, '$APITABLESCCOMSTR')
-
-def apitables_h_generator(source, target, env, for_signature):
-    cmd = 'perl ' + source[-1].path + ' --mode=header --header=' + source[0].path
-    for header in source[1:-1]:
-        cmd += ' ' + header.path
-    cmd += ' > ' + target[0].path
-    return Action.Action(cmd, '$APITABLESHCOMSTR')
 
 def generate(env, **kw):
     alias_builder = env.Builder(
-            generator = alias_generator,
+            action = Action.Action('perl $GENGL --mode=alias $SOURCES > $TARGET', '$ALIASCOMSTR'),
             emitter = gengl_emitter)
     apitables_c_builder = env.Builder(
-            generator = apitables_c_generator,
+            action = Action.Action('perl $GENGL --mode=c --header=$SOURCES > $TARGET', '$APITABLESCCOMSTR'),
             emitter = gengl_emitter)
     apitables_h_builder = env.Builder(
-            generator = apitables_h_generator,
+            action = Action.Action('perl $GENGL --mode=header --header=$SOURCES > $TARGET', '$APITABLESHCOMSTR'),
             emitter = gengl_emitter)
     env.Append(
             BUILDERS = {
@@ -70,6 +49,7 @@ def generate(env, **kw):
                 'ApitablesC': apitables_c_builder,
                 'ApitablesH': apitables_h_builder
                 },
+            GENGL = env['srcdir'].File('gengl/gengl.perl'),
             find_header = find_header)
 
 def exists(env):

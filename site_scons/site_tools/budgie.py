@@ -25,8 +25,8 @@ def bc_scanner_function(node, env, path, arg = None):
     return deps
 
 def bc_emitter(target, source, env):
-    '''Make budgie itself an implicit source'''
-    source.append(env['BUDGIE'])
+    '''Make budgie itself a dependency'''
+    env.Depends(target, env['BUDGIE'])
     return target, source
 
 def generate(env, **kw):
