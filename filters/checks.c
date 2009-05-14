@@ -615,7 +615,7 @@ static void checks_min_max(GLsizei count, GLenum gltype, const GLvoid *indices,
                                     (const char *) indices - (const char *) NULL,
                                     size, vbo_indices);
             indices = vbo_indices;
-#endif // 
+#endif /* !GLES */
         }
     }
 
