@@ -99,13 +99,11 @@ def get_apis():
         apis[i[0]] = API(i[0], *f)
     return apis
 
-def api_validator(apis, name):
-    '''
-    Checks that an API name is in the dictionary of recognised names
-    '''
-    if name not in apis:
-        print "%s is not a valid api (pick one of %s)" % (name, ', '.join(apis.keys()))
-        Exit(2)
+def get_default_api_name(env):
+    if env['PLATFORM'] == 'posix':
+        return 'gl-glx'
+    else:
+        return 'gl-wgl'
 
 def setup_options():
     '''
@@ -140,14 +138,13 @@ def checks(env):
 
 def get_vars(apis):
     vars = Variables('config.py', ARGUMENTS)
-    # TODO determine the default from the platform
-    vars.Add('api', help = 'GL API variant', default = 'gl-glx',
-            validator = lambda key, val, env: api_validator(apis, val))
-    vars.Add('HOST', help = 'Host machine string for cross-compilation')
-    vars.Add('CC', help = 'The C compiler')
-    vars.Add('CCFLAGS', help = 'C and C++ compilation flags')
-    vars.Add('CFLAGS', help = 'C compilation flags')
-    vars.Add('CXXFLAGS', help = 'C++ compilation flags')
+    vars.AddVariables(
+            EnumVariable('api', 'GL API variant', get_default_api_name(DefaultEnvironment()), allowed_values = apis.keys()),
+            ('HOST', 'Host machine string for cross-compilation'),
+            ('CC', 'The C compiler'),
+            ('CCFLAGS', 'C and C++ compilation flags'),
+            ('CFLAGS', 'C compilation flags'),
+            ('CXXFLAGS', 'C++ compilation flags'))
     return vars
 
 def get_substs(platform, api):
