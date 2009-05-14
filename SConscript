@@ -119,14 +119,10 @@ def checks(env):
         return env
 
     conf = Configure(env, custom_tests = BugleChecks.tests, config_h = '#/config.h')
-    conf.CheckHeader('dirent.h')
-    conf.CheckHeader('ndir.h')
+    conf.CheckLib('m')
     conf.CheckHeader('dlfcn.h')
     conf.CheckHeader('stdint.h')
-    for i in ['cosf', 'sinf', 'finite', 'isfinite', 'isnan']:
-        conf.CheckLibWithHeader('m', 'math.h', 'c', '%s(1.0);' % i, autoadd = False)
-    conf.CheckLibWithHeader('m', 'math.h', 'c', 'nan("");', autoadd = False)
-    for i in ['strtof', 'strrchr']:
+    for i in ['cosf', 'sinf', 'finite', 'isfinite', 'isnan', 'nan', 'strtof']:
         conf.CheckFunc(i)
     conf.CheckAttributePrintf()
     conf.CheckAttributeConstructor()

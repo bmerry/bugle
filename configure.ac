@@ -59,8 +59,6 @@ AC_SUBST(GLEW_LIBS)
 
 dnl Checks for header files
 AC_HEADER_STDC
-AC_HEADER_DIRENT
-AC_HEADER_STDBOOL
 AC_CHECK_HEADERS([sys/types.h stdlib.h stddef.h NVPerfSDK.h dlfcn.h sys/select.h])
 AC_CHECK_HEADERS([readline/readline.h readline/history.h], [], [HAVE_READLINE=0])
 # ffmpeg moves the headers around

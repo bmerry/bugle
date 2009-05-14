@@ -1,5 +1,5 @@
 /*  BuGLe: an OpenGL debugging tool
- *  Copyright (C) 2004-2007  Bruce Merry
+ *  Copyright (C) 2004-2007, 2009  Bruce Merry
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -18,11 +18,13 @@
 #if HAVE_CONFIG_H
 # include <config.h>
 #endif
+#define _BSD_SOURCE /* For finite() */
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
 #include <stdarg.h>
 #include <unistd.h>
+#include <math.h>
 #include <bugle/misc.h>
 #include <bugle/linkedlist.h>
 #include "common/threads.h"
@@ -93,4 +95,33 @@ char *bugle_afgets(FILE *stream)
         return NULL;
     }
     return str;
+}
+
+int bugle_isfinite(double x)
+{
+#if HAVE_ISFINITE
+    return isfinite(x);
+#elif HAVE_FINITE
+    return finite(x);
+#else
+    return x == x && x - x == 0.0;
+#endif
+}
+
+int bugle_isnan(double x)
+{
+#if HAVE_ISNAN
+    return isnan(x);
+#else
+    return x != x;
+#endif
+}
+
+double bugle_nan(const char *tagp)
+{
+#if HAVE_NAN
+    return nan(tagp);
+#else
+    return 0.0 / 0.0;
+#endif
 }

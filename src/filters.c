@@ -19,7 +19,6 @@
 # include <config.h>
 #endif
 #define _POSIX_C_SOURCE 200112L /* For flockfile */
-#define _BSD_SOURCE /* For finite() */
 #define _XOPEN_SOURCE 600 /* For strtof */
 #include <stdio.h>
 #include <stddef.h>
@@ -29,23 +28,9 @@
 #include <errno.h>
 #include <stdlib.h>
 #include <math.h>
-#if HAVE_DIRENT_H
-# include <dirent.h>
-# define NAMLEN(dirent) strlen((dirent)->d_name)
-#else
-# define dirent direct
-# define NAMLEN(dirent) (dirent)->d_namlen
-# if HAVE_SYS_NDIR_H
-#  include <sys/ndir.h>
-# endif
-# if HAVE_SYS_DIR_H
-#  include <sys/dir.h>
-# endif
-# if HAVE_NDIR_H
-#  include <ndir.h>
-# endif
-#endif
+#include <dirent.h>
 #include <ltdl.h>
+#include <bugle/misc.h>
 #include <bugle/input.h>
 #include <bugle/filters.h>
 #include <bugle/log.h>
@@ -349,7 +334,7 @@ void filters_initialise(void)
     if (!libdir) libdir = PKGLIBDIR;
     dir = opendir(libdir);
     if (!dir)
-    { 
+    {
         bugle_log_printf("filters", "initialise", BUGLE_LOG_ERROR,
                          "failed to open %s: %s", libdir, strerror(errno));
         exit(1);
@@ -371,7 +356,6 @@ bugle_bool filter_set_variable(filter_set *handle, const char *name, const char 
     char *end;
     bugle_input_key key_value;
     void *value_ptr = NULL;
-    bugle_bool finite_value;
 
     for (v = handle->variables; v && v->name; v++)
     {
@@ -440,14 +424,7 @@ bugle_bool filter_set_variable(filter_set *handle, const char *name, const char 
                     return BUGLE_FALSE;
                 }
 
-#if HAVE_ISFINITE
-                finite_value = isfinite(float_value);
-#elif HAVE_FINITE
-                finite_value = finite(float_value);
-#else
-                finite_value = BUGLE_TRUE;
-#endif
-                if (!finite_value)
+                if (!bugle_isfinite(float_value))
                 {
                     bugle_log_printf(handle->name, "initialise", BUGLE_LOG_ERROR,
                                      "Expected a finite real number for %s in filter-set %s",

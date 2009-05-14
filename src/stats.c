@@ -1,5 +1,5 @@
 /*  BuGLe: an OpenGL debugging tool
- *  Copyright (C) 2004-2008  Bruce Merry
+ *  Copyright (C) 2004-2009  Bruce Merry
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -29,6 +29,7 @@
 #include <bugle/log.h>
 #include <bugle/input.h>
 #include <bugle/stats.h>
+#include <bugle/misc.h>
 #include "src/statsparse.h"
 #include <bugle/hashtable.h>
 #include <bugle/bool.h>
@@ -78,7 +79,7 @@ stats_signal *bugle_stats_signal_new(const char *name, void *user_data,
 
     assert(!stats_signal_get(name));
     si = XZALLOC(stats_signal);
-    si->value = NAN;
+    si->value = bugle_nan("");
     si->integral = 0.0;
     si->offset = -1;
     si->user_data = user_data;
@@ -117,7 +118,7 @@ double bugle_stats_expression_evaluate(const stats_expression *expr,
     case STATS_EXPRESSION_SIGNAL:
         /* Generate a NaN, and let good old IEEE 754 take care of propagating it. */
         if (!expr->signal)
-            return NAN;
+            return bugle_nan("");
         switch (expr->op)
         {
         case STATS_OPERATION_DELTA:
@@ -141,7 +142,7 @@ void bugle_stats_signal_update(stats_signal *si, double v)
 
     gettimeofday(&now, NULL);
     /* Integrate over time; a NaN indicates that this is the first time */
-    if (FINITE(si->value))
+    if (bugle_isfinite(si->value))
         si->integral += time_elapsed(&si->last_updated, &now) * si->value;
     si->value = v;
     si->last_updated = now;
@@ -150,7 +151,7 @@ void bugle_stats_signal_update(stats_signal *si, double v)
 /* Convenience for accumulating signals */
 void bugle_stats_signal_add(stats_signal *si, double dv)
 {
-    if (!FINITE(si->value))
+    if (!bugle_isfinite(si->value))
         bugle_stats_signal_update(si, dv);
     else
         bugle_stats_signal_update(si, si->value + dv);
@@ -206,7 +207,7 @@ void bugle_stats_signal_values_gather(stats_signal_values *sv)
     }
     /* Make sure that everything is initialised to an insane value (NaN) */
     for (i = 0; i < stats_signals_num_active; i++)
-        sv->values[i].value = sv->values[i].integral = NAN;
+        sv->values[i].value = sv->values[i].integral = bugle_nan("");
     for (s = bugle_list_head(&stats_signals_active); s; s = bugle_list_next(s))
     {
         si = (stats_signal *) bugle_list_data(s);
@@ -216,7 +217,7 @@ void bugle_stats_signal_values_gather(stats_signal_values *sv)
             sv->values[si->offset].integral = si->integral;
             /* Have to update the integral from when the signal was updated
              * until this instant. */
-            if (FINITE(si->value))
+            if (bugle_isfinite(si->value))
                 sv->values[si->offset].integral +=
                     si->value * time_elapsed(&si->last_updated,
                                              &sv->last_updated);

@@ -58,6 +58,11 @@ BUGLE_EXPORT_PRE int bugle_appendf(char **strp, size_t *sz, const char *format, 
  */
 BUGLE_EXPORT_PRE char *bugle_afgets(FILE *stream) BUGLE_EXPORT_POST;
 
+/* Equivalent to C99 functions, but specific to double */
+BUGLE_EXPORT_PRE int bugle_isfinite(double x) BUGLE_EXPORT_POST;
+BUGLE_EXPORT_PRE int bugle_isnan(double x) BUGLE_EXPORT_POST;
+BUGLE_EXPORT_PRE double bugle_nan(const char *tagp) BUGLE_EXPORT_POST;
+
 #ifdef __cplusplus
 }
 #endif

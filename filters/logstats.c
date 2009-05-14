@@ -1,5 +1,5 @@
 /*  BuGLe: an OpenGL debugging tool
- *  Copyright (C) 2004-2007  Bruce Merry
+ *  Copyright (C) 2004-2007, 2009  Bruce Merry
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -25,6 +25,7 @@
 #include <bugle/glwin/glwin.h>
 #include <bugle/linkedlist.h>
 #include <bugle/stats.h>
+#include <bugle/misc.h>
 #include <bugle/filters.h>
 #include <bugle/log.h>
 #include "xalloc.h"
@@ -58,7 +59,7 @@ static bugle_bool logstats_swap_buffers(function_call *call, const callback_data
         {
             st = (stats_statistic *) bugle_list_data(i);
             double v = bugle_stats_expression_evaluate(st->value, &logstats_prev, &logstats_cur);
-            if (FINITE(v))
+            if (bugle_isfinite(v))
             {
                 sub = bugle_stats_statistic_find_substitution(st, v);
                 if (sub)

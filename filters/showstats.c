@@ -1,5 +1,5 @@
 /*  BuGLe: an OpenGL debugging tool
- *  Copyright (C) 2004-2008  Bruce Merry
+ *  Copyright (C) 2004-2009  Bruce Merry
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -212,7 +212,7 @@ static void showstats_update(showstats_struct *ss)
                 switch (sst->mode)
                 {
                 case SHOWSTATS_TEXT:
-                    if (FINITE(v))
+                    if (bugle_isfinite(v))
                     {
                         sub = bugle_stats_statistic_find_substitution(sst->st, v);
                         if (sub)
@@ -228,7 +228,7 @@ static void showstats_update(showstats_struct *ss)
                     {
                         GLubyte vs;
 
-                        if (!FINITE(v)) v = 0.0;
+                        if (!bugle_isfinite(v)) v = 0.0;
                         sst->graph_history[sst->graph_offset] = v;
                         /* Check if we need to rescale */
                         if (v > sst->graph_scale)

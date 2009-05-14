@@ -28,28 +28,6 @@
 extern "C" {
 #endif
 
-#if HAVE_FINITE
-# define FINITE(x) (finite(x))
-#elif HAVE_ISFINITE
-# define FINITE(x) (isfinite(x))
-#else
-# define FINITE(x) ((x) != (x) && (x) != HUGE_VAL && (x) != -HUGE_VAL)
-#endif
-
-#if HAVE_ISNAN
-# define ISNAN(x) isnan(x)
-#else
-# define ISNAN(x) ((x) != (x))
-#endif
-
-#ifndef NAN
-# if HAVE_NAN
-#  define NAN (nan(""))
-# else
-#  define NAN (0.0 / 0.0)
-# endif
-#endif
-
 typedef enum
 {
     STATS_EXPRESSION_NUMBER,
