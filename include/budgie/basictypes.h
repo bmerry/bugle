@@ -18,9 +18,6 @@
 #ifndef BUGLE_BUDGIE_BASICTYPES_H
 #define BUGLE_BUDGIE_BASICTYPES_H
 
-#if HAVE_CONFIG_H
-# include <config.h>
-#endif
 
 typedef int budgie_function;
 typedef int budgie_group;

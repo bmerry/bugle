@@ -18,9 +18,6 @@
 #ifndef BUGLE_GLWIN_H
 #define BUGLE_GLWIN_H
 
-#if HAVE_CONFIG_H
-# include <config.h>
-#endif
 #include <bugle/filters.h>
 #include <bugle/porting.h>
 #include <bugle/glwin/glwintypes.h>

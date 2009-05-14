@@ -18,9 +18,6 @@
 #ifndef BUGLE_GL_GLHEADERS_H
 #define BUGLE_GL_GLHEADERS_H
 
-#if HAVE_CONFIG_H
-# include <config.h>
-#endif
 #include <bugle/porting.h>
 #if BUGLE_GLTYPE_GL
 # include <GL/gl.h>

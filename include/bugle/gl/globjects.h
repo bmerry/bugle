@@ -18,9 +18,6 @@
 #ifndef BUGLE_GL_GLOBJECTS_H
 #define BUGLE_GL_GLOBJECTS_H
 
-#if HAVE_CONFIG_H
-# include <config.h>
-#endif
 #include <bugle/gl/glheaders.h>
 #include <bugle/export.h>
 

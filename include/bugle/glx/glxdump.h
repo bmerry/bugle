@@ -18,9 +18,6 @@
 #ifndef BUGLE_GLX_GLXDUMP_H
 #define BUGLE_GLX_GLXDUMP_H
 
-#if HAVE_CONFIG_H
-# include <config.h>
-#endif
 #include <GL/glx.h>
 #include <stdbool.h>
 #include <stdio.h>

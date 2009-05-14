@@ -18,9 +18,6 @@
 #ifndef BUGLE_SRC_OBJECTS_H
 #define BUGLE_SRC_OBJECTS_H
 
-#if HAVE_CONFIG_H
-# include <config.h>
-#endif
 #include <stddef.h>
 #include <stdbool.h>
 #include <bugle/linkedlist.h>

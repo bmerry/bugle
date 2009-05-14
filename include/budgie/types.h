@@ -18,9 +18,6 @@
 #ifndef BUGLE_BUDGIE_TYPES_H
 #define BUGLE_BUDGIE_TYPES_H
 
-#if HAVE_CONFIG_H
-# include <config.h>
-#endif
 
 #include <budgie/basictypes.h>
 #include <budgie/types2.h>

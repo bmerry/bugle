@@ -18,9 +18,6 @@
 #ifndef BUGLE_TRACKCONTEXT_H
 #define BUGLE_TRACKCONTEXT_H
 
-#if HAVE_CONFIG_H
-# include <config.h>
-#endif
 #include <stddef.h>
 #include <stdbool.h>
 #include <bugle/glwin/glwintypes.h>

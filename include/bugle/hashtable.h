@@ -18,9 +18,6 @@
 #ifndef BUGLE_COMMON_HASHTABLE_H
 #define BUGLE_COMMON_HASHTABLE_H
 
-#if HAVE_CONFIG_H
-# include <config.h>
-#endif
 #include <stdbool.h>
 #include <stddef.h>
 #include <bugle/export.h>

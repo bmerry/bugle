@@ -18,9 +18,6 @@
 #ifndef BUGLE_EGL_GLWINTYPES_H
 #define BUGLE_EGL_GLWINTYPES_H
 
-#if HAVE_CONFIG_H
-# include <config.h>
-#endif
 
 #include <EGL/egl.h>
 #include <EGL/eglext.h>

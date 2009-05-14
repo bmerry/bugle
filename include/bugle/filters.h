@@ -18,9 +18,6 @@
 #ifndef BUGLE_SRC_FILTERS_H
 #define BUGLE_SRC_FILTERS_H
 
-#if HAVE_CONFIG_H
-# include <config.h>
-#endif
 #include <stddef.h>
 #include <ltdl.h>
 #include <bugle/linkedlist.h>

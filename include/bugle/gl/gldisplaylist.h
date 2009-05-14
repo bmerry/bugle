@@ -18,9 +18,6 @@
 #ifndef BUGLE_GL_GLDISPLAYLIST_H
 #define BUGLE_GL_GLDISPLAYLIST_H
 
-#if HAVE_CONFIG_H
-# include <config.h>
-#endif
 #include <bugle/gl/glheaders.h>
 #include <bugle/objects.h>
 #include <bugle/export.h>

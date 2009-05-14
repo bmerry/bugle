@@ -18,9 +18,6 @@
 #ifndef BUGLE_SRC_APIREFLECT_H
 #define BUGLE_SRC_APIREFLECT_H
 
-#if HAVE_CONFIG_H
-# include <config.h>
-#endif
 #include <stdbool.h>
 #include <budgie/types.h>
 #include <bugle/porting.h>

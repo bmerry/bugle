@@ -18,9 +18,6 @@
 #ifndef BUGLE_BUDGIE_REFLECT_H
 #define BUGLE_BUDGIE_REFLECT_H
 
-#if HAVE_CONFIG_H
-# include <config.h>
-#endif
 #include <stdbool.h>
 #include <stdio.h>
 #include <stddef.h>

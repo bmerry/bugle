@@ -25,9 +25,6 @@
 #ifndef BUGLE_SRC_LOG_H
 #define BUGLE_SRC_LOG_H
 
-#if HAVE_CONFIG_H
-# include <config.h>
-#endif
 #include <stdbool.h>
 #include <bugle/filters.h>
 #include <bugle/misc.h>

@@ -22,9 +22,6 @@
 #ifndef BUGLE_GL_GLTYPES_H
 #define BUGLE_GL_GLTYPES_H
 
-#if HAVE_CONFIG_H
-# include <config.h>
-#endif
 #include <bugle/porting.h>
 #include <bugle/gl/glheaders.h>
 #include <stdio.h>

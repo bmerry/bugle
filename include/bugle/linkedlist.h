@@ -17,9 +17,6 @@
 
 #ifndef BUGLE_COMMON_LINKEDLIST_H
 #define BUGLE_COMMON_LINKEDLIST_H
-#if HAVE_CONFIG_H
-# include <config.h>
-#endif
 #include <stdbool.h>
 #include <bugle/export.h>
 

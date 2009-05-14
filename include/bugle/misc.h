@@ -20,9 +20,6 @@
 #ifndef BUGLE_COMMON_MISC_H
 #define BUGLE_COMMON_MISC_H
 
-#if HAVE_CONFIG_H
-# include <config.h>
-#endif
 #include <stddef.h>
 #include <stdio.h>
 #include <bugle/export.h>

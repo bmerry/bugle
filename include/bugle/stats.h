@@ -18,9 +18,6 @@
 #ifndef BUGLE_FILTERS_STATS_H
 #define BUGLE_FILTERS_STATS_H
 
-#if HAVE_CONFIG_H
-# include <config.h>
-#endif
 #include <sys/time.h>
 #include <sys/types.h>
 #include <bugle/linkedlist.h>

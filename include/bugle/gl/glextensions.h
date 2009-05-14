@@ -18,9 +18,6 @@
 #ifndef BUGLE_GL_GLEXTENSIONS_H
 #define BUGLE_GL_GLEXTENSIONS_H
 
-#if HAVE_CONFIG_H
-# include <config.h>
-#endif
 #include <stdbool.h>
 #include <bugle/apireflect.h>
 #include <budgie/macros.h>

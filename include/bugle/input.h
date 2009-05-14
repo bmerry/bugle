@@ -18,9 +18,6 @@
 #ifndef BUGLE_SRC_INPUT_H
 #define BUGLE_SRC_INPUT_H
 
-#if HAVE_CONFIG_H
-# include <config.h>
-#endif
 #include <stdbool.h>
 #include <bugle/porting.h>
 #include <bugle/export.h>

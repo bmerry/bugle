@@ -26,9 +26,6 @@
 extern "C" {
 #endif
 
-#if HAVE_CONFIG_H
-# include <config.h>
-#endif
 #include <bugle/export.h>
 
 typedef void (*bugle_alloc_die_callback)(void);

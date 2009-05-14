@@ -18,9 +18,6 @@
 #ifndef BUGLE_GLWIN_GLWINTYPES_H
 #define BUGLE_GLWIN_GLWINTYPES_H
 
-#if HAVE_CONFIG_H
-# include <config.h>
-#endif
 #include <bugle/porting.h>
 #include <bugle/export.h>
 #include <stdbool.h>
