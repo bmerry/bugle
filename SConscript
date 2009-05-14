@@ -264,6 +264,6 @@ tu_env.Budgie(budgie_outputs, ['src/data/gl.tu', 'bc/' + api.name + '.bc'])
 
 headers = [tu_env['find_header'](env, h) for h in api.headers]
 # TODO change to bc/alias.bc
-tu_env.BudgieAlias(target = ['bc/gl/alias.bc'], source = headers)
+tu_env.BudgieAlias(target = ['bc/alias.bc'], source = headers)
 tu_env.ApitablesC(target = ['src/apitables.c'], source = ['budgielib/defines.h'] + headers)
 tu_env.ApitablesH(target = ['src/apitables.h'], source = ['budgielib/defines.h'] + headers)

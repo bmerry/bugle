@@ -2,5 +2,6 @@ LIBRARY bglEGL.dll
 LIBRARY bglGLESv2.dll
 CALLAPI __stdcall
 
+INCLUDE bc/alias.bc
 INCLUDE bc/gles2/gles2.bc
 INCLUDE bc/egl/egl.bc
