@@ -22,7 +22,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
-#include <stdbool.h>
+#include <bugle/bool.h>
 #include <budgie/reflect.h>
 #include <budgie/addresses.h>
 #include <bugle/glwin/glwin.h>
@@ -33,7 +33,7 @@
 
 static FILE *out;
 static int frame = 0;
-static bool outside = true;
+static bugle_bool outside = BUGLE_TRUE;
 static char *exe_filename = NULL;
 
 #define MAX_ARGS 32 /* Up this if necessary, but I hope not... */
@@ -110,30 +110,30 @@ static int follow_pointer(budgie_type type, int length, const void *ptr,
     return *defn_pool++;
 }
 
-static bool exe_glwin_swap_buffers(function_call *call, const callback_data *data)
+static bugle_bool exe_glwin_swap_buffers(function_call *call, const callback_data *data)
 {
     if (!outside)
     {
         fprintf(out, "}\n");
-        outside = true;
+        outside = BUGLE_TRUE;
     }
-    return true;
+    return BUGLE_TRUE;
 }
 
-static bool exe_callback(function_call *call, const callback_data *data)
+static bugle_bool exe_callback(function_call *call, const callback_data *data)
 {
     int i, defn_pool = 0;
     int arg_ids[MAX_ARGS];
-    bool block = false;
+    bugle_bool block = BUGLE_FALSE;
 
     if (bugle_api_extension_block(bugle_api_function_extension(call->generic.id)) == BUGLE_API_EXTENSION_BLOCK_GLWIN)
-        return true;
+        return BUGLE_TRUE;
 
     if (outside)
     {
         fprintf(out, "static void frame%d(void)\n{\n", frame);
         frame++;
-        outside = false;
+        outside = BUGLE_FALSE;
     }
     /* Generate any pointer data first */
     for (i = 0; i < call->generic.num_args; i++)
@@ -147,7 +147,7 @@ static bool exe_callback(function_call *call, const callback_data *data)
             if (!block)
             {
                 fprintf(out, "    {\n");
-                block = true;
+                block = BUGLE_TRUE;
             }
             length = abs(budgie_call_parameter_length(&call->generic, i));
             arg_ids[i] = follow_pointer(base, length, *(void **) call->generic.args[i], &defn_pool);
@@ -182,16 +182,16 @@ static bool exe_callback(function_call *call, const callback_data *data)
     }
     fputs(");\n", out);
     if (block) fputs("    }\n", out);
-    return true;
+    return BUGLE_TRUE;
 }
 
-static bool exe_initialise(filter_set *handle)
+static bugle_bool exe_initialise(filter_set *handle)
 {
     filter *f;
 
     f = bugle_filter_new(handle, "exe");
-    bugle_filter_catches_all(f, false, exe_callback);
-    bugle_glwin_filter_catches_swap_buffers(f, false, exe_glwin_swap_buffers);
+    bugle_filter_catches_all(f, BUGLE_FALSE, exe_callback);
+    bugle_glwin_filter_catches_swap_buffers(f, BUGLE_FALSE, exe_glwin_swap_buffers);
     bugle_filter_order("invoke", "exe");
 
     out = fopen(exe_filename, "w");
@@ -199,7 +199,7 @@ static bool exe_initialise(filter_set *handle)
     {
         bugle_log_printf("exe", "initialise", BUGLE_LOG_ERROR,
                          "cannot open %s for writing: %s", exe_filename, strerror(errno));
-        return false;
+        return BUGLE_FALSE;
     }
     fputs("#include <stdlib.h>\n"
           "#include <string.h>\n"
@@ -217,7 +217,7 @@ static bool exe_initialise(filter_set *handle)
 #endif
           "\n",
           out);
-    return true;
+    return BUGLE_TRUE;
 }
 
 static void exe_shutdown(filter_set *handle)

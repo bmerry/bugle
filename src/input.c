@@ -18,7 +18,7 @@
 #if HAVE_CONFIG_H
 # include <config.h>
 #endif
-#include <stdbool.h>
+#include <bugle/bool.h>
 #include <ltdl.h>
 #include <stdio.h>
 #include <stddef.h>
@@ -44,22 +44,22 @@ typedef struct
     KeyCode keycode;
 #endif
     void *arg;
-    bool (*wanted)(const bugle_input_key *, void *, bugle_input_event *);
+    bugle_bool (*wanted)(const bugle_input_key *, void *, bugle_input_event *);
     void (*callback)(const bugle_input_key *, void *, bugle_input_event *);
 } handler;
 
-static bool active = false;
+static bugle_bool active = BUGLE_FALSE;
 static linked_list handlers;
 
-static bool mouse_active = false;
-static bool mouse_first = true;
-static bool mouse_dga = false;
+static bugle_bool mouse_active = BUGLE_FALSE;
+static bugle_bool mouse_first = BUGLE_TRUE;
+static bugle_bool mouse_dga = BUGLE_FALSE;
 static bugle_input_window mouse_window;
 static int mouse_x, mouse_y;
 static void (*mouse_callback)(int, int, bugle_input_event *) = NULL;
 
 void bugle_input_key_callback(const bugle_input_key *key,
-                               bool (*wanted)(const bugle_input_key *, void *, bugle_input_event *),
+                               bugle_bool (*wanted)(const bugle_input_key *, void *, bugle_input_event *),
                                void (*callback)(const bugle_input_key *, void *, bugle_input_event *),
                                void *arg)
 {
@@ -73,27 +73,27 @@ void bugle_input_key_callback(const bugle_input_key *key,
     h->arg = arg;
 
     bugle_list_append(&handlers, h);
-    active = true;
+    active = BUGLE_TRUE;
 }
 
-void bugle_input_grab_pointer(bool dga, void (*callback)(int, int, bugle_input_event *))
+void bugle_input_grab_pointer(bugle_bool dga, void (*callback)(int, int, bugle_input_event *))
 {
     mouse_dga = dga;
     mouse_callback = callback;
-    mouse_active = true;
-    mouse_first = true;
+    mouse_active = BUGLE_TRUE;
+    mouse_first = BUGLE_TRUE;
     bugle_log("input", "mouse", BUGLE_LOG_DEBUG, "grabbed");
 }
 
 void bugle_input_release_pointer(void)
 {
-    mouse_active = false;
+    mouse_active = BUGLE_FALSE;
     bugle_log("input", "mouse", BUGLE_LOG_DEBUG, "released");
 }
 
 void bugle_input_key_callback_flag(const bugle_input_key *key, void *arg, bugle_input_event *event)
 {
-    *(bool *) arg = true;
+    *(bugle_bool *) arg = BUGLE_TRUE;
 }
 
 #if BUGLE_HAVE_ATTRIBUTE_CONSTRUCTOR && !DEBUG_CONSTRUCTOR && BUGLE_BINFMT_CONSTRUCTOR_LTDL
@@ -175,7 +175,7 @@ static Bool event_predicate(Display *dpy, XEvent *event, XPointer arg)
     return False;
 }
 
-/* Note: assumes that event_predicate is true */
+/* Note: assumes that event_predicate is True */
 static void handle_event(Display *dpy, XEvent *event)
 {
     bugle_input_key key;
@@ -202,7 +202,7 @@ static void handle_event(Display *dpy, XEvent *event)
             XWarpPointer(dpy, event->xmotion.window, event->xmotion.window,
                          0, 0, 0, 0, mouse_x, mouse_y);
             XFlush(dpy); /* try to ensure that XWarpPointer gets to server before next motion */
-            mouse_first = false;
+            mouse_first = BUGLE_FALSE;
         }
         else if (event->xmotion.window != mouse_window)
             XWarpPointer(dpy, None, mouse_window, 0, 0, 0, 0, mouse_x, mouse_y);
@@ -218,7 +218,7 @@ static void handle_event(Display *dpy, XEvent *event)
         }
         return;
     }
-    /* event_predicate returns true on release as well, so that the
+    /* event_predicate returns True on release as well, so that the
      * release event does not appear to the app without the press event.
      * We only conditionally pass releases to the filterset.
      */
@@ -261,17 +261,17 @@ static void initialise_keycodes(Display *dpy)
     gl_lock_unlock(lock);
 }
 
-static bool extract_events(Display *dpy)
+static bugle_bool extract_events(Display *dpy)
 {
     XEvent event;
-    bool any = false;
+    bugle_bool any = BUGLE_FALSE;
 
     initialise_keycodes(dpy);
 
     while ((*real_XCheckIfEvent)(dpy, &event, event_predicate, NULL))
     {
         handle_event(dpy, &event);
-        any = true;
+        any = BUGLE_TRUE;
     }
     return any;
 }
@@ -385,7 +385,7 @@ Bool matches_mask(XEvent *event, unsigned long mask)
     case MappingNotify: return False;
     default:
         /* Unknown event! This is probably related to an extension. We
-         * return true for now to be safe. That means that BuGLe might
+         * return True for now to be safe. That means that BuGLe might
          * wait longer than expected for an event, but it will never
          * cause to wait forever for one.
          */
@@ -827,7 +827,7 @@ void input_initialise(void)
     bugle_list_init(&handlers, free);
 }
 
-static bool input_key_lookup(const char *name, bugle_input_key *key)
+static bugle_bool input_key_lookup(const char *name, bugle_input_key *key)
 {
     bugle_input_keysym keysym;
 
@@ -835,10 +835,10 @@ static bool input_key_lookup(const char *name, bugle_input_key *key)
     if (keysym != BUGLE_INPUT_NOSYMBOL)
     {
         key->keysym = keysym;
-        return true;
+        return BUGLE_TRUE;
     }
     else
-        return false;
+        return BUGLE_FALSE;
 }
 
 #endif /* BUGLE_WINSYS_X11 */
@@ -894,7 +894,7 @@ LRESULT CALLBACK input_mouse_hook(int code, WPARAM wParam, LPARAM lParam)
                 mouse_x = (area.left + area.right) / 2;
                 mouse_y = (area.top + area.bottom) / 2;
                 SetCursorPos(mouse_x, mouse_y);
-                mouse_first = false;
+                mouse_first = BUGLE_FALSE;
             }
             else if (mouse_x != info->pt.x || mouse_y != info->pt.y)
             {
@@ -921,15 +921,15 @@ void input_initialise(void)
     SetWindowsHookEx(WH_MOUSE, input_mouse_hook, (HINSTANCE) NULL, GetCurrentThreadId());
 }
 
-static bool input_key_lookup(const char *name, bugle_input_key *key)
+static bugle_bool input_key_lookup(const char *name, bugle_input_key *key)
 {
     if (name[0] >= 'A' && name[0] <= 'Z' && name[1] == '\0')
     {
         key->keysym = name[0];
-        return true;
+        return BUGLE_TRUE;
     }
     else
-        return false;
+        return BUGLE_FALSE;
 }
 
 #endif /* BUGLE_WINSYS_WINDOWS */
@@ -944,23 +944,23 @@ void input_initialise(void)
 {
 }
 
-static bool input_key_lookup(const char *name, bugle_input_key *key)
+static bugle_bool input_key_lookup(const char *name, bugle_input_key *key)
 {
     /* make all input keys appear valid, so that we don't reject config
      * files just because they have keys in them.
      */
     key->keysym = BUGLE_INPUT_NOSYMBOL;
-    return true;
+    return BUGLE_TRUE;
 }
 
 #endif /* BUGLE_WINSYS_NONE */
 
-bool bugle_input_key_lookup(const char *name, bugle_input_key *key)
+bugle_bool bugle_input_key_lookup(const char *name, bugle_input_key *key)
 {
     unsigned int state = 0;
 
-    key->press = true;
-    while (true)
+    key->press = BUGLE_TRUE;
+    while (BUGLE_TRUE)
     {
         if (name[0] == 'C' && name[1] == '-')
         {
@@ -982,10 +982,10 @@ bool bugle_input_key_lookup(const char *name, bugle_input_key *key)
             if (input_key_lookup(name, key))
             {
                 key->state = state;
-                return true;
+                return BUGLE_TRUE;
             }
             else
-                return false;
+                return BUGLE_FALSE;
         }
     }
 }

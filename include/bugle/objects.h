@@ -19,7 +19,7 @@
 #define BUGLE_SRC_OBJECTS_H
 
 #include <stddef.h>
-#include <stdbool.h>
+#include <bugle/bool.h>
 #include <bugle/linkedlist.h>
 #include <bugle/export.h>
 
@@ -42,7 +42,7 @@ BUGLE_EXPORT_PRE object_view bugle_object_view_new(object_class *klass,
                                                    void (*constructor)(const void *key, void *data),
                                                    void (*destructor)(void *data),
                                                    size_t size) BUGLE_EXPORT_POST;
-BUGLE_EXPORT_PRE object *    bugle_object_new(object_class *klass, const void *key, bool make_current) BUGLE_EXPORT_POST;
+BUGLE_EXPORT_PRE object *    bugle_object_new(object_class *klass, const void *key, bugle_bool make_current) BUGLE_EXPORT_POST;
 BUGLE_EXPORT_PRE void        bugle_object_free(object *obj) BUGLE_EXPORT_POST;
 BUGLE_EXPORT_PRE object *    bugle_object_get_current(const object_class *klass) BUGLE_EXPORT_POST;
 BUGLE_EXPORT_PRE void *      bugle_object_get_current_data(const object_class *klass, object_view view) BUGLE_EXPORT_POST;

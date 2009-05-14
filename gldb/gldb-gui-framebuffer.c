@@ -123,7 +123,7 @@ static gboolean gldb_framebuffer_pane_response_callback(gldb_response *response,
         pane->active.levels[0].planes[0].width = width;
         pane->active.levels[0].planes[0].height = height;
         pane->active.levels[0].planes[0].channels = channels;
-        pane->active.levels[0].planes[0].owns_pixels = true;
+        pane->active.levels[0].planes[0].owns_pixels = BUGLE_TRUE;
         pane->active.levels[0].planes[0].type = data->type;
         pane->active.levels[0].planes[0].pixels = (GLfloat *) r->data;
         r->data = NULL; /* stops gldb_free_response from freeing data */

@@ -20,7 +20,7 @@
 #endif
 #define _XOPEN_SOURCE 500
 #define GL_GLEXT_PROTOTYPES
-#include <stdbool.h>
+#include <bugle/bool.h>
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -46,17 +46,17 @@
 
 typedef struct
 {
-    bool capture;            /* Set to true when in feedback mode */
+    bugle_bool capture;            /* Set to BUGLE_TRUE when in feedback mode */
     size_t frame;
     FILE *stream;
 } eps_struct;
 
 static object_view eps_view;
-static bool keypress_eps = false;
-static bugle_input_key key_eps = { BUGLE_INPUT_NOSYMBOL, 0, true };
+static bugle_bool keypress_eps = BUGLE_FALSE;
+static bugle_input_key key_eps = { BUGLE_INPUT_NOSYMBOL, 0, BUGLE_TRUE };
 static char *eps_filename = NULL;
 static char *eps_title = NULL;
-static bool eps_bsp = false;
+static bugle_bool eps_bsp = BUGLE_FALSE;
 static long eps_feedback_size = 0x100000;
 
 static char *interpolate_filename(const char *pattern, int frame)
@@ -78,13 +78,13 @@ static void eps_context_init(const void *key, void *data)
     d->stream = NULL;
 }
 
-static bool eps_swap_buffers(function_call *call, const callback_data *data)
+static bugle_bool eps_swap_buffers(function_call *call, const callback_data *data)
 {
     size_t frame;
     eps_struct *d;
 
     d = (eps_struct *) bugle_object_get_current_data(bugle_context_class, eps_view);
-    if (!d) return true;
+    if (!d) return BUGLE_TRUE;
     frame = d->frame++;
     if (d->capture)
     {
@@ -115,8 +115,8 @@ static bool eps_swap_buffers(function_call *call, const callback_data *data)
                 break;
             }
             fclose(d->stream);
-            d->capture = false;
-            return false; /* Don't swap, since it isn't a real frame */
+            d->capture = BUGLE_FALSE;
+            return BUGLE_FALSE; /* Don't swap, since it isn't a real frame */
         }
         else
             bugle_log("eps", "gl2ps", BUGLE_LOG_NOTICE,
@@ -129,7 +129,7 @@ static bool eps_swap_buffers(function_call *call, const callback_data *data)
         GLint format, status;
         GLfloat size;
 
-        keypress_eps = false;
+        keypress_eps = BUGLE_FALSE;
 
         fname = interpolate_filename(eps_filename, frame);
         end = fname + strlen(fname);
@@ -144,7 +144,7 @@ static bool eps_swap_buffers(function_call *call, const callback_data *data)
             free(fname);
             bugle_log_printf("eps", "file", BUGLE_LOG_WARNING,
                              "Cannot open %s", eps_filename);
-            return true;
+            return BUGLE_TRUE;
         }
 
         status = gl2psBeginPage(eps_title ? eps_title : "Unnamed scene", "bugle",
@@ -159,7 +159,7 @@ static bool eps_swap_buffers(function_call *call, const callback_data *data)
                       "gl2psBeginPage failed");
             fclose(f);
             free(fname);
-            return true;
+            return BUGLE_TRUE;
         }
         CALL(glGetFloatv)(GL_POINT_SIZE, &size);
         gl2psPointSize(size);
@@ -167,14 +167,14 @@ static bool eps_swap_buffers(function_call *call, const callback_data *data)
         gl2psLineWidth(size);
 
         d->stream = f;
-        d->capture = true;
+        d->capture = BUGLE_TRUE;
         free(fname);
-        bugle_gl_end_internal_render("eps_swap_buffers", true);
+        bugle_gl_end_internal_render("eps_swap_buffers", BUGLE_TRUE);
     }
-    return true;
+    return BUGLE_TRUE;
 }
 
-static bool eps_glPointSize(function_call *call, const callback_data *data)
+static bugle_bool eps_glPointSize(function_call *call, const callback_data *data)
 {
     eps_struct *d;
 
@@ -184,12 +184,12 @@ static bool eps_glPointSize(function_call *call, const callback_data *data)
         GLfloat size;
         CALL(glGetFloatv)(GL_POINT_SIZE, &size);
         gl2psPointSize(size);
-        bugle_gl_end_internal_render("eps_glPointSize", true);
+        bugle_gl_end_internal_render("eps_glPointSize", BUGLE_TRUE);
     }
-    return true;
+    return BUGLE_TRUE;
 }
 
-static bool eps_glLineWidth(function_call *call, const callback_data *data)
+static bugle_bool eps_glLineWidth(function_call *call, const callback_data *data)
 {
     eps_struct *d;
 
@@ -199,20 +199,20 @@ static bool eps_glLineWidth(function_call *call, const callback_data *data)
         GLfloat width;
         CALL(glGetFloatv)(GL_LINE_WIDTH, &width);
         gl2psPointSize(width);
-        bugle_gl_end_internal_render("eps_glLineWidth", true);
+        bugle_gl_end_internal_render("eps_glLineWidth", BUGLE_TRUE);
     }
-    return true;
+    return BUGLE_TRUE;
 }
 
-static bool eps_initialise(filter_set *handle)
+static bugle_bool eps_initialise(filter_set *handle)
 {
     filter *f;
 
     f = bugle_filter_new(handle, "eps_pre");
-    bugle_glwin_filter_catches_swap_buffers(f, false, eps_swap_buffers);
+    bugle_glwin_filter_catches_swap_buffers(f, BUGLE_FALSE, eps_swap_buffers);
     f = bugle_filter_new(handle, "eps");
-    bugle_filter_catches(f, "glPointSize", false, eps_glPointSize);
-    bugle_filter_catches(f, "glLineWidth", false, eps_glLineWidth);
+    bugle_filter_catches(f, "glPointSize", BUGLE_FALSE, eps_glPointSize);
+    bugle_filter_catches(f, "glLineWidth", BUGLE_FALSE, eps_glLineWidth);
     bugle_filter_order("eps_pre", "invoke");
     bugle_filter_order("invoke", "eps");
     bugle_gl_filter_post_renders("eps");
@@ -221,7 +221,7 @@ static bool eps_initialise(filter_set *handle)
                                      NULL,
                                      sizeof(eps_struct));
     bugle_input_key_callback(&key_eps, NULL, bugle_input_key_callback_flag, &keypress_eps);
-    return true;
+    return BUGLE_TRUE;
 }
 
 void bugle_initialise_filter_library(void)

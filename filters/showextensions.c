@@ -20,7 +20,7 @@
 #endif
 #define _XOPEN_SOURCE 500
 #define GL_GLEXT_PROTOTYPES
-#include <stdbool.h>
+#include <bugle/bool.h>
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -45,16 +45,16 @@
  * FIXME-GLES: needs to be updated to support GL ES
  * FIXME: needs to be updated to support WGL
  */
-static bool *seen_functions;
+static bugle_bool *seen_functions;
 static hashptr_table seen_enums;
 static const char *gl_version = "1.1";
 static const char *glx_version = "1.2";
 
-static bool showextensions_callback(function_call *call, const callback_data *data)
+static bugle_bool showextensions_callback(function_call *call, const callback_data *data)
 {
     int i;
 
-    seen_functions[call->generic.id] = true;
+    seen_functions[call->generic.id] = BUGLE_TRUE;
     for (i = 0; i < budgie_group_parameter_count(call->generic.group); i++)
     {
         if (budgie_group_parameter_type(call->generic.group, i)
@@ -67,51 +67,51 @@ static bool showextensions_callback(function_call *call, const callback_data *da
             bugle_hashptr_set(&seen_enums, (void *) (size_t) e, &seen_enums);
         }
     }
-    return true;
+    return BUGLE_TRUE;
 }
 
-static bool showextensions_initialise(filter_set *handle)
+static bugle_bool showextensions_initialise(filter_set *handle)
 {
     filter *f;
 
     f = bugle_filter_new(handle, "showextensions");
-    bugle_filter_catches_all(f, false, showextensions_callback);
+    bugle_filter_catches_all(f, BUGLE_FALSE, showextensions_callback);
     /* The order mainly doesn't matter, but making it a pre-filter
      * reduces the risk of another filter aborting the call.
      */
     bugle_filter_order("showextensions", "invoke");
 
-    seen_functions = XCALLOC(budgie_function_count(), bool);
+    seen_functions = XCALLOC(budgie_function_count(), bugle_bool);
     bugle_hashptr_init(&seen_enums, NULL);
-    return true;
+    return BUGLE_TRUE;
 }
 
-static bool has_extension(const bugle_api_extension *list, bugle_api_extension test)
+static bugle_bool has_extension(const bugle_api_extension *list, bugle_api_extension test)
 {
     size_t i;
     for (i = 0; list[i] != NULL_EXTENSION; i++)
         if (list[i] == test)
-            return true;
-    return false;
+            return BUGLE_TRUE;
+    return BUGLE_FALSE;
 }
 
 /* Clears the seen flags for everything covered by this extension, so that
  * we don't try to find a different extension to cover it.
  */
-static void mark_extension(bugle_api_extension ext, bool *marked_extensions)
+static void mark_extension(bugle_api_extension ext, bugle_bool *marked_extensions)
 {
     budgie_function f;
     const hashptr_table_entry *e;
     const bugle_api_extension *exts;
 
     if (marked_extensions[ext]) return;
-    marked_extensions[ext] = true;
+    marked_extensions[ext] = BUGLE_TRUE;
 
     for (f = 0; f < budgie_function_count(); f++)
         if (seen_functions[f])
         {
             if (bugle_api_function_extension(f) == ext)
-                seen_functions[f] = false;
+                seen_functions[f] = BUGLE_FALSE;
         }
     for (e = bugle_hashptr_begin(&seen_enums); e; e = bugle_hashptr_next(&seen_enums, e))
         if (e->value)
@@ -133,11 +133,11 @@ static void mark_extension(bugle_api_extension ext, bool *marked_extensions)
 
 static void showextensions_print(void *marked, FILE *logf)
 {
-    bool *marked_extensions;
+    bugle_bool *marked_extensions;
     bugle_api_extension i;
 
     fputs("Required extensions:", logf);
-    marked_extensions = (bool *) marked;
+    marked_extensions = (bugle_bool *) marked;
     for (i = 0; i < bugle_api_extension_count(); i++)
         if (marked_extensions[i] && !bugle_api_extension_version(i))
         {
@@ -151,11 +151,11 @@ static void showextensions_shutdown(filter_set *handle)
     int i;
     budgie_function f;
     const hashptr_table_entry *e;
-    bool *marked_extensions;
+    bugle_bool *marked_extensions;
     const bugle_api_extension *exts;
     bugle_api_extension best;
 
-    marked_extensions = XCALLOC(bugle_api_extension_count(), bool);
+    marked_extensions = XCALLOC(bugle_api_extension_count(), bugle_bool);
     /* We assume GL 1.1 and GLX 1.2 */
     mark_extension(BUGLE_API_EXTENSION_ID(GL_VERSION_1_1), marked_extensions);
     mark_extension(BUGLE_API_EXTENSION_ID(GLX_VERSION_1_2), marked_extensions);

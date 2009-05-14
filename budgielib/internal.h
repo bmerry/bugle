@@ -35,7 +35,7 @@ typedef struct
     size_t num_parameters;
     const budgie_type *parameter_types;
     budgie_type retn_type;
-    bool has_retn;
+    bugle_bool has_retn;
 } group_data;
 
 typedef struct
@@ -100,7 +100,7 @@ extern int _budgie_type_count;
 extern int _budgie_function_count;
 extern const function_data _budgie_function_table[];
 extern const function_name_data _budgie_function_name_table[]; /* Holds wrappers in alphabetical order */
-extern bool _budgie_bypass[];
+extern bugle_bool _budgie_bypass[];
 
 extern int _budgie_group_count;
 extern const group_data _budgie_group_table[];
@@ -110,9 +110,9 @@ void _budgie_dump_bitfield(unsigned int value, char **buffer, size_t *size,
 
 /* User functions for .bc files */
 
-bool BUGLE_EXPORT_PRE budgie_dump_string(const char *value, char **buffer, size_t *size) BUGLE_EXPORT_POST;
+bugle_bool BUGLE_EXPORT_PRE budgie_dump_string(const char *value, char **buffer, size_t *size) BUGLE_EXPORT_POST;
 int BUGLE_EXPORT_PRE budgie_count_string(const char *value) BUGLE_EXPORT_POST;
 /* Like dump_string but takes an explicit length rather than NULL terminator */
-bool BUGLE_EXPORT_PRE budgie_dump_string_length(const char *value, size_t length, char **buffer, size_t *size) BUGLE_EXPORT_POST;
+bugle_bool BUGLE_EXPORT_PRE budgie_dump_string_length(const char *value, size_t length, char **buffer, size_t *size) BUGLE_EXPORT_POST;
 
 #endif /* BUGLE_BUDGIE_INTERNAL_H */

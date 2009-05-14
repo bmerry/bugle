@@ -27,7 +27,7 @@
 #endif
 #define _XOPEN_SOURCE 500
 #define GL_GLEXT_PROTOTYPES
-#include <stdbool.h>
+#include <bugle/bool.h>
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -80,7 +80,7 @@ typedef struct
     size_t stride;         /* bytes between rows */
     GLubyte *pixels;
     GLuint pbo;
-    bool pbo_mapped;       /* true during glMapBuffer/glUnmapBuffer */
+    bugle_bool pbo_mapped;       /* BUGLE_TRUE during glMapBuffer/glUnmapBuffer */
     int multiplicity;      /* number of times to write to video stream */
 } screenshot_data;
 
@@ -94,25 +94,25 @@ typedef struct
 } screenshot_context;
 
 /* General settings */
-static bool video = false;
+static bugle_bool video = BUGLE_FALSE;
 static char *video_filename = NULL;
 /* Still settings */
-static bugle_input_key key_screenshot = { BUGLE_INPUT_NOSYMBOL, 0, true };
+static bugle_input_key key_screenshot = { BUGLE_INPUT_NOSYMBOL, 0, BUGLE_TRUE };
 /* Video settings */
 static char *video_codec = NULL;
-static bool video_sample_all = false;
+static bugle_bool video_sample_all = BUGLE_FALSE;
 static long video_bitrate = 7500000;
 static long video_lag = 1;     /* latency between readpixels and encoding */
 
 /* General data */
 static int video_cur;  /* index of the next circular queue index to capture into */
-static bool video_first;
+static bugle_bool video_first;
 static screenshot_data *video_data;
 /* Still data */
-static bool keypress_screenshot = false;
+static bugle_bool keypress_screenshot = BUGLE_FALSE;
 /* Video data */
 static FILE *video_pipe = NULL;  /* Used for ppmtoy4m */
-static bool video_done = false;
+static bugle_bool video_done = BUGLE_FALSE;
 static double video_frame_time = 0.0;
 static double video_frame_step = 1.0 / 30.0; /* FIXME: depends on frame rate */
 
@@ -133,7 +133,7 @@ static char *interpolate_filename(const char *pattern, int frame)
  */
 static void prepare_screenshot_data(screenshot_data *data,
                                     int width, int height,
-                                    int align, bool use_pbo)
+                                    int align, bugle_bool use_pbo)
 {
     size_t stride;
 
@@ -172,12 +172,12 @@ static void prepare_screenshot_data(screenshot_data *data,
 
 /* These two functions should bracket all screenshot-using code. They are
  * responsible for checking for in begin/end and switching to the aux
- * context. If screenshot_start returns false, do not continue.
+ * context. If screenshot_start returns BUGLE_FALSE, do not continue.
  *
  * The argument must point to a structure which screenshot_start will
  * populate with data that should then be passed to screenshot_stop.
  */
-static bool screenshot_start(screenshot_context *ssctx)
+static bugle_bool screenshot_start(screenshot_context *ssctx)
 {
     glwin_context aux;
     glwin_display dpy;
@@ -186,16 +186,16 @@ static bool screenshot_start(screenshot_context *ssctx)
     ssctx->old_write = bugle_glwin_get_current_drawable();
     ssctx->old_read = bugle_glwin_get_current_read_drawable();
     dpy = bugle_glwin_get_current_display();
-    aux = bugle_get_aux_context(false);
-    if (!aux) return false;
+    aux = bugle_get_aux_context(BUGLE_FALSE);
+    if (!aux) return BUGLE_FALSE;
     if (!bugle_gl_begin_internal_render())
     {
         bugle_log("screenshot", "grab", BUGLE_LOG_NOTICE,
                   "swap_buffers called inside begin/end; skipping frame");
-        return false;
+        return BUGLE_FALSE;
     }
     bugle_glwin_make_context_current(dpy, ssctx->old_write, ssctx->old_write, aux);
-    return true;
+    return BUGLE_TRUE;
 }
 
 static void screenshot_stop(screenshot_context *ssctx)
@@ -226,7 +226,7 @@ static struct SwsContext *sws_context = NULL;
 #endif
 
 static AVFrame *allocate_video_frame(int fmt, int width, int height,
-                                     bool create)
+                                     bugle_bool create)
 {
     AVFrame *f;
     size_t size;
@@ -245,7 +245,7 @@ static AVFrame *allocate_video_frame(int fmt, int width, int height,
     return f;
 }
 
-static bool lavc_initialise(int width, int height)
+static bugle_bool lavc_initialise(int width, int height)
 {
     AVOutputFormat *fmt;
     AVCodecContext *c;
@@ -254,18 +254,18 @@ static bool lavc_initialise(int width, int height)
     av_register_all();
     fmt = guess_format(NULL, video_filename, NULL);
     if (!fmt) fmt = guess_format("avi", NULL, NULL);
-    if (!fmt) return false;
+    if (!fmt) return BUGLE_FALSE;
     video_context = av_alloc_format_context();
-    if (!video_context) return false;
+    if (!video_context) return BUGLE_FALSE;
     video_context->oformat = fmt;
     snprintf(video_context->filename,
              sizeof(video_context->filename), "%s", video_filename);
     /* FIXME: what does the second parameter (id) do? */
     video_stream = av_new_stream(video_context, 0);
-    if (!video_stream) return false;
+    if (!video_stream) return BUGLE_FALSE;
     codec = avcodec_find_encoder_by_name(video_codec);
     if (!codec) codec = avcodec_find_encoder(CODEC_ID_HUFFYUV);
-    if (!codec) return false;
+    if (!codec) return BUGLE_FALSE;
     c = video_stream->codec;
     c->codec_type = CODEC_TYPE_VIDEO;
     c->codec_id = codec->id;
@@ -279,11 +279,11 @@ static bool lavc_initialise(int width, int height)
     c->time_base.num = 1;
     c->gop_size = 12;     /* FIXME: user should specify */
     /* FIXME: what does the NULL do? */
-    if (av_set_parameters(video_context, NULL) < 0) return false;
-    if (avcodec_open(c, codec) < 0) return false;
+    if (av_set_parameters(video_context, NULL) < 0) return BUGLE_FALSE;
+    if (avcodec_open(c, codec) < 0) return BUGLE_FALSE;
     video_buffer = xmalloc(video_buffer_size);
-    video_raw = allocate_video_frame(CAPTURE_AV_FMT, width, height, false);
-    video_yuv = allocate_video_frame(c->pix_fmt, width, height, true);
+    video_raw = allocate_video_frame(CAPTURE_AV_FMT, width, height, BUGLE_FALSE);
+    video_yuv = allocate_video_frame(c->pix_fmt, width, height, BUGLE_TRUE);
     if (url_fopen(&video_context->pb, video_filename, URL_WRONLY) < 0)
     {
         bugle_log_printf("screenshot", "video", BUGLE_LOG_ERROR,
@@ -291,7 +291,7 @@ static bool lavc_initialise(int width, int height)
         exit(1);
     }
     av_write_header(video_context);
-    return true;
+    return BUGLE_TRUE;
 }
 
 static void lavc_shutdown(void)
@@ -359,13 +359,13 @@ static void lavc_shutdown(void)
 /* There are three use cases:
  * 1. There is no PBO. There is nothing to do.
  * 2. Use glMapBufferARB. In this case, data->pixels is NULL on entry, and
- * we set it to the mapped value and set pbo_mapped to true. If glMapBufferARB
+ * we set it to the mapped value and set pbo_mapped to BUGLE_TRUE. If glMapBufferARB
  * fails, we allocate system memory and fall back to case 3.
  * 3. We use glGetBufferSubDataARB. In this case, data->pixels is non-NULL on
  * entry and of the correct size, and we read straight into it and set
- * pbo_mapped to false.
+ * pbo_mapped to BUGLE_FALSE.
  */
-static bool map_screenshot(screenshot_data *data)
+static bugle_bool map_screenshot(screenshot_data *data)
 {
 #ifdef GL_EXT_pixel_buffer_object
     GLint size = 0;
@@ -380,10 +380,10 @@ static bool map_screenshot(screenshot_data *data)
                 CALL(glGetError)(); /* hide the error from end_internal_render() */
             else
             {
-                data->pbo_mapped = true;
-                bugle_gl_end_internal_render("map_screenshot", true);
+                data->pbo_mapped = BUGLE_TRUE;
+                bugle_gl_end_internal_render("map_screenshot", BUGLE_TRUE);
                 CALL(glBindBufferARB)(GL_PIXEL_PACK_BUFFER_EXT, 0);
-                return true;
+                return BUGLE_TRUE;
             }
         }
         /* If we get here, we're in case 3 */
@@ -391,36 +391,36 @@ static bool map_screenshot(screenshot_data *data)
         if (!data->pixels)
             data->pixels = xmalloc(size);
         CALL(glGetBufferSubDataARB)(GL_PIXEL_PACK_BUFFER_EXT, 0, size, data->pixels);
-        data->pbo_mapped = false;
+        data->pbo_mapped = BUGLE_FALSE;
         CALL(glBindBufferARB)(GL_PIXEL_PACK_BUFFER_EXT, 0);
-        bugle_gl_end_internal_render("map_screenshot", true);
+        bugle_gl_end_internal_render("map_screenshot", BUGLE_TRUE);
     }
 #endif
-    return true;
+    return BUGLE_TRUE;
 }
 
-static bool unmap_screenshot(screenshot_data *data)
+static bugle_bool unmap_screenshot(screenshot_data *data)
 {
 #ifdef GL_EXT_pixel_buffer_object
     if (data->pbo && data->pbo_mapped)
     {
-        bool ret;
+        bugle_bool ret;
 
         CALL(glBindBufferARB)(GL_PIXEL_PACK_BUFFER_EXT, data->pbo);
         ret = CALL(glUnmapBufferARB)(GL_PIXEL_PACK_BUFFER_EXT);
         CALL(glBindBufferARB)(GL_PIXEL_PACK_BUFFER_EXT, 0);
-        bugle_gl_end_internal_render("unmap_screenshot", true);
+        bugle_gl_end_internal_render("unmap_screenshot", BUGLE_TRUE);
         data->pixels = NULL;
         return ret;
     }
     else
 #endif
     {
-        return true;
+        return BUGLE_TRUE;
     }
 }
 
-static bool do_screenshot(GLenum format, int test_width, int test_height,
+static bugle_bool do_screenshot(GLenum format, int test_width, int test_height,
                           screenshot_data **data)
 {
     glwin_drawable drawable;
@@ -441,12 +441,12 @@ static bool do_screenshot(GLenum format, int test_width, int test_height,
             bugle_log_printf("screenshot", "video", BUGLE_LOG_WARNING,
                              "size changed from %dx%d to %dx%d, stopping recording",
                              test_width, test_height, width, height);
-            return false;
+            return BUGLE_FALSE;
         }
 
-    prepare_screenshot_data(cur, width, height, 4, true);
+    prepare_screenshot_data(cur, width, height, 4, BUGLE_TRUE);
 
-    if (!bugle_gl_begin_internal_render()) return false;
+    if (!bugle_gl_begin_internal_render()) return BUGLE_FALSE;
 #ifdef GL_EXT_pixel_buffer_object
     if (cur->pbo)
         CALL(glBindBufferARB)(GL_PIXEL_PACK_BUFFER_EXT, cur->pbo);
@@ -457,28 +457,28 @@ static bool do_screenshot(GLenum format, int test_width, int test_height,
     if (cur->pbo)
         CALL(glBindBufferARB)(GL_PIXEL_PACK_BUFFER_EXT, 0);
 #endif
-    bugle_gl_end_internal_render("do_screenshot", true);
+    bugle_gl_end_internal_render("do_screenshot", BUGLE_TRUE);
 
-    return true;
+    return BUGLE_TRUE;
 }
 
-static bool screenshot_stream(FILE *out, bool check_size)
+static bugle_bool screenshot_stream(FILE *out, bugle_bool check_size)
 {
     screenshot_data *fetch;
     GLubyte *cur;
     size_t size, count;
-    bool ret = true;
+    bugle_bool ret = BUGLE_TRUE;
     int i;
 
     if (check_size && !video_first)
         video_done = !do_screenshot(GL_RGB, video_data[0].width, video_data[0].height, &fetch);
     else
         do_screenshot(GL_RGB, -1, -1, &fetch);
-    video_first = false;
+    video_first = BUGLE_FALSE;
 
     if (fetch->width > 0)
     {
-        if (!map_screenshot(fetch)) return false;
+        if (!map_screenshot(fetch)) return BUGLE_FALSE;
         fprintf(out, "P6\n%d %d\n255\n",
                 fetch->width, fetch->height);
         cur = fetch->pixels + fetch->stride * (fetch->height - 1);
@@ -489,7 +489,7 @@ static bool screenshot_stream(FILE *out, bool check_size)
             if (count != size)
             {
                 perror("write error");
-                ret = false;
+                ret = BUGLE_FALSE;
                 break;
             }
             cur -= fetch->stride;
@@ -540,7 +540,7 @@ static void screenshot_video()
         video_done = !do_screenshot(CAPTURE_GL_FMT, video_data[0].width, video_data[0].height, &fetch);
     else
         do_screenshot(CAPTURE_GL_FMT, -1, -1, &fetch);
-    video_first = false;
+    video_first = BUGLE_FALSE;
 
     if (fetch->width > 0)
     {
@@ -603,7 +603,7 @@ static void screenshot_video(int frameno)
     screenshot_context ssctx;
     if (!screenshot_start(&ssctx)) return;
 
-    if (!screenshot_stream(video_pipe, true))
+    if (!screenshot_stream(video_pipe, BUGLE_TRUE))
     {
         pclose(video_pipe);
         video_pipe = NULL;
@@ -629,13 +629,13 @@ static void screenshot_file(int frameno)
         screenshot_stop(&ssctx);
         return;
     }
-    screenshot_stream(out, false);
+    screenshot_stream(out, BUGLE_FALSE);
     if (fclose(out) != 0)
         perror("write error");
     screenshot_stop(&ssctx);
 }
 
-bool screenshot_callback(function_call *call, const callback_data *data)
+bugle_bool screenshot_callback(function_call *call, const callback_data *data)
 {
     /* FIXME: track the frameno in the context?
      */
@@ -649,13 +649,13 @@ bool screenshot_callback(function_call *call, const callback_data *data)
     else if (keypress_screenshot)
     {
         screenshot_file(frameno);
-        keypress_screenshot = false;
+        keypress_screenshot = BUGLE_FALSE;
     }
     frameno++;
-    return true;
+    return BUGLE_TRUE;
 }
 
-static bool screenshot_initialise(filter_set *handle)
+static bugle_bool screenshot_initialise(filter_set *handle)
 {
     filter *f;
 #if !HAVE_LAVC
@@ -663,15 +663,15 @@ static bool screenshot_initialise(filter_set *handle)
 #endif
 
     f = bugle_filter_new(handle, "screenshot");
-    bugle_glwin_filter_catches_swap_buffers(f, false, screenshot_callback);
+    bugle_glwin_filter_catches_swap_buffers(f, BUGLE_FALSE, screenshot_callback);
     bugle_filter_order("screenshot", "invoke");
 
     video_data = XCALLOC(video_lag, screenshot_data);
     video_cur = 0;
-    video_first = true;
+    video_first = BUGLE_TRUE;
     if (video)
     {
-        video_done = false; /* becomes true if we resize */
+        video_done = BUGLE_FALSE; /* becomes BUGLE_TRUE if we resize */
         if (!video_filename)
             video_filename = xstrdup("bugle.avi");
 #if !HAVE_LAVC
@@ -679,7 +679,7 @@ static bool screenshot_initialise(filter_set *handle)
                             video_codec, video_filename);
         video_pipe = popen(cmdline, "w");
         free(cmdline);
-        if (!video_pipe) return false;
+        if (!video_pipe) return BUGLE_FALSE;
 #endif
         /* Note: we only initialise libavcodec on the first frame, because
          * we need the frame size.
@@ -693,7 +693,7 @@ static bool screenshot_initialise(filter_set *handle)
         /* FIXME: should only intercept the key when enabled */
         bugle_input_key_callback(&key_screenshot, NULL, bugle_input_key_callback_flag, &keypress_screenshot);
     }
-    return true;
+    return BUGLE_TRUE;
 }
 
 static void screenshot_shutdown(filter_set *handle)

@@ -211,7 +211,7 @@ static void gldb_shader_pane_update_ids(GldbShaderPane *pane)
                 u = gldb_state_find_child_enum(t, GL_OBJECT_SUBTYPE_ARB);
                 if (u && gldb_state_GLenum(u) == targets[trg])
                 {
-                    bool active;
+                    gboolean active;
 
                     active = bugle_hashptr_get_int(&active_glsl, t->numeric_name);
                     name = xasprintf("%d (%s)",

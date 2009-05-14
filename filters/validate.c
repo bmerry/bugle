@@ -20,7 +20,7 @@
 #endif
 #define _POSIX_SOURCE
 #define GL_GLEXT_PROTOTYPES
-#include <stdbool.h>
+#include <bugle/bool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -36,7 +36,7 @@
 #include <budgie/types.h>
 #include <budgie/reflect.h>
 
-static bool trap = false;
+static bugle_bool trap = BUGLE_FALSE;
 static filter_set *error_handle = NULL;
 static object_view error_context_view, error_call_view;
 
@@ -47,7 +47,7 @@ GLenum bugle_gl_call_get_error_internal(object *call_object)
     return call_error ? *call_error : GL_NO_ERROR;
 }
 
-static bool error_callback(function_call *call, const callback_data *data)
+static bugle_bool error_callback(function_call *call, const callback_data *data)
 {
     GLenum error;
     GLenum *stored_error;
@@ -58,7 +58,7 @@ static bool error_callback(function_call *call, const callback_data *data)
     *call_error = GL_NO_ERROR;
 
     if (bugle_api_extension_block(bugle_api_function_extension(call->generic.id)) != BUGLE_API_EXTENSION_BLOCK_GL)
-        return true;  /* only applies to real GL calls */
+        return BUGLE_TRUE;  /* only applies to real GL calls */
     if (call->generic.group == BUDGIE_GROUP_ID(glGetError))
     {
         /* We hope that it returns GL_NO_ERROR, since otherwise something
@@ -115,16 +115,16 @@ static bool error_callback(function_call *call, const callback_data *data)
             }
         }
     }
-    return true;
+    return BUGLE_TRUE;
 }
 
-static bool error_initialise(filter_set *handle)
+static bugle_bool error_initialise(filter_set *handle)
 {
     filter *f;
 
     error_handle = handle;
     f = bugle_filter_new(handle, "error");
-    bugle_filter_catches_all(f, true, error_callback);
+    bugle_filter_catches_all(f, BUGLE_TRUE, error_callback);
     bugle_filter_order("invoke", "error");
     bugle_gl_filter_post_queries_begin_end("error");
     /* We don't call filter_post_renders, because that would make the
@@ -138,10 +138,10 @@ static bool error_initialise(filter_set *handle)
                                             NULL,
                                             NULL,
                                             sizeof(GLenum));
-    return true;
+    return BUGLE_TRUE;
 }
 
-static bool showerror_callback(function_call *call, const callback_data *data)
+static bugle_bool showerror_callback(function_call *call, const callback_data *data)
 {
     GLenum error;
     if ((error = bugle_gl_call_get_error_internal(data->call_object)) != GL_NO_ERROR)
@@ -157,18 +157,18 @@ static bool showerror_callback(function_call *call, const callback_data *data)
                              "%#08x in %s", (unsigned int) error,
                              budgie_function_name(call->generic.id));
     }
-    return true;
+    return BUGLE_TRUE;
 }
 
-static bool showerror_initialise(filter_set *handle)
+static bugle_bool showerror_initialise(filter_set *handle)
 {
     filter *f;
 
     f = bugle_filter_new(handle, "showerror");
-    bugle_filter_catches_all(f, false, showerror_callback);
+    bugle_filter_catches_all(f, BUGLE_FALSE, showerror_callback);
     bugle_filter_order("error", "showerror");
     bugle_filter_order("invoke", "showerror");
-    return true;
+    return BUGLE_TRUE;
 }
 
 void bugle_initialise_filter_library(void)

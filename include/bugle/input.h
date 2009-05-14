@@ -18,7 +18,7 @@
 #ifndef BUGLE_SRC_INPUT_H
 #define BUGLE_SRC_INPUT_H
 
-#include <stdbool.h>
+#include <bugle/bool.h>
 #include <bugle/porting.h>
 #include <bugle/export.h>
 
@@ -69,30 +69,30 @@ typedef struct
 {
     bugle_input_keysym keysym;
     unsigned char state;
-    bool press;
+    bugle_bool press;
 } bugle_input_key;
 
-/* Returns true if the key name was found, false otherwise. On false
+/* Returns BUGLE_TRUE if the key name was found, BUGLE_FALSE otherwise. On BUGLE_FALSE
  * return, the value of *key is unmodified. The press field is always
- * set to true.
+ * set to BUGLE_TRUE.
  */
-BUGLE_EXPORT_PRE bool bugle_input_key_lookup(const char *name, bugle_input_key *key) BUGLE_EXPORT_POST;
+BUGLE_EXPORT_PRE bugle_bool bugle_input_key_lookup(const char *name, bugle_input_key *key) BUGLE_EXPORT_POST;
 
 /* Convenience callback: sets a flag */
 BUGLE_EXPORT_PRE void bugle_input_key_callback_flag(const bugle_input_key *key, void *arg, bugle_input_event *event) BUGLE_EXPORT_POST;
 
 /* Registers a key trap. If non-NULL, the wanted function should return
- * true if the key should be trapped on this occasion. The wanted function
+ * BUGLE_TRUE if the key should be trapped on this occasion. The wanted function
  * may be called multiple times for the same keypress, so it should be
  * stateless and have no side effects. It must also ignore the 'press'
  * field, otherwise the app will see press/release mismatches.
  */
 BUGLE_EXPORT_PRE void bugle_input_key_callback(const bugle_input_key *key,
-                                               bool (*wanted)(const bugle_input_key *, void *, bugle_input_event *),
+                                               bugle_bool (*wanted)(const bugle_input_key *, void *, bugle_input_event *),
                                                void (*callback)(const bugle_input_key *, void *, bugle_input_event *),
                                                void *arg) BUGLE_EXPORT_POST;
 
-BUGLE_EXPORT_PRE void bugle_input_grab_pointer(bool dga, void (*callback)(int, int, bugle_input_event *)) BUGLE_EXPORT_POST;
+BUGLE_EXPORT_PRE void bugle_input_grab_pointer(bugle_bool dga, void (*callback)(int, int, bugle_input_event *)) BUGLE_EXPORT_POST;
 BUGLE_EXPORT_PRE void bugle_input_release_pointer(void) BUGLE_EXPORT_POST;
 
 /* Sends an invalidation event to the window referenced by the event */

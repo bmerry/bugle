@@ -19,7 +19,7 @@
 # include <config.h>
 #endif
 #include <stdlib.h>
-#include <stdbool.h>
+#include <bugle/bool.h>
 #include <string.h>
 #include <assert.h>
 #include <bugle/hashtable.h>
@@ -39,7 +39,7 @@ static void bugle_api_extension_clear(void)
 static void bugle_api_extension_init(void)
 {
     bugle_api_extension i;
-    bugle_hash_init(&ext_map, false);
+    bugle_hash_init(&ext_map, BUGLE_FALSE);
     for (i = 0; i < BUGLE_API_EXTENSION_COUNT; i++)
         bugle_hash_set(&ext_map, _bugle_api_extension_table[i].name, (void *) (size_t) (i + 1));
     atexit(bugle_api_extension_clear);

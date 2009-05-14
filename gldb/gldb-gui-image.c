@@ -39,7 +39,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <math.h>
-#include <stdbool.h>
+#include <bugle/bool.h>
 #include "gldb/gldb-common.h"
 #include "gldb/gldb-channels.h"
 #include "gldb/gldb-gui.h"
@@ -1085,7 +1085,7 @@ static void image_filter_changed(GtkWidget *widget, gpointer user_data)
     gtk_widget_queue_draw(viewer->draw);
 }
 
-GtkWidget *gldb_gui_image_viewer_filter_new(GldbGuiImageViewer *viewer, bool mag)
+GtkWidget *gldb_gui_image_viewer_filter_new(GldbGuiImageViewer *viewer, bugle_bool mag)
 {
     GtkCellRenderer *cell;
     GtkWidget *filter;
@@ -1225,7 +1225,7 @@ void gldb_gui_image_viewer_update_face_zoffset(GldbGuiImageViewer *viewer)
 }
 
 void gldb_gui_image_viewer_update_min_filter(GldbGuiImageViewer *viewer,
-                                             bool sensitive)
+                                             bugle_bool sensitive)
 {
     gboolean valid;
     GtkTreeModel *model;
@@ -1386,11 +1386,11 @@ static int round_up_two(int x)
     return y;
 }
 
-void gldb_gui_image_upload(GldbGuiImage *image, bool remap)
+void gldb_gui_image_upload(GldbGuiImage *image, bugle_bool remap)
 {
     GLenum face, format;
     int l, p;
-    bool have_npot;
+    bugle_bool have_npot;
     GLint texture_width, texture_height, texture_depth;
     GldbGuiImagePlane *plane;
 
@@ -1416,7 +1416,7 @@ void gldb_gui_image_upload(GldbGuiImage *image, bool remap)
                         }
             }
         if (high == HUGE_VAL || high - low < 1e-8)
-            remap = false;
+            remap = BUGLE_FALSE;
 
         scale = 1.0f / (high - low);
         bias = -low * scale;
@@ -1531,7 +1531,7 @@ void gldb_gui_image_upload(GldbGuiImage *image, bool remap)
     }
 }
 
-static GtkTreeModel *build_filter_model(bool mag)
+static GtkTreeModel *build_filter_model(bugle_bool mag)
 {
     GtkListStore *store;
     GtkTreeIter iter;
@@ -1599,8 +1599,8 @@ static GtkTreeModel *build_face_model()
 
 void gldb_gui_image_initialise(void)
 {
-    mag_filter_model = build_filter_model(true);
-    min_filter_model = build_filter_model(false);
+    mag_filter_model = build_filter_model(BUGLE_TRUE);
+    min_filter_model = build_filter_model(BUGLE_FALSE);
     face_model = build_face_model();
 }
 

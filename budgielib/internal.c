@@ -34,12 +34,12 @@ int _budgie_type_count = TYPE_COUNT;
 void _budgie_dump_bitfield(unsigned int value, char **buffer, size_t *size,
                            const bitfield_pair *tags, int count)
 {
-    bool first = true;
+    bugle_bool first = BUGLE_TRUE;
     int i;
     for (i = 0; i < count; i++)
         if (value & tags[i].value)
         {
-            if (!first) budgie_snputs_advance(buffer, size, " | "); else first = false;
+            if (!first) budgie_snputs_advance(buffer, size, " | "); else first = BUGLE_FALSE;
             budgie_snputs_advance(buffer, size, tags[i].name);
             value &= ~tags[i].value;
         }
@@ -50,7 +50,7 @@ void _budgie_dump_bitfield(unsigned int value, char **buffer, size_t *size,
     }
 }
 
-bool budgie_dump_string(const char *value, char **buffer, size_t *size)
+bugle_bool budgie_dump_string(const char *value, char **buffer, size_t *size)
 {
     /* FIXME: handle illegal dereferences */
     if (value == NULL) budgie_snputs_advance(buffer, size, "NULL");
@@ -75,10 +75,10 @@ bool budgie_dump_string(const char *value, char **buffer, size_t *size)
         }
         budgie_snputc_advance(buffer, size, '"');
     }
-    return true;
+    return BUGLE_TRUE;
 }
 
-bool budgie_dump_string_length(const char *value, size_t length, char **buffer, size_t *size)
+bugle_bool budgie_dump_string_length(const char *value, size_t length, char **buffer, size_t *size)
 {
     size_t i;
     /* FIXME: handle illegal dereferences */
@@ -105,7 +105,7 @@ bool budgie_dump_string_length(const char *value, size_t length, char **buffer, 
         }
         budgie_snputc_advance(buffer, size, '"');
     }
-    return true;
+    return BUGLE_TRUE;
 }
 
 int budgie_count_string(const char *value)

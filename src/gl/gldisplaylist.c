@@ -18,7 +18,7 @@
 #if HAVE_CONFIG_H
 # include <config.h>
 #endif
-#include <stdbool.h>
+#include <bugle/bool.h>
 #include <stddef.h>
 #include <string.h>
 #include <stdlib.h>
@@ -91,27 +91,27 @@ void *bugle_displaylist_get(GLuint list)
     return ans;
 }
 
-static bool gldisplaylist_glNewList(function_call *call, const callback_data *data)
+static bugle_bool gldisplaylist_glNewList(function_call *call, const callback_data *data)
 {
     displaylist_struct info;
     object *obj;
     GLint value;
 
-    if (bugle_displaylist_list()) return true; /* Nested call */
+    if (bugle_displaylist_list()) return BUGLE_TRUE; /* Nested call */
     if (bugle_gl_begin_internal_render())
     {
         CALL(glGetIntegerv)(GL_LIST_INDEX, &value);
         info.list = value;
         CALL(glGetIntegerv)(GL_LIST_MODE, &value);
         info.mode = value;
-        if (info.list == 0) return true; /* Call failed? */
-        obj = bugle_object_new(bugle_displaylist_class, &info, true);
-        bugle_gl_end_internal_render("gldisplaylist_callback", true);
+        if (info.list == 0) return BUGLE_TRUE; /* Call failed? */
+        obj = bugle_object_new(bugle_displaylist_class, &info, BUGLE_TRUE);
+        bugle_gl_end_internal_render("gldisplaylist_callback", BUGLE_TRUE);
     }
-    return true;
+    return BUGLE_TRUE;
 }
 
-static bool gldisplaylist_glEndList(function_call *call, const callback_data *data)
+static bugle_bool gldisplaylist_glEndList(function_call *call, const callback_data *data)
 {
     object *obj;
     displaylist_struct *info_ptr;
@@ -128,7 +128,7 @@ static bool gldisplaylist_glEndList(function_call *call, const callback_data *da
         bugle_hashptr_set(objects, (void *) (size_t) info_ptr->list, obj);
     gl_lock_unlock(displaylist_lock);
     bugle_object_set_current(bugle_displaylist_class, NULL);
-    return true;
+    return BUGLE_TRUE;
 }
 #else /* !GL_VERSION_1_1 */
 GLenum bugle_displaylist_mode(void)
@@ -142,7 +142,7 @@ GLuint bugle_displaylist_list(void)
 }
 #endif
 
-static bool gldisplaylist_filter_set_initialise(filter_set *handle)
+static bugle_bool gldisplaylist_filter_set_initialise(filter_set *handle)
 {
     filter *f;
 
@@ -151,8 +151,8 @@ static bool gldisplaylist_filter_set_initialise(filter_set *handle)
 #if GL_VERSION_1_1
     f = bugle_filter_new(handle, "gldisplaylist");
     bugle_filter_order("invoke", "gldisplaylist");
-    bugle_filter_catches(f, "glNewList", true, gldisplaylist_glNewList);
-    bugle_filter_catches(f, "glEndList", true, gldisplaylist_glEndList);
+    bugle_filter_catches(f, "glNewList", BUGLE_TRUE, gldisplaylist_glNewList);
+    bugle_filter_catches(f, "glEndList", BUGLE_TRUE, gldisplaylist_glEndList);
 
     displaylist_view = bugle_object_view_new(bugle_displaylist_class,
                                              displaylist_struct_init,
@@ -163,7 +163,7 @@ static bool gldisplaylist_filter_set_initialise(filter_set *handle)
                                            namespace_clear,
                                            sizeof(hashptr_table));
 #endif
-    return true;
+    return BUGLE_TRUE;
 }
 
 void gldisplaylist_initialise(void)

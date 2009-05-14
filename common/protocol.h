@@ -21,7 +21,7 @@
 #if HAVE_CONFIG_H
 # include <config.h>
 #endif
-#include <stdbool.h>
+#include <bugle/bool.h>
 #include <inttypes.h>
 #include <sys/types.h>
 #include <bugle/export.h>
@@ -93,9 +93,9 @@ BUGLE_EXPORT_PRE gldb_protocol_reader *gldb_protocol_reader_new_func(ssize_t (*r
 
 /* Determines whether the given reader has data available. This only works
  * if it was created with gldb_protocol_reader_new_fd_select, otherwise it
- * will always return false.
+ * will always return BUGLE_FALSE.
  */
-BUGLE_EXPORT_PRE bool gldb_protocol_reader_has_data(gldb_protocol_reader *reader) BUGLE_EXPORT_POST;
+BUGLE_EXPORT_PRE bugle_bool gldb_protocol_reader_has_data(gldb_protocol_reader *reader) BUGLE_EXPORT_POST;
 
 /* Analog to read(). Not guaranteed to extract all available data */
 BUGLE_EXPORT_PRE ssize_t gldb_protocol_reader_read(gldb_protocol_reader *reader, void *buf, size_t count) BUGLE_EXPORT_POST;
@@ -105,11 +105,11 @@ BUGLE_EXPORT_PRE ssize_t gldb_protocol_reader_read(gldb_protocol_reader *reader,
  */
 BUGLE_EXPORT_PRE void gldb_protocol_reader_free(gldb_protocol_reader *reader) BUGLE_EXPORT_POST;
 
-BUGLE_EXPORT_PRE bool gldb_protocol_send_code(int fd, uint32_t code) BUGLE_EXPORT_POST;
-BUGLE_EXPORT_PRE bool gldb_protocol_send_binary_string(int fd, uint32_t len, const char *str) BUGLE_EXPORT_POST;
-BUGLE_EXPORT_PRE bool gldb_protocol_send_string(int fd, const char *str) BUGLE_EXPORT_POST;
-BUGLE_EXPORT_PRE bool gldb_protocol_recv_code(gldb_protocol_reader *reader, uint32_t *code) BUGLE_EXPORT_POST;
-BUGLE_EXPORT_PRE bool gldb_protocol_recv_binary_string(gldb_protocol_reader *reader, uint32_t *len, char **data) BUGLE_EXPORT_POST;
-BUGLE_EXPORT_PRE bool gldb_protocol_recv_string(gldb_protocol_reader *reader, char **str) BUGLE_EXPORT_POST;
+BUGLE_EXPORT_PRE bugle_bool gldb_protocol_send_code(int fd, uint32_t code) BUGLE_EXPORT_POST;
+BUGLE_EXPORT_PRE bugle_bool gldb_protocol_send_binary_string(int fd, uint32_t len, const char *str) BUGLE_EXPORT_POST;
+BUGLE_EXPORT_PRE bugle_bool gldb_protocol_send_string(int fd, const char *str) BUGLE_EXPORT_POST;
+BUGLE_EXPORT_PRE bugle_bool gldb_protocol_recv_code(gldb_protocol_reader *reader, uint32_t *code) BUGLE_EXPORT_POST;
+BUGLE_EXPORT_PRE bugle_bool gldb_protocol_recv_binary_string(gldb_protocol_reader *reader, uint32_t *len, char **data) BUGLE_EXPORT_POST;
+BUGLE_EXPORT_PRE bugle_bool gldb_protocol_recv_string(gldb_protocol_reader *reader, char **str) BUGLE_EXPORT_POST;
 
 #endif /* BUGLE_COMMON_PROTOCOL_H */

@@ -41,17 +41,17 @@ extern void (BUDGIEAPI *_budgie_function_address_wrapper[])(void);
 extern int _budgie_library_count;
 extern const char * const _budgie_library_names[];
 
-extern bool _budgie_bypass[];
+extern bugle_bool _budgie_bypass[];
 
 /* Code used by generated lib.c code */
 
-bool _budgie_reentrance_init(void);
+bugle_bool _budgie_reentrance_init(void);
 void _budgie_reentrance_clear(void);
 
 void budgie_interceptor(function_call *call);
 
 
-typedef bool (*arg_dumper)(const generic_function_call *, int, const void *, int, char **buffer, size_t *size);
+typedef bugle_bool (*arg_dumper)(const generic_function_call *, int, const void *, int, char **buffer, size_t *size);
 typedef budgie_type (*arg_get_type)(const generic_function_call *, int, const void *);
 typedef int (*arg_get_length)(const generic_function_call *, int, const void *);
 
@@ -68,7 +68,7 @@ typedef struct
     size_t num_parameters;
     const group_dump_parameter *parameters;
     group_dump_parameter retn;
-    bool has_retn;
+    bugle_bool has_retn;
 } group_dump;
 
 extern const group_dump _budgie_group_dump_table[];

@@ -20,7 +20,7 @@
 #endif
 #define _XOPEN_SOURCE 500
 #define GL_GLEXT_PROTOTYPES
-#include <stdbool.h>
+#include <bugle/bool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -62,16 +62,16 @@
 
 static gldb_protocol_reader *in_pipe = NULL;
 static int in_pipe_fd = -1, out_pipe = -1;
-static bool *break_on;
-static bool break_on_event[REQ_EVENT_COUNT];
-static bool break_on_next = false;
-static bool stop_in_begin_end = false;
-static bool stopped = true;
+static bugle_bool *break_on;
+static bugle_bool break_on_event[REQ_EVENT_COUNT];
+static bugle_bool break_on_next = BUGLE_FALSE;
+static bugle_bool stop_in_begin_end = BUGLE_FALSE;
+static bugle_bool stopped = BUGLE_TRUE;
 static uint32_t start_id = 0;
 
 static unsigned long debug_thread;
 
-static bool stoppable(void)
+static bugle_bool stoppable(void)
 {
     return stop_in_begin_end || !bugle_gl_in_begin_end();
 }
@@ -253,9 +253,9 @@ static void pixel_pack_restore(const pixel_state *old)
  * chances with setting up the default readback state and restoring it
  * afterwards.
  */
-static bool send_data_texture(uint32_t id, GLuint texid, GLenum target,
-                              GLenum face, GLint level,
-                              GLenum format, GLenum type)
+static bugle_bool send_data_texture(uint32_t id, GLuint texid, GLenum target,
+                                    GLenum face, GLint level,
+                                    GLenum format, GLenum type)
 {
     char *data;
     size_t length;
@@ -273,10 +273,10 @@ static bool send_data_texture(uint32_t id, GLuint texid, GLenum target,
         gldb_protocol_send_code(out_pipe, id);
         gldb_protocol_send_code(out_pipe, 0);
         gldb_protocol_send_string(out_pipe, "inside glBegin/glEnd");
-        return false;
+        return BUGLE_FALSE;
     }
 
-    aux = bugle_get_aux_context(true);
+    aux = bugle_get_aux_context(BUGLE_TRUE);
     if (aux && texid)
     {
         real = bugle_glwin_get_current_context();
@@ -352,21 +352,21 @@ static bool send_data_texture(uint32_t id, GLuint texid, GLenum target,
     gldb_protocol_send_code(out_pipe, width);
     gldb_protocol_send_code(out_pipe, height);
     gldb_protocol_send_code(out_pipe, depth);
-    bugle_gl_end_internal_render("send_data_texture", true);
+    bugle_gl_end_internal_render("send_data_texture", BUGLE_TRUE);
     free(data);
-    return true;
+    return BUGLE_TRUE;
 }
 #endif /* GL */
 
 /* Unfortunately, FBO cannot have a size query, because while incomplete
  * it could have different sizes for different buffers. Thus, we have to
- * do the query on the underlying attachment. The return is false if there
+ * do the query on the underlying attachment. The return is BUGLE_FALSE if there
  * is no attachment or a size could not be established.
  *
  * It is assumed that the appropriate framebuffer (if any) is already current.
  */
-static bool get_framebuffer_size(GLuint fbo, GLenum target, GLenum attachment,
-                                 GLint *width, GLint *height)
+static bugle_bool get_framebuffer_size(GLuint fbo, GLenum target, GLenum attachment,
+                                       GLint *width, GLint *height)
 {
     /* FIXME: support GLES framebuffer objects */
 #ifdef GL_EXT_framebuffer_object
@@ -394,7 +394,7 @@ static bool get_framebuffer_size(GLuint fbo, GLenum target, GLenum attachment,
                                                           GL_FRAMEBUFFER_ATTACHMENT_TEXTURE_LEVEL_EXT, &level);
             texture_target = bugle_globjects_get_target(BUGLE_GLOBJECTS_TEXTURE, name);
             texture_binding = target_to_binding(texture_target);
-            if (!texture_binding) return false;
+            if (!texture_binding) return BUGLE_FALSE;
 
             CALL(glGetIntegerv)(texture_binding, &old_name);
             CALL(glBindTexture)(texture_target, name);
@@ -411,7 +411,7 @@ static bool get_framebuffer_size(GLuint fbo, GLenum target, GLenum attachment,
             CALL(glGetTexLevelParameteriv)(face, level, GL_TEXTURE_HEIGHT, height);
         }
         else
-            return false;
+            return BUGLE_FALSE;
     }
     else
 #endif /* GL_EXT_framebuffer_object */
@@ -439,7 +439,7 @@ static bool get_framebuffer_size(GLuint fbo, GLenum target, GLenum attachment,
         }
         return *width >= 0 && *height >= 0;
     }
-    return true;
+    return BUGLE_TRUE;
 }
 
 /* This function is complicated by GL_EXT_framebuffer_object and
@@ -452,8 +452,8 @@ static bool get_framebuffer_size(GLuint fbo, GLenum target, GLenum attachment,
  * (for application-defined framebuffers). In the future it may be used
  * to allow other types of framebuffers e.g. pbuffers.
  */
-static bool send_data_framebuffer(uint32_t id, GLuint fbo, GLenum target,
-                                  GLenum buffer, GLenum format, GLenum type)
+static bugle_bool send_data_framebuffer(uint32_t id, GLuint fbo, GLenum target,
+                                        GLenum buffer, GLenum format, GLenum type)
 {
     glwin_display dpy = NULL;
     glwin_context aux = NULL, real = NULL;
@@ -464,7 +464,7 @@ static bool send_data_framebuffer(uint32_t id, GLuint fbo, GLenum target,
     size_t length;
     GLuint fbo_target = 0, fbo_binding = 0;
     char *data;
-    bool illegal = false;
+    bugle_bool illegal = BUGLE_FALSE;
 
     if (!bugle_gl_begin_internal_render())
     {
@@ -472,7 +472,7 @@ static bool send_data_framebuffer(uint32_t id, GLuint fbo, GLenum target,
         gldb_protocol_send_code(out_pipe, id);
         gldb_protocol_send_code(out_pipe, 0);
         gldb_protocol_send_string(out_pipe, "inside glBegin/glEnd");
-        return false;
+        return BUGLE_FALSE;
     }
 
 #ifdef GL_EXT_framebuffer_blit
@@ -503,7 +503,7 @@ static bool send_data_framebuffer(uint32_t id, GLuint fbo, GLenum target,
         gldb_protocol_send_code(out_pipe, id);
         gldb_protocol_send_code(out_pipe, 0);
         gldb_protocol_send_string(out_pipe, "GL_EXT_framebuffer_object is not available");
-        return false;
+        return BUGLE_FALSE;
     }
 
 #ifdef GL_VERSION_1_1
@@ -514,7 +514,7 @@ static bool send_data_framebuffer(uint32_t id, GLuint fbo, GLenum target,
          * don't bother to work around them.
          */
         if (strcmp((char *) CALL(glGetString)(GL_VERSION), "2.0.2 NVIDIA 87.62") != 0)
-            aux = bugle_get_aux_context(true);
+            aux = bugle_get_aux_context(BUGLE_TRUE);
     }
     if (aux)
     {
@@ -599,14 +599,14 @@ static bool send_data_framebuffer(uint32_t id, GLuint fbo, GLenum target,
     gldb_protocol_send_binary_string(out_pipe, length, data);
     gldb_protocol_send_code(out_pipe, width);
     gldb_protocol_send_code(out_pipe, height);
-    bugle_gl_end_internal_render("send_data_framebuffer", true);
+    bugle_gl_end_internal_render("send_data_framebuffer", BUGLE_TRUE);
     free(data);
-    return true;
+    return BUGLE_TRUE;
 }
 
 #if GL_ES_VERSION_2_0 || GL_VERSION_2_0
-static bool send_data_shader(uint32_t id, GLuint shader_id,
-                             GLenum target)
+static bugle_bool send_data_shader(uint32_t id, GLuint shader_id,
+                                   GLenum target)
 {
     GLint length;
     char *text;
@@ -617,7 +617,7 @@ static bool send_data_shader(uint32_t id, GLuint shader_id,
         gldb_protocol_send_code(out_pipe, id);
         gldb_protocol_send_code(out_pipe, 0);
         gldb_protocol_send_string(out_pipe, "inside glBegin/glEnd");
-        return false;
+        return BUGLE_FALSE;
     }
 
     switch (target)
@@ -664,12 +664,12 @@ static bool send_data_shader(uint32_t id, GLuint shader_id,
     gldb_protocol_send_binary_string(out_pipe, length, text);
     free(text);
 
-    bugle_gl_end_internal_render("send_data_shader", true);
-    return true;
+    bugle_gl_end_internal_render("send_data_shader", BUGLE_TRUE);
+    return BUGLE_TRUE;
 }
 
-static bool send_data_info_log(uint32_t id, GLuint object_id,
-                               GLenum target)
+static bugle_bool send_data_info_log(uint32_t id, GLuint object_id,
+                                     GLenum target)
 {
     GLint length;
     char *text;
@@ -680,7 +680,7 @@ static bool send_data_info_log(uint32_t id, GLuint object_id,
         gldb_protocol_send_code(out_pipe, id);
         gldb_protocol_send_code(out_pipe, 0);
         gldb_protocol_send_string(out_pipe, "inside glBegin/glEnd");
-        return false;
+        return BUGLE_FALSE;
     }
 
     switch (target)
@@ -738,14 +738,14 @@ static bool send_data_info_log(uint32_t id, GLuint object_id,
     gldb_protocol_send_binary_string(out_pipe, length, text);
     free(text);
 
-    bugle_gl_end_internal_render("send_data_info_log", true);
-    return true;
+    bugle_gl_end_internal_render("send_data_info_log", BUGLE_TRUE);
+    return BUGLE_TRUE;
 
 }
 #endif /* GL_ES_VERSION_2_0 || GL_VERSION_2_0 */
 
 #ifdef GL_VERSION_1_1
-static bool send_data_buffer(uint32_t id, GLuint object_id)
+static bugle_bool send_data_buffer(uint32_t id, GLuint object_id)
 {
     GLint old_binding;
     GLint size;
@@ -761,7 +761,7 @@ static bool send_data_buffer(uint32_t id, GLuint object_id)
         gldb_protocol_send_code(out_pipe, id);
         gldb_protocol_send_code(out_pipe, 0);
         gldb_protocol_send_string(out_pipe, "GL_ARB_vertex_buffer_object is not available");
-        return false;
+        return BUGLE_FALSE;
     }
     if (!bugle_gl_begin_internal_render())
     {
@@ -769,19 +769,19 @@ static bool send_data_buffer(uint32_t id, GLuint object_id)
         gldb_protocol_send_code(out_pipe, id);
         gldb_protocol_send_code(out_pipe, 0);
         gldb_protocol_send_string(out_pipe, "inside glBegin/glEnd");
-        return false;
+        return BUGLE_FALSE;
     }
     if (!CALL(glIsBufferARB)(object_id))
     {
-        bugle_gl_end_internal_render("send_data_buffer", true);
+        bugle_gl_end_internal_render("send_data_buffer", BUGLE_TRUE);
         gldb_protocol_send_code(out_pipe, RESP_ERROR);
         gldb_protocol_send_code(out_pipe, id);
         gldb_protocol_send_code(out_pipe, 0);
         gldb_protocol_send_string(out_pipe, "buffer ID is invalid");
-        return false;
+        return BUGLE_FALSE;
     }
 
-    aux = bugle_get_aux_context(true);
+    aux = bugle_get_aux_context(BUGLE_TRUE);
     if (aux)
     {
         real = bugle_glwin_get_current_context();
@@ -817,8 +817,8 @@ static bool send_data_buffer(uint32_t id, GLuint object_id)
     gldb_protocol_send_binary_string(out_pipe, size, data);
 
     free(data);
-    bugle_gl_end_internal_render("send_data_buffer", true);
-    return true;
+    bugle_gl_end_internal_render("send_data_buffer", BUGLE_TRUE);
+    return BUGLE_TRUE;
 }
 #endif
 
@@ -827,7 +827,7 @@ static void process_single_command(function_call *call)
     uint32_t req, id, req_val;
     uint32_t event;
     char *req_str, *resp_str;
-    bool activate;
+    bugle_bool activate;
     budgie_function func;
     filter_set *f;
 
@@ -846,7 +846,7 @@ static void process_single_command(function_call *call)
     case REQ_CONT:
     case REQ_STEP:
         break_on_next = (req == REQ_STEP);
-        stopped = false;
+        stopped = BUGLE_FALSE;
         start_id = id;
         break;
     case REQ_BREAK:
@@ -955,7 +955,7 @@ static void process_single_command(function_call *call)
         if (bugle_gl_begin_internal_render())
         {
             send_state(bugle_state_get_root(), id);
-            bugle_gl_end_internal_render("send_state", true);
+            bugle_gl_end_internal_render("send_state", BUGLE_TRUE);
         }
         else
         {
@@ -969,7 +969,7 @@ static void process_single_command(function_call *call)
         if (bugle_gl_begin_internal_render())
         {
             send_state_raw(bugle_state_get_root(), id);
-            bugle_gl_end_internal_render("send_state_raw", true);
+            bugle_gl_end_internal_render("send_state_raw", BUGLE_TRUE);
         }
         else
         {
@@ -1045,12 +1045,12 @@ static void process_single_command(function_call *call)
         if (!stopped)
         {
             if (!stoppable())
-                break_on_next = true;
+                break_on_next = BUGLE_TRUE;
             else
             {
                 resp_str = bugle_string_io(dump_any_call_string_io, call);
-                stopped = true;
-                break_on_next = false;
+                stopped = BUGLE_TRUE;
+                break_on_next = BUGLE_FALSE;
                 gldb_protocol_send_code(out_pipe, RESP_BREAK);
                 gldb_protocol_send_code(out_pipe, start_id);
                 gldb_protocol_send_string(out_pipe, resp_str);
@@ -1075,7 +1075,7 @@ static void debugger_loop(function_call *call)
     if (call && bugle_gl_begin_internal_render())
     {
         CALL(glFinish)();
-        bugle_gl_end_internal_render("debugger", true);
+        bugle_gl_end_internal_render("debugger", BUGLE_TRUE);
     }
 
     do
@@ -1093,7 +1093,7 @@ static void debugger_init_thread(void)
 
 gl_once_define(static, debugger_init_thread_once)
 
-static bool debugger_callback(function_call *call, const callback_data *data)
+static bugle_bool debugger_callback(function_call *call, const callback_data *data)
 {
     char *resp_str;
 
@@ -1103,15 +1103,15 @@ static bool debugger_callback(function_call *call, const callback_data *data)
      */
     gl_once(debugger_init_thread_once, debugger_init_thread);
     if (debug_thread != bugle_thread_self())
-        return true;
+        return BUGLE_TRUE;
 
     if (stoppable())
     {
         if (break_on[call->generic.id] || break_on_next)
         {
             resp_str = bugle_string_io(dump_any_call_string_io, call);
-            stopped = true;
-            break_on_next = false;
+            stopped = BUGLE_TRUE;
+            break_on_next = BUGLE_FALSE;
             gldb_protocol_send_code(out_pipe, RESP_BREAK);
             gldb_protocol_send_code(out_pipe, start_id);
             gldb_protocol_send_string(out_pipe, resp_str);
@@ -1119,10 +1119,10 @@ static bool debugger_callback(function_call *call, const callback_data *data)
         }
     }
     debugger_loop(call);
-    return true;
+    return BUGLE_TRUE;
 }
 
-static bool debugger_error_callback(function_call *call, const callback_data *data)
+static bugle_bool debugger_error_callback(function_call *call, const callback_data *data)
 {
     GLenum error;
     char *resp_str;
@@ -1130,7 +1130,7 @@ static bool debugger_error_callback(function_call *call, const callback_data *da
 
     gl_once(debugger_init_thread_once, debugger_init_thread);
     if (debug_thread != bugle_thread_self())
-        return true;
+        return BUGLE_TRUE;
 
     error = bugle_gl_call_get_error(data->call_object);
     if (break_on_event[REQ_EVENT_GL_ERROR] && error != GL_NO_ERROR)
@@ -1164,25 +1164,25 @@ static bool debugger_error_callback(function_call *call, const callback_data *da
         gldb_protocol_send_string(out_pipe, resp_str);
         gldb_protocol_send_string(out_pipe, error_str);
         free(resp_str);
-        stopped = true;
+        stopped = BUGLE_TRUE;
         debugger_loop(call);
     }
-    return true;
+    return BUGLE_TRUE;
 }
 
-static bool debugger_initialise(filter_set *handle)
+static bugle_bool debugger_initialise(filter_set *handle)
 {
     const char *env;
     char *last;
     filter *f;
 
-    break_on = XCALLOC(budgie_function_count(), bool);
+    break_on = XCALLOC(budgie_function_count(), bugle_bool);
 
     if (!getenv("BUGLE_DEBUGGER"))
     {
         bugle_log("debugger", "initialise", BUGLE_LOG_ERROR,
                   "The debugger filter-set should only be used with gldb");
-        return false;
+        return BUGLE_FALSE;
     }
 
     if (0 == strcmp(getenv("BUGLE_DEBUGGER"), "fd"))
@@ -1192,7 +1192,7 @@ static bool debugger_initialise(filter_set *handle)
         {
             bugle_log("debugger", "initialise", BUGLE_LOG_ERROR,
                       "The debugger filter-set should only be used with gldb");
-            return false;
+            return BUGLE_FALSE;
         }
 
         env = getenv("BUGLE_DEBUGGER_FD_IN");
@@ -1202,7 +1202,7 @@ static bool debugger_initialise(filter_set *handle)
             bugle_log_printf("debugger", "initialise", BUGLE_LOG_ERROR,
                              "Illegal BUGLE_DEBUGGER_FD_IN: '%s' (bug in gldb?)",
                              env);
-            return false;
+            return BUGLE_FALSE;
         }
 
         env = getenv("BUGLE_DEBUGGER_FD_OUT");
@@ -1212,7 +1212,7 @@ static bool debugger_initialise(filter_set *handle)
             bugle_log_printf("debugger", "initialise", BUGLE_LOG_ERROR,
                              "Illegal BUGLE_DEBUGGER_FD_OUT: '%s' (bug in gldb?)",
                              env);
-            return false;
+            return BUGLE_FALSE;
         }
         in_pipe = gldb_protocol_reader_new_fd_select(in_pipe_fd);
     }
@@ -1229,7 +1229,7 @@ static bool debugger_initialise(filter_set *handle)
         {
             bugle_log("debugger", "initialise", BUGLE_LOG_ERROR,
                       "BUGLE_DEBUGGER_PORT must be set");
-            return false;
+            return BUGLE_FALSE;
         }
 
         host = getenv("BUGLE_DEBUGGER_HOST");
@@ -1245,7 +1245,7 @@ static bool debugger_initialise(filter_set *handle)
             bugle_log_printf("debugger", "initialise", BUGLE_LOG_ERROR,
                              "failed to resolve %s:%s: %s",
                              host ? host : "", env, gai_strerror(status));
-            return false;
+            return BUGLE_FALSE;
         }
 
 
@@ -1255,7 +1255,7 @@ static bool debugger_initialise(filter_set *handle)
             freeaddrinfo(ai);
             bugle_log_printf("debugger", "initialise", BUGLE_LOG_ERROR,
                              "failed to open socket");
-            return false;
+            return BUGLE_FALSE;
         }
 
         status = bind(sock, ai->ai_addr, ai->ai_addrlen);
@@ -1266,7 +1266,7 @@ static bool debugger_initialise(filter_set *handle)
             bugle_log_printf("debugger", "initialise", BUGLE_LOG_ERROR,
                              "failed to bind to %s:%s",
                              host ? host : "", env);
-            return false;
+            return BUGLE_FALSE;
         }
 
         if (listen(sock, 1) == -1)
@@ -1276,7 +1276,7 @@ static bool debugger_initialise(filter_set *handle)
             bugle_log_printf("debugger", "initialise", BUGLE_LOG_ERROR,
                              "failed to listen on %s:%s",
                              host ? host : "", env);
-            return false;
+            return BUGLE_FALSE;
         }
 
         in_pipe_fd = accept(sock, NULL, NULL);
@@ -1286,7 +1286,7 @@ static bool debugger_initialise(filter_set *handle)
             close(sock);
             bugle_log_printf("debugger", "initialise", BUGLE_LOG_ERROR,
                              "failed to accept a connection on %s:%s", host, env);
-            return false;
+            return BUGLE_FALSE;
         }
         close(sock);
 
@@ -1299,14 +1299,14 @@ static bool debugger_initialise(filter_set *handle)
         bugle_log_printf("debugger", "initialise", BUGLE_LOG_ERROR,
                          "did not recognise BUGLE_DEBUGGER value '%s'",
                          getenv("BUGLE_DEBUGGER"));
-        return false;
+        return BUGLE_FALSE;
     }
     debugger_loop(NULL);
 
     f = bugle_filter_new(handle, "debugger");
-    bugle_filter_catches_all(f, false, debugger_callback);
+    bugle_filter_catches_all(f, BUGLE_FALSE, debugger_callback);
     f = bugle_filter_new(handle, "debugger_error");
-    bugle_filter_catches_all(f, false, debugger_error_callback);
+    bugle_filter_catches_all(f, BUGLE_FALSE, debugger_error_callback);
     bugle_filter_order("debugger", "invoke");
     bugle_filter_order("invoke", "debugger_error");
     bugle_filter_order("error", "debugger_error");
@@ -1314,7 +1314,7 @@ static bool debugger_initialise(filter_set *handle)
     bugle_gl_filter_post_renders("debugger_error");
     bugle_gl_filter_set_queries_error("debugger");
 
-    return true;
+    return BUGLE_TRUE;
 }
 
 static void debugger_shutdown(filter_set *handle)
@@ -1346,5 +1346,5 @@ void bugle_initialise_filter_library(void)
     bugle_gl_filter_set_renders("debugger");
 
     for (i = 0; i < REQ_EVENT_COUNT; i++)
-        break_on_event[i] = true;
+        break_on_event[i] = BUGLE_TRUE;
 }

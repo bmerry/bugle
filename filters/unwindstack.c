@@ -19,7 +19,7 @@
 # include <config.h>
 #endif
 #define _POSIX_SOURCE
-#include <stdbool.h>
+#include <bugle/bool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -52,7 +52,7 @@ static void unwindstack_sigsegv_handler(int sig)
     siglongjmp(unwind_buf, 1);
 }
 
-static bool unwindstack_pre_callback(function_call *call, const callback_data *data)
+static bugle_bool unwindstack_pre_callback(function_call *call, const callback_data *data)
 {
     struct sigaction act;
 
@@ -83,10 +83,10 @@ static bool unwindstack_pre_callback(function_call *call, const callback_data *d
             perror("failed to set SIGSEGV handler");
             exit(1);
         }
-    return true;
+    return BUGLE_TRUE;
 }
 
-static bool unwindstack_post_callback(function_call *call, const callback_data *data)
+static bugle_bool unwindstack_post_callback(function_call *call, const callback_data *data)
 {
     while (sigaction(SIGSEGV, &unwindstack_old_sigsegv_act, NULL) != 0)
         if (errno != EINTR)
@@ -94,20 +94,20 @@ static bool unwindstack_post_callback(function_call *call, const callback_data *
             perror("failed to restore SIGSEGV handler");
             exit(1);
         }
-    return true;
+    return BUGLE_TRUE;
 }
 
-static bool unwindstack_initialise(filter_set *handle)
+static bugle_bool unwindstack_initialise(filter_set *handle)
 {
     filter *f;
 
     f = bugle_filter_new(handle, "unwindstack_pre");
-    bugle_filter_catches_all(f, false, unwindstack_pre_callback);
+    bugle_filter_catches_all(f, BUGLE_FALSE, unwindstack_pre_callback);
     f = bugle_filter_new(handle, "unwindstack_post");
-    bugle_filter_catches_all(f, false, unwindstack_post_callback);
+    bugle_filter_catches_all(f, BUGLE_FALSE, unwindstack_post_callback);
     bugle_filter_order("invoke", "unwindstack_post");
     bugle_filter_order("unwindstack_pre", "invoke");
-    return true;
+    return BUGLE_TRUE;
 }
 #endif /* HAVE_SIGLONGJMP */
 

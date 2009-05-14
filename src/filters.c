@@ -62,14 +62,14 @@ typedef struct
 {
     filter *parent;
     budgie_function function;
-    bool inactive;    /* True if callback should be called even when filterset is inactive */
+    bugle_bool inactive;    /* True if callback should be called even when filterset is inactive */
     filter_callback callback;
 } filter_catcher;
 
 typedef struct
 {
     filter_set *set;
-    bool active;        /* true for an activation, false for a deactivation */
+    bugle_bool active;        /* BUGLE_TRUE for an activation, BUGLE_FALSE for a deactivation */
 } filter_set_activation;
 
 static linked_list filter_sets;
@@ -137,16 +137,16 @@ static void register_order(hash_table *orders, const char *before, const char *a
     bugle_list_append(deps, xstrdup(before));
 }
 
-/* Returns true on success, false if there was a cycle.
+/* Returns BUGLE_TRUE on success, BUGLE_FALSE if there was a cycle.
  * - present: linked list of the binary items (not names); it is rewritten
  *   in place on success.
  * - order: name-name ordering dependencies, as a hash table of linked
  *   lists. If B is in A's linked list, then A must come before B.
  * - get_name: maps an item pointer to the name of the item
  */
-static bool compute_order(linked_list *present,
-                          hash_table *order,
-                          const char *(*get_name)(void *))
+static bugle_bool compute_order(linked_list *present,
+                                hash_table *order,
+                                const char *(*get_name)(void *))
 {
     linked_list ordered;
     linked_list queue;
@@ -226,7 +226,7 @@ static bool compute_order(linked_list *present,
     if (count > 0)
     {
         bugle_list_clear(&ordered);
-        return false;
+        return BUGLE_FALSE;
     }
     else
     {
@@ -240,7 +240,7 @@ static bool compute_order(linked_list *present,
         bugle_list_clear(present);
         *present = ordered;
         present->destructor = destructor;
-        return true;
+        return BUGLE_TRUE;
     }
 }
 
@@ -256,7 +256,7 @@ static void filter_set_free(filter_set *handle)
 {
     if (handle->loaded)
     {
-        handle->loaded = false;
+        handle->loaded = BUGLE_FALSE;
         filter_set_deactivate_nolock(handle);
         if (handle->unload) (*handle->unload)(handle);
 
@@ -361,17 +361,17 @@ void filters_initialise(void)
     atexit(filters_shutdown);
 }
 
-bool filter_set_variable(filter_set *handle, const char *name, const char *value)
+bugle_bool filter_set_variable(filter_set *handle, const char *name, const char *value)
 {
     const filter_set_variable_info *v;
-    bool bool_value;
+    bugle_bool bool_value;
     long int_value;
     float float_value;
     char *string_value;
     char *end;
     bugle_input_key key_value;
     void *value_ptr = NULL;
-    bool finite_value;
+    bugle_bool finite_value;
 
     for (v = handle->variables; v && v->name; v++)
     {
@@ -383,17 +383,17 @@ bool filter_set_variable(filter_set *handle, const char *name, const char *value
                 if (strcmp(value, "1") == 0
                     || strcmp(value, "yes") == 0
                     || strcmp(value, "true") == 0)
-                    bool_value = true;
+                    bool_value = BUGLE_TRUE;
                 else if (strcmp(value, "0") == 0
                          || strcmp(value, "no") == 0
                          || strcmp(value, "false") == 0)
-                    bool_value = false;
+                    bool_value = BUGLE_FALSE;
                 else
                 {
                     bugle_log_printf(handle->name, "initialise", BUGLE_LOG_ERROR,
                                      "Expected 1|0|yes|no|true|false for %s in filter-set %s",
                                      name, handle->name);
-                    return false;
+                    return BUGLE_FALSE;
                 }
                 value_ptr = &bool_value;
                 break;
@@ -407,21 +407,21 @@ bool filter_set_variable(filter_set *handle, const char *name, const char *value
                     bugle_log_printf(handle->name, "initialise", BUGLE_LOG_ERROR,
                                      "Expected an integer for %s in filter-set %s",
                                      name, handle->name);
-                    return false;
+                    return BUGLE_FALSE;
                 }
                 if (v->type == FILTER_SET_VARIABLE_UINT && int_value < 0)
                 {
                     bugle_log_printf(handle->name, "initialise", BUGLE_LOG_ERROR,
                                      "Expected a non-negative integer for %s in filter-set %s",
                                      name, handle->name);
-                    return false;
+                    return BUGLE_FALSE;
                 }
                 else if (v->type == FILTER_SET_VARIABLE_POSITIVE_INT && int_value <= 0)
                 {
                     bugle_log_printf(handle->name, "initialise", BUGLE_LOG_ERROR,
                                      "Expected a positive integer for %s in filter-set %s",
                                      name, handle->name);
-                    return false;
+                    return BUGLE_FALSE;
                 }
                 value_ptr = &int_value;
                 break;
@@ -437,7 +437,7 @@ bool filter_set_variable(filter_set *handle, const char *name, const char *value
                     bugle_log_printf(handle->name, "initialise", BUGLE_LOG_ERROR,
                                      "Expected a real number for %s in filter-set %s",
                                      name, handle->name);
-                    return false;
+                    return BUGLE_FALSE;
                 }
 
 #if HAVE_ISFINITE
@@ -445,14 +445,14 @@ bool filter_set_variable(filter_set *handle, const char *name, const char *value
 #elif HAVE_FINITE
                 finite_value = finite(float_value);
 #else
-                finite_value = true;
+                finite_value = BUGLE_TRUE;
 #endif
                 if (!finite_value)
                 {
                     bugle_log_printf(handle->name, "initialise", BUGLE_LOG_ERROR,
                                      "Expected a finite real number for %s in filter-set %s",
                                      name, handle->name);
-                    return false;
+                    return BUGLE_FALSE;
                 }
                 value_ptr = &float_value;
                 break;
@@ -465,7 +465,7 @@ bool filter_set_variable(filter_set *handle, const char *name, const char *value
                 {
                     bugle_log_printf(handle->name, "initialise", BUGLE_LOG_ERROR,
                                      "Unknown key %s for %s in filter-set %s", value, name, handle->name);
-                    return false;
+                    return BUGLE_FALSE;
                 }
                 value_ptr = &key_value;
                 break;
@@ -477,7 +477,7 @@ bool filter_set_variable(filter_set *handle, const char *name, const char *value
             {
                 if (v->type == FILTER_SET_VARIABLE_STRING)
                     free(string_value);
-                return false;
+                return BUGLE_FALSE;
             }
             else
             {
@@ -486,7 +486,7 @@ bool filter_set_variable(filter_set *handle, const char *name, const char *value
                     switch (v->type)
                     {
                     case FILTER_SET_VARIABLE_BOOL:
-                        *(bool *) v->value = bool_value;
+                        *(bugle_bool *) v->value = bool_value;
                         break;
                     case FILTER_SET_VARIABLE_INT:
                     case FILTER_SET_VARIABLE_UINT:
@@ -508,14 +508,14 @@ bool filter_set_variable(filter_set *handle, const char *name, const char *value
                         break;
                     }
                 }
-                return true;
+                return BUGLE_TRUE;
             }
         }
     }
     bugle_log_printf(handle->name, "initialise", BUGLE_LOG_ERROR,
                      "Unknown variable %s in filter-set %s",
                      name, handle->name);
-    return false;
+    return BUGLE_FALSE;
 }
 
 /* Every function that calls this one must hold active_callbacks_rwlock
@@ -529,7 +529,7 @@ static void filter_set_activate_nolock(filter_set *handle)
     if (!handle->active)
     {
         if (handle->activate) (*handle->activate)(handle);
-        handle->active = true;
+        handle->active = BUGLE_TRUE;
     }
 }
 
@@ -540,11 +540,11 @@ static void filter_set_deactivate_nolock(filter_set *handle)
     if (handle->active)
     {
         if (handle->deactivate) (*handle->deactivate)(handle);
-        handle->active = false;
+        handle->active = BUGLE_FALSE;
     }
 }
 
-void filter_set_add(filter_set *handle, bool activate)
+void filter_set_add(filter_set *handle, bugle_bool activate)
 {
     linked_list *deps;
     linked_list_node *i;
@@ -552,7 +552,7 @@ void filter_set_add(filter_set *handle, bool activate)
 
     if (!handle->added)
     {
-        handle->added = true;
+        handle->added = BUGLE_TRUE;
         deps = (linked_list *) bugle_hash_get(&filter_set_dependencies, handle->name);
         if (deps)
         {
@@ -596,7 +596,7 @@ void load_filter_sets(void)
                              "failed to initialise filter-set %s", handle->name);
             exit(1);
         }
-        handle->loaded = true;
+        handle->loaded = BUGLE_TRUE;
 
         for (j = bugle_list_head(&handle->filters); j; j = bugle_list_next(j))
         {
@@ -635,7 +635,7 @@ void bugle_filter_set_activate_deferred(filter_set *handle)
     filter_set_activation *activation = XMALLOC(filter_set_activation);
 
     activation->set = handle;
-    activation->active = true;
+    activation->active = BUGLE_TRUE;
 
     gl_rwlock_wrlock(active_callbacks_rwlock);
     bugle_list_append(&activations_deferred, activation);
@@ -647,7 +647,7 @@ void bugle_filter_set_deactivate_deferred(filter_set *handle)
     filter_set_activation *activation = XMALLOC(filter_set_activation);
 
     activation->set = handle;
-    activation->active = false;
+    activation->active = BUGLE_FALSE;
 
     gl_rwlock_wrlock(active_callbacks_rwlock);
     bugle_list_append(&activations_deferred, activation);
@@ -661,7 +661,7 @@ static const char *filter_get_name(void *f)
 
 static void filter_compute_order(void)
 {
-    bool success;
+    bugle_bool success;
 
     success = compute_order(&loaded_filters, &filter_orders, filter_get_name);
     if (!success)
@@ -676,15 +676,15 @@ static void set_bypass(void)
 {
     linked_list_node *i, *j;
     int k;
-    bool *bypass;
+    bugle_bool *bypass;
     filter *cur;
     filter_catcher *catcher;
 
-    bypass = XNMALLOC(budgie_function_count(), bool);
+    bypass = XNMALLOC(budgie_function_count(), bugle_bool);
     /* We use this temporary instead of modifying values directly, because
      * we don't want other threads to see intermediate values.
      */
-    memset(bypass, 1, budgie_function_count() * sizeof(bool));
+    memset(bypass, 1, budgie_function_count() * sizeof(bugle_bool));
     for (i = bugle_list_head(&loaded_filters); i; i = bugle_list_next(i))
     {
         cur = (filter *) bugle_list_data(i);
@@ -692,7 +692,7 @@ static void set_bypass(void)
         {
             catcher = (filter_catcher *) bugle_list_data(j);
             if (strcmp(catcher->parent->name, "invoke") != 0)
-                bypass[catcher->function] = false;
+                bypass[catcher->function] = BUGLE_FALSE;
         }
     }
     for (k = 0; k < budgie_function_count(); k++)
@@ -740,7 +740,7 @@ void filters_run(function_call *call)
 
     gl_rwlock_rdlock(active_callbacks_rwlock);
 
-    data.call_object = bugle_object_new(bugle_call_class, NULL, true);
+    data.call_object = bugle_object_new(bugle_call_class, NULL, BUGLE_TRUE);
     for (i = bugle_list_head(&active_callbacks[call->generic.id]); i; i = bugle_list_next(i))
     {
         cur = (filter_catcher *) bugle_list_data(i);
@@ -781,9 +781,9 @@ filter_set *bugle_filter_set_new(const filter_set_info *info)
     s->activate = info->activate;
     s->deactivate = info->deactivate;
     s->variables = info->variables;
-    s->loaded = false;
-    s->active = false;
-    s->added = false;
+    s->loaded = BUGLE_FALSE;
+    s->active = BUGLE_FALSE;
+    s->added = BUGLE_FALSE;
     s->dl_handle = current_dl_handle;
 
     bugle_list_append(&filter_sets, s);
@@ -811,7 +811,7 @@ filter *bugle_filter_new(filter_set *handle, const char *name)
 }
 
 void bugle_filter_catches_function_id(filter *handle, budgie_function id,
-                                      bool inactive,
+                                      bugle_bool inactive,
                                       filter_callback callback)
 {
     filter_catcher *cb;
@@ -825,7 +825,7 @@ void bugle_filter_catches_function_id(filter *handle, budgie_function id,
 }
 
 void bugle_filter_catches_function(filter *handle, const char *f,
-                                   bool inactive,
+                                   bugle_bool inactive,
                                    filter_callback callback)
 {
     budgie_function id;
@@ -839,7 +839,7 @@ void bugle_filter_catches_function(filter *handle, const char *f,
 }
 
 void bugle_filter_catches(filter *handle, const char *group,
-                          bool inactive,
+                          bugle_bool inactive,
                           filter_callback callback)
 {
     budgie_function i;
@@ -859,7 +859,7 @@ void bugle_filter_catches(filter *handle, const char *group,
             bugle_filter_catches_function_id(handle, i, inactive, callback);
 }
 
-void bugle_filter_catches_all(filter *handle, bool inactive,
+void bugle_filter_catches_all(filter *handle, bugle_bool inactive,
                               filter_callback callback)
 {
     budgie_function i;
@@ -892,13 +892,13 @@ void bugle_filter_set_order(const char *before, const char *after)
     register_order(&filter_set_orders, before, after);
 }
 
-bool bugle_filter_set_is_loaded(const filter_set *handle)
+bugle_bool bugle_filter_set_is_loaded(const filter_set *handle)
 {
     assert(handle);
     return handle->loaded;
 }
 
-bool bugle_filter_set_is_active(const filter_set *handle)
+bugle_bool bugle_filter_set_is_active(const filter_set *handle)
 {
     assert(handle);
     return handle->active;
@@ -967,7 +967,7 @@ void filters_help(void)
                     type_str = " (float)";
                     break;
                 case FILTER_SET_VARIABLE_BOOL:
-                    type_str = " (bool)";
+                    type_str = " (bugle_bool)";
                     break;
                 case FILTER_SET_VARIABLE_STRING:
                     type_str = " (string)";

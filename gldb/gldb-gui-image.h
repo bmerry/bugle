@@ -36,7 +36,7 @@
 #include <glib.h>
 #include <glib/gi18n-lib.h>
 #include <gdk-pixbuf/gdk-pixbuf.h>
-#include <stdbool.h>
+#include <bugle/bool.h>
 #include "gldb/gldb-common.h"
 #include "gldb/gldb-channels.h"
 
@@ -60,7 +60,7 @@ typedef struct
     uint32_t channels;
     GLenum type;
     GLvoid *pixels;
-    bool owns_pixels;
+    bugle_bool owns_pixels;
 } GldbGuiImagePlane;
 
 GLfloat gldb_gui_image_plane_get_pixel(const GldbGuiImagePlane *plane, int x, int y, int c);
@@ -140,7 +140,7 @@ GtkWidget *gldb_gui_image_viewer_zoffset_new(GldbGuiImageViewer *viewer);
 GtkWidget *gldb_gui_image_viewer_remap_new(GldbGuiImageViewer *viewer);
 
 /* Creates add-on widgets to control the filtering */
-GtkWidget *gldb_gui_image_viewer_filter_new(GldbGuiImageViewer *viewer, bool mag);
+GtkWidget *gldb_gui_image_viewer_filter_new(GldbGuiImageViewer *viewer, bugle_bool mag);
 
 /* Updates the sensitivity of the zoom combo items and zoom button, and
  * switches to a legal zoom level if the previous level is now illegal.
@@ -159,7 +159,7 @@ void gldb_gui_image_viewer_update_face_zoffset(GldbGuiImageViewer *viewer);
 
 /* Sets the sensitivity of the mipmapping min-filters. */
 void gldb_gui_image_viewer_update_min_filter(GldbGuiImageViewer *viewer,
-                                             bool sensitive);
+                                             bugle_bool sensitive);
 
 
 /* Creates all the memory for nlevels levels, each with nplanes planes.
@@ -174,7 +174,7 @@ void gldb_gui_image_level_clear(GldbGuiImageLevel *level);
 void gldb_gui_image_clear(GldbGuiImage *image);
 
 /* Copies the internal image data into OpenGL texture memory */
-void gldb_gui_image_upload(GldbGuiImage *image, bool remap);
+void gldb_gui_image_upload(GldbGuiImage *image, bugle_bool remap);
 
 /* General initialisation function; call before all others */
 void gldb_gui_image_initialise(void);

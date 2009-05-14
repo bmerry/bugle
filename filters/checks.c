@@ -20,7 +20,7 @@
 #endif
 #define _POSIX_SOURCE
 #define GL_GLEXT_PROTOTYPES
-#include <stdbool.h>
+#include <bugle/bool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -59,12 +59,12 @@ static void checks_texture_complete_fail(int unit, GLenum target, const char *re
 
 /* Tests whether the given texture face (bound to the active texture unit)
  * is complete (unit is passed only for error reporting). The face is either
- * a target, or a single face of a cube map. Returns true if complete,
- * false (and a log message) if not.  It assumes that the minification filter
+ * a target, or a single face of a cube map. Returns BUGLE_TRUE if complete,
+ * BUGLE_FALSE (and a log message) if not.  It assumes that the minification filter
  * requires mipmapping and that base <= max.
  */
-static bool checks_texture_face_complete(GLuint unit, GLenum face, int dims,
-                                         int base, int max, bool needs_mip)
+static bugle_bool checks_texture_face_complete(GLuint unit, GLenum face, int dims,
+                                               int base, int max, bugle_bool needs_mip)
 {
     GLint sizes[3], border, format;
     int d, lvl;
@@ -83,23 +83,23 @@ static bool checks_texture_face_complete(GLuint unit, GLenum face, int dims,
         {
             checks_texture_complete_fail(unit, face,
                                          "base level does not have positive dimensions");
-            return false;
+            return BUGLE_FALSE;
         }
     }
 
     if (!needs_mip)
-        return true;
+        return BUGLE_TRUE;
 
     CALL(glGetTexLevelParameteriv)(face, base, GL_TEXTURE_BORDER, &border);
     CALL(glGetTexLevelParameteriv)(face, base, GL_TEXTURE_INTERNAL_FORMAT, &format);
     for (lvl = base + 1; lvl <= max; lvl++)
     {
         GLint lformat, lborder;
-        bool more = false;
+        bugle_bool more = BUGLE_FALSE;
         for (d = 0; d < dims; d++)
             if (sizes[d] > 1)
             {
-                more = true;
+                more = BUGLE_TRUE;
                 sizes[d] /= 2;
             }
         if (!more) break;
@@ -111,13 +111,13 @@ static bool checks_texture_face_complete(GLuint unit, GLenum face, int dims,
             {
                 checks_texture_complete_fail(unit, face,
                                              "missing image in mipmap sequence");
-                return false;
+                return BUGLE_FALSE;
             }
             if (size != sizes[d])
             {
                 checks_texture_complete_fail(unit, face,
                                              "incorrect size in mipmap sequence");
-                return false;
+                return BUGLE_FALSE;
             }
         }
         CALL(glGetTexLevelParameteriv)(face, lvl, GL_TEXTURE_INTERNAL_FORMAT, &lformat);
@@ -126,16 +126,16 @@ static bool checks_texture_face_complete(GLuint unit, GLenum face, int dims,
         {
             checks_texture_complete_fail(unit, face,
                                          "inconsistent internal formats");
-            return false;
+            return BUGLE_FALSE;
         }
         if (border != lborder)
         {
             checks_texture_complete_fail(unit, face,
                                          "inconsistent borders");
-            return false;
+            return BUGLE_FALSE;
         }
     }
-    return true;
+    return BUGLE_TRUE;
 }
 
 /* Tests whether the texture bound to the given target is complete, and
@@ -149,8 +149,8 @@ static void checks_texture_complete(int unit, GLenum target)
     GLint format, lformat, border, lborder;
     GLint old_unit = 0;
     GLenum face;
-    bool needs_mip = true;
-    bool success = true;
+    bugle_bool needs_mip = BUGLE_TRUE;
+    bugle_bool success = BUGLE_TRUE;
     int i;
 
     if (BUGLE_GL_HAS_EXTENSION_GROUP(GL_ARB_multitexture))
@@ -166,7 +166,7 @@ static void checks_texture_complete(int unit, GLenum target)
     {
     case GL_NEAREST:
     case GL_LINEAR:
-        needs_mip = false;
+        needs_mip = BUGLE_FALSE;
     }
 
     if (base > max && needs_mip)
@@ -188,25 +188,25 @@ static void checks_texture_complete(int unit, GLenum target)
                 if (width != height)
                 {
                     checks_texture_complete_fail(unit, face, "cube map face is not square");
-                    success = false;
+                    success = BUGLE_FALSE;
                     break;
                 }
                 if (width != size)
                 {
                     checks_texture_complete_fail(unit, face, "cube map faces have different sizes");
-                    success = false;
+                    success = BUGLE_FALSE;
                     break;
                 }
                 if (format != lformat)
                 {
                     checks_texture_complete_fail(unit, face, "cube map faces have different internal formats");
-                    success = false;
+                    success = BUGLE_FALSE;
                     break;
                 }
                 if (border != lborder)
                 {
                     checks_texture_complete_fail(unit, face, "cube map faces have different border widths");
-                    success = false;
+                    success = BUGLE_FALSE;
                     break;
                 }
             }
@@ -242,7 +242,7 @@ static void checks_completeness()
     {
         /* FIXME: should unify this code with glstate.c */
         GLint num_textures = 1;
-        if (false)
+        if (BUGLE_FALSE)
             (void) 0; /* makes sure the "else if" works regardless of ifdefs */
 #if GL_ES_VERSION_2_0 || GL_VERSION_2_0
         else if (BUGLE_GL_HAS_EXTENSION_GROUP(EXTGROUP_texunits))
@@ -298,7 +298,7 @@ static void checks_completeness()
             }
         }
 #endif /* GLES2 || GL2 */
-        bugle_gl_end_internal_render("checks_completeness", true);
+        bugle_gl_end_internal_render("checks_completeness", BUGLE_TRUE);
     }
 }
 
@@ -307,7 +307,7 @@ static void checks_completeness()
  */
 static const char *checks_error;
 static int checks_error_attribute;  /* generic attribute number for error */
-static bool checks_error_vbo;
+static bugle_bool checks_error_vbo;
 
 #if HAVE_SIGLONGJMP
 static sigjmp_buf checks_buf;
@@ -345,7 +345,7 @@ static void checks_memory(size_t size, const void *data)
     const char *cdata;
     size_t i;
 
-    checks_error_vbo = false;
+    checks_error_vbo = BUGLE_FALSE;
     cdata = (const char *) data;
     for (i = 0; i < size; i++)
         dummy = cdata[i];
@@ -358,7 +358,7 @@ static void checks_buffer_vbo(size_t size, const void *data,
     GLint tmp, bsize;
     size_t end;
 
-    checks_error_vbo = true;
+    checks_error_vbo = BUGLE_TRUE;
     assert(buffer && !bugle_gl_in_begin_end() && BUGLE_GL_HAS_EXTENSION_GROUP(GL_ARB_vertex_buffer_object));
 
     CALL(glGetIntegerv)(GL_ARRAY_BUFFER_BINDING, &tmp);
@@ -636,7 +636,7 @@ static void checks_min_max(GLsizei count, GLenum gltype, const GLvoid *indices,
 /* Note: this cannot be a function, because a jmpbuf becomes invalid
  * once the function calling setjmp exits. It is also written in a
  * funny way, so that it can be used as if (CHECKS_START()) { ... },
- * which will be true if there was an error.
+ * which will be BUGLE_TRUE if there was an error.
  *
  * The entire checks method is fundamentally non-reentrant, so
  * we protect it with a big lock.
@@ -645,13 +645,13 @@ static void checks_min_max(GLsizei count, GLenum gltype, const GLvoid *indices,
 #if HAVE_SIGLONGJMP
 #define CHECKS_START() 1) { \
     struct sigaction act, old_act; \
-    volatile bool ret = true; \
+    volatile bugle_bool ret = BUGLE_TRUE; \
     \
     gl_lock_lock(checks_mutex); \
     checks_error = NULL; \
     checks_error_attribute = -1; \
-    checks_error_vbo = false; \
-    if (sigsetjmp(checks_buf, 1) == 1) ret = false; \
+    checks_error_vbo = BUGLE_FALSE; \
+    if (sigsetjmp(checks_buf, 1) == 1) ret = BUGLE_FALSE; \
     if (ret) \
     { \
         act.sa_handler = checks_sigsegv_handler; \
@@ -679,20 +679,20 @@ static void checks_min_max(GLsizei count, GLenum gltype, const GLvoid *indices,
 
 #else /* !HAVE_SIGLONGJMP */
 #define CHECKS_START() 1) { \
-    bool ret = true; \
+    bugle_bool ret = BUGLE_TRUE; \
     if (0
 #define CHECKS_STOP() \
     return ret; \
     } else (void) 0
 #endif
 
-static bool checks_glDrawArrays(function_call *call, const callback_data *data)
+static bugle_bool checks_glDrawArrays(function_call *call, const callback_data *data)
 {
     if (*call->glDrawArrays.arg1 < 0)
     {
         bugle_log("checks", "error", BUGLE_LOG_NOTICE,
                   "glDrawArrays called with a negative argument; call will be ignored.");
-        return false;
+        return BUGLE_FALSE;
     }
 
     checks_completeness();
@@ -708,7 +708,7 @@ static bool checks_glDrawArrays(function_call *call, const callback_data *data)
     CHECKS_STOP();
 }
 
-static bool checks_glDrawElements(function_call *call, const callback_data *data)
+static bugle_bool checks_glDrawElements(function_call *call, const callback_data *data)
 {
     checks_completeness();
     if (CHECKS_START())
@@ -737,7 +737,7 @@ static bool checks_glDrawElements(function_call *call, const callback_data *data
 }
 
 #ifdef GL_VERSION_1_1
-static bool checks_glDrawRangeElements(function_call *call, const callback_data *data)
+static bugle_bool checks_glDrawRangeElements(function_call *call, const callback_data *data)
 {
     checks_completeness();
     if (CHECKS_START())
@@ -765,7 +765,7 @@ static bool checks_glDrawRangeElements(function_call *call, const callback_data 
         {
             bugle_log("checks", "error", BUGLE_LOG_NOTICE,
                       "glDrawRangeElements indices fall outside range; call will be ignored.");
-            ret = false;
+            ret = BUGLE_FALSE;
         }
         else
         {
@@ -777,7 +777,7 @@ static bool checks_glDrawRangeElements(function_call *call, const callback_data 
     CHECKS_STOP();
 }
 
-static bool checks_glMultiDrawArrays(function_call *call, const callback_data *data)
+static bugle_bool checks_glMultiDrawArrays(function_call *call, const callback_data *data)
 {
     checks_completeness();
     if (CHECKS_START())
@@ -807,7 +807,7 @@ static bool checks_glMultiDrawArrays(function_call *call, const callback_data *d
     CHECKS_STOP();
 }
 
-static bool checks_glMultiDrawElements(function_call *call, const callback_data *data)
+static bugle_bool checks_glMultiDrawElements(function_call *call, const callback_data *data)
 {
     checks_completeness();
     if (CHECKS_START())
@@ -851,20 +851,20 @@ static bool checks_glMultiDrawElements(function_call *call, const callback_data 
 /* OpenGL defines certain calls to be illegal inside glBegin/glEnd but
  * allows undefined behaviour when it happens (these are client-side calls).
  */
-static bool checks_no_begin_end(function_call *call, const callback_data *data)
+static bugle_bool checks_no_begin_end(function_call *call, const callback_data *data)
 {
     if (bugle_gl_in_begin_end())
     {
         bugle_log_printf("checks", "error", BUGLE_LOG_NOTICE,
                          "%s called inside glBegin/glEnd; call will be ignored.",
                          budgie_function_name(call->generic.id));
-        return false;
+        return BUGLE_FALSE;
     }
-    else return true;
+    else return BUGLE_TRUE;
 }
 
 /* Vertex drawing commands have undefined behaviour outside of begin/end. */
-static bool checks_begin_end(function_call *call, const callback_data *data)
+static bugle_bool checks_begin_end(function_call *call, const callback_data *data)
 {
     const char *name;
 
@@ -877,30 +877,30 @@ static bool checks_begin_end(function_call *call, const callback_data *data)
             GLuint attrib;
 
             attrib = *(const GLuint *) call->generic.args[0];
-            if (attrib) return true;
+            if (attrib) return BUGLE_TRUE;
         }
         bugle_log_printf("checks", "error", BUGLE_LOG_NOTICE,
                          "%s called outside glBegin/glEnd; call will be ignored.",
                          name);
-        return false;
+        return BUGLE_FALSE;
     }
     else
-        return true;
+        return BUGLE_TRUE;
 }
 
-static bool checks_glArrayElement(function_call *call, const callback_data *data)
+static bugle_bool checks_glArrayElement(function_call *call, const callback_data *data)
 {
     if (*call->glArrayElement.arg0 < 0)
     {
         bugle_log("checks", "error", BUGLE_LOG_NOTICE,
                   "glArrayElement called with a negative argument; call will be ignored.");
-        return false;
+        return BUGLE_FALSE;
     }
-    return true;
+    return BUGLE_TRUE;
 }
 
 /* glMultiTexCoord with an illegal texture has undefined behaviour */
-static bool checks_glMultiTexCoord(function_call *call, const callback_data *data)
+static bugle_bool checks_glMultiTexCoord(function_call *call, const callback_data *data)
 {
     GLenum texture;
     GLint max = 0;
@@ -919,93 +919,93 @@ static bool checks_glMultiTexCoord(function_call *call, const callback_data *dat
         }
         if (!max)
             CALL(glGetIntegerv)(GL_MAX_TEXTURE_UNITS, &max);
-        bugle_gl_end_internal_render("checks_glMultiTexCoord", true);
+        bugle_gl_end_internal_render("checks_glMultiTexCoord", BUGLE_TRUE);
     }
 
     /* FIXME: This is the most likely scenario i.e. inside glBegin/glEnd.
      * We should pre-lookup the implementation dependent values so that
      * we can actually check things here.
      */
-    if (!max) return true;
+    if (!max) return BUGLE_TRUE;
 
     if (texture < GL_TEXTURE0 || texture >= GL_TEXTURE0 + (GLenum) max)
     {
         bugle_log_printf("checks", "error", BUGLE_LOG_NOTICE,
                          "%s called with out of range texture unit; call will be ignored.",
                          budgie_function_name(call->generic.id));
-        return false;
+        return BUGLE_FALSE;
     }
-    return true;
+    return BUGLE_TRUE;
 }
 #endif /* GL_VERSION_1_1 */
 
-static bool checks_initialise(filter_set *handle)
+static bugle_bool checks_initialise(filter_set *handle)
 {
     filter *f;
 
     f = bugle_filter_new(handle, "checks");
     /* Pointer checks */
-    bugle_filter_catches(f, "glDrawArrays", false, checks_glDrawArrays);
-    bugle_filter_catches(f, "glDrawElements", false, checks_glDrawElements);
+    bugle_filter_catches(f, "glDrawArrays", BUGLE_FALSE, checks_glDrawArrays);
+    bugle_filter_catches(f, "glDrawElements", BUGLE_FALSE, checks_glDrawElements);
 #ifdef GL_VERSION_1_1
-    bugle_filter_catches(f, "glDrawRangeElements", false, checks_glDrawRangeElements);
-    bugle_filter_catches(f, "glMultiDrawArrays", false, checks_glMultiDrawArrays);
-    bugle_filter_catches(f, "glMultiDrawElements", false, checks_glMultiDrawElements);
+    bugle_filter_catches(f, "glDrawRangeElements", BUGLE_FALSE, checks_glDrawRangeElements);
+    bugle_filter_catches(f, "glMultiDrawArrays", BUGLE_FALSE, checks_glMultiDrawArrays);
+    bugle_filter_catches(f, "glMultiDrawElements", BUGLE_FALSE, checks_glMultiDrawElements);
     /* Checks that we are outside begin/end */
-    bugle_filter_catches(f, "glEnableClientState", false, checks_no_begin_end);
-    bugle_filter_catches(f, "glDisableClientState", false, checks_no_begin_end);
-    bugle_filter_catches(f, "glPushClientAttrib", false, checks_no_begin_end);
-    bugle_filter_catches(f, "glPopClientAttrib", false, checks_no_begin_end);
-    bugle_filter_catches(f, "glColorPointer", false, checks_no_begin_end);
-    bugle_filter_catches(f, "glFogCoordPointer", false, checks_no_begin_end);
-    bugle_filter_catches(f, "glEdgeFlagPointer", false, checks_no_begin_end);
-    bugle_filter_catches(f, "glIndexPointer", false, checks_no_begin_end);
-    bugle_filter_catches(f, "glNormalPointer", false, checks_no_begin_end);
-    bugle_filter_catches(f, "glTexCoordPointer", false, checks_no_begin_end);
-    bugle_filter_catches(f, "glSecondaryColorPointer", false, checks_no_begin_end);
-    bugle_filter_catches(f, "glVertexPointer", false, checks_no_begin_end);
-    bugle_filter_catches(f, "glVertexAttribPointer", false, checks_no_begin_end);
-    bugle_filter_catches(f, "glClientActiveTexture", false, checks_no_begin_end);
-    bugle_filter_catches(f, "glInterleavedArrays", false, checks_no_begin_end);
-    bugle_filter_catches(f, "glPixelStorei", false, checks_no_begin_end);
-    bugle_filter_catches(f, "glPixelStoref", false, checks_no_begin_end);
+    bugle_filter_catches(f, "glEnableClientState", BUGLE_FALSE, checks_no_begin_end);
+    bugle_filter_catches(f, "glDisableClientState", BUGLE_FALSE, checks_no_begin_end);
+    bugle_filter_catches(f, "glPushClientAttrib", BUGLE_FALSE, checks_no_begin_end);
+    bugle_filter_catches(f, "glPopClientAttrib", BUGLE_FALSE, checks_no_begin_end);
+    bugle_filter_catches(f, "glColorPointer", BUGLE_FALSE, checks_no_begin_end);
+    bugle_filter_catches(f, "glFogCoordPointer", BUGLE_FALSE, checks_no_begin_end);
+    bugle_filter_catches(f, "glEdgeFlagPointer", BUGLE_FALSE, checks_no_begin_end);
+    bugle_filter_catches(f, "glIndexPointer", BUGLE_FALSE, checks_no_begin_end);
+    bugle_filter_catches(f, "glNormalPointer", BUGLE_FALSE, checks_no_begin_end);
+    bugle_filter_catches(f, "glTexCoordPointer", BUGLE_FALSE, checks_no_begin_end);
+    bugle_filter_catches(f, "glSecondaryColorPointer", BUGLE_FALSE, checks_no_begin_end);
+    bugle_filter_catches(f, "glVertexPointer", BUGLE_FALSE, checks_no_begin_end);
+    bugle_filter_catches(f, "glVertexAttribPointer", BUGLE_FALSE, checks_no_begin_end);
+    bugle_filter_catches(f, "glClientActiveTexture", BUGLE_FALSE, checks_no_begin_end);
+    bugle_filter_catches(f, "glInterleavedArrays", BUGLE_FALSE, checks_no_begin_end);
+    bugle_filter_catches(f, "glPixelStorei", BUGLE_FALSE, checks_no_begin_end);
+    bugle_filter_catches(f, "glPixelStoref", BUGLE_FALSE, checks_no_begin_end);
     /* Checks that we are inside begin/end */
-    bugle_gl_filter_catches_drawing_immediate(f, false, checks_begin_end);
+    bugle_gl_filter_catches_drawing_immediate(f, BUGLE_FALSE, checks_begin_end);
     /* This call has undefined behaviour if given a negative argument */
-    bugle_filter_catches(f, "glArrayElement", false, checks_glArrayElement);
+    bugle_filter_catches(f, "glArrayElement", BUGLE_FALSE, checks_glArrayElement);
     /* Other */
-    bugle_filter_catches(f, "glMultiTexCoord1s", false, checks_glMultiTexCoord);
-    bugle_filter_catches(f, "glMultiTexCoord1i", false, checks_glMultiTexCoord);
-    bugle_filter_catches(f, "glMultiTexCoord1f", false, checks_glMultiTexCoord);
-    bugle_filter_catches(f, "glMultiTexCoord1d", false, checks_glMultiTexCoord);
-    bugle_filter_catches(f, "glMultiTexCoord2s", false, checks_glMultiTexCoord);
-    bugle_filter_catches(f, "glMultiTexCoord2i", false, checks_glMultiTexCoord);
-    bugle_filter_catches(f, "glMultiTexCoord2f", false, checks_glMultiTexCoord);
-    bugle_filter_catches(f, "glMultiTexCoord2d", false, checks_glMultiTexCoord);
-    bugle_filter_catches(f, "glMultiTexCoord3s", false, checks_glMultiTexCoord);
-    bugle_filter_catches(f, "glMultiTexCoord3i", false, checks_glMultiTexCoord);
-    bugle_filter_catches(f, "glMultiTexCoord3f", false, checks_glMultiTexCoord);
-    bugle_filter_catches(f, "glMultiTexCoord3d", false, checks_glMultiTexCoord);
-    bugle_filter_catches(f, "glMultiTexCoord4s", false, checks_glMultiTexCoord);
-    bugle_filter_catches(f, "glMultiTexCoord4i", false, checks_glMultiTexCoord);
-    bugle_filter_catches(f, "glMultiTexCoord4f", false, checks_glMultiTexCoord);
-    bugle_filter_catches(f, "glMultiTexCoord4d", false, checks_glMultiTexCoord);
-    bugle_filter_catches(f, "glMultiTexCoord1sv", false, checks_glMultiTexCoord);
-    bugle_filter_catches(f, "glMultiTexCoord1iv", false, checks_glMultiTexCoord);
-    bugle_filter_catches(f, "glMultiTexCoord1fv", false, checks_glMultiTexCoord);
-    bugle_filter_catches(f, "glMultiTexCoord1dv", false, checks_glMultiTexCoord);
-    bugle_filter_catches(f, "glMultiTexCoord2sv", false, checks_glMultiTexCoord);
-    bugle_filter_catches(f, "glMultiTexCoord2iv", false, checks_glMultiTexCoord);
-    bugle_filter_catches(f, "glMultiTexCoord2fv", false, checks_glMultiTexCoord);
-    bugle_filter_catches(f, "glMultiTexCoord2dv", false, checks_glMultiTexCoord);
-    bugle_filter_catches(f, "glMultiTexCoord3sv", false, checks_glMultiTexCoord);
-    bugle_filter_catches(f, "glMultiTexCoord3iv", false, checks_glMultiTexCoord);
-    bugle_filter_catches(f, "glMultiTexCoord3fv", false, checks_glMultiTexCoord);
-    bugle_filter_catches(f, "glMultiTexCoord3dv", false, checks_glMultiTexCoord);
-    bugle_filter_catches(f, "glMultiTexCoord4sv", false, checks_glMultiTexCoord);
-    bugle_filter_catches(f, "glMultiTexCoord4iv", false, checks_glMultiTexCoord);
-    bugle_filter_catches(f, "glMultiTexCoord4fv", false, checks_glMultiTexCoord);
-    bugle_filter_catches(f, "glMultiTexCoord4dv", false, checks_glMultiTexCoord);
+    bugle_filter_catches(f, "glMultiTexCoord1s", BUGLE_FALSE, checks_glMultiTexCoord);
+    bugle_filter_catches(f, "glMultiTexCoord1i", BUGLE_FALSE, checks_glMultiTexCoord);
+    bugle_filter_catches(f, "glMultiTexCoord1f", BUGLE_FALSE, checks_glMultiTexCoord);
+    bugle_filter_catches(f, "glMultiTexCoord1d", BUGLE_FALSE, checks_glMultiTexCoord);
+    bugle_filter_catches(f, "glMultiTexCoord2s", BUGLE_FALSE, checks_glMultiTexCoord);
+    bugle_filter_catches(f, "glMultiTexCoord2i", BUGLE_FALSE, checks_glMultiTexCoord);
+    bugle_filter_catches(f, "glMultiTexCoord2f", BUGLE_FALSE, checks_glMultiTexCoord);
+    bugle_filter_catches(f, "glMultiTexCoord2d", BUGLE_FALSE, checks_glMultiTexCoord);
+    bugle_filter_catches(f, "glMultiTexCoord3s", BUGLE_FALSE, checks_glMultiTexCoord);
+    bugle_filter_catches(f, "glMultiTexCoord3i", BUGLE_FALSE, checks_glMultiTexCoord);
+    bugle_filter_catches(f, "glMultiTexCoord3f", BUGLE_FALSE, checks_glMultiTexCoord);
+    bugle_filter_catches(f, "glMultiTexCoord3d", BUGLE_FALSE, checks_glMultiTexCoord);
+    bugle_filter_catches(f, "glMultiTexCoord4s", BUGLE_FALSE, checks_glMultiTexCoord);
+    bugle_filter_catches(f, "glMultiTexCoord4i", BUGLE_FALSE, checks_glMultiTexCoord);
+    bugle_filter_catches(f, "glMultiTexCoord4f", BUGLE_FALSE, checks_glMultiTexCoord);
+    bugle_filter_catches(f, "glMultiTexCoord4d", BUGLE_FALSE, checks_glMultiTexCoord);
+    bugle_filter_catches(f, "glMultiTexCoord1sv", BUGLE_FALSE, checks_glMultiTexCoord);
+    bugle_filter_catches(f, "glMultiTexCoord1iv", BUGLE_FALSE, checks_glMultiTexCoord);
+    bugle_filter_catches(f, "glMultiTexCoord1fv", BUGLE_FALSE, checks_glMultiTexCoord);
+    bugle_filter_catches(f, "glMultiTexCoord1dv", BUGLE_FALSE, checks_glMultiTexCoord);
+    bugle_filter_catches(f, "glMultiTexCoord2sv", BUGLE_FALSE, checks_glMultiTexCoord);
+    bugle_filter_catches(f, "glMultiTexCoord2iv", BUGLE_FALSE, checks_glMultiTexCoord);
+    bugle_filter_catches(f, "glMultiTexCoord2fv", BUGLE_FALSE, checks_glMultiTexCoord);
+    bugle_filter_catches(f, "glMultiTexCoord2dv", BUGLE_FALSE, checks_glMultiTexCoord);
+    bugle_filter_catches(f, "glMultiTexCoord3sv", BUGLE_FALSE, checks_glMultiTexCoord);
+    bugle_filter_catches(f, "glMultiTexCoord3iv", BUGLE_FALSE, checks_glMultiTexCoord);
+    bugle_filter_catches(f, "glMultiTexCoord3fv", BUGLE_FALSE, checks_glMultiTexCoord);
+    bugle_filter_catches(f, "glMultiTexCoord3dv", BUGLE_FALSE, checks_glMultiTexCoord);
+    bugle_filter_catches(f, "glMultiTexCoord4sv", BUGLE_FALSE, checks_glMultiTexCoord);
+    bugle_filter_catches(f, "glMultiTexCoord4iv", BUGLE_FALSE, checks_glMultiTexCoord);
+    bugle_filter_catches(f, "glMultiTexCoord4fv", BUGLE_FALSE, checks_glMultiTexCoord);
+    bugle_filter_catches(f, "glMultiTexCoord4dv", BUGLE_FALSE, checks_glMultiTexCoord);
 #endif
 
     /* FIXME: still perhaps to do:
@@ -1021,7 +1021,7 @@ static bool checks_initialise(filter_set *handle)
     bugle_filter_order("checks", "trackcontext");
     bugle_filter_order("checks", "glbeginend");
     bugle_filter_order("checks", "gldisplaylist");
-    return true;
+    return BUGLE_TRUE;
 }
 
 void bugle_initialise_filter_library(void)

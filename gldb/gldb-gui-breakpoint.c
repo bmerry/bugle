@@ -94,7 +94,7 @@ static void gldb_breakpoint_pane_add(GtkButton *button, gpointer user_data)
                            COLUMN_BREAKPOINT_ENABLED, TRUE,
                            COLUMN_BREAKPOINT_FUNCTION, gtk_entry_get_text(GTK_ENTRY(entry)),
                            -1);
-        gldb_set_break(0, gtk_entry_get_text(GTK_ENTRY(entry)), true);
+        gldb_set_break(0, gtk_entry_get_text(GTK_ENTRY(entry)), BUGLE_TRUE);
     }
     gtk_widget_destroy(dialog);
 }
@@ -117,7 +117,7 @@ static void gldb_breakpoint_pane_remove(GtkButton *button, gpointer user_data)
                            COLUMN_BREAKPOINT_FUNCTION, &func,
                            -1);
         if (enabled)
-            gldb_set_break(0, func, false);
+            gldb_set_break(0, func, BUGLE_FALSE);
         gtk_list_store_remove(GTK_LIST_STORE(model), &iter);
     }
 }

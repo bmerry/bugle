@@ -171,7 +171,7 @@ static GtkWidget *entry_new_with_setting(gldb_program_setting setting)
     return entry;
 }
 
-bool gldb_gui_target_dialog_run(GtkWindow *parent)
+bugle_bool gldb_gui_target_dialog_run(GtkWindow *parent)
 {
     GldbGuiTargetDialog context;
     gint result;

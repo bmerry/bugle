@@ -13,7 +13,7 @@
 #include <stddef.h>
 #include <string.h>
 #include <ctype.h>
-#include <stdbool.h>
+#include <bugle/bool.h>
 
 /* Still TODO (how depressing)
  * - GetConvolutionFilter
@@ -419,7 +419,7 @@ static void query_shaders(void)
         "}\n";
     const char *vs_source;
     char name[128];
-    bool lang120;
+    bugle_bool lang120;
 
     if (GLEW_ARB_shader_objects
         && GLEW_ARB_vertex_shader

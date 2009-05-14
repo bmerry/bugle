@@ -28,7 +28,7 @@
 #if BUGLE_OSAPI_WIN32
 
 #define WIN32_LEAN_AND_MEAN
-#include <stdbool.h>
+#include <bugle/bool.h>
 #include <fcntl.h>
 #include <errno.h>
 #include "lock.h"
@@ -51,8 +51,8 @@ typedef struct gldb_protocol_reader_select
      */
     int read_idx, write_idx; 
 
-    /* Set to true by the thread to signal that no more data is coming. */
-    bool is_eof;
+    /* Set to BUGLE_TRUE by the thread to signal that no more data is coming. */
+    bugle_bool is_eof;
 
     /* The circular buffer */
     char buffer[BUFFER_SIZE];
@@ -76,7 +76,7 @@ unsigned __stdcall reader_thread(void *arg)
 
     r = (gldb_protocol_reader_select *) arg;
     EnterCriticalSection(&r->lock);
-    while (true)
+    while (BUGLE_TRUE)
     {
         ssize_t space;
         ssize_t bytes;
@@ -106,7 +106,7 @@ unsigned __stdcall reader_thread(void *arg)
 
         if (bytes <= 0)
         {
-            r->is_eof = true;
+            r->is_eof = BUGLE_TRUE;
             SetEvent(r->data_event);
             LeaveCriticalSection(&r->lock);
             return 0;
@@ -131,7 +131,7 @@ gldb_protocol_reader_select *gldb_protocol_reader_select_new(int fd)
     r->data_event = CreateEvent(NULL, TRUE, FALSE, NULL);
     r->space_event = CreateEvent(NULL, TRUE, TRUE, NULL);
     r->fd = fd;
-    r->is_eof = false;
+    r->is_eof = BUGLE_FALSE;
     r->read_idx = 0;
     r->write_idx = 0;
     EnterCriticalSection(&r->lock);
@@ -181,9 +181,9 @@ ssize_t gldb_protocol_reader_select_read(gldb_protocol_reader_select *r, void *b
     return ret;
 }
 
-bool gldb_protocol_reader_select_has_data(gldb_protocol_reader_select *r)
+bugle_bool gldb_protocol_reader_select_has_data(gldb_protocol_reader_select *r)
 {
-    bool ret;
+    bugle_bool ret;
 
     EnterCriticalSection(&r->lock);
     ret = (r->read_idx != r->write_idx);

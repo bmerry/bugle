@@ -29,18 +29,18 @@
 #if HAVE_DLFCN_H
 # include <dlfcn.h>
 # include <string.h>
-# include <stdbool.h>
+# include <bugle/bool.h>
 # include <bugle/export.h>
 
 # ifdef RTLD_NEXT
 #  define BUGLE_DEFINED_DLOPEN
 
-static bool bypass_dlopen;
+static bugle_bool bypass_dlopen;
 static void *(*real_dlopen)(const char *, int) = NULL;
 
 void dlopen_initialise()
 {
-    bypass_dlopen = true;
+    bypass_dlopen = BUGLE_TRUE;
 }
 
 BUGLE_EXPORT_PRE void *dlopen(const char *filename, int flag) BUGLE_EXPORT_POST;

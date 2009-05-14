@@ -17,7 +17,7 @@
 
 #ifndef BUGLE_COMMON_LINKEDLIST_H
 #define BUGLE_COMMON_LINKEDLIST_H
-#include <stdbool.h>
+#include <bugle/bool.h>
 #include <bugle/export.h>
 
 #ifdef __cplusplus

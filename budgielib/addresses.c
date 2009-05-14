@@ -191,7 +191,7 @@ void budgie_function_address_set_real(budgie_function id, void (BUDGIEAPI *addr)
     _budgie_function_address_real[id] = addr;
 }
 
-void budgie_function_set_bypass(budgie_function id, bool bypass)
+void budgie_function_set_bypass(budgie_function id, bugle_bool bypass)
 {
     assert(id >= 0 && id < budgie_function_count());
     _budgie_bypass[id] = bypass;
@@ -216,15 +216,15 @@ static void reentrance_initialise(void)
     gl_tls_key_init(reentrance_key, NULL);
 }
 
-/* Sets the flag to mark entry, and returns true if we should call
+/* Sets the flag to mark entry, and returns BUGLE_TRUE if we should call
  * the interceptor. We set an arbitrary non-NULL pointer.
  */
-bool _budgie_reentrance_init(void)
+bugle_bool _budgie_reentrance_init(void)
 {
     /* Note that since the data is thread-specific, we need not worry
      * about contention.
      */
-    bool ans;
+    bugle_bool ans;
 
     BUGLE_RUN_CONSTRUCTOR(reentrance_initialise);
     ans = gl_tls_get(reentrance_key) == NULL;

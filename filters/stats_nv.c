@@ -23,7 +23,7 @@
 
 #if HAVE_NVPERFSDK_H
 
-#include <stdbool.h>
+#include <bugle/bool.h>
 #include <ltdl.h>
 #include <stdlib.h>
 #include <string.h>
@@ -39,18 +39,18 @@
 typedef struct
 {
     UINT index;
-    bool use_cycles;
-    bool accumulate;
-    bool experiment;
+    bugle_bool use_cycles;
+    bugle_bool accumulate;
+    bugle_bool experiment;
     char *name;
 } stats_signal_nv;
 
 static linked_list stats_nv_active;
 static linked_list stats_nv_registered;
 static lt_dlhandle stats_nv_dl = NULL;
-static bool stats_nv_experiment_mode = false; /* True if using simplified experiments */
+static bugle_bool stats_nv_experiment_mode = BUGLE_FALSE; /* True if using simplified experiments */
 static int stats_nv_num_passes = -1, stats_nv_pass = -1;
-static bool stats_nv_flush = false;
+static bugle_bool stats_nv_flush = BUGLE_FALSE;
 
 static NVPMRESULT (*fNVPMInit)(void);
 static NVPMRESULT (*fNVPMShutdown)(void);
@@ -79,14 +79,14 @@ static NVPMRESULT check_nvpm(NVPMRESULT status, const char *file, int line)
 
 #define CHECK_NVPM(x) (check_nvpm((x), __FILE__, __LINE__))
 
-static bool stats_nv_swap_buffers(function_call *call, const callback_data *data)
+static bugle_bool stats_nv_swap_buffers(function_call *call, const callback_data *data)
 {
     linked_list_node *i;
     stats_signal *si;
     stats_signal_nv *nv;
     UINT samples;
     UINT64 value, cycles;
-    bool experiment_done = false;
+    bugle_bool experiment_done = BUGLE_FALSE;
 
     if (bugle_list_head(&stats_nv_active))
     {
@@ -99,7 +99,7 @@ static bool stats_nv_swap_buffers(function_call *call, const callback_data *data
                 if (stats_nv_pass + 1 == stats_nv_num_passes)
                 {
                     CHECK_NVPM(fNVPMEndExperiment());
-                    experiment_done = true;
+                    experiment_done = BUGLE_TRUE;
                     stats_nv_pass = -1;    /* tag as not-in-experiment */
                 }
             }
@@ -119,10 +119,10 @@ static bool stats_nv_swap_buffers(function_call *call, const callback_data *data
             else bugle_stats_signal_update(si, value);
         }
     }
-    return true;
+    return BUGLE_TRUE;
 }
 
-static bool stats_nv_post_swap_buffers(function_call *call, const callback_data *data)
+static bugle_bool stats_nv_post_swap_buffers(function_call *call, const callback_data *data)
 {
     if (stats_nv_experiment_mode)
     {
@@ -131,10 +131,10 @@ static bool stats_nv_post_swap_buffers(function_call *call, const callback_data 
             CHECK_NVPM(fNVPMBeginExperiment(&stats_nv_num_passes));
         CHECK_NVPM(fNVPMBeginPass(stats_nv_pass));
     }
-    return true;
+    return BUGLE_TRUE;
 }
 
-static bool stats_nv_signal_activate(stats_signal *st)
+static bugle_bool stats_nv_signal_activate(stats_signal *st)
 {
     stats_signal_nv *nv;
 
@@ -143,11 +143,11 @@ static bool stats_nv_signal_activate(stats_signal *st)
     {
         bugle_log_printf("stats_nv", "nvpm", BUGLE_LOG_ERROR,
                          "failed to add NVPM counter %s", nv->name);
-        return false;
+        return BUGLE_FALSE;
     }
-    if (nv->experiment) stats_nv_experiment_mode = true;
+    if (nv->experiment) stats_nv_experiment_mode = BUGLE_TRUE;
     bugle_list_append(&stats_nv_active, st);
-    return true;
+    return BUGLE_TRUE;
 }
 
 static int stats_nv_enumerate(UINT index, char *name)
@@ -188,14 +188,14 @@ static void stats_nv_free(stats_signal *si)
     free(nv);
 }
 
-static bool stats_nv_initialise(filter_set *handle)
+static bugle_bool stats_nv_initialise(filter_set *handle)
 {
     filter *f;
 
     bugle_list_init(&stats_nv_active, NULL);
     bugle_list_init(&stats_nv_registered, (void (*)(void *)) stats_nv_free);
     stats_nv_dl = lt_dlopenext("libNVPerfSDK");
-    if (stats_nv_dl == NULL) return true;
+    if (stats_nv_dl == NULL) return BUGLE_TRUE;
 
     fNVPMInit = (NVPMRESULT (*)(void)) lt_dlsym(stats_nv_dl, "NVPMInit");
     fNVPMShutdown = (NVPMRESULT (*)(void)) lt_dlsym(stats_nv_dl, "NVPMShutdown");
@@ -239,21 +239,21 @@ static bool stats_nv_initialise(filter_set *handle)
     }
 
     f = bugle_filter_new(handle, "stats_nv");
-    bugle_glwin_filter_catches_swap_buffers(f, false, stats_nv_swap_buffers);
+    bugle_glwin_filter_catches_swap_buffers(f, BUGLE_FALSE, stats_nv_swap_buffers);
     bugle_filter_order("stats_nv", "invoke");
     bugle_filter_order("stats_nv", "stats");
 
     f = bugle_filter_new(handle, "stats_nv_post");
-    bugle_glwin_filter_catches_swap_buffers(f, false, stats_nv_post_swap_buffers);
+    bugle_glwin_filter_catches_swap_buffers(f, BUGLE_FALSE, stats_nv_post_swap_buffers);
     bugle_filter_order("invoke", "stats_nv_post");
-    return true;
+    return BUGLE_TRUE;
 
 cancel2:
     fNVPMShutdown();
 cancel1:
     lt_dlclose(stats_nv_dl);
     stats_nv_dl = NULL;
-    return false;
+    return BUGLE_FALSE;
 }
 
 static void stats_nv_shutdown(filter_set *handle)

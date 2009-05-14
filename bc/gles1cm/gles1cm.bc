@@ -46,12 +46,12 @@ LENGTH PARAMETER gl(Gen|Delete)(Textures|Buffers|FramebuffersOES|RenderbuffersOE
 # Functions where the count is determined by the token
 LENGTH PARAMETER glDrawElements 3 bugle_gl_type_to_size($2) * $1
 TYPE PARAMETER glTexImage2D 8 bugle_gl_type_to_type_ptr($7)
-LENGTH PARAMETER glTexImage2D 8 bugle_image_element_count($3, $4, -1, $6, $7, true)
+LENGTH PARAMETER glTexImage2D 8 bugle_image_element_count($3, $4, -1, $6, $7, BUGLE_TRUE)
 TYPE PARAMETER glTexSubImage2D 8 bugle_gl_type_to_type_ptr($7)
-LENGTH PARAMETER glTexSubImage2D 8 bugle_image_element_count($4, $5, -1, $6, $7, true)
+LENGTH PARAMETER glTexSubImage2D 8 bugle_image_element_count($4, $5, -1, $6, $7, BUGLE_TRUE)
 
 TYPE PARAMETER glReadPixels 6 bugle_gl_type_to_type_ptr($5)
-LENGTH PARAMETER glReadPixels 6 bugle_image_element_count($2, $3, -1, $4, $5, false)
+LENGTH PARAMETER glReadPixels 6 bugle_image_element_count($2, $3, -1, $4, $5, BUGLE_FALSE)
 
 # Assorted type overrides
 TYPE PARAMETER gl(Mult|Load)Matrixf 0 TYPE_14pGLfloatmatrix

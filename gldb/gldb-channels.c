@@ -24,7 +24,6 @@
 #endif
 #include <GL/gl.h>
 #include <inttypes.h>
-#include <stdbool.h>
 #include <stddef.h>
 #include "gldb/gldb-channels.h"
 

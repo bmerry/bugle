@@ -18,7 +18,7 @@
 #if HAVE_CONFIG_H
 # include <config.h>
 #endif
-#include <stdbool.h>
+#include <bugle/bool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <bugle/gl/glutils.h>
@@ -28,7 +28,7 @@
 #include <budgie/addresses.h>
 #include "xalloc.h"
 
-static bool trace_callback(function_call *call, const callback_data *data)
+static bugle_bool trace_callback(function_call *call, const callback_data *data)
 {
     char fixed_buffer[4096], *dyn_buffer = NULL, *ptr;
     size_t fixed_size, len;
@@ -53,18 +53,18 @@ static bool trace_callback(function_call *call, const callback_data *data)
 
     bugle_log("trace", "call", BUGLE_LOG_INFO, ptr);
     free(dyn_buffer);
-    return true;
+    return BUGLE_TRUE;
 }
 
-static bool trace_initialise(filter_set *handle)
+static bugle_bool trace_initialise(filter_set *handle)
 {
     filter *f;
 
     f = bugle_filter_new(handle, "trace");
     bugle_filter_order("invoke", "trace");
-    bugle_filter_catches_all(f, false, trace_callback);
+    bugle_filter_catches_all(f, BUGLE_FALSE, trace_callback);
     bugle_gl_filter_post_renders("trace");
-    return true;
+    return BUGLE_TRUE;
 }
 
 void bugle_initialise_filter_library(void)

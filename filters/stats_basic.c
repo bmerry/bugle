@@ -18,7 +18,7 @@
 #if HAVE_CONFIG_H
 # include <config.h>
 #endif
-#include <stdbool.h>
+#include <bugle/bool.h>
 #include <sys/time.h>
 #include <sys/types.h>
 #include <bugle/stats.h>
@@ -27,36 +27,36 @@
 
 static stats_signal *stats_basic_frames, *stats_basic_seconds;
 
-static bool stats_basic_seconds_activate(stats_signal *si)
+static bugle_bool stats_basic_seconds_activate(stats_signal *si)
 {
     struct timeval t;
     gettimeofday(&t, NULL);
     bugle_stats_signal_update(si, t.tv_sec + 1e-6 * t.tv_usec);
-    return true;
+    return BUGLE_TRUE;
 }
 
-static bool stats_basic_swap_buffers(function_call *call, const callback_data *data)
+static bugle_bool stats_basic_swap_buffers(function_call *call, const callback_data *data)
 {
     struct timeval now;
 
     gettimeofday(&now, NULL);
     bugle_stats_signal_update(stats_basic_seconds, now.tv_sec + 1e-6 * now.tv_usec);
     bugle_stats_signal_add(stats_basic_frames, 1.0);
-    return true;
+    return BUGLE_TRUE;
 }
 
-static bool stats_basic_initialise(filter_set *handle)
+static bugle_bool stats_basic_initialise(filter_set *handle)
 {
     filter *f;
 
     f = bugle_filter_new(handle, "stats_basic");
-    bugle_glwin_filter_catches_swap_buffers(f, false, stats_basic_swap_buffers);
+    bugle_glwin_filter_catches_swap_buffers(f, BUGLE_FALSE, stats_basic_swap_buffers);
     bugle_filter_order("stats_basic", "invoke");
     bugle_filter_order("stats_basic", "stats");
 
     stats_basic_frames = bugle_stats_signal_new("frames", NULL, NULL);
     stats_basic_seconds = bugle_stats_signal_new("seconds", NULL, stats_basic_seconds_activate);
-    return true;
+    return BUGLE_TRUE;
 }
 
 void bugle_initialise_filter_library(void)

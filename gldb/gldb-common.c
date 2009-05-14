@@ -28,7 +28,7 @@
 #include <signal.h>
 #include <errno.h>
 #include <sys/types.h>
-#include <stdbool.h>
+#include <bugle/bool.h>
 #include <fcntl.h>
 #include <bugle/linkedlist.h>
 #include <bugle/hashtable.h>
@@ -43,7 +43,7 @@
 
 static int lib_in_fd = -1, lib_out = -1;
 static gldb_protocol_reader *lib_in = NULL;
-/* Started is set to true only after receiving RESP_RUNNING. When
+/* Started is set to BUGLE_TRUE only after receiving RESP_RUNNING. When
  * we are in the state (running && !started), non-break responses are
  * handled but do not cause a new line to be read.
  */
@@ -54,9 +54,9 @@ static char *prog_settings[GLDB_PROGRAM_SETTING_COUNT];
 static gldb_program_type prog_type;
 
 static gldb_state *state_root = NULL;
-static bool state_dirty = true;
+static bugle_bool state_dirty = BUGLE_TRUE;
 
-static bool break_on_event[REQ_EVENT_COUNT];
+static bugle_bool break_on_event[REQ_EVENT_COUNT];
 static hash_table break_on;
 
 static void state_destroy(gldb_state *s)
@@ -79,16 +79,16 @@ void gldb_program_clear(void)
     prog_type = GLDB_PROGRAM_TYPE_LOCAL;
 }
 
-bool gldb_program_type_has_setting(gldb_program_type type, gldb_program_setting setting)
+bugle_bool gldb_program_type_has_setting(gldb_program_type type, gldb_program_setting setting)
 {
-    static const bool ans[GLDB_PROGRAM_TYPE_COUNT][GLDB_PROGRAM_SETTING_COUNT] =
+    static const bugle_bool ans[GLDB_PROGRAM_TYPE_COUNT][GLDB_PROGRAM_SETTING_COUNT] =
     {
         /* GLDB_PROGRAM_TYPE_LOCAL */
-        { true, true, true, false, false },
+        { BUGLE_TRUE, BUGLE_TRUE, BUGLE_TRUE, BUGLE_FALSE, BUGLE_FALSE },
         /* GLDB_PROGRAM_TYPE_SSH */
-        { true, true, true, true, false },
+        { BUGLE_TRUE, BUGLE_TRUE, BUGLE_TRUE, BUGLE_TRUE, BUGLE_FALSE },
         /* GLDB_PROGRAM_TYPE_TCP */
-        { false, false, false, true, true }
+        { BUGLE_FALSE, BUGLE_FALSE, BUGLE_FALSE, BUGLE_TRUE, BUGLE_TRUE }
     };
 
     assert(type >= 0 && type < GLDB_PROGRAM_TYPE_COUNT);
@@ -362,7 +362,7 @@ static pid_t execute(void (*child_init)(void))
             (*child_init)();
 
         command = prog_settings[GLDB_PROGRAM_SETTING_COMMAND];
-        if (!command) command = "/bin/true";
+        if (!command) command = "/bin/BUGLE_TRUE";
         display = prog_settings[GLDB_PROGRAM_SETTING_DISPLAY];
         chain = prog_settings[GLDB_PROGRAM_SETTING_CHAIN];
         host = prog_settings[GLDB_PROGRAM_SETTING_HOST];
@@ -421,7 +421,7 @@ void set_status(gldb_status s)
     {
     case GLDB_STATUS_RUNNING:
     case GLDB_STATUS_STOPPED:
-        state_dirty = true;
+        state_dirty = BUGLE_TRUE;
         break;
     case GLDB_STATUS_STARTED:
         break;
@@ -456,7 +456,7 @@ gldb_state *gldb_state_update(uint32_t id)
         {
             state_root = ((gldb_response_state_tree *) r)->root;
             free(r);
-            state_dirty = false;
+            state_dirty = BUGLE_FALSE;
         }
         else
         {
@@ -780,12 +780,12 @@ gldb_state *gldb_state_find(gldb_state *root, const char *name, size_t n)
     const char *split;
     linked_list_node *i;
     gldb_state *child;
-    bool found;
+    bugle_bool found;
 
     if (n > strlen(name)) n = strlen(name);
     while (n > 0)
     {
-        found = false;
+        found = BUGLE_FALSE;
         split = strchr(name, '.');
         while (split == name && n > 0 && name[0] == '.')
         {
@@ -801,7 +801,7 @@ gldb_state *gldb_state_find(gldb_state *root, const char *name, size_t n)
             if (child->name && strncmp(child->name, name, split - name) == 0
                 && child->name[split - name] == '\0')
             {
-                found = true;
+                found = BUGLE_TRUE;
                 root = child;
                 n -= split - name;
                 name = split;
@@ -909,14 +909,14 @@ void gldb_safe_syscall(int r, const char *str)
     }
 }
 
-bool gldb_run(uint32_t id, void (*child_init)(void))
+bugle_bool gldb_run(uint32_t id, void (*child_init)(void))
 {
     const hash_table_entry *h;
     uint32_t event;
 
     child_pid = execute(child_init);
     if (child_pid == -1)
-        return false;
+        return BUGLE_FALSE;
     /* Send breakpoints */
     for (event = 0; event < REQ_EVENT_COUNT; event++)
     {
@@ -935,7 +935,7 @@ bool gldb_run(uint32_t id, void (*child_init)(void))
     gldb_protocol_send_code(lib_out, REQ_RUN);
     gldb_protocol_send_code(lib_out, id);
     set_status(GLDB_STATUS_STARTED);
-    return true;
+    return BUGLE_TRUE;
 }
 
 void gldb_send_continue(uint32_t id)
@@ -961,7 +961,7 @@ void gldb_send_quit(uint32_t id)
     gldb_protocol_send_code(lib_out, id);
 }
 
-void gldb_send_enable_disable(uint32_t id, const char *filterset, bool enable)
+void gldb_send_enable_disable(uint32_t id, const char *filterset, bugle_bool enable)
 {
     assert(status != GLDB_STATUS_DEAD);
     gldb_protocol_send_code(lib_out, enable ? REQ_ACTIVATE_FILTERSET : REQ_DEACTIVATE_FILTERSET);
@@ -1049,13 +1049,13 @@ void gldb_send_data_buffer(uint32_t id, GLuint object_id)
     gldb_protocol_send_code(lib_out, object_id);
 }
 
-bool gldb_get_break_event(uint32_t event)
+bugle_bool gldb_get_break_event(uint32_t event)
 {
     assert(event < REQ_EVENT_COUNT);
     return break_on_event[event];
 }
 
-void gldb_set_break_event(uint32_t id, uint32_t event, bool brk)
+void gldb_set_break_event(uint32_t id, uint32_t event, bugle_bool brk)
 {
     assert(event < REQ_EVENT_COUNT);
     break_on_event[event] = brk;
@@ -1068,7 +1068,7 @@ void gldb_set_break_event(uint32_t id, uint32_t event, bool brk)
     }
 }
 
-void gldb_set_break(uint32_t id, const char *function, bool brk)
+void gldb_set_break(uint32_t id, const char *function, bugle_bool brk)
 {
     bugle_hash_set(&break_on, function, brk ? "1" : "0");
     if (status != GLDB_STATUS_DEAD)
@@ -1136,7 +1136,7 @@ void gldb_initialise(int argc, const char * const *argv)
     free(command);
     bugle_hash_init(&break_on, NULL);
     for (i = 0; i < (int) REQ_EVENT_COUNT; i++)
-        break_on_event[i] = true;
+        break_on_event[i] = BUGLE_TRUE;
 }
 
 void gldb_shutdown(void)

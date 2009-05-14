@@ -18,7 +18,6 @@
 #ifndef BUGLE_BUDGIE_REFLECT_H
 #define BUGLE_BUDGIE_REFLECT_H
 
-#include <stdbool.h>
 #include <stdio.h>
 #include <stddef.h>
 #if HAVE_SYS_TYPES_H

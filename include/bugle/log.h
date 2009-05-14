@@ -25,7 +25,6 @@
 #ifndef BUGLE_SRC_LOG_H
 #define BUGLE_SRC_LOG_H
 
-#include <stdbool.h>
 #include <bugle/filters.h>
 #include <bugle/misc.h>
 #include <bugle/export.h>

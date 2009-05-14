@@ -20,7 +20,7 @@
 #endif
 #include <bugle/gl/glheaders.h>
 #include <assert.h>
-#include <stdbool.h>
+#include <bugle/bool.h>
 #include <stdlib.h>
 #include <bugle/glwin/trackcontext.h>
 #include <bugle/gl/glbeginend.h>
@@ -108,7 +108,7 @@ static void stats_primitives_update(GLenum mode, GLsizei count)
 }
 
 #ifdef GL_VERSION_1_1
-static bool stats_primitives_immediate(function_call *call, const callback_data *data)
+static bugle_bool stats_primitives_immediate(function_call *call, const callback_data *data)
 {
     stats_primitives_struct *s;
 
@@ -117,20 +117,20 @@ static bool stats_primitives_immediate(function_call *call, const callback_data 
         s = bugle_object_get_current_data(bugle_context_class, stats_primitives_view);
         s->begin_count++;
     }
-    return true;
+    return BUGLE_TRUE;
 }
 
-static bool stats_primitives_glBegin(function_call *call, const callback_data *data)
+static bugle_bool stats_primitives_glBegin(function_call *call, const callback_data *data)
 {
     stats_primitives_struct *s;
 
     s = bugle_object_get_current_data(bugle_context_class, stats_primitives_view);
     s->begin_mode = *call->glBegin.arg0;
     s->begin_count = 0;
-    return true;
+    return BUGLE_TRUE;
 }
 
-static bool stats_primitives_glEnd(function_call *call, const callback_data *data)
+static bugle_bool stats_primitives_glEnd(function_call *call, const callback_data *data)
 {
     stats_primitives_struct *s;
 
@@ -138,30 +138,30 @@ static bool stats_primitives_glEnd(function_call *call, const callback_data *dat
     stats_primitives_update(s->begin_mode, s->begin_count);
     s->begin_mode = GL_NONE;
     s->begin_count = 0;
-    return true;
+    return BUGLE_TRUE;
 }
 #endif /* !GL_ES_VERSION_2_0 */
 
-static bool stats_primitives_glDrawArrays(function_call *call, const callback_data *data)
+static bugle_bool stats_primitives_glDrawArrays(function_call *call, const callback_data *data)
 {
     stats_primitives_update(*call->glDrawArrays.arg0, *call->glDrawArrays.arg2);
-    return true;
+    return BUGLE_TRUE;
 }
 
-static bool stats_primitives_glDrawElements(function_call *call, const callback_data *data)
+static bugle_bool stats_primitives_glDrawElements(function_call *call, const callback_data *data)
 {
     stats_primitives_update(*call->glDrawElements.arg0, *call->glDrawElements.arg1);
-    return true;
+    return BUGLE_TRUE;
 }
 
 #ifdef GL_VERSION_1_1
-static bool stats_primitives_glDrawRangeElements(function_call *call, const callback_data *data)
+static bugle_bool stats_primitives_glDrawRangeElements(function_call *call, const callback_data *data)
 {
     stats_primitives_update(*call->glDrawRangeElements.arg0, *call->glDrawRangeElementsEXT.arg3);
-    return true;
+    return BUGLE_TRUE;
 }
 
-static bool stats_primitives_glMultiDrawArrays(function_call *call, const callback_data *data)
+static bugle_bool stats_primitives_glMultiDrawArrays(function_call *call, const callback_data *data)
 {
     GLsizei i, primcount;
 
@@ -169,10 +169,10 @@ static bool stats_primitives_glMultiDrawArrays(function_call *call, const callba
     for (i = 0; i < primcount; i++)
         stats_primitives_update(*call->glMultiDrawArrays.arg0,
                                 (*call->glMultiDrawArrays.arg2)[i]);
-    return true;
+    return BUGLE_TRUE;
 }
 
-static bool stats_primitives_glMultiDrawElements(function_call *call, const callback_data *data)
+static bugle_bool stats_primitives_glMultiDrawElements(function_call *call, const callback_data *data)
 {
     GLsizei i, primcount;
 
@@ -180,10 +180,10 @@ static bool stats_primitives_glMultiDrawElements(function_call *call, const call
     for (i = 0; i < primcount; i++)
         stats_primitives_update(*call->glMultiDrawElements.arg0,
                                 (*call->glMultiDrawElements.arg1)[i]);
-    return true;
+    return BUGLE_TRUE;
 }
 
-static bool stats_primitives_glCallList(function_call *call, const callback_data *data)
+static bugle_bool stats_primitives_glCallList(function_call *call, const callback_data *data)
 {
     stats_primitives_struct *s;
     stats_primitives_displaylist_struct *counts;
@@ -196,18 +196,18 @@ static bool stats_primitives_glCallList(function_call *call, const callback_data
         bugle_stats_signal_add(stats_primitives_triangles, counts->triangles);
         bugle_stats_signal_add(stats_primitives_batches, counts->batches);
     }
-    return true;
+    return BUGLE_TRUE;
 }
 
-static bool stats_primitives_glCallLists(function_call *call, const callback_data *data)
+static bugle_bool stats_primitives_glCallLists(function_call *call, const callback_data *data)
 {
     bugle_log("stats_primitives", "glCallLists", BUGLE_LOG_WARNING,
               "triangle counting in glCallLists is not implemented!");
-    return true;
+    return BUGLE_TRUE;
 }
 #endif /* GL_VERSION_1_1 */
 
-static bool stats_primitives_initialise(filter_set *handle)
+static bugle_bool stats_primitives_initialise(filter_set *handle)
 {
     filter *f;
 
@@ -221,17 +221,17 @@ static bool stats_primitives_initialise(filter_set *handle)
                                                               sizeof(stats_primitives_struct));
 
     f = bugle_filter_new(handle, "stats_primitives");
-    bugle_filter_catches(f, "glDrawElements", false, stats_primitives_glDrawElements);
-    bugle_filter_catches(f, "glDrawArrays", false, stats_primitives_glDrawArrays);
+    bugle_filter_catches(f, "glDrawElements", BUGLE_FALSE, stats_primitives_glDrawElements);
+    bugle_filter_catches(f, "glDrawArrays", BUGLE_FALSE, stats_primitives_glDrawArrays);
 #ifdef GL_VERSION_1_1
-    bugle_filter_catches(f, "glDrawRangeElements", false, stats_primitives_glDrawRangeElements);
-    bugle_filter_catches(f, "glMultiDrawElements", false, stats_primitives_glMultiDrawElements);
-    bugle_filter_catches(f, "glMultiDrawArrays", false, stats_primitives_glMultiDrawArrays);
-    bugle_gl_filter_catches_drawing_immediate(f, false, stats_primitives_immediate);
-    bugle_filter_catches(f, "glBegin", false, stats_primitives_glBegin);
-    bugle_filter_catches(f, "glEnd", false, stats_primitives_glEnd);
-    bugle_filter_catches(f, "glCallList", false, stats_primitives_glCallList);
-    bugle_filter_catches(f, "glCallLists", false, stats_primitives_glCallLists);
+    bugle_filter_catches(f, "glDrawRangeElements", BUGLE_FALSE, stats_primitives_glDrawRangeElements);
+    bugle_filter_catches(f, "glMultiDrawElements", BUGLE_FALSE, stats_primitives_glMultiDrawElements);
+    bugle_filter_catches(f, "glMultiDrawArrays", BUGLE_FALSE, stats_primitives_glMultiDrawArrays);
+    bugle_gl_filter_catches_drawing_immediate(f, BUGLE_FALSE, stats_primitives_immediate);
+    bugle_filter_catches(f, "glBegin", BUGLE_FALSE, stats_primitives_glBegin);
+    bugle_filter_catches(f, "glEnd", BUGLE_FALSE, stats_primitives_glEnd);
+    bugle_filter_catches(f, "glCallList", BUGLE_FALSE, stats_primitives_glCallList);
+    bugle_filter_catches(f, "glCallLists", BUGLE_FALSE, stats_primitives_glCallLists);
 #endif
     bugle_filter_order("stats_primitives", "invoke");
     bugle_filter_order("stats_primitives", "stats");
@@ -239,7 +239,7 @@ static bool stats_primitives_initialise(filter_set *handle)
     stats_primitives_batches = bugle_stats_signal_new("batches", NULL, NULL);
     stats_primitives_triangles = bugle_stats_signal_new("triangles", NULL, NULL);
 
-    return true;
+    return BUGLE_TRUE;
 }
 
 void bugle_initialise_filter_library(void)

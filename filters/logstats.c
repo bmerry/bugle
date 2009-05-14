@@ -21,7 +21,7 @@
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdbool.h>
+#include <bugle/bool.h>
 #include <bugle/glwin/glwin.h>
 #include <bugle/linkedlist.h>
 #include <bugle/stats.h>
@@ -34,14 +34,14 @@ static linked_list logstats_show_requested;  /* names in config file */
 static stats_signal_values logstats_prev, logstats_cur;
 
 /* Callback to assign the "show" pseudo-variable */
-static bool logstats_show_set(const struct filter_set_variable_info_s *var,
+static bugle_bool logstats_show_set(const struct filter_set_variable_info_s *var,
                               const char *text, const void *value)
 {
     bugle_list_append(&logstats_show_requested, xstrdup(text));
-    return true;
+    return BUGLE_TRUE;
 }
 
-static bool logstats_swap_buffers(function_call *call, const callback_data *data)
+static bugle_bool logstats_swap_buffers(function_call *call, const callback_data *data)
 {
     linked_list_node *i;
     stats_statistic *st;
@@ -74,17 +74,17 @@ static bool logstats_swap_buffers(function_call *call, const callback_data *data
             }
         }
     }
-    return true;
+    return BUGLE_TRUE;
 }
 
-static bool logstats_initialise(filter_set *handle)
+static bugle_bool logstats_initialise(filter_set *handle)
 {
     filter *f;
     linked_list_node *i, *j;
     stats_statistic *st;
 
     f = bugle_filter_new(handle, "stats_log");
-    bugle_glwin_filter_catches_swap_buffers(f, false, logstats_swap_buffers);
+    bugle_glwin_filter_catches_swap_buffers(f, BUGLE_FALSE, logstats_swap_buffers);
 
     bugle_list_clear(&logstats_show);
     for (i = bugle_list_head(&logstats_show_requested); i; i = bugle_list_next(i))
@@ -97,7 +97,7 @@ static bool logstats_initialise(filter_set *handle)
             bugle_log_printf("logstats", "initialise", BUGLE_LOG_ERROR,
                              "statistic '%s' not found.", name);
             bugle_stats_statistic_list();
-            return false;
+            return BUGLE_FALSE;
         }
         for (; j; j = bugle_list_next(j))
         {
@@ -109,7 +109,7 @@ static bool logstats_initialise(filter_set *handle)
                 bugle_log_printf("logstats", "initialise", BUGLE_LOG_ERROR,
                                  "could not initialise statistic '%s'",
                                  st->name);
-                return false;
+                return BUGLE_FALSE;
             }
             if (st->last) break;
         }
@@ -117,7 +117,7 @@ static bool logstats_initialise(filter_set *handle)
     bugle_list_clear(&logstats_show_requested);
     bugle_stats_signal_values_init(&logstats_prev);
     bugle_stats_signal_values_init(&logstats_cur);
-    return true;
+    return BUGLE_TRUE;
 }
 
 static void logstats_shutdown(filter_set *handle)

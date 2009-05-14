@@ -21,7 +21,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdbool.h>
+#include <bugle/bool.h>
 #include <sys/types.h>
 #include <sys/time.h>
 #include <bugle/stats.h>
@@ -35,16 +35,16 @@ static stats_signal **stats_calltimes_signals;
 static stats_signal *stats_calltimes_total;
 static object_view time_view;
 
-static bool stats_calltimes_pre(function_call *call, const callback_data *data)
+static bugle_bool stats_calltimes_pre(function_call *call, const callback_data *data)
 {
     struct timeval *start;
 
     start = bugle_object_get_current_data(bugle_call_class, time_view);
     gettimeofday(start, NULL);
-    return true;
+    return BUGLE_TRUE;
 }
 
-static bool stats_calltimes_post(function_call *call, const callback_data *data)
+static bugle_bool stats_calltimes_post(function_call *call, const callback_data *data)
 {
     struct timeval *start;
     struct timeval end;
@@ -56,21 +56,21 @@ static bool stats_calltimes_post(function_call *call, const callback_data *data)
 
     bugle_stats_signal_add(stats_calltimes_signals[call->generic.id], elapsed);
     bugle_stats_signal_add(stats_calltimes_total, elapsed);
-    return true;
+    return BUGLE_TRUE;
 }
 
-static bool stats_calltimes_initialise(filter_set *handle)
+static bugle_bool stats_calltimes_initialise(filter_set *handle)
 {
     filter *f;
     int i;
 
     f = bugle_filter_new(handle, "stats_calltimes_pre");
-    bugle_filter_catches_all(f, false, stats_calltimes_pre);
+    bugle_filter_catches_all(f, BUGLE_FALSE, stats_calltimes_pre);
     bugle_filter_order("stats_calltimes_pre", "invoke");
     bugle_filter_order("stats_calltimes_pre", "stats");
 
     f = bugle_filter_new(handle, "stats_calltimes_post");
-    bugle_filter_catches_all(f, false, stats_calltimes_post);
+    bugle_filter_catches_all(f, BUGLE_FALSE, stats_calltimes_post);
     bugle_filter_order("invoke", "stats_calltimes_post");
 
     /* Try to get this filter-set close to the calls */
@@ -93,7 +93,7 @@ static bool stats_calltimes_initialise(filter_set *handle)
                                       NULL,
                                       sizeof(struct timeval));
 
-    return true;
+    return BUGLE_TRUE;
 }
 
 static void stats_calltimes_shutdown(filter_set *handle)

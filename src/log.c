@@ -22,7 +22,7 @@
 #include <bugle/log.h>
 #include <bugle/filters.h>
 #include <bugle/die.h>
-#include <stdbool.h>
+#include <bugle/bool.h>
 #include "common/threads.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -41,7 +41,7 @@
  */
 static char *log_filename = NULL;
 static char *log_format = LOG_DEFAULT_FORMAT;
-static bool log_flush = false;
+static bugle_bool log_flush = BUGLE_FALSE;
 static FILE *log_file = NULL;
 static long log_file_level = BUGLE_LOG_INFO + 1;
 static long log_stderr_level = BUGLE_LOG_NOTICE + 1;
@@ -202,7 +202,7 @@ static void log_alloc_die(void)
     abort();
 }
 
-static bool log_filter_set_initialise(filter_set *handle)
+static bugle_bool log_filter_set_initialise(filter_set *handle)
 {
     if (log_filename)
     {
@@ -210,11 +210,11 @@ static bool log_filter_set_initialise(filter_set *handle)
         if (!log_file)
         {
             fprintf(stderr, "failed to open log file %s\n", log_filename);
-            return false;
+            return BUGLE_FALSE;
         }
     }
     bugle_set_alloc_die(log_alloc_die);
-    return true;
+    return BUGLE_TRUE;
 }
 
 static void log_filter_set_shutdown(filter_set *handle)

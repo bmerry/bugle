@@ -900,9 +900,9 @@ static void write_group_table(FILE *f)
         else
             fprintf(f, "NULL, ");
         if (i->has_retn)
-            fprintf(f, "%s, true }", i->retn.type->define().c_str());
+            fprintf(f, "%s, BUGLE_TRUE }", i->retn.type->define().c_str());
         else
-            fprintf(f, "NULL_TYPE, false }");
+            fprintf(f, "NULL_TYPE, BUGLE_FALSE }");
     }
     fprintf(f, "\n};\n\n");
 }
@@ -960,7 +960,7 @@ static void write_group_dump_table(FILE *f)
             write_dump_parameter_entry(f, *i, i->retn, -1);
         else
             fprintf(f, "{ NULL_TYPE, NULL, NULL, NULL }");
-        fprintf(f, i->has_retn ? ", true }" : ", false }");
+        fprintf(f, i->has_retn ? ", BUGLE_TRUE }" : ", BUGLE_FALSE }");
     }
     fprintf(f, "\n};\n\n");
 }
@@ -1364,7 +1364,7 @@ static void write_parameter_overrides(FILE *f)
             if (p.overrides.count(OVERRIDE_DUMP))
             {
                 fprintf(f,
-                        "static bool _budgie_dump_%s_%s(const generic_function_call *call, int arg, const void *value, int length, char **buffer, size_t *size)\n"
+                        "static bugle_bool _budgie_dump_%s_%s(const generic_function_call *call, int arg, const void *value, int length, char **buffer, size_t *size)\n"
                         "{\n"
                         "    return (%s);\n"
                         "}\n"
@@ -1601,7 +1601,7 @@ static void write_invoke(FILE *f)
  */
 static void write_interceptors(FILE *f)
 {
-    fprintf(f, "bool _budgie_bypass[FUNCTION_COUNT];\n\n");
+    fprintf(f, "bugle_bool _budgie_bypass[FUNCTION_COUNT];\n\n");
     for (list<Function>::iterator i = functions.begin(); i != functions.end(); i++)
     {
         string name = i->name();

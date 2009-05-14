@@ -22,7 +22,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stddef.h>
-#include <stdbool.h>
+#include <bugle/bool.h>
 #include <bugle/glwin/trackcontext.h>
 #include <bugle/gl/glheaders.h>
 #include <bugle/gl/glutils.h>
@@ -87,7 +87,7 @@ static void globjects_add_single(bugle_globjects_type type,
     {
         if (is == NULL || is(object))
             bugle_hashptr_set_int(table, object, (void *) (size_t) target);
-        bugle_gl_end_internal_render("globjects_add_single", true);
+        bugle_gl_end_internal_render("globjects_add_single", BUGLE_TRUE);
     }
     unlock();
 }
@@ -107,64 +107,64 @@ static void globjects_delete_multiple(bugle_globjects_type type,
         for (i = 0; i < count; i++)
             if (is == NULL || !is(objects[i]))
                 bugle_hashptr_set_int(table, objects[i], NULL);
-        bugle_gl_end_internal_render("globjects_delete_multiple", true);
+        bugle_gl_end_internal_render("globjects_delete_multiple", BUGLE_TRUE);
     }
     unlock();
 }
 
-static bool globjects_glBindTexture(function_call *call, const callback_data *data)
+static bugle_bool globjects_glBindTexture(function_call *call, const callback_data *data)
 {
     globjects_add_single(BUGLE_GLOBJECTS_TEXTURE,
                          *call->glBindTexture.arg0,
                          *call->glBindTexture.arg1,
                          CALL(glIsTexture));
-    return true;
+    return BUGLE_TRUE;
 }
 
-static bool globjects_glDeleteTextures(function_call *call, const callback_data *data)
+static bugle_bool globjects_glDeleteTextures(function_call *call, const callback_data *data)
 {
     globjects_delete_multiple(BUGLE_GLOBJECTS_TEXTURE,
                               *call->glDeleteTextures.arg0,
                               *call->glDeleteTextures.arg1,
                               CALL(glIsTexture));
-    return true;
+    return BUGLE_TRUE;
 }
 
-static bool globjects_glBindBuffer(function_call *call, const callback_data *data)
+static bugle_bool globjects_glBindBuffer(function_call *call, const callback_data *data)
 {
     globjects_add_single(BUGLE_GLOBJECTS_BUFFER,
                          *call->glBindBuffer.arg0,
                          *call->glBindBuffer.arg1,
                          CALL(glIsBuffer));
-    return true;
+    return BUGLE_TRUE;
 }
 
-static bool globjects_glDeleteBuffers(function_call *call, const callback_data *data)
+static bugle_bool globjects_glDeleteBuffers(function_call *call, const callback_data *data)
 {
     globjects_delete_multiple(BUGLE_GLOBJECTS_BUFFER,
                               *call->glDeleteBuffers.arg0,
                               *call->glDeleteBuffers.arg1,
                               CALL(glIsBuffer));
-    return true;
+    return BUGLE_TRUE;
 }
 
 #if BUGLE_GLTYPE_GL
-static bool globjects_glBeginQuery(function_call *call, const callback_data *data)
+static bugle_bool globjects_glBeginQuery(function_call *call, const callback_data *data)
 {
     globjects_add_single(BUGLE_GLOBJECTS_QUERY,
                          *call->glBeginQuery.arg0,
                          *call->glBeginQuery.arg1,
                          CALL(glIsQuery));
-    return true;
+    return BUGLE_TRUE;
 }
 
-static bool globjects_glDeleteQueries(function_call *call, const callback_data *data)
+static bugle_bool globjects_glDeleteQueries(function_call *call, const callback_data *data)
 {
     globjects_delete_multiple(BUGLE_GLOBJECTS_QUERY,
                               *call->glDeleteQueries.arg0,
                               *call->glDeleteQueries.arg1,
                               CALL(glIsQueryARB));
-    return true;
+    return BUGLE_TRUE;
 }
 #endif
 
@@ -183,10 +183,10 @@ static void globjects_delete_single(bugle_globjects_type type,
 #endif /* GL_ES_VERSION_2_0 || GL_VERSION_2_0 */
 
 #if defined(GL_ARB_vertex_program) || defined(GL_ARB_fragment_program)
-static bool globjects_glBindProgramARB(function_call *call, const callback_data *data)
+static bugle_bool globjects_glBindProgramARB(function_call *call, const callback_data *data)
 {
     /* NVIDIA driver 66.29 has a bug where glIsProgramARB will return
-     * false until glProgramStringARB is called. We work around this
+     * BUGLE_FALSE until glProgramStringARB is called. We work around this
      * by blindly assuming that the bind succeeded, unless it is a bind
      * to object 0.
      */
@@ -195,16 +195,16 @@ static bool globjects_glBindProgramARB(function_call *call, const callback_data 
                              *call->glBindProgramARB.arg0,
                              *call->glBindProgramARB.arg1,
                              NULL);
-    return true;
+    return BUGLE_TRUE;
 }
 
-static bool globjects_glDeleteProgramsARB(function_call *call, const callback_data *data)
+static bugle_bool globjects_glDeleteProgramsARB(function_call *call, const callback_data *data)
 {
     globjects_delete_multiple(BUGLE_GLOBJECTS_OLD_PROGRAM,
                               *call->glDeleteProgramsARB.arg0,
                               *call->glDeleteProgramsARB.arg1,
                               CALL(glIsProgramARB));
-    return true;
+    return BUGLE_TRUE;
 }
 #endif
 
@@ -239,22 +239,22 @@ static void add_check(object *call_object,
 }
 
 #if GL_ES_VERSION_2_0 || GL_VERSION_2_0
-static bool globjects_glCreateShader(function_call *call, const callback_data *data)
+static bugle_bool globjects_glCreateShader(function_call *call, const callback_data *data)
 {
     globjects_add_single(BUGLE_GLOBJECTS_SHADER,
                          *call->glCreateShader.arg0,
                          *call->glCreateShader.retn,
                          NULL);
-    return true;
+    return BUGLE_TRUE;
 }
 
-static bool globjects_glCreateProgram(function_call *call, const callback_data *data)
+static bugle_bool globjects_glCreateProgram(function_call *call, const callback_data *data)
 {
     globjects_add_single(BUGLE_GLOBJECTS_PROGRAM,
                          1,  /* arbitrary non-zero value */
                          *call->glCreateProgram.retn,
                          NULL);
-    return true;
+    return BUGLE_TRUE;
 }
 
 /* Used for glDeleteProgram, glUseProgram and glDeleteObjectARB */
@@ -276,7 +276,7 @@ static void globjects_pre_glsl_delete_program(GLuint object, const callback_data
 }
 
 #ifdef GL_ARB_shader_objects
-static bool globjects_pre_glDeleteObjectARB(function_call *call, const callback_data *data)
+static bugle_bool globjects_pre_glDeleteObjectARB(function_call *call, const callback_data *data)
 {
     GLhandleARB object;
     GLint type;
@@ -294,13 +294,13 @@ static bool globjects_pre_glDeleteObjectARB(function_call *call, const callback_
             add_check(data->call_object, BUGLE_GLOBJECTS_SHADER, object);
             break;
         }
-        bugle_gl_end_internal_render("globjects_pre_glDeleteObjectARB", true);
+        bugle_gl_end_internal_render("globjects_pre_glDeleteObjectARB", BUGLE_TRUE);
     }
-    return true;
+    return BUGLE_TRUE;
 }
 #endif
 
-static bool globjects_pre_glUseProgram(function_call *call, const callback_data *data)
+static bugle_bool globjects_pre_glUseProgram(function_call *call, const callback_data *data)
 {
     GLuint program;
 
@@ -309,25 +309,25 @@ static bool globjects_pre_glUseProgram(function_call *call, const callback_data 
         program = bugle_gl_get_current_program();
         if (program != 0)
             globjects_pre_glsl_delete_program(program, data);
-        bugle_gl_end_internal_render("globjects_pre_glUseProgram", true);
+        bugle_gl_end_internal_render("globjects_pre_glUseProgram", BUGLE_TRUE);
     }
-    return true;
+    return BUGLE_TRUE;
 }
 
-static bool globjects_pre_glDetachShader(function_call *call, const callback_data *data)
+static bugle_bool globjects_pre_glDetachShader(function_call *call, const callback_data *data)
 {
     add_check(data->call_object, BUGLE_GLOBJECTS_SHADER,
               *call->glDetachShader.arg1);
-    return true;
+    return BUGLE_TRUE;
 }
 
-static bool globjects_pre_glDeleteShader(function_call *call, const callback_data *data)
+static bugle_bool globjects_pre_glDeleteShader(function_call *call, const callback_data *data)
 {
     add_check(data->call_object, BUGLE_GLOBJECTS_SHADER, *call->glDeleteShader.arg0);
-    return true;
+    return BUGLE_TRUE;
 }
 
-static bool globjects_pre_glDeleteProgram(function_call *call, const callback_data *data)
+static bugle_bool globjects_pre_glDeleteProgram(function_call *call, const callback_data *data)
 {
     GLuint object;
 
@@ -335,12 +335,12 @@ static bool globjects_pre_glDeleteProgram(function_call *call, const callback_da
     if (bugle_gl_begin_internal_render())
     {
         globjects_pre_glsl_delete_program(object, data);
-        bugle_gl_end_internal_render("globjects_pre_glDeleteProgram", true);
+        bugle_gl_end_internal_render("globjects_pre_glDeleteProgram", BUGLE_TRUE);
     }
-    return true;
+    return BUGLE_TRUE;
 }
 
-static bool globjects_checks(function_call *call, const callback_data *data)
+static bugle_bool globjects_checks(function_call *call, const callback_data *data)
 {
     linked_list *l;
     linked_list_node *i;
@@ -365,48 +365,48 @@ static bool globjects_checks(function_call *call, const callback_data *data)
             default:
                 abort();
             }
-            bugle_gl_end_internal_render("globjects_checks", true);
+            bugle_gl_end_internal_render("globjects_checks", BUGLE_TRUE);
         }
     }
-    return true;
+    return BUGLE_TRUE;
 }
 #endif /* GLES2 || GL2 */
 
 #ifdef GL_EXT_framebuffer_object
-static bool globjects_glBindFramebuffer(function_call *call, const callback_data *data)
+static bugle_bool globjects_glBindFramebuffer(function_call *call, const callback_data *data)
 {
     globjects_add_single(BUGLE_GLOBJECTS_FRAMEBUFFER,
                          *call->glBindFramebufferEXT.arg0,
                          *call->glBindFramebufferEXT.arg1,
                          CALL(glIsFramebufferEXT));
-    return true;
+    return BUGLE_TRUE;
 }
 
-static bool globjects_glDeleteFramebuffers(function_call *call, const callback_data *data)
+static bugle_bool globjects_glDeleteFramebuffers(function_call *call, const callback_data *data)
 {
     globjects_delete_multiple(BUGLE_GLOBJECTS_FRAMEBUFFER,
                               *call->glDeleteFramebuffersEXT.arg0,
                               *call->glDeleteFramebuffersEXT.arg1,
                               CALL(glIsFramebufferEXT));
-    return true;
+    return BUGLE_TRUE;
 }
 
-static bool globjects_glBindRenderbuffer(function_call *call, const callback_data *data)
+static bugle_bool globjects_glBindRenderbuffer(function_call *call, const callback_data *data)
 {
     globjects_add_single(BUGLE_GLOBJECTS_RENDERBUFFER,
                          *call->glBindRenderbufferEXT.arg0,
                          *call->glBindRenderbufferEXT.arg1,
                          CALL(glIsRenderbufferEXT));
-    return true;
+    return BUGLE_TRUE;
 }
 
-static bool globjects_glDeleteRenderbuffers(function_call *call, const callback_data *data)
+static bugle_bool globjects_glDeleteRenderbuffers(function_call *call, const callback_data *data)
 {
     globjects_delete_multiple(BUGLE_GLOBJECTS_RENDERBUFFER,
                               *call->glDeleteRenderbuffersEXT.arg0,
                               *call->glDeleteRenderbuffersEXT.arg1,
                               CALL(glIsRenderbufferEXT));
-    return true;
+    return BUGLE_TRUE;
 }
 #endif /* GL_EXT_framebuffer_object */
 
@@ -432,50 +432,50 @@ static void globjects_data_clear(void *data)
         bugle_hashptr_clear(&d->objects[i]);
 }
 
-static bool globjects_filter_set_initialise(filter_set *handle)
+static bugle_bool globjects_filter_set_initialise(filter_set *handle)
 {
     filter *f;
 
 #if GL_ES_VERSION_2_0 || GL_VERSION_2_0
     f = bugle_filter_new(handle, "globjects_pre");
 #ifdef GL_ARB_shader_objects
-    bugle_filter_catches(f, "glDeleteObjectARB", true, globjects_pre_glDeleteObjectARB);
+    bugle_filter_catches(f, "glDeleteObjectARB", BUGLE_TRUE, globjects_pre_glDeleteObjectARB);
 #endif
-    bugle_filter_catches(f, "glUseProgram", true, globjects_pre_glUseProgram);
-    bugle_filter_catches(f, "glDetachShader", true, globjects_pre_glDetachShader);
-    bugle_filter_catches(f, "glDeleteShader", true, globjects_pre_glDeleteShader);
-    bugle_filter_catches(f, "glDeleteProgram", true, globjects_pre_glDeleteProgram);
+    bugle_filter_catches(f, "glUseProgram", BUGLE_TRUE, globjects_pre_glUseProgram);
+    bugle_filter_catches(f, "glDetachShader", BUGLE_TRUE, globjects_pre_glDetachShader);
+    bugle_filter_catches(f, "glDeleteShader", BUGLE_TRUE, globjects_pre_glDeleteShader);
+    bugle_filter_catches(f, "glDeleteProgram", BUGLE_TRUE, globjects_pre_glDeleteProgram);
 #endif
 
     f = bugle_filter_new(handle, "globjects");
-    bugle_filter_catches(f, "glBindTexture", true, globjects_glBindTexture);
-    bugle_filter_catches(f, "glDeleteTextures", true, globjects_glDeleteTextures);
-    bugle_filter_catches(f, "glBindBuffer", true, globjects_glBindBuffer);
-    bugle_filter_catches(f, "glDeleteBuffers", true, globjects_glDeleteBuffers);
+    bugle_filter_catches(f, "glBindTexture", BUGLE_TRUE, globjects_glBindTexture);
+    bugle_filter_catches(f, "glDeleteTextures", BUGLE_TRUE, globjects_glDeleteTextures);
+    bugle_filter_catches(f, "glBindBuffer", BUGLE_TRUE, globjects_glBindBuffer);
+    bugle_filter_catches(f, "glDeleteBuffers", BUGLE_TRUE, globjects_glDeleteBuffers);
 #ifdef GL_VERSION_1_5
-    bugle_filter_catches(f, "glBeginQuery", true, globjects_glBeginQuery);
-    bugle_filter_catches(f, "glDeleteQueries", true, globjects_glDeleteQueries);
+    bugle_filter_catches(f, "glBeginQuery", BUGLE_TRUE, globjects_glBeginQuery);
+    bugle_filter_catches(f, "glDeleteQueries", BUGLE_TRUE, globjects_glDeleteQueries);
 #endif
 #if defined(GL_ARB_vertex_program) || defined(GL_ARB_fragment_program)
-    bugle_filter_catches(f, "glBindProgramARB", true, globjects_glBindProgramARB);
-    bugle_filter_catches(f, "glDeleteProgramsARB", true, globjects_glDeleteProgramsARB);
+    bugle_filter_catches(f, "glBindProgramARB", BUGLE_TRUE, globjects_glBindProgramARB);
+    bugle_filter_catches(f, "glDeleteProgramsARB", BUGLE_TRUE, globjects_glDeleteProgramsARB);
 #endif
 #ifdef GL_ARB_shader_objects
-    bugle_filter_catches(f, "glDeleteObjectARB", true, globjects_checks);
+    bugle_filter_catches(f, "glDeleteObjectARB", BUGLE_TRUE, globjects_checks);
 #endif
 #if GL_ES_VERSION_2_0 || GL_VERSION_2_0
-    bugle_filter_catches(f, "glUseProgram", true, globjects_checks);
-    bugle_filter_catches(f, "glDetachShader", true, globjects_checks);
-    bugle_filter_catches(f, "glCreateShader", true, globjects_glCreateShader);
-    bugle_filter_catches(f, "glCreateProgram", true, globjects_glCreateProgram);
-    bugle_filter_catches(f, "glDeleteShader", true, globjects_checks);
-    bugle_filter_catches(f, "glDeleteProgram", true, globjects_checks);
+    bugle_filter_catches(f, "glUseProgram", BUGLE_TRUE, globjects_checks);
+    bugle_filter_catches(f, "glDetachShader", BUGLE_TRUE, globjects_checks);
+    bugle_filter_catches(f, "glCreateShader", BUGLE_TRUE, globjects_glCreateShader);
+    bugle_filter_catches(f, "glCreateProgram", BUGLE_TRUE, globjects_glCreateProgram);
+    bugle_filter_catches(f, "glDeleteShader", BUGLE_TRUE, globjects_checks);
+    bugle_filter_catches(f, "glDeleteProgram", BUGLE_TRUE, globjects_checks);
 #endif
 #ifdef GL_EXT_framebuffer_object
-    bugle_filter_catches(f, "glBindRenderbufferEXT", true, globjects_glBindRenderbuffer);
-    bugle_filter_catches(f, "glDeleteRenderbuffersEXT", true, globjects_glDeleteRenderbuffers);
-    bugle_filter_catches(f, "glBindFramebufferEXT", true, globjects_glBindFramebuffer);
-    bugle_filter_catches(f, "glDeleteFramebuffersEXT", true, globjects_glDeleteFramebuffers);
+    bugle_filter_catches(f, "glBindRenderbufferEXT", BUGLE_TRUE, globjects_glBindRenderbuffer);
+    bugle_filter_catches(f, "glDeleteRenderbuffersEXT", BUGLE_TRUE, globjects_glDeleteRenderbuffers);
+    bugle_filter_catches(f, "glBindFramebufferEXT", BUGLE_TRUE, globjects_glBindFramebuffer);
+    bugle_filter_catches(f, "glDeleteFramebuffersEXT", BUGLE_TRUE, globjects_glDeleteFramebuffers);
 #endif
     bugle_filter_order("invoke", "globjects");
     bugle_filter_order("globjects_pre", "invoke");
@@ -488,7 +488,7 @@ static bool globjects_filter_set_initialise(filter_set *handle)
                                       checks_init,
                                       (void (*)(void *)) bugle_list_clear,
                                       sizeof(linked_list));
-    return true;
+    return BUGLE_TRUE;
 }
 
 typedef struct

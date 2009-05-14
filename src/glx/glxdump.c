@@ -25,6 +25,7 @@
 #include <budgie/reflect.h>
 #include <bugle/glwin/glwintypes.h>
 #include <bugle/glx/glxdump.h>
+#include <bugle/bool.h>
 
 int bugle_count_glXChooseVisual_attributes(const int *attr)
 {
@@ -47,12 +48,12 @@ int bugle_count_glXChooseVisual_attributes(const int *attr)
     return i + 1;
 }
 
-bool bugle_dump_glXChooseVisual_attributes(const int *attr, char **buffer, size_t *size)
+bugle_bool bugle_dump_glXChooseVisual_attributes(const int *attr, char **buffer, size_t *size)
 {
     int i = 0;
 
     if (!attr)
-        return false;   /* Fall back on default dumping for NULL */
+        return BUGLE_FALSE;   /* Fall back on default dumping for NULL */
 
     budgie_snprintf_advance(buffer, size, "%p -> { ", attr);
     while (attr[i])
@@ -74,5 +75,5 @@ bool bugle_dump_glXChooseVisual_attributes(const int *attr, char **buffer, size_
         }
     }
     budgie_snputs_advance(buffer, size, "None }");
-    return true;
+    return BUGLE_TRUE;
 }

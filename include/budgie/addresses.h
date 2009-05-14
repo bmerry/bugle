@@ -19,7 +19,7 @@
 #define BUGLE_BUDGIE_ADDRESSES_H
 
 #include <stdio.h>
-#include <stdbool.h>
+#include <bugle/bool.h>
 #include <budgie/types.h>
 #include <bugle/export.h>
 
@@ -52,7 +52,7 @@ BUGLE_EXPORT_PRE void budgie_function_address_initialise(void) BUGLE_EXPORT_POST
 /* Used to manually override the initialiser */
 BUGLE_EXPORT_PRE void budgie_function_address_set_real(budgie_function id, void (BUDGIEAPI *addr)(void)) BUGLE_EXPORT_POST;
 
-BUGLE_EXPORT_PRE void budgie_function_set_bypass(budgie_function id, bool bypass) BUGLE_EXPORT_POST;
+BUGLE_EXPORT_PRE void budgie_function_set_bypass(budgie_function id, bugle_bool bypass) BUGLE_EXPORT_POST;
 
 BUGLE_EXPORT_PRE void budgie_invoke(function_call *call) BUGLE_EXPORT_POST;
 

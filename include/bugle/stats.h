@@ -22,7 +22,7 @@
 #include <sys/types.h>
 #include <bugle/linkedlist.h>
 #include <bugle/export.h>
-#include <stdbool.h>
+#include <bugle/bool.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -82,9 +82,9 @@ typedef struct stats_signal_s
     struct timeval last_updated;
     int offset;                     /* for value tables */
 
-    bool active;
+    bugle_bool active;
     void *user_data;
-    bool (*activate)(struct stats_signal_s *);
+    bugle_bool (*activate)(struct stats_signal_s *);
 } stats_signal;
 
 typedef struct stats_expression_s
@@ -112,7 +112,7 @@ typedef struct
     double maximum;                     /* 0.0 for unset */
     char *label;
     linked_list substitutions;
-    bool last;                          /* Last in an instance set */
+    bugle_bool last;                    /* Last in an instance set */
 } stats_statistic;
 
 /*** Internal functions for the lexer and parser code ***/
@@ -129,7 +129,7 @@ void stats_statistic_free(stats_statistic *st);
  * signal, as that is handled by the stats shutdown code.
  */
 BUGLE_EXPORT_PRE stats_signal *bugle_stats_signal_new(const char *name, void *user_data,
-                                                      bool (*activate)(stats_signal *)) BUGLE_EXPORT_POST;
+                                                      bugle_bool (*activate)(stats_signal *)) BUGLE_EXPORT_POST;
 /* Sets a new value, replacing any previous one */
 BUGLE_EXPORT_PRE void bugle_stats_signal_update(stats_signal *si, double v) BUGLE_EXPORT_POST;
 
@@ -168,7 +168,7 @@ BUGLE_EXPORT_PRE linked_list_node *bugle_stats_statistic_find(const char *name) 
 /* List the registered statistics, for when an illegal one is mentioned */
 BUGLE_EXPORT_PRE void bugle_stats_statistic_list(void) BUGLE_EXPORT_POST;
 
-BUGLE_EXPORT_PRE bool bugle_stats_expression_activate_signals(stats_expression *expr) BUGLE_EXPORT_POST;
+BUGLE_EXPORT_PRE bugle_bool bugle_stats_expression_activate_signals(stats_expression *expr) BUGLE_EXPORT_POST;
 BUGLE_EXPORT_PRE void bugle_filter_set_stats_logger(const char *name) BUGLE_EXPORT_POST;
 
 #ifdef __cplusplus

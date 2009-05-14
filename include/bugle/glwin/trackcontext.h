@@ -19,7 +19,7 @@
 #define BUGLE_TRACKCONTEXT_H
 
 #include <stddef.h>
-#include <stdbool.h>
+#include <bugle/bool.h>
 #include <bugle/glwin/glwintypes.h>
 #include <bugle/filters.h>
 #include <bugle/objects.h>
@@ -38,7 +38,7 @@ extern BUGLE_EXPORT_PRE object_class *bugle_namespace_class BUGLE_EXPORT_POST;
  * best for querying object state, the latter for creating internal objects
  * so as not to pollute the primary namespace.
  */
-BUGLE_EXPORT_PRE glwin_context bugle_get_aux_context(bool shared) BUGLE_EXPORT_POST;
+BUGLE_EXPORT_PRE glwin_context bugle_get_aux_context(bugle_bool shared) BUGLE_EXPORT_POST;
 
 /* Draws text at the specified location. The current colour is used to
  * render the text. The text is rendered with alpha, so alpha-test or

@@ -297,7 +297,7 @@ static void make_objects_walker(GLuint object,
 static void make_objects(const glstate *self,
                          bugle_globjects_type type,
                          GLenum target,
-                         bool add_zero,
+                         bugle_bool add_zero,
                          const char *format,
                          void (*spawn_children)(const glstate *, linked_list *),
                          state_info *info,
@@ -397,7 +397,7 @@ static void spawn_children_tex_parameter(const glstate *self, linked_list *child
 static void spawn_children_tex_target(const glstate *self, linked_list *children)
 {
     bugle_list_init(children, free);
-    make_objects(self, BUGLE_GLOBJECTS_TEXTURE, self->target, true, "%lu",
+    make_objects(self, BUGLE_GLOBJECTS_TEXTURE, self->target, BUGLE_TRUE, "%lu",
                  spawn_children_tex_parameter, NULL, children);
 }
 
@@ -522,7 +522,7 @@ static void spawn_shaders(const struct glstate *self,
                           linked_list *children,
                           const struct state_info *info)
 {
-    make_objects(self, BUGLE_GLOBJECTS_SHADER, GL_NONE, false,
+    make_objects(self, BUGLE_GLOBJECTS_SHADER, GL_NONE, BUGLE_FALSE,
                  "Shader[%lu]", spawn_children_shader, NULL, children);
 }
 
@@ -530,7 +530,7 @@ static void spawn_programs(const struct glstate *self,
                            linked_list *children,
                            const struct state_info *info)
 {
-    make_objects(self, BUGLE_GLOBJECTS_PROGRAM, GL_NONE, false,
+    make_objects(self, BUGLE_GLOBJECTS_PROGRAM, GL_NONE, BUGLE_FALSE,
                  "Program[%lu]", spawn_children_program, NULL, children);
 }
 
@@ -773,7 +773,7 @@ void bugle_state_get_raw(const glstate *state, bugle_state_raw *wrapper)
 
     GLint old_texture, old_buffer;
     GLint old_unit, old_framebuffer, old_renderbuffer;
-    bool flag_active_texture = false;
+    bugle_bool flag_active_texture = BUGLE_FALSE;
     GLenum pname;
 
     if (!state->info) return;
@@ -1149,7 +1149,7 @@ static void spawn_children_framebuffer_object(const glstate *self, linked_list *
 static void spawn_children_framebuffer(const glstate *self, linked_list *children)
 {
     bugle_list_init(children, free);
-    make_objects(self, BUGLE_GLOBJECTS_FRAMEBUFFER, self->target, true,
+    make_objects(self, BUGLE_GLOBJECTS_FRAMEBUFFER, self->target, BUGLE_TRUE,
                  "%lu", spawn_children_framebuffer_object, NULL, children);
 }
 
@@ -1162,7 +1162,7 @@ static void spawn_children_renderbuffer_object(const glstate *self, linked_list 
 static void spawn_children_renderbuffer(const glstate *self, linked_list *children)
 {
     bugle_list_init(children, free);
-    make_objects(self, BUGLE_GLOBJECTS_RENDERBUFFER, self->target, false,
+    make_objects(self, BUGLE_GLOBJECTS_RENDERBUFFER, self->target, BUGLE_FALSE,
                  "%lu", spawn_children_renderbuffer_object, NULL, children);
 }
 
@@ -1174,7 +1174,7 @@ static void spawn_children_global(const glstate *self, linked_list *children)
     bugle_list_init(children, free);
     make_leaves(self, global_state, children);
 
-    make_objects(self, BUGLE_GLOBJECTS_BUFFER, GL_NONE, false,
+    make_objects(self, BUGLE_GLOBJECTS_BUFFER, GL_NONE, BUGLE_FALSE,
                  "Buffer[%lu]", spawn_children_buffer_parameter, NULL, children);
     make_target(self, "GL_FRAMEBUFFER",
                 GL_FRAMEBUFFER,

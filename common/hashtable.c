@@ -22,7 +22,7 @@
 #include <string.h>
 #include <stddef.h>
 #include <assert.h>
-#include <stdbool.h>
+#include <bugle/bool.h>
 #include <bugle/hashtable.h>
 #include "lock.h"
 #include "xalloc.h"
@@ -30,13 +30,13 @@
 /* Primes are used for hash table sizes */
 static size_t primes[sizeof(size_t) * 8];
 
-static bool is_prime(int x)
+static bugle_bool is_prime(int x)
 {
     int i;
 
     for (i = 2; i * i <= x; i++)
-        if (x % i == 0) return false;
-    return true;
+        if (x % i == 0) return BUGLE_FALSE;
+    return BUGLE_TRUE;
 }
 
 gl_once_define(static, hash_once)
@@ -129,11 +129,11 @@ void bugle_hash_set(hash_table *table, const char *key, void *value)
     table->entries[h].value = value;
 }
 
-bool bugle_hash_count(const hash_table *table, const char *key)
+bugle_bool bugle_hash_count(const hash_table *table, const char *key)
 {
     size_t h;
 
-    if (!table->entries) return NULL;
+    if (!table->entries) return BUGLE_FALSE;
     h = hash(key) % table->size;
     while (table->entries[h].key && strcmp(key, table->entries[h].key) != 0)
         if (++h == table->size) h = 0;
@@ -263,11 +263,11 @@ void bugle_hashptr_set(hashptr_table *table, const void *key, void *value)
     table->entries[h].value = value;
 }
 
-bool bugle_hashptr_count(const hashptr_table *table, const void *key)
+bugle_bool bugle_hashptr_count(const hashptr_table *table, const void *key)
 {
     size_t h;
 
-    if (!table->entries) return NULL;
+    if (!table->entries) return BUGLE_FALSE;
     h = hashptr(key) % table->size;
     while (table->entries[h].key && table->entries[h].key != key)
         if (++h == table->size) h = 0;

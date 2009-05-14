@@ -18,7 +18,7 @@
 #if HAVE_CONFIG_H
 # include <config.h>
 #endif
-#include <stdbool.h>
+#include <bugle/bool.h>
 #include <bugle/filters.h>
 #include <bugle/gl/glutils.h>
 #include <bugle/glwin/glwin.h>
@@ -28,18 +28,18 @@
 
 /* Invoke filter-set */
 
-static bool invoke_callback(function_call *call, const callback_data *data)
+static bugle_bool invoke_callback(function_call *call, const callback_data *data)
 {
     budgie_invoke(call);
-    return true;
+    return BUGLE_TRUE;
 }
 
-static bool invoke_initialise(filter_set *handle)
+static bugle_bool invoke_initialise(filter_set *handle)
 {
     filter *f;
     f = bugle_filter_new(handle, "invoke");
-    bugle_filter_catches_all(f, false, invoke_callback);
-    return true;
+    bugle_filter_catches_all(f, BUGLE_FALSE, invoke_callback);
+    return BUGLE_TRUE;
 }
 
 /* glXGetProcAddress wrapper. This ensures that glXGetProcAddressARB
@@ -47,7 +47,7 @@ static bool invoke_initialise(filter_set *handle)
  * to never change the truth value of the return.
  */
 
-static bool procaddress_callback(function_call *call, const callback_data *data)
+static bugle_bool procaddress_callback(function_call *call, const callback_data *data)
 {
     /* Note: we can depend on this extension at least on Linux, since it
      * is specified as part of the ABI.
@@ -56,15 +56,15 @@ static bool procaddress_callback(function_call *call, const callback_data *data)
     void (BUDGIEAPI *sym)(void);
     budgie_function func;
 
-    if (!*call->BUGLE_GLWIN_GET_PROC_ADDRESS.retn) return true;
+    if (!*call->BUGLE_GLWIN_GET_PROC_ADDRESS.retn) return BUGLE_TRUE;
     func = budgie_function_id((const char *) *call->BUGLE_GLWIN_GET_PROC_ADDRESS.arg0);
     sym = (func == NULL_FUNCTION) ? NULL : budgie_function_address_wrapper(func);
     if (sym) *(void (BUDGIEAPI **)(void)) call->BUGLE_GLWIN_GET_PROC_ADDRESS.retn = sym;
 #endif
-    return true;
+    return BUGLE_TRUE;
 }
 
-static bool procaddress_initialise(filter_set *handle)
+static bugle_bool procaddress_initialise(filter_set *handle)
 {
     filter *f;
 
@@ -76,9 +76,9 @@ static bool procaddress_initialise(filter_set *handle)
     f = bugle_filter_new(handle, "procaddress");
     bugle_filter_order("invoke", "procaddress");
     bugle_filter_order("procaddress", "trace");
-    bugle_filter_catches(f, STRINGIFY(BUGLE_GLWIN_GET_PROC_ADDRESS), false, procaddress_callback);
+    bugle_filter_catches(f, STRINGIFY(BUGLE_GLWIN_GET_PROC_ADDRESS), BUGLE_FALSE, procaddress_callback);
 #endif
-    return true;
+    return BUGLE_TRUE;
 }
 
 /* General */

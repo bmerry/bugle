@@ -18,7 +18,7 @@
 #ifndef BUGLE_SRC_APIREFLECT_H
 #define BUGLE_SRC_APIREFLECT_H
 
-#include <stdbool.h>
+#include <bugle/bool.h>
 #include <budgie/types.h>
 #include <bugle/porting.h>
 #include <bugle/export.h>

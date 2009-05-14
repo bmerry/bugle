@@ -19,34 +19,34 @@
 # include <config.h>
 #endif
 #include <stdio.h>
-#include <stdbool.h>
+#include <bugle/bool.h>
 #include <string.h>
 #include <bugle/gl/glheaders.h>
 #include <budgie/reflect.h>
 #include <bugle/apireflect.h>
 #include <bugle/gl/gltypes.h>
 
-bool bugle_dump_GLenum(GLenum e, char **buffer, size_t *size)
+bugle_bool bugle_dump_GLenum(GLenum e, char **buffer, size_t *size)
 {
     const char *name = bugle_api_enum_name(e, BUGLE_API_EXTENSION_BLOCK_GL);
     if (!name)
         budgie_snprintf_advance(buffer, size, "<unknown enum 0x%.4x>", (unsigned int) e);
     else
         budgie_snputs_advance(buffer, size, name);
-    return true;
+    return BUGLE_TRUE;
 }
 
-bool bugle_dump_GLerror(GLenum err, char **buffer, size_t *size)
+bugle_bool bugle_dump_GLerror(GLenum err, char **buffer, size_t *size)
 {
     switch (err)
     {
     case GL_NO_ERROR: budgie_snputs_advance(buffer, size, "GL_NO_ERROR"); break;
     default: bugle_dump_GLenum(err, buffer, size);
     }
-    return true;
+    return BUGLE_TRUE;
 }
 
-bool bugle_dump_GLblendenum(GLenum token, char **buffer, size_t *size)
+bugle_bool bugle_dump_GLblendenum(GLenum token, char **buffer, size_t *size)
 {
     switch (token)
     {
@@ -54,10 +54,10 @@ bool bugle_dump_GLblendenum(GLenum token, char **buffer, size_t *size)
     case GL_ONE: budgie_snputs_advance(buffer, size, "GL_ONE"); break;
     default: bugle_dump_GLenum(token, buffer, size);
     }
-    return true;
+    return BUGLE_TRUE;
 }
 
-bool bugle_dump_GLprimitiveenum(GLenum token, char **buffer, size_t *size)
+bugle_bool bugle_dump_GLprimitiveenum(GLenum token, char **buffer, size_t *size)
 {
     switch (token)
     {
@@ -75,31 +75,31 @@ bool bugle_dump_GLprimitiveenum(GLenum token, char **buffer, size_t *size)
 #endif
     default: bugle_dump_GLenum(token, buffer, size);
     }
-    return true;
+    return BUGLE_TRUE;
     /* Note: doesn't include GL_EXT_geometry_shader4 primitives, but those
      * are unique anyway.
      */
 }
 
-bool bugle_dump_GLcomponentsenum(GLenum token, char **buffer, size_t *size)
+bugle_bool bugle_dump_GLcomponentsenum(GLenum token, char **buffer, size_t *size)
 {
     if (token >= 1 && token <= 4)
         budgie_snprintf_advance(buffer, size, "%d", (int) token);
     else
         bugle_dump_GLenum(token, buffer, size);
-    return true;
+    return BUGLE_TRUE;
 }
 
-bool bugle_dump_GLboolean(GLboolean b, char **buffer, size_t *size)
+bugle_bool bugle_dump_GLboolean(GLboolean b, char **buffer, size_t *size)
 {
     if (b == 0 || b == 1)
         budgie_snputs_advance(buffer, size, b ? "GL_TRUE" : "GL_FALSE");
     else
         budgie_snprintf_advance(buffer, size, "(GLboolean) %u", (unsigned int) b);
-    return true;
+    return BUGLE_TRUE;
 }
 
-bool bugle_dump_GLpolygonstipple(const GLubyte (*pattern)[4], char **buffer, size_t *size)
+bugle_bool bugle_dump_GLpolygonstipple(const GLubyte (*pattern)[4], char **buffer, size_t *size)
 {
     GLubyte cur;
     int i, j, k;
@@ -114,13 +114,13 @@ bool bugle_dump_GLpolygonstipple(const GLubyte (*pattern)[4], char **buffer, siz
             budgie_snputc_advance(buffer, size, ' ');
         }
     budgie_snputs_advance(buffer, size, "}");
-    return true;
+    return BUGLE_TRUE;
 }
 
-bool bugle_dump_GLxfbattrib(const GLxfbattrib *a, char **buffer, size_t *size)
+bugle_bool bugle_dump_GLxfbattrib(const GLxfbattrib *a, char **buffer, size_t *size)
 {
     budgie_snputs_advance(buffer, size, "{ ");
     bugle_dump_GLenum(a->attribute, buffer, size);
     budgie_snprintf_advance(buffer, size, ", %d, %d }", (int) a->components, (int) a->index);
-    return true;
+    return BUGLE_TRUE;
 }

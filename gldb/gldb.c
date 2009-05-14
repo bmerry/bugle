@@ -20,7 +20,7 @@
 #endif
 #include <stdio.h>
 #include <stdlib.h>
-#include <stdbool.h>
+#include <bugle/bool.h>
 #include <string.h>
 #include <unistd.h>
 #include <sys/wait.h>
@@ -75,12 +75,12 @@ void gldb_perror(const char *msg)
  * Note that setting "help" to NULL excludes the command from the
  * documentation. This is recommended for shorthand aliases.
  */
-typedef bool (*command_handler)(const char *, const char *, const char * const *);
+typedef bugle_bool (*command_handler)(const char *, const char *, const char * const *);
 typedef struct
 {
     const char *name;
     const char *help;
-    bool running;
+    bugle_bool running;
     command_handler handler;
     char * (*generator)(const char *text, int state);
 } command_info;
@@ -89,7 +89,7 @@ command_info commands[];
 /* The structure for indexing commands in a hash table. */
 typedef struct
 {
-    bool root;             /* i.e. not an abbreviation */
+    bugle_bool root;             /* i.e. not an abbreviation */
     const command_info *command;
 } command_data;
 /* The table of legal commands. The keys are the (possibly abbreviated)
@@ -122,10 +122,10 @@ static void chop(char *s)
 }
 #endif
 
-/* Returns true on quit, false otherwise */
-static bool handle_commands(void)
+/* Returns BUGLE_TRUE on quit, BUGLE_FALSE otherwise */
+static bugle_bool handle_commands(void)
 {
-    bool done;
+    bugle_bool done;
     char *line = NULL, *cur, *base;
     /* prev_line must be static, because we sometimes leave handle_commands
      * via a signal/longjmp pair.
@@ -139,7 +139,7 @@ static bool handle_commands(void)
 
     do
     {
-        done = false;
+        done = BUGLE_FALSE;
 #if HAVE_READLINE
         /* Readline replaces the SIGINT handler, but still chains to the
          * original. We set the handler to ignore for the readline()
@@ -168,7 +168,7 @@ static bool handle_commands(void)
         {
             if (gldb_get_status() != GLDB_STATUS_DEAD) gldb_send_quit(0);
             if (prev_line) free(prev_line);
-            return true;
+            return BUGLE_TRUE;
         }
         else
         {
@@ -225,11 +225,11 @@ static bool handle_commands(void)
             free(line);
         }
     } while (!done);
-    return false;
+    return BUGLE_FALSE;
 }
 
-/* Deals with response code resp. Returns true if we are done processing
- * responses, or false if we are expecting more.
+/* Deals with response code resp. Returns 1 if we are done processing
+ * responses, 0 if we are expecting more, and 2 if there was an EOF.
  */
 static int handle_responses(void)
 {
@@ -346,12 +346,12 @@ static void main_loop(void)
     int result;
     int status;
     pid_t pid;
-    bool done, pipe_done;
+    bugle_bool done, pipe_done;
 
     while (!handle_commands())
     {
-        done = false;
-        pipe_done = false;
+        done = BUGLE_FALSE;
+        pipe_done = BUGLE_FALSE;
         while (gldb_get_status() != GLDB_STATUS_DEAD && !done)
         {
             /* Allow signals in. This appears to open a race condition (because
@@ -411,7 +411,7 @@ static void main_loop(void)
 
                 assert(gldb_get_status() != GLDB_STATUS_DEAD);
                 gldb_notify_child_dead();
-                done = true;
+                done = BUGLE_TRUE;
             }
             else if (result != -1 && FD_ISSET(int_pipes[0], &readfds))
             {
@@ -420,16 +420,16 @@ static void main_loop(void)
                 /* Ctrl-C was pressed */
                 read(int_pipes[0], &buf, 1);
                 gldb_send_async(0);
-                done = false; /* We still need to wait for RESP_BREAK */
+                done = BUGLE_FALSE; /* We still need to wait for RESP_BREAK */
             }
             else if (result != -1 && FD_ISSET(gldb_get_in_pipe(), &readfds))
             {
                 /* Response from child */
                 switch (handle_responses())
                 {
-                case 0: break;                    /* Expecting more */
-                case 1: done = true; break;       /* Get commands */
-                case 2: pipe_done = true; break;  /* EOF on pipe, expect SIGCHLD */
+                case 0: break;                          /* Expecting more */
+                case 1: done = BUGLE_TRUE; break;       /* Get commands */
+                case 2: pipe_done = BUGLE_TRUE; break;  /* EOF on pipe, expect SIGCHLD */
                 }
             }
         }
@@ -470,41 +470,41 @@ static void state_dump(const gldb_state *root, int depth)
     }
 }
 
-static bool command_cont(const char *cmd,
-                         const char *line,
-                         const char * const *tokens)
+static bugle_bool command_cont(const char *cmd,
+                               const char *line,
+                               const char * const *tokens)
 {
     gldb_send_continue(0);
-    return true;
+    return BUGLE_TRUE;
 }
 
-static bool command_step(const char *cmd,
-                         const char *line,
-                         const char * const *tokens)
+static bugle_bool command_step(const char *cmd,
+                               const char *line,
+                               const char * const *tokens)
 {
     gldb_send_step(0);
-    return true;
+    return BUGLE_TRUE;
 }
 
-static bool command_kill(const char *cmd,
-                         const char *line,
-                         const char * const *tokens)
+static bugle_bool command_kill(const char *cmd,
+                               const char *line,
+                               const char * const *tokens)
 {
     gldb_send_quit(0);
-    return true;
+    return BUGLE_TRUE;
 }
 
-static bool command_quit(const char *cmd,
-                         const char *line,
-                         const char * const *tokens)
+static bugle_bool command_quit(const char *cmd,
+                               const char *line,
+                               const char * const *tokens)
 {
     if (gldb_get_status() != GLDB_STATUS_DEAD) gldb_send_quit(0);
     exit(0);
 }
 
-static bool command_break_unbreak(const char *cmd,
-                                  const char *line,
-                                  const char * const *tokens)
+static bugle_bool command_break_unbreak(const char *cmd,
+                                        const char *line,
+                                        const char * const *tokens)
 {
     const char *func;
 
@@ -512,7 +512,7 @@ static bool command_break_unbreak(const char *cmd,
     if (!func)
     {
         fputs("Specify a function or \"error\".\n", stdout);
-        return false;
+        return BUGLE_FALSE;
     }
 
     if (strcmp(func, "error") == 0)
@@ -535,26 +535,26 @@ static void child_init(void)
     sigprocmask(SIG_SETMASK, &unblocked, NULL);
 }
 
-static bool command_run(const char *cmd,
-                        const char *line,
-                        const char * const *tokens)
+static bugle_bool command_run(const char *cmd,
+                              const char *line,
+                              const char * const *tokens)
 {
     if (gldb_get_status() != GLDB_STATUS_DEAD)
     {
         fputs("Already running\n", stdout);
-        return false;
+        return BUGLE_FALSE;
     }
     else
     {
         gldb_run(0, child_init);
         gldb_set_in_reader(gldb_protocol_reader_new_fd_select(gldb_get_in_pipe()));
-        return true;
+        return BUGLE_TRUE;
     }
 }
 
-static bool command_backtrace(const char *cmd,
-                              const char *line,
-                              const char * const *tokens)
+static bugle_bool command_backtrace(const char *cmd,
+                                    const char *line,
+                                    const char * const *tokens)
 {
     int in_pipe[2], out_pipe[2];
     pid_t pid;
@@ -607,17 +607,17 @@ static bool command_backtrace(const char *cmd,
     }
 
     gldb_safe_syscall(sigprocmask(SIG_SETMASK, &blocked, NULL), "sigprocmask");
-    return false;
+    return BUGLE_FALSE;
 }
 
-static bool command_chain(const char *cmd,
-                          const char *line,
-                          const char * const *tokens)
+static bugle_bool command_chain(const char *cmd,
+                                const char *line,
+                                const char * const *tokens)
 {
     if (!tokens[1])
     {
         fputs("Usage: chain <chain> OR chain none.\n", stdout);
-        return false;
+        return BUGLE_FALSE;
     }
     if (strcmp(tokens[1], "none") == 0)
     {
@@ -631,32 +631,32 @@ static bool command_chain(const char *cmd,
     }
     if (gldb_get_status() != GLDB_STATUS_DEAD)
         fputs("The change will only take effect when the program is restarted.\n", stdout);
-    return false;
+    return BUGLE_FALSE;
 }
 
-static bool command_enable_disable(const char *cmd,
-                                   const char *line,
-                                   const char * const *tokens)
+static bugle_bool command_enable_disable(const char *cmd,
+                                         const char *line,
+                                         const char * const *tokens)
 {
     if (!tokens[1] || !*tokens[1])
     {
         fputs("Usage: enable|disable <filterset>\n", stdout);
-        return false;
+        return BUGLE_FALSE;
     }
 
     gldb_send_enable_disable(0, tokens[1], strcmp(cmd, "enable") == 0);
-    return true;
+    return BUGLE_TRUE;
 }
 
-static bool command_gdb(const char *cmd,
-                        const char *line,
-                        const char * const *tokens)
+static bugle_bool command_gdb(const char *cmd,
+                              const char *line,
+                              const char * const *tokens)
 {
 #if BUGLE_OSAPI_POSIX
     pid_t pid, pgrp, tc_pgrp;
     char *pid_str;
     int status;
-    bool fore;
+    bugle_bool fore;
 
     gldb_safe_syscall(sigprocmask(SIG_SETMASK, &unblocked, NULL), "sigprocmask");
 
@@ -695,12 +695,12 @@ static bool command_gdb(const char *cmd,
 #else
     printf("gdb command not implemented on this platform\n");
 #endif
-    return false;
+    return BUGLE_FALSE;
 }
 
-static bool command_state(const char *cmd,
-                          const char *line,
-                          const char * const *tokens)
+static bugle_bool command_state(const char *cmd,
+                                const char *line,
+                                const char * const *tokens)
 {
     gldb_state *s;
     gldb_state *root;
@@ -714,12 +714,12 @@ static bool command_state(const char *cmd,
             fprintf(stderr, "No such state %s\n", tokens[1]);
     }
     if (s) state_dump(s, 0);
-    return false;
+    return BUGLE_FALSE;
 }
 
-static bool command_screenshot(const char *cmd,
-                               const char *line,
-                               const char * const *tokens)
+static bugle_bool command_screenshot(const char *cmd,
+                                     const char *line,
+                                     const char * const *tokens)
 {
     const char *fname;
 
@@ -727,24 +727,24 @@ static bool command_screenshot(const char *cmd,
     if (!fname)
     {
         fputs("Specify a filename\n", stdout);
-        return false;
+        return BUGLE_FALSE;
     }
     if (screenshot_file) free(screenshot_file);
     screenshot_file = xstrdup(tokens[1]);
     gldb_send_data_framebuffer(0, 0, 0, GL_FRONT, GL_RGB, GL_UNSIGNED_BYTE);
-    return true;
+    return BUGLE_TRUE;
 }
 
-static bool command_help(const char *cmd,
-                         const char *line,
-                         const char * const *tokens)
+static bugle_bool command_help(const char *cmd,
+                               const char *line,
+                               const char * const *tokens)
 {
     const command_info *c;
 
     for (c = commands; c->name; c++)
         if (c->help)
             printf("%-12s\t%s\n", c->name, c->help);
-    return false;
+    return BUGLE_FALSE;
 }
 
 static void register_command(const command_info *cmd)
@@ -758,7 +758,7 @@ static void register_command(const command_info *cmd)
         assert(!data->root); /* can't redefine commands */
     else
         data = XMALLOC(command_data);
-    data->root = true;
+    data->root = BUGLE_TRUE;
     data->command = cmd;
     bugle_hash_set(&command_table, key, data);
 
@@ -771,7 +771,7 @@ static void register_command(const command_info *cmd)
         if (!data)
         {
             data = XMALLOC(command_data);
-            data->root = false;
+            data->root = BUGLE_FALSE;
             data->command = cmd;
             bugle_hash_set(&command_table, key, data);
         }
@@ -898,31 +898,31 @@ static char **completion(const char *text, int start, int end)
 
 command_info commands[] =
 {
-    { "backtrace", "Show a gdb backtrace", true, command_backtrace, NULL },
-    { "bt", NULL, true, command_backtrace, NULL },
+    { "backtrace", "Show a gdb backtrace", BUGLE_TRUE, command_backtrace, NULL },
+    { "bt", NULL, BUGLE_TRUE, command_backtrace, NULL },
 
-    { "break", "Set breakpoints", false, command_break_unbreak, generate_functions },
-    { "b", NULL, false, command_break_unbreak, generate_functions },
-    { "unbreak", "Clear breakpoints", false, command_break_unbreak, generate_functions },
+    { "break", "Set breakpoints", BUGLE_FALSE, command_break_unbreak, generate_functions },
+    { "b", NULL, BUGLE_FALSE, command_break_unbreak, generate_functions },
+    { "unbreak", "Clear breakpoints", BUGLE_FALSE, command_break_unbreak, generate_functions },
 
-    { "continue", "Continue running the program", true, command_cont, NULL },
-    { "c", NULL, true, command_cont, NULL },
+    { "continue", "Continue running the program", BUGLE_TRUE, command_cont, NULL },
+    { "c", NULL, BUGLE_TRUE, command_cont, NULL },
 
-    { "chain", "Set the filter-set chain", false, command_chain, NULL },
-    { "disable", "Disable a filterset", true, command_enable_disable, NULL },
-    { "enable", "Enable a filterset", true, command_enable_disable, NULL },
-    { "gdb", "Stop in the program in gdb", false, command_gdb, NULL },
-    { "help", "Show the list of commands", false, command_help, generate_commands },
-    { "kill", "Kill the program", true, command_kill, NULL },
-    { "run", "Start the program", false, command_run, NULL },
-    { "state", "Show GL state", true, command_state, generate_state },
+    { "chain", "Set the filter-set chain", BUGLE_FALSE, command_chain, NULL },
+    { "disable", "Disable a filterset", BUGLE_TRUE, command_enable_disable, NULL },
+    { "enable", "Enable a filterset", BUGLE_TRUE, command_enable_disable, NULL },
+    { "gdb", "Stop in the program in gdb", BUGLE_FALSE, command_gdb, NULL },
+    { "help", "Show the list of commands", BUGLE_FALSE, command_help, generate_commands },
+    { "kill", "Kill the program", BUGLE_TRUE, command_kill, NULL },
+    { "run", "Start the program", BUGLE_FALSE, command_run, NULL },
+    { "state", "Show GL state", BUGLE_TRUE, command_state, generate_state },
 
-    { "step", "Continue until next OpenGL call", true, command_step, NULL },
-    { "s", NULL, true, command_step, NULL },
+    { "step", "Continue until next OpenGL call", BUGLE_TRUE, command_step, NULL },
+    { "s", NULL, BUGLE_TRUE, command_step, NULL },
 
-    { "quit", "Exit gldb", false, command_quit, NULL },
-    { "screenshot", "Capture a screenshot", true, command_screenshot, NULL },
-    { NULL, NULL, false, NULL, NULL }
+    { "quit", "Exit gldb", BUGLE_FALSE, command_quit, NULL },
+    { "screenshot", "Capture a screenshot", BUGLE_TRUE, command_screenshot, NULL },
+    { NULL, NULL, BUGLE_FALSE, NULL, NULL }
 };
 
 static int compare_commands(const void *a, const void *b)

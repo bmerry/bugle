@@ -19,7 +19,7 @@
 # include <config.h>
 #endif
 #include <stdlib.h>
-#include <stdbool.h>
+#include <bugle/bool.h>
 #include <string.h>
 #include "xalloc.h"
 #include <bugle/glwin/glwin.h>
@@ -41,7 +41,7 @@
 /* The design is that extensions that we have never heard of may be
  * suppressed; hence we use the two hash-tables rather than a boolean array.
  */
-static bool extoverride_disable_all = false;
+static bugle_bool extoverride_disable_all = BUGLE_FALSE;
 static char *extoverride_max_version = NULL;
 static hash_table extoverride_disabled;
 static hash_table extoverride_enabled;
@@ -53,7 +53,7 @@ typedef struct
     GLubyte *extensions;    /* Filtered version of glGetString(GL_EXTENSIONS) */
 } extoverride_context;
 
-static bool extoverride_suppressed(const char *ext)
+static bugle_bool extoverride_suppressed(const char *ext)
 {
     if (extoverride_disable_all)
         return !bugle_hash_count(&extoverride_enabled, ext);
@@ -112,12 +112,12 @@ static void extoverride_context_clear(void *data)
     free(self->extensions);
 }
 
-static bool extoverride_glGetString(function_call *call, const callback_data *data)
+static bugle_bool extoverride_glGetString(function_call *call, const callback_data *data)
 {
     extoverride_context *ctx;
 
     ctx = (extoverride_context *) bugle_object_get_current_data(bugle_context_class, extoverride_view);
-    if (!ctx) return true; /* Nothing can be overridden */
+    if (!ctx) return BUGLE_TRUE; /* Nothing can be overridden */
     switch (*call->glGetString.arg0)
     {
     case GL_VERSION:
@@ -127,18 +127,18 @@ static bool extoverride_glGetString(function_call *call, const callback_data *da
         *call->glGetString.retn = ctx->extensions;
         break;
     }
-    return true;
+    return BUGLE_TRUE;
 }
 
-static bool extoverride_warn(function_call *call, const callback_data *data)
+static bugle_bool extoverride_warn(function_call *call, const callback_data *data)
 {
     bugle_log_printf("extoverride", "warn", BUGLE_LOG_NOTICE,
                      "%s was called, although the corresponding extension was suppressed",
                      budgie_function_name(call->generic.id));
-    return true;
+    return BUGLE_TRUE;
 }
 
-static bool extoverride_initialise(filter_set *handle)
+static bugle_bool extoverride_initialise(filter_set *handle)
 {
     filter *f;
     budgie_function i;
@@ -146,7 +146,7 @@ static bool extoverride_initialise(filter_set *handle)
     f = bugle_filter_new(handle, "extoverride_get");
     bugle_filter_order("invoke", "extoverride_get");
     bugle_filter_order("extoverride_get", "trace");
-    bugle_filter_catches(f, "glGetString", false, extoverride_glGetString);
+    bugle_filter_catches(f, "glGetString", BUGLE_FALSE, extoverride_glGetString);
 
     f = bugle_filter_new(handle, "extoverride_warn");
     bugle_filter_order("extoverride_warn", "invoke");
@@ -160,7 +160,7 @@ static bool extoverride_initialise(filter_set *handle)
         name = bugle_api_extension_name(ext);
         if (!version
             && extoverride_suppressed(name))
-            bugle_filter_catches_function_id(f, i, false, extoverride_warn);
+            bugle_filter_catches_function_id(f, i, BUGLE_FALSE, extoverride_warn);
         else if (extoverride_max_version
                  && version
                  && bugle_api_extension_block(ext) == BUGLE_API_EXTENSION_BLOCK_GL
@@ -169,7 +169,7 @@ static bool extoverride_initialise(filter_set *handle)
             /* FIXME: the strcmp above will break if there is ever an OpenGL
              * version with multiple digits.
              */
-            bugle_filter_catches_function_id(f, i, false, extoverride_warn);
+            bugle_filter_catches_function_id(f, i, BUGLE_FALSE, extoverride_warn);
         }
     }
 
@@ -177,7 +177,7 @@ static bool extoverride_initialise(filter_set *handle)
                                              extoverride_context_init,
                                              extoverride_context_clear,
                                              sizeof(extoverride_context));
-    return true;
+    return BUGLE_TRUE;
 }
 
 static void extoverride_shutdown(filter_set *handle)
@@ -187,15 +187,15 @@ static void extoverride_shutdown(filter_set *handle)
     free(extoverride_max_version);
 }
 
-static bool extoverride_variable_disable(const struct filter_set_variable_info_s *var,
+static bugle_bool extoverride_variable_disable(const struct filter_set_variable_info_s *var,
                                          const char *text, const void *value)
 {
     bugle_api_extension i;
 
     if (strcmp(text, "all") == 0)
     {
-        extoverride_disable_all = true;
-        return true;
+        extoverride_disable_all = BUGLE_TRUE;
+        return BUGLE_TRUE;
     }
 
     bugle_hash_set(&extoverride_disabled, text, NULL);
@@ -203,18 +203,18 @@ static bool extoverride_variable_disable(const struct filter_set_variable_info_s
     if (i == -1 || bugle_api_extension_version(i) != NULL)
         bugle_log_printf("extoverride", "disable", BUGLE_LOG_WARNING,
                          "Extension %s is unknown (typo?)", text);
-    return true;
+    return BUGLE_TRUE;
 }
 
-static bool extoverride_variable_enable(const struct filter_set_variable_info_s *var,
+static bugle_bool extoverride_variable_enable(const struct filter_set_variable_info_s *var,
                                         const char *text, const void *value)
 {
     bugle_api_extension i;
 
     if (strcmp(text, "all") == 0)
     {
-        extoverride_disable_all = false;
-        return true;
+        extoverride_disable_all = BUGLE_FALSE;
+        return BUGLE_TRUE;
     }
 
     bugle_hash_set(&extoverride_enabled, text, NULL);
@@ -222,7 +222,7 @@ static bool extoverride_variable_enable(const struct filter_set_variable_info_s 
     if (i == -1 || bugle_api_extension_version(i) != NULL)
         bugle_log_printf("extoverride", "enable", BUGLE_LOG_WARNING,
                          "Extension %s is unknown (typo?)", text);
-    return true;
+    return BUGLE_TRUE;
 }
 
 void bugle_initialise_filter_library(void)

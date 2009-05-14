@@ -18,7 +18,7 @@
 #ifndef BUGLE_COMMON_HASHTABLE_H
 #define BUGLE_COMMON_HASHTABLE_H
 
-#include <stdbool.h>
+#include <bugle/bool.h>
 #include <stddef.h>
 #include <bugle/export.h>
 
@@ -47,7 +47,7 @@ typedef struct
 BUGLE_EXPORT_PRE void bugle_hash_init(hash_table *table, void (*destructor)(void *)) BUGLE_EXPORT_POST;
 BUGLE_EXPORT_PRE void bugle_hash_set(hash_table *table, const char *key, void *value) BUGLE_EXPORT_POST;
 /* Determines whether the key is present */
-BUGLE_EXPORT_PRE bool bugle_hash_count(const hash_table *table, const char *key) BUGLE_EXPORT_POST;
+BUGLE_EXPORT_PRE bugle_bool bugle_hash_count(const hash_table *table, const char *key) BUGLE_EXPORT_POST;
 /* Returns NULL if key absent OR if value is NULL */
 BUGLE_EXPORT_PRE void *bugle_hash_get(const hash_table *table, const char *key) BUGLE_EXPORT_POST;
 BUGLE_EXPORT_PRE void bugle_hash_clear(hash_table *table) BUGLE_EXPORT_POST;
@@ -79,7 +79,7 @@ typedef struct
 
 BUGLE_EXPORT_PRE void bugle_hashptr_init(hashptr_table *table, void (*destructor)(void *)) BUGLE_EXPORT_POST;
 BUGLE_EXPORT_PRE void bugle_hashptr_set(hashptr_table *table, const void *key, void *value) BUGLE_EXPORT_POST;
-BUGLE_EXPORT_PRE bool bugle_hashptr_count(const hashptr_table *table, const void *key) BUGLE_EXPORT_POST;
+BUGLE_EXPORT_PRE bugle_bool bugle_hashptr_count(const hashptr_table *table, const void *key) BUGLE_EXPORT_POST;
 BUGLE_EXPORT_PRE void *bugle_hashptr_get(const hashptr_table *table, const void *key) BUGLE_EXPORT_POST;
 BUGLE_EXPORT_PRE void bugle_hashptr_clear(hashptr_table *table) BUGLE_EXPORT_POST;
 

@@ -22,6 +22,7 @@
 #define WGL_WGLEXT_PROTOTYPES
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
+#include <bugle/bool.h>
 #include <bugle/glwin/glwin.h>
 #include <GL/wglext.h>
 #include <budgie/call.h>
@@ -51,8 +52,8 @@ glwin_drawable bugle_glwin_get_current_read_drawable(void)
     return CALL(wglGetCurrentDC)();
 }
 
-bool bugle_glwin_make_context_current(glwin_display dpy, glwin_drawable draw,
-                                      glwin_drawable read, glwin_context ctx)
+bugle_bool bugle_glwin_make_context_current(glwin_display dpy, glwin_drawable draw,
+                                            glwin_drawable read, glwin_context ctx)
 {
     /* FIXME: use wglMakeContextCurrentARB if available - but it needs a
      * context to obtain the address.
@@ -132,12 +133,12 @@ glwin_context_create *bugle_glwin_context_create_save(function_call *call)
     create->parent.function = call->generic.id;
     create->parent.group = call->generic.group;
     create->parent.ctx = ctx;
-    create->parent.share = false;
+    create->parent.share = BUGLE_FALSE;
 
     return (glwin_context_create *) create;
 }
 
-glwin_context bugle_glwin_context_create_new(const glwin_context_create *create, bool share)
+glwin_context bugle_glwin_context_create_new(const glwin_context_create *create, bugle_bool share)
 {
     glwin_context ctx;
     ctx = CALL(wglCreateContext)(create->dpy);
@@ -151,23 +152,23 @@ glwin_context bugle_glwin_get_context_destroy(function_call *call)
     return *call->wglDeleteContext.arg0;
 }
 
-void bugle_glwin_filter_catches_create_context(filter *f, bool inactive, filter_callback callback)
+void bugle_glwin_filter_catches_create_context(filter *f, bugle_bool inactive, filter_callback callback)
 {
     bugle_filter_catches(f, "wglCreateContext", inactive, callback);
 }
 
-void bugle_glwin_filter_catches_destroy_context(filter *f, bool inactive, filter_callback callback)
+void bugle_glwin_filter_catches_destroy_context(filter *f, bugle_bool inactive, filter_callback callback)
 {
     bugle_filter_catches(f, "wglDeleteContext", inactive, callback);
 }
 
-void bugle_glwin_filter_catches_make_current(filter *f, bool inactive, filter_callback callback)
+void bugle_glwin_filter_catches_make_current(filter *f, bugle_bool inactive, filter_callback callback)
 {
     bugle_filter_catches(f, "wglMakeCurrent", inactive, callback);
     bugle_filter_catches(f, "wglMakeContextCurrentARB", inactive, callback);
 }
 
-void bugle_glwin_filter_catches_swap_buffers(filter *f, bool inactive, filter_callback callback)
+void bugle_glwin_filter_catches_swap_buffers(filter *f, bugle_bool inactive, filter_callback callback)
 {
     bugle_filter_catches(f, "wglSwapBuffers", inactive, callback);
 }

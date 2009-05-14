@@ -24,7 +24,7 @@
 #endif
 #include <bugle/linkedlist.h>
 #include <bugle/objects.h>
-#include <stdbool.h>
+#include <bugle/bool.h>
 #include <stddef.h>
 #include <string.h>
 #include <stdlib.h>
@@ -94,7 +94,7 @@ object_view bugle_object_view_new(object_class *klass,
     return klass->count++;
 }
 
-object *bugle_object_new(object_class *klass, const void *key, bool make_current)
+object *bugle_object_new(object_class *klass, const void *key, bugle_bool make_current)
 {
     object *obj;
     linked_list_node *i;

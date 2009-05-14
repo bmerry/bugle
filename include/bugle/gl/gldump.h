@@ -19,7 +19,7 @@
 #define BUGLE_GL_GLDUMP_H
 
 #include <bugle/gl/glheaders.h>
-#include <stdbool.h>
+#include <bugle/bool.h>
 #include <stdio.h>
 #include <budgie/types.h>
 #include <bugle/export.h>
@@ -45,8 +45,8 @@ BUGLE_EXPORT_PRE int bugle_count_program_string(GLenum target, GLenum pname) BUG
 #endif
 BUGLE_EXPORT_PRE int bugle_count_attached_shaders(GLuint program, GLsizei max) BUGLE_EXPORT_POST;
 
-BUGLE_EXPORT_PRE bool bugle_dump_convert(GLenum pname, const void *value,
-                                         budgie_type in_type, char **buffer, size_t *size) BUGLE_EXPORT_POST;
+BUGLE_EXPORT_PRE bugle_bool bugle_dump_convert(GLenum pname, const void *value,
+                                               budgie_type in_type, char **buffer, size_t *size) BUGLE_EXPORT_POST;
 
 /* Computes the number of pixel elements (units of byte, int, float etc)
  * used by a client-side encoding of a 1D, 2D or 3D image.
@@ -57,7 +57,7 @@ BUGLE_EXPORT_PRE size_t bugle_image_element_count(GLsizei width,
                                                   GLsizei depth,
                                                   GLenum format,
                                                   GLenum type,
-                                                  bool unpack) BUGLE_EXPORT_POST;
+                                                  bugle_bool unpack) BUGLE_EXPORT_POST;
 
 /* Computes the number of pixel elements required by glGetTexImage
  */

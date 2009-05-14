@@ -25,7 +25,7 @@
 #include <inttypes.h>
 #include <signal.h>
 #include <unistd.h>
-#include <stdbool.h>
+#include <bugle/bool.h>
 #include <bugle/linkedlist.h>
 #include <bugle/misc.h>
 #include <budgie/basictypes.h>
@@ -250,11 +250,11 @@ gldb_state *gldb_state_update();
  */
 void gldb_safe_syscall(int r, const char *str);
 
-bool gldb_run(uint32_t id, void (*child_init)(void));
+bugle_bool gldb_run(uint32_t id, void (*child_init)(void));
 void gldb_send_quit(uint32_t id);
 void gldb_send_continue(uint32_t id);
 void gldb_send_step(uint32_t id);
-void gldb_send_enable_disable(uint32_t id, const char *filterset, bool enable);
+void gldb_send_enable_disable(uint32_t id, const char *filterset, bugle_bool enable);
 void gldb_send_screenshot(uint32_t id);
 void gldb_send_async(uint32_t id);
 void gldb_send_state_tree(uint32_t id);
@@ -266,8 +266,8 @@ void gldb_send_data_framebuffer(uint32_t id, GLuint fbo_id, GLenum target,
 void gldb_send_data_shader(uint32_t id, GLuint shader_id, GLenum target);
 void gldb_send_data_info_log(uint32_t id, GLuint object_id, GLenum target);
 void gldb_send_data_buffer(uint32_t id, GLuint object_id);
-void gldb_set_break_event(uint32_t id, uint32_t event, bool brk);
-void gldb_set_break(uint32_t id, const char *function, bool brk);
+void gldb_set_break_event(uint32_t id, uint32_t event, bugle_bool brk);
+void gldb_set_break(uint32_t id, const char *function, bugle_bool brk);
 
 const char *gldb_get_chain(void);
 void gldb_set_chain(const char *chain);
@@ -276,7 +276,7 @@ void gldb_notify_child_dead(void);
 gldb_response *gldb_get_response(void);
 void gldb_free_response(gldb_response *response);
 
-bool gldb_get_break_event(uint32_t event);
+bugle_bool gldb_get_break_event(uint32_t event);
 gldb_status gldb_get_status(void);
 pid_t gldb_get_child_pid(void);
 /* These should only be used for select() and the like, never read from.
@@ -295,7 +295,7 @@ void gldb_set_in_reader(struct gldb_protocol_reader *reader);
 void gldb_program_clear();
 void gldb_program_set_setting(gldb_program_setting setting, const char *value);
 void gldb_program_set_type(gldb_program_type type);
-bool gldb_program_type_has_setting(gldb_program_type type, gldb_program_setting setting);
+bugle_bool gldb_program_type_has_setting(gldb_program_type type, gldb_program_setting setting);
 const char *gldb_program_get_setting(gldb_program_setting setting);
 gldb_program_type gldb_program_get_type(void);
 

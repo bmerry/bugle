@@ -33,6 +33,7 @@
 #include <bugle/log.h>
 #include <bugle/stats.h>
 #include <bugle/hashtable.h>
+#include <bugle/bool.h>
 #include "common/threads.h"
 #include <budgie/reflect.h>
 #include <budgie/addresses.h>
@@ -69,7 +70,7 @@ static void load_config(void)
     const config_variable *var;
     filter_set *f;
     linked_list_node *i, *j;
-    bool debugging;
+    bugle_bool debugging;
     bugle_input_key key;
 
     if (getenv("BUGLE_FILTERS"))
@@ -168,7 +169,7 @@ static void load_config(void)
         fputs("could not find the 'invoke' filter-set; aborting\n", stderr);
         exit(1);
     }
-    filter_set_add(f, true);
+    filter_set_add(f, BUGLE_TRUE);
     /* Auto-load the debugger filter-set if using the debugger */
     if (debugging)
     {
@@ -178,7 +179,7 @@ static void load_config(void)
             fputs("could not find the 'debugger' filter-set; aborting\n", stderr);
             exit(1);
         }
-        filter_set_add(f, true);
+        filter_set_add(f, BUGLE_TRUE);
     }
 }
 

@@ -24,7 +24,7 @@
 #include <bugle/objects.h>
 #include <bugle/export.h>
 #include <budgie/types.h>
-#include <stdbool.h>
+#include <bugle/bool.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -39,11 +39,11 @@ typedef struct
     struct filter_set_s *filter_set_handle;
 } callback_data;
 
-typedef bool (*filter_set_loader)(struct filter_set_s *);
+typedef bugle_bool (*filter_set_loader)(struct filter_set_s *);
 typedef void (*filter_set_unloader)(struct filter_set_s *);
 typedef void (*filter_set_activator)(struct filter_set_s *);
 typedef void (*filter_set_deactivator)(struct filter_set_s *);
-typedef bool (*filter_callback)(function_call *call, const callback_data *data);
+typedef bugle_bool (*filter_callback)(function_call *call, const callback_data *data);
 
 typedef enum
 {
@@ -64,7 +64,7 @@ typedef struct filter_set_variable_info_s
     filter_set_variable_type type;
     /* int, uint, posint: a long * (uint just enforces non-negative)
      * float: a float *
-     * bool: a bool *
+     * bool: a bugle_bool *
      * string: pointer to char *, which will then own the memory.
      *         If the old value was non-NULL, it is freed.
      * key: a bugle_input_key *
@@ -73,13 +73,13 @@ typedef struct filter_set_variable_info_s
      */
     void *value;
     /* If not NULL, then is called before value is assigned. It may
-     * return false to abort the assignment. The parameter `value'
+     * return BUGLE_FALSE to abort the assignment. The parameter `value'
      * points to the value that will be assigned to the struct `value'
-     * if the callback returns true (in the case of CUSTOM, no copy
+     * if the callback returns BUGLE_TRUE (in the case of CUSTOM, no copy
      * is performed - you get the real pointer).
      */
-    bool (*callback)(const struct filter_set_variable_info_s *var,
-                     const char *text, const void *value);
+    bugle_bool (*callback)(const struct filter_set_variable_info_s *var,
+                           const char *text, const void *value);
 } filter_set_variable_info;
 
 typedef struct
@@ -102,9 +102,9 @@ typedef struct filter_set_s
     const filter_set_variable_info *variables;
     lt_dlhandle dl_handle;
 
-    bool added;         /* Is listed in the config file or is depended upon */
-    bool loaded;        /* Initialisation has been called */
-    bool active;        /* Is actively intercepting events */
+    bugle_bool added;         /* Is listed in the config file or is depended upon */
+    bugle_bool loaded;        /* Initialisation has been called */
+    bugle_bool active;        /* Is actively intercepting events */
 } filter_set;
 
 typedef struct
@@ -120,8 +120,8 @@ typedef struct
 
 /* Functions to be used by the interceptor only */
 void filters_initialise(void);
-bool filter_set_variable(filter_set *handle, const char *name, const char *text);
-void filter_set_add(filter_set *handle, bool activate);
+bugle_bool filter_set_variable(filter_set *handle, const char *name, const char *text);
+void filter_set_add(filter_set *handle, bugle_bool activate);
 void filter_set_activate(filter_set *handle);
 void filter_set_deactivate(filter_set *handle);
 void filters_finalise(void); /* Called after all filtersets added to do last initialisation */
@@ -135,19 +135,19 @@ BUGLE_EXPORT_PRE void        bugle_filter_set_order(const char *before, const ch
 
 BUGLE_EXPORT_PRE filter *    bugle_filter_new(filter_set *handle, const char *name) BUGLE_EXPORT_POST;
 BUGLE_EXPORT_PRE void        bugle_filter_order(const char *before, const char *after) BUGLE_EXPORT_POST;
-BUGLE_EXPORT_PRE void        bugle_filter_catches(filter *handle, const char *group, bool inactive, filter_callback callback) BUGLE_EXPORT_POST;
+BUGLE_EXPORT_PRE void        bugle_filter_catches(filter *handle, const char *group, bugle_bool inactive, filter_callback callback) BUGLE_EXPORT_POST;
 /* Like bugle_filter_catches, but per-function rather than per-group. */
-BUGLE_EXPORT_PRE void        bugle_filter_catches_function(filter *handle, const char *f, bool inactive, filter_callback callback) BUGLE_EXPORT_POST;
+BUGLE_EXPORT_PRE void        bugle_filter_catches_function(filter *handle, const char *f, bugle_bool inactive, filter_callback callback) BUGLE_EXPORT_POST;
 /* Like bugle_filter_catch_function, but takes a budgie_function not a string */
-BUGLE_EXPORT_PRE void        bugle_filter_catches_function_id(filter *handle, budgie_function, bool inactive, filter_callback callback) BUGLE_EXPORT_POST;
-BUGLE_EXPORT_PRE void        bugle_filter_catches_all(filter *handle, bool inactive, filter_callback callback) BUGLE_EXPORT_POST;
+BUGLE_EXPORT_PRE void        bugle_filter_catches_function_id(filter *handle, budgie_function, bugle_bool inactive, filter_callback callback) BUGLE_EXPORT_POST;
+BUGLE_EXPORT_PRE void        bugle_filter_catches_all(filter *handle, bugle_bool inactive, filter_callback callback) BUGLE_EXPORT_POST;
 
 extern BUGLE_EXPORT_PRE object_class *bugle_call_class BUGLE_EXPORT_POST;
 
 /* Other run-time functions */
 BUGLE_EXPORT_PRE filter_set *bugle_filter_set_get_handle(const char *name) BUGLE_EXPORT_POST;
-BUGLE_EXPORT_PRE bool        bugle_filter_set_is_loaded(const filter_set *handle) BUGLE_EXPORT_POST;
-BUGLE_EXPORT_PRE bool        bugle_filter_set_is_active(const filter_set *handle) BUGLE_EXPORT_POST;
+BUGLE_EXPORT_PRE bugle_bool  bugle_filter_set_is_loaded(const filter_set *handle) BUGLE_EXPORT_POST;
+BUGLE_EXPORT_PRE bugle_bool  bugle_filter_set_is_active(const filter_set *handle) BUGLE_EXPORT_POST;
 BUGLE_EXPORT_PRE void *      bugle_filter_set_get_symbol(filter_set *handle, const char *name) BUGLE_EXPORT_POST;
 BUGLE_EXPORT_PRE void        bugle_filter_set_activate_deferred(filter_set *handle) BUGLE_EXPORT_POST;
 BUGLE_EXPORT_PRE void        bugle_filter_set_deactivate_deferred(filter_set *handle) BUGLE_EXPORT_POST;

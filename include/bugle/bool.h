@@ -1,5 +1,5 @@
 /*  BuGLe: an OpenGL debugging tool
- *  Copyright (C) 2004-2007, 2009  Bruce Merry
+ *  Copyright (C) 2009  Bruce Merry
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -15,18 +15,11 @@
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#ifndef BUGLE_GLDB_GLDB_GUI_TARGET_H
-#define BUGLE_GLDB_GLDB_GUI_TARGET_H
+#ifndef BUGLE_BOOL_H
+#define BUGLE_BOOL_H
 
-#if HAVE_CONFIG_H
-# include <config.h>
-#endif
+typedef signed char bugle_bool;
+#define BUGLE_TRUE 1
+#define BUGLE_FALSE 0
 
-#include <gtk/gtk.h>
-
-/* Display the target dialog and gather responses
- * Returns BUGLE_TRUE if the user accepted the dialog.
- */
-bugle_bool gldb_gui_target_dialog_run(GtkWidget *parent);
-
-#endif
+#endif /* !BUGLE_BOOL_H */

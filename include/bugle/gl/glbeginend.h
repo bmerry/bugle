@@ -18,7 +18,7 @@
 #ifndef BUGLE_GL_GLBEGINEND_H
 #define BUGLE_GL_GLBEGINEND_H
 
-#include <stdbool.h>
+#include <bugle/bool.h>
 #include <bugle/export.h>
 
 #ifdef __cplusplus
@@ -28,7 +28,7 @@ extern "C" {
 /* True if we are in begin/end, OR if there is no current context.
  * glbeginend is required.
  */
-BUGLE_EXPORT_PRE bool bugle_gl_in_begin_end(void) BUGLE_EXPORT_POST;
+BUGLE_EXPORT_PRE bugle_bool bugle_gl_in_begin_end(void) BUGLE_EXPORT_POST;
 
 /* Must be used for filter-sets that call bugle_gl_in_begin_end() to guarantee
  * correct answers when intercepting glBegin or glEnd.

@@ -18,7 +18,7 @@
 #if HAVE_CONFIG_H
 # include <config.h>
 #endif
-#include <stdbool.h>
+#include <bugle/bool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <inttypes.h>
@@ -88,7 +88,7 @@ gldb_protocol_reader_select *gldb_protocol_reader_select_new(int fd);
 ssize_t gldb_protocol_reader_select_read(gldb_protocol_reader_select *r, void *buf, size_t count);
 
 /* Determine whether there is some data available to read */
-bool gldb_protocol_reader_select_has_data(gldb_protocol_reader_select *r);
+bugle_bool gldb_protocol_reader_select_has_data(gldb_protocol_reader_select *r);
 
 /* Clean up the structure. Does not close the fd. */
 void gldb_protocol_reader_select_free(gldb_protocol_reader_select *r);
@@ -168,7 +168,7 @@ ssize_t gldb_protocol_reader_read(gldb_protocol_reader *reader, void *buf, size_
     return -1; /* Should never be reached */
 }
 
-bool gldb_protocol_reader_has_data(gldb_protocol_reader *reader)
+bugle_bool gldb_protocol_reader_has_data(gldb_protocol_reader *reader)
 {
     if (reader->mode == MODE_FD_SELECT)
     {
@@ -183,11 +183,11 @@ bool gldb_protocol_reader_has_data(gldb_protocol_reader *reader)
         timeout.tv_sec = 0;
         timeout.tv_usec = 0;
         select(reader->fd + 1, &read_fds, NULL, NULL, &timeout);
-        return (FD_ISSET(reader->fd, &read_fds)) ? true : false;
+        return (FD_ISSET(reader->fd, &read_fds)) ? BUGLE_TRUE : BUGLE_FALSE;
 #endif
     }
     else
-        return false;
+        return BUGLE_FALSE;
 }
 
 /* FIXME: should eventually allow a user destructor for the user arg */
@@ -200,8 +200,8 @@ void gldb_protocol_reader_free(gldb_protocol_reader *reader)
     free(reader);
 }
 
-/* Returns false on EOF, aborts on failure */
-static bool io_safe_write(int fd, const void *buf, size_t count)
+/* Returns BUGLE_FALSE on EOF, aborts on failure */
+static bugle_bool io_safe_write(int fd, const void *buf, size_t count)
 {
     ssize_t out;
 
@@ -213,14 +213,14 @@ static bool io_safe_write(int fd, const void *buf, size_t count)
             perror("write failed");
             exit(1);
         }
-        return false;
+        return BUGLE_FALSE;
     }
     else
-        return true;
+        return BUGLE_TRUE;
 }
 
-/* Returns false on EOF, aborts on failure */
-static bool io_safe_read(gldb_protocol_reader *reader, void *buf, size_t count)
+/* Returns BUGLE_FALSE on EOF, aborts on failure */
+static bugle_bool io_safe_read(gldb_protocol_reader *reader, void *buf, size_t count)
 {
     ssize_t bytes;
 
@@ -234,15 +234,15 @@ static bool io_safe_read(gldb_protocol_reader *reader, void *buf, size_t count)
                 perror("read failed");
                 exit(1);
             }
-            return false;
+            return BUGLE_FALSE;
         }
         count -= bytes;
         buf += bytes;
     }
-    return true;
+    return BUGLE_TRUE;
 }
 
-bool gldb_protocol_send_code(int fd, uint32_t code)
+bugle_bool gldb_protocol_send_code(int fd, uint32_t code)
 {
     uint32_t code2;
 
@@ -250,7 +250,7 @@ bool gldb_protocol_send_code(int fd, uint32_t code)
     return io_safe_write(fd, &code2, sizeof(uint32_t));
 }
 
-bool gldb_protocol_send_binary_string(int fd, uint32_t len, const char *str)
+bugle_bool gldb_protocol_send_binary_string(int fd, uint32_t len, const char *str)
 {
     uint32_t len2;
 
@@ -263,34 +263,34 @@ bool gldb_protocol_send_binary_string(int fd, uint32_t len, const char *str)
      * better to just break backwards compatibility.
      */
     len2 = TO_NETWORK(len);
-    if (!io_safe_write(fd, &len2, sizeof(uint32_t))) return false;
-    if (!io_safe_write(fd, str, len)) return false;
-    return true;
+    if (!io_safe_write(fd, &len2, sizeof(uint32_t))) return BUGLE_FALSE;
+    if (!io_safe_write(fd, str, len)) return BUGLE_FALSE;
+    return BUGLE_TRUE;
 }
 
-bool gldb_protocol_send_string(int fd, const char *str)
+bugle_bool gldb_protocol_send_string(int fd, const char *str)
 {
     return gldb_protocol_send_binary_string(fd, strlen(str), str);
 }
 
-bool gldb_protocol_recv_code(gldb_protocol_reader *reader, uint32_t *code)
+bugle_bool gldb_protocol_recv_code(gldb_protocol_reader *reader, uint32_t *code)
 {
     uint32_t code2;
     if (io_safe_read(reader, &code2, sizeof(uint32_t)))
     {
         *code = TO_HOST(code2);
-        return true;
+        return BUGLE_TRUE;
     }
     else
-        return false;
+        return BUGLE_FALSE;
 }
 
-bool gldb_protocol_recv_binary_string(gldb_protocol_reader *reader, uint32_t *len, char **data)
+bugle_bool gldb_protocol_recv_binary_string(gldb_protocol_reader *reader, uint32_t *len, char **data)
 {
     uint32_t len2;
     int old_errno;
 
-    if (!io_safe_read(reader, &len2, sizeof(uint32_t))) return false;
+    if (!io_safe_read(reader, &len2, sizeof(uint32_t))) return BUGLE_FALSE;
     *len = TO_HOST(len2);
     *data = xmalloc(*len + 1);
     if (!io_safe_read(reader, *data, *len))
@@ -298,16 +298,16 @@ bool gldb_protocol_recv_binary_string(gldb_protocol_reader *reader, uint32_t *le
         old_errno = errno;
         free(*data);
         errno = old_errno;
-        return false;
+        return BUGLE_FALSE;
     }
     else
     {
         (*data)[*len] = '\0';
-        return true;
+        return BUGLE_TRUE;
     }
 }
 
-bool gldb_protocol_recv_string(gldb_protocol_reader *reader, char **str)
+bugle_bool gldb_protocol_recv_string(gldb_protocol_reader *reader, char **str)
 {
     uint32_t dummy;
 

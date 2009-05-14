@@ -77,7 +77,6 @@ AC_DEFUN([gl_INIT],
   gl_SIZE_MAX
   gt_TYPE_SSIZE_T
   gl_STDARG_H
-  AM_STDBOOL_H
   gl_STDINT_H
   gl_STDIO_H
   gl_STDLIB_H
@@ -193,7 +192,6 @@ AC_DEFUN([gl_FILE_LIST], [
   lib/signbitf.c
   lib/signbitl.c
   lib/size_max.h
-  lib/stdbool.in.h
   lib/stdint.in.h
   lib/stdio.in.h
   lib/stdlib.in.h
@@ -256,7 +254,6 @@ AC_DEFUN([gl_FILE_LIST], [
   m4/size_max.m4
   m4/ssize_t.m4
   m4/stdarg.m4
-  m4/stdbool.m4
   m4/stdint.m4
   m4/stdint_h.m4
   m4/stdio_h.m4

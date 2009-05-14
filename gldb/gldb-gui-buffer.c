@@ -210,7 +210,7 @@ static void gldb_buffer_pane_update_data(GldbBufferPane *pane)
         if (!valid)
         {
             gtk_list_store_append(pane->data_store, &iter);
-            valid = true;
+            valid = TRUE;
         }
         for (i = 0; i < pane->nfields && !done; i++)
         {
@@ -234,7 +234,7 @@ static void gldb_buffer_pane_update_data(GldbBufferPane *pane)
 
                 size = budgie_type_size(pane->fields[i]);
                 if (data + size > end)
-                    done = true;
+                    done = TRUE;
                 else
                 {
                     g_assert(size <= sizeof(double));
@@ -275,7 +275,7 @@ static void gldb_buffer_pane_update_data(GldbBufferPane *pane)
             {
                 /* Padding byte */
                 if (data + 1 > end)
-                    done = true;
+                    done = TRUE;
                 else
                     data++;
             }

@@ -36,7 +36,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
-#include <stdbool.h>
+#include <bugle/bool.h>
 #include <bugle/hashtable.h>
 #include "common/protocol.h"
 #include "gldb/gldb-common.h"
@@ -144,7 +144,7 @@ static gboolean gldb_texture_pane_response_callback(gldb_response *response,
             level->planes[plane].width = r->width;
             level->planes[plane].height = r->height;
             level->planes[plane].channels = data->channels;
-            level->planes[plane].owns_pixels = true;
+            level->planes[plane].owns_pixels = BUGLE_TRUE;
             level->planes[plane].type = data->pixel_type;
             level->planes[plane].pixels = (GLfloat *) r->data;
             break;
@@ -462,12 +462,12 @@ static GtkWidget *gldb_texture_pane_combo_table_new(GldbTexturePane *pane)
     gtk_table_attach(GTK_TABLE(combos), zoom, 1, 2, 4, 5, GTK_EXPAND | GTK_FILL, 0, 0, 0);
 
     label = gtk_label_new(_("Mag filter"));
-    mag = gldb_gui_image_viewer_filter_new(pane->viewer, true);
+    mag = gldb_gui_image_viewer_filter_new(pane->viewer, BUGLE_TRUE);
     gtk_table_attach(GTK_TABLE(combos), label, 0, 1, 5, 6, 0, 0, 0, 0);
     gtk_table_attach(GTK_TABLE(combos), mag, 1, 2, 5, 6, GTK_EXPAND | GTK_FILL, 0, 0, 0);
 
     label = gtk_label_new(_("Min filter"));
-    min = gldb_gui_image_viewer_filter_new(pane->viewer, false);
+    min = gldb_gui_image_viewer_filter_new(pane->viewer, BUGLE_FALSE);
     gtk_table_attach(GTK_TABLE(combos), label, 0, 1, 6, 7, 0, 0, 0, 0);
     gtk_table_attach(GTK_TABLE(combos), min, 1, 2, 6, 7, GTK_EXPAND | GTK_FILL, 0, 0, 0);
 

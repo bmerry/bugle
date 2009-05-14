@@ -29,7 +29,6 @@
 #include <glib/gi18n-lib.h>
 #include <string.h>
 #include <stdlib.h>
-#include <stdbool.h>
 #include <bugle/linkedlist.h>
 #include <bugle/hashtable.h>
 #include "gldb/gldb-common.h"
@@ -454,7 +453,7 @@ static void state_save(GtkToolButton *toolbutton,
         gchar *filename;
         gchar *state;
         FILE *f;
-        gboolean error = false;
+        gboolean error = FALSE;
 
         filename = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(dialog));
         f = fopen(filename, "w");
@@ -463,11 +462,11 @@ static void state_save(GtkToolButton *toolbutton,
         {
             state = dump_state_xml(root);
             if (fwrite(state, 1, strlen(state), f) != strlen(state))
-                error = true;
+                error = TRUE;
             g_free(state);
         }
         else
-            error = true;
+            error = TRUE;
         if (error)
         {
             dialog = gtk_message_dialog_new(parent,

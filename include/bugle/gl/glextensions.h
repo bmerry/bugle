@@ -18,15 +18,15 @@
 #ifndef BUGLE_GL_GLEXTENSIONS_H
 #define BUGLE_GL_GLEXTENSIONS_H
 
-#include <stdbool.h>
+#include <bugle/bool.h>
 #include <bugle/apireflect.h>
 #include <budgie/macros.h>
 
-BUGLE_EXPORT_PRE bool bugle_gl_has_extension(bugle_api_extension ext) BUGLE_EXPORT_POST;
-BUGLE_EXPORT_PRE bool bugle_gl_has_extension_group(bugle_api_extension ext) BUGLE_EXPORT_POST;
+BUGLE_EXPORT_PRE bugle_bool bugle_gl_has_extension(bugle_api_extension ext) BUGLE_EXPORT_POST;
+BUGLE_EXPORT_PRE bugle_bool bugle_gl_has_extension_group(bugle_api_extension ext) BUGLE_EXPORT_POST;
 /* More robust versions: if ext == -1, checks for the string in a hash table) */
-BUGLE_EXPORT_PRE bool bugle_gl_has_extension2(bugle_api_extension ext, const char *name) BUGLE_EXPORT_POST;
-BUGLE_EXPORT_PRE bool bugle_gl_has_extension_group2(bugle_api_extension ext, const char *name) BUGLE_EXPORT_POST;
+BUGLE_EXPORT_PRE bugle_bool bugle_gl_has_extension2(bugle_api_extension ext, const char *name) BUGLE_EXPORT_POST;
+BUGLE_EXPORT_PRE bugle_bool bugle_gl_has_extension_group2(bugle_api_extension ext, const char *name) BUGLE_EXPORT_POST;
 
 /* The BUGLE_ prefix is built up across several macros because using ##
  * inhibits macro expansion.

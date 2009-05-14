@@ -19,7 +19,7 @@
 # include <config.h>
 #endif
 #include <stdlib.h>
-#include <stdbool.h>
+#include <bugle/bool.h>
 #include <string.h>
 #include "xalloc.h"
 #include <bugle/glwin/glwin.h>
@@ -57,16 +57,16 @@ static linked_list classify_callbacks;
 
 typedef struct
 {
-    bool real;
+    bugle_bool real;
 } classify_context;
 
 typedef struct
 {
-    void (*callback)(bool, void *);
+    void (*callback)(bugle_bool, void *);
     void *arg;
 } classify_callback;
 
-static void register_classify_callback(void (*callback)(bool, void *), void *arg)
+static void register_classify_callback(void (*callback)(bugle_bool, void *), void *arg)
 {
     classify_callback *cb;
 
@@ -81,11 +81,11 @@ static void classify_context_init(const void *key, void *data)
     classify_context *ctx;
 
     ctx = (classify_context *) data;
-    ctx->real = true;
+    ctx->real = BUGLE_TRUE;
 }
 
 #ifdef GL_EXT_framebuffer_object
-static bool classify_glBindFramebufferEXT(function_call *call, const callback_data *data)
+static bugle_bool classify_glBindFramebufferEXT(function_call *call, const callback_data *data)
 {
     classify_context *ctx;
     GLint fbo;
@@ -106,24 +106,24 @@ static bool classify_glBindFramebufferEXT(function_call *call, const callback_da
             CALL(glGetIntegerv)(GL_FRAMEBUFFER_BINDING_EXT, &fbo);
         }
         ctx->real = (fbo == 0);
-        bugle_gl_end_internal_render("classify_glBindFramebufferEXT", true);
+        bugle_gl_end_internal_render("classify_glBindFramebufferEXT", BUGLE_TRUE);
         for (i = bugle_list_head(&classify_callbacks); i; i = bugle_list_next(i))
         {
             cb = (classify_callback *) bugle_list_data(i);
             (*cb->callback)(ctx->real, cb->arg);
         }
     }
-    return true;
+    return BUGLE_TRUE;
 }
 #endif
 
-static bool classify_initialise(filter_set *handle)
+static bugle_bool classify_initialise(filter_set *handle)
 {
     filter *f;
 
     f = bugle_filter_new(handle, "classify");
 #ifdef GL_EXT_framebuffer_object
-    bugle_filter_catches(f, "glBindFramebufferEXT", true, classify_glBindFramebufferEXT);
+    bugle_filter_catches(f, "glBindFramebufferEXT", BUGLE_TRUE, classify_glBindFramebufferEXT);
 #endif
     bugle_filter_order("invoke", "classify");
     bugle_gl_filter_post_renders("classify");
@@ -132,7 +132,7 @@ static bool classify_initialise(filter_set *handle)
                                           NULL,
                                           sizeof(classify_context));
     bugle_list_init(&classify_callbacks, free);
-    return true;
+    return BUGLE_TRUE;
 }
 
 static void classify_shutdown(filter_set *handle)
@@ -147,8 +147,8 @@ static object_view wireframe_view;
 
 typedef struct
 {
-    bool active;            /* True if polygon mode has been adjusted */
-    bool real;              /* True unless this is a render-to-X preprocess */
+    bugle_bool active;            /* True if polygon mode has been adjusted */
+    bugle_bool real;              /* True unless this is a render-to-X preprocess */
     GLint polygon_mode[2];  /* The app polygon mode, for front and back */
 } wireframe_context;
 
@@ -157,8 +157,8 @@ static void wireframe_context_init(const void *key, void *data)
     wireframe_context *ctx;
 
     ctx = (wireframe_context *) data;
-    ctx->active = false;
-    ctx->real = true;
+    ctx->active = BUGLE_FALSE;
+    ctx->real = BUGLE_TRUE;
     ctx->polygon_mode[0] = GL_FILL;
     ctx->polygon_mode[1] = GL_FILL;
 
@@ -166,13 +166,13 @@ static void wireframe_context_init(const void *key, void *data)
         && bugle_gl_begin_internal_render())
     {
         CALL(glPolygonMode)(GL_FRONT_AND_BACK, GL_LINE);
-        ctx->real = true;
-        bugle_gl_end_internal_render("wireframe_context_init", true);
+        ctx->real = BUGLE_TRUE;
+        bugle_gl_end_internal_render("wireframe_context_init", BUGLE_TRUE);
     }
 }
 
 /* Handles on the fly activation and deactivation */
-static void wireframe_handle_activation(bool active, wireframe_context *ctx)
+static void wireframe_handle_activation(bugle_bool active, wireframe_context *ctx)
 {
     active &= ctx->real;
     if (active && !ctx->active)
@@ -181,8 +181,8 @@ static void wireframe_handle_activation(bool active, wireframe_context *ctx)
         {
             CALL(glGetIntegerv)(GL_POLYGON_MODE, ctx->polygon_mode);
             CALL(glPolygonMode)(GL_FRONT_AND_BACK, GL_LINE);
-            ctx->active = true;
-            bugle_gl_end_internal_render("wireframe_handle_activation", true);
+            ctx->active = BUGLE_TRUE;
+            bugle_gl_end_internal_render("wireframe_handle_activation", BUGLE_TRUE);
         }
     }
     else if (!active && ctx->active)
@@ -191,8 +191,8 @@ static void wireframe_handle_activation(bool active, wireframe_context *ctx)
         {
             CALL(glPolygonMode)(GL_FRONT, ctx->polygon_mode[0]);
             CALL(glPolygonMode)(GL_BACK, ctx->polygon_mode[1]);
-            ctx->active = false;
-            bugle_gl_end_internal_render("wireframe_handle_activation", true);
+            ctx->active = BUGLE_FALSE;
+            bugle_gl_end_internal_render("wireframe_handle_activation", BUGLE_TRUE);
         }
     }
 }
@@ -200,47 +200,47 @@ static void wireframe_handle_activation(bool active, wireframe_context *ctx)
 /* This is called even when inactive, to restore the proper state to contexts
  * that were not current when activation or deactivation occurred.
  */
-static bool wireframe_make_current(function_call *call, const callback_data *data)
+static bugle_bool wireframe_make_current(function_call *call, const callback_data *data)
 {
     wireframe_context *ctx;
 
     ctx = (wireframe_context *) bugle_object_get_current_data(bugle_context_class, wireframe_view);
     if (ctx)
         wireframe_handle_activation(bugle_filter_set_is_active(data->filter_set_handle), ctx);
-    return true;
+    return BUGLE_TRUE;
 }
 
-static bool wireframe_swap_buffers(function_call *call, const callback_data *data)
+static bugle_bool wireframe_swap_buffers(function_call *call, const callback_data *data)
 {
     /* apps that render the entire frame don't always bother to clear */
     CALL(glClear)(GL_COLOR_BUFFER_BIT);
-    return true;
+    return BUGLE_TRUE;
 }
 
-static bool wireframe_glPolygonMode(function_call *call, const callback_data *data)
+static bugle_bool wireframe_glPolygonMode(function_call *call, const callback_data *data)
 {
     wireframe_context *ctx;
 
     ctx = (wireframe_context *) bugle_object_get_current_data(bugle_context_class, wireframe_view);
     if (ctx && !ctx->real)
-        return true;
+        return BUGLE_TRUE;
     if (bugle_gl_begin_internal_render())
     {
         if (ctx)
             CALL(glGetIntegerv)(GL_POLYGON_MODE, ctx->polygon_mode);
         CALL(glPolygonMode)(GL_FRONT_AND_BACK, GL_LINE);
-        bugle_gl_end_internal_render("wireframe_glPolygonMode", true);
+        bugle_gl_end_internal_render("wireframe_glPolygonMode", BUGLE_TRUE);
     }
-    return true;
+    return BUGLE_TRUE;
 }
 
-static bool wireframe_glEnable(function_call *call, const callback_data *data)
+static bugle_bool wireframe_glEnable(function_call *call, const callback_data *data)
 {
     wireframe_context *ctx;
 
     ctx = (wireframe_context *) bugle_object_get_current_data(bugle_context_class, wireframe_view);
     if (ctx && !ctx->real)
-        return true;
+        return BUGLE_TRUE;
     /* FIXME: need to track this state to restore it on deactivation */
     /* FIXME: also need to nuke it at activation */
     /* FIXME: has no effect when using a fragment shader */
@@ -253,14 +253,14 @@ static bool wireframe_glEnable(function_call *call, const callback_data *data)
         if (bugle_gl_begin_internal_render())
         {
             CALL(glDisable)(*call->glEnable.arg0);
-            bugle_gl_end_internal_render("wireframe_callback", true);
+            bugle_gl_end_internal_render("wireframe_callback", BUGLE_TRUE);
         }
     default: /* avoids compiler warning if GLenum is a C enum */ ;
     }
-    return true;
+    return BUGLE_TRUE;
 }
 
-static void wireframe_classify_callback(bool real, void *arg)
+static void wireframe_classify_callback(bugle_bool real, void *arg)
 {
     wireframe_context *ctx;
 
@@ -278,7 +278,7 @@ static void wireframe_activation(filter_set *handle)
 
     ctx = (wireframe_context *) bugle_object_get_current_data(bugle_context_class, wireframe_view);
     if (ctx)
-        wireframe_handle_activation(true, ctx);
+        wireframe_handle_activation(BUGLE_TRUE, ctx);
 }
 
 static void wireframe_deactivation(filter_set *handle)
@@ -287,19 +287,19 @@ static void wireframe_deactivation(filter_set *handle)
 
     ctx = (wireframe_context *) bugle_object_get_current_data(bugle_context_class, wireframe_view);
     if (ctx)
-        wireframe_handle_activation(false, ctx);
+        wireframe_handle_activation(BUGLE_FALSE, ctx);
 }
 
-static bool wireframe_initialise(filter_set *handle)
+static bugle_bool wireframe_initialise(filter_set *handle)
 {
     filter *f;
 
     wireframe_filterset = handle;
     f = bugle_filter_new(handle, "wireframe");
-    bugle_glwin_filter_catches_swap_buffers(f, false, wireframe_swap_buffers);
-    bugle_filter_catches(f, "glPolygonMode", false, wireframe_glPolygonMode);
-    bugle_filter_catches(f, "glEnable", false, wireframe_glEnable);
-    bugle_glwin_filter_catches_make_current(f, true, wireframe_make_current);
+    bugle_glwin_filter_catches_swap_buffers(f, BUGLE_FALSE, wireframe_swap_buffers);
+    bugle_filter_catches(f, "glPolygonMode", BUGLE_FALSE, wireframe_glPolygonMode);
+    bugle_filter_catches(f, "glEnable", BUGLE_FALSE, wireframe_glEnable);
+    bugle_glwin_filter_catches_make_current(f, BUGLE_TRUE, wireframe_make_current);
     bugle_filter_order("invoke", "wireframe");
     bugle_gl_filter_post_renders("wireframe");
     wireframe_view = bugle_object_view_new(bugle_context_class,
@@ -307,7 +307,7 @@ static bool wireframe_initialise(filter_set *handle)
                                            NULL,
                                            sizeof(wireframe_context));
     register_classify_callback(wireframe_classify_callback, handle);
-    return true;
+    return BUGLE_TRUE;
 }
 
 /*** Frontbuffer filterset */
@@ -317,7 +317,7 @@ static object_view frontbuffer_view;
 
 typedef struct
 {
-    bool active;
+    bugle_bool active;
     GLint draw_buffer;
 } frontbuffer_context;
 
@@ -329,14 +329,14 @@ static void frontbuffer_context_init(const void *key, void *data)
     if (bugle_filter_set_is_active(frontbuffer_filterset)
         && bugle_gl_begin_internal_render())
     {
-        ctx->active = true;
+        ctx->active = BUGLE_TRUE;
         CALL(glGetIntegerv)(GL_DRAW_BUFFER, &ctx->draw_buffer);
         CALL(glDrawBuffer)(GL_FRONT);
-        bugle_gl_end_internal_render("frontbuffer_context_init", true);
+        bugle_gl_end_internal_render("frontbuffer_context_init", BUGLE_TRUE);
     }
 }
 
-static void frontbuffer_handle_activation(bool active, frontbuffer_context *ctx)
+static void frontbuffer_handle_activation(bugle_bool active, frontbuffer_context *ctx)
 {
     if (active && !ctx->active)
     {
@@ -344,8 +344,8 @@ static void frontbuffer_handle_activation(bool active, frontbuffer_context *ctx)
         {
             CALL(glGetIntegerv)(GL_DRAW_BUFFER, &ctx->draw_buffer);
             CALL(glDrawBuffer)(GL_FRONT);
-            ctx->active = true;
-            bugle_gl_end_internal_render("frontbuffer_handle_activation", true);
+            ctx->active = BUGLE_TRUE;
+            bugle_gl_end_internal_render("frontbuffer_handle_activation", BUGLE_TRUE);
         }
     }
     else if (!active && ctx->active)
@@ -353,23 +353,23 @@ static void frontbuffer_handle_activation(bool active, frontbuffer_context *ctx)
         if (bugle_gl_begin_internal_render())
         {
             CALL(glDrawBuffer)(ctx->draw_buffer);
-            ctx->active = false;
-            bugle_gl_end_internal_render("frontbuffer_handle_activation", true);
+            ctx->active = BUGLE_FALSE;
+            bugle_gl_end_internal_render("frontbuffer_handle_activation", BUGLE_TRUE);
         }
     }
 }
 
-static bool frontbuffer_make_current(function_call *call, const callback_data *data)
+static bugle_bool frontbuffer_make_current(function_call *call, const callback_data *data)
 {
     frontbuffer_context *ctx;
 
     ctx = (frontbuffer_context *) bugle_object_get_current_data(bugle_context_class, frontbuffer_view);
     if (ctx)
         frontbuffer_handle_activation(bugle_filter_set_is_active(data->filter_set_handle), ctx);
-    return true;
+    return BUGLE_TRUE;
 }
 
-static bool frontbuffer_glDrawBuffer(function_call *call, const callback_data *data)
+static bugle_bool frontbuffer_glDrawBuffer(function_call *call, const callback_data *data)
 {
     frontbuffer_context *ctx;
 
@@ -378,18 +378,18 @@ static bool frontbuffer_glDrawBuffer(function_call *call, const callback_data *d
         ctx = (frontbuffer_context *) bugle_object_get_current_data(bugle_context_class, frontbuffer_view);
         if (ctx) CALL(glGetIntegerv)(GL_DRAW_BUFFER, &ctx->draw_buffer);
         CALL(glDrawBuffer)(GL_FRONT);
-        bugle_gl_end_internal_render("frontbuffer_glDrawBuffer", true);
+        bugle_gl_end_internal_render("frontbuffer_glDrawBuffer", BUGLE_TRUE);
     }
-    return true;
+    return BUGLE_TRUE;
 }
 
-static bool frontbuffer_swap_buffers(function_call *call, const callback_data *data)
+static bugle_bool frontbuffer_swap_buffers(function_call *call, const callback_data *data)
 {
     /* swap_buffers is specified to do an implicit glFlush. We're going to
      * kill the call, so we need to do the flush explicitly.
      */
     CALL(glFlush)();
-    return false;
+    return BUGLE_FALSE;
 }
 
 static void frontbuffer_activation(filter_set *handle)
@@ -398,7 +398,7 @@ static void frontbuffer_activation(filter_set *handle)
 
     ctx = (frontbuffer_context *) bugle_object_get_current_data(bugle_context_class, frontbuffer_view);
     if (ctx)
-        frontbuffer_handle_activation(true, ctx);
+        frontbuffer_handle_activation(BUGLE_TRUE, ctx);
 }
 
 static void frontbuffer_deactivation(filter_set *handle)
@@ -407,29 +407,29 @@ static void frontbuffer_deactivation(filter_set *handle)
 
     ctx = (frontbuffer_context *) bugle_object_get_current_data(bugle_context_class, frontbuffer_view);
     if (ctx)
-        frontbuffer_handle_activation(false, ctx);
+        frontbuffer_handle_activation(BUGLE_FALSE, ctx);
 }
 
-static bool frontbuffer_initialise(filter_set *handle)
+static bugle_bool frontbuffer_initialise(filter_set *handle)
 {
     filter *f;
 
     frontbuffer_filterset = handle;
     f = bugle_filter_new(handle, "frontbuffer");
     bugle_filter_order("invoke", "frontbuffer");
-    bugle_filter_catches(f, "glDrawBuffer", false, frontbuffer_glDrawBuffer);
-    bugle_glwin_filter_catches_make_current(f, true, frontbuffer_make_current);
+    bugle_filter_catches(f, "glDrawBuffer", BUGLE_FALSE, frontbuffer_glDrawBuffer);
+    bugle_glwin_filter_catches_make_current(f, BUGLE_TRUE, frontbuffer_make_current);
     bugle_gl_filter_post_renders("frontbuffer");
 
     f = bugle_filter_new(handle, "frontbuffer_pre");
     bugle_filter_order("frontbuffer_pre", "invoke");
-    bugle_glwin_filter_catches_swap_buffers(f, false, frontbuffer_swap_buffers);
+    bugle_glwin_filter_catches_swap_buffers(f, BUGLE_FALSE, frontbuffer_swap_buffers);
 
     frontbuffer_view = bugle_object_view_new(bugle_context_class,
                                              frontbuffer_context_init,
                                              NULL,
                                              sizeof(frontbuffer_context));
-    return true;
+    return BUGLE_TRUE;
 }
 
 void bugle_initialise_filter_library(void)

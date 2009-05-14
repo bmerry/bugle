@@ -19,7 +19,7 @@
 # include <config.h>
 #endif
 #define GL_GLEXT_PROTOTYPES
-#include <stdbool.h>
+#include <bugle/bool.h>
 #include <bugle/gl/glheaders.h>
 #include <bugle/glwin/glwin.h>
 #include <bugle/glwin/trackcontext.h>
@@ -51,11 +51,11 @@ static void stats_fragments_struct_init(const void *key, void *data)
         CALL(glGenQueriesARB)(1, &s->query);
         if (s->query)
             CALL(glBeginQueryARB)(GL_SAMPLES_PASSED_ARB, s->query);
-        bugle_gl_end_internal_render("stats_fragments_struct_initialise", true);
+        bugle_gl_end_internal_render("stats_fragments_struct_initialise", BUGLE_TRUE);
     }
 }
 
-static bool stats_fragments_swap_buffers(function_call *call, const callback_data *data)
+static bugle_bool stats_fragments_swap_buffers(function_call *call, const callback_data *data)
 {
     stats_fragments_struct *s;
     GLuint fragments;
@@ -66,13 +66,13 @@ static bool stats_fragments_swap_buffers(function_call *call, const callback_dat
     {
         CALL(glEndQueryARB)(GL_SAMPLES_PASSED_ARB);
         CALL(glGetQueryObjectuivARB)(s->query, GL_QUERY_RESULT_ARB, &fragments);
-        bugle_gl_end_internal_render("stats_fragments_swap_buffers", true);
+        bugle_gl_end_internal_render("stats_fragments_swap_buffers", BUGLE_TRUE);
         bugle_stats_signal_add(stats_fragments_fragments, fragments);
     }
-    return true;
+    return BUGLE_TRUE;
 }
 
-static bool stats_fragments_post_swap_buffers(function_call *call, const callback_data *data)
+static bugle_bool stats_fragments_post_swap_buffers(function_call *call, const callback_data *data)
 {
     stats_fragments_struct *s;
 
@@ -81,12 +81,12 @@ static bool stats_fragments_post_swap_buffers(function_call *call, const callbac
         && s && s->query && bugle_gl_begin_internal_render())
     {
         CALL(glBeginQueryARB)(GL_SAMPLES_PASSED_ARB, s->query);
-        bugle_gl_end_internal_render("stats_fragments_post_swap_buffers", true);
+        bugle_gl_end_internal_render("stats_fragments_post_swap_buffers", BUGLE_TRUE);
     }
-    return true;
+    return BUGLE_TRUE;
 }
 
-static bool stats_fragments_query(function_call *call, const callback_data *data)
+static bugle_bool stats_fragments_query(function_call *call, const callback_data *data)
 {
     stats_fragments_struct *s;
 
@@ -99,12 +99,12 @@ static bool stats_fragments_query(function_call *call, const callback_data *data
         CALL(glEndQueryARB)(GL_SAMPLES_PASSED_ARB);
         CALL(glDeleteQueriesARB)(1, &s->query);
         s->query = 0;
-        stats_fragments_fragments->active = false;
+        stats_fragments_fragments->active = BUGLE_FALSE;
     }
-    return true;
+    return BUGLE_TRUE;
 }
 
-static bool stats_fragments_initialise(filter_set *handle)
+static bugle_bool stats_fragments_initialise(filter_set *handle)
 {
     filter *f;
 
@@ -114,18 +114,18 @@ static bool stats_fragments_initialise(filter_set *handle)
                                                  sizeof(stats_fragments_struct));
 
     f = bugle_filter_new(handle, "stats_fragments");
-    bugle_glwin_filter_catches_swap_buffers(f, false, stats_fragments_swap_buffers);
-    bugle_filter_catches(f, "glBeginQueryARB", false, stats_fragments_query);
-    bugle_filter_catches(f, "glEndQueryARB", false, stats_fragments_query);
+    bugle_glwin_filter_catches_swap_buffers(f, BUGLE_FALSE, stats_fragments_swap_buffers);
+    bugle_filter_catches(f, "glBeginQueryARB", BUGLE_FALSE, stats_fragments_query);
+    bugle_filter_catches(f, "glEndQueryARB", BUGLE_FALSE, stats_fragments_query);
     bugle_filter_order("stats_fragments", "invoke");
     bugle_filter_order("stats_fragments", "stats");
 
     f = bugle_filter_new(handle, "stats_fragments_post");
-    bugle_glwin_filter_catches_swap_buffers(f, false, stats_fragments_post_swap_buffers);
+    bugle_glwin_filter_catches_swap_buffers(f, BUGLE_FALSE, stats_fragments_post_swap_buffers);
     bugle_filter_order("invoke", "stats_fragments_post");
 
     stats_fragments_fragments = bugle_stats_signal_new("fragments", NULL, NULL);
-    return true;
+    return BUGLE_TRUE;
 }
 
 void bugle_initialise_filter_library(void)

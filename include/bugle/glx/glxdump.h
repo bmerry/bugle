@@ -19,7 +19,7 @@
 #define BUGLE_GLX_GLXDUMP_H
 
 #include <GL/glx.h>
-#include <stdbool.h>
+#include <bugle/bool.h>
 #include <stdio.h>
 #include <budgie/types.h>
 
@@ -33,7 +33,7 @@ extern "C" {
 int bugle_count_glXChooseVisual_attributes(const int *attr);
 
 /* Output the attribute list passed to glXChooseVisual */
-bool bugle_dump_glXChooseVisual_attributes(const int *attr, char **buffer, size_t *size);
+bugle_bool bugle_dump_glXChooseVisual_attributes(const int *attr, char **buffer, size_t *size);
 
 #ifdef __cplusplus
 }

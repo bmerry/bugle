@@ -22,7 +22,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
-#include <stdbool.h>
+#include <bugle/bool.h>
 #include <bugle/glwin/glwin.h>
 #include <bugle/glwin/trackcontext.h>
 #include <bugle/gl/glutils.h>
@@ -56,7 +56,7 @@ typedef struct
 {
     showstats_mode mode;
     stats_statistic *st;
-    bool initialised;
+    bugle_bool initialised;
 
     /* Graph-specific stuff */
     double graph_scale;     /* Largest value on graph */
@@ -78,8 +78,8 @@ typedef struct
 static object_view showstats_view;
 static linked_list showstats_stats;  /* List of showstats_statistic */
 static int showstats_num_graph;
-static bugle_input_key key_showstats_accumulate = { BUGLE_INPUT_NOSYMBOL, 0, true };
-static bugle_input_key key_showstats_noaccumulate = { BUGLE_INPUT_NOSYMBOL, 0, true };
+static bugle_input_key key_showstats_accumulate = { BUGLE_INPUT_NOSYMBOL, 0, BUGLE_TRUE };
+static bugle_input_key key_showstats_noaccumulate = { BUGLE_INPUT_NOSYMBOL, 0, BUGLE_TRUE };
 static double showstats_time = 0.2;
 
 static linked_list showstats_stats_requested;
@@ -98,7 +98,7 @@ static void showstats_statistic_initialise(showstats_statistic *sst)
     switch (sst->mode)
     {
     case SHOWSTATS_TEXT:
-        sst->initialised = true;
+        sst->initialised = BUGLE_TRUE;
         break;
     case SHOWSTATS_GRAPH:
 #ifdef GL_ARB_texture_env_combine
@@ -133,8 +133,8 @@ static void showstats_statistic_initialise(showstats_statistic *sst)
             CALL(glTexImage1D)(GL_TEXTURE_1D, 0, GL_ALPHA8,
                               sst->graph_size, 0, GL_ALPHA, GL_UNSIGNED_BYTE, sst->graph_scaled);
             CALL(glBindTexture)(GL_TEXTURE_1D, 0);
-            bugle_gl_end_internal_render("showstats_statistic_initialise", true);
-            sst->initialised = true;
+            bugle_gl_end_internal_render("showstats_statistic_initialise", BUGLE_TRUE);
+            sst->initialised = BUGLE_TRUE;
         }
 #endif
         break;
@@ -264,12 +264,12 @@ static void showstats_update(showstats_struct *ss)
 }
 
 /* Helper function to apply one pass of the graph-drawing to all graphs.
- * If graph_tex is true, the graph texture is bound before each draw
+ * If graph_tex is BUGLE_TRUE, the graph texture is bound before each draw
  * call. If graph_texcoords is not NULL, it is populated with the
  * appropriate texture coordinates before each draw call.
  */
 static void showstats_graph_draw(GLenum mode, int xofs0, int yofs0,
-                                 bool graph_tex, GLfloat *graph_texcoords)
+                                 bugle_bool graph_tex, GLfloat *graph_texcoords)
 {
     showstats_statistic *sst;
     linked_list_node *i;
@@ -305,7 +305,7 @@ static void showstats_graph_draw(GLenum mode, int xofs0, int yofs0,
     }
 }
 
-static bool showstats_swap_buffers(function_call *call, const callback_data *data)
+static bugle_bool showstats_swap_buffers(function_call *call, const callback_data *data)
 {
     glwin_display dpy;
     glwin_drawable old_read, old_write;
@@ -334,7 +334,7 @@ static bool showstats_swap_buffers(function_call *call, const callback_data *dat
     };
 
     ss = bugle_object_get_current_data(bugle_context_class, showstats_view);
-    aux = bugle_get_aux_context(false);
+    aux = bugle_get_aux_context(BUGLE_FALSE);
     if (aux && bugle_gl_begin_internal_render())
     {
         CALL(glGetIntegerv)(GL_VIEWPORT, viewport);
@@ -374,7 +374,7 @@ static bool showstats_swap_buffers(function_call *call, const callback_data *dat
 
             /* Pass 1: clear the background */
             CALL(glColor3f)(0.0f, 0.0f, 0.0f);
-            showstats_graph_draw(GL_QUADS, xofs0, yofs0, false, NULL);
+            showstats_graph_draw(GL_QUADS, xofs0, yofs0, BUGLE_FALSE, NULL);
 
             /* Pass 2: draw the graphs */
             CALL(glEnable)(GL_ALPHA_TEST);
@@ -385,7 +385,7 @@ static bool showstats_swap_buffers(function_call *call, const callback_data *dat
             CALL(glTexEnvi)(GL_TEXTURE_ENV, GL_SOURCE0_RGB_ARB, GL_PREVIOUS);
             CALL(glTexEnvi)(GL_TEXTURE_ENV, GL_COMBINE_RGB_ARB, GL_REPLACE);
             CALL(glTexEnvi)(GL_TEXTURE_ENV, GL_COMBINE_ALPHA_ARB, GL_SUBTRACT_ARB);
-            showstats_graph_draw(GL_QUADS, xofs0, yofs0, true, graph_texcoords);
+            showstats_graph_draw(GL_QUADS, xofs0, yofs0, BUGLE_TRUE, graph_texcoords);
             CALL(glTexEnvi)(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
             CALL(glTexEnvi)(GL_TEXTURE_ENV, GL_SOURCE0_RGB_ARB, GL_TEXTURE);
             CALL(glTexEnvi)(GL_TEXTURE_ENV, GL_COMBINE_RGB_ARB, GL_MODULATE);
@@ -398,7 +398,7 @@ static bool showstats_swap_buffers(function_call *call, const callback_data *dat
 
             /* Pass 3: draw the border */
             CALL(glColor3f)(1.0f, 1.0f, 1.0f);
-            showstats_graph_draw(GL_LINE_LOOP, xofs0, yofs0, false, NULL);
+            showstats_graph_draw(GL_LINE_LOOP, xofs0, yofs0, BUGLE_FALSE, NULL);
 
             /* Pass 4: labels */
             xofs = xofs0;
@@ -426,9 +426,9 @@ static bool showstats_swap_buffers(function_call *call, const callback_data *dat
         CALL(glPopAttrib)();
 
         bugle_glwin_make_context_current(dpy, old_write, old_read, real);
-        bugle_gl_end_internal_render("showstats_callback", true);
+        bugle_gl_end_internal_render("showstats_callback", BUGLE_TRUE);
     }
-    return true;
+    return BUGLE_TRUE;
 }
 
 static void showstats_accumulate_callback(const bugle_input_key *key, void *arg, bugle_input_event *event)
@@ -441,7 +441,7 @@ static void showstats_accumulate_callback(const bugle_input_key *key, void *arg,
 }
 
 /* Callback to assign the "show" pseudo-variable */
-static bool showstats_show_set(const struct filter_set_variable_info_s *var,
+static bugle_bool showstats_show_set(const struct filter_set_variable_info_s *var,
                                const char *text, const void *value)
 {
     showstats_statistic_request *req;
@@ -450,11 +450,11 @@ static bool showstats_show_set(const struct filter_set_variable_info_s *var,
     req->name = xstrdup(text);
     req->mode = SHOWSTATS_TEXT;
     bugle_list_append(&showstats_stats_requested, req);
-    return true;
+    return BUGLE_TRUE;
 }
 
 /* Same as above but for graphing */
-static bool showstats_graph_set(const struct filter_set_variable_info_s *var,
+static bugle_bool showstats_graph_set(const struct filter_set_variable_info_s *var,
                                 const char *text, const void *value)
 {
     showstats_statistic_request *req;
@@ -463,7 +463,7 @@ static bool showstats_graph_set(const struct filter_set_variable_info_s *var,
     req->name = xstrdup(text);
     req->mode = SHOWSTATS_GRAPH;
     bugle_list_append(&showstats_stats_requested, req);
-    return true;
+    return BUGLE_TRUE;
 }
 
 static void showstats_struct_clear(void *data)
@@ -476,7 +476,7 @@ static void showstats_struct_clear(void *data)
     free(ss->showstats_display);
 }
 
-static bool showstats_initialise(filter_set *handle)
+static bugle_bool showstats_initialise(filter_set *handle)
 {
     filter *f;
     linked_list_node *i;
@@ -488,7 +488,7 @@ static bool showstats_initialise(filter_set *handle)
     bugle_filter_order("showstats", "debugger");
     bugle_filter_order("showstats", "screenshot");
     bugle_filter_order("stats", "showstats");
-    bugle_glwin_filter_catches_swap_buffers(f, false, showstats_swap_buffers);
+    bugle_glwin_filter_catches_swap_buffers(f, BUGLE_FALSE, showstats_swap_buffers);
     showstats_view = bugle_object_view_new(bugle_context_class,
                                            NULL,
                                            showstats_struct_clear,
@@ -514,7 +514,7 @@ static bool showstats_initialise(filter_set *handle)
             bugle_log_printf("showstats", "initialise", BUGLE_LOG_ERROR,
                              "statistic '%s' not found.", req->name);
             bugle_stats_statistic_list();
-            return false;
+            return BUGLE_FALSE;
         }
         for (; j; j = bugle_list_next(j))
         {
@@ -526,14 +526,14 @@ static bool showstats_initialise(filter_set *handle)
                 bugle_log_printf("showstats", "initialise", BUGLE_LOG_ERROR,
                                  "could not initialise statistic '%s'",
                                  sst->st->name);
-                return false;
+                return BUGLE_FALSE;
             }
             bugle_list_append(&showstats_stats, sst);
             if (sst->st->last) break;
         }
     }
 
-    return true;
+    return BUGLE_TRUE;
 }
 
 static void showstats_shutdown(filter_set *handle)

@@ -22,7 +22,7 @@
 #include <bugle/porting.h>
 #include <bugle/glwin/glwintypes.h>
 #include <budgie/types2.h>
-#include <stdbool.h>
+#include <bugle/bool.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -34,8 +34,8 @@ BUGLE_EXPORT_PRE glwin_context  bugle_glwin_get_current_context(void) BUGLE_EXPO
 BUGLE_EXPORT_PRE glwin_drawable bugle_glwin_get_current_drawable(void) BUGLE_EXPORT_POST;
 BUGLE_EXPORT_PRE glwin_drawable bugle_glwin_get_current_read_drawable(void) BUGLE_EXPORT_POST;
 
-BUGLE_EXPORT_PRE bool bugle_glwin_make_context_current(glwin_display dpy, glwin_drawable draw,
-                                                       glwin_drawable read, glwin_context ctx) BUGLE_EXPORT_POST;
+BUGLE_EXPORT_PRE bugle_bool bugle_glwin_make_context_current(glwin_display dpy, glwin_drawable draw,
+                                                             glwin_drawable read, glwin_context ctx) BUGLE_EXPORT_POST;
 
 
 /* Wrapper around glXGetProcAddress or similar functios */
@@ -74,19 +74,19 @@ typedef struct glwin_context_create
 BUGLE_EXPORT_PRE glwin_context_create *bugle_glwin_context_create_save(function_call *call)BUGLE_EXPORT_POST;
 
 /* Creates a new context that is compatible with the information captured in
- * the create structure. If share is true, the new context will share textures
+ * the create structure. If share is BUGLE_TRUE, the new context will share textures
  * etc with the original. Returns the new context, or NULL on failure.
  */
-BUGLE_EXPORT_PRE glwin_context bugle_glwin_context_create_new(const struct glwin_context_create *create, bool share) BUGLE_EXPORT_POST;
+BUGLE_EXPORT_PRE glwin_context bugle_glwin_context_create_new(const struct glwin_context_create *create, bugle_bool share) BUGLE_EXPORT_POST;
 
 /* Extracts the context passed to a destroy function */
 BUGLE_EXPORT_PRE glwin_context bugle_glwin_get_context_destroy(function_call *call) BUGLE_EXPORT_POST;
 
 /* Helper functions to trap the appropriate window-system calls */
-BUGLE_EXPORT_PRE void bugle_glwin_filter_catches_create_context(filter *f, bool inactive, filter_callback callback) BUGLE_EXPORT_POST;
-BUGLE_EXPORT_PRE void bugle_glwin_filter_catches_destroy_context(filter *f, bool inactive, filter_callback callback) BUGLE_EXPORT_POST;
-BUGLE_EXPORT_PRE void bugle_glwin_filter_catches_make_current(filter *f, bool inactive, filter_callback callback) BUGLE_EXPORT_POST;
-BUGLE_EXPORT_PRE void bugle_glwin_filter_catches_swap_buffers(filter *f, bool inactive, filter_callback callback) BUGLE_EXPORT_POST;
+BUGLE_EXPORT_PRE void bugle_glwin_filter_catches_create_context(filter *f, bugle_bool inactive, filter_callback callback) BUGLE_EXPORT_POST;
+BUGLE_EXPORT_PRE void bugle_glwin_filter_catches_destroy_context(filter *f, bugle_bool inactive, filter_callback callback) BUGLE_EXPORT_POST;
+BUGLE_EXPORT_PRE void bugle_glwin_filter_catches_make_current(filter *f, bugle_bool inactive, filter_callback callback) BUGLE_EXPORT_POST;
+BUGLE_EXPORT_PRE void bugle_glwin_filter_catches_swap_buffers(filter *f, bugle_bool inactive, filter_callback callback) BUGLE_EXPORT_POST;
 
 /* Fills in function pointer table for extensions */
 BUGLE_EXPORT_PRE void bugle_function_address_initialise_extra(void) BUGLE_EXPORT_POST;

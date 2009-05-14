@@ -39,18 +39,18 @@ LENGTH PARAMETER glPrioritizeTextures 2 $0
 LENGTH PARAMETER glDrawElements 3 bugle_gl_type_to_size($2) * $1
 
 TYPE PARAMETER glTexImage1D 7 bugle_gl_type_to_type_ptr_pbo_source($6)
-LENGTH PARAMETER glTexImage1D 7 bugle_image_element_count($3, 1, -1, $5, $6, true)
+LENGTH PARAMETER glTexImage1D 7 bugle_image_element_count($3, 1, -1, $5, $6, BUGLE_TRUE)
 TYPE PARAMETER glTexSubImage1D 6 bugle_gl_type_to_type_ptr_pbo_source($5)
-LENGTH PARAMETER glTexSubImage1D 6 bugle_image_element_count($3, 1, -1, $4, $5, true)
+LENGTH PARAMETER glTexSubImage1D 6 bugle_image_element_count($3, 1, -1, $4, $5, BUGLE_TRUE)
 TYPE PARAMETER glTexImage2D 8 bugle_gl_type_to_type_ptr_pbo_source($7)
-LENGTH PARAMETER glTexImage2D 8 bugle_image_element_count($3, $4, -1, $6, $7, true)
+LENGTH PARAMETER glTexImage2D 8 bugle_image_element_count($3, $4, -1, $6, $7, BUGLE_TRUE)
 TYPE PARAMETER glTexSubImage2D 8 bugle_gl_type_to_type_ptr_pbo_source($7)
-LENGTH PARAMETER glTexSubImage2D 8 bugle_image_element_count($4, $5, -1, $6, $7, true)
+LENGTH PARAMETER glTexSubImage2D 8 bugle_image_element_count($4, $5, -1, $6, $7, BUGLE_TRUE)
 
 TYPE PARAMETER glGetTexImage 4 bugle_gl_type_to_type_ptr_pbo_sink($3)
 LENGTH PARAMETER glGetTexImage 4 bugle_texture_element_count($0, $1, $2, $3)
 TYPE PARAMETER glReadPixels 6 bugle_gl_type_to_type_ptr_pbo_sink($5)
-LENGTH PARAMETER glReadPixels 6 bugle_image_element_count($2, $3, -1, $4, $5, false)
+LENGTH PARAMETER glReadPixels 6 bugle_image_element_count($2, $3, -1, $4, $5, BUGLE_FALSE)
 
 # Both count and interpretation of type depend on the token
 # Note that we only override length for the vector versions

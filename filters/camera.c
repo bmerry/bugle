@@ -21,7 +21,7 @@
 #include <sys/time.h>
 #include <math.h>
 #include <stdlib.h>
-#include <stdbool.h>
+#include <bugle/bool.h>
 #include <string.h>
 #include <bugle/glwin/glwin.h>
 #include <bugle/glwin/trackcontext.h>
@@ -59,9 +59,9 @@
 static filter_set *camera_filterset;
 static object_view camera_view;
 static float camera_speed = 1.0f;
-static bool camera_dga = false;
-static bool camera_intercept = true;
-static bool camera_frustum = false;
+static bugle_bool camera_dga = BUGLE_FALSE;
+static bugle_bool camera_intercept = BUGLE_TRUE;
+static bugle_bool camera_frustum = BUGLE_FALSE;
 
 static bugle_input_key key_camera[CAMERA_KEYS];
 static const char * const key_camera_defaults[] =
@@ -81,9 +81,9 @@ typedef struct
 {
     GLfloat original[16];
     GLfloat modifier[16];
-    bool active;
-    bool dirty;       /* Set to true when mouse moves */
-    bool pressed[CAMERA_MOTION_KEYS];
+    bugle_bool active;
+    bugle_bool dirty;       /* Set to BUGLE_TRUE when mouse moves */
+    bugle_bool pressed[CAMERA_MOTION_KEYS];
 } camera_context;
 
 /* Determinant of a 4x4 matrix */
@@ -164,7 +164,7 @@ static void camera_draw_frustum(const GLfloat *original)
     GLfloat mvp[16];
     GLint viewport[4];
 
-    aux = bugle_get_aux_context(true);
+    aux = bugle_get_aux_context(BUGLE_TRUE);
     if (!aux) return;
 
     CALL(glGetIntegerv)(GL_VIEWPORT, viewport);
@@ -285,12 +285,12 @@ static void camera_mouse_callback(int dx, int dy, bugle_input_event *event)
             for (k = 0; k < 3; k++)
                 ctx->modifier[j * 4 + i] += rotator[i][k] * old[j * 4 + k];
         }
-    ctx->dirty = true;
+    ctx->dirty = BUGLE_TRUE;
 
     bugle_input_invalidate_window(event);
 }
 
-static bool camera_key_wanted(const bugle_input_key *key, void *arg, bugle_input_event *event)
+static bugle_bool camera_key_wanted(const bugle_input_key *key, void *arg, bugle_input_event *event)
 {
     return bugle_filter_set_is_active(camera_filterset);
 }
@@ -322,13 +322,13 @@ static void camera_key_callback(const bugle_input_key *key, void *arg, bugle_inp
         case CAMERA_KEY_TOGGLE:
             if (!camera_intercept)
             {
-                camera_intercept = true;
+                camera_intercept = BUGLE_TRUE;
                 bugle_input_grab_pointer(camera_dga, camera_mouse_callback);
                 break;
             }
             else
             {
-                camera_intercept = false;
+                camera_intercept = BUGLE_FALSE;
                 bugle_input_release_pointer();
             }
             break;
@@ -357,13 +357,13 @@ static void camera_context_init(const void *key, void *data)
     if (bugle_filter_set_is_active(camera_filterset)
         && bugle_gl_begin_internal_render())
     {
-        ctx->active = true;
+        ctx->active = BUGLE_TRUE;
         camera_get_original(ctx);
-        bugle_gl_end_internal_render("camera_context_init", true);
+        bugle_gl_end_internal_render("camera_context_init", BUGLE_TRUE);
     }
 }
 
-static bool camera_restore(function_call *call, const callback_data *data)
+static bugle_bool camera_restore(function_call *call, const callback_data *data)
 {
     GLint mode;
     camera_context *ctx;
@@ -376,13 +376,13 @@ static bool camera_restore(function_call *call, const callback_data *data)
             CALL(glGetIntegerv)(GL_MATRIX_MODE, &mode);
             if (mode == GL_MODELVIEW)
                 CALL(glLoadMatrixf)(ctx->original);
-            bugle_gl_end_internal_render("camera_restore", true);
+            bugle_gl_end_internal_render("camera_restore", BUGLE_TRUE);
         }
     }
-    return true;
+    return BUGLE_TRUE;
 }
 
-static bool camera_override(function_call *call, const callback_data *data)
+static bugle_bool camera_override(function_call *call, const callback_data *data)
 {
     GLint mode;
     camera_context *ctx;
@@ -399,19 +399,19 @@ static bool camera_override(function_call *call, const callback_data *data)
                 CALL(glLoadMatrixf)(ctx->modifier);
                 CALL(glMultMatrixf)(ctx->original);
             }
-            bugle_gl_end_internal_render("camera_restore", true);
+            bugle_gl_end_internal_render("camera_restore", BUGLE_TRUE);
         }
     }
-    return true;
+    return BUGLE_TRUE;
 }
 
-static bool camera_get(function_call *call, const callback_data *data)
+static bugle_bool camera_get(function_call *call, const callback_data *data)
 {
     int i;
     camera_context *ctx;
 
     ctx = (camera_context *) bugle_object_get_current_data(bugle_context_class, camera_view);
-    if (!ctx) return true;
+    if (!ctx) return BUGLE_TRUE;
 
     if (call->generic.group == BUDGIE_GROUP_ID(glGetFloatv))
     {
@@ -423,10 +423,10 @@ static bool camera_get(function_call *call, const callback_data *data)
         for (i = 0; i < 16; i++)
             (*call->glGetDoublev.arg1)[i] = ctx->original[i];
     }
-    return true;
+    return BUGLE_TRUE;
 }
 
-static bool camera_swap_buffers(function_call *call, const callback_data *data)
+static bugle_bool camera_swap_buffers(function_call *call, const callback_data *data)
 {
     camera_context *ctx;
     GLint mode;
@@ -451,14 +451,14 @@ static bool camera_swap_buffers(function_call *call, const callback_data *data)
             CALL(glLoadMatrixf)(ctx->modifier);
             CALL(glMultMatrixf)(ctx->original);
             CALL(glMatrixMode)(mode);
-            ctx->dirty = false;
+            ctx->dirty = BUGLE_FALSE;
         }
-        bugle_gl_end_internal_render("camera_swap_buffers", true);
+        bugle_gl_end_internal_render("camera_swap_buffers", BUGLE_TRUE);
     }
-    return true;
+    return BUGLE_TRUE;
 }
 
-static void camera_handle_activation(bool active, camera_context *ctx)
+static void camera_handle_activation(bugle_bool active, camera_context *ctx)
 {
     GLint mode;
 
@@ -467,9 +467,9 @@ static void camera_handle_activation(bool active, camera_context *ctx)
         if (bugle_gl_begin_internal_render())
         {
             camera_get_original(ctx);
-            ctx->active = true;
-            ctx->dirty = true;
-            bugle_gl_end_internal_render("camera_handle_activation", true);
+            ctx->active = BUGLE_TRUE;
+            ctx->dirty = BUGLE_TRUE;
+            bugle_gl_end_internal_render("camera_handle_activation", BUGLE_TRUE);
         }
     }
     else if (!active && ctx->active)
@@ -480,20 +480,20 @@ static void camera_handle_activation(bool active, camera_context *ctx)
             CALL(glMatrixMode)(GL_MODELVIEW);
             CALL(glLoadMatrixf)(ctx->original);
             CALL(glMatrixMode)(mode);
-            ctx->active = false;
-            bugle_gl_end_internal_render("camera_handle_activation", true);
+            ctx->active = BUGLE_FALSE;
+            bugle_gl_end_internal_render("camera_handle_activation", BUGLE_TRUE);
         }
     }
 }
 
-static bool camera_make_current(function_call *call, const callback_data *data)
+static bugle_bool camera_make_current(function_call *call, const callback_data *data)
 {
     camera_context *ctx;
 
     ctx = (camera_context *) bugle_object_get_current_data(bugle_context_class, camera_view);
     if (ctx)
         camera_handle_activation(bugle_filter_set_is_active(data->filter_set_handle), ctx);
-    return true;
+    return BUGLE_TRUE;
 }
 
 static void camera_activation(filter_set *handle)
@@ -502,7 +502,7 @@ static void camera_activation(filter_set *handle)
 
     ctx = (camera_context *) bugle_object_get_current_data(bugle_context_class, camera_view);
     if (ctx)
-        camera_handle_activation(true, ctx);
+        camera_handle_activation(BUGLE_TRUE, ctx);
     if (camera_intercept)
         bugle_input_grab_pointer(camera_dga, camera_mouse_callback);
 }
@@ -513,12 +513,12 @@ static void camera_deactivation(filter_set *handle)
 
     ctx = (camera_context *) bugle_object_get_current_data(bugle_context_class, camera_view);
     if (ctx)
-        camera_handle_activation(false, ctx);
+        camera_handle_activation(BUGLE_FALSE, ctx);
     if (camera_intercept)
         bugle_input_release_pointer();
 }
 
-static bool camera_initialise(filter_set *handle)
+static bugle_bool camera_initialise(filter_set *handle)
 {
     filter *f;
     int i;
@@ -526,45 +526,45 @@ static bool camera_initialise(filter_set *handle)
     camera_filterset = handle;
     f = bugle_filter_new(handle, "camera_pre");
     bugle_filter_order("camera_pre", "invoke");
-    bugle_filter_catches(f, "glMultMatrixf", false, camera_restore);
-    bugle_filter_catches(f, "glMultMatrixd", false, camera_restore);
-    bugle_filter_catches(f, "glTranslatef", false, camera_restore);
-    bugle_filter_catches(f, "glTranslated", false, camera_restore);
-    bugle_filter_catches(f, "glScalef", false, camera_restore);
-    bugle_filter_catches(f, "glScaled", false, camera_restore);
-    bugle_filter_catches(f, "glRotatef", false, camera_restore);
-    bugle_filter_catches(f, "glRotated", false, camera_restore);
-    bugle_filter_catches(f, "glFrustum", false, camera_restore);
-    bugle_filter_catches(f, "glPushMatrix", false, camera_restore);
-    bugle_filter_catches(f, "glPopMatrix", false, camera_restore);
-    bugle_filter_catches(f, "glMultTransposeMatrixf", false, camera_restore);
-    bugle_filter_catches(f, "glMultTransposeMatrixd", false, camera_restore);
-    bugle_glwin_filter_catches_swap_buffers(f, false, camera_swap_buffers);
+    bugle_filter_catches(f, "glMultMatrixf", BUGLE_FALSE, camera_restore);
+    bugle_filter_catches(f, "glMultMatrixd", BUGLE_FALSE, camera_restore);
+    bugle_filter_catches(f, "glTranslatef", BUGLE_FALSE, camera_restore);
+    bugle_filter_catches(f, "glTranslated", BUGLE_FALSE, camera_restore);
+    bugle_filter_catches(f, "glScalef", BUGLE_FALSE, camera_restore);
+    bugle_filter_catches(f, "glScaled", BUGLE_FALSE, camera_restore);
+    bugle_filter_catches(f, "glRotatef", BUGLE_FALSE, camera_restore);
+    bugle_filter_catches(f, "glRotated", BUGLE_FALSE, camera_restore);
+    bugle_filter_catches(f, "glFrustum", BUGLE_FALSE, camera_restore);
+    bugle_filter_catches(f, "glPushMatrix", BUGLE_FALSE, camera_restore);
+    bugle_filter_catches(f, "glPopMatrix", BUGLE_FALSE, camera_restore);
+    bugle_filter_catches(f, "glMultTransposeMatrixf", BUGLE_FALSE, camera_restore);
+    bugle_filter_catches(f, "glMultTransposeMatrixd", BUGLE_FALSE, camera_restore);
+    bugle_glwin_filter_catches_swap_buffers(f, BUGLE_FALSE, camera_swap_buffers);
 
     f = bugle_filter_new(handle, "camera_post");
     bugle_gl_filter_post_renders("camera_post");
     bugle_filter_order("invoke", "camera_post");
-    bugle_glwin_filter_catches_make_current(f, true, camera_make_current);
-    bugle_filter_catches(f, "glLoadIdentity", false, camera_override);
-    bugle_filter_catches(f, "glLoadMatrixf", false, camera_override);
-    bugle_filter_catches(f, "glLoadMatrixd", false, camera_override);
-    bugle_filter_catches(f, "glMultMatrixf", false, camera_override);
-    bugle_filter_catches(f, "glMultMatrixd", false, camera_override);
-    bugle_filter_catches(f, "glTranslatef", false, camera_override);
-    bugle_filter_catches(f, "glTranslated", false, camera_override);
-    bugle_filter_catches(f, "glScalef", false, camera_override);
-    bugle_filter_catches(f, "glScaled", false, camera_override);
-    bugle_filter_catches(f, "glRotatef", false, camera_override);
-    bugle_filter_catches(f, "glRotated", false, camera_override);
-    bugle_filter_catches(f, "glFrustum", false, camera_override);
-    bugle_filter_catches(f, "glPushMatrix", false, camera_override);
-    bugle_filter_catches(f, "glPopMatrix", false, camera_override);
-    bugle_filter_catches(f, "glLoadTransposeMatrixf", false, camera_override);
-    bugle_filter_catches(f, "glLoadTransposeMatrixd", false, camera_override);
-    bugle_filter_catches(f, "glMultTransposeMatrixf", false, camera_override);
-    bugle_filter_catches(f, "glMultTransposeMatrixd", false, camera_override);
-    bugle_filter_catches(f, "glGetFloatv", false, camera_get);
-    bugle_filter_catches(f, "glGetDoublev", false, camera_get);
+    bugle_glwin_filter_catches_make_current(f, BUGLE_TRUE, camera_make_current);
+    bugle_filter_catches(f, "glLoadIdentity", BUGLE_FALSE, camera_override);
+    bugle_filter_catches(f, "glLoadMatrixf", BUGLE_FALSE, camera_override);
+    bugle_filter_catches(f, "glLoadMatrixd", BUGLE_FALSE, camera_override);
+    bugle_filter_catches(f, "glMultMatrixf", BUGLE_FALSE, camera_override);
+    bugle_filter_catches(f, "glMultMatrixd", BUGLE_FALSE, camera_override);
+    bugle_filter_catches(f, "glTranslatef", BUGLE_FALSE, camera_override);
+    bugle_filter_catches(f, "glTranslated", BUGLE_FALSE, camera_override);
+    bugle_filter_catches(f, "glScalef", BUGLE_FALSE, camera_override);
+    bugle_filter_catches(f, "glScaled", BUGLE_FALSE, camera_override);
+    bugle_filter_catches(f, "glRotatef", BUGLE_FALSE, camera_override);
+    bugle_filter_catches(f, "glRotated", BUGLE_FALSE, camera_override);
+    bugle_filter_catches(f, "glFrustum", BUGLE_FALSE, camera_override);
+    bugle_filter_catches(f, "glPushMatrix", BUGLE_FALSE, camera_override);
+    bugle_filter_catches(f, "glPopMatrix", BUGLE_FALSE, camera_override);
+    bugle_filter_catches(f, "glLoadTransposeMatrixf", BUGLE_FALSE, camera_override);
+    bugle_filter_catches(f, "glLoadTransposeMatrixd", BUGLE_FALSE, camera_override);
+    bugle_filter_catches(f, "glMultTransposeMatrixf", BUGLE_FALSE, camera_override);
+    bugle_filter_catches(f, "glMultTransposeMatrixd", BUGLE_FALSE, camera_override);
+    bugle_filter_catches(f, "glGetFloatv", BUGLE_FALSE, camera_get);
+    bugle_filter_catches(f, "glGetDoublev", BUGLE_FALSE, camera_get);
 
     camera_view = bugle_object_view_new(bugle_context_class,
                                         camera_context_init,
@@ -575,12 +575,12 @@ static bool camera_initialise(filter_set *handle)
         bugle_input_key release;
 
         release = key_camera[i];
-        release.press = false;
+        release.press = BUGLE_FALSE;
         bugle_input_key_callback(&key_camera[i], camera_key_wanted, camera_key_callback, (void *) &key_camera[i]);
         if (i < CAMERA_MOTION_KEYS)
             bugle_input_key_callback(&release, camera_key_wanted, camera_key_callback, (void *) &key_camera[i]);
     }
-    return true;
+    return BUGLE_TRUE;
 }
 
 void bugle_initialise_filter_library(void)
