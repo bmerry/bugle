@@ -19,6 +19,7 @@
 # include <config.h>
 #endif
 #define _BSD_SOURCE /* For finite() */
+#define _GNU_SOURCE /* For getline() (gnulib provides on non-GNU systems) */
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
