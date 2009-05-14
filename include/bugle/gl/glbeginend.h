@@ -21,6 +21,10 @@
 #include <stdbool.h>
 #include <bugle/export.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /* True if we are in begin/end, OR if there is no current context.
  * glbeginend is required.
  */
@@ -32,5 +36,9 @@ BUGLE_EXPORT_PRE bool bugle_gl_in_begin_end(void) BUGLE_EXPORT_POST;
 BUGLE_EXPORT_PRE void bugle_gl_filter_post_queries_begin_end(const char *name) BUGLE_EXPORT_POST;
 
 void glbeginend_initialise(void);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* !BUGLE_GL_GLBEGINEND_H */

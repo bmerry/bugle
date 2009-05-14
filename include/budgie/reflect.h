@@ -28,6 +28,10 @@
 #include <bugle/misc.h>  /* For printf format attribute */
 #include <bugle/export.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 BUGLE_EXPORT_PRE int             budgie_function_count(void) BUGLE_EXPORT_POST;
 BUGLE_EXPORT_PRE const char *    budgie_function_name(budgie_function id) BUGLE_EXPORT_POST;
 BUGLE_EXPORT_PRE budgie_function budgie_function_id(const char *name) BUGLE_EXPORT_POST;
@@ -115,5 +119,9 @@ BUGLE_EXPORT_PRE ssize_t budgie_snputc_advance(char **buffer, size_t *size, char
     _BUDGIE_ID_FULL(budgie_type, budgie_type_id, TYPE_ ## name, #name)
 #define BUDGIE_GROUP_ID(name) \
     _BUDGIE_ID_FULL(budgie_group, budgie_group_id, GROUP_ ## name, #name)
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* BUGLE_BUDGIE_REFLECT_H */

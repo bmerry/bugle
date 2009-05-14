@@ -26,6 +26,10 @@
 #include <bugle/export.h>
 #include <assert.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /* The intended use is:
  * if (bugle_gl_begin_internal_render())
  * {
@@ -59,5 +63,9 @@ BUGLE_EXPORT_PRE void bugle_gl_filter_set_renders(const char *name) BUGLE_EXPORT
 BUGLE_EXPORT_PRE void bugle_gl_filter_post_renders(const char *name) BUGLE_EXPORT_POST;
 BUGLE_EXPORT_PRE void bugle_gl_filter_set_queries_error(const char *name) BUGLE_EXPORT_POST;
 BUGLE_EXPORT_PRE GLenum bugle_gl_call_get_error(object *call_object) BUGLE_EXPORT_POST;
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* !BUGLE_SRC_GLUTILS_H */

@@ -24,6 +24,10 @@
 #include <budgie/types2.h>
 #include <stdbool.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /* Wrappers around GLX/WGL/EGL functions */
 BUGLE_EXPORT_PRE glwin_display  bugle_glwin_get_current_display(void) BUGLE_EXPORT_POST;
 BUGLE_EXPORT_PRE glwin_context  bugle_glwin_get_current_context(void) BUGLE_EXPORT_POST;
@@ -86,5 +90,9 @@ BUGLE_EXPORT_PRE void bugle_glwin_filter_catches_swap_buffers(filter *f, bool in
 
 /* Fills in function pointer table for extensions */
 BUGLE_EXPORT_PRE void bugle_function_address_initialise_extra(void) BUGLE_EXPORT_POST;
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* !BUGLE_GLWIN_H */

@@ -22,6 +22,10 @@
 #include <bugle/objects.h>
 #include <bugle/export.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 extern BUGLE_EXPORT_PRE object_class *bugle_displaylist_class BUGLE_EXPORT_POST;
 
 /* The number and mode of the current display list being compiled,
@@ -35,5 +39,9 @@ BUGLE_EXPORT_PRE void *bugle_displaylist_get(GLuint list) BUGLE_EXPORT_POST;
 
 /* Used by the initialisation code */
 void gldisplaylist_initialise(void);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* !BUGLE_GL_GLDISPLAYLIST_H */

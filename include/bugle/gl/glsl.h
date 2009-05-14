@@ -26,6 +26,10 @@
 #include <bugle/gl/glheaders.h>
 #include <bugle/export.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #if GL_ES_VERSION_2_0 || GL_VERSION_2_0
 
 #if BUGLE_GLTYPE_GLES2
@@ -48,5 +52,9 @@ BUGLE_EXPORT_PRE GLboolean bugle_glIsShader(GLuint shader) BUGLE_EXPORT_POST;
 BUGLE_EXPORT_PRE GLboolean bugle_glIsProgram(GLuint program) BUGLE_EXPORT_POST;
 
 #endif /* GLES2 || GL2 */
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* !BUGLE_SRC_GLSL_H */

@@ -22,6 +22,10 @@
 #include <stddef.h>
 #include <bugle/export.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef struct
 {
     char *key;

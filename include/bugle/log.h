@@ -30,6 +30,10 @@
 #include <bugle/misc.h>
 #include <bugle/export.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 enum
 {
     BUGLE_LOG_ERROR = 0,
@@ -58,5 +62,9 @@ BUGLE_EXPORT_PRE void bugle_log_callback(const char *filterset, const char *even
 
 /* Used internally by the initialisation code */
 void log_initialise(void);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* !BUGLE_SRC_LOG_H */

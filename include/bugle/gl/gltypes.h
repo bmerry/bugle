@@ -28,6 +28,10 @@
 #include <stdbool.h>
 #include <bugle/gl/overrides.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 bool bugle_dump_GLenum(GLenum e, char **buffer, size_t *size);
 bool bugle_dump_GLblendenum(GLenum e, char **buffer, size_t *size);
 bool bugle_dump_GLprimitiveenum(GLenum e, char **buffer, size_t *size);
@@ -36,5 +40,9 @@ bool bugle_dump_GLerror(GLenum e, char **buffer, size_t *size);
 bool bugle_dump_GLboolean(GLboolean b, char **buffer, size_t *size);
 bool bugle_dump_GLpolygonstipple(const GLubyte (*pattern)[4], char **buffer, size_t *size);
 bool bugle_dump_GLxfbattrib(const GLxfbattrib *a, char **buffer, size_t *size);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* !BUGLE_GL_GLTYPES_H */

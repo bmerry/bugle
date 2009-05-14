@@ -28,5 +28,3 @@ typedef EGLSurface bugle_glwin_drawable;
 typedef EGLConfig  bugle_glwin_visual_info;
 
 #endif /* !BUGLE_EGL_GLWINTYPES_H */
-
-

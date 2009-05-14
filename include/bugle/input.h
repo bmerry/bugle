@@ -22,6 +22,10 @@
 #include <bugle/porting.h>
 #include <bugle/export.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /* These are chosen to match the X definitions for convenience */
 #define BUGLE_INPUT_SHIFT_BIT   1
 #define BUGLE_INPUT_CONTROL_BIT 4
@@ -95,5 +99,9 @@ BUGLE_EXPORT_PRE void bugle_input_release_pointer(void) BUGLE_EXPORT_POST;
 BUGLE_EXPORT_PRE void bugle_input_invalidate_window(bugle_input_event *event) BUGLE_EXPORT_POST;
 
 void input_initialise(void);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* !BUGLE_SRC_INPUT_H */

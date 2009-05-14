@@ -42,4 +42,4 @@ typedef struct
     void *args[BUDGIE_MAX_ARGS];
 } generic_function_call;
 
-#endif /* BUGLE_BUDGIE_BASICTYPES_H */
+#endif /* !BUGLE_BUDGIE_BASICTYPES_H */

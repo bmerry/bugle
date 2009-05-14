@@ -23,6 +23,10 @@
 #include <bugle/porting.h>
 #include <bugle/export.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef unsigned int api_enum;
 typedef int api_block;
 
@@ -66,5 +70,9 @@ BUGLE_EXPORT_PRE bugle_api_extension bugle_api_function_extension(budgie_functio
     _BUDGIE_ID_FULL(bugle_api_extension, bugle_api_extension_id, BUGLE ## symbol, name)
 #define BUGLE_API_EXTENSION_ID(ext) \
     _BUGLE_API_EXTENSION_ID(_ ## ext, #ext)
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* BUGLE_SRC_APIREFLECT_H */

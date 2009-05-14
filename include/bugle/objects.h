@@ -23,6 +23,10 @@
 #include <bugle/linkedlist.h>
 #include <bugle/export.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef size_t object_view;
 typedef struct object_class object_class;
 typedef struct object object;
@@ -44,5 +48,9 @@ BUGLE_EXPORT_PRE object *    bugle_object_get_current(const object_class *klass)
 BUGLE_EXPORT_PRE void *      bugle_object_get_current_data(const object_class *klass, object_view view) BUGLE_EXPORT_POST;
 BUGLE_EXPORT_PRE void        bugle_object_set_current(object_class *klass, object *obj) BUGLE_EXPORT_POST;
 BUGLE_EXPORT_PRE void *      bugle_object_get_data(object *obj, object_view view) BUGLE_EXPORT_POST;
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* !BUGLE_SRC_OBJECTS_H */

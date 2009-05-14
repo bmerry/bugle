@@ -24,6 +24,10 @@
 #include <stdio.h>
 #include <bugle/export.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #if BUGLE_HAVE_ATTRIBUTE_FORMAT_PRINTF
 # define BUGLE_ATTRIBUTE_FORMAT_PRINTF(a, b) __attribute__((format(printf, a, b)))
 #else
@@ -49,5 +53,9 @@ BUGLE_EXPORT_PRE int bugle_appendf(char **strp, size_t *sz, const char *format, 
  * meaning as for fgets, but must be free()ed if non-NULL
  */
 BUGLE_EXPORT_PRE char *bugle_afgets(FILE *stream) BUGLE_EXPORT_POST;
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* !BUGLE_COMMON_MISC_H */

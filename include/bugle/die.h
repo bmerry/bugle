@@ -22,11 +22,11 @@
 #ifndef BUGLE_SRC_DIE_H
 #define BUGLE_SRC_DIE_H
 
+#include <bugle/export.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-#include <bugle/export.h>
 
 typedef void (*bugle_alloc_die_callback)(void);
 

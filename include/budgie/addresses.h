@@ -23,6 +23,10 @@
 #include <budgie/types.h>
 #include <bugle/export.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /* Determines the length of the array pointed to by a parameter. If it is
  * not an array (e.g. non-pointer, or pointer to a single item), returns -1.
  * Use -1 as the parameter index to query the return.
@@ -75,5 +79,9 @@ static inline void (BUDGIEAPI *_budgie_function_address_get_real(budgie_function
  */
 #define _BUDGIE_CALL(name, type) \
     ((type) _budgie_function_address_get_real(BUDGIE_FUNCTION_ID(name), (void (BUDGIEAPI *)(void)) NULL))
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* BUGLE_BUDGIE_ADDRESSES_H */

@@ -24,6 +24,10 @@
 #include <bugle/export.h>
 #include <stdbool.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #if HAVE_FINITE
 # define FINITE(x) (finite(x))
 #elif HAVE_ISFINITE
@@ -166,5 +170,9 @@ BUGLE_EXPORT_PRE void bugle_stats_statistic_list(void) BUGLE_EXPORT_POST;
 
 BUGLE_EXPORT_PRE bool bugle_stats_expression_activate_signals(stats_expression *expr) BUGLE_EXPORT_POST;
 BUGLE_EXPORT_PRE void bugle_filter_set_stats_logger(const char *name) BUGLE_EXPORT_POST;
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* BUGLE_FILTERS_STATS_H */

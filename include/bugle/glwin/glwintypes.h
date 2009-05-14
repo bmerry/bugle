@@ -80,11 +80,19 @@ typedef EGLint     glwin_attrib;
 #define BUGLE_GLWIN_GET_PROC_ADDRESS eglGetProcAddress
 #endif /* BUGLE_GLWIN_EGL */
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 BUGLE_EXPORT_PRE bool bugle_dump_glwin_bool(glwin_bool b, char **buffer, size_t *size) BUGLE_EXPORT_POST;
 BUGLE_EXPORT_PRE bool bugle_dump_glwin_drawable(glwin_drawable d, char **buffer, size_t *size) BUGLE_EXPORT_POST;
 BUGLE_EXPORT_PRE bool bugle_dump_glwin_enum(glwin_enum e, char **buffer, size_t *size) BUGLE_EXPORT_POST;
 
 BUGLE_EXPORT_PRE int bugle_count_glwin_attributes(const glwin_attrib *attribs, glwin_attrib terminator) BUGLE_EXPORT_POST;
 BUGLE_EXPORT_PRE bool bugle_dump_glwin_attributes(const glwin_attrib *attribs, glwin_attrib terminator, char **buffer, size_t *size) BUGLE_EXPORT_POST;
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* BUGLE_GLWIN_GLWINTYPES_H */

@@ -22,6 +22,10 @@
 #include <bugle/gl/glheaders.h>
 #include <bugle/linkedlist.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 struct glstate;
 
 typedef struct state_info
@@ -84,5 +88,9 @@ BUGLE_EXPORT_PRE void bugle_state_clear(glstate *) BUGLE_EXPORT_POST;
 BUGLE_EXPORT_PRE const glstate *bugle_state_get_root(void) BUGLE_EXPORT_POST;
 
 extern const state_info * const all_state[];
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* !BUGLE_SRC_GLSTATE_H */

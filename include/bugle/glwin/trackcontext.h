@@ -25,6 +25,10 @@
 #include <bugle/objects.h>
 #include <bugle/export.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 extern BUGLE_EXPORT_PRE object_class *bugle_context_class BUGLE_EXPORT_POST;
 extern BUGLE_EXPORT_PRE object_class *bugle_namespace_class BUGLE_EXPORT_POST;
 
@@ -53,5 +57,9 @@ BUGLE_EXPORT_PRE void bugle_gl_text_render(const char *msg, int x, int y) BUGLE_
 
 /* Used by the initialisation code */
 void trackcontext_initialise(void);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* !BUGLE_TRACKCONTEXT_H */

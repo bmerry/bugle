@@ -26,6 +26,10 @@
 #include <budgie/types.h>
 #include <stdbool.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 struct filter_set_s;
 struct function_call_s;
 
@@ -152,5 +156,9 @@ BUGLE_EXPORT_PRE void        bugle_filter_set_deactivate_deferred(filter_set *ha
  * has the correct symbol visibility.
  */
 BUGLE_EXPORT_PRE void        bugle_initialise_filter_library(void) BUGLE_EXPORT_POST;
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* BUGLE_SRC_FILTERS_H */
