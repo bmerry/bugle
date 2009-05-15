@@ -27,9 +27,9 @@
 #include <unistd.h>
 #include <math.h>
 #include <bugle/misc.h>
+#include <bugle/memory.h>
 #include <bugle/linkedlist.h>
 #include "common/threads.h"
-#include "xalloc.h"
 
 char *bugle_string_io(void (*call)(char **, size_t *, void *), void *data)
 {
@@ -38,7 +38,7 @@ char *bugle_string_io(void (*call)(char **, size_t *, void *), void *data)
 
     call(&buffer, &len, data);
     len = buffer - (char *) NULL + 1;
-    buffer = xcharalloc(len);
+    buffer = BUGLE_NMALLOC(len, char);
     ptr = buffer;
     call(&ptr, &len, data);
     return buffer;
@@ -53,7 +53,7 @@ int bugle_appendf(char **strp, size_t *sz, const char *format, ...)
     if (!*strp)
     {
         *sz = 128;
-        *strp = XNMALLOC(*sz, char);
+        *strp = BUGLE_NMALLOC(*sz, char);
         **strp = '\0';
     }
     len = strlen(*strp);

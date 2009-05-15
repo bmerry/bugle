@@ -3,13 +3,18 @@ Import('build_env', 'tu_env', 'env', 'api', 'gnulib_shared')
 
 tu_env.Tu(['data/gl.o', 'data/gl.tu'], 'data/gl.c')
 
+platform_sources = [
+        'string.c'
+        ]
+platform_sources = ['../platform/posix/' + x for x in platform_sources]
+
 libbugleutils = env.SharedLibrary2(
         'bugleutils',
         [
             'gl/gltypes.c',
             'apireflect.c',
             'glwin/glwintypes.c',
-            'die.c',
+            'memory.c',
             '../common/misc.c',
             '../common/protocol.c',
             '../common/protocol-win32.c',
@@ -20,6 +25,7 @@ libbugleutils = env.SharedLibrary2(
             '../budgielib/tables.c',
             'apitables.c',
             api.bugleutils_sources,
+            platform_sources,
 
             gnulib_shared
         ], version = '7.0.0')

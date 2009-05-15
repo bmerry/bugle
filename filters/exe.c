@@ -23,13 +23,14 @@
 #include <string.h>
 #include <errno.h>
 #include <bugle/bool.h>
+#include <bugle/memory.h>
+#include <bugle/string.h>
 #include <budgie/reflect.h>
 #include <budgie/addresses.h>
 #include <bugle/glwin/glwin.h>
 #include <bugle/apireflect.h>
 #include <bugle/filters.h>
 #include <bugle/log.h>
-#include "xalloc.h"
 
 static FILE *out;
 static int frame = 0;
@@ -50,7 +51,7 @@ static int follow_pointer(budgie_type type, int length, const void *ptr,
     int *arg_ids;
 
     size = budgie_type_size(type);
-    arg_ids = XNMALLOC(length, int);
+    arg_ids = BUGLE_NMALLOC(length, int);
     /* First follow any sub-pointers */
     for (i = 0; i < length; i++)
     {
@@ -99,7 +100,7 @@ static int follow_pointer(budgie_type type, int length, const void *ptr,
             budgie_dump_any_type(cur_type, cur, -1, &buffer_ptr, &buffer_size);
             buffer_size = buffer_ptr - buffer + 1;
             /* Fill in */
-            buffer_ptr = buffer = xcharalloc(buffer_size);
+            buffer_ptr = buffer = BUGLE_NMALLOC(buffer_size, char);
             budgie_dump_any_type(cur_type, cur, -1, &buffer_ptr, &buffer_size);
             fputs(buffer, out);
             free(buffer);
@@ -174,7 +175,7 @@ static bugle_bool exe_callback(function_call *call, const callback_data *data)
             budgie_call_parameter_dump(&call->generic, i, &buffer_ptr, &buffer_size);
             buffer_size = buffer_ptr - buffer + 1;
             /* Fill in */
-            buffer_ptr = buffer = xcharalloc(buffer_size);
+            buffer_ptr = buffer = BUGLE_NMALLOC(buffer_size, char);
             budgie_call_parameter_dump(&call->generic, i, &buffer_ptr, &buffer_size);
             fputs(buffer, out);
             free(buffer);
@@ -255,5 +256,5 @@ void bugle_initialise_filter_library(void)
     };
 
     bugle_filter_set_new(&info);
-    exe_filename = xstrdup("exetrace.c");
+    exe_filename = bugle_strdup("exetrace.c");
 }

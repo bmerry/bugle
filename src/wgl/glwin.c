@@ -22,11 +22,11 @@
 #define WGL_WGLEXT_PROTOTYPES
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
+#include <bugle/memory.h>
 #include <bugle/bool.h>
 #include <bugle/glwin/glwin.h>
 #include <GL/wglext.h>
 #include <budgie/call.h>
-#include "xalloc.h"
 #include "budgielib/defines.h"
 
 glwin_display bugle_glwin_get_current_display(void)
@@ -128,7 +128,7 @@ glwin_context_create *bugle_glwin_context_create_save(function_call *call)
     ctx = *call->wglCreateContext.retn;
     if (!ctx)
         return NULL;
-    create = XMALLOC(glwin_context_create_wgl);
+    create = BUGLE_MALLOC(glwin_context_create_wgl);
     create->parent.dpy = *call->wglCreateContext.arg0;
     create->parent.function = call->generic.id;
     create->parent.group = call->generic.group;

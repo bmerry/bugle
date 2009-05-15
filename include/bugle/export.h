@@ -15,8 +15,8 @@
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#ifndef BUGLE_COMMON_EXPORT_H
-#define BUGLE_COMMON_EXPORT_H
+#ifndef BUGLE_EXPORT_H
+#define BUGLE_EXPORT_H
 
 /* To declare a function that should have cross-DSO visibility, declare it
  * as
@@ -29,11 +29,11 @@
 #define BUGLE_EXPORT_PRE
 #define BUGLE_EXPORT_POST __attribute__((visibility("default")))
 
-#else /* __GNUC__ */
+#else
 
 #define BUGLE_EXPORT_PRE
 #define BUGLE_EXPORT_POST
 
 #endif
 
-#endif /* !BUGLE_COMMON_EXPORT_H */
+#endif /* !BUGLE_EXPORT_H */

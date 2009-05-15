@@ -27,13 +27,7 @@ AC_DEFUN([gl_EARLY],
   AC_REQUIRE([AC_PROG_RANLIB])
   AC_REQUIRE([AC_GNU_SOURCE])
   AC_REQUIRE([gl_USE_SYSTEM_EXTENSIONS])
-  AC_REQUIRE([gl_FP_IEEE])
   AC_REQUIRE([gl_LOCK_EARLY])
-  dnl Some compilers (e.g., AIX 5.3 cc) need to be in c99 mode
-  dnl for the builtin va_copy to work.  With Autoconf 2.60 or later,
-  dnl AC_PROG_CC_STDC arranges for this.  With older Autoconf AC_PROG_CC_STDC
-  dnl shouldn't hurt, though installers are on their own to set c99 mode.
-  AC_REQUIRE([AC_PROG_CC_STDC])
 ])
 
 # This macro should be invoked from ./configure.ac, in the section
@@ -46,58 +40,23 @@ AC_DEFUN([gl_INIT],
   AM_CONDITIONAL([GL_COND_LIBTOOL], [true])
   gl_cond_libtool=true
   gl_source_base='lib'
-  gl_FUNC_ALLOCA
-  gl_FLOAT_H
-  gl_FUNC_FREXPL_NO_LIBM
-  gl_MATH_MODULE_INDICATOR([frexpl])
   gl_FUNC_GETDELIM
   gl_STDIO_MODULE_INDICATOR([getdelim])
   gl_FUNC_GETLINE
   gl_STDIO_MODULE_INDICATOR([getline])
-  gl_INLINE
   gl_INTTYPES_H
-  gl_FUNC_ISNAN_NO_LIBM
-  gl_FUNC_ISNANF_NO_LIBM
-  gl_FUNC_ISNANL_NO_LIBM
   gl_LOCK
-  AC_FUNC_MALLOC
-  gl_FUNC_MALLOC_POSIX
-  gl_STDLIB_MODULE_INDICATOR([malloc-posix])
-  gl_MATH_H
-  gl_FUNC_PRINTF_FREXP
-  gl_FUNC_PRINTF_FREXPL
-  m4_divert_text([INIT_PREPARE], [gl_printf_safe=yes])
-  AC_FUNC_REALLOC
   gl_FUNC_REALLOC_POSIX
   gl_STDLIB_MODULE_INDICATOR([realloc-posix])
   gl_SAFE_READ
   gl_SAFE_WRITE
-  gl_SIGNBIT
-  gl_MATH_MODULE_INDICATOR([signbit])
-  gl_SIZE_MAX
   gt_TYPE_SSIZE_T
-  gl_STDARG_H
   gl_STDINT_H
   gl_STDIO_H
   gl_STDLIB_H
-  gl_HEADER_STRING_H
-  gl_FUNC_STRNDUP
-  gl_STRING_MODULE_INDICATOR([strndup])
-  gl_FUNC_STRNLEN
-  gl_STRING_MODULE_INDICATOR([strnlen])
   gl_TLS
   gl_UNISTD_H
-  gl_FUNC_VASNPRINTF
-  gl_FUNC_VASPRINTF
-  gl_STDIO_MODULE_INDICATOR([vasprintf])
-  gl_FUNC_VSNPRINTF
-  gl_STDIO_MODULE_INDICATOR([vsnprintf])
-  gl_FUNC_VSNPRINTF_POSIX
   gl_WCHAR_H
-  gl_XALLOC
-  gl_XSIZE
-  gl_XSTRNDUP
-  gl_XVASPRINTF
   m4_popdef([AC_LIBSOURCES])
   m4_popdef([AC_REPLACE_FUNCS])
   m4_popdef([AC_LIBOBJ])
@@ -150,14 +109,6 @@ AC_DEFUN([gl_LIBSOURCES], [
 AC_DEFUN([gl_FILE_LIST], [
   build-aux/config.rpath
   build-aux/link-warning.h
-  lib/alloca.in.h
-  lib/asnprintf.c
-  lib/asprintf.c
-  lib/float+.h
-  lib/float.in.h
-  lib/fpucw.h
-  lib/frexp.c
-  lib/frexpl.c
   lib/full-read.c
   lib/full-read.h
   lib/full-write.c
@@ -165,114 +116,44 @@ AC_DEFUN([gl_FILE_LIST], [
   lib/getdelim.c
   lib/getline.c
   lib/inttypes.in.h
-  lib/isnan.c
-  lib/isnan.h
-  lib/isnanf.c
-  lib/isnanf.h
-  lib/isnanl-nolibm.h
-  lib/isnanl.c
   lib/lock.c
   lib/lock.h
-  lib/malloc.c
-  lib/math.in.h
-  lib/printf-args.c
-  lib/printf-args.h
-  lib/printf-frexp.c
-  lib/printf-frexp.h
-  lib/printf-frexpl.c
-  lib/printf-frexpl.h
-  lib/printf-parse.c
-  lib/printf-parse.h
   lib/realloc.c
   lib/safe-read.c
   lib/safe-read.h
   lib/safe-write.c
   lib/safe-write.h
-  lib/signbitd.c
-  lib/signbitf.c
-  lib/signbitl.c
-  lib/size_max.h
   lib/stdint.in.h
   lib/stdio.in.h
   lib/stdlib.in.h
-  lib/string.in.h
-  lib/strndup.c
-  lib/strnlen.c
   lib/tls.c
   lib/tls.h
   lib/unistd.in.h
-  lib/vasnprintf.c
-  lib/vasnprintf.h
-  lib/vasprintf.c
-  lib/vsnprintf.c
   lib/wchar.in.h
-  lib/xalloc-die.c
-  lib/xalloc.h
-  lib/xasprintf.c
-  lib/xmalloc.c
-  lib/xsize.h
-  lib/xstrndup.c
-  lib/xstrndup.h
-  lib/xvasprintf.c
-  lib/xvasprintf.h
   m4/absolute-header.m4
-  m4/alloca.m4
-  m4/eoverflow.m4
   m4/extensions.m4
-  m4/float_h.m4
-  m4/fpieee.m4
-  m4/frexp.m4
-  m4/frexpl.m4
   m4/getdelim.m4
   m4/getline.m4
   m4/gnulib-common.m4
   m4/include_next.m4
-  m4/inline.m4
-  m4/intmax_t.m4
   m4/inttypes-pri.m4
   m4/inttypes.m4
-  m4/inttypes_h.m4
-  m4/isnan.m4
-  m4/isnanf.m4
-  m4/isnanl.m4
-  m4/ldexpl.m4
   m4/lib-ld.m4
   m4/lib-link.m4
   m4/lib-prefix.m4
   m4/lock.m4
   m4/longlong.m4
   m4/malloc.m4
-  m4/math_h.m4
   m4/onceonly_2_57.m4
-  m4/printf-frexp.m4
-  m4/printf-frexpl.m4
-  m4/printf.m4
   m4/realloc.m4
   m4/safe-read.m4
   m4/safe-write.m4
-  m4/signbit.m4
-  m4/size_max.m4
   m4/ssize_t.m4
-  m4/stdarg.m4
   m4/stdint.m4
-  m4/stdint_h.m4
   m4/stdio_h.m4
   m4/stdlib_h.m4
-  m4/string_h.m4
-  m4/strndup.m4
-  m4/strnlen.m4
   m4/tls.m4
   m4/ulonglong.m4
   m4/unistd_h.m4
-  m4/vasnprintf.m4
-  m4/vasprintf.m4
-  m4/vsnprintf-posix.m4
-  m4/vsnprintf.m4
   m4/wchar.m4
-  m4/wchar_t.m4
-  m4/wint_t.m4
-  m4/xalloc.m4
-  m4/xsize.m4
-  m4/xstrndup.m4
-  m4/xvasprintf.m4
 ])

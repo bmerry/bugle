@@ -23,10 +23,10 @@
 #include <stdlib.h>
 #include <bugle/gl/glutils.h>
 #include <bugle/filters.h>
+#include <bugle/memory.h>
 #include <bugle/log.h>
 #include <budgie/reflect.h>
 #include <budgie/addresses.h>
-#include "xalloc.h"
 
 static bugle_bool trace_callback(function_call *call, const callback_data *data)
 {
@@ -43,7 +43,7 @@ static bugle_bool trace_callback(function_call *call, const callback_data *data)
     if (len > sizeof(fixed_buffer))
     {
         /* No good, it's too big */
-        dyn_buffer = xcharalloc(len);
+        dyn_buffer = BUGLE_NMALLOC(len, char);
         ptr = dyn_buffer;
         budgie_dump_any_call((generic_function_call *) call, 0, &ptr, &len);
         ptr = dyn_buffer;

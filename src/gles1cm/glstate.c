@@ -25,10 +25,10 @@
 #include <limits.h>
 #include <assert.h>
 #include <inttypes.h>
-#include "xalloc.h"
-#include "xvasprintf.h"
 #include <bugle/log.h>
 #include <bugle/misc.h>
+#include <bugle/memory.h>
+#include <bugle/string.h>
 #include <bugle/gl/glsl.h>
 #include <bugle/gl/glstate.h>
 #include <bugle/gl/glutils.h>
@@ -220,9 +220,9 @@ static void make_leaves_conditional(const glstate *self, const state_info *table
                 info->spawn(self, children, info);
             else
             {
-                child = XMALLOC(glstate);
+                child = BUGLE_MALLOC(glstate);
                 *child = *self; /* copies contextual info */
-                child->name = xstrdup(info->name);
+                child->name = bugle_strdup(info->name);
                 child->numeric_name = 0;
                 child->enum_name = info->pname;
                 child->info = info;
@@ -252,10 +252,10 @@ static void make_fixed(const glstate *self,
     for (i = 0; enums[i].name; i++)
         if (bugle_gl_has_extension_group(enums[i].extensions))
         {
-            child = XMALLOC(glstate);
+            child = BUGLE_MALLOC(glstate);
             *child = *self;
             child->info = info;
-            child->name = xstrdup(enums[i].name);
+            child->name = bugle_strdup(enums[i].name);
             child->numeric_name = 0;
             child->enum_name = enums[i].token;
             *(GLenum *) (((char *) child) + offset) = enums[i].token;
@@ -278,10 +278,10 @@ static void make_counted2(const glstate *self,
 
     for (i = 0; i < count; i++)
     {
-        child = XMALLOC(glstate);
+        child = BUGLE_MALLOC(glstate);
         *child = *self;
         child->info = info;
-        child->name = xasprintf(format, (unsigned long) i);
+        child->name = bugle_asprintf(format, (unsigned long) i);
         child->numeric_name = i;
         child->enum_name = 0;
         *(GLenum *) (((char *) child) + offset1) = base + i;
@@ -301,11 +301,11 @@ static void make_object(const glstate *self,
 {
     glstate *child;
 
-    child = XMALLOC(glstate);
+    child = BUGLE_MALLOC(glstate);
     *child = *self;
     child->target = target;
     child->info = info;
-    child->name = xasprintf(format, (unsigned long) id);
+    child->name = bugle_asprintf(format, (unsigned long) id);
     child->numeric_name = id;
     child->enum_name = 0;
     child->object = id;
@@ -369,9 +369,9 @@ static void make_target(const glstate *self,
 {
     glstate *child;
 
-    child = XMALLOC(glstate);
+    child = BUGLE_MALLOC(glstate);
     *child = *self;
-    child->name = xstrdup(name);
+    child->name = bugle_strdup(name);
     child->numeric_name = 0;
     child->enum_name = target;
     child->target = target;
@@ -875,8 +875,8 @@ void bugle_state_get_raw(const glstate *state, bugle_state_raw *wrapper)
         if (state->info->type == TYPE_PKc)
         {
             str = (char *) CALL(glGetString)(pname);
-            if (str) str = xstrdup(str);
-            else str = xstrdup("(nil)");
+            if (str) str = bugle_strdup(str);
+            else str = bugle_strdup("(nil)");
         }
         else if (state->info->type == TYPE_9GLboolean)
             CALL(glGetBooleanv)(pname, b);
@@ -933,8 +933,8 @@ void bugle_state_get_raw(const glstate *state, bugle_state_raw *wrapper)
             GLenum *out;
 
             CALL(glGetIntegerv)(GL_NUM_COMPRESSED_TEXTURE_FORMATS, &count);
-            formats = XNMALLOC(count, GLint);
-            out = XNMALLOC(count, GLenum);
+            formats = BUGLE_NMALLOC(count, GLint);
+            out = BUGLE_NMALLOC(count, GLenum);
             CALL(glGetIntegerv)(GL_COMPRESSED_TEXTURE_FORMATS, formats);
             budgie_type_convert(out, TYPE_6GLenum, formats, TYPE_5GLint, count);
             wrapper->data = out;
@@ -1017,7 +1017,7 @@ void bugle_state_get_raw(const glstate *state, bugle_state_raw *wrapper)
         default: abort();
         }
 
-        wrapper->data = xnmalloc(abs(in_length), budgie_type_size(out_type));
+        wrapper->data = bugle_nmalloc(abs(in_length), budgie_type_size(out_type));
         wrapper->type = out_type;
         wrapper->length = in_length;
         budgie_type_convert(wrapper->data, wrapper->type, in, in_type, abs(wrapper->length));
@@ -1045,7 +1045,7 @@ char *bugle_state_get_string(const glstate *state)
         return "<GL error>";
 
     if (wrapper.type == TYPE_Pc)
-        ans = xstrdup((const char *) wrapper.data); /* bugle_string_io(dump_string_wrapper, (char *) wrapper.data); */
+        ans = bugle_strdup((const char *) wrapper.data); /* bugle_string_io(dump_string_wrapper, (char *) wrapper.data); */
     else
         ans = bugle_string_io(dump_wrapper, &wrapper);
     free(wrapper.data);
@@ -1090,10 +1090,10 @@ static void make_framebuffer_attachment(const glstate *self,
                                                   &type);
     if (type != GL_NONE)
     {
-        child = XMALLOC(glstate);
+        child = BUGLE_MALLOC(glstate);
         *child = *self;
-        if (index < 0) child->name = xstrdup(format);
-        else child->name = xasprintf(format, index);
+        if (index < 0) child->name = bugle_strdup(format);
+        else child->name = bugle_asprintf(format, index);
         child->info = NULL;
         child->numeric_name = index;
         child->enum_name = attachment;

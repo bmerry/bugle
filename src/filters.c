@@ -30,6 +30,8 @@
 #include <math.h>
 #include <dirent.h>
 #include <ltdl.h>
+#include <bugle/memory.h>
+#include <bugle/string.h>
 #include <bugle/misc.h>
 #include <bugle/input.h>
 #include <bugle/filters.h>
@@ -40,7 +42,6 @@
 #include <budgie/reflect.h>
 #include <budgie/addresses.h>
 #include "budgielib/defines.h"
-#include "xalloc.h"
 #include "lock.h"
 
 typedef struct
@@ -115,11 +116,11 @@ static void register_order(hash_table *orders, const char *before, const char *a
     deps = (linked_list *) bugle_hash_get(orders, after);
     if (!deps)
     {
-        deps = XMALLOC(linked_list);
+        deps = BUGLE_MALLOC(linked_list);
         bugle_list_init(deps, free);
         bugle_hash_set(orders, after, deps);
     }
-    bugle_list_append(deps, xstrdup(before));
+    bugle_list_append(deps, bugle_strdup(before));
 }
 
 /* Returns BUGLE_TRUE on success, BUGLE_FALSE if there was a cycle.
@@ -148,7 +149,7 @@ static bugle_bool compute_order(linked_list *present,
     for (i = bugle_list_head(present); i; i = bugle_list_next(i))
     {
         count++;
-        info = XMALLOC(order_data);
+        info = BUGLE_MALLOC(order_data);
         info->f = bugle_list_data(i);
         info->valence = 0;
         bugle_hash_set(&byname, get_name(info->f), info);
@@ -434,7 +435,7 @@ bugle_bool filter_set_variable(filter_set *handle, const char *name, const char 
                 value_ptr = &float_value;
                 break;
             case FILTER_SET_VARIABLE_STRING:
-                string_value = xstrdup(value);
+                string_value = bugle_strdup(value);
                 value_ptr = &string_value;
                 break;
             case FILTER_SET_VARIABLE_KEY:
@@ -609,7 +610,7 @@ void filter_set_deactivate(filter_set *handle)
  */
 void bugle_filter_set_activate_deferred(filter_set *handle)
 {
-    filter_set_activation *activation = XMALLOC(filter_set_activation);
+    filter_set_activation *activation = BUGLE_MALLOC(filter_set_activation);
 
     activation->set = handle;
     activation->active = BUGLE_TRUE;
@@ -621,7 +622,7 @@ void bugle_filter_set_activate_deferred(filter_set *handle)
 
 void bugle_filter_set_deactivate_deferred(filter_set *handle)
 {
-    filter_set_activation *activation = XMALLOC(filter_set_activation);
+    filter_set_activation *activation = BUGLE_MALLOC(filter_set_activation);
 
     activation->set = handle;
     activation->active = BUGLE_FALSE;
@@ -657,7 +658,7 @@ static void set_bypass(void)
     filter *cur;
     filter_catcher *catcher;
 
-    bypass = XNMALLOC(budgie_function_count(), bugle_bool);
+    bypass = BUGLE_NMALLOC(budgie_function_count(), bugle_bool);
     /* We use this temporary instead of modifying values directly, because
      * we don't want other threads to see intermediate values.
      */
@@ -749,7 +750,7 @@ filter_set *bugle_filter_set_new(const filter_set_info *info)
 {
     filter_set *s;
 
-    s = XMALLOC(filter_set);
+    s = BUGLE_MALLOC(filter_set);
     s->name = info->name;
     s->help = info->help;
     bugle_list_init(&s->filters, (void (*)(void *)) filter_free);
@@ -779,7 +780,7 @@ filter *bugle_filter_new(filter_set *handle, const char *name)
 {
     filter *f;
 
-    f = XMALLOC(filter);
+    f = BUGLE_MALLOC(filter);
     f->name = name;
     f->parent = handle;
     bugle_list_init(&f->callbacks, free);
@@ -793,7 +794,7 @@ void bugle_filter_catches_function_id(filter *handle, budgie_function id,
 {
     filter_catcher *cb;
 
-    cb = XMALLOC(filter_catcher);
+    cb = BUGLE_MALLOC(filter_catcher);
     cb->parent = handle;
     cb->function = id;
     cb->inactive = inactive;
@@ -844,7 +845,7 @@ void bugle_filter_catches_all(filter *handle, bugle_bool inactive,
 
     for (i = 0; i < budgie_function_count(); i++)
     {
-        cb = XMALLOC(filter_catcher);
+        cb = BUGLE_MALLOC(filter_catcher);
         cb->parent = handle;
         cb->function = i;
         cb->inactive = inactive;

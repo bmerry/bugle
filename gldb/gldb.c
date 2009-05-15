@@ -37,13 +37,13 @@
 # include <readline/readline.h>
 # include <readline/history.h>
 #endif
+#include <bugle/string.h>
+#include <bugle/memory.h>
 #include <bugle/misc.h>
 #include <bugle/hashtable.h>
 #include <budgie/reflect.h>
 #include "common/protocol.h"
 #include "gldb/gldb-common.h"
-#include "xalloc.h"
-#include "xvasprintf.h"
 /* Uncomment these lines to test the legacy I/O support
 #undef HAVE_READLINE
 #define HAVE_READLINE
@@ -175,12 +175,12 @@ static bugle_bool handle_commands(void)
             if (!*line && prev_line != NULL)
             {
                 free(line);
-                line = xstrdup(prev_line);
+                line = bugle_strdup(prev_line);
             }
             if (*line)
             {
                 if (prev_line) free(prev_line);
-                prev_line = xstrdup(line);
+                prev_line = bugle_strdup(line);
 
                 /* Tokenise */
                 num_tokens = 0;
@@ -190,7 +190,7 @@ static bugle_bool handle_commands(void)
                         num_tokens++;
                 if (num_tokens)
                 {
-                    tokens = XNMALLOC(num_tokens + 1, char *);
+                    tokens = BUGLE_NMALLOC(num_tokens + 1, char *);
                     tokens[num_tokens] = NULL;
                     i = 0;
                     for (cur = line; *cur; cur++)
@@ -199,7 +199,7 @@ static bugle_bool handle_commands(void)
                         {
                             base = cur;
                             while (*cur && !isspace(*cur)) cur++;
-                            tokens[i] = XNMALLOC(cur - base + 1, char);
+                            tokens[i] = BUGLE_NMALLOC(cur - base + 1, char);
                             memcpy(tokens[i], base, cur - base);
                             tokens[i][cur - base] = '\0';
                             i++;
@@ -574,7 +574,7 @@ static bugle_bool command_backtrace(const char *cmd,
         exit(1);
     case 0: /* child */
         sigprocmask(SIG_SETMASK, &unblocked, NULL);
-        pid_str = xasprintf("%lu", (unsigned long) gldb_get_child_pid());
+        pid_str = bugle_asprintf("%lu", (unsigned long) gldb_get_child_pid());
         /* FIXME: if in_pipe[1] or out_pipe[0] is already 0 or 1 */
         gldb_safe_syscall(dup2(in_pipe[1], 1), "dup2");
         gldb_safe_syscall(dup2(out_pipe[0], 0), "dup2");
@@ -680,7 +680,7 @@ static bugle_bool command_gdb(const char *cmd,
         if (fore) tcsetpgrp(1, getpgrp());
         sigprocmask(SIG_SETMASK, &unblocked, NULL);
 
-        pid_str = xasprintf("%lu", (unsigned long) gldb_get_child_pid());
+        pid_str = bugle_asprintf("%lu", (unsigned long) gldb_get_child_pid());
         execlp("gdb", "gdb", "-p", pid_str, NULL);
         perror("could not invoke gdb");
         free(pid_str);
@@ -730,7 +730,7 @@ static bugle_bool command_screenshot(const char *cmd,
         return BUGLE_FALSE;
     }
     if (screenshot_file) free(screenshot_file);
-    screenshot_file = xstrdup(tokens[1]);
+    screenshot_file = bugle_strdup(tokens[1]);
     gldb_send_data_framebuffer(0, 0, 0, GL_FRONT, GL_RGB, GL_UNSIGNED_BYTE);
     return BUGLE_TRUE;
 }
@@ -752,12 +752,12 @@ static void register_command(const command_info *cmd)
     command_data *data;
     char *key, *end;
 
-    key = xstrdup(cmd->name);
+    key = bugle_strdup(cmd->name);
     data = (command_data *) bugle_hash_get(&command_table, key);
     if (data)
         assert(!data->root); /* can't redefine commands */
     else
-        data = XMALLOC(command_data);
+        data = BUGLE_MALLOC(command_data);
     data->root = BUGLE_TRUE;
     data->command = cmd;
     bugle_hash_set(&command_table, key, data);
@@ -770,7 +770,7 @@ static void register_command(const command_info *cmd)
         data = (command_data *) bugle_hash_get(&command_table, key);
         if (!data)
         {
-            data = XMALLOC(command_data);
+            data = BUGLE_MALLOC(command_data);
             data->root = BUGLE_FALSE;
             data->command = cmd;
             bugle_hash_set(&command_table, key, data);
@@ -795,7 +795,7 @@ static char *generate_commands(const char *text, int state)
 
     for (; ptr->name; ptr++)
         if (strncmp(ptr->name, text, len) == 0)
-            return xstrdup((ptr++)->name);
+            return bugle_strdup((ptr++)->name);
     return NULL;
 }
 
@@ -811,7 +811,7 @@ static char *generate_functions(const char *text, int state)
     }
     for (; i < budgie_function_count(); i++)
         if (strncmp(budgie_function_name(i), text, len) == 0)
-            return xstrdup(budgie_function_name(i++));
+            return bugle_strdup(budgie_function_name(i++));
     return NULL;
 }
 
@@ -853,7 +853,7 @@ static char *generate_state(const char *text, int state)
         if (child->name && strncmp(child->name, split, strlen(split)) == 0)
         {
             node = bugle_list_next(node);
-            ans = XNMALLOC(strlen(child->name) + (split - text) + 1, char);
+            ans = BUGLE_NMALLOC(strlen(child->name) + (split - text) + 1, char);
             strncpy(ans, text, split - text);
             strcpy(ans + (split - text), child->name);
             return ans;
@@ -880,7 +880,7 @@ static char **completion(const char *text, int start, int end)
     else
     {
         /* try to find the command */
-        key = XNMALLOC(last - first + 1, char);
+        key = BUGLE_NMALLOC(last - first + 1, char);
         strncpy(key, rl_line_buffer + first, last - first);
         key[last - first] = '\0';
         data = bugle_hash_get(&command_table, key);

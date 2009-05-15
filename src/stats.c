@@ -25,17 +25,17 @@
 #include <sys/types.h>
 #include <assert.h>
 #include <math.h>
+#include <bugle/memory.h>
+#include <bugle/string.h>
 #include <bugle/filters.h>
 #include <bugle/log.h>
 #include <bugle/input.h>
 #include <bugle/stats.h>
 #include <bugle/misc.h>
+#include <bugle/string.h>
 #include "src/statsparse.h"
 #include <bugle/hashtable.h>
 #include <bugle/bool.h>
-#include "xalloc.h"
-#include "xstrndup.h"
-#include "xvasprintf.h"
 
 #define STATISTICSFILE "/.bugle/statistics"
 
@@ -78,7 +78,7 @@ stats_signal *bugle_stats_signal_new(const char *name, void *user_data,
     stats_signal *si;
 
     assert(!stats_signal_get(name));
-    si = XZALLOC(stats_signal);
+    si = BUGLE_ZALLOC(stats_signal);
     si->value = bugle_nan("");
     si->integral = 0.0;
     si->offset = -1;
@@ -203,7 +203,7 @@ void bugle_stats_signal_values_gather(stats_signal_values *sv)
     if (sv->allocated < stats_signals_num_active)
     {
         sv->allocated = stats_signals_num_active;
-        sv->values = xnrealloc(sv->values, stats_signals_num_active, sizeof(stats_signal_value));
+        sv->values = bugle_nrealloc(sv->values, stats_signals_num_active, sizeof(stats_signal_value));
     }
     /* Make sure that everything is initialised to an insane value (NaN) */
     for (i = 0; i < stats_signals_num_active; i++)
@@ -310,10 +310,10 @@ static char *pattern_replace(const char *pattern, const char *rep)
     char *full;
 
     wildcard = strchr(pattern, '*');
-    if (!wildcard) return xstrdup(pattern);
+    if (!wildcard) return bugle_strdup(pattern);
     l_pattern = strlen(pattern);
     l_rep = strlen(rep);
-    full = XNMALLOC(l_pattern + l_rep, char);
+    full = BUGLE_NMALLOC(l_pattern + l_rep, char);
     memcpy(full, pattern, wildcard - pattern);
     memcpy(full + (wildcard - pattern), rep, l_rep);
     strcpy(full + (wildcard - pattern) + l_rep, wildcard + 1);
@@ -352,7 +352,7 @@ static char *pattern_match_rep(const char *pattern, const char *instance)
     wildcard = strchr(pattern, '*');
     l_pattern = strlen(pattern);
     l_instance = strlen(instance);
-    return xstrndup(instance + (wildcard - pattern), l_instance + 1 - l_pattern);
+    return bugle_strndup(instance + (wildcard - pattern), l_instance + 1 - l_pattern);
 }
 
 /* For a generic expression, checks whether substituting arg (a char *)
@@ -376,7 +376,7 @@ static stats_expression *stats_expression_instantiate(stats_expression *base, co
     stats_expression *n;
 
     assert(base);
-    n = XMALLOC(stats_expression);
+    n = BUGLE_MALLOC(stats_expression);
     *n = *base;
     switch (base->type)
     {
@@ -440,9 +440,9 @@ static stats_statistic *stats_statistic_instantiate(stats_statistic *st, const c
     stats_statistic *n;
     linked_list_node *i;
 
-    n = XMALLOC(stats_statistic);
+    n = BUGLE_MALLOC(stats_statistic);
     *n = *st;
-    n->name = xstrdup(n->name);
+    n->name = bugle_strdup(n->name);
     n->label = pattern_replace(n->label, rep);
     n->value = stats_expression_instantiate(st->value, rep);
     n->last = BUGLE_FALSE;
@@ -452,7 +452,7 @@ static stats_statistic *stats_statistic_instantiate(stats_statistic *st, const c
     {
         stats_substitution *su_old, *su_new;
         su_old = bugle_list_data(i);
-        su_new = XMALLOC(stats_substitution);
+        su_new = BUGLE_MALLOC(stats_substitution);
         *su_new = *su_old;
         su_new->replacement = pattern_replace(su_old->replacement, rep);
         bugle_list_append(&n->substitutions, su_new);
@@ -493,7 +493,7 @@ static bugle_bool stats_load_config(void)
     char *config = NULL;
 
     if (getenv("BUGLE_STATISTICS"))
-        config = xstrdup(getenv("BUGLE_STATISTICS"));
+        config = bugle_strdup(getenv("BUGLE_STATISTICS"));
     home = getenv("HOME");
     if (!config && !home)
     {
@@ -503,7 +503,7 @@ static bugle_bool stats_load_config(void)
     }
     if (!config)
     {
-        config = XNMALLOC(strlen(home) + strlen(STATISTICSFILE) + 1, char);
+        config = BUGLE_NMALLOC(strlen(home) + strlen(STATISTICSFILE) + 1, char);
         sprintf(config, "%s%s", home, STATISTICSFILE);
     }
     if ((stats_yyin = fopen(config, "r")) != NULL)

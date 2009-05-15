@@ -36,6 +36,7 @@
 #include <bugle/linkedlist.h>
 #include <bugle/hashtable.h>
 #include <bugle/porting.h>
+#include <bugle/string.h>
 #include "common/protocol.h"
 #include "gldb/gldb-common.h"
 #include "gldb/gldb-channels.h"
@@ -49,8 +50,6 @@
 #include "gldb/gldb-gui-shader.h"
 #include "gldb/gldb-gui-backtrace.h"
 #include "gldb/gldb-gui-breakpoint.h"
-#include "xalloc.h"
-#include "xvasprintf.h"
 
 /* Global variables */
 static linked_list response_handlers;
@@ -65,7 +64,7 @@ void gldb_error(const char *fmt, ...)
     GtkWidget *dialog;
 
     va_start(ap, fmt);
-    msg = xvasprintf(fmt, ap);
+    msg = bugle_vasprintf(fmt, ap);
     va_end(ap);
 
     dialog = gtk_message_dialog_new(NULL,
@@ -207,7 +206,7 @@ guint32 gldb_gui_set_response_handler(gboolean (*callback)(gldb_response *r, gpo
 {
     response_handler *h;
 
-    h = XMALLOC(response_handler);
+    h = BUGLE_MALLOC(response_handler);
     h->id = seq++;
     h->callback = callback;
     h->user_data = user_data;
@@ -449,14 +448,14 @@ static gboolean response_callback(GIOChannel *channel, GIOCondition condition,
     switch (r->code)
     {
     case RESP_BREAK:
-        msg = xasprintf(_("Stopped in %s"), ((gldb_response_break *) r)->call);
+        msg = bugle_asprintf(_("Stopped in %s"), ((gldb_response_break *) r)->call);
         stopped(context, msg);
         free(msg);
         break;
     case RESP_BREAK_EVENT:
-        msg = xasprintf( _("%s in %s"),
-                        ((gldb_response_break_event *) r)->event,
-                        ((gldb_response_break_event *) r)->call);
+        msg = bugle_asprintf( _("%s in %s"),
+                              ((gldb_response_break_event *) r)->event,
+                              ((gldb_response_break_event *) r)->call);
         stopped(context, msg);
         free(msg);
         break;
@@ -594,7 +593,7 @@ static void attach_gdb_action(GtkAction *action, gpointer user_data)
     argv[1] = (gchar *) "-e";
     argv[2] = (gchar *) "gdb";
     argv[3] = (gchar *) "-p";
-    argv[4] = xasprintf("%lu", (unsigned long) gldb_get_child_pid());
+    argv[4] = bugle_asprintf("%lu", (unsigned long) gldb_get_child_pid());
     argv[5] = NULL;
 
     context = (GldbWindow *) user_data;

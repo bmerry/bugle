@@ -32,11 +32,11 @@
 #include <stdio.h>
 #include <GL/glew.h>
 #include <bugle/hashtable.h>
+#include <bugle/string.h>
 #include "common/protocol.h"
 #include "gldb/gldb-common.h"
 #include "gldb/gldb-gui.h"
 #include "gldb/gldb-gui-shader.h"
-#include "xvasprintf.h"
 
 struct _GldbShaderPane
 {

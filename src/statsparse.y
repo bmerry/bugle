@@ -30,7 +30,7 @@
 #include <bugle/stats.h>
 #include <bugle/linkedlist.h>
 #include <bugle/log.h>
-#include "xalloc.h"
+#include <bugle/memory.h>
 
 int stats_yyerror(const char *msg);
 extern int stats_yylex(void);
@@ -39,7 +39,7 @@ static stats_expression *stats_expression_new_number(double value)
 {
     stats_expression *expr;
 
-    expr = XMALLOC(stats_expression);
+    expr = BUGLE_MALLOC(stats_expression);
     expr->type = STATS_EXPRESSION_NUMBER;
     expr->op = STATS_OPERATION_NUMBER;
     expr->value = value;
@@ -50,7 +50,7 @@ static stats_expression *stats_expression_new_op(stats_operation_type op, stats_
 {
     stats_expression *expr;
 
-    expr = XMALLOC(stats_expression);
+    expr = BUGLE_MALLOC(stats_expression);
     expr->type = STATS_EXPRESSION_OPERATION;
     expr->op = op;
     expr->left = left;
@@ -62,7 +62,7 @@ static stats_expression *stats_expression_new_signal(stats_operation_type op, ch
 {
     stats_expression *expr;
 
-    expr = XMALLOC(stats_expression);
+    expr = BUGLE_MALLOC(stats_expression);
     expr->type = STATS_EXPRESSION_SIGNAL;
     expr->op = op;
     expr->signal_name = signal;
@@ -80,7 +80,7 @@ static stats_statistic *stats_statistic_new()
 {
     stats_statistic *st;
 
-    st = XMALLOC(stats_statistic);
+    st = BUGLE_MALLOC(stats_statistic);
     st->name = NULL;
     st->value = NULL;
     st->precision = 1;
@@ -94,7 +94,7 @@ static stats_substitution *stats_substitution_new(double value, char *replacemen
 {
     stats_substitution *sub;
 
-    sub = XMALLOC(stats_substitution);
+    sub = BUGLE_MALLOC(stats_substitution);
     sub->value = value;
     sub->replacement = replacement;
     return sub;

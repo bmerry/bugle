@@ -22,20 +22,11 @@
 
 #include <stddef.h>
 #include <stdio.h>
+#include <bugle/attributes.h>
 #include <bugle/export.h>
 
 #ifdef __cplusplus
 extern "C" {
-#endif
-
-/* BUGLE_HAVE_ATTRIBUTE_FORMAT_PRINTF is declared by the internal
- * config.h. For third-party users, we fall back to detecting based
- * on GCC and GCC version.
- */
-#if BUGLE_HAVE_ATTRIBUTE_FORMAT_PRINTF || (__GNUC__ > 2 || (__GNUC__ == 2 && __GNUC_MINOR > 4))
-# define BUGLE_ATTRIBUTE_FORMAT_PRINTF(a, b) __attribute__((format(printf, a, b)))
-#else
-# define BUGLE_ATTRIBUTE_FORMAT_PRINTF(a, b)
 #endif
 
 /* Calls "call" with a char **, size_t * and "data".

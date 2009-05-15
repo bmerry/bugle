@@ -38,11 +38,11 @@
 #include <bugle/filters.h>
 #include <bugle/log.h>
 #include <bugle/apireflect.h>
+#include <bugle/memory.h>
 #include "common/threads.h"
 #include <budgie/addresses.h>
 #include <budgie/types.h>
 #include <budgie/reflect.h>
-#include "xalloc.h"
 #include "lock.h"
 
 #ifdef GL_VERSION_1_1
@@ -267,7 +267,7 @@ static void checks_completeness()
             {
                 bugle_glGetProgramiv(program, GL_ACTIVE_UNIFORMS, &num_uniforms);
                 bugle_glGetProgramiv(program, GL_ACTIVE_UNIFORM_MAX_LENGTH, &length);
-                name = xcharalloc(length + 1);
+                name = BUGLE_NMALLOC(length + 1, char);
                 for (u = 0; u < num_uniforms; u++)
                 {
                     bugle_glGetActiveUniform(program, u, length + 1, NULL, &size, &type, name);
@@ -610,7 +610,7 @@ static void checks_min_max(GLsizei count, GLenum gltype, const GLvoid *indices,
             if (mapped) return;
 
             size = count * budgie_type_size(type);
-            vbo_indices = xmalloc(size);
+            vbo_indices = bugle_malloc(size);
             CALL(glGetBufferSubData)(GL_ELEMENT_ARRAY_BUFFER,
                                     (const char *) indices - (const char *) NULL,
                                     size, vbo_indices);
@@ -619,7 +619,7 @@ static void checks_min_max(GLsizei count, GLenum gltype, const GLvoid *indices,
         }
     }
 
-    out = XNMALLOC(count, GLuint);
+    out = BUGLE_NMALLOC(count, GLuint);
     budgie_type_convert(out, bugle_gl_type_to_type(GL_UNSIGNED_INT), indices, type, count);
     min = max = out[0];
     for (i = 0; i < count; i++)

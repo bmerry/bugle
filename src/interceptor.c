@@ -34,12 +34,13 @@
 #include <bugle/stats.h>
 #include <bugle/hashtable.h>
 #include <bugle/bool.h>
+#include <bugle/memory.h>
+#include <bugle/string.h>
 #include "common/threads.h"
 #include <budgie/reflect.h>
 #include <budgie/addresses.h>
 #include "conffile.h"
 #include "dlopen.h"
-#include "xalloc.h"
 
 #define FILTERFILE "/.bugle/filters"
 
@@ -74,7 +75,7 @@ static void load_config(void)
     bugle_input_key key;
 
     if (getenv("BUGLE_FILTERS"))
-        config = xstrdup(getenv("BUGLE_FILTERS"));
+        config = bugle_strdup(getenv("BUGLE_FILTERS"));
     home = getenv("HOME");
     chain_name = getenv("BUGLE_CHAIN");
     if (chain_name && !*chain_name) chain_name = NULL;
@@ -86,7 +87,7 @@ static void load_config(void)
     {
         if (!config)
         {
-            config = XNMALLOC(strlen(home) + strlen(FILTERFILE) + 1, char);
+            config = BUGLE_NMALLOC(strlen(home) + strlen(FILTERFILE) + 1, char);
             sprintf(config, "%s%s", home, FILTERFILE);
         }
         if ((yyin = fopen(config, "r")))

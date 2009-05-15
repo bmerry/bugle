@@ -37,6 +37,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <bugle/bool.h>
+#include <bugle/string.h>
 #include <bugle/hashtable.h>
 #include "common/protocol.h"
 #include "gldb/gldb-common.h"
@@ -45,7 +46,6 @@
 #include "gldb/gldb-gui-image.h"
 #include "gldb/gldb-gui-texture.h"
 #include "xalloc.h"
-#include "xvasprintf.h"
 
 struct _GldbTexturePane
 {

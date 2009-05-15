@@ -26,7 +26,7 @@
 #define BUGLE_SRC_LOG_H
 
 #include <bugle/filters.h>
-#include <bugle/misc.h>
+#include <bugle/attributes.h>
 #include <bugle/export.h>
 
 #ifdef __cplusplus

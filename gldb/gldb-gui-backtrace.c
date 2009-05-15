@@ -32,12 +32,11 @@
 #include <stdio.h>
 #include <bugle/hashtable.h>
 #include <bugle/linkedlist.h>
+#include <bugle/string.h>
+#include <bugle/memory.h>
 #include "gldb/gldb-common.h"
 #include "gldb/gldb-gui.h"
 #include "gldb/gldb-gui-backtrace.h"
-#include "xalloc.h"
-#include "xstrndup.h"
-#include "xvasprintf.h"
 
 /* Functions and structures to parse GDB/MI output. Split this out of
  * gldb-gui one day.
@@ -139,7 +138,7 @@ static GldbGdbValue *gldb_gdb_value_parse(const char **record_ptr, GError **erro
     g_return_val_if_fail(error == NULL || *error == NULL, NULL);
 
     record = *record_ptr;
-    v = XMALLOC(GldbGdbValue);
+    v = BUGLE_MALLOC(GldbGdbValue);
     if (record[0] == '"')
     {
         v->type = GLDB_GDB_VALUE_CONST;
@@ -157,7 +156,7 @@ static GldbGdbValue *gldb_gdb_value_parse(const char **record_ptr, GError **erro
                         "Failed to parse value: expected '\"'");
             return NULL;
         }
-        v->const_value = xstrndup(record, end - record);
+        v->const_value = bugle_strndup(record, end - record);
         g_return_val_if_fail(end[0] == '"', NULL);
         record = end + 1;
     }
@@ -182,7 +181,7 @@ static GldbGdbValue *gldb_gdb_value_parse(const char **record_ptr, GError **erro
                                 "Failed to parse value: expected '='");
                     return NULL;
                 }
-                name = xstrndup(record, end - record);
+                name = bugle_strndup(record, end - record);
                 record = end + 1;
                 value = gldb_gdb_value_parse(&record, error);
                 if (!value)
@@ -307,7 +306,7 @@ static GldbGdbResultRecord *gldb_gdb_result_record_parse(const char *record, GEr
         return NULL;
     }
 
-    rr = XMALLOC(GldbGdbResultRecord);
+    rr = BUGLE_MALLOC(GldbGdbResultRecord);
     rr->result_class = rc;
     bugle_hash_init(&rr->results, (void (*)(void *)) gldb_gdb_value_free);
 
@@ -330,7 +329,7 @@ static GldbGdbResultRecord *gldb_gdb_result_record_parse(const char *record, GEr
             return NULL;
         }
 
-        name = xstrndup(record, end - record);
+        name = bugle_strndup(record, end - record);
         record = end + 1;
         value = gldb_gdb_value_parse(&record, error);
         if (!value)
@@ -428,11 +427,11 @@ static void gldb_backtrace_pane_populate(GldbBacktracePane *pane,
         from = gldb_gdb_value_get_string_field(frame, "from");
 
         if (file && line)
-            location = xasprintf("%s:%s", file, line);
+            location = bugle_asprintf("%s:%s", file, line);
         else if (from)
-            location = xstrdup(from);
+            location = bugle_strdup(from);
         else
-            location = xstrdup("??");
+            location = bugle_strdup("??");
 
         gtk_list_store_append(pane->backtrace_store, &iter);
         gtk_list_store_set(pane->backtrace_store, &iter,
@@ -468,7 +467,7 @@ static void gldb_backtrace_pane_real_update(GldbPane *self)
     argv[3] = (gchar *) "-q";    /* quiet */
     argv[4] = (gchar *) "--interpreter=mi2";
     argv[5] = (gchar *) "-p";
-    argv[6] = xasprintf("%lu", (unsigned long) gldb_get_child_pid());
+    argv[6] = bugle_asprintf("%lu", (unsigned long) gldb_get_child_pid());
     argv[7] = NULL;
     if (g_spawn_async_with_pipes(NULL,    /* working directory */
                                  argv,

@@ -45,10 +45,10 @@
 #include <bugle/apireflect.h>
 #include <bugle/input.h>
 #include <bugle/log.h>
+#include <bugle/memory.h>
+#include <bugle/string.h>
 #include <budgie/addresses.h>
 #include <budgie/reflect.h>
-#include "xalloc.h"
-#include "xvasprintf.h"
 
 #if HAVE_LAVC
 # include <inttypes.h>
@@ -120,10 +120,10 @@ static char *interpolate_filename(const char *pattern, int frame)
 {
     if (strchr(pattern, '%'))
     {
-        return xasprintf(pattern, frame);
+        return bugle_asprintf(pattern, frame);
     }
     else
-        return xstrdup(pattern);
+        return bugle_strdup(pattern);
 }
 
 /* If data->pixels == NULL and pbo = 0,
@@ -164,7 +164,7 @@ static void prepare_screenshot_data(screenshot_data *data,
         else
 #endif
         {
-            data->pixels = xmalloc(stride * height);
+            data->pixels = bugle_malloc(stride * height);
             data->pbo = 0;
         }
     }
@@ -240,7 +240,7 @@ static AVFrame *allocate_video_frame(int fmt, int width, int height,
         exit(1);
     }
     size = avpicture_get_size(fmt, width, height);
-    if (create) buffer = xmalloc(size);
+    if (create) buffer = bugle_malloc(size);
     avpicture_fill((AVPicture *) f, buffer, fmt, width, height);
     return f;
 }
@@ -281,7 +281,7 @@ static bugle_bool lavc_initialise(int width, int height)
     /* FIXME: what does the NULL do? */
     if (av_set_parameters(video_context, NULL) < 0) return BUGLE_FALSE;
     if (avcodec_open(c, codec) < 0) return BUGLE_FALSE;
-    video_buffer = xmalloc(video_buffer_size);
+    video_buffer = bugle_malloc(video_buffer_size);
     video_raw = allocate_video_frame(CAPTURE_AV_FMT, width, height, BUGLE_FALSE);
     video_yuv = allocate_video_frame(c->pix_fmt, width, height, BUGLE_TRUE);
     if (url_fopen(&video_context->pb, video_filename, URL_WRONLY) < 0)
@@ -389,7 +389,7 @@ static bugle_bool map_screenshot(screenshot_data *data)
         /* If we get here, we're in case 3 */
         CALL(glGetBufferParameterivARB)(GL_PIXEL_PACK_BUFFER_EXT, GL_BUFFER_SIZE_ARB, &size);
         if (!data->pixels)
-            data->pixels = xmalloc(size);
+            data->pixels = bugle_malloc(size);
         CALL(glGetBufferSubDataARB)(GL_PIXEL_PACK_BUFFER_EXT, 0, size, data->pixels);
         data->pbo_mapped = BUGLE_FALSE;
         CALL(glBindBufferARB)(GL_PIXEL_PACK_BUFFER_EXT, 0);
@@ -673,10 +673,10 @@ static bugle_bool screenshot_initialise(filter_set *handle)
     {
         video_done = BUGLE_FALSE; /* becomes BUGLE_TRUE if we resize */
         if (!video_filename)
-            video_filename = xstrdup("bugle.avi");
+            video_filename = bugle_strdup("bugle.avi");
 #if !HAVE_LAVC
-        cmdline = xasprintf("ppmtoy4m | ffmpeg -f yuv4mpegpipe -i - -vcodec %s -strict -1 -y %s",
-                            video_codec, video_filename);
+        cmdline = bugle_asprintf("ppmtoy4m | ffmpeg -f yuv4mpegpipe -i - -vcodec %s -strict -1 -y %s",
+                                 video_codec, video_filename);
         video_pipe = popen(cmdline, "w");
         free(cmdline);
         if (!video_pipe) return BUGLE_FALSE;
@@ -688,7 +688,7 @@ static bugle_bool screenshot_initialise(filter_set *handle)
     else
     {
         if (!video_filename)
-            video_filename = xstrdup("bugle.ppm");
+            video_filename = bugle_strdup("bugle.ppm");
         video_lag = 1;
         /* FIXME: should only intercept the key when enabled */
         bugle_input_key_callback(&key_screenshot, NULL, bugle_input_key_callback_flag, &keypress_screenshot);
@@ -731,7 +731,7 @@ void bugle_initialise_filter_library(void)
         "captures screenshots or a video clip"
     };
 
-    video_codec = xstrdup("mpeg4");
+    video_codec = bugle_strdup("mpeg4");
     bugle_input_key_lookup("C-A-S-S", &key_screenshot);
 
     bugle_filter_set_new(&screenshot_info);

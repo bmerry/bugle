@@ -23,6 +23,7 @@
 #include <string.h>
 #include <math.h>
 #include <bugle/bool.h>
+#include <bugle/memory.h>
 #include <bugle/glwin/glwin.h>
 #include <bugle/glwin/trackcontext.h>
 #include <bugle/gl/glutils.h>
@@ -34,7 +35,6 @@
 #include <bugle/log.h>
 #include <bugle/input.h>
 #include <budgie/addresses.h>
-#include "xalloc.h"
 
 typedef struct
 {
@@ -446,8 +446,8 @@ static bugle_bool showstats_show_set(const struct filter_set_variable_info_s *va
 {
     showstats_statistic_request *req;
 
-    req = XMALLOC(showstats_statistic_request);
-    req->name = xstrdup(text);
+    req = BUGLE_MALLOC(showstats_statistic_request);
+    req->name = bugle_strdup(text);
     req->mode = SHOWSTATS_TEXT;
     bugle_list_append(&showstats_stats_requested, req);
     return BUGLE_TRUE;
@@ -459,8 +459,8 @@ static bugle_bool showstats_graph_set(const struct filter_set_variable_info_s *v
 {
     showstats_statistic_request *req;
 
-    req = XMALLOC(showstats_statistic_request);
-    req->name = xstrdup(text);
+    req = BUGLE_MALLOC(showstats_statistic_request);
+    req->name = bugle_strdup(text);
     req->mode = SHOWSTATS_GRAPH;
     bugle_list_append(&showstats_stats_requested, req);
     return BUGLE_TRUE;

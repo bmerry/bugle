@@ -38,11 +38,10 @@
 #include <bugle/apireflect.h>
 #include <bugle/input.h>
 #include <bugle/log.h>
+#include <bugle/string.h>
 #include <budgie/addresses.h>
 #include <budgie/reflect.h>
 #include "gl2ps/gl2ps.h"
-#include "xalloc.h"
-#include "xvasprintf.h"
 
 typedef struct
 {
@@ -66,7 +65,7 @@ static char *interpolate_filename(const char *pattern, int frame)
         return xasprintf(pattern, frame);
     }
     else
-        return xstrdup(pattern);
+        return bugle_strdup(pattern);
 }
 
 static void eps_context_init(const void *key, void *data)
@@ -247,7 +246,7 @@ void bugle_initialise_filter_library(void)
         "dumps scene to EPS/PS/PDF/SVG format"
     };
 
-    eps_filename = xstrdup("bugle.eps");
+    eps_filename = bugle_strdup("bugle.eps");
     bugle_input_key_lookup("C-A-S-W", &key_eps);
 
     bugle_filter_set_new(&eps_info);

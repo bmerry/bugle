@@ -29,8 +29,8 @@
 #include <bugle/filters.h>
 #include <bugle/input.h>
 #include <bugle/log.h>
+#include <bugle/memory.h>
 #include "common/threads.h"
-#include "xalloc.h"
 
 #define STATE_MASK (BUGLE_INPUT_SHIFT_BIT | BUGLE_INPUT_CONTROL_BIT | BUGLE_INPUT_ALT_BIT)
 
@@ -66,7 +66,7 @@ void bugle_input_key_callback(const bugle_input_key *key,
     handler *h;
 
     if (key->keysym == BUGLE_INPUT_NOSYMBOL) return;
-    h = XMALLOC(handler);
+    h = BUGLE_MALLOC(handler);
     h->key = *key;
     h->wanted = wanted;
     h->callback = callback;

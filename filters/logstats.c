@@ -22,13 +22,13 @@
 #include <stdlib.h>
 #include <string.h>
 #include <bugle/bool.h>
+#include <bugle/string.h>
 #include <bugle/glwin/glwin.h>
 #include <bugle/linkedlist.h>
 #include <bugle/stats.h>
 #include <bugle/misc.h>
 #include <bugle/filters.h>
 #include <bugle/log.h>
-#include "xalloc.h"
 
 static linked_list logstats_show;    /* actual stats */
 static linked_list logstats_show_requested;  /* names in config file */
@@ -38,7 +38,7 @@ static stats_signal_values logstats_prev, logstats_cur;
 static bugle_bool logstats_show_set(const struct filter_set_variable_info_s *var,
                               const char *text, const void *value)
 {
-    bugle_list_append(&logstats_show_requested, xstrdup(text));
+    bugle_list_append(&logstats_show_requested, bugle_strdup(text));
     return BUGLE_TRUE;
 }
 

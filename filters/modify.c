@@ -20,8 +20,8 @@
 #endif
 #include <stdlib.h>
 #include <bugle/bool.h>
+#include <bugle/memory.h>
 #include <string.h>
-#include "xalloc.h"
 #include <bugle/glwin/glwin.h>
 #include <bugle/glwin/trackcontext.h>
 #include <bugle/gl/glheaders.h>
@@ -70,7 +70,7 @@ static void register_classify_callback(void (*callback)(bugle_bool, void *), voi
 {
     classify_callback *cb;
 
-    cb = XMALLOC(classify_callback);
+    cb = BUGLE_MALLOC(classify_callback);
     cb->callback = callback;
     cb->arg = arg;
     bugle_list_append(&classify_callbacks, cb);

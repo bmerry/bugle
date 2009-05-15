@@ -29,11 +29,11 @@
 #include <budgie/macros.h>
 #include <budgie/types.h>
 #include <budgie/reflect.h>
+#include <bugle/string.h>
 #include "gldb/gldb-common.h"
 #include "gldb/gldb-gui.h"
 #include "gldb/gldb-gui-buffer.h"
 #include "xalloc.h"
-#include "xvasprintf.h"
 
 struct _GldbBufferPane
 {
@@ -337,7 +337,7 @@ static void gldb_buffer_pane_update_ids(GldbBufferPane *pane)
         s = (gldb_state *) bugle_list_data(i);
         if (gldb_state_find_child_enum(s, GL_BUFFER_SIZE) != NULL)
         {
-            name = xasprintf("%u", (unsigned int) s->numeric_name);
+            name = bugle_asprintf("%u", (unsigned int) s->numeric_name);
             gtk_list_store_append(GTK_LIST_STORE(model), &iter);
             gtk_list_store_set(GTK_LIST_STORE(model), &iter,
                                COLUMN_BUFFER_ID_ID, (guint) s->numeric_name,

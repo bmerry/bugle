@@ -24,6 +24,7 @@
 #if HAVE_NVPERFSDK_H
 
 #include <bugle/bool.h>
+#include <bugle/memory.h>
 #include <ltdl.h>
 #include <stdlib.h>
 #include <string.h>
@@ -33,8 +34,7 @@
 #include <bugle/objects.h>
 #include <bugle/log.h>
 #include <bugle/glwin/glwin.h>
-#include "xalloc.h"
-#include "xvasprintf.h"
+#include <bugle/string.h>
 
 typedef struct
 {
@@ -162,15 +162,15 @@ static int stats_nv_enumerate(UINT index, char *name)
     for (accum = 0; accum < 2; accum++)
         for (cycles = 0; cycles < 2; cycles++)
         {
-            stat_name = xasprintf("nv%s%s:%s",
-                                  accum ? ":accum" : "",
-                                  cycles ? ":cycles" : "", name);
-            nv = XMALLOC(stats_signal_nv);
+            stat_name = bugle_asprintf("nv%s%s:%s",
+                                       accum ? ":accum" : "",
+                                       cycles ? ":cycles" : "", name);
+            nv = BUGLE_MALLOC(stats_signal_nv);
             nv->index = index;
             nv->accumulate = (accum == 1);
             nv->use_cycles = (cycles == 1);
             nv->experiment = (counter_type == NVPM_CT_SIMEXP);
-            nv->name = xstrdup(name);
+            nv->name = bugle_strdup(name);
             si = bugle_stats_signal_new(stat_name, nv,
                                         stats_nv_signal_activate);
             bugle_list_append(&stats_nv_registered, si);

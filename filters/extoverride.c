@@ -20,8 +20,8 @@
 #endif
 #include <stdlib.h>
 #include <bugle/bool.h>
+#include <bugle/memory.h>
 #include <string.h>
-#include "xalloc.h"
 #include <bugle/glwin/glwin.h>
 #include <bugle/glwin/trackcontext.h>
 #include <bugle/gl/glheaders.h>
@@ -76,8 +76,8 @@ static void extoverride_context_init(const void *key, void *data)
     else
         self->version = (const GLubyte *) real_version;
 
-    exts_ptr = exts = XNMALLOC(strlen(real_exts) + 1, char);
-    ext = XNMALLOC(strlen(real_exts) + 1, char); /* Current extension */
+    exts_ptr = exts = BUGLE_NMALLOC(strlen(real_exts) + 1, char);
+    ext = BUGLE_NMALLOC(strlen(real_exts) + 1, char); /* Current extension */
     p = real_exts;
     while (*p == ' ') p++;
     while (*p)

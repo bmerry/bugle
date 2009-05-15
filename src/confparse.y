@@ -26,8 +26,8 @@
 #include <string.h>
 #include <stdlib.h>
 #include "src/conffile.h"
+#include <bugle/memory.h>
 #include <bugle/linkedlist.h>
-#include "xalloc.h"
 
 static linked_list config_root;
 int yyerror(const char *msg);
@@ -73,7 +73,7 @@ input: 		/* empty */ { bugle_list_init(&$$, (void (*)(void *)) chain_free); conf
 ;
 
 chainitem:	CHAIN WORD '{' chainspec '}' {
-			$$ = XMALLOC(config_chain);
+			$$ = BUGLE_MALLOC(config_chain);
                         $$->name = $2;
                         $$->filtersets = $4;
 	        }
@@ -117,7 +117,7 @@ filtersetactive: filtersetallocator {
 ;
 
 filtersetallocator: /* empty */ {
-                	$$ = XMALLOC(config_filterset);
+                	$$ = BUGLE_MALLOC(config_filterset);
                         $$->name = NULL;
                         $$->key = NULL;
                         $$->active = 1;
@@ -130,7 +130,7 @@ filtersetspec:	/* empty */ { bugle_list_init(&$$, (void (*)(void *)) variable_fr
 ;
 
 variableitem:	WORD string {
-			$$ = XMALLOC(config_variable);
+			$$ = BUGLE_MALLOC(config_variable);
                         $$->name = $1;
                         $$->value = $2;
 		}

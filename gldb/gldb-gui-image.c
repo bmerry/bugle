@@ -40,12 +40,12 @@
 #include <stdio.h>
 #include <math.h>
 #include <bugle/bool.h>
+#include <bugle/memory.h>
+#include <bugle/string.h>
 #include "gldb/gldb-common.h"
 #include "gldb/gldb-channels.h"
 #include "gldb/gldb-gui.h"
 #include "gldb/gldb-gui-image.h"
-#include "xalloc.h"
-#include "xvasprintf.h"
 
 enum
 {
@@ -409,7 +409,7 @@ static void image_draw_motion_update(GldbGuiImageViewer *viewer,
     v = CLAMP((int) y, 0, height - 1);
     nchannels = gldb_channel_count(plane->channels);
     pixel = plane->pixels + nchannels * (v * width + u);
-    msg = xasprintf("u: %d v: %d ", u, v);
+    msg = bugle_asprintf("u: %d v: %d ", u, v);
 
     channels = plane->channels;
     for (p = 0; channels; channels &= ~channel, p++)
@@ -417,7 +417,7 @@ static void image_draw_motion_update(GldbGuiImageViewer *viewer,
         channel = channels & ~(channels - 1);
         const char *abbr = gldb_channel_get_abbr(channel);
         tmp_msg = msg;
-        msg = xasprintf(" %s %s: %f", tmp_msg, abbr ? abbr : "?", gldb_gui_image_plane_get_pixel(plane, u, v, p));
+        msg = bugle_asprintf(" %s %s: %f", tmp_msg, abbr ? abbr : "?", gldb_gui_image_plane_get_pixel(plane, u, v, p));
         free(tmp_msg);
     }
     viewer->pixel_status_id = gtk_statusbar_push(viewer->statusbar,
@@ -650,7 +650,7 @@ static void gldb_gui_image_viewer_new_zoom_combo(GldbGuiImageViewer *viewer)
     {
         gchar *caption;
 
-        caption = xasprintf("1:%d", (1 << i));
+        caption = bugle_asprintf("1:%d", (1 << i));
         gtk_list_store_append(store, &iter);
         gtk_list_store_set(store, &iter,
                            COLUMN_IMAGE_ZOOM_VALUE, (gdouble) 1.0 / (1 << i),
@@ -663,7 +663,7 @@ static void gldb_gui_image_viewer_new_zoom_combo(GldbGuiImageViewer *viewer)
     {
         gchar *caption;
 
-        caption = xasprintf("%d:1", (1 << i));
+        caption = bugle_asprintf("%d:1", (1 << i));
         gtk_list_store_append(store, &iter);
         gtk_list_store_set(store, &iter,
                            COLUMN_IMAGE_ZOOM_VALUE, (gdouble) (1 << i),
@@ -743,7 +743,7 @@ static void image_copy_clicked(GtkWidget *button, gpointer user_data)
     height = plane->height;
     nin = gldb_channel_count(plane->channels);
     nout = CLAMP(nin, 3, 4);
-    pixels = XNMALLOC(width * height * nout, guint8);
+    pixels = BUGLE_NMALLOC(width * height * nout, guint8);
     p = pixels;
     for (y = height - 1; y >= 0; y--)
         for (x = 0; x < width; x++)
@@ -1117,7 +1117,7 @@ GldbGuiImageViewer *gldb_gui_image_viewer_new(GtkStatusbar *statusbar,
 {
     GldbGuiImageViewer *viewer;
 
-    viewer = XZALLOC(GldbGuiImageViewer);
+    viewer = BUGLE_ZALLOC(GldbGuiImageViewer);
     viewer->statusbar = statusbar;
     viewer->statusbar_context_id = statusbar_context_id;
     viewer->current_level = -1;
@@ -1162,7 +1162,7 @@ void gldb_gui_image_viewer_update_levels(GldbGuiImageViewer *viewer)
     {
         char *text;
 
-        text = xasprintf("%d", i);
+        text = bugle_asprintf("%d", i);
         gtk_list_store_append(GTK_LIST_STORE(model), &iter);
         gtk_list_store_set(GTK_LIST_STORE(model), &iter,
                            COLUMN_IMAGE_LEVEL_VALUE, i,
@@ -1364,14 +1364,14 @@ void gldb_gui_image_allocate(GldbGuiImage *image, GldbGuiImageType type,
 
     image->nlevels = nlevels;
     if (nlevels)
-        image->levels = XNMALLOC(nlevels, GldbGuiImageLevel);
+        image->levels = BUGLE_NMALLOC(nlevels, GldbGuiImageLevel);
     else
         image->levels = NULL;
     for (i = 0; i < nlevels; i++)
     {
         image->levels[i].nplanes = nplanes;
         if (nplanes)
-            image->levels[i].planes = XCALLOC(nplanes, GldbGuiImagePlane);
+            image->levels[i].planes = BUGLE_CALLOC(nplanes, GldbGuiImagePlane);
         else
             image->levels[i].planes = NULL;
     }

@@ -23,9 +23,9 @@
 #include <bugle/apireflect.h>
 #include <budgie/call.h>
 #include <X11/Xlib.h>
+#include <bugle/memory.h>
 #include <bugle/bool.h>
 #include <stdlib.h>
-#include "xalloc.h"
 #include "budgielib/defines.h"
 
 /* Wrappers around GLX/WGL/EGL functions */
@@ -121,7 +121,7 @@ glwin_context_create *bugle_glwin_context_create_save(function_call *call)
     ctx = *(glwin_context *) call->generic.retn;
     if (!ctx)
         return NULL;
-    create = XMALLOC(glwin_context_create_glx);
+    create = BUGLE_MALLOC(glwin_context_create_glx);
     create->parent.function = call->generic.id;
     create->parent.group = call->generic.group;
     create->parent.ctx = ctx;

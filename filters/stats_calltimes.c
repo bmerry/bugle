@@ -22,14 +22,14 @@
 #include <stdlib.h>
 #include <string.h>
 #include <bugle/bool.h>
+#include <bugle/memory.h>
+#include <bugle/string.h>
 #include <sys/types.h>
 #include <sys/time.h>
 #include <bugle/stats.h>
 #include <bugle/filters.h>
 #include <bugle/objects.h>
 #include <budgie/reflect.h>
-#include "xalloc.h"
-#include "xvasprintf.h"
 
 static stats_signal **stats_calltimes_signals;
 static stats_signal *stats_calltimes_total;
@@ -78,11 +78,11 @@ static bugle_bool stats_calltimes_initialise(filter_set *handle)
     bugle_filter_order("stats_basic", "stats_calltimes_pre");
     bugle_filter_order("stats_primitives", "stats_calltimes_pre");
 
-    stats_calltimes_signals = XNMALLOC(budgie_function_count(), stats_signal *);
+    stats_calltimes_signals = BUGLE_NMALLOC(budgie_function_count(), stats_signal *);
     for (i = 0; i < budgie_function_count(); i++)
     {
         char *name;
-        name = xasprintf("calltimes:%s", budgie_function_name(i));
+        name = bugle_asprintf("calltimes:%s", budgie_function_name(i));
         stats_calltimes_signals[i] = bugle_stats_signal_new(name, NULL, NULL);
         free(name);
     }

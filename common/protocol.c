@@ -34,9 +34,9 @@
 #include "full-read.h"
 #include "full-write.h"
 #include "lock.h"
-#include "xalloc.h"
 #include "protocol.h"
 #include <bugle/misc.h>
+#include <bugle/memory.h>
 #include <bugle/porting.h>
 
 /* Trying to detect whether or not there is a working htonl, what header
@@ -117,7 +117,7 @@ struct gldb_protocol_reader
 gldb_protocol_reader *gldb_protocol_reader_new_fd(int fd)
 {
     gldb_protocol_reader *reader;
-    reader = XMALLOC(gldb_protocol_reader);
+    reader = BUGLE_MALLOC(gldb_protocol_reader);
     reader->mode = MODE_FD;
     reader->fd = fd;
     reader->reader_func = NULL;
@@ -128,7 +128,7 @@ gldb_protocol_reader *gldb_protocol_reader_new_fd(int fd)
 gldb_protocol_reader *gldb_protocol_reader_new_fd_select(int fd)
 {
     gldb_protocol_reader *reader;
-    reader = XMALLOC(gldb_protocol_reader);
+    reader = BUGLE_MALLOC(gldb_protocol_reader);
     reader->mode = MODE_FD_SELECT;
     reader->fd = fd;
     reader->reader_func = NULL;
@@ -142,7 +142,7 @@ gldb_protocol_reader *gldb_protocol_reader_new_fd_select(int fd)
 gldb_protocol_reader *gldb_protocol_reader_new_func(ssize_t (*read_func)(void *arg, void *buf, size_t count), void *arg)
 {
     gldb_protocol_reader *reader;
-    reader = XMALLOC(gldb_protocol_reader);
+    reader = BUGLE_MALLOC(gldb_protocol_reader);
     reader->mode = MODE_FUNC;
     reader->fd = -1;
     reader->reader_func = read_func;
@@ -292,7 +292,7 @@ bugle_bool gldb_protocol_recv_binary_string(gldb_protocol_reader *reader, uint32
 
     if (!io_safe_read(reader, &len2, sizeof(uint32_t))) return BUGLE_FALSE;
     *len = TO_HOST(len2);
-    *data = xmalloc(*len + 1);
+    *data = bugle_malloc(*len + 1);
     if (!io_safe_read(reader, *data, *len))
     {
         old_errno = errno;

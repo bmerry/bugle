@@ -21,7 +21,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <bugle/linkedlist.h>
-#include "xalloc.h"
+#include <bugle/memory.h>
 
 void bugle_list_init(linked_list *l, void (*destructor)(void *))
 {
@@ -43,7 +43,7 @@ linked_list_node *bugle_list_prepend(linked_list *l, void *data)
 {
     linked_list_node *n;
 
-    n = XMALLOC(linked_list_node);
+    n = BUGLE_MALLOC(linked_list_node);
     n->prev = NULL;
     n->next = l->head;
     n->data = data;
@@ -56,7 +56,7 @@ linked_list_node *bugle_list_prepend(linked_list *l, void *data)
 linked_list_node *bugle_list_append(linked_list *l, void *data)
 {
     linked_list_node *n;
-    n = XMALLOC(linked_list_node);
+    n = BUGLE_MALLOC(linked_list_node);
     n->next = NULL;
     n->prev = l->tail;
     n->data = data;
@@ -73,7 +73,7 @@ linked_list_node *bugle_list_insert_before(linked_list *l,
     linked_list_node *n;
 
     if (node == l->head) return bugle_list_prepend(l, data);
-    n = XMALLOC(linked_list_node);
+    n = BUGLE_MALLOC(linked_list_node);
     n->data = data;
     n->prev = node->prev;
     n->prev->next = n;
@@ -89,7 +89,7 @@ linked_list_node *bugle_list_insert_after(linked_list *l,
     linked_list_node *n;
 
     if (node == l->tail) return bugle_list_append(l, data);
-    n = XMALLOC(linked_list_node);
+    n = BUGLE_MALLOC(linked_list_node);
     n->data = data;
     n->next = node->next;
     n->next->prev = n;

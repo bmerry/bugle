@@ -25,12 +25,12 @@
 #include <bugle/linkedlist.h>
 #include <bugle/objects.h>
 #include <bugle/bool.h>
+#include <bugle/memory.h>
 #include <stddef.h>
 #include <string.h>
 #include <stdlib.h>
 #include <assert.h>
 #include "tls.h"
-#include "xalloc.h"
 
 struct object_class
 {
@@ -60,7 +60,7 @@ object_class * bugle_object_class_new(object_class *parent)
 {
     object_class *klass;
 
-    klass = XMALLOC(object_class);
+    klass = BUGLE_MALLOC(object_class);
     bugle_list_init(&klass->info, free);
     klass->parent = parent;
     klass->count = 0;
@@ -86,7 +86,7 @@ object_view bugle_object_view_new(object_class *klass,
 {
     object_class_info *info;
 
-    info = XMALLOC(object_class_info);
+    info = BUGLE_MALLOC(object_class_info);
     info->constructor = constructor;
     info->destructor = destructor;
     info->size = size;
@@ -101,7 +101,7 @@ object *bugle_object_new(object_class *klass, const void *key, bugle_bool make_c
     const object_class_info *info;
     size_t j;
 
-    obj = xmalloc(sizeof(object) + klass->count * sizeof(void *) - sizeof(void *));
+    obj = bugle_malloc(sizeof(object) + klass->count * sizeof(void *) - sizeof(void *));
     obj->klass = klass;
     obj->count = klass->count;
 
@@ -110,7 +110,7 @@ object *bugle_object_new(object_class *klass, const void *key, bugle_bool make_c
         info = (const object_class_info *) bugle_list_data(i);
         if (info->size)
         {
-            obj->views[j] = xmalloc(info->size);
+            obj->views[j] = bugle_malloc(info->size);
             memset(obj->views[j], 0, info->size);
         }
         else

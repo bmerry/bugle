@@ -18,10 +18,11 @@
 #if HAVE_CONFIG_H
 # include <config.h>
 #endif
-#define _POSIX_C_SOURCE 200112L /* for flockfile */
+#define _POSIX_C_SOURCE 200112L /* for flockfile (TODO: put into abstraction layer) */
 #include <bugle/log.h>
 #include <bugle/filters.h>
-#include <bugle/die.h>
+#include <bugle/memory.h>
+#include <bugle/string.h>
 #include <bugle/bool.h>
 #include "common/threads.h"
 #include <stdio.h>
@@ -31,12 +32,11 @@
 #include <sys/types.h>
 #include <unistd.h>
 #include <assert.h>
-#include "xalloc.h"
 
 #define LOG_DEFAULT_FORMAT "[%l] %f.%e: %m" 
 
 /* Note: it is important for these to all have sensible initial values
- * (even though the format is later replaced by xstrdup), because errors in
+ * (even though the format is later replaced by bugle_strdup), because errors in
  * loading the config file are logged before the log filterset is initialised.
  */
 static char *log_filename = NULL;
@@ -252,5 +252,5 @@ void log_initialise(void)
     };
 
     bugle_filter_set_new(&log_info);
-    log_format = xstrdup(LOG_DEFAULT_FORMAT);
+    log_format = bugle_strdup(LOG_DEFAULT_FORMAT);
 }

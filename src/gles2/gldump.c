@@ -34,11 +34,11 @@
 #include <bugle/filters.h>
 #include <bugle/log.h>
 #include <bugle/apireflect.h>
+#include <bugle/memory.h>
 #include <budgie/types.h>
 #include <budgie/reflect.h>
 #include <budgie/call.h>
 #include "budgielib/defines.h"
-#include "xalloc.h"
 
 budgie_type bugle_gl_type_to_type(GLenum gl_type)
 {
@@ -206,7 +206,7 @@ void dump_initialise(void)
             if (s->type == TYPE_9GLboolean || s->type == TYPE_6GLenum
                 || s->length != 1) dump_table_size++;
 
-    dump_table = XNMALLOC(dump_table_size, dump_table_entry);
+    dump_table = BUGLE_NMALLOC(dump_table_size, dump_table_entry);
     cur = dump_table;
     for (t = all_state; *t; t++)
         for (s = *t; s->name; s++)
@@ -269,7 +269,7 @@ bugle_bool bugle_dump_convert(GLenum pname, const void *value,
 
     length = entry->length;
     alength = (length == -1) ? 1 : length;
-    out_data = xnmalloc(alength, budgie_type_size(out_type));
+    out_data = bugle_nmalloc(alength, budgie_type_size(out_type));
     budgie_type_convert(out_data, out_type, in, in_type, alength);
     if (ptr)
         budgie_dump_any_type_extended(out_type, out_data, -1, length, ptr, buffer, size);

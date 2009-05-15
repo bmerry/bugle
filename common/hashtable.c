@@ -1,5 +1,5 @@
 /*  BuGLe: an OpenGL debugging tool
- *  Copyright (C) 2004-2007  Bruce Merry
+ *  Copyright (C) 2004-2007, 2009  Bruce Merry
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -23,9 +23,10 @@
 #include <stddef.h>
 #include <assert.h>
 #include <bugle/bool.h>
+#include <bugle/memory.h>
+#include <bugle/string.h>
 #include <bugle/hashtable.h>
 #include "lock.h"
-#include "xalloc.h"
 
 /* Primes are used for hash table sizes */
 static size_t primes[sizeof(size_t) * 8];
@@ -105,7 +106,7 @@ void bugle_hash_set(hash_table *table, const char *key, void *value)
         gl_once(hash_once, hash_initialise);
         big.size_index = table->size_index + 1;
         big.size = primes[big.size_index];
-        big.entries = XCALLOC(big.size, hash_table_entry);
+        big.entries = BUGLE_CALLOC(big.size, hash_table_entry);
         big.count = 0;
         big.destructor = table->destructor;
         for (i = 0; i < table->size; i++)
@@ -121,7 +122,7 @@ void bugle_hash_set(hash_table *table, const char *key, void *value)
         if (++h == table->size) h = 0;
     if (!table->entries[h].key)
     {
-        table->entries[h].key = xstrdup(key);
+        table->entries[h].key = bugle_strdup(key);
         table->count++;
     }
     else if (table->destructor)
@@ -239,7 +240,7 @@ void bugle_hashptr_set(hashptr_table *table, const void *key, void *value)
         gl_once(hash_once, hash_initialise);
         big.size_index = table->size_index + 1;
         big.size = primes[big.size_index];
-        big.entries = XCALLOC(big.size, hashptr_table_entry);
+        big.entries = BUGLE_CALLOC(big.size, hashptr_table_entry);
         big.count = 0;
         big.destructor = table->destructor;
         for (i = 0; i < table->size; i++)

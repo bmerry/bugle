@@ -37,14 +37,14 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <bugle/porting.h>
+#include <bugle/memory.h>
+#include <bugle/string.h>
 #include "common/protocol.h"
 #include "gldb/gldb-common.h"
 #include "gldb/gldb-channels.h"
 #include "gldb/gldb-gui.h"
 #include "gldb/gldb-gui-image.h"
 #include "gldb/gldb-gui-framebuffer.h"
-#include "xalloc.h"
-#include "xvasprintf.h"
 
 struct _GldbFramebufferPane
 {
@@ -186,9 +186,9 @@ static void gldb_framebuffer_pane_update_ids(GldbFramebufferPane *pane)
             fbo = (gldb_state *) bugle_list_data(pfbo);
 
             if (fbo->numeric_name == 0)
-                name = xstrdup(_("Default"));
+                name = bugle_strdup(_("Default"));
             else
-                name = xasprintf("%u", (unsigned int) fbo->numeric_name);
+                name = bugle_asprintf("%u", (unsigned int) fbo->numeric_name);
             gtk_list_store_append(GTK_LIST_STORE(model), &iter);
             gtk_list_store_set(GTK_LIST_STORE(model), &iter,
                                COLUMN_FRAMEBUFFER_ID_ID, fbo->numeric_name,
@@ -442,7 +442,7 @@ static void gldb_framebuffer_pane_buffer_changed(GtkWidget *widget, gpointer use
             buffer = GL_FRONT;
         }
 
-        data = XMALLOC(framebuffer_callback_data);
+        data = BUGLE_MALLOC(framebuffer_callback_data);
         data->channels = gldb_channel_get_query_channels(channel);
         data->flags = 0;
         data->pane = pane;

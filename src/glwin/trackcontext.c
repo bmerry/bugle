@@ -28,11 +28,11 @@
 #include <bugle/glwin/trackcontext.h>
 #include <bugle/filters.h>
 #include <bugle/objects.h>
+#include <bugle/memory.h>
 #include <bugle/log.h>
 #include <budgie/types.h>
 #include <budgie/addresses.h>
 #include "budgielib/defines.h"
-#include "xalloc.h"
 #include "lock.h"
 
 /* Some constructors like the context to be current when they are run.
@@ -263,7 +263,7 @@ static bugle_bool trackcontext_newcontext(function_call *call, const callback_da
     {
         gl_lock_lock(context_mutex);
 
-        base = XZALLOC(trackcontext_data);
+        base = BUGLE_ZALLOC(trackcontext_data);
         base->aux_shared = NULL;
         base->aux_unshared = NULL;
         base->create = create;

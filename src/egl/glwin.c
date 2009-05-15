@@ -22,11 +22,11 @@
 #include <EGL/egl.h>
 #include <budgie/call.h>
 #include <bugle/bool.h>
+#include <bugle/memory.h>
 #include <string.h>
 #include <bugle/glwin/glwin.h>
 #include <bugle/apireflect.h>
 #include "budgielib/defines.h"
-#include "xalloc.h"
 
 glwin_display bugle_glwin_get_current_display(void)
 {
@@ -105,7 +105,7 @@ glwin_context_create *bugle_glwin_context_create_save(function_call *call)
         nattribs++;
     }
 
-    create = XMALLOC(glwin_context_create_egl);
+    create = BUGLE_MALLOC(glwin_context_create_egl);
     create->parent.dpy = *call->eglCreateContext.arg0;
     create->parent.function = call->generic.id;
     create->parent.group = call->generic.group;
@@ -114,7 +114,7 @@ glwin_context_create *bugle_glwin_context_create_save(function_call *call)
     create->config = *call->eglCreateContext.arg1;
     if (attribs != NULL)
     {
-        create->attribs = XNMALLOC(nattribs, EGLint);
+        create->attribs = BUGLE_NMALLOC(nattribs, EGLint);
         memcpy(create->attribs, attribs, nattribs * sizeof(EGLint));
     }
     else

@@ -23,6 +23,7 @@
 #include <string.h>
 #include <stddef.h>
 #include <bugle/bool.h>
+#include <bugle/memory.h>
 #include <bugle/glwin/trackcontext.h>
 #include <bugle/gl/glheaders.h>
 #include <bugle/gl/glutils.h>
@@ -32,7 +33,6 @@
 #include <bugle/hashtable.h>
 #include <budgie/types.h>
 #include <budgie/call.h>
-#include "xalloc.h"
 #include "lock.h"
 
 typedef struct
@@ -232,7 +232,7 @@ static void add_check(object *call_object,
 {
     check_data *c;
 
-    c = XMALLOC(check_data);
+    c = BUGLE_MALLOC(check_data);
     c->type = type;
     c->object = object;
     bugle_list_append((linked_list *) bugle_object_get_data(call_object, call_view), c);
@@ -266,7 +266,7 @@ static void globjects_pre_glsl_delete_program(GLuint object, const callback_data
     bugle_glGetProgramiv(object, GL_ATTACHED_SHADERS, &count);
     if (count)
     {
-        attached = XNMALLOC(count, GLuint);
+        attached = BUGLE_NMALLOC(count, GLuint);
         bugle_glGetAttachedShaders(object, count, NULL, attached);
         for (i = 0; i < count; i++)
             add_check(data->call_object, BUGLE_GLOBJECTS_SHADER, attached[i]);
@@ -521,7 +521,7 @@ void bugle_globjects_walk(bugle_globjects_type type,
     for (i = bugle_hashptr_begin(table); i; i = bugle_hashptr_next(table, i))
         if (i->value)
             count++;
-    keyvalues = (size_t (*)[2]) xnmalloc(count, sizeof(size_t [2]));
+    keyvalues = (size_t (*)[2]) bugle_nmalloc(count, sizeof(size_t [2]));
     for (i = bugle_hashptr_begin(table), j = 0; i; i = bugle_hashptr_next(table, i))
         if (i->value)
         {

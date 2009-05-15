@@ -7,11 +7,6 @@ gnulib_env = env.Clone()
 gnulib_env.Prepend(CPPPATH = ['.'])
 
 gnulib_sources = [
-        'xmalloc.c',
-        '../gnulib-local/lib/xalloc-die.c',
-        'xstrndup.c',
-        'xvasprintf.c',
-        'xasprintf.c',
         'lock.c',
         'safe-read.c',
         'safe-write.c',

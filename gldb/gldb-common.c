@@ -34,12 +34,12 @@
 #include <bugle/hashtable.h>
 #include <bugle/misc.h>
 #include <bugle/porting.h>
+#include <bugle/string.h>
+#include <bugle/memory.h>
 #include <budgie/reflect.h>
 #include "budgielib/defines.h"
 #include "common/protocol.h"
 #include "gldb/gldb-common.h"
-#include "xalloc.h"
-#include "xvasprintf.h"
 
 static int lib_in_fd = -1, lib_out = -1;
 static gldb_protocol_reader *lib_in = NULL;
@@ -101,7 +101,7 @@ void gldb_program_set_setting(gldb_program_setting setting, const char *value)
     assert(setting < GLDB_PROGRAM_SETTING_COUNT);
     free(prog_settings[setting]);
     if (value && !*value) value = NULL;
-    prog_settings[setting] = value ? xstrdup(value) : NULL;
+    prog_settings[setting] = value ? bugle_strdup(value) : NULL;
 }
 
 void gldb_program_set_type(gldb_program_type type)
@@ -161,7 +161,7 @@ static void setenv_printf(const char *fmt, ...)
     char *var;
 
     va_start(ap, fmt);
-    var = xvasprintf(fmt, ap);
+    var = bugle_vasprintf(fmt, ap);
     va_end(ap);
     _putenv(var);
     free(var);
@@ -180,7 +180,7 @@ static char **make_argv(const char *cmd)
     char *buffer, *i;
     int argc = 0;
 
-    buffer = xstrdup(cmd);
+    buffer = bugle_strdup(cmd);
     /* First pass to count arguments */
     i = buffer;
     while (*i == ' ') i++;  /* Skip leading whitespace */
@@ -197,13 +197,13 @@ static char **make_argv(const char *cmd)
         /* empty argument list. We can't pass that back, because then the
          * caller would have no command to run.
          */
-        argv = XNMALLOC(2, char *);
+        argv = BUGLE_NMALLOC(2, char *);
         argv[0] = buffer;
         argv[1] = NULL;
         return argv;
     }
 
-    argv = XNMALLOC(argc + 1, char *);
+    argv = BUGLE_NMALLOC(argc + 1, char *);
     argc = 0;
     i = buffer;
     while (*i == ' ') i++;  /* Skip leading whitespace */
@@ -371,20 +371,20 @@ static pid_t execute(void (*child_init)(void))
         case GLDB_PROGRAM_TYPE_LOCAL:
             prog_argv[0] = "/bin/sh";
             prog_argv[1] = "-c";
-            prog_argv[2] = xasprintf("%s%s BUGLE_CHAIN=%s LD_PRELOAD=libbugle.so BUGLE_DEBUGGER=fd BUGLE_DEBUGGER_FD_IN=%d BUGLE_DEBUGGER_FD_OUT=%d %s",
-                                     display ? "DISPLAY=" : "", display ? display : "",
-                                     chain ? chain : "",
-                                     out_pipe[0], in_pipe[1], command);
+            prog_argv[2] = bugle_asprintf("%s%s BUGLE_CHAIN=%s LD_PRELOAD=libbugle.so BUGLE_DEBUGGER=fd BUGLE_DEBUGGER_FD_IN=%d BUGLE_DEBUGGER_FD_OUT=%d %s",
+                                          display ? "DISPLAY=" : "", display ? display : "",
+                                          chain ? chain : "",
+                                          out_pipe[0], in_pipe[1], command);
             prog_argv[3] = NULL;
             break;
         case GLDB_PROGRAM_TYPE_SSH:
             /* Insert the environment variables into the command. */
             prog_argv[0] = "/usr/bin/ssh";
             prog_argv[1] = host ? host : "localhost";
-            prog_argv[2] = xasprintf("%s%s BUGLE_CHAIN=%s LD_PRELOAD=libbugle.so BUGLE_DEBUGGER=fd BUGLE_DEBUGGER_FD_IN=3 BUGLE_DEBUGGER_FD_OUT=4 %s 3<&0 4>&1 </dev/null 1>&2",
-                                     display ? "DISPLAY=" : "", display ? display : "",
-                                     chain ? chain : "",
-                                     command);
+            prog_argv[2] = bugle_asprintf("%s%s BUGLE_CHAIN=%s LD_PRELOAD=libbugle.so BUGLE_DEBUGGER=fd BUGLE_DEBUGGER_FD_IN=3 BUGLE_DEBUGGER_FD_OUT=4 %s 3<&0 4>&1 </dev/null 1>&2",
+                                          display ? "DISPLAY=" : "", display ? display : "",
+                                          chain ? chain : "",
+                                          command);
             prog_argv[3] = NULL;
             dup2(in_pipe[1], 1);
             dup2(out_pipe[0], 0);
@@ -471,7 +471,7 @@ static gldb_response *gldb_get_response_ans(uint32_t code, uint32_t id)
 {
     gldb_response_ans *r;
 
-    r = XMALLOC(gldb_response_ans);
+    r = BUGLE_MALLOC(gldb_response_ans);
     r->code = code;
     r->id = id;
     gldb_protocol_recv_code(lib_in, &r->value);
@@ -483,7 +483,7 @@ static gldb_response *gldb_get_response_break(uint32_t code, uint32_t id)
     gldb_response_break *r;
 
     set_status(GLDB_STATUS_STOPPED);
-    r = XMALLOC(gldb_response_break);
+    r = BUGLE_MALLOC(gldb_response_break);
     r->code = code;
     r->id = id;
     gldb_protocol_recv_string(lib_in, &r->call);
@@ -495,7 +495,7 @@ static gldb_response *gldb_get_response_break_event(uint32_t code, uint32_t id)
     gldb_response_break_event *r;
 
     set_status(GLDB_STATUS_STOPPED);
-    r = XMALLOC(gldb_response_break_event);
+    r = BUGLE_MALLOC(gldb_response_break_event);
     r->code = code;
     r->id = id;
     gldb_protocol_recv_string(lib_in, &r->call);
@@ -507,7 +507,7 @@ static gldb_response *gldb_get_response_state(uint32_t code, uint32_t id)
 {
     gldb_response_state *r;
 
-    r = XMALLOC(gldb_response_state);
+    r = BUGLE_MALLOC(gldb_response_state);
     r->code = code;
     r->id = id;
     gldb_protocol_recv_string(lib_in, &r->state);
@@ -518,7 +518,7 @@ static gldb_response *gldb_get_response_error(uint32_t code, uint32_t id)
 {
     gldb_response_error *r;
 
-    r = XMALLOC(gldb_response_error);
+    r = BUGLE_MALLOC(gldb_response_error);
     r->code = code;
     r->id = id;
     gldb_protocol_recv_code(lib_in, &r->error_code);
@@ -531,7 +531,7 @@ static gldb_response *gldb_get_response_running(uint32_t code, uint32_t id)
     gldb_response_running *r;
 
     set_status(GLDB_STATUS_RUNNING);
-    r = XMALLOC(gldb_response_running);
+    r = BUGLE_MALLOC(gldb_response_running);
     r->code = code;
     r->id = id;
     return (gldb_response *) r;
@@ -541,7 +541,7 @@ static gldb_response *gldb_get_response_screenshot(uint32_t code, uint32_t id)
 {
     gldb_response_screenshot *r;
 
-    r = XMALLOC(gldb_response_screenshot);
+    r = BUGLE_MALLOC(gldb_response_screenshot);
     r->code = code;
     r->id = id;
     gldb_protocol_recv_binary_string(lib_in, &r->length, &r->data);
@@ -558,7 +558,7 @@ static gldb_state *state_get(void)
     uint32_t data_len;
     char *type_name = NULL;
 
-    s = XMALLOC(gldb_state);
+    s = BUGLE_MALLOC(gldb_state);
     bugle_list_init(&s->children, (void (*)(void *)) state_destroy);
     gldb_protocol_recv_string(lib_in, &s->name);
     gldb_protocol_recv_code(lib_in, &numeric_name);
@@ -602,7 +602,7 @@ static gldb_response *gldb_get_response_state_tree(uint32_t code, uint32_t id)
 {
     gldb_response_state_tree *r;
 
-    r = XMALLOC(gldb_response_state_tree);
+    r = BUGLE_MALLOC(gldb_response_state_tree);
     r->code = code;
     r->id = id;
     r->root = state_get();
@@ -615,7 +615,7 @@ static gldb_response *gldb_get_response_data_texture(uint32_t code, uint32_t id,
 {
     gldb_response_data_texture *r;
 
-    r = XMALLOC(gldb_response_data_texture);
+    r = BUGLE_MALLOC(gldb_response_data_texture);
     r->code = code;
     r->id = id;
     r->subtype = subtype;
@@ -633,7 +633,7 @@ static gldb_response *gldb_get_response_data_framebuffer(uint32_t code, uint32_t
 {
     gldb_response_data_framebuffer *r;
 
-    r = XMALLOC(gldb_response_data_framebuffer);
+    r = BUGLE_MALLOC(gldb_response_data_framebuffer);
     r->code = code;
     r->id = id;
     r->subtype = subtype;
@@ -650,7 +650,7 @@ static gldb_response *gldb_get_response_data_shader(uint32_t code, uint32_t id,
 {
     gldb_response_data_shader *r;
 
-    r = XMALLOC(gldb_response_data_shader);
+    r = BUGLE_MALLOC(gldb_response_data_shader);
     r->code = code;
     r->id = id;
     r->subtype = subtype;
@@ -665,7 +665,7 @@ static gldb_response *gldb_get_response_data_info_log(uint32_t code, uint32_t id
 {
     gldb_response_data_info_log *r;
 
-    r = XMALLOC(gldb_response_data_info_log);
+    r = BUGLE_MALLOC(gldb_response_data_info_log);
     r->code = code;
     r->id = id;
     r->subtype = subtype;
@@ -680,7 +680,7 @@ static gldb_response *gldb_get_response_data_buffer(uint32_t code, uint32_t id,
 {
     gldb_response_data_buffer *r;
 
-    r = XMALLOC(gldb_response_data_buffer);
+    r = BUGLE_MALLOC(gldb_response_data_buffer);
     r->code = code;
     r->id = id;
     r->subtype = subtype;
@@ -852,11 +852,11 @@ static void dump_wrapper(char **buffer, size_t *size, void *data)
 char *gldb_state_string(const gldb_state *state)
 {
     if (state->length == 0)
-        return xstrdup("");
+        return bugle_strdup("");
     if (state->length == -2)
-        return xstrdup("<GL error>");
+        return bugle_strdup("<GL error>");
     if (state->type == TYPE_c || state->type == TYPE_Kc)
-        return xstrdup((const char *) state->data);
+        return bugle_strdup((const char *) state->data);
     else
         return bugle_string_io(dump_wrapper, (void *) state);
 }
@@ -1118,7 +1118,7 @@ void gldb_initialise(int argc, const char * const *argv)
 
     for (i = 1; i < argc; i++)
         len += strlen(argv[i]) + 1;
-    ptr = command = XNMALLOC(len, char);
+    ptr = command = BUGLE_NMALLOC(len, char);
     for (i = 1; i < argc; i++)
     {
         len = strlen(argv[i]);

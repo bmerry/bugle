@@ -44,6 +44,8 @@
 #include <bugle/hashtable.h>
 #include <bugle/misc.h>
 #include <bugle/apireflect.h>
+#include <bugle/memory.h>
+#include <bugle/string.h>
 #include <bugle/porting.h>
 #include <budgie/types.h>
 #include <budgie/reflect.h>
@@ -56,8 +58,6 @@
 #endif
 #include "common/protocol.h"
 #include "common/threads.h"
-#include "xalloc.h"
-#include "xvasprintf.h"
 #include "lock.h"
 
 static gldb_protocol_reader *in_pipe = NULL;
@@ -325,7 +325,7 @@ static bugle_bool send_data_texture(uint32_t id, GLuint texid, GLenum target,
 
     length = bugle_gl_type_to_size(type) * bugle_gl_format_to_count(format, type)
         * width * height * depth;
-    data = xmalloc(length);
+    data = bugle_malloc(length);
 
     CALL(glGetTexImage)(face, level, format, type, data);
 
@@ -561,7 +561,7 @@ static bugle_bool send_data_framebuffer(uint32_t id, GLuint fbo, GLenum target,
     get_framebuffer_size(fbo, fbo_target, buffer, &width, &height);
     length = bugle_gl_type_to_size(type) * bugle_gl_format_to_count(format, type)
         * width * height;
-    data = xmalloc(length);
+    data = bugle_malloc(length);
     CALL(glReadPixels)(0, 0, width, height, format, type, data);
 
     /* Restore the old state. glPushAttrib currently does NOT save FBO
@@ -632,7 +632,7 @@ static bugle_bool send_data_shader(uint32_t id, GLuint shader_id,
         CALL(glPushAttrib)(GL_ALL_ATTRIB_BITS);
         CALL(glBindProgramARB)(target, shader_id);
         CALL(glGetProgramivARB)(target, GL_PROGRAM_LENGTH_ARB, &length);
-        text = XNMALLOC(length, char);
+        text = BUGLE_NMALLOC(length, char);
         CALL(glGetProgramStringARB)(target, GL_PROGRAM_STRING_ARB, text);
         CALL(glPopAttrib)();
         break;
@@ -645,16 +645,16 @@ static bugle_bool send_data_shader(uint32_t id, GLuint shader_id,
         bugle_glGetShaderiv(shader_id, GL_SHADER_SOURCE_LENGTH, &length);
         if (length != 0)
         {
-            text = XNMALLOC(length, char);
+            text = BUGLE_NMALLOC(length, char);
             bugle_glGetShaderSource(shader_id, length, NULL, text);
             length--; /* Don't count NULL terminator */
         }
         else
-            text = XNMALLOC(1, char);
+            text = BUGLE_NMALLOC(1, char);
         break;
     default:
         /* Should never get here */
-        text = XNMALLOC(1, char);
+        text = BUGLE_NMALLOC(1, char);
         length = 0;
     }
 
@@ -696,7 +696,7 @@ static bugle_bool send_data_info_log(uint32_t id, GLuint object_id,
          * fetch this.
          */
         length = 0;
-        text = XNMALLOC(1, char);
+        text = BUGLE_NMALLOC(1, char);
         text[0] = '\0';
         break;
 #endif
@@ -708,27 +708,27 @@ static bugle_bool send_data_info_log(uint32_t id, GLuint object_id,
         bugle_glGetShaderiv(object_id, GL_INFO_LOG_LENGTH, &length);
         if (length != 0)
         {
-            text = XNMALLOC(length, char);
+            text = BUGLE_NMALLOC(length, char);
             bugle_glGetShaderInfoLog(object_id, length, NULL, text);
             length--; /* Don't count NULL terminator */
         }
         else
-            text = XNMALLOC(1, char);
+            text = BUGLE_NMALLOC(1, char);
         break;
     case 0x8B40: /* GL_PROGRAM_OBJECT_ARB - but doesn't exist in ES header files */
         bugle_glGetProgramiv(object_id, GL_INFO_LOG_LENGTH, &length);
         if (length != 0)
         {
-            text = XNMALLOC(length, char);
+            text = BUGLE_NMALLOC(length, char);
             bugle_glGetProgramInfoLog(object_id, length, NULL, text);
             length--; /* Don't count NULL terminator */
         }
         else
-            text = XNMALLOC(1, char);
+            text = BUGLE_NMALLOC(1, char);
         break;
     default:
         /* Should never get here */
-        text = XNMALLOC(1, char);
+        text = BUGLE_NMALLOC(1, char);
         length = 0;
     }
 
@@ -798,7 +798,7 @@ static bugle_bool send_data_buffer(uint32_t id, GLuint object_id)
 
     CALL(glBindBuffer)(GL_ARRAY_BUFFER_ARB, object_id);
     CALL(glGetBufferParameterivARB)(GL_ARRAY_BUFFER_ARB, GL_BUFFER_SIZE_ARB, &size);
-    data = xmalloc(size);
+    data = bugle_malloc(size);
     CALL(glGetBufferSubDataARB)(GL_ARRAY_BUFFER_ARB, 0, size, data);
     CALL(glBindBuffer)(GL_ARRAY_BUFFER_ARB, old_binding);
 
@@ -865,7 +865,7 @@ static void process_single_command(function_call *call)
             gldb_protocol_send_code(out_pipe, RESP_ERROR);
             gldb_protocol_send_code(out_pipe, id);
             gldb_protocol_send_code(out_pipe, 0);
-            resp_str = xasprintf("Unknown function %s", req_str);
+            resp_str = bugle_asprintf("Unknown function %s", req_str);
             gldb_protocol_send_string(out_pipe, resp_str);
             free(resp_str);
         }
@@ -896,7 +896,7 @@ static void process_single_command(function_call *call)
         f = bugle_filter_set_get_handle(req_str);
         if (!f)
         {
-            resp_str = xasprintf("Unknown filter-set %s", req_str);
+            resp_str = bugle_asprintf("Unknown filter-set %s", req_str);
             gldb_protocol_send_code(out_pipe, RESP_ERROR);
             gldb_protocol_send_code(out_pipe, id);
             gldb_protocol_send_code(out_pipe, 0);
@@ -912,8 +912,8 @@ static void process_single_command(function_call *call)
         }
         else if (!bugle_filter_set_is_loaded(f))
         {
-            resp_str = xasprintf("Filter-set %s is not loaded; it must be loaded at program start",
-                                 req_str);
+            resp_str = bugle_asprintf("Filter-set %s is not loaded; it must be loaded at program start",
+                                      req_str);
             gldb_protocol_send_code(out_pipe, RESP_ERROR);
             gldb_protocol_send_code(out_pipe, id);
             gldb_protocol_send_code(out_pipe, 0);
@@ -922,8 +922,8 @@ static void process_single_command(function_call *call)
         }
         else if (bugle_filter_set_is_active(f) == activate)
         {
-            resp_str = xasprintf("Filter-set %s is already %s",
-                                 req_str, activate ? "active" : "inactive");
+            resp_str = bugle_asprintf("Filter-set %s is already %s",
+                                      req_str, activate ? "active" : "inactive");
             gldb_protocol_send_code(out_pipe, RESP_ERROR);
             gldb_protocol_send_code(out_pipe, id);
             gldb_protocol_send_code(out_pipe, 0);
@@ -1176,7 +1176,7 @@ static bugle_bool debugger_initialise(filter_set *handle)
     char *last;
     filter *f;
 
-    break_on = XCALLOC(budgie_function_count(), bugle_bool);
+    break_on = BUGLE_CALLOC(budgie_function_count(), bugle_bool);
 
     if (!getenv("BUGLE_DEBUGGER"))
     {

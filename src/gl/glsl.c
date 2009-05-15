@@ -32,7 +32,6 @@
 #include <bugle/gl/glsl.h>
 #include <budgie/call.h>
 #include "src/apitables.h"
-#include "xalloc.h"
 
 #if GL_ES_VERSION_2_0 || GL_VERSION_2_0
 

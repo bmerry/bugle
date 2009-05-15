@@ -31,8 +31,8 @@
 #include <bugle/filters.h>
 #include <bugle/objects.h>
 #include <bugle/apireflect.h>
+#include <bugle/memory.h>
 #include <budgie/call.h>
-#include "xalloc.h"
 
 typedef struct
 {
@@ -50,7 +50,7 @@ static void tokenise(const char *str, hash_table *tokens)
     const char *p, *q;
     char *tmp;
 
-    tmp = xcharalloc(strlen(str) + 1);
+    tmp = BUGLE_NMALLOC(strlen(str) + 1, char);
     p = str;
     while (*p == ' ') p++;
     while (*p != '\0')
@@ -76,7 +76,7 @@ static void context_init(const void *key, void *data)
     glwin_display dpy;
 
     ce = (context_extensions *) data;
-    ce->flags = XCALLOC(bugle_api_extension_count(), bugle_bool);
+    ce->flags = BUGLE_CALLOC(bugle_api_extension_count(), bugle_bool);
     bugle_hash_init(&ce->names, NULL);
 
     glexts = (const char *) CALL(glGetString)(GL_EXTENSIONS);

@@ -22,13 +22,13 @@
 #include <assert.h>
 #include <ltdl.h>
 #include <stdio.h>
+#include <bugle/memory.h>
 #include <budgie/types.h>
 #include <budgie/addresses.h>
 #include <budgie/reflect.h>
 #include "common/threads.h"
 #include "budgielib/lib.h"
 #include "tls.h"
-#include "xalloc.h"
 
 /* External function provided to look up addresses on the fly, for when the
  * address is context-dependent.
@@ -160,7 +160,7 @@ void budgie_function_address_initialise(void)
     /* These have gone away at some point in libtool
      */
 #if 0
-    lt_dlmalloc = xmalloc;
+    lt_dlmalloc = bugle_malloc;
     lt_dlrealloc = xrealloc;
 #endif
     lt_dlinit();

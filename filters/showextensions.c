@@ -35,9 +35,9 @@
 #include <bugle/filters.h>
 #include <bugle/apireflect.h>
 #include <bugle/log.h>
+#include <bugle/memory.h>
 #include <budgie/addresses.h>
 #include <budgie/reflect.h>
-#include "xalloc.h"
 
 /* The values are set to &seen_extensions to indicate presence, then
  * lazily deleted by setting to NULL.
@@ -81,7 +81,7 @@ static bugle_bool showextensions_initialise(filter_set *handle)
      */
     bugle_filter_order("showextensions", "invoke");
 
-    seen_functions = XCALLOC(budgie_function_count(), bugle_bool);
+    seen_functions = BUGLE_CALLOC(budgie_function_count(), bugle_bool);
     bugle_hashptr_init(&seen_enums, NULL);
     return BUGLE_TRUE;
 }
@@ -155,7 +155,7 @@ static void showextensions_shutdown(filter_set *handle)
     const bugle_api_extension *exts;
     bugle_api_extension best;
 
-    marked_extensions = XCALLOC(bugle_api_extension_count(), bugle_bool);
+    marked_extensions = BUGLE_CALLOC(bugle_api_extension_count(), bugle_bool);
     /* We assume GL 1.1 and GLX 1.2 */
     mark_extension(BUGLE_API_EXTENSION_ID(GL_VERSION_1_1), marked_extensions);
     mark_extension(BUGLE_API_EXTENSION_ID(GLX_VERSION_1_2), marked_extensions);
