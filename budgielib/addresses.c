@@ -28,7 +28,6 @@
 #include <budgie/reflect.h>
 #include "common/threads.h"
 #include "budgielib/lib.h"
-#include "tls.h"
 
 /* External function provided to look up addresses on the fly, for when the
  * address is context-dependent.
@@ -208,12 +207,12 @@ void budgie_function_set_bypass(budgie_function id, bugle_bool bypass)
  * here to avoid quoting them for generation in lib.c.
  */
 
-static gl_tls_key_t reentrance_key;
+static bugle_thread_key_t reentrance_key;
 
 BUGLE_CONSTRUCTOR(reentrance_initialise);
 static void reentrance_initialise(void)
 {
-    gl_tls_key_init(reentrance_key, NULL);
+    bugle_thread_key_create(reentrance_key, NULL);
 }
 
 /* Sets the flag to mark entry, and returns BUGLE_TRUE if we should call
@@ -227,12 +226,12 @@ bugle_bool _budgie_reentrance_init(void)
     bugle_bool ans;
 
     BUGLE_RUN_CONSTRUCTOR(reentrance_initialise);
-    ans = gl_tls_get(reentrance_key) == NULL;
-    gl_tls_set(reentrance_key, &ans); /* arbitrary non-NULL value */
+    ans = bugle_thread_getspecific(reentrance_key) == NULL;
+    bugle_thread_setspecific(reentrance_key, &ans); /* arbitrary non-NULL value */
     return ans;
 }
 
 void _budgie_reentrance_clear(void)
 {
-    gl_tls_set(reentrance_key, NULL);
+    bugle_thread_setspecific(reentrance_key, NULL);
 }

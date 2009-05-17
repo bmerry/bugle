@@ -43,7 +43,6 @@
 #include <budgie/addresses.h>
 #include <budgie/types.h>
 #include <budgie/reflect.h>
-#include "lock.h"
 
 #ifdef GL_VERSION_1_1
 static void checks_texture_complete_fail(int unit, GLenum target, const char *reason)
@@ -236,7 +235,7 @@ static void checks_texture_complete(int unit, GLenum target)
 }
 #endif /* GL_VERSION_1_1 */
 
-static void checks_completeness()
+static void checks_completeness(void)
 {
     if (bugle_gl_begin_internal_render())
     {
@@ -311,7 +310,7 @@ static bugle_bool checks_error_vbo;
 
 #if HAVE_SIGLONGJMP
 static sigjmp_buf checks_buf;
-gl_lock_define_initialized(static, checks_mutex)
+bugle_thread_lock_define_initialized(static, checks_mutex)
 
 static void checks_sigsegv_handler(int sig)
 {
@@ -647,7 +646,7 @@ static void checks_min_max(GLsizei count, GLenum gltype, const GLvoid *indices,
     struct sigaction act, old_act; \
     volatile bugle_bool ret = BUGLE_TRUE; \
     \
-    gl_lock_lock(checks_mutex); \
+    bugle_thread_lock_lock(checks_mutex); \
     checks_error = NULL; \
     checks_error_attribute = -1; \
     checks_error_vbo = BUGLE_FALSE; \
@@ -673,7 +672,7 @@ static void checks_min_max(GLsizei count, GLenum gltype, const GLvoid *indices,
             perror("failed to restore SIGSEGV handler"); \
             exit(1); \
         } \
-    gl_lock_unlock(checks_mutex); \
+    bugle_thread_lock_unlock(checks_mutex); \
     return ret; \
     } else (void) 0
 

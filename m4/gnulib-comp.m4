@@ -27,7 +27,6 @@ AC_DEFUN([gl_EARLY],
   AC_REQUIRE([AC_PROG_RANLIB])
   AC_REQUIRE([AC_GNU_SOURCE])
   AC_REQUIRE([gl_USE_SYSTEM_EXTENSIONS])
-  AC_REQUIRE([gl_LOCK_EARLY])
 ])
 
 # This macro should be invoked from ./configure.ac, in the section
@@ -45,7 +44,6 @@ AC_DEFUN([gl_INIT],
   gl_FUNC_GETLINE
   gl_STDIO_MODULE_INDICATOR([getline])
   gl_INTTYPES_H
-  gl_LOCK
   gl_FUNC_REALLOC_POSIX
   gl_STDLIB_MODULE_INDICATOR([realloc-posix])
   gl_SAFE_READ
@@ -54,7 +52,6 @@ AC_DEFUN([gl_INIT],
   gl_STDINT_H
   gl_STDIO_H
   gl_STDLIB_H
-  gl_TLS
   gl_UNISTD_H
   gl_WCHAR_H
   m4_popdef([AC_LIBSOURCES])
@@ -107,7 +104,6 @@ AC_DEFUN([gl_LIBSOURCES], [
 # This macro records the list of files which have been installed by
 # gnulib-tool and may be removed by future gnulib-tool invocations.
 AC_DEFUN([gl_FILE_LIST], [
-  build-aux/config.rpath
   build-aux/link-warning.h
   lib/full-read.c
   lib/full-read.h
@@ -116,8 +112,6 @@ AC_DEFUN([gl_FILE_LIST], [
   lib/getdelim.c
   lib/getline.c
   lib/inttypes.in.h
-  lib/lock.c
-  lib/lock.h
   lib/realloc.c
   lib/safe-read.c
   lib/safe-read.h
@@ -126,8 +120,6 @@ AC_DEFUN([gl_FILE_LIST], [
   lib/stdint.in.h
   lib/stdio.in.h
   lib/stdlib.in.h
-  lib/tls.c
-  lib/tls.h
   lib/unistd.in.h
   lib/wchar.in.h
   m4/absolute-header.m4
@@ -138,10 +130,6 @@ AC_DEFUN([gl_FILE_LIST], [
   m4/include_next.m4
   m4/inttypes-pri.m4
   m4/inttypes.m4
-  m4/lib-ld.m4
-  m4/lib-link.m4
-  m4/lib-prefix.m4
-  m4/lock.m4
   m4/longlong.m4
   m4/malloc.m4
   m4/onceonly_2_57.m4
@@ -152,7 +140,6 @@ AC_DEFUN([gl_FILE_LIST], [
   m4/stdint.m4
   m4/stdio_h.m4
   m4/stdlib_h.m4
-  m4/tls.m4
   m4/ulonglong.m4
   m4/unistd_h.m4
   m4/wchar.m4

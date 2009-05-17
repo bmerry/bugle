@@ -15,49 +15,96 @@
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-/* Most of the thread management is handled by gnulib now. Note that
- * bugle never creates or destroys threads, it just needs some thread-safe
- * primitives like mutexes.
+/* In general, the function names match either pthread or gnulib conventions.
  *
- * What remains here are oddities not covered by gnulib:
- * - thread ID
- * - pthread_kill wrapper
- * - macros for emulating constructors
+ * Some caveats:
+ * - read-lock locks may degrade to simple mutexes if rwlock functionality is
+ *   not available. rwlocks should only be used to gain efficiency from
+ *   not serialising multiple readers.
  */
 
 #ifndef BUGLE_COMMON_THREADS_H
 #define BUGLE_COMMON_THREADS_H
+
 #if HAVE_CONFIG_H
 # include <config.h>
 #endif
 #include <signal.h>
 #include <stdlib.h>
+#include <stddef.h>
 #include <bugle/porting.h>
-#include "lock.h"
 
 #if USE_POSIX_THREADS
 
 #include <pthread.h>
 
-#if BUGLE_PTHREAD_T_INTEGRAL
-# define bugle_thread_self() (pthread_in_use() ? (unsigned long) pthread_self() : 0UL)
+typedef pthread_once_t bugle_thread_once_t;
+#define bugle_thread_once_define(storage, name) \
+    storage bugle_thread_once_t name = PTHREAD_ONCE_INIT;
+#define bugle_thread_once(name, function) \
+    pthread_once(&(name), function)
+
+#define bugle_thread_lock_t pthread_mutex_t
+#define bugle_thread_lock_define(storage, name) \
+    storage bugle_thread_lock_t name;
+#define bugle_thread_lock_define_initialized(storage, name) \
+    storage bugle_thread_lock_t name = PTHREAD_MUTEX_INITIALIZER;
+#define bugle_thread_lock_init(name) \
+    pthread_mutex_init(&(name), NULL)
+#define bugle_thread_lock_destroy(name) \
+    pthread_mutex_destroy(&(name))
+#define bugle_thread_lock_lock(name) \
+    pthread_mutex_lock(&(name))
+#define bugle_thread_lock_unlock(name) \
+    pthread_mutex_unlock(&(name))
+
+#if HAVE_PTHREAD_RWLOCK
+typedef pthread_rwlock_t bugle_thread_rwlock_t;
+# define bugle_thread_rwlock_define(storage, name) \
+    storage bugle_thread_rwlock_t name;
+# define bugle_thread_rwlock_init(name) \
+    pthread_rwlock_init(&(name), NULL)
+# define bugle_thread_rwlock_destroy(name) \
+    pthread_rwlock_destroy(&(name))
+# define bugle_thread_rwlock_rdlock(name) \
+    pthread_rwlock_rdlock(&(name))
+# define bugle_thread_rwlock_wrlock(name) \
+    pthread_rwlock_wrlock(&(name))
+# define bugle_thread_rwlock_unlock(name) \
+    pthread_rwlock_unlock(&(name))
+#else /* !HAVE_PTHREAD_RWLOCK */
+typedef pthread_mutex_t bugle_thread_rwlock_t;
+# define bugle_thread_rwlock_define(storage, name) \
+    storage bugle_thread_rwlock_t name;
+# define bugle_thread_rwlock_init(name) \
+    pthread_mutex_init(&(name), NULL)
+# define bugle_thread_rwlock_destroy(name) \
+    pthread_mutex_destroy(&(name))
+# define bugle_thread_rwlock_rdlock(name) \
+    pthread_mutex_lock(&(name))
+# define bugle_thread_rwlock_wrlock(name) \
+    pthread_mutex_lock(&(name))
+# define bugle_thread_rwlock_unlock(name) \
+    pthread_mutex_unlock(&(name))
+#endif /* !HAVE_PTHREAD_RWLOCK */
+
+typedef pthread_key_t bugle_thread_key_t;
+#define bugle_thread_key_create(name, destructor) \
+    pthread_key_create(&name, destructor)
+#define bugle_thread_getspecific pthread_getspecific
+#define bugle_thread_setspecific pthread_setspecific
+#define bugle_thread_key_delete pthread_key_delete
+
+typedef pthread_t bugle_thread_t;
+#define bugle_thread_self() pthread_self()
+#if HAVE_PTHREAD_KILL
+# define bugle_thread_raise(sig) pthread_kill(pthread_self(), (sig))
 #endif
-#define bugle_pthread_raise(sig) (pthread_in_use() ? pthread_kill(pthread_self(), (sig)) : raise((sig)))
 
-#endif /* USE_POSIX_THREADS */
+#else /* USE_POSIX_THREADS */
 
-#if USE_WIN32_THREADS
+#error "At the moment only POSIX threads are supported"
 
-#ifndef WIN32_LEAN_AND_MEAN
-#define WIN32_LEAN_AND_MEAN
-#endif
-#include <windows.h>
-#define bugle_thread_self() (GetCurrentThreadId())
-
-#endif /* USE_WIN32_THREADS */
-
-#if USE_PTH_THREADS || USE_SOLARIS_THREADS
-# warning "Threading model not totally supported; some features might not work"
 #endif
 
 #ifndef bugle_thread_self
@@ -81,8 +128,8 @@
 # define BUGLE_CONSTRUCTOR(fn) static void fn(void) __attribute__((constructor))
 # define BUGLE_RUN_CONSTRUCTOR(fn) ((void) 0)
 #else
-# define BUGLE_CONSTRUCTOR(fn) gl_once_define(static, fn ## _once)
-# define BUGLE_RUN_CONSTRUCTOR(fn) gl_once(fn ## _once, (fn))
+# define BUGLE_CONSTRUCTOR(fn) bugle_thread_once_define(static, fn ## _once)
+# define BUGLE_RUN_CONSTRUCTOR(fn) bugle_thread_once(fn ## _once, (fn))
 #endif
 
 #endif /* !BUGLE_COMMON_THREADS_H */

@@ -30,13 +30,13 @@
 #include <string.h>
 #include <stdlib.h>
 #include <assert.h>
-#include "tls.h"
+#include "common/threads.h"
 
 struct object_class
 {
     size_t count;       /* number of registrants */
     linked_list info;   /* list of object_class_info, defined in objects.c */
-    gl_tls_key_t current;
+    bugle_thread_key_t current;
 
     struct object_class *parent;
     object_view parent_view; /* view where we store current of this class in parent */
@@ -67,7 +67,7 @@ object_class * bugle_object_class_new(object_class *parent)
     if (parent)
         klass->parent_view = bugle_object_view_new(parent, NULL, NULL, sizeof(object *));
     else
-        gl_tls_key_init(klass->current, NULL);
+        bugle_thread_key_create(klass->current, NULL);
     return klass;
 }
 
@@ -75,7 +75,7 @@ void bugle_object_class_free(object_class *klass)
 {
     bugle_list_clear(&klass->info);
     if (!klass->parent)
-        gl_tls_key_destroy(klass->current);
+        bugle_thread_key_delete(klass->current);
     free(klass);
 }
 
@@ -158,7 +158,7 @@ object *bugle_object_get_current(const object_class *klass)
         else return *(object **) ans;
     }
     else
-        return (object *) gl_tls_get(klass->current);
+        return (object *) bugle_thread_getspecific(klass->current);
 }
 
 void *bugle_object_get_current_data(const object_class *klass, object_view view)
@@ -176,7 +176,7 @@ void bugle_object_set_current(object_class *klass, object *obj)
         if (tmp) *(object **) tmp = obj;
     }
     else
-        gl_tls_set(klass->current, (void *) obj);
+        bugle_thread_setspecific(klass->current, (void *) obj);
 }
 
 void *bugle_object_get_data(object *obj, object_view view)

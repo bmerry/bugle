@@ -130,6 +130,8 @@ def checks(env):
     conf.CheckInline()
     for c in api.checks:
         c(conf)
+    # TODO actually do a test here
+    conf.Define('USE_POSIX_THREADS', 1)
     return conf.Finish()
 
 def get_vars(apis):
@@ -219,7 +221,7 @@ env = CrossEnvironment(
         **common_kw
         )
 if 'gcc' in env['TOOLS']:
-    env.MergeFlags('-fvisibility=hidden')
+    env.MergeFlags('-fvisibility=hidden -Wstrict-prototypes -Wall')
 
 # Environment for generating parse tree. This has to be GCC, and in cross
 # compilation should be the cross-gcc so that the correct headers are

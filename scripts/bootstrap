@@ -1,4 +1,5 @@
 #!/bin/sh
 set -e
 libtoolize --copy --force --ltdl
+(cd lib && aclocal -I ../m4)
 autoreconf -i

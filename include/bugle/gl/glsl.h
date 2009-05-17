@@ -47,7 +47,7 @@ BUGLE_EXPORT_PRE void bugle_glGetUniformfv(GLuint program, GLint location, GLflo
 BUGLE_EXPORT_PRE void bugle_glGetUniformiv(GLuint program, GLint location, GLint *params) BUGLE_EXPORT_POST;
 BUGLE_EXPORT_PRE GLint bugle_glGetUniformLocation(GLuint program, const GLchar *name) BUGLE_EXPORT_POST;
 BUGLE_EXPORT_PRE GLint bugle_glGetAttribLocation(GLuint program, const GLchar *name) BUGLE_EXPORT_POST;
-BUGLE_EXPORT_PRE GLuint bugle_gl_get_current_program() BUGLE_EXPORT_POST;
+BUGLE_EXPORT_PRE GLuint bugle_gl_get_current_program(void) BUGLE_EXPORT_POST;
 BUGLE_EXPORT_PRE GLboolean bugle_glIsShader(GLuint shader) BUGLE_EXPORT_POST;
 BUGLE_EXPORT_PRE GLboolean bugle_glIsProgram(GLuint program) BUGLE_EXPORT_POST;
 

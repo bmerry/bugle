@@ -74,7 +74,7 @@ int bugle_appendf(char **strp, size_t *sz, const char *format, ...)
         *sz *= 2;
         if (ans >= (ssize_t) (*sz - len))
             *sz = ans + len + 1;
-        *strp = xnrealloc(*strp, *sz, sizeof(char));
+        *strp = bugle_nrealloc(*strp, *sz, sizeof(char));
         va_start(ap, format);
         ans = vsnprintf(*strp + len, *sz - len, format, ap);
         va_end(ap);

@@ -58,7 +58,6 @@
 #endif
 #include "common/protocol.h"
 #include "common/threads.h"
-#include "lock.h"
 
 static gldb_protocol_reader *in_pipe = NULL;
 static int in_pipe_fd = -1, out_pipe = -1;
@@ -1091,7 +1090,7 @@ static void debugger_init_thread(void)
     debug_thread = bugle_thread_self();
 }
 
-gl_once_define(static, debugger_init_thread_once)
+bugle_thread_once_define(static, debugger_init_thread_once)
 
 static bugle_bool debugger_callback(function_call *call, const callback_data *data)
 {
@@ -1101,7 +1100,7 @@ static bugle_bool debugger_callback(function_call *call, const callback_data *da
      * FIXME: still stop others threads, with events to start and stop everything
      * in sync.
      */
-    gl_once(debugger_init_thread_once, debugger_init_thread);
+    bugle_thread_once(debugger_init_thread_once, debugger_init_thread);
     if (debug_thread != bugle_thread_self())
         return BUGLE_TRUE;
 
@@ -1128,7 +1127,7 @@ static bugle_bool debugger_error_callback(function_call *call, const callback_da
     char *resp_str;
     const char *error_str = NULL; /* NULL indicates no break, if non-NULL then break */
 
-    gl_once(debugger_init_thread_once, debugger_init_thread);
+    bugle_thread_once(debugger_init_thread_once, debugger_init_thread);
     if (debug_thread != bugle_thread_self())
         return BUGLE_TRUE;
 

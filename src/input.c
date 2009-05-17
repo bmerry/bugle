@@ -245,8 +245,8 @@ static void initialise_keycodes(Display *dpy)
      * different X servers try to use this at the same time.
      */
     static Display *dpy_cached = NULL;
-    gl_lock_define(static, lock);
-    gl_lock_lock(lock);
+    bugle_thread_lock_define(static, lock);
+    bugle_thread_lock_lock(lock);
     if (dpy_cached != dpy)
     {
         linked_list_node *i;
@@ -258,7 +258,7 @@ static void initialise_keycodes(Display *dpy)
         }
         dpy_cached = dpy;
     }
-    gl_lock_unlock(lock);
+    bugle_thread_lock_unlock(lock);
 }
 
 static bugle_bool extract_events(Display *dpy)
@@ -340,7 +340,7 @@ typedef struct
     int use_predicate;
 } if_block_data;
 
-Bool matches_mask(XEvent *event, unsigned long mask)
+static Bool matches_mask(XEvent *event, unsigned long mask)
 {
     /* Loosely based on evtomask.c and ChkMaskEv.c from XOrg 6.8.2 */
     switch (event->type)
@@ -393,7 +393,7 @@ Bool matches_mask(XEvent *event, unsigned long mask)
     }
 }
 
-Bool if_block(Display *dpy, XEvent *event, XPointer arg)
+static Bool if_block(Display *dpy, XEvent *event, XPointer arg)
 {
     const if_block_data *data;
 
@@ -404,7 +404,7 @@ Bool if_block(Display *dpy, XEvent *event, XPointer arg)
     return True;
 }
 
-Bool if_block_intercept(Display *dpy, XEvent *event, XPointer arg)
+static Bool if_block_intercept(Display *dpy, XEvent *event, XPointer arg)
 {
     return event_predicate(dpy, event, NULL) || if_block(dpy, event, arg);
 }

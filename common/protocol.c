@@ -33,7 +33,6 @@
 #endif
 #include "full-read.h"
 #include "full-write.h"
-#include "lock.h"
 #include "protocol.h"
 #include <bugle/misc.h>
 #include <bugle/memory.h>

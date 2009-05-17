@@ -15,11 +15,11 @@
 
 
 # Specification in the form of a command-line invocation:
-#   gnulib-tool --import --dir=. --local-dir=gnulib-local --lib=libgnu --source-base=lib --m4-base=m4 --doc-base=doc --aux-dir=. --libtool --macro-prefix=gl full-read full-write getline inttypes lock tls
+#   gnulib-tool --import --dir=. --local-dir=gnulib-local --lib=libgnu --source-base=lib --m4-base=m4 --doc-base=doc --aux-dir=. --libtool --macro-prefix=gl full-read full-write getline inttypes
 
 # Specification in the form of a few gnulib-tool.m4 macro invocations:
 gl_LOCAL_DIR([gnulib-local])
-gl_MODULES([full-read full-write getline inttypes lock tls])
+gl_MODULES([full-read full-write getline inttypes])
 gl_AVOID([])
 gl_SOURCE_BASE([lib])
 gl_M4_BASE([m4])

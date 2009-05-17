@@ -56,6 +56,7 @@ void *bugle_zalloc(size_t size)
     void *ret;
     ret = bugle_malloc(size);
     memset(ret, 0, size);
+    return ret;
 }
 
 void *bugle_nrealloc(void *ptr, size_t nmemb, size_t size)

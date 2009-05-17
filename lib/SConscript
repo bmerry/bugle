@@ -7,7 +7,6 @@ gnulib_env = env.Clone()
 gnulib_env.Prepend(CPPPATH = ['.'])
 
 gnulib_sources = [
-        'lock.c',
         'safe-read.c',
         'safe-write.c',
         'full-write.c']

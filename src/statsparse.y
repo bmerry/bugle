@@ -76,7 +76,7 @@ static void stats_substitution_free(stats_substitution *sub)
     free(sub);
 }
 
-static stats_statistic *stats_statistic_new()
+static stats_statistic *stats_statistic_new(void)
 {
     stats_statistic *st;
 

@@ -31,6 +31,7 @@
 #include <bugle/filters.h>
 #include <bugle/log.h>
 #include <bugle/apireflect.h>
+#include <bugle/export.h>
 #include "common/threads.h"
 #include <budgie/addresses.h>
 #include <budgie/types.h>
@@ -40,6 +41,7 @@ static bugle_bool trap = BUGLE_FALSE;
 static filter_set *error_handle = NULL;
 static object_view error_context_view, error_call_view;
 
+BUGLE_EXPORT_PRE GLenum bugle_gl_call_get_error_internal(object *call_object) BUGLE_EXPORT_POST;
 GLenum bugle_gl_call_get_error_internal(object *call_object)
 {
     GLenum *call_error;

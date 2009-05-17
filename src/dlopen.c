@@ -26,6 +26,7 @@
 #if HAVE_CONFIG_H
 # include <config.h>
 #endif
+# include "dlopen.h"
 #if HAVE_DLFCN_H
 # include <dlfcn.h>
 # include <string.h>
@@ -38,7 +39,7 @@
 static bugle_bool bypass_dlopen;
 static void *(*real_dlopen)(const char *, int) = NULL;
 
-void dlopen_initialise()
+void dlopen_initialise(void)
 {
     bypass_dlopen = BUGLE_TRUE;
 }
