@@ -244,6 +244,10 @@ env.SubstFile(builddir.File('include/bugle/porting.h'), srcdir.File('include/bug
 env = checks(env)
 Export('build_env', 'tu_env', 'env', 'api')
 
+# Platform SConscript must be first, since it modifies the environment
+# via config.h
+SConscript('platform/posix/SConscript')
+
 SConscript('lib/SConscript')
 SConscript('budgie/SConscript')
 SConscript('src/SConscript')

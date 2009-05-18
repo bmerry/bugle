@@ -25,6 +25,7 @@
 #include <stdarg.h>
 #include <ltdl.h>
 #include <bugle/hashtable.h>
+#include <bugle/string.h>
 #include <budgie/types.h>
 #include <budgie/reflect.h>
 #include "internal.h"
@@ -253,7 +254,7 @@ ssize_t budgie_snprintf_advance(char **buffer, size_t *size, const char *fmt, ..
     ssize_t written;
 
     va_start(ap, fmt);
-    written = vsnprintf(*buffer, *size, fmt, ap);
+    written = bugle_vsnprintf(*buffer, *size, fmt, ap);
     va_end(ap);
     *size = (written >= (ssize_t) *size) ? 0 : *size - written;
     *buffer += written;

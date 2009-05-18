@@ -58,7 +58,6 @@ typedef pthread_once_t bugle_thread_once_t;
 #define bugle_thread_lock_unlock(name) \
     pthread_mutex_unlock(&(name))
 
-#if HAVE_PTHREAD_RWLOCK
 typedef pthread_rwlock_t bugle_thread_rwlock_t;
 # define bugle_thread_rwlock_define(storage, name) \
     storage bugle_thread_rwlock_t name;
@@ -72,21 +71,6 @@ typedef pthread_rwlock_t bugle_thread_rwlock_t;
     pthread_rwlock_wrlock(&(name))
 # define bugle_thread_rwlock_unlock(name) \
     pthread_rwlock_unlock(&(name))
-#else /* !HAVE_PTHREAD_RWLOCK */
-typedef pthread_mutex_t bugle_thread_rwlock_t;
-# define bugle_thread_rwlock_define(storage, name) \
-    storage bugle_thread_rwlock_t name;
-# define bugle_thread_rwlock_init(name) \
-    pthread_mutex_init(&(name), NULL)
-# define bugle_thread_rwlock_destroy(name) \
-    pthread_mutex_destroy(&(name))
-# define bugle_thread_rwlock_rdlock(name) \
-    pthread_mutex_lock(&(name))
-# define bugle_thread_rwlock_wrlock(name) \
-    pthread_mutex_lock(&(name))
-# define bugle_thread_rwlock_unlock(name) \
-    pthread_mutex_unlock(&(name))
-#endif /* !HAVE_PTHREAD_RWLOCK */
 
 typedef pthread_key_t bugle_thread_key_t;
 #define bugle_thread_key_create(name, destructor) \
@@ -97,9 +81,7 @@ typedef pthread_key_t bugle_thread_key_t;
 
 typedef pthread_t bugle_thread_t;
 #define bugle_thread_self() pthread_self()
-#if HAVE_PTHREAD_KILL
-# define bugle_thread_raise(sig) pthread_kill(pthread_self(), (sig))
-#endif
+#define bugle_thread_raise(sig) pthread_kill(pthread_self(), (sig))
 
 #else /* USE_POSIX_THREADS */
 
