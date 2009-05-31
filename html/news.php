@@ -23,6 +23,37 @@ else
     <a href="screenshots.php">[Screenshots]</a>
     </p>
     <h1>BuGLe News</h1>
+
+    <h2>Mailing lists and other news (31/5/2009)</h2>
+    <p>Sourceforge is planning to remove the forums feature soon, which will
+    eliminate that avenue for support. I've never really liked the forums
+    model, since it meant I couldn't just hit reply in my mail client, so I'm
+    going to switch to mailing lists. There are now three mailing lists
+    accessible through the <a
+        href="http://sourceforge.net/projects/bugle/">project page</a> on
+    Sourceforge:</p>
+    <dl>
+        <dt>bugle-announce</dt>
+        <dd>For new release announcements</dd>
+        <dt>bugle-users</dt>
+        <dd>For general help and discussion about bugle</dd>
+        <dt>bugle-devel</dt>
+        <dd>For anyone interesting in hacking on the bugle core or writing new
+        filter-sets</dd>
+    </dl>
+
+    <p>I've been fairly busy working on bugle lately, but I don't have much to
+    show for it yet. I'm trying to implement a <a
+        href="http://www.scons.org">scons</a> build system, which should in
+    theory allow me to do ports to systems without a POSIX build environment,
+    such as a WinCE port using the standard toolchains. It's proving to be a
+    lot of work, since I've been using <a
+        href="http://www.gnu.org/software/gnulib/">gnulib</a> to handle
+    portability nastiness, and it's wrapped pretty tightly around autoconf and
+    automake. I'm working on writing a portability abstraction layer, which
+    will be able to use gnulib as a backend on systems where it makes sense,
+    but also have other OS-specific backends.</p>
+
     <h2>New ticket system, new release (15/3/2009)</h2>
     <p>
     BuGLe has grown to the point that having people email me bug reports meant
