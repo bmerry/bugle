@@ -44,16 +44,6 @@ BUGLE_EXPORT_PRE char *bugle_string_io(void (*call)(char **, size_t *, void *), 
  */
 BUGLE_EXPORT_PRE int bugle_appendf(char **strp, size_t *sz, const char *format, ...) BUGLE_ATTRIBUTE_FORMAT_PRINTF(3, 4) BUGLE_EXPORT_POST;
 
-/* Like fgets, but creates the memory. The return value has the same
- * meaning as for fgets, but must be free()ed if non-NULL
- */
-BUGLE_EXPORT_PRE char *bugle_afgets(FILE *stream) BUGLE_EXPORT_POST;
-
-/* Equivalent to C99 functions, but specific to double */
-BUGLE_EXPORT_PRE int bugle_isfinite(double x) BUGLE_EXPORT_POST;
-BUGLE_EXPORT_PRE int bugle_isnan(double x) BUGLE_EXPORT_POST;
-BUGLE_EXPORT_PRE double bugle_nan(const char *tagp) BUGLE_EXPORT_POST;
-
 #ifdef __cplusplus
 }
 #endif

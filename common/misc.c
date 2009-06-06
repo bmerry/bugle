@@ -27,6 +27,7 @@
 #include <unistd.h>
 #include <math.h>
 #include <bugle/misc.h>
+#include <bugle/string.h>
 #include <bugle/memory.h>
 #include <bugle/linkedlist.h>
 #include "threads.h"
@@ -59,12 +60,11 @@ int bugle_appendf(char **strp, size_t *sz, const char *format, ...)
     len = strlen(*strp);
 
     va_start(ap, format);
-    ans = vsnprintf(*strp + len, *sz - len, format, ap);
+    ans = bugle_vsnprintf(*strp + len, *sz - len, format, ap);
     va_end(ap);
 
     /* C99 says that the return value is the number of characters that
-     * *would* have been written, if not for truncation. gnulib wraps
-     * vsnprintf for us, so we can assume this holds.
+     * *would* have been written, if not for truncation.
      */
     if (ans < 0)
         return 0;  /* Output error */
@@ -76,53 +76,9 @@ int bugle_appendf(char **strp, size_t *sz, const char *format, ...)
             *sz = ans + len + 1;
         *strp = bugle_nrealloc(*strp, *sz, sizeof(char));
         va_start(ap, format);
-        ans = vsnprintf(*strp + len, *sz - len, format, ap);
+        ans = bugle_vsnprintf(*strp + len, *sz - len, format, ap);
         va_end(ap);
     }
     if (ans < 0) return ans;
     else return ans + len;
-}
-
-char *bugle_afgets(FILE *stream)
-{
-    char *str = NULL;
-    size_t n = 0;
-    ssize_t result;
-
-    result = getline(&str, &n, stream);
-    if (result <= 0)
-    {
-        free(str);
-        return NULL;
-    }
-    return str;
-}
-
-int bugle_isfinite(double x)
-{
-#if HAVE_ISFINITE
-    return isfinite(x);
-#elif HAVE_FINITE
-    return finite(x);
-#else
-    return x == x && x - x == 0.0;
-#endif
-}
-
-int bugle_isnan(double x)
-{
-#if HAVE_ISNAN
-    return isnan(x);
-#else
-    return x != x;
-#endif
-}
-
-double bugle_nan(const char *tagp)
-{
-#if HAVE_NAN
-    return nan(tagp);
-#else
-    return 0.0 / 0.0;
-#endif
 }

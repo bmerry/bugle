@@ -1,19 +1,15 @@
 - add gldb and gldb-gui
 - add tests
 - add remaining filters
-- eliminate need for ssize_t in headers
 - complete platform layer for POSIX
 - add platform layer for glib?
 - add SCons tests for strndup, strdup, vasprintf etc
 - add SCons tests for threading and so on
 - add better SCons framework for platform
-  - instead of common/threads.h, have a separate .h file for each
-    platform dir and use -I to pick the right one
-
 
 Platform interface functions:
 
-Strings (public):
+Strings: external, shared iface, shared header, private impl
 
 bugle_snprintf
 bugle_vsnprintf
@@ -22,7 +18,13 @@ bugle_vasprintf
 bugle_strdup
 bugle_strndup
 
-Threads (private):
+Maths: external, shared iface, shared header, private impl
+
+bugle_isfinite
+bugle_isnan
+bugle_nan
+
+Threads: internal only, shared iface, private header, private impl
 
 bugle_thread_once_t
 bugle_thread_once_define

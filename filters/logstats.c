@@ -26,7 +26,7 @@
 #include <bugle/glwin/glwin.h>
 #include <bugle/linkedlist.h>
 #include <bugle/stats.h>
-#include <bugle/misc.h>
+#include <bugle/math.h>
 #include <bugle/filters.h>
 #include <bugle/log.h>
 

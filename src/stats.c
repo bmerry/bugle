@@ -31,7 +31,7 @@
 #include <bugle/log.h>
 #include <bugle/input.h>
 #include <bugle/stats.h>
-#include <bugle/misc.h>
+#include <bugle/math.h>
 #include <bugle/string.h>
 #include "src/statsparse.h"
 #include <bugle/hashtable.h>
@@ -79,7 +79,7 @@ stats_signal *bugle_stats_signal_new(const char *name, void *user_data,
 
     assert(!stats_signal_get(name));
     si = BUGLE_ZALLOC(stats_signal);
-    si->value = bugle_nan("");
+    si->value = bugle_nan();
     si->integral = 0.0;
     si->offset = -1;
     si->user_data = user_data;
@@ -118,7 +118,7 @@ double bugle_stats_expression_evaluate(const stats_expression *expr,
     case STATS_EXPRESSION_SIGNAL:
         /* Generate a NaN, and let good old IEEE 754 take care of propagating it. */
         if (!expr->signal)
-            return bugle_nan("");
+            return bugle_nan();
         switch (expr->op)
         {
         case STATS_OPERATION_DELTA:
@@ -207,7 +207,7 @@ void bugle_stats_signal_values_gather(stats_signal_values *sv)
     }
     /* Make sure that everything is initialised to an insane value (NaN) */
     for (i = 0; i < stats_signals_num_active; i++)
-        sv->values[i].value = sv->values[i].integral = bugle_nan("");
+        sv->values[i].value = sv->values[i].integral = bugle_nan();
     for (s = bugle_list_head(&stats_signals_active); s; s = bugle_list_next(s))
     {
         si = (stats_signal *) bugle_list_data(s);

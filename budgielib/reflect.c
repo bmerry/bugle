@@ -1,5 +1,5 @@
 /*  BuGLe: an OpenGL debugging tool
- *  Copyright (C) 2004-2007  Bruce Merry
+ *  Copyright (C) 2004-2007, 2009  Bruce Merry
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -248,20 +248,20 @@ void budgie_dump_any_type_extended(budgie_type type,
     }
 }
 
-ssize_t budgie_snprintf_advance(char **buffer, size_t *size, const char *fmt, ...)
+int budgie_snprintf_advance(char **buffer, size_t *size, const char *fmt, ...)
 {
     va_list ap;
-    ssize_t written;
+    int written;
 
     va_start(ap, fmt);
     written = bugle_vsnprintf(*buffer, *size, fmt, ap);
     va_end(ap);
-    *size = (written >= (ssize_t) *size) ? 0 : *size - written;
+    *size = ((size_t)written >= *size) ? 0 : *size - written;
     *buffer += written;
     return written;
 }
 
-ssize_t budgie_snputs_advance(char **buffer, size_t *size, const char *s)
+int budgie_snputs_advance(char **buffer, size_t *size, const char *s)
 {
     size_t len;
 
@@ -283,7 +283,7 @@ ssize_t budgie_snputs_advance(char **buffer, size_t *size, const char *s)
     return len;
 }
 
-ssize_t budgie_snputc_advance(char **buffer, size_t *size, char c)
+int budgie_snputc_advance(char **buffer, size_t *size, char c)
 {
     if (*size > 1)
     {

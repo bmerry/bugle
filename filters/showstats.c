@@ -30,6 +30,7 @@
 #include <bugle/gl/glextensions.h>
 #include <bugle/linkedlist.h>
 #include <bugle/misc.h>
+#include <bugle/math.h>
 #include <bugle/stats.h>
 #include <bugle/filters.h>
 #include <bugle/log.h>

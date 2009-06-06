@@ -20,9 +20,6 @@
 
 #include <stdio.h>
 #include <stddef.h>
-#if HAVE_SYS_TYPES_H
-# include <sys/types.h>  /* for ssize_t */
-#endif
 #include <budgie/types.h>
 #include <bugle/misc.h>  /* For printf format attribute */
 #include <bugle/export.h>
@@ -85,10 +82,10 @@ BUGLE_EXPORT_PRE void budgie_type_convert(void *out, budgie_type out_type, const
  * If *size is 1 on return, then the string just fit without overflowing. If
  * it is zero, there was an overflow.
  */
-BUGLE_EXPORT_PRE ssize_t budgie_snprintf_advance(char **buffer, size_t *size, const char *fmt, ...) BUGLE_ATTRIBUTE_FORMAT_PRINTF(3, 4) BUGLE_EXPORT_POST;
+BUGLE_EXPORT_PRE int budgie_snprintf_advance(char **buffer, size_t *size, const char *fmt, ...) BUGLE_ATTRIBUTE_FORMAT_PRINTF(3, 4) BUGLE_EXPORT_POST;
 /* Equivalent to budgie_snprintf(buffer, size, "%s", s) but more efficient. */
-BUGLE_EXPORT_PRE ssize_t budgie_snputs_advance(char **buffer, size_t *size, const char *s) BUGLE_EXPORT_POST;
-BUGLE_EXPORT_PRE ssize_t budgie_snputc_advance(char **buffer, size_t *size, char c) BUGLE_EXPORT_POST;
+BUGLE_EXPORT_PRE int budgie_snputs_advance(char **buffer, size_t *size, const char *s) BUGLE_EXPORT_POST;
+BUGLE_EXPORT_PRE int budgie_snputc_advance(char **buffer, size_t *size, char c) BUGLE_EXPORT_POST;
 
 /* Some black magic to look up ID's as efficiently as possible. If defines.h
  * is included, GCC will compile this down to a constant. If it is not
@@ -108,7 +105,7 @@ BUGLE_EXPORT_PRE ssize_t budgie_snputc_advance(char **buffer, size_t *size, char
  *
  * Cons
  * - A cache variable is needed per lexical use, rather than per symbol.
- * - The cache miss in incurred the first time for each static use, rather
+ * - The cache miss is incurred the first time for each static use, rather
  * than the first time for the symbol.
  */
 /* This particular test is taken from glib/gmacros.h */
