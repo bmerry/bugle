@@ -26,7 +26,7 @@
 #include <bugle/apireflect.h>
 #include <budgie/reflect.h>
 #include "src/apitables.h"
-#include "threads.h"
+#include "platform/threads.h"
 
 static hash_table ext_map;
 bugle_thread_once_define(static, ext_map_once)

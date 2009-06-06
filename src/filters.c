@@ -42,7 +42,7 @@
 #include <budgie/reflect.h>
 #include <budgie/addresses.h>
 #include "budgielib/defines.h"
-#include "threads.h"
+#include "platform/threads.h"
 
 typedef struct
 {

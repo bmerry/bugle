@@ -26,7 +26,7 @@
 #include <bugle/memory.h>
 #include <bugle/string.h>
 #include <bugle/hashtable.h>
-#include "threads.h"
+#include "platform/threads.h"
 
 /* Primes are used for hash table sizes */
 static size_t primes[sizeof(size_t) * 8];

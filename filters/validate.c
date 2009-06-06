@@ -32,7 +32,7 @@
 #include <bugle/log.h>
 #include <bugle/apireflect.h>
 #include <bugle/export.h>
-#include "threads.h"
+#include "platform/threads.h"
 #include <budgie/addresses.h>
 #include <budgie/types.h>
 #include <budgie/reflect.h>

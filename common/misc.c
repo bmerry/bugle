@@ -30,7 +30,7 @@
 #include <bugle/string.h>
 #include <bugle/memory.h>
 #include <bugle/linkedlist.h>
-#include "threads.h"
+#include "platform/threads.h"
 
 char *bugle_string_io(void (*call)(char **, size_t *, void *), void *data)
 {

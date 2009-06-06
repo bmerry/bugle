@@ -31,7 +31,7 @@
 #include <bugle/gl/glutils.h>
 #include <bugle/hashtable.h>
 #include <budgie/call.h>
-#include "threads.h"
+#include "platform/threads.h"
 
 object_class *bugle_displaylist_class;
 

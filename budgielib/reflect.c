@@ -29,7 +29,7 @@
 #include <budgie/types.h>
 #include <budgie/reflect.h>
 #include "internal.h"
-#include "threads.h"
+#include "platform/threads.h"
 
 static hash_table function_id_map;
 static hash_table type_id_map;

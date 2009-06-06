@@ -30,7 +30,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <assert.h>
-#include "threads.h"
+#include "platform/threads.h"
 
 struct object_class
 {

@@ -33,7 +33,7 @@
 #include <budgie/types.h>
 #include <budgie/addresses.h>
 #include "budgielib/defines.h"
-#include "threads.h"
+#include "platform/threads.h"
 
 /* Some constructors like the context to be current when they are run.
  * To facilitate this, the object is not constructed until the first
