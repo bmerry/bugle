@@ -33,7 +33,7 @@
 #include <bugle/hashtable.h>
 #include <budgie/types.h>
 #include <budgie/call.h>
-#include "common/threads.h"
+#include "threads.h"
 
 typedef struct
 {

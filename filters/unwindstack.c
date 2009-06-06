@@ -28,7 +28,7 @@
 #include <setjmp.h>
 #include <errno.h>
 #include <bugle/filters.h>
-#include "common/threads.h"
+#include "threads.h"
 #include <budgie/types.h>
 
 #if HAVE_SIGLONGJMP

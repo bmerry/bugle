@@ -24,7 +24,7 @@
 #include <bugle/memory.h>
 #include <bugle/string.h>
 #include <bugle/bool.h>
-#include "common/threads.h"
+#include "threads.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

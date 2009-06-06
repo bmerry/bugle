@@ -29,13 +29,11 @@
 #if HAVE_CONFIG_H
 # include <config.h>
 #endif
+#include "platform_config.h"
 #include <signal.h>
 #include <stdlib.h>
 #include <stddef.h>
 #include <bugle/porting.h>
-
-#if USE_POSIX_THREADS
-
 #include <pthread.h>
 
 typedef pthread_once_t bugle_thread_once_t;
@@ -83,21 +81,8 @@ typedef pthread_t bugle_thread_t;
 #define bugle_thread_self() pthread_self()
 #define bugle_thread_raise(sig) pthread_kill(pthread_self(), (sig))
 
-#else /* USE_POSIX_THREADS */
-
-#error "At the moment only POSIX threads are supported"
-
-#endif
-
-#ifndef bugle_thread_self
-# define bugle_thread_self() (0)
-#endif
-
-#ifndef bugle_thread_raise
-# define bugle_thread_raise(sig) (raise((sig)))
-#endif
-
 /*** Higher-level stuff that doesn't depend on the threading implementation ***/
+/* TODO move it out of here and into a shared header */
 
 /* This initialisation mechanism is only valid for static constructor functions.
  * Any code that depends on the initialisation being complete must call

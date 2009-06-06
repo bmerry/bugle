@@ -26,7 +26,7 @@
 #include <budgie/types.h>
 #include <budgie/addresses.h>
 #include <budgie/reflect.h>
-#include "common/threads.h"
+#include "threads.h"
 #include "budgielib/lib.h"
 
 /* External function provided to look up addresses on the fly, for when the

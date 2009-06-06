@@ -57,7 +57,7 @@
 #include <netdb.h>
 #endif
 #include "common/protocol.h"
-#include "common/threads.h"
+#include "threads.h"
 
 static gldb_protocol_reader *in_pipe = NULL;
 static int in_pipe_fd = -1, out_pipe = -1;

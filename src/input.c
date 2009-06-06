@@ -30,7 +30,7 @@
 #include <bugle/input.h>
 #include <bugle/log.h>
 #include <bugle/memory.h>
-#include "common/threads.h"
+#include "threads.h"
 
 #define STATE_MASK (BUGLE_INPUT_SHIFT_BIT | BUGLE_INPUT_CONTROL_BIT | BUGLE_INPUT_ALT_BIT)
 

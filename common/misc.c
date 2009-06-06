@@ -29,7 +29,7 @@
 #include <bugle/misc.h>
 #include <bugle/memory.h>
 #include <bugle/linkedlist.h>
-#include "common/threads.h"
+#include "threads.h"
 
 char *bugle_string_io(void (*call)(char **, size_t *, void *), void *data)
 {

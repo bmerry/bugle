@@ -39,7 +39,7 @@
 #include <bugle/log.h>
 #include <bugle/apireflect.h>
 #include <bugle/memory.h>
-#include "common/threads.h"
+#include "threads.h"
 #include <budgie/addresses.h>
 #include <budgie/types.h>
 #include <budgie/reflect.h>

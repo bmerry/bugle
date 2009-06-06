@@ -15,7 +15,9 @@
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#include <config.h>
+#if HAVE_CONFIG_H
+# include <config.h>
+#endif
 #include "platform_config.h"
 #include <bugle/string.h>
 #include <bugle/memory.h>

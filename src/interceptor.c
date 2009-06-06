@@ -36,7 +36,7 @@
 #include <bugle/bool.h>
 #include <bugle/memory.h>
 #include <bugle/string.h>
-#include "common/threads.h"
+#include "threads.h"
 #include <budgie/reflect.h>
 #include <budgie/addresses.h>
 #include "conffile.h"
