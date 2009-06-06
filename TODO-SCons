@@ -1,0 +1,56 @@
+- add gldb and gldb-gui
+- add tests
+- add remaining filters
+- eliminate need for ssize_t in headers
+- complete platform layer for POSIX
+- add platform layer for glib?
+- add SCons tests for strndup, strdup, vasprintf etc
+- add SCons tests for threading and so on
+- add better SCons framework for platform
+  - instead of common/threads.h, have a separate .h file for each
+    platform dir and use -I to pick the right one
+
+
+Platform interface functions:
+
+Strings (public):
+
+bugle_snprintf
+bugle_vsnprintf
+bugle_asprintf
+bugle_vasprintf
+bugle_strdup
+bugle_strndup
+
+Threads (private):
+
+bugle_thread_once_t
+bugle_thread_once_define
+bugle_thread_once
+bugle_thread_lock_t
+bugle_thread_lock_define
+bugle_thread_lock_define_initialized (*)
+bugle_thread_lock_init
+bugle_thread_lock_destroy
+bugle_thread_lock_lock
+bugle_thread_lock_unlock
+bugle_thread_rwlock_t
+bugle_thread_rwlock_define
+bugle_thread_rwlock_init
+bugle_thread_rwlock_destroy
+bugle_thread_rwlock_rdlock
+bugle_thread_rwlock_wrlock
+bugle_thread_rwlock_unlock
+bugle_thread_key_t
+bugle_thread_key_create
+bugle_thread_getspecific
+bugle_thread_setspecific
+bugle_thread_t
+bugle_thread_self
+bugle_thread_raise
+
+IO and networking (private? maybe needed by gldb-gui):
+
+bugle_net_send ?
+bugle_net_recv ?
+need to see what Windows capabilities are needed

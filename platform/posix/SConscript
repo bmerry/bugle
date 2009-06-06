@@ -14,11 +14,29 @@ def header_checks(env):
     conf.Define('_POSIX_C_SOURCE', '200112L', 'Enable IEEE 1003.1-2001 functionality')
     return conf.Finish()
 
+def internal_checks(env):
+    '''
+    Checks that will only affect C files in the platform directory.
+    '''
+
+    if env.GetOption('help') or env.GetOption('clean'):
+        return env
+
+    conf = Configure(env, custom_tests = BugleChecks.tests, config_h = 'platform_config.h')
+    # Get benefit of as many extensions as possible
+    conf.Define('_XOPEN_SOURCE', '600')
+    conf.Define('_GNU_SOURCE', '1')
+    conf.CheckFunc('vasprintf')
+    conf.CheckFunc('va_copy')
+    return conf.Finish()
+
 Import('env')
 
 env.MergeFlags('-I. -pthread')
 env = header_checks(env)
 
-platform_shared = env.SharedObject(source = ['string.c'])
+platform_env = internal_checks(env.Clone())
+
+platform_shared = platform_env.SharedObject(source = ['string.c'])
 
 Export('platform_shared')

@@ -15,8 +15,8 @@
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#define _POSIX_C_SOURCE 200112L
-#define _XOPEN_SOURCE 500 /* Needed for vsnprintf */
+#include <config.h>
+#include "platform_config.h"
 #include <bugle/string.h>
 #include <bugle/memory.h>
 #include <stddef.h>
@@ -72,7 +72,7 @@ char *bugle_vasprintf(const char *format, va_list ap)
 
     len = vsnprintf(NULL, 0, format, ap2);
     va_end(ap2);
-    ret = (char *) bugle_malloc(len + 1);
+    ret = BUGLE_NMALLOC(len + 1, char);
     vsnprintf(ret, len, format, ap);
     return ret;
 #endif
