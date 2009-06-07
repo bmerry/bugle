@@ -10,7 +10,6 @@ libbugleutils = env.SharedLibrary2(
             'apireflect.c',
             'glwin/glwintypes.c',
             'memory.c',
-            '../common/misc.c',
             '../common/protocol.c',
             '../common/protocol-win32.c',
             '../common/hashtable.c',

@@ -24,12 +24,12 @@
 #include <math.h>
 #include <bugle/bool.h>
 #include <bugle/memory.h>
+#include <bugle/io.h>
 #include <bugle/glwin/glwin.h>
 #include <bugle/glwin/trackcontext.h>
 #include <bugle/gl/glutils.h>
 #include <bugle/gl/glextensions.h>
 #include <bugle/linkedlist.h>
-#include <bugle/misc.h>
 #include <bugle/math.h>
 #include <bugle/stats.h>
 #include <bugle/filters.h>
@@ -43,8 +43,7 @@ typedef struct
     int accumulating;  /* 0: no  1: yes  2: yes, reset counters */
 
     stats_signal_values showstats_prev, showstats_cur;
-    char *showstats_display;
-    size_t showstats_display_size;
+    bugle_io_writer *showstats_display;
 } showstats_struct;
 
 typedef enum
@@ -204,7 +203,7 @@ static void showstats_update(showstats_struct *ss)
 
         if (ss->showstats_prev.allocated)
         {
-            if (ss->showstats_display) ss->showstats_display[0] = '\0';
+            bugle_io_writer_mem_clear(ss->showstats_display);
             for (i = bugle_list_head(&showstats_stats); i; i = bugle_list_next(i))
             {
                 sst = (showstats_statistic *) bugle_list_data(i);
@@ -217,10 +216,10 @@ static void showstats_update(showstats_struct *ss)
                     {
                         sub = bugle_stats_statistic_find_substitution(sst->st, v);
                         if (sub)
-                            bugle_appendf(&ss->showstats_display, &ss->showstats_display_size,
+                            bugle_io_printf(ss->showstats_display,
                                           "%10s %s\n", sub->replacement, sst->st->label);
                         else
-                            bugle_appendf(&ss->showstats_display, &ss->showstats_display_size,
+                            bugle_io_printf(ss->showstats_display,
                                           "%10.*f %s\n", sst->st->precision, v, sst->st->label);
                     }
                     break;
@@ -354,8 +353,7 @@ static bugle_bool showstats_swap_buffers(function_call *call, const callback_dat
         CALL(glTranslatef)(-1.0f, -1.0f, 0.0f);
         CALL(glScalef)(2.0f / viewport[2], 2.0f / viewport[3], 1.0f);
 
-        if (ss->showstats_display)
-            bugle_gl_text_render(ss->showstats_display, 16, viewport[3] - 16);
+        bugle_gl_text_render(bugle_io_writer_mem_get(ss->showstats_display), 16, viewport[3] - 16);
 
 #ifdef GL_ARB_texture_env_combine
         if (showstats_num_graph)
@@ -472,9 +470,18 @@ static void showstats_struct_clear(void *data)
     showstats_struct *ss;
 
     ss = (showstats_struct *) data;
+    ss->showstats_display = bugle_io_writer_mem_new(64);
+}
+
+static void showstats_struct_clear(void *data)
+{
+    showstats_struct *ss;
+
+    ss = (showstats_struct *) data;
     bugle_stats_signal_values_clear(&ss->showstats_prev);
     bugle_stats_signal_values_clear(&ss->showstats_cur);
-    free(ss->showstats_display);
+    bugle_io_writer_mem_release(ss->showstats_display);
+    bugle_io_writer_close(ss->showstats_display);
 }
 
 static bugle_bool showstats_initialise(filter_set *handle)
@@ -491,7 +498,7 @@ static bugle_bool showstats_initialise(filter_set *handle)
     bugle_filter_order("stats", "showstats");
     bugle_glwin_filter_catches_swap_buffers(f, BUGLE_FALSE, showstats_swap_buffers);
     showstats_view = bugle_object_view_new(bugle_context_class,
-                                           NULL,
+                                           showstats_struct_init,
                                            showstats_struct_clear,
                                            sizeof(showstats_struct));
 
