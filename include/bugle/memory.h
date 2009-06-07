@@ -45,9 +45,10 @@ BUGLE_EXPORT_PRE void *bugle_zalloc(size_t size) BUGLE_ATTRIBUTE_MALLOC BUGLE_EX
 BUGLE_EXPORT_PRE void *bugle_nrealloc(void *ptr, size_t nmemb, size_t size) BUGLE_EXPORT_POST;
 
 #define BUGLE_MALLOC(type) ((type *) bugle_malloc(sizeof(type)))
-#define BUGLE_NMALLOC(count, type) ((type *) bugle_nmalloc(sizeof(type), count))
-#define BUGLE_CALLOC(count, type) ((type *) bugle_calloc(sizeof(type), count))
+#define BUGLE_NMALLOC(count, type) ((type *) bugle_nmalloc(count, sizeof(type)))
+#define BUGLE_CALLOC(count, type) ((type *) bugle_calloc(count, sizeof(type)))
 #define BUGLE_ZALLOC(type) ((type *) bugle_zalloc(sizeof(type)))
+#define BUGLE_NREALLOC(ptr, count, type) ((type *) bugle_nrealloc(ptr, count, sizeof(type)))
 
 typedef void (*bugle_alloc_die_callback)(void);
 

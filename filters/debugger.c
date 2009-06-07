@@ -40,7 +40,7 @@
 #include <bugle/filters.h>
 #include <bugle/log.h>
 #include <bugle/hashtable.h>
-#include <bugle/misc.h>
+#include <bugle/io.h>
 #include <bugle/apireflect.h>
 #include <bugle/memory.h>
 #include <bugle/string.h>
@@ -141,9 +141,16 @@ static void send_state_raw(const glstate *state, uint32_t id)
     gldb_protocol_send_code(out_pipe, id);
 }
 
-static void dump_any_call_string_io(char **buffer, size_t *size, void *data)
+static char *dump_any_call_string(const function_call *call)
 {
-    budgie_dump_any_call(&((const function_call *) data)->generic, 0, buffer, size);
+    bugle_io_writer *writer;
+    char *ans;
+
+    writer = bugle_io_writer_mem_new(256);
+    budgie_dump_any_call(&call->generic, 0, writer);
+    ans = bugle_io_writer_mem_get(writer);
+    bugle_io_writer_close(writer);
+    return ans;
 }
 
 static GLenum target_to_binding(GLenum target)
@@ -1045,7 +1052,7 @@ static void process_single_command(function_call *call)
                 break_on_next = BUGLE_TRUE;
             else
             {
-                resp_str = bugle_string_io(dump_any_call_string_io, call);
+                resp_str = dump_any_call_string(call);
                 stopped = BUGLE_TRUE;
                 break_on_next = BUGLE_FALSE;
                 gldb_protocol_send_code(out_pipe, RESP_BREAK);
@@ -1106,7 +1113,7 @@ static bugle_bool debugger_callback(function_call *call, const callback_data *da
     {
         if (break_on[call->generic.id] || break_on_next)
         {
-            resp_str = bugle_string_io(dump_any_call_string_io, call);
+            resp_str = dump_any_call_string(call);
             stopped = BUGLE_TRUE;
             break_on_next = BUGLE_FALSE;
             gldb_protocol_send_code(out_pipe, RESP_BREAK);
@@ -1155,7 +1162,7 @@ static bugle_bool debugger_error_callback(function_call *call, const callback_da
 
     if (error_str != NULL)
     {
-        resp_str = bugle_string_io(dump_any_call_string_io, call);
+        resp_str = dump_any_call_string(call);
         gldb_protocol_send_code(out_pipe, RESP_BREAK_EVENT);
         gldb_protocol_send_code(out_pipe, start_id);
         gldb_protocol_send_string(out_pipe, resp_str);

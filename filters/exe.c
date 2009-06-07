@@ -25,6 +25,7 @@
 #include <bugle/bool.h>
 #include <bugle/memory.h>
 #include <bugle/string.h>
+#include <bugle/io.h>
 #include <budgie/reflect.h>
 #include <budgie/addresses.h>
 #include <bugle/glwin/glwin.h>
@@ -32,7 +33,7 @@
 #include <bugle/filters.h>
 #include <bugle/log.h>
 
-static FILE *out;
+static bugle_io_writer *out;
 static int frame = 0;
 static bugle_bool outside = BUGLE_TRUE;
 static char *exe_filename = NULL;
@@ -77,37 +78,23 @@ static int follow_pointer(budgie_type type, int length, const void *ptr,
      * Note: the __typeof is because not all definitions can be formed
      * simply as "<type> <identifier>" e.g. function pointers.
      */
-    fprintf(out, "        __typeof(%s) defn%d[] = { ",
-            budgie_type_name_nomangle(type), *defn_pool);
+    bugle_io_printf(out, "        __typeof(%s) defn%d[] = { ",
+                    budgie_type_name_nomangle(type), *defn_pool);
     for (i = 0; i < length; i++)
     {
         const void *cur;
         budgie_type cur_type;
 
-        if (i) fprintf(out, ", ");
+        if (i) bugle_io_puts(", ", out);
         cur = (const void *) (i * budgie_type_size(type) + (const char *) ptr);
         cur_type = budgie_type_type(type, cur);
         if (arg_ids[i] != -1)
-            fprintf(out, "defn%d", arg_ids[i]);
+            bugle_io_printf(out, "defn%d", arg_ids[i]);
         else
-        {
-            char *buffer, *buffer_ptr;
-            size_t buffer_size;
-            /* Obtain size */
-            buffer = NULL;
-            buffer_ptr = buffer;
-            buffer_size = 0;
-            budgie_dump_any_type(cur_type, cur, -1, &buffer_ptr, &buffer_size);
-            buffer_size = buffer_ptr - buffer + 1;
-            /* Fill in */
-            buffer_ptr = buffer = BUGLE_NMALLOC(buffer_size, char);
-            budgie_dump_any_type(cur_type, cur, -1, &buffer_ptr, &buffer_size);
-            fputs(buffer, out);
-            free(buffer);
-        }
+            budgie_dump_any_type(cur_type, cur, -1, out);
     }
     free(arg_ids);
-    fprintf(out, " };\n");
+    bugle_io_puts(" };\n", out);
     return *defn_pool++;
 }
 
@@ -115,7 +102,7 @@ static bugle_bool exe_glwin_swap_buffers(function_call *call, const callback_dat
 {
     if (!outside)
     {
-        fprintf(out, "}\n");
+        bugle_io_puts("}\n", out);
         outside = BUGLE_TRUE;
     }
     return BUGLE_TRUE;
@@ -132,7 +119,7 @@ static bugle_bool exe_callback(function_call *call, const callback_data *data)
 
     if (outside)
     {
-        fprintf(out, "static void frame%d(void)\n{\n", frame);
+        bugle_io_printf(out, "static void frame%d(void)\n{\n", frame);
         frame++;
         outside = BUGLE_FALSE;
     }
@@ -147,7 +134,7 @@ static bugle_bool exe_callback(function_call *call, const callback_data *data)
         {
             if (!block)
             {
-                fprintf(out, "    {\n");
+                bugle_io_puts("    {\n", out);
                 block = BUGLE_TRUE;
             }
             length = abs(budgie_call_parameter_length(&call->generic, i));
@@ -157,67 +144,55 @@ static bugle_bool exe_callback(function_call *call, const callback_data *data)
             arg_ids[i] = -1;
     }
     /* Generate the function call */
-    if (block) fputs("    ", out);
-    fprintf(out, "    %s(", budgie_function_name(call->generic.id));
+    if (block) bugle_io_puts("    ", out);
+    bugle_io_printf(out, "    %s(", budgie_function_name(call->generic.id));
     for (i = 0; i < call->generic.num_args; i++)
     {
-        if (i) fprintf(out, ", ");
+        if (i) bugle_io_puts(", ", out);
         if (arg_ids[i] != -1)
-            fprintf(out, "defn%d", arg_ids[i]);
+            bugle_io_printf(out, "defn%d", arg_ids[i]);
         else
-        {
-            char *buffer, *buffer_ptr;
-            size_t buffer_size;
-            /* Obtain size */
-            buffer = NULL;
-            buffer_ptr = buffer;
-            buffer_size = 0;
-            budgie_call_parameter_dump(&call->generic, i, &buffer_ptr, &buffer_size);
-            buffer_size = buffer_ptr - buffer + 1;
-            /* Fill in */
-            buffer_ptr = buffer = BUGLE_NMALLOC(buffer_size, char);
-            budgie_call_parameter_dump(&call->generic, i, &buffer_ptr, &buffer_size);
-            fputs(buffer, out);
-            free(buffer);
-        }
+            budgie_call_parameter_dump(&call->generic, i, out);
     }
-    fputs(");\n", out);
-    if (block) fputs("    }\n", out);
+    bugle_io_puts(");\n", out);
+    if (block) bugle_io_puts("    }\n", out);
     return BUGLE_TRUE;
 }
 
 static bugle_bool exe_initialise(filter_set *handle)
 {
     filter *f;
+    FILE *out_file;
 
     f = bugle_filter_new(handle, "exe");
     bugle_filter_catches_all(f, BUGLE_FALSE, exe_callback);
     bugle_glwin_filter_catches_swap_buffers(f, BUGLE_FALSE, exe_glwin_swap_buffers);
     bugle_filter_order("invoke", "exe");
 
-    out = fopen(exe_filename, "w");
-    if (!out)
+    out_file = fopen(exe_filename, "w");
+    if (!out_file)
     {
         bugle_log_printf("exe", "initialise", BUGLE_LOG_ERROR,
                          "cannot open %s for writing: %s", exe_filename, strerror(errno));
         return BUGLE_FALSE;
     }
-    fputs("#include <stdlib.h>\n"
-          "#include <string.h>\n"
+    out = bugle_io_writer_file_new(out_file);
+    bugle_io_puts("#include <stdlib.h>\n"
+                  "#include <string.h>\n"
 #if BUGLE_GLTYPE_GL
-          "#include <GL/glew.h>\n"
-          "#include <GL/glut.h>\n"
+                  "#include <GL/glew.h>\n"
+                  "#include <GL/glut.h>\n"
 #endif
 #if BUGLE_GLTYPE_GLES1CM
-          "#include <GLES/gl.h>\n"
-          "#include <GLES/glext.h>\n"
+                  "#include <GLES/gl.h>\n"
+                  "#include <GLES/glext.h>\n"
 #endif
 #if BUGLE_GLTYPE_GLES2
-          "#include <GLES2/gl2.h>\n"
-          "#include <GLES2/gl2ext.h>\n"
+                  "#include <GLES2/gl2.h>\n"
+                  "#include <GLES2/gl2ext.h>\n"
 #endif
-          "\n",
-          out);
+                  "\n",
+                  out);
     return BUGLE_TRUE;
 }
 
@@ -226,13 +201,13 @@ static void exe_shutdown(filter_set *handle)
     int i;
 
     if (!outside)
-        fprintf(out, "}\n");
-    fprintf(out, "\nint frame_count = %d;\n", frame);
-    fprintf(out, "void (*frames[])(void) =\n{\n");
+        bugle_io_puts("}\n", out);
+    bugle_io_printf(out, "\nint frame_count = %d;\n", frame);
+    bugle_io_printf(out, "void (*frames[])(void) =\n{\n");
     for (i = 0; i < frame; i++)
-        fprintf(out, "    frame%d,\n", i);
-    fprintf(out, "};\n");
-    fclose(out);
+        bugle_io_printf(out, "    frame%d,\n", i);
+    bugle_io_printf(out, "};\n");
+    bugle_io_writer_close(out);
     free(exe_filename);
 }
 

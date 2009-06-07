@@ -36,6 +36,7 @@
 #include <bugle/log.h>
 #include <bugle/apireflect.h>
 #include <bugle/memory.h>
+#include <bugle/io.h>
 #include <budgie/types.h>
 #include <budgie/reflect.h>
 #include <budgie/call.h>
@@ -351,7 +352,7 @@ static const dump_table_entry *get_dump_table_entry(GLenum e)
 }
 
 bugle_bool bugle_dump_convert(GLenum pname, const void *value,
-                        budgie_type in_type, char **buffer, size_t *size)
+                              budgie_type in_type, bugle_io_writer *writer)
 {
     const dump_table_entry *entry;
     budgie_type out_type;
@@ -386,9 +387,9 @@ bugle_bool bugle_dump_convert(GLenum pname, const void *value,
     else
         budgie_type_convert(out_data, out_type, in, in_type, alength);
     if (ptr)
-        budgie_dump_any_type_extended(out_type, out_data, -1, length, ptr, buffer, size);
+        budgie_dump_any_type_extended(out_type, out_data, -1, length, ptr, writer);
     else
-        budgie_dump_any_type(out_type, out_data, -1, buffer, size);
+        budgie_dump_any_type(out_type, out_data, -1, writer);
     free(out_data);
     return BUGLE_TRUE;
 }

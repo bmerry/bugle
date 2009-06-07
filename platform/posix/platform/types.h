@@ -1,5 +1,5 @@
 /*  BuGLe: an OpenGL debugging tool
- *  Copyright (C) 2004-2007  Bruce Merry
+ *  Copyright (C) 2009  Bruce Merry
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -15,28 +15,16 @@
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#ifndef BUGLE_GLX_GLXDUMP_H
-#define BUGLE_GLX_GLXDUMP_H
+#ifndef BUGLE_PLATFORM_TYPES_H
+#define BUGLE_PLATFORM_TYPES_H
 
-#include <GL/glx.h>
-#include <bugle/bool.h>
-#include <stdio.h>
-#include <budgie/types.h>
+#include "platform_config.h"
+#include <inttypes.h>
+#include <sys/types.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+typedef uint8_t bugle_uint8_t;
+typedef uint16_t bugle_uint16_t;
+typedef uint32_t bugle_uint32_t;
+typedef ssize_t bugle_ssize_t;
 
-/* Count the attribute list for glXChooseVisual,
- * for which boolean attributes are not followed by a value.
- */
-int bugle_count_glXChooseVisual_attributes(const int *attr);
-
-/* Output the attribute list passed to glXChooseVisual */
-bugle_bool bugle_dump_glXChooseVisual_attributes(const int *attr, bugle_io_writer *writer);
-
-#ifdef __cplusplus
-}
-#endif
-
-#endif /* !BUGLE_GLX_GLXDUMP_H */
+#endif /* BUGLE_PLATFORM_TYPES_H */

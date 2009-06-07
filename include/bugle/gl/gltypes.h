@@ -24,22 +24,22 @@
 
 #include <bugle/porting.h>
 #include <bugle/gl/glheaders.h>
-#include <stdio.h>
 #include <bugle/bool.h>
+#include <bugle/io.h>
 #include <bugle/gl/overrides.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-bugle_bool bugle_dump_GLenum(GLenum e, char **buffer, size_t *size);
-bugle_bool bugle_dump_GLblendenum(GLenum e, char **buffer, size_t *size);
-bugle_bool bugle_dump_GLprimitiveenum(GLenum e, char **buffer, size_t *size);
-bugle_bool bugle_dump_GLcomponentsenum(GLenum e, char **buffer, size_t *size);
-bugle_bool bugle_dump_GLerror(GLenum e, char **buffer, size_t *size);
-bugle_bool bugle_dump_GLboolean(GLboolean b, char **buffer, size_t *size);
-bugle_bool bugle_dump_GLpolygonstipple(const GLubyte (*pattern)[4], char **buffer, size_t *size);
-bugle_bool bugle_dump_GLxfbattrib(const GLxfbattrib *a, char **buffer, size_t *size);
+bugle_bool bugle_dump_GLenum(GLenum e, bugle_io_writer *writer);
+bugle_bool bugle_dump_GLblendenum(GLenum e, bugle_io_writer *writer);
+bugle_bool bugle_dump_GLprimitiveenum(GLenum e, bugle_io_writer *writer);
+bugle_bool bugle_dump_GLcomponentsenum(GLenum e, bugle_io_writer *writer);
+bugle_bool bugle_dump_GLerror(GLenum e, bugle_io_writer *writer);
+bugle_bool bugle_dump_GLboolean(GLboolean b, bugle_io_writer *writer);
+bugle_bool bugle_dump_GLpolygonstipple(const GLubyte (*pattern)[4], bugle_io_writer *writer);
+bugle_bool bugle_dump_GLxfbattrib(const GLxfbattrib *a, bugle_io_writer *writer);
 
 #ifdef __cplusplus
 }

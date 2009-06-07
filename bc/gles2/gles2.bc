@@ -64,7 +64,7 @@ TYPE PARAMETER glBufferSubData 3 TYPE_PK7GLubyte
 LENGTH PARAMETER glBufferData 2 $1
 LENGTH PARAMETER glBufferSubData 3 $2
 LENGTH PARAMETER glGetBufferParameteriv 2 bugle_count_gl($f, $1)
-DUMP PARAMETER glGetBufferParameteriv 2 bugle_dump_convert($1, &$$, $t$, $B, $S)
+DUMP PARAMETER glGetBufferParameteriv 2 bugle_dump_convert($1, &$$, $t$, $W)
 
 # Handle generator and deletors
 LENGTH PARAMETER gl(Gen|Delete)(Textures|Buffers|Framebuffers|Renderbuffers) 1 $0
@@ -83,9 +83,9 @@ LENGTH PARAMETER glReadPixels 6 bugle_image_element_count($2, $3, -1, $4, $5, BU
 # Note that we only override length for the vector versions
 LENGTH PARAMETER glGet(Boolean|Integer|Float|Double)v 1 bugle_count_gl($f, $0)
 LENGTH PARAMETER gl(Get)?(TexParameter)[sifd]v 2 bugle_count_gl($f, $1)
-DUMP PARAMETER glGet(Integer|Float|Double)v 1 bugle_dump_convert($0, &$$, $t$, $B, $S)
-DUMP PARAMETER gl(Get)?(TexParameter)[sifd]v? 2 bugle_dump_convert($1, &$$, $t$, $B, $S)
-DUMP PARAMETER glPixelStorei 1 bugle_dump_convert($0, &$$, $t$, $B, $S)
+DUMP PARAMETER glGet(Integer|Float|Double)v 1 bugle_dump_convert($0, &$$, $t$, $W)
+DUMP PARAMETER gl(Get)?(TexParameter)[sifd]v? 2 bugle_dump_convert($1, &$$, $t$, $W)
+DUMP PARAMETER glPixelStorei 1 bugle_dump_convert($0, &$$, $t$, $W)
 
 # Assorted type overrides
 TYPE PARAMETER glClear 0 TYPE_10bufferbits
@@ -102,13 +102,13 @@ TYPE PARAMETER glDrawElements 0 TYPE_15GLprimitiveenum
 TYPE PARAMETER glGetString -1 TYPE_PKc
 
 # Dumping overrides
-DUMP TYPE GLenum bugle_dump_GLenum($$, $B, $S)
-DUMP TYPE GLboolean bugle_dump_GLboolean($$, $B, $S)
-DUMP TYPE GLerror bugle_dump_GLerror($$, $B, $S)
-DUMP TYPE GLblendenum bugle_dump_GLblendenum($$, $B, $S)
-DUMP TYPE GLprimitiveenum bugle_dump_GLprimitiveenum($$, $B, $S)
-DUMP TYPE +PKc budgie_dump_string($$, $B, $S)
-DUMP TYPE +Pc budgie_dump_string($$, $B, $S)
+DUMP TYPE GLenum bugle_dump_GLenum($$, $W)
+DUMP TYPE GLboolean bugle_dump_GLboolean($$, $W)
+DUMP TYPE GLerror bugle_dump_GLerror($$, $W)
+DUMP TYPE GLblendenum bugle_dump_GLblendenum($$, $W)
+DUMP TYPE GLprimitiveenum bugle_dump_GLprimitiveenum($$, $W)
+DUMP TYPE +PKc budgie_dump_string($$, $W)
+DUMP TYPE +Pc budgie_dump_string($$, $W)
 LENGTH TYPE +PKc budgie_count_string($$)
 LENGTH TYPE +Pc budgie_count_string($$)
 
@@ -126,12 +126,12 @@ LENGTH PARAMETER glGetAttachedShaders 3 bugle_count_attached_shaders($0, $1)
 
 LENGTH PARAMETER glGetProgramiv 2 bugle_count_gl($f, $1)
 LENGTH PARAMETER glGetShaderiv 2 bugle_count_gl($f, $1)
-DUMP PARAMETER glGetProgramiv 2 bugle_dump_convert($1, &$$, $t$, $B, $S)
-DUMP PARAMETER glGetShaderiv 2 bugle_dump_convert($1, &$$, $t$, $B, $S)
+DUMP PARAMETER glGetProgramiv 2 bugle_dump_convert($1, &$$, $t$, $W)
+DUMP PARAMETER glGetShaderiv 2 bugle_dump_convert($1, &$$, $t$, $W)
 
 # Framebuffer objects
 LENGTH PARAMETER glGetRenderbufferParameteriv 2 bugle_count_gl($f, $1)
 LENGTH PARAMETER glGetFramebufferAttachmentParameteriv 3 bugle_count_gl($f, $2)
-DUMP PARAMETER glGetRenderbufferParameteriv 2 bugle_dump_convert($1, &$$, $t$, $B, $S)
-DUMP PARAMETER glGetFramebufferAttachmentParameteriv 3 bugle_dump_convert($2, &$$, $t$, $B, $S)
+DUMP PARAMETER glGetRenderbufferParameteriv 2 bugle_dump_convert($1, &$$, $t$, $W)
+DUMP PARAMETER glGetFramebufferAttachmentParameteriv 3 bugle_dump_convert($2, &$$, $t$, $W)
 

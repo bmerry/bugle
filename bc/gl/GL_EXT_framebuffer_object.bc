@@ -1,5 +1,5 @@
 LENGTH PARAMETER gl(Gen|Delete)(Framebuffers|Renderbuffers)EXT 1 $0
 LENGTH PARAMETER glGetRenderbufferParameterivEXT 2 bugle_count_gl($f, $1)
 LENGTH PARAMETER glGetFramebufferAttachmentParameterivEXT 3 bugle_count_gl($f, $2)
-DUMP PARAMETER glGetRenderbufferParameterivEXT 2 bugle_dump_convert($1, &$$, $t$, $B, $S)
-DUMP PARAMETER glGetFramebufferAttachmentParameterivEXT 3 bugle_dump_convert($2, &$$, $t$, $B, $S)
+DUMP PARAMETER glGetRenderbufferParameterivEXT 2 bugle_dump_convert($1, &$$, $t$, $W)
+DUMP PARAMETER glGetFramebufferAttachmentParameterivEXT 3 bugle_dump_convert($2, &$$, $t$, $W)

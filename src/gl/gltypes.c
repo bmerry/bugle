@@ -18,62 +18,62 @@
 #if HAVE_CONFIG_H
 # include <config.h>
 #endif
-#include <stdio.h>
 #include <bugle/bool.h>
+#include <bugle/io.h>
 #include <string.h>
 #include <bugle/gl/glheaders.h>
 #include <budgie/reflect.h>
 #include <bugle/apireflect.h>
 #include <bugle/gl/gltypes.h>
 
-bugle_bool bugle_dump_GLenum(GLenum e, char **buffer, size_t *size)
+bugle_bool bugle_dump_GLenum(GLenum e, bugle_io_writer *writer)
 {
     const char *name = bugle_api_enum_name(e, BUGLE_API_EXTENSION_BLOCK_GL);
     if (!name)
-        budgie_snprintf_advance(buffer, size, "<unknown enum 0x%.4x>", (unsigned int) e);
+        bugle_io_printf(writer, "<unknown enum 0x%.4x>", (unsigned int) e);
     else
-        budgie_snputs_advance(buffer, size, name);
+        bugle_io_puts(name, writer);
     return BUGLE_TRUE;
 }
 
-bugle_bool bugle_dump_GLerror(GLenum err, char **buffer, size_t *size)
+bugle_bool bugle_dump_GLerror(GLenum err, bugle_io_writer *writer)
 {
     switch (err)
     {
-    case GL_NO_ERROR: budgie_snputs_advance(buffer, size, "GL_NO_ERROR"); break;
-    default: bugle_dump_GLenum(err, buffer, size);
+    case GL_NO_ERROR: bugle_io_puts("GL_NO_ERROR", writer); break;
+    default: bugle_dump_GLenum(err, writer);
     }
     return BUGLE_TRUE;
 }
 
-bugle_bool bugle_dump_GLblendenum(GLenum token, char **buffer, size_t *size)
+bugle_bool bugle_dump_GLblendenum(GLenum token, bugle_io_writer *writer)
 {
     switch (token)
     {
-    case GL_ZERO: budgie_snputs_advance(buffer, size, "GL_ZERO"); break;
-    case GL_ONE: budgie_snputs_advance(buffer, size, "GL_ONE"); break;
-    default: bugle_dump_GLenum(token, buffer, size);
+    case GL_ZERO: bugle_io_puts("GL_ZERO", writer); break;
+    case GL_ONE: bugle_io_puts("GL_ONE", writer); break;
+    default: bugle_dump_GLenum(token, writer);
     }
     return BUGLE_TRUE;
 }
 
-bugle_bool bugle_dump_GLprimitiveenum(GLenum token, char **buffer, size_t *size)
+bugle_bool bugle_dump_GLprimitiveenum(GLenum token, bugle_io_writer *writer)
 {
     switch (token)
     {
-    case GL_POINTS: budgie_snputs_advance(buffer, size, "GL_POINTS"); break;
-    case GL_LINES: budgie_snputs_advance(buffer, size, "GL_LINES"); break;
-    case GL_LINE_LOOP: budgie_snputs_advance(buffer, size, "GL_LINE_LOOP"); break;
-    case GL_LINE_STRIP: budgie_snputs_advance(buffer, size, "GL_LINE_STRIP"); break;
-    case GL_TRIANGLES: budgie_snputs_advance(buffer, size, "GL_TRIANGLES"); break;
-    case GL_TRIANGLE_STRIP: budgie_snputs_advance(buffer, size, "GL_TRIANGLE_STRIP"); break;
-    case GL_TRIANGLE_FAN: budgie_snputs_advance(buffer, size, "GL_TRIANGLE_FAN"); break;
+    case GL_POINTS: bugle_io_puts("GL_POINTS", writer); break;
+    case GL_LINES: bugle_io_puts("GL_LINES", writer); break;
+    case GL_LINE_LOOP: bugle_io_puts("GL_LINE_LOOP", writer); break;
+    case GL_LINE_STRIP: bugle_io_puts("GL_LINE_STRIP", writer); break;
+    case GL_TRIANGLES: bugle_io_puts("GL_TRIANGLES", writer); break;
+    case GL_TRIANGLE_STRIP: bugle_io_puts("GL_TRIANGLE_STRIP", writer); break;
+    case GL_TRIANGLE_FAN: bugle_io_puts("GL_TRIANGLE_FAN", writer); break;
 #if BUGLE_GLTYPE_GL
-    case GL_QUADS: budgie_snputs_advance(buffer, size, "GL_QUADS"); break;
-    case GL_QUAD_STRIP: budgie_snputs_advance(buffer, size, "GL_QUAD_STRIP"); break;
-    case GL_POLYGON: budgie_snputs_advance(buffer, size, "GL_POLYGON"); break;
+    case GL_QUADS: bugle_io_puts("GL_QUADS", writer); break;
+    case GL_QUAD_STRIP: bugle_io_puts("GL_QUAD_STRIP", writer); break;
+    case GL_POLYGON: bugle_io_puts("GL_POLYGON", writer); break;
 #endif
-    default: bugle_dump_GLenum(token, buffer, size);
+    default: bugle_dump_GLenum(token, writer);
     }
     return BUGLE_TRUE;
     /* Note: doesn't include GL_EXT_geometry_shader4 primitives, but those
@@ -81,46 +81,46 @@ bugle_bool bugle_dump_GLprimitiveenum(GLenum token, char **buffer, size_t *size)
      */
 }
 
-bugle_bool bugle_dump_GLcomponentsenum(GLenum token, char **buffer, size_t *size)
+bugle_bool bugle_dump_GLcomponentsenum(GLenum token, bugle_io_writer *writer)
 {
     if (token >= 1 && token <= 4)
-        budgie_snprintf_advance(buffer, size, "%d", (int) token);
+        bugle_io_printf(writer, "%d", (int) token);
     else
-        bugle_dump_GLenum(token, buffer, size);
+        bugle_dump_GLenum(token, writer);
     return BUGLE_TRUE;
 }
 
-bugle_bool bugle_dump_GLboolean(GLboolean b, char **buffer, size_t *size)
+bugle_bool bugle_dump_GLboolean(GLboolean b, bugle_io_writer *writer)
 {
     if (b == 0 || b == 1)
-        budgie_snputs_advance(buffer, size, b ? "GL_TRUE" : "GL_FALSE");
+        bugle_io_puts(b ? "GL_TRUE" : "GL_FALSE", writer);
     else
-        budgie_snprintf_advance(buffer, size, "(GLboolean) %u", (unsigned int) b);
+        bugle_io_printf(writer, "(GLboolean) %u", (unsigned int) b);
     return BUGLE_TRUE;
 }
 
-bugle_bool bugle_dump_GLpolygonstipple(const GLubyte (*pattern)[4], char **buffer, size_t *size)
+bugle_bool bugle_dump_GLpolygonstipple(const GLubyte (*pattern)[4], bugle_io_writer *writer)
 {
     GLubyte cur;
     int i, j, k;
 
-    budgie_snputs_advance(buffer, size, "{ ");
+    bugle_io_puts("{ ", writer);
     for (i = 0; i < 32; i++)
         for (j = 0; j < 4; j++)
         {
             cur = pattern[i][j];
             for (k = 0; k < 8; k++)
-                budgie_snputc_advance(buffer, size, (cur & (1 << (7 - k))) ? '1' : '0');
-            budgie_snputc_advance(buffer, size, ' ');
+                bugle_io_putc((cur & (1 << (7 - k))) ? '1' : '0', writer);
+            bugle_io_putc(' ', writer);
         }
-    budgie_snputs_advance(buffer, size, "}");
+    bugle_io_puts("}", writer);
     return BUGLE_TRUE;
 }
 
-bugle_bool bugle_dump_GLxfbattrib(const GLxfbattrib *a, char **buffer, size_t *size)
+bugle_bool bugle_dump_GLxfbattrib(const GLxfbattrib *a, bugle_io_writer *writer)
 {
-    budgie_snputs_advance(buffer, size, "{ ");
-    bugle_dump_GLenum(a->attribute, buffer, size);
-    budgie_snprintf_advance(buffer, size, ", %d, %d }", (int) a->components, (int) a->index);
+    bugle_io_puts("{ ", writer);
+    bugle_dump_GLenum(a->attribute, writer);
+    bugle_io_printf(writer, ", %d, %d }", (int) a->components, (int) a->index);
     return BUGLE_TRUE;
 }

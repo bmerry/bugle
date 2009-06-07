@@ -30,29 +30,16 @@
 
 static bugle_bool trace_callback(function_call *call, const callback_data *data)
 {
-    char fixed_buffer[4096], *dyn_buffer = NULL, *ptr;
-    size_t fixed_size, len;
-
-    /* First try just the fixed buffer, which should take care of the vast
-     * majority without allocating memory.
+    /* TODO modify bugle_log_callback to pass a bugle_io_writer
+     * and use that instead of constructing in memory.
      */
-    fixed_size = sizeof(fixed_buffer);
-    ptr = fixed_buffer;
-    budgie_dump_any_call((generic_function_call *) call, 0, &ptr, &fixed_size);
-    len = ptr - fixed_buffer + 1;
-    if (len > sizeof(fixed_buffer))
-    {
-        /* No good, it's too big */
-        dyn_buffer = BUGLE_NMALLOC(len, char);
-        ptr = dyn_buffer;
-        budgie_dump_any_call((generic_function_call *) call, 0, &ptr, &len);
-        ptr = dyn_buffer;
-    }
-    else
-        ptr = fixed_buffer;
+    bugle_io_writer *writer;
 
-    bugle_log("trace", "call", BUGLE_LOG_INFO, ptr);
-    free(dyn_buffer);
+    writer = bugle_io_writer_mem_new(256);
+    budgie_dump_any_call(&call->generic, 0, writer);
+    bugle_log("trace", "call", BUGLE_LOG_INFO, bugle_io_writer_mem_get(writer));
+    bugle_io_writer_mem_release(writer);
+    bugle_io_writer_close(writer);
     return BUGLE_TRUE;
 }
 

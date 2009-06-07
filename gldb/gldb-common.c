@@ -32,7 +32,6 @@
 #include <fcntl.h>
 #include <bugle/linkedlist.h>
 #include <bugle/hashtable.h>
-#include <bugle/misc.h>
 #include <bugle/porting.h>
 #include <bugle/string.h>
 #include <bugle/memory.h>
@@ -841,14 +840,6 @@ gldb_state *gldb_state_find_child_enum(gldb_state *parent, GLenum name)
     return NULL;
 }
 
-static void dump_wrapper(char **buffer, size_t *size, void *data)
-{
-    const gldb_state *w;
-
-    w = (const gldb_state *) data;
-    budgie_dump_any_type_extended(w->type, w->data, -1, w->length, NULL, buffer, size);
-}
-
 char *gldb_state_string(const gldb_state *state)
 {
     if (state->length == 0)
@@ -858,7 +849,16 @@ char *gldb_state_string(const gldb_state *state)
     if (state->type == TYPE_c || state->type == TYPE_Kc)
         return bugle_strdup((const char *) state->data);
     else
-        return bugle_string_io(dump_wrapper, (void *) state);
+    {
+        bugle_io_writer *writer;
+        char *ans;
+
+        writer = bugle_io_writer_mem_new(64);
+        budgie_dump_any_type_extended(state->type, state->data, -1, state->length, NULL, writer);
+        ans = bugle_io_writer_mem_get(writer);
+        bugle_io_writer_close(writer);
+        return ans;
+    }
 }
 
 GLint gldb_state_GLint(const gldb_state *state)

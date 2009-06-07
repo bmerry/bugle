@@ -1,5 +1,5 @@
 /*  BuGLe: an OpenGL debugging tool
- *  Copyright (C) 2004-2007  Bruce Merry
+ *  Copyright (C) 2004-2007, 2009  Bruce Merry
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -51,7 +51,7 @@ void _budgie_reentrance_clear(void);
 void budgie_interceptor(function_call *call);
 
 
-typedef bugle_bool (*arg_dumper)(const generic_function_call *, int, const void *, int, char **buffer, size_t *size);
+typedef bugle_bool (*arg_dumper)(const generic_function_call *, int, const void *, int, bugle_io_writer *writer);
 typedef budgie_type (*arg_get_type)(const generic_function_call *, int, const void *);
 typedef int (*arg_get_length)(const generic_function_call *, int, const void *);
 

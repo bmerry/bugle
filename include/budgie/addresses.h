@@ -22,6 +22,7 @@
 #include <bugle/bool.h>
 #include <budgie/types.h>
 #include <bugle/export.h>
+#include <bugle/io.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -38,9 +39,9 @@ BUGLE_EXPORT_PRE budgie_type budgie_call_parameter_type(const generic_function_c
  */
 BUGLE_EXPORT_PRE int budgie_call_parameter_length(const generic_function_call *call, int param) BUGLE_EXPORT_POST;
 /* Dumps a single parameter, with appropriate type and length */
-BUGLE_EXPORT_PRE void budgie_call_parameter_dump(const generic_function_call *call, int param, char **buffer, size_t *size) BUGLE_EXPORT_POST;
+BUGLE_EXPORT_PRE void budgie_call_parameter_dump(const generic_function_call *call, int param, bugle_io_writer *writer) BUGLE_EXPORT_POST;
 /* Dumps a call, including arguments and return. Does not include a newline */
-BUGLE_EXPORT_PRE void budgie_dump_any_call(const generic_function_call *call, int indent, char **buffer, size_t *size) BUGLE_EXPORT_POST;
+BUGLE_EXPORT_PRE void budgie_dump_any_call(const generic_function_call *call, int indent, bugle_io_writer *writer) BUGLE_EXPORT_POST;
 
 BUGLE_EXPORT_PRE BUDGIEAPIPROC budgie_function_address_real(budgie_function id) BUGLE_EXPORT_POST;
 BUGLE_EXPORT_PRE BUDGIEAPIPROC budgie_function_address_wrapper(budgie_function id) BUGLE_EXPORT_POST;

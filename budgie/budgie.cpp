@@ -549,8 +549,7 @@ static string group_substitute(const Override &o,
     ans = search_replace(ans, "$l", "(length)");
     if (o.mode == OVERRIDE_DUMP)
     {
-        ans = search_replace(ans, "$B", "(buffer)");
-        ans = search_replace(ans, "$S", "(size)");
+        ans = search_replace(ans, "$W", "(writer)");
     }
 
     /* We count downwards because there may be more than 10 parameters,
@@ -1106,16 +1105,15 @@ static void write_type_dumpers(FILE *f)
         destroy_temporary(ptr);
 
         fprintf(f,
-                "static ssize_t _budgie_dump_%s(%s, int count, char **buffer, size_t *size)\n"
-                "{\n"
-                "    char *orig;\n",
+                "static void _budgie_dump_%s(%s, int count, bugle_io_writer *writer)\n"
+                "{\n",
                 define.c_str(), arg.c_str());
 
-        custom_code = "    orig = *buffer;\n";
+        custom_code = "";
         // build handler for override, if any
         if (i->overrides.count(OVERRIDE_DUMP))
             custom_code +=
-                "    if (" + i->overrides[OVERRIDE_DUMP] + ") return *buffer - orig;\n";
+                "    if (" + i->overrides[OVERRIDE_DUMP] + ") return;\n";
 
         // handle bitfields
         if (bitfield_map.count(i->node))
@@ -1135,8 +1133,7 @@ static void write_type_dumpers(FILE *f)
                     "\n"
                     "    };\n"
                     "%s"
-                    "    _budgie_dump_bitfield(*value, buffer, size, tokens, %d);\n"
-                    "    return *buffer - orig;\n"
+                    "    _budgie_dump_bitfield(*value, writer, tokens, %d);\n"
                     "}\n"
                     "\n",
                     custom_code.c_str(), (int) b->bits.size());
@@ -1165,20 +1162,20 @@ static void write_type_dumpers(FILE *f)
                 if (!seen_enums.count(value))
                 {
                     fprintf(f,
-                            "    case %s: budgie_snputs_advance(buffer, size, \"%s\"); break;\n",
+                            "    case %s: bugle_io_puts(\"%s\", writer); break;\n",
                             name.c_str(), name.c_str());
                     seen_enums.insert(value);
                 }
                 tmp = TREE_CHAIN(tmp);
             }
             fprintf(f,
-                    "    default: budgie_snprintf_advance(buffer, size, \"%%ld\", (long) *value);\n"
+                    "    default: bugle_io_printf(writer, \"%%ld\", (long) *value);\n"
                     "    }\n");
             break;
         case INTEGER_TYPE:
             fprintf(f,
                     "%s"
-                    "    budgie_snprintf_advance(buffer, size, \"%%\" PRI%c%ld, (%sint%ld_t) *value);\n",
+                    "    bugle_io_printf(writer, \"%%\" PRI%c%ld, (%sint%ld_t) *value);\n",
                     custom_code.c_str(),
                     (i->node->flag_unsigned ? 'u' : 'd'),
                     i->node->size->low,
@@ -1190,12 +1187,12 @@ static void write_type_dumpers(FILE *f)
 #if HAVE_LONG_DOUBLE
             fprintf(f,
                     "%s"
-                    "    budgie_snprintf_advance(buffer, size, \"%%Lg\", (long double) *value);\n",
+                    "    bugle_io_printf(writer, \"%%Lg\", (long double) *value);\n",
                     custom_code.c_str());
 #else
             fprintf(f,
                     "%s"
-                    "    budgie_snprintf_advance(buffer, size, \"%%g\", (double) *value);\n",
+                    "    bugle_io_printf(writer, \"%%g\", (double) *value);\n",
                     custom_code.c_str());
 #endif
             break;
@@ -1214,26 +1211,26 @@ static void write_type_dumpers(FILE *f)
                 fprintf(f, "    asize = count;\n");
             child = TREE_TYPE(i->node); // array element type
             fprintf(f,
-                    "    budgie_snputs_advance(buffer, size, \"{ \");\n"
+                    "    bugle_io_puts(\"{ \", writer);\n"
                     "    for (i = 0; i < asize; i++)\n"
                     "    {\n");
             if (type_map.count(child))
             {
                 define = get_type_map(child)->define();
                 fprintf(f,
-                        "        budgie_dump_any_type(%s, &(*value)[i], -1, buffer, size);\n",
+                        "        budgie_dump_any_type(%s, &(*value)[i], -1, writer);\n",
                         define.c_str());
             }
             else
                 fprintf(f,
-                        "        budgie_snputs_advance(buffer, size, \"<unknown>\");\n");
+                        "        bugle_io_puts(\"<unknown>\", writer);\n");
             fprintf(f,
                     "        if (i < asize - 1)\n"
-                    "            budgie_snputs_advance(buffer, size, \", \");\n"
+                    "            bugle_io_puts(\", \", writer);\n"
                     "    }\n"
                     "    if (asize < 0)\n"
-                    "        budgie_snputs_advance(buffer, size, \"<unknown size array>\");\n"
-                    "    budgie_snputs_advance(buffer, size, \" }\");\n");
+                    "        bugle_io_puts(\"<unknown size array>\", writer);\n"
+                    "    bugle_io_puts(\" }\", writer);\n");
             break;
         case POINTER_TYPE:
             child = TREE_TYPE(i->node); // pointed to type
@@ -1241,8 +1238,8 @@ static void write_type_dumpers(FILE *f)
                 fprintf(f, "    int i;\n");
             fprintf(f,
                     "%s"
-                    "    if (*value == NULL) budgie_snputs_advance(buffer, size, \"NULL\");\n"
-                    "    else budgie_snprintf_advance(buffer, size, \"%%p\", (void *) *value);\n",
+                    "    if (*value == NULL) bugle_io_puts(\"NULL\", writer);\n"
+                    "    else bugle_io_printf(writer, \"%%p\", (void *) *value);\n",
                     custom_code.c_str());
             if (type_map.count(child))
             {
@@ -1250,20 +1247,20 @@ static void write_type_dumpers(FILE *f)
                 fprintf(f,
                         "    if (*value)\n"
                         "    {\n"
-                        "        budgie_snputs_advance(buffer, size, \" -> \");\n"
+                        "        bugle_io_puts(\" -> \", writer);\n"
                         // -1 means a simple pointer, not pointer to array
                         "        if (count < 0)\n"
-                        "            budgie_dump_any_type(%s, *value, -1, buffer, size);\n"
+                        "            budgie_dump_any_type(%s, *value, -1, writer);\n"
                         "        else\n"
                         "        {\n"
                         // pointer to array
-                        "            budgie_snputs_advance(buffer, size, \"{ \");\n"
+                        "            bugle_io_puts(\"{ \", writer);\n"
                         "            for (i = 0; i < count; i++)\n"
                         "            {\n"
-                        "                budgie_dump_any_type(%s, &(*value)[i], -1, buffer, size);\n"
-                        "                if (i + 1 < count) budgie_snputs_advance(buffer, size, \", \");\n"
+                        "                budgie_dump_any_type(%s, &(*value)[i], -1, writer);\n"
+                        "                if (i + 1 < count) bugle_io_puts(\", \", writer);\n"
                         "            }\n"
-                        "            budgie_snputs_advance(buffer, size, \" }\");\n"
+                        "            bugle_io_puts(\" }\", writer);\n"
                         "        }\n"
                         "    }\n",
                         define.c_str(), define.c_str());
@@ -1274,7 +1271,7 @@ static void write_type_dumpers(FILE *f)
             { // block to allow "first" to be declared in this scope
                 fprintf(f,
                         "%s"
-                        "    budgie_snputs_advance(buffer, size, \"{ \");\n",
+                        "    bugle_io_puts(\"{ \", writer);\n",
                         custom_code.c_str());
                 tmp = TYPE_FIELDS(i->node);
                 bool first = true;
@@ -1285,27 +1282,27 @@ static void write_type_dumpers(FILE *f)
                         name = IDENTIFIER_POINTER(DECL_NAME(tmp));
                         if (!first)
                             fprintf(f,
-                                    "    budgie_snputs_advance(buffer, size, \", \");\n");
+                                    "    bugle_io_puts(\", \", writer);\n");
                         else first = false;
                         child = TREE_TYPE(tmp);
                         define = get_type_map(child)->define();
                         fprintf(f,
-                                "    budgie_dump_any_type(%s, &value->%s, -1, buffer, size);\n",
+                                "    budgie_dump_any_type(%s, &value->%s, -1, writer);\n",
                                 define.c_str(), name.c_str());
                     }
                     tmp = TREE_CHAIN(tmp);
                 }
                 fprintf(f,
-                        "    budgie_snputs_advance(buffer, size, \" }\");\n");
+                        "    bugle_io_puts(\" }\", writer);\n");
             }
             break;
         default:
             fprintf(f,
                     "%s"
-                    "    budgie_snputs_advance(buffer, size, \"<unknown>\");\n",
+                    "    bugle_io_puts(\"<unknown>\", writer);\n",
                     custom_code.c_str());
         }
-        fprintf(f, "\n    return *buffer - orig;\n}\n\n");
+        fprintf(f, "\n}\n\n");
     }
 }
 
@@ -1364,7 +1361,7 @@ static void write_parameter_overrides(FILE *f)
             if (p.overrides.count(OVERRIDE_DUMP))
             {
                 fprintf(f,
-                        "static bugle_bool _budgie_dump_%s_%s(const generic_function_call *call, int arg, const void *value, int length, char **buffer, size_t *size)\n"
+                        "static bugle_bool _budgie_dump_%s_%s(const generic_function_call *call, int arg, const void *value, int length, bugle_io_writer *writer)\n"
                         "{\n"
                         "    return (%s);\n"
                         "}\n"
@@ -1787,8 +1784,7 @@ void parser_type(override_type mode, const string &type, const string &code)
         break;
     case OVERRIDE_DUMP:
         o.code = search_replace(o.code, "$$", "(*value)");
-        o.code = search_replace(o.code, "$B", "(buffer)");
-        o.code = search_replace(o.code, "$S", "(size)");
+        o.code = search_replace(o.code, "$W", "(writer)");
         o.code = search_replace(o.code, "$l", "(count)");
         break;
     }

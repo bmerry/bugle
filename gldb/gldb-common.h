@@ -27,7 +27,6 @@
 #include <unistd.h>
 #include <bugle/bool.h>
 #include <bugle/linkedlist.h>
-#include <bugle/misc.h>
 #include <budgie/basictypes.h>
 #ifndef GL_FALSE
 # include <GL/gl.h>

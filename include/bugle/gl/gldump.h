@@ -23,6 +23,7 @@
 #include <stdio.h>
 #include <budgie/types.h>
 #include <bugle/export.h>
+#include <bugle/io.h>
 
 /* Takes a type specified by a GL token e.g. GL_FLOAT and returns the budgie_type.
  * The _ptr variant returns the budgie_type variant for a pointer to
@@ -46,7 +47,7 @@ BUGLE_EXPORT_PRE int bugle_count_program_string(GLenum target, GLenum pname) BUG
 BUGLE_EXPORT_PRE int bugle_count_attached_shaders(GLuint program, GLsizei max) BUGLE_EXPORT_POST;
 
 BUGLE_EXPORT_PRE bugle_bool bugle_dump_convert(GLenum pname, const void *value,
-                                               budgie_type in_type, char **buffer, size_t *size) BUGLE_EXPORT_POST;
+                                               budgie_type in_type, bugle_io_writer *writer) BUGLE_EXPORT_POST;
 
 /* Computes the number of pixel elements (units of byte, int, float etc)
  * used by a client-side encoding of a 1D, 2D or 3D image.

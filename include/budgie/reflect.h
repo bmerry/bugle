@@ -21,8 +21,8 @@
 #include <stdio.h>
 #include <stddef.h>
 #include <budgie/types.h>
-#include <bugle/misc.h>  /* For printf format attribute */
 #include <bugle/export.h>
+#include <bugle/io.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -60,7 +60,7 @@ BUGLE_EXPORT_PRE budgie_type     budgie_type_id_nomangle(const char *name) BUGLE
 BUGLE_EXPORT_PRE budgie_type     budgie_type_type(budgie_type type, const void *instance) BUGLE_EXPORT_POST;
 /* Computes the length of the array pointed to, if any, or -1 */
 BUGLE_EXPORT_PRE int             budgie_type_length(budgie_type type, const void *instance) BUGLE_EXPORT_POST;
-BUGLE_EXPORT_PRE void            budgie_dump_any_type(budgie_type type, const void *value, int length, char **buffer, size_t *size) BUGLE_EXPORT_POST;
+BUGLE_EXPORT_PRE void            budgie_dump_any_type(budgie_type type, const void *value, int length, bugle_io_writer *writer) BUGLE_EXPORT_POST;
 /* Calls budgie_dump_any_type, BUT:
  * if outer_length != -1, then it considers the type as if it were an
  * array of that type, of length outer_length. If pointer is
@@ -72,20 +72,10 @@ BUGLE_EXPORT_PRE void budgie_dump_any_type_extended(budgie_type type,
                                                     int length,
                                                     int outer_length,
                                                     const void *pointer,
-                                                    char **buffer, size_t *size) BUGLE_EXPORT_POST;
+                                                    bugle_io_writer *writer) BUGLE_EXPORT_POST;
 
 /* Generated function that converts [an array of] one numeric type to another */
 BUGLE_EXPORT_PRE void budgie_type_convert(void *out, budgie_type out_type, const void *in, budgie_type in_type, size_t count) BUGLE_EXPORT_POST;
-
-/* Does snprintf and returns the result, but advances buffer and size by the
- * number of characters that would have been written (size clamps to 0).
- * If *size is 1 on return, then the string just fit without overflowing. If
- * it is zero, there was an overflow.
- */
-BUGLE_EXPORT_PRE int budgie_snprintf_advance(char **buffer, size_t *size, const char *fmt, ...) BUGLE_ATTRIBUTE_FORMAT_PRINTF(3, 4) BUGLE_EXPORT_POST;
-/* Equivalent to budgie_snprintf(buffer, size, "%s", s) but more efficient. */
-BUGLE_EXPORT_PRE int budgie_snputs_advance(char **buffer, size_t *size, const char *s) BUGLE_EXPORT_POST;
-BUGLE_EXPORT_PRE int budgie_snputc_advance(char **buffer, size_t *size, char c) BUGLE_EXPORT_POST;
 
 /* Some black magic to look up ID's as efficiently as possible. If defines.h
  * is included, GCC will compile this down to a constant. If it is not

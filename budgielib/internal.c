@@ -23,6 +23,7 @@
 #include <ctype.h>
 #include <stdarg.h>
 #include <stddef.h>
+#include <bugle/io.h>
 #include <budgie/reflect.h>
 #include "budgielib/defines.h"
 #include "budgielib/internal.h"
@@ -31,7 +32,7 @@ int _budgie_function_count = FUNCTION_COUNT;
 int _budgie_group_count = GROUP_COUNT;
 int _budgie_type_count = TYPE_COUNT;
 
-void _budgie_dump_bitfield(unsigned int value, char **buffer, size_t *size,
+void _budgie_dump_bitfield(unsigned int value, bugle_io_writer *writer,
                            const bitfield_pair *tags, int count)
 {
     bugle_bool first = BUGLE_TRUE;
@@ -39,71 +40,71 @@ void _budgie_dump_bitfield(unsigned int value, char **buffer, size_t *size,
     for (i = 0; i < count; i++)
         if (value & tags[i].value)
         {
-            if (!first) budgie_snputs_advance(buffer, size, " | "); else first = BUGLE_FALSE;
-            budgie_snputs_advance(buffer, size, tags[i].name);
+            if (!first) bugle_io_puts(" | ", writer); else first = BUGLE_FALSE;
+            bugle_io_puts(tags[i].name, writer);
             value &= ~tags[i].value;
         }
     if (value)
     {
-        if (!first) budgie_snputs_advance(buffer, size, " | ");
-        budgie_snprintf_advance(buffer, size, "%08x", value);
+        if (!first) bugle_io_puts(" | ", writer);
+        bugle_io_printf(writer, "%08x", value);
     }
 }
 
-bugle_bool budgie_dump_string(const char *value, char **buffer, size_t *size)
+bugle_bool budgie_dump_string(const char *value, bugle_io_writer *writer)
 {
     /* FIXME: handle illegal dereferences */
-    if (value == NULL) budgie_snputs_advance(buffer, size, "NULL");
+    if (value == NULL) bugle_io_puts("NULL", writer);
     else
     {
-        budgie_snputc_advance(buffer, size, '"');
+        bugle_io_putc('"', writer);
         while (value[0])
         {
             switch (value[0])
             {
-            case '"': budgie_snputs_advance(buffer, size, "\\\""); break;
-            case '\\': budgie_snputs_advance(buffer, size, "\\\\"); break;
-            case '\n': budgie_snputs_advance(buffer, size, "\\n"); break;
-            case '\r': budgie_snputs_advance(buffer, size, "\\r"); break;
+            case '"': bugle_io_puts("\\\"", writer); break;
+            case '\\': bugle_io_puts("\\\\", writer); break;
+            case '\n': bugle_io_puts("\\n", writer); break;
+            case '\r': bugle_io_puts("\\r", writer); break;
             default:
                 if (iscntrl(value[0]))
-                    budgie_snprintf_advance(buffer, size, "\\%03o", (int) value[0]);
+                    bugle_io_printf(writer, "\\%03o", (int) value[0]);
                 else
-                    budgie_snputc_advance(buffer, size, value[0]);
+                    bugle_io_putc(value[0], writer);
             }
             value++;
         }
-        budgie_snputc_advance(buffer, size, '"');
+        bugle_io_putc('"', writer);
     }
     return BUGLE_TRUE;
 }
 
-bugle_bool budgie_dump_string_length(const char *value, size_t length, char **buffer, size_t *size)
+bugle_bool budgie_dump_string_length(const char *value, size_t length, bugle_io_writer *writer)
 {
     size_t i;
     /* FIXME: handle illegal dereferences */
-    if (value == NULL) budgie_snputs_advance(buffer, size, "NULL");
+    if (value == NULL) bugle_io_puts("NULL", writer);
     else
     {
-        budgie_snputc_advance(buffer, size, '"');
+        bugle_io_putc('"', writer);
         for (i = 0; i < length; i++)
         {
             switch (value[0])
             {
-            case '"': budgie_snputs_advance(buffer, size, "\\\""); break;
-            case '\\': budgie_snputs_advance(buffer, size, "\\\\"); break;
-            case '\n': budgie_snputs_advance(buffer, size, "\\n"); break;
-            case '\r': budgie_snputs_advance(buffer, size, "\\r"); break;
-            case '\t': budgie_snputs_advance(buffer, size, "\\t"); break;
+            case '"': bugle_io_puts("\\\"", writer); break;
+            case '\\': bugle_io_puts("\\\\", writer); break;
+            case '\n': bugle_io_puts("\\n", writer); break;
+            case '\r': bugle_io_puts("\\r", writer); break;
+            case '\t': bugle_io_puts("\\t", writer); break;
             default:
                 if (iscntrl(value[0]))
-                    budgie_snprintf_advance(buffer, size, "\\%03o", (int) value[0]);
+                    bugle_io_printf(writer, "\\%03o", (int) value[0]);
                 else
-                    budgie_snputc_advance(buffer, size, value[0]);
+                    bugle_io_putc(value[0], writer);
             }
             value++;
         }
-        budgie_snputc_advance(buffer, size, '"');
+        bugle_io_putc('"', writer);
     }
     return BUGLE_TRUE;
 }

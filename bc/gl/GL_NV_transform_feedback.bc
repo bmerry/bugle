@@ -2,8 +2,8 @@ EXTRATYPE GLxfbattrib
 EXTRATYPE pGLxfbattrib
 EXTRATYPE pkGLxfbattrib
 
-DUMP TYPE GLxfbattrib bugle_dump_GLxfbattrib(&$$, $B, $S)
-DUMP TYPE +K11GLxfbattrib bugle_dump_GLxfbattrib(&$$, $B, $S)
+DUMP TYPE GLxfbattrib bugle_dump_GLxfbattrib(&$$, $W)
+DUMP TYPE +K11GLxfbattrib bugle_dump_GLxfbattrib(&$$, $W)
 
 TYPE PARAMETER glTransformFeedbackAttribsNV 1 TYPE_13pkGLxfbattrib
 LENGTH PARAMETER glTransformFeedbackAttribsNV 1 $0

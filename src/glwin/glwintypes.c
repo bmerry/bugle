@@ -20,31 +20,32 @@
 #endif
 #include <bugle/porting.h>
 #include <bugle/apireflect.h>
+#include <bugle/io.h>
 #include <bugle/glwin/glwintypes.h>
 #include <budgie/reflect.h>
 
-bugle_bool bugle_dump_glwin_drawable(glwin_drawable d, char **buffer, size_t *size)
+bugle_bool bugle_dump_glwin_drawable(glwin_drawable d, bugle_io_writer *writer)
 {
-    budgie_snprintf_advance(buffer, size, "0x%08lx", (unsigned long) d);
+    bugle_io_printf(writer, "0x%08lx", (unsigned long) d);
     return BUGLE_TRUE;
 }
 
-bugle_bool bugle_dump_glwin_bool(glwin_bool b, char **buffer, size_t *size)
+bugle_bool bugle_dump_glwin_bool(glwin_bool b, bugle_io_writer *writer)
 {
     if (b == 0 || b == 1)
-        budgie_snputs_advance(buffer, size, b ? GLWIN_BOOL_TRUE : GLWIN_BOOL_FALSE);
+        bugle_io_puts(b ? GLWIN_BOOL_TRUE : GLWIN_BOOL_FALSE, writer);
     else
-        budgie_snprintf_advance(buffer, size, "(" GLWIN_BOOL_TYPE ") %u", (unsigned int) b);
+        bugle_io_printf(writer, "(" GLWIN_BOOL_TYPE ") %u", (unsigned int) b);
     return BUGLE_TRUE;
 }
 
-bugle_bool bugle_dump_glwin_enum(glwin_enum e, char **buffer, size_t *size)
+bugle_bool bugle_dump_glwin_enum(glwin_enum e, bugle_io_writer *writer)
 {
     const char *name = bugle_api_enum_name(e, BUGLE_API_EXTENSION_BLOCK_GLWIN);
     if (!name)
-        budgie_snprintf_advance(buffer, size, "<unknown enum 0x%.4x>", (unsigned int) e);
+        bugle_io_printf(writer, "<unknown enum 0x%.4x>", (unsigned int) e);
     else
-        budgie_snputs_advance(buffer, size, name);
+        bugle_io_puts(name, writer);
     return BUGLE_TRUE;
 }
 
@@ -56,21 +57,21 @@ int bugle_count_glwin_attributes(const glwin_attrib *attribs, glwin_attrib termi
     return i + 1;
 }
 
-bugle_bool bugle_dump_glwin_attributes(const glwin_attrib *attribs, glwin_attrib terminator, char **buffer, size_t *size)
+bugle_bool bugle_dump_glwin_attributes(const glwin_attrib *attribs, glwin_attrib terminator, bugle_io_writer *writer)
 {
     int i = 0;
 
     if (!attribs)
         return BUGLE_FALSE;   /* Fall back on default dumping for NULL */
 
-    budgie_snprintf_advance(buffer, size, "%p -> { ", attribs);
+    bugle_io_printf(writer, "%p -> { ", attribs);
     while (attribs[i] != terminator)
     {
-        bugle_dump_glwin_enum(attribs[i], buffer, size);
-        budgie_snprintf_advance(buffer, size, ", %d, ", (int) attribs[i + 1]);
+        bugle_dump_glwin_enum(attribs[i], writer);
+        bugle_io_printf(writer, ", %d, ", (int) attribs[i + 1]);
         i += 2;
     }
-    bugle_dump_glwin_enum(terminator, buffer, size);
-    budgie_snputs_advance(buffer, size, " }");
+    bugle_dump_glwin_enum(terminator, writer);
+    bugle_io_puts(" }", writer);
     return BUGLE_TRUE;
 }

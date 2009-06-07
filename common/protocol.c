@@ -1,5 +1,5 @@
 /*  BuGLe: an OpenGL debugging tool
- *  Copyright (C) 2004-2008  Bruce Merry
+ *  Copyright (C) 2004-2009  Bruce Merry
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -34,7 +34,6 @@
 #include "full-read.h"
 #include "full-write.h"
 #include "protocol.h"
-#include <bugle/misc.h>
 #include <bugle/memory.h>
 #include <bugle/porting.h>
 
@@ -42,12 +41,12 @@
  * it is in, and what library to link against is far more effort than
  * simply writing it from scratch.
  */
-static uint32_t io_htonl(uint32_t h)
+static bugle_uint32_t io_htonl(bugle_uint32_t h)
 {
     union
     {
-        uint8_t bytes[4];
-        uint32_t n;
+        bugle_uint8_t bytes[4];
+        bugle_uint32_t n;
     } u;
 
     u.bytes[0] = (h >> 24) & 0xff;
@@ -57,12 +56,12 @@ static uint32_t io_htonl(uint32_t h)
     return u.n;
 }
 
-static uint32_t io_ntohl(uint32_t n)
+static bugle_uint32_t io_ntohl(bugle_uint32_t n)
 {
     union
     {
-        uint8_t bytes[4];
-        uint32_t n;
+        bugle_uint8_t bytes[4];
+        bugle_uint32_t n;
     } u;
 
     u.n = n;
@@ -108,8 +107,8 @@ struct gldb_protocol_reader
 #if BUGLE_OSAPI_SELECT_BROKEN
     gldb_protocol_reader_select *select_reader;
 #endif
-    
-    ssize_t (*reader_func)(void *arg, void *buf, size_t count);
+
+    bugle_ssize_t (*reader_func)(void *arg, void *buf, size_t count);
     void *reader_arg;
 };
 
@@ -138,7 +137,7 @@ gldb_protocol_reader *gldb_protocol_reader_new_fd_select(int fd)
     return reader;
 }
 
-gldb_protocol_reader *gldb_protocol_reader_new_func(ssize_t (*read_func)(void *arg, void *buf, size_t count), void *arg)
+gldb_protocol_reader *gldb_protocol_reader_new_func(bugle_ssize_t (*read_func)(void *arg, void *buf, size_t count), void *arg)
 {
     gldb_protocol_reader *reader;
     reader = BUGLE_MALLOC(gldb_protocol_reader);
@@ -149,7 +148,7 @@ gldb_protocol_reader *gldb_protocol_reader_new_func(ssize_t (*read_func)(void *a
     return reader;
 }
 
-ssize_t gldb_protocol_reader_read(gldb_protocol_reader *reader, void *buf, size_t count)
+bugle_ssize_t gldb_protocol_reader_read(gldb_protocol_reader *reader, void *buf, size_t count)
 {
     switch (reader->mode)
     {
@@ -202,10 +201,10 @@ void gldb_protocol_reader_free(gldb_protocol_reader *reader)
 /* Returns BUGLE_FALSE on EOF, aborts on failure */
 static bugle_bool io_safe_write(int fd, const void *buf, size_t count)
 {
-    ssize_t out;
+    bugle_ssize_t out;
 
     out = full_write(fd, buf, count);
-    if (out < (ssize_t) count)
+    if (out < (bugle_ssize_t) count)
     {
         if (errno)
         {
@@ -221,7 +220,7 @@ static bugle_bool io_safe_write(int fd, const void *buf, size_t count)
 /* Returns BUGLE_FALSE on EOF, aborts on failure */
 static bugle_bool io_safe_read(gldb_protocol_reader *reader, void *buf, size_t count)
 {
-    ssize_t bytes;
+    bugle_ssize_t bytes;
 
     while (count > 0)
     {
@@ -241,17 +240,17 @@ static bugle_bool io_safe_read(gldb_protocol_reader *reader, void *buf, size_t c
     return BUGLE_TRUE;
 }
 
-bugle_bool gldb_protocol_send_code(int fd, uint32_t code)
+bugle_bool gldb_protocol_send_code(int fd, bugle_uint32_t code)
 {
-    uint32_t code2;
+    bugle_uint32_t code2;
 
     code2 = TO_NETWORK(code);
-    return io_safe_write(fd, &code2, sizeof(uint32_t));
+    return io_safe_write(fd, &code2, sizeof(bugle_uint32_t));
 }
 
-bugle_bool gldb_protocol_send_binary_string(int fd, uint32_t len, const char *str)
+bugle_bool gldb_protocol_send_binary_string(int fd, bugle_uint32_t len, const char *str)
 {
-    uint32_t len2;
+    bugle_uint32_t len2;
 
     /* FIXME: on 64-bit systems, length could in theory be >=2^32. This is
      * not as unlikely as it sounds, since textures are retrieved in floating
@@ -262,7 +261,7 @@ bugle_bool gldb_protocol_send_binary_string(int fd, uint32_t len, const char *st
      * better to just break backwards compatibility.
      */
     len2 = TO_NETWORK(len);
-    if (!io_safe_write(fd, &len2, sizeof(uint32_t))) return BUGLE_FALSE;
+    if (!io_safe_write(fd, &len2, sizeof(bugle_uint32_t))) return BUGLE_FALSE;
     if (!io_safe_write(fd, str, len)) return BUGLE_FALSE;
     return BUGLE_TRUE;
 }
@@ -272,10 +271,10 @@ bugle_bool gldb_protocol_send_string(int fd, const char *str)
     return gldb_protocol_send_binary_string(fd, strlen(str), str);
 }
 
-bugle_bool gldb_protocol_recv_code(gldb_protocol_reader *reader, uint32_t *code)
+bugle_bool gldb_protocol_recv_code(gldb_protocol_reader *reader, bugle_uint32_t *code)
 {
-    uint32_t code2;
-    if (io_safe_read(reader, &code2, sizeof(uint32_t)))
+    bugle_uint32_t code2;
+    if (io_safe_read(reader, &code2, sizeof(bugle_uint32_t)))
     {
         *code = TO_HOST(code2);
         return BUGLE_TRUE;
@@ -284,12 +283,12 @@ bugle_bool gldb_protocol_recv_code(gldb_protocol_reader *reader, uint32_t *code)
         return BUGLE_FALSE;
 }
 
-bugle_bool gldb_protocol_recv_binary_string(gldb_protocol_reader *reader, uint32_t *len, char **data)
+bugle_bool gldb_protocol_recv_binary_string(gldb_protocol_reader *reader, bugle_uint32_t *len, char **data)
 {
-    uint32_t len2;
+    bugle_uint32_t len2;
     int old_errno;
 
-    if (!io_safe_read(reader, &len2, sizeof(uint32_t))) return BUGLE_FALSE;
+    if (!io_safe_read(reader, &len2, sizeof(bugle_uint32_t))) return BUGLE_FALSE;
     *len = TO_HOST(len2);
     *data = bugle_malloc(*len + 1);
     if (!io_safe_read(reader, *data, *len))
@@ -308,7 +307,7 @@ bugle_bool gldb_protocol_recv_binary_string(gldb_protocol_reader *reader, uint32
 
 bugle_bool gldb_protocol_recv_string(gldb_protocol_reader *reader, char **str)
 {
-    uint32_t dummy;
+    bugle_uint32_t dummy;
 
     return gldb_protocol_recv_binary_string(reader, &dummy, str);
 }

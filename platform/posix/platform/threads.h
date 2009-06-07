@@ -23,8 +23,8 @@
  *   not serialising multiple readers.
  */
 
-#ifndef BUGLE_COMMON_THREADS_H
-#define BUGLE_COMMON_THREADS_H
+#ifndef BUGLE_PLATFORM_THREADS_H
+#define BUGLE_PLATFORM_THREADS_H
 
 #if HAVE_CONFIG_H
 # include <config.h>
@@ -99,4 +99,4 @@ typedef pthread_t bugle_thread_t;
 # define BUGLE_RUN_CONSTRUCTOR(fn) bugle_thread_once(fn ## _once, (fn))
 #endif
 
-#endif /* !BUGLE_COMMON_THREADS_H */
+#endif /* !BUGLE_PLATFORM_THREADS_H */

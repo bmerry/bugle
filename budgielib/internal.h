@@ -24,6 +24,7 @@
 #include <stdio.h>
 #include <budgie/types.h>
 #include <bugle/export.h>
+#include <bugle/io.h>
 
 typedef struct
 {
@@ -69,7 +70,7 @@ typedef struct
     ptrdiff_t offset;
 } type_record_data;
 
-typedef void (*type_dumper)(const void *, int, char **buffer, size_t *size);
+typedef void (*type_dumper)(const void *, int, bugle_io_writer *writer);
 typedef budgie_type (*type_get_type)(const void *);
 typedef int (*type_get_length)(const void *);
 
@@ -105,14 +106,14 @@ extern bugle_bool _budgie_bypass[];
 extern int _budgie_group_count;
 extern const group_data _budgie_group_table[];
 
-void _budgie_dump_bitfield(unsigned int value, char **buffer, size_t *size,
+void _budgie_dump_bitfield(unsigned int value, bugle_io_writer *writer,
                            const bitfield_pair *tags, int count);
 
 /* User functions for .bc files */
 
-bugle_bool BUGLE_EXPORT_PRE budgie_dump_string(const char *value, char **buffer, size_t *size) BUGLE_EXPORT_POST;
+bugle_bool BUGLE_EXPORT_PRE budgie_dump_string(const char *value, bugle_io_writer *writer) BUGLE_EXPORT_POST;
 int BUGLE_EXPORT_PRE budgie_count_string(const char *value) BUGLE_EXPORT_POST;
 /* Like dump_string but takes an explicit length rather than NULL terminator */
-bugle_bool BUGLE_EXPORT_PRE budgie_dump_string_length(const char *value, size_t length, char **buffer, size_t *size) BUGLE_EXPORT_POST;
+bugle_bool BUGLE_EXPORT_PRE budgie_dump_string_length(const char *value, size_t length, bugle_io_writer *writer) BUGLE_EXPORT_POST;
 
 #endif /* BUGLE_BUDGIE_INTERNAL_H */

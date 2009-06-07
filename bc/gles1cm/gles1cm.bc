@@ -38,7 +38,7 @@ TYPE PARAMETER glBufferSubData 3 TYPE_PK7GLubyte
 LENGTH PARAMETER glBufferData 2 $1
 LENGTH PARAMETER glBufferSubData 3 $2
 LENGTH PARAMETER glGetBufferParameteriv 2 bugle_count_gl($f, $1)
-DUMP PARAMETER glGetBufferParameteriv 2 bugle_dump_convert($1, &$$, $t$, $B, $S)
+DUMP PARAMETER glGetBufferParameteriv 2 bugle_dump_convert($1, &$$, $t$, $W)
 
 # Handle generator and deletors
 LENGTH PARAMETER gl(Gen|Delete)(Textures|Buffers|FramebuffersOES|RenderbuffersOES) 1 $0
@@ -66,13 +66,13 @@ TYPE PARAMETER glDrawElements 0 TYPE_15GLprimitiveenum
 TYPE PARAMETER glGetString -1 TYPE_PKc
 
 # Dumping overrides
-DUMP TYPE GLenum bugle_dump_GLenum($$, $B, $S)
-DUMP TYPE GLboolean bugle_dump_GLboolean($$, $B, $S)
-DUMP TYPE GLerror bugle_dump_GLerror($$, $B, $S)
-DUMP TYPE GLblendenum bugle_dump_GLblendenum($$, $B, $S)
-DUMP TYPE GLprimitiveenum bugle_dump_GLprimitiveenum($$, $B, $S)
-DUMP TYPE +PKc budgie_dump_string($$, $B, $S)
-DUMP TYPE +Pc budgie_dump_string($$, $B, $S)
+DUMP TYPE GLenum bugle_dump_GLenum($$, $W)
+DUMP TYPE GLboolean bugle_dump_GLboolean($$, $W)
+DUMP TYPE GLerror bugle_dump_GLerror($$, $W)
+DUMP TYPE GLblendenum bugle_dump_GLblendenum($$, $W)
+DUMP TYPE GLprimitiveenum bugle_dump_GLprimitiveenum($$, $W)
+DUMP TYPE +PKc budgie_dump_string($$, $W)
+DUMP TYPE +Pc budgie_dump_string($$, $W)
 LENGTH TYPE +PKc budgie_count_string($$)
 LENGTH TYPE +Pc budgie_count_string($$)
 
@@ -81,13 +81,13 @@ LENGTH TYPE +Pc budgie_count_string($$)
 LENGTH PARAMETER gl(LightModel|Fog)[xf]v 1 bugle_count_gl($f, $0)
 LENGTH PARAMETER glGet(Boolean|Integer|Float|Fixed)v 1 bugle_count_gl($f, $0)
 LENGTH PARAMETER gl(Get)?(TexParameter|TexEnv|Light|Material)[ifx]v 2 bugle_count_gl($f, $1)
-DUMP PARAMETER gl(LightModel|Fog)[xf]v? 1 bugle_dump_convert($0, &$$, $t$, $B, $S)
-DUMP PARAMETER glGet(Integer|Float|Fixed)v 1 bugle_dump_convert($0, &$$, $t$, $B, $S)
-DUMP PARAMETER gl(Get)?(TexParameter|TexEnv|Light|Material)[ifx]v? 2 bugle_dump_convert($1, &$$, $t$, $B, $S)
-DUMP PARAMETER glPixelStorei 1 bugle_dump_convert($0, &$$, $t$, $B, $S)
+DUMP PARAMETER gl(LightModel|Fog)[xf]v? 1 bugle_dump_convert($0, &$$, $t$, $W)
+DUMP PARAMETER glGet(Integer|Float|Fixed)v 1 bugle_dump_convert($0, &$$, $t$, $W)
+DUMP PARAMETER gl(Get)?(TexParameter|TexEnv|Light|Material)[ifx]v? 2 bugle_dump_convert($1, &$$, $t$, $W)
+DUMP PARAMETER glPixelStorei 1 bugle_dump_convert($0, &$$, $t$, $W)
 
 # Framebuffer objects
 LENGTH PARAMETER glGetRenderbufferParameterivOES 2 bugle_count_gl($f, $1)
 LENGTH PARAMETER glGetFramebufferAttachmentParameterivOES 3 bugle_count_gl($f, $2)
-DUMP PARAMETER glGetRenderbufferParameterivOES 2 bugle_dump_convert($1, &$$, $t$, $B, $S)
-DUMP PARAMETER glGetFramebufferAttachmentParameterivOES 3 bugle_dump_convert($2, &$$, $t$, $B, $S)
+DUMP PARAMETER glGetRenderbufferParameterivOES 2 bugle_dump_convert($1, &$$, $t$, $W)
+DUMP PARAMETER glGetFramebufferAttachmentParameterivOES 3 bugle_dump_convert($2, &$$, $t$, $W)

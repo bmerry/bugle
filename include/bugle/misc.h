@@ -29,13 +29,6 @@
 extern "C" {
 #endif
 
-/* Calls "call" with a char **, size_t * and "data".
- * The data that "call" writes into the buffer (advancing it) is returned in
- * a malloc'ed string. It is intended to be used together with the dump
- * functions, which take the same char ** and size_t *.
- */
-BUGLE_EXPORT_PRE char *bugle_string_io(void (*call)(char **, size_t *, void *), void *data) BUGLE_EXPORT_POST;
-
 /* Appends to *strp using the format, reallocating if necessary. The
  * current size is *sz, and will be updated on reallocation. *strp may
  * be NULL, in which case this reduces to asprintf. The return value is

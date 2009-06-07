@@ -26,9 +26,9 @@
 #include <assert.h>
 #include <inttypes.h>
 #include <bugle/log.h>
-#include <bugle/misc.h>
 #include <bugle/memory.h>
 #include <bugle/string.h>
+#include <bugle/io.h>
 #include <bugle/gl/glsl.h>
 #include <bugle/gl/glstate.h>
 #include <bugle/gl/glutils.h>
@@ -1047,7 +1047,14 @@ char *bugle_state_get_string(const glstate *state)
     if (wrapper.type == TYPE_Pc)
         ans = bugle_strdup((const char *) wrapper.data); /* bugle_string_io(dump_string_wrapper, (char *) wrapper.data); */
     else
-        ans = bugle_string_io(dump_wrapper, &wrapper);
+    {
+        bugle_io_writer *writer;
+
+        writer = bugle_io_writer_mem_new(64);
+        budgie_dump_any_type_extended(wrapper.type, wrapper.data, -1, wrapper.length, NULL, writer);
+        ans = bugle_io_writer_mem_get(writer);
+        bugle_io_writer_close(writer);
+    }
     free(wrapper.data);
     return ans;
 }

@@ -32,7 +32,7 @@
 #include <ltdl.h>
 #include <bugle/memory.h>
 #include <bugle/string.h>
-#include <bugle/misc.h>
+#include <bugle/math.h>
 #include <bugle/input.h>
 #include <bugle/filters.h>
 #include <bugle/log.h>

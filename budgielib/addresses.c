@@ -23,6 +23,7 @@
 #include <ltdl.h>
 #include <stdio.h>
 #include <bugle/memory.h>
+#include <bugle/io.h>
 #include <budgie/types.h>
 #include <budgie/addresses.h>
 #include <budgie/reflect.h>
@@ -34,11 +35,11 @@
  */
 extern BUDGIEAPIPROC budgie_address_generator(budgie_function id);
 
-static void make_indent(int indent, char **buffer, size_t *size)
+static void make_indent(int indent, bugle_io_writer *writer)
 {
     int i;
     for (i = 0; i < indent; i++)
-        budgie_snputc_advance(buffer, size, ' ');
+        bugle_io_putc(' ', writer);
 }
 
 static const group_dump_parameter *parameter_info(const generic_function_call *call, int param)
@@ -81,7 +82,7 @@ int budgie_call_parameter_length(const generic_function_call *call, int param)
                                   arg);
 }
 
-void budgie_call_parameter_dump(const generic_function_call *call, int param, char **buffer, size_t *size)
+void budgie_call_parameter_dump(const generic_function_call *call, int param, bugle_io_writer *writer)
 {
     const group_dump_parameter *info;
     int length = -1;
@@ -91,27 +92,27 @@ void budgie_call_parameter_dump(const generic_function_call *call, int param, ch
     length = budgie_call_parameter_length(call, param);
     arg = (param == -1) ? call->retn : call->args[param];
 
-    if (!info->dumper || !info->dumper(call, param, arg, length, buffer, size))
+    if (!info->dumper || !info->dumper(call, param, arg, length, writer))
         budgie_dump_any_type(budgie_call_parameter_type(call, param),
-                             arg, length, buffer, size);
+                             arg, length, writer);
 }
 
-void budgie_dump_any_call(const generic_function_call *call, int indent, char **buffer, size_t *size)
+void budgie_dump_any_call(const generic_function_call *call, int indent, bugle_io_writer *writer)
 {
     int i;
 
-    make_indent(indent, buffer, size);
-    budgie_snprintf_advance(buffer, size, "%s(", budgie_function_name(call->id));
+    make_indent(indent, writer);
+    bugle_io_printf(writer, "%s(", budgie_function_name(call->id));
     for (i = 0; i < call->num_args; i++)
     {
-        if (i) budgie_snputs_advance(buffer, size, ", ");
-        budgie_call_parameter_dump(call, i, buffer, size);
+        if (i) bugle_io_puts(", ", writer);
+        budgie_call_parameter_dump(call, i, writer);
     }
-    budgie_snputc_advance(buffer, size, ')');
+    bugle_io_putc(')', writer);
     if (call->retn)
     {
-        budgie_snputs_advance(buffer, size, " = ");
-        budgie_call_parameter_dump(call, -1, buffer, size);
+        bugle_io_puts(" = ", writer);
+        budgie_call_parameter_dump(call, -1, writer);
     }
 }
 

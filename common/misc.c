@@ -32,19 +32,6 @@
 #include <bugle/linkedlist.h>
 #include "platform/threads.h"
 
-char *bugle_string_io(void (*call)(char **, size_t *, void *), void *data)
-{
-    char *buffer = NULL, *ptr;
-    size_t len = 0;
-
-    call(&buffer, &len, data);
-    len = buffer - (char *) NULL + 1;
-    buffer = BUGLE_NMALLOC(len, char);
-    ptr = buffer;
-    call(&ptr, &len, data);
-    return buffer;
-}
-
 int bugle_appendf(char **strp, size_t *sz, const char *format, ...)
 {
     va_list ap;

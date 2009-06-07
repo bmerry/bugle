@@ -26,6 +26,7 @@
 #include <ltdl.h>
 #include <bugle/hashtable.h>
 #include <bugle/string.h>
+#include <bugle/io.h>
 #include <budgie/types.h>
 #include <budgie/reflect.h>
 #include "internal.h"
@@ -202,7 +203,7 @@ int budgie_type_length(budgie_type type, const void *instance)
         return -1;
 }
 
-void budgie_dump_any_type(budgie_type type, const void *value, int length, char **buffer, size_t *size)
+void budgie_dump_any_type(budgie_type type, const void *value, int length, bugle_io_writer *writer)
 {
     const type_data *info;
 
@@ -217,7 +218,7 @@ void budgie_dump_any_type(budgie_type type, const void *value, int length, char 
         length = (*info->get_length)(value);
 
     assert(info->dumper);
-    (*info->dumper)(value, length, buffer, size);
+    (*info->dumper)(value, length, writer);
 }
 
 void budgie_dump_any_type_extended(budgie_type type,
@@ -225,79 +226,25 @@ void budgie_dump_any_type_extended(budgie_type type,
                                    int length,
                                    int outer_length,
                                    const void *pointer,
-                                   char **buffer, size_t *size)
+                                   bugle_io_writer *writer)
 {
     int i;
     const char *v;
 
     if (pointer)
-        budgie_snprintf_advance(buffer, size, "%p -> ", pointer);
+        bugle_io_printf(writer, "%p -> ", pointer);
     if (outer_length == -1)
-        budgie_dump_any_type(type, value, length, buffer, size);
+        budgie_dump_any_type(type, value, length, writer);
     else
     {
         v = (const char *) value;
-        budgie_snputs_advance(buffer, size, "{ ");
+        bugle_io_puts("{ ", writer);
         for (i = 0; i < outer_length; i++)
         {
-            if (i) budgie_snputs_advance(buffer, size, ", ");
-            budgie_dump_any_type(type, (const void *) v, length, buffer, size);
+            if (i) bugle_io_puts(", ", writer);
+            budgie_dump_any_type(type, (const void *) v, length, writer);
             v += _budgie_type_table[type].size;
         }
-        budgie_snputs_advance(buffer, size, " }");
+        bugle_io_puts(" }", writer);
     }
-}
-
-int budgie_snprintf_advance(char **buffer, size_t *size, const char *fmt, ...)
-{
-    va_list ap;
-    int written;
-
-    va_start(ap, fmt);
-    written = bugle_vsnprintf(*buffer, *size, fmt, ap);
-    va_end(ap);
-    *size = ((size_t)written >= *size) ? 0 : *size - written;
-    *buffer += written;
-    return written;
-}
-
-int budgie_snputs_advance(char **buffer, size_t *size, const char *s)
-{
-    size_t len;
-
-    len = strlen(s);
-    if (len < *size)
-    {
-        /* No overflow */
-        strcpy(*buffer, s);
-        *size -= len;
-    }
-    else if (*size > 0)
-    {
-        /* Not previously overflowed, but is now */
-        memcpy(*buffer, s, *size - 1);
-        (*buffer)[*size - 1] = '\0';
-        *size = 0;
-    }
-    *buffer += len;
-    return len;
-}
-
-int budgie_snputc_advance(char **buffer, size_t *size, char c)
-{
-    if (*size > 1)
-    {
-        /* No overflow */
-        (*buffer)[0] = c;
-        (*buffer)[1] = '\0';
-        (*size)--;
-    }
-    else if (*size == 1)
-    {
-        /* Now an overflow */
-        (*buffer)[0] = '\0';
-        *size = 0;
-    }
-    (*buffer)++;
-    return 1;
 }

@@ -1,1 +1,1 @@
-DUMP PARAMETER glProgramParameteriEXT 2 bugle_dump_convert($1, &$$, $t$, $B, $S)
+DUMP PARAMETER glProgramParameteriEXT 2 bugle_dump_convert($1, &$$, $t$, $W)
