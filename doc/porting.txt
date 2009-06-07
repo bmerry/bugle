@@ -1,0 +1,156 @@
+This is a scratch space for me to collect ideas on what things are
+OS/compiler/library dependent and how to abstract them.
+
+Header file declarations:
+
+Feature       C99    POSIX    glibc  glib   gnulib   MSVCRT
+uint32_t       Y      Y        Y      Y*     Y
+ssize_t        N      Y        Y      Y*     Y
+
+(*) under different name
+
+Functions that could be reimplemented in pure C89:
+
+Feature       C99    POSIX    glibc  glib   gnulib   MSVCRT
+sinf, cosf     Y      N        Y      N      N
+isnan, nan     Y      N        Y      N      Y
+ntohl          N      Y        Y      Y      N
+strdup         N      Y        Y      Y      Y
+vsnprintf      Y      Y        Y      Y      Y
+vasprintf      N      N        Y      Y      Y
+getline        N      N        Y      Y(*)   Y
+regexec        N      Y        Y      Y      Y
+xmalloc        N      N        N       ?     Y
+
+(*) through IOChannel abstraction - and only needed for gldb
+
+OS integration:
+
+Feature       C99    POSIX    glibc  glib   gnulib   MSVCRT
+dlopen         N      Y        Y      Y      ltdl
+spawn          N      Y        Y      Y       ?
+sockets        N      Y        Y      Y      N
+opendir        N      Y        Y      Y      N
+setenv         N      Y        Y      Y      Y
+TLS(+)         N      Y        Y      Y      Y
+mutex(+)       N      Y        Y      Y      Y
+once(+)        N      Y        Y      Y      Y
+
+(+) only needed in C code, not public headers
+NB: glib requires the thread subsystem to be initialised first. This probably
+makes it completely unusable.
+
+Compiler:
+
+Feature       type       C89    C99      GCC    MSVC
+inline         CC         N      Y        Y      Y
+__attribute__  CC         N      N        Y      N
+
+tools
+-----
+- yacc/bison
+- lex/flex
+ship .c files, conditionally add rules if the tool is found
+
+IDEAS
+-----
+1. Extend gnulib to support scons.
++ get to reuse all the system knowledge and code in gnulib
+- lots of work, and really needs to be pushed upstream
+- if done in gnulib HEAD, sucks in GPL3
+
+2. Implement a bugle portability layer, with a separate .so file
+(libbugleplatform or something). On systems with autotools support, this is a
+thin wrapper around a gnulib backend (which will vanish to almost nothing on
+GNU systems).  Pure utilities like full_write that don't need a lot of probing
+get pulled into common/
++ relatively little new code
+- more wrapper layers than there should be
+- doesn't address header file problems like ssize_t
+- probably requires more complex built process, since libbugleport would need
+  be built with autotools and the rest with scons
+
+2b. As above, but have library-based backends: probably POSIX and glib, with
+some GNU support in the POSIX backend
++ no autoconf required
++ lightweight on POSIX+C99 systems
+- still heavyweight on Windows and WinCE, but can be made lighter by writing
+  OS-specific code for them, or adding a gnulib+ltdl backend
+
+3. Switch from gnulib to glib
++ built separately, so no autoconf/automake/scons tug-of-war
++ already used in debugger, so would make code styles match in places
+- limits to systems with glib port (Win32, WinCE and Symbian might qualify)
+- makes bugle a lot more heavyweight to deploy
+- threads support in glib probably won't work
+
+4. Abandon trying to support non-POSIX build environments, continue to use
+scons
++ can built gnulib with autotools
+- more effort to port to embedded systems, but probably still possible
+- still has the autotools/scons tug-of-war
+
+5. Abandon trying to support non-POSIX build environments, abandon scons
++ avoids the autotools/scons tug-of-war
+- scons is a lot better than automake at almost everything
+- scons handles separate environments for host and target better
+
+
+
+
+Platform interface functions:
+
+Strings: external, shared iface, shared header, private impl
+
+bugle_snprintf
+bugle_vsnprintf
+bugle_asprintf
+bugle_vasprintf
+bugle_strdup
+bugle_strndup
+
+Maths: external, shared iface, shared header, private impl
+
+bugle_isfinite
+bugle_isnan
+bugle_nan
+
+Threads: internal only, shared iface, private header, private impl
+
+bugle_thread_once_t
+bugle_thread_once_define
+bugle_thread_once
+bugle_thread_lock_t
+bugle_thread_lock_define
+bugle_thread_lock_define_initialized (*)
+bugle_thread_lock_init
+bugle_thread_lock_destroy
+bugle_thread_lock_lock
+bugle_thread_lock_unlock
+bugle_thread_rwlock_t
+bugle_thread_rwlock_define
+bugle_thread_rwlock_init
+bugle_thread_rwlock_destroy
+bugle_thread_rwlock_rdlock
+bugle_thread_rwlock_wrlock
+bugle_thread_rwlock_unlock
+bugle_thread_key_t
+bugle_thread_key_create
+bugle_thread_getspecific
+bugle_thread_setspecific
+bugle_thread_t
+bugle_thread_self
+bugle_thread_raise
+
+IO and networking (private? maybe needed by gldb-gui):
+
+bugle_io_writer
+bugle_io_reader
+
+need to see what Windows capabilities are needed
+
+Other
+
+- libtool replacement
+- process spawning
+- TCP/IP (suck into I/O?)
