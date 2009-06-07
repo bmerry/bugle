@@ -23,6 +23,7 @@
 #endif
 #include <bugle/bool.h>
 #include <bugle/export.h>
+#include <bugle/io.h>
 #include "platform/types.h"
 
 /* The top bytes are set to make them easier to pick out in dumps, and
@@ -104,9 +105,9 @@ BUGLE_EXPORT_PRE ssize_t gldb_protocol_reader_read(gldb_protocol_reader *reader,
  */
 BUGLE_EXPORT_PRE void gldb_protocol_reader_free(gldb_protocol_reader *reader) BUGLE_EXPORT_POST;
 
-BUGLE_EXPORT_PRE bugle_bool gldb_protocol_send_code(int fd, bugle_uint32_t code) BUGLE_EXPORT_POST;
-BUGLE_EXPORT_PRE bugle_bool gldb_protocol_send_binary_string(int fd, bugle_uint32_t len, const char *str) BUGLE_EXPORT_POST;
-BUGLE_EXPORT_PRE bugle_bool gldb_protocol_send_string(int fd, const char *str) BUGLE_EXPORT_POST;
+BUGLE_EXPORT_PRE bugle_bool gldb_protocol_send_code(bugle_io_writer *writer, bugle_uint32_t code) BUGLE_EXPORT_POST;
+BUGLE_EXPORT_PRE bugle_bool gldb_protocol_send_binary_string(bugle_io_writer *writer, bugle_uint32_t len, const char *str) BUGLE_EXPORT_POST;
+BUGLE_EXPORT_PRE bugle_bool gldb_protocol_send_string(bugle_io_writer *writer, const char *str) BUGLE_EXPORT_POST;
 BUGLE_EXPORT_PRE bugle_bool gldb_protocol_recv_code(gldb_protocol_reader *reader, bugle_uint32_t *code) BUGLE_EXPORT_POST;
 BUGLE_EXPORT_PRE bugle_bool gldb_protocol_recv_binary_string(gldb_protocol_reader *reader, bugle_uint32_t *len, char **data) BUGLE_EXPORT_POST;
 BUGLE_EXPORT_PRE bugle_bool gldb_protocol_recv_string(gldb_protocol_reader *reader, char **str) BUGLE_EXPORT_POST;

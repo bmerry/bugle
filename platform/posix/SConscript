@@ -42,7 +42,8 @@ platform_env = internal_checks(env.Clone())
 
 platform_shared = platform_env.SharedObject(source = [
     'string.c',
-    'math.c'
+    'math.c',
+    'io-posix.c'
     ])
 
 Export('platform_shared')

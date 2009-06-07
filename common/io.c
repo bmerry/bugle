@@ -27,16 +27,7 @@
 #include <bugle/string.h>
 #include <bugle/memory.h>
 #include <bugle/attributes.h>
-
-struct bugle_io_writer
-{
-    int (*fn_vprintf)(void *arg, const char *format, va_list ap) BUGLE_ATTRIBUTE_FORMAT_PRINTF(2, 0);
-    int (*fn_putc)(int c, void *arg);
-    size_t (*fn_write)(const void *ptr, size_t size, size_t nmemb, void *arg);
-    int (*fn_close)(void *arg);
-
-    void *arg;
-};
+#include "io-impl.h"
 
 typedef struct bugle_io_writer_mem
 {
@@ -83,6 +74,13 @@ static int mem_vprintf(void *arg, const char *format, va_list ap)
 {
     bugle_io_writer_mem *mem;
     int written;
+    va_list ap2;    /* backup copy, for second pass */
+
+#if HAVE_VA_COPY
+    va_copy(ap2, ap);
+#else
+    memcpy(ap2, ap, sizeof(ap));
+#endif
 
     mem = (bugle_io_writer_mem *) arg;
     written = bugle_vsnprintf(mem->ptr + mem->size, mem->total - mem->size, format, ap);
@@ -94,9 +92,10 @@ static int mem_vprintf(void *arg, const char *format, va_list ap)
             mem->total = written + mem->size + 1; /* enough room for this one */
         mem->ptr = BUGLE_NREALLOC(mem->ptr, mem->total, char);
 
-        written = bugle_vsnprintf(mem->ptr + mem->size, mem->total - mem->size, format, ap);
+        written = bugle_vsnprintf(mem->ptr + mem->size, mem->total - mem->size, format, ap2);
         assert(written >= 0 && written < mem-> total - mem->size);
     }
+    va_end(ap2);
     mem->size += written;
     return written;
 }

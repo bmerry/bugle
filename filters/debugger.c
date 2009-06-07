@@ -56,9 +56,11 @@
 #endif
 #include "common/protocol.h"
 #include "platform/threads.h"
+#include "platform/io.h"
 
 static gldb_protocol_reader *in_pipe = NULL;
-static int in_pipe_fd = -1, out_pipe = -1;
+static bugle_io_writer *out_pipe = NULL;
+static int in_pipe_fd = -1, out_pipe_fd = -1;
 static bugle_bool *break_on;
 static bugle_bool break_on_event[REQ_EVENT_COUNT];
 static bugle_bool break_on_next = BUGLE_FALSE;
@@ -1210,7 +1212,7 @@ static bugle_bool debugger_initialise(filter_set *handle)
         }
 
         env = getenv("BUGLE_DEBUGGER_FD_OUT");
-        out_pipe = strtol(env, &last, 0);
+        out_pipe_fd = strtol(env, &last, 0);
         if (!*env || *last)
         {
             bugle_log_printf("debugger", "initialise", BUGLE_LOG_ERROR,
@@ -1219,6 +1221,7 @@ static bugle_bool debugger_initialise(filter_set *handle)
             return BUGLE_FALSE;
         }
         in_pipe = gldb_protocol_reader_new_fd_select(in_pipe_fd);
+        out_pipe = bugle_io_writer_fd_new(out_pipe_fd);
     }
 #if BUGLE_OSAPI_POSIX
     else if (0 == strcmp(getenv("BUGLE_DEBUGGER"), "tcp"))
@@ -1294,8 +1297,9 @@ static bugle_bool debugger_initialise(filter_set *handle)
         }
         close(sock);
 
-        out_pipe = in_pipe_fd;
+        out_pipe_fd = in_pipe_fd;
         in_pipe = gldb_protocol_reader_new_fd_select(in_pipe_fd);
+        out_pipe = bugle_io_writer_fd_new(out_pipe_fd);
     }
 #endif
     else

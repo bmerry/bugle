@@ -18,15 +18,15 @@
 #ifndef BUGLE_IO_H
 #define BUGLE_IO_H
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #include <stddef.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <bugle/attributes.h>
 #include <bugle/export.h>
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 typedef struct bugle_io_writer bugle_io_writer;
 

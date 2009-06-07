@@ -240,15 +240,16 @@ static bugle_bool io_safe_read(gldb_protocol_reader *reader, void *buf, size_t c
     return BUGLE_TRUE;
 }
 
-bugle_bool gldb_protocol_send_code(int fd, bugle_uint32_t code)
+bugle_bool gldb_protocol_send_code(bugle_io_writer *writer, bugle_uint32_t code)
 {
     bugle_uint32_t code2;
 
     code2 = TO_NETWORK(code);
-    return io_safe_write(fd, &code2, sizeof(bugle_uint32_t));
+    if (bugle_io_write(&code2, sizeof(bugle_uint32_t), 1, writer) != 1) return BUGLE_FALSE;
+    return BUGLE_TRUE;
 }
 
-bugle_bool gldb_protocol_send_binary_string(int fd, bugle_uint32_t len, const char *str)
+bugle_bool gldb_protocol_send_binary_string(bugle_io_writer *writer, bugle_uint32_t len, const char *str)
 {
     bugle_uint32_t len2;
 
@@ -261,14 +262,14 @@ bugle_bool gldb_protocol_send_binary_string(int fd, bugle_uint32_t len, const ch
      * better to just break backwards compatibility.
      */
     len2 = TO_NETWORK(len);
-    if (!io_safe_write(fd, &len2, sizeof(bugle_uint32_t))) return BUGLE_FALSE;
-    if (!io_safe_write(fd, str, len)) return BUGLE_FALSE;
+    if (bugle_io_write(&len2, sizeof(bugle_uint32_t), 1, writer) != 1) return BUGLE_FALSE;
+    if (bugle_io_write(str, sizeof(char), len, writer) < len) return BUGLE_FALSE;
     return BUGLE_TRUE;
 }
 
-bugle_bool gldb_protocol_send_string(int fd, const char *str)
+bugle_bool gldb_protocol_send_string(bugle_io_writer *writer, const char *str)
 {
-    return gldb_protocol_send_binary_string(fd, strlen(str), str);
+    return gldb_protocol_send_binary_string(writer, strlen(str), str);
 }
 
 bugle_bool gldb_protocol_recv_code(gldb_protocol_reader *reader, bugle_uint32_t *code)
