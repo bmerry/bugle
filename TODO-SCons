@@ -5,7 +5,9 @@
 - add platform layer for glib?
 - add platform layer for gnulib?
 - add platform layer for win32?
+- audit autoconf/SCons tests again what code asks
 - add SCons tests for strndup, strdup, vasprintf etc
 - add SCons tests for threading and so on
 - add better SCons framework for platform
 - add unit tests for I/O layer
+- add unit tests for string functions

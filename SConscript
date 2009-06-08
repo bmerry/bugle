@@ -248,7 +248,6 @@ Export('build_env', 'tu_env', 'env', 'api')
 # via config.h
 SConscript('platform/posix/SConscript')
 
-SConscript('lib/SConscript')
 SConscript('budgie/SConscript')
 SConscript('src/SConscript')
 SConscript('filters/SConscript')

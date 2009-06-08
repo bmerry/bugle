@@ -31,8 +31,6 @@
 #if HAVE_SYS_SELECT_H
 # include <sys/select.h>
 #endif
-#include "full-read.h"
-#include "full-write.h"
 #include "protocol.h"
 #include <bugle/memory.h>
 #include <bugle/porting.h>
