@@ -124,6 +124,8 @@ def checks(env):
     conf.CheckHeader('stdint.h')
     for i in ['cosf', 'sinf', 'finite', 'isfinite', 'isnan', 'nan', 'strtof']:
         conf.CheckFunc(i)
+    conf.CheckDeclaration('va_copy', '#include <stdarg.h>')
+    conf.CheckDeclaration('__va_copy', '#include <stdarg.h>')
     conf.CheckAttributePrintf()
     conf.CheckAttributeConstructor()
     conf.CheckAttributeHiddenAlias()
@@ -216,12 +218,11 @@ env = CrossEnvironment(
             ('PKGLIBDIR', r'\"%(libdir)s/%(PACKAGE)s\"' % ac_vars),
             ('HAVE_CONFIG_H', 1)
             ],
-        parse_flags = '-pthread',
         tools = ['default', 'yacc', 'subst'],
         **common_kw
         )
 if 'gcc' in env['TOOLS']:
-    env.MergeFlags('-fvisibility=hidden -Wstrict-prototypes -Wall')
+    env.MergeFlags('-fvisibility=hidden -Wstrict-prototypes -Wall -g')
 
 # Environment for generating parse tree. This has to be GCC, and in cross
 # compilation should be the cross-gcc so that the correct headers are

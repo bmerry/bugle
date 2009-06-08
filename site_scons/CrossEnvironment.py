@@ -57,7 +57,7 @@ class CrossEnvironment(Environment):
 
                 shl_list = self.SharedLibrary(full, source,
                     SHLIBPREFIX = '', SHLIBSUFFIX = '',
-                    LINKFLAGS = '-Wl,-soname,' + soname, **kw)
+                    LINKFLAGS = ['-Wl,-soname,' + soname] + self['LINKFLAGS'], **kw)
                 self.Command(soname, shl_list[0], 'ln -s ${SOURCE.file} $TARGET')
                 return self.Command(base, shl_list[0], 'ln -s ${SOURCE.file} $TARGET')
 

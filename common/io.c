@@ -75,6 +75,11 @@ size_t bugle_io_write(const void *ptr, size_t size, size_t nmemb, bugle_io_write
     return writer->fn_write(ptr, size, nmemb, writer->arg);
 }
 
+int bugle_io_putc(int c, bugle_io_writer *writer)
+{
+    return writer->fn_putc(c, writer->arg);
+}
+
 int bugle_io_puts(const char *s, bugle_io_writer *writer)
 {
     return writer->fn_write(s, sizeof(char), strlen(s), writer->arg);
@@ -94,8 +99,10 @@ static int mem_vprintf(void *arg, const char *format, va_list ap)
     int written;
     va_list ap2;    /* backup copy, for second pass */
 
-#if HAVE_VA_COPY
+#if HAVE_DECL_VA_COPY
     va_copy(ap2, ap);
+#elif HAVE_DECL___VA_COPY
+    __va_copy(ap2, ap);
 #else
     memcpy(ap2, ap, sizeof(ap));
 #endif
@@ -111,7 +118,7 @@ static int mem_vprintf(void *arg, const char *format, va_list ap)
         mem->ptr = BUGLE_NREALLOC(mem->ptr, mem->total, char);
 
         written = bugle_vsnprintf(mem->ptr + mem->size, mem->total - mem->size, format, ap2);
-        assert(written >= 0 && written < mem-> total - mem->size);
+        assert(written >= 0 && written < mem->total - mem->size);
     }
     va_end(ap2);
     mem->size += written;

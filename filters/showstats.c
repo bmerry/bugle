@@ -31,6 +31,7 @@
 #include <bugle/gl/glextensions.h>
 #include <bugle/linkedlist.h>
 #include <bugle/math.h>
+#include <bugle/string.h>
 #include <bugle/stats.h>
 #include <bugle/filters.h>
 #include <bugle/log.h>
@@ -119,8 +120,8 @@ static void showstats_statistic_initialise(showstats_statistic *sst)
             CALL(glGetIntegerv)(GL_MAX_TEXTURE_SIZE, &max_size);
             if (max_size < sst->graph_size)
                 sst->graph_size = max_size;
-            sst->graph_history = XCALLOC(sst->graph_size, double);
-            sst->graph_scaled = XCALLOC(sst->graph_size, GLubyte);
+            sst->graph_history = BUGLE_CALLOC(sst->graph_size, double);
+            sst->graph_scaled = BUGLE_CALLOC(sst->graph_size, GLubyte);
             sst->graph_scale = sst->st->maximum;
             sst->graph_scale_label[0] = '\0';
 
@@ -159,20 +160,20 @@ static void showstats_graph_rescale(showstats_statistic *sst, double new_scale)
     else s = 5.0 * p10;
 
     if (e > 11)
-        snprintf(sst->graph_scale_label, sizeof(sst->graph_scale_label),
-                 "%.0e", s);
+        bugle_snprintf(sst->graph_scale_label, sizeof(sst->graph_scale_label),
+                       "%.0e", s);
     else if (e >= 9)
-        snprintf(sst->graph_scale_label, sizeof(sst->graph_scale_label),
-                 "%.0fG", s * 1e-9);
+        bugle_snprintf(sst->graph_scale_label, sizeof(sst->graph_scale_label),
+                       "%.0fG", s * 1e-9);
     else if (e >= 6)
-        snprintf(sst->graph_scale_label, sizeof(sst->graph_scale_label),
-                 "%.0fM", s * 1e-6);
+        bugle_snprintf(sst->graph_scale_label, sizeof(sst->graph_scale_label),
+                       "%.0fM", s * 1e-6);
     else if (e >= 3)
-        snprintf(sst->graph_scale_label, sizeof(sst->graph_scale_label),
-                 "%.0fK", s * 1e-3);
+        bugle_snprintf(sst->graph_scale_label, sizeof(sst->graph_scale_label),
+                       "%.0fK", s * 1e-3);
     else
-        snprintf(sst->graph_scale_label, sizeof(sst->graph_scale_label),
-                 "%.0f", s);
+        bugle_snprintf(sst->graph_scale_label, sizeof(sst->graph_scale_label),
+                       "%.0f", s);
 
     sst->graph_scale = s;
     /* Regenerate the texture at the new scale */
@@ -465,7 +466,7 @@ static bugle_bool showstats_graph_set(const struct filter_set_variable_info_s *v
     return BUGLE_TRUE;
 }
 
-static void showstats_struct_clear(void *data)
+static void showstats_struct_init(const void *key, void *data)
 {
     showstats_struct *ss;
 
@@ -526,7 +527,7 @@ static bugle_bool showstats_initialise(filter_set *handle)
         }
         for (; j; j = bugle_list_next(j))
         {
-            sst = XZALLOC(showstats_statistic);
+            sst = BUGLE_ZALLOC(showstats_statistic);
             sst->st = (stats_statistic *) bugle_list_data(j);
             sst->mode = req->mode;
             if (!bugle_stats_expression_activate_signals(sst->st->value))

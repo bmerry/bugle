@@ -22,6 +22,7 @@
 #include <bugle/math.h>
 #include <math.h>
 #include <stddef.h>
+#include <stdlib.h>
 
 int bugle_isfinite(double x)
 {
@@ -35,5 +36,5 @@ int bugle_isnan(double x)
 
 double bugle_nan(void)
 {
-    return nan(NULL);
+    return strtod("NAN", NULL);
 }

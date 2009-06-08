@@ -8,19 +8,24 @@ filter_env = env.Clone(
         SHLIBPREFIX = '')
 
 for filter in [
-        'common',
-        'showextensions',
-        'validate',
-        'unwindstack',
         'checks',
-        'trace',
-        'exe',
+        'common',
         'debugger',
+        'exe',
         'extoverride',
+        'logstats',
+        'modify',
+        'showextensions',
+        'showstats',
         'stats_basic',
         'stats_calls',
         'stats_calltimes',
+        'stats_fragments',
         'stats_nv',
         'stats_primitives',
-        'logstats']:
+        'trace',
+        'unwindstack',
+        'validate']:
     filter_env.LoadableModule(filter, [filter + '.c'])
+
+filter_env.LoadableModule('eps', ['eps.c', '../gl2ps/gl2ps.c'])

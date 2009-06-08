@@ -66,8 +66,10 @@ char *bugle_vasprintf(const char *format, va_list ap)
     int len;
     va_list ap2;
 
-#if HAVE_VA_COPY
+#if HAVE_DECL_VA_COPY
     va_copy(ap2, ap);
+#elif HAVE_DECL___VA_COPY
+    __va_copy(ap2, ap);
 #else
     memcpy(ap2, ap, sizeof(ap));
 #endif

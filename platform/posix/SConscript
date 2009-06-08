@@ -12,9 +12,6 @@ def header_checks(env):
 
     conf = Configure(env, custom_tests = BugleChecks.tests, config_h = '#/config.h')
     conf.Define('_POSIX_C_SOURCE', '200112L', 'Enable IEEE 1003.1-2001 functionality')
-    env.Append(CPPPATH = [
-        srcdir.Dir('platform/posix'),
-        builddir.Dir('platform/posix')])
     return conf.Finish()
 
 def internal_checks(env):
@@ -30,12 +27,15 @@ def internal_checks(env):
     conf.Define('_XOPEN_SOURCE', '600')
     conf.Define('_GNU_SOURCE', '1')
     conf.CheckFunc('vasprintf')
-    conf.CheckFunc('va_copy')
     return conf.Finish()
 
 Import('env', 'srcdir', 'builddir')
 
-env.MergeFlags('-I. -pthread')
+env.Append(CPPPATH = [
+    srcdir.Dir('platform/posix'),
+    builddir.Dir('platform/posix')],
+    LIBS = ['-lm'])
+env.MergeFlags('-pthread')
 env = header_checks(env)
 
 platform_env = internal_checks(env.Clone())
