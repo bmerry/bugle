@@ -29,6 +29,24 @@
 #include <bugle/attributes.h>
 #include "io-impl.h"
 
+size_t bugle_io_read(void *ptr, size_t size, size_t nmemb, bugle_io_reader *reader)
+{
+    return reader->fn_read(ptr, size, nmemb, reader);
+}
+
+bugle_bool bugle_io_reader_has_data(bugle_io_reader *reader)
+{
+    if (reader->fn_has_data != NULL)
+        return reader->fn_has_data(reader->arg);
+    else
+        return BUGLE_FALSE;
+}
+
+int bugle_io_reader_close(bugle_io_reader *reader)
+{
+    return reader->fn_close(reader->arg);
+}
+
 typedef struct bugle_io_writer_mem
 {
     char *ptr;
@@ -120,7 +138,7 @@ static size_t mem_write(const void *ptr, size_t size, size_t nmemb, void *arg)
     bugle_io_writer_mem *mem;
 
     mem = (bugle_io_writer_mem *) arg;
-    size *= nmemb;  /* TODO: check for overflow */
+    size *= nmemb;  /* FIXME: check for overflow */
     if (size >= mem->total - mem->size)
     {
         mem->total *= 2;

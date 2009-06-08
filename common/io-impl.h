@@ -29,6 +29,15 @@ extern "C" {
  * backends, but which are not part of the public interface.
  */
 
+struct bugle_io_reader
+{
+    size_t (*fn_read)(void *ptr, size_t size, size_t nmemb, void *arg);
+    bugle_bool (*fn_has_data)(void *arg);  /* NULL if query not supported */
+    int (*fn_close)(void *arg);
+
+    void *arg;
+};
+
 struct bugle_io_writer
 {
     int (*fn_vprintf)(void *arg, const char *format, va_list ap) BUGLE_ATTRIBUTE_FORMAT_PRINTF(2, 0);

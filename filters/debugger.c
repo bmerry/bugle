@@ -58,7 +58,7 @@
 #include "platform/threads.h"
 #include "platform/io.h"
 
-static gldb_protocol_reader *in_pipe = NULL;
+static bugle_io_reader *in_pipe = NULL;
 static bugle_io_writer *out_pipe = NULL;
 static int in_pipe_fd = -1, out_pipe_fd = -1;
 static bugle_bool *break_on;
@@ -1086,7 +1086,7 @@ static void debugger_loop(function_call *call)
 
     do
     {
-        if (!stopped && !gldb_protocol_reader_has_data(in_pipe))
+        if (!stopped && !bugle_io_reader_has_data(in_pipe))
             break;
         process_single_command(call);
     } while (stopped);
@@ -1220,7 +1220,7 @@ static bugle_bool debugger_initialise(filter_set *handle)
                              env);
             return BUGLE_FALSE;
         }
-        in_pipe = gldb_protocol_reader_new_fd_select(in_pipe_fd);
+        in_pipe = bugle_io_reader_fd_new(in_pipe_fd);
         out_pipe = bugle_io_writer_fd_new(out_pipe_fd);
     }
 #if BUGLE_OSAPI_POSIX
@@ -1298,8 +1298,8 @@ static bugle_bool debugger_initialise(filter_set *handle)
         close(sock);
 
         out_pipe_fd = in_pipe_fd;
-        in_pipe = gldb_protocol_reader_new_fd_select(in_pipe_fd);
-        out_pipe = bugle_io_writer_fd_new(out_pipe_fd);
+        in_pipe = bugle_io_reader_socket_new(in_pipe_fd);
+        out_pipe = bugle_io_writer_socket_new(out_pipe_fd);
     }
 #endif
     else

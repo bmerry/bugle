@@ -25,7 +25,25 @@ extern "C" {
 #include <bugle/io.h>
 #include <bugle/export.h>
 
+/* Wraps a file descriptor in a reader. The fd should be for a file or pipe,
+ * not a network socket. Dies on malloc failure, so always returns non-NULL.
+ */
+BUGLE_EXPORT_PRE bugle_io_reader *bugle_io_reader_fd_new(int fd) BUGLE_EXPORT_POST;
+
+/* Wraps a network socket in a reader. Dies on malloc failure, so always
+ * returns non-NULL.
+ */
+BUGLE_EXPORT_PRE bugle_io_reader *bugle_io_reader_socket_new(int sock) BUGLE_EXPORT_POST;
+
+/* Wraps a file descriptor in a writer. The fd should be for a file or pipe,
+ * not a network socket. Dies on malloc failure, so always returns non-NULL.
+ */
 BUGLE_EXPORT_PRE bugle_io_writer *bugle_io_writer_fd_new(int fd) BUGLE_EXPORT_POST;
+
+/* Wraps a network socket in a writer. Dies on malloc failure, so always
+ * returns non-NULL.
+ */
+BUGLE_EXPORT_PRE bugle_io_writer *bugle_io_writer_socket_new(int sock) BUGLE_EXPORT_POST;
 
 #ifdef __cplusplus
 }

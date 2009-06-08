@@ -23,7 +23,11 @@
 #include <stdarg.h>
 #include <errno.h>
 #include <string.h>
+#include <stdio.h>
+#include <stdlib.h>
 #include <sys/types.h>
+#include <sys/time.h>
+#include <poll.h>
 #include <bugle/string.h>
 #include <bugle/io.h>
 #include <bugle/memory.h>
@@ -31,6 +35,104 @@
 #include "common/io-impl.h"
 
 #define BUFFER_SIZE 256
+
+typedef struct bugle_io_reader_fd
+{
+    int fd;
+} bugle_io_reader_fd;
+
+static size_t fd_read(void *ptr, size_t size, size_t nmemb, void *arg)
+{
+    bugle_io_reader_fd *s;
+    size_t remain;
+    size_t received = 0;
+
+    remain = size * nmemb; /* FIXME handle overflow */
+    while (remain > 0)
+    {
+        ssize_t cur;
+        cur = read(s->fd, (char *)ptr + received, remain);
+        if (cur < 0)
+        {
+            if (errno == EINTR)
+                continue;
+            else
+                return received / size;
+        }
+        else
+        {
+            received += cur;
+            remain -= cur;
+        }
+    }
+    return nmemb;
+}
+
+static bugle_bool fd_has_data(void *arg)
+{
+    struct pollfd fds[1];
+    bugle_io_reader_fd *s;
+
+    s = (bugle_io_reader_fd *) arg;
+    fds[0].fd = s->fd;
+    fds[0].events = POLLIN;
+
+    while (1)
+    {
+        int ret;
+        ret = poll(fds, 1, 0);
+        if (ret == -1)
+        {
+            if (errno != EINTR)
+            {
+                /* Fatal error */
+                perror("poll");
+                exit(1);
+            }
+        }
+        else if (ret > 0 && (fds[0].revents & (POLLIN | POLLHUP)))
+        {
+            return BUGLE_TRUE;
+        }
+        else
+        {
+            /* Timeout i.e. no descriptors ready */
+            return BUGLE_FALSE;
+        }
+    }
+}
+
+static int fd_reader_close(void *arg)
+{
+    bugle_io_reader_fd *s;
+
+    s = (bugle_io_reader_fd *) arg;
+    return close(s->fd) == 0 ? 0 : EOF;
+}
+
+bugle_io_reader *bugle_io_reader_fd_new(int fd)
+{
+    bugle_io_reader *reader;
+    bugle_io_reader_fd *s;
+
+    reader = BUGLE_MALLOC(bugle_io_reader);
+    s = BUGLE_MALLOC(bugle_io_reader_fd);
+
+    reader->fn_read = fd_read;
+    reader->fn_has_data = fd_has_data;
+    reader->fn_close = fd_reader_close;
+    reader->arg = s;
+
+    s->fd = fd;
+
+    return reader;
+}
+
+bugle_io_reader *bugle_io_reader_socket_new(int sock)
+{
+    /* On POSIX, sockets are the same as file descriptors */
+    return bugle_io_reader_fd_new(sock);
+}
 
 typedef struct bugle_io_writer_fd
 {
@@ -43,18 +145,27 @@ static size_t fd_write(const void *ptr, size_t size, size_t nmemb, void *arg)
     bugle_io_writer_fd *s;
     size_t written = 0;
     ssize_t cur;
-    size_t total;
+    size_t remain;
 
-    /* TODO: handle multiplication overflow */
-    total = size * nmemb;
+    /* FIXME: handle multiplication overflow */
+    remain = size * nmemb;
 
     s = (bugle_io_writer_fd *) arg;
-    while (written < total && -1 == (cur = write(s->fd, ptr, size * nmemb)))
+    while (remain > 0)
     {
-        if (errno != EINTR)
-            return written / size;
+        cur = write(s->fd, (char *)ptr + written, remain);
+        if (cur < 0)
+        {
+            if (errno == EINTR)
+                continue;
+            else
+                return written / size;
+        }
         else
+        {
             written += cur;
+            remain -= cur;
+        }
     }
     return nmemb;
 }
@@ -95,7 +206,7 @@ static int fd_putc(int c, void *arg)
     return fd_write(&ch, 1, 1, arg);
 }
 
-static int fd_close(void *arg)
+static int fd_writer_close(void *arg)
 {
     bugle_io_writer_fd *s;
     int ret;
@@ -117,10 +228,16 @@ bugle_io_writer *bugle_io_writer_fd_new(int fd)
     writer->fn_vprintf = fd_vprintf;
     writer->fn_putc = fd_putc;
     writer->fn_write = fd_write;
-    writer->fn_close = fd_close;
+    writer->fn_close = fd_writer_close;
     writer->arg = s;
 
     s->fd = fd;
 
     return writer;
+}
+
+bugle_io_writer *bugle_io_writer_socket_new(int sock)
+{
+    /* On POSIX, sockets are the same as file descriptors */
+    return bugle_io_writer_fd_new(sock);
 }

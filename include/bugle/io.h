@@ -23,10 +23,34 @@
 #include <stdio.h>
 #include <bugle/attributes.h>
 #include <bugle/export.h>
+#include <bugle/bool.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+typedef struct bugle_io_reader bugle_io_reader;
+
+/*** Reader input functions ***/
+
+/* Read bytes from the stream.
+ * Like fread, returns number of items read (0 if none available or on error).
+ * However, it's possible that partial items will be read as well.
+ *
+ * This will keep trying to get all available data, so unlike read(2) it won't
+ * return early just because the data isn't available yet.
+ */
+BUGLE_EXPORT_PRE size_t bugle_io_read(void *ptr, size_t size, size_t nmemb, bugle_io_reader *reader) BUGLE_EXPORT_POST;
+
+/* Determines whether a subsequent read would block. If no information is
+ * available (depending on the underlying stream), returns false.
+ */
+BUGLE_EXPORT_PRE bugle_bool bugle_io_reader_has_data(bugle_io_reader *reader) BUGLE_EXPORT_POST;
+
+/* Closes the underlying stream and cleans up.
+ * Returns EOF on failure, 0 on success
+ */
+BUGLE_EXPORT_PRE int bugle_io_reader_close(bugle_io_reader *reader) BUGLE_EXPORT_POST;
 
 typedef struct bugle_io_writer bugle_io_writer;
 
@@ -38,7 +62,9 @@ BUGLE_EXPORT_PRE int bugle_io_putc(int c, bugle_io_writer *writer) BUGLE_EXPORT_
 BUGLE_EXPORT_PRE int bugle_io_puts(const char *s, bugle_io_writer *writer) BUGLE_EXPORT_POST;
 BUGLE_EXPORT_PRE size_t bugle_io_write(const void *ptr, size_t size, size_t nmemb, bugle_io_writer *writer) BUGLE_EXPORT_POST;
 
-/* Closes the underlying stream and clears up any memory */
+/* Closes the underlying stream and clears up any memory.
+ * Returns EOF on failure, 0 on success
+ */
 BUGLE_EXPORT_PRE int bugle_io_writer_close(bugle_io_writer *writer) BUGLE_EXPORT_POST;
 
 /*** Specific types of writers */
