@@ -37,7 +37,11 @@
 #include <bugle/hashtable.h>
 #include <bugle/porting.h>
 #include <bugle/string.h>
+#include <bugle/memory.h>
+#include <bugle/io.h>
+#include "common/io-impl.h"
 #include "common/protocol.h"
+#include "platform/io.h"
 #include "gldb/gldb-common.h"
 #include "gldb/gldb-channels.h"
 #include "gldb/gldb-gui.h"
@@ -388,6 +392,8 @@ static void notebook_switch_page(GtkNotebook *notebook,
 
 static void child_exit_notify(GldbWindow *context)
 {
+    gldb_notify_child_dead();
+
     if (context->channel)
     {
         g_io_channel_unref(context->channel);
@@ -396,7 +402,6 @@ static void child_exit_notify(GldbWindow *context)
         context->channel_watch = 0;
     }
 
-    gldb_notify_child_dead();
     update_status_bar(context, _("Not running"));
     gtk_action_group_set_sensitive(context->running_actions, FALSE);
     gtk_action_group_set_sensitive(context->stopped_actions, FALSE);
@@ -490,19 +495,35 @@ static void quit_action(GtkAction *action, gpointer user_data)
     gtk_widget_destroy(((GldbWindow *) user_data)->window);
 }
 
-static ssize_t read_callback(void *channel, void *buf, size_t count)
+static size_t channel_read(void *ptr, size_t size, size_t nmemb, void *channel)
 {
     GIOStatus status;
+    gsize remain;
     gsize bytes_read;
-    do
+    gsize cur;
+
+    remain = size * nmemb; /* FIXME handle overflow */
+    while (remain > 0)
     {
-        status = g_io_channel_read_chars((GIOChannel *) channel, buf, count,
-                                         &bytes_read, NULL);
-    } while (status == G_IO_STATUS_AGAIN);
-    if (status == G_IO_STATUS_ERROR)
-        return -1;
+        status = g_io_channel_read_chars((GIOChannel *) channel,
+                                         (gchar *)ptr + bytes_read, remain,
+                                         &cur, NULL);
+        if (status == G_IO_STATUS_AGAIN)
+            continue;
+        else if (status == G_IO_STATUS_ERROR)
+            return bytes_read / size;
+        bytes_read += cur;
+        remain -= cur;
+    }
+    return nmemb;
+}
+
+static int channel_close(void *channel)
+{
+    if (g_io_channel_shutdown((GIOChannel *) channel, TRUE, NULL) == G_IO_STATUS_NORMAL)
+        return 0;
     else
-        return bytes_read;
+        return EOF;
 }
 
 static void run_action(GtkAction *action, gpointer user_data)
@@ -510,6 +531,7 @@ static void run_action(GtkAction *action, gpointer user_data)
     const char *error_msg;
     GldbWindow *context;
     context = (GldbWindow *) user_data;
+    bugle_io_reader *in_reader;
 
     g_return_if_fail(gldb_get_status() == GLDB_STATUS_DEAD);
     while ((error_msg = gldb_program_validate()) != NULL)
@@ -526,7 +548,7 @@ static void run_action(GtkAction *action, gpointer user_data)
         if (!gldb_gui_target_dialog_run(context->window))
             return;     /* user cancelled the dialog, so cancel the run too */
     }
-    if (!gldb_run(seq++, NULL))
+    if (!gldb_execute(NULL))
         return;
 #if BUGLE_OSAPI_WIN32
     context->channel = g_io_channel_win32_new_fd(gldb_get_in_pipe());
@@ -534,7 +556,18 @@ static void run_action(GtkAction *action, gpointer user_data)
     context->channel = g_io_channel_unix_new(gldb_get_in_pipe());
 #endif
     g_io_channel_set_encoding(context->channel, NULL, NULL);
-    gldb_set_in_reader(gldb_protocol_reader_new_func(read_callback, context->channel));
+
+    in_reader = BUGLE_MALLOC(bugle_io_reader);
+    in_reader->fn_read = channel_read;
+    in_reader->fn_has_data = NULL; /* we don't depend on this functionality */
+    in_reader->fn_close = channel_close;
+    in_reader->arg = context->channel;
+    gldb_set_in_reader(in_reader);
+    gldb_set_out_writer(bugle_io_writer_fd_new(gldb_get_out_pipe()));
+    if (!gldb_run(seq++))
+    {
+        return; /* TODO clean up */
+    }
     context->channel_watch = g_io_add_watch(context->channel, G_IO_IN | G_IO_ERR,
                                             response_callback, context);
 
@@ -646,7 +679,7 @@ static void about_action(GtkAction *action, gpointer user_data)
                           "comments", "An open-source OpenGL debugger",
                           "copyright", "2004-2009 Bruce Merry",
                           "license", license,
-                          "version", PACKAGE_VERSION,
+                          /* TODO "version", PACKAGE_VERSION, */
                           "website", "http://www.opengl.org/sdk/tools/BuGLe/",
                           NULL);
 }

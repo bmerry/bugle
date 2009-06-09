@@ -38,3 +38,8 @@ double bugle_nan(void)
 {
     return strtod("NAN", NULL);
 }
+
+double bugle_round(double x)
+{
+    return round(x);
+}

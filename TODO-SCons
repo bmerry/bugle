@@ -11,3 +11,4 @@
 - add better SCons framework for platform
 - add unit tests for I/O layer
 - add unit tests for string functions
+- clean up gldb-gui and move all the nasty process stuff into glib code

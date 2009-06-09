@@ -180,7 +180,7 @@ static void showstats_graph_rescale(showstats_statistic *sst, double new_scale)
     for (i = 0; i < sst->graph_size; i++)
     {
         v = sst->graph_history[i] >= 0.0 ? sst->graph_history[i] : 0.0;
-        sst->graph_scaled[i] = (GLubyte) rint(v * 255.0 / s);
+        sst->graph_scaled[i] = (GLubyte) bugle_round(v * 255.0 / s);
     }
     CALL(glBindTexture)(GL_TEXTURE_1D, sst->graph_tex);
     CALL(glTexSubImage1D)(GL_TEXTURE_1D, 0, 0, sst->graph_size,
@@ -236,7 +236,7 @@ static void showstats_update(showstats_struct *ss)
                             showstats_graph_rescale(sst, v);
                         v /= sst->graph_scale;
                         if (v < 0.0) v = 0.0;
-                        vs = (GLubyte) rint(v * 255.0);
+                        vs = (GLubyte) bugle_round(v * 255.0);
                         CALL(glBindTexture)(GL_TEXTURE_1D, sst->graph_tex);
                         CALL(glTexSubImage1D)(GL_TEXTURE_1D, 0, sst->graph_offset, 1, GL_ALPHA, GL_UNSIGNED_BYTE, &vs);
                         CALL(glBindTexture)(GL_TEXTURE_1D, 0);

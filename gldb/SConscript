@@ -1,0 +1,25 @@
+#!/usr/bin/env python
+Import('env', 'libbugleutils')
+
+# TODO use a proper pkg-config configuration test
+# TODO add a #define when GTK 2.6+ is available
+gtk_env = env.Clone(parse_flags = ['!pkg-config gtk+-2.0 --cflags --libs'])
+
+# Non-GUI files
+gldb_shared = env.StaticObject([
+    'gldb-common.c',
+    'gldb-channels.c'])
+
+gtk_env.Program('gldb-gui', [
+    'gldb-gui-backtrace.c',
+    'gldb-gui-breakpoint.c',
+    'gldb-gui-buffer.c',
+    'gldb-gui-framebuffer.c',
+    'gldb-gui-image.c',
+    'gldb-gui-shader.c',
+    'gldb-gui-state.c',
+    'gldb-gui-target.c',
+    'gldb-gui-texture.c',
+    'gldb-gui.c',
+    gldb_shared,
+    libbugleutils])

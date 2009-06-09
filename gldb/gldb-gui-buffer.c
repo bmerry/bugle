@@ -30,10 +30,10 @@
 #include <budgie/types.h>
 #include <budgie/reflect.h>
 #include <bugle/string.h>
+#include <bugle/memory.h>
 #include "gldb/gldb-common.h"
 #include "gldb/gldb-gui.h"
 #include "gldb/gldb-gui-buffer.h"
-#include "xalloc.h"
 
 struct _GldbBufferPane
 {
@@ -147,8 +147,8 @@ static gboolean parse_format(const gchar *format,
     /* Second pass: allocation and filling in */
     *ncolumns = n;
     *nfields = f;
-    *columns = XNMALLOC(n, GType);
-    *fields = XNMALLOC(f, budgie_type);
+    *columns = BUGLE_NMALLOC(n, GType);
+    *fields = BUGLE_NMALLOC(f, budgie_type);
     n = 0;
     f = 0;
     number = -1;
@@ -370,7 +370,7 @@ static void gldb_buffer_pane_id_changed(GtkComboBox *id_box, gpointer user_data)
                            COLUMN_BUFFER_ID_ID, &id,
                            -1);
 
-        data = XMALLOC(buffer_callback_data);
+        data = BUGLE_MALLOC(buffer_callback_data);
         data->pane = pane;
         seq = gldb_gui_set_response_handler(gldb_buffer_pane_response_callback, data);
         gldb_send_data_buffer(seq, id);

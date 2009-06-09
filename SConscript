@@ -132,8 +132,6 @@ def checks(env):
     conf.CheckInline()
     for c in api.checks:
         c(conf)
-    # TODO actually do a test here
-    conf.Define('USE_POSIX_THREADS', 1)
     return conf.Finish()
 
 def get_vars(apis):
@@ -252,6 +250,7 @@ SConscript('platform/posix/SConscript')
 SConscript('budgie/SConscript')
 SConscript('src/SConscript')
 SConscript('filters/SConscript')
+SConscript('gldb/SConscript')
 
 env.AlwaysBuild(env.Command('libltdl/libltdl.la', [], 'make -C libltdl'))
 

@@ -18,30 +18,28 @@
 #if HAVE_CONFIG_H
 # include <config.h>
 #endif
-#define _XOPEN_SOURCE 600
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
 #include <assert.h>
-#include <unistd.h>
-#include <signal.h>
 #include <errno.h>
-#include <sys/types.h>
 #include <bugle/bool.h>
-#include <fcntl.h>
 #include <bugle/linkedlist.h>
 #include <bugle/hashtable.h>
 #include <bugle/porting.h>
 #include <bugle/string.h>
 #include <bugle/memory.h>
+#include <bugle/io.h>
 #include <budgie/reflect.h>
 #include "budgielib/defines.h"
 #include "common/protocol.h"
 #include "gldb/gldb-common.h"
+#include "platform/types.h"
 
-static int lib_in_fd = -1, lib_out = -1;
-static gldb_protocol_reader *lib_in = NULL;
+static int lib_in_fd = -1, lib_out_fd = -1;
+static bugle_io_reader *lib_in = NULL;
+static bugle_io_writer *lib_out = NULL;
 /* Started is set to BUGLE_TRUE only after receiving RESP_RUNNING. When
  * we are in the state (running && !started), non-break responses are
  * handled but do not cause a new line to be read.
@@ -147,6 +145,8 @@ const char *gldb_program_validate(void)
         if (setting == NULL || setting[0] == '\0')
             return "Port not set";
         break;
+    default:
+        assert(0); /* Should never be reached */
     }
     return NULL;    /* success */
 }
@@ -279,7 +279,7 @@ static pid_t execute(void (*child_init)(void))
     close(child_pipes[0]);
     close(child_pipes[1]);
     lib_in_fd = in_pipe[0];
-    lib_out = out_pipe[1];
+    lib_out_fd = out_pipe[1];
     return pid;
 }
 
@@ -345,7 +345,7 @@ static pid_t execute(void (*child_init)(void))
         }
         freeaddrinfo(ai);
         lib_in_fd = sock;
-        lib_out = sock;
+        lib_out_fd = sock;
         return 0;
     }
 
@@ -398,7 +398,7 @@ static pid_t execute(void (*child_init)(void))
         exit(1);
     default: /* Parent */
         lib_in_fd = in_pipe[0];
-        lib_out = out_pipe[1];
+        lib_out_fd = out_pipe[1];
         close(in_pipe[1]);
         close(out_pipe[0]);
         switch (prog_type)
@@ -426,18 +426,19 @@ void set_status(gldb_status s)
         break;
     case GLDB_STATUS_DEAD:
         if (lib_in)
-            gldb_protocol_reader_free(lib_in);
-        close(lib_in_fd);
-        close(lib_out);
+            bugle_io_reader_close(lib_in);
+        if (lib_out)
+            bugle_io_writer_close(lib_out);
         lib_in_fd = -1;
-        lib_out = -1;
+        lib_out_fd = -1;
         lib_in = NULL;
+        lib_out = NULL;
         child_pid = 0;
         break;
     }
 }
 
-gldb_state *gldb_state_update(uint32_t id)
+gldb_state *gldb_state_update(void)
 {
     gldb_response *r = NULL;
 
@@ -466,7 +467,7 @@ gldb_state *gldb_state_update(uint32_t id)
     return state_root;
 }
 
-static gldb_response *gldb_get_response_ans(uint32_t code, uint32_t id)
+static gldb_response *gldb_get_response_ans(bugle_uint32_t code, bugle_uint32_t id)
 {
     gldb_response_ans *r;
 
@@ -477,7 +478,7 @@ static gldb_response *gldb_get_response_ans(uint32_t code, uint32_t id)
     return (gldb_response *) r;
 }
 
-static gldb_response *gldb_get_response_break(uint32_t code, uint32_t id)
+static gldb_response *gldb_get_response_break(bugle_uint32_t code, bugle_uint32_t id)
 {
     gldb_response_break *r;
 
@@ -489,7 +490,7 @@ static gldb_response *gldb_get_response_break(uint32_t code, uint32_t id)
     return (gldb_response *) r;
 }
 
-static gldb_response *gldb_get_response_break_event(uint32_t code, uint32_t id)
+static gldb_response *gldb_get_response_break_event(bugle_uint32_t code, bugle_uint32_t id)
 {
     gldb_response_break_event *r;
 
@@ -502,7 +503,7 @@ static gldb_response *gldb_get_response_break_event(uint32_t code, uint32_t id)
     return (gldb_response *) r;
 }
 
-static gldb_response *gldb_get_response_state(uint32_t code, uint32_t id)
+static gldb_response *gldb_get_response_state(bugle_uint32_t code, bugle_uint32_t id)
 {
     gldb_response_state *r;
 
@@ -513,7 +514,7 @@ static gldb_response *gldb_get_response_state(uint32_t code, uint32_t id)
     return (gldb_response *) r;
 }
 
-static gldb_response *gldb_get_response_error(uint32_t code, uint32_t id)
+static gldb_response *gldb_get_response_error(bugle_uint32_t code, bugle_uint32_t id)
 {
     gldb_response_error *r;
 
@@ -525,7 +526,7 @@ static gldb_response *gldb_get_response_error(uint32_t code, uint32_t id)
     return (gldb_response *) r;
 }
 
-static gldb_response *gldb_get_response_running(uint32_t code, uint32_t id)
+static gldb_response *gldb_get_response_running(bugle_uint32_t code, bugle_uint32_t id)
 {
     gldb_response_running *r;
 
@@ -536,7 +537,7 @@ static gldb_response *gldb_get_response_running(uint32_t code, uint32_t id)
     return (gldb_response *) r;
 }
 
-static gldb_response *gldb_get_response_screenshot(uint32_t code, uint32_t id)
+static gldb_response *gldb_get_response_screenshot(bugle_uint32_t code, bugle_uint32_t id)
 {
     gldb_response_screenshot *r;
 
@@ -550,11 +551,11 @@ static gldb_response *gldb_get_response_screenshot(uint32_t code, uint32_t id)
 static gldb_state *state_get(void)
 {
     gldb_state *s, *child;
-    uint32_t resp, id;
-    uint32_t numeric_name, enum_name;
-    int32_t length;
+    bugle_uint32_t resp, id;
+    bugle_uint32_t numeric_name, enum_name;
+    bugle_int32_t length;
     char *data;
-    uint32_t data_len;
+    bugle_uint32_t data_len;
     char *type_name = NULL;
 
     s = BUGLE_MALLOC(gldb_state);
@@ -563,7 +564,7 @@ static gldb_state *state_get(void)
     gldb_protocol_recv_code(lib_in, &numeric_name);
     gldb_protocol_recv_code(lib_in, &enum_name);
     gldb_protocol_recv_string(lib_in, &type_name);
-    gldb_protocol_recv_code(lib_in, (uint32_t *) &length);
+    gldb_protocol_recv_code(lib_in, (bugle_uint32_t *) &length);
     gldb_protocol_recv_binary_string(lib_in, &data_len, &data);
     s->numeric_name = numeric_name;
     s->enum_name = enum_name;
@@ -597,7 +598,7 @@ static gldb_state *state_get(void)
     return s;
 }
 
-static gldb_response *gldb_get_response_state_tree(uint32_t code, uint32_t id)
+static gldb_response *gldb_get_response_state_tree(bugle_uint32_t code, bugle_uint32_t id)
 {
     gldb_response_state_tree *r;
 
@@ -608,9 +609,9 @@ static gldb_response *gldb_get_response_state_tree(uint32_t code, uint32_t id)
     return (gldb_response *) r;
 }
 
-static gldb_response *gldb_get_response_data_texture(uint32_t code, uint32_t id,
-                                                     uint32_t subtype,
-                                                     uint32_t length, char *data)
+static gldb_response *gldb_get_response_data_texture(bugle_uint32_t code, bugle_uint32_t id,
+                                                     bugle_uint32_t subtype,
+                                                     bugle_uint32_t length, char *data)
 {
     gldb_response_data_texture *r;
 
@@ -626,9 +627,9 @@ static gldb_response *gldb_get_response_data_texture(uint32_t code, uint32_t id,
     return (gldb_response *) r;
 }
 
-static gldb_response *gldb_get_response_data_framebuffer(uint32_t code, uint32_t id,
-                                                         uint32_t subtype,
-                                                         uint32_t length, char *data)
+static gldb_response *gldb_get_response_data_framebuffer(bugle_uint32_t code, bugle_uint32_t id,
+                                                         bugle_uint32_t subtype,
+                                                         bugle_uint32_t length, char *data)
 {
     gldb_response_data_framebuffer *r;
 
@@ -643,9 +644,9 @@ static gldb_response *gldb_get_response_data_framebuffer(uint32_t code, uint32_t
     return (gldb_response *) r;
 }
 
-static gldb_response *gldb_get_response_data_shader(uint32_t code, uint32_t id,
-                                                    uint32_t subtype,
-                                                    uint32_t length, char *data)
+static gldb_response *gldb_get_response_data_shader(bugle_uint32_t code, bugle_uint32_t id,
+                                                    bugle_uint32_t subtype,
+                                                    bugle_uint32_t length, char *data)
 {
     gldb_response_data_shader *r;
 
@@ -658,9 +659,9 @@ static gldb_response *gldb_get_response_data_shader(uint32_t code, uint32_t id,
     return (gldb_response *) r;
 }
 
-static gldb_response *gldb_get_response_data_info_log(uint32_t code, uint32_t id,
-                                                      uint32_t subtype,
-                                                      uint32_t length, char *data)
+static gldb_response *gldb_get_response_data_info_log(bugle_uint32_t code, bugle_uint32_t id,
+                                                      bugle_uint32_t subtype,
+                                                      bugle_uint32_t length, char *data)
 {
     gldb_response_data_info_log *r;
 
@@ -673,9 +674,9 @@ static gldb_response *gldb_get_response_data_info_log(uint32_t code, uint32_t id
     return (gldb_response *) r;
 }
 
-static gldb_response *gldb_get_response_data_buffer(uint32_t code, uint32_t id,
-                                                    uint32_t subtype,
-                                                    uint32_t length, char *data)
+static gldb_response *gldb_get_response_data_buffer(bugle_uint32_t code, bugle_uint32_t id,
+                                                    bugle_uint32_t subtype,
+                                                    bugle_uint32_t length, char *data)
 {
     gldb_response_data_buffer *r;
 
@@ -688,10 +689,10 @@ static gldb_response *gldb_get_response_data_buffer(uint32_t code, uint32_t id,
     return (gldb_response *) r;
 }
 
-static gldb_response *gldb_get_response_data(uint32_t code, uint32_t id)
+static gldb_response *gldb_get_response_data(bugle_uint32_t code, bugle_uint32_t id)
 {
-    uint32_t subtype;
-    uint32_t length;
+    bugle_uint32_t subtype;
+    bugle_uint32_t length;
     char *data;
 
     gldb_protocol_recv_code(lib_in, &subtype);
@@ -716,7 +717,7 @@ static gldb_response *gldb_get_response_data(uint32_t code, uint32_t id)
 
 gldb_response *gldb_get_response(void)
 {
-    uint32_t code, id;
+    bugle_uint32_t code, id;
 
     if (!gldb_protocol_recv_code(lib_in, &code)
         || !gldb_protocol_recv_code(lib_in, &id))
@@ -909,14 +910,20 @@ void gldb_safe_syscall(int r, const char *str)
     }
 }
 
-bugle_bool gldb_run(uint32_t id, void (*child_init)(void))
+bugle_bool gldb_execute(void (*child_init)(void))
 {
-    const hash_table_entry *h;
-    uint32_t event;
-
     child_pid = execute(child_init);
     if (child_pid == -1)
         return BUGLE_FALSE;
+    else
+        return BUGLE_TRUE;
+}
+
+bugle_bool gldb_run(bugle_uint32_t id)
+{
+    const hash_table_entry *h;
+    bugle_uint32_t event;
+
     /* Send breakpoints */
     for (event = 0; event < REQ_EVENT_COUNT; event++)
     {
@@ -938,7 +945,7 @@ bugle_bool gldb_run(uint32_t id, void (*child_init)(void))
     return BUGLE_TRUE;
 }
 
-void gldb_send_continue(uint32_t id)
+void gldb_send_continue(bugle_uint32_t id)
 {
     assert(status == GLDB_STATUS_STOPPED);
     set_status(GLDB_STATUS_RUNNING);
@@ -946,7 +953,7 @@ void gldb_send_continue(uint32_t id)
     gldb_protocol_send_code(lib_out, id);
 }
 
-void gldb_send_step(uint32_t id)
+void gldb_send_step(bugle_uint32_t id)
 {
     assert(status == GLDB_STATUS_STOPPED);
     set_status(GLDB_STATUS_RUNNING);
@@ -954,14 +961,14 @@ void gldb_send_step(uint32_t id)
     gldb_protocol_send_code(lib_out, id);
 }
 
-void gldb_send_quit(uint32_t id)
+void gldb_send_quit(bugle_uint32_t id)
 {
     assert(status != GLDB_STATUS_DEAD);
     gldb_protocol_send_code(lib_out, REQ_QUIT);
     gldb_protocol_send_code(lib_out, id);
 }
 
-void gldb_send_enable_disable(uint32_t id, const char *filterset, bugle_bool enable)
+void gldb_send_enable_disable(bugle_uint32_t id, const char *filterset, bugle_bool enable)
 {
     assert(status != GLDB_STATUS_DEAD);
     gldb_protocol_send_code(lib_out, enable ? REQ_ACTIVATE_FILTERSET : REQ_DEACTIVATE_FILTERSET);
@@ -969,28 +976,28 @@ void gldb_send_enable_disable(uint32_t id, const char *filterset, bugle_bool ena
     gldb_protocol_send_string(lib_out, filterset);
 }
 
-void gldb_send_screenshot(uint32_t id)
+void gldb_send_screenshot(bugle_uint32_t id)
 {
     assert(status != GLDB_STATUS_DEAD);
     gldb_protocol_send_code(lib_out, REQ_SCREENSHOT);
     gldb_protocol_send_code(lib_out, id);
 }
 
-void gldb_send_async(uint32_t id)
+void gldb_send_async(bugle_uint32_t id)
 {
     assert(status != GLDB_STATUS_DEAD && status != GLDB_STATUS_STOPPED);
     gldb_protocol_send_code(lib_out, REQ_ASYNC);
     gldb_protocol_send_code(lib_out, id);
 }
 
-void gldb_send_state_tree(uint32_t id)
+void gldb_send_state_tree(bugle_uint32_t id)
 {
     assert(status != GLDB_STATUS_DEAD);
     gldb_protocol_send_code(lib_out, REQ_STATE_TREE_RAW);
     gldb_protocol_send_code(lib_out, id);
 }
 
-void gldb_send_data_texture(uint32_t id, GLuint tex_id, GLenum target,
+void gldb_send_data_texture(bugle_uint32_t id, GLuint tex_id, GLenum target,
                             GLenum face, GLint level, GLenum format,
                             GLenum type)
 {
@@ -1006,7 +1013,7 @@ void gldb_send_data_texture(uint32_t id, GLuint tex_id, GLenum target,
     gldb_protocol_send_code(lib_out, type);
 }
 
-void gldb_send_data_framebuffer(uint32_t id, GLuint fbo_id, GLenum target,
+void gldb_send_data_framebuffer(bugle_uint32_t id, GLuint fbo_id, GLenum target,
                                 GLenum buffer, GLenum format, GLenum type)
 {
     assert(status != GLDB_STATUS_DEAD);
@@ -1020,7 +1027,7 @@ void gldb_send_data_framebuffer(uint32_t id, GLuint fbo_id, GLenum target,
     gldb_protocol_send_code(lib_out, type);
 }
 
-void gldb_send_data_shader(uint32_t id, GLuint shader_id, GLenum target)
+void gldb_send_data_shader(bugle_uint32_t id, GLuint shader_id, GLenum target)
 {
     assert(status != GLDB_STATUS_DEAD);
     gldb_protocol_send_code(lib_out, REQ_DATA);
@@ -1030,7 +1037,7 @@ void gldb_send_data_shader(uint32_t id, GLuint shader_id, GLenum target)
     gldb_protocol_send_code(lib_out, target);
 }
 
-void gldb_send_data_info_log(uint32_t id, GLuint object_id, GLenum target)
+void gldb_send_data_info_log(bugle_uint32_t id, GLuint object_id, GLenum target)
 {
     assert(status != GLDB_STATUS_DEAD);
     gldb_protocol_send_code(lib_out, REQ_DATA);
@@ -1040,7 +1047,7 @@ void gldb_send_data_info_log(uint32_t id, GLuint object_id, GLenum target)
     gldb_protocol_send_code(lib_out, target);
 }
 
-void gldb_send_data_buffer(uint32_t id, GLuint object_id)
+void gldb_send_data_buffer(bugle_uint32_t id, GLuint object_id)
 {
     assert(status != GLDB_STATUS_DEAD);
     gldb_protocol_send_code(lib_out, REQ_DATA);
@@ -1049,13 +1056,13 @@ void gldb_send_data_buffer(uint32_t id, GLuint object_id)
     gldb_protocol_send_code(lib_out, object_id);
 }
 
-bugle_bool gldb_get_break_event(uint32_t event)
+bugle_bool gldb_get_break_event(bugle_uint32_t event)
 {
     assert(event < REQ_EVENT_COUNT);
     return break_on_event[event];
 }
 
-void gldb_set_break_event(uint32_t id, uint32_t event, bugle_bool brk)
+void gldb_set_break_event(bugle_uint32_t id, bugle_uint32_t event, bugle_bool brk)
 {
     assert(event < REQ_EVENT_COUNT);
     break_on_event[event] = brk;
@@ -1068,7 +1075,7 @@ void gldb_set_break_event(uint32_t id, uint32_t event, bugle_bool brk)
     }
 }
 
-void gldb_set_break(uint32_t id, const char *function, bugle_bool brk)
+void gldb_set_break(bugle_uint32_t id, const char *function, bugle_bool brk)
 {
     bugle_hash_set(&break_on, function, brk ? "1" : "0");
     if (status != GLDB_STATUS_DEAD)
@@ -1100,14 +1107,19 @@ int gldb_get_in_pipe(void)
     return lib_in_fd;
 }
 
-void gldb_set_in_reader(gldb_protocol_reader *reader)
+void gldb_set_in_reader(bugle_io_reader *reader)
 {
     lib_in = reader;
 }
 
 int gldb_get_out_pipe(void)
 {
-    return lib_out;
+    return lib_out_fd;
+}
+
+void gldb_set_out_writer(bugle_io_writer *writer)
+{
+    lib_out = writer;
 }
 
 void gldb_initialise(int argc, const char * const *argv)
