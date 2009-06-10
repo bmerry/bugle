@@ -122,7 +122,7 @@ def checks(env):
     conf.CheckLib('m')
     conf.CheckHeader('dlfcn.h')
     conf.CheckHeader('stdint.h')
-    for i in ['cosf', 'sinf', 'finite', 'isfinite', 'isnan', 'nan', 'strtof']:
+    for i in ['cosf', 'sinf', 'siglongjmp']:
         conf.CheckFunc(i)
     conf.CheckDeclaration('va_copy', '#include <stdarg.h>')
     conf.CheckDeclaration('__va_copy', '#include <stdarg.h>')

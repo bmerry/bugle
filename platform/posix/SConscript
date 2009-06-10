@@ -27,6 +27,8 @@ def internal_checks(env):
     conf.Define('_XOPEN_SOURCE', '600')
     conf.Define('_GNU_SOURCE', '1')
     conf.CheckFunc('vasprintf')
+    conf.CheckFunc('strdup')
+    conf.CheckFunc('strndup')
     return conf.Finish()
 
 Import('env', 'srcdir', 'builddir')

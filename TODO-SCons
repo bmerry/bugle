@@ -1,14 +1,18 @@
-- add gldb and gldb-gui
 - add tests
 - add remaining filters
 - complete platform layer for POSIX
 - add platform layer for glib?
 - add platform layer for gnulib?
 - add platform layer for win32?
-- audit autoconf/SCons tests again what code asks
-- add SCons tests for strndup, strdup, vasprintf etc
-- add SCons tests for threading and so on
 - add better SCons framework for platform
-- add unit tests for I/O layer
-- add unit tests for string functions
 - clean up gldb-gui and move all the nasty process stuff into glib code
+- missing autoconf/SCons tests:
+  - GTK
+  - GTK versions
+  - ffmpeg
+  - nvperksdk
+  - threading API
+- unit tests:
+  - I/O layer
+  - string functions
+  - math functions

@@ -30,23 +30,6 @@
 #include <bugle/gl/glheaders.h>
 #include "platform/types.h"
 
-#if HAVE_READLINE && !HAVE_RL_COMPLETION_MATCHES
-# define rl_completion_matches completion_matches
-#endif
-
-#define RESTART(expr) \
-    do \
-    { \
-        while ((expr) == -1) \
-        { \
-            if (errno != EINTR) \
-            { \
-                perror(#expr " failed"); \
-                exit(1); \
-            } \
-        } \
-    } while (0)
-
 /* Callback functions provided by the UI */
 void gldb_error(const char *fmt, ...) BUGLE_ATTRIBUTE_FORMAT_PRINTF(1, 2);
 void gldb_perror(const char *msg);

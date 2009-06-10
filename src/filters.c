@@ -18,8 +18,6 @@
 #if HAVE_CONFIG_H
 # include <config.h>
 #endif
-#define _POSIX_C_SOURCE 200112L /* For flockfile */
-#define _XOPEN_SOURCE 600 /* For strtof */
 #include <stdio.h>
 #include <stddef.h>
 #include <string.h>
@@ -413,11 +411,7 @@ bugle_bool filter_set_variable(filter_set *handle, const char *name, const char 
                 break;
             case FILTER_SET_VARIABLE_FLOAT:
                 errno = 0;
-#if HAVE_STRTOF
-                float_value = strtof(value, &end);
-#else
-                float_value = strtod(value, &end);
-#endif
+                float_value = (float) strtod(value, &end);
                 if (errno || !*value || *end)
                 {
                     bugle_log_printf(handle->name, "initialise", BUGLE_LOG_ERROR,

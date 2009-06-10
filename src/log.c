@@ -18,7 +18,6 @@
 #if HAVE_CONFIG_H
 # include <config.h>
 #endif
-#define _POSIX_C_SOURCE 200112L /* for flockfile (TODO: put into abstraction layer) */
 #include <bugle/log.h>
 #include <bugle/filters.h>
 #include <bugle/memory.h>
@@ -33,7 +32,7 @@
 #include <unistd.h>
 #include <assert.h>
 
-#define LOG_DEFAULT_FORMAT "[%l] %f.%e: %m" 
+#define LOG_DEFAULT_FORMAT "[%l] %f.%e: %m"
 
 /* Note: it is important for these to all have sensible initial values
  * (even though the format is later replaced by bugle_strdup), because errors in

@@ -18,22 +18,14 @@
 #if HAVE_CONFIG_H
 # include <config.h>
 #endif
-#include <bugle/bool.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <inttypes.h>
-#include <unistd.h>
-#include <errno.h>
 #include <string.h>
 #include <assert.h>
-#include <sys/types.h>
-#include <sys/time.h>
-#if HAVE_SYS_SELECT_H
-# include <sys/select.h>
-#endif
 #include "protocol.h"
 #include <bugle/memory.h>
 #include <bugle/porting.h>
+#include <bugle/bool.h>
 
 /* Trying to detect whether or not there is a working htonl, what header
  * it is in, and what library to link against is far more effort than
