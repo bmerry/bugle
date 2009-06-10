@@ -262,7 +262,7 @@ void gldb_free_response(gldb_response *response);
 
 bugle_bool gldb_get_break_event(bugle_uint32_t event);
 gldb_status gldb_get_status(void);
-pid_t gldb_get_child_pid(void);
+bugle_pid_t gldb_get_child_pid(void);
 /* These should only be used for select() and the like, never read from.
  * All protocol details are abstracted by gldb_send_*, gldb_set_* and
  * gldb_get_response.

@@ -56,7 +56,7 @@ static const char *log_level_names[] =
 
 static inline void log_start(FILE *f)
 {
-#ifdef _POSIX_THREAD_SAFE_FUNCTIONS
+#if defined(_POSIX_C_SOURCE) && defined(_POSIX_THREAD_SAFE_FUNCTIONS)
     flockfile(f);
 #endif
 }
@@ -64,7 +64,7 @@ static inline void log_start(FILE *f)
 static inline void log_end(FILE *f)
 {
     if (log_flush) fflush(f);
-#ifdef _POSIX_THREAD_SAFE_FUNCTIONS
+#if defined(_POSIX_C_SOURCE) && defined(_POSIX_THREAD_SAFE_FUNCTIONS)
     funlockfile(f);
 #endif
 }

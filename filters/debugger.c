@@ -1160,7 +1160,7 @@ static bugle_bool debugger_error_callback(function_call *call, const callback_da
         if (status == GL_FALSE)
             error_str = "Program link error";
     }
-#endif // GL_ES_VERSION_2_0 || GL_VERSION_2_0
+#endif /* GL_ES_VERSION_2_0 || GL_VERSION_2_0 */
 
     if (error_str != NULL)
     {

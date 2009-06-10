@@ -15,21 +15,29 @@
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#ifndef BUGLE_PLATFORM_TYPES_H
-#define BUGLE_PLATFORM_TYPES_H
+#if HAVE_CONFIG_H
+# include <config.h>
+#endif
+#include <bugle/io.h>
+#include "platform/io.h"
+#include "common/io-impl.h"
 
-#include "platform_config.h"
-#include <inttypes.h>
-#include <sys/types.h>
+bugle_io_reader *bugle_io_reader_fd_new(int fd)
+{
+    return NULL;
+}
 
-typedef uint8_t bugle_uint8_t;
-typedef int8_t bugle_int8_t;
-typedef uint16_t bugle_uint16_t;
-typedef int16_t bugle_int16_t;
-typedef uint32_t bugle_uint32_t;
-typedef int32_t bugle_int32_t;
-typedef ssize_t bugle_ssize_t;
+bugle_io_reader *bugle_io_reader_socket_new(int sock)
+{
+    return NULL;
+}
 
-typedef pid_t bugle_pid_t;
+bugle_io_writer *bugle_io_writer_fd_new(int fd)
+{
+    return NULL;
+}
 
-#endif /* BUGLE_PLATFORM_TYPES_H */
+bugle_io_writer *bugle_io_writer_socket_new(int sock)
+{
+    return NULL;
+}

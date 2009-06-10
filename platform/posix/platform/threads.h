@@ -42,6 +42,7 @@ typedef pthread_once_t bugle_thread_once_t;
 #define bugle_thread_once(name, function) \
     pthread_once(&(name), function)
 
+typedef pthread_mutex_t bugle_thread_lock_t;
 #define bugle_thread_lock_t pthread_mutex_t
 #define bugle_thread_lock_define(storage, name) \
     storage bugle_thread_lock_t name;

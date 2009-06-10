@@ -15,21 +15,39 @@
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#ifndef BUGLE_PLATFORM_TYPES_H
-#define BUGLE_PLATFORM_TYPES_H
+#if HAVE_CONFIG_H
+# include <config.h>
+#endif
+#include <bugle/string.h>
+#include <bugle/memory.h>
+#include <stddef.h>
 
-#include "platform_config.h"
-#include <inttypes.h>
-#include <sys/types.h>
+int bugle_snprintf(char *str, size_t size, const char *format, ...)
+{
+    return 0;
+}
 
-typedef uint8_t bugle_uint8_t;
-typedef int8_t bugle_int8_t;
-typedef uint16_t bugle_uint16_t;
-typedef int16_t bugle_int16_t;
-typedef uint32_t bugle_uint32_t;
-typedef int32_t bugle_int32_t;
-typedef ssize_t bugle_ssize_t;
+int bugle_vsnprintf(char *str, size_t size, const char *format, va_list ap)
+{
+    return 0;
+}
 
-typedef pid_t bugle_pid_t;
+char *bugle_asprintf(const char *format, ...)
+{
+    return NULL;
+}
 
-#endif /* BUGLE_PLATFORM_TYPES_H */
+char *bugle_vasprintf(const char *format, va_list ap)
+{
+    return NULL;
+}
+
+char *bugle_strdup(const char *str)
+{
+    return NULL;
+}
+
+char *bugle_strndup(const char *str, size_t n)
+{
+    return NULL;
+}

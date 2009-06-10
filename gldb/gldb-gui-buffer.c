@@ -101,7 +101,7 @@ static gboolean parse_format(const gchar *format,
                              guint *nfields, budgie_type **fields)
 {
     guint n = 0, f = 0, i;
-    int number = -1;    // when >= 0, a repeat count
+    int number = -1;    /* when >= 0, a repeat count */
     const gchar *p;
     GType column;
     budgie_type field;

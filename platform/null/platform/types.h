@@ -18,18 +18,14 @@
 #ifndef BUGLE_PLATFORM_TYPES_H
 #define BUGLE_PLATFORM_TYPES_H
 
-#include "platform_config.h"
-#include <inttypes.h>
-#include <sys/types.h>
+typedef unsigned char bugle_uint8_t;
+typedef signed char bugle_int8_t;
+typedef unsigned short bugle_uint16_t;
+typedef signed short bugle_int16_t;
+typedef unsigned int bugle_uint32_t;
+typedef signed int bugle_int32_t;
+typedef unsigned long bugle_ssize_t;
 
-typedef uint8_t bugle_uint8_t;
-typedef int8_t bugle_int8_t;
-typedef uint16_t bugle_uint16_t;
-typedef int16_t bugle_int16_t;
-typedef uint32_t bugle_uint32_t;
-typedef int32_t bugle_int32_t;
-typedef ssize_t bugle_ssize_t;
-
-typedef pid_t bugle_pid_t;
+typedef unsigned int bugle_pid_t;
 
 #endif /* BUGLE_PLATFORM_TYPES_H */

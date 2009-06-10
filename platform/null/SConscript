@@ -1,0 +1,15 @@
+#!/usr/bin/env python
+
+import BugleChecks
+
+Import('env', 'srcdir', 'builddir')
+
+env.Append(CPPPATH = [srcdir.Dir('platform/null')])
+
+platform_shared = env.SharedObject(source = [
+    'string.c',
+    'math.c',
+    'io-null.c'
+    ])
+
+Export('platform_shared')

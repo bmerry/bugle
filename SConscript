@@ -220,7 +220,7 @@ env = CrossEnvironment(
         **common_kw
         )
 if 'gcc' in env['TOOLS']:
-    env.MergeFlags('-fvisibility=hidden -Wstrict-prototypes -Wall -g')
+    env.MergeFlags('-fvisibility=hidden -Wstrict-prototypes -Wall -g -std=c89')
 
 # Environment for generating parse tree. This has to be GCC, and in cross
 # compilation should be the cross-gcc so that the correct headers are
@@ -245,6 +245,7 @@ Export('build_env', 'tu_env', 'env', 'api')
 
 # Platform SConscript must be first, since it modifies the environment
 # via config.h
+# TODO properly detect the platform
 SConscript('platform/posix/SConscript')
 
 SConscript('budgie/SConscript')

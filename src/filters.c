@@ -914,7 +914,7 @@ void filters_help(void)
     const filter_set_variable_info *j;
     filter_set *cur;
 
-#ifdef _POSIX_THREAD_SAFE_FUNCTIONS
+#if defined(_POSIX_C_SOURCE) && defined(_POSIX_THREAD_SAFE_FUNCTIONS)
     flockfile(stderr);
 #endif
     fprintf(stderr, "Usage: BUGLE_CHAIN=<chain> LD_PRELOAD=libbugle.so <program> <args>\n");
@@ -955,7 +955,7 @@ void filters_help(void)
                         j->name, type_str, j->help);
             }
     }
-#ifdef _POSIX_THREAD_SAFE_FUNCTIONS
+#if defined(_POSIX_C_SOURCE) && defined(_POSIX_THREAD_SAFE_FUNCTIONS)
     funlockfile(stderr);
 #endif
 }

@@ -15,21 +15,28 @@
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#ifndef BUGLE_PLATFORM_TYPES_H
-#define BUGLE_PLATFORM_TYPES_H
+#if HAVE_CONFIG_H
+# include <config.h>
+#endif
+#include <bugle/math.h>
+#include <stddef.h>
 
-#include "platform_config.h"
-#include <inttypes.h>
-#include <sys/types.h>
+int bugle_isfinite(double x)
+{
+    return 0;
+}
 
-typedef uint8_t bugle_uint8_t;
-typedef int8_t bugle_int8_t;
-typedef uint16_t bugle_uint16_t;
-typedef int16_t bugle_int16_t;
-typedef uint32_t bugle_uint32_t;
-typedef int32_t bugle_int32_t;
-typedef ssize_t bugle_ssize_t;
+int bugle_isnan(double x)
+{
+    return 0;
+}
 
-typedef pid_t bugle_pid_t;
+double bugle_nan(void)
+{
+    return 0.0;
+}
 
-#endif /* BUGLE_PLATFORM_TYPES_H */
+double bugle_round(double x)
+{
+    return 0.0;
+}

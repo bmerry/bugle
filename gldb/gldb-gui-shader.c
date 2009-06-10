@@ -213,7 +213,7 @@ static void gldb_shader_pane_update_ids(GldbShaderPane *pane)
                 {
                     gboolean active;
 
-                    active = bugle_hashptr_get_int(&active_glsl, t->numeric_name);
+                    active = bugle_hashptr_get_int(&active_glsl, t->numeric_name) != NULL;
                     name = bugle_asprintf("%d (%s)",
                                           t->numeric_name, target_names[trg]);
                     gtk_list_store_append(GTK_LIST_STORE(model), &iter);

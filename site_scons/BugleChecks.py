@@ -47,22 +47,34 @@ extern __typeof(bugle_public) bugle_alias __attribute__((alias("bugle_public"), 
 # error "Cygwin accepts but ignores hidden visibility"
 #endif''')
 
-def check_inline(ctx):
-    '''
-    Checks whether the inline keyword is supported, and if not defines it away
-    '''
-    ctx.Message('Checking for inline keyword...')
+def _has_inline(ctx, subst):
+    ctx.Message('Checking for ' + subst + '...')
     ret = ctx.TryCompile('''
-static inline int my_inline_func(void)
+static %s int my_inline_func(void)
 {
     return 0;
 }
 
 int main() { return my_inline_func(); }
-''', '.c')
+''' % subst, '.c')
     ctx.Result(ret)
-    if not ret:
-        ctx.sconf.Define('inline', '', 'Define to nothing if the compiler does not support the inline keyword')
+    return ret
+
+def check_inline(ctx):
+    '''
+    Defines inline suitably
+    '''
+
+    ret = True
+    if _has_inline(ctx, 'inline'):
+        pass
+    elif _has_inline(ctx, '__inline__'):
+        ctx.sconf.Define('inline', '__inline__')
+    elif _has_inline(ctx, '__inline'):
+        ctx.sconf.Define('inline', '__inline')
+    else:
+        ctx.sconf.Define('inline', '')
+        ret = False
     return ret
 
 tests = {

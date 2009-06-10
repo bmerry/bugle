@@ -45,7 +45,7 @@ static bugle_io_writer *lib_out = NULL;
  * handled but do not cause a new line to be read.
  */
 static gldb_status status = GLDB_STATUS_DEAD;
-static pid_t child_pid = -1;
+static bugle_pid_t child_pid = -1;
 
 static char *prog_settings[GLDB_PROGRAM_SETTING_COUNT];
 static gldb_program_type prog_type;
@@ -219,9 +219,9 @@ static char **make_argv(const char *cmd)
 }
 
 /* Spawns off the program, and returns the pid */
-static pid_t execute(void (*child_init)(void))
+static bugle_pid_t execute(void (*child_init)(void))
 {
-    pid_t pid;
+    bugle_pid_t pid;
     /* in is child->parent
      * out is parent->child
      */
@@ -295,9 +295,9 @@ static pid_t execute(void (*child_init)(void))
  * Returns: -1 on failure
  *           pid on success
  */
-static pid_t execute(void (*child_init)(void))
+static bugle_pid_t execute(void (*child_init)(void))
 {
-    pid_t pid;
+    bugle_pid_t pid;
     /* in/out refers to our view, not child view */
     int in_pipe[2], out_pipe[2];
     char *prog_argv[10];
@@ -1097,7 +1097,7 @@ gldb_status gldb_get_status(void)
     return status;
 }
 
-pid_t gldb_get_child_pid(void)
+bugle_pid_t gldb_get_child_pid(void)
 {
     return child_pid;
 }
