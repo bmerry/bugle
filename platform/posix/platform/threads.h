@@ -33,6 +33,7 @@
 #include <signal.h>
 #include <stdlib.h>
 #include <stddef.h>
+#include <unistd.h>
 #include <bugle/porting.h>
 #include <pthread.h>
 
@@ -81,6 +82,14 @@ typedef pthread_key_t bugle_thread_key_t;
 typedef pthread_t bugle_thread_t;
 #define bugle_thread_self() pthread_self()
 #define bugle_thread_raise(sig) pthread_kill(pthread_self(), (sig))
+
+#ifdef _POSIX_THREAD_SAFE_FUNCTIONS
+# define bugle_flockfile(f) flockfile(f)
+# define bugle_funlockfile(f) funlockfile(f)
+#else
+# define bugle_flockfile(f) ((void) 0)
+# define bugle_funlockfile(f) ((void) 0)
+#endif
 
 /*** Higher-level stuff that doesn't depend on the threading implementation ***/
 /* TODO move it out of here and into a shared header */

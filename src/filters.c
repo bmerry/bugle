@@ -914,9 +914,7 @@ void filters_help(void)
     const filter_set_variable_info *j;
     filter_set *cur;
 
-#if defined(_POSIX_C_SOURCE) && defined(_POSIX_THREAD_SAFE_FUNCTIONS)
-    flockfile(stderr);
-#endif
+    bugle_flockfile(stderr);
     fprintf(stderr, "Usage: BUGLE_CHAIN=<chain> LD_PRELOAD=libbugle.so <program> <args>\n");
     fprintf(stderr, "The following filter-sets are available:\n");
     for (i = bugle_list_head(&filter_sets); i; i = bugle_list_next(i))
@@ -955,7 +953,5 @@ void filters_help(void)
                         j->name, type_str, j->help);
             }
     }
-#if defined(_POSIX_C_SOURCE) && defined(_POSIX_THREAD_SAFE_FUNCTIONS)
-    funlockfile(stderr);
-#endif
+    bugle_funlockfile(stderr);
 }

@@ -65,6 +65,9 @@ typedef int bugle_thread_t;
 #define bugle_thread_self() (0UL)
 #define bugle_thread_raise(sig) ((void) 0)
 
+#define bugle_flockfile(f) ((void) 0)
+#define bugle_funlockfile(f) ((void) 0)
+
 #define BUGLE_CONSTRUCTOR(fn) bugle_thread_once_define(static, fn ## _once)
 #define BUGLE_RUN_CONSTRUCTOR(fn) bugle_thread_once(fn ## _once, (fn))
 

@@ -28,8 +28,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdarg.h>
-#include <sys/types.h>
-#include <unistd.h>
 #include <assert.h>
 
 #define LOG_DEFAULT_FORMAT "[%l] %f.%e: %m"
@@ -56,17 +54,13 @@ static const char *log_level_names[] =
 
 static inline void log_start(FILE *f)
 {
-#if defined(_POSIX_C_SOURCE) && defined(_POSIX_THREAD_SAFE_FUNCTIONS)
-    flockfile(f);
-#endif
+    bugle_flockfile(f);
 }
 
 static inline void log_end(FILE *f)
 {
     if (log_flush) fflush(f);
-#if defined(_POSIX_C_SOURCE) && defined(_POSIX_THREAD_SAFE_FUNCTIONS)
-    funlockfile(f);
-#endif
+    bugle_funlockfile(f);
 }
 
 /* Processes tokens from *format until it hits something it cannot
