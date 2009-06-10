@@ -83,7 +83,7 @@ typedef pthread_t bugle_thread_t;
 #define bugle_thread_self() pthread_self()
 #define bugle_thread_raise(sig) pthread_kill(pthread_self(), (sig))
 
-#ifdef _POSIX_THREAD_SAFE_FUNCTIONS
+#if _POSIX_THREAD_SAFE_FUNCTIONS > 0
 # define bugle_flockfile(f) flockfile(f)
 # define bugle_funlockfile(f) funlockfile(f)
 #else
