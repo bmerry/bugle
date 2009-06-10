@@ -47,6 +47,7 @@ static size_t fd_read(void *ptr, size_t size, size_t nmemb, void *arg)
     size_t remain;
     size_t received = 0;
 
+    s = (bugle_io_reader_fd *) arg;
     remain = size * nmemb; /* FIXME handle overflow */
     while (remain > 0)
     {

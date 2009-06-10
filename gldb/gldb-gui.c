@@ -499,7 +499,7 @@ static size_t channel_read(void *ptr, size_t size, size_t nmemb, void *channel)
 {
     GIOStatus status;
     gsize remain;
-    gsize bytes_read;
+    gsize bytes_read = 0;
     gsize cur;
 
     remain = size * nmemb; /* FIXME handle overflow */
