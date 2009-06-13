@@ -19,7 +19,6 @@
 #define BUGLE_SRC_FILTERS_H
 
 #include <stddef.h>
-#include <ltdl.h>
 #include <bugle/linkedlist.h>
 #include <bugle/objects.h>
 #include <bugle/export.h>
@@ -90,22 +89,7 @@ typedef struct
     linked_list callbacks;
 } filter;
 
-typedef struct filter_set_s
-{
-    const char *name;
-    const char *help;
-    linked_list filters;
-    filter_set_loader load;
-    filter_set_unloader unload;
-    filter_set_activator activate;
-    filter_set_deactivator deactivate;
-    const filter_set_variable_info *variables;
-    lt_dlhandle dl_handle;
-
-    bugle_bool added;         /* Is listed in the config file or is depended upon */
-    bugle_bool loaded;        /* Initialisation has been called */
-    bugle_bool active;        /* Is actively intercepting events */
-} filter_set;
+typedef struct filter_set_s filter_set;
 
 typedef struct
 {
