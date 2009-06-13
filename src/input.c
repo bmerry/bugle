@@ -19,7 +19,6 @@
 # include <config.h>
 #endif
 #include <bugle/bool.h>
-#include <ltdl.h>
 #include <stdio.h>
 #include <stddef.h>
 #include <stdlib.h>
@@ -103,6 +102,9 @@ extern void bugle_initialise_all(void);
 #endif
 
 #if BUGLE_WINSYS_X11
+
+#include <X11/Xlib.h>
+#include <ltdl.h>
 
 /* Events we want to get, even if the app doesn't ask for them */
 #define EVENT_MASK (KeyPressMask | KeyReleaseMask | PointerMotionMask)
