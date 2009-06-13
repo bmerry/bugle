@@ -2,17 +2,37 @@
 from SCons import *
 from subprocess import *
 import re
+import tempfile
+import os
 
 def find_header(env, name):
-    # TODO: -I should come from CPPPATH
-    sp = Popen([env['CC'], '-E', '-I.', '-I' + env['srcdir'].path, '-'],
-            stdin = PIPE, stdout = PIPE, stderr = PIPE)
-    (out, err) = sp.communicate('#include <' + name + '>\n')
-    errcode = sp.wait()
-    if errcode != 0:
-        raise NameError, err.rstrip("\r\n")
+    (fd, tmpname) = tempfile.mkstemp(suffix = '.c', text = True)
+    try:
+        fh = os.fdopen(fd, 'w+')
+        print >>fh, '#ifdef _WIN32'
+        print >>fh, '#define _WIN32_LEAN_AND_MEAN'
+        print >>fh, '#include <windows.h>'
+        print >>fh, '#endif'
+        print >>fh, '#include <' + name + '>\n'
+        fh.close()
+        fd = -1
 
-    s = re.compile(r'^# \d+ "(.*' + name + r')"', re.M)
+        preproc_opt = '-E'
+        if env['INCPREFIX'] == '/I':
+            preprop_opt = '/E'
+        sp = Popen([env['CC'], preproc_opt,
+            env['INCPREFIX'] + '.' + env['INCSUFFIX'],
+            env['INCPREFIX'] + env['srcdir'].path + env['INCSUFFIX'], tmpname],
+                stdin = PIPE, stdout = PIPE, stderr = PIPE)
+        (out, err) = sp.communicate()
+        errcode = sp.wait()
+        if errcode != 0:
+            raise NameError, err.rstrip("\r\n")
+    finally:
+        if fd != -1: os.close(fd)
+        os.remove(tmpname)
+
+    s = re.compile(r'^#(?:line)? \d+ "(.*' + name + r')"', re.M)
     matches = s.search(out)
     if matches is not None:
         return matches.group(1)
