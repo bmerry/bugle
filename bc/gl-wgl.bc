@@ -1,6 +1,7 @@
 LIBRARY c:\\windows\\system32\\opengl32.dll
 CALLAPI __stdcall
+HEADER windows.h
 
-INCLUDE bc/alias.bc
 INCLUDE bc/gl/gl.bc
 INCLUDE bc/wgl/wgl.bc
+INCLUDE bc/alias.bc
