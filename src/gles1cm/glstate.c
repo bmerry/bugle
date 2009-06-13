@@ -24,7 +24,6 @@
 #include <string.h>
 #include <limits.h>
 #include <assert.h>
-#include <inttypes.h>
 #include <bugle/log.h>
 #include <bugle/memory.h>
 #include <bugle/string.h>
@@ -39,6 +38,7 @@
 #include <budgie/call.h>
 #include "budgielib/defines.h"
 #include "src/apitables.h"
+#include "platform/types.h"
 
 #define STATE_NAME(x) #x, x
 #define STATE_NAME_EXT(x, ext) #x, x ## ext
@@ -202,7 +202,7 @@ static const state_info generic_enable = { NULL, GL_NONE, TYPE_9GLboolean, -1, B
  * to initialise the list yourself.
  */
 static void make_leaves_conditional(const glstate *self, const state_info *table,
-                                    uint32_t flags, unsigned int mask,
+                                    bugle_uint32_t flags, unsigned int mask,
                                     linked_list *children)
 {
     const char *version;
@@ -437,9 +437,9 @@ static int get_total_texture_units(void)
 /* Returns a mask of flags not to select from state tables, based on the
  * dimension of the target.
  */
-static uint32_t texture_mask(GLenum target)
+static bugle_uint32_t texture_mask(GLenum target)
 {
-    uint32_t mask = 0;
+    bugle_uint32_t mask = 0;
 
     switch (target)
     {
@@ -488,7 +488,7 @@ static void spawn_children_tex_unit(const glstate *self, linked_list *children)
 {
     linked_list_node *i;
     glstate *child;
-    uint32_t mask = 0;
+    bugle_uint32_t mask = 0;
 
     bugle_list_init(children, free);
     if (self->unit >= GL_TEXTURE0 + get_texture_env_units())

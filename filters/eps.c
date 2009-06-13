@@ -23,10 +23,8 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-#include <errno.h>
 #include <assert.h>
 #include <math.h>
-#include <sys/time.h>
 #include <bugle/gl/glheaders.h>
 #include <bugle/glwin/glwin.h>
 #include <bugle/glwin/trackcontext.h>

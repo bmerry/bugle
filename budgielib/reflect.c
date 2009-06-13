@@ -23,7 +23,6 @@
 #include <string.h>
 #include <assert.h>
 #include <stdarg.h>
-#include <ltdl.h>
 #include <bugle/hashtable.h>
 #include <bugle/string.h>
 #include <bugle/io.h>

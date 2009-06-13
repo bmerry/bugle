@@ -39,6 +39,18 @@
 
 #define STATISTICSFILE "/.bugle/statistics"
 
+struct stats_signal_s
+{
+    double value;
+    double integral;                /* value integrated over time */
+    struct timeval last_updated;
+    int offset;                     /* for value tables */
+
+    bugle_bool active;
+    void *user_data;
+    bugle_bool (*activate)(struct stats_signal_s *);
+};
+
 extern FILE *stats_yyin;
 extern int stats_yyparse(void);
 

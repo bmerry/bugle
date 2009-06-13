@@ -22,11 +22,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <inttypes.h>
-#include <sys/time.h>
-#include <sys/types.h>
 #include <unistd.h>
-#include <errno.h>
 #include <assert.h>
 #include <bugle/gl/glheaders.h>
 #include <bugle/glwin/glwin.h>
@@ -57,6 +53,7 @@
 #include "common/protocol.h"
 #include "platform/threads.h"
 #include "platform/io.h"
+#include "platform/types.h"
 
 static bugle_io_reader *in_pipe = NULL;
 static bugle_io_writer *out_pipe = NULL;
@@ -66,7 +63,7 @@ static bugle_bool break_on_event[REQ_EVENT_COUNT];
 static bugle_bool break_on_next = BUGLE_FALSE;
 static bugle_bool stop_in_begin_end = BUGLE_FALSE;
 static bugle_bool stopped = BUGLE_TRUE;
-static uint32_t start_id = 0;
+static bugle_uint32_t start_id = 0;
 
 static unsigned long debug_thread;
 
@@ -75,7 +72,7 @@ static bugle_bool stoppable(void)
     return stop_in_begin_end || !bugle_gl_in_begin_end();
 }
 
-static void send_state(const glstate *state, uint32_t id)
+static void send_state(const glstate *state, bugle_uint32_t id)
 {
     char *str;
     linked_list children;

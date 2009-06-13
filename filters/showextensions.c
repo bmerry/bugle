@@ -27,7 +27,6 @@
 #include <errno.h>
 #include <assert.h>
 #include <math.h>
-#include <sys/time.h>
 #include <bugle/gl/glheaders.h>
 #include <bugle/glwin/glwin.h>
 #include <bugle/gl/glutils.h>
