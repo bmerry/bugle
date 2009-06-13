@@ -762,7 +762,7 @@ static void write_headers()
             "#endif\n"
             "#include <budgie/types.h>\n"
             "#define BUDGIEAPI %s\n"
-            "typedef void BUDGIEAPI (*BUDGIEAPIPROC)(void);\n",
+            "typedef void (BUDGIEAPI *BUDGIEAPIPROC)(void);\n",
             call_api.c_str());
     fprintf(files[FILE_TABLES_C],
             "#if HAVE_CONFIG_H\n"
