@@ -53,7 +53,17 @@ typedef enum
  * integrator that the last_updated field is invalid, and also means that
  * displaying the value makes it clear that no value exists.
  */
-typedef struct stats_signal_s stats_signal;
+typedef struct stats_signal_s
+{
+    double value;
+    double integral;                /* value integrated over time */
+    struct timeval last_updated;
+    int offset;                     /* for value tables */
+
+    bugle_bool active;
+    void *user_data;
+    bugle_bool (*activate)(struct stats_signal_s *);
+} stats_signal;
 
 typedef struct stats_expression_s
 {
