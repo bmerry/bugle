@@ -20,6 +20,13 @@
 
 #include <bugle/porting.h>
 #if BUGLE_GLTYPE_GL
+/* MS's gl.h can't actually be included in isolation */
+#ifdef _WIN32
+# ifndef _WIN32_LEAN_AND_MEAN
+#  define _WIN32_LEAN_AND_MEAN
+# endif
+# include <windows.h>
+#endif
 # include <GL/gl.h>
 # include <GL/glext.h>
 # ifndef GL_VERSION_2_0
