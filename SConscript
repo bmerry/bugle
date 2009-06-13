@@ -54,6 +54,7 @@ def get_features():
                 headers = ['GL/glx.h', 'GL/glxext.h'],
                 bugle_sources = ['#src/glx/glxdump.c']),
             'wgl': Feature(
+                winsys = 'windows',
                 glwin = 'wgl',
                 headers = ['wingdi.h', 'GL/wglext.h']),
             'egl': Feature(
