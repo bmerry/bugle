@@ -330,6 +330,33 @@ static bool dumpable(tree_node_p type)
     }
 }
 
+/* For each type node for which we have a TYPE override, mark it as
+ * non-recursive so that we don't pick out its children for use.
+ */
+static void eliminate_types()
+{
+    set<string> overridden_types;
+    for (list<Override>::const_iterator i = overrides.begin(); i != overrides.end(); ++i)
+        if (i->mode == OVERRIDE_TYPE && !i->type.empty())
+            overridden_types.insert(i->type);
+
+    for (size_t i = 0; i < T.size(); i++)
+        if (T.exists(i))
+        {
+            tree_node_p node = T[i];
+            tree_code code = TREE_CODE(node);
+            if (code != TYPE_DECL) continue;
+            if (DECL_NAME(node) == NULL_TREE) continue;
+            string name = IDENTIFIER_POINTER(DECL_NAME(node));
+
+            if (overridden_types.count(name))
+            {
+                node->user_flags |= FLAG_NO_RECURSE;
+                if (node->type != NULL)
+                    node->type->user_flags |= FLAG_NO_RECURSE;
+            }
+        }
+}
 
 /* Identify the nodes that are required. We call set_flags on the
  * type of the function to recursively tag the parameter and return
@@ -783,6 +810,7 @@ static void write_headers()
             "#if HAVE_CONFIG_H\n"
             "# include <config.h>\n"
             "#endif\n"
+            "#define BUDGIE_REDIRECT_FUNCTIONS\n"
             "#include <stdlib.h>\n"
             "#include <budgie/types.h>\n"
             "#include <budgie/call.h>\n"
@@ -1176,7 +1204,7 @@ static void write_type_dumpers(FILE *f)
         case INTEGER_TYPE:
             fprintf(f,
                     "%s"
-                    "    bugle_io_printf(writer, \"%%\" BUGLE_PRI%c%ld, (%sint%ld_t) *value);\n",
+                    "    bugle_io_printf(writer, \"%%\" BUGLE_PRI%c%ld, (bugle_%sint%ld_t) *value);\n",
                     custom_code.c_str(),
                     (i->node->flag_unsigned ? 'u' : 'd'),
                     i->node->size->low,
@@ -1638,18 +1666,15 @@ static void write_interceptors(FILE *f)
                 "    call.generic.retn = %s;\n"
                 "    call.generic.num_args = %d;\n",
                 define.c_str(), group.c_str(),
-                i->group->has_retn ? "&retn" : "NULL",
+                i->group->has_retn ? "(void *) &retn" : "NULL",
                 (int) i->group->parameters.size());
 
         for (size_t j = 0; j < i->group->parameters.size(); j++)
         {
             fprintf(f,
-                    "    call.generic.args[%d] = &arg%d;\n",
+                    "    call.generic.args[%d] = (void *) &arg%d;\n",
                     (int) j, (int) j);
         }
-        if (i->group->has_retn)
-            fprintf(f,
-                    "    call.generic.retn = &retn;\n");
 
         fprintf(f,
                 "    budgie_interceptor(&call);\n"
@@ -1684,6 +1709,7 @@ int main(int argc, char * const argv[])
         load_config(argv[i]);
 
     make_bitfields();
+    eliminate_types();
     identify();
     make_function_map();
     make_groups();

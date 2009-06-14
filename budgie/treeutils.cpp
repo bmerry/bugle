@@ -360,6 +360,8 @@ void set_flags(tree_node_p node, unsigned int flags)
         if (cur && (cur->user_flags & flags) != flags)
         {
             cur->user_flags |= flags;
+            if (cur->user_flags & FLAG_NO_RECURSE)
+                continue;
             todo.push(cur->value);
             switch (TREE_CODE(cur))
             {
