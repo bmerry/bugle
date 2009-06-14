@@ -56,7 +56,8 @@ def get_features():
             'wgl': Feature(
                 winsys = 'windows',
                 glwin = 'wgl',
-                headers = ['wingdi.h', 'GL/wglext.h']),
+                headers = ['wingdi.h', 'GL/wglext.h'],
+                bugle_libs = ['user32']),
             'egl': Feature(
                 glwin = 'egl',
                 headers = ['EGL/egl.h', 'EGL/eglext.h']),
@@ -178,7 +179,7 @@ apis = get_apis()
 vars = get_vars(apis)
 
 environ = {}
-for e in ['PATH', 'CPATH', 'LIBRARY_PATH', 'LD_LIBRARY_PATH']:
+for e in ['PATH', 'CPATH', 'LIBRARY_PATH', 'LD_LIBRARY_PATH', 'LIB', 'LIBPATH', 'INCLUDE']:
     if e in os.environ:
         environ[e] = os.environ[e]
 
@@ -253,8 +254,6 @@ SConscript('budgie/SConscript')
 SConscript('src/SConscript')
 SConscript('filters/SConscript')
 SConscript('gldb/SConscript')
-
-env.AlwaysBuild(env.Command('libltdl/libltdl.la', [], 'make -C libltdl'))
 
 budgie_outputs = [
         'include/budgie/call.h',

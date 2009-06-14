@@ -40,7 +40,7 @@
 #include <budgie/reflect.h>
 #include <budgie/addresses.h>
 #include "conffile.h"
-#include "dlopen.h"
+#include "platform/dl.h"
 
 #define FILTERFILE "/.bugle/filters"
 
@@ -205,7 +205,7 @@ static void initialise_all(void)
     filters_initialise();
     initialise_core_filters();
     dump_initialise();
-    dlopen_initialise();
+    bugle_dl_enable_interception();
     load_config();
     filters_finalise();
 }

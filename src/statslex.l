@@ -68,8 +68,7 @@ static void clear_string(void)
 %x STRING_MODE
 %option never-interactive
 %option prefix="stats_yy"
-%option outfile="lex.yy.c"
-%option noyywrap
+%option nounistd
 
 %%
 
@@ -105,3 +104,8 @@ d|a|s|e|"{"|"}"|"+"|"-"|"*"|"/"|"="|"("|")" { return yytext[0]; }
 <STRING_MODE>.	{ append_char(yytext[0]); }
 
 %%
+
+int stats_yywrap()
+{
+    return 1;
+}

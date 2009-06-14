@@ -33,9 +33,6 @@ extern "C" {
 
 typedef void *bugle_dl_module;
 
-/* Initialise module system */
-BUGLE_EXPORT_PRE void bugle_dl_init(void);
-
 /* Open the module; returns NULL on error.
  * filename must be non-NULL
  */
@@ -57,6 +54,9 @@ BUGLE_EXPORT_PRE void *bugle_dl_sym_data(bugle_dl_module module, const char *sym
 BUGLE_EXPORT_PRE BUDGIEAPIPROC bugle_dl_sym_function(bugle_dl_module module, const char *symbol) BUGLE_EXPORT_POST;
 
 /*** The remaining functions should only be used by the filter system ***/
+
+/* Initialise module system */
+BUGLE_EXPORT_PRE void bugle_dl_init(void);
 
 /* For each module in path, call the callback function with the path to the
  * file.

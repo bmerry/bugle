@@ -4,8 +4,10 @@ Import('env', 'srcdir', 'builddir', 'libbugle', 'libbugleutils')
 
 filter_env = env.Clone(
         LIBS = libbugle + libbugleutils,
-        LINKFLAGS = '-Wl,-soname,${TARGET.file}',
         SHLIBPREFIX = '')
+
+if filter_env['PLATFORM'] == 'posix' and 'gcc' in self['TOOLS']:
+    filter_env.Append(LINKFLAGS = '-Wl,-soname,${TARGET.file}')
 
 for filter in [
         'checks',

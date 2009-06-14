@@ -22,7 +22,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <unistd.h>
 #include <assert.h>
 #include <bugle/gl/glheaders.h>
 #include <bugle/glwin/glwin.h>
@@ -45,6 +44,7 @@
 #include <budgie/reflect.h>
 #include <budgie/addresses.h>
 #if BUGLE_OSAPI_POSIX
+#include <unistd.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <netinet/tcp.h>
@@ -101,7 +101,7 @@ static void send_state(const glstate *state, bugle_uint32_t id)
     gldb_protocol_send_code(out_pipe, id);
 }
 
-static void send_state_raw(const glstate *state, uint32_t id)
+static void send_state_raw(const glstate *state, bugle_uint32_t id)
 {
     linked_list children;
     linked_list_node *cur;
@@ -256,7 +256,7 @@ static void pixel_pack_restore(const pixel_state *old)
  * chances with setting up the default readback state and restoring it
  * afterwards.
  */
-static bugle_bool send_data_texture(uint32_t id, GLuint texid, GLenum target,
+static bugle_bool send_data_texture(bugle_uint32_t id, GLuint texid, GLenum target,
                                     GLenum face, GLint level,
                                     GLenum format, GLenum type)
 {
@@ -455,7 +455,7 @@ static bugle_bool get_framebuffer_size(GLuint fbo, GLenum target, GLenum attachm
  * (for application-defined framebuffers). In the future it may be used
  * to allow other types of framebuffers e.g. pbuffers.
  */
-static bugle_bool send_data_framebuffer(uint32_t id, GLuint fbo, GLenum target,
+static bugle_bool send_data_framebuffer(bugle_uint32_t id, GLuint fbo, GLenum target,
                                         GLenum buffer, GLenum format, GLenum type)
 {
     glwin_display dpy = NULL;
@@ -608,7 +608,7 @@ static bugle_bool send_data_framebuffer(uint32_t id, GLuint fbo, GLenum target,
 }
 
 #if GL_ES_VERSION_2_0 || GL_VERSION_2_0
-static bugle_bool send_data_shader(uint32_t id, GLuint shader_id,
+static bugle_bool send_data_shader(bugle_uint32_t id, GLuint shader_id,
                                    GLenum target)
 {
     GLint length;
@@ -671,7 +671,7 @@ static bugle_bool send_data_shader(uint32_t id, GLuint shader_id,
     return BUGLE_TRUE;
 }
 
-static bugle_bool send_data_info_log(uint32_t id, GLuint object_id,
+static bugle_bool send_data_info_log(bugle_uint32_t id, GLuint object_id,
                                      GLenum target)
 {
     GLint length;
@@ -748,7 +748,7 @@ static bugle_bool send_data_info_log(uint32_t id, GLuint object_id,
 #endif /* GL_ES_VERSION_2_0 || GL_VERSION_2_0 */
 
 #ifdef GL_VERSION_1_1
-static bugle_bool send_data_buffer(uint32_t id, GLuint object_id)
+static bugle_bool send_data_buffer(bugle_uint32_t id, GLuint object_id)
 {
     GLint old_binding;
     GLint size;
@@ -827,8 +827,8 @@ static bugle_bool send_data_buffer(uint32_t id, GLuint object_id)
 
 static void process_single_command(function_call *call)
 {
-    uint32_t req, id, req_val;
-    uint32_t event;
+    bugle_uint32_t req, id, req_val;
+    bugle_uint32_t event;
     char *req_str, *resp_str;
     bugle_bool activate;
     budgie_function func;
@@ -992,8 +992,8 @@ static void process_single_command(function_call *call)
         exit(1);
     case REQ_DATA:
         {
-            uint32_t subtype, object_id, target, face, level, format, type;
-            uint32_t buffer;
+            bugle_uint32_t subtype, object_id, target, face, level, format, type;
+            bugle_uint32_t buffer;
 
             /* FIXME: check for begin/end? */
             gldb_protocol_recv_code(in_pipe, &subtype);

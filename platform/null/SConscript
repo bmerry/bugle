@@ -6,11 +6,15 @@ Import('env', 'srcdir', 'builddir')
 
 env.Append(CPPPATH = [srcdir.Dir('platform/null')])
 
-platform_shared = env.SharedObject(source = [
+platform_libbugleutils = env.SharedObject(source = [
     'string-null.c',
     'math-null.c',
     'io-null.c',
     'time-null.c'
     ])
 
-Export('platform_shared')
+platform_libbugle = env.SharedObject(source = [
+    'dl-null.c'
+    ])
+
+Export('platform_libbugle', 'platform_libbugleutils')

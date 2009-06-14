@@ -30,6 +30,11 @@
 #include <bugle/string.h>
 #include <bugle/log.h>
 
+void bugle_dl_init(void)
+{
+    /* Nothing required on POSIX */
+}
+
 bugle_dl_module bugle_dl_open(const char *filename, int flag)
 {
     char *fullname = NULL;

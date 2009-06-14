@@ -53,7 +53,6 @@ libbugle = env.SharedLibrary2(
             platform_libbugle
         ],
         version = '8.0.0',
-        LIBPATH = ['../libltdl/.libs'],
-        LIBS = [libbugleutils, 'ltdl', api.bugle_libs])
+        LIBS = [libbugleutils, api.bugle_libs])
 
 Export('libbugle', 'libbugleutils')

@@ -63,6 +63,7 @@ static void clear_string(void)
 
 %}
 
+%option never-interactive
 %option nounistd
 
 %x STRING_MODE

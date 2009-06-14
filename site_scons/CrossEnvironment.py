@@ -60,5 +60,9 @@ class CrossEnvironment(Environment):
                     LINKFLAGS = ['-Wl,-soname,' + soname] + self['LINKFLAGS'], **kw)
                 self.Command(soname, shl_list[0], 'ln -s ${SOURCE.file} $TARGET')
                 return self.Command(base, shl_list[0], 'ln -s ${SOURCE.file} $TARGET')
+        elif 'msvc' in self['TOOLS']:
+            # Builder returns [dll, lib, exp], we only need the lib for linking
+            # other libraries against
+            return [self.SharedLibrary(target, source, **kw)[1]]
 
         return self.SharedLibrary(target, source, **kw)
