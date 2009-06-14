@@ -11,7 +11,6 @@ libbugleutils = env.SharedLibrary2(
             'glwin/glwintypes.c',
             '../common/memory.c',
             '../common/protocol.c',
-            '../common/protocol-win32.c',
             '../common/hashtable.c',
             '../common/linkedlist.c',
             '../common/io.c',
