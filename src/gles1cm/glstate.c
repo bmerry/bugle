@@ -771,8 +771,8 @@ const state_info * const all_state[] =
 static void get_helper(const glstate *state,
                        GLfloat *f, GLint *i,
                        budgie_type *in_type,
-                       void (BUDGIEAPI *get_float)(GLenum, GLenum, GLfloat *),
-                       void (BUDGIEAPI *get_int)(GLenum, GLenum, GLint *))
+                       void (BUDGIEAPIP get_float)(GLenum, GLenum, GLfloat *),
+                       void (BUDGIEAPIP get_int)(GLenum, GLenum, GLint *))
 {
     if ((state->info->type == TYPE_7GLfloat || state->info->type == TYPE_7GLfloat)
         && get_float != NULL)

@@ -142,7 +142,7 @@ BUDGIEAPIPROC budgie_function_address_real(budgie_function id)
     return NULL;
 }
 
-void (BUDGIEAPI *budgie_function_address_wrapper(budgie_function id))(void)
+BUDGIEAPIPROC budgie_function_address_wrapper(budgie_function id)
 {
     assert(id >= 0 && id < budgie_function_count());
     return _budgie_function_address_wrapper[id];
@@ -173,7 +173,7 @@ void budgie_function_address_initialise(void)
                 if (!_budgie_function_address_real[j])
                 {
                     _budgie_function_address_real[j] =
-                        (void (BUDGIEAPI *)(void)) lt_dlsym(handle, budgie_function_name(j));
+                        (BUDGIEAPIPROC) lt_dlsym(handle, budgie_function_name(j));
                     lt_dlerror(); /* clear the error flag */
                 }
         }
@@ -185,7 +185,7 @@ void budgie_function_address_initialise(void)
     }
 }
 
-void budgie_function_address_set_real(budgie_function id, void (BUDGIEAPI *addr)(void))
+void budgie_function_address_set_real(budgie_function id, BUDGIEAPIPROC addr)
 {
     assert(id >= 0 && id < budgie_function_count());
     _budgie_function_address_real[id] = addr;

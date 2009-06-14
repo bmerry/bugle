@@ -239,7 +239,7 @@ void bugle_function_address_initialise_extra(void)
          */
         if (bugle_api_function_extension(i) > BUGLE_API_EXTENSION_ID(GL_VERSION_1_2))
         {
-            void (BUDGIEAPI *ptr)(void) = bugle_glwin_get_proc_address(budgie_function_name(i));
+            BUDGIEAPIPROC ptr = bugle_glwin_get_proc_address(budgie_function_name(i));
             if (ptr != NULL)
                 budgie_function_address_set_real(i, ptr);
         }

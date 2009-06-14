@@ -762,8 +762,9 @@ static void write_headers()
             "#endif\n"
             "#include <budgie/types.h>\n"
             "#define BUDGIEAPI %s\n"
-            "typedef void (BUDGIEAPI *BUDGIEAPIPROC)(void);\n",
-            call_api.c_str());
+            "#define BUDGIEAPIP %s *\n"
+            "typedef void (BUDGIEAPIP BUDGIEAPIPROC)(void);\n",
+            call_api.c_str(), call_api.c_str());
     fprintf(files[FILE_TABLES_C],
             "#if HAVE_CONFIG_H\n"
             "# include <config.h>\n"
@@ -1474,15 +1475,12 @@ static void write_call_wrappers(FILE *f)
 {
     for (list<Function>::iterator i = functions.begin(); i != functions.end(); i++)
     {
-        tree_node_p ptr = make_pointer(TREE_TYPE(i->node));
-
         string name = i->name();
-        string type = type_to_string(ptr, "BUDGIEAPI", false);
+        string type = type_to_string(TREE_TYPE(i->node), "BUDGIEAPIP", true);
         fprintf(f,
                 "#define _BUDGIE_HAVE_CALL_%s 1\n"
                 "#define _BUDGIE_CALL_%s _BUDGIE_CALL(%s, %s)\n",
                 name.c_str(), name.c_str(), name.c_str(), type.c_str());
-        destroy_temporary(ptr);
     }
 }
 
@@ -1535,11 +1533,9 @@ static void write_call_structs(FILE *f)
 
 static void write_call_to(FILE *f, list<Function>::iterator func, const char *arg_template)
 {
-    tree_node_p ptr = make_pointer(TREE_TYPE(func->node));
-    string type = type_to_string(ptr, " BUDGIEAPI", false);
+    string type = type_to_string(TREE_TYPE(func->node), "BUDGIEAPIP", true);
     string name = func->name();
     string define = func->define();
-    destroy_temporary(ptr);
 
     fprintf(f, "(*(%s) budgie_function_address_real(%s))(",
             type.c_str(), define.c_str());

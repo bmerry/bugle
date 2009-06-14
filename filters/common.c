@@ -53,13 +53,13 @@ static bugle_bool procaddress_callback(function_call *call, const callback_data 
      * is specified as part of the ABI.
      */
 #ifdef BUGLE_GLWIN_GET_PROC_ADDRESS
-    void (BUDGIEAPI *sym)(void);
+    BUDGIEAPIPROC sym;
     budgie_function func;
 
     if (!*call->BUGLE_GLWIN_GET_PROC_ADDRESS.retn) return BUGLE_TRUE;
     func = budgie_function_id((const char *) *call->BUGLE_GLWIN_GET_PROC_ADDRESS.arg0);
     sym = (func == NULL_FUNCTION) ? NULL : budgie_function_address_wrapper(func);
-    if (sym) *(void (BUDGIEAPI **)(void)) call->BUGLE_GLWIN_GET_PROC_ADDRESS.retn = sym;
+    if (sym) *(BUDGIEAPIPROC *) call->BUGLE_GLWIN_GET_PROC_ADDRESS.retn = sym;
 #endif
     return BUGLE_TRUE;
 }

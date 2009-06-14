@@ -51,7 +51,7 @@ BUGLE_EXPORT_PRE BUDGIEAPIPROC budgie_function_address_wrapper(budgie_function i
  */
 BUGLE_EXPORT_PRE void budgie_function_address_initialise(void) BUGLE_EXPORT_POST;
 /* Used to manually override the initialiser */
-BUGLE_EXPORT_PRE void budgie_function_address_set_real(budgie_function id, void (BUDGIEAPI *addr)(void)) BUGLE_EXPORT_POST;
+BUGLE_EXPORT_PRE void budgie_function_address_set_real(budgie_function id, BUDGIEAPIPROC addr) BUGLE_EXPORT_POST;
 
 BUGLE_EXPORT_PRE void budgie_function_set_bypass(budgie_function id, bugle_bool bypass) BUGLE_EXPORT_POST;
 
@@ -68,7 +68,7 @@ BUGLE_EXPORT_PRE void budgie_invoke(function_call *call) BUGLE_EXPORT_POST;
  * time, but libbugleutils has been downgraded and it is no longer available
  * at run-time.
  */
-static inline void (BUDGIEAPI *_budgie_function_address_get_real(budgie_function id, void (BUDGIEAPI *symbol)(void)))(void)
+static inline BUDGIEAPIPROC _budgie_function_address_get_real(budgie_function id, BUDGIEAPIPROC symbol)
 {
     return id == -1 ? symbol : budgie_function_address_real(id);
 }
@@ -79,7 +79,7 @@ static inline void (BUDGIEAPI *_budgie_function_address_get_real(budgie_function
  * will succeed anyway), and undefined symbols are not always valid.
  */
 #define _BUDGIE_CALL(name, type) \
-    ((type) _budgie_function_address_get_real(BUDGIE_FUNCTION_ID(name), (void (BUDGIEAPI *)(void)) NULL))
+    ((type) _budgie_function_address_get_real(BUDGIE_FUNCTION_ID(name), (BUDGIEAPIPROC) NULL))
 
 #ifdef __cplusplus
 }

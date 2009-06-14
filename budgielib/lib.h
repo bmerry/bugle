@@ -34,9 +34,9 @@
 #endif
 
 /* Holds function pointers for real implementations */
-extern void (BUDGIEAPI *_budgie_function_address_real[])(void);
+extern BUDGIEAPIPROC _budgie_function_address_real[];
 /* Holds function pointers for wrappers */
-extern void (BUDGIEAPI *_budgie_function_address_wrapper[])(void);
+extern BUDGIEAPIPROC _budgie_function_address_wrapper[];
 
 extern int _budgie_library_count;
 extern const char * const _budgie_library_names[];

@@ -77,7 +77,7 @@ static inline void unlock(void)
 static void globjects_add_single(bugle_globjects_type type,
                                  GLenum target,
                                  GLuint object,
-                                 GLboolean (BUDGIEAPI *is)(GLuint))
+                                 GLboolean (BUDGIEAPIP is)(GLuint))
 {
     hashptr_table *table;
 
@@ -95,7 +95,7 @@ static void globjects_add_single(bugle_globjects_type type,
 static void globjects_delete_multiple(bugle_globjects_type type,
                                       GLsizei count,
                                       const GLuint *objects,
-                                      GLboolean (BUDGIEAPI *is)(GLuint))
+                                      GLboolean (BUDGIEAPIP is)(GLuint))
 {
     GLsizei i;
     hashptr_table *table;
