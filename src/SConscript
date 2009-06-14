@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-Import('build_env', 'tu_env', 'env', 'api', 'platform_shared')
+Import('build_env', 'tu_env', 'env', 'api', 'platform_libbugle', 'platform_libbugleutils')
 
 tu_env.Tu(['data/gl.o', 'data/gl.tu'], 'data/gl.c')
 
@@ -20,7 +20,7 @@ libbugleutils = env.SharedLibrary2(
             'apitables.c',
             api.bugleutils_sources,
 
-            platform_shared
+            platform_libbugleutils
         ], version = '7.0.0')
 
 libbugle = env.SharedLibrary2(
@@ -29,7 +29,6 @@ libbugle = env.SharedLibrary2(
             env.CFile('confparse.y', YACCFLAGS = '-d')[0],
             'conflex.l',
             'interceptor.c',
-            'dlopen.c',
             'filters.c',
             'stats.c',
             'statslex.l',
@@ -49,7 +48,9 @@ libbugle = env.SharedLibrary2(
             api.gltype + '/gldump.c',
             api.gltype + '/glstate.c',
             api.glwin + '/glwin.c',
-            api.bugle_sources
+            api.bugle_sources,
+
+            platform_libbugle
         ],
         version = '8.0.0',
         LIBPATH = ['../libltdl/.libs'],

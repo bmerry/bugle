@@ -42,11 +42,16 @@ env = header_checks(env)
 
 platform_env = internal_checks(env.Clone())
 
-platform_shared = platform_env.SharedObject(source = [
+platform_libbugleutils = platform_env.SharedObject(source = [
     'string-posix.c',
     'math-posix.c',
     'io-posix.c',
-    'time-posix.c'
+    'time-posix.c',
     ])
 
-Export('platform_shared')
+platform_libbugle = platform_env.SharedObject(source = [
+    'dl-posix.c',
+    'dlopen.c'
+    ])
+
+Export('platform_libbugleutils', 'platform_libbugle')

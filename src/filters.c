@@ -1,5 +1,5 @@
 /*  BuGLe: an OpenGL debugging tool
- *  Copyright (C) 2004-2007  Bruce Merry
+ *  Copyright (C) 2004-2007, 2009  Bruce Merry
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -22,12 +22,9 @@
 #include <stddef.h>
 #include <string.h>
 #include <assert.h>
-#include <sys/types.h>
-#include <errno.h>
 #include <stdlib.h>
 #include <math.h>
-#include <dirent.h>
-#include <ltdl.h>
+#include <errno.h>
 #include <bugle/memory.h>
 #include <bugle/string.h>
 #include <bugle/math.h>
@@ -41,6 +38,7 @@
 #include <budgie/addresses.h>
 #include "budgielib/defines.h"
 #include "platform/threads.h"
+#include "platform/dl.h"
 
 struct filter_set_s
 {
@@ -52,7 +50,7 @@ struct filter_set_s
     filter_set_activator activate;
     filter_set_deactivator deactivate;
     const filter_set_variable_info *variables;
-    lt_dlhandle dl_handle;
+    bugle_dl_module dl_handle;
 
     bugle_bool added;         /* Is listed in the config file or is depended upon */
     bugle_bool loaded;        /* Initialisation has been called */
@@ -109,7 +107,7 @@ static hash_table filter_orders;           /* A is called after B */
 static hash_table filter_set_dependencies; /* A requires B */
 static hash_table filter_set_orders;       /* A is initialised after B */
 
-static lt_dlhandle current_dl_handle = NULL;
+static bugle_dl_module current_dl_handle = NULL;
 
 object_class *bugle_call_class;
 
@@ -291,29 +289,27 @@ static void filters_shutdown(void)
     bugle_list_clear(&added_filter_sets);
     bugle_list_clear(&filter_sets);
     bugle_object_class_free(bugle_call_class);
-    lt_dlexit();
 }
 
-static int filter_library_init(const char *filename, lt_ptr data)
+static void filter_library_init(const char *filename, void *data)
 {
-    lt_dlhandle handle;
+    bugle_dl_module handle;
     void (*init)(void);
 
-    handle = lt_dlopenext(filename);
-    if (handle == NULL) return 0;
+    handle = bugle_dl_open(filename, 0);
+    if (handle == NULL) return;
 
-    init = (void (*)(void)) lt_dlsym(handle, "bugle_initialise_filter_library");
+    init = (void (*)(void)) bugle_dl_sym_function(handle, "bugle_initialise_filter_library");
     if (init == NULL)
     {
         bugle_log_printf("filters", "initialise", BUGLE_LOG_WARNING,
                          "library %s did not export initialisation symbol",
                          filename);
-        return 0;
+        return;
     }
     current_dl_handle = handle;
     (*init)();
     current_dl_handle = NULL;
-    return 0;
 }
 
 static void list_free(void *l)
@@ -326,12 +322,8 @@ static void list_free(void *l)
     free(list);
 }
 
-/* Note: filters_initialise is called after initialise_real, which sets
- * up ltdl. Hence we don't call lt_dlinit.
- */
 void filters_initialise(void)
 {
-    DIR *dir;
     const char *libdir;
     budgie_function f;
 
@@ -349,16 +341,8 @@ void filters_initialise(void)
 
     libdir = getenv("BUGLE_FILTER_DIR");
     if (!libdir) libdir = PKGLIBDIR;
-    dir = opendir(libdir);
-    if (!dir)
-    {
-        bugle_log_printf("filters", "initialise", BUGLE_LOG_ERROR,
-                         "failed to open %s: %s", libdir, strerror(errno));
-        exit(1);
-    }
-    closedir(dir);
 
-    lt_dlforeachfile(libdir, filter_library_init, NULL);
+    bugle_dl_foreach(libdir, filter_library_init, NULL);
 
     atexit(filters_shutdown);
 }
@@ -910,19 +894,8 @@ filter_set *bugle_filter_set_get_handle(const char *name)
 
 void *bugle_filter_set_get_symbol(filter_set *handle, const char *name)
 {
-    if (handle)
-        return lt_dlsym(handle->dl_handle, name);
-    else
-    {
-        void *h, *sym = NULL;
-        h = lt_dlopen(NULL);
-        if (h)
-        {
-            sym = lt_dlsym(h, name);
-            lt_dlclose(h);
-        }
-        return sym;
-    }
+    assert(handle != NULL);
+    return bugle_dl_sym_data(handle->dl_handle, name);
 }
 
 void filters_help(void)

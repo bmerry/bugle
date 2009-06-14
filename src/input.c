@@ -104,7 +104,7 @@ extern void bugle_initialise_all(void);
 #if BUGLE_WINSYS_X11
 
 #include <X11/Xlib.h>
-#include <ltdl.h>
+#include "platform/dl.h"
 
 /* Events we want to get, even if the app doesn't ask for them */
 #define EVENT_MASK (KeyPressMask | KeyReleaseMask | PointerMotionMask)
@@ -764,16 +764,16 @@ void bugle_input_invalidate_window(bugle_input_event *event)
 
 void input_initialise(void)
 {
-    lt_dlhandle handle;
+    bugle_dl_module handle;
 
-    handle = lt_dlopenext("libX11");
+    handle = bugle_dl_open("libX11", 0);
     if (handle == NULL)
     {
         /* The first attempt ought to be the most portable, but also fails
          * when trying to run with 32-bit apps on a 64-bit system. This is
          * a fallback.
          */
-        handle = lt_dlopen("libX11.so");
+        handle = bugle_dl_open("libX11", BUGLE_DL_FLAG_SUFFIX);
     }
     if (handle == NULL)
     {
@@ -784,25 +784,25 @@ void input_initialise(void)
         exit(1);
     }
 
-    real_XNextEvent = (int (*)(Display *, XEvent *)) lt_dlsym(handle, "XNextEvent");
-    real_XPeekEvent = (int (*)(Display *, XEvent *)) lt_dlsym(handle, "XPeekEvent");
-    real_XWindowEvent = (int (*)(Display *, Window, long, XEvent *)) lt_dlsym(handle, "XWindowEvent");
-    real_XCheckWindowEvent = (Bool (*)(Display *, Window, long, XEvent *)) lt_dlsym(handle, "XCheckWindowEvent");
-    real_XMaskEvent = (int (*)(Display *, long, XEvent *)) lt_dlsym(handle, "XMaskEvent");
-    real_XCheckMaskEvent = (Bool (*)(Display *, long, XEvent *)) lt_dlsym(handle, "XCheckMaskEvent");
-    real_XCheckTypedEvent = (Bool (*)(Display *, int, XEvent *)) lt_dlsym(handle, "XCheckTypedEvent");
-    real_XCheckTypedWindowEvent = (Bool (*)(Display *, Window, int, XEvent *)) lt_dlsym(handle, "XCheckTypedWindowEvent");
+    real_XNextEvent = (int (*)(Display *, XEvent *)) bugle_dl_sym_function(handle, "XNextEvent");
+    real_XPeekEvent = (int (*)(Display *, XEvent *)) bugle_dl_sym_function(handle, "XPeekEvent");
+    real_XWindowEvent = (int (*)(Display *, Window, long, XEvent *)) bugle_dl_sym_function(handle, "XWindowEvent");
+    real_XCheckWindowEvent = (Bool (*)(Display *, Window, long, XEvent *)) bugle_dl_sym_function(handle, "XCheckWindowEvent");
+    real_XMaskEvent = (int (*)(Display *, long, XEvent *)) bugle_dl_sym_function(handle, "XMaskEvent");
+    real_XCheckMaskEvent = (Bool (*)(Display *, long, XEvent *)) bugle_dl_sym_function(handle, "XCheckMaskEvent");
+    real_XCheckTypedEvent = (Bool (*)(Display *, int, XEvent *)) bugle_dl_sym_function(handle, "XCheckTypedEvent");
+    real_XCheckTypedWindowEvent = (Bool (*)(Display *, Window, int, XEvent *)) bugle_dl_sym_function(handle, "XCheckTypedWindowEvent");
 
-    real_XIfEvent = (int (*)(Display *, XEvent *, Bool (*)(Display *, XEvent *, XPointer), XPointer)) lt_dlsym(handle, "XIfEvent");
-    real_XCheckIfEvent = (Bool (*)(Display *, XEvent *, Bool (*)(Display *, XEvent *, XPointer), XPointer)) lt_dlsym(handle, "XCheckIfEvent");
-    real_XPeekIfEvent = (int (*)(Display *, XEvent *, Bool (*)(Display *, XEvent *, XPointer), XPointer)) lt_dlsym(handle, "XPeekIfEvent");
+    real_XIfEvent = (int (*)(Display *, XEvent *, Bool (*)(Display *, XEvent *, XPointer), XPointer)) bugle_dl_sym_function(handle, "XIfEvent");
+    real_XCheckIfEvent = (Bool (*)(Display *, XEvent *, Bool (*)(Display *, XEvent *, XPointer), XPointer)) bugle_dl_sym_function(handle, "XCheckIfEvent");
+    real_XPeekIfEvent = (int (*)(Display *, XEvent *, Bool (*)(Display *, XEvent *, XPointer), XPointer)) bugle_dl_sym_function(handle, "XPeekIfEvent");
 
-    real_XEventsQueued = (int (*)(Display *, int)) lt_dlsym(handle, "XEventsQueued");
-    real_XPending = (int (*)(Display *)) lt_dlsym(handle, "XPending");
+    real_XEventsQueued = (int (*)(Display *, int)) bugle_dl_sym_function(handle, "XEventsQueued");
+    real_XPending = (int (*)(Display *)) bugle_dl_sym_function(handle, "XPending");
 
-    real_XCreateWindow = (Window (*)(Display *, Window, int, int, unsigned int, unsigned int, unsigned int, int, unsigned int, Visual *, unsigned long, XSetWindowAttributes *)) lt_dlsym(handle, "XCreateWindow");
-    real_XCreateSimpleWindow = (Window (*)(Display *, Window, int, int, unsigned int, unsigned int, unsigned int, unsigned long, unsigned long)) lt_dlsym(handle, "XCreateSimpleWindow");
-    real_XSelectInput = (int (*)(Display *, Window, long)) lt_dlsym(handle, "XSelectInput");
+    real_XCreateWindow = (Window (*)(Display *, Window, int, int, unsigned int, unsigned int, unsigned int, int, unsigned int, Visual *, unsigned long, XSetWindowAttributes *)) bugle_dl_sym_function(handle, "XCreateWindow");
+    real_XCreateSimpleWindow = (Window (*)(Display *, Window, int, int, unsigned int, unsigned int, unsigned int, unsigned long, unsigned long)) bugle_dl_sym_function(handle, "XCreateSimpleWindow");
+    real_XSelectInput = (int (*)(Display *, Window, long)) bugle_dl_sym_function(handle, "XSelectInput");
 
     if (!real_XNextEvent
         || !real_XPeekEvent

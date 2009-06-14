@@ -22,24 +22,23 @@
  * dlsym.
  */
 
-#define _GNU_SOURCE
+#define _GNU_SOURCE /* to get RTLD_NEXT defined */
 #if HAVE_CONFIG_H
 # include <config.h>
 #endif
-# include "dlopen.h"
-#if HAVE_DLFCN_H
-# include <dlfcn.h>
-# include <string.h>
-# include <bugle/bool.h>
-# include <bugle/export.h>
+#include "platform/dl.h"
+#include <dlfcn.h>
+#include <string.h>
+#include <bugle/bool.h>
+#include <bugle/export.h>
 
-# ifdef RTLD_NEXT
-#  define BUGLE_DEFINED_DLOPEN
+#ifdef RTLD_NEXT
+# define BUGLE_DEFINED_DLOPEN
 
 static bugle_bool bypass_dlopen;
 static void *(*real_dlopen)(const char *, int) = NULL;
 
-void dlopen_initialise(void)
+void bugle_dl_enable_interception(void)
 {
     bypass_dlopen = BUGLE_TRUE;
 }
@@ -67,9 +66,7 @@ void *dlopen(const char *filename, int flag)
     }
     return real_dlopen(filename, flag);
 }
-# endif /* RTLD_NEXT */
-
-#endif /* HAVE_DLFCN_H */
+#endif /* RTLD_NEXT */
 
 #ifndef BUGLE_DEFINED_DLOPEN
 void dlopen_initialise()

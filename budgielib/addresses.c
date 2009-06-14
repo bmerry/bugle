@@ -20,7 +20,6 @@
 #endif
 #include <stddef.h>
 #include <assert.h>
-#include <ltdl.h>
 #include <stdio.h>
 #include <bugle/memory.h>
 #include <bugle/io.h>
@@ -28,6 +27,7 @@
 #include <budgie/addresses.h>
 #include <budgie/reflect.h>
 #include "platform/threads.h"
+#include "platform/dl.h"
 #include "budgielib/lib.h"
 
 /* External function provided to look up addresses on the fly, for when the
@@ -150,36 +150,29 @@ BUDGIEAPIPROC budgie_function_address_wrapper(budgie_function id)
 
 void budgie_function_address_initialise(void)
 {
-    lt_dlhandle handle;
+    bugle_dl_module handle;
     size_t i, j;
     size_t N, F;
 
     N = _budgie_library_count;
     F = budgie_function_count();
 
-    /* These have gone away at some point in libtool
-     */
-#if 0
-    lt_dlmalloc = bugle_malloc;
-    lt_dlrealloc = xrealloc;
-#endif
-    lt_dlinit();
+    bugle_dl_init();
     for (i = 0; i < N; i++)
     {
-        handle = lt_dlopen(_budgie_library_names[i]);
+        handle = bugle_dl_open(_budgie_library_names[i], 0);
         if (handle)
         {
             for (j = 0; j < F; j++)
                 if (!_budgie_function_address_real[j])
                 {
                     _budgie_function_address_real[j] =
-                        (BUDGIEAPIPROC) lt_dlsym(handle, budgie_function_name(j));
-                    lt_dlerror(); /* clear the error flag */
+                        bugle_dl_sym_function(handle, budgie_function_name(j));
                 }
         }
         else
         {
-            fprintf(stderr, "%s", lt_dlerror());
+            fprintf(stderr, "Failed to open %s", _budgie_library_names[i]);
             exit(1);
         }
     }
