@@ -21,8 +21,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/time.h>
-#include <sys/types.h>
 #include <assert.h>
 #include <math.h>
 #include <bugle/memory.h>
@@ -33,6 +31,7 @@
 #include <bugle/stats.h>
 #include <bugle/math.h>
 #include <bugle/string.h>
+#include <bugle/time.h>
 #include "src/statsparse.h"
 #include <bugle/hashtable.h>
 #include <bugle/bool.h>
@@ -57,7 +56,7 @@ static hash_table stats_statistics_first;
 
 /*** Low-level utilities ***/
 
-static double time_elapsed(struct timeval *old, struct timeval *now)
+static double time_elapsed(bugle_timeval *old, bugle_timeval *now)
 {
     return (now->tv_sec - old->tv_sec) + 1e-6 * (now->tv_usec - old->tv_usec);
 }
@@ -138,9 +137,9 @@ double bugle_stats_expression_evaluate(const stats_expression *expr,
 
 void bugle_stats_signal_update(stats_signal *si, double v)
 {
-    struct timeval now;
+    bugle_timeval now;
 
-    gettimeofday(&now, NULL);
+    bugle_gettimeofday(&now);
     /* Integrate over time; a NaN indicates that this is the first time */
     if (bugle_isfinite(si->value))
         si->integral += time_elapsed(&si->last_updated, &now) * si->value;
@@ -198,7 +197,7 @@ void bugle_stats_signal_values_gather(stats_signal_values *sv)
     linked_list_node *s;
     size_t i;
 
-    gettimeofday(&sv->last_updated, NULL);
+    bugle_gettimeofday(&sv->last_updated);
 
     if (sv->allocated < stats_signals_num_active)
     {

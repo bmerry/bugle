@@ -34,7 +34,6 @@
 #include <errno.h>
 #include <assert.h>
 #include <math.h>
-#include <sys/time.h>
 #include <bugle/gl/glheaders.h>
 #include <bugle/glwin/glwin.h>
 #include <bugle/glwin/trackcontext.h>
@@ -47,6 +46,7 @@
 #include <bugle/log.h>
 #include <bugle/memory.h>
 #include <bugle/string.h>
+#include <bugle/time.h>
 #include <budgie/addresses.h>
 #include <budgie/reflect.h>
 
@@ -506,13 +506,13 @@ static void screenshot_video()
     AVCodecContext *c;
     size_t out_size;
     int i, ret;
-    struct timeval tv;
+    bugle_timeval tv;
     double t = 0.0;
     screenshot_context ssctx;
 
     if (!video_sample_all)
     {
-        gettimeofday(&tv, NULL);
+        bugle_gettimeofday(&tv);
         t = tv.tv_sec + 1e-6 * tv.tv_usec;
         if (video_first) /* first frame */
             video_frame_time = t;

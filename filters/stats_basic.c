@@ -19,8 +19,7 @@
 # include <config.h>
 #endif
 #include <bugle/bool.h>
-#include <sys/time.h>
-#include <sys/types.h>
+#include <bugle/time.h>
 #include <bugle/stats.h>
 #include <bugle/filters.h>
 #include <bugle/glwin/glwin.h>
@@ -29,17 +28,17 @@ static stats_signal *stats_basic_frames, *stats_basic_seconds;
 
 static bugle_bool stats_basic_seconds_activate(stats_signal *si)
 {
-    struct timeval t;
-    gettimeofday(&t, NULL);
+    bugle_timeval t;
+    bugle_gettimeofday(&t);
     bugle_stats_signal_update(si, t.tv_sec + 1e-6 * t.tv_usec);
     return BUGLE_TRUE;
 }
 
 static bugle_bool stats_basic_swap_buffers(function_call *call, const callback_data *data)
 {
-    struct timeval now;
+    bugle_timeval now;
 
-    gettimeofday(&now, NULL);
+    bugle_gettimeofday(&now);
     bugle_stats_signal_update(stats_basic_seconds, now.tv_sec + 1e-6 * now.tv_usec);
     bugle_stats_signal_add(stats_basic_frames, 1.0);
     return BUGLE_TRUE;

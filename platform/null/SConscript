@@ -7,8 +7,8 @@ Import('env', 'srcdir', 'builddir')
 env.Append(CPPPATH = [srcdir.Dir('platform/null')])
 
 platform_shared = env.SharedObject(source = [
-    'string.c',
-    'math.c',
+    'string-null.c',
+    'math-null.c',
     'io-null.c'
     ])
 

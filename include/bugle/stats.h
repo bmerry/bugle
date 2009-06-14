@@ -18,11 +18,10 @@
 #ifndef BUGLE_FILTERS_STATS_H
 #define BUGLE_FILTERS_STATS_H
 
-#include <sys/time.h>
-#include <sys/types.h>
 #include <bugle/linkedlist.h>
 #include <bugle/export.h>
 #include <bugle/bool.h>
+#include <bugle/time.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -57,7 +56,7 @@ typedef struct stats_signal_s
 {
     double value;
     double integral;                /* value integrated over time */
-    struct timeval last_updated;
+    bugle_timeval last_updated;
     int offset;                     /* for value tables */
 
     bugle_bool active;
@@ -128,7 +127,7 @@ typedef struct
 {
     size_t allocated;
     stats_signal_value *values;
-    struct timeval last_updated;
+    bugle_timeval last_updated;
 } stats_signal_values;
 
 BUGLE_EXPORT_PRE void bugle_stats_signal_values_init(stats_signal_values *sv) BUGLE_EXPORT_POST;

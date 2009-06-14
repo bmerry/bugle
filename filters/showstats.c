@@ -36,11 +36,12 @@
 #include <bugle/filters.h>
 #include <bugle/log.h>
 #include <bugle/input.h>
+#include <bugle/time.h>
 #include <budgie/addresses.h>
 
 typedef struct
 {
-    struct timeval last_update;
+    bugle_timeval last_update;
     int accumulating;  /* 0: no  1: yes  2: yes, reset counters */
 
     stats_signal_values showstats_prev, showstats_cur;
@@ -85,7 +86,7 @@ static double showstats_time = 0.2;
 
 static linked_list showstats_stats_requested;
 
-static double time_elapsed(struct timeval *old, struct timeval *now)
+static double time_elapsed(bugle_timeval *old, bugle_timeval *now)
 {
     return (now->tv_sec - old->tv_sec) + 1e-6 * (now->tv_usec - old->tv_usec);
 }
@@ -190,13 +191,13 @@ static void showstats_graph_rescale(showstats_statistic *sst, double new_scale)
 
 static void showstats_update(showstats_struct *ss)
 {
-    struct timeval now;
+    bugle_timeval now;
     linked_list_node *i;
     showstats_statistic *sst;
     stats_substitution *sub;
     double v;
 
-    gettimeofday(&now, NULL);
+    bugle_gettimeofday(&now);
     if (time_elapsed(&ss->last_update, &now) >= showstats_time)
     {
         ss->last_update = now;

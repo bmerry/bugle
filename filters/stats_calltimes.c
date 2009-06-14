@@ -24,8 +24,7 @@
 #include <bugle/bool.h>
 #include <bugle/memory.h>
 #include <bugle/string.h>
-#include <sys/types.h>
-#include <sys/time.h>
+#include <bugle/time.h>
 #include <bugle/stats.h>
 #include <bugle/filters.h>
 #include <bugle/objects.h>
@@ -37,20 +36,20 @@ static object_view time_view;
 
 static bugle_bool stats_calltimes_pre(function_call *call, const callback_data *data)
 {
-    struct timeval *start;
+    bugle_timeval *start;
 
     start = bugle_object_get_current_data(bugle_call_class, time_view);
-    gettimeofday(start, NULL);
+    bugle_gettimeofday(start);
     return BUGLE_TRUE;
 }
 
 static bugle_bool stats_calltimes_post(function_call *call, const callback_data *data)
 {
-    struct timeval *start;
-    struct timeval end;
+    bugle_timeval *start;
+    bugle_timeval end;
     double elapsed;
 
-    gettimeofday(&end, NULL);
+    bugle_gettimeofday(&end);
     start = bugle_object_get_current_data(bugle_call_class, time_view);
     elapsed = (end.tv_sec  - start->tv_sec) + 1e-6 * (end.tv_usec - start->tv_usec);
 
@@ -91,7 +90,7 @@ static bugle_bool stats_calltimes_initialise(filter_set *handle)
     time_view = bugle_object_view_new(bugle_call_class,
                                       NULL,
                                       NULL,
-                                      sizeof(struct timeval));
+                                      sizeof(bugle_timeval));
 
     return BUGLE_TRUE;
 }

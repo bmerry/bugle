@@ -2,3 +2,6 @@ This is a 'null' platform. The functions don't do anything, but it has all
 the interfaces so that one can link against it. The purpose is to test that
 the portable code doesn't depend on any of the functions that end up being
 exposed when using the 'posix' platform due to _POSIX_C_SOURCE being defined.
+
+It's also handy for bringing up new ports before they have a real porting
+layer.
