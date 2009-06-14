@@ -24,6 +24,9 @@ typedef unsigned short bugle_uint16_t;
 typedef signed short bugle_int16_t;
 typedef unsigned int bugle_uint32_t;
 typedef signed int bugle_int32_t;
+typedef unsigned long bugle_uint64_t;
+typedef signed long bugle_int64_t;
+
 typedef unsigned long bugle_ssize_t;
 
 typedef unsigned int bugle_pid_t;
