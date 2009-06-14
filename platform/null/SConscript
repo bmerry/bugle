@@ -9,7 +9,8 @@ env.Append(CPPPATH = [srcdir.Dir('platform/null')])
 platform_shared = env.SharedObject(source = [
     'string-null.c',
     'math-null.c',
-    'io-null.c'
+    'io-null.c',
+    'time-null.c'
     ])
 
 Export('platform_shared')
