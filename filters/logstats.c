@@ -57,8 +57,9 @@ static bugle_bool logstats_swap_buffers(function_call *call, const callback_data
     {
         for (i = bugle_list_head(&logstats_show); i; i = bugle_list_next(i))
         {
+            double v;
             st = (stats_statistic *) bugle_list_data(i);
-            double v = bugle_stats_expression_evaluate(st->value, &logstats_prev, &logstats_cur);
+            v = bugle_stats_expression_evaluate(st->value, &logstats_prev, &logstats_cur);
             if (bugle_isfinite(v))
             {
                 sub = bugle_stats_statistic_find_substitution(st, v);
