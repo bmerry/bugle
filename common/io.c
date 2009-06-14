@@ -104,7 +104,7 @@ static int mem_vprintf(void *arg, const char *format, va_list ap)
 #elif HAVE_DECL___VA_COPY
     __va_copy(ap2, ap);
 #else
-    memcpy(ap2, ap, sizeof(ap));
+    memcpy(&ap2, &ap, sizeof(ap2));
 #endif
 
     mem = (bugle_io_writer_mem *) arg;

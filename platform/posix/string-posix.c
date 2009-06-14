@@ -71,7 +71,7 @@ char *bugle_vasprintf(const char *format, va_list ap)
 #elif HAVE_DECL___VA_COPY
     __va_copy(ap2, ap);
 #else
-    memcpy(ap2, ap, sizeof(ap));
+    memcpy(&ap2, &ap, sizeof(ap2));
 #endif
 
     len = vsnprintf(NULL, 0, format, ap2);
