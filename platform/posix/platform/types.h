@@ -32,4 +32,13 @@ typedef ssize_t bugle_ssize_t;
 
 typedef pid_t bugle_pid_t;
 
+#define BUGLE_PRIu8 PRIu8
+#define BUGLE_PRId8 PRId8
+#define BUGLE_PRIu16 PRIu16
+#define BUGLE_PRId16 PRId16
+#define BUGLE_PRIu32 PRIu32
+#define BUGLE_PRId32 PRId32
+#define BUGLE_PRIu64 PRIu64
+#define BUGLE_PRId64 PRId64
+
 #endif /* BUGLE_PLATFORM_TYPES_H */

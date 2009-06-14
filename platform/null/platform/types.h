@@ -28,4 +28,13 @@ typedef unsigned long bugle_ssize_t;
 
 typedef unsigned int bugle_pid_t;
 
+#define BUGLE_PRIu8
+#define BUGLE_PRId8
+#define BUGLE_PRIu16
+#define BUGLE_PRId16
+#define BUGLE_PRIu32
+#define BUGLE_PRId32
+#define BUGLE_PRIu64
+#define BUGLE_PRId64
+
 #endif /* BUGLE_PLATFORM_TYPES_H */

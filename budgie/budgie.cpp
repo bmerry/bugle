@@ -66,7 +66,7 @@
 #include <regex.h>
 #include <unistd.h>
 
-typedef enum
+enum
 {
     FILE_CALL_H,
     FILE_TYPES2_H,
@@ -772,10 +772,10 @@ static void write_headers()
             "#include <stdlib.h>\n"
             "#include <string.h>\n"
             "#include <stddef.h>\n"   // for offsetof
-            "#include <inttypes.h>\n" // for PRIxxx
             "#include <budgie/types.h>\n"
             "#include <budgie/reflect.h>\n"
             "#include \"%s\"\n"
+            "#include \"platform/types.h\"\n" // for BUGLE_PRIxxx
             "#include \"budgielib/internal.h\"\n",
             filenames[FILE_DEFINES_H].c_str());
     fprintf(files[FILE_LIB_C],
@@ -1175,7 +1175,7 @@ static void write_type_dumpers(FILE *f)
         case INTEGER_TYPE:
             fprintf(f,
                     "%s"
-                    "    bugle_io_printf(writer, \"%%\" PRI%c%ld, (%sint%ld_t) *value);\n",
+                    "    bugle_io_printf(writer, \"%%\" BUGLE_PRI%c%ld, (%sint%ld_t) *value);\n",
                     custom_code.c_str(),
                     (i->node->flag_unsigned ? 'u' : 'd'),
                     i->node->size->low,
