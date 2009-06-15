@@ -15,9 +15,32 @@
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#include <bugle/time.h>
+#if HAVE_CONFIG_H
+# include <config.h>
+#endif
+#include <bugle/math.h>
+#include <math.h>
+#include <float.h>
+#include <stddef.h>
+#include <stdlib.h>
 
-int bugle_gettime(bugle_timeval *tv)
+int bugle_isfinite(double x)
 {
-    return 0;
+    return _finite(x);
+}
+
+int bugle_isnan(double x)
+{
+    return _isnan(x);
+}
+
+double bugle_nan(void)
+{
+    /* FIXME: test this */
+    return 0.0 / 0.0;
+}
+
+double bugle_round(double x)
+{
+    return floor(x + 0.5);
 }

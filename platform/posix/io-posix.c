@@ -199,6 +199,7 @@ static int fd_vprintf(void *arg, const char *format, va_list ap)
         ret = fd_write(s->buffer, sizeof(char), length, arg);
         free(buffer);
     }
+    va_end(ap2);
     return ret;
 }
 

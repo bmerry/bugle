@@ -1,0 +1,25 @@
+#!/usr/bin/env python
+
+import BugleChecks
+
+Import('env', 'srcdir', 'builddir')
+
+env.Append(CPPPATH = [
+    srcdir.Dir('platform/msvcrt'),
+    builddir.Dir('platform/msvcrt')],
+    LIBS = ['user32', 'kernel32'])
+
+platform_env = env.Clone()
+
+platform_libbugleutils = platform_env.SharedObject(source = [
+    'string-msvcrt.c',
+    'math-msvcrt.c',
+    # 'io-msvcrt.c',
+    'time-msvcrt.c',
+    ])
+
+platform_libbugle = platform_env.SharedObject(source = [
+    'dl-msvcrt.c'
+    ])
+
+Export('platform_libbugleutils', 'platform_libbugle')

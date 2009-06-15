@@ -28,18 +28,18 @@ static stats_signal *stats_basic_frames, *stats_basic_seconds;
 
 static bugle_bool stats_basic_seconds_activate(stats_signal *si)
 {
-    bugle_timeval t;
-    bugle_gettimeofday(&t);
-    bugle_stats_signal_update(si, t.tv_sec + 1e-6 * t.tv_usec);
+    bugle_timespec t;
+    bugle_gettime(&t);
+    bugle_stats_signal_update(si, t.tv_sec + 1e-9 * t.tv_nsec);
     return BUGLE_TRUE;
 }
 
 static bugle_bool stats_basic_swap_buffers(function_call *call, const callback_data *data)
 {
-    bugle_timeval now;
+    bugle_timespec now;
 
-    bugle_gettimeofday(&now);
-    bugle_stats_signal_update(stats_basic_seconds, now.tv_sec + 1e-6 * now.tv_usec);
+    bugle_gettime(&now);
+    bugle_stats_signal_update(stats_basic_seconds, now.tv_sec + 1e-9 * now.tv_nsec);
     bugle_stats_signal_add(stats_basic_frames, 1.0);
     return BUGLE_TRUE;
 }

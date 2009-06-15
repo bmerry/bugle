@@ -4,8 +4,12 @@
 - add platform layer for glib?
 - add platform layer for gnulib?
 - add platform layer for win32?
+- remove data exports (object classes)
 - add better SCons framework for platform
 - clean up gldb-gui and move all the nasty process stuff into glib code
+- add abstraction for va_copy
+- slim down platform layer to provide shared fallbacks for string functions
+  and include them where necessary
 - missing autoconf/SCons tests:
   - GTK
   - GTK versions

@@ -56,7 +56,7 @@ typedef struct stats_signal_s
 {
     double value;
     double integral;                /* value integrated over time */
-    bugle_timeval last_updated;
+    bugle_timespec last_updated;
     int offset;                     /* for value tables */
 
     bugle_bool active;
@@ -127,7 +127,7 @@ typedef struct
 {
     size_t allocated;
     stats_signal_value *values;
-    bugle_timeval last_updated;
+    bugle_timespec last_updated;
 } stats_signal_values;
 
 BUGLE_EXPORT_PRE void bugle_stats_signal_values_init(stats_signal_values *sv) BUGLE_EXPORT_POST;

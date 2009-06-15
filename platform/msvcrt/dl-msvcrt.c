@@ -19,22 +19,12 @@
 # include <config.h>
 #endif
 
-#include "platform/dl.h"
-#include <dlfcn.h>
-#include <dirent.h>
-#include <unistd.h>
-#include <string.h>
 #include <stdlib.h>
 #include <stddef.h>
-#include <errno.h>
 #include <assert.h>
 #include <bugle/string.h>
 #include <bugle/log.h>
-
-void bugle_dl_init(void)
-{
-    /* Nothing required on POSIX */
-}
+#include <io.h>
 
 bugle_dl_module bugle_dl_open(const char *filename, int flag)
 {
@@ -46,20 +36,11 @@ bugle_dl_module bugle_dl_open(const char *filename, int flag)
 
     if (flag & BUGLE_DL_FLAG_SUFFIX)
     {
-        fullname = bugle_asprintf("%s.so", filename);
+        fullname = bugle_asprintf("%s.dll", filename);
         filename = fullname;
     }
 
-    if (flag & BUGLE_DL_FLAG_GLOBAL)
-        dlopen_flag = RTLD_GLOBAL;
-    else
-        dlopen_flag = RTLD_LOCAL;
-
-    if (flag & BUGLE_DL_FLAG_NOW)
-        dlopen_flag |= RTLD_NOW;
-    else
-        dlopen_flag |= RTLD_LAZY;
-    handle = dlopen(filename, dlopen_flag);
+    handle = (void *) LoadLibrary(filename);
 
     free(fullname);
     return handle;
@@ -68,61 +49,48 @@ bugle_dl_module bugle_dl_open(const char *filename, int flag)
 int bugle_dl_close(bugle_dl_module module)
 {
     assert(module != NULL);
-    return dlclose(module);
+    return FreeLibrary(module) ? 0 : -1;
 }
 
 void *bugle_dl_sym_data(bugle_dl_module module, const char *symbol)
 {
-    assert(module != NULL && symbol != NULL);
-    return dlsym(module, symbol);
+    /* Windows doesn't appear to support a data version of GetProcAddress */
+    assert(0);
 }
 
 BUDGIEAPIPROC bugle_dl_sym_function(bugle_dl_module module, const char *symbol)
 {
     assert(module != NULL && symbol != NULL);
-    return (BUDGIEAPIPROC) dlsym(module, symbol);
+    return GetProcAddress(module, symbol);
 }
 
 void bugle_dl_foreach(const char *path, void (*callback)(const char *filename, void *arg), void *arg)
 {
-    DIR *dir;
     struct dirent *item;
+    intptr_t handle;
+    char *spec;
+    struct _finddata_t data;
 
     assert(path != NULL);
 
-    dir = opendir(path);
-    if (dir == NULL)
+    spec = bugle_asprintf("%s\\*.dll", path);
+    handle = _findfirst(spec, &data);
+    free(spec);
+    if (handle == 0)
     {
         bugle_log_printf("filters", "initialise", BUGLE_LOG_ERROR,
-                         "failed to open %s: %s", path, strerror(errno));
+                         "did not find any filter-set libraries in %s", path);
         exit(1);
     }
 
-    /* readdir returns NULL for both end-of-stream and error, and
-     * leaves errno untouched in the former case.
-     */
-    errno = 0;
-    while (NULL != (item = readdir(dir)))
+    do
     {
-        size_t len;
-        len = strlen(item->d_name);
-        if (len >= 3
-            && item->d_name[len - 3] == '.'
-            && item->d_name[len - 2] == 's'
-            && item->d_name[len - 1] == 'o')
-        {
-            char *filename;
+        char *filename;
 
-            filename = bugle_asprintf("%s/%s", path, item->d_name);
-            callback(filename, arg);
-            free(filename);
-        }
-    }
+        filename = bugle_asprintf("%s/%s", path, data.name);
+        callback(filename, arg);
+        free(filename);
+    } while (_findnext(handle, &data));
 
-    if (errno != 0)
-    {
-        bugle_log_printf("filters", "initialise", BUGLE_LOG_ERROR,
-                         "failed to read from %s: %s", path, strerror(errno));
-        exit(1);
-    }
+    _findclose(handle);
 }

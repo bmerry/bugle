@@ -36,22 +36,22 @@ static object_view time_view;
 
 static bugle_bool stats_calltimes_pre(function_call *call, const callback_data *data)
 {
-    bugle_timeval *start;
+    bugle_timespec *start;
 
     start = bugle_object_get_current_data(bugle_call_class, time_view);
-    bugle_gettimeofday(start);
+    bugle_gettime(start);
     return BUGLE_TRUE;
 }
 
 static bugle_bool stats_calltimes_post(function_call *call, const callback_data *data)
 {
-    bugle_timeval *start;
-    bugle_timeval end;
+    bugle_timespec *start;
+    bugle_timespec end;
     double elapsed;
 
-    bugle_gettimeofday(&end);
+    bugle_gettime(&end);
     start = bugle_object_get_current_data(bugle_call_class, time_view);
-    elapsed = (end.tv_sec  - start->tv_sec) + 1e-6 * (end.tv_usec - start->tv_usec);
+    elapsed = (end.tv_sec  - start->tv_sec) + 1e-9 * (end.tv_nsec - start->tv_nsec);
 
     bugle_stats_signal_add(stats_calltimes_signals[call->generic.id], elapsed);
     bugle_stats_signal_add(stats_calltimes_total, elapsed);
@@ -90,7 +90,7 @@ static bugle_bool stats_calltimes_initialise(filter_set *handle)
     time_view = bugle_object_view_new(bugle_call_class,
                                       NULL,
                                       NULL,
-                                      sizeof(bugle_timeval));
+                                      sizeof(bugle_timespec));
 
     return BUGLE_TRUE;
 }

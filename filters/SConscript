@@ -6,7 +6,7 @@ filter_env = env.Clone(
         LIBS = libbugle + libbugleutils,
         SHLIBPREFIX = '')
 
-if filter_env['PLATFORM'] == 'posix' and 'gcc' in self['TOOLS']:
+if filter_env['PLATFORM'] == 'posix' and 'gcc' in filter_env['TOOLS']:
     filter_env.Append(LINKFLAGS = '-Wl,-soname,${TARGET.file}')
 
 for filter in [

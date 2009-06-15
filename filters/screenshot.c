@@ -506,14 +506,14 @@ static void screenshot_video()
     AVCodecContext *c;
     size_t out_size;
     int i, ret;
-    bugle_timeval tv;
+    bugle_timespec tv;
     double t = 0.0;
     screenshot_context ssctx;
 
     if (!video_sample_all)
     {
-        bugle_gettimeofday(&tv);
-        t = tv.tv_sec + 1e-6 * tv.tv_usec;
+        bugle_gettime(&tv);
+        t = tv.tv_sec + 1e-9 * tv.tv_nsec;
         if (video_first) /* first frame */
             video_frame_time = t;
         else if (t < video_frame_time)

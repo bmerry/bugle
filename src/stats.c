@@ -56,9 +56,9 @@ static hash_table stats_statistics_first;
 
 /*** Low-level utilities ***/
 
-static double time_elapsed(bugle_timeval *old, bugle_timeval *now)
+static double time_elapsed(bugle_timespec *old, bugle_timespec *now)
 {
-    return (now->tv_sec - old->tv_sec) + 1e-6 * (now->tv_usec - old->tv_usec);
+    return (now->tv_sec - old->tv_sec) + 1e-9 * (now->tv_nsec - old->tv_nsec);
 }
 
 /* Finds the named signal object. If it does not exist, NULL is returned. */
@@ -137,9 +137,9 @@ double bugle_stats_expression_evaluate(const stats_expression *expr,
 
 void bugle_stats_signal_update(stats_signal *si, double v)
 {
-    bugle_timeval now;
+    bugle_timespec now;
 
-    bugle_gettimeofday(&now);
+    bugle_gettime(&now);
     /* Integrate over time; a NaN indicates that this is the first time */
     if (bugle_isfinite(si->value))
         si->integral += time_elapsed(&si->last_updated, &now) * si->value;
@@ -179,7 +179,7 @@ void bugle_stats_signal_values_init(stats_signal_values *sv)
     sv->allocated = 0;
     sv->values = NULL;
     sv->last_updated.tv_sec = 0;
-    sv->last_updated.tv_usec = 0;
+    sv->last_updated.tv_nsec = 0;
 }
 
 void bugle_stats_signal_values_clear(stats_signal_values *sv)
@@ -188,7 +188,7 @@ void bugle_stats_signal_values_clear(stats_signal_values *sv)
     sv->values = NULL;
     sv->allocated = 0;
     sv->last_updated.tv_sec = 0;
-    sv->last_updated.tv_usec = 0;
+    sv->last_updated.tv_nsec = 0;
 }
 
 void bugle_stats_signal_values_gather(stats_signal_values *sv)
@@ -197,7 +197,7 @@ void bugle_stats_signal_values_gather(stats_signal_values *sv)
     linked_list_node *s;
     size_t i;
 
-    bugle_gettimeofday(&sv->last_updated);
+    bugle_gettime(&sv->last_updated);
 
     if (sv->allocated < stats_signals_num_active)
     {

@@ -25,12 +25,15 @@
 extern "C" {
 #endif
 
-typedef struct bugle_timeval_s
+typedef struct bugle_timespec_s
 {
     time_t tv_sec;
-    int tv_usec;
-} bugle_timeval;
+    long tv_nsec;
+} bugle_timespec;
 
-BUGLE_EXPORT_PRE int bugle_gettimeofday(bugle_timeval *tv) BUGLE_EXPORT_POST;
+/* Returns a timestamp, relative to an arbitrary origin. Should only be
+ * used for relative time calculations.
+ */
+BUGLE_EXPORT_PRE int bugle_gettime(bugle_timespec *tv) BUGLE_EXPORT_POST;
 
 #endif /* !BUGLE_TIME_H */

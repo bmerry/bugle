@@ -15,19 +15,35 @@
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
+#ifndef WIN32_LEAN_AND_MEAN
+# define WIN32_LEAN_AND_MEAN
+#endif
+#include <windows.h>
 #include <stddef.h>
 #include <bugle/time.h>
-#include <sys/time.h>
 
-int bugle_gettime(bugle_timespec *ts)
+int bugle_gettime(bugle_timespec *tv)
 {
     struct timeval t;
-    int ret;
+    BOOL ret;
+    LARGE_INTEGER count, freq;
 
-    /* FIXME: use clock_gettime with CLOCK_MONOTONIC if available */
-    ret = gettimeofday(&t, NULL);
-    if (ret != 0) return ret;
-    ts->tv_sec = t.tv_sec;
-    ts->tv_nsec = t.tv_usec * 1000;
+    ret = QueryPerformanceCounter(&count);
+    if (!ret) return -1;
+    ret = QueryPerformanceFrequency(&freq);
+    if (!ret) return -1;
+
+    tv->tv_sec = count.QuadPart / freq.QuadPart;
+    /* Remove part that is whole seconds */
+    count.QuadPart -= tv->tv_sec * freq.QuadPart;
+    /* If frequency > 9GHz, we can't do the obvious without
+     * overflowing an int64, so round off a bit instead.
+     */
+    while (freq.QuadPart >= 9223372036LL)
+    {
+        freq.QuadPart >>= 1;
+        count.QuadPart >>= 1;
+    }
+    tv->tv_nsec = count.QuadPart * 1000000000 / freq.QuadPart;
     return 0;
 }
