@@ -24,7 +24,13 @@
 #include <assert.h>
 #include <bugle/string.h>
 #include <bugle/log.h>
+#include "platform/dl.h"
 #include <io.h>
+
+void bugle_dl_init(void)
+{
+    /* Nothing required */
+}
 
 bugle_dl_module bugle_dl_open(const char *filename, int flag)
 {
@@ -54,14 +60,19 @@ int bugle_dl_close(bugle_dl_module module)
 
 void *bugle_dl_sym_data(bugle_dl_module module, const char *symbol)
 {
-    /* Windows doesn't appear to support a data version of GetProcAddress */
-    assert(0);
+    assert(module != NULL && symbol != NULL);
+    return (void *) GetProcAddress(module, symbol);
 }
 
 BUDGIEAPIPROC bugle_dl_sym_function(bugle_dl_module module, const char *symbol)
 {
     assert(module != NULL && symbol != NULL);
-    return GetProcAddress(module, symbol);
+    return (BUDGIEAPIPROC) GetProcAddress(module, symbol);
+}
+
+void bugle_dl_enable_interception(void)
+{
+    /* Not much one can do on Windows I think */
 }
 
 void bugle_dl_foreach(const char *path, void (*callback)(const char *filename, void *arg), void *arg)

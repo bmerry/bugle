@@ -24,7 +24,6 @@
 
 int bugle_gettime(bugle_timespec *tv)
 {
-    struct timeval t;
     BOOL ret;
     LARGE_INTEGER count, freq;
 

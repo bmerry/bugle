@@ -18,7 +18,6 @@
 #if HAVE_CONFIG_H
 # include <config.h>
 #endif
-#include "platform_config.h"
 #include <bugle/string.h>
 #include <bugle/memory.h>
 #include <stddef.h>
@@ -57,11 +56,11 @@ int bugle_vsnprintf(char *str, size_t size, const char *format, va_list ap)
 
     if (ret < 0)
     {
-        buffer = bugle_vasprintf(format, orig_ap);
+        buffer = bugle_vasprintf(format, ap2);
         ret = strlen(buffer);
         free(buffer);
     }
-    va_end(orig_ap);
+    va_end(ap2);
     return ret;
 }
 
@@ -91,7 +90,7 @@ char *bugle_vasprintf(const char *format, va_list ap)
 
     size = 16;
     buffer = BUGLE_NMALLOC(size, char);
-    while (true)
+    while (1)
     {
         memcpy(&ap2, &ap, sizeof(ap));
         len = vsnprintf_s(buffer, size, _TRUNCATE, format, ap2);
@@ -103,7 +102,7 @@ char *bugle_vasprintf(const char *format, va_list ap)
             return buffer;
         }
         size *= 2;
-        buffer = BUGLE_NREALLOC(size, char);
+        buffer = BUGLE_NREALLOC(buffer, size, char);
     }
 }
 
