@@ -16,6 +16,7 @@ platform_libbugleutils = platform_env.SharedObject(source = [
     'math-msvcrt.c',
     # 'io-msvcrt.c',
     'time-msvcrt.c',
+    'threads-msvcrt.c'
     ])
 
 platform_libbugle = platform_env.SharedObject(source = [

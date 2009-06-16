@@ -47,7 +47,7 @@ object_class *bugle_namespace_class;
 static hashptr_table context_objects, namespace_objects;
 static hashptr_table initial_values;
 static object_view trackcontext_view;
-bugle_thread_lock_define_initialized(static, context_mutex)
+bugle_thread_lock_define(static, context_mutex)
 
 typedef struct
 {
@@ -438,5 +438,6 @@ void trackcontext_initialise(void)
         NULL /* No documentation */
     };
 
+    bugle_thread_lock_init(context_mutex);
     bugle_filter_set_new(&trackcontext_info);
 }

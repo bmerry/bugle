@@ -18,9 +18,10 @@
 /* In general, the function names match either pthread or gnulib conventions.
  *
  * Some caveats:
- * - read-lock locks may degrade to simple mutexes if rwlock functionality is
+ * - read-write locks may degrade to simple mutexes if rwlock functionality is
  *   not available. rwlocks should only be used to gain efficiency from
  *   not serialising multiple readers.
+ * - TLS destructors are not guaranteed to be called
  */
 
 #ifndef BUGLE_PLATFORM_THREADS_H
@@ -39,8 +40,6 @@ typedef int bugle_thread_once_t;
 typedef int bugle_thread_lock_t;
 #define bugle_thread_lock_define(storage, name) \
     storage bugle_thread_lock_t name;
-#define bugle_thread_lock_define_initialized(storage, name) \
-    storage bugle_thread_lock_t name = 0;
 #define bugle_thread_lock_init(name) ((void) 0)
 #define bugle_thread_lock_destroy(name) ((void) 0)
 #define bugle_thread_lock_lock(name) ((void) 0)

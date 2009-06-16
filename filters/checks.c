@@ -310,7 +310,7 @@ static bugle_bool checks_error_vbo;
 
 #if HAVE_SIGLONGJMP
 static sigjmp_buf checks_buf;
-bugle_thread_lock_define_initialized(static, checks_mutex)
+bugle_thread_lock_define(static, checks_mutex)
 
 static void checks_sigsegv_handler(int sig)
 {
@@ -1035,6 +1035,11 @@ void bugle_initialise_filter_library(void)
         NULL,
         "checks for illegal values passed to OpenGL in some places"
     };
+
+#if HAVE_SIGLONGJMP
+    bugle_thread_lock_init(checks_mutex);
+#endif
+
     bugle_filter_set_new(&checks_info);
 
     bugle_gl_filter_set_renders("checks");

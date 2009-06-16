@@ -36,7 +36,7 @@
 object_class *bugle_displaylist_class;
 
 #if GL_VERSION_1_1
-bugle_thread_lock_define_initialized(static, displaylist_lock)
+bugle_thread_lock_define(static, displaylist_lock)
 static object_view displaylist_view;
 static object_view namespace_view;   /* handle of the hash table */
 
@@ -178,6 +178,10 @@ void gldisplaylist_initialise(void)
         NULL,
         NULL /* No documentation */
     };
+
+#if GL_VERSION_1_1
+    bugle_thread_lock_init(displaylist_lock);
+#endif
 
     bugle_filter_set_new(&gldisplaylist_info);
 
