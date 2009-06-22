@@ -2,14 +2,14 @@
 
 import BugleChecks
 
-Import('env', 'srcdir', 'builddir')
+Import('envs', 'srcdir', 'builddir')
 
-env.Append(CPPPATH = [
+envs['host'].Append(CPPPATH = [
     srcdir.Dir('platform/msvcrt'),
     builddir.Dir('platform/msvcrt')],
     LIBS = ['user32', 'kernel32'])
 
-platform_env = env.Clone()
+platform_env = envs['host'].Clone()
 
 platform_libbugleutils = platform_env.SharedObject(source = [
     'string-msvcrt.c',

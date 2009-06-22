@@ -31,16 +31,16 @@ def internal_checks(env):
     conf.CheckFunc('strndup')
     return conf.Finish()
 
-Import('env', 'srcdir', 'builddir')
+Import('envs', 'srcdir', 'builddir')
 
-env.Append(CPPPATH = [
+envs['host'].Append(CPPPATH = [
     srcdir.Dir('platform/posix'),
     builddir.Dir('platform/posix')],
     LIBS = ['-lm'])
-env.MergeFlags('-pthread')
-env = header_checks(env)
+envs['host'].MergeFlags('-pthread')
+envs['host'] = header_checks(envs['host'])
 
-platform_env = internal_checks(env.Clone())
+platform_env = internal_checks(envs['host'].Clone())
 
 platform_libbugleutils = platform_env.SharedObject(source = [
     'string-posix.c',

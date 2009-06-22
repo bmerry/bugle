@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 import BugleChecks
 
-Import('build_env', 'tu_env')
+Import('envs')
 
 # Ensure that <config.h> comes from the one in this directory
-budgie_env = build_env.Clone()
+budgie_env = envs['build'].Clone()
 budgie_env.Prepend(CPPPATH = ['.'])
 
 conf = Configure(budgie_env, custom_tests = BugleChecks.tests, config_h = 'config.h')
@@ -26,4 +26,4 @@ budgie_list = budgie_env.Program('budgie', source = [
     'bclexer.cpp',
     'tulexer.cpp'])
 
-tu_env.Append(BUDGIE = budgie_list[0])
+envs['tu'].Append(BUDGIE = budgie_list[0])

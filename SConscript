@@ -178,14 +178,9 @@ def get_substs(platform, api):
 apis = get_apis()
 vars = get_vars(apis)
 
-environ = {}
-for e in ['PATH', 'CPATH', 'LIBRARY_PATH', 'LD_LIBRARY_PATH', 'LIB', 'LIBPATH', 'INCLUDE']:
-    if e in os.environ:
-        environ[e] = os.environ[e]
-
 # Values common to both build environment and host environment
 common_kw = dict(
-        ENV = environ,
+        ENV = os.environ,
         CPPPATH = [
             srcdir,
             srcdir.Dir('lib'),
@@ -205,14 +200,15 @@ if GetOption('bugle_short'):
     common_kw['TUCOMSTR'] = 'TU ${TARGETS[1]}'
     common_kw['BUDGIECOMSTR'] = 'BUDGIE ${TARGETS}'
 
+envs = {}
 # Environment for tools that have to run on the build machine
-build_env = Environment(
+envs['build'] = Environment(
         YACCHXXFILESUFFIX = '.h',
         tools = ['default', 'yacc'],
         **common_kw)
 
 # Environment for the target machine
-env = CrossEnvironment(
+envs['host'] = CrossEnvironment(
         CPPDEFINES = [
             ('LIBDIR', r'\"%(libdir)s\"' % ac_vars),
             ('PKGLIBDIR', r'\"%(libdir)s/%(PACKAGE)s\"' % ac_vars),
@@ -221,29 +217,29 @@ env = CrossEnvironment(
         tools = ['default', 'yacc', 'subst'],
         **common_kw
         )
-if 'gcc' in env['TOOLS']:
-    env.MergeFlags('-fvisibility=hidden -Wstrict-prototypes -Wall -g -std=c89')
+if 'gcc' in envs['host']['TOOLS']:
+    envs['host'].MergeFlags('-fvisibility=hidden -Wstrict-prototypes -Wall -g -std=c89')
 
 # Environment for generating parse tree. This has to be GCC, and in cross
 # compilation should be the cross-gcc so that the correct headers are
 # identified for the target.
-tu_env = CrossEnvironment(
+envs['tu'] = CrossEnvironment(
         tools = ['gcc', 'budgie', 'gengl', 'tu'],
         BCPATH = [builddir, srcdir],
         **common_kw)
 
 # Post-process command-line options
-Help(vars.GenerateHelpText(env))
+Help(vars.GenerateHelpText(envs['host']))
 unknown = vars.UnknownVariables()
 if unknown:
     print 'Unknown command-line option(s):', ', '.join(unknown.keys())
     Exit(2)
-api = apis[env['api']]
-substs = get_substs(env['PLATFORM'], api)
-env.SubstFile(builddir.File('include/bugle/porting.h'), srcdir.File('include/bugle/porting.h.in'), substs)
+api = apis[envs['host']['api']]
+substs = get_substs(envs['host']['PLATFORM'], api)
+envs['host'].SubstFile(builddir.File('include/bugle/porting.h'), srcdir.File('include/bugle/porting.h.in'), substs)
 
-env = checks(env)
-Export('build_env', 'tu_env', 'env', 'api')
+envs['host'] = checks(envs['host'])
+Export('envs', 'api')
 
 # Platform SConscript must be first, since it modifies the environment
 # via config.h
@@ -262,10 +258,10 @@ budgie_outputs = [
         'budgielib/tables.c',
         'budgielib/lib.c'
         ]
-tu_env.Budgie(budgie_outputs, ['src/data/gl.tu', 'bc/' + api.name + '.bc'])
+envs['tu'].Budgie(budgie_outputs, ['src/data/gl.tu', 'bc/' + api.name + '.bc'])
 
-headers = [tu_env['find_header'](env, h) for h in api.headers]
+headers = [envs['tu']['find_header'](envs['host'], h) for h in api.headers]
 # TODO change to bc/alias.bc
-tu_env.BudgieAlias(target = ['bc/alias.bc'], source = headers)
-tu_env.ApitablesC(target = ['src/apitables.c'], source = ['budgielib/defines.h'] + headers)
-tu_env.ApitablesH(target = ['src/apitables.h'], source = ['budgielib/defines.h'] + headers)
+envs['tu'].BudgieAlias(target = ['bc/alias.bc'], source = headers)
+envs['tu'].ApitablesC(target = ['src/apitables.c'], source = ['budgielib/defines.h'] + headers)
+envs['tu'].ApitablesH(target = ['src/apitables.h'], source = ['budgielib/defines.h'] + headers)
