@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 
-Import('envs', 'srcdir', 'builddir', 'libbugle', 'libbugleutils')
+Import('envs', 'srcdir', 'builddir', 'targets')
 
 filter_env = envs['host'].Clone(
-        LIBS = libbugle + libbugleutils,
+        LIBS = targets['bugle'].out + targets['bugleutils'].out,
         SHLIBPREFIX = '')
 
 if filter_env['PLATFORM'] == 'posix' and 'gcc' in filter_env['TOOLS']:

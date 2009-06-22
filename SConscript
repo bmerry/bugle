@@ -8,6 +8,21 @@ import BugleChecks
 
 Import('ac_vars', 'srcdir', 'builddir')
 
+class Target(dict):
+    '''
+    Contains the keywords that will be passed to a builder. This allows
+    the sources, libraries etc, to be built up from different places
+    '''
+    def __init__(self):
+        self['source'] = []
+        self['target'] = []
+        self['LIBS'] = ['$LIBS']    # ensures we add to rather than replace
+
+targets = {
+        'bugle': Target(),
+        'bugleutils': Target()
+        }
+
 def check_gl(conf, lib, headers):
     '''
     Looks for an OpenGL library of the appropriate name.
@@ -236,10 +251,12 @@ if unknown:
     Exit(2)
 api = apis[envs['host']['api']]
 substs = get_substs(envs['host']['PLATFORM'], api)
+targets['bugle']['source'].extend(api.bugle_sources)
+targets['bugle']['LIBS'].extend(api.bugle_libs)
 envs['host'].SubstFile(builddir.File('include/bugle/porting.h'), srcdir.File('include/bugle/porting.h.in'), substs)
 
 envs['host'] = checks(envs['host'])
-Export('envs', 'api')
+Export('envs', 'api', 'targets')
 
 # Platform SConscript must be first, since it modifies the environment
 # via config.h

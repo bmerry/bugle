@@ -2,7 +2,7 @@
 
 import BugleChecks
 
-Import('envs', 'srcdir', 'builddir')
+Import('envs', 'srcdir', 'builddir', 'targets')
 
 envs['host'].Append(CPPPATH = [
     srcdir.Dir('platform/msvcrt'),
@@ -11,7 +11,7 @@ envs['host'].Append(CPPPATH = [
 
 platform_env = envs['host'].Clone()
 
-platform_libbugleutils = platform_env.SharedObject(source = [
+targets['bugleutils']['source'].extend(platform_env.SharedObject(source = [
     'string-msvcrt.c',
     'math-msvcrt.c',
     # 'io-msvcrt.c',
@@ -19,8 +19,6 @@ platform_libbugleutils = platform_env.SharedObject(source = [
     'threads-msvcrt.c'
     ])
 
-platform_libbugle = platform_env.SharedObject(source = [
+targets['bugle']['source'].extend(platform_env.SharedObject(source = [
     'dl-msvcrt.c'
     ])
-
-Export('platform_libbugleutils', 'platform_libbugle')

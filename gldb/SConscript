@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-Import('envs', 'libbugleutils')
+Import('envs', 'targets')
 
 # TODO use a proper pkg-config configuration test
 # TODO add a #define when GTK 2.6+ is available
@@ -21,5 +21,4 @@ gtk_env.Program('gldb-gui', [
     'gldb-gui-target.c',
     'gldb-gui-texture.c',
     'gldb-gui.c',
-    gldb_shared,
-    libbugleutils])
+    gldb_shared], LIBS = [targets['bugleutils'].out, '$LIBS'])

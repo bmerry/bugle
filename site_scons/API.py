@@ -9,7 +9,6 @@ class Feature(dict):
       - C{gltype}, C{glwin}, C{winsys}: strings identifying the feature
       - C{bugle_libs}: libraries against which to link libbugle
       - C{bugle_sources}: extra source files for libbugle
-      - C{bugleutils_sources}: extra source files for libbugleutils
     '''
 
     def __init__(self, **kw):
@@ -31,7 +30,6 @@ _default_feature = Feature(
         headers = [],
         bugle_libs = [],
         bugle_sources = [],
-        bugleutils_sources = [],
         checks = [])
 
 class API:

@@ -31,7 +31,7 @@ def internal_checks(env):
     conf.CheckFunc('strndup')
     return conf.Finish()
 
-Import('envs', 'srcdir', 'builddir')
+Import('envs', 'srcdir', 'builddir', 'targets')
 
 envs['host'].Append(CPPPATH = [
     srcdir.Dir('platform/posix'),
@@ -42,16 +42,14 @@ envs['host'] = header_checks(envs['host'])
 
 platform_env = internal_checks(envs['host'].Clone())
 
-platform_libbugleutils = platform_env.SharedObject(source = [
+targets['bugleutils']['source'].extend(platform_env.SharedObject(source = [
     'string-posix.c',
     'math-posix.c',
     'io-posix.c',
     'time-posix.c',
-    ])
+    ]))
 
-platform_libbugle = platform_env.SharedObject(source = [
+targets['bugle']['source'].extend(platform_env.SharedObject(source = [
     'dl-posix.c',
     'dlopen.c'
-    ])
-
-Export('platform_libbugleutils', 'platform_libbugle')
+    ]))
