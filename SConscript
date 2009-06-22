@@ -67,7 +67,7 @@ def get_features():
             'glx': Feature(
                 glwin = 'glx',
                 headers = ['GL/glx.h', 'GL/glxext.h'],
-                bugle_sources = ['#src/glx/glxdump.c']),
+                bugle_sources = ['src/glx/glxdump.c']),
             'wgl': Feature(
                 winsys = 'windows',
                 glwin = 'wgl',
@@ -251,7 +251,7 @@ if unknown:
     Exit(2)
 api = apis[envs['host']['api']]
 substs = get_substs(envs['host']['PLATFORM'], api)
-targets['bugle']['source'].extend(api.bugle_sources)
+targets['bugle']['source'].extend([srcdir.File(x) for x in api.bugle_sources])
 targets['bugle']['LIBS'].extend(api.bugle_libs)
 envs['host'].SubstFile(builddir.File('include/bugle/porting.h'), srcdir.File('include/bugle/porting.h.in'), substs)
 
