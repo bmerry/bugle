@@ -3,7 +3,7 @@ import sys
 import os
 from SCons.Script.Main import OptionsParser
 from CrossEnvironment import CrossEnvironment
-from API import *
+from Aspects import *
 import BugleChecks
 
 Import('ac_vars', 'srcdir', 'builddir')
@@ -33,15 +33,14 @@ def check_gl(conf, lib, headers):
                 will be removed on platforms where that is already a library
                 prefix.
     @type lib   strings
-    @param headers The header files to include for the check. The last item
-                   must be the actual header file with GL defines
+    @param headers The header files to include for the check.
     @type headers list of strings
     '''
 
     if lib.startswith('lib') and conf.env.subst('${SHLIBPREFIX}') == 'lib':
         lib = lib[3:]
     if not conf.CheckCHeader(headers, '<>'):
-        print '<' + headers[-1] + '> not found'
+        print 'GL headers not found'
         Exit(1)
     if not conf.CheckLibWithHeader(lib, headers, 'c', 'glFlush();', False):
         print conf.env.subst('${SHLIBPREFIX}' + lib + '${SHLIBSUFFIX} not found')
@@ -53,74 +52,103 @@ def get_features():
     '''
 
     return {
-            'gl': Feature(
-                gltype = 'gl',
-                headers = ['GL/gl.h', 'GL/glext.h']),
+            'gl': Feature(),
             'gles1': Feature(
-                gltype = 'gles1cm',
-                headers = ['GLES/gl.h', 'GLES/glext.h']),
+                gltype = 'gles1cm'),
             'gles2': Feature(
-                gltype = 'gles2',
-                checks = [lambda conf: check_gl(conf, 'GLESv2', ['GLES2/gl2.h'])],
-                headers = ['GLES2/gl2.h', 'GLES2/gl2ext.h']),
+                gltype = 'gles2'),
 
             'glx': Feature(
-                glwin = 'glx',
-                headers = ['GL/glx.h', 'GL/glxext.h'],
-                bugle_sources = ['src/glx/glxdump.c']),
+                glwin = 'glx'),
             'wgl': Feature(
                 winsys = 'windows',
-                glwin = 'wgl',
-                headers = ['wingdi.h', 'GL/wglext.h'],
-                bugle_libs = ['user32']),
+                glwin = 'wgl'),
             'egl': Feature(
-                glwin = 'egl',
-                headers = ['EGL/egl.h', 'EGL/eglext.h']),
+                glwin = 'egl'),
 
             'x11': Feature(
-                winsys = 'x11',
-                bugle_libs = ['X11']),
+                winsys = 'x11'),
 
             'gl-wgl': Feature(
-                checks = [lambda conf: check_gl(conf, 'opengl32', ['windows.h', 'GL/gl.h'])]
                 ),
             'gl-glx': Feature(
-                checks = [lambda conf: check_gl(conf, 'GL', ['GL/gl.h'])]
                 ),
             'gles1-legacy': Feature(
-                checks = [lambda conf: check_gl(conf, 'GLES_CM', ['GLES/gl.h'])]
                 ),
             'gles1-new': Feature(
-                checks = [lambda conf: check_gl(conf, 'GLESv1_CM', ['GLES/gl.h'])]
                 )
             }
 
-def get_apis():
-    '''
-    Returns a dictionary of possible API objects
-    '''
-
-    # Each list is a name followed by a list of feature keys
-    api_helpers = [
-            ['gl-glx', 'gl', 'glx', 'gl-glx', 'x11'],
-            ['gl-wgl', 'gl', 'wgl', 'gl-wgl'],
-            ['gles1cm-egl-posix', 'gles1', 'gles1-new', 'egl'],
-            ['gles1cm-legacy-egl-win', 'gles1', 'gles1-legacy', 'egl'],
-            ['gles2-egl-posix', 'gles2', 'egl', 'x11'],
-            ['gles2-egl-win', 'gles2', 'egl']
-            ]
-    apis = {}
-    features = get_features()
-    for i in api_helpers:
-        f = [features[x] for x in i[1:]]
-        apis[i[0]] = API(i[0], *f)
-    return apis
-
-def get_default_api_name(env):
-    if env['PLATFORM'] == 'posix':
-        return 'gl-glx'
+def platform_default(aspect):
+    compiler = aspects['host_compiler']
+    if compiler == 'msvc':
+        return 'msvcrt'
     else:
-        return 'gl-wgl'
+        return 'posix'
+
+def winsys_default(aspect):
+    platform = aspects['platform']
+    if platform == 'msvcrt':
+        return 'windows'
+    else:
+        return 'x11'
+
+def glwin_default(aspect):
+    gltype = aspects['gltype']
+    winsys = aspects['winsys']
+    if gltype == 'gl':
+        if winsys == 'x11':
+            return 'glx'
+        elif winsys == 'windows':
+            return 'wgl'
+        else:
+            return 'unknown'
+    else:
+        return 'egl'
+
+def fs_default(aspect):
+    platform = aspects['platform']
+    if platform == 'msvcrt':
+        return 'cygming'    # TODO add windows fs
+    else:
+        return 'unix'
+
+def binfmt_default(aspect):
+    platform = aspects['platform']
+    if platform == 'msvcrt':
+        return 'pe'
+    else:
+        return 'elf'
+
+def apply_compiler(env, compiler, config):
+    if compiler == 'msvc':
+        env.Tool('msvc')
+        env.Tool('mslink')
+        env.Tool('mslib')
+        if config == 'debug':
+            env.Append(CCFLAGS = ['/Zi'])
+            env.Append(LINKFLAGS = ['/DEBUG'])
+        elif config == 'release':
+            pass
+        else:
+            raise RuntimeError, 'Unknown config "%s"' % config
+
+    elif compiler == 'gcc':
+        env.Tool('gcc')
+        env.Tool('g++')
+        env.Tool('gnulink')
+        env.Tool('ar')
+        env.AppendUnique(CCFLAGS = ['-fvisibility=hidden', '-Wall'])
+        env.AppendUnique(CFLAGS = ['-std=c89', '-Wstrict-prototypes'])
+        if config == 'debug':
+            env.MergeFlags('-g')
+        elif config == 'release':
+            env.MergeFlags('-O2 -s')
+        else:
+            raise RuntimeError, 'Unknown config "%s"' % config
+
+    else:
+        raise RuntimeError, 'Don\'t know how to apply compiler "%s"' % compiler
 
 def setup_options():
     '''
@@ -128,7 +156,63 @@ def setup_options():
     '''
     AddOption('--short', help = 'Show more compact build lines', dest = 'bugle_short', action = 'store_true')
 
-def checks(env):
+def setup_aspects():
+    '''
+    Creates an AspectParser object with the user-configurable options
+    '''
+    aspects = AspectParser()
+    aspects.AddAspect(Aspect(
+        name = 'build_compiler',
+        help = 'Compiler for tools used to build the rest of bugle',
+        choices = ['gcc', 'msvc'],
+        default = 'gcc'))
+    aspects.AddAspect(Aspect(
+        name = 'host_compiler',
+        help = 'Compiler for the final outputs',
+        choices = ['gcc', 'msvc'],
+        default = 'gcc'))
+    aspects.AddAspect(Aspect(
+        name = 'host',
+        help = 'name for the host machine for cross-compiling',
+        default = ''))
+    aspects.AddAspect(Aspect(
+        name = 'gltype',
+        help = 'Variant of GL',
+        choices = ['gl', 'gles1cm', 'gles2'],
+        default = 'gl'))
+    aspects.AddAspect(Aspect(
+        name = 'glwin',
+        help = 'Window system abstraction',
+        choices = ['wgl', 'glx', 'egl'],
+        default = glwin_default))
+    aspects.AddAspect(Aspect(
+        name = 'winsys',
+        help = 'Windowing system',
+        choices = ['windows', 'x11', 'none'],
+        default = winsys_default))
+    aspects.AddAspect(Aspect(
+        name = 'fs',
+        help = 'Location of files',
+        choices = ['cygming', 'unix'],
+        default = fs_default))
+    aspects.AddAspect(Aspect(
+        name = 'platform',
+        help = 'C runtime libraries',
+        choices = ['posix', 'msvcrt', 'null'],
+        default = platform_default))
+    aspects.AddAspect(Aspect(
+        name = 'binfmt',
+        help = 'Dynamic linker style',
+        choices = ['pe', 'elf'],
+        default = binfmt_default))
+    aspects.AddAspect(Aspect(
+        name = 'config',
+        help = 'Compiler option set',
+        choices = ['debug', 'release'],
+        default = 'debug'))
+    return aspects
+
+def checks(env, gl_lib, gl_headers):
     '''
     Do configuration checks
     '''
@@ -147,14 +231,12 @@ def checks(env):
     conf.CheckAttributeConstructor()
     conf.CheckAttributeHiddenAlias()
     conf.CheckInline()
-    for c in api.checks:
-        c(conf)
+    check_gl(conf, gl_lib, gl_headers)
     return conf.Finish()
 
-def get_vars(apis):
+def get_vars():
     vars = Variables('config.py', ARGUMENTS)
     vars.AddVariables(
-            EnumVariable('api', 'GL API variant', get_default_api_name(DefaultEnvironment()), allowed_values = apis.keys()),
             ('HOST', 'Host machine string for cross-compilation'),
             ('CC', 'The C compiler'),
             ('CCFLAGS', 'C and C++ compilation flags'),
@@ -162,36 +244,28 @@ def get_vars(apis):
             ('CXXFLAGS', 'C++ compilation flags'))
     return vars
 
-def get_substs(platform, api):
+def get_substs(aspects):
     '''
     Obtains a dictionary of substitutions to make in porting.h
     '''
 
     substs = {}
-    if platform == 'posix':
-        substs['BUGLE_OSAPI'] = 'BUGLE_OSAPI_POSIX'
-        substs['BUGLE_FS'] = 'BUGLE_FS_UNIX'
-        substs['BUGLE_BINFMT'] = 'BUGLE_BINFMT_ELF'
-    elif platform == 'win32':
-        substs['BUGLE_OSAPI'] = 'BUGLE_OSAPI_WIN32'
-        substs['BUGLE_FS'] = 'BUGLE_FS_CYGMING'
-        substs['BUGLE_BINFMT'] = 'BUGLE_BINFMT_PE'
-    elif platform == 'cygwin':
-        substs['BUGLE_OSAPI'] = 'BUGLE_OSAPI_POSIX'
-        substs['BUGLE_FS'] = 'BUGLE_FS_CYGMING'
-        substs['BUGLE_BINFMT'] = 'BUGLE_BINFMT_PE'
-    else:
-        print 'Platform', platform, 'is not recognised.'
-        Exit(1)
-
-    substs['BUGLE_GLTYPE'] = 'BUGLE_GLTYPE_' + api.gltype.upper()
-    substs['BUGLE_GLWIN'] = 'BUGLE_GLWIN_' + api.glwin.upper()
-    substs['BUGLE_WINSYS'] = 'BUGLE_WINSYS_' + api.winsys.upper()
+    for i in ['fs', 'binfmt', 'gltype', 'glwin', 'winsys']:
+        name = 'BUGLE_' + i
+        value = name + '_' + aspects[i]
+        name = name.upper()
+        value = value.upper()
+        substs[name] = value
     return substs
 
 # Process command line arguments
-apis = get_apis()
-vars = get_vars(apis)
+vars = get_vars()
+aspects = setup_aspects()
+for name, value in ARGUMENTS.iteritems():
+    if name in aspects:
+        aspects[name] = value
+aspects.Resolve()
+aspects.Report()
 
 # Values common to both build environment and host environment
 common_kw = dict(
@@ -207,6 +281,8 @@ common_kw = dict(
         srcdir = srcdir,
         builddir = builddir,
         variables = vars)
+if aspects['host'] != '':
+    common_kw['HOST'] = aspects['host']
 
 setup_options()
 if GetOption('bugle_short'):
@@ -219,7 +295,7 @@ envs = {}
 # Environment for tools that have to run on the build machine
 envs['build'] = Environment(
         YACCHXXFILESUFFIX = '.h',
-        tools = ['default', 'yacc'],
+        tools = ['lex', 'yacc'],
         **common_kw)
 
 # Environment for the target machine
@@ -229,34 +305,55 @@ envs['host'] = CrossEnvironment(
             ('PKGLIBDIR', r'\"%(libdir)s/%(PACKAGE)s\"' % ac_vars),
             ('HAVE_CONFIG_H', 1)
             ],
-        tools = ['default', 'yacc', 'subst'],
+        tools = ['lex', 'yacc', 'subst'],
         **common_kw
         )
-if 'gcc' in envs['host']['TOOLS']:
-    envs['host'].MergeFlags('-fvisibility=hidden -Wstrict-prototypes -Wall -g -std=c89')
 
 # Environment for generating parse tree. This has to be GCC, and in cross
 # compilation should be the cross-gcc so that the correct headers are
 # identified for the target.
 envs['tu'] = CrossEnvironment(
-        tools = ['gcc', 'budgie', 'gengl', 'tu'],
+        tools = ['gcc', 'budgie', 'gengl', 'tu', 'subst'],
         BCPATH = [builddir, srcdir],
         **common_kw)
 
+# Post-process environments based on aspects
+headers = []
+libname = 'libGL'
+callapi = None
+
+apply_compiler(envs['build'], aspects['build_compiler'], aspects['config'])
+apply_compiler(envs['host'], aspects['host_compiler'], aspects['config'])
+
+if aspects['glwin'] == 'wgl':
+    headers.extend(['wingdi.h', 'GL/wglext.h'])
+    libname = 'opengl32'
+    callapi = '__stdcall'
+    targets['bugle']['LIBS'].extend(['user32'])
+if aspects['glwin'] == 'glx':
+    headers.extend(['GL/glx.h', 'GL/glxext.h'])
+    targets['bugle']['LIBS'].extend(['X11'])
+    targets['bugle']['source'].extend([srcdir.File('src/glx/glxdump.c')])
+if aspects['glwin'] == 'egl':
+    if aspects['winsys'] == 'windows':
+        callapi = '__stdcall'
+    headers.extend(['EGL/egl.h', 'EGL/eglext.h'])
+
+if aspects['gltype'] == 'gl':
+    headers.extend(['GL/gl.h', 'GL/glext.h'])
+if aspects['gltype'] == 'gles1cm':
+    headers.extend(['GLES/gl.h', 'GLES/glext.h'])
+    libname = 'libGLESv1_CM'
+if aspects['gltype'] == 'gles2':
+    headers.extend(['GLES2/gl2.h', 'GLES2/gl2ext.h'])
+    libname = 'libGLESv2'
+
 # Post-process command-line options
-Help(vars.GenerateHelpText(envs['host']))
-unknown = vars.UnknownVariables()
-if unknown:
-    print 'Unknown command-line option(s):', ', '.join(unknown.keys())
-    Exit(2)
-api = apis[envs['host']['api']]
-substs = get_substs(envs['host']['PLATFORM'], api)
-targets['bugle']['source'].extend([srcdir.File(x) for x in api.bugle_sources])
-targets['bugle']['LIBS'].extend(api.bugle_libs)
+substs = get_substs(aspects)
 envs['host'].SubstFile(builddir.File('include/bugle/porting.h'), srcdir.File('include/bugle/porting.h.in'), substs)
 
-envs['host'] = checks(envs['host'])
-Export('envs', 'api', 'targets')
+envs['host'] = checks(envs['host'], libname, headers)
+Export('envs', 'targets', 'aspects', 'callapi', 'libname')
 
 # Platform SConscript must be first, since it modifies the environment
 # via config.h
@@ -267,6 +364,7 @@ SConscript('budgie/SConscript')
 SConscript('src/SConscript')
 SConscript('filters/SConscript')
 SConscript('gldb/SConscript')
+SConscript('bc/SConscript')
 
 budgie_outputs = [
         'include/budgie/call.h',
@@ -275,9 +373,9 @@ budgie_outputs = [
         'budgielib/tables.c',
         'budgielib/lib.c'
         ]
-envs['tu'].Budgie(budgie_outputs, ['src/data/gl.tu', 'bc/' + api.name + '.bc'])
+envs['tu'].Budgie(budgie_outputs, ['src/data/gl.tu', 'bc/main.bc'])
 
-headers = [envs['tu']['find_header'](envs['host'], h) for h in api.headers]
+headers = [envs['tu']['find_header'](envs['host'], h) for h in headers]
 # TODO change to bc/alias.bc
 envs['tu'].BudgieAlias(target = ['bc/alias.bc'], source = headers)
 envs['tu'].ApitablesC(target = ['src/apitables.c'], source = ['budgielib/defines.h'] + headers)
