@@ -42,8 +42,10 @@ class Aspect:
 class AspectParser:
     def __init__(self):
         self.aspects = {}
+        self.ordered = []
 
     def AddAspect(self, aspect):
+        self.ordered.append(aspect)
         self.aspects[aspect.name] = aspect
 
     def Resolve(self):
@@ -65,15 +67,25 @@ class AspectParser:
         return key in self.aspects
 
     def Report(self):
-        for name in sorted(self.aspects.keys()):
-            a = self.aspects[name]
-            print name, '=', str(a.get()),
+        print
+        print "*** Configuration ***"
+        print
+        for a in self.ordered:
+            value = a.get()
+            if value is None:
+                continue
+            if value == '':
+                value = '<empty>'
+            print "%-20s = %-20s" % (a.name, value),
             if a.explicit:
                 print '(from user)'
             elif callable(a.default):
-                print '(computed)'
+                print '(derived)'
             else:
                 print '(default)'
+        print
+        print "***"
+        print
 
     def Help(self):
         # TODO fill in

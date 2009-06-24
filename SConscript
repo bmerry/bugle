@@ -49,39 +49,6 @@ def check_gl(conf, lib, headers):
         print conf.env.subst('${SHLIBPREFIX}' + lib + '${SHLIBSUFFIX} not found')
         Exit(1)
 
-def get_features():
-    '''
-    Returns a dictionary of Feature objects
-    '''
-
-    return {
-            'gl': Feature(),
-            'gles1': Feature(
-                gltype = 'gles1cm'),
-            'gles2': Feature(
-                gltype = 'gles2'),
-
-            'glx': Feature(
-                glwin = 'glx'),
-            'wgl': Feature(
-                winsys = 'windows',
-                glwin = 'wgl'),
-            'egl': Feature(
-                glwin = 'egl'),
-
-            'x11': Feature(
-                winsys = 'x11'),
-
-            'gl-wgl': Feature(
-                ),
-            'gl-glx': Feature(
-                ),
-            'gles1-legacy': Feature(
-                ),
-            'gles1-new': Feature(
-                )
-            }
-
 def platform_default(aspect):
     compiler = aspects['host_compiler']
     if compiler == 'msvc':
@@ -123,6 +90,13 @@ def binfmt_default(aspect):
     else:
         return 'elf'
 
+def callapi_default(aspect):
+    winsys = aspects['winsys']
+    if winsys == 'windows':
+        return '__stdcall'
+    else:
+        return ''
+
 def apply_compiler(env, compiler, config):
     if compiler == 'msvc':
         env.Tool('msvc')
@@ -144,9 +118,9 @@ def apply_compiler(env, compiler, config):
         env.AppendUnique(CCFLAGS = ['-fvisibility=hidden', '-Wall'])
         env.AppendUnique(CFLAGS = ['-std=c89', '-Wstrict-prototypes'])
         if config == 'debug':
-            env.MergeFlags('-g')
+            env.AppendUnique(CCFLAGS = ['-g'])
         elif config == 'release':
-            env.MergeFlags('-O2 -s')
+            env.AppendUnique(CCFLAGS = ['-O2'], LINKFLAGS = ['-s'])
         else:
             raise RuntimeError, 'Unknown config "%s"' % config
 
@@ -209,10 +183,31 @@ def setup_aspects():
         choices = ['pe', 'elf'],
         default = binfmt_default))
     aspects.AddAspect(Aspect(
+        name = 'callapi',
+        help = 'Calling convention for GL functions',
+        default = callapi_default))
+    aspects.AddAspect(Aspect(
         name = 'config',
         help = 'Compiler option set',
         choices = ['debug', 'release'],
         default = 'debug'))
+
+    aspects.AddAspect(Aspect(
+        name = 'CC',
+        help = 'C compiler',
+        default = None))
+    aspects.AddAspect(Aspect(
+        name = 'CCFLAGS',
+        help = 'C and C++ compilation flags',
+        default = None))
+    aspects.AddAspect(Aspect(
+        name = 'CFLAGS',
+        help = 'C compilation flags',
+        default = None))
+    aspects.AddAspect(Aspect(
+        name = 'CXXFLAGS',
+        help = 'C++ compilation flags',
+        default = None))
     return aspects
 
 def checks(env, gl_lib, gl_headers):
@@ -237,16 +232,6 @@ def checks(env, gl_lib, gl_headers):
     check_gl(conf, gl_lib, gl_headers)
     return conf.Finish()
 
-def get_vars():
-    vars = Variables('config.py', ARGUMENTS)
-    vars.AddVariables(
-            ('HOST', 'Host machine string for cross-compilation'),
-            ('CC', 'The C compiler'),
-            ('CCFLAGS', 'C and C++ compilation flags'),
-            ('CFLAGS', 'C compilation flags'),
-            ('CXXFLAGS', 'C++ compilation flags'))
-    return vars
-
 def get_substs(aspects):
     '''
     Obtains a dictionary of substitutions to make in porting.h
@@ -262,11 +247,12 @@ def get_substs(aspects):
     return substs
 
 # Process command line arguments
-vars = get_vars()
 aspects = setup_aspects()
 for name, value in ARGUMENTS.iteritems():
     if name in aspects:
         aspects[name] = value
+    else:
+        raise RuntimeError, name + ' is not a valid option'
 aspects.Resolve()
 aspects.Report()
 
@@ -282,10 +268,7 @@ common_kw = dict(
             ],
         toolpath = ['%(srcdir)s/site_scons/site_tools' % ac_vars],
         srcdir = srcdir,
-        builddir = builddir,
-        variables = vars)
-if aspects['host'] != '':
-    common_kw['HOST'] = aspects['host']
+        builddir = builddir)
 
 setup_options()
 if GetOption('bugle_short'):
@@ -323,22 +306,30 @@ envs['tu'] = CrossEnvironment(
 # Post-process environments based on aspects
 headers = []
 libraries = []
-callapi = None
 
 apply_compiler(envs['build'], aspects['build_compiler'], aspects['config'])
 apply_compiler(envs['host'], aspects['host_compiler'], aspects['config'])
 
+for env in envs.itervalues():
+    if aspects['host'] != '':
+        env['HOST'] = aspects['host']
+    # single values
+    for i in ['CC']:
+        if aspects[i] is not None and aspects[i] != '':
+            env[i] = aspects[i]
+    # Lists
+    for i in ['CFLAGS', 'CCFLAGS', 'CXXFLAGS']:
+        if aspects[i] is not None and aspects[i] != '':
+            env.AppendUnique(**{i: Split(aspects[i])})
+
 if aspects['glwin'] == 'wgl':
     headers.extend(['wingdi.h', 'GL/wglext.h'])
-    callapi = '__stdcall'
     targets['bugle']['LIBS'].extend(['user32'])
 if aspects['glwin'] == 'glx':
     headers.extend(['GL/glx.h', 'GL/glxext.h'])
     targets['bugle']['LIBS'].extend(['X11'])
     targets['bugle']['source'].extend([srcdir.File('src/glx/glxdump.c')])
 if aspects['glwin'] == 'egl':
-    if aspects['winsys'] == 'windows':
-        callapi = '__stdcall'
     headers.extend(['EGL/egl.h', 'EGL/eglext.h'])
     libraries.append('libEGL')
 
@@ -366,7 +357,7 @@ substs = get_substs(aspects)
 envs['host'].SubstFile(builddir.File('include/bugle/porting.h'), srcdir.File('include/bugle/porting.h.in'), substs)
 
 envs['host'] = checks(envs['host'], libraries[-1], headers)
-Export('envs', 'targets', 'aspects', 'callapi', 'libraries')
+Export('envs', 'targets', 'aspects', 'libraries')
 
 # Platform SConscript must be first, since it modifies the environment
 # via config.h

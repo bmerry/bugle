@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-Import('envs', 'srcdir', 'builddir', 'aspects', 'callapi', 'libraries')
+Import('envs', 'srcdir', 'builddir', 'aspects', 'libraries')
 
 substs = {
         'GLWIN': aspects['glwin'],
@@ -16,7 +16,8 @@ for lib in libraries:
         mangled = lib + envs['host'].subst('$SHLIBSUFFIX')
     substs['LIBRARIES'] += 'LIBRARY ' + mangled + '\n'
 
-if callapi is None:
+callapi = aspects['callapi']
+if callapi is None or callapi == '':
     substs['CALLAPI'] = ''
 else:
     substs['CALLAPI'] = 'CALLAPI ' + callapi
