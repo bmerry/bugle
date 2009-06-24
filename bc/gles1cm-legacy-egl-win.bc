@@ -1,5 +1,0 @@
-LIBRARY c:\\windows\\system32\\libGLES_CM.dll
-
-INCLUDE bc/alias.bc
-INCLUDE bc/gles1cm/gles1cm.bc
-INCLUDE bc/egl/egl.bc

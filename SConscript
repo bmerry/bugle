@@ -32,16 +32,19 @@ def check_gl(conf, lib, headers):
     @param lib  The library to look for. If the name starts of "lib", it
                 will be removed on platforms where that is already a library
                 prefix.
-    @type lib   strings
+    @type lib   string
     @param headers The header files to include for the check.
     @type headers list of strings
     '''
 
     if lib.startswith('lib') and conf.env.subst('${SHLIBPREFIX}') == 'lib':
         lib = lib[3:]
-    if not conf.CheckCHeader(headers, '<>'):
-        print 'GL headers not found'
-        Exit(1)
+
+    # Incrementally check the headers
+    for i in range(len(headers)):
+        if not conf.CheckCHeader(headers[:(i+1)], '<>'):
+            print headers[i] + ' not found'
+            Exit(1)
     if not conf.CheckLibWithHeader(lib, headers, 'c', 'glFlush();', False):
         print conf.env.subst('${SHLIBPREFIX}' + lib + '${SHLIBSUFFIX} not found')
         Exit(1)
@@ -319,7 +322,7 @@ envs['tu'] = CrossEnvironment(
 
 # Post-process environments based on aspects
 headers = []
-libname = 'libGL'
+libraries = []
 callapi = None
 
 apply_compiler(envs['build'], aspects['build_compiler'], aspects['config'])
@@ -327,7 +330,6 @@ apply_compiler(envs['host'], aspects['host_compiler'], aspects['config'])
 
 if aspects['glwin'] == 'wgl':
     headers.extend(['wingdi.h', 'GL/wglext.h'])
-    libname = 'opengl32'
     callapi = '__stdcall'
     targets['bugle']['LIBS'].extend(['user32'])
 if aspects['glwin'] == 'glx':
@@ -338,22 +340,33 @@ if aspects['glwin'] == 'egl':
     if aspects['winsys'] == 'windows':
         callapi = '__stdcall'
     headers.extend(['EGL/egl.h', 'EGL/eglext.h'])
+    libraries.append('libEGL')
 
 if aspects['gltype'] == 'gl':
     headers.extend(['GL/gl.h', 'GL/glext.h'])
+    if aspects['glwin'] == 'wgl':
+        libraries.append('opengl32')
+    else:
+        libraries.append('libGL')
 if aspects['gltype'] == 'gles1cm':
     headers.extend(['GLES/gl.h', 'GLES/glext.h'])
-    libname = 'libGLESv1_CM'
+    libraries.append('libGLESv1_CM')
 if aspects['gltype'] == 'gles2':
     headers.extend(['GLES2/gl2.h', 'GLES2/gl2ext.h'])
-    libname = 'libGLESv2'
+    libraries.append('libGLESv2')
+
+if aspects['binfmt'] == 'pe':
+    # Can't use LD_PRELOAD on windows, so have to use the same name
+    targets['bugle']['target'] = libraries[-1]
+else:
+    targets['bugle']['target'] = 'libbugle'
 
 # Post-process command-line options
 substs = get_substs(aspects)
 envs['host'].SubstFile(builddir.File('include/bugle/porting.h'), srcdir.File('include/bugle/porting.h.in'), substs)
 
-envs['host'] = checks(envs['host'], libname, headers)
-Export('envs', 'targets', 'aspects', 'callapi', 'libname')
+envs['host'] = checks(envs['host'], libraries[-1], headers)
+Export('envs', 'targets', 'aspects', 'callapi', 'libraries')
 
 # Platform SConscript must be first, since it modifies the environment
 # via config.h

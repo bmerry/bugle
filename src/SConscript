@@ -22,7 +22,6 @@ targets['bugleutils']['source'].extend([
 targets['bugleutils'].out = envs['host'].SharedLibrary2(**targets['bugleutils'])
 
 targets['bugle'].update({
-    'target': 'bugle',
     'version': '8.0.0'})
 targets['bugle']['source'].extend([
     envs['host'].CFile('confparse.y', YACCFLAGS = '-d')[0],
