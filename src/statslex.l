@@ -29,7 +29,7 @@
 #include <bugle/stats.h>
 #include <bugle/memory.h>
 #include <bugle/string.h>
-#include "src/statsparse.h"
+#include "statsparse.h"
 #include <bugle/log.h>
 
 static char *current_string = NULL;

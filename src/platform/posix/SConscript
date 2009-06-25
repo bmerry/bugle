@@ -31,12 +31,11 @@ def internal_checks(env):
     conf.CheckFunc('strndup')
     return conf.Finish()
 
-Import('envs', 'srcdir', 'builddir', 'targets')
+Import('envs', 'targets', 'srcdir')
 
-envs['host'].Append(CPPPATH = [
-    srcdir.Dir('platform/posix'),
-    builddir.Dir('platform/posix')],
-    LIBS = ['-lm'])
+envs['host'].Append(
+        CPPPATH = [srcdir, Dir('.')],
+        LIBS = ['-lm'])
 envs['host'].MergeFlags('-pthread')
 envs['host'] = header_checks(envs['host'])
 

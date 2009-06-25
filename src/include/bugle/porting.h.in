@@ -23,7 +23,6 @@
 #define @BUGLE_GLWIN@ 1
 #define @BUGLE_GLTYPE@ 1
 #define @BUGLE_FS@ 1
-#define @BUGLE_OSAPI@ 1
 
 #if BUGLE_BINFMT_ELF
 /* 1 if symbols are bound to a specific dynamic object,
@@ -52,17 +51,6 @@
 # define BUGLE_GLWIN_CONTEXT_DEPENDENT 1
 #else
 # define BUGLE_GLWIN_CONTEXT_DEPENDENT 0
-#endif
-
-/* Win32 doesn't allow select() to be used on pipes. It also does not allow
- * fcntl to be used to do non-blocking I/O. The only way to tell if there is
- * data to be read is to buffer the data in a separate thread and implement
- * an equivalent interface to that thread.
- */
-#if BUGLE_OSAPI_WIN32
-# define BUGLE_OSAPI_SELECT_BROKEN 1
-#else
-# define BUGLE_OSAPI_SELECT_BROKEN 0
 #endif
 
 #endif /* BUGLE_SRC_PORTING_H */

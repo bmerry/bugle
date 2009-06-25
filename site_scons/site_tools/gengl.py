@@ -20,10 +20,10 @@ def find_header(env, name):
         preproc_opt = '-E'
         if env['INCPREFIX'] == '/I':
             preprop_opt = '/E'
-        sp = Popen([env['CC'], preproc_opt,
-            env['INCPREFIX'] + '.' + env['INCSUFFIX'],
-            env['INCPREFIX'] + env['srcdir'].path + env['INCSUFFIX'], tmpname],
-                stdin = PIPE, stdout = PIPE, stderr = PIPE)
+        cmd = [env['CC'], preproc_opt,
+            env['INCPREFIX'] + env.Dir('#').abspath + env['INCSUFFIX'], tmpname]
+        # print "Running", ' '.join(cmd)
+        sp = Popen(cmd, stdin = PIPE, stdout = PIPE, stderr = PIPE)
         (out, err) = sp.communicate()
         errcode = sp.wait()
         if errcode != 0:
@@ -69,7 +69,7 @@ def generate(env, **kw):
                 'ApitablesC': apitables_c_builder,
                 'ApitablesH': apitables_h_builder
                 },
-            GENGL = env['srcdir'].File('gengl/gengl.perl'),
+            GENGL = env.File('src/gengl/gengl.perl'),
             find_header = find_header)
 
 def exists(env):

@@ -25,7 +25,7 @@
 #include <bugle/hashtable.h>
 #include <bugle/apireflect.h>
 #include <budgie/reflect.h>
-#include "src/apitables.h"
+#include "apitables.h"
 #include "platform/threads.h"
 
 static hash_table ext_map;

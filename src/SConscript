@@ -1,7 +1,45 @@
 #!/usr/bin/env python
-Import('envs', 'targets', 'aspects')
 
+Import('envs', 'targets', 'aspects', 'headers', 'subdir', 'srcdir')
+
+def get_substs(aspects):
+    '''
+    Obtains a dictionary of substitutions to make in porting.h
+    '''
+
+    substs = {}
+    for i in ['fs', 'binfmt', 'gltype', 'glwin', 'winsys']:
+        name = 'BUGLE_' + i
+        value = name + '_' + aspects[i]
+        name = name.upper()
+        value = value.upper()
+        substs[name] = value
+    return substs
+
+# General setup that must be done inside the variant_dir
+for env in envs.itervalues():
+    env.Append(CPPPATH = [srcdir.Dir('.'), srcdir.Dir('include'), Dir('.'), Dir('include')])
+    env.Append(BCPATH = [srcdir.Dir('.'), Dir('.')])
+
+# Platform must be first, since it modifies the environment
+subdir(srcdir, 'platform/' + aspects['platform'])
+subdir(srcdir, 'budgie')
+
+budgie_outputs = [
+        'include/budgie/call.h',
+        'include/budgie/types2.h',
+        'budgielib/defines.h',
+        'budgielib/tables.c',
+        'budgielib/lib.c'
+        ]
 envs['tu'].Tu(['data/gl.o', 'data/gl.tu'], 'data/gl.c')
+envs['tu'].Budgie(budgie_outputs, ['data/gl.tu', 'bc/main.bc'])
+envs['tu'].BudgieAlias(target = ['bc/alias.bc'], source = headers)
+envs['tu'].ApitablesC(target = ['apitables.c'], source = ['budgielib/defines.h'] + headers)
+envs['tu'].ApitablesH(target = ['apitables.h'], source = ['budgielib/defines.h'] + headers)
+
+substs = get_substs(aspects)
+envs['host'].SubstFile('include/bugle/porting.h', 'include/bugle/porting.h.in', substs)
 
 targets['bugleutils'].update({
     'target': 'bugleutils',
@@ -10,14 +48,14 @@ targets['bugleutils']['source'].extend([
     'gl/gltypes.c',
     'apireflect.c',
     'glwin/glwintypes.c',
-    '../common/memory.c',
-    '../common/protocol.c',
-    '../common/hashtable.c',
-    '../common/linkedlist.c',
-    '../common/io.c',
-    '../budgielib/internal.c',
-    '../budgielib/reflect.c',
-    '../budgielib/tables.c',
+    'common/memory.c',
+    'common/protocol.c',
+    'common/hashtable.c',
+    'common/linkedlist.c',
+    'common/io.c',
+    'budgielib/internal.c',
+    'budgielib/reflect.c',
+    'budgielib/tables.c',
     'apitables.c'])
 targets['bugleutils'].out = envs['host'].SharedLibrary2(**targets['bugleutils'])
 
@@ -34,8 +72,8 @@ targets['bugle']['source'].extend([
     'log.c',
     'objects.c',
     'input.c',
-    '../budgielib/addresses.c',
-    '../budgielib/lib.c',
+    'budgielib/addresses.c',
+    'budgielib/lib.c',
     'gl/glutils.c',
     'gl/glsl.c',
     'glwin/trackcontext.c',
@@ -48,3 +86,8 @@ targets['bugle']['source'].extend([
     aspects['glwin'] + '/glwin.c'])
 targets['bugle']['LIBS'].extend(targets['bugleutils'].out)
 targets['bugle'].out = envs['host'].SharedLibrary2(**targets['bugle'])
+
+# These need to come after the targets have been built
+subdir(srcdir, 'bc')
+subdir(srcdir, 'filters')
+subdir(srcdir, 'gldb')

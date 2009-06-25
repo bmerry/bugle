@@ -6,8 +6,6 @@ from CrossEnvironment import CrossEnvironment
 from Aspects import *
 import BugleChecks
 
-Import('ac_vars', 'srcdir', 'builddir')
-
 class Target(dict):
     '''
     Contains the keywords that will be passed to a builder. This allows
@@ -22,6 +20,12 @@ targets = {
         'bugle': Target(),
         'bugleutils': Target()
         }
+
+def subdir(srcdir, dir, **kw):
+    '''
+    Run SConscript in a subdir, setting srcdir appropriately
+    '''
+    SConscript(dirs = [dir], exports = {'srcdir': srcdir.Dir(dir)}, **kw)
 
 def check_gl(conf, lib, headers):
     '''
@@ -193,6 +197,23 @@ def setup_aspects():
         default = 'debug'))
 
     aspects.AddAspect(Aspect(
+        name = 'prefix',
+        help = 'Installation prefix',
+        default = '/usr/local')),
+    aspects.AddAspect(Aspect(
+        name = 'libdir',
+        help = 'Installation path for libraries',
+        default = lambda a: aspects['prefix'] + '/lib')),
+    aspects.AddAspect(Aspect(
+        name = 'pkglibdir',
+        help = 'Installation path for plugins',
+        default = lambda a: aspects['libdir'] + '/bugle')),
+    aspects.AddAspect(Aspect(
+        name = 'bindir',
+        help = 'Installation path for binaries',
+        default = lambda a: aspects['prefix'] + '/lib'))
+
+    aspects.AddAspect(Aspect(
         name = 'CC',
         help = 'C compiler',
         default = None))
@@ -232,20 +253,6 @@ def checks(env, gl_lib, gl_headers):
     check_gl(conf, gl_lib, gl_headers)
     return conf.Finish()
 
-def get_substs(aspects):
-    '''
-    Obtains a dictionary of substitutions to make in porting.h
-    '''
-
-    substs = {}
-    for i in ['fs', 'binfmt', 'gltype', 'glwin', 'winsys']:
-        name = 'BUGLE_' + i
-        value = name + '_' + aspects[i]
-        name = name.upper()
-        value = value.upper()
-        substs[name] = value
-    return substs
-
 # Process command line arguments
 aspects = setup_aspects()
 for name, value in ARGUMENTS.iteritems():
@@ -259,16 +266,8 @@ aspects.Report()
 # Values common to both build environment and host environment
 common_kw = dict(
         ENV = os.environ,
-        CPPPATH = [
-            srcdir,
-            srcdir.Dir('lib'),
-            srcdir.Dir('include'),
-            builddir,
-            builddir.Dir('include')
-            ],
-        toolpath = ['%(srcdir)s/site_scons/site_tools' % ac_vars],
-        srcdir = srcdir,
-        builddir = builddir)
+        CPPPATH = [Dir('.')])
+        # toolpath = ['%(srcdir)s/site_scons/site_tools' % ac_vars],
 
 setup_options()
 if GetOption('bugle_short'):
@@ -287,8 +286,8 @@ envs['build'] = Environment(
 # Environment for the target machine
 envs['host'] = CrossEnvironment(
         CPPDEFINES = [
-            ('LIBDIR', r'\"%(libdir)s\"' % ac_vars),
-            ('PKGLIBDIR', r'\"%(libdir)s/%(PACKAGE)s\"' % ac_vars),
+            ('LIBDIR', r'\"%s\"' % aspects['libdir']),
+            ('PKGLIBDIR', r'\"%s\"' % aspects['pkglibdir']),
             ('HAVE_CONFIG_H', 1)
             ],
         tools = ['lex', 'yacc', 'subst'],
@@ -300,7 +299,6 @@ envs['host'] = CrossEnvironment(
 # identified for the target.
 envs['tu'] = CrossEnvironment(
         tools = ['gcc', 'budgie', 'gengl', 'tu', 'subst'],
-        BCPATH = [builddir, srcdir],
         **common_kw)
 
 # Post-process environments based on aspects
@@ -328,7 +326,7 @@ if aspects['glwin'] == 'wgl':
 if aspects['glwin'] == 'glx':
     headers.extend(['GL/glx.h', 'GL/glxext.h'])
     targets['bugle']['LIBS'].extend(['X11'])
-    targets['bugle']['source'].extend([srcdir.File('src/glx/glxdump.c')])
+    targets['bugle']['source'].extend(['#src/glx/glxdump.c'])
 if aspects['glwin'] == 'egl':
     headers.extend(['EGL/egl.h', 'EGL/eglext.h'])
     libraries.append('libEGL')
@@ -352,35 +350,9 @@ if aspects['binfmt'] == 'pe':
 else:
     targets['bugle']['target'] = 'libbugle'
 
-# Post-process command-line options
-substs = get_substs(aspects)
-envs['host'].SubstFile(builddir.File('include/bugle/porting.h'), srcdir.File('include/bugle/porting.h.in'), substs)
+headers = [envs['tu']['find_header'](envs['host'], h) for h in headers]
 
 envs['host'] = checks(envs['host'], libraries[-1], headers)
-Export('envs', 'targets', 'aspects', 'libraries')
+Export('envs', 'targets', 'aspects', 'headers', 'libraries', 'subdir')
 
-# Platform SConscript must be first, since it modifies the environment
-# via config.h
-# TODO properly detect the platform
-SConscript('platform/posix/SConscript')
-
-SConscript('budgie/SConscript')
-SConscript('src/SConscript')
-SConscript('filters/SConscript')
-SConscript('gldb/SConscript')
-SConscript('bc/SConscript')
-
-budgie_outputs = [
-        'include/budgie/call.h',
-        'include/budgie/types2.h',
-        'budgielib/defines.h',
-        'budgielib/tables.c',
-        'budgielib/lib.c'
-        ]
-envs['tu'].Budgie(budgie_outputs, ['src/data/gl.tu', 'bc/main.bc'])
-
-headers = [envs['tu']['find_header'](envs['host'], h) for h in headers]
-# TODO change to bc/alias.bc
-envs['tu'].BudgieAlias(target = ['bc/alias.bc'], source = headers)
-envs['tu'].ApitablesC(target = ['src/apitables.c'], source = ['budgielib/defines.h'] + headers)
-envs['tu'].ApitablesH(target = ['src/apitables.h'], source = ['budgielib/defines.h'] + headers)
+subdir(Dir('.'), 'src', variant_dir = 'build', duplicate = 0)

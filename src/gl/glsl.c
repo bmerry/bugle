@@ -31,7 +31,7 @@
 #include <bugle/gl/glutils.h>
 #include <bugle/gl/glsl.h>
 #include <budgie/call.h>
-#include "src/apitables.h"
+#include "apitables.h"
 
 #if GL_ES_VERSION_2_0 || GL_VERSION_2_0
 

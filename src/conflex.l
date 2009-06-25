@@ -27,8 +27,8 @@
 #include <stdio.h>
 #include <bugle/memory.h>
 #include <bugle/string.h>
-#include "src/conffile.h"
-#include "src/confparse.h"
+#include "conffile.h"
+#include "confparse.h"
 
 static char *current_string = NULL;
 static int current_string_length = 0;

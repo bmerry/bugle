@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-Import('envs', 'srcdir', 'builddir', 'aspects', 'libraries')
+Import('envs', 'aspects', 'libraries')
 
 substs = {
         'GLWIN': aspects['glwin'],
@@ -22,4 +22,4 @@ if callapi is None or callapi == '':
 else:
     substs['CALLAPI'] = 'CALLAPI ' + callapi
 
-envs['tu'].SubstFile(builddir.File('bc/main.bc'), srcdir.File('bc/main.bc.in'), substs)
+envs['tu'].SubstFile('main.bc', 'main.bc.in', substs)

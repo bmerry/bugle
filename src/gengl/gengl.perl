@@ -580,7 +580,7 @@ elsif ($mode eq 'c')
 # include <config.h>
 #endif
 #include <bugle/apireflect.h>
-#include "src/apitables.h"
+#include "apitables.h"
 EOF
     foreach my $ext (@extensions)
     {

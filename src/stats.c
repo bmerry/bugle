@@ -32,7 +32,7 @@
 #include <bugle/math.h>
 #include <bugle/string.h>
 #include <bugle/time.h>
-#include "src/statsparse.h"
+#include "statsparse.h"
 #include <bugle/hashtable.h>
 #include <bugle/bool.h>
 

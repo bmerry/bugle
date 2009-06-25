@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-Import('envs', 'srcdir', 'builddir', 'targets')
+Import('envs', 'targets')
 
 filter_env = envs['host'].Clone(
         LIBS = targets['bugle'].out + targets['bugleutils'].out,

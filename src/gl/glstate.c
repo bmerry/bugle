@@ -48,7 +48,7 @@
 #include <budgie/reflect.h>
 #include <budgie/call.h>
 #include "budgielib/defines.h"
-#include "src/apitables.h"
+#include "apitables.h"
 #include "platform/types.h"
 
 #define STATE_NAME(x) #x, x
