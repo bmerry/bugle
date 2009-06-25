@@ -150,5 +150,5 @@ void bugle_initialise_filter_library(void)
 
     bugle_filter_set_new(&logstats_info);
     bugle_filter_set_stats_logger("logstats");
-    bugle_list_init(&logstats_show_requested, free);
+    bugle_list_init(&logstats_show_requested, bugle_free);
 }

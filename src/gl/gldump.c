@@ -390,7 +390,7 @@ bugle_bool bugle_dump_convert(GLenum pname, const void *value,
         budgie_dump_any_type_extended(out_type, out_data, -1, length, ptr, writer);
     else
         budgie_dump_any_type(out_type, out_data, -1, writer);
-    free(out_data);
+    bugle_free(out_data);
     return BUGLE_TRUE;
 }
 

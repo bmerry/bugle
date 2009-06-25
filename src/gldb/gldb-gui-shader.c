@@ -159,7 +159,7 @@ static void gldb_shader_pane_update_ids(GldbShaderPane *pane)
     {
         name = bugle_asprintf("Program[%d]", program);
         s = gldb_state_find(root, name, strlen(name));
-        free(name);
+        bugle_free(name);
         if (s)
         {
             t = gldb_state_find(s, "Attached", strlen("Attached"));
@@ -196,7 +196,7 @@ static void gldb_shader_pane_update_ids(GldbShaderPane *pane)
                                        COLUMN_SHADER_ID_BOLD, (t->numeric_name == active_arb[trg]) ? PANGO_WEIGHT_BOLD : PANGO_WEIGHT_NORMAL,
                                        COLUMN_SHADER_ID_TEXT, name,
                                        -1);
-                    free(name);
+                    bugle_free(name);
                 }
             }
             break;
@@ -223,7 +223,7 @@ static void gldb_shader_pane_update_ids(GldbShaderPane *pane)
                                        COLUMN_SHADER_ID_BOLD, active ? PANGO_WEIGHT_BOLD : PANGO_WEIGHT_NORMAL,
                                        COLUMN_SHADER_ID_TEXT, name,
                                        -1);
-                    free(name);
+                    bugle_free(name);
                 }
             }
             break;
@@ -307,7 +307,7 @@ static gboolean gldb_shader_pane_source_expose(GtkWidget *widget,
                                               0, y, &winx, &winy);
         no = bugle_asprintf("%d", (int) gtk_text_iter_get_line(&line) + 1);
         pango_layout_set_text(layout, no, -1);
-        free(no);
+        bugle_free(no);
         pango_layout_get_pixel_size(layout, &text_width, &text_height);
         gtk_paint_layout(gtk_widget_get_style(widget), event->window,
                          GTK_STATE_NORMAL, FALSE, NULL,

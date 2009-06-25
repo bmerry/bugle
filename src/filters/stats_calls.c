@@ -50,14 +50,14 @@ static bugle_bool stats_calls_initialise(filter_set *handle)
         char *name;
         name = bugle_asprintf("calls:%s", budgie_function_name(i));
         stats_calls_counts[i] = bugle_stats_signal_new(name, NULL, NULL);
-        free(name);
+        bugle_free(name);
     }
     return BUGLE_TRUE;
 }
 
 static void stats_calls_shutdown(filter_set *handle)
 {
-    free(stats_calls_counts);
+    bugle_free(stats_calls_counts);
 }
 
 void bugle_initialise_filter_library(void)

@@ -115,7 +115,7 @@ bugle_bool gldb_protocol_recv_binary_string(bugle_io_reader *reader, bugle_uint3
     *data = bugle_malloc(*len + 1);
     if (bugle_io_read(*data, sizeof(char), *len, reader) != *len)
     {
-        free(*data);
+        bugle_free(*data);
         return BUGLE_FALSE;
     }
     else

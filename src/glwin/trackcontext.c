@@ -364,7 +364,7 @@ static void trackcontext_data_clear(void *data)
     if (d->aux_shared) CALL(glXDestroyContext)(d->dpy, d->aux_shared);
     if (d->aux_unshared) CALL(glXDestroyContext)(d->dpy, d->aux_unshared);
 #endif
-    free(d->create);
+    bugle_free(d->create);
 }
 
 static bugle_bool trackcontext_filter_set_initialise(filter_set *handle)
@@ -375,7 +375,7 @@ static bugle_bool trackcontext_filter_set_initialise(filter_set *handle)
     bugle_namespace_class = bugle_object_class_new(bugle_context_class);
     bugle_hashptr_init(&context_objects, (void (*)(void *)) bugle_object_free);
     bugle_hashptr_init(&namespace_objects, (void (*)(void *)) bugle_object_free);
-    bugle_hashptr_init(&initial_values, free);
+    bugle_hashptr_init(&initial_values, bugle_free);
 
     f = bugle_filter_new(handle, "trackcontext");
     bugle_filter_order("invoke", "trackcontext");

@@ -72,8 +72,8 @@ static stats_expression *stats_expression_new_signal(stats_operation_type op, ch
 
 static void stats_substitution_free(stats_substitution *sub)
 {
-    free(sub->replacement);
-    free(sub);
+    bugle_free(sub->replacement);
+    bugle_free(sub);
 }
 
 static stats_statistic *stats_statistic_new(void)
@@ -167,7 +167,7 @@ attributes: /* empty */           { $$ = stats_statistic_new(); }
         | attributes ST_PRECISION ST_NUMBER
                                   { $$ = $1; $$->precision = (int) $3; }
 	| attributes ST_LABEL ST_STRING
-                                  { $$ = $1; free($$->label); $$->label = $3; }
+                                  { $$ = $1; bugle_free($$->label); $$->label = $3; }
         | attributes ST_MAX ST_NUMBER
                                   { $$ = $1; $$->maximum = $3; }
         | attributes ST_SUBSTITUTE ST_NUMBER ST_STRING 

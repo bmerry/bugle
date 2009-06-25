@@ -29,6 +29,10 @@ extern "C" {
 /* All the allocation functions below will call bugle_alloc_die (which
  * in turn provides a user-provided callback) on an allocation failure.
  * Thus, it is not necessary to check the return value.
+ *
+ * It is important to use bugle_free rather than free, otherwise MSVC builds
+ * will blow up because each DLL statically links the C runtime and so will
+ * have a disjoint heap.
  */
 
 BUGLE_EXPORT_PRE void *bugle_malloc(size_t size) BUGLE_ATTRIBUTE_MALLOC BUGLE_EXPORT_POST;
@@ -43,6 +47,9 @@ BUGLE_EXPORT_PRE void *bugle_zalloc(size_t size) BUGLE_ATTRIBUTE_MALLOC BUGLE_EX
 
 /* Like realloc, but with a count */
 BUGLE_EXPORT_PRE void *bugle_nrealloc(void *ptr, size_t nmemb, size_t size) BUGLE_EXPORT_POST;
+
+/* Like free */
+BUGLE_EXPORT_PRE void bugle_free(void *ptr) BUGLE_EXPORT_POST;
 
 #define BUGLE_MALLOC(type) ((type *) bugle_malloc(sizeof(type)))
 #define BUGLE_NMALLOC(count, type) ((type *) bugle_nmalloc(count, sizeof(type)))

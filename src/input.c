@@ -826,7 +826,7 @@ void input_initialise(void)
               "features. Please contact the author to help him resolve this issue.\n", stderr);
         exit(1);
     }
-    bugle_list_init(&handlers, free);
+    bugle_list_init(&handlers, bugle_free);
 }
 
 static bugle_bool input_key_lookup(const char *name, bugle_input_key *key)

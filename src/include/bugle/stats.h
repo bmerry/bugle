@@ -102,7 +102,7 @@ void stats_statistic_free(stats_statistic *st);
 
 /* Used by generators to list signals that they expose. Signals may not
  * be multiply registered. Slots are only assigned when signals are
- * activated. User code should note attempt to free() the registered
+ * activated. User code should note attempt to bugle_free() the registered
  * signal, as that is handled by the stats shutdown code.
  */
 BUGLE_EXPORT_PRE stats_signal *bugle_stats_signal_new(const char *name, void *user_data,

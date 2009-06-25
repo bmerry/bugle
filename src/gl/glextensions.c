@@ -64,7 +64,7 @@ static void tokenise(const char *str, hash_table *tokens)
         p = q;
         while (*p == ' ') p++;
     }
-    free(tmp);
+    bugle_free(tmp);
 }
 
 static void context_init(const void *key, void *data)
@@ -119,7 +119,7 @@ static void context_clear(void *data)
     context_extensions *ce;
 
     ce = (context_extensions *) data;
-    free(ce->flags);
+    bugle_free(ce->flags);
     bugle_hash_clear(&ce->names);
 }
 

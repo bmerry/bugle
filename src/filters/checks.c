@@ -293,7 +293,7 @@ static void checks_completeness(void)
 #endif
                     }
                 }
-                free(name);
+                bugle_free(name);
             }
         }
 #endif /* GLES2 || GL2 */
@@ -628,8 +628,8 @@ static void checks_min_max(GLsizei count, GLenum gltype, const GLvoid *indices,
     }
     if (min_out) *min_out = min;
     if (max_out) *max_out = max;
-    free(out);
-    if (vbo_indices) free(vbo_indices);
+    bugle_free(out);
+    if (vbo_indices) bugle_free(vbo_indices);
 }
 
 /* Note: this cannot be a function, because a jmpbuf becomes invalid

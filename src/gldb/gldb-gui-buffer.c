@@ -303,7 +303,7 @@ static gboolean gldb_buffer_pane_response_callback(gldb_response *response,
     r = (gldb_response_data_buffer *) response;
     data = (buffer_callback_data *) user_data;
 
-    free(data->pane->data);
+    bugle_free(data->pane->data);
     data->pane->data = r->data;
     data->pane->length = r->length;
     r->data = NULL; /* prevents gldb_free_response from freeing it */
@@ -311,7 +311,7 @@ static gboolean gldb_buffer_pane_response_callback(gldb_response *response,
     gldb_buffer_pane_update_data(data->pane);
 
     gldb_free_response(response);
-    free(data);
+    bugle_free(data);
     return TRUE;
 }
 
@@ -343,7 +343,7 @@ static void gldb_buffer_pane_update_ids(GldbBufferPane *pane)
                                COLUMN_BUFFER_ID_ID, (guint) s->numeric_name,
                                COLUMN_BUFFER_ID_TEXT, name,
                                -1);
-            free(name);
+            bugle_free(name);
         }
     }
 
@@ -432,7 +432,7 @@ static GtkWidget *gldb_buffer_pane_rebuild_view(GtkWidget *editable, GldbBufferP
     format = gtk_editable_get_chars(GTK_EDITABLE(editable), 0, -1);
     if (!parse_format(format, &ncolumns, &columns, &nfields, &fields))
     {
-        free(format);
+        bugle_free(format);
         /* Invalid or empty format; leave as is until it is valid again */
         return pane->data_view;
     }
@@ -464,9 +464,9 @@ static GtkWidget *gldb_buffer_pane_rebuild_view(GtkWidget *editable, GldbBufferP
                                                           NULL);
         gtk_tree_view_append_column(GTK_TREE_VIEW(pane->data_view), column);
     }
-    free(columns);
-    free(format);
-    free(pane->fields);
+    bugle_free(columns);
+    bugle_free(format);
+    bugle_free(pane->fields);
     pane->fields = fields;
     pane->nfields = nfields;
 
@@ -538,8 +538,8 @@ static void gldb_buffer_pane_real_update(GldbPane *self)
 
 static void gldb_buffer_pane_finalize(GldbBufferPane *pane)
 {
-    free(pane->data);
-    free(pane->fields);
+    bugle_free(pane->data);
+    bugle_free(pane->fields);
 }
 
 static void gldb_buffer_pane_class_init(GldbBufferPaneClass *klass)

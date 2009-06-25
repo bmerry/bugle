@@ -223,7 +223,7 @@ typedef struct
 
 static void checks_init(const void *key, void *data)
 {
-    bugle_list_init((linked_list *) data, free);
+    bugle_list_init((linked_list *) data, bugle_free);
 }
 
 static void add_check(object *call_object,
@@ -270,7 +270,7 @@ static void globjects_pre_glsl_delete_program(GLuint object, const callback_data
         bugle_glGetAttachedShaders(object, count, NULL, attached);
         for (i = 0; i < count; i++)
             add_check(data->call_object, BUGLE_GLOBJECTS_SHADER, attached[i]);
-        free(attached);
+        bugle_free(attached);
     }
     add_check(data->call_object, BUGLE_GLOBJECTS_PROGRAM, object);
 }
@@ -532,7 +532,7 @@ void bugle_globjects_walk(bugle_globjects_type type,
     qsort(keyvalues, count, 2 * sizeof(size_t), cmp_size_t);
     for (j = 0; j < count; j++)
         (*walker)(keyvalues[j][0], keyvalues[j][1], data);
-    free(keyvalues);
+    bugle_free(keyvalues);
     unlock();
 }
 

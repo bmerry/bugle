@@ -203,7 +203,7 @@ void gldb_protocol_reader_select_free(gldb_protocol_reader_select *r)
     TerminateThread(r->thread, 0);
     WaitForSingleObject(r->thread, INFINITE);  /* wait for thread termination */
     CloseHandle(r->thread);
-    free(r);
+    bugle_free(r);
 }
 
 #endif /* BUGLE_OSAPI_WIN32 */

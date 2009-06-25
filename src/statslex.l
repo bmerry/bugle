@@ -38,7 +38,7 @@ static int current_string_memory = 0;
 
 static void free_string(void)
 {
-    if (current_string) free(current_string);
+    if (current_string) bugle_free(current_string);
 }
 
 static void append_char(char ch)

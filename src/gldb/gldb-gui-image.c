@@ -418,12 +418,12 @@ static void image_draw_motion_update(GldbGuiImageViewer *viewer,
         const char *abbr = gldb_channel_get_abbr(channel);
         tmp_msg = msg;
         msg = bugle_asprintf(" %s %s: %f", tmp_msg, abbr ? abbr : "?", gldb_gui_image_plane_get_pixel(plane, u, v, p));
-        free(tmp_msg);
+        bugle_free(tmp_msg);
     }
     viewer->pixel_status_id = gtk_statusbar_push(viewer->statusbar,
                                                  viewer->statusbar_context_id,
                                                  msg);
-    free(msg);
+    bugle_free(msg);
 }
 
 static gboolean image_draw_motion(GtkWidget *widget,
@@ -657,7 +657,7 @@ static void gldb_gui_image_viewer_new_zoom_combo(GldbGuiImageViewer *viewer)
                            COLUMN_IMAGE_ZOOM_TEXT, caption,
                            COLUMN_IMAGE_ZOOM_SENSITIVE, FALSE,
                            -1);
-        free(caption);
+        bugle_free(caption);
     }
     for (i = 1; i <= 5; i++)
     {
@@ -670,7 +670,7 @@ static void gldb_gui_image_viewer_new_zoom_combo(GldbGuiImageViewer *viewer)
                            COLUMN_IMAGE_ZOOM_TEXT, caption,
                            COLUMN_IMAGE_ZOOM_SENSITIVE, FALSE,
                            -1);
-        free(caption);
+        bugle_free(caption);
     }
 
     viewer->zoom = zoom = gtk_combo_box_new_with_model(GTK_TREE_MODEL(store));
@@ -696,7 +696,7 @@ static void gldb_gui_image_viewer_new_zoom_combo(GldbGuiImageViewer *viewer)
 
 static void free_pixbuf_data(guchar *pixels, gpointer user_data)
 {
-    free(pixels);
+    bugle_free(pixels);
 }
 
 GLfloat gldb_gui_image_plane_get_pixel(const GldbGuiImagePlane *plane, int x, int y, int c)
@@ -1168,7 +1168,7 @@ void gldb_gui_image_viewer_update_levels(GldbGuiImageViewer *viewer)
                            COLUMN_IMAGE_LEVEL_VALUE, i,
                            COLUMN_IMAGE_LEVEL_TEXT, text,
                            -1);
-        free(text);
+        bugle_free(text);
         if (i == old) new_iter = iter;
     }
 
@@ -1308,7 +1308,7 @@ void gldb_gui_image_plane_clear(GldbGuiImagePlane *plane)
 {
     if (plane)
     {
-        if (plane->owns_pixels && plane->pixels) free(plane->pixels);
+        if (plane->owns_pixels && plane->pixels) bugle_free(plane->pixels);
         plane->pixels = NULL;
     }
 }
@@ -1321,7 +1321,7 @@ void gldb_gui_image_level_clear(GldbGuiImageLevel *level)
         for (i = 0; i < level->nplanes; i++)
             gldb_gui_image_plane_clear(&level->planes[i]);
         if (level->planes)
-            free(level->planes);
+            bugle_free(level->planes);
         level->planes = NULL;
         level->nplanes = 0;
     }
@@ -1335,7 +1335,7 @@ void gldb_gui_image_clear(GldbGuiImage *image)
         for (i = 0; i < image->nlevels; i++)
             gldb_gui_image_level_clear(&image->levels[i]);
         if (image->levels)
-            free(image->levels);
+            bugle_free(image->levels);
         image->levels = NULL;
         image->nlevels = 0;
     }

@@ -174,7 +174,7 @@ static int stats_nv_enumerate(UINT index, char *name)
             si = bugle_stats_signal_new(stat_name, nv,
                                         stats_nv_signal_activate);
             bugle_list_append(&stats_nv_registered, si);
-            free(stat_name);
+            bugle_free(stat_name);
         }
     return NVPM_OK;
 }
@@ -184,8 +184,8 @@ static void stats_nv_free(stats_signal *si)
     stats_signal_nv *nv;
 
     nv = (stats_signal_nv *) si->user_data;
-    free(nv->name);
-    free(nv);
+    bugle_free(nv->name);
+    bugle_free(nv);
 }
 
 static bugle_bool stats_nv_initialise(filter_set *handle)

@@ -92,3 +92,8 @@ void bugle_alloc_die(void)
         fprintf(stderr, "bugle: memory allocation failed\n");
     abort();
 }
+
+void bugle_free(void *ptr)
+{
+    free(ptr);
+}

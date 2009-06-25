@@ -144,7 +144,7 @@ static void prepare_screenshot_data(screenshot_data *data,
         || data->height != height
         || data->stride != stride)
     {
-        if (data->pixels) free(data->pixels);
+        if (data->pixels) bugle_free(data->pixels);
 #ifdef GL_EXT_pixel_buffer_object
         if (data->pbo) CALL(glDeleteBuffersARB)(1, &data->pbo);
 #endif
@@ -212,7 +212,7 @@ static void screenshot_stop(screenshot_context *ssctx)
  */
 static void free_screenshot_data(screenshot_data *data)
 {
-    if (data->pixels) free(data->pixels);
+    if (data->pixels) bugle_free(data->pixels);
 }
 
 #if HAVE_LAVC
@@ -346,7 +346,7 @@ static void lavc_shutdown(void)
 
     for (i = 0; i < video_lag; i++)
         free_screenshot_data(&video_data[i]);
-    free(video_data);
+    bugle_free(video_data);
 #if HAVE_LIBSWSCALE
     sws_freeContext(sws_context);
 #endif
@@ -622,7 +622,7 @@ static void screenshot_file(int frameno)
     if (!screenshot_start(&ssctx)) return;
     fname = interpolate_filename(video_filename, frameno);
     out = fopen(fname, "wb");
-    free(fname);
+    bugle_free(fname);
     if (!out)
     {
         perror("failed to open screenshot file");
@@ -678,7 +678,7 @@ static bugle_bool screenshot_initialise(filter_set *handle)
         cmdline = bugle_asprintf("ppmtoy4m | ffmpeg -f yuv4mpegpipe -i - -vcodec %s -strict -1 -y %s",
                                  video_codec, video_filename);
         video_pipe = popen(cmdline, "w");
-        free(cmdline);
+        bugle_free(cmdline);
         if (!video_pipe) return BUGLE_FALSE;
 #endif
         /* Note: we only initialise libavcodec on the first frame, because
@@ -703,7 +703,7 @@ static void screenshot_shutdown(filter_set *handle)
         lavc_shutdown();
 #endif
     if (video_pipe) pclose(video_pipe);
-    if (video_codec) free(video_codec);
+    if (video_codec) bugle_free(video_codec);
 }
 
 void bugle_initialise_filter_library(void)

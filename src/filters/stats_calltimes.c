@@ -83,7 +83,7 @@ static bugle_bool stats_calltimes_initialise(filter_set *handle)
         char *name;
         name = bugle_asprintf("calltimes:%s", budgie_function_name(i));
         stats_calltimes_signals[i] = bugle_stats_signal_new(name, NULL, NULL);
-        free(name);
+        bugle_free(name);
     }
     stats_calltimes_total = bugle_stats_signal_new("calltimes:total", NULL, NULL);
 
@@ -97,7 +97,7 @@ static bugle_bool stats_calltimes_initialise(filter_set *handle)
 
 static void stats_calltimes_shutdown(filter_set *handle)
 {
-    free(stats_calltimes_signals);
+    bugle_free(stats_calltimes_signals);
 }
 
 void bugle_initialise_filter_library(void)

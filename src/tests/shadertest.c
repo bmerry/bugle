@@ -35,7 +35,7 @@ static void show_log(GLhandleARB s)
     log = (GLcharARB *) malloc(max_length * sizeof(GLcharARB));
     glGetInfoLogARB(s, max_length, &length, log);
     printf("%s", log);
-    free(log);
+    bugle_free(log);
 }
 
 static void show_compile_log(GLhandleARB s)

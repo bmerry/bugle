@@ -191,7 +191,7 @@ static gboolean gldb_texture_pane_response_callback(gldb_response *response,
     }
 
     gldb_free_response(response);
-    free(data);
+    bugle_free(data);
     return TRUE;
 }
 
@@ -303,7 +303,7 @@ static void gldb_texture_pane_update_ids(GldbTexturePane *pane)
                                    COLUMN_TEXTURE_ID_BOLD, bugle_hashptr_get_int(&active, t->numeric_name) ? PANGO_WEIGHT_BOLD : PANGO_WEIGHT_NORMAL,
                                    COLUMN_TEXTURE_ID_TEXT, name,
                                    -1);
-                free(name);
+                bugle_free(name);
             }
         }
         bugle_hashptr_clear(&active);

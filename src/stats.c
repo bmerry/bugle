@@ -184,7 +184,7 @@ void bugle_stats_signal_values_init(stats_signal_values *sv)
 
 void bugle_stats_signal_values_clear(stats_signal_values *sv)
 {
-    free(sv->values);
+    bugle_free(sv->values);
     sv->values = NULL;
     sv->allocated = 0;
     sv->last_updated.tv_sec = 0;
@@ -365,7 +365,7 @@ static bugle_bool stats_expression_match1(stats_expression *expr, void *arg)
     if (!strchr(expr->signal_name, '*')) return BUGLE_TRUE; /* Not a generic */
     full = pattern_replace(expr->signal_name, (const char *) arg);
     found = stats_signal_get(full) != NULL;
-    free(full);
+    bugle_free(full);
     return found;
 }
 
@@ -406,10 +406,10 @@ static void stats_expression_free(stats_expression *expr)
         if (expr->right) stats_expression_free(expr->right);
         break;
     case STATS_EXPRESSION_SIGNAL:
-        free(expr->signal_name);
+        bugle_free(expr->signal_name);
         break;
     }
-    free(expr);
+    bugle_free(expr);
 }
 
 stats_substitution *bugle_stats_statistic_find_substitution(stats_statistic *st, double v)
@@ -427,11 +427,11 @@ stats_substitution *bugle_stats_statistic_find_substitution(stats_statistic *st,
 
 void stats_statistic_free(stats_statistic *st)
 {
-    free(st->name);
+    bugle_free(st->name);
     stats_expression_free(st->value);
-    free(st->label);
+    bugle_free(st->label);
     bugle_list_clear(&st->substitutions);
-    free(st);
+    bugle_free(st);
 }
 
 static stats_statistic *stats_statistic_instantiate(stats_statistic *st, const char *rep)
@@ -446,7 +446,7 @@ static stats_statistic *stats_statistic_instantiate(stats_statistic *st, const c
     n->value = stats_expression_instantiate(st->value, rep);
     n->last = BUGLE_FALSE;
 
-    bugle_list_init(&n->substitutions, free);
+    bugle_list_init(&n->substitutions, bugle_free);
     for (i = bugle_list_head(&st->substitutions); i; i = bugle_list_next(i))
     {
         stats_substitution *su_old, *su_new;
@@ -510,14 +510,14 @@ static bugle_bool stats_load_config(void)
         if (stats_yyparse() == 0)
         {
             stats_statistics = stats_statistics_get_list();
-            free(config);
+            bugle_free(config);
             return BUGLE_TRUE;
         }
         else
         {
             bugle_log_printf("stats", "config", BUGLE_LOG_ERROR,
                              "Parse error in %s", config);
-            free(config);
+            bugle_free(config);
             return BUGLE_FALSE;
         }
     }
@@ -525,14 +525,14 @@ static bugle_bool stats_load_config(void)
     {
         bugle_log_printf("stats", "config", BUGLE_LOG_ERROR,
                          "Failed to open %s", config);
-        free(config);
+        bugle_free(config);
         return BUGLE_FALSE;
     }
 }
 
 static bugle_bool stats_initialise(filter_set *handle)
 {
-    bugle_hash_init(&stats_signals, free);
+    bugle_hash_init(&stats_signals, bugle_free);
     bugle_list_init(&stats_signals_active, NULL);
     bugle_hash_init(&stats_statistics_first, NULL);
     return BUGLE_TRUE;
@@ -580,7 +580,7 @@ static bugle_bool stats_ordering_initialise(filter_set *handle)
                         i = bugle_list_insert_after(stats_statistics, i, n);
                         count++;
                     }
-                    free(rep);
+                    bugle_free(rep);
                 }
             }
 

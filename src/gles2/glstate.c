@@ -347,7 +347,7 @@ static void make_target(const glstate *self,
 
 static void spawn_children_vertex_attrib(const glstate *self, linked_list *children)
 {
-    bugle_list_init(children, free);
+    bugle_list_init(children, bugle_free);
     make_leaves_conditional(self, vertex_attrib_state,
                             0,
                             (self->object == 0) ? STATE_SELECT_NON_ZERO : 0,
@@ -389,21 +389,21 @@ static bugle_uint32_t texture_mask(GLenum target)
 
 static void spawn_children_tex_parameter(const glstate *self, linked_list *children)
 {
-    bugle_list_init(children, free);
+    bugle_list_init(children, bugle_free);
     make_leaves_conditional(self, tex_parameter_state, 0,
                             texture_mask(self->target), children);
 }
 
 static void spawn_children_tex_target(const glstate *self, linked_list *children)
 {
-    bugle_list_init(children, free);
+    bugle_list_init(children, bugle_free);
     make_objects(self, BUGLE_GLOBJECTS_TEXTURE, self->target, BUGLE_TRUE, "%lu",
                  spawn_children_tex_parameter, NULL, children);
 }
 
 static void spawn_children_tex_unit(const glstate *self, linked_list *children)
 {
-    bugle_list_init(children, free);
+    bugle_list_init(children, bugle_free);
     make_leaves(self, tex_unit_state, children);
 }
 
@@ -441,7 +441,7 @@ static void spawn_textures(const glstate *self,
 
 static void spawn_children_shader(const glstate *self, linked_list *children)
 {
-    bugle_list_init(children, free);
+    bugle_list_init(children, bugle_free);
     make_leaves(self, shader_state, children);
 }
 
@@ -460,7 +460,7 @@ static void spawn_children_program(const glstate *self, linked_list *children)
         NULL, GL_NONE, TYPE_5GLint, -1, BUGLE_GL_ES_VERSION_2_0, -1, STATE_ATTRIB_LOCATION
     };
 
-    bugle_list_init(children, free);
+    bugle_list_init(children, bugle_free);
     make_leaves(self, program_state, children);
 
     bugle_glGetProgramiv(self->object, GL_ACTIVE_UNIFORMS, &count);
@@ -489,7 +489,7 @@ static void spawn_children_program(const glstate *self, linked_list *children)
                 if (child->numeric_name == -1) length = 0;
             }
             if (length) bugle_list_append(children, child);
-            else free(child->name); /* failed query */
+            else bugle_free(child->name); /* failed query */
         }
 
     if (status != GL_FALSE)
@@ -513,7 +513,7 @@ static void spawn_children_program(const glstate *self, linked_list *children)
             bugle_glGetActiveAttrib(self->object, i, max, &length, &size,
                                     &type, child->name);
             if (length) bugle_list_append(children, child);
-            else free(child->name);
+            else bugle_free(child->name);
         }
     }
 }
@@ -936,7 +936,7 @@ void bugle_state_get_raw(const glstate *state, bugle_state_raw *wrapper)
                 bugle_glGetUniformiv(state->object, state->numeric_name, (GLint *) buffer);
 
             budgie_type_convert(wrapper->data, out_type, buffer, in_type, size * units);
-            free(buffer);
+            bugle_free(buffer);
         }
         break;
     case STATE_MODE_ATTRIB_LOCATION:
@@ -969,7 +969,7 @@ void bugle_state_get_raw(const glstate *state, bugle_state_raw *wrapper)
             wrapper->data = out;
             wrapper->length = count;
             wrapper->type = TYPE_6GLenum;
-            free(formats);
+            bugle_free(formats);
         }
         break;
     case STATE_MODE_FRAMEBUFFER_ATTACHMENT_PARAMETER:
@@ -1062,31 +1062,31 @@ char *bugle_state_get_string(const glstate *state)
         ans = bugle_io_writer_mem_get(writer);
         bugle_io_writer_close(writer);
     }
-    free(wrapper.data);
+    bugle_free(wrapper.data);
     return ans;
 }
 
 void bugle_state_get_children(const glstate *self, linked_list *children)
 {
     if (self->spawn_children) (*self->spawn_children)(self, children);
-    else bugle_list_init(children, free);
+    else bugle_list_init(children, bugle_free);
 }
 
 void bugle_state_clear(glstate *self)
 {
-    if (self->name) free(self->name);
+    if (self->name) bugle_free(self->name);
 }
 
 static void spawn_children_buffer_parameter(const glstate *self, linked_list *children)
 {
-    bugle_list_init(children, free);
+    bugle_list_init(children, bugle_free);
     make_leaves(self, buffer_parameter_state, children);
 }
 
 
 static void spawn_children_framebuffer_attachment(const glstate *self, linked_list *children)
 {
-    bugle_list_init(children, free);
+    bugle_list_init(children, bugle_free);
     make_leaves(self, framebuffer_attachment_parameter_state, children);
 }
 
@@ -1123,7 +1123,7 @@ static void spawn_children_framebuffer_object(const glstate *self, linked_list *
     GLint attachments;
     int i;
 
-    bugle_list_init(children, free);
+    bugle_list_init(children, bugle_free);
     CALL(glGetIntegerv)(self->binding, &old);
     CALL(glBindFramebuffer)(self->target, self->object);
     make_leaves(self, framebuffer_parameter_state, children);
@@ -1145,20 +1145,20 @@ static void spawn_children_framebuffer_object(const glstate *self, linked_list *
 
 static void spawn_children_framebuffer(const glstate *self, linked_list *children)
 {
-    bugle_list_init(children, free);
+    bugle_list_init(children, bugle_free);
     make_objects(self, BUGLE_GLOBJECTS_FRAMEBUFFER, self->target, BUGLE_TRUE,
                  "%lu", spawn_children_framebuffer_object, NULL, children);
 }
 
 static void spawn_children_renderbuffer_object(const glstate *self, linked_list *children)
 {
-    bugle_list_init(children, free);
+    bugle_list_init(children, bugle_free);
     make_leaves(self, renderbuffer_parameter_state, children);
 }
 
 static void spawn_children_renderbuffer(const glstate *self, linked_list *children)
 {
-    bugle_list_init(children, free);
+    bugle_list_init(children, bugle_free);
     make_objects(self, BUGLE_GLOBJECTS_RENDERBUFFER, self->target, BUGLE_FALSE,
                  "%lu", spawn_children_renderbuffer_object, NULL, children);
 }
@@ -1168,7 +1168,7 @@ static void spawn_children_global(const glstate *self, linked_list *children)
     const char *version;
 
     version = (const char *) CALL(glGetString)(GL_VERSION);
-    bugle_list_init(children, free);
+    bugle_list_init(children, bugle_free);
     make_leaves(self, global_state, children);
 
     make_objects(self, BUGLE_GLOBJECTS_BUFFER, GL_NONE, BUGLE_FALSE,

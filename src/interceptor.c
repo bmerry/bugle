@@ -158,7 +158,7 @@ static void load_config(void)
         }
         else
             fprintf(stderr, "failed to open config file %s; running in passthrough mode\n", config);
-        free(config);
+        bugle_free(config);
     }
     else if (!debugging)
         fputs("$HOME not defined; running in passthrough mode\n", stderr);

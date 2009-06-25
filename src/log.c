@@ -216,9 +216,9 @@ static void log_filter_set_shutdown(filter_set *handle)
     if (log_filename)
     {
         if (log_file) fclose(log_file);
-        free(log_filename);
+        bugle_free(log_filename);
     }
-    free(log_format);
+    bugle_free(log_format);
 }
 
 void log_initialise(void)

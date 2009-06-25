@@ -554,7 +554,7 @@ static void showstats_shutdown(filter_set *handle)
     for (i = bugle_list_head(&showstats_stats_requested); i; i = bugle_list_next(i))
     {
         req = (showstats_statistic_request *) bugle_list_data(i);
-        free(req->name);
+        bugle_free(req->name);
     }
     bugle_list_clear(&showstats_stats_requested);
     bugle_list_clear(&showstats_stats);
@@ -587,6 +587,6 @@ void bugle_initialise_filter_library(void)
     bugle_filter_set_depends("showstats", "glextensions");
     bugle_gl_filter_set_renders("showstats");
     bugle_filter_set_stats_logger("showstats");
-    bugle_list_init(&showstats_stats_requested, free);
-    bugle_list_init(&showstats_stats, free);
+    bugle_list_init(&showstats_stats_requested, bugle_free);
+    bugle_list_init(&showstats_stats, bugle_free);
 }

@@ -24,6 +24,7 @@
 #include <stdlib.h>
 #include <bugle/filters.h>
 #include <bugle/objects.h>
+#include <bugle/memory.h>
 #include <bugle/glwin/trackcontext.h>
 #include <bugle/gl/glheaders.h>
 #include <bugle/gl/gldisplaylist.h>
@@ -48,7 +49,7 @@ typedef struct
 
 static void namespace_init(const void *key, void *data)
 {
-    bugle_hashptr_init((hashptr_table *) data, free);
+    bugle_hashptr_init((hashptr_table *) data, bugle_free);
 }
 
 static void namespace_clear(void *data)

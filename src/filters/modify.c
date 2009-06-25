@@ -131,7 +131,7 @@ static bugle_bool classify_initialise(filter_set *handle)
                                           classify_context_init,
                                           NULL,
                                           sizeof(classify_context));
-    bugle_list_init(&classify_callbacks, free);
+    bugle_list_init(&classify_callbacks, bugle_free);
     return BUGLE_TRUE;
 }
 

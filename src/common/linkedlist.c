@@ -128,7 +128,7 @@ void bugle_list_erase(linked_list *l, linked_list_node *node)
     if (node->prev) node->prev->next = node->next;
     else l->head = node->next;
 
-    free(node);
+    bugle_free(node);
 }
 
 void bugle_list_clear(linked_list *l)
@@ -140,7 +140,7 @@ void bugle_list_clear(linked_list *l)
     {
         nxt = cur->next;
         if (l->destructor) l->destructor(cur->data);
-        free(cur);
+        bugle_free(cur);
         cur = nxt;
     }
     l->head = l->tail = NULL;

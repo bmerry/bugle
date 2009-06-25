@@ -84,7 +84,7 @@ static void dump_state_xml_r(const gldb_state *root, GString *f, gboolean top)
         header = g_markup_printf_escaped("<state name=\"%s\">%s",
                                          name_utf8, value_utf8);
         g_string_append(f, header);
-        free(value);
+        bugle_free(value);
         g_free(name_utf8);
         g_free(value_utf8);
         g_free(header);
@@ -232,7 +232,7 @@ static void update_state_r(const gldb_state *root, GtkTreeStore *store,
                                    -1);
                 set_column(store, &iter, COLUMN_STATE_MODIFIED, COLUMN_STATE_MODIFIED_TOTAL, FALSE);
             }
-            free(value);
+            bugle_free(value);
             g_free(old_utf8);
             g_free(value_utf8);
             update_state_r(child, store, &iter);
@@ -270,7 +270,7 @@ static void update_state_r(const gldb_state *root, GtkTreeStore *store,
                                COLUMN_STATE_EXPANDED, FALSE,
                                -1);
             set_column(store, &iter2, COLUMN_STATE_MODIFIED, COLUMN_STATE_MODIFIED_TOTAL, TRUE);
-            free(value);
+            bugle_free(value);
             g_free(value_utf8);
             update_state_r(child, store, &iter2);
         }

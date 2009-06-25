@@ -100,7 +100,7 @@ static void extoverride_context_init(const void *key, void *data)
     if (exts_ptr != exts) exts_ptr--;
     *exts_ptr = '\0';
     self->extensions = (GLubyte *) exts;
-    free(ext);
+    bugle_free(ext);
 }
 
 static void extoverride_context_clear(void *data)
@@ -109,7 +109,7 @@ static void extoverride_context_clear(void *data)
 
     self = (extoverride_context *) data;
     /* self->version is always a shallow copy of another string */
-    free(self->extensions);
+    bugle_free(self->extensions);
 }
 
 static bugle_bool extoverride_glGetString(function_call *call, const callback_data *data)
@@ -184,7 +184,7 @@ static void extoverride_shutdown(filter_set *handle)
 {
     bugle_hash_clear(&extoverride_disabled);
     bugle_hash_clear(&extoverride_enabled);
-    free(extoverride_max_version);
+    bugle_free(extoverride_max_version);
 }
 
 static bugle_bool extoverride_variable_disable(const struct filter_set_variable_info_s *var,

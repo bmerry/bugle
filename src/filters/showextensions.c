@@ -201,8 +201,8 @@ static void showextensions_shutdown(filter_set *handle)
     bugle_log_callback("showextensions", "ext", BUGLE_LOG_INFO,
                        showextensions_print, marked_extensions);
 
-    free(marked_extensions);
-    free(seen_functions);
+    bugle_free(marked_extensions);
+    bugle_free(seen_functions);
     bugle_hashptr_clear(&seen_enums);
 }
 

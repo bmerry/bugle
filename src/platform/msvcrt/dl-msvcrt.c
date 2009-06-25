@@ -48,7 +48,7 @@ bugle_dl_module bugle_dl_open(const char *filename, int flag)
 
     handle = (void *) LoadLibrary(filename);
 
-    free(fullname);
+    bugle_free(fullname);
     return handle;
 }
 
@@ -86,7 +86,7 @@ void bugle_dl_foreach(const char *path, void (*callback)(const char *filename, v
 
     spec = bugle_asprintf("%s\\*.dll", path);
     handle = _findfirst(spec, &data);
-    free(spec);
+    bugle_free(spec);
     if (handle == -1)
     {
         bugle_log_printf("filters", "initialise", BUGLE_LOG_ERROR,
@@ -99,9 +99,10 @@ void bugle_dl_foreach(const char *path, void (*callback)(const char *filename, v
         char *filename;
 
         filename = bugle_asprintf("%s/%s", path, data.name);
+        fprintf(stderr, "Loading %s\n", filename);
         callback(filename, arg);
-        free(filename);
-    } while (_findnext(handle, &data));
+        bugle_free(filename);
+    } while (_findnext(handle, &data) == 0);
 
     _findclose(handle);
 }

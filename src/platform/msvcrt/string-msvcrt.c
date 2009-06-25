@@ -58,7 +58,7 @@ int bugle_vsnprintf(char *str, size_t size, const char *format, va_list ap)
     {
         buffer = bugle_vasprintf(format, ap2);
         ret = strlen(buffer);
-        free(buffer);
+        bugle_free(buffer);
     }
     va_end(ap2);
     return ret;

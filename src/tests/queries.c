@@ -511,7 +511,7 @@ static void query_ll_programs(void)
         fprintf(ref, "trace\\.call: glGetProgramStringARB\\(GL_VERTEX_PROGRAM_ARB, GL_PROGRAM_STRING_ARB, ");
         dump_string(ref, vp);
         fprintf(ref, "\\)\n");
-        free(source);
+        bugle_free(source);
 
         glDeleteProgramsARB(1, &program);
         fprintf(ref, "trace\\.call: glDeleteProgramsARB\\(1, %p -> { %u }\\)\n",

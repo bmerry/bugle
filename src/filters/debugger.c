@@ -87,7 +87,7 @@ static void send_state(const glstate *state, bugle_uint32_t id)
     gldb_protocol_send_code(out_pipe, state->enum_name);
     if (str) gldb_protocol_send_string(out_pipe, str);
     else gldb_protocol_send_string(out_pipe, "");
-    free(str);
+    bugle_free(str);
 
     bugle_state_get_children(state, &children);
     for (cur = bugle_list_head(&children); cur; cur = bugle_list_next(cur))
@@ -126,7 +126,7 @@ static void send_state_raw(const glstate *state, bugle_uint32_t id)
         gldb_protocol_send_code(out_pipe, -2); /* Magic invalid value */
         gldb_protocol_send_binary_string(out_pipe, 0, (const char *) wrapper.data);
     }
-    free(wrapper.data);
+    bugle_free(wrapper.data);
 
     bugle_state_get_children(state, &children);
     for (cur = bugle_list_head(&children); cur; cur = bugle_list_next(cur))
@@ -356,7 +356,7 @@ static bugle_bool send_data_texture(bugle_uint32_t id, GLuint texid, GLenum targ
     gldb_protocol_send_code(out_pipe, height);
     gldb_protocol_send_code(out_pipe, depth);
     bugle_gl_end_internal_render("send_data_texture", BUGLE_TRUE);
-    free(data);
+    bugle_free(data);
     return BUGLE_TRUE;
 }
 #endif /* GL */
@@ -603,7 +603,7 @@ static bugle_bool send_data_framebuffer(bugle_uint32_t id, GLuint fbo, GLenum ta
     gldb_protocol_send_code(out_pipe, width);
     gldb_protocol_send_code(out_pipe, height);
     bugle_gl_end_internal_render("send_data_framebuffer", BUGLE_TRUE);
-    free(data);
+    bugle_free(data);
     return BUGLE_TRUE;
 }
 
@@ -665,7 +665,7 @@ static bugle_bool send_data_shader(bugle_uint32_t id, GLuint shader_id,
     gldb_protocol_send_code(out_pipe, id);
     gldb_protocol_send_code(out_pipe, REQ_DATA_SHADER);
     gldb_protocol_send_binary_string(out_pipe, length, text);
-    free(text);
+    bugle_free(text);
 
     bugle_gl_end_internal_render("send_data_shader", BUGLE_TRUE);
     return BUGLE_TRUE;
@@ -739,7 +739,7 @@ static bugle_bool send_data_info_log(bugle_uint32_t id, GLuint object_id,
     gldb_protocol_send_code(out_pipe, id);
     gldb_protocol_send_code(out_pipe, REQ_DATA_INFO_LOG);
     gldb_protocol_send_binary_string(out_pipe, length, text);
-    free(text);
+    bugle_free(text);
 
     bugle_gl_end_internal_render("send_data_info_log", BUGLE_TRUE);
     return BUGLE_TRUE;
@@ -819,7 +819,7 @@ static bugle_bool send_data_buffer(bugle_uint32_t id, GLuint object_id)
     gldb_protocol_send_code(out_pipe, REQ_DATA_BUFFER);
     gldb_protocol_send_binary_string(out_pipe, size, data);
 
-    free(data);
+    bugle_free(data);
     bugle_gl_end_internal_render("send_data_buffer", BUGLE_TRUE);
     return BUGLE_TRUE;
 }
@@ -870,9 +870,9 @@ static void process_single_command(function_call *call)
             gldb_protocol_send_code(out_pipe, 0);
             resp_str = bugle_asprintf("Unknown function %s", req_str);
             gldb_protocol_send_string(out_pipe, resp_str);
-            free(resp_str);
+            bugle_free(resp_str);
         }
-        free(req_str);
+        bugle_free(req_str);
         break;
     case REQ_BREAK_EVENT:
         gldb_protocol_recv_code(in_pipe, &event);
@@ -904,7 +904,7 @@ static void process_single_command(function_call *call)
             gldb_protocol_send_code(out_pipe, id);
             gldb_protocol_send_code(out_pipe, 0);
             gldb_protocol_send_string(out_pipe, resp_str);
-            free(resp_str);
+            bugle_free(resp_str);
         }
         else if (!strcmp(req_str, "debugger"))
         {
@@ -921,7 +921,7 @@ static void process_single_command(function_call *call)
             gldb_protocol_send_code(out_pipe, id);
             gldb_protocol_send_code(out_pipe, 0);
             gldb_protocol_send_string(out_pipe, resp_str);
-            free(resp_str);
+            bugle_free(resp_str);
         }
         else if (bugle_filter_set_is_active(f) == activate)
         {
@@ -931,7 +931,7 @@ static void process_single_command(function_call *call)
             gldb_protocol_send_code(out_pipe, id);
             gldb_protocol_send_code(out_pipe, 0);
             gldb_protocol_send_string(out_pipe, resp_str);
-            free(resp_str);
+            bugle_free(resp_str);
         }
         else
         {
@@ -952,7 +952,7 @@ static void process_single_command(function_call *call)
                 gldb_protocol_send_code(out_pipe, 0);
             }
         }
-        free(req_str);
+        bugle_free(req_str);
         break;
     case REQ_STATE_TREE:
         if (bugle_gl_begin_internal_render())
@@ -1057,7 +1057,7 @@ static void process_single_command(function_call *call)
                 gldb_protocol_send_code(out_pipe, RESP_BREAK);
                 gldb_protocol_send_code(out_pipe, start_id);
                 gldb_protocol_send_string(out_pipe, resp_str);
-                free(resp_str);
+                bugle_free(resp_str);
             }
         }
         break;
@@ -1118,7 +1118,7 @@ static bugle_bool debugger_callback(function_call *call, const callback_data *da
             gldb_protocol_send_code(out_pipe, RESP_BREAK);
             gldb_protocol_send_code(out_pipe, start_id);
             gldb_protocol_send_string(out_pipe, resp_str);
-            free(resp_str);
+            bugle_free(resp_str);
         }
     }
     debugger_loop(call);
@@ -1166,7 +1166,7 @@ static bugle_bool debugger_error_callback(function_call *call, const callback_da
         gldb_protocol_send_code(out_pipe, start_id);
         gldb_protocol_send_string(out_pipe, resp_str);
         gldb_protocol_send_string(out_pipe, error_str);
-        free(resp_str);
+        bugle_free(resp_str);
         stopped = BUGLE_TRUE;
         debugger_loop(call);
     }
@@ -1324,7 +1324,7 @@ static bugle_bool debugger_initialise(filter_set *handle)
 
 static void debugger_shutdown(filter_set *handle)
 {
-    free(break_on);
+    bugle_free(break_on);
 }
 
 void bugle_initialise_filter_library(void)

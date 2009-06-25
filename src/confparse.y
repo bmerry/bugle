@@ -164,24 +164,24 @@ const config_chain *bugle_config_get_chain(const char *name)
 
 static void variable_free(config_variable *variable)
 {
-    free(variable->name);
-    free(variable->value);
-    free(variable);
+    bugle_free(variable->name);
+    bugle_free(variable->value);
+    bugle_free(variable);
 }
 
 static void filterset_free(config_filterset *filterset)
 {
-    free(filterset->name);
-    if (filterset->key) free(filterset->key);
+    bugle_free(filterset->name);
+    if (filterset->key) bugle_free(filterset->key);
     bugle_list_clear(&filterset->variables);
-    free(filterset);
+    bugle_free(filterset);
 }
 
 static void chain_free(config_chain *chain)
 {
-    free(chain->name);
+    bugle_free(chain->name);
     bugle_list_clear(&chain->filtersets);
-    free(chain);
+    bugle_free(chain);
 }
 
 void bugle_config_shutdown(void)

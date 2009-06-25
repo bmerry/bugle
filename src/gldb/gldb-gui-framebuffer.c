@@ -196,7 +196,7 @@ static void gldb_framebuffer_pane_update_ids(GldbFramebufferPane *pane)
                                COLUMN_FRAMEBUFFER_ID_BOLD, fbo->numeric_name == active ? PANGO_WEIGHT_BOLD : PANGO_WEIGHT_NORMAL,
                                COLUMN_FRAMEBUFFER_ID_TEXT, name,
                                -1);
-            free(name);
+            bugle_free(name);
         }
     }
     else
@@ -278,7 +278,7 @@ static void gldb_framebuffer_pane_id_changed(GtkWidget *widget, gpointer user_da
                                        COLUMN_FRAMEBUFFER_BUFFER_CHANNELS, color_channels,
                                        COLUMN_FRAMEBUFFER_BUFFER_TEXT, name,
                                        -1);
-                    free(name);
+                    bugle_free(name);
                 }
             }
 
@@ -367,7 +367,7 @@ static void gldb_framebuffer_pane_id_changed(GtkWidget *widget, gpointer user_da
                                        COLUMN_FRAMEBUFFER_BUFFER_CHANNELS, color_channels,
                                        COLUMN_FRAMEBUFFER_BUFFER_TEXT, name,
                                        -1);
-                    free(name);
+                    bugle_free(name);
                 }
             }
 

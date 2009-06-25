@@ -113,7 +113,7 @@ void bugle_hash_set(hash_table *table, const char *key, void *value)
             if (table->entries[i].key)
                 hash_set_fast(&big, table->entries[i].key,
                                     table->entries[i].value);
-        if (table->entries) free(table->entries);
+        if (table->entries) bugle_free(table->entries);
         *table = big;
     }
 
@@ -162,11 +162,11 @@ void bugle_hash_clear(hash_table *table)
         for (i = 0; i < table->size; i++)
             if (table->entries[i].key)
             {
-                free(table->entries[i].key);
+                bugle_free(table->entries[i].key);
                 if (table->destructor)
                     table->destructor(table->entries[i].value);
             }
-        free(table->entries);
+        bugle_free(table->entries);
     }
     table->entries = NULL;
     table->size = table->count = 0;
@@ -247,7 +247,7 @@ void bugle_hashptr_set(hashptr_table *table, const void *key, void *value)
             if (table->entries[i].key)
                 hashptr_set_fast(&big, table->entries[i].key,
                                  table->entries[i].value);
-        if (table->entries) free(table->entries);
+        if (table->entries) bugle_free(table->entries);
         *table = big;
     }
 
@@ -299,7 +299,7 @@ void bugle_hashptr_clear(hashptr_table *table)
                 if (table->destructor)
                     table->destructor(table->entries[i].value);
             }
-        free(table->entries);
+        bugle_free(table->entries);
     }
     table->entries = NULL;
     table->size = table->count = 0;

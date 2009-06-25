@@ -197,7 +197,7 @@ static int fd_vprintf(void *arg, const char *format, va_list ap)
     {
         buffer = bugle_vasprintf(format, ap);
         ret = fd_write(s->buffer, sizeof(char), length, arg);
-        free(buffer);
+        bugle_free(buffer);
     }
     va_end(ap2);
     return ret;

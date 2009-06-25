@@ -89,7 +89,7 @@ int bugle_io_writer_close(bugle_io_writer *writer)
 {
     int ret;
     ret = writer->fn_close(writer->arg);
-    free(writer);
+    bugle_free(writer);
     return ret;
 }
 
@@ -211,7 +211,7 @@ void bugle_io_writer_mem_release(bugle_io_writer *writer)
     bugle_io_writer_mem *mem;
 
     mem = (bugle_io_writer_mem *) writer->arg;
-    free(mem->ptr);
+    bugle_free(mem->ptr);
     mem->ptr = NULL;
     mem->size = 0;
     mem->total = 0;

@@ -137,7 +137,7 @@ static bugle_bool eps_swap_buffers(function_call *call, const callback_data *dat
         f = fopen(eps_filename, "wb");
         if (!f)
         {
-            free(fname);
+            bugle_free(fname);
             bugle_log_printf("eps", "file", BUGLE_LOG_WARNING,
                              "Cannot open %s", eps_filename);
             return BUGLE_TRUE;
@@ -154,7 +154,7 @@ static bugle_bool eps_swap_buffers(function_call *call, const callback_data *dat
             bugle_log("eps", "gl2ps", BUGLE_LOG_WARNING,
                       "gl2psBeginPage failed");
             fclose(f);
-            free(fname);
+            bugle_free(fname);
             return BUGLE_TRUE;
         }
         CALL(glGetFloatv)(GL_POINT_SIZE, &size);
@@ -164,7 +164,7 @@ static bugle_bool eps_swap_buffers(function_call *call, const callback_data *dat
 
         d->stream = f;
         d->capture = BUGLE_TRUE;
-        free(fname);
+        bugle_free(fname);
         bugle_gl_end_internal_render("eps_swap_buffers", BUGLE_TRUE);
     }
     return BUGLE_TRUE;

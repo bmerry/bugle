@@ -61,7 +61,7 @@ bugle_dl_module bugle_dl_open(const char *filename, int flag)
         dlopen_flag |= RTLD_LAZY;
     handle = dlopen(filename, dlopen_flag);
 
-    free(fullname);
+    bugle_free(fullname);
     return handle;
 }
 
@@ -115,7 +115,7 @@ void bugle_dl_foreach(const char *path, void (*callback)(const char *filename, v
 
             filename = bugle_asprintf("%s/%s", path, item->d_name);
             callback(filename, arg);
-            free(filename);
+            bugle_free(filename);
         }
     }
 

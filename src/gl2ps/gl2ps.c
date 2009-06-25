@@ -337,7 +337,7 @@ static void *gl2psRealloc(void *ptr, size_t size)
 static void gl2psFree(void *ptr)
 {
   if(!ptr) return;
-  free(ptr);
+  bugle_free(ptr);
 }
 
 static size_t gl2psWriteBigEndian(unsigned long data, size_t bytes)

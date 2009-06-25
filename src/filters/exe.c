@@ -93,7 +93,7 @@ static int follow_pointer(budgie_type type, int length, const void *ptr,
         else
             budgie_dump_any_type(cur_type, cur, -1, out);
     }
-    free(arg_ids);
+    bugle_free(arg_ids);
     bugle_io_puts(" };\n", out);
     return *defn_pool++;
 }
@@ -208,7 +208,7 @@ static void exe_shutdown(filter_set *handle)
         bugle_io_printf(out, "    frame%d,\n", i);
     bugle_io_printf(out, "};\n");
     bugle_io_writer_close(out);
-    free(exe_filename);
+    bugle_free(exe_filename);
 }
 
 void bugle_initialise_filter_library(void)

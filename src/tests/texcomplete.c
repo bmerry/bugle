@@ -243,7 +243,7 @@ static void dump_log(const char *phase,
     lg = malloc(length + 1);
     get(object, length + 1, &length, lg);
     fprintf(stderr, "%s\n", lg);
-    free(lg);
+    bugle_free(lg);
     exit(1);
 }
 

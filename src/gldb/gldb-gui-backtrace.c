@@ -93,7 +93,7 @@ static void gldb_gdb_value_free(GldbGdbValue *value)
     switch (value->type)
     {
     case GLDB_GDB_VALUE_CONST:
-        free(value->const_value);
+        bugle_free(value->const_value);
         break;
     case GLDB_GDB_VALUE_LIST:
         bugle_list_clear(&value->list_value);
@@ -102,7 +102,7 @@ static void gldb_gdb_value_free(GldbGdbValue *value)
         bugle_hash_clear(&value->tuple_value);
         break;
     }
-    free(value);
+    bugle_free(value);
 }
 
 /* Returns the value from a tuple with the specified name. The value must
@@ -123,7 +123,7 @@ static char *gldb_gdb_value_get_string_field(GldbGdbValue *tuple, const char *na
 static void gldb_gdb_result_record_free(GldbGdbResultRecord *record)
 {
     bugle_hash_clear(&record->results);
-    free(record);
+    bugle_free(record);
 }
 
 /* Updates the record_ptr to point just beyond the extracted value.
@@ -151,7 +151,7 @@ static GldbGdbValue *gldb_gdb_value_parse(const char **record_ptr, GError **erro
         }
         if (end[0] != '"')
         {
-            free(v);
+            bugle_free(v);
             g_set_error(error, GLDB_GDB_ERROR, GLDB_GDB_ERROR_PARSE,
                         "Failed to parse value: expected '\"'");
             return NULL;
@@ -192,7 +192,7 @@ static GldbGdbValue *gldb_gdb_value_parse(const char **record_ptr, GError **erro
                 old = (GldbGdbValue *) bugle_hash_get(&v->tuple_value, name);
                 if (old) gldb_gdb_value_free(old);
                 bugle_hash_set(&v->tuple_value, name, value);
-                free(name);
+                bugle_free(name);
             } while (record[0] == ',');
             if (record[0] != '}')
             {
@@ -255,7 +255,7 @@ static GldbGdbValue *gldb_gdb_value_parse(const char **record_ptr, GError **erro
     }
     else
     {
-        free(v);
+        bugle_free(v);
         g_set_error(error, GLDB_GDB_ERROR, GLDB_GDB_ERROR_PARSE,
                     "Failed to parse value: expected '\"', '[' or '{'");
         return NULL;
@@ -340,7 +340,7 @@ static GldbGdbResultRecord *gldb_gdb_result_record_parse(const char *record, GEr
         old = bugle_hash_get(&rr->results, name);
         if (old) gldb_gdb_value_free(old);
         bugle_hash_set(&rr->results, name, value);
-        free(name);
+        bugle_free(name);
     }
     return rr;
 }
@@ -440,7 +440,7 @@ static void gldb_backtrace_pane_populate(GldbBacktracePane *pane,
                            COLUMN_BACKTRACE_FUNCTION, func ? func : "??",
                            COLUMN_BACKTRACE_LOCATION, location,
                            -1);
-        free(location);
+        bugle_free(location);
     }
 
     gldb_gdb_result_record_free(result);
@@ -500,7 +500,7 @@ static void gldb_backtrace_pane_real_update(GldbPane *self)
         g_io_channel_unref(inf);
         g_io_channel_unref(outf);
     }
-    free(argv[6]);
+    bugle_free(argv[6]);
 }
 
 void gldb_backtrace_pane_status_changed(GldbPane *self, gldb_status new_status)

@@ -59,9 +59,9 @@ static hash_table break_on;
 static void state_destroy(gldb_state *s)
 {
     bugle_list_clear(&s->children);
-    free(s->name);
-    free(s->data);
-    free(s);
+    bugle_free(s->name);
+    bugle_free(s->data);
+    bugle_free(s);
 }
 
 void gldb_program_clear(void)
@@ -70,7 +70,7 @@ void gldb_program_clear(void)
 
     for (i = 0; i < GLDB_PROGRAM_SETTING_COUNT; i++)
     {
-        free(prog_settings[i]);
+        bugle_free(prog_settings[i]);
         prog_settings[i] = NULL;
     }
     prog_type = GLDB_PROGRAM_TYPE_LOCAL;
@@ -96,7 +96,7 @@ bugle_bool gldb_program_type_has_setting(gldb_program_type type, gldb_program_se
 void gldb_program_set_setting(gldb_program_setting setting, const char *value)
 {
     assert(setting < GLDB_PROGRAM_SETTING_COUNT);
-    free(prog_settings[setting]);
+    bugle_free(prog_settings[setting]);
     if (value && !*value) value = NULL;
     prog_settings[setting] = value ? bugle_strdup(value) : NULL;
 }
@@ -163,11 +163,11 @@ static void setenv_printf(const char *fmt, ...)
     var = bugle_vasprintf(fmt, ap);
     va_end(ap);
     _putenv(var);
-    free(var);
+    bugle_free(var);
 }
 
 /* Produces an argv array by splitting the fields of the command.
- * To clean up, free(argv[0]), then free(argv).
+ * To clean up, bugle_free(argv[0]), then bugle_free(argv).
  *
  * The field is split on individual spaces, not blocks of it. _spawnvp will
  * concatenate the arguments with spaces between, so this gives the original
@@ -268,8 +268,8 @@ static bugle_pid_t execute(void (*child_init)(void))
 
     argv = make_argv(command);
     pid = _spawnvp(_P_NOWAIT, argv[0], argv);
-    free(argv[0]);
-    free(argv);
+    bugle_free(argv[0]);
+    bugle_free(argv);
     if (pid == -1)
     {
         perror("failed to execute program");
@@ -455,7 +455,7 @@ gldb_state *gldb_state_update(void)
         else if (r->code == RESP_STATE_NODE_BEGIN_RAW)
         {
             state_root = ((gldb_response_state_tree *) r)->root;
-            free(r);
+            bugle_free(r);
             state_dirty = BUGLE_FALSE;
         }
         else
@@ -568,7 +568,7 @@ static gldb_state *state_get(void)
     gldb_protocol_recv_binary_string(lib_in, &data_len, &data);
     s->numeric_name = numeric_name;
     s->enum_name = enum_name;
-    s->type = budgie_type_id(type_name); free(type_name);
+    s->type = budgie_type_id(type_name); bugle_free(type_name);
     s->length = length;
     s->data = data;
 
@@ -747,29 +747,29 @@ void gldb_free_response(gldb_response *r)
     switch (r->code)
     {
     case RESP_BREAK:
-        free(((gldb_response_break *) r)->call);
+        bugle_free(((gldb_response_break *) r)->call);
         break;
     case RESP_BREAK_EVENT:
-        free(((gldb_response_break_event *) r)->call);
-        free(((gldb_response_break_event *) r)->event);
+        bugle_free(((gldb_response_break_event *) r)->call);
+        bugle_free(((gldb_response_break_event *) r)->event);
         break;
     case RESP_STATE:
-        free(((gldb_response_state *) r)->state);
+        bugle_free(((gldb_response_state *) r)->state);
         break;
     case RESP_ERROR:
-        free(((gldb_response_error *) r)->error);
+        bugle_free(((gldb_response_error *) r)->error);
         break;
     case RESP_SCREENSHOT:
-        free(((gldb_response_screenshot *) r)->data);
+        bugle_free(((gldb_response_screenshot *) r)->data);
         break;
     case RESP_STATE_NODE_BEGIN:
         state_destroy(((gldb_response_state_tree *) r)->root);
         break;
     case RESP_DATA:
-        free(((gldb_response_data *) r)->data);
+        bugle_free(((gldb_response_data *) r)->data);
         break;
     }
-    free(r);
+    bugle_free(r);
 }
 
 /* Only first n characters of name are considered. This simplifies
@@ -1145,7 +1145,7 @@ void gldb_initialise(int argc, const char * const *argv)
     gldb_program_set_setting(GLDB_PROGRAM_SETTING_COMMAND, command);
     gldb_program_set_setting(GLDB_PROGRAM_SETTING_HOST, "localhost");
     gldb_program_set_setting(GLDB_PROGRAM_SETTING_PORT, "9118");
-    free(command);
+    bugle_free(command);
     bugle_hash_init(&break_on, NULL);
     for (i = 0; i < (int) REQ_EVENT_COUNT; i++)
         break_on_event[i] = BUGLE_TRUE;

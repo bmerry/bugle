@@ -455,14 +455,14 @@ static gboolean response_callback(GIOChannel *channel, GIOCondition condition,
     case RESP_BREAK:
         msg = bugle_asprintf(_("Stopped in %s"), ((gldb_response_break *) r)->call);
         stopped(context, msg);
-        free(msg);
+        bugle_free(msg);
         break;
     case RESP_BREAK_EVENT:
         msg = bugle_asprintf( _("%s in %s"),
                               ((gldb_response_break_event *) r)->event,
                               ((gldb_response_break_event *) r)->call);
         stopped(context, msg);
-        free(msg);
+        bugle_free(msg);
         break;
     case RESP_ERROR:
         {
@@ -651,7 +651,7 @@ static void attach_gdb_action(GtkAction *action, gpointer user_data)
         gtk_widget_destroy(dialog);
         g_error_free(error);
     }
-    free(argv[4]);
+    bugle_free(argv[4]);
 }
 
 #if HAVE_GTK2_6
@@ -858,7 +858,7 @@ int main(int argc, char **argv)
     gldb_gui_image_initialise();
 #endif
     gldb_initialise(argc, (const char * const *) argv);
-    bugle_list_init(&response_handlers, free);
+    bugle_list_init(&response_handlers, bugle_free);
 
     memset(&context, 0, sizeof(context));
     build_main_window(&context);

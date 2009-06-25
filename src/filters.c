@@ -130,7 +130,7 @@ static void register_order(hash_table *orders, const char *before, const char *a
     if (!deps)
     {
         deps = BUGLE_MALLOC(linked_list);
-        bugle_list_init(deps, free);
+        bugle_list_init(deps, bugle_free);
         bugle_hash_set(orders, after, deps);
     }
     bugle_list_append(deps, bugle_strdup(before));
@@ -158,7 +158,7 @@ static bugle_bool compute_order(linked_list *present,
     order_data *info;
 
     bugle_list_init(&ordered, NULL);
-    bugle_hash_init(&byname, free);
+    bugle_hash_init(&byname, bugle_free);
     for (i = bugle_list_head(present); i; i = bugle_list_next(i))
     {
         count++;
@@ -248,7 +248,7 @@ static bugle_bool compute_order(linked_list *present,
 static void filter_free(filter *f)
 {
     bugle_list_clear(&f->callbacks);
-    free(f);
+    bugle_free(f);
 }
 
 static void filter_set_free(filter_set *handle)
@@ -319,7 +319,7 @@ static void list_free(void *l)
     list = (linked_list *) l;
     if (!list) return;
     bugle_list_clear(list);
-    free(list);
+    bugle_free(list);
 }
 
 void filters_initialise(void)
@@ -328,12 +328,12 @@ void filters_initialise(void)
     budgie_function f;
 
     bugle_thread_rwlock_init(active_callbacks_rwlock);
-    bugle_list_init(&filter_sets, free);
+    bugle_list_init(&filter_sets, bugle_free);
     bugle_list_init(&added_filter_sets, NULL);
     bugle_list_init(&loaded_filters, NULL);
     for (f = 0; f < budgie_function_count(); f++)
         bugle_list_init(&active_callbacks[f], NULL);
-    bugle_list_init(&activations_deferred, free);
+    bugle_list_init(&activations_deferred, bugle_free);
     bugle_hash_init(&filter_orders, list_free);
     bugle_hash_init(&filter_set_dependencies, list_free);
     bugle_hash_init(&filter_set_orders, list_free);
@@ -450,7 +450,7 @@ bugle_bool filter_set_variable(filter_set *handle, const char *name, const char 
             if (v->callback && !(*v->callback)(v, value, value_ptr))
             {
                 if (v->type == FILTER_SET_VARIABLE_STRING)
-                    free(string_value);
+                    bugle_free(string_value);
                 return BUGLE_FALSE;
             }
             else
@@ -472,7 +472,7 @@ bugle_bool filter_set_variable(filter_set *handle, const char *name, const char 
                         break;
                     case FILTER_SET_VARIABLE_STRING:
                         if (*(char **) v->value)
-                            free(*(char **) v->value);
+                            bugle_free(*(char **) v->value);
                         *(char **) v->value = string_value;
                         break;
                     case FILTER_SET_VARIABLE_KEY:
@@ -671,7 +671,7 @@ static void set_bypass(void)
     }
     for (k = 0; k < budgie_function_count(); k++)
         budgie_function_set_bypass(k, bypass[k]);
-    free(bypass);
+    bugle_free(bypass);
 }
 
 /* Note: caller must take mutexes */
@@ -779,7 +779,7 @@ filter *bugle_filter_new(filter_set *handle, const char *name)
     f = BUGLE_MALLOC(filter);
     f->name = name;
     f->parent = handle;
-    bugle_list_init(&f->callbacks, free);
+    bugle_list_init(&f->callbacks, bugle_free);
     bugle_list_append(&handle->filters, f);
     return f;
 }

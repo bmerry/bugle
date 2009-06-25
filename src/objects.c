@@ -61,7 +61,7 @@ object_class * bugle_object_class_new(object_class *parent)
     object_class *klass;
 
     klass = BUGLE_MALLOC(object_class);
-    bugle_list_init(&klass->info, free);
+    bugle_list_init(&klass->info, bugle_free);
     klass->parent = parent;
     klass->count = 0;
     if (parent)
@@ -76,7 +76,7 @@ void bugle_object_class_free(object_class *klass)
     bugle_list_clear(&klass->info);
     if (!klass->parent)
         bugle_thread_key_delete(klass->current);
-    free(klass);
+    bugle_free(klass);
 }
 
 object_view bugle_object_view_new(object_class *klass,
@@ -142,9 +142,9 @@ void bugle_object_free(object *obj)
         info = (const object_class_info *) bugle_list_data(i);
         if (info->destructor)
             (*info->destructor)(obj->views[j]);
-        free(obj->views[j]);
+        bugle_free(obj->views[j]);
     }
-    free(obj);
+    bugle_free(obj);
 }
 
 object *bugle_object_get_current(const object_class *klass)
