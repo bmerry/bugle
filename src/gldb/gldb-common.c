@@ -151,7 +151,7 @@ const char *gldb_program_validate(void)
     return NULL;    /* success */
 }
 
-#if BUGLE_OSAPI_WIN32
+#if BUGLE_PLATFORM_MSVCRT
 # include <windows.h>
 
 static void setenv_printf(const char *fmt, ...)
@@ -283,7 +283,7 @@ static bugle_pid_t execute(void (*child_init)(void))
     return pid;
 }
 
-#else /* !BUGLE_OSAPI_WIN32 */
+#else /* !BUGLE_PLATFORM_MSVCRT */
 # include <sys/wait.h>
 # include <sys/socket.h>
 # include <netinet/in.h>

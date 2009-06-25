@@ -2,17 +2,17 @@
 
 import BugleChecks
 
-Import('envs', 'srcdir', 'builddir', 'targets')
+Import('envs', 'srcdir', 'targets')
 
-env['host'].Append(CPPPATH = [srcdir.Dir('platform/null')])
+envs['host'].Append(CPPPATH = [srcdir, Dir('.')])
 
-targets['bugleutils']['source'].extend(env['host'].SharedObject(source = [
+targets['bugleutils']['source'].extend(envs['host'].SharedObject(source = [
     'string-null.c',
     'math-null.c',
     'io-null.c',
     'time-null.c'
-    ])
+    ]))
 
 targets['bugle']['source'].extend(envs['host'].SharedObject(source = [
     'dl-null.c'
-    ])
+    ]))

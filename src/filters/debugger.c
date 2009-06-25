@@ -43,7 +43,7 @@
 #include <budgie/types.h>
 #include <budgie/reflect.h>
 #include <budgie/addresses.h>
-#if BUGLE_OSAPI_POSIX
+#if BUGLE_PLATFORM_POSIX
 #include <unistd.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -1220,7 +1220,7 @@ static bugle_bool debugger_initialise(filter_set *handle)
         in_pipe = bugle_io_reader_fd_new(in_pipe_fd);
         out_pipe = bugle_io_writer_fd_new(out_pipe_fd);
     }
-#if BUGLE_OSAPI_POSIX
+#if BUGLE_PLATFORM_POSIX
     else if (0 == strcmp(getenv("BUGLE_DEBUGGER"), "tcp"))
     {
         int sock;

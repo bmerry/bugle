@@ -550,7 +550,7 @@ static void run_action(GtkAction *action, gpointer user_data)
     }
     if (!gldb_execute(NULL))
         return;
-#if BUGLE_OSAPI_WIN32
+#if BUGLE_PLATFORM_MSVCRT
     context->channel = g_io_channel_win32_new_fd(gldb_get_in_pipe());
 #else
     context->channel = g_io_channel_unix_new(gldb_get_in_pipe());

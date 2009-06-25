@@ -5,7 +5,7 @@ Import('envs')
 
 # Ensure that <config.h> comes from the one in this directory
 budgie_env = envs['build'].Clone()
-budgie_env.Prepend(CPPPATH = ['.'])
+budgie_env.Prepend(CPPPATH = [Dir('.')])
 
 conf = Configure(budgie_env, custom_tests = BugleChecks.tests, config_h = 'config.h')
 if not conf.CheckLibWithHeader(None, 'regex.h', 'c++', 'regcomp(0, 0, 0);'):

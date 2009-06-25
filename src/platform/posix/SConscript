@@ -10,7 +10,7 @@ def header_checks(env):
     if env.GetOption('help') or env.GetOption('clean'):
         return env
 
-    conf = Configure(env, custom_tests = BugleChecks.tests, config_h = '#/config.h')
+    conf = Configure(env, custom_tests = BugleChecks.tests, config_h = '../../config.h')
     conf.Define('_POSIX_C_SOURCE', '200112L', 'Enable IEEE 1003.1-2001 functionality')
     return conf.Finish()
 

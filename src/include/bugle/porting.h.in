@@ -23,6 +23,7 @@
 #define @BUGLE_GLWIN@ 1
 #define @BUGLE_GLTYPE@ 1
 #define @BUGLE_FS@ 1
+#define @BUGLE_PLATFORM@ 1
 
 #if BUGLE_BINFMT_ELF
 /* 1 if symbols are bound to a specific dynamic object,

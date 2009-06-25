@@ -17,7 +17,7 @@
 
 #include <bugle/time.h>
 
-int bugle_gettime(bugle_timeval *tv)
+int bugle_gettime(bugle_timespec *ts)
 {
     return 0;
 }

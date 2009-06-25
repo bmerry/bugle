@@ -48,6 +48,13 @@ def find_header(env, name):
 
     raise NameError, 'Could not find ' + name
 
+def find_header_factory(env):
+    def factory(name):
+        path = find_header(env, name)
+        return env.File(path)
+
+    return factory
+
 def gengl_emitter(target, source, env):
     '''Make the generator a dependency'''
     env.Depends(target, env['GENGL'])
@@ -56,20 +63,23 @@ def gengl_emitter(target, source, env):
 def generate(env, **kw):
     alias_builder = env.Builder(
             action = Action.Action('perl $GENGL --mode=alias $SOURCES > $TARGET', '$ALIASCOMSTR'),
-            emitter = gengl_emitter)
+            emitter = gengl_emitter,
+            source_factory = find_header_factory(env))
     apitables_c_builder = env.Builder(
             action = Action.Action('perl $GENGL --mode=c --header=$SOURCES > $TARGET', '$APITABLESCCOMSTR'),
-            emitter = gengl_emitter)
+            emitter = gengl_emitter,
+            source_factory = find_header_factory(env))
     apitables_h_builder = env.Builder(
             action = Action.Action('perl $GENGL --mode=header --header=$SOURCES > $TARGET', '$APITABLESHCOMSTR'),
-            emitter = gengl_emitter)
+            emitter = gengl_emitter,
+            source_factory = find_header_factory(env))
     env.Append(
             BUILDERS = {
                 'BudgieAlias': alias_builder,
                 'ApitablesC': apitables_c_builder,
                 'ApitablesH': apitables_h_builder
                 },
-            GENGL = env.File('src/gengl/gengl.perl'),
+            GENGL = env.File('#src/gengl/gengl.perl'),
             find_header = find_header)
 
 def exists(env):
