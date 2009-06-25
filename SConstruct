@@ -168,8 +168,6 @@ for name, value in ARGUMENTS.iteritems():
 aspects.Resolve()
 aspects.Report()
 
-# Post-process environments based on aspects
-
 Export('aspects', 'subdir')
 
 subdir(Dir('.'), 'src', variant_dir = 'build', duplicate = 0)
