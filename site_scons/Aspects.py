@@ -3,7 +3,8 @@
 import SCons
 
 class Aspect:
-    def __init__(self, name, help, choices = None, default = None, metavar = None):
+    def __init__(self, group, name, help, choices = None, default = None, metavar = None):
+        self.group = group
         self.name = name
         self.help = help
         self.choices = choices
@@ -38,6 +39,13 @@ class Aspect:
                 text = self.default
             self._set(text, False)
         return self.value
+
+    def is_default(self):
+        if callable(self.default):
+            default = self.default(self)
+        else:
+            default = self.default
+        return default == self.get()
 
 class AspectParser:
     def __init__(self):

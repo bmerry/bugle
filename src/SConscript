@@ -224,8 +224,8 @@ targets = {
         'bugleutils': Target()
         }
 
-apply_compiler(envs['build'], aspects['build_compiler'], aspects['config'])
-apply_compiler(envs['host'], aspects['host_compiler'], aspects['config'])
+apply_compiler(envs['build'], aspects['build-compiler'], aspects['config'])
+apply_compiler(envs['host'], aspects['host-compiler'], aspects['config'])
 for env in envs.itervalues():
     apply_compilation_aspects(env, aspects)
 

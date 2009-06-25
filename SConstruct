@@ -15,7 +15,7 @@ def host_compiler_default(aspect):
         return 'gcc'
 
 def platform_default(aspect):
-    compiler = aspects['host_compiler']
+    compiler = aspects['host-compiler']
     if compiler == 'msvc':
         return 'msvcrt'
     else:
@@ -74,89 +74,109 @@ def setup_aspects():
     '''
     aspects = AspectParser()
     aspects.AddAspect(Aspect(
-        name = 'build_compiler',
+        group = 'variant',
+        name = 'build-compiler',
         help = 'Compiler for tools used to build the rest of bugle',
         choices = ['gcc', 'msvc'],
         default = 'gcc'))
     aspects.AddAspect(Aspect(
-        name = 'host_compiler',
+        group = 'variant',
+        name = 'host-compiler',
         help = 'Compiler for the final outputs',
         choices = ['gcc', 'msvc'],
         default = host_compiler_default))
     aspects.AddAspect(Aspect(
+        group = 'variant',
         name = 'host',
         help = 'name for the host machine for cross-compiling',
         default = ''))
+
     aspects.AddAspect(Aspect(
+        group = 'variant',
         name = 'gltype',
         help = 'Variant of GL',
         choices = ['gl', 'gles1cm', 'gles2'],
         default = 'gl'))
     aspects.AddAspect(Aspect(
+        group = 'variant',
         name = 'glwin',
         help = 'Window system abstraction',
         choices = ['wgl', 'glx', 'egl'],
         default = glwin_default))
     aspects.AddAspect(Aspect(
+        group = 'variant',
         name = 'winsys',
         help = 'Windowing system',
         choices = ['windows', 'x11', 'none'],
         default = winsys_default))
     aspects.AddAspect(Aspect(
+        group = 'variant',
         name = 'fs',
         help = 'Location of files',
         choices = ['cygming', 'unix'],
         default = fs_default))
     aspects.AddAspect(Aspect(
+        group = 'variant',
         name = 'platform',
         help = 'C runtime libraries',
         choices = ['posix', 'msvcrt', 'null'],
         default = platform_default))
     aspects.AddAspect(Aspect(
+        group = 'variant',
         name = 'binfmt',
         help = 'Dynamic linker style',
         choices = ['pe', 'elf'],
         default = binfmt_default))
     aspects.AddAspect(Aspect(
+        group = 'variant',
         name = 'callapi',
         help = 'Calling convention for GL functions',
         default = callapi_default))
     aspects.AddAspect(Aspect(
+        group = 'variant',
         name = 'config',
         help = 'Compiler option set',
         choices = ['debug', 'release'],
         default = 'debug'))
 
     aspects.AddAspect(Aspect(
+        group = 'path',
         name = 'prefix',
         help = 'Installation prefix',
         default = '/usr/local')),
     aspects.AddAspect(Aspect(
+        group = 'path',
         name = 'libdir',
         help = 'Installation path for libraries',
         default = lambda a: aspects['prefix'] + '/lib')),
     aspects.AddAspect(Aspect(
+        group = 'path',
         name = 'pkglibdir',
         help = 'Installation path for plugins',
         default = lambda a: aspects['libdir'] + '/bugle')),
     aspects.AddAspect(Aspect(
+        group = 'path',
         name = 'bindir',
         help = 'Installation path for binaries',
         default = lambda a: aspects['prefix'] + '/bin'))
 
     aspects.AddAspect(Aspect(
+        group = 'tool',
         name = 'CC',
         help = 'C compiler',
         default = None))
     aspects.AddAspect(Aspect(
+        group = 'flags',
         name = 'CCFLAGS',
         help = 'C and C++ compilation flags',
         default = None))
     aspects.AddAspect(Aspect(
+        group = 'flags',
         name = 'CFLAGS',
         help = 'C compilation flags',
         default = None))
     aspects.AddAspect(Aspect(
+        group = 'flags',
         name = 'CXXFLAGS',
         help = 'C++ compilation flags',
         default = None))
@@ -173,6 +193,12 @@ for name, value in ARGUMENTS.iteritems():
 aspects.Resolve()
 aspects.Report()
 
+variant = []
+for a in aspects.ordered:
+    if a.group == 'variant' and (not a.is_default() or a.name == 'config'):
+        variant.append('%s=%s' % (a.name, a.get()))
+variant_str = '_'.join(variant)
+
 Export('aspects', 'subdir')
 
-subdir(Dir('.'), 'src', variant_dir = 'build', duplicate = 0)
+subdir(Dir('.'), 'src', variant_dir = 'build/' + variant_str, duplicate = 0)
