@@ -21,13 +21,22 @@
 #if HAVE_CONFIG_H
 # include <config.h>
 #endif
+/* Nasty hack to make sure we get desktop GL even when other headers are
+ * trying to pull in the target version (otherwise we have problems trying to
+ * include glew.h if it's used in the GUI). Note that this means that
+ * gldb-common.h must always preceed these other headers.
+ */
+#include <GL/gl.h>
+#define BUGLE_GL_GLHEADERS_H
+#define BUDGIE_TYPES2_H
+
 #include <signal.h>
 #include <unistd.h>
 #include <bugle/bool.h>
 #include <bugle/linkedlist.h>
 #include <bugle/attributes.h>
-#include <budgie/basictypes.h>
 #include <bugle/gl/glheaders.h>
+#include <budgie/basictypes.h>
 #include "platform/types.h"
 
 /* Callback functions provided by the UI */

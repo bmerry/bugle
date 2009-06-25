@@ -1024,16 +1024,6 @@ void bugle_state_get_raw(const glstate *state, bugle_state_raw *wrapper)
     }
 }
 
-static void dump_wrapper(char **buffer, size_t *size, void *data)
-{
-    const bugle_state_raw *w;
-    int length;
-
-    w = (const bugle_state_raw *) data;
-    length = w->length;
-    budgie_dump_any_type_extended(w->type, w->data, -1, length, NULL, buffer, size);
-}
-
 char *bugle_state_get_string(const glstate *state)
 {
     bugle_state_raw wrapper;

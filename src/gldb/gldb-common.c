@@ -24,6 +24,7 @@
 #include <ctype.h>
 #include <assert.h>
 #include <errno.h>
+#include "gldb/gldb-common.h"
 #include <bugle/bool.h>
 #include <bugle/linkedlist.h>
 #include <bugle/hashtable.h>
@@ -34,7 +35,6 @@
 #include <budgie/reflect.h>
 #include "budgielib/defines.h"
 #include "common/protocol.h"
-#include "gldb/gldb-common.h"
 #include "platform/types.h"
 
 static int lib_in_fd = -1, lib_out_fd = -1;

@@ -136,7 +136,7 @@ def setup_aspects():
     aspects.AddAspect(Aspect(
         name = 'bindir',
         help = 'Installation path for binaries',
-        default = lambda a: aspects['prefix'] + '/lib'))
+        default = lambda a: aspects['prefix'] + '/bin'))
 
     aspects.AddAspect(Aspect(
         name = 'CC',

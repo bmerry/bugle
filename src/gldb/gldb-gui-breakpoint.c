@@ -27,10 +27,10 @@
 #include <gtk/gtk.h>
 #include <glib.h>
 #include <glib/gi18n-lib.h>
+#include "gldb/gldb-common.h"
 #include <budgie/reflect.h>
 #include "gldb/gldb-gui.h"
 #include "gldb/gldb-gui-breakpoint.h"
-#include "gldb/gldb-common.h"
 #include "common/protocol.h"
 
 struct _GldbBreakpointPane

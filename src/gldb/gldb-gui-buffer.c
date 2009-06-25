@@ -26,12 +26,12 @@
 #include <glib.h>
 #include <glib-object.h>
 #include <glib/gi18n-lib.h>
+#include "gldb/gldb-common.h"
 #include <budgie/macros.h>
 #include <budgie/types.h>
 #include <budgie/reflect.h>
 #include <bugle/string.h>
 #include <bugle/memory.h>
-#include "gldb/gldb-common.h"
 #include "gldb/gldb-gui.h"
 #include "gldb/gldb-gui-buffer.h"
 

@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-Import('envs', 'targets')
+Import('envs', 'targets', 'aspects')
 
 filter_env = envs['host'].Clone(
         LIBS = targets['bugle'].out + targets['bugleutils'].out,
@@ -16,13 +16,10 @@ for filter in [
         'exe',
         'extoverride',
         'logstats',
-        'modify',
         'showextensions',
-        'showstats',
         'stats_basic',
         'stats_calls',
         'stats_calltimes',
-        'stats_fragments',
         'stats_nv',
         'stats_primitives',
         'trace',
@@ -30,4 +27,12 @@ for filter in [
         'validate']:
     filter_env.LoadableModule(filter, [filter + '.c'])
 
-filter_env.LoadableModule('eps', ['eps.c', '../gl2ps/gl2ps.c'])
+if aspects['gltype'] == 'gl':
+    # These currently only build on desktop GL
+    for filter in [
+            'camera',
+            'modify',
+            'stats_fragments',
+            'showstats']:
+        filter_env.LoadableModule(filter, [filter + '.c'])
+    filter_env.LoadableModule('eps', ['eps.c', '../gl2ps/gl2ps.c'])
