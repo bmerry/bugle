@@ -11,7 +11,7 @@ substs = {
 for lib in libraries:
     if aspects['binfmt'] == 'pe':
         # TODO need a better way to do this
-        mangled = 'c:\\windows\\system32\\' + lib + '.dll'
+        mangled = r'c:\\windows\\system32\\' + lib + '.dll'
     else:
         mangled = lib + envs['host'].subst('$SHLIBSUFFIX')
     substs['LIBRARIES'] += 'LIBRARY ' + mangled + '\n'

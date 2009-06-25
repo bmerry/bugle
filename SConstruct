@@ -8,6 +8,12 @@ def subdir(srcdir, dir, **kw):
     '''
     SConscript(dirs = [dir], exports = {'srcdir': srcdir.Dir(dir)}, **kw)
 
+def host_compiler_default(aspect):
+    if DefaultEnvironment()['PLATFORM'] == 'win32':
+        return 'msvc'
+    else:
+        return 'gcc'
+
 def platform_default(aspect):
     compiler = aspects['host_compiler']
     if compiler == 'msvc':
@@ -76,7 +82,7 @@ def setup_aspects():
         name = 'host_compiler',
         help = 'Compiler for the final outputs',
         choices = ['gcc', 'msvc'],
-        default = 'gcc'))
+        default = host_compiler_default))
     aspects.AddAspect(Aspect(
         name = 'host',
         help = 'name for the host machine for cross-compiling',

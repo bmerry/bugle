@@ -81,7 +81,9 @@ def apply_compiler(env, compiler, config):
         env.Tool('g++')
         env.Tool('gnulink')
         env.Tool('ar')
-        env.AppendUnique(CCFLAGS = ['-fvisibility=hidden', '-Wall'])
+        env.AppendUnique(CCFLAGS = ['-Wall'])
+        if env is envs['host']:
+            env.AppendUnique(CCFLAGS = ['-fvisibility=hidden'])
         env.AppendUnique(CFLAGS = ['-std=c89', '-Wstrict-prototypes'])
         if config == 'debug':
             env.AppendUnique(CCFLAGS = ['-g'])
@@ -172,15 +174,21 @@ def get_initial_envs(common_kw):
 
 def get_runtime(aspects):
     '''
-    Get header files and libraries for the GL variant.
+    Get header files and libraries for the GL variant. It returns three lists:
+      - A list of headers that are needed to include the GL headers
+      - The GL headers, for parsing out extension information
+      - The libraries containing GL
 
-    @return a (headers, libraries) tuple, with relative paths
+    @return a (pre_headers, headers, libraries) tuple, with relative paths
     '''
+    pre_headers = []
     headers = []
     libraries = []
 
     if aspects['glwin'] == 'wgl':
+        pre_headers.extend(['windows.h', 'GL/gl.h'])
         headers.extend(['wingdi.h', 'GL/wglext.h'])
+        targets['bugle']['source'].extend([File('gl/opengl32.def')])
         targets['bugle']['LIBS'].extend(['user32'])
     if aspects['glwin'] == 'glx':
         headers.extend(['GL/glx.h', 'GL/glxext.h'])
@@ -203,7 +211,7 @@ def get_runtime(aspects):
         headers.extend(['GLES2/gl2.h', 'GLES2/gl2ext.h'])
         libraries.append('libGLESv2')
 
-    return headers, libraries
+    return pre_headers, headers, libraries
 
 ############################
 ### Start of main script ###
@@ -222,7 +230,7 @@ for env in envs.itervalues():
     apply_compilation_aspects(env, aspects)
 
 # Deal with choice aspects
-headers, libraries = get_runtime(aspects)
+pre_headers, headers, libraries = get_runtime(aspects)
 if aspects['binfmt'] == 'pe':
     # Can't use LD_PRELOAD on windows, so have to use the same name
     targets['bugle']['target'] = libraries[-1]
@@ -231,7 +239,7 @@ else:
 
 Export('envs', 'targets', 'libraries')
 # Modify environment based on configuration checks
-envs['host'] = checks(envs['host'], libraries[-1], headers)
+envs['host'] = checks(envs['host'], libraries[-1], pre_headers + headers)
 # Modify environments with include paths and config.h options
 subdir(srcdir, 'platform/' + aspects['platform'])
 # Modify environments with BUDGIE tool

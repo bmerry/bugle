@@ -1,4 +1,5 @@
 HEADER windows.h
+HEADER GL/gl.h
 HEADER GL/wglext.h
 HEADER bugle/glwin/glwintypes.h
 LIMIT wgl.*

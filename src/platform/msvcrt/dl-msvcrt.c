@@ -87,7 +87,7 @@ void bugle_dl_foreach(const char *path, void (*callback)(const char *filename, v
     spec = bugle_asprintf("%s\\*.dll", path);
     handle = _findfirst(spec, &data);
     free(spec);
-    if (handle == 0)
+    if (handle == -1)
     {
         bugle_log_printf("filters", "initialise", BUGLE_LOG_ERROR,
                          "did not find any filter-set libraries in %s", path);

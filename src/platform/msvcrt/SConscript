@@ -2,11 +2,9 @@
 
 import BugleChecks
 
-Import('envs', 'srcdir', 'builddir', 'targets')
+Import('envs', 'srcdir', 'targets')
 
-envs['host'].Append(CPPPATH = [
-    srcdir.Dir('platform/msvcrt'),
-    builddir.Dir('platform/msvcrt')],
+envs['host'].Append(CPPPATH = [srcdir, Dir('.')],
     LIBS = ['user32', 'kernel32'])
 
 platform_env = envs['host'].Clone()
@@ -17,8 +15,8 @@ targets['bugleutils']['source'].extend(platform_env.SharedObject(source = [
     # 'io-msvcrt.c',
     'time-msvcrt.c',
     'threads-msvcrt.c'
-    ])
+    ]))
 
 targets['bugle']['source'].extend(platform_env.SharedObject(source = [
     'dl-msvcrt.c'
-    ])
+    ]))
