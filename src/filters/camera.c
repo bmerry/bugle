@@ -18,7 +18,6 @@
 #if HAVE_CONFIG_H
 # include <config.h>
 #endif
-#include <sys/time.h>
 #include <math.h>
 #include <stdlib.h>
 #include <bugle/bool.h>

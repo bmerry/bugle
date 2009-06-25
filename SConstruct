@@ -196,8 +196,8 @@ aspects.Report()
 variant = []
 for a in aspects.ordered:
     if a.group == 'variant' and (not a.is_default() or a.name == 'config'):
-        variant.append('%s=%s' % (a.name, a.get()))
-variant_str = '_'.join(variant)
+        variant.append('%s_%s' % (a.name, a.get()))
+variant_str = '__'.join(variant)
 
 Export('aspects', 'subdir')
 
