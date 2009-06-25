@@ -364,7 +364,7 @@ void image(float x, float y, GLboolean opaque){
     gl2psDrawPixels((GLsizei)w, (GLsizei)h, 0, 0, GL_RGBA, GL_FLOAT, pixels);
     glDrawPixels((GLsizei)w, (GLsizei)h, GL_RGBA, GL_FLOAT, pixels);
   }
-  bugle_free(pixels);
+  free(pixels);
 }
 
 /* A simple drawing function, using the default viewport */
