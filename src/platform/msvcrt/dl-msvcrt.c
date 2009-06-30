@@ -99,7 +99,6 @@ void bugle_dl_foreach(const char *path, void (*callback)(const char *filename, v
         char *filename;
 
         filename = bugle_asprintf("%s/%s", path, data.name);
-        fprintf(stderr, "Loading %s\n", filename);
         callback(filename, arg);
         bugle_free(filename);
     } while (_findnext(handle, &data) == 0);
