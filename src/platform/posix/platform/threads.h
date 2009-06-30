@@ -38,44 +38,29 @@
 #include <pthread.h>
 
 typedef pthread_once_t bugle_thread_once_t;
-#define bugle_thread_once_define(storage, name) \
-    storage bugle_thread_once_t name = PTHREAD_ONCE_INIT;
-#define bugle_thread_once(name, function) \
-    pthread_once(&(name), function)
+
+#define BUGLE_THREAD_ONCE_INIT PTHREAD_ONCE_INIT
+#define bugle_thread_once(once, function) pthread_once(once, function)
 
 typedef pthread_mutex_t bugle_thread_lock_t;
-#define bugle_thread_lock_t pthread_mutex_t
-#define bugle_thread_lock_define(storage, name) \
-    storage bugle_thread_lock_t name;
-#define bugle_thread_lock_init(name) \
-    pthread_mutex_init(&(name), NULL)
-#define bugle_thread_lock_destroy(name) \
-    pthread_mutex_destroy(&(name))
-#define bugle_thread_lock_lock(name) \
-    pthread_mutex_lock(&(name))
-#define bugle_thread_lock_unlock(name) \
-    pthread_mutex_unlock(&(name))
+#define bugle_thread_lock_init(lock) pthread_mutex_init(lock, NULL)
+#define bugle_thread_lock_destroy(lock) pthread_mutex_destroy(lock)
+#define bugle_thread_lock_lock(lock) pthread_mutex_lock(lock)
+#define bugle_thread_lock_unlock(lock) pthread_mutex_unlock(lock)
 
 typedef pthread_rwlock_t bugle_thread_rwlock_t;
-# define bugle_thread_rwlock_define(storage, name) \
-    storage bugle_thread_rwlock_t name;
-# define bugle_thread_rwlock_init(name) \
-    pthread_rwlock_init(&(name), NULL)
-# define bugle_thread_rwlock_destroy(name) \
-    pthread_rwlock_destroy(&(name))
-# define bugle_thread_rwlock_rdlock(name) \
-    pthread_rwlock_rdlock(&(name))
-# define bugle_thread_rwlock_wrlock(name) \
-    pthread_rwlock_wrlock(&(name))
-# define bugle_thread_rwlock_unlock(name) \
-    pthread_rwlock_unlock(&(name))
+# define bugle_thread_rwlock_init(rwlock) pthread_rwlock_init(rwlock, NULL)
+# define bugle_thread_rwlock_destroy(rwlock) pthread_rwlock_destroy(rwlock)
+# define bugle_thread_rwlock_rdlock(rwlock) pthread_rwlock_rdlock(rwlock)
+# define bugle_thread_rwlock_wrlock(rwlock) pthread_rwlock_wrlock(rwlock)
+# define bugle_thread_rwlock_unlock(rwlock) pthread_rwlock_unlock(rwlock)
 
 typedef pthread_key_t bugle_thread_key_t;
-#define bugle_thread_key_create(name, destructor) \
-    pthread_key_create(&name, destructor)
-#define bugle_thread_getspecific pthread_getspecific
-#define bugle_thread_setspecific pthread_setspecific
-#define bugle_thread_key_delete pthread_key_delete
+#define bugle_thread_key_create(key, destructor) \
+    pthread_key_create(key, destructor)
+#define bugle_thread_getspecific(key) pthread_getspecific(key)
+#define bugle_thread_setspecific(key, value) pthread_setspecific(key, value)
+#define bugle_thread_key_delete(key) pthread_key_delete(key)
 
 typedef pthread_t bugle_thread_t;
 #define bugle_thread_self() pthread_self()

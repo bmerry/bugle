@@ -29,7 +29,7 @@
 #include "platform/threads.h"
 
 static hash_table ext_map;
-bugle_thread_once_define(static, ext_map_once)
+static bugle_thread_once_t ext_map_once = BUGLE_THREAD_ONCE_INIT;
 
 static void bugle_api_extension_clear(void)
 {
@@ -70,7 +70,7 @@ api_block bugle_api_extension_block(bugle_api_extension ext)
 
 bugle_api_extension bugle_api_extension_id(const char *name)
 {
-    bugle_thread_once(ext_map_once, bugle_api_extension_init);
+    bugle_thread_once(&ext_map_once, bugle_api_extension_init);
     return (bugle_api_extension) (size_t) bugle_hash_get(&ext_map, name) - 1;
 }
 

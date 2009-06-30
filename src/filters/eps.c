@@ -36,6 +36,7 @@
 #include <bugle/input.h>
 #include <bugle/log.h>
 #include <bugle/string.h>
+#include <bugle/memory.h>
 #include <budgie/addresses.h>
 #include <budgie/reflect.h>
 #include "gl2ps/gl2ps.h"

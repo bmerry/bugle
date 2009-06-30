@@ -37,7 +37,7 @@
 
 typedef struct
 {
-    bugle_thread_lock_define(, mutex)
+    bugle_thread_lock_t mutex;
     hashptr_table objects[BUGLE_GLOBJECTS_COUNT];
 } globjects_data;
 
@@ -56,12 +56,12 @@ static hashptr_table *get_table(bugle_globjects_type type)
 
 static inline void lock(void)
 {
-    bugle_thread_lock_lock(((globjects_data *) bugle_object_get_current_data(bugle_namespace_class, ns_view))->mutex);
+    bugle_thread_lock_lock(&((globjects_data *) bugle_object_get_current_data(bugle_namespace_class, ns_view))->mutex);
 }
 
 static inline void unlock(void)
 {
-    bugle_thread_lock_unlock(((globjects_data *) bugle_object_get_current_data(bugle_namespace_class, ns_view))->mutex);
+    bugle_thread_lock_unlock(&((globjects_data *) bugle_object_get_current_data(bugle_namespace_class, ns_view))->mutex);
 }
 
 /* We don't rely entirely on glBindTexture and glDeleteTextures etc to
@@ -416,7 +416,7 @@ static void globjects_data_init(const void *key, void *data)
     size_t i;
 
     d = (globjects_data *) data;
-    bugle_thread_lock_init(d->mutex);
+    bugle_thread_lock_init(&d->mutex);
     for (i = 0; i < BUGLE_GLOBJECTS_COUNT; i++)
         bugle_hashptr_init(&d->objects[i], NULL);
 }
@@ -427,7 +427,7 @@ static void globjects_data_clear(void *data)
     size_t i;
 
     d = (globjects_data *) data;
-    bugle_thread_lock_destroy(d->mutex);
+    bugle_thread_lock_destroy(&d->mutex);
     for (i = 0; i < BUGLE_GLOBJECTS_COUNT; i++)
         bugle_hashptr_clear(&d->objects[i]);
 }

@@ -20,7 +20,9 @@
 #endif
 #include "platform/threads.h"
 
-void bugle_thread_once_win32(bugle_thread_once_t *once, void (*function)(void))
+#define RWLOCK_WRITER_BIT 0x40000000L
+
+void _bugle_thread_once(bugle_thread_once_t *once, void (*function)(void))
 {
     if (InterlockedIncrement(&once->value) == 1)
     {
@@ -40,6 +42,67 @@ void bugle_thread_once_win32(bugle_thread_once_t *once, void (*function)(void))
         while (!once->complete)
         {
             Sleep(0);
+        }
+    }
+}
+
+void _bugle_thread_rwlock_init(bugle_thread_rwlock_t *rwlock)
+{
+    rwlock->num_readers = 0;
+    InitializeCriticalSection(&rwlock->mutex);
+    rwlock->readers_done = CreateEvent(NULL, TRUE, FALSE, NULL);
+    /* TODO: error handling */
+}
+
+void _bugle_thread_rwlock_destroy(bugle_thread_rwlock_t *rwlock)
+{
+    DestroyCriticalSection(&rwlock->mutex);
+    CloseHandle(&rwlock->readers_done);
+}
+
+void _bugle_thread_rwlock_rdlock(bugle_thread_rwlock_t *rwlock)
+{
+    /* Wait on any waiting or active writers */
+    EnterCriticalSection(&rwlock->mutex);
+
+    InterlockedAdd(&rwlock->num_readers, 1);
+
+    LeaveCriticalSection(&rwlock->mutex);
+}
+
+void _bugle_thread_rwlock_wrlock(bugle_thread_rwlock_t *rwlock)
+{
+    LONG num_readers;
+
+    /* Exclude new readers and other writers */
+    EnterCriticalSection(&rwlock->mutex);
+
+    num_readers = InterlockedAdd(&rwlock->num_readers, RWLOCK_WRITER_BIT) - RWLOCK_WRITER_BIT;
+
+    if (num_readers != 0)
+        WaitForSingleEvent(rwlock->readers_done, INFINITE);
+}
+
+void _bugle_thread_rwlock_unlock(bugle_thread_rwlock_t *rwlock)
+{
+    bugle_bool is_writer;
+
+    /* If there are any readers, we must be a reader. Otherwise, we
+     * are a writer and RWLOCK_WRITER_BIT must be set.
+     */
+    if (rwlock->num_readers == RWLOCK_WRITER_BIT)
+    {
+        InterlockedAdd(&rwlock->num_readers, -RWLOCK_WRITER_BIT);
+        LeaveCriticalSection(&rwlock->mutex);
+    }
+    else
+    {
+        LONG num_readers;
+        num_readers = InterlockedAdd(&rwlock->num_readers, -1);
+        if (num_readers == RWLOCK_WRITER_BIT)
+        {
+            /* We were the last reader, and a writer is waiting for us */
+            SetEvent(&rwlock->readers_done);
         }
     }
 }

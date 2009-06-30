@@ -206,7 +206,7 @@ static bugle_thread_key_t reentrance_key;
 BUGLE_CONSTRUCTOR(reentrance_initialise);
 static void reentrance_initialise(void)
 {
-    bugle_thread_key_create(reentrance_key, NULL);
+    bugle_thread_key_create(&reentrance_key, NULL);
 }
 
 /* Sets the flag to mark entry, and returns BUGLE_TRUE if we should call

@@ -310,7 +310,7 @@ static bugle_bool checks_error_vbo;
 
 #if HAVE_SIGLONGJMP
 static sigjmp_buf checks_buf;
-bugle_thread_lock_define(static, checks_mutex)
+static bugle_thread_lock_t checks_mutex;
 
 static void checks_sigsegv_handler(int sig)
 {
@@ -646,7 +646,7 @@ static void checks_min_max(GLsizei count, GLenum gltype, const GLvoid *indices,
     struct sigaction act, old_act; \
     volatile bugle_bool ret = BUGLE_TRUE; \
     \
-    bugle_thread_lock_lock(checks_mutex); \
+    bugle_thread_lock_lock(&checks_mutex); \
     checks_error = NULL; \
     checks_error_attribute = -1; \
     checks_error_vbo = BUGLE_FALSE; \
@@ -672,7 +672,7 @@ static void checks_min_max(GLsizei count, GLenum gltype, const GLvoid *indices,
             perror("failed to restore SIGSEGV handler"); \
             exit(1); \
         } \
-    bugle_thread_lock_unlock(checks_mutex); \
+    bugle_thread_lock_unlock(&checks_mutex); \
     return ret; \
     } else (void) 0
 
@@ -1037,7 +1037,7 @@ void bugle_initialise_filter_library(void)
     };
 
 #if HAVE_SIGLONGJMP
-    bugle_thread_lock_init(checks_mutex);
+    bugle_thread_lock_init(&checks_mutex);
 #endif
 
     bugle_filter_set_new(&checks_info);

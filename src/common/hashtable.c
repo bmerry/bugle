@@ -40,7 +40,7 @@ static bugle_bool is_prime(int x)
     return BUGLE_TRUE;
 }
 
-bugle_thread_once_define(static, hash_once)
+static bugle_thread_once_t hash_once = BUGLE_THREAD_ONCE_INIT;
 
 static void hash_initialise(void)
 {
@@ -103,7 +103,7 @@ void bugle_hash_set(hash_table *table, const char *key, void *value)
     if (table->count >= table->size / 2
         && table->size < (size_t) -1)
     {
-        bugle_thread_once(hash_once, hash_initialise);
+        bugle_thread_once(&hash_once, hash_initialise);
         big.size_index = table->size_index + 1;
         big.size = primes[big.size_index];
         big.entries = BUGLE_CALLOC(big.size, hash_table_entry);
@@ -237,7 +237,7 @@ void bugle_hashptr_set(hashptr_table *table, const void *key, void *value)
     if (table->count >= table->size / 2
         && table->size < (size_t) -1)
     {
-        bugle_thread_once(hash_once, hash_initialise);
+        bugle_thread_once(&hash_once, hash_initialise);
         big.size_index = table->size_index + 1;
         big.size = primes[big.size_index];
         big.entries = BUGLE_CALLOC(big.size, hashptr_table_entry);

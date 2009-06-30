@@ -47,7 +47,7 @@ object_class *bugle_namespace_class;
 static hashptr_table context_objects, namespace_objects;
 static hashptr_table initial_values;
 static object_view trackcontext_view;
-bugle_thread_lock_define(static, context_mutex)
+static bugle_thread_lock_t context_mutex;
 
 typedef struct
 {
@@ -261,7 +261,7 @@ static bugle_bool trackcontext_newcontext(function_call *call, const callback_da
 
     if (create)
     {
-        bugle_thread_lock_lock(context_mutex);
+        bugle_thread_lock_lock(&context_mutex);
 
         base = BUGLE_ZALLOC(trackcontext_data);
         base->aux_shared = NULL;
@@ -281,7 +281,7 @@ static bugle_bool trackcontext_newcontext(function_call *call, const callback_da
         }
 
         bugle_hashptr_set(&initial_values, create->ctx, base);
-        bugle_thread_lock_unlock(context_mutex);
+        bugle_thread_lock_unlock(&context_mutex);
     }
 
     return BUGLE_TRUE;
@@ -301,7 +301,7 @@ static bugle_bool trackcontext_callback(function_call *call, const callback_data
         bugle_object_set_current(bugle_context_class, NULL);
     else
     {
-        bugle_thread_lock_lock(context_mutex);
+        bugle_thread_lock_lock(&context_mutex);
         obj = bugle_hashptr_get(&context_objects, ctx);
         if (!obj)
         {
@@ -330,7 +330,7 @@ static bugle_bool trackcontext_callback(function_call *call, const callback_data
         }
         else
             bugle_object_set_current(bugle_context_class, obj);
-        bugle_thread_lock_unlock(context_mutex);
+        bugle_thread_lock_unlock(&context_mutex);
     }
     return BUGLE_TRUE;
 }
@@ -438,6 +438,6 @@ void trackcontext_initialise(void)
         NULL /* No documentation */
     };
 
-    bugle_thread_lock_init(context_mutex);
+    bugle_thread_lock_init(&context_mutex);
     bugle_filter_set_new(&trackcontext_info);
 }

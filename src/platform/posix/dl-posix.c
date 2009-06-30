@@ -30,6 +30,7 @@
 #include <assert.h>
 #include <bugle/string.h>
 #include <bugle/log.h>
+#include <bugle/memory.h>
 
 void bugle_dl_init(void)
 {

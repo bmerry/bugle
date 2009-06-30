@@ -40,56 +40,54 @@ typedef struct
     volatile LONG value;
     volatile LONG complete;
 } bugle_thread_once_t;
-#define bugle_thread_once_define(storage, name) \
+
+#define BUGLE_THREAD_ONCE_INIT { 0, 0 }
     storage bugle_thread_once_t name = { 0, 0 };
-#define bugle_thread_once(name, function) \
-    _bugle_thread_once(&(name), function)
-static inline void _bugle_thread_once(bugle_thread_once_t *once, void (*function)(void))
-{
-    if (InterlockedIncrement(&once->value) == 1)
-    {
-        /* We got here first. */
-       (*function)();
-       once->complete = 1; /* Mark completion */
-    }
-    else
-    {
-        /* Unlike with pthreads, there are no sync primitives that
-         * can be statically initialised, so we have to spin. In the
-         * bugle use cases, the chance of contention is low and the
-         * initialiser functions should not be particularly long-running,
-         * so we keep it simple and spin until full completion rather than
-         * waiting for critical section to be created as in gnulib.
-         */
-        while (!once->complete)
-        {
-            Sleep(0);
-        }
-    }
-}
+void bugle_thread_once(bugle_thread_once_t *once, void (*function)(void));
 
 typedef CRITICAL_SECTION bugle_thread_lock_t;
-#define bugle_thread_lock_define(storage, name) \
-    storage bugle_thread_lock_t name;
-#define bugle_thread_lock_init(name) (InitializeCriticalSection(&(name)))
-#define bugle_thread_lock_destroy(name) (DeleteCriticalSection(&(name)))
-#define bugle_thread_lock_lock(name) (EnterCriticalSection(&(name)))
-#define bugle_thread_lock_unlock(name) (LeaveCriticalSection(&(name)))
+#define bugle_thread_lock_init(lock) (InitializeCriticalSection(lock)
+#define bugle_thread_lock_destroy(lock) (DeleteCriticalSection(lock))
+#define bugle_thread_lock_lock(lock) (EnterCriticalSection(lock))
+#define bugle_thread_lock_unlock(lock) (LeaveCriticalSection(lock))
 
-/* Devolve rwlocks to regular locks for now */
-typedef bugle_thread_lock_t bugle_thread_rwlock_t;
-# define bugle_thread_rwlock_define(storage, name) \
-    bugle_thread_lock_define(storage, name)
-# define bugle_thread_rwlock_init(name) bugle_thread_lock_init(name)
-# define bugle_thread_rwlock_destroy(name) bugle_thread_lock_destroy(name)
-# define bugle_thread_rwlock_rdlock(name) bugle_thread_lock_lock(name)
-# define bugle_thread_rwlock_wrlock(name) bugle_thread_lock_lock(name)
-# define bugle_thread_rwlock_unlock(name) bugle_thread_lock_unlock(name)
+/* RW lock implementation that prevents writer starvation.
+ */
+typedef struct
+{
+    /* Writers hold this mutex over their lifetime. Readers take it momentarily
+     * on entry. This ensures that readers are blocked while a writer is
+     * active or waiting.
+     */
+    CRITICAL_SECTION mutex;
+
+    /* Number of active readers (i.e. those that have successfully taken the
+     * lock). It is updated using atomic operations. Increments are done
+     * with the lock held, so that a thread observing no readers and with
+     * the lock held can be certain that a reader won't appear until the
+     * lock is released.
+     *
+     * If there is a writer waiting or active, RWLOCK_WRITER_BIT is set.
+     */
+    volatile LONG num_readers;
+
+    /* This is an auto-reset event that is used by the last exiting reader
+     * to signal a writer that has the lock but is waiting for readers to
+     * finish. It is unsignalled except during this transfer.
+     */
+    HANDLE readers_done;
+} bugle_thread_rwlock_t;
+
+void bugle_thread_rwlock_init(bugle_thread_rwlock_t *rwlock);
+void bugle_thread_rwlock_destroy(bugle_thread_rwlock_t *rwlock);
+void bugle_thread_rwlock_rdlock(bugle_thread_rwlock_t *rwlock);
+void bugle_thread_rwlock_wrlock(bugle_thread_rwlock_t *rwlock);
+void bugle_thread_rwlock_unlock(bugle_thread_rwlock_t *rwlock);
 
 typedef DWORD bugle_thread_key_t;
 #define bugle_thread_key_create(name, destructor) \
    do { \
-      if (TLS_OUT_OF_INDEXES == ((name) = TlsAlloc())) abort(); \
+      if (TLS_OUT_OF_INDEXES == (*(name) = TlsAlloc())) abort(); \
    } while (0)
 #define bugle_thread_getspecific(key) (TlsGetValue(key))
 #define bugle_thread_setspecific(key, value) \
@@ -105,7 +103,7 @@ typedef DWORD bugle_thread_t;
 #define bugle_flockfile(f) ((void) 0)
 #define bugle_funlockfile(f) ((void) 0)
 
-#define BUGLE_CONSTRUCTOR(fn) bugle_thread_once_define(static, fn ## _once)
-#define BUGLE_RUN_CONSTRUCTOR(fn) bugle_thread_once(fn ## _once, (fn))
+#define BUGLE_CONSTRUCTOR(fn) static bugle_thread_once_t fn ## once = BUGLE_THREAD_ONCE_INITIALIZER;
+#define BUGLE_RUN_CONSTRUCTOR(fn) bugle_thread_once(&(fn ## _once), (fn))
 
 #endif /* !BUGLE_PLATFORM_THREADS_H */

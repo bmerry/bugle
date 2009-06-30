@@ -154,6 +154,7 @@ BUGLE_EXPORT_PRE Window XCreateWindow(Display *, Window, int, int, unsigned int,
 BUGLE_EXPORT_PRE Window XCreateSimpleWindow(Display *, Window, int, int, unsigned int, unsigned int, unsigned int, unsigned long, unsigned long) BUGLE_EXPORT_POST;
 BUGLE_EXPORT_PRE int XSelectInput(Display *, Window, long) BUGLE_EXPORT_POST;
 
+static bugle_thread_lock_t keycodes_lock;
 
 /* Determines whether bugle wants to intercept an event */
 static Bool event_predicate(Display *dpy, XEvent *event, XPointer arg)
@@ -247,8 +248,7 @@ static void initialise_keycodes(Display *dpy)
      * different X servers try to use this at the same time.
      */
     static Display *dpy_cached = NULL;
-    bugle_thread_lock_define(static, lock);
-    bugle_thread_lock_lock(lock);
+    bugle_thread_lock_lock(&keycodes_lock);
     if (dpy_cached != dpy)
     {
         linked_list_node *i;
@@ -260,7 +260,7 @@ static void initialise_keycodes(Display *dpy)
         }
         dpy_cached = dpy;
     }
-    bugle_thread_lock_unlock(lock);
+    bugle_thread_lock_unlock(&keycodes_lock);
 }
 
 static bugle_bool extract_events(Display *dpy)
@@ -827,6 +827,7 @@ void input_initialise(void)
         exit(1);
     }
     bugle_list_init(&handlers, bugle_free);
+    bugle_thread_lock_init(&keycodes_lock);
 }
 
 static bugle_bool input_key_lookup(const char *name, bugle_input_key *key)

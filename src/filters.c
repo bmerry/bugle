@@ -100,7 +100,7 @@ static linked_list loaded_filters;
 /* FIXME: remove the dependence on defines.h */
 static linked_list active_callbacks[FUNCTION_COUNT];
 static linked_list activations_deferred;
-bugle_thread_rwlock_define(static, active_callbacks_rwlock)
+static bugle_thread_rwlock_t active_callbacks_rwlock;
 
 /* hash tables of linked lists of strings; A is the key, B is the linked list element */
 static hash_table filter_orders;           /* A is called after B */
@@ -327,7 +327,7 @@ void filters_initialise(void)
     const char *libdir;
     budgie_function f;
 
-    bugle_thread_rwlock_init(active_callbacks_rwlock);
+    bugle_thread_rwlock_init(&active_callbacks_rwlock);
     bugle_list_init(&filter_sets, bugle_free);
     bugle_list_init(&added_filter_sets, NULL);
     bugle_list_init(&loaded_filters, NULL);
@@ -587,18 +587,18 @@ static void load_filter_sets(void)
 
 void filter_set_activate(filter_set *handle)
 {
-    bugle_thread_rwlock_wrlock(active_callbacks_rwlock);
+    bugle_thread_rwlock_wrlock(&active_callbacks_rwlock);
     filter_set_activate_nolock(handle);
     compute_active_callbacks();
-    bugle_thread_rwlock_unlock(active_callbacks_rwlock);
+    bugle_thread_rwlock_unlock(&active_callbacks_rwlock);
 }
 
 void filter_set_deactivate(filter_set *handle)
 {
-    bugle_thread_rwlock_wrlock(active_callbacks_rwlock);
+    bugle_thread_rwlock_wrlock(&active_callbacks_rwlock);
     filter_set_deactivate_nolock(handle);
     compute_active_callbacks();
-    bugle_thread_rwlock_unlock(active_callbacks_rwlock);
+    bugle_thread_rwlock_unlock(&active_callbacks_rwlock);
 }
 
 /* Note: these should be called only from within a callback, in which
@@ -611,9 +611,9 @@ void bugle_filter_set_activate_deferred(filter_set *handle)
     activation->set = handle;
     activation->active = BUGLE_TRUE;
 
-    bugle_thread_rwlock_wrlock(active_callbacks_rwlock);
+    bugle_thread_rwlock_wrlock(&active_callbacks_rwlock);
     bugle_list_append(&activations_deferred, activation);
-    bugle_thread_rwlock_unlock(active_callbacks_rwlock);
+    bugle_thread_rwlock_unlock(&active_callbacks_rwlock);
 }
 
 void bugle_filter_set_deactivate_deferred(filter_set *handle)
@@ -623,9 +623,9 @@ void bugle_filter_set_deactivate_deferred(filter_set *handle)
     activation->set = handle;
     activation->active = BUGLE_FALSE;
 
-    bugle_thread_rwlock_wrlock(active_callbacks_rwlock);
+    bugle_thread_rwlock_wrlock(&active_callbacks_rwlock);
     bugle_list_append(&activations_deferred, activation);
-    bugle_thread_rwlock_unlock(active_callbacks_rwlock);
+    bugle_thread_rwlock_unlock(&active_callbacks_rwlock);
 }
 
 static const char *filter_get_name(void *f)
@@ -712,7 +712,7 @@ void filters_run(function_call *call)
     filter_catcher *cur;
     callback_data data;
 
-    bugle_thread_rwlock_rdlock(active_callbacks_rwlock);
+    bugle_thread_rwlock_rdlock(&active_callbacks_rwlock);
 
     data.call_object = bugle_object_new(bugle_call_class, NULL, BUGLE_TRUE);
     for (i = bugle_list_head(&active_callbacks[call->generic.id]); i; i = bugle_list_next(i))
@@ -729,8 +729,8 @@ void filters_run(function_call *call)
         /* Upgrade to a write lock. Somebody else make get in between the
          * unlock and the wrlock, but at worst they will do our work for us.
          */
-        bugle_thread_rwlock_unlock(active_callbacks_rwlock);
-        bugle_thread_rwlock_wrlock(active_callbacks_rwlock);
+        bugle_thread_rwlock_unlock(&active_callbacks_rwlock);
+        bugle_thread_rwlock_wrlock(&active_callbacks_rwlock);
         while (bugle_list_head(&activations_deferred))
         {
             i = bugle_list_head(&activations_deferred);
@@ -739,7 +739,7 @@ void filters_run(function_call *call)
         }
         compute_active_callbacks();
     }
-    bugle_thread_rwlock_unlock(active_callbacks_rwlock);
+    bugle_thread_rwlock_unlock(&active_callbacks_rwlock);
 }
 
 filter_set *bugle_filter_set_new(const filter_set_info *info)

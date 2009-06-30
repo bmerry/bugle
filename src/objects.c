@@ -67,7 +67,7 @@ object_class * bugle_object_class_new(object_class *parent)
     if (parent)
         klass->parent_view = bugle_object_view_new(parent, NULL, NULL, sizeof(object *));
     else
-        bugle_thread_key_create(klass->current, NULL);
+        bugle_thread_key_create(&klass->current, NULL);
     return klass;
 }
 

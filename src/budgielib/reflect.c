@@ -34,7 +34,7 @@
 static hash_table function_id_map;
 static hash_table type_id_map;
 static hash_table type_id_nomangle_map;
-bugle_thread_once_define(static, reflect_once)
+static bugle_thread_once_t reflect_once = BUGLE_THREAD_ONCE_INIT;
 
 static void reflect_shutdown(void)
 {
@@ -78,7 +78,7 @@ const char *budgie_function_name(budgie_function id)
 
 budgie_function budgie_function_id(const char *name)
 {
-    bugle_thread_once(reflect_once, reflect_initialise);
+    bugle_thread_once(&reflect_once, reflect_initialise);
     return (budgie_function) (size_t) bugle_hash_get(&function_id_map, name) - 1;
 }
 
@@ -165,13 +165,13 @@ const char *budgie_type_name_nomangle(budgie_type type)
 
 budgie_type budgie_type_id(const char *name)
 {
-    bugle_thread_once(reflect_once, reflect_initialise);
+    bugle_thread_once(&reflect_once, reflect_initialise);
     return (budgie_type) (size_t) bugle_hash_get(&type_id_map, name) - 1;
 }
 
 budgie_type budgie_type_id_nomangle(const char *name)
 {
-    bugle_thread_once(reflect_once, reflect_initialise);
+    bugle_thread_once(&reflect_once, reflect_initialise);
     return (budgie_type) (size_t) bugle_hash_get(&type_id_nomangle_map, name) - 1;
 }
 

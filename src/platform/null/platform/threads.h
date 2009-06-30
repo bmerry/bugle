@@ -33,21 +33,17 @@
 #include <stddef.h>
 
 typedef int bugle_thread_once_t;
-#define bugle_thread_once_define(storage, name) \
-    storage bugle_thread_once_t name = 0;
+
+#define BUGLE_THREAD_ONCE_INIT 0
 #define bugle_thread_once(name, function) ((void) 0)
 
 typedef int bugle_thread_lock_t;
-#define bugle_thread_lock_define(storage, name) \
-    storage bugle_thread_lock_t name;
 #define bugle_thread_lock_init(name) ((void) 0)
 #define bugle_thread_lock_destroy(name) ((void) 0)
 #define bugle_thread_lock_lock(name) ((void) 0)
 #define bugle_thread_lock_unlock(name) ((void) 0)
 
 typedef int bugle_thread_rwlock_t;
-# define bugle_thread_rwlock_define(storage, name) \
-    storage bugle_thread_rwlock_t name;
 # define bugle_thread_rwlock_init(name) ((void) 0)
 # define bugle_thread_rwlock_destroy(name) ((void) 0)
 # define bugle_thread_rwlock_rdlock(name) ((void) 0)

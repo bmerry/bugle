@@ -27,6 +27,7 @@
 #include <bugle/linkedlist.h>
 #include <bugle/stats.h>
 #include <bugle/math.h>
+#include <bugle/memory.h>
 #include <bugle/filters.h>
 #include <bugle/log.h>
 
