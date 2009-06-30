@@ -1,13 +1,15 @@
 - add tests
 - add remaining filters
-- complete platform layer for POSIX
 - add platform layer for glib?
 - add platform layer for gnulib?
-- add platform layer for win32?
+- complete platform layer for win32 (I/O)
+- implement rwlock for win32
+- add abstractions:
+  - sockets
+  - va_copy
 - remove data exports (object classes)
-- add better SCons framework for platform
+- audit use of malloc/bugle_malloc/free/bugle_free for matching up
 - clean up gldb-gui and move all the nasty process stuff into glib code
-- add abstraction for va_copy
 - slim down platform layer to provide shared fallbacks for string functions
   and include them where necessary
 - missing autoconf/SCons tests:
@@ -20,3 +22,4 @@
   - I/O layer
   - string functions
   - math functions
+  - socket API?
