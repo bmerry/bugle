@@ -34,6 +34,7 @@
 #endif
 #include <windows.h>
 #include <stddef.h>
+#include <bugle/export.h>
 
 typedef struct
 {
@@ -42,11 +43,10 @@ typedef struct
 } bugle_thread_once_t;
 
 #define BUGLE_THREAD_ONCE_INIT { 0, 0 }
-    storage bugle_thread_once_t name = { 0, 0 };
-void bugle_thread_once(bugle_thread_once_t *once, void (*function)(void));
+BUGLE_EXPORT_PRE void bugle_thread_once(bugle_thread_once_t *once, void (*function)(void)) BUGLE_EXPORT_POST;
 
 typedef CRITICAL_SECTION bugle_thread_lock_t;
-#define bugle_thread_lock_init(lock) (InitializeCriticalSection(lock)
+#define bugle_thread_lock_init(lock) (InitializeCriticalSection(lock))
 #define bugle_thread_lock_destroy(lock) (DeleteCriticalSection(lock))
 #define bugle_thread_lock_lock(lock) (EnterCriticalSection(lock))
 #define bugle_thread_lock_unlock(lock) (LeaveCriticalSection(lock))
@@ -62,14 +62,14 @@ typedef struct
     CRITICAL_SECTION mutex;
 
     /* Number of active readers (i.e. those that have successfully taken the
-     * lock). It is updated using atomic operations. Increments are done
-     * with the lock held, so that a thread observing no readers and with
-     * the lock held can be certain that a reader won't appear until the
-     * lock is released.
+     * lock). Increments are done with mutex held, so that a thread observing
+     * no readers and with mutex held can be certain that a reader won't
+     * appear until the lock is released.
      *
      * If there is a writer waiting or active, RWLOCK_WRITER_BIT is set.
      */
     volatile LONG num_readers;
+    CRITICAL_SECTION num_readers_lock;
 
     /* This is an auto-reset event that is used by the last exiting reader
      * to signal a writer that has the lock but is waiting for readers to
@@ -78,11 +78,11 @@ typedef struct
     HANDLE readers_done;
 } bugle_thread_rwlock_t;
 
-void bugle_thread_rwlock_init(bugle_thread_rwlock_t *rwlock);
-void bugle_thread_rwlock_destroy(bugle_thread_rwlock_t *rwlock);
-void bugle_thread_rwlock_rdlock(bugle_thread_rwlock_t *rwlock);
-void bugle_thread_rwlock_wrlock(bugle_thread_rwlock_t *rwlock);
-void bugle_thread_rwlock_unlock(bugle_thread_rwlock_t *rwlock);
+BUGLE_EXPORT_PRE void bugle_thread_rwlock_init(bugle_thread_rwlock_t *rwlock) BUGLE_EXPORT_POST;
+BUGLE_EXPORT_PRE void bugle_thread_rwlock_destroy(bugle_thread_rwlock_t *rwlock) BUGLE_EXPORT_POST;
+BUGLE_EXPORT_PRE void bugle_thread_rwlock_rdlock(bugle_thread_rwlock_t *rwlock) BUGLE_EXPORT_POST;
+BUGLE_EXPORT_PRE void bugle_thread_rwlock_wrlock(bugle_thread_rwlock_t *rwlock) BUGLE_EXPORT_POST;
+BUGLE_EXPORT_PRE void bugle_thread_rwlock_unlock(bugle_thread_rwlock_t *rwlock) BUGLE_EXPORT_POST;
 
 typedef DWORD bugle_thread_key_t;
 #define bugle_thread_key_create(name, destructor) \
@@ -103,7 +103,7 @@ typedef DWORD bugle_thread_t;
 #define bugle_flockfile(f) ((void) 0)
 #define bugle_funlockfile(f) ((void) 0)
 
-#define BUGLE_CONSTRUCTOR(fn) static bugle_thread_once_t fn ## once = BUGLE_THREAD_ONCE_INITIALIZER;
+#define BUGLE_CONSTRUCTOR(fn) static bugle_thread_once_t fn ## _once = BUGLE_THREAD_ONCE_INIT;
 #define BUGLE_RUN_CONSTRUCTOR(fn) bugle_thread_once(&(fn ## _once), (fn))
 
 #endif /* !BUGLE_PLATFORM_THREADS_H */
