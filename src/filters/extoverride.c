@@ -116,7 +116,7 @@ static bugle_bool extoverride_glGetString(function_call *call, const callback_da
 {
     extoverride_context *ctx;
 
-    ctx = (extoverride_context *) bugle_object_get_current_data(bugle_context_class, extoverride_view);
+    ctx = (extoverride_context *) bugle_object_get_current_data(bugle_get_context_class(), extoverride_view);
     if (!ctx) return BUGLE_TRUE; /* Nothing can be overridden */
     switch (*call->glGetString.arg0)
     {
@@ -173,7 +173,7 @@ static bugle_bool extoverride_initialise(filter_set *handle)
         }
     }
 
-    extoverride_view = bugle_object_view_new(bugle_context_class,
+    extoverride_view = bugle_object_view_new(bugle_get_context_class(),
                                              extoverride_context_init,
                                              extoverride_context_clear,
                                              sizeof(extoverride_context));

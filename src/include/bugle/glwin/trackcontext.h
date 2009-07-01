@@ -29,8 +29,8 @@
 extern "C" {
 #endif
 
-extern BUGLE_EXPORT_PRE object_class *bugle_context_class BUGLE_EXPORT_POST;
-extern BUGLE_EXPORT_PRE object_class *bugle_namespace_class BUGLE_EXPORT_POST;
+BUGLE_EXPORT_PRE object_class *bugle_get_context_class(void) BUGLE_EXPORT_POST;
+BUGLE_EXPORT_PRE object_class *bugle_get_namespace_class(void) BUGLE_EXPORT_POST;
 
 /* Gets a context with the same config. Please leave all state as default.
  * There is a choice of a shared or an unshared context, which refers to

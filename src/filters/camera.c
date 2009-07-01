@@ -247,7 +247,7 @@ static void camera_mouse_callback(int dx, int dy, bugle_input_event *event)
     GLfloat angle, cs, sn;
     int i, j, k;
 
-    ctx = (camera_context *) bugle_object_get_current_data(bugle_context_class, camera_view);
+    ctx = (camera_context *) bugle_object_get_current_data(bugle_get_context_class(), camera_view);
     if (!ctx) return;
 
     /* We use a rolling-ball type rotation. We do the calculations
@@ -299,7 +299,7 @@ static void camera_key_callback(const bugle_input_key *key, void *arg, bugle_inp
     int index, i;
     camera_context *ctx;
 
-    ctx = (camera_context *) bugle_object_get_current_data(bugle_context_class, camera_view);
+    ctx = (camera_context *) bugle_object_get_current_data(bugle_get_context_class(), camera_view);
     if (!ctx) return;
     index = (bugle_input_key *) arg - key_camera;
     if (index < CAMERA_MOTION_KEYS)
@@ -369,7 +369,7 @@ static bugle_bool camera_restore(function_call *call, const callback_data *data)
 
     if (bugle_displaylist_mode() == GL_NONE)
     {
-        ctx = (camera_context *) bugle_object_get_current_data(bugle_context_class, camera_view);
+        ctx = (camera_context *) bugle_object_get_current_data(bugle_get_context_class(), camera_view);
         if (ctx && bugle_gl_begin_internal_render())
         {
             CALL(glGetIntegerv)(GL_MATRIX_MODE, &mode);
@@ -388,7 +388,7 @@ static bugle_bool camera_override(function_call *call, const callback_data *data
 
     if (bugle_displaylist_mode() == GL_NONE)
     {
-        ctx = (camera_context *) bugle_object_get_current_data(bugle_context_class, camera_view);
+        ctx = (camera_context *) bugle_object_get_current_data(bugle_get_context_class(), camera_view);
         if (ctx && bugle_gl_begin_internal_render())
         {
             CALL(glGetIntegerv)(GL_MATRIX_MODE, &mode);
@@ -409,7 +409,7 @@ static bugle_bool camera_get(function_call *call, const callback_data *data)
     int i;
     camera_context *ctx;
 
-    ctx = (camera_context *) bugle_object_get_current_data(bugle_context_class, camera_view);
+    ctx = (camera_context *) bugle_object_get_current_data(bugle_get_context_class(), camera_view);
     if (!ctx) return BUGLE_TRUE;
 
     if (call->generic.group == BUDGIE_GROUP_ID(glGetFloatv))
@@ -430,7 +430,7 @@ static bugle_bool camera_swap_buffers(function_call *call, const callback_data *
     camera_context *ctx;
     GLint mode;
 
-    ctx = (camera_context *) bugle_object_get_current_data(bugle_context_class, camera_view);
+    ctx = (camera_context *) bugle_object_get_current_data(bugle_get_context_class(), camera_view);
     if (ctx && bugle_gl_begin_internal_render())
     {
         int f = 0, l = 0;
@@ -489,7 +489,7 @@ static bugle_bool camera_make_current(function_call *call, const callback_data *
 {
     camera_context *ctx;
 
-    ctx = (camera_context *) bugle_object_get_current_data(bugle_context_class, camera_view);
+    ctx = (camera_context *) bugle_object_get_current_data(bugle_get_context_class(), camera_view);
     if (ctx)
         camera_handle_activation(bugle_filter_set_is_active(data->filter_set_handle), ctx);
     return BUGLE_TRUE;
@@ -499,7 +499,7 @@ static void camera_activation(filter_set *handle)
 {
     camera_context *ctx;
 
-    ctx = (camera_context *) bugle_object_get_current_data(bugle_context_class, camera_view);
+    ctx = (camera_context *) bugle_object_get_current_data(bugle_get_context_class(), camera_view);
     if (ctx)
         camera_handle_activation(BUGLE_TRUE, ctx);
     if (camera_intercept)
@@ -510,7 +510,7 @@ static void camera_deactivation(filter_set *handle)
 {
     camera_context *ctx;
 
-    ctx = (camera_context *) bugle_object_get_current_data(bugle_context_class, camera_view);
+    ctx = (camera_context *) bugle_object_get_current_data(bugle_get_context_class(), camera_view);
     if (ctx)
         camera_handle_activation(BUGLE_FALSE, ctx);
     if (camera_intercept)
@@ -565,7 +565,7 @@ static bugle_bool camera_initialise(filter_set *handle)
     bugle_filter_catches(f, "glGetFloatv", BUGLE_FALSE, camera_get);
     bugle_filter_catches(f, "glGetDoublev", BUGLE_FALSE, camera_get);
 
-    camera_view = bugle_object_view_new(bugle_context_class,
+    camera_view = bugle_object_view_new(bugle_get_context_class(),
                                         camera_context_init,
                                         NULL, sizeof(camera_context));
 

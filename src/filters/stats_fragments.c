@@ -60,7 +60,7 @@ static bugle_bool stats_fragments_swap_buffers(function_call *call, const callba
     stats_fragments_struct *s;
     GLuint fragments;
 
-    s = bugle_object_get_current_data(bugle_context_class, stats_fragments_view);
+    s = bugle_object_get_current_data(bugle_get_context_class(), stats_fragments_view);
     if (stats_fragments_fragments->active
         && s && s->query && bugle_gl_begin_internal_render())
     {
@@ -76,7 +76,7 @@ static bugle_bool stats_fragments_post_swap_buffers(function_call *call, const c
 {
     stats_fragments_struct *s;
 
-    s = bugle_object_get_current_data(bugle_context_class, stats_fragments_view);
+    s = bugle_object_get_current_data(bugle_get_context_class(), stats_fragments_view);
     if (stats_fragments_fragments->active
         && s && s->query && bugle_gl_begin_internal_render())
     {
@@ -90,7 +90,7 @@ static bugle_bool stats_fragments_query(function_call *call, const callback_data
 {
     stats_fragments_struct *s;
 
-    s = bugle_object_get_current_data(bugle_context_class, stats_fragments_view);
+    s = bugle_object_get_current_data(bugle_get_context_class(), stats_fragments_view);
     if (stats_fragments_fragments->active
         && s->query)
     {
@@ -108,7 +108,7 @@ static bugle_bool stats_fragments_initialise(filter_set *handle)
 {
     filter *f;
 
-    stats_fragments_view = bugle_object_view_new(bugle_context_class,
+    stats_fragments_view = bugle_object_view_new(bugle_get_context_class(),
                                                  stats_fragments_struct_init,
                                                  NULL,
                                                  sizeof(stats_fragments_struct));

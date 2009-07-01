@@ -114,7 +114,7 @@ static bugle_bool stats_primitives_immediate(function_call *call, const callback
 
     if (bugle_gl_in_begin_end())
     {
-        s = bugle_object_get_current_data(bugle_context_class, stats_primitives_view);
+        s = bugle_object_get_current_data(bugle_get_context_class(), stats_primitives_view);
         s->begin_count++;
     }
     return BUGLE_TRUE;
@@ -124,7 +124,7 @@ static bugle_bool stats_primitives_glBegin(function_call *call, const callback_d
 {
     stats_primitives_struct *s;
 
-    s = bugle_object_get_current_data(bugle_context_class, stats_primitives_view);
+    s = bugle_object_get_current_data(bugle_get_context_class(), stats_primitives_view);
     s->begin_mode = *call->glBegin.arg0;
     s->begin_count = 0;
     return BUGLE_TRUE;
@@ -134,7 +134,7 @@ static bugle_bool stats_primitives_glEnd(function_call *call, const callback_dat
 {
     stats_primitives_struct *s;
 
-    s = bugle_object_get_current_data(bugle_context_class, stats_primitives_view);
+    s = bugle_object_get_current_data(bugle_get_context_class(), stats_primitives_view);
     stats_primitives_update(s->begin_mode, s->begin_count);
     s->begin_mode = GL_NONE;
     s->begin_count = 0;
@@ -188,7 +188,7 @@ static bugle_bool stats_primitives_glCallList(function_call *call, const callbac
     stats_primitives_struct *s;
     stats_primitives_displaylist_struct *counts;
 
-    s = bugle_object_get_current_data(bugle_context_class, stats_primitives_view);
+    s = bugle_object_get_current_data(bugle_get_context_class(), stats_primitives_view);
     counts = bugle_object_get_data(bugle_displaylist_get(*call->glCallList.arg0),
                                    stats_primitives_displaylist_view);
     if (counts)
@@ -211,7 +211,7 @@ static bugle_bool stats_primitives_initialise(filter_set *handle)
 {
     filter *f;
 
-    stats_primitives_view = bugle_object_view_new(bugle_context_class,
+    stats_primitives_view = bugle_object_view_new(bugle_get_context_class(),
                                                   NULL,
                                                   NULL,
                                                   sizeof(stats_primitives_struct));

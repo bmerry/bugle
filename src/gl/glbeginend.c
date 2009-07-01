@@ -63,7 +63,7 @@ static bugle_bool glbeginend_glBegin(function_call *call, const callback_data *d
     case GL_TRIANGLES_ADJACENCY_EXT:
     case GL_TRIANGLE_STRIP_ADJACENCY_EXT:
 #endif
-        begin_end = (bugle_bool *) bugle_object_get_current_data(bugle_context_class, glbeginend_view);
+        begin_end = (bugle_bool *) bugle_object_get_current_data(bugle_get_context_class(), glbeginend_view);
         if (begin_end != NULL) *begin_end = BUGLE_TRUE;
     default: /* Avoids compiler warning if GLenum is a C enum */ ;
     }
@@ -75,7 +75,7 @@ static bugle_bool glbeginend_glEnd(function_call *call, const callback_data *dat
     bugle_bool *begin_end;
 
     /* glEnd can only fail if we weren't in begin/end anyway. */
-    begin_end = (bugle_bool *) bugle_object_get_current_data(bugle_context_class, glbeginend_view);
+    begin_end = (bugle_bool *) bugle_object_get_current_data(bugle_get_context_class(), glbeginend_view);
     if (begin_end != NULL) *begin_end = BUGLE_FALSE;
     return BUGLE_TRUE;
 }
@@ -84,13 +84,13 @@ bugle_bool bugle_gl_in_begin_end(void)
 {
     bugle_bool *begin_end;
 
-    begin_end = (bugle_bool *) bugle_object_get_current_data(bugle_context_class, glbeginend_view);
+    begin_end = (bugle_bool *) bugle_object_get_current_data(bugle_get_context_class(), glbeginend_view);
     return !begin_end || *begin_end;
 }
 #else
 bugle_bool bugle_gl_in_begin_end(void)
 {
-    return bugle_object_get_current(bugle_context_class) == NULL;
+    return bugle_object_get_current(bugle_get_context_class()) == NULL;
 }
 #endif
 
@@ -109,7 +109,7 @@ static bugle_bool glbeginend_filter_set_initialise(filter_set *handle)
     bugle_filter_catches(f, "glBegin", BUGLE_TRUE, glbeginend_glBegin);
     bugle_filter_catches(f, "glEnd", BUGLE_TRUE, glbeginend_glEnd);
 
-    glbeginend_view = bugle_object_view_new(bugle_context_class,
+    glbeginend_view = bugle_object_view_new(bugle_get_context_class(),
                                                NULL,
                                                NULL,
                                                sizeof(bugle_bool));

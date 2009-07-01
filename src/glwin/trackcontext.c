@@ -42,8 +42,8 @@
  * a trackcontext_data struct in the initial_values hash.
  */
 
-object_class *bugle_context_class;
-object_class *bugle_namespace_class;
+static object_class *bugle_context_class;
+static object_class *bugle_namespace_class;
 static hashptr_table context_objects, namespace_objects;
 static hashptr_table initial_values;
 static object_view trackcontext_view;
@@ -424,6 +424,17 @@ glwin_context bugle_get_aux_context(bugle_bool shared)
     return *aux;
 }
 
+object_class *bugle_get_context_class(void)
+{
+    assert(bugle_context_class != NULL);
+    return bugle_context_class;
+}
+
+object_class *bugle_get_namespace_class(void)
+{
+    assert(bugle_namespace_class != NULL);
+    return bugle_namespace_class;
+}
 
 void trackcontext_initialise(void)
 {

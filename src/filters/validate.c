@@ -55,7 +55,7 @@ static bugle_bool error_callback(function_call *call, const callback_data *data)
     GLenum *stored_error;
     GLenum *call_error;
 
-    stored_error = bugle_object_get_current_data(bugle_context_class, error_context_view);
+    stored_error = bugle_object_get_current_data(bugle_get_context_class(), error_context_view);
     call_error = bugle_object_get_current_data(bugle_call_class, error_call_view);
     *call_error = GL_NO_ERROR;
 
@@ -132,7 +132,7 @@ static bugle_bool error_initialise(filter_set *handle)
     /* We don't call filter_post_renders, because that would make the
      * error filter-set depend on itself.
      */
-    error_context_view = bugle_object_view_new(bugle_context_class,
+    error_context_view = bugle_object_view_new(bugle_get_context_class(),
                                                NULL,
                                                NULL,
                                                sizeof(GLenum));

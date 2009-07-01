@@ -86,7 +86,7 @@ void *bugle_displaylist_get(GLuint list)
     hashptr_table *objects;
 
     bugle_thread_lock_lock(&displaylist_lock);
-    objects = bugle_object_get_current_data(bugle_namespace_class, namespace_view);
+    objects = bugle_object_get_current_data(bugle_get_namespace_class(), namespace_view);
     if (objects) ans = bugle_hashptr_get(objects, (void *) (size_t) list);
     bugle_thread_lock_unlock(&displaylist_lock);
     return ans;
@@ -124,7 +124,7 @@ static bugle_bool gldisplaylist_glEndList(function_call *call, const callback_da
      * says the new name comes into effect.
      */
     bugle_thread_lock_lock(&displaylist_lock);
-    objects = bugle_object_get_current_data(bugle_namespace_class, namespace_view);
+    objects = bugle_object_get_current_data(bugle_get_namespace_class(), namespace_view);
     if (objects)
         bugle_hashptr_set(objects, (void *) (size_t) info_ptr->list, obj);
     bugle_thread_lock_unlock(&displaylist_lock);
@@ -147,7 +147,7 @@ static bugle_bool gldisplaylist_filter_set_initialise(filter_set *handle)
 {
     filter *f;
 
-    bugle_displaylist_class = bugle_object_class_new(bugle_context_class);
+    bugle_displaylist_class = bugle_object_class_new(bugle_get_context_class());
 
 #if GL_VERSION_1_1
     f = bugle_filter_new(handle, "gldisplaylist");
@@ -159,7 +159,7 @@ static bugle_bool gldisplaylist_filter_set_initialise(filter_set *handle)
                                              displaylist_struct_init,
                                              NULL,
                                              sizeof(displaylist_struct));
-    namespace_view = bugle_object_view_new(bugle_namespace_class,
+    namespace_view = bugle_object_view_new(bugle_get_namespace_class(),
                                            namespace_init,
                                            namespace_clear,
                                            sizeof(hashptr_table));

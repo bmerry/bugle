@@ -125,7 +125,7 @@ static void context_clear(void *data)
 
 static bugle_bool glextensions_filter_set_initialise(filter_set *handle)
 {
-    glextensions_view = bugle_object_view_new(bugle_context_class,
+    glextensions_view = bugle_object_view_new(bugle_get_context_class(),
                                               context_init,
                                               context_clear,
                                               sizeof(context_extensions));
@@ -144,7 +144,7 @@ bugle_bool bugle_gl_has_extension(bugle_api_extension ext)
     if (ext == NULL_EXTENSION) return BUGLE_FALSE;
     if (ext < 0) return !bugle_gl_has_extension(~ext);
     assert(ext < bugle_api_extension_count());
-    ce = (const context_extensions *) bugle_object_get_current_data(bugle_context_class, glextensions_view);
+    ce = (const context_extensions *) bugle_object_get_current_data(bugle_get_context_class(), glextensions_view);
     if (!ce) return BUGLE_FALSE;
     else return ce->flags[ext];
 }
@@ -155,7 +155,7 @@ bugle_bool bugle_gl_has_extension2(int ext, const char *name)
 
     assert(ext >= -1 && ext < bugle_api_extension_count());
     /* bugle_api_extension_id returns -1 for unknown extensions - play it safe */
-    ce = (const context_extensions *) bugle_object_get_current_data(bugle_context_class, glextensions_view);
+    ce = (const context_extensions *) bugle_object_get_current_data(bugle_get_context_class(), glextensions_view);
     if (!ce) return BUGLE_FALSE;
     if (ext >= 0)
         return ce->flags[ext];
@@ -174,7 +174,7 @@ bugle_bool bugle_gl_has_extension_group(bugle_api_extension ext)
 
     if (ext < 0) return !bugle_gl_has_extension_group(~ext);
     assert(ext < bugle_api_extension_count());
-    ce = (const context_extensions *) bugle_object_get_current_data(bugle_context_class, glextensions_view);
+    ce = (const context_extensions *) bugle_object_get_current_data(bugle_get_context_class(), glextensions_view);
     if (!ce) return BUGLE_FALSE;
     exts = bugle_api_extension_group_members(ext);
 

@@ -335,7 +335,7 @@ static bugle_bool showstats_swap_buffers(function_call *call, const callback_dat
         0, 255, 0, 255
     };
 
-    ss = bugle_object_get_current_data(bugle_context_class, showstats_view);
+    ss = bugle_object_get_current_data(bugle_get_context_class(), showstats_view);
     aux = bugle_get_aux_context(BUGLE_FALSE);
     if (aux && bugle_gl_begin_internal_render())
     {
@@ -435,7 +435,7 @@ static bugle_bool showstats_swap_buffers(function_call *call, const callback_dat
 static void showstats_accumulate_callback(const bugle_input_key *key, void *arg, bugle_input_event *event)
 {
     showstats_struct *ss;
-    ss = bugle_object_get_current_data(bugle_context_class, showstats_view);
+    ss = bugle_object_get_current_data(bugle_get_context_class(), showstats_view);
     if (!ss) return;
     /* Value of arg is irrelevant, only truth value */
     ss->accumulating = arg ? 2 : 0;
@@ -499,7 +499,7 @@ static bugle_bool showstats_initialise(filter_set *handle)
     bugle_filter_order("showstats", "screenshot");
     bugle_filter_order("stats", "showstats");
     bugle_glwin_filter_catches_swap_buffers(f, BUGLE_FALSE, showstats_swap_buffers);
-    showstats_view = bugle_object_view_new(bugle_context_class,
+    showstats_view = bugle_object_view_new(bugle_get_context_class(),
                                            showstats_struct_init,
                                            showstats_struct_clear,
                                            sizeof(showstats_struct));

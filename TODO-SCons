@@ -3,7 +3,8 @@
 - add platform layer for glib?
 - add platform layer for gnulib?
 - complete platform layer for win32 (I/O)
-- implement rwlock for win32
+- make aspects sticky
+- better naming convention for variant dirs
 - add abstractions:
   - sockets
   - va_copy

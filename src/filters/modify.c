@@ -92,7 +92,7 @@ static bugle_bool classify_glBindFramebufferEXT(function_call *call, const callb
     linked_list_node *i;
     classify_callback *cb;
 
-    ctx = (classify_context *) bugle_object_get_current_data(bugle_context_class, classify_view);
+    ctx = (classify_context *) bugle_object_get_current_data(bugle_get_context_class(), classify_view);
     if (ctx && bugle_gl_begin_internal_render())
     {
 #ifdef GL_EXT_framebuffer_blit
@@ -127,7 +127,7 @@ static bugle_bool classify_initialise(filter_set *handle)
 #endif
     bugle_filter_order("invoke", "classify");
     bugle_gl_filter_post_renders("classify");
-    classify_view = bugle_object_view_new(bugle_context_class,
+    classify_view = bugle_object_view_new(bugle_get_context_class(),
                                           classify_context_init,
                                           NULL,
                                           sizeof(classify_context));
@@ -204,7 +204,7 @@ static bugle_bool wireframe_make_current(function_call *call, const callback_dat
 {
     wireframe_context *ctx;
 
-    ctx = (wireframe_context *) bugle_object_get_current_data(bugle_context_class, wireframe_view);
+    ctx = (wireframe_context *) bugle_object_get_current_data(bugle_get_context_class(), wireframe_view);
     if (ctx)
         wireframe_handle_activation(bugle_filter_set_is_active(data->filter_set_handle), ctx);
     return BUGLE_TRUE;
@@ -221,7 +221,7 @@ static bugle_bool wireframe_glPolygonMode(function_call *call, const callback_da
 {
     wireframe_context *ctx;
 
-    ctx = (wireframe_context *) bugle_object_get_current_data(bugle_context_class, wireframe_view);
+    ctx = (wireframe_context *) bugle_object_get_current_data(bugle_get_context_class(), wireframe_view);
     if (ctx && !ctx->real)
         return BUGLE_TRUE;
     if (bugle_gl_begin_internal_render())
@@ -238,7 +238,7 @@ static bugle_bool wireframe_glEnable(function_call *call, const callback_data *d
 {
     wireframe_context *ctx;
 
-    ctx = (wireframe_context *) bugle_object_get_current_data(bugle_context_class, wireframe_view);
+    ctx = (wireframe_context *) bugle_object_get_current_data(bugle_get_context_class(), wireframe_view);
     if (ctx && !ctx->real)
         return BUGLE_TRUE;
     /* FIXME: need to track this state to restore it on deactivation */
@@ -264,7 +264,7 @@ static void wireframe_classify_callback(bugle_bool real, void *arg)
 {
     wireframe_context *ctx;
 
-    ctx = (wireframe_context *) bugle_object_get_current_data(bugle_context_class, wireframe_view);
+    ctx = (wireframe_context *) bugle_object_get_current_data(bugle_get_context_class(), wireframe_view);
     if (ctx)
     {
         ctx->real = real;
@@ -276,7 +276,7 @@ static void wireframe_activation(filter_set *handle)
 {
     wireframe_context *ctx;
 
-    ctx = (wireframe_context *) bugle_object_get_current_data(bugle_context_class, wireframe_view);
+    ctx = (wireframe_context *) bugle_object_get_current_data(bugle_get_context_class(), wireframe_view);
     if (ctx)
         wireframe_handle_activation(BUGLE_TRUE, ctx);
 }
@@ -285,7 +285,7 @@ static void wireframe_deactivation(filter_set *handle)
 {
     wireframe_context *ctx;
 
-    ctx = (wireframe_context *) bugle_object_get_current_data(bugle_context_class, wireframe_view);
+    ctx = (wireframe_context *) bugle_object_get_current_data(bugle_get_context_class(), wireframe_view);
     if (ctx)
         wireframe_handle_activation(BUGLE_FALSE, ctx);
 }
@@ -302,7 +302,7 @@ static bugle_bool wireframe_initialise(filter_set *handle)
     bugle_glwin_filter_catches_make_current(f, BUGLE_TRUE, wireframe_make_current);
     bugle_filter_order("invoke", "wireframe");
     bugle_gl_filter_post_renders("wireframe");
-    wireframe_view = bugle_object_view_new(bugle_context_class,
+    wireframe_view = bugle_object_view_new(bugle_get_context_class(),
                                            wireframe_context_init,
                                            NULL,
                                            sizeof(wireframe_context));
@@ -363,7 +363,7 @@ static bugle_bool frontbuffer_make_current(function_call *call, const callback_d
 {
     frontbuffer_context *ctx;
 
-    ctx = (frontbuffer_context *) bugle_object_get_current_data(bugle_context_class, frontbuffer_view);
+    ctx = (frontbuffer_context *) bugle_object_get_current_data(bugle_get_context_class(), frontbuffer_view);
     if (ctx)
         frontbuffer_handle_activation(bugle_filter_set_is_active(data->filter_set_handle), ctx);
     return BUGLE_TRUE;
@@ -375,7 +375,7 @@ static bugle_bool frontbuffer_glDrawBuffer(function_call *call, const callback_d
 
     if (bugle_gl_begin_internal_render())
     {
-        ctx = (frontbuffer_context *) bugle_object_get_current_data(bugle_context_class, frontbuffer_view);
+        ctx = (frontbuffer_context *) bugle_object_get_current_data(bugle_get_context_class(), frontbuffer_view);
         if (ctx) CALL(glGetIntegerv)(GL_DRAW_BUFFER, &ctx->draw_buffer);
         CALL(glDrawBuffer)(GL_FRONT);
         bugle_gl_end_internal_render("frontbuffer_glDrawBuffer", BUGLE_TRUE);
@@ -396,7 +396,7 @@ static void frontbuffer_activation(filter_set *handle)
 {
     frontbuffer_context *ctx;
 
-    ctx = (frontbuffer_context *) bugle_object_get_current_data(bugle_context_class, frontbuffer_view);
+    ctx = (frontbuffer_context *) bugle_object_get_current_data(bugle_get_context_class(), frontbuffer_view);
     if (ctx)
         frontbuffer_handle_activation(BUGLE_TRUE, ctx);
 }
@@ -405,7 +405,7 @@ static void frontbuffer_deactivation(filter_set *handle)
 {
     frontbuffer_context *ctx;
 
-    ctx = (frontbuffer_context *) bugle_object_get_current_data(bugle_context_class, frontbuffer_view);
+    ctx = (frontbuffer_context *) bugle_object_get_current_data(bugle_get_context_class(), frontbuffer_view);
     if (ctx)
         frontbuffer_handle_activation(BUGLE_FALSE, ctx);
 }
@@ -425,7 +425,7 @@ static bugle_bool frontbuffer_initialise(filter_set *handle)
     bugle_filter_order("frontbuffer_pre", "invoke");
     bugle_glwin_filter_catches_swap_buffers(f, BUGLE_FALSE, frontbuffer_swap_buffers);
 
-    frontbuffer_view = bugle_object_view_new(bugle_context_class,
+    frontbuffer_view = bugle_object_view_new(bugle_get_context_class(),
                                              frontbuffer_context_init,
                                              NULL,
                                              sizeof(frontbuffer_context));

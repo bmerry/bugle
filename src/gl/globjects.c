@@ -49,19 +49,19 @@ static hashptr_table *get_table(bugle_globjects_type type)
 {
     globjects_data *data;
 
-    data = bugle_object_get_current_data(bugle_namespace_class, ns_view);
+    data = bugle_object_get_current_data(bugle_get_namespace_class(), ns_view);
     if (!data) return NULL;
     return &data->objects[type];
 }
 
 static inline void lock(void)
 {
-    bugle_thread_lock_lock(&((globjects_data *) bugle_object_get_current_data(bugle_namespace_class, ns_view))->mutex);
+    bugle_thread_lock_lock(&((globjects_data *) bugle_object_get_current_data(bugle_get_namespace_class(), ns_view))->mutex);
 }
 
 static inline void unlock(void)
 {
-    bugle_thread_lock_unlock(&((globjects_data *) bugle_object_get_current_data(bugle_namespace_class, ns_view))->mutex);
+    bugle_thread_lock_unlock(&((globjects_data *) bugle_object_get_current_data(bugle_get_namespace_class(), ns_view))->mutex);
 }
 
 /* We don't rely entirely on glBindTexture and glDeleteTextures etc to
@@ -480,7 +480,7 @@ static bugle_bool globjects_filter_set_initialise(filter_set *handle)
     bugle_filter_order("invoke", "globjects");
     bugle_filter_order("globjects_pre", "invoke");
     bugle_gl_filter_post_renders("globjects");
-    ns_view = bugle_object_view_new(bugle_namespace_class,
+    ns_view = bugle_object_view_new(bugle_get_namespace_class(),
                                     globjects_data_init,
                                     globjects_data_clear,
                                     sizeof(globjects_data));
