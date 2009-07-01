@@ -26,7 +26,7 @@
 extern "C" {
 #endif
 
-extern BUGLE_EXPORT_PRE object_class *bugle_displaylist_class BUGLE_EXPORT_POST;
+BUGLE_EXPORT_PRE object_class *bugle_get_displaylist_class(void) BUGLE_EXPORT_POST;
 
 /* The number and mode of the current display list being compiled,
  * or 0 and GL_NONE if none.

@@ -96,7 +96,7 @@ static void stats_primitives_update(GLenum mode, GLsizei count)
         bugle_stats_signal_add(stats_primitives_batches, 1);
         /* Fall through */
     case GL_COMPILE:
-        displaylist = bugle_object_get_current_data(bugle_displaylist_class, stats_primitives_displaylist_view);
+        displaylist = bugle_object_get_current_data(bugle_get_displaylist_class(), stats_primitives_displaylist_view);
         assert(displaylist);
         displaylist->triangles += t;
         displaylist->batches++;
@@ -215,7 +215,7 @@ static bugle_bool stats_primitives_initialise(filter_set *handle)
                                                   NULL,
                                                   NULL,
                                                   sizeof(stats_primitives_struct));
-    stats_primitives_displaylist_view = bugle_object_view_new(bugle_displaylist_class,
+    stats_primitives_displaylist_view = bugle_object_view_new(bugle_get_displaylist_class(),
                                                               NULL,
                                                               NULL,
                                                               sizeof(stats_primitives_struct));

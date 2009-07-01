@@ -34,7 +34,7 @@
 #include <budgie/call.h>
 #include "platform/threads.h"
 
-object_class *bugle_displaylist_class;
+static object_class *bugle_displaylist_class;
 
 #if GL_VERSION_1_1
 static bugle_thread_lock_t displaylist_lock;
@@ -165,6 +165,12 @@ static bugle_bool gldisplaylist_filter_set_initialise(filter_set *handle)
                                            sizeof(hashptr_table));
 #endif
     return BUGLE_TRUE;
+}
+
+object_class *bugle_get_displaylist_class(void)
+{
+    assert(bugle_displaylist_class != NULL);
+    return bugle_displaylist_class;
 }
 
 void gldisplaylist_initialise(void)
