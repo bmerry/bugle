@@ -160,10 +160,16 @@ def setup_aspects():
         help = 'Installation path for binaries',
         default = lambda a: aspects['prefix'] + '/bin'))
 
+    # TODO separate specification of build CC and host CC
     aspects.AddAspect(Aspect(
         group = 'tool',
         name = 'CC',
         help = 'C compiler',
+        default = None))
+    aspects.AddAspect(Aspect(
+        group = 'tool',
+        name = 'CXX',
+        help = 'C++ compiler',
         default = None))
     aspects.AddAspect(Aspect(
         group = 'flags',
@@ -179,6 +185,11 @@ def setup_aspects():
         group = 'flags',
         name = 'CXXFLAGS',
         help = 'C++ compilation flags',
+        default = None))
+    aspects.AddAspect(Aspect(
+        group = 'flags',
+        name = 'LINKFLAGS',
+        help = 'C and C++ linking flags',
         default = None))
     return aspects
 
