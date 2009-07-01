@@ -33,6 +33,7 @@
 #include <GL/glew.h>
 #include <bugle/hashtable.h>
 #include <bugle/string.h>
+#include <bugle/memory.h>
 #include "common/protocol.h"
 #include "gldb/gldb-common.h"
 #include "gldb/gldb-gui.h"
