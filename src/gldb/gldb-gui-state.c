@@ -31,6 +31,7 @@
 #include <stdlib.h>
 #include <bugle/linkedlist.h>
 #include <bugle/hashtable.h>
+#include <bugle/memory.h>
 #include "gldb/gldb-common.h"
 #include "gldb/gldb-gui.h"
 #include "gldb/gldb-gui-state.h"
