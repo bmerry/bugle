@@ -38,7 +38,7 @@ static bugle_bool stats_calltimes_pre(function_call *call, const callback_data *
 {
     bugle_timespec *start;
 
-    start = bugle_object_get_current_data(bugle_call_class, time_view);
+    start = bugle_object_get_current_data(bugle_get_call_class(), time_view);
     bugle_gettime(start);
     return BUGLE_TRUE;
 }
@@ -50,7 +50,7 @@ static bugle_bool stats_calltimes_post(function_call *call, const callback_data 
     double elapsed;
 
     bugle_gettime(&end);
-    start = bugle_object_get_current_data(bugle_call_class, time_view);
+    start = bugle_object_get_current_data(bugle_get_call_class(), time_view);
     elapsed = (end.tv_sec  - start->tv_sec) + 1e-9 * (end.tv_nsec - start->tv_nsec);
 
     bugle_stats_signal_add(stats_calltimes_signals[call->generic.id], elapsed);
@@ -87,7 +87,7 @@ static bugle_bool stats_calltimes_initialise(filter_set *handle)
     }
     stats_calltimes_total = bugle_stats_signal_new("calltimes:total", NULL, NULL);
 
-    time_view = bugle_object_view_new(bugle_call_class,
+    time_view = bugle_object_view_new(bugle_get_call_class(),
                                       NULL,
                                       NULL,
                                       sizeof(bugle_timespec));

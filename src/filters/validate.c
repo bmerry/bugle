@@ -56,7 +56,7 @@ static bugle_bool error_callback(function_call *call, const callback_data *data)
     GLenum *call_error;
 
     stored_error = bugle_object_get_current_data(bugle_get_context_class(), error_context_view);
-    call_error = bugle_object_get_current_data(bugle_call_class, error_call_view);
+    call_error = bugle_object_get_current_data(bugle_get_call_class(), error_call_view);
     *call_error = GL_NO_ERROR;
 
     if (bugle_api_extension_block(bugle_api_function_extension(call->generic.id)) != BUGLE_API_EXTENSION_BLOCK_GL)
@@ -136,7 +136,7 @@ static bugle_bool error_initialise(filter_set *handle)
                                                NULL,
                                                NULL,
                                                sizeof(GLenum));
-    error_call_view = bugle_object_view_new(bugle_call_class,
+    error_call_view = bugle_object_view_new(bugle_get_call_class(),
                                             NULL,
                                             NULL,
                                             sizeof(GLenum));

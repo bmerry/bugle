@@ -109,7 +109,7 @@ static hash_table filter_set_orders;       /* A is initialised after B */
 
 static bugle_dl_module current_dl_handle = NULL;
 
-object_class *bugle_call_class;
+static object_class *bugle_call_class;
 
 /* Forward declarations */
 static void filter_set_deactivate_nolock(filter_set *handle);
@@ -896,6 +896,12 @@ void *bugle_filter_set_get_symbol(filter_set *handle, const char *name)
 {
     assert(handle != NULL);
     return bugle_dl_sym_data(handle->dl_handle, name);
+}
+
+object_class *bugle_get_call_class(void)
+{
+    assert(bugle_call_class != NULL);
+    return bugle_call_class;
 }
 
 void filters_help(void)

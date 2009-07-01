@@ -484,7 +484,7 @@ static bugle_bool globjects_filter_set_initialise(filter_set *handle)
                                     globjects_data_init,
                                     globjects_data_clear,
                                     sizeof(globjects_data));
-    call_view = bugle_object_view_new(bugle_call_class,
+    call_view = bugle_object_view_new(bugle_get_call_class(),
                                       checks_init,
                                       (void (*)(void *)) bugle_list_clear,
                                       sizeof(linked_list));
