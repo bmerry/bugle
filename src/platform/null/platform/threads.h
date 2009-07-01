@@ -63,7 +63,7 @@ typedef int bugle_thread_t;
 #define bugle_flockfile(f) ((void) 0)
 #define bugle_funlockfile(f) ((void) 0)
 
-#define BUGLE_CONSTRUCTOR(fn) bugle_thread_once_define(static, fn ## _once)
-#define BUGLE_RUN_CONSTRUCTOR(fn) bugle_thread_once(fn ## _once, (fn))
+#define BUGLE_CONSTRUCTOR(fn) 
+#define BUGLE_RUN_CONSTRUCTOR(fn) fn()
 
 #endif /* !BUGLE_PLATFORM_THREADS_H */
