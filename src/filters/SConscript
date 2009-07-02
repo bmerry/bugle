@@ -18,6 +18,7 @@ simple_filters(filter_env, [
         'exe',
         'extoverride',
         'logstats',
+        'screenshot',
         'showextensions',
         'stats_basic',
         'stats_calls',

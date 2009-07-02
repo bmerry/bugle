@@ -605,7 +605,12 @@ static void screenshot_video(int frameno)
 
     if (!screenshot_stream(video_pipe, BUGLE_TRUE))
     {
+        /* TODO: abstract this code away somewhere */
+#if defined(BUGLE_PLATFORM_POSIX)
         pclose(video_pipe);
+#elif defined(BUGLE_PLATFORM_MSVCRT)
+        _pclose(video_pipe);
+#endif
         video_pipe = NULL;
     }
     screenshot_stop(&ssctx);
@@ -666,7 +671,7 @@ static bugle_bool screenshot_initialise(filter_set *handle)
     bugle_glwin_filter_catches_swap_buffers(f, BUGLE_FALSE, screenshot_callback);
     bugle_filter_order("screenshot", "invoke");
 
-    video_data = XCALLOC(video_lag, screenshot_data);
+    video_data = BUGLE_CALLOC(video_lag, screenshot_data);
     video_cur = 0;
     video_first = BUGLE_TRUE;
     if (video)
@@ -677,10 +682,18 @@ static bugle_bool screenshot_initialise(filter_set *handle)
 #if !HAVE_LAVC
         cmdline = bugle_asprintf("ppmtoy4m | ffmpeg -f yuv4mpegpipe -i - -vcodec %s -strict -1 -y %s",
                                  video_codec, video_filename);
+#if defined(BUGLE_PLATFORM_POSIX)
         video_pipe = popen(cmdline, "w");
+#elif defined(BUGLE_PLATFORM_MSVCRT)
+        video_pipe = _popen(cmdline, "w");
+#else
+        bugle_log("screenshot", "init", BUGLE_LOG_ERROR,
+                  "Video capture by pipe not supported on this platform");
+#endif
+
         bugle_free(cmdline);
         if (!video_pipe) return BUGLE_FALSE;
-#endif
+#endif /* !HAVE_LAVC */
         /* Note: we only initialise libavcodec on the first frame, because
          * we need the frame size.
          */
@@ -702,7 +715,14 @@ static void screenshot_shutdown(filter_set *handle)
     if (video_context)
         lavc_shutdown();
 #endif
-    if (video_pipe) pclose(video_pipe);
+    if (video_pipe)
+    {
+#if defined(BUGLE_PLATFORM_POSIX)
+        pclose(video_pipe);
+#elif defined(BUGLE_PLATFORM_MSVCRT)
+        _pclose(video_pipe);
+#endif
+    }
     if (video_codec) bugle_free(video_codec);
 }
 
