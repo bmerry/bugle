@@ -6,7 +6,7 @@ filter_env = envs['host'].Clone(
         LIBS = targets['bugle'].out + targets['bugleutils'].out,
         SHLIBPREFIX = '')
 
-if aspects['binfmt'] == 'elf' and aspects['compiler'] == 'gcc':
+if aspects['binfmt'] == 'elf' and aspects['host-compiler'] == 'gcc':
     filter_env.Append(LINKFLAGS = '-Wl,-soname,${TARGET.file}')
 
 def simple_filters(env, names):
@@ -39,7 +39,7 @@ if aspects['gltype'] == 'gl':
 
 if aspects['platform'] == 'posix':
     # These currently depend on POSIX features
-    simpe_filters(filter_env, [
+    simple_filters(filter_env, [
             'checks',
             'debugger',
             'unwindstack'])

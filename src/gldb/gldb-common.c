@@ -287,6 +287,7 @@ static bugle_pid_t execute(void (*child_init)(void))
 }
 
 #else /* !BUGLE_PLATFORM_MSVCRT */
+# include <unistd.h>
 # include <sys/wait.h>
 # include <sys/socket.h>
 # include <netinet/in.h>
