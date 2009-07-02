@@ -96,8 +96,6 @@ def apply_compiler(env, compiler, config):
         raise RuntimeError, 'Don\'t know how to apply compiler "%s"' % compiler
 
 def apply_compilation_aspects(env, aspects):
-    if aspects['host'] != '':
-        env['HOST'] = aspects['host']
     # single values
     for i in ['CC', 'CXX']:
         if aspects[i] is not None and aspects[i] != '':
@@ -224,6 +222,8 @@ targets = {
         'bugleutils': Target()
         }
 
+if aspects['host'] != '':
+    envs['host']['HOST'] = aspects['host']
 apply_compiler(envs['build'], aspects['build-compiler'], aspects['config'])
 apply_compiler(envs['host'], aspects['host-compiler'], aspects['config'])
 for env in envs.itervalues():
@@ -235,7 +235,7 @@ if aspects['binfmt'] == 'pe':
     # Can't use LD_PRELOAD on windows, so have to use the same name
     targets['bugle']['target'] = libraries[-1]
 else:
-    targets['bugle']['target'] = 'libbugle'
+    targets['bugle']['target'] = 'bugle'
 
 Export('envs', 'targets', 'libraries')
 # Modify environment based on configuration checks
