@@ -98,3 +98,34 @@ class AspectParser:
     def Help(self):
         # TODO fill in
         pass
+
+    def LoadFile(self, filename):
+        try:
+            f = file(filename, 'r')
+            try:
+                globls = {}
+                values = eval(f.read(), globls)
+                self.Load(values, filename)
+                print 'Loaded configuration from', filename
+            finally:
+                f.close()
+        except IOError:
+            pass    # Don't care if the file doesn't exist
+
+    def Load(self, args, source):
+        for name, value in args.iteritems():
+            if name in self:
+                self[name] = value
+            else:
+                raise RuntimeError, name + ' is not a valid option (' + source + ')'
+
+    def Save(self, filename):
+        explicit = {}
+        for aspect in self.aspects.values():
+            if aspect.explicit:
+                explicit[aspect.name] = aspect.get()
+        f = file(filename, 'w')
+        try:
+            print >>f, repr(explicit)
+        finally:
+            f.close()

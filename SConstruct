@@ -110,7 +110,7 @@ def setup_aspects():
         choices = ['windows', 'x11', 'none'],
         default = winsys_default))
     aspects.AddAspect(Aspect(
-        group = 'variant',
+        group = 'subvariant',
         name = 'fs',
         help = 'Location of files',
         choices = ['cygming', 'unix'],
@@ -122,13 +122,13 @@ def setup_aspects():
         choices = ['posix', 'msvcrt', 'null'],
         default = platform_default))
     aspects.AddAspect(Aspect(
-        group = 'variant',
+        group = 'subvariant',
         name = 'binfmt',
         help = 'Dynamic linker style',
         choices = ['pe', 'elf'],
         default = binfmt_default))
     aspects.AddAspect(Aspect(
-        group = 'variant',
+        group = 'subvariant',
         name = 'callapi',
         help = 'Calling convention for GL functions',
         default = callapi_default))
@@ -191,25 +191,28 @@ def setup_aspects():
         name = 'LINKFLAGS',
         help = 'C and C++ linking flags',
         default = None))
+
     return aspects
 
 # Process command line arguments
 setup_options()
 aspects = setup_aspects()
-for name, value in ARGUMENTS.iteritems():
-    if name in aspects:
-        aspects[name] = value
-    else:
-        raise RuntimeError, name + ' is not a valid option'
+aspects.LoadFile('config.py')
+aspects.Load(ARGUMENTS, 'command line')
 aspects.Resolve()
 aspects.Report()
 
 variant = []
 for a in aspects.ordered:
-    if a.group == 'variant' and (not a.is_default() or a.name == 'config'):
-        variant.append('%s_%s' % (a.name, a.get()))
-variant_str = '__'.join(variant)
+    if a.get() is not None and a.get() != '':
+        if a.group == 'variant' or (a.group == 'subvariant' and a.explicit):
+            variant.append('%s' % a.get())
+variant_str = '_'.join(variant)
 
 Export('aspects', 'subdir')
 
 subdir(Dir('.'), 'src', variant_dir = 'build/' + variant_str, duplicate = 0)
+
+# Only save right at the end, in case some subdir rejects an aspect or
+# combination of aspects
+aspects.Save('config.py')
