@@ -25,8 +25,14 @@
 #if HAVE_CONFIG_H
 # include <config.h>
 #endif
+#ifdef _WIN32
+# ifndef WIN32_LEAN_AND_MEAN
+#  define WIN32_LEAN_AND_MEAN
+# endif
+# include <windows.h>
+#endif
 #include <GL/gl.h>
-#include <inttypes.h>
+#include "platform/types.h"
 
 /* Note: Luminance must appear before alpha, so that LUMINANCE_ALPHA is
  * processed correctly.
@@ -51,7 +57,7 @@
  */
 typedef struct
 {
-    uint32_t channel;
+    bugle_uint32_t channel;
     GLenum texture_token;          /* Name for glGetTexImage */
     GLenum framebuffer_token;      /* Name for glReadPixels */
     GLenum display_token;          /* Equivalent token to get colour image */
@@ -70,25 +76,25 @@ extern gldb_channel_table_entry gldb_channel_table[];
  * set. "Appropriate" means that there is a GL token to query with. If there
  * is no super-set, returns 0.
  */
-uint32_t gldb_channel_get_query_channels(uint32_t channels);
+bugle_uint32_t gldb_channel_get_query_channels(bugle_uint32_t channels);
 
 /* Returns the OpenGL token to pass to glGetTexImage / glReadPixels to
  * retrieve the given set of channels. It will not automatically expand
  * the set; use gldb_channel_get_query_channel to do that. If no token
  * is found, returns GL_NONE.
  */
-GLenum gldb_channel_get_texture_token(uint32_t channels);
-GLenum gldb_channel_get_framebuffer_token(uint32_t channels);
+GLenum gldb_channel_get_texture_token(bugle_uint32_t channels);
+GLenum gldb_channel_get_framebuffer_token(bugle_uint32_t channels);
 
 /* Determines what token to use to load channel data into a texture for
  * display. Non-colour channels are mapped to colour channels.
  */
-GLenum gldb_channel_get_display_token(uint32_t channels);
+GLenum gldb_channel_get_display_token(bugle_uint32_t channels);
 
 /* Similar to the above, but returns the abbreviation, or NULL */
-const char *gldb_channel_get_abbr(uint32_t channels);
+const char *gldb_channel_get_abbr(bugle_uint32_t channels);
 
 /* Convenience function to count the number of channels in a set. */
-int gldb_channel_count(uint32_t channels);
+int gldb_channel_count(bugle_uint32_t channels);
 
 #endif /* BUGLE_GLDB_GLDB_CHANNELS_H */

@@ -153,6 +153,9 @@ const char *gldb_program_validate(void)
 
 #if BUGLE_PLATFORM_MSVCRT
 # include <windows.h>
+# include <io.h>
+# include <fcntl.h>
+# include <process.h>
 
 static void setenv_printf(const char *fmt, ...)
 {

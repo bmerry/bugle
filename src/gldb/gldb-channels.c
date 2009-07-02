@@ -22,8 +22,13 @@
 #if HAVE_CONFIG_H
 # include <config.h>
 #endif
+#ifdef _WIN32
+# ifndef WIN32_LEAN_AND_MEAN
+#  define WIN32_LEAN_AND_MEAN
+# endif
+# include <windows.h>
+#endif
 #include <GL/gl.h>
-#include <inttypes.h>
 #include <stddef.h>
 #include "gldb/gldb-channels.h"
 
@@ -55,7 +60,7 @@ gldb_channel_table_entry gldb_channel_table[] =
     { 0, 0, 0, 0, 0, 0, NULL, NULL }
 };
 
-uint32_t gldb_channel_get_query_channels(uint32_t channels)
+bugle_uint32_t gldb_channel_get_query_channels(bugle_uint32_t channels)
 {
     int i;
 
@@ -66,7 +71,7 @@ uint32_t gldb_channel_get_query_channels(uint32_t channels)
     return 0;
 }
 
-GLenum gldb_channel_get_texture_token(uint32_t channels)
+GLenum gldb_channel_get_texture_token(bugle_uint32_t channels)
 {
     int i;
 
@@ -77,7 +82,7 @@ GLenum gldb_channel_get_texture_token(uint32_t channels)
     return GL_NONE;
 }
 
-GLenum gldb_channel_get_framebuffer_token(uint32_t channels)
+GLenum gldb_channel_get_framebuffer_token(bugle_uint32_t channels)
 {
     int i;
 
@@ -88,7 +93,7 @@ GLenum gldb_channel_get_framebuffer_token(uint32_t channels)
     return GL_NONE;
 }
 
-GLenum gldb_channel_get_display_token(uint32_t channels)
+GLenum gldb_channel_get_display_token(bugle_uint32_t channels)
 {
     int i;
 
@@ -99,7 +104,7 @@ GLenum gldb_channel_get_display_token(uint32_t channels)
     return GL_NONE;
 }
 
-const char *gldb_channel_get_abbr(uint32_t channels)
+const char *gldb_channel_get_abbr(bugle_uint32_t channels)
 {
     int i;
 
@@ -110,7 +115,7 @@ const char *gldb_channel_get_abbr(uint32_t channels)
     return NULL;
 }
 
-int gldb_channel_count(uint32_t channels)
+int gldb_channel_count(bugle_uint32_t channels)
 {
     int ans = 0;
     while (channels)

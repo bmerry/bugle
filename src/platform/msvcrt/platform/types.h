@@ -22,6 +22,7 @@
 # define WIN32_LEAN_AND_MEAN
 #endif
 #include <windows.h>
+#include <stdio.h>
 
 typedef UINT8 bugle_uint8_t;
 typedef INT8 bugle_int8_t;
@@ -33,6 +34,8 @@ typedef UINT64 bugle_uint64_t;
 typedef INT64 bugle_int64_t;
 
 typedef LONG_PTR bugle_ssize_t;
+
+typedef intptr_t bugle_pid_t;
 
 #define BUGLE_PRIu8 "u"
 #define BUGLE_PRId8 "d"

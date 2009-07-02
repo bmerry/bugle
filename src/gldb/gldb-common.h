@@ -26,12 +26,16 @@
  * include glew.h if it's used in the GUI). Note that this means that
  * gldb-common.h must always preceed these other headers.
  */
+#ifdef _WIN32
+# ifndef WIN32_LEAN_AND_MEAN
+#  define WIN32_LEAN_AND_MEAN
+# endif
+# include <windows.h>
+#endif
 #include <GL/gl.h>
 #define BUGLE_GL_GLHEADERS_H
 #define BUDGIE_TYPES2_H
 
-#include <signal.h>
-#include <unistd.h>
 #include <bugle/bool.h>
 #include <bugle/linkedlist.h>
 #include <bugle/attributes.h>
