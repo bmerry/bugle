@@ -1,0 +1,21 @@
+#!/usr/bin/env python
+import os
+
+Import('aspects', 'version')
+
+env = Environment(
+        ENV = os.environ,
+        DOCBOOKFLAGS = '--stringparam bugle.version ' + version,
+        tools = ['default', 'docbook'])
+if GetOption('bugle_short'):
+    for i in ['DOCBOOK']:
+        env[i + 'COMSTR'] = i + ' $TARGET'
+
+env.DocBook(
+        target = '../html/single.html',
+        source = ['xhtml-single.xsl', 'bugle.xml'])
+chunked = env.DocBookDir(
+        target = '../html/chunked',
+        source = ['xhtml-chunk.xsl', 'bugle.xml'])
+env.Clean(chunked, '../html/chunked')
+env.Clean('.', '../html')

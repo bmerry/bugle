@@ -2,6 +2,8 @@
 import os
 from Aspects import *
 
+version = '0.0.20090704'
+
 def subdir(srcdir, dir, **kw):
     '''
     Run SConscript in a subdir, setting srcdir appropriately
@@ -67,6 +69,7 @@ def setup_options():
     Adds custom command-line options
     '''
     AddOption('--short', help = 'Show more compact build lines', dest = 'bugle_short', action = 'store_true')
+    AddOption('--sticky', help ='Save build options for later runs', dest = 'bugle_save', action = 'store_true')
 
 def setup_aspects():
     '''
@@ -209,10 +212,12 @@ for a in aspects.ordered:
             variant.append('%s' % a.get())
 variant_str = '_'.join(variant)
 
-Export('aspects', 'subdir')
+Export('aspects', 'subdir', 'version')
 
 subdir(Dir('.'), 'src', variant_dir = 'build/' + variant_str, duplicate = 0)
+SConscript('doc/DocBook/SConscript')
 
 # Only save right at the end, in case some subdir rejects an aspect or
 # combination of aspects
-aspects.Save('config.py')
+if GetOption('bugle_save'):
+    aspects.Save('config.py')
