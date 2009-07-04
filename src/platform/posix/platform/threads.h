@@ -15,13 +15,7 @@
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-/* In general, the function names match either pthread or gnulib conventions.
- *
- * Some caveats:
- * - read-write locks may degrade to simple mutexes if rwlock functionality is
- *   not available. rwlocks should only be used to gain efficiency from
- *   not serialising multiple readers.
- */
+/* Refer to the DocBook manual for documentation on these functions. */
 
 #ifndef BUGLE_PLATFORM_THREADS_H
 #define BUGLE_PLATFORM_THREADS_H
@@ -75,7 +69,9 @@ typedef pthread_t bugle_thread_t;
 #endif
 
 /*** Higher-level stuff that doesn't depend on the threading implementation ***/
-/* TODO move it out of here and into a shared header */
+/* TODO move it out of here and into a shared header
+ * TODO remove reference to LTDL
+ */
 
 /* This initialisation mechanism is only valid for static constructor functions.
  * Any code that depends on the initialisation being complete must call

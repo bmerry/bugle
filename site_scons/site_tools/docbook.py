@@ -27,20 +27,25 @@ def generate(env, **kw):
             function = xinclude_scanner_function,
             recursive = 1)
     docbook_builder = env.Builder(
-            action = Action.Action('$DOCBOOKCOM', '$DOCBOOKCOMSTR'),
+            action = [
+                Action.Action('$DOCBOOKLINTCOM', '$DOCBOOKLINTCOMSTR'),
+                Action.Action('$DOCBOOKCOM', '$DOCBOOKCOMSTR')],
             source_scanner = xinclude_scanner,
             target_factory = env.File)
     docbook_dir_builder = env.Builder(
             action = [
                 Defaults.Mkdir('$TARGET'),
+                Action.Action('$DOCBOOKLINTCOM', '$DOCBOOKLINTCOMSTR'),
                 Action.Action('$DOCBOOKDIRCOM', '$DOCBOOKCOMSTR')
                 ],
             source_scanner = xinclude_scanner,
             target_factory = env.Dir)
     env.Append(
             XSLTPROC = 'xsltproc',
+            XMLLINT = 'xmllint',
             DOCBOOKCOM = '$XSLTPROC --xinclude $DOCBOOKFLAGS -o $TARGET $SOURCES',
             DOCBOOKDIRCOM = '$XSLTPROC --xinclude $DOCBOOKFLAGS -o $TARGET/ $SOURCES',
+            DOCBOOKLINTCOM = '$XMLLINT --noent --noout --xinclude --postvalid ${SOURCES[1]}',
             BUILDERS = {
                 'DocBook': docbook_builder,
                 'DocBookDir': docbook_dir_builder}

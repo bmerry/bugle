@@ -190,5 +190,492 @@
                 </varlistentry>
             </variablelist>
         </sect2>
+
+        <sect2 id="hacking-porting-platform">
+            <title>Platforms</title>
+            <para>
+                The term <quote>platform</quote> has a specific meaning in
+                &bugle; porting: it is the set of standard runtime libraries
+                available, together with the associated header files.
+                The currently available platforms are:
+            </para>
+            <variablelist>
+                <varlistentry>
+                    <term>null</term>
+                    <listitem><para>
+                            This is a dummy platform which provides all the
+                            interfaces but not implementation. It will compile
+                            and link, and is intended as a stepping stone for
+                            porting to new platforms.
+                    </para></listitem>
+                </varlistentry>
+                <varlistentry>
+                    <term>posix</term>
+                    <listitem><para>
+                            This is IEEE 1003.1-2001 with the
+                            <symbol>_POSIX_THREADS</symbol> option. Other
+                            optional features will be used if present
+                            (including GNU extensions), but are (in theory)
+                            not required.
+                    </para></listitem>
+                </varlistentry>
+                <varlistentry>
+                    <term>msvcrt</term>
+                    <listitem><para>
+                            Microsoft Visual C++ runtime. This is only tested
+                            with Visual C++ 9.0.
+                    </para></listitem>
+                </varlistentry>
+            </variablelist>
+            <para>
+                Adding a new interface requires implementing a number of
+                functions and header files, described below.
+            </para>
+            <sect3 id="hacking-porting-platform-stringfunctions">
+                <title>String functions</title>
+                <para>
+                    Some of these functions return newly allocated memory.
+                    These functions must terminate the program if memory
+                    could not be allocated, by calling
+                    <function>bugle_alloc_die</function> (or by allocating the
+                    memory from <function>bugle_malloc</function>).
+                </para>
+                <para>
+                    Failure behaviour is loosely defined, since the methods
+                    of reporting failure vary from one platform to another.
+                    Functions may modify <parameter>errno</parameter> but are
+                    not required to.
+                </para>
+                <funcsynopsis>
+                    <funcprototype>
+                        <funcdef>int
+                            <function>bugle_snprintf</function></funcdef>
+                        <paramdef>char *<parameter>str</parameter></paramdef>
+                        <paramdef>size_t <parameter>size</parameter></paramdef>
+                        <paramdef>const char *<parameter>format</parameter></paramdef>
+                        <varargs/>
+                    </funcprototype>
+                    <funcprototype>
+                        <funcdef>int
+                            <function>bugle_vsnprintf</function></funcdef>
+                        <paramdef>char *<parameter>str</parameter></paramdef>
+                        <paramdef>size_t <parameter>size</parameter></paramdef>
+                        <paramdef>const char *<parameter>format</parameter></paramdef>
+                        <paramdef>va_list <parameter>ap</parameter></paramdef>
+                    </funcprototype>
+                </funcsynopsis>
+                <para>
+                    These functions must implement the C99 semantics of the
+                    corresponding functions, in particular, returning the
+                    number of characters that would have been written if
+                    truncation had not occurred.
+                </para>
+                <funcsynopsis>
+                    <funcprototype>
+                        <funcdef>char *<function>bugle_strdup</function></funcdef>
+                        <paramdef>char *<parameter>str</parameter></paramdef>
+                    </funcprototype>
+                    <funcprototype>
+                        <funcdef>char *<function>bugle_strndup</function></funcdef>
+                        <paramdef>char *<parameter>str</parameter></paramdef>
+                        <paramdef>size_t <parameter>n</parameter></paramdef>
+                    </funcprototype>
+                </funcsynopsis>
+                <para>
+                    Returns a copy of <parameter>str</parameter> in newly
+                    allocated memory. <function>bugle_strndup</function>
+                    truncates the string to at most <parameter>n</parameter>
+                    characters.
+                </para>
+                <funcsynopsis>
+                    <funcprototype>
+                        <funcdef>char *<function>bugle_asprintf</function></funcdef>
+                        <paramdef>const char *<parameter>format</parameter></paramdef>
+                        <varargs/>
+                    </funcprototype>
+                </funcsynopsis>
+                <para>
+                    Performs a <function>printf</function>, but returns the
+                    written data in newly allocated memory.
+                </para>
+            </sect3>
+            <sect3 id="hacking-porting-platform-timefunctions">
+                <title>Time functions</title>
+                <funcsynopsis>
+                    <funcprototype>
+                        <funcdef>int <function>bugle_gettime</function></funcdef>
+                        <paramdef>bugle_timespec *<parameter>ts</parameter></paramdef>
+                    </funcprototype>
+                </funcsynopsis>
+                <para>
+                    Returns a timestamp, measured in seconds since an
+                    arbitrary point in time (<type>bugle_timespec</type> is
+                    defined in <filename
+                        class="headerfile">bugle/time.h</filename>). There are
+                    no specific requirements on precision, but since this
+                    function is used for statistics it should have at least
+                    millisecond precision. If possible, it should also use a
+                    monotonic clock that will not be affected by changes to
+                    the system time, daylight savings, leap seconds etc.
+                </para>
+            </sect3>
+            <sect3 id="hacking-porting-platform-mathfunctions">
+                <title>Mathematical functions</title>
+                <funcsynopsis>
+                    <funcprototype>
+                        <funcdef>int <function>bugle_isfinite</function></funcdef>
+                        <paramdef>double <parameter>x</parameter></paramdef>
+                    </funcprototype>
+                    <funcprototype>
+                        <funcdef>int <function>bugle_isnan</function></funcdef>
+                        <paramdef>double <parameter>x</parameter></paramdef>
+                    </funcprototype>
+                </funcsynopsis>
+                <para>
+                    Returns a non-zero value if <parameter>x</parameter> is
+                    respectively finite or not-a-number.
+                </para>
+                <funcsynopsis>
+                    <funcprototype>
+                        <funcdef>double <function>bugle_nan</function></funcdef>
+                        <void/>
+                    </funcprototype>
+                </funcsynopsis>
+                <para>
+                    Returns a non-signalling not-a-number value.
+                </para>
+                <funcsynopsis>
+                    <funcprototype>
+                        <funcdef>double <function>bugle_round</function></funcdef>
+                        <paramdef>double <parameter>x</parameter></paramdef>
+                    </funcprototype>
+                </funcsynopsis>
+                <para>
+                    Returns <parameter>x</parameter> rounded to the nearest
+                    integral value. Half-integer values may be rounded in
+                    either direction.
+                </para>
+            </sect3>
+            <sect3 id="hacking-porting-dlfunctions">
+                <title>Dynamic library functions</title>
+                <funcsynopsis>
+                    <funcprototype>
+                        <funcdef>bugle_dl_module <function>bugle_dl_open</function></funcdef>
+                        <paramdef>const char *<parameter>filename</parameter></paramdef>
+                        <paramdef>int <parameter>flag</parameter></paramdef>
+                    </funcprototype>
+                    <funcprototype>
+                        <funcdef>int <function>bugle_dl_close</function></funcdef>
+                        <paramdef>bugle_dl_module <parameter>module</parameter></paramdef>
+                    </funcprototype>
+                </funcsynopsis>
+                <para>
+                    <function>bugle_dl_open</function> loads a dynamical module.
+                    <parameter>filename</parameter> is the name of the file to
+                    open and will not be <symbol>NULL</symbol>. If it is not an
+                    absolute pathname, it is platform-dependent how the file is
+                    located. The possible value for flags are
+                </para>
+                <variablelist>
+                    <varlistentry>
+                        <term><symbol>BUGLE_DL_FLAG_GLOBAL</symbol></term>
+                        <listitem><para>
+                                Place the symbols in the module in the global
+                                symbol table. This flag may be ignored.
+                        </para></listitem>
+                    </varlistentry>
+                    <varlistentry>
+                        <term><symbol>BUGLE_DL_FLAG_NOW</symbol></term>
+                        <listitem><para>
+                                Resolve all symbols in the module immediately,
+                                rather than on first use. This flag may be
+                                ignored.
+                        </para></listitem>
+                    </varlistentry>
+                    <varlistentry>
+                        <term><symbol>BUGLE_DL_FLAG_SUFFIX</symbol></term>
+                        <listitem><para>
+                                Append a platform-specific suffix to the
+                                filename before trying to locate it. If this
+                                flag is absent, it is still permitted (but not
+                                required) for the implementation to append a
+                                suffix.
+                        </para></listitem>
+                    </varlistentry>
+                </variablelist>
+                <para>
+                    The type <type>bugle_dl_module</type> is an opaque pointer,
+                    which the implementation may interpret as it wishes. This
+                    function is not required to be reentrant nor to support
+                    multiple loading of the same library. However, it must be
+                    possible to open a library that is already linked into the
+                    application by other means.
+                </para>
+                <para>
+                    A module is closed with<function>bugle_dl_close</function>.
+                    <function>bugle_dl_open</function> supports opening the
+                    same library multiple times, then the library must not
+                    actually be released until it has been closed as many times
+                    as it has been opened. Returns zero on success, non-zero on
+                    failure.
+                </para>
+                <funcsynopsis>
+                    <funcprototype>
+                        <funcdef>void *<function>bugle_dl_sym_data</function></funcdef>
+                        <paramdef>bugle_dl_module <parameter>module</parameter></paramdef>
+                        <paramdef>const char *<parameter>symbol</parameter></paramdef>
+                    </funcprototype>
+                    <funcprototype>
+                        <funcdef>BUDGIEAPIPROC <function>bugle_dl_sym_function</function></funcdef>
+                        <paramdef>bugle_dl_module <parameter>module</parameter></paramdef>
+                        <paramdef>const char *<parameter>symbol</parameter></paramdef>
+                    </funcprototype>
+                </funcsynopsis>
+                <para>
+                    These functions retrieve a symbol.
+                    <parameter>module</parameter> must be a handle previously
+                    returned by <function>bugle_dl_open</function> &mdash;
+                    there are no magic values for retrieving global symbols.
+                    These functions return <symbol>NULL</symbol> if the
+                    function is not declared.
+                </para>
+
+                <funcsynopsis>
+                    <funcprototype>
+                        <funcdef>void <function>bugle_dl_foreach</function></funcdef>
+                        <paramdef>const char *<parameter>path</parameter></paramdef>
+                        <paramdef>void <parameter>(*callback)</parameter>
+                            <funcparams>const char *<parameter>filename</parameter>,
+                                void *<parameter>arg</parameter></funcparams></paramdef>
+                    </funcprototype>
+                </funcsynopsis>
+                <para>
+                    Search <parameter>path</parameter> (non-recursively) for
+                    loadable modules (files with appropriate filenames), and
+                    calls <parameter>callback</parameter> for each file found.
+                    <parameter>arg</parameter> is passed on to
+                    <parameter>callback</parameter>.
+                </para>
+                <para>
+                    If this function fails, it is responsible for logging an
+                    appropriate error and terminating the process.
+                </para>
+            </sect3>
+            <sect3 id="hacking-porting-platform-threads">
+                <title><filename
+                        class="headerfile">platform/threads.h</filename></title>
+                <para>
+                    This file provides thread primitives. While this
+                    section lists a number of functions, they may be
+                    implemented as function-like macros or inline functions,
+                    and probably should where they are thin wrappers around
+                    platform functions.
+                </para>
+                <para>
+                    The header file needs to define the following types and
+                    defines. With the exception of
+                    <type>bugle_thread_once_t</type>, there is no requirement
+                    that variables of these types are useable before being
+                    initialised by an appropriate function call.
+                </para>
+                <variablelist>
+                    <varlistentry>
+                        <term><type>bugle_thread_once_t</type></term>
+                        <listitem><para>
+                                A type used to allow an initialisation function to be run only
+                                once.
+                        </para></listitem>
+                    </varlistentry>
+                    <varlistentry>
+                        <term><symbol>BUGLE_THREAD_ONCE_INIT</symbol></term>
+                        <listitem><para>
+                                A static initialiser for a
+                                <type>bugle_thread_once_t</type>. There is no
+                                guarantee that this can be used in an
+                                assignment expression.
+                        </para></listitem>
+                    </varlistentry>
+                    <varlistentry>
+                        <term><type>bugle_thread_lock_t</type></term>
+                        <listitem><para>
+                                A mutual exclusion lock.
+                        </para></listitem>
+                    </varlistentry>
+                    <varlistentry>
+                        <term><type>bugle_thread_rwlock_t</type></term>
+                        <listitem><para>
+                                A multiple-reader, single-writer lock.
+                        </para></listitem>
+                    </varlistentry>
+                    <varlistentry>
+                        <term><type>bugle_thread_key_t</type></term>
+                        <listitem><para>
+                                A key used to identify thread-local storage.
+                        </para></listitem>
+                    </varlistentry>
+                    <varlistentry>
+                        <term><type>bugle_thread_t</type></term>
+                        <listitem><para>
+                                A thread identifier.
+                        </para></listitem>
+                    </varlistentry>
+                </variablelist>
+
+                <funcsynopsis>
+                    <funcprototype>
+                        <funcdef>int
+                            <function>bugle_thread_once</function></funcdef>
+                        <paramdef>bugle_thread_once *<parameter>once</parameter></paramdef>
+                        <paramdef>void <parameter>(* once_function)</parameter>
+                            <funcparams>void</funcparams></paramdef>
+                    </funcprototype>
+                </funcsynopsis>
+                <para>
+                    Call <parameter>once_function</parameter> if
+                    <parameter>once</parameter> has not previously been used
+                    with this function; otherwise waits until the previous
+                    call has completed. <parameter>once</parameter> must have
+                    been staticly initialised to
+                    <symbol>BUGLE_THREAD_ONCE_INIT</symbol>.
+                </para>
+
+                <funcsynopsis>
+                    <funcprototype>
+                        <funcdef>int <function>bugle_thread_lock_init</function></funcdef>
+                        <paramdef>bugle_thread_lock_t *<parameter>lock</parameter></paramdef>
+                    </funcprototype>
+                    <funcprototype>
+                        <funcdef>int <function>bugle_thread_lock_destroy</function></funcdef>
+                        <paramdef>bugle_pthread_lock_t *<parameter>lock</parameter></paramdef>
+                    </funcprototype>
+                </funcsynopsis>
+                <para>
+                    These functions respectively create and destroy a lock. Locks may only be used
+                    when initialised. Initialising an already initialised lock, destroying an
+                    uninitialised lock, or destroying a lock that is held, all lead to undefined
+                    behaviour. These functions return zero on success, non-zero on failure.
+                </para>
+
+                <funcsynopsis>
+                    <funcprototype>
+                        <funcdef>int <function>bugle_thread_lock_lock</function></funcdef>
+                        <paramdef>bugle_thread_lock_t *<parameter>lock</parameter></paramdef>
+                    </funcprototype>
+                    <funcprototype>
+                        <funcdef>int <function>bugle_thread_lock_unlock</function></funcdef>
+                        <paramdef>bugle_thread_lock_t *<parameter>lock</parameter></paramdef>
+                    </funcprototype>
+                </funcsynopsis>
+                <para>
+                    These functions respectively obtain or release a lock. Attempting to obtain a lock
+                    that is already held, release a lock that is not held by this thread, or perform
+                    an operation that results in deadlock all have undefined behaviour. These
+                    functions return zero on success, non-zero on failure.
+                </para>
+
+                <funcsynopsis>
+                    <funcprototype>
+                        <funcdef>int <function>bugle_thread_rwlock_init</function></funcdef>
+                        <paramdef>bugle_thread_rwlock_t *<parameter>lock</parameter></paramdef>
+                    </funcprototype>
+                    <funcprototype>
+                        <funcdef>int <function>bugle_thread_rwlock_destroy</function></funcdef>
+                        <paramdef>bugle_thread_rwlock_t *<parameter>lock</parameter></paramdef>
+                    </funcprototype>
+                </funcsynopsis>
+                <para>
+                    These functions respectively create and destroy a read-write lock. Locks may only be used
+                    when initialised. Initialising an already initialised lock, destroying an
+                    uninitialised lock, or destroying a lock that is held, all lead to undefined
+                    behaviour. These functions return zero on success, non-zero on failure.
+                </para>
+
+                <funcsynopsis>
+                    <funcprototype>
+                        <funcdef>int <function>bugle_thread_rwlock_rdlock</function></funcdef>
+                        <paramdef>bugle_thread_rwlock_t *<parameter>lock</parameter></paramdef>
+                    </funcprototype>
+                    <funcprototype>
+                        <funcdef>int <function>bugle_thread_rwlock_wrlock</function></funcdef>
+                        <paramdef>bugle_thread_rwlock_t *<parameter>lock</parameter></paramdef>
+                    </funcprototype>
+                    <funcprototype>
+                        <funcdef>int <function>bugle_thread_rwlock_unlock</function></funcdef>
+                        <paramdef>bugle_thread_rwlock_t *<parameter>lock</parameter></paramdef>
+                    </funcprototype>
+                </funcsynopsis>
+                <para>
+                    These functions obtain a read-write lock for reading or
+                    writing, or release a held lock. Attempting to obtain a
+                    lock that is already held, release a lock that is not held
+                    by this thread, or perform an operation that results in
+                    deadlock all have undefined behaviour.
+                </para>
+                <para>
+                    &Bugle; does not itself depend on multiple concurrent
+                    readers, but some drivers make synchronous callbacks from
+                    different threads that will deadlock if this is not
+                    implemented. It is also recommended that implementations
+                    are designed to avoid writer starvation.
+                </para>
+
+                <funcsynopsis>
+                    <funcprototype>
+                        <funcdef>int <function>bugle_thread_key_create</function></funcdef>
+                        <paramdef>bugle_thread_key_t *<parameter>key</parameter></paramdef>
+                        <paramdef>void <parameter>(*destructor)</parameter>
+                            <funcparams>void *</funcparams></paramdef>
+                    </funcprototype>
+                    <funcprototype>
+                        <funcdef>int <function>bugle_thread_key_delete</function></funcdef>
+                        <paramdef>bugle_thread_key_t <parameter>key</parameter></paramdef>
+                    </funcprototype>
+                </funcsynopsis>
+                <para>
+                    Respectively create or destroy a key for thread-local
+                    storage. On key creation, the value <symbol>NULL</symbol>
+                    is associated with the key in all threads. On thread
+                    creation, the value <symbol>NULL</symbol> is associated
+                    with all keys in that thread. These functions return zero
+                    on success, non-zero on failure.
+                </para>
+                <para>
+                    When a thread terminates, if the destructor and the
+                    associated value are both non-<symbol>NULL</symbol> then
+                    the destructor should be called with the value. The order
+                    of destructors is unspecified, and the destructors will
+                    have undefined behaviour if they try to set or query any
+                    thread-local storage. If a key is destroyed, the
+                    destructor will not be called on any of its associated
+                    data.
+                </para>
+                <para>
+                    At present, not all platforms implement destructors. These
+                    platforms <emphasis>will</emphasis> leak resources and
+                    should be fixed.
+                </para>
+
+                <funcsynopsis>
+                    <funcprototype>
+                        <funcdef>int <function>bugle_thread_setspecific</function></funcdef>
+                        <paramdef>bugle_thread_key_t <parameter>key</parameter></paramdef>
+                        <paramdef>const void *<parameter>value</parameter></paramdef>
+                    </funcprototype>
+                    <funcprototype>
+                        <funcdef>void *<function>bugle_thread_getspecific</function></funcdef>
+                        <paramdef>bugle_thread_key_t <parameter>key</parameter></paramdef>
+                    </funcprototype>
+                </funcsynopsis>
+                <para>
+                    Respectively set or query a thread-local value.
+                    Thread-local values are of type <type>void *</type>.
+                    <function>bugle_thread_setspecific</function> returns
+                    zero on success, non-zero on failure;
+                    <function>bugle_thread_getspecific</function> must never
+                    fail given a valid key (an invalid key leads to undefined
+                    behaviour).
+                </para>
+            </sect3>
+        </sect2>
     </sect1>
 </chapter>
