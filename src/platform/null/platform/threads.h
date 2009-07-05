@@ -35,35 +35,35 @@
 typedef int bugle_thread_once_t;
 
 #define BUGLE_THREAD_ONCE_INIT 0
-#define bugle_thread_once(name, function) ((void) 0)
+#define bugle_thread_once(name, function) (-1)
 
 typedef int bugle_thread_lock_t;
-#define bugle_thread_lock_init(name) ((void) 0)
-#define bugle_thread_lock_destroy(name) ((void) 0)
-#define bugle_thread_lock_lock(name) ((void) 0)
-#define bugle_thread_lock_unlock(name) ((void) 0)
+#define bugle_thread_lock_init(name) (-1)
+#define bugle_thread_lock_destroy(name) (-1)
+#define bugle_thread_lock_lock(name) (-1)
+#define bugle_thread_lock_unlock(name) (-1)
 
 typedef int bugle_thread_rwlock_t;
-# define bugle_thread_rwlock_init(name) ((void) 0)
-# define bugle_thread_rwlock_destroy(name) ((void) 0)
-# define bugle_thread_rwlock_rdlock(name) ((void) 0)
-# define bugle_thread_rwlock_wrlock(name) ((void) 0)
-# define bugle_thread_rwlock_unlock(name) ((void) 0)
+# define bugle_thread_rwlock_init(name) (-1)
+# define bugle_thread_rwlock_destroy(name) (-1)
+# define bugle_thread_rwlock_rdlock(name) (-1)
+# define bugle_thread_rwlock_wrlock(name) (-1)
+# define bugle_thread_rwlock_unlock(name) (-1)
 
 typedef int bugle_thread_key_t;
-#define bugle_thread_key_create(name, destructor) ((void) 0)
+#define bugle_thread_key_create(name, destructor) (-1)
 #define bugle_thread_getspecific(key) (NULL)
-#define bugle_thread_setspecific(key, value) ((void) 0)
-#define bugle_thread_key_delete(key) ((void) 0)
+#define bugle_thread_setspecific(key, value) (-1)
+#define bugle_thread_key_delete(key) (-1)
 
 typedef int bugle_thread_t;
 #define bugle_thread_self() (0UL)
-#define bugle_thread_raise(sig) ((void) 0)
+#define bugle_thread_raise(sig) (-1)
 
 #define bugle_flockfile(f) ((void) 0)
 #define bugle_funlockfile(f) ((void) 0)
 
-#define BUGLE_CONSTRUCTOR(fn) 
-#define BUGLE_RUN_CONSTRUCTOR(fn) fn()
+#define BUGLE_CONSTRUCTOR(fn) static int dummy_constructor_ ## fn
+#define BUGLE_RUN_CONSTRUCTOR(fn) (fn())
 
 #endif /* !BUGLE_PLATFORM_THREADS_H */

@@ -84,7 +84,7 @@ typedef pthread_t bugle_thread_t;
 # define BUGLE_CONSTRUCTOR(fn) static void fn(void) __attribute__((constructor))
 # define BUGLE_RUN_CONSTRUCTOR(fn) ((void) 0)
 #else
-# define BUGLE_CONSTRUCTOR(fn) static bugle_thread_once_t fn ## _once = BUGLE_THREAD_ONCE_INIT;
+# define BUGLE_CONSTRUCTOR(fn) static bugle_thread_once_t fn ## _once = BUGLE_THREAD_ONCE_INIT
 # define BUGLE_RUN_CONSTRUCTOR(fn) bugle_thread_once(&(fn ## _once), (fn))
 #endif
 

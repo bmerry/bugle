@@ -34,6 +34,7 @@
 #endif
 #include <windows.h>
 #include <stddef.h>
+#include <signal.h>
 #include <bugle/export.h>
 
 typedef struct
@@ -98,7 +99,7 @@ typedef DWORD bugle_thread_key_t;
 
 typedef DWORD bugle_thread_t;
 #define bugle_thread_self() (GetCurrentThreadId())
-#define bugle_thread_raise(sig) ((void) 0)
+#define bugle_thread_raise(sig) (raise(sig))
 
 #define bugle_flockfile(f) ((void) 0)
 #define bugle_funlockfile(f) ((void) 0)
