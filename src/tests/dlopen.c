@@ -4,6 +4,11 @@
 #include <GL/gl.h>
 #include <GL/glx.h>
 
+/* Some versions of Mesa 6.5 don't define PFNGLXGETPROCADDRESSARBPROC */
+#ifdef GLX_VERSION_1_4
+# undef PFNGLXGETPROCADDRESSARBPROC
+# define PFNGLXGETPROCADDRESSARBPROC PFNGLXGETPROCADDRESSPROC
+#endif
 static PFNGLXGETPROCADDRESSARBPROC dl_glXGetProcAddressARB;
 static void (*glx_glEnd)(void);
 

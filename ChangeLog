@@ -13,6 +13,10 @@
 * Support for MSVC on Windows
 * Autogenerate a main.bc instead of having a menu of API combinations
 
+0.0.20090706
+------------
+* Make compilation work with latest glext.h
+
 0.0.20090411
 ------------
 * Fix display of uniform arrays to show all elements, not just one (closes: #53)
