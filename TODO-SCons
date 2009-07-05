@@ -3,12 +3,12 @@
 - add platform layer for glib?
 - add platform layer for gnulib?
 - complete platform layer for win32 (I/O)
-- make aspects sticky
-- better naming convention for variant dirs
 - add abstractions:
   - sockets
   - va_copy
-- remove data exports (object classes)
+- documentation updates
+- make chunked documentation compile work
+- component selection
 - audit use of malloc/bugle_malloc/free/bugle_free for matching up
 - clean up gldb-gui and move all the nasty process stuff into glib code
 - slim down platform layer to provide shared fallbacks for string functions
