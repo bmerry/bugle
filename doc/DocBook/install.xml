@@ -13,8 +13,8 @@
             <envar>LD_PRELOAD</envar> for library interposition. If it fails
             to work on such an operating system, please let me know (I only
             use it on GNU/Linux). It is also supported on Windows, although
-            this support is less complete. It also includes highly
-            experimental and incomplete support for OpenGL ES 2 on Windows.
+            this support is less complete. It also supports OpenGL ES (1.1 and
+            2.0), although again, support is less complete and less tested.
         </para>
         <para>
             The following packages are required to compile &bugle;:
@@ -32,23 +32,18 @@
                     OpenGL header files, including a recent version of <ulink
                         url="http://www.opengl.org/registry/api/glext.h">glext.h</ulink>.
                     A version supporting at least OpenGL 2.0 is required. For
-                    OpenGL ES 2, the OpenGL ES 2 and EGL header files are
+                    OpenGL ES, the OpenGL ES and EGL header files are
                     required.
             </para></listitem>
             <listitem><para>Perl 5</para></listitem>
+            <listitem><para>Python 2 (2.5 is tested, 2.4 may work)</para></listitem>
+            <listitem><para><ulink url="http://www.scons.org">SCons</ulink> (only 1.20 is tested, older versions may work)</para></listitem>
         </itemizedlist>
         <para>
             The following packages are not required, but if present, will
             enable extra functionality:
         </para>
         <variablelist>
-            <varlistentry>
-                <term><ulink url="http://cnswww.cns.cwru.edu/php/chet/readline/rltop.html">readline</ulink></term>
-                <listitem><para>
-                        This will enable line editing in the console debugger.
-                        The GUI debugger is the preferred method of debugging.
-                </para></listitem>
-            </varlistentry>
             <varlistentry>
                 <term><ulink url="http://www.gtk.org/">GTK+</ulink></term>
                 <listitem><para>
@@ -57,16 +52,10 @@
             </varlistentry>
             <varlistentry>
                 <term><ulink url="http://gtkglext.sourceforge.net/">gtkglext</ulink></term>
-                <listitem><para>
-                        This is needed for the texture and framebuffer viewers
-                        in the GUI debugger.
-                </para></listitem>
-            </varlistentry>
-            <varlistentry>
                 <term><ulink url="http://glew.sourceforge.net/">GLEW</ulink></term>
                 <listitem><para>
-                        GLEW is also needed for texture and framebuffer
-                        viewers.
+                        These are needed for the texture and framebuffer viewers
+                        in the GUI debugger.
                 </para></listitem>
             </varlistentry>
             <varlistentry>
@@ -78,6 +67,70 @@
                 </para></listitem>
             </varlistentry>
         </variablelist>
+    </sect1>
+
+    <sect1 id="install-scons">
+        <title>SCons</title>
+        <para>
+            &Bugle; uses <ulink url="http://www.scons.org/">SCons</ulink>
+            rather than <command>make</command> as its build system. To build
+            &bugle;, simple run <userinput>scons</userinput> in the top-level
+            directory, and the targets will be built in the <filename
+                class="directory">build</filename> directory. The generic
+            SCons options can be found by running
+            <userinput>scons -H</userinput> and &bugle;-specific options can
+            be found by running <userinput>scons --help</userinput>. The
+            options are you most likely to need are:
+        </para>
+        <variablelist>
+            <varlistentry>
+                <term><userinput>--clean</userinput></term>
+                <listitem><para>
+                        Remove built files (for a more thorough clean,
+                        remove the <filename
+                            class="directory">build</filename> directory).
+                </para></listitem>
+            </varlistentry>
+            <varlistentry>
+                <term><userinput>--sticky</userinput></term>
+                <listitem><para>
+                        Save the command-line variables to
+                        <filename>config.py</filename>, from where they will
+                        automatically be loaded next time. To reset variables
+                        to automatic selection, remove or edit this file.
+                </para></listitem>
+            </varlistentry>
+            <varlistentry>
+                <term><userinput>gltype=<replaceable>type</replaceable></userinput></term>
+                <listitem><para>
+                        Select the variant of OpenGL to build for. &Bugle;
+                        only supports one variant at a time.
+                </para></listitem>
+            </varlistentry>
+            <varlistentry>
+                <term><userinput>parts=<replaceable>list</replaceable></userinput></term>
+                <listitem><para>
+                        Select a subset of the parts of &bugle; to build
+                        (useful if you are missing tools).
+                </para></listitem>
+            </varlistentry>
+            <varlistentry>
+                <term><userinput>prefix=<replaceable>directory</replaceable></userinput></term>
+                <listitem><para>
+                        Select an installation prefix (similar to
+                        <command>autoconf</command>).
+                </para></listitem>
+            </varlistentry>
+            <varlistentry>
+                <term><userinput></userinput></term>
+                <listitem><para>
+                </para></listitem>
+            </varlistentry>
+        </variablelist>
+        <para>
+            Once you have successfully built &bugle;, you can run
+            <userinput>scons install</userinput> to install it.
+        </para>
     </sect1>
 
     <sect1 id="install-configure">

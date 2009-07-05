@@ -104,6 +104,9 @@ class AspectParser:
         return key in self.aspects
 
     def Report(self):
+        """
+        Prints a user-readable description of the current configuration
+        """
         print
         print "*** Configuration ***"
         print
@@ -125,8 +128,18 @@ class AspectParser:
         print
 
     def Help(self):
-        # TODO fill in
-        pass
+        '''
+        Returns a help string describing the options
+        '''
+        help = ''
+        for a in self.ordered:
+            values = '<string>'
+            if a.choices is not None:
+                values = '|'.join(a.choices)
+                if a.multiple:
+                    values = '(' + values + ')+ | all'
+            help += '%s=%s\n            %s\n\n' % (a.name, values, a.help)
+        return help
 
     def LoadFile(self, filename):
         try:

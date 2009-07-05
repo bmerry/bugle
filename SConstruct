@@ -91,7 +91,7 @@ def setup_aspects():
     aspects.AddAspect(Aspect(
         group = 'variant',
         name = 'host',
-        help = 'name for the host machine for cross-compiling',
+        help = 'Name for the host machine for cross-compiling (GCC only)',
         default = ''))
 
     aspects.AddAspect(Aspect(
@@ -140,7 +140,7 @@ def setup_aspects():
         name = 'config',
         help = 'Compiler option set',
         choices = ['debug', 'release'],
-        default = 'debug'))
+        default = 'release'))
 
     aspects.AddAspect(Aspect(
         group = 'path',
@@ -208,6 +208,10 @@ def setup_aspects():
 # Process command line arguments
 setup_options()
 aspects = setup_aspects()
+Help('Available command-line variables:\n\n')
+Help(aspects.Help())
+if GetOption('help'):
+    Return()
 aspects.LoadFile('config.py')
 aspects.Load(ARGUMENTS, 'command line')
 aspects.Resolve()

@@ -1,3 +1,7 @@
+- install rules
+- packaging rules
+- don't rebuild from .xml/.y/.l if present in source package
+- documentation updates
 - add tests
 - add remaining filters
 - add platform layer for glib?
@@ -6,7 +10,6 @@
 - add abstractions:
   - sockets
   - va_copy
-- documentation updates
 - audit use of malloc/bugle_malloc/free/bugle_free for matching up
 - clean up gldb-gui and move all the nasty process stuff into glib code
 - slim down platform layer to provide shared fallbacks for string functions
