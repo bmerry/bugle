@@ -675,6 +675,84 @@
                     fail given a valid key (an invalid key leads to undefined
                     behaviour).
                 </para>
+
+                <funcsynopsis>
+                    <funcprototype>
+                        <funcdef>int <function>bugle_thread_raise</function></funcdef>
+                        <paramdef>int <parameter>sig</parameter></paramdef>
+                    </funcprototype>
+                </funcsynopsis>
+                <para>
+                    Send <parameter>sig</parameter> to the current thread,
+                    similar to the C <function>raise</function> function. This
+                    function is not required to wait for signal handlers to
+                    complete.
+                </para>
+
+                <funcsynopsis>
+                    <funcprototype>
+                        <funcdef>bugle_thread_t <function>bugle_thread_self</function></funcdef>
+                        <void/>
+                    </funcprototype>
+                </funcsynopsis>
+                <para>
+                    Returns an OS identifier for the current thread. Two
+                    concurrently executing threads must have different
+                    identifiers. Ideally, identifiers should not be recycled
+                    during a process, but this may be impossible to guarantee.
+                </para>
+
+                <funcsynopsis>
+                    <funcprototype>
+                        <funcdef>void <function>bugle_flockfile</function></funcdef>
+                        <paramdef>FILE *<parameter>filehandle</parameter></paramdef>
+                    </funcprototype>
+                    <funcprototype>
+                        <funcdef>void <function>bugle_funlockfile</function></funcdef>
+                        <paramdef>FILE *<parameter>filehandle</parameter></paramdef>
+                    </funcprototype>
+                </funcsynopsis>
+                <para>
+                    These functions lock or unlock a file handle for
+                    concurrent access. While locked, other threads attempting
+                    to use the filehandle will be blocked, even if they do not
+                    explicitly lock. Locking is recursive, so the handle
+                    becomes unlocked when
+                    <function>bugle_funlockfile</function> has been called as
+                    many times as <function>bugle_flockfile</function>.
+                    Calling <function>bugle_funlockfile</function> in a thread
+                    which does not hold a lock yields undefined behaviour.
+                </para>
+                <para>
+                    Since not all platforms provide this mechanism, and since
+                    &bugle; only relies on it to avoid interleaving output
+                    from different threads, platforms are permitted to
+                    implement these functions as no-ops.
+                </para>
+
+                <funcsynopsis>
+                    <funcsynopsisinfo language="C++">BUGLE_CONSTRUCTOR(function);
+BUGLE_RUN_CONSTRUCTOR(function);</funcsynopsisinfo>
+                </funcsynopsis>
+                <para>
+                    These macros implement an initialise-once mechanism at a
+                    higher level than <type>bugle_thread_once_t</type>. The
+                    function must be <symbol>static</symbol> and have no
+                    parameters or return value.
+                    <symbol>BUGLE_CONSTRUCTOR</symbol> is used at file scope
+                    prior to the declaration of the function, while
+                    <symbol>BUGLE_RUN_CONSTRUCTOR</symbol> is used inside
+                    code to ensure that the function has been run.
+                </para>
+                <para>
+                    Implementations are free to execute the function at any
+                    point up to <symbol>BUGLE_RUN_CONSTRUCTOR</symbol>
+                    returning. In particular, they may choose to implement
+                    these macros using constructor semantics. However, the
+                    function must be run in an environment where it may safely
+                    execute all the functions in this section, particularly
+                    the dynamic library functions.
+                </para>
             </sect3>
         </sect2>
     </sect1>
