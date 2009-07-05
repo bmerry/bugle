@@ -3,11 +3,15 @@
 import SCons
 
 class Aspect:
-    def __init__(self, group, name, help, choices = None, default = None, metavar = None):
+    def __init__(self, group, name, help, choices = None, default = None, metavar = None, multiple = False):
+        if choices is None and multiple:
+            raise ValueError, 'multiple aspect can only be used with choices'
+
         self.group = group
         self.name = name
         self.help = help
         self.choices = choices
+        self.multiple = multiple
         self.default = default
         self.metavar = metavar
 
@@ -16,9 +20,24 @@ class Aspect:
         self.explicit = False
         self.on_stack = False
 
+    def _convert(self, value):
+        if self.multiple:
+            if value == 'all':
+                return self.choices
+            else:
+                return set(value.split(','))
+        else:
+            return value
+
     def _set(self, value, explicit):
-        if self.choices is not None and value not in self.choices:
-            raise RuntimeError, "%s is not a valid value for %s" % (value, self.name)
+        value = self._convert(value)
+        if self.multiple:
+            for i in value:
+                if i not in self.choices:
+                    raise ValueError, "%s is not a valid value for %s" % (i, self.name)
+        elif self.choices is not None:
+            if value not in self.choices:
+                raise ValueError, "%s is not a valid value for %s" % (value, self.name)
         self.value = value
         self.known = True
         self.explicit = explicit
@@ -40,11 +59,21 @@ class Aspect:
             self._set(text, False)
         return self.value
 
+    def __str__(self):
+        if self.multiple:
+            value = self.get()
+            if self.get() == self.choices:
+                return 'all'
+            else:
+                return ','.join(self.get())
+        else:
+            return str(self.get())
+
     def is_default(self):
         if callable(self.default):
-            default = self.default(self)
+            default = self._convert(self.default(self))
         else:
-            default = self.default
+            default = self._convert(self.default)
         return default == self.get()
 
 class AspectParser:
@@ -79,9 +108,9 @@ class AspectParser:
         print "*** Configuration ***"
         print
         for a in self.ordered:
-            value = a.get()
-            if value is None:
-                continue
+            if a.get() is None:
+                continue;
+            value = str(a)
             if value == '':
                 value = '<empty>'
             print "%-20s = %-20s" % (a.name, value),
@@ -123,7 +152,7 @@ class AspectParser:
         explicit = {}
         for aspect in self.aspects.values():
             if aspect.explicit:
-                explicit[aspect.name] = aspect.get()
+                explicit[aspect.name] = str(aspect)
         f = file(filename, 'w')
         try:
             print >>f, repr(explicit)

@@ -7,8 +7,6 @@
   - sockets
   - va_copy
 - documentation updates
-- make chunked documentation compile work
-- component selection
 - audit use of malloc/bugle_malloc/free/bugle_free for matching up
 - clean up gldb-gui and move all the nasty process stuff into glib code
 - slim down platform layer to provide shared fallbacks for string functions

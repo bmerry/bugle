@@ -3,21 +3,22 @@ import os
 
 Import('aspects', 'version')
 
-env = Environment(
-        ENV = os.environ,
-        DOCBOOKFLAGS = '--stringparam bugle.version ' + version,
-        tools = ['default', 'docbook'])
-if GetOption('bugle_short'):
-    for i in ['DOCBOOK']:
-        env[i + 'COMSTR'] = i + ' $TARGET'
+if 'docs' in aspects['parts']:
+    env = Environment(
+            ENV = os.environ,
+            DOCBOOKFLAGS = '--stringparam bugle.version ' + version,
+            tools = ['default', 'docbook'])
+    if GetOption('bugle_short'):
+        for i in ['DOCBOOK']:
+            env[i + 'COMSTR'] = i + ' $TARGET'
 
-env.DocBook(
-        target = 'html/single.html',
-        source = ['xhtml-single.xsl', 'bugle.xml'])
-env.Command('html/bugle.css', 'bugle.css', [Copy('$TARGET', '$SOURCE')])
+    env.DocBook(
+            target = 'html/single.html',
+            source = ['xhtml-single.xsl', 'bugle.xml'])
+    env.Command('html/bugle.css', 'bugle.css', [Copy('$TARGET', '$SOURCE')])
 
-chunked = env.DocBook(
-        target = 'html/chunked/index.html',
-        source = ['xhtml-chunk.xsl', 'bugle.xml'])
-env.Command('html/chunked/bugle.css', 'bugle.css', [Copy('$TARGET', '$SOURCE')])
-env.Clean(chunked, 'html/chunked')
+    chunked = env.DocBook(
+            target = 'html/chunked/index.html',
+            source = ['xhtml-chunk.xsl', 'bugle.xml'])
+    env.Command('html/chunked/bugle.css', 'bugle.css', [Copy('$TARGET', '$SOURCE')])
+    env.Clean(chunked, 'html/chunked')

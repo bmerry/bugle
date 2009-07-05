@@ -195,6 +195,14 @@ def setup_aspects():
         help = 'C and C++ linking flags',
         default = None))
 
+    aspects.AddAspect(Aspect(
+        group = 'parts',
+        name = 'parts',
+        help = 'Select which parts of BuGLe to build',
+        choices = ['debugger', 'interceptor', 'docs', 'tests'],
+        multiple = True,
+        default = 'all'))
+
     return aspects
 
 # Process command line arguments

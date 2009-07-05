@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 Import('envs', 'targets', 'aspects')
 
-# MSVC currently can't build gldb because it can't find libintl.h
-if aspects['platform'] != 'msvcrt':
+if 'debugger' in aspects['parts']:
     # TODO use a proper pkg-config configuration test
     # TODO add a #define when GTK 2.6+ is available
+    # TODO detect gtkglext+glew
     gtk_env = envs['host'].Clone(parse_flags = ['!pkg-config gtk+-2.0 --cflags --libs'])
 
     # Non-GUI files

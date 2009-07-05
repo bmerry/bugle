@@ -283,33 +283,34 @@ targets['bugleutils']['source'].extend([
     'apitables.c'])
 targets['bugleutils'].out = envs['host'].SharedLibrary2(**targets['bugleutils'])
 
-targets['bugle'].update({
-    'version': '8.0.0'})
-targets['bugle']['source'].extend([
-    envs['host'].CFile('confparse.y', YACCFLAGS = '-d')[0],
-    'conflex.l',
-    'interceptor.c',
-    'filters.c',
-    'stats.c',
-    'statslex.l',
-    envs['host'].CFile('statsparse.y', YACCFLAGS = '-d')[0],
-    'log.c',
-    'objects.c',
-    'input.c',
-    'budgielib/addresses.c',
-    'budgielib/lib.c',
-    'gl/glutils.c',
-    'gl/glsl.c',
-    'glwin/trackcontext.c',
-    'gl/gldisplaylist.c',
-    'gl/globjects.c',
-    'gl/glextensions.c',
-    'gl/glbeginend.c',
-    aspects['gltype'] + '/gldump.c',
-    aspects['gltype'] + '/glstate.c',
-    aspects['glwin'] + '/glwin.c'])
-targets['bugle']['LIBS'].extend(targets['bugleutils'].out)
-targets['bugle'].out = envs['host'].SharedLibrary2(**targets['bugle'])
+if 'interceptor' in aspects['parts']:
+    targets['bugle'].update({
+        'version': '8.0.0'})
+    targets['bugle']['source'].extend([
+        envs['host'].CFile('confparse.y', YACCFLAGS = '-d')[0],
+        'conflex.l',
+        'interceptor.c',
+        'filters.c',
+        'stats.c',
+        'statslex.l',
+        envs['host'].CFile('statsparse.y', YACCFLAGS = '-d')[0],
+        'log.c',
+        'objects.c',
+        'input.c',
+        'budgielib/addresses.c',
+        'budgielib/lib.c',
+        'gl/glutils.c',
+        'gl/glsl.c',
+        'glwin/trackcontext.c',
+        'gl/gldisplaylist.c',
+        'gl/globjects.c',
+        'gl/glextensions.c',
+        'gl/glbeginend.c',
+        aspects['gltype'] + '/gldump.c',
+        aspects['gltype'] + '/glstate.c',
+        aspects['glwin'] + '/glwin.c'])
+    targets['bugle']['LIBS'].extend(targets['bugleutils'].out)
+    targets['bugle'].out = envs['host'].SharedLibrary2(**targets['bugle'])
 
 # These need to come after the targets have been built
 subdir(srcdir, 'bc')

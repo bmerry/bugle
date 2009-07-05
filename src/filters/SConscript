@@ -2,44 +2,45 @@
 
 Import('envs', 'targets', 'aspects')
 
-filter_env = envs['host'].Clone(
-        LIBS = targets['bugle'].out + targets['bugleutils'].out,
-        SHLIBPREFIX = '')
+if 'interceptor' in aspects['parts']:
+    filter_env = envs['host'].Clone(
+            LIBS = targets['bugle'].out + targets['bugleutils'].out,
+            SHLIBPREFIX = '')
 
-if aspects['binfmt'] == 'elf' and aspects['host-compiler'] == 'gcc':
-    filter_env.Append(LINKFLAGS = '-Wl,-soname,${TARGET.file}')
+    if aspects['binfmt'] == 'elf' and aspects['host-compiler'] == 'gcc':
+        filter_env.Append(LINKFLAGS = '-Wl,-soname,${TARGET.file}')
 
-def simple_filters(env, names):
-    for name in names:
-        env.LoadableModule(name, [name + '.c'])
+    def simple_filters(env, names):
+        for name in names:
+            env.LoadableModule(name, [name + '.c'])
 
-simple_filters(filter_env, [
-        'common',
-        'exe',
-        'extoverride',
-        'logstats',
-        'screenshot',
-        'showextensions',
-        'stats_basic',
-        'stats_calls',
-        'stats_calltimes',
-        'stats_nv',
-        'stats_primitives',
-        'trace',
-        'validate'])
-
-if aspects['gltype'] == 'gl':
-    # These currently only build on desktop GL
     simple_filters(filter_env, [
-            'camera',
-            'modify',
-            'stats_fragments',
-            'showstats'])
-    filter_env.LoadableModule('eps', ['eps.c', '../gl2ps/gl2ps.c'])
+            'common',
+            'exe',
+            'extoverride',
+            'logstats',
+            'screenshot',
+            'showextensions',
+            'stats_basic',
+            'stats_calls',
+            'stats_calltimes',
+            'stats_nv',
+            'stats_primitives',
+            'trace',
+            'validate'])
 
-if aspects['platform'] == 'posix':
-    # These currently depend on POSIX features
-    simple_filters(filter_env, [
-            'checks',
-            'debugger',
-            'unwindstack'])
+    if aspects['gltype'] == 'gl':
+        # These currently only build on desktop GL
+        simple_filters(filter_env, [
+                'camera',
+                'modify',
+                'stats_fragments',
+                'showstats'])
+        filter_env.LoadableModule('eps', ['eps.c', '../gl2ps/gl2ps.c'])
+
+    if aspects['platform'] == 'posix':
+        # These currently depend on POSIX features
+        simple_filters(filter_env, [
+                'checks',
+                'debugger',
+                'unwindstack'])
