@@ -215,7 +215,7 @@ variant_str = '_'.join(variant)
 Export('aspects', 'subdir', 'version')
 
 subdir(Dir('.'), 'src', variant_dir = 'build/' + variant_str, duplicate = 0)
-SConscript('doc/DocBook/SConscript')
+subdir(Dir('.'), 'doc/DocBook', variant_dir = 'build/doc', duplicate = 0)
 
 # Only save right at the end, in case some subdir rejects an aspect or
 # combination of aspects

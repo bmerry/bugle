@@ -12,10 +12,12 @@ if GetOption('bugle_short'):
         env[i + 'COMSTR'] = i + ' $TARGET'
 
 env.DocBook(
-        target = '../html/single.html',
+        target = 'html/single.html',
         source = ['xhtml-single.xsl', 'bugle.xml'])
-chunked = env.DocBookDir(
-        target = '../html/chunked',
+env.Command('html/bugle.css', 'bugle.css', [Copy('$TARGET', '$SOURCE')])
+
+chunked = env.DocBook(
+        target = 'html/chunked/index.html',
         source = ['xhtml-chunk.xsl', 'bugle.xml'])
-env.Clean(chunked, '../html/chunked')
-env.Clean('.', '../html')
+env.Command('html/chunked/bugle.css', 'bugle.css', [Copy('$TARGET', '$SOURCE')])
+env.Clean(chunked, 'html/chunked')
