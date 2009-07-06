@@ -1,3 +1,8 @@
+0.0.20090706
+------------
+This release just fixes compilation problems with the newest glext.h. If you
+have successfully installed the previous version, there is no need to upgrade.
+
 0.0.20090411
 ------------
 This release fixes several bugs, and has improved tracing of EGL and GLX.
