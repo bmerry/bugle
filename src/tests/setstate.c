@@ -33,7 +33,7 @@
 
 static FILE *ref;
 
-static void set_enables()
+static void set_enables(void)
 {
     glEnable(GL_LIGHTING);             fprintf(ref, "trace\\.call: glEnable\\(GL_LIGHTING\\)\n");
     glEnable(GL_DEPTH_TEST);           fprintf(ref, "trace\\.call: glEnable\\(GL_DEPTH_TEST\\)\n");
@@ -57,7 +57,7 @@ static void set_enables()
     glEnable(GL_BLEND);                fprintf(ref, "trace\\.call: glEnable\\(GL_BLEND\\)\n");
 }
 
-void set_client_state()
+void set_client_state(void)
 {
     glEnableClientState(GL_VERTEX_ARRAY); fprintf(ref, "trace\\.call: glEnableClientState\\(GL_VERTEX_ARRAY\\)\n");
     glVertexPointer(3, GL_INT, 0, NULL);  fprintf(ref, "trace\\.call: glVertexPointer\\(3, GL_INT, 0, NULL\\)\n");
@@ -65,7 +65,7 @@ void set_client_state()
     glPixelStoref(GL_PACK_SWAP_BYTES, GL_FALSE); fprintf(ref, "trace\\.call: glPixelStoref\\(GL_PACK_SWAP_BYTES, GL_FALSE\\)\n");
 }
 
-void set_texture_state()
+void set_texture_state(void)
 {
     GLuint id;
     GLint arg;
@@ -90,7 +90,7 @@ void set_texture_state()
     fprintf(ref, "trace\\.call: glDeleteTextures\\(1, %p -> { %u }\\)\n", (void *) &id, (unsigned int) id);
 }
 
-static void set_material_state()
+static void set_material_state(void)
 {
     GLfloat col[4] = {0.0, 0.25, 0.5, 1.0};
     glMaterialfv(GL_FRONT, GL_AMBIENT_AND_DIFFUSE, col);
@@ -98,7 +98,7 @@ static void set_material_state()
             (void *) col);
 }
 
-static void set_matrices()
+static void set_matrices(void)
 {
     GLfloat m[16] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16};
     glMultMatrixf(m);

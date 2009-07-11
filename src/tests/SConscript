@@ -1,0 +1,71 @@
+#!/usr/bin/env python
+import tempfile
+from subprocess import *
+import sys
+import os
+
+Import('envs', 'aspects', 'targets', 'libraries')
+
+test_env = envs['host'].Clone()
+test_env.Append(LIBS = libraries)
+test_env.Append(LIBS = targets['bugleutils'].out)
+
+# TODO: use GLEW32 on Windows
+# TODO: detect GLEW, only link if available, otherwise exclude GL-based tests
+test_env.Append(LIBS = ['glut', 'GLEW'])
+
+def run_log_test(target, testprog, env, name):
+    (handle, logfile) = tempfile.mkstemp('.log')
+    try:
+        os.close(handle)
+        sp = Popen([testprog[0].abspath, '--test', name, '--log', logfile],
+                stdout = PIPE, stderr = PIPE)
+        (out, err) = sp.communicate()
+        errcode = sp.wait()
+        if errcode != 0:
+            print name + " FAILED (exit code " + errcode + ")"
+        else:
+            print "Test `" + name + "' RAN (checking not implemented yet)"
+    finally:
+        os.remove(logfile)
+
+def simple_test(name):
+    return test_env.Program(
+            target = name,
+            source = [name + '.c'])
+
+if 'tests' in aspects['parts']:
+    plain_tests = ['string']
+    log_tests = ['pbo']
+
+    bugletest = test_env.Program(
+            target = 'bugletest',
+            source = ['test.c'] + plain_tests + log_tests)
+
+    test = test_env.Command(Value(''), bugletest, '${SOURCE.path}')
+    test_env.AlwaysBuild(test)
+    test_env.Alias('test', test)
+
+    for i in log_tests:
+        test = test_env.Command(Value(''), bugletest,
+                Action(lambda target, source, env: run_log_test(target, source, env, i),
+                       'Running test ' + i))
+        test_env.AlwaysBuild(test)
+        test_env.Alias('test', test)
+
+    # These only work for desktop GL
+    if aspects['gltype'] == 'gl':
+        simple_test('errors')
+        simple_test('interpose')
+        simple_test('misc')
+        simple_test('objects')
+        simple_test('pointers')
+        simple_test('queries')
+        simple_test('setstate')
+        simple_test('shadertest')
+        simple_test('showextensions')
+        simple_test('texcomplete')
+        simple_test('textest')
+        simple_test('threads1')
+        simple_test('threads2')
+        simple_test('triangles')

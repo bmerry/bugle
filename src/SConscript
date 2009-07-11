@@ -316,3 +316,4 @@ if 'interceptor' in aspects['parts']:
 subdir(srcdir, 'bc')
 subdir(srcdir, 'filters')
 subdir(srcdir, 'gldb')
+subdir(srcdir, 'tests')

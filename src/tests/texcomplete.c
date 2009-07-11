@@ -114,17 +114,17 @@ static void tex_image(GLenum face, int level, GLenum internalformat,
     }
 }
 
-static void tex_images(GLenum *faces, int level, GLenum internalformat,
+static void tex_images(const GLenum *faces, int level, GLenum internalformat,
                        int width, int height, int depth, int border,
                        GLenum format, GLenum type, const void *pixels)
 {
-    GLenum *f;
+    const GLenum *f;
     for (f = faces; *f; f++)
         tex_image(*f, level, internalformat, width, height, depth, border,
                   format, type, pixels);
 }
 
-static GLuint make_texture_object(GLenum target, GLenum *faces,
+static GLuint make_texture_object(GLenum target, const GLenum *faces,
                                   texture_mode mode, const void *image)
 {
     GLuint id;
@@ -243,7 +243,7 @@ static void dump_log(const char *phase,
     lg = malloc(length + 1);
     get(object, length + 1, &length, lg);
     fprintf(stderr, "%s\n", lg);
-    bugle_free(lg);
+    free(lg);
     exit(1);
 }
 
