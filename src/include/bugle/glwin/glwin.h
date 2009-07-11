@@ -38,7 +38,7 @@ BUGLE_EXPORT_PRE bugle_bool bugle_glwin_make_context_current(glwin_display dpy, 
                                                              glwin_drawable read, glwin_context ctx) BUGLE_EXPORT_POST;
 
 
-/* Wrapper around glXGetProcAddress or similar functios */
+/* Wrapper around glXGetProcAddress or similar functions */
 BUGLE_EXPORT_PRE BUDGIEAPIPROC bugle_glwin_get_proc_address(const char *name) BUGLE_EXPORT_POST;
 
 /* Wrapper around glXQueryVersion - return 1.0 for wgl */

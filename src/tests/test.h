@@ -23,7 +23,6 @@
 #if HAVE_CONFIG_H
 # include <config.h>
 #endif
-#include <GL/glew.h>
 #include <bugle/attributes.h>
 #include <stdarg.h>
 

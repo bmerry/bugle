@@ -32,6 +32,7 @@
 static const test_suite *current_suite;
 static int current_asserts;
 static int current_asserts_fail;
+static int tests_fail = 0;
 
 /* Name of selected suite, or NULL to run all non-log tests */
 static const test_suite *chosen_suite;
@@ -41,12 +42,25 @@ static const char *log_filename = NULL;
 static FILE *log_handle = NULL;
 
 extern test_status pbo_suite(void);
+extern test_status procaddress_suite(void);
+extern test_status queries_suite(void);
+extern test_status setstate_suite(void);
+extern test_status showextensions_suite(void);
+extern test_status texcomplete_suite(void);
+extern test_status triangles_suite(void);
 extern test_status string_suite(void);
 
 static const test_suite suites[] =
 {
-    { "pbo", TEST_FLAG_LOG | TEST_FLAG_CONTEXT, pbo_suite },
-    { "string", 0, string_suite }
+    { "pbo",            TEST_FLAG_LOG | TEST_FLAG_CONTEXT, pbo_suite },
+    { "procaddress",    TEST_FLAG_CONTEXT,                 procaddress_suite },
+    { "queries",        TEST_FLAG_LOG | TEST_FLAG_CONTEXT, queries_suite },
+    { "setstate",       TEST_FLAG_LOG | TEST_FLAG_CONTEXT, setstate_suite },
+    { "showextensions", TEST_FLAG_LOG | TEST_FLAG_CONTEXT, showextensions_suite },
+    { "texcomplete",    TEST_FLAG_LOG | TEST_FLAG_CONTEXT, texcomplete_suite },
+    { "triangles",      TEST_FLAG_LOG | TEST_FLAG_CONTEXT, triangles_suite },
+
+    { "string",      0, string_suite }
 };
 
 static void usage(void)
@@ -204,6 +218,7 @@ static void run_test(const test_suite *suite, void *dummy)
             printf("SKIPPED\n");
             break;
         default:
+            tests_fail++;
             printf("FAILED\n");
             break;
         }
@@ -220,13 +235,14 @@ static void run_test(const test_suite *suite, void *dummy)
         switch (result)
         {
         case TEST_RAN:
-            printf("Test `%s' PASSED (%d assertions)\n", suite->name, current_asserts);
+            printf("PASSED  Test `%s' (%d assertions)\n", suite->name, current_asserts);
             break;
         case TEST_SKIPPED:
-            printf("Test `%s' SKIPPED\n", suite->name);
+            printf("SKIPPED Test `%s'\n", suite->name);
             break;
         default:
-            printf("Test `%s' FAILED (%d of %d assertions failed)\n",
+            tests_fail++;
+            printf("FAILED  Test `%s' (%d of %d assertions failed)\n",
                    suite->name, current_asserts_fail, current_asserts);
             break;
         }
@@ -265,7 +281,7 @@ int main(int argc, char **argv)
     init_tests(unified_flags);
     foreach_test(run_test, NULL);
     uninit_tests(unified_flags);
-    return 0;
+    return tests_fail != 0 ? 1 : 0;
 }
 
 /* Functions called by the test suites - see logtester.h */

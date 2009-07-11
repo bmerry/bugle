@@ -5,16 +5,12 @@
 #if HAVE_CONFIG_H
 # include <config.h>
 #endif
-#define _POSIX_SOURCE
 #include <GL/glew.h>
 #include <GL/gl.h>
 #include <GL/glext.h>
-#include <GL/glx.h>
 #include <GL/glut.h>
 #include <stdlib.h>
-#include <stdio.h>
-
-static FILE *ref;
+#include "test.h"
 
 static GLfloat float_data[18] =
 {
@@ -41,14 +37,14 @@ static void triangles_immediate(GLenum mode, int count)
     glVertex3sv(s);
     glVertex4dv(d);
     glEnd();
-    fprintf(ref, "logstats\\.triangles per frame: %d triangles per frame\n", count);
+    test_log_printf("logstats\\.triangles per frame: %d triangles/frame\n", count);
 }
 
 static void triangles_draw_arrays(GLenum mode, int count)
 {
     glVertexPointer(GL_FLOAT, 3, 0, float_data);
     glDrawArrays(mode, 0, 6);
-    fprintf(ref, "logstats\\.triangles per frame: %d triangles per frame\n", count);
+    test_log_printf("logstats\\.triangles per frame: %d triangles/frame\n", count);
 }
 
 static void triangles_draw_elements(GLenum mode, int count)
@@ -57,7 +53,7 @@ static void triangles_draw_elements(GLenum mode, int count)
 
     glVertexPointer(GL_FLOAT, 3, 0, float_data);
     glDrawElements(mode, 6, GL_UNSIGNED_SHORT, indices);
-    fprintf(ref, "logstats\\.triangles per frame: %d triangles per frame\n", count);
+    test_log_printf("logstats\\.triangles per frame: %d triangles/frame\n", count);
 }
 
 static void triangles_draw_range_elements(GLenum mode, int count)
@@ -69,12 +65,12 @@ static void triangles_draw_range_elements(GLenum mode, int count)
     if (GLEW_EXT_draw_range_elements)
     {
         glDrawRangeElementsEXT(mode, 0, 5, 6, GL_UNSIGNED_SHORT, indices);
-        fprintf(ref, "logstats\\.triangles per frame: %d triangles per frame\n", count);
+        test_log_printf("logstats\\.triangles per frame: %d triangles/frame\n", count);
     }
     else
 #endif
     {
-        fprintf(ref, "logstats\\.triangles per frame: 0 triangles per frame\n");
+        test_log_printf("logstats\\.triangles per frame: 0 triangles/frame\n");
     }
 }
 
@@ -92,20 +88,12 @@ static void run(void (*func)(GLenum, int))
     glutSwapBuffers();
 }
 
-int main(int argc, char **argv)
+test_status triangles_suite(void)
 {
-    ref = fdopen(3, "w");
-    if (!ref) ref = fopen("/dev/null", "w");
-    glutInit(&argc, argv);
-    glutInitDisplayMode(GLUT_RGBA | GLUT_DOUBLE | GLUT_DEPTH);
-    glutInitWindowSize(300, 300);
-    glutCreateWindow("triangle count test");
-    glewInit();
-
     glutSwapBuffers(); /* No counts on first frame */
     run(triangles_immediate);
     run(triangles_draw_arrays);
     run(triangles_draw_elements);
     run(triangles_draw_range_elements);
-    return 0;
+    return TEST_RAN;
 }

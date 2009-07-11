@@ -3,37 +3,26 @@
 #if HAVE_CONFIG_H
 # include <config.h>
 #endif
-#define _POSIX_SOURCE
 #include <GL/glew.h>
-#include <GL/glut.h>
 #include <stdlib.h>
-#include <stdio.h>
+#include "test.h"
 
-int main(int argc, char **argv)
+test_status showextensions_suite(void)
 {
-    FILE *ref;
     GLint max;
 
-    ref = fdopen(3, "w");
-    if (!ref) ref = fopen("/dev/null", "w");
-    glutInit(&argc, argv);
-    glutInitDisplayMode(GLUT_RGBA | GLUT_DOUBLE | GLUT_DEPTH);
-    glutInitWindowSize(300, 300);
-    glutCreateWindow("extension tester");
-    glewInit();
-
+    /* Need a minimum level of driver support to do a decent test */
     if (!GLEW_VERSION_1_2 || !GLEW_ARB_texture_cube_map)
     {
-        fclose(ref);
-        return 0;  /* Need a minimum level of driver support to do a decent test */
+        return TEST_SKIPPED;
     }
-    glBlendColor(1.0f, 1.0f, 1.0f, 1.0f); /* 1.2 */
+    glDrawRangeElements(GL_TRIANGLES, 0, 0, 0, GL_UNSIGNED_SHORT, NULL); /* 1.2 */
     glGetIntegerv(GL_MAX_CUBE_MAP_TEXTURE_SIZE_ARB, &max); /* cube_map/1.3 */
 
-    fprintf(ref, 
+    test_log_printf(
             "\\[INFO\\] showextensions\\.gl: Min GL version: 1\\.2\n"
             "\\[INFO\\] showextensions\\.glx: Min GLX version: 1\\.\\d\n"
             "\\[INFO\\] showextensions\\.ext: Required extensions: GL_EXT_texture_cube_map GLX_ARB_get_proc_address\n");
 
-    return 0;
+    return TEST_RAN;
 }

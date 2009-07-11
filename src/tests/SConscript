@@ -3,69 +3,134 @@ import tempfile
 from subprocess import *
 import sys
 import os
+import re
 
-Import('envs', 'aspects', 'targets', 'libraries')
+Import('envs', 'aspects', 'targets', 'libraries', 'srcdir')
 
 test_env = envs['host'].Clone()
 test_env.Append(LIBS = libraries)
-test_env.Append(LIBS = targets['bugleutils'].out)
-
 # TODO: use GLEW32 on Windows
 # TODO: detect GLEW, only link if available, otherwise exclude GL-based tests
 test_env.Append(LIBS = ['glut', 'GLEW'])
 
-def run_log_test(target, testprog, env, name):
+bugle_path = os.path.dirname(targets['bugle'].out[0].abspath)
+test_env.AppendENVPath('LD_LIBRARY_PATH', bugle_path)
+test_env['ENV']['BUGLE_FILTER_DIR'] = os.path.join(bugle_path, 'filters')
+test_env['ENV']['BUGLE_FILTERS'] = srcdir.File('filters').abspath
+
+class TestFailed(Exception):
+    def __init__(self, value):
+        Exception.__init__(self, value)
+
+def run_log_test(target, testprog, env, name, chain):
     (handle, logfile) = tempfile.mkstemp('.log')
+    reflog = None
     try:
-        os.close(handle)
-        sp = Popen([testprog[0].abspath, '--test', name, '--log', logfile],
-                stdout = PIPE, stderr = PIPE)
-        (out, err) = sp.communicate()
-        errcode = sp.wait()
-        if errcode != 0:
-            print name + " FAILED (exit code " + errcode + ")"
-        else:
-            print "Test `" + name + "' RAN (checking not implemented yet)"
+        try:
+            os.close(handle)
+            env = env['ENV']
+            env['LD_PRELOAD'] = 'libbugle.so'
+            env['BUGLE_CHAIN'] = chain
+            sp = Popen([testprog[0].abspath, '--test', name, '--log', logfile],
+                    stdout = PIPE, env = env)
+            (out, err) = sp.communicate()
+            errcode = sp.wait()
+            if errcode != 0:
+                raise TestFailed, 'exit code ' + str(errcode)
+
+            lines = out.splitlines()
+            if len(lines) == 0:
+                raise TestFailed, 'no standard output'
+            # Some filters output logging on shutdown, AFTER the status is
+            # written, so look for status anywhere
+            statuses = []
+            for i in range(len(lines)):
+                if lines[i] == 'SKIPPED':
+                    print "SKIPPED Test `" + name + "'"
+                    return
+                elif lines[i] == 'FAILED':
+                    raise TestFailed, ''
+                elif lines[i] == 'RAN':
+                    statuses.append(i)
+            if len(statuses) != 1:
+                raise TestFailed, 'Got %d status lines, expected 1' % len(statuses)
+            del lines[statuses[0]]
+
+            reflog = file(logfile, 'r')
+            reflines = reflog.readlines()
+            reflines = ['^' + x.rstrip('\r\n') + '$' for x in reflines]
+            if len(reflines) == 0:
+                raise TestFailed, 'no reference output'
+            # There will be some startup stuff not in the log
+            while len(lines) > 0 and not re.match(reflines[0], lines[0]):
+                del lines[0]
+            if len(lines) == 0:
+                raise TestFailed, 'did not match ' + reflines[0] + ' at line 1'
+            if len(lines) < len(reflines):
+                raise TestFailed, 'not enough output'
+            for i in range(len(reflines)):
+                if not re.match(reflines[i], lines[i]):
+                    raise TestFailed, "`" + lines[i] + "' did not match `" + reflines[i] + "' at line " + str(i + 1)
+
+            print "PASSED  Test `" + name + "'"
+        except TestFailed, (msg,):
+            if msg != '':
+                msg = ' (' + msg + ')'
+            print "FAILED  Test `" + name + "'" + msg
     finally:
         os.remove(logfile)
+        if reflog is not None:
+            reflog.close()
+
+def make_log_test(name, chain):
+    def action(target, source, env):
+        return run_log_test(target, source, env, name, chain)
+    return action
 
 def simple_test(name):
     return test_env.Program(
             target = name,
             source = [name + '.c'])
 
+# TODO: split up tests based on where they actually work
 if 'tests' in aspects['parts']:
-    plain_tests = ['string']
-    log_tests = ['pbo']
+    plain_tests = [
+            'procaddress',
+            'string']
+    log_tests = [
+            ('pbo', 'trace'),
+            ('queries', 'trace'),
+            ('setstate', 'trace'),
+            ('showextensions', 'showextensions'),
+            ('texcomplete', 'checks'),
+            ('triangles', 'triangles')]
+    tests_sources = [x + '.c' for x in plain_tests]
+    tests_sources += [x[0] + '.c' for x in log_tests]
 
     bugletest = test_env.Program(
             target = 'bugletest',
-            source = ['test.c'] + plain_tests + log_tests)
+            source = ['test.c'] + tests_sources + targets['bugleutils'].out)
 
     test = test_env.Command(Value(''), bugletest, '${SOURCE.path}')
+    test_env.Depends(test, targets['bugle'].out)
     test_env.AlwaysBuild(test)
     test_env.Alias('test', test)
 
-    for i in log_tests:
+    for name, chain in log_tests:
+        # The lambda below is to suppress the printout of what is happening,
+        # to get all the PASSED/FAILED in a single block
         test = test_env.Command(Value(''), bugletest,
-                Action(lambda target, source, env: run_log_test(target, source, env, i),
-                       'Running test ' + i))
+                Action(make_log_test(name, chain), lambda t, s, e: ''))
+        test_env.Depends(test, targets['bugle'].out)
+        test_env.Depends(test, 'filters')
         test_env.AlwaysBuild(test)
         test_env.Alias('test', test)
 
-    # These only work for desktop GL
-    if aspects['gltype'] == 'gl':
-        simple_test('errors')
-        simple_test('interpose')
-        simple_test('misc')
-        simple_test('objects')
-        simple_test('pointers')
-        simple_test('queries')
-        simple_test('setstate')
-        simple_test('shadertest')
-        simple_test('showextensions')
-        simple_test('texcomplete')
-        simple_test('textest')
-        simple_test('threads1')
-        simple_test('threads2')
-        simple_test('triangles')
+    simple_test('errors')
+    simple_test('interpose')
+    simple_test('objects')
+    simple_test('pointers')
+    simple_test('shadertest')
+    simple_test('textest')
+    simple_test('threads1')
+    simple_test('threads2')

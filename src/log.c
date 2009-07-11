@@ -40,8 +40,21 @@ static char *log_filename = NULL;
 static char *log_format = LOG_DEFAULT_FORMAT;
 static bugle_bool log_flush = BUGLE_FALSE;
 static FILE *log_file = NULL;
-static long log_file_level = BUGLE_LOG_INFO + 1;
-static long log_stderr_level = BUGLE_LOG_NOTICE + 1;
+
+enum
+{
+    LOG_TARGET_STDOUT,
+    LOG_TARGET_STDERR,
+    LOG_TARGET_FILE,
+    LOG_TARGET_COUNT
+};
+
+static long log_levels[LOG_TARGET_COUNT] =
+{
+    0,
+    BUGLE_LOG_NOTICE + 1,
+    BUGLE_LOG_INFO + 1
+};
 
 static const char *log_level_names[] =
 {
@@ -61,6 +74,17 @@ static inline void log_end(FILE *f)
 {
     if (log_flush) fflush(f);
     bugle_funlockfile(f);
+}
+
+static FILE *log_get_file(int target)
+{
+    switch (target)
+    {
+    case LOG_TARGET_STDOUT: return stdout;
+    case LOG_TARGET_STDERR: return stderr;
+    case LOG_TARGET_FILE:   return log_file;
+    default: assert(0);
+    }
 }
 
 /* Processes tokens from *format until it hits something it cannot
@@ -104,15 +128,13 @@ void bugle_log_callback(const char *filterset, const char *event, int severity,
 {
     int i;
 
-    for (i = 0; i < 2; i++)
+    for (i = 0; i < LOG_TARGET_COUNT; i++)
     {
         const char *format;
         int special;
-        FILE *f;
-        int level;
+        FILE *f = log_get_file(i);
+        int level = log_levels[i];
 
-        f = i ? stderr : log_file;
-        level = i ? log_stderr_level : log_file_level;
         if (!f || severity >= level) continue;
 
         log_start(f);
@@ -133,16 +155,14 @@ void bugle_log_printf(const char *filterset, const char *event, int severity,
 {
     int i;
 
-    for (i = 0; i < 2; i++)
+    for (i = 0; i < LOG_TARGET_COUNT; i++)
     {
         va_list ap;
         const char *format;
         int special;
-        FILE *f;
-        int level;
+        FILE *f = log_get_file(i);
+        int level = log_levels[i];
 
-        f = i ? stderr : log_file;
-        level = i ? log_stderr_level : log_file_level;
         if (!f || severity >= level) continue;
 
         log_start(f);
@@ -165,15 +185,13 @@ void bugle_log(const char *filterset, const char *event, int severity,
 {
     int i;
 
-    for (i = 0; i < 2; i++)
+    for (i = 0; i < LOG_TARGET_COUNT; i++)
     {
         const char *format;
         int special;
-        FILE *f;
-        int level;
+        FILE *f = log_get_file(i);
+        int level = log_levels[i];
 
-        f = i ? stderr : log_file;
-        level = i ? log_stderr_level : log_file_level;
         if (!f || severity >= level) continue;
 
         log_start(f);
@@ -228,8 +246,9 @@ void log_initialise(void)
         { "filename", "filename of the log to write [none]", FILTER_SET_VARIABLE_STRING, &log_filename, NULL },
         { "flush", "flush log after every call [no]", FILTER_SET_VARIABLE_BOOL, &log_flush, NULL },
         { "format", "template for log lines [[%l] %f.%e: %m]", FILTER_SET_VARIABLE_STRING, &log_format, NULL },
-        { "file_level", "how much information to log to file [4] (0 is none, 5 is all)", FILTER_SET_VARIABLE_UINT, &log_file_level, NULL },
-        { "stderr_level", "how much information to log to stderr [3]", FILTER_SET_VARIABLE_UINT, &log_stderr_level, NULL },
+        { "file_level", "how much information to log to file [4] (0 is none, 5 is all)", FILTER_SET_VARIABLE_UINT, &log_levels[LOG_TARGET_FILE], NULL },
+        { "stderr_level", "how much information to log to stderr [3]", FILTER_SET_VARIABLE_UINT, &log_levels[LOG_TARGET_STDERR], NULL },
+        { "stdout_level", "how much information to log to stderr [0]", FILTER_SET_VARIABLE_UINT, &log_levels[LOG_TARGET_STDOUT], NULL },
         { NULL, NULL, 0, NULL, NULL }
     };
 

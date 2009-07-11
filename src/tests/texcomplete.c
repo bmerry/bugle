@@ -4,12 +4,11 @@
 # include <config.h>
 #endif
 #include <GL/glew.h>
-#include <GL/glut.h>
 #include <GL/glext.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
-#include <assert.h>
+#include "test.h"
 
 /* It's too much effort to make this test portable to older GL's */
 #if GL_VERSION_2_0
@@ -282,34 +281,23 @@ static GLuint make_program(GLuint vs, GLuint fs)
     return program;
 }
 
-int main(int argc, char **argv)
+test_status texcomplete_suite(void)
 {
-    FILE *ref;
     int i;
     texture_mode j;
 
-    ref = fdopen(3, "w");
-    if (!ref) ref = fopen("/dev/null", "w");
-
-    glutInit(&argc, argv);
-    glutInitDisplayMode(GLUT_RGBA | GLUT_DOUBLE | GLUT_DEPTH);
-    glutInitWindowSize(300, 300);
-    glutCreateWindow("texture completeness");
-
-    glewInit();
     if (!GLEW_VERSION_2_0)
-        return 0;
+        return TEST_SKIPPED;
     state_init();
 
     for (i = 0; i < sizeof(targets) / sizeof(texture_target); i++)
     {
-        printf("Testing %s\n", targets[i].name);
+        fprintf(stderr, "Testing %s\n", targets[i].name);
         for (j = 0; j < MODE_COUNT; j++)
         {
             GLuint tex;
             GLuint program, vs, fs;
             GLint loc;
-            GLubyte pixel[4] = {0, 1, 2, 3};
             GLubyte image[256];
 
             memset(image, 255, sizeof(image));
@@ -318,24 +306,36 @@ int main(int argc, char **argv)
             fs = make_shader(GL_FRAGMENT_SHADER, targets[i].source);
             program = make_program(vs, fs);
             loc = glGetUniformLocation(program, "s");
-            assert(loc >= 0);
+            TEST_ASSERT(loc >= 0);
             glUniform1i(loc, 0);
 
             glClear(GL_COLOR_BUFFER_BIT);
             glDrawArrays(GL_QUADS, 0, 4);
-            glReadPixels(0, 0, 1, 1, GL_RGBA, GL_UNSIGNED_BYTE, pixel);
-            printf("(%d,%d,%d,%d)\n", pixel[0], pixel[1], pixel[2], pixel[3]);
+            /* Debug code
+            {
+                GLubyte pixel[4] = {0, 1, 2, 3};
+                glReadPixels(0, 0, 1, 1, GL_RGBA, GL_UNSIGNED_BYTE, pixel);
+                fprintf(stderr, "(%d,%d,%d,%d)\n", pixel[0], pixel[1], pixel[2], pixel[3]);
+            }
+            */
 
             if (j >= MODE_INCOMPLETE_EMPTY)
-                fprintf(ref, "checks\\.texture: GL_TEXTURE0 / %s: incomplete texture.*\n",
-                        targets[i].target_regex);
+                test_log_printf("checks\\.texture: GL_TEXTURE0 / %s: incomplete texture.*\n",
+                                targets[i].target_regex);
 
             glUseProgram(0);
             glDeleteProgram(program);
             glDeleteTextures(1, &tex);
         }
     }
-    return 0;
+    return TEST_RAN;
+}
+
+#else /* GL_VERSION_2_0 */
+
+test_status texcomplete_suite(void)
+{
+    return TEST_SKIPPED;
 }
 
 #endif

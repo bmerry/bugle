@@ -1,3 +1,8 @@
+chain default
+{
+    filterset error
+}
+
 # Wireframe. We use this to test various things, mainly because it
 # loads up various other filtersets (trackbeginend, trackcontext, etc).
 chain wireframe
@@ -11,7 +16,8 @@ chain trace
     filterset log
     {
         format "%f.%e: %m"
-        stderr_level 4
+        stderr_level 0
+        stdout_level 4
         flush yes
     }
     filterset trace
@@ -27,7 +33,8 @@ chain triangles
     filterset log
     {
         format "%f.%e: %m"
-        stderr_level 4
+        stdout_level 4
+        stderr_level 0
         flush yes
     }
     filterset stats_primitives
@@ -39,6 +46,8 @@ chain checks
     filterset log
     {
         format "%f.%e: %m"
+        stderr_level 0
+        stdout_level 3
         flush yes
     }
 }
@@ -48,6 +57,7 @@ chain showextensions
     filterset showextensions
     filterset log
     {
-        stderr_level 4
+        stdout_level 4
+        stderr_level 0
     }
 }

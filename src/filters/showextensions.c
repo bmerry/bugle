@@ -18,7 +18,6 @@
 #if HAVE_CONFIG_H
 # include <config.h>
 #endif
-#define _XOPEN_SOURCE 500
 #define GL_GLEXT_PROTOTYPES
 #include <bugle/bool.h>
 #include <stdio.h>
