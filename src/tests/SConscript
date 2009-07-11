@@ -95,10 +95,14 @@ def simple_test(name):
 # TODO: split up tests based on where they actually work
 if 'tests' in aspects['parts']:
     plain_tests = [
+            'errors',
+            'interpose',
             'procaddress',
             'string']
     log_tests = [
+            ('dlopen', 'trace'),
             ('pbo', 'trace'),
+            ('pointers', 'checks'),
             ('queries', 'trace'),
             ('setstate', 'trace'),
             ('showextensions', 'showextensions'),
@@ -126,10 +130,7 @@ if 'tests' in aspects['parts']:
         test_env.AlwaysBuild(test)
         test_env.Alias('test', test)
 
-    simple_test('errors')
-    simple_test('interpose')
     simple_test('objects')
-    simple_test('pointers')
     simple_test('shadertest')
     simple_test('textest')
     simple_test('threads1')

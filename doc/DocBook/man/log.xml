@@ -5,7 +5,7 @@
 ]>
 <refentry id="log.7">
     <refentryinfo>
-        <date>October 2007</date>
+        <date>July 2009</date>
         <productname>BUGLE</productname>
     </refentryinfo>
     <refmeta>
@@ -23,6 +23,7 @@
 {
     filename "<replaceable>bugle.log</replaceable>"
     file_level "<replaceable>4</replaceable>"
+    stdout_level "<replaceable>0</replaceable>"
     stderr_level "<replaceable>3</replaceable>"
     flush "<replaceable>no</replaceable>"
     format "<replaceable>[%l] %f.%e: %m</replaceable>"
@@ -106,11 +107,13 @@
                 </listitem>
             </varlistentry>
             <varlistentry>
+                <term><option>stdout_level</option></term>
                 <term><option>stderr_level</option></term>
                 <listitem><para>
                         Similar to <option>file_level</option>, but for
-                        logging to standard error. The default is 4 for a file
-                        and 3 for standard error.
+                        logging to standard output and standard error.
+                        The defaults are 4 for a file, 0 (no logging) for
+                        standard out, and 3 for standard error.
                 </para></listitem>
             </varlistentry>
             <varlistentry>

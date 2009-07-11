@@ -6,33 +6,41 @@
 #if HAVE_CONFIG_H
 # include <config.h>
 #endif
-#include <GL/glut.h>
 #include <GL/glx.h>
+#include <GL/gl.h>
+#include <GL/glext.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <stddef.h>
+#include <bugle/bool.h>
+#include <budgie/types.h>
+#include "test.h"
 
-extern void (*glXGetProcAddressARB(const GLubyte *))(void);
+extern BUDGIEAPIPROC glXGetProcAddressARB(const GLubyte *);
 
-void glGetIntegerv(GLenum pname, GLint *out)
+static bugle_bool test_failed = BUGLE_FALSE;
+
+/* If linking is done wrong, this will override the version that
+ * glXGetProcAddress returns. We deliberate choose a post-1.1 function so
+ * that GLEW will wrap it up and prevent other tests from directly calling
+ * this version.
+ */
+void BUDGIEAPI glDrawRangeElements(GLenum mode, GLuint start, GLuint end, GLsizei count, GLenum type, const GLvoid *data)
 {
-    fprintf(stderr,
-            "bugle will not work if the application defines symbols with the\n"
-            "same names as OpenGL functions. If you are using GCC and an ELF\n"
-            "linker, this indicates that bugle was not linked correctly.\n");
-    exit(1);
+    test_failed = BUGLE_TRUE;
 }
 
-void (*pglGetIntegerv)(GLenum, GLint *);
+static void (BUDGIEAPIP pglDrawRangeElements)(GLenum, GLuint, GLuint, GLsizei, GLenum, const GLvoid *);
 
-int main(int argc, char **argv)
+test_status interpose_suite(void)
 {
-    glutInit(&argc, argv);
-    glutInitDisplayMode(GLUT_RGBA | GLUT_DOUBLE | GLUT_DEPTH);
-    glutInitWindowSize(300, 300);
-    glutCreateWindow("linker test");
+    if (strcmp(glGetString(GL_VERSION), "1.2") < 0)
+        return TEST_SKIPPED;    /* Won't have a glDrawElements anyway */
 
-    GLint dummy;
-    pglGetIntegerv = (void (*)(GLenum, GLint *)) glXGetProcAddressARB((GLubyte *) "glGetIntegerv");
-    pglGetIntegerv(GL_MATRIX_MODE, &dummy);
-    return 0;
+    pglDrawRangeElements = (void (BUDGIEAPIP)(GLenum, GLint *)) glXGetProcAddressARB((const GLubyte *) "glDrawRangeElements");
+
+    TEST_ASSERT(pglDrawRangeElements != glDrawRangeElements);
+    pglDrawRangeElements(GL_TRIANGLES, 0, 0, 0, GL_UNSIGNED_SHORT, NULL);
+    TEST_ASSERT(!test_failed);
+    return TEST_RAN;
 }

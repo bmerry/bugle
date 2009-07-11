@@ -1,19 +1,15 @@
-/* Generates a variety of GL errors */
-#ifdef NDEBUG /* make sure that assert is defined */
-# undef NDEBUG
+#if HAVE_CONFIG_H
+# include <config.h>
 #endif
-
-#include <GL/gl.h>
-#include <GL/glx.h>
-#include <GL/glut.h>
+#include <GL/glew.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <assert.h>
+#include "test.h"
 
 static void invalid_enum(void)
 {
     glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_FLOAT);
-    assert(glGetError() == GL_INVALID_ENUM);
+    TEST_ASSERT(glGetError() == GL_INVALID_ENUM);
 }
 
 static void invalid_operation(void)
@@ -21,20 +17,20 @@ static void invalid_operation(void)
     glBegin(GL_TRIANGLES);
     glGetError();
     glEnd();
-    assert(glGetError() == GL_INVALID_OPERATION);
+    TEST_ASSERT(glGetError() == GL_INVALID_OPERATION);
 }
 
 static void invalid_value(void)
 {
     /* border of 2 is illegal */
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB8, 1, 1, 2, GL_RGB, GL_UNSIGNED_BYTE, NULL);
-    assert(glGetError() == GL_INVALID_VALUE);
+    TEST_ASSERT(glGetError() == GL_INVALID_VALUE);
 }
 
 static void stack_underflow(void)
 {
     glPopAttrib();
-    assert(glGetError() == GL_STACK_UNDERFLOW);
+    TEST_ASSERT(glGetError() == GL_STACK_UNDERFLOW);
 }
 
 static void stack_overflow(void)
@@ -46,19 +42,15 @@ static void stack_overflow(void)
         glPushAttrib(GL_ALL_ATTRIB_BITS);
     for (i = 0; i < depth; i++)
         glPopAttrib();
-    assert(glGetError() == GL_STACK_OVERFLOW);
+    TEST_ASSERT(glGetError() == GL_STACK_OVERFLOW);
 }
 
-int main(int argc, char **argv)
+test_status errors_suite(void)
 {
-    glutInit(&argc, argv);
-    glutInitDisplayMode(GLUT_RGBA | GLUT_DOUBLE | GLUT_DEPTH);
-    glutInitWindowSize(300, 300);
-    glutCreateWindow("error generator");
     invalid_enum();
     invalid_operation();
     invalid_value();
     stack_underflow();
     stack_overflow();
-    return 0;
+    return TEST_RAN;
 }
