@@ -53,7 +53,7 @@ static void idle(void)
     glutPostRedisplay();
 }
 
-static void init_gl()
+static void init_gl(void)
 {
     GLuint id;
     GLubyte data[TEXTURE_SIZE][TEXTURE_SIZE][3];
