@@ -3,6 +3,7 @@ import os
 
 Import('aspects', 'version')
 
+# TODO: single.html doesn't see bugle.css in this setup
 if 'docs' in aspects['parts']:
     env = Environment(
             ENV = os.environ,
@@ -22,3 +23,6 @@ if 'docs' in aspects['parts']:
             source = ['xhtml-chunk.xsl', 'bugle.xml'])
     env.Command('html/chunked/bugle.css', 'bugle.css', [Copy('$TARGET', '$SOURCE')])
     env.Clean(chunked, 'html/chunked')
+
+    env.Install(aspects['docdir'], 'html/single.html')
+    env.Install(aspects['docdir'], 'html/chunked')

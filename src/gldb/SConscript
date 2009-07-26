@@ -12,7 +12,7 @@ if 'debugger' in aspects['parts']:
         'gldb-common.c',
         'gldb-channels.c'])
 
-    gtk_env.Program('gldb-gui', [
+    gldb_gui = gtk_env.Program('gldb-gui', [
         'gldb-gui-backtrace.c',
         'gldb-gui-breakpoint.c',
         'gldb-gui-buffer.c',
@@ -24,3 +24,5 @@ if 'debugger' in aspects['parts']:
         'gldb-gui-texture.c',
         'gldb-gui.c',
         gldb_shared], LIBS = [targets['bugleutils'].out, '$LIBS'])
+
+    Install(aspects['bindir'], gldb_gui)

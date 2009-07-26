@@ -162,6 +162,21 @@ def setup_aspects():
         name = 'bindir',
         help = 'Installation path for binaries',
         default = lambda a: aspects['prefix'] + '/bin'))
+    aspects.AddAspect(Aspect(
+        group = 'path',
+        name = 'includedir',
+        help = 'Installation path for header files',
+        default = lambda a: aspects['prefix'] + '/include'))
+    aspects.AddAspect(Aspect(
+        group = 'path',
+        name = 'datadir',
+        help = 'Installation path for architecture-independent data',
+        default = lambda a: aspects['prefix'] + '/share'))
+    aspects.AddAspect(Aspect(
+        group = 'path',
+        name = 'docdir',
+        help = 'Installation path for documentation',
+        default = lambda a: aspects['datadir'] + '/doc/bugle'))
 
     # TODO separate specification of build CC and host CC
     aspects.AddAspect(Aspect(
@@ -228,6 +243,12 @@ Export('aspects', 'subdir', 'version')
 
 subdir(Dir('.'), 'src', variant_dir = 'build/' + variant_str, duplicate = 0)
 subdir(Dir('.'), 'doc/DocBook', variant_dir = 'build/doc', duplicate = 0)
+
+Alias('install', [
+    aspects['libdir'],
+    aspects['bindir'],
+    aspects['pkglibdir'],
+    aspects['docdir']])
 
 # Only save right at the end, in case some subdir rejects an aspect or
 # combination of aspects

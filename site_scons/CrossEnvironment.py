@@ -34,35 +34,3 @@ class CrossEnvironment(Environment):
                 print 'WARNING: did not find %s-%s, falling back' % (self['HOST'], progs[0])
 
         return Environment.Detect(self, progs)
-
-    def SharedLibrary2(self, target, source, **kw):
-        '''
-        Overrides the default SharedLibrary builder to support
-          - sonames: automatically set
-          - C{version=1.2.3} creates the library with the version appended,
-            and uses the leading part of the version in the SONAME
-          - C{symbols=...} can be a list, a regex, or a callback (not yet
-            implemented)
-        Other options are passed to the original rule
-        '''
-
-        if self['PLATFORM'] == 'posix' and 'gcc' in self['TOOLS']:
-            # Assume posix is the same as ELF
-            if 'version' in kw:
-                version = kw['version']
-                version_parts = version.split('.')
-                base = self.subst('${SHLIBPREFIX}' + target + '${SHLIBSUFFIX}')
-                full = base + '.' + version
-                soname = base + '.' + version_parts[0]
-
-                shl_list = self.SharedLibrary(full, source,
-                    SHLIBPREFIX = '', SHLIBSUFFIX = '',
-                    LINKFLAGS = ['-Wl,-soname,' + soname] + self['LINKFLAGS'], **kw)
-                self.Command(soname, shl_list[0], 'ln -s ${SOURCE.file} $TARGET')
-                return self.Command(base, shl_list[0], 'ln -s ${SOURCE.file} $TARGET')
-        elif 'msvc' in self['TOOLS']:
-            # Builder returns [dll, lib, exp], we only need the lib for linking
-            # other libraries against
-            return [self.SharedLibrary(target, source, **kw)[1]]
-
-        return self.SharedLibrary(target, source, **kw)

@@ -12,7 +12,8 @@ if 'interceptor' in aspects['parts']:
 
     def simple_filters(env, names):
         for name in names:
-            env.LoadableModule(name, [name + '.c'])
+            module = env.LoadableModule(name, [name + '.c'])
+            Install(aspects['pkglibdir'], module)
 
     simple_filters(filter_env, [
             'common',
@@ -36,7 +37,8 @@ if 'interceptor' in aspects['parts']:
                 'modify',
                 'stats_fragments',
                 'showstats'])
-        filter_env.LoadableModule('eps', ['eps.c', '../gl2ps/gl2ps.c'])
+        module = filter_env.LoadableModule('eps', ['eps.c', '../gl2ps/gl2ps.c'])
+        Install(aspects['pkglibdir'], module)
 
     if aspects['platform'] == 'posix':
         # These currently depend on POSIX features
