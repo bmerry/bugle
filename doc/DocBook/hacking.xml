@@ -461,6 +461,15 @@
                     appropriate error and terminating the process.
                 </para>
             </sect3>
+            <sect3 id="hacking-porting-platform-macros">
+                <title><filename class="headerfile">platform/macros.h</filename></title>
+                <para>
+                    This file provides miscellaneous macros. At present, the
+                    only macro that is defined in
+                    <symbol>BUGLE_VA_COPY</symbol>, which must implement the
+                    C99 <function>va_copy</function> function.
+                </para>
+            </sect3>
             <sect3 id="hacking-porting-platform-threads">
                 <title><filename
                         class="headerfile">platform/threads.h</filename></title>
