@@ -1,17 +1,14 @@
-- finish install rules
-  - fix Install deep-copying symlinks
 - packaging rules
+- complete platform layer for win32 (I/O)
+- test new library rules on win32
+- MinGW support
 - don't rebuild from .xml/.y/.l if present in source package
 - documentation updates
 - finish adding tests and making portable
 - add remaining filters
-- add platform layer for glib?
-- add platform layer for gnulib?
-- complete platform layer for win32 (I/O)
 - add abstractions:
   - sockets
   - va_copy
-- audit use of malloc/bugle_malloc/free/bugle_free for matching up
 - clean up gldb-gui and move all the nasty process stuff into glib code
 - slim down platform layer to provide shared fallbacks for string functions
   and include them where necessary
@@ -28,3 +25,6 @@
   - string functions
   - math functions
   - socket API?
+- audit use of malloc/bugle_malloc/free/bugle_free for matching up
+- add platform layer for glib?
+- add platform layer for gnulib?
