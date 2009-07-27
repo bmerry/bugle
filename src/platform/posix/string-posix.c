@@ -25,6 +25,7 @@
 #include <stdarg.h>
 #include <string.h>
 #include <stdio.h>
+#include "platform/macros.h"
 
 int bugle_snprintf(char *str, size_t size, const char *format, ...)
 {
@@ -66,13 +67,7 @@ char *bugle_vasprintf(const char *format, va_list ap)
     int len;
     va_list ap2;
 
-#if HAVE_DECL_VA_COPY
-    va_copy(ap2, ap);
-#elif HAVE_DECL___VA_COPY
-    __va_copy(ap2, ap);
-#else
-    memcpy(&ap2, &ap, sizeof(ap2));
-#endif
+    BUGLE_VA_COPY(ap2, ap);
 
     len = vsnprintf(NULL, 0, format, ap2);
     va_end(ap2);

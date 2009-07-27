@@ -32,6 +32,7 @@
 #include <bugle/io.h>
 #include <bugle/memory.h>
 #include "platform/io.h"
+#include "platform/macros.h"
 #include "common/io-impl.h"
 
 #define BUFFER_SIZE 256
@@ -179,13 +180,7 @@ static int fd_vprintf(void *arg, const char *format, va_list ap)
     va_list ap2; /* backup copy for second pass */
     int ret;
 
-#if HAVE_DECL_VA_COPY
-    va_copy(ap2, ap);
-#elif HAVE_DECL___VA_COPY
-    __va_copy(ap2, ap);
-#else
-    memcpy(&ap2, &ap, sizeof(ap2));
-#endif
+    BUGLE_VA_COPY(ap2, ap);
 
     s = (bugle_io_writer_fd *) arg;
     length = bugle_vsnprintf(s->buffer, sizeof(s->buffer), format, ap);

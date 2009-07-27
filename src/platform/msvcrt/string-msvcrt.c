@@ -24,6 +24,7 @@
 #include <stdarg.h>
 #include <string.h>
 #include <stdio.h>
+#include "platform/macros.h"
 
 int bugle_snprintf(char *str, size_t size, const char *format, ...)
 {
@@ -45,13 +46,12 @@ int bugle_vsnprintf(char *str, size_t size, const char *format, va_list ap)
      *
      * We try once, if it doesn't fit we have no choice but to actually
      * allocate a big enough buffer just to find out how big the string is.
-     * Also, we don't have va_copy.
      */
     va_list ap2;
     int ret;
     char *buffer = NULL;
 
-    memcpy(&ap2, &ap, sizeof(ap2));
+    BUGLE_VA_COPY(ap2, ap);
     ret = vsnprintf_s(str, size, _TRUNCATE, format, ap);
 
     if (ret < 0)

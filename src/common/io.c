@@ -28,6 +28,7 @@
 #include <bugle/memory.h>
 #include <bugle/attributes.h>
 #include "io-impl.h"
+#include "platform/macros.h"
 
 size_t bugle_io_read(void *ptr, size_t size, size_t nmemb, bugle_io_reader *reader)
 {
@@ -99,13 +100,7 @@ static int mem_vprintf(void *arg, const char *format, va_list ap)
     int written;
     va_list ap2;    /* backup copy, for second pass */
 
-#if HAVE_DECL_VA_COPY
-    va_copy(ap2, ap);
-#elif HAVE_DECL___VA_COPY
-    __va_copy(ap2, ap);
-#else
-    memcpy(&ap2, &ap, sizeof(ap2));
-#endif
+    BUGLE_VA_COPY(ap2, ap);
 
     mem = (bugle_io_writer_mem *) arg;
     written = bugle_vsnprintf(mem->ptr + mem->size, mem->total - mem->size, format, ap);
