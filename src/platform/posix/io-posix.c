@@ -19,6 +19,9 @@
 # include <config.h>
 #endif
 #include "platform_config.h"
+#ifdef _GNU_SOURCE
+# undef _GNU_SOURCE /* It causes a GNU version of strerror_r to replace the POSIX version */
+#endif
 #include <unistd.h>
 #include <stdarg.h>
 #include <errno.h>
@@ -28,10 +31,13 @@
 #include <sys/types.h>
 #include <sys/time.h>
 #include <poll.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <netinet/tcp.h>
+#include <netdb.h>
 #include <bugle/string.h>
 #include <bugle/io.h>
 #include <bugle/memory.h>
-#include "platform/io.h"
 #include "platform/macros.h"
 #include "common/io-impl.h"
 
@@ -239,4 +245,92 @@ bugle_io_writer *bugle_io_writer_socket_new(int sock)
 {
     /* On POSIX, sockets are the same as file descriptors */
     return bugle_io_writer_fd_new(sock);
+}
+
+static int _bugle_strerror_r(int errnum, char *errbuf, size_t buflen)
+{
+#if _POSIX_THREAD_SAFE_FUNCTIONS > 0
+    return strerror_r(errnum, errbuf, buflen);
+#else
+    const char *err;
+
+    errno = 0;
+    err = strerror(errnum);
+    if (errno != 0)
+        return errno;
+    else
+    {
+        size_t len = strlen(err);
+        if (len > buflen)
+            return ERANGE;
+        else
+        {
+            strcpy(errbuf, err);
+            return 0;
+        }
+    }
+#endif
+}
+
+char *bugle_io_socket_listen(const char *host, const char *port, bugle_io_reader **reader, bugle_io_writer **writer)
+{
+    int listen_sock;
+    int sock;
+    int status;
+    struct addrinfo hints, *ai;
+    char err_buffer[1024];
+
+    memset(&hints, 0, sizeof(hints));
+    hints.ai_family = AF_UNSPEC;        /* supports IPv4 and IPv6 */
+    hints.ai_socktype = SOCK_STREAM;
+    hints.ai_protocol = IPPROTO_TCP;
+    hints.ai_flags = AI_V4MAPPED | AI_ADDRCONFIG | AI_PASSIVE;
+    status = getaddrinfo(host, port, &hints, &ai);
+    if (status != 0 || ai == NULL)
+    {
+        return bugle_asprintf("failed to resolve %s:%s: %s",
+                              host ? host : "", port, gai_strerror(status));
+    }
+
+
+    listen_sock = socket(ai->ai_family, ai->ai_socktype, ai->ai_protocol);
+    if (listen_sock == -1)
+    {
+        _bugle_strerror_r(errno, err_buffer, sizeof(err_buffer));
+        freeaddrinfo(ai);
+        return bugle_asprintf("failed to open socket: %s", err_buffer);
+    }
+
+    status = bind(listen_sock, ai->ai_addr, ai->ai_addrlen);
+    if (status == -1)
+    {
+        _bugle_strerror_r(errno, err_buffer, sizeof(err_buffer));
+        freeaddrinfo(ai);
+        return bugle_asprintf("failed to bind to %s:%s: %s",
+                              host ? host : "", port, err_buffer);
+    }
+
+    if (listen(listen_sock, 1) == -1)
+    {
+        _bugle_strerror_r(errno, err_buffer, sizeof(err_buffer));
+        freeaddrinfo(ai);
+        close(listen_sock);
+        return bugle_asprintf("failed to listen on %s:%s: %s",
+                              host ? host : "", port, err_buffer);
+    }
+
+    sock = accept(listen_sock, NULL, NULL);
+    if (sock == -1)
+    {
+        _bugle_strerror_r(errno, err_buffer, sizeof(err_buffer));
+        freeaddrinfo(ai);
+        close(listen_sock);
+        return bugle_asprintf("failed to accept a connection on %s:%s: %s",
+                              host ? host : "", port, err_buffer);
+    }
+    close(listen_sock);
+
+    *reader = bugle_io_reader_fd_new(sock);
+    *writer = bugle_io_writer_fd_new(sock);
+    return NULL;
 }

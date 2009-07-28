@@ -91,6 +91,32 @@ BUGLE_EXPORT_PRE void bugle_io_writer_mem_release(bugle_io_writer *writer) BUGLE
  */
 BUGLE_EXPORT_PRE bugle_io_writer *bugle_io_writer_file_new(FILE *f) BUGLE_EXPORT_POST;
 
+/* Wraps a file descriptor in a reader. The fd should be for a file or pipe,
+ * not a network socket. Dies on malloc failure, so always returns non-NULL.
+ * A platform that does not support file descriptors should abort.
+ */
+BUGLE_EXPORT_PRE bugle_io_reader *bugle_io_reader_fd_new(int fd) BUGLE_EXPORT_POST;
+
+/* Wraps a file descriptor in a writer. The fd should be for a file or pipe,
+ * not a network socket. Dies on malloc failure, so always returns non-NULL.
+ * A platform that does not support file descriptors should abort.
+ */
+BUGLE_EXPORT_PRE bugle_io_writer *bugle_io_writer_fd_new(int fd) BUGLE_EXPORT_POST;
+
+/* Creates a writer to accept a connection on host:port. The interpretation of
+ * host and port are platform-specific, but must accept at least an IPv4
+ * address in host and a number in port. Host may also be NULL to bind to the
+ * wildcard address.
+ *
+ * On success, the reader and writer are populated with the reader and writer
+ * to use for input/output on the socket, and NULL is returned. On failure,
+ * an error message is returned. This error message is dynamically allocated
+ * and should be passed to bugle_free.
+ */
+BUGLE_EXPORT_PRE char *bugle_io_socket_listen(
+    const char *host, const char *port,
+    bugle_io_reader **reader, bugle_io_writer **writer) BUGLE_EXPORT_POST;
+
 #ifdef __cplusplus
 }
 #endif

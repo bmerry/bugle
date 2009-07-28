@@ -43,21 +43,12 @@
 #include <budgie/types.h>
 #include <budgie/reflect.h>
 #include <budgie/addresses.h>
-#if BUGLE_PLATFORM_POSIX
-#include <unistd.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <netinet/tcp.h>
-#include <netdb.h>
-#endif
 #include "common/protocol.h"
 #include "platform/threads.h"
-#include "platform/io.h"
 #include "platform/types.h"
 
 static bugle_io_reader *in_pipe = NULL;
 static bugle_io_writer *out_pipe = NULL;
-static int in_pipe_fd = -1, out_pipe_fd = -1;
 static bugle_bool *break_on;
 static bugle_bool break_on_event[REQ_EVENT_COUNT];
 static bugle_bool break_on_next = BUGLE_FALSE;
@@ -1190,6 +1181,8 @@ static bugle_bool debugger_initialise(filter_set *handle)
 
     if (0 == strcmp(getenv("BUGLE_DEBUGGER"), "fd"))
     {
+        int in_pipe_fd, out_pipe_fd;
+
         if (!getenv("BUGLE_DEBUGGER_FD_IN")
             || !getenv("BUGLE_DEBUGGER_FD_OUT"))
         {
@@ -1220,16 +1213,14 @@ static bugle_bool debugger_initialise(filter_set *handle)
         in_pipe = bugle_io_reader_fd_new(in_pipe_fd);
         out_pipe = bugle_io_writer_fd_new(out_pipe_fd);
     }
-#if BUGLE_PLATFORM_POSIX
     else if (0 == strcmp(getenv("BUGLE_DEBUGGER"), "tcp"))
     {
-        int sock;
-        int status;
         const char *host;
-        struct addrinfo hints, *ai;
+        const char *port;
+        char *error;
 
-        env = getenv("BUGLE_DEBUGGER_PORT");
-        if (!env)
+        port = getenv("BUGLE_DEBUGGER_PORT");
+        if (!port)
         {
             bugle_log("debugger", "initialise", BUGLE_LOG_ERROR,
                       "BUGLE_DEBUGGER_PORT must be set");
@@ -1238,67 +1229,14 @@ static bugle_bool debugger_initialise(filter_set *handle)
 
         host = getenv("BUGLE_DEBUGGER_HOST");
 
-        memset(&hints, 0, sizeof(hints));
-        hints.ai_family = AF_UNSPEC;        /* supports IPv4 and IPv6 */
-        hints.ai_socktype = SOCK_STREAM;
-        hints.ai_protocol = IPPROTO_TCP;
-        hints.ai_flags = AI_V4MAPPED | AI_ADDRCONFIG | AI_PASSIVE;
-        status = getaddrinfo(host, env, &hints, &ai);
-        if (status != 0 || ai == NULL)
+        error = bugle_io_socket_listen(host, port, &in_pipe, &out_pipe);
+        if (error != NULL)
         {
-            bugle_log_printf("debugger", "initialise", BUGLE_LOG_ERROR,
-                             "failed to resolve %s:%s: %s",
-                             host ? host : "", env, gai_strerror(status));
+            bugle_log("debugger", "initialise", BUGLE_LOG_ERROR, error);
+            bugle_free(error);
             return BUGLE_FALSE;
         }
-
-
-        sock = socket(ai->ai_family, ai->ai_socktype, ai->ai_protocol);
-        if (sock == -1)
-        {
-            freeaddrinfo(ai);
-            bugle_log_printf("debugger", "initialise", BUGLE_LOG_ERROR,
-                             "failed to open socket");
-            return BUGLE_FALSE;
-        }
-
-        status = bind(sock, ai->ai_addr, ai->ai_addrlen);
-        if (status == -1)
-        {
-            freeaddrinfo(ai);
-            close(sock);
-            bugle_log_printf("debugger", "initialise", BUGLE_LOG_ERROR,
-                             "failed to bind to %s:%s",
-                             host ? host : "", env);
-            return BUGLE_FALSE;
-        }
-
-        if (listen(sock, 1) == -1)
-        {
-            freeaddrinfo(ai);
-            close(sock);
-            bugle_log_printf("debugger", "initialise", BUGLE_LOG_ERROR,
-                             "failed to listen on %s:%s",
-                             host ? host : "", env);
-            return BUGLE_FALSE;
-        }
-
-        in_pipe_fd = accept(sock, NULL, NULL);
-        if (in_pipe_fd == -1)
-        {
-            freeaddrinfo(ai);
-            close(sock);
-            bugle_log_printf("debugger", "initialise", BUGLE_LOG_ERROR,
-                             "failed to accept a connection on %s:%s", host, env);
-            return BUGLE_FALSE;
-        }
-        close(sock);
-
-        out_pipe_fd = in_pipe_fd;
-        in_pipe = bugle_io_reader_socket_new(in_pipe_fd);
-        out_pipe = bugle_io_writer_socket_new(out_pipe_fd);
     }
-#endif
     else
     {
         bugle_log_printf("debugger", "initialise", BUGLE_LOG_ERROR,

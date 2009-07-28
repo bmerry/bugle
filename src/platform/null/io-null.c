@@ -19,15 +19,9 @@
 # include <config.h>
 #endif
 #include <bugle/io.h>
-#include "platform/io.h"
 #include "common/io-impl.h"
 
 bugle_io_reader *bugle_io_reader_fd_new(int fd)
-{
-    return NULL;
-}
-
-bugle_io_reader *bugle_io_reader_socket_new(int sock)
 {
     return NULL;
 }
@@ -37,7 +31,8 @@ bugle_io_writer *bugle_io_writer_fd_new(int fd)
     return NULL;
 }
 
-bugle_io_writer *bugle_io_writer_socket_new(int sock)
+char *bugle_io_socket_listen(const char *host, const char *port,
+                             bugle_io_reader **reader, bugle_io_writer **writer)
 {
     return NULL;
 }

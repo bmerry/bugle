@@ -41,7 +41,6 @@
 #include <bugle/io.h>
 #include "common/io-impl.h"
 #include "common/protocol.h"
-#include "platform/io.h"
 #include "gldb/gldb-common.h"
 #include "gldb/gldb-channels.h"
 #include "gldb/gldb-gui.h"
