@@ -1,5 +1,5 @@
 /*  BuGLe: an OpenGL debugging tool
- *  Copyright (C) 2004-2008  Bruce Merry
+ *  Copyright (C) 2004-2009  Bruce Merry
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -66,7 +66,7 @@
 #include <regex.h>
 #include <unistd.h>
 
-typedef enum
+enum
 {
     FILE_CALL_H,
     FILE_TYPES2_H,
@@ -132,6 +132,9 @@ struct Function
 
     bool operator <(const Function &b) const
     { return name() < b.name(); }
+
+    bool operator ==(const Function &b) const
+    { return name() == b.name(); }
 };
 
 struct Group
@@ -412,7 +415,7 @@ static void identify()
                 types.back().unconst = unconst;
                 type_map[node] = types.end(); type_map[node]--;
                 if (unconst->user_flags & FLAG_TEMPORARY)
-		{
+                {
                     unconst->user_flags &= ~FLAG_TEMPORARY;
                     insert_tree(T, unconst);
                     types.push_back(Type());
@@ -428,6 +431,7 @@ static void identify()
 static void make_function_map()
 {
     functions.sort();
+    functions.unique();
     for (list<Function>::iterator i = functions.begin(); i != functions.end(); i++)
         function_map[i->name()] = i;
 }
