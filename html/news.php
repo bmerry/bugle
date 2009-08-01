@@ -24,6 +24,18 @@ else
     </p>
     <h1>BuGLe News</h1>
 
+    <h2>Release to fix compilation issues (01/08/2009)</h2>
+    <p>The just-released 0.0.20090801 version adds a fix for GCC 4.4,
+    which mysteriously duplicates function nodes in the parse tree. And in
+    case you missed it (I didn't announce it here), the previous release also
+    fixed a problem with recent versions of <tt>glext.h</tt>.
+    </p>
+
+    <p>Sourceforge have also enabled email notifications on
+    <a href="https://apps.sourceforge.net/trac/bugle/">Trac</a>, so it should
+    now be easier to get my attention when posting bugs there.
+    </p>
+
     <h2>Mailing lists and other news (31/5/2009)</h2>
     <p>Sourceforge is planning to remove the forums feature soon, which will
     eliminate that avenue for support. I've never really liked the forums
