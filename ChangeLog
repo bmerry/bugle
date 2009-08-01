@@ -13,6 +13,10 @@
 * Support for MSVC on Windows
 * Autogenerate a main.bc instead of having a menu of API combinations
 
+0.0.20090801
+------------
+* Make compilation work with GCC 4.4
+
 0.0.20090706
 ------------
 * Make compilation work with latest glext.h
