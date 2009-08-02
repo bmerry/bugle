@@ -51,7 +51,6 @@ def checks(env, gl_lib, gl_headers):
 
     conf = Configure(env, custom_tests = BugleChecks.tests, config_h = 'config.h')
     conf.CheckLib('m')
-    conf.CheckHeader('dlfcn.h')
     conf.CheckHeader('stdint.h')
     for i in ['cosf', 'sinf', 'siglongjmp']:
         conf.CheckFunc(i)
@@ -59,7 +58,15 @@ def checks(env, gl_lib, gl_headers):
     conf.CheckAttributeConstructor()
     conf.CheckAttributeHiddenAlias()
     conf.CheckInline()
+
+    have_gtk = False
+    if conf.CheckPkgConfig('0.18'):
+        if 'debugger' in aspects['parts'] and conf.CheckPkg('gtk+-2.0', '2.4.0'):
+            have_gtk = True
     check_gl(conf, gl_lib, gl_headers)
+    if 'debugger' in aspects['parts'] and not have_gtk:
+        print 'WARNING: GTK >= 2.4.0 is required for the debugger. It will not be built.'
+        parts.discard('debugger')
     return conf.Finish()
 
 def apply_compiler(env, compiler, config):

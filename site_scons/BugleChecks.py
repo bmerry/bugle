@@ -1,5 +1,28 @@
 #!/usr/bin/env python
 
+def check_pkg_config(ctx, version):
+    '''
+    Checks that pkg-config exists with at least C{version}
+    '''
+    ctx.Message('Checking for pkg-config >= %s... ' % version)
+    ret = ctx.TryAction('pkg-config --atleast-pkgconfig-version=%s' % version)[0]
+    ctx.Result(ret)
+    return ret
+
+def check_pkg(ctx, pkg, version = None):
+    '''
+    Checks for package C{pkg} with at least version C{version}. If C{version}
+    is C{None}, simply checks that the package exists.
+    '''
+    if version is None:
+        ctx.Message('Checking for %s... ' % pkg)
+        ret = ctx.TryAction('pkg-config --exists %s' % pkg)[0]
+    else:
+        ctx.Message('Checking for %s >= %s... ' % (pkg, version))
+        ret = ctx.TryAction('pkg-config --atleast-version=%s %s' % (version, pkg))[0]
+    ctx.Result(ret)
+    return ret
+
 def check_attribute(ctx, name, define, prototype):
     '''
     Checks whether a GCC attribute is supported
@@ -10,7 +33,7 @@ def check_attribute(ctx, name, define, prototype):
     @param prototype The function prototype to test, including semi-colon
     '''
 
-    ctx.Message('Checking for GCC %s attribute...' % name)
+    ctx.Message('Checking for GCC %s attribute... ' % name)
     ret = ctx.TryCompile('''
 %s
 
@@ -48,7 +71,7 @@ extern __typeof(bugle_public) bugle_alias __attribute__((alias("bugle_public"), 
 #endif''')
 
 def _has_inline(ctx, subst):
-    ctx.Message('Checking for ' + subst + '...')
+    ctx.Message('Checking for ' + subst + '... ')
     ret = ctx.TryCompile('''
 static %s int my_inline_func(void)
 {
@@ -62,24 +85,30 @@ int main() { return my_inline_func(); }
 
 def check_inline(ctx):
     '''
-    Defines inline suitably
+    Defines inline suitably.
+    Note: the definition is added to CPPDEFINES rather than to config.h,
+    so that it will work for further CheckHeader tests. This is necessary for
+    ffmpeg, which assumes that inline is available.
     '''
 
     ret = True
     if _has_inline(ctx, 'inline'):
-        pass
+        return True
     elif _has_inline(ctx, '__inline__'):
-        ctx.sconf.Define('inline', '__inline__')
+        define = '__inline__'
     elif _has_inline(ctx, '__inline'):
-        ctx.sconf.Define('inline', '__inline')
+        define = '__inline'
     else:
-        ctx.sconf.Define('inline', '')
+        define = ''
         ret = False
+    ctx.sconf.env.Append(CPPDEFINES = [('inline', define)])
     return ret
 
 tests = {
         'CheckAttributePrintf': check_attribute_printf,
         'CheckAttributeConstructor': check_attribute_constructor,
         'CheckAttributeHiddenAlias': check_attribute_hidden_alias,
-        'CheckInline': check_inline
+        'CheckInline': check_inline,
+        'CheckPkgConfig': check_pkg_config,
+        'CheckPkg': check_pkg
         }

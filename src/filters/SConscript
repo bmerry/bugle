@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 
+import BugleChecks
+
 Import('envs', 'targets', 'aspects')
 
 if 'interceptor' in aspects['parts']:
@@ -20,7 +22,6 @@ if 'interceptor' in aspects['parts']:
             'exe',
             'extoverride',
             'logstats',
-            'screenshot',
             'showextensions',
             'stats_basic',
             'stats_calls',
@@ -46,3 +47,18 @@ if 'interceptor' in aspects['parts']:
                 'checks',
                 'debugger',
                 'unwindstack'])
+
+    screenshot_env = filter_env.Clone()
+    conf = Configure(screenshot_env, custom_tests = BugleChecks.tests)
+    if conf.CheckPkgConfig('0.18'):
+        if conf.CheckPkg('libavcodec'):
+            conf.Define('HAVE_LAVC', 1, 'Define if libavcodec is available')
+            conf.env.MergeFlags(['!pkg-config libavcodec --cflags --libs'])
+            conf.CheckHeader('libavcodec/avcodec.h')
+            conf.CheckHeader('libavformat/avformat.h')
+        if conf.CheckPkg('libswscale'):
+            conf.Define('HAVE_LIBSWSCALE', 1, 'Define if libswscale is available')
+            conf.env.MergeFlags(['!pkg-config libswscale --cflags --libs'])
+            conf.CheckHeader('libswscale/swscale.h')
+    screenshot_env = conf.Finish()
+    simple_filters(screenshot_env, ['screenshot'])
