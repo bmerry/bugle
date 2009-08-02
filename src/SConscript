@@ -66,7 +66,7 @@ def checks(env, gl_lib, gl_headers):
     check_gl(conf, gl_lib, gl_headers)
     if 'debugger' in aspects['parts'] and not have_gtk:
         print 'WARNING: GTK >= 2.4.0 is required for the debugger. It will not be built.'
-        parts.discard('debugger')
+        aspects['parts'].remove('debugger')
     return conf.Finish()
 
 def apply_compiler(env, compiler, config):
