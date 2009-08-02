@@ -52,13 +52,18 @@ if 'interceptor' in aspects['parts']:
     conf = Configure(screenshot_env, custom_tests = BugleChecks.tests)
     if conf.CheckPkgConfig('0.18'):
         if conf.CheckPkg('libavcodec'):
-            conf.Define('HAVE_LAVC', 1, 'Define if libavcodec is available')
-            conf.env.MergeFlags(['!pkg-config libavcodec --cflags --libs'])
-            conf.CheckHeader('libavcodec/avcodec.h')
-            conf.CheckHeader('libavformat/avformat.h')
+            conf.env.Append(CPPDEFINES = [('HAVE_LAVC', 1)])
+            conf.env.ParseConfig('pkg-config libavcodec --cflags --libs')
+            if conf.CheckPkg('libavformat'):
+                conf.env.ParseConfig('pkg-config libavformat --cflags --libs')
+            if conf.CheckHeader('libavcodec/avcodec.h'):
+                conf.env.Append(CPPDEFINES = [('HAVE_LIBAVCODEC_AVCODEC_H', 1)])
+            if conf.CheckHeader('libavformat/avformat.h'):
+                conf.env.Append(CPPDEFINES = [('HAVE_LIBAVFORMAT_AVFORMAT_H', 1)])
         if conf.CheckPkg('libswscale'):
-            conf.Define('HAVE_LIBSWSCALE', 1, 'Define if libswscale is available')
-            conf.env.MergeFlags(['!pkg-config libswscale --cflags --libs'])
-            conf.CheckHeader('libswscale/swscale.h')
+            conf.env.Append(CPPDEFINES = [('HAVE_LIBSWSCALE', 1)])
+            conf.env.ParseConfig('pkg-config libswscale --cflags --libs')
+            if conf.CheckHeader('libswscale/swscale.h'):
+                conf.env.Append(CPPDEFINES = [('HAVE_LIBSWSCALE_SWSCALE_H', 1)])
     screenshot_env = conf.Finish()
     simple_filters(screenshot_env, ['screenshot'])
