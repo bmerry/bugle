@@ -464,7 +464,7 @@ gldb_state *gldb_state_update(void)
         }
         else
         {
-            gldb_error(((gldb_response_error *) r)->error);
+            gldb_error("%s", ((gldb_response_error *) r)->error);
             gldb_free_response(r);
         }
     }

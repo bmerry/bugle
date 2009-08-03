@@ -20,7 +20,7 @@ def find_header(env, name):
         preproc_opt = '-E'
         if env['INCPREFIX'] == '/I':
             preprop_opt = '/E'
-        cmd = [env['CC'], preproc_opt,
+        cmd = [env['CC']] + env['CCFLAGS'] + [preproc_opt,
             env['INCPREFIX'] + env.Dir('#').abspath + env['INCSUFFIX'], tmpname]
         # print "Running", ' '.join(cmd)
         sp = Popen(cmd, stdin = PIPE, stdout = PIPE, stderr = PIPE)

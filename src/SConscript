@@ -38,9 +38,10 @@ def check_gl(conf, lib, headers):
         if not conf.CheckCHeader(headers[:(i+1)], '<>'):
             print headers[i] + ' not found'
             Exit(1)
-    if not conf.CheckLibWithHeader(lib, headers, 'c', 'glFlush();', False):
-        print conf.env.subst('${SHLIBPREFIX}' + lib + '${SHLIBSUFFIX} not found')
-        Exit(1)
+    if 'interceptor' in aspects['parts'] or 'tests' in aspects['parts']:
+        if not conf.CheckLibWithHeader(lib, headers, 'c', 'glFlush();', False):
+            print conf.env.subst('${SHLIBPREFIX}' + lib + '${SHLIBSUFFIX} not found')
+            Exit(1)
 
 def checks(env, gl_lib, gl_headers):
     '''

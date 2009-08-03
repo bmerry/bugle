@@ -7,16 +7,17 @@ import re
 
 Import('envs', 'aspects', 'targets', 'libraries', 'srcdir')
 
-test_env = envs['host'].Clone()
-test_env.Append(LIBS = libraries)
-# TODO: use GLEW32 on Windows
-# TODO: detect GLEW, only link if available, otherwise exclude GL-based tests
-test_env.Append(LIBS = ['glut', 'GLEW'])
+if 'tests' in aspects['parts']:
+    test_env = envs['host'].Clone()
+    test_env.Append(LIBS = libraries)
+    # TODO: use GLEW32 on Windows
+    # TODO: detect GLEW, only link if available, otherwise exclude GL-based tests
+    test_env.Append(LIBS = ['glut', 'GLEW'])
 
-bugle_path = os.path.dirname(targets['bugle'].out[0].abspath)
-test_env.AppendENVPath('LD_LIBRARY_PATH', bugle_path)
-test_env['ENV']['BUGLE_FILTER_DIR'] = os.path.join(bugle_path, 'filters')
-test_env['ENV']['BUGLE_FILTERS'] = srcdir.File('filters').abspath
+    bugle_path = os.path.dirname(targets['bugle'].out[0].abspath)
+    test_env.AppendENVPath('LD_LIBRARY_PATH', bugle_path)
+    test_env['ENV']['BUGLE_FILTER_DIR'] = os.path.join(bugle_path, 'filters')
+    test_env['ENV']['BUGLE_FILTERS'] = srcdir.File('filters').abspath
 
 class TestFailed(Exception):
     def __init__(self, value):
