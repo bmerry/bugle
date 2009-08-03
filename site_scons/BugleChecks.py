@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-def check_pkg_config(ctx, version):
+def check_pkg_config(ctx, version = '0.18'):
     '''
     Checks that pkg-config exists with at least C{version}
     '''

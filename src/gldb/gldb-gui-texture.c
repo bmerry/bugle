@@ -38,6 +38,7 @@
 #include <stdio.h>
 #include <bugle/bool.h>
 #include <bugle/string.h>
+#include <bugle/memory.h>
 #include <bugle/hashtable.h>
 #include "common/protocol.h"
 #include "gldb/gldb-common.h"
@@ -45,7 +46,6 @@
 #include "gldb/gldb-gui.h"
 #include "gldb/gldb-gui-image.h"
 #include "gldb/gldb-gui-texture.h"
-#include "xalloc.h"
 
 struct _GldbTexturePane
 {
@@ -150,7 +150,7 @@ static gboolean gldb_texture_pane_response_callback(gldb_response *response,
             break;
         case GLDB_GUI_IMAGE_TYPE_3D:
             level->nplanes = r->depth;
-            level->planes = XCALLOC(r->depth, GldbGuiImagePlane);
+            level->planes = BUGLE_CALLOC(r->depth, GldbGuiImagePlane);
             for (plane = 0; plane < r->depth; plane++)
             {
                 level->planes[plane].width = r->width;
@@ -293,7 +293,7 @@ static void gldb_texture_pane_update_ids(GldbTexturePane *pane)
                 }
                 channels = gldb_channel_get_query_channels(channels);
                 if (!levels || !channels) continue;
-                name = xasprintf("%u (%s)", (unsigned int) t->numeric_name, target_names[trg]);
+                name = bugle_asprintf("%u (%s)", (unsigned int) t->numeric_name, target_names[trg]);
                 gtk_list_store_append(GTK_LIST_STORE(model), &iter);
                 gtk_list_store_set(GTK_LIST_STORE(model), &iter,
                                    COLUMN_TEXTURE_ID_ID, (guint) t->numeric_name,
@@ -342,7 +342,7 @@ static void gldb_texture_pane_id_changed(GtkComboBox *id_box, gpointer user_data
             {
                 for (i = 0; i < 6; i++)
                 {
-                    data = XMALLOC(texture_callback_data);
+                    data = BUGLE_MALLOC(texture_callback_data);
                     data->target = target;
                     data->face = GL_TEXTURE_CUBE_MAP_POSITIVE_X_ARB + i;
                     data->level = l;
@@ -366,7 +366,7 @@ static void gldb_texture_pane_id_changed(GtkComboBox *id_box, gpointer user_data
             }
             else
             {
-                data = XMALLOC(texture_callback_data);
+                data = BUGLE_MALLOC(texture_callback_data);
                 data->target = target;
                 data->face = target;
                 data->level = l;

@@ -24,5 +24,6 @@ if 'docs' in aspects['parts']:
     env.Command('html/chunked/bugle.css', 'bugle.css', [Copy('$TARGET', '$SOURCE')])
     env.Clean(chunked, 'html/chunked')
 
+    Alias('install', aspects['docdir'])
     env.Install(aspects['docdir'], 'html/single.html')
     env.Install(aspects['docdir'], 'html/chunked')

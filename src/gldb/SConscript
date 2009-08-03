@@ -1,18 +1,49 @@
 #!/usr/bin/env python
+
+import BugleChecks
+
 Import('envs', 'targets', 'aspects')
 
 if 'debugger' in aspects['parts']:
-    # TODO use a proper pkg-config configuration test
-    # TODO add a #define when GTK 2.6+ is available
-    # TODO detect gtkglext+glew
-    gtk_env = envs['host'].Clone(parse_flags = ['!pkg-config gtk+-2.0 --cflags --libs'])
+    have_gtk = False
+    have_gtkglext = False
+    have_glew = False
+
+    gldb_env = envs['host'].Clone()
+    conf = Configure(gldb_env, custom_tests = BugleChecks.tests)
+    if conf.CheckPkgConfig():
+        if conf.CheckPkg('gtk+-2.0', '2.4.0'):
+            have_gtk = True
+        if conf.CheckPkg('gtkglext-1.0', '1.0.0'):
+            have_gtkglext = True
+        if conf.CheckLibWithHeader('GLEW', 'GL/glew.h', 'c', autoadd = False):
+            have_glew = 'GLEW'
+        elif conf.CheckLibWithHeader('glew32', 'GL/glew.h', 'c', autoadd = False):
+            have_glew = 'glew32'
+    gldb_env = conf.Finish()
+
+    if not have_gtk:
+        print 'WARNING: GTK+ 2.4+ is needed for the debugger. It will not be built'
+        aspects['parts'].remove('debugger')
+        Return
+
+    gldb_env.MergeFlags('!pkg-config gtk+-2.0 --cflags --libs')
+    if have_glew and have_gtkglext:
+        gldb_env.MergeFlags('!pkg-config gtkglext-1.0 --cflags --libs')
+        gldb_env.Append(LIBS = [have_glew])
+        gldb_env.Append(CPPDEFINES = [('HAVE_GTKGLEXT', '1')])
+    else:
+        if not have_glew:
+            print 'WARNING: GLEW was not detected. The debugger will be missing features'
+        if not have_gtkglext:
+            print 'WARNING: GtkGLExt was not detected. The debugger will be missing features'
 
     # Non-GUI files
     gldb_shared = envs['host'].StaticObject([
         'gldb-common.c',
         'gldb-channels.c'])
 
-    gldb_gui = gtk_env.Program('gldb-gui', [
+    gldb_gui = gldb_env.Program('gldb-gui', [
         'gldb-gui-backtrace.c',
         'gldb-gui-breakpoint.c',
         'gldb-gui-buffer.c',
@@ -25,4 +56,5 @@ if 'debugger' in aspects['parts']:
         'gldb-gui.c',
         gldb_shared], LIBS = [targets['bugleutils'].out, '$LIBS'])
 
+    Alias('install', aspects['bindir'])
     Install(aspects['bindir'], gldb_gui)

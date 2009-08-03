@@ -5,6 +5,8 @@ import BugleChecks
 Import('envs', 'targets', 'aspects')
 
 if 'interceptor' in aspects['parts']:
+    Alias('install', aspects['pkglibdir'])
+
     filter_env = envs['host'].Clone(
             LIBS = targets['bugle'].out + targets['bugleutils'].out,
             SHLIBPREFIX = '')
@@ -50,7 +52,7 @@ if 'interceptor' in aspects['parts']:
 
     screenshot_env = filter_env.Clone()
     conf = Configure(screenshot_env, custom_tests = BugleChecks.tests)
-    if conf.CheckPkgConfig('0.18'):
+    if conf.CheckPkgConfig():
         if conf.CheckPkg('libavcodec'):
             conf.env.Append(CPPDEFINES = [('HAVE_LAVC', 1)])
             conf.env.ParseConfig('pkg-config libavcodec --cflags --libs')

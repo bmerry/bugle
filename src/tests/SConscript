@@ -8,6 +8,11 @@ import re
 Import('envs', 'aspects', 'targets', 'libraries', 'srcdir')
 
 if 'tests' in aspects['parts']:
+    if 'interceptor' not in aspects['parts']:
+        print 'WARNING: cannot build tests without interceptor. They will be skipped'
+        aspects['parts'].remove('tests')
+        Return()
+
     test_env = envs['host'].Clone()
     test_env.Append(LIBS = libraries)
     # TODO: use GLEW32 on Windows

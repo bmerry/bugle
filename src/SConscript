@@ -60,14 +60,7 @@ def checks(env, gl_lib, gl_headers):
     conf.CheckAttributeHiddenAlias()
     conf.CheckInline()
 
-    have_gtk = False
-    if conf.CheckPkgConfig('0.18'):
-        if 'debugger' in aspects['parts'] and conf.CheckPkg('gtk+-2.0', '2.4.0'):
-            have_gtk = True
     check_gl(conf, gl_lib, gl_headers)
-    if 'debugger' in aspects['parts'] and not have_gtk:
-        print 'WARNING: GTK >= 2.4.0 is required for the debugger. It will not be built.'
-        aspects['parts'].remove('debugger')
     return conf.Finish()
 
 def apply_compiler(env, compiler, config):
@@ -257,6 +250,8 @@ subdir(srcdir, 'budgie')
 #################################
 ### Start of specific targets ###
 #################################
+
+Alias('install', aspects['libdir'])
 
 budgie_outputs = [
         'include/budgie/call.h',

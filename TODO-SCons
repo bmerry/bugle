@@ -13,11 +13,7 @@
 - slim down platform layer to provide shared fallbacks for string functions
   and include them where necessary
 - missing autoconf/SCons tests:
-  - GTK
-  - GTK versions
   - GLUT
-  - GLEW
-  - ffmpeg
   - nvperksdk
   - threading API
 - unit tests:

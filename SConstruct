@@ -230,7 +230,6 @@ if GetOption('help'):
 aspects.LoadFile('config.py')
 aspects.Load(ARGUMENTS, 'command line')
 aspects.Resolve()
-aspects.Report()
 
 variant = []
 for a in aspects.ordered:
@@ -244,13 +243,9 @@ Export('aspects', 'subdir', 'version')
 subdir(Dir('.'), 'src', variant_dir = 'build/' + variant_str, duplicate = 0)
 subdir(Dir('.'), 'doc/DocBook', variant_dir = 'build/doc', duplicate = 0)
 
-Alias('install', [
-    aspects['libdir'],
-    aspects['bindir'],
-    aspects['pkglibdir'],
-    aspects['docdir']])
-
-# Only save right at the end, in case some subdir rejects an aspect or
-# combination of aspects
+# Only save right at the end, in case some subdir rejects an aspect
+# However, we save what the user asks for, not what they got, in case
+# the modifications change later (e.g. they install a package)
+aspects.Report()
 if GetOption('bugle_save'):
-    aspects.Save('config.py')
+    original_aspects.Save('config.py')

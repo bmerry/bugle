@@ -17,7 +17,7 @@ class Aspect:
 
         self.value = None
         self.known = False
-        self.explicit = False
+        self.explicit = None    # Explicitly set value from user
         self.on_stack = False
 
     def _convert(self, value):
@@ -43,7 +43,7 @@ class Aspect:
         self.explicit = explicit
 
     def set(self, value):
-        self._set(value, True)
+        self._set(value, value)
 
     def get(self):
         if not self.known:
@@ -56,7 +56,7 @@ class Aspect:
                 self.on_stack = False
             else:
                 text = self.default
-            self._set(text, False)
+            self._set(text, None)
         return self.value
 
     def __str__(self):
@@ -117,12 +117,16 @@ class AspectParser:
             if value == '':
                 value = '<empty>'
             print "%-20s = %-20s" % (a.name, value),
-            if a.explicit:
-                print '(from user)'
+            tags = []
+            if a.explicit is not None:
+                tags.append('from user')
             elif callable(a.default):
-                print '(derived)'
+                tags.append('derived')
             else:
-                print '(default)'
+                tags.append('default')
+            if a.explicit is not None and a.explicit != value:
+                tags.append('modified')
+            print '(' + ', '.join(tags) + ')'
         print
         print "***"
         print
@@ -164,8 +168,8 @@ class AspectParser:
     def Save(self, filename):
         explicit = {}
         for aspect in self.aspects.values():
-            if aspect.explicit:
-                explicit[aspect.name] = str(aspect)
+            if aspect.explicit is not None:
+                explicit[aspect.name] = aspect.explicit
         f = file(filename, 'w')
         try:
             print >>f, repr(explicit)

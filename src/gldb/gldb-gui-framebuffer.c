@@ -271,7 +271,7 @@ static void gldb_framebuffer_pane_id_changed(GtkWidget *widget, gpointer user_da
             {
                 if (gldb_state_find_child_enum(fbo, GL_COLOR_ATTACHMENT0_EXT + i))
                 {
-                    name = xasprintf(_("Color %d"), i);
+                    name = bugle_asprintf(_("Color %d"), i);
                     gtk_list_store_append(GTK_LIST_STORE(model), &iter);
                     gtk_list_store_set(GTK_LIST_STORE(model), &iter,
                                        COLUMN_FRAMEBUFFER_BUFFER_ID, (guint) (GL_COLOR_ATTACHMENT0_EXT + i),
@@ -360,7 +360,7 @@ static void gldb_framebuffer_pane_id_changed(GtkWidget *widget, gpointer user_da
                 attachments = gldb_state_GLint(parameter);
                 for (i = 0; i < attachments; i++)
                 {
-                    name = xasprintf(_("GL_AUX%d"), i);
+                    name = bugle_asprintf(_("GL_AUX%d"), i);
                     gtk_list_store_append(GTK_LIST_STORE(model), &iter);
                     gtk_list_store_set(GTK_LIST_STORE(model), &iter,
                                        COLUMN_FRAMEBUFFER_BUFFER_ID, (guint) (GL_AUX0 + i),
