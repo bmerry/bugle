@@ -33,9 +33,7 @@ def internal_checks(env):
 
 Import('envs', 'targets', 'srcdir')
 
-envs['host'].Append(
-        CPPPATH = [srcdir, Dir('.')],
-        LIBS = ['-lm'])
+envs['host'].Append(CPPPATH = [srcdir, Dir('.')])
 envs['host'].MergeFlags('-pthread')
 envs['host'] = header_checks(envs['host'])
 
@@ -48,6 +46,7 @@ targets['bugleutils']['source'].extend(platform_env.SharedObject(source = [
     'time-posix.c',
     ]))
 
+targets['bugle']['LIBS'].append('dl')
 targets['bugle']['source'].extend(platform_env.SharedObject(source = [
     'dl-posix.c',
     'dlopen.c'

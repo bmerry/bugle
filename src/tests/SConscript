@@ -4,6 +4,7 @@ from subprocess import *
 import sys
 import os
 import re
+import BugleChecks
 
 Import('envs', 'aspects', 'targets', 'libraries', 'srcdir')
 
@@ -15,9 +16,34 @@ if 'tests' in aspects['parts']:
 
     test_env = envs['host'].Clone()
     test_env.Append(LIBS = libraries)
-    # TODO: use GLEW32 on Windows
-    # TODO: detect GLEW, only link if available, otherwise exclude GL-based tests
-    test_env.Append(LIBS = ['glut', 'GLEW'])
+
+    glew_lib = False
+    glut_lib = False
+
+    conf = Configure(test_env, custom_tests = BugleChecks.tests)
+    if aspects['gltype'] == 'gl':
+        if conf.CheckLibWithHeader('GLEW', 'GL/glew.h', 'c', autoadd = False):
+            glew_lib = 'GLEW'
+        elif conf.CheckLibWithHeader('glew32', 'GL/glew.h', 'c', autoadd = False):
+            glew_lib = 'glew32'
+        if conf.CheckLibWithHeader('glut', 'GL/glut.h', 'c', autoadd = False):
+            glut_lib = 'glut'
+        elif conf.CheckLibWithHeader('glut32', 'GL/glut.h', 'c', autoadd = False):
+            glut_lib = 'glut32'
+
+        use_gl = glew_lib and glut_lib
+        if use_gl:
+            conf.env.Append(LIBS = [glew_lib, glut_lib])
+        else:
+            print 'WARNING: Both GLEW and GLUT are required for tests'
+            aspects['parts'].remove('tests')
+            Return()
+    else:
+        # No tests possible for non-desktop GL until we split up the platform
+        # tests from the API tests
+        Return()
+
+    test_env = conf.Finish()
 
     bugle_path = os.path.dirname(targets['bugle'].out[0].abspath)
     test_env.AppendENVPath('LD_LIBRARY_PATH', bugle_path)
