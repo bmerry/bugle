@@ -83,6 +83,12 @@ def SharedLibrary(env, binfmt, target, source, bindir = None, libdir = None, ver
                 env.Install(target = bindir, source = dll)
                 env.Alias('install', bindir)
             return [lib]
+        elif 'mingw' in env['TOOLS']:
+            dll = env.SharedLibrary(target, source, **kw)
+            if bindir is not None:
+                env.Install(target = bindir, source = dll)
+                env.Alias('install', bindir)
+            return [dll]
         else:
             raise NotImplemented, 'Do not know how to build shared libraries for PE without MSVC'
             # TODO what does mingw output?

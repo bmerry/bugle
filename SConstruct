@@ -12,13 +12,13 @@ def subdir(srcdir, dir, **kw):
 
 def host_compiler_default(aspect):
     if DefaultEnvironment()['PLATFORM'] == 'win32':
-        return 'msvc'
+        return 'mingw'
     else:
         return 'gcc'
 
 def platform_default(aspect):
     compiler = aspects['host-compiler']
-    if compiler == 'msvc':
+    if compiler == 'msvc' or compiler == 'mingw':
         return 'msvcrt'
     else:
         return 'posix'
@@ -80,13 +80,13 @@ def setup_aspects():
         group = 'variant',
         name = 'build-compiler',
         help = 'Compiler for tools used to build the rest of bugle',
-        choices = ['gcc', 'msvc'],
+        choices = ['gcc', 'mingw', 'msvc'],
         default = 'gcc'))
     aspects.AddAspect(Aspect(
         group = 'variant',
         name = 'host-compiler',
         help = 'Compiler for the final outputs',
-        choices = ['gcc', 'msvc'],
+        choices = ['gcc', 'mingw', 'msvc'],
         default = host_compiler_default))
     aspects.AddAspect(Aspect(
         group = 'variant',

@@ -92,6 +92,17 @@ def apply_compiler(env, compiler, config):
         else:
             raise RuntimeError, 'Unknown config "%s"' % config
 
+    elif compiler == 'mingw':
+        env.Tool('mingw')
+        env.AppendUnique(CCFLAGS = ['-Wall'])
+        env.AppendUnique(CFLAGS = ['-std=c89', '-Wstrict-prototypes'])
+        if config == 'debug':
+            env.AppendUnique(CCFLAGS = ['-g'])
+        elif config == 'release':
+            env.AppendUnique(CCFLAGS = ['-O2'], LINKFLAGS = ['-s'])
+        else:
+            raise RuntimeError, 'Unknown config "%s"' % config
+
     else:
         raise RuntimeError, 'Don\'t know how to apply compiler "%s"' % compiler
 
