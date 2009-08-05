@@ -251,8 +251,6 @@ subdir(srcdir, 'budgie')
 ### Start of specific targets ###
 #################################
 
-Alias('install', aspects['libdir'])
-
 budgie_outputs = [
         'include/budgie/call.h',
         'include/budgie/types2.h',

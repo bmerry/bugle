@@ -178,6 +178,25 @@ def setup_aspects():
         help = 'Installation path for documentation',
         default = lambda a: aspects['datadir'] + '/doc/bugle'))
 
+    aspects.AddAspect(Aspect(
+        group = 'package',
+        name = 'without_gtk',
+        help = 'Prevent GTK+ from being detected and used',
+        choices = ['yes', 'no'],
+        default = 'no'))
+    aspects.AddAspect(Aspect(
+        group = 'package',
+        name = 'without_gtkglext',
+        help = 'Prevent GtkGLExt from being detected and used',
+        choices = ['yes', 'no'],
+        default = 'no'))
+    aspects.AddAspect(Aspect(
+        group = 'package',
+        name = 'without_lavc',
+        help = 'Prevent ffmpeg/libavcodec from being detected and used',
+        choices = ['yes', 'no'],
+        default = 'no'))
+
     # TODO separate specification of build CC and host CC
     aspects.AddAspect(Aspect(
         group = 'tool',
@@ -248,4 +267,4 @@ subdir(Dir('.'), 'doc/DocBook', variant_dir = 'build/doc', duplicate = 0)
 # the modifications change later (e.g. they install a package)
 aspects.Report()
 if GetOption('bugle_save'):
-    original_aspects.Save('config.py')
+    aspects.Save('config.py')

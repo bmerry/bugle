@@ -12,9 +12,9 @@ if 'debugger' in aspects['parts']:
     gldb_env = envs['host'].Clone()
     conf = Configure(gldb_env, custom_tests = BugleChecks.tests)
     if conf.CheckPkgConfig():
-        if conf.CheckPkg('gtk+-2.0', '2.4.0'):
+        if conf.CheckPkg(aspects, 'gtk+-2.0', '2.4.0', without_name = 'without_gtk'):
             have_gtk = True
-        if conf.CheckPkg('gtkglext-1.0', '1.0.0'):
+        if conf.CheckPkg(aspects, 'gtkglext-1.0', '1.0.0', without_name = 'without_gtkglext'):
             have_gtkglext = True
         if conf.CheckLibWithHeader('GLEW', 'GL/glew.h', 'c', autoadd = False):
             have_glew = 'GLEW'
@@ -25,7 +25,7 @@ if 'debugger' in aspects['parts']:
     if not have_gtk:
         print 'WARNING: GTK+ 2.4+ is needed for the debugger. It will not be built'
         aspects['parts'].remove('debugger')
-        Return
+        Return()
 
     gldb_env.MergeFlags('!pkg-config gtk+-2.0 --cflags --libs')
     if have_glew and have_gtkglext:

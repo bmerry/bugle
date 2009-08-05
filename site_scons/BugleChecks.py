@@ -9,17 +9,30 @@ def check_pkg_config(ctx, version = '0.18'):
     ctx.Result(ret)
     return ret
 
-def check_pkg(ctx, pkg, version = None):
+def check_pkg(ctx, aspects, pkg, version = None, without_name = None):
     '''
     Checks for package C{pkg} with at least version C{version}. If C{version}
-    is C{None}, simply checks that the package exists.
+    is C{None}, simply checks that the package exists. However, if
+    C{without_name} is yes in aspects, it is assumed not to the present.
+    If C{without_name} is not specified, it defaults to the package name
+    prefixed with the literal string C{without_}.
     '''
+    if without_name is None:
+        without_name = 'without_' + str(pkg)
     if version is None:
-        ctx.Message('Checking for %s... ' % pkg)
-        ret = ctx.TryAction('pkg-config --exists %s' % pkg)[0]
+        msg = 'Checking for %s' % pkg
+        test = 'pkg-config --exists %s' % pkg
     else:
-        ctx.Message('Checking for %s >= %s... ' % (pkg, version))
-        ret = ctx.TryAction('pkg-config --atleast-version=%s %s' % (version, pkg))[0]
+        msg = 'Checking for %s >= %s' % (pkg, version)
+        test = 'pkg-config --atleast-version=%s %s' % (version, pkg)
+    if without_name in aspects:
+        if aspects[without_name] == 'yes':
+            ctx.Message(msg + ' (suppressed by user)... ')
+            ctx.Result(0)
+            return 0
+
+    ctx.Message(msg + '... ')
+    ret = ctx.TryAction(test)[0]
     ctx.Result(ret)
     return ret
 

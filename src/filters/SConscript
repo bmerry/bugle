@@ -52,16 +52,16 @@ if 'interceptor' in aspects['parts']:
     screenshot_env = filter_env.Clone()
     conf = Configure(screenshot_env, custom_tests = BugleChecks.tests)
     if conf.CheckPkgConfig():
-        if conf.CheckPkg('libavcodec'):
+        if conf.CheckPkg(aspects, 'libavcodec'):
             conf.env.Append(CPPDEFINES = [('HAVE_LAVC', 1)])
             conf.env.ParseConfig('pkg-config libavcodec --cflags --libs')
-            if conf.CheckPkg('libavformat'):
+            if conf.CheckPkg(aspects, 'libavformat'):
                 conf.env.ParseConfig('pkg-config libavformat --cflags --libs')
             if conf.CheckHeader('libavcodec/avcodec.h'):
                 conf.env.Append(CPPDEFINES = [('HAVE_LIBAVCODEC_AVCODEC_H', 1)])
             if conf.CheckHeader('libavformat/avformat.h'):
                 conf.env.Append(CPPDEFINES = [('HAVE_LIBAVFORMAT_AVFORMAT_H', 1)])
-        if conf.CheckPkg('libswscale'):
+        if conf.CheckPkg(aspects, 'libswscale'):
             conf.env.Append(CPPDEFINES = [('HAVE_LIBSWSCALE', 1)])
             conf.env.ParseConfig('pkg-config libswscale --cflags --libs')
             if conf.CheckHeader('libswscale/swscale.h'):

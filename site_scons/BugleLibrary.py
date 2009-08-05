@@ -68,17 +68,20 @@ def SharedLibrary(env, binfmt, target, source, bindir = None, libdir = None, ver
             if libdir is not None:
                 install_env = env.Clone(OLDINSTALL = env['INSTALL'], INSTALL = copyFunc)
                 install_env.Install(target = libdir, source = shl_list)
+                install_envenv.Alias('install', libdir)
     elif binfmt == 'pe':
         if 'msvc' in env['TOOLS']:
             # Builder returns [dll, lib, exp], we only need the lib for linking
             # other libraries against
-            dll, lib, exp = env.SharedLibrary(target, source, **kw)[1]
+            dll, lib, exp = env.SharedLibrary(target, source, **kw)
 
             # No symlinks required, so no need to replace the env
             if libdir is not None:
                 env.Install(target = libdir, source = [lib, exp])
+                env.Alias('install', libdir)
             if bindir is not None:
                 env.Install(target = bindir, source = dll)
+                env.Alias('install', bindir)
             return [lib]
         else:
             raise NotImplemented, 'Do not know how to build shared libraries for PE without MSVC'
