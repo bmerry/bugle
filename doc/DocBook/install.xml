@@ -23,10 +23,12 @@
             <listitem><para>
                     GCC, at least version 3.2, and <emphasis>not</emphasis>
                     4.0 (see the <link linkend="faq-gcc-version">FAQ</link>
-                    for an explanation of why).
+                    for an explanation of why). It has been tested with
+                    versions 4.1 to 4.4.
             </para></listitem>
             <listitem><para>
-                    A C++ compiler (generally <application>g++</application>)
+                    A C++ compiler with the POSIX regular expression functions
+                    (generally <application>g++</application>)
             </para></listitem>
             <listitem><para>
                     OpenGL header files, including a recent version of <ulink
@@ -59,6 +61,12 @@
                 </para></listitem>
             </varlistentry>
             <varlistentry>
+                <term><!-- FIXME URL -->GLUT</term>
+                <listitem><para>
+                        GLUT is required by the test suite.
+                </para></listitem>
+            </varlistentry>
+            <varlistentry>
                 <term><ulink url="http://ffmpeg.org/">FFmpeg</ulink></term>
                 <listitem><para>
                         If FFmpeg is available, the included <systemitem
@@ -74,17 +82,17 @@
         <para>
             &Bugle; uses <ulink url="http://www.scons.org/">SCons</ulink>
             rather than <command>make</command> as its build system. To build
-            &bugle;, simple run <userinput>scons</userinput> in the top-level
+            &bugle;, simply run <command>scons</command> in the top-level
             directory, and the targets will be built in the <filename
                 class="directory">build</filename> directory. The generic
             SCons options can be found by running
-            <userinput>scons -H</userinput> and &bugle;-specific options can
-            be found by running <userinput>scons --help</userinput>. The
+            <command>scons -H</command> and &bugle;-specific options can
+            be found by running <command>scons --help</command>. The
             options are you most likely to need are:
         </para>
         <variablelist>
             <varlistentry>
-                <term><userinput>--clean</userinput></term>
+                <term><parameter>--clean</parameter></term>
                 <listitem><para>
                         Remove built files (for a more thorough clean,
                         remove the <filename
@@ -92,7 +100,7 @@
                 </para></listitem>
             </varlistentry>
             <varlistentry>
-                <term><userinput>--sticky</userinput></term>
+                <term><parameter>--sticky</parameter></term>
                 <listitem><para>
                         Save the command-line variables to
                         <filename>config.py</filename>, from where they will
@@ -101,136 +109,83 @@
                 </para></listitem>
             </varlistentry>
             <varlistentry>
-                <term><userinput>gltype=<replaceable>type</replaceable></userinput></term>
+                <term><parameter>gltype=<replaceable>type</replaceable></parameter></term>
                 <listitem><para>
                         Select the variant of OpenGL to build for. &Bugle;
                         only supports one variant at a time.
                 </para></listitem>
             </varlistentry>
             <varlistentry>
-                <term><userinput>parts=<replaceable>list</replaceable></userinput></term>
+                <term><parameter>parts=<replaceable>list</replaceable></parameter></term>
                 <listitem><para>
                         Select a subset of the parts of &bugle; to build
                         (useful if you are missing tools).
                 </para></listitem>
             </varlistentry>
             <varlistentry>
-                <term><userinput>prefix=<replaceable>directory</replaceable></userinput></term>
+                <term><parameter>prefix=<replaceable>directory</replaceable></parameter></term>
                 <listitem><para>
                         Select an installation prefix (similar to
                         <command>autoconf</command>).
                 </para></listitem>
             </varlistentry>
-            <varlistentry>
-                <term><userinput></userinput></term>
-                <listitem><para>
-                </para></listitem>
-            </varlistentry>
         </variablelist>
         <para>
             Once you have successfully built &bugle;, you can run
-            <userinput>scons install</userinput> to install it.
+            <command>scons install</command> to install it.
         </para>
     </sect1>
 
-    <sect1 id="install-configure">
-        <title>Configuring</title>
+    <sect1 id="install-cross">
+        <title>Cross-compilation</title>
         <para>
-            &Bugle; uses the standard <command>configure</command> command for
-            compile-time configuration. Generic instructions may be found in
-            <filename>INSTALL</filename> in the root of the source directory.
-            In general, <command>configure</command> will auto-detect optional
-            packages and use them only if present, but you can also prevent it
-            from depending on certain packages with the following flags.
-            FFmpeg (lavc) in particular is a moving target and if you get
-            compilation failures, you should try disabling it.
-        </para>
-        <itemizedlist>
-            <listitem><para><option>--without-lavc</option></para></listitem>
-            <listitem><para><option>--without-readline</option></para></listitem>
-            <listitem><para><option>--without-gtk</option></para></listitem>
-            <listitem><para><option>--without-gtkglext</option></para></listitem>
-        </itemizedlist>
-        <para>
-            &Bugle; does not use threads itself, but applications that it
-            debugs might, and &bugle; needs to use appropriate locking and
-            thread-local storage libraries. The correct option should be
-            auto-detected, but you can force it with
-            <option>--enable-threads</option>=<replaceable>model</replaceable>.
-            Valid models are <literal>posix</literal> and
-            <literal>win32</literal>.
+            &Bugle; supports cross-compilation with GCC. Other compilers are not
+            yet supported should be relatively easy to add.
         </para>
         <para>
-            Finally, &bugle; intercepts events from X11 and Windows. While
-            there are no known cases of this causing problems, it is difficult
-            to make the interception completely transparent, and so the
-            <option>--disable-input</option> option is available to disable it
-            at compile time. It is also required when using EGL on a platform
-            other than X11 or Windows.
-        </para>
-
-        <sect2 id="install-configure-cross">
-            <title>Configuring for cross-compilation</title>
-            <para>
-                If possible, the best way to do cross-compilation is to use
-                <ulink
-                    url="http://www.scratchbox.org/"><application>scratchbox</application></ulink>,
-                where it should all work seamlessly. However,
-                <application>scratchbox</application> only supports a limited
-                set of cross-compilation targets. If you want to do
-                cross-compilation, you will need to jump through some extra
-                hoops.
-            </para>
-            <para>
-                First, run <command>configure</command> in the top-level
-                directory, passing the appropriate <option>--host</option>
-                option for your cross-compiler. Also make sure that the
-                appropriate header files and libraries for the
-                cross-compilation target are available. You might also need to
-                pass extra options to <command>configure</command> to disable
-                optional features that are incorrectly detected (see above).
-            </para>
-            <para>
-                Next, change into the <filename
-                    class="directory">budgie</filename> subdirectory and run
-                the configure script there (if you are configuring in a
-                different directory from the source, you will need to be in
-                the <filename class="directory">budgie</filename> subdirectory
-                of the build directory, running the
-                <command>configure</command> script from the <filename
-                    class="directory">budgie</filename> subdirectory of the
-                source. When doing this, configure for your
-                <emphasis>native</emphasis> compiler. This is necessary
-                because the program that is built in this directory is run on
-                the build machine to produce source code, not on the host.
-            </para>
-        </sect2>
-    </sect1>
-
-    <sect1 id="install-compile">
-        <title>Compiling and installing</title>
-        <para>
-            Compilation is as simple as running <userinput>make</userinput>.
-            Before installing, you should remove any previous installation of
-            &bugle; to avoid leaving old versions of files around. If you do not
-            have your original installation tree to run <userinput>make
-                uninstall</userinput>, you should at least remove the files in
-            <filename><replaceable>/usr/local/lib/</replaceable>bugle</filename>
-            and
-            <filename><replaceable>/usr/local/lib/</replaceable>libbugle*</filename>.
-            To install the new version, run <userinput>make
-                install</userinput> as <systemitem
-                class="username">root</systemitem>.
+            First, a note about terminology. &Bugle; follows the
+            <application>autoconf</application> conventions: the machine that
+            you perform the compilation on is the <emphasis>build</emphasis>
+            machine. The machine where you run the resulting interceptor is
+            the <emphasis>host</emphasis> machine.
+            <application>autoconf</application> also has the concept of a
+            <emphasis>target</emphasis> machine, but that only applies to
+            cross-toolchains and is not used in &bugle;.
         </para>
         <para>
-            Next, you need to install some files for the user that will run
-            &bugle;. Create a directory <filename
-                class="directory">$HOME/.bugle</filename>, and copy
-            <filename>doc/examples/filters</filename> and
-            <filename>doc/examples/statistics</filename> into it.
+            The basic step required to use cross-compilation is to add the
+            <parameter>host=<replaceable>machine</replaceable></parameter>
+            parameter to the <command>scons</command> command line. This
+            causes the build to use, for example,
+            <command><replaceable>machine</replaceable>-gcc</command> in place
+            of <command>gcc</command>, and similarly for other parts of the
+            toolchain. For example, to cross-compile for ARM one could use
+            <parameter>host=arm-none-linux-gnueabi</parameter>. Note that this
+            requires the cross-compiler to be on the
+            <envar>PATH</envar>.
+        </para>
+        <para>
+            Cross-compilation hosts are often a little different to the build
+            machine, which can cause additional problems during building.
+            Firstly, the build system uses
+            <application>pkg-config</application> to detect optional packages
+            such as GTK+, but <application>pkg-config</application> is likely
+            to report information about the build machine rather than the
+            host machine. If you know that these packages are not available on
+            the host machine anyway, you can override the detection by
+            specifying
+            <parameter>without-<replaceable>pkg</replaceable>=yes</parameter>
+            on the <command>scons</command> command line. Use <command>scons
+                -h</command> to see a list of packages that can be suppressed.
+        </para>
+        <para>
+            In addition, a common cross-compilation host is Linux without the
+            X Windowing System. The code to intercept X events can be disabled
+            by specifying <parameter>winsys=none</parameter>.
         </para>
     </sect1>
 
+    <!-- FIXME rewrite this -->
     <sect1 id="install-windows">
         <title>Compiling on Windows</title>
         <para>
