@@ -66,19 +66,13 @@
                 <listitem><para>Functions that act on
                         <replaceable>type</replaceable> should be named
                         <function><replaceable>type</replaceable>_<replaceable>action</replaceable></function>.
-                        See below for when to prefix the name with
-                        <literal>bugle_</literal>.
                 </para></listitem>
-                <listitem><para>Names of types should generally not have a
-                        <literal>bugle_</literal> prefix, unless it is needed
-                        to clearly disambiguate it. This is an area where
+                <listitem><para>
+                        Types and functions that are intended to be used from
+                        outside the file/submodule where they are defined
+                        should be prefixed with
+                        <literal>bugle_</literal>. This is an area where
                         consistency could be improved.
-                </para></listitem>
-                <listitem><para>Functions in the core code should have a
-                        <literal>bugle_</literal> prefix if and only if they
-                        are meant to be called from filter-sets or from the
-                        debugger. Such functions are generally safe for
-                        filter-sets to use unless marked otherwise.
                 </para></listitem>
                 <listitem><para>A constructor for a type that returns a
                         <function>malloc</function>ed instance should be named
@@ -100,7 +94,7 @@
                 <listitem><para>
                         Functions in filter-sets should be declared <code
                             language="C">static</code>, unless they are to be
-                        exported to other filter-sets. These functions must
+                        exported to other filter-sets. Exported functions must
                         have some vendor prefix. This is
                         <literal>bugle_</literal> for the filter-sets
                         distributed with &bugle;, but should be something else
@@ -112,16 +106,15 @@
                         (<literal>//</literal>) comments.
                 </para></listitem>
                 <listitem><para>
-                        POSIX, BSD and X/OPEN library functions are
-                        acceptable if the appropriate feature macros are
-                        defined (<symbol>_POSIX_C_SOURCE</symbol> and so on).
-                        For filter-sets distributed with &bugle;,
-                        gnulib should be used for memory-allocating functions
-                        (<function>xmalloc</function> and
-                        <function>xasprintf</function>, for example) and for
-                        non-portable functions. Unfortunately, gnulib symbols
-                        cannot be exported since they may conflict with
-                        different implementations in the debugged application.
+                        Non-C89 library functions should not be called
+                        directly unless they are protected by a suitable
+                        test of
+                        <symbol>BUGLE_PLATFORM_<replaceable>PLATFORM</replaceable></symbol>.
+                        If such a function is used in multiple places with
+                        alternatives for multiple operating systems, it really
+                        should be abstracted through the <link
+                            linkend="hacking-porting-platform">platform
+                            layer</link>.
                 </para></listitem>
             </itemizedlist>
         </sect2>

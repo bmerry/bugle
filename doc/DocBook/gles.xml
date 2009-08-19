@@ -27,7 +27,7 @@
             It should be noted that when using an emulator that works on top
             of OpenGL, an alternative approach to debugging is to use
             &bugle; as a regular (desktop) OpenGL debugger. This will reveal
-            data such as textures and framebuffers. However, it cannot access
+            data such as textures, VBOs and framebuffers. However, it cannot access
             the error checking that is done in the emulation layer. For
             example, an <symbol>INVALID_ENUM</symbol> error will not be caught
             by the debugger if it is generated entirely within the emulation
@@ -42,12 +42,13 @@
     <sect1 id="gles-config">
         <title>Building</title>
         <para>
-            First refer to the generic installation instructions in <xref
+            The process for building is the same as described in <xref
                 linkend="install"/>. To indicate that OpenGL ES is
-            desired, add either
-            <parameter>--with-target=<replaceable>config</replaceable></parameter>
-            must be passed to <command>configure</command>, where
-            <replaceable>config</replaceable> is one of the values below:
+            desired, add either <parameter>gltype=gles1cm</parameter> or
+            <parameter>gltype=gles2</parameter> to the
+            <command>scons</command> command line. There is no need to specify
+            <parameter>glwin</parameter>, as it will automatically default of
+            EGL.
         </para>
         <variablelist>
             <varlistentry>
@@ -88,12 +89,6 @@
                 for the GUI debugger.
             </para>
         </note>
-        <note>
-            <para>
-                Currently OpenGL ES 1.x on Windows is not supported, but this
-                can easily be added.
-            </para>
-        </note>
         <para>
             You also need to ensure that your various paths are set correctly.
             The headers, libraries and DLLs for the OpenGL ES implementation
@@ -102,12 +97,13 @@
             unless the compiler is already configured to find them.
         </para>
     </sect1>
-    <sect1 id="gles-install">
-        <title>Installation</title>
+    <sect1 id="gles-windows">
+        <title>Windows specifics</title>
         <para>
             Apart from the usual installation step, some extra setup is
-            required on a Windows system when using OpenGL ES 2.0, due to the
-            limitations of the dynamic linker. Create copies of the system
+            required on a Windows system when using OpenGL ES, due to the
+            limitations of the dynamic linker. For OpenGL ES 2.0, create copies
+            of the system
             <filename>libEGL.dll</filename> and
             <filename>libGLESv2.dll</filename> called
             <filename>bglEGL.dll</filename> and
@@ -128,6 +124,23 @@
             <filename>libGLESv2.dll</filename> installed by &bugle; are the
             first on the path, and that the renamed libraries you generated
             are also on the path.
+        </para>
+        <para>
+            For OpenGL ES 1.x, the process is the same, except that references
+            to <filename>libGLESv2.dll</filename> should be replaced by
+            <filename>libGLESv1_CM.dll</filename>.
+        </para>
+
+        <para>
+            Windows also has multiple function calling conventions, and
+            different implementations of OpenGL ES (particular for 1.x) make
+            inconsistent choices. You can override the automatic choice by
+            passing <parameter>callapi=__stdcall</parameter> or
+            <parameter>callapi=</parameter> to select the
+            <symbol>stdcall</symbol> or <symbol>cdecl</symbol> calling
+            convention. You should be able to determine the convention by
+            examining <filename>GLES/glplatform.h</filename> or
+            <filename>GLES2/gl2platform.h</filename>.
         </para>
     </sect1>
 </chapter>
