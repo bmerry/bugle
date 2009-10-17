@@ -18,34 +18,11 @@
 #if HAVE_CONFIG_H
 # include <config.h>
 #endif
+#include <bugle/math.h>
 
-#include "platform/dl.h"
-
-void bugle_dl_init(void)
+double bugle_nan(void)
 {
+    /* FIXME: test this */
+    volatile double x = 0.0;
+    return 0.0 / x;
 }
-
-bugle_dl_module bugle_dl_open(const char *filename, int flag)
-{
-    return NULL;
-}
-
-int bugle_dl_close(bugle_dl_module module)
-{
-    return 0;
-}
-
-void *bugle_dl_sym_data(bugle_dl_module module, const char *symbol)
-{
-    return NULL;
-}
-
-BUDGIEAPIPROC bugle_dl_sym_function(bugle_dl_module module, const char *symbol)
-{
-    return (BUDGIEAPIPROC) NULL;
-}
-
-void bugle_dl_foreach(const char *path, void (*callback)(const char *filename, void *arg), void *arg)
-{
-}
-

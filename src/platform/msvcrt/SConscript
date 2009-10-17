@@ -14,7 +14,9 @@ targets['bugleutils']['source'].extend(platform_env.SharedObject(source = [
     'math-msvcrt.c',
     # 'io-msvcrt.c',
     'time-msvcrt.c',
-    'threads-msvcrt.c'
+    'threads-msvcrt.c',
+    '../fallback/bugle_nan.c',
+    '../fallback/bugle_strndup.c'
     ]))
 
 targets['bugle']['source'].extend(platform_env.SharedObject(source = [

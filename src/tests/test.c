@@ -44,6 +44,7 @@ static FILE *log_handle = NULL;
 extern test_status dlopen_suite(void);
 extern test_status errors_suite(void);
 extern test_status interpose_suite(void);
+extern test_status math_suite(void);
 extern test_status pbo_suite(void);
 extern test_status pointers_suite(void);
 extern test_status procaddress_suite(void);
@@ -59,13 +60,14 @@ static const test_suite suites[] =
     { "dlopen",         TEST_FLAG_LOG,                     dlopen_suite },
     { "errors",         TEST_FLAG_CONTEXT,                 errors_suite },
     { "interpose",      TEST_FLAG_CONTEXT,                 interpose_suite },
+    { "math",           0,                                 math_suite },
     { "pbo",            TEST_FLAG_LOG | TEST_FLAG_CONTEXT, pbo_suite },
     { "pointers",       TEST_FLAG_LOG | TEST_FLAG_CONTEXT, pointers_suite },
     { "procaddress",    TEST_FLAG_CONTEXT,                 procaddress_suite },
     { "queries",        TEST_FLAG_LOG | TEST_FLAG_CONTEXT, queries_suite },
     { "setstate",       TEST_FLAG_LOG | TEST_FLAG_CONTEXT, setstate_suite },
     { "showextensions", TEST_FLAG_LOG | TEST_FLAG_CONTEXT, showextensions_suite },
-    { "string",         0, string_suite },
+    { "string",         0,                                  string_suite },
     { "texcomplete",    TEST_FLAG_LOG | TEST_FLAG_CONTEXT, texcomplete_suite },
     { "triangles",      TEST_FLAG_LOG | TEST_FLAG_CONTEXT, triangles_suite }
 };

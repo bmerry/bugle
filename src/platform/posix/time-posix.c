@@ -15,9 +15,31 @@
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
+#if HAVE_CONFIG_H
+# include <config.h>
+#endif
+#include "platform_config.h"
 #include <stddef.h>
-#include <bugle/time.h>
+#include <unistd.h>
 #include <sys/time.h>
+#include <time.h>
+#include <bugle/time.h>
+
+#if _POSIX_TIMERS > 0 && defined(_POSIX_MONOTONIC_CLOCK)
+
+int bugle_gettime(bugle_timespec *ts)
+{
+    struct timespec t;
+    int ret;
+
+    ret = clock_gettime(CLOCK_MONOTONIC, &t);
+    if (ret != 0) return ret;
+    ts->tv_sec = t.tv_sec;
+    ts->tv_nsec = t.tv_nsec;
+    return 0;
+}
+
+#else
 
 int bugle_gettime(bugle_timespec *ts)
 {
@@ -31,3 +53,5 @@ int bugle_gettime(bugle_timespec *ts)
     ts->tv_nsec = t.tv_usec * 1000;
     return 0;
 }
+
+#endif

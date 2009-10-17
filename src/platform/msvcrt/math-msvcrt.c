@@ -34,13 +34,6 @@ int bugle_isnan(double x)
     return _isnan(x);
 }
 
-double bugle_nan(void)
-{
-    /* FIXME: test this */
-    volatile double x = 0.0;
-    return 0.0 / x;
-}
-
 double bugle_round(double x)
 {
     return floor(x + 0.5);

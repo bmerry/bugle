@@ -130,7 +130,8 @@ if 'tests' in aspects['parts']:
             'errors',
             'interpose',
             'procaddress',
-            'string']
+            'string',
+            'math']
     log_tests = [
             ('dlopen', 'trace'),
             ('pbo', 'trace'),

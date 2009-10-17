@@ -136,15 +136,3 @@ char *bugle_strdup(const char *str)
     if (ret == NULL) bugle_alloc_die();
     return ret;
 }
-
-char *bugle_strndup(const char *str, size_t n)
-{
-    char *ret;
-    size_t len = 0;
-
-    while (len < n && str[len] != '\0') len++;
-    ret = BUGLE_NMALLOC(len + 1, char);
-    memcpy(ret, str, len * sizeof(char));
-    ret[len] = '\0';
-    return ret;
-}

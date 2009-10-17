@@ -18,34 +18,18 @@
 #if HAVE_CONFIG_H
 # include <config.h>
 #endif
+#include <bugle/string.h>
+#include <bugle/memory.h>
+#include <string.h>
 
-#include "platform/dl.h"
-
-void bugle_dl_init(void)
+char *bugle_strndup(const char *str, size_t n)
 {
-}
+    char *ret;
+    size_t len = 0;
 
-bugle_dl_module bugle_dl_open(const char *filename, int flag)
-{
-    return NULL;
+    while (len < n && str[len] != '\0') len++;
+    ret = BUGLE_NMALLOC(len + 1, char);
+    memcpy(ret, str, len * sizeof(char));
+    ret[len] = '\0';
+    return ret;
 }
-
-int bugle_dl_close(bugle_dl_module module)
-{
-    return 0;
-}
-
-void *bugle_dl_sym_data(bugle_dl_module module, const char *symbol)
-{
-    return NULL;
-}
-
-BUDGIEAPIPROC bugle_dl_sym_function(bugle_dl_module module, const char *symbol)
-{
-    return (BUDGIEAPIPROC) NULL;
-}
-
-void bugle_dl_foreach(const char *path, void (*callback)(const char *filename, void *arg), void *arg)
-{
-}
-

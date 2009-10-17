@@ -21,6 +21,8 @@
 # include <config.h>
 #endif
 #include <bugle/string.h>
+#include <bugle/memory.h>
+#include <string.h>
 #include "test.h"
 
 static void string_snprintf(void)
@@ -49,9 +51,21 @@ static void string_snprintf(void)
     TEST_ASSERT(ret == 13);
 }
 
+static void string_strdup(void)
+{
+    const char *orig = "abcde";
+    char *dupl;
+
+    dupl = bugle_strdup(orig);
+    TEST_ASSERT(strcmp(orig, dupl) == 0);
+    TEST_ASSERT(dupl != orig);
+    bugle_free(dupl);
+}
+
 test_status string_suite(void)
 {
     string_snprintf();
+    string_strdup();
 
     return TEST_RAN;
 }

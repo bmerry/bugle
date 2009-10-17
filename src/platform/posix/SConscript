@@ -27,14 +27,12 @@ def internal_checks(env):
     conf.Define('_XOPEN_SOURCE', '600')
     conf.Define('_GNU_SOURCE', '1')
     conf.CheckFunc('vasprintf')
-    conf.CheckFunc('strdup')
-    conf.CheckFunc('strndup')
     return conf.Finish()
 
 Import('envs', 'targets', 'srcdir')
 
 envs['host'].Append(CPPPATH = [srcdir, Dir('.')])
-envs['host'].MergeFlags('-pthread')
+envs['host'].MergeFlags('-pthread -lrt')
 envs['host'] = header_checks(envs['host'])
 
 platform_env = internal_checks(envs['host'].Clone())
@@ -44,6 +42,8 @@ targets['bugleutils']['source'].extend(platform_env.SharedObject(source = [
     'math-posix.c',
     'io-posix.c',
     'time-posix.c',
+    '../fallback/bugle_strdup.c',
+    '../fallback/bugle_strndup.c'
     ]))
 
 targets['bugle']['LIBS'].append('dl')

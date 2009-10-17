@@ -27,27 +27,7 @@ int bugle_isfinite(double x)
     return 0;
 }
 
-int bugle_isnan(double x)
-{
-    return 0;
-}
-
-double bugle_nan(void)
-{
-    return 0.0;
-}
-
 double bugle_round(double x)
 {
     return 0.0;
-}
-
-float bugle_sinf(float x)
-{
-    return (float) sin((double) x);
-}
-
-float bugle_cosf(float x)
-{
-    return (float) cos((double) x);
 }

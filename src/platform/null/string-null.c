@@ -41,13 +41,3 @@ char *bugle_vasprintf(const char *format, va_list ap)
 {
     return NULL;
 }
-
-char *bugle_strdup(const char *str)
-{
-    return NULL;
-}
-
-char *bugle_strndup(const char *str, size_t n)
-{
-    return NULL;
-}
