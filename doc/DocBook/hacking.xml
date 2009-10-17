@@ -355,6 +355,20 @@
                     integral value. Half-integer values may be rounded in
                     either direction.
                 </para>
+                <funcsynopsis>
+                    <funcprototype>
+                        <funcdef>float <function>bugle_sinf</function></funcdef>
+                        <paramdef>float <parameter>x</parameter></paramdef>
+                    </funcprototype>
+                    <funcprototype>
+                        <funcdef>float <function>bugle_cosf</function></funcdef>
+                        <paramdef>float <parameter>x</parameter></paramdef>
+                    </funcprototype>
+                </funcsynopsis>
+                <para>
+                    These correspond to the C99 functions
+                    <function>sinf</function> and <function>cosf</function>.
+                </para>
             </sect3>
             <sect3 id="hacking-porting-dlfunctions">
                 <title>Dynamic library functions</title>

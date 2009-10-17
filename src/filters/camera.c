@@ -35,11 +35,6 @@
 #include <budgie/reflect.h>
 #include <budgie/addresses.h>
 
-#if !HAVE_SINF
-# define sinf(x) ((float) (sin((double) (x))))
-# define cosf(x) ((float) (cos((double) (x))))
-#endif
-
 /*** Camera filterset ***/
 
 #define CAMERA_KEY_FORWARD 0
@@ -265,8 +260,8 @@ static void camera_mouse_callback(int dx, int dy, bugle_input_event *event)
     angle *= 0.005f;
 
     memcpy(old, ctx->modifier, sizeof(old));
-    cs = cosf(angle);
-    sn = sinf(angle);
+    cs = bugle_cosf(angle);
+    sn = bugle_sinf(angle);
     for (i = 0; i < 3; i++)
         for (j = 0; j < 3; j++)
         {

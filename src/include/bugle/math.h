@@ -27,6 +27,10 @@ BUGLE_EXPORT_PRE int bugle_isfinite(double x) BUGLE_EXPORT_POST;
 BUGLE_EXPORT_PRE int bugle_isnan(double x) BUGLE_EXPORT_POST;
 BUGLE_EXPORT_PRE double bugle_nan(void) BUGLE_EXPORT_POST;
 
+/* Equivalent to C99 functions */
+BUGLE_EXPORT_PRE float bugle_sinf(float x) BUGLE_EXPORT_POST;
+BUGLE_EXPORT_PRE float bugle_cosf(float x) BUGLE_EXPORT_POST;
+
 /* Rounds to nearest, but halfway cases are not defined */
 BUGLE_EXPORT_PRE double bugle_round(double x) BUGLE_EXPORT_POST;
 

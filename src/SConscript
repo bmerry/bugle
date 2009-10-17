@@ -53,7 +53,7 @@ def checks(env, gl_lib, gl_headers):
     conf = Configure(env, custom_tests = BugleChecks.tests, config_h = 'config.h')
     conf.CheckLib('m')
     conf.CheckHeader('stdint.h')
-    for i in ['cosf', 'sinf', 'siglongjmp']:
+    for i in ['siglongjmp']:
         conf.CheckFunc(i)
     conf.CheckAttributePrintf()
     conf.CheckAttributeConstructor()

@@ -9,7 +9,6 @@
 - add remaining filters
 - add abstractions:
   - sockets
-  - sinf/cosf?
 - clean up gldb-gui and move all the nasty process stuff into glib code
 - slim down platform layer to provide shared fallbacks for string functions
   and include them where necessary

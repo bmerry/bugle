@@ -19,6 +19,7 @@
 # include <config.h>
 #endif
 #include <bugle/math.h>
+#include <math.h>
 #include <stddef.h>
 
 int bugle_isfinite(double x)
@@ -39,4 +40,14 @@ double bugle_nan(void)
 double bugle_round(double x)
 {
     return 0.0;
+}
+
+float bugle_sinf(float x)
+{
+    return (float) sin((double) x);
+}
+
+float bugle_cosf(float x)
+{
+    return (float) cos((double) x);
 }

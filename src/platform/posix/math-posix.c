@@ -43,3 +43,13 @@ double bugle_round(double x)
 {
     return round(x);
 }
+
+float bugle_sinf(float x)
+{
+    return sinf(x);
+}
+
+float bugle_cosf(float x)
+{
+    return cosf(x);
+}
