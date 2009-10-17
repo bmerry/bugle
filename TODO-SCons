@@ -9,9 +9,7 @@
 - add remaining filters
 - add abstractions:
   - sockets
-- clean up gldb-gui and move all the nasty process stuff into glib code
-- slim down platform layer to provide shared fallbacks for string functions
-  and include them where necessary
+- portable printf implementation, from newlib/gnulib/glibc/elsewhere?
 - missing autoconf/SCons tests:
   - GLUT
   - nvperksdk
