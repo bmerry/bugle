@@ -223,7 +223,8 @@ string type_to_string(tree_node_p type, const string &name, bool brackets)
     }
     else if (TREE_CODE(type) == VOID_TYPE)
         return "void";
-    return "<unknown type>";
+
+    throw anonymous_type_error("anonymous type passed to type_to_string");
 }
 
 // attempt to mimic C++ name mangling, with the difference that

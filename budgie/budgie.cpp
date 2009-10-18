@@ -309,6 +309,16 @@ static void load_config(const string &name)
 
 static bool dumpable(tree_node_p type)
 {
+    /* We can't dump it unless we can name it. */
+    try
+    {
+        string name = type_to_string(type, "", false);
+    }
+    catch (anonymous_type_error)
+    {
+        return false;
+    }
+
     switch (TREE_CODE(type))
     {
     case INTEGER_TYPE:
@@ -322,7 +332,7 @@ static bool dumpable(tree_node_p type)
     case UNION_TYPE:
         // anonymous types are impossible to name for dumping, and
         // if the types are undefined then there is nothing to dump
-        if ((DECL_NAME(type) || TYPE_NAME(type)) && TYPE_VALUES(type)) return true;
+        if (TYPE_VALUES(type) != NULL_TREE) return true;
         else return false;
     case ARRAY_TYPE:
         // unspecified array sizes make dumping impossible
