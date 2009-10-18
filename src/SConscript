@@ -299,6 +299,7 @@ targets['bugleutils'].out = BugleLibrary.SharedLibrary(
         envs['host'], aspects['binfmt'],
         libdir = aspects['libdir'], bindir = aspects['bindir'],
         **targets['bugleutils'])
+Default(targets['bugleutils'].out)
 
 if 'interceptor' in aspects['parts']:
     targets['bugle'].update({
@@ -333,6 +334,7 @@ if 'interceptor' in aspects['parts']:
             aspects['binfmt'],
             libdir = aspects['libdir'], bindir = aspects['bindir'],
             **targets['bugle'])
+    Default(targets['bugle'].out)
 
 # These need to come after the targets have been built
 subdir(srcdir, 'bc')

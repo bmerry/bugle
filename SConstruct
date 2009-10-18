@@ -262,6 +262,44 @@ Export('aspects', 'subdir', 'version')
 subdir(Dir('.'), 'src', variant_dir = 'build/' + variant_str, duplicate = 0)
 subdir(Dir('.'), 'doc/DocBook', variant_dir = 'build/doc', duplicate = 0)
 
+package_env = Environment(tools = ['default', 'packaging'])
+package_sources = [
+    'AUTHORS',
+    'COPYING',
+    'ChangeLog',
+    'LICENSE',
+    'NEWS',
+    'README',
+    'SConstruct',
+    'TODO-SCons',
+
+    Glob('site_scons/*.py'),
+    Glob('site_scons/site_tools/*.py'),
+
+    Glob('doc/*.txt'),
+    Glob('doc/*.html'),
+    'doc/examples/filters',
+    'doc/examples/statistics',
+
+    Glob('src/gl2ps/*'),
+    ]
+for i in [
+        '*.c', '*.h', '*.y', '*.l', '*.cpp', '*.ll', '*.yy',
+        '*.def', '*.py', '*.perl', '*.bc', '*.in',
+        '*.xml', '*.xsl', '*.css', '*.ent', '*.png',
+        'SConscript']:
+    for levels in ['', '*/', '*/*/', '*/*/*/', '*/*/*/*/']:
+        package_sources += Glob('doc/' + levels + i)
+        package_sources += Glob('src/' + levels + i)
+
+package_env.Alias('dist', package_env.Package(source = package_sources,
+                    NAME = 'bugle',
+                    VERSION = version,
+                    PACKAGEVERSION = 0,
+                    PACKAGETYPE = 'src_tarbz2',
+                    LICENCE = 'gpl',
+                    SUMMARY = 'testing'))
+
 # Only save right at the end, in case some subdir rejects an aspect
 # However, we save what the user asks for, not what they got, in case
 # the modifications change later (e.g. they install a package)

@@ -13,17 +13,18 @@ if 'docs' in aspects['parts']:
         for i in ['DOCBOOK']:
             env[i + 'COMSTR'] = i + ' $TARGET'
 
-    env.DocBook(
+    single = env.DocBook(
             target = 'html/single.html',
             source = ['xhtml-single.xsl', 'bugle.xml'])
-    env.Command('html/bugle.css', 'bugle.css', [Copy('$TARGET', '$SOURCE')])
+    single_css = env.Command('html/bugle.css', 'bugle.css', [Copy('$TARGET', '$SOURCE')])
 
     chunked = env.DocBook(
             target = 'html/chunked/index.html',
             source = ['xhtml-chunk.xsl', 'bugle.xml'])
-    env.Command('html/chunked/bugle.css', 'bugle.css', [Copy('$TARGET', '$SOURCE')])
+    chunked_css = env.Command('html/chunked/bugle.css', 'bugle.css', [Copy('$TARGET', '$SOURCE')])
     env.Clean(chunked, 'html/chunked')
 
+    Default(single, chunked, single_css, chunked_css)
     Alias('install', aspects['docdir'])
     env.Install(aspects['docdir'], 'html/single.html')
     env.Install(aspects['docdir'], 'html/chunked')
