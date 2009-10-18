@@ -21,6 +21,7 @@
 #include <math.h>
 #include <stdlib.h>
 #include <bugle/bool.h>
+#include <bugle/math.h>
 #include <string.h>
 #include <bugle/glwin/glwin.h>
 #include <bugle/glwin/trackcontext.h>
