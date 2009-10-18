@@ -188,7 +188,11 @@ my %function_non_aliases = (
 
     # NV version has different args
     "glGetTransformFeedbackVaryingNV" => 1,
-    "glTransformFeedbackVaryingsNV" => 1
+    "glTransformFeedbackVaryingsNV" => 1,
+
+    # APPLE version has different number of args
+    "glGetObjectParameterivAPPLE" => 1,
+    "glGetObjectParameterfvAPPLE" => 1
 );
 
 # Enumerants that we don't want to be the chosen return for

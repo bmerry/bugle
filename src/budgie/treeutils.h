@@ -26,11 +26,18 @@
 #include "tree.h"
 #include <string>
 #include <vector>
+#include <stdexcept>
 
 #define FLAG_USE 0x1          // will be used to generate dumpers
 #define FLAG_TEMPORARY 0x2    // constructed on the fly, should be deleted soon
 #define FLAG_ARTIFICIAL 0x4   // constructed internally, not seen in .tu file
 #define FLAG_NO_RECURSE 0x8   // set_flags should not recurse past this type
+
+class anonymous_type_error : public std::runtime_error
+{
+public:
+    anonymous_type_error(const std::string &what) : std::runtime_error(what) {}
+};
 
 // Generates a new node, which points at the base. It is a reference
 // if ref is true, a pointer otherwise.
