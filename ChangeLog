@@ -1,3 +1,8 @@
+0.0.20091026
+------------
+* Better detection of anonymous types in budgie
+* Fix bogus aliasing of glGetObjectParameter*APPLE in newer glext.h
+
 0.0.20090801
 ------------
 * Make compilation work with GCC 4.4
