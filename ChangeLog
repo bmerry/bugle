@@ -1,3 +1,5 @@
+* Fix bash dependence in configure (patch from Gerald Pfeifer)
+
 0.0.20091026
 ------------
 * Better detection of anonymous types in budgie
