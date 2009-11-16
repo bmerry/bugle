@@ -27,7 +27,7 @@ typedef int budgie_type;
 #define NULL_GROUP (-1)
 #define NULL_TYPE (-1)
 
-#define BUDGIE_MAX_ARGS 16
+#define BUDGIE_MAX_ARGS 32
 
 /* If you modify this, be sure to update write_call_structs to set up the
  * function_call union with compatible memory layout.

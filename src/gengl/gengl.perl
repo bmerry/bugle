@@ -192,7 +192,10 @@ my %function_non_aliases = (
 
     # APPLE version has different number of args
     "glGetObjectParameterivAPPLE" => 1,
-    "glGetObjectParameterfvAPPLE" => 1
+    "glGetObjectParameterfvAPPLE" => 1,
+
+    # NV version returns a Bool
+    "glXJoinSwapGroupNV" => 1
 );
 
 # Enumerants that we don't want to be the chosen return for
