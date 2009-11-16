@@ -4,7 +4,7 @@ from CrossEnvironment import CrossEnvironment
 import BugleChecks
 import BugleLibrary
 
-Import('aspects', 'subdir', 'srcdir')
+Import('aspects', 'subdir', 'srcdir', 'version')
 
 class Target(dict):
     '''
@@ -128,6 +128,10 @@ def get_substs(aspects):
         name = name.upper()
         value = value.upper()
         substs[name] = value
+    substs['PACKAGE_VERSION'] = version
+    for a in aspects.aspects.values():
+        if a.group == 'path':
+            substs[a.name] = a.get()
     return substs
 
 def get_common_options():
@@ -276,7 +280,11 @@ envs['tu'].ApitablesC(target = ['apitables.c'], source = [File('budgielib/define
 envs['tu'].ApitablesH(target = ['apitables.h'], source = [File('budgielib/defines.h')] + headers)
 
 substs = get_substs(aspects)
-envs['host'].SubstFile('include/bugle/porting.h', 'include/bugle/porting.h.in', substs)
+Default(envs['host'].SubstFile('include/bugle/porting.h', 'include/bugle/porting.h.in', substs))
+bugle_pc = envs['host'].SubstFile('bugle.pc', 'bugle.pc.in', substs)
+Default(bugle_pc)
+Install(aspects['libdir'] + '/pkgconfig', source = bugle_pc)
+Alias('install', aspects['libdir'] + '/pkgconfig')
 
 targets['bugleutils'].update({
     'target': 'bugleutils',

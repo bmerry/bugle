@@ -2,7 +2,7 @@
 import os
 from Aspects import *
 
-version = '0.0.20090704'
+version = '0.0.20091116'
 
 def subdir(srcdir, dir, **kw):
     '''

@@ -2,7 +2,7 @@ from SCons import *
 
 def _wrapper(self, target, source, replacements, **kw):
     sources = [source, self.Value(replacements)]
-    self.SubstFileReal(target, sources, **kw)
+    return self.SubstFileReal(target, sources, **kw)
 
 def substfile(target, source, env):
     src = source[0].get_contents()

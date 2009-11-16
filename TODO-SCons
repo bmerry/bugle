@@ -10,7 +10,6 @@
 - add abstractions:
   - sockets
 - portable printf implementation, from newlib/gnulib/glibc/elsewhere?
-- generation and installation of bugle.pc
 - missing autoconf/SCons tests:
   - GLUT
   - nvperksdk
