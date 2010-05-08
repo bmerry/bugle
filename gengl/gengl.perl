@@ -182,7 +182,10 @@ my %function_non_aliases = (
 
     # APPLE version has different number of args
     "glGetObjectParameterivAPPLE" => 1,
-    "glGetObjectParameterfvAPPLE" => 1
+    "glGetObjectParameterfvAPPLE" => 1,
+
+    # EXT version has different number of args to SGI and Mesa versions
+    "glXSwapIntervalEXT" => 1
 );
 
 # Enumerants that we don't want to be the chosen return for

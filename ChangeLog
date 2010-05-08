@@ -1,4 +1,8 @@
+0.0.20100508
+------------
 * Fix bash dependence in configure (patch from Gerald Pfeifer)
+* Fix building against latest glxext.h
+* Fix bug #70 (missing -lX11)
 
 0.0.20091026
 ------------

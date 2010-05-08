@@ -514,6 +514,13 @@ bugle_sources += \
 	src/glx/glxdump.c src/glx/glwin.c
 
 budgie_all_bc_files += $(GLXBCFILES)
+bugle_libadd += $(X_LIBS) $(X_EXTRA_LIBS) -lX11
+endif
+
+if BUGLE_WINSYS_X11
+if !BUGLE_GLWIN_GLX
+bugle_libadd += $(X_LIBS) $(X_EXTRA_LIBS) -lX11
+endif
 endif
 
 if BUGLE_GLWIN_WGL
