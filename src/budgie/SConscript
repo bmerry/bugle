@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 import BugleChecks
 
-Import('envs')
+Import('envs', 'package_sources')
 
 # Ensure that <config.h> comes from the one in this directory
-budgie_env = envs['build'].Clone()
+budgie_env = envs['build'].Clone(CXXFILESUFFIX = '.cpp')
 budgie_env.Prepend(CPPPATH = [Dir('.')])
 
 conf = Configure(budgie_env, custom_tests = BugleChecks.tests, config_h = 'config.h')
@@ -14,9 +14,9 @@ if not conf.CheckLibWithHeader(None, 'regex.h', 'c++', 'regcomp(0, 0, 0);'):
         Exit(1)
 budgie_env = conf.Finish()
 
-budgie_env.CXXFile('bcparser.cpp', 'bcparser.yy', YACCFLAGS = '-d --defines=${TARGET.dir}/bcparser.h')
-budgie_env.CXXFile('bclexer.cpp', 'bclexer.ll', LEXFLAGS = '-Pbc_yy')
-budgie_env.CXXFile('tulexer.cpp', 'tulexer.ll')
+budgie_env.BugleCXXFile('bcparser.yy', package_sources, YACCFLAGS = '-d --defines=${TARGET.dir}/bcparser.h')
+budgie_env.BugleCXXFile('bclexer.ll', package_sources, LEXFLAGS = '-Pbc_yy')
+budgie_env.BugleCXXFile('tulexer.ll', package_sources)
 
 budgie_list = budgie_env.Program('budgie', source = [
     'budgie.cpp',

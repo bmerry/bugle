@@ -93,9 +93,8 @@
                         <ulink
                             url="http://gcc.gnu.org/bugzilla/show_bug.cgi?id=30052">#30052</ulink>
                         but possibly not. Either downgrade to 4.1, upgrade to
-                        a version where the bug is fixed (none are released at
-                        the time of writing), or compile without optimisation
-                        (<option>-O0</option>).
+                        a version where the bug is fixed , or compile without
+                        optimisation (<option>-O0</option>).
                     </para>
                 </answer>
             </qandaentry>
@@ -225,6 +224,20 @@
                         one. Find out which one is correct
                         (<application>ldd</application>) should help, then
                         move other ones out of the way.
+                </para></answer>
+            </qandaentry>
+
+            <qandaentry>
+                <question><para>
+                        Why do I get the error <computeroutput>*** %n in
+                            writable segment detected ***</computeroutput>?
+                </para></question>
+                <answer><para>
+                        Most likely your distribution has crippled GCC by
+                        switching on options that improve security but are not
+                        C compliant. Try adding
+                        <userinput>-U_FORTIFY_SOURCE</userinput> to your
+                        <envar>CFLAGS</envar>.
                 </para></answer>
             </qandaentry>
         </qandaset>

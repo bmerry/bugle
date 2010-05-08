@@ -2,19 +2,9 @@
 import os
 from CrossEnvironment import CrossEnvironment
 import BugleChecks
-import BugleLibrary
+from BugleTarget import *
 
-Import('aspects', 'subdir', 'srcdir', 'version')
-
-class Target(dict):
-    '''
-    Contains the keywords that will be passed to a builder. This allows
-    the sources, libraries etc, to be built up from different places
-    '''
-    def __init__(self):
-        self['source'] = []
-        self['target'] = []
-        self['LIBS'] = ['$LIBS']    # ensures we add to rather than replace
+Import('aspects', 'subdir', 'srcdir', 'version', 'package_sources', 'PACKAGEROOT')
 
 def check_gl(conf, lib, headers):
     '''
@@ -146,7 +136,8 @@ def get_common_options():
                 srcdir.Dir('include'),
                 Dir('.'),
                 Dir('include')],
-            BCPATH = [srcdir.Dir('.'), Dir('.')])
+            BCPATH = [srcdir.Dir('.'), Dir('.')],
+            PACKAGEROOT = PACKAGEROOT)
 
     if GetOption('bugle_short'):
         for i in ['ALIAS', 'APITABLESC', 'APITABLESH',
@@ -164,7 +155,7 @@ def get_initial_envs(common_kw):
     # Environment for tools that have to run on the build machine
     envs['build'] = Environment(
             YACCHXXFILESUFFIX = '.h',
-            tools = ['lex', 'yacc'],
+            tools = ['lex', 'yacc', 'buglewrappers', 'filesystem', 'packaging'],
             **common_kw)
 
     # Environment for the target machine
@@ -174,7 +165,7 @@ def get_initial_envs(common_kw):
                 ('PKGLIBDIR', r'\"%s\"' % aspects['pkglibdir']),
                 ('HAVE_CONFIG_H', 1)
                 ],
-            tools = ['lex', 'yacc', 'subst', 'install'],
+            tools = ['lex', 'yacc', 'subst', 'buglewrappers', 'filesystem', 'install', 'packaging'],
             **common_kw
             )
 
@@ -227,6 +218,47 @@ def get_runtime(aspects):
         libraries.append('libGLESv2')
 
     return pre_headers, headers, libraries
+
+def get_yacc(env, basename):
+    '''
+    Returns a target for a .y file.
+    If the corresponding C file already exists in the srcdir, it is used
+    directly rather than generating a rule. The C and H files are also
+    scheduled for packaging.
+
+    @return A Node for the .c file
+    '''
+
+    if os.path.exists(srcdir.abspath + os.sep + basename + '.c'):
+        targets = [env.File(basename + '.c'), env.File(basename + '.h')]
+        package_sources.append(targets)
+    else:
+        targets = env.CFile(basename + '.y', YACCFLAGS = '-d')
+        for t in targets:
+            # TODO: this (and get_lex) is pretty hacky
+            out = '#/bugle-' + version + '/src/' + t.name
+            package_sources.extend(env.Command(out, t, Copy('$TARGET', '$SOURCE')))
+    return targets[0]
+
+def get_lex(env, basename):
+    '''
+    Returns a target for a .y file.
+    If the corresponding C file already exists in the srcdir, it is used
+    directly rather than generating a rule. The C file is also
+    scheduled for packaging.
+
+    @return A Node for the .c file
+    '''
+
+    if os.path.exists(srcdir.abspath + os.sep + basename + '.c'):
+        targets = [env.File(basename + '.c')]
+        package_sources.append(targets)
+    else:
+        targets = env.CFile(basename + '.l')
+        for t in targets:
+            out = '#/bugle-' + version + '/src/' + t.name
+            package_sources.extend(env.Command(out, t, Copy('$TARGET', '$SOURCE')))
+    return targets[0]
 
 ############################
 ### Start of main script ###
@@ -303,8 +335,8 @@ targets['bugleutils']['source'].extend([
     'budgielib/tables.c',
     'apitables.c'])
 
-targets['bugleutils'].out = BugleLibrary.SharedLibrary(
-        envs['host'], aspects['binfmt'],
+targets['bugleutils'].out = envs['host'].BugleSharedLibrary(
+        aspects['binfmt'],
         libdir = aspects['libdir'], bindir = aspects['bindir'],
         **targets['bugleutils'])
 Default(targets['bugleutils'].out)
@@ -313,13 +345,11 @@ if 'interceptor' in aspects['parts']:
     targets['bugle'].update({
         'version': '8.0.0'})
     targets['bugle']['source'].extend([
-        envs['host'].CFile('confparse.y', YACCFLAGS = '-d')[0],
-        'conflex.l',
+        envs['host'].BugleCFile(['confparse.y', 'statsparse.y'], package_sources, YACCFLAGS = '-d'),
+        envs['host'].BugleCFile(['conflex.l', 'statslex.l'], package_sources),
         'interceptor.c',
         'filters.c',
         'stats.c',
-        'statslex.l',
-        envs['host'].CFile('statsparse.y', YACCFLAGS = '-d')[0],
         'log.c',
         'objects.c',
         'input.c',
@@ -337,8 +367,7 @@ if 'interceptor' in aspects['parts']:
         aspects['glwin'] + '/glwin.c'])
     targets['bugle']['LIBS'].extend(targets['bugleutils'].out)
 
-    targets['bugle'].out = BugleLibrary.SharedLibrary(
-            envs['host'],
+    targets['bugle'].out = envs['host'].BugleSharedLibrary(
             aspects['binfmt'],
             libdir = aspects['libdir'], bindir = aspects['bindir'],
             **targets['bugle'])

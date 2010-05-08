@@ -194,6 +194,9 @@ my %function_non_aliases = (
     "glGetObjectParameterivAPPLE" => 1,
     "glGetObjectParameterfvAPPLE" => 1,
 
+    # EXT version has different number of args to SGI and Mesa versions
+    "glXSwapIntervalEXT" => 1,
+
     # NV version returns a Bool
     "glXJoinSwapGroupNV" => 1
 );
@@ -657,7 +660,7 @@ EOF
             print "    NULL_EXTENSION\n};\n\n";
         }
 
-        print "static const bugle_api_enum_data _bugle_api_enum_table_$block" . "[] =\n{\n";
+        print "static const bugle_api_enum_data _bugle_api_enum_table_${block}[] =\n{\n";
         $first = 1;
         foreach my $enum (@$list)
         {

@@ -13,6 +13,17 @@
 * Support for MSVC on Windows
 * Autogenerate a main.bc instead of having a menu of API combinations
 
+0.0.20100508
+------------
+* Fix bash dependence in configure (patch from Gerald Pfeifer)
+* Fix building against latest glxext.h
+* Fix bug #70 (missing -lX11)
+
+0.0.20091026
+------------
+* Better detection of anonymous types in budgie
+* Fix bogus aliasing of glGetObjectParameter*APPLE in newer glext.h
+
 0.0.20090801
 ------------
 * Make compilation work with GCC 4.4

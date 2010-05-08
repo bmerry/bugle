@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 
 import os
-import os.path
 import SCons.Action
 
 """
@@ -26,7 +25,7 @@ def symlinkFunc(target, source, env):
     os.symlink(os.path.split(source[0].path)[-1], target[0].path)
     return 0
 
-def SharedLibrary(env, binfmt, target, source, bindir = None, libdir = None, version = None, **kw):
+def _build_shared_library(env, binfmt, target, source, bindir = None, libdir = None, version = None, **kw):
     """
     An enhanced version of the SCons SharedLibrary builder, that handles
       - adding sonames
@@ -60,6 +59,7 @@ def SharedLibrary(env, binfmt, target, source, bindir = None, libdir = None, ver
                 if libdir is not None:
                     install_env = env.Clone(OLDINSTALL = env['INSTALL'], INSTALL = copyFunc)
                     install_env.Install(target = libdir, source = shl_list + soname_target + base_target)
+                    install_env.Alias('install', libdir)
                 return base_target
             else:
                 raise NotImplemented, 'Do not know how to set SONAME without GCC'
@@ -68,7 +68,8 @@ def SharedLibrary(env, binfmt, target, source, bindir = None, libdir = None, ver
             if libdir is not None:
                 install_env = env.Clone(OLDINSTALL = env['INSTALL'], INSTALL = copyFunc)
                 install_env.Install(target = libdir, source = shl_list)
-                install_envenv.Alias('install', libdir)
+                install_env.Alias('install', libdir)
+            return shl_list
     elif binfmt == 'pe':
         if 'msvc' in env['TOOLS']:
             # Builder returns [dll, lib, exp], we only need the lib for linking
@@ -94,3 +95,50 @@ def SharedLibrary(env, binfmt, target, source, bindir = None, libdir = None, ver
             # TODO what does mingw output?
     else:
         raise NotImplemented, 'Do not know how to build shared libraries for ' + binfmt
+
+def _c_cxx_file(env, func, source, package_sources, **kw):
+    '''
+    Returns a target for a .y or .l file.
+    If the corresponding C file already exists in the srcdir, it is used
+    directly rather than generating a rule. The C and header files are also
+    scheduled for packaging.
+
+    @param package_sources A list to be extended with nodes to package
+    @return A Node for the .c file
+    '''
+
+    if package_sources is None:
+        package_sources = []
+    source = env.arg2nodes(source, env.fs.Entry)
+    for s in source:
+        basename, ext = os.path.splitext(s.srcnode().abspath)
+        srcdir = s.dir.srcnode().path
+        if ext == '.yy' or ext == '.ll':
+            target_ext = env['CXXFILESUFFIX']
+        else:
+            target_ext = env['CFILESUFFIX']
+        if os.path.exists(basename + target_ext):
+            targets = [env.File(basename + target_ext)]
+            if ext == '.y' or ext == '.yy':
+                targets.append(env.File(basename + '.h'))
+            package_sources.extend(targets)
+        else:
+            targets = func(s, **kw)
+            for t in targets:
+                out = env['PACKAGEROOT'].File(srcdir + '/' + t.name)
+                package_sources.extend(env.CopyTo(out, t))
+    return [targets[0]]
+
+def _cfile(env, source, package_sources = None, **kw):
+    return _c_cxx_file(env, env.CFile, source, package_sources, **kw)
+
+def _cxxfile(env, source, package_sources = None, **kw):
+    return _c_cxx_file(env, env.CXXFile, source, package_sources, **kw)
+
+def generate(env, **kw):
+    env.AddMethod(_build_shared_library, 'BugleSharedLibrary')
+    env.AddMethod(_cfile, 'BugleCFile')
+    env.AddMethod(_cxxfile, 'BugleCXXFile')
+
+def exists(env):
+    return 1

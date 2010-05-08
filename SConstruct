@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 import os
-from Aspects import *
+from BugleAspects import *
 
 version = '0.0.20091116'
 
@@ -257,13 +257,15 @@ for a in aspects.ordered:
             variant.append('%s' % a.get())
 variant_str = '_'.join(variant)
 
-Export('aspects', 'subdir', 'version')
+package_sources = []
+PACKAGEROOT = Dir('bugle-' + version)
+Export('aspects', 'subdir', 'version', 'package_sources', 'PACKAGEROOT')
 
 subdir(Dir('.'), 'src', variant_dir = 'build/' + variant_str, duplicate = 0)
 subdir(Dir('.'), 'doc/DocBook', variant_dir = 'build/doc', duplicate = 0)
 
 package_env = Environment(tools = ['default', 'packaging'])
-package_sources = [
+package_sources.extend([
     'AUTHORS',
     'COPYING',
     'ChangeLog',
@@ -282,7 +284,7 @@ package_sources = [
     'doc/examples/statistics',
 
     Glob('src/gl2ps/*'),
-    ]
+    ])
 for i in [
         '*.c', '*.h', '*.y', '*.l', '*.cpp', '*.ll', '*.yy',
         '*.def', '*.py', '*.perl', '*.bc', '*.in',
@@ -292,13 +294,15 @@ for i in [
         package_sources += Glob('doc/' + levels + i)
         package_sources += Glob('src/' + levels + i)
 
-package_env.Alias('dist', package_env.Package(source = package_sources,
+package_env.Package(source = package_sources,
                     NAME = 'bugle',
                     VERSION = version,
                     PACKAGEVERSION = 0,
                     PACKAGETYPE = 'src_tarbz2',
+                    # TODO: share with encoding in src/SConscript
+                    PACKAGEROOT = PACKAGEROOT,
                     LICENCE = 'gpl',
-                    SUMMARY = 'testing'))
+                    SUMMARY = 'testing')
 
 # Only save right at the end, in case some subdir rejects an aspect
 # However, we save what the user asks for, not what they got, in case

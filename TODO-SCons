@@ -3,7 +3,7 @@
 - test new library rules on win32
 - MinGW support
 - allow user to override package detection (esp. for cross-compiling)
-- don't rebuild from .xml/.y/.l if present in source package
+- don't rebuild from .xml if present in source package
 - documentation updates
 - finish adding tests and making portable
 - add remaining filters

@@ -24,6 +24,12 @@ else
     </p>
     <h1>BuGLe News</h1>
 
+    <h2>Another compilation release fix (26/10/2009)</h2>
+    <p>Yep, like the headline says. If you've already got it running, there are
+    no new features. The all-new, all-shiny development version will be ready
+    any year now.
+    </p>
+
     <h2>Release to fix compilation issues (01/08/2009)</h2>
     <p>The just-released 0.0.20090801 version adds a fix for GCC 4.4,
     which mysteriously duplicates function nodes in the parse tree. And in

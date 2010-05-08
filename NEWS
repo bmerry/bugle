@@ -1,3 +1,14 @@
+0.0.20100508
+------------
+This release just fixes some compilation problems and errors related to
+undefined symbols (particular XStringToKeysym).
+
+0.0.20091026
+------------
+This release just fixes a compilation problem with newer versions of glext.h.
+If you have successfully installed the previous version, there is no need to
+upgrade.
+
 0.0.20090801
 ------------
 This release just fixes a compilation problem with GCC 4.4. If you have
