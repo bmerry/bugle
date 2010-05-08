@@ -58,8 +58,8 @@ char *bugle_vasprintf(const char *format, va_list ap)
 {
 #if HAVE_VASPRINTF
     char *ret = NULL;
-    vasprintf(&ret, format, ap);
-    if (ret == NULL)
+    int status = vasprintf(&ret, format, ap);
+    if (status < 0)
         bugle_alloc_die();
     return ret;
 #else /* !HAVE_VASPRINTF */

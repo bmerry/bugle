@@ -32,6 +32,7 @@
 #include <budgie/reflect.h>
 #include <bugle/string.h>
 #include <bugle/memory.h>
+#include <bugle/porting.h>
 #include "gldb/gldb-gui.h"
 #include "gldb/gldb-gui-buffer.h"
 

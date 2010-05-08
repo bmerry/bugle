@@ -1565,7 +1565,7 @@ static GtkTreeModel *build_filter_model(bugle_bool mag)
     return GTK_TREE_MODEL(store);
 }
 
-static GtkTreeModel *build_face_model()
+static GtkTreeModel *build_face_model(void)
 {
     GtkListStore *store;
     GtkTreeIter iter;

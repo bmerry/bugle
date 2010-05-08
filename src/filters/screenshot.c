@@ -500,7 +500,7 @@ static bugle_bool screenshot_stream(FILE *out, bugle_bool check_size)
 }
 
 #if HAVE_LAVC
-static void screenshot_video()
+static void screenshot_video(void)
 {
     screenshot_data *fetch;
     AVCodecContext *c;
@@ -598,7 +598,7 @@ static void screenshot_video()
 
 #else /* !HAVE_LAVC */
 
-static void screenshot_video(int frameno)
+static void screenshot_video(void)
 {
     screenshot_context ssctx;
     if (!screenshot_start(&ssctx)) return;
@@ -649,7 +649,7 @@ bugle_bool screenshot_callback(function_call *call, const callback_data *data)
     if (video)
     {
         if (!video_done)
-            screenshot_video(frameno);
+            screenshot_video();
     }
     else if (keypress_screenshot)
     {
