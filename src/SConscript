@@ -219,47 +219,6 @@ def get_runtime(aspects):
 
     return pre_headers, headers, libraries
 
-def get_yacc(env, basename):
-    '''
-    Returns a target for a .y file.
-    If the corresponding C file already exists in the srcdir, it is used
-    directly rather than generating a rule. The C and H files are also
-    scheduled for packaging.
-
-    @return A Node for the .c file
-    '''
-
-    if os.path.exists(srcdir.abspath + os.sep + basename + '.c'):
-        targets = [env.File(basename + '.c'), env.File(basename + '.h')]
-        package_sources.append(targets)
-    else:
-        targets = env.CFile(basename + '.y', YACCFLAGS = '-d')
-        for t in targets:
-            # TODO: this (and get_lex) is pretty hacky
-            out = '#/bugle-' + version + '/src/' + t.name
-            package_sources.extend(env.Command(out, t, Copy('$TARGET', '$SOURCE')))
-    return targets[0]
-
-def get_lex(env, basename):
-    '''
-    Returns a target for a .y file.
-    If the corresponding C file already exists in the srcdir, it is used
-    directly rather than generating a rule. The C file is also
-    scheduled for packaging.
-
-    @return A Node for the .c file
-    '''
-
-    if os.path.exists(srcdir.abspath + os.sep + basename + '.c'):
-        targets = [env.File(basename + '.c')]
-        package_sources.append(targets)
-    else:
-        targets = env.CFile(basename + '.l')
-        for t in targets:
-            out = '#/bugle-' + version + '/src/' + t.name
-            package_sources.extend(env.Command(out, t, Copy('$TARGET', '$SOURCE')))
-    return targets[0]
-
 ############################
 ### Start of main script ###
 ############################

@@ -110,6 +110,7 @@ def _c_cxx_file(env, func, source, package_sources, **kw):
     if package_sources is None:
         package_sources = []
     source = env.arg2nodes(source, env.fs.Entry)
+    all_targets = []
     for s in source:
         basename, ext = os.path.splitext(s.srcnode().abspath)
         srcdir = s.dir.srcnode().path
@@ -127,7 +128,8 @@ def _c_cxx_file(env, func, source, package_sources, **kw):
             for t in targets:
                 out = env['PACKAGEROOT'].File(srcdir + '/' + t.name)
                 package_sources.extend(env.CopyTo(out, t))
-    return [targets[0]]
+        all_targets.append(targets[0])
+    return all_targets
 
 def _cfile(env, source, package_sources = None, **kw):
     return _c_cxx_file(env, env.CFile, source, package_sources, **kw)
