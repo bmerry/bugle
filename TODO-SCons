@@ -11,7 +11,6 @@
 - portable printf implementation, from newlib/gnulib/glibc/elsewhere?
 - missing autoconf/SCons tests:
   - GLUT
-  - nvperksdk
   - threading API
 - unit tests:
   - I/O layer

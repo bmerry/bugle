@@ -124,11 +124,65 @@ static void query_multi(void)
     test_log_printf("trace\\.call: glGetDoublev\\(GL_MODELVIEW_MATRIX, %p -> { 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1 }\\)\n", (void *) d);
 }
 
+/* Creates a copy of a string with regex special characters escaped. The caller
+ * must free the memory afterwards.
+ */
+static char *re_escape(const char *s)
+{
+    size_t old_len = strlen(s);
+    size_t new_len = 2 * old_len;
+    char *out = (char *) malloc((new_len + 1) * sizeof(char));
+    char *p = out;
+    size_t i;
+
+    for (i = 0; i < old_len; i++)
+    {
+        /* To keep the tests readable, we enumerate some common bad characters.
+         * This may cause test failures if any slip through, but those can
+         * be fixed as and when they occur.
+         */
+        switch (s[i])
+        {
+        case '(':
+        case ')':
+        case '[':
+        case ']':
+        case '+':
+        case '*':
+        case '?':
+        case '{':
+        case '}':
+        case '\\':
+        case '^':
+        case '$':
+        case '.':
+        case '|':
+            *p++ = '\\';
+            /* Fall through */
+        default:
+            *p++ = s[i];
+        }
+    }
+    *p++ = '\0';
+    return out;
+}
+
+static void query_string(GLenum token, const char *name)
+{
+    const char *value;
+    char *escaped;
+
+    value = (const char *) glGetString(token);
+    escaped = re_escape(value);
+    test_log_printf("trace\\.call: glGetString\\(%s\\) = \"%s\"\n", name, escaped);
+    free(escaped);
+}
+
 static void query_strings(void)
 {
-    test_log_printf("trace\\.call: glGetString\\(GL_VENDOR\\) = \"%s\"\n", glGetString(GL_VENDOR));
-    test_log_printf("trace\\.call: glGetString\\(GL_RENDERER\\) = \"%s\"\n", glGetString(GL_RENDERER));
-    test_log_printf("trace\\.call: glGetString\\(GL_EXTENSIONS\\) = \"%s\"\n", glGetString(GL_EXTENSIONS));
+    query_string(GL_VENDOR, "GL_VENDOR");
+    query_string(GL_RENDERER, "GL_RENDERER");
+    query_string(GL_EXTENSIONS, "GL_EXTENSIONS");
 }
 
 static void query_tex_parameter(void)
