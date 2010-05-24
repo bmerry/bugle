@@ -1,6 +1,8 @@
 /* Check that dlopen()ing libGL.so still passes through bugle */
 
-#define _GNU_SOURCE /* To get RTLD_NEXT defined, if it is available */
+#ifndef _GNU_SOURCE
+# define _GNU_SOURCE /* To get RTLD_NEXT defined, if it is available */
+#endif
 #include <stdio.h>
 #include <dlfcn.h>
 #include <GL/gl.h>
