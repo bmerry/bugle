@@ -28,7 +28,6 @@ if 'interceptor' in aspects['parts']:
             'stats_basic',
             'stats_calls',
             'stats_calltimes',
-            'stats_nv',
             'stats_primitives',
             'trace',
             'validate'])
@@ -70,3 +69,10 @@ if 'interceptor' in aspects['parts']:
                 conf.env.Append(CPPDEFINES = [('HAVE_LIBSWSCALE_SWSCALE_H', 1)])
     screenshot_env = conf.Finish()
     simple_filters(screenshot_env, ['screenshot'])
+
+    nv_env = filter_env.Clone()
+    conf = Configure(nv_env)
+    has_nvperfsdk = conf.CheckHeader('NVPerfSDK.h')
+    nv_env = conf.Finish()
+    if has_nvperfsdk:
+        simple_filters(nv_env, ['stats_nv'])

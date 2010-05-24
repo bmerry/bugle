@@ -6,7 +6,6 @@
 - don't rebuild from .xml if present in source package
 - documentation updates
 - finish adding tests and making portable
-- add remaining filters
 - add abstractions:
   - sockets
 - portable printf implementation, from newlib/gnulib/glibc/elsewhere?

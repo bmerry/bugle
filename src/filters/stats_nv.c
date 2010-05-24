@@ -21,8 +21,6 @@
 
 #include <bugle/filters.h>
 
-#if HAVE_NVPERFSDK_H
-
 #include <bugle/bool.h>
 #include <bugle/memory.h>
 #include <ltdl.h>
@@ -258,10 +256,6 @@ cancel1:
 
 static void stats_nv_shutdown(filter_set *handle)
 {
-    linked_list_node *i;
-    stats_signal *si;
-    stats_signal_nv *nv;
-
     if (stats_nv_dl == NULL) return; /* NVPerfSDK not installed */
 
     fNVPMRemoveAllCounters();
@@ -294,11 +288,3 @@ void bugle_initialise_filter_library(void)
     bugle_filter_set_depends("stats_nv", "stats_basic");
     bugle_filter_set_stats_generator("stats_nv");
 }
-
-#else /* HAVE_NVPERFSDK_H */
-
-void bugle_initialise_filter_library(void)
-{
-}
-
-#endif /* !HAVE_NVPERFSDK_H */
