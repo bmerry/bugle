@@ -19,17 +19,18 @@ def move_tu(target, source, env):
     '''
     source_name = os.path.split(str(source[0]))[-1]
     for ext in ['.tu', '.t00.tu', '.001t.tu']:
-        tu_name = source_name + ext
-        exists = False
-        try:
-            f = file(tu_name, 'r')
-            f.close()
-            exists = True
-        except IOError:
+        for dir in ['', target[0].dir.path]:
+            tu_name = os.path.join(dir, source_name) + ext
             exists = False
-        if exists:
-            if str(target) != tu_name:
-                return env.Execute(Script.Move(target[-1], tu_name))
+            try:
+                f = file(tu_name, 'r')
+                f.close()
+                exists = True
+            except IOError:
+                exists = False
+            if exists:
+                if str(target) != tu_name:
+                    return env.Execute(Script.Move(target[-1], tu_name))
     print ".tu file could not be found"
     return 1
 
