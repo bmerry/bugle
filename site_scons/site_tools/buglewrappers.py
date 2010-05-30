@@ -10,6 +10,19 @@ An enhanced version of the SCons SharedLibrary builder, that handles
 - installation of the relevant pieces to the relevant locations
 """
 
+def _relpath(path, start):
+    """
+    Same idea as os.path.relpath, but intended to be independent of the host
+    pathname conventions.
+    """
+    src = path.split('/')
+    trg = path.split('/')
+    while src and trg and src[0] == trg[0]:
+        del src[0:1]
+        del trg[0:1]
+    parts = ['..' for x in src] + trg
+    return '/'.join(parts)
+
 def copyFunc(dest, source, env):
     """
     Wrapper around SCons' copyFunc that handles symlinks correctly
@@ -110,7 +123,7 @@ def _c_cxx_file(env, builder, source, srcdir, package_sources, **kw):
     source = env.arg2nodes(source, env.fs.Entry)
     all_targets = []
     for s in source:
-        basename, ext = os.path.splitext(os.path.relpath(s.srcnode().path, srcdir.path))
+        basename, ext = os.path.splitext(_relpath(s.srcnode().path, srcdir.path))
         if ext == '.yy' or ext == '.ll':
             target_ext = env['CXXFILESUFFIX']
         else:

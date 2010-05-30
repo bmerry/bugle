@@ -24,15 +24,15 @@
  * BUGLE_EXPORT_PRE void bugle_function(int arg) BUGLE_EXPORT_POST;
  */
 
-#if defined(__GNUC__)
-
-#define BUGLE_EXPORT_PRE
-#define BUGLE_EXPORT_POST __attribute__((visibility("default")))
-
-#elif defined(_MSC_VER)
+#if defined(_MSC_VER) || defined(__MINGW32__)
 
 #define BUGLE_EXPORT_PRE __declspec(dllexport)
 #define BUGLE_EXPORT_POST
+
+#elif defined(__GNUC__)
+
+#define BUGLE_EXPORT_PRE
+#define BUGLE_EXPORT_POST __attribute__((visibility("default")))
 
 #else
 
