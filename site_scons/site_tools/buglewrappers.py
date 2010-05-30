@@ -96,7 +96,7 @@ def _build_shared_library(env, binfmt, target, source, bindir = None, libdir = N
     else:
         raise NotImplemented, 'Do not know how to build shared libraries for ' + binfmt
 
-def _c_cxx_file(env, func, source, package_sources, **kw):
+def _c_cxx_file(env, builder, source, srcdir, package_sources, **kw):
     '''
     Returns a target for a .y or .l file.
     If the corresponding C file already exists in the srcdir, it is used
@@ -107,40 +107,85 @@ def _c_cxx_file(env, func, source, package_sources, **kw):
     @return A Node for the .c file
     '''
 
-    if package_sources is None:
-        package_sources = []
     source = env.arg2nodes(source, env.fs.Entry)
     all_targets = []
     for s in source:
-        basename, ext = os.path.splitext(s.srcnode().abspath)
-        srcdir = s.dir.srcnode().path
+        basename, ext = os.path.splitext(os.path.relpath(s.srcnode().path, srcdir.path))
         if ext == '.yy' or ext == '.ll':
             target_ext = env['CXXFILESUFFIX']
         else:
             target_ext = env['CFILESUFFIX']
-        if os.path.exists(basename + target_ext):
-            targets = [env.File(basename + target_ext)]
-            if ext == '.y' or ext == '.yy':
-                targets.append(env.File(basename + '.h'))
-            package_sources.extend(targets)
-        else:
-            targets = func(s, **kw)
-            for t in targets:
-                out = env['PACKAGEROOT'].File(srcdir + '/' + t.name)
-                package_sources.extend(env.CopyTo(out, t))
-        all_targets.append(targets[0])
+        target = [basename + target_ext]
+        if ext == '.y' or ext == '.yy':
+            target.append(basename + '.h')
+
+        target = env.BuglePrebuild(
+                target = target,
+                source = [s],
+                srcdir = srcdir,
+                builder = builder,
+                package_sources = package_sources,
+                implicit_target = True,
+                **kw)
+        all_targets.append(target[0])   # Only return the .c node
     return all_targets
 
-def _cfile(env, source, package_sources = None, **kw):
-    return _c_cxx_file(env, env.CFile, source, package_sources, **kw)
+def _cfile(env, source, srcdir, package_sources = None, **kw):
+    return _c_cxx_file(env, env.CFile, source, srcdir, package_sources, **kw)
 
-def _cxxfile(env, source, package_sources = None, **kw):
-    return _c_cxx_file(env, env.CXXFile, source, package_sources, **kw)
+def _cxxfile(env, source, srcdir, package_sources = None, **kw):
+    return _c_cxx_file(env, env.CXXFile, source, srcdir, package_sources, **kw)
+
+def _prebuild_wrapper(env, target, source, srcdir, builder, package_sources = None,
+                      implicit_target = False, **kw):
+    '''
+    Wraps another builder, but if all the targets already exist in srcdir
+    then they are just copied to the target. Additionally, the targets
+    are marked for packaging
+
+    @param target: List of relative filenames to be built
+    @type target: List of strings
+    @param source: List of source nodes
+    @type source: List of nodes and string objects (like any builder)
+    @param srcdir: Directory relative to which targets are searched
+    @type srcdir: Node object
+    @param builder: The underlying builder to use
+    @type builder
+    @param package_sources: A list to be extended with nodes to package
+    @type package_sources: mutable sequence
+    @param implicit_target: If true, the target parameter is not given to the builder
+    @return A list of nodes corresponding to targets
+    '''
+    if package_sources is None:
+        package_sources = []
+    source = env.arg2nodes(source, env.fs.Entry)
+    target = env.Flatten(target)
+    have_as_source = True
+
+    for t in target:
+        srcpath = os.path.join(srcdir.abspath, t)
+        if not os.path.exists(srcpath):
+            have_as_source = False
+            break
+
+    if have_as_source:
+        target = env.arg2nodes(target, env.fs.Entry)
+        target = [env.CopyAs(t, t.srcnode()) for t in target]
+    elif implicit_target:
+        target = builder(source, **kw)
+    else:
+        target = builder(target, source, **kw)
+
+    out = env['PACKAGEROOT'].Dir(srcdir.path)
+    for t in target:
+        package_sources.extend(env.CopyTo(out, t))
+    return target
 
 def generate(env, **kw):
     env.AddMethod(_build_shared_library, 'BugleSharedLibrary')
     env.AddMethod(_cfile, 'BugleCFile')
     env.AddMethod(_cxxfile, 'BugleCXXFile')
+    env.AddMethod(_prebuild_wrapper, 'BuglePrebuild')
 
 def exists(env):
     return 1

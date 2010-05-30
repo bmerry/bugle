@@ -1,26 +1,36 @@
 #!/usr/bin/env python
 import os
 
-Import('aspects', 'version')
+Import('aspects', 'version', 'package_sources', 'srcdir', 'PACKAGEROOT')
 
 # TODO: single.html doesn't see bugle.css in this setup
 if 'docs' in aspects['parts']:
     env = Environment(
             ENV = os.environ,
             DOCBOOKFLAGS = '--stringparam bugle.version ' + version,
-            tools = ['default', 'docbook'])
+            PACKAGEROOT = PACKAGEROOT,
+            tools = ['default', 'docbook', 'buglewrappers'])
     if GetOption('bugle_short'):
         for i in ['DOCBOOK']:
             env[i + 'COMSTR'] = i + ' $TARGET'
+    for i in ['XSLTPROC']:
+        if aspects[i] is not None and aspects[i] != '':
+            env[i] = aspects[i]
 
-    single = env.DocBook(
-            target = 'html/single.html',
-            source = ['xhtml-single.xsl', 'bugle.xml'])
+    single = env.BuglePrebuild(
+            target = ['html/single.html'],
+            source = ['xhtml-single.xsl', 'bugle.xml'],
+            srcdir = srcdir,
+            builder = env.DocBook,
+            package_sources = package_sources)
     single_css = env.Command('html/bugle.css', 'bugle.css', [Copy('$TARGET', '$SOURCE')])
 
-    chunked = env.DocBook(
-            target = 'html/chunked/index.html',
-            source = ['xhtml-chunk.xsl', 'bugle.xml'])
+    chunked = env.BuglePrebuild(
+            target = ['html/chunked/index.html'],
+            source = ['xhtml-chunk.xsl', 'bugle.xml'],
+            srcdir = srcdir,
+            builder = env.DocBook,
+            package_sources = package_sources)
     chunked_css = env.Command('html/chunked/bugle.css', 'bugle.css', [Copy('$TARGET', '$SOURCE')])
     env.Clean(chunked, 'html/chunked')
 

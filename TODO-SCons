@@ -1,9 +1,7 @@
-- packaging rules
 - complete platform layer for win32 (I/O)
 - test new library rules on win32
 - MinGW support
 - allow user to override package detection (esp. for cross-compiling)
-- don't rebuild from .xml if present in source package
 - documentation updates
 - finish adding tests and making portable
 - add abstractions:

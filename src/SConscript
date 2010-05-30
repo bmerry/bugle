@@ -303,9 +303,10 @@ Default(targets['bugleutils'].out)
 if 'interceptor' in aspects['parts']:
     targets['bugle'].update({
         'version': '8.0.0'})
+
     targets['bugle']['source'].extend([
-        envs['host'].BugleCFile(['confparse.y', 'statsparse.y'], package_sources, YACCFLAGS = '-d'),
-        envs['host'].BugleCFile(['conflex.l', 'statslex.l'], package_sources),
+        envs['host'].BugleCFile(['confparse.y', 'statsparse.y'], srcdir, package_sources, YACCFLAGS = '-d'),
+        envs['host'].BugleCFile(['conflex.l', 'statslex.l'], srcdir, package_sources),
         'interceptor.c',
         'filters.c',
         'stats.c',
