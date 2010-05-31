@@ -40,12 +40,21 @@ struct bugle_io_reader
 
 struct bugle_io_writer
 {
+    /* vfprintf equivalent. If NULL, a fallback that formats via a string
+     * followed by fn_write will be used.
+     */
     int (*fn_vprintf)(void *arg, const char *format, va_list ap) BUGLE_ATTRIBUTE_FORMAT_PRINTF(2, 0);
+    /* fputc equivalent. If NULL, fn_write will be used.
+     */
     int (*fn_putc)(int c, void *arg);
+    /* fwrite equivalent. Must not be NULL.
+     */
     size_t (*fn_write)(const void *ptr, size_t size, size_t nmemb, void *arg);
+    /* Function to close down the writer and free resources. Must not be NULL.
+     */
     int (*fn_close)(void *arg);
 
-    void *arg;
+    void *arg;  /* Value passed as the arg to the callbacks */
 };
 
 #ifdef __cplusplus

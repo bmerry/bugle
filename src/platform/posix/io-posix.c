@@ -144,7 +144,6 @@ bugle_io_reader *bugle_io_reader_socket_new(int sock)
 
 typedef struct bugle_io_writer_fd
 {
-    char buffer[BUFFER_SIZE];   /* Buffer for holding printf output */
     int fd;
 } bugle_io_writer_fd;
 
@@ -178,39 +177,6 @@ static size_t fd_write(const void *ptr, size_t size, size_t nmemb, void *arg)
     return nmemb;
 }
 
-static int fd_vprintf(void *arg, const char *format, va_list ap)
-{
-    bugle_io_writer_fd *s;
-    int length;
-    char *buffer;
-    va_list ap2; /* backup copy for second pass */
-    int ret;
-
-    BUGLE_VA_COPY(ap2, ap);
-
-    s = (bugle_io_writer_fd *) arg;
-    length = bugle_vsnprintf(s->buffer, sizeof(s->buffer), format, ap);
-    if (length < sizeof(s->buffer))
-    {
-        ret = fd_write(s->buffer, sizeof(char), length, arg);
-    }
-    else
-    {
-        buffer = bugle_vasprintf(format, ap);
-        ret = fd_write(s->buffer, sizeof(char), length, arg);
-        bugle_free(buffer);
-    }
-    va_end(ap2);
-    return ret;
-}
-
-static int fd_putc(int c, void *arg)
-{
-    char ch;
-    ch = c;
-    return fd_write(&ch, 1, 1, arg);
-}
-
 static int fd_writer_close(void *arg)
 {
     bugle_io_writer_fd *s;
@@ -230,8 +196,8 @@ bugle_io_writer *bugle_io_writer_fd_new(int fd)
     writer = BUGLE_MALLOC(bugle_io_writer);
     s = BUGLE_MALLOC(bugle_io_writer_fd);
 
-    writer->fn_vprintf = fd_vprintf;
-    writer->fn_putc = fd_putc;
+    writer->fn_vprintf = NULL;
+    writer->fn_putc = NULL;
     writer->fn_write = fd_write;
     writer->fn_close = fd_writer_close;
     writer->arg = s;

@@ -61,14 +61,44 @@ int bugle_io_printf(bugle_io_writer *writer, const char *format, ...)
     int ret;
 
     va_start(ap, format);
-    ret = writer->fn_vprintf(writer->arg, format, ap);
+    if (writer->fn_vprintf != NULL)
+        ret = writer->fn_vprintf(writer->arg, format, ap);
+    else
+        ret = bugle_io_vprintf(writer, format, ap);
     va_end(ap);
     return ret;
 }
 
 int bugle_io_vprintf(bugle_io_writer *writer, const char *format, va_list ap)
 {
-    return writer->fn_vprintf(writer->arg, format, ap);
+    if (writer->fn_vprintf != NULL)
+        return writer->fn_vprintf(writer->arg, format, ap);
+    else
+    {
+        int length;
+        char small_buffer[128];
+        char *buffer;
+        int ret;
+        va_list ap2;
+
+        /* Back up the arg list, since if we fall back to a second pass we'll
+         * need it.
+         */
+        BUGLE_VA_COPY(ap2, ap);
+        length = bugle_vsnprintf(small_buffer, sizeof(small_buffer), format, ap);
+        if (length < sizeof(small_buffer))
+        {
+            ret = writer->fn_write(small_buffer, sizeof(char), length, writer->arg);
+        }
+        else
+        {
+            buffer = bugle_vasprintf(format, ap2);
+            ret = writer->fn_write(buffer, sizeof(char), length, writer->arg);
+            bugle_free(buffer);
+        }
+        va_end(ap2);
+        return ret;
+    }
 }
 
 size_t bugle_io_write(const void *ptr, size_t size, size_t nmemb, bugle_io_writer *writer)
@@ -78,7 +108,13 @@ size_t bugle_io_write(const void *ptr, size_t size, size_t nmemb, bugle_io_write
 
 int bugle_io_putc(int c, bugle_io_writer *writer)
 {
-    return writer->fn_putc(c, writer->arg);
+    if (writer->fn_putc != NULL)
+        return writer->fn_putc(c, writer->arg);
+    else
+    {
+        char ch = c;
+        return writer->fn_write(&ch, 1, 1, writer->arg);
+    }
 }
 
 int bugle_io_puts(const char *s, bugle_io_writer *writer)
