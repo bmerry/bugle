@@ -12,11 +12,10 @@ An enhanced version of the SCons SharedLibrary builder, that handles
 
 def _relpath(path, start):
     """
-    Same idea as os.path.relpath, but intended to be independent of the host
-    pathname conventions.
+    Same idea as os.path.relpath, but without requiring Python 2.6.
     """
-    src = path.split('/')
-    trg = path.split('/')
+    src = start.split(os.path.sep)
+    trg = path.split(os.path.sep)
     while src and trg and src[0] == trg[0]:
         del src[0:1]
         del trg[0:1]
@@ -98,14 +97,13 @@ def _build_shared_library(env, binfmt, target, source, bindir = None, libdir = N
                 env.Alias('install', bindir)
             return [lib]
         elif 'mingw' in env['TOOLS']:
-            dll = env.SharedLibrary(target, source, **kw)
+            outputs = env.SharedLibrary(target, source, **kw)
             if bindir is not None:
-                env.Install(target = bindir, source = dll)
+                env.Install(target = bindir, source = outputs[0])
                 env.Alias('install', bindir)
-            return [dll]
+            return [outputs[0]]
         else:
             raise NotImplemented, 'Do not know how to build shared libraries for PE without MSVC'
-            # TODO what does mingw output?
     else:
         raise NotImplemented, 'Do not know how to build shared libraries for ' + binfmt
 
