@@ -138,7 +138,7 @@ string function_type_to_string(tree_node_p type, const string &name,
     }
     if (cur == NULL_TREE && count)
         fname << ", ...";
-    if (!count && cur != NULL_TREE) fname << "void";
+    if (!count) fname << "void";
     fname << ")";
 
     return type_to_string(TREE_TYPE(type), fname.str(), false);

@@ -97,8 +97,6 @@ void bugle_thread_rwlock_wrlock(bugle_thread_rwlock_t *rwlock)
 
 void bugle_thread_rwlock_unlock(bugle_thread_rwlock_t *rwlock)
 {
-    bugle_bool is_writer;
-
     /* If there are any readers, we must be a reader. Otherwise, we
      * are a writer and RWLOCK_WRITER_BIT must be set.
      */

@@ -85,7 +85,9 @@ def apply_compiler(env, compiler, config):
     elif compiler == 'mingw':
         env.Tool('mingw')
         env.AppendUnique(CCFLAGS = ['-Wall'])
-        env.AppendUnique(CFLAGS = ['-std=c89', '-Wstrict-prototypes'])
+        # We can't use -std=c89 on MinGW because there is no equivalent to
+        # _POSIX_C_SOURCE to turn on MSVCRT extensions in headers
+        env.AppendUnique(CFLAGS = ['-D__USE_MINGW_ANSI_STDIO=1', '-Wstrict-prototypes'])
         if config == 'debug':
             env.AppendUnique(CCFLAGS = ['-g'])
         elif config == 'release':
