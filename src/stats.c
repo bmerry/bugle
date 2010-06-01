@@ -133,6 +133,7 @@ double bugle_stats_expression_evaluate(const stats_expression *expr,
         }
     }
     abort(); /* Should never be reached */
+    return 0.0;  /* Unreachable, but keeps compilers quiet */
 }
 
 void bugle_stats_signal_update(stats_signal *si, double v)

@@ -83,7 +83,7 @@ static FILE *log_get_file(int target)
     case LOG_TARGET_STDOUT: return stdout;
     case LOG_TARGET_STDERR: return stderr;
     case LOG_TARGET_FILE:   return log_file;
-    default: assert(0);
+    default: assert(0); return NULL;
     }
 }
 

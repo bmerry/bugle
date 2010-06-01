@@ -18,3 +18,4 @@
 - add platform layer for glib?
 - add platform layer for gnulib?
 - separate platform tests from GL/API tests
+- fix build rules for chunked HTML to copy and package all the .html files
