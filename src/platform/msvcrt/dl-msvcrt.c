@@ -1,5 +1,5 @@
 /*  BuGLe: an OpenGL debugging tool
- *  Copyright (C) 2009  Bruce Merry
+ *  Copyright (C) 2009, 2010  Bruce Merry
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -24,6 +24,7 @@
 #include <assert.h>
 #include <bugle/string.h>
 #include <bugle/log.h>
+#include <bugle/memory.h>
 #include "platform/dl.h"
 #include <io.h>
 
@@ -36,7 +37,6 @@ bugle_dl_module bugle_dl_open(const char *filename, int flag)
 {
     char *fullname = NULL;
     void *handle;
-    int dlopen_flag = 0;
 
     assert(filename != NULL);
 
@@ -77,7 +77,6 @@ void bugle_dl_enable_interception(void)
 
 void bugle_dl_foreach(const char *path, void (*callback)(const char *filename, void *arg), void *arg)
 {
-    struct dirent *item;
     intptr_t handle;
     char *spec;
     struct _finddata_t data;
