@@ -26,50 +26,6 @@
 #include <stdio.h>
 #include "platform/macros.h"
 
-int bugle_snprintf(char *str, size_t size, const char *format, ...)
-{
-    va_list ap;
-    int ret;
-
-    va_start(ap, format);
-    ret = bugle_vsnprintf(str, size, format, ap);
-    va_end(ap);
-    return ret;
-}
-
-int bugle_vsnprintf(char *str, size_t size, const char *format, va_list ap)
-{
-    /* MSVC's vsnprintf fails to be C99-compliant in several ways:
-     * - on overflow, returns -1 instead of string length
-     * - on overflow, completely fills the buffer without a \0
-     * vsnprintf_s with _TRUNCATE fixes the latter but not the former.
-     *
-     * We try once, if it doesn't fit we have no choice but to actually
-     * allocate a big enough buffer just to find out how big the string is.
-     *
-     * However, MinGW provides a C99-compliant replacement.
-     */
-#if __USE_MINGW_ANSI_STDIO
-    return vsnprintf(str, size, format, ap);
-#else
-    va_list ap2;
-    int ret;
-    char *buffer = NULL;
-
-    BUGLE_VA_COPY(ap2, ap);
-    ret = vsnprintf_s(str, size, _TRUNCATE, format, ap);
-
-    if (ret < 0)
-    {
-        buffer = bugle_vasprintf(format, ap2);
-        ret = strlen(buffer);
-        bugle_free(buffer);
-    }
-    va_end(ap2);
-    return ret;
-#endif /* !__USE_MINGW_ANSI_STDIO */
-}
-
 char *bugle_asprintf(const char *format, ...)
 {
     va_list ap;
@@ -88,21 +44,8 @@ char *bugle_vasprintf(const char *format, va_list ap)
      * - on overflow, completely fills the buffer without a \0
      * vsnprintf_s with _TRUNCATE fixes the latter but not the former.
      *
-     * MinGW provides a working replacement.
+     * Note that MinGW provides a working replacement.
      */
-#if __USE_MINGW_ANSI_STDIO
-    va_list ap2;
-    size_t len;
-    char *buffer;
-    BUGLE_VA_COPY(ap2, ap);
-
-    len = vsnprintf(NULL, 0, format, ap);
-    va_end(ap);
-    buffer = BUGLE_NMALLOC(len + 1, char);
-    vsnprintf(buffer, len + 1, format, ap2);
-    va_end(ap2);
-    return buffer;
-#else
 
     char *buffer;
     size_t size;
@@ -125,14 +68,5 @@ char *bugle_vasprintf(const char *format, va_list ap)
         size *= 2;
         buffer = BUGLE_NREALLOC(buffer, size, char);
     }
-#endif /* !__USE_MINGW_ANSI_STDIO */
 }
 
-char *bugle_strdup(const char *str)
-{
-    char *ret;
-
-    ret = _strdup(str);
-    if (ret == NULL) bugle_alloc_die();
-    return ret;
-}

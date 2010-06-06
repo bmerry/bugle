@@ -18,7 +18,6 @@
 #if HAVE_CONFIG_H
 # include <config.h>
 #endif
-#include "platform_config.h"
 #include <bugle/string.h>
 #include <bugle/memory.h>
 #include <stddef.h>
@@ -33,46 +32,37 @@ int bugle_snprintf(char *str, size_t size, const char *format, ...)
     int ret;
 
     va_start(ap, format);
-    ret = vsnprintf(str, size, format, ap);
+    ret = bugle_vsnprintf(str, size, format, ap);
     va_end(ap);
     return ret;
 }
 
 int bugle_vsnprintf(char *str, size_t size, const char *format, va_list ap)
 {
-    return vsnprintf(str, size, format, ap);
-}
-
-char *bugle_asprintf(const char *format, ...)
-{
-    va_list ap;
-    char *ret;
-
-    va_start(ap, format);
-    ret = bugle_vasprintf(format, ap);
-    va_end(ap);
-    return ret;
-}
-
-char *bugle_vasprintf(const char *format, va_list ap)
-{
-#if HAVE_VASPRINTF
-    char *ret = NULL;
-    int status = vasprintf(&ret, format, ap);
-    if (status < 0)
-        bugle_alloc_die();
-    return ret;
-#else /* !HAVE_VASPRINTF */
-    char *ret;
-    int len;
+    /* MSVC's vsnprintf fails to be C99-compliant in several ways:
+     * - on overflow, returns -1 instead of string length
+     * - on overflow, completely fills the buffer without a \0
+     * vsnprintf_s with _TRUNCATE fixes the latter but not the former.
+     *
+     * We try once, if it doesn't fit we have no choice but to actually
+     * allocate a big enough buffer just to find out how big the string is
+     * (which in turn works by successive doubling...)
+     *
+     * Note that MinGW provides a C99-compliant replacement.
+     */
     va_list ap2;
+    int ret;
+    char *buffer = NULL;
 
     BUGLE_VA_COPY(ap2, ap);
+    ret = vsnprintf_s(str, size, _TRUNCATE, format, ap);
 
-    len = vsnprintf(NULL, 0, format, ap2);
+    if (ret < 0)
+    {
+        buffer = bugle_vasprintf(format, ap2);
+        ret = strlen(buffer);
+        bugle_free(buffer);
+    }
     va_end(ap2);
-    ret = BUGLE_NMALLOC(len + 1, char);
-    vsnprintf(ret, len, format, ap);
     return ret;
-#endif
 }

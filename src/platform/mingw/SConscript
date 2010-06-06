@@ -20,19 +20,23 @@ envs['host'].Append(CPPPATH = [srcdir, Dir('.')],
 
 platform_env = internal_checks(envs['host'].Clone())
 
+# Don't use -std=c89, otherwise we don't get MSVCRT functions like _strdup
+platform_env.AppendUnique(CFLAGS = ['-std=gnu89'])
+platform_env.Append(CPPDEFINES = [('__USE_MINGW_ANSI_STDIO', 1)])
+
 targets['bugleutils']['source'].extend(platform_env.SharedObject(source = [
-    '../cosf_pass.c',
+    '../cosf_soft.c',
     '../gettime_queryperformancecounter.c',
-    '../isfinite_msvcrt.c',
-    '../isnan_msvcrt.c',
+    '../isfinite_pass.c',
+    '../isnan_pass.c',
     '../nan_soft.c',
     '../round_soft.c',
-    '../sinf_pass.c',
+    '../sinf_soft.c',
     '../strdup_msvcrt.c',
     '../strndup_soft.c',
     '../threads_msvcrt.c',
-    '../vasprintf_msvcrt.c',
-    '../vsnprintf_msvcrt.c']))
+    '../vasprintf_vsnprintf.c',
+    '../vsnprintf_pass.c']))
 
 targets['bugle']['source'].extend(platform_env.SharedObject(source = [
     '../dl_loadlibrary.c'

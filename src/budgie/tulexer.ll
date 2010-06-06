@@ -184,6 +184,7 @@ rest of the record, find the length, then replace what we don't need.
 "tag : union"           { yylnode->flag_union = true; }
 "body: undefined"       { yylnode->flag_undefined = true; }
 "link: extern"          { yylnode->flag_extern = true; }
+"link: static"          /* Ignore */
 "sign: signed"          { yylnode->flag_unsigned = false; }
 "sign: unsigned"        { yylnode->flag_unsigned = true; }
 "note: artificial"      /* Ignore these fields */

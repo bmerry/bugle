@@ -32,12 +32,4 @@ int bugle_vsnprintf(char *str, size_t size, const char *format, va_list ap)
     return 0;
 }
 
-char *bugle_asprintf(const char *format, ...)
-{
-    return NULL;
-}
 
-char *bugle_vasprintf(const char *format, va_list ap)
-{
-    return NULL;
-}

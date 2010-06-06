@@ -18,33 +18,11 @@
 #if HAVE_CONFIG_H
 # include <config.h>
 #endif
+#include "platform_config.h"
 #include <bugle/math.h>
 #include <math.h>
-#include <float.h>
-#include <stddef.h>
-#include <stdlib.h>
-
-int bugle_isfinite(double x)
-{
-    return _finite(x);
-}
-
-int bugle_isnan(double x)
-{
-    return _isnan(x);
-}
-
-double bugle_round(double x)
-{
-    return floor(x + 0.5);
-}
 
 float bugle_sinf(float x)
 {
     return sinf(x);
-}
-
-float bugle_cosf(float x)
-{
-    return cosf(x);
 }

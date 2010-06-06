@@ -18,14 +18,16 @@ def host_compiler_default(aspect):
 
 def platform_default(aspect):
     compiler = aspects['host-compiler']
-    if compiler == 'msvc' or compiler == 'mingw':
+    if compiler == 'msvc':
         return 'msvcrt'
+    elif compiler == 'mingw':
+        return 'mingw'
     else:
         return 'posix'
 
 def winsys_default(aspect):
     platform = aspects['platform']
-    if platform == 'msvcrt':
+    if platform == 'msvcrt' or platform == 'mingw':
         return 'windows'
     else:
         return 'x11'
@@ -45,14 +47,14 @@ def glwin_default(aspect):
 
 def fs_default(aspect):
     platform = aspects['platform']
-    if platform == 'msvcrt':
+    if platform == 'msvcrt' or platform == 'mingw':
         return 'cygming'    # TODO add windows fs
     else:
         return 'unix'
 
 def binfmt_default(aspect):
     platform = aspects['platform']
-    if platform == 'msvcrt':
+    if platform == 'msvcrt' or platform == 'mingw':
         return 'pe'
     else:
         return 'elf'
@@ -122,7 +124,7 @@ def setup_aspects():
         group = 'variant',
         name = 'platform',
         help = 'C runtime libraries',
-        choices = ['posix', 'msvcrt', 'null'],
+        choices = ['posix', 'mingw', 'msvcrt', 'null'],
         default = platform_default))
     aspects.AddAspect(Aspect(
         group = 'subvariant',
@@ -538,41 +540,56 @@ package_sources.extend([
     'src/interceptor.c',
     'src/log.c',
     'src/objects.c',
+    'src/platform/cosf_pass.c',
+    'src/platform/cosf_soft.c',
     'src/platform/dl.h',
-    'src/platform/fallback/bugle_cosf.c',
-    'src/platform/fallback/bugle_isnan.c',
-    'src/platform/fallback/bugle_nan.c',
-    'src/platform/fallback/bugle_sinf.c',
-    'src/platform/fallback/bugle_strdup.c',
-    'src/platform/fallback/bugle_strndup.c',
+    'src/platform/dl_dlopen.c',
+    'src/platform/dl_loadlibrary.c',
+    'src/platform/dl_null.c',
+    'src/platform/gettime_null.c',
+    'src/platform/gettime_posix.c',
+    'src/platform/gettime_queryperformancecounter.c',
+    'src/platform/io_null.c',
+    'src/platform/io_posix.c',
+    'src/platform/isfinite_msvcrt.c',
+    'src/platform/isfinite_null.c',
+    'src/platform/isfinite_pass.c',
+    'src/platform/isnan_msvcrt.c',
+    'src/platform/isnan_pass.c',
+    'src/platform/isnan_soft.c',
+    'src/platform/mingw/SConscript',
+    'src/platform/mingw/platform/macros.h',
+    'src/platform/mingw/platform/threads.h',
+    'src/platform/mingw/platform/types.h',
     'src/platform/msvcrt/SConscript',
-    'src/platform/msvcrt/dl-msvcrt.c',
-    'src/platform/msvcrt/math-msvcrt.c',
     'src/platform/msvcrt/platform/macros.h',
     'src/platform/msvcrt/platform/threads.h',
     'src/platform/msvcrt/platform/types.h',
-    'src/platform/msvcrt/string-msvcrt.c',
-    'src/platform/msvcrt/threads-msvcrt.c',
-    'src/platform/msvcrt/time-msvcrt.c',
-    'src/platform/null/SConscript',
-    'src/platform/null/dl-null.c',
-    'src/platform/null/io-null.c',
-    'src/platform/null/math-null.c',
+    'src/platform/nan_soft.c',
+    'src/platform/nan_strtod.c',
     'src/platform/null/platform/macros.h',
     'src/platform/null/platform/threads.h',
     'src/platform/null/platform/types.h',
-    'src/platform/null/string-null.c',
-    'src/platform/null/time-null.c',
     'src/platform/posix/SConscript',
-    'src/platform/posix/dl-posix.c',
     'src/platform/posix/dlopen.c',
-    'src/platform/posix/io-posix.c',
-    'src/platform/posix/math-posix.c',
     'src/platform/posix/platform/macros.h',
     'src/platform/posix/platform/threads.h',
     'src/platform/posix/platform/types.h',
-    'src/platform/posix/string-posix.c',
-    'src/platform/posix/time-posix.c',
+    'src/platform/round_pass.c',
+    'src/platform/round_soft.c',
+    'src/platform/sinf_pass.c',
+    'src/platform/sinf_soft.c',
+    'src/platform/strdup_msvcrt.c',
+    'src/platform/strdup_pass.c',
+    'src/platform/strndup_soft.c',
+    'src/platform/threads_msvcrt.c',
+    'src/platform/vasprintf_msvcrt.c',
+    'src/platform/vasprintf_null.c',
+    'src/platform/vasprintf_pass.c',
+    'src/platform/vasprintf_vsnprintf.c',
+    'src/platform/vsnprintf_msvcrt.c',
+    'src/platform/vsnprintf_null.c',
+    'src/platform/vsnprintf_pass.c',
     'src/stats.c',
     'src/statslex.l',
     'src/statsparse.y',

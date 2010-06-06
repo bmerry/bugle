@@ -18,16 +18,13 @@
 #if HAVE_CONFIG_H
 # include <config.h>
 #endif
+#include "platform_config.h"
 #include <bugle/math.h>
 #include <math.h>
-#include <stddef.h>
-
-int bugle_isfinite(double x)
-{
-    return 0;
-}
 
 double bugle_round(double x)
 {
-    return 0.0;
+    return round(x);
 }
+
+

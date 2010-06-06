@@ -15,18 +15,40 @@
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#ifndef BUGLE_PLATFORM_MACROS_H
-#define BUGLE_PLATFORM_MACROS_H
-
-#include <stdarg.h>
-
-/* GCC does not define va_copy when using -std=c89, even if _POSIX_C_SOURCE
- * is set. However, it will define __va_copy instead.
- */
-#if defined(__va_copy) && !defined(va_copy)
-# define BUGLE_VA_COPY(trg, src) __va_copy(trg, src)
-#else
-# define BUGLE_VA_COPY(trg, src) va_copy(trg, src)
+#if HAVE_CONFIG_H
+# include <config.h>
 #endif
+#include "platform_config.h"
+#include <bugle/string.h>
+#include <bugle/memory.h>
+#include <stddef.h>
+#include <stdarg.h>
+#include <string.h>
+#include <stdio.h>
+#include "platform/macros.h"
 
-#endif /* BUGLE_PLATFORM_MACROS_H */
+char *bugle_asprintf(const char *format, ...)
+{
+    va_list ap;
+    char *ret;
+
+    va_start(ap, format);
+    ret = bugle_vasprintf(format, ap);
+    va_end(ap);
+    return ret;
+}
+
+char *bugle_vasprintf(const char *format, va_list ap)
+{
+    char *ret;
+    int len;
+    va_list ap2;
+
+    BUGLE_VA_COPY(ap2, ap);
+
+    len = vsnprintf(NULL, 0, format, ap2);
+    va_end(ap2);
+    ret = BUGLE_NMALLOC(len + 1, char);
+    vsnprintf(ret, len, format, ap);
+    return ret;
+}

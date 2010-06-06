@@ -21,35 +21,9 @@
 #include "platform_config.h"
 #include <bugle/math.h>
 #include <math.h>
-#include <stddef.h>
-#include <stdlib.h>
-
-int bugle_isfinite(double x)
-{
-    return isfinite(x);
-}
+#include <float.h>
 
 int bugle_isnan(double x)
 {
-    return isnan(x);
-}
-
-double bugle_nan(void)
-{
-    return strtod("NAN", NULL);
-}
-
-double bugle_round(double x)
-{
-    return round(x);
-}
-
-float bugle_sinf(float x)
-{
-    return sinf(x);
-}
-
-float bugle_cosf(float x)
-{
-    return cosf(x);
+    return _isnan(x);
 }

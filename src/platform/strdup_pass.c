@@ -15,18 +15,19 @@
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#ifndef BUGLE_PLATFORM_MACROS_H
-#define BUGLE_PLATFORM_MACROS_H
-
-#include <stdarg.h>
-
-/* GCC does not define va_copy when using -std=c89, even if _POSIX_C_SOURCE
- * is set. However, it will define __va_copy instead.
- */
-#if defined(__va_copy) && !defined(va_copy)
-# define BUGLE_VA_COPY(trg, src) __va_copy(trg, src)
-#else
-# define BUGLE_VA_COPY(trg, src) va_copy(trg, src)
+#if HAVE_CONFIG_H
+# include <config.h>
 #endif
+#include <bugle/string.h>
+#include <bugle/memory.h>
+#include <stddef.h>
+#include <string.h>
 
-#endif /* BUGLE_PLATFORM_MACROS_H */
+char *bugle_strdup(const char *str)
+{
+    char *ret;
+
+    ret = strdup(str);
+    if (ret == NULL) bugle_alloc_die();
+    return ret;
+}

@@ -14,7 +14,7 @@ def header_checks(env):
     conf.Define('_POSIX_C_SOURCE', '200112L', 'Enable IEEE 1003.1-2001 functionality')
     return conf.Finish()
 
-def internal_checks(env):
+def internal_checks(env, features):
     '''
     Checks that will only affect C files in the platform directory.
     '''
@@ -26,7 +26,9 @@ def internal_checks(env):
     # Get benefit of as many extensions as possible
     conf.Define('_XOPEN_SOURCE', '600')
     conf.Define('_GNU_SOURCE', '1')
-    conf.CheckFunc('vasprintf')
+    features['vasprintf'] = conf.CheckFunc('vasprintf')
+    features['strdup'] = conf.CheckFunc('strdup')
+    features['strndup'] = conf.CheckFunc('strndup')
     return conf.Finish()
 
 Import('envs', 'targets', 'srcdir')
@@ -35,19 +37,31 @@ envs['host'].Append(CPPPATH = [srcdir, Dir('.')])
 envs['host'].MergeFlags('-pthread -lrt')
 envs['host'] = header_checks(envs['host'])
 
-platform_env = internal_checks(envs['host'].Clone())
+features = {}
+platform_env = internal_checks(envs['host'].Clone(), features)
 
-targets['bugleutils']['source'].extend(platform_env.SharedObject(source = [
-    'string-posix.c',
-    'math-posix.c',
-    'io-posix.c',
-    'time-posix.c',
-    '../fallback/bugle_strdup.c',
-    '../fallback/bugle_strndup.c'
-    ]))
+sources = [
+    '../cosf_pass.c',
+    '../gettime_posix.c',
+    '../io_posix.c',
+    '../isfinite_pass.c',
+    '../isnan_pass.c',
+    '../nan_strtod.c',
+    '../round_pass.c',
+    '../sinf_pass.c',
+    '../strndup_soft.c',
+    '../vsnprintf_pass.c']
+if features['strdup']:
+    sources.append('../strdup_pass.c')
+else:
+    sources.append('../strdup_soft.c')
+if features['vasprintf']:
+    sources.append('../vasprintf_pass.c')
+else:
+    sources.append('../vasprintf_vsnprintf.c')
+targets['bugleutils']['source'].extend(platform_env.SharedObject(source = sources))
 
 targets['bugle']['LIBS'].append('dl')
 targets['bugle']['source'].extend(platform_env.SharedObject(source = [
-    'dl-posix.c',
-    'dlopen.c'
-    ]))
+    '../dl_dlopen.c',
+    'dlopen.c']))

@@ -18,17 +18,11 @@
 #if HAVE_CONFIG_H
 # include <config.h>
 #endif
-#include <bugle/string.h>
-#include <bugle/memory.h>
-#include <string.h>
+#include "platform_config.h"
+#include <bugle/math.h>
+#include <math.h>
 
-char *bugle_strdup(const char *str)
+int bugle_isfinite(double x)
 {
-    char *ret;
-    size_t len = strlen(str);
-
-    ret = BUGLE_NMALLOC(len + 1, char);
-    memcpy(ret, str, len * sizeof(char));
-    ret[len] = '\0';
-    return ret;
+    return isfinite(x);
 }

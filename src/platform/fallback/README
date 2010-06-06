@@ -1,4 +1,0 @@
-This directory is not itself a supported platform, but contains fallback
-versions of a number of functions that do not strictly require OS kernel
-support (such as string functions), for use in platforms where the system
-libraries do not provide the functionality.
