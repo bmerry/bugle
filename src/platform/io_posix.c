@@ -41,8 +41,6 @@
 #include "platform/macros.h"
 #include "common/io-impl.h"
 
-#define BUFFER_SIZE 256
-
 typedef struct bugle_io_reader_fd
 {
     int fd;
@@ -136,12 +134,6 @@ bugle_io_reader *bugle_io_reader_fd_new(int fd)
     return reader;
 }
 
-bugle_io_reader *bugle_io_reader_socket_new(int sock)
-{
-    /* On POSIX, sockets are the same as file descriptors */
-    return bugle_io_reader_fd_new(sock);
-}
-
 typedef struct bugle_io_writer_fd
 {
     int fd;
@@ -184,6 +176,7 @@ static int fd_writer_close(void *arg)
 
     s = (bugle_io_writer_fd *) arg;
     ret = close(s->fd);
+    bugle_free(s);
     if (ret == -1) return EOF;
     else return ret;
 }
@@ -205,12 +198,6 @@ bugle_io_writer *bugle_io_writer_fd_new(int fd)
     s->fd = fd;
 
     return writer;
-}
-
-bugle_io_writer *bugle_io_writer_socket_new(int sock)
-{
-    /* On POSIX, sockets are the same as file descriptors */
-    return bugle_io_writer_fd_new(sock);
 }
 
 static int _bugle_strerror_r(int errnum, char *errbuf, size_t buflen)
@@ -241,7 +228,7 @@ static int _bugle_strerror_r(int errnum, char *errbuf, size_t buflen)
 char *bugle_io_socket_listen(const char *host, const char *port, bugle_io_reader **reader, bugle_io_writer **writer)
 {
     int listen_sock;
-    int sock;
+    int sock, write_sock;
     int status;
     struct addrinfo hints, *ai;
     char err_buffer[1024];
@@ -294,9 +281,21 @@ char *bugle_io_socket_listen(const char *host, const char *port, bugle_io_reader
         return bugle_asprintf("failed to accept a connection on %s:%s: %s",
                               host ? host : "", port, err_buffer);
     }
+    freeaddrinfo(ai);
     close(listen_sock);
 
+    /* reader and writer can be closed independently, so we need two handles
+     * to the underlying socket
+     */
+    write_sock = dup(sock);
+    if (write_sock == -1)
+    {
+        _bugle_strerror_r(errno, err_buffer, sizeof(err_buffer));
+        close(sock);
+        return bugle_asprintf("failed to duplicate socket: %s", err_buffer);
+    }
+
     *reader = bugle_io_reader_fd_new(sock);
-    *writer = bugle_io_writer_fd_new(sock);
+    *writer = bugle_io_writer_fd_new(write_sock);
     return NULL;
 }

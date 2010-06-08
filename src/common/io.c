@@ -45,7 +45,9 @@ bugle_bool bugle_io_reader_has_data(bugle_io_reader *reader)
 
 int bugle_io_reader_close(bugle_io_reader *reader)
 {
-    return reader->fn_close(reader->arg);
+    int ret = reader->fn_close(reader->arg);
+    free(reader);
+    return ret;
 }
 
 typedef struct bugle_io_writer_mem
