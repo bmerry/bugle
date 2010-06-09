@@ -29,6 +29,10 @@
 # include <config.h>
 #endif
 #include "platform_config.h"
+/* getaddrinfo only exists on XP and newer */
+#ifndef WINVER
+# define WINVER 0x0501
+#endif
 #ifndef WIN32_LEAN_AND_MEAN
 # define WIN32_LEAN_AND_MEAN
 #endif
@@ -274,7 +278,7 @@ static void wsa_initialise(void)
 char *bugle_io_socket_listen(const char *host, const char *port, bugle_io_reader **reader, bugle_io_writer **writer)
 {
     int listen_sock;
-    int sock, write_sock;
+    int sock;
     int status;
     struct addrinfo hints, *ai;
 
@@ -288,7 +292,14 @@ char *bugle_io_socket_listen(const char *host, const char *port, bugle_io_reader
     hints.ai_family = AF_UNSPEC;        /* supports IPv4 and IPv6 */
     hints.ai_socktype = SOCK_STREAM;
     hints.ai_protocol = IPPROTO_TCP;
-    hints.ai_flags = AI_V4MAPPED | AI_ADDRCONFIG | AI_PASSIVE;
+    /* Mingw doesn't define AI_V4MAPPED or AI_ADDRCONFIG */
+    hints.ai_flags = AI_PASSIVE;
+#ifdef AI_V4MAPPED
+    hints.ai_flags |= AI_V4MAPPED;
+#endif
+#ifdef AI_ADDRCONFIG
+    hints.ai_flags |= AI_ADDRCONFIG;
+#endif
     status = getaddrinfo(host, port, &hints, &ai);
     if (status != 0 || ai == NULL)
     {

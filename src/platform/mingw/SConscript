@@ -16,7 +16,7 @@ def internal_checks(env):
 Import('envs', 'srcdir', 'targets')
 
 envs['host'].Append(CPPPATH = [srcdir, Dir('.')],
-    LIBS = ['user32', 'kernel32'])
+    LIBS = ['user32', 'kernel32', 'ws2_32'])
 
 platform_env = internal_checks(envs['host'].Clone())
 
