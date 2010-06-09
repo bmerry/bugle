@@ -29,19 +29,27 @@
 # include <config.h>
 #endif
 #include "platform_config.h"
-#ifndef _WIN32_LEAN_AND_MEAN
-# define _WIN32_LEAN_AND_MEAN
+#ifndef WIN32_LEAN_AND_MEAN
+# define WIN32_LEAN_AND_MEAN
 #endif
 #include <windows.h>
 #include <winsock2.h>
+#include <ws2tcpip.h>
 #include <time.h>
 #include <io.h>
+#include <string.h>
+#include <bugle/bool.h>
+#include <bugle/io.h>
+#include <bugle/memory.h>
+#include <bugle/string.h>
+#include "common/io-impl.h"
+#include "platform/threads.h"
 
-enum bugle_io_handle_type
+typedef enum
 {
     BUGLE_HANDLE_TYPE_SOCKET,
     BUGLE_HANDLE_TYPE_FILE
-};
+} bugle_io_handle_type;
 
 typedef struct bugle_io_reader_handle
 {
@@ -79,15 +87,15 @@ static bugle_bool handle_has_data(void *arg)
     switch (s->type)
     {
     case BUGLE_HANDLE_TYPE_FILE:
-        return bugle_true;
+        return BUGLE_TRUE;
     case BUGLE_HANDLE_TYPE_SOCKET:
         {
             fd_set readfds;
             int status;
             const struct timeval timeout = {0, 0};
 
-            FD_ZERO(readfds);
-            FD_SET(s->handle, readfds);
+            FD_ZERO(&readfds);
+            FD_SET((SOCKET) s->handle, &readfds);
             status = select(1, &readfds, NULL, NULL, &timeout);
             if (status > 0)
                 return BUGLE_TRUE;  /* data available now */
@@ -112,7 +120,7 @@ static int handle_reader_close(void *arg)
     switch (s->type)
     {
     case BUGLE_HANDLE_TYPE_SOCKET:
-        if (closesocket(s->handle) == 0)
+        if (closesocket((SOCKET) s->handle) == 0)
             ret = 0;
         else
             ret = EOF;
@@ -124,6 +132,8 @@ static int handle_reader_close(void *arg)
             ret = EOF;
         break;
     }
+    bugle_free(arg);
+    return ret;
 }
 
 static bugle_io_reader *bugle_io_reader_handle_new(HANDLE handle, bugle_io_handle_type type, bugle_bool do_close)
@@ -145,14 +155,13 @@ static bugle_io_reader *bugle_io_reader_handle_new(HANDLE handle, bugle_io_handl
     return reader;
 }
 
-bugle_io_reader *bugle_io_reader_fd_new(HANDLE fd)
+bugle_io_reader *bugle_io_reader_fd_new(int fd)
 {
-    return bugle_io_reader_handle_new(fd, BUGLE_HANDLE_TYPE_FILE, BUGLE_TRUE);
-}
-
-bugle_io_reader *bugle_io_reader_socket_new(SOCKET fd)
-{
-    return bugle_io_reader_handle_new(fd, BUGLE_HANDLE_TYPE_SOCKET, BUGLE_TRUE);
+    HANDLE handle = (HANDLE) _get_osfhandle(fd);
+    if (handle == INVALID_HANDLE_VALUE)
+        return NULL;
+    else
+        return bugle_io_reader_handle_new(handle, BUGLE_HANDLE_TYPE_FILE, BUGLE_TRUE);
 }
 
 typedef struct bugle_io_writer_handle
@@ -193,7 +202,7 @@ static int handle_writer_close(void *arg)
     switch (s->type)
     {
     case BUGLE_HANDLE_TYPE_SOCKET:
-        if (closesocket(s->handle) == 0)
+        if (closesocket((SOCKET) s->handle) == 0)
             ret = 0;
         else
             ret = EOF;
@@ -205,6 +214,8 @@ static int handle_writer_close(void *arg)
             ret = EOF;
         break;
     }
+    bugle_free(arg);
+    return ret;
 }
 
 static bugle_io_writer *bugle_io_writer_handle_new(HANDLE handle, bugle_io_handle_type type, bugle_bool do_close)
@@ -218,8 +229,8 @@ static bugle_io_writer *bugle_io_writer_handle_new(HANDLE handle, bugle_io_handl
     writer->fn_vprintf = NULL;
     writer->fn_putc = NULL;
     writer->fn_write = handle_write;
-    reader->fn_close = handle_writer_close;
-    reader->arg = s;
+    writer->fn_close = handle_writer_close;
+    writer->arg = s;
 
     s->handle = handle;
     s->type = type;
@@ -229,19 +240,104 @@ static bugle_io_writer *bugle_io_writer_handle_new(HANDLE handle, bugle_io_handl
 
 bugle_io_writer *bugle_io_writer_fd_new(int fd)
 {
-    HANDLE handle = _get_osfhandle(fd);
+    HANDLE handle = (HANDLE) _get_osfhandle(fd);
     if (handle == INVALID_HANDLE_VALUE)
         return NULL;
     else
         return bugle_io_writer_handle_new(handle, BUGLE_HANDLE_TYPE_FILE, BUGLE_TRUE);
 }
 
-static bugle_io_writer *bugle_io_writer_socket_new(SOCKET sock)
+static bugle_bool wsa_initialised = BUGLE_FALSE;
+
+BUGLE_CONSTRUCTOR(wsa_initialise);
+static void wsa_initialise(void)
 {
-    return bugle_io_writer_handle_new(sock, BUGLE_HANDLE_TYPE_SOCKET, BUGLE_TRUE);
+    WSADATA wsa_data;
+    int error;
+    WORD version = MAKEWORD(2, 2);
+
+    /* Request version 2.2 */
+    error = WSAStartup(version, &wsa_data);
+    if (error != 0)
+        return;
+
+    /* Winsock isn't required to give us what we asked for */
+    if (wsa_data.wVersion != version)
+    {
+        WSACleanup();
+        return;
+    }
+
+    wsa_initialised = BUGLE_TRUE;
 }
 
 char *bugle_io_socket_listen(const char *host, const char *port, bugle_io_reader **reader, bugle_io_writer **writer)
 {
-    /* TODO */
+    int listen_sock;
+    int sock, write_sock;
+    int status;
+    struct addrinfo hints, *ai;
+
+    BUGLE_RUN_CONSTRUCTOR(wsa_initialise);
+    if (!wsa_initialised)
+    {
+        return "Could not initialise Winsock";
+    }
+
+    memset(&hints, 0, sizeof(hints));
+    hints.ai_family = AF_UNSPEC;        /* supports IPv4 and IPv6 */
+    hints.ai_socktype = SOCK_STREAM;
+    hints.ai_protocol = IPPROTO_TCP;
+    hints.ai_flags = AI_V4MAPPED | AI_ADDRCONFIG | AI_PASSIVE;
+    status = getaddrinfo(host, port, &hints, &ai);
+    if (status != 0 || ai == NULL)
+    {
+        return bugle_asprintf("failed to resolve %s:%s: %s",
+                              host ? host : "", port, gai_strerror(status));
+    }
+
+
+    /* Using FormatMessage to get error information out requires a
+     * ridiculuous amount of jumping through hoops. For now, don't bother.
+     */
+    listen_sock = socket(ai->ai_family, ai->ai_socktype, ai->ai_protocol);
+    if (listen_sock == -1)
+    {
+        freeaddrinfo(ai);
+        return bugle_asprintf("failed to open socket");
+    }
+
+    status = bind(listen_sock, ai->ai_addr, ai->ai_addrlen);
+    if (status == -1)
+    {
+        freeaddrinfo(ai);
+        return bugle_asprintf("failed to bind to %s:%s",
+                              host ? host : "", port);
+    }
+
+    if (listen(listen_sock, 1) == -1)
+    {
+        freeaddrinfo(ai);
+        close(listen_sock);
+        return bugle_asprintf("failed to listen on %s:%s",
+                              host ? host : "", port);
+    }
+
+    sock = accept(listen_sock, NULL, NULL);
+    if (sock == -1)
+    {
+        freeaddrinfo(ai);
+        close(listen_sock);
+        return bugle_asprintf("failed to accept a connection on %s:%s",
+                              host ? host : "", port);
+    }
+    freeaddrinfo(ai);
+    close(listen_sock);
+
+    /* Reader and writer can be closed independently. Ensure that the
+     * socket doesn't get closed twice.
+     */
+    *reader = bugle_io_reader_handle_new((HANDLE) sock, BUGLE_HANDLE_TYPE_SOCKET, BUGLE_TRUE);
+    *writer = bugle_io_writer_handle_new((HANDLE) sock, BUGLE_HANDLE_TYPE_SOCKET, BUGLE_FALSE);
+    return NULL;
 }

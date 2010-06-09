@@ -551,6 +551,7 @@ package_sources.extend([
     'src/platform/gettime_queryperformancecounter.c',
     'src/platform/io_null.c',
     'src/platform/io_posix.c',
+    'src/platform/io_msvcrt.c',
     'src/platform/isfinite_msvcrt.c',
     'src/platform/isfinite_null.c',
     'src/platform/isfinite_pass.c',

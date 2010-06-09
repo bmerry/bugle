@@ -21,6 +21,7 @@ if 'interceptor' in aspects['parts']:
 
     simple_filters(filter_env, [
             'common',
+            'debugger',
             'exe',
             'extoverride',
             'logstats',
@@ -47,7 +48,6 @@ if 'interceptor' in aspects['parts']:
         # These currently depend on POSIX features
         simple_filters(filter_env, [
                 'checks',
-                'debugger',
                 'unwindstack'])
 
     screenshot_env = filter_env.Clone()

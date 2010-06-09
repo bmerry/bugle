@@ -29,13 +29,32 @@
 # define _BUDGIE_ID_FULL(type, call, fullname, namestr) (call((namestr)))
 #endif
 
-/* Expands to ifdef if def is defined, to ifndef otherwise */
+/* Expands to ifdef if def is defined to 1, and to ifndef otherwise */
+
+/* First force the arguments to be expanded, so we paste with the defined
+ * value if any.
+ */
 #define _BUDGIE_SWITCH(def, ifdef, ifndef) _BUDGIE_SWITCH2(def, ifdef, ifndef)
+
+/* If the define is not set, then
+ * _BUDGIE_SWITCH_LEFT ## def, ifndef, _BUDGIE_SWITCH_RIGHT ## def(ifdef)
+ * is just what it looks like, with 'ifndef' being the middle argument.
+ * If def is defined to 1, then the macros insert an extra layer of
+ * brackets around the visible commas, and add two extra arguments to the
+ * right, changing what constitutes the middle argument.
+ */
 #define _BUDGIE_SWITCH2(def, ifdef, ifndef) \
-    _BUDGIE_SWITCH3(_BUDGIE_SWITCH_PRE ## def(ifdef), (ifndef), _BUDGIE_SWITCH_POST ## def(ifdef))
-#define _BUDGIE_SWITCH3(pre, ifndef, post) _BUDGIE_SWITCH_2ND(pre, ifndef, post)
-#define _BUDGIE_SWITCH_2ND(a, b, c) b
-#define _BUDGIE_SWITCH_PRE1(ifdef) 0, (ifdef), (
-#define _BUDGIE_SWITCH_POST1(ifdef) )
+    _BUDGIE_SWITCH3((_BUDGIE_SWITCH_LEFT ## def, ifndef, _BUDGIE_SWITCH_RIGHT ## def(ifdef)))
+#define _BUDGIE_SWITCH_LEFT1 (dummy
+#define _BUDGIE_SWITCH_RIGHT1(ifdef) ), ifdef, dummy 
+
+/* The call to _BUDGIE_SWITCH3 has two layers of brackets, otherwise the
+ * commas are detected too early. Strip off the outer layer now.
+ */
+#define _BUDGIE_SWITCH3(x) _BUDGIE_SWITCH4 x
+
+/* And finally, select the middle element
+ */
+#define _BUDGIE_SWITCH4(a, b, c) (b)
 
 #endif /* !BUGLE_BUDGIE_MACROS_H */

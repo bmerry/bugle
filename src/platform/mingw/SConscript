@@ -27,6 +27,7 @@ platform_env.Append(CPPDEFINES = [('__USE_MINGW_ANSI_STDIO', 1)])
 targets['bugleutils']['source'].extend(platform_env.SharedObject(source = [
     '../cosf_soft.c',
     '../gettime_queryperformancecounter.c',
+    '../io_msvcrt.c',
     '../isfinite_pass.c',
     '../isnan_pass.c',
     '../nan_soft.c',
