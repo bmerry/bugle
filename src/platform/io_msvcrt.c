@@ -310,8 +310,10 @@ char *bugle_io_socket_listen(const char *host, const char *port, bugle_io_reader
 
     /* Using FormatMessage to get error information out requires a
      * ridiculuous amount of jumping through hoops. For now, don't bother.
+     * Also, we avoid the standard socket call because it creates an
+     * "overlapped" socket that can't be used with synchronous ReadFile.
      */
-    listen_sock = socket(ai->ai_family, ai->ai_socktype, ai->ai_protocol);
+    listen_sock = WSASocket(ai->ai_family, ai->ai_socktype, ai->ai_protocol, NULL, 0, 0);
     if (listen_sock == -1)
     {
         freeaddrinfo(ai);
