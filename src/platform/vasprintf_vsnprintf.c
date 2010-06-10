@@ -49,6 +49,6 @@ char *bugle_vasprintf(const char *format, va_list ap)
     len = vsnprintf(NULL, 0, format, ap2);
     va_end(ap2);
     ret = BUGLE_NMALLOC(len + 1, char);
-    vsnprintf(ret, len, format, ap);
+    vsnprintf(ret, len + 1, format, ap);
     return ret;
 }
