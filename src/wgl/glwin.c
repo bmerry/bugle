@@ -106,7 +106,7 @@ void bugle_glwin_get_drawable_dimensions(glwin_display dpy, glwin_drawable drawa
         *height = viewport[3];
 
         bugle_glwin_make_context_current(old_dpy, old_draw, old_read, old_ctx);
-        wglDeleteContext(ctx);
+        CALL(wglDeleteContext)(ctx);
     }
     else
     {

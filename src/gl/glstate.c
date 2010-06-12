@@ -2774,7 +2774,7 @@ static void spawn_children_transform_feedback(const glstate *self, linked_list *
 {
     GLint buffers;
 
-    glGetIntegerv(GL_MAX_TRANSFORM_FEEDBACK_SEPARATE_ATTRIBS_NV, &buffers);
+    CALL(glGetIntegerv)(GL_MAX_TRANSFORM_FEEDBACK_SEPARATE_ATTRIBS_NV, &buffers);
     bugle_list_init(children, bugle_free);
     make_counted(self, buffers, "%lu", 0, offsetof(glstate, level),
                  spawn_children_transform_feedback_buffer, NULL, children);
