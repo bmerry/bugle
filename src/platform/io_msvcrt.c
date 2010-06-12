@@ -331,7 +331,7 @@ char *bugle_io_socket_listen(const char *host, const char *port, bugle_io_reader
     if (listen(listen_sock, 1) == -1)
     {
         freeaddrinfo(ai);
-        close(listen_sock);
+        closesocket(listen_sock);
         return bugle_asprintf("failed to listen on %s:%s",
                               host ? host : "", port);
     }
@@ -340,12 +340,12 @@ char *bugle_io_socket_listen(const char *host, const char *port, bugle_io_reader
     if (sock == -1)
     {
         freeaddrinfo(ai);
-        close(listen_sock);
+        closesocket(listen_sock);
         return bugle_asprintf("failed to accept a connection on %s:%s",
                               host ? host : "", port);
     }
     freeaddrinfo(ai);
-    close(listen_sock);
+    closesocket(listen_sock);
 
     /* Reader and writer can be closed independently. Ensure that the
      * socket doesn't get closed twice.
