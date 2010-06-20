@@ -1,5 +1,5 @@
 /*  BuGLe: an OpenGL debugging tool
- *  Copyright (C) 2004-2007, 2009  Bruce Merry
+ *  Copyright (C) 2004-2007, 2009-2010  Bruce Merry
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -28,8 +28,11 @@
 #include <stdlib.h>
 #include <stddef.h>
 #include <unistd.h>
-#include <bugle/porting.h>
 #include <pthread.h>
+#include <semaphore.h>
+#include <bugle/porting.h>
+#include <bugle/export.h>
+#include <bugle/bool.h>
 
 typedef pthread_once_t bugle_thread_once_t;
 
@@ -43,11 +46,18 @@ typedef pthread_mutex_t bugle_thread_lock_t;
 #define bugle_thread_lock_unlock(lock) pthread_mutex_unlock(lock)
 
 typedef pthread_rwlock_t bugle_thread_rwlock_t;
-# define bugle_thread_rwlock_init(rwlock) pthread_rwlock_init(rwlock, NULL)
-# define bugle_thread_rwlock_destroy(rwlock) pthread_rwlock_destroy(rwlock)
-# define bugle_thread_rwlock_rdlock(rwlock) pthread_rwlock_rdlock(rwlock)
-# define bugle_thread_rwlock_wrlock(rwlock) pthread_rwlock_wrlock(rwlock)
-# define bugle_thread_rwlock_unlock(rwlock) pthread_rwlock_unlock(rwlock)
+#define bugle_thread_rwlock_init(rwlock) pthread_rwlock_init(rwlock, NULL)
+#define bugle_thread_rwlock_destroy(rwlock) pthread_rwlock_destroy(rwlock)
+#define bugle_thread_rwlock_rdlock(rwlock) pthread_rwlock_rdlock(rwlock)
+#define bugle_thread_rwlock_wrlock(rwlock) pthread_rwlock_wrlock(rwlock)
+#define bugle_thread_rwlock_unlock(rwlock) pthread_rwlock_unlock(rwlock)
+
+typedef sem_t bugle_thread_sem_t;
+#define bugle_thread_sem_init(sem, value) sem_init(sem, 0, value)
+#define bugle_thread_sem_destroy(sem) sem_destroy(sem)
+#define bugle_thread_sem_post(sem) sem_post(sem)
+#define bugle_thread_sem_wait(sem) sem_wait(sem)
+BUGLE_EXPORT_PRE int bugle_thread_sem_trywait(bugle_thread_sem_t *sem) BUGLE_EXPORT_POST;
 
 typedef pthread_key_t bugle_thread_key_t;
 #define bugle_thread_key_create(key, destructor) \
@@ -56,8 +66,9 @@ typedef pthread_key_t bugle_thread_key_t;
 #define bugle_thread_setspecific(key, value) pthread_setspecific(key, value)
 #define bugle_thread_key_delete(key) pthread_key_delete(key)
 
-typedef pthread_t bugle_thread_t;
+typedef pthread_t bugle_thread_id;
 #define bugle_thread_self() pthread_self()
+#define bugle_thread_equal(t1, t2) ((bugle_bool) ((t1) == (t2)))
 #define bugle_thread_raise(sig) pthread_kill(pthread_self(), (sig))
 
 #if _POSIX_THREAD_SAFE_FUNCTIONS > 0
@@ -70,22 +81,23 @@ typedef pthread_t bugle_thread_t;
 
 /*** Higher-level stuff that doesn't depend on the threading implementation ***/
 /* TODO move it out of here and into a shared header
- * TODO remove reference to LTDL
  */
 
 /* This initialisation mechanism is only valid for static constructor functions.
  * Any code that depends on the initialisation being complete must call
  * BUGLE_RUN_CONSTRUCTOR on the constructor first.
- *
- * This is disabled on WIN32 because it does DLL initialisation before it is
- * safe to call LoadLibrary.
  */
-#if BUGLE_HAVE_ATTRIBUTE_CONSTRUCTOR && !DEBUG_CONSTRUCTOR && BUGLE_BINFMT_CONSTRUCTOR_LTDL
+#if BUGLE_HAVE_ATTRIBUTE_CONSTRUCTOR && !DEBUG_CONSTRUCTOR && BUGLE_BINFMT_CONSTRUCTOR_DL
 # define BUGLE_CONSTRUCTOR(fn) static void fn(void) __attribute__((constructor))
 # define BUGLE_RUN_CONSTRUCTOR(fn) ((void) 0)
 #else
 # define BUGLE_CONSTRUCTOR(fn) static bugle_thread_once_t fn ## _once = BUGLE_THREAD_ONCE_INIT
 # define BUGLE_RUN_CONSTRUCTOR(fn) bugle_thread_once(&(fn ## _once), (fn))
 #endif
+
+typedef pthread_t bugle_thread_handle;
+
+BUGLE_EXPORT_PRE int bugle_thread_create(bugle_thread_handle *thread, unsigned int (*start)(void *), void *arg) BUGLE_EXPORT_POST;
+BUGLE_EXPORT_PRE int bugle_thread_join(bugle_thread_handle thread, unsigned int *retval) BUGLE_EXPORT_POST;
 
 #endif /* !BUGLE_PLATFORM_THREADS_H */

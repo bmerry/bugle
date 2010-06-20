@@ -36,7 +36,7 @@
 /* 1 if __attribute__((constructor)) may safely load new libraries
  * 0 if not
  */
-# define BUGLE_BINFMT_CONSTRUCTOR_LTDL 1
+# define BUGLE_BINFMT_CONSTRUCTOR_DL 1
 #endif
 #if BUGLE_BINFMT_PE
 # define BUGLE_BINFMT_SYMBOL_BY_DSO 1

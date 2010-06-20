@@ -95,7 +95,7 @@ void bugle_input_key_callback_flag(const bugle_input_key *key, void *arg, bugle_
     *(bugle_bool *) arg = BUGLE_TRUE;
 }
 
-#if BUGLE_HAVE_ATTRIBUTE_CONSTRUCTOR && !DEBUG_CONSTRUCTOR && BUGLE_BINFMT_CONSTRUCTOR_LTDL
+#if BUGLE_HAVE_ATTRIBUTE_CONSTRUCTOR && !DEBUG_CONSTRUCTOR && BUGLE_BINFMT_CONSTRUCTOR_DL
 # define bugle_initialise_all() ((void) 0)
 #else
 extern void bugle_initialise_all(void);

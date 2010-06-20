@@ -97,8 +97,9 @@ typedef DWORD bugle_thread_key_t;
     } while (0)
 #define bugle_thread_key_delete(key) (TlsFree(key))
 
-typedef DWORD bugle_thread_t;
+typedef DWORD bugle_thread_id;
 #define bugle_thread_self() (GetCurrentThreadId())
+#define bugle_thread_equal(t1, t2) ((bugle_bool) ((t1) == (t2)))
 #define bugle_thread_raise(sig) (raise(sig))
 
 #define bugle_flockfile(f) ((void) 0)
@@ -106,5 +107,10 @@ typedef DWORD bugle_thread_t;
 
 #define BUGLE_CONSTRUCTOR(fn) static bugle_thread_once_t fn ## _once = BUGLE_THREAD_ONCE_INIT;
 #define BUGLE_RUN_CONSTRUCTOR(fn) bugle_thread_once(&(fn ## _once), (fn))
+
+typedef HANDLE bugle_thread_handle;
+
+BUGLE_EXPORT_PRE void bugle_thread_create(bugle_thread_handle *thread, unsigned int (*start)(void *), void *arg) BUGLE_EXPORT_POST;
+BUGLE_EXPORT_PRE void bugle_thread_join(bugle_thread_handle thread, unsigned int *retval) BUGLE_EXPORT_POST;
 
 #endif /* !BUGLE_PLATFORM_THREADS_H */

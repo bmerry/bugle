@@ -12,13 +12,6 @@
         <sect2 id="hacking-porting-intro">
             <title>Introduction</title>
             <para>
-                Wherever possible, autoconf, libtool and gnulib are used to hide
-                the gory details of porting to different operating systems.
-                However, because &bugle; interfaces directly into the host system
-                in a number of ways, some work is required to port &bugle; to new
-                systems.
-            </para>
-            <para>
                 While other projects may have simply a <quote>Windows</quote> port and a
                 <quote>GNU</quote> port, for example, but it is not so simple for &bugle;.
                 For example, one might run on Windows but using Cygwin with an X
@@ -204,7 +197,7 @@
                     <term>null</term>
                     <listitem><para>
                             This is a dummy platform which provides all the
-                            interfaces but not implementation. It will compile
+                            interfaces but no implementation. It will compile
                             and link, and is intended as a stepping stone for
                             porting to new platforms.
                     </para></listitem>
@@ -226,10 +219,22 @@
                             with Visual C++ 9.0.
                     </para></listitem>
                 </varlistentry>
+                <varlistentry>
+                    <term>mingw</term>
+                    <listitem><para>
+                            MinGW runtime, based on msvcrt. It is
+                            treated separately because MinGW provides its own
+                            header files.
+                    </para></listitem>
+                </varlistentry>
             </variablelist>
             <para>
                 Adding a new interface requires implementing a number of
-                functions and header files, described below.
+                functions and header files, described below. Because some
+                implementations can be shared between platforms (particularly
+                implementations that bypass system libraries), each function
+                (or closely-related group of functions) is implemented in a
+                separate file in <filename>src/platform</filename>.
             </para>
             <sect3 id="hacking-porting-platform-stringfunctions">
                 <title>String functions</title>
@@ -426,7 +431,7 @@
                     application by other means.
                 </para>
                 <para>
-                    A module is closed with<function>bugle_dl_close</function>.
+                    A module is closed with <function>bugle_dl_close</function>.
                     <function>bugle_dl_open</function> supports opening the
                     same library multiple times, then the library must not
                     actually be released until it has been closed as many times
@@ -537,11 +542,17 @@
                         </para></listitem>
                     </varlistentry>
                     <varlistentry>
-                        <term><type>bugle_thread_t</type></term>
+                        <term><type>bugle_thread_id</type></term>
                         <listitem><para>
-                                A thread identifier.
+                                A thread identifier, useful only for
+                                comparisons.
                         </para></listitem>
                     </varlistentry>
+                    <varlistentry>
+                        <term><type>bugle_thread_handle</type></term>
+                        <listitem><para>
+                                A thread handle, used to join with a thread.
+                        </para></listitem>
                 </variablelist>
 
                 <funcsynopsis>
@@ -644,6 +655,64 @@
 
                 <funcsynopsis>
                     <funcprototype>
+                        <funcdef>int <function>bugle_thread_sem_init</function></funcdef>
+                        <paramdef>bugle_thread_sem_t *<parameter>sem</parameter></paramdef>
+                        <paramdef>unsigned int <parameter>value</parameter></paramdef>
+                    </funcprototype>
+                    <funcprototype>
+                        <funcdef>int <function>bugle_thread_sem_destroy</function></funcdef>
+                        <paramdef>bugle_thread_sem_t *<parameter>sem</parameter></paramdef>
+                    </funcprototype>
+                </funcsynopsis>
+                <para>
+                    These functions respectively create and destroy a
+                    counting semaphore. Semaphores may only be used when
+                    initialised. Initialising an already initialised semaphore,
+                    destroying an uninitialised semaphore, or destroying a
+                    semaphore on which any thread is blocked, all lead to
+                    undefined behaviour. These functions return zero on
+                    success, non-zero on failure.
+                </para>
+                <para>
+                    The underlying platform may impose an implementation limit
+                    on the maximum value of a semaphore. You should not expect
+                    to be able to use enormous semaphore values. Values up
+                    to 65536 should be safe.
+                </para>
+
+                <funcsynopsis>
+                    <funcprototype>
+                        <funcdef>int <function>bugle_thread_sem_post</function></funcdef>
+                        <paramdef>bugle_thread_sem_t *<parameter>sem</parameter></paramdef>
+                    </funcprototype>
+                    <funcprototype>
+                        <funcdef>int <function>bugle_thread_sem_wait</function></funcdef>
+                        <paramdef>bugle_thread_sem_t *<parameter>sem</parameter></paramdef>
+                    </funcprototype>
+                    <funcprototype>
+                        <funcdef>int <function>bugle_thread_sem_trywait</function></funcdef>
+                        <paramdef>bugle_thread_sem_t *<parameter>sem</parameter></paramdef>
+                    </funcprototype>
+                </funcsynopsis>
+                <para>
+                    These functions increment or decrement a semaphore count.
+                    If the count is currently zero,
+                    <function>bugle_thread_sem_wait</function> will block
+                    until it can decrement it, while
+                    <function>bugle_thread_sem_trywait</function> will fail.
+                    These functions return zero on success or non-zero on
+                    failure; <function>bugle_thread_sem_trywait</function>
+                    will return a positive value if it failed because the
+                    count was zero and a negative value if it failed for some
+                    other reason.
+                </para>
+                <para>
+                    The value of <symbol>errno</symbol> after calling any of
+                    these functions in undefined.
+                </para>
+
+                <funcsynopsis>
+                    <funcprototype>
                         <funcdef>int <function>bugle_thread_key_create</function></funcdef>
                         <paramdef>bugle_thread_key_t *<parameter>key</parameter></paramdef>
                         <paramdef>void <parameter>(*destructor)</parameter>
@@ -714,7 +783,7 @@
 
                 <funcsynopsis>
                     <funcprototype>
-                        <funcdef>bugle_thread_t <function>bugle_thread_self</function></funcdef>
+                        <funcdef>bugle_thread_id <function>bugle_thread_self</function></funcdef>
                         <void/>
                     </funcprototype>
                 </funcsynopsis>
@@ -723,6 +792,20 @@
                     concurrently executing threads must have different
                     identifiers. Ideally, identifiers should not be recycled
                     during a process, but this may be impossible to guarantee.
+                </para>
+                <para>
+                    Thread IDs must not be compared directly, but with
+                </para>
+                <funcsynopsis>
+                    <funcprototype>
+                        <funcdef>bugle_bool <function>bugle_thread_equal</function></funcdef>
+                        <paramdef>bugle_thread_id <parameter>thread1</parameter></paramdef>
+                        <paramdef>bugle_thread_id <parameter>thread2</parameter></paramdef>
+                    </funcprototype>
+                </funcsynopsis>
+                <para>
+                    which will return true if the thread IDs refer to the same
+                    thread.
                 </para>
 
                 <funcsynopsis>
@@ -775,6 +858,30 @@ BUGLE_RUN_CONSTRUCTOR(function);</funcsynopsisinfo>
                     function must be run in an environment where it may safely
                     execute all the functions in this section, particularly
                     the dynamic library functions.
+                </para>
+
+                <para>
+                    Threads can be created and destroyed with
+                </para>
+                <funcsynopsis>
+                    <funcprototype>
+                        <funcdef>bugle_bool <function>bugle_thread_create</function></funcdef>
+                        <paramdef>bugle_thread_handle <parameter>thread</parameter></paramdef>
+                        <paramdef>unsigned int <parameter>(*start)</parameter>
+                            <funcparams>void *</funcparams></paramdef>
+                        <paramdef>void *<parameter>arg</parameter></paramdef>
+                    </funcprototype>
+                    <funcprototype>
+                        <funcdef>bugle_bool <function>bugle_thread_join</function></funcdef>
+                        <paramdef>bugle_thread_handle <parameter>thread</parameter></paramdef>
+                        <paramdef>unsigned int *<parameter>retval</parameter></paramdef>
+                    </funcprototype>
+                </funcsynopsis>
+                <para>
+                    These functions return zero on success. POSIX detached
+                    threads are not supported; all threads must be joined to
+                    avoid leaking resources. Joining a thread also invalidates
+                    the handle.
                 </para>
             </sect3>
         </sect2>

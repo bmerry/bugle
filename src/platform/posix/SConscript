@@ -50,6 +50,7 @@ sources = [
     '../round_pass.c',
     '../sinf_pass.c',
     '../strndup_soft.c',
+    '../threads_posix.c',
     '../vsnprintf_pass.c']
 if features['strdup']:
     sources.append('../strdup_pass.c')

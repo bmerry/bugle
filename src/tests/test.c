@@ -54,6 +54,7 @@ extern test_status showextensions_suite(void);
 extern test_status string_suite(void);
 extern test_status texcomplete_suite(void);
 extern test_status triangles_suite(void);
+extern test_status threads_suite(void);
 
 static const test_suite suites[] =
 {
@@ -67,8 +68,9 @@ static const test_suite suites[] =
     { "queries",        TEST_FLAG_LOG | TEST_FLAG_CONTEXT, queries_suite },
     { "setstate",       TEST_FLAG_LOG | TEST_FLAG_CONTEXT, setstate_suite },
     { "showextensions", TEST_FLAG_LOG | TEST_FLAG_CONTEXT, showextensions_suite },
-    { "string",         0,                                  string_suite },
+    { "string",         0,                                 string_suite },
     { "texcomplete",    TEST_FLAG_LOG | TEST_FLAG_CONTEXT, texcomplete_suite },
+    { "threads",        0,                                 threads_suite },
     { "triangles",      TEST_FLAG_LOG | TEST_FLAG_CONTEXT, triangles_suite }
 };
 

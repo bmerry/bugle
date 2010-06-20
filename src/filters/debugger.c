@@ -56,7 +56,7 @@ static bugle_bool stop_in_begin_end = BUGLE_FALSE;
 static bugle_bool stopped = BUGLE_TRUE;
 static bugle_uint32_t start_id = 0;
 
-static unsigned long debug_thread;
+static bugle_thread_id debug_thread;
 
 static bugle_bool stoppable(void)
 {
@@ -1096,7 +1096,7 @@ static bugle_bool debugger_callback(function_call *call, const callback_data *da
      * in sync.
      */
     bugle_thread_once(&debugger_init_thread_once, debugger_init_thread);
-    if (debug_thread != bugle_thread_self())
+    if (!bugle_thread_equal(debug_thread, bugle_thread_self()))
         return BUGLE_TRUE;
 
     if (stoppable())
