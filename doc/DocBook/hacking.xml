@@ -553,6 +553,7 @@
                         <listitem><para>
                                 A thread handle, used to join with a thread.
                         </para></listitem>
+                    </varlistentry>
                 </variablelist>
 
                 <funcsynopsis>
