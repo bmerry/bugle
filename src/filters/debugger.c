@@ -1,5 +1,5 @@
 /*  BuGLe: an OpenGL debugging tool
- *  Copyright (C) 2004-2009  Bruce Merry
+ *  Copyright (C) 2004-2010  Bruce Merry
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -816,145 +816,411 @@ static bugle_bool send_data_buffer(bugle_uint32_t id, GLuint object_id)
 }
 #endif
 
-static void process_single_command(function_call *call)
+typedef struct
 {
-    bugle_uint32_t req, id, req_val;
+    bugle_uint32_t length;
+    char *data;
+} gldb_binary_string;
+
+typedef struct
+{
+    bugle_uint32_t code;
+    bugle_uint32_t request_id;
+} gldb_request_header;
+
+typedef struct
+{
+    gldb_request_header header;
+} gldb_request_simple;
+
+typedef struct
+{
+    gldb_request_header header;
+    gldb_binary_string name;
+    bugle_uint32_t enable;
+} gldb_request_break;
+
+typedef struct
+{
+    gldb_request_header header;
     bugle_uint32_t event;
-    char *req_str, *resp_str;
-    bugle_bool activate;
-    budgie_function func;
-    filter_set *f;
+    bugle_uint32_t enable;
+} gldb_request_break_event;
 
-    if (!gldb_protocol_recv_code(in_pipe, &req)) exit(1);
-    if (!gldb_protocol_recv_code(in_pipe, &id)) exit(1);
+typedef struct
+{
+    gldb_request_header header;
+    gldb_binary_string name;
+} gldb_request_activate_filterset;
 
-    switch (req)
+typedef struct
+{
+    gldb_request_header header;
+    bugle_uint32_t subtype;
+} gldb_request_data_header;
+
+typedef struct
+{
+    gldb_request_data_header header;
+    bugle_uint32_t object_id;
+    bugle_uint32_t target;
+    bugle_uint32_t face;
+    bugle_uint32_t level;
+    bugle_uint32_t format;
+    bugle_uint32_t type;
+} gldb_request_data_texture;
+
+typedef struct
+{
+    gldb_request_data_header header;
+    bugle_uint32_t object_id;
+} gldb_request_data_buffer;
+
+typedef struct
+{
+    gldb_request_data_header header;
+    bugle_uint32_t object_id;
+    bugle_uint32_t target;
+    bugle_uint32_t buffer;
+    bugle_uint32_t format;
+    bugle_uint32_t type;
+} gldb_request_data_framebuffer;
+
+typedef struct
+{
+    gldb_request_data_header header;
+    bugle_uint32_t object_id;
+    bugle_uint32_t target;
+} gldb_request_data_shader;
+
+typedef struct
+{
+    gldb_request_data_header header;
+    bugle_uint32_t object_id;
+    bugle_uint32_t target;
+} gldb_request_data_info_log;
+
+/* Reads a binary string into a structure. Returns true on success */
+static bugle_bool read_binary_string(bugle_io_reader *in_pipe, gldb_binary_string *s)
+{
+    return gldb_protocol_recv_binary_string(in_pipe, &s->length, &s->data);
+}
+
+/* Reads a single request from the input pipe, and returns it (in newly
+ * allocated memory). If reading fails (either due to EOF or failure),
+ * returns NULL.
+ */
+static gldb_request_header *read_request(bugle_io_reader *in_pipe)
+{
+    gldb_request_header header;
+
+    if (!gldb_protocol_recv_code(in_pipe, &header.code))
+        return NULL;
+    if (!gldb_protocol_recv_code(in_pipe, &header.request_id))
+        return NULL;
+
+    switch (header.code)
     {
     case REQ_RUN:
-        if (req == REQ_RUN)
-        {
-            gldb_protocol_send_code(out_pipe, RESP_RUNNING);
-            gldb_protocol_send_code(out_pipe, id);
-        }
-        /* Fall through */
     case REQ_CONT:
+    case REQ_SCREENSHOT:
     case REQ_STEP:
-        break_on_next = (req == REQ_STEP);
-        stopped = BUGLE_FALSE;
-        start_id = id;
+    case REQ_STATE_TREE:
+    case REQ_STATE_TREE_RAW:
+    case REQ_QUIT:
+    case REQ_ASYNC:
+        {
+            gldb_request_simple *req = BUGLE_MALLOC(gldb_request_simple);
+            req->header = header;
+            return &req->header;
+        }
         break;
     case REQ_BREAK:
-        gldb_protocol_recv_string(in_pipe, &req_str);
-        gldb_protocol_recv_code(in_pipe, &req_val);
-        func = budgie_function_id(req_str);
-        if (func != NULL_FUNCTION)
         {
-            gldb_protocol_send_code(out_pipe, RESP_ANS);
-            gldb_protocol_send_code(out_pipe, id);
-            gldb_protocol_send_code(out_pipe, 0);
-            break_on[func] = req_val != 0;
+            gldb_request_break *req = BUGLE_MALLOC(gldb_request_break);
+            req->header = header;
+            req->name.data = NULL;
+            if (!read_binary_string(in_pipe, &req->name)
+                || !gldb_protocol_recv_code(in_pipe, &req->enable))
+            {
+                bugle_free(req->name.data);
+                bugle_free(req);
+                return NULL;
+            }
+            return &req->header;
         }
-        else
-        {
-            gldb_protocol_send_code(out_pipe, RESP_ERROR);
-            gldb_protocol_send_code(out_pipe, id);
-            gldb_protocol_send_code(out_pipe, 0);
-            resp_str = bugle_asprintf("Unknown function %s", req_str);
-            gldb_protocol_send_string(out_pipe, resp_str);
-            bugle_free(resp_str);
-        }
-        bugle_free(req_str);
         break;
     case REQ_BREAK_EVENT:
-        gldb_protocol_recv_code(in_pipe, &event);
-        gldb_protocol_recv_code(in_pipe, &req_val);
-        if (event >= REQ_EVENT_COUNT)
         {
-            gldb_protocol_send_code(out_pipe, RESP_ERROR);
-            gldb_protocol_send_code(out_pipe, id);
-            gldb_protocol_send_code(out_pipe, 0);
-            gldb_protocol_send_string(out_pipe, "Event out of range - protocol mismatch?");
-        }
-        else
-        {
-            break_on_event[event] = req_val != 0;
-            gldb_protocol_send_code(out_pipe, RESP_ANS);
-            gldb_protocol_send_code(out_pipe, id);
-            gldb_protocol_send_code(out_pipe, 0);
+            gldb_request_break_event *req = BUGLE_MALLOC(gldb_request_break_event);
+            req->header = header;
+            if (!gldb_protocol_recv_code(in_pipe, &req->event)
+                || !gldb_protocol_recv_code(in_pipe, &req->enable))
+            {
+                bugle_free(req);
+                return NULL;
+            }
+            return &req->header;
         }
         break;
     case REQ_ACTIVATE_FILTERSET:
     case REQ_DEACTIVATE_FILTERSET:
-        activate = (req == REQ_ACTIVATE_FILTERSET);
-        gldb_protocol_recv_string(in_pipe, &req_str);
-        f = bugle_filter_set_get_handle(req_str);
-        if (!f)
         {
-            resp_str = bugle_asprintf("Unknown filter-set %s", req_str);
-            gldb_protocol_send_code(out_pipe, RESP_ERROR);
-            gldb_protocol_send_code(out_pipe, id);
-            gldb_protocol_send_code(out_pipe, 0);
-            gldb_protocol_send_string(out_pipe, resp_str);
-            bugle_free(resp_str);
-        }
-        else if (!strcmp(req_str, "debugger"))
-        {
-            gldb_protocol_send_code(out_pipe, RESP_ERROR);
-            gldb_protocol_send_code(out_pipe, id);
-            gldb_protocol_send_code(out_pipe, 0);
-            gldb_protocol_send_string(out_pipe, "Cannot activate or deactivate the debugger");
-        }
-        else if (!bugle_filter_set_is_loaded(f))
-        {
-            resp_str = bugle_asprintf("Filter-set %s is not loaded; it must be loaded at program start",
-                                      req_str);
-            gldb_protocol_send_code(out_pipe, RESP_ERROR);
-            gldb_protocol_send_code(out_pipe, id);
-            gldb_protocol_send_code(out_pipe, 0);
-            gldb_protocol_send_string(out_pipe, resp_str);
-            bugle_free(resp_str);
-        }
-        else if (bugle_filter_set_is_active(f) == activate)
-        {
-            resp_str = bugle_asprintf("Filter-set %s is already %s",
-                                      req_str, activate ? "active" : "inactive");
-            gldb_protocol_send_code(out_pipe, RESP_ERROR);
-            gldb_protocol_send_code(out_pipe, id);
-            gldb_protocol_send_code(out_pipe, 0);
-            gldb_protocol_send_string(out_pipe, resp_str);
-            bugle_free(resp_str);
-        }
-        else
-        {
-            if (activate) bugle_filter_set_activate_deferred(f);
-            else bugle_filter_set_deactivate_deferred(f);
-            if (!bugle_filter_set_is_active(bugle_filter_set_get_handle("debugger")))
+            gldb_request_activate_filterset *req = BUGLE_MALLOC(gldb_request_activate_filterset);
+            req->header = header;
+            if (!read_binary_string(in_pipe, &req->name))
             {
-                gldb_protocol_send_code(out_pipe, RESP_ERROR);
-                gldb_protocol_send_code(out_pipe, id);
+                bugle_free(req);
+                return NULL;
+            }
+            return &req->header;
+        }
+        break;
+    case REQ_DATA:
+        {
+            bugle_uint32_t subtype;
+            if (!gldb_protocol_recv_code(in_pipe, &subtype))
+                return NULL;
+
+            switch (subtype)
+            {
+            case REQ_DATA_TEXTURE:
+                {
+                    gldb_request_data_texture *req = BUGLE_MALLOC(gldb_request_data_texture);
+                    req->header.header = header;
+                    req->header.subtype = subtype;
+                    if (!gldb_protocol_recv_code(in_pipe, &req->object_id)
+                        || !gldb_protocol_recv_code(in_pipe, &req->object_id)
+                        || !gldb_protocol_recv_code(in_pipe, &req->target)
+                        || !gldb_protocol_recv_code(in_pipe, &req->face)
+                        || !gldb_protocol_recv_code(in_pipe, &req->level)
+                        || !gldb_protocol_recv_code(in_pipe, &req->format)
+                        || !gldb_protocol_recv_code(in_pipe, &req->type))
+                    {
+                        bugle_free(req);
+                        return NULL;
+                    }
+                    return &req->header.header;
+                }
+                break;
+            case REQ_DATA_BUFFER:
+                {
+                    gldb_request_data_buffer *req = BUGLE_MALLOC(gldb_request_data_buffer);
+                    req->header.header = header;
+                    req->header.subtype = subtype;
+                    if (!gldb_protocol_recv_code(in_pipe, &req->object_id))
+                    {
+                        bugle_free(req);
+                        return NULL;
+                    }
+                    return &req->header.header;
+                }
+                break;
+            case REQ_DATA_FRAMEBUFFER:
+                {
+                    gldb_request_data_framebuffer *req = BUGLE_MALLOC(gldb_request_data_framebuffer);
+                    req->header.header = header;
+                    req->header.subtype = subtype;
+                    if (!gldb_protocol_recv_code(in_pipe, &req->object_id)
+                        || !gldb_protocol_recv_code(in_pipe, &req->target)
+                        || !gldb_protocol_recv_code(in_pipe, &req->buffer)
+                        || !gldb_protocol_recv_code(in_pipe, &req->format)
+                        || !gldb_protocol_recv_code(in_pipe, &req->type))
+                    {
+                        bugle_free(req);
+                        return NULL;
+                    }
+                    return &req->header.header;
+                }
+                break;
+            case REQ_DATA_SHADER:
+                {
+                    gldb_request_data_shader *req = BUGLE_MALLOC(gldb_request_data_shader);
+                    req->header.header = header;
+                    req->header.subtype = subtype;
+                    if (!gldb_protocol_recv_code(in_pipe, &req->object_id)
+                        || !gldb_protocol_recv_code(in_pipe, &req->target))
+                    {
+                        bugle_free(req);
+                        return NULL;
+                    }
+                    return &req->header.header;
+                }
+                break;
+            case REQ_DATA_INFO_LOG:
+                {
+                    gldb_request_data_info_log *req = BUGLE_MALLOC(gldb_request_data_info_log);
+                    req->header.header = header;
+                    req->header.subtype = subtype;
+                    if (!gldb_protocol_recv_code(in_pipe, &req->object_id)
+                        || !gldb_protocol_recv_code(in_pipe, &req->target))
+                    {
+                        bugle_free(req);
+                        return NULL;
+                    }
+                    return &req->header.header;
+                }
+                break;
+            default:
+                bugle_log_printf("debugger", "read_request",
+                                 BUGLE_LOG_ERROR,
+                                 "Unknown debug data subcommand %#08lx received",
+                                 (unsigned long) subtype);
+                return NULL;
+            }
+        }
+        break;
+    default:
+        bugle_log_printf("debugger", "process_single_command",
+                         BUGLE_LOG_ERROR,
+                         "Unknown debug command %#08lx received",
+                         (unsigned long) header.code);
+        return NULL;
+    }
+}
+
+static void process_single_command(function_call *call)
+{
+    char *resp_str;
+    gldb_request_header *req;
+
+    req = read_request(in_pipe);
+    if (req == NULL)
+    {
+        bugle_log_printf("debugger", "process_single_command",
+                         BUGLE_LOG_WARNING,
+                         "Could not read a command from the pipe, exiting");
+        exit(1);
+    }
+
+    switch (req->code)
+    {
+    case REQ_RUN:
+        gldb_protocol_send_code(out_pipe, RESP_RUNNING);
+        gldb_protocol_send_code(out_pipe, req->request_id);
+        /* Fall through */
+    case REQ_CONT:
+    case REQ_STEP:
+        break_on_next = (req->code == REQ_STEP);
+        stopped = BUGLE_FALSE;
+        start_id = req->request_id;
+        break;
+    case REQ_BREAK:
+        {
+            gldb_request_break *req2 = (gldb_request_break *) req;
+            budgie_function func = budgie_function_id(req2->name.data);
+            if (func != NULL_FUNCTION)
+            {
+                gldb_protocol_send_code(out_pipe, RESP_ANS);
+                gldb_protocol_send_code(out_pipe, req->request_id);
                 gldb_protocol_send_code(out_pipe, 0);
-                gldb_protocol_send_string(out_pipe, "Debugger was disabled; re-enabling");
-                bugle_filter_set_activate_deferred(bugle_filter_set_get_handle("debugger"));
+                break_on[func] = req2->enable != 0;
             }
             else
             {
+                gldb_protocol_send_code(out_pipe, RESP_ERROR);
+                gldb_protocol_send_code(out_pipe, req->request_id);
+                gldb_protocol_send_code(out_pipe, 0);
+                resp_str = bugle_asprintf("Unknown function %s", req2->name.data);
+                gldb_protocol_send_string(out_pipe, resp_str);
+                bugle_free(resp_str);
+            }
+            bugle_free(req2->name.data);
+        }
+        break;
+    case REQ_BREAK_EVENT:
+        {
+            gldb_request_break_event *req2 = (gldb_request_break_event *) req;
+            if (req2->event >= REQ_EVENT_COUNT)
+            {
+                gldb_protocol_send_code(out_pipe, RESP_ERROR);
+                gldb_protocol_send_code(out_pipe, req->request_id);
+                gldb_protocol_send_code(out_pipe, 0);
+                gldb_protocol_send_string(out_pipe, "Event out of range - protocol mismatch?");
+            }
+            else
+            {
+                break_on_event[req2->event] = req2->enable != 0;
                 gldb_protocol_send_code(out_pipe, RESP_ANS);
-                gldb_protocol_send_code(out_pipe, id);
+                gldb_protocol_send_code(out_pipe, req->request_id);
                 gldb_protocol_send_code(out_pipe, 0);
             }
         }
-        bugle_free(req_str);
+        break;
+    case REQ_ACTIVATE_FILTERSET:
+    case REQ_DEACTIVATE_FILTERSET:
+        {
+            gldb_request_activate_filterset *req2 = (gldb_request_activate_filterset *) req;
+            bugle_bool activate = (req->code == REQ_ACTIVATE_FILTERSET);
+            filter_set *f = bugle_filter_set_get_handle(req2->name.data);
+            if (!f)
+            {
+                resp_str = bugle_asprintf("Unknown filter-set %s", req2->name.data);
+                gldb_protocol_send_code(out_pipe, RESP_ERROR);
+                gldb_protocol_send_code(out_pipe, req->request_id);
+                gldb_protocol_send_code(out_pipe, 0);
+                gldb_protocol_send_string(out_pipe, resp_str);
+                bugle_free(resp_str);
+            }
+            else if (!strcmp(req2->name.data, "debugger"))
+            {
+                gldb_protocol_send_code(out_pipe, RESP_ERROR);
+                gldb_protocol_send_code(out_pipe, req->request_id);
+                gldb_protocol_send_code(out_pipe, 0);
+                gldb_protocol_send_string(out_pipe, "Cannot activate or deactivate the debugger");
+            }
+            else if (!bugle_filter_set_is_loaded(f))
+            {
+                resp_str = bugle_asprintf("Filter-set %s is not loaded; it must be loaded at program start",
+                                          req2->name.data);
+                gldb_protocol_send_code(out_pipe, RESP_ERROR);
+                gldb_protocol_send_code(out_pipe, req->request_id);
+                gldb_protocol_send_code(out_pipe, 0);
+                gldb_protocol_send_string(out_pipe, resp_str);
+                bugle_free(resp_str);
+            }
+            else if (bugle_filter_set_is_active(f) == activate)
+            {
+                resp_str = bugle_asprintf("Filter-set %s is already %s",
+                                          req2->name.data, activate ? "active" : "inactive");
+                gldb_protocol_send_code(out_pipe, RESP_ERROR);
+                gldb_protocol_send_code(out_pipe, req->request_id);
+                gldb_protocol_send_code(out_pipe, 0);
+                gldb_protocol_send_string(out_pipe, resp_str);
+                bugle_free(resp_str);
+            }
+            else
+            {
+                if (activate) bugle_filter_set_activate_deferred(f);
+                else bugle_filter_set_deactivate_deferred(f);
+                if (!bugle_filter_set_is_active(bugle_filter_set_get_handle("debugger")))
+                {
+                    gldb_protocol_send_code(out_pipe, RESP_ERROR);
+                    gldb_protocol_send_code(out_pipe, req->request_id);
+                    gldb_protocol_send_code(out_pipe, 0);
+                    gldb_protocol_send_string(out_pipe, "Debugger was disabled; re-enabling");
+                    bugle_filter_set_activate_deferred(bugle_filter_set_get_handle("debugger"));
+                }
+                else
+                {
+                    gldb_protocol_send_code(out_pipe, RESP_ANS);
+                    gldb_protocol_send_code(out_pipe, req->request_id);
+                    gldb_protocol_send_code(out_pipe, 0);
+                }
+            }
+            bugle_free(req2->name.data);
+        }
         break;
     case REQ_STATE_TREE:
         if (bugle_gl_begin_internal_render())
         {
-            send_state(bugle_state_get_root(), id);
+            send_state(bugle_state_get_root(), req->request_id);
             bugle_gl_end_internal_render("send_state", BUGLE_TRUE);
         }
         else
         {
             gldb_protocol_send_code(out_pipe, RESP_ERROR);
-            gldb_protocol_send_code(out_pipe, id);
+            gldb_protocol_send_code(out_pipe, req->request_id);
             gldb_protocol_send_code(out_pipe, 0);
             gldb_protocol_send_string(out_pipe, "In glBegin/glEnd; no state available");
         }
@@ -962,20 +1228,20 @@ static void process_single_command(function_call *call)
     case REQ_STATE_TREE_RAW:
         if (bugle_gl_begin_internal_render())
         {
-            send_state_raw(bugle_state_get_root(), id);
+            send_state_raw(bugle_state_get_root(), req->request_id);
             bugle_gl_end_internal_render("send_state_raw", BUGLE_TRUE);
         }
         else
         {
             gldb_protocol_send_code(out_pipe, RESP_ERROR);
-            gldb_protocol_send_code(out_pipe, id);
+            gldb_protocol_send_code(out_pipe, req->request_id);
             gldb_protocol_send_code(out_pipe, 0);
             gldb_protocol_send_string(out_pipe, "In glBegin/glEnd; no state available");
         }
         break;
     case REQ_SCREENSHOT:
         gldb_protocol_send_code(out_pipe, RESP_ERROR);
-        gldb_protocol_send_code(out_pipe, id);
+        gldb_protocol_send_code(out_pipe, req->request_id);
         gldb_protocol_send_code(out_pipe, 0);
         gldb_protocol_send_string(out_pipe, "Screenshot interface has been removed. Please upgrade gldb.");
         break;
@@ -983,52 +1249,60 @@ static void process_single_command(function_call *call)
         exit(1);
     case REQ_DATA:
         {
-            bugle_uint32_t subtype, object_id, target, face, level, format, type;
-            bugle_uint32_t buffer;
-
+            gldb_request_data_header *req_sub = (gldb_request_data_header *) req;
             /* FIXME: check for begin/end? */
-            gldb_protocol_recv_code(in_pipe, &subtype);
-            switch (subtype)
+            switch (req_sub->subtype)
             {
 #ifdef GL_VERSION_1_1
             case REQ_DATA_TEXTURE:
-                gldb_protocol_recv_code(in_pipe, &object_id);
-                gldb_protocol_recv_code(in_pipe, &target);
-                gldb_protocol_recv_code(in_pipe, &face);
-                gldb_protocol_recv_code(in_pipe, &level);
-                gldb_protocol_recv_code(in_pipe, &format);
-                gldb_protocol_recv_code(in_pipe, &type);
-                send_data_texture(id, object_id, target, face, level,
-                                  format, type);
+                {
+                    gldb_request_data_texture *req2 = (gldb_request_data_texture *) req;
+                    send_data_texture(req->request_id,
+                                      req2->object_id,
+                                      req2->target,
+                                      req2->face,
+                                      req2->level,
+                                      req2->format,
+                                      req2->type);
+                }
                 break;
             case REQ_DATA_BUFFER:
-                gldb_protocol_recv_code(in_pipe, &object_id);
-                send_data_buffer(id, object_id);
+                {
+                    gldb_request_data_buffer *req2 = (gldb_request_data_buffer *) req;
+                    send_data_buffer(req->request_id, req2->object_id);
+                }
                 break;
 #endif
             case REQ_DATA_FRAMEBUFFER:
-                gldb_protocol_recv_code(in_pipe, &object_id);
-                gldb_protocol_recv_code(in_pipe, &target);
-                gldb_protocol_recv_code(in_pipe, &buffer);
-                gldb_protocol_recv_code(in_pipe, &format);
-                gldb_protocol_recv_code(in_pipe, &type);
-                send_data_framebuffer(id, object_id, target, buffer, format, type);
+                {
+                    gldb_request_data_framebuffer *req2 = (gldb_request_data_framebuffer *) req;
+                    send_data_framebuffer(req->request_id,
+                                          req2->object_id,
+                                          req2->target,
+                                          req2->buffer,
+                                          req2->format,
+                                          req2->type);
+                }
                 break;
 #if GL_ES_VERSION_2_0 || GL_VERSION_2_0
             case REQ_DATA_SHADER:
-                gldb_protocol_recv_code(in_pipe, &object_id);
-                gldb_protocol_recv_code(in_pipe, &target);
-                send_data_shader(id, object_id, target);
+                {
+                    gldb_request_data_shader *req2 = (gldb_request_data_shader *) req;
+                    send_data_shader(req->request_id, req2->object_id, req2->target);
+                }
                 break;
             case REQ_DATA_INFO_LOG:
-                gldb_protocol_recv_code(in_pipe, &object_id);
-                gldb_protocol_recv_code(in_pipe, &target);
-                send_data_info_log(id, object_id, target);
+                {
+                    gldb_request_data_info_log *req2 = (gldb_request_data_info_log *) req;
+                    send_data_info_log(req->request_id, req2->object_id, req2->target);
+                }
                 break;
 #endif
             default:
+                /* read_request should have caught this */
+                assert(0);
                 gldb_protocol_send_code(out_pipe, RESP_ERROR);
-                gldb_protocol_send_code(out_pipe, id);
+                gldb_protocol_send_code(out_pipe, req->request_id);
                 gldb_protocol_send_code(out_pipe, 0);
                 gldb_protocol_send_string(out_pipe, "unknown subtype");
                 break;
@@ -1053,11 +1327,14 @@ static void process_single_command(function_call *call)
         }
         break;
     default:
+        assert(0); /* read_request should have caught this case */
         bugle_log_printf("debugger", "process_single_command",
                          BUGLE_LOG_WARNING,
                          "Unknown debug command %#08lx received",
                          (unsigned long) req);
+        break;
     }
+    bugle_free(req);
 }
 
 /* The main initialiser calls this with call == NULL. It has essentially
@@ -1074,6 +1351,7 @@ static void debugger_loop(function_call *call)
 
     do
     {
+
         if (!stopped && !bugle_io_reader_has_data(in_pipe))
             break;
         process_single_command(call);
