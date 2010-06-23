@@ -32,7 +32,6 @@ extern "C" {
 struct bugle_io_reader
 {
     size_t (*fn_read)(void *ptr, size_t size, size_t nmemb, void *arg);
-    bugle_bool (*fn_has_data)(void *arg);  /* NULL if query not supported */
     int (*fn_close)(void *arg);
 
     void *arg;

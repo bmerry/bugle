@@ -558,7 +558,6 @@ static void run_action(GtkAction *action, gpointer user_data)
 
     in_reader = BUGLE_MALLOC(bugle_io_reader);
     in_reader->fn_read = channel_read;
-    in_reader->fn_has_data = NULL; /* we don't depend on this functionality */
     in_reader->fn_close = channel_close;
     in_reader->arg = context->channel;
     gldb_set_in_reader(in_reader);

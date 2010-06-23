@@ -35,14 +35,6 @@ size_t bugle_io_read(void *ptr, size_t size, size_t nmemb, bugle_io_reader *read
     return reader->fn_read(ptr, size, nmemb, reader->arg);
 }
 
-bugle_bool bugle_io_reader_has_data(bugle_io_reader *reader)
-{
-    if (reader->fn_has_data != NULL)
-        return reader->fn_has_data(reader->arg);
-    else
-        return BUGLE_FALSE;
-}
-
 int bugle_io_reader_close(bugle_io_reader *reader)
 {
     int ret = reader->fn_close(reader->arg);

@@ -15,16 +15,6 @@
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-/* Still TODO:
- * - Implement bugle_io_socket_listen
- * - handle_has_data won't currently work for pipes between the debugger and
- *   the debug filter. Probably the best option is just to put in threading
- *   at the debug filter level, and have one thread run a read pump that
- *   passes messages to the debug thread via a semaphore. An alternative is
- *   to actually read some data via async I/O and buffer it for reads, and
- *   check the status of the async I/O to tell if there is data ready.
- */
-
 #if HAVE_CONFIG_H
 # include <config.h>
 #endif
@@ -81,38 +71,6 @@ static size_t handle_read(void *ptr, size_t size, size_t nmemb, void *arg)
     return nmemb;
 }
 
-static bugle_bool handle_has_data(void *arg)
-{
-    /* This only works for sockets at present - I don't know how to tell
-     * whether other I/O handles have data
-     */
-    bugle_io_reader_handle *s = (bugle_io_reader_handle *) arg;
-
-    switch (s->type)
-    {
-    case BUGLE_HANDLE_TYPE_FILE:
-        return BUGLE_TRUE;
-    case BUGLE_HANDLE_TYPE_SOCKET:
-        {
-            fd_set readfds;
-            int status;
-            const struct timeval timeout = {0, 0};
-
-            FD_ZERO(&readfds);
-            FD_SET((SOCKET) s->handle, &readfds);
-            status = select(1, &readfds, NULL, NULL, &timeout);
-            if (status > 0)
-                return BUGLE_TRUE;  /* data available now */
-            else if (status == 0)
-                return BUGLE_FALSE; /* no data available, timed out */
-            else
-                /* No way to tell, take a guess */
-                return BUGLE_FALSE;
-        }
-    }
-    return BUGLE_FALSE; /* Should never be reached */
-}
-
 static int handle_reader_close(void *arg)
 {
     bugle_io_reader_handle *s = (bugle_io_reader_handle *) arg;
@@ -149,7 +107,6 @@ static bugle_io_reader *bugle_io_reader_handle_new(HANDLE handle, bugle_io_handl
     s = BUGLE_MALLOC(bugle_io_reader_handle);
 
     reader->fn_read = handle_read;
-    reader->fn_has_data = handle_has_data;
     reader->fn_close = handle_reader_close;
     reader->arg = s;
 

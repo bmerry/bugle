@@ -74,40 +74,6 @@ static size_t fd_read(void *ptr, size_t size, size_t nmemb, void *arg)
     return nmemb;
 }
 
-static bugle_bool fd_has_data(void *arg)
-{
-    struct pollfd fds[1];
-    bugle_io_reader_fd *s;
-
-    s = (bugle_io_reader_fd *) arg;
-    fds[0].fd = s->fd;
-    fds[0].events = POLLIN;
-
-    while (1)
-    {
-        int ret;
-        ret = poll(fds, 1, 0);
-        if (ret == -1)
-        {
-            if (errno != EINTR)
-            {
-                /* Fatal error */
-                perror("poll");
-                exit(1);
-            }
-        }
-        else if (ret > 0 && (fds[0].revents & (POLLIN | POLLHUP)))
-        {
-            return BUGLE_TRUE;
-        }
-        else
-        {
-            /* Timeout i.e. no descriptors ready */
-            return BUGLE_FALSE;
-        }
-    }
-}
-
 static int fd_reader_close(void *arg)
 {
     bugle_io_reader_fd *s;
@@ -125,7 +91,6 @@ bugle_io_reader *bugle_io_reader_fd_new(int fd)
     s = BUGLE_MALLOC(bugle_io_reader_fd);
 
     reader->fn_read = fd_read;
-    reader->fn_has_data = fd_has_data;
     reader->fn_close = fd_reader_close;
     reader->arg = s;
 

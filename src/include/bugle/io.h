@@ -42,11 +42,6 @@ typedef struct bugle_io_reader bugle_io_reader;
  */
 BUGLE_EXPORT_PRE size_t bugle_io_read(void *ptr, size_t size, size_t nmemb, bugle_io_reader *reader) BUGLE_EXPORT_POST;
 
-/* Determines whether a subsequent read would block. If no information is
- * available (depending on the underlying stream), returns false.
- */
-BUGLE_EXPORT_PRE bugle_bool bugle_io_reader_has_data(bugle_io_reader *reader) BUGLE_EXPORT_POST;
-
 /* Closes the underlying stream and cleans up.
  * Returns EOF on failure, 0 on success
  */
