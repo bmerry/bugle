@@ -20,8 +20,10 @@
 #if HAVE_CONFIG_H
 # include <config.h>
 #endif
-#include <GL/glew.h>
-#include <GL/glut.h>
+#if TEST_GL
+# include <GL/glew.h>
+# include <GL/glut.h>
+#endif
 #include <string.h>
 #include <stdlib.h>
 #include <stddef.h>
@@ -41,37 +43,42 @@ static const test_suite *chosen_suite;
 static const char *log_filename = NULL;
 static FILE *log_handle = NULL;
 
+#if TEST_GL
 extern test_status dlopen_suite(void);
 extern test_status errors_suite(void);
 extern test_status interpose_suite(void);
-extern test_status math_suite(void);
 extern test_status pbo_suite(void);
 extern test_status pointers_suite(void);
 extern test_status procaddress_suite(void);
 extern test_status queries_suite(void);
 extern test_status setstate_suite(void);
 extern test_status showextensions_suite(void);
-extern test_status string_suite(void);
 extern test_status texcomplete_suite(void);
 extern test_status triangles_suite(void);
+#endif /* TEST_GL */
+
+extern test_status math_suite(void);
+extern test_status string_suite(void);
 extern test_status threads_suite(void);
 
 static const test_suite suites[] =
 {
+#if TEST_GL
     { "dlopen",         TEST_FLAG_LOG,                     dlopen_suite },
     { "errors",         TEST_FLAG_CONTEXT,                 errors_suite },
     { "interpose",      TEST_FLAG_CONTEXT,                 interpose_suite },
-    { "math",           0,                                 math_suite },
     { "pbo",            TEST_FLAG_LOG | TEST_FLAG_CONTEXT, pbo_suite },
     { "pointers",       TEST_FLAG_LOG | TEST_FLAG_CONTEXT, pointers_suite },
     { "procaddress",    TEST_FLAG_CONTEXT,                 procaddress_suite },
     { "queries",        TEST_FLAG_LOG | TEST_FLAG_CONTEXT, queries_suite },
     { "setstate",       TEST_FLAG_LOG | TEST_FLAG_CONTEXT, setstate_suite },
     { "showextensions", TEST_FLAG_LOG | TEST_FLAG_CONTEXT, showextensions_suite },
-    { "string",         0,                                 string_suite },
     { "texcomplete",    TEST_FLAG_LOG | TEST_FLAG_CONTEXT, texcomplete_suite },
-    { "threads",        0,                                 threads_suite },
-    { "triangles",      TEST_FLAG_LOG | TEST_FLAG_CONTEXT, triangles_suite }
+    { "triangles",      TEST_FLAG_LOG | TEST_FLAG_CONTEXT, triangles_suite },
+#endif /* TEST_GL */
+    { "math",           0,                                 math_suite },
+    { "string",         0,                                 string_suite },
+    { "threads",        0,                                 threads_suite }
 };
 
 static void usage(void)
@@ -176,6 +183,7 @@ static void init_tests(unsigned int unified_flags)
 
     if (unified_flags & TEST_FLAG_CONTEXT)
     {
+#if TEST_GL
         int dummy_argc = 1;
         char *dummy_argv[] = {"", NULL};
 
@@ -185,6 +193,10 @@ static void init_tests(unsigned int unified_flags)
         glutInitWindowSize(300, 300);
         glutCreateWindow("BuGLe test suite");
         glewInit();
+#else /* TEST_GL */
+        fprintf(stderr, "Test suite was not built with GL support\n");
+        exit(1);
+#endif /* !TESTGL */
     }
 }
 

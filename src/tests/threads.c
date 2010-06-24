@@ -21,6 +21,7 @@
 # include <config.h>
 #endif
 #include <bugle/memory.h>
+#include <bugle/bool.h>
 #include "platform/threads.h"
 #include "test.h"
 

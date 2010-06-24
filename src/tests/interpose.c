@@ -11,6 +11,7 @@
 #include <GL/glext.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
 #include <stddef.h>
 #include <bugle/bool.h>
 #include <budgie/types.h>
@@ -34,10 +35,10 @@ static void (BUDGIEAPIP pglDrawRangeElements)(GLenum, GLuint, GLuint, GLsizei, G
 
 test_status interpose_suite(void)
 {
-    if (strcmp(glGetString(GL_VERSION), "1.2") < 0)
+    if (strcmp((const char *) glGetString(GL_VERSION), "1.2") < 0)
         return TEST_SKIPPED;    /* Won't have a glDrawElements anyway */
 
-    pglDrawRangeElements = (void (BUDGIEAPIP)(GLenum, GLint *)) glXGetProcAddressARB((const GLubyte *) "glDrawRangeElements");
+    pglDrawRangeElements = (void (BUDGIEAPIP)(GLenum, GLuint, GLuint, GLsizei, GLenum, const GLvoid *)) glXGetProcAddressARB((const GLubyte *) "glDrawRangeElements");
 
     TEST_ASSERT(pglDrawRangeElements != glDrawRangeElements);
     pglDrawRangeElements(GL_TRIANGLES, 0, 0, 0, GL_UNSIGNED_SHORT, NULL);

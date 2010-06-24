@@ -8,48 +8,6 @@ import BugleChecks
 
 Import('envs', 'aspects', 'targets', 'libraries', 'srcdir')
 
-if 'tests' in aspects['parts']:
-    if 'interceptor' not in aspects['parts']:
-        print 'WARNING: cannot build tests without interceptor. They will be skipped'
-        aspects['parts'].remove('tests')
-        Return()
-
-    test_env = envs['host'].Clone()
-    test_env.Append(LIBS = libraries)
-
-    glew_lib = False
-    glut_lib = False
-
-    conf = Configure(test_env, custom_tests = BugleChecks.tests)
-    if aspects['gltype'] == 'gl':
-        if conf.CheckLibWithHeader('GLEW', 'GL/glew.h', 'c', autoadd = False):
-            glew_lib = 'GLEW'
-        elif conf.CheckLibWithHeader('glew32', 'GL/glew.h', 'c', autoadd = False):
-            glew_lib = 'glew32'
-        if conf.CheckLibWithHeader('glut', 'GL/glut.h', 'c', autoadd = False):
-            glut_lib = 'glut'
-        elif conf.CheckLibWithHeader('glut32', 'GL/glut.h', 'c', autoadd = False):
-            glut_lib = 'glut32'
-
-        use_gl = glew_lib and glut_lib
-        if use_gl:
-            conf.env.Append(LIBS = [glew_lib, glut_lib])
-        else:
-            print 'WARNING: Both GLEW and GLUT are required for tests'
-            aspects['parts'].remove('tests')
-            Return()
-    else:
-        # No tests possible for non-desktop GL until we split up the platform
-        # tests from the API tests
-        Return()
-
-    test_env = conf.Finish()
-
-    bugle_path = os.path.dirname(targets['bugle'].out[0].abspath)
-    test_env.AppendENVPath('LD_LIBRARY_PATH', bugle_path)
-    test_env['ENV']['BUGLE_FILTER_DIR'] = os.path.join(bugle_path, 'filters')
-    test_env['ENV']['BUGLE_FILTERS'] = srcdir.File('filters').abspath
-
 class TestFailed(Exception):
     def __init__(self, value):
         Exception.__init__(self, value)
@@ -124,48 +82,88 @@ def simple_test(name):
             target = name,
             source = [name + '.c'])
 
-# TODO: split up tests based on where they actually work
-if 'tests' in aspects['parts']:
-    plain_tests = [
-            'errors',
-            'interpose',
-            'procaddress',
-            'string',
-            'math',
-            'threads']
-    log_tests = [
-            ('dlopen', 'trace'),
-            ('pbo', 'trace'),
-            ('pointers', 'checks'),
-            ('queries', 'trace'),
-            ('setstate', 'trace'),
-            ('showextensions', 'showextensions'),
-            ('texcomplete', 'checks'),
-            ('triangles', 'triangles')]
-    tests_sources = [x + '.c' for x in plain_tests]
-    tests_sources += [x[0] + '.c' for x in log_tests]
+if 'tests' not in aspects['parts']:
+    Return()
 
-    bugletest = test_env.Program(
-            target = 'bugletest',
-            source = ['test.c'] + tests_sources + targets['bugleutils'].out)
+test_env = envs['host'].Clone()
+plain_tests = ['string', 'math', 'threads']
+log_tests = []
+simple_tests = []
+test_deps = []
+test_sources = ['test.c']
+bugle_path = os.path.dirname(targets['bugle'].out[0].abspath)
 
-    test = test_env.Command(Value(''), bugletest, '${SOURCE.path}')
-    test_env.Depends(test, targets['bugle'].out)
+if 'interceptor' not in aspects['parts']:
+    print 'WARNING: cannot run some tests without interceptor. They will be skipped'
+else:
+    if aspects['gltype'] == 'gl':
+        glew_lib = False
+        glut_lib = False
+
+        conf = Configure(test_env, custom_tests = BugleChecks.tests)
+        if conf.CheckLibWithHeader('GLEW', 'GL/glew.h', 'c', autoadd = False):
+            glew_lib = 'GLEW'
+        elif conf.CheckLibWithHeader('glew32', 'GL/glew.h', 'c', autoadd = False):
+            glew_lib = 'glew32'
+        if conf.CheckLibWithHeader('glut', 'GL/glut.h', 'c', autoadd = False):
+            glut_lib = 'glut'
+        elif conf.CheckLibWithHeader('glut32', 'GL/glut.h', 'c', autoadd = False):
+            glut_lib = 'glut32'
+
+        use_gl = glew_lib and glut_lib
+        if use_gl:
+            conf.env.Append(LIBS = [glew_lib, glut_lib])
+            test_env = conf.Finish()
+
+            test_env.Append(LIBS = libraries)
+            test_env.Append(CPPDEFINES = ['TEST_GL'])
+            test_env['ENV']['BUGLE_FILTER_DIR'] = os.path.join(bugle_path, 'filters')
+            test_env['ENV']['BUGLE_FILTERS'] = srcdir.File('filters').abspath
+
+            test_deps.append(targets['bugle'].out)
+            plain_tests.extend([
+                    'errors',
+                    'interpose',
+                    'procaddress'])
+            log_tests.extend([
+                    ('dlopen', 'trace'),
+                    ('pbo', 'trace'),
+                    ('pointers', 'checks'),
+                    ('queries', 'trace'),
+                    ('setstate', 'trace'),
+                    ('showextensions', 'showextensions'),
+                    ('texcomplete', 'checks'),
+                    ('triangles', 'triangles')])
+            simple_test('objects')
+            simple_test('shadertest')
+            simple_test('textest')
+            simple_test('threads1')
+            simple_test('threads2')
+        else:
+            print 'WARNING: Both GLEW and GLUT are required for some tests'
+    else:
+        print 'WARNING: not all tests run on this variant of OpenGL'
+
+test_env.AppendENVPath('LD_LIBRARY_PATH', bugle_path) # For Linux
+test_env.AppendENVPath('PATH', bugle_path)            # For Windows
+
+test_sources += [x + '.c' for x in plain_tests]
+test_sources += [x[0] + '.c' for x in log_tests]
+bugletest = test_env.Program(
+        target = 'bugletest',
+        source = test_sources + targets['bugleutils'].out)
+
+test = test_env.Command(Value(''), bugletest, '${SOURCE.path}')
+test_env.Depends(test, test_deps)
+test_env.AlwaysBuild(test)
+test_env.Alias('test', test)
+
+for name, chain in log_tests:
+    # The lambda below is to suppress the printout of what is happening,
+    # to get all the PASSED/FAILED in a single block
+    test = test_env.Command(Value(''), bugletest,
+            Action(make_log_test(name, chain), lambda t, s, e: ''))
+    test_env.Depends(test, test_deps)
+    test_env.Depends(test, 'filters')
     test_env.AlwaysBuild(test)
     test_env.Alias('test', test)
-
-    for name, chain in log_tests:
-        # The lambda below is to suppress the printout of what is happening,
-        # to get all the PASSED/FAILED in a single block
-        test = test_env.Command(Value(''), bugletest,
-                Action(make_log_test(name, chain), lambda t, s, e: ''))
-        test_env.Depends(test, targets['bugle'].out)
-        test_env.Depends(test, 'filters')
-        test_env.AlwaysBuild(test)
-        test_env.Alias('test', test)
-
-    simple_test('objects')
-    simple_test('shadertest')
-    simple_test('textest')
-    simple_test('threads1')
-    simple_test('threads2')
