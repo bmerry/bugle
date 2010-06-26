@@ -1193,9 +1193,18 @@ static void debugger_loop(function_call *call)
         {
             bugle_thread_sem_wait(&request_queue.data_sem);
         }
+
         req = request_queue.requests[request_queue.head];
         if (++request_queue.head == REQUEST_QUEUE_SIZE)
             request_queue.head = 0;
+
+        if (req == NULL)
+        {
+            bugle_log_printf("debugger", "debugger_loop", BUGLE_LOG_ERROR,
+                             "Error reading from debugger, continuing");
+            stopped = BUGLE_FALSE;
+            break;
+        }
         process_single_command(call, req);
         bugle_thread_sem_post(&request_queue.space_sem);
     } while (stopped);
@@ -1536,13 +1545,13 @@ static gldb_request_header *read_request(bugle_io_reader *in_pipe)
 
             switch (subtype)
             {
+#ifdef GL_VERSION_1_1
             case REQ_DATA_TEXTURE:
                 {
                     gldb_request_data_texture *req = BUGLE_MALLOC(gldb_request_data_texture);
                     req->header.header = header;
                     req->header.subtype = subtype;
                     if (!gldb_protocol_recv_code(in_pipe, &req->object_id)
-                        || !gldb_protocol_recv_code(in_pipe, &req->object_id)
                         || !gldb_protocol_recv_code(in_pipe, &req->target)
                         || !gldb_protocol_recv_code(in_pipe, &req->face)
                         || !gldb_protocol_recv_code(in_pipe, &req->level)
@@ -1568,6 +1577,7 @@ static gldb_request_header *read_request(bugle_io_reader *in_pipe)
                     return &req->header.header;
                 }
                 break;
+#endif
             case REQ_DATA_FRAMEBUFFER:
                 {
                     gldb_request_data_framebuffer *req = BUGLE_MALLOC(gldb_request_data_framebuffer);
