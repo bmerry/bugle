@@ -39,17 +39,14 @@
 #include "common/io-impl.h"
 #include "platform/threads.h"
 
-typedef enum
-{
-    BUGLE_HANDLE_TYPE_SOCKET,
-    BUGLE_HANDLE_TYPE_FILE
-} bugle_io_handle_type;
-
-typedef struct bugle_io_reader_handle
+/* Reader structure for a HANDLE-based pipe. It does not work for
+ * sockets, because Winsock is just flat-out whacky and doesn't properly
+ * integrate with HANDLE-based APIs.
+ */
+typedef struct 
 {
     HANDLE handle;
-    bugle_io_handle_type type;
-    bugle_bool do_close; /* to allow a reader and a writer on a single socket */
+    bugle_bool do_close; /* to allow a reader and a writer on a single pipe */
 } bugle_io_reader_handle;
 
 static size_t handle_read(void *ptr, size_t size, size_t nmemb, void *arg)
@@ -61,8 +58,10 @@ static size_t handle_read(void *ptr, size_t size, size_t nmemb, void *arg)
     remain = size * nmemb; /* FIXME handle overflow */
     while (remain > 0)
     {
-        DWORD bytes_read;
-        BOOL status = ReadFile(s->handle, (char *)ptr + received, remain, &bytes_read, NULL);
+        DWORD bytes_read = 0;
+        BOOL status;
+        
+        status = ReadFile(s->handle, (char *)ptr + received, remain, &bytes_read, NULL);
         received += bytes_read;
         remain -= bytes_read;
         if (!status)
@@ -79,26 +78,16 @@ static int handle_reader_close(void *arg)
     if (!s->do_close)
         return 0;
 
-    switch (s->type)
-    {
-    case BUGLE_HANDLE_TYPE_SOCKET:
-        if (closesocket((SOCKET) s->handle) == 0)
-            ret = 0;
-        else
-            ret = EOF;
-        break;
-    default:
-        if (CloseHandle(s->handle))
-            ret = 0;
-        else
-            ret = EOF;
-        break;
-    }
+    if (CloseHandle(s->handle))
+        ret = 0;
+    else
+        ret = EOF;
+
     bugle_free(arg);
     return ret;
 }
 
-static bugle_io_reader *bugle_io_reader_handle_new(HANDLE handle, bugle_io_handle_type type, bugle_bool do_close)
+static bugle_io_reader *bugle_io_reader_handle_new(HANDLE handle, bugle_bool do_close)
 {
     bugle_io_reader *reader;
     bugle_io_reader_handle *s;
@@ -111,7 +100,6 @@ static bugle_io_reader *bugle_io_reader_handle_new(HANDLE handle, bugle_io_handl
     reader->arg = s;
 
     s->handle = handle;
-    s->type = type;
     s->do_close = do_close;
     return reader;
 }
@@ -122,13 +110,95 @@ bugle_io_reader *bugle_io_reader_fd_new(int fd)
     if (handle == INVALID_HANDLE_VALUE)
         return NULL;
     else
-        return bugle_io_reader_handle_new(handle, BUGLE_HANDLE_TYPE_FILE, BUGLE_TRUE);
+        return bugle_io_reader_handle_new(handle, BUGLE_TRUE);
 }
 
-typedef struct bugle_io_writer_handle
+/* Reader structure for Winsock sockets. This uses non-blocking sockets with
+ * a select() call to obtain synchronous operations, because Winsock seems
+ * to hold a lock during blocking reads that prevents any data from being
+ * transmitted in another thread.
+ */
+typedef struct
+{
+    SOCKET sock;
+    bugle_bool do_close; /* to allow a reader and a writer on a single socket */
+} bugle_io_reader_socket;
+
+static size_t socket_read(void *ptr, size_t size, size_t nmemb, void *arg)
+{
+    bugle_io_reader_socket *s = (bugle_io_reader_socket *) arg;
+    DWORD remain;
+    DWORD received = 0;
+
+    remain = size * nmemb; /* FIXME handle overflow */
+    while (remain > 0)
+    {
+        DWORD bytes_read = 0;
+        BOOL status = TRUE;
+        int ret;
+        fd_set read_fds;
+
+        FD_ZERO(&read_fds);
+        FD_SET(s->sock, &read_fds);
+        select(s->sock + 1, &read_fds, NULL, NULL, NULL);
+        ret = recv(s->sock, (char *)ptr + received, remain, 0);
+        if (ret == SOCKET_ERROR)
+        {
+            /* Deal with spurious wakeups from select */
+            if (WSAGetLastError() != WSAEWOULDBLOCK)
+                status = FALSE;
+        }
+        else
+            bytes_read = ret;
+        
+        received += bytes_read;
+        remain -= bytes_read;
+        if (!status)
+            return received / size;
+    }
+    return nmemb;
+}
+
+static int socket_reader_close(void *arg)
+{
+    bugle_io_reader_socket *s = (bugle_io_reader_socket *) arg;
+    int ret;
+
+    if (!s->do_close)
+        return 0;
+
+    if (closesocket(s->sock) == 0)
+        ret = 0;
+    else
+        ret = EOF;
+
+    bugle_free(arg);
+    return ret;
+}
+
+static bugle_io_reader *bugle_io_reader_socket_new(SOCKET sock, bugle_bool do_close)
+{
+    bugle_io_reader *reader;
+    bugle_io_reader_socket *s;
+
+    reader = BUGLE_MALLOC(bugle_io_reader);
+    s = BUGLE_MALLOC(bugle_io_reader_socket);
+
+    reader->fn_read = socket_read;
+    reader->fn_close = socket_reader_close;
+    reader->arg = s;
+
+    s->sock = sock;
+    s->do_close = do_close;
+    return reader;
+}
+
+/* Writer structure for HANDLE-based pipes. Does not work with sockets
+ * (see comments on bugle_io_reader_handle).
+ */
+typedef struct
 {
     HANDLE handle;
-    bugle_io_handle_type type;
     bugle_bool do_close;
 } bugle_io_writer_handle;
 
@@ -137,15 +207,17 @@ static size_t handle_write(const void *ptr, size_t size, size_t nmemb, void *arg
     bugle_io_writer_handle *s = (bugle_io_writer_handle *) arg;
     DWORD written = 0;
     DWORD remain;
-    DWORD cur;
 
-    /* FIXME: handle overflow */
     remain = size * nmemb;
     while (remain > 0)
     {
-        BOOL status = WriteFile(s->handle, (char *)ptr + written, remain, &cur, NULL);
-        written += cur;
-        remain -= cur;
+        DWORD bytes_written = 0;
+        BOOL status;
+
+        status = WriteFile(s->handle, (char *)ptr + written, remain, &bytes_written, NULL);
+
+        written += bytes_written;
+        remain -= bytes_written;
         if (!status)
             return written / size;
     }
@@ -160,26 +232,16 @@ static int handle_writer_close(void *arg)
     if (!s->do_close)
         return 0;
 
-    switch (s->type)
-    {
-    case BUGLE_HANDLE_TYPE_SOCKET:
-        if (closesocket((SOCKET) s->handle) == 0)
-            ret = 0;
-        else
-            ret = EOF;
-        break;
-    default:
-        if (CloseHandle(s->handle))
-            ret = 0;
-        else
-            ret = EOF;
-        break;
-    }
+    if (CloseHandle(s->handle))
+        ret = 0;
+    else
+        ret = EOF;
+
     bugle_free(arg);
     return ret;
 }
 
-static bugle_io_writer *bugle_io_writer_handle_new(HANDLE handle, bugle_io_handle_type type, bugle_bool do_close)
+static bugle_io_writer *bugle_io_writer_handle_new(HANDLE handle, bugle_bool do_close)
 {
     bugle_io_writer *writer;
     bugle_io_writer_handle *s;
@@ -194,7 +256,6 @@ static bugle_io_writer *bugle_io_writer_handle_new(HANDLE handle, bugle_io_handl
     writer->arg = s;
 
     s->handle = handle;
-    s->type = type;
     s->do_close = do_close;
     return writer;
 }
@@ -205,7 +266,88 @@ bugle_io_writer *bugle_io_writer_fd_new(int fd)
     if (handle == INVALID_HANDLE_VALUE)
         return NULL;
     else
-        return bugle_io_writer_handle_new(handle, BUGLE_HANDLE_TYPE_FILE, BUGLE_TRUE);
+        return bugle_io_writer_handle_new(handle, BUGLE_TRUE);
+}
+
+/* Writer for winsock sockets.
+ */
+typedef struct
+{
+    SOCKET sock;
+    bugle_bool do_close;
+} bugle_io_writer_socket;
+
+static size_t socket_write(const void *ptr, size_t size, size_t nmemb, void *arg)
+{
+    bugle_io_writer_socket *s = (bugle_io_writer_socket *) arg;
+    DWORD written = 0;
+    DWORD remain;
+
+    remain = size * nmemb;
+    while (remain > 0)
+    {
+        BOOL status = TRUE;
+        DWORD bytes_written = 0;
+        fd_set write_fds;
+        int ret;
+
+        FD_ZERO(&write_fds);
+        FD_SET(s->sock, &write_fds);
+        select(s->sock + 1, NULL, &write_fds, NULL, NULL);
+        ret = send(s->sock, (char *)ptr + written, remain, 0);
+        if (ret == SOCKET_ERROR)
+        {
+            /* Cater for spurious wakeups from select() */
+            if (WSAGetLastError() != WSAEWOULDBLOCK)
+                status = FALSE;
+        }
+        else
+        {
+            bytes_written = ret;
+        }
+
+        written += bytes_written;
+        remain -= bytes_written;
+        if (!status)
+            return written / size;
+    }
+    return nmemb;
+}
+
+static int socket_writer_close(void *arg)
+{
+    bugle_io_writer_socket *s = (bugle_io_writer_socket *) arg;
+    int ret;
+
+    if (!s->do_close)
+        return 0;
+
+    if (closesocket(s->sock) == 0)
+        ret = 0;
+    else
+        ret = EOF;
+
+    bugle_free(arg);
+    return ret;
+}
+
+static bugle_io_writer *bugle_io_writer_socket_new(SOCKET sock, bugle_bool do_close)
+{
+    bugle_io_writer *writer;
+    bugle_io_writer_socket *s;
+
+    writer = BUGLE_MALLOC(bugle_io_writer);
+    s = BUGLE_MALLOC(bugle_io_writer_socket);
+
+    writer->fn_vprintf = NULL;
+    writer->fn_putc = NULL;
+    writer->fn_write = socket_write;
+    writer->fn_close = socket_writer_close;
+    writer->arg = s;
+
+    s->sock = sock;
+    s->do_close = do_close;
+    return writer;
 }
 
 static bugle_bool wsa_initialised = BUGLE_FALSE;
@@ -270,7 +412,7 @@ char *bugle_io_socket_listen(const char *host, const char *port, bugle_io_reader
      * Also, we avoid the standard socket call because it creates an
      * "overlapped" socket that can't be used with synchronous ReadFile.
      */
-    listen_sock = WSASocket(ai->ai_family, ai->ai_socktype, ai->ai_protocol, NULL, 0, 0);
+    listen_sock = socket(ai->ai_family, ai->ai_socktype, ai->ai_protocol);
     if (listen_sock == -1)
     {
         freeaddrinfo(ai);
@@ -304,10 +446,19 @@ char *bugle_io_socket_listen(const char *host, const char *port, bugle_io_reader
     freeaddrinfo(ai);
     closesocket(listen_sock);
 
+    {
+        u_long argp = 1;
+        if (ioctlsocket(sock, FIONBIO, &argp) == SOCKET_ERROR)
+        {
+            closesocket(sock);
+            return bugle_asprintf("failed to make socket non-blocking");
+        }
+    }
+
     /* Reader and writer can be closed independently. Ensure that the
      * socket doesn't get closed twice.
      */
-    *reader = bugle_io_reader_handle_new((HANDLE) sock, BUGLE_HANDLE_TYPE_SOCKET, BUGLE_TRUE);
-    *writer = bugle_io_writer_handle_new((HANDLE) sock, BUGLE_HANDLE_TYPE_SOCKET, BUGLE_FALSE);
+    *reader = bugle_io_reader_socket_new(sock, BUGLE_TRUE);
+    *writer = bugle_io_writer_socket_new(sock, BUGLE_FALSE);
     return NULL;
 }

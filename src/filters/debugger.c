@@ -1623,7 +1623,7 @@ static gldb_request_header *read_request(bugle_io_reader *in_pipe)
         }
         break;
     default:
-        bugle_log_printf("debugger", "process_single_command",
+        bugle_log_printf("debugger", "read_request",
                          BUGLE_LOG_ERROR,
                          "Unknown debug command %#08lx received",
                          (unsigned long) header.code);
