@@ -36,6 +36,11 @@
 #include "gldb/gldb-gui.h"
 #include "gldb/gldb-gui-buffer.h"
 
+/* Avoid making this debugger module directly depend on GL extension headers */
+#ifndef GL_BUFFER_SIZE
+# define GL_BUFFER_SIZE 0x8764
+#endif
+
 struct _GldbBufferPane
 {
     GldbPane parent;

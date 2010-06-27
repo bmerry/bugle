@@ -20,12 +20,15 @@
 #if HAVE_CONFIG_H
 # include <config.h>
 #endif
+/* Note: stdlib.h must be included before glut.h under MSVC, otherwise it
+ * attempts to redefine exit.
+ */
+#include <stdlib.h>
 #if TEST_GL
 # include <GL/glew.h>
 # include <GL/glut.h>
 #endif
 #include <string.h>
-#include <stdlib.h>
 #include <stddef.h>
 #include <stdio.h>
 #include <errno.h>

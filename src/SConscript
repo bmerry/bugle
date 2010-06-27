@@ -58,6 +58,7 @@ def apply_compiler(env, compiler, config):
         env.Tool('msvc')
         env.Tool('mslink')
         env.Tool('mslib')
+        env.Append(CCFLAGS = ['/MD'])
         if config == 'debug':
             env.Append(CCFLAGS = ['/Zi'])
             env.Append(LINKFLAGS = ['/DEBUG'])
@@ -84,10 +85,13 @@ def apply_compiler(env, compiler, config):
 
     elif compiler == 'mingw':
         env.Tool('mingw')
-        env.AppendUnique(CCFLAGS = ['-Wall'])
+        env.AppendUnique(CCFLAGS = ['-Wall', '-mthreads'])
         # We can't use -std=c89 on MinGW because there is no equivalent to
         # _POSIX_C_SOURCE to turn on MSVCRT extensions in headers
-        env.AppendUnique(CFLAGS = ['-D__USE_MINGW_ANSI_STDIO=1', '-Wstrict-prototypes'])
+        env.AppendUnique(CFLAGS = ['-Wstrict-prototypes'])
+        env.AppendUnique(CPPDEFINES = [
+            ('__USE_MINGW_ANSI_STDIO', '1'),
+            ('GLUT_DISABLE_ATEXIT_HACK', '1')])
         if config == 'debug':
             env.AppendUnique(CCFLAGS = ['-g'])
         elif config == 'release':

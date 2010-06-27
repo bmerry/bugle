@@ -151,7 +151,7 @@ const char *gldb_program_validate(void)
     return NULL;    /* success */
 }
 
-#if BUGLE_PLATFORM_MSVCRT
+#if BUGLE_PLATFORM_MSVCRT || BUGLE_PLATFORM_MINGW
 # include <windows.h>
 # include <io.h>
 # include <fcntl.h>
