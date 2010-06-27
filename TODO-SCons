@@ -19,3 +19,10 @@
 - add platform layer for gnulib?
 - separate platform tests from GL/API tests
 - fix build rules for chunked HTML to copy and package all the .html files
+- update MinGW instructions:
+  GTK+: use 2.16 bundle from http://www.gtk.org/download-windows.html (NOT >= 2.18)
+  install into /mingw
+  gtkglext: use source package, first fix up with
+    sed -i -e 's/pangox/pangowin32/g' configure
+  configure with --prefix=/mingw
+    don't build in a subdir
