@@ -528,8 +528,7 @@ static int channel_close(void *channel)
 static void run_action(GtkAction *action, gpointer user_data)
 {
     const char *error_msg;
-    GldbWindow *context;
-    context = (GldbWindow *) user_data;
+    GldbWindow *context = (GldbWindow *) user_data;
     bugle_io_reader *in_reader;
 
     g_return_if_fail(gldb_get_status() == GLDB_STATUS_DEAD);

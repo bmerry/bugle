@@ -57,7 +57,7 @@ typedef struct
 {
     int width;
     int height;
-    uint32_t channels;
+    bugle_uint32_t channels;
     GLenum type;
     GLvoid *pixels;
     bugle_bool owns_pixels;

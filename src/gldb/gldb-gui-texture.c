@@ -87,7 +87,7 @@ typedef struct
     GLenum target;
     GLenum face;
     GLuint level;
-    uint32_t channels;
+    bugle_uint32_t channels;
     GLenum pixel_type;
     guint32 flags;
 
@@ -105,7 +105,7 @@ static gboolean gldb_texture_pane_response_callback(gldb_response *response,
     gldb_response_data_texture *r;
     texture_callback_data *data;
     GLenum format;
-    uint32_t channels;
+    bugle_uint32_t channels;
     GldbGuiImageLevel *level;
     GldbTexturePane *pane;
     GdkGLContext *glcontext;
@@ -204,7 +204,7 @@ static void gldb_texture_pane_update_ids(GldbTexturePane *pane)
     linked_list_node *nt, *nl;
     gchar *name;
     guint levels;
-    uint32_t channels;
+    bugle_uint32_t channels;
     guint trg;
     hashptr_table active;
     GLenum unit;

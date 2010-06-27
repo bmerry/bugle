@@ -496,6 +496,19 @@ GldbPane *gldb_buffer_pane_new(void)
 {
     GtkWidget *hbox, *vbox, *scrolled, *combos, *format, *help;
     GldbBufferPane *pane;
+    const char *label_text =
+        "b = byte\n"
+        "B = ubyte\n"
+        "s = short\n"
+        "S = ushort\n"
+        "i = int\n"
+        "I = uint\n"
+        "f = float\n"
+#ifdef BUGLE_GLTYPE_GL
+        "d = double\n"
+#endif
+        "_ = pad byte\n"
+        "3x = xxx";
 
     pane = GLDB_BUFFER_PANE(g_object_new(GLDB_BUFFER_PANE_TYPE, NULL));
 
@@ -506,18 +519,7 @@ GldbPane *gldb_buffer_pane_new(void)
 
     combos = gldb_buffer_pane_combo_table_new(pane);
     format = gldb_buffer_pane_format_new(pane);
-    help = gtk_label_new(_("b = byte\n"
-                           "B = ubyte\n"
-                           "s = short\n"
-                           "S = ushort\n"
-                           "i = int\n"
-                           "I = uint\n"
-                           "f = float\n"
-#ifdef BUGLE_GLTYPE_GL
-                           "d = double\n"
-#endif
-                           "_ = pad byte\n"
-                           "3x = xxx"));
+    help = gtk_label_new(_(label_text));
     gldb_buffer_pane_rebuild_view(format, pane);
     gtk_container_add(GTK_CONTAINER(scrolled), pane->data_view);
 

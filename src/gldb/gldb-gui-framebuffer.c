@@ -82,7 +82,7 @@ enum
 typedef struct
 {
     GldbFramebufferPane *pane;
-    uint32_t channels;
+    bugle_uint32_t channels;
     GLenum type;
     guint32 flags;  /* not used at present */
 } framebuffer_callback_data;
@@ -94,7 +94,7 @@ static gboolean gldb_framebuffer_pane_response_callback(gldb_response *response,
     gldb_response_data_framebuffer *r;
     framebuffer_callback_data *data;
     GLenum format;
-    uint32_t channels;
+    bugle_uint32_t channels;
     GLint width, height;
 
     r = (gldb_response_data_framebuffer *) response;

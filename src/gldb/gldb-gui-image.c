@@ -386,10 +386,9 @@ static void image_draw_motion_update(GldbGuiImageViewer *viewer,
     int width, height;
     int level;
     int u, v;
-    GLfloat *pixel;
     char *msg, *tmp_msg;
     int nchannels, p;
-    uint32_t channels, channel;
+    bugle_uint32_t channels, channel;
     const GldbGuiImagePlane *plane;
 
     image_draw_motion_clear_status(viewer);
@@ -408,14 +407,13 @@ static void image_draw_motion_update(GldbGuiImageViewer *viewer,
     u = CLAMP((int) x, 0, width - 1);
     v = CLAMP((int) y, 0, height - 1);
     nchannels = gldb_channel_count(plane->channels);
-    pixel = plane->pixels + nchannels * (v * width + u);
     msg = bugle_asprintf("u: %d v: %d ", u, v);
 
     channels = plane->channels;
     for (p = 0; channels; channels &= ~channel, p++)
     {
-        channel = channels & ~(channels - 1);
         const char *abbr = gldb_channel_get_abbr(channel);
+        channel = channels & ~(channels - 1);
         tmp_msg = msg;
         msg = bugle_asprintf(" %s %s: %f", tmp_msg, abbr ? abbr : "?", gldb_gui_image_plane_get_pixel(plane, u, v, p));
         bugle_free(tmp_msg);
@@ -1460,8 +1458,8 @@ void gldb_gui_image_upload(GldbGuiImage *image, bugle_bool remap)
             for (l = 0; l < image->nlevels; l++)
                 for (p = 0; p < 6; p++)
                 {
-                    face = GL_TEXTURE_CUBE_MAP_POSITIVE_X_ARB + p;
                     GldbGuiImagePlane *plane = &image->levels[l].planes[p];
+                    face = GL_TEXTURE_CUBE_MAP_POSITIVE_X_ARB + p;
                     texture_width = have_npot ? plane->width : round_up_two(plane->width);
                     texture_height = have_npot ? plane->height : round_up_two(plane->height);
                     format = gldb_channel_get_display_token(plane->channels);

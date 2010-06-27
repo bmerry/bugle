@@ -58,7 +58,6 @@ def apply_compiler(env, compiler, config):
         env.Tool('msvc')
         env.Tool('mslink')
         env.Tool('mslib')
-        env.Append(CCFLAGS = ['/MD'])
         if config == 'debug':
             env.Append(CCFLAGS = ['/Zi'])
             env.Append(LINKFLAGS = ['/DEBUG'])
