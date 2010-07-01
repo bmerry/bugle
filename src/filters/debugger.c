@@ -46,6 +46,7 @@
 #include "common/protocol.h"
 #include "platform/threads.h"
 #include "platform/types.h"
+#include "platform/io.h"
 
 #define REQUEST_QUEUE_SIZE 64
 
@@ -1311,7 +1312,47 @@ static bugle_bool debugger_initialise(filter_set *handle)
         return BUGLE_FALSE;
     }
 
-    if (0 == strcmp(getenv("BUGLE_DEBUGGER"), "fd"))
+    if (BUGLE_FALSE)
+    {
+        /* Empty block to start conditionally-compiled chain of else ifs. */
+    }
+#if BUGLE_PLATFORM_MSVCRT || BUGLE_PLATFORM_MINGW
+    else if (0 == strcmp(getenv("BUGLE_DEBUGGER"), "handle"))
+    {
+        HANDLE in_pipe_handle, out_pipe_handle;
+
+        if (!getenv("BUGLE_DEBUGGER_HANDLE_IN")
+            || !getenv("BUGLE_DEBUGGER_HANDLE_OUT"))
+        {
+            bugle_log("debugger", "initialise", BUGLE_LOG_ERROR,
+                      "The debugger filter-set should only be used with gldb (missing envars)");
+            return BUGLE_FALSE;
+        }
+        env = getenv("BUGLE_DEBUGGER_HANDLE_IN");
+        in_pipe_handle = (HANDLE) _strtoui64(env, &last, 0);
+        if (!*env || *last)
+        {
+            bugle_log_printf("debugger", "initialise", BUGLE_LOG_ERROR,
+                             "Illegal BUGLE_DEBUGGER_HANDLE_IN: '%s' (bug in gldb?)",
+                             env);
+            return BUGLE_FALSE;
+        }
+
+        env = getenv("BUGLE_DEBUGGER_HANDLE_OUT");
+        out_pipe_handle = (HANDLE) _strtoui64(env, &last, 0);
+        if (!*env || *last)
+        {
+            bugle_log_printf("debugger", "initialise", BUGLE_LOG_ERROR,
+                             "Illegal BUGLE_DEBUGGER_FD_OUT: '%s' (bug in gldb?)",
+                             env);
+            return BUGLE_FALSE;
+        }
+        in_pipe = bugle_io_reader_handle_new(in_pipe_handle, TRUE);
+        out_pipe = bugle_io_writer_handle_new(out_pipe_handle, TRUE);
+    }
+#endif
+#if BUGLE_PLATFORM_POSIX
+    else if (0 == strcmp(getenv("BUGLE_DEBUGGER"), "fd"))
     {
         int in_pipe_fd, out_pipe_fd;
 
@@ -1345,6 +1386,7 @@ static bugle_bool debugger_initialise(filter_set *handle)
         in_pipe = bugle_io_reader_fd_new(in_pipe_fd);
         out_pipe = bugle_io_writer_fd_new(out_pipe_fd);
     }
+#endif
     else if (0 == strcmp(getenv("BUGLE_DEBUGGER"), "tcp"))
     {
         const char *host;

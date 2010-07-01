@@ -37,7 +37,8 @@
 #include "common/protocol.h"
 #include "platform/types.h"
 
-static int lib_in_fd = -1, lib_out_fd = -1;
+static gldb_pipe lib_in_pipe, lib_out_pipe;
+
 static bugle_io_reader *lib_in = NULL;
 static bugle_io_writer *lib_out = NULL;
 /* Started is set to BUGLE_TRUE only after receiving RESP_RUNNING. When
@@ -228,7 +229,7 @@ static bugle_pid_t execute(void (*child_init)(void))
     /* in is child->parent
      * out is parent->child
      */
-    int in_pipe[2], out_pipe[2], child_pipes[2];
+    HANDLE in_pipe[2], out_pipe[2];
     const char *command, *chain;
     char **argv;
 
@@ -254,35 +255,53 @@ static bugle_pid_t execute(void (*child_init)(void))
     if (!command) command = "/bin/true";
     chain = prog_settings[GLDB_PROGRAM_SETTING_CHAIN];
 
-    /* Some trickery is needed on windows to get inheritance right: the
-     * pipes are all initially opened with _O_NOINHERIT, and then those that
-     * must be inherited are put through dup.
-     */
-    gldb_safe_syscall(_pipe(in_pipe, 4096, _O_BINARY | _O_NOINHERIT), "_pipe");
-    gldb_safe_syscall(_pipe(out_pipe, 4096, _O_BINARY | _O_NOINHERIT), "_pipe");
+    if (!CreatePipe(&in_pipe[0], &in_pipe[1], NULL, 0))
+    {
+        gldb_error("Failed to create pipes");
+        return -1;
+    }
+    if (!CreatePipe(&out_pipe[0], &out_pipe[1], NULL, 0))
+    {
+        gldb_error("Failed to create pipes");
+        CloseHandle(in_pipe[0]);
+        CloseHandle(in_pipe[1]);
+        return -1;
+    }
+    /* Allow the child ends to be inheritable */
+    if (!SetHandleInformation(out_pipe[0], HANDLE_FLAG_INHERIT, HANDLE_FLAG_INHERIT)
+        || !SetHandleInformation(in_pipe[1], HANDLE_FLAG_INHERIT, HANDLE_FLAG_INHERIT))
+    {
+        gldb_error("Failed to make handles inheritable");
+        CloseHandle(in_pipe[0]);
+        CloseHandle(in_pipe[1]);
+        CloseHandle(out_pipe[0]);
+        CloseHandle(out_pipe[1]);
+        return -1;
+    }
 
-    child_pipes[0] = dup(out_pipe[0]); close(out_pipe[0]);
-    child_pipes[1] = dup(in_pipe[1]);  close(in_pipe[1]);
-
-    setenv_printf("BUGLE_DEBUGGER=fd");
-    setenv_printf("BUGLE_DEBUGGER_FD_IN=%d", child_pipes[0]);
-    setenv_printf("BUGLE_DEBUGGER_FD_OUT=%d", child_pipes[1]);
+    setenv_printf("BUGLE_DEBUGGER=handle");
+    setenv_printf("BUGLE_DEBUGGER_HANDLE_IN=%#I64x", (unsigned __int64) (uintptr_t) out_pipe[0]);
+    setenv_printf("BUGLE_DEBUGGER_HANDLE_OUT=%#I64x", (unsigned __int64) (uintptr_t) in_pipe[1]);
     setenv_printf("BUGLE_CHAIN=%s", chain ? chain : "");
 
     argv = make_argv(command);
     pid = _spawnvp(_P_NOWAIT, argv[0], argv);
     bugle_free(argv[0]);
     bugle_free(argv);
+    CloseHandle(out_pipe[0]);
+    CloseHandle(in_pipe[1]);
     if (pid == -1)
     {
-        perror("failed to execute program");
-        exit(1);
+        gldb_error("failed to execute program");
+        CloseHandle(in_pipe[0]);
+        CloseHandle(out_pipe[1]);
+        return -1;
     }
 
-    close(child_pipes[0]);
-    close(child_pipes[1]);
-    lib_in_fd = in_pipe[0];
-    lib_out_fd = out_pipe[1];
+    lib_in_pipe.type = GLDB_PIPE_TYPE_HANDLE;
+    lib_in_pipe.value.handle = in_pipe[0];
+    lib_out_pipe.type = GLDB_PIPE_TYPE_HANDLE;
+    lib_out_pipe.value.handle = out_pipe[1];
     return pid;
 }
 
@@ -348,8 +367,11 @@ static bugle_pid_t execute(void (*child_init)(void))
             return -1;
         }
         freeaddrinfo(ai);
-        lib_in_fd = sock;
-        lib_out_fd = sock;
+
+        lib_in_pipe.type = GLDB_PIPE_TYPE_FD;
+        lib_in_pipe.value.fd = sock;
+        lib_out_pipe.type = GLDB_PIPE_TYPE_FD;
+        lib_out_pipe.value.fd = sock;
         return 0;
     }
 
@@ -401,8 +423,10 @@ static bugle_pid_t execute(void (*child_init)(void))
         perror("failed to execute program");
         exit(1);
     default: /* Parent */
-        lib_in_fd = in_pipe[0];
-        lib_out_fd = out_pipe[1];
+        lib_in_pipe.type = GLDB_PIPE_TYPE_FD;
+        lib_in_pipe.value.fd = in_pipe[0];
+        lib_out_pipe.type = GLDB_PIPE_TYPE_FD;
+        lib_out_pipe.value.fd = out_pipe[1];
         close(in_pipe[1]);
         close(out_pipe[0]);
         switch (prog_type)
@@ -433,8 +457,8 @@ void set_status(gldb_status s)
             bugle_io_reader_close(lib_in);
         if (lib_out)
             bugle_io_writer_close(lib_out);
-        lib_in_fd = -1;
-        lib_out_fd = -1;
+        lib_in_pipe.type = GLDB_PIPE_TYPE_NONE;
+        lib_out_pipe.type = GLDB_PIPE_TYPE_NONE;
         lib_in = NULL;
         lib_out = NULL;
         child_pid = 0;
@@ -1106,9 +1130,9 @@ bugle_pid_t gldb_get_child_pid(void)
     return child_pid;
 }
 
-int gldb_get_in_pipe(void)
+void gldb_get_in_pipe(gldb_pipe *p)
 {
-    return lib_in_fd;
+    *p = lib_in_pipe;
 }
 
 void gldb_set_in_reader(bugle_io_reader *reader)
@@ -1116,9 +1140,9 @@ void gldb_set_in_reader(bugle_io_reader *reader)
     lib_in = reader;
 }
 
-int gldb_get_out_pipe(void)
+void gldb_get_out_pipe(gldb_pipe *p)
 {
-    return lib_out_fd;
+    *p = lib_out_pipe;
 }
 
 void gldb_set_out_writer(bugle_io_writer *writer)

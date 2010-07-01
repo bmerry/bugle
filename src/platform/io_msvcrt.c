@@ -38,6 +38,7 @@
 #include <bugle/string.h>
 #include "common/io-impl.h"
 #include "platform/threads.h"
+#include "platform/io.h"
 
 /* Reader structure for a HANDLE-based pipe. It does not work for
  * sockets, because Winsock is just flat-out whacky and doesn't properly
@@ -87,7 +88,7 @@ static int handle_reader_close(void *arg)
     return ret;
 }
 
-static bugle_io_reader *bugle_io_reader_handle_new(HANDLE handle, bugle_bool do_close)
+bugle_io_reader *bugle_io_reader_handle_new(HANDLE handle, bugle_bool do_close)
 {
     bugle_io_reader *reader;
     bugle_io_reader_handle *s;
@@ -176,7 +177,7 @@ static int socket_reader_close(void *arg)
     return ret;
 }
 
-static bugle_io_reader *bugle_io_reader_socket_new(SOCKET sock, bugle_bool do_close)
+bugle_io_reader *bugle_io_reader_socket_new(SOCKET sock, bugle_bool do_close)
 {
     bugle_io_reader *reader;
     bugle_io_reader_socket *s;
@@ -241,7 +242,7 @@ static int handle_writer_close(void *arg)
     return ret;
 }
 
-static bugle_io_writer *bugle_io_writer_handle_new(HANDLE handle, bugle_bool do_close)
+bugle_io_writer *bugle_io_writer_handle_new(HANDLE handle, bugle_bool do_close)
 {
     bugle_io_writer *writer;
     bugle_io_writer_handle *s;
@@ -331,7 +332,7 @@ static int socket_writer_close(void *arg)
     return ret;
 }
 
-static bugle_io_writer *bugle_io_writer_socket_new(SOCKET sock, bugle_bool do_close)
+bugle_io_writer *bugle_io_writer_socket_new(SOCKET sock, bugle_bool do_close)
 {
     bugle_io_writer *writer;
     bugle_io_writer_socket *s;

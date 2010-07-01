@@ -1,4 +1,4 @@
-- complete platform layer for win32 (I/O)
+- use OS handles for child process debug on Win32
 - test new library rules on win32
 - allow user to override package detection (esp. for cross-compiling)
 - documentation updates
@@ -11,13 +11,10 @@
   - threading API
 - unit tests:
   - I/O layer
-  - string functions
-  - math functions
   - socket API?
 - audit use of malloc/bugle_malloc/free/bugle_free for matching up
 - add platform layer for glib?
 - add platform layer for gnulib?
-- separate platform tests from GL/API tests
 - fix build rules for chunked HTML to copy and package all the .html files
 - update MinGW instructions:
   GTK+: use 2.16 bundle from http://www.gtk.org/download-windows.html (NOT >= 2.18)

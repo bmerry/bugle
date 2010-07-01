@@ -42,6 +42,7 @@
 #include <bugle/gl/glheaders.h>
 #include <budgie/basictypes.h>
 #include "platform/types.h"
+#include "platform/io.h"
 
 /* Callback functions provided by the UI */
 void gldb_error(const char *fmt, ...) BUGLE_ATTRIBUTE_FORMAT_PRINTF(1, 2);
@@ -222,6 +223,29 @@ typedef struct
     bugle_uint32_t id;
 } gldb_response;
 
+typedef enum
+{
+    GLDB_PIPE_TYPE_NONE,
+#if BUGLE_PLATFORM_MSVCRT || BUGLE_PLATFORM_MINGW
+    GLDB_PIPE_TYPE_HANDLE,
+    GLDB_PIPE_TYPE_SOCKET,
+#endif
+    GLDB_PIPE_TYPE_FD
+} gldb_pipe_type;
+
+typedef struct
+{
+    gldb_pipe_type type;
+    union
+    {
+#if BUGLE_PLATFORM_MSVCRT || BUGLE_PLATFORM_MINGW
+        HANDLE handle;
+        SOCKET sock;
+#endif
+        int fd;
+    } value;
+} gldb_pipe;
+
 /* Only first n characters of name are considered. This simplifies
  * generate_commands.
  */
@@ -278,10 +302,10 @@ gldb_status gldb_get_status(void);
 bugle_pid_t gldb_get_child_pid(void);
 /* These should only be used for select() and the like, never read from.
  * All protocol details are abstracted by gldb_send_*, gldb_set_* and
- * gldb_get_response.
+ * gldb_get_response. These functions receive a copy of the pipe.
  */
-int gldb_get_in_pipe(void);
-int gldb_get_out_pipe(void);
+void gldb_get_in_pipe(gldb_pipe *p);
+void gldb_get_out_pipe(gldb_pipe *p);
 /* Used to tell gldb what reader to use in gldb_protocol_recv* and to write
  * in gldb_protocol_send. They must also be set after launching a process
  * before trying to read/write anything. They are deallocated on process

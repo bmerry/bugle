@@ -40,6 +40,7 @@
 #include <bugle/memory.h>
 #include "platform/macros.h"
 #include "common/io-impl.h"
+#include "platform/io.h"
 
 typedef struct bugle_io_reader_fd
 {

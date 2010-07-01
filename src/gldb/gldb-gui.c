@@ -41,6 +41,7 @@
 #include <bugle/io.h>
 #include "common/io-impl.h"
 #include "common/protocol.h"
+#include "platform/io.h"
 #include "gldb/gldb-common.h"
 #include "gldb/gldb-channels.h"
 #include "gldb/gldb-gui.h"
@@ -530,6 +531,7 @@ static void run_action(GtkAction *action, gpointer user_data)
     const char *error_msg;
     GldbWindow *context = (GldbWindow *) user_data;
     bugle_io_reader *in_reader;
+    gldb_pipe in_pipe, out_pipe;
 
     g_return_if_fail(gldb_get_status() == GLDB_STATUS_DEAD);
     while ((error_msg = gldb_program_validate()) != NULL)
@@ -548,11 +550,32 @@ static void run_action(GtkAction *action, gpointer user_data)
     }
     if (!gldb_execute(NULL))
         return;
-#if BUGLE_PLATFORM_MSVCRT
-    context->channel = g_io_channel_win32_new_fd(gldb_get_in_pipe());
+
+    gldb_get_in_pipe(&in_pipe);
+    switch (in_pipe.type)
+    {
+#if BUGLE_PLATFORM_MSVCRT || BUGLE_PLATFORM_MINGW
+    case GLDB_PIPE_TYPE_HANDLE:
+        {
+            /* TODO: this file handle will leak. It should be moved into the
+             * channel reader.
+             */
+            int fd = _open_osfhandle((intptr_t) in_pipe.value.handle, _O_RDONLY);
+            context->channel = g_io_channel_win32_new_fd(fd);
+        }
+        break;
+    case GLDB_PIPE_TYPE_SOCKET:
+        context->channel = g_io_channel_win32_new_socket(in_pipe.value.sock);
+        break;
 #else
-    context->channel = g_io_channel_unix_new(gldb_get_in_pipe());
+    case GLDB_PIPE_TYPE_FD:
+        context->channel = g_io_channel_unix_new(in_pipe.value.fd);
+        break;
 #endif
+    default:
+        g_assert_not_reached();
+        context->channel = NULL;
+    }
     g_io_channel_set_encoding(context->channel, NULL, NULL);
 
     in_reader = BUGLE_MALLOC(bugle_io_reader);
@@ -560,15 +583,34 @@ static void run_action(GtkAction *action, gpointer user_data)
     in_reader->fn_close = channel_close;
     in_reader->arg = context->channel;
     gldb_set_in_reader(in_reader);
-    gldb_set_out_writer(bugle_io_writer_fd_new(gldb_get_out_pipe()));
+
+    gldb_get_out_pipe(&out_pipe);
+    switch (out_pipe.type)
+    {
+#if BUGLE_PLATFORM_MSVCRT || BUGLE_PLATFORM_MINGW
+    case GLDB_PIPE_TYPE_HANDLE:
+        gldb_set_out_writer(bugle_io_writer_handle_new(out_pipe.value.handle, TRUE));
+        break;
+    case GLDB_PIPE_TYPE_SOCKET:
+        gldb_set_out_writer(bugle_io_writer_socket_new(out_pipe.value.sock, TRUE));
+        break;
+#else
+    case GLDB_PIPE_TYPE_FD:
+        gldb_set_out_writer(bugle_io_writer_fd_new(out_pipe.value.fd));
+        break;
+#endif
+    default:
+        g_assert_not_reached();
+    }
+
     if (!gldb_run(seq++))
     {
-        return; /* TODO clean up */
+        return; /* TODO clean up - actually this function leaks like a sieve */
     }
     context->channel_watch = g_io_add_watch(context->channel, G_IO_IN | G_IO_ERR,
                                             response_callback, context);
 
-    g_child_watch_add(gldb_get_child_pid(), child_exit_callback, context);
+    g_child_watch_add((GPid) gldb_get_child_pid(), child_exit_callback, context);
     update_status_bar(context, _("Started"));
 }
 

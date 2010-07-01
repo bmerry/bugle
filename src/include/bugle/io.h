@@ -24,6 +24,7 @@
 #include <bugle/attributes.h>
 #include <bugle/export.h>
 #include <bugle/bool.h>
+#include <bugle/porting.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -85,18 +86,6 @@ BUGLE_EXPORT_PRE void bugle_io_writer_mem_release(bugle_io_writer *writer) BUGLE
  * Kills the program on OOM, so always returns non-NULL.
  */
 BUGLE_EXPORT_PRE bugle_io_writer *bugle_io_writer_file_new(FILE *f) BUGLE_EXPORT_POST;
-
-/* Wraps a file descriptor in a reader. The fd should be for a file or pipe,
- * not a network socket. Dies on malloc failure, so always returns non-NULL.
- * A platform that does not support file descriptors should abort.
- */
-BUGLE_EXPORT_PRE bugle_io_reader *bugle_io_reader_fd_new(int fd) BUGLE_EXPORT_POST;
-
-/* Wraps a file descriptor in a writer. The fd should be for a file or pipe,
- * not a network socket. Dies on malloc failure, so always returns non-NULL.
- * A platform that does not support file descriptors should abort.
- */
-BUGLE_EXPORT_PRE bugle_io_writer *bugle_io_writer_fd_new(int fd) BUGLE_EXPORT_POST;
 
 /* Creates a writer to accept a connection on host:port. The interpretation of
  * host and port are platform-specific, but must accept at least an IPv4
