@@ -52,11 +52,13 @@ static unsigned int bugle_workqueue_thread(void *arg)
 {
     bugle_workqueue *queue = (bugle_workqueue *) arg;
     void *item;
+    bugle_bool more;
 
     assert(queue != NULL);
 
-    while (queue->consume(queue, queue->user_data, &item))
+    do
     {
+        more = queue->consume(queue, queue->user_data, &item);
         bugle_thread_sem_wait(&queue->space_sem);
         bugle_thread_lock_lock(&queue->tail_lock);
         queue->items[queue->tail] = item;
@@ -65,8 +67,9 @@ static unsigned int bugle_workqueue_thread(void *arg)
         bugle_thread_lock_unlock(&queue->tail_lock);
         bugle_thread_sem_post(&queue->data_sem);
 
-        queue->wakeup(queue, queue->user_data);
-    }
+        if (queue->wakeup != NULL)
+            queue->wakeup(queue, queue->user_data);
+    } while (more);
     return 0;
 }
 
@@ -77,7 +80,10 @@ bugle_workqueue *bugle_workqueue_new(bugle_workqueue_consume consume,
     bugle_workqueue *queue = BUGLE_MALLOC(bugle_workqueue);
     if (bugle_thread_sem_init(&queue->data_sem, 0) != 0)
         goto cleanup_data_sem;
-    if (bugle_thread_sem_init(&queue->space_sem, BUGLE_WORKQUEUE_SIZE) != 0)
+    /* Note: we avoid allowing the queue to completely fill, so that
+     * head == tail can be used to test for empty.
+     */
+    if (bugle_thread_sem_init(&queue->space_sem, BUGLE_WORKQUEUE_SIZE - 1) != 0)
         goto cleanup_space_sem;
     if (bugle_thread_lock_init(&queue->tail_lock) != 0)
         goto cleanup_tail_lock;
@@ -133,7 +139,7 @@ bugle_bool bugle_workqueue_has_data(bugle_workqueue *queue)
 
     assert(queue != NULL);
     bugle_thread_lock_lock(&queue->tail_lock);
-    ret = (queue->head == queue->tail);
+    ret = (queue->head != queue->tail);
     bugle_thread_lock_unlock(&queue->tail_lock);
     return ret;
 }

@@ -31,35 +31,41 @@ typedef struct bugle_workqueue bugle_workqueue;
 /* Obtains data from the source, and fills in *item with a value that is
  * passed back to the calling thread.
  *
- * Returns BUGLE_FALSE if the source is exhausted.
+ * Returns BUGLE_FALSE if the source is exhausted - the returned item is still
+ * added (the expected use is that it will be NULL in this case, which would
+ * signal to the main thread that the source is exhausted).
  */
 typedef bugle_bool (*bugle_workqueue_consume)(bugle_workqueue *queue, void *arg, void **item);
 
 /* Callback function that is called after data is received. This should signal
  * the main thread (e.g. by posting a semaphore) that data is available.
+ *
+ * This callback may be NULL to indicate that no wakeup is required. Note
+ * that no wakeup is required to unblock bugle_workqueue_get_item - it is
+ * provided to allow a GUI event loop to be woken.
  */
 typedef void (*bugle_workqueue_wakeup)(bugle_workqueue *queue, void *arg);
 
 /* Creates a new queue, but does not start it running. Returns NULL
  * on failure.
  */
-bugle_workqueue *bugle_workqueue_new(bugle_workqueue_consume consume,
-                                     bugle_workqueue_wakeup wakeup,
-                                     void *user_data);
+BUGLE_EXPORT_PRE bugle_workqueue *bugle_workqueue_new(bugle_workqueue_consume consume,
+                                                      bugle_workqueue_wakeup wakeup,
+                                                      void *user_data) BUGLE_EXPORT_POST;
 
 /* Spawns the worker thread to process this queue */
-void bugle_workqueue_start(bugle_workqueue *queue);
+BUGLE_EXPORT_PRE void bugle_workqueue_start(bugle_workqueue *queue) BUGLE_EXPORT_POST;
 
 /* Blocks until the worker thread is finished. */
-void bugle_workqueue_stop(bugle_workqueue *queue);
+BUGLE_EXPORT_PRE void bugle_workqueue_stop(bugle_workqueue *queue) BUGLE_EXPORT_POST;
 
 /* Destroys the queue (should only be done after bugle_workqueue_stop) */
-void bugle_workqueue_free(bugle_workqueue *queue);
+BUGLE_EXPORT_PRE void bugle_workqueue_free(bugle_workqueue *queue) BUGLE_EXPORT_POST;
 
 /* Determines whether there is data ready to be read. */
-bugle_bool bugle_workqueue_has_data(bugle_workqueue *queue);
+BUGLE_EXPORT_PRE bugle_bool bugle_workqueue_has_data(bugle_workqueue *queue) BUGLE_EXPORT_POST;
 
 /* Obtains an item from the queue (blocks until data is available) */
-void *bugle_workqueue_get_item(bugle_workqueue *queue);
+BUGLE_EXPORT_PRE void *bugle_workqueue_get_item(bugle_workqueue *queue) BUGLE_EXPORT_POST;
 
 #endif /* !BUGLE_COMMON_WORKQUEUE_H */

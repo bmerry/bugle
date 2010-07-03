@@ -44,6 +44,7 @@
 #include <budgie/reflect.h>
 #include <budgie/addresses.h>
 #include "common/protocol.h"
+#include "common/workqueue.h"
 #include "platform/threads.h"
 #include "platform/types.h"
 #include "platform/io.h"
@@ -134,14 +135,6 @@ typedef struct
     bugle_uint32_t target;
 } gldb_request_data_info_log;
 
-typedef struct
-{
-    unsigned int head, tail;
-    bugle_thread_sem_t data_sem, space_sem;
-    gldb_request_header *requests[REQUEST_QUEUE_SIZE];
-    bugle_io_reader *reader;
-} gldb_request_queue;
-
 static bugle_io_reader *in_pipe = NULL;
 static bugle_io_writer *out_pipe = NULL;
 static bugle_bool *break_on;
@@ -152,8 +145,7 @@ static bugle_bool stopped = BUGLE_TRUE;
 static bugle_uint32_t start_id = 0;
 
 static bugle_thread_id debug_thread;
-static bugle_thread_handle reader_thread;
-static gldb_request_queue request_queue;
+static bugle_workqueue *request_queue;
 
 static bugle_bool stoppable(void)
 {
@@ -913,6 +905,12 @@ static bugle_bool send_data_buffer(bugle_uint32_t id, GLuint object_id)
 }
 #endif
 
+/* Reads a binary string into a structure. Returns true on success */
+static bugle_bool read_binary_string(bugle_io_reader *in_pipe, gldb_binary_string *s)
+{
+    return gldb_protocol_recv_binary_string(in_pipe, &s->length, &s->data);
+}
+
 static void process_single_command(function_call *call, gldb_request_header *req)
 {
     char *resp_str;
@@ -1185,19 +1183,12 @@ static void debugger_loop(function_call *call)
     {
         gldb_request_header *req;
 
-        if (!stopped)
+        if (!stopped && !bugle_workqueue_has_data(request_queue))
         {
-            if (bugle_thread_sem_trywait(&request_queue.data_sem) != 0)
-                break;
-        }
-        else
-        {
-            bugle_thread_sem_wait(&request_queue.data_sem);
+            break;
         }
 
-        req = request_queue.requests[request_queue.head];
-        if (++request_queue.head == REQUEST_QUEUE_SIZE)
-            request_queue.head = 0;
+        req = bugle_workqueue_get_item(request_queue);
 
         if (req == NULL)
         {
@@ -1207,11 +1198,8 @@ static void debugger_loop(function_call *call)
             break;
         }
         process_single_command(call, req);
-        bugle_thread_sem_post(&request_queue.space_sem);
     } while (stopped);
 }
-
-static unsigned int reader_thread_run(void *arg);
 
 static void debugger_init_thread(void)
 {
@@ -1295,6 +1283,192 @@ static bugle_bool debugger_error_callback(function_call *call, const callback_da
         debugger_loop(call);
     }
     return BUGLE_TRUE;
+}
+
+/* Reads a single request from the input pipe, and returns it (in newly
+ * allocated memory). If reading fails (either due to EOF or failure),
+ * returns NULL.
+ */
+static bugle_bool read_request(bugle_workqueue *queue, void *user_data, void **item)
+{
+    bugle_io_reader *in_pipe = (bugle_io_reader *) user_data;
+    gldb_request_header **out = (gldb_request_header **) item;
+    gldb_request_header header;
+
+    *out = NULL;
+    if (!gldb_protocol_recv_code(in_pipe, &header.code))
+        return BUGLE_FALSE;
+    if (!gldb_protocol_recv_code(in_pipe, &header.request_id))
+        return BUGLE_FALSE;
+
+    switch (header.code)
+    {
+    case REQ_RUN:
+    case REQ_CONT:
+    case REQ_SCREENSHOT:
+    case REQ_STEP:
+    case REQ_STATE_TREE:
+    case REQ_STATE_TREE_RAW:
+    case REQ_QUIT:
+    case REQ_ASYNC:
+        {
+            gldb_request_simple *req = BUGLE_MALLOC(gldb_request_simple);
+            req->header = header;
+            *out = &req->header;
+            return BUGLE_TRUE;
+        }
+        break;
+    case REQ_BREAK:
+        {
+            gldb_request_break *req = BUGLE_MALLOC(gldb_request_break);
+            req->header = header;
+            req->name.data = NULL;
+            if (!read_binary_string(in_pipe, &req->name)
+                || !gldb_protocol_recv_code(in_pipe, &req->enable))
+            {
+                bugle_free(req->name.data);
+                bugle_free(req);
+                return BUGLE_FALSE;
+            }
+            *out = &req->header;
+            return BUGLE_TRUE;
+        }
+        break;
+    case REQ_BREAK_EVENT:
+        {
+            gldb_request_break_event *req = BUGLE_MALLOC(gldb_request_break_event);
+            req->header = header;
+            if (!gldb_protocol_recv_code(in_pipe, &req->event)
+                || !gldb_protocol_recv_code(in_pipe, &req->enable))
+            {
+                bugle_free(req);
+                return BUGLE_FALSE;
+            }
+            *out = &req->header;
+            return BUGLE_TRUE;
+        }
+        break;
+    case REQ_ACTIVATE_FILTERSET:
+    case REQ_DEACTIVATE_FILTERSET:
+        {
+            gldb_request_activate_filterset *req = BUGLE_MALLOC(gldb_request_activate_filterset);
+            req->header = header;
+            if (!read_binary_string(in_pipe, &req->name))
+            {
+                bugle_free(req);
+                return BUGLE_FALSE;
+            }
+            *out = &req->header;
+            return BUGLE_TRUE;
+        }
+        break;
+    case REQ_DATA:
+        {
+            bugle_uint32_t subtype;
+            if (!gldb_protocol_recv_code(in_pipe, &subtype))
+                return BUGLE_FALSE;
+
+            switch (subtype)
+            {
+#ifdef GL_VERSION_1_1
+            case REQ_DATA_TEXTURE:
+                {
+                    gldb_request_data_texture *req = BUGLE_MALLOC(gldb_request_data_texture);
+                    req->header.header = header;
+                    req->header.subtype = subtype;
+                    if (!gldb_protocol_recv_code(in_pipe, &req->object_id)
+                        || !gldb_protocol_recv_code(in_pipe, &req->target)
+                        || !gldb_protocol_recv_code(in_pipe, &req->face)
+                        || !gldb_protocol_recv_code(in_pipe, &req->level)
+                        || !gldb_protocol_recv_code(in_pipe, &req->format)
+                        || !gldb_protocol_recv_code(in_pipe, &req->type))
+                    {
+                        bugle_free(req);
+                        return BUGLE_FALSE;
+                    }
+                    *out = &req->header.header;
+                    return BUGLE_TRUE;
+                }
+                break;
+            case REQ_DATA_BUFFER:
+                {
+                    gldb_request_data_buffer *req = BUGLE_MALLOC(gldb_request_data_buffer);
+                    req->header.header = header;
+                    req->header.subtype = subtype;
+                    if (!gldb_protocol_recv_code(in_pipe, &req->object_id))
+                    {
+                        bugle_free(req);
+                        return BUGLE_FALSE;
+                    }
+                    *out = &req->header.header;
+                    return BUGLE_TRUE;
+                }
+                break;
+#endif
+            case REQ_DATA_FRAMEBUFFER:
+                {
+                    gldb_request_data_framebuffer *req = BUGLE_MALLOC(gldb_request_data_framebuffer);
+                    req->header.header = header;
+                    req->header.subtype = subtype;
+                    if (!gldb_protocol_recv_code(in_pipe, &req->object_id)
+                        || !gldb_protocol_recv_code(in_pipe, &req->target)
+                        || !gldb_protocol_recv_code(in_pipe, &req->buffer)
+                        || !gldb_protocol_recv_code(in_pipe, &req->format)
+                        || !gldb_protocol_recv_code(in_pipe, &req->type))
+                    {
+                        bugle_free(req);
+                        return BUGLE_FALSE;
+                    }
+                    *out = &req->header.header;
+                    return BUGLE_TRUE;
+                }
+                break;
+            case REQ_DATA_SHADER:
+                {
+                    gldb_request_data_shader *req = BUGLE_MALLOC(gldb_request_data_shader);
+                    req->header.header = header;
+                    req->header.subtype = subtype;
+                    if (!gldb_protocol_recv_code(in_pipe, &req->object_id)
+                        || !gldb_protocol_recv_code(in_pipe, &req->target))
+                    {
+                        bugle_free(req);
+                        return BUGLE_FALSE;
+                    }
+                    *out = &req->header.header;
+                    return BUGLE_TRUE;
+                }
+                break;
+            case REQ_DATA_INFO_LOG:
+                {
+                    gldb_request_data_info_log *req = BUGLE_MALLOC(gldb_request_data_info_log);
+                    req->header.header = header;
+                    req->header.subtype = subtype;
+                    if (!gldb_protocol_recv_code(in_pipe, &req->object_id)
+                        || !gldb_protocol_recv_code(in_pipe, &req->target))
+                    {
+                        bugle_free(req);
+                        return BUGLE_FALSE;
+                    }
+                    *out = &req->header.header;
+                    return BUGLE_TRUE;
+                }
+                break;
+            default:
+                bugle_log_printf("debugger", "read_request",
+                                 BUGLE_LOG_ERROR,
+                                 "Unknown debug data subcommand %#08lx received",
+                                 (unsigned long) subtype);
+                return BUGLE_FALSE;
+            }
+        }
+        break;
+    default:
+        bugle_log_printf("debugger", "read_request",
+                         BUGLE_LOG_ERROR,
+                         "Unknown debug command %#08lx received",
+                         (unsigned long) header.code);
+        return BUGLE_FALSE;
+    }
 }
 
 static bugle_bool debugger_initialise(filter_set *handle)
@@ -1419,28 +1593,16 @@ static bugle_bool debugger_initialise(filter_set *handle)
         return BUGLE_FALSE;
     }
 
-    request_queue.head = 0;
-    request_queue.tail = 0;
-    request_queue.reader = in_pipe;
-    if (bugle_thread_sem_init(&request_queue.data_sem, 0) != 0
-        || bugle_thread_sem_init(&request_queue.space_sem, REQUEST_QUEUE_SIZE) != 0)
+    request_queue = bugle_workqueue_new(read_request, NULL, in_pipe);
+    if (request_queue == NULL)
     {
         bugle_log_printf("debugger", "initialise", BUGLE_LOG_ERROR,
-                         "failed to create semaphores for request queue");
+                         "failed to initialise work queue");
         bugle_io_reader_close(in_pipe);
         bugle_io_writer_close(out_pipe);
         return BUGLE_FALSE;
     }
-    if (bugle_thread_create(&reader_thread, reader_thread_run, &request_queue) != 0)
-    {
-        bugle_log_printf("debugger", "initialise", BUGLE_LOG_ERROR,
-                         "failed to create reader thread");
-        bugle_thread_sem_destroy(&request_queue.data_sem);
-        bugle_thread_sem_destroy(&request_queue.space_sem);
-        bugle_io_reader_close(in_pipe);
-        bugle_io_writer_close(out_pipe);
-        return BUGLE_FALSE;
-    }
+    bugle_workqueue_start(request_queue);
 
     debugger_loop(NULL);
 
@@ -1492,210 +1654,4 @@ void bugle_initialise_filter_library(void)
 
     for (i = 0; i < REQ_EVENT_COUNT; i++)
         break_on_event[i] = BUGLE_TRUE;
-}
-
-
-/***************************************************************************
- * Reader thread. Code below this point runs in a separate thread dedicated
- * to reading messages from a pipe and enqueuing them to the main thread.
- *
- * The queue contains requests. A NULL request is used to indicate that
- * the piped has unexpectedly closed.
- */
-
-/* Reads a binary string into a structure. Returns true on success */
-static bugle_bool read_binary_string(bugle_io_reader *in_pipe, gldb_binary_string *s)
-{
-    return gldb_protocol_recv_binary_string(in_pipe, &s->length, &s->data);
-}
-
-/* Reads a single request from the input pipe, and returns it (in newly
- * allocated memory). If reading fails (either due to EOF or failure),
- * returns NULL.
- */
-static gldb_request_header *read_request(bugle_io_reader *in_pipe)
-{
-    gldb_request_header header;
-
-    if (!gldb_protocol_recv_code(in_pipe, &header.code))
-        return NULL;
-    if (!gldb_protocol_recv_code(in_pipe, &header.request_id))
-        return NULL;
-
-    switch (header.code)
-    {
-    case REQ_RUN:
-    case REQ_CONT:
-    case REQ_SCREENSHOT:
-    case REQ_STEP:
-    case REQ_STATE_TREE:
-    case REQ_STATE_TREE_RAW:
-    case REQ_QUIT:
-    case REQ_ASYNC:
-        {
-            gldb_request_simple *req = BUGLE_MALLOC(gldb_request_simple);
-            req->header = header;
-            return &req->header;
-        }
-        break;
-    case REQ_BREAK:
-        {
-            gldb_request_break *req = BUGLE_MALLOC(gldb_request_break);
-            req->header = header;
-            req->name.data = NULL;
-            if (!read_binary_string(in_pipe, &req->name)
-                || !gldb_protocol_recv_code(in_pipe, &req->enable))
-            {
-                bugle_free(req->name.data);
-                bugle_free(req);
-                return NULL;
-            }
-            return &req->header;
-        }
-        break;
-    case REQ_BREAK_EVENT:
-        {
-            gldb_request_break_event *req = BUGLE_MALLOC(gldb_request_break_event);
-            req->header = header;
-            if (!gldb_protocol_recv_code(in_pipe, &req->event)
-                || !gldb_protocol_recv_code(in_pipe, &req->enable))
-            {
-                bugle_free(req);
-                return NULL;
-            }
-            return &req->header;
-        }
-        break;
-    case REQ_ACTIVATE_FILTERSET:
-    case REQ_DEACTIVATE_FILTERSET:
-        {
-            gldb_request_activate_filterset *req = BUGLE_MALLOC(gldb_request_activate_filterset);
-            req->header = header;
-            if (!read_binary_string(in_pipe, &req->name))
-            {
-                bugle_free(req);
-                return NULL;
-            }
-            return &req->header;
-        }
-        break;
-    case REQ_DATA:
-        {
-            bugle_uint32_t subtype;
-            if (!gldb_protocol_recv_code(in_pipe, &subtype))
-                return NULL;
-
-            switch (subtype)
-            {
-#ifdef GL_VERSION_1_1
-            case REQ_DATA_TEXTURE:
-                {
-                    gldb_request_data_texture *req = BUGLE_MALLOC(gldb_request_data_texture);
-                    req->header.header = header;
-                    req->header.subtype = subtype;
-                    if (!gldb_protocol_recv_code(in_pipe, &req->object_id)
-                        || !gldb_protocol_recv_code(in_pipe, &req->target)
-                        || !gldb_protocol_recv_code(in_pipe, &req->face)
-                        || !gldb_protocol_recv_code(in_pipe, &req->level)
-                        || !gldb_protocol_recv_code(in_pipe, &req->format)
-                        || !gldb_protocol_recv_code(in_pipe, &req->type))
-                    {
-                        bugle_free(req);
-                        return NULL;
-                    }
-                    return &req->header.header;
-                }
-                break;
-            case REQ_DATA_BUFFER:
-                {
-                    gldb_request_data_buffer *req = BUGLE_MALLOC(gldb_request_data_buffer);
-                    req->header.header = header;
-                    req->header.subtype = subtype;
-                    if (!gldb_protocol_recv_code(in_pipe, &req->object_id))
-                    {
-                        bugle_free(req);
-                        return NULL;
-                    }
-                    return &req->header.header;
-                }
-                break;
-#endif
-            case REQ_DATA_FRAMEBUFFER:
-                {
-                    gldb_request_data_framebuffer *req = BUGLE_MALLOC(gldb_request_data_framebuffer);
-                    req->header.header = header;
-                    req->header.subtype = subtype;
-                    if (!gldb_protocol_recv_code(in_pipe, &req->object_id)
-                        || !gldb_protocol_recv_code(in_pipe, &req->target)
-                        || !gldb_protocol_recv_code(in_pipe, &req->buffer)
-                        || !gldb_protocol_recv_code(in_pipe, &req->format)
-                        || !gldb_protocol_recv_code(in_pipe, &req->type))
-                    {
-                        bugle_free(req);
-                        return NULL;
-                    }
-                    return &req->header.header;
-                }
-                break;
-            case REQ_DATA_SHADER:
-                {
-                    gldb_request_data_shader *req = BUGLE_MALLOC(gldb_request_data_shader);
-                    req->header.header = header;
-                    req->header.subtype = subtype;
-                    if (!gldb_protocol_recv_code(in_pipe, &req->object_id)
-                        || !gldb_protocol_recv_code(in_pipe, &req->target))
-                    {
-                        bugle_free(req);
-                        return NULL;
-                    }
-                    return &req->header.header;
-                }
-                break;
-            case REQ_DATA_INFO_LOG:
-                {
-                    gldb_request_data_info_log *req = BUGLE_MALLOC(gldb_request_data_info_log);
-                    req->header.header = header;
-                    req->header.subtype = subtype;
-                    if (!gldb_protocol_recv_code(in_pipe, &req->object_id)
-                        || !gldb_protocol_recv_code(in_pipe, &req->target))
-                    {
-                        bugle_free(req);
-                        return NULL;
-                    }
-                    return &req->header.header;
-                }
-                break;
-            default:
-                bugle_log_printf("debugger", "read_request",
-                                 BUGLE_LOG_ERROR,
-                                 "Unknown debug data subcommand %#08lx received",
-                                 (unsigned long) subtype);
-                return NULL;
-            }
-        }
-        break;
-    default:
-        bugle_log_printf("debugger", "read_request",
-                         BUGLE_LOG_ERROR,
-                         "Unknown debug command %#08lx received",
-                         (unsigned long) header.code);
-        return NULL;
-    }
-}
-
-static unsigned int reader_thread_run(void *arg)
-{
-    gldb_request_queue *q = (gldb_request_queue *) arg;
-    while (BUGLE_TRUE)
-    {
-        gldb_request_header *req = read_request(q->reader);
-        bugle_thread_sem_wait(&q->space_sem);
-        q->requests[q->tail] = req;
-        if (++q->tail == REQUEST_QUEUE_SIZE)
-            q->tail = 0;
-        bugle_thread_sem_post(&q->data_sem);
-        if (req == NULL)
-            break;
-    }
-    return 0;
 }
