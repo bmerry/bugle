@@ -293,6 +293,7 @@ targets['bugleutils']['source'].extend([
     'common/protocol.c',
     'common/hashtable.c',
     'common/linkedlist.c',
+    'common/workqueue.c',
     'common/io.c',
     'budgielib/internal.c',
     'budgielib/reflect.c',

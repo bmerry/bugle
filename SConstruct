@@ -411,6 +411,8 @@ package_sources.extend([
     'src/common/protocol-win32.c',
     'src/common/protocol.c',
     'src/common/protocol.h',
+    'src/common/workqueue.h',
+    'src/common/workqueue.c',
     'src/conffile.h',
     'src/conflex.l',
     'src/confparse.y',
