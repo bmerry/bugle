@@ -18,6 +18,7 @@
 #if HAVE_CONFIG_H
 # include <config.h>
 #endif
+#include "platform_config.h"
 #include <bugle/string.h>
 #include <bugle/memory.h>
 #include <stddef.h>

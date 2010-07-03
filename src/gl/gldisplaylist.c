@@ -145,7 +145,9 @@ GLuint bugle_displaylist_list(void)
 
 static bugle_bool gldisplaylist_filter_set_initialise(filter_set *handle)
 {
+#if GL_VERSION_1_1
     filter *f;
+#endif
 
     bugle_displaylist_class = bugle_object_class_new(bugle_get_context_class());
 
