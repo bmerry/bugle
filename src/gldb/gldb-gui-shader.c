@@ -74,7 +74,6 @@ static void gldb_shader_pane_update_buffer(gldb_response *response,
         gtk_text_buffer_set_text(buffer, "", 0);
     else
         gtk_text_buffer_set_text(buffer, r->data, r->length);
-    gldb_free_response(response);
 }
 
 static gboolean gldb_shader_pane_response_callback_source(gldb_response *response,
@@ -101,9 +100,9 @@ static gboolean gldb_shader_pane_response_callback_info_log(gldb_response *respo
     return TRUE;
 }
 
-static void gldb_shader_pane_update_ids(GldbShaderPane *pane)
+static void gldb_shader_pane_update_ids(GldbShaderPane *pane, const gldb_state *root)
 {
-    gldb_state *root, *s, *t, *u;
+    gldb_state *s, *t, *u;
     GtkTreeModel *model;
     GtkTreeIter iter;
     GValue old[2];
@@ -135,12 +134,12 @@ static void gldb_shader_pane_update_ids(GldbShaderPane *pane)
         "GLSL FS"
     };
 
+    g_return_if_fail(root != NULL);
+
     gldb_gui_combo_box_get_old(GTK_COMBO_BOX(pane->id), old,
                                COLUMN_SHADER_ID_ID, COLUMN_SHADER_ID_TARGET, -1);
     model = gtk_combo_box_get_model(GTK_COMBO_BOX(pane->id));
     gtk_list_store_clear(GTK_LIST_STORE(model));
-
-    root = gldb_state_update();
 
     /* Identify active shaders */
     for (trg = 0; trg < 2; trg++)
@@ -170,7 +169,7 @@ static void gldb_shader_pane_update_ids(GldbShaderPane *pane)
                 GLuint *ids;
                 ids = (GLuint *) t->data;
                 for (i = 0; i < t->length; i++)
-                    bugle_hashptr_set_int(&active_glsl, ids[i], root); /* arbitrary non-NULL */
+                    bugle_hashptr_set_int(&active_glsl, ids[i], &i); /* arbitrary non-NULL */
             }
         }
     }
@@ -404,12 +403,12 @@ GldbPane *gldb_shader_pane_new(void)
     return GLDB_PANE(pane);
 }
 
-static void gldb_shader_pane_real_update(GldbPane *self)
+static void gldb_shader_pane_state_update(GldbPane *self, const gldb_state *root)
 {
     GldbShaderPane *pane;
 
     pane = GLDB_SHADER_PANE(self);
-    gldb_shader_pane_update_ids(pane);
+    gldb_shader_pane_update_ids(pane, root);
 }
 
 /* GObject stuff */
@@ -419,7 +418,8 @@ static void gldb_shader_pane_class_init(GldbShaderPaneClass *klass)
     GldbPaneClass *pane_class;
 
     pane_class = GLDB_PANE_CLASS(klass);
-    pane_class->do_real_update = gldb_shader_pane_real_update;
+    pane_class->do_real_update = NULL;
+    pane_class->do_state_update = gldb_shader_pane_state_update;
 }
 
 static void gldb_shader_pane_init(GldbShaderPane *self, gpointer g_class)

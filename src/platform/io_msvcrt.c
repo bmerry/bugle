@@ -61,7 +61,7 @@ static size_t handle_read(void *ptr, size_t size, size_t nmemb, void *arg)
     {
         DWORD bytes_read = 0;
         BOOL status;
-        
+
         status = ReadFile(s->handle, (char *)ptr + received, remain, &bytes_read, NULL);
         received += bytes_read;
         remain -= bytes_read;
@@ -151,7 +151,7 @@ static size_t socket_read(void *ptr, size_t size, size_t nmemb, void *arg)
         }
         else
             bytes_read = ret;
-        
+
         received += bytes_read;
         remain -= bytes_read;
         if (!status)

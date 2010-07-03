@@ -40,8 +40,9 @@ struct bugle_workqueue
     bugle_thread_handle worker_thread;
 
     bugle_workqueue_consume consume;
+    void *consume_data;
     bugle_workqueue_wakeup wakeup;
-    void *user_data;
+    void *wakeup_data;
 
     bugle_bool running;
     unsigned int head, tail;
@@ -58,7 +59,7 @@ static unsigned int bugle_workqueue_thread(void *arg)
 
     do
     {
-        more = queue->consume(queue, queue->user_data, &item);
+        more = queue->consume(queue, queue->consume_data, &item);
         bugle_thread_sem_wait(&queue->space_sem);
         bugle_thread_lock_lock(&queue->tail_lock);
         queue->items[queue->tail] = item;
@@ -68,13 +69,12 @@ static unsigned int bugle_workqueue_thread(void *arg)
         bugle_thread_sem_post(&queue->data_sem);
 
         if (queue->wakeup != NULL)
-            queue->wakeup(queue, queue->user_data);
+            queue->wakeup(queue, queue->wakeup_data);
     } while (more);
     return 0;
 }
 
 bugle_workqueue *bugle_workqueue_new(bugle_workqueue_consume consume,
-                                     bugle_workqueue_wakeup wakeup,
                                      void *user_data)
 {
     bugle_workqueue *queue = BUGLE_MALLOC(bugle_workqueue);
@@ -89,8 +89,9 @@ bugle_workqueue *bugle_workqueue_new(bugle_workqueue_consume consume,
         goto cleanup_tail_lock;
 
     queue->consume = consume;
-    queue->wakeup = wakeup;
-    queue->user_data = user_data;
+    queue->consume_data = user_data;
+    queue->wakeup = NULL;
+    queue->wakeup_data = NULL;
     queue->running = BUGLE_FALSE;
     queue->head = 0;
     queue->tail = 0;
@@ -103,6 +104,16 @@ cleanup_space_sem:
 cleanup_data_sem:
     bugle_free(queue);
     return NULL;
+}
+
+void bugle_workqueue_set_wakeup(bugle_workqueue *queue,
+                                bugle_workqueue_wakeup wakeup,
+                                void *user_data)
+{
+    assert(queue != NULL);
+    assert(!queue->running);
+    queue->wakeup = wakeup;
+    queue->wakeup_data = user_data;
 }
 
 void bugle_workqueue_start(bugle_workqueue *queue)

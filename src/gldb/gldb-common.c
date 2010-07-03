@@ -37,8 +37,6 @@
 #include "common/protocol.h"
 #include "platform/types.h"
 
-static gldb_pipe lib_in_pipe, lib_out_pipe;
-
 static bugle_io_reader *lib_in = NULL;
 static bugle_io_writer *lib_out = NULL;
 /* Started is set to BUGLE_TRUE only after receiving RESP_RUNNING. When
@@ -52,13 +50,13 @@ static char *prog_settings[GLDB_PROGRAM_SETTING_COUNT];
 static gldb_program_type prog_type;
 
 static gldb_state *state_root = NULL;
-static bugle_bool state_dirty = BUGLE_TRUE;
 
 static bugle_bool break_on_event[REQ_EVENT_COUNT];
 static hash_table break_on;
 
 static void state_destroy(gldb_state *s)
 {
+    if (s == NULL) return;
     bugle_list_clear(&s->children);
     bugle_free(s->name);
     bugle_free(s->data);
@@ -298,10 +296,8 @@ static bugle_pid_t execute(void (*child_init)(void))
         return -1;
     }
 
-    lib_in_pipe.type = GLDB_PIPE_TYPE_HANDLE;
-    lib_in_pipe.value.handle = in_pipe[0];
-    lib_out_pipe.type = GLDB_PIPE_TYPE_HANDLE;
-    lib_out_pipe.value.handle = out_pipe[1];
+    lib_in = bugle_io_reader_handle_new(in_pipe[0], BUGLE_FALSE);
+    lib_out = bugle_io_writer_handle_new(out_pipe[1], BUGLE_TRUE);
     return pid;
 }
 
@@ -332,7 +328,7 @@ static bugle_pid_t execute(void (*child_init)(void))
         struct addrinfo hints;
         struct addrinfo *ai;
         int status;
-        int sock;
+        int sock, write_sock;
 
         host = prog_settings[GLDB_PROGRAM_SETTING_HOST];
         port = prog_settings[GLDB_PROGRAM_SETTING_PORT];
@@ -368,10 +364,16 @@ static bugle_pid_t execute(void (*child_init)(void))
         }
         freeaddrinfo(ai);
 
-        lib_in_pipe.type = GLDB_PIPE_TYPE_FD;
-        lib_in_pipe.value.fd = sock;
-        lib_out_pipe.type = GLDB_PIPE_TYPE_FD;
-        lib_out_pipe.value.fd = sock;
+        write_sock = dup(sock);
+        if (write_sock == -1)
+        {
+            close(sock);
+            gldb_perror("socket duplication failed");
+            return -1;
+        }
+
+        lib_in = bugle_io_reader_fd_new(sock);
+        lib_out = bugle_io_writer_fd_new(write_sock);
         return 0;
     }
 
@@ -387,7 +389,7 @@ static bugle_pid_t execute(void (*child_init)(void))
             (*child_init)();
 
         command = prog_settings[GLDB_PROGRAM_SETTING_COMMAND];
-        if (!command) command = "/bin/BUGLE_TRUE";
+        if (!command) command = "/bin/true";
         display = prog_settings[GLDB_PROGRAM_SETTING_DISPLAY];
         chain = prog_settings[GLDB_PROGRAM_SETTING_CHAIN];
         host = prog_settings[GLDB_PROGRAM_SETTING_HOST];
@@ -423,10 +425,8 @@ static bugle_pid_t execute(void (*child_init)(void))
         perror("failed to execute program");
         exit(1);
     default: /* Parent */
-        lib_in_pipe.type = GLDB_PIPE_TYPE_FD;
-        lib_in_pipe.value.fd = in_pipe[0];
-        lib_out_pipe.type = GLDB_PIPE_TYPE_FD;
-        lib_out_pipe.value.fd = out_pipe[1];
+        lib_in = bugle_io_reader_fd_new(in_pipe[0]);
+        lib_out = bugle_io_writer_fd_new(out_pipe[1]);
         close(in_pipe[1]);
         close(out_pipe[0]);
         switch (prog_type)
@@ -440,7 +440,7 @@ static bugle_pid_t execute(void (*child_init)(void))
 }
 #endif
 
-void set_status(gldb_status s)
+static void set_status(gldb_status s)
 {
     if (status == s) return;
     status = s;
@@ -448,7 +448,8 @@ void set_status(gldb_status s)
     {
     case GLDB_STATUS_RUNNING:
     case GLDB_STATUS_STOPPED:
-        state_dirty = BUGLE_TRUE;
+        state_destroy(state_root);
+        state_root = NULL;
         break;
     case GLDB_STATUS_STARTED:
         break;
@@ -457,8 +458,6 @@ void set_status(gldb_status s)
             bugle_io_reader_close(lib_in);
         if (lib_out)
             bugle_io_writer_close(lib_out);
-        lib_in_pipe.type = GLDB_PIPE_TYPE_NONE;
-        lib_out_pipe.type = GLDB_PIPE_TYPE_NONE;
         lib_in = NULL;
         lib_out = NULL;
         child_pid = 0;
@@ -466,32 +465,8 @@ void set_status(gldb_status s)
     }
 }
 
-gldb_state *gldb_state_update(void)
+const gldb_state *gldb_state_get_root(void)
 {
-    gldb_response *r = NULL;
-
-    if (state_dirty)
-    {
-        gldb_send_state_tree(0);
-        do
-        {
-            if (r) gldb_free_response(r);
-            r = gldb_get_response();
-        } while (r && r->code != RESP_STATE_NODE_BEGIN_RAW && r->code != RESP_ERROR);
-        if (!r)
-            state_root = NULL;
-        else if (r->code == RESP_STATE_NODE_BEGIN_RAW)
-        {
-            state_root = ((gldb_response_state_tree *) r)->root;
-            bugle_free(r);
-            state_dirty = BUGLE_FALSE;
-        }
-        else
-        {
-            gldb_error("%s", ((gldb_response_error *) r)->error);
-            gldb_free_response(r);
-        }
-    }
     return state_root;
 }
 
@@ -510,7 +485,6 @@ static gldb_response *gldb_get_response_break(bugle_uint32_t code, bugle_uint32_
 {
     gldb_response_break *r;
 
-    set_status(GLDB_STATUS_STOPPED);
     r = BUGLE_MALLOC(gldb_response_break);
     r->code = code;
     r->id = id;
@@ -522,7 +496,6 @@ static gldb_response *gldb_get_response_break_event(bugle_uint32_t code, bugle_u
 {
     gldb_response_break_event *r;
 
-    set_status(GLDB_STATUS_STOPPED);
     r = BUGLE_MALLOC(gldb_response_break_event);
     r->code = code;
     r->id = id;
@@ -558,7 +531,6 @@ static gldb_response *gldb_get_response_running(bugle_uint32_t code, bugle_uint3
 {
     gldb_response_running *r;
 
-    set_status(GLDB_STATUS_RUNNING);
     r = BUGLE_MALLOC(gldb_response_running);
     r->code = code;
     r->id = id;
@@ -576,6 +548,7 @@ static gldb_response *gldb_get_response_screenshot(bugle_uint32_t code, bugle_ui
     return (gldb_response *) r;
 }
 
+/* Recursively retrieves a state tree */
 static gldb_state *state_get(void)
 {
     gldb_state *s, *child;
@@ -800,10 +773,34 @@ void gldb_free_response(gldb_response *r)
     bugle_free(r);
 }
 
+void gldb_process_response(gldb_response *r)
+{
+    switch (r->code)
+    {
+    case RESP_BREAK:
+    case RESP_BREAK_EVENT:
+        set_status(GLDB_STATUS_STOPPED);
+        break;
+    case RESP_RUNNING:
+        set_status(GLDB_STATUS_RUNNING);
+        break;
+    case RESP_STATE_NODE_BEGIN_RAW:
+        {
+            gldb_response_state_tree *resp = (gldb_response_state_tree *) r;
+            state_destroy(state_root);
+            state_root = resp->root;
+            resp->root = NULL;  /* Prevent gldb_free_response from clearing it */
+        }
+        break;
+    default:
+        break;
+    }
+}
+
 /* Only first n characters of name are considered. This simplifies
  * generate_commands.
  */
-gldb_state *gldb_state_find(gldb_state *root, const char *name, size_t n)
+gldb_state *gldb_state_find(const gldb_state *root, const char *name, size_t n)
 {
     const char *split;
     linked_list_node *i;
@@ -838,10 +835,10 @@ gldb_state *gldb_state_find(gldb_state *root, const char *name, size_t n)
         }
         if (!found) return NULL;
     }
-    return root;
+    return (gldb_state *) root;
 }
 
-gldb_state *gldb_state_find_child_numeric(gldb_state *parent, GLint name)
+gldb_state *gldb_state_find_child_numeric(const gldb_state *parent, GLint name)
 {
     gldb_state *child;
     linked_list_node *i;
@@ -855,7 +852,7 @@ gldb_state *gldb_state_find_child_numeric(gldb_state *parent, GLint name)
     return NULL;
 }
 
-gldb_state *gldb_state_find_child_enum(gldb_state *parent, GLenum name)
+gldb_state *gldb_state_find_child_enum(const gldb_state *parent, GLenum name)
 {
     gldb_state *child;
     linked_list_node *i;
@@ -1128,26 +1125,6 @@ gldb_status gldb_get_status(void)
 bugle_pid_t gldb_get_child_pid(void)
 {
     return child_pid;
-}
-
-void gldb_get_in_pipe(gldb_pipe *p)
-{
-    *p = lib_in_pipe;
-}
-
-void gldb_set_in_reader(bugle_io_reader *reader)
-{
-    lib_in = reader;
-}
-
-void gldb_get_out_pipe(gldb_pipe *p)
-{
-    *p = lib_out_pipe;
-}
-
-void gldb_set_out_writer(bugle_io_writer *writer)
-{
-    lib_out = writer;
 }
 
 void gldb_initialise(int argc, const char * const *argv)

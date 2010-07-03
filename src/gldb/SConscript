@@ -12,7 +12,7 @@ if 'debugger' in aspects['parts']:
     gldb_env = envs['host'].Clone()
     conf = Configure(gldb_env, custom_tests = BugleChecks.tests)
     if conf.CheckPkgConfig():
-        if conf.CheckPkg(aspects, 'gtk+-2.0', '2.4.0', without_name = 'without_gtk'):
+        if conf.CheckPkg(aspects, 'gtk+-2.0', '2.4.0', without_name = 'without_gtk') and conf.CheckPkg(aspects, 'gthread-2.0', '2.0', without_name = 'without_gtk'):
             have_gtk = True
         if conf.CheckPkg(aspects, 'gtkglext-1.0', '1.0.0', without_name = 'without_gtkglext'):
             have_gtkglext = True
@@ -28,6 +28,7 @@ if 'debugger' in aspects['parts']:
         Return()
 
     gldb_env.MergeFlags('!pkg-config gtk+-2.0 --cflags --libs')
+    gldb_env.MergeFlags('!pkg-config gthread-2.0 --cflags --libs')
     if have_glew and have_gtkglext:
         gldb_env.MergeFlags('!pkg-config gtkglext-1.0 --cflags --libs')
         gldb_env.Append(LIBS = [have_glew])

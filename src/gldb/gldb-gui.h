@@ -49,6 +49,7 @@ struct _GldbPane
 
     /* protected */
     gboolean dirty;
+    gboolean state_dirty;
     GtkWidget *top_widget;
 };
 
@@ -56,7 +57,19 @@ struct _GldbPaneClass
 {
     GObjectClass parent;
     /* class members */
+
+    /* Called the first time the pane is exposed after the program is stopped.
+     */
     void (*do_real_update)(GldbPane *self);
+
+    /* Called the first time the pane is exposed after the program is stopped
+     * AND the state tree is available.
+     */
+    void (*do_state_update)(GldbPane *self, const gldb_state *root);
+
+    /* Called whenever the program changes state (even if the pane is not
+     * exposed).
+     */
     void (*do_status_changed)(GldbPane *self, gldb_status status);
 };
 

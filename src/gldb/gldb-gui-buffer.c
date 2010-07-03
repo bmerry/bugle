@@ -1,5 +1,5 @@
 /*  BuGLe: an OpenGL debugging tool
- *  Copyright (C) 2009  Bruce Merry
+ *  Copyright (C) 2009-2010  Bruce Merry
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -316,21 +316,19 @@ static gboolean gldb_buffer_pane_response_callback(gldb_response *response,
 
     gldb_buffer_pane_update_data(data->pane);
 
-    gldb_free_response(response);
     bugle_free(data);
     return TRUE;
 }
 
-static void gldb_buffer_pane_update_ids(GldbBufferPane *pane)
+static void gldb_buffer_pane_update_ids(GldbBufferPane *pane, const gldb_state *root)
 {
     GValue old[1];
-    gldb_state *root, *s;
+    gldb_state *s;
     GtkTreeModel *model;
     GtkTreeIter iter;
     gchar *name;
     linked_list_node *i;
 
-    root = gldb_state_update();
     g_return_if_fail(root != NULL);
 
     gldb_gui_combo_box_get_old(GTK_COMBO_BOX(pane->id), old,
@@ -534,12 +532,12 @@ GldbPane *gldb_buffer_pane_new(void)
     return GLDB_PANE(pane);
 }
 
-static void gldb_buffer_pane_real_update(GldbPane *self)
+static void gldb_buffer_pane_state_update(GldbPane *self, const gldb_state *root)
 {
     GldbBufferPane *pane;
 
     pane = GLDB_BUFFER_PANE(self);
-    gldb_buffer_pane_update_ids(pane);
+    gldb_buffer_pane_update_ids(pane, root);
 }
 
 /* GObject stuff */
@@ -555,7 +553,8 @@ static void gldb_buffer_pane_class_init(GldbBufferPaneClass *klass)
     GldbPaneClass *pane_class;
 
     pane_class = GLDB_PANE_CLASS(klass);
-    pane_class->do_real_update = gldb_buffer_pane_real_update;
+    pane_class->do_real_update = NULL;
+    pane_class->do_state_update = gldb_buffer_pane_state_update;
     G_OBJECT_CLASS(pane_class)->finalize = (GObjectFinalizeFunc) gldb_buffer_pane_finalize;
 }
 

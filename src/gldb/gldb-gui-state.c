@@ -417,7 +417,7 @@ static void state_save(GtkToolButton *toolbutton,
         gtk_widget_destroy(dialog);
         return;
     }
-    root = gldb_state_update();
+    root = gldb_state_get_root();
     if (!root)
     {
         dialog = gtk_message_dialog_new(parent,
@@ -584,29 +584,13 @@ GldbPane *gldb_state_pane_new(void)
     return GLDB_PANE(pane);
 }
 
-static void gldb_state_pane_real_update(GldbPane *self)
+static void gldb_state_pane_state_update(GldbPane *self, const gldb_state *root)
 {
     GldbStatePane *pane;
-    const gldb_state *root;
 
-    if (gldb_get_status() != GLDB_STATUS_DEAD)
-    {
-        pane = GLDB_STATE_PANE(self);
-        root = gldb_state_update();
-        if (root)
-            update_state_r(root, pane->state_store, NULL);
-        else
-        {
-            GtkWidget *dialog;
-            dialog = gtk_message_dialog_new(GTK_WINDOW(gtk_widget_get_toplevel(self->top_widget)),
-                                            GTK_DIALOG_DESTROY_WITH_PARENT,
-                                            GTK_MESSAGE_ERROR,
-                                            GTK_BUTTONS_CLOSE,
-                                            "Could not update state");
-            gtk_dialog_run(GTK_DIALOG(dialog));
-            gtk_widget_destroy(dialog);
-        }
-    }
+    pane = GLDB_STATE_PANE(self);
+    g_return_if_fail(root != NULL);
+    update_state_r(root, pane->state_store, NULL);
 }
 
 /* GObject stuff */
@@ -616,7 +600,8 @@ static void gldb_state_pane_class_init(GldbStatePaneClass *klass)
     GldbPaneClass *pane_class;
 
     pane_class = GLDB_PANE_CLASS(klass);
-    pane_class->do_real_update = gldb_state_pane_real_update;
+    pane_class->do_real_update = NULL;
+    pane_class->do_state_update = gldb_state_pane_state_update;
 }
 
 static void gldb_state_pane_init(GldbStatePane *self, gpointer g_class)

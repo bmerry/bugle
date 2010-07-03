@@ -190,15 +190,14 @@ static gboolean gldb_texture_pane_response_callback(gldb_response *response,
         gtk_widget_queue_draw(pane->viewer->draw);
     }
 
-    gldb_free_response(response);
     bugle_free(data);
     return TRUE;
 }
 
-static void gldb_texture_pane_update_ids(GldbTexturePane *pane)
+static void gldb_texture_pane_update_ids(GldbTexturePane *pane, const gldb_state *root)
 {
     GValue old[2];
-    gldb_state *root, *s, *t, *l, *f, *param;
+    gldb_state *s, *t, *l, *f, *param;
     GtkTreeModel *model;
     GtkTreeIter iter;
     linked_list_node *nt, *nl;
@@ -239,7 +238,6 @@ static void gldb_texture_pane_update_ids(GldbTexturePane *pane)
         "2D array"
     };
 
-    root = gldb_state_update();
     g_return_if_fail(root != NULL);
 
     gldb_gui_combo_box_get_old(GTK_COMBO_BOX(pane->id), old,
@@ -259,7 +257,7 @@ static void gldb_texture_pane_update_ids(GldbTexturePane *pane)
         {
             l = gldb_state_find_child_enum(t, binding[trg]);
             if (l)
-                bugle_hashptr_set_int(&active, gldb_state_GLint(l), root); /* arbitrary non-NULL value */
+                bugle_hashptr_set_int(&active, gldb_state_GLint(l), &l); /* arbitrary non-NULL value */
             unit++;
         }
 
@@ -535,7 +533,7 @@ GldbPane *gldb_texture_pane_new(GtkStatusbar *statusbar,
     return GLDB_PANE(pane);
 }
 
-static void gldb_texture_pane_real_update(GldbPane *self)
+static void gldb_texture_pane_state_update(GldbPane *self, const gldb_state *root)
 {
     GldbTexturePane *pane;
 
@@ -543,7 +541,7 @@ static void gldb_texture_pane_real_update(GldbPane *self)
     /* Simply invoke a change event on the selector. This launches a
      * cascade of updates.
      */
-    gldb_texture_pane_update_ids(pane);
+    gldb_texture_pane_update_ids(pane, root);
 }
 
 /* GObject stuff */
@@ -553,7 +551,8 @@ static void gldb_texture_pane_class_init(GldbTexturePaneClass *klass)
     GldbPaneClass *pane_class;
 
     pane_class = GLDB_PANE_CLASS(klass);
-    pane_class->do_real_update = gldb_texture_pane_real_update;
+    pane_class->do_real_update = NULL;
+    pane_class->do_state_update = gldb_texture_pane_state_update;
 }
 
 static void gldb_texture_pane_init(GldbTexturePane *self, gpointer g_class)

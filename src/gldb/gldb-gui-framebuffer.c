@@ -152,20 +152,18 @@ static gboolean gldb_framebuffer_pane_response_callback(gldb_response *response,
 
     gldb_gui_image_viewer_update_zoom(pane->viewer);
     gtk_widget_queue_draw(pane->viewer->draw);
-    gldb_free_response(response);
     return TRUE;
 }
 
-static void gldb_framebuffer_pane_update_ids(GldbFramebufferPane *pane)
+static void gldb_framebuffer_pane_update_ids(GldbFramebufferPane *pane, const gldb_state *root)
 {
     GValue old[2];
     GtkTreeIter iter;
-    gldb_state *root, *framebuffer, *binding;
+    gldb_state *framebuffer, *binding;
     GtkTreeModel *model;
     char *name;
     GLint active = -1;
 
-    root = gldb_state_update();
     g_return_if_fail(root != NULL);
 
     gldb_gui_combo_box_get_old(GTK_COMBO_BOX(pane->id), old,
@@ -221,19 +219,19 @@ static void gldb_framebuffer_pane_id_changed(GtkWidget *widget, gpointer user_da
     GtkTreeIter iter;
     guint id;
     GValue old_buffer;
-    gldb_state *root;
+    const gldb_state *root;
 #if BUGLE_GLTYPE_GL
     gboolean stereo = FALSE, doublebuffer = FALSE;
     guint channels = 0, color_channels;
-    gldb_state *framebuffer, *fbo, *parameter;
+    const gldb_state *framebuffer, *fbo, *parameter;
     int i, attachments;
     char *name;
 #endif
 
-    if (gldb_get_status() == GLDB_STATUS_STOPPED)
+    root = gldb_state_get_root();
+    if (gldb_get_status() == GLDB_STATUS_STOPPED && root != NULL)
     {
         pane = (GldbFramebufferPane *) user_data;
-        root = gldb_state_update();
 
         model = gtk_combo_box_get_model(GTK_COMBO_BOX(pane->id));
         if (!gtk_combo_box_get_active_iter(GTK_COMBO_BOX(pane->id), &iter))
@@ -605,7 +603,7 @@ GldbPane *gldb_framebuffer_pane_new(GtkStatusbar *statusbar,
     return GLDB_PANE(pane);
 }
 
-static void gldb_framebuffer_pane_real_update(GldbPane *self)
+static void gldb_framebuffer_pane_state_update(GldbPane *self, const gldb_state *root)
 {
     GldbFramebufferPane *framebuffer;
 
@@ -613,7 +611,7 @@ static void gldb_framebuffer_pane_real_update(GldbPane *self)
     /* Simply invoke a change event on the selector. This launches a
      * cascade of updates.
      */
-    gldb_framebuffer_pane_update_ids(framebuffer);
+    gldb_framebuffer_pane_update_ids(framebuffer, root);
 }
 
 /* GObject stuff */
@@ -623,7 +621,8 @@ static void gldb_framebuffer_pane_class_init(GldbFramebufferPaneClass *klass)
     GldbPaneClass *pane_class;
 
     pane_class = GLDB_PANE_CLASS(klass);
-    pane_class->do_real_update = gldb_framebuffer_pane_real_update;
+    pane_class->do_real_update = NULL;
+    pane_class->do_state_update = gldb_framebuffer_pane_state_update;
 }
 
 static void gldb_framebuffer_pane_init(GldbFramebufferPane *self, gpointer g_class)

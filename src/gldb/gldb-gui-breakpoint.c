@@ -277,6 +277,7 @@ static void gldb_breakpoint_pane_class_init(GldbBreakpointPaneClass *klass)
 
     pane_class = GLDB_PANE_CLASS(klass);
     pane_class->do_real_update = gldb_breakpoint_pane_real_update;
+    pane_class->do_state_update = NULL;
 
     object_class = G_OBJECT_CLASS(klass);
     object_class->dispose = gldb_breakpoint_pane_dispose;

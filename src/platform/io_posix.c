@@ -66,6 +66,8 @@ static size_t fd_read(void *ptr, size_t size, size_t nmemb, void *arg)
             else
                 return received / size;
         }
+        else if (cur == 0)
+            return received / size;
         else
         {
             received += cur;

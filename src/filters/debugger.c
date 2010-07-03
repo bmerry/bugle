@@ -1593,7 +1593,7 @@ static bugle_bool debugger_initialise(filter_set *handle)
         return BUGLE_FALSE;
     }
 
-    request_queue = bugle_workqueue_new(read_request, NULL, in_pipe);
+    request_queue = bugle_workqueue_new(read_request, in_pipe);
     if (request_queue == NULL)
     {
         bugle_log_printf("debugger", "initialise", BUGLE_LOG_ERROR,

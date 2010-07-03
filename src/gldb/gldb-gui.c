@@ -39,8 +39,8 @@
 #include <bugle/string.h>
 #include <bugle/memory.h>
 #include <bugle/io.h>
-#include "common/io-impl.h"
 #include "common/protocol.h"
+#include "common/workqueue.h"
 #include "platform/io.h"
 #include "gldb/gldb-common.h"
 #include "gldb/gldb-channels.h"
@@ -96,13 +96,15 @@ static void gldb_pane_real_status_changed(GldbPane *self, gldb_status new_status
 
 static void gldb_pane_class_init(GldbPaneClass *klass)
 {
-    klass->do_real_update = NULL;    /* pure virtual function */
+    klass->do_real_update = NULL;    /* indicates no need for early update */
+    klass->do_state_update = NULL;   /* indicates no need for post-state update */
     klass->do_status_changed = gldb_pane_real_status_changed; /* no-op */
 }
 
 static void gldb_pane_init(GldbPane *self)
 {
     self->dirty = FALSE;
+    self->state_dirty = TRUE; /* There is no state at startup */
     self->top_widget = NULL;
 }
 
@@ -133,12 +135,13 @@ GType gldb_pane_get_type(void)
 
 void gldb_pane_update(GldbPane *self)
 {
-    if (self->dirty)
+    const gldb_state *root = gldb_state_get_root();
+    gboolean do_state = (self->state_dirty && root != NULL);
+    if (self->dirty || do_state)
     {
         GdkWindow *window = NULL;
         GtkWidget *widget;
 
-        self->dirty = FALSE;
         /* Show an hourglass/watch while waiting for potentially slow update */
         widget = gtk_widget_get_toplevel(gldb_pane_get_widget(self));
         if (GTK_WIDGET_REALIZED(widget))
@@ -147,7 +150,18 @@ void gldb_pane_update(GldbPane *self)
             gdk_window_set_cursor(window, wait_cursor);
             gdk_display_flush(gtk_widget_get_display(widget));
         }
-        GLDB_PANE_GET_CLASS(self)->do_real_update(self);
+        if (self->dirty)
+        {
+            if (GLDB_PANE_GET_CLASS(self)->do_real_update != NULL)
+                GLDB_PANE_GET_CLASS(self)->do_real_update(self);
+            self->dirty = FALSE;
+        }
+        if (do_state)
+        {
+            if (GLDB_PANE_GET_CLASS(self)->do_state_update != NULL)
+                GLDB_PANE_GET_CLASS(self)->do_state_update(self, root);
+            self->state_dirty = FALSE;
+        }
         if (window)
             gdk_window_set_cursor(window, NULL);
     }
@@ -156,6 +170,7 @@ void gldb_pane_update(GldbPane *self)
 void gldb_pane_invalidate(GldbPane *self)
 {
     self->dirty = TRUE;
+    self->state_dirty = TRUE;
 }
 
 GtkWidget *gldb_pane_get_widget(GldbPane *self)
@@ -193,8 +208,8 @@ typedef struct GldbWindow
     GtkActionGroup *live_actions;
     GtkActionGroup *dead_actions;
 
-    GIOChannel *channel;
-    guint channel_watch;
+    bugle_workqueue *queue;
+    guint queue_watch;
 
     GPtrArray *panes;
 } GldbWindow;
@@ -366,6 +381,11 @@ static void stopped(GldbWindow *context, const gchar *text)
     gtk_action_group_set_sensitive(context->stopped_actions, TRUE);
     update_status_bar(context, text);
     pane_status_changed(context);
+
+    /* Force the state tree to refresh - even if the current pane doesn't need
+     * it, this will prepare it in the background.
+     */
+    gldb_send_state_tree(0);
 }
 
 static void main_window_add_pane(GldbWindow *context, gchar *title, GldbPane *pane)
@@ -392,15 +412,16 @@ static void notebook_switch_page(GtkNotebook *notebook,
 
 static void child_exit_notify(GldbWindow *context)
 {
-    gldb_notify_child_dead();
-
-    if (context->channel)
+    if (context->queue)
     {
-        g_io_channel_unref(context->channel);
-        context->channel = NULL;
-        g_source_remove(context->channel_watch);
-        context->channel_watch = 0;
+        bugle_workqueue_stop(context->queue);
+        bugle_workqueue_free(context->queue);
+        context->queue = NULL;
+        g_source_remove(context->queue_watch);
+        context->queue_watch = 0;
     }
+
+    gldb_notify_child_dead();
 
     update_status_bar(context, _("Not running"));
     gtk_action_group_set_sensitive(context->running_actions, FALSE);
@@ -415,8 +436,7 @@ static void child_exit_callback(GPid pid, gint status, gpointer user_data)
     child_exit_notify((GldbWindow *) user_data);
 }
 
-static gboolean response_callback(GIOChannel *channel, GIOCondition condition,
-                                  gpointer user_data)
+static gboolean response_callback(bugle_workqueue *queue, gpointer user_data)
 {
     GldbWindow *context;
     gldb_response *r;
@@ -426,12 +446,13 @@ static gboolean response_callback(GIOChannel *channel, GIOCondition condition,
     response_handler *h;
 
     context = (GldbWindow *) user_data;
-    r = gldb_get_response();
+    r = (gldb_response *) bugle_workqueue_get_item(queue);
     if (r == NULL)
     {
         child_exit_notify(context);
         return TRUE;
     }
+    gldb_process_response(r);
 
     n = bugle_list_head(&response_handlers);
     if (n) h = (response_handler *) bugle_list_data(n);
@@ -445,7 +466,11 @@ static gboolean response_callback(GIOChannel *channel, GIOCondition condition,
     {
         done = (*h->callback)(r, h->user_data);
         bugle_list_erase(&response_handlers, n);
-        if (done) return TRUE;
+        if (done)
+        {
+            gldb_free_response(r);
+            return TRUE;
+        }
         n = bugle_list_head(&response_handlers);
         if (n) h = (response_handler *) bugle_list_data(n);
     }
@@ -485,9 +510,78 @@ static gboolean response_callback(GIOChannel *channel, GIOCondition condition,
         gtk_action_group_set_sensitive(context->dead_actions, FALSE);
         pane_status_changed(context);
         break;
+    case RESP_STATE_NODE_BEGIN_RAW:
+        /* Update panes that depend on the state tree */
+        notebook_update(context, -1);
+        break;
     }
 
+    gldb_free_response(r);
     return TRUE;
+}
+
+typedef gboolean (*queue_func)(bugle_workqueue *queue, gpointer user_data);
+
+typedef struct
+{
+    GSource source;
+    bugle_workqueue *queue;
+} queue_wrapper;
+
+static gboolean queue_prepare(GSource *source, int *tm)
+{
+    queue_wrapper *qw = (queue_wrapper *) source;
+    *tm = -1;
+    return bugle_workqueue_has_data(qw->queue);
+}
+
+static gboolean queue_check(GSource *source)
+{
+    queue_wrapper *qw = (queue_wrapper *) source;
+    return bugle_workqueue_has_data(qw->queue);
+}
+
+static gboolean queue_dispatch(GSource *source, GSourceFunc callback, void *user_data)
+{
+    queue_wrapper *qw = (queue_wrapper *) source;
+    queue_func func = (queue_func) callback;
+
+    g_assert(func != NULL);
+    return (*func)(qw->queue, user_data);
+}
+
+static bugle_bool queue_consume(bugle_workqueue *queue, void *user_data, void **item)
+{
+    *item = gldb_get_response();
+    return *item != NULL;
+}
+
+static void queue_wakeup(bugle_workqueue *queue, void *user_data)
+{
+    g_main_context_wakeup((GMainContext *) user_data);
+}
+
+/* Add a main loop source which is dispatched when work becomes available
+ * on the given queue. The queue must not yet have been started.
+ */
+static guint add_queue_watch(bugle_workqueue *queue, queue_func callback, void *user_data)
+{
+    static GSourceFuncs funcs =
+    {
+        queue_prepare,
+        queue_check,
+        queue_dispatch,
+        NULL
+    };
+
+    GSource *source = g_source_new(&funcs, sizeof(queue_wrapper));
+    ((queue_wrapper *) source)->queue = queue;
+    GMainContext *ctx = g_main_context_default();
+
+    g_source_set_callback(source, (GSourceFunc) callback, user_data, NULL);
+    bugle_workqueue_set_wakeup(queue, queue_wakeup, ctx);
+    g_source_attach(source, ctx);
+    return g_source_get_id(source);
 }
 
 static void quit_action(GtkAction *action, gpointer user_data)
@@ -495,43 +589,11 @@ static void quit_action(GtkAction *action, gpointer user_data)
     gtk_widget_destroy(((GldbWindow *) user_data)->window);
 }
 
-static size_t channel_read(void *ptr, size_t size, size_t nmemb, void *channel)
-{
-    GIOStatus status;
-    gsize remain;
-    gsize bytes_read = 0;
-    gsize cur;
-
-    remain = size * nmemb; /* FIXME handle overflow */
-    while (remain > 0)
-    {
-        status = g_io_channel_read_chars((GIOChannel *) channel,
-                                         (gchar *)ptr + bytes_read, remain,
-                                         &cur, NULL);
-        if (status == G_IO_STATUS_AGAIN)
-            continue;
-        else if (status == G_IO_STATUS_ERROR)
-            return bytes_read / size;
-        bytes_read += cur;
-        remain -= cur;
-    }
-    return nmemb;
-}
-
-static int channel_close(void *channel)
-{
-    if (g_io_channel_shutdown((GIOChannel *) channel, TRUE, NULL) == G_IO_STATUS_NORMAL)
-        return 0;
-    else
-        return EOF;
-}
 
 static void run_action(GtkAction *action, gpointer user_data)
 {
     const char *error_msg;
     GldbWindow *context = (GldbWindow *) user_data;
-    bugle_io_reader *in_reader;
-    gldb_pipe in_pipe, out_pipe;
 
     g_return_if_fail(gldb_get_status() == GLDB_STATUS_DEAD);
     while ((error_msg = gldb_program_validate()) != NULL)
@@ -551,64 +613,15 @@ static void run_action(GtkAction *action, gpointer user_data)
     if (!gldb_execute(NULL))
         return;
 
-    gldb_get_in_pipe(&in_pipe);
-    switch (in_pipe.type)
-    {
-#if BUGLE_PLATFORM_MSVCRT || BUGLE_PLATFORM_MINGW
-    case GLDB_PIPE_TYPE_HANDLE:
-        {
-            /* TODO: this file handle will leak. It should be moved into the
-             * channel reader.
-             */
-            int fd = _open_osfhandle((intptr_t) in_pipe.value.handle, _O_RDONLY);
-            context->channel = g_io_channel_win32_new_fd(fd);
-        }
-        break;
-    case GLDB_PIPE_TYPE_SOCKET:
-        context->channel = g_io_channel_win32_new_socket(in_pipe.value.sock);
-        break;
-#else
-    case GLDB_PIPE_TYPE_FD:
-        context->channel = g_io_channel_unix_new(in_pipe.value.fd);
-        break;
-#endif
-    default:
-        g_assert_not_reached();
-        context->channel = NULL;
-    }
-    g_io_channel_set_encoding(context->channel, NULL, NULL);
-
-    in_reader = BUGLE_MALLOC(bugle_io_reader);
-    in_reader->fn_read = channel_read;
-    in_reader->fn_close = channel_close;
-    in_reader->arg = context->channel;
-    gldb_set_in_reader(in_reader);
-
-    gldb_get_out_pipe(&out_pipe);
-    switch (out_pipe.type)
-    {
-#if BUGLE_PLATFORM_MSVCRT || BUGLE_PLATFORM_MINGW
-    case GLDB_PIPE_TYPE_HANDLE:
-        gldb_set_out_writer(bugle_io_writer_handle_new(out_pipe.value.handle, TRUE));
-        break;
-    case GLDB_PIPE_TYPE_SOCKET:
-        gldb_set_out_writer(bugle_io_writer_socket_new(out_pipe.value.sock, TRUE));
-        break;
-#else
-    case GLDB_PIPE_TYPE_FD:
-        gldb_set_out_writer(bugle_io_writer_fd_new(out_pipe.value.fd));
-        break;
-#endif
-    default:
-        g_assert_not_reached();
-    }
+    context->queue = bugle_workqueue_new(queue_consume, NULL);
+    context->queue_watch = add_queue_watch(context->queue, response_callback, context);
 
     if (!gldb_run(seq++))
     {
         return; /* TODO clean up - actually this function leaks like a sieve */
     }
-    context->channel_watch = g_io_add_watch(context->channel, G_IO_IN | G_IO_ERR,
-                                            response_callback, context);
+
+    bugle_workqueue_start(context->queue);
 
     g_child_watch_add((GPid) gldb_get_child_pid(), child_exit_callback, context);
     update_status_bar(context, _("Started"));
@@ -891,6 +904,7 @@ int main(int argc, char **argv)
     GldbWindow context;
 
     gtk_init(&argc, &argv);
+    g_thread_init(NULL);
     wait_cursor = gdk_cursor_new(GDK_WATCH);
 #if HAVE_GTKGLEXT
     gtk_gl_init(&argc, &argv);

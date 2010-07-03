@@ -47,11 +47,15 @@ typedef bugle_bool (*bugle_workqueue_consume)(bugle_workqueue *queue, void *arg,
 typedef void (*bugle_workqueue_wakeup)(bugle_workqueue *queue, void *arg);
 
 /* Creates a new queue, but does not start it running. Returns NULL
- * on failure.
+ * on failure. The user_data is passed to the consume callback.
  */
 BUGLE_EXPORT_PRE bugle_workqueue *bugle_workqueue_new(bugle_workqueue_consume consume,
-                                                      bugle_workqueue_wakeup wakeup,
                                                       void *user_data) BUGLE_EXPORT_POST;
+
+/* Set the wakeup callback. This must only be called when not running. */
+BUGLE_EXPORT_PRE void bugle_workqueue_set_wakeup(bugle_workqueue *queue,
+                                                 bugle_workqueue_wakeup wakeup,
+                                                 void *user_data) BUGLE_EXPORT_POST;
 
 /* Spawns the worker thread to process this queue */
 BUGLE_EXPORT_PRE void bugle_workqueue_start(bugle_workqueue *queue) BUGLE_EXPORT_POST;

@@ -223,44 +223,23 @@ typedef struct
     bugle_uint32_t id;
 } gldb_response;
 
-typedef enum
-{
-    GLDB_PIPE_TYPE_NONE,
-#if BUGLE_PLATFORM_MSVCRT || BUGLE_PLATFORM_MINGW
-    GLDB_PIPE_TYPE_HANDLE,
-    GLDB_PIPE_TYPE_SOCKET,
-#endif
-    GLDB_PIPE_TYPE_FD
-} gldb_pipe_type;
-
-typedef struct
-{
-    gldb_pipe_type type;
-    union
-    {
-#if BUGLE_PLATFORM_MSVCRT || BUGLE_PLATFORM_MINGW
-        HANDLE handle;
-        SOCKET sock;
-#endif
-        int fd;
-    } value;
-} gldb_pipe;
-
 /* Only first n characters of name are considered. This simplifies
  * generate_commands.
  */
-gldb_state *gldb_state_find(gldb_state *root, const char *name, size_t n);
+gldb_state *gldb_state_find(const gldb_state *root, const char *name, size_t n);
 /* Finds the immediate child with the given numeric/enum name, or NULL */
-gldb_state *gldb_state_find_child_numeric(gldb_state *parent, GLint name);
-gldb_state *gldb_state_find_child_enum(gldb_state *parent, GLenum name);
+gldb_state *gldb_state_find_child_numeric(const gldb_state *parent, GLint name);
+gldb_state *gldb_state_find_child_enum(const gldb_state *parent, GLenum name);
 /* Converts a state to a string representation, which the caller must free */
 char *gldb_state_string(const gldb_state *state);
 GLint gldb_state_GLint(const gldb_state *state);
 GLenum gldb_state_GLenum(const gldb_state *state);
 GLboolean gldb_state_GLboolean(const gldb_state *state);
 
-/* Updates the internal state tree if necessary, and returns the tree */
-gldb_state *gldb_state_update(void);
+/* Retrieves the root of the state cache. Returns NULL if the cache is
+ * invalid (use gldb_send_state_tree to refresh it asynchronously).
+ */
+const gldb_state *gldb_state_get_root(void);
 
 /* Checks that the result of a system call is not -1, otherwise throws
  * an error.
@@ -297,24 +276,21 @@ void gldb_notify_child_dead(void);
 gldb_response *gldb_get_response(void);
 void gldb_free_response(gldb_response *response);
 
+/* Update internal flags based on the response. This is separate from
+ * gldb_get_response since it should be run in the same thread that queries
+ * those states, rather than in a thread that purely calls gldb_get_response.
+ *
+ * The specific states that are updated as a result:
+ * - the program status
+ * - the state cache
+ * The state tree is removed from state responses so that the response may
+ * be freed without breaking the cache.
+ */
+void gldb_process_response(gldb_response *response);
+
 bugle_bool gldb_get_break_event(bugle_uint32_t event);
 gldb_status gldb_get_status(void);
 bugle_pid_t gldb_get_child_pid(void);
-/* These should only be used for select() and the like, never read from.
- * All protocol details are abstracted by gldb_send_*, gldb_set_* and
- * gldb_get_response. These functions receive a copy of the pipe.
- */
-void gldb_get_in_pipe(gldb_pipe *p);
-void gldb_get_out_pipe(gldb_pipe *p);
-/* Used to tell gldb what reader to use in gldb_protocol_recv* and to write
- * in gldb_protocol_send. They must also be set after launching a process
- * before trying to read/write anything. They are deallocated on process
- * shutdown.
- */
-struct bugle_io_reader;
-struct bugle_io_writer;
-void gldb_set_in_reader(struct bugle_io_reader *reader);
-void gldb_set_out_writer(struct bugle_io_writer *writer);
 
 void gldb_program_clear(void);
 void gldb_program_set_setting(gldb_program_setting setting, const char *value);
