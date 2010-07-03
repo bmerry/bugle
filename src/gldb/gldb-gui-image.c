@@ -412,8 +412,10 @@ static void image_draw_motion_update(GldbGuiImageViewer *viewer,
     channels = plane->channels;
     for (p = 0; channels; channels &= ~channel, p++)
     {
-        const char *abbr = gldb_channel_get_abbr(channel);
+        const char *abbr;
+
         channel = channels & ~(channels - 1);
+        abbr = gldb_channel_get_abbr(channel);
         tmp_msg = msg;
         msg = bugle_asprintf(" %s %s: %f", tmp_msg, abbr ? abbr : "?", gldb_gui_image_plane_get_pixel(plane, u, v, p));
         bugle_free(tmp_msg);
