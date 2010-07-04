@@ -25,7 +25,7 @@
 #define BUGLE_ATTRIBUTES_H
 
 #if BUGLE_HAVE_ATTRIBUTE_FORMAT_PRINTF || (__GNUC__ > 2 || (__GNUC__ == 2 && __GNUC_MINOR > 4))
-# define BUGLE_ATTRIBUTE_FORMAT_PRINTF(a, b) __attribute__((format(printf, a, b)))
+# define BUGLE_ATTRIBUTE_FORMAT_PRINTF(a, b) __attribute__((format(__printf__, a, b)))
 #else
 # define BUGLE_ATTRIBUTE_FORMAT_PRINTF(a, b)
 #endif

@@ -283,7 +283,7 @@ static bugle_pid_t execute(void (*child_init)(void))
     setenv_printf("BUGLE_CHAIN=%s", chain ? chain : "");
 
     argv = make_argv(command);
-    pid = _spawnvp(_P_NOWAIT, argv[0], argv);
+    pid = _spawnvp(_P_NOWAIT, argv[0], (const char * const *) argv);
     bugle_free(argv[0]);
     bugle_free(argv);
     CloseHandle(out_pipe[0]);

@@ -575,9 +575,9 @@ static guint add_queue_watch(bugle_workqueue *queue, queue_func callback, void *
     };
 
     GSource *source = g_source_new(&funcs, sizeof(queue_wrapper));
-    ((queue_wrapper *) source)->queue = queue;
     GMainContext *ctx = g_main_context_default();
 
+    ((queue_wrapper *) source)->queue = queue;
     g_source_set_callback(source, (GSourceFunc) callback, user_data, NULL);
     bugle_workqueue_set_wakeup(queue, queue_wakeup, ctx);
     g_source_attach(source, ctx);
