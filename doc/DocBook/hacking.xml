@@ -13,7 +13,7 @@
             <title>Introduction</title>
             <para>
                 While other projects may have simply a <quote>Windows</quote> port and a
-                <quote>GNU</quote> port, for example, but it is not so simple for &bugle;.
+                <quote>GNU</quote> port, for example, it is not so simple for &bugle;.
                 For example, one might run on Windows but using Cygwin with an X
                 server, or on Linux but using EGL rather than GLX. Instead, a
                 target system is based on a number of categories:

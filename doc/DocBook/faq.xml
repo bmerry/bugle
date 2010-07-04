@@ -18,28 +18,26 @@
                         The exact details will depend on your OS. Here is what
                         I do on Gentoo:
                     </para>
-                    <screen><prompt>$</prompt> <userinput>./configure --x-libraries=/usr/lib32 CC="gcc -m32" CXX="g++ -m32" \
-    --libdir=/usr/local/lib32 --bindir=/usr/local/bin32</userinput></screen>
+                    <screen><prompt>$</prompt> <userinput>scons CCFLAGS="-m32" LINKFLAGS="-m32" without_gtkglext=yes without_lavc=yes \
+    libdir=/usr/local/lib32 bindir=/usr/local/bin32</userinput></screen>
                     <para>
-                        Gentoo also tries to be clever by putting in a
-                        <filename>libGL.la</filename> to make linking
-                        against OpenGL work better, but in some cases it
-                        causes <application>libtool</application> to pick
-                        up the 64-bit version of OpenGL. I work around this by copying
-                        <filename>/usr/lib/libGL.la</filename> into the compilation directory, and replacing all
-                        references to <filename
-                            class="directory">/usr/lib</filename> with
-                        <filename>/usr/lib32</filename>.
+                        The <option>without_gtkglext</option> and
+                        <option>without_lavc</option> options are there
+                        because I do not have 32-bit versions of those
+                        libraries installed, and
+                        <application>pkg-config</application> will provide
+                        information about the 64-bit installs instead.
                     </para>
                 </answer>
             </qandaentry>
 
             <qandaentry id="faq-gcc-version">
                 <question><para>
-                        Why is a recent (&gt;3.0) version of
+                        Why is a recent (&gt;4.0) version of
                         <application>GCC</application> required?
                 </para></question>
-                <answer><para>
+                <answer>
+                    <para>
                         <application>Bugle</application> is driven by a number
                         of tables that list all the information about the
                         various types and functions in OpenGL. To capture this
@@ -51,7 +49,15 @@
                         <option>-fdump-translation-unit</option> option) was
                         only added sometime after 3.0, and is also broken in
                         4.0 (fixed in 4.1).
-                </para></answer>
+                    </para>
+                    <para>
+                        To avoid namespace pollution, &bugle; passes
+                        <option>-fvisibility=hidden</option> to GCC, which is
+                        only supported since GCC 4. If you need to build with
+                        GCC 3.<replaceable>x</replaceable>, you can try
+                        removing this option, but doing so is unsupported.
+                    </para>
+                </answer>
             </qandaentry>
 
             <qandaentry>
@@ -78,8 +84,7 @@
                         <option>-fdump-translation-unit</option>
                         (<application>GCC</application> bug <ulink
                             url="http://gcc.gnu.org/bugzilla/show_bug.cgi?id=18279">18279</ulink>).
-                        Use <application>GCC</application>
-                        3.<replaceable>x</replaceable> or 4.1 instead.
+                        Use a newer <application>GCC</application> version.
                 </para></answer>
             </qandaentry>
 
@@ -93,7 +98,7 @@
                         <ulink
                             url="http://gcc.gnu.org/bugzilla/show_bug.cgi?id=30052">#30052</ulink>
                         but possibly not. Either downgrade to 4.1, upgrade to
-                        a version where the bug is fixed , or compile without
+                        a version where the bug is fixed, or compile without
                         optimisation (<option>-O0</option>).
                     </para>
                 </answer>
@@ -229,16 +234,23 @@
 
             <qandaentry>
                 <question><para>
-                        Why do I get the error <computeroutput>*** %n in
-                            writable segment detected ***</computeroutput>?
+                        I have NVIDIA drivers. Why does my program fall back to
+                        indirect rendering when I use &bugle;?
                 </para></question>
-                <answer><para>
-                        Most likely your distribution has crippled GCC by
-                        switching on options that improve security but are not
-                        C compliant. Try adding
-                        <userinput>-U_FORTIFY_SOURCE</userinput> to your
-                        <envar>CFLAGS</envar>.
-                </para></answer>
+                <answer>
+                    <para>
+                        This has been reported by several users. It appears to
+                        be specific
+                        to the way some distribution vendors have packaged the
+                        drivers. Users have reported that installing the NVIDIA
+                        drivers with NVIDIA's installer fixes the problem.
+                    </para>
+                    <para>
+                        I have not been able to reproduce this bug on my Gentoo
+                        system. If anybody has further information about what
+                        causes the issue, patches are welcome.
+                    </para>
+                </answer>
             </qandaentry>
         </qandaset>
     </sect1>
@@ -399,30 +411,6 @@
                         This is a known bug in NVIDIA's 76.76 driver. It is
                         fixed in the 80 series drivers. The results should
                         appear in the framebuffer viewer.
-                </para></answer>
-            </qandaentry>
-
-            <qandaentry>
-                <question><para>
-                        I'm running 64-bit bugle on a 64-bit OS with a
-                        64-bit application, but when I try to run it, it
-                        tries to open the 32-bit version of <filename
-                            class="libraryfile">libGL.so</filename>.
-                </para></question>
-                <answer><para>
-                        I haven't heard if this actually works, but try
-                        setting <envar>LTDL_LIBRARY_PATH</envar> to the
-                        path containing your 64-bit OpenGL library (probably
-                        <filename class="directory">/usr/lib64</filename>. If
-                        you run into this problem, please let me know if this
-                        workaround is effective.
-                </para></answer>
-                <answer><para>
-                        Another potential workaround is to replace
-                        <filename class="libraryfile">libGL.so</filename> in
-                        <filename>gl.bc.in</filename> with the full path
-                        before running <command>configure</command>. Again,
-                        please let me know whether this is effective.
                 </para></answer>
             </qandaentry>
 

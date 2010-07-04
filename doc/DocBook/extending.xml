@@ -65,7 +65,7 @@
                 </para></listitem>
                 <listitem><para>Functions that act on
                         <replaceable>type</replaceable> should be named
-                        <function><replaceable>type</replaceable>_<replaceable>action</replaceable></function>.
+                        <replaceable>type</replaceable>_<replaceable>action</replaceable>.
                 </para></listitem>
                 <listitem><para>
                         Types and functions that are intended to be used from
@@ -102,8 +102,9 @@
                 </para></listitem>
                 <listitem><para>C files should contain conforming C89 syntax as
                         far as possible. That means no variable initialisers,
-                        no variable-length arrays, and no C++-style
-                        (<literal>//</literal>) comments.
+                        no variable-length arrays, no C++-style
+                        (<literal>//</literal>) comments, and no code after
+                        declarations.
                 </para></listitem>
                 <listitem><para>
                         Non-C89 library functions should not be called
@@ -171,9 +172,7 @@
             <envar>LDFLAGS</envar> extracted from
             <application>pkg-config</application>, you should also ensure that
             your module is compiled with suitable flags to make it
-            thread-safe. Using <application>libtool</application> is
-            recommended, in which case you should use the
-            <option>-thread-safe</option>.
+            thread-safe.
         </para>
         <para>
             The installation directory can also be extracted from
@@ -479,6 +478,13 @@
                     <paramdef>filter_callback <parameter>callback</parameter></paramdef>
                 </funcprototype>
                 <funcprototype>
+                    <funcdef>void <function>bugle_filter_catches_function</function></funcdef>
+                    <paramdef>filter *<parameter>f</parameter></paramdef>
+                    <paramdef>const char *<parameter>function</parameter></paramdef>
+                    <paramdef>bugle_bool <parameter>inactive</parameter></paramdef>
+                    <paramdef>filter_callback <parameter>callback</parameter></paramdef>
+                </funcprototype>
+                <funcprototype>
                     <funcdef>void <function>bugle_filter_all</function></funcdef>
                     <paramdef>filter *<parameter>f</parameter></paramdef>
                     <paramdef>bugle_bool <parameter>inactive</parameter></paramdef>
@@ -638,8 +644,8 @@
                             each thread has a current context, and each
                             context may have a current display list, so
                             display lists have context scope. &Bugle; allows
-                            you so specify what the current object for each
-                            class is (which may be <symbol>NULL</symbol>), and
+                            you to specify the current object for each
+                            class (which may be <symbol>NULL</symbol>), and
                             retrieve it later.
                     </para></listitem>
                 </varlistentry>
@@ -648,9 +654,11 @@
         <sect2 id="extending-objects-classes">
             <title>Class management functions</title>
             <para>
-                Class structs are generally declared as global pointers with
-                external linkage, so that code that uses them may access them
-                directly.
+                Class structs are generally declared as global pointers.
+                However, exported variables from a shared library is not very
+                portable, so access to the class struct should be via a
+                function call. And example of such a function call is
+                <function>bugle_get_namespace_class</function>.
             </para>
             <funcsynopsis>
                 <funcsynopsisinfo language="cpp">#include &lt;bugle/objects.h&gt;</funcsynopsisinfo>
@@ -725,7 +733,7 @@
             </funcsynopsis>
             <para>
                 This instantiates a new instance of the given class.
-                Instantiate an instance of the given class. Firstly, if
+                Firstly, if
                 <parameter>make_current</parameter> is <symbol>BUGLE_TRUE</symbol>
                 then the new object is immediately made the current object of
                 its class. Then, for each registrant the constructor is called
@@ -954,7 +962,7 @@
                 will return a boolean, indicating whether it is safe to
                 proceed. If it is, you must terminate that block of code by
                 calling
-                <code>bugle_gl_end_internal_render("<replaceable>name</replaceable>", true);</code>
+                <code>bugle_gl_end_internal_render("<replaceable>name</replaceable>", BUGLE_TRUE);</code>
                 The first parameter is
                 a descriptive name for the section of code (typically the
                 name of the containing function), which is logged if the code

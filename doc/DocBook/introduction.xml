@@ -6,8 +6,8 @@
 <chapter id="introduction">
     <title>Introduction</title>
     <para>
-        &Bugle; is an toolkit for debugging and profiling OpenGL applications
-        running on UNIX-like systems. It consists of two parts: a collection
+        &Bugle; is an toolkit for debugging and profiling OpenGL applications.
+        It consists of two parts: a collection
         of <firstterm>filter-sets</firstterm> that observe and sometimes
         modify calls to the OpenGL API, and a graphical <link
             linkend="gldb-gui.1">debugger</link> that helps in examining

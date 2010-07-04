@@ -21,14 +21,14 @@
         </para>
         <itemizedlist>
             <listitem><para>
-                    GCC, at least version 3.2, and <emphasis>not</emphasis>
-                    4.0 (see the <link linkend="faq-gcc-version">FAQ</link>
-                    for an explanation of why). It has been tested with
-                    versions 4.1 to 4.4.
+                    GCC 4.1 or higher (see the <link
+                        linkend="faq-gcc-version">FAQ</link>
+                    for an explanation of why). It is currently only
+                    tested with 4.4 and 4.5.
             </para></listitem>
             <listitem><para>
                     A C++ compiler with the POSIX regular expression functions
-                    (generally <application>g++</application>)
+                    (generally <application>g++</application>).
             </para></listitem>
             <listitem><para>
                     OpenGL header files, including a recent version of <ulink
@@ -38,8 +38,11 @@
                     required.
             </para></listitem>
             <listitem><para>Perl 5</para></listitem>
-            <listitem><para>Python 2 (2.5 is tested, 2.4 may work)</para></listitem>
-            <listitem><para><ulink url="http://www.scons.org">SCons</ulink> (only 1.20 is tested, older versions may work)</para></listitem>
+            <listitem><para>Python 2 (2.6 is tested, older versions may
+                    work)</para></listitem>
+            <listitem><para><ulink url="http://www.scons.org">SCons</ulink>
+                    (only 1.2.0 is tested, other versions may
+                    work)</para></listitem>
         </itemizedlist>
         <para>
             The following packages are not required, but if present, will
@@ -61,7 +64,7 @@
                 </para></listitem>
             </varlistentry>
             <varlistentry>
-                <term><!-- FIXME URL -->GLUT</term>
+                <term><ulink url="http://www.opengl.org/resources/libraries/glut/glut_downloads.php">GLUT</ulink></term>
                 <listitem><para>
                         GLUT is required by the test suite.
                 </para></listitem>
@@ -139,8 +142,8 @@
     <sect1 id="install-cross">
         <title>Cross-compilation</title>
         <para>
-            &Bugle; supports cross-compilation with GCC. Other compilers are not
-            yet supported should be relatively easy to add.
+            &Bugle; supports cross-compilation with GCC. Other compilers are
+            not yet supported but should be relatively easy to add.
         </para>
         <para>
             First, a note about terminology. &Bugle; follows the
@@ -194,57 +197,179 @@
             UNIX-like systems, and currently only recommended for experts.
             The intended target is <ulink
                 url="http://www.mingw.org">MinGW</ulink>; you can try using
-            Cygwin as well, but it is not tested.
+            Cygwin as well, but it is not tested. You can also build using
+            Microsoft Visual C++, but MinGW is still useful as it provides a
+            number of the supporting tools such as Perl.
         </para>
         <para>
             Here is the list of steps I used to install on Windows, including
             support for the debugger. The versions numbers were the latest
-            available at the time, but newer versions should work too.
+            available at the time, but newer versions may work too.
         </para>
         <orderedlist>
+            <listitem>
+                <para>
+                    Install <application>MinGW</application>. The installer
+                    is rather outdated (at the time of writing), and I found it
+                    necessary to manually install from a set of downloads.
+                    Download and unpack the following files into <filename
+                        class="directory">c:\mingw</filename> (for example).
+                    This list potentially contain more than you need.
+                </para>
+                <screen>
+binutils-2.20.1-2-mingw32-bin.tar.gz
+gcc-c++-4.5.0-1-mingw32-bin.tar.lzma
+gcc-core-4.5.0-1-mingw32-bin.tar.lzma
+gmp-5.0.1-1-mingw32-dev.tar.lzma
+libexpat-2.0.1-1-mingw32-dll-1.tar.gz
+libgcc-4.5.0-1-mingw32-dll-1.tar.lzma
+libgmp-5.0.1-1-mingw32-dll-10.tar.lzma
+libgomp-4.5.0-1-mingw32-dll-1.tar.lzma
+libmpc-0.8.1-1-mingw32-dll-2.tar.lzma
+libmpfr-2.4.1-1-mingw32-dll-1.tar.lzma
+libpthread-2.8.0-3-mingw32-dll-2.tar.lzma
+libssp-4.5.0-1-mingw32-dll-0.tar.lzma
+libstdc++-4.5.0-1-mingw32-dll-6.tar.lzma
+mingw-libgnurx-2.5.1-bin.tar.gz
+mingw-libgnurx-2.5.1-dev.tar.gz
+mingwrt-3.18-mingw32-dev.tar.gz
+mingwrt-3.18-mingw32-dll.tar.gz
+mpc-0.8.1-1-mingw32-dev.tar.lzma
+mpfr-2.4.1-1-mingw32-dev.tar.lzma
+pthreads-w32-2.8.0-3-mingw32-dev.tar.lzma
+w32api-3.14-mingw32-dev.tar.gz
+</screen>
+            </listitem>
+            <listitem>
+                <para>
+                    Install <application>MSYS</application>. Again, the
+                    installer is outdated (at the time of writing), and I
+                    installed from manually downloaded files. I unpackaged
+                    these files to <filename
+                        class="directory">c:\msys</filename>.
+                </para>
+                <screen>
+automake-1.11.1-1-msys-1.0.13-bin.tar.lzma
+bash-3.1.17-3-msys-1.0.13-bin.tar.lzma
+bison-2.4.2-1-msys-1.0.13-bin.tar.lzma
+bzip2-1.0.5-2-msys-1.0.13-bin.tar.lzma
+coreutils-5.97-3-msys-1.0.13-bin.tar.lzma
+cvs-1.12.13-2-msys-1.0.13-bin.tar.lzma
+diffutils-2.8.7.20071206cvs-3-msys-1.0.13-bin.tar.lzma
+findutils-4.4.2-2-msys-1.0.13-bin.tar.lzma
+flex-2.5.35-2-msys-1.0.13-bin.tar.lzma
+gawk-3.1.7-2-msys-1.0.13-bin.tar.lzma
+gettext-0.17-2-msys-1.0.13-bin.tar.lzma
+gettext-0.17-2-msys-1.0.13-dev.tar.lzma
+grep-2.5.4-2-msys-1.0.13-bin.tar.lzma
+gzip-1.3.12-2-msys-1.0.13-bin.tar.lzma
+less-436-2-msys-1.0.13-bin.tar.lzma
+libbz2-1.0.5-2-msys-1.0.13-dll-1.tar.lzma
+libcrypt-1.1_1-3-msys-1.0.13-dll-0.tar.lzma
+libexpat-2.0.1-1-msys-1.0.13-dll-1.tar.lzma
+libgdbm-1.8.3-3-msys-1.0.13-dll-3.tar.lzma
+libgettextpo-0.17-2-msys-dll-0.tar.lzma
+libiconv-1.13.1-2-msys-1.0.13-bin.tar.lzma
+libiconv-1.13.1-2-msys-1.0.13-dll-2.tar.lzma
+libintl-0.17-2-msys-dll-8.tar.lzma
+liblzma-4.999.9beta_20100401-1-msys-1.0.13-dll-1.tar.gz
+libregex-1.20090805-2-msys-1.0.13-dll-1.tar.lzma
+libtermcap-0.20050421_1-2-msys-1.0.13-dll-0.tar.lzma
+libtool-2.2.7a-2-msys-1.0.13-bin.tar.lzma
+m4-1.4.14-1-msys-1.0.13-bin.tar.lzma
+make-3.81-3-msys-1.0.13-bin.tar.lzma
+msysCORE-1.0.14-1-msys-1.0.14-bin.tar.lzma
+patch-2.6.1-1-msys-1.0.13-bin.tar.lzma
+perl-5.6.1_2-2-msys-1.0.13-bin.tar.lzma
+rxvt-2.7.2-3-msys-1.0.14-bin.tar.lzma
+sed-4.2.1-2-msys-1.0.13-bin.tar.lzma
+tar-1.23-1-msys-1.0.13-bin.tar.lzma
+texinfo-4.13a-2-msys-1.0.13-bin.tar.lzma
+xz-4.999.9beta_20100401-1-msys-1.0.13-bin.tar.gz
+zlib-1.2.3-2-msys-1.0.13-dll.tar.lzma
+</screen>
+                <para>
+                    Again, this is potentially more than you need.
+                </para>
+            </listitem>
             <listitem><para>
-                    Install <application>MinGW</application> 5.1.4, including
-                    <application>GCC</application> and
-                    <application>G++</application>, but not
-                    <application>make</application>.
+                    Start up MSYS using the provided
+                    <filename>msys.bat</filename>. You should immediately
+                    create <filename>/etc/fstab</filename> from
+                    <filename>/etc/fstab.sample</filename>, so that
+                    <filename class="directory">/mingw</filename> refers to
+                    your MinGW installation from install MSYS.
             </para></listitem>
-            <listitem><para>
-                    Install <application>MSYS</application> 1.0.10.
-            </para></listitem>
-            <listitem><para>
-                    Install <application>msysDTK</application> 1.0.1.
-                    Alternatively, if you have Cygwin installed, add Cygwin's
-                    <filename class="directory">bin</filename> directory to
-                    the end of <envar>PATH</envar>.
-            </para></listitem>
-            <listitem><para>
-                    Downloaded
-                    <filename>mingw-libgnurx-2.5.1-bin.tar.gz</filename> and
-                    <filename>mingw-libgnurx-2.5.1-dev.tar.gz</filename> from
-                    the <application>MinGW</application> page, and unpacked
-                    both into <filename class="directory">/mingw</filename>
-                    (i.e., the directory in which
-                    <application>MinGW</application> is installed).
-            </para></listitem>
-            <listitem><para>
+            <listitem>
+                <para>
                     Download the <application>GTK+</application> bundle
-                    (2.12.11) from <ulink
+                    (2.16.6) from <ulink
                         url="http://www.gtk.org/download-windows.html">gtk.org</ulink>,
-                    and unpack it into <filename
-                        class="directory">/mingw</filename>.
-            </para></listitem>
-            <listitem><para>
-                    Get the <application>gtkglext</application> installer from
-                    <ulink url="http://www.bonifazi.eu/appunti/"/>, and
-                    install it into <filename
-                        class="directory">/mingw</filename>.
-            </para></listitem>
-            <listitem><para>
+                    and unpack it somewhere (e.g. <filename
+                        class="directory">c:\tools\gtk+</filename>).
+                </para>
+                <warning><para>
+                        At the time of writing, the latest released version of
+                        <application>gtkglext</application> (1.2.0) does not
+                        work with GTK+ versions 2.18 or higher.
+                </para></warning>
+                <warning><para>
+                        If you are planning to use a toolchain other than
+                        MinGW (e.g. MSVC), do not overlay GTK+ on the MinGW
+                        installation as it cause MinGW's system headers to be
+                        used when trying to build against GTK+.
+                </para></warning>
+                <para>
+                    You will also need to set (or add to) some environment
+                    variables to allow GTK+ to be detected. For example (the
+                    syntax assumes variables are being set from within MSYS):
+                    <screen>
+PATH=/c/tools/gtk+/bin
+PKG_CONFIG_PATH=/c/tools/gtk+/lib/pkgconfig
+</screen>
+                </para>
+            </listitem>
+            <listitem>
+                <para>
+                    Get the sources for <application>gtkglext</application>
+                    (1.2.0) from <ulink
+                        url="http://projects.gnome.org/gtkglext/download.html"/>,
+                    and unpack them into a temporary directory. The sources
+                    contain a bug, which you should fix by running
+                </para>
+                <screen>
+<prompt>$</prompt> <userinput>sed -i -e 's/pangox/pangowin32/g' configure</userinput>
+</screen>
+                <para>
+                    Then, run <userinput>./configure
+                        --prefix=/c/tools/gtk+</userinput>,
+                    <userinput>make</userinput> and <userinput>make
+                        install</userinput>. This will overlay
+                    <application>gtkglext</application> on your GTK+
+                    installation; you could also choose to install it
+                    separately, but you will then need to add to
+                    <envar>PATH</envar> and <envar>PKG_CONFIG_PATH</envar>.
+                </para>
+            </listitem>
+            <listitem>
+                <para>
                     Download the source for <application>GLEW</application>
                     1.5 and unpack it into a temporary location and built it
                     using make, then install it with the command
                     <userinput>make GLEW_DEST=/mingw install</userinput>.
-            </para></listitem>
+                </para>
+                <para>
+                    This will overlay GLEW on your MinGW installation; the
+                    alternative is to install it elsewhere and set
+                    <envar>CPATH</envar>, <envar>PATH</envar>
+                    and <envar>LIBRARY_PATH</envar> appropriately.
+                </para>
+                <para>
+                    If you are building &bugle; with MSVC, you should instead
+                    use the binary download for GLEW (the binary download will
+                    not work with MinGW).
+                </para>
+            </listitem>
             <listitem><para>
                     Grab the latest <ulink
                         url="http://www.opengl.org/registry/api/glext.h"><filename>glext.h</filename></ulink> and
@@ -254,6 +379,25 @@
                     <filename class="directory">/mingw/include/GL</filename>.
             </para></listitem>
         </orderedlist>
+        <para>
+            This should give you all the tools needed to build &bugle; from a
+            tarballed package. I did not succeed in building from a subversion
+            checkout, because that requires a working
+            <application>flex</application> and the one provided by MinGW
+            crashed.
+        </para>
+        <para>
+            The specific versions packages above also includes a bug in the
+            GCC 4.5 setup:
+            without <option>-static-libstdc++</option> it will fail. You can
+            fix this by adding
+            <userinput>CXX='g++ -static-libstdc++'</userinput> to the
+            <command>scons</command> command line.
+        </para>
+        <para>
+            To build with MSVC instead of MinGW, pass
+            <userinput>host-compiler=msvc</userinput> on the command line.
+        </para>
         <para>
             After installation, you will have a
             <filename>opengl32.dll</filename> file installed. When debugging a

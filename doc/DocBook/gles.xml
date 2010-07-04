@@ -50,39 +50,6 @@
             <parameter>glwin</parameter>, as it will automatically default of
             EGL.
         </para>
-        <variablelist>
-            <varlistentry>
-                <term>gles1cm-egl-posix</term>
-                <listitem><para>
-                        OpenGL ES 1.x Common profile with EGL on a UNIX-like
-                        operating system (only tested with GNU/Linux).
-                </para></listitem>
-            </varlistentry>
-            <varlistentry>
-                <term>gles1cm-legacy-egl-win</term>
-                <listitem><para>
-                        OpenGL ES 1.x Common profile with EGL on a Windows
-                        system. This is set up for the legacy integration
-                        guidelines, with a single library
-                        (<filename>libGLES_CM.so</filename>) containing both
-                        EGL and OpenGL ES functions, and using the
-                        <literal>__cdecl</literal> calling convention.
-                </para></listitem>
-            </varlistentry>
-            <varlistentry>
-                <term>gles2-egl-posix</term>
-                <listitem><para>
-                        OpenGL ES 2.x with EGL on a UNIX-like
-                        operating system (untested).
-                </para></listitem>
-            </varlistentry>
-            <varlistentry>
-                <term>gles2-egl-win</term>
-                <listitem><para>
-                        OpenGL ES 2.x with EGL on Windows
-                </para></listitem>
-            </varlistentry>
-        </variablelist>
         <note>
             <para>
                 Desktop OpenGL header files and libraries are still required
@@ -110,8 +77,7 @@
             <filename>bglGLESv2.dll</filename> respectively. Then modify each
             of these
             files so that links to the other use the replacement name. This
-            can be done as follows, although you might find that the version
-            of <command>sed</command> provided with MSYS is too old:
+            can be done as follows:
         </para>
 <screen>
 <prompt>$</prompt> <userinput>sed -b 's/libGLESv2/bglGLESv2/g' libEGL.dll &gt; bglEGL.dll</userinput>
@@ -136,7 +102,7 @@
             different implementations of OpenGL ES (particular for 1.x) make
             inconsistent choices. You can override the automatic choice by
             passing <parameter>callapi=__stdcall</parameter> or
-            <parameter>callapi=</parameter> to select the
+            <parameter>callapi=__cdecl</parameter> to select the
             <symbol>stdcall</symbol> or <symbol>cdecl</symbol> calling
             convention. You should be able to determine the convention by
             examining <filename>GLES/glplatform.h</filename> or
