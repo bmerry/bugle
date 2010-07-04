@@ -19,7 +19,7 @@ def internal_checks(env, features):
     Checks that will only affect C files in the platform directory.
     '''
 
-    if env.GetOption('help') or env.GetOption('clean'):
+    if env.GetOption('help'):
         return env
 
     conf = Configure(env, custom_tests = BugleChecks.tests, config_h = 'platform_config.h')
