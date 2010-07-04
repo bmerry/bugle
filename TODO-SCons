@@ -1,20 +1,6 @@
-- use OS handles for child process debug on Win32
-- test new library rules on win32
-- allow user to override package detection (esp. for cross-compiling)
+- test change to bugle_workqueue in gldb for Win32
+- check that all tests and filters are re-enabled
 - documentation updates
-- finish adding tests and making portable
-- add abstractions:
-  - sockets
-- portable printf implementation, from newlib/gnulib/glibc/elsewhere?
-- missing autoconf/SCons tests:
-  - GLUT
-  - threading API
-- unit tests:
-  - I/O layer
-  - socket API?
-- audit use of malloc/bugle_malloc/free/bugle_free for matching up
-- add platform layer for glib?
-- add platform layer for gnulib?
 - fix build rules for chunked HTML to copy and package all the .html files
 - update MinGW instructions:
   GTK+: use 2.16 bundle from http://www.gtk.org/download-windows.html (NOT >= 2.18)
@@ -23,3 +9,12 @@
     sed -i -e 's/pangox/pangowin32/g' configure
   configure with --prefix=/mingw
     don't build in a subdir
+
+Future:
+- audit use of malloc/bugle_malloc/free/bugle_free for matching up
+- unit tests:
+  - I/O layer
+  - socket API
+- gldb-common is still rather platform-specific
+- portable printf implementation, from newlib/gnulib/glibc/elsewhere?
+- add platform layer for glib/gnulib?
