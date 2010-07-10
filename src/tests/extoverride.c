@@ -8,8 +8,6 @@
 #include <string.h>
 #include "test.h"
 
-#undef glTexImage3D
-
 test_status extoverride_suite(void)
 {
     const char *version = (const char *) glGetString(GL_VERSION);
