@@ -604,6 +604,7 @@ package_sources.extend([
     'src/tests/SConscript',
     'src/tests/dlopen.c',
     'src/tests/errors.c',
+    'src/tests/extoverride.c',
     'src/tests/filters',
     'src/tests/interpose.c',
     'src/tests/math.c',

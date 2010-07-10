@@ -49,6 +49,7 @@ static FILE *log_handle = NULL;
 #if TEST_GL
 extern test_status dlopen_suite(void);
 extern test_status errors_suite(void);
+extern test_status extoverride_suite(void);
 extern test_status interpose_suite(void);
 extern test_status pbo_suite(void);
 extern test_status pointers_suite(void);
@@ -69,6 +70,7 @@ static const test_suite suites[] =
 #if TEST_GL
     { "dlopen",         TEST_FLAG_LOG,                     dlopen_suite },
     { "errors",         TEST_FLAG_CONTEXT,                 errors_suite },
+    { "extoverride",    TEST_FLAG_LOG | TEST_FLAG_CONTEXT, extoverride_suite },
     { "interpose",      TEST_FLAG_CONTEXT,                 interpose_suite },
     { "pbo",            TEST_FLAG_LOG | TEST_FLAG_CONTEXT, pbo_suite },
     { "pointers",       TEST_FLAG_LOG | TEST_FLAG_CONTEXT, pointers_suite },

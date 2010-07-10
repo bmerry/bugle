@@ -127,6 +127,7 @@ else:
                     'procaddress'])
             log_tests.extend([
                     ('dlopen', 'trace'),
+                    ('extoverride', 'extoverride'),
                     ('pbo', 'trace'),
                     ('pointers', 'checks'),
                     ('queries', 'trace'),
