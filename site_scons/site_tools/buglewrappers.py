@@ -148,7 +148,7 @@ def _cxxfile(env, source, srcdir, package_sources = None, **kw):
     return _c_cxx_file(env, env.CXXFile, source, srcdir, package_sources, **kw)
 
 def _prebuild_wrapper(env, target, source, srcdir, builder, package_sources = None,
-                      implicit_target = False, **kw):
+                      implicit_target = False, dir = None, **kw):
     '''
     Wraps another builder, but if all the targets already exist in srcdir
     then they are just copied to the target. Additionally, the targets
@@ -165,6 +165,9 @@ def _prebuild_wrapper(env, target, source, srcdir, builder, package_sources = No
     @param package_sources: A list to be extended with nodes to package
     @type package_sources: mutable sequence
     @param implicit_target: If true, the target parameter is not given to the builder
+    @type implicit_target: boolean
+    @param dir: If set, specifies a whole directory to transfer
+    @type dir: str
     @return A list of nodes corresponding to targets
     '''
     if package_sources is None:
@@ -179,17 +182,30 @@ def _prebuild_wrapper(env, target, source, srcdir, builder, package_sources = No
             have_as_source = False
             break
 
+    dir_node = None
+    dir_src_node = None
+    if dir is not None:
+        dir_node = env.Dir(dir)
+        dir_src_node = srcdir.Dir(dir)
+
     if have_as_source:
-        target = env.arg2nodes(target, env.fs.Entry)
-        target = [env.CopyAs(t, t.srcnode()) for t in target]
+        if dir is None:
+            target = env.arg2nodes(target, env.fs.Entry)
+            target = [env.CopyAs(t, t.srcnode()) for t in target]
+        else:
+            target = [env.CopyAs(dir_node, dir_src_node)]
     elif implicit_target:
         target = builder(source, **kw)
     else:
         target = builder(target, source, **kw)
 
     out = env['PACKAGEROOT'].Dir(srcdir.path)
-    for t in target:
-        package_sources.extend(env.CopyTo(out, t))
+    if dir is None:
+        for t in target:
+            package_sources.extend(env.CopyTo(out, t))
+    else:
+        package_sources.extend(env.CopyAs(out.Dir(dir), dir_node))
+        env.Clean(target, dir_node)
     return target
 
 def generate(env, **kw):

@@ -1,5 +1,4 @@
-- check that all tests and filters are re-enabled
-- fix build rules for chunked HTML to copy and package all the .html files
+- test all filters
 
 Future:
 - audit use of malloc/bugle_malloc/free/bugle_free for matching up
