@@ -10,7 +10,7 @@ def find_header(env, name):
     try:
         fh = os.fdopen(fd, 'w+')
         print >>fh, '#ifdef _WIN32'
-        print >>fh, '#define _WIN32_LEAN_AND_MEAN'
+        print >>fh, '#define WIN32_LEAN_AND_MEAN'
         print >>fh, '#include <windows.h>'
         print >>fh, '#endif'
         print >>fh, '#include <' + name + '>\n'
@@ -20,8 +20,10 @@ def find_header(env, name):
         preproc_opt = '-E'
         if env['INCPREFIX'] == '/I':
             preprop_opt = '/E'
-        cmd = env.Flatten([env['CC'], env['CCFLAGS'], preproc_opt,
-            env['INCPREFIX'] + env.Dir('#').abspath + env['INCSUFFIX'], tmpname])
+        incflags = []
+        for i in env['CPPPATH']:
+            incflags.append(env['INCPREFIX'] + env.Dir(i).path)
+        cmd = env.Flatten([env['CC'], env['CCFLAGS'], preproc_opt, incflags, tmpname])
         # print "Running", ' '.join(cmd)
         sp = Popen(cmd, stdin = PIPE, stdout = PIPE, stderr = PIPE)
         (out, err) = sp.communicate()

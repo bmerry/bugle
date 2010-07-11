@@ -10,14 +10,14 @@ def check_gl(conf, lib, headers):
     '''
     Looks for an OpenGL library of the appropriate name.
 
-    @param conf The configuration context to use for the check
-    @type conf  SCons.Configure
-    @param lib  The library to look for. If the name starts of "lib", it
-                will be removed on platforms where that is already a library
-                prefix.
-    @type lib   string
-    @param headers The header files to include for the check.
-    @type headers list of strings
+    @param conf: The configuration context to use for the check
+    @type conf:  SCons.Configure
+    @param lib:  The library to look for. If the name starts of "lib", it
+                 will be removed on platforms where that is already a library
+                 prefix.
+    @type lib:   string
+    @param headers: The header files to include for the check.
+    @type headers: list of strings
     '''
 
     if lib.startswith('lib') and conf.env.subst('${SHLIBPREFIX}') == 'lib':
@@ -110,6 +110,10 @@ def apply_compilation_aspects(env, aspects):
     for i in ['CFLAGS', 'CCFLAGS', 'CXXFLAGS', 'LINKFLAGS']:
         if aspects[i] is not None and aspects[i] != '':
             env.AppendUnique(**{i: Split(aspects[i])})
+    # Colon-separated lists
+    for i in ['CPPPATH', 'LIBPATH']:
+        if aspects[i] is not None and aspects[i] != '':
+            env.AppendUnique(**{i: aspects[i].split(':')})
 
 def get_substs(aspects):
     '''

@@ -235,6 +235,16 @@ def setup_aspects():
         name = 'LINKFLAGS',
         help = 'C and C++ linking flags',
         default = None))
+    aspects.AddAspect(Aspect(
+        group = 'flags',
+        name = 'CPPPATH',
+        help = 'Colon-separated list of paths to find headers',
+        default = None))
+    aspects.AddAspect(Aspect(
+        group = 'flags',
+        name = 'LIBPATH',
+        help = 'Colon-separated list of paths to find libraries',
+        default = None))
 
     aspects.AddAspect(Aspect(
         group = 'parts',
