@@ -67,6 +67,10 @@ def _build_shared_library(env, binfmt, target, source, bindir = None, libdir = N
                     LINKFLAGS = ['-Wl,-soname,' + soname] + env['LINKFLAGS'], **kw)
                 soname_target = env.Command(soname, shl_list[0], symlink_action)
                 base_target = env.Command(base, shl_list[0], symlink_action)
+                # Make sure that the soname link gets built whenever the
+                # base link is built, since the base link is what gets added
+                # to env.Defaults
+                env.Depends(base_target, soname_target)
 
                 if libdir is not None:
                     install_env = env.Clone(OLDINSTALL = env['INSTALL'], INSTALL = copyFunc)
