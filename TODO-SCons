@@ -1,5 +1,3 @@
-- extoverride doesn't warn for core function
-
 Future:
 - audit use of malloc/bugle_malloc/free/bugle_free for matching up
 - unit tests:

@@ -164,7 +164,7 @@ static bugle_bool extoverride_initialise(filter_set *handle)
         else if (extoverride_max_version
                  && version
                  && bugle_api_extension_block(ext) == BUGLE_API_EXTENSION_BLOCK_GL
-                 && strcmp(version, extoverride_max_version) > 1)
+                 && strcmp(version, extoverride_max_version) > 0)
         {
             /* FIXME: the strcmp above will break if there is ever an OpenGL
              * version with multiple digits.
