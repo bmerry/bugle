@@ -17,7 +17,7 @@ if 'interceptor' in aspects['parts']:
         for name in names:
             module = env.LoadableModule(name, [name + '.c'])
             Default(module)
-            Install(aspects['pkglibdir'], module)
+            filter_env.Install(aspects['pkglibdir'], module)
 
     simple_filters(filter_env, [
             'common',

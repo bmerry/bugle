@@ -148,13 +148,15 @@ def get_common_options():
             BCPATH = [srcdir.Dir('.'), Dir('.')],
             PACKAGEROOT = PACKAGEROOT)
 
-    if GetOption('bugle_short'):
+    if aspects['quiet'] == 'yes':
         for i in ['ALIAS', 'APITABLESC', 'APITABLESH',
                 'CC', 'CXX', 'LDMODULE', 'LEX', 'LINK',
                 'SHCC', 'SHCXX', 'SHLINK', 'YACC']:
             common_kw[i + 'COMSTR'] = i + ' $TARGET'
         common_kw['TUCOMSTR'] = 'TU ${TARGETS[1]}'
         common_kw['BUDGIECOMSTR'] = 'BUDGIE ${TARGETS}'
+        for i in ['COPY', 'INSTALL']:
+            common_kw[i + 'STR'] = i + ' $TARGET'
     return common_kw
 
 def get_initial_envs(common_kw):
@@ -283,7 +285,7 @@ substs = get_substs(aspects)
 Default(envs['host'].SubstFile('include/bugle/porting.h', 'include/bugle/porting.h.in', substs))
 bugle_pc = envs['host'].SubstFile('bugle.pc', 'bugle.pc.in', substs)
 Default(bugle_pc)
-Install(aspects['libdir'] + '/pkgconfig', source = bugle_pc)
+envs['host'].Install(aspects['libdir'] + '/pkgconfig', source = bugle_pc)
 Alias('install', aspects['libdir'] + '/pkgconfig')
 
 targets['bugleutils'].update({

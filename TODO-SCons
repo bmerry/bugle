@@ -1,3 +1,7 @@
+- man pages
+- retest on Win32
+- suppress docbook output when quiet=yes
+
 Future:
 - audit use of malloc/bugle_malloc/free/bugle_free for matching up
 - unit tests:

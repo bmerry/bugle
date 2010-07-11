@@ -9,9 +9,14 @@ if 'docs' in aspects['parts']:
             DOCBOOKFLAGS = '--stringparam bugle.version ' + version,
             PACKAGEROOT = PACKAGEROOT,
             tools = ['default', 'docbook', 'buglewrappers'])
-    if GetOption('bugle_short'):
-        for i in ['DOCBOOK']:
+    if aspects['quiet'] == 'yes':
+        for i in ['DOCBOOK', 'DOCBOOKLINT']:
             env[i + 'COMSTR'] = i + ' $TARGET'
+        for i in ['COPY', 'INSTALL']:
+            env[i + 'STR'] = i + ' $TARGET'
+        env['DOCBOOKFLAGS'] += ' --stringparam man.output.quietly 1'
+        env['DOCBOOKFLAGS'] += ' --stringparam chunk.quietly 1'
+
     for i in ['XSLTPROC']:
         if aspects[i] is not None and aspects[i] != '':
             env[i] = aspects[i]
@@ -22,7 +27,7 @@ if 'docs' in aspects['parts']:
             srcdir = srcdir,
             builder = env.DocBook,
             package_sources = package_sources)
-    single_css = env.Command('html/bugle.css', 'bugle.css', [Copy('$TARGET', '$SOURCE')])
+    single_css = env.CopyAs('html/bugle.css', 'bugle.css')
 
     chunked = env.BuglePrebuild(
             target = ['html/chunked/index.html'],
@@ -31,7 +36,7 @@ if 'docs' in aspects['parts']:
             builder = env.DocBook,
             dir = 'html/chunked',
             package_sources = package_sources)
-    chunked_css = env.Command('html/chunked/bugle.css', 'bugle.css', [Copy('$TARGET', '$SOURCE')])
+    chunked_css = env.CopyAs('html/chunked/bugle.css', 'bugle.css')
     env.Clean(chunked, 'html/chunked')
 
     Default(single, chunked, single_css, chunked_css)

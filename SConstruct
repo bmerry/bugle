@@ -70,7 +70,6 @@ def setup_options():
     '''
     Adds custom command-line options
     '''
-    AddOption('--short', help = 'Show more compact build lines', dest = 'bugle_short', action = 'store_true')
     AddOption('--sticky', help ='Save build options for later runs', dest = 'bugle_save', action = 'store_true')
 
 def setup_aspects():
@@ -247,12 +246,18 @@ def setup_aspects():
         default = None))
 
     aspects.AddAspect(Aspect(
-        group = 'parts',
+        group = 'options',
         name = 'parts',
         help = 'Select which parts of BuGLe to build',
         choices = ['debugger', 'interceptor', 'docs', 'tests'],
         multiple = True,
         default = 'all'))
+    aspects.AddAspect(Aspect(
+        group = 'options',
+        name = 'quiet',
+        help = 'Show abbreviated command-lines',
+        choices = ['yes', 'no'],
+        default = 'yes'))
 
     return aspects
 
