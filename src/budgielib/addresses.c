@@ -151,14 +151,19 @@ BUDGIEAPIPROC budgie_function_address_wrapper(budgie_function id)
 void budgie_function_address_initialise(void)
 {
     bugle_dl_module handle;
-    size_t i, j;
-    size_t N, F;
+    int i;
+    size_t N, F, j;
 
     N = _budgie_library_count;
     F = budgie_function_count();
 
     bugle_dl_init();
-    for (i = 0; i < N; i++)
+    /* If we search EGL for GLES symbols, the ARM GLES2 emulator will
+     * return symbols from the underlying GL driver. Reversing the library
+     * order is a hack (ideally we should search each library only for the
+     * appropriate symbols).
+     */
+    for (i = N - 1; i >= 0; i--)
     {
         handle = bugle_dl_open(_budgie_library_names[i], 0);
         if (handle)
