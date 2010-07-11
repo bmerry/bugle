@@ -59,4 +59,4 @@ if 'debugger' in aspects['parts']:
     Default(gldb_gui)
 
     Alias('install', aspects['bindir'])
-    Install(aspects['bindir'], gldb_gui)
+    gldb_env.Install(aspects['bindir'], gldb_gui)

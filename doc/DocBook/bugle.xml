@@ -23,7 +23,7 @@
     <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="hacking.xml"/>
     <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="protocol.xml"/>
     <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="faq.xml"/>
-    <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="man/manpages.xml"/>
+    <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="manpages/manpages.xml"/>
     <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="releasenotes.xml"/>
     <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="changelog.xml"/>
 </book>

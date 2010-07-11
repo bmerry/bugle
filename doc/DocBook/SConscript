@@ -37,10 +37,25 @@ if 'docs' in aspects['parts']:
             dir = 'html/chunked',
             package_sources = package_sources)
     chunked_css = env.CopyAs('html/chunked/bugle.css', 'bugle.css')
-    env.Clean(chunked, 'html/chunked')
 
-    Default(single, chunked, single_css, chunked_css)
-    Alias('install', aspects['docdir'])
+    manpages = env.BuglePrebuild(
+            target = ['man/man3/bugle.3'],
+            source = ['manpages.xsl', 'bugle.xml'],
+            srcdir = srcdir,
+            builder = env.DocBook,
+            dir = 'man',
+            package_sources = package_sources)
+
+    Default(single, chunked, single_css, chunked_css, manpages)
+    Alias('install', [aspects['docdir'], aspects['mandir']])
     env.Install(aspects['docdir'], 'html/single.html')
     env.Install(aspects['docdir'], 'html/bugle.css')
     env.Install(aspects['docdir'], 'html/chunked')
+
+    # For some reason trying to install from the top level just doesn't do
+    # anything.
+    # env.InstallAs(aspects['mandir'], 'man')
+    env.Install(aspects['mandir'] + '/man1', Glob('man/man1/*.1'))
+    env.Install(aspects['mandir'] + '/man3', Glob('man/man3/*.3'))
+    env.Install(aspects['mandir'] + '/man5', Glob('man/man5/*.5'))
+    env.Install(aspects['mandir'] + '/man7', Glob('man/man7/*.7'))

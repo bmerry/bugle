@@ -42,7 +42,7 @@ if 'interceptor' in aspects['parts']:
                 'showstats'])
         module = filter_env.LoadableModule('eps', ['eps.c', '../gl2ps/gl2ps.c'])
         Default(module)
-        Install(aspects['pkglibdir'], module)
+        filter_env.Install(aspects['pkglibdir'], module)
 
     if aspects['platform'] == 'posix':
         # These currently depend on POSIX features
