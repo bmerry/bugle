@@ -1,6 +1,4 @@
-- test all filters
 - extoverride doesn't warn for core function
-- showstats is broken
 
 Future:
 - audit use of malloc/bugle_malloc/free/bugle_free for matching up

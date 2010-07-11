@@ -344,6 +344,12 @@ static bugle_bool showstats_swap_buffers(function_call *call, const callback_dat
         old_write = bugle_glwin_get_current_drawable();
         old_read = bugle_glwin_get_current_read_drawable();
         dpy = bugle_glwin_get_current_display();
+        /* Ensure that rendering for this context completes before the overlay.
+         * Technically a glFinish might be required here, but this seems to
+         * work for Mesa on ATI (everywhere else I've tried it, nothing is
+         * needed at all).
+         */
+        CALL(glFlush)();
         bugle_glwin_make_context_current(dpy, old_write, old_write, aux);
 
         showstats_update(ss);
@@ -425,6 +431,11 @@ static bugle_bool showstats_swap_buffers(function_call *call, const callback_dat
 #endif
         CALL(glLoadIdentity)();
         CALL(glPopAttrib)();
+
+        /* glXSwapBuffers only synchronizes with the current context and
+         * drawable, which will not be this context.
+         */
+        CALL(glFlush)();
 
         bugle_glwin_make_context_current(dpy, old_write, old_read, real);
         bugle_gl_end_internal_render("showstats_callback", BUGLE_TRUE);
