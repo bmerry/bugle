@@ -1,7 +1,13 @@
+- document that only a few key names are known on Win32
+- should not put LD_PRELOAD= in help on Win32
+- stats_fragment seems to be broken on Win32?
 - retest on Win32
+- update version strings, and work through RELEASE doc
 
 Future:
 - audit use of malloc/bugle_malloc/free/bugle_free for matching up
+- fix warnings about not finding wglMakeContextCurrent or whatever it was
+- avoid creating static libs for filters in Mingw
 - unit tests:
   - I/O layer
   - socket API
