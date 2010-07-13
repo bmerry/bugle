@@ -7,11 +7,23 @@
 * Replace weak symbol trickery in alloc_die with simple registration
 * Avoid including <config.h> in public headers; public interface should be portable
 * Fix some broken function prototypes
+* Fix assorted non-portable code (particularly code that's not C89)
 * Mark exports in the code instead of through regexes
 * Move math helpers into bugle/math header and make part of platform porting
 * Some documentation corrections
 * Support for MSVC on Windows
 * Autogenerate a main.bc instead of having a menu of API combinations
+* Fix symbol finding when using ARM ES2.0 emulator on Linux
+* Fix extoverride so that using a suppressed core function gives a warning
+* Fix showstats filterset for Mesa Radeon driver
+* Add a number of tests
+* Include generated documentation in the package, so that DocBook is not required
+* Use separate threads to handle reading from the debugger pipe (in both gldb-gui and the debugger filterset)
+* Change debugger to pass HANDLEs instead of file descriptors, to support staticly-linked C runtimes
+* Add network debug support on Windows (to filter-set only - debugger must still be POSIX)
+* Add missing CALL wrappers
+* Support GCC 4.5
+* Drop the deprecated gldb command-line tool
 
 0.0.20100508
 ------------
