@@ -290,7 +290,7 @@ Alias('install', aspects['libdir'] + '/pkgconfig')
 
 targets['bugleutils'].update({
     'target': 'bugleutils',
-    'version': '7.0.0'})
+    'version': '8.0.0'})
 targets['bugleutils']['source'].extend([
     'gl/gltypes.c',
     'apireflect.c',
@@ -314,7 +314,7 @@ Default(targets['bugleutils'].out)
 
 if 'interceptor' in aspects['parts']:
     targets['bugle'].update({
-        'version': '8.0.0'})
+        'version': '9.0.0'})
 
     targets['bugle']['source'].extend([
         envs['host'].BugleCFile(['confparse.y', 'statsparse.y'], srcdir, package_sources, YACCFLAGS = '-d'),

@@ -1,3 +1,5 @@
+0.0.20100714
+------------
 * Replace automake with scons
 * Replace gnulib with hand-written porting layer included in libbugleutils
 * Replace string writing with bugle_io_writer abstraction layer

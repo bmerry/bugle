@@ -5,7 +5,7 @@
 ]>
 <refentry id="bugle.3">
     <refentryinfo>
-        <date>Jan 2009</date>
+        <date>July 2010</date>
         <productname>BUGLE</productname>
     </refentryinfo>
     <refmeta>
@@ -27,7 +27,7 @@
     <refsect1>
         <title>Description</title>
         <para>
-            <application>bugle</application> is a library that intercepts
+            &Bugle; is a library that intercepts
             calls to OpenGL functions, in much the same way that many memory
             debuggers do. Calls are run through a number of user-specified
             <firstterm>filter-sets</firstterm>, including one that invokes the
@@ -98,7 +98,9 @@ filterset <replaceable>filterset</replaceable> <optional><replaceable>key</repla
             the key must be combined with <keycap>Ctrl</keycap>,
             <keycap>Alt</keycap> or <keycap>Shift</keycap> respectively. Some
             filter-sets have options which are keys; these take the same
-            format.
+            format. The Windows build current only supports alphabetic keys
+            (together with the <keycap>Ctrl</keycap>, <keycap>Alt</keycap> and
+            <keycap>Shift</keycap> modifiers).
         </para>
         <para>
             If you don't need to specify any options, it is also legal to omit
@@ -151,7 +153,12 @@ filterset <replaceable>filterset</replaceable> <optional><replaceable>key</repla
                 <term><envar>LD_PRELOAD</envar></term>
                 <listitem><para>
                         Tells the linker to load
-                        <application>bugle</application>.
+                        <application>bugle</application> on Linux and similar
+                        systems. On Windows, you need to put the &bugle;
+                        version of <filename>opengl32.dll</filename> on the
+                        <envar>PATH</envar> ahead of the real version; the
+                        easiest way to do this is to copy it into the same
+                        directory as the executable you are debugging.
                 </para></listitem>
             </varlistentry>
             <varlistentry>
@@ -204,11 +211,13 @@ filterset <replaceable>filterset</replaceable> <optional><replaceable>key</repla
             </para></listitem>
         </itemizedlist>
         <para>
-            See the pages for individual filter-sets for specific bugs
-            affecting each.
+            For an up to date list of bugs, see the <ulink
+                url="http://sourceforge.net/apps/trac/bugle/">bug
+                tracker</ulink> online. Also see the pages for individual
+            filter-sets for specific bugs affecting each.
         </para>
     </refsect1>
-    
+
     &author;
 
 </refentry>

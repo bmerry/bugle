@@ -1,5 +1,5 @@
 /*  BuGLe: an OpenGL debugging tool
- *  Copyright (C) 2004-2007, 2009  Bruce Merry
+ *  Copyright (C) 2004-2007, 2009-2010  Bruce Merry
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -911,7 +911,11 @@ void filters_help(void)
     filter_set *cur;
 
     bugle_flockfile(stderr);
+#if BUGLE_BINFMT_LDPRELOAD
     fprintf(stderr, "Usage: BUGLE_CHAIN=<chain> LD_PRELOAD=libbugle.so <program> <args>\n");
+#else
+    fprintf(stderr, "Usage: BUGLE_CHAIN=<chain> <program> <args>\n");
+#endif
     fprintf(stderr, "The following filter-sets are available:\n");
     for (i = bugle_list_head(&filter_sets); i; i = bugle_list_next(i))
     {
