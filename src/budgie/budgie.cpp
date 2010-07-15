@@ -1,5 +1,5 @@
 /*  BuGLe: an OpenGL debugging tool
- *  Copyright (C) 2004-2009  Bruce Merry
+ *  Copyright (C) 2004-2010  Bruce Merry
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -36,6 +36,7 @@
  * types.h              Y             N               ? (no functions)
  * reflect.h            Y             N               N
  * types2.h             Y             Y               Y (no functions)
+ * callapi.h            Y             Y               N (no functions)
  * calls.h              Y             Y               Y
  * internal.h           N             N               N
  * lib.h                N             N               Y
@@ -70,6 +71,7 @@ enum
 {
     FILE_CALL_H,
     FILE_TYPES2_H,
+    FILE_CALLAPI_H,
     FILE_DEFINES_H,
     FILE_LIB_C,
     FILE_TABLES_C,
@@ -260,10 +262,11 @@ static void process_args(int argc, char * const argv[])
 
     filenames[FILE_CALL_H] = "include/budgie/call.h";
     filenames[FILE_TYPES2_H] = "include/budgie/types2.h";
+    filenames[FILE_CALLAPI_H] = "include/budgie/callapi.h";
     filenames[FILE_DEFINES_H] = "budgielib/defines.h";
     filenames[FILE_TABLES_C] = "budgielib/tables.c";
     filenames[FILE_LIB_C] = "budgielib/lib.c";
-    while ((opt = getopt(argc, argv, "T:c:2:t:l:d:I:")) != -1)
+    while ((opt = getopt(argc, argv, "T:c:2:a:t:l:d:I:")) != -1)
     {
         switch (opt)
         {
@@ -275,6 +278,9 @@ static void process_args(int argc, char * const argv[])
             break;
         case '2':
             filenames[FILE_TYPES2_H] = optarg;
+            break;
+        case 'a':
+            filenames[FILE_CALLAPI_H] = optarg;
             break;
         case 'd':
             filenames[FILE_DEFINES_H] = optarg;
@@ -798,10 +804,11 @@ static void write_headers()
     fprintf(files[FILE_TYPES2_H],
             "#ifndef BUDGIE_TYPES2_H\n"
             "#define BUDGIE_TYPES2_H\n"
-            "#if HAVE_CONFIG_H\n"
-            "# include <config.h>\n"
-            "#endif\n"
             "#include <budgie/types.h>\n"
+            "#include <budgie/callapi.h>\n");
+    fprintf(files[FILE_CALLAPI_H],
+            "#ifndef BUDGIE_CALLAPI_H\n"
+            "#define BUDGIE_CALLAPI_H\n"
             "#define BUDGIEAPI %s\n"
             "#define BUDGIEAPIP %s *\n"
             "typedef void (BUDGIEAPIP BUDGIEAPIPROC)(void);\n",
@@ -838,6 +845,7 @@ static void write_trailers()
     fprintf(files[FILE_CALL_H], "#endif /* !BUDGIE_CALL_H */\n");
     fprintf(files[FILE_DEFINES_H], "#endif /* !BUDGIE_DEFINES_H */\n");
     fprintf(files[FILE_TYPES2_H], "#endif /* !BUDGIE_TYPES2_H */\n");
+    fprintf(files[FILE_CALLAPI_H], "#endif /* !BUDGIE_CALLAPI_H */\n");
 
     for (int i = 0; i < (int) FILE_COUNT; i++)
         fclose(files[i]);

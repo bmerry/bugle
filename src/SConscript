@@ -271,6 +271,7 @@ subdir(srcdir, 'budgie')
 budgie_outputs = [
         'include/budgie/call.h',
         'include/budgie/types2.h',
+        'include/budgie/callapi.h',
         'budgielib/defines.h',
         'budgielib/tables.c',
         'budgielib/lib.c'
