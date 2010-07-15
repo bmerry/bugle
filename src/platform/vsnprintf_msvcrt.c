@@ -55,7 +55,10 @@ int bugle_vsnprintf(char *str, size_t size, const char *format, va_list ap)
     char *buffer = NULL;
 
     BUGLE_VA_COPY(ap2, ap);
-    ret = vsnprintf_s(str, size, _TRUNCATE, format, ap);
+    if (str != NULL)
+        ret = vsnprintf_s(str, size, _TRUNCATE, format, ap);
+    else
+        ret = -1;
 
     if (ret < 0)
     {
