@@ -1,27 +1,33 @@
-/* Does miscellaneous sanity checking */
+/* Checks that GetProcAddress is correctly intercepted */
 
-#include "test.h"
+#if HAVE_CONFIG_H
+# include <config.h>
+#endif
+
+#include <GL/glew.h>
 #include <stdlib.h>
-#include <budgie/types.h>
+#include <budgie/callapi.h>
+#include "test.h"
 
-extern BUDGIEAPIPROC glXGetProcAddress(const GLubyte *name);
-
-void check_procaddress(void)
+test_status check_procaddress(void)
 {
     /* We deliberately raise an error, then check for it via the
      * address glXGetProcAddressARB gives us for glGetError. If we've
      * messed up glXGetProcAddressARB, we won't get the error because
      * the error interception will have eaten it.
      */
-    GLenum (BUDGIEAPIP GetError)(void);
+    GLenum (BUDGIEAPIP pglGetError)(void);
 
-    GetError = (GLenum (BUDGIEAPIP)(void)) glXGetProcAddress((const GLubyte *) "glGetError");
+    pglGetError = (GLenum (BUDGIEAPIP)(void)) test_get_proc_address("glGetError");
+    if (pglGetError == NULL)
+        return TEST_SKIPPED; /* Some window system APIs don't return pointers to core functions */
+
     glPopAttrib();
-    TEST_ASSERT((*GetError)() == GL_STACK_UNDERFLOW);
+    TEST_ASSERT((*pglGetError)() == GL_STACK_UNDERFLOW);
+    return TEST_RAN;
 }
 
 test_status procaddress_suite(void)
 {
-    check_procaddress();
-    return TEST_RAN;
+    return check_procaddress();
 }

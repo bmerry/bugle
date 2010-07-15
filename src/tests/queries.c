@@ -5,7 +5,6 @@
 #endif
 #include <GL/glew.h>
 #include <GL/gl.h>
-#include <GL/glx.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <stddef.h>

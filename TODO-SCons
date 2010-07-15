@@ -1,7 +1,12 @@
 - retest on Win32
-- update version strings, and work through RELEASE doc
+- test that external filtersets (using pkg-config) compile
+- get automated tests running on Windows (abstract glXGetProcAddress)
+- scons test does not build filterset libraries
+- update release dates work through RELEASE doc
 
 Future:
+- not all automated tests pass on Win32
+- Windows automated tests don't pick up opengl32.dll (needs copying)
 - stats_fragment seems to be broken on Win32?
 - audit use of malloc/bugle_malloc/free/bugle_free for matching up
 - fix warnings about not finding wglMakeContextCurrent or whatever it was

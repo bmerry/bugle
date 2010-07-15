@@ -1,5 +1,8 @@
 /* Check that dlopen()ing libGL.so still passes through bugle */
 
+#if HAVE_CONFIG_H
+# include <config.h>
+#endif
 #ifndef _GNU_SOURCE
 # define _GNU_SOURCE /* To get RTLD_NEXT defined, if it is available */
 #endif

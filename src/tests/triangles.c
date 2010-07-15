@@ -8,8 +8,12 @@
 #include <GL/glew.h>
 #include <GL/gl.h>
 #include <GL/glext.h>
-#include <GL/glut.h>
 #include <stdlib.h>
+/* Required to compile GLUT under MinGW */
+#if defined(_WIN32) && !defined(_STDCALL_SUPPORTED)
+# define _STDCALL_SUPPORTED
+#endif
+#include <GL/glut.h>
 #include "test.h"
 
 static GLfloat float_data[18] =

@@ -18,7 +18,7 @@ def run_log_test(target, testprog, env, name, chain):
     try:
         try:
             os.close(handle)
-            env = env['ENV']
+            env = dict([(key, str(value)) for (key, value) in env['ENV'].items()])
             env['LD_PRELOAD'] = 'libbugle.so'
             env['BUGLE_CHAIN'] = chain
             sp = Popen([testprog[0].abspath, '--test', name, '--log', logfile],
@@ -68,9 +68,9 @@ def run_log_test(target, testprog, env, name, chain):
                 msg = ' (' + msg + ')'
             print "FAILED  Test `" + name + "'" + msg
     finally:
-        os.remove(logfile)
         if reflog is not None:
             reflog.close()
+        os.remove(logfile)
 
 def make_log_test(name, chain):
     def action(target, source, env):
@@ -126,15 +126,17 @@ else:
                     'interpose',
                     'procaddress'])
             log_tests.extend([
-                    ('dlopen', 'trace'),
                     ('extoverride', 'extoverride'),
                     ('pbo', 'trace'),
-                    ('pointers', 'checks'),
                     ('queries', 'trace'),
                     ('setstate', 'trace'),
                     ('showextensions', 'showextensions'),
-                    ('texcomplete', 'checks'),
                     ('triangles', 'triangles')])
+            if aspects['platform'] == 'posix':
+                log_tests.extend([
+                        ('dlopen', 'trace'),
+                        ('pointers', 'checks'),
+                        ('texcomplete', 'checks')])
             simple_test('objects')
             simple_test('shadertest')
             simple_test('textest')
@@ -160,10 +162,11 @@ test_env.AlwaysBuild(test)
 test_env.Alias('test', test)
 
 for name, chain in log_tests:
-    # The lambda below is to suppress the printout of what is happening,
-    # to get all the PASSED/FAILED in a single block
+    message = None
+    if aspects['quiet'] == 'no':
+        message = 'Running test %s' % (name,)
     test = test_env.Command(Value(''), bugletest,
-            Action(make_log_test(name, chain), lambda t, s, e: ''))
+            Action(make_log_test(name, chain), message))
     test_env.Depends(test, test_deps)
     test_env.Depends(test, 'filters')
     test_env.AlwaysBuild(test)

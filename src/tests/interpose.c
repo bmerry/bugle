@@ -6,7 +6,8 @@
 #if HAVE_CONFIG_H
 # include <config.h>
 #endif
-#include <GL/glx.h>
+
+#include <GL/glew.h>
 #include <GL/gl.h>
 #include <GL/glext.h>
 #include <stdlib.h>
@@ -14,10 +15,8 @@
 #include <string.h>
 #include <stddef.h>
 #include <bugle/bool.h>
-#include <budgie/types.h>
+#include <budgie/callapi.h>
 #include "test.h"
-
-extern BUDGIEAPIPROC glXGetProcAddressARB(const GLubyte *);
 
 static bugle_bool test_failed = BUGLE_FALSE;
 
@@ -26,19 +25,20 @@ static bugle_bool test_failed = BUGLE_FALSE;
  * that GLEW will wrap it up and prevent other tests from directly calling
  * this version.
  */
+#undef glDrawRangeElements
 void BUDGIEAPI glDrawRangeElements(GLenum mode, GLuint start, GLuint end, GLsizei count, GLenum type, const GLvoid *data)
 {
     test_failed = BUGLE_TRUE;
 }
 
-static void (BUDGIEAPIP pglDrawRangeElements)(GLenum, GLuint, GLuint, GLsizei, GLenum, const GLvoid *);
-
 test_status interpose_suite(void)
 {
+    PFNGLDRAWRANGEELEMENTSPROC pglDrawRangeElements;
+
     if (strcmp((const char *) glGetString(GL_VERSION), "1.2") < 0)
         return TEST_SKIPPED;    /* Won't have a glDrawElements anyway */
 
-    pglDrawRangeElements = (void (BUDGIEAPIP)(GLenum, GLuint, GLuint, GLsizei, GLenum, const GLvoid *)) glXGetProcAddressARB((const GLubyte *) "glDrawRangeElements");
+    pglDrawRangeElements = (PFNGLDRAWRANGEELEMENTSPROC) test_get_proc_address("glDrawRangeElements");
 
     TEST_ASSERT(pglDrawRangeElements != glDrawRangeElements);
     pglDrawRangeElements(GL_TRIANGLES, 0, 0, 0, GL_UNSIGNED_SHORT, NULL);

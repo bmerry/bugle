@@ -230,20 +230,30 @@ static GLuint make_texture_object(GLenum target, const GLenum *faces,
     return id;
 }
 
-static void dump_log(const char *phase,
-                     void (*getiv)(GLuint, GLenum, GLint *),
-                     void (*get)(GLuint, GLsizei, GLsizei *, GLchar *), GLuint object)
+static void dump_program_log(GLuint program)
 {
     GLint length;
     GLchar *lg;
 
-    fprintf(stderr, "%s failed:\n", phase);
-    getiv(object, GL_INFO_LOG_LENGTH, &length);
+    fprintf(stderr, "Linking failed:\n");
+    glGetProgramiv(program, GL_INFO_LOG_LENGTH, &length);
     lg = malloc(length + 1);
-    get(object, length + 1, &length, lg);
+    glGetProgramInfoLog(program, length + 1, &length, lg);
     fprintf(stderr, "%s\n", lg);
     free(lg);
-    exit(1);
+}
+
+static void dump_shader_log(GLuint shader)
+{
+    GLint length;
+    GLchar *lg;
+
+    fprintf(stderr, "Compilation failed:\n");
+    glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &length);
+    lg = malloc(length + 1);
+    glGetShaderInfoLog(shader, length + 1, &length, lg);
+    fprintf(stderr, "%s\n", lg);
+    free(lg);
 }
 
 static GLuint make_shader(GLenum type, const char *source)
@@ -255,8 +265,13 @@ static GLuint make_shader(GLenum type, const char *source)
     glShaderSourceARB(shader, 1, &source, NULL);
     glCompileShaderARB(shader);
     glGetShaderiv(shader, GL_COMPILE_STATUS, &status);
-    if (status != GL_TRUE)
-        dump_log("compilation", glGetShaderiv, glGetShaderInfoLog, shader);
+    TEST_ASSERT(status);
+    if (!status)
+    {
+        dump_shader_log(shader);
+        glDeleteShader(shader);
+        return 0;
+    }
     return shader;
 }
 
@@ -272,12 +287,17 @@ static GLuint make_program(GLuint vs, GLuint fs)
         glAttachShader(program, fs);
     glLinkProgram(program);
     glGetProgramiv(program, GL_LINK_STATUS, &status);
-    if (status != GL_TRUE)
-        dump_log("linking", glGetProgramiv, glGetProgramInfoLog, program);
-
-    glUseProgram(program);
+    TEST_ASSERT(status);
     if (vs) glDeleteShader(vs);
     if (fs) glDeleteShader(fs);
+    if (!status)
+    {
+        dump_program_log(program);
+        glDeleteProgram(program);
+        return 0;
+    }
+
+    glUseProgram(program);
     return program;
 }
 
@@ -304,7 +324,19 @@ test_status texcomplete_suite(void)
             tex = make_texture_object(targets[i].target, targets[i].faces, j, image);
             vs = make_shader(GL_VERTEX_SHADER, vertex_source);
             fs = make_shader(GL_FRAGMENT_SHADER, targets[i].source);
+            if (!vs || !fs)
+            {
+                glDeleteShader(vs);
+                glDeleteShader(fs);
+                glDeleteTextures(1, &tex);
+                return TEST_FAILED;
+            }
             program = make_program(vs, fs);
+            if (!program)
+            {
+                glDeleteTextures(1, &tex);
+                return TEST_FAILED;
+            }
             loc = glGetUniformLocation(program, "s");
             TEST_ASSERT(loc >= 0);
             glUniform1i(loc, 0);

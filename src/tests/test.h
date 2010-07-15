@@ -24,6 +24,8 @@
 # include <config.h>
 #endif
 #include <bugle/attributes.h>
+#include <bugle/porting.h>
+#include <budgie/callapi.h>
 #include <stdarg.h>
 
 typedef enum
@@ -52,5 +54,13 @@ void test_assert(int cond, const char *file, int line, const char *cond_str);
  */
 int test_log_printf(const char *format, ...) BUGLE_ATTRIBUTE_FORMAT_PRINTF(1, 2);
 int test_log_vprintf(const char *format, va_list ap) BUGLE_ATTRIBUTE_FORMAT_PRINTF(1, 0);
+
+/* Queries a function through glXGetProcAddress or equivalent.
+ * To portably use this, you must have a current context.
+ */
+
+#if TEST_GL
+BUDGIEAPIPROC test_get_proc_address(const char *name);
+#endif
 
 #endif /* !BUGLE_TESTS_TEST_H */

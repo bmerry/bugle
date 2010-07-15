@@ -26,6 +26,10 @@
 #include <stdlib.h>
 #if TEST_GL
 # include <GL/glew.h>
+/* Required to compile GLUT under MinGW */
+# if defined(_WIN32) && !defined(_STDCALL_SUPPORTED)
+#  define _STDCALL_SUPPORTED
+# endif
 # include <GL/glut.h>
 #endif
 #include <string.h>
@@ -47,17 +51,19 @@ static const char *log_filename = NULL;
 static FILE *log_handle = NULL;
 
 #if TEST_GL
+#if BUGLE_PLATFORM_POSIX
 extern test_status dlopen_suite(void);
+extern test_status pointers_suite(void);
+extern test_status texcomplete_suite(void);
+#endif
 extern test_status errors_suite(void);
 extern test_status extoverride_suite(void);
 extern test_status interpose_suite(void);
 extern test_status pbo_suite(void);
-extern test_status pointers_suite(void);
 extern test_status procaddress_suite(void);
 extern test_status queries_suite(void);
 extern test_status setstate_suite(void);
 extern test_status showextensions_suite(void);
-extern test_status texcomplete_suite(void);
 extern test_status triangles_suite(void);
 #endif /* TEST_GL */
 
@@ -68,17 +74,19 @@ extern test_status threads_suite(void);
 static const test_suite suites[] =
 {
 #if TEST_GL
+#if BUGLE_PLATFORM_POSIX
     { "dlopen",         TEST_FLAG_LOG,                     dlopen_suite },
+    { "pointers",       TEST_FLAG_LOG | TEST_FLAG_CONTEXT, pointers_suite },
+    { "texcomplete",    TEST_FLAG_LOG | TEST_FLAG_CONTEXT, texcomplete_suite },
+#endif
     { "errors",         TEST_FLAG_CONTEXT,                 errors_suite },
     { "extoverride",    TEST_FLAG_LOG | TEST_FLAG_CONTEXT, extoverride_suite },
     { "interpose",      TEST_FLAG_CONTEXT,                 interpose_suite },
     { "pbo",            TEST_FLAG_LOG | TEST_FLAG_CONTEXT, pbo_suite },
-    { "pointers",       TEST_FLAG_LOG | TEST_FLAG_CONTEXT, pointers_suite },
     { "procaddress",    TEST_FLAG_CONTEXT,                 procaddress_suite },
     { "queries",        TEST_FLAG_LOG | TEST_FLAG_CONTEXT, queries_suite },
     { "setstate",       TEST_FLAG_LOG | TEST_FLAG_CONTEXT, setstate_suite },
     { "showextensions", TEST_FLAG_LOG | TEST_FLAG_CONTEXT, showextensions_suite },
-    { "texcomplete",    TEST_FLAG_LOG | TEST_FLAG_CONTEXT, texcomplete_suite },
     { "triangles",      TEST_FLAG_LOG | TEST_FLAG_CONTEXT, triangles_suite },
 #endif /* TEST_GL */
     { "math",           0,                                 math_suite },
@@ -312,7 +320,7 @@ int main(int argc, char **argv)
     return tests_fail != 0 ? 1 : 0;
 }
 
-/* Functions called by the test suites - see logtester.h */
+/* Functions called by the test suites - see test.h */
 
 int test_log_printf(const char *format, ...)
 {
@@ -351,3 +359,40 @@ void test_assert(int cond, const char *file, int line, const char *cond_str)
                current_suite->name, file, line, cond_str);
     }
 }
+
+#if TEST_GL
+
+#if BUGLE_GLWIN_GLX
+
+#include <GL/glx.h>
+#include <GL/glxext.h>
+BUDGIEAPIPROC test_get_proc_address(const char *name)
+{
+    return glXGetProcAddressARB((const GLubyte *) name);
+}
+
+#elif BUGLE_GLWIN_WGL
+
+#ifndef WIN32_LEAN_AND_MEAN
+# define WIN32_LEAN_AND_MEAN
+#endif
+#include <windows.h>
+BUDGIEAPIPROC test_get_proc_address(const char *name)
+{
+    return (BUDGIEAPIPROC) wglGetProcAddress(name);
+}
+
+#elif BUGLE_GLWIN_EGL
+
+#include <EGL/egl.h>
+
+BUDGIEAPIPROC test_get_proc_address(const char *name)
+{
+    return eglGetProcAddress(name);
+}
+
+#else
+# error "Window system not known"
+#endif /* BUGLE_GLWIN_* */
+
+#endif /* TEST_GL */
