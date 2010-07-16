@@ -30,7 +30,7 @@ void *thread2(void *arg)
     return NULL;
 }
 
-int main()
+int main(void)
 {
     Display *dpy;
     pthread_t threads[2];

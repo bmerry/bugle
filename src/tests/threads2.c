@@ -124,7 +124,7 @@ void *thread(void *arg)
     return NULL;
 }
 
-int main()
+int main(void)
 {
     pthread_t threads[THREADS];
     int i;
