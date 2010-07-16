@@ -300,7 +300,6 @@ package_sources.extend([
     'NEWS',
     'README',
     'SConstruct',
-    'TODO-SCons',
     'doc/DocBook/SConscript',
     'doc/DocBook/bugle.css',
     'doc/DocBook/bugle.ent',

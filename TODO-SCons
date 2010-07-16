@@ -1,5 +1,5 @@
 - retest on Win32
-- test that external filtersets (using pkg-config) compile
+- make the build dir the default target?
 - update release dates and work through RELEASE doc
 
 Future:
