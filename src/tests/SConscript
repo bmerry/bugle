@@ -168,6 +168,6 @@ for name, chain in log_tests:
     test = test_env.Command(Value(''), bugletest,
             Action(make_log_test(name, chain), message))
     test_env.Depends(test, test_deps)
-    test_env.Depends(test, 'filters')
+    test_env.Depends(test, '../filters')
     test_env.AlwaysBuild(test)
     test_env.Alias('test', test)

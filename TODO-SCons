@@ -1,8 +1,6 @@
 - retest on Win32
 - test that external filtersets (using pkg-config) compile
-- get automated tests running on Windows (abstract glXGetProcAddress)
-- scons test does not build filterset libraries
-- update release dates work through RELEASE doc
+- update release dates and work through RELEASE doc
 
 Future:
 - not all automated tests pass on Win32
