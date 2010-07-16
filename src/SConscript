@@ -283,9 +283,8 @@ envs['tu'].ApitablesC(target = ['apitables.c'], source = [File('budgielib/define
 envs['tu'].ApitablesH(target = ['apitables.h'], source = [File('budgielib/defines.h')] + headers)
 
 substs = get_substs(aspects)
-Default(envs['host'].SubstFile('include/bugle/porting.h', 'include/bugle/porting.h.in', substs))
+envs['host'].SubstFile('include/bugle/porting.h', 'include/bugle/porting.h.in', substs)
 bugle_pc = envs['host'].SubstFile('bugle.pc', 'bugle.pc.in', substs)
-Default(bugle_pc)
 envs['host'].Install(aspects['libdir'] + '/pkgconfig', source = bugle_pc)
 Alias('install', aspects['libdir'] + '/pkgconfig')
 
@@ -311,7 +310,6 @@ targets['bugleutils'].out = envs['host'].BugleSharedLibrary(
         aspects['binfmt'],
         libdir = aspects['libdir'], bindir = aspects['bindir'],
         **targets['bugleutils'])
-Default(targets['bugleutils'].out)
 
 if 'interceptor' in aspects['parts']:
     targets['bugle'].update({
@@ -344,7 +342,6 @@ if 'interceptor' in aspects['parts']:
             aspects['binfmt'],
             libdir = aspects['libdir'], bindir = aspects['bindir'],
             **targets['bugle'])
-    Default(targets['bugle'].out)
 
 # These need to come after the targets have been built
 subdir(srcdir, 'bc')

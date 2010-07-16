@@ -46,7 +46,6 @@ if 'docs' in aspects['parts']:
             dir = 'man',
             package_sources = package_sources)
 
-    Default(single, chunked, single_css, chunked_css, manpages)
     Alias('install', [aspects['docdir'], aspects['mandir']])
     env.Install(aspects['docdir'], 'html/single.html')
     env.Install(aspects['docdir'], 'html/bugle.css')

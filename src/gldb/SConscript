@@ -56,7 +56,6 @@ if 'debugger' in aspects['parts']:
         'gldb-gui-texture.c',
         'gldb-gui.c',
         gldb_shared], LIBS = [targets['bugleutils'].out, '$LIBS'])
-    Default(gldb_gui)
 
     Alias('install', aspects['bindir'])
     gldb_env.Install(aspects['bindir'], gldb_gui)
