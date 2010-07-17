@@ -20,7 +20,6 @@
     <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="bugle.xml"/>
     <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="statistics.xml"/>
     <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="gldb-gui.xml"/>
-    <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="gldb.xml"/>
     <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="camera.xml"/>
     <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="checks.xml"/>
     <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="eps.xml"/>

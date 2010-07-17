@@ -29,7 +29,7 @@
             to determine what version of OpenGL and which extensions are used
             by a particular application. It can be used to check that an
             application does not accidentally depend on an OpenGL version that
-            is not targetted. The most common error is calling a core OpenGL
+            is not targeted. The most common error is calling a core OpenGL
             function (for a recent version of OpenGL) when one intended to use
             an older and more widely supported extension.
         </para>

@@ -163,8 +163,8 @@
             <application>pkg-config</application> configuration file. Note
             that with the default install paths for &bugle;, not all
             <application>pkg-config</application> installations will look in
-            the right place. You might need to set <envar>PKG_CONFIG</envar>
-            to something like <filename
+            the right place. You might need to set
+            <envar>PKG_CONFIG_PATH</envar> to something like <filename
                 class="directory">/usr/local/lib/pkgconfig</filename>.
         </para>
         <para>

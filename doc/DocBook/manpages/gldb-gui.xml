@@ -5,7 +5,7 @@
 ]>
 <refentry id="gldb-gui.1">
     <refentryinfo>
-        <date>March 2009</date>
+        <date>July 2010</date>
         <productname>BUGLE</productname>
     </refentryinfo>
     <refmeta>
@@ -91,7 +91,7 @@
         <para>
             The initial tab is the <guilabel>State</guilabel> tab. It shows
             all OpenGL state that is textual rather than an image. The state
-            is organised roughly more or less according to the state tables in
+            is organised more or less according to the state tables in
             the <ulink
                 url="http://www.opengl.org/registry/doc/glspec21.20061201.pdf">OpenGL
                 specification.</ulink> OpenGL has an
@@ -123,7 +123,7 @@
                 buffer is decoded as a sequence of unsigned bytes, but a
                 format specification can be filled in below the combobox to
                 control the decoding. It works best when the entire buffer
-                contains repetitions of repetitions of a single structure
+                contains repetitions of a single structure
                 format.
             </para>
             <para>
@@ -318,7 +318,8 @@
         </para>
         <note><para>Your program needs to be running from the point of view of
                 <command>gdb</command> for <command>gldb-gui</command> to
-                function correctly.</para></note>
+                function correctly. In particular, this feature does not work
+                for remote debugging.</para></note>
     </refsect1>
 
     <refsect1 id="gldb-gui-MAN-remote">
@@ -402,12 +403,7 @@
                 <listitem><para>Any types used on the target must also be known
                         to the debugger. Ideally, one should use the same
                         version of &bugle;, compiled with the same compiler and
-                        the same OpenGL headers. In some cases it may be
-                        sufficient to copy <filename>src/data/gl.tu</filename>
-                        from one build to another and re-build (but do
-                        <emphasis>not</emphasis> run <command>make
-                            clean</command>, as this will cause the copied
-                        file to be regenerated).
+                        the same OpenGL headers.
                 </para></listitem>
                 <listitem><para>The <guilabel>Backtrace</guilabel> tab and the
                         <guimenuitem>Attach GDB</guimenuitem> action will not

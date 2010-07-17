@@ -66,6 +66,10 @@
             in the <application>bugle</application> source and set a
             breakpoint on the appropriate line).
         </para>
+        <para>
+            Additionally, warnings are printed when an incomplete texture is
+            used.
+        </para>
     </refsect1>
 
     <refsect1>

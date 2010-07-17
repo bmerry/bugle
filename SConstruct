@@ -326,7 +326,6 @@ package_sources.extend([
     'doc/DocBook/manpages/extoverride.xml',
     'doc/DocBook/manpages/frontbuffer.xml',
     'doc/DocBook/manpages/gldb-gui.xml',
-    'doc/DocBook/manpages/gldb.xml',
     'doc/DocBook/manpages/log.xml',
     'doc/DocBook/manpages/logstats.xml',
     'doc/DocBook/manpages/manpages.xml',

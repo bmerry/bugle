@@ -5,7 +5,7 @@
 ]>
 <refentry id="exe.7">
     <refentryinfo>
-        <date>July 2008</date>
+        <date>July 2010</date>
         <productname>BUGLE</productname>
     </refentryinfo>
     <refmeta>
@@ -21,7 +21,7 @@
     <refsynopsisdiv>
         <screen>filterset exe
 {
-filename "<replaceable>exetrace.c</replaceable>"
+    filename "<replaceable>exetrace.c</replaceable>"
 }</screen>
     </refsynopsisdiv>
 

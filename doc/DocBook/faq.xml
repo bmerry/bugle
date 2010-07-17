@@ -193,28 +193,6 @@
 
             <qandaentry>
                 <question><para>
-                        I have an x86-64 (Athlon 64/Opteron/EM64T) machine
-                        with 64-bit OS, and compilation fails with the message
-                        <computeroutput>/usr/lib/libGL.so: could not read
-                            symbols: File in wrong format</computeroutput>.
-                </para></question>
-                <answer><para>
-                        This has been reported on Fedora Core 5, where
-                        <application>libtool</application> incorrectly
-                        tries to link against the 32-bit version of <filename
-                            class="libraryfile">libGL.so</filename>. The workaround is
-                        to run (in the build directory)
-                        <screen><userinput>sed -i 's#sys_lib_search_path_spec="#sys_lib_search_path_spec="/usr/lib64#' libtool</userinput></screen>
-                        and re-run <command>make</command>. If this still
-                        doesn't work, see if your 64-bit <filename
-                            class="libraryfile">libGL.so</filename> is in a
-                        different directory and use that in place of <filename
-                            class="directory">/usr/lib64</filename> above.
-                </para></answer>
-            </qandaentry>
-
-            <qandaentry>
-                <question><para>
                         I am using Fedora 10, and when I run
                         <application>glxgears</application> under &bugle; it
                         exits with the message
@@ -227,7 +205,7 @@
                             class="libraryfile">libGL.so</filename> on your
                         system, and &bugle; picking up symbols from the wrong
                         one. Find out which one is correct
-                        (<application>ldd</application>) should help, then
+                        (<application>ldd</application> should help), then
                         move other ones out of the way.
                 </para></answer>
             </qandaentry>
@@ -273,18 +251,19 @@
                         penalty.
                     </para>
                     <para>
-                        To give you an example, here are some rough numbers for Quake3 1.32c on
+                        To give you an example, here are some rough numbers for
+                        Quake3 1.34_rc3 (64-bit build from source) on
                         demo <systemitem>four</systemitem>:
                     </para>
                     <informaltable>
                         <tgroup cols="2">
                             <tbody>
-                                <row><entry>without <application>bugle</application></entry><entry>683.7</entry></row>
-                                <row><entry>none</entry><entry>668.4</entry></row>
-                                <row><entry>logfps</entry><entry>661.8</entry></row>
-                                <row><entry>showfps</entry><entry>625.6</entry></row>
-                                <row><entry>trace</entry><entry>181.6</entry></row>
-                                <row><entry><command>gldb-gui</command></entry><entry>131.3</entry></row>
+                                <row><entry>without &bugle;</entry><entry>351.5</entry></row>
+                                <row><entry>none</entry><entry>340.0</entry></row>
+                                <row><entry>logfps</entry><entry>337.0</entry></row>
+                                <row><entry>showfps</entry><entry>309.5</entry></row>
+                                <row><entry>trace</entry><entry>121.0</entry></row>
+                                <row><entry><command>gldb-gui</command></entry><entry>109.0</entry></row>
                             </tbody>
                         </tgroup>
                     </informaltable>

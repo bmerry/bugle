@@ -87,7 +87,7 @@
             The expression consists of standard arithmetic operations
             (including parentheses), numbers, and signal expressions. When a
             signal expression is evaluated, it is done so over some interval
-            of time (usually one frame), but <option>key_accumulate</option>
+            of time (usually one frame, but <option>key_accumulate</option>
             in &mp-showstats; allows for longer intervals). Several types of
             signal expressions are available to determine how the signal is
             measured over that time: 
