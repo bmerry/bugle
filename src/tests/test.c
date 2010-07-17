@@ -355,8 +355,8 @@ void test_assert(int cond, const char *file, int line, const char *cond_str)
     if (!cond)
     {
         current_asserts_fail++;
-        printf("%s %s:%d: Assertion `%s' FAILED\n",
-               current_suite->name, file, line, cond_str);
+        fprintf(stderr, "%s %s:%d: Assertion `%s' FAILED\n",
+                current_suite->name, file, line, cond_str);
     }
 }
 
