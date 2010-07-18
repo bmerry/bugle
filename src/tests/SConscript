@@ -99,6 +99,7 @@ else:
     if aspects['gltype'] == 'gl':
         glew_lib = False
         glut_lib = False
+        glu_lib = False
 
         conf = Configure(test_env, custom_tests = BugleChecks.tests)
         if conf.CheckLibWithHeader('GLEW', 'GL/glew.h', 'c', autoadd = False):
@@ -109,10 +110,14 @@ else:
             glut_lib = 'glut'
         elif conf.CheckLibWithHeader('glut32', 'GL/glut.h', 'c', autoadd = False):
             glut_lib = 'glut32'
+        if conf.CheckLibWithHeader('GLU', 'GL/glu.h', 'c', autoadd = False):
+            glu_lib = 'GLU'
+        elif conf.CheckLibWithHeader('glu32', 'GL/glu.h', 'c', autoadd = False):
+            glu_lib = 'GLU32'
 
-        use_gl = glew_lib and glut_lib
+        use_gl = glew_lib and glut_lib and glu_lib
         if use_gl:
-            conf.env.Append(LIBS = [glew_lib, glut_lib])
+            conf.env.Append(LIBS = [glew_lib, glut_lib, glu_lib])
             test_env = conf.Finish()
 
             test_env.Append(LIBS = libraries)
@@ -140,10 +145,11 @@ else:
             simple_test('objects')
             simple_test('shadertest')
             simple_test('textest')
-            simple_test('threads1')
-            simple_test('threads2')
+            if aspects['glwin'] == 'glx':
+                simple_test('threads1')
+                simple_test('threads2')
         else:
-            print 'WARNING: Both GLEW and GLUT are required for some tests'
+            print 'WARNING: GLEW, GLUT and GLU are required for some tests'
     else:
         print 'WARNING: not all tests run on this variant of OpenGL'
 

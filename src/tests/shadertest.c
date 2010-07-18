@@ -1,8 +1,16 @@
+#if HAVE_CONFIG_H
+# include <config.h>
+#endif
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <GL/glew.h>
+/* Required to compile GLUT under MinGW */
+#if defined(_WIN32) && !defined(_STDCALL_SUPPORTED)
+# define _STDCALL_SUPPORTED
+#endif
 #include <GL/glut.h>
+#include <GL/glu.h>
 
 static void display(void)
 {

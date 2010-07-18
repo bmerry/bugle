@@ -1,5 +1,9 @@
 /* Creates a number of textures, to test the texture viewer */
 
+/* Required to compile GLUT under MinGW */
+#if defined(_WIN32) && !defined(_STDCALL_SUPPORTED)
+# define _STDCALL_SUPPORTED
+#endif
 #include <GL/glew.h>
 #include <GL/glut.h>
 #include <stdlib.h>

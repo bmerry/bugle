@@ -6,6 +6,10 @@
 # include <config.h>
 #endif
 #include <GL/glew.h>
+/* Required to compile GLUT under MinGW */
+#if defined(_WIN32) && !defined(_STDCALL_SUPPORTED)
+# define _STDCALL_SUPPORTED
+#endif
 #include <GL/glut.h>
 #include <GL/glext.h>
 #include <stdlib.h>
