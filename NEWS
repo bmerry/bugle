@@ -1,4 +1,4 @@
-0.0.20100714
+0.0.20100718
 ------------
 The build system has been replaced SCons. Where there are few new features,
 this is a major restructuring of the internals. Many bugs have been fixed

@@ -1,4 +1,4 @@
-0.0.20100714
+0.0.20100718
 ------------
 * Replace automake with scons
 * Replace gnulib with hand-written porting layer included in libbugleutils
