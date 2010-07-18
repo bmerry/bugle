@@ -292,7 +292,7 @@ subdir(Dir('.'), 'src', variant_dir = 'build/' + variant_str, duplicate = 0)
 subdir(Dir('.'), 'doc/DocBook', variant_dir = 'build/doc', duplicate = 0)
 Default('build')
 
-package_env = Environment(tools = ['default', 'packaging'])
+package_env = Environment(tools = ['default', 'packaging'], TAR = 'fakeroot tar')
 package_sources.extend([
     'AUTHORS',
     'COPYING',
