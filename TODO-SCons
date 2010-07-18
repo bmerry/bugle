@@ -1,6 +1,3 @@
-- retest on Win32
-- update release dates and work through RELEASE doc
-
 Future:
 - not all automated tests pass on Win32
 - Windows automated tests don't pick up opengl32.dll (needs copying)
