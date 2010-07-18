@@ -5,6 +5,7 @@
 #if HAVE_CONFIG_H
 # include <config.h>
 #endif
+#include <stdlib.h>
 #include <GL/glew.h>
 /* Required to compile GLUT under MinGW */
 #if defined(_WIN32) && !defined(_STDCALL_SUPPORTED)
@@ -12,7 +13,6 @@
 #endif
 #include <GL/glut.h>
 #include <GL/glext.h>
-#include <stdlib.h>
 #include <string.h>
 
 static GLuint tex1d = 0, tex2d = 0, tex3d = 0, texcube = 0;

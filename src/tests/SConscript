@@ -110,9 +110,9 @@ else:
             glut_lib = 'glut'
         elif conf.CheckLibWithHeader('glut32', 'GL/glut.h', 'c', autoadd = False):
             glut_lib = 'glut32'
-        if conf.CheckLibWithHeader('GLU', 'GL/glu.h', 'c', autoadd = False):
+        if conf.CheckLibWithHeader('GLU', ['GL/glut.h', 'GL/glu.h'], 'c', autoadd = False):
             glu_lib = 'GLU'
-        elif conf.CheckLibWithHeader('glu32', 'GL/glu.h', 'c', autoadd = False):
+        elif conf.CheckLibWithHeader('glu32', ['GL/glut.h', 'GL/glu.h'], 'c', autoadd = False):
             glu_lib = 'GLU32'
 
         use_gl = glew_lib and glut_lib and glu_lib

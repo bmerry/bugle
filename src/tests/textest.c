@@ -1,12 +1,15 @@
 /* Creates a number of textures, to test the texture viewer */
 
+#if HAVE_CONFIG_H
+# include <config.h>
+#endif
+#include <stdlib.h>
 /* Required to compile GLUT under MinGW */
 #if defined(_WIN32) && !defined(_STDCALL_SUPPORTED)
 # define _STDCALL_SUPPORTED
 #endif
 #include <GL/glew.h>
 #include <GL/glut.h>
-#include <stdlib.h>
 
 #ifndef LOG_TEXTURE_SIZE
 # define LOG_TEXTURE_SIZE 6
