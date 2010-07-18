@@ -24,6 +24,14 @@ else
     </p>
     <h1>BuGLe News</h1>
 
+    <h2>BuGLe now uses SCons as its build system (18/7/2010)</h2>
+    <p>The build system has been replaced SCons. While there are few new
+    features, this is a major restructuring of the internals. Many bugs have
+    been fixed and portability has been improved (in particular, BuGLe can now
+    be built with Visual C++ Express 2008), although it is likely that new bugs
+    have been introduced.
+    </p>
+
     <h2>Another compilation release fix (26/10/2009)</h2>
     <p>Yep, like the headline says. If you've already got it running, there are
     no new features. The all-new, all-shiny development version will be ready
