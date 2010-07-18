@@ -23,7 +23,7 @@
 #if HAVE_CONFIG_H
 # include <config.h>
 #endif
-#include <stdbool.h>
+#include <bugle/bool.h>
 #include <stddef.h>
 #include <bugle/glwin/trackcontext.h>
 #include <bugle/gl/glheaders.h>
@@ -41,9 +41,9 @@ static object_view glbeginend_view;
  * because if the call was successful then doing so is itself an error. So
  * we are forced to do the validation ourselves.
  */
-static bool glbeginend_glBegin(function_call *call, const callback_data *data)
+static bugle_bool glbeginend_glBegin(function_call *call, const callback_data *data)
 {
-    bool *begin_end;
+    bugle_bool *begin_end;
 
     switch (*call->glBegin.arg0)
     {
@@ -63,34 +63,34 @@ static bool glbeginend_glBegin(function_call *call, const callback_data *data)
     case GL_TRIANGLES_ADJACENCY_EXT:
     case GL_TRIANGLE_STRIP_ADJACENCY_EXT:
 #endif
-        begin_end = (bool *) bugle_object_get_current_data(bugle_context_class, glbeginend_view);
-        if (begin_end != NULL) *begin_end = true;
+        begin_end = (bugle_bool *) bugle_object_get_current_data(bugle_get_context_class(), glbeginend_view);
+        if (begin_end != NULL) *begin_end = BUGLE_TRUE;
     default: /* Avoids compiler warning if GLenum is a C enum */ ;
     }
-    return true;
+    return BUGLE_TRUE;
 }
 
-static bool glbeginend_glEnd(function_call *call, const callback_data *data)
+static bugle_bool glbeginend_glEnd(function_call *call, const callback_data *data)
 {
-    bool *begin_end;
+    bugle_bool *begin_end;
 
     /* glEnd can only fail if we weren't in begin/end anyway. */
-    begin_end = (bool *) bugle_object_get_current_data(bugle_context_class, glbeginend_view);
-    if (begin_end != NULL) *begin_end = false;
-    return true;
+    begin_end = (bugle_bool *) bugle_object_get_current_data(bugle_get_context_class(), glbeginend_view);
+    if (begin_end != NULL) *begin_end = BUGLE_FALSE;
+    return BUGLE_TRUE;
 }
 
-bool bugle_gl_in_begin_end(void)
+bugle_bool bugle_gl_in_begin_end(void)
 {
-    bool *begin_end;
+    bugle_bool *begin_end;
 
-    begin_end = (bool *) bugle_object_get_current_data(bugle_context_class, glbeginend_view);
+    begin_end = (bugle_bool *) bugle_object_get_current_data(bugle_get_context_class(), glbeginend_view);
     return !begin_end || *begin_end;
 }
 #else
-bool bugle_gl_in_begin_end(void)
+bugle_bool bugle_gl_in_begin_end(void)
 {
-    return bugle_object_get_current(bugle_context_class) == NULL;
+    return bugle_object_get_current(bugle_get_context_class()) == NULL;
 }
 #endif
 
@@ -99,22 +99,22 @@ void bugle_gl_filter_post_queries_begin_end(const char *name)
     bugle_filter_order("glbeginend", name);
 }
 
-static bool glbeginend_filter_set_initialise(filter_set *handle)
+static bugle_bool glbeginend_filter_set_initialise(filter_set *handle)
 {
 #if BUGLE_GLTYPE_GL
     filter *f;
 
     f = bugle_filter_new(handle, "glbeginend");
     bugle_filter_order("invoke", "glbeginend");
-    bugle_filter_catches(f, "glBegin", true, glbeginend_glBegin);
-    bugle_filter_catches(f, "glEnd", true, glbeginend_glEnd);
+    bugle_filter_catches(f, "glBegin", BUGLE_TRUE, glbeginend_glBegin);
+    bugle_filter_catches(f, "glEnd", BUGLE_TRUE, glbeginend_glEnd);
 
-    glbeginend_view = bugle_object_view_new(bugle_context_class,
+    glbeginend_view = bugle_object_view_new(bugle_get_context_class(),
                                                NULL,
                                                NULL,
-                                               sizeof(bool));
+                                               sizeof(bugle_bool));
 #endif
-    return true;
+    return BUGLE_TRUE;
 }
 
 void glbeginend_initialise(void)

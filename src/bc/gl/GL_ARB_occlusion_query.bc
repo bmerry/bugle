@@ -1,0 +1,3 @@
+LENGTH PARAMETER gl(Gen|Delete)QueriesARB 1 $0
+LENGTH PARAMETER glGetQueryObject(ui|i)vARB 2 bugle_count_gl($f, $1)
+DUMP PARAMETER glGetQueryObject(ui|i)vARB 2 bugle_dump_convert($1, &$$, $t$, $W)

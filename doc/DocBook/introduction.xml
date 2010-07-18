@@ -6,8 +6,8 @@
 <chapter id="introduction">
     <title>Introduction</title>
     <para>
-        &Bugle; is an toolkit for debugging and profiling OpenGL applications
-        running on UNIX-like systems. It consists of two parts: a collection
+        &Bugle; is an toolkit for debugging and profiling OpenGL applications.
+        It consists of two parts: a collection
         of <firstterm>filter-sets</firstterm> that observe and sometimes
         modify calls to the OpenGL API, and a graphical <link
             linkend="gldb-gui.1">debugger</link> that helps in examining
@@ -17,8 +17,8 @@
         &Bugle; is still in active development, and is considered
         <quote>alpha</quote>. What this means is that while there are a lot of
         features, any given one of them might be broken on any given day. If
-        you do find a bug, please let me know
-        (<email>bmerry@users.sourceforge.net</email>).
+        you do find a bug, please let me know by filing a bug in <ulink
+            url="http://apps.sourceforge.net/trac/bugle">trac</ulink>.
     </para>
     <para>
         To get started with &bugle;, first read the <link

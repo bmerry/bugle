@@ -1,5 +1,0 @@
-LIBRARY libEGL.so
-LIBRARY libGLESv1_CM.so
-
-INCLUDE bc/gles1cm/gles1cm.bc
-INCLUDE bc/egl/egl.bc

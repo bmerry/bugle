@@ -22,10 +22,9 @@
                     aware of this until something goes catastrophically wrong.
             </para></listitem>
             <listitem><para>
-                    It is not endian-safe. While the control codes this is easily fixed for the
-                    control codes, there is little point in doing so until the
-                    data being transferred can be placed into a canonical
-                    representation.
+                    It is not endian-safe. The control codes are sent in
+                    big-endian, but the data being transferred is sent in the
+                    host encoding.
             </para></listitem>
             <listitem><para>
                     It may in places be dependent on the pointer size of the

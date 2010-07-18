@@ -1,0 +1,76 @@
+#!/usr/bin/env python
+
+import BugleChecks
+
+Import('envs', 'targets', 'aspects')
+
+if 'interceptor' in aspects['parts']:
+    Alias('install', aspects['pkglibdir'])
+
+    filter_env = envs['host'].Clone(SHLIBPREFIX = '')
+    filter_env.Append(LIBS = targets['bugle'].out + targets['bugleutils'].out)
+
+    if aspects['binfmt'] == 'elf' and aspects['host-compiler'] == 'gcc':
+        filter_env.Append(LINKFLAGS = '-Wl,-soname,${TARGET.file}')
+
+    def simple_filters(env, names):
+        for name in names:
+            module = env.LoadableModule(name, [name + '.c'])
+            filter_env.Install(aspects['pkglibdir'], module)
+
+    simple_filters(filter_env, [
+            'common',
+            'debugger',
+            'exe',
+            'extoverride',
+            'logstats',
+            'showextensions',
+            'stats_basic',
+            'stats_calls',
+            'stats_calltimes',
+            'stats_primitives',
+            'trace',
+            'validate'])
+
+    if aspects['gltype'] == 'gl':
+        # These currently only build on desktop GL
+        simple_filters(filter_env, [
+                'camera',
+                'modify',
+                'stats_fragments',
+                'showstats'])
+        module = filter_env.LoadableModule('eps', ['eps.c', '../gl2ps/gl2ps.c'])
+        filter_env.Install(aspects['pkglibdir'], module)
+
+    if aspects['platform'] == 'posix':
+        # These currently depend on POSIX features
+        simple_filters(filter_env, [
+                'checks',
+                'unwindstack'])
+
+    screenshot_env = filter_env.Clone()
+    conf = Configure(screenshot_env, custom_tests = BugleChecks.tests)
+    if conf.CheckPkgConfig():
+        if conf.CheckPkg(aspects, 'libavcodec', without_name = 'without_lavc'):
+            conf.env.Append(CPPDEFINES = [('HAVE_LAVC', 1)])
+            conf.env.ParseConfig('pkg-config libavcodec --cflags --libs')
+            if conf.CheckPkg(aspects, 'libavformat'):
+                conf.env.ParseConfig('pkg-config libavformat --cflags --libs')
+            if conf.CheckHeader('libavcodec/avcodec.h'):
+                conf.env.Append(CPPDEFINES = [('HAVE_LIBAVCODEC_AVCODEC_H', 1)])
+            if conf.CheckHeader('libavformat/avformat.h'):
+                conf.env.Append(CPPDEFINES = [('HAVE_LIBAVFORMAT_AVFORMAT_H', 1)])
+        if conf.CheckPkg(aspects, 'libswscale', without_name = 'without_lavc'):
+            conf.env.Append(CPPDEFINES = [('HAVE_LIBSWSCALE', 1)])
+            conf.env.ParseConfig('pkg-config libswscale --cflags --libs')
+            if conf.CheckHeader('libswscale/swscale.h'):
+                conf.env.Append(CPPDEFINES = [('HAVE_LIBSWSCALE_SWSCALE_H', 1)])
+    screenshot_env = conf.Finish()
+    simple_filters(screenshot_env, ['screenshot'])
+
+    nv_env = filter_env.Clone()
+    conf = Configure(nv_env)
+    has_nvperfsdk = conf.CheckHeader('NVPerfSDK.h')
+    nv_env = conf.Finish()
+    if has_nvperfsdk:
+        simple_filters(nv_env, ['stats_nv'])

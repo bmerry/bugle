@@ -3,7 +3,7 @@
     <xsl:import href="http://docbook.sourceforge.net/release/xsl/current/manpages/docbook.xsl"/>
     <xsl:param name="use.id.as.filename" select="'1'"/>
     <xsl:param name="man.output.in.separate.dir" select="'1'"/>
-    <xsl:param name="man.output.base.dir" select="'doc/'"/>
+    <xsl:param name="man.output.base.dir" select="'../'"/>
     <xsl:param name="man.output.subdirs" select="'1'"/>
     <xsl:param name="man.authors.section.enabled" select="'0'"/>
     <xsl:param name="man.copyright.section.enabled" select="'0'"/>

@@ -1,0 +1,25 @@
+#!/usr/bin/env python
+
+Import('envs', 'aspects', 'libraries')
+
+substs = {
+        'GLWIN': aspects['glwin'],
+        'GLTYPE': aspects['gltype'],
+        'LIBRARIES': ''
+        }
+
+for lib in libraries:
+    if aspects['binfmt'] == 'pe':
+        # TODO need a better way to do this
+        mangled = r'c:\\windows\\system32\\' + lib + '.dll'
+    else:
+        mangled = lib + envs['host'].subst('$SHLIBSUFFIX')
+    substs['LIBRARIES'] += 'LIBRARY ' + mangled + '\n'
+
+callapi = aspects['callapi']
+if callapi is None or callapi == '':
+    substs['CALLAPI'] = ''
+else:
+    substs['CALLAPI'] = 'CALLAPI ' + callapi
+
+envs['tu'].SubstFile('main.bc', 'main.bc.in', substs)

@@ -1,0 +1,11 @@
+prefix=@prefix@
+exec_prefix=@prefix@
+libdir=@libdir@
+includedir=@includedir@
+filterdir=${libdir}/bugle
+
+Name: Bugle
+Description: OpenGL debugger with pluggable filters
+Version: @PACKAGE_VERSION@
+Libs: -L${libdir} -lbugleutils -lbugle
+Cflags: -I${includedir}/bugle -I${includedir}

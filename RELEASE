@@ -1,10 +1,10 @@
-- update the version number in configure.ac
-- update the library version info in Makefile.am
+- update the version number in SConstruct
+- update the library version info in src/SConscript
 - update and date ChangeLog
 - update and date NEWS
 - test on several machines
-- run 'make distcheck' on several machines
-- do a 'fakeroot make dist'
+- run 'scons test' on several machines
+- do a 'fakeroot scons package'
 - upload to sourceforge
 - post details on freshmeat
 - update project news webpage

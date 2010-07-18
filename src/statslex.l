@@ -1,6 +1,6 @@
 %{
 /*  BuGLe: an OpenGL debugging tool
- *  Copyright (C) 2004-2007  Bruce Merry
+ *  Copyright (C) 2004-2007, 2009  Bruce Merry
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -20,16 +20,17 @@
 # include <config.h>
 #endif
 #ifndef _POSIX_SOURCE
-# define _POSIX_SOURCE
+# define _POSIX_SOURCE /* TODO is this still needed? */
 #endif
 
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <bugle/stats.h>
-#include "src/statsparse.h"
+#include <bugle/memory.h>
+#include <bugle/string.h>
+#include "statsparse.h"
 #include <bugle/log.h>
-#include "xalloc.h"
 
 static char *current_string = NULL;
 static int current_string_length = 0;
@@ -37,7 +38,7 @@ static int current_string_memory = 0;
 
 static void free_string(void)
 {
-    if (current_string) free(current_string);
+    if (current_string) bugle_free(current_string);
 }
 
 static void append_char(char ch)
@@ -50,7 +51,7 @@ static void append_char(char ch)
             current_string_memory = 64;
             atexit(free_string);
         }
-        current_string = xnrealloc(current_string, current_string_memory, sizeof(char));
+        current_string = bugle_nrealloc(current_string, current_string_memory, sizeof(char));
     }
     current_string[current_string_length - 1] = ch;
     current_string[current_string_length] = '\0';
@@ -67,8 +68,7 @@ static void clear_string(void)
 %x STRING_MODE
 %option never-interactive
 %option prefix="stats_yy"
-%option outfile="lex.yy.c"
-%option noyywrap
+%option nounistd
 
 %%
 
@@ -94,7 +94,7 @@ d|a|s|e|"{"|"}"|"+"|"-"|"*"|"/"|"="|"("|")" { return yytext[0]; }
 <STRING_MODE>\\\n	/* Do nothing */
 <STRING_MODE>\\.	{ append_char(yytext[1]); }
 <STRING_MODE>\"	{ BEGIN(INITIAL);
-			stats_yylval.str = xstrdup(current_string);
+			stats_yylval.str = bugle_strdup(current_string);
 			clear_string();
 			return ST_STRING; }
 <STRING_MODE><<EOF>>	{
@@ -104,3 +104,8 @@ d|a|s|e|"{"|"}"|"+"|"-"|"*"|"/"|"="|"("|")" { return yytext[0]; }
 <STRING_MODE>.	{ append_char(yytext[0]); }
 
 %%
+
+int stats_yywrap()
+{
+    return 1;
+}

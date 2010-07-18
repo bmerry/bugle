@@ -18,7 +18,7 @@
 #if HAVE_CONFIG_H
 # include <config.h>
 #endif
-#include <stdbool.h>
+#include <bugle/bool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
@@ -35,11 +35,11 @@
 static filter_set *error_handle = NULL;
 static GLenum (*bugle_gl_call_get_error_ptr)(object *) = NULL;
 
-bool bugle_gl_begin_internal_render(void)
+bugle_bool bugle_gl_begin_internal_render(void)
 {
     GLenum error;
 
-    if (bugle_gl_in_begin_end()) return false;
+    if (bugle_gl_in_begin_end()) return BUGLE_FALSE;
     /* FIXME: work with the error filterset to save the errors even
      * when the error filterset is not actively checking for errors.
      */
@@ -52,10 +52,10 @@ bool bugle_gl_begin_internal_render(void)
                   "Use the 'error' filterset to allow the application to see errors.");
         while ((error = CALL(glGetError)()) != GL_NO_ERROR);
     }
-    return true;
+    return BUGLE_TRUE;
 }
 
-void bugle_gl_end_internal_render(const char *name, bool warn)
+void bugle_gl_end_internal_render(const char *name, bugle_bool warn)
 {
     GLenum error;
     while ((error = CALL(glGetError)()) != GL_NO_ERROR)
@@ -76,7 +76,7 @@ void bugle_gl_end_internal_render(const char *name, bool warn)
     }
 }
 
-void bugle_gl_filter_catches_drawing_immediate(filter *f, bool inactive, filter_callback callback)
+void bugle_gl_filter_catches_drawing_immediate(filter *f, bugle_bool inactive, filter_callback callback)
 {
 #if BUGLE_GLTYPE_GL
     bugle_filter_catches(f, "glVertexAttrib1s", inactive, callback);
@@ -144,7 +144,7 @@ void bugle_gl_filter_catches_drawing_immediate(filter *f, bool inactive, filter_
 #endif /* BUGLE_GLTYPE_GL */
 }
 
-void bugle_gl_filter_catches_drawing(filter *f, bool inactive, filter_callback callback)
+void bugle_gl_filter_catches_drawing(filter *f, bugle_bool inactive, filter_callback callback)
 {
     bugle_gl_filter_catches_drawing_immediate(f, inactive, callback);
 
@@ -155,7 +155,7 @@ void bugle_gl_filter_catches_drawing(filter *f, bool inactive, filter_callback c
     bugle_filter_catches(f, "glMultiDrawArrays", inactive, callback);
 }
 
-bool bugle_gl_call_is_immediate(function_call *call)
+bugle_bool bugle_gl_call_is_immediate(function_call *call)
 {
 #if BUGLE_GLTYPE_GL
     switch (call->generic.group)
@@ -222,12 +222,12 @@ bool bugle_gl_call_is_immediate(function_call *call)
     case GROUP_glVertex4s:
     case GROUP_glVertex4sv:
     case GROUP_glArrayElement:
-        return true;
+        return BUGLE_TRUE;
     default:
-        return false;
+        return BUGLE_FALSE;
     }
 #else /* !BUGLE_GLTYPE_GL */
-    return false;
+    return BUGLE_FALSE;
 #endif
 }
 

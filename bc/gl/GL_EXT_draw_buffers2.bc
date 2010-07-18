@@ -1,2 +1,0 @@
-LENGTH PARAMETER glGet(Boolean|Integer|Float|Double)IndexedvEXT 2 bugle_count_gl($f, $0)
-DUMP PARAMETER glGet(Integer|Float|Double)IndexedvEXT 2 bugle_dump_convert($0, &$$, $t$, $B, $S)

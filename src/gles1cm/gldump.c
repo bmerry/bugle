@@ -34,11 +34,11 @@
 #include <bugle/filters.h>
 #include <bugle/log.h>
 #include <bugle/apireflect.h>
+#include <bugle/memory.h>
 #include <budgie/types.h>
 #include <budgie/reflect.h>
 #include <budgie/call.h>
 #include "budgielib/defines.h"
-#include "xalloc.h"
 
 budgie_type bugle_gl_type_to_type(GLenum gl_type)
 {
@@ -176,7 +176,7 @@ void dump_initialise(void)
 
     dump_table_size += 1; /* Manual extras */
 
-    dump_table = XNMALLOC(dump_table_size, dump_table_entry);
+    dump_table = BUGLE_NMALLOC(dump_table_size, dump_table_entry);
     cur = dump_table;
     for (t = all_state; *t; t++)
         for (s = *t; s->name; s++)
@@ -220,8 +220,8 @@ static const dump_table_entry *get_dump_table_entry(GLenum e)
     return ans ? ans : &def;
 }
 
-bool bugle_dump_convert(GLenum pname, const void *value,
-                        budgie_type in_type, char **buffer, size_t *size)
+bugle_bool bugle_dump_convert(GLenum pname, const void *value,
+                              budgie_type in_type, bugle_io_writer *writer)
 {
     const dump_table_entry *entry;
     budgie_type out_type;
@@ -232,7 +232,7 @@ bool bugle_dump_convert(GLenum pname, const void *value,
     budgie_type base_type;
 
     entry = get_dump_table_entry(pname);
-    if (entry->type == NULL_TYPE) return false;
+    if (entry->type == NULL_TYPE) return BUGLE_FALSE;
     out_type = entry->type;
 
     base_type = budgie_type_pointer_base(in_type);
@@ -247,14 +247,14 @@ bool bugle_dump_convert(GLenum pname, const void *value,
 
     length = entry->length;
     alength = (length == -1) ? 1 : length;
-    out_data = xnmalloc(alength, budgie_type_size(out_type));
+    out_data = bugle_nmalloc(alength, budgie_type_size(out_type));
     budgie_type_convert(out_data, out_type, in, in_type, alength);
     if (ptr)
-        budgie_dump_any_type_extended(out_type, out_data, -1, length, ptr, buffer, size);
+        budgie_dump_any_type_extended(out_type, out_data, -1, length, ptr, writer);
     else
-        budgie_dump_any_type(out_type, out_data, -1, buffer, size);
-    free(out_data);
-    return true;
+        budgie_dump_any_type(out_type, out_data, -1, writer);
+    bugle_free(out_data);
+    return BUGLE_TRUE;
 }
 
 int bugle_count_gl(budgie_function func, GLenum token)
@@ -274,7 +274,7 @@ size_t bugle_image_element_count(GLsizei width,
                                  GLsizei depth,
                                  GLenum format,
                                  GLenum type,
-                                 bool unpack)
+                                 bugle_bool unpack)
 {
     /* data from OpenGL state */
     GLint alignment = 4;

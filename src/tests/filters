@@ -1,0 +1,79 @@
+chain default
+{
+    filterset error
+}
+
+# Wireframe. We use this to test various things, mainly because it
+# loads up various other filtersets (trackbeginend, trackcontext, etc).
+chain wireframe
+{
+    filterset wireframe
+    filterset error
+}
+
+chain trace
+{
+    filterset log
+    {
+        format "%f.%e: %m"
+        stderr_level 0
+        stdout_level 4
+        flush yes
+    }
+    filterset trace
+    filterset error
+}
+
+chain triangles
+{
+    filterset logstats
+    {
+        show "triangles per frame"
+    }
+    filterset log
+    {
+        format "%f.%e: %m"
+        stdout_level 4
+        stderr_level 0
+        flush yes
+    }
+    filterset stats_primitives
+}
+
+chain checks
+{
+    filterset checks
+    filterset log
+    {
+        format "%f.%e: %m"
+        stderr_level 0
+        stdout_level 3
+        flush yes
+    }
+}
+
+chain showextensions
+{
+    filterset showextensions
+    filterset log
+    {
+        stdout_level 4
+        stderr_level 0
+    }
+}
+
+chain extoverride
+{
+    filterset extoverride
+    {
+        version "1.1"
+        disable "all"
+        enable "GL_EXT_texture"
+        enable "GLX_ARB_get_proc_address"
+    }
+    filterset log
+    {
+        stdout_level 4
+        stderr_level 0
+    }
+}

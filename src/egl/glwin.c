@@ -21,12 +21,12 @@
 
 #include <EGL/egl.h>
 #include <budgie/call.h>
-#include <stdbool.h>
+#include <bugle/bool.h>
+#include <bugle/memory.h>
 #include <string.h>
 #include <bugle/glwin/glwin.h>
 #include <bugle/apireflect.h>
 #include "budgielib/defines.h"
-#include "xalloc.h"
 
 glwin_display bugle_glwin_get_current_display(void)
 {
@@ -48,7 +48,7 @@ glwin_drawable bugle_glwin_get_current_read_drawable(void)
     return CALL(eglGetCurrentSurface)(EGL_READ);
 }
 
-bool bugle_glwin_make_context_current(glwin_display dpy, glwin_drawable draw,
+bugle_bool bugle_glwin_make_context_current(glwin_display dpy, glwin_drawable draw,
                                       glwin_drawable read, glwin_context ctx)
 {
     return CALL(eglMakeCurrent)(dpy, draw, read, ctx);
@@ -105,16 +105,16 @@ glwin_context_create *bugle_glwin_context_create_save(function_call *call)
         nattribs++;
     }
 
-    create = XMALLOC(glwin_context_create_egl);
+    create = BUGLE_MALLOC(glwin_context_create_egl);
     create->parent.dpy = *call->eglCreateContext.arg0;
     create->parent.function = call->generic.id;
     create->parent.group = call->generic.group;
     create->parent.ctx = ctx;
-    create->parent.share = false;
+    create->parent.share = BUGLE_FALSE;
     create->config = *call->eglCreateContext.arg1;
     if (attribs != NULL)
     {
-        create->attribs = XNMALLOC(nattribs, EGLint);
+        create->attribs = BUGLE_NMALLOC(nattribs, EGLint);
         memcpy(create->attribs, attribs, nattribs * sizeof(EGLint));
     }
     else
@@ -123,7 +123,7 @@ glwin_context_create *bugle_glwin_context_create_save(function_call *call)
     return (glwin_context_create *) create;
 }
 
-glwin_context bugle_glwin_context_create_new(const glwin_context_create *create, bool share)
+glwin_context bugle_glwin_context_create_new(const glwin_context_create *create, bugle_bool share)
 {
     glwin_context_create_egl *c;
 
@@ -136,22 +136,22 @@ glwin_context bugle_glwin_get_context_destroy(function_call *call)
     return *call->eglDestroyContext.arg1;
 }
 
-void bugle_glwin_filter_catches_create_context(filter *f, bool inactive, filter_callback callback)
+void bugle_glwin_filter_catches_create_context(filter *f, bugle_bool inactive, filter_callback callback)
 {
     bugle_filter_catches(f, "eglCreateContext", inactive, callback);
 }
 
-void bugle_glwin_filter_catches_destroy_context(filter *f, bool inactive, filter_callback callback)
+void bugle_glwin_filter_catches_destroy_context(filter *f, bugle_bool inactive, filter_callback callback)
 {
     bugle_filter_catches(f, "eglDestroyContext", inactive, callback);
 }
 
-void bugle_glwin_filter_catches_make_current(filter *f, bool inactive, filter_callback callback)
+void bugle_glwin_filter_catches_make_current(filter *f, bugle_bool inactive, filter_callback callback)
 {
     bugle_filter_catches(f, "eglMakeCurrent", inactive, callback);
 }
 
-void bugle_glwin_filter_catches_swap_buffers(filter *f, bool inactive, filter_callback callback)
+void bugle_glwin_filter_catches_swap_buffers(filter *f, bugle_bool inactive, filter_callback callback)
 {
     bugle_filter_catches(f, "eglSwapBuffers", inactive, callback);
 }
@@ -168,7 +168,7 @@ void bugle_function_address_initialise_extra(void)
          */
         if (bugle_api_function_extension(i) > BUGLE_API_EXTENSION_ID(GL_ES_VERSION_2_0))
         {
-            void (BUDGIEAPI *ptr)(void) = bugle_glwin_get_proc_address(budgie_function_name(i));
+            BUDGIEAPIPROC ptr = bugle_glwin_get_proc_address(budgie_function_name(i));
             if (ptr != NULL)
                 budgie_function_address_set_real(i, ptr);
         }

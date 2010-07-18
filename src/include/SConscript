@@ -1,0 +1,14 @@
+#!/usr/bin/env python
+
+Import('aspects', 'envs')
+
+for dir in [
+        'bugle',
+        'bugle/gl',
+        'bugle/glwin',
+        'bugle/egl',
+        'bugle/glx',
+        'bugle/wgl',
+        'budgie']:
+    envs['host'].Install(aspects['includedir'] + '/bugle/' + dir, source = Glob(dir + '/*.h'))
+Alias('install', aspects['includedir'])

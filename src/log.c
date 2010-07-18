@@ -1,5 +1,5 @@
 /*  BuGLe: an OpenGL debugging tool
- *  Copyright (C) 2004-2007  Bruce Merry
+ *  Copyright (C) 2004-2007, 2009-2010  Bruce Merry
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -18,32 +18,43 @@
 #if HAVE_CONFIG_H
 # include <config.h>
 #endif
-#define _POSIX_C_SOURCE 200112L /* for flockfile */
 #include <bugle/log.h>
 #include <bugle/filters.h>
-#include <stdbool.h>
-#include "common/threads.h"
+#include <bugle/memory.h>
+#include <bugle/string.h>
+#include <bugle/bool.h>
+#include "platform/threads.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdarg.h>
-#include <sys/types.h>
-#include <unistd.h>
 #include <assert.h>
-#include "xalloc.h"
 
-#define LOG_DEFAULT_FORMAT "[%l] %f.%e: %m" 
+#define LOG_DEFAULT_FORMAT "[%l] %f.%e: %m"
 
 /* Note: it is important for these to all have sensible initial values
- * (even though the format is later replaced by xstrdup), because errors in
+ * (even though the format is later replaced by bugle_strdup), because errors in
  * loading the config file are logged before the log filterset is initialised.
  */
 static char *log_filename = NULL;
 static char *log_format = LOG_DEFAULT_FORMAT;
-static bool log_flush = false;
+static bugle_bool log_flush = BUGLE_FALSE;
 static FILE *log_file = NULL;
-static long log_file_level = BUGLE_LOG_INFO + 1;
-static long log_stderr_level = BUGLE_LOG_NOTICE + 1;
+
+enum
+{
+    LOG_TARGET_STDOUT,
+    LOG_TARGET_STDERR,
+    LOG_TARGET_FILE,
+    LOG_TARGET_COUNT
+};
+
+static long log_levels[LOG_TARGET_COUNT] =
+{
+    0,
+    BUGLE_LOG_NOTICE + 1,
+    BUGLE_LOG_INFO + 1
+};
 
 static const char *log_level_names[] =
 {
@@ -56,17 +67,24 @@ static const char *log_level_names[] =
 
 static inline void log_start(FILE *f)
 {
-#ifdef _POSIX_THREAD_SAFE_FUNCTIONS
-    flockfile(f);
-#endif
+    bugle_flockfile(f);
 }
 
 static inline void log_end(FILE *f)
 {
     if (log_flush) fflush(f);
-#ifdef _POSIX_THREAD_SAFE_FUNCTIONS
-    funlockfile(f);
-#endif
+    bugle_funlockfile(f);
+}
+
+static FILE *log_get_file(int target)
+{
+    switch (target)
+    {
+    case LOG_TARGET_STDOUT: return stdout;
+    case LOG_TARGET_STDERR: return stderr;
+    case LOG_TARGET_FILE:   return log_file;
+    default: assert(0); return NULL;
+    }
 }
 
 /* Processes tokens from *format until it hits something it cannot
@@ -110,15 +128,13 @@ void bugle_log_callback(const char *filterset, const char *event, int severity,
 {
     int i;
 
-    for (i = 0; i < 2; i++)
+    for (i = 0; i < LOG_TARGET_COUNT; i++)
     {
         const char *format;
         int special;
-        FILE *f;
-        int level;
+        FILE *f = log_get_file(i);
+        int level = log_levels[i];
 
-        f = i ? stderr : log_file;
-        level = i ? log_stderr_level : log_file_level;
         if (!f || severity >= level) continue;
 
         log_start(f);
@@ -139,16 +155,14 @@ void bugle_log_printf(const char *filterset, const char *event, int severity,
 {
     int i;
 
-    for (i = 0; i < 2; i++)
+    for (i = 0; i < LOG_TARGET_COUNT; i++)
     {
         va_list ap;
         const char *format;
         int special;
-        FILE *f;
-        int level;
+        FILE *f = log_get_file(i);
+        int level = log_levels[i];
 
-        f = i ? stderr : log_file;
-        level = i ? log_stderr_level : log_file_level;
         if (!f || severity >= level) continue;
 
         log_start(f);
@@ -171,15 +185,13 @@ void bugle_log(const char *filterset, const char *event, int severity,
 {
     int i;
 
-    for (i = 0; i < 2; i++)
+    for (i = 0; i < LOG_TARGET_COUNT; i++)
     {
         const char *format;
         int special;
-        FILE *f;
-        int level;
+        FILE *f = log_get_file(i);
+        int level = log_levels[i];
 
-        f = i ? stderr : log_file;
-        level = i ? log_stderr_level : log_file_level;
         if (!f || severity >= level) continue;
 
         log_start(f);
@@ -195,7 +207,13 @@ void bugle_log(const char *filterset, const char *event, int severity,
     }
 }
 
-static bool log_filter_set_initialise(filter_set *handle)
+static void log_alloc_die(void)
+{
+    bugle_log("core", "alloc", BUGLE_LOG_ERROR, "memory allocation failed");
+    abort();
+}
+
+static bugle_bool log_filter_set_initialise(filter_set *handle)
 {
     if (log_filename)
     {
@@ -203,20 +221,22 @@ static bool log_filter_set_initialise(filter_set *handle)
         if (!log_file)
         {
             fprintf(stderr, "failed to open log file %s\n", log_filename);
-            return false;
+            return BUGLE_FALSE;
         }
     }
-    return true;
+    bugle_set_alloc_die(log_alloc_die);
+    return BUGLE_TRUE;
 }
 
 static void log_filter_set_shutdown(filter_set *handle)
 {
+    bugle_set_alloc_die(NULL);
     if (log_filename)
     {
         if (log_file) fclose(log_file);
-        free(log_filename);
+        bugle_free(log_filename);
     }
-    free(log_format);
+    bugle_free(log_format);
 }
 
 void log_initialise(void)
@@ -226,8 +246,9 @@ void log_initialise(void)
         { "filename", "filename of the log to write [none]", FILTER_SET_VARIABLE_STRING, &log_filename, NULL },
         { "flush", "flush log after every call [no]", FILTER_SET_VARIABLE_BOOL, &log_flush, NULL },
         { "format", "template for log lines [[%l] %f.%e: %m]", FILTER_SET_VARIABLE_STRING, &log_format, NULL },
-        { "file_level", "how much information to log to file [4] (0 is none, 5 is all)", FILTER_SET_VARIABLE_UINT, &log_file_level, NULL },
-        { "stderr_level", "how much information to log to stderr [3]", FILTER_SET_VARIABLE_UINT, &log_stderr_level, NULL },
+        { "file_level", "how much information to log to file [4] (0 is none, 5 is all)", FILTER_SET_VARIABLE_UINT, &log_levels[LOG_TARGET_FILE], NULL },
+        { "stderr_level", "how much information to log to stderr [3]", FILTER_SET_VARIABLE_UINT, &log_levels[LOG_TARGET_STDERR], NULL },
+        { "stdout_level", "how much information to log to stderr [0]", FILTER_SET_VARIABLE_UINT, &log_levels[LOG_TARGET_STDOUT], NULL },
         { NULL, NULL, 0, NULL, NULL }
     };
 
@@ -243,11 +264,5 @@ void log_initialise(void)
     };
 
     bugle_filter_set_new(&log_info);
-    log_format = xstrdup(LOG_DEFAULT_FORMAT);
-}
-
-void bugle_log_xalloc_die(void)
-{
-    bugle_log("core", "xalloc", BUGLE_LOG_ERROR, "memory allocation failed");
-    abort();
+    log_format = bugle_strdup(LOG_DEFAULT_FORMAT);
 }

@@ -1,5 +1,5 @@
 /*  BuGLe: an OpenGL debugging tool
- *  Copyright (C) 2004-2008  Bruce Merry
+ *  Copyright (C) 2004-2010  Bruce Merry
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -21,20 +21,20 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/time.h>
-#include <sys/types.h>
 #include <assert.h>
 #include <math.h>
+#include <bugle/memory.h>
+#include <bugle/string.h>
 #include <bugle/filters.h>
 #include <bugle/log.h>
 #include <bugle/input.h>
 #include <bugle/stats.h>
-#include "src/statsparse.h"
+#include <bugle/math.h>
+#include <bugle/string.h>
+#include <bugle/time.h>
+#include "statsparse.h"
 #include <bugle/hashtable.h>
-#include <stdbool.h>
-#include "xalloc.h"
-#include "xstrndup.h"
-#include "xvasprintf.h"
+#include <bugle/bool.h>
 
 #define STATISTICSFILE "/.bugle/statistics"
 
@@ -56,9 +56,9 @@ static hash_table stats_statistics_first;
 
 /*** Low-level utilities ***/
 
-static double time_elapsed(struct timeval *old, struct timeval *now)
+static double time_elapsed(bugle_timespec *old, bugle_timespec *now)
 {
-    return (now->tv_sec - old->tv_sec) + 1e-6 * (now->tv_usec - old->tv_usec);
+    return (now->tv_sec - old->tv_sec) + 1e-9 * (now->tv_nsec - old->tv_nsec);
 }
 
 /* Finds the named signal object. If it does not exist, NULL is returned. */
@@ -72,13 +72,13 @@ static stats_signal *stats_signal_get(const char *name)
  * activated.
  */
 stats_signal *bugle_stats_signal_new(const char *name, void *user_data,
-                                     bool (*activate)(stats_signal *))
+                                     bugle_bool (*activate)(stats_signal *))
 {
     stats_signal *si;
 
     assert(!stats_signal_get(name));
-    si = XZALLOC(stats_signal);
-    si->value = NAN;
+    si = BUGLE_ZALLOC(stats_signal);
+    si->value = bugle_nan();
     si->integral = 0.0;
     si->offset = -1;
     si->user_data = user_data;
@@ -117,7 +117,7 @@ double bugle_stats_expression_evaluate(const stats_expression *expr,
     case STATS_EXPRESSION_SIGNAL:
         /* Generate a NaN, and let good old IEEE 754 take care of propagating it. */
         if (!expr->signal)
-            return NAN;
+            return bugle_nan();
         switch (expr->op)
         {
         case STATS_OPERATION_DELTA:
@@ -133,15 +133,16 @@ double bugle_stats_expression_evaluate(const stats_expression *expr,
         }
     }
     abort(); /* Should never be reached */
+    return 0.0;  /* Unreachable, but keeps compilers quiet */
 }
 
 void bugle_stats_signal_update(stats_signal *si, double v)
 {
-    struct timeval now;
+    bugle_timespec now;
 
-    gettimeofday(&now, NULL);
+    bugle_gettime(&now);
     /* Integrate over time; a NaN indicates that this is the first time */
-    if (FINITE(si->value))
+    if (bugle_isfinite(si->value))
         si->integral += time_elapsed(&si->last_updated, &now) * si->value;
     si->value = v;
     si->last_updated = now;
@@ -150,17 +151,17 @@ void bugle_stats_signal_update(stats_signal *si, double v)
 /* Convenience for accumulating signals */
 void bugle_stats_signal_add(stats_signal *si, double dv)
 {
-    if (!FINITE(si->value))
+    if (!bugle_isfinite(si->value))
         bugle_stats_signal_update(si, dv);
     else
         bugle_stats_signal_update(si, si->value + dv);
 }
 
-static bool stats_signal_activate(stats_signal *si)
+static bugle_bool stats_signal_activate(stats_signal *si)
 {
     if (!si->active)
     {
-        si->active = true;
+        si->active = BUGLE_TRUE;
         if (si->activate)
             si->active = (*si->activate)(si);
         else
@@ -179,16 +180,16 @@ void bugle_stats_signal_values_init(stats_signal_values *sv)
     sv->allocated = 0;
     sv->values = NULL;
     sv->last_updated.tv_sec = 0;
-    sv->last_updated.tv_usec = 0;
+    sv->last_updated.tv_nsec = 0;
 }
 
 void bugle_stats_signal_values_clear(stats_signal_values *sv)
 {
-    free(sv->values);
+    bugle_free(sv->values);
     sv->values = NULL;
     sv->allocated = 0;
     sv->last_updated.tv_sec = 0;
-    sv->last_updated.tv_usec = 0;
+    sv->last_updated.tv_nsec = 0;
 }
 
 void bugle_stats_signal_values_gather(stats_signal_values *sv)
@@ -197,16 +198,16 @@ void bugle_stats_signal_values_gather(stats_signal_values *sv)
     linked_list_node *s;
     size_t i;
 
-    gettimeofday(&sv->last_updated, NULL);
+    bugle_gettime(&sv->last_updated);
 
     if (sv->allocated < stats_signals_num_active)
     {
         sv->allocated = stats_signals_num_active;
-        sv->values = xnrealloc(sv->values, stats_signals_num_active, sizeof(stats_signal_value));
+        sv->values = bugle_nrealloc(sv->values, stats_signals_num_active, sizeof(stats_signal_value));
     }
     /* Make sure that everything is initialised to an insane value (NaN) */
     for (i = 0; i < stats_signals_num_active; i++)
-        sv->values[i].value = sv->values[i].integral = NAN;
+        sv->values[i].value = sv->values[i].integral = bugle_nan();
     for (s = bugle_list_head(&stats_signals_active); s; s = bugle_list_next(s))
     {
         si = (stats_signal *) bugle_list_data(s);
@@ -216,7 +217,7 @@ void bugle_stats_signal_values_gather(stats_signal_values *sv)
             sv->values[si->offset].integral = si->integral;
             /* Have to update the integral from when the signal was updated
              * until this instant. */
-            if (FINITE(si->value))
+            if (bugle_isfinite(si->value))
                 sv->values[si->offset].integral +=
                     si->value * time_elapsed(&si->last_updated,
                                              &sv->last_updated);
@@ -226,18 +227,18 @@ void bugle_stats_signal_values_gather(stats_signal_values *sv)
 
 /* Calls the callback function for each signal sub-expression in the
  * expression. The return value is the AND of the return values of all
- * the callbacks. If shortcut is true, the function returns as soon as
- * any callback return false, without calling the rest.
+ * the callbacks. If shortcut is BUGLE_TRUE, the function returns as soon as
+ * any callback return BUGLE_FALSE, without calling the rest.
  */
-static bool stats_expression_forall(stats_expression *expr, bool shortcut,
-                                    bool (*callback)(stats_expression *, void *),
-                                    void *arg)
+static bugle_bool stats_expression_forall(stats_expression *expr, bugle_bool shortcut,
+                                          bugle_bool (*callback)(stats_expression *, void *),
+                                          void *arg)
 {
-    bool ans;
+    bugle_bool ans;
     switch (expr->type)
     {
     case STATS_EXPRESSION_NUMBER:
-        return true;
+        return BUGLE_TRUE;
     case STATS_EXPRESSION_OPERATION:
         ans = stats_expression_forall(expr->left, shortcut, callback, arg);
         if (shortcut && !ans) return ans;
@@ -247,11 +248,11 @@ static bool stats_expression_forall(stats_expression *expr, bool shortcut,
     case STATS_EXPRESSION_SIGNAL:
         return callback(expr, arg);
     }
-    return false;  /* should never be reached */
+    return BUGLE_FALSE;  /* should never be reached */
 }
 
 /* Callback for stats_expression_activate_signals */
-static bool stats_expression_activate_signals1(stats_expression *expr, void *arg)
+static bugle_bool stats_expression_activate_signals1(stats_expression *expr, void *arg)
 {
     expr->signal = stats_signal_get(expr->signal_name);
     if (!expr->signal)
@@ -259,34 +260,34 @@ static bool stats_expression_activate_signals1(stats_expression *expr, void *arg
         bugle_log_printf("stats", "expression", BUGLE_LOG_WARNING,
                          "Signal %s is not registered - missing filter-set?",
                          expr->signal_name);
-        return false;
+        return BUGLE_FALSE;
     }
     return stats_signal_activate(expr->signal);
 }
 
 /* Initialises and activates all signals that this expression depends on.
- * It returns true if they were successfully activated, or false if any
+ * It returns BUGLE_TRUE if they were successfully activated, or BUGLE_FALSE if any
  * failed to activate or were unregistered.
  */
-bool bugle_stats_expression_activate_signals(stats_expression *expr)
+bugle_bool bugle_stats_expression_activate_signals(stats_expression *expr)
 {
-    return stats_expression_forall(expr, false, stats_expression_activate_signals1, NULL);
+    return stats_expression_forall(expr, BUGLE_FALSE, stats_expression_activate_signals1, NULL);
 }
 
 /* Checks whether this signal_name does NOT contain a *. This is because
  * the forall takes an AND rather than an OR. If the signal is generic, it
  * copies a pointer to the name into the arg, if not already present.
  */
-static bool stats_expression_generic1(stats_expression *expr, void *arg)
+static bugle_bool stats_expression_generic1(stats_expression *expr, void *arg)
 {
     if (strchr(expr->signal_name, '*') != NULL)
     {
         char **out;
         out = (char **) arg;
         if (!*out) *out = expr->signal_name;
-        return false;
+        return BUGLE_FALSE;
     }
-    else return true;
+    else return BUGLE_TRUE;
 }
 
 /* If the expression is generic, returns a pointer to a generic signal name
@@ -295,7 +296,7 @@ static bool stats_expression_generic1(stats_expression *expr, void *arg)
 static char *stats_expression_generic(stats_expression *expr)
 {
     char *generic_name = NULL;
-    stats_expression_forall(expr, true, stats_expression_generic1, &generic_name);
+    stats_expression_forall(expr, BUGLE_TRUE, stats_expression_generic1, &generic_name);
     return generic_name;
 }
 
@@ -309,10 +310,10 @@ static char *pattern_replace(const char *pattern, const char *rep)
     char *full;
 
     wildcard = strchr(pattern, '*');
-    if (!wildcard) return xstrdup(pattern);
+    if (!wildcard) return bugle_strdup(pattern);
     l_pattern = strlen(pattern);
     l_rep = strlen(rep);
-    full = XNMALLOC(l_pattern + l_rep, char);
+    full = BUGLE_NMALLOC(l_pattern + l_rep, char);
     memcpy(full, pattern, wildcard - pattern);
     memcpy(full + (wildcard - pattern), rep, l_rep);
     strcpy(full + (wildcard - pattern) + l_rep, wildcard + 1);
@@ -320,7 +321,7 @@ static char *pattern_replace(const char *pattern, const char *rep)
 }
 
 /* Checks whether instance matches pattern, where the first * is a wildcard. */
-static bool pattern_match(const char *pattern, const char *instance)
+static bugle_bool pattern_match(const char *pattern, const char *instance)
 {
     char *wildcard;
     size_t l_pattern, l_instance;
@@ -332,14 +333,14 @@ static bool pattern_match(const char *pattern, const char *instance)
 
     l_pattern = strlen(pattern);
     l_instance = strlen(instance);
-    if (l_instance + 1 < l_pattern) return false;  /* instance too short */
+    if (l_instance + 1 < l_pattern) return BUGLE_FALSE;  /* instance too short */
     size1 = wildcard - pattern;
     size2 = l_pattern - 1 - size1;
     return memcmp(pattern, instance, size1) == 0
         && memcmp(wildcard + 1, instance + l_instance - size2, size2) == 0;
 }
 
-/* Assumes that pattern_match is true, and returns the string that is the
+/* Assumes that pattern_match is BUGLE_TRUE, and returns the string that is the
  * substitution for the *. The caller must free the memory.
  */
 static char *pattern_match_rep(const char *pattern, const char *instance)
@@ -351,21 +352,21 @@ static char *pattern_match_rep(const char *pattern, const char *instance)
     wildcard = strchr(pattern, '*');
     l_pattern = strlen(pattern);
     l_instance = strlen(instance);
-    return xstrndup(instance + (wildcard - pattern), l_instance + 1 - l_pattern);
+    return bugle_strndup(instance + (wildcard - pattern), l_instance + 1 - l_pattern);
 }
 
 /* For a generic expression, checks whether substituting arg (a char *)
  * will yield a registered expression.
  */
-static bool stats_expression_match1(stats_expression *expr, void *arg)
+static bugle_bool stats_expression_match1(stats_expression *expr, void *arg)
 {
     char *full;
-    bool found;
+    bugle_bool found;
 
-    if (!strchr(expr->signal_name, '*')) return true; /* Not a generic */
+    if (!strchr(expr->signal_name, '*')) return BUGLE_TRUE; /* Not a generic */
     full = pattern_replace(expr->signal_name, (const char *) arg);
     found = stats_signal_get(full) != NULL;
-    free(full);
+    bugle_free(full);
     return found;
 }
 
@@ -375,7 +376,7 @@ static stats_expression *stats_expression_instantiate(stats_expression *base, co
     stats_expression *n;
 
     assert(base);
-    n = XMALLOC(stats_expression);
+    n = BUGLE_MALLOC(stats_expression);
     *n = *base;
     switch (base->type)
     {
@@ -406,10 +407,10 @@ static void stats_expression_free(stats_expression *expr)
         if (expr->right) stats_expression_free(expr->right);
         break;
     case STATS_EXPRESSION_SIGNAL:
-        free(expr->signal_name);
+        bugle_free(expr->signal_name);
         break;
     }
-    free(expr);
+    bugle_free(expr);
 }
 
 stats_substitution *bugle_stats_statistic_find_substitution(stats_statistic *st, double v)
@@ -427,11 +428,11 @@ stats_substitution *bugle_stats_statistic_find_substitution(stats_statistic *st,
 
 void stats_statistic_free(stats_statistic *st)
 {
-    free(st->name);
+    bugle_free(st->name);
     stats_expression_free(st->value);
-    free(st->label);
+    bugle_free(st->label);
     bugle_list_clear(&st->substitutions);
-    free(st);
+    bugle_free(st);
 }
 
 static stats_statistic *stats_statistic_instantiate(stats_statistic *st, const char *rep)
@@ -439,19 +440,19 @@ static stats_statistic *stats_statistic_instantiate(stats_statistic *st, const c
     stats_statistic *n;
     linked_list_node *i;
 
-    n = XMALLOC(stats_statistic);
+    n = BUGLE_MALLOC(stats_statistic);
     *n = *st;
-    n->name = xstrdup(n->name);
+    n->name = bugle_strdup(n->name);
     n->label = pattern_replace(n->label, rep);
     n->value = stats_expression_instantiate(st->value, rep);
-    n->last = false;
+    n->last = BUGLE_FALSE;
 
-    bugle_list_init(&n->substitutions, free);
+    bugle_list_init(&n->substitutions, bugle_free);
     for (i = bugle_list_head(&st->substitutions); i; i = bugle_list_next(i))
     {
         stats_substitution *su_old, *su_new;
         su_old = bugle_list_data(i);
-        su_new = XMALLOC(stats_substitution);
+        su_new = BUGLE_MALLOC(stats_substitution);
         *su_new = *su_old;
         su_new->replacement = pattern_replace(su_old->replacement, rep);
         bugle_list_append(&n->substitutions, su_new);
@@ -484,25 +485,25 @@ void bugle_stats_statistic_list(void)
 /*** stats filterset ***/
 
 /* Reads the statistics configuration file. On error, prints a message
- * to the log and returns false.
+ * to the log and returns BUGLE_FALSE.
  */
-static bool stats_load_config(void)
+static bugle_bool stats_load_config(void)
 {
     const char *home;
     char *config = NULL;
 
     if (getenv("BUGLE_STATISTICS"))
-        config = xstrdup(getenv("BUGLE_STATISTICS"));
+        config = bugle_strdup(getenv("BUGLE_STATISTICS"));
     home = getenv("HOME");
     if (!config && !home)
     {
         bugle_log("stats", "config", BUGLE_LOG_ERROR,
                   "$HOME is not set; please set $HOME or $BUGLE_STATISTICS");
-        return false;
+        return BUGLE_FALSE;
     }
     if (!config)
     {
-        config = XNMALLOC(strlen(home) + strlen(STATISTICSFILE) + 1, char);
+        config = BUGLE_NMALLOC(strlen(home) + strlen(STATISTICSFILE) + 1, char);
         sprintf(config, "%s%s", home, STATISTICSFILE);
     }
     if ((stats_yyin = fopen(config, "r")) != NULL)
@@ -510,42 +511,42 @@ static bool stats_load_config(void)
         if (stats_yyparse() == 0)
         {
             stats_statistics = stats_statistics_get_list();
-            free(config);
-            return true;
+            bugle_free(config);
+            return BUGLE_TRUE;
         }
         else
         {
             bugle_log_printf("stats", "config", BUGLE_LOG_ERROR,
                              "Parse error in %s", config);
-            free(config);
-            return false;
+            bugle_free(config);
+            return BUGLE_FALSE;
         }
     }
     else
     {
         bugle_log_printf("stats", "config", BUGLE_LOG_ERROR,
                          "Failed to open %s", config);
-        free(config);
-        return false;
+        bugle_free(config);
+        return BUGLE_FALSE;
     }
 }
 
-static bool stats_initialise(filter_set *handle)
+static bugle_bool stats_initialise(filter_set *handle)
 {
-    bugle_hash_init(&stats_signals, free);
+    bugle_hash_init(&stats_signals, bugle_free);
     bugle_list_init(&stats_signals_active, NULL);
     bugle_hash_init(&stats_statistics_first, NULL);
-    return true;
+    return BUGLE_TRUE;
 }
 
 /* Replaces each generic statistic from the config file with one or more
  * instances, and sets up stats_statistics_first.
  */
-static bool stats_ordering_initialise(filter_set *handle)
+static bugle_bool stats_ordering_initialise(filter_set *handle)
 {
     linked_list_node *i, *first, *last, *tmp;
 
-    if (!stats_load_config()) return false;
+    if (!stats_load_config()) return BUGLE_FALSE;
 
     /* We don't do i = bugle_list_next(i) here, because if we have a
      * pattern with no instances then we have to do the iteration before
@@ -573,14 +574,14 @@ static bool stats_ordering_initialise(filter_set *handle)
                     stats_statistic *n;
 
                     rep = pattern_match_rep(pattern, j->key);
-                    if (stats_expression_forall(st->value, true,
+                    if (stats_expression_forall(st->value, BUGLE_TRUE,
                                                 stats_expression_match1, rep))
                     {
                         n = stats_statistic_instantiate(st, rep);
                         i = bugle_list_insert_after(stats_statistics, i, n);
                         count++;
                     }
-                    free(rep);
+                    bugle_free(rep);
                 }
             }
 
@@ -598,7 +599,7 @@ static bool stats_ordering_initialise(filter_set *handle)
             st = bugle_list_data(first);
             bugle_hash_set(&stats_statistics_first, st->name, first);
             st = bugle_list_data(last);
-            st->last = true;
+            st->last = BUGLE_TRUE;
         }
     }
 
@@ -607,7 +608,7 @@ static bool stats_ordering_initialise(filter_set *handle)
      * generator modules (stats_basic etc).
      */
     bugle_filter_new(handle, "stats_ordering");
-    return true;
+    return BUGLE_TRUE;
 }
 
 static void stats_shutdown(filter_set *handle)

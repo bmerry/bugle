@@ -1,9 +1,0 @@
-HEADER windows.h
-HEADER GL/wglext.h
-HEADER bugle/glwin/glwintypes.h
-LIMIT wgl.*
-
-TYPE TYPE HDC TYPE_P6GLvoid
-TYPE TYPE HGLRC TYPE_P6GLvoid
-TYPE TYPE HWND TYPE_P6GLvoid
-TYPE TYPE HBITMAP TYPE_P6GLvoid

@@ -1,0 +1,6 @@
+@LIBRARIES@
+@CALLAPI@
+
+INCLUDE bc/@GLWIN@/@GLWIN@.bc
+INCLUDE bc/@GLTYPE@/@GLTYPE@.bc
+INCLUDE bc/alias.bc

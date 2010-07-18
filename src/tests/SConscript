@@ -1,0 +1,179 @@
+#!/usr/bin/env python
+import tempfile
+from subprocess import *
+import sys
+import os
+import re
+import BugleChecks
+
+Import('envs', 'aspects', 'targets', 'libraries', 'srcdir')
+
+class TestFailed(Exception):
+    def __init__(self, value):
+        Exception.__init__(self, value)
+
+def run_log_test(target, testprog, env, name, chain):
+    (handle, logfile) = tempfile.mkstemp('.log')
+    reflog = None
+    try:
+        try:
+            os.close(handle)
+            env = dict([(key, str(value)) for (key, value) in env['ENV'].items()])
+            env['LD_PRELOAD'] = 'libbugle.so'
+            env['BUGLE_CHAIN'] = chain
+            sp = Popen([testprog[0].abspath, '--test', name, '--log', logfile],
+                    stdout = PIPE, env = env)
+            (out, err) = sp.communicate()
+            errcode = sp.wait()
+            if errcode != 0:
+                raise TestFailed, 'exit code ' + str(errcode)
+
+            lines = out.splitlines()
+            if len(lines) == 0:
+                raise TestFailed, 'no standard output'
+            # Some filters output logging on shutdown, AFTER the status is
+            # written, so look for status anywhere
+            statuses = []
+            for i in range(len(lines)):
+                if lines[i] == 'SKIPPED':
+                    print "SKIPPED Test `" + name + "'"
+                    return
+                elif lines[i] == 'FAILED':
+                    raise TestFailed, ''
+                elif lines[i] == 'RAN':
+                    statuses.append(i)
+            if len(statuses) != 1:
+                raise TestFailed, 'Got %d status lines, expected 1' % len(statuses)
+            del lines[statuses[0]]
+
+            reflog = file(logfile, 'r')
+            reflines = reflog.readlines()
+            reflines = ['^' + x.rstrip('\r\n') + '$' for x in reflines]
+            if len(reflines) == 0:
+                raise TestFailed, 'no reference output'
+            # There will be some startup stuff not in the log
+            while len(lines) > 0 and not re.match(reflines[0], lines[0]):
+                del lines[0]
+            if len(lines) == 0:
+                raise TestFailed, 'did not match ' + reflines[0] + ' at line 1'
+            if len(lines) < len(reflines):
+                raise TestFailed, 'not enough output'
+            for i in range(len(reflines)):
+                if not re.match(reflines[i], lines[i]):
+                    raise TestFailed, "`" + lines[i] + "' did not match `" + reflines[i] + "' at line " + str(i + 1)
+
+            print "PASSED  Test `" + name + "'"
+        except TestFailed, (msg,):
+            if msg != '':
+                msg = ' (' + msg + ')'
+            print "FAILED  Test `" + name + "'" + msg
+    finally:
+        if reflog is not None:
+            reflog.close()
+        os.remove(logfile)
+
+def make_log_test(name, chain):
+    def action(target, source, env):
+        return run_log_test(target, source, env, name, chain)
+    return action
+
+def simple_test(name):
+    return test_env.Program(
+            target = name,
+            source = [name + '.c'])
+
+if 'tests' not in aspects['parts']:
+    Return()
+
+test_env = envs['host'].Clone()
+plain_tests = ['string', 'math', 'threads']
+log_tests = []
+simple_tests = []
+test_deps = []
+test_sources = ['test.c']
+bugle_path = os.path.dirname(targets['bugle'].out[0].abspath)
+
+if 'interceptor' not in aspects['parts']:
+    print 'WARNING: cannot run some tests without interceptor. They will be skipped'
+else:
+    if aspects['gltype'] == 'gl':
+        glew_lib = False
+        glut_lib = False
+        glu_lib = False
+
+        conf = Configure(test_env, custom_tests = BugleChecks.tests)
+        if conf.CheckLibWithHeader('GLEW', 'GL/glew.h', 'c', autoadd = False):
+            glew_lib = 'GLEW'
+        elif conf.CheckLibWithHeader('glew32', 'GL/glew.h', 'c', autoadd = False):
+            glew_lib = 'glew32'
+        if conf.CheckLibWithHeader('glut', 'GL/glut.h', 'c', autoadd = False):
+            glut_lib = 'glut'
+        elif conf.CheckLibWithHeader('glut32', 'GL/glut.h', 'c', autoadd = False):
+            glut_lib = 'glut32'
+        if conf.CheckLibWithHeader('GLU', ['GL/glut.h', 'GL/glu.h'], 'c', autoadd = False):
+            glu_lib = 'GLU'
+        elif conf.CheckLibWithHeader('glu32', ['GL/glut.h', 'GL/glu.h'], 'c', autoadd = False):
+            glu_lib = 'GLU32'
+
+        use_gl = glew_lib and glut_lib and glu_lib
+        if use_gl:
+            conf.env.Append(LIBS = [glew_lib, glut_lib, glu_lib])
+            test_env = conf.Finish()
+
+            test_env.Append(LIBS = libraries)
+            test_env.Append(CPPDEFINES = ['TEST_GL'])
+            test_env['ENV']['BUGLE_FILTER_DIR'] = os.path.join(bugle_path, 'filters')
+            test_env['ENV']['BUGLE_FILTERS'] = srcdir.File('filters').abspath
+
+            test_deps.append(targets['bugle'].out)
+            plain_tests.extend([
+                    'errors',
+                    'interpose',
+                    'procaddress'])
+            log_tests.extend([
+                    ('extoverride', 'extoverride'),
+                    ('pbo', 'trace'),
+                    ('queries', 'trace'),
+                    ('setstate', 'trace'),
+                    ('showextensions', 'showextensions'),
+                    ('triangles', 'triangles')])
+            if aspects['platform'] == 'posix':
+                log_tests.extend([
+                        ('dlopen', 'trace'),
+                        ('pointers', 'checks'),
+                        ('texcomplete', 'checks')])
+            simple_test('objects')
+            simple_test('shadertest')
+            simple_test('textest')
+            if aspects['glwin'] == 'glx':
+                simple_test('threads1')
+                simple_test('threads2')
+        else:
+            print 'WARNING: GLEW, GLUT and GLU are required for some tests'
+    else:
+        print 'WARNING: not all tests run on this variant of OpenGL'
+
+test_env.AppendENVPath('LD_LIBRARY_PATH', bugle_path) # For Linux
+test_env.AppendENVPath('PATH', bugle_path)            # For Windows
+
+test_sources += [x + '.c' for x in plain_tests]
+test_sources += [x[0] + '.c' for x in log_tests]
+bugletest = test_env.Program(
+        target = 'bugletest',
+        source = test_sources + targets['bugleutils'].out)
+
+test = test_env.Command(Value(''), bugletest, '${SOURCE.path}')
+test_env.Depends(test, test_deps)
+test_env.AlwaysBuild(test)
+test_env.Alias('test', test)
+
+for name, chain in log_tests:
+    message = None
+    if aspects['quiet'] == 'no':
+        message = 'Running test %s' % (name,)
+    test = test_env.Command(Value(''), bugletest,
+            Action(make_log_test(name, chain), message))
+    test_env.Depends(test, test_deps)
+    test_env.Depends(test, '../filters')
+    test_env.AlwaysBuild(test)
+    test_env.Alias('test', test)

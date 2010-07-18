@@ -36,6 +36,20 @@ chain showfps
     }
 }
 
+# Log FPS stats to bugle.log
+chain logfps
+{
+    filterset stats_basic
+    filterset logstats
+    {
+        show "frames per second"
+    }
+    filterset log
+    {
+        filename "bugle.log"
+    }
+}
+
 # Show assorted stats. This is just an example; see the statistics
 # example file to see what statistics are available.
 chain showstats

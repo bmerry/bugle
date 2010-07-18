@@ -18,7 +18,7 @@
 #if HAVE_CONFIG_H
 # include <config.h>
 #endif
-#include <stdbool.h>
+#include <bugle/bool.h>
 #include <bugle/hashtable.h>
 #include <assert.h>
 #include <stddef.h>
@@ -28,12 +28,12 @@
 #include <bugle/glwin/trackcontext.h>
 #include <bugle/filters.h>
 #include <bugle/objects.h>
+#include <bugle/memory.h>
 #include <bugle/log.h>
 #include <budgie/types.h>
 #include <budgie/addresses.h>
 #include "budgielib/defines.h"
-#include "xalloc.h"
-#include "lock.h"
+#include "platform/threads.h"
 
 /* Some constructors like the context to be current when they are run.
  * To facilitate this, the object is not constructed until the first
@@ -42,12 +42,12 @@
  * a trackcontext_data struct in the initial_values hash.
  */
 
-object_class *bugle_context_class;
-object_class *bugle_namespace_class;
+static object_class *bugle_context_class;
+static object_class *bugle_namespace_class;
 static hashptr_table context_objects, namespace_objects;
 static hashptr_table initial_values;
 static object_view trackcontext_view;
-gl_lock_define_initialized(static, context_mutex)
+static bugle_thread_lock_t context_mutex;
 
 typedef struct
 {
@@ -252,7 +252,7 @@ void bugle_gl_text_render(const char *msg, int x, int y)
 }
 #endif
 
-static bool trackcontext_newcontext(function_call *call, const callback_data *data)
+static bugle_bool trackcontext_newcontext(function_call *call, const callback_data *data)
 {
     trackcontext_data *base, *up;
     glwin_context_create *create;
@@ -261,9 +261,9 @@ static bool trackcontext_newcontext(function_call *call, const callback_data *da
 
     if (create)
     {
-        gl_lock_lock(context_mutex);
+        bugle_thread_lock_lock(&context_mutex);
 
-        base = XZALLOC(trackcontext_data);
+        base = BUGLE_ZALLOC(trackcontext_data);
         base->aux_shared = NULL;
         base->aux_unshared = NULL;
         base->create = create;
@@ -281,13 +281,13 @@ static bool trackcontext_newcontext(function_call *call, const callback_data *da
         }
 
         bugle_hashptr_set(&initial_values, create->ctx, base);
-        gl_lock_unlock(context_mutex);
+        bugle_thread_lock_unlock(&context_mutex);
     }
 
-    return true;
+    return BUGLE_TRUE;
 }
 
-static bool trackcontext_callback(function_call *call, const callback_data *data)
+static bugle_bool trackcontext_callback(function_call *call, const callback_data *data)
 {
     glwin_context ctx;
     object *obj, *ns;
@@ -301,11 +301,11 @@ static bool trackcontext_callback(function_call *call, const callback_data *data
         bugle_object_set_current(bugle_context_class, NULL);
     else
     {
-        gl_lock_lock(context_mutex);
+        bugle_thread_lock_lock(&context_mutex);
         obj = bugle_hashptr_get(&context_objects, ctx);
         if (!obj)
         {
-            obj = bugle_object_new(bugle_context_class, ctx, true);
+            obj = bugle_object_new(bugle_context_class, ctx, BUGLE_TRUE);
             bugle_hashptr_set(&context_objects, ctx, obj);
             initial = bugle_hashptr_get(&initial_values, ctx);
             if (initial == NULL)
@@ -321,7 +321,7 @@ static bool trackcontext_callback(function_call *call, const callback_data *data
                 ns = bugle_hashptr_get(&namespace_objects, view->root_context);
                 if (!ns)
                 {
-                    ns = bugle_object_new(bugle_namespace_class, ctx, true);
+                    ns = bugle_object_new(bugle_namespace_class, ctx, BUGLE_TRUE);
                     bugle_hashptr_set(&namespace_objects, ctx, ns);
                 }
                 else
@@ -330,12 +330,12 @@ static bool trackcontext_callback(function_call *call, const callback_data *data
         }
         else
             bugle_object_set_current(bugle_context_class, obj);
-        gl_lock_unlock(context_mutex);
+        bugle_thread_lock_unlock(&context_mutex);
     }
-    return true;
+    return BUGLE_TRUE;
 }
 
-static bool trackcontext_destroycontext(function_call *call, const callback_data *data)
+static bugle_bool trackcontext_destroycontext(function_call *call, const callback_data *data)
 {
     object *obj;
     glwin_context ctx;
@@ -345,7 +345,7 @@ static bool trackcontext_destroycontext(function_call *call, const callback_data
     ctx = bugle_glwin_get_context_destroy(call);
     if (ctx)
         bugle_hashptr_set(&context_objects, ctx, NULL);
-    return true;
+    return BUGLE_TRUE;
 }
 
 static void trackcontext_data_clear(void *data)
@@ -364,10 +364,10 @@ static void trackcontext_data_clear(void *data)
     if (d->aux_shared) CALL(glXDestroyContext)(d->dpy, d->aux_shared);
     if (d->aux_unshared) CALL(glXDestroyContext)(d->dpy, d->aux_unshared);
 #endif
-    free(d->create);
+    bugle_free(d->create);
 }
 
-static bool trackcontext_filter_set_initialise(filter_set *handle)
+static bugle_bool trackcontext_filter_set_initialise(filter_set *handle)
 {
     filter *f;
 
@@ -375,22 +375,22 @@ static bool trackcontext_filter_set_initialise(filter_set *handle)
     bugle_namespace_class = bugle_object_class_new(bugle_context_class);
     bugle_hashptr_init(&context_objects, (void (*)(void *)) bugle_object_free);
     bugle_hashptr_init(&namespace_objects, (void (*)(void *)) bugle_object_free);
-    bugle_hashptr_init(&initial_values, free);
+    bugle_hashptr_init(&initial_values, bugle_free);
 
     f = bugle_filter_new(handle, "trackcontext");
     bugle_filter_order("invoke", "trackcontext");
-    bugle_glwin_filter_catches_make_current(f, true, trackcontext_callback);
-    bugle_glwin_filter_catches_create_context(f, true, trackcontext_newcontext);
+    bugle_glwin_filter_catches_make_current(f, BUGLE_TRUE, trackcontext_callback);
+    bugle_glwin_filter_catches_create_context(f, BUGLE_TRUE, trackcontext_newcontext);
 
     f = bugle_filter_new(handle, "trackcontext_destroy");
     bugle_filter_order("trackcontext_destroy", "invoke");
-    bugle_glwin_filter_catches_destroy_context(f, true, trackcontext_destroycontext);
+    bugle_glwin_filter_catches_destroy_context(f, BUGLE_TRUE, trackcontext_destroycontext);
 
     trackcontext_view = bugle_object_view_new(bugle_context_class,
                                               NULL,
                                               trackcontext_data_clear,
                                               sizeof(trackcontext_data));
-    return true;
+    return BUGLE_TRUE;
 }
 
 static void trackcontext_filter_set_shutdown(filter_set *handle)
@@ -402,7 +402,7 @@ static void trackcontext_filter_set_shutdown(filter_set *handle)
     bugle_object_class_free(bugle_context_class);
 }
 
-glwin_context bugle_get_aux_context(bool shared)
+glwin_context bugle_get_aux_context(bugle_bool shared)
 {
     trackcontext_data *data;
     glwin_context old_ctx, ctx;
@@ -424,6 +424,17 @@ glwin_context bugle_get_aux_context(bool shared)
     return *aux;
 }
 
+object_class *bugle_get_context_class(void)
+{
+    assert(bugle_context_class != NULL);
+    return bugle_context_class;
+}
+
+object_class *bugle_get_namespace_class(void)
+{
+    assert(bugle_namespace_class != NULL);
+    return bugle_namespace_class;
+}
 
 void trackcontext_initialise(void)
 {
@@ -438,5 +449,6 @@ void trackcontext_initialise(void)
         NULL /* No documentation */
     };
 
+    bugle_thread_lock_init(&context_mutex);
     bugle_filter_set_new(&trackcontext_info);
 }

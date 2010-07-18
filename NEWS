@@ -1,3 +1,11 @@
+0.0.20100718
+------------
+The build system has been replaced SCons. While there are few new features,
+this is a major restructuring of the internals. Many bugs have been fixed
+and portability has been improved (in particular, BuGLe can now be built with
+Visual C++ Express 2008), although it is likely that new bugs have been
+introduced.
+
 0.0.20100508
 ------------
 This release just fixes some compilation problems and errors related to

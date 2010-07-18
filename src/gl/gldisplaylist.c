@@ -1,5 +1,5 @@
 /*  BuGLe: an OpenGL debugging tool
- *  Copyright (C) 2004-2006, 2008  Bruce Merry
+ *  Copyright (C) 2004-2006, 2008, 2010  Bruce Merry
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -18,12 +18,13 @@
 #if HAVE_CONFIG_H
 # include <config.h>
 #endif
-#include <stdbool.h>
+#include <bugle/bool.h>
 #include <stddef.h>
 #include <string.h>
 #include <stdlib.h>
 #include <bugle/filters.h>
 #include <bugle/objects.h>
+#include <bugle/memory.h>
 #include <bugle/glwin/trackcontext.h>
 #include <bugle/gl/glheaders.h>
 #include <bugle/gl/gldisplaylist.h>
@@ -31,12 +32,12 @@
 #include <bugle/gl/glutils.h>
 #include <bugle/hashtable.h>
 #include <budgie/call.h>
-#include "lock.h"
+#include "platform/threads.h"
 
-object_class *bugle_displaylist_class;
+static object_class *bugle_displaylist_class;
 
 #if GL_VERSION_1_1
-gl_lock_define_initialized(static, displaylist_lock)
+static bugle_thread_lock_t displaylist_lock;
 static object_view displaylist_view;
 static object_view namespace_view;   /* handle of the hash table */
 
@@ -48,7 +49,7 @@ typedef struct
 
 static void namespace_init(const void *key, void *data)
 {
-    bugle_hashptr_init((hashptr_table *) data, free);
+    bugle_hashptr_init((hashptr_table *) data, bugle_free);
 }
 
 static void namespace_clear(void *data)
@@ -84,34 +85,34 @@ void *bugle_displaylist_get(GLuint list)
     void *ans = NULL;
     hashptr_table *objects;
 
-    gl_lock_lock(displaylist_lock);
-    objects = bugle_object_get_current_data(bugle_namespace_class, namespace_view);
+    bugle_thread_lock_lock(&displaylist_lock);
+    objects = bugle_object_get_current_data(bugle_get_namespace_class(), namespace_view);
     if (objects) ans = bugle_hashptr_get(objects, (void *) (size_t) list);
-    gl_lock_unlock(displaylist_lock);
+    bugle_thread_lock_unlock(&displaylist_lock);
     return ans;
 }
 
-static bool gldisplaylist_glNewList(function_call *call, const callback_data *data)
+static bugle_bool gldisplaylist_glNewList(function_call *call, const callback_data *data)
 {
     displaylist_struct info;
     object *obj;
     GLint value;
 
-    if (bugle_displaylist_list()) return true; /* Nested call */
+    if (bugle_displaylist_list()) return BUGLE_TRUE; /* Nested call */
     if (bugle_gl_begin_internal_render())
     {
         CALL(glGetIntegerv)(GL_LIST_INDEX, &value);
         info.list = value;
         CALL(glGetIntegerv)(GL_LIST_MODE, &value);
         info.mode = value;
-        if (info.list == 0) return true; /* Call failed? */
-        obj = bugle_object_new(bugle_displaylist_class, &info, true);
-        bugle_gl_end_internal_render("gldisplaylist_callback", true);
+        if (info.list == 0) return BUGLE_TRUE; /* Call failed? */
+        obj = bugle_object_new(bugle_displaylist_class, &info, BUGLE_TRUE);
+        bugle_gl_end_internal_render("gldisplaylist_callback", BUGLE_TRUE);
     }
-    return true;
+    return BUGLE_TRUE;
 }
 
-static bool gldisplaylist_glEndList(function_call *call, const callback_data *data)
+static bugle_bool gldisplaylist_glEndList(function_call *call, const callback_data *data)
 {
     object *obj;
     displaylist_struct *info_ptr;
@@ -122,13 +123,13 @@ static bool gldisplaylist_glEndList(function_call *call, const callback_data *da
     /* Note: we update the hash table when we end the list, since this is when OpenGL
      * says the new name comes into effect.
      */
-    gl_lock_lock(displaylist_lock);
-    objects = bugle_object_get_current_data(bugle_namespace_class, namespace_view);
+    bugle_thread_lock_lock(&displaylist_lock);
+    objects = bugle_object_get_current_data(bugle_get_namespace_class(), namespace_view);
     if (objects)
         bugle_hashptr_set(objects, (void *) (size_t) info_ptr->list, obj);
-    gl_lock_unlock(displaylist_lock);
+    bugle_thread_lock_unlock(&displaylist_lock);
     bugle_object_set_current(bugle_displaylist_class, NULL);
-    return true;
+    return BUGLE_TRUE;
 }
 #else /* !GL_VERSION_1_1 */
 GLenum bugle_displaylist_mode(void)
@@ -142,28 +143,36 @@ GLuint bugle_displaylist_list(void)
 }
 #endif
 
-static bool gldisplaylist_filter_set_initialise(filter_set *handle)
+static bugle_bool gldisplaylist_filter_set_initialise(filter_set *handle)
 {
+#if GL_VERSION_1_1
     filter *f;
+#endif
 
-    bugle_displaylist_class = bugle_object_class_new(bugle_context_class);
+    bugle_displaylist_class = bugle_object_class_new(bugle_get_context_class());
 
 #if GL_VERSION_1_1
     f = bugle_filter_new(handle, "gldisplaylist");
     bugle_filter_order("invoke", "gldisplaylist");
-    bugle_filter_catches(f, "glNewList", true, gldisplaylist_glNewList);
-    bugle_filter_catches(f, "glEndList", true, gldisplaylist_glEndList);
+    bugle_filter_catches(f, "glNewList", BUGLE_TRUE, gldisplaylist_glNewList);
+    bugle_filter_catches(f, "glEndList", BUGLE_TRUE, gldisplaylist_glEndList);
 
     displaylist_view = bugle_object_view_new(bugle_displaylist_class,
                                              displaylist_struct_init,
                                              NULL,
                                              sizeof(displaylist_struct));
-    namespace_view = bugle_object_view_new(bugle_namespace_class,
+    namespace_view = bugle_object_view_new(bugle_get_namespace_class(),
                                            namespace_init,
                                            namespace_clear,
                                            sizeof(hashptr_table));
 #endif
-    return true;
+    return BUGLE_TRUE;
+}
+
+object_class *bugle_get_displaylist_class(void)
+{
+    assert(bugle_displaylist_class != NULL);
+    return bugle_displaylist_class;
 }
 
 void gldisplaylist_initialise(void)
@@ -178,6 +187,10 @@ void gldisplaylist_initialise(void)
         NULL,
         NULL /* No documentation */
     };
+
+#if GL_VERSION_1_1
+    bugle_thread_lock_init(&displaylist_lock);
+#endif
 
     bugle_filter_set_new(&gldisplaylist_info);
 

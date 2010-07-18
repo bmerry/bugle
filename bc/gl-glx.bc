@@ -1,4 +1,0 @@
-LIBRARY libGL.so
-
-INCLUDE bc/gl/gl.bc
-INCLUDE bc/glx/glx.bc

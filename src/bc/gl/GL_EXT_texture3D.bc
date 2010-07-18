@@ -1,0 +1,6 @@
+TYPE PARAMETER glTexImage3DEXT 9 bugle_gl_type_to_type_ptr($8)
+LENGTH PARAMETER glTexImage3DEXT 9 bugle_image_element_count($3, $4, $5, $7, $8, BUGLE_TRUE)
+TYPE PARAMETER glTexSubImage3DEXT 10 bugle_gl_type_to_type_ptr($9)
+LENGTH PARAMETER glTexSubImage3DEXT 10 bugle_image_element_count($5, $6, $7, $8, $9, BUGLE_TRUE)
+
+TYPE PARAMETER glTexImage3DEXT 2 TYPE_16GLcomponentsenum

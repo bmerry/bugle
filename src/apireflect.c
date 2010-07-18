@@ -19,17 +19,17 @@
 # include <config.h>
 #endif
 #include <stdlib.h>
-#include <stdbool.h>
+#include <bugle/bool.h>
 #include <string.h>
 #include <assert.h>
 #include <bugle/hashtable.h>
 #include <bugle/apireflect.h>
 #include <budgie/reflect.h>
-#include "src/apitables.h"
-#include "lock.h"
+#include "apitables.h"
+#include "platform/threads.h"
 
 static hash_table ext_map;
-gl_once_define(static, ext_map_once)
+static bugle_thread_once_t ext_map_once = BUGLE_THREAD_ONCE_INIT;
 
 static void bugle_api_extension_clear(void)
 {
@@ -39,7 +39,7 @@ static void bugle_api_extension_clear(void)
 static void bugle_api_extension_init(void)
 {
     bugle_api_extension i;
-    bugle_hash_init(&ext_map, false);
+    bugle_hash_init(&ext_map, BUGLE_FALSE);
     for (i = 0; i < BUGLE_API_EXTENSION_COUNT; i++)
         bugle_hash_set(&ext_map, _bugle_api_extension_table[i].name, (void *) (size_t) (i + 1));
     atexit(bugle_api_extension_clear);
@@ -70,7 +70,7 @@ api_block bugle_api_extension_block(bugle_api_extension ext)
 
 bugle_api_extension bugle_api_extension_id(const char *name)
 {
-    gl_once(ext_map_once, bugle_api_extension_init);
+    bugle_thread_once(&ext_map_once, bugle_api_extension_init);
     return (bugle_api_extension) (size_t) bugle_hash_get(&ext_map, name) - 1;
 }
 

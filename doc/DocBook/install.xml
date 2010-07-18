@@ -13,42 +13,42 @@
             <envar>LD_PRELOAD</envar> for library interposition. If it fails
             to work on such an operating system, please let me know (I only
             use it on GNU/Linux). It is also supported on Windows, although
-            this support is less complete. It also includes highly
-            experimental and incomplete support for OpenGL ES 2 on Windows.
+            this support is less complete. It also supports OpenGL ES (1.1 and
+            2.0), although again, support is less complete and less tested.
         </para>
         <para>
             The following packages are required to compile &bugle;:
         </para>
         <itemizedlist>
             <listitem><para>
-                    GCC, at least version 3.2, and <emphasis>not</emphasis>
-                    4.0 (see the <link linkend="faq-gcc-version">FAQ</link>
-                    for an explanation of why).
+                    GCC 4.1 or higher (see the <link
+                        linkend="faq-gcc-version">FAQ</link>
+                    for an explanation of why). It is currently only
+                    tested with 4.4 and 4.5.
             </para></listitem>
             <listitem><para>
-                    A C++ compiler (generally <application>g++</application>)
+                    A C++ compiler with the POSIX regular expression functions
+                    (generally <application>g++</application>).
             </para></listitem>
             <listitem><para>
                     OpenGL header files, including a recent version of <ulink
                         url="http://www.opengl.org/registry/api/glext.h">glext.h</ulink>.
                     A version supporting at least OpenGL 2.0 is required. For
-                    OpenGL ES 2, the OpenGL ES 2 and EGL header files are
+                    OpenGL ES, the OpenGL ES and EGL header files are
                     required.
             </para></listitem>
             <listitem><para>Perl 5</para></listitem>
+            <listitem><para>Python 2 (2.6 is tested, older versions may
+                    work)</para></listitem>
+            <listitem><para><ulink url="http://www.scons.org">SCons</ulink>
+                    (only 1.2.0 is tested, other versions may
+                    work)</para></listitem>
         </itemizedlist>
         <para>
             The following packages are not required, but if present, will
             enable extra functionality:
         </para>
         <variablelist>
-            <varlistentry>
-                <term><ulink url="http://cnswww.cns.cwru.edu/php/chet/readline/rltop.html">readline</ulink></term>
-                <listitem><para>
-                        This will enable line editing in the console debugger.
-                        The GUI debugger is the preferred method of debugging.
-                </para></listitem>
-            </varlistentry>
             <varlistentry>
                 <term><ulink url="http://www.gtk.org/">GTK+</ulink></term>
                 <listitem><para>
@@ -57,16 +57,16 @@
             </varlistentry>
             <varlistentry>
                 <term><ulink url="http://gtkglext.sourceforge.net/">gtkglext</ulink></term>
+                <term><ulink url="http://glew.sourceforge.net/">GLEW</ulink></term>
                 <listitem><para>
-                        This is needed for the texture and framebuffer viewers
+                        These are needed for the texture and framebuffer viewers
                         in the GUI debugger.
                 </para></listitem>
             </varlistentry>
             <varlistentry>
-                <term><ulink url="http://glew.sourceforge.net/">GLEW</ulink></term>
+                <term><ulink url="http://www.opengl.org/resources/libraries/glut/glut_downloads.php">GLUT</ulink></term>
                 <listitem><para>
-                        GLEW is also needed for texture and framebuffer
-                        viewers.
+                        GLUT is required by the test suite.
                 </para></listitem>
             </varlistentry>
             <varlistentry>
@@ -80,104 +80,115 @@
         </variablelist>
     </sect1>
 
-    <sect1 id="install-configure">
-        <title>Configuring</title>
+    <sect1 id="install-scons">
+        <title>SCons</title>
         <para>
-            &Bugle; uses the standard <command>configure</command> command for
-            compile-time configuration. Generic instructions may be found in
-            <filename>INSTALL</filename> in the root of the source directory.
-            In general, <command>configure</command> will auto-detect optional
-            packages and use them only if present, but you can also prevent it
-            from depending on certain packages with the following flags.
-            FFmpeg (lavc) in particular is a moving target and if you get
-            compilation failures, you should try disabling it.
+            &Bugle; uses <ulink url="http://www.scons.org/">SCons</ulink>
+            rather than <command>make</command> as its build system. To build
+            &bugle;, simply run <command>scons</command> in the top-level
+            directory, and the targets will be built in the <filename
+                class="directory">build</filename> directory. The generic
+            SCons options can be found by running
+            <command>scons -H</command> and &bugle;-specific options can
+            be found by running <command>scons --help</command>. The
+            options are you most likely to need are:
         </para>
-        <itemizedlist>
-            <listitem><para><option>--without-lavc</option></para></listitem>
-            <listitem><para><option>--without-readline</option></para></listitem>
-            <listitem><para><option>--without-gtk</option></para></listitem>
-            <listitem><para><option>--without-gtkglext</option></para></listitem>
-        </itemizedlist>
+        <variablelist>
+            <varlistentry>
+                <term><parameter>--clean</parameter></term>
+                <listitem><para>
+                        Remove built files (for a more thorough clean,
+                        remove the <filename
+                            class="directory">build</filename> directory).
+                </para></listitem>
+            </varlistentry>
+            <varlistentry>
+                <term><parameter>--sticky</parameter></term>
+                <listitem><para>
+                        Save the command-line variables to
+                        <filename>config.py</filename>, from where they will
+                        automatically be loaded next time. To reset variables
+                        to automatic selection, remove or edit this file.
+                </para></listitem>
+            </varlistentry>
+            <varlistentry>
+                <term><parameter>gltype=<replaceable>type</replaceable></parameter></term>
+                <listitem><para>
+                        Select the variant of OpenGL to build for. &Bugle;
+                        only supports one variant at a time.
+                </para></listitem>
+            </varlistentry>
+            <varlistentry>
+                <term><parameter>parts=<replaceable>list</replaceable></parameter></term>
+                <listitem><para>
+                        Select a subset of the parts of &bugle; to build
+                        (useful if you are missing tools).
+                </para></listitem>
+            </varlistentry>
+            <varlistentry>
+                <term><parameter>prefix=<replaceable>directory</replaceable></parameter></term>
+                <listitem><para>
+                        Select an installation prefix (similar to
+                        <command>autoconf</command>).
+                </para></listitem>
+            </varlistentry>
+        </variablelist>
         <para>
-            &Bugle; does not use threads itself, but applications that it
-            debugs might, and &bugle; needs to use appropriate locking and
-            thread-local storage libraries. The correct option should be
-            auto-detected, but you can force it with
-            <option>--enable-threads</option>=<replaceable>model</replaceable>.
-            Valid models are <literal>posix</literal> and
-            <literal>win32</literal>.
-        </para>
-        <para>
-            Finally, &bugle; intercepts events from X11 and Windows. While
-            there are no known cases of this causing problems, it is difficult
-            to make the interception completely transparent, and so the
-            <option>--disable-input</option> option is available to disable it
-            at compile time. It is also required when using EGL on a platform
-            other than X11 or Windows.
-        </para>
-
-        <sect2 id="install-configure-cross">
-            <title>Configuring for cross-compilation</title>
-            <para>
-                If possible, the best way to do cross-compilation is to use
-                <ulink
-                    url="http://www.scratchbox.org/"><application>scratchbox</application></ulink>,
-                where it should all work seamlessly. However,
-                <application>scratchbox</application> only supports a limited
-                set of cross-compilation targets. If you want to do
-                cross-compilation, you will need to jump through some extra
-                hoops.
-            </para>
-            <para>
-                First, run <command>configure</command> in the top-level
-                directory, passing the appropriate <option>--host</option>
-                option for your cross-compiler. Also make sure that the
-                appropriate header files and libraries for the
-                cross-compilation target are available. You might also need to
-                pass extra options to <command>configure</command> to disable
-                optional features that are incorrectly detected (see above).
-            </para>
-            <para>
-                Next, change into the <filename
-                    class="directory">budgie</filename> subdirectory and run
-                the configure script there (if you are configuring in a
-                different directory from the source, you will need to be in
-                the <filename class="directory">budgie</filename> subdirectory
-                of the build directory, running the
-                <command>configure</command> script from the <filename
-                    class="directory">budgie</filename> subdirectory of the
-                source. When doing this, configure for your
-                <emphasis>native</emphasis> compiler. This is necessary
-                because the program that is built in this directory is run on
-                the build machine to produce source code, not on the host.
-            </para>
-        </sect2>
-    </sect1>
-
-    <sect1 id="install-compile">
-        <title>Compiling and installing</title>
-        <para>
-            Compilation is as simple as running <userinput>make</userinput>.
-            Before installing, you should remove any previous installation of
-            &bugle; to avoid leaving old versions of files around. If you do not
-            have your original installation tree to run <userinput>make
-                uninstall</userinput>, you should at least remove the files in
-            <filename><replaceable>/usr/local/lib/</replaceable>bugle</filename>
-            and
-            <filename><replaceable>/usr/local/lib/</replaceable>libbugle*</filename>.
-            To install the new version, run <userinput>make
-                install</userinput> as <systemitem
-                class="username">root</systemitem>.
-        </para>
-        <para>
-            Next, you need to install some files for the user that will run
-            &bugle;. Create a directory <filename
-                class="directory">$HOME/.bugle</filename>, and copy
-            <filename>doc/examples/filters</filename> and
-            <filename>doc/examples/statistics</filename> into it.
+            Once you have successfully built &bugle;, you can run
+            <command>scons install</command> to install it.
         </para>
     </sect1>
 
+    <sect1 id="install-cross">
+        <title>Cross-compilation</title>
+        <para>
+            &Bugle; supports cross-compilation with GCC. Other compilers are
+            not yet supported but should be relatively easy to add.
+        </para>
+        <para>
+            First, a note about terminology. &Bugle; follows the
+            <application>autoconf</application> conventions: the machine that
+            you perform the compilation on is the <emphasis>build</emphasis>
+            machine. The machine where you run the resulting interceptor is
+            the <emphasis>host</emphasis> machine.
+            <application>autoconf</application> also has the concept of a
+            <emphasis>target</emphasis> machine, but that only applies to
+            cross-toolchains and is not used in &bugle;.
+        </para>
+        <para>
+            The basic step required to use cross-compilation is to add the
+            <parameter>host=<replaceable>machine</replaceable></parameter>
+            parameter to the <command>scons</command> command line. This
+            causes the build to use, for example,
+            <command><replaceable>machine</replaceable>-gcc</command> in place
+            of <command>gcc</command>, and similarly for other parts of the
+            toolchain. For example, to cross-compile for ARM one could use
+            <parameter>host=arm-none-linux-gnueabi</parameter>. Note that this
+            requires the cross-compiler to be on the
+            <envar>PATH</envar>.
+        </para>
+        <para>
+            Cross-compilation hosts are often a little different to the build
+            machine, which can cause additional problems during building.
+            Firstly, the build system uses
+            <application>pkg-config</application> to detect optional packages
+            such as GTK+, but <application>pkg-config</application> is likely
+            to report information about the build machine rather than the
+            host machine. If you know that these packages are not available on
+            the host machine anyway, you can override the detection by
+            specifying
+            <parameter>without-<replaceable>pkg</replaceable>=yes</parameter>
+            on the <command>scons</command> command line. Use <command>scons
+                -h</command> to see a list of packages that can be suppressed.
+        </para>
+        <para>
+            In addition, a common cross-compilation host is Linux without the
+            X Windowing System. The code to intercept X events can be disabled
+            by specifying <parameter>winsys=none</parameter>.
+        </para>
+    </sect1>
+
+    <!-- FIXME rewrite this -->
     <sect1 id="install-windows">
         <title>Compiling on Windows</title>
         <para>
@@ -186,57 +197,179 @@
             UNIX-like systems, and currently only recommended for experts.
             The intended target is <ulink
                 url="http://www.mingw.org">MinGW</ulink>; you can try using
-            Cygwin as well, but it is not tested.
+            Cygwin as well, but it is not tested. You can also build using
+            Microsoft Visual C++, but MinGW is still useful as it provides a
+            number of the supporting tools such as Perl.
         </para>
         <para>
             Here is the list of steps I used to install on Windows, including
             support for the debugger. The versions numbers were the latest
-            available at the time, but newer versions should work too.
+            available at the time, but newer versions may work too.
         </para>
         <orderedlist>
+            <listitem>
+                <para>
+                    Install <application>MinGW</application>. The installer
+                    is rather outdated (at the time of writing), and I found it
+                    necessary to manually install from a set of downloads.
+                    Download and unpack the following files into <filename
+                        class="directory">c:\mingw</filename> (for example).
+                    This list potentially contain more than you need.
+                </para>
+                <screen>
+binutils-2.20.1-2-mingw32-bin.tar.gz
+gcc-c++-4.5.0-1-mingw32-bin.tar.lzma
+gcc-core-4.5.0-1-mingw32-bin.tar.lzma
+gmp-5.0.1-1-mingw32-dev.tar.lzma
+libexpat-2.0.1-1-mingw32-dll-1.tar.gz
+libgcc-4.5.0-1-mingw32-dll-1.tar.lzma
+libgmp-5.0.1-1-mingw32-dll-10.tar.lzma
+libgomp-4.5.0-1-mingw32-dll-1.tar.lzma
+libmpc-0.8.1-1-mingw32-dll-2.tar.lzma
+libmpfr-2.4.1-1-mingw32-dll-1.tar.lzma
+libpthread-2.8.0-3-mingw32-dll-2.tar.lzma
+libssp-4.5.0-1-mingw32-dll-0.tar.lzma
+libstdc++-4.5.0-1-mingw32-dll-6.tar.lzma
+mingw-libgnurx-2.5.1-bin.tar.gz
+mingw-libgnurx-2.5.1-dev.tar.gz
+mingwrt-3.18-mingw32-dev.tar.gz
+mingwrt-3.18-mingw32-dll.tar.gz
+mpc-0.8.1-1-mingw32-dev.tar.lzma
+mpfr-2.4.1-1-mingw32-dev.tar.lzma
+pthreads-w32-2.8.0-3-mingw32-dev.tar.lzma
+w32api-3.14-mingw32-dev.tar.gz
+</screen>
+            </listitem>
+            <listitem>
+                <para>
+                    Install <application>MSYS</application>. Again, the
+                    installer is outdated (at the time of writing), and I
+                    installed from manually downloaded files. I unpackaged
+                    these files to <filename
+                        class="directory">c:\msys</filename>.
+                </para>
+                <screen>
+automake-1.11.1-1-msys-1.0.13-bin.tar.lzma
+bash-3.1.17-3-msys-1.0.13-bin.tar.lzma
+bison-2.4.2-1-msys-1.0.13-bin.tar.lzma
+bzip2-1.0.5-2-msys-1.0.13-bin.tar.lzma
+coreutils-5.97-3-msys-1.0.13-bin.tar.lzma
+cvs-1.12.13-2-msys-1.0.13-bin.tar.lzma
+diffutils-2.8.7.20071206cvs-3-msys-1.0.13-bin.tar.lzma
+findutils-4.4.2-2-msys-1.0.13-bin.tar.lzma
+flex-2.5.35-2-msys-1.0.13-bin.tar.lzma
+gawk-3.1.7-2-msys-1.0.13-bin.tar.lzma
+gettext-0.17-2-msys-1.0.13-bin.tar.lzma
+gettext-0.17-2-msys-1.0.13-dev.tar.lzma
+grep-2.5.4-2-msys-1.0.13-bin.tar.lzma
+gzip-1.3.12-2-msys-1.0.13-bin.tar.lzma
+less-436-2-msys-1.0.13-bin.tar.lzma
+libbz2-1.0.5-2-msys-1.0.13-dll-1.tar.lzma
+libcrypt-1.1_1-3-msys-1.0.13-dll-0.tar.lzma
+libexpat-2.0.1-1-msys-1.0.13-dll-1.tar.lzma
+libgdbm-1.8.3-3-msys-1.0.13-dll-3.tar.lzma
+libgettextpo-0.17-2-msys-dll-0.tar.lzma
+libiconv-1.13.1-2-msys-1.0.13-bin.tar.lzma
+libiconv-1.13.1-2-msys-1.0.13-dll-2.tar.lzma
+libintl-0.17-2-msys-dll-8.tar.lzma
+liblzma-4.999.9beta_20100401-1-msys-1.0.13-dll-1.tar.gz
+libregex-1.20090805-2-msys-1.0.13-dll-1.tar.lzma
+libtermcap-0.20050421_1-2-msys-1.0.13-dll-0.tar.lzma
+libtool-2.2.7a-2-msys-1.0.13-bin.tar.lzma
+m4-1.4.14-1-msys-1.0.13-bin.tar.lzma
+make-3.81-3-msys-1.0.13-bin.tar.lzma
+msysCORE-1.0.14-1-msys-1.0.14-bin.tar.lzma
+patch-2.6.1-1-msys-1.0.13-bin.tar.lzma
+perl-5.6.1_2-2-msys-1.0.13-bin.tar.lzma
+rxvt-2.7.2-3-msys-1.0.14-bin.tar.lzma
+sed-4.2.1-2-msys-1.0.13-bin.tar.lzma
+tar-1.23-1-msys-1.0.13-bin.tar.lzma
+texinfo-4.13a-2-msys-1.0.13-bin.tar.lzma
+xz-4.999.9beta_20100401-1-msys-1.0.13-bin.tar.gz
+zlib-1.2.3-2-msys-1.0.13-dll.tar.lzma
+</screen>
+                <para>
+                    Again, this is potentially more than you need.
+                </para>
+            </listitem>
             <listitem><para>
-                    Install <application>MinGW</application> 5.1.4, including
-                    <application>GCC</application> and
-                    <application>G++</application>, but not
-                    <application>make</application>.
+                    Start up MSYS using the provided
+                    <filename>msys.bat</filename>. You should immediately
+                    create <filename>/etc/fstab</filename> from
+                    <filename>/etc/fstab.sample</filename>, so that
+                    <filename class="directory">/mingw</filename> refers to
+                    your MinGW installation from install MSYS.
             </para></listitem>
-            <listitem><para>
-                    Install <application>MSYS</application> 1.0.10.
-            </para></listitem>
-            <listitem><para>
-                    Install <application>msysDTK</application> 1.0.1.
-                    Alternatively, if you have Cygwin installed, add Cygwin's
-                    <filename class="directory">bin</filename> directory to
-                    the end of <envar>PATH</envar>.
-            </para></listitem>
-            <listitem><para>
-                    Downloaded
-                    <filename>mingw-libgnurx-2.5.1-bin.tar.gz</filename> and
-                    <filename>mingw-libgnurx-2.5.1-dev.tar.gz</filename> from
-                    the <application>MinGW</application> page, and unpacked
-                    both into <filename class="directory">/mingw</filename>
-                    (i.e., the directory in which
-                    <application>MinGW</application> is installed).
-            </para></listitem>
-            <listitem><para>
+            <listitem>
+                <para>
                     Download the <application>GTK+</application> bundle
-                    (2.12.11) from <ulink
+                    (2.16.6) from <ulink
                         url="http://www.gtk.org/download-windows.html">gtk.org</ulink>,
-                    and unpack it into <filename
-                        class="directory">/mingw</filename>.
-            </para></listitem>
-            <listitem><para>
-                    Get the <application>gtkglext</application> installer from
-                    <ulink url="http://www.bonifazi.eu/appunti/"/>, and
-                    install it into <filename
-                        class="directory">/mingw</filename>.
-            </para></listitem>
-            <listitem><para>
+                    and unpack it somewhere (e.g. <filename
+                        class="directory">c:\tools\gtk+</filename>).
+                </para>
+                <warning><para>
+                        At the time of writing, the latest released version of
+                        <application>gtkglext</application> (1.2.0) does not
+                        work with GTK+ versions 2.18 or higher.
+                </para></warning>
+                <warning><para>
+                        If you are planning to use a toolchain other than
+                        MinGW (e.g. MSVC), do not overlay GTK+ on the MinGW
+                        installation as it cause MinGW's system headers to be
+                        used when trying to build against GTK+.
+                </para></warning>
+                <para>
+                    You will also need to set (or add to) some environment
+                    variables to allow GTK+ to be detected. For example (the
+                    syntax assumes variables are being set from within MSYS):
+                    <screen>
+PATH=/c/tools/gtk+/bin
+PKG_CONFIG_PATH=/c/tools/gtk+/lib/pkgconfig
+</screen>
+                </para>
+            </listitem>
+            <listitem>
+                <para>
+                    Get the sources for <application>gtkglext</application>
+                    (1.2.0) from <ulink
+                        url="http://projects.gnome.org/gtkglext/download.html"/>,
+                    and unpack them into a temporary directory. The sources
+                    contain a bug, which you should fix by running
+                </para>
+                <screen>
+<prompt>$</prompt> <userinput>sed -i -e 's/pangox/pangowin32/g' configure</userinput>
+</screen>
+                <para>
+                    Then, run <userinput>./configure
+                        --prefix=/c/tools/gtk+</userinput>,
+                    <userinput>make</userinput> and <userinput>make
+                        install</userinput>. This will overlay
+                    <application>gtkglext</application> on your GTK+
+                    installation; you could also choose to install it
+                    separately, but you will then need to add to
+                    <envar>PATH</envar> and <envar>PKG_CONFIG_PATH</envar>.
+                </para>
+            </listitem>
+            <listitem>
+                <para>
                     Download the source for <application>GLEW</application>
                     1.5 and unpack it into a temporary location and built it
                     using make, then install it with the command
                     <userinput>make GLEW_DEST=/mingw install</userinput>.
-            </para></listitem>
+                </para>
+                <para>
+                    This will overlay GLEW on your MinGW installation; the
+                    alternative is to install it elsewhere and set
+                    <envar>CPATH</envar>, <envar>PATH</envar>
+                    and <envar>LIBRARY_PATH</envar> appropriately.
+                </para>
+                <para>
+                    If you are building &bugle; with MSVC, you should instead
+                    use the binary download for GLEW (the binary download will
+                    not work with MinGW).
+                </para>
+            </listitem>
             <listitem><para>
                     Grab the latest <ulink
                         url="http://www.opengl.org/registry/api/glext.h"><filename>glext.h</filename></ulink> and
@@ -246,6 +379,25 @@
                     <filename class="directory">/mingw/include/GL</filename>.
             </para></listitem>
         </orderedlist>
+        <para>
+            This should give you all the tools needed to build &bugle; from a
+            tarballed package. I did not succeed in building from a subversion
+            checkout, because that requires a working
+            <application>flex</application> and the one provided by MinGW
+            crashed.
+        </para>
+        <para>
+            The specific versions packages above also includes a bug in the
+            GCC 4.5 setup:
+            without <option>-static-libstdc++</option> it will fail. You can
+            fix this by adding
+            <userinput>CXX='g++ -static-libstdc++'</userinput> to the
+            <command>scons</command> command line.
+        </para>
+        <para>
+            To build with MSVC instead of MinGW, pass
+            <userinput>host-compiler=msvc</userinput> on the command line.
+        </para>
         <para>
             After installation, you will have a
             <filename>opengl32.dll</filename> file installed. When debugging a

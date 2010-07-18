@@ -1,5 +1,5 @@
 /*  BuGLe: an OpenGL debugging tool
- *  Copyright (C) 2004-2009  Bruce Merry
+ *  Copyright (C) 2004-2010  Bruce Merry
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -18,8 +18,7 @@
 #if HAVE_CONFIG_H
 # include <config.h>
 #endif
-#include <stdbool.h>
-#include <ltdl.h>
+#include <bugle/bool.h>
 #include <stdio.h>
 #include <stddef.h>
 #include <stdlib.h>
@@ -29,8 +28,8 @@
 #include <bugle/filters.h>
 #include <bugle/input.h>
 #include <bugle/log.h>
-#include "common/threads.h"
-#include "xalloc.h"
+#include <bugle/memory.h>
+#include "platform/threads.h"
 
 #define STATE_MASK (BUGLE_INPUT_SHIFT_BIT | BUGLE_INPUT_CONTROL_BIT | BUGLE_INPUT_ALT_BIT)
 
@@ -44,59 +43,59 @@ typedef struct
     KeyCode keycode;
 #endif
     void *arg;
-    bool (*wanted)(const bugle_input_key *, void *, bugle_input_event *);
+    bugle_bool (*wanted)(const bugle_input_key *, void *, bugle_input_event *);
     void (*callback)(const bugle_input_key *, void *, bugle_input_event *);
 } handler;
 
-static bool active = false;
+static bugle_bool active = BUGLE_FALSE;
 static linked_list handlers;
 
-static bool mouse_active = false;
-static bool mouse_first = true;
-static bool mouse_dga = false;
+static bugle_bool mouse_active = BUGLE_FALSE;
+static bugle_bool mouse_first = BUGLE_TRUE;
+static bugle_bool mouse_dga = BUGLE_FALSE;
 static bugle_input_window mouse_window;
 static int mouse_x, mouse_y;
 static void (*mouse_callback)(int, int, bugle_input_event *) = NULL;
 
 void bugle_input_key_callback(const bugle_input_key *key,
-                               bool (*wanted)(const bugle_input_key *, void *, bugle_input_event *),
+                               bugle_bool (*wanted)(const bugle_input_key *, void *, bugle_input_event *),
                                void (*callback)(const bugle_input_key *, void *, bugle_input_event *),
                                void *arg)
 {
     handler *h;
 
     if (key->keysym == BUGLE_INPUT_NOSYMBOL) return;
-    h = XMALLOC(handler);
+    h = BUGLE_MALLOC(handler);
     h->key = *key;
     h->wanted = wanted;
     h->callback = callback;
     h->arg = arg;
 
     bugle_list_append(&handlers, h);
-    active = true;
+    active = BUGLE_TRUE;
 }
 
-void bugle_input_grab_pointer(bool dga, void (*callback)(int, int, bugle_input_event *))
+void bugle_input_grab_pointer(bugle_bool dga, void (*callback)(int, int, bugle_input_event *))
 {
     mouse_dga = dga;
     mouse_callback = callback;
-    mouse_active = true;
-    mouse_first = true;
+    mouse_active = BUGLE_TRUE;
+    mouse_first = BUGLE_TRUE;
     bugle_log("input", "mouse", BUGLE_LOG_DEBUG, "grabbed");
 }
 
 void bugle_input_release_pointer(void)
 {
-    mouse_active = false;
+    mouse_active = BUGLE_FALSE;
     bugle_log("input", "mouse", BUGLE_LOG_DEBUG, "released");
 }
 
 void bugle_input_key_callback_flag(const bugle_input_key *key, void *arg, bugle_input_event *event)
 {
-    *(bool *) arg = true;
+    *(bugle_bool *) arg = BUGLE_TRUE;
 }
 
-#if BUGLE_HAVE_ATTRIBUTE_CONSTRUCTOR && !DEBUG_CONSTRUCTOR && BUGLE_BINFMT_CONSTRUCTOR_LTDL
+#if BUGLE_HAVE_ATTRIBUTE_CONSTRUCTOR && !DEBUG_CONSTRUCTOR && BUGLE_BINFMT_CONSTRUCTOR_DL
 # define bugle_initialise_all() ((void) 0)
 #else
 extern void bugle_initialise_all(void);
@@ -104,12 +103,16 @@ extern void bugle_initialise_all(void);
 
 #if BUGLE_WINSYS_X11
 
+#include <X11/Xlib.h>
+#include "platform/dl.h"
+
 /* Events we want to get, even if the app doesn't ask for them */
 #define EVENT_MASK (KeyPressMask | KeyReleaseMask | PointerMotionMask)
 
 /* Events we don't want to know about */
 #define EVENT_UNMASK (PointerMotionHintMask)
 
+/* Pointers to the real versions in libX11 */
 static int (*real_XNextEvent)(Display *, XEvent *) = NULL;
 static int (*real_XPeekEvent)(Display *, XEvent *) = NULL;
 static int (*real_XWindowEvent)(Display *, Window, long, XEvent *) = NULL;
@@ -127,8 +130,31 @@ static int (*real_XEventsQueued)(Display *, int) = NULL;
 static int (*real_XPending)(Display *) = NULL;
 
 static Window (*real_XCreateWindow)(Display *, Window, int, int, unsigned int, unsigned int, unsigned int, int, unsigned int, Visual *, unsigned long, XSetWindowAttributes *) = NULL;
-static Window (*real_XCreateSimpleWindow)(Display *, Window, int, int, unsigned int, unsigned int, unsigned int, unsigned long, unsigned long);
-static int (*real_XSelectInput)(Display *, Window, long);
+static Window (*real_XCreateSimpleWindow)(Display *, Window, int, int, unsigned int, unsigned int, unsigned int, unsigned long, unsigned long) = NULL;
+static int (*real_XSelectInput)(Display *, Window, long) = NULL;
+
+/* Declare our versions for DLL export */
+BUGLE_EXPORT_PRE int XNextEvent(Display *, XEvent *) BUGLE_EXPORT_POST;
+BUGLE_EXPORT_PRE int XPeekEvent(Display *, XEvent *) BUGLE_EXPORT_POST;
+BUGLE_EXPORT_PRE int XWindowEvent(Display *, Window, long, XEvent *) BUGLE_EXPORT_POST;
+BUGLE_EXPORT_PRE Bool XCheckWindowEvent(Display *, Window, long, XEvent *) BUGLE_EXPORT_POST;
+BUGLE_EXPORT_PRE int XMaskEvent(Display *, long, XEvent *) BUGLE_EXPORT_POST;
+BUGLE_EXPORT_PRE Bool XCheckMaskEvent(Display *, long, XEvent *) BUGLE_EXPORT_POST;
+BUGLE_EXPORT_PRE Bool XCheckTypedEvent(Display *, int, XEvent *) BUGLE_EXPORT_POST;
+BUGLE_EXPORT_PRE Bool XCheckTypedWindowEvent(Display *, Window, int, XEvent *) BUGLE_EXPORT_POST;
+
+BUGLE_EXPORT_PRE int XIfEvent(Display *, XEvent *, Bool (*)(Display *, XEvent *, XPointer), XPointer) BUGLE_EXPORT_POST;
+BUGLE_EXPORT_PRE Bool XCheckIfEvent(Display *, XEvent *, Bool (*)(Display *, XEvent *, XPointer), XPointer) BUGLE_EXPORT_POST;
+BUGLE_EXPORT_PRE int XPeekIfEvent(Display *, XEvent *, Bool (*)(Display *, XEvent *, XPointer), XPointer) BUGLE_EXPORT_POST;
+
+BUGLE_EXPORT_PRE int XEventsQueued(Display *, int) BUGLE_EXPORT_POST;
+BUGLE_EXPORT_PRE int XPending(Display *) BUGLE_EXPORT_POST;
+
+BUGLE_EXPORT_PRE Window XCreateWindow(Display *, Window, int, int, unsigned int, unsigned int, unsigned int, int, unsigned int, Visual *, unsigned long, XSetWindowAttributes *) BUGLE_EXPORT_POST;
+BUGLE_EXPORT_PRE Window XCreateSimpleWindow(Display *, Window, int, int, unsigned int, unsigned int, unsigned int, unsigned long, unsigned long) BUGLE_EXPORT_POST;
+BUGLE_EXPORT_PRE int XSelectInput(Display *, Window, long) BUGLE_EXPORT_POST;
+
+static bugle_thread_lock_t keycodes_lock;
 
 /* Determines whether bugle wants to intercept an event */
 static Bool event_predicate(Display *dpy, XEvent *event, XPointer arg)
@@ -152,7 +178,7 @@ static Bool event_predicate(Display *dpy, XEvent *event, XPointer arg)
     return False;
 }
 
-/* Note: assumes that event_predicate is true */
+/* Note: assumes that event_predicate is True */
 static void handle_event(Display *dpy, XEvent *event)
 {
     bugle_input_key key;
@@ -179,7 +205,7 @@ static void handle_event(Display *dpy, XEvent *event)
             XWarpPointer(dpy, event->xmotion.window, event->xmotion.window,
                          0, 0, 0, 0, mouse_x, mouse_y);
             XFlush(dpy); /* try to ensure that XWarpPointer gets to server before next motion */
-            mouse_first = false;
+            mouse_first = BUGLE_FALSE;
         }
         else if (event->xmotion.window != mouse_window)
             XWarpPointer(dpy, None, mouse_window, 0, 0, 0, 0, mouse_x, mouse_y);
@@ -195,7 +221,7 @@ static void handle_event(Display *dpy, XEvent *event)
         }
         return;
     }
-    /* event_predicate returns true on release as well, so that the
+    /* event_predicate returns True on release as well, so that the
      * release event does not appear to the app without the press event.
      * We only conditionally pass releases to the filterset.
      */
@@ -222,8 +248,7 @@ static void initialise_keycodes(Display *dpy)
      * different X servers try to use this at the same time.
      */
     static Display *dpy_cached = NULL;
-    gl_lock_define(static, lock);
-    gl_lock_lock(lock);
+    bugle_thread_lock_lock(&keycodes_lock);
     if (dpy_cached != dpy)
     {
         linked_list_node *i;
@@ -235,20 +260,20 @@ static void initialise_keycodes(Display *dpy)
         }
         dpy_cached = dpy;
     }
-    gl_lock_unlock(lock);
+    bugle_thread_lock_unlock(&keycodes_lock);
 }
 
-static bool extract_events(Display *dpy)
+static bugle_bool extract_events(Display *dpy)
 {
     XEvent event;
-    bool any = false;
+    bugle_bool any = BUGLE_FALSE;
 
     initialise_keycodes(dpy);
 
     while ((*real_XCheckIfEvent)(dpy, &event, event_predicate, NULL))
     {
         handle_event(dpy, &event);
-        any = true;
+        any = BUGLE_TRUE;
     }
     return any;
 }
@@ -317,7 +342,7 @@ typedef struct
     int use_predicate;
 } if_block_data;
 
-Bool matches_mask(XEvent *event, unsigned long mask)
+static Bool matches_mask(XEvent *event, unsigned long mask)
 {
     /* Loosely based on evtomask.c and ChkMaskEv.c from XOrg 6.8.2 */
     switch (event->type)
@@ -362,7 +387,7 @@ Bool matches_mask(XEvent *event, unsigned long mask)
     case MappingNotify: return False;
     default:
         /* Unknown event! This is probably related to an extension. We
-         * return true for now to be safe. That means that BuGLe might
+         * return True for now to be safe. That means that BuGLe might
          * wait longer than expected for an event, but it will never
          * cause to wait forever for one.
          */
@@ -370,7 +395,7 @@ Bool matches_mask(XEvent *event, unsigned long mask)
     }
 }
 
-Bool if_block(Display *dpy, XEvent *event, XPointer arg)
+static Bool if_block(Display *dpy, XEvent *event, XPointer arg)
 {
     const if_block_data *data;
 
@@ -381,7 +406,7 @@ Bool if_block(Display *dpy, XEvent *event, XPointer arg)
     return True;
 }
 
-Bool if_block_intercept(Display *dpy, XEvent *event, XPointer arg)
+static Bool if_block_intercept(Display *dpy, XEvent *event, XPointer arg)
 {
     return event_predicate(dpy, event, NULL) || if_block(dpy, event, arg);
 }
@@ -739,16 +764,16 @@ void bugle_input_invalidate_window(bugle_input_event *event)
 
 void input_initialise(void)
 {
-    lt_dlhandle handle;
+    bugle_dl_module handle;
 
-    handle = lt_dlopenext("libX11");
+    handle = bugle_dl_open("libX11", 0);
     if (handle == NULL)
     {
         /* The first attempt ought to be the most portable, but also fails
          * when trying to run with 32-bit apps on a 64-bit system. This is
          * a fallback.
          */
-        handle = lt_dlopen("libX11.so");
+        handle = bugle_dl_open("libX11", BUGLE_DL_FLAG_SUFFIX);
     }
     if (handle == NULL)
     {
@@ -759,25 +784,25 @@ void input_initialise(void)
         exit(1);
     }
 
-    real_XNextEvent = (int (*)(Display *, XEvent *)) lt_dlsym(handle, "XNextEvent");
-    real_XPeekEvent = (int (*)(Display *, XEvent *)) lt_dlsym(handle, "XPeekEvent");
-    real_XWindowEvent = (int (*)(Display *, Window, long, XEvent *)) lt_dlsym(handle, "XWindowEvent");
-    real_XCheckWindowEvent = (Bool (*)(Display *, Window, long, XEvent *)) lt_dlsym(handle, "XCheckWindowEvent");
-    real_XMaskEvent = (int (*)(Display *, long, XEvent *)) lt_dlsym(handle, "XMaskEvent");
-    real_XCheckMaskEvent = (Bool (*)(Display *, long, XEvent *)) lt_dlsym(handle, "XCheckMaskEvent");
-    real_XCheckTypedEvent = (Bool (*)(Display *, int, XEvent *)) lt_dlsym(handle, "XCheckTypedEvent");
-    real_XCheckTypedWindowEvent = (Bool (*)(Display *, Window, int, XEvent *)) lt_dlsym(handle, "XCheckTypedWindowEvent");
+    real_XNextEvent = (int (*)(Display *, XEvent *)) bugle_dl_sym_function(handle, "XNextEvent");
+    real_XPeekEvent = (int (*)(Display *, XEvent *)) bugle_dl_sym_function(handle, "XPeekEvent");
+    real_XWindowEvent = (int (*)(Display *, Window, long, XEvent *)) bugle_dl_sym_function(handle, "XWindowEvent");
+    real_XCheckWindowEvent = (Bool (*)(Display *, Window, long, XEvent *)) bugle_dl_sym_function(handle, "XCheckWindowEvent");
+    real_XMaskEvent = (int (*)(Display *, long, XEvent *)) bugle_dl_sym_function(handle, "XMaskEvent");
+    real_XCheckMaskEvent = (Bool (*)(Display *, long, XEvent *)) bugle_dl_sym_function(handle, "XCheckMaskEvent");
+    real_XCheckTypedEvent = (Bool (*)(Display *, int, XEvent *)) bugle_dl_sym_function(handle, "XCheckTypedEvent");
+    real_XCheckTypedWindowEvent = (Bool (*)(Display *, Window, int, XEvent *)) bugle_dl_sym_function(handle, "XCheckTypedWindowEvent");
 
-    real_XIfEvent = (int (*)(Display *, XEvent *, Bool (*)(Display *, XEvent *, XPointer), XPointer)) lt_dlsym(handle, "XIfEvent");
-    real_XCheckIfEvent = (Bool (*)(Display *, XEvent *, Bool (*)(Display *, XEvent *, XPointer), XPointer)) lt_dlsym(handle, "XCheckIfEvent");
-    real_XPeekIfEvent = (int (*)(Display *, XEvent *, Bool (*)(Display *, XEvent *, XPointer), XPointer)) lt_dlsym(handle, "XPeekIfEvent");
+    real_XIfEvent = (int (*)(Display *, XEvent *, Bool (*)(Display *, XEvent *, XPointer), XPointer)) bugle_dl_sym_function(handle, "XIfEvent");
+    real_XCheckIfEvent = (Bool (*)(Display *, XEvent *, Bool (*)(Display *, XEvent *, XPointer), XPointer)) bugle_dl_sym_function(handle, "XCheckIfEvent");
+    real_XPeekIfEvent = (int (*)(Display *, XEvent *, Bool (*)(Display *, XEvent *, XPointer), XPointer)) bugle_dl_sym_function(handle, "XPeekIfEvent");
 
-    real_XEventsQueued = (int (*)(Display *, int)) lt_dlsym(handle, "XEventsQueued");
-    real_XPending = (int (*)(Display *)) lt_dlsym(handle, "XPending");
+    real_XEventsQueued = (int (*)(Display *, int)) bugle_dl_sym_function(handle, "XEventsQueued");
+    real_XPending = (int (*)(Display *)) bugle_dl_sym_function(handle, "XPending");
 
-    real_XCreateWindow = (Window (*)(Display *, Window, int, int, unsigned int, unsigned int, unsigned int, int, unsigned int, Visual *, unsigned long, XSetWindowAttributes *)) lt_dlsym(handle, "XCreateWindow");
-    real_XCreateSimpleWindow = (Window (*)(Display *, Window, int, int, unsigned int, unsigned int, unsigned int, unsigned long, unsigned long)) lt_dlsym(handle, "XCreateSimpleWindow");
-    real_XSelectInput = (int (*)(Display *, Window, long)) lt_dlsym(handle, "XSelectInput");
+    real_XCreateWindow = (Window (*)(Display *, Window, int, int, unsigned int, unsigned int, unsigned int, int, unsigned int, Visual *, unsigned long, XSetWindowAttributes *)) bugle_dl_sym_function(handle, "XCreateWindow");
+    real_XCreateSimpleWindow = (Window (*)(Display *, Window, int, int, unsigned int, unsigned int, unsigned int, unsigned long, unsigned long)) bugle_dl_sym_function(handle, "XCreateSimpleWindow");
+    real_XSelectInput = (int (*)(Display *, Window, long)) bugle_dl_sym_function(handle, "XSelectInput");
 
     if (!real_XNextEvent
         || !real_XPeekEvent
@@ -801,10 +826,11 @@ void input_initialise(void)
               "features. Please contact the author to help him resolve this issue.\n", stderr);
         exit(1);
     }
-    bugle_list_init(&handlers, free);
+    bugle_list_init(&handlers, bugle_free);
+    bugle_thread_lock_init(&keycodes_lock);
 }
 
-static bool input_key_lookup(const char *name, bugle_input_key *key)
+static bugle_bool input_key_lookup(const char *name, bugle_input_key *key)
 {
     bugle_input_keysym keysym;
 
@@ -812,10 +838,10 @@ static bool input_key_lookup(const char *name, bugle_input_key *key)
     if (keysym != BUGLE_INPUT_NOSYMBOL)
     {
         key->keysym = keysym;
-        return true;
+        return BUGLE_TRUE;
     }
     else
-        return false;
+        return BUGLE_FALSE;
 }
 
 #endif /* BUGLE_WINSYS_X11 */
@@ -871,7 +897,7 @@ LRESULT CALLBACK input_mouse_hook(int code, WPARAM wParam, LPARAM lParam)
                 mouse_x = (area.left + area.right) / 2;
                 mouse_y = (area.top + area.bottom) / 2;
                 SetCursorPos(mouse_x, mouse_y);
-                mouse_first = false;
+                mouse_first = BUGLE_FALSE;
             }
             else if (mouse_x != info->pt.x || mouse_y != info->pt.y)
             {
@@ -898,15 +924,15 @@ void input_initialise(void)
     SetWindowsHookEx(WH_MOUSE, input_mouse_hook, (HINSTANCE) NULL, GetCurrentThreadId());
 }
 
-static bool input_key_lookup(const char *name, bugle_input_key *key)
+static bugle_bool input_key_lookup(const char *name, bugle_input_key *key)
 {
     if (name[0] >= 'A' && name[0] <= 'Z' && name[1] == '\0')
     {
         key->keysym = name[0];
-        return true;
+        return BUGLE_TRUE;
     }
     else
-        return false;
+        return BUGLE_FALSE;
 }
 
 #endif /* BUGLE_WINSYS_WINDOWS */
@@ -921,23 +947,23 @@ void input_initialise(void)
 {
 }
 
-static bool input_key_lookup(const char *name, bugle_input_key *key)
+static bugle_bool input_key_lookup(const char *name, bugle_input_key *key)
 {
     /* make all input keys appear valid, so that we don't reject config
      * files just because they have keys in them.
      */
     key->keysym = BUGLE_INPUT_NOSYMBOL;
-    return true;
+    return BUGLE_TRUE;
 }
 
 #endif /* BUGLE_WINSYS_NONE */
 
-bool bugle_input_key_lookup(const char *name, bugle_input_key *key)
+bugle_bool bugle_input_key_lookup(const char *name, bugle_input_key *key)
 {
     unsigned int state = 0;
 
-    key->press = true;
-    while (true)
+    key->press = BUGLE_TRUE;
+    while (BUGLE_TRUE)
     {
         if (name[0] == 'C' && name[1] == '-')
         {
@@ -959,10 +985,10 @@ bool bugle_input_key_lookup(const char *name, bugle_input_key *key)
             if (input_key_lookup(name, key))
             {
                 key->state = state;
-                return true;
+                return BUGLE_TRUE;
             }
             else
-                return false;
+                return BUGLE_FALSE;
         }
     }
 }

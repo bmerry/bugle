@@ -1,0 +1,60 @@
+#!/usr/bin/env python
+import os
+
+Import('aspects', 'version', 'package_sources', 'srcdir', 'PACKAGEROOT')
+
+if 'docs' in aspects['parts']:
+    env = Environment(
+            ENV = os.environ,
+            DOCBOOKFLAGS = '--stringparam bugle.version ' + version,
+            PACKAGEROOT = PACKAGEROOT,
+            tools = ['default', 'docbook', 'buglewrappers'])
+    if aspects['quiet'] == 'yes':
+        for i in ['DOCBOOK', 'DOCBOOKLINT']:
+            env[i + 'COMSTR'] = i + ' $TARGET'
+        for i in ['COPY', 'INSTALL']:
+            env[i + 'STR'] = i + ' $TARGET'
+        env['DOCBOOKFLAGS'] += ' --stringparam man.output.quietly 1'
+        env['DOCBOOKFLAGS'] += ' --stringparam chunk.quietly 1'
+
+    for i in ['XSLTPROC']:
+        if aspects[i] is not None and aspects[i] != '':
+            env[i] = aspects[i]
+
+    single = env.BuglePrebuild(
+            target = ['html/single.html'],
+            source = ['xhtml-single.xsl', 'bugle.xml'],
+            srcdir = srcdir,
+            builder = env.DocBook,
+            package_sources = package_sources)
+    single_css = env.CopyAs('html/bugle.css', 'bugle.css')
+
+    chunked = env.BuglePrebuild(
+            target = ['html/chunked/index.html'],
+            source = ['xhtml-chunk.xsl', 'bugle.xml'],
+            srcdir = srcdir,
+            builder = env.DocBook,
+            dir = 'html/chunked',
+            package_sources = package_sources)
+    chunked_css = env.CopyAs('html/chunked/bugle.css', 'bugle.css')
+
+    manpages = env.BuglePrebuild(
+            target = ['man/man3/bugle.3'],
+            source = ['manpages.xsl', 'bugle.xml'],
+            srcdir = srcdir,
+            builder = env.DocBook,
+            dir = 'man',
+            package_sources = package_sources)
+
+    Alias('install', [aspects['docdir'], aspects['mandir']])
+    env.Install(aspects['docdir'], 'html/single.html')
+    env.Install(aspects['docdir'], 'html/bugle.css')
+    env.Install(aspects['docdir'], 'html/chunked')
+
+    # For some reason trying to install from the top level just doesn't do
+    # anything.
+    # env.InstallAs(aspects['mandir'], 'man')
+    env.Install(aspects['mandir'] + '/man1', Glob('man/man1/*.1'))
+    env.Install(aspects['mandir'] + '/man3', Glob('man/man3/*.3'))
+    env.Install(aspects['mandir'] + '/man5', Glob('man/man5/*.5'))
+    env.Install(aspects['mandir'] + '/man7', Glob('man/man7/*.7'))

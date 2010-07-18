@@ -8,16 +8,16 @@
     <sect1 id="gles-introduction">
         <title>Introduction</title>
         <para>
-            &bugle; has partial support for OpenGL ES. The OpenGL ES 2.0
+            &Bugle; has partial support for OpenGL ES. The OpenGL ES 2.0
             support has been tested using the AMD OpenGL ES Emulator 1.3, and
-            OpenGL ES 1.1 support has been tested on a hardware platform.
+            both 1.1 and 2.0 support have been tested on an ARM Linux platform.
             OpenGL ES 1.0 support has not been tested and is probably broken.
             For OpenGL ES 1.x, only the Common (CM) profile is supported.
         </para>
         <para>
             The testing shows that basic features work. These include tracing,
             and the debugger using breakpoints, examining state, and examining
-            shaders. Texture and buffer viewing does not currently work
+            shaders. Texture and vertex buffer viewing does not currently work
             (due to limitations of the query mechanisms in OpenGL ES). Many of
             the filtersets do not work, either because they intrinsicly depend
             on features excluded from OpenGL ES, or because they have not yet
@@ -27,71 +27,33 @@
             It should be noted that when using an emulator that works on top
             of OpenGL, an alternative approach to debugging is to use
             &bugle; as a regular (desktop) OpenGL debugger. This will reveal
-            data such as textures and framebuffers. However, it cannot access
+            data such as textures, VBOs and framebuffers. However, it cannot access
             the error checking that is done in the emulation layer. For
             example, an <symbol>INVALID_ENUM</symbol> error will not be caught
             by the debugger if it is generated entirely within the emulation
             layer.
         </para>
         <para>
-            Support on top of X11 rather than Windows is theoretically present
+            Support on top of X11 is theoretically present
             and compiles, but has not been tested. Feedback from anyone with a
             working OpenGL ES implementation on an X11 system is welcomed.
         </para>
     </sect1>
     <sect1 id="gles-config">
-        <title>Configuration</title>
+        <title>Building</title>
         <para>
-            Configuration can be done largely as described in <xref
-                linkend="install-configure"/>. To indicate that OpenGL ES is
-            desired,
-            <parameter>--with-target=<replaceable>config</replaceable></parameter>
-            must be passed to <command>configure</command>, where
-            <replaceable>config</replaceable> is one of the values below:
+            The process for building is the same as described in <xref
+                linkend="install"/>. To indicate that OpenGL ES is
+            desired, add either <parameter>gltype=gles1cm</parameter> or
+            <parameter>gltype=gles2</parameter> to the
+            <command>scons</command> command line. There is no need to specify
+            <parameter>glwin</parameter>, as it will automatically default of
+            EGL.
         </para>
-        <variablelist>
-            <varlistentry>
-                <term>gles1cm-egl-posix</term>
-                <listitem><para>
-                        OpenGL ES 1.x Common profile with EGL on a UNIX-like
-                        operating system (only tested with GNU/Linux).
-                </para></listitem>
-            </varlistentry>
-            <varlistentry>
-                <term>gles1cm-legacy-egl-win</term>
-                <listitem><para>
-                        OpenGL ES 1.x Common profile with EGL on a Windows
-                        system. This is set up for the legacy integration
-                        guidelines, with a single library
-                        (<filename>libGLES_CM.so</filename>) containing both
-                        EGL and OpenGL ES functions, and using the
-                        <literal>__cdecl</literal> calling convention.
-                </para></listitem>
-            </varlistentry>
-            <varlistentry>
-                <term>gles2-egl-posix</term>
-                <listitem><para>
-                        OpenGL ES 2.x with EGL on a UNIX-like
-                        operating system (untested).
-                </para></listitem>
-            </varlistentry>
-            <varlistentry>
-                <term>gles2-egl-win</term>
-                <listitem><para>
-                        OpenGL ES 2.x with EGL on Windows
-                </para></listitem>
-            </varlistentry>
-        </variablelist>
         <note>
             <para>
                 Desktop OpenGL header files and libraries are still required
                 for the GUI debugger.
-            </para>
-        </note>
-        <note>
-            <para>
-                Currently OpenGL ES 1.x on Windows is not supported, but this
-                can easily be added.
             </para>
         </note>
         <para>
@@ -102,20 +64,20 @@
             unless the compiler is already configured to find them.
         </para>
     </sect1>
-    <sect1 id="gles-install">
-        <title>Installation</title>
+    <sect1 id="gles-windows">
+        <title>Windows specifics</title>
         <para>
             Apart from the usual installation step, some extra setup is
-            required on a Windows system when using OpenGL ES 2.0, due to the
-            limitations of the dynamic linker. Create copies of the system
+            required on a Windows system when using OpenGL ES, due to the
+            limitations of the dynamic linker. For OpenGL ES 2.0, create copies
+            of the system
             <filename>libEGL.dll</filename> and
             <filename>libGLESv2.dll</filename> called
             <filename>bglEGL.dll</filename> and
             <filename>bglGLESv2.dll</filename> respectively. Then modify each
             of these
             files so that links to the other use the replacement name. This
-            can be done as follows, although you might find that the version
-            of <command>sed</command> provided with MSYS is too old:
+            can be done as follows:
         </para>
 <screen>
 <prompt>$</prompt> <userinput>sed -b 's/libGLESv2/bglGLESv2/g' libEGL.dll &gt; bglEGL.dll</userinput>
@@ -128,6 +90,23 @@
             <filename>libGLESv2.dll</filename> installed by &bugle; are the
             first on the path, and that the renamed libraries you generated
             are also on the path.
+        </para>
+        <para>
+            For OpenGL ES 1.x, the process is the same, except that references
+            to <filename>libGLESv2.dll</filename> should be replaced by
+            <filename>libGLESv1_CM.dll</filename>.
+        </para>
+
+        <para>
+            Windows also has multiple function calling conventions, and
+            different implementations of OpenGL ES (particular for 1.x) make
+            inconsistent choices. You can override the automatic choice by
+            passing <parameter>callapi=__stdcall</parameter> or
+            <parameter>callapi=__cdecl</parameter> to select the
+            <symbol>stdcall</symbol> or <symbol>cdecl</symbol> calling
+            convention. You should be able to determine the convention by
+            examining <filename>GLES/glplatform.h</filename> or
+            <filename>GLES2/gl2platform.h</filename>.
         </para>
     </sect1>
 </chapter>

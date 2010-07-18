@@ -1,0 +1,22 @@
+#!/usr/bin/env python
+
+import BugleChecks
+
+Import('envs', 'srcdir', 'targets')
+
+envs['host'].Append(CPPPATH = [srcdir, Dir('.')])
+
+targets['bugleutils']['source'].extend(envs['host'].SharedObject(source = [
+    'string-null.c',
+    'math-null.c',
+    'io-null.c',
+    'time-null.c',
+    '../fallback/bugle_sinf.c',
+    '../fallback/bugle_cosf.c',
+    '../fallback/bugle_strdup.c',
+    '../fallback/bugle_strndup.c'
+    ]))
+
+targets['bugle']['source'].extend(envs['host'].SharedObject(source = [
+    'dl-null.c'
+    ]))

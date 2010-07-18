@@ -1,0 +1,29 @@
+#!/usr/bin/env python
+import BugleChecks
+
+Import('srcdir', 'envs', 'package_sources')
+
+# Ensure that <config.h> comes from the one in this directory
+budgie_env = envs['build'].Clone(CXXFILESUFFIX = '.cpp')
+budgie_env.Prepend(CPPPATH = [Dir('.')])
+
+conf = Configure(budgie_env, custom_tests = BugleChecks.tests, config_h = 'config.h')
+if not conf.CheckLibWithHeader(None, 'regex.h', 'c++', 'regcomp(0, 0, 0);'):
+    if not conf.CheckLibWithHeader('regex', 'regex.h', 'c++', 'regcomp(0, 0, 0);'):
+        print "A regex library is required"
+        Exit(1)
+budgie_env = conf.Finish()
+
+budgie_env.BugleCXXFile('bcparser.yy', srcdir, package_sources, YACCFLAGS = '--defines=${TARGET.dir}/bcparser.h')
+budgie_env.BugleCXXFile('bclexer.ll', srcdir, package_sources, LEXFLAGS = '-Pbc_yy')
+budgie_env.BugleCXXFile('tulexer.ll', srcdir, package_sources)
+
+budgie_list = budgie_env.Program('budgie', source = [
+    'budgie.cpp',
+    'tree.cpp',
+    'treeutils.cpp',
+    'bcparser.cpp',
+    'bclexer.cpp',
+    'tulexer.cpp'])
+
+envs['tu'].Append(BUDGIE = budgie_list[0])

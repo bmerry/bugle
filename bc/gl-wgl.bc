@@ -1,5 +1,0 @@
-LIBRARY c:\\windows\\system32\\opengl32.dll
-CALLAPI __stdcall
-
-INCLUDE bc/gl/gl.bc
-INCLUDE bc/wgl/wgl.bc

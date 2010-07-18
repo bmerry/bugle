@@ -24,19 +24,19 @@
 #endif
 #include <bugle/linkedlist.h>
 #include <bugle/objects.h>
-#include <stdbool.h>
+#include <bugle/bool.h>
+#include <bugle/memory.h>
 #include <stddef.h>
 #include <string.h>
 #include <stdlib.h>
 #include <assert.h>
-#include "tls.h"
-#include "xalloc.h"
+#include "platform/threads.h"
 
 struct object_class
 {
     size_t count;       /* number of registrants */
     linked_list info;   /* list of object_class_info, defined in objects.c */
-    gl_tls_key_t current;
+    bugle_thread_key_t current;
 
     struct object_class *parent;
     object_view parent_view; /* view where we store current of this class in parent */
@@ -60,14 +60,14 @@ object_class * bugle_object_class_new(object_class *parent)
 {
     object_class *klass;
 
-    klass = XMALLOC(object_class);
-    bugle_list_init(&klass->info, free);
+    klass = BUGLE_MALLOC(object_class);
+    bugle_list_init(&klass->info, bugle_free);
     klass->parent = parent;
     klass->count = 0;
     if (parent)
         klass->parent_view = bugle_object_view_new(parent, NULL, NULL, sizeof(object *));
     else
-        gl_tls_key_init(klass->current, NULL);
+        bugle_thread_key_create(&klass->current, NULL);
     return klass;
 }
 
@@ -75,8 +75,8 @@ void bugle_object_class_free(object_class *klass)
 {
     bugle_list_clear(&klass->info);
     if (!klass->parent)
-        gl_tls_key_destroy(klass->current);
-    free(klass);
+        bugle_thread_key_delete(klass->current);
+    bugle_free(klass);
 }
 
 object_view bugle_object_view_new(object_class *klass,
@@ -86,7 +86,7 @@ object_view bugle_object_view_new(object_class *klass,
 {
     object_class_info *info;
 
-    info = XMALLOC(object_class_info);
+    info = BUGLE_MALLOC(object_class_info);
     info->constructor = constructor;
     info->destructor = destructor;
     info->size = size;
@@ -94,14 +94,14 @@ object_view bugle_object_view_new(object_class *klass,
     return klass->count++;
 }
 
-object *bugle_object_new(object_class *klass, const void *key, bool make_current)
+object *bugle_object_new(object_class *klass, const void *key, bugle_bool make_current)
 {
     object *obj;
     linked_list_node *i;
     const object_class_info *info;
     size_t j;
 
-    obj = xmalloc(sizeof(object) + klass->count * sizeof(void *) - sizeof(void *));
+    obj = bugle_malloc(sizeof(object) + klass->count * sizeof(void *) - sizeof(void *));
     obj->klass = klass;
     obj->count = klass->count;
 
@@ -110,7 +110,7 @@ object *bugle_object_new(object_class *klass, const void *key, bool make_current
         info = (const object_class_info *) bugle_list_data(i);
         if (info->size)
         {
-            obj->views[j] = xmalloc(info->size);
+            obj->views[j] = bugle_malloc(info->size);
             memset(obj->views[j], 0, info->size);
         }
         else
@@ -142,9 +142,9 @@ void bugle_object_free(object *obj)
         info = (const object_class_info *) bugle_list_data(i);
         if (info->destructor)
             (*info->destructor)(obj->views[j]);
-        free(obj->views[j]);
+        bugle_free(obj->views[j]);
     }
-    free(obj);
+    bugle_free(obj);
 }
 
 object *bugle_object_get_current(const object_class *klass)
@@ -158,7 +158,7 @@ object *bugle_object_get_current(const object_class *klass)
         else return *(object **) ans;
     }
     else
-        return (object *) gl_tls_get(klass->current);
+        return (object *) bugle_thread_getspecific(klass->current);
 }
 
 void *bugle_object_get_current_data(const object_class *klass, object_view view)
@@ -176,7 +176,7 @@ void bugle_object_set_current(object_class *klass, object *obj)
         if (tmp) *(object **) tmp = obj;
     }
     else
-        gl_tls_set(klass->current, (void *) obj);
+        bugle_thread_setspecific(klass->current, (void *) obj);
 }
 
 void *bugle_object_get_data(object *obj, object_view view)

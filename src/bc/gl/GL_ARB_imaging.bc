@@ -1,0 +1,2 @@
+LENGTH PARAMETER gl(Get)?(ColorTable|Convolution|Histogram|Minmax)Parameter[if]v 2 bugle_count_gl($f, $1)
+DUMP PARAMETER gl(Get)?(ColorTable|Convolution|Histogram|Minmax)Parameter[if]v 2 bugle_dump_convert($1, &$$, $t$, $W)

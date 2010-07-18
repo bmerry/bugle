@@ -33,12 +33,14 @@
 #include <bugle/log.h>
 #include <bugle/stats.h>
 #include <bugle/hashtable.h>
-#include "common/threads.h"
+#include <bugle/bool.h>
+#include <bugle/memory.h>
+#include <bugle/string.h>
+#include "platform/threads.h"
 #include <budgie/reflect.h>
 #include <budgie/addresses.h>
 #include "conffile.h"
-#include "dlopen.h"
-#include "xalloc.h"
+#include "platform/dl.h"
 
 #define FILTERFILE "/.bugle/filters"
 
@@ -69,11 +71,11 @@ static void load_config(void)
     const config_variable *var;
     filter_set *f;
     linked_list_node *i, *j;
-    bool debugging;
+    bugle_bool debugging;
     bugle_input_key key;
 
     if (getenv("BUGLE_FILTERS"))
-        config = xstrdup(getenv("BUGLE_FILTERS"));
+        config = bugle_strdup(getenv("BUGLE_FILTERS"));
     home = getenv("HOME");
     chain_name = getenv("BUGLE_CHAIN");
     if (chain_name && !*chain_name) chain_name = NULL;
@@ -85,7 +87,7 @@ static void load_config(void)
     {
         if (!config)
         {
-            config = XNMALLOC(strlen(home) + strlen(FILTERFILE) + 1, char);
+            config = BUGLE_NMALLOC(strlen(home) + strlen(FILTERFILE) + 1, char);
             sprintf(config, "%s%s", home, FILTERFILE);
         }
         if ((yyin = fopen(config, "r")))
@@ -156,7 +158,7 @@ static void load_config(void)
         }
         else
             fprintf(stderr, "failed to open config file %s; running in passthrough mode\n", config);
-        free(config);
+        bugle_free(config);
     }
     else if (!debugging)
         fputs("$HOME not defined; running in passthrough mode\n", stderr);
@@ -168,7 +170,7 @@ static void load_config(void)
         fputs("could not find the 'invoke' filter-set; aborting\n", stderr);
         exit(1);
     }
-    filter_set_add(f, true);
+    filter_set_add(f, BUGLE_TRUE);
     /* Auto-load the debugger filter-set if using the debugger */
     if (debugging)
     {
@@ -178,7 +180,7 @@ static void load_config(void)
             fputs("could not find the 'debugger' filter-set; aborting\n", stderr);
             exit(1);
         }
-        filter_set_add(f, true);
+        filter_set_add(f, BUGLE_TRUE);
     }
 }
 
@@ -203,7 +205,7 @@ static void initialise_all(void)
     filters_initialise();
     initialise_core_filters();
     dump_initialise();
-    dlopen_initialise();
+    bugle_dl_enable_interception();
     load_config();
     filters_finalise();
 }

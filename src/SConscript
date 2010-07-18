@@ -1,0 +1,351 @@
+#!/usr/bin/env python
+import os
+from CrossEnvironment import CrossEnvironment
+import BugleChecks
+from BugleTarget import *
+
+Import('aspects', 'subdir', 'srcdir', 'version', 'package_sources', 'PACKAGEROOT')
+
+def check_gl(conf, lib, headers):
+    '''
+    Looks for an OpenGL library of the appropriate name.
+
+    @param conf: The configuration context to use for the check
+    @type conf:  SCons.Configure
+    @param lib:  The library to look for. If the name starts of "lib", it
+                 will be removed on platforms where that is already a library
+                 prefix.
+    @type lib:   string
+    @param headers: The header files to include for the check.
+    @type headers: list of strings
+    '''
+
+    if lib.startswith('lib') and conf.env.subst('${SHLIBPREFIX}') == 'lib':
+        lib = lib[3:]
+
+    # Incrementally check the headers
+    for i in range(len(headers)):
+        if not conf.CheckCHeader(headers[:(i+1)], '<>'):
+            print headers[i] + ' not found'
+            Exit(1)
+    if 'interceptor' in aspects['parts'] or 'tests' in aspects['parts']:
+        if not conf.CheckLibWithHeader(lib, headers, 'c', 'glFlush();', False):
+            print conf.env.subst('${SHLIBPREFIX}' + lib + '${SHLIBSUFFIX} not found')
+            Exit(1)
+
+def checks(env, gl_lib, gl_headers):
+    '''
+    Do configuration checks
+    '''
+    if env.GetOption('help') or env.GetOption('clean'):
+        return env
+
+    conf = Configure(env, custom_tests = BugleChecks.tests, config_h = 'config.h')
+    conf.CheckLib('m')
+    conf.CheckHeader('stdint.h')
+    for i in ['siglongjmp']:
+        conf.CheckFunc(i)
+    conf.CheckAttributePrintf()
+    conf.CheckAttributeConstructor()
+    conf.CheckAttributeHiddenAlias()
+    conf.CheckInline()
+
+    check_gl(conf, gl_lib, gl_headers)
+    return conf.Finish()
+
+def apply_compiler(env, compiler, config):
+    if compiler == 'msvc':
+        env.Tool('msvc')
+        env.Tool('mslink')
+        env.Tool('mslib')
+        if config == 'debug':
+            env.Append(CCFLAGS = ['/Zi'])
+            env.Append(LINKFLAGS = ['/DEBUG'])
+        elif config == 'release':
+            pass
+        else:
+            raise RuntimeError, 'Unknown config "%s"' % config
+
+    elif compiler == 'gcc':
+        env.Tool('gcc')
+        env.Tool('g++')
+        env.Tool('gnulink')
+        env.Tool('ar')
+        env.AppendUnique(CCFLAGS = ['-Wall'])
+        if env is envs['host']:
+            env.AppendUnique(CCFLAGS = ['-fvisibility=hidden'])
+        env.AppendUnique(CFLAGS = ['-std=c89', '-Wstrict-prototypes'])
+        if config == 'debug':
+            env.AppendUnique(CCFLAGS = ['-g'])
+        elif config == 'release':
+            env.AppendUnique(CCFLAGS = ['-O2'], LINKFLAGS = ['-s'])
+        else:
+            raise RuntimeError, 'Unknown config "%s"' % config
+
+    elif compiler == 'mingw':
+        env.Tool('mingw')
+        env.AppendUnique(CCFLAGS = ['-Wall', '-mthreads'])
+        # We can't use -std=c89 on MinGW because there is no equivalent to
+        # _POSIX_C_SOURCE to turn on MSVCRT extensions in headers
+        env.AppendUnique(CFLAGS = ['-Wstrict-prototypes'])
+        env.AppendUnique(CPPDEFINES = [
+            ('__USE_MINGW_ANSI_STDIO', '1'),
+            ('GLUT_DISABLE_ATEXIT_HACK', '1')])
+        if config == 'debug':
+            env.AppendUnique(CCFLAGS = ['-g'])
+        elif config == 'release':
+            env.AppendUnique(CCFLAGS = ['-O2'], LINKFLAGS = ['-s'])
+        else:
+            raise RuntimeError, 'Unknown config "%s"' % config
+
+    else:
+        raise RuntimeError, 'Don\'t know how to apply compiler "%s"' % compiler
+
+def apply_compilation_aspects(env, aspects):
+    # single values
+    for i in ['CC', 'CXX']:
+        if aspects[i] is not None and aspects[i] != '':
+            env[i] = aspects[i]
+    # Lists
+    for i in ['CFLAGS', 'CCFLAGS', 'CXXFLAGS', 'LINKFLAGS']:
+        if aspects[i] is not None and aspects[i] != '':
+            env.AppendUnique(**{i: Split(aspects[i])})
+    # Colon-separated lists
+    for i in ['CPPPATH', 'LIBPATH']:
+        if aspects[i] is not None and aspects[i] != '':
+            env.AppendUnique(**{i: aspects[i].split(':')})
+
+def get_substs(aspects):
+    '''
+    Obtains a dictionary of substitutions to make in porting.h
+    '''
+
+    substs = {}
+    for i in ['fs', 'binfmt', 'gltype', 'glwin', 'winsys', 'platform']:
+        name = 'BUGLE_' + i
+        value = name + '_' + aspects[i]
+        name = name.upper()
+        value = value.upper()
+        substs[name] = value
+    substs['PACKAGE_VERSION'] = version
+    for a in aspects.aspects.values():
+        if a.group == 'path':
+            substs[a.name] = a.get()
+    return substs
+
+def get_common_options():
+    '''Returns a dictionary of options for use in all environments'''
+
+    # Values common to both build environment and host environment
+    common_kw = dict(
+            ENV = os.environ,
+            CPPPATH = [
+                Dir('#'),
+                srcdir.Dir('.'),
+                srcdir.Dir('include'),
+                Dir('.'),
+                Dir('include')],
+            BCPATH = [srcdir.Dir('.'), Dir('.')],
+            PACKAGEROOT = PACKAGEROOT)
+
+    if aspects['quiet'] == 'yes':
+        for i in ['ALIAS', 'APITABLESC', 'APITABLESH',
+                'CC', 'CXX', 'LDMODULE', 'LEX', 'LINK',
+                'SHCC', 'SHCXX', 'SHLINK', 'YACC']:
+            common_kw[i + 'COMSTR'] = i + ' $TARGET'
+        common_kw['TUCOMSTR'] = 'TU ${TARGETS[1]}'
+        common_kw['BUDGIECOMSTR'] = 'BUDGIE ${TARGETS}'
+        for i in ['COPY', 'INSTALL']:
+            common_kw[i + 'STR'] = i + ' $TARGET'
+    return common_kw
+
+def get_initial_envs(common_kw):
+    '''Returns a dictionary of environments in unconfigured state'''
+
+    envs = {}
+    # Environment for tools that have to run on the build machine
+    envs['build'] = Environment(
+            YACCHXXFILESUFFIX = '.h',
+            tools = ['lex', 'yacc', 'buglewrappers', 'filesystem', 'packaging'],
+            **common_kw)
+
+    # Environment for the target machine
+    envs['host'] = CrossEnvironment(
+            CPPDEFINES = [
+                ('LIBDIR', r'\"%s\"' % aspects['libdir']),
+                ('PKGLIBDIR', r'\"%s\"' % aspects['pkglibdir']),
+                ('HAVE_CONFIG_H', 1)
+                ],
+            tools = ['lex', 'yacc', 'subst', 'buglewrappers', 'filesystem', 'install', 'packaging'],
+            **common_kw
+            )
+
+    # Environment for generating parse tree. This has to be GCC, and in cross
+    # compilation should be the cross-gcc so that the correct headers are
+    # identified for the target.
+    envs['tu'] = CrossEnvironment(
+            tools = ['gcc', 'budgie', 'gengl', 'tu', 'subst'],
+            **common_kw)
+
+    return envs
+
+def get_runtime(aspects):
+    '''
+    Get header files and libraries for the GL variant. It returns three lists:
+      - A list of headers that are needed to include the GL headers
+      - The GL headers, for parsing out extension information
+      - The libraries containing GL
+
+    @return a (pre_headers, headers, libraries) tuple, with relative paths
+    '''
+    pre_headers = []
+    headers = []
+    libraries = []
+
+    if aspects['glwin'] == 'wgl':
+        pre_headers.extend(['windows.h', 'GL/gl.h'])
+        headers.extend(['wingdi.h', 'GL/wglext.h'])
+        targets['bugle']['source'].extend([File('gl/opengl32.def')])
+        targets['bugle']['LIBS'].extend(['user32'])
+    if aspects['glwin'] == 'glx':
+        headers.extend(['GL/glx.h', 'GL/glxext.h'])
+        targets['bugle']['LIBS'].extend(['X11'])
+        targets['bugle']['source'].extend([File('glx/glxdump.c')])
+    if aspects['glwin'] == 'egl':
+        headers.extend(['EGL/egl.h', 'EGL/eglext.h'])
+        libraries.append('libEGL')
+
+    if aspects['gltype'] == 'gl':
+        headers.extend(['GL/gl.h', 'GL/glext.h'])
+        if aspects['glwin'] == 'wgl':
+            libraries.append('opengl32')
+        else:
+            libraries.append('libGL')
+    if aspects['gltype'] == 'gles1cm':
+        headers.extend(['GLES/gl.h', 'GLES/glext.h'])
+        libraries.append('libGLESv1_CM')
+    if aspects['gltype'] == 'gles2':
+        headers.extend(['GLES2/gl2.h', 'GLES2/gl2ext.h'])
+        libraries.append('libGLESv2')
+
+    return pre_headers, headers, libraries
+
+############################
+### Start of main script ###
+############################
+
+common_kw = get_common_options()
+envs = get_initial_envs(common_kw)
+targets = {
+        'bugle': Target(),
+        'bugleutils': Target()
+        }
+
+if aspects['host'] != '':
+    envs['host']['HOST'] = aspects['host']
+apply_compiler(envs['build'], aspects['build-compiler'], aspects['config'])
+apply_compiler(envs['host'], aspects['host-compiler'], aspects['config'])
+for env in envs.itervalues():
+    apply_compilation_aspects(env, aspects)
+
+# Deal with choice aspects
+pre_headers, headers, libraries = get_runtime(aspects)
+if aspects['binfmt'] == 'pe':
+    # Can't use LD_PRELOAD on windows, so have to use the same name
+    targets['bugle']['target'] = libraries[-1]
+else:
+    targets['bugle']['target'] = 'bugle'
+
+Export('envs', 'targets', 'libraries')
+# Modify environment based on configuration checks
+envs['host'] = checks(envs['host'], libraries[-1], pre_headers + headers)
+# Modify environments with include paths and config.h options
+subdir(srcdir, 'platform/' + aspects['platform'])
+# Modify environments with BUDGIE tool
+subdir(srcdir, 'budgie')
+
+#################################
+### Start of specific targets ###
+#################################
+
+budgie_outputs = [
+        'include/budgie/call.h',
+        'include/budgie/types2.h',
+        'include/budgie/callapi.h',
+        'budgielib/defines.h',
+        'budgielib/tables.c',
+        'budgielib/lib.c'
+        ]
+envs['tu'].Tu(['data/gl.o', 'data/gl.tu'], 'data/gl.c')
+envs['tu'].Budgie(budgie_outputs, ['data/gl.tu', 'bc/main.bc'])
+envs['tu'].BudgieAlias(target = ['bc/alias.bc'], source = headers)
+envs['tu'].ApitablesC(target = ['apitables.c'], source = [File('budgielib/defines.h')] + headers)
+envs['tu'].ApitablesH(target = ['apitables.h'], source = [File('budgielib/defines.h')] + headers)
+
+substs = get_substs(aspects)
+envs['host'].SubstFile('include/bugle/porting.h', 'include/bugle/porting.h.in', substs)
+bugle_pc = envs['host'].SubstFile('bugle.pc', 'bugle.pc.in', substs)
+envs['host'].Install(aspects['libdir'] + '/pkgconfig', source = bugle_pc)
+Alias('install', aspects['libdir'] + '/pkgconfig')
+
+targets['bugleutils'].update({
+    'target': 'bugleutils',
+    'version': '8.0.0'})
+targets['bugleutils']['source'].extend([
+    'gl/gltypes.c',
+    'apireflect.c',
+    'glwin/glwintypes.c',
+    'common/memory.c',
+    'common/protocol.c',
+    'common/hashtable.c',
+    'common/linkedlist.c',
+    'common/workqueue.c',
+    'common/io.c',
+    'budgielib/internal.c',
+    'budgielib/reflect.c',
+    'budgielib/tables.c',
+    'apitables.c'])
+
+targets['bugleutils'].out = envs['host'].BugleSharedLibrary(
+        aspects['binfmt'],
+        libdir = aspects['libdir'], bindir = aspects['bindir'],
+        **targets['bugleutils'])
+
+if 'interceptor' in aspects['parts']:
+    targets['bugle'].update({
+        'version': '9.0.0'})
+
+    targets['bugle']['source'].extend([
+        envs['host'].BugleCFile(['confparse.y', 'statsparse.y'], srcdir, package_sources, YACCFLAGS = '-d'),
+        envs['host'].BugleCFile(['conflex.l', 'statslex.l'], srcdir, package_sources),
+        'interceptor.c',
+        'filters.c',
+        'stats.c',
+        'log.c',
+        'objects.c',
+        'input.c',
+        'budgielib/addresses.c',
+        'budgielib/lib.c',
+        'gl/glutils.c',
+        'gl/glsl.c',
+        'glwin/trackcontext.c',
+        'gl/gldisplaylist.c',
+        'gl/globjects.c',
+        'gl/glextensions.c',
+        'gl/glbeginend.c',
+        aspects['gltype'] + '/gldump.c',
+        aspects['gltype'] + '/glstate.c',
+        aspects['glwin'] + '/glwin.c'])
+    targets['bugle']['LIBS'].extend(targets['bugleutils'].out)
+
+    targets['bugle'].out = envs['host'].BugleSharedLibrary(
+            aspects['binfmt'],
+            libdir = aspects['libdir'], bindir = aspects['bindir'],
+            **targets['bugle'])
+
+# These need to come after the targets have been built
+subdir(srcdir, 'bc')
+subdir(srcdir, 'filters')
+subdir(srcdir, 'gldb')
+subdir(srcdir, 'tests')
+subdir(srcdir, 'include')
