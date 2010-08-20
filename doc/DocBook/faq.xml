@@ -209,33 +209,32 @@
                         move other ones out of the way.
                 </para></answer>
             </qandaentry>
-
-            <qandaentry>
-                <question><para>
-                        I have NVIDIA drivers. Why does my program fall back to
-                        indirect rendering when I use &bugle;?
-                </para></question>
-                <answer>
-                    <para>
-                        This has been reported by several users. It appears to
-                        be specific
-                        to the way some distribution vendors have packaged the
-                        drivers. Users have reported that installing the NVIDIA
-                        drivers with NVIDIA's installer fixes the problem.
-                    </para>
-                    <para>
-                        I have not been able to reproduce this bug on my Gentoo
-                        system. If anybody has further information about what
-                        causes the issue, patches are welcome.
-                    </para>
-                </answer>
-            </qandaentry>
         </qandaset>
     </sect1>
 
     <sect1 id="faq-running">
         <title>Running</title>
         <qandaset defaultlabel="qanda">
+            <qandaentry>
+                <question><para>
+                        I just upgraded &bugle; and now it crashes. What's wrong?
+                </para></question>
+                <answer>
+                    <para>
+                        You may have ended up with a mix of old and new
+                        versions that don't work together.  Try removing all
+                        files related to the previous version
+                        of &bugle; (in particular, <filename
+                            class="libraryfile">libbugle.so*</filename>,
+                        <filename
+                            class="libraryfile">libbugleutils.so*</filename>
+                        and all the filter-set libraries (in <filename
+                            class="directory">/usr/local/lib/bugle</filename>
+                        for example). Also be sure to run
+                        <command>ldconfig</command> after installation.
+                    </para>
+                </answer>
+            </qandaentry>
             <qandaentry>
                 <question><para>
                         What is the performance penalty?
