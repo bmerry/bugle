@@ -8,10 +8,8 @@ WGL port
 - better robustness to missing WGL/GLX extensions
 - support read != draw DC in glwin.c
 - handle cross-DLL data import/export cleanly
-- put suitable visibility tags on all export functions, so that -export-symbols-regex and --export-all-symbols are not needed
 - make gldb and gldb-gui work
   - kill takes out gldb-gui [fixed?]
-- prevent libraries from being loaded twice
 - fix crash in shutdown on es2demo [fixed?]
 - make Cygwin work
 - doc updates
@@ -22,12 +20,11 @@ camera filter-set
 - do the right thing when event handling is in a different
   thread to rendering
 
-gldb
-----
+gldb core
+---------
 - more robust wire protocol
   - ability to obtain list of functions for tab completion in the GUI
   - ability to get the target to do dump formatting when the client doesn't know how
-- allow Ctrl-C to abort current line when reading commands
 - set filter variables on the fly
 - enable reporting of segfaults
 
@@ -50,7 +47,7 @@ bugle
 - exploit per-context, per-filter state e.g. for video
 - proper support for enabled but inactive filtersets
 - rewrite some things to use hash tables
-- autoconf test for GLENUM_IS_GLUINT
+- scons test for GLENUM_IS_GLUINT
 - better handling of texture proxies
 - capture more information about call lists
 - finish documenting API in DocBook
@@ -71,4 +68,3 @@ long term
 - internationalisation
 - make gldb-gui tabs totally modular (separate shared objects)
 - write support for state
-- scons build system
