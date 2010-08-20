@@ -1,5 +1,5 @@
 /*  BuGLe: an OpenGL debugging tool
- *  Copyright (C) 2004-2008  Bruce Merry
+ *  Copyright (C) 2004-2008, 2010  Bruce Merry
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -154,6 +154,20 @@ static bugle_bool stats_primitives_glDrawElements(function_call *call, const cal
     return BUGLE_TRUE;
 }
 
+#ifdef GL_EXT_draw_instanced
+static bugle_bool stats_primitives_glDrawArraysInstancedEXT(function_call *call, const callback_data *data)
+{
+    stats_primitives_update(*call->glDrawArraysInstancedEXT.arg0, *call->glDrawArraysInstancedEXT.arg2 * *call->glDrawArraysInstancedEXT.arg3);
+    return BUGLE_TRUE;
+}
+
+static bugle_bool stats_primitives_glDrawElementsInstancedEXT(function_call *call, const callback_data *data)
+{
+    stats_primitives_update(*call->glDrawElementsInstancedEXT.arg0, *call->glDrawElementsInstancedEXT.arg1 * *call->glDrawElementsInstancedEXT.arg4);
+    return BUGLE_TRUE;
+}
+#endif /* GL_EXT_draw_instanced */
+
 #ifdef GL_VERSION_1_1
 static bugle_bool stats_primitives_glDrawRangeElements(function_call *call, const callback_data *data)
 {
@@ -223,6 +237,10 @@ static bugle_bool stats_primitives_initialise(filter_set *handle)
     f = bugle_filter_new(handle, "stats_primitives");
     bugle_filter_catches(f, "glDrawElements", BUGLE_FALSE, stats_primitives_glDrawElements);
     bugle_filter_catches(f, "glDrawArrays", BUGLE_FALSE, stats_primitives_glDrawArrays);
+#ifdef GL_EXT_draw_instanced
+    bugle_filter_catches(f, "glDrawArraysInstancedEXT", BUGLE_FALSE, stats_primitives_glDrawArraysInstancedEXT);
+    bugle_filter_catches(f, "glDrawElementsInstancedEXT", BUGLE_FALSE, stats_primitives_glDrawElementsInstancedEXT);
+#endif
 #ifdef GL_VERSION_1_1
     bugle_filter_catches(f, "glDrawRangeElements", BUGLE_FALSE, stats_primitives_glDrawRangeElements);
     bugle_filter_catches(f, "glMultiDrawElements", BUGLE_FALSE, stats_primitives_glMultiDrawElements);
