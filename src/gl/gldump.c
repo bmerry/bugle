@@ -1,5 +1,5 @@
 /*  BuGLe: an OpenGL debugging tool
- *  Copyright (C) 2004-2008  Bruce Merry
+ *  Copyright (C) 2004-2008, 2010  Bruce Merry
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -169,13 +169,32 @@ budgie_type bugle_gl_type_to_type_ptr_pbo_sink(GLenum gl_type)
     {
         GLint id;
         CALL(glGetIntegerv)(GL_PIXEL_PACK_BUFFER_BINDING_EXT, &id);
-        if (id) 
+        if (id)
         {
             if (sizeof(unsigned long) == sizeof(GLvoid *)) return TYPE_m;
             else return TYPE_P6GLvoid;
         }
     }
 #endif
+    return bugle_gl_type_to_type_ptr(gl_type);
+}
+
+budgie_type bugle_gl_type_to_type_ptr_vbo_element(GLenum gl_type)
+{
+    if (
+#if BUGLE_GLTYPE_GL
+        BUGLE_GL_HAS_EXTENSION_GROUP(GL_ARB_vertex_buffer_object) &&
+#endif
+        bugle_gl_begin_internal_render())
+    {
+        GLint id;
+        CALL(glGetIntegerv)(GL_ELEMENT_ARRAY_BUFFER_BINDING, &id);
+        if (id)
+        {
+            if (sizeof(unsigned long) == sizeof(GLvoid *)) return TYPE_m;
+            else return TYPE_P6GLvoid;
+        }
+    }
     return bugle_gl_type_to_type_ptr(gl_type);
 }
 

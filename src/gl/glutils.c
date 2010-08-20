@@ -153,6 +153,16 @@ void bugle_gl_filter_catches_drawing(filter *f, bugle_bool inactive, filter_call
     bugle_filter_catches(f, "glDrawRangeElements", inactive, callback);
     bugle_filter_catches(f, "glMultiDrawElements", inactive, callback);
     bugle_filter_catches(f, "glMultiDrawArrays", inactive, callback);
+    bugle_filter_catches(f, "glDrawElementsInstancedEXT", inactive, callback);
+    bugle_filter_catches(f, "glDrawArraysInstancedEXT", inactive, callback);
+    bugle_filter_catches(f, "glDrawElementsBaseVertex", inactive, callback);
+    bugle_filter_catches(f, "glDrawRangeElementsBaseVertex", inactive, callback);
+    bugle_filter_catches(f, "glDrawElementsInstancedBaseVertex", inactive, callback);
+    bugle_filter_catches(f, "glMultiDrawElementsBaseVertex", inactive, callback);
+    bugle_filter_catches(f, "glDrawArraysIndirect", inactive, callback);
+    bugle_filter_catches(f, "glDrawElementsIndirect", inactive, callback);
+    bugle_filter_catches(f, "glDrawTransformFeedback", inactive, callback);
+    bugle_filter_catches(f, "glDrawTransformFeedbackStream", inactive, callback);
 }
 
 bugle_bool bugle_gl_call_is_immediate(function_call *call)

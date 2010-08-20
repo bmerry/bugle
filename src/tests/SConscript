@@ -131,6 +131,7 @@ else:
                     'interpose',
                     'procaddress'])
             log_tests.extend([
+                    ('draw', 'trace'),
                     ('extoverride', 'extoverride'),
                     ('pbo', 'trace'),
                     ('queries', 'trace'),

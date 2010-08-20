@@ -1,5 +1,5 @@
 /*  BuGLe: an OpenGL debugging tool
- *  Copyright (C) 2004-2009  Bruce Merry
+ *  Copyright (C) 2004-2010  Bruce Merry
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -29,11 +29,14 @@
  * The _ptr variant returns the budgie_type variant for a pointer to
  * that type. The _pbo_source and _pbo_sink variant first check if a PBO
  * source/sink is active, and if so returns an integral type of suitable size.
+ * Similarly, the _vbo_element version first checks if an element array buffer
+ * is active.
  */
 BUGLE_EXPORT_PRE budgie_type bugle_gl_type_to_type(GLenum gl_type) BUGLE_EXPORT_POST;
 BUGLE_EXPORT_PRE budgie_type bugle_gl_type_to_type_ptr(GLenum gl_type) BUGLE_EXPORT_POST;
 BUGLE_EXPORT_PRE budgie_type bugle_gl_type_to_type_ptr_pbo_source(GLenum gl_type) BUGLE_EXPORT_POST;
 BUGLE_EXPORT_PRE budgie_type bugle_gl_type_to_type_ptr_pbo_sink(GLenum gl_type) BUGLE_EXPORT_POST;
+BUGLE_EXPORT_PRE budgie_type bugle_gl_type_to_type_ptr_vbo_element(GLenum gl_type) BUGLE_EXPORT_POST;
 BUGLE_EXPORT_PRE size_t bugle_gl_type_to_size(GLenum gl_type) BUGLE_EXPORT_POST;
 BUGLE_EXPORT_PRE int bugle_gl_format_to_count(GLenum format, GLenum type) BUGLE_EXPORT_POST;
 

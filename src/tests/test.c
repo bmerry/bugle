@@ -56,6 +56,7 @@ extern test_status dlopen_suite(void);
 extern test_status pointers_suite(void);
 extern test_status texcomplete_suite(void);
 #endif
+extern test_status draw_suite(void);
 extern test_status errors_suite(void);
 extern test_status extoverride_suite(void);
 extern test_status interpose_suite(void);
@@ -79,6 +80,7 @@ static const test_suite suites[] =
     { "pointers",       TEST_FLAG_LOG | TEST_FLAG_CONTEXT, pointers_suite },
     { "texcomplete",    TEST_FLAG_LOG | TEST_FLAG_CONTEXT, texcomplete_suite },
 #endif
+    { "draw",           TEST_FLAG_LOG | TEST_FLAG_CONTEXT, draw_suite },
     { "errors",         TEST_FLAG_CONTEXT,                 errors_suite },
     { "extoverride",    TEST_FLAG_LOG | TEST_FLAG_CONTEXT, extoverride_suite },
     { "interpose",      TEST_FLAG_CONTEXT,                 interpose_suite },

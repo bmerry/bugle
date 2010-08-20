@@ -1,4 +1,6 @@
-TYPE PARAMETER glDrawArraysInstancedEXT 0 TYPE_15GLprimitiveenum
+TYPE PARAMETER glDrawArraysInstanced(EXT|ARB)? 0 TYPE_15GLprimitiveenum
 
-TYPE PARAMETER glDrawElementsInstancedEXT 0 TYPE_15GLprimitiveenum
-LENGTH PARAMETER glDrawElementsInstancedEXT 3 bugle_gl_type_to_size($2) * $1
+TYPE PARAMETER glDrawElementsInstanced(EXT|ARB)? 0 TYPE_15GLprimitiveenum
+TYPE PARAMETER glDrawElementsInstanced(EXT|ARB)? 3 bugle_gl_type_to_type_ptr_vbo_element($2)
+LENGTH PARAMETER glDrawElementsInstanced(EXT|ARB)? 3 $1
+

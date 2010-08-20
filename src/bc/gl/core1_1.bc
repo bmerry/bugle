@@ -36,7 +36,8 @@ LENGTH PARAMETER glPrioritizeTextures 1 $0
 LENGTH PARAMETER glPrioritizeTextures 2 $0
 
 # Functions where the count is determined by the token
-LENGTH PARAMETER glDrawElements 3 bugle_gl_type_to_size($2) * $1
+TYPE PARAMETER glDrawElements 3 bugle_gl_type_to_type_ptr_vbo_element($2)
+LENGTH PARAMETER glDrawElements 3 $1
 
 TYPE PARAMETER glTexImage1D 7 bugle_gl_type_to_type_ptr_pbo_source($6)
 LENGTH PARAMETER glTexImage1D 7 bugle_image_element_count($3, 1, -1, $5, $6, BUGLE_TRUE)
