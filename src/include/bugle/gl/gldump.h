@@ -52,6 +52,11 @@ BUGLE_EXPORT_PRE int bugle_count_attached_shaders(GLuint program, GLsizei max) B
 BUGLE_EXPORT_PRE bugle_bool bugle_dump_convert(GLenum pname, const void *value,
                                                budgie_type in_type, bugle_io_writer *writer) BUGLE_EXPORT_POST;
 
+/* Dumps the indices array of glMultiDrawElements, showing the appropriate
+ * number of elements for each element of indices.
+ */
+BUGLE_EXPORT_PRE bugle_bool bugle_gl_dump_multi_draw_elements(const GLsizei *count, GLenum gl_type, const GLvoid * const *indices, GLsizei primcount, bugle_io_writer *writer) BUGLE_EXPORT_POST;
+
 /* Computes the number of pixel elements (units of byte, int, float etc)
  * used by a client-side encoding of a 1D, 2D or 3D image.
  * Specify -1 for depth for 1D or 2D textures.

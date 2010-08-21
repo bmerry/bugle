@@ -143,59 +143,56 @@ budgie_type bugle_gl_type_to_type_ptr(GLenum gl_type)
     return ans;
 }
 
-budgie_type bugle_gl_type_to_type_ptr_pbo_source(GLenum gl_type)
+static budgie_type bugle_gl_type_to_type_ptr_vbo(GLenum gl_type, GLenum binding)
 {
-#ifdef GL_EXT_pixel_buffer_object
-    if (BUGLE_GL_HAS_EXTENSION_GROUP(GL_EXT_pixel_buffer_object)
-        && bugle_gl_begin_internal_render())
+    if (binding != 0 && bugle_gl_begin_internal_render())
     {
         GLint id;
-        CALL(glGetIntegerv)(GL_PIXEL_UNPACK_BUFFER_BINDING_EXT, &id);
-        if (id) 
+        CALL(glGetIntegerv)(binding, &id);
+        bugle_gl_end_internal_render("bugle_gl_type_to_type_ptr_vbo", BUGLE_FALSE);
+        if (id != 0)
         {
             if (sizeof(unsigned long) == sizeof(GLvoid *)) return TYPE_m;
             else return TYPE_P6GLvoid;
         }
     }
-#endif
     return bugle_gl_type_to_type_ptr(gl_type);
+}
+
+budgie_type bugle_gl_type_to_type_ptr_pbo_source(GLenum gl_type)
+{
+    GLenum binding = 0;
+#ifdef GL_EXT_pixel_buffer_object
+    if (BUGLE_GL_HAS_EXTENSION_GROUP(GL_EXT_pixel_buffer_object))
+    {
+        binding = GL_PIXEL_UNPACK_BUFFER_BINDING_EXT;
+    }
+#endif
+    return bugle_gl_type_to_type_ptr_vbo(gl_type, binding);
 }
 
 budgie_type bugle_gl_type_to_type_ptr_pbo_sink(GLenum gl_type)
 {
+    GLenum binding = 0;
 #ifdef GL_EXT_pixel_buffer_object
-    if (BUGLE_GL_HAS_EXTENSION_GROUP(GL_EXT_pixel_buffer_object)
-        && bugle_gl_begin_internal_render())
+    if (BUGLE_GL_HAS_EXTENSION_GROUP(GL_EXT_pixel_buffer_object))
     {
-        GLint id;
-        CALL(glGetIntegerv)(GL_PIXEL_PACK_BUFFER_BINDING_EXT, &id);
-        if (id)
-        {
-            if (sizeof(unsigned long) == sizeof(GLvoid *)) return TYPE_m;
-            else return TYPE_P6GLvoid;
-        }
+        binding = GL_PIXEL_PACK_BUFFER_BINDING_EXT;
     }
 #endif
-    return bugle_gl_type_to_type_ptr(gl_type);
+    return bugle_gl_type_to_type_ptr_vbo(gl_type, binding);
 }
 
 budgie_type bugle_gl_type_to_type_ptr_vbo_element(GLenum gl_type)
 {
-    if (
+    GLenum binding = 0;
 #if BUGLE_GLTYPE_GL
-        BUGLE_GL_HAS_EXTENSION_GROUP(GL_ARB_vertex_buffer_object) &&
+    if (BUGLE_GL_HAS_EXTENSION_GROUP(GL_ARB_vertex_buffer_object))
 #endif
-        bugle_gl_begin_internal_render())
     {
-        GLint id;
-        CALL(glGetIntegerv)(GL_ELEMENT_ARRAY_BUFFER_BINDING, &id);
-        if (id)
-        {
-            if (sizeof(unsigned long) == sizeof(GLvoid *)) return TYPE_m;
-            else return TYPE_P6GLvoid;
-        }
+        binding = GL_ELEMENT_ARRAY_BUFFER_BINDING;
     }
-    return bugle_gl_type_to_type_ptr(gl_type);
+    return bugle_gl_type_to_type_ptr_vbo(gl_type, binding);
 }
 
 size_t bugle_gl_type_to_size(GLenum gl_type)
@@ -416,6 +413,26 @@ bugle_bool bugle_dump_convert(GLenum pname, const void *value,
 int bugle_count_gl(budgie_function func, GLenum token)
 {
     return get_dump_table_entry(token)->length;
+}
+
+bugle_bool bugle_gl_dump_multi_draw_elements(const GLsizei *count, GLenum gl_type, const GLvoid * const *indices, GLsizei primcount, bugle_io_writer *writer)
+{
+    budgie_type type, base_type;
+    GLsizei i;
+
+    type = bugle_gl_type_to_type_ptr_vbo_element(gl_type);
+    base_type = budgie_type_pointer_base(type);
+    /* Happens if there is an element array buffer bound */
+    if (base_type == NULL_TYPE) return BUGLE_FALSE;
+
+    bugle_io_printf(writer, "%p -> { ", indices);
+    for (i = 0; i < primcount; i++)
+    {
+        if (i) bugle_io_puts(", ", writer);
+        budgie_dump_any_type_extended(base_type, indices[i], -1, count[i], indices[i], writer);
+    }
+    bugle_io_puts(" }", writer);
+    return BUGLE_TRUE;
 }
 
 #ifdef GL_ARB_vertex_program

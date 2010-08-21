@@ -1,7 +1,12 @@
-# FIXME: cannot specify the length of each pointer in glMultiDrawElements
+EXTRATYPE +PP7GLubyte
+EXTRATYPE +PP8GLushort
+EXTRATYPE +PP6GLuint
+
 TYPE PARAMETER glMultiDrawArraysEXT 0 TYPE_15GLprimitiveenum
 TYPE PARAMETER glMultiDrawElementsEXT 0 TYPE_15GLprimitiveenum
 LENGTH PARAMETER glMultiDrawArraysEXT 1 $3
 LENGTH PARAMETER glMultiDrawArraysEXT 2 $3
 LENGTH PARAMETER glMultiDrawElementsEXT 1 $4
 LENGTH PARAMETER glMultiDrawElementsEXT 3 $4
+TYPE PARAMETER glMultiDrawElementsEXT 3 budgie_type_pointer(bugle_gl_type_to_type_ptr_vbo_element($2))
+DUMP PARAMETER glMultiDrawElementsEXT 3 bugle_gl_dump_multi_draw_elements($1, $2, $3, $4, $W)
