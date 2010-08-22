@@ -49,7 +49,7 @@ typedef struct
 } stats_primitives_displaylist_struct;
 
 /* Increments the triangle and batch count according to mode */
-static void stats_primitives_update(GLenum mode, GLsizei count)
+static void stats_primitives_update(GLenum mode, GLsizei count, GLsizei primcount)
 {
     size_t t = 0;
 #ifdef GL_VERSION_1_1
@@ -83,6 +83,8 @@ static void stats_primitives_update(GLenum mode, GLsizei count)
         break;
 #endif
     }
+
+    t *= primcount;
 
     switch (bugle_displaylist_mode())
     {
@@ -135,7 +137,7 @@ static bugle_bool stats_primitives_glEnd(function_call *call, const callback_dat
     stats_primitives_struct *s;
 
     s = bugle_object_get_current_data(bugle_get_context_class(), stats_primitives_view);
-    stats_primitives_update(s->begin_mode, s->begin_count);
+    stats_primitives_update(s->begin_mode, s->begin_count, 1);
     s->begin_mode = GL_NONE;
     s->begin_count = 0;
     return BUGLE_TRUE;
@@ -144,26 +146,26 @@ static bugle_bool stats_primitives_glEnd(function_call *call, const callback_dat
 
 static bugle_bool stats_primitives_glDrawArrays(function_call *call, const callback_data *data)
 {
-    stats_primitives_update(*call->glDrawArrays.arg0, *call->glDrawArrays.arg2);
+    stats_primitives_update(*call->glDrawArrays.arg0, *call->glDrawArrays.arg2, 1);
     return BUGLE_TRUE;
 }
 
 static bugle_bool stats_primitives_glDrawElements(function_call *call, const callback_data *data)
 {
-    stats_primitives_update(*call->glDrawElements.arg0, *call->glDrawElements.arg1);
+    stats_primitives_update(*call->glDrawElements.arg0, *call->glDrawElements.arg1, 1);
     return BUGLE_TRUE;
 }
 
 #ifdef GL_EXT_draw_instanced
 static bugle_bool stats_primitives_glDrawArraysInstancedEXT(function_call *call, const callback_data *data)
 {
-    stats_primitives_update(*call->glDrawArraysInstancedEXT.arg0, *call->glDrawArraysInstancedEXT.arg2 * *call->glDrawArraysInstancedEXT.arg3);
+    stats_primitives_update(*call->glDrawArraysInstancedEXT.arg0, *call->glDrawArraysInstancedEXT.arg2, *call->glDrawArraysInstancedEXT.arg3);
     return BUGLE_TRUE;
 }
 
 static bugle_bool stats_primitives_glDrawElementsInstancedEXT(function_call *call, const callback_data *data)
 {
-    stats_primitives_update(*call->glDrawElementsInstancedEXT.arg0, *call->glDrawElementsInstancedEXT.arg1 * *call->glDrawElementsInstancedEXT.arg4);
+    stats_primitives_update(*call->glDrawElementsInstancedEXT.arg0, *call->glDrawElementsInstancedEXT.arg1, *call->glDrawElementsInstancedEXT.arg4);
     return BUGLE_TRUE;
 }
 #endif /* GL_EXT_draw_instanced */
@@ -171,7 +173,7 @@ static bugle_bool stats_primitives_glDrawElementsInstancedEXT(function_call *cal
 #ifdef GL_VERSION_1_1
 static bugle_bool stats_primitives_glDrawRangeElements(function_call *call, const callback_data *data)
 {
-    stats_primitives_update(*call->glDrawRangeElements.arg0, *call->glDrawRangeElementsEXT.arg3);
+    stats_primitives_update(*call->glDrawRangeElements.arg0, *call->glDrawRangeElementsEXT.arg3, 1);
     return BUGLE_TRUE;
 }
 
@@ -182,7 +184,7 @@ static bugle_bool stats_primitives_glMultiDrawArrays(function_call *call, const 
     primcount = *call->glMultiDrawArrays.arg3;
     for (i = 0; i < primcount; i++)
         stats_primitives_update(*call->glMultiDrawArrays.arg0,
-                                (*call->glMultiDrawArrays.arg2)[i]);
+                                (*call->glMultiDrawArrays.arg2)[i], 1);
     return BUGLE_TRUE;
 }
 
@@ -193,7 +195,7 @@ static bugle_bool stats_primitives_glMultiDrawElements(function_call *call, cons
     primcount = *call->glMultiDrawElements.arg4;
     for (i = 0; i < primcount; i++)
         stats_primitives_update(*call->glMultiDrawElements.arg0,
-                                (*call->glMultiDrawElements.arg1)[i]);
+                                (*call->glMultiDrawElements.arg1)[i], 1);
     return BUGLE_TRUE;
 }
 

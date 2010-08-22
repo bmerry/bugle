@@ -65,11 +65,43 @@ static void triangles_draw_range_elements(GLenum mode, int count)
     GLushort indices[6] = {0, 1, 2, 3, 4, 5};
 
     glVertexPointer(GL_FLOAT, 3, 0, float_data);
-#ifdef GL_EXT_draw_range_elements
     if (GLEW_EXT_draw_range_elements)
     {
         glDrawRangeElementsEXT(mode, 0, 5, 6, GL_UNSIGNED_SHORT, indices);
         test_log_printf("logstats\\.triangles per frame: %d triangles/frame\n", count);
+    }
+    else
+    {
+        test_log_printf("logstats\\.triangles per frame: 0 triangles/frame\n");
+    }
+}
+
+static void triangles_draw_arrays_instanced(GLenum mode, int count)
+{
+    glVertexPointer(GL_FLOAT, 3, 0, float_data);
+#ifdef GL_ARB_draw_instanced
+    if (GLEW_ARB_draw_instanced)
+    {
+        glDrawArraysInstancedARB(mode, 0, 6, 3);
+        test_log_printf("logstats\\.triangles per frame: %d triangles/frame\n", count * 3);
+    }
+    else
+#endif
+    {
+        test_log_printf("logstats\\.triangles per frame: 0 triangles/frame\n");
+    }
+}
+
+static void triangles_draw_elements_instanced(GLenum mode, int count)
+{
+    GLushort indices[6] = {0, 1, 2, 3, 4, 5};
+
+    glVertexPointer(GL_FLOAT, 3, 0, float_data);
+#ifdef GL_ARB_draw_instanced
+    if (GLEW_ARB_draw_instanced)
+    {
+        glDrawElementsInstancedARB(mode, 6, GL_UNSIGNED_SHORT, indices, 3);
+        test_log_printf("logstats\\.triangles per frame: %d triangles/frame\n", count * 3);
     }
     else
 #endif
@@ -99,5 +131,7 @@ test_status triangles_suite(void)
     run(triangles_draw_arrays);
     run(triangles_draw_elements);
     run(triangles_draw_range_elements);
+    run(triangles_draw_arrays_instanced);
+    run(triangles_draw_elements_instanced);
     return TEST_RAN;
 }
