@@ -1,0 +1,14 @@
+TYPE PARAMETER glDrawElements(Instanced)?BaseVertex 0 TYPE_15GLprimitiveenum
+TYPE PARAMETER glDrawElements(Instanced)?BaseVertex 3 bugle_gl_type_to_type_ptr_vbo_element($2)
+LENGTH PARAMETER glDrawElements(Instanced)?BaseVertex 3 $1
+
+TYPE PARAMETER glDrawRangeElementsBaseVertex 0 TYPE_15GLprimitiveenum
+TYPE PARAMETER glDrawRangeElementsBaseVertex 5 bugle_gl_type_to_type_ptr_vbo_element($4)
+LENGTH PARAMETER glDrawRangeElementsBaseVertex 5 $3
+
+TYPE PARAMETER glMultiDrawElementsBaseVertex 0 TYPE_15GLprimitiveenum
+LENGTH PARAMETER glMultiDrawElementsBaseVertex 1 $4
+LENGTH PARAMETER glMultiDrawElementsBaseVertex 3 $4
+TYPE PARAMETER glMultiDrawElementsBaseVertex 3 budgie_type_pointer(bugle_gl_type_to_type_ptr_vbo_element($2))
+DUMP PARAMETER glMultiDrawElementsBaseVertex 3 bugle_gl_dump_multi_draw_elements($1, $2, $3, $4, $W)
+LENGTH PARAMETER glMultiDrawElementsBaseVertex 5 $4

@@ -372,6 +372,7 @@ package_sources.extend([
     'src/apireflect.c',
     'src/bc/SConscript',
     'src/bc/egl/egl.bc',
+    'src/bc/gl/GL_ARB_draw_elements_base_vertex.bc',
     'src/bc/gl/GL_ARB_imaging.bc',
     'src/bc/gl/GL_ARB_multitexture.bc',
     'src/bc/gl/GL_ARB_occlusion_query.bc',

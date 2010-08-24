@@ -1,2 +1,3 @@
 TYPE PARAMETER glDrawRangeElementsEXT 0 TYPE_15GLprimitiveenum
-LENGTH PARAMETER glDrawRangeElementsEXT 5 bugle_gl_type_to_size($4) * $3
+TYPE PARAMETER glDrawRangeElementsEXT 5 bugle_gl_type_to_type_ptr_vbo_element($4)
+LENGTH PARAMETER glDrawRangeElementsEXT 5 $3
