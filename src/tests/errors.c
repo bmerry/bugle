@@ -1,3 +1,20 @@
+/*  BuGLe: an OpenGL debugging tool
+ *  Copyright (C) 2004, 2005, 2009, 2010  Bruce Merry
+ *
+ *  This program is free software; you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation; version 2.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program; if not, write to the Free Software
+ *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ */
+
 #if HAVE_CONFIG_H
 # include <config.h>
 #endif
@@ -45,12 +62,12 @@ static void stack_overflow(void)
     TEST_ASSERT(glGetError() == GL_STACK_OVERFLOW);
 }
 
-test_status errors_suite(void)
+void errors_suite_register(void)
 {
-    invalid_enum();
-    invalid_operation();
-    invalid_value();
-    stack_underflow();
-    stack_overflow();
-    return TEST_RAN;
+    test_suite *ts = test_suite_new("errors", TEST_FLAG_CONTEXT, NULL, NULL);
+    test_suite_add_test(ts, "INVALID_ENUM", invalid_enum);
+    test_suite_add_test(ts, "INVALID_OPERATION", invalid_operation);
+    test_suite_add_test(ts, "INVALID_VALUE", invalid_value);
+    test_suite_add_test(ts, "STACK_UNDERFLOW", stack_underflow);
+    test_suite_add_test(ts, "STACK_OVERFLOW", stack_overflow);
 }

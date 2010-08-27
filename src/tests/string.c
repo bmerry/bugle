@@ -1,5 +1,5 @@
 /*  BuGLe: an OpenGL debugging tool
- *  Copyright (C) 2009  Bruce Merry
+ *  Copyright (C) 2009, 2010  Bruce Merry
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -62,10 +62,9 @@ static void string_strdup(void)
     bugle_free(dupl);
 }
 
-test_status string_suite(void)
+void string_suite_register(void)
 {
-    string_snprintf();
-    string_strdup();
-
-    return TEST_RAN;
+    test_suite *ts = test_suite_new("string", 0, NULL, NULL);
+    test_suite_add_test(ts, "snprintf", string_snprintf);
+    test_suite_add_test(ts, "strdup", string_strdup);
 }

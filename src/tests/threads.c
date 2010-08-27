@@ -22,6 +22,7 @@
 #endif
 #include <bugle/memory.h>
 #include <bugle/bool.h>
+#include <stddef.h>
 #include "platform/threads.h"
 #include "test.h"
 
@@ -276,12 +277,12 @@ void threads_sem(void)
     bugle_free(s.q);
 }
 
-test_status threads_suite(void)
+void threads_suite_register(void)
 {
-    threads_create();
-    threads_self();
-    threads_lock();
-    threads_rwlock();
-    threads_sem();
-    return TEST_RAN;
+    test_suite *ts = test_suite_new("threads", 0, NULL, NULL);
+    test_suite_add_test(ts, "create", threads_create);
+    test_suite_add_test(ts, "self", threads_self);
+    test_suite_add_test(ts, "lock", threads_lock);
+    test_suite_add_test(ts, "rwlock", threads_rwlock);
+    test_suite_add_test(ts, "sem", threads_sem);
 }

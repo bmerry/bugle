@@ -1,5 +1,5 @@
 /*  BuGLe: an OpenGL debugging tool
- *  Copyright (C) 2009  Bruce Merry
+ *  Copyright (C) 2009-2010  Bruce Merry
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -21,6 +21,7 @@
 # include <config.h>
 #endif
 #include <bugle/math.h>
+#include <stddef.h>
 #include <math.h>
 #include <float.h>
 #include "test.h"
@@ -61,13 +62,12 @@ static void math_cosf(void)
     TEST_ASSERT(bugle_cosf(0.0f) == 1.0f);
 }
 
-test_status math_suite(void)
+void math_suite_register(void)
 {
-    math_isnan();
-    math_isfinite();
-    math_nan();
-    math_cosf();
-    math_sinf();
-
-    return TEST_RAN;
+    test_suite *ts = test_suite_new("math", 0, NULL, NULL);
+    test_suite_add_test(ts, "isnan", math_isnan);
+    test_suite_add_test(ts, "isfinite", math_isfinite);
+    test_suite_add_test(ts, "nan", math_nan);
+    test_suite_add_test(ts, "cosf", math_cosf);
+    test_suite_add_test(ts, "sinf", math_sinf);
 }

@@ -36,42 +36,68 @@
 #include <stddef.h>
 #include <stdio.h>
 #include <errno.h>
+#include <bugle/string.h>
+#include <bugle/memory.h>
 #include "test.h"
 
-static const test_suite *current_suite;
-static int current_asserts;
-static int current_asserts_fail;
-static int tests_fail = 0;
+static test_suite *current_suite = NULL;
+static test *current_test = NULL;
 
 /* Name of selected suite, or NULL to run all non-log tests */
-static const test_suite *chosen_suite;
+static test_suite *chosen_suite;
 
 /* Name of output log file. One log file may be specified */
 static const char *log_filename = NULL;
 static FILE *log_handle = NULL;
 
+/* Linked list of registered suites */
+static test_suite *first_suite = NULL;
+static test_suite *last_suite = NULL;
+
 #if TEST_GL
-#if BUGLE_PLATFORM_POSIX
-extern test_status dlopen_suite(void);
-extern test_status pointers_suite(void);
-extern test_status texcomplete_suite(void);
+extern void dlopen_suite_register(void);
+extern void draw_suite_register(void);
+extern void errors_suite_register(void);
+extern void extoverride_suite_register(void);
+extern void interpose_suite_register(void);
+extern void pbo_suite_register(void);
+extern void pointers_suite_register(void);
+extern void procaddress_suite_register(void);
+extern void queries_suite_register(void);
+extern void setstate_suite_register(void);
+extern void showextensions_suite_register(void);
+extern void texcomplete_suite_register(void);
+extern void triangles_suite_register(void);
 #endif
-extern test_status draw_suite(void);
-extern test_status errors_suite(void);
-extern test_status extoverride_suite(void);
-extern test_status interpose_suite(void);
-extern test_status pbo_suite(void);
-extern test_status procaddress_suite(void);
-extern test_status queries_suite(void);
-extern test_status setstate_suite(void);
-extern test_status showextensions_suite(void);
-extern test_status triangles_suite(void);
+
+extern void math_suite_register(void);
+extern void string_suite_register(void);
+extern void threads_suite_register(void);
+
+static void (* const register_fns[])(void) =
+{
+#if TEST_GL
+    dlopen_suite_register,
+    draw_suite_register,
+    errors_suite_register,
+    extoverride_suite_register,
+    interpose_suite_register,
+    pbo_suite_register,
+    pointers_suite_register,
+#if 0
+    procaddress_suite_register,
+    setstate_suite_register,
+    showextensions_suite_register,
+    texcomplete_suite_register,
+    triangles_suite_register,
+#endif
 #endif /* TEST_GL */
+    string_suite_register,
+    math_suite_register,
+    threads_suite_register
+};
 
-extern test_status math_suite(void);
-extern test_status string_suite(void);
-extern test_status threads_suite(void);
-
+#if 0
 static const test_suite suites[] =
 {
 #if TEST_GL
@@ -95,16 +121,17 @@ static const test_suite suites[] =
     { "string",         0,                                 string_suite },
     { "threads",        0,                                 threads_suite }
 };
+#endif
 
 static void usage(void)
 {
-    unsigned int i;
-    fprintf(stderr, "Usage: logtester [--test <suite>] [--log <referencelog>]\n");
+    test_suite *ts;
+    fprintf(stderr, "Usage: bugletest [--suite <suite>] [--log <referencelog>]\n");
     fprintf(stderr, "Available suites:\n");
     fprintf(stderr, "\n");
-    for (i = 0; i < sizeof(suites) / sizeof(suites[0]); i++)
+    for (ts = first_suite; ts != NULL; ts = ts->next)
     {
-        fprintf(stderr, "    %s\n", suites[i].name);
+        fprintf(stderr, "    %s\n", ts->name);
     }
     fprintf(stderr, "\n");
 }
@@ -122,13 +149,13 @@ static void usage_error(const char *format, ...)
     exit(2);
 }
 
-static const test_suite *find_suite(const char *name)
+static test_suite *find_suite(const char *name)
 {
-    unsigned int i;
-    for (i = 0; i < sizeof(suites) / sizeof(suites[0]); i++)
+    test_suite *s;
+    for (s = first_suite; s != NULL; s = s->next)
     {
-        if (0 == strcmp(suites[i].name, name))
-            return &suites[i];
+        if (0 == strcmp(s->name, name))
+            return s;
     }
     return NULL;
 }
@@ -147,16 +174,16 @@ static void process_options(int argc, char **argv)
             usage();
             exit(0);
         }
-        else if (0 == strcmp(argv[i], "--test"))
+        else if (0 == strcmp(argv[i], "--suite"))
         {
             if (chosen_suite != NULL)
-                usage_error("Cannot specify --test more than once\n");
+                usage_error("Cannot specify --suite more than once\n");
             if (i + 1 >= argc)
-                usage_error("--test requires an argument\n");
+                usage_error("--suite requires an argument\n");
 
             chosen_suite = find_suite(argv[i + 1]);
             if (chosen_suite == NULL)
-                usage_error("Test '%s' not found\n", argv[i + 1]);
+                usage_error("Suite '%s' not found\n", argv[i + 1]);
             i++;
         }
         else if (0 == strcmp(argv[i], "--log"))
@@ -176,9 +203,32 @@ static void process_options(int argc, char **argv)
     }
 }
 
-static void init_tests(unsigned int unified_flags)
+/* Set the enabled flag for the tests we intend to run */
+static void enable_suites(void)
 {
-    if (unified_flags & TEST_FLAG_LOG)
+    if (chosen_suite != NULL)
+    {
+        chosen_suite->enabled = BUGLE_TRUE;
+    }
+    else
+    {
+        test_suite *ts;
+        for (ts = first_suite; ts != NULL; ts = ts->next)
+            if (!(ts->flags & TEST_FLAG_LOG))
+                ts->enabled = BUGLE_TRUE;
+    }
+}
+
+static void init_suites(void)
+{
+    unsigned int all_flags = 0;
+    test_suite *s;
+
+    for (s = first_suite; s != NULL; s = s->next)
+        if (s->enabled)
+            all_flags |= s->flags;
+
+    if (all_flags & TEST_FLAG_LOG)
     {
         if (log_filename == NULL)
         {
@@ -196,7 +246,7 @@ static void init_tests(unsigned int unified_flags)
         }
     }
 
-    if (unified_flags & TEST_FLAG_CONTEXT)
+    if (all_flags & TEST_FLAG_CONTEXT)
     {
 #if TEST_GL
         int dummy_argc = 1;
@@ -215,9 +265,9 @@ static void init_tests(unsigned int unified_flags)
     }
 }
 
-static void uninit_tests(unsigned int unified_flags)
+static void uninit_suites(void)
 {
-    if (unified_flags & TEST_FLAG_LOG)
+    if (log_handle != NULL)
     {
         int ret = fclose(log_handle);
         if (ret != 0)
@@ -231,95 +281,134 @@ static void uninit_tests(unsigned int unified_flags)
     }
 }
 
-static void run_test(const test_suite *suite, void *dummy)
+static void run_suite(test_suite *suite)
 {
-    test_status result;
-
+    unsigned int i;
+    static const char * const labels[TEST_STATUS_NOTRUN] =
+    {
+        "FAILED",
+        "PASSED",
+        "RAN",
+        "SKIPPED"
+    };
     current_suite = suite;
-    current_asserts = 0;
-    current_asserts_fail = 0;
 
-    result = current_suite->fn();
+    for (i = 0; i < TEST_STATUS_NOTRUN; i++)
+        current_suite->count_status[i] = 0;
 
-    if (current_asserts_fail != 0)
-        result = TEST_FAILED;
+    if (current_suite->setup != NULL)
+        current_suite->setup();
 
-    if (suite->flags & TEST_FLAG_LOG)
+    for (current_test = suite->first_test; current_test != NULL; current_test = current_test->next)
     {
-        /* Write a machine readable report for caller to process */
-        switch (result)
-        {
-        case TEST_RAN:
-            printf("RAN\n");
-            break;
-        case TEST_SKIPPED:
-            printf("SKIPPED\n");
-            break;
-        default:
-            tests_fail++;
-            printf("FAILED\n");
-            break;
-        }
-    }
-    else
-    {
-        /* A non-log test should make assertions unless it was skipped; if it
-         * didn't, something is probably wrong
-         */
-        if (result == TEST_RAN && current_asserts == 0)
-            result = TEST_FAILED;
+        current_test->total_assertions = 0;
+        current_test->failed_assertions = 0;
+        current_test->reason = NULL;
+        current_test->status = TEST_STATUS_NOTRUN;
 
-        /* Write a human readable report */
-        switch (result)
+        fprintf(stderr, "  %-50s", current_test->name);
+        fflush(stderr);
+        current_test->run();
+        if (current_test->status == TEST_STATUS_NOTRUN)
         {
-        case TEST_RAN:
-            printf("PASSED  Test `%s' (%d assertions)\n", suite->name, current_asserts);
-            break;
-        case TEST_SKIPPED:
-            printf("SKIPPED Test `%s'\n", suite->name);
-            break;
-        default:
-            tests_fail++;
-            printf("FAILED  Test `%s' (%d of %d assertions failed)\n",
-                   suite->name, current_asserts_fail, current_asserts);
-            break;
+            if (current_test->failed_assertions > 0)
+                current_test->status = TEST_STATUS_FAILED;
+            else if (current_suite->flags & TEST_FLAG_LOG)
+                current_test->status = TEST_STATUS_RAN;
+            else if (current_test->total_assertions == 0)
+                test_skipped("WARNING: no assertions found");
+            else
+                current_test->status = TEST_STATUS_PASSED;
         }
+
+        if (current_test->reason == NULL)
+        {
+            switch (current_test->status)
+            {
+            case TEST_STATUS_PASSED:
+                current_test->reason = bugle_asprintf("%d assertions",
+                                                      current_test->total_assertions);
+                break;
+            case TEST_STATUS_FAILED:
+                current_test->reason = bugle_asprintf("%d/%d assertions failed",
+                                                      current_test->failed_assertions,
+                                                      current_test->total_assertions);
+                break;
+            default:
+                break;
+            }
+        }
+
+        if (log_handle != NULL)
+        {
+            /* Log test output is parsed by the SConscript */
+            printf("%s\n", labels[current_test->status]);
+        }
+
+        if (current_test->reason != NULL && current_test->reason[0] != '\0')
+        {
+            fprintf(stderr, "[%s - %s]\n", labels[current_test->status], current_test->reason);
+        }
+        else
+        {
+            fprintf(stderr, "[%s]\n", labels[current_test->status]);
+        }
+
+        current_suite->count_status[current_test->status]++;
     }
+
+    if (current_suite->teardown != NULL)
+        current_suite->teardown();
 }
 
-static void unify_flags(const test_suite *suite, void *arg)
+/* Returns number of failing tests */
+int run_all_suites(void)
 {
-    unsigned int *flags = (unsigned int *) arg;
+    test_suite *suite;
 
-    *flags |= suite->flags;
+    int totals[TEST_STATUS_NOTRUN] = {};
+    for (suite = first_suite; suite != NULL; suite = suite->next)
+    {
+        if (suite->enabled)
+        {
+            int i;
+            run_suite(suite);
+
+            for (i = 0; i < TEST_STATUS_NOTRUN; i++)
+                totals[i] += suite->count_status[i];
+        }
+    }
+    fprintf(stderr, "\n");
+    fprintf(stderr, "%d passed, %d failed, %d ran, %d skipped\n",
+           totals[TEST_STATUS_PASSED],
+           totals[TEST_STATUS_FAILED],
+           totals[TEST_STATUS_RAN],
+           totals[TEST_STATUS_SKIPPED]);
+    return totals[TEST_STATUS_FAILED];
 }
 
-static void foreach_test(void (*callback)(const test_suite *suite, void *), void *arg)
+static void create_suites(void)
 {
-    if (chosen_suite != NULL)
+    unsigned int i;
+    for (i = 0; i < sizeof(register_fns) / sizeof(register_fns[0]); i++)
     {
-        callback(chosen_suite, arg);
-    }
-    else
-    {
-        unsigned int i;
-        for (i = 0; i < sizeof(suites) / sizeof(suites[0]); i++)
-            if (!(suites[i].flags & TEST_FLAG_LOG))
-                callback(&suites[i], arg);
+        register_fns[i]();
     }
 }
 
 int main(int argc, char **argv)
 {
-    int unified_flags = 0;
+    int failed = 0;
 
+    create_suites();
     process_options(argc, argv);
-    foreach_test(unify_flags, &unified_flags);
 
-    init_tests(unified_flags);
-    foreach_test(run_test, NULL);
-    uninit_tests(unified_flags);
-    return tests_fail != 0 ? 1 : 0;
+    enable_suites();
+    init_suites();
+    failed = run_all_suites();
+    uninit_suites();
+
+    return failed != 0 ? 1 : 0;
 }
 
 /* Functions called by the test suites - see test.h */
@@ -351,15 +440,84 @@ int test_log_vprintf(const char *format, va_list ap)
     return ret;
 }
 
-void test_assert(int cond, const char *file, int line, const char *cond_str)
+const char * test_name(void)
 {
-    current_asserts++;
+    return current_test->name;
+}
+
+void test_failed(const char *format, ...)
+{
+    va_list ap;
+    char *msg;
+
+    va_start(ap, format);
+    msg = bugle_vasprintf(format, ap);
+    va_end(ap);
+    free(current_test->reason);
+    current_test->reason = msg;
+    current_test->status = TEST_STATUS_FAILED;
+}
+
+void test_skipped(const char *format, ...)
+{
+    va_list ap;
+    char *msg;
+
+    va_start(ap, format);
+    msg = bugle_vasprintf(format, ap);
+    va_end(ap);
+    free(current_test->reason);
+    current_test->reason = msg;
+    current_test->status = TEST_STATUS_SKIPPED;
+}
+
+test_suite *test_suite_new(const char *name, unsigned int flags,
+                           void (*setup)(void), void (*teardown)(void))
+{
+    test_suite *ts;
+
+    ts = BUGLE_ZALLOC(test_suite);
+    ts->name = bugle_strdup(name);
+    ts->flags = flags;
+    ts->setup = setup;
+    ts->teardown = teardown;
+    if (last_suite == NULL)
+        first_suite = last_suite = ts;
+    else
+    {
+        last_suite->next = ts;
+        last_suite = ts;
+    }
+    return ts;
+}
+
+void test_suite_add_test(test_suite *suite, const char *name, void (*run)(void))
+{
+    test *t;
+
+    t = BUGLE_ZALLOC(test);
+    t->name = bugle_asprintf("%s::%s", suite->name, name);
+    t->run = run;
+    t->status = TEST_STATUS_NOTRUN;
+    if (suite->last_test == NULL)
+        suite->first_test = suite->last_test = t;
+    else
+    {
+        suite->last_test->next = t;
+        suite->last_test = t;
+    }
+}
+
+int test_assert(int cond, const char *file, int line, const char *cond_str)
+{
+    current_test->total_assertions++;
     if (!cond)
     {
-        current_asserts_fail++;
+        current_test->failed_assertions++;
         fprintf(stderr, "%s %s:%d: Assertion `%s' FAILED\n",
-                current_suite->name, file, line, cond_str);
+                current_test->name, file, line, cond_str);
     }
+    return cond;
 }
 
 #if TEST_GL

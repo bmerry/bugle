@@ -12,7 +12,7 @@ class TestFailed(Exception):
     def __init__(self, value):
         Exception.__init__(self, value)
 
-def run_log_test(target, testprog, env, name, chain):
+def run_log_suite(target, testprog, env, suite, chain):
     (handle, logfile) = tempfile.mkstemp('.log')
     reflog = None
     try:
@@ -21,7 +21,7 @@ def run_log_test(target, testprog, env, name, chain):
             env = dict([(key, str(value)) for (key, value) in env['ENV'].items()])
             env['LD_PRELOAD'] = 'libbugle.so'
             env['BUGLE_CHAIN'] = chain
-            sp = Popen([testprog[0].abspath, '--test', name, '--log', logfile],
+            sp = Popen([testprog[0].abspath, '--suite', suite, '--log', logfile],
                     stdout = PIPE, env = env)
             (out, err) = sp.communicate()
             errcode = sp.wait()
@@ -35,21 +35,23 @@ def run_log_test(target, testprog, env, name, chain):
             # written, so look for status anywhere
             statuses = []
             for i in range(len(lines)):
-                if lines[i] == 'SKIPPED':
-                    print "SKIPPED Test `" + name + "'"
-                    return
-                elif lines[i] == 'FAILED':
-                    raise TestFailed, ''
-                elif lines[i] == 'RAN':
+                if lines[i] == 'FAILED':
+                    raise TestFailed('')
+                elif lines[i] in ('SKIPPED', 'RAN'):
                     statuses.append(i)
-            if len(statuses) != 1:
-                raise TestFailed, 'Got %d status lines, expected 1' % len(statuses)
-            del lines[statuses[0]]
+            if len(statuses) == 0:
+                raise TestFailed('Did not find any status lines')
+            if not 'RAN' in lines:
+                print "SKIPPED  Test `" + suite + "'"
+                return
+            statuses.reverse()
+            for lineno in statuses:
+                del lines[lineno]
 
             reflog = file(logfile, 'r')
             reflines = reflog.readlines()
             reflines = ['^' + x.rstrip('\r\n') + '$' for x in reflines]
-            if len(reflines) == 0:
+            if len(reflines) == 0 and 'RAN' in lines:
                 raise TestFailed, 'no reference output'
             # There will be some startup stuff not in the log
             while len(lines) > 0 and not re.match(reflines[0], lines[0]):
@@ -62,19 +64,20 @@ def run_log_test(target, testprog, env, name, chain):
                 if not re.match(reflines[i], lines[i]):
                     raise TestFailed, "`" + lines[i] + "' did not match `" + reflines[i] + "' at line " + str(i + 1)
 
-            print "PASSED  Test `" + name + "'"
+            print "PASSED  Test `" + suite + "'"
         except TestFailed, (msg,):
             if msg != '':
                 msg = ' (' + msg + ')'
-            print "FAILED  Test `" + name + "'" + msg
+            print "FAILED  Test `" + suite + "'" + msg
+            return 1
     finally:
         if reflog is not None:
             reflog.close()
         os.remove(logfile)
 
-def make_log_test(name, chain):
+def make_log_suite(name, chain):
     def action(target, source, env):
-        return run_log_test(target, source, env, name, chain)
+        return run_log_suite(target, source, env, name, chain)
     return action
 
 def simple_test(name):
@@ -87,7 +90,7 @@ if 'tests' not in aspects['parts']:
 
 test_env = envs['host'].Clone()
 plain_tests = ['string', 'math', 'threads']
-log_tests = []
+log_suites = []
 simple_tests = []
 test_deps = []
 test_sources = ['test.c']
@@ -126,6 +129,7 @@ else:
             test_env['ENV']['BUGLE_FILTERS'] = srcdir.File('filters').abspath
 
             test_deps.append(targets['bugle'].out)
+            '''
             plain_tests.extend([
                     'errors',
                     'interpose',
@@ -149,6 +153,18 @@ else:
             if aspects['glwin'] == 'glx':
                 simple_test('threads1')
                 simple_test('threads2')
+            '''
+            plain_tests.extend([
+                'errors',
+                'interpose'])
+            log_suites.extend([
+                ('dlopen.c', 'dlopen', 'trace'),
+                ('draw.c',   'draw_client', 'trace'),
+                ('draw.c',   'draw_vbo', 'trace'),
+                ('extoverride.c', 'extoverride', 'extoverride'),
+                ('pbo.c', 'pbo', 'trace'),
+                ('pointers.c', 'pointers', 'checks')
+                ])
         else:
             print 'WARNING: GLEW, GLUT and GLU are required for some tests'
     else:
@@ -158,7 +174,7 @@ test_env.AppendENVPath('LD_LIBRARY_PATH', bugle_path) # For Linux
 test_env.AppendENVPath('PATH', bugle_path)            # For Windows
 
 test_sources += [x + '.c' for x in plain_tests]
-test_sources += [x[0] + '.c' for x in log_tests]
+test_sources += set([x[0] for x in log_suites])
 bugletest = test_env.Program(
         target = 'bugletest',
         source = test_sources + targets['bugleutils'].out)
@@ -168,12 +184,12 @@ test_env.Depends(test, test_deps)
 test_env.AlwaysBuild(test)
 test_env.Alias('test', test)
 
-for name, chain in log_tests:
+for source, suite, chain in log_suites:
     message = None
     if aspects['quiet'] == 'no':
-        message = 'Running test %s' % (name,)
+        message = 'Running suite %s' % (suite,)
     test = test_env.Command(Value(''), bugletest,
-            Action(make_log_test(name, chain), message))
+            Action(make_log_suite(suite, chain), message))
     test_env.Depends(test, test_deps)
     test_env.Depends(test, '../filters')
     test_env.AlwaysBuild(test)
