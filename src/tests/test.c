@@ -84,8 +84,8 @@ static void (* const register_fns[])(void) =
     interpose_suite_register,
     pbo_suite_register,
     pointers_suite_register,
-#if 0
     procaddress_suite_register,
+#if 0
     setstate_suite_register,
     showextensions_suite_register,
     texcomplete_suite_register,

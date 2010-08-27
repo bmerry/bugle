@@ -1,3 +1,20 @@
+/*  BuGLe: an OpenGL debugging tool
+ *  Copyright (C) 2004-2005, 2009-2010  Bruce Merry
+ *
+ *  This program is free software; you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation; version 2.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program; if not, write to the Free Software
+ *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ */
+
 /* Checks that GetProcAddress is correctly intercepted */
 
 #if HAVE_CONFIG_H
@@ -9,7 +26,7 @@
 #include <budgie/callapi.h>
 #include "test.h"
 
-test_status check_procaddress(void)
+static void check_procaddress(void)
 {
     /* We deliberately raise an error, then check for it via the
      * address glXGetProcAddressARB gives us for glGetError. If we've
@@ -20,14 +37,17 @@ test_status check_procaddress(void)
 
     pglGetError = (GLenum (BUDGIEAPIP)(void)) test_get_proc_address("glGetError");
     if (pglGetError == NULL)
-        return TEST_SKIPPED; /* Some window system APIs don't return pointers to core functions */
+    {
+        test_skipped("Could not get glGetError address");
+        return;
+    }
 
     glPopAttrib();
     TEST_ASSERT((*pglGetError)() == GL_STACK_UNDERFLOW);
-    return TEST_RAN;
 }
 
-test_status procaddress_suite(void)
+void procaddress_suite_register(void)
 {
-    return check_procaddress();
+    test_suite *ts = test_suite_new("procaddress", TEST_FLAG_CONTEXT, NULL, NULL);
+    test_suite_add_test(ts, "procaddress", check_procaddress);
 }

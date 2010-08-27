@@ -156,7 +156,8 @@ else:
             '''
             plain_tests.extend([
                 'errors',
-                'interpose'])
+                'interpose',
+                'procaddress'])
             log_suites.extend([
                 ('dlopen.c', 'dlopen', 'trace'),
                 ('draw.c',   'draw_client', 'trace'),
@@ -172,6 +173,8 @@ else:
 
 test_env.AppendENVPath('LD_LIBRARY_PATH', bugle_path) # For Linux
 test_env.AppendENVPath('PATH', bugle_path)            # For Windows
+test_env_run = test_env.Clone()
+test_env_run.AppendENVPath('LD_PRELOAD', 'libbugle.so')   # For Linux
 
 test_sources += [x + '.c' for x in plain_tests]
 test_sources += set([x[0] for x in log_suites])
@@ -179,18 +182,19 @@ bugletest = test_env.Program(
         target = 'bugletest',
         source = test_sources + targets['bugleutils'].out)
 
-test = test_env.Command(Value(''), bugletest, '${SOURCE.path}')
-test_env.Depends(test, test_deps)
-test_env.AlwaysBuild(test)
-test_env.Alias('test', test)
+test = test_env_run.Command(Value(''), bugletest, Action('${SOURCE.path}', 'Running basic tests'))
+test_env_run.Depends(test, test_deps)
+test_env_run.Depends(test, '../filters')
+test_env_run.AlwaysBuild(test)
+test_env_run.Alias('test', test)
 
 for source, suite, chain in log_suites:
     message = None
     if aspects['quiet'] == 'no':
         message = 'Running suite %s' % (suite,)
-    test = test_env.Command(Value(''), bugletest,
+    test = test_env_run.Command(Value(''), bugletest,
             Action(make_log_suite(suite, chain), message))
-    test_env.Depends(test, test_deps)
-    test_env.Depends(test, '../filters')
-    test_env.AlwaysBuild(test)
-    test_env.Alias('test', test)
+    test_env_run.Depends(test, test_deps)
+    test_env_run.Depends(test, '../filters')
+    test_env_run.AlwaysBuild(test)
+    test_env_run.Alias('test', test)
