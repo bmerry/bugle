@@ -1,6 +1,7 @@
 * Fix #81: primitive counting when instanced drawing is in use
 * Add many newer draw calls to bugle_gl_filter_catches_drawing
 * Add trace support for GL_ARB_draw_elements_base_vertex
+* Link against -lX11 when winsys is X11 but glwin is not GLX
 
 0.0.20100718
 ------------
