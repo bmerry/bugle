@@ -1,3 +1,20 @@
+/*  BuGLe: an OpenGL debugging tool
+ *  Copyright (C) 2008-2010  Bruce Merry
+ *
+ *  This program is free software; you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation; version 2.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program; if not, write to the Free Software
+ *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ */
+
 /* Tests the texture completeness validation code */
 
 #if HAVE_CONFIG_H
@@ -9,9 +26,6 @@
 #include <string.h>
 #include <stdio.h>
 #include "test.h"
-
-/* It's too much effort to make this test portable to older GL's */
-#if GL_VERSION_2_0
 
 typedef enum
 {
@@ -45,23 +59,23 @@ static const GLchar vertex_source[] =
 
 static const texture_target targets[] =
 {
-    { 
+    {
         "1D", "GL_TEXTURE_1D",  GL_TEXTURE_1D, { GL_TEXTURE_1D }, 
         "#version 110\n"
-            "uniform sampler1D s;\n"
-            "void main() { gl_FragColor = texture1D(s, 0.5); }\n"
+        "uniform sampler1D s;\n"
+        "void main() { gl_FragColor = texture1D(s, 0.5); }\n"
     },
     {
         "2D", "GL_TEXTURE_2D", GL_TEXTURE_2D, { GL_TEXTURE_2D },
         "#version 110\n"
-            "uniform sampler2D s;\n"
-            "void main() { gl_FragColor = texture2D(s, vec2(0.5, 0.5)); }\n"
+        "uniform sampler2D s;\n"
+        "void main() { gl_FragColor = texture2D(s, vec2(0.5, 0.5)); }\n"
     },
     {
         "3D", "GL_TEXTURE_3D(_EXT)?", GL_TEXTURE_3D, { GL_TEXTURE_3D },
         "#version 110\n"
-            "uniform sampler3D s;\n"
-            "void main() { gl_FragColor = texture3D(s, vec3(0.5, 0.5, 0.5)); }\n"
+        "uniform sampler3D s;\n"
+        "void main() { gl_FragColor = texture3D(s, vec3(0.5, 0.5, 0.5)); }\n"
     },
     {
         "cube map", "GL_TEXTURE_CUBE_MAP(_(POSITIVE|NEGATIVE)_([XYZ]))?(_EXT|_ARB)?", GL_TEXTURE_CUBE_MAP,
@@ -74,12 +88,12 @@ static const texture_target targets[] =
             GL_TEXTURE_CUBE_MAP_NEGATIVE_Z
         },
         "#version 110\n"
-            "uniform samplerCube s;\n"
-            "void main() { gl_FragColor = textureCube(s, vec3(1.0, 0.5, 0.5)); }\n"
-    },
+        "uniform samplerCube s;\n"
+        "void main() { gl_FragColor = textureCube(s, vec3(1.0, 0.5, 0.5)); }\n"
+    }
 };
 
-static void state_init(void)
+static void setup_texcomplete(void)
 {
     static const int verts[8] =
     {
@@ -90,6 +104,11 @@ static void state_init(void)
     };
     glEnableClientState(GL_VERTEX_ARRAY);
     glVertexPointer(2, GL_INT, 0, verts);
+}
+
+static void teardown_texcomplete(void)
+{
+    glDisableClientState(GL_VERTEX_ARRAY);
 }
 
 static void tex_image(GLenum face, int level, GLenum internalformat,
@@ -301,18 +320,23 @@ static GLuint make_program(GLuint vs, GLuint fs)
     return program;
 }
 
-test_status texcomplete_suite(void)
+static void texcomplete_test(GLenum target_enum)
 {
     int i;
     texture_mode j;
 
     if (!GLEW_VERSION_2_0)
-        return TEST_SKIPPED;
-    state_init();
+    {
+        /* It's not required for this feature, but it's easier to test this
+         * way. */
+        test_skipped("GL 2.0 required");
+        return;
+    }
 
     for (i = 0; i < sizeof(targets) / sizeof(texture_target); i++)
     {
-        fprintf(stderr, "Testing %s\n", targets[i].name);
+        if (targets[i].target != target_enum)
+            continue;
         for (j = 0; j < MODE_COUNT; j++)
         {
             GLuint tex;
@@ -329,13 +353,15 @@ test_status texcomplete_suite(void)
                 glDeleteShader(vs);
                 glDeleteShader(fs);
                 glDeleteTextures(1, &tex);
-                return TEST_FAILED;
+                test_failed("Failed to create shaders");
+                return;
             }
             program = make_program(vs, fs);
             if (!program)
             {
                 glDeleteTextures(1, &tex);
-                return TEST_FAILED;
+                test_failed("Failed to create program");
+                return;
             }
             loc = glGetUniformLocation(program, "s");
             TEST_ASSERT(loc >= 0);
@@ -360,14 +386,33 @@ test_status texcomplete_suite(void)
             glDeleteTextures(1, &tex);
         }
     }
-    return TEST_RAN;
 }
 
-#else /* GL_VERSION_2_0 */
-
-test_status texcomplete_suite(void)
+static void texcomplete_1D(void)
 {
-    return TEST_SKIPPED;
+    texcomplete_test(GL_TEXTURE_1D);
 }
 
-#endif
+static void texcomplete_2D(void)
+{
+    texcomplete_test(GL_TEXTURE_2D);
+}
+
+static void texcomplete_3D(void)
+{
+    texcomplete_test(GL_TEXTURE_3D);
+}
+
+static void texcomplete_cube(void)
+{
+    texcomplete_test(GL_TEXTURE_CUBE_MAP);
+}
+
+void texcomplete_suite_register(void)
+{
+    test_suite *ts = test_suite_new("texcomplete", TEST_FLAG_LOG | TEST_FLAG_CONTEXT, setup_texcomplete, teardown_texcomplete);
+    test_suite_add_test(ts, "1D", texcomplete_1D);
+    test_suite_add_test(ts, "2D", texcomplete_2D);
+    test_suite_add_test(ts, "3D", texcomplete_3D);
+    test_suite_add_test(ts, "cube", texcomplete_cube);
+}

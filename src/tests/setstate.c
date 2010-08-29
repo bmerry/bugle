@@ -55,23 +55,31 @@ static void set_enables(void)
     glEnable(GL_AUTO_NORMAL);          test_log_printf("trace\\.call: glEnable\\(GL_AUTO_NORMAL\\)\n");
     glEnable(GL_TEXTURE_1D);           test_log_printf("trace\\.call: glEnable\\(GL_TEXTURE_1D\\)\n");
     glEnable(GL_TEXTURE_2D);           test_log_printf("trace\\.call: glEnable\\(GL_TEXTURE_2D\\)\n");
-#ifdef GL_EXT_texture3D
-    if (GLEW_EXT_texture3D)
-    {
-        glEnable(GL_TEXTURE_3D_EXT);   test_log_printf("trace\\.call: glEnable\\(GL_TEXTURE_3D(_EXT)?\\)\n");
-    }
-#endif
-#ifdef GL_ARB_texture_cube_map
-    if (GLEW_ARB_texture_cube_map)
-    {
-        glEnable(GL_TEXTURE_CUBE_MAP_ARB); test_log_printf("trace\\.call: glEnable\\(GL_TEXTURE_CUBE_MAP(_ARB)?\\)\n");
-    }
-#endif
     glEnable(GL_POLYGON_OFFSET_LINE);  test_log_printf("trace\\.call: glEnable\\(GL_POLYGON_OFFSET_LINE\\)\n");
     glEnable(GL_BLEND);                test_log_printf("trace\\.call: glEnable\\(GL_BLEND\\)\n");
 }
 
-void set_client_state(void)
+static void set_enables_texture3D(void)
+{
+    if (GLEW_VERSION_1_2)
+    {
+        glEnable(GL_TEXTURE_3D);   test_log_printf("trace\\.call: glEnable\\(GL_TEXTURE_3D\\)\n");
+    }
+    else
+        test_skipped("GL 1.2 required");
+}
+
+static void set_enables_cube_map(void)
+{
+    if (GLEW_VERSION_1_3)
+    {
+        glEnable(GL_TEXTURE_CUBE_MAP); test_log_printf("trace\\.call: glEnable\\(GL_TEXTURE_CUBE_MAP\\)\n");
+    }
+    else
+        test_skipped("GL 1.3 required");
+}
+
+static void set_client_state(void)
 {
     glEnableClientState(GL_VERTEX_ARRAY); test_log_printf("trace\\.call: glEnableClientState\\(GL_VERTEX_ARRAY\\)\n");
     glVertexPointer(3, GL_INT, 0, NULL);  test_log_printf("trace\\.call: glVertexPointer\\(3, GL_INT, 0, NULL\\)\n");
@@ -79,29 +87,49 @@ void set_client_state(void)
     glPixelStoref(GL_PACK_SWAP_BYTES, GL_FALSE); test_log_printf("trace\\.call: glPixelStoref\\(GL_PACK_SWAP_BYTES, GL_FALSE\\)\n");
 }
 
-void set_texture_state(void)
-{
-    GLuint id;
-    GLint arg;
+static GLuint texture_id;
 
-    glGenTextures(1, &id);                test_log_printf("trace\\.call: glGenTextures\\(1, %p -> { %u }\\)\n", (void *) &id, (unsigned int) id);
-    glBindTexture(GL_TEXTURE_2D, id);     test_log_printf("trace\\.call: glBindTexture\\(GL_TEXTURE_2D, [0-9]+\\)\n");
+static void setup_texture_state(void)
+{
+    glGenTextures(1, &texture_id);
+    test_log_printf("trace\\.call: glGenTextures\\(1, %p -> { %u }\\)\n", (void *) &texture_id, (unsigned int) texture_id);
+    glBindTexture(GL_TEXTURE_2D, texture_id);
+    test_log_printf("trace\\.call: glBindTexture\\(GL_TEXTURE_2D, %u\\)\n", (unsigned int) texture_id);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 4, 4, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
     test_log_printf("trace\\.call: glTexImage2D\\(GL_TEXTURE_2D, 0, GL_RGB, 4, 4, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL\\)\n");
+}
+
+static void teardown_texture_state(void)
+{
+    glDeleteTextures(1, &texture_id);
+    test_log_printf("trace\\.call: glDeleteTextures\\(1, %p -> { %u }\\)\n", (void *) &texture_id, (unsigned int) texture_id);
+}
+
+static void set_texture_state(void)
+{
+    GLint arg;
+
+    setup_texture_state();
+
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     test_log_printf("trace\\.call: glTexParameteri\\(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR\\)\n");
     arg = GL_LINEAR;
     glTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, &arg);
     test_log_printf("trace\\.call: glTexParameteriv\\(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, %p -> GL_LINEAR\\)\n", (void *) &arg);
-#ifdef GL_SGIS_generate_mipmap
-    if (GLEW_SGIS_generate_mipmap)
+    teardown_texture_state();
+}
+
+static void set_texture_state_mipmap(void)
+{
+    if (GLEW_VERSION_1_4)
     {
+        setup_texture_state();
         glTexParameterf(GL_TEXTURE_2D, GL_GENERATE_MIPMAP_SGIS, GL_TRUE);
         test_log_printf("trace\\.call: glTexParameterf\\(GL_TEXTURE_2D, GL_GENERATE_MIPMAP(_SGIS)?, GL_TRUE\\)\n");
+        teardown_texture_state();
     }
-#endif
-    glDeleteTextures(1, &id);
-    test_log_printf("trace\\.call: glDeleteTextures\\(1, %p -> { %u }\\)\n", (void *) &id, (unsigned int) id);
+    else
+        test_skipped("GL 1.4 required");
 }
 
 static void set_material_state(void)
@@ -124,12 +152,15 @@ static void set_matrices(void)
                     m[12], m[13], m[14], m[15]);
 }
 
-test_status setstate_suite(void)
+void setstate_suite_register(void)
 {
-    set_enables();
-    set_client_state();
-    set_texture_state();
-    set_material_state();
-    set_matrices();
-    return TEST_RAN;
+    test_suite *ts = test_suite_new("setstate", TEST_FLAG_LOG | TEST_FLAG_CONTEXT, NULL, NULL);
+    test_suite_add_test(ts, "enables", set_enables);
+    test_suite_add_test(ts, "enables_texture3D", set_enables_texture3D);
+    test_suite_add_test(ts, "enables_cube_map", set_enables_cube_map);
+    test_suite_add_test(ts, "client_state", set_client_state);
+    test_suite_add_test(ts, "texture_state", set_texture_state);
+    test_suite_add_test(ts, "texture_state_mipmap", set_texture_state_mipmap);
+    test_suite_add_test(ts, "material_state", set_material_state);
+    test_suite_add_test(ts, "matrices", set_matrices);
 }

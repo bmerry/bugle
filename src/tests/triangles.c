@@ -1,3 +1,20 @@
+/*  BuGLe: an OpenGL debugging tool
+ *  Copyright (C) 2004-2006, 2009-2010  Bruce Merry
+ *
+ *  This program is free software; you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation; version 2.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program; if not, write to the Free Software
+ *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ */
+
 /* Generates triangles using a variety of OpenGL functions, to test the
  * triangle counting code.
  */
@@ -72,6 +89,7 @@ static void triangles_draw_range_elements(GLenum mode, int count)
     }
     else
     {
+        test_skipped("EXT_draw_range_elements required");
         test_log_printf("logstats\\.triangles per frame: 0 triangles/frame\n");
     }
 }
@@ -88,6 +106,7 @@ static void triangles_draw_arrays_instanced(GLenum mode, int count)
     else
 #endif
     {
+        test_skipped("ARB_draw_instanced required");
         test_log_printf("logstats\\.triangles per frame: 0 triangles/frame\n");
     }
 }
@@ -106,6 +125,7 @@ static void triangles_draw_elements_instanced(GLenum mode, int count)
     else
 #endif
     {
+        test_skipped("ARB_draw_instanced required");
         test_log_printf("logstats\\.triangles per frame: 0 triangles/frame\n");
     }
 }
@@ -124,14 +144,44 @@ static void run(void (*func)(GLenum, int))
     glutSwapBuffers();
 }
 
-test_status triangles_suite(void)
+static void triangles_test_immediate(void)
 {
-    glutSwapBuffers(); /* No counts on first frame */
     run(triangles_immediate);
+}
+
+static void triangles_test_draw_arrays(void)
+{
     run(triangles_draw_arrays);
+}
+
+static void triangles_test_draw_elements(void)
+{
     run(triangles_draw_elements);
+}
+
+static void triangles_test_draw_range_elements(void)
+{
     run(triangles_draw_range_elements);
+}
+
+static void triangles_test_draw_arrays_instanced(void)
+{
     run(triangles_draw_arrays_instanced);
+}
+
+static void triangles_test_draw_elements_instanced(void)
+{
     run(triangles_draw_elements_instanced);
-    return TEST_RAN;
+}
+
+void triangles_suite_register(void)
+{
+    /* glutSwapBuffers is used for setup since there is no triangle on the first frame */
+    test_suite *ts = test_suite_new("triangles", TEST_FLAG_LOG | TEST_FLAG_CONTEXT, glutSwapBuffers, NULL);
+    test_suite_add_test(ts, "immediate", triangles_test_immediate);
+    test_suite_add_test(ts, "draw_arrays", triangles_test_draw_arrays);
+    test_suite_add_test(ts, "draw_elements", triangles_test_draw_elements);
+    test_suite_add_test(ts, "draw_range_elements", triangles_test_draw_range_elements);
+    test_suite_add_test(ts, "draw_arrays_instanced", triangles_test_draw_arrays_instanced);
+    test_suite_add_test(ts, "draw_elements_instanced", triangles_test_draw_elements_instanced);
 }

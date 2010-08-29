@@ -129,31 +129,7 @@ else:
             test_env['ENV']['BUGLE_FILTERS'] = srcdir.File('filters').abspath
 
             test_deps.append(targets['bugle'].out)
-            '''
-            plain_tests.extend([
-                    'errors',
-                    'interpose',
-                    'procaddress'])
-            log_tests.extend([
-                    ('draw', 'trace'),
-                    ('extoverride', 'extoverride'),
-                    ('pbo', 'trace'),
-                    ('queries', 'trace'),
-                    ('setstate', 'trace'),
-                    ('showextensions', 'showextensions'),
-                    ('triangles', 'triangles')])
-            if aspects['platform'] == 'posix':
-                log_tests.extend([
-                        ('dlopen', 'trace'),
-                        ('pointers', 'checks'),
-                        ('texcomplete', 'checks')])
-            simple_test('objects')
-            simple_test('shadertest')
-            simple_test('textest')
-            if aspects['glwin'] == 'glx':
-                simple_test('threads1')
-                simple_test('threads2')
-            '''
+
             plain_tests.extend([
                 'errors',
                 'interpose',
@@ -164,8 +140,19 @@ else:
                 ('draw.c',   'draw_vbo', 'trace'),
                 ('extoverride.c', 'extoverride', 'extoverride'),
                 ('pbo.c', 'pbo', 'trace'),
-                ('pointers.c', 'pointers', 'checks')
+                ('pointers.c', 'pointers', 'checks'),
+                ('queries.c', 'queries', 'trace'),
+                ('setstate.c', 'setstate', 'trace'),
+                ('showextensions.c', 'showextensions', 'showextensions'),
+                ('texcomplete.c', 'texcomplete', 'checks'),
+                ('triangles.c', 'triangles', 'triangles')
                 ])
+            simple_test('objects')
+            simple_test('shadertest')
+            simple_test('textest')
+            if aspects['glwin'] == 'glx':
+                simple_test('threads1')
+                simple_test('threads2')
         else:
             print 'WARNING: GLEW, GLUT and GLU are required for some tests'
     else:

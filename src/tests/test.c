@@ -85,43 +85,16 @@ static void (* const register_fns[])(void) =
     pbo_suite_register,
     pointers_suite_register,
     procaddress_suite_register,
-#if 0
+    queries_suite_register,
     setstate_suite_register,
     showextensions_suite_register,
     texcomplete_suite_register,
     triangles_suite_register,
-#endif
 #endif /* TEST_GL */
     string_suite_register,
     math_suite_register,
     threads_suite_register
 };
-
-#if 0
-static const test_suite suites[] =
-{
-#if TEST_GL
-#if BUGLE_PLATFORM_POSIX
-    { "dlopen",         TEST_FLAG_LOG,                     dlopen_suite },
-    { "pointers",       TEST_FLAG_LOG | TEST_FLAG_CONTEXT, pointers_suite },
-    { "texcomplete",    TEST_FLAG_LOG | TEST_FLAG_CONTEXT, texcomplete_suite },
-#endif
-    { "draw",           TEST_FLAG_LOG | TEST_FLAG_CONTEXT, draw_suite },
-    { "errors",         TEST_FLAG_CONTEXT,                 errors_suite },
-    { "extoverride",    TEST_FLAG_LOG | TEST_FLAG_CONTEXT, extoverride_suite },
-    { "interpose",      TEST_FLAG_CONTEXT,                 interpose_suite },
-    { "pbo",            TEST_FLAG_LOG | TEST_FLAG_CONTEXT, pbo_suite },
-    { "procaddress",    TEST_FLAG_CONTEXT,                 procaddress_suite },
-    { "queries",        TEST_FLAG_LOG | TEST_FLAG_CONTEXT, queries_suite },
-    { "setstate",       TEST_FLAG_LOG | TEST_FLAG_CONTEXT, setstate_suite },
-    { "showextensions", TEST_FLAG_LOG | TEST_FLAG_CONTEXT, showextensions_suite },
-    { "triangles",      TEST_FLAG_LOG | TEST_FLAG_CONTEXT, triangles_suite },
-#endif /* TEST_GL */
-    { "math",           0,                                 math_suite },
-    { "string",         0,                                 string_suite },
-    { "threads",        0,                                 threads_suite }
-};
-#endif
 
 static void usage(void)
 {

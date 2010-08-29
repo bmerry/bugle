@@ -1,3 +1,20 @@
+/*  BuGLe: an OpenGL debugging tool
+ *  Copyright (C) 2004-2010  Bruce Merry
+ *
+ *  This program is free software; you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation; version 2.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program; if not, write to the Free Software
+ *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ */
+
 /* Generates a variety of OpenGL queries, mainly for testing the logger */
 
 #if HAVE_CONFIG_H
@@ -206,11 +223,19 @@ static void query_tex_level_parameter(void)
     /* ATI rather suspiciously return 0 here, which is why 0 is included in the regex */
     glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_INTERNAL_FORMAT, &i);
     test_log_printf("trace\\.call: glGetTexLevelParameteriv\\(GL_TEXTURE_2D, 0, GL_TEXTURE_INTERNAL_FORMAT, %p -> ([0-4]|GL_[A-Z0-9_]+)\\)\n", (void *) &i);
+}
+
+static void query_tex_level_parameter_compressed(void)
+{
+    GLint i;
+
     if (GLEW_ARB_texture_compression)
     {
         glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_COMPRESSED_ARB, &i);
         test_log_printf("trace\\.call: glGetTexLevelParameteriv\\(GL_TEXTURE_2D, 0, GL_TEXTURE_COMPRESSED(_ARB)?, %p -> (GL_TRUE|GL_FALSE)\\)\n", (void *) &i);
     }
+    else
+        test_skipped("ARB_texture_compression required");
 }
 
 static void query_tex_gen(void)
@@ -237,19 +262,34 @@ static void query_tex_env(void)
     glGetTexEnvfv(GL_TEXTURE_ENV, GL_TEXTURE_ENV_COLOR, color);
     test_log_printf("trace\\.call: glGetTexEnvfv\\(GL_TEXTURE_ENV, GL_TEXTURE_ENV_COLOR, %p -> { 0, 0, 0, 0 }\\)\n",
                     (void *) color);
+}
+
+static void query_tex_env_lod_bias(void)
+{
+    GLfloat bias;
 
     if (GLEW_EXT_texture_lod_bias)
     {
-        glGetTexEnvfv(GL_TEXTURE_FILTER_CONTROL_EXT, GL_TEXTURE_LOD_BIAS_EXT, color);
+        glGetTexEnvfv(GL_TEXTURE_FILTER_CONTROL_EXT, GL_TEXTURE_LOD_BIAS_EXT, &bias);
         test_log_printf("trace\\.call: glGetTexEnvfv\\(GL_TEXTURE_FILTER_CONTROL(_EXT)?, GL_TEXTURE_LOD_BIAS(_EXT)?, %p -> 0\\)\n",
-                        (void *) color);
+                        (void *) &bias);
     }
+    else
+        test_skipped("EXT_texture_lod_bias required");
+}
+
+static void query_tex_env_point_sprite(void)
+{
+    GLint mode;
+
     if (GLEW_ARB_point_sprite)
     {
         glGetTexEnviv(GL_POINT_SPRITE_ARB, GL_COORD_REPLACE_ARB, &mode);
         test_log_printf("trace\\.call: glGetTexEnviv\\(GL_POINT_SPRITE(_ARB)?, GL_COORD_REPLACE(_ARB)?, %p -> GL_FALSE\\)\n",
                         (void *) &mode);
     }
+    else
+        test_skipped("ARB_point_sprite required");
 }
 
 static void query_light(void)
@@ -296,6 +336,8 @@ static void query_vertex_attrib(void)
         glGetVertexAttribivARB(6, GL_VERTEX_ATTRIB_ARRAY_TYPE_ARB, &i);
         test_log_printf("trace\\.call: glGetVertexAttribivARB\\(6, (GL_VERTEX_ATTRIB_ARRAY_TYPE(_ARB)?|GL_ATTRIB_ARRAY_TYPE_NV), %p -> GL_FLOAT\\)\n", (void *) &i);
     }
+    else
+        test_skipped("ARB_vertex_program required");
 }
 
 static void query_query(void)
@@ -320,6 +362,8 @@ static void query_query(void)
         test_log_printf("trace\\.call: glGetQueryObjectuivARB\\(1, GL_QUERY_RESULT(_ARB)?, %p -> 0\\)\n",
                         (void *) &count);
     }
+    else
+        test_skipped("ARB_occlusion_query required");
 }
 
 static void query_buffer_parameter(void)
@@ -342,6 +386,8 @@ static void query_buffer_parameter(void)
         test_log_printf("trace\\.call: glGetBufferPointervARB\\(GL_ARRAY_BUFFER(_ARB)?, GL_BUFFER_MAP_POINTER(_ARB)?, %p -> NULL\\)\n",
                         (void *) &ptr);
     }
+    else
+        test_skipped("ARB_vertex_buffer_object required");
 }
 
 static void query_color_table(void)
@@ -365,6 +411,8 @@ static void query_color_table(void)
         test_log_printf("trace\\.call: glGetColorTable\\(GL_COLOR_TABLE, GL_RGB, GL_UNSIGNED_BYTE, %p\\)\n",
                         (void *) data);
     }
+    else
+        test_skipped("ARB_imaging required");
 }
 
 static void query_convolution(void)
@@ -385,6 +433,8 @@ static void query_convolution(void)
         test_log_printf("trace\\.call: glGetConvolutionParameteriv\\(GL_CONVOLUTION_1D, GL_CONVOLUTION_BORDER_MODE, %p -> GL_REDUCE\\)\n",
                         (void *) &border_mode);
     }
+    else
+        test_skipped("ARB_imaging required");
 }
 
 static void query_histogram(void)
@@ -402,6 +452,8 @@ static void query_histogram(void)
         test_log_printf("trace\\.call: glGetHistogramParameteriv\\(GL_HISTOGRAM, GL_HISTOGRAM_SINK, %p -> GL_FALSE\\)\n",
                         (void *) &sink);
     }
+    else
+        test_skipped("ARB_imaging required");
 }
 
 static void query_minmax(void)
@@ -419,6 +471,8 @@ static void query_minmax(void)
         test_log_printf("trace\\.call: glGetMinmaxParameteriv\\(GL_MINMAX, GL_MINMAX_SINK, %p -> GL_FALSE\\)\n",
                         (void *) &sink);
     }
+    else
+        test_skipped("ARB_imaging required");
 }
 
 static void shader_source(GLhandleARB shader, const char *source)
@@ -524,6 +578,8 @@ static void query_shaders(void)
                         lang120 ? (type == GL_FLOAT_MAT3 ? "GL_FLOAT_MAT3" : "GL_FLOAT_MAT4x3") : "GL_FLOAT_MAT4",
                         name);
     }
+    else
+        test_skipped("ARB shaders required");
     /* FIXME: test lots more things e.g. source */
 }
 
@@ -567,6 +623,8 @@ static void query_ll_programs(void)
         test_log_printf("trace\\.call: glDeleteProgramsARB\\(1, %p -> { %u }\\)\n",
                         (void *) &program, (unsigned int) program);
     }
+    else
+        test_skipped("ARB_vertex_program required");
 }
 
 /* Generates empty contents for a texture */
@@ -679,6 +737,8 @@ static void query_framebuffers(void)
         test_log_printf("trace\\.call: glDeleteTextures\\(3, %p -> { %u, %u, %u }\\)\n",
                         (void *) tex, (unsigned int) tex[0], (unsigned int) tex[1], (unsigned int) tex[2]);
     }
+    else
+        test_skipped("EXT_framebuffer_object required");
 }
 
 static void query_renderbuffers(void)
@@ -709,6 +769,8 @@ static void query_renderbuffers(void)
         test_log_printf("trace\\.call: glDeleteRenderbuffersEXT\\(1, %p -> { %u }\\)\n",
                         (void *) &rb, (unsigned int) rb);
     }
+    else
+        test_skipped("EXT_framebuffer_object required");
 }
 
 static void query_readpixels(void)
@@ -770,34 +832,39 @@ static void query_transform_feedback(void)
         test_log_printf("trace\\.call: glGetIntegerIndexedvEXT\\(GL_TRANSFORM_FEEDBACK_RECORD_NV, 0, %p -> { GL_POSITION, 4, 0 }\\)\n",
                         record);
     }
+    else
+        test_skipped("NV_transform_feedback required");
 }
 
-test_status queries_suite(void)
+void queries_suite_register(void)
 {
-    query_enums();
-    query_bools();
-    query_pointers();
-    query_multi();
-    query_tex_parameter();
-    query_tex_level_parameter();
-    query_tex_gen();
-    query_tex_env();
-    query_light();
-    query_material();
-    query_clip_plane();
-    query_vertex_attrib();
-    query_query();
-    query_buffer_parameter();
-    query_color_table();
-    query_convolution();
-    query_histogram();
-    query_minmax();
-    query_strings();
-    query_shaders();
-    query_ll_programs();
-    query_framebuffers();
-    query_renderbuffers();
-    query_readpixels();
-    query_transform_feedback();
-    return TEST_RAN;
+    test_suite *ts = test_suite_new("queries", TEST_FLAG_LOG | TEST_FLAG_CONTEXT, NULL, NULL);
+    test_suite_add_test(ts, "enums", query_enums);
+    test_suite_add_test(ts, "bools", query_bools);
+    test_suite_add_test(ts, "pointers", query_pointers);
+    test_suite_add_test(ts, "multi", query_multi);
+    test_suite_add_test(ts, "tex_parameter", query_tex_parameter);
+    test_suite_add_test(ts, "tex_level_parameter", query_tex_level_parameter);
+    test_suite_add_test(ts, "tex_level_parameter_compressed", query_tex_level_parameter_compressed);
+    test_suite_add_test(ts, "tex_gen", query_tex_gen);
+    test_suite_add_test(ts, "tex_env", query_tex_env);
+    test_suite_add_test(ts, "tex_env_point_sprite", query_tex_env_point_sprite);
+    test_suite_add_test(ts, "tex_env_lod_bias", query_tex_env_lod_bias);
+    test_suite_add_test(ts, "light", query_light);
+    test_suite_add_test(ts, "material", query_material);
+    test_suite_add_test(ts, "clip_plane", query_clip_plane);
+    test_suite_add_test(ts, "vertex_attrib", query_vertex_attrib);
+    test_suite_add_test(ts, "query", query_query);
+    test_suite_add_test(ts, "buffer_parameter", query_buffer_parameter);
+    test_suite_add_test(ts, "color_table", query_color_table);
+    test_suite_add_test(ts, "convolution", query_convolution);
+    test_suite_add_test(ts, "histogram", query_histogram);
+    test_suite_add_test(ts, "minmax", query_minmax);
+    test_suite_add_test(ts, "strings", query_strings);
+    test_suite_add_test(ts, "shaders", query_shaders);
+    test_suite_add_test(ts, "ll_programs", query_ll_programs);
+    test_suite_add_test(ts, "framebuffers", query_framebuffers);
+    test_suite_add_test(ts, "renderbuffers", query_renderbuffers);
+    test_suite_add_test(ts, "readpixels", query_readpixels);
+    test_suite_add_test(ts, "transform_feedback", query_transform_feedback);
 }

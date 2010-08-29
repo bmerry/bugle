@@ -215,8 +215,8 @@ def get_runtime(aspects):
         headers.extend(['EGL/egl.h', 'EGL/eglext.h'])
         libraries.append('libEGL')
     if aspects['winsys'] == 'x11':
-        if 'X11' not in headers:
-            targets['bugle']['LIBS'].extend(['X11'])
+        if 'X11' not in targets['bugle']['LIBS']:
+            targets['bugle']['LIBS'].extend(['-lX11'])
 
     if aspects['gltype'] == 'gl':
         headers.extend(['GL/gl.h', 'GL/glext.h'])
