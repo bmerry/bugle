@@ -5,8 +5,6 @@ import BugleChecks
 Import('envs', 'targets', 'aspects')
 
 if 'interceptor' in aspects['parts']:
-    Alias('install', aspects['pkglibdir'])
-
     filter_env = envs['host'].Clone(SHLIBPREFIX = '')
     filter_env.Append(LIBS = targets['bugle'].out + targets['bugleutils'].out)
 
@@ -39,8 +37,8 @@ if 'interceptor' in aspects['parts']:
                 'modify',
                 'stats_fragments',
                 'showstats'])
-        module = filter_env.LoadableModule('eps', ['eps.c', '../gl2ps/gl2ps.c'])
-        filter_env.Install(aspects['pkglibdir'], module)
+        eps_module = filter_env.LoadableModule('eps', ['eps.c', '../gl2ps/gl2ps.c'])
+        filter_env.Install(aspects['pkglibdir'], eps_module)
 
     if aspects['platform'] == 'posix':
         # These currently depend on POSIX features

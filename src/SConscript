@@ -155,6 +155,7 @@ def get_common_options():
             common_kw[i + 'COMSTR'] = i + ' $TARGET'
         common_kw['TUCOMSTR'] = 'TU ${TARGETS[1]}'
         common_kw['BUDGIECOMSTR'] = 'BUDGIE ${TARGETS}'
+        common_kw['LDCONFIGCOMSTR'] = 'LDCONFIG'
         for i in ['COPY', 'INSTALL']:
             common_kw[i + 'STR'] = i + ' $TARGET'
     return common_kw
@@ -289,7 +290,6 @@ substs = get_substs(aspects)
 envs['host'].SubstFile('include/bugle/porting.h', 'include/bugle/porting.h.in', substs)
 bugle_pc = envs['host'].SubstFile('bugle.pc', 'bugle.pc.in', substs)
 envs['host'].Install(aspects['libdir'] + '/pkgconfig', source = bugle_pc)
-Alias('install', aspects['libdir'] + '/pkgconfig')
 
 targets['bugleutils'].update({
     'target': 'bugleutils',

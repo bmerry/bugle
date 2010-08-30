@@ -74,8 +74,9 @@ def _build_shared_library(env, binfmt, target, source, bindir = None, libdir = N
 
                 if libdir is not None:
                     install_env = env.Clone(OLDINSTALL = env['INSTALL'], INSTALL = copyFunc)
-                    install_env.Install(target = libdir, source = shl_list + soname_target + base_target)
-                    install_env.Alias('install', libdir)
+                    targets = install_env.Install(target = libdir, source = shl_list + soname_target + base_target)
+                    if not SCons.Script.GetOption('install_sandbox'):
+                        install_env.AddPostAction(targets, SCons.Action.Action('-ldconfig', '$LDCONFIGCOMSTR'))
                 return base_target
             else:
                 raise NotImplemented, 'Do not know how to set SONAME without GCC'
@@ -84,7 +85,6 @@ def _build_shared_library(env, binfmt, target, source, bindir = None, libdir = N
             if libdir is not None:
                 install_env = env.Clone(OLDINSTALL = env['INSTALL'], INSTALL = copyFunc)
                 install_env.Install(target = libdir, source = shl_list)
-                install_env.Alias('install', libdir)
             return shl_list
     elif binfmt == 'pe':
         if 'msvc' in env['TOOLS']:
@@ -95,16 +95,13 @@ def _build_shared_library(env, binfmt, target, source, bindir = None, libdir = N
             # No symlinks required, so no need to replace the env
             if libdir is not None:
                 env.Install(target = libdir, source = [lib, exp])
-                env.Alias('install', libdir)
             if bindir is not None:
                 env.Install(target = bindir, source = dll)
-                env.Alias('install', bindir)
             return [lib]
         elif 'mingw' in env['TOOLS']:
             outputs = env.SharedLibrary(target, source, **kw)
             if bindir is not None:
                 env.Install(target = bindir, source = outputs[0])
-                env.Alias('install', bindir)
             return [outputs[0]]
         else:
             raise NotImplemented, 'Do not know how to build shared libraries for PE without MSVC'

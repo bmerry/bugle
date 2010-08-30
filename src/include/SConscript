@@ -11,4 +11,3 @@ for dir in [
         'bugle/wgl',
         'budgie']:
     envs['host'].Install(aspects['includedir'] + '/bugle/' + dir, source = Glob(dir + '/*.h'))
-Alias('install', aspects['includedir'])
