@@ -376,6 +376,7 @@ package_sources.extend([
     'src/bc/egl/egl.bc',
     'src/bc/gl/GL_ARB_draw_elements_base_vertex.bc',
     'src/bc/gl/GL_ARB_imaging.bc',
+    'src/bc/gl/GL_ARB_map_buffer_range.bc',
     'src/bc/gl/GL_ARB_multitexture.bc',
     'src/bc/gl/GL_ARB_occlusion_query.bc',
     'src/bc/gl/GL_ARB_shader_objects.bc',

@@ -45,6 +45,7 @@
  * - glCopyTexImage1D, glCopyTexSubImage1D, glCopyTexImage2D, glCopyTexSubImage2D
  * - glVertexAttrib*
  * - glUniform*
+ * - Anything >= GL 3.0
  */
 
 static void set_enables(void)
@@ -152,6 +153,35 @@ static void set_matrices(void)
                     m[12], m[13], m[14], m[15]);
 }
 
+static void set_map_buffer_range(void)
+{
+#ifdef GL_ARB_map_buffer_range
+    if (GLEW_ARB_map_buffer_range)
+    {
+        GLuint id;
+        glGenBuffers(1, &id);
+        test_log_printf("trace\\.call: glGenBuffers\\(1, %p -> { %u }\\)\n",
+                        &id, (unsigned int) id);
+        glBindBuffer(GL_ARRAY_BUFFER, id);
+        test_log_printf("trace\\.call: glBindBuffer\\(GL_ARRAY_BUFFER, %u\\)\n",
+                        (unsigned int) id);
+        glBufferData(GL_ARRAY_BUFFER, 128, NULL, GL_STATIC_DRAW);
+        test_log_printf("trace\\.call: glBufferData\\(GL_ARRAY_BUFFER, 128, NULL, GL_STATIC_DRAW\\)\n");
+        glMapBufferRange(GL_ARRAY_BUFFER, 16, 64, GL_MAP_WRITE_BIT | GL_MAP_FLUSH_EXPLICIT_BIT);
+        test_log_printf("trace\\.call: glMapBufferRange\\(GL_ARRAY_BUFFER, 16, 64, GL_MAP_WRITE_BIT | GL_MAP_FLUSH_EXPLICIT_BIT\\)\n");
+        glFlushMappedBufferRange(GL_ARRAY_BUFFER, 20, 4);
+        test_log_printf("trace\\.call: glFlushMappedBufferRange\\(GL_ARRAY_BUFFER, 20, 4\\)\n");
+        glDeleteBuffers(1, &id);
+        test_log_printf("trace\\.call: glDeleteBuffers\\(1, %p -> { %u }\\)\n",
+                        &id, (unsigned int) id);
+    }
+    else
+#endif
+    {
+        test_skipped("GL_ARB_map_buffer_range required");
+    }
+}
+
 void setstate_suite_register(void)
 {
     test_suite *ts = test_suite_new("setstate", TEST_FLAG_LOG | TEST_FLAG_CONTEXT, NULL, NULL);
@@ -163,4 +193,5 @@ void setstate_suite_register(void)
     test_suite_add_test(ts, "texture_state_mipmap", set_texture_state_mipmap);
     test_suite_add_test(ts, "material_state", set_material_state);
     test_suite_add_test(ts, "matrices", set_matrices);
+    test_suite_add_test(ts, "map_buffer_range", set_map_buffer_range);
 }

@@ -1,6 +1,7 @@
 * Fix #81: primitive counting when instanced drawing is in use
 * Add many newer draw calls to bugle_gl_filter_catches_drawing
 * Add trace support for GL_ARB_draw_elements_base_vertex
+* Add trace support for GL_ARB_map_buffer_range
 * Link against -lX11 when winsys is X11 but glwin is not GLX
 * Fix install alias when used with --install-sandbox
 * Run ldconfig after installing libraries

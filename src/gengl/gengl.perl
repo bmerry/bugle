@@ -41,6 +41,7 @@ my %extension_chains = (
     "GL_ARB_fragment_program" => undef,
     "GL_ARB_fragment_shader" => ["GL_VERSION_2_0", "GL_ES_VERSION_2_0"],
     "GL_ARB_imaging" => undef,
+    "GL_ARB_map_buffer_range" => ["GL_VERSION_3_0"],
     "GL_ARB_multisample" => ["GL_VERSION_1_3", "GL_VERSION_ES_CM_1_0", "GL_ES_VERSION_2_0"],
     "GL_ARB_multitexture" => ["GL_VERSION_1_3", "GL_VERSION_ES_CM_1_0", "GL_ES_VERSION_2_0"],
     "GL_ARB_occlusion_query" => "GL_VERSION_1_5",
