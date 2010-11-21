@@ -625,6 +625,7 @@ package_sources.extend([
     'src/statsparse.y',
     'src/tests/SConscript',
     'src/tests/dlopen.c',
+    'src/tests/draw.c',
     'src/tests/errors.c',
     'src/tests/extoverride.c',
     'src/tests/filters',
