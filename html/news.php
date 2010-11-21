@@ -24,6 +24,12 @@ else
     </p>
     <h1>BuGLe News</h1>
 
+    <h2>Miscellaneous bugfixes (21/11/2010)</h2>
+    <p>This release contains miscellaneous bugfixes (see the
+    <a href="documentation/changelog.php">ChangeLog</a> for
+    details). In particular, it should now build with Ubuntu 10.10.
+    </p>
+
     <h2>BuGLe now uses SCons as its build system (18/7/2010)</h2>
     <p>The build system has been replaced SCons. While there are few new
     features, this is a major restructuring of the internals. Many bugs have
