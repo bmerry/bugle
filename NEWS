@@ -1,3 +1,8 @@
+0.0.20101121
+------------
+This release contains miscellaneous bugfixes (see the ChangeLog for details).
+In particular, it should now build with Ubuntu 10.10.
+
 0.0.20100718
 ------------
 The build system has been replaced SCons. While there are few new features,

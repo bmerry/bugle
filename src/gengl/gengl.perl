@@ -199,7 +199,12 @@ my %function_non_aliases = (
     "glXSwapIntervalEXT" => 1,
 
     # NV version returns a Bool
-    "glXJoinSwapGroupNV" => 1
+    "glXJoinSwapGroupNV" => 1,
+
+    # Many changes between AMD and ARB versions
+    "glDebugMessageInsertAMD" => 1,
+    "glDebugMessageCallbackAMD" => 1,
+    "glGetDebugMessageLogAMD" => 1
 );
 
 # Enumerants that we don't want to be the chosen return for
