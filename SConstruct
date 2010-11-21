@@ -359,7 +359,6 @@ package_sources.extend([
     'doc/extensions.txt',
     'doc/filters.html',
     'doc/locks.txt',
-    'doc/porting.txt',
     'site_scons/BugleAspects.py',
     'site_scons/BugleChecks.py',
     'site_scons/BugleTarget.py',
