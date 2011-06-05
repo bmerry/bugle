@@ -1,3 +1,5 @@
+* Avoid freeing a string constant if a GL error occurs (thanks to Bryce Van Dyke for spotting this)
+
 0.0.20101121
 ------------
 * Fix #81: primitive counting when instanced drawing is in use
