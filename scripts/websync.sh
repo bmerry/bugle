@@ -4,4 +4,5 @@ if ! [ -f html/index.php ]; then
   exit 1
 fi
 rsync -v -a --copy-links --delete --delete-after --progress --stats --exclude=.svn --exclude=documentation --exclude=snapshots --exclude='sdk_*.txt' html/ $HOME/devel/bugle/oglsdk
+rsync -v -a --copy-links --delete --delete-after --progress --stats --exclude=.svn doc/DocBook/images/ $HOME/devel/bugle/oglsdk/documentation/images
 xsltproc --xinclude --stringparam "base.dir" "$HOME/devel/bugle/oglsdk/documentation/" doc/DocBook/xhtml-chunk-php.xsl doc/DocBook/bugle.xml
