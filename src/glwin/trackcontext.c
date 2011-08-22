@@ -1,5 +1,5 @@
 /*  BuGLe: an OpenGL debugging tool
- *  Copyright (C) 2004-2008  Bruce Merry
+ *  Copyright (C) 2004-2008, 2011  Bruce Merry
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -364,7 +364,7 @@ static void trackcontext_data_clear(void *data)
     if (d->aux_shared) CALL(glXDestroyContext)(d->dpy, d->aux_shared);
     if (d->aux_unshared) CALL(glXDestroyContext)(d->dpy, d->aux_unshared);
 #endif
-    bugle_free(d->create);
+    bugle_glwin_context_create_free(d->create);
 }
 
 static bugle_bool trackcontext_filter_set_initialise(filter_set *handle)

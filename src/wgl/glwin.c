@@ -1,5 +1,5 @@
 /*  BuGLe: an OpenGL debugging tool
- *  Copyright (C) 2008, 2010  Bruce Merry
+ *  Copyright (C) 2008, 2010-2011  Bruce Merry
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -145,6 +145,11 @@ glwin_context bugle_glwin_context_create_new(const glwin_context_create *create,
     if (share)
         CALL(wglShareLists)(create->ctx, ctx);
     return ctx;
+}
+
+void bugle_glwin_context_create_free(struct glwin_context_create *create)
+{
+    bugle_free(create);
 }
 
 glwin_context bugle_glwin_get_context_destroy(function_call *call)

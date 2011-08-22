@@ -1,5 +1,5 @@
 /*  BuGLe: an OpenGL debugging tool
- *  Copyright (C) 2008-2009  Bruce Merry
+ *  Copyright (C) 2008-2009, 2011  Bruce Merry
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -70,6 +70,9 @@ typedef struct glwin_context_create
  * more contexts. Returns a newly allocated glwin_context_create (or a
  * subclass) if the original function succeeded, or NULL if it failed.
  * This should only be called after the original function completed.
+ *
+ * After the returned structure is no longer needed, it must be freed with
+ * bugle_glwin_context_create_free.
  */
 BUGLE_EXPORT_PRE glwin_context_create *bugle_glwin_context_create_save(function_call *call)BUGLE_EXPORT_POST;
 
@@ -78,6 +81,10 @@ BUGLE_EXPORT_PRE glwin_context_create *bugle_glwin_context_create_save(function_
  * etc with the original. Returns the new context, or NULL on failure.
  */
 BUGLE_EXPORT_PRE glwin_context bugle_glwin_context_create_new(const struct glwin_context_create *create, bugle_bool share) BUGLE_EXPORT_POST;
+
+/* Frees up resources allocated with bugle_glwin_context_create_save.
+ */
+BUGLE_EXPORT_PRE void bugle_glwin_context_create_free(struct glwin_context_create *create) BUGLE_EXPORT_POST;
 
 /* Extracts the context passed to a destroy function */
 BUGLE_EXPORT_PRE glwin_context bugle_glwin_get_context_destroy(function_call *call) BUGLE_EXPORT_POST;

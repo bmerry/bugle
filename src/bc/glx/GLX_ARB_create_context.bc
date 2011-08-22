@@ -1,0 +1,3 @@
+TYPE PARAMETER glXCreateContextAttribsARB 3 TYPE_5XBool
+LENGTH PARAMETER glXCreateContextAttribsARB 4 bugle_count_glwin_attributes($$, None)
+DUMP PARAMETER glXCreateContextAttribsARB 4 bugle_dump_glwin_attributes($$, None, $W)

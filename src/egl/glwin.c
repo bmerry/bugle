@@ -1,5 +1,5 @@
 /*  BuGLe: an OpenGL debugging tool
- *  Copyright (C) 2008  Bruce Merry
+ *  Copyright (C) 2008, 2011  Bruce Merry
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -49,7 +49,7 @@ glwin_drawable bugle_glwin_get_current_read_drawable(void)
 }
 
 bugle_bool bugle_glwin_make_context_current(glwin_display dpy, glwin_drawable draw,
-                                      glwin_drawable read, glwin_context ctx)
+                                            glwin_drawable read, glwin_context ctx)
 {
     return CALL(eglMakeCurrent)(dpy, draw, read, ctx);
 }
@@ -127,8 +127,13 @@ glwin_context bugle_glwin_context_create_new(const glwin_context_create *create,
 {
     glwin_context_create_egl *c;
 
-    c = (glwin_context_create_egl *) create;    
+    c = (glwin_context_create_egl *) create;
     return CALL(eglCreateContext)(create->dpy, c->config, share ? create->ctx : NULL, c->attribs);
+}
+
+void bugle_glwin_context_create_free(struct glwin_context_create *create)
+{
+    bugle_free(create);
 }
 
 glwin_context bugle_glwin_get_context_destroy(function_call *call)

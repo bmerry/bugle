@@ -1,5 +1,5 @@
 /*  BuGLe: an OpenGL debugging tool
- *  Copyright (C) 2008  Bruce Merry
+ *  Copyright (C) 2008, 2011  Bruce Merry
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -19,6 +19,7 @@
 # include <config.h>
 #endif
 #include <bugle/glwin/glwin.h>
+#include <bugle/glwin/glwintypes.h>
 #include <bugle/filters.h>
 #include <bugle/apireflect.h>
 #include <budgie/call.h>
@@ -26,6 +27,7 @@
 #include <bugle/memory.h>
 #include <bugle/bool.h>
 #include <stdlib.h>
+#include <string.h>
 #include "budgielib/defines.h"
 
 /* Wrappers around GLX/WGL/EGL functions */
@@ -111,6 +113,7 @@ typedef struct glwin_context_create_glx
     GLXFBConfigSGIX config;
     int render_type;
     Bool direct;
+    int *attribs;
 } glwin_context_create_glx;
 
 glwin_context_create *bugle_glwin_context_create_save(function_call *call)
@@ -121,13 +124,31 @@ glwin_context_create *bugle_glwin_context_create_save(function_call *call)
     ctx = *(glwin_context *) call->generic.retn;
     if (!ctx)
         return NULL;
-    create = BUGLE_MALLOC(glwin_context_create_glx);
+    create = BUGLE_ZALLOC(glwin_context_create_glx);
     create->parent.function = call->generic.id;
     create->parent.group = call->generic.group;
     create->parent.ctx = ctx;
 
     switch (call->generic.group)
     {
+#ifdef GLX_ARB_create_context
+    case GROUP_glXCreateContextAttribsARB:
+        create->parent.dpy =   *call->glXCreateContextAttribsARB.arg0;
+        create->config =       *call->glXCreateContextAttribsARB.arg1;
+        create->parent.share = *call->glXCreateContextAttribsARB.arg2;
+        create->direct =       *call->glXCreateContextAttribsARB.arg3;
+        {
+            const int *orig_attribs = *call->glXCreateContextAttribsARB.arg4;
+            if (orig_attribs == NULL)
+                create->attribs = NULL;
+            else
+            {
+                int n_attribs = bugle_count_glwin_attributes(orig_attribs, None);
+                create->attribs = BUGLE_NMALLOC(n_attribs, int);
+                memcpy(create->attribs, orig_attribs, n_attribs * sizeof(int));
+            }
+        }
+#endif /* GLX_ARB_create_context */
     case GROUP_glXCreateContextWithConfigSGIX:
         create->parent.dpy =   *call->glXCreateContextWithConfigSGIX.arg0;
         create->config =       *call->glXCreateContextWithConfigSGIX.arg1;
@@ -168,11 +189,22 @@ glwin_context bugle_glwin_context_create_new(const glwin_context_create *create,
     new_call.generic.group = create_glx->parent.group;
     new_call.generic.user_data = NULL;
     new_call.generic.retn = &retn;
+
+    /* The explicit typecasts below are to discard constness. */
     switch (create_glx->parent.group)
     {
+#if GLX_ARB_create_context
+    case GROUP_glXCreateContextAttribsARB:
+        new_call.generic.num_args = 5;
+        new_call.glXCreateContextAttribsARB.arg0 = (Display **) &create_glx->parent.dpy;
+        new_call.glXCreateContextAttribsARB.arg1 = (GLXFBConfigSGIX *) &create_glx->config;
+        new_call.glXCreateContextAttribsARB.arg2 = (GLXContext *) &share_ctx;
+        new_call.glXCreateContextAttribsARB.arg3 = (Bool *) &create_glx->direct;
+        new_call.glXCreateContextAttribsARB.arg4 = (const int **) &create_glx->attribs;
+        break;
+#endif /* GLX_ARB_create_context */
     case GROUP_glXCreateContextWithConfigSGIX:
         new_call.generic.num_args = 5;
-        /* Need to cast away constness */
         new_call.glXCreateContextWithConfigSGIX.arg0 = (Display **) &create_glx->parent.dpy;
         new_call.glXCreateContextWithConfigSGIX.arg1 = (GLXFBConfigSGIX *) &create_glx->config;
         new_call.glXCreateContextWithConfigSGIX.arg2 = (int *) &create_glx->render_type;
@@ -181,7 +213,6 @@ glwin_context bugle_glwin_context_create_new(const glwin_context_create *create,
         break;
     case GROUP_glXCreateContext:
         new_call.generic.num_args = 4;
-        /* Need to cast away constness */
         new_call.glXCreateContext.arg0 = (Display **) &create_glx->parent.dpy;
         vi = &create_glx->visual_info;
         new_call.glXCreateContext.arg1 = (XVisualInfo **) &vi;
@@ -196,6 +227,13 @@ glwin_context bugle_glwin_context_create_new(const glwin_context_create *create,
     return retn;
 }
 
+void bugle_glwin_context_create_free(struct glwin_context_create *create)
+{
+    const glwin_context_create_glx *create_glx = (glwin_context_create_glx *) create;
+    bugle_free(create_glx->attribs);
+    bugle_free(create);
+}
+
 glwin_context bugle_glwin_get_context_destroy(function_call *call)
 {
     return *call->glXDestroyContext.arg1;
@@ -205,12 +243,12 @@ void bugle_glwin_filter_catches_create_context(filter *f, bugle_bool inactive, f
 {
     bugle_filter_catches(f, "glXCreateContext", inactive, callback);
     bugle_filter_catches(f, "glXCreateContextWithConfigSGIX", inactive, callback);
+    bugle_filter_catches(f, "glXCreateContextAttribsARB", inactive, callback);
 }
 
 void bugle_glwin_filter_catches_destroy_context(filter *f, bugle_bool inactive, filter_callback callback)
 {
     bugle_filter_catches(f, "glXDestroyContext", inactive, callback);
-    bugle_filter_catches(f, "glXCreateContextWithConfigSGIX", inactive, callback);
 }
 
 void bugle_glwin_filter_catches_make_current(filter *f, bugle_bool inactive, filter_callback callback)
