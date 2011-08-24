@@ -27,7 +27,7 @@
 #include "test.h"
 
 /* Number of threads to use in stress tests */
-#define STRESS_THREADS 50
+#define STRESS_THREADS 40
 
 static unsigned int threads_create_child(void *arg)
 {
