@@ -148,6 +148,7 @@ glwin_context_create *bugle_glwin_context_create_save(function_call *call)
                 memcpy(create->attribs, orig_attribs, n_attribs * sizeof(int));
             }
         }
+        break;
 #endif /* GLX_ARB_create_context */
     case GROUP_glXCreateContextWithConfigSGIX:
         create->parent.dpy =   *call->glXCreateContextWithConfigSGIX.arg0;

@@ -25,13 +25,18 @@
 
 #if BUGLE_GLWIN_GLX
 
-#include <GL/glxew.h>
+#include <GL/glx.h>
+#include <GL/glxext.h>
 #include <X11/Xlib.h>
+#include <string.h>
 
 static void glxarbcreatecontext_test(void)
 {
+    Display *dpy;
+    dpy = XOpenDisplay(NULL);
 #if GLX_ARB_create_context
-    if (GLXEW_ARB_create_context)
+    const char * extensions = glXQueryExtensionsString(dpy, DefaultScreen(dpy));
+    if (strstr(extensions, "GLX_ARB_create_context"))
     {
         const int cfg_attribs[] =
         {
@@ -44,12 +49,12 @@ static void glxarbcreatecontext_test(void)
             GLX_CONTEXT_MINOR_VERSION_ARB, 0,
             None
         };
-        Display *dpy;
         GLXContext ctx;
         GLXFBConfig cfg, *cfgs;
+        PFNGLXCREATECONTEXTATTRIBSARBPROC create =
+            (PFNGLXCREATECONTEXTATTRIBSARBPROC) glXGetProcAddressARB((const GLubyte *) "glXCreateContextAttribsARB");
         int elements;
 
-        dpy = XOpenDisplay(NULL);
         cfgs = glXChooseFBConfig(dpy, DefaultScreen(dpy), cfg_attribs, &elements);
         if (elements == 0)
         {
@@ -58,8 +63,8 @@ static void glxarbcreatecontext_test(void)
         }
         cfg = *cfgs;
         XFree(cfgs);
-        ctx = glXCreateContextAttribsARB(dpy, cfg, NULL, True, ctx_attribs);
-        test_log_printf("trace\\.call: glXCreateContextAttribs(ARB)?\\(%p, %p, NULL, True, %p -> { GLX_CONTEXT_MAJOR_VERSION, 1, GL_CONTEXT_MINOR_VERSION, 0, None }\\) = %p\n",
+        ctx = create(dpy, cfg, NULL, True, ctx_attribs);
+        test_log_printf("trace\\.call: glXCreateContextAttribsARB\\(%p, %p, NULL, True, %p -> { GLX_CONTEXT_MAJOR_VERSION(_ARB)?, 1, GL_CONTEXT_MINOR_VERSION(_ARB)?, 0, None }\\) = %p\n",
                         (void *) dpy, (void *) cfg, ctx_attribs, (void *) ctx);
         TEST_ASSERT(ctx != NULL);
         if (ctx != NULL)
@@ -69,13 +74,13 @@ static void glxarbcreatecontext_test(void)
                             (void *) dpy, (void *) cfg);
         }
 
-        XCloseDisplay(dpy);
     }
     else
 #endif /* ARB_create_context */
     {
         test_skipped("GLX_ARB_create_context not found");
     }
+    XCloseDisplay(dpy);
 }
 
 #endif /* BUGLE_GLWIN_GLX */

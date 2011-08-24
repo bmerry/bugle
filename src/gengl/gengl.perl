@@ -263,6 +263,10 @@ my $enum_not_name_regex = qr/^(?:
     |WGL_WGLEXT_\w+
     |E?GLX?_[A-Z0-9_]+_BIT(?:_[A-Z0-9]+)?
     |GLX_BUFFER_CLOBBER_MASK(?:_[A-Z0-9]+)?
+    |GLX_PbufferClobber
+    |GLX_BufferSwapComplete
+    |GLX_SYNC_FRAME_SGIX
+    |GLX_SYNC_SWAP_SGIX
     |GL(?:_[A-Z0-9_]+)?_ALL_[A-Z0-9_]+_BITS(?:_[A-Z0-9]+)?
     |E?GL_FALSE
     |E?GL_TRUE

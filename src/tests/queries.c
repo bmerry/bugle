@@ -810,23 +810,23 @@ static void query_transform_feedback(void)
         for (i = 0; i < 4; i++)
         {
             glBindBuffer(GL_TRANSFORM_FEEDBACK_BUFFER_NV, buffers[i]);
-            test_log_printf("trace\\.call: glBindBuffer\\(GL_TRANSFORM_FEEDBACK_BUFFER_NV, %u\\)\n",
+            test_log_printf("trace\\.call: glBindBuffer\\(GL_TRANSFORM_FEEDBACK_BUFFER(_NV)?, %u\\)\n",
                             buffers[i]);
             glBufferData(GL_TRANSFORM_FEEDBACK_BUFFER_NV, 1024, NULL, GL_STREAM_COPY);
-            test_log_printf("trace\\.call: glBufferData\\(GL_TRANSFORM_FEEDBACK_BUFFER_NV, 1024, NULL, GL_STREAM_COPY(_ARB)?\\)\n");
+            test_log_printf("trace\\.call: glBufferData\\(GL_TRANSFORM_FEEDBACK_BUFFER(_NV)?, 1024, NULL, GL_STREAM_COPY(_ARB)?\\)\n");
             glBindBufferBaseNV(GL_TRANSFORM_FEEDBACK_BUFFER_NV, i, i);
-            test_log_printf("trace\\.call: glBindBufferBaseNV\\(GL_TRANSFORM_FEEDBACK_BUFFER_NV, %d, %d\\)\n",
+            test_log_printf("trace\\.call: glBindBufferBaseNV\\(GL_TRANSFORM_FEEDBACK_BUFFER(_NV)?, %d, %d\\)\n",
                             i, i);
         }
         glGetIntegerv(GL_TRANSFORM_FEEDBACK_BUFFER_BINDING_NV, &bound);
-        test_log_printf("trace\\.call: glGetIntegerv\\(GL_TRANSFORM_FEEDBACK_BUFFER_BINDING_NV, %p -> %d\\)\n",
+        test_log_printf("trace\\.call: glGetIntegerv\\(GL_TRANSFORM_FEEDBACK_BUFFER_BINDING(_NV)?, %p -> %d\\)\n",
                         &bound, bound);
         glTransformFeedbackAttribsNV(4, attribs, GL_SEPARATE_ATTRIBS_NV);
         test_log_printf("trace\\.call: glTransformFeedbackAttribsNV\\(4, %p -> { "
                         "{ GL_POSITION, 4, 0 }, "
                         "{ GL_TEXTURE_COORD_NV, 2, 0 }, "
                         "{ GL_TEXTURE_COORD_NV, 2, 1 }, "
-                        "{ GL_POINT_SIZE, 1, 0 } }, GL_SEPARATE_ATTRIBS_NV\\)\n",
+                        "{ GL_POINT_SIZE, 1, 0 } }, GL_SEPARATE_ATTRIBS(_NV)?\\)\n",
                         attribs);
         glGetIntegerIndexedvEXT(GL_TRANSFORM_FEEDBACK_RECORD_NV, 0, record);
         test_log_printf("trace\\.call: glGetIntegerIndexedvEXT\\(GL_TRANSFORM_FEEDBACK_RECORD_NV, 0, %p -> { GL_POSITION, 4, 0 }\\)\n",
