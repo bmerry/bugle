@@ -90,7 +90,7 @@ if 'tests' not in aspects['parts']:
 
 test_env = envs['host'].Clone()
 plain_tests = ['string', 'math', 'threads']
-log_suites = []
+log_suites = []  # Tuples of (source file, suite name, filter chain)
 simple_tests = []
 test_deps = []
 test_sources = ['test.c']
@@ -135,6 +135,7 @@ else:
                 'interpose',
                 'procaddress'])
             log_suites.extend([
+                ('arbcreatecontext.c', 'ARB_create_context', 'trace'),
                 ('dlopen.c', 'dlopen', 'trace'),
                 ('draw.c',   'draw_client', 'trace'),
                 ('draw.c',   'draw_vbo', 'trace'),

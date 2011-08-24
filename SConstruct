@@ -624,6 +624,7 @@ package_sources.extend([
     'src/statslex.l',
     'src/statsparse.y',
     'src/tests/SConscript',
+    'src/tests/arbcreatecontext.c',
     'src/tests/dlopen.c',
     'src/tests/draw.c',
     'src/tests/errors.c',
