@@ -70,7 +70,7 @@ static void tokenise(const char *str, hash_table *tokens)
 static void context_init(const void *key, void *data)
 {
     context_extensions *ce;
-    const char *glver, *glexts, *glwinexts = NULL;
+    const char *glver, *glwinexts = NULL;
     int glwin_major = 0, glwin_minor = 0;
     bugle_api_extension i;
     glwin_display dpy;
@@ -78,9 +78,27 @@ static void context_init(const void *key, void *data)
     ce = (context_extensions *) data;
     ce->flags = BUGLE_CALLOC(bugle_api_extension_count(), bugle_bool);
     bugle_hash_init(&ce->names, NULL);
-
-    glexts = (const char *) CALL(glGetString)(GL_EXTENSIONS);
     glver = (const char *) CALL(glGetString)(GL_VERSION);
+    if (strcmp(glver, "3.0") >= 0)
+    {
+        /* GL3+ context with glGetStringi available to obtain
+         * individual extensions.
+         */
+        GLint num_extensions = 0;
+        GLint j;
+        CALL(glGetIntegerv)(GL_NUM_EXTENSIONS, &num_extensions);
+        for (j = 0; j < num_extensions; j++)
+        {
+            const char *ext = (const char *) CALL(glGetStringi)(GL_EXTENSIONS, j);
+            bugle_hash_set(&ce->names, (const char *) ext, &ce->names);
+        }
+    }
+    else
+    {
+        const char *glexts = (const char *) CALL(glGetString)(GL_EXTENSIONS);
+        tokenise(glexts, &ce->names);
+    }
+
     dpy = bugle_glwin_get_current_display();
     if (dpy)
     {
@@ -88,7 +106,6 @@ static void context_init(const void *key, void *data)
         glwinexts = bugle_glwin_query_extensions_string(dpy);
     }
 
-    tokenise(glexts, &ce->names);
     if (glwinexts) tokenise(glwinexts, &ce->names);
     for (i = 0; i < bugle_api_extension_count(); i++)
     {
