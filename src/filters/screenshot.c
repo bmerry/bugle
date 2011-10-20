@@ -267,7 +267,11 @@ static bugle_bool lavc_initialise(int width, int height)
     if (!codec) codec = avcodec_find_encoder(CODEC_ID_HUFFYUV);
     if (!codec) return BUGLE_FALSE;
     c = video_stream->codec;
+#if LIBAVFORMAT_BUILD < 4621
     c->codec_type = CODEC_TYPE_VIDEO;
+#else
+    c->codec_type = AVMEDIA_TYPE_VIDEO;
+#endif
     c->codec_id = codec->id;
     if (c->codec_id == CODEC_ID_HUFFYUV) c->pix_fmt = PIX_FMT_YUV422P;
     else c->pix_fmt = PIX_FMT_YUV420P;
@@ -313,7 +317,13 @@ static void lavc_shutdown(void)
             av_init_packet(&pkt);
             pkt.pts = c->coded_frame->pts;
             if (c->coded_frame->key_frame)
+            {
+#if LIBAVFORMAT_BUILD < 4621
                 pkt.flags |= PKT_FLAG_KEY;
+#else
+                pkt.flags |= AV_PKT_FLAG_KEY;
+#endif
+            }
             pkt.stream_index = video_stream->index;
             pkt.data = video_buffer;
             pkt.size = out_size;
@@ -579,7 +589,13 @@ static void screenshot_video(void)
                 av_init_packet(&pkt);
                 pkt.pts = c->coded_frame->pts;
                 if (c->coded_frame->key_frame)
+                {
+#if LIBAVFORMAT_BUILD < 4621
                     pkt.flags |= PKT_FLAG_KEY;
+#else
+                    pkt.flags |= AV_PKT_FLAG_KEY;
+#endif
+                }
                 pkt.stream_index = video_stream->index;
                 pkt.data = video_buffer;
                 pkt.size = out_size;
