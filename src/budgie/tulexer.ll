@@ -178,6 +178,7 @@ rest of the record, find the length, then replace what we don't need.
 <ASM>"strg: "@{DIGIT}+  | /* See comments about ASM above */
 "outs: "@{DIGIT}+       |
 "vars: "@{DIGIT}+       |
+"chain: "@{DIGIT}+      |
 "algn: "{DIGIT}+        /* Ignore these fields, which are mainly code body */
 
 "tag : struct"          { yylnode->flag_struct = true; }
