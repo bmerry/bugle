@@ -93,7 +93,6 @@ static gboolean gldb_framebuffer_pane_response_callback(gldb_response *response,
     GldbFramebufferPane *pane;
     gldb_response_data_framebuffer *r;
     framebuffer_callback_data *data;
-    GLenum format;
     bugle_uint32_t channels;
     GLint width, height;
 
@@ -113,7 +112,6 @@ static gboolean gldb_framebuffer_pane_response_callback(gldb_response *response,
         GdkGLDrawable *gldrawable;
 
         channels = data->channels;
-        format = gldb_channel_get_display_token(channels);
         width = r->width;
         height = r->height;
 

@@ -1,5 +1,6 @@
 * Avoid freeing a string constant if a GL error occurs (thanks to Bryce Van Dyke for spotting this)
 * Fix for compiling on newer ffmpeg (thanks to François Bertel for the patch)
+* Fix a number of warnings reported by GCC 4.6
 
 0.0.20101121
 ------------

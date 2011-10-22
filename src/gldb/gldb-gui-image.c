@@ -387,7 +387,7 @@ static void image_draw_motion_update(GldbGuiImageViewer *viewer,
     int level;
     int u, v;
     char *msg, *tmp_msg;
-    int nchannels, p;
+    int p;
     bugle_uint32_t channels, channel;
     const GldbGuiImagePlane *plane;
 
@@ -406,7 +406,6 @@ static void image_draw_motion_update(GldbGuiImageViewer *viewer,
     y = (1.0 - (y + 0.5) / draw->allocation.height) * height;
     u = CLAMP((int) x, 0, width - 1);
     v = CLAMP((int) y, 0, height - 1);
-    nchannels = gldb_channel_count(plane->channels);
     msg = bugle_asprintf("u: %d v: %d ", u, v);
 
     channels = plane->channels;

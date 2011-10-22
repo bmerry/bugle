@@ -337,11 +337,9 @@ static bugle_bool trackcontext_callback(function_call *call, const callback_data
 
 static bugle_bool trackcontext_destroycontext(function_call *call, const callback_data *data)
 {
-    object *obj;
     glwin_context ctx;
 
     /* FIXME: leaks from namespace associations */
-    obj = bugle_object_get_current(bugle_context_class);
     ctx = bugle_glwin_get_context_destroy(call);
     if (ctx)
         bugle_hashptr_set(&context_objects, ctx, NULL);
@@ -405,7 +403,7 @@ static void trackcontext_filter_set_shutdown(filter_set *handle)
 glwin_context bugle_get_aux_context(bugle_bool shared)
 {
     trackcontext_data *data;
-    glwin_context old_ctx, ctx;
+    glwin_context ctx;
     glwin_context *aux;
 
     data = bugle_object_get_current_data(bugle_context_class, trackcontext_view);
@@ -413,8 +411,6 @@ glwin_context bugle_get_aux_context(bugle_bool shared)
     aux = shared ? &data->aux_shared : &data->aux_unshared;
     if (*aux == NULL)
     {
-        old_ctx = bugle_glwin_get_current_context();
-
         ctx = bugle_glwin_context_create_new(data->create, shared);
         if (ctx == NULL)
             bugle_log("trackcontext", "aux", BUGLE_LOG_WARNING,

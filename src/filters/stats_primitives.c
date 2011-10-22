@@ -201,10 +201,8 @@ static bugle_bool stats_primitives_glMultiDrawElements(function_call *call, cons
 
 static bugle_bool stats_primitives_glCallList(function_call *call, const callback_data *data)
 {
-    stats_primitives_struct *s;
     stats_primitives_displaylist_struct *counts;
 
-    s = bugle_object_get_current_data(bugle_get_context_class(), stats_primitives_view);
     counts = bugle_object_get_data(bugle_displaylist_get(*call->glCallList.arg0),
                                    stats_primitives_displaylist_view);
     if (counts)

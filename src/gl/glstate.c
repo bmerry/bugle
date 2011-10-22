@@ -516,11 +516,9 @@ static void make_leaves_conditional(const glstate *self, const state_info *table
                                     bugle_uint32_t flags, unsigned int mask,
                                     linked_list *children)
 {
-    const char *version;
     glstate *child;
     const state_info *info;
 
-    version = (const char *) CALL(glGetString)(GL_VERSION);
     for (info = table; info->name; info++)
     {
         if ((info->flags & mask) == flags
@@ -2795,9 +2793,6 @@ static void spawn_children_global(const glstate *self, linked_list *children)
         NULL, GL_NONE, TYPE_9GLboolean, -1, BUGLE_GL_VERSION_1_1, -1, STATE_ENABLED
     };
 
-    const char *version;
-
-    version = (const char *) CALL(glGetString)(GL_VERSION);
     bugle_list_init(children, bugle_free);
     make_leaves(self, global_state, children);
 

@@ -95,7 +95,6 @@ void *bugle_displaylist_get(GLuint list)
 static bugle_bool gldisplaylist_glNewList(function_call *call, const callback_data *data)
 {
     displaylist_struct info;
-    object *obj;
     GLint value;
 
     if (bugle_displaylist_list()) return BUGLE_TRUE; /* Nested call */
@@ -106,7 +105,7 @@ static bugle_bool gldisplaylist_glNewList(function_call *call, const callback_da
         CALL(glGetIntegerv)(GL_LIST_MODE, &value);
         info.mode = value;
         if (info.list == 0) return BUGLE_TRUE; /* Call failed? */
-        obj = bugle_object_new(bugle_displaylist_class, &info, BUGLE_TRUE);
+        bugle_object_new(bugle_displaylist_class, &info, BUGLE_TRUE);
         bugle_gl_end_internal_render("gldisplaylist_callback", BUGLE_TRUE);
     }
     return BUGLE_TRUE;

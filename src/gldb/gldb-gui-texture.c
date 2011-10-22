@@ -104,8 +104,6 @@ static gboolean gldb_texture_pane_response_callback(gldb_response *response,
 {
     gldb_response_data_texture *r;
     texture_callback_data *data;
-    GLenum format;
-    bugle_uint32_t channels;
     GldbGuiImageLevel *level;
     GldbTexturePane *pane;
     GdkGLContext *glcontext;
@@ -129,9 +127,6 @@ static gboolean gldb_texture_pane_response_callback(gldb_response *response,
     else
     {
         GLuint plane;
-
-        channels = data->channels;
-        format = gldb_channel_get_display_token(channels);
 
         plane = 0;
         level = &pane->progressive.levels[data->level];

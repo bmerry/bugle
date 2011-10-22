@@ -59,7 +59,7 @@ static int follow_pointer(budgie_type type, int length, const void *ptr,
         const void *cur;
         budgie_type cur_type, base;
 
-        cur = (const void *) (i * budgie_type_size(type) + (const char *) ptr);
+        cur = (const void *) (i * size + (const char *) ptr);
         cur_type = budgie_type_type(type, cur);
         base = budgie_type_pointer_base(cur_type);
         if (base != NULL_TYPE)
@@ -86,7 +86,7 @@ static int follow_pointer(budgie_type type, int length, const void *ptr,
         budgie_type cur_type;
 
         if (i) bugle_io_puts(", ", out);
-        cur = (const void *) (i * budgie_type_size(type) + (const char *) ptr);
+        cur = (const void *) (i * size + (const char *) ptr);
         cur_type = budgie_type_type(type, cur);
         if (arg_ids[i] != -1)
             bugle_io_printf(out, "defn%d", arg_ids[i]);

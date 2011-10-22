@@ -340,14 +340,13 @@ static void checks_pointer_message(const char *function)
 static void checks_memory(size_t size, const void *data)
 {
 #if HAVE_SIGLONGJMP
-    volatile char dummy;
-    const char *cdata;
+    const volatile char *cdata;
     size_t i;
 
     checks_error_vbo = BUGLE_FALSE;
     cdata = (const char *) data;
     for (i = 0; i < size; i++)
-        dummy = cdata[i];
+        (void) cdata[i];
 #endif
 }
 

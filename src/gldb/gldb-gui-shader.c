@@ -266,8 +266,7 @@ static gboolean gldb_shader_pane_source_expose(GtkWidget *widget,
                                                gpointer user_data)
 {
     PangoLayout *layout;
-    gint lines, firsty, lasty, dummy;
-    GtkTextBuffer *buffer;
+    gint firsty, lasty, dummy;
     GtkTextIter line;
 
     /* Check that this is an expose on the line number area */
@@ -275,8 +274,6 @@ static gboolean gldb_shader_pane_source_expose(GtkWidget *widget,
         != GTK_TEXT_WINDOW_LEFT)
         return FALSE;
 
-    buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(widget));
-    lines = gtk_text_buffer_get_line_count(buffer);
     layout = gtk_widget_create_pango_layout(widget, NULL);
 
     /* Find the first line that is in the expose area */

@@ -124,27 +124,18 @@ static void gldb_breakpoint_pane_remove(GtkButton *button, gpointer user_data)
 
 static void gldb_breakpoint_pane_gl_error_toggled(GtkWidget *toggle, gpointer user_data)
 {
-    GldbBreakpointPane *pane;
-
-    pane = GLDB_BREAKPOINT_PANE(user_data);
     gldb_set_break_event(0, REQ_EVENT_GL_ERROR,
                          gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(toggle)));
 }
 
 static void gldb_breakpoint_pane_compile_error_toggled(GtkWidget *toggle, gpointer user_data)
 {
-    GldbBreakpointPane *pane;
-
-    pane = GLDB_BREAKPOINT_PANE(user_data);
     gldb_set_break_event(0, REQ_EVENT_COMPILE_ERROR,
                          gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(toggle)));
 }
 
 static void gldb_breakpoint_pane_link_error_toggled(GtkWidget *toggle, gpointer user_data)
 {
-    GldbBreakpointPane *pane;
-
-    pane = GLDB_BREAKPOINT_PANE(user_data);
     gldb_set_break_event(0, REQ_EVENT_LINK_ERROR,
                          gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(toggle)));
 }
