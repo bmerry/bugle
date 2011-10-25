@@ -124,6 +124,14 @@ else:
             test_env = conf.Finish()
 
             test_env.Append(LIBS = libraries)
+            # libdl should be pulled in by dependencies, but since the dlopen
+            # test calls it directly we will explicitly list it. This is apparently
+            # needed due to some symbol version weirdness on Fedora 14 (bug #84).
+            if aspects['platform'] == 'posix':
+                test_env.Append(LIBS = ['dl'])
+            # The ARB_create_context GLX test calls X11 directly instead of using GLUT
+            if aspects['glwin'] == 'glx':
+                test_env.Append(LIBS = ['X11'])
             test_env.Append(CPPDEFINES = ['TEST_GL'])
             test_env['ENV']['BUGLE_FILTER_DIR'] = os.path.join(bugle_path, 'filters')
             test_env['ENV']['BUGLE_FILTERS'] = srcdir.File('filters').abspath

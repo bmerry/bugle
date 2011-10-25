@@ -2,6 +2,7 @@
 * Fix for compiling on newer ffmpeg (thanks to François Bertel for the patch)
 * Fix a number of warnings reported by GCC 4.6
 * Dynamically load libGL.so.1 instead of libGL.so (avoids indirect fallback on Ubuntu)
+* Link tests against libdl and libX11 when appropriate (fixes #84)
 
 0.0.20101121
 ------------
