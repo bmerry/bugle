@@ -8,12 +8,18 @@ substs = {
         'LIBRARIES': ''
         }
 
+soname_map = {
+    'libGL.so': 'libGL.so.1'
+}
+
 for lib in libraries:
     if aspects['binfmt'] == 'pe':
         # TODO need a better way to do this
         mangled = r'c:\\windows\\system32\\' + lib + '.dll'
     else:
         mangled = lib + envs['host'].subst('$SHLIBSUFFIX')
+        if mangled in soname_map:
+            mangled = soname_map[mangled]
     substs['LIBRARIES'] += 'LIBRARY ' + mangled + '\n'
 
 callapi = aspects['callapi']
