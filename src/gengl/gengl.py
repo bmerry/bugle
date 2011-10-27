@@ -1,20 +1,14 @@
 #!/usr/bin/env python
-from __future__ import division, print_function
-from optparse import OptionParser, OptionValueError
-from textwrap import dedent
-import re
-import sys
-import os.path
 
 """
 Generate header and C files for BuGLe from GL and window system headers.
 
 The following data are emitted (depending on command-line options):
-- apitables.h:
+  - apitables.h:
     - #defines for each extension (versions are considered to be extensions)
     - count of the number of extensions
     - declarations for the data in apitables.c
-- apitables.c:
+  - apitables.c:
     - list of extensions in each extension group (set of extensions all providing
       some piece of functionality)
     - for each extension:
@@ -29,17 +23,24 @@ The following data are emitted (depending on command-line options):
     - for each API block
         - the enums, with value, canonical name, and the list of extensions that define it
         - the number of enums
-- alias.bc:
+  - alias.bc:
     - list of aliases between functions with different names but the
       same signatures and semantics.
 
 TODO:
     - handle ES
     - force the WGL internal functions to exist
-    - extension chains
-    - extension groups
-    - alias overrides
+    - consider version subsumption in L{API.extension_children}
+    - use extension names from latest GL core version, not oldest (where renaming happened)
+    - filter out false matches against GL 1.1 from Mesa
 """
+
+from __future__ import division, print_function
+from optparse import OptionParser, OptionValueError
+from textwrap import dedent
+import re
+import sys
+import os.path
 
 class API(object):
     """
@@ -59,7 +60,7 @@ class API(object):
         @type headers: list
         @param block: C define for the API block owning the extension (e.g. C{'BUGLE_API_EXTENSION_BLOCK_GL'})
         @type block: str
-        @param version_regex: Regular expression that matches CPP defines for API versions
+        @param version_regex: Regular expression that matches CPP defines for API versions.
         @type version_regex: re.RegexObject
         @param extension_regex: Regular expression that matches CPP defines for
                                 API versions or extensions.  It must have a
@@ -142,6 +143,13 @@ class API(object):
         """
         return self.version_regex.match(s)
 
+    def version_number(self, s):
+        """
+        A tuple of version number parts from a version number string, or C{None} for anything else.
+        """
+        if self.is_version(s):
+            return tuple([int(x) for x in re.findall('\d+', s)])
+
     def get_default_version(self):
         """
         The minimum version of API to which things are assigned if no higher
@@ -180,7 +188,7 @@ class API(object):
         if extension_name.startswith('EXTGROUP_'):
             return (4, extension_name)
         elif self.is_version(extension_name):
-            return (0, tuple(re.findall('\d+', extension_name)))
+            return (0, self.version_number(extension_name))
         else:
             suffix = self.extension_suffix(extension_name)
             if suffix in ['ARB', 'OES', 'KHR']:
@@ -233,6 +241,21 @@ class GLAPI(API):
 
     GL 1.0 is thoroughly dead, so we assume things start with GL 1.1. That is
     the software version provided with old versions of Windows.
+
+    >>> bool(GLAPI().is_version('GL_VERSION_2_0'))
+    True
+    >>> bool(GLAPI().is_version('GL_ES_VERSION_2_0'))
+    True
+    >>> bool(GLAPI().is_version('GL_VERSION_ES_CM_1_0'))
+    True
+    >>> bool(GLAPI().is_version('GL_ARB_imaging'))
+    False
+    >>> bool(GLAPI().is_version('GL_TRUE'))
+    False
+    >>> GLAPI().extension_sort_key('GL_VERSION_2_0') < GLAPI().extension_sort_key('GL_ARB_imaging')
+    True
+    >>> GLAPI().extension_sort_key('GL_VERSION_1_4') < GLAPI().extension_sort_key('GL_ARB_point_parameters')
+    True
     """
 
     _bad_enum_re = re.compile(r'''^(?:
@@ -326,8 +349,8 @@ class GLAPI(API):
         API.__init__(self,
             ['gl.h', 'glext.h'],
             'BUGLE_API_EXTENSION_BLOCK_GL',
-            re.compile(r'^GL_(?:ES_)?VERSION_(?:ES_)?[0-9_]+$'),
-            re.compile(r'^GL_(?P<suffix>[0-9A-Z]+)_\w+$'),
+            re.compile(r'^GL_(?:ES_)?VERSION_(?:ES_C[LM])?[0-9_]+$'),
+            re.compile(r'^GL_(?P<suffix>[0-9A-Za-z]+)_\w+$'),
             re.compile(r'^GL_[0-9A-Za-z_]+$'),
             re.compile(r'^gl[A-WY-Z]\w+$'),  # Being careful to avoid glX
             'GL_VERSION_1_1')
@@ -344,6 +367,8 @@ class GLAPI(API):
     def is_enum(self, s, value):
         if self._bad_enum_re.match(s):
             return False
+        elif s in ['GL_LINES', 'GL_ONE', 'GL_RESTART_SUN']:
+            return True  # Have the value 1, but really are enums
         else:
             return API.is_enum(self, s, value)
 
@@ -387,7 +412,7 @@ class WGLAPI(API):
             ['wingdi.h', 'wglext.h'],
             "BUGLE_API_EXTENSION_BLOCK_GLWIN",
             re.compile(r'^WGL_VERSION_[0-9_]+$'),
-            re.compile(r'^WGL_(?P<suffix>[0-9A-Z]+)_\w+$'),
+            re.compile(r'^WGL_(?P<suffix>[0-9A-Za-z]+)_\w+$'),
             re.compile(r'^WGL_[0-9A-Za-z_]+$'),
             re.compile(r'^(?:wgl[A-Z]\w+|Glmf|glDebugEntry)$'),
             'WGL_VERSION_1_0')
@@ -404,7 +429,7 @@ class EGLAPI(API):
             ['egl.h', 'eglext.h'],
             'BUGLE_API_EXTENSION_BLOCK_GLWIN',
             re.compile(r'^EGL_VERSION_[0-9_]+$'),
-            re.compile(r'^EGL_(?P<suffix>[0-9A-Z]+)_\w+$'),
+            re.compile(r'^EGL_(?P<suffix>[0-9A-Za-z]+)_\w+$'),
             re.compile(r'^EGL_[0-9A-Za-z_]+$'),
             re.compile(r'^egl[A-Z]\w+$'),
             'EGL_VERSION_1_3')
@@ -416,6 +441,18 @@ class GLXAPI(API):
     Although GLX has versions 1.0-1.1, they are seldom seen in the wild, so
     we start with GLX 1.2.
     """
+
+    _bad_enum_re = re.compile(r'''^(?:
+        GLX_GLXEXT_\w+
+        |GLX_BUFFER_CLOBBER_MASK_SGIX
+        |GLX_PBUFFER_CLOBBER_MASK
+        |GLX_PbufferClobber
+        |GLX_BufferSwapComplete
+        |GLX_SYNC_FRAME_SGIX
+        |GLX_SYNC_SWAP_SGIX
+        |GLX_[A-Z0-9_]+_BIT(?:_[A-Z0-9]+)?
+        |GLX(?:_[A-Z0-9_]+)?_ALL_[A-Z0-9_]+_BITS(?:_[A-Z0-9]+)?
+        )$''', re.VERBOSE)
 
     _extension_children = {
         "GLX_ARB_get_proc_address": ["GLX_VERSION_1_4"],
@@ -429,10 +466,18 @@ class GLXAPI(API):
             ['glx.h', 'glxext.h'],
             'BUGLE_API_EXTENSION_BLOCK_GLWIN',
             re.compile(r'^GLX_VERSION_[0-9_]+$'),
-            re.compile(r'^GLX_(?P<suffix>[0-9A-Z]+)_\w+$'),
+            re.compile(r'^GLX_(?P<suffix>[0-9A-Za-z]+)_\w+$'),
             re.compile(r'^GLX_[0-9A-Za-z_]+$'),
             re.compile(r'^glX[A-Z]\w+$'),
             'GLX_VERSION_1_2')
+
+    def is_enum(self, s, value):
+        if self._bad_enum_re.match(s):
+            return False
+        elif s in ['GLX_USE_GL', 'GLX_VENDOR']:
+            return True  # Have the value 1, but really are enums
+        else:
+            return API.is_enum(self, s, value)
 
     def is_extension(self, s):
         if s.startswith('GLX_GLXEXT_'):
@@ -461,7 +506,6 @@ class Extension(object):
     def __init__(self, api, name):
         self.api = api
         self.name = name
-        self.children = set()
 
     def get_name(self):
         return self.name
@@ -478,12 +522,6 @@ class Extension(object):
             cls._extensions[name] = Extension(api, name)
         return cls._extensions[name]
 
-    def add_child(self, child):
-        """
-        Indicate that a child extension subsumes the functionality of this one.
-        """
-        children.add(child)
-
     def get_descendants(self):
         """
         Find all extensions that have the functionality defined by this one.
@@ -496,7 +534,9 @@ class Extension(object):
             cur = q.pop()
             if cur not in ans:
                 ans.append(cur)
-                q.extend(cur.children)
+                for ch in self.api.extension_children(cur.name):
+                    if ch in self.api.extensions:
+                        q.append(self.api.get_extension(ch))
         return ans
 
 class Enum(object):
@@ -539,12 +579,13 @@ class Enum(object):
 
     def __init__(self, api, value):
         self.name = None
+        self.name_key = None
         self.api = api
         self.value = value
         self.extensions = {}  
 
     @classmethod
-    def _name_key(cls, name):
+    def _name_key(cls, name, extension):
         '''
         Compute a sort key such that more preferred names
         have a lower key.
@@ -552,7 +593,7 @@ class Enum(object):
         if cls._unwanted_name.match(name):
             return (1, name)
         else:
-            return (0, name)
+            return (0, extension.api.extension_sort_key(extension.name), name)
 
     def add_name(self, name, extension):
         """
@@ -562,8 +603,10 @@ class Enum(object):
         @param extension: extension defining the enum
         @type extension: L{Extension}
         """
-        if self.name is None or self._name_key(name) < self._name_key(self.name):
+        key = self._name_key(name, extension)
+        if self.name is None or self._name_key(name, extension) < self.name_key:
             self.name = name
+            self.name_key = key
         if name in self.extensions:
             if extension != self.extensions[name]:
                 # Normally two extensions can't define the same name, but
@@ -780,10 +823,9 @@ def load_function_ids(filename, apis):
                     raise ValueError("Expected function ID of " + len(functions) + " but got " + fid)
                 func = None
                 for api in apis:
-                    for (n, f) in api.functions.items():
-                        if n == name:
-                            func = f
-                            break
+                    if name in api.functions:
+                        func = api.functions[name]
+                        break
                 if func is None:
                     raise KeyError("Function name " + name + " has not been parsed")
                 functions.append(func)
@@ -801,6 +843,10 @@ def process_alias(apis, options):
         for group in groups.values():
             for f in group[1:]:
                 print("ALIAS %s %s" % (f.name, group[0].name))
+
+def ordered_extensions(api):
+    ordered_names = sorted(api.extensions.keys(), key = api.extension_sort_key)
+    return [api.extensions[x] for x in ordered_names]
 
 def process_header(apis, functions, options):
     print('/* Generated by ' + sys.argv[0] + '. Do not edit. */')
@@ -835,8 +881,8 @@ def process_header(apis, functions, options):
     index = 0
     # TODO: anything special needed for extension groups?
     for api in apis:
-        for extension in sorted(api.extensions.keys(), key = api.extension_sort_key):
-            print("#define BUGLE_{} {}".format(extension, index))
+        for extension in ordered_extensions(api):
+            print("#define BUGLE_{} {}".format(extension.name, index))
             index += 1
     print("#define BUGLE_API_EXTENSION_COUNT {}".format(index))
     print(dedent("""
@@ -845,6 +891,91 @@ def process_header(apis, functions, options):
         extern const bugle_api_enum_data * const _bugle_api_enum_table[];
         extern const int _bugle_api_enum_count[];
         #endif /* BUGLE_SRC_APITABLES_H */"""))
+
+def process_c(apis, functions, options):
+    print('/* Generated by ' + sys.argv[0] + '. Do not edit. */')
+    print(dedent('''
+        #if HAVE_CONFIG_H
+        # include <config.h>
+        #endif
+        #include <bugle/apireflect.h>
+        #include "apitables.h"
+        '''))
+    for api in apis:
+        for extension in ordered_extensions(api):
+            key = lambda x: api.extension_sort_key(x.name)
+            desc = extension.get_descendants()
+            print(dedent('''
+                static const bugle_api_extension extension_group_{}[] =
+                {{''').format(extension.name))
+            for d in sorted(desc, key = key):
+                print('    BUGLE_{},'.format(d.name))
+            print('    NULL_EXTENSION')
+            print('};')
+
+    print(dedent('''
+        const bugle_api_extension_data _bugle_api_extension_table[] =
+        {'''))
+    for api in apis:
+        for extension in ordered_extensions(api):
+            fields = []
+            if api.is_version(extension.name):
+                version_number = api.version_number(extension.name)
+                fields.append('"' + '.'.join([str(x) for x in version_number]) + '"')
+            else:
+                fields.append('NULL')
+            fields.append('"' + extension.name + '"')
+            fields.append('extension_group_' + extension.name)
+            fields.append(api.block)
+            print('    {{ {} }},'.format(', '.join(fields)))
+    print('};')
+
+    print(dedent('''
+        const bugle_api_function_data _bugle_api_function_table[] =
+        {'''))
+    for function in functions:
+        print('    {{ BUGLE_{} }},'.format(function.extension.name))
+    print('};')
+
+    enum_counts = {}
+    for api in apis:
+        for enum in sorted(api.enums.values(), key = lambda x: x.value):
+            print(dedent('''
+                static const bugle_api_extension enum_extensions_{}[] =
+                {{''').format(enum.name))
+            key = lambda x: api.extension_sort_key(x.name)
+            extensions = list(set(enum.extensions.values()))
+            for extension in sorted(extensions, key = key):
+                print('    BUGLE_{},'.format(extension.name))
+            print('    NULL_EXTENSION')
+            print('};')
+
+        print(dedent('''
+            static const bugle_api_enum_data _bugle_api_enum_table_{}[] =
+            {{''').format(api.block))
+        for enum in sorted(api.enums.values(), key = lambda x: x.value):
+            fields = []
+            fields.append('%#.4x' % (enum.value,))
+            fields.append('"' + enum.name + '"')
+            fields.append('enum_extensions_' + enum.name)
+            print('    {{ {} }},'.format(', '.join(fields)))
+        print('};')
+        enum_counts[api.block] = len(api.enums)
+
+    print(dedent('''
+        const bugle_api_enum_data * const _bugle_api_enum_table[] =
+        {
+            _bugle_api_enum_table_BUGLE_API_EXTENSION_BLOCK_GL,
+            _bugle_api_enum_table_BUGLE_API_EXTENSION_BLOCK_GLWIN
+        };'''))
+    print(dedent('''
+        const int _bugle_api_enum_count[] =
+        {{
+            {},
+            {}
+        }};''').format(
+            enum_counts['BUGLE_API_EXTENSION_BLOCK_GL'],
+            enum_counts['BUGLE_API_EXTENSION_BLOCK_GLWIN']))
 
 def main():
     parser = OptionParser()
