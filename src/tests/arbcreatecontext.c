@@ -64,14 +64,14 @@ static void glxarbcreatecontext_test(void)
         cfg = *cfgs;
         XFree(cfgs);
         ctx = create(dpy, cfg, NULL, True, ctx_attribs);
-        test_log_printf("trace\\.call: glXCreateContextAttribsARB\\(%p, %p, NULL, True, %p -> { GLX_CONTEXT_MAJOR_VERSION(_ARB)?, 1, GL_CONTEXT_MINOR_VERSION(_ARB)?, 0, None }\\) = %p\n",
+        test_log_printf("trace\\.call: glXCreateContextAttribsARB\\(%p, %p, NULL, True, %p -> { GLX_CONTEXT_MAJOR_VERSION(_ARB)?, 1, GLX_CONTEXT_MINOR_VERSION(_ARB)?, 0, None }\\) = %p\n",
                         (void *) dpy, (void *) cfg, ctx_attribs, (void *) ctx);
         TEST_ASSERT(ctx != NULL);
         if (ctx != NULL)
         {
             glXDestroyContext(dpy, ctx);
             test_log_printf("trace\\.call: glXDestroyContext\\(%p, %p\\)\n",
-                            (void *) dpy, (void *) cfg);
+                            (void *) dpy, (void *) ctx);
         }
 
     }
