@@ -29,6 +29,7 @@ def run_log_suite(target, testprog, env, suite, chain):
                 raise TestFailed, 'exit code ' + str(errcode)
 
             lines = out.splitlines()
+            orig_lines = [x for x in lines] # Deep copy
             if len(lines) == 0:
                 raise TestFailed, 'no standard output'
             # Some filters output logging on shutdown, AFTER the status is
@@ -57,12 +58,12 @@ def run_log_suite(target, testprog, env, suite, chain):
             while len(lines) > 0 and not re.match(reflines[0], lines[0]):
                 del lines[0]
             if len(lines) == 0:
-                raise TestFailed, 'did not match ' + reflines[0] + ' at line 1'
+                raise TestFailed, 'did not match ' + reflines[0] + ' at line 1\n' + '\n'.join(orig_lines)
             if len(lines) < len(reflines):
                 raise TestFailed, 'not enough output'
             for i in range(len(reflines)):
                 if not re.match(reflines[i], lines[i]):
-                    raise TestFailed, "`" + lines[i] + "' did not match `" + reflines[i] + "' at line " + str(i + 1)
+                    raise TestFailed, "`" + lines[i] + "' did not match `" + reflines[i] + "' at line " + str(i + 1) + '\n' + '\n'.join(orig_lines)
 
             print "PASSED  Test `" + suite + "'"
         except TestFailed, (msg,):
