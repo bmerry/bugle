@@ -64,15 +64,15 @@ def gengl_emitter(target, source, env):
 
 def generate(env, **kw):
     alias_builder = env.Builder(
-            action = Action.Action('perl $GENGL --mode=alias $SOURCES > $TARGET', '$ALIASCOMSTR'),
+            action = Action.Action('python $GENGL --mode=alias $SOURCES > $TARGET', '$ALIASCOMSTR'),
             emitter = gengl_emitter,
             source_factory = find_header_factory(env))
     apitables_c_builder = env.Builder(
-            action = Action.Action('perl $GENGL --mode=c --header=$SOURCES > $TARGET', '$APITABLESCCOMSTR'),
+            action = Action.Action('python $GENGL --mode=c --header=$SOURCES > $TARGET', '$APITABLESCCOMSTR'),
             emitter = gengl_emitter,
             source_factory = find_header_factory(env))
     apitables_h_builder = env.Builder(
-            action = Action.Action('perl $GENGL --mode=header --header=$SOURCES > $TARGET', '$APITABLESHCOMSTR'),
+            action = Action.Action('python $GENGL --mode=header --header=$SOURCES > $TARGET', '$APITABLESHCOMSTR'),
             emitter = gengl_emitter,
             source_factory = find_header_factory(env))
     env.Append(
@@ -81,7 +81,7 @@ def generate(env, **kw):
                 'ApitablesC': apitables_c_builder,
                 'ApitablesH': apitables_h_builder
                 },
-            GENGL = env.File('#src/gengl/gengl.perl'),
+            GENGL = env.File('#src/gengl/gengl.py'),
             find_header = find_header)
 
 def exists(env):

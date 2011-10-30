@@ -466,7 +466,7 @@ package_sources.extend([
     'src/filters/validate.c',
     'src/gengl/find_header.perl',
     'src/gengl/genegldef.perl',
-    'src/gengl/gengl.perl',
+    'src/gengl/gengl.py',
     'src/gl/glbeginend.c',
     'src/gl/gldisplaylist.c',
     'src/gl/gldump.c',

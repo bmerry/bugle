@@ -1015,7 +1015,7 @@ bugle_filter_set_depends(<replaceable>"myfilterset"</replaceable>, "glextensions
             </note>
             <para>
                 There are also some special extension groups, defined in
-                <filename>gengl/gengl.perl</filename>, that are
+                <filename>src/gengl/gengl.py</filename>, that are
                 convenient ways to test for certain functionality that is
                 provided by several extensions but is not the sole function of
                 any of them.

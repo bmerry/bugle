@@ -41,7 +41,7 @@
  * lazily deleted by setting to NULL.
  *
  * FIXME-GLES: needs to be updated to support GL ES
- * FIXME: needs to be updated to support WGL
+ * FIXME: needs to be updated to support WGL/EGL
  */
 static bugle_bool *seen_functions;
 static hashptr_table seen_enums;
@@ -119,14 +119,14 @@ static void mark_extension(bugle_api_extension ext, bugle_bool *marked_extension
                 bugle_hashptr_set(&seen_enums, e->key, NULL);
         }
     /* GL and GLX versions automatically include all previous versions of
-     * the same extension, and the extension numbering puts them all in order.
-     * We recursively mark off all prior extensions.
+     * the same extension, and the extension numbering puts them all descending
+     * order. We recursively mark off all prior versions.
      */
     if (ext > 0
         && bugle_api_extension_version(ext)
-        && bugle_api_extension_version(ext - 1)
-        && bugle_api_extension_block(ext) == bugle_api_extension_block(ext - 1))
-        mark_extension(ext - 1, marked_extensions);
+        && bugle_api_extension_version(ext + 1)
+        && bugle_api_extension_block(ext) == bugle_api_extension_block(ext + 1))
+        mark_extension(ext + 1, marked_extensions);
 }
 
 static void showextensions_print(void *marked, FILE *logf)
@@ -178,7 +178,7 @@ static void showextensions_shutdown(filter_set *handle)
         }
 
     /* Now identify the versions of GL and GLX. */
-    for (best = 0; best < bugle_api_extension_count(); best++)
+    for (best = bugle_api_extension_count() - 1; best >= 0; best--)
         if (marked_extensions[best])
         {
             const char *ver;

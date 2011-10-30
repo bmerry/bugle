@@ -31,8 +31,7 @@ TODO:
     - handle ES
     - force the WGL internal functions to exist
     - consider version subsumption in L{API.extension_children}
-    - use extension names from latest GL core version, not oldest (where renaming happened)
-    - filter out false matches against GL 1.1 from Mesa
+    - autodetect extension chains from tokens?
 """
 
 from __future__ import division, print_function
@@ -179,7 +178,7 @@ class API(object):
         """
         Generate a tuple which can be used to sort extensions. Extensions
         are sorted into the order:
-         - versions, by version number
+         - versions, by decreasing version number
          - Khronos-approved extensions (ARB/KHR/OES)
          - multi-vendor extensions (EXT)
          - vendor extensions
@@ -188,7 +187,10 @@ class API(object):
         if extension_name.startswith('EXTGROUP_'):
             return (4, extension_name)
         elif self.is_version(extension_name):
-            return (0, self.version_number(extension_name))
+            number = self.version_number(extension_name)
+            # Want higher versions to supersede lower ones
+            number = tuple([-x for x in number])
+            return (0, number)
         else:
             suffix = self.extension_suffix(extension_name)
             if suffix in ['ARB', 'OES', 'KHR']:
@@ -244,10 +246,6 @@ class GLAPI(API):
 
     >>> bool(GLAPI().is_version('GL_VERSION_2_0'))
     True
-    >>> bool(GLAPI().is_version('GL_ES_VERSION_2_0'))
-    True
-    >>> bool(GLAPI().is_version('GL_VERSION_ES_CM_1_0'))
-    True
     >>> bool(GLAPI().is_version('GL_ARB_imaging'))
     False
     >>> bool(GLAPI().is_version('GL_TRUE'))
@@ -265,6 +263,7 @@ class GLAPI(API):
             |GL_[A-Z0-9_]+_BIT(?:_[A-Z0-9_]+)?
             |GL_(?:[A-Z0-9_]+)?ALL_[A-Z0-9_]+_BITS(?:_[A-Z0-9_]+)?
             |GL_TIMEOUT_IGNORED
+            |GL_INVALID_INDEX
             )$''', re.VERBOSE)
 
     _extension_children = {
@@ -347,9 +346,9 @@ class GLAPI(API):
 
     def __init__(self):
         API.__init__(self,
-            ['gl.h', 'glext.h'],
+            [['GL', 'gl.h'], ['GL', 'glext.h']],
             'BUGLE_API_EXTENSION_BLOCK_GL',
-            re.compile(r'^GL_(?:ES_)?VERSION_(?:ES_C[LM])?[0-9_]+$'),
+            re.compile(r'^GL_VERSION_[0-9_]+$'),
             re.compile(r'^GL_(?P<suffix>[0-9A-Za-z]+)_\w+$'),
             re.compile(r'^GL_[0-9A-Za-z_]+$'),
             re.compile(r'^gl[A-WY-Z]\w+$'),  # Being careful to avoid glX
@@ -400,6 +399,52 @@ class GLAPI(API):
     def extension_children(self, extension_name):
         return self._extension_children.get(extension_name, [])
 
+class ES1API(API):
+    """
+    API class for OpenGL ES 1.x CM (CL is not supported).
+
+    >>> bool(ES1API().is_version('GL_VERSION_ES_CM_1_0'))
+    True
+    """
+
+    _extension_children = {}
+
+    def __init__(self):
+        API.__init__(self,
+            [['GLES', 'gl.h'], ['GLES', 'glext.h']],
+            'BUGLE_API_EXTENSION_BLOCK_GL',
+            re.compile(r'^GL_VERSION_ES_C[LM][0-9_]+$'),
+            re.compile(r'^GL_(?P<suffix>[0-9A-Za-z]+)_\w+$'),
+            re.compile(r'^GL_[0-9A-Za-z_]+$'),
+            re.compile(r'^gl[A-WY-Z]\w+$'),  # Being careful to avoid glX
+            'GL_VERSION_ES_CM_1_0')
+        # Force the extension groups to exist
+        for e in self._extension_children.keys():
+            self.get_extension(e)
+
+class ES2API(API):
+    """
+    API class for OpenGL ES 2.0.
+
+    >>> bool(ES2API().is_version('GL_ES_VERSION_2_0'))
+    True
+    """
+
+    _extension_children = {}
+
+    def __init__(self):
+        API.__init__(self,
+            [['GLES2', 'gl2.h'], ['GLES2', 'gl2ext.h']],
+            'BUGLE_API_EXTENSION_BLOCK_GL',
+            re.compile(r'^GL_ES_VERSION_[0-9_]+$'),
+            re.compile(r'^GL_(?P<suffix>[0-9A-Za-z]+)_\w+$'),
+            re.compile(r'^GL_[0-9A-Za-z_]+$'),
+            re.compile(r'^gl[A-WY-Z]\w+$'),  # Being careful to avoid glX
+            'GL_ES_VERSION_2_0')
+        # Force the extension groups to exist
+        for e in self._extension_children.keys():
+            self.get_extension(e)
+
 class WGLAPI(API):
     """
     API class for the WGL API.
@@ -409,7 +454,7 @@ class WGLAPI(API):
     """
     def __init__(self):
         API.__init__(self,
-            ['wingdi.h', 'wglext.h'],
+            [['wingdi.h'], ['GL', 'wglext.h']],
             "BUGLE_API_EXTENSION_BLOCK_GLWIN",
             re.compile(r'^WGL_VERSION_[0-9_]+$'),
             re.compile(r'^WGL_(?P<suffix>[0-9A-Za-z]+)_\w+$'),
@@ -426,7 +471,7 @@ class EGLAPI(API):
     """
     def __init__(self):
         API.__init__(self,
-            ['egl.h', 'eglext.h'],
+            [['EGL', 'egl.h'], ['EGL', 'eglext.h']],
             'BUGLE_API_EXTENSION_BLOCK_GLWIN',
             re.compile(r'^EGL_VERSION_[0-9_]+$'),
             re.compile(r'^EGL_(?P<suffix>[0-9A-Za-z]+)_\w+$'),
@@ -463,13 +508,14 @@ class GLXAPI(API):
 
     def __init__(self):
         API.__init__(self,
-            ['glx.h', 'glxext.h'],
+            [['GL', 'glx.h'], ['GL', 'glxext.h']],
             'BUGLE_API_EXTENSION_BLOCK_GLWIN',
             re.compile(r'^GLX_VERSION_[0-9_]+$'),
             re.compile(r'^GLX_(?P<suffix>[0-9A-Za-z]+)_\w+$'),
             re.compile(r'^GLX_[0-9A-Za-z_]+$'),
             re.compile(r'^glX[A-Z]\w+$'),
             'GLX_VERSION_1_2')
+        self.add_enum('None', 0, self.default_version)
 
     def is_enum(self, s, value):
         if self._bad_enum_re.match(s):
@@ -774,6 +820,27 @@ class State(object):
             return True
         return False
 
+def split_path(path):
+    """
+    Splits a path into its component directories.
+
+    >>> split_path('/hello/world')
+    ['hello', 'world']
+    >>> split_path('/')
+    []
+    >>> split_path('/a/dir/')
+    ['a', 'dir']
+    >>> split_path('//extra//dir//separators//')
+    ['extra', 'dir', 'separators']
+    """
+    (head, tail) = os.path.split(path)
+    if tail != '':
+        return split_path(head) + [tail]
+    elif head != path:
+        return split_path(head)
+    else:
+        return []
+
 def load_headers(filenames):
     apis = [GLAPI(), GLXAPI(), WGLAPI(), EGLAPI()]
     state = State()
@@ -784,14 +851,19 @@ def load_headers(filenames):
         LineHandler(r'(?:(?:[A-Z]*API[A-Z]*|extern)\s+)?(?P<ret>[A-Za-z0-9_ *]+?)\b\s*(?:[A-Z]*API[A-Z]*\s+)?(?P<name>[a-z_][A-Za-z0-9_]*)\s*\((?P<args>.*)\)', state.handle_function)
     ]
     for filename in filenames:
-        basename = os.path.basename(filename)
+        filename_parts = split_path(filename)
         state.api = None
         for api in apis:
-            if basename in api.headers:
+            match = False
+            for header in api.headers:
+                if filename_parts[-len(header):] == header:
+                    match = True
+                    break
+            if match:
                 state.api = api
                 break
         if state.api is None:
-            raise KeyError('Unknown header file "' + basename + "'")
+            raise KeyError('Unknown header file "' + filename + '"')
         state.extension = state.api.default_version
         with open(filename, 'r') as hf:
             vline = ''
