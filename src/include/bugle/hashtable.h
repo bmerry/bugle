@@ -96,4 +96,8 @@ static inline void *bugle_hashptr_get_int(hashptr_table *table, size_t key)
     return bugle_hashptr_get(table, (const void *) key);
 }
 
+#ifdef __cplusplus
+}
+#endif
+
 #endif /* !BUGLE_COMMON_HASHTABLE_H */
