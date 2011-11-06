@@ -97,6 +97,9 @@ def apply_compiler(env, compiler, config):
             env.AppendUnique(CCFLAGS = ['-O2'], LINKFLAGS = ['-s'])
         else:
             raise RuntimeError, 'Unknown config "%s"' % config
+        # Workaround for http://scons.tigris.org/issues/show_bug.cgi?id=2683
+        # We don't actually need the .def file.
+        env['WINDOWS_INSERT_DEF'] = True
 
     else:
         raise RuntimeError, 'Don\'t know how to apply compiler "%s"' % compiler
