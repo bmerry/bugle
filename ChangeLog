@@ -4,6 +4,7 @@
 * Dynamically load libGL.so.1 instead of libGL.so (avoids indirect fallback on Ubuntu)
 * Link tests against libdl and libX11 when appropriate (fixes #84)
 * Rewrote gengl in Python, fixing many bugs along the way
+* Add "tar" to the scons tools list, to keep version 2.1.0 happy
 
 0.0.20101121
 ------------

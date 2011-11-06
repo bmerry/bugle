@@ -294,7 +294,7 @@ Default('build')
 
 Alias('install', FindInstalledFiles())
 
-package_env = Environment(tools = ['default', 'packaging'], TAR = 'fakeroot tar')
+package_env = Environment(tools = ['default', 'tar', 'packaging'], TAR = 'fakeroot tar')
 package_sources.extend([
     'AUTHORS',
     'COPYING',
