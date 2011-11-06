@@ -29,9 +29,9 @@ The following data are emitted (depending on command-line options):
 
 TODO:
     - handle ES
-    - force the WGL internal functions to exist
     - consider version subsumption in L{API.extension_children}
     - autodetect extension chains from tokens?
+    - better handling of GLenum -> GLint signature changes
 """
 
 from __future__ import division, print_function
@@ -122,7 +122,9 @@ class API(object):
         if name in self.functions:
             f = self.functions[name]
             if f.signature != signature:
-                raise KeyError("Function `" + name + "' already exists with different signature")
+                # Special case: <format> changed from GLenum to GLint
+                if name != 'glTexImage3D':
+                    raise KeyError("Function `" + name + "' already exists with different signature")
             if f.extension != extension:
                 # This happens with Mesa, which doesn't have the #ifndef
                 # guards in gl.h. Assume that if one of the two is the
@@ -461,6 +463,21 @@ class WGLAPI(API):
             re.compile(r'^WGL_[0-9A-Za-z_]+$'),
             re.compile(r'^(?:wgl[A-Z]\w+|Glmf|glDebugEntry)$'),
             'WGL_VERSION_1_0')
+
+        # These are internal opengl32.dll functions, not called by the user.
+        # But to replace opengl32.dll we have to implement them as
+        # passthroughs. The signatures don't matter since they're only used
+        # to check for signature conflicts
+        for x in [
+                'glDebugEntry',
+                'wglChoosePixelFormat',
+                'wglSetPixelFormat',
+                'wglDescribePixelFormat',
+                'wglGetPixelFormat',
+                'wglGetDefaultProcAddress',
+                'wglSwapBuffers',
+                'wglSwapMultipleBuffers']:
+            self.add_function(x, (), self.default_version)
 
 class EGLAPI(API):
     """
