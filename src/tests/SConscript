@@ -114,6 +114,8 @@ else:
             glut_lib = 'glut'
         elif conf.CheckLibWithHeader('glut32', 'GL/glut.h', 'c', autoadd = False):
             glut_lib = 'glut32'
+        elif conf.CheckLibWithHeader('freeglut', 'GL/glut.h', 'c', autoadd = False):
+            glut_lib = 'freeglut'
         if conf.CheckLibWithHeader('GLU', ['GL/glut.h', 'GL/glu.h'], 'c', autoadd = False):
             glu_lib = 'GLU'
         elif conf.CheckLibWithHeader('glu32', ['GL/glut.h', 'GL/glu.h'], 'c', autoadd = False):
