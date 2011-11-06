@@ -11,6 +11,7 @@
 #if BUGLE_GLWIN_WGL
 # define WIN32_LEAN_AND_MEAN
 # include <windows.h>
+# include <GL/wglext.h>
 # include <bugle/wgl/overrides.h>
 #endif
 #if BUGLE_GLWIN_EGL

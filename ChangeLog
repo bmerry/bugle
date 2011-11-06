@@ -7,6 +7,7 @@
 * Add "tar" to the scons tools list, to keep version 2.1.0 happy
 * Add workaround to avoid continualy rebuilding with mingw due to scons bug
 * Fix use of hashtable.h in C++ code (fixed #93)
+* Parse wglext.h when building reflection information
 
 0.0.20101121
 ------------
