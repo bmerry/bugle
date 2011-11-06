@@ -21,6 +21,7 @@
 # include <config.h>
 #endif
 #include <bugle/porting.h>
+#include <stddef.h>
 #include "test.h"
 
 #if BUGLE_GLWIN_GLX
@@ -88,6 +89,7 @@ static void glxarbcreatecontext_test(void)
 void arbcreatecontext_suite_register(void)
 {
     test_suite *ts = test_suite_new("ARB_create_context", TEST_FLAG_LOG, NULL, NULL);
+    (void) ts; /* Suppress unused variable warning when not on GLX */
 #if BUGLE_GLWIN_GLX
     test_suite_add_test(ts, "GLX_ARB_create_context", glxarbcreatecontext_test);
 #endif
