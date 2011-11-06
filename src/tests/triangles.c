@@ -174,10 +174,18 @@ static void triangles_test_draw_elements_instanced(void)
     run(triangles_draw_elements_instanced);
 }
 
+/* GLUT may be using __stdcall instead of __cdecl, so we have to wrap it to
+ * use as a callback.
+ */
+static void wrap_swap_buffers(void)
+{
+    glutSwapBuffers();
+}
+
 void triangles_suite_register(void)
 {
     /* glutSwapBuffers is used for setup since there is no triangle on the first frame */
-    test_suite *ts = test_suite_new("triangles", TEST_FLAG_LOG | TEST_FLAG_CONTEXT, glutSwapBuffers, NULL);
+    test_suite *ts = test_suite_new("triangles", TEST_FLAG_LOG | TEST_FLAG_CONTEXT, wrap_swap_buffers, NULL);
     test_suite_add_test(ts, "immediate", triangles_test_immediate);
     test_suite_add_test(ts, "draw_arrays", triangles_test_draw_arrays);
     test_suite_add_test(ts, "draw_elements", triangles_test_draw_elements);
