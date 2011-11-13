@@ -12,6 +12,7 @@
 * Detect freeglut under mingw
 * Rewrote SIGSEGV detection for much cleaner code
 * Updated instructions for installing on Windows
+* Update ffmpeg usage to handle 0.7.7 (fixes #41)
 
 0.0.20101121
 ------------

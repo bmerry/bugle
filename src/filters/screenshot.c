@@ -252,20 +252,31 @@ static bugle_bool lavc_initialise(int width, int height)
     AVCodec *codec;
 
     av_register_all();
+#if LIBAVFORMAT_VERSION_INT >= 0x00342D00 /* Major 52, minor 45 */
+    fmt = av_guess_format(NULL, video_filename, NULL);
+    if (!fmt)
+        fmt = av_guess_format("avi", NULL, NULL);
+#else
     fmt = guess_format(NULL, video_filename, NULL);
-    if (!fmt) fmt = guess_format("avi", NULL, NULL);
-    if (!fmt) return BUGLE_FALSE;
-    video_context = av_alloc_format_context();
-    if (!video_context) return BUGLE_FALSE;
+    if (!fmt)
+        fmt = guess_format("avi", NULL, NULL);
+#endif
+    if (!fmt)
+        return BUGLE_FALSE;
+    video_context = avformat_alloc_context();
+    if (!video_context)
+        return BUGLE_FALSE;
     video_context->oformat = fmt;
     snprintf(video_context->filename,
              sizeof(video_context->filename), "%s", video_filename);
     /* FIXME: what does the second parameter (id) do? */
     video_stream = av_new_stream(video_context, 0);
-    if (!video_stream) return BUGLE_FALSE;
+    if (!video_stream)
+        return BUGLE_FALSE;
     codec = avcodec_find_encoder_by_name(video_codec);
     if (!codec) codec = avcodec_find_encoder(CODEC_ID_HUFFYUV);
-    if (!codec) return BUGLE_FALSE;
+    if (!codec)
+        return BUGLE_FALSE;
     c = video_stream->codec;
 #if LIBAVFORMAT_BUILD < 4621
     c->codec_type = CODEC_TYPE_VIDEO;
@@ -273,28 +284,38 @@ static bugle_bool lavc_initialise(int width, int height)
     c->codec_type = AVMEDIA_TYPE_VIDEO;
 #endif
     c->codec_id = codec->id;
-    if (c->codec_id == CODEC_ID_HUFFYUV) c->pix_fmt = PIX_FMT_YUV422P;
-    else c->pix_fmt = PIX_FMT_YUV420P;
-    if (c->codec_id == CODEC_ID_FFV1) c->strict_std_compliance = -1;
+    if (c->codec_id == CODEC_ID_HUFFYUV)
+        c->pix_fmt = PIX_FMT_YUV422P;
+    else
+        c->pix_fmt = PIX_FMT_YUV420P;
+    if (c->codec_id == CODEC_ID_FFV1)
+        c->strict_std_compliance = -1;
     c->bit_rate = video_bitrate;
     c->width = width;
     c->height = height;
     c->time_base.den = 30;
     c->time_base.num = 1;
     c->gop_size = 12;     /* FIXME: user should specify */
-    /* FIXME: what does the NULL do? */
-    if (av_set_parameters(video_context, NULL) < 0) return BUGLE_FALSE;
-    if (avcodec_open(c, codec) < 0) return BUGLE_FALSE;
+    if (avcodec_open(c, codec) < 0)
+        return BUGLE_FALSE;
     video_buffer = bugle_malloc(video_buffer_size);
     video_raw = allocate_video_frame(CAPTURE_AV_FMT, width, height, BUGLE_FALSE);
     video_yuv = allocate_video_frame(c->pix_fmt, width, height, BUGLE_TRUE);
+#if LIBAVFORMAT_VERSION_INT >= 0x00350000 /* major of 53 */
+    if (avio_open(&video_context->pb, video_filename, AVIO_FLAG_WRITE) < 0)
+#else
     if (url_fopen(&video_context->pb, video_filename, URL_WRONLY) < 0)
+#endif
     {
         bugle_log_printf("screenshot", "video", BUGLE_LOG_ERROR,
                          "failed to open video output file %s", video_filename);
         exit(1);
     }
+#if LIBAVFORMAT_VERSION_INT >= 0x00350200 /* major 53, minor 2 */
+    avformat_write_header(video_context, NULL);
+#else
     av_write_header(video_context);
+#endif
     return BUGLE_TRUE;
 }
 
@@ -347,7 +368,9 @@ static void lavc_shutdown(void)
     av_free(video_buffer);
     for (i = 0; i < (int) video_context->nb_streams; i++)
         av_freep(&video_context->streams[i]);
-#if LIBAVFORMAT_VERSION_INT >= 0x00340000 /* major of 52 */
+#if LIBAVFORMAT_VERSION_INT >= 0x00350000 /* major of 53 */
+    avio_close(video_context->pb);
+#elif LIBAVFORMAT_VERSION_INT >= 0x00340000 /* major of 52 */
     url_fclose(video_context->pb);
 #else
     url_fclose(&video_context->pb);
@@ -569,7 +592,7 @@ static void screenshot_video(void)
                                            fetch->width, fetch->height, CAPTURE_AV_FMT,
                                            fetch->width, fetch->height, c->pix_fmt,
                                            SWS_BILINEAR, NULL, NULL, NULL);
-        sws_scale(sws_context, video_raw->data, video_raw->linesize,
+        sws_scale(sws_context, (const uint8_t * const *) video_raw->data, video_raw->linesize,
                   0, fetch->height, video_yuv->data, video_yuv->linesize);
 #else
 
