@@ -29,7 +29,7 @@
 static GLfloat vertices[3] = {0.0f, 0.0f, 0.0f};
 static GLushort indices[4] = {0, 0, 0, 0};
 
-static bugle_bool check_support(void)
+static bugle_bool check_memory_support(void)
 {
 #ifdef BUGLE_PLATFORM_POSIX
     return BUGLE_TRUE;
@@ -41,7 +41,7 @@ static bugle_bool check_support(void)
 
 static void invalid_direct(void)
 {
-    if (!check_support()) return;
+    if (!check_memory_support()) return;
 
     glVertexPointer(3, GL_FLOAT, 0, vertices);
     glEnableClientState(GL_VERTEX_ARRAY);
@@ -59,7 +59,7 @@ static void invalid_direct(void)
 
 static void invalid_direct_draw_range_elements(void)
 {
-    if (!check_support()) return;
+    if (!check_memory_support()) return;
 
     if (GLEW_VERSION_1_2)
     {
@@ -76,7 +76,7 @@ static void invalid_direct_draw_range_elements(void)
 
 static void invalid_direct_multitexture(void)
 {
-    if (!check_support()) return;
+    if (!check_memory_support()) return;
 
     if (GLEW_VERSION_1_3)
     {
@@ -132,7 +132,7 @@ static void invalid_direct_vbo(void)
 
 static void invalid_indirect(void)
 {
-    if (!check_support()) return;
+    if (!check_memory_support()) return;
 
     glVertexPointer(3, GL_FLOAT, 0, NULL);
     glEnableClientState(GL_VERTEX_ARRAY);
@@ -146,7 +146,7 @@ static void invalid_indirect(void)
 
 static void invalid_indirect_attrib_array(void)
 {
-    if (!check_support()) return;
+    if (!check_memory_support()) return;
 
     if (GLEW_VERSION_2_0)
     {
@@ -162,7 +162,7 @@ static void invalid_indirect_attrib_array(void)
 
 static void invalid_indirect_draw_range_elements(void)
 {
-    if (!check_support()) return;
+    if (!check_memory_support()) return;
 
     if (GLEW_VERSION_1_2)
     {
@@ -179,7 +179,7 @@ static void invalid_indirect_draw_range_elements(void)
 
 static void invalid_indirect_multi_draw(void)
 {
-    if (!check_support()) return;
+    if (!check_memory_support()) return;
 
     if (GLEW_VERSION_1_4)
     {
@@ -201,6 +201,8 @@ static void invalid_indirect_multi_draw(void)
 
 static void invalid_range(void)
 {
+    if (!check_memory_support()) return;
+
     if (GLEW_VERSION_1_2)
     {
         GLfloat range_vertices[6] = {0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f};

@@ -55,7 +55,9 @@ static test_suite *first_suite = NULL;
 static test_suite *last_suite = NULL;
 
 #if TEST_GL
+#if BUGLE_GLWIN_GLX
 extern void arbcreatecontext_suite_register(void);
+#endif
 extern void dlopen_suite_register(void);
 extern void draw_suite_register(void);
 extern void errors_suite_register(void);
@@ -78,7 +80,9 @@ extern void threads_suite_register(void);
 static void (* const register_fns[])(void) =
 {
 #if TEST_GL
+#if BUGLE_GLWIN_GLX
     arbcreatecontext_suite_register,
+#endif
     dlopen_suite_register,
     draw_suite_register,
     errors_suite_register,
