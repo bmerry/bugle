@@ -24,7 +24,7 @@
                     GCC 4.1 or higher (see the <link
                         linkend="faq-gcc-version">FAQ</link>
                     for an explanation of why). It is currently only
-                    tested with 4.4 and 4.5.
+                    tested with 4.6.
             </para></listitem>
             <listitem><para>
                     A C++ compiler with the POSIX regular expression functions
@@ -38,10 +38,10 @@
                     required.
             </para></listitem>
             <listitem><para>Perl 5</para></listitem>
-            <listitem><para>Python 2 (2.6 is tested, older versions may
+            <listitem><para>Python 2 (2.7 is tested, older versions may
                     work)</para></listitem>
             <listitem><para><ulink url="http://www.scons.org">SCons</ulink>
-                    (only 1.2.0 is tested, other versions may
+                    (only 2.0 is tested, other versions may
                     work)</para></listitem>
         </itemizedlist>
         <para>
@@ -198,113 +198,61 @@
             The intended target is <ulink
                 url="http://www.mingw.org">MinGW</ulink>; you can try using
             Cygwin as well, but it is not tested. You can also build using
-            Microsoft Visual C++, but MinGW is still useful as it provides a
-            number of the supporting tools such as Perl.
+            Microsoft Visual C++, but MinGW is still needed as it provides a
+            number of the supporting tools such as Perl and gcc.
         </para>
         <para>
             Here is the list of steps I used to install on Windows, including
-            support for the debugger. The versions numbers were the latest
-            available at the time, but newer versions may work too.
+            support for the debugger. Except where noted, the versions numbers
+            were the latest available at the time, but newer versions may work too.
         </para>
         <orderedlist>
             <listitem>
                 <para>
-                    Install <application>MinGW</application>. The installer
-                    is rather outdated (at the time of writing), and I found it
-                    necessary to manually install from a set of downloads.
-                    Download and unpack the following files into <filename
-                        class="directory">c:\mingw</filename> (for example).
-                    This list potentially contain more than you need.
+                    Install <application>MinGW</application>. I used the
+                    command-line installer interface (<command>mingw-get</command>). See the
+                    <ulink
+                        url="http://www.mingw.org/wiki/Getting_Started">Getting
+                        Started</ulink> page for more details.
                 </para>
-                <screen>
-binutils-2.20.1-2-mingw32-bin.tar.gz
-gcc-c++-4.5.0-1-mingw32-bin.tar.lzma
-gcc-core-4.5.0-1-mingw32-bin.tar.lzma
-gmp-5.0.1-1-mingw32-dev.tar.lzma
-libexpat-2.0.1-1-mingw32-dll-1.tar.gz
-libgcc-4.5.0-1-mingw32-dll-1.tar.lzma
-libgmp-5.0.1-1-mingw32-dll-10.tar.lzma
-libgomp-4.5.0-1-mingw32-dll-1.tar.lzma
-libmpc-0.8.1-1-mingw32-dll-2.tar.lzma
-libmpfr-2.4.1-1-mingw32-dll-1.tar.lzma
-libpthread-2.8.0-3-mingw32-dll-2.tar.lzma
-libssp-4.5.0-1-mingw32-dll-0.tar.lzma
-libstdc++-4.5.0-1-mingw32-dll-6.tar.lzma
-mingw-libgnurx-2.5.1-bin.tar.gz
-mingw-libgnurx-2.5.1-dev.tar.gz
-mingwrt-3.18-mingw32-dev.tar.gz
-mingwrt-3.18-mingw32-dll.tar.gz
-mpc-0.8.1-1-mingw32-dev.tar.lzma
-mpfr-2.4.1-1-mingw32-dev.tar.lzma
-pthreads-w32-2.8.0-3-mingw32-dev.tar.lzma
-w32api-3.14-mingw32-dev.tar.gz
-</screen>
+                <para>
+                    After setting <envar>PATH</envar> appropriately, I ran
+                </para>
+                <screen><userinput>mingw-get install gcc g++ mingw-developer-toolkit gdb msys-zip msys-unzip</userinput></screen>
+                <para>
+                    Then I launched <command>msys.bat</command> and ran
+                    <command>/postinstall/pi.sh</command>.
+                </para>
             </listitem>
             <listitem>
                 <para>
-                    Install <application>MSYS</application>. Again, the
-                    installer is outdated (at the time of writing), and I
-                    installed from manually downloaded files. I unpackaged
-                    these files to <filename
-                        class="directory">c:\msys</filename>.
-                </para>
-                <screen>
-automake-1.11.1-1-msys-1.0.13-bin.tar.lzma
-bash-3.1.17-3-msys-1.0.13-bin.tar.lzma
-bison-2.4.2-1-msys-1.0.13-bin.tar.lzma
-bzip2-1.0.5-2-msys-1.0.13-bin.tar.lzma
-coreutils-5.97-3-msys-1.0.13-bin.tar.lzma
-cvs-1.12.13-2-msys-1.0.13-bin.tar.lzma
-diffutils-2.8.7.20071206cvs-3-msys-1.0.13-bin.tar.lzma
-findutils-4.4.2-2-msys-1.0.13-bin.tar.lzma
-flex-2.5.35-2-msys-1.0.13-bin.tar.lzma
-gawk-3.1.7-2-msys-1.0.13-bin.tar.lzma
-gettext-0.17-2-msys-1.0.13-bin.tar.lzma
-gettext-0.17-2-msys-1.0.13-dev.tar.lzma
-grep-2.5.4-2-msys-1.0.13-bin.tar.lzma
-gzip-1.3.12-2-msys-1.0.13-bin.tar.lzma
-less-436-2-msys-1.0.13-bin.tar.lzma
-libbz2-1.0.5-2-msys-1.0.13-dll-1.tar.lzma
-libcrypt-1.1_1-3-msys-1.0.13-dll-0.tar.lzma
-libexpat-2.0.1-1-msys-1.0.13-dll-1.tar.lzma
-libgdbm-1.8.3-3-msys-1.0.13-dll-3.tar.lzma
-libgettextpo-0.17-2-msys-dll-0.tar.lzma
-libiconv-1.13.1-2-msys-1.0.13-bin.tar.lzma
-libiconv-1.13.1-2-msys-1.0.13-dll-2.tar.lzma
-libintl-0.17-2-msys-dll-8.tar.lzma
-liblzma-4.999.9beta_20100401-1-msys-1.0.13-dll-1.tar.gz
-libregex-1.20090805-2-msys-1.0.13-dll-1.tar.lzma
-libtermcap-0.20050421_1-2-msys-1.0.13-dll-0.tar.lzma
-libtool-2.2.7a-2-msys-1.0.13-bin.tar.lzma
-m4-1.4.14-1-msys-1.0.13-bin.tar.lzma
-make-3.81-3-msys-1.0.13-bin.tar.lzma
-msysCORE-1.0.14-1-msys-1.0.14-bin.tar.lzma
-patch-2.6.1-1-msys-1.0.13-bin.tar.lzma
-perl-5.6.1_2-2-msys-1.0.13-bin.tar.lzma
-rxvt-2.7.2-3-msys-1.0.14-bin.tar.lzma
-sed-4.2.1-2-msys-1.0.13-bin.tar.lzma
-tar-1.23-1-msys-1.0.13-bin.tar.lzma
-texinfo-4.13a-2-msys-1.0.13-bin.tar.lzma
-xz-4.999.9beta_20100401-1-msys-1.0.13-bin.tar.gz
-zlib-1.2.3-2-msys-1.0.13-dll.tar.lzma
-</screen>
-                <para>
-                    Again, this is potentially more than you need.
+                    Download <ulink
+                        url="https://sourceforge.net/projects/mingw/files/Other/UserContributed/regex/mingw-regex-2.5.1/">mingw-libgnurx</ulink>
+                    from the user contributed files folder (both the dev and
+                    bin packages), and unpack them into <filename class="directory">/mingw</filename>.
                 </para>
             </listitem>
-            <listitem><para>
-                    Start up MSYS using the provided
-                    <filename>msys.bat</filename>. You should immediately
-                    create <filename>/etc/fstab</filename> from
-                    <filename>/etc/fstab.sample</filename>, so that
-                    <filename class="directory">/mingw</filename> refers to
-                    your MinGW installation from install MSYS.
-            </para></listitem>
+            <listitem>
+                <para>
+                    Download and install Python 2.7 for Windows x86. Do not use Python 3.x, as some
+                    of the code in &bugle; is not Python 3 compatible. Also do not use the x86-64
+                    version of Python, as the SCons installer will not detect it.
+                </para>
+                <para>
+                    Also add <filename class="directory">C:\python27</filename> and
+                    <filename class="directory">c:\python27\scripts</filename> to <envar>PATH</envar>.
+                </para>
+            </listitem>
+            <listitem>
+                <para>
+                    Download and install SCons 2.1.
+                </para>
+            </listitem>
             <listitem>
                 <para>
                     Download the <application>GTK+</application> bundle
                     (2.16.6) from <ulink
-                        url="http://www.gtk.org/download-windows.html">gtk.org</ulink>,
+                        url="http://www.gtk.org/download/win32.php">gtk.org</ulink>,
                     and unpack it somewhere (e.g. <filename
                         class="directory">c:\tools\gtk+</filename>).
                 </para>
@@ -354,8 +302,8 @@ PKG_CONFIG_PATH=/c/tools/gtk+/lib/pkgconfig
             <listitem>
                 <para>
                     Download the source for <application>GLEW</application>
-                    1.5 and unpack it into a temporary location and built it
-                    using make, then install it with the command
+                    1.7 and unpack it into a temporary location and build it
+                    using <command>make</command>, then install it with the command
                     <userinput>make GLEW_DEST=/mingw install</userinput>.
                 </para>
                 <para>
@@ -370,6 +318,17 @@ PKG_CONFIG_PATH=/c/tools/gtk+/lib/pkgconfig
                     not work with MinGW).
                 </para>
             </listitem>
+            <listitem>
+                <para>
+                    Download the <ulink
+                        url="http://www.transmissionzero.co.uk/computing/using-glut-with-mingw/">MinGW
+                        build of freeglut</ulink>, and unpack it in a temporary directory. Then run
+                </para>
+                <screen>
+<userinput>mv freeglut/lib/* /mingw/lib
+mv freeglut/include/GL/* /mingw/include/GL
+mv freeglut/*.dll /mingw/bin</userinput></screen>
+            </listitem>
             <listitem><para>
                     Grab the latest <ulink
                         url="http://www.opengl.org/registry/api/glext.h"><filename>glext.h</filename></ulink> and
@@ -380,15 +339,14 @@ PKG_CONFIG_PATH=/c/tools/gtk+/lib/pkgconfig
             </para></listitem>
         </orderedlist>
         <para>
-            This should give you all the tools needed to build &bugle; from a
-            tarballed package. I did not succeed in building from a subversion
-            checkout, because that requires a working
-            <application>flex</application> and the one provided by MinGW
-            crashed.
+            This should give you all the tools needed to build &bugle; from either
+            a tarballed package or from subversion, with the exception that you will not be able
+            to build the documentation. You should pass a subset of the
+            <parameter>parts</parameter> parameter to the scons command-line.
         </para>
         <para>
-            The specific versions packages above also includes a bug in the
-            GCC 4.5 setup:
+            If you've just done a fresh install, you should have at least GCC
+            4.6, but if you have an older installation you may have a bug in GCC 4.5:
             without <option>-static-libstdc++</option> it will fail. You can
             fix this by adding
             <userinput>CXX='g++ -static-libstdc++'</userinput> to the
@@ -405,5 +363,11 @@ PKG_CONFIG_PATH=/c/tools/gtk+/lib/pkgconfig
             This can be achieved by copying it to the same directory as the
             program you intend to debug.
         </para>
+        <warning>
+            <para>
+                Windows looks in its system directories before looking at <envar>PATH</envar>,
+                so it will usually not be sufficient to add the directory to <envar>PATH</envar>.
+            </para>
+        </warning>
     </sect1>
 </chapter>

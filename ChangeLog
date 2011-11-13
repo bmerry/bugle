@@ -1,15 +1,17 @@
 * Avoid freeing a string constant if a GL error occurs (thanks to Bryce Van Dyke for spotting this)
 * Fix for compiling on newer ffmpeg (thanks to François Bertel for the patch)
 * Fix a number of warnings reported by GCC 4.6
-* Dynamically load libGL.so.1 instead of libGL.so (avoids indirect fallback on Ubuntu)
+* Dynamically load libGL.so.1 instead of libGL.so (fixes #91)
 * Link tests against libdl and libX11 when appropriate (fixes #84)
-* Rewrote gengl in Python, fixing many bugs along the way
+* Rewrote gengl in Python, fixing many bugs along the way (fixes #68, #90)
 * Add "tar" to the scons tools list, to keep version 2.1.0 happy
 * Add workaround to avoid continualy rebuilding with mingw due to scons bug
-* Fix use of hashtable.h in C++ code (fixed #93)
-* Parse wglext.h when building reflection information
+* Fix use of hashtable.h in C++ code (fixes #93)
+* Explicitly link to -ldl (fixes #84)
+* Parse wglext.h when building reflection information (fixes #73)
 * Detect freeglut under mingw
 * Rewrote SIGSEGV detection for much cleaner code
+* Updated instructions for installing on Windows
 
 0.0.20101121
 ------------

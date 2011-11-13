@@ -47,7 +47,7 @@
             desired, add either <parameter>gltype=gles1cm</parameter> or
             <parameter>gltype=gles2</parameter> to the
             <command>scons</command> command line. There is no need to specify
-            <parameter>glwin</parameter>, as it will automatically default of
+            <parameter>glwin</parameter>, as it will automatically default to
             EGL.
         </para>
         <note>
@@ -99,7 +99,7 @@
 
         <para>
             Windows also has multiple function calling conventions, and
-            different implementations of OpenGL ES (particular for 1.x) make
+            different implementations of OpenGL ES (particularly for 1.x) make
             inconsistent choices. You can override the automatic choice by
             passing <parameter>callapi=__stdcall</parameter> or
             <parameter>callapi=__cdecl</parameter> to select the
