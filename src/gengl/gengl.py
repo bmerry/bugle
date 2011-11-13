@@ -122,9 +122,7 @@ class API(object):
         if name in self.functions:
             f = self.functions[name]
             if f.signature != signature:
-                # Special case: <format> changed from GLenum to GLint
-                if name != 'glTexImage3D':
-                    raise KeyError("Function `" + name + "' already exists with different signature")
+                raise KeyError("Function `" + name + "' already exists with different signature")
             if f.extension != extension:
                 # This happens with Mesa, which doesn't have the #ifndef
                 # guards in gl.h. Assume that if one of the two is the
@@ -378,25 +376,6 @@ class GLAPI(API):
             return self.get_extension('EXTGROUP_framebuffer_texture_layer')
         else:
             return API.function_extension(self, name, extension)
-
-    def function_group(self, func):
-        # Some extra aliases that can't be automatically detected.
-        extra_alias = [
-            ('glCreateShaderObjectARB',          'glCreateShader'),
-            ('glCreateProgramObjectARB',         'glCreateProgram'),
-            ('glUseProgramObjectARB',            'glUseProgram'),
-            ('glAttachObjectARB',                'glAttachShader'),
-            ('glDetachObjectARB',                'glDetachShader'),
-            ('glGetAttachedObjectsARB',          'glGetAttachedShaders'),
-            ('glXCreateContextWithConfigSGIX',   'glXCreateNewContext'),
-            ('glXMakeCurrentReadSGI',            'glXMakeContextCurrent')
-        ]
-        group = API.function_group(self, func)
-        for e in extra_alias:
-            if func.name == e[0]:
-                group = (e[1], group[1:])
-                break
-        return group
 
     def extension_children(self, extension_name):
         return self._extension_children.get(extension_name, [])
@@ -749,14 +728,26 @@ class Function(object):
         return ' '.join(out)
 
     @classmethod
+    def remap_arg_type(cls, argtype):
+        """
+        Canonicalises argument types to avoid spurious signature mismatches.
+        """
+        remapping = {
+            'GLenum'       : 'GLint',  # Texture functions changed <format>
+            'GLsizeiptrARB': 'GLsizeiptr',
+            'GLintptrARB'  : 'GLintptr'
+            }
+        return remapping.get(argtype, argtype)
+
+    @classmethod
     def parse_signature(cls, match):
         ret = match.group('ret')
         args = match.group('args')
         args = cls._split_params_re.split(args)
         if args == ('void'):
             args = ()
-        args = [cls._stripargname(x) for x in args]
-        ret = ret.strip()
+        args = [cls.remap_arg_type(cls._stripargname(x)) for x in args]
+        ret = cls.remap_arg_type(ret.strip())
         return (ret, tuple(args))
 
     def base_name(self):
@@ -896,7 +887,7 @@ def load_headers(filenames):
                     vline = ''
 
     # Filter out APIs that weren't actually used
-    apis = [api for api in apis if len(api.functions) > 0]
+    apis = [api for api in apis if len(api.functions) > 0 and len(api.enums) > 0]
     return apis
 
 def load_function_ids(filename, apis):
@@ -932,6 +923,20 @@ def process_alias(apis, options):
         for group in groups.values():
             for f in group[1:]:
                 print("ALIAS %s %s" % (f.name, group[0].name))
+    # Some extras that aren't automatically detected, either because of
+    # different names or apparently different signatures.
+    extra_alias = [
+        ('glCreateShaderObjectARB',          'glCreateShader'),
+        ('glCreateProgramObjectARB',         'glCreateProgram'),
+        ('glUseProgramObjectARB',            'glUseProgram'),
+        ('glAttachObjectARB',                'glAttachShader'),
+        ('glDetachObjectARB',                'glDetachShader'),
+        ('glGetAttachedObjectsARB',          'glGetAttachedShaders'),
+        ('glXCreateContextWithConfigSGIX',   'glXCreateNewContext'),
+        ('glXMakeCurrentReadSGI',            'glXMakeContextCurrent')
+    ]
+    for extra in extra_alias:
+        print("ALIAS %s %s" % extra)
 
 def ordered_extensions(api):
     ordered_names = sorted(api.extensions.keys(), key = api.extension_sort_key)

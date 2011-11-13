@@ -116,7 +116,7 @@ static void invalid_direct_vbo(void)
         glDrawRangeElements(GL_POINTS, 0, 0, 4, GL_UNSIGNED_SHORT, NULL); /* legal */
 
         glMultiDrawElementsEXT(GL_POINTS, &count, GL_UNSIGNED_SHORT, &pindices, 1);
-        test_log_printf("checks\\.error: illegal index array caught in glMultiDrawElements \\(VBO overrun\\); call will be ignored\\.\n");
+        test_log_printf("checks\\.error: illegal index array caught in glMultiDrawElementsEXT \\(VBO overrun\\); call will be ignored\\.\n");
 
         count = 4;
         glMultiDrawElementsEXT(GL_POINTS, &count, GL_UNSIGNED_SHORT, &pindices, 1);
@@ -208,11 +208,11 @@ static void invalid_range(void)
         glVertexPointer(3, GL_FLOAT, 0, range_vertices);
         glEnableClientState(GL_VERTEX_ARRAY);
 
-        glDrawRangeElementsEXT(GL_POINTS, 0, 0, 4, GL_UNSIGNED_SHORT, range_indices);
+        glDrawRangeElements(GL_POINTS, 0, 0, 4, GL_UNSIGNED_SHORT, range_indices);
         test_log_printf("checks\\.error: glDrawRangeElements indices fall outside range; call will be ignored\\.\n");
-        glDrawRangeElementsEXT(GL_POINTS, 1, 1, 4, GL_UNSIGNED_SHORT, range_indices);
+        glDrawRangeElements(GL_POINTS, 1, 1, 4, GL_UNSIGNED_SHORT, range_indices);
         test_log_printf("checks\\.error: glDrawRangeElements indices fall outside range; call will be ignored\\.\n");
-        glDrawRangeElementsEXT(GL_POINTS, 0, 0xffffff, 4, GL_UNSIGNED_SHORT, range_indices);
+        glDrawRangeElements(GL_POINTS, 0, 0xffffff, 4, GL_UNSIGNED_SHORT, range_indices);
         test_log_printf("checks\\.error: illegal vertex array caught in glDrawRangeElements \\(unreadable memory\\); call will be ignored\\.\n");
 
         glDisableClientState(GL_VERTEX_ARRAY);

@@ -9,6 +9,7 @@
 * Fix use of hashtable.h in C++ code (fixed #93)
 * Parse wglext.h when building reflection information
 * Detect freeglut under mingw
+* Rewrote SIGSEGV detection for much cleaner code
 
 0.0.20101121
 ------------

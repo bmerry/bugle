@@ -131,6 +131,9 @@ static void multi_draw_elements_vbo(void)
 {
     if (GLEW_VERSION_1_5)
     {
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(short_indices), short_indices, GL_STATIC_DRAW);
+        test_log_printf("trace\\.call: glBufferData\\(GL_ELEMENT_ARRAY_BUFFER, %u, %p -> {[0-9 ,]+}, GL_STATIC_DRAW\\)\n",
+                        (unsigned int) sizeof(short_indices), short_indices);
         glMultiDrawElements(GL_TRIANGLES, count, GL_UNSIGNED_SHORT, (const GLvoid **) ptr_short_indices_vbo, 2);
         test_log_printf("trace\\.call: glMultiDrawElements\\(GL_TRIANGLES, %p -> { %d, %d }, GL_UNSIGNED_SHORT, %p -> { 12, 0 }, 2\\)\n",
                         count, (int) count[0], (int) count[1],

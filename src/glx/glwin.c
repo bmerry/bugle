@@ -273,10 +273,11 @@ void bugle_function_address_initialise_extra(void)
 
     for (i = 0; i < budgie_function_count(); i++)
     {
-        /* gengl.perl puts the OpenGL versions first, and ordered by version
+        /* gengl.py puts the OpenGL versions first, and ordered by decreasing version
          * number.
          */
-        if (bugle_api_function_extension(i) > BUGLE_API_EXTENSION_ID(GL_VERSION_1_2))
+        if (bugle_api_function_extension(i) < BUGLE_API_EXTENSION_ID(GL_VERSION_1_2)
+            || bugle_api_function_extension(i) > BUGLE_API_EXTENSION_ID(GL_VERSION_1_1))
         {
             BUDGIEAPIPROC ptr = bugle_glwin_get_proc_address(budgie_function_name(i));
             if (ptr != NULL)
