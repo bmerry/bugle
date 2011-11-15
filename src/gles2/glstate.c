@@ -1163,9 +1163,6 @@ static void spawn_children_renderbuffer(const glstate *self, linked_list *childr
 
 static void spawn_children_global(const glstate *self, linked_list *children)
 {
-    const char *version;
-
-    version = (const char *) CALL(glGetString)(GL_VERSION);
     bugle_list_init(children, bugle_free);
     make_leaves(self, global_state, children);
 

@@ -383,7 +383,7 @@ class ES1API(GLAPI):
     """
     API class for OpenGL ES 1.x CM (CL is not supported).
 
-    >>> bool(ES1API().is_version('GL_VERSION_ES_CM_1_0'))
+    >>> bool(ES1API().is_version('GL_VERSION_ES_CM_1_1'))
     True
     """
 
@@ -391,7 +391,7 @@ class ES1API(GLAPI):
         API.__init__(self,
             [['GLES', 'gl.h'], ['GLES', 'glext.h']],
             'BUGLE_API_EXTENSION_BLOCK_GL',
-            re.compile(r'^GL_VERSION_ES_C[LM][0-9_]+$'),
+            re.compile(r'^GL_VERSION_ES_C[LM]_[0-9_]+$'),
             re.compile(r'^GL_(?P<suffix>[0-9A-Za-z]+)_\w+$'),
             re.compile(r'^GL_[0-9A-Za-z_]+$'),
             re.compile(r'^gl[A-WY-Z]\w+$'),  # Being careful to avoid glX
@@ -399,6 +399,7 @@ class ES1API(GLAPI):
         # Force the extension groups to exist
         for e in self._extension_children.keys():
             self.get_extension(e)
+        self.get_extension('GL_VERSION_ES_CM_1_1')
 
 class ES2API(GLAPI):
     """

@@ -196,7 +196,7 @@ static const state_info tex_parameter_state[] =
     { NULL, GL_NONE, NULL_TYPE, 0, -1, -1, 0 }
 };
 
-static const state_info generic_enable = { NULL, GL_NONE, TYPE_9GLboolean, -1, BUGLE_GL_VERSION_1_1, -1, STATE_ENABLED };
+static const state_info generic_enable = { NULL, GL_NONE, TYPE_9GLboolean, -1, BUGLE_GL_VERSION_ES_CM_1_0, -1, STATE_ENABLED };
 
 /* All the make functions _append_ nodes to children. That means you have
  * to initialise the list yourself.
@@ -612,8 +612,8 @@ static const state_info global_state[] =
     { STATE_NAME(GL_SAMPLE_COVERAGE), TYPE_9GLboolean, -1, BUGLE_GL_VERSION_ES_CM_1_0, -1, STATE_ENABLED },
     { STATE_NAME(GL_SAMPLE_COVERAGE_VALUE), TYPE_7GLfloat, -1, BUGLE_GL_VERSION_ES_CM_1_1, -1, STATE_GLOBAL },
     { STATE_NAME(GL_SAMPLE_COVERAGE_INVERT), TYPE_9GLboolean, -1, BUGLE_GL_VERSION_ES_CM_1_1, -1, STATE_GLOBAL },
-    { "Texture units", GL_TEXTURE0, NULL_TYPE, -1, BUGLE_GL_VERSION_1_1, -1, 0, spawn_texture_units },
-    { "Textures", GL_TEXTURE_2D, NULL_TYPE, -1, BUGLE_GL_VERSION_1_1, -1, 0, spawn_textures },
+    { "Texture units", GL_TEXTURE0, NULL_TYPE, -1, BUGLE_GL_VERSION_ES_CM_1_0, -1, 0, spawn_texture_units },
+    { "Textures", GL_TEXTURE_2D, NULL_TYPE, -1, BUGLE_GL_VERSION_ES_CM_1_0, -1, 0, spawn_textures },
     { STATE_NAME(GL_ACTIVE_TEXTURE), TYPE_6GLenum, -1, BUGLE_GL_VERSION_ES_CM_1_1, -1, STATE_GLOBAL },
     { STATE_NAME(GL_SCISSOR_TEST), TYPE_9GLboolean, -1, BUGLE_GL_VERSION_ES_CM_1_0, -1, STATE_ENABLED },
     { STATE_NAME(GL_SCISSOR_BOX), TYPE_5GLint, 4, BUGLE_GL_VERSION_ES_CM_1_1, -1, STATE_GLOBAL },
@@ -629,14 +629,14 @@ static const state_info global_state[] =
     { STATE_NAME(GL_STENCIL_PASS_DEPTH_PASS), TYPE_6GLenum, -1, BUGLE_GL_VERSION_ES_CM_1_1, -1, STATE_GLOBAL },
     { STATE_NAME(GL_DEPTH_TEST), TYPE_9GLboolean, -1, BUGLE_GL_VERSION_ES_CM_1_0, -1, STATE_ENABLED },
     { STATE_NAME(GL_DEPTH_FUNC), TYPE_6GLenum, -1, BUGLE_GL_VERSION_ES_CM_1_0, -1, STATE_GLOBAL },
-    { STATE_NAME(GL_BLEND), TYPE_9GLboolean, -1, BUGLE_GL_VERSION_1_1, -1, STATE_ENABLED },
+    { STATE_NAME(GL_BLEND), TYPE_9GLboolean, -1, BUGLE_GL_VERSION_ES_CM_1_0, -1, STATE_ENABLED },
     { STATE_NAME(GL_BLEND_SRC_RGB_OES), TYPE_11GLblendenum, -1, BUGLE_GL_OES_blend_func_separate, -1, STATE_GLOBAL },
     { STATE_NAME(GL_BLEND_SRC_ALPHA_OES), TYPE_11GLblendenum, -1, BUGLE_GL_OES_blend_func_separate, -1, STATE_GLOBAL },
     { STATE_NAME(GL_BLEND_DST_RGB_OES), TYPE_11GLblendenum, -1, BUGLE_GL_OES_blend_func_separate, -1, STATE_GLOBAL },
     { STATE_NAME(GL_BLEND_DST_ALPHA_OES), TYPE_11GLblendenum, -1, BUGLE_GL_OES_blend_func_separate, -1, STATE_GLOBAL },
     { STATE_NAME(GL_BLEND_SRC), TYPE_11GLblendenum, -1, BUGLE_GL_VERSION_ES_CM_1_1, BUGLE_GL_OES_blend_func_separate, STATE_GLOBAL },
     { STATE_NAME(GL_BLEND_DST), TYPE_11GLblendenum, -1, BUGLE_GL_VERSION_ES_CM_1_1, BUGLE_GL_OES_blend_func_separate, STATE_GLOBAL },
-    { STATE_NAME(GL_BLEND_EQUATION_RGB_OES), TYPE_6GLenum, -1, BUGLE_GL_VERSION_1_1, -1, STATE_GLOBAL },
+    { STATE_NAME(GL_BLEND_EQUATION_RGB_OES), TYPE_6GLenum, -1, BUGLE_GL_OES_blend_equation_separate, -1, STATE_GLOBAL },
     { STATE_NAME(GL_BLEND_EQUATION_ALPHA_OES), TYPE_6GLenum, -1, BUGLE_GL_OES_blend_equation_separate, -1, STATE_GLOBAL },
     { STATE_NAME(GL_DITHER), TYPE_9GLboolean, -1, BUGLE_GL_VERSION_ES_CM_1_0, -1, STATE_ENABLED },
     { STATE_NAME(GL_COLOR_WRITEMASK), TYPE_9GLboolean, 4, BUGLE_GL_VERSION_ES_CM_1_1, -1, STATE_GLOBAL },
@@ -645,8 +645,8 @@ static const state_info global_state[] =
     { STATE_NAME(GL_COLOR_CLEAR_VALUE), TYPE_7GLfloat, 4, BUGLE_GL_VERSION_ES_CM_1_1, -1, STATE_GLOBAL },
     { STATE_NAME(GL_DEPTH_CLEAR_VALUE), TYPE_7GLfloat, -1, BUGLE_GL_VERSION_ES_CM_1_1, -1, STATE_GLOBAL },
     { STATE_NAME(GL_STENCIL_CLEAR_VALUE), TYPE_5GLint, -1, BUGLE_GL_VERSION_ES_CM_1_1, -1, STATE_GLOBAL },
-    { STATE_NAME(GL_UNPACK_ALIGNMENT), TYPE_5GLint, -1, BUGLE_GL_VERSION_1_1, -1, STATE_GLOBAL },
-    { STATE_NAME(GL_PACK_ALIGNMENT), TYPE_5GLint, -1, BUGLE_GL_VERSION_1_1, -1, STATE_GLOBAL },
+    { STATE_NAME(GL_UNPACK_ALIGNMENT), TYPE_5GLint, -1, BUGLE_GL_VERSION_ES_CM_1_0, -1, STATE_GLOBAL },
+    { STATE_NAME(GL_PACK_ALIGNMENT), TYPE_5GLint, -1, BUGLE_GL_VERSION_ES_CM_1_0, -1, STATE_GLOBAL },
 
     { STATE_NAME(GL_PERSPECTIVE_CORRECTION_HINT), TYPE_6GLenum, -1, BUGLE_GL_VERSION_ES_CM_1_0, -1, STATE_GLOBAL },
     { STATE_NAME(GL_POINT_SMOOTH_HINT), TYPE_6GLenum, -1, BUGLE_GL_VERSION_ES_CM_1_0, -1, STATE_GLOBAL },
@@ -1149,9 +1149,6 @@ static void spawn_children_renderbuffer(const glstate *self, linked_list *childr
 
 static void spawn_children_global(const glstate *self, linked_list *children)
 {
-    const char *version;
-
-    version = (const char *) CALL(glGetString)(GL_VERSION);
     bugle_list_init(children, bugle_free);
     make_leaves(self, global_state, children);
 
