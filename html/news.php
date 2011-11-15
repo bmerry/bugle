@@ -24,6 +24,13 @@ else
     </p>
     <h1>BuGLe News</h1>
 
+    <h2>The almost-annual release (15/11/2011)</h2>
+    <p>As you can probably tell from the frequency of releases, I don't spend
+    as much time on BuGLe as I used to. If you're keen to see BuGLe evolve and
+    support newer GL versions, you should try to get involved and implement some
+    things yourself.</p>
+    <p>In the meantime, here is a release that fixes quite a few bugs.</p>
+
     <h2>Miscellaneous bugfixes (21/11/2010)</h2>
     <p>This release contains miscellaneous bugfixes (see the
     <a href="documentation/changelog.php">ChangeLog</a> for
