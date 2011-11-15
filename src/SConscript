@@ -296,7 +296,7 @@ envs['host'].Install(aspects['libdir'] + '/pkgconfig', source = bugle_pc)
 
 targets['bugleutils'].update({
     'target': 'bugleutils',
-    'version': '8.0.0'})
+    'version': '8.0.1'})
 targets['bugleutils']['source'].extend([
     'gl/gltypes.c',
     'apireflect.c',
@@ -319,7 +319,7 @@ targets['bugleutils'].out = envs['host'].BugleSharedLibrary(
 
 if 'interceptor' in aspects['parts']:
     targets['bugle'].update({
-        'version': '9.0.0'})
+        'version': '9.0.1'})
 
     targets['bugle']['source'].extend([
         envs['host'].BugleCFile(['confparse.y', 'statsparse.y'], srcdir, package_sources, YACCFLAGS = '-d'),

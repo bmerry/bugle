@@ -1,3 +1,12 @@
+0.0.20111115
+------------
+This is a maintainence release: there are no major new features, but some
+things have been improved and there are lots of bug fixes. Amongst other
+things, it should work better on Ubuntu 11.10 than previous releases.
+
+It also hasn't been as thoroughly tested as usual (which is never very thorough
+to start with), so let me know if anything is broken.
+
 0.0.20101121
 ------------
 This release contains miscellaneous bugfixes (see the ChangeLog for details).
