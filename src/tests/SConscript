@@ -21,10 +21,6 @@ def run_log_suite(target, testprog, env, suite, chain):
             env = dict([(key, str(value)) for (key, value) in env['ENV'].items()])
             env['LD_PRELOAD'] = 'libbugle.so'
             env['BUGLE_CHAIN'] = chain
-            with open('run-test.env', 'w') as f:
-                for key in ['PATH', 'BUGLE_FILTER_DIR', 'BUGLE_FILTERS', 'BUGLE_CHAIN']:
-                    print >>f, 'set env %s=%s' % (key, env.get(key, ''))
-                print >>f, 'set args --suite %s --log bugle.log' % (suite,)
 
             sp = Popen([testprog[0].abspath, '--suite', suite, '--log', logfile],
                     stdout = PIPE, env = env)
