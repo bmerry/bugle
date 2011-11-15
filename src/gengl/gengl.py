@@ -28,7 +28,6 @@ The following data are emitted (depending on command-line options):
       same signatures and semantics.
 
 TODO:
-    - handle ES
     - consider version subsumption in L{API.extension_children}
     - autodetect extension chains from tokens?
     - better handling of GLenum -> GLint signature changes
@@ -380,15 +379,13 @@ class GLAPI(API):
     def extension_children(self, extension_name):
         return self._extension_children.get(extension_name, [])
 
-class ES1API(API):
+class ES1API(GLAPI):
     """
     API class for OpenGL ES 1.x CM (CL is not supported).
 
     >>> bool(ES1API().is_version('GL_VERSION_ES_CM_1_0'))
     True
     """
-
-    _extension_children = {}
 
     def __init__(self):
         API.__init__(self,
@@ -403,15 +400,13 @@ class ES1API(API):
         for e in self._extension_children.keys():
             self.get_extension(e)
 
-class ES2API(API):
+class ES2API(GLAPI):
     """
     API class for OpenGL ES 2.0.
 
     >>> bool(ES2API().is_version('GL_ES_VERSION_2_0'))
     True
     """
-
-    _extension_children = {}
 
     def __init__(self):
         API.__init__(self,
@@ -850,7 +845,7 @@ def split_path(path):
         return []
 
 def load_headers(filenames):
-    apis = [GLAPI(), GLXAPI(), WGLAPI(), EGLAPI()]
+    apis = [GLAPI(), GLXAPI(), WGLAPI(), EGLAPI(), ES1API(), ES2API()]
     state = State()
     line_handlers = [
         LineHandler(r'#ifndef (?P<name>\w+?)(?:_DEPRECATED)?\s*$', state.handle_ifndef),

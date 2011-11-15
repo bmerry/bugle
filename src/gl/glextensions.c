@@ -79,6 +79,7 @@ static void context_init(const void *key, void *data)
     ce->flags = BUGLE_CALLOC(bugle_api_extension_count(), bugle_bool);
     bugle_hash_init(&ce->names, NULL);
     glver = (const char *) CALL(glGetString)(GL_VERSION);
+#if BUGLE_GLTYPE_GL && defined(GL_VERSION_3_0)
     if (strcmp(glver, "3.0") >= 0)
     {
         /* GL3+ context with glGetStringi available to obtain
@@ -94,6 +95,7 @@ static void context_init(const void *key, void *data)
         }
     }
     else
+#endif
     {
         const char *glexts = (const char *) CALL(glGetString)(GL_EXTENSIONS);
         tokenise(glexts, &ce->names);

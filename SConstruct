@@ -400,6 +400,7 @@ package_sources.extend([
     'src/bc/gl/glsl1_20.bc',
     'src/bc/gles1cm/gles1cm.bc',
     'src/bc/gles2/gles2.bc',
+    'src/bc/glx/GLX_ARB_create_context.bc',
     'src/bc/glx/GLX_ARB_get_proc_address.bc',
     'src/bc/glx/GLX_SGIX_fbconfig.bc',
     'src/bc/glx/GLX_SGIX_pbuffer.bc',

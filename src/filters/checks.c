@@ -547,7 +547,6 @@ static bugle_bool checks_generic_attribute(size_t first, size_t count,
 
 static bugle_bool checks_attributes(size_t first, size_t count, budgie_function function)
 {
-    GLenum i;
     bugle_bool result = BUGLE_TRUE;
 
     if (!count) return BUGLE_TRUE;
@@ -598,6 +597,7 @@ static bugle_bool checks_attributes(size_t first, size_t count, budgie_function 
 
     if (BUGLE_GL_HAS_EXTENSION_GROUP(GL_ARB_multitexture))
     {
+        GLenum i;
         GLint texunits, old;
 
         CALL(glGetIntegerv)(GL_MAX_TEXTURE_UNITS, &texunits);
@@ -666,8 +666,7 @@ static bugle_bool checks_min_max(GLsizei count, GLenum gltype, const GLvoid *ind
     /* Check for element array buffer */
     if (BUGLE_GL_HAS_EXTENSION_GROUP(GL_ARB_vertex_buffer_object))
     {
-        GLint id, mapped;
-        size_t size;
+        GLint id;
         CALL(glGetIntegerv)(GL_ELEMENT_ARRAY_BUFFER_BINDING, &id);
         if (id)
         {
@@ -675,6 +674,8 @@ static bugle_bool checks_min_max(GLsizei count, GLenum gltype, const GLvoid *ind
             /* FIXME-GLES: save data on load */
             return BUGLE_FALSE;
 #else
+            GLint mapped;
+            size_t size;
             /* We are not allowed to call glGetBufferSubDataARB on a
              * mapped buffer. Fortunately, if the buffer is mapped, the
              * call is illegal and should generate INVALID_OPERATION anyway.
