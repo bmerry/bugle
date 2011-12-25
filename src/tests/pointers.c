@@ -1,5 +1,5 @@
 /*  BuGLe: an OpenGL debugging tool
- *  Copyright (C) 2004-2010  Bruce Merry
+ *  Copyright (C) 2004-2011  Bruce Merry
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -160,6 +160,44 @@ static void invalid_indirect_attrib_array(void)
         test_skipped("GL 2.0 required");
 }
 
+static void invalid_indirect_instanced_arrays(void)
+{
+    if (GLEW_VERSION_3_3)
+    {
+        GLfloat data[2] = {0.0f, 1.0f};
+
+        GLuint buffer;
+        glGenBuffers(1, &buffer);
+        glBindBuffer(GL_ARRAY_BUFFER, buffer);
+        glBufferData(GL_ARRAY_BUFFER, sizeof(data), data, GL_STATIC_DRAW);
+        glVertexAttribPointer(0, 1, GL_FLOAT, GL_FALSE, 0, NULL);
+        glEnableVertexAttribArray(0);
+
+        glDrawArrays(GL_POINTS, 0, 8);
+        test_log_printf("checks\\.error: illegal generic attribute array 0 caught in glDrawArrays \\(VBO overrun\\); call will be ignored\\.\n");
+
+        glDrawArraysInstanced(GL_POINTS, 0, 8, 4);
+        test_log_printf("checks\\.error: illegal generic attribute array 0 caught in glDrawArraysInstanced \\(VBO overrun\\); call will be ignored\\.\n");
+
+        glVertexAttribDivisor(0, 1);
+        glDrawArraysInstanced(GL_POINTS, 0, 8, 4);
+        test_log_printf("checks\\.error: illegal generic attribute array 0 caught in glDrawArraysInstanced \\(VBO overrun\\); call will be ignored\\.\n");
+
+        glVertexAttribDivisor(0, 2);
+        glDrawArraysInstanced(GL_POINTS, 0, 8, 4);
+        /* passes: 4 / 2 = 2 */
+
+        glDrawArraysInstanced(GL_POINTS, 0, 8, 5);
+        test_log_printf("checks\\.error: illegal generic attribute array 0 caught in glDrawArraysInstanced \\(VBO overrun\\); call will be ignored\\.\n");
+
+        glDisableVertexAttribArray(0);
+        glBindBuffer(GL_ARRAY_BUFFER, 0);
+        glDeleteBuffers(1, &buffer);
+    }
+    else
+        test_skipped("GL 3.3 required");
+}
+
 static void invalid_indirect_draw_range_elements(void)
 {
     if (!check_memory_support()) return;
@@ -232,6 +270,7 @@ void pointers_suite_register(void)
     test_suite_add_test(ts, "direct_vbo", invalid_direct_vbo);
     test_suite_add_test(ts, "indirect", invalid_indirect);
     test_suite_add_test(ts, "indirect_attrib_array", invalid_indirect_attrib_array);
+    test_suite_add_test(ts, "indirect_instanced_arrays", invalid_indirect_instanced_arrays);
     test_suite_add_test(ts, "indirect_draw_range_elements", invalid_indirect_draw_range_elements);
     test_suite_add_test(ts, "indirect_multi_draw", invalid_indirect_multi_draw);
     test_suite_add_test(ts, "indirect_range", invalid_range);

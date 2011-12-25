@@ -1,3 +1,5 @@
+* Added support for ARB_draw_instanced and ARB_instanced_arrays
+
 0.0.20111115
 ------------
 * Avoid freeing a string constant if a GL error occurs (thanks to Bryce Van Dyke for spotting this)

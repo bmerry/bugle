@@ -491,6 +491,7 @@ static bugle_bool checks_attribute(size_t first, size_t count,
 /* Like checks_attribute, but for generic vertex array attributes.
  */
 static bugle_bool checks_generic_attribute(size_t first, size_t count,
+                                           size_t firstInstance, size_t numInstances,
                                            GLint number, budgie_function function)
 {
     /* See comment about Mesa below */
@@ -513,6 +514,26 @@ static bugle_bool checks_generic_attribute(size_t first, size_t count,
     }
     if (enabled)
     {
+        size_t attrib_first = first;
+        size_t attrib_count = count;
+#ifdef GL_ARB_instanced_arrays
+        if (BUGLE_GL_HAS_EXTENSION(GL_ARB_instanced_arrays))
+        {
+            GLint divisor = 0;
+            CALL(glGetVertexAttribiv)(number, GL_VERTEX_ATTRIB_ARRAY_DIVISOR_ARB, &divisor);
+            if (divisor != 0)
+            {
+                attrib_first = firstInstance / divisor;
+                attrib_count = (firstInstance + numInstances + divisor - 1) / divisor - attrib_first;
+            }
+        }
+#else
+        {
+            /* Prevent compiler warnings */
+            (void) firstInstance;
+            (void) numInstances;
+        }
+#endif
         CALL(glGetVertexAttribiv)(number, GL_VERTEX_ATTRIB_ARRAY_SIZE, &size);
         CALL(glGetVertexAttribiv)(number, GL_VERTEX_ATTRIB_ARRAY_TYPE, &gltype);
         if (gltype <= 1)
@@ -528,9 +549,9 @@ static bugle_bool checks_generic_attribute(size_t first, size_t count,
         group_size = budgie_type_size(type) * size;
         if (!stride) stride = group_size;
         cptr = (const char *) ptr;
-        cptr += group_size * first;
+        cptr += group_size * attrib_first;
 
-        size = (count - 1) * stride + group_size;
+        size = (attrib_count - 1) * stride + group_size;
         id = 0;
         if (BUGLE_GL_HAS_EXTENSION_GROUP(GL_ARB_vertex_buffer_object))
         {
@@ -545,7 +566,9 @@ static bugle_bool checks_generic_attribute(size_t first, size_t count,
 }
 #endif
 
-static bugle_bool checks_attributes(size_t first, size_t count, budgie_function function)
+static bugle_bool checks_attributes(size_t first, size_t count,
+                                    size_t firstInstance, size_t numInstances,
+                                    budgie_function function)
 {
     bugle_bool result = BUGLE_TRUE;
 
@@ -636,7 +659,7 @@ static bugle_bool checks_attributes(size_t first, size_t count, budgie_function 
 
         CALL(glGetIntegerv)(GL_MAX_VERTEX_ATTRIBS, &attribs);
         for (i = 0; i < attribs; i++)
-            result = result && checks_generic_attribute(first, count, i, function);
+            result = result && checks_generic_attribute(first, count, firstInstance, numInstances, i, function);
     }
 #endif
     return result;
@@ -725,7 +748,7 @@ static bugle_bool checks_glDrawArrays(function_call *call, const callback_data *
 
     checks_completeness();
     return checks_attributes(*call->glDrawArrays.arg1, *call->glDrawArrays.arg2,
-                             call->generic.id);
+                             0, 1, call->generic.id);
 }
 
 static bugle_bool checks_glDrawElements(function_call *call, const callback_data *data)
@@ -747,7 +770,7 @@ static bugle_bool checks_glDrawElements(function_call *call, const callback_data
         "index array", -1, call->generic.id))
         return BUGLE_FALSE;
     if (checks_min_max(count, type, indices, &min, &max))
-        if (!checks_attributes(min, max - min + 1, call->generic.id))
+        if (!checks_attributes(min, max - min + 1, 0, 1, call->generic.id))
             return BUGLE_FALSE;
     return BUGLE_TRUE;
 }
@@ -784,7 +807,7 @@ static bugle_bool checks_glDrawRangeElements(function_call *call, const callback
     }
     min = *call->glDrawRangeElements.arg1;
     max = *call->glDrawRangeElements.arg2;
-    if (!checks_attributes(min, max - min + 1, call->generic.id))
+    if (!checks_attributes(min, max - min + 1, 0, 1, call->generic.id))
         return BUGLE_FALSE;
     return BUGLE_TRUE;
 }
@@ -808,7 +831,7 @@ static bugle_bool checks_glMultiDrawArrays(function_call *call, const callback_d
     if (!valid_read_range(count_ptr, sizeof(GLsizei) * count, "count array", -1, call->generic.id))
         return BUGLE_FALSE;
     for (i = 0; i < count; i++)
-        if (!checks_attributes(first_ptr[i], count_ptr[i], call->generic.id))
+        if (!checks_attributes(first_ptr[i], count_ptr[i], 0, 1, call->generic.id))
             return BUGLE_FALSE;
     return BUGLE_TRUE;
 }
@@ -842,11 +865,57 @@ static bugle_bool checks_glMultiDrawElements(function_call *call, const callback
                          "index array", -1, call->generic.id))
             return BUGLE_FALSE;
         if (checks_min_max(count, type, indices_ptr[i], &min, &max))
-            if (!checks_attributes(min, max - min + 1, call->generic.id))
+            if (!checks_attributes(min, max - min + 1, 0, 1, call->generic.id))
                 return BUGLE_FALSE;
     }
     return BUGLE_TRUE;
 }
+
+#ifdef GL_EXT_draw_instanced
+static bugle_bool checks_glDrawArraysInstanced(function_call *call, const callback_data *data)
+{
+    if (*call->glDrawArraysInstancedEXT.arg1 < 0)
+    {
+        bugle_log("checks", "error", BUGLE_LOG_NOTICE,
+                  "glDrawArraysInstanced called with a negative argument; call will be ignored.");
+        return BUGLE_FALSE;
+    }
+
+    if (bugle_gl_in_begin_end())
+        return BUGLE_TRUE;
+
+    checks_completeness();
+    return checks_attributes(*call->glDrawArraysInstancedEXT.arg1, *call->glDrawArraysInstancedEXT.arg2,
+                             0, *call->glDrawArraysInstancedEXT.arg3,
+                             call->generic.id);
+}
+
+static bugle_bool checks_glDrawElementsInstanced(function_call *call, const callback_data *data)
+{
+    GLsizei count;
+    GLenum type;
+    const GLvoid *indices;
+    GLuint min, max;
+
+    if (bugle_gl_in_begin_end())
+        return BUGLE_TRUE;
+
+    count = *call->glDrawElementsInstancedEXT.arg1;
+    type = *call->glDrawElementsInstancedEXT.arg2;
+    indices = *call->glDrawElementsInstancedEXT.arg3;
+    checks_completeness();
+    if (!valid_range(indices, count * bugle_gl_type_to_size(type),
+        GL_ELEMENT_ARRAY_BUFFER_BINDING,
+        "index array", -1, call->generic.id))
+        return BUGLE_FALSE;
+    if (checks_min_max(count, type, indices, &min, &max))
+        if (!checks_attributes(min, max - min + 1,
+                               0, *call->glDrawElementsInstanced.arg4,
+                               call->generic.id))
+            return BUGLE_FALSE;
+    return BUGLE_TRUE;
+}
+#endif /* GL_EXT_draw_instanced */
 
 /* OpenGL defines certain calls to be illegal inside glBegin/glEnd but
  * allows undefined behaviour when it happens (these are client-side calls).
@@ -952,6 +1021,10 @@ static bugle_bool checks_initialise(filter_set *handle)
     bugle_filter_catches(f, "glDrawRangeElements", BUGLE_FALSE, checks_glDrawRangeElements);
     bugle_filter_catches(f, "glMultiDrawArrays", BUGLE_FALSE, checks_glMultiDrawArrays);
     bugle_filter_catches(f, "glMultiDrawElements", BUGLE_FALSE, checks_glMultiDrawElements);
+#ifdef GL_EXT_draw_instanced
+    bugle_filter_catches(f, "glDrawArraysInstancedEXT", BUGLE_FALSE, checks_glDrawArraysInstanced);
+    bugle_filter_catches(f, "glDrawElementsInstancedEXT", BUGLE_FALSE, checks_glDrawElementsInstanced);
+#endif
     /* Checks that we are outside begin/end */
     bugle_filter_catches(f, "glEnableClientState", BUGLE_FALSE, checks_no_begin_end);
     bugle_filter_catches(f, "glDisableClientState", BUGLE_FALSE, checks_no_begin_end);
@@ -1007,7 +1080,7 @@ static bugle_bool checks_initialise(filter_set *handle)
     bugle_filter_catches(f, "glMultiTexCoord4iv", BUGLE_FALSE, checks_glMultiTexCoord);
     bugle_filter_catches(f, "glMultiTexCoord4fv", BUGLE_FALSE, checks_glMultiTexCoord);
     bugle_filter_catches(f, "glMultiTexCoord4dv", BUGLE_FALSE, checks_glMultiTexCoord);
-#endif
+#endif /* GL 1.1 */
 
     /* FIXME: still perhaps to do:
      * - check for passing a glMapBuffer region to a command
