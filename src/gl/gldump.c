@@ -246,6 +246,10 @@ int bugle_gl_format_to_count(GLenum format, GLenum type)
 #ifdef GL_EXT_texture_integer
         case GL_LUMINANCE_ALPHA_INTEGER_EXT:
 #endif
+#ifdef GL_ARB_texture_rg
+        case GL_RG:
+        case GL_RG_INTEGER:
+#endif
             return 2;
         case GL_RGB:
         case GL_BGR:

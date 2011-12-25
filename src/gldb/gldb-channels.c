@@ -40,7 +40,7 @@ gldb_channel_table_entry gldb_channel_table[] =
      */
     { GLDB_CHANNEL_LUMINANCE, GL_LUMINANCE,       GL_LUMINANCE,       GL_LUMINANCE, GL_TEXTURE_LUMINANCE_SIZE, 0,               "L", "Luminance" },
     { GLDB_CHANNEL_INTENSITY, GL_INTENSITY,       0,                  GL_INTENSITY, GL_TEXTURE_INTENSITY_SIZE, 0,               "I", "Intensity" },
-    { GLDB_CHANNEL_RED,       GL_RED,             GL_RED,             GL_LUMINANCE, GL_TEXTURE_RED_SIZE,       GL_RED_BITS,     "R", "Red" },
+    { GLDB_CHANNEL_RED,       GL_RED,             GL_RED,             GL_RED,       GL_TEXTURE_RED_SIZE,       GL_RED_BITS,     "R", "Red" },
     { GLDB_CHANNEL_GREEN,     GL_GREEN,           GL_GREEN,           GL_LUMINANCE, GL_TEXTURE_GREEN_SIZE,     GL_GREEN_BITS,   "G", "Green" },
     { GLDB_CHANNEL_BLUE,      GL_BLUE,            GL_BLUE,            GL_LUMINANCE, GL_TEXTURE_BLUE_SIZE,      GL_BLUE_BITS,    "B", "Blue" },
     { GLDB_CHANNEL_ALPHA,     GL_ALPHA,           GL_ALPHA,           GL_LUMINANCE, GL_TEXTURE_ALPHA_SIZE,     GL_ALPHA_BITS,   "A", "Alpha" },
@@ -53,6 +53,9 @@ gldb_channel_table_entry gldb_channel_table[] =
     { GLDB_CHANNEL_COLOR_INDEX, 0,                GL_COLOR_INDEX,     GL_LUMINANCE, 0,                         GL_INDEX_BITS,   "C", "Color" },
 
     /* Composites */
+#ifdef GL_ARB_texture_rg
+    { GLDB_CHANNEL_RG,        GL_RG,              GL_RG,              GL_RG,        0,                         0,               "RG", "RG" },
+#endif
     { GLDB_CHANNEL_RGB,       GL_RGB,             GL_RGB,             GL_RGB,       0,                         0,               "RGB", "RGB" },
     { GLDB_CHANNEL_RGBA,      GL_RGBA,            GL_RGBA,            GL_RGBA,      0,                         0,               "RGBA", "RGBA" },
     { GLDB_CHANNEL_LUMINANCE_ALPHA, GL_LUMINANCE_ALPHA, GL_LUMINANCE_ALPHA, GL_LUMINANCE_ALPHA, 0,             0,               "LA", "Luminance-Alpha" },
