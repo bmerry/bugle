@@ -1,0 +1,4 @@
+EXTRATYPE GLhalfARB
+EXTRATYPE pGLhalfARB
+
+DUMP TYPE GLhalfARB bugle_dump_GLhalf($$, $W)

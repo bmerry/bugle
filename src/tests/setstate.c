@@ -182,6 +182,42 @@ static void set_map_buffer_range(void)
     }
 }
 
+static void set_half_float_pixel(void)
+{
+#ifdef GL_ARB_half_float_pixel
+    if (GLEW_ARB_half_float_pixel)
+    {
+        const GLushort values[9] =
+        {
+            0x0000,   /* 0.0 */
+            0x8000,   /* -0.0 */
+            0x0001,   /* 1p-24 */
+            0x8010,   /* -1p-20 */
+            0x3c00,   /* 1.0 */
+            0xbe00,   /* -1.5 */
+            0xffff,   /* NaN */
+            0x7c00,   /* Inf */
+            0xfc00    /* -Inf */
+        };
+
+        GLuint tex;
+        glGenTextures(1, &tex);
+        test_log_printf("trace\\.call: glGenTextures\\(1, %p -> { %u }\\)\n",
+                        &tex, (unsigned int) tex);
+        glBindTexture(GL_TEXTURE_2D, tex);
+        test_log_printf("trace\\.call: glBindTexture\\(GL_TEXTURE_2D, %u\\)\n",
+                        (unsigned int) tex);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, 9, 1, 0, GL_RED, GL_HALF_FLOAT_ARB, values);
+        test_log_printf("trace\\.call: glTexImage2D\\(GL_TEXTURE_2D, 0, GL_RED, 9, 1, 0, GL_RED, GL_HALF_FLOAT(_ARB)?, %p -> { 0, -0, 5.96046e-08, -9.53674e-07, 1, -1.5, NaN, Inf, -Inf }\\)\n",
+                        &values);
+    }
+    else
+#endif
+    {
+        test_skipped("GL_ARB_half_float_pixel required");
+    }
+}
+
 void setstate_suite_register(void)
 {
     test_suite *ts = test_suite_new("setstate", TEST_FLAG_LOG | TEST_FLAG_CONTEXT, NULL, NULL);
@@ -194,4 +230,5 @@ void setstate_suite_register(void)
     test_suite_add_test(ts, "material_state", set_material_state);
     test_suite_add_test(ts, "matrices", set_matrices);
     test_suite_add_test(ts, "map_buffer_range", set_map_buffer_range);
+    test_suite_add_test(ts, "half_float_pixel", set_half_float_pixel);
 }

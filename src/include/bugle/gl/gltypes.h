@@ -40,6 +40,7 @@ bugle_bool bugle_dump_GLerror(GLenum e, bugle_io_writer *writer);
 bugle_bool bugle_dump_GLboolean(GLboolean b, bugle_io_writer *writer);
 bugle_bool bugle_dump_GLpolygonstipple(const GLubyte (*pattern)[4], bugle_io_writer *writer);
 bugle_bool bugle_dump_GLxfbattrib(const GLxfbattrib *a, bugle_io_writer *writer);
+bugle_bool bugle_dump_GLhalf(GLhalfARB h, bugle_io_writer *writer);
 
 #ifdef __cplusplus
 }

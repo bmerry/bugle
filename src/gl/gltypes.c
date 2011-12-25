@@ -25,6 +25,7 @@
 #include <budgie/reflect.h>
 #include <bugle/apireflect.h>
 #include <bugle/gl/gltypes.h>
+#include <math.h>
 
 bugle_bool bugle_dump_GLenum(GLenum e, bugle_io_writer *writer)
 {
@@ -122,5 +123,28 @@ bugle_bool bugle_dump_GLxfbattrib(const GLxfbattrib *a, bugle_io_writer *writer)
     bugle_io_puts("{ ", writer);
     bugle_dump_GLenum(a->attribute, writer);
     bugle_io_printf(writer, ", %d, %d }", (int) a->components, (int) a->index);
+    return BUGLE_TRUE;
+}
+
+bugle_bool bugle_dump_GLhalf(GLhalfARB h, bugle_io_writer *writer)
+{
+    int s = h >> 15;
+    int e = (h >> 10) & 0x1f;
+    int m = h & 0x3ff;
+    float f;
+    if (e == 31 && m != 0)
+        bugle_io_puts("NaN", writer);
+    else if (e == 31)
+        bugle_io_puts(s ? "-Inf" : "Inf", writer);
+    else
+    {
+        if (e == 0)
+            f = ldexp((double) m, -24);   /* denorm or zero */
+        else
+            f = ldexp(1024.0 + m, e - 25);
+        if (s)
+            f = -f;
+        bugle_io_printf(writer, "%g", f);
+    }
     return BUGLE_TRUE;
 }

@@ -89,6 +89,10 @@ budgie_type bugle_gl_type_to_type(GLenum gl_type)
         return TYPE_5GLint;
     case GL_FLOAT:
         return TYPE_7GLfloat;
+#ifdef GL_ARB_half_float_pixel
+    case GL_HALF_FLOAT_ARB:
+        return TYPE_9GLhalfARB;
+#endif
     case GL_DOUBLE:
         return TYPE_8GLdouble;
     case GL_FLOAT_VEC2: return TYPE_6GLvec2; break;
@@ -211,6 +215,9 @@ int bugle_gl_format_to_count(GLenum format, GLenum type)
     case GL_UNSIGNED_INT:
     case GL_INT:
     case GL_FLOAT:
+#ifdef GL_ARB_half_float_pixel
+    case GL_HALF_FLOAT_ARB:
+#endif
         /* Note: GL_DOUBLE is not a legal value */
         switch (format)
         {

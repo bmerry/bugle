@@ -73,6 +73,9 @@ typedef GLmat4x3 *pGLmat4x3;
 typedef GLubyte *pGLubyte;
 typedef GLushort *pGLushort;
 typedef GLuint *pGLuint;
+#ifdef GL_ARB_half_float_pixel
+typedef GLhalfARB *pGLhalfARB;
+#endif
 
 typedef GLubyte **ppGLubyte;
 typedef GLushort **ppGLushort;

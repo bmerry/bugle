@@ -374,6 +374,7 @@ package_sources.extend([
     'src/bc/SConscript',
     'src/bc/egl/egl.bc',
     'src/bc/gl/GL_ARB_draw_elements_base_vertex.bc',
+    'src/bc/gl/GL_ARB_half_float_pixel.bc',
     'src/bc/gl/GL_ARB_imaging.bc',
     'src/bc/gl/GL_ARB_map_buffer_range.bc',
     'src/bc/gl/GL_ARB_multitexture.bc',

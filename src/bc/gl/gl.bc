@@ -8,6 +8,7 @@ LIMIT gl[A-Z][a-z].*
 
 INCLUDE bc/gl/core1_1.bc
 INCLUDE bc/gl/GL_ARB_draw_elements_base_vertex.bc
+INCLUDE bc/gl/GL_ARB_half_float_pixel.bc
 INCLUDE bc/gl/GL_ARB_imaging.bc
 INCLUDE bc/gl/GL_ARB_map_buffer_range.bc
 INCLUDE bc/gl/GL_ARB_multitexture.bc
