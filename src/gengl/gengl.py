@@ -266,6 +266,7 @@ class GLAPI(API):
             )$''', re.VERBOSE)
 
     _extension_children = {
+        "GL_APPLE_flush_buffer_range": ["GL_ARB_map_buffer_range"],
         "GL_ATI_draw_buffers": ["GL_ARB_draw_buffers"],
         "GL_ATI_stencil_two_side": ["GL_EXT_stencil_two_side"],
         "GL_ARB_ES2_compatibility": ["GL_VERSION_4_1"],
@@ -357,9 +358,12 @@ class GLAPI(API):
         "GL_EXT_blend_func_separate": ["GL_VERSION_1_4", "GL_ES_VERSION_2_0"],
         "GL_EXT_draw_range_elements": ["GL_VERSION_1_2"],
         "GL_EXT_fog_coord": ["GL_VERSION_1_4"],
+        "GL_EXT_framebuffer_blit": ["GL_ARB_framebuffer_object"],
         "GL_EXT_framebuffer_object": ["GL_ES_VERSION_2_0", "GL_ARB_framebuffer_object"],
+        "GL_EXT_framebuffer_multisample": ["GL_ARB_framebuffer_object"],
         "GL_EXT_framebuffer_sRGB": ["GL_ARB_framebuffer_sRGB"],
         "GL_EXT_multi_draw_arrays": ["GL_VERSION_1_4"],
+        "GL_EXT_packed_depth_stencil": ["GL_VERSION_3_0"],
         "GL_EXT_packed_pixels": ["GL_VERSION_1_2"],
         "GL_EXT_pixel_buffer_object": ["GL_ARB_pixel_buffer_object"],
         "GL_EXT_point_parameters": ["GL_ARB_point_parameters"],
@@ -374,6 +378,7 @@ class GLAPI(API):
         "GL_EXT_texture_cube_map": ["GL_ARB_texture_cube_map"],
         "GL_EXT_texture_env_combine": ["GL_ARB_texture_env_combine"],
         "GL_EXT_texture_filter_anisotropic": [],
+        "GL_EXT_texture_integer": ["GL_VERSION_3_0"],
         "GL_EXT_texture_lod_bias": ["GL_VERSION_1_4"],
         "GL_EXT_texture_rectangle": ["GL_ARB_texture_rectangle"],
         "GL_EXT_texture_sRGB": ["GL_VERSION_2_1"],
