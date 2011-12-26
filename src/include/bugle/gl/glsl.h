@@ -57,4 +57,4 @@ BUGLE_EXPORT_PRE GLboolean bugle_glIsProgram(GLuint program) BUGLE_EXPORT_POST;
 }
 #endif
 
-#endif /* !BUGLE_SRC_GLSL_H */
+#endif /* !BUGLE_GL_GLSL_H */
