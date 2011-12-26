@@ -33,6 +33,8 @@
 #include <bugle/string.h>
 #include <bugle/memory.h>
 #include <bugle/porting.h>
+#include <bugle/math.h>
+#include <math.h>
 #include "gldb/gldb-gui.h"
 #include "gldb/gldb-gui-buffer.h"
 
@@ -88,6 +90,7 @@ static gboolean parse_format_letter(gchar letter, GType *column, budgie_type *fi
     case 'i': *column = G_TYPE_INT; *field = BUDGIE_TYPE_ID(5GLint); break;
     case 'I': *column = G_TYPE_INT; *field = BUDGIE_TYPE_ID(6GLuint); break;
     case 'f': *column = G_TYPE_FLOAT; *field = BUDGIE_TYPE_ID(7GLfloat); break;
+    case 'h': *column = G_TYPE_FLOAT; *field = BUDGIE_TYPE_ID(9GLhalfARB); break;
 #if BUGLE_GLTYPE_GL
     case 'd': *column = G_TYPE_DOUBLE; *field = BUDGIE_TYPE_ID(8GLdouble); break;
 #endif
@@ -195,6 +198,28 @@ static gboolean parse_format(const gchar *format,
     return TRUE;
 }
 
+static float half_to_float(guint16 h)
+{
+    int s = h >> 15;
+    int e = (h >> 10) & 0x1f;
+    int m = h & 0x3ff;
+    float f;
+    if (e == 31 && m != 0)
+        return bugle_nan();
+    else if (e == 31)
+        return s ? HUGE_VAL : -HUGE_VAL;
+    else
+    {
+        if (e == 0)
+            f = ldexp((double) m, -24);   /* denorm or zero */
+        else
+            f = ldexp(1024.0 + m, e - 25);
+        if (s)
+            f = -f;
+        return f;
+    }
+}
+
 static void gldb_buffer_pane_update_data(GldbBufferPane *pane)
 {
     guint i;
@@ -260,8 +285,17 @@ static void gldb_buffer_pane_update_data(GldbBufferPane *pane)
                         gtk_list_store_set(pane->data_store, &iter, column, (guint) uint_value, -1);
                         break;
                     case G_TYPE_FLOAT:
-                        budgie_type_convert(&float_value, BUDGIE_TYPE_ID(f),
-                                            &aligned.store, pane->fields[i], 1);
+                        if (pane->fields[i] == BUDGIE_TYPE_ID(9GLhalfARB))
+                        {
+                            guint16 h;
+                            memcpy(&h, &aligned.store, sizeof(h));
+                            float_value = half_to_float(h);
+                        }
+                        else
+                        {
+                            budgie_type_convert(&float_value, BUDGIE_TYPE_ID(f),
+                                                &aligned.store, pane->fields[i], 1);
+                        }
                         gtk_list_store_set(pane->data_store, &iter, column, (gfloat) float_value, -1);
                         break;
 #if BUGLE_GLTYPE_GL
@@ -502,6 +536,7 @@ GldbPane *gldb_buffer_pane_new(void)
         "i = int\n"
         "I = uint\n"
         "f = float\n"
+        "h = half\n"
 #ifdef BUGLE_GLTYPE_GL
         "d = double\n"
 #endif
