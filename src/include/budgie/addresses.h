@@ -73,7 +73,7 @@ static inline BUDGIEAPIPROC _budgie_function_address_get_real(budgie_function id
     return id == -1 ? symbol : budgie_function_address_real(id);
 }
 
-/* Note: it's tempting to put to put 'name' instead of NULL (and this was
+/* Note: it's tempting to put 'name' instead of NULL (and this was
  * originally done). However, there is no guarantee that the symbol will
  * actually exist (unless bugle overrides it, in which case BUDGIE_FUNCTION_ID
  * will succeed anyway), and undefined symbols are not always valid.
