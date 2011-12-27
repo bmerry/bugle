@@ -594,15 +594,6 @@ static bugle_bool send_data_framebuffer(bugle_uint32_t id, GLuint fbo, GLenum ta
     if ((GLint) fbo != old_fbo)
         bugle_glBindFramebuffer(fbo_target, fbo);
 
-    /* Note: GL_READ_BUFFER belongs to the FBO where an application-created
-     * FBO is in use. Thus, we must save the old value even if we are
-     * using the aux context. We're also messing with shared object state,
-     * so if anyone was insane enough to be using the FBO for readback in
-     * another thread at the same time, things might go pear-shaped. The
-     * workaround would be to query all the bindings of the FBO and clone
-     * a brand new FBO, but that seems like a lot of work and quite
-     * fragile to future changes in the way FBO's are handled.
-     */
 #if BUGLE_GLTYPE_GL
     if (format != GL_DEPTH_COMPONENT && format != GL_STENCIL_INDEX)
     {
@@ -622,7 +613,7 @@ static bugle_bool send_data_framebuffer(bugle_uint32_t id, GLuint fbo, GLenum ta
 #if BUGLE_GLTYPE_GL
     if (format != GL_DEPTH_COMPONENT && format != GL_STENCIL_INDEX)
         CALL(glReadBuffer)(old_read_buffer);
-#endif /* GL_VERSION_1_1 */
+#endif
     if ((GLint) fbo != old_fbo)
         bugle_glBindFramebuffer(fbo_target, old_fbo);
     pixel_pack_restore(&old_pack);
