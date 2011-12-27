@@ -44,6 +44,7 @@
 #include <bugle/gl/glutils.h>
 #include <bugle/gl/globjects.h>
 #include <bugle/gl/glextensions.h>
+#include <bugle/gl/glfbo.h>
 #include <budgie/types.h>
 #include <budgie/reflect.h>
 #include <budgie/call.h>
@@ -1765,11 +1766,11 @@ static const state_info global_state[] =
 #ifdef GL_IBM_rasterpos_clip
     { STATE_NAME(GL_RASTER_POSITION_UNCLIPPED_IBM), TYPE_9GLboolean, -1, BUGLE_GL_IBM_rasterpos_clip, -1, STATE_ENABLED },
 #endif
-#ifdef GL_EXT_framebuffer_object
-    { STATE_NAME(GL_RENDERBUFFER_BINDING_EXT), TYPE_5GLint, -1, BUGLE_GL_EXT_framebuffer_object, -1, STATE_GLOBAL },
-    { STATE_NAME(GL_FRAMEBUFFER_BINDING_EXT), TYPE_5GLint, -1, BUGLE_GL_EXT_framebuffer_object, -1, STATE_GLOBAL },
-    { STATE_NAME(GL_MAX_RENDERBUFFER_SIZE_EXT), TYPE_5GLint, -1, BUGLE_GL_EXT_framebuffer_object, -1, STATE_GLOBAL },
-#endif
+    { STATE_NAME(GL_RENDERBUFFER_BINDING), TYPE_5GLint, -1, BUGLE_GL_EXT_framebuffer_object, -1, STATE_GLOBAL },
+    { STATE_NAME(GL_DRAW_FRAMEBUFFER_BINDING), TYPE_5GLint, -1, BUGLE_GL_EXT_framebuffer_blit, -1, STATE_GLOBAL },
+    { STATE_NAME(GL_READ_FRAMEBUFFER_BINDING), TYPE_5GLint, -1, BUGLE_GL_EXT_framebuffer_blit, -1, STATE_GLOBAL },
+    { STATE_NAME(GL_FRAMEBUFFER_BINDING), TYPE_5GLint, -1, BUGLE_GL_EXT_framebuffer_object, BUGLE_GL_EXT_framebuffer_blit, STATE_GLOBAL },
+    { STATE_NAME(GL_MAX_RENDERBUFFER_SIZE), TYPE_5GLint, -1, BUGLE_GL_EXT_framebuffer_object, -1, STATE_GLOBAL },
 #ifdef GL_EXT_depth_bounds_test
     { STATE_NAME(GL_DEPTH_BOUNDS_TEST_EXT), TYPE_9GLboolean, -1, BUGLE_GL_EXT_depth_bounds_test, -1, STATE_ENABLED },
     { STATE_NAME(GL_DEPTH_BOUNDS_EXT), TYPE_8GLdouble, 2, BUGLE_GL_EXT_depth_bounds_test, -1, STATE_GLOBAL },
@@ -1799,10 +1800,11 @@ static const state_info global_state[] =
 #ifdef GL_EXT_packed_float
     { STATE_NAME(GL_RGBA_SIGNED_COMPONENTS_EXT), TYPE_9GLboolean, 4, BUGLE_GL_EXT_packed_float, -1, STATE_GLOBAL },
 #endif
-#ifdef GL_EXT_framebuffer_sRGB
-    { STATE_NAME(GL_FRAMEBUFFER_SRGB_CAPABLE_EXT), TYPE_9GLboolean, 4, BUGLE_GL_EXT_framebuffer_sRGB, -1, STATE_GLOBAL },
+    /* EXT_framebuffer_sRGB is not a strict subset of ARB_framebuffer_sRGB, hence
+     * the two variants of this state (one suppressing the other).
+     */
     { STATE_NAME(GL_FRAMEBUFFER_SRGB_EXT), TYPE_9GLboolean, -1, BUGLE_GL_EXT_framebuffer_sRGB, -1, STATE_ENABLED },
-#endif
+    { STATE_NAME(GL_FRAMEBUFFER_SRGB), TYPE_9GLboolean, -1, BUGLE_GL_ARB_framebuffer_sRGB, BUGLE_GL_EXT_framebuffer_sRGB, STATE_ENABLED },
 #ifdef GL_NV_transform_feedback
     /* glext.h gets the name wrong */
 #ifdef GL_MAX_TRANSFORM_FEEDBACK_INTERLEAVED_COMPONENTS_NV
@@ -1905,36 +1907,32 @@ static const state_info query_object_state[] =
 
 static const state_info buffer_parameter_state[] =
 {
+    /* Note: the access flags, offset and length are new in GL 3.0, and were
+     * not backported to ARB_map_buffer_range even though it sets the state.
+     */
     { STATE_NAME(GL_BUFFER_SIZE), TYPE_5GLint, -1, BUGLE_GL_ARB_vertex_buffer_object, -1, STATE_BUFFER_PARAMETER },
     { STATE_NAME(GL_BUFFER_USAGE), TYPE_6GLenum, -1, BUGLE_GL_ARB_vertex_buffer_object, -1, STATE_BUFFER_PARAMETER },
     { STATE_NAME(GL_BUFFER_ACCESS), TYPE_6GLenum, -1, BUGLE_GL_ARB_vertex_buffer_object, -1, STATE_BUFFER_PARAMETER },
-#ifdef GL_VERSION_3_0
     { STATE_NAME(GL_BUFFER_ACCESS_FLAGS), TYPE_20mapbufferrangeaccess, -1, BUGLE_GL_VERSION_3_0, -1, STATE_BUFFER_PARAMETER },
-#endif
     { STATE_NAME(GL_BUFFER_MAPPED), TYPE_9GLboolean, -1, BUGLE_GL_ARB_vertex_buffer_object, -1, STATE_BUFFER_PARAMETER },
     { STATE_NAME(GL_BUFFER_MAP_POINTER), TYPE_P6GLvoid, -1, BUGLE_GL_ARB_vertex_buffer_object, -1, STATE_BUFFER_PARAMETER },
-#ifdef GL_VERSION_3_0
     { STATE_NAME(GL_BUFFER_MAP_OFFSET), TYPE_5GLint, -1, BUGLE_GL_VERSION_3_0, -1, STATE_BUFFER_PARAMETER },
     { STATE_NAME(GL_BUFFER_MAP_LENGTH), TYPE_5GLint, -1, BUGLE_GL_VERSION_3_0, -1, STATE_BUFFER_PARAMETER },
-#endif
     { NULL, GL_NONE, NULL_TYPE, 0, -1, -1, 0 }
 };
 
 static const state_info renderbuffer_parameter_state[] =
 {
-#ifdef GL_EXT_framebuffer_object
-    { STATE_NAME(GL_RENDERBUFFER_WIDTH_EXT), TYPE_5GLint, -1, BUGLE_GL_EXT_framebuffer_object, -1, STATE_RENDERBUFFER_PARAMETER },
-    { STATE_NAME(GL_RENDERBUFFER_HEIGHT_EXT), TYPE_5GLint, -1, BUGLE_GL_EXT_framebuffer_object, -1, STATE_RENDERBUFFER_PARAMETER },
-    { STATE_NAME(GL_RENDERBUFFER_INTERNAL_FORMAT_EXT), TYPE_6GLenum, -1, BUGLE_GL_EXT_framebuffer_object, -1, STATE_RENDERBUFFER_PARAMETER },
-#ifdef GL_RENDERBUFFER_RED_SIZE_EXT /* glext.h version 26 is missing these */
-    { STATE_NAME(GL_RENDERBUFFER_RED_SIZE_EXT), TYPE_5GLint, -1, BUGLE_GL_EXT_framebuffer_object, -1, STATE_RENDERBUFFER_PARAMETER },
-    { STATE_NAME(GL_RENDERBUFFER_GREEN_SIZE_EXT), TYPE_5GLint, -1, BUGLE_GL_EXT_framebuffer_object, -1, STATE_RENDERBUFFER_PARAMETER },
-    { STATE_NAME(GL_RENDERBUFFER_BLUE_SIZE_EXT), TYPE_5GLint, -1, BUGLE_GL_EXT_framebuffer_object, -1, STATE_RENDERBUFFER_PARAMETER },
-    { STATE_NAME(GL_RENDERBUFFER_ALPHA_SIZE_EXT), TYPE_5GLint, -1, BUGLE_GL_EXT_framebuffer_object, -1, STATE_RENDERBUFFER_PARAMETER },
-    { STATE_NAME(GL_RENDERBUFFER_DEPTH_SIZE_EXT), TYPE_5GLint, -1, BUGLE_GL_EXT_framebuffer_object, -1, STATE_RENDERBUFFER_PARAMETER },
-    { STATE_NAME(GL_RENDERBUFFER_STENCIL_SIZE_EXT), TYPE_5GLint, -1, BUGLE_GL_EXT_framebuffer_object, -1, STATE_RENDERBUFFER_PARAMETER },
-#endif
-#endif
+    { STATE_NAME(GL_RENDERBUFFER_WIDTH), TYPE_5GLint, -1, BUGLE_GL_EXT_framebuffer_object, -1, STATE_RENDERBUFFER_PARAMETER },
+    { STATE_NAME(GL_RENDERBUFFER_HEIGHT), TYPE_5GLint, -1, BUGLE_GL_EXT_framebuffer_object, -1, STATE_RENDERBUFFER_PARAMETER },
+    { STATE_NAME(GL_RENDERBUFFER_INTERNAL_FORMAT), TYPE_6GLenum, -1, BUGLE_GL_EXT_framebuffer_object, -1, STATE_RENDERBUFFER_PARAMETER },
+    { STATE_NAME(GL_RENDERBUFFER_RED_SIZE), TYPE_5GLint, -1, BUGLE_GL_EXT_framebuffer_object, -1, STATE_RENDERBUFFER_PARAMETER },
+    { STATE_NAME(GL_RENDERBUFFER_GREEN_SIZE), TYPE_5GLint, -1, BUGLE_GL_EXT_framebuffer_object, -1, STATE_RENDERBUFFER_PARAMETER },
+    { STATE_NAME(GL_RENDERBUFFER_BLUE_SIZE), TYPE_5GLint, -1, BUGLE_GL_EXT_framebuffer_object, -1, STATE_RENDERBUFFER_PARAMETER },
+    { STATE_NAME(GL_RENDERBUFFER_ALPHA_SIZE), TYPE_5GLint, -1, BUGLE_GL_EXT_framebuffer_object, -1, STATE_RENDERBUFFER_PARAMETER },
+    { STATE_NAME(GL_RENDERBUFFER_DEPTH_SIZE), TYPE_5GLint, -1, BUGLE_GL_EXT_framebuffer_object, -1, STATE_RENDERBUFFER_PARAMETER },
+    { STATE_NAME(GL_RENDERBUFFER_STENCIL_SIZE), TYPE_5GLint, -1, BUGLE_GL_EXT_framebuffer_object, -1, STATE_RENDERBUFFER_PARAMETER },
+    { STATE_NAME(GL_RENDERBUFFER_SAMPLES), TYPE_5GLint, -1, BUGLE_GL_EXT_framebuffer_multisample, -1, STATE_RENDERBUFFER_PARAMETER },
     { NULL, GL_NONE, NULL_TYPE, 0, -1, -1, 0 }
 };
 
@@ -1943,7 +1941,6 @@ static const state_info renderbuffer_parameter_state[] =
  */
 static const state_info framebuffer_parameter_state[] =
 {
-#ifdef GL_EXT_framebuffer_object
     { STATE_NAME(GL_DRAW_BUFFER), TYPE_6GLenum, -1, BUGLE_GL_VERSION_1_1, BUGLE_GL_ATI_draw_buffers, STATE_FRAMEBUFFER_PARAMETER },
     { STATE_NAME(GL_DRAW_BUFFER0), TYPE_6GLenum, -1, BUGLE_GL_ATI_draw_buffers, -1, STATE_FRAMEBUFFER_PARAMETER, spawn_draw_buffers },
     { STATE_NAME(GL_DRAW_BUFFER), TYPE_6GLenum, -1, BUGLE_GL_VERSION_1_1, -1, STATE_FRAMEBUFFER_PARAMETER },
@@ -1967,26 +1964,30 @@ static const state_info framebuffer_parameter_state[] =
     { STATE_NAME(GL_ACCUM_BLUE_BITS), TYPE_5GLint, -1, BUGLE_GL_VERSION_1_1, -1, STATE_FRAMEBUFFER_PARAMETER },
     { STATE_NAME(GL_ACCUM_ALPHA_BITS), TYPE_5GLint, -1, BUGLE_GL_VERSION_1_1, -1, STATE_FRAMEBUFFER_PARAMETER },
     { STATE_NAME(GL_STENCIL_REF), TYPE_5GLint, -1, BUGLE_GL_VERSION_1_1, -1, STATE_FRAMEBUFFER_PARAMETER },
-    { STATE_NAME(GL_MAX_COLOR_ATTACHMENTS_EXT), TYPE_5GLint, -1, BUGLE_GL_VERSION_1_1, -1, STATE_FRAMEBUFFER_PARAMETER },
-#ifdef GL_EXT_packed_float
+    { STATE_NAME(GL_MAX_COLOR_ATTACHMENTS), TYPE_5GLint, -1, BUGLE_GL_VERSION_1_1, -1, STATE_FRAMEBUFFER_PARAMETER },
+    { STATE_NAME(GL_FRAMEBUFFER_SRGB_CAPABLE_EXT), TYPE_9GLboolean, 4, BUGLE_GL_EXT_framebuffer_sRGB, -1, STATE_FRAMEBUFFER_PARAMETER },
     { STATE_NAME(GL_RGBA_SIGNED_COMPONENTS_EXT), TYPE_9GLboolean, 4, BUGLE_GL_EXT_packed_float, -1, STATE_FRAMEBUFFER_PARAMETER },
-#endif
-#endif /* GL_EXT_framebuffer_object */
     { NULL, GL_NONE, NULL_TYPE, 0, -1, -1, 0 }
 };
 
 static const state_info framebuffer_attachment_parameter_state[] =
 {
-#ifdef GL_EXT_framebuffer_object
-    { STATE_NAME(GL_FRAMEBUFFER_ATTACHMENT_OBJECT_TYPE_EXT), TYPE_6GLenum, -1, BUGLE_GL_EXT_framebuffer_object, -1, STATE_FRAMEBUFFER_ATTACHMENT_PARAMETER },
-    { STATE_NAME(GL_FRAMEBUFFER_ATTACHMENT_OBJECT_NAME_EXT), TYPE_5GLint, -1, BUGLE_GL_EXT_framebuffer_object, -1, STATE_FRAMEBUFFER_ATTACHMENT_PARAMETER },
-    { STATE_NAME(GL_FRAMEBUFFER_ATTACHMENT_TEXTURE_LEVEL_EXT), TYPE_5GLint, -1, BUGLE_GL_EXT_framebuffer_object, -1, STATE_FRAMEBUFFER_ATTACHMENT_PARAMETER },
-    { STATE_NAME(GL_FRAMEBUFFER_ATTACHMENT_TEXTURE_CUBE_MAP_FACE_EXT), TYPE_6GLenum, -1, BUGLE_GL_EXT_framebuffer_object, -1, STATE_FRAMEBUFFER_ATTACHMENT_PARAMETER },
-    { "GL_FRAMEBUFFER_ATTACHMENT_TEXTURE_LAYER_EXT", GL_FRAMEBUFFER_ATTACHMENT_TEXTURE_3D_ZOFFSET_EXT, TYPE_5GLint, -1, BUGLE_GL_EXT_framebuffer_object, -1, STATE_FRAMEBUFFER_ATTACHMENT_PARAMETER },
+    { STATE_NAME(GL_FRAMEBUFFER_ATTACHMENT_OBJECT_TYPE), TYPE_6GLenum, -1, BUGLE_GL_EXT_framebuffer_object, -1, STATE_FRAMEBUFFER_ATTACHMENT_PARAMETER },
+    { STATE_NAME(GL_FRAMEBUFFER_ATTACHMENT_OBJECT_NAME), TYPE_5GLint, -1, BUGLE_GL_EXT_framebuffer_object, -1, STATE_FRAMEBUFFER_ATTACHMENT_PARAMETER },
+    { STATE_NAME(GL_FRAMEBUFFER_ATTACHMENT_TEXTURE_LEVEL), TYPE_5GLint, -1, BUGLE_GL_EXT_framebuffer_object, -1, STATE_FRAMEBUFFER_ATTACHMENT_PARAMETER },
+    { STATE_NAME(GL_FRAMEBUFFER_ATTACHMENT_TEXTURE_CUBE_MAP_FACE), TYPE_6GLenum, -1, BUGLE_GL_EXT_framebuffer_object, -1, STATE_FRAMEBUFFER_ATTACHMENT_PARAMETER },
+    { STATE_NAME(GL_FRAMEBUFFER_ATTACHMENT_TEXTURE_LAYER), TYPE_5GLint, -1, BUGLE_GL_EXT_framebuffer_object, -1, STATE_FRAMEBUFFER_ATTACHMENT_PARAMETER },
+    { STATE_NAME(GL_FRAMEBUFFER_ATTACHMENT_COLOR_ENCODING), TYPE_6GLenum, -1, BUGLE_GL_ARB_framebuffer_object, -1, STATE_FRAMEBUFFER_ATTACHMENT_PARAMETER },
+    { STATE_NAME(GL_FRAMEBUFFER_ATTACHMENT_COMPONENT_TYPE), TYPE_6GLenum, -1, BUGLE_GL_ARB_framebuffer_object, -1, STATE_FRAMEBUFFER_ATTACHMENT_PARAMETER },
+    { STATE_NAME(GL_FRAMEBUFFER_ATTACHMENT_RED_SIZE), TYPE_5GLint, -1, BUGLE_GL_ARB_framebuffer_object, -1, STATE_FRAMEBUFFER_ATTACHMENT_PARAMETER },
+    { STATE_NAME(GL_FRAMEBUFFER_ATTACHMENT_GREEN_SIZE), TYPE_5GLint, -1, BUGLE_GL_ARB_framebuffer_object, -1, STATE_FRAMEBUFFER_ATTACHMENT_PARAMETER },
+    { STATE_NAME(GL_FRAMEBUFFER_ATTACHMENT_BLUE_SIZE), TYPE_5GLint, -1, BUGLE_GL_ARB_framebuffer_object, -1, STATE_FRAMEBUFFER_ATTACHMENT_PARAMETER },
+    { STATE_NAME(GL_FRAMEBUFFER_ATTACHMENT_ALPHA_SIZE), TYPE_5GLint, -1, BUGLE_GL_ARB_framebuffer_object, -1, STATE_FRAMEBUFFER_ATTACHMENT_PARAMETER },
+    { STATE_NAME(GL_FRAMEBUFFER_ATTACHMENT_DEPTH_SIZE), TYPE_5GLint, -1, BUGLE_GL_ARB_framebuffer_object, -1, STATE_FRAMEBUFFER_ATTACHMENT_PARAMETER },
+    { STATE_NAME(GL_FRAMEBUFFER_ATTACHMENT_STENCIL_SIZE), TYPE_5GLint, -1, BUGLE_GL_ARB_framebuffer_object, -1, STATE_FRAMEBUFFER_ATTACHMENT_PARAMETER },
 #ifdef GL_EXT_geometry_shader4
     { STATE_NAME(GL_FRAMEBUFFER_ATTACHMENT_LAYERED_EXT), TYPE_9GLboolean, -1, BUGLE_GL_EXT_geometry_shader4, -1, STATE_FRAMEBUFFER_ATTACHMENT_PARAMETER },
 #endif
-#endif /* GL_EXT_framebuffer_object */
     { NULL, GL_NONE, NULL_TYPE, 0, -1, -1, 0 }
 };
 
@@ -2180,19 +2181,17 @@ void bugle_state_get_raw(const glstate *state, bugle_state_raw *wrapper)
         CALL(glBindProgramARB)(state->target, state->object);
     }
 #endif
-#ifdef GL_EXT_framebuffer_object
     if ((state->info->flags & STATE_MULTIPLEX_BIND_FRAMEBUFFER)
-        && bugle_gl_has_extension_group(BUGLE_GL_EXT_framebuffer_object))
+        && bugle_gl_fbo_support())
     {
         CALL(glGetIntegerv)(state->binding, &old_framebuffer);
-        CALL(glBindFramebufferEXT)(state->target, state->object);
+        bugle_glBindFramebuffer(state->target, state->object);
     }
     if (state->info->flags & STATE_MULTIPLEX_BIND_RENDERBUFFER)
     {
         CALL(glGetIntegerv)(state->binding, &old_renderbuffer);
         CALL(glBindRenderbufferEXT)(state->target, state->object);
     }
-#endif
     if ((state->info->flags & STATE_MULTIPLEX_BIND_TEXTURE)
         && state->binding) /* binding of 0 means a proxy texture */
     {
@@ -2465,18 +2464,16 @@ void bugle_state_get_raw(const glstate *state, bugle_state_raw *wrapper)
             bugle_free(formats);
         }
         break;
-#ifdef GL_EXT_framebuffer_object
     case STATE_MODE_FRAMEBUFFER_ATTACHMENT_PARAMETER:
-        CALL(glGetFramebufferAttachmentParameterivEXT)(state->target,
-                                                      state->level,
-                                                      pname, i);
+        bugle_glGetFramebufferAttachmentParameteriv(state->target,
+                                                    state->level,
+                                                    pname, i);
         in_type = TYPE_5GLint;
         break;
     case STATE_MODE_RENDERBUFFER_PARAMETER:
         CALL(glGetRenderbufferParameterivEXT)(state->target, pname, i);
         in_type = TYPE_5GLint;
         break;
-#endif
     default:
         abort();
     }
@@ -2495,13 +2492,11 @@ void bugle_state_get_raw(const glstate *state, bugle_state_raw *wrapper)
     if (state->info->flags & STATE_MULTIPLEX_BIND_PROGRAM)
         CALL(glBindProgramARB)(state->target, old_program);
 #endif
-#ifdef GL_EXT_framebuffer_object
     if ((state->info->flags & STATE_MULTIPLEX_BIND_FRAMEBUFFER)
         && bugle_gl_has_extension_group(GL_EXT_framebuffer_object))
         CALL(glBindFramebufferEXT)(state->target, old_framebuffer);
     if (state->info->flags & STATE_MULTIPLEX_BIND_RENDERBUFFER)
         CALL(glBindRenderbufferEXT)(state->target, old_renderbuffer);
-#endif
     if ((state->info->flags & STATE_MULTIPLEX_BIND_TEXTURE)
         && state->binding)
         CALL(glBindTexture)(state->target, old_texture);
@@ -2690,7 +2685,6 @@ static void spawn_children_old_program(const glstate *self, linked_list *childre
 }
 #endif /* GL_ARB_vertex_program || GL_ARB_fragment_program */
 
-#ifdef GL_EXT_framebuffer_object
 static void spawn_children_framebuffer_attachment(const glstate *self, linked_list *children)
 {
     bugle_list_init(children, bugle_free);
@@ -2706,9 +2700,10 @@ static void make_framebuffer_attachment(const glstate *self,
     GLint type;
     glstate *child;
 
-    CALL(glGetFramebufferAttachmentParameterivEXT)(self->target, attachment,
-                                                  GL_FRAMEBUFFER_ATTACHMENT_OBJECT_TYPE_EXT,
-                                                  &type);
+    bugle_glGetFramebufferAttachmentParameteriv(
+        self->target, attachment,
+        GL_FRAMEBUFFER_ATTACHMENT_OBJECT_TYPE,
+        &type);
     if (type != GL_NONE)
     {
         child = BUGLE_MALLOC(glstate);
@@ -2732,22 +2727,22 @@ static void spawn_children_framebuffer_object(const glstate *self, linked_list *
 
     bugle_list_init(children, bugle_free);
     CALL(glGetIntegerv)(self->binding, &old);
-    CALL(glBindFramebufferEXT)(self->target, self->object);
+    bugle_glBindFramebuffer(self->target, self->object);
     make_leaves(self, framebuffer_parameter_state, children);
     if (self->object != 0)
     {
-        CALL(glGetIntegerv)(GL_MAX_COLOR_ATTACHMENTS_EXT, &attachments);
+        CALL(glGetIntegerv)(GL_MAX_COLOR_ATTACHMENTS, &attachments);
         for (i = 0; i < attachments; i++)
-            make_framebuffer_attachment(self, GL_COLOR_ATTACHMENT0_EXT + i,
+            make_framebuffer_attachment(self, GL_COLOR_ATTACHMENT0 + i,
                                         "GL_COLOR_ATTACHMENT%ld",
                                         i, children);
-        make_framebuffer_attachment(self, GL_DEPTH_ATTACHMENT_EXT,
+        make_framebuffer_attachment(self, GL_DEPTH_ATTACHMENT,
                                     "GL_DEPTH_ATTACHMENT", -1, children);
-        make_framebuffer_attachment(self, GL_STENCIL_ATTACHMENT_EXT,
+        make_framebuffer_attachment(self, GL_STENCIL_ATTACHMENT,
                                     "GL_STENCIL_ATTACHMENT", -1, children);
     }
 
-    CALL(glBindFramebufferEXT)(self->target, old);
+    bugle_glBindFramebuffer(self->target, old);
 }
 
 static void spawn_children_framebuffer(const glstate *self, linked_list *children)
@@ -2769,9 +2764,7 @@ static void spawn_children_renderbuffer(const glstate *self, linked_list *childr
     make_objects(self, BUGLE_GLOBJECTS_RENDERBUFFER, self->target, BUGLE_FALSE,
                  "%lu", spawn_children_renderbuffer_object, NULL, children);
 }
-#endif /* GL_EXT_framebuffer_object */
 
-#ifdef GL_NV_transform_feedback
 static void spawn_children_transform_feedback_buffer(const glstate *self, linked_list *children)
 {
     bugle_list_init(children, bugle_free);
@@ -2787,7 +2780,6 @@ static void spawn_children_transform_feedback(const glstate *self, linked_list *
     make_counted(self, buffers, "%lu", 0, offsetof(glstate, level),
                  spawn_children_transform_feedback_buffer, NULL, children);
 }
-#endif /* GL_NV_transform_feedback */
 
 static void spawn_children_global(const glstate *self, linked_list *children)
 {
@@ -2811,32 +2803,36 @@ static void spawn_children_global(const glstate *self, linked_list *children)
         make_objects(self, BUGLE_GLOBJECTS_BUFFER, GL_NONE, BUGLE_FALSE,
                      "Buffer[%lu]", spawn_children_buffer_parameter, NULL, children);
     }
-#ifdef GL_ARB_vertex_program
     if (bugle_gl_has_extension_group(BUGLE_GL_ARB_vertex_program))
         make_target(self, "GL_VERTEX_PROGRAM_ARB",
                     GL_VERTEX_PROGRAM_ARB,
                     0, spawn_children_old_program, &enable, children);
-#endif
-#ifdef GL_ARB_fragment_program
     if (bugle_gl_has_extension_group(BUGLE_GL_ARB_fragment_program))
         make_target(self, "GL_FRAGMENT_PROGRAM_ARB",
                     GL_FRAGMENT_PROGRAM_ARB,
                     0, spawn_children_old_program, &enable, children);
-#endif
-#ifdef GL_EXT_framebuffer_object
-    if (bugle_gl_has_extension_group(BUGLE_GL_EXT_framebuffer_object))
+    if (bugle_gl_fbo_support())
     {
-        make_target(self, "GL_FRAMEBUFFER_EXT",
-                    GL_FRAMEBUFFER_EXT,
-                    GL_FRAMEBUFFER_BINDING_EXT,
+        GLenum fbo_target, fbo_binding;
+        if (bugle_gl_has_extension_group(BUGLE_GL_EXT_framebuffer_blit))
+        {
+            fbo_target = GL_DRAW_FRAMEBUFFER;
+            fbo_binding = GL_DRAW_FRAMEBUFFER_BINDING;
+        }
+        else
+        {
+            fbo_target = GL_FRAMEBUFFER;
+            fbo_binding = GL_FRAMEBUFFER_BINDING;
+        }
+        make_target(self, "GL_FRAMEBUFFER",
+                    fbo_target,
+                    fbo_binding,
                     spawn_children_framebuffer, NULL, children);
-        make_target(self, "GL_RENDERBUFFER_EXT",
-                    GL_RENDERBUFFER_EXT,
-                    GL_RENDERBUFFER_BINDING_EXT,
+        make_target(self, "GL_RENDERBUFFER",
+                    GL_RENDERBUFFER,
+                    GL_RENDERBUFFER_BINDING,
                     spawn_children_renderbuffer, NULL, children);
     }
-#endif
-#ifdef GL_NV_transform_feedback
     if (bugle_gl_has_extension_group(BUGLE_GL_NV_transform_feedback))
     {
         make_target(self, "TransformFeedbackBuffers",
@@ -2844,7 +2840,6 @@ static void spawn_children_global(const glstate *self, linked_list *children)
                     GL_TRANSFORM_FEEDBACK_BUFFER_BINDING_NV,
                     spawn_children_transform_feedback, NULL, children);
     }
-#endif
 }
 
 const glstate *bugle_state_get_root(void)

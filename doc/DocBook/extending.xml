@@ -141,16 +141,25 @@
             <para>
                 BuGLe tries to support systems that only have
                 runtime support for <application>OpenGL</application> 1.1, to
-                support the Windows software rasteriser. However, as of July
-                2008, a <filename>glext.h</filename> supporting OpenGL 2.0
-                is a requirement, so you may assume that the reflection system
-                knows about these functions. For any post-2.0 functions,
-                you should favour the
-                <symbol>BUDGIE_GROUP_ID(<replaceable>glFunction</replaceable>)</symbol>
-                definition with the oldest name, which is generally an
-                extension function. You should also protect any such code with
-                a test for the GL extension define e.g.,
-                <symbol>GL_ARB_multitexture</symbol>.
+                support the Windows XP software rasteriser. However, as of
+                December 2011, an up-to-date <filename>glext.h</filename> file
+                is a requirement, so you may assume that the reflection system knows
+                about all functions and enums in the latest version of this file.
+                There is a still a lot of code that pre-dates this policy and which
+                is protected by #ifdefs, but this was found to make the code more
+                difficult to understand and maintain.
+            </para>
+            <para>
+                On the other hand, code that depends on recent OpenGL extensions
+                is unlikely to work on OpenGL ES 1.x or 2.0, and so should be
+                protected by a test for <symbol>BUGLE_GLTYPE_GL</symbol>.
+            </para>
+            <para>
+                When making run-time extension checks, one should generally use
+                <function>BUGLE_GL_HAS_EXTENSION_GROUP</function> applied to the
+                older versions of the extension. This will also return true when
+                newer versions are present (provided that the extension promotion
+                table in <filename>gengl.py</filename> is up to date).
             </para>
         </sect2>
     </sect1>
