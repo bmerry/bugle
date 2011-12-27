@@ -1,5 +1,5 @@
 /*  BuGLe: an OpenGL debugging tool
- *  Copyright (C) 2004-2009  Bruce Merry
+ *  Copyright (C) 2004-2009, 2011  Bruce Merry
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -26,9 +26,11 @@
 #include <bugle/memory.h>
 #include <bugle/glwin/trackcontext.h>
 #include <bugle/gl/glheaders.h>
+#include <bugle/gl/glfbo.h>
 #include <bugle/gl/glutils.h>
 #include <bugle/gl/glsl.h>
 #include <bugle/gl/globjects.h>
+#include <bugle/gl/glfbo.h>
 #include <bugle/filters.h>
 #include <bugle/hashtable.h>
 #include <budgie/types.h>
@@ -43,13 +45,32 @@ typedef struct
 
 /* FIXME: check which types of objects are shared between contexts (all but queries I think) */
 
-static object_view ns_view, call_view;
+static object_view ns_view, context_view, call_view;
+
+static bugle_bool object_type_shared(bugle_globjects_type type)
+{
+    switch (type)
+    {
+    case BUGLE_GLOBJECTS_QUERY:
+    case BUGLE_GLOBJECTS_FRAMEBUFFER:
+        /* ARB_framebuffer_object doesn't allow sharing. This is thus wrong for
+         * EXT_framebuffer_object, but the interactions aren't defined anyway.
+         */
+        return BUGLE_FALSE;
+    default:
+        return BUGLE_TRUE;
+    }
+    return BUGLE_TRUE; /* should never be reached */
+}
 
 static hashptr_table *get_table(bugle_globjects_type type)
 {
     globjects_data *data;
 
-    data = bugle_object_get_current_data(bugle_get_namespace_class(), ns_view);
+    if (object_type_shared(type))
+        data = bugle_object_get_current_data(bugle_get_namespace_class(), ns_view);
+    else
+        data = bugle_object_get_current_data(bugle_get_context_class(), context_view);
     if (!data) return NULL;
     return &data->objects[type];
 }
@@ -372,43 +393,41 @@ static bugle_bool globjects_checks(function_call *call, const callback_data *dat
 }
 #endif /* GLES2 || GL2 */
 
-#ifdef GL_EXT_framebuffer_object
 static bugle_bool globjects_glBindFramebuffer(function_call *call, const callback_data *data)
 {
     globjects_add_single(BUGLE_GLOBJECTS_FRAMEBUFFER,
-                         *call->glBindFramebufferEXT.arg0,
-                         *call->glBindFramebufferEXT.arg1,
-                         CALL(glIsFramebufferEXT));
+                         *(const GLenum *) call->generic.args[0],
+                         *(const GLuint *) call->generic.args[1],
+                         bugle_glIsFramebuffer);
     return BUGLE_TRUE;
 }
 
 static bugle_bool globjects_glDeleteFramebuffers(function_call *call, const callback_data *data)
 {
     globjects_delete_multiple(BUGLE_GLOBJECTS_FRAMEBUFFER,
-                              *call->glDeleteFramebuffersEXT.arg0,
-                              *call->glDeleteFramebuffersEXT.arg1,
-                              CALL(glIsFramebufferEXT));
+                              *(const GLsizei *) call->generic.args[0],
+                              *(const GLuint * const *) call->generic.args[1],
+                              bugle_glIsFramebuffer);
     return BUGLE_TRUE;
 }
 
 static bugle_bool globjects_glBindRenderbuffer(function_call *call, const callback_data *data)
 {
     globjects_add_single(BUGLE_GLOBJECTS_RENDERBUFFER,
-                         *call->glBindRenderbufferEXT.arg0,
-                         *call->glBindRenderbufferEXT.arg1,
-                         CALL(glIsRenderbufferEXT));
+                         *(const GLenum *) call->generic.args[0],
+                         *(const GLuint *) call->generic.args[1],
+                         bugle_glIsFramebuffer);
     return BUGLE_TRUE;
 }
 
 static bugle_bool globjects_glDeleteRenderbuffers(function_call *call, const callback_data *data)
 {
     globjects_delete_multiple(BUGLE_GLOBJECTS_RENDERBUFFER,
-                              *call->glDeleteRenderbuffersEXT.arg0,
-                              *call->glDeleteRenderbuffersEXT.arg1,
-                              CALL(glIsRenderbufferEXT));
+                              *(const GLsizei *) call->generic.args[0],
+                              *(const GLuint * const *) call->generic.args[1],
+                              bugle_glIsFramebuffer);
     return BUGLE_TRUE;
 }
-#endif /* GL_EXT_framebuffer_object */
 
 static void globjects_data_init(const void *key, void *data)
 {
@@ -471,11 +490,28 @@ static bugle_bool globjects_filter_set_initialise(filter_set *handle)
     bugle_filter_catches(f, "glDeleteShader", BUGLE_TRUE, globjects_checks);
     bugle_filter_catches(f, "glDeleteProgram", BUGLE_TRUE, globjects_checks);
 #endif
+
+    /* The function groups for FBOs are a little weird, because the bind calls have different
+     * semantics in the EXT and ARB versions (ARB versions require generated names). So we
+     * list everything explicitly by function.
+     */
+#if GL_ARB_framebuffer_object || GL_ES_VERSION_2_0
+    bugle_filter_catches_function(f, "glBindRenderbuffer", BUGLE_TRUE, globjects_glBindRenderbuffer);
+    bugle_filter_catches_function(f, "glDeleteRenderbuffers", BUGLE_TRUE, globjects_glDeleteRenderbuffers);
+    bugle_filter_catches_function(f, "glBindFramebuffer", BUGLE_TRUE, globjects_glBindFramebuffer);
+    bugle_filter_catches_function(f, "glDeleteFramebuffers", BUGLE_TRUE, globjects_glDeleteFramebuffers);
+#endif
 #ifdef GL_EXT_framebuffer_object
-    bugle_filter_catches(f, "glBindRenderbufferEXT", BUGLE_TRUE, globjects_glBindRenderbuffer);
-    bugle_filter_catches(f, "glDeleteRenderbuffersEXT", BUGLE_TRUE, globjects_glDeleteRenderbuffers);
-    bugle_filter_catches(f, "glBindFramebufferEXT", BUGLE_TRUE, globjects_glBindFramebuffer);
-    bugle_filter_catches(f, "glDeleteFramebuffersEXT", BUGLE_TRUE, globjects_glDeleteFramebuffers);
+    bugle_filter_catches_function(f, "glBindRenderbufferEXT", BUGLE_TRUE, globjects_glBindRenderbuffer);
+    bugle_filter_catches_function(f, "glDeleteRenderbuffersEXT", BUGLE_TRUE, globjects_glDeleteRenderbuffers);
+    bugle_filter_catches_function(f, "glBindFramebufferEXT", BUGLE_TRUE, globjects_glBindFramebuffer);
+    bugle_filter_catches_function(f, "glDeleteFramebuffersEXT", BUGLE_TRUE, globjects_glDeleteFramebuffers);
+#endif
+#ifdef GL_OES_framebuffer_object
+    bugle_filter_catches_function(f, "glBindRenderbufferOES", BUGLE_TRUE, globjects_glBindRenderbuffer);
+    bugle_filter_catches_function(f, "glDeleteRenderbuffersOES", BUGLE_TRUE, globjects_glDeleteRenderbuffers);
+    bugle_filter_catches_function(f, "glBindFramebufferOES", BUGLE_TRUE, globjects_glBindFramebuffer);
+    bugle_filter_catches_function(f, "glDeleteFramebuffersOES", BUGLE_TRUE, globjects_glDeleteFramebuffers);
 #endif
     bugle_filter_order("invoke", "globjects");
     bugle_filter_order("globjects_pre", "invoke");
@@ -484,6 +520,10 @@ static bugle_bool globjects_filter_set_initialise(filter_set *handle)
                                     globjects_data_init,
                                     globjects_data_clear,
                                     sizeof(globjects_data));
+    context_view = bugle_object_view_new(bugle_get_context_class(),
+                                         globjects_data_init,
+                                         globjects_data_clear,
+                                         sizeof(globjects_data));
     call_view = bugle_object_view_new(bugle_get_call_class(),
                                       checks_init,
                                       (void (*)(void *)) bugle_list_clear,

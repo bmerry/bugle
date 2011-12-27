@@ -1,5 +1,5 @@
 /*  BuGLe: an OpenGL debugging tool
- *  Copyright (C) 2004-2008  Bruce Merry
+ *  Copyright (C) 2004-2008, 2011  Bruce Merry
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -24,6 +24,7 @@
 #include <string.h>
 #include <bugle/glwin/glwin.h>
 #include <bugle/glwin/trackcontext.h>
+#include <bugle/gl/glfbo.h>
 #include <bugle/gl/glheaders.h>
 #include <bugle/gl/glutils.h>
 #include <bugle/gl/glextensions.h>
@@ -84,8 +85,7 @@ static void classify_context_init(const void *key, void *data)
     ctx->real = BUGLE_TRUE;
 }
 
-#ifdef GL_EXT_framebuffer_object
-static bugle_bool classify_glBindFramebufferEXT(function_call *call, const callback_data *data)
+static bugle_bool classify_glBindFramebuffer(function_call *call, const callback_data *data)
 {
     classify_context *ctx;
     GLint fbo;
@@ -95,18 +95,9 @@ static bugle_bool classify_glBindFramebufferEXT(function_call *call, const callb
     ctx = (classify_context *) bugle_object_get_current_data(bugle_get_context_class(), classify_view);
     if (ctx && bugle_gl_begin_internal_render())
     {
-#ifdef GL_EXT_framebuffer_blit
-        if (BUGLE_GL_HAS_EXTENSION(GL_EXT_framebuffer_blit))
-        {
-            CALL(glGetIntegerv)(GL_DRAW_FRAMEBUFFER_BINDING_EXT, &fbo);
-        }
-        else
-#endif
-        {
-            CALL(glGetIntegerv)(GL_FRAMEBUFFER_BINDING_EXT, &fbo);
-        }
+        fbo = bugle_gl_get_draw_fbo();
         ctx->real = (fbo == 0);
-        bugle_gl_end_internal_render("classify_glBindFramebufferEXT", BUGLE_TRUE);
+        bugle_gl_end_internal_render("classify_glBindFramebuffer", BUGLE_TRUE);
         for (i = bugle_list_head(&classify_callbacks); i; i = bugle_list_next(i))
         {
             cb = (classify_callback *) bugle_list_data(i);
@@ -115,16 +106,13 @@ static bugle_bool classify_glBindFramebufferEXT(function_call *call, const callb
     }
     return BUGLE_TRUE;
 }
-#endif
 
 static bugle_bool classify_initialise(filter_set *handle)
 {
     filter *f;
 
     f = bugle_filter_new(handle, "classify");
-#ifdef GL_EXT_framebuffer_object
-    bugle_filter_catches(f, "glBindFramebufferEXT", BUGLE_TRUE, classify_glBindFramebufferEXT);
-#endif
+    bugle_gl_filter_catches_glBindFramebuffer(f, BUGLE_TRUE, classify_glBindFramebuffer);
     bugle_filter_order("invoke", "classify");
     bugle_gl_filter_post_renders("classify");
     classify_view = bugle_object_view_new(bugle_get_context_class(),

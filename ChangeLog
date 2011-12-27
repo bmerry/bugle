@@ -1,6 +1,7 @@
 * Added support for ARB_draw_instanced and ARB_instanced_arrays
 * Added support for ARB_texture_rg (untested)
 * Added support for ARB_half_float_vertex and ARB_half_float_pixel
+* Start on support for ARB_framebuffer_object (incomplete and untested)
 
 0.0.20111115
 ------------

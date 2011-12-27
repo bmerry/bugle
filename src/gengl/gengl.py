@@ -405,6 +405,14 @@ class GLAPI(API):
         "EXTGROUP_framebuffer_texture_layer": ["GL_EXT_texture_array", "GL_NV_geometry_program4"]
     }
 
+    # Functions that have the same signature as a promoted version, but different
+    # semantics.
+    _non_aliases = set([
+        # GL3 version required generated names, even in compatibility profile
+        'glBindFramebufferEXT',
+        'glBindRenderbufferEXT'
+        ]);
+
     def __init__(self):
         API.__init__(self,
             [['GL', 'gl.h'], ['GL', 'glext.h']],
@@ -437,6 +445,12 @@ class GLAPI(API):
             return self.get_extension('EXTGROUP_framebuffer_texture_layer')
         else:
             return API.function_extension(self, name, extension)
+
+    def function_group(self, function):
+        if function.name in self._non_aliases:
+            return function.name
+        else:
+            return API.function_group(self, function)
 
     def extension_children(self, extension_name):
         return self._extension_children.get(extension_name, [])

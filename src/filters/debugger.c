@@ -1,5 +1,5 @@
 /*  BuGLe: an OpenGL debugging tool
- *  Copyright (C) 2004-2010  Bruce Merry
+ *  Copyright (C) 2004-2011  Bruce Merry
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -32,6 +32,7 @@
 #include <bugle/gl/glbeginend.h>
 #include <bugle/gl/globjects.h>
 #include <bugle/gl/glextensions.h>
+#include <bugle/gl/glfbo.h>
 #include <bugle/filters.h>
 #include <bugle/log.h>
 #include <bugle/hashtable.h>
@@ -451,30 +452,31 @@ static bugle_bool send_data_texture(bugle_uint32_t id, GLuint texid, GLenum targ
 static bugle_bool get_framebuffer_size(GLuint fbo, GLenum target, GLenum attachment,
                                        GLint *width, GLint *height)
 {
-    /* FIXME: support GLES framebuffer objects */
-#ifdef GL_EXT_framebuffer_object
+    /* FIXME: support ES FBOs. Will require tracking dimensions of textures
+     */
+#if BUGLE_GLTYPE_GL
     if (fbo)
     {
         GLint type, name, old_name;
         GLenum texture_target, texture_binding;
         GLint level = 0, face;
 
-        CALL(glGetFramebufferAttachmentParameterivEXT)(target, attachment,
-                                                      GL_FRAMEBUFFER_ATTACHMENT_OBJECT_TYPE_EXT, &type);
-        CALL(glGetFramebufferAttachmentParameterivEXT)(target, attachment,
-                                                      GL_FRAMEBUFFER_ATTACHMENT_OBJECT_NAME_EXT, &name);
-        if (type == GL_RENDERBUFFER_EXT)
+        bugle_glGetFramebufferAttachmentParameteriv(target, attachment,
+                                                    GL_FRAMEBUFFER_ATTACHMENT_OBJECT_TYPE, &type);
+        bugle_glGetFramebufferAttachmentParameteriv(target, attachment,
+                                                    GL_FRAMEBUFFER_ATTACHMENT_OBJECT_NAME, &name);
+        if (type == GL_RENDERBUFFER)
         {
-            CALL(glGetIntegerv)(GL_RENDERBUFFER_BINDING_EXT, &old_name);
-            CALL(glBindRenderbufferEXT)(GL_RENDERBUFFER_EXT, name);
-            CALL(glGetRenderbufferParameterivEXT)(GL_RENDERBUFFER_EXT, GL_RENDERBUFFER_WIDTH_EXT, width);
-            CALL(glGetRenderbufferParameterivEXT)(GL_RENDERBUFFER_EXT, GL_RENDERBUFFER_HEIGHT_EXT, height);
-            CALL(glBindRenderbufferEXT)(GL_RENDERBUFFER_EXT, old_name);
+            CALL(glGetIntegerv)(GL_RENDERBUFFER_BINDING, &old_name);
+            bugle_glBindRenderbuffer(GL_RENDERBUFFER, name);
+            bugle_glGetRenderbufferParameteriv(GL_RENDERBUFFER, GL_RENDERBUFFER_WIDTH, width);
+            bugle_glGetRenderbufferParameteriv(GL_RENDERBUFFER, GL_RENDERBUFFER_HEIGHT, height);
+            bugle_glBindRenderbuffer(GL_RENDERBUFFER, old_name);
         }
         else if (type == GL_TEXTURE)
         {
-            CALL(glGetFramebufferAttachmentParameterivEXT)(target, attachment,
-                                                          GL_FRAMEBUFFER_ATTACHMENT_TEXTURE_LEVEL_EXT, &level);
+            bugle_glGetFramebufferAttachmentParameteriv(target, attachment,
+                                                        GL_FRAMEBUFFER_ATTACHMENT_TEXTURE_LEVEL, &level);
             texture_target = bugle_globjects_get_target(BUGLE_GLOBJECTS_TEXTURE, name);
             texture_binding = target_to_binding(texture_target);
             if (!texture_binding) return BUGLE_FALSE;
@@ -483,8 +485,9 @@ static bugle_bool get_framebuffer_size(GLuint fbo, GLenum target, GLenum attachm
             CALL(glBindTexture)(texture_target, name);
             if (target == GL_TEXTURE_CUBE_MAP)
             {
-                CALL(glGetFramebufferAttachmentParameterivEXT)(target, attachment,
-                                                               GL_FRAMEBUFFER_ATTACHMENT_TEXTURE_CUBE_MAP_FACE_EXT, &face);
+                bugle_glGetFramebufferAttachmentParameteriv(
+                    target, attachment,
+                    GL_FRAMEBUFFER_ATTACHMENT_TEXTURE_CUBE_MAP_FACE, &face);
             }
             else
             {
@@ -497,7 +500,7 @@ static bugle_bool get_framebuffer_size(GLuint fbo, GLenum target, GLenum attachm
             return BUGLE_FALSE;
     }
     else
-#endif /* GL_EXT_framebuffer_object */
+#endif /* framebuffer object support */
     {
         glwin_display dpy;
         glwin_drawable draw;
@@ -559,22 +562,20 @@ static bugle_bool send_data_framebuffer(bugle_uint32_t id, GLuint fbo, GLenum ta
     }
 
 #ifdef GL_EXT_framebuffer_blit
-    if (BUGLE_GL_HAS_EXTENSION(GL_EXT_framebuffer_blit))
+    if (BUGLE_GL_HAS_EXTENSION_GROUP(GL_EXT_framebuffer_blit))
     {
-        fbo_target = GL_READ_FRAMEBUFFER_EXT;
-        fbo_binding = GL_READ_FRAMEBUFFER_BINDING_EXT;
+        fbo_target = GL_READ_FRAMEBUFFER;
+        fbo_binding = GL_READ_FRAMEBUFFER_BINDING;
     }
     else
 #endif
     {
-#ifdef GL_EXT_framebuffer_object
-        if (BUGLE_GL_HAS_EXTENSION(GL_EXT_framebuffer_object))
+        if (BUGLE_GL_HAS_EXTENSION_GROUP(GL_EXT_framebuffer_object))
         {
-            fbo_target = GL_FRAMEBUFFER_EXT;
-            fbo_binding = GL_FRAMEBUFFER_BINDING_EXT;
+            fbo_target = GL_FRAMEBUFFER;
+            fbo_binding = GL_FRAMEBUFFER_BINDING;
         }
         else
-#endif
         {
             illegal = fbo != 0;
         }
@@ -619,10 +620,8 @@ static bugle_bool send_data_framebuffer(bugle_uint32_t id, GLuint fbo, GLenum ta
             CALL(glGetIntegerv)(fbo_binding, &old_fbo);
     }
 
-#ifdef GL_EXT_framebuffer_object
     if ((GLint) fbo != old_fbo)
-        CALL(glBindFramebufferEXT)(fbo_target, fbo);
-#endif
+        bugle_glBindFramebuffer(fbo_target, fbo);
 
     /* Note: GL_READ_BUFFER belongs to the FBO where an application-created
      * FBO is in use. Thus, we must save the old value even if we are
@@ -658,10 +657,8 @@ static bugle_bool send_data_framebuffer(bugle_uint32_t id, GLuint fbo, GLenum ta
         while ((error = CALL(glGetError)()) != GL_NO_ERROR)
             bugle_log_printf("debugger", "protocol", BUGLE_LOG_WARNING,
                              "GL error %#04x generated by send_data_framebuffer in aux context", error);
-#ifdef GL_EXT_framebuffer_object
         if (fbo)
-            CALL(glBindFramebufferEXT)(fbo_target, 0);
-#endif
+            bugle_glBindFramebuffer(fbo_target, 0);
         CALL(glPopClientAttrib)();
         CALL(glPopAttrib)();
         bugle_glwin_make_context_current(dpy, old_write, old_read, real);
@@ -669,10 +666,8 @@ static bugle_bool send_data_framebuffer(bugle_uint32_t id, GLuint fbo, GLenum ta
     else
 #endif /* GL_VERSION_1_1 */
     {
-#ifdef GL_EXT_framebuffer_object
         if ((GLint) fbo != old_fbo)
-            CALL(glBindFramebufferEXT)(fbo_target, old_fbo);
-#endif
+            bugle_glBindFramebuffer(fbo_target, old_fbo);
         pixel_pack_restore(&old_pack);
     }
 

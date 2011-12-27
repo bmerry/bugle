@@ -336,6 +336,7 @@ if 'interceptor' in aspects['parts']:
         'gl/glsl.c',
         'glwin/trackcontext.c',
         'gl/gldisplaylist.c',
+        'gl/glfbo.c',
         'gl/globjects.c',
         'gl/glextensions.c',
         'gl/glbeginend.c',
