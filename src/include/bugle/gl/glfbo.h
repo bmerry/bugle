@@ -35,12 +35,22 @@ extern "C" {
 /* Detects whether an FBO-capable core version or extension is
  * present in the current context.
  */
-BUGLE_EXPORT_PRE bugle_bool bugle_gl_fbo_support(void) BUGLE_EXPORT_POST;
+BUGLE_EXPORT_PRE bugle_bool bugle_gl_has_framebuffer_object(void) BUGLE_EXPORT_POST;
 
 /* Retrieves the draw framebuffer (if there are separate read and draw targets),
  * or the framebuffer if there is only one target.
  */
-BUGLE_EXPORT_PRE GLuint bugle_gl_get_draw_fbo(void) BUGLE_EXPORT_POST;
+BUGLE_EXPORT_PRE GLuint bugle_gl_get_draw_framebuffer_binding(void) BUGLE_EXPORT_POST;
+
+/* Returns the enum corresponding to the draw framebuffer target.
+ */
+BUGLE_EXPORT_PRE GLenum bugle_gl_draw_framebuffer_target(void) BUGLE_EXPORT_POST;
+
+/*
+ * Sets the draw framebuffer (or the framebuffer, if there are no separate
+ * read/draw framebuffers).
+ */
+BUGLE_EXPORT_PRE void bugle_gl_bind_draw_framebuffer(GLuint framebuffer) BUGLE_EXPORT_POST;
 
 /* Call the GL function with the same name, picking the variant with the right
  * suffix.  Note that ARB_framebuffer_object and EXT_framebuffer_object have
@@ -65,7 +75,7 @@ BUGLE_EXPORT_PRE void BUDGIEAPI bugle_glGenerateMipmap(GLenum target) BUGLE_EXPO
 
 BUGLE_EXPORT_PRE void bugle_gl_filter_catches_glIsRenderbuffer(filter *f, bugle_bool inactive, filter_callback callback) BUGLE_EXPORT_POST;
 BUGLE_EXPORT_PRE void bugle_gl_filter_catches_glBindRenderbuffer(filter *f, bugle_bool inactive, filter_callback callback) BUGLE_EXPORT_POST;
-BUGLE_EXPORT_PRE void bugle_gl_filter_catches_glDeleteRenderbuffer(filter *f, bugle_bool inactive, filter_callback callback) BUGLE_EXPORT_POST;
+BUGLE_EXPORT_PRE void bugle_gl_filter_catches_glDeleteRenderbuffers(filter *f, bugle_bool inactive, filter_callback callback) BUGLE_EXPORT_POST;
 BUGLE_EXPORT_PRE void bugle_gl_filter_catches_glGenRenderbuffers(filter *f, bugle_bool inactive, filter_callback callback) BUGLE_EXPORT_POST;
 BUGLE_EXPORT_PRE void bugle_gl_filter_catches_glRenderbufferStorage(filter *f, bugle_bool inactive, filter_callback callback) BUGLE_EXPORT_POST;
 BUGLE_EXPORT_PRE void bugle_gl_filter_catches_glGetRenderbufferParameteriv(filter *f, bugle_bool inactive, filter_callback callback) BUGLE_EXPORT_POST;

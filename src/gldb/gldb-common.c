@@ -1038,7 +1038,7 @@ void gldb_send_data_texture(bugle_uint32_t id, GLuint tex_id, GLenum target,
     gldb_protocol_send_code(lib_out, type);
 }
 
-void gldb_send_data_framebuffer(bugle_uint32_t id, GLuint fbo_id, GLenum target,
+void gldb_send_data_framebuffer(bugle_uint32_t id, GLuint fbo_id,
                                 GLenum buffer, GLenum format, GLenum type)
 {
     assert(status != GLDB_STATUS_DEAD);
@@ -1046,7 +1046,6 @@ void gldb_send_data_framebuffer(bugle_uint32_t id, GLuint fbo_id, GLenum target,
     gldb_protocol_send_code(lib_out, id);
     gldb_protocol_send_code(lib_out, REQ_DATA_FRAMEBUFFER);
     gldb_protocol_send_code(lib_out, fbo_id);
-    gldb_protocol_send_code(lib_out, target);
     gldb_protocol_send_code(lib_out, buffer);
     gldb_protocol_send_code(lib_out, format);
     gldb_protocol_send_code(lib_out, type);

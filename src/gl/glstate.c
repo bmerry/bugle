@@ -20,7 +20,7 @@
  * - paletted textures (need to extend color_table_parameter, which is
  *   complicated by the fact that the palette belongs to the texture not
  *   the target).
- * - EXT_framebuffer_blit and EXT_framebuffer_multisample
+ * - EXT_framebuffer_multisample
  * - all the 4th-gen extensions (DX10 equivalents)
  * - matrix stacks
  * - all the image state (textures, color tables, maps, pixel maps, convolution, stipple etc)
@@ -1803,8 +1803,8 @@ static const state_info global_state[] =
     /* EXT_framebuffer_sRGB is not a strict subset of ARB_framebuffer_sRGB, hence
      * the two variants of this state (one suppressing the other).
      */
-    { STATE_NAME(GL_FRAMEBUFFER_SRGB_EXT), TYPE_9GLboolean, -1, BUGLE_GL_EXT_framebuffer_sRGB, -1, STATE_ENABLED },
-    { STATE_NAME(GL_FRAMEBUFFER_SRGB), TYPE_9GLboolean, -1, BUGLE_GL_ARB_framebuffer_sRGB, BUGLE_GL_EXT_framebuffer_sRGB, STATE_ENABLED },
+    { STATE_NAME(GL_FRAMEBUFFER_SRGB_EXT), TYPE_9GLboolean, -1, BUGLE_GL_EXT_framebuffer_sRGB, BUGLE_GL_ARB_framebuffer_sRGB, STATE_ENABLED },
+    { STATE_NAME(GL_FRAMEBUFFER_SRGB), TYPE_9GLboolean, -1, BUGLE_GL_ARB_framebuffer_sRGB, -1, STATE_ENABLED },
 #ifdef GL_NV_transform_feedback
     /* glext.h gets the name wrong */
 #ifdef GL_MAX_TRANSFORM_FEEDBACK_INTERLEAVED_COMPONENTS_NV
@@ -1963,9 +1963,8 @@ static const state_info framebuffer_parameter_state[] =
     { STATE_NAME(GL_ACCUM_GREEN_BITS), TYPE_5GLint, -1, BUGLE_GL_VERSION_1_1, -1, STATE_FRAMEBUFFER_PARAMETER },
     { STATE_NAME(GL_ACCUM_BLUE_BITS), TYPE_5GLint, -1, BUGLE_GL_VERSION_1_1, -1, STATE_FRAMEBUFFER_PARAMETER },
     { STATE_NAME(GL_ACCUM_ALPHA_BITS), TYPE_5GLint, -1, BUGLE_GL_VERSION_1_1, -1, STATE_FRAMEBUFFER_PARAMETER },
-    { STATE_NAME(GL_STENCIL_REF), TYPE_5GLint, -1, BUGLE_GL_VERSION_1_1, -1, STATE_FRAMEBUFFER_PARAMETER },
     { STATE_NAME(GL_MAX_COLOR_ATTACHMENTS), TYPE_5GLint, -1, BUGLE_GL_VERSION_1_1, -1, STATE_FRAMEBUFFER_PARAMETER },
-    { STATE_NAME(GL_FRAMEBUFFER_SRGB_CAPABLE_EXT), TYPE_9GLboolean, 4, BUGLE_GL_EXT_framebuffer_sRGB, -1, STATE_FRAMEBUFFER_PARAMETER },
+    { STATE_NAME(GL_FRAMEBUFFER_SRGB_CAPABLE_EXT), TYPE_9GLboolean, -1, BUGLE_GL_EXT_framebuffer_sRGB, -1, STATE_FRAMEBUFFER_PARAMETER },
     { STATE_NAME(GL_RGBA_SIGNED_COMPONENTS_EXT), TYPE_9GLboolean, 4, BUGLE_GL_EXT_packed_float, -1, STATE_FRAMEBUFFER_PARAMETER },
     { NULL, GL_NONE, NULL_TYPE, 0, -1, -1, 0 }
 };
@@ -2182,15 +2181,15 @@ void bugle_state_get_raw(const glstate *state, bugle_state_raw *wrapper)
     }
 #endif
     if ((state->info->flags & STATE_MULTIPLEX_BIND_FRAMEBUFFER)
-        && bugle_gl_fbo_support())
+        && bugle_gl_has_framebuffer_object())
     {
-        CALL(glGetIntegerv)(state->binding, &old_framebuffer);
-        bugle_glBindFramebuffer(state->target, state->object);
+        old_framebuffer = bugle_gl_get_draw_framebuffer_binding();
+        bugle_gl_bind_draw_framebuffer(state->object);
     }
     if (state->info->flags & STATE_MULTIPLEX_BIND_RENDERBUFFER)
     {
         CALL(glGetIntegerv)(state->binding, &old_renderbuffer);
-        CALL(glBindRenderbufferEXT)(state->target, state->object);
+        bugle_glBindRenderbuffer(state->target, state->object);
     }
     if ((state->info->flags & STATE_MULTIPLEX_BIND_TEXTURE)
         && state->binding) /* binding of 0 means a proxy texture */
@@ -2465,13 +2464,13 @@ void bugle_state_get_raw(const glstate *state, bugle_state_raw *wrapper)
         }
         break;
     case STATE_MODE_FRAMEBUFFER_ATTACHMENT_PARAMETER:
-        bugle_glGetFramebufferAttachmentParameteriv(state->target,
+        bugle_glGetFramebufferAttachmentParameteriv(bugle_gl_draw_framebuffer_target(),
                                                     state->level,
                                                     pname, i);
         in_type = TYPE_5GLint;
         break;
     case STATE_MODE_RENDERBUFFER_PARAMETER:
-        CALL(glGetRenderbufferParameterivEXT)(state->target, pname, i);
+        bugle_glGetRenderbufferParameteriv(state->target, pname, i);
         in_type = TYPE_5GLint;
         break;
     default:
@@ -2493,10 +2492,10 @@ void bugle_state_get_raw(const glstate *state, bugle_state_raw *wrapper)
         CALL(glBindProgramARB)(state->target, old_program);
 #endif
     if ((state->info->flags & STATE_MULTIPLEX_BIND_FRAMEBUFFER)
-        && bugle_gl_has_extension_group(GL_EXT_framebuffer_object))
-        CALL(glBindFramebufferEXT)(state->target, old_framebuffer);
+        && bugle_gl_has_framebuffer_object())
+        bugle_gl_bind_draw_framebuffer(old_framebuffer);
     if (state->info->flags & STATE_MULTIPLEX_BIND_RENDERBUFFER)
-        CALL(glBindRenderbufferEXT)(state->target, old_renderbuffer);
+        bugle_glBindRenderbuffer(state->target, old_renderbuffer);
     if ((state->info->flags & STATE_MULTIPLEX_BIND_TEXTURE)
         && state->binding)
         CALL(glBindTexture)(state->target, old_texture);
@@ -2748,7 +2747,7 @@ static void spawn_children_framebuffer_object(const glstate *self, linked_list *
 static void spawn_children_framebuffer(const glstate *self, linked_list *children)
 {
     bugle_list_init(children, bugle_free);
-    make_objects(self, BUGLE_GLOBJECTS_FRAMEBUFFER, self->target, BUGLE_TRUE,
+    make_objects(self, BUGLE_GLOBJECTS_FRAMEBUFFER, GL_NONE, BUGLE_TRUE,
                  "%lu", spawn_children_framebuffer_object, NULL, children);
 }
 
@@ -2811,22 +2810,11 @@ static void spawn_children_global(const glstate *self, linked_list *children)
         make_target(self, "GL_FRAGMENT_PROGRAM_ARB",
                     GL_FRAGMENT_PROGRAM_ARB,
                     0, spawn_children_old_program, &enable, children);
-    if (bugle_gl_fbo_support())
+    if (bugle_gl_has_framebuffer_object())
     {
-        GLenum fbo_target, fbo_binding;
-        if (bugle_gl_has_extension_group(BUGLE_GL_EXT_framebuffer_blit))
-        {
-            fbo_target = GL_DRAW_FRAMEBUFFER;
-            fbo_binding = GL_DRAW_FRAMEBUFFER_BINDING;
-        }
-        else
-        {
-            fbo_target = GL_FRAMEBUFFER;
-            fbo_binding = GL_FRAMEBUFFER_BINDING;
-        }
         make_target(self, "GL_FRAMEBUFFER",
-                    fbo_target,
-                    fbo_binding,
+                    GL_FRAMEBUFFER,
+                    GL_DRAW_FRAMEBUFFER_BINDING,
                     spawn_children_framebuffer, NULL, children);
         make_target(self, "GL_RENDERBUFFER",
                     GL_RENDERBUFFER,

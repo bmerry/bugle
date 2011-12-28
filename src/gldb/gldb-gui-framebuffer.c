@@ -67,7 +67,6 @@ struct _GldbFramebufferPaneClass
 enum
 {
     COLUMN_FRAMEBUFFER_ID_ID,
-    COLUMN_FRAMEBUFFER_ID_TARGET,
     COLUMN_FRAMEBUFFER_ID_BOLD,
     COLUMN_FRAMEBUFFER_ID_TEXT
 };
@@ -155,7 +154,7 @@ static gboolean gldb_framebuffer_pane_response_callback(gldb_response *response,
 
 static void gldb_framebuffer_pane_update_ids(GldbFramebufferPane *pane, const gldb_state *root)
 {
-    GValue old[2];
+    GValue old[1];
     GtkTreeIter iter;
     gldb_state *framebuffer, *binding;
     GtkTreeModel *model;
@@ -165,14 +164,23 @@ static void gldb_framebuffer_pane_update_ids(GldbFramebufferPane *pane, const gl
     g_return_if_fail(root != NULL);
 
     gldb_gui_combo_box_get_old(GTK_COMBO_BOX(pane->id), old,
-                               COLUMN_FRAMEBUFFER_ID_ID, COLUMN_FRAMEBUFFER_ID_TARGET, -1);
+                               COLUMN_FRAMEBUFFER_ID_ID, -1);
     model = gtk_combo_box_get_model(GTK_COMBO_BOX(pane->id));
     gtk_list_store_clear(GTK_LIST_STORE(model));
 
-    binding = gldb_state_find_child_enum(root, GL_FRAMEBUFFER_BINDING_EXT);
-    if (binding)
+    /* The name for the draw framebuffer binding will change depending on whether
+     * EXT_framebuffer_blit is present.
+     */
+    binding = gldb_state_find_child_enum(root, GL_DRAW_FRAMEBUFFER_BINDING);
+    if (binding == NULL)
+        binding = gldb_state_find_child_enum(root, GL_FRAMEBUFFER_BINDING);
+    if (binding != NULL)
         active = gldb_state_GLint(binding);
-    if ((framebuffer = gldb_state_find_child_enum(root, GL_FRAMEBUFFER_EXT)) != NULL)
+
+    framebuffer = gldb_state_find_child_enum(root, GL_DRAW_FRAMEBUFFER);
+    if (framebuffer == NULL)
+        framebuffer = gldb_state_find_child_enum(root, GL_FRAMEBUFFER_EXT);
+    if (framebuffer != NULL)
     {
         linked_list_node *pfbo;
         gldb_state *fbo;
@@ -188,7 +196,6 @@ static void gldb_framebuffer_pane_update_ids(GldbFramebufferPane *pane, const gl
             gtk_list_store_append(GTK_LIST_STORE(model), &iter);
             gtk_list_store_set(GTK_LIST_STORE(model), &iter,
                                COLUMN_FRAMEBUFFER_ID_ID, fbo->numeric_name,
-                               COLUMN_FRAMEBUFFER_ID_TARGET, GL_FRAMEBUFFER_EXT,
                                COLUMN_FRAMEBUFFER_ID_BOLD, fbo->numeric_name == active ? PANGO_WEIGHT_BOLD : PANGO_WEIGHT_NORMAL,
                                COLUMN_FRAMEBUFFER_ID_TEXT, name,
                                -1);
@@ -200,14 +207,13 @@ static void gldb_framebuffer_pane_update_ids(GldbFramebufferPane *pane, const gl
         gtk_list_store_append(GTK_LIST_STORE(model), &iter);
         gtk_list_store_set(GTK_LIST_STORE(model), &iter,
                            COLUMN_FRAMEBUFFER_ID_ID, 0,
-                           COLUMN_FRAMEBUFFER_ID_TARGET, 0,
                            COLUMN_FRAMEBUFFER_ID_BOLD, PANGO_WEIGHT_BOLD,
                            COLUMN_FRAMEBUFFER_ID_TEXT, _("Default"),
                            -1);
     }
 
     gldb_gui_combo_box_restore_old(GTK_COMBO_BOX(pane->id), old,
-                                   COLUMN_FRAMEBUFFER_ID_ID, COLUMN_FRAMEBUFFER_ID_TARGET, -1);
+                                   COLUMN_FRAMEBUFFER_ID_ID, -1);
 }
 
 static void gldb_framebuffer_pane_id_changed(GtkWidget *widget, gpointer user_data)
@@ -244,7 +250,9 @@ static void gldb_framebuffer_pane_id_changed(GtkWidget *widget, gpointer user_da
         gtk_list_store_clear(GTK_LIST_STORE(model));
 
 #if BUGLE_GLTYPE_GL
-        framebuffer = gldb_state_find_child_enum(root, GL_FRAMEBUFFER_EXT);
+        framebuffer = gldb_state_find_child_enum(root, GL_DRAW_FRAMEBUFFER);
+        if (framebuffer == NULL)
+            framebuffer = gldb_state_find_child_enum(root, GL_FRAMEBUFFER_EXT);
         if (id != 0)
         {
             g_assert(framebuffer != NULL);
@@ -405,7 +413,7 @@ static void gldb_framebuffer_pane_buffer_changed(GtkWidget *widget, gpointer use
     framebuffer_callback_data *data;
     GtkTreeModel *model;
     GtkTreeIter iter;
-    guint id, target, buffer, channel;
+    guint id, buffer, channel;
     guint32 seq;
     GLenum type, format;
 
@@ -418,7 +426,6 @@ static void gldb_framebuffer_pane_buffer_changed(GtkWidget *widget, gpointer use
             return;
         gtk_tree_model_get(model, &iter,
                            COLUMN_FRAMEBUFFER_ID_ID, &id,
-                           COLUMN_FRAMEBUFFER_ID_TARGET, &target,
                            -1);
         model = gtk_combo_box_get_model(GTK_COMBO_BOX(pane->buffer));
         if (!gtk_combo_box_get_active_iter(GTK_COMBO_BOX(pane->buffer), &iter))
@@ -452,10 +459,10 @@ static void gldb_framebuffer_pane_buffer_changed(GtkWidget *widget, gpointer use
         format = GL_RGBA;
         type = GL_UNSIGNED_BYTE;
 #else
-# error "Unknown target"
+# error "Unknown GL variant"
 #endif
         data->type = type;
-        gldb_send_data_framebuffer(seq, id, target, buffer, format, type);
+        gldb_send_data_framebuffer(seq, id, buffer, format, type);
     }
 }
 
@@ -467,7 +474,6 @@ static GtkWidget *gldb_framebuffer_pane_id_new(GldbFramebufferPane *pane)
 
     store = gtk_list_store_new(4,
                                G_TYPE_UINT,  /* ID */
-                               G_TYPE_UINT,  /* target */
                                G_TYPE_INT,   /* bold */
                                G_TYPE_STRING);
 

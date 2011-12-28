@@ -562,11 +562,6 @@
                             </row>
                             <row>
                                 <entry><type>GLENUM</type></entry>
-                                <entry>framebuffer target (currently ignored but
-                                    should be <symbol>GL_FRAMEBUFFER</symbol>)</entry>
-                            </row>
-                            <row>
-                                <entry><type>GLENUM</type></entry>
                                 <entry>read buffer</entry>
                             </row>
                             <row>

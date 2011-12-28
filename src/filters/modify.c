@@ -95,7 +95,7 @@ static bugle_bool classify_glBindFramebuffer(function_call *call, const callback
     ctx = (classify_context *) bugle_object_get_current_data(bugle_get_context_class(), classify_view);
     if (ctx && bugle_gl_begin_internal_render())
     {
-        fbo = bugle_gl_get_draw_fbo();
+        fbo = bugle_gl_get_draw_framebuffer_binding();
         ctx->real = (fbo == 0);
         bugle_gl_end_internal_render("classify_glBindFramebuffer", BUGLE_TRUE);
         for (i = bugle_list_head(&classify_callbacks); i; i = bugle_list_next(i))

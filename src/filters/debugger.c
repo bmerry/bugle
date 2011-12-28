@@ -116,7 +116,6 @@ typedef struct
 {
     gldb_request_data_header header;
     bugle_uint32_t object_id;
-    bugle_uint32_t target;
     bugle_uint32_t buffer;
     bugle_uint32_t format;
     bugle_uint32_t type;
@@ -532,13 +531,8 @@ static bugle_bool get_framebuffer_size(GLuint fbo, GLenum target, GLenum attachm
  * GL_EXT_framebuffer_blit. The latter defines separate read and draw
  * framebuffers, and also modifies the semantics of the former (even if
  * the latter is never actually used!)
- *
- * The target is currently not used. It is expected to be either 0
- * (for the window-system-defined framebuffer) or GL_FRAMEBUFFER_EXT
- * (for application-defined framebuffers). In the future it may be used
- * to allow other types of framebuffers e.g. pbuffers.
  */
-static bugle_bool send_data_framebuffer(bugle_uint32_t id, GLuint fbo, GLenum target,
+static bugle_bool send_data_framebuffer(bugle_uint32_t id, GLuint fbo,
                                         GLenum buffer, GLenum format, GLenum type)
 {
     pixel_state old_pack;
@@ -567,7 +561,7 @@ static bugle_bool send_data_framebuffer(bugle_uint32_t id, GLuint fbo, GLenum ta
     else
 #endif
     {
-        if (bugle_gl_fbo_support())
+        if (bugle_gl_has_framebuffer_object())
         {
             fbo_target = GL_FRAMEBUFFER;
             fbo_binding = GL_FRAMEBUFFER_BINDING;
@@ -1050,7 +1044,6 @@ static void process_single_command(function_call *call, gldb_request_header *req
                     gldb_request_data_framebuffer *req2 = (gldb_request_data_framebuffer *) req;
                     send_data_framebuffer(req->request_id,
                                           req2->object_id,
-                                          req2->target,
                                           req2->buffer,
                                           req2->format,
                                           req2->type);
@@ -1353,7 +1346,6 @@ static bugle_bool read_request(bugle_workqueue *queue, void *user_data, void **i
                     req->header.header = header;
                     req->header.subtype = subtype;
                     if (!gldb_protocol_recv_code(in_pipe, &req->object_id)
-                        || !gldb_protocol_recv_code(in_pipe, &req->target)
                         || !gldb_protocol_recv_code(in_pipe, &req->buffer)
                         || !gldb_protocol_recv_code(in_pipe, &req->format)
                         || !gldb_protocol_recv_code(in_pipe, &req->type))

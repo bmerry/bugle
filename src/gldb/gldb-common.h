@@ -261,7 +261,7 @@ void gldb_send_state_tree(bugle_uint32_t id);
 void gldb_send_data_texture(bugle_uint32_t id, GLuint tex_id, GLenum target,
                             GLenum face, GLint level, GLenum format,
                             GLenum type);
-void gldb_send_data_framebuffer(bugle_uint32_t id, GLuint fbo_id, GLenum target,
+void gldb_send_data_framebuffer(bugle_uint32_t id, GLuint fbo_id,
                                 GLenum buffer, GLenum format, GLenum type);
 void gldb_send_data_shader(bugle_uint32_t id, GLuint shader_id, GLenum target);
 void gldb_send_data_info_log(bugle_uint32_t id, GLuint object_id, GLenum target);

@@ -35,7 +35,7 @@
 # define call(x) (BUGLE_GL_HAS_EXTENSION_GROUP(GL_ARB_framebuffer_object) ? (CALL(x)) : (CALL(x ## EXT)))
 #endif
 
-bugle_bool bugle_gl_fbo_support(void)
+bugle_bool bugle_gl_has_framebuffer_object(void)
 {
 #if BUGLE_GLTYPE_GLES2
     return true;
@@ -48,7 +48,7 @@ bugle_bool bugle_gl_fbo_support(void)
 #endif
 }
 
-GLuint bugle_gl_get_draw_fbo(void)
+GLuint bugle_gl_get_draw_framebuffer_binding(void)
 {
     GLint fbo;
 #if BUGLE_GLTYPE_GL
@@ -67,6 +67,27 @@ GLuint bugle_gl_get_draw_fbo(void)
 #else
     return 0;
 #endif
+}
+
+GLenum bugle_gl_draw_framebuffer_target(void)
+{
+    GLenum target;
+#if BUGLE_GLTYPE_GL
+    if (BUGLE_GL_HAS_EXTENSION_GROUP(GL_EXT_framebuffer_blit))
+        target = GL_DRAW_FRAMEBUFFER;
+    else
+        target = GL_FRAMEBUFFER;
+#elif BUGLE_GLTYPE_GLES1
+    target = GL_FRAMEBUFFER_OES;
+#else
+    target = GL_FRAMEBUFFER;
+#endif
+    return target;
+}
+
+void bugle_gl_bind_draw_framebuffer(GLuint framebuffer)
+{
+    bugle_glBindFramebuffer(bugle_gl_draw_framebuffer_target(), framebuffer);
 }
 
 GLboolean BUDGIEAPI bugle_glIsRenderbuffer(GLuint renderbuffer)
@@ -169,7 +190,7 @@ void BUDGIEAPI bugle_glGenerateMipmap(GLenum target)
 
 CATCHER_WRAPPER(glIsRenderbuffer)
 CATCHER_WRAPPER(glBindRenderbuffer)
-CATCHER_WRAPPER(glDeleteRenderbuffer)
+CATCHER_WRAPPER(glDeleteRenderbuffers)
 CATCHER_WRAPPER(glGenRenderbuffers)
 CATCHER_WRAPPER(glRenderbufferStorage)
 CATCHER_WRAPPER(glGetRenderbufferParameteriv)
