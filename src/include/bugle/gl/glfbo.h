@@ -37,8 +37,7 @@ extern "C" {
  */
 BUGLE_EXPORT_PRE bugle_bool bugle_gl_has_framebuffer_object(void) BUGLE_EXPORT_POST;
 
-/* Retrieves the draw framebuffer (if there are separate read and draw targets),
- * or the framebuffer if there is only one target.
+/* Retrieves the draw framebuffer.
  */
 BUGLE_EXPORT_PRE GLuint bugle_gl_get_draw_framebuffer_binding(void) BUGLE_EXPORT_POST;
 
@@ -46,11 +45,21 @@ BUGLE_EXPORT_PRE GLuint bugle_gl_get_draw_framebuffer_binding(void) BUGLE_EXPORT
  */
 BUGLE_EXPORT_PRE GLenum bugle_gl_draw_framebuffer_target(void) BUGLE_EXPORT_POST;
 
-/*
- * Sets the draw framebuffer (or the framebuffer, if there are no separate
- * read/draw framebuffers).
+/* Sets the draw framebuffer.
  */
 BUGLE_EXPORT_PRE void bugle_gl_bind_draw_framebuffer(GLuint framebuffer) BUGLE_EXPORT_POST;
+
+/* Retrieves the read framebuffer.
+ */
+BUGLE_EXPORT_PRE GLuint bugle_gl_get_read_framebuffer_binding(void) BUGLE_EXPORT_POST;
+
+/* Returns the enum corresponding to the read framebuffer target.
+ */
+BUGLE_EXPORT_PRE GLenum bugle_gl_read_framebuffer_target(void) BUGLE_EXPORT_POST;
+
+/* Sets the read framebuffer.
+ */
+BUGLE_EXPORT_PRE void bugle_gl_bind_read_framebuffer(GLuint framebuffer) BUGLE_EXPORT_POST;
 
 /* Call the GL function with the same name, picking the variant with the right
  * suffix.  Note that ARB_framebuffer_object and EXT_framebuffer_object have

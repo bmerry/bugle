@@ -90,6 +90,48 @@ void bugle_gl_bind_draw_framebuffer(GLuint framebuffer)
     bugle_glBindFramebuffer(bugle_gl_draw_framebuffer_target(), framebuffer);
 }
 
+GLuint bugle_gl_get_read_framebuffer_binding(void)
+{
+    GLint fbo;
+#if BUGLE_GLTYPE_GL
+    if (BUGLE_GL_HAS_EXTENSION_GROUP(GL_EXT_framebuffer_blit))
+    {
+        CALL(glGetIntegerv)(GL_READ_FRAMEBUFFER_BINDING, &fbo);
+        return fbo;
+    }
+#endif
+#if BUGLE_GLTYPE_GL || BUGLE_GLTYPE_GLES2
+    CALL(glGetIntegerv)(GL_FRAMEBUFFER_BINDING, &fbo);
+    return fbo;
+#elif BUGLE_GLTYPE_GLES1
+    CALL(glGetIntegerv)(GL_FRAMEBUFFER_BINDING_OES, &fbo);
+    return fbo;
+#else
+    return 0;
+#endif
+}
+
+GLenum bugle_gl_read_framebuffer_target(void)
+{
+    GLenum target;
+#if BUGLE_GLTYPE_GL
+    if (BUGLE_GL_HAS_EXTENSION_GROUP(GL_EXT_framebuffer_blit))
+        target = GL_READ_FRAMEBUFFER;
+    else
+        target = GL_FRAMEBUFFER;
+#elif BUGLE_GLTYPE_GLES1
+    target = GL_FRAMEBUFFER_OES;
+#else
+    target = GL_FRAMEBUFFER;
+#endif
+    return target;
+}
+
+void bugle_gl_bind_read_framebuffer(GLuint framebuffer)
+{
+    bugle_glBindFramebuffer(bugle_gl_read_framebuffer_target(), framebuffer);
+}
+
 GLboolean BUDGIEAPI bugle_glIsRenderbuffer(GLuint renderbuffer)
 {
     return call(glIsRenderbuffer)(renderbuffer);
