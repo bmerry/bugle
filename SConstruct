@@ -398,6 +398,7 @@ package_sources.extend([
     'src/bc/gl/GL_EXT_texture3D.bc',
     'src/bc/gl/GL_NV_transform_feedback.bc',
     'src/bc/gl/core1_1.bc',
+    'src/bc/gl/core3_0.bc',
     'src/bc/gl/gl.bc',
     'src/bc/gl/glsl1_20.bc',
     'src/bc/gles1cm/gles1cm.bc',

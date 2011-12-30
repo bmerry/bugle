@@ -1,0 +1,4 @@
+# Just functionality that went directly into GL 3.0 without
+# having its own extension
+
+TYPE PARAMETER glGetStringi -1 TYPE_PKc
