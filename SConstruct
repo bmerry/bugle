@@ -389,6 +389,7 @@ package_sources.extend([
     'src/bc/gl/GL_EXT_draw_buffers2.bc',
     'src/bc/gl/GL_EXT_draw_instanced.bc',
     'src/bc/gl/GL_EXT_draw_range_elements.bc',
+    'src/bc/gl/GL_EXT_framebuffer_blit.bc'
     'src/bc/gl/GL_EXT_framebuffer_object.bc',
     'src/bc/gl/GL_EXT_geometry_shader4.bc',
     'src/bc/gl/GL_EXT_gpu_program_parameters.bc',
