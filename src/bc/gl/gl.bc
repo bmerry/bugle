@@ -13,6 +13,7 @@ INCLUDE bc/gl/GL_ARB_half_float_pixel.bc
 INCLUDE bc/gl/GL_ARB_imaging.bc
 INCLUDE bc/gl/GL_ARB_map_buffer_range.bc
 INCLUDE bc/gl/GL_ARB_multitexture.bc
+INCLUDE bc/gl/GL_ARB_sampler_objects.bc
 INCLUDE bc/gl/GL_ARB_shader_objects.bc
 INCLUDE bc/gl/GL_ARB_texture_compression.bc
 INCLUDE bc/gl/GL_ARB_occlusion_query.bc

@@ -5,6 +5,7 @@
 * Fixed incorrect state display of GL_CLIP_DISTANCEi and GL_DRAW_BUFFERi (always showed element 0)
 * Fixed invalid queries of GL_TRANSFORM_FEEDBACK_RECORD_NV
 * Support tracing of glGetStringi
+* Support tracing of GL_ARB_sampler_objects
 
 0.0.20111115
 ------------

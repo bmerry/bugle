@@ -379,6 +379,7 @@ package_sources.extend([
     'src/bc/gl/GL_ARB_map_buffer_range.bc',
     'src/bc/gl/GL_ARB_multitexture.bc',
     'src/bc/gl/GL_ARB_occlusion_query.bc',
+    'src/bc/gl/GL_ARB_sampler_objects.bc',
     'src/bc/gl/GL_ARB_shader_objects.bc',
     'src/bc/gl/GL_ARB_texture_compression.bc',
     'src/bc/gl/GL_ARB_transpose_matrix.bc',
