@@ -1991,14 +1991,17 @@ static const state_info framebuffer_attachment_parameter_state[] =
     { NULL, GL_NONE, NULL_TYPE, 0, -1, -1, 0 }
 };
 
+static const state_info transform_feedback_record_state[] =
+{
+    { STATE_NAME(GL_TRANSFORM_FEEDBACK_RECORD_NV), TYPE_11GLxfbattrib, -1, BUGLE_GL_NV_transform_feedback, -1, STATE_INDEXED },
+    { NULL, GL_NONE, NULL_TYPE, 0, -1, -1, 0 }
+};
+
 static const state_info transform_feedback_buffer_state[] =
 {
-#ifdef GL_NV_transform_feedback
-    { STATE_NAME(GL_TRANSFORM_FEEDBACK_RECORD_NV), TYPE_11GLxfbattrib, -1, BUGLE_GL_NV_transform_feedback, -1, STATE_INDEXED },
     { STATE_NAME(GL_TRANSFORM_FEEDBACK_BUFFER_BINDING_NV), TYPE_5GLint, -1, BUGLE_GL_NV_transform_feedback, -1, STATE_INDEXED },
     { STATE_NAME(GL_TRANSFORM_FEEDBACK_BUFFER_START_NV), TYPE_5GLint, -1, BUGLE_GL_NV_transform_feedback, -1, STATE_INDEXED },
     { STATE_NAME(GL_TRANSFORM_FEEDBACK_BUFFER_SIZE_NV), TYPE_5GLint, -1, BUGLE_GL_NV_transform_feedback, -1, STATE_INDEXED },
-#endif /* GL_NV_transform_feedback */
     { NULL, GL_NONE, NULL_TYPE, 0, -1, -1, 0 }
 };
 
@@ -2028,6 +2031,7 @@ const state_info * const all_state[] =
     framebuffer_attachment_parameter_state,
     framebuffer_parameter_state,
     renderbuffer_parameter_state,
+    transform_feedback_record_state,
     transform_feedback_buffer_state,
     NULL
 };
@@ -2803,7 +2807,13 @@ static void spawn_children_renderbuffer(const glstate *self, linked_list *childr
 
 static void spawn_children_transform_feedback_buffer(const glstate *self, linked_list *children)
 {
+    GLint records;
+    CALL(glGetIntegerv)(GL_TRANSFORM_FEEDBACK_ATTRIBS_NV, &records);
     bugle_list_init(children, bugle_free);
+    if (self->level < records)
+    {
+        make_leaves(self, transform_feedback_record_state, children);
+    }
     make_leaves(self, transform_feedback_buffer_state, children);
 }
 
