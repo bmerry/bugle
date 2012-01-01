@@ -390,6 +390,7 @@ class GLAPI(API):
         "GL_SGIS_texture_lod": ["GL_VERSION_1_2"],
         "GL_NV_blend_square": ["GL_VERSION_1_4", "GL_ES_VERSION_2_0"],
         "GL_NV_depth_buffer_float": ["GL_ARB_depth_buffer_float"],
+        "GL_NV_packed_depth_stencil": ["GL_EXT_packed_depth_stencil"],
         "GL_NV_texture_rectangle": ["GL_EXT_texture_rectangle"],
 
         # This got promoted to core from imaging subset in 1.4

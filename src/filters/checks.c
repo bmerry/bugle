@@ -77,7 +77,6 @@ static bugle_bool checks_texture_face_complete(GLuint unit, GLenum face, int dim
         GL_TEXTURE_DEPTH
     };
 
-    /* FIXME: cannot query depth unless 3D texture extension is present */
     for (d = 0; d < dims; d++)
     {
         CALL(glGetTexLevelParameteriv)(face, base, dim_enum[d], &sizes[d]);

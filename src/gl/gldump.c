@@ -58,10 +58,8 @@ budgie_type bugle_gl_type_to_type(GLenum gl_type)
     case GL_UNSIGNED_SHORT_5_6_5_REV:
     case GL_UNSIGNED_SHORT_4_4_4_4_REV:
     case GL_UNSIGNED_SHORT_1_5_5_5_REV:
-#ifdef GL_APPLE_ycbcr_422
     case GL_UNSIGNED_SHORT_8_8_APPLE:
     case GL_UNSIGNED_SHORT_8_8_REV_APPLE:
-#endif
     case GL_UNSIGNED_SHORT:
         return TYPE_8GLushort;
     case GL_SHORT:
@@ -70,29 +68,19 @@ budgie_type bugle_gl_type_to_type(GLenum gl_type)
     case GL_UNSIGNED_INT_10_10_10_2:
     case GL_UNSIGNED_INT_8_8_8_8_REV:
     case GL_UNSIGNED_INT_2_10_10_10_REV:
-#ifdef GL_NV_packed_depth_stencil
-    case GL_UNSIGNED_INT_24_8_NV:
-#endif
-#ifdef GL_NV_texture_shader
+    case GL_UNSIGNED_INT_24_8:
     case GL_UNSIGNED_INT_S8_S8_8_8_NV:
     case GL_UNSIGNED_INT_8_8_S8_S8_REV_NV:
-#endif
-#ifdef GL_EXT_packed_float
-    case GL_UNSIGNED_INT_10F_11F_11F_REV_EXT:
-#endif
-#ifdef GL_EXT_texture_shared_exponent
-    case GL_UNSIGNED_INT_5_9_9_9_REV_EXT:
-#endif
+    case GL_UNSIGNED_INT_10F_11F_11F_REV:
+    case GL_UNSIGNED_INT_5_9_9_9_REV:
     case GL_UNSIGNED_INT:
         return TYPE_6GLuint;
     case GL_INT:
         return TYPE_5GLint;
     case GL_FLOAT:
         return TYPE_7GLfloat;
-#ifdef GL_ARB_half_float_pixel
-    case GL_HALF_FLOAT_ARB:
+    case GL_HALF_FLOAT:
         return TYPE_9GLhalfARB;
-#endif
     case GL_DOUBLE:
         return TYPE_8GLdouble;
     case GL_FLOAT_VEC2: return TYPE_6GLvec2; break;
@@ -215,9 +203,7 @@ int bugle_gl_format_to_count(GLenum format, GLenum type)
     case GL_UNSIGNED_INT:
     case GL_INT:
     case GL_FLOAT:
-#ifdef GL_ARB_half_float_pixel
-    case GL_HALF_FLOAT_ARB:
-#endif
+    case GL_HALF_FLOAT:
         /* Note: GL_DOUBLE is not a legal value */
         switch (format)
         {
@@ -233,45 +219,30 @@ int bugle_gl_format_to_count(GLenum format, GLenum type)
         case GL_ALPHA:
         case GL_INTENSITY:
         case GL_LUMINANCE:
-#ifdef GL_EXT_texture_sRGB
-        case GL_SLUMINANCE_EXT:
-#endif
+        case GL_SLUMINANCE:
         case GL_STENCIL_INDEX:
         case GL_DEPTH_COMPONENT:
-#ifdef GL_EXT_texture_integer
-        case GL_RED_INTEGER_EXT:
-        case GL_GREEN_INTEGER_EXT:
-        case GL_BLUE_INTEGER_EXT:
-        case GL_ALPHA_INTEGER_EXT:
+        case GL_RED_INTEGER:
+        case GL_GREEN_INTEGER:
+        case GL_BLUE_INTEGER:
+        case GL_ALPHA_INTEGER:
         case GL_LUMINANCE_INTEGER_EXT:
-#endif
             return 1;
         case GL_LUMINANCE_ALPHA:
-#ifdef GL_EXT_texture_sRGB
         case GL_SLUMINANCE_ALPHA_EXT:
-#endif
-#ifdef GL_EXT_texture_integer
-        case GL_LUMINANCE_ALPHA_INTEGER_EXT:
-#endif
-#ifdef GL_ARB_texture_rg
+        case GL_LUMINANCE_ALPHA_INTEGER:
         case GL_RG:
         case GL_RG_INTEGER:
-#endif
+        case GL_DEPTH_STENCIL:
             return 2;
         case GL_RGB:
         case GL_BGR:
-#ifdef GL_EXT_texture_sRGB
-        case GL_SRGB_EXT:
-#endif
+        case GL_SRGB:
             return 3;
         case GL_RGBA:
-        case GL_BGRA_EXT:
-#ifdef GL_EXT_abgr
+        case GL_BGRA:
         case GL_ABGR_EXT:
-#endif
-#ifdef GL_EXT_texture_sRGB
         case GL_SRGB_ALPHA_EXT:
-#endif
             return 4;
         default:
             bugle_log_printf("gldump", "format_to_count", BUGLE_LOG_WARNING,
