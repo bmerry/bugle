@@ -230,7 +230,7 @@ int bugle_gl_format_to_count(GLenum format, GLenum type)
             return 1;
         case GL_LUMINANCE_ALPHA:
         case GL_SLUMINANCE_ALPHA_EXT:
-        case GL_LUMINANCE_ALPHA_INTEGER:
+        case GL_LUMINANCE_ALPHA_INTEGER_EXT:
         case GL_RG:
         case GL_RG_INTEGER:
         case GL_DEPTH_STENCIL:

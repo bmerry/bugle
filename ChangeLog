@@ -7,6 +7,7 @@
 * Fixed invalid queries of GL_TRANSFORM_FEEDBACK_RECORD_NV
 * Support tracing of glGetStringi
 * Support tracing of GL_ARB_sampler_objects
+* Add most missing GL 3.0 state to the state display
 
 0.0.20111115
 ------------
