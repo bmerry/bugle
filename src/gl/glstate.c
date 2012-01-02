@@ -1,5 +1,5 @@
 /*  BuGLe: an OpenGL debugging tool
- *  Copyright (C) 2004-2011  Bruce Merry
+ *  Copyright (C) 2004-2012  Bruce Merry
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -107,6 +107,7 @@
 #define STATE_MULTIPLEX_BIND_READ_FRAMEBUFFER    0x00001000    /* Set current read framebuffer object */
 #define STATE_MULTIPLEX_BIND_DRAW_FRAMEBUFFER    0x00002000    /* Set current draw framebuffer object */
 #define STATE_MULTIPLEX_BIND_RENDERBUFFER   0x00004000    /* Set current renderbuffer object */
+#define STATE_MULTIPLEX_BIND_VERTEX_ARRAY   0x00008000    /* Set current vertex array object */
 
 #define STATE_SELECT_NO_1D                  0x00010000    /* Ignore for 1D targets like GL_CONVOLUTION_1D */
 #define STATE_SELECT_NO_2D                  0x00020000    /* Ignore for 2D targets like GL_TEXTURE_2D */
@@ -160,6 +161,9 @@
 #define STATE_RENDERBUFFER_PARAMETER (STATE_MODE_RENDERBUFFER_PARAMETER | STATE_MULTIPLEX_BIND_RENDERBUFFER)
 #define STATE_INDEXED STATE_MODE_INDEXED
 #define STATE_ENABLED_INDEXED STATE_MODE_ENABLED_INDEXED
+#define STATE_VERTEX_ARRAY (STATE_MODE_GLOBAL | STATE_MULTIPLEX_BIND_VERTEX_ARRAY)
+#define STATE_VERTEX_ARRAY_ENABLED (STATE_MODE_ENABLED | STATE_MULTIPLEX_BIND_VERTEX_ARRAY)
+#define STATE_VERTEX_ARRAY_ATTRIB (STATE_VERTEX_ATTRIB | STATE_MULTIPLEX_BIND_VERTEX_ARRAY)
 
 typedef struct
 {
@@ -245,6 +249,9 @@ static const enum_list query_enums[] =
     { NULL, GL_NONE, 0 }
 };
 
+/* Note: currently we have two copies of this state, one for per-VAO state and
+ * one for the current state (or the only state if VAOs are not present).
+ */
 static const state_info vertex_attrib_state[] =
 {
     { STATE_NAME(GL_VERTEX_ATTRIB_ARRAY_ENABLED), TYPE_9GLboolean, -1, BUGLE_EXTGROUP_vertex_attrib, -1, STATE_VERTEX_ATTRIB },
@@ -259,6 +266,23 @@ static const state_info vertex_attrib_state[] =
     { STATE_NAME_EXT(GL_VERTEX_ATTRIB_ARRAY_DIVISOR, _ARB), TYPE_5GLint, -1, BUGLE_GL_ARB_instanced_arrays, -1, STATE_VERTEX_ATTRIB },
 #endif
     { STATE_NAME(GL_CURRENT_VERTEX_ATTRIB), TYPE_8GLdouble, 4, BUGLE_EXTGROUP_vertex_attrib, -1, STATE_VERTEX_ATTRIB | STATE_SELECT_NON_ZERO },
+    { NULL, GL_NONE, NULL_TYPE, 0, -1, -1, 0 }
+};
+
+static const state_info vertex_array_attrib_state[] =
+{
+    { STATE_NAME(GL_VERTEX_ATTRIB_ARRAY_ENABLED), TYPE_9GLboolean, -1, BUGLE_EXTGROUP_vertex_attrib, -1, STATE_VERTEX_ARRAY_ATTRIB },
+    { STATE_NAME(GL_VERTEX_ATTRIB_ARRAY_SIZE), TYPE_5GLint, -1, BUGLE_EXTGROUP_vertex_attrib, -1, STATE_VERTEX_ARRAY_ATTRIB },
+    { STATE_NAME(GL_VERTEX_ATTRIB_ARRAY_STRIDE), TYPE_5GLint, -1, BUGLE_EXTGROUP_vertex_attrib, -1, STATE_VERTEX_ARRAY_ATTRIB },
+    { STATE_NAME(GL_VERTEX_ATTRIB_ARRAY_TYPE), TYPE_6GLenum, -1, BUGLE_EXTGROUP_vertex_attrib, -1, STATE_VERTEX_ARRAY_ATTRIB },
+    { STATE_NAME(GL_VERTEX_ATTRIB_ARRAY_NORMALIZED), TYPE_9GLboolean, -1, BUGLE_EXTGROUP_vertex_attrib, -1, STATE_VERTEX_ARRAY_ATTRIB },
+    { STATE_NAME(GL_VERTEX_ATTRIB_ARRAY_INTEGER), TYPE_9GLboolean, -1, BUGLE_GL_VERSION_3_0, -1, STATE_VERTEX_ARRAY_ATTRIB },
+    { STATE_NAME(GL_VERTEX_ATTRIB_ARRAY_POINTER), TYPE_P6GLvoid, -1, BUGLE_EXTGROUP_vertex_attrib, -1, STATE_VERTEX_ARRAY_ATTRIB },
+    { STATE_NAME(GL_VERTEX_ATTRIB_ARRAY_BUFFER_BINDING), TYPE_5GLint, -1, BUGLE_GL_ARB_vertex_buffer_object, -1, STATE_VERTEX_ARRAY_ATTRIB },
+#ifdef GL_ARB_instanced_arrays
+    { STATE_NAME_EXT(GL_VERTEX_ATTRIB_ARRAY_DIVISOR, _ARB), TYPE_5GLint, -1, BUGLE_GL_ARB_instanced_arrays, -1, STATE_VERTEX_ARRAY_ATTRIB },
+#endif
+    { STATE_NAME(GL_CURRENT_VERTEX_ATTRIB), TYPE_8GLdouble, 4, BUGLE_EXTGROUP_vertex_attrib, -1, STATE_VERTEX_ARRAY_ATTRIB | STATE_SELECT_NON_ZERO },
     { NULL, GL_NONE, NULL_TYPE, 0, -1, -1, 0 }
 };
 
@@ -717,7 +741,7 @@ static void spawn_children_vertex_attrib(const glstate *self, linked_list *child
     bugle_list_init(children, bugle_free);
     make_leaves_conditional(self, vertex_attrib_state,
                             0,
-                            (self->object == 0) ? STATE_SELECT_NON_ZERO : 0,
+                            (self->level == 0) ? STATE_SELECT_NON_ZERO : 0,
                             children);
 }
 
@@ -725,10 +749,28 @@ static void spawn_vertex_attrib_arrays(const struct glstate *self,
                                        linked_list *children,
                                        const struct state_info *info)
 {
-    GLint count, i;
+    GLint count;
     CALL(glGetIntegerv)(GL_MAX_VERTEX_ATTRIBS, &count);
-    for (i = 0; i < count; i++)
-        make_object(self, 0, "VertexAttrib[%lu]", i, spawn_children_vertex_attrib, NULL, children);
+    make_counted(self, count, "VertexAttrib[%lu]", 0, offsetof(glstate, level), spawn_children_vertex_attrib, NULL, children);
+}
+
+/* Like the above two, but for VAOs */
+static void spawn_children_vertex_array_attrib(const glstate *self, linked_list *children)
+{
+    bugle_list_init(children, bugle_free);
+    make_leaves_conditional(self, vertex_array_attrib_state,
+                            0,
+                            (self->level == 0) ? STATE_SELECT_NON_ZERO : 0,
+                            children);
+}
+
+static void spawn_vertex_array_attrib_arrays(const struct glstate *self,
+                                             linked_list *children,
+                                             const struct state_info *info)
+{
+    GLint count;
+    CALL(glGetIntegerv)(GL_MAX_VERTEX_ATTRIBS, &count);
+    make_counted(self, count, "VertexAttrib[%lu]", 0, offsetof(glstate, level), spawn_children_vertex_array_attrib, NULL, children);
 }
 
 static void spawn_clip_planes(const struct glstate *self,
@@ -1948,6 +1990,50 @@ static const state_info buffer_parameter_state[] =
     { NULL, GL_NONE, NULL_TYPE, 0, -1, -1, 0 }
 };
 
+static const state_info vertex_array_parameter_state[] =
+{
+    { STATE_NAME(GL_VERTEX_ARRAY), TYPE_9GLboolean, -1, BUGLE_GL_VERSION_1_1, -1, STATE_VERTEX_ARRAY_ENABLED },
+    { STATE_NAME(GL_VERTEX_ARRAY_SIZE), TYPE_5GLint, -1, BUGLE_GL_VERSION_1_1, -1, STATE_VERTEX_ARRAY },
+    { STATE_NAME(GL_VERTEX_ARRAY_TYPE), TYPE_6GLenum, -1, BUGLE_GL_VERSION_1_1, -1, STATE_VERTEX_ARRAY },
+    { STATE_NAME(GL_VERTEX_ARRAY_STRIDE), TYPE_5GLint, -1, BUGLE_GL_VERSION_1_1, -1, STATE_VERTEX_ARRAY },
+    { STATE_NAME(GL_VERTEX_ARRAY_POINTER), TYPE_P6GLvoid, -1, BUGLE_GL_VERSION_1_1, -1, STATE_VERTEX_ARRAY },
+    { STATE_NAME(GL_NORMAL_ARRAY), TYPE_9GLboolean, -1, BUGLE_GL_VERSION_1_1, -1, STATE_VERTEX_ARRAY_ENABLED },
+    { STATE_NAME(GL_NORMAL_ARRAY_TYPE), TYPE_6GLenum, -1, BUGLE_GL_VERSION_1_1, -1, STATE_VERTEX_ARRAY },
+    { STATE_NAME(GL_NORMAL_ARRAY_STRIDE), TYPE_5GLint, -1, BUGLE_GL_VERSION_1_1, -1, STATE_VERTEX_ARRAY },
+    { STATE_NAME(GL_NORMAL_ARRAY_POINTER), TYPE_P6GLvoid, -1, BUGLE_GL_VERSION_1_1, -1, STATE_VERTEX_ARRAY },
+    { STATE_NAME(GL_FOG_COORD_ARRAY), TYPE_9GLboolean, -1, BUGLE_GL_EXT_fog_coord, -1, STATE_VERTEX_ARRAY_ENABLED },
+    { STATE_NAME(GL_FOG_COORD_ARRAY_TYPE), TYPE_6GLenum, -1, BUGLE_GL_EXT_fog_coord, -1, STATE_VERTEX_ARRAY },
+    { STATE_NAME(GL_FOG_COORD_ARRAY_STRIDE), TYPE_5GLint, -1, BUGLE_GL_EXT_fog_coord, -1, STATE_VERTEX_ARRAY },
+    { STATE_NAME(GL_FOG_COORD_ARRAY_POINTER), TYPE_P6GLvoid, -1, BUGLE_GL_EXT_fog_coord, -1, STATE_VERTEX_ARRAY },
+    { STATE_NAME(GL_COLOR_ARRAY), TYPE_9GLboolean, -1, BUGLE_GL_VERSION_1_1, -1, STATE_VERTEX_ARRAY_ENABLED },
+    { STATE_NAME(GL_COLOR_ARRAY_SIZE), TYPE_5GLint, -1, BUGLE_GL_VERSION_1_1, -1, STATE_VERTEX_ARRAY },
+    { STATE_NAME(GL_COLOR_ARRAY_TYPE), TYPE_6GLenum, -1, BUGLE_GL_VERSION_1_1, -1, STATE_VERTEX_ARRAY },
+    { STATE_NAME(GL_COLOR_ARRAY_STRIDE), TYPE_5GLint, -1, BUGLE_GL_VERSION_1_1, -1, STATE_VERTEX_ARRAY },
+    { STATE_NAME(GL_COLOR_ARRAY_POINTER), TYPE_P6GLvoid, -1, BUGLE_GL_VERSION_1_1, -1, STATE_VERTEX_ARRAY },
+    { STATE_NAME(GL_SECONDARY_COLOR_ARRAY), TYPE_9GLboolean, -1, BUGLE_GL_EXT_secondary_color, -1, STATE_VERTEX_ARRAY_ENABLED },
+    { STATE_NAME(GL_SECONDARY_COLOR_ARRAY_SIZE), TYPE_5GLint, -1, BUGLE_GL_EXT_secondary_color, -1, STATE_VERTEX_ARRAY },
+    { STATE_NAME(GL_SECONDARY_COLOR_ARRAY_TYPE), TYPE_6GLenum, -1, BUGLE_GL_EXT_secondary_color, -1, STATE_VERTEX_ARRAY },
+    { STATE_NAME(GL_SECONDARY_COLOR_ARRAY_STRIDE), TYPE_5GLint, -1, BUGLE_GL_EXT_secondary_color, -1, STATE_VERTEX_ARRAY },
+    { STATE_NAME(GL_SECONDARY_COLOR_ARRAY_POINTER), TYPE_P6GLvoid, -1, BUGLE_GL_EXT_secondary_color, -1, STATE_VERTEX_ARRAY },
+    { STATE_NAME(GL_INDEX_ARRAY), TYPE_9GLboolean, -1, BUGLE_GL_VERSION_1_1, -1, STATE_VERTEX_ARRAY_ENABLED },
+    { STATE_NAME(GL_INDEX_ARRAY_TYPE), TYPE_6GLenum, -1, BUGLE_GL_VERSION_1_1, -1, STATE_VERTEX_ARRAY },
+    { STATE_NAME(GL_INDEX_ARRAY_STRIDE), TYPE_5GLint, -1, BUGLE_GL_VERSION_1_1, -1, STATE_VERTEX_ARRAY },
+    { STATE_NAME(GL_INDEX_ARRAY_POINTER), TYPE_P6GLvoid, -1, BUGLE_GL_VERSION_1_1, -1, STATE_VERTEX_ARRAY },
+    { STATE_NAME(GL_EDGE_FLAG_ARRAY), TYPE_9GLboolean, -1, BUGLE_GL_VERSION_1_1, -1, STATE_VERTEX_ARRAY_ENABLED },
+    { STATE_NAME(GL_EDGE_FLAG_ARRAY_STRIDE), TYPE_5GLint, -1, BUGLE_GL_VERSION_1_1, -1, STATE_VERTEX_ARRAY },
+    { STATE_NAME(GL_EDGE_FLAG_ARRAY_POINTER), TYPE_P6GLvoid, -1, BUGLE_GL_VERSION_1_1, -1, STATE_VERTEX_ARRAY },
+    { "Attribute Arrays", GL_NONE, NULL_TYPE, -1, BUGLE_EXTGROUP_vertex_attrib, -1, 0, spawn_vertex_array_attrib_arrays },
+    { STATE_NAME(GL_VERTEX_ARRAY_BUFFER_BINDING), TYPE_5GLint, -1, BUGLE_GL_ARB_vertex_buffer_object, -1, STATE_VERTEX_ARRAY },
+    { STATE_NAME(GL_NORMAL_ARRAY_BUFFER_BINDING), TYPE_5GLint, -1, BUGLE_GL_ARB_vertex_buffer_object, -1, STATE_VERTEX_ARRAY },
+    { STATE_NAME(GL_COLOR_ARRAY_BUFFER_BINDING), TYPE_5GLint, -1, BUGLE_GL_ARB_vertex_buffer_object, -1, STATE_VERTEX_ARRAY },
+    { STATE_NAME(GL_INDEX_ARRAY_BUFFER_BINDING), TYPE_5GLint, -1, BUGLE_GL_ARB_vertex_buffer_object, -1, STATE_VERTEX_ARRAY },
+    { STATE_NAME(GL_EDGE_FLAG_ARRAY_BUFFER_BINDING), TYPE_5GLint, -1, BUGLE_GL_ARB_vertex_buffer_object, -1, STATE_VERTEX_ARRAY },
+    { STATE_NAME(GL_SECONDARY_COLOR_ARRAY_BUFFER_BINDING), TYPE_5GLint, -1, BUGLE_GL_ARB_vertex_buffer_object, -1, STATE_VERTEX_ARRAY },
+    { STATE_NAME(GL_FOG_COORDINATE_ARRAY_BUFFER_BINDING), TYPE_5GLint, -1, BUGLE_GL_ARB_vertex_buffer_object, -1, STATE_VERTEX_ARRAY },
+    { STATE_NAME(GL_ELEMENT_ARRAY_BUFFER_BINDING), TYPE_5GLint, -1, BUGLE_GL_ARB_vertex_buffer_object, -1, STATE_VERTEX_ARRAY },
+    { NULL, GL_NONE, NULL_TYPE, 0, -1, -1, 0 }
+};
+
 static const state_info renderbuffer_parameter_state[] =
 {
     { STATE_NAME(GL_RENDERBUFFER_WIDTH), TYPE_5GLint, -1, BUGLE_GL_EXT_framebuffer_object, -1, STATE_RENDERBUFFER_PARAMETER },
@@ -2051,6 +2137,7 @@ const state_info * const all_state[] =
     query_state,
     query_object_state,
     buffer_parameter_state,
+    vertex_array_parameter_state,
     shader_state,
     program_state,
     old_program_object_state,
@@ -2155,7 +2242,7 @@ void bugle_state_get_raw(const glstate *state, bugle_state_raw *wrapper)
     int in_length;
     char *str = NULL;  /* Set to non-NULL for human-readable string output */
 
-    GLint old_texture, old_buffer, old_program;
+    GLint old_texture, old_buffer, old_vertex_array, old_program;
     GLint old_unit, old_client_unit, old_framebuffer, old_renderbuffer;
     bugle_bool flag_active_texture = BUGLE_FALSE;
     GLenum pname;
@@ -2200,18 +2287,21 @@ void bugle_state_get_raw(const glstate *state, bugle_state_raw *wrapper)
             CALL(glClientActiveTexture)(state->unit);
         flag_active_texture = BUGLE_TRUE;
     }
+    if (state->info->flags & STATE_MULTIPLEX_BIND_VERTEX_ARRAY)
+    {
+        CALL(glGetIntegerv)(GL_VERTEX_ARRAY_BINDING, &old_vertex_array);
+        CALL(glBindVertexArray)(state->object);
+    }
     if (state->info->flags & STATE_MULTIPLEX_BIND_BUFFER)
     {
-        CALL(glGetIntegerv)(GL_ARRAY_BUFFER_BINDING_ARB, &old_buffer);
-        CALL(glBindBuffer)(GL_ARRAY_BUFFER_ARB, state->object);
+        CALL(glGetIntegerv)(GL_ARRAY_BUFFER_BINDING, &old_buffer);
+        CALL(glBindBuffer)(GL_ARRAY_BUFFER, state->object);
     }
-#if defined(GL_ARB_vertex_program) || defined(GL_ARB_fragment_program)
     if (state->info->flags & STATE_MULTIPLEX_BIND_PROGRAM)
     {
         CALL(glGetProgramivARB)(state->target, GL_PROGRAM_BINDING_ARB, &old_program);
         CALL(glBindProgramARB)(state->target, state->object);
     }
-#endif
     if ((state->info->flags & STATE_MULTIPLEX_BIND_DRAW_FRAMEBUFFER)
         && bugle_gl_has_framebuffer_object())
     {
@@ -2342,14 +2432,13 @@ void bugle_state_get_raw(const glstate *state, bugle_state_raw *wrapper)
         get_helper(state, d, f, i, &in_type, NULL,
                    CALL(glGetMinmaxParameterfv), CALL(glGetMinmaxParameteriv));
         break;
-#ifdef GL_ARB_vertex_program
     case STATE_MODE_VERTEX_ATTRIB:
         if (state->info->type == TYPE_P6GLvoid)
-            CALL(glGetVertexAttribPointervARB)(state->object, pname, p);
+            CALL(glGetVertexAttribPointerv)(state->level, pname, p);
         else if (state->info->type == TYPE_8GLdouble)
-            CALL(glGetVertexAttribdvARB)(state->object, pname, d);
+            CALL(glGetVertexAttribdv)(state->level, pname, d);
         else if (state->info->type == TYPE_7GLfloat)
-            CALL(glGetVertexAttribfvARB)(state->object, pname, f);
+            CALL(glGetVertexAttribfv)(state->level, pname, f);
         else
         {
             /* xorg-server 1.2.0 maps the iv and fv forms to the NV
@@ -2357,11 +2446,10 @@ void bugle_state_get_raw(const glstate *state, bugle_state_raw *wrapper)
              * (_ENABLED and _NORMALIZED). We work around that by using
              * the dv form.
              */
-            CALL(glGetVertexAttribdvARB)(state->object, pname, d);
+            CALL(glGetVertexAttribdv)(state->level, pname, d);
             in_type = TYPE_8GLdouble;
         }
         break;
-#endif
     case STATE_MODE_QUERY:
         CALL(glGetQueryiv)(state->target, pname, i);
         in_type = TYPE_5GLint;
@@ -2530,10 +2618,10 @@ void bugle_state_get_raw(const glstate *state, bugle_state_raw *wrapper)
     {
         CALL(glBindBuffer)(GL_ARRAY_BUFFER, old_buffer);
     }
-#if defined(GL_ARB_vertex_program) || defined(GL_ARB_fragment_program)
+    if (state->info->flags & STATE_MULTIPLEX_BIND_VERTEX_ARRAY)
+        CALL(glBindVertexArray)(old_vertex_array);
     if (state->info->flags & STATE_MULTIPLEX_BIND_PROGRAM)
         CALL(glBindProgramARB)(state->target, old_program);
-#endif
     if ((state->info->flags & STATE_MULTIPLEX_BIND_DRAW_FRAMEBUFFER)
         && bugle_gl_has_framebuffer_object())
         bugle_gl_bind_draw_framebuffer(old_framebuffer);
@@ -2671,6 +2759,12 @@ static void spawn_children_buffer_parameter(const glstate *self, linked_list *ch
 {
     bugle_list_init(children, bugle_free);
     make_leaves(self, buffer_parameter_state, children);
+}
+
+static void spawn_children_vertex_array_parameter(const glstate *self, linked_list *children)
+{
+    bugle_list_init(children, bugle_free);
+    make_leaves(self, vertex_array_parameter_state, children);
 }
 
 #if defined(GL_ARB_vertex_program) || defined(GL_ARB_fragment_program)
@@ -2879,6 +2973,11 @@ static void spawn_children_global(const glstate *self, linked_list *children)
     {
         make_objects(self, BUGLE_GLOBJECTS_BUFFER, GL_NONE, BUGLE_FALSE,
                      "Buffer[%lu]", spawn_children_buffer_parameter, NULL, children);
+    }
+    if (bugle_gl_has_extension_group(BUGLE_GL_ARB_vertex_array_object))
+    {
+        make_objects(self, BUGLE_GLOBJECTS_VERTEX_ARRAY, GL_NONE, BUGLE_TRUE,
+                     "VertexArray[%lu]", spawn_children_vertex_array_parameter, NULL, children);
     }
     if (bugle_gl_has_extension_group(BUGLE_GL_ARB_vertex_program))
         make_target(self, "GL_VERTEX_PROGRAM_ARB",

@@ -51,6 +51,7 @@ static bugle_bool object_type_shared(bugle_globjects_type type)
     switch (type)
     {
     case BUGLE_GLOBJECTS_QUERY:
+    case BUGLE_GLOBJECTS_VERTEX_ARRAY:
     case BUGLE_GLOBJECTS_FRAMEBUFFER:
         /* ARB_framebuffer_object doesn't allow sharing. This is thus wrong for
          * EXT_framebuffer_object, but the interactions aren't defined anyway.
@@ -428,6 +429,26 @@ static bugle_bool globjects_glDeleteRenderbuffers(function_call *call, const cal
     return BUGLE_TRUE;
 }
 
+#if BUGLE_GLTYPE_GL
+static bugle_bool globjects_glBindVertexArray(function_call *call, const callback_data *data)
+{
+    globjects_add_single(BUGLE_GLOBJECTS_VERTEX_ARRAY,
+                         1,  /* arbitrary non-zero value */
+                         *call->glBindVertexArray.arg0,
+                         CALL(glIsVertexArray));
+    return BUGLE_TRUE;
+}
+
+static bugle_bool globjects_glDeleteVertexArrays(function_call *call, const callback_data *data)
+{
+    globjects_delete_multiple(BUGLE_GLOBJECTS_VERTEX_ARRAY,
+                              *call->glDeleteVertexArrays.arg0,
+                              *call->glDeleteVertexArrays.arg1,
+                              CALL(glIsVertexArray));
+    return BUGLE_TRUE;
+}
+#endif
+
 static void globjects_data_init(const void *key, void *data)
 {
     globjects_data *d;
@@ -470,9 +491,11 @@ static bugle_bool globjects_filter_set_initialise(filter_set *handle)
     bugle_filter_catches(f, "glDeleteTextures", BUGLE_TRUE, globjects_glDeleteTextures);
     bugle_filter_catches(f, "glBindBuffer", BUGLE_TRUE, globjects_glBindBuffer);
     bugle_filter_catches(f, "glDeleteBuffers", BUGLE_TRUE, globjects_glDeleteBuffers);
-#ifdef GL_VERSION_1_5
+#if BUGLE_GLTYPE_GL
     bugle_filter_catches(f, "glBeginQuery", BUGLE_TRUE, globjects_glBeginQuery);
     bugle_filter_catches(f, "glDeleteQueries", BUGLE_TRUE, globjects_glDeleteQueries);
+    bugle_filter_catches(f, "glBindVertexArray", BUGLE_TRUE, globjects_glBindVertexArray);
+    bugle_filter_catches(f, "glDeleteVertexArrays", BUGLE_TRUE, globjects_glDeleteVertexArrays);
 #endif
 #if defined(GL_ARB_vertex_program) || defined(GL_ARB_fragment_program)
     bugle_filter_catches(f, "glBindProgramARB", BUGLE_TRUE, globjects_glBindProgramARB);

@@ -2,11 +2,13 @@
 * Added support for ARB_texture_rg (untested)
 * Added support for ARB_half_float_vertex and ARB_half_float_pixel
 * Added support for EXT_packed_depth_stencil
+* Added support for ARB_vertex_array_object
 * Start on support for ARB_framebuffer_object (incomplete and poorly tested)
 * Fixed incorrect state display of GL_CLIP_DISTANCEi and GL_DRAW_BUFFERi (always showed element 0)
 * Fixed invalid queries of GL_TRANSFORM_FEEDBACK_RECORD_NV
 * Support tracing of glGetStringi
 * Support tracing of GL_ARB_sampler_objects
+* Recognize the GL 3.0-equivalent functions to those in EXT_draw_buffers2
 * Add most missing GL 3.0 state to the state display
 * Removed unnecessary definitions of GL_GLEXT_PROTOTYPES
 * Filled out list of sampler types in gldump - it should now be possible to view the uniforms of all sampler types up to GL 4.2
