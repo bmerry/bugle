@@ -93,22 +93,52 @@ budgie_type bugle_gl_type_to_type(GLenum gl_type)
     case GL_BOOL_VEC3: return TYPE_7GLbvec3; break;
     case GL_BOOL_VEC4: return TYPE_7GLbvec4; break;
     case GL_SAMPLER_1D:
+    case GL_SAMPLER_BUFFER:
     case GL_SAMPLER_2D:
+    case GL_SAMPLER_2D_RECT:
     case GL_SAMPLER_3D:
     case GL_SAMPLER_CUBE:
+    case GL_SAMPLER_CUBE_MAP_ARRAY:
+    case GL_SAMPLER_1D_ARRAY:
+    case GL_SAMPLER_2D_ARRAY:
+    case GL_SAMPLER_2D_MULTISAMPLE:
+    case GL_SAMPLER_2D_MULTISAMPLE_ARRAY:
     case GL_SAMPLER_1D_SHADOW:
     case GL_SAMPLER_2D_SHADOW:
-    case GL_SAMPLER_2D_RECT_ARB:
-    case GL_SAMPLER_2D_RECT_SHADOW_ARB:
+    case GL_SAMPLER_2D_RECT_SHADOW:
+    case GL_SAMPLER_CUBE_SHADOW:
+    case GL_SAMPLER_1D_ARRAY_SHADOW:
+    case GL_SAMPLER_2D_ARRAY_SHADOW:
+    case GL_SAMPLER_CUBE_MAP_ARRAY_SHADOW:
+    case GL_INT_SAMPLER_1D:
+    case GL_INT_SAMPLER_BUFFER:
+    case GL_INT_SAMPLER_2D:
+    case GL_INT_SAMPLER_2D_RECT:
+    case GL_INT_SAMPLER_3D:
+    case GL_INT_SAMPLER_CUBE:
+    case GL_INT_SAMPLER_1D_ARRAY:
+    case GL_INT_SAMPLER_2D_ARRAY:
+    case GL_INT_SAMPLER_CUBE_MAP_ARRAY:
+    case GL_INT_SAMPLER_2D_MULTISAMPLE:
+    case GL_INT_SAMPLER_2D_MULTISAMPLE_ARRAY:
+    case GL_UNSIGNED_INT_SAMPLER_1D:
+    case GL_UNSIGNED_INT_SAMPLER_BUFFER:
+    case GL_UNSIGNED_INT_SAMPLER_2D:
+    case GL_UNSIGNED_INT_SAMPLER_2D_RECT:
+    case GL_UNSIGNED_INT_SAMPLER_3D:
+    case GL_UNSIGNED_INT_SAMPLER_CUBE:
+    case GL_UNSIGNED_INT_SAMPLER_1D_ARRAY:
+    case GL_UNSIGNED_INT_SAMPLER_2D_ARRAY:
+    case GL_UNSIGNED_INT_SAMPLER_CUBE_MAP_ARRAY:
+    case GL_UNSIGNED_INT_SAMPLER_2D_MULTISAMPLE:
+    case GL_UNSIGNED_INT_SAMPLER_2D_MULTISAMPLE_ARRAY:
         return TYPE_5GLint;
-#if defined(GL_VERSION_2_1)
     case GL_FLOAT_MAT2x3: return TYPE_8GLmat2x3; break;
     case GL_FLOAT_MAT3x2: return TYPE_8GLmat3x2; break;
     case GL_FLOAT_MAT2x4: return TYPE_8GLmat2x4; break;
     case GL_FLOAT_MAT4x2: return TYPE_8GLmat4x2; break;
     case GL_FLOAT_MAT3x4: return TYPE_8GLmat3x4; break;
     case GL_FLOAT_MAT4x3: return TYPE_8GLmat4x3; break;
-#endif
     default:
         fprintf(stderr,
                 "Do not know the correct type for %s. This probably indicates that you\n"

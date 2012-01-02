@@ -9,6 +9,7 @@
 * Support tracing of GL_ARB_sampler_objects
 * Add most missing GL 3.0 state to the state display
 * Removed unnecessary definitions of GL_GLEXT_PROTOTYPES
+* Filled out list of sampler types in gldump - it should now be possible to view the uniforms of all sampler types up to GL 4.2
 
 0.0.20111115
 ------------
