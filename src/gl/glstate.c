@@ -16,20 +16,21 @@
  */
 
 /* Still TODO:
- * - multiple modelview matrices (for vertex/fragment program)
- * - paletted textures (need to extend color_table_parameter, which is
+ * - VAOs
+ * - GL3-style transform feedback state
+ * - Just about everything from GL 3.1 and above
+ *
+ * The following will probably never get done, since it's deprecated:
+ * - Multiple modelview matrices (for ARB vertex/fragment program)
+ * - Paletted textures (need to extend color_table_parameter, which is
  *   complicated by the fact that the palette belongs to the texture not
  *   the target).
- * - EXT_framebuffer_multisample
- * - all the 4th-gen extensions (DX10 equivalents)
- * - matrix stacks
- * - all the image state (textures, color tables, maps, pixel maps, convolution, stipple etc)
+ * - Matrix stacks.
  */
 
 #if HAVE_CONFIG_H
 # include <config.h>
 #endif
-#define GL_GLEXT_PROTOTYPES
 #include <bugle/gl/glheaders.h>
 #include <stdlib.h>
 #include <string.h>

@@ -19,7 +19,6 @@
 # include <config.h>
 #endif
 
-#define GL_GLEXT_PROTOTYPES
 #include <bugle/gl/glheaders.h>
 #include <bugle/gl/glextensions.h>
 #include <bugle/gl/glfbo.h>

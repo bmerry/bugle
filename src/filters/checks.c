@@ -19,7 +19,6 @@
 # include <config.h>
 #endif
 #define _POSIX_SOURCE
-#define GL_GLEXT_PROTOTYPES
 #include <bugle/bool.h>
 #include <stdio.h>
 #include <stdlib.h>

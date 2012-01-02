@@ -18,7 +18,6 @@
 #if HAVE_CONFIG_H
 # include <config.h>
 #endif
-#define GL_GLEXT_PROTOTYPES
 #include <stdlib.h>
 #include <string.h>
 #include <stddef.h>
