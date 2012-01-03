@@ -62,9 +62,9 @@ static void checks_texture_complete_fail(int unit, GLenum target, const char *re
  * requires mipmapping and that base <= max.
  *
  * TODO: handle sampler objects
- * TODO: handle more targets e.g. array textures
+ * TODO: handle other reasons for incompleteness e.g. linear filtering of integer data
  */
-static bugle_bool checks_texture_face_complete(GLuint unit, GLenum face, int dims,
+static bugle_bool checks_texture_face_complete(GLuint unit, GLenum face, int dims, int mip_dims,
                                                int base, int max, bugle_bool needs_mip)
 {
     GLint sizes[3], border, format;
@@ -96,7 +96,7 @@ static bugle_bool checks_texture_face_complete(GLuint unit, GLenum face, int dim
     {
         GLint lformat, lborder;
         bugle_bool more = BUGLE_FALSE;
-        for (d = 0; d < dims; d++)
+        for (d = 0; d < mip_dims; d++)
             if (sizes[d] > 1)
             {
                 more = BUGLE_TRUE;
@@ -215,19 +215,25 @@ static void checks_texture_complete(int unit, GLenum target)
             for (i = 0; i < 6; i++)
             {
                 face = GL_TEXTURE_CUBE_MAP_POSITIVE_X + i;
-                if (!checks_texture_face_complete(unit, face, 2, base, max, needs_mip))
+                if (!checks_texture_face_complete(unit, face, 2, 2, base, max, needs_mip))
                     break;
             }
             break;
         case GL_TEXTURE_3D:
-            success = checks_texture_face_complete(unit, target, 3, base, max, needs_mip);
+            success = checks_texture_face_complete(unit, target, 3, 3, base, max, needs_mip);
             break;
         case GL_TEXTURE_2D:
-        case GL_TEXTURE_RECTANGLE_ARB:
-            checks_texture_face_complete(unit, target, 2, base, max, needs_mip);
+        case GL_TEXTURE_RECTANGLE:
+            checks_texture_face_complete(unit, target, 2, 2, base, max, needs_mip);
             break;
         case GL_TEXTURE_1D:
-            checks_texture_face_complete(unit, target, 1, base, max, needs_mip);
+            checks_texture_face_complete(unit, target, 1, 1, base, max, needs_mip);
+            break;
+        case GL_TEXTURE_2D_ARRAY:
+            checks_texture_face_complete(unit, target, 3, 2, base, max, needs_mip);
+            break;
+        case GL_TEXTURE_1D_ARRAY:
+            checks_texture_face_complete(unit, target, 2, 1, base, max, needs_mip);
             break;
         }
 
