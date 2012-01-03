@@ -1,5 +1,5 @@
 /*  BuGLe: an OpenGL debugging tool
- *  Copyright (C) 2008-2010  Bruce Merry
+ *  Copyright (C) 2008-2010, 2012  Bruce Merry
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -90,6 +90,18 @@ static const texture_target targets[] =
         "#version 110\n"
         "uniform samplerCube s;\n"
         "void main() { gl_FragColor = textureCube(s, vec3(1.0, 0.5, 0.5)); }\n"
+    },
+    {
+        "1D array", "GL_TEXTURE_1D_ARRAY(_EXT)?", GL_TEXTURE_1D_ARRAY, { GL_TEXTURE_1D_ARRAY },
+        "#version 130\n"
+        "uniform sampler1DArray s;\n"
+        "void main() { gl_FragColor = texture(s, vec2(0.5, 0.5)); }\n"
+    },
+    {
+        "2D array", "GL_TEXTURE_2D_ARRAY(_EXT)?", GL_TEXTURE_2D_ARRAY, { GL_TEXTURE_2D_ARRAY },
+        "#version 130\n"
+        "uniform sampler2DArray s;\n"
+        "void main() { gl_FragColor = texture(s, vec3(0.5, 0.5, 0.5)); }\n"
     }
 };
 
@@ -112,7 +124,7 @@ static void teardown_texcomplete(void)
 }
 
 static void tex_image(GLenum face, int level, GLenum internalformat,
-                      int width, int height, int depth, int border,
+                      int width, int height, int depth, int layers, int border,
                       GLenum format, GLenum type, const void *pixels)
 {
     switch (face)
@@ -121,24 +133,38 @@ static void tex_image(GLenum face, int level, GLenum internalformat,
         glTexImage1D(face, level, internalformat, width, border,
                      format, type, pixels);
         break;
+    case GL_TEXTURE_2D:
+    case GL_TEXTURE_CUBE_MAP_POSITIVE_X:
+    case GL_TEXTURE_CUBE_MAP_NEGATIVE_X:
+    case GL_TEXTURE_CUBE_MAP_POSITIVE_Y:
+    case GL_TEXTURE_CUBE_MAP_NEGATIVE_Y:
+    case GL_TEXTURE_CUBE_MAP_POSITIVE_Z:
+    case GL_TEXTURE_CUBE_MAP_NEGATIVE_Z:
+        glTexImage2D(face, level, internalformat, width, height, border,
+                     format, type, pixels);
+        break;
     case GL_TEXTURE_3D:
         glTexImage3D(face, level, internalformat, width, height, depth, border,
                      format, type, pixels);
         break;
-    default:
-        glTexImage2D(face, level, internalformat, width, height, border,
+    case GL_TEXTURE_1D_ARRAY:
+        glTexImage2D(face, level, internalformat, width, layers, border,
+                     format, type, pixels);
+        break;
+    case GL_TEXTURE_2D_ARRAY:
+        glTexImage3D(face, level, internalformat, width, height, layers, border,
                      format, type, pixels);
         break;
     }
 }
 
 static void tex_images(const GLenum *faces, int level, GLenum internalformat,
-                       int width, int height, int depth, int border,
+                       int width, int height, int depth, int layers, int border,
                        GLenum format, GLenum type, const void *pixels)
 {
     const GLenum *f;
     for (f = faces; *f; f++)
-        tex_image(*f, level, internalformat, width, height, depth, border,
+        tex_image(*f, level, internalformat, width, height, depth, layers, border,
                   format, type, pixels);
 }
 
@@ -150,49 +176,49 @@ static GLuint make_texture_object(GLenum target, const GLenum *faces,
     glGenTextures(1, &id);
     glBindTexture(target, id);
 
-    if (target == GL_TEXTURE_CUBE_MAP_ARB)
+    if (target == GL_TEXTURE_CUBE_MAP)
     {
         switch (mode)
         {
         case MODE_COMPLETE_FULL:
-            tex_images(faces, 0, GL_RGB8, 4, 4, 4, 0, GL_RGB, GL_UNSIGNED_BYTE, image);
-            tex_images(faces, 1, GL_RGB8, 2, 2, 2, 0, GL_RGB, GL_UNSIGNED_BYTE, image);
-            tex_images(faces, 2, GL_RGB8, 1, 1, 1, 0, GL_RGB, GL_UNSIGNED_BYTE, image);
+            tex_images(faces, 0, GL_RGB8, 4, 4, 4, 4, 0, GL_RGB, GL_UNSIGNED_BYTE, image);
+            tex_images(faces, 1, GL_RGB8, 2, 2, 2, 4, 0, GL_RGB, GL_UNSIGNED_BYTE, image);
+            tex_images(faces, 2, GL_RGB8, 1, 1, 1, 4, 0, GL_RGB, GL_UNSIGNED_BYTE, image);
             break;
         case MODE_COMPLETE_MAX:
             glTexParameteri(target, GL_TEXTURE_MAX_LEVEL, 1);
-            tex_images(faces, 0, GL_RGB8, 4, 4, 4, 0, GL_RGB, GL_UNSIGNED_BYTE, image);
-            tex_images(faces, 1, GL_RGB8, 2, 2, 2, 0, GL_RGB, GL_UNSIGNED_BYTE, image);
+            tex_images(faces, 0, GL_RGB8, 4, 4, 4, 4, 0, GL_RGB, GL_UNSIGNED_BYTE, image);
+            tex_images(faces, 1, GL_RGB8, 2, 2, 2, 4, 0, GL_RGB, GL_UNSIGNED_BYTE, image);
             break;
         case MODE_COMPLETE_NOMIP:
             glTexParameteri(target, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-            tex_images(faces, 0, GL_RGB8, 4, 4, 4, 0, GL_RGB, GL_UNSIGNED_BYTE, image);
+            tex_images(faces, 0, GL_RGB8, 4, 4, 4, 4, 0, GL_RGB, GL_UNSIGNED_BYTE, image);
             break;
         case MODE_INCOMPLETE_EMPTY:
             break;
         case MODE_INCOMPLETE_SHORT:
-            tex_images(faces, 0, GL_RGB8, 4, 4, 4, 0, GL_RGB, GL_UNSIGNED_BYTE, image);
-            tex_images(faces, 1, GL_RGB8, 2, 2, 2, 0, GL_RGB, GL_UNSIGNED_BYTE, image);
+            tex_images(faces, 0, GL_RGB8, 4, 4, 4, 4, 0, GL_RGB, GL_UNSIGNED_BYTE, image);
+            tex_images(faces, 1, GL_RGB8, 2, 2, 2, 4, 0, GL_RGB, GL_UNSIGNED_BYTE, image);
             break;
         case MODE_INCOMPLETE_SIZE:
-            tex_images(faces, 0, GL_RGB8, 4, 4, 4, 0, GL_RGB, GL_UNSIGNED_BYTE, image);
-            tex_images(faces, 1, GL_RGB8, 1, 1, 1, 0, GL_RGB, GL_UNSIGNED_BYTE, image);
-            tex_images(faces, 2, GL_RGB8, 1, 1, 1, 0, GL_RGB, GL_UNSIGNED_BYTE, image);
+            tex_images(faces, 0, GL_RGB8, 4, 4, 4, 4, 0, GL_RGB, GL_UNSIGNED_BYTE, image);
+            tex_images(faces, 1, GL_RGB8, 1, 1, 1, 4, 0, GL_RGB, GL_UNSIGNED_BYTE, image);
+            tex_images(faces, 2, GL_RGB8, 1, 1, 1, 4, 0, GL_RGB, GL_UNSIGNED_BYTE, image);
             break;
         case MODE_INCOMPLETE_FORMAT:
-            tex_images(faces, 0, GL_RGB8, 4, 4, 4, 0, GL_RGB, GL_UNSIGNED_BYTE, image);
-            tex_images(faces, 1, GL_RGBA8, 2, 2, 2, 0, GL_RGB, GL_UNSIGNED_BYTE, image);
-            tex_images(faces, 2, GL_RGB8, 1, 1, 1, 0, GL_RGB, GL_UNSIGNED_BYTE, image);
+            tex_images(faces, 0, GL_RGB8, 4, 4, 4, 4, 0, GL_RGB, GL_UNSIGNED_BYTE, image);
+            tex_images(faces, 1, GL_RGBA8, 2, 2, 2, 4, 0, GL_RGB, GL_UNSIGNED_BYTE, image);
+            tex_images(faces, 2, GL_RGB8, 1, 1, 1, 4, 0, GL_RGB, GL_UNSIGNED_BYTE, image);
             break;
         case MODE_INCOMPLETE_BORDER:
-            tex_images(faces, 0, GL_RGB8, 6, 6, 6, 1, GL_RGB, GL_UNSIGNED_BYTE, image);
-            tex_images(faces, 1, GL_RGB8, 4, 4, 4, 1, GL_RGB, GL_UNSIGNED_BYTE, image);
-            tex_images(faces, 2, GL_RGB8, 1, 1, 1, 0, GL_RGB, GL_UNSIGNED_BYTE, image);
+            tex_images(faces, 0, GL_RGB8, 6, 6, 6, 4, 1, GL_RGB, GL_UNSIGNED_BYTE, image);
+            tex_images(faces, 1, GL_RGB8, 4, 4, 4, 4, 1, GL_RGB, GL_UNSIGNED_BYTE, image);
+            tex_images(faces, 2, GL_RGB8, 1, 1, 1, 4, 0, GL_RGB, GL_UNSIGNED_BYTE, image);
             break;
         case MODE_INCOMPLETE_NO_LEVELS:
-            tex_images(faces, 0, GL_RGB8, 4, 4, 4, 0, GL_RGB, GL_UNSIGNED_BYTE, image);
-            tex_images(faces, 1, GL_RGB8, 2, 2, 2, 0, GL_RGB, GL_UNSIGNED_BYTE, image);
-            tex_images(faces, 2, GL_RGB8, 1, 1, 1, 0, GL_RGB, GL_UNSIGNED_BYTE, image);
+            tex_images(faces, 0, GL_RGB8, 4, 4, 4, 4, 0, GL_RGB, GL_UNSIGNED_BYTE, image);
+            tex_images(faces, 1, GL_RGB8, 2, 2, 2, 4, 0, GL_RGB, GL_UNSIGNED_BYTE, image);
+            tex_images(faces, 2, GL_RGB8, 1, 1, 1, 4, 0, GL_RGB, GL_UNSIGNED_BYTE, image);
             glTexParameteri(target, GL_TEXTURE_BASE_LEVEL, 1);
             glTexParameteri(target, GL_TEXTURE_MAX_LEVEL, 0);
             break;
@@ -203,44 +229,44 @@ static GLuint make_texture_object(GLenum target, const GLenum *faces,
         switch (mode)
         {
         case MODE_COMPLETE_FULL:
-            tex_images(faces, 0, GL_RGB8, 4, 1, 2, 0, GL_RGB, GL_UNSIGNED_BYTE, image);
-            tex_images(faces, 1, GL_RGB8, 2, 1, 1, 0, GL_RGB, GL_UNSIGNED_BYTE, image);
-            tex_images(faces, 2, GL_RGB8, 1, 1, 1, 0, GL_RGB, GL_UNSIGNED_BYTE, image);
+            tex_images(faces, 0, GL_RGB8, 4, 1, 2, 2, 0, GL_RGB, GL_UNSIGNED_BYTE, image);
+            tex_images(faces, 1, GL_RGB8, 2, 1, 1, 2, 0, GL_RGB, GL_UNSIGNED_BYTE, image);
+            tex_images(faces, 2, GL_RGB8, 1, 1, 1, 2, 0, GL_RGB, GL_UNSIGNED_BYTE, image);
             break;
         case MODE_COMPLETE_MAX:
             glTexParameteri(target, GL_TEXTURE_MAX_LEVEL, 1);
-            tex_images(faces, 0, GL_RGB8, 4, 1, 2, 0, GL_RGB, GL_UNSIGNED_BYTE, image);
-            tex_images(faces, 1, GL_RGB8, 2, 1, 1, 0, GL_RGB, GL_UNSIGNED_BYTE, image);
+            tex_images(faces, 0, GL_RGB8, 4, 1, 2, 2, 0, GL_RGB, GL_UNSIGNED_BYTE, image);
+            tex_images(faces, 1, GL_RGB8, 2, 1, 1, 2, 0, GL_RGB, GL_UNSIGNED_BYTE, image);
             break;
         case MODE_COMPLETE_NOMIP:
             glTexParameteri(target, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-            tex_images(faces, 0, GL_RGB8, 4, 1, 2, 0, GL_RGB, GL_UNSIGNED_BYTE, image);
+            tex_images(faces, 0, GL_RGB8, 4, 1, 2, 2, 0, GL_RGB, GL_UNSIGNED_BYTE, image);
             break;
         case MODE_INCOMPLETE_EMPTY:
             break;
         case MODE_INCOMPLETE_SHORT:
-            tex_images(faces, 0, GL_RGB8, 4, 1, 2, 0, GL_RGB, GL_UNSIGNED_BYTE, image);
-            tex_images(faces, 1, GL_RGB8, 2, 1, 1, 0, GL_RGB, GL_UNSIGNED_BYTE, image);
+            tex_images(faces, 0, GL_RGB8, 4, 1, 2, 2, 0, GL_RGB, GL_UNSIGNED_BYTE, image);
+            tex_images(faces, 1, GL_RGB8, 2, 1, 1, 2, 0, GL_RGB, GL_UNSIGNED_BYTE, image);
             break;
         case MODE_INCOMPLETE_SIZE:
-            tex_images(faces, 0, GL_RGB8, 4, 1, 2, 0, GL_RGB, GL_UNSIGNED_BYTE, image);
-            tex_images(faces, 1, GL_RGB8, 1, 1, 1, 0, GL_RGB, GL_UNSIGNED_BYTE, image);
-            tex_images(faces, 2, GL_RGB8, 1, 1, 1, 0, GL_RGB, GL_UNSIGNED_BYTE, image);
+            tex_images(faces, 0, GL_RGB8, 4, 1, 2, 2, 0, GL_RGB, GL_UNSIGNED_BYTE, image);
+            tex_images(faces, 1, GL_RGB8, 1, 1, 1, 2, 0, GL_RGB, GL_UNSIGNED_BYTE, image);
+            tex_images(faces, 2, GL_RGB8, 1, 1, 1, 2, 0, GL_RGB, GL_UNSIGNED_BYTE, image);
             break;
         case MODE_INCOMPLETE_FORMAT:
-            tex_images(faces, 0, GL_RGB8, 4, 1, 2, 0, GL_RGB, GL_UNSIGNED_BYTE, image);
-            tex_images(faces, 1, GL_RGBA8, 2, 1, 1, 0, GL_RGB, GL_UNSIGNED_BYTE, image);
-            tex_images(faces, 2, GL_RGB8, 1, 1, 1, 0, GL_RGB, GL_UNSIGNED_BYTE, image);
+            tex_images(faces, 0, GL_RGB8, 4, 1, 2, 2, 0, GL_RGB, GL_UNSIGNED_BYTE, image);
+            tex_images(faces, 1, GL_RGBA8, 2, 1, 1, 2, 0, GL_RGB, GL_UNSIGNED_BYTE, image);
+            tex_images(faces, 2, GL_RGB8, 1, 1, 1, 2, 0, GL_RGB, GL_UNSIGNED_BYTE, image);
             break;
         case MODE_INCOMPLETE_BORDER:
-            tex_images(faces, 0, GL_RGB8, 6, 3, 4, 1, GL_RGB, GL_UNSIGNED_BYTE, image);
-            tex_images(faces, 1, GL_RGB8, 4, 3, 3, 1, GL_RGB, GL_UNSIGNED_BYTE, image);
-            tex_images(faces, 2, GL_RGB8, 1, 1, 1, 0, GL_RGB, GL_UNSIGNED_BYTE, image);
+            tex_images(faces, 0, GL_RGB8, 6, 3, 4, 4, 1, GL_RGB, GL_UNSIGNED_BYTE, image);
+            tex_images(faces, 1, GL_RGB8, 4, 3, 3, 4, 1, GL_RGB, GL_UNSIGNED_BYTE, image);
+            tex_images(faces, 2, GL_RGB8, 1, 1, 1, 4, 0, GL_RGB, GL_UNSIGNED_BYTE, image);
             break;
         case MODE_INCOMPLETE_NO_LEVELS:
-            tex_images(faces, 0, GL_RGB8, 4, 1, 2, 0, GL_RGB, GL_UNSIGNED_BYTE, image);
-            tex_images(faces, 1, GL_RGB8, 2, 1, 1, 0, GL_RGB, GL_UNSIGNED_BYTE, image);
-            tex_images(faces, 2, GL_RGB8, 1, 1, 1, 0, GL_RGB, GL_UNSIGNED_BYTE, image);
+            tex_images(faces, 0, GL_RGB8, 4, 1, 2, 2, 0, GL_RGB, GL_UNSIGNED_BYTE, image);
+            tex_images(faces, 1, GL_RGB8, 2, 1, 1, 2, 0, GL_RGB, GL_UNSIGNED_BYTE, image);
+            tex_images(faces, 2, GL_RGB8, 1, 1, 1, 2, 0, GL_RGB, GL_UNSIGNED_BYTE, image);
             glTexParameteri(target, GL_TEXTURE_BASE_LEVEL, 1);
             glTexParameteri(target, GL_TEXTURE_MAX_LEVEL, 0);
             break;
@@ -325,11 +351,11 @@ static void texcomplete_test(GLenum target_enum)
     int i;
     texture_mode j;
 
-    if (!GLEW_VERSION_2_0)
+    if (!GLEW_VERSION_3_0)
     {
-        /* It's not required for this feature, but it's easier to test this
+        /* It's not required for this test, but it's easier to test this
          * way. */
-        test_skipped("GL 2.0 required");
+        test_skipped("GL 3.0 required");
         return;
     }
 
@@ -408,6 +434,16 @@ static void texcomplete_cube(void)
     texcomplete_test(GL_TEXTURE_CUBE_MAP);
 }
 
+static void texcomplete_1d_array(void)
+{
+    texcomplete_test(GL_TEXTURE_1D_ARRAY);
+}
+
+static void texcomplete_2d_array(void)
+{
+    texcomplete_test(GL_TEXTURE_2D_ARRAY);
+}
+
 void texcomplete_suite_register(void)
 {
     test_suite *ts = test_suite_new("texcomplete", TEST_FLAG_LOG | TEST_FLAG_CONTEXT, setup_texcomplete, teardown_texcomplete);
@@ -415,4 +451,6 @@ void texcomplete_suite_register(void)
     test_suite_add_test(ts, "2D", texcomplete_2D);
     test_suite_add_test(ts, "3D", texcomplete_3D);
     test_suite_add_test(ts, "cube", texcomplete_cube);
+    test_suite_add_test(ts, "1D_array", texcomplete_1d_array);
+    test_suite_add_test(ts, "2D_array", texcomplete_2d_array);
 }

@@ -3,6 +3,7 @@
 * Added support for ARB_half_float_vertex and ARB_half_float_pixel
 * Added support for EXT_packed_depth_stencil
 * Added support for ARB_vertex_array_object
+* Added texture completeness checks for EXT_texture_array
 * Start on support for ARB_framebuffer_object (incomplete and poorly tested)
 * Fixed incorrect state display of GL_CLIP_DISTANCEi and GL_DRAW_BUFFERi (always showed element 0)
 * Fixed invalid queries of GL_TRANSFORM_FEEDBACK_RECORD_NV

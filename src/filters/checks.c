@@ -280,16 +280,33 @@ static void checks_completeness(void)
                     target = 0;
                     switch (type)
                     {
-                    case GL_SAMPLER_2D:        target = GL_TEXTURE_2D; break;
-                    case GL_SAMPLER_CUBE:      target = GL_TEXTURE_CUBE_MAP; break;
-#ifdef GL_VERSION_2_0
-                    case GL_SAMPLER_1D:        target = GL_TEXTURE_1D; break;
-                    case GL_SAMPLER_3D:        target = GL_TEXTURE_3D; break;
-                    case GL_SAMPLER_1D_SHADOW: target = GL_TEXTURE_1D; break;
-                    case GL_SAMPLER_2D_SHADOW: target = GL_TEXTURE_2D; break;
-                    case GL_SAMPLER_2D_RECT_ARB:        target = GL_TEXTURE_RECTANGLE_ARB; break;
-                    case GL_SAMPLER_2D_RECT_SHADOW_ARB: target = GL_TEXTURE_RECTANGLE_ARB; break;
-#endif
+                    case GL_SAMPLER_1D:
+                    case GL_SAMPLER_1D_SHADOW:
+                        target = GL_TEXTURE_1D;
+                        break;
+                    case GL_SAMPLER_2D:
+                    case GL_SAMPLER_2D_SHADOW:
+                        target = GL_TEXTURE_2D;
+                        break;
+                    case GL_SAMPLER_CUBE:
+                    case GL_SAMPLER_CUBE_SHADOW:
+                        target = GL_TEXTURE_CUBE_MAP;
+                        break;
+                    case GL_SAMPLER_2D_RECT:
+                    case GL_SAMPLER_2D_RECT_SHADOW:
+                        target = GL_TEXTURE_RECTANGLE;
+                        break;
+                    case GL_SAMPLER_3D:
+                        target = GL_TEXTURE_3D;
+                        break;
+                    case GL_SAMPLER_1D_ARRAY:
+                    case GL_SAMPLER_1D_ARRAY_SHADOW:
+                        target = GL_TEXTURE_1D_ARRAY;
+                        break;
+                    case GL_SAMPLER_2D_ARRAY:
+                    case GL_SAMPLER_2D_ARRAY_SHADOW:
+                        target = GL_TEXTURE_2D_ARRAY;
+                        break;
                     }
                     if (target)
                     {

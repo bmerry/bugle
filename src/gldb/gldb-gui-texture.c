@@ -133,7 +133,7 @@ static gboolean gldb_texture_pane_response_callback(gldb_response *response,
         switch (pane->progressive.type)
         {
         case GLDB_GUI_IMAGE_TYPE_CUBE_MAP:
-            plane = data->face - GL_TEXTURE_CUBE_MAP_POSITIVE_X_ARB;
+            plane = data->face - GL_TEXTURE_CUBE_MAP_POSITIVE_X;
             /* Fall through */
         case GLDB_GUI_IMAGE_TYPE_2D:
             level->planes[plane].width = r->width;
@@ -207,21 +207,21 @@ static void gldb_texture_pane_update_ids(GldbTexturePane *pane, const gldb_state
     {
         GL_TEXTURE_1D,
         GL_TEXTURE_2D,
-        GL_TEXTURE_3D_EXT,
-        GL_TEXTURE_CUBE_MAP_ARB,
-        GL_TEXTURE_RECTANGLE_NV,
-        GL_TEXTURE_1D_ARRAY_EXT,
-        GL_TEXTURE_2D_ARRAY_EXT
+        GL_TEXTURE_3D,
+        GL_TEXTURE_CUBE_MAP,
+        GL_TEXTURE_RECTANGLE,
+        GL_TEXTURE_1D_ARRAY,
+        GL_TEXTURE_2D_ARRAY
     };
     const GLenum binding[] =
     {
         GL_TEXTURE_BINDING_1D,
         GL_TEXTURE_BINDING_2D,
         GL_TEXTURE_BINDING_3D,
-        GL_TEXTURE_BINDING_CUBE_MAP_ARB,
-        GL_TEXTURE_BINDING_RECTANGLE_NV,
-        GL_TEXTURE_BINDING_1D_ARRAY_EXT,
-        GL_TEXTURE_BINDING_2D_ARRAY_EXT
+        GL_TEXTURE_BINDING_CUBE_MAP,
+        GL_TEXTURE_BINDING_RECTANGLE,
+        GL_TEXTURE_BINDING_1D_ARRAY,
+        GL_TEXTURE_BINDING_2D_ARRAY
     };
     const gchar * const target_names[] = {
         "1D",
@@ -247,7 +247,7 @@ static void gldb_texture_pane_update_ids(GldbTexturePane *pane, const gldb_state
 
         /* Identify active textures */
         bugle_hashptr_init(&active, NULL);
-        unit = GL_TEXTURE0_ARB;
+        unit = GL_TEXTURE0;
         while ((t = gldb_state_find_child_enum(root, unit)) != NULL)
         {
             l = gldb_state_find_child_enum(t, binding[trg]);
@@ -263,8 +263,8 @@ static void gldb_texture_pane_update_ids(GldbTexturePane *pane, const gldb_state
             {
                 /* Count the levels */
                 f = t;
-                if (targets[trg] == GL_TEXTURE_CUBE_MAP_ARB)
-                    f = gldb_state_find_child_enum(t, GL_TEXTURE_CUBE_MAP_POSITIVE_X_ARB);
+                if (targets[trg] == GL_TEXTURE_CUBE_MAP)
+                    f = gldb_state_find_child_enum(t, GL_TEXTURE_CUBE_MAP_POSITIVE_X);
                 levels = 0;
                 channels = 0;
                 for (nl = bugle_list_head(&f->children); nl != NULL; nl = bugle_list_next(nl))
@@ -331,13 +331,13 @@ static void gldb_texture_pane_id_changed(GtkComboBox *id_box, gpointer user_data
 
         for (l = 0; l < levels; l++)
         {
-            if (target == GL_TEXTURE_CUBE_MAP_ARB)
+            if (target == GL_TEXTURE_CUBE_MAP)
             {
                 for (i = 0; i < 6; i++)
                 {
                     data = BUGLE_MALLOC(texture_callback_data);
                     data->target = target;
-                    data->face = GL_TEXTURE_CUBE_MAP_POSITIVE_X_ARB + i;
+                    data->face = GL_TEXTURE_CUBE_MAP_POSITIVE_X + i;
                     data->level = l;
                     data->channels = channels;
                     data->pixel_type = GL_FLOAT;
@@ -374,8 +374,8 @@ static void gldb_texture_pane_id_changed(GtkComboBox *id_box, gpointer user_data
                     data->nplanes = 1;
                     data->type = GLDB_GUI_IMAGE_TYPE_2D;
                     switch (target)
-                    case GL_TEXTURE_3D_EXT:
-                    case GL_TEXTURE_2D_ARRAY_EXT:
+                    case GL_TEXTURE_3D:
+                    case GL_TEXTURE_2D_ARRAY:
                     {
                         data->type = GLDB_GUI_IMAGE_TYPE_3D;
                         data->nplanes = 0;

@@ -244,6 +244,7 @@ static GLenum target_to_binding(GLenum target)
     case GL_TEXTURE_1D_ARRAY: return GL_TEXTURE_BINDING_1D_ARRAY;
     case GL_TEXTURE_2D_ARRAY: return GL_TEXTURE_BINDING_2D_ARRAY;
     case GL_TEXTURE_BUFFER: return GL_TEXTURE_BINDING_BUFFER;
+    case GL_TEXTURE_CUBE_MAP_ARRAY: return GL_TEXTURE_BINDING_CUBE_MAP_ARRAY;
     case GL_TEXTURE_2D_MULTISAMPLE: return GL_TEXTURE_BINDING_2D_MULTISAMPLE;
     case GL_TEXTURE_2D_MULTISAMPLE_ARRAY: return GL_TEXTURE_BINDING_2D_MULTISAMPLE_ARRAY;
     default:
@@ -378,24 +379,18 @@ static bugle_bool send_data_texture(bugle_uint32_t id, GLuint texid, GLenum targ
     switch (face)
     {
     case GL_TEXTURE_1D:
-#ifdef GL_EXT_texture_buffer_object
-    case GL_TEXTURE_BUFFER_EXT:
-#endif
+    case GL_TEXTURE_BUFFER:
         break;
-#ifdef GL_EXT_texture3D
-    case GL_TEXTURE_3D_EXT:
+    case GL_TEXTURE_3D:
         CALL(glGetTexLevelParameteriv)(face, level, GL_TEXTURE_HEIGHT, &height);
         if (BUGLE_GL_HAS_EXTENSION_GROUP(GL_EXT_texture3D))
             CALL(glGetTexLevelParameteriv)(face, level, GL_TEXTURE_DEPTH_EXT, &depth);
         break;
-#endif
-#ifdef GL_EXT_texture_array
-    case GL_TEXTURE_2D_ARRAY_EXT:
+    case GL_TEXTURE_2D_ARRAY:
         CALL(glGetTexLevelParameteriv)(face, level, GL_TEXTURE_HEIGHT, &height);
         if (BUGLE_GL_HAS_EXTENSION_GROUP(GL_EXT_texture_array))
-            CALL(glGetTexLevelParameteriv)(face, level, GL_TEXTURE_DEPTH_EXT, &depth);
+            CALL(glGetTexLevelParameteriv)(face, level, GL_TEXTURE_DEPTH, &depth);
         break;
-#endif
     default: /* 2D-like: 2D, RECTANGLE and 1D_ARRAY at the moment */
         CALL(glGetTexLevelParameteriv)(face, level, GL_TEXTURE_HEIGHT, &height);
     }
