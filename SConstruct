@@ -374,6 +374,7 @@ package_sources.extend([
     'src/bc/SConscript',
     'src/bc/egl/egl.bc',
     'src/bc/gl/GL_ARB_draw_elements_base_vertex.bc',
+    'src/bc/gl/GL_ARB_gpu_shader_fp64.bc',
     'src/bc/gl/GL_ARB_half_float_pixel.bc',
     'src/bc/gl/GL_ARB_imaging.bc',
     'src/bc/gl/GL_ARB_map_buffer_range.bc',
@@ -394,6 +395,7 @@ package_sources.extend([
     'src/bc/gl/GL_EXT_framebuffer_object.bc',
     'src/bc/gl/GL_EXT_geometry_shader4.bc',
     'src/bc/gl/GL_EXT_gpu_program_parameters.bc',
+    'src/bc/gl/GL_EXT_gpu_shader4.bc'
     'src/bc/gl/GL_EXT_multi_draw_arrays.bc',
     'src/bc/gl/GL_EXT_secondary_color.bc',
     'src/bc/gl/GL_EXT_texture3D.bc',

@@ -82,12 +82,33 @@ budgie_type bugle_gl_type_to_type(GLenum gl_type)
     case GL_FLOAT_VEC2: return TYPE_6GLvec2; break;
     case GL_FLOAT_VEC3: return TYPE_6GLvec3; break;
     case GL_FLOAT_VEC4: return TYPE_6GLvec4; break;
+    case GL_DOUBLE_VEC2: return TYPE_7GLdvec2; break;
+    case GL_DOUBLE_VEC3: return TYPE_7GLdvec3; break;
+    case GL_DOUBLE_VEC4: return TYPE_7GLdvec4; break;
     case GL_INT_VEC2: return TYPE_7GLivec2; break;
     case GL_INT_VEC3: return TYPE_7GLivec3; break;
     case GL_INT_VEC4: return TYPE_7GLivec4; break;
+    case GL_UNSIGNED_INT_VEC2: return TYPE_7GLuvec2; break;
+    case GL_UNSIGNED_INT_VEC3: return TYPE_7GLuvec3; break;
+    case GL_UNSIGNED_INT_VEC4: return TYPE_7GLuvec4; break;
     case GL_FLOAT_MAT2: return TYPE_6GLmat2; break;
     case GL_FLOAT_MAT3: return TYPE_6GLmat3; break;
     case GL_FLOAT_MAT4: return TYPE_6GLmat4; break;
+    case GL_FLOAT_MAT2x3: return TYPE_8GLmat2x3; break;
+    case GL_FLOAT_MAT3x2: return TYPE_8GLmat3x2; break;
+    case GL_FLOAT_MAT2x4: return TYPE_8GLmat2x4; break;
+    case GL_FLOAT_MAT4x2: return TYPE_8GLmat4x2; break;
+    case GL_FLOAT_MAT3x4: return TYPE_8GLmat3x4; break;
+    case GL_FLOAT_MAT4x3: return TYPE_8GLmat4x3; break;
+    case GL_DOUBLE_MAT2: return TYPE_7GLdmat2; break;
+    case GL_DOUBLE_MAT3: return TYPE_7GLdmat3; break;
+    case GL_DOUBLE_MAT4: return TYPE_7GLdmat4; break;
+    case GL_DOUBLE_MAT2x3: return TYPE_9GLdmat2x3; break;
+    case GL_DOUBLE_MAT3x2: return TYPE_9GLdmat3x2; break;
+    case GL_DOUBLE_MAT2x4: return TYPE_9GLdmat2x4; break;
+    case GL_DOUBLE_MAT4x2: return TYPE_9GLdmat4x2; break;
+    case GL_DOUBLE_MAT3x4: return TYPE_9GLdmat3x4; break;
+    case GL_DOUBLE_MAT4x3: return TYPE_9GLdmat4x3; break;
     case GL_BOOL: return TYPE_9GLboolean; break;
     case GL_BOOL_VEC2: return TYPE_7GLbvec2; break;
     case GL_BOOL_VEC3: return TYPE_7GLbvec3; break;
@@ -133,12 +154,6 @@ budgie_type bugle_gl_type_to_type(GLenum gl_type)
     case GL_UNSIGNED_INT_SAMPLER_2D_MULTISAMPLE:
     case GL_UNSIGNED_INT_SAMPLER_2D_MULTISAMPLE_ARRAY:
         return TYPE_5GLint;
-    case GL_FLOAT_MAT2x3: return TYPE_8GLmat2x3; break;
-    case GL_FLOAT_MAT3x2: return TYPE_8GLmat3x2; break;
-    case GL_FLOAT_MAT2x4: return TYPE_8GLmat2x4; break;
-    case GL_FLOAT_MAT4x2: return TYPE_8GLmat4x2; break;
-    case GL_FLOAT_MAT3x4: return TYPE_8GLmat3x4; break;
-    case GL_FLOAT_MAT4x3: return TYPE_8GLmat4x3; break;
     default:
         fprintf(stderr,
                 "Do not know the correct type for %s. This probably indicates that you\n"

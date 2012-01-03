@@ -1,2 +1,2 @@
-LENGTH glProgramEnvParameters4fvEXT 3 $2
-LENGTH glProgramLocalParameters4fvEXT 3 $2
+LENGTH PARAMETER glProgramEnvParameters4fvEXT 3 $2
+LENGTH PARAMETER glProgramLocalParameters4fvEXT 3 $2

@@ -9,6 +9,7 @@ LIMIT gl[A-Z][a-z].*
 INCLUDE bc/gl/core1_1.bc
 INCLUDE bc/gl/core3_0.bc
 INCLUDE bc/gl/GL_ARB_draw_elements_base_vertex.bc
+INCLUDE bc/gl/GL_ARB_gpu_shader_fp64.bc
 INCLUDE bc/gl/GL_ARB_half_float_pixel.bc
 INCLUDE bc/gl/GL_ARB_imaging.bc
 INCLUDE bc/gl/GL_ARB_map_buffer_range.bc
@@ -28,6 +29,8 @@ INCLUDE bc/gl/GL_EXT_draw_range_elements.bc
 INCLUDE bc/gl/GL_EXT_framebuffer_blit.bc
 INCLUDE bc/gl/GL_EXT_framebuffer_object.bc
 INCLUDE bc/gl/GL_EXT_geometry_shader4.bc
+INCLUDE bc/gl/GL_EXT_gpu_program_parameters.bc
+INCLUDE bc/gl/GL_EXT_gpu_shader4.bc
 INCLUDE bc/gl/GL_EXT_multi_draw_arrays.bc
 INCLUDE bc/gl/GL_EXT_secondary_color.bc
 INCLUDE bc/gl/GL_EXT_texture3D.bc
