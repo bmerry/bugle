@@ -98,6 +98,11 @@ static void setup_texture_state(void)
     test_log_printf("trace\\.call: glBindTexture\\(GL_TEXTURE_2D, %u\\)\n", (unsigned int) texture_id);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 4, 4, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
     test_log_printf("trace\\.call: glTexImage2D\\(GL_TEXTURE_2D, 0, GL_RGB, 4, 4, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL\\)\n");
+    if (GLEW_VERSION_1_4)
+    {
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_COMPARE_REF_TO_TEXTURE);
+        test_log_printf("trace\\.call: glTexParameteri\\(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_COMPARE_REF_TO_TEXTURE\\)\n");
+    }
 }
 
 static void teardown_texture_state(void)

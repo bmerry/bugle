@@ -391,7 +391,7 @@ static bugle_bool send_data_texture(bugle_uint32_t id, GLuint texid, GLenum targ
         if (BUGLE_GL_HAS_EXTENSION_GROUP(GL_EXT_texture_array))
             CALL(glGetTexLevelParameteriv)(face, level, GL_TEXTURE_DEPTH, &depth);
         break;
-    default: /* 2D-like: 2D, RECTANGLE and 1D_ARRAY at the moment */
+    default: /* 2D-like: 2D, RECTANGLE, 1D_ARRAY or cube map at the moment */
         CALL(glGetTexLevelParameteriv)(face, level, GL_TEXTURE_HEIGHT, &height);
     }
 

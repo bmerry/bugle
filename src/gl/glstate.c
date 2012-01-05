@@ -863,11 +863,9 @@ static bugle_uint32_t texture_mask(GLenum target)
     case GL_TEXTURE_RECTANGLE_NV: mask |= STATE_SELECT_NO_2D; break;
 #endif
     case GL_PROXY_TEXTURE_3D: mask |= STATE_SELECT_NO_PROXY; break;
-#ifdef GL_EXT_texture_array
-    case GL_PROXY_TEXTURE_1D_ARRAY_EXT: mask |= STATE_SELECT_NO_PROXY; /* Fall through */
-    case GL_TEXTURE_1D_ARRAY_EXT: mask |= STATE_SELECT_NO_2D; break;
-    case GL_PROXY_TEXTURE_2D_ARRAY_EXT: mask |= STATE_SELECT_NO_PROXY; break;
-#endif
+    case GL_PROXY_TEXTURE_1D_ARRAY: mask |= STATE_SELECT_NO_PROXY; /* Fall through */
+    case GL_TEXTURE_1D_ARRAY: mask |= STATE_SELECT_NO_2D; break;
+    case GL_PROXY_TEXTURE_2D_ARRAY: mask |= STATE_SELECT_NO_PROXY; break;
 #ifdef GL_EXT_texture_buffer_object
     /* GL_TEXTURE_BUFFER_EXT has no proxy */
     case GL_TEXTURE_BUFFER_EXT: mask |= STATE_SELECT_NO_1D; break;
@@ -1137,40 +1135,36 @@ static void spawn_textures(const glstate *self,
                     0,
                     spawn_children_tex_target, NULL, children);
     }
-#ifdef GL_NV_texture_rectangle
     if (bugle_gl_has_extension_group(BUGLE_GL_NV_texture_rectangle))
     {
-        make_target(self, "GL_TEXTURE_RECTANGLE_ARB",
-                    GL_TEXTURE_RECTANGLE_NV,
-                    GL_TEXTURE_BINDING_RECTANGLE_NV,
+        make_target(self, "GL_TEXTURE_RECTANGLE",
+                    GL_TEXTURE_RECTANGLE,
+                    GL_TEXTURE_BINDING_RECTANGLE,
                     spawn_children_tex_target, NULL, children);
-        make_target(self, "GL_PROXY_TEXTURE_RECTANGLE_ARB",
-                    GL_PROXY_TEXTURE_RECTANGLE_NV,
+        make_target(self, "GL_PROXY_TEXTURE_RECTANGLE",
+                    GL_PROXY_TEXTURE_RECTANGLE,
                     0,
                     spawn_children_tex_target, NULL, children);
     }
-#endif
-#ifdef GL_EXT_texture_array
     if (bugle_gl_has_extension_group(BUGLE_GL_EXT_texture_array))
     {
-        make_target(self, "GL_TEXTURE_1D_ARRAY_EXT",
-                    GL_TEXTURE_1D_ARRAY_EXT,
-                    GL_TEXTURE_BINDING_1D_ARRAY_EXT,
+        make_target(self, "GL_TEXTURE_1D_ARRAY",
+                    GL_TEXTURE_1D_ARRAY,
+                    GL_TEXTURE_BINDING_1D_ARRAY,
                     spawn_children_tex_target, NULL, children);
-        make_target(self, "GL_PROXY_TEXTURE_1D_ARRAY_EXT",
-                    GL_PROXY_TEXTURE_1D_ARRAY_EXT,
+        make_target(self, "GL_PROXY_TEXTURE_1D_ARRAY",
+                    GL_PROXY_TEXTURE_1D_ARRAY,
                     0,
                     spawn_children_tex_target, NULL, children);
-        make_target(self, "GL_TEXTURE_2D_ARRAY_EXT",
-                    GL_TEXTURE_2D_ARRAY_EXT,
-                    GL_TEXTURE_BINDING_2D_ARRAY_EXT,
+        make_target(self, "GL_TEXTURE_2D_ARRAY",
+                    GL_TEXTURE_2D_ARRAY,
+                    GL_TEXTURE_BINDING_2D_ARRAY,
                     spawn_children_tex_target, NULL, children);
-        make_target(self, "GL_PROXY_TEXTURE_2D_ARRAY_EXT",
-                    GL_PROXY_TEXTURE_2D_ARRAY_EXT,
+        make_target(self, "GL_PROXY_TEXTURE_2D_ARRAY",
+                    GL_PROXY_TEXTURE_2D_ARRAY,
                     0,
                     spawn_children_tex_target, NULL, children);
     }
-#endif
 #ifdef GL_EXT_texture_buffer_object
     if (bugle_gl_has_extension_group(BUGLE_GL_EXT_texture_buffer_object))
     {

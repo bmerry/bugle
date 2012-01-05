@@ -149,7 +149,7 @@ static gboolean gldb_texture_pane_response_callback(gldb_response *response,
             for (plane = 0; plane < r->depth; plane++)
             {
                 level->planes[plane].width = r->width;
-                level->planes[plane].height = r->width;
+                level->planes[plane].height = r->height;
                 level->planes[plane].channels = data->channels;
                 level->planes[plane].owns_pixels = (plane == 0);
                 level->planes[plane].type = data->pixel_type;
