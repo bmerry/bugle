@@ -1974,10 +1974,8 @@ static const state_info global_state[] =
     { STATE_NAME(GL_RGBA_SIGNED_COMPONENTS_EXT), TYPE_9GLboolean, 4, BUGLE_GL_EXT_packed_float, -1, STATE_GLOBAL },
 #endif
 #ifdef GL_NV_transform_feedback
-    { STATE_NAME(GL_TRANSFORM_FEEDBACK_BUFFER_MODE_NV), TYPE_6GLenum, -1, BUGLE_GL_NV_transform_feedback, -1, STATE_GLOBAL },
     { STATE_NAME(GL_TRANSFORM_FEEDBACK_ATTRIBS_NV), TYPE_5GLint, -1, BUGLE_GL_NV_transform_feedback, -1, STATE_GLOBAL },
     { STATE_NAME(GL_TRANSFORM_FEEDBACK_BUFFER_BINDING_NV), TYPE_5GLint, -1, BUGLE_GL_NV_transform_feedback, -1, STATE_GLOBAL },
-    { STATE_NAME(GL_RASTERIZER_DISCARD_NV), TYPE_9GLboolean, -1, BUGLE_GL_NV_transform_feedback, -1, STATE_ENABLED },
 #endif /* GL_NV_transform_feedback */
     { NULL, GL_NONE, NULL_TYPE, 0, -1, -1, 0 }
 };
