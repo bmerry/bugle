@@ -15,10 +15,23 @@
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-/* Still TODO:
- * - VAOs
- * - GL3-style transform feedback state
- * - Just about everything from GL 3.1 and above
+/* This should be complete for GL 4.2 with the exception of anything marked TODO, plus
+ * - State that can be either pure integer or float and has to be queried
+ *   with the right query to get the right result.
+ * - Using GetInteger64v for certain state where GetIntegerv might be out of
+ *   range.
+ * - GL3-style transform feedback state and per-program XFB varyings
+ * - ARB_viewport_array state (scissor, viewport, depth range being arrays)
+ * - GL_CLIP_DISTANCE
+ * - Check that TexBO tex objects list only the appropriate state
+ * - Make blend state per-draw-buffer
+ * - ARB_separate_shader_objects state
+ * - ARB_shader_subroutines
+ * - ARB_shader_atomic_counters
+ * - ARB_sync
+ * - UBO binding points and most other UBO state
+ * - GetInternalformat queries
+ * - SAMPLE_POSITION queries
  *
  * The following will probably never get done, since it's deprecated:
  * - Multiple modelview matrices (for ARB vertex/fragment program)
@@ -98,6 +111,7 @@
 #define STATE_MODE_FRAMEBUFFER_ATTACHMENT_PARAMETER 0x00000022 /* glGetFramebufferAttachmentPArameterivEXT */
 #define STATE_MODE_INDEXED                  0x00000023    /* glGetIntegerIndexedvEXT etc */
 #define STATE_MODE_ENABLED_INDEXED          0x00000024    /* glIsEnabledIndexedEXT */
+#define STATE_MODE_SAMPLE_MASK_VALUE        0x00000025    /* Extracts individual bits from GL_SAMPLE_MASK_VALUE */
 #define STATE_MODE_MASK                     0x000000ff
 
 #define STATE_MULTIPLEX_ACTIVE_TEXTURE      0x00000100    /* Set active texture */
@@ -164,6 +178,7 @@
 #define STATE_VERTEX_ARRAY (STATE_MODE_GLOBAL | STATE_MULTIPLEX_BIND_VERTEX_ARRAY)
 #define STATE_VERTEX_ARRAY_ENABLED (STATE_MODE_ENABLED | STATE_MULTIPLEX_BIND_VERTEX_ARRAY)
 #define STATE_VERTEX_ARRAY_ATTRIB (STATE_VERTEX_ATTRIB | STATE_MULTIPLEX_BIND_VERTEX_ARRAY)
+#define STATE_SAMPLE_MASK_VALUE STATE_MODE_SAMPLE_MASK_VALUE
 
 typedef struct
 {
@@ -1432,6 +1447,28 @@ static void spawn_programs(const struct glstate *self,
                  "Program[%lu]", spawn_children_program, NULL, children);
 }
 
+static void spawn_children_sample_mask_value(const struct glstate *self,
+                                             linked_list *children)
+{
+    static const state_info sample_mask_value =
+    {
+        NULL, GL_NONE, TYPE_9GLboolean, -1, BUGLE_GL_ARB_texture_multisample, -1, STATE_SAMPLE_MASK_VALUE
+    };
+
+    GLint samples = 0;
+    CALL(glGetIntegerv)(GL_MAX_SAMPLES, &samples);
+    bugle_list_init(children, bugle_free);
+    make_counted(self, samples, "%lu", 0, offsetof(glstate, level), NULL, &sample_mask_value, children);
+}
+
+static void spawn_sample_mask_value(const struct glstate *self,
+                                    linked_list *children,
+                                    const struct state_info *info)
+{
+    make_target(self, "GL_SAMPLE_MASK_VALUE", GL_SAMPLE_MASK_VALUE, GL_SAMPLE_MASK_VALUE,
+                spawn_children_sample_mask_value, NULL, children);
+}
+
 /*** Main state table ***/
 
 static const state_info global_state[] =
@@ -1571,7 +1608,7 @@ static const state_info global_state[] =
     { STATE_NAME(GL_SAMPLE_SHADING), TYPE_9GLboolean, -1, BUGLE_GL_ARB_sample_shading, -1, STATE_ENABLED },
     { STATE_NAME(GL_MIN_SAMPLE_SHADING_VALUE), TYPE_7GLfloat, -1, BUGLE_GL_ARB_sample_shading, -1, STATE_GLOBAL },
     { STATE_NAME(GL_SAMPLE_MASK), TYPE_9GLboolean, -1, BUGLE_GL_ARB_texture_multisample, -1, STATE_ENABLED },
-    /* TODO: GL_SAMPLE_MASK_VALUE */
+    { STATE_NAME(GL_SAMPLE_MASK_VALUE), TYPE_9GLboolean, -1, BUGLE_GL_ARB_texture_multisample, -1, STATE_GLOBAL, spawn_sample_mask_value },
     { "Texture units", GL_TEXTURE0, NULL_TYPE, -1, BUGLE_GL_VERSION_1_1, -1, 0, spawn_texture_units },
     { "Textures", GL_TEXTURE_2D, NULL_TYPE, -1, BUGLE_GL_VERSION_1_1, -1, 0, spawn_textures },
     { STATE_NAME(GL_ACTIVE_TEXTURE), TYPE_6GLenum, -1, BUGLE_GL_ARB_multitexture, -1, STATE_GLOBAL },
@@ -2447,6 +2484,8 @@ void bugle_state_get_raw(const glstate *state, bugle_state_raw *wrapper)
     case STATE_MODE_INDEXED:
         if (state->info->type == TYPE_9GLboolean)
             CALL(glGetBooleani_v)(pname, state->level, b);
+        else if (state->info->type == TYPE_7GLint64)
+            CALL(glGetInteger64i_v)(pname, state->level, i64);
         else if (state->info->type == TYPE_11GLxfbattrib)
             CALL(glGetIntegeri_v)(pname, state->level, (GLint *) &xfbattrib);
         else if (state->info->type == TYPE_PKc)
@@ -2463,6 +2502,11 @@ void bugle_state_get_raw(const glstate *state, bugle_state_raw *wrapper)
         break;
     case STATE_MODE_ENABLED_INDEXED:
         b[0] = CALL(glIsEnabledi)(pname, state->numeric_name);
+        in_type = TYPE_9GLboolean;
+        break;
+    case STATE_MODE_SAMPLE_MASK_VALUE:
+        CALL(glGetInteger64i_v)(pname, state->level / 32, i64);
+        b[0] = ((i64[0] >> (state->level & 31)) & 1) ? GL_TRUE : GL_FALSE;
         in_type = TYPE_9GLboolean;
         break;
     case STATE_MODE_TEXTURE_ENV:
