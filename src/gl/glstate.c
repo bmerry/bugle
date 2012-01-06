@@ -30,7 +30,6 @@
  * - ARB_sync
  * - UBO binding points and most other UBO state
  * - GetInternalformat queries
- * - SAMPLE_POSITION queries
  *
  * The following will probably never get done, since it's deprecated:
  * - Multiple modelview matrices (for ARB vertex/fragment program)
@@ -111,6 +110,7 @@
 #define STATE_MODE_INDEXED                  0x00000023    /* glGetIntegerIndexedvEXT etc */
 #define STATE_MODE_ENABLED_INDEXED          0x00000024    /* glIsEnabledIndexedEXT */
 #define STATE_MODE_SAMPLE_MASK_VALUE        0x00000025    /* Extracts individual bits from GL_SAMPLE_MASK_VALUE */
+#define STATE_MODE_MULTISAMPLE              0x00000026    /* glGetMultisamplefv */
 #define STATE_MODE_MASK                     0x000000ff
 
 #define STATE_MULTIPLEX_ACTIVE_TEXTURE      0x00000100    /* Set active texture */
@@ -178,6 +178,7 @@
 #define STATE_VERTEX_ARRAY_ENABLED (STATE_MODE_ENABLED | STATE_MULTIPLEX_BIND_VERTEX_ARRAY)
 #define STATE_VERTEX_ARRAY_ATTRIB (STATE_VERTEX_ATTRIB | STATE_MULTIPLEX_BIND_VERTEX_ARRAY)
 #define STATE_SAMPLE_MASK_VALUE STATE_MODE_SAMPLE_MASK_VALUE
+#define STATE_MULTISAMPLE (STATE_MODE_MULTISAMPLE | STATE_MULTIPLEX_BIND_DRAW_FRAMEBUFFER)
 
 typedef struct
 {
@@ -1475,6 +1476,33 @@ static void spawn_sample_mask_value(const struct glstate *self,
                 spawn_children_sample_mask_value, NULL, children);
 }
 
+static void spawn_children_sample_position(const struct glstate *self,
+                                           linked_list *children)
+{
+    static const state_info sample_position =
+    {
+        NULL, GL_NONE, TYPE_7GLfloat, 2, BUGLE_GL_ARB_texture_multisample, -1, STATE_MULTISAMPLE
+    };
+
+    GLuint old = bugle_gl_get_draw_framebuffer_binding();
+    bugle_gl_bind_draw_framebuffer(self->object);
+
+    GLint samples = 0;
+    CALL(glGetIntegerv)(GL_SAMPLES, &samples);
+    bugle_list_init(children, bugle_free);
+    make_counted(self, samples, "%lu", 0, offsetof(glstate, level), NULL, &sample_position, children);
+
+    bugle_gl_bind_draw_framebuffer(old);
+}
+
+static void spawn_sample_position(const struct glstate *self,
+                                  linked_list *children,
+                                  const struct state_info *info)
+{
+    make_target(self, "GL_SAMPLE_POSITION", GL_SAMPLE_POSITION, GL_SAMPLE_POSITION,
+                spawn_children_sample_position, NULL, children);
+}
+
 /*** Main state table ***/
 
 static const state_info global_state[] =
@@ -1949,7 +1977,6 @@ static const state_info global_state[] =
     { STATE_NAME(GL_STEREO), TYPE_9GLboolean, -1, BUGLE_GL_VERSION_1_1, -1, STATE_GLOBAL },
     { STATE_NAME(GL_SAMPLE_BUFFERS), TYPE_5GLint, -1, BUGLE_GL_ARB_multisample, -1, STATE_GLOBAL },
     { STATE_NAME(GL_SAMPLES), TYPE_5GLint, -1, BUGLE_GL_ARB_multisample, -1, STATE_GLOBAL },
-    /* TODO: SAMPLE_POSITION */
     { STATE_NAME(GL_MAX_COLOR_ATTACHMENTS), TYPE_5GLint, -1, BUGLE_GL_EXT_framebuffer_object, -1, STATE_GLOBAL },
     { STATE_NAME(GL_RED_BITS), TYPE_5GLint, -1, BUGLE_GL_VERSION_1_1, -1, STATE_GLOBAL },
     { STATE_NAME(GL_GREEN_BITS), TYPE_5GLint, -1, BUGLE_GL_VERSION_1_1, -1, STATE_GLOBAL },
@@ -2197,6 +2224,7 @@ static const state_info framebuffer_parameter_state[] =
     { STATE_NAME(GL_STEREO), TYPE_9GLboolean, -1, BUGLE_GL_VERSION_1_1, -1, STATE_DRAW_FRAMEBUFFER_PARAMETER },
     { STATE_NAME(GL_SAMPLE_BUFFERS), TYPE_5GLint, -1, BUGLE_GL_ARB_multisample, -1, STATE_DRAW_FRAMEBUFFER_PARAMETER },
     { STATE_NAME(GL_SAMPLES), TYPE_5GLint, -1, BUGLE_GL_ARB_multisample, -1, STATE_DRAW_FRAMEBUFFER_PARAMETER },
+    { STATE_NAME(GL_SAMPLE_POSITION), TYPE_7GLfloat, 2, BUGLE_GL_ARB_texture_multisample, -1, STATE_MULTISAMPLE, spawn_sample_position },
     { STATE_NAME(GL_RED_BITS), TYPE_5GLint, -1, BUGLE_GL_VERSION_1_1, -1, STATE_DRAW_FRAMEBUFFER_PARAMETER },
     { STATE_NAME(GL_GREEN_BITS), TYPE_5GLint, -1, BUGLE_GL_VERSION_1_1, -1, STATE_DRAW_FRAMEBUFFER_PARAMETER },
     { STATE_NAME(GL_BLUE_BITS), TYPE_5GLint, -1, BUGLE_GL_VERSION_1_1, -1, STATE_DRAW_FRAMEBUFFER_PARAMETER },
@@ -2743,6 +2771,10 @@ void bugle_state_get_raw(const glstate *state, bugle_state_raw *wrapper)
     case STATE_MODE_RENDERBUFFER_PARAMETER:
         bugle_glGetRenderbufferParameteriv(state->target, pname, i);
         in_type = TYPE_5GLint;
+        break;
+    case STATE_MODE_MULTISAMPLE:
+        CALL(glGetMultisamplefv)(pname, state->level, f);
+        in_type = TYPE_7GLfloat;
         break;
     default:
         abort();
