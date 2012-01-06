@@ -22,7 +22,6 @@
  *   range.
  * - GL3-style transform feedback state and per-program XFB varyings
  * - ARB_viewport_array state (scissor, viewport, depth range being arrays)
- * - GL_CLIP_DISTANCE
  * - Check that TexBO tex objects list only the appropriate state
  * - Make blend state per-draw-buffer
  * - ARB_separate_shader_objects state
@@ -801,11 +800,18 @@ static void spawn_clip_planes(const struct glstate *self,
                               linked_list *children,
                               const struct state_info *info)
 {
+    static const state_info clip_distance =
+    {
+        NULL, GL_NONE, TYPE_9GLboolean, -1, BUGLE_GL_VERSION_1_1, -1, STATE_ENABLED
+    };
+
     GLint count;
     CALL(glGetIntegerv)(GL_MAX_CLIP_PLANES, &count);
     make_counted2(self, count, "GL_CLIP_PLANE%lu", GL_CLIP_PLANE0,
                   offsetof(glstate, target), offsetof(glstate, enum_name),
                   NULL, info, children);
+    make_counted(self, count, "GL_CLIP_DISTANCE%lu", GL_CLIP_DISTANCE0,
+                  offsetof(glstate, enum_name), NULL, &clip_distance, children);
 }
 
 static void spawn_children_material(const glstate *self, linked_list *children)
