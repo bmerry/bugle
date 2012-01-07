@@ -266,6 +266,9 @@ static const enum_list query_enums[] =
 
 /* Note: currently we have two copies of this state, one for per-VAO state and
  * one for the current state (or the only state if VAOs are not present).
+ *
+ * They are not quite the same, because CURRENT_VERTEX_ATTRIB is global rather
+ * than per-VAO.
  */
 static const state_info vertex_attrib_state[] =
 {
@@ -277,9 +280,7 @@ static const state_info vertex_attrib_state[] =
     { STATE_NAME(GL_VERTEX_ATTRIB_ARRAY_INTEGER), TYPE_9GLboolean, -1, BUGLE_GL_VERSION_3_0, -1, STATE_VERTEX_ATTRIB },
     { STATE_NAME(GL_VERTEX_ATTRIB_ARRAY_POINTER), TYPE_P6GLvoid, -1, BUGLE_EXTGROUP_vertex_attrib, -1, STATE_VERTEX_ATTRIB },
     { STATE_NAME(GL_VERTEX_ATTRIB_ARRAY_BUFFER_BINDING), TYPE_5GLint, -1, BUGLE_GL_ARB_vertex_buffer_object, -1, STATE_VERTEX_ATTRIB },
-#ifdef GL_ARB_instanced_arrays
-    { STATE_NAME_EXT(GL_VERTEX_ATTRIB_ARRAY_DIVISOR, _ARB), TYPE_5GLint, -1, BUGLE_GL_ARB_instanced_arrays, -1, STATE_VERTEX_ATTRIB },
-#endif
+    { STATE_NAME(GL_VERTEX_ATTRIB_ARRAY_DIVISOR), TYPE_5GLint, -1, BUGLE_GL_ARB_instanced_arrays, -1, STATE_VERTEX_ATTRIB },
     { STATE_NAME(GL_CURRENT_VERTEX_ATTRIB), TYPE_8GLdouble, 4, BUGLE_EXTGROUP_vertex_attrib, -1, STATE_VERTEX_ATTRIB | STATE_SELECT_NON_ZERO },
     { NULL, GL_NONE, NULL_TYPE, 0, -1, -1, 0 }
 };
@@ -294,10 +295,7 @@ static const state_info vertex_array_attrib_state[] =
     { STATE_NAME(GL_VERTEX_ATTRIB_ARRAY_INTEGER), TYPE_9GLboolean, -1, BUGLE_GL_VERSION_3_0, -1, STATE_VERTEX_ARRAY_ATTRIB },
     { STATE_NAME(GL_VERTEX_ATTRIB_ARRAY_POINTER), TYPE_P6GLvoid, -1, BUGLE_EXTGROUP_vertex_attrib, -1, STATE_VERTEX_ARRAY_ATTRIB },
     { STATE_NAME(GL_VERTEX_ATTRIB_ARRAY_BUFFER_BINDING), TYPE_5GLint, -1, BUGLE_GL_ARB_vertex_buffer_object, -1, STATE_VERTEX_ARRAY_ATTRIB },
-#ifdef GL_ARB_instanced_arrays
-    { STATE_NAME_EXT(GL_VERTEX_ATTRIB_ARRAY_DIVISOR, _ARB), TYPE_5GLint, -1, BUGLE_GL_ARB_instanced_arrays, -1, STATE_VERTEX_ARRAY_ATTRIB },
-#endif
-    { STATE_NAME(GL_CURRENT_VERTEX_ATTRIB), TYPE_8GLdouble, 4, BUGLE_EXTGROUP_vertex_attrib, -1, STATE_VERTEX_ARRAY_ATTRIB | STATE_SELECT_NON_ZERO },
+    { STATE_NAME(GL_VERTEX_ATTRIB_ARRAY_DIVISOR), TYPE_5GLint, -1, BUGLE_GL_ARB_instanced_arrays, -1, STATE_VERTEX_ARRAY_ATTRIB },
     { NULL, GL_NONE, NULL_TYPE, 0, -1, -1, 0 }
 };
 
@@ -567,6 +565,7 @@ static const state_info program_state[] =
     { STATE_NAME(GL_VALIDATE_STATUS), TYPE_9GLboolean, -1, BUGLE_GL_ARB_shader_objects, -1, STATE_PROGRAM },
     { STATE_NAME(GL_PROGRAM_BINARY_LENGTH), TYPE_5GLint, -1, BUGLE_GL_ARB_get_program_binary, -1, STATE_PROGRAM },
     { STATE_NAME(GL_PROGRAM_BINARY_RETRIEVABLE_HINT), TYPE_9GLboolean, -1, BUGLE_GL_ARB_get_program_binary, -1, STATE_PROGRAM },
+    { STATE_NAME(GL_PROGRAM_SEPARABLE), TYPE_9GLboolean, -1, BUGLE_GL_ARB_separate_shader_objects, -1, STATE_PROGRAM },
     { STATE_NAME(GL_ACTIVE_UNIFORM_MAX_LENGTH), TYPE_5GLint, -1, BUGLE_GL_ARB_shader_objects, -1, STATE_PROGRAM },
     { "Attached", GL_NONE, TYPE_6GLuint, 0, BUGLE_GL_ARB_shader_objects, -1, STATE_ATTACHED_SHADERS },
     { STATE_NAME(GL_ACTIVE_ATTRIBUTES), TYPE_5GLint, -1, BUGLE_GL_ARB_vertex_shader, -1, STATE_PROGRAM },
