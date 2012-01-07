@@ -514,6 +514,48 @@ static const state_info minmax_parameter_state[] =
     { NULL, GL_NONE, NULL_TYPE, 0, -1, -1, 0 }
 };
 
+/* Per-program state that is only valid when a geometry shader is present.
+ */
+static const state_info program_geometry_state[] =
+{
+    { STATE_NAME(GL_GEOMETRY_VERTICES_OUT), TYPE_5GLint, -1, BUGLE_GL_ARB_geometry_shader4, -1, STATE_PROGRAM },
+    { STATE_NAME(GL_GEOMETRY_INPUT_TYPE), TYPE_6GLenum, -1, BUGLE_GL_ARB_geometry_shader4, -1, STATE_PROGRAM },
+    { STATE_NAME(GL_GEOMETRY_OUTPUT_TYPE), TYPE_6GLenum, -1, BUGLE_GL_ARB_geometry_shader4, -1, STATE_PROGRAM },
+    { STATE_NAME(GL_GEOMETRY_SHADER_INVOCATIONS), TYPE_5GLint, -1, BUGLE_GL_ARB_gpu_shader5, -1, STATE_PROGRAM },
+    { NULL, GL_NONE, NULL_TYPE, 0, -1, -1, 0 }
+};
+
+/* Per-program state that is only valid when tessellation control shader is present.
+ */
+static const state_info program_tess_control_state[] =
+{
+    { STATE_NAME(GL_TESS_CONTROL_OUTPUT_VERTICES), TYPE_5GLint, -1, BUGLE_GL_ARB_tessellation_shader, -1, STATE_PROGRAM },
+    { NULL, GL_NONE, NULL_TYPE, 0, -1, -1, 0 }
+};
+
+/* Per-program state that is only valid when tessellation evaluation shader is present.
+ */
+static const state_info program_tess_evaluation_state[] =
+{
+    { STATE_NAME(GL_TESS_GEN_MODE), TYPE_6GLenum, -1, BUGLE_GL_ARB_tessellation_shader, -1, STATE_PROGRAM },
+    { STATE_NAME(GL_TESS_GEN_SPACING), TYPE_6GLenum, -1, BUGLE_GL_ARB_tessellation_shader, -1, STATE_PROGRAM },
+    { STATE_NAME(GL_TESS_GEN_VERTEX_ORDER), TYPE_6GLenum, -1, BUGLE_GL_ARB_tessellation_shader, -1, STATE_PROGRAM },
+    { STATE_NAME(GL_TESS_GEN_POINT_MODE), TYPE_9GLboolean, -1, BUGLE_GL_ARB_tessellation_shader, -1, STATE_PROGRAM },
+    { NULL, GL_NONE, NULL_TYPE, 0, -1, -1, 0 }
+};
+
+static void spawn_program_geometry(const struct glstate *self,
+                                   linked_list *children,
+                                   const struct state_info *info);
+
+static void spawn_program_tess_control(const struct glstate *self,
+                                       linked_list *children,
+                                       const struct state_info *info);
+
+static void spawn_program_tess_evaluation(const struct glstate *self,
+                                          linked_list *children,
+                                          const struct state_info *info);
+
 static const state_info program_state[] =
 {
     { STATE_NAME(GL_DELETE_STATUS), TYPE_9GLboolean, -1, BUGLE_GL_ARB_shader_objects, -1, STATE_PROGRAM },
@@ -529,15 +571,9 @@ static const state_info program_state[] =
     { "Attached", GL_NONE, TYPE_6GLuint, 0, BUGLE_GL_ARB_shader_objects, -1, STATE_ATTACHED_SHADERS },
     { STATE_NAME(GL_ACTIVE_ATTRIBUTES), TYPE_5GLint, -1, BUGLE_GL_ARB_vertex_shader, -1, STATE_PROGRAM },
     { STATE_NAME(GL_ACTIVE_ATTRIBUTE_MAX_LENGTH), TYPE_5GLint, -1, BUGLE_GL_ARB_vertex_shader, -1, STATE_PROGRAM },
-    { STATE_NAME(GL_GEOMETRY_VERTICES_OUT), TYPE_5GLint, -1, BUGLE_GL_ARB_geometry_shader4, -1, STATE_PROGRAM },
-    { STATE_NAME(GL_GEOMETRY_INPUT_TYPE), TYPE_6GLenum, -1, BUGLE_GL_ARB_geometry_shader4, -1, STATE_PROGRAM },
-    { STATE_NAME(GL_GEOMETRY_OUTPUT_TYPE), TYPE_6GLenum, -1, BUGLE_GL_ARB_geometry_shader4, -1, STATE_PROGRAM },
-    { STATE_NAME(GL_GEOMETRY_SHADER_INVOCATIONS), TYPE_5GLint, -1, BUGLE_GL_ARB_gpu_shader5, -1, STATE_PROGRAM },
-    { STATE_NAME(GL_TESS_CONTROL_OUTPUT_VERTICES), TYPE_5GLint, -1, BUGLE_GL_ARB_tessellation_shader, -1, STATE_PROGRAM },
-    { STATE_NAME(GL_TESS_GEN_MODE), TYPE_6GLenum, -1, BUGLE_GL_ARB_tessellation_shader, -1, STATE_PROGRAM },
-    { STATE_NAME(GL_TESS_GEN_SPACING), TYPE_6GLenum, -1, BUGLE_GL_ARB_tessellation_shader, -1, STATE_PROGRAM },
-    { STATE_NAME(GL_TESS_GEN_VERTEX_ORDER), TYPE_6GLenum, -1, BUGLE_GL_ARB_tessellation_shader, -1, STATE_PROGRAM },
-    { STATE_NAME(GL_TESS_GEN_POINT_MODE), TYPE_9GLboolean, -1, BUGLE_GL_ARB_tessellation_shader, -1, STATE_PROGRAM },
+    { "", GL_NONE, NULL_TYPE, 0, BUGLE_GL_ARB_geometry_shader4, -1, STATE_PROGRAM, spawn_program_geometry },
+    { "", GL_NONE, NULL_TYPE, 0, BUGLE_GL_ARB_tessellation_shader, -1, STATE_PROGRAM, spawn_program_tess_control },
+    { "", GL_NONE, NULL_TYPE, 0, BUGLE_GL_ARB_tessellation_shader, -1, STATE_PROGRAM, spawn_program_tess_evaluation },
     { STATE_NAME(GL_TRANSFORM_FEEDBACK_BUFFER_MODE), TYPE_6GLenum, -1, BUGLE_GL_EXT_transform_feedback, -1, STATE_PROGRAM },
     { STATE_NAME(GL_TRANSFORM_FEEDBACK_VARYINGS), TYPE_5GLint, -1, BUGLE_GL_EXT_transform_feedback, -1, STATE_PROGRAM },
     { STATE_NAME(GL_TRANSFORM_FEEDBACK_VARYING_MAX_LENGTH), TYPE_5GLint, -1, BUGLE_GL_EXT_transform_feedback, -1, STATE_PROGRAM },
@@ -759,6 +795,68 @@ static void make_target(const glstate *self,
  * functions (2-argument functions) or from make_leaves conditional due to
  * a state_info with a callback (3-argument form).
  */
+
+static void spawn_program_geometry(const struct glstate *self,
+                                   linked_list *children,
+                                   const struct state_info *info)
+{
+    /* There is no direct way to tell whether the program has a geometry
+     * shader (GetAttachedShaders only tells us what is attached now, not
+     * what was attached at link time). However, we only care so that we
+     * can avoid triggering an error, so we just try one query and catch
+     * the error.
+     */
+    if (bugle_gl_has_extension_group(BUGLE_GL_ARB_geometry_shader4))
+    {
+        GLint dummy;
+        GLenum error;
+
+        CALL(glGetProgramiv)(self->object, GL_GEOMETRY_VERTICES_OUT, &dummy);
+        error = CALL(glGetError)();
+        if (error == GL_NO_ERROR)
+        {
+            make_leaves(self, program_geometry_state, children);
+        }
+    }
+}
+
+static void spawn_program_tess_control(const struct glstate *self,
+                                       linked_list *children,
+                                       const struct state_info *info)
+{
+    /* See comments in spawn_program_geometry */
+    if (bugle_gl_has_extension_group(BUGLE_GL_ARB_tessellation_shader))
+    {
+        GLint dummy;
+        GLenum error;
+
+        CALL(glGetProgramiv)(self->object, GL_TESS_CONTROL_OUTPUT_VERTICES, &dummy);
+        error = CALL(glGetError)();
+        if (error == GL_NO_ERROR)
+        {
+            make_leaves(self, program_tess_control_state, children);
+        }
+    }
+}
+
+static void spawn_program_tess_evaluation(const struct glstate *self,
+                                          linked_list *children,
+                                          const struct state_info *info)
+{
+    /* See comments in spawn_program_geometry */
+    if (bugle_gl_has_extension_group(BUGLE_GL_ARB_tessellation_shader))
+    {
+        GLint dummy;
+        GLenum error;
+
+        CALL(glGetProgramiv)(self->object, GL_TESS_GEN_MODE, &dummy);
+        error = CALL(glGetError)();
+        if (error == GL_NO_ERROR)
+        {
+            make_leaves(self, program_tess_evaluation_state, children);
+        }
+    }
+}
 
 static void spawn_children_vertex_attrib(const glstate *self, linked_list *children)
 {
@@ -1565,8 +1663,8 @@ static const state_info global_state[] =
     { STATE_NAME(GL_ELEMENT_ARRAY_BUFFER_BINDING), TYPE_5GLint, -1, BUGLE_GL_ARB_vertex_buffer_object, -1, STATE_GLOBAL },
     { STATE_NAME(GL_DRAW_INDIRECT_BUFFER_BINDING), TYPE_5GLint, -1, BUGLE_GL_ARB_draw_indirect, -1, STATE_GLOBAL },
     { STATE_NAME(GL_VERTEX_ARRAY_BINDING), TYPE_5GLint, -1, BUGLE_GL_ARB_vertex_array_object, -1, STATE_GLOBAL },
-    { STATE_NAME(GL_PRIMITIVE_RESTART), TYPE_9GLboolean, -1, BUGLE_GL_VERSION_3_0, -1, STATE_ENABLED },
-    { STATE_NAME(GL_PRIMITIVE_RESTART_INDEX), TYPE_5GLint, -1, BUGLE_GL_VERSION_3_0, -1, STATE_GLOBAL },
+    { STATE_NAME(GL_PRIMITIVE_RESTART), TYPE_9GLboolean, -1, BUGLE_GL_VERSION_3_1, -1, STATE_ENABLED },
+    { STATE_NAME(GL_PRIMITIVE_RESTART_INDEX), TYPE_5GLint, -1, BUGLE_GL_VERSION_3_1, -1, STATE_GLOBAL },
     /* FIXME: these are matrix stacks, not just single matrices */
     { STATE_NAME(GL_COLOR_MATRIX), TYPE_8GLdouble, 16, BUGLE_GL_ARB_imaging, -1, STATE_GLOBAL },
     { STATE_NAME(GL_MODELVIEW_MATRIX), TYPE_8GLdouble, 16, BUGLE_GL_VERSION_1_1, -1, STATE_GLOBAL },
