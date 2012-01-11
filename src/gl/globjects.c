@@ -1,5 +1,5 @@
 /*  BuGLe: an OpenGL debugging tool
- *  Copyright (C) 2004-2009, 2011  Bruce Merry
+ *  Copyright (C) 2004-2009, 2011-2012  Bruce Merry
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -447,6 +447,24 @@ static bugle_bool globjects_glDeleteVertexArrays(function_call *call, const call
                               CALL(glIsVertexArray));
     return BUGLE_TRUE;
 }
+
+static bugle_bool globjects_glBindTransformFeedback(function_call *call, const callback_data *data)
+{
+    globjects_add_single(BUGLE_GLOBJECTS_TRANSFORM_FEEDBACK,
+                         *call->glBindTransformFeedback.arg0,
+                         *call->glBindTransformFeedback.arg1,
+                         CALL(glIsTransformFeedback));
+    return BUGLE_TRUE;
+}
+
+static bugle_bool globjects_glDeleteTransformFeedbacks(function_call *call, const callback_data *data)
+{
+    globjects_delete_multiple(BUGLE_GLOBJECTS_TRANSFORM_FEEDBACK,
+                              *call->glDeleteTransformFeedbacks.arg0,
+                              *call->glDeleteTransformFeedbacks.arg1,
+                              CALL(glIsTransformFeedback));
+    return BUGLE_TRUE;
+}
 #endif
 
 static void globjects_data_init(const void *key, void *data)
@@ -496,6 +514,8 @@ static bugle_bool globjects_filter_set_initialise(filter_set *handle)
     bugle_filter_catches(f, "glDeleteQueries", BUGLE_TRUE, globjects_glDeleteQueries);
     bugle_filter_catches(f, "glBindVertexArray", BUGLE_TRUE, globjects_glBindVertexArray);
     bugle_filter_catches(f, "glDeleteVertexArrays", BUGLE_TRUE, globjects_glDeleteVertexArrays);
+    bugle_filter_catches(f, "glBindTransformFeedback", BUGLE_TRUE, globjects_glBindTransformFeedback);
+    bugle_filter_catches(f, "glDeleteTransformFeedbacks", BUGLE_TRUE, globjects_glDeleteTransformFeedbacks);
 #endif
 #if defined(GL_ARB_vertex_program) || defined(GL_ARB_fragment_program)
     bugle_filter_catches(f, "glBindProgramARB", BUGLE_TRUE, globjects_glBindProgramARB);

@@ -115,12 +115,13 @@
 
 #define STATE_MULTIPLEX_ACTIVE_TEXTURE      0x00000100    /* Set active texture */
 #define STATE_MULTIPLEX_BIND_TEXTURE        0x00000200    /* Set current texture object */
-#define STATE_MULTIPLEX_BIND_BUFFER         0x00000400    /* Set current buffer object (GL_ARRAY_BUFFER) */
-#define STATE_MULTIPLEX_BIND_PROGRAM        0x00000800    /* Set current low-level program */
-#define STATE_MULTIPLEX_BIND_READ_FRAMEBUFFER    0x00001000    /* Set current read framebuffer object */
-#define STATE_MULTIPLEX_BIND_DRAW_FRAMEBUFFER    0x00002000    /* Set current draw framebuffer object */
-#define STATE_MULTIPLEX_BIND_RENDERBUFFER   0x00004000    /* Set current renderbuffer object */
-#define STATE_MULTIPLEX_BIND_VERTEX_ARRAY   0x00008000    /* Set current vertex array object */
+#define STATE_MULTIPLEX_BIND_BUFFER         0x00000300    /* Set current buffer object (GL_ARRAY_BUFFER) */
+#define STATE_MULTIPLEX_BIND_PROGRAM        0x00000400    /* Set current low-level program */
+#define STATE_MULTIPLEX_BIND_READ_FRAMEBUFFER    0x00000500    /* Set current read framebuffer object */
+#define STATE_MULTIPLEX_BIND_DRAW_FRAMEBUFFER    0x00000600    /* Set current draw framebuffer object */
+#define STATE_MULTIPLEX_BIND_RENDERBUFFER   0x00000700    /* Set current renderbuffer object */
+#define STATE_MULTIPLEX_BIND_VERTEX_ARRAY   0x00000800    /* Set current vertex array object */
+#define STATE_MULTIPLEX_MASK                0x0000ff00
 
 #define STATE_SELECT_NO_1D                  0x00010000    /* Ignore for 1D targets like GL_CONVOLUTION_1D */
 #define STATE_SELECT_NO_2D                  0x00020000    /* Ignore for 2D targets like GL_TEXTURE_2D */
@@ -2533,54 +2534,56 @@ void bugle_state_get_raw(const glstate *state, bugle_state_raw *wrapper)
                          (unsigned int) state->object);
     }
 
-    if ((state->info->flags & STATE_MULTIPLEX_ACTIVE_TEXTURE)
-        && bugle_gl_has_extension_group(BUGLE_GL_ARB_multitexture))
+    switch (state->info->flags & STATE_MULTIPLEX_MASK)
     {
-        CALL(glGetIntegerv)(GL_ACTIVE_TEXTURE, &old_unit);
-        CALL(glGetIntegerv)(GL_CLIENT_ACTIVE_TEXTURE, &old_client_unit);
-        CALL(glActiveTexture)(state->unit);
-        if (state->unit > get_texture_coord_units())
-            CALL(glClientActiveTexture)(state->unit);
-        flag_active_texture = BUGLE_TRUE;
-    }
-    if (state->info->flags & STATE_MULTIPLEX_BIND_VERTEX_ARRAY)
-    {
+    case STATE_MULTIPLEX_ACTIVE_TEXTURE:
+        if (bugle_gl_has_extension_group(BUGLE_GL_ARB_multitexture))
+        {
+            CALL(glGetIntegerv)(GL_ACTIVE_TEXTURE, &old_unit);
+            CALL(glGetIntegerv)(GL_CLIENT_ACTIVE_TEXTURE, &old_client_unit);
+            CALL(glActiveTexture)(state->unit);
+            if (state->unit < GL_TEXTURE0 + get_texture_coord_units())
+                CALL(glClientActiveTexture)(state->unit);
+            flag_active_texture = BUGLE_TRUE;
+        }
+        break;
+    case STATE_MULTIPLEX_BIND_VERTEX_ARRAY:
         CALL(glGetIntegerv)(GL_VERTEX_ARRAY_BINDING, &old_vertex_array);
         CALL(glBindVertexArray)(state->object);
-    }
-    if (state->info->flags & STATE_MULTIPLEX_BIND_BUFFER)
-    {
+        break;
+    case STATE_MULTIPLEX_BIND_BUFFER:
         CALL(glGetIntegerv)(GL_ARRAY_BUFFER_BINDING, &old_buffer);
         CALL(glBindBuffer)(GL_ARRAY_BUFFER, state->object);
-    }
-    if (state->info->flags & STATE_MULTIPLEX_BIND_PROGRAM)
-    {
+        break;
+    case STATE_MULTIPLEX_BIND_PROGRAM:
         CALL(glGetProgramivARB)(state->target, GL_PROGRAM_BINDING_ARB, &old_program);
         CALL(glBindProgramARB)(state->target, state->object);
-    }
-    if ((state->info->flags & STATE_MULTIPLEX_BIND_DRAW_FRAMEBUFFER)
-        && bugle_gl_has_framebuffer_object())
-    {
-        old_framebuffer = bugle_gl_get_draw_framebuffer_binding();
-        bugle_gl_bind_draw_framebuffer(state->object);
-    }
-    else if ((state->info->flags & STATE_MULTIPLEX_BIND_READ_FRAMEBUFFER)
-             && bugle_gl_has_framebuffer_object())
-    {
-        old_framebuffer = bugle_gl_get_read_framebuffer_binding();
-        bugle_gl_bind_read_framebuffer(state->object);
-    }
-
-    if (state->info->flags & STATE_MULTIPLEX_BIND_RENDERBUFFER)
-    {
+        break;
+    case STATE_MULTIPLEX_BIND_DRAW_FRAMEBUFFER:
+        if (bugle_gl_has_framebuffer_object())
+        {
+            old_framebuffer = bugle_gl_get_draw_framebuffer_binding();
+            bugle_gl_bind_draw_framebuffer(state->object);
+        }
+        break;
+    case STATE_MULTIPLEX_BIND_READ_FRAMEBUFFER:
+        if (bugle_gl_has_framebuffer_object())
+        {
+            old_framebuffer = bugle_gl_get_read_framebuffer_binding();
+            bugle_gl_bind_read_framebuffer(state->object);
+        }
+        break;
+    case STATE_MULTIPLEX_BIND_RENDERBUFFER:
         CALL(glGetIntegerv)(state->binding, &old_renderbuffer);
         bugle_glBindRenderbuffer(state->target, state->object);
-    }
-    if ((state->info->flags & STATE_MULTIPLEX_BIND_TEXTURE)
-        && state->binding) /* binding of 0 means a proxy texture */
-    {
-        CALL(glGetIntegerv)(state->binding, &old_texture);
-        CALL(glBindTexture)(state->target, state->object);
+        break;
+    case STATE_MULTIPLEX_BIND_TEXTURE:
+        if (state->binding) /* binding of 0 means a proxy texture */
+        {
+            CALL(glGetIntegerv)(state->binding, &old_texture);
+            CALL(glBindTexture)(state->target, state->object);
+        }
+        break;
     }
 
     switch (state->info->flags & STATE_MODE_MASK)
@@ -2877,32 +2880,41 @@ void bugle_state_get_raw(const glstate *state, bugle_state_raw *wrapper)
         abort();
     }
 
-    if (flag_active_texture)
+    switch (state->info->flags & STATE_MODE_MASK)
     {
-        CALL(glActiveTexture)(old_unit);
-        if (state->unit > get_texture_coord_units())
-            CALL(glClientActiveTexture)(old_client_unit);
-    }
-    if (state->info->flags & STATE_MULTIPLEX_BIND_BUFFER)
-    {
+    case STATE_MULTIPLEX_ACTIVE_TEXTURE:
+        if (flag_active_texture)
+        {
+            CALL(glActiveTexture)(old_unit);
+            if (state->unit > get_texture_coord_units())
+                CALL(glClientActiveTexture)(old_client_unit);
+        }
+        break;
+    case STATE_MULTIPLEX_BIND_BUFFER:
         CALL(glBindBuffer)(GL_ARRAY_BUFFER, old_buffer);
-    }
-    if (state->info->flags & STATE_MULTIPLEX_BIND_VERTEX_ARRAY)
+        break;
+    case STATE_MULTIPLEX_BIND_VERTEX_ARRAY:
         CALL(glBindVertexArray)(old_vertex_array);
-    if (state->info->flags & STATE_MULTIPLEX_BIND_PROGRAM)
+        break;
+    case STATE_MULTIPLEX_BIND_PROGRAM:
         CALL(glBindProgramARB)(state->target, old_program);
-    if ((state->info->flags & STATE_MULTIPLEX_BIND_DRAW_FRAMEBUFFER)
-        && bugle_gl_has_framebuffer_object())
-        bugle_gl_bind_draw_framebuffer(old_framebuffer);
-    else if ((state->info->flags & STATE_MULTIPLEX_BIND_READ_FRAMEBUFFER)
-        && bugle_gl_has_framebuffer_object())
-        bugle_gl_bind_read_framebuffer(old_framebuffer);
-
-    if (state->info->flags & STATE_MULTIPLEX_BIND_RENDERBUFFER)
+        break;
+    case STATE_MULTIPLEX_BIND_DRAW_FRAMEBUFFER:
+        if (bugle_gl_has_framebuffer_object())
+            bugle_gl_bind_draw_framebuffer(old_framebuffer);
+        break;
+    case STATE_MULTIPLEX_BIND_READ_FRAMEBUFFER:
+        if (bugle_gl_has_framebuffer_object())
+            bugle_gl_bind_read_framebuffer(old_framebuffer);
+        break;
+    case STATE_MULTIPLEX_BIND_RENDERBUFFER:
         bugle_glBindRenderbuffer(state->target, old_renderbuffer);
-    if ((state->info->flags & STATE_MULTIPLEX_BIND_TEXTURE)
-        && state->binding)
-        CALL(glBindTexture)(state->target, old_texture);
+        break;
+    case STATE_MULTIPLEX_BIND_TEXTURE:
+        if (state->binding)
+            CALL(glBindTexture)(state->target, old_texture);
+        break;
+    }
 
     if ((error = CALL(glGetError)()) != GL_NO_ERROR)
     {

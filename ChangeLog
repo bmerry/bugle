@@ -8,10 +8,12 @@
 * Fixed incorrect state display of GL_CLIP_DISTANCEi and GL_DRAW_BUFFERi (always showed element 0)
 * Fixed invalid queries of GL_TRANSFORM_FEEDBACK_RECORD_NV
 * Fixed incorrect height computation for display of 3D textures in the debugger
+* Fixed bug causing client texture state to be queried for all units
 * Support tracing of glGetStringi
 * Support tracing of GL_ARB_sampler_objects
 * Recognize the GL 3.0-equivalent functions to those in EXT_draw_buffers2
 * Add most missing GL 3.0 state to the state display
+* Add most simple GL 4.2 state to the state display (more complex state is still missing)
 * Removed unnecessary definitions of GL_GLEXT_PROTOTYPES
 * Filled out list of sampler types in gldump - it should now be possible to view the uniforms of all sampler types up to GL 4.2
 
