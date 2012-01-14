@@ -16,6 +16,7 @@
 * Add most simple GL 4.2 state to the state display (more complex state is still missing)
 * Removed unnecessary definitions of GL_GLEXT_PROTOTYPES
 * Filled out list of sampler types in gldump - it should now be possible to view the uniforms of all sampler types up to GL 4.2
+* Removed NV_transform_feedback state in state display to avoid conflicts with EXT_transform_feedback
 
 0.0.20111115
 ------------

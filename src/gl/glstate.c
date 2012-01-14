@@ -3280,13 +3280,6 @@ static void spawn_children_global(const glstate *self, linked_list *children)
                     GL_RENDERBUFFER_BINDING,
                     spawn_children_renderbuffer, NULL, children);
     }
-    if (bugle_gl_has_extension_group(BUGLE_GL_NV_transform_feedback))
-    {
-        make_target(self, "TransformFeedbackBuffers",
-                    0,
-                    GL_TRANSFORM_FEEDBACK_BUFFER_BINDING_NV,
-                    spawn_children_transform_feedback, NULL, children);
-    }
 }
 
 const glstate *bugle_state_get_root(void)
