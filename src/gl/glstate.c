@@ -20,7 +20,7 @@
  *   with the right query to get the right result.
  * - Using GetInteger64v for certain state where GetIntegerv might be out of
  *   range.
- * - GL3-style transform feedback state and per-program XFB varyings
+ * - Per-program XFB varyings
  * - ARB_viewport_array state (scissor, viewport, depth range being arrays)
  * - Check that TexBO tex objects list only the appropriate state
  * - Make blend state per-draw-buffer
@@ -121,6 +121,7 @@
 #define STATE_MULTIPLEX_BIND_DRAW_FRAMEBUFFER    0x00000600    /* Set current draw framebuffer object */
 #define STATE_MULTIPLEX_BIND_RENDERBUFFER   0x00000700    /* Set current renderbuffer object */
 #define STATE_MULTIPLEX_BIND_VERTEX_ARRAY   0x00000800    /* Set current vertex array object */
+#define STATE_MULTIPLEX_BIND_TRANSFORM_FEEDBACK 0x00000900     /* Set current transform feedback object */
 #define STATE_MULTIPLEX_MASK                0x0000ff00
 
 #define STATE_SELECT_NO_1D                  0x00010000    /* Ignore for 1D targets like GL_CONVOLUTION_1D */
@@ -180,6 +181,8 @@
 #define STATE_VERTEX_ARRAY_ATTRIB (STATE_VERTEX_ATTRIB | STATE_MULTIPLEX_BIND_VERTEX_ARRAY)
 #define STATE_SAMPLE_MASK_VALUE STATE_MODE_SAMPLE_MASK_VALUE
 #define STATE_MULTISAMPLE (STATE_MODE_MULTISAMPLE | STATE_MULTIPLEX_BIND_DRAW_FRAMEBUFFER)
+#define STATE_TRANSFORM_FEEDBACK (STATE_MODE_GLOBAL | STATE_MULTIPLEX_BIND_TRANSFORM_FEEDBACK)
+#define STATE_TRANSFORM_FEEDBACK_INDEXED (STATE_MODE_INDEXED | STATE_MULTIPLEX_BIND_TRANSFORM_FEEDBACK)
 
 typedef struct
 {
@@ -592,6 +595,14 @@ static const state_info shader_state[] =
     { STATE_NAME(GL_SHADER_TYPE), TYPE_6GLenum, -1, BUGLE_GL_ARB_shader_objects, -1, STATE_SHADER },
     { STATE_NAME(GL_COMPILE_STATUS), TYPE_9GLboolean, -1, BUGLE_GL_ARB_shader_objects, -1, STATE_SHADER },
     { STATE_NAME(GL_SHADER_SOURCE_LENGTH), TYPE_5GLint, -1, BUGLE_GL_ARB_shader_objects, -1, STATE_SHADER },
+    { NULL, GL_NONE, NULL_TYPE, 0, -1, -1, 0 }
+};
+
+static const state_info transform_feedback_buffer_state[] =
+{
+    { STATE_NAME(GL_TRANSFORM_FEEDBACK_BUFFER_BINDING), TYPE_5GLint, -1, BUGLE_GL_EXT_transform_feedback, -1, STATE_TRANSFORM_FEEDBACK_INDEXED },
+    { STATE_NAME(GL_TRANSFORM_FEEDBACK_BUFFER_START), TYPE_7GLint64, -1, BUGLE_GL_EXT_transform_feedback, -1, STATE_TRANSFORM_FEEDBACK_INDEXED },
+    { STATE_NAME(GL_TRANSFORM_FEEDBACK_BUFFER_SIZE), TYPE_7GLint64, -1, BUGLE_GL_EXT_transform_feedback, -1, STATE_TRANSFORM_FEEDBACK_INDEXED },
     { NULL, GL_NONE, NULL_TYPE, 0, -1, -1, 0 }
 };
 
@@ -1601,6 +1612,26 @@ static void spawn_sample_position(const struct glstate *self,
                 spawn_children_sample_position, NULL, children);
 }
 
+static void spawn_children_transform_feedback_buffer(const struct glstate *self,
+                                                     linked_list *children)
+{
+    bugle_list_init(children, bugle_free);
+    make_leaves(self, transform_feedback_buffer_state, children);
+}
+
+static void spawn_transform_feedback_buffer(const struct glstate *self,
+                                            linked_list *children,
+                                            const struct state_info *info)
+{
+    GLint buffers = 0;
+    if (bugle_gl_has_extension_group(BUGLE_GL_ARB_transform_feedback3))
+        CALL(glGetIntegerv)(GL_MAX_TRANSFORM_FEEDBACK_BUFFERS, &buffers);
+    else
+        CALL(glGetIntegerv)(GL_MAX_TRANSFORM_FEEDBACK_SEPARATE_ATTRIBS, &buffers);
+    make_counted(self, buffers, "Buffer[%lu]", 0, offsetof(glstate, level),
+                 spawn_children_transform_feedback_buffer, NULL, children);
+}
+
 /*** Main state table ***/
 
 static const state_info global_state[] =
@@ -2141,10 +2172,6 @@ static const state_info global_state[] =
 #ifdef GL_EXT_packed_float
     { STATE_NAME(GL_RGBA_SIGNED_COMPONENTS_EXT), TYPE_9GLboolean, 4, BUGLE_GL_EXT_packed_float, -1, STATE_GLOBAL },
 #endif
-#ifdef GL_NV_transform_feedback
-    { STATE_NAME(GL_TRANSFORM_FEEDBACK_ATTRIBS_NV), TYPE_5GLint, -1, BUGLE_GL_NV_transform_feedback, -1, STATE_GLOBAL },
-    { STATE_NAME(GL_TRANSFORM_FEEDBACK_BUFFER_BINDING_NV), TYPE_5GLint, -1, BUGLE_GL_NV_transform_feedback, -1, STATE_GLOBAL },
-#endif /* GL_NV_transform_feedback */
     { NULL, GL_NONE, NULL_TYPE, 0, -1, -1, 0 }
 };
 
@@ -2360,17 +2387,12 @@ static const state_info framebuffer_attachment_parameter_state[] =
     { NULL, GL_NONE, NULL_TYPE, 0, -1, -1, 0 }
 };
 
-static const state_info transform_feedback_record_state[] =
+static const state_info transform_feedback_parameter_state[] =
 {
-    { STATE_NAME(GL_TRANSFORM_FEEDBACK_RECORD_NV), TYPE_11GLxfbattrib, -1, BUGLE_GL_NV_transform_feedback, -1, STATE_INDEXED },
-    { NULL, GL_NONE, NULL_TYPE, 0, -1, -1, 0 }
-};
-
-static const state_info transform_feedback_buffer_state[] =
-{
-    { STATE_NAME(GL_TRANSFORM_FEEDBACK_BUFFER_BINDING_NV), TYPE_5GLint, -1, BUGLE_GL_NV_transform_feedback, -1, STATE_INDEXED },
-    { STATE_NAME(GL_TRANSFORM_FEEDBACK_BUFFER_START_NV), TYPE_5GLint, -1, BUGLE_GL_NV_transform_feedback, -1, STATE_INDEXED },
-    { STATE_NAME(GL_TRANSFORM_FEEDBACK_BUFFER_SIZE_NV), TYPE_5GLint, -1, BUGLE_GL_NV_transform_feedback, -1, STATE_INDEXED },
+    { STATE_NAME(GL_TRANSFORM_FEEDBACK_BUFFER_BINDING), TYPE_5GLint, -1, BUGLE_GL_EXT_transform_feedback, -1, STATE_TRANSFORM_FEEDBACK },
+    { "Buffer", GL_NONE, NULL_TYPE, -1, BUGLE_GL_EXT_transform_feedback, -1, STATE_TRANSFORM_FEEDBACK, spawn_transform_feedback_buffer },
+    { STATE_NAME(GL_TRANSFORM_FEEDBACK_BUFFER_PAUSED), TYPE_9GLboolean, -1, BUGLE_GL_ARB_transform_feedback2, -1, STATE_TRANSFORM_FEEDBACK },
+    { STATE_NAME(GL_TRANSFORM_FEEDBACK_BUFFER_ACTIVE), TYPE_9GLboolean, -1, BUGLE_GL_ARB_transform_feedback2, -1, STATE_TRANSFORM_FEEDBACK },
     { NULL, GL_NONE, NULL_TYPE, 0, -1, -1, 0 }
 };
 
@@ -2401,7 +2423,7 @@ const state_info * const all_state[] =
     framebuffer_attachment_parameter_state,
     framebuffer_parameter_state,
     renderbuffer_parameter_state,
-    transform_feedback_record_state,
+    transform_feedback_parameter_state,
     transform_feedback_buffer_state,
     NULL
 };
@@ -2501,6 +2523,7 @@ void bugle_state_get_raw(const glstate *state, bugle_state_raw *wrapper)
 
     GLint old_texture, old_buffer, old_vertex_array, old_program;
     GLint old_unit, old_client_unit, old_framebuffer, old_renderbuffer;
+    GLint old_transform_feedback, xfb_paused, xfb_active;
     bugle_bool flag_active_texture = BUGLE_FALSE;
     GLenum pname;
 
@@ -2582,6 +2605,20 @@ void bugle_state_get_raw(const glstate *state, bugle_state_raw *wrapper)
         {
             CALL(glGetIntegerv)(state->binding, &old_texture);
             CALL(glBindTexture)(state->target, state->object);
+        }
+        break;
+    case STATE_MULTIPLEX_BIND_TRANSFORM_FEEDBACK:
+        if (bugle_gl_has_extension_group(BUGLE_GL_ARB_transform_feedback2))
+        {
+            CALL(glGetIntegerv)(GL_TRANSFORM_FEEDBACK_BINDING, &old_transform_feedback);
+            if (old_transform_feedback != state->object)
+            {
+                CALL(glGetIntegerv)(GL_TRANSFORM_FEEDBACK_BUFFER_PAUSED, &xfb_paused);
+                CALL(glGetIntegerv)(GL_TRANSFORM_FEEDBACK_BUFFER_ACTIVE, &xfb_active);
+                if (xfb_active && !xfb_paused)
+                    CALL(glPauseTransformFeedback)();
+                CALL(glBindTransformFeedback)(GL_TRANSFORM_FEEDBACK, state->object);
+            }
         }
         break;
     }
@@ -2880,7 +2917,7 @@ void bugle_state_get_raw(const glstate *state, bugle_state_raw *wrapper)
         abort();
     }
 
-    switch (state->info->flags & STATE_MODE_MASK)
+    switch (state->info->flags & STATE_MULTIPLEX_MASK)
     {
     case STATE_MULTIPLEX_ACTIVE_TEXTURE:
         if (flag_active_texture)
@@ -2913,6 +2950,17 @@ void bugle_state_get_raw(const glstate *state, bugle_state_raw *wrapper)
     case STATE_MULTIPLEX_BIND_TEXTURE:
         if (state->binding)
             CALL(glBindTexture)(state->target, old_texture);
+        break;
+    case STATE_MULTIPLEX_BIND_TRANSFORM_FEEDBACK:
+        if (bugle_gl_has_extension_group(BUGLE_GL_ARB_transform_feedback2))
+        {
+            if (old_transform_feedback != state->object)
+            {
+                CALL(glBindTransformFeedback)(GL_TRANSFORM_FEEDBACK, old_transform_feedback);
+                if (xfb_active && !xfb_paused)
+                    CALL(glResumeTransformFeedback)();
+            }
+        }
         break;
     }
 
@@ -3212,26 +3260,10 @@ static void spawn_children_renderbuffer(const glstate *self, linked_list *childr
                  "%lu", spawn_children_renderbuffer_object, NULL, children);
 }
 
-static void spawn_children_transform_feedback_buffer(const glstate *self, linked_list *children)
+static void spawn_children_transform_feedback_parameter(const glstate *self, linked_list *children)
 {
-    GLint records;
-    CALL(glGetIntegerv)(GL_TRANSFORM_FEEDBACK_ATTRIBS_NV, &records);
     bugle_list_init(children, bugle_free);
-    if (self->level < records)
-    {
-        make_leaves(self, transform_feedback_record_state, children);
-    }
-    make_leaves(self, transform_feedback_buffer_state, children);
-}
-
-static void spawn_children_transform_feedback(const glstate *self, linked_list *children)
-{
-    GLint buffers;
-
-    CALL(glGetIntegerv)(GL_MAX_TRANSFORM_FEEDBACK_SEPARATE_ATTRIBS_NV, &buffers);
-    bugle_list_init(children, bugle_free);
-    make_counted(self, buffers, "%lu", 0, offsetof(glstate, level),
-                 spawn_children_transform_feedback_buffer, NULL, children);
+    make_leaves(self, transform_feedback_parameter_state, children);
 }
 
 static void spawn_children_global(const glstate *self, linked_list *children)
@@ -3279,6 +3311,11 @@ static void spawn_children_global(const glstate *self, linked_list *children)
                     GL_RENDERBUFFER,
                     GL_RENDERBUFFER_BINDING,
                     spawn_children_renderbuffer, NULL, children);
+    }
+    if (bugle_gl_has_extension_group(BUGLE_GL_EXT_transform_feedback))
+    {
+        make_objects(self, BUGLE_GLOBJECTS_TRANSFORM_FEEDBACK, GL_NONE, BUGLE_TRUE,
+                     "TransformFeedback[%lu]", spawn_children_transform_feedback_parameter, NULL, children);
     }
 }
 
