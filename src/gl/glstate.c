@@ -111,6 +111,8 @@
 #define STATE_MODE_ENABLED_INDEXED          0x00000024    /* glIsEnabledIndexedEXT */
 #define STATE_MODE_SAMPLE_MASK_VALUE        0x00000025    /* Extracts individual bits from GL_SAMPLE_MASK_VALUE */
 #define STATE_MODE_MULTISAMPLE              0x00000026    /* glGetMultisamplefv */
+#define STATE_MODE_TRANSFORM_FEEDBACK_VARYING_SIZE  0x00000027    /* glGetTransformFeedbackVarying, returning size */
+#define STATE_MODE_TRANSFORM_FEEDBACK_VARYING_TYPE  0x00000028    /* glGetTransformFeedbackVarying, returnign type */
 #define STATE_MODE_MASK                     0x000000ff
 
 #define STATE_MULTIPLEX_ACTIVE_TEXTURE      0x00000100    /* Set active texture */
@@ -183,6 +185,8 @@
 #define STATE_MULTISAMPLE (STATE_MODE_MULTISAMPLE | STATE_MULTIPLEX_BIND_DRAW_FRAMEBUFFER)
 #define STATE_TRANSFORM_FEEDBACK (STATE_MODE_GLOBAL | STATE_MULTIPLEX_BIND_TRANSFORM_FEEDBACK)
 #define STATE_TRANSFORM_FEEDBACK_INDEXED (STATE_MODE_INDEXED | STATE_MULTIPLEX_BIND_TRANSFORM_FEEDBACK)
+#define STATE_TRANSFORM_FEEDBACK_VARYING_SIZE STATE_MODE_TRANSFORM_FEEDBACK_VARYING_SIZE
+#define STATE_TRANSFORM_FEEDBACK_VARYING_TYPE STATE_MODE_TRANSFORM_FEEDBACK_VARYING_TYPE
 
 typedef struct
 {
@@ -1474,6 +1478,19 @@ static void spawn_children_shader(const glstate *self, linked_list *children)
     make_leaves(self, shader_state, children);
 }
 
+static void spawn_children_transform_feedback_varying(const glstate *self, linked_list *children)
+{
+    static const state_info transform_feedback_varying_state[] =
+    {
+        { "Size", 0, TYPE_5GLint, -1, BUGLE_GL_EXT_transform_feedback, -1, STATE_TRANSFORM_FEEDBACK_VARYING_SIZE },
+        { "Type", 0, TYPE_6GLenum, -1, BUGLE_GL_EXT_transform_feedback, -1, STATE_TRANSFORM_FEEDBACK_VARYING_TYPE },
+        { NULL, GL_NONE, NULL_TYPE, 0, -1, -1, 0 }
+    };
+
+    bugle_list_init(children, bugle_free);
+    make_leaves(self, transform_feedback_varying_state, children);
+}
+
 static void spawn_children_program(const glstate *self, linked_list *children)
 {
     GLint i, count, max, status;
@@ -1503,12 +1520,14 @@ static void spawn_children_program(const glstate *self, linked_list *children)
             *child = *self;
             child->spawn_children = NULL;
             child->info = &uniform_state;
-            child->name = BUGLE_NMALLOC(max, GLcharARB);
-            child->name[0] = '\0'; /* sanity, in case the query borks */
+            child->name = BUGLE_NMALLOC(max + 3, GLcharARB);
+            child->name[0] = 'U';
+            child->name[1] = ':';
+            child->name[2] = '\0'; /* sanity, in case the query borks */
             child->enum_name = 0;
             child->level = i;      /* level is overloaded with the uniform index */
             bugle_glGetActiveUniform(self->object, i, max, &length, &size,
-                                     &type, child->name);
+                                     &type, child->name + 2);
             if (length)
             {
                 child->numeric_name = bugle_glGetUniformLocation(self->object, child->name);
@@ -1517,8 +1536,14 @@ static void spawn_children_program(const glstate *self, linked_list *children)
                  */
                 if (child->numeric_name == -1) length = 0;
             }
-            if (length) bugle_list_append(children, child);
-            else bugle_free(child->name); /* failed query */
+            if (length)
+                bugle_list_append(children, child);
+            else
+            {
+                /* failed query */
+                bugle_free(child->name);
+                bugle_free(child);
+            }
         }
 
     if (status != GL_FALSE && bugle_gl_has_extension_group(BUGLE_GL_ARB_vertex_shader))
@@ -1534,15 +1559,53 @@ static void spawn_children_program(const glstate *self, linked_list *children)
             *child = *self;
             child->spawn_children = NULL;
             child->info = &attrib_state;
-            child->name = BUGLE_NMALLOC(max + 1, GLcharARB);
-            child->name[0] = '\0';
+            child->name = BUGLE_NMALLOC(max + 3, GLcharARB);
+            child->name[0] = 'A';
+            child->name[1] = ':';
+            child->name[2] = '\0';
             child->numeric_name = i;
             child->enum_name = 0;
             child->level = i;
             bugle_glGetActiveAttrib(self->object, i, max, &length, &size,
-                                    &type, child->name);
-            if (length) bugle_list_append(children, child);
-            else bugle_free(child->name);
+                                    &type, child->name + 2);
+            if (length)
+                bugle_list_append(children, child);
+            else
+            {
+                /* Failed query */
+                bugle_free(child->name);
+                bugle_free(child);
+            }
+        }
+    }
+
+    if (status != GL_FALSE && bugle_gl_has_extension_group(BUGLE_GL_EXT_transform_feedback))
+    {
+        bugle_glGetProgramiv(self->object, GL_TRANSFORM_FEEDBACK_VARYINGS, &count);
+        bugle_glGetProgramiv(self->object, GL_TRANSFORM_FEEDBACK_VARYING_MAX_LENGTH, &max);
+        for (i = 0; i < count; i++)
+        {
+            child = BUGLE_MALLOC(glstate);
+            *child = *self;
+            child->spawn_children = spawn_children_transform_feedback_varying;
+            child->info = NULL;
+            child->name = BUGLE_NMALLOC(max + 3, GLcharARB);
+            child->name[0] = 'X';
+            child->name[1] = ':';
+            child->name[2] = '\0'; /* sanity, in case query fails */
+            child->numeric_name = i;
+            child->enum_name = 0;
+            child->level = i;
+            CALL(glGetTransformFeedbackVarying)(self->object, i, max, &length, &size,
+                                                &type, child->name + 2);
+            if (length)
+                bugle_list_append(children, child);
+            else
+            {
+                /* failed */
+                bugle_free(child->name);
+                bugle_free(child);
+            }
         }
     }
 }
@@ -2840,6 +2903,20 @@ void bugle_state_get_raw(const glstate *state, bugle_state_raw *wrapper)
 
             budgie_type_convert(wrapper->data, out_type, buffer, in_type, size * units);
             bugle_free(buffer);
+        }
+        break;
+    case STATE_MODE_TRANSFORM_FEEDBACK_VARYING_SIZE:
+    case STATE_MODE_TRANSFORM_FEEDBACK_VARYING_TYPE:
+        {
+            GLsizei size;
+            GLenum type;
+
+            CALL(glGetTransformFeedbackVarying)(state->object, state->numeric_name, 0, NULL, &size, &type, NULL);
+            if ((state->info->flags & STATE_MODE_MASK) == STATE_MODE_TRANSFORM_FEEDBACK_VARYING_SIZE)
+                i[0] = size;
+            else
+                i[0] = type;
+            in_type = TYPE_5GLint;
         }
         break;
     case STATE_MODE_ATTRIB_LOCATION:
