@@ -1530,7 +1530,7 @@ static void spawn_children_program(const glstate *self, linked_list *children)
                                      &type, child->name + 2);
             if (length)
             {
-                child->numeric_name = bugle_glGetUniformLocation(self->object, child->name);
+                child->numeric_name = bugle_glGetUniformLocation(self->object, child->name + 2);
                 /* Check for built-in state, which is returned by glGetActiveUniformARB
                  * but cannot be queried.
                  */
@@ -2920,7 +2920,7 @@ void bugle_state_get_raw(const glstate *state, bugle_state_raw *wrapper)
         }
         break;
     case STATE_MODE_ATTRIB_LOCATION:
-        i[0] = bugle_glGetAttribLocation(state->object, state->name);
+        i[0] = bugle_glGetAttribLocation(state->object, state->name + 2); /* Skips over "A:" prefix */
         break;
     case STATE_MODE_ATTACHED_SHADERS:
         {
