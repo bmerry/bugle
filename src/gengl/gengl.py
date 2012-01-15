@@ -1011,6 +1011,8 @@ def process_alias(apis, options):
         ('glColorMaskIndexedEXT',            'glColorMaski'),
         ('glGetBooleanIndexedvEXT',          'glGetBooleani_v'),
         ('glGetIntegerIndexedvEXT',          'glGetIntegeri_v'),
+        ('glGetFloatIndexedvEXT',            'glGetFloati_v'),
+        ('glGetDoubleIndexedvEXT',           'glGetDoublei_v'),
         ('glEnableIndexedEXT',               'glEnablei'),
         ('glDisableIndexedEXT',              'glDisablei'),
         ('glIsEnabledIndexedEXT',            'glIsEnabledi'),

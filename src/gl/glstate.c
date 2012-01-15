@@ -20,7 +20,6 @@
  *   with the right query to get the right result.
  * - Using GetInteger64v for certain state where GetIntegerv might be out of
  *   range.
- * - Per-program XFB varyings
  * - ARB_viewport_array state (scissor, viewport, depth range being arrays)
  * - Check that TexBO tex objects list only the appropriate state
  * - Make blend state per-draw-buffer
@@ -29,6 +28,7 @@
  * - ARB_shader_atomic_counters
  * - ARB_sync
  * - UBO binding points and most other UBO state
+ * - Indexed asynchronous queries
  * - GetInternalformat queries
  *
  * The following will probably never get done, since it's deprecated:

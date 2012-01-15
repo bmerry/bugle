@@ -4,9 +4,9 @@
 * Added support for EXT_packed_depth_stencil
 * Added support for ARB_vertex_array_object
 * Added support for EXT_texture_array (was previously partially supported)
+* Added support for EXT_transform_feedback and ARB_transform_feedback2
 * Start on support for ARB_framebuffer_object (incomplete and poorly tested)
 * Fixed incorrect state display of GL_CLIP_DISTANCEi and GL_DRAW_BUFFERi (always showed element 0)
-* Fixed invalid queries of GL_TRANSFORM_FEEDBACK_RECORD_NV
 * Fixed incorrect height computation for display of 3D textures in the debugger
 * Fixed bug causing client texture state to be queried for all units
 * Support tracing of glGetStringi

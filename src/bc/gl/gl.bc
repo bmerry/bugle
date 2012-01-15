@@ -14,10 +14,11 @@ INCLUDE bc/gl/GL_ARB_half_float_pixel.bc
 INCLUDE bc/gl/GL_ARB_imaging.bc
 INCLUDE bc/gl/GL_ARB_map_buffer_range.bc
 INCLUDE bc/gl/GL_ARB_multitexture.bc
+INCLUDE bc/gl/GL_ARB_occlusion_query.bc
 INCLUDE bc/gl/GL_ARB_sampler_objects.bc
 INCLUDE bc/gl/GL_ARB_shader_objects.bc
 INCLUDE bc/gl/GL_ARB_texture_compression.bc
-INCLUDE bc/gl/GL_ARB_occlusion_query.bc
+INCLUDE bc/gl/GL_ARB_transform_feedback2.bc
 INCLUDE bc/gl/GL_ARB_transpose_matrix.bc
 INCLUDE bc/gl/GL_ARB_vertex_buffer_object.bc
 INCLUDE bc/gl/GL_ARB_vertex_program.bc
@@ -34,5 +35,6 @@ INCLUDE bc/gl/GL_EXT_gpu_shader4.bc
 INCLUDE bc/gl/GL_EXT_multi_draw_arrays.bc
 INCLUDE bc/gl/GL_EXT_secondary_color.bc
 INCLUDE bc/gl/GL_EXT_texture3D.bc
+INCLUDE bc/gl/GL_EXT_transform_feedback.bc
 INCLUDE bc/gl/GL_NV_transform_feedback.bc
 INCLUDE bc/gl/glsl1_20.bc
