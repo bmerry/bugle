@@ -1,5 +1,5 @@
 /*  BuGLe: an OpenGL debugging tool
- *  Copyright (C) 2004-2007, 2009-2010  Bruce Merry
+ *  Copyright (C) 2004-2007, 2009-2010, 2012  Bruce Merry
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -117,20 +117,20 @@ static void gldb_shader_pane_update_ids(GldbShaderPane *pane, const gldb_state *
     {
         GL_VERTEX_PROGRAM_ARB,
         GL_FRAGMENT_PROGRAM_ARB,
-        GL_VERTEX_SHADER_ARB,
-#ifdef GL_EXT_geometry_shader4
-        GL_GEOMETRY_SHADER_EXT,
-#endif
-        GL_FRAGMENT_SHADER_ARB,
+        GL_VERTEX_SHADER,
+        GL_TESS_CONTROL_SHADER,
+        GL_TESS_EVALUATION_SHADER,
+        GL_GEOMETRY_SHADER,
+        GL_FRAGMENT_SHADER,
     };
     const gchar *target_names[] =
     {
         "ARB VP",
         "ARB FP",
         "GLSL VS",
-#ifdef GL_EXT_geometry_shader4
+        "GLSL TCS",
+        "GLSL TES",
         "GLSL GS",
-#endif
         "GLSL FS"
     };
 
@@ -200,11 +200,11 @@ static void gldb_shader_pane_update_ids(GldbShaderPane *pane, const gldb_state *
                 }
             }
             break;
-        case GL_VERTEX_SHADER_ARB:
-        case GL_FRAGMENT_SHADER_ARB:
-#ifdef GL_EXT_geometry_shader4
-        case GL_GEOMETRY_SHADER_EXT:
-#endif
+        case GL_VERTEX_SHADER:
+        case GL_TESS_CONTROL_SHADER:
+        case GL_TESS_EVALUATION_SHADER:
+        case GL_FRAGMENT_SHADER:
+        case GL_GEOMETRY_SHADER:
             for (nt = bugle_list_head(&root->children); nt != NULL; nt = bugle_list_next(nt))
             {
                 t = (gldb_state *) bugle_list_data(nt);

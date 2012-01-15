@@ -630,13 +630,8 @@ static bugle_bool send_data_shader(bugle_uint32_t id, GLuint shader_id,
 
     switch (target)
     {
-#ifdef GL_ARB_fragment_program
     case GL_FRAGMENT_PROGRAM_ARB:
-#endif
-#ifdef GL_ARB_vertex_program
     case GL_VERTEX_PROGRAM_ARB:
-#endif
-#if defined(GL_ARB_vertex_program) || defined(GL_ARB_fragment_program)
         CALL(glPushAttrib)(GL_ALL_ATTRIB_BITS);
         CALL(glBindProgramARB)(target, shader_id);
         CALL(glGetProgramivARB)(target, GL_PROGRAM_LENGTH_ARB, &length);
@@ -644,12 +639,11 @@ static bugle_bool send_data_shader(bugle_uint32_t id, GLuint shader_id,
         CALL(glGetProgramStringARB)(target, GL_PROGRAM_STRING_ARB, text);
         CALL(glPopAttrib)();
         break;
-#endif
     case GL_VERTEX_SHADER:
+    case GL_TESS_CONTROL_SHADER:
+    case GL_TESS_EVALUATION_SHADER:
     case GL_FRAGMENT_SHADER:
-#ifdef GL_EXT_geometry_shader4
-    case GL_GEOMETRY_SHADER_EXT:
-#endif
+    case GL_GEOMETRY_SHADER:
         bugle_glGetShaderiv(shader_id, GL_SHADER_SOURCE_LENGTH, &length);
         if (length != 0)
         {
