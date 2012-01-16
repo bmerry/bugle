@@ -209,6 +209,23 @@
                         move other ones out of the way.
                 </para></answer>
             </qandaentry>
+
+            <qandaentry>
+                <question><para>
+                        I am using ATI drivers and when I run configure, it
+                        does not find <function>glBegin</function> in
+                        <option>-lGL</option>.
+                </para></question>
+                <answer><para>
+                        I have had this reported by one Debian user, but
+                        didn't get further details on hardware or driver
+                        version. It appears that this version depended on but
+                        did not link to libpthread. While it is possible to
+                        hack this in <filename>configure.ac</filename>, the
+                        same user reported other problems with this driver,
+                        and it is probably best to upgrade to a newer driver.
+                </para></answer>
+            </qandaentry>
         </qandaset>
     </sect1>
 
@@ -394,19 +411,30 @@
 
             <qandaentry>
                 <question><para>
-                        I am using ATI drivers and when I run configure, it
-                        does not find <function>glBegin</function> in
-                        <option>-lGL</option>.
+                        How can I use &bugle; to debug WebGL applications?
                 </para></question>
-                <answer><para>
-                        I have had this reported by one Debian user, but
-                        didn't get further details on hardware or driver
-                        version. It appears that this version depended on but
-                        did not link to libpthread. While it is possible to
-                        hack this in <filename>configure.ac</filename>, the
-                        same user reported other problems with this driver,
-                        and it is probably best to upgrade to a newer driver.
-                </para></answer>
+                <answer>
+                    <para>
+                        This is a little tricky because of the way modern
+                        browsers use multiple processes, so your mileage might
+                        vary. It probably also depends on details of the WebGL
+                        implementation and also on whether the browser uses
+                        OpenGL for its rendering engine. I have been able to
+                        successfully attach the debugger to a WebGL
+                        application in Chromium under Ubuntu using a <xref
+                            linkend="gldb-gui-MAN-remote-tcp"/> and passing
+                        the <parameter>--single-process</parameter> parameter
+                        to Chromium.
+                    </para>
+                    <para>
+                        On my system, <command>chromium-browser</command> is
+                        actually a shell script that launches the executable.
+                        Rather than setting <envar>LD_PRELOAD</envar> on the
+                        command line (which would just debug the shell), I
+                        edited a copy of the shell script to set it
+                        immediately before launching the executable.
+                    </para>
+                </answer>
             </qandaentry>
         </qandaset>
     </sect1>
