@@ -20,6 +20,7 @@
 * Removed NV_transform_feedback state in state display to avoid conflicts with EXT_transform_feedback
 * Added FAQ entry about WebGL
 * Make gengl.py run on Python 2.6 (closes #94)
+* Fixed bug causing buffer display to crash in Windows (closes #86)
 
 0.0.20111115
 ------------

@@ -1,5 +1,5 @@
 /*  BuGLe: an OpenGL debugging tool
- *  Copyright (C) 2009-2010  Bruce Merry
+ *  Copyright (C) 2009-2010, 2012  Bruce Merry
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -470,7 +470,7 @@ static GtkWidget *gldb_buffer_pane_rebuild_view(GtkWidget *editable, GldbBufferP
     format = gtk_editable_get_chars(GTK_EDITABLE(editable), 0, -1);
     if (!parse_format(format, &ncolumns, &columns, &nfields, &fields))
     {
-        bugle_free(format);
+        g_free(format);
         /* Invalid or empty format; leave as is until it is valid again */
         return pane->data_view;
     }
@@ -503,7 +503,7 @@ static GtkWidget *gldb_buffer_pane_rebuild_view(GtkWidget *editable, GldbBufferP
         gtk_tree_view_append_column(GTK_TREE_VIEW(pane->data_view), column);
     }
     bugle_free(columns);
-    bugle_free(format);
+    g_free(format);
     bugle_free(pane->fields);
     pane->fields = fields;
     pane->nfields = nfields;
