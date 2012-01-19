@@ -701,7 +701,7 @@ class Enum(object):
         self.name_key = None
         self.api = api
         self.value = value
-        self.extensions = {}  
+        self.extensions = {}
 
     @classmethod
     def _name_key(cls, name, extension):
@@ -1061,9 +1061,9 @@ def process_header(apis, functions, options):
     # TODO: anything special needed for extension groups?
     for api in apis:
         for extension in ordered_extensions(api):
-            print("#define BUGLE_{} {}".format(extension.name, index))
+            print("#define BUGLE_{0} {1}".format(extension.name, index))
             index += 1
-    print("#define BUGLE_API_EXTENSION_COUNT {}".format(index))
+    print("#define BUGLE_API_EXTENSION_COUNT {0}".format(index))
     print(dedent("""
         extern const bugle_api_extension_data _bugle_api_extension_table[BUGLE_API_EXTENSION_COUNT];
         extern const bugle_api_function_data _bugle_api_function_table[];
@@ -1085,10 +1085,10 @@ def process_c(apis, functions, options):
             key = lambda x: api.extension_sort_key(x.name)
             desc = extension.get_descendants()
             print(dedent('''
-                static const bugle_api_extension extension_group_{}[] =
+                static const bugle_api_extension extension_group_{0}[] =
                 {{''').format(extension.name))
             for d in sorted(desc, key = key):
-                print('    BUGLE_{},'.format(d.name))
+                print('    BUGLE_{0},'.format(d.name))
             print('    NULL_EXTENSION')
             print('};')
 
@@ -1106,38 +1106,38 @@ def process_c(apis, functions, options):
             fields.append('"' + extension.name + '"')
             fields.append('extension_group_' + extension.name)
             fields.append(api.block)
-            print('    {{ {} }},'.format(', '.join(fields)))
+            print('    {{ {0} }},'.format(', '.join(fields)))
     print('};')
 
     print(dedent('''
         const bugle_api_function_data _bugle_api_function_table[] =
         {'''))
     for function in functions:
-        print('    {{ BUGLE_{} }},'.format(function.extension.name))
+        print('    {{ BUGLE_{0} }},'.format(function.extension.name))
     print('};')
 
     enum_counts = {}
     for api in apis:
         for enum in sorted(api.enums.values(), key = lambda x: x.value):
             print(dedent('''
-                static const bugle_api_extension enum_extensions_{}[] =
+                static const bugle_api_extension enum_extensions_{0}[] =
                 {{''').format(enum.name))
             key = lambda x: api.extension_sort_key(x.name)
             extensions = list(set(enum.extensions.values()))
             for extension in sorted(extensions, key = key):
-                print('    BUGLE_{},'.format(extension.name))
+                print('    BUGLE_{0},'.format(extension.name))
             print('    NULL_EXTENSION')
             print('};')
 
         print(dedent('''
-            static const bugle_api_enum_data _bugle_api_enum_table_{}[] =
+            static const bugle_api_enum_data _bugle_api_enum_table_{0}[] =
             {{''').format(api.block))
         for enum in sorted(api.enums.values(), key = lambda x: x.value):
             fields = []
             fields.append('%#.4x' % (enum.value,))
             fields.append('"' + enum.name + '"')
             fields.append('enum_extensions_' + enum.name)
-            print('    {{ {} }},'.format(', '.join(fields)))
+            print('    {{ {0} }},'.format(', '.join(fields)))
         print('};')
         enum_counts[api.block] = len(api.enums)
 
@@ -1150,8 +1150,8 @@ def process_c(apis, functions, options):
     print(dedent('''
         const int _bugle_api_enum_count[] =
         {{
-            {},
-            {}
+            {0},
+            {1}
         }};''').format(
             enum_counts['BUGLE_API_EXTENSION_BLOCK_GL'],
             enum_counts['BUGLE_API_EXTENSION_BLOCK_GLWIN']))
