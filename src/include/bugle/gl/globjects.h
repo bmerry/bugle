@@ -20,6 +20,7 @@
 
 #include <bugle/gl/glheaders.h>
 #include <bugle/export.h>
+#include <bugle/porting.h>
 
 typedef enum
 {
@@ -32,6 +33,7 @@ typedef enum
     BUGLE_GLOBJECTS_OLD_PROGRAM, /* glGenProgramsARB */
     BUGLE_GLOBJECTS_RENDERBUFFER,
     BUGLE_GLOBJECTS_FRAMEBUFFER,
+    BUGLE_GLOBJECTS_SYNC,
     BUGLE_GLOBJECTS_TRANSFORM_FEEDBACK,
     BUGLE_GLOBJECTS_COUNT
 } bugle_globjects_type;
@@ -43,6 +45,16 @@ typedef enum
 BUGLE_EXPORT_PRE void bugle_globjects_walk(bugle_globjects_type type,
                                            void (*walker)(GLuint, GLenum, void *),
                                            void *) BUGLE_EXPORT_POST;
+
+#if BUGLE_GLTYPE_GL
+/* Variation of bugle_globjects_walk that deals with sync objects. These
+ * can't use the normal interface because the names of sync objects
+ * are pointers rather than GLuint.
+ */
+BUGLE_EXPORT_PRE void bugle_globjects_walk_sync(void (*walker)(GLsync, GLenum, void *),
+                                                void *) BUGLE_EXPORT_POST;
+#endif
+
 /* Determines the target associated with a particular object, or GL_NONE
  * if none is known.
  */

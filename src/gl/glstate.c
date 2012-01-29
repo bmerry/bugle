@@ -21,7 +21,6 @@
  * - Using GetInteger64v for certain state where GetIntegerv might be out of
  *   range.
  * - ARB_viewport_array state (scissor, viewport, depth range being arrays)
- * - Check that TexBO tex objects list only the appropriate state
  * - Make blend state per-draw-buffer
  * - ARB_separate_shader_objects state
  * - ARB_shader_subroutines
@@ -113,6 +112,7 @@
 #define STATE_MODE_MULTISAMPLE              0x00000026    /* glGetMultisamplefv */
 #define STATE_MODE_TRANSFORM_FEEDBACK_VARYING_SIZE  0x00000027    /* glGetTransformFeedbackVarying, returning size */
 #define STATE_MODE_TRANSFORM_FEEDBACK_VARYING_TYPE  0x00000028    /* glGetTransformFeedbackVarying, returnign type */
+#define STATE_MODE_SYNC                     0x00000029
 #define STATE_MODE_MASK                     0x000000ff
 
 #define STATE_MULTIPLEX_ACTIVE_TEXTURE      0x00000100    /* Set active texture */
@@ -187,6 +187,7 @@
 #define STATE_TRANSFORM_FEEDBACK_INDEXED (STATE_MODE_INDEXED | STATE_MULTIPLEX_BIND_TRANSFORM_FEEDBACK)
 #define STATE_TRANSFORM_FEEDBACK_VARYING_SIZE STATE_MODE_TRANSFORM_FEEDBACK_VARYING_SIZE
 #define STATE_TRANSFORM_FEEDBACK_VARYING_TYPE STATE_MODE_TRANSFORM_FEEDBACK_VARYING_TYPE
+#define STATE_SYNC STATE_MODE_SYNC
 
 typedef struct
 {
@@ -737,6 +738,32 @@ static void make_object(const glstate *self,
     bugle_list_append(children, child);
 }
 
+/* Equivalent to make_object, but takes a GLsync instead of a GLuint.
+ * It also sets sync instead of numeric_name or object.
+ */
+static void make_object_sync(const glstate *self,
+                             GLenum target,
+                             const char *format,
+                             GLsync sync,
+                             void (*spawn)(const glstate *, linked_list *),
+                             const state_info *info,
+                             linked_list *children)
+{
+    glstate *child;
+
+    child = BUGLE_MALLOC(glstate);
+    *child = *self;
+    child->target = target;
+    child->info = info;
+    child->name = bugle_asprintf(format, (const void *) sync);
+    child->numeric_name = 0;
+    child->enum_name = 0;
+    child->object = 0;
+    child->sync = sync;
+    child->spawn_children = spawn;
+    bugle_list_append(children, child);
+}
+
 typedef struct
 {
     const glstate *self;
@@ -760,6 +787,17 @@ static void make_objects_walker(GLuint object,
                 data->info, data->children);
 }
 
+static void make_objects_walker_sync(GLsync object, GLenum type, void *vdata)
+{
+    const make_objects_data *data;
+
+    data = (const make_objects_data *) vdata;
+    if (data->target != GL_NONE && type != GL_NONE
+        && type != data->target) return;
+    make_object_sync(data->self, type, data->format, object, data->spawn_children,
+                data->info, data->children);
+}
+
 static void make_objects(const glstate *self,
                          bugle_globjects_type type,
                          GLenum target,
@@ -779,8 +817,16 @@ static void make_objects(const glstate *self,
     data.children = children;
 
     if (add_zero)
-        make_object(self, target, format, 0, spawn_children, info, children);
-    bugle_globjects_walk(type, make_objects_walker, &data);
+    {
+        if (type != BUGLE_GLOBJECTS_SYNC)
+            make_object(self, target, format, 0, spawn_children, info, children);
+        else
+            make_object_sync(self, target, format, NULL, spawn_children, info, children);
+    }
+    if (type != BUGLE_GLOBJECTS_SYNC)
+        bugle_globjects_walk(type, make_objects_walker, &data);
+    else
+        bugle_globjects_walk_sync(make_objects_walker_sync, &data);
 }
 
 static void make_target(const glstate *self,
@@ -2459,6 +2505,15 @@ static const state_info transform_feedback_parameter_state[] =
     { NULL, GL_NONE, NULL_TYPE, 0, -1, -1, 0 }
 };
 
+static const state_info sync_state[] =
+{
+    { STATE_NAME(GL_OBJECT_TYPE), TYPE_6GLenum, -1, BUGLE_GL_ARB_sync, -1, STATE_SYNC },
+    { STATE_NAME(GL_SYNC_STATUS), TYPE_6GLenum, -1, BUGLE_GL_ARB_sync, -1, STATE_SYNC },
+    { STATE_NAME(GL_SYNC_CONDITION), TYPE_6GLenum, -1, BUGLE_GL_ARB_sync, -1, STATE_SYNC },
+    { STATE_NAME(GL_SYNC_FLAGS), TYPE_5GLint, -1, BUGLE_GL_ARB_sync, -1, STATE_SYNC },
+    { NULL, GL_NONE, NULL_TYPE, 0, -1, -1, 0 }
+};
+
 /* This exists to simplify the work of gldump.c */
 const state_info * const all_state[] =
 {
@@ -2488,6 +2543,7 @@ const state_info * const all_state[] =
     renderbuffer_parameter_state,
     transform_feedback_parameter_state,
     transform_feedback_buffer_state,
+    sync_state,
     NULL
 };
 
@@ -2990,6 +3046,10 @@ void bugle_state_get_raw(const glstate *state, bugle_state_raw *wrapper)
         CALL(glGetMultisamplefv)(pname, state->level, f);
         in_type = TYPE_7GLfloat;
         break;
+    case STATE_MODE_SYNC:
+        CALL(glGetSynciv)(state->sync, pname, 1, NULL, i);
+        in_type = TYPE_5GLint;
+        break;
     default:
         abort();
     }
@@ -3343,6 +3403,12 @@ static void spawn_children_transform_feedback_parameter(const glstate *self, lin
     make_leaves(self, transform_feedback_parameter_state, children);
 }
 
+static void spawn_children_sync(const glstate *self, linked_list *children)
+{
+    bugle_list_init(children, bugle_free);
+    make_leaves(self, sync_state, children);
+}
+
 static void spawn_children_global(const glstate *self, linked_list *children)
 {
     static const state_info enable =
@@ -3394,6 +3460,11 @@ static void spawn_children_global(const glstate *self, linked_list *children)
         make_objects(self, BUGLE_GLOBJECTS_TRANSFORM_FEEDBACK, GL_NONE, BUGLE_TRUE,
                      "TransformFeedback[%lu]", spawn_children_transform_feedback_parameter, NULL, children);
     }
+    if (bugle_gl_has_extension_group(BUGLE_GL_ARB_sync))
+    {
+        make_objects(self, BUGLE_GLOBJECTS_SYNC, GL_NONE, BUGLE_FALSE,
+                     "Sync[%p]", spawn_children_sync, NULL, children);
+    }
 }
 
 const glstate *bugle_state_get_root(void)
@@ -3401,7 +3472,7 @@ const glstate *bugle_state_get_root(void)
     static const glstate root =
     {
         "", 0, GL_NONE, GL_NONE, GL_NONE, GL_NONE, GL_NONE,
-        0, 0, NULL, spawn_children_global
+        0, 0, NULL, NULL, spawn_children_global
     };
 
     return &root;

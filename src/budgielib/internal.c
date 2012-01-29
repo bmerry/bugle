@@ -37,17 +37,24 @@ void _budgie_dump_bitfield(unsigned int value, bugle_io_writer *writer,
 {
     bugle_bool first = BUGLE_TRUE;
     int i;
-    for (i = 0; i < count; i++)
-        if (value & tags[i].value)
-        {
-            if (!first) bugle_io_puts(" | ", writer); else first = BUGLE_FALSE;
-            bugle_io_puts(tags[i].name, writer);
-            value &= ~tags[i].value;
-        }
-    if (value)
+    if (value == 0)
     {
-        if (!first) bugle_io_puts(" | ", writer);
-        bugle_io_printf(writer, "%08x", value);
+        bugle_io_puts("0", writer);
+    }
+    else
+    {
+        for (i = 0; i < count; i++)
+            if (value & tags[i].value)
+            {
+                if (!first) bugle_io_puts(" | ", writer); else first = BUGLE_FALSE;
+                bugle_io_puts(tags[i].name, writer);
+                value &= ~tags[i].value;
+            }
+        if (value)
+        {
+            if (!first) bugle_io_puts(" | ", writer);
+            bugle_io_printf(writer, "%08x", value);
+        }
     }
 }
 

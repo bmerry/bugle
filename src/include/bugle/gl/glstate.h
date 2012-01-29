@@ -21,6 +21,7 @@
 #include <stddef.h>
 #include <bugle/gl/glheaders.h>
 #include <bugle/linkedlist.h>
+#include <bugle/porting.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -57,6 +58,9 @@ typedef struct glstate
     GLenum unit;
     GLuint object;
     GLint level;
+#if BUGLE_GLTYPE_GL
+    GLsync sync;   /* Special case of object for sync objects, which aren't GLuints */
+#endif
     const struct state_info *info;
 
     void (*spawn_children)(const struct glstate *, linked_list *);

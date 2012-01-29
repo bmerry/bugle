@@ -191,7 +191,7 @@ static bugle_bool globjects_glDeleteQueries(function_call *call, const callback_
 
 #if GL_ES_VERSION_2_0 || GL_VERSION_2_0
 static void globjects_delete_single(bugle_globjects_type type,
-                                       GLuint object)
+                                    GLuint object)
 {
     hashptr_table *table;
 
@@ -465,6 +465,40 @@ static bugle_bool globjects_glDeleteTransformFeedbacks(function_call *call, cons
                               CALL(glIsTransformFeedback));
     return BUGLE_TRUE;
 }
+
+static bugle_bool globjects_glFenceSync(function_call *call, const callback_data *data)
+{
+    /* We can't use globjects_add_single because the name is a pointer not a GLuint.
+     */
+    hashptr_table *table;
+    const GLsync sync = *call->glFenceSync.retn;
+
+    lock();
+    table = get_table(BUGLE_GLOBJECTS_SYNC);
+    if (table && bugle_gl_begin_internal_render())
+    {
+        if (CALL(glIsSync)(sync))
+            bugle_hashptr_set(table, sync, (void *) (size_t) GL_SYNC_FENCE);
+        bugle_gl_end_internal_render("globjects_glFenceSync", BUGLE_TRUE);
+    }
+    unlock();
+    return BUGLE_TRUE;
+}
+
+static bugle_bool globjects_glDeleteSync(function_call *call, const callback_data *data)
+{
+    /* Can't use globjects_delete_single because the name is not a GLuint.
+     */
+    hashptr_table *table;
+    const GLsync sync = *call->glDeleteSync.arg0;
+
+    lock();
+    table = get_table(BUGLE_GLOBJECTS_SYNC);
+    if (table)
+        bugle_hashptr_set(table, sync, NULL);
+    unlock();
+    return BUGLE_TRUE;
+}
 #endif
 
 static void globjects_data_init(const void *key, void *data)
@@ -516,6 +550,8 @@ static bugle_bool globjects_filter_set_initialise(filter_set *handle)
     bugle_filter_catches(f, "glDeleteVertexArrays", BUGLE_TRUE, globjects_glDeleteVertexArrays);
     bugle_filter_catches(f, "glBindTransformFeedback", BUGLE_TRUE, globjects_glBindTransformFeedback);
     bugle_filter_catches(f, "glDeleteTransformFeedbacks", BUGLE_TRUE, globjects_glDeleteTransformFeedbacks);
+    bugle_filter_catches(f, "glFenceSync", BUGLE_TRUE, globjects_glFenceSync);
+    bugle_filter_catches(f, "glDeleteSync", BUGLE_TRUE, globjects_glDeleteSync);
 #endif
 #if defined(GL_ARB_vertex_program) || defined(GL_ARB_fragment_program)
     bugle_filter_catches(f, "glBindProgramARB", BUGLE_TRUE, globjects_glBindProgramARB);
@@ -556,12 +592,6 @@ static bugle_bool globjects_filter_set_initialise(filter_set *handle)
     return BUGLE_TRUE;
 }
 
-typedef struct
-{
-    void (*walker)(GLuint, GLenum, void *);
-    void *data;
-} globjects_walker;
-
 static int cmp_size_t(const void *a, const void *b)
 {
     size_t A, B;
@@ -571,10 +601,10 @@ static int cmp_size_t(const void *a, const void *b)
 }
 
 void bugle_globjects_walk(bugle_globjects_type type,
-                             void (*walker)(GLuint object,
-                                            GLenum target,
-                                            void *),
-                             void *data)
+                          void (*walker)(GLuint object,
+                                         GLenum target,
+                                         void *),
+                          void *data)
 {
     hashptr_table *table;
     const hashptr_table_entry *i;
@@ -598,6 +628,23 @@ void bugle_globjects_walk(bugle_globjects_type type,
     for (j = 0; j < count; j++)
         (*walker)(keyvalues[j][0], keyvalues[j][1], data);
     bugle_free(keyvalues);
+    unlock();
+}
+
+void bugle_globjects_walk_sync(void (*walker)(GLsync, GLenum, void *), void *data)
+{
+    hashptr_table *table;
+    const hashptr_table_entry *i;
+
+    lock();
+    table = get_table(BUGLE_GLOBJECTS_SYNC);
+    for (i = bugle_hashptr_begin(table); i; i = bugle_hashptr_next(table, i))
+    {
+        if (i->value)
+        {
+            (*walker)((GLsync) i->key, (size_t) i->value, data);
+        }
+    }
     unlock();
 }
 

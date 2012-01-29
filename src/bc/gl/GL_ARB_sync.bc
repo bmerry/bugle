@@ -1,0 +1,11 @@
+NEWTYPE BITFIELD clientwaitsyncflags GLbitfield GL_SYNC_FLUSH_COMMANDS_BIT
+
+LENGTH PARAMETER glGetInteger64v 1 bugle_count_gl($f, $0)
+DUMP PARAMETER glGetInteger64v 1 bugle_dump_convert($0, &$$, $t$, $W)
+
+TYPE PARAMETER glClientWaitSync 1 TYPE_19clientwaitsyncflags
+
+# Although GetSynciv was future-proofed to allow returning multiple parameters,
+# at present all queries return just a single value. So we do not bother
+# overriding the length on GetSynciv.
+DUMP PARAMETER glGetSynciv 4 bugle_dump_convert($1, &$$, $t$, $W)

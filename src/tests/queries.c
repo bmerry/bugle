@@ -48,7 +48,7 @@
  * - GetShaderSource
  * - GetUniform
  * - GetUniformLocation
- * - G80 extensions
+ * - Just about anything from GL 3.0 onwards
  */
 
 static void dump_string(const char *value)
@@ -787,53 +787,31 @@ static void query_readpixels(void)
     test_log_printf("%d }\\)\n", ans[13]);
 }
 
-static void query_transform_feedback(void)
+static void query_sync(void)
 {
-    if (GLEW_NV_transform_feedback)
+    if (GLEW_ARB_sync || GLEW_VERSION_3_2)
     {
-        GLuint buffers[4];
-        GLint bound;
-        GLint record[3];
-        int i;
+        GLint v;
+        GLint len;
 
-        const GLint attribs[12] =
-        {
-            GL_POSITION, 4, 0,
-            GL_TEXTURE_COORD_NV, 2, 0,
-            GL_TEXTURE_COORD_NV, 2, 1,
-            GL_POINT_SIZE, 1, 0
-        };
+        GLsync sync = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
+        test_log_printf("trace\\.call: glFenceSync\\(GL_SYNC_GPU_COMMANDS_COMPLETE, 0\\) = %p\n", sync);
+        glClientWaitSync(sync, GL_SYNC_FLUSH_COMMANDS_BIT, (GLuint64) -1);
+        test_log_printf("trace\\.call: glClientWaitSync\\(%p, GL_SYNC_FLUSH_COMMANDS_BIT, 18446744073709551615\\) = GL_.*\n",
+                        sync);
+        glClientWaitSync(sync, 0, (GLuint64) -1);
+        test_log_printf("trace\\.call: glClientWaitSync\\(%p, 0, 18446744073709551615\\) = GL_ALREADY_SIGNALED\n",
+                        sync);
 
-        glGenBuffers(4, buffers);
-        test_log_printf("trace\\.call: glGenBuffers\\(4, %p -> { %u, %u, %u, %u }\\)\n",
-                        buffers, buffers[0], buffers[1], buffers[2], buffers[3]);
-        for (i = 0; i < 4; i++)
-        {
-            glBindBuffer(GL_TRANSFORM_FEEDBACK_BUFFER_NV, buffers[i]);
-            test_log_printf("trace\\.call: glBindBuffer\\(GL_TRANSFORM_FEEDBACK_BUFFER(_NV)?, %u\\)\n",
-                            buffers[i]);
-            glBufferData(GL_TRANSFORM_FEEDBACK_BUFFER_NV, 1024, NULL, GL_STREAM_COPY);
-            test_log_printf("trace\\.call: glBufferData\\(GL_TRANSFORM_FEEDBACK_BUFFER(_NV)?, 1024, NULL, GL_STREAM_COPY(_ARB)?\\)\n");
-            glBindBufferBaseNV(GL_TRANSFORM_FEEDBACK_BUFFER_NV, i, i);
-            test_log_printf("trace\\.call: glBindBufferBaseNV\\(GL_TRANSFORM_FEEDBACK_BUFFER(_NV)?, %d, %d\\)\n",
-                            i, i);
-        }
-        glGetIntegerv(GL_TRANSFORM_FEEDBACK_BUFFER_BINDING_NV, &bound);
-        test_log_printf("trace\\.call: glGetIntegerv\\(GL_TRANSFORM_FEEDBACK_BUFFER_BINDING(_NV)?, %p -> %d\\)\n",
-                        &bound, bound);
-        glTransformFeedbackAttribsNV(4, attribs, GL_SEPARATE_ATTRIBS_NV);
-        test_log_printf("trace\\.call: glTransformFeedbackAttribsNV\\(4, %p -> { "
-                        "{ GL_POSITION, 4, 0 }, "
-                        "{ GL_TEXTURE_COORD_NV, 2, 0 }, "
-                        "{ GL_TEXTURE_COORD_NV, 2, 1 }, "
-                        "{ GL_POINT_SIZE, 1, 0 } }, GL_SEPARATE_ATTRIBS(_NV)?\\)\n",
-                        attribs);
-        glGetIntegerIndexedvEXT(GL_TRANSFORM_FEEDBACK_RECORD_NV, 0, record);
-        test_log_printf("trace\\.call: glGetIntegerIndexedvEXT\\(GL_TRANSFORM_FEEDBACK_RECORD_NV, 0, %p -> { GL_POSITION, 4, 0 }\\)\n",
-                        record);
+        glGetSynciv(sync, GL_SYNC_CONDITION, 1, &len, &v);
+        test_log_printf("trace\\.call: glGetSynciv\\(%p, GL_SYNC_CONDITION, 1, %p -> 1, %p -> GL_SYNC_GPU_COMMANDS_COMPLETE\\)\n",
+                        sync, &len, &v);
+        glGetSynciv(sync, GL_SYNC_FLAGS, 1, NULL, &v);
+        test_log_printf("trace\\.call: glGetSynciv\\(%p, GL_SYNC_FLAGS, 1, NULL, %p -> 0\\)\n",
+                        sync, &v);
     }
     else
-        test_skipped("NV_transform_feedback required");
+        test_skipped("ARB_sync required");
 }
 
 void queries_suite_register(void)
@@ -866,5 +844,5 @@ void queries_suite_register(void)
     test_suite_add_test(ts, "framebuffers", query_framebuffers);
     test_suite_add_test(ts, "renderbuffers", query_renderbuffers);
     test_suite_add_test(ts, "readpixels", query_readpixels);
-    test_suite_add_test(ts, "transform_feedback", query_transform_feedback);
+    test_suite_add_test(ts, "sync", query_sync);
 }
