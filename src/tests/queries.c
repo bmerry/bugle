@@ -28,6 +28,7 @@
 #include <string.h>
 #include <ctype.h>
 #include <bugle/bool.h>
+#include <bugle/memory.h>
 #include "test.h"
 
 /* Still TODO (how depressing)
@@ -814,6 +815,38 @@ static void query_sync(void)
         test_skipped("ARB_sync required");
 }
 
+static void query_compressed_texture_formats(void)
+{
+    if (GLEW_ARB_texture_compression)
+    {
+        GLint num, i;
+        GLint *formats;
+
+        glGetIntegerv(GL_NUM_COMPRESSED_TEXTURE_FORMATS, &num);
+        test_log_printf("trace\\.call: glGetIntegerv\\(GL_NUM_COMPRESSED_TEXTURE_FORMATS, %p -> %d\\)\n",
+                        &num, num);
+        if (num > 0)
+        {
+            formats = BUGLE_NMALLOC(num, GLint);
+            glGetIntegerv(GL_COMPRESSED_TEXTURE_FORMATS, formats);
+            test_log_printf("trace\\.call: glGetIntegerv\\(GL_COMPRESSED_TEXTURE_FORMATS, %p -> { ",
+                            formats);
+            for (i = 0; i < num; i++)
+            {
+                if (i > 0)
+                    test_log_printf(", ");
+                test_log_printf("GL_[A-Za-z0-9_]+");
+            }
+            test_log_printf(" }\\)\n");
+            bugle_free(formats);
+        }
+        else
+            test_skipped("No compressed texture formats supported");
+    }
+    else
+        test_skipped("ARB_compressed_texture_formats is required");
+}
+
 void queries_suite_register(void)
 {
     test_suite *ts = test_suite_new("queries", TEST_FLAG_LOG | TEST_FLAG_CONTEXT, NULL, NULL);
@@ -845,4 +878,5 @@ void queries_suite_register(void)
     test_suite_add_test(ts, "renderbuffers", query_renderbuffers);
     test_suite_add_test(ts, "readpixels", query_readpixels);
     test_suite_add_test(ts, "sync", query_sync);
+    test_suite_add_test(ts, "compressed_texture_formats", query_compressed_texture_formats);
 }

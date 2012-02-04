@@ -23,6 +23,7 @@
 * Added FAQ entry about WebGL
 * Make gengl.py run on Python 2.6 (closes #94)
 * Fixed bug causing buffer display to crash in Windows (closes #86)
+* Fixed bug causing glGetIntegerv(GL_COMPRESSED_TEXTURE_FORMATS, ...) to be traced incorrectly.
 
 0.0.20111115
 ------------

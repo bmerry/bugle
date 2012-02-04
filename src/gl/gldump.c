@@ -415,7 +415,7 @@ bugle_bool bugle_dump_convert(GLenum pname, const void *value,
     else
         in = value;
 
-    length = entry->length;
+    length = bugle_count_gl(NULL_FUNCTION, pname);
     alength = (length == -1) ? 1 : length;
     out_data = bugle_nmalloc(alength, budgie_type_size(out_type));
     if (out_type == TYPE_11GLxfbattrib)
@@ -435,6 +435,20 @@ bugle_bool bugle_dump_convert(GLenum pname, const void *value,
 
 int bugle_count_gl(budgie_function func, GLenum token)
 {
+    GLint length;
+    /* TODO: use func to avoid the switch except on global gets */
+    switch (token)
+    {
+    case GL_COMPRESSED_TEXTURE_FORMATS:
+        CALL(glGetIntegerv)(GL_NUM_COMPRESSED_TEXTURE_FORMATS, &length);
+        return length;
+    case GL_PROGRAM_BINARY_FORMATS:
+        CALL(glGetIntegerv)(GL_NUM_PROGRAM_BINARY_FORMATS, &length);
+        return length;
+    case GL_SHADER_BINARY_FORMATS:
+        CALL(glGetIntegerv)(GL_NUM_SHADER_BINARY_FORMATS, &length);
+        return length;
+    }
     return get_dump_table_entry(token)->length;
 }
 

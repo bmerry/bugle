@@ -60,11 +60,6 @@
 #include "apitables.h"
 #include "platform/types.h"
 
-/* Workarounds for bugs in glext.h */
-#ifndef GL_SHADER_BINARY_FORMATS
-# define GL_SHADER_BINARY_FORMATS 0x8DF8
-#endif
-
 #define STATE_NAME(x) #x, x
 #define STATE_NAME_EXT(x, ext) #x, x ## ext
 

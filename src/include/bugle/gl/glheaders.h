@@ -29,9 +29,15 @@
 #endif
 # include <GL/gl.h>
 # include <GL/glext.h>
-# ifndef GL_VERSION_2_0
+# ifndef GL_VERSION_4_2
 #  error "Your GL/glext.h is too old! Please obtain the latest version from http://www.opengl.org/registry/"
 # endif
+
+/* Workarounds for bugs in glext.h */
+#ifndef GL_SHADER_BINARY_FORMATS
+# define GL_SHADER_BINARY_FORMATS 0x8DF8
+#endif
+
 #elif BUGLE_GLTYPE_GLES2
 # include <GLES2/gl2.h>
 # include <GLES2/gl2ext.h>
