@@ -18,14 +18,11 @@
 /* This should be complete for GL 4.2 with the exception of anything marked TODO, plus
  * - State that can be either pure integer or float and has to be queried
  *   with the right query to get the right result.
- * - Using GetInteger64v for certain state where GetIntegerv might be out of
- *   range.
  * - ARB_viewport_array state (scissor, viewport, depth range being arrays)
  * - Make blend state per-draw-buffer
  * - ARB_separate_shader_objects state
  * - ARB_shader_subroutines
  * - ARB_shader_atomic_counters
- * - ARB_sync
  * - UBO binding points and most other UBO state
  * - Indexed asynchronous queries
  * - GetInternalformat queries
@@ -62,6 +59,11 @@
 #include "budgielib/defines.h"
 #include "apitables.h"
 #include "platform/types.h"
+
+/* Workarounds for bugs in glext.h */
+#ifndef GL_SHADER_BINARY_FORMATS
+# define GL_SHADER_BINARY_FORMATS 0x8DF8
+#endif
 
 #define STATE_NAME(x) #x, x
 #define STATE_NAME_EXT(x, ext) #x, x ## ext
@@ -104,15 +106,17 @@
 #define STATE_MODE_PROGRAM_ENV_PARAMETER    0x0000001e    /* glGetProgramEnvParameterARB */
 #define STATE_MODE_PROGRAM_LOCAL_PARAMETER  0x0000001f    /* glGetProgramLocalParameterARB */
 #define STATE_MODE_COMPRESSED_TEXTURE_FORMATS 0x00000020  /* glGetIntegerv(GL_COMPRESSED_TEXTURE_FORMATS, ...) */
-#define STATE_MODE_RENDERBUFFER_PARAMETER   0x00000021    /* glGetRenderbufferParameterivEXT */
-#define STATE_MODE_FRAMEBUFFER_ATTACHMENT_PARAMETER 0x00000022 /* glGetFramebufferAttachmentPArameterivEXT */
-#define STATE_MODE_INDEXED                  0x00000023    /* glGetIntegerIndexedvEXT etc */
-#define STATE_MODE_ENABLED_INDEXED          0x00000024    /* glIsEnabledIndexedEXT */
-#define STATE_MODE_SAMPLE_MASK_VALUE        0x00000025    /* Extracts individual bits from GL_SAMPLE_MASK_VALUE */
-#define STATE_MODE_MULTISAMPLE              0x00000026    /* glGetMultisamplefv */
-#define STATE_MODE_TRANSFORM_FEEDBACK_VARYING_SIZE  0x00000027    /* glGetTransformFeedbackVarying, returning size */
-#define STATE_MODE_TRANSFORM_FEEDBACK_VARYING_TYPE  0x00000028    /* glGetTransformFeedbackVarying, returnign type */
-#define STATE_MODE_SYNC                     0x00000029
+#define STATE_MODE_PROGRAM_BINARY_FORMATS   0x00000021    /* glGetIntegerv(GL_PROGRAM_BINARY_FORMATS, ...) */
+#define STATE_MODE_SHADER_BINARY_FORMATS    0x00000022    /* glGetIntegerv(GL_SHADER_BINARY_FORMATS, ...) */
+#define STATE_MODE_RENDERBUFFER_PARAMETER   0x00000023    /* glGetRenderbufferParameterivEXT */
+#define STATE_MODE_FRAMEBUFFER_ATTACHMENT_PARAMETER 0x00000024 /* glGetFramebufferAttachmentPArameterivEXT */
+#define STATE_MODE_INDEXED                  0x00000025    /* glGetIntegerIndexedvEXT etc */
+#define STATE_MODE_ENABLED_INDEXED          0x00000026    /* glIsEnabledIndexedEXT */
+#define STATE_MODE_SAMPLE_MASK_VALUE        0x00000027    /* Extracts individual bits from GL_SAMPLE_MASK_VALUE */
+#define STATE_MODE_MULTISAMPLE              0x00000028    /* glGetMultisamplefv */
+#define STATE_MODE_TRANSFORM_FEEDBACK_VARYING_SIZE  0x00000029    /* glGetTransformFeedbackVarying, returning size */
+#define STATE_MODE_TRANSFORM_FEEDBACK_VARYING_TYPE  0x0000002a    /* glGetTransformFeedbackVarying, returnign type */
+#define STATE_MODE_SYNC                     0x0000002b
 #define STATE_MODE_MASK                     0x000000ff
 
 #define STATE_MULTIPLEX_ACTIVE_TEXTURE      0x00000100    /* Set active texture */
@@ -172,6 +176,8 @@
 #define STATE_PROGRAM_ENV_PARAMETER STATE_MODE_PROGRAM_ENV_PARAMETER
 #define STATE_PROGRAM_LOCAL_PARAMETER (STATE_MODE_PROGRAM_LOCAL_PARAMETER | STATE_MULTIPLEX_BIND_PROGRAM)
 #define STATE_COMPRESSED_TEXTURE_FORMATS STATE_MODE_COMPRESSED_TEXTURE_FORMATS
+#define STATE_PROGRAM_BINARY_FORMATS STATE_MODE_PROGRAM_BINARY_FORMATS
+#define STATE_SHADER_BINARY_FORMATS STATE_MODE_SHADER_BINARY_FORMATS
 #define STATE_FRAMEBUFFER_ATTACHMENT_PARAMETER (STATE_MODE_FRAMEBUFFER_ATTACHMENT_PARAMETER | STATE_MULTIPLEX_BIND_DRAW_FRAMEBUFFER)
 #define STATE_DRAW_FRAMEBUFFER_PARAMETER (STATE_MODE_GLOBAL | STATE_MULTIPLEX_BIND_DRAW_FRAMEBUFFER)
 #define STATE_READ_FRAMEBUFFER_PARAMETER (STATE_MODE_GLOBAL | STATE_MULTIPLEX_BIND_READ_FRAMEBUFFER)
@@ -2101,9 +2107,9 @@ static const state_info global_state[] =
     { STATE_NAME(GL_MAX_ELEMENTS_VERTICES), TYPE_5GLint, -1, BUGLE_GL_VERSION_1_1, -1, STATE_GLOBAL },
     { STATE_NAME(GL_COMPRESSED_TEXTURE_FORMATS), TYPE_6GLenum, -1, BUGLE_GL_ARB_texture_compression, -1, STATE_COMPRESSED_TEXTURE_FORMATS },
     { STATE_NAME(GL_NUM_COMPRESSED_TEXTURE_FORMATS), TYPE_5GLint, -1, BUGLE_GL_ARB_texture_compression, -1, STATE_GLOBAL },
-    /* TODO: GL_PROGRAM_BINARY_FORMATS */
+    { STATE_NAME(GL_PROGRAM_BINARY_FORMATS), TYPE_6GLenum, -1, BUGLE_GL_ARB_get_program_binary, -1, STATE_PROGRAM_BINARY_FORMATS },
     { STATE_NAME(GL_NUM_PROGRAM_BINARY_FORMATS), TYPE_5GLint, -1, BUGLE_GL_ARB_get_program_binary, -1, STATE_GLOBAL },
-    /* TODO: GL_SHADER_BINARY_FORMATS */
+    { STATE_NAME(GL_SHADER_BINARY_FORMATS), TYPE_6GLenum, -1, BUGLE_GL_ARB_ES2_compatibility, -1, STATE_SHADER_BINARY_FORMATS },
     { STATE_NAME(GL_NUM_SHADER_BINARY_FORMATS), TYPE_5GLint, -1, BUGLE_GL_ARB_ES2_compatibility, -1, STATE_GLOBAL },
     { STATE_NAME(GL_SHADER_COMPILER), TYPE_9GLboolean, -1, BUGLE_GL_ARB_ES2_compatibility, -1, STATE_GLOBAL },
     { STATE_NAME(GL_MIN_MAP_BUFFER_ALIGNMENT), TYPE_5GLint, -1, BUGLE_GL_ARB_map_buffer_alignment, -1, STATE_GLOBAL },
@@ -3022,15 +3028,31 @@ void bugle_state_get_raw(const glstate *state, bugle_state_raw *wrapper)
         break;
 #endif
     case STATE_MODE_COMPRESSED_TEXTURE_FORMATS:
+    case STATE_MODE_PROGRAM_BINARY_FORMATS:
+    case STATE_MODE_SHADER_BINARY_FORMATS:
         {
             GLint count;
             GLint *formats;
             GLenum *out;
+            GLenum num_query;
 
-            CALL(glGetIntegerv)(GL_NUM_COMPRESSED_TEXTURE_FORMATS, &count);
+            switch (state->info->flags & STATE_MODE_MASK)
+            {
+            case STATE_MODE_COMPRESSED_TEXTURE_FORMATS:
+                num_query = GL_NUM_COMPRESSED_TEXTURE_FORMATS;
+                break;
+            case STATE_MODE_PROGRAM_BINARY_FORMATS:
+                num_query = GL_NUM_PROGRAM_BINARY_FORMATS;
+                break;
+            case STATE_MODE_SHADER_BINARY_FORMATS:
+                num_query = GL_NUM_SHADER_BINARY_FORMATS;
+                break;
+            }
+
+            CALL(glGetIntegerv)(num_query, &count);
             formats = BUGLE_NMALLOC(count, GLint);
             out = BUGLE_NMALLOC(count, GLenum);
-            CALL(glGetIntegerv)(GL_COMPRESSED_TEXTURE_FORMATS, formats);
+            CALL(glGetIntegerv)(state->info->pname, formats);
             budgie_type_convert(out, TYPE_6GLenum, formats, TYPE_5GLint, count);
             wrapper->data = out;
             wrapper->length = count;
