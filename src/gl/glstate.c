@@ -2759,7 +2759,8 @@ void bugle_state_get_raw(const glstate *state, bugle_state_raw *wrapper)
             CALL(glGetDoublev)(pname, d);
         else if (state->info->type == TYPE_7GLfloat)
             CALL(glGetFloatv)(pname, f);
-        else if (state->info->type == TYPE_7GLint64)
+        else if (state->info->type == TYPE_7GLint64
+                 && bugle_gl_has_extension_group(BUGLE_GL_ARB_sync))
             CALL(glGetInteger64v)(pname, i64);
         else
         {
@@ -2890,6 +2891,11 @@ void bugle_state_get_raw(const glstate *state, bugle_state_raw *wrapper)
     case STATE_MODE_BUFFER_PARAMETER:
         if (state->info->type == TYPE_P6GLvoid)
             CALL(glGetBufferPointerv)(GL_ARRAY_BUFFER, pname, p);
+        else if (state->info->type == TYPE_7GLint64
+                 && bugle_gl_has_extension_group(BUGLE_GL_VERSION_3_2))
+        {
+            CALL(glGetBufferParameteri64v)(GL_ARRAY_BUFFER, pname, i64);
+        }
         else
         {
             CALL(glGetBufferParameteriv)(GL_ARRAY_BUFFER, pname, i);
