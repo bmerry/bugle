@@ -373,6 +373,7 @@ package_sources.extend([
     'src/apireflect.c',
     'src/bc/SConscript',
     'src/bc/egl/egl.bc',
+    'src/bc/gl/GL_ARB_draw_buffers_blend.bc',
     'src/bc/gl/GL_ARB_draw_elements_base_vertex.bc',
     'src/bc/gl/GL_ARB_gpu_shader_fp64.bc',
     'src/bc/gl/GL_ARB_half_float_pixel.bc',

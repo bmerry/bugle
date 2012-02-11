@@ -1019,8 +1019,8 @@ def process_alias(apis, options):
         ('glIsEnabledIndexedEXT',            'glIsEnabledi'),
         ('glBlendEquationIndexedAMD',        'glBlendEquationiARB'),
         ('glBlendEquationSeparateIndexedAMD','glBlendEquationSeparateiARB'),
-        ('glBlendFuncIndexedAMD',            'glBlendFuncIndexedARB'),
-        ('glBlendFuncSeparateIndexedAMD',    'glBlendFuncSeparateARB'),
+        ('glBlendFuncIndexedAMD',            'glBlendFunciARB'),
+        ('glBlendFuncSeparateIndexedAMD',    'glBlendFuncSeparateiARB'),
         ('glGetAttachedObjectsARB',          'glGetAttachedShaders'),
         ('glXCreateContextWithConfigSGIX',   'glXCreateNewContext'),
         ('glXMakeCurrentReadSGI',            'glXMakeContextCurrent')

@@ -1,0 +1,9 @@
+TYPE PARAMETER glBlendFunciARB 1 TYPE_11GLblendenum
+TYPE PARAMETER glBlendFunciARB 2 TYPE_11GLblendenum
+TYPE PARAMETER glBlendFuncSeparateiARB 1 TYPE_11GLblendenum
+TYPE PARAMETER glBlendFuncSeparateiARB 2 TYPE_11GLblendenum
+TYPE PARAMETER glBlendFuncSeparateiARB 3 TYPE_11GLblendenum
+TYPE PARAMETER glBlendFuncSeparateiARB 4 TYPE_11GLblendenum
+TYPE PARAMETER glBlendEquationiARB 1 TYPE_11GLblendenum
+TYPE PARAMETER glBlendEquationSeparateiARB 1 TYPE_11GLblendenum
+TYPE PARAMETER glBlendEquationSeparateiARB 2 TYPE_11GLblendenum

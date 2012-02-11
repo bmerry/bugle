@@ -612,6 +612,19 @@ static const state_info transform_feedback_buffer_state[] =
     { NULL, GL_NONE, NULL_TYPE, 0, -1, -1, 0 }
 };
 
+static const state_info draw_buffer_state[] =
+{
+    { STATE_NAME(GL_COLOR_WRITEMASK), TYPE_9GLboolean, 4, BUGLE_GL_EXT_draw_buffers2, -1, STATE_INDEXED },
+    { STATE_NAME(GL_BLEND), TYPE_9GLboolean, -1, BUGLE_GL_EXT_draw_buffers2, -1, STATE_ENABLED_INDEXED },
+    { STATE_NAME(GL_BLEND_SRC_RGB), TYPE_11GLblendenum, -1, BUGLE_GL_ARB_draw_buffers_blend, -1, STATE_INDEXED },
+    { STATE_NAME(GL_BLEND_SRC_ALPHA), TYPE_11GLblendenum, -1, BUGLE_GL_ARB_draw_buffers_blend, -1, STATE_INDEXED },
+    { STATE_NAME(GL_BLEND_DST_RGB), TYPE_11GLblendenum, -1, BUGLE_GL_ARB_draw_buffers_blend, -1, STATE_INDEXED },
+    { STATE_NAME(GL_BLEND_DST_ALPHA), TYPE_11GLblendenum, -1, BUGLE_GL_ARB_draw_buffers_blend, -1, STATE_INDEXED },
+    { STATE_NAME(GL_BLEND_EQUATION_RGB), TYPE_6GLenum, -1, BUGLE_GL_ARB_draw_buffers_blend, -1, STATE_INDEXED },
+    { STATE_NAME(GL_BLEND_EQUATION_ALPHA), TYPE_6GLenum, -1, BUGLE_GL_ARB_draw_buffers_blend, -1, STATE_INDEXED },
+    { NULL, GL_NONE, NULL_TYPE, 0, -1, -1, 0 }
+};
+
 static const state_info generic_enable = { NULL, GL_NONE, TYPE_9GLboolean, -1, BUGLE_GL_VERSION_1_1, -1, STATE_ENABLED };
 
 /* All the make functions _append_ nodes to children. That means you have
@@ -683,6 +696,7 @@ static void make_counted2(const glstate *self,
                           const char *format,
                           GLenum base,
                           size_t offset1, size_t offset2,
+                          bugle_bool set_level,
                           void (*spawn)(const glstate *, linked_list *),
                           const state_info *info,
                           linked_list *children)
@@ -698,6 +712,8 @@ static void make_counted2(const glstate *self,
         child->name = bugle_asprintf(format, (unsigned long) i);
         child->numeric_name = i;
         child->enum_name = 0;
+        if (set_level)
+            child->level = i;
         *(GLenum *) (((char *) child) + offset1) = base + i;
         *(GLenum *) (((char *) child) + offset2) = base + i;
         child->spawn_children = spawn;
@@ -714,7 +730,7 @@ static void make_counted(const glstate *self,
                          const state_info *info,
                          linked_list *children)
 {
-    make_counted2(self, count, format, base, offset, offset, spawn, info, children);
+    make_counted2(self, count, format, base, offset, offset, BUGLE_FALSE, spawn, info, children);
 }
 
 static void make_object(const glstate *self,
@@ -970,7 +986,7 @@ static void spawn_clip_planes(const struct glstate *self,
     CALL(glGetIntegerv)(GL_MAX_CLIP_PLANES, &count);
     make_counted2(self, count, "GL_CLIP_PLANE%lu", GL_CLIP_PLANE0,
                   offsetof(glstate, target), offsetof(glstate, enum_name),
-                  NULL, info, children);
+                  BUGLE_FALSE, NULL, info, children);
     make_counted(self, count, "GL_CLIP_DISTANCE%lu", GL_CLIP_DISTANCE0,
                   offsetof(glstate, enum_name), NULL, &clip_distance, children);
 }
@@ -1004,7 +1020,7 @@ static void spawn_lights(const glstate *self,
     CALL(glGetIntegerv)(GL_MAX_LIGHTS, &count);
     make_counted2(self, count, "GL_LIGHT%lu", GL_LIGHT0,
                   offsetof(glstate, target), offsetof(glstate, enum_name),
-                  spawn_children_light,
+                  BUGLE_FALSE, spawn_children_light,
                   &generic_enable, children);
 }
 
@@ -1280,7 +1296,7 @@ static void spawn_texture_units(const glstate *self,
         count = get_total_texture_units();
         make_counted2(self, count, "GL_TEXTURE%lu", GL_TEXTURE0,
                       offsetof(glstate, unit), offsetof(glstate, enum_name),
-                      spawn_children_tex_unit,
+                      BUGLE_FALSE, spawn_children_tex_unit,
                       NULL, children);
     }
     else
@@ -1367,48 +1383,6 @@ static void spawn_textures(const glstate *self,
 #endif
 }
 
-static void spawn_children_blend(const struct glstate *self,
-                                 linked_list *children)
-{
-#ifdef GL_EXT_draw_buffers2
-    static const state_info blend = { STATE_NAME(GL_BLEND), TYPE_9GLboolean, -1, BUGLE_GL_EXT_draw_buffers2, -1, STATE_ENABLED_INDEXED };
-
-    GLint count;
-    CALL(glGetIntegerv)(GL_MAX_DRAW_BUFFERS_ATI, &count);
-    bugle_list_init(children, bugle_free);
-    make_counted(self, count, "%lu", 0, offsetof(glstate, numeric_name), NULL,
-                 &blend, children);
-#endif
-}
-
-static void spawn_blend(const struct glstate *self,
-                        linked_list *children,
-                        const struct state_info *info)
-{
-    make_target(self, "GL_BLEND", GL_BLEND, GL_BLEND,
-                spawn_children_blend, NULL, children);
-}
-
-static void spawn_children_color_writemask(const struct glstate *self,
-                                           linked_list *children)
-{
-    static const state_info color_writemask = { STATE_NAME(GL_COLOR_WRITEMASK), TYPE_9GLboolean, 4, BUGLE_GL_EXT_draw_buffers2, -1, STATE_INDEXED };
-
-    GLint count;
-    CALL(glGetIntegerv)(GL_MAX_DRAW_BUFFERS, &count);
-    bugle_list_init(children, bugle_free);
-    make_counted(self, count, "%lu", 0, offsetof(glstate, numeric_name), NULL,
-                 &color_writemask, children);
-}
-
-static void spawn_color_writemask(const struct glstate *self,
-                                  linked_list *children,
-                                  const struct state_info *info)
-{
-    make_target(self, "GL_COLOR_WRITEMASK", GL_COLOR_WRITEMASK, GL_COLOR_WRITEMASK,
-                spawn_children_color_writemask, NULL, children);
-}
-
 static void spawn_children_extensions(const struct glstate *self,
                                       linked_list *children)
 {
@@ -1431,15 +1405,24 @@ static void spawn_extensions(const struct glstate *self,
                 gl3 ? spawn_children_extensions : NULL, info, children);
 }
 
+static void spawn_children_draw_buffers(const struct glstate *self,
+                                        linked_list *children)
+{
+    bugle_list_init(children, bugle_free);
+    make_leaves(self, draw_buffer_state, children);
+}
+
 static void spawn_draw_buffers(const struct glstate *self,
                                linked_list *children,
                                const struct state_info *info)
 {
     GLint count;
     CALL(glGetIntegerv)(GL_MAX_DRAW_BUFFERS, &count);
-    make_counted(self, count, "GL_DRAW_BUFFER%lu", GL_DRAW_BUFFER0,
-                 offsetof(glstate, enum_name), NULL,
-                 info, children);
+    make_counted2(self, count, "GL_DRAW_BUFFER%lu", GL_DRAW_BUFFER0,
+                  offsetof(glstate, enum_name), offsetof(glstate, enum_name),
+                  BUGLE_TRUE,
+                  spawn_children_draw_buffers,
+                  info, children);
 }
 
 static void spawn_children_color_table_parameter(const glstate *self, linked_list *children)
@@ -1905,17 +1888,15 @@ static const state_info global_state[] =
     { STATE_NAME(GL_STENCIL_BACK_PASS_DEPTH_PASS), TYPE_6GLenum, -1, BUGLE_GL_VERSION_2_0, -1, STATE_GLOBAL },
     { STATE_NAME(GL_DEPTH_TEST), TYPE_9GLboolean, -1, BUGLE_GL_VERSION_1_1, -1, STATE_ENABLED },
     { STATE_NAME(GL_DEPTH_FUNC), TYPE_6GLenum, -1, BUGLE_GL_VERSION_1_1, -1, STATE_GLOBAL },
-    { STATE_NAME(GL_BLEND), TYPE_9GLboolean, -1, BUGLE_GL_EXT_draw_buffers2, -1, STATE_ENABLED, spawn_blend },
-    /* The fallback in case EXT_draw_buffers2 is missing */
     { STATE_NAME(GL_BLEND), TYPE_9GLboolean, -1, BUGLE_GL_VERSION_1_1, BUGLE_GL_EXT_draw_buffers2, STATE_ENABLED },
-    { STATE_NAME(GL_BLEND_SRC_RGB), TYPE_11GLblendenum, -1, BUGLE_GL_EXT_blend_func_separate, -1, STATE_GLOBAL },
-    { STATE_NAME(GL_BLEND_SRC_ALPHA), TYPE_11GLblendenum, -1, BUGLE_GL_EXT_blend_func_separate, -1, STATE_GLOBAL },
-    { STATE_NAME(GL_BLEND_DST_RGB), TYPE_11GLblendenum, -1, BUGLE_GL_EXT_blend_func_separate, -1, STATE_GLOBAL },
-    { STATE_NAME(GL_BLEND_DST_ALPHA), TYPE_11GLblendenum, -1, BUGLE_GL_EXT_blend_func_separate, -1, STATE_GLOBAL },
+    { STATE_NAME(GL_BLEND_SRC_RGB), TYPE_11GLblendenum, -1, BUGLE_GL_EXT_blend_func_separate, BUGLE_GL_ARB_draw_buffers_blend, STATE_GLOBAL },
+    { STATE_NAME(GL_BLEND_SRC_ALPHA), TYPE_11GLblendenum, -1, BUGLE_GL_EXT_blend_func_separate, BUGLE_GL_ARB_draw_buffers_blend, STATE_GLOBAL },
+    { STATE_NAME(GL_BLEND_DST_RGB), TYPE_11GLblendenum, -1, BUGLE_GL_EXT_blend_func_separate, BUGLE_GL_ARB_draw_buffers_blend, STATE_GLOBAL },
+    { STATE_NAME(GL_BLEND_DST_ALPHA), TYPE_11GLblendenum, -1, BUGLE_GL_EXT_blend_func_separate, BUGLE_GL_ARB_draw_buffers_blend, STATE_GLOBAL },
     { STATE_NAME(GL_BLEND_SRC), TYPE_11GLblendenum, -1, BUGLE_GL_VERSION_1_1, BUGLE_GL_EXT_blend_func_separate, STATE_GLOBAL },
     { STATE_NAME(GL_BLEND_DST), TYPE_11GLblendenum, -1, BUGLE_GL_VERSION_1_1, BUGLE_GL_EXT_blend_func_separate, STATE_GLOBAL },
-    { STATE_NAME(GL_BLEND_EQUATION_RGB), TYPE_6GLenum, -1, BUGLE_GL_VERSION_1_1, -1, STATE_GLOBAL },
-    { STATE_NAME(GL_BLEND_EQUATION_ALPHA), TYPE_6GLenum, -1, BUGLE_GL_EXT_blend_equation_separate, -1, STATE_GLOBAL },
+    { STATE_NAME(GL_BLEND_EQUATION_RGB), TYPE_6GLenum, -1, BUGLE_GL_VERSION_1_1, BUGLE_GL_ARB_draw_buffers_blend, STATE_GLOBAL },
+    { STATE_NAME(GL_BLEND_EQUATION_ALPHA), TYPE_6GLenum, -1, BUGLE_GL_EXT_blend_equation_separate, BUGLE_GL_ARB_draw_buffers_blend, STATE_GLOBAL },
     { STATE_NAME(GL_BLEND_COLOR), TYPE_8GLdouble, 4, BUGLE_EXTGROUP_blend_color, -1, STATE_GLOBAL },
     /* EXT_framebuffer_sRGB is not a strict subset of ARB_framebuffer_sRGB, hence
      * the two variants of this state (one suppressing the other).
@@ -1929,8 +1910,6 @@ static const state_info global_state[] =
     { STATE_NAME(GL_DRAW_BUFFER), TYPE_6GLenum, -1, GL_VERSION_1_1, BUGLE_GL_ATI_draw_buffers, STATE_GLOBAL },
     { STATE_NAME(GL_DRAW_BUFFER0), TYPE_6GLenum, -1, BUGLE_GL_ATI_draw_buffers, -1, STATE_GLOBAL, spawn_draw_buffers },
     { STATE_NAME(GL_INDEX_WRITEMASK), TYPE_5GLint, -1, BUGLE_GL_VERSION_1_1, -1, STATE_GLOBAL },
-    { STATE_NAME(GL_COLOR_WRITEMASK), TYPE_9GLboolean, 4, BUGLE_GL_EXT_draw_buffers2, -1, STATE_GLOBAL, spawn_color_writemask },
-    /* Fallback for if EXT_draw_buffers2 is missing */
     { STATE_NAME(GL_COLOR_WRITEMASK), TYPE_9GLboolean, 4, BUGLE_GL_VERSION_1_1, BUGLE_GL_EXT_draw_buffers2, STATE_GLOBAL },
     { STATE_NAME(GL_DEPTH_WRITEMASK), TYPE_9GLboolean, -1, BUGLE_GL_VERSION_1_1, -1, STATE_GLOBAL },
     { STATE_NAME(GL_STENCIL_WRITEMASK), TYPE_5GLint, -1, BUGLE_GL_VERSION_1_1, -1, STATE_GLOBAL },
@@ -2544,6 +2523,7 @@ const state_info * const all_state[] =
     renderbuffer_parameter_state,
     transform_feedback_parameter_state,
     transform_feedback_buffer_state,
+    draw_buffer_state,
     sync_state,
     NULL
 };
