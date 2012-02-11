@@ -269,6 +269,7 @@ class GLAPI(API):
         "GL_APPLE_flush_buffer_range": ["GL_ARB_map_buffer_range"],
         "GL_ATI_draw_buffers": ["GL_ARB_draw_buffers"],
         "GL_ATI_stencil_two_side": ["GL_EXT_stencil_two_side"],
+        "GL_AMD_draw_buffers_blend": ["GL_ARB_draw_buffers_blend"],
         "GL_ARB_ES2_compatibility": ["GL_VERSION_4_1"],
         "GL_ARB_blend_func_extended": ["GL_VERSION_3_3"],
         "GL_ARB_color_buffer_float": ["GL_VERSION_3_0"],
@@ -1016,6 +1017,10 @@ def process_alias(apis, options):
         ('glEnableIndexedEXT',               'glEnablei'),
         ('glDisableIndexedEXT',              'glDisablei'),
         ('glIsEnabledIndexedEXT',            'glIsEnabledi'),
+        ('glBlendEquationIndexedAMD',        'glBlendEquationiARB'),
+        ('glBlendEquationSeparateIndexedAMD','glBlendEquationSeparateiARB'),
+        ('glBlendFuncIndexedAMD',            'glBlendFuncIndexedARB'),
+        ('glBlendFuncSeparateIndexedAMD',    'glBlendFuncSeparateARB'),
         ('glGetAttachedObjectsARB',          'glGetAttachedShaders'),
         ('glXCreateContextWithConfigSGIX',   'glXCreateNewContext'),
         ('glXMakeCurrentReadSGI',            'glXMakeContextCurrent')
