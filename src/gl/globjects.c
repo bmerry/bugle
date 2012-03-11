@@ -42,8 +42,6 @@ typedef struct
     hashptr_table objects[BUGLE_GLOBJECTS_COUNT];
 } globjects_data;
 
-/* FIXME: check which types of objects are shared between contexts (all but queries I think) */
-
 static object_view ns_view, context_view, call_view;
 
 static bugle_bool object_type_shared(bugle_globjects_type type)
