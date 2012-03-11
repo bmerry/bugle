@@ -1,3 +1,10 @@
+0.0.20120312
+------------
+This release greatly improves support for OpenGL 3.0 and beyond. While there
+are still gaps, most OpenGL 3.0 applications should work and the state viewer
+should be complete. There is also support for a few post-3.0 features (see
+the ChangeLog for details).
+
 0.0.20111115
 ------------
 This is a maintainence release: there are no major new features, but some

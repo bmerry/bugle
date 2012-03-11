@@ -1,3 +1,5 @@
+0.0.20120312
+------------
 * Added support for the following extensions:
   * ARB_draw_instanced and ARB_instanced_arrays
   * ARB_texture_rg (untested)
@@ -26,6 +28,7 @@
 * Make gengl.py run on Python 2.6 (closes #94)
 * Fixed bug causing buffer display to crash in Windows (closes #86)
 * Fixed bug causing glGetIntegerv(GL_COMPRESSED_TEXTURE_FORMATS, ...) to be traced incorrectly.
+* Correctly treat occlusion queries as non-shared objects
 
 0.0.20111115
 ------------

@@ -2,7 +2,7 @@
 import os
 from BugleAspects import *
 
-version = '0.0.20111115'
+version = '0.0.20120312'
 
 def subdir(srcdir, dir, **kw):
     '''
@@ -394,11 +394,11 @@ package_sources.extend([
     'src/bc/gl/GL_EXT_draw_buffers2.bc',
     'src/bc/gl/GL_EXT_draw_instanced.bc',
     'src/bc/gl/GL_EXT_draw_range_elements.bc',
-    'src/bc/gl/GL_EXT_framebuffer_blit.bc'
+    'src/bc/gl/GL_EXT_framebuffer_blit.bc',
     'src/bc/gl/GL_EXT_framebuffer_object.bc',
     'src/bc/gl/GL_EXT_geometry_shader4.bc',
     'src/bc/gl/GL_EXT_gpu_program_parameters.bc',
-    'src/bc/gl/GL_EXT_gpu_shader4.bc'
+    'src/bc/gl/GL_EXT_gpu_shader4.bc',
     'src/bc/gl/GL_EXT_multi_draw_arrays.bc',
     'src/bc/gl/GL_EXT_secondary_color.bc',
     'src/bc/gl/GL_EXT_texture3D.bc',
