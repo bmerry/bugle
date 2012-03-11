@@ -1,5 +1,5 @@
 /*  BuGLe: an OpenGL debugging tool
- *  Copyright (C) 2004-2009, 2011  Bruce Merry
+ *  Copyright (C) 2004-2009, 2011-2012  Bruce Merry
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -280,25 +280,36 @@ static void checks_completeness(void)
                     target = 0;
                     switch (type)
                     {
+#if BUGLE_GLTYPE_GL
                     case GL_SAMPLER_1D:
                     case GL_SAMPLER_1D_SHADOW:
                         target = GL_TEXTURE_1D;
                         break;
+#endif
                     case GL_SAMPLER_2D:
+#if BUGLE_GLTYPE_GL
                     case GL_SAMPLER_2D_SHADOW:
+#endif
                         target = GL_TEXTURE_2D;
                         break;
                     case GL_SAMPLER_CUBE:
+#if BUGLE_GLTYPE_GL
                     case GL_SAMPLER_CUBE_SHADOW:
+#endif
                         target = GL_TEXTURE_CUBE_MAP;
                         break;
+#if BUGLE_GLTYPE_GL
                     case GL_SAMPLER_2D_RECT:
                     case GL_SAMPLER_2D_RECT_SHADOW:
                         target = GL_TEXTURE_RECTANGLE;
                         break;
+#endif
+#if BUGLE_GLTYPE_GL
                     case GL_SAMPLER_3D:
                         target = GL_TEXTURE_3D;
                         break;
+#endif
+#if BUGLE_GLTYPE_GL
                     case GL_SAMPLER_1D_ARRAY:
                     case GL_SAMPLER_1D_ARRAY_SHADOW:
                         target = GL_TEXTURE_1D_ARRAY;
@@ -307,6 +318,7 @@ static void checks_completeness(void)
                     case GL_SAMPLER_2D_ARRAY_SHADOW:
                         target = GL_TEXTURE_2D_ARRAY;
                         break;
+#endif
                     }
                     if (target)
                     {

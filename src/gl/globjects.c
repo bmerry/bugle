@@ -631,6 +631,7 @@ void bugle_globjects_walk(bugle_globjects_type type,
     unlock();
 }
 
+#if BUGLE_GLTYPE_GL
 void bugle_globjects_walk_sync(void (*walker)(GLsync, GLenum, void *), void *data)
 {
     hashptr_table *table;
@@ -647,6 +648,7 @@ void bugle_globjects_walk_sync(void (*walker)(GLsync, GLenum, void *), void *dat
     }
     unlock();
 }
+#endif
 
 GLenum bugle_globjects_get_target(bugle_globjects_type type, GLuint id)
 {

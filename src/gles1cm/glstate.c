@@ -204,11 +204,9 @@ static void make_leaves_conditional(const glstate *self, const state_info *table
                                     bugle_uint32_t flags, unsigned int mask,
                                     linked_list *children)
 {
-    const char *version;
     glstate *child;
     const state_info *info;
 
-    version = (const char *) CALL(glGetString)(GL_VERSION);
     for (info = table; info->name; info++)
     {
         if ((info->flags & mask) == flags

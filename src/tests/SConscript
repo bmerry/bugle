@@ -184,7 +184,7 @@ bugletest = test_env.Program(
         target = 'bugletest',
         source = test_sources + targets['bugleutils'].out)
 
-test = test_env_run.Command(Value(''), bugletest, Action('${SOURCE.path}', 'Running basic tests'))
+test = test_env.Command(Value(''), bugletest, Action('${SOURCE.path}', 'Running basic tests'))
 test_env_run.Depends(test, test_deps)
 test_env_run.Depends(test, '../filters')
 test_env_run.AlwaysBuild(test)

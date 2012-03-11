@@ -1,5 +1,5 @@
 /*  BuGLe: an OpenGL debugging tool
- *  Copyright (C) 2011  Bruce Merry
+ *  Copyright (C) 2011-2012  Bruce Merry
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -28,7 +28,7 @@
 
 #if BUGLE_GLTYPE_GLES2
 # define call(x) (CALL(x))
-#elif BUGLE_GLTYPE_GLES1
+#elif BUGLE_GLTYPE_GLES1CM
 # define call(x) (CALL(x ## OES))
 #elif BUGLE_GLTYPE_GL
 # define call(x) (BUGLE_GL_HAS_EXTENSION_GROUP(GL_ARB_framebuffer_object) ? (CALL(x)) : (CALL(x ## EXT)))
@@ -37,13 +37,13 @@
 bugle_bool bugle_gl_has_framebuffer_object(void)
 {
 #if BUGLE_GLTYPE_GLES2
-    return true;
-#elif BUGLE_GLTYPE_GLES1
+    return BUGLE_TRUE;
+#elif BUGLE_GLTYPE_GLES1CM
     return BUGLE_GL_HAS_EXTENSION_GROUP(GL_OES_framebuffer_object);
 #elif BUGLE_GLTYPE_GL
     return BUGLE_GL_HAS_EXTENSION_GROUP(GL_EXT_framebuffer_object);
 #else
-    return false;
+    return BUGLE_FALSE;
 #endif
 }
 
@@ -60,7 +60,7 @@ GLuint bugle_gl_get_draw_framebuffer_binding(void)
 #if BUGLE_GLTYPE_GL || BUGLE_GLTYPE_GLES2
     CALL(glGetIntegerv)(GL_FRAMEBUFFER_BINDING, &fbo);
     return fbo;
-#elif BUGLE_GLTYPE_GLES1
+#elif BUGLE_GLTYPE_GLES1CM
     CALL(glGetIntegerv)(GL_FRAMEBUFFER_BINDING_OES, &fbo);
     return fbo;
 #else
@@ -76,7 +76,7 @@ GLenum bugle_gl_draw_framebuffer_target(void)
         target = GL_DRAW_FRAMEBUFFER;
     else
         target = GL_FRAMEBUFFER;
-#elif BUGLE_GLTYPE_GLES1
+#elif BUGLE_GLTYPE_GLES1CM
     target = GL_FRAMEBUFFER_OES;
 #else
     target = GL_FRAMEBUFFER;
@@ -102,7 +102,7 @@ GLuint bugle_gl_get_read_framebuffer_binding(void)
 #if BUGLE_GLTYPE_GL || BUGLE_GLTYPE_GLES2
     CALL(glGetIntegerv)(GL_FRAMEBUFFER_BINDING, &fbo);
     return fbo;
-#elif BUGLE_GLTYPE_GLES1
+#elif BUGLE_GLTYPE_GLES1CM
     CALL(glGetIntegerv)(GL_FRAMEBUFFER_BINDING_OES, &fbo);
     return fbo;
 #else
@@ -118,7 +118,7 @@ GLenum bugle_gl_read_framebuffer_target(void)
         target = GL_READ_FRAMEBUFFER;
     else
         target = GL_FRAMEBUFFER;
-#elif BUGLE_GLTYPE_GLES1
+#elif BUGLE_GLTYPE_GLES1CM
     target = GL_FRAMEBUFFER_OES;
 #else
     target = GL_FRAMEBUFFER;
@@ -214,17 +214,17 @@ void BUDGIEAPI bugle_glGenerateMipmap(GLenum target)
 #define CATCHER_WRAPPER(func) \
     void bugle_gl_filter_catches_ ## func (filter *f, bugle_bool inactive, filter_callback callback) \
     { \
-        CATCH_WRAPPER_INNER(func); \
+        CATCHER_WRAPPER_INNER(func); \
     }
 
 #if BUGLE_GLTYPE_GLES2
 # define CATCHER_WRAPPER_INNER(func) \
     bugle_filter_catches_function(f, STRINGIFY(func), inactive, callback)
-#elif BUGLE_GLTYPE_GLES1
+#elif BUGLE_GLTYPE_GLES1CM
 # define CATCHER_WRAPPER_INNER(func) \
     bugle_filter_catches_function(f, STRINGIFY(func ## OES), inactive, callback)
 #elif BUGLE_GLTYPE_GL
-# define CATCH_WRAPPER_INNER(func) \
+# define CATCHER_WRAPPER_INNER(func) \
     bugle_filter_catches_function(f, STRINGIFY(func), inactive, callback); \
     bugle_filter_catches_function(f, STRINGIFY(func ## EXT), inactive, callback)
 #endif

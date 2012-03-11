@@ -21,9 +21,11 @@ typedef GLubyte GLpolygonstipple[32][4];
 typedef GLfloat GLvec2[2];
 typedef GLfloat GLvec3[3];
 typedef GLfloat GLvec4[4];
+#if BUGLE_GLTYPE_GL
 typedef GLdouble GLdvec2[2];
 typedef GLdouble GLdvec3[3];
 typedef GLdouble GLdvec4[4];
+#endif
 typedef GLint GLivec2[2];
 typedef GLint GLivec3[3];
 typedef GLint GLivec4[4];
@@ -42,6 +44,7 @@ typedef GLfloat GLmat2x4[2][4];
 typedef GLfloat GLmat4x2[4][2];
 typedef GLfloat GLmat3x4[3][4];
 typedef GLfloat GLmat4x3[4][3];
+#if BUGLE_GLTYPE_GL
 typedef GLdouble GLdmat2[2][2];
 typedef GLdouble GLdmat3[3][3];
 typedef GLdouble GLdmat4[4][4];
@@ -51,6 +54,7 @@ typedef GLdouble GLdmat2x4[2][4];
 typedef GLdouble GLdmat4x2[4][2];
 typedef GLdouble GLdmat3x4[3][4];
 typedef GLdouble GLdmat4x3[4][3];
+#endif
 
 /* Pointers to the array types */
 typedef const GLfloatmatrix *pGLfloatmatrix;
@@ -65,9 +69,11 @@ typedef const GLpolygonstipple *pGLpolygonstipple;
 typedef GLvec2 *pGLvec2;
 typedef GLvec3 *pGLvec3;
 typedef GLvec4 *pGLvec4;
+#if BUGLE_GLTYPE_GL
 typedef GLdvec2 *pGLdvec2;
 typedef GLdvec3 *pGLdvec3;
 typedef GLdvec4 *pGLdvec4;
+#endif
 typedef GLivec2 *pGLivec2;
 typedef GLivec3 *pGLivec3;
 typedef GLivec4 *pGLivec4;
@@ -86,6 +92,7 @@ typedef GLmat2x4 *pGLmat2x4;
 typedef GLmat4x2 *pGLmat4x2;
 typedef GLmat3x4 *pGLmat3x4;
 typedef GLmat4x3 *pGLmat4x3;
+#if BUGLE_GLTYPE_GL
 typedef GLdmat2 *pGLdmat2;
 typedef GLdmat3 *pGLdmat3;
 typedef GLdmat4 *pGLdmat4;
@@ -95,6 +102,7 @@ typedef GLdmat2x4 *pGLdmat2x4;
 typedef GLdmat4x2 *pGLdmat4x2;
 typedef GLdmat3x4 *pGLdmat3x4;
 typedef GLdmat4x3 *pGLdmat4x3;
+#endif
 
 /* Pointer types that don't get detected automatically in all cases. */
 typedef GLubyte *pGLubyte;

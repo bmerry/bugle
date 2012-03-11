@@ -1,5 +1,5 @@
 /*  BuGLe: an OpenGL debugging tool
- *  Copyright (C) 2004-2008, 2011  Bruce Merry
+ *  Copyright (C) 2004-2008, 2011-2012  Bruce Merry
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -126,7 +126,7 @@ bugle_bool bugle_dump_GLxfbattrib(const GLxfbattrib *a, bugle_io_writer *writer)
     return BUGLE_TRUE;
 }
 
-bugle_bool bugle_dump_GLhalf(GLhalfARB h, bugle_io_writer *writer)
+bugle_bool bugle_dump_GLhalf(GLushort h, bugle_io_writer *writer)
 {
     int s = h >> 15;
     int e = (h >> 10) & 0x1f;

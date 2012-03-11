@@ -1,5 +1,5 @@
 /*  BuGLe: an OpenGL debugging tool
- *  Copyright (C) 2004-2008  Bruce Merry
+ *  Copyright (C) 2004-2008, 2012  Bruce Merry
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -40,7 +40,8 @@ bugle_bool bugle_dump_GLerror(GLenum e, bugle_io_writer *writer);
 bugle_bool bugle_dump_GLboolean(GLboolean b, bugle_io_writer *writer);
 bugle_bool bugle_dump_GLpolygonstipple(const GLubyte (*pattern)[4], bugle_io_writer *writer);
 bugle_bool bugle_dump_GLxfbattrib(const GLxfbattrib *a, bugle_io_writer *writer);
-bugle_bool bugle_dump_GLhalf(GLhalfARB h, bugle_io_writer *writer);
+/* The parameter is passed as GLushort because ES2 doesn't have the typedef for GLhalf */
+bugle_bool bugle_dump_GLhalf(GLushort h, bugle_io_writer *writer);
 
 #ifdef __cplusplus
 }
