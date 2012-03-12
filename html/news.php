@@ -24,6 +24,12 @@ else
     </p>
     <h1>BuGLe News</h1>
 
+    <h2>Support for lots of new OpenGL features (12/03/2012)</h2>
+    <p>Unlike the last few releases, I finally found some time over the
+    Christmas holiday to bring BuGLe a little more up to date with OpenGL. It's
+    still a long way behind, but now I would expect most OpenGL 3.0 applications
+    to work, and even some post-3.0 extensions are now supported.</p>
+
     <h2>The almost-annual release (15/11/2011)</h2>
     <p>As you can probably tell from the frequency of releases, I don't spend
     as much time on BuGLe as I used to. If you're keen to see BuGLe evolve and
