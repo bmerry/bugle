@@ -1,3 +1,9 @@
+0.0.20120331
+------------
+This is a bugfix release that only fixes some build problems. If you have
+successfully installed the previous version of BuGLe, you do not need to
+upgrade to this version.
+
 0.0.20120312
 ------------
 This release greatly improves support for OpenGL 3.0 and beyond. While there
