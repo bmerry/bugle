@@ -813,7 +813,10 @@ class Function(object):
         remapping = {
             'GLenum'       : 'GLint',  # Texture functions changed <format>
             'GLsizeiptrARB': 'GLsizeiptr',
-            'GLintptrARB'  : 'GLintptr'
+            'GLintptrARB'  : 'GLintptr',
+            # glext.h has changed some instances of clamped to unclamped
+            'GLclampf'     : 'GLfloat',
+            'GLclampd'     : 'GLdouble'
             }
         return remapping.get(argtype, argtype)
 

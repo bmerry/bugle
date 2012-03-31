@@ -1,4 +1,5 @@
 * Removed doctest invocation from gengl.py (fixes #95)
+* Allow GLclampf/GLclampd to alias GLfloat/GLdouble in signature checking (fixes #97)
 
 0.0.20120312
 ------------
