@@ -1191,7 +1191,4 @@ def main():
         process_header(apis, functions, options)
 
 if __name__ == '__main__':
-    import doctest
-    doctest.testmod()
-
     sys.exit(main())

@@ -1,3 +1,5 @@
+* Removed doctest invocation from gengl.py (fixes #95)
+
 0.0.20120312
 ------------
 * Added support for the following extensions:
