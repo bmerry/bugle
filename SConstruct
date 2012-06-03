@@ -461,6 +461,7 @@ package_sources.extend([
     'src/filters/eps.c',
     'src/filters/exe.c',
     'src/filters/extoverride.c',
+    'src/filters/logdebug.c',
     'src/filters/logstats.c',
     'src/filters/modify.c',
     'src/filters/screenshot.c',

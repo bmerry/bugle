@@ -1,3 +1,5 @@
+* Added logdebug filterset (still undocumented, untested)
+
 0.0.20120331
 ------------
 * Removed doctest invocation from gengl.py (fixes #95)

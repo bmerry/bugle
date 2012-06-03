@@ -35,6 +35,7 @@ if 'interceptor' in aspects['parts']:
         # These currently only build on desktop GL
         simple_filters(filter_env, [
                 'camera',
+                'logdebug',
                 'modify',
                 'stats_fragments',
                 'showstats'])
