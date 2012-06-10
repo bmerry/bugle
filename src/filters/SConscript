@@ -42,10 +42,15 @@ if 'interceptor' in aspects['parts']:
         eps_module = filter_env.LoadableModule('eps', ['eps.c', '../gl2ps/gl2ps.c'])
         filter_env.Install(aspects['pkglibdir'], eps_module)
 
+    if aspects['glwin'] == 'glx':
+        # Currently very GLX-heavy
+        simple_filters(filter_env, [
+            'contextattribs'])
+
     if aspects['platform'] == 'posix':
         # These currently depend on POSIX features
         simple_filters(filter_env, [
-                'unwindstack'])
+            'unwindstack'])
 
     screenshot_env = filter_env.Clone()
     conf = Configure(screenshot_env, custom_tests = BugleChecks.tests)

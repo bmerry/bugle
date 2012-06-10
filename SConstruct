@@ -457,6 +457,7 @@ package_sources.extend([
     'src/filters/camera.c',
     'src/filters/checks.c',
     'src/filters/common.c',
+    'src/filters/contextattribs.c',
     'src/filters/debugger.c',
     'src/filters/eps.c',
     'src/filters/exe.c',

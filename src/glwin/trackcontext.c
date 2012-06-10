@@ -252,37 +252,48 @@ void bugle_gl_text_render(const char *msg, int x, int y)
 }
 #endif
 
-static bugle_bool trackcontext_newcontext(function_call *call, const callback_data *data)
+bugle_bool bugle_glwin_newcontext(glwin_context_create *create)
 {
     trackcontext_data *base, *up;
+
+    bugle_thread_lock_lock(&context_mutex);
+
+    if (bugle_hashptr_get(&initial_values, create->ctx) != NULL)
+    {
+        bugle_glwin_context_create_free(create);
+        bugle_thread_lock_unlock(&context_mutex);
+        return BUGLE_FALSE;
+    }
+
+    base = BUGLE_ZALLOC(trackcontext_data);
+    base->aux_shared = NULL;
+    base->aux_unshared = NULL;
+    base->create = create;
+    if (create->share)
+    {
+        up = (trackcontext_data *) bugle_hashptr_get(&initial_values, create->share);
+        if (!up)
+        {
+            bugle_log_printf("trackcontext", "newcontext", BUGLE_LOG_WARNING,
+                             "share context %p unknown", (void *) create->share);
+            base->root_context = create->ctx;
+        }
+        else
+            base->root_context = up->root_context;
+    }
+
+    bugle_hashptr_set(&initial_values, create->ctx, base);
+    bugle_thread_lock_unlock(&context_mutex);
+    return BUGLE_TRUE;
+}
+
+static bugle_bool trackcontext_newcontext(function_call *call, const callback_data *data)
+{
     glwin_context_create *create;
 
     create = bugle_glwin_context_create_save(call);
-
     if (create)
-    {
-        bugle_thread_lock_lock(&context_mutex);
-
-        base = BUGLE_ZALLOC(trackcontext_data);
-        base->aux_shared = NULL;
-        base->aux_unshared = NULL;
-        base->create = create;
-        if (create->share)
-        {
-            up = (trackcontext_data *) bugle_hashptr_get(&initial_values, create->share);
-            if (!up)
-            {
-                bugle_log_printf("trackcontext", "newcontext", BUGLE_LOG_WARNING,
-                                 "share context %p unknown", (void *) create->share);
-                base->root_context = create->ctx;
-            }
-            else
-                base->root_context = up->root_context;
-        }
-
-        bugle_hashptr_set(&initial_values, create->ctx, base);
-        bugle_thread_lock_unlock(&context_mutex);
-    }
+        bugle_glwin_newcontext(create);
 
     return BUGLE_TRUE;
 }

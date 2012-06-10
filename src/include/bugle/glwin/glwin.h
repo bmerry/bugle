@@ -74,7 +74,7 @@ typedef struct glwin_context_create
  * After the returned structure is no longer needed, it must be freed with
  * bugle_glwin_context_create_free.
  */
-BUGLE_EXPORT_PRE glwin_context_create *bugle_glwin_context_create_save(function_call *call)BUGLE_EXPORT_POST;
+BUGLE_EXPORT_PRE glwin_context_create *bugle_glwin_context_create_save(function_call *call) BUGLE_EXPORT_POST;
 
 /* Creates a new context that is compatible with the information captured in
  * the create structure. If share is BUGLE_TRUE, the new context will share textures

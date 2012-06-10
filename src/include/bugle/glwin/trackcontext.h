@@ -29,6 +29,8 @@
 extern "C" {
 #endif
 
+struct glwin_context_create;
+
 BUGLE_EXPORT_PRE object_class *bugle_get_context_class(void) BUGLE_EXPORT_POST;
 BUGLE_EXPORT_PRE object_class *bugle_get_namespace_class(void) BUGLE_EXPORT_POST;
 
@@ -39,6 +41,23 @@ BUGLE_EXPORT_PRE object_class *bugle_get_namespace_class(void) BUGLE_EXPORT_POST
  * so as not to pollute the primary namespace.
  */
 BUGLE_EXPORT_PRE glwin_context bugle_get_aux_context(bugle_bool shared) BUGLE_EXPORT_POST;
+
+/* Register a newly created context with information about it should be
+ * duplicated. This is not normally needed, but can be used by filtersets that
+ * override context creation function calls. It is also used by the
+ * "trackcontext" filterset internally.
+ *
+ * If multiple such calls are made for the same context, the first applies.
+ * Thus, a filterset wishing to override context creation should ensure that
+ * it runs before trackcontext.
+ *
+ * The create argument is consumed and possibly destroyed. The caller should
+ * not attempt to free it, nor refer to it again.
+ *
+ * The return value is true on success, false if the context was already
+ * registered.
+ */
+BUGLE_EXPORT_PRE bugle_bool bugle_glwin_newcontext(struct glwin_context_create *create) BUGLE_EXPORT_POST;
 
 /* Draws text at the specified location. The current colour is used to
  * render the text. The text is rendered with alpha, so alpha-test or
