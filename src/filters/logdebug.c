@@ -191,7 +191,7 @@ static bugle_bool logdebug_glDebugMessageCallbackARB(function_call *call, const 
     return BUGLE_TRUE;
 }
 
-static bugle_bool logdebug_initialize(filter_set *handle)
+static bugle_bool logdebug_initialise(filter_set *handle)
 {
     filter *f;
 
@@ -216,7 +216,7 @@ void bugle_initialise_filter_library(void)
     static const filter_set_info logdebug_info =
     {
         "logdebug",
-        logdebug_initialize,
+        logdebug_initialise,
         NULL,
         logdebug_activation,
         logdebug_deactivation,
