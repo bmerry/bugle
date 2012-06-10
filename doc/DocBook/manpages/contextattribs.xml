@@ -1,0 +1,137 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE refentry PUBLIC "-//OASIS//DTD DocBook XML V4.3//EN" "http://www.oasis-open.org/docbook/xml/4.3/docbookx.dtd" [
+<!ENTITY % myentities SYSTEM "../bugle.ent" >
+%myentities;
+]>
+<refentry id="contextattribs.7">
+    <refentryinfo>
+        <date>June 2012</date>
+        <productname>BUGLE</productname>
+    </refentryinfo>
+    <refmeta>
+        <refentrytitle>bugle-contextattribs</refentrytitle>
+        <manvolnum>7</manvolnum>
+    </refmeta>
+
+    <refnamediv>
+        <refname>bugle-contextattribs</refname>
+        <refpurpose>override attributes during context creation</refpurpose>
+    </refnamediv>
+
+    <refsynopsisdiv>
+        <screen>filterset contextattribs
+{
+    major 3
+    minor 3
+    flag "debug"
+    flag "robust"
+    profile "core"
+    profile "!compatibility"
+}</screen>
+    </refsynopsisdiv>
+
+    <refsect1>
+        <title>Description</title>
+        <para>
+            The GLX_ARB_context_create and GLX_ARB_context_create_profile
+            extensions allow applications extra control over how contexts are
+            created. Applications can specify a GL version, select flags that
+            modify the operation of the context, or specify which GL profiles
+            they wish to use.
+        </para>
+        <para>
+            The <systemitem>contextattribs</systemitem> filter-set allows these
+            attributes to be overridden on an existing application. There are
+            a number of reasons this might be desirable:
+        </para>
+        <itemizedlist>
+            <listitem><para>
+                    If the application is using a framework that does not allow
+                    these attributes to be specified, this may be the easiest way
+                    to do so.
+            </para></listitem>
+            <listitem><para>
+                    Forcing the core profile can be used to identify areas of the
+                    application that rely on the compatibility profile.
+            </para></listitem>
+            <listitem><para>
+                    Forcing a debug context will allow the &mp-logdebug;
+                    filter-set to record debugging information from the driver.
+            </para></listitem>
+        </itemizedlist>
+        <para>
+            The interface provided is fairly low-level. The major version, the
+            minor version, and each bit in the flags and the profile mask can
+            be either left alone or set to a specific value. There are no checks
+            that the requested combination makes sense e.g., versions of GL before
+            3.2 did not have profiles.
+        </para>
+    </refsect1>
+
+    <refsect1>
+        <title>Options</title>
+        <variablelist>
+            <varlistentry>
+                <term><option>major</option></term>
+                <listitem><para>
+                        Specifies a value for <symbol>GLX_CONTEXT_MAJOR_VERSION_ARB</symbol>.
+                </para></listitem>
+            </varlistentry>
+            <varlistentry>
+                <term><option>minor</option></term>
+                <listitem><para>
+                        Specifies a value for <symbol>GLX_CONTEXT_MINOR_VERSION_ARB</symbol>.
+                </para></listitem>
+            </varlistentry>
+            <varlistentry>
+                <term><option>flag</option></term>
+                <listitem>
+                    <para>
+                        Specifies a flag to be added or removed from
+                        <symbol>GLX_CONTEXT_FLAGS_ARB</symbol>. The available
+                        flags are <literal>debug</literal>,
+                        <literal>forward</literal> and
+                        <literal>robust</literal>. By default a flag is added
+                        to the flag mask, but if preceeded by a
+                        <literal>!</literal> it is removed.
+                    </para>
+                    <para>
+                        This option may be given multiple times to override
+                        multiple flags. Specifying that a flag should be both added and
+                        removed has undefined results.
+                    </para>
+                </listitem>
+            </varlistentry>
+            <varlistentry>
+                <term><option>profile</option></term>
+                <listitem>
+                    <para>
+                        This option works similarly to <option>flag</option> except that
+                        it affects <symbol>GLX_CONTEXT_PROFILE_MASK_ARB</symbol>. The
+                        available profiles are <literal>core</literal>,
+                        <literal>compatibility</literal> and <literal>es2</literal>.
+                    </para>
+                    <para>
+                        Note that because this is a mask, the correct way to force
+                        core profile is to specify both <literal>core</literal> and
+                        <literal>!compatibility</literal>.
+                    </para>
+                </listitem>
+            </varlistentry>
+        </variablelist>
+    </refsect1>
+
+    <refsect1>
+        <title>Limitation</title>
+        <para>
+            This filter-set is currently only implemented for GLX.
+        </para>
+    </refsect1>
+
+    &author;
+
+    <refsect1>
+        <title>See also</title>
+        <para>&mp-bugle;, &mp-logdebug;</para>
+    </refsect1>
+</refentry>

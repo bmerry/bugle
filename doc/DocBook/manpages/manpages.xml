@@ -10,10 +10,7 @@
 - in ../bugle.ent:
   - add the &mp-xxx entity
 - if it's a statistics filter-set, add it to statistics.xml See Also
-- in ../../../Makefile.am
-  - add the XML file to DOCBOOK_MAN_SRCS
-  - add the HTML file to DOCBOOK_HTML
-  - add the manpage to DOCBOOK_MAN_MANPAGES
+- in ../../../SConstruct, add the XML file to package_sources
 -->
 <appendix id="manpages">
     <title>Bugle manual pages</title>
@@ -22,12 +19,14 @@
     <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="gldb-gui.xml"/>
     <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="camera.xml"/>
     <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="checks.xml"/>
+    <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="contextattribs.xml"/>
     <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="eps.xml"/>
     <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="error.xml"/>
     <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="exe.xml"/>
     <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="extoverride.xml"/>
     <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="frontbuffer.xml"/>
     <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="log.xml"/>
+    <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="logdebug.xml"/>
     <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="logstats.xml"/>
     <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="screenshot.xml"/>
     <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="showerror.xml"/>

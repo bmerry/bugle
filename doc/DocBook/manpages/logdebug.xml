@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE refentry PUBLIC "-//OASIS//DTD DocBook XML V4.3//EN" "http://www.oasis-open.org/docbook/xml/4.3/docbookx.dtd" [
+<!ENTITY % myentities SYSTEM "../bugle.ent" >
+%myentities;
+]>
+<refentry id="logdebug.7">
+    <refentryinfo>
+        <date>June 2012</date>
+        <productname>BUGLE</productname>
+    </refentryinfo>
+    <refmeta>
+        <refentrytitle>bugle-logdebug</refentrytitle>
+        <manvolnum>7</manvolnum>
+    </refmeta>
+
+    <refnamediv>
+        <refname>bugle-logdebug</refname>
+        <refpurpose>send GL debug log to &bugle; log</refpurpose>
+    </refnamediv>
+
+    <refsynopsisdiv>
+        <screen>filterset logdebug</screen>
+    </refsynopsisdiv>
+
+    <refsect1>
+        <title>Description</title>
+        <para>
+            The <systemitem>logdebug</systemitem> installs a callback using
+            <function>glDebugMessageCallbackARB</function> and reports any
+            GL debug log messages to the &bugle; log.
+        </para>
+        <para>
+            Note that this will only be effective in a debug context. If your
+            application does not already create a debug context, you can use the
+            &mp-contextattribs; filter-set to achieve this.
+        </para>
+        <para>
+            The GL severities <symbol>GL_DEBUG_SEVERITY_HIGH_ARB</symbol>,
+            <symbol>GL_DEBUG_SEVERITY_MEDIUM_ARB</symbol> and
+            <symbol>GL_DEBUG_SEVERITY_LOW_ARB</symbol> are mapped to the log levels
+            warning, notice and info, which allows lower-severity messages to
+            be filtered out.
+        </para>
+    </refsect1>
+
+    <refsect1>
+        <title>Bugs</title>
+        <para>
+            It is not recommended to use this filter-set with an application that
+            uses the ARB_debug_output extension itself. Messages will be forwarded
+            to the application's callback, but the filter-set will modify the set
+            of messages that is enabled and this will be observable to the
+            application. Enabling and disabling the filter-set on the fly may also
+            have unexpected effects if the application changes the set of enabled
+            messages.
+        </para>
+    </refsect1>
+
+    &author;
+
+    <refsect1>
+        <title>See also</title>
+        <para>&mp-bugle;, &mp-log;, &mp-contextattribs;</para>
+    </refsect1>
+</refentry>

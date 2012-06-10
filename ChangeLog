@@ -1,5 +1,5 @@
-* Added logdebug filterset (still undocumented, untested)
-* Added contextattribs filterset (still undocumented, untested and incomplete)
+* Added logdebug filterset (still untested)
+* Added contextattribs filterset (still untested and incomplete)
 
 0.0.20120331
 ------------
