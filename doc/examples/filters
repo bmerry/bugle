@@ -212,3 +212,13 @@ chain validate
     filterset checks
     filterset showerror
 }
+
+# Output ARB_debug_output messages to the BuGLe debug log
+chain logdebug
+{
+    filterset log
+    {
+        filename "bugle.log"
+    }
+    filterset logdebug
+}
