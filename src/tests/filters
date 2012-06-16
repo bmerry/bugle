@@ -77,3 +77,15 @@ chain extoverride
         stderr_level 0
     }
 }
+
+chain contextattribs
+{
+    filterset contextattribs
+    {
+        major 3
+        minor 2
+        flag "forward"
+        profile "core"
+        profile "!compatibility"
+    }
+}

@@ -40,6 +40,8 @@ typedef enum
 
 #define TEST_FLAG_LOG     1     /* Test writes a log of regexes to match */
 #define TEST_FLAG_CONTEXT 2     /* Test requires a GL context */
+#define TEST_FLAG_MANUAL  4     /* Test requires a special environment and should only be run
+                                   when explicitly selected (implied by TEST_FLAG_LOG) */
 
 typedef struct test
 {

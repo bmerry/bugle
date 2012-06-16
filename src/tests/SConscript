@@ -87,13 +87,19 @@ def simple_test(name):
             target = name,
             source = [name + '.c'])
 
+def add_test_target(env, test, test_deps):
+    env.Depends(test, test_deps)
+    env.Depends(test, '../filters')
+    env.AlwaysBuild(test)
+    env.Alias('test', test)
+
 if 'tests' not in aspects['parts']:
     Return()
 
 test_env = envs['host'].Clone()
 plain_tests = ['string', 'math', 'threads']
-log_suites = []  # Tuples of (source file, suite name, filter chain)
-simple_tests = []
+log_suites = []    # Tuples of (source file, suite name, filter chain)
+manual_suites = [] # As for log_suites
 test_deps = []
 test_sources = ['test.c']
 bugle_path = os.path.dirname(targets['bugle'].out[0].abspath)
@@ -160,8 +166,12 @@ else:
                 ('triangles.c', 'triangles', 'triangles')
                 ])
             if aspects['glwin'] == 'glx':
-                log_suites.append(
-                    ('arbcreatecontext.c', 'ARB_create_context', 'trace'))
+                log_suites.extend([
+                    ('arbcreatecontext.c', 'ARB_create_context', 'trace')
+                    ])
+                manual_suites.extend([
+                    ('contextattribs.c', 'contextattribs', 'contextattribs')
+                    ])
             simple_test('objects')
             simple_test('shadertest')
             simple_test('textest')
@@ -179,24 +189,27 @@ test_env_run = test_env.Clone()
 test_env_run.AppendENVPath('LD_PRELOAD', 'libbugle.so')   # For Linux
 
 test_sources += [x + '.c' for x in plain_tests]
-test_sources += set([x[0] for x in log_suites])
+test_sources += set([x[0] for x in log_suites + manual_suites])
 bugletest = test_env.Program(
         target = 'bugletest',
         source = test_sources + targets['bugleutils'].out)
 
 test = test_env.Command(Value(''), bugletest, Action('${SOURCE.path}', 'Running basic tests'))
-test_env_run.Depends(test, test_deps)
-test_env_run.Depends(test, '../filters')
-test_env_run.AlwaysBuild(test)
-test_env_run.Alias('test', test)
+add_test_target(test_env, test, test_deps)
 
+for source, suite, chain in manual_suites:
+    message = None
+    if aspects['quiet'] == 'no':
+        message = 'Running suite %s' % (suite,)
+    test_env_run_manual = test_env_run.Clone()
+    test_env_run_manual.AppendENVPath('BUGLE_CHAIN', chain)
+    test = test_env_run_manual.Command(Value(''), bugletest,
+            Action('${SOURCE.path} --suite ' + suite, message))
+    add_test_target(test_env_run_manual, test, test_deps)
 for source, suite, chain in log_suites:
     message = None
     if aspects['quiet'] == 'no':
         message = 'Running suite %s' % (suite,)
     test = test_env_run.Command(Value(''), bugletest,
             Action(make_log_suite(suite, chain), message))
-    test_env_run.Depends(test, test_deps)
-    test_env_run.Depends(test, '../filters')
-    test_env_run.AlwaysBuild(test)
-    test_env_run.Alias('test', test)
+    add_test_target(test_env_run, test, test_deps)

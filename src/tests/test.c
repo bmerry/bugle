@@ -57,6 +57,7 @@ static test_suite *last_suite = NULL;
 #if TEST_GL
 #if BUGLE_GLWIN_GLX
 extern void arbcreatecontext_suite_register(void);
+extern void contextattribs_suite_register(void);
 #endif
 extern void dlopen_suite_register(void);
 extern void draw_suite_register(void);
@@ -82,6 +83,7 @@ static void (* const register_fns[])(void) =
 #if TEST_GL
 #if BUGLE_GLWIN_GLX
     arbcreatecontext_suite_register,
+    contextattribs_suite_register,
 #endif
     dlopen_suite_register,
     draw_suite_register,
@@ -193,7 +195,7 @@ static void enable_suites(void)
     {
         test_suite *ts;
         for (ts = first_suite; ts != NULL; ts = ts->next)
-            if (!(ts->flags & TEST_FLAG_LOG))
+            if (!(ts->flags & TEST_FLAG_MANUAL))
                 ts->enabled = BUGLE_TRUE;
     }
 }
@@ -454,6 +456,9 @@ test_suite *test_suite_new(const char *name, unsigned int flags,
                            void (*setup)(void), void (*teardown)(void))
 {
     test_suite *ts;
+
+    if (flags & TEST_FLAG_LOG)
+        flags |= TEST_FLAG_MANUAL;
 
     ts = BUGLE_ZALLOC(test_suite);
     ts->name = bugle_strdup(name);
