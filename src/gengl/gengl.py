@@ -1025,6 +1025,7 @@ def process_alias(apis, options):
         ('glBlendFuncIndexedAMD',            'glBlendFunciARB'),
         ('glBlendFuncSeparateIndexedAMD',    'glBlendFuncSeparateiARB'),
         ('glGetAttachedObjectsARB',          'glGetAttachedShaders'),
+        ('glMultiDrawElementsEXT',           'glMultiDrawElements'), # Not detected due to const change
         ('glXCreateContextWithConfigSGIX',   'glXCreateNewContext'),
         ('glXMakeCurrentReadSGI',            'glXMakeContextCurrent')
     ]
