@@ -1,5 +1,5 @@
 * Added logdebug filterset (still untested)
-* Added contextattribs filterset (still untested and incomplete)
+* Added contextattribs filterset
 * Fixed detection of glMultiDrawElementsEXT as an alias of glMultiDrawElements
 
 0.0.20120331

@@ -334,15 +334,28 @@ static bugle_bool contextattribs_glXCreateNewContext(function_call *call, const 
     return BUGLE_TRUE;
 }
 
+static bugle_bool contextattribs_glXCreateContextAttribsARB(function_call *call, const callback_data *data)
+{
+    Display *dpy = *call->glXCreateContextAttribsARB.arg0;
+    GLXFBConfig config = *call->glXCreateContextAttribsARB.arg1;
+    GLXContext share_context = *call->glXCreateContextAttribsARB.arg2;
+    Bool direct = *call->glXCreateContextAttribsARB.arg3;
+    const int *base_attribs = *call->glXCreateContextAttribsARB.arg4;
+
+    if (*call->glXCreateContextAttribsARB.retn == NULL)
+        return BUGLE_TRUE;
+
+    contextattribs_replace(call, dpy, config, share_context, direct, base_attribs);
+    return BUGLE_TRUE;
+}
+
 static bugle_bool contextattribs_initialise(filter_set *handle)
 {
     filter *f;
     f = bugle_filter_new(handle, "contextattribs");
     bugle_filter_catches(f, "glXCreateContext", BUGLE_FALSE, contextattribs_glXCreateContext);
     bugle_filter_catches(f, "glXCreateNewContext", BUGLE_FALSE, contextattribs_glXCreateNewContext);
-#if 0 /* TODO */
     bugle_filter_catches(f, "glXCreateContextAttribsARB", BUGLE_FALSE, contextattribs_glXCreateContextAttribsARB);
-#endif
     bugle_filter_order("invoke", "contextattribs");
     bugle_filter_order("contextattribs", "trackcontext");
     bugle_gl_filter_post_renders("contextattribs");

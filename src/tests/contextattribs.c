@@ -43,9 +43,17 @@ typedef struct
 typedef struct
 {
     Display *dpy;
-    GLXContext ctx;
     GLXDrawable draw;
+    GLXFBConfig config;
+} info_fbconfig;
+
+typedef struct
+{
+    info_fbconfig fbconfig;
+    GLXContext ctx;
 } info_glXCreateNewContext;
+
+typedef info_glXCreateNewContext info_glXCreateContextAttribsARB;
 
 static bugle_bool open_glXCreateContext(info_glXCreateContext *info)
 {
@@ -130,19 +138,20 @@ static void close_glXCreateContext(const info_glXCreateContext *info)
     XCloseDisplay(info->dpy);
 }
 
-static bugle_bool open_glXCreateNewContext(info_glXCreateNewContext *info)
+/* Configures the display, config and pbuffer, but not the context itself.
+ */
+static bugle_bool open_fbconfig(info_fbconfig *info)
 {
     Display *dpy;
-    GLXContext ctx;
     GLXDrawable draw;
     int nelements;
     GLXFBConfig config;
     GLXFBConfig *configs;
-    Bool result;
+    const char *extensions;
 
     dpy = XOpenDisplay(NULL);
 
-    const char * extensions = glXQueryExtensionsString(dpy, DefaultScreen(dpy));
+    extensions = glXQueryExtensionsString(dpy, DefaultScreen(dpy));
     if (strstr(extensions, "GLX_ARB_create_context_profile"))
     {
         const int fbconfig_attribs[] =
@@ -171,44 +180,115 @@ static bugle_bool open_glXCreateNewContext(info_glXCreateNewContext *info)
         }
         config = configs[0];
         XFree(configs);
-        ctx = glXCreateNewContext(dpy, config, GLX_RGBA_TYPE, NULL, True);
-        if (ctx == NULL)
-        {
-            test_failed("Context creation failed");
-            XCloseDisplay(dpy);
-            return BUGLE_FALSE;
-        }
 
         draw = glXCreatePbuffer(dpy, config, pbuffer_attribs);
-
-        result = glXMakeContextCurrent(dpy, draw, draw, ctx);
-        if (!result)
+        if (draw == None)
         {
-            test_failed("glXMakeCurrent failed");
-            glXDestroyContext(dpy, ctx);
-            glXDestroyPbuffer(dpy, draw);
+            test_failed("Pbuffer creation failed");
             XCloseDisplay(dpy);
             return BUGLE_FALSE;
         }
     }
     else
     {
-        test_skipped("ARB_create_context_profile not found");
+        test_skipped("GLX_ARB_context_create_profile not present");
+        XCloseDisplay(dpy);
         return BUGLE_FALSE;
     }
 
     info->dpy = dpy;
     info->draw = draw;
+    info->config = config;
+    return BUGLE_TRUE;
+}
+
+static void close_fbconfig(const info_fbconfig *info)
+{
+    glXDestroyPbuffer(info->dpy, info->draw);
+    XCloseDisplay(info->dpy);
+}
+
+static bugle_bool open_glXCreateNewContext(info_glXCreateNewContext *info)
+{
+    Display *dpy;
+    GLXContext ctx;
+    Bool result;
+
+    if (!open_fbconfig(&info->fbconfig))
+        return BUGLE_FALSE;
+    dpy = info->fbconfig.dpy;
+
+    ctx = glXCreateNewContext(dpy, info->fbconfig.config, GLX_RGBA_TYPE, NULL, True);
+    if (ctx == NULL)
+    {
+        test_failed("Context creation failed");
+        close_fbconfig(&info->fbconfig);
+        return BUGLE_FALSE;
+    }
+
+    result = glXMakeContextCurrent(dpy, info->fbconfig.draw, info->fbconfig.draw, ctx);
+    if (!result)
+    {
+        test_failed("glXMakeCurrent failed");
+        glXDestroyContext(dpy, ctx);
+        close_fbconfig(&info->fbconfig);
+        return BUGLE_FALSE;
+    }
+
     info->ctx = ctx;
     return BUGLE_TRUE;
 }
 
 static void close_glXCreateNewContext(const info_glXCreateNewContext *info)
 {
-    glXMakeContextCurrent(info->dpy, None, None, NULL);
-    glXDestroyContext(info->dpy, info->ctx);
-    glXDestroyPbuffer(info->dpy, info->draw);
-    XCloseDisplay(info->dpy);
+    glXMakeContextCurrent(info->fbconfig.dpy, None, None, NULL);
+    glXDestroyContext(info->fbconfig.dpy, info->ctx);
+    close_fbconfig(&info->fbconfig);
+}
+
+static bugle_bool open_glXCreateContextAttribsARB(info_glXCreateContextAttribsARB *info)
+{
+    Display *dpy;
+    GLXContext ctx;
+    Bool result;
+    const int attribs[] =
+    {
+        GLX_CONTEXT_MAJOR_VERSION_ARB, 2,
+        GLX_CONTEXT_MINOR_VERSION_ARB, 1,
+        GLX_CONTEXT_PROFILE_MASK_ARB, GLX_CONTEXT_COMPATIBILITY_PROFILE_BIT_ARB,
+        None
+    };
+    PFNGLXCREATECONTEXTATTRIBSARBPROC glXCreateContextAttribsARB_ptr
+        = (PFNGLXCREATECONTEXTATTRIBSARBPROC) glXGetProcAddress((const GLubyte *) "glXCreateContextAttribsARB");
+
+    if (!open_fbconfig(&info->fbconfig))
+        return BUGLE_FALSE;
+    dpy = info->fbconfig.dpy;
+
+    ctx = glXCreateContextAttribsARB_ptr(dpy, info->fbconfig.config, NULL, True, attribs);
+    if (ctx == NULL)
+    {
+        test_failed("Context creation failed");
+        close_fbconfig(&info->fbconfig);
+        return BUGLE_FALSE;
+    }
+
+    result = glXMakeContextCurrent(dpy, info->fbconfig.draw, info->fbconfig.draw, ctx);
+    if (!result)
+    {
+        test_failed("glXMakeCurrent failed");
+        glXDestroyContext(dpy, ctx);
+        close_fbconfig(&info->fbconfig);
+        return BUGLE_FALSE;
+    }
+
+    info->ctx = ctx;
+    return BUGLE_TRUE;
+}
+
+static void close_glXCreateContextAttribsARB(const info_glXCreateContextAttribsARB *info)
+{
+    close_glXCreateNewContext(info);
 }
 
 static void test_gl(void)
@@ -247,6 +327,16 @@ static void contextattribs_glXCreateNewContext_test(void)
     close_glXCreateNewContext(&info);
 }
 
+static void contextattribs_glXCreateContextAttribsARB_test(void)
+{
+    info_glXCreateContextAttribsARB info;
+
+    if (!open_glXCreateContextAttribsARB(&info))
+        return; /* callee set the test status */
+    test_gl();
+    close_glXCreateContextAttribsARB(&info);
+}
+
 #endif /* BUGLE_GLWIN_GLX */
 
 void contextattribs_suite_register(void)
@@ -256,5 +346,6 @@ void contextattribs_suite_register(void)
 #if BUGLE_GLWIN_GLX
     test_suite_add_test(ts, "glXCreateContext", contextattribs_glXCreateContext_test);
     test_suite_add_test(ts, "glXCreateNewContext", contextattribs_glXCreateNewContext_test);
+    test_suite_add_test(ts, "glXCreateContextAttribsARB", contextattribs_glXCreateContextAttribsARB_test);
 #endif
 }
