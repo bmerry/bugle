@@ -297,13 +297,50 @@ static bugle_bool contextattribs_glXCreateContext(function_call *call, const cal
     return BUGLE_TRUE;
 }
 
+static bugle_bool contextattribs_glXCreateNewContext(function_call *call, const callback_data *data)
+{
+    Display *dpy = *call->glXCreateNewContext.arg0;
+    GLXFBConfig config = *call->glXCreateNewContext.arg1;
+    int render_type = *call->glXCreateNewContext.arg2;
+    GLXContext share_context = *call->glXCreateNewContext.arg3;
+    Bool direct = *call->glXCreateNewContext.arg4;
+    const int base_attribs[3] =
+    {
+        GLX_CONTEXT_PROFILE_MASK_ARB, GLX_CONTEXT_COMPATIBILITY_PROFILE_BIT_ARB,
+        None
+    };
+
+    if (dpy == NULL)
+        return BUGLE_TRUE;  /* It should have exploded on its own */
+
+    if (*call->glXCreateNewContext.retn == NULL)
+        return BUGLE_TRUE;  /* It failed */
+
+    /* TODO: should use a screen corresponding to the config, by
+     * using ScreenCount() to determine the number of screens and
+     * then glXGetFBConfigs on each until a match is found.
+     */
+    if (!contextattribs_support(dpy, DefaultScreen(dpy)))
+        return BUGLE_TRUE;
+
+    if (render_type != GLX_RGBA_TYPE)
+    {
+        bugle_log("contextattribs", "create", BUGLE_LOG_WARNING,
+                  "Unsupported render_type in glXCreateNewContext");
+        return BUGLE_TRUE;
+    }
+
+    contextattribs_replace(call, dpy, config, share_context, direct, base_attribs);
+    return BUGLE_TRUE;
+}
+
 static bugle_bool contextattribs_initialise(filter_set *handle)
 {
     filter *f;
     f = bugle_filter_new(handle, "contextattribs");
     bugle_filter_catches(f, "glXCreateContext", BUGLE_FALSE, contextattribs_glXCreateContext);
-#if 0 /* TODO */
     bugle_filter_catches(f, "glXCreateNewContext", BUGLE_FALSE, contextattribs_glXCreateNewContext);
+#if 0 /* TODO */
     bugle_filter_catches(f, "glXCreateContextAttribsARB", BUGLE_FALSE, contextattribs_glXCreateContextAttribsARB);
 #endif
     bugle_filter_order("invoke", "contextattribs");
