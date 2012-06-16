@@ -157,6 +157,7 @@ else:
                 ('draw.c',   'draw_client', 'trace'),
                 ('draw.c',   'draw_vbo', 'trace'),
                 ('extoverride.c', 'extoverride', 'extoverride'),
+                ('logdebug.c', 'logdebug', 'logdebug'),
                 ('pbo.c', 'pbo', 'trace'),
                 ('pointers.c', 'pointers', 'checks'),
                 ('queries.c', 'queries', 'trace'),

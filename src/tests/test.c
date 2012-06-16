@@ -64,6 +64,7 @@ extern void draw_suite_register(void);
 extern void errors_suite_register(void);
 extern void extoverride_suite_register(void);
 extern void interpose_suite_register(void);
+extern void logdebug_suite_register(void);
 extern void pbo_suite_register(void);
 extern void pointers_suite_register(void);
 extern void procaddress_suite_register(void);
@@ -90,6 +91,7 @@ static void (* const register_fns[])(void) =
     errors_suite_register,
     extoverride_suite_register,
     interpose_suite_register,
+    logdebug_suite_register,
     pbo_suite_register,
     pointers_suite_register,
     procaddress_suite_register,

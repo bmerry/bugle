@@ -89,3 +89,21 @@ chain contextattribs
         profile "!compatibility"
     }
 }
+
+chain logdebug
+{
+    filterset contextattribs
+    {
+        major 3
+        minor 0
+        flag "debug"
+    }
+    filterset logdebug
+    filterset log
+    {
+        format "%f.%e: %m"
+        stderr_level 0
+        stdout_level 4
+        flush yes
+    }
+}

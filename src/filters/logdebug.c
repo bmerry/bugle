@@ -114,18 +114,26 @@ static void logdebug_handle_activation(bugle_bool active)
 
         if (active && !ctx->active)
         {
-            CALL(glGetPointerv)(GL_DEBUG_CALLBACK_FUNCTION_ARB, (GLvoid **) &ctx->orig_callback);
-            CALL(glGetPointerv)(GL_DEBUG_CALLBACK_USER_PARAM_ARB, &ctx->orig_user_param);
-            /* Enable all messages */
-            CALL(glDebugMessageControlARB)(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, NULL, GL_TRUE);
-            CALL(glDebugMessageCallbackARB)(logdebug_message, ctx);
+            if (bugle_gl_begin_internal_render())
+            {
+                CALL(glGetPointerv)(GL_DEBUG_CALLBACK_FUNCTION_ARB, (GLvoid **) &ctx->orig_callback);
+                CALL(glGetPointerv)(GL_DEBUG_CALLBACK_USER_PARAM_ARB, &ctx->orig_user_param);
+                /* Enable all messages */
+                CALL(glDebugMessageControlARB)(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, NULL, GL_TRUE);
+                CALL(glDebugMessageCallbackARB)(logdebug_message, ctx);
+                bugle_gl_end_internal_render("logdebug_handle_activation", BUGLE_TRUE);
+            }
             ctx->active = BUGLE_TRUE;
         }
         else if (!active && ctx->active)
         {
             /* TODO: should record the prior state of all debug messages */
-            CALL(glDebugMessageControlARB)(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, NULL, GL_FALSE);
-            CALL(glDebugMessageCallbackARB)(ctx->orig_callback, ctx->orig_user_param);
+            if (bugle_gl_begin_internal_render())
+            {
+                CALL(glDebugMessageControlARB)(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, NULL, GL_FALSE);
+                CALL(glDebugMessageCallbackARB)(ctx->orig_callback, ctx->orig_user_param);
+                bugle_gl_end_internal_render("logdebug_handle_activation", BUGLE_TRUE);
+            }
             ctx->active = BUGLE_FALSE;
         }
     }
