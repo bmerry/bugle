@@ -30,7 +30,8 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
-#include <GL/glew.h>
+#include <GL/gl.h>
+#include <GL/glext.h>
 #include <bugle/hashtable.h>
 #include <bugle/string.h>
 #include <bugle/memory.h>
