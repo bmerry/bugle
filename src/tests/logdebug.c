@@ -38,7 +38,7 @@ static void logdebug_log_test(void)
             GL_DEBUG_SEVERITY_HIGH_ARB,
             -1,
             test_message);
-        test_log_printf("logdebug\\.message: Message to test logdebug filter-set [source: application type: other id: 123]\n");
+        test_log_printf("logdebug\\.message: Message to test logdebug filter-set \\[source: application type: other id: 123\\]\n");
     }
     else
     {
@@ -79,7 +79,7 @@ static void logdebug_passthrough_test(void)
             GL_DEBUG_SEVERITY_HIGH_ARB,
             -1,
             "Message to test logdebug filter-set");
-        test_log_printf("logdebug\\.message: Message to test logdebug filter-set [source: application type: other id: 123]\n");
+        test_log_printf("logdebug\\.message: Message to test logdebug filter-set \\[source: application type: other id: 123\\]\n");
 
         glFinish();
         TEST_ASSERT(success);

@@ -1,4 +1,4 @@
-* Added logdebug filterset (still untested)
+* Added logdebug filterset
 * Added contextattribs filterset
 * Fixed detection of glMultiDrawElementsEXT as an alias of glMultiDrawElements
 * Fixed compilation when GLEW headers missing (fixes #106)

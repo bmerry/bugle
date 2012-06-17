@@ -376,6 +376,16 @@ static void trackcontext_data_clear(void *data)
     bugle_glwin_context_create_free(d->create);
 }
 
+/* Called by atexit() to indicate that there is no current
+ * context, as other some filters try to do rendering during
+ * shutdown and crash because the GL library has already
+ * shut down.
+ */
+static void trackcontext_clear_current(void)
+{
+    bugle_object_set_current(bugle_context_class, NULL);
+}
+
 static bugle_bool trackcontext_filter_set_initialise(filter_set *handle)
 {
     filter *f;
@@ -399,6 +409,8 @@ static bugle_bool trackcontext_filter_set_initialise(filter_set *handle)
                                               NULL,
                                               trackcontext_data_clear,
                                               sizeof(trackcontext_data));
+
+    atexit(trackcontext_clear_current);
     return BUGLE_TRUE;
 }
 
