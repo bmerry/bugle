@@ -75,6 +75,15 @@
                                 integer</entry>
                         </row>
                         <row>
+                            <entry><type>UINT64</type></entry>
+                            <entry>64-bit big-endian unsigned integer</entry>
+                        </row>
+                        <row>
+                            <entry><type>INT64</type></entry>
+                            <entry>64-bit twos-complement big-endian signed
+                                integer</entry>
+                        </row>
+                        <row>
                             <entry><type>CODE</type></entry>
                             <entry>same as UINT32, but for debugger protocol
                                 enumerated values</entry>
@@ -171,6 +180,10 @@
                         <row>
                             <entry><type>UINT32</type></entry>
                             <entry>request ID</entry>
+                        </row>
+                        <row>
+                            <entry><type>UINT64</type></entry>
+                            <entry>process ID</entry>
                         </row>
                     </tbody>
                 </tgroup>

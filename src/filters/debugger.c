@@ -845,6 +845,7 @@ static void process_single_command(function_call *call, gldb_request_header *req
     case REQ_RUN:
         gldb_protocol_send_code(out_pipe, RESP_RUNNING);
         gldb_protocol_send_code(out_pipe, req->request_id);
+        gldb_protocol_send_code64(out_pipe, bugle_getpid());
         /* Fall through */
     case REQ_CONT:
     case REQ_STEP:

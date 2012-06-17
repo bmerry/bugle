@@ -57,8 +57,11 @@ typedef int bugle_thread_key_t;
 #define bugle_thread_key_delete(key) (-1)
 
 typedef int bugle_thread_t;
-#define bugle_thread_self() (0UL)
+#define bugle_thread_self() (0)
 #define bugle_thread_raise(sig) (-1)
+
+typedef int bugle_process_id;
+#define bugle_get_pid() (0)
 
 #define bugle_flockfile(f) ((void) 0)
 #define bugle_funlockfile(f) ((void) 0)

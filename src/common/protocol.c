@@ -66,8 +66,15 @@ bugle_bool gldb_protocol_send_code(bugle_io_writer *writer, bugle_uint32_t code)
     bugle_uint32_t code2;
 
     code2 = TO_NETWORK(code);
-    if (bugle_io_write(&code2, sizeof(bugle_uint32_t), 1, writer) != 1) return BUGLE_FALSE;
+    if (bugle_io_write(&code2, sizeof(bugle_uint32_t), 1, writer) != 1)
+        return BUGLE_FALSE;
     return BUGLE_TRUE;
+}
+
+bugle_bool gldb_protocol_send_code64(bugle_io_writer *writer, bugle_uint64_t code)
+{
+    return gldb_protocol_send_code(writer, code >> 32)
+        && gldb_protocol_send_code(writer, code & 0xFFFFFFFF);
 }
 
 bugle_bool gldb_protocol_send_binary_string(bugle_io_writer *writer, bugle_uint32_t len, const char *str)
@@ -99,6 +106,19 @@ bugle_bool gldb_protocol_recv_code(bugle_io_reader *reader, bugle_uint32_t *code
     if (bugle_io_read(&code2, sizeof(code2), 1, reader) == 1)
     {
         *code = TO_HOST(code2);
+        return BUGLE_TRUE;
+    }
+    else
+        return BUGLE_FALSE;
+}
+
+bugle_bool gldb_protocol_recv_code64(bugle_io_reader *reader, bugle_uint64_t *code)
+{
+    bugle_uint32_t lo, hi;
+    if (gldb_protocol_recv_code(reader, &hi)
+        && gldb_protocol_recv_code(reader, &lo))
+    {
+        *code = (((bugle_uint64_t) hi) << 32) | lo;
         return BUGLE_TRUE;
     }
     else

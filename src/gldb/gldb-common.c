@@ -398,7 +398,7 @@ static bugle_pid_t execute(void (*child_init)(void))
         case GLDB_PROGRAM_TYPE_LOCAL:
             prog_argv[0] = "/bin/sh";
             prog_argv[1] = "-c";
-            prog_argv[2] = bugle_asprintf("%s%s BUGLE_CHAIN=%s LD_PRELOAD=libbugle.so BUGLE_DEBUGGER=fd BUGLE_DEBUGGER_FD_IN=%d BUGLE_DEBUGGER_FD_OUT=%d %s",
+            prog_argv[2] = bugle_asprintf("%s%s BUGLE_CHAIN=%s LD_PRELOAD=libbugle.so BUGLE_DEBUGGER=fd BUGLE_DEBUGGER_FD_IN=%d BUGLE_DEBUGGER_FD_OUT=%d exec %s",
                                           display ? "DISPLAY=" : "", display ? display : "",
                                           chain ? chain : "",
                                           out_pipe[0], in_pipe[1], command);
@@ -530,10 +530,13 @@ static gldb_response *gldb_get_response_error(bugle_uint32_t code, bugle_uint32_
 static gldb_response *gldb_get_response_running(bugle_uint32_t code, bugle_uint32_t id)
 {
     gldb_response_running *r;
+    bugle_uint64_t pid;
 
     r = BUGLE_MALLOC(gldb_response_running);
     r->code = code;
     r->id = id;
+    gldb_protocol_recv_code64(lib_in, &pid);
+    r->pid = pid;
     return (gldb_response *) r;
 }
 
@@ -782,6 +785,7 @@ void gldb_process_response(gldb_response *r)
         set_status(GLDB_STATUS_STOPPED);
         break;
     case RESP_RUNNING:
+        child_pid = ((gldb_response_running *) r)->pid;
         set_status(GLDB_STATUS_RUNNING);
         break;
     case RESP_STATE_NODE_BEGIN_RAW:

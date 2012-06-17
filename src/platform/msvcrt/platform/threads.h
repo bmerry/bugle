@@ -109,6 +109,8 @@ typedef DWORD bugle_thread_id;
 #define bugle_thread_equal(t1, t2) ((bugle_bool) ((t1) == (t2)))
 #define bugle_thread_raise(sig) (raise(sig))
 
+#define bugle_getpid() (GetCurrentProcessId())
+
 #define bugle_flockfile(f) ((void) 0)
 #define bugle_funlockfile(f) ((void) 0)
 

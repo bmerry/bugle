@@ -71,6 +71,8 @@ typedef pthread_t bugle_thread_id;
 #define bugle_thread_equal(t1, t2) ((bugle_bool) ((t1) == (t2)))
 #define bugle_thread_raise(sig) pthread_kill(pthread_self(), (sig))
 
+#define bugle_getpid() (getpid())
+
 #if _POSIX_THREAD_SAFE_FUNCTIONS > 0
 # define bugle_flockfile(f) flockfile(f)
 # define bugle_funlockfile(f) funlockfile(f)

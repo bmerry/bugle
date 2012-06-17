@@ -140,6 +140,7 @@ typedef struct
 {
     bugle_uint32_t code;
     bugle_uint32_t id;
+    bugle_pid_t pid;
 } gldb_response_running;
 
 typedef struct

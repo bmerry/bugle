@@ -74,10 +74,12 @@
 #define REQ_EVENT_COUNT                0x00000003UL
 
 BUGLE_EXPORT_PRE bugle_bool gldb_protocol_send_code(bugle_io_writer *writer, bugle_uint32_t code) BUGLE_EXPORT_POST;
+BUGLE_EXPORT_PRE bugle_bool gldb_protocol_send_code64(bugle_io_writer *writer, bugle_uint64_t code) BUGLE_EXPORT_POST;
 BUGLE_EXPORT_PRE bugle_bool gldb_protocol_send_binary_string(bugle_io_writer *writer, bugle_uint32_t len, const char *str) BUGLE_EXPORT_POST;
 BUGLE_EXPORT_PRE bugle_bool gldb_protocol_send_string(bugle_io_writer *writer, const char *str) BUGLE_EXPORT_POST;
 
 BUGLE_EXPORT_PRE bugle_bool gldb_protocol_recv_code(bugle_io_reader *reader, bugle_uint32_t *code) BUGLE_EXPORT_POST;
+BUGLE_EXPORT_PRE bugle_bool gldb_protocol_recv_code64(bugle_io_reader *reader, bugle_uint64_t *code) BUGLE_EXPORT_POST;
 BUGLE_EXPORT_PRE bugle_bool gldb_protocol_recv_binary_string(bugle_io_reader *reader, bugle_uint32_t *len, char **data) BUGLE_EXPORT_POST;
 BUGLE_EXPORT_PRE bugle_bool gldb_protocol_recv_string(bugle_io_reader *reader, char **str) BUGLE_EXPORT_POST;
 
