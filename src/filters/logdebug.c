@@ -30,6 +30,7 @@
 #include <budgie/callapi.h>
 
 static object_view logdebug_view;
+static bugle_bool logdebug_sync = BUGLE_FALSE;
 
 typedef struct
 {
@@ -121,6 +122,10 @@ static void logdebug_handle_activation(bugle_bool active)
                 /* Enable all messages */
                 CALL(glDebugMessageControlARB)(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, NULL, GL_TRUE);
                 CALL(glDebugMessageCallbackARB)(logdebug_message, ctx);
+                if (logdebug_sync)
+                {
+                    CALL(glEnable)(GL_DEBUG_OUTPUT_SYNCHRONOUS_ARB);
+                }
                 bugle_gl_end_internal_render("logdebug_handle_activation", BUGLE_TRUE);
             }
             ctx->active = BUGLE_TRUE;
@@ -130,6 +135,10 @@ static void logdebug_handle_activation(bugle_bool active)
             /* TODO: should record the prior state of all debug messages */
             if (bugle_gl_begin_internal_render())
             {
+                if (logdebug_sync)
+                {
+                    CALL(glDisable)(GL_DEBUG_OUTPUT_SYNCHRONOUS_ARB);
+                }
                 CALL(glDebugMessageControlARB)(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, NULL, GL_FALSE);
                 CALL(glDebugMessageCallbackARB)(ctx->orig_callback, ctx->orig_user_param);
                 bugle_gl_end_internal_render("logdebug_handle_activation", BUGLE_TRUE);
@@ -221,6 +230,12 @@ static bugle_bool logdebug_initialise(filter_set *handle)
 
 void bugle_initialise_filter_library(void)
 {
+    static const filter_set_variable_info logdebug_variables[] =
+    {
+        { "sync", "enable GL_DEBUG_OUTPUT_SYNCHRONOUS_ARB [no]", FILTER_SET_VARIABLE_BOOL, &logdebug_sync, NULL },
+        { NULL, NULL, 0, NULL, NULL }
+    };
+    
     static const filter_set_info logdebug_info =
     {
         "logdebug",
@@ -228,7 +243,7 @@ void bugle_initialise_filter_library(void)
         NULL,
         logdebug_activation,
         logdebug_deactivation,
-        NULL,
+        logdebug_variables,
         "Send ARB_debug_output messages to the BuGLe log"
     };
 

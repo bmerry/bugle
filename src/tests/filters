@@ -99,6 +99,9 @@ chain logdebug
         flag "debug"
     }
     filterset logdebug
+    {
+        sync "yes"
+    }
     filterset log
     {
         format "%f.%e: %m"

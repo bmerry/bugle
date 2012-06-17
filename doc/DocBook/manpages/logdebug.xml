@@ -44,6 +44,19 @@
     </refsect1>
 
     <refsect1>
+        <title>Options</title>
+        <variablelist>
+            <varlistentry>
+                <term><option>sync</option></term>
+                <listitem><para>
+                    If set to <literal>>yes</literal>, then
+                    <symbol>GL_DEBUG_OUTPUT_SYNCHRONOUS</symbol> will be enabled.
+                </para></listitem>
+            </varlistentry>
+        </variablelist>
+    </refsect1>
+
+    <refsect1>
         <title>Bugs</title>
         <para>
             It is not recommended to use this filter-set with an application that

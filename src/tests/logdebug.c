@@ -84,6 +84,7 @@ static void logdebug_passthrough_test(void)
         glFinish();
         TEST_ASSERT(success);
         glDebugMessageCallbackARB(NULL, NULL);
+        TEST_ASSERT(glIsEnabled(GL_DEBUG_OUTPUT_SYNCHRONOUS_ARB));
     }
     else
     {

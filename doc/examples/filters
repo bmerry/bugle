@@ -221,4 +221,7 @@ chain logdebug
         filename "bugle.log"
     }
     filterset logdebug
+    {
+        sync "yes"
+    }
 }
