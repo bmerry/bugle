@@ -49,7 +49,7 @@
             <varlistentry>
                 <term><option>sync</option></term>
                 <listitem><para>
-                    If set to <literal>>yes</literal>, then
+                    If set to <literal>yes</literal>, then
                     <symbol>GL_DEBUG_OUTPUT_SYNCHRONOUS</symbol> will be enabled.
                 </para></listitem>
             </varlistentry>
