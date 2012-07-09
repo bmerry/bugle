@@ -472,7 +472,7 @@ static GtkWidget *gldb_framebuffer_pane_id_new(GldbFramebufferPane *pane)
     GtkWidget *id;
     GtkCellRenderer *cell;
 
-    store = gtk_list_store_new(4,
+    store = gtk_list_store_new(3,
                                G_TYPE_UINT,  /* ID */
                                G_TYPE_INT,   /* bold */
                                G_TYPE_STRING);

@@ -3,6 +3,7 @@
 * Fixed detection of glMultiDrawElementsEXT as an alias of glMultiDrawElements
 * Fixed compilation when GLEW headers missing (fixes #106)
 * Fix the Attach GDB debugger command (fixes #100)
+* Fix off-by-one error in allocating a GTK list store (fixes #96)
 
 0.0.20120331
 ------------
