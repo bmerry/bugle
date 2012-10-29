@@ -65,7 +65,7 @@ else
     </p>
 
     <p>Sourceforge have also enabled email notifications on
-    <a href="https://apps.sourceforge.net/trac/bugle/">Trac</a>, so it should
+    <a href="https://sourceforge.net/apps/trac/bugle/">Trac</a>, so it should
     now be easier to get my attention when posting bugs there.
     </p>
 
@@ -103,7 +103,7 @@ else
     <p>
     BuGLe has grown to the point that having people email me bug reports meant
     that they tended to get lost. I've set up a <a
-        href="http://apps.sourceforge.net/trac/bugle">trac</a> system where
+        href="http://sourceforge.net/apps/trac/bugle">trac</a> system where
     you can report bugs in future.
     </p>
     <p>I also made a new release on 11 March, which contains a number of new
@@ -180,7 +180,7 @@ else
     viewer. There is also a minor bug-fix for the framebuffer viewer when
     using FBOs.</p>
     <p>I've also switched on the Sourceforge
-    <a href="http://sourceforge.net/forum/?group_id=110905">forums</a>
+    <a href="http://sourceforge.net/projects/bugle/forums">forums</a>
     for the project.</p>
     <h2>Logging rewritten, extoverride filterset, bugfixes (29/5/2007)</h2>
     <p>
@@ -405,7 +405,7 @@ in this function)
         <kbd>#ifdef GL_ARB_occlusion_query</kbd> and <kbd>#endif</kbd></li>
     </ol>
     <h2>GUI debugger in the works (28/03/2005)</h2>
-    <p>If you're wondering what's been happening since the last release, here's the answer: I've been working on a GUI version of the debugger. A big advantage over the text based debugger will be a texture viewer. There may also be a viewer for buffers (e.g. depth buffer, stencil buffer), but that might take a bit longer. You can see what the debugger looks like so far in <a href="gldb-gui.png">this</a> screenshot.
+    <p>If you're wondering what's been happening since the last release, here's the answer: I've been working on a GUI version of the debugger. A big advantage over the text based debugger will be a texture viewer. There may also be a viewer for buffers (e.g. depth buffer, stencil buffer), but that might take a bit longer. You can see what the debugger looks like so far in <a href="images/gldb-gui-state.png">this</a> screenshot (note: the image has been updates since this news item was originally posted).
     <h2>Email address fixed (23/02/2005)</h2>
     <p>The email address that my sourceforge address forwards to disappeared
     several months ago, and I forgot to update the forward. My apologies to
@@ -418,7 +418,7 @@ in this function)
     <p>
     After three months of development, the shiny new version is ready. The state
     manager has been completely rewritten, and now works much better. 
-    It also supports very nearly all of the OpenGL 2.0 state. You can download it from the Sourceforge <a href="http://www.sourceforge.net/projects/bugle/">project page</a>.
+    It also supports very nearly all of the OpenGL 2.0 state. You can download it from the Sourceforge <a href="http://sourceforge.net/projects/bugle/">project page</a>.
     </p>
 
     <hr />
