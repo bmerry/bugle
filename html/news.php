@@ -186,13 +186,13 @@ else
     <p>
     The logging system has been heavily reworked. If you are upgrading,
     please read the manpage for
-    <a href="documentation/log.7.html">bugle-log(7)</a> and 
-    <a href="documentation/trace.7.html">bugle-trace(7)</a> and
+    <a href="documentation/log.7.php">bugle-log(7)</a> and 
+    <a href="documentation/trace.7.php">bugle-trace(7)</a> and
     update your <tt>~/.bugle/filters</tt> as appropriate.
     </p>
     <p>
     There is also a new filter-set for hiding extensions
-    (<a href="documentation/extoverride.7.html">extoverride</a>)
+    (<a href="documentation/extoverride.7.php">extoverride</a>)
     and miscellaneous bugfixes.
     </p>
     <h2>BuGLe now available in Gentoo portage (27/3/2007)</h2>
