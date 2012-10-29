@@ -35,7 +35,7 @@
             <symbol>GL_ARB_occlusion_query</symbol>, so a
             <firstterm>fragment</firstterm> is defined exactly as in that
             <ulink
-                url="http://www.opengl.org/registry/ARB/occlusion_query.txt">extension</ulink>
+                url="http://www.opengl.org/registry/specs/ARB/occlusion_query.txt">extension</ulink>
             (and OpenGL 1.5), and will not work unless that extension is
             supported.
         </para>

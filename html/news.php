@@ -375,7 +375,7 @@ else
     </p>
     <h2>New release fixes build error (12/5/2005)</h2>
     <p>
-    I've just released a new version <a href="http://prdownloads.sourceforge.net/bugle/bugle-0.0.20050512.tar.bz2?download">(0.0.20050512)</a> that fixes the build problem listed in the previous post. It also fixes a few bugs and adds some new extensions to the state dump in gldb, so it is worth installing even if the previous release compiled for you.
+    I've just released a new version <a href="http://sourceforge.net/projects/bugle/files/bugle/0.0.20050512/bugle-0.0.20050512.tar.bz2/download">(0.0.20050512)</a> that fixes the build problem listed in the previous post. It also fixes a few bugs and adds some new extensions to the state dump in gldb, so it is worth installing even if the previous release compiled for you.
     </p>
     <h2>Read this if you have a build error (11/5/2005)</h2>
     <p>Several people have emailed me to ask about build errors like the following:
@@ -397,8 +397,8 @@ in this function)
     meantime here are two workarounds you can try.
     </p>
     <ol>
-        <li>Update your <tt>glext.h</tt>. You can download the latest one from SGI
-        <a href="http://oss.sgi.com/projects/ogl-sample/ABI/glext.h">here</a>. The file normally lives in /usr/include/GL/glext.h, although your OS may do something different. If you're not the sysadmin on your machine, you can put the downloaded file in a <tt>GL</tt> subdirectory of the bugle tree. Upgrading <tt>glext.h</tt>
+        <li>Update your <tt>glext.h</tt>. You can download the latest one from Khronos
+        <a href="http://www.opengl.org/registry/api/glext.h">here</a>. The file normally lives in /usr/include/GL/glext.h, although your OS may do something different. If you're not the sysadmin on your machine, you can put the downloaded file in a <tt>GL</tt> subdirectory of the bugle tree. Upgrading <tt>glext.h</tt>
         is a good idea anyway, since it will enable extra features of bugle.</li>
         <li>Repair the code. Either just remove the two offending lines, or else
         surround the enclosing <tt>if</tt> statement with the lines
