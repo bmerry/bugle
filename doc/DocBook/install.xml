@@ -57,7 +57,7 @@
             </varlistentry>
             <varlistentry>
                 <term><ulink url="http://gtkglext.sourceforge.net/">gtkglext</ulink></term>
-                <term><ulink url="http://glew.sourceforge.net/">GLEW</ulink></term>
+                <term><ulink url="http://glew.sourceforge.net/">GLEW (1.6 or later)</ulink></term>
                 <listitem><para>
                         These are needed for the texture and framebuffer viewers
                         in the GUI debugger.
