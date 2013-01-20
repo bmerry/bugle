@@ -327,15 +327,16 @@ static void query_vertex_attrib(void)
 
     if (GLEW_ARB_vertex_program)
     {
-        /* We use attribute 6, since ATI seems to use the same buffer for
-         * attribute 0 and VertexPointer.
+        /* We use attribute 7, since ATI seems to use the same buffer for
+         * attribute 0 and VertexPointer, and NVIDIA have incorrect initial
+         * values for several initial attributes.
          */
-        glGetVertexAttribPointervARB(6, GL_VERTEX_ATTRIB_ARRAY_POINTER_ARB, &p);
-        test_log_printf("trace\\.call: glGetVertexAttribPointervARB\\(6, GL_VERTEX_ATTRIB_ARRAY_POINTER(_ARB)?, %p -> NULL\\)\n", (void *) &p);
-        glGetVertexAttribdvARB(6, GL_CURRENT_VERTEX_ATTRIB_ARB, d);
-        test_log_printf("trace\\.call: glGetVertexAttribdvARB\\(6, (GL_CURRENT_VERTEX_ATTRIB(_ARB)?|GL_CURRENT_ATTRIB_NV), %p -> { 0, 0, 0, 1 }\\)\n", (void *) d);
-        glGetVertexAttribivARB(6, GL_VERTEX_ATTRIB_ARRAY_TYPE_ARB, &i);
-        test_log_printf("trace\\.call: glGetVertexAttribivARB\\(6, (GL_VERTEX_ATTRIB_ARRAY_TYPE(_ARB)?|GL_ATTRIB_ARRAY_TYPE_NV), %p -> GL_FLOAT\\)\n", (void *) &i);
+        glGetVertexAttribPointervARB(7, GL_VERTEX_ATTRIB_ARRAY_POINTER_ARB, &p);
+        test_log_printf("trace\\.call: glGetVertexAttribPointervARB\\(7, GL_VERTEX_ATTRIB_ARRAY_POINTER(_ARB)?, %p -> NULL\\)\n", (void *) &p);
+        glGetVertexAttribdvARB(7, GL_CURRENT_VERTEX_ATTRIB_ARB, d);
+        test_log_printf("trace\\.call: glGetVertexAttribdvARB\\(7, (GL_CURRENT_VERTEX_ATTRIB(_ARB)?|GL_CURRENT_ATTRIB_NV), %p -> { 0, 0, 0, 1 }\\)\n", (void *) d);
+        glGetVertexAttribivARB(7, GL_VERTEX_ATTRIB_ARRAY_TYPE_ARB, &i);
+        test_log_printf("trace\\.call: glGetVertexAttribivARB\\(7, (GL_VERTEX_ATTRIB_ARRAY_TYPE(_ARB)?|GL_ATTRIB_ARRAY_TYPE_NV), %p -> GL_FLOAT\\)\n", (void *) &i);
     }
     else
         test_skipped("ARB_vertex_program required");
