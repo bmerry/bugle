@@ -1,5 +1,5 @@
 /*  BuGLe: an OpenGL debugging tool
- *  Copyright (C) 2004-2010  Bruce Merry
+ *  Copyright (C) 2004-2010, 2013  Bruce Merry
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -835,7 +835,7 @@ static void query_compressed_texture_formats(void)
             {
                 if (i > 0)
                     test_log_printf(", ");
-                test_log_printf("GL_[A-Za-z0-9_]+");
+                test_log_printf("(GL_[A-Za-z0-9_]+|<unknown enum 0x[A-Fa-f0-9]+>)");
             }
             test_log_printf(" }\\)\n");
             bugle_free(formats);
