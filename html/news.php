@@ -24,6 +24,19 @@ else
     </p>
     <h1>BuGLe News</h1>
 
+    <h2>Another almost-annual release (21/01/2013)</h2>
+    <p>So, I've gotten around to my New Year's resolution of pushing out another
+    release. It's mostly code that I wrote more than 6 months ago and I can't 
+    quite remember if I got everything working, so if any of the new stuff is
+    broken please let me know (I don't do much GL programming these days, so it's
+    entirely possible that I broke things badly and just haven't noticed).</p>
+    <p>
+    This release adds two new filtersets: <tt>logdebug</tt> captures the debug messages from
+    ARB_debug_output to the BuGLe log, and <tt>contextattribs</tt> allows context flags to
+    be overridden (particularly useful for forcing a debug context). There are also
+    some bug fixes.
+    </p>
+
     <h2>Support for lots of new OpenGL features (12/03/2012)</h2>
     <p>Unlike the last few releases, I finally found some time over the
     Christmas holiday to bring BuGLe a little more up to date with OpenGL. It's

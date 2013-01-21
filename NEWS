@@ -1,3 +1,10 @@
+0.0.20130121
+------------
+This release adds two new filtersets: logdebug captures the debug messages from
+ARB_debug_output to the BuGLe log, and contextattribs allows context flags to
+be overridden (particularly useful for forcing a debug context). There are also
+some bug fixes.
+
 0.0.20120331
 ------------
 This is a bugfix release that only fixes some build problems. If you have

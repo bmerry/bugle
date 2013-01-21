@@ -1,13 +1,21 @@
-- update the version number in SConstruct
-- update the library version info in src/SConscript
-- update and date ChangeLog
-- update and date NEWS
-- test on several machines
-- run 'scons test' on several machines
-- do a 'fakeroot scons package'
-- upload to sourceforge
-- post details on freshmeat
-- update project news webpage
-- upload new docs to project webpage
-- tag in svn
-- create new release in trac
+- Update the version number in SConstruct
+- Update the library version info in src/SConscript
+- Update and date ChangeLog
+- Update and date NEWS
+- Test on several machines
+- Run 'scons test' on several machines
+- Do a 'fakeroot scons package'
+- Unpackage the rest, run 'scons test' on it
+- Upload to sourceforge:
+  - sftp bmerry@frs.sourceforge.net
+  - cd /home/frs/project/bugle/bugle
+  - mkdir <release>
+  - cd <release>
+  - put bugle-<release>.tar.bz2
+  - put NEWS README
+- Mark as preferred version on sourceforge
+- Post details on freecode
+- Update project news webpage
+- Upload new docs to project webpage
+- Tag in svn
+- Create new release in trac
