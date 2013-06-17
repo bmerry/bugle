@@ -17,5 +17,6 @@
 - Post details on freecode
 - Update project news webpage
 - Upload new docs to project webpage
-- Tag in svn
+- Tag in svn:
+  svn cp svn+ssh://bmerry@svn.code.sf.net/p/bugle/code/trunk svn+ssh://bmerry@svn.code.sf.net/p/bugle/code/tags/release-<version>
 - Create new release in trac
