@@ -408,15 +408,30 @@ class GLAPI(API):
         "EXTGROUP_vertex_attrib": ["GL_ARB_vertex_program", "GL_ARB_vertex_shader", "GL_VERSION_2_0", "GL_ES_VERSION_2_0"],
         # Extensions that define FramebufferTextureLayerEXT - needed because some
         # versions of Mesa headers do odd things with this function
-        "EXTGROUP_framebuffer_texture_layer": ["GL_EXT_texture_array", "GL_NV_geometry_program4"]
+        "EXTGROUP_framebuffer_texture_layer": ["GL_EXT_geometry_shader4", "GL_EXT_texture_array", "GL_NV_geometry_program4"]
     }
 
     # Functions that have the same signature as a promoted version, but different
     # semantics.
     _non_aliases = set([
-        # GL3 version required generated names, even in compatibility profile
+        # Core version required generated names, even in compatibility profile
         'glBindFramebufferEXT',
-        'glBindRenderbufferEXT'
+        'glBindRenderbufferEXT',
+        'glBindTransformFeedbackNV',
+        # Core version generates different errors
+        'glBindImageTextureEXT',
+        # Core version allows copies between aliasable formats
+        'glCopyImageSubDataNV',
+        # Does not accept core hints
+        'glHintPGI',
+        # To prevent aliasing with assembly program functions
+        'glIsProgram', 'glGetProgramiv',
+        # Alias the 4Nub versions, not the 4ub versions
+        'glVertexAttrib4ubvNV', 'glVertexAttrib4ubNV',
+        # NV_primitive_restart uses different tokens to core, so presumably not interchangeable
+        'glPrimitiveRestartIndexNV',
+        # ATI version takes front and back functions in one call
+        'glStencilFuncSeparateATI'
         ]);
 
     def __init__(self):
@@ -814,11 +829,17 @@ class Function(object):
             'GLenum'       : 'GLint',  # Texture functions changed <format>
             'GLsizeiptrARB': 'GLsizeiptr',
             'GLintptrARB'  : 'GLintptr',
+            'GLhandleARB'  : 'GLuint',
+            'GLcharARB'    : 'GLchar',
+            'GLDEBUGPROCARB' : 'GLDEBUGPROC',
+            'GLvoid'       : 'void',
             # glext.h has changed some instances of clamped to unclamped
             'GLclampf'     : 'GLfloat',
             'GLclampd'     : 'GLdouble'
             }
-        return remapping.get(argtype, argtype)
+        for (key, value) in remapping.items():
+            argtype = re.sub(r'\b' + key + r'\b', value, argtype)
+        return argtype
 
     @classmethod
     def parse_signature(cls, match):
@@ -877,6 +898,12 @@ class State(object):
     def __init__(self):
         self.api = None
         self.extension = None
+        self.ifdef_nesting = 0
+
+    def handle_ifdef(self, match, line):
+        # This is a horrific hack that doesn't actually track the
+        # nesting levels at all
+        self.ifdef_nesting += 1
 
     def handle_ifndef(self, match, line):
         name = match.group('name')
@@ -886,7 +913,10 @@ class State(object):
         return False
 
     def handle_endif(self, match, line):
-        self.extension = self.api.default_version
+        if self.ifdef_nesting > 0:
+            self.ifdef_nesting -= 1
+        else:
+            self.extension = self.api.default_version
 
     def handle_define(self, match, line):
         name = match.group('name')
@@ -935,6 +965,7 @@ def load_headers(filenames):
     state = State()
     line_handlers = [
         LineHandler(r'#ifndef (?P<name>\w+?)(?:_DEPRECATED)?\s*$', state.handle_ifndef),
+        LineHandler(r'#ifdef', state.handle_ifdef),
         LineHandler(r'#endif', state.handle_endif),
         LineHandler(r'#define (?P<name>\w+)\s+(?P<value>(?:0x)?[0-9A-Fa-f]+)', state.handle_define),
         LineHandler(r'(?:(?:[A-Z]*API[A-Z]*|extern)\s+)?(?P<ret>[A-Za-z0-9_ *]+?)\b\s*(?:[A-Z]*API[A-Z]*\s+)?(?P<name>[a-z_][A-Za-z0-9_]*)\s*\((?P<args>.*)\)', state.handle_function)
@@ -1010,6 +1041,7 @@ def process_alias(apis, options):
         ('glCreateShaderObjectARB',          'glCreateShader'),
         ('glCreateProgramObjectARB',         'glCreateProgram'),
         ('glUseProgramObjectARB',            'glUseProgram'),
+        ('glShaderSourceARB',                'glShaderSource'),  # Different const-ness
         ('glAttachObjectARB',                'glAttachShader'),
         ('glDetachObjectARB',                'glDetachShader'),
         ('glColorMaskIndexedEXT',            'glColorMaski'),
@@ -1025,7 +1057,11 @@ def process_alias(apis, options):
         ('glBlendFuncIndexedAMD',            'glBlendFunciARB'),
         ('glBlendFuncSeparateIndexedAMD',    'glBlendFuncSeparateiARB'),
         ('glGetAttachedObjectsARB',          'glGetAttachedShaders'),
+        ('glFramebufferTextureLayerEXT',     'glFramebufferTextureLayer'), # Not detected due to special case for EXTGROUP_framebuffer_texture_layer
         ('glMultiDrawElementsEXT',           'glMultiDrawElements'), # Not detected due to const change
+        ('glVertexAttrib4ubNV',              'glVertexAttrib4NubARB'),
+        ('glVertexAttrib4ubvNV',             'glVertexAttrib4NubvARB'),
+        ('glTransformFeedbackVaryingsEXT',   'glTransformFeedbackVaryings'), # Different const-ness
         ('glXCreateContextWithConfigSGIX',   'glXCreateNewContext'),
         ('glXMakeCurrentReadSGI',            'glXMakeContextCurrent')
     ]
