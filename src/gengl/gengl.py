@@ -1157,7 +1157,7 @@ def process_c(apis, functions, options):
         const bugle_api_function_data _bugle_api_function_table[] =
         {'''))
     for function in functions:
-        print('    {{ BUGLE_{0} }},'.format(function.extension.name))
+        print('    {{ BUGLE_{0} }},  /* {1} */'.format(function.extension.name, function.name))
     print('};')
 
     enum_counts = {}
