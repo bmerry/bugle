@@ -130,6 +130,11 @@ extension_children = {
     "GL_NV_packed_depth_stencil": ["GL_EXT_packed_depth_stencil"],
     "GL_NV_texture_rectangle": ["GL_EXT_texture_rectangle"],
 
+    "GLX_ARB_get_proc_address": ["GLX_VERSION_1_4"],
+    "GLX_EXT_import_context": ["GLX_VERSION_1_3"],
+    "GLX_SGI_make_current_read": ["GLX_VERSION_1_3"],
+    "GLX_SGIX_fbconfig": ["GLX_VERSION_1_3"],
+
     # This got promoted to core from imaging subset in 1.4
     "EXTGROUP_blend_color": ["GL_EXT_blend_color", "GL_ARB_imaging", "GL_VERSION_1_4"],
     # GL_ARB_vertex_program and GL_ARB_fragment_program have a lot of overlap

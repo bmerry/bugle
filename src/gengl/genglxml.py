@@ -8,12 +8,24 @@ from textwrap import dedent
 from lxml import etree
 import genglxmltables
 
+def sortedDict(d, keyfunc):
+    '''
+    Takes a dictionary and returns an OrderedDict with the same content,
+    sorted by a key function that operates on the values
+    '''
+    return OrderedDict(sorted(d.items(), key = lambda x: keyfunc(x[1])))
+
 class Enum:
     def __init__(self, elem):
         self.elem = elem
         self.type = elem.get('type', '')
         self.name = elem.get('name')
+        self.value = None # A EnumValue
         self.extensions = []
+
+    def key(self):
+        newest = min(self.extensions, key = Extension.key)
+        return newest.key()
 
 class EnumValue:
     def __init__(self, value):
@@ -40,7 +52,7 @@ class Extension:
         self.enums = []
         self.functions = []
         for require_elem in elem.iterfind('require'):
-            if api.matchRequire(require_elem):
+            if api.match_require(require_elem):
                 for enum_elem in require_elem.iterfind('enum'):
                     name = enum_elem.get('name')
                     # Need the test because bit values etc are excluded
@@ -76,45 +88,68 @@ class Extension:
             return (3, self.name)
 
 class API:
+    def valid_enums(self, enums_elem):
+        return enums_elem.get('type') != 'bitmask' and 'group' not in enums_elem
+
     def __init__(self, filename):
         self.tree = etree.parse(filename)
         self.enums = dict()
         self.enum_values = dict()
         self.functions = dict()
-        self.extensions = OrderedDict()
+        self.extensions = dict()
         tree = etree.parse(filename)
         root = tree.getroot()
+
         for enums_elem in root.iterfind('enums'):
-            if enums_elem.get('type') != 'bitmask' and 'group' not in enums_elem:
+            if self.valid_enums(enums_elem):
                 for enum_elem in enums_elem.iterfind('enum'):
+                    if not self.match_require(enum_elem):
+                        continue
                     enum = Enum(enum_elem)
                     value = int(enum_elem.get('value'), 0)
                     if value not in self.enum_values:
                         self.enum_values[value] = EnumValue(value)
                     enum.value = self.enum_values[value]
                     enum.value.enums.append(enum)
+                    assert enum.name not in self.enums
                     self.enums[enum.name] = enum
 
         for command_elem in root.iterfind('commands/command'):
+            if not self.match_require(command_elem):
+                continue
             function = Function(command_elem)
             self.functions[function.name] = function
 
-        extensions = []
         for feature_elem in root.iterfind('feature'):
-            if self.useExtension(feature_elem):
-                extensions.append(Extension(feature_elem, self))
+            if self.use_extension(feature_elem):
+                extension = Extension(feature_elem, self)
+                self.extensions[extension.name] = extension
         for extension_elem in root.iterfind('extensions/extension'):
-            if self.useExtension(extension_elem):
-                extensions.append(Extension(extension_elem, self))
-        extensions.sort(key = Extension.key) # Sort by key, to insert into OrderedDict
-        for extension in extensions:
-            self.extensions[extension.name] = extension
+            if self.use_extension(extension_elem):
+                extension = Extension(extension_elem, self)
+                self.extensions[extension.name] = extension
+        self.extensions = sortedDict(self.extensions, Extension.key)
 
         # Prune enums and functions that don't apply in this API/profile
         self.enums = {x[0]: x[1] for x in self.enums.items() if x[1].extensions}
         self.functions = {x[0]: x[1] for x in self.functions.items() if x[1].extensions}
+        for value in self.enum_values.values():
+            value.enums = [x for x in value.enums if x.name in self.enums]
+            value.enums.sort(key = Enum.key)
+        self.enum_values = {x[0]: x[1] for x in self.enum_values.items() if x[1].enums}
 
-    def useExtension(self, extension_elem):
+        # Sort enums by value and functions by name
+        self.enums = sortedDict(self.enums, lambda x: x.value.value)
+        self.enum_values = sortedDict(self.enum_values, lambda x: x.value)
+        self.functions = sortedDict(self.functions, lambda x: x.name)
+
+        # Sort extension lists
+        for enum in self.enums.values():
+            enum.extensions.sort(key = Extension.key)
+        for function in self.functions.values():
+            function.extensions.sort(key = Extension.key)
+
+    def use_extension(self, extension_elem):
         if extension_elem.tag == 'feature':
             return self.api == extension_elem.get('api')
         else:
@@ -122,7 +157,7 @@ class API:
             # TODO: needs to consider ES1 required vs extensions
             return supported_re.match(self.default_extensions)
 
-    def matchRequire(self, elem):
+    def match_require(self, elem):
         if 'api' in elem.attrib:
             if elem.get('api') != self.api:
                 return False
@@ -135,6 +170,18 @@ class GLAPI(API):
     api = 'gl'
     profile = 'compatibility'
     default_extensions = 'gl'
+    block = 'BUGLE_API_EXTENSION_BLOCK_GL'
+
+class GLXAPI(API):
+    api = 'glx'
+    profile = None
+    default_extensions = 'glx'
+    block = 'BUGLE_API_EXTENSION_BLOCK_GLWIN'
+
+    def valid_enums(self, enums_elem):
+        if enums_elem.get('namespace') != 'GLX':
+            return False
+        return API.valid_enums(self, enums_elem)
 
 def do_alias(options, apis):
     for api in apis:
@@ -238,7 +285,7 @@ def do_c_extension_table(apis):
                 fields.append('NULL')
             fields.append('"{}"'.format(extension.name))
             fields.append('extension_group_{}'.format(extension.name))
-            fields.append('BUGLE_API_EXTENSION_BLOCK_GL') # TODO: get from api
+            fields.append(api.block)
             print('    {{ {0} }},'.format(', '.join(fields)))
     print('};')
 
@@ -257,9 +304,54 @@ def do_c_function_table(apis, header):
             extension = 'NULL_EXTENSION'
         else:
             # TODO: design currently assumes one extension per function
-            extension = 'BUGLE_' + function.extensions[0].name
+            # We use the oldest extension
+            extension = 'BUGLE_' + function.extensions[-1].name
         print('    {{ {0} }},  /* {1} */'.format(extension, function_name))
     print('};')
+
+def do_c_enum_table(apis):
+    enum_counts = {}
+    for api in apis:
+        for enum_value in api.enum_values.values():
+            print(dedent('''
+                static const bugle_api_extension enum_extensions_{0}[] =
+                {{''').format(enum_value.enums[0].name))
+            extensions = set()
+            for enum in enum_value.enums:
+                for extension in enum.extensions:
+                    extensions.add(extension)
+            for extension in sorted(list(extensions), key = Extension.key):
+                print('    BUGLE_{0},'.format(extension.name))
+            print('    NULL_EXTENSION')
+            print('};')
+
+        print(dedent('''
+            static const bugle_api_enum_data _bugle_api_enum_table_{0}[] =
+            {{''').format(api.block))
+        for enum_value in api.enum_values.values():
+            enum = enum_value.enums[0]
+            fields = []
+            fields.append('%#.4x' % (enum_value.value,))
+            fields.append('"' + enum.name + '"')
+            fields.append('enum_extensions_' + enum.name)
+            print('    {{ {0} }},'.format(', '.join(fields)))
+        print('};')
+        enum_counts[api.block] = len(api.enum_values)
+
+    print(dedent('''
+        const bugle_api_enum_data * const _bugle_api_enum_table[] =
+        {
+            _bugle_api_enum_table_BUGLE_API_EXTENSION_BLOCK_GL,
+            _bugle_api_enum_table_BUGLE_API_EXTENSION_BLOCK_GLWIN
+        };'''))
+    print(dedent('''
+        const int _bugle_api_enum_count[] =
+        {{
+            {0},
+            {1}
+        }};''').format(
+            enum_counts['BUGLE_API_EXTENSION_BLOCK_GL'],
+            enum_counts['BUGLE_API_EXTENSION_BLOCK_GLWIN']))
 
 def do_c(options, apis):
     print('/* Generated by ' + sys.argv[0] + '. Do not edit. */')
@@ -273,6 +365,7 @@ def do_c(options, apis):
 
     do_c_extension_table(apis)
     do_c_function_table(apis, options.header)
+    do_c_enum_table(apis)
 
 def main():
     parser = OptionParser()
@@ -301,7 +394,7 @@ def main():
         'c': do_c
     }
 
-    apis = [GLAPI(args[0])]
+    apis = [GLAPI(args[0]), GLXAPI(args[1])]
     modes[options.mode](options, apis)
 
 if __name__ == '__main__':
