@@ -118,7 +118,6 @@ extension_children = {
     "GL_EXT_texture_filter_anisotropic": [],
     "GL_EXT_texture_integer": ["GL_VERSION_3_0"],
     "GL_EXT_texture_lod_bias": ["GL_VERSION_1_4"],
-    "GL_EXT_texture_rectangle": ["GL_ARB_texture_rectangle"],
     "GL_EXT_texture_sRGB": ["GL_VERSION_2_1"],
     "GL_EXT_texture_shared_exponent": ["GL_VERSION_3_0"],
     "GL_EXT_transform_feedback": ["GL_VERSION_3_0"],
@@ -128,7 +127,7 @@ extension_children = {
     "GL_NV_blend_square": ["GL_VERSION_1_4", "GL_ES_VERSION_2_0"],
     "GL_NV_depth_buffer_float": ["GL_ARB_depth_buffer_float"],
     "GL_NV_packed_depth_stencil": ["GL_EXT_packed_depth_stencil"],
-    "GL_NV_texture_rectangle": ["GL_EXT_texture_rectangle"],
+    "GL_NV_texture_rectangle": ["GL_ARB_texture_rectangle"],
 
     "GLX_ARB_get_proc_address": ["GLX_VERSION_1_4"],
     "GLX_EXT_import_context": ["GLX_VERSION_1_3"],
@@ -147,5 +146,6 @@ extension_children = {
     "EXTGROUP_vertex_attrib": ["GL_ARB_vertex_program", "GL_ARB_vertex_shader", "GL_VERSION_2_0", "GL_ES_VERSION_2_0"],
     # Extensions that define FramebufferTextureLayerEXT - needed because some
     # versions of Mesa headers do odd things with this function
+    # TODO: instead use the registry to decide which extensions provide this function
     "EXTGROUP_framebuffer_texture_layer": ["GL_EXT_geometry_shader4", "GL_EXT_texture_array", "GL_NV_geometry_program4"]
 }

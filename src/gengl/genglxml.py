@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+from __future__ import print_function, division
 import sys
 import os.path
 import re
@@ -84,8 +85,16 @@ class Extension:
             return (1, self.name)
         elif (self.category == 'EXT'):
             return (2, self.name)
+        elif (self.category == 'PSEUDO'):
+            return (4, self.name)
         else:
             return (3, self.name)
+
+class PseudoExtension(Extension):
+    def __init__(self, name):
+        self.elem = None
+        self.name = name
+        self.category = 'PSEUDO'
 
 class API:
     def valid_enums(self, enums_elem):
@@ -395,6 +404,12 @@ def main():
     }
 
     apis = [GLAPI(args[0]), GLXAPI(args[1])]
+    for key in genglxmltables.extension_children.keys():
+        if key.startswith('EXTGROUP_'):
+            apis[0].extensions[key] = PseudoExtension(key)
+    # Re-sort extensions
+    apis[0].extensions = sortedDict(apis[0].extensions, Extension.key)
+
     modes[options.mode](options, apis)
 
 if __name__ == '__main__':
