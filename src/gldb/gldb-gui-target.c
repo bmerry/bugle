@@ -54,6 +54,11 @@ static GtkTreeModel *target_model(void)
                        -1);
     gtk_list_store_append(store, &iter);
     gtk_list_store_set(store, &iter,
+                       COLUMN_MODE_NAME, _("Local inside GDB"),
+                       COLUMN_MODE_ENUM, GLDB_PROGRAM_TYPE_GDB,
+                       -1);
+    gtk_list_store_append(store, &iter);
+    gtk_list_store_set(store, &iter,
                        COLUMN_MODE_NAME, _("Remote via SSH"),
                        COLUMN_MODE_ENUM, GLDB_PROGRAM_TYPE_SSH,
                        -1);

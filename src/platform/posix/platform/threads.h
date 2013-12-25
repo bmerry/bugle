@@ -33,6 +33,7 @@
 #include <bugle/porting.h>
 #include <bugle/export.h>
 #include <bugle/bool.h>
+#include "platform/process.h"
 
 typedef pthread_once_t bugle_thread_once_t;
 
@@ -90,7 +91,12 @@ typedef pthread_t bugle_thread_id;
  * BUGLE_RUN_CONSTRUCTOR on the constructor first.
  */
 #if BUGLE_HAVE_ATTRIBUTE_CONSTRUCTOR && !DEBUG_CONSTRUCTOR && BUGLE_BINFMT_CONSTRUCTOR_DL
-# define BUGLE_CONSTRUCTOR(fn) static void fn(void) __attribute__((constructor))
+# define BUGLE_CONSTRUCTOR(fn) \
+    static void fn(void); \
+    static __attribute__((constructor)) void fn ## _constructor(void) \
+    { \
+        if (!bugle_process_is_shell()) fn(); \
+    }
 # define BUGLE_RUN_CONSTRUCTOR(fn) ((void) 0)
 #else
 # define BUGLE_CONSTRUCTOR(fn) static bugle_thread_once_t fn ## _once = BUGLE_THREAD_ONCE_INIT

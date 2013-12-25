@@ -1,4 +1,8 @@
+* Add "Local inside GDB" debug mode
+* Detect common shells, and avoid initializing anything when inside them
+
 0.0.20130121
+------------
 * Added logdebug filterset
 * Added contextattribs filterset
 * Fixed detection of glMultiDrawElementsEXT as an alias of glMultiDrawElements

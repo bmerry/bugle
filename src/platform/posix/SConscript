@@ -47,6 +47,7 @@ sources = [
     '../isfinite_pass.c',
     '../isnan_pass.c',
     '../nan_strtod.c',
+    '../process_linux.c',
     '../round_pass.c',
     '../sinf_pass.c',
     '../strndup_soft.c',

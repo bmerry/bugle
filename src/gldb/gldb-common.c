@@ -81,6 +81,8 @@ bugle_bool gldb_program_type_has_setting(gldb_program_type type, gldb_program_se
     {
         /* GLDB_PROGRAM_TYPE_LOCAL */
         { BUGLE_TRUE, BUGLE_TRUE, BUGLE_TRUE, BUGLE_FALSE, BUGLE_FALSE },
+        /* GLDB_PROGRAM_TYPE_GDB */
+        { BUGLE_TRUE, BUGLE_TRUE, BUGLE_TRUE, BUGLE_FALSE, BUGLE_FALSE },
         /* GLDB_PROGRAM_TYPE_SSH */
         { BUGLE_TRUE, BUGLE_TRUE, BUGLE_TRUE, BUGLE_TRUE, BUGLE_FALSE },
         /* GLDB_PROGRAM_TYPE_TCP */
@@ -123,6 +125,7 @@ const char *gldb_program_validate(void)
     switch (gldb_program_get_type())
     {
     case GLDB_PROGRAM_TYPE_LOCAL:
+    case GLDB_PROGRAM_TYPE_GDB:
         setting = gldb_program_get_setting(GLDB_PROGRAM_SETTING_COMMAND);
         if (setting == NULL || setting[0] == '\0')
             return "Command not set";
@@ -238,6 +241,9 @@ static bugle_pid_t execute(void (*child_init)(void))
     {
     case GLDB_PROGRAM_TYPE_LOCAL:
         break;
+    case GLDB_PROGRAM_TYPE_GDB:
+        gldb_error("GDB mode not yet supported on Windows");
+        break;
     case GLDB_PROGRAM_TYPE_SSH:
         gldb_error("SSH mode not yet supported on Windows");
         return -1;
@@ -319,7 +325,7 @@ static bugle_pid_t execute(void (*child_init)(void))
     bugle_pid_t pid;
     /* in/out refers to our view, not child view */
     int in_pipe[2], out_pipe[2];
-    char *prog_argv[10];
+    char *prog_argv[20];
     char *command, *chain, *display, *host, *port;
 
     if (prog_type == GLDB_PROGRAM_TYPE_TCP)
@@ -396,7 +402,7 @@ static bugle_pid_t execute(void (*child_init)(void))
         switch (prog_type)
         {
         case GLDB_PROGRAM_TYPE_LOCAL:
-            prog_argv[0] = "/bin/sh";
+            prog_argv[0] = "sh";
             prog_argv[1] = "-c";
             prog_argv[2] = bugle_asprintf("%s%s BUGLE_CHAIN=%s LD_PRELOAD=libbugle.so BUGLE_DEBUGGER=fd BUGLE_DEBUGGER_FD_IN=%d BUGLE_DEBUGGER_FD_OUT=%d exec %s",
                                           display ? "DISPLAY=" : "", display ? display : "",
@@ -404,9 +410,37 @@ static bugle_pid_t execute(void (*child_init)(void))
                                           out_pipe[0], in_pipe[1], command);
             prog_argv[3] = NULL;
             break;
+        case GLDB_PROGRAM_TYPE_GDB:
+            {
+                int p = 0;
+                prog_argv[p++] = "xterm";
+                prog_argv[p++] = "-e";
+                prog_argv[p++] = "gdb";
+                if (display)
+                {
+                    prog_argv[p++] = "-ex";
+                    prog_argv[p++] = bugle_asprintf("set env DISPLAY %s", display);
+                }
+                if (chain)
+                {
+                    prog_argv[p++] = "-ex";
+                    prog_argv[p++] = bugle_asprintf("set env BUGLE_CHAIN=%s", chain);
+                }
+                prog_argv[p++] = "-ex";
+                prog_argv[p++] = "set env LD_PRELOAD=libbugle.so";
+                prog_argv[p++] = "-ex";
+                prog_argv[p++] = "set env BUGLE_DEBUGGER=fd";
+                prog_argv[p++] = "-ex";
+                prog_argv[p++] = bugle_asprintf("set env BUGLE_DEBUGGER_FD_IN=%d", out_pipe[0]);
+                prog_argv[p++] = "-ex";
+                prog_argv[p++] = bugle_asprintf("set env BUGLE_DEBUGGER_FD_OUT=%d", in_pipe[1]);
+                prog_argv[p++] = command;
+                prog_argv[p++] = NULL;
+            }
+            break;
         case GLDB_PROGRAM_TYPE_SSH:
             /* Insert the environment variables into the command. */
-            prog_argv[0] = "/usr/bin/ssh";
+            prog_argv[0] = "ssh";
             prog_argv[1] = host ? host : "localhost";
             prog_argv[2] = bugle_asprintf("%s%s BUGLE_CHAIN=%s LD_PRELOAD=libbugle.so BUGLE_DEBUGGER=fd BUGLE_DEBUGGER_FD_IN=3 BUGLE_DEBUGGER_FD_OUT=4 %s 3<&0 4>&1 </dev/null 1>&2",
                                           display ? "DISPLAY=" : "", display ? display : "",
@@ -421,7 +455,7 @@ static bugle_pid_t execute(void (*child_init)(void))
 
         close(in_pipe[0]);
         close(out_pipe[1]);
-        execv(prog_argv[0], prog_argv);
+        execvp(prog_argv[0], prog_argv);
         perror("failed to execute program");
         exit(1);
     default: /* Parent */
