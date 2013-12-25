@@ -1,6 +1,5 @@
 HEADER EGL/egl.h
 HEADER bugle/glwin/glwintypes.h
-LIMIT egl.*
 
 TYPE TYPE EGLNativeWindowType TYPE_Pv
 TYPE TYPE EGLNativeDisplayType TYPE_Pv

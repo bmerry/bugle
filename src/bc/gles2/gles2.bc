@@ -4,7 +4,6 @@ HEADER bugle/gl/gltypes.h
 HEADER bugle/gl/gldump.h
 HEADER bugle/gl/overrides.h
 HEADER bugle/gl/glstate.h
-LIMIT gl[A-Z][a-z].*
 
 # Typedefs
 NEWTYPE BITFIELD bufferbits GLbitfield GL_COLOR_BUFFER_BIT GL_DEPTH_BUFFER_BIT GL_STENCIL_BUFFER_BIT

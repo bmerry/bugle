@@ -98,7 +98,7 @@ extension_children = {
     "GL_EXT_framebuffer_multisample": ["GL_ARB_framebuffer_object"],
     # Note: although ARB_framebuffer_sRGB incorporates equivalent functionality,
     # the GL_FRAMEBUFFER_SRGB_CAPABLE query was dropped so it is not a strict subset.
-    "GL_EXT_framebuffer_sRGB": [""],
+    "GL_EXT_framebuffer_sRGB": [],
     "GL_EXT_multi_draw_arrays": ["GL_VERSION_1_4"],
     "GL_EXT_packed_depth_stencil": ["GL_VERSION_3_0"],
     "GL_EXT_packed_pixels": ["GL_VERSION_1_2"],

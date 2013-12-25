@@ -4,7 +4,6 @@ HEADER bugle/gl/gltypes.h
 HEADER bugle/gl/gldump.h
 HEADER bugle/gl/overrides.h
 HEADER bugle/gl/glstate.h
-LIMIT gl[A-Z][a-z].*
 
 INCLUDE bc/gl/core1_1.bc
 INCLUDE bc/gl/core3_0.bc

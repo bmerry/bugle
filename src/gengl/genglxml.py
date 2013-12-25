@@ -193,6 +193,12 @@ class GLXAPI(API):
         return API.valid_enums(self, enums_elem)
 
 def do_alias(options, apis):
+    def generator():
+        for api in apis:
+            for function in api.functions.values():
+                yield function.name
+    print('LIMIT', '|'.join(generator()))
+
     for api in apis:
         for function in api.functions.values():
             aliases = function.elem.findall('alias')
