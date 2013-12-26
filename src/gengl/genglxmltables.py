@@ -149,3 +149,13 @@ extension_children = {
     # TODO: instead use the registry to decide which extensions provide this function
     "EXTGROUP_framebuffer_texture_layer": ["GL_EXT_geometry_shader4", "GL_EXT_texture_array", "GL_NV_geometry_program4"]
 }
+
+# These aliases are not in the registry because the underlying protocol is different
+glx_extra_aliases = [
+    ('glXCreateContextWithConfigSGIX', 'glXCreateNewContext'),
+    ('glXGetCurrentDisplayEXT', 'glXGetCurrentDisplay'),
+    ('glXGetCurrentReadDrawableSGI', 'glXGetCurrentReadDrawable'),
+    ('glXGetProcAddressARB', 'glXGetProcAddress'),
+    ('glXMakeCurrentReadSGI', 'glXMakeContextCurrent'),
+    ('glXSelectEventSGIX', 'glXSelectEvent')
+]
