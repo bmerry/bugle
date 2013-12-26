@@ -40,9 +40,7 @@ bugle_bool bugle_process_is_shell(void)
     char target[4096];
     bugle_bool ans = BUGLE_FALSE;
 
-    printf("In bugle_process_is_shell\n");
     result = readlink(filename, target, sizeof(target) - 1); /* make space for \0 */
-    printf("result = %d errno = %d\n", (int) result, errno);
     if (result >= 0 && result < sizeof(target) - 1)
     {
         target[result] = '\0'; /* readlink does not terminate it */
