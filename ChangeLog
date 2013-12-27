@@ -1,5 +1,7 @@
 * Add "Local inside GDB" debug mode
 * Detect common shells, and avoid initializing anything when inside them
+* Fix a potential infinite loop in budgie_function_address_real
+* Fix infinite recursion on Mesa
 
 0.0.20130121
 ------------

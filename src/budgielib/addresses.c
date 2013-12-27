@@ -137,7 +137,7 @@ BUDGIEAPIPROC budgie_function_address_real(budgie_function id)
         fn = function_address_real1(id2);
         if (fn != NULL)
             return fn;
-        id2 = budgie_function_next(id);
+        id2 = budgie_function_next(id2);
     } while (id2 != id);
     return NULL;
 }
