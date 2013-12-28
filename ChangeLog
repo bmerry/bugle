@@ -2,6 +2,7 @@
 * Detect common shells, and avoid initializing anything when inside them
 * Fix a potential infinite loop in budgie_function_address_real
 * Fix infinite recursion on Mesa
+* Fix queries of some non-existent state on ARB_vertex_program
 
 0.0.20130121
 ------------
