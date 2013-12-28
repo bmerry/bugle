@@ -8,6 +8,7 @@ import os
 def gengl_emitter(target, source, env):
     '''Make the generator a dependency'''
     env.Depends(target, env['GENGL'])
+    env.Depends(target, env['GENGLTABLES'])
     return target, source
 
 def generate(env, **kw):
@@ -26,7 +27,8 @@ def generate(env, **kw):
                 'ApitablesC': apitables_c_builder,
                 'ApitablesH': apitables_h_builder
                 },
-            GENGL = env.File('#src/gengl/genglxml.py'))
+            GENGL = env.File('#src/gengl/genglxml.py'),
+            GENGLTABLES = env.File('#src/gengl/genglxmltables.py'))
 
 def exists(env):
     return 1
