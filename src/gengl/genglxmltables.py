@@ -152,6 +152,7 @@ extension_children = {
 
 # These aliases are not in the registry because the underlying protocol is different
 glx_extra_aliases = [
+    ('glXChooseFBConfigSGIX', 'glXChooseFBConfig'),
     ('glXCreateContextWithConfigSGIX', 'glXCreateNewContext'),
     ('glXGetCurrentDisplayEXT', 'glXGetCurrentDisplay'),
     ('glXGetCurrentReadDrawableSGI', 'glXGetCurrentReadDrawable'),
