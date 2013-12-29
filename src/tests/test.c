@@ -1,5 +1,5 @@
 /*  BuGLe: an OpenGL debugging tool
- *  Copyright (C) 2009-2010  Bruce Merry
+ *  Copyright (C) 2009-2010, 2013  Bruce Merry
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -32,6 +32,9 @@
 # endif
 # include <GL/glut.h>
 #endif
+#if HAVE_GL_FREEGLUT_H && TEST_GL
+# include <GL/freeglut.h>
+#endif
 #include <string.h>
 #include <stddef.h>
 #include <stdio.h>
@@ -53,6 +56,9 @@ static FILE *log_handle = NULL;
 /* Linked list of registered suites */
 static test_suite *first_suite = NULL;
 static test_suite *last_suite = NULL;
+
+/* Whether we initialised GLUT */
+static int glut_initialised = 0;
 
 #if TEST_GL
 #if BUGLE_GLWIN_GLX
@@ -241,6 +247,7 @@ static void init_suites(void)
         glutInitWindowSize(300, 300);
         glutCreateWindow("BuGLe test suite");
         glewInit();
+        glut_initialised = 1;
 #else /* TEST_GL */
         fprintf(stderr, "Test suite was not built with GL support\n");
         exit(1);
@@ -379,6 +386,16 @@ static void create_suites(void)
     }
 }
 
+#if HAVE_GL_FREEGLUT_H && TEST_GL
+static void idle_func(void)
+{
+    /* We want to terminate the main loop immediately. This happens when
+     * there are no windows left.
+     */
+    glutDestroyWindow(glutGetWindow());
+}
+#endif
+
 int main(int argc, char **argv)
 {
     int failed = 0;
@@ -390,6 +407,21 @@ int main(int argc, char **argv)
     init_suites();
     failed = run_all_suites();
     uninit_suites();
+
+#if HAVE_GL_FREEGLUT_H && TEST_GL
+    if (glut_initialised)
+    {
+        /* Workaround for a bug in AMD Catalyst drivers
+         * (http://ati.cchtml.com/show_bug.cgi?id=979). We need to ensure that
+         * the glut main loop runs so that it will do cleanup there instead of
+         * in atexit. But we need control to return so that we can return
+         * success or failure.
+         */
+        glutSetOption(GLUT_ACTION_ON_WINDOW_CLOSE, GLUT_ACTION_GLUTMAINLOOP_RETURNS);
+        glutIdleFunc(idle_func);
+        glutMainLoop();
+    }
+#endif
 
     return failed != 0 ? 1 : 0;
 }

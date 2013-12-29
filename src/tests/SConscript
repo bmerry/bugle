@@ -128,6 +128,7 @@ else:
         elif conf.CheckLibWithHeader('glu32', ['GL/glut.h', 'GL/glu.h'], 'c', autoadd = False):
             glu_lib = 'GLU32'
 
+        have_freeglut = conf.CheckCHeader('GL/freeglut.h')
         use_gl = glew_lib and glut_lib and glu_lib
         if use_gl:
             conf.env.Append(LIBS = [glew_lib, glut_lib, glu_lib])
@@ -143,6 +144,8 @@ else:
             if aspects['glwin'] == 'glx':
                 test_env.Append(LIBS = ['X11'])
             test_env.Append(CPPDEFINES = ['TEST_GL'])
+            if have_freeglut:
+                test_env.Append(CPPDEFINES = ['HAVE_GL_FREEGLUT_H'])
             test_env['ENV']['BUGLE_FILTER_DIR'] = os.path.join(bugle_path, 'filters')
             test_env['ENV']['BUGLE_FILTERS'] = srcdir.File('filters').abspath
 

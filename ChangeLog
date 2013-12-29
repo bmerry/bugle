@@ -3,6 +3,7 @@
 * Fix a potential infinite loop in budgie_function_address_real
 * Fix infinite recursion on Mesa
 * Fix queries of some non-existent state on ARB_vertex_program
+* Worked around an AMD driver bug that prevented the tests from running
 
 0.0.20130121
 ------------
