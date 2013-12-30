@@ -108,8 +108,10 @@ DUMP TYPE GLblendenum bugle_dump_GLblendenum($$, $W)
 DUMP TYPE GLprimitiveenum bugle_dump_GLprimitiveenum($$, $W)
 DUMP TYPE +PKc budgie_dump_string($$, $W)
 DUMP TYPE +Pc budgie_dump_string($$, $W)
+DUMP TYPE +KPKc budgie_dump_string($$, $W)
 LENGTH TYPE +PKc budgie_count_string($$)
 LENGTH TYPE +Pc budgie_count_string($$)
+LENGTH TYPE +KPKc budgie_count_string($$)
 
 # Shading language
 LENGTH PARAMETER glUniform([1234])[if]v 2 $1

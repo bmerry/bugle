@@ -3,9 +3,10 @@
 * Fix a potential infinite loop in budgie_function_address_real
 * Fix infinite recursion on Mesa
 * Fix queries of some non-existent state on ARB_vertex_program
-* Fix dumping of GL_TEXTURE_INTERNAL_FORMAT queries
+* Fix tracing of GL_TEXTURE_INTERNAL_FORMAT queries
 * Worked around an AMD driver bug that prevented the tests from running
 * Fix test suite where GLX_ARB_create_context_profile is present but GL 3.2 is not
+* Fix display of strings when tracing glShaderSource
 
 0.0.20130121
 ------------
