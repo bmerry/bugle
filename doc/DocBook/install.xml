@@ -38,8 +38,7 @@
                     required.
             </para></listitem>
             <listitem><para>Perl 5</para></listitem>
-            <listitem><para>Python 2 (2.7 is tested, older versions may
-                    work)</para></listitem>
+            <listitem><para>Python 2.7</para></listitem>
             <listitem><para><ulink url="http://www.scons.org">SCons</ulink>
                     (only 2.0 is tested, other versions may
                     work)</para></listitem>

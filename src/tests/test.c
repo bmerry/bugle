@@ -163,6 +163,15 @@ static void process_options(int argc, char **argv)
             usage();
             exit(0);
         }
+        else if (0 == strcmp(argv[i], "--list"))
+        {
+            test_suite *ts;
+            for (ts = first_suite; ts != NULL; ts = ts->next)
+            {
+                printf("%s\n", ts->name);
+            }
+            exit(0);
+        }
         else if (0 == strcmp(argv[i], "--suite"))
         {
             if (chosen_suite != NULL)
