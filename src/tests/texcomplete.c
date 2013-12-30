@@ -1,5 +1,5 @@
 /*  BuGLe: an OpenGL debugging tool
- *  Copyright (C) 2008-2010, 2012  Bruce Merry
+ *  Copyright (C) 2008-2010, 2012-2013  Bruce Merry
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -47,11 +47,19 @@ typedef struct
     const char *target_regex;
     GLenum target;
     GLenum faces[7];
-    const char *source;
+    const GLchar *source;
+    const GLchar *vertex_source;
 } texture_target;
 
-static const GLchar vertex_source[] =
+static const GLchar vertex_source_110[] =
 "#version 110\n"
+"void main()\n"
+"{\n"
+"    gl_Position = gl_Vertex;\n"
+"}\n";
+
+static const GLchar vertex_source_130[] =
+"#version 130\n"
 "void main()\n"
 "{\n"
 "    gl_Position = gl_Vertex;\n"
@@ -63,19 +71,22 @@ static const texture_target targets[] =
         "1D", "GL_TEXTURE_1D",  GL_TEXTURE_1D, { GL_TEXTURE_1D }, 
         "#version 110\n"
         "uniform sampler1D s;\n"
-        "void main() { gl_FragColor = texture1D(s, 0.5); }\n"
+        "void main() { gl_FragColor = texture1D(s, 0.5); }\n",
+        vertex_source_110
     },
     {
         "2D", "GL_TEXTURE_2D", GL_TEXTURE_2D, { GL_TEXTURE_2D },
         "#version 110\n"
         "uniform sampler2D s;\n"
-        "void main() { gl_FragColor = texture2D(s, vec2(0.5, 0.5)); }\n"
+        "void main() { gl_FragColor = texture2D(s, vec2(0.5, 0.5)); }\n",
+        vertex_source_110
     },
     {
         "3D", "GL_TEXTURE_3D(_EXT)?", GL_TEXTURE_3D, { GL_TEXTURE_3D },
         "#version 110\n"
         "uniform sampler3D s;\n"
-        "void main() { gl_FragColor = texture3D(s, vec3(0.5, 0.5, 0.5)); }\n"
+        "void main() { gl_FragColor = texture3D(s, vec3(0.5, 0.5, 0.5)); }\n",
+        vertex_source_110
     },
     {
         "cube map", "GL_TEXTURE_CUBE_MAP(_(POSITIVE|NEGATIVE)_([XYZ]))?(_EXT|_ARB)?", GL_TEXTURE_CUBE_MAP,
@@ -89,19 +100,22 @@ static const texture_target targets[] =
         },
         "#version 110\n"
         "uniform samplerCube s;\n"
-        "void main() { gl_FragColor = textureCube(s, vec3(1.0, 0.5, 0.5)); }\n"
+        "void main() { gl_FragColor = textureCube(s, vec3(1.0, 0.5, 0.5)); }\n",
+        vertex_source_110
     },
     {
         "1D array", "GL_TEXTURE_1D_ARRAY(_EXT)?", GL_TEXTURE_1D_ARRAY, { GL_TEXTURE_1D_ARRAY },
         "#version 130\n"
         "uniform sampler1DArray s;\n"
-        "void main() { gl_FragColor = texture(s, vec2(0.5, 0.5)); }\n"
+        "void main() { gl_FragColor = texture(s, vec2(0.5, 0.5)); }\n",
+        vertex_source_130
     },
     {
         "2D array", "GL_TEXTURE_2D_ARRAY(_EXT)?", GL_TEXTURE_2D_ARRAY, { GL_TEXTURE_2D_ARRAY },
         "#version 130\n"
         "uniform sampler2DArray s;\n"
-        "void main() { gl_FragColor = texture(s, vec3(0.5, 0.5, 0.5)); }\n"
+        "void main() { gl_FragColor = texture(s, vec3(0.5, 0.5, 0.5)); }\n",
+        vertex_source_130
     }
 };
 
@@ -372,7 +386,7 @@ static void texcomplete_test(GLenum target_enum)
 
             memset(image, 255, sizeof(image));
             tex = make_texture_object(targets[i].target, targets[i].faces, j, image);
-            vs = make_shader(GL_VERTEX_SHADER, vertex_source);
+            vs = make_shader(GL_VERTEX_SHADER, targets[i].vertex_source);
             fs = make_shader(GL_FRAGMENT_SHADER, targets[i].source);
             if (!vs || !fs)
             {
