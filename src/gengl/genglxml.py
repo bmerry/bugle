@@ -7,8 +7,15 @@ import itertools
 from collections import OrderedDict
 from optparse import OptionParser
 from textwrap import dedent
-from lxml import etree
 import genglxmltables
+
+try:
+    from lxml import etree
+except ImportError:
+    try:
+        import xml.etree.cElementTree as etree
+    except ImportError:
+        import xml.etree.ElementTree as etree
 
 def sortedDict(d, keyfunc):
     '''
