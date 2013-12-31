@@ -160,3 +160,100 @@ glx_extra_aliases = [
     ('glXMakeCurrentReadSGI', 'glXMakeContextCurrent'),
     ('glXSelectEventSGIX', 'glXSelectEvent')
 ]
+
+wgl_extra_xml = '''
+<registry>
+    <commands namespace="WGL">
+        <command>
+            <proto>int <name>wglChoosePixelFormat</name></proto>
+            <param><ptype>HDC</ptype> <name>hdc</name></param>
+            <param>const <ptype>PIXELFORMATDESCRIPTOR</ptype> *<name>ppfd</name></param>
+        </command>
+        <command>
+            <proto><ptype>BOOL</ptype> <name>wglSetPixelFormat</name></proto>
+            <param><ptype>HDC</ptype> <name>hdc</name></param>
+            <param>int <name>ipfd</name></param>
+            <param><ptype>UINT</ptype> <name>cjpfd</name></param>
+            <param>const <ptype>PIXELFORMATDESCRIPTOR</ptype> *<name>ppfd</name></param>
+        </command>
+        <command>
+            <proto>int <name>wglDescribePixelFormat</name></proto>
+            <param><ptype>HDC</ptype> <name>hdc</name></param>
+            <param>int <name>ipfd</name></param>
+            <param><ptype>UINT</ptype> <name>cjpfd</name></param>
+            <param><ptype>PIXELFORMATDESCRIPTOR</ptype> *<name>ppfd</name></param>
+        </command>
+        <command>
+            <proto>int <name>wglGetPixelFormat</name></proto>
+            <param><ptype>HDC</ptype> <name>hdc</name></param>
+        </command>
+        <command>
+            <proto><ptype>PROC</ptype> <name>wglGetDefaultProcAddress</name></proto>
+            <param><ptype>HDC</ptype> <name>hdc</name></param>
+        </command>
+        <command>
+            <proto><ptype>BOOL</ptype> <name>wglSwapBuffers</name></proto>
+            <param><ptype>HDC</ptype> <name>hdc</name></param>
+        </command>
+        <command>
+            <proto><ptype>DWORD</ptype> <name>wglSwapMultipleBuffers</name></proto>
+            <param><ptype>UINT</ptype> <name>a1</name></param>
+            <!-- Actually CONST WGLSWAP *, but WGLSWAP isn't defined by the registry -->
+            <param>const void *<name>a2</name></param>
+        </command>
+        <command>
+            <proto>int <name>GlmfPlayGlsRecord</name></proto>
+            <param><ptype>DWORD</ptype> a1</param>
+            <param><ptype>DWORD</ptype> a2</param>
+            <param><ptype>DWORD</ptype> a3</param>
+            <param><ptype>DWORD</ptype> a4</param>
+        </command>
+        <command>
+            <proto>int <name>GlmfInitPlayback</name></proto>
+            <param><ptype>DWORD</ptype> a1</param>
+            <param><ptype>DWORD</ptype> a2</param>
+            <param><ptype>DWORD</ptype> a3</param>
+        </command>
+        <command>
+            <proto>int <name>GlmfEndPlayback</name></proto>
+            <param><ptype>DWORD</ptype> a1</param>
+        </command>
+        <command>
+            <proto>int <name>GlmfEndGlsBlock</name></proto>
+            <param><ptype>DWORD</ptype> a1</param>
+        </command>
+        <command>
+            <proto>int <name>GlmfCloseMetaFile</name></proto>
+            <param><ptype>DWORD</ptype> a1</param>
+        </command>
+        <command>
+            <proto>int <name>GlmfBeginGlsBlock</name></proto>
+            <param><ptype>DWORD</ptype> a1</param>
+        </command>
+        <command>
+            <proto>int <name>glDebugEntry</name></proto>
+            <param><ptype>DWORD</ptype> a1</param>
+            <param><ptype>DWORD</ptype> a2</param>
+        </command>
+    </commands>
+
+    <feature api="wgl" name="WGL_VERSION_1_0" number="1.0">
+        <require>
+            <command name="wglChoosePixelFormat"/>
+            <command name="wglSetPixelFormat"/>
+            <command name="wglDescribePixelFormat"/>
+            <command name="wglGetPixelFormat"/>
+            <command name="wglGetDefaultProcAddress"/>
+            <command name="wglSwapBuffers"/>
+            <command name="wglSwapMultipleBuffers"/>
+            <command name="GlmfPlayGlsRecord"/>
+            <command name="GlmfInitPlayback"/>
+            <command name="GlmfEndPlayback"/>
+            <command name="GlmfEndGlsBlock"/>
+            <command name="GlmfCloseMetaFile"/>
+            <command name="GlmfBeginGlsBlock"/>
+            <command name="glDebugEntry"/>
+        </require>
+    </feature>
+</registry>
+'''

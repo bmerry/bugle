@@ -212,7 +212,21 @@ class GLXAPI(API):
         </registry>''')
 
     def valid_enums(self, enums_elem):
-        if enums_elem.get('namespace') != 'GLX':
+        if enums_elem.get('namespace') not in ['GLX', 'GL']:
+            return False
+        return API.valid_enums(self, enums_elem)
+
+class WGLAPI(API):
+    api = 'wgl'
+    profile = None
+    default_extensions = 'wgl'
+    block = 'BUGLE_API_EXTENSION_BLOCK_GLWIN'
+    # WGL has some internal functions not directly called by the user.
+    # However, we need to forward them to replace OpenGL32.dll.
+    extra_tree = etree.XML(genglxmltables.wgl_extra_xml)
+
+    def valid_enums(self, enums_elem):
+        if enums_elem.get('namespace') not in ['WGL', 'GL']:
             return False
         return API.valid_enums(self, enums_elem)
 
@@ -415,7 +429,7 @@ def main():
     parser.add_option('-m', '--mode', dest = 'mode', metavar = 'MODE',
                       type = 'choice', choices = ['c', 'header', 'alias'],
                       help = 'output to generate')
-    parser.set_usage('Usage: %prog [options] -m mode gl.xml')
+    parser.set_usage('Usage: %prog [options] -m mode gl.xml [...]')
     (options, args) = parser.parse_args()
     if not args:
         parser.print_usage(sys.stderr)
@@ -435,7 +449,16 @@ def main():
         'c': do_c
     }
 
-    apis = [GLAPI(args[0]), GLXAPI(args[1])]
+    factories = {
+        'gl.xml': GLAPI,
+        'glx.xml': GLXAPI,
+        'wgl.xml': WGLAPI
+    }
+
+    apis = []
+    for arg in args:
+        base = os.path.basename(arg)
+        apis.append(factories[base](arg))
     for key in genglxmltables.extension_children.keys():
         if key.startswith('EXTGROUP_'):
             apis[0].extensions[key] = PseudoExtension(key)
