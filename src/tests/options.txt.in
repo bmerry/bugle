@@ -1,0 +1,4 @@
+--library-path=@LIBRARY_PATH@
+--filter-dir=@FILTER_DIR@
+--filters=@FILTERS@
+--tester=@TESTER@

@@ -7,6 +7,7 @@
 * Worked around an AMD driver bug that prevented the tests from running
 * Fix test suite where GLX_ARB_create_context_profile is present but GL 3.2 is not
 * Fix display of strings when tracing glShaderSource
+* Split testing logic into separate user-runnable Python tool
 
 0.0.20130121
 ------------
