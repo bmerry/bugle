@@ -1,5 +1,5 @@
 /*  BuGLe: an OpenGL debugging tool
- *  Copyright (C) 2008-2009  Bruce Merry
+ *  Copyright (C) 2008-2009, 2013  Bruce Merry
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -23,10 +23,14 @@
 #include <bugle/io.h>
 #include <bugle/glwin/glwintypes.h>
 #include <budgie/reflect.h>
+#include "platform/types.h"
 
 bugle_bool bugle_dump_glwin_drawable(glwin_drawable d, bugle_io_writer *writer)
 {
-    bugle_io_printf(writer, "0x%08lx", (unsigned long) d);
+    if (sizeof(d) == 8)
+        bugle_io_printf(writer, "0x%016" BUGLE_PRIxPTR, (bugle_uintptr_t) d);
+    else
+        bugle_io_printf(writer, "0x%08" BUGLE_PRIxPTR, (bugle_uintptr_t) d);
     return BUGLE_TRUE;
 }
 

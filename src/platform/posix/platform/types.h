@@ -1,5 +1,5 @@
 /*  BuGLe: an OpenGL debugging tool
- *  Copyright (C) 2009  Bruce Merry
+ *  Copyright (C) 2009, 2013  Bruce Merry
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -30,6 +30,7 @@ typedef uint32_t bugle_uint32_t;
 typedef int32_t bugle_int32_t;
 typedef uint64_t bugle_uint64_t;
 typedef int64_t bugle_int64_t;
+typedef uintptr_t bugle_uintptr_t;
 
 typedef ssize_t bugle_ssize_t;
 
@@ -43,5 +44,6 @@ typedef pid_t bugle_pid_t;
 #define BUGLE_PRId32 PRId32
 #define BUGLE_PRIu64 PRIu64
 #define BUGLE_PRId64 PRId64
+#define BUGLE_PRIxPTR PRIxPTR
 
 #endif /* BUGLE_PLATFORM_TYPES_H */
