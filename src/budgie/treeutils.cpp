@@ -304,7 +304,8 @@ string type_to_id(tree_node_p type)
             break;
         case ARRAY_TYPE:
             ans << "A";
-            if (TYPE_DOMAIN(type) != NULL_TREE)
+            if (TYPE_DOMAIN(type) != NULL_TREE
+                && TYPE_MAX_VALUE(TYPE_DOMAIN(type)) != NULL_TREE)
                 ans << TREE_INT_CST_LOW(TYPE_MAX_VALUE(TYPE_DOMAIN(type))) + 1;
             ans << "_" << type_to_id(TREE_TYPE(type));
             break;
