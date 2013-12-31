@@ -43,13 +43,14 @@ class SimpleSuite(TestSuite):
 
     def envars(self, args):
         newenv = dict()
+        if os.name == 'posix':
+            newenv['LD_LIBRARY_PATH'] = appendpath(os.environ.get('LD_LIBRARY_PATH'), args.library_path)
+        else:
+            newenv['PATH'] = appendpath(os.environ.get('PATH'), args.library_path)
         if self.chain is not None:
             if args.library_path:
                 if os.name == 'posix':
-                    newenv['LD_LIBRARY_PATH'] = appendpath(os.environ.get('LD_LIBRARY_PATH'), args.library_path)
                     newenv['LD_PRELOAD'] = 'libbugle.so'
-                else:
-                    newenv['PATH'] = appendpath(os.environ.get('PATH'), args.library_path)
             if args.filter_dir:
                 newenv['BUGLE_FILTER_DIR'] = args.filter_dir
             if args.filters:
@@ -176,7 +177,13 @@ def make_suites(args):
     ]
 
     # Not all suites are necessarily compiled in. Query tester for a list
-    out = subprocess.check_output([args.tester, '--list']).decode('utf-8')
+    env = dict(os.environ)
+    if os.name == 'posix':
+        env['LD_LIBRARY_PATH'] = appendpath(env.get('LD_LIBRARY_PATH'), args.library_path)
+    else:
+        env['PATH'] = appendpath(env.get('PATH'), args.library_path)
+
+    out = subprocess.check_output([args.tester, '--list'], env = env).decode('utf-8')
     avail = set(out.splitlines())
     out = [x for x in suites if x.suite in avail]
     return out
