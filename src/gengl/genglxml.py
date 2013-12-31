@@ -3,6 +3,7 @@ from __future__ import print_function, division
 import sys
 import os.path
 import re
+import itertools
 from collections import OrderedDict
 from optparse import OptionParser
 from textwrap import dedent
@@ -98,47 +99,48 @@ class PseudoExtension(Extension):
 
 class API:
     extra_aliases = []
+    extra_tree = etree.XML('<registry></registry>')
 
     def valid_enums(self, enums_elem):
         return enums_elem.get('type') != 'bitmask' and 'group' not in enums_elem
 
     def __init__(self, filename):
-        self.tree = etree.parse(filename)
         self.enums = dict()
         self.enum_values = dict()
         self.functions = dict()
         self.extensions = dict()
         tree = etree.parse(filename)
-        root = tree.getroot()
+        roots = [self.extra_tree, tree.getroot()]
 
-        for enums_elem in root.iterfind('enums'):
-            if self.valid_enums(enums_elem):
-                for enum_elem in enums_elem.iterfind('enum'):
-                    if not self.match_require(enum_elem):
-                        continue
-                    enum = Enum(enum_elem)
-                    value = int(enum_elem.get('value'), 0)
-                    if value not in self.enum_values:
-                        self.enum_values[value] = EnumValue(value)
-                    enum.value = self.enum_values[value]
-                    enum.value.enums.append(enum)
-                    assert enum.name not in self.enums
-                    self.enums[enum.name] = enum
+        for root in roots:
+            for enums_elem in root.iterfind('enums'):
+                if self.valid_enums(enums_elem):
+                    for enum_elem in enums_elem.iterfind('enum'):
+                        if not self.match_require(enum_elem):
+                            continue
+                        enum = Enum(enum_elem)
+                        value = int(enum_elem.get('value'), 0)
+                        if value not in self.enum_values:
+                            self.enum_values[value] = EnumValue(value)
+                        enum.value = self.enum_values[value]
+                        enum.value.enums.append(enum)
+                        assert enum.name not in self.enums
+                        self.enums[enum.name] = enum
 
-        for command_elem in root.iterfind('commands/command'):
-            if not self.match_require(command_elem):
-                continue
-            function = Function(command_elem)
-            self.functions[function.name] = function
+        for root in roots:
+            for command_elem in root.iterfind('commands/command'):
+                if not self.match_require(command_elem):
+                    continue
+                function = Function(command_elem)
+                self.functions[function.name] = function
 
-        for feature_elem in root.iterfind('feature'):
-            if self.use_extension(feature_elem):
-                extension = Extension(feature_elem, self)
-                self.extensions[extension.name] = extension
-        for extension_elem in root.iterfind('extensions/extension'):
-            if self.use_extension(extension_elem):
-                extension = Extension(extension_elem, self)
-                self.extensions[extension.name] = extension
+        for root in roots:
+            for feature_elem in itertools.chain(
+                    root.iterfind('feature'),
+                    root.iterfind('extensions/extension')):
+                if self.use_extension(feature_elem):
+                    extension = Extension(feature_elem, self)
+                    self.extensions[extension.name] = extension
         self.extensions = sortedDict(self.extensions, Extension.key)
 
         # Prune enums and functions that don't apply in this API/profile
@@ -189,6 +191,18 @@ class GLXAPI(API):
     default_extensions = 'glx'
     block = 'BUGLE_API_EXTENSION_BLOCK_GLWIN'
     extra_aliases = genglxmltables.glx_extra_aliases
+    # Add None as a token
+    extra_tree = etree.XML('''
+        <registry>
+            <enums namespace="GLX">
+                <enum name="None" value="0"/>
+            </enums>
+            <feature api="glx" name="GLX_VERSION_1_0" number="1.0">
+                <require>
+                    <enum name="None" />
+                </require>
+            </feature>
+        </registry>''')
 
     def valid_enums(self, enums_elem):
         if enums_elem.get('namespace') != 'GLX':
