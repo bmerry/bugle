@@ -1,6 +1,8 @@
 EXTRATYPE +PP7GLubyte
 EXTRATYPE +PP8GLushort
 EXTRATYPE +PP6GLuint
+EXTRATYPE +Pm
+EXTRATYPE +P8GLintptr
 
 TYPE PARAMETER glMultiDrawArraysEXT 0 TYPE_15GLprimitiveenum
 TYPE PARAMETER glMultiDrawElementsEXT 0 TYPE_15GLprimitiveenum
