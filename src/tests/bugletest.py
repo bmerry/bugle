@@ -67,7 +67,6 @@ class SimpleSuite(TestSuite):
             '--suite', self.suite])
         if logfile is not None:
             prog.extend(['--log', logfile])
-        print(prog)
         os.execvp(prog[0], prog)
         # Should never be reached
         raise TestFailed('GDB did not run')
@@ -140,7 +139,7 @@ class LogSuite(SimpleSuite):
                 raise TestFailed('not enough output')
             for i in range(len(reflines)):
                 if not re.match(reflines[i], lines[i]):
-                    raise TestFailed("`" + lines[i] + "' did not match `" + reflines[i] + "' at line " + str(i + 1) + '\n' + '\n'.join(orig_lines))
+                    raise TestFailed("`" + lines[i] + "' did not match `" + reflines[i] + "' at line " + str(i + 1))
         finally:
             if reflog is not None:
                 reflog.close()
