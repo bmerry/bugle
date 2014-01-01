@@ -10,12 +10,9 @@ from textwrap import dedent
 import genglxmltables
 
 try:
-    from lxml import etree
+    import xml.etree.cElementTree as etree
 except ImportError:
-    try:
-        import xml.etree.cElementTree as etree
-    except ImportError:
-        import xml.etree.ElementTree as etree
+    import xml.etree.ElementTree as etree
 
 def sortedDict(d, keyfunc):
     '''
