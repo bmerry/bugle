@@ -10,6 +10,7 @@
 * Split testing logic into separate user-runnable Python tool
 * Automate copying of opengl32.dll to test directory on Windows
 * Fix tracing of wglGetProcAddress
+* Fix tracing of VBO offsets on LLP64 systems
 
 0.0.20130121
 ------------

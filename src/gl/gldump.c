@@ -185,8 +185,12 @@ static budgie_type bugle_gl_type_to_type_ptr_vbo(GLenum gl_type, GLenum binding)
         bugle_gl_end_internal_render("bugle_gl_type_to_type_ptr_vbo", BUGLE_FALSE);
         if (id != 0)
         {
-            if (sizeof(unsigned long) == sizeof(GLvoid *)) return TYPE_m;
-            else return TYPE_P6GLvoid;
+            if (sizeof(unsigned long) == sizeof(GLvoid *))
+                return TYPE_m;
+            else if (sizeof(GLintptr) == sizeof(GLvoid *))
+                return TYPE_8GLintptr;
+            else
+                return TYPE_P6GLvoid;
         }
     }
     return bugle_gl_type_to_type_ptr(gl_type);
