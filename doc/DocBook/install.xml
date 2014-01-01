@@ -198,44 +198,60 @@
                 url="http://www.mingw.org">MinGW</ulink>; you can try using
             Cygwin as well, but it is not tested. You can also build using
             Microsoft Visual C++, but MinGW is still needed as it provides a
-            number of the supporting tools such as Perl and gcc.
+            number of the supporting tools such as gcc.
         </para>
         <para>
-            Here is the list of steps I used to install on Windows, including
+            Here is the list of steps I used to install on 64-bit Windows, including
             support for the debugger. Except where noted, the versions numbers
-            were the latest available at the time, but newer versions may work too.
+            were the latest available at the time, but newer versions may work too. Similarly,
+            I've listed the directory names I used, but there is no reason you can't change
+            them, and in some cases install several packages to one directory.
+            However, installing packages like GTK+ on top of MinGW's directory
+            structure is not recommended, because it makes it impossible to use
+            those packages from a different compiler (such as MSVC).
+        </para>
+        <para>
+            For each package you install, you will need to set
+            <envar>PATH</envar> to include the <filename
+                class="directory">bin</filename> directory. If there is a
+            <filename class="directory">lib/pkgconfig</filename> directory, it
+            should be added to <envar>PKG_CONFIG_PATH</envar>; if not, then the
+            <filename class="directory">include</filename> directory should be
+            added to <envar>CPATH</envar> (or <envar>INCLUDES</envar> for MSVC) and
+            the <filename class="directory">lib</filename> directory should be
+            added to <envar>LIBRARY_PATH</envar>.
         </para>
         <orderedlist>
             <listitem>
                 <para>
-                    Install <application>MinGW</application>. I used the
-                    command-line installer interface (<command>mingw-get</command>). See the
-                    <ulink
-                        url="http://www.mingw.org/wiki/Getting_Started">Getting
-                        Started</ulink> page for more details.
-                </para>
-                <para>
-                    After setting <envar>PATH</envar> appropriately, I ran
-                </para>
-                <screen><userinput>mingw-get install gcc g++ mingw-developer-toolkit gdb msys-zip msys-unzip</userinput></screen>
-                <para>
-                    Then I launched <command>msys.bat</command> and ran
-                    <command>/postinstall/pi.sh</command>.
+                    Install <application>MinGW w64</application>. I used the
+                    installer from <ulink
+                        url="http://sourceforge.net/projects/mingwbuilds/">mingw-builds</ulink>.
                 </para>
             </listitem>
             <listitem>
                 <para>
-                    Download <ulink
+                    Install <application>MSYS</application>. Again, I used the
+                    <ulink url="http://sourceforge.net/projects/mingwbuilds/files/external-binary-packages/">
+                        binaries</ulink> provided by mingw-builds. Further steps are run from
+                    inside the MSYS shell.
+                </para>
+            </listitem>
+            <listitem>
+                <para>
+                    Download the source for <ulink
                         url="https://sourceforge.net/projects/mingw/files/Other/UserContributed/regex/mingw-regex-2.5.1/">mingw-libgnurx</ulink>
-                    from the user contributed files folder (both the dev and
-                    bin packages), and unpack them into <filename class="directory">/mingw</filename>.
+                    from the Mingw user contributed files folder. Configure it with
+                    <screen><prompt>$ </prompt><userinput>./configure --prefix=<replaceable>/c/mingw/mingw64</replaceable>/x86_64-w64-mingw32</userinput></screen>
+                    Then run <userinput>make &amp;&amp; make install</userinput>.
                 </para>
             </listitem>
             <listitem>
                 <para>
                     Download and install Python 2.7 for Windows x86. Do not use Python 3.x, as some
                     of the code in &bugle; is not Python 3 compatible. Also do not use the x86-64
-                    version of Python, as the SCons installer will not detect it.
+                    version of Python, as the SCons installer will not detect
+                    it (this has not been tested for a while: it might be fine now).
                 </para>
                 <para>
                     Also add <filename class="directory">C:\python27</filename> and
@@ -249,31 +265,11 @@
             </listitem>
             <listitem>
                 <para>
-                    Download the <application>GTK+</application> bundle
-                    (2.16.6) from <ulink
-                        url="http://www.gtk.org/download/win32.php">gtk.org</ulink>,
-                    and unpack it somewhere (e.g. <filename
-                        class="directory">c:\tools\gtk+</filename>).
-                </para>
-                <warning><para>
-                        At the time of writing, the latest released version of
-                        <application>gtkglext</application> (1.2.0) does not
-                        work with GTK+ versions 2.18 or higher.
-                </para></warning>
-                <warning><para>
-                        If you are planning to use a toolchain other than
-                        MinGW (e.g. MSVC), do not overlay GTK+ on the MinGW
-                        installation as it cause MinGW's system headers to be
-                        used when trying to build against GTK+.
-                </para></warning>
-                <para>
-                    You will also need to set (or add to) some environment
-                    variables to allow GTK+ to be detected. For example (the
-                    syntax assumes variables are being set from within MSYS):
-                    <screen>
-PATH=/c/tools/gtk+/bin
-PKG_CONFIG_PATH=/c/tools/gtk+/lib/pkgconfig
-</screen>
+                    Download the GTK+ 2.22 <ulink
+                        url="http://www.gtk.org/download/win64.php">binary
+                        bundle</ulink> and unpack it into
+                    <filename class="directory">c:\devel\gtk+</filename>. Note:
+                    do not use GTK+ 3.
                 </para>
             </listitem>
             <listitem>
@@ -288,45 +284,32 @@ PKG_CONFIG_PATH=/c/tools/gtk+/lib/pkgconfig
 <prompt>$</prompt> <userinput>sed -i -e 's/pangox/pangowin32/g' configure</userinput>
 </screen>
                 <para>
+                    Additionally, you need to edit <filename>Makefile.am</filename>
+                    and <filename>Makefile.in</filename> to remove
+                    <literal>-DGTK_REMOVE_DEPRECATED</literal> (remember to
+                    remove the trailing backslash from the previous line too).
+                </para>
+                <para>
                     Then, run <userinput>./configure
-                        --prefix=/c/tools/gtk+</userinput>,
+                        --prefix=/c/devel/gtkglext</userinput>,
                     <userinput>make</userinput> and <userinput>make
-                        install</userinput>. This will overlay
-                    <application>gtkglext</application> on your GTK+
-                    installation; you could also choose to install it
-                    separately, but you will then need to add to
-                    <envar>PATH</envar> and <envar>PKG_CONFIG_PATH</envar>.
+                        install</userinput>.
                 </para>
             </listitem>
             <listitem>
                 <para>
                     Download the source for <application>GLEW</application>
-                    1.7 and unpack it into a temporary location and build it
+                    1.10 and unpack it into a temporary location and build it
                     using <command>make</command>, then install it with the command
-                    <userinput>make GLEW_DEST=/mingw install</userinput>.
-                </para>
-                <para>
-                    This will overlay GLEW on your MinGW installation; the
-                    alternative is to install it elsewhere and set
-                    <envar>CPATH</envar>, <envar>PATH</envar>
-                    and <envar>LIBRARY_PATH</envar> appropriately.
-                </para>
-                <para>
-                    If you are building &bugle; with MSVC, you should instead
-                    use the binary download for GLEW (the binary download will
-                    not work with MinGW).
+                    <userinput>make GLEW_DEST=/c/devel/glew install</userinput>.
                 </para>
             </listitem>
             <listitem>
                 <para>
-                    Download the <ulink
-                        url="http://www.transmissionzero.co.uk/computing/using-glut-with-mingw/">MinGW
-                        build of freeglut</ulink>, and unpack it in a temporary directory. Then run
+                    Download <ulink url="http://freeglut.sourceforge.net/">freeglut</ulink> source.
+                    Unpack it, and run <userinput>./configure --prefix=/c/devel/freeglut</userinput>,
+                    <userinput>make</userinput> and <userinput>make install</userinput>.
                 </para>
-                <screen>
-<userinput>mv freeglut/lib/* /mingw/lib
-mv freeglut/include/GL/* /mingw/include/GL
-mv freeglut/*.dll /mingw/bin</userinput></screen>
             </listitem>
             <listitem><para>
                     Grab the latest <ulink
