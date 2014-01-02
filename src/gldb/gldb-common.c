@@ -885,7 +885,8 @@ gldb_state *gldb_state_find_child_numeric(const gldb_state *parent, GLint name)
     for (i = bugle_list_head(&parent->children); i; i = bugle_list_next(i))
     {
         child = (gldb_state *) bugle_list_data(i);
-        if (child->numeric_name == name) return child;
+        if (child->numeric_name == name)
+            return child;
     }
     return NULL;
 }
@@ -899,7 +900,23 @@ gldb_state *gldb_state_find_child_enum(const gldb_state *parent, GLenum name)
     for (i = bugle_list_head(&parent->children); i; i = bugle_list_next(i))
     {
         child = (gldb_state *) bugle_list_data(i);
-        if (child->enum_name == name) return child;
+        if (child->enum_name == name) 
+            return child;
+    }
+    return NULL;
+}
+
+gldb_state *gldb_state_find_child_enum_numeric(const gldb_state *parent, GLenum name, GLint numeric)
+{
+    gldb_state *child;
+    linked_list_node *i;
+
+    /* FIXME: build indices on the state */
+    for (i = bugle_list_head(&parent->children); i; i = bugle_list_next(i))
+    {
+        child = (gldb_state *) bugle_list_data(i);
+        if (child->enum_name == name && child->numeric_name == numeric)
+            return child;
     }
     return NULL;
 }

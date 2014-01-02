@@ -242,7 +242,7 @@ static void gldb_texture_pane_update_ids(GldbTexturePane *pane, const gldb_state
 
     for (trg = 0; trg < G_N_ELEMENTS(targets); trg++)
     {
-        s = gldb_state_find_child_enum(root, targets[trg]);
+        s = gldb_state_find_child_enum_numeric(root, targets[trg], 0);
         if (!s) continue;
 
         /* Identify active textures */
