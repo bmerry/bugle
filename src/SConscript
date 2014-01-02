@@ -291,9 +291,13 @@ budgie_outputs = [
         ]
 envs['tu'].Tu(['data/gl.o', 'data/gl.tu'], 'data/gl.c')
 envs['tu'].Budgie(budgie_outputs, ['data/gl.tu', 'bc/main.bc'])
-envs['tu'].BudgieAlias(target = ['bc/alias.bc'], source = registries)
-envs['tu'].ApitablesC(target = ['apitables.c'], source = [File('budgielib/defines.h')] + registries)
-envs['tu'].ApitablesH(target = ['apitables.h'], source = [File('budgielib/defines.h')] + registries)
+envs['tu'].BudgieAlias(target = ['bc/alias.bc'], source = registries, GLTYPE = aspects['gltype'])
+envs['tu'].ApitablesC(target = ['apitables.c'],
+        source = [File('budgielib/defines.h')] + registries,
+        GLTYPE = aspects['gltype'])
+envs['tu'].ApitablesH(target = ['apitables.h'],
+        source = [File('budgielib/defines.h')] + registries,
+        GLTYPE = aspects['gltype'])
 
 substs = get_substs(aspects)
 envs['host'].SubstFile('include/bugle/porting.h', 'include/bugle/porting.h.in', substs)

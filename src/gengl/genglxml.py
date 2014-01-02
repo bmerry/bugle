@@ -106,7 +106,7 @@ class API:
     extra_tree = etree.XML('<registry></registry>')
 
     def valid_enums(self, enums_elem):
-        return enums_elem.get('type') != 'bitmask' and 'group' not in enums_elem
+        return enums_elem.get('type') != 'bitmask' and 'group' not in enums_elem.keys()
 
     def __init__(self, filename):
         self.enums = dict()
@@ -189,6 +189,18 @@ class GLAPI(API):
     default_extensions = 'gl'
     block = 'BUGLE_API_EXTENSION_BLOCK_GL'
 
+class GLES1CMAPI(GLAPI):
+    api = 'gles1'
+    profile = 'common'
+    default_extensions = 'gles1'
+    block = 'BUGLE_API_EXTENSION_BLOCK_GL'
+
+class GLES2API(GLAPI):
+    api = 'gles2'
+    profile = 'common'
+    default_extensions = 'gles2'
+    block = 'BUGLE_API_EXTENSION_BLOCK_GL'
+
 class GLXAPI(API):
     api = 'glx'
     profile = None
@@ -211,6 +223,17 @@ class GLXAPI(API):
     def valid_enums(self, enums_elem):
         if enums_elem.get('namespace') not in ['GLX', 'GL']:
             return False
+        return API.valid_enums(self, enums_elem)
+
+class EGLAPI(API):
+    api = 'egl'
+    profile = None
+    default_extensions = 'egl'
+    block = 'BUGLE_API_EXTENSION_BLOCK_GLWIN'
+
+    def valid_enums(self, enums_elem):
+        if enums_elem.get('group') == 'Boolean':
+            return True
         return API.valid_enums(self, enums_elem)
 
 class WGLAPI(API):
@@ -421,12 +444,16 @@ def do_c(options, apis):
 
 def main():
     parser = OptionParser()
-    parser.add_option('--header', dest = 'header', metavar = 'FILE',
+    parser.add_option('--header', metavar = 'FILE',
                       help = 'header file with function enumeration')
-    parser.add_option('-m', '--mode', dest = 'mode', metavar = 'MODE',
+    parser.add_option('-m', '--mode', metavar = 'MODE',
                       type = 'choice', choices = ['c', 'header', 'alias'],
                       help = 'output to generate')
-    parser.set_usage('Usage: %prog [options] -m mode gl.xml [...]')
+    parser.add_option('--gltype', metavar = 'TYPE',
+                      type = 'choice', choices = ['gl', 'gles1cm', 'gles2'],
+                      default = 'gl',
+                      help = 'GL variant to use for gl.xml')
+    parser.set_usage('Usage: %prog [options] -m mode --gltype type gl.xml [...]')
     (options, args) = parser.parse_args()
     if not args:
         parser.print_usage(sys.stderr)
@@ -446,9 +473,16 @@ def main():
         'c': do_c
     }
 
+    glfactories = {
+        'gl': GLAPI,
+        'gles1cm': GLES1CMAPI,
+        'gles2': GLES2API
+    }
+
     factories = {
-        'gl.xml': GLAPI,
+        'gl.xml': glfactories[options.gltype],
         'glx.xml': GLXAPI,
+        'egl.xml': EGLAPI,
         'wgl.xml': WGLAPI
     }
 
