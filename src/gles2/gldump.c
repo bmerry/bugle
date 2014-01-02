@@ -136,7 +136,6 @@ int bugle_gl_format_to_count(GLenum format, GLenum type)
         {
         case GL_ALPHA:
         case GL_LUMINANCE:
-        case GL_STENCIL_INDEX:
         case GL_DEPTH_COMPONENT:
             return 1;
         case GL_LUMINANCE_ALPHA:
