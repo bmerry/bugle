@@ -57,10 +57,10 @@ static FILE *log_handle = NULL;
 static test_suite *first_suite = NULL;
 static test_suite *last_suite = NULL;
 
+#if TEST_GL
 /* Whether we initialised GLUT */
 static int glut_initialised = 0;
 
-#if TEST_GL
 #if BUGLE_GLWIN_GLX
 extern void arbcreatecontext_suite_register(void);
 extern void contextattribs_suite_register(void);

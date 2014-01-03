@@ -263,6 +263,8 @@ static void gldb_buffer_pane_update_data(GldbBufferPane *pane)
                 float float_value;
                 double double_value;
 
+                (void) double_value; /* prevent compiler warnings in builds where it is unused */
+
                 size = budgie_type_size(pane->fields[i]);
                 if (data + size > end)
                     done = TRUE;
