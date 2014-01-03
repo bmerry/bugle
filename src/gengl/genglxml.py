@@ -261,7 +261,8 @@ def do_alias(options, apis):
         for function in api.functions.values():
             aliases = function.elem.findall('alias')
             for a in aliases:
-                print('ALIAS {} {}'.format(function.name, a.get('name')))
+                if a.get('name') in api.functions:
+                    print('ALIAS {} {}'.format(function.name, a.get('name')))
         for x, y in api.extra_aliases:
             print('ALIAS {} {}'.format(x, y))
 
