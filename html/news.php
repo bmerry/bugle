@@ -24,6 +24,17 @@ else
     </p>
     <h1>BuGLe News</h1>
 
+    <h2>Happy 2014 (04/01/2014)</h2>
+    <p>It's 2014, which means it's time for me to squash the most glaring bugs and
+    push out another release. There isn't much to see, but there is some
+    re-engineering under the hood to take advantage of the OpenGL API registry
+    having moved to an XML format. No more half-baked C parsing to try to determine
+    which functions go with which extensions!</p>
+    <p>As usual, I do little-to-zero GL programming these days, so it's quite
+    possible that things are glaringly, obviously broken and I just haven't noticed.
+    If so, please let me know, preferably via a bug in <a
+    href="https://sourceforge.net/apps/trac/bugle/">trac</a>.</p>
+
     <h2>Another almost-annual release (21/01/2013)</h2>
     <p>So, I've gotten around to my New Year's resolution of pushing out another
     release. It's mostly code that I wrote more than 6 months ago and I can't 
