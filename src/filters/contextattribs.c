@@ -1,5 +1,5 @@
 /*  BuGLe: an OpenGL debugging tool
- *  Copyright (C) 2012  Bruce Merry
+ *  Copyright (C) 2012, 2014  Bruce Merry
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -29,8 +29,8 @@
 #include <budgie/reflect.h>
 #include <string.h>
 
-static int force_major_version;
-static int force_minor_version;
+static long force_major_version;
+static long force_minor_version;
 static int add_flags = 0, remove_flags = 0;
 static int add_profiles = 0, remove_profiles = 0;
 
@@ -212,6 +212,7 @@ static int *contextattribs_make_attribs(const int *base_attribs)
         attribs[i++] = GLX_CONTEXT_PROFILE_MASK_ARB;
         attribs[i++] = mask;
     }
+    attribs[i] = None;
     return attribs;
 }
 

@@ -14,6 +14,7 @@
 * Fix tracing of wglGetProcAddress
 * Fix tracing of VBO offsets on LLP64 systems
 * Change deprecated XKeycodeToKeysym to XkbKeycodeToKeysym (fixes #109)
+* Fix memory corruption in contextattribs filterset
 
 0.0.20130121
 ------------
