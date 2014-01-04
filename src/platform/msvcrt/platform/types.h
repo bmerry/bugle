@@ -34,6 +34,7 @@ typedef uint32_t bugle_uint32_t;
 typedef int32_t  bugle_int32_t;
 typedef uint64_t bugle_uint64_t;
 typedef int64_t  bugle_int64_t;
+typedef uint64_t bugle_uint64_t;
 typedef uintptr_t bugle_uintptr_t;
 
 #define BUGLE_PRIu8 PRIu8
