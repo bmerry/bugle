@@ -2,7 +2,7 @@
 import os
 from BugleAspects import *
 
-version = '0.0.20130121'
+version = '0.0.20140104'
 
 def subdir(srcdir, dir, **kw):
     '''
@@ -625,6 +625,9 @@ package_sources.extend([
     'src/platform/posix/platform/macros.h',
     'src/platform/posix/platform/threads.h',
     'src/platform/posix/platform/types.h',
+    'src/platform/process.h',
+    'src/platform/process_linux.h',
+    'src/platform/process_null.h',
     'src/platform/round_pass.c',
     'src/platform/round_soft.c',
     'src/platform/sinf_pass.c',

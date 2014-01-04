@@ -1,3 +1,9 @@
+0.0.20140104
+------------
+This is the first release to use the Khronos XML API registry, with the result
+that reflection information is more accurate. It also contains a number of bug
+fixes.
+
 0.0.20130121
 ------------
 This release adds two new filtersets: logdebug captures the debug messages from
