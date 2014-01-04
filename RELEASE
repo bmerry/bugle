@@ -2,10 +2,9 @@
 - Update the library version info in src/SConscript
 - Update and date ChangeLog
 - Update and date NEWS
-- Test on several machines
 - Run 'scons test' on several machines
 - Do a 'fakeroot scons package'
-- Unpackage the rest, run 'scons test' on it
+- Unpackage the result, run 'scons test' on it
 - Upload to sourceforge:
   - sftp bmerry@frs.sourceforge.net
   - cd /home/frs/project/bugle/bugle
