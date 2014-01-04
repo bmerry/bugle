@@ -1,5 +1,5 @@
 /*  BuGLe: an OpenGL debugging tool
- *  Copyright (C) 2011  Bruce Merry
+ *  Copyright (C) 2011, 2013  Bruce Merry
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -24,13 +24,17 @@
 #include <GL/glext.h>
 #include "test.h"
 #include <bugle/bool.h>
+#include <bugle/porting.h>
 
-#if BUGLE_GLWIN_GLX
+#if BUGLE_GLWIN_GLX && BUGLE_PLATFORM_POSIX
 
 #include <GL/glx.h>
 #include <GL/glxext.h>
 #include <X11/Xlib.h>
 #include <string.h>
+#include <budgie/addresses.h>
+#include <budgie/call.h>
+#include <dlfcn.h>
 
 typedef struct
 {
@@ -291,6 +295,69 @@ static void close_glXCreateContextAttribsARB(const info_glXCreateContextAttribsA
     close_glXCreateNewContext(info);
 }
 
+static int gl32_core_supported_handler(Display *dpy, XErrorEvent *e)
+{
+    /* Do nothing. We detect the error from the fact that the context
+     * creation call returns NULL.
+     */
+    (void) dpy;
+    (void) e;
+    return 0;
+}
+
+/* Checks whether GL 3.2 core profile is supported. If not, marks the
+ * test as skipped.
+ */
+static bugle_bool gl32_core_supported(void)
+{
+    PFNGLXCREATECONTEXTATTRIBSARBPROC glXCreateContextAttribsARB_real;
+    BUDGIEAPIPROC (*budgie_function_address_real_ptr)(budgie_function);
+    int (*old_handler)(Display *, XErrorEvent *);
+    info_fbconfig info;
+    GLXContext ctx;
+
+    const int attribs[] =
+    {
+        GLX_CONTEXT_MAJOR_VERSION_ARB, 3,
+        GLX_CONTEXT_MINOR_VERSION_ARB, 2,
+        GLX_CONTEXT_PROFILE_MASK_ARB, GLX_CONTEXT_CORE_PROFILE_BIT_ARB,
+        GLX_CONTEXT_FLAGS_ARB, GLX_CONTEXT_FORWARD_COMPATIBLE_BIT_ARB,
+        None
+    };
+
+    if (!open_fbconfig(&info))
+        return BUGLE_FALSE;
+
+    budgie_function_address_real_ptr = dlsym(NULL, "budgie_function_address_real");
+    if (!budgie_function_address_real_ptr)
+    {
+        test_skipped("could not get address for budgie_function_address_real");
+        close_fbconfig(&info);
+        return BUGLE_FALSE;
+    }
+    glXCreateContextAttribsARB_real = (PFNGLXCREATECONTEXTATTRIBSARBPROC)
+        budgie_function_address_real_ptr(BUDGIE_FUNCTION_ID(glXCreateContextAttribsARB));
+
+    /* We use XSync to ensure that our custom handler handles only the
+     * context creation call.
+     */
+    XSync(info.dpy, False);
+    old_handler = XSetErrorHandler(gl32_core_supported_handler);
+
+    /* Bypass the bugle wrapper */
+    ctx = glXCreateContextAttribsARB_real(info.dpy, info.config, NULL, True, attribs);
+
+    XSync(info.dpy, False);
+    XSetErrorHandler(old_handler);
+    if (ctx != NULL)
+        glXDestroyContext(info.dpy, ctx);
+    else
+        test_skipped("GL 3.2 core profile is not supported");
+
+    close_fbconfig(&info);
+    return ctx != NULL;
+}
+
 static void test_gl(void)
 {
     const GLubyte *version;
@@ -311,6 +378,8 @@ static void contextattribs_glXCreateContext_test(void)
 {
     info_glXCreateContext info;
 
+    if (!gl32_core_supported())
+        return; /* callee set the test status */
     if (!open_glXCreateContext(&info))
         return; /* callee set the test status */
     test_gl();
@@ -321,6 +390,8 @@ static void contextattribs_glXCreateNewContext_test(void)
 {
     info_glXCreateNewContext info;
 
+    if (!gl32_core_supported())
+        return; /* callee set the test status */
     if (!open_glXCreateNewContext(&info))
         return; /* callee set the test status */
     test_gl();
@@ -331,19 +402,21 @@ static void contextattribs_glXCreateContextAttribsARB_test(void)
 {
     info_glXCreateContextAttribsARB info;
 
+    if (!gl32_core_supported())
+        return; /* callee set the test status */
     if (!open_glXCreateContextAttribsARB(&info))
         return; /* callee set the test status */
     test_gl();
     close_glXCreateContextAttribsARB(&info);
 }
 
-#endif /* BUGLE_GLWIN_GLX */
+#endif /* BUGLE_GLWIN_GLX && BUGLE_PLATFORM_POSIX */
 
 void contextattribs_suite_register(void)
 {
     test_suite *ts = test_suite_new("contextattribs", TEST_FLAG_MANUAL, NULL, NULL);
     (void) ts; /* suppress unused variable warning when not under GLX */
-#if BUGLE_GLWIN_GLX
+#if BUGLE_GLWIN_GLX && BUGLE_PLATFORM_POSIX
     test_suite_add_test(ts, "glXCreateContext", contextattribs_glXCreateContext_test);
     test_suite_add_test(ts, "glXCreateNewContext", contextattribs_glXCreateNewContext_test);
     test_suite_add_test(ts, "glXCreateContextAttribsARB", contextattribs_glXCreateContextAttribsARB_test);

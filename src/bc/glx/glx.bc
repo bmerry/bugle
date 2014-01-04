@@ -2,7 +2,6 @@ HEADER GL/glx.h
 HEADER bugle/glwin/glwintypes.h
 HEADER bugle/glx/glxdump.h
 HEADER bugle/glx/overrides.h
-LIMIT glX.*
 
 INCLUDE bc/glx/GLX_ARB_get_proc_address.bc
 INCLUDE bc/glx/GLX_ARB_create_context.bc

@@ -1,5 +1,5 @@
 /*  BuGLe: an OpenGL debugging tool
- *  Copyright (C) 2009-2010, 2012  Bruce Merry
+ *  Copyright (C) 2009-2010, 2012, 2014  Bruce Merry
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -262,6 +262,8 @@ static void gldb_buffer_pane_update_data(GldbBufferPane *pane)
                 unsigned int uint_value;
                 float float_value;
                 double double_value;
+
+                (void) double_value; /* prevent compiler warnings in builds where it is unused */
 
                 size = budgie_type_size(pane->fields[i]);
                 if (data + size > end)

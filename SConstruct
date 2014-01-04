@@ -2,7 +2,7 @@
 import os
 from BugleAspects import *
 
-version = '0.0.20130121'
+version = '0.0.20140104'
 
 def subdir(srcdir, dir, **kw):
     '''
@@ -361,6 +361,11 @@ package_sources.extend([
     'doc/extensions.txt',
     'doc/filters.html',
     'doc/locks.txt',
+    'khronos-api/egl.xml',
+    'khronos-api/gl.xml',
+    'khronos-api/glx.xml',
+    'khronos-api/wgl.xml',
+    'khronos-api/registry.rnc',
     'site_scons/BugleAspects.py',
     'site_scons/BugleChecks.py',
     'site_scons/BugleTarget.py',
@@ -479,9 +484,8 @@ package_sources.extend([
     'src/filters/trace.c',
     'src/filters/unwindstack.c',
     'src/filters/validate.c',
-    'src/gengl/find_header.perl',
-    'src/gengl/genegldef.perl',
-    'src/gengl/gengl.py',
+    'src/gengl/genglxml.py',
+    'src/gengl/genglxmltables.py',
     'src/gl/glbeginend.c',
     'src/gl/gldisplaylist.c',
     'src/gl/gldump.c',
@@ -621,6 +625,9 @@ package_sources.extend([
     'src/platform/posix/platform/macros.h',
     'src/platform/posix/platform/threads.h',
     'src/platform/posix/platform/types.h',
+    'src/platform/process.h',
+    'src/platform/process_linux.h',
+    'src/platform/process_null.h',
     'src/platform/round_pass.c',
     'src/platform/round_soft.c',
     'src/platform/sinf_pass.c',

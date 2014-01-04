@@ -396,7 +396,7 @@ static void query_color_table(void)
 {
     GLubyte data[12] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11};
     GLfloat scale[4];
-    GLint format;
+    GLint format = 0;
 
     if (GLEW_ARB_imaging)
     {
@@ -678,7 +678,7 @@ static void query_framebuffers(void)
         test_log_printf("trace\\.call: glFramebufferTexture2DEXT\\(GL_FRAMEBUFFER(_EXT)?, GL_COLOR_ATTACHMENT0(_EXT)?, GL_TEXTURE_2D, %u, 1\\)\n",
                         (unsigned int) tex[0]);
         glGetIntegerv(GL_FRAMEBUFFER_BINDING_EXT, &i);
-        test_log_printf("trace\\.call: glGetIntegerv\\(GL_FRAMEBUFFER_BINDING(_EXT)?, %p -> %i\\)\n",
+        test_log_printf("trace\\.call: glGetIntegerv\\(GL_(DRAW_)?FRAMEBUFFER_BINDING(_EXT)?, %p -> %i\\)\n",
                         (void *) &i, (int) fb);
         glGetFramebufferAttachmentParameterivEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT,
                                                  GL_FRAMEBUFFER_ATTACHMENT_OBJECT_TYPE_EXT, &i);

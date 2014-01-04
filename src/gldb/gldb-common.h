@@ -1,5 +1,5 @@
 /*  BuGLe: an OpenGL debugging tool
- *  Copyright (C) 2004-2007, 2009-2010  Bruce Merry
+ *  Copyright (C) 2004-2007, 2009-2010, 2013  Bruce Merry
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -76,6 +76,7 @@ typedef enum
 typedef enum
 {
     GLDB_PROGRAM_TYPE_LOCAL = 0,
+    GLDB_PROGRAM_TYPE_GDB,
     GLDB_PROGRAM_TYPE_SSH,
     GLDB_PROGRAM_TYPE_TCP,
     GLDB_PROGRAM_TYPE_COUNT
@@ -231,6 +232,7 @@ gldb_state *gldb_state_find(const gldb_state *root, const char *name, size_t n);
 /* Finds the immediate child with the given numeric/enum name, or NULL */
 gldb_state *gldb_state_find_child_numeric(const gldb_state *parent, GLint name);
 gldb_state *gldb_state_find_child_enum(const gldb_state *parent, GLenum name);
+gldb_state *gldb_state_find_child_enum_numeric(const gldb_state *parent, GLenum name, GLint numeric);
 /* Converts a state to a string representation, which the caller must free */
 char *gldb_state_string(const gldb_state *state);
 GLint gldb_state_GLint(const gldb_state *state);

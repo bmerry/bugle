@@ -20,6 +20,7 @@ if 'debugger' in aspects['parts']:
             have_glew = 'GLEW'
         elif conf.CheckLibWithHeader('glew32', 'GL/glew.h', 'c', autoadd = False):
             have_glew = 'glew32'
+    conf.CheckLib('m')
     gldb_env = conf.Finish()
 
     if not have_gtk:

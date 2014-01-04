@@ -1,4 +1,22 @@
+0.0.20140104
+------------
+* Add "Local inside GDB" debug mode
+* Detect common shells, and avoid initializing anything when inside them
+* Fix a potential infinite loop in budgie_function_address_real
+* Fix infinite recursion on Mesa
+* Fix queries of some non-existent state on ARB_vertex_program
+* Fix tracing of GL_TEXTURE_INTERNAL_FORMAT queries
+* Worked around an AMD driver bug that prevented the tests from running
+* Fix test suite where GLX_ARB_create_context_profile is present but GL 3.2 is not
+* Fix display of strings when tracing glShaderSource
+* Split testing logic into separate user-runnable Python tool
+* Automate copying of opengl32.dll to test directory on Windows
+* Fix tracing of wglGetProcAddress
+* Fix tracing of VBO offsets on LLP64 systems
+* Change deprecated XKeycodeToKeysym to XkbKeycodeToKeysym (fixes #109)
+
 0.0.20130121
+------------
 * Added logdebug filterset
 * Added contextattribs filterset
 * Fixed detection of glMultiDrawElementsEXT as an alias of glMultiDrawElements

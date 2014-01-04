@@ -1,5 +1,5 @@
 /*  BuGLe: an OpenGL debugging tool
- *  Copyright (C) 2004-2010  Bruce Merry
+ *  Copyright (C) 2004-2010, 2014  Bruce Merry
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -104,6 +104,7 @@ extern void bugle_initialise_all(void);
 #if BUGLE_WINSYS_X11
 
 #include <X11/Xlib.h>
+#include <X11/XKBlib.h>
 #include "platform/dl.h"
 
 /* Events we want to get, even if the app doesn't ask for them */
@@ -227,7 +228,7 @@ static void handle_event(Display *dpy, XEvent *event)
      */
     if (event->type != KeyPress && event->type != KeyRelease) return;
 
-    key.keysym = XKeycodeToKeysym(dpy, event->xkey.keycode, 1);
+    key.keysym = XkbKeycodeToKeysym(dpy, event->xkey.keycode, 0, 1);
     key.state = event->xkey.state & STATE_MASK;
     key.press = (event->type == KeyPress);
     for (i = bugle_list_head(&handlers); i; i = bugle_list_next(i))

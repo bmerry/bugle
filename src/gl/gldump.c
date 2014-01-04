@@ -1,5 +1,5 @@
 /*  BuGLe: an OpenGL debugging tool
- *  Copyright (C) 2004-2008, 2010-2012  Bruce Merry
+ *  Copyright (C) 2004-2008, 2010-2013  Bruce Merry
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -185,8 +185,12 @@ static budgie_type bugle_gl_type_to_type_ptr_vbo(GLenum gl_type, GLenum binding)
         bugle_gl_end_internal_render("bugle_gl_type_to_type_ptr_vbo", BUGLE_FALSE);
         if (id != 0)
         {
-            if (sizeof(unsigned long) == sizeof(GLvoid *)) return TYPE_m;
-            else return TYPE_P6GLvoid;
+            if (sizeof(unsigned long) == sizeof(GLvoid *))
+                return TYPE_m;
+            else if (sizeof(GLintptr) == sizeof(GLvoid *))
+                return TYPE_8GLintptr;
+            else
+                return TYPE_P6GLvoid;
         }
     }
     return bugle_gl_type_to_type_ptr(gl_type);
@@ -323,6 +327,14 @@ static int find_dump_table_entry(const void *a, const void *b)
     return (ka < kb) ? -1 : (ka > kb) ? 1 : 0;
 }
 
+static bugle_bool needs_dump_entry(const state_info *s)
+{
+    return s->type == TYPE_9GLboolean
+        || s->type == TYPE_6GLenum
+        || s->type == TYPE_16GLcomponentsenum
+        || s->length != 1;
+}
+
 static dump_table_entry *dump_table = NULL;
 static size_t dump_table_size = 0;
 
@@ -340,8 +352,8 @@ void dump_initialise(void)
     dump_table_size = 0;
     for (t = all_state; *t; t++)
         for (s = *t; s->name; s++)
-            if (s->type == TYPE_9GLboolean || s->type == TYPE_6GLenum
-                || s->length != 1) dump_table_size++;
+            if (needs_dump_entry(s))
+                dump_table_size++;
 
     dump_table_size += 1; /* Manual extras */
 
@@ -349,8 +361,7 @@ void dump_initialise(void)
     cur = dump_table;
     for (t = all_state; *t; t++)
         for (s = *t; s->name; s++)
-            if (s->type == BUDGIE_TYPE_ID(9GLboolean) || s->type == BUDGIE_TYPE_ID(6GLenum)
-                || s->length != 1)
+            if (needs_dump_entry(s))
             {
                 cur->key = s->pname;
                 cur->type = NULL_TYPE;
@@ -358,6 +369,7 @@ void dump_initialise(void)
                 {
                 case TYPE_9GLboolean:
                 case TYPE_6GLenum:
+                case TYPE_16GLcomponentsenum:
                 case TYPE_11GLxfbattrib:
                     cur->type = s->type;
                     break;

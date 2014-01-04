@@ -4,11 +4,11 @@ HEADER bugle/gl/gltypes.h
 HEADER bugle/gl/gldump.h
 HEADER bugle/gl/overrides.h
 HEADER bugle/gl/glstate.h
-LIMIT gl[A-Z][a-z].*
 
 # Typedefs
 NEWTYPE BITFIELD bufferbits GLbitfield GL_COLOR_BUFFER_BIT GL_DEPTH_BUFFER_BIT GL_STENCIL_BUFFER_BIT
 
+EXTRATYPE +m
 EXTRATYPE +PKc
 EXTRATYPE +Pc
 EXTRATYPE +P7GLubyte
@@ -53,7 +53,7 @@ EXTRATYPE pGLbvec4
 TYPE PARAMETER glCompressedTexImage2D 7 bugle_gl_type_to_type_ptr_pbo_source(GL_UNSIGNED_BYTE)
 TYPE PARAMETER glCompressedTexImage3DOES 8 bugle_gl_type_to_type_ptr_pbo_source(GL_UNSIGNED_BYTE)
 TYPE PARAMETER glCompressedTexSubImage2D 8 bugle_gl_type_to_type_ptr_pbo_source(GL_UNSIGNED_BYTE)
-TYPE PARAMETER glCompressedTexSubImage3D 10 bugle_gl_type_to_type_ptr_pbo_source(GL_UNSIGNED_BYTE)
+TYPE PARAMETER glCompressedTexSubImage3DOES 10 bugle_gl_type_to_type_ptr_pbo_source(GL_UNSIGNED_BYTE)
 LENGTH PARAMETER glCompressedTexImage2D 7 $6
 LENGTH PARAMETER glCompressedTexImage3DOES 8 $7
 LENGTH PARAMETER glCompressedTexSubImage2D 8 $7

@@ -12,6 +12,12 @@ and have given a quick thought about whether Roman might perhaps be interested
 to read what you did with his stuff. Horizontal rules don't apply."
 
 
+The files in the khronos-api directory are from the Khronos API registry,
+which can be obtained by anonymous SVN from
+https://cvs.khronos.org/svn/repos/ogl/trunk/doc/registry/public/api. Refer
+to the individual files for license information.
+
+
 gl2ps (which is placed verbatim in the gl2ps/ subdirectory and compiled
 into bugle) is licensed under the LGPL and the GL2PS licencse:
 

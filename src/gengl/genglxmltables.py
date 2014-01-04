@@ -1,5 +1,21 @@
 #!/usr/bin/env python3
 
+# BuGLe: an OpenGL debugging tool
+# Copyright (C) 2013-2014  Bruce Merry
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; version 2.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+
 extension_children = {
     "GL_APPLE_flush_buffer_range": ["GL_ARB_map_buffer_range"],
     "GL_ATI_draw_buffers": ["GL_ARB_draw_buffers"],
@@ -98,7 +114,7 @@ extension_children = {
     "GL_EXT_framebuffer_multisample": ["GL_ARB_framebuffer_object"],
     # Note: although ARB_framebuffer_sRGB incorporates equivalent functionality,
     # the GL_FRAMEBUFFER_SRGB_CAPABLE query was dropped so it is not a strict subset.
-    "GL_EXT_framebuffer_sRGB": [""],
+    "GL_EXT_framebuffer_sRGB": [],
     "GL_EXT_multi_draw_arrays": ["GL_VERSION_1_4"],
     "GL_EXT_packed_depth_stencil": ["GL_VERSION_3_0"],
     "GL_EXT_packed_pixels": ["GL_VERSION_1_2"],
@@ -118,7 +134,6 @@ extension_children = {
     "GL_EXT_texture_filter_anisotropic": [],
     "GL_EXT_texture_integer": ["GL_VERSION_3_0"],
     "GL_EXT_texture_lod_bias": ["GL_VERSION_1_4"],
-    "GL_EXT_texture_rectangle": ["GL_ARB_texture_rectangle"],
     "GL_EXT_texture_sRGB": ["GL_VERSION_2_1"],
     "GL_EXT_texture_shared_exponent": ["GL_VERSION_3_0"],
     "GL_EXT_transform_feedback": ["GL_VERSION_3_0"],
@@ -128,7 +143,7 @@ extension_children = {
     "GL_NV_blend_square": ["GL_VERSION_1_4", "GL_ES_VERSION_2_0"],
     "GL_NV_depth_buffer_float": ["GL_ARB_depth_buffer_float"],
     "GL_NV_packed_depth_stencil": ["GL_EXT_packed_depth_stencil"],
-    "GL_NV_texture_rectangle": ["GL_EXT_texture_rectangle"],
+    "GL_NV_texture_rectangle": ["GL_ARB_texture_rectangle"],
 
     "GLX_ARB_get_proc_address": ["GLX_VERSION_1_4"],
     "GLX_EXT_import_context": ["GLX_VERSION_1_3"],
@@ -147,5 +162,114 @@ extension_children = {
     "EXTGROUP_vertex_attrib": ["GL_ARB_vertex_program", "GL_ARB_vertex_shader", "GL_VERSION_2_0", "GL_ES_VERSION_2_0"],
     # Extensions that define FramebufferTextureLayerEXT - needed because some
     # versions of Mesa headers do odd things with this function
+    # TODO: instead use the registry to decide which extensions provide this function
     "EXTGROUP_framebuffer_texture_layer": ["GL_EXT_geometry_shader4", "GL_EXT_texture_array", "GL_NV_geometry_program4"]
 }
+
+# These aliases are not in the registry because the underlying protocol is different
+glx_extra_aliases = [
+    ('glXChooseFBConfigSGIX', 'glXChooseFBConfig'),
+    ('glXCreateContextWithConfigSGIX', 'glXCreateNewContext'),
+    ('glXGetCurrentDisplayEXT', 'glXGetCurrentDisplay'),
+    ('glXGetCurrentReadDrawableSGI', 'glXGetCurrentReadDrawable'),
+    ('glXGetProcAddressARB', 'glXGetProcAddress'),
+    ('glXMakeCurrentReadSGI', 'glXMakeContextCurrent'),
+    ('glXSelectEventSGIX', 'glXSelectEvent')
+]
+
+wgl_extra_xml = '''
+<registry>
+    <commands namespace="WGL">
+        <command>
+            <proto>int <name>wglChoosePixelFormat</name></proto>
+            <param><ptype>HDC</ptype> <name>hdc</name></param>
+            <param>const <ptype>PIXELFORMATDESCRIPTOR</ptype> *<name>ppfd</name></param>
+        </command>
+        <command>
+            <proto><ptype>BOOL</ptype> <name>wglSetPixelFormat</name></proto>
+            <param><ptype>HDC</ptype> <name>hdc</name></param>
+            <param>int <name>ipfd</name></param>
+            <param><ptype>UINT</ptype> <name>cjpfd</name></param>
+            <param>const <ptype>PIXELFORMATDESCRIPTOR</ptype> *<name>ppfd</name></param>
+        </command>
+        <command>
+            <proto>int <name>wglDescribePixelFormat</name></proto>
+            <param><ptype>HDC</ptype> <name>hdc</name></param>
+            <param>int <name>ipfd</name></param>
+            <param><ptype>UINT</ptype> <name>cjpfd</name></param>
+            <param><ptype>PIXELFORMATDESCRIPTOR</ptype> *<name>ppfd</name></param>
+        </command>
+        <command>
+            <proto>int <name>wglGetPixelFormat</name></proto>
+            <param><ptype>HDC</ptype> <name>hdc</name></param>
+        </command>
+        <command>
+            <proto><ptype>PROC</ptype> <name>wglGetDefaultProcAddress</name></proto>
+            <param><ptype>HDC</ptype> <name>hdc</name></param>
+        </command>
+        <command>
+            <proto><ptype>BOOL</ptype> <name>wglSwapBuffers</name></proto>
+            <param><ptype>HDC</ptype> <name>hdc</name></param>
+        </command>
+        <command>
+            <proto><ptype>DWORD</ptype> <name>wglSwapMultipleBuffers</name></proto>
+            <param><ptype>UINT</ptype> <name>a1</name></param>
+            <!-- Actually CONST WGLSWAP *, but WGLSWAP isn't defined by the registry -->
+            <param>const void *<name>a2</name></param>
+        </command>
+        <command>
+            <proto>int <name>GlmfPlayGlsRecord</name></proto>
+            <param><ptype>DWORD</ptype> a1</param>
+            <param><ptype>DWORD</ptype> a2</param>
+            <param><ptype>DWORD</ptype> a3</param>
+            <param><ptype>DWORD</ptype> a4</param>
+        </command>
+        <command>
+            <proto>int <name>GlmfInitPlayback</name></proto>
+            <param><ptype>DWORD</ptype> a1</param>
+            <param><ptype>DWORD</ptype> a2</param>
+            <param><ptype>DWORD</ptype> a3</param>
+        </command>
+        <command>
+            <proto>int <name>GlmfEndPlayback</name></proto>
+            <param><ptype>DWORD</ptype> a1</param>
+        </command>
+        <command>
+            <proto>int <name>GlmfEndGlsBlock</name></proto>
+            <param><ptype>DWORD</ptype> a1</param>
+        </command>
+        <command>
+            <proto>int <name>GlmfCloseMetaFile</name></proto>
+            <param><ptype>DWORD</ptype> a1</param>
+        </command>
+        <command>
+            <proto>int <name>GlmfBeginGlsBlock</name></proto>
+            <param><ptype>DWORD</ptype> a1</param>
+        </command>
+        <command>
+            <proto>int <name>glDebugEntry</name></proto>
+            <param><ptype>DWORD</ptype> a1</param>
+            <param><ptype>DWORD</ptype> a2</param>
+        </command>
+    </commands>
+
+    <feature api="wgl" name="WGL_VERSION_1_0" number="1.0">
+        <require>
+            <command name="wglChoosePixelFormat"/>
+            <command name="wglSetPixelFormat"/>
+            <command name="wglDescribePixelFormat"/>
+            <command name="wglGetPixelFormat"/>
+            <command name="wglGetDefaultProcAddress"/>
+            <command name="wglSwapBuffers"/>
+            <command name="wglSwapMultipleBuffers"/>
+            <command name="GlmfPlayGlsRecord"/>
+            <command name="GlmfInitPlayback"/>
+            <command name="GlmfEndPlayback"/>
+            <command name="GlmfEndGlsBlock"/>
+            <command name="GlmfCloseMetaFile"/>
+            <command name="GlmfBeginGlsBlock"/>
+            <command name="glDebugEntry"/>
+        </require>
+    </feature>
+</registry>
+'''

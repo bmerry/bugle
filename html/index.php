@@ -64,8 +64,6 @@ else
         is <a href="http://gcc.gnu.org/bugzilla/show_bug.cgi?id=18279">broken</a>, but 4.1 works).</li>
         <li><a href="http://ffmpeg.sourceforge.net/">FFmpeg</a> is needed for
         video capture</li>
-        <li><a href="http://tiswww.case.edu/php/chet/readline/rltop.html">GNU
-            readline</a> is recommended for history editing in <kbd>gldb</kbd></li>
         <li><a href="http://www.gtk.org/">GTK+</a> is required for <kbd>gldb-gui</kbd></li>
         <li><a href="http://projects.gnome.org/gtkglext/">GtkGLExt</a> and
         <a href="http://glew.sourceforge.net/">GLEW</a> are highly

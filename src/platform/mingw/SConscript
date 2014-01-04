@@ -31,6 +31,7 @@ targets['bugleutils']['source'].extend(platform_env.SharedObject(source = [
     '../isfinite_pass.c',
     '../isnan_pass.c',
     '../nan_soft.c',
+    '../process_null.c',
     '../round_soft.c',
     '../sinf_soft.c',
     '../strdup_msvcrt.c',

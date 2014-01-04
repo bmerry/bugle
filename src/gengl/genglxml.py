@@ -1,12 +1,35 @@
 #!/usr/bin/env python3
+
+# BuGLe: an OpenGL debugging tool
+# Copyright (C) 2013-2014  Bruce Merry
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; version 2.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+
+from __future__ import print_function, division
 import sys
 import os.path
 import re
+import itertools
 from collections import OrderedDict
 from optparse import OptionParser
 from textwrap import dedent
-from lxml import etree
 import genglxmltables
+
+try:
+    import xml.etree.cElementTree as etree
+except ImportError:
+    import xml.etree.ElementTree as etree
 
 def sortedDict(d, keyfunc):
     '''
@@ -84,50 +107,61 @@ class Extension:
             return (1, self.name)
         elif (self.category == 'EXT'):
             return (2, self.name)
+        elif (self.category == 'PSEUDO'):
+            return (4, self.name)
         else:
             return (3, self.name)
 
+class PseudoExtension(Extension):
+    def __init__(self, name):
+        self.elem = None
+        self.name = name
+        self.category = 'PSEUDO'
+
 class API:
+    extra_aliases = []
+    extra_tree = etree.XML('<registry></registry>')
+
     def valid_enums(self, enums_elem):
-        return enums_elem.get('type') != 'bitmask' and 'group' not in enums_elem
+        return enums_elem.get('type') != 'bitmask' and 'group' not in enums_elem.keys()
 
     def __init__(self, filename):
-        self.tree = etree.parse(filename)
         self.enums = dict()
         self.enum_values = dict()
         self.functions = dict()
         self.extensions = dict()
         tree = etree.parse(filename)
-        root = tree.getroot()
+        roots = [self.extra_tree, tree.getroot()]
 
-        for enums_elem in root.iterfind('enums'):
-            if self.valid_enums(enums_elem):
-                for enum_elem in enums_elem.iterfind('enum'):
-                    if not self.match_require(enum_elem):
-                        continue
-                    enum = Enum(enum_elem)
-                    value = int(enum_elem.get('value'), 0)
-                    if value not in self.enum_values:
-                        self.enum_values[value] = EnumValue(value)
-                    enum.value = self.enum_values[value]
-                    enum.value.enums.append(enum)
-                    assert enum.name not in self.enums
-                    self.enums[enum.name] = enum
+        for root in roots:
+            for enums_elem in root.iterfind('enums'):
+                if self.valid_enums(enums_elem):
+                    for enum_elem in enums_elem.iterfind('enum'):
+                        if not self.match_require(enum_elem):
+                            continue
+                        enum = Enum(enum_elem)
+                        value = int(enum_elem.get('value'), 0)
+                        if value not in self.enum_values:
+                            self.enum_values[value] = EnumValue(value)
+                        enum.value = self.enum_values[value]
+                        enum.value.enums.append(enum)
+                        assert enum.name not in self.enums
+                        self.enums[enum.name] = enum
 
-        for command_elem in root.iterfind('commands/command'):
-            if not self.match_require(command_elem):
-                continue
-            function = Function(command_elem)
-            self.functions[function.name] = function
+        for root in roots:
+            for command_elem in root.iterfind('commands/command'):
+                if not self.match_require(command_elem):
+                    continue
+                function = Function(command_elem)
+                self.functions[function.name] = function
 
-        for feature_elem in root.iterfind('feature'):
-            if self.use_extension(feature_elem):
-                extension = Extension(feature_elem, self)
-                self.extensions[extension.name] = extension
-        for extension_elem in root.iterfind('extensions/extension'):
-            if self.use_extension(extension_elem):
-                extension = Extension(extension_elem, self)
-                self.extensions[extension.name] = extension
+        for root in roots:
+            for feature_elem in itertools.chain(
+                    root.iterfind('feature'),
+                    root.iterfind('extensions/extension')):
+                if self.use_extension(feature_elem):
+                    extension = Extension(feature_elem, self)
+                    self.extensions[extension.name] = extension
         self.extensions = sortedDict(self.extensions, Extension.key)
 
         # Prune enums and functions that don't apply in this API/profile
@@ -172,23 +206,82 @@ class GLAPI(API):
     default_extensions = 'gl'
     block = 'BUGLE_API_EXTENSION_BLOCK_GL'
 
+class GLES1CMAPI(GLAPI):
+    api = 'gles1'
+    profile = 'common'
+    default_extensions = 'gles1'
+    block = 'BUGLE_API_EXTENSION_BLOCK_GL'
+
+class GLES2API(GLAPI):
+    api = 'gles2'
+    profile = 'common'
+    default_extensions = 'gles2'
+    block = 'BUGLE_API_EXTENSION_BLOCK_GL'
+
 class GLXAPI(API):
     api = 'glx'
     profile = None
     default_extensions = 'glx'
     block = 'BUGLE_API_EXTENSION_BLOCK_GLWIN'
+    extra_aliases = genglxmltables.glx_extra_aliases
+    # Add None as a token
+    extra_tree = etree.XML('''
+        <registry>
+            <enums namespace="GLX">
+                <enum name="None" value="0"/>
+            </enums>
+            <feature api="glx" name="GLX_VERSION_1_0" number="1.0">
+                <require>
+                    <enum name="None" />
+                </require>
+            </feature>
+        </registry>''')
 
     def valid_enums(self, enums_elem):
-        if enums_elem.get('namespace') != 'GLX':
+        if enums_elem.get('namespace') not in ['GLX', 'GL']:
+            return False
+        return API.valid_enums(self, enums_elem)
+
+class EGLAPI(API):
+    api = 'egl'
+    profile = None
+    default_extensions = 'egl'
+    block = 'BUGLE_API_EXTENSION_BLOCK_GLWIN'
+
+    def valid_enums(self, enums_elem):
+        if enums_elem.get('group') == 'Boolean':
+            return True
+        return API.valid_enums(self, enums_elem)
+
+class WGLAPI(API):
+    api = 'wgl'
+    profile = None
+    default_extensions = 'wgl'
+    block = 'BUGLE_API_EXTENSION_BLOCK_GLWIN'
+    # WGL has some internal functions not directly called by the user.
+    # However, we need to forward them to replace OpenGL32.dll.
+    extra_tree = etree.XML(genglxmltables.wgl_extra_xml)
+
+    def valid_enums(self, enums_elem):
+        if enums_elem.get('namespace') not in ['WGL', 'GL']:
             return False
         return API.valid_enums(self, enums_elem)
 
 def do_alias(options, apis):
+    def generator():
+        for api in apis:
+            for function in api.functions.values():
+                yield function.name
+    print('LIMIT', '|'.join(generator()))
+
     for api in apis:
         for function in api.functions.values():
             aliases = function.elem.findall('alias')
             for a in aliases:
-                print('ALIAS {} {}'.format(function.name, a.get('name')))
+                if a.get('name') in api.functions:
+                    print('ALIAS {} {}'.format(function.name, a.get('name')))
+        for x, y in api.extra_aliases:
+            print('ALIAS {} {}'.format(x, y))
 
 def do_header(options, apis):
     print('/* Generated by ' + sys.argv[0] + '. Do not edit. */')
@@ -369,12 +462,16 @@ def do_c(options, apis):
 
 def main():
     parser = OptionParser()
-    parser.add_option('--header', dest = 'header', metavar = 'FILE',
+    parser.add_option('--header', metavar = 'FILE',
                       help = 'header file with function enumeration')
-    parser.add_option('-m', '--mode', dest = 'mode', metavar = 'MODE',
+    parser.add_option('-m', '--mode', metavar = 'MODE',
                       type = 'choice', choices = ['c', 'header', 'alias'],
                       help = 'output to generate')
-    parser.set_usage('Usage: %prog [options] -m mode gl.xml')
+    parser.add_option('--gltype', metavar = 'TYPE',
+                      type = 'choice', choices = ['gl', 'gles1cm', 'gles2'],
+                      default = 'gl',
+                      help = 'GL variant to use for gl.xml')
+    parser.set_usage('Usage: %prog [options] -m mode --gltype type gl.xml [...]')
     (options, args) = parser.parse_args()
     if not args:
         parser.print_usage(sys.stderr)
@@ -394,7 +491,29 @@ def main():
         'c': do_c
     }
 
-    apis = [GLAPI(args[0]), GLXAPI(args[1])]
+    glfactories = {
+        'gl': GLAPI,
+        'gles1cm': GLES1CMAPI,
+        'gles2': GLES2API
+    }
+
+    factories = {
+        'gl.xml': glfactories[options.gltype],
+        'glx.xml': GLXAPI,
+        'egl.xml': EGLAPI,
+        'wgl.xml': WGLAPI
+    }
+
+    apis = []
+    for arg in args:
+        base = os.path.basename(arg)
+        apis.append(factories[base](arg))
+    for key in genglxmltables.extension_children.keys():
+        if key.startswith('EXTGROUP_'):
+            apis[0].extensions[key] = PseudoExtension(key)
+    # Re-sort extensions
+    apis[0].extensions = sortedDict(apis[0].extensions, Extension.key)
+
     modes[options.mode](options, apis)
 
 if __name__ == '__main__':

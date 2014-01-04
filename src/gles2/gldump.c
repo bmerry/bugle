@@ -1,5 +1,5 @@
 /*  BuGLe: an OpenGL debugging tool
- *  Copyright (C) 2004-2008, 2012  Bruce Merry
+ *  Copyright (C) 2004-2008, 2012-2013  Bruce Merry
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -136,7 +136,6 @@ int bugle_gl_format_to_count(GLenum format, GLenum type)
         {
         case GL_ALPHA:
         case GL_LUMINANCE:
-        case GL_STENCIL_INDEX:
         case GL_DEPTH_COMPONENT:
             return 1;
         case GL_LUMINANCE_ALPHA:

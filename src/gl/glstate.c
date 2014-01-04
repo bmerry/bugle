@@ -1,5 +1,5 @@
 /*  BuGLe: an OpenGL debugging tool
- *  Copyright (C) 2004-2012  Bruce Merry
+ *  Copyright (C) 2004-2013  Bruce Merry
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -3250,10 +3250,10 @@ static void spawn_children_old_program_object(const glstate *self, linked_list *
 
     bugle_list_init(children, bugle_free);
 #ifdef GL_ARB_vertex_program
-    if (self->target == GL_ARB_vertex_program) mask = STATE_SELECT_FRAGMENT;
+    if (self->target == GL_VERTEX_PROGRAM_ARB) mask = STATE_SELECT_FRAGMENT;
 #endif
 #ifdef GL_ARB_fragment_program
-    if (self->target == GL_ARB_fragment_program) mask = STATE_SELECT_VERTEX;
+    if (self->target == GL_FRAGMENT_PROGRAM_ARB) mask = STATE_SELECT_VERTEX;
 #endif
     make_leaves_conditional(self, old_program_object_state, 0, mask, children);
 
@@ -3290,10 +3290,10 @@ static void spawn_children_old_program(const glstate *self, linked_list *childre
 
     bugle_list_init(children, bugle_free);
 #ifdef GL_ARB_vertex_program
-    if (self->target == GL_ARB_vertex_program) mask = STATE_SELECT_FRAGMENT;
+    if (self->target == GL_VERTEX_PROGRAM_ARB) mask = STATE_SELECT_FRAGMENT;
 #endif
 #ifdef GL_ARB_fragment_program
-    if (self->target == GL_ARB_fragment_program) mask = STATE_SELECT_VERTEX;
+    if (self->target == GL_FRAGMENT_PROGRAM_ARB) mask = STATE_SELECT_VERTEX;
 #endif
     make_leaves_conditional(self, old_program_state, 0, mask, children);
     CALL(glGetProgramivARB)(self->target, GL_MAX_PROGRAM_ENV_PARAMETERS_ARB, &max_env);

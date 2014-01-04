@@ -199,24 +199,30 @@ def get_runtime(aspects):
       - A list of headers that are needed to include the GL headers
       - The GL headers, for parsing out extension information
       - The libraries containing GL
+      - The XML registries defining GL and the window system bindings
 
-    @return a (pre_headers, headers, libraries) tuple, with relative paths
+    @return a (pre_headers, headers, libraries, registries) tuple, with relative paths
     '''
     pre_headers = []
     headers = []
     libraries = []
+    registries = []
+    registries.append('#khronos-api/gl.xml')  # Shared by all flavours of GL
 
     if aspects['glwin'] == 'wgl':
         pre_headers.extend(['windows.h', 'GL/gl.h'])
         headers.extend(['wingdi.h', 'GL/wglext.h'])
+        registries.append('#khronos-api/wgl.xml')
         targets['bugle']['source'].extend([File('gl/opengl32.def')])
         targets['bugle']['LIBS'].extend(['user32'])
     if aspects['glwin'] == 'glx':
         headers.extend(['GL/glx.h', 'GL/glxext.h'])
+        registries.append('#khronos-api/glx.xml')
         targets['bugle']['LIBS'].extend(['X11'])
         targets['bugle']['source'].extend([File('glx/glxdump.c')])
     if aspects['glwin'] == 'egl':
         headers.extend(['EGL/egl.h', 'EGL/eglext.h'])
+        registries.append('#khronos-api/egl.xml')
         libraries.append('libEGL')
     if aspects['winsys'] == 'x11':
         if 'X11' not in targets['bugle']['LIBS']:
@@ -235,7 +241,7 @@ def get_runtime(aspects):
         headers.extend(['GLES2/gl2.h', 'GLES2/gl2ext.h'])
         libraries.append('libGLESv2')
 
-    return pre_headers, headers, libraries
+    return pre_headers, headers, libraries, registries
 
 ############################
 ### Start of main script ###
@@ -256,7 +262,7 @@ for env in envs.itervalues():
     apply_compilation_aspects(env, aspects)
 
 # Deal with choice aspects
-pre_headers, headers, libraries = get_runtime(aspects)
+pre_headers, headers, libraries, registries = get_runtime(aspects)
 if aspects['binfmt'] == 'pe':
     # Can't use LD_PRELOAD on windows, so have to use the same name
     targets['bugle']['target'] = libraries[-1]
@@ -285,9 +291,13 @@ budgie_outputs = [
         ]
 envs['tu'].Tu(['data/gl.o', 'data/gl.tu'], 'data/gl.c')
 envs['tu'].Budgie(budgie_outputs, ['data/gl.tu', 'bc/main.bc'])
-envs['tu'].BudgieAlias(target = ['bc/alias.bc'], source = headers)
-envs['tu'].ApitablesC(target = ['apitables.c'], source = [File('budgielib/defines.h')] + headers)
-envs['tu'].ApitablesH(target = ['apitables.h'], source = [File('budgielib/defines.h')] + headers)
+envs['tu'].BudgieAlias(target = ['bc/alias.bc'], source = registries, GLTYPE = aspects['gltype'])
+envs['tu'].ApitablesC(target = ['apitables.c'],
+        source = [File('budgielib/defines.h')] + registries,
+        GLTYPE = aspects['gltype'])
+envs['tu'].ApitablesH(target = ['apitables.h'],
+        source = [File('budgielib/defines.h')] + registries,
+        GLTYPE = aspects['gltype'])
 
 substs = get_substs(aspects)
 envs['host'].SubstFile('include/bugle/porting.h', 'include/bugle/porting.h.in', substs)
@@ -296,7 +306,7 @@ envs['host'].Install(aspects['libdir'] + '/pkgconfig', source = bugle_pc)
 
 targets['bugleutils'].update({
     'target': 'bugleutils',
-    'version': '8.0.2'})
+    'version': '8.0.3'})
 targets['bugleutils']['source'].extend([
     'gl/gltypes.c',
     'apireflect.c',
@@ -319,7 +329,7 @@ targets['bugleutils'].out = envs['host'].BugleSharedLibrary(
 
 if 'interceptor' in aspects['parts']:
     targets['bugle'].update({
-        'version': '10.0.0'})
+        'version': '10.0.1'})
 
     targets['bugle']['source'].extend([
         envs['host'].BugleCFile(['confparse.y', 'statsparse.y'], srcdir, package_sources, YACCFLAGS = '-d'),

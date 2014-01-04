@@ -1,5 +1,5 @@
 /*  BuGLe: an OpenGL debugging tool
- *  Copyright (C) 2004-2006, 2010  Bruce Merry
+ *  Copyright (C) 2004-2006, 2010, 2013  Bruce Merry
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -304,7 +304,8 @@ string type_to_id(tree_node_p type)
             break;
         case ARRAY_TYPE:
             ans << "A";
-            if (TYPE_DOMAIN(type) != NULL_TREE)
+            if (TYPE_DOMAIN(type) != NULL_TREE
+                && TYPE_MAX_VALUE(TYPE_DOMAIN(type)) != NULL_TREE)
                 ans << TREE_INT_CST_LOW(TYPE_MAX_VALUE(TYPE_DOMAIN(type))) + 1;
             ans << "_" << type_to_id(TREE_TYPE(type));
             break;

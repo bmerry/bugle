@@ -1,5 +1,5 @@
 /*  BuGLe: an OpenGL debugging tool
- *  Copyright (C) 2004-2007, 2009-2010  Bruce Merry
+ *  Copyright (C) 2004-2007, 2009-2010, 2014  Bruce Merry
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -24,6 +24,7 @@
 #include <bugle/string.h>
 #include <bugle/bool.h>
 #include "platform/threads.h"
+#include "platform/types.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -104,8 +105,8 @@ static int log_next(FILE *f, const char **format, const char *filterset, const c
             case 'f': fputs(filterset, f); break;
             case 'e': fputs(event, f); break;
             case 'm': *format += 2; return 1;
-            case 'p': fprintf(f, "%lu", (unsigned long) getpid()); break;
-            case 't': fprintf(f, "%lu", bugle_thread_self()); break;
+            case 'p': fprintf(f, "%" BUGLE_PRIu64, (bugle_uint64_t) bugle_getpid()); break;
+            case 't': fprintf(f, "%" BUGLE_PRIu64, (bugle_uint64_t) bugle_thread_self()); break;
             case '%': fputc('%', f); break;
             default: /* Unrecognised escape, treat it as literal */
                 fputc('%', f);

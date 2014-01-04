@@ -1,5 +1,5 @@
 /*  BuGLe: an OpenGL debugging tool
- *  Copyright (C) 2004-2007, 2009  Bruce Merry
+ *  Copyright (C) 2004-2007, 2009, 2013  Bruce Merry
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -51,6 +51,11 @@ static GtkTreeModel *target_model(void)
     gtk_list_store_set(store, &iter,
                        COLUMN_MODE_NAME, _("Local"),
                        COLUMN_MODE_ENUM, GLDB_PROGRAM_TYPE_LOCAL,
+                       -1);
+    gtk_list_store_append(store, &iter);
+    gtk_list_store_set(store, &iter,
+                       COLUMN_MODE_NAME, _("Local inside GDB"),
+                       COLUMN_MODE_ENUM, GLDB_PROGRAM_TYPE_GDB,
                        -1);
     gtk_list_store_append(store, &iter);
     gtk_list_store_set(store, &iter,

@@ -1,5 +1,5 @@
 /*  BuGLe: an OpenGL debugging tool
- *  Copyright (C) 2008, 2011  Bruce Merry
+ *  Copyright (C) 2008, 2011, 2013  Bruce Merry
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -265,7 +265,8 @@ void bugle_glwin_filter_catches_swap_buffers(filter *f, bugle_bool inactive, fil
 
 /* The Linux ABI requires that OpenGL 1.2 functions be accessible by
  * direct dynamic linking, but everything else should be accessed by
- * glXGetProcAddressARB. We deal with that here.
+ * glXGetProcAddressARB. We deal with that here. However, we don't
+ * use glXGetProcAddressARB to query itself.
  */
 void bugle_function_address_initialise_extra(void)
 {
@@ -280,7 +281,7 @@ void bugle_function_address_initialise_extra(void)
             || bugle_api_function_extension(i) > BUGLE_API_EXTENSION_ID(GL_VERSION_1_1))
         {
             BUDGIEAPIPROC ptr = bugle_glwin_get_proc_address(budgie_function_name(i));
-            if (ptr != NULL)
+            if (ptr != NULL && ptr != budgie_function_address_wrapper(i))
                 budgie_function_address_set_real(i, ptr);
         }
     }
