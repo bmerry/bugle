@@ -533,7 +533,7 @@ static bugle_bool send_data_framebuffer(bugle_uint32_t id, GLuint fbo,
 #endif
     GLint width = 0, height = 0;
     size_t length;
-    GLuint fbo_target = 0, fbo_binding = 0;
+    GLuint fbo_target = 0;
     char *data;
     bugle_bool illegal = BUGLE_FALSE;
 
@@ -549,7 +549,7 @@ static bugle_bool send_data_framebuffer(bugle_uint32_t id, GLuint fbo,
     if (bugle_gl_has_framebuffer_object())
     {
         fbo_target = bugle_gl_read_framebuffer_target();
-        fbo_binding = bugle_gl_get_read_framebuffer_binding();
+        old_fbo = bugle_gl_get_read_framebuffer_binding();
     }
     else
     {
@@ -566,8 +566,6 @@ static bugle_bool send_data_framebuffer(bugle_uint32_t id, GLuint fbo,
     }
 
     pixel_pack_reset(&old_pack);
-    if (fbo_binding)
-        CALL(glGetIntegerv)(fbo_binding, &old_fbo);
 
     if ((GLint) fbo != old_fbo)
         bugle_gl_bind_read_framebuffer(fbo);

@@ -177,6 +177,16 @@ glx_extra_aliases = [
     ('glXSelectEventSGIX', 'glXSelectEvent')
 ]
 
+# Extension enum groups that contain tokens that alias other tokens and are
+# more likely to cause problems than to give correct dumps, at least until
+# support is written for these extensions.
+bad_enum_groups = [
+    'TriangleListSUN',
+    'MapTextureFormatINTEL',
+    'PathRenderingTokenNV',
+    'GLXAttribute'
+]
+
 wgl_extra_xml = '''
 <registry>
     <commands namespace="WGL">

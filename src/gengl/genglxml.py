@@ -123,7 +123,9 @@ class API:
     extra_tree = etree.XML('<registry></registry>')
 
     def valid_enums(self, enums_elem):
-        return enums_elem.get('type') != 'bitmask' and 'group' not in enums_elem.keys()
+        return (enums_elem.get('type') != 'bitmask' and
+            ('group' not in enums_elem.keys()
+                or enums_elem.get('group') not in genglxmltables.bad_enum_groups))
 
     def __init__(self, filename):
         self.enums = dict()
