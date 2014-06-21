@@ -415,26 +415,22 @@ static bugle_pid_t execute(void (*child_init)(void))
                 int p = 0;
                 prog_argv[p++] = "xterm";
                 prog_argv[p++] = "-e";
-                prog_argv[p++] = "gdb";
-                if (display)
-                {
-                    prog_argv[p++] = "-ex";
-                    prog_argv[p++] = bugle_asprintf("set env DISPLAY %s", display);
-                }
-                if (chain)
-                {
-                    prog_argv[p++] = "-ex";
-                    prog_argv[p++] = bugle_asprintf("set env BUGLE_CHAIN=%s", chain);
-                }
-                prog_argv[p++] = "-ex";
-                prog_argv[p++] = "set env LD_PRELOAD=libbugle.so";
-                prog_argv[p++] = "-ex";
-                prog_argv[p++] = "set env BUGLE_DEBUGGER=fd";
-                prog_argv[p++] = "-ex";
-                prog_argv[p++] = bugle_asprintf("set env BUGLE_DEBUGGER_FD_IN=%d", out_pipe[0]);
-                prog_argv[p++] = "-ex";
-                prog_argv[p++] = bugle_asprintf("set env BUGLE_DEBUGGER_FD_OUT=%d", in_pipe[1]);
-                prog_argv[p++] = command;
+                prog_argv[p++] = "sh";
+                prog_argv[p++] = "-c";
+                prog_argv[p++] = 
+                    bugle_asprintf(
+                        "gdb -ex \"%s %s\""
+                        " -ex \"%s %s\""
+                        " -ex \"set env LD_PRELOAD libbugle.so\""
+                        " -ex \"set env BUGLE_DEBUGGER fd\""
+                        " -ex \"set env BUGLE_DEBUGGER_FD_IN %d\""
+                        " -ex \"set env BUGLE_DEBUGGER_FD_OUT %d\""
+                        " --args %s",
+                        display ? "set env DISPLAY" : "", display ? display : "",
+                        chain ? "set env BUGLE_CHAIN" : "", chain ? chain : "",
+                        out_pipe[0],
+                        in_pipe[1],
+                        command);
                 prog_argv[p++] = NULL;
             }
             break;
