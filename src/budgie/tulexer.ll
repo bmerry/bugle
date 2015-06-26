@@ -150,6 +150,7 @@ rest of the record, find the length, then replace what we don't need.
 
 "lngt: "{DIGIT}+        { yylnode->length = atoi(yytext + 6); }
 "prec: "{DIGIT}+        { yylnode->prec = atoi(yytext + 6); }
+"int: "-?{DIGIT}+      { yylnode->low = atoi(yytext + 5); }
 "low : "-?{DIGIT}+      { yylnode->low = atoi(yytext + 6); }
 "high: "-?{DIGIT}+      { yylnode->high = atoi(yytext + 6); }
 

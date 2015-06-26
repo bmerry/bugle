@@ -1,6 +1,7 @@
 * Fix errors with debug framebuffer view when non-zero framebuffer bound
 * Fix many tokens going missing due to changes in Khronos API registry
 * Fix "Local inside GDB" debug mode when taking arguments
+* Fix compilation on GCC 5.1 (patch from jdtournier)
 
 0.0.20140104
 ------------
