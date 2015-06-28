@@ -2,7 +2,7 @@
 import os
 from BugleAspects import *
 
-version = '0.0.20140104'
+version = '0.0.20150628'
 
 def subdir(srcdir, dir, **kw):
     '''
