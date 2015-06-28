@@ -268,10 +268,10 @@ static bugle_bool lavc_initialise(int width, int height)
     video_context->oformat = fmt;
     snprintf(video_context->filename,
              sizeof(video_context->filename), "%s", video_filename);
-    /* FIXME: what does the second parameter (id) do? */
-    video_stream = av_new_stream(video_context, 0);
+    video_stream = avformat_new_stream(video_context, NULL);
     if (!video_stream)
         return BUGLE_FALSE;
+    video_stream->id = 0; /* FIXME: what does this parameter do? */
     codec = avcodec_find_encoder_by_name(video_codec);
     if (!codec) codec = avcodec_find_encoder(CODEC_ID_HUFFYUV);
     if (!codec)
@@ -295,7 +295,7 @@ static bugle_bool lavc_initialise(int width, int height)
     c->time_base.den = 30;
     c->time_base.num = 1;
     c->gop_size = 12;     /* FIXME: user should specify */
-    if (avcodec_open(c, codec) < 0)
+    if (avcodec_open2(c, codec, NULL) < 0)
         return BUGLE_FALSE;
     video_buffer = bugle_malloc(video_buffer_size);
     video_raw = allocate_video_frame(CAPTURE_AV_FMT, width, height, BUGLE_FALSE);
